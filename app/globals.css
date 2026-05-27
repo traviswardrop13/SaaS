@@ -1,0 +1,48 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url("https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Nunito:wght@500;700;800&display=swap");
+
+html,
+body {
+  height: 100%;
+  font-family: "Nunito", system-ui, sans-serif;
+  background: linear-gradient(180deg, #fff7ed 0%, #ffedd5 100%);
+  color: #1f2937;
+}
+
+h1,
+h2,
+h3,
+.font-display {
+  font-family: "Baloo 2", system-ui, sans-serif;
+}
+
+button {
+  font-family: "Baloo 2", system-ui, sans-serif;
+}
+
+.btn {
+  @apply inline-flex items-center justify-center rounded-2xl px-6 py-3 font-bold text-white shadow-chunky transition active:translate-y-1 active:shadow-chunky-sm;
+}
+
+.btn-primary {
+  @apply btn bg-grass-500 hover:bg-grass-600;
+}
+
+.btn-secondary {
+  @apply btn bg-sky-500 hover:bg-sky-400;
+}
+
+.btn-ghost {
+  @apply btn bg-white text-gray-700 shadow-chunky-sm hover:bg-gray-50;
+}
+
+.btn-warn {
+  @apply btn bg-brand-500 hover:bg-brand-600;
+}
+
+.card {
+  @apply rounded-3xl bg-white p-6 shadow-chunky;
+}
