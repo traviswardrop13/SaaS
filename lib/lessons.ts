@@ -1,3 +1,5 @@
+import type { SoundPosition, TargetSound } from "./scoring";
+
 export type Word = {
   /** the target word the child should say */
   text: string;
@@ -12,13 +14,17 @@ export type Lesson = {
   title: string;
   /** very short hint shown before the lesson starts */
   hint: string;
+  /** Which phoneme this lesson is targeting. */
+  targetSound: TargetSound;
+  /** Where the target sound sits in each word. */
+  position: SoundPosition;
   words: Word[];
 };
 
 export type Skill = {
   id: string;
   /** the phoneme this skill targets, e.g. "S" */
-  sound: string;
+  sound: TargetSound;
   title: string;
   subtitle: string;
   color: string; // tailwind bg-* class for the node
@@ -39,11 +45,13 @@ export const SKILLS: Skill[] = [
         id: "s-initial",
         title: "S at the start",
         hint: "Hiss like a snake — sssss!",
+        targetSound: "S",
+        position: "initial",
         words: [
-          { text: "sun", emoji: "☀️" },
-          { text: "sock", emoji: "🧦" },
+          { text: "sun", emoji: "☀️", accepts: ["son"] },
+          { text: "sock", emoji: "🧦", accepts: ["socks"] },
           { text: "soup", emoji: "🍲" },
-          { text: "seal", emoji: "🦭" },
+          { text: "seal", emoji: "🦭", accepts: ["seel"] },
           { text: "snake", emoji: "🐍" },
         ],
       },
@@ -51,22 +59,26 @@ export const SKILLS: Skill[] = [
         id: "s-medial",
         title: "S in the middle",
         hint: "Keep the snake hiss going in the middle.",
+        targetSound: "S",
+        position: "medial",
         words: [
           { text: "pencil", emoji: "✏️" },
           { text: "racing", emoji: "🏁" },
           { text: "music", emoji: "🎵" },
-          { text: "tossing", emoji: "🤾" },
+          { text: "tossing", emoji: "🤾", accepts: ["toss"] },
         ],
       },
       {
         id: "s-final",
         title: "S at the end",
         hint: "Finish strong with a long ssss.",
+        targetSound: "S",
+        position: "final",
         words: [
-          { text: "bus", emoji: "🚌" },
+          { text: "bus", emoji: "🚌", accepts: ["buss"] },
           { text: "house", emoji: "🏠" },
           { text: "mouse", emoji: "🐭" },
-          { text: "ice", emoji: "🧊" },
+          { text: "ice", emoji: "🧊", accepts: ["eyes"] },
         ],
       },
     ],
@@ -83,22 +95,26 @@ export const SKILLS: Skill[] = [
         id: "r-initial",
         title: "R at the start",
         hint: "Roar like a lion — rrrrr!",
+        targetSound: "R",
+        position: "initial",
         words: [
-          { text: "rain", emoji: "🌧️" },
+          { text: "rain", emoji: "🌧️", accepts: ["rein", "reign"] },
           { text: "robot", emoji: "🤖" },
           { text: "rabbit", emoji: "🐰" },
-          { text: "rocket", emoji: "🚀" },
-          { text: "ring", emoji: "💍" },
+          { text: "rocket", emoji: "🚀", accepts: ["rock it"] },
+          { text: "ring", emoji: "💍", accepts: ["wring"] },
         ],
       },
       {
         id: "r-medial",
         title: "R in the middle",
         hint: "Keep the roar going in the middle.",
+        targetSound: "R",
+        position: "medial",
         words: [
-          { text: "carrot", emoji: "🥕" },
+          { text: "carrot", emoji: "🥕", accepts: ["caret", "karat"] },
           { text: "parrot", emoji: "🦜" },
-          { text: "berry", emoji: "🍓" },
+          { text: "berry", emoji: "🍓", accepts: ["bury"] },
           { text: "story", emoji: "📖" },
         ],
       },
@@ -116,6 +132,8 @@ export const SKILLS: Skill[] = [
         id: "l-initial",
         title: "L at the start",
         hint: "Tongue up — la la la!",
+        targetSound: "L",
+        position: "initial",
         words: [
           { text: "lion", emoji: "🦁" },
           { text: "leaf", emoji: "🍃" },
@@ -128,9 +146,11 @@ export const SKILLS: Skill[] = [
         id: "l-final",
         title: "L at the end",
         hint: "Tongue tip up at the end — ball!",
+        targetSound: "L",
+        position: "final",
         words: [
-          { text: "ball", emoji: "⚽" },
-          { text: "bell", emoji: "🔔" },
+          { text: "ball", emoji: "⚽", accepts: ["bawl"] },
+          { text: "bell", emoji: "🔔", accepts: ["belle"] },
           { text: "owl", emoji: "🦉" },
           { text: "snail", emoji: "🐌" },
         ],
@@ -149,8 +169,10 @@ export const SKILLS: Skill[] = [
         id: "sh-initial",
         title: "SH at the start",
         hint: "Like telling someone to be quiet — shhh!",
+        targetSound: "SH",
+        position: "initial",
         words: [
-          { text: "shoe", emoji: "👟" },
+          { text: "shoe", emoji: "👟", accepts: ["shoo"] },
           { text: "ship", emoji: "🚢" },
           { text: "shark", emoji: "🦈" },
           { text: "sheep", emoji: "🐑" },
@@ -171,8 +193,10 @@ export const SKILLS: Skill[] = [
         id: "th-initial",
         title: "TH at the start",
         hint: "Tongue peeks out between your teeth.",
+        targetSound: "TH",
+        position: "initial",
         words: [
-          { text: "thumb", emoji: "👍" },
+          { text: "thumb", emoji: "👍", accepts: ["thum"] },
           { text: "think", emoji: "🤔" },
           { text: "three", emoji: "3️⃣" },
           { text: "thirsty", emoji: "🥤" },
@@ -192,6 +216,8 @@ export const SKILLS: Skill[] = [
         id: "ch-initial",
         title: "CH at the start",
         hint: "Like a train — choo choo!",
+        targetSound: "CH",
+        position: "initial",
         words: [
           { text: "chair", emoji: "🪑" },
           { text: "cheese", emoji: "🧀" },

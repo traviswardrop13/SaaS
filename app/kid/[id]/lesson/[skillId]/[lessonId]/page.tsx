@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import confetti from "canvas-confetti";
 import { findLesson } from "@/lib/lessons";
@@ -13,8 +13,10 @@ import {
 } from "@/lib/storage";
 import {
   isSpeechRecognitionSupported,
+  prewarmMicrophone,
   speak,
   startRecognition,
+  type RecognitionAlternative,
   type RecognitionHandle,
 } from "@/lib/speech";
 import { scoreUtterance, type ScoreResult } from "@/lib/scoring";
@@ -23,7 +25,6 @@ type Phase = "intro" | "prompt" | "listening" | "result" | "done";
 
 export default function LessonPage() {
   const params = useParams<{ id: string; skillId: string; lessonId: string }>();
-  const router = useRouter();
 
   const lessonInfo = useMemo(
     () => findLesson(params.skillId, params.lessonId),
@@ -35,10 +36,11 @@ export default function LessonPage() {
 
   const [phase, setPhase] = useState<Phase>("intro");
   const [wordIdx, setWordIdx] = useState(0);
-  const [transcript, setTranscript] = useState("");
+  const [interim, setInterim] = useState("");
   const [result, setResult] = useState<ScoreResult | null>(null);
   const [scores, setScores] = useState<number[]>([]);
   const recRef = useRef<RecognitionHandle | null>(null);
+  const alternativesRef = useRef<RecognitionAlternative[]>([]);
 
   useEffect(() => {
     setSupported(isSpeechRecognitionSupported());
@@ -57,7 +59,9 @@ export default function LessonPage() {
   if (missing || !lessonInfo) {
     return (
       <main className="mx-auto max-w-xl px-6 py-16 text-center">
-        <h1 className="font-display text-3xl">We couldn&apos;t find that lesson.</h1>
+        <h1 className="font-display text-3xl">
+          We couldn&apos;t find that lesson.
+        </h1>
         <Link href="/dashboard" className="btn-primary mt-6 inline-flex">
           Back
         </Link>
@@ -75,49 +79,54 @@ export default function LessonPage() {
     if (word) speak(word.text);
   }
 
+  function beginLesson() {
+    // Fire and forget — getting permission now means the very first mic
+    // tap doesn't stall on a permission prompt mid-recording.
+    if (supported) void prewarmMicrophone();
+    setPhase("prompt");
+  }
+
   function startListening() {
     if (!word) return;
-    setTranscript("");
+    setInterim("");
     setResult(null);
+    alternativesRef.current = [];
     setPhase("listening");
+
     const handle = startRecognition({
-      onResult: (t, isFinal) => {
-        setTranscript(t);
-        if (isFinal) finishUtterance(t);
+      onResult: (alts, isFinal) => {
+        alternativesRef.current = alts;
+        setInterim(alts[0]?.transcript ?? "");
+        if (isFinal) finishUtterance(alts);
       },
       onError: (err) => {
-        if (err === "no-speech") {
-          setPhase("prompt");
-        } else if (err === "not-allowed" || err === "service-not-allowed") {
+        if (err === "not-allowed" || err === "service-not-allowed") {
           setSupported(false);
-          setPhase("prompt");
-        } else {
-          setPhase("prompt");
         }
+        // Any error: drop out of listening; let the kid try again.
+        setPhase("prompt");
       },
       onEnd: () => {
-        // If we get here without a final result, keep what we have.
+        // onEnd fires after stop(). If we already produced a result, we're
+        // done. Otherwise, score whatever interim alternatives we collected.
         setPhase((p) => {
-          if (p === "listening") {
-            finishUtterance(transcriptRef.current);
-            return "result";
-          }
-          return p;
+          if (p !== "listening") return p;
+          finishUtterance(alternativesRef.current);
+          return "result";
         });
       },
     });
     recRef.current = handle;
   }
 
-  // Keep latest transcript accessible inside onEnd closure.
-  const transcriptRef = useRef("");
-  useEffect(() => {
-    transcriptRef.current = transcript;
-  }, [transcript]);
-
-  function finishUtterance(finalTranscript: string) {
+  function finishUtterance(alts: RecognitionAlternative[]) {
     if (!word) return;
-    const s = scoreUtterance(finalTranscript, word.text, word.accepts);
+    const s = scoreUtterance(alts, {
+      target: word.text,
+      accepts: word.accepts,
+      targetSound: lesson.targetSound,
+      position: lesson.position,
+    });
     setResult(s);
     setScores((prev) => [...prev, s.similarity]);
     setPhase("result");
@@ -127,7 +136,12 @@ export default function LessonPage() {
   function selfRate(rating: ScoreResult["rating"]) {
     if (!word) return;
     const sim = rating === "great" ? 1 : rating === "ok" ? 0.7 : 0.3;
-    const r: ScoreResult = { similarity: sim, rating, matchedAgainst: word.text };
+    const r: ScoreResult = {
+      similarity: sim,
+      rating,
+      matchedAgainst: word.text,
+      bestHeard: "",
+    };
     setResult(r);
     setScores((prev) => [...prev, sim]);
     setPhase("result");
@@ -140,7 +154,8 @@ export default function LessonPage() {
     } else {
       setWordIdx(next);
       setResult(null);
-      setTranscript("");
+      setInterim("");
+      alternativesRef.current = [];
       setPhase("prompt");
     }
   }
@@ -201,7 +216,7 @@ export default function LessonPage() {
               </p>
             )}
             <button
-              onClick={() => setPhase("prompt")}
+              onClick={beginLesson}
               className="btn-primary mt-6 w-full text-lg"
             >
               Let&apos;s go!
@@ -230,16 +245,23 @@ export default function LessonPage() {
               {phase !== "result" ? (
                 <div className="mt-6 w-full">
                   {supported ? (
-                    <MicButton
-                      listening={phase === "listening"}
-                      onPress={() => {
-                        if (phase === "listening") {
-                          recRef.current?.stop();
-                        } else {
-                          startListening();
-                        }
-                      }}
-                    />
+                    <>
+                      <MicButton
+                        listening={phase === "listening"}
+                        onPress={() => {
+                          if (phase === "listening") {
+                            recRef.current?.stop();
+                          } else {
+                            startListening();
+                          }
+                        }}
+                      />
+                      <p className="mt-3 text-xs text-gray-400">
+                        {phase === "listening"
+                          ? "Listening… tap to stop when you're done"
+                          : "Tap the mic, then say the word"}
+                      </p>
+                    </>
                   ) : (
                     <div className="space-y-2">
                       <p className="text-sm text-gray-500">
@@ -267,20 +289,20 @@ export default function LessonPage() {
                       </div>
                     </div>
                   )}
-                  {transcript && phase === "listening" && (
+                  {interim && phase === "listening" && (
                     <p className="mt-3 text-sm text-gray-500">
-                      I hear: <span className="italic">{transcript}</span>
+                      I hear: <span className="italic">{interim}</span>
                     </p>
                   )}
                 </div>
               ) : (
                 <ResultPanel
                   result={result!}
-                  transcript={transcript}
                   onNext={nextWord}
                   onRetry={() => {
                     setResult(null);
-                    setTranscript("");
+                    setInterim("");
+                    alternativesRef.current = [];
                     setPhase("prompt");
                     setScores((prev) => prev.slice(0, -1));
                   }}
@@ -307,7 +329,8 @@ export default function LessonPage() {
                   setWordIdx(0);
                   setScores([]);
                   setResult(null);
-                  setTranscript("");
+                  setInterim("");
+                  alternativesRef.current = [];
                   setPhase("intro");
                 }}
                 className="btn-secondary"
@@ -361,12 +384,10 @@ function MicButton({
 
 function ResultPanel({
   result,
-  transcript,
   onNext,
   onRetry,
 }: {
   result: ScoreResult;
-  transcript: string;
   onNext: () => void;
   onRetry: () => void;
 }) {
@@ -382,9 +403,15 @@ function ResultPanel({
       <h2 className={`mt-2 font-display text-3xl font-extrabold ${copy.color}`}>
         {copy.title}
       </h2>
-      {transcript && (
-        <p className="mt-2 text-sm text-gray-500">
-          I heard: <span className="italic">&ldquo;{transcript}&rdquo;</span>
+      {result.hint && (
+        <p className="mx-auto mt-3 max-w-sm rounded-2xl bg-brand-50 p-3 text-sm font-bold text-brand-700">
+          {result.hint}
+        </p>
+      )}
+      {result.bestHeard && (
+        <p className="mt-3 text-sm text-gray-500">
+          I heard:{" "}
+          <span className="italic">&ldquo;{result.bestHeard}&rdquo;</span>
         </p>
       )}
       <div className="mt-6 flex justify-center gap-3">
