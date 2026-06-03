@@ -93,6 +93,20 @@ export default function WelcomePage() {
     return base;
   }, [hasExistingParent, path]);
 
+  // Auto-derive focus areas from whichever picker the parent used so the
+  // review step always reflects the latest choice. Diagnostic wins if the
+  // parent took that branch; otherwise tile selections drive focus.
+  // IMPORTANT: this hook must stay above the `!mounted` early return below,
+  // otherwise we'd skip it on first render and violate the rules of hooks
+  // (silent in dev, hard crash in production).
+  useEffect(() => {
+    if (path === "diagnostic") {
+      setFocus(new Set(diagnosticToFocus(Array.from(challenges))));
+    } else {
+      setFocus(new Set(tilesToFocus(Array.from(selectedTiles))));
+    }
+  }, [challenges, selectedTiles, path]);
+
   if (!mounted) return null;
 
   const step = steps[stepIdx] ?? "done";
@@ -108,17 +122,6 @@ export default function WelcomePage() {
     else n.add(id);
     return n;
   }
-
-  // Auto-derive focus areas from whichever picker the parent used so the
-  // review step always reflects the latest choice. Diagnostic wins if the
-  // parent took that branch; otherwise tile selections drive focus.
-  useEffect(() => {
-    if (path === "diagnostic") {
-      setFocus(new Set(diagnosticToFocus(Array.from(challenges))));
-    } else {
-      setFocus(new Set(tilesToFocus(Array.from(selectedTiles))));
-    }
-  }, [challenges, selectedTiles, path]);
 
   function commitAndFinish() {
     const child: Child = {
