@@ -126,6 +126,7 @@ export default function LessonPage() {
       accepts: word.accepts,
       targetSound: lesson.targetSound,
       position: lesson.position,
+      blend: lesson.blend,
     });
     setResult(s);
     setScores((prev) => [...prev, s.similarity]);

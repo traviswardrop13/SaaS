@@ -1,6 +1,6 @@
 "use client";
 
-import { allLessonsInOrder } from "./lessons";
+import { allLessonsInOrder, SKILLS, type Skill } from "./lessons";
 
 const KEY = "speakup.state.v1";
 
@@ -14,6 +14,12 @@ export type Child = {
   lastActiveDay: string | null;
   /** lessonId -> { stars 0..3, attempts, bestScore } */
   progress: Record<string, LessonProgress>;
+  /**
+   * Skill IDs (from lib/lessons.ts) this child is actively working on.
+   * Empty/missing means "show everything" (good default for new profiles
+   * before the parent has gone through focus selection).
+   */
+  focusAreas?: string[];
 };
 
 export type LessonProgress = {
@@ -76,7 +82,18 @@ export function newChild(name: string, avatar: string): Child {
     streak: 0,
     lastActiveDay: null,
     progress: {},
+    focusAreas: [],
   };
+}
+
+export function setChildFocus(
+  childId: string,
+  focusAreas: string[],
+): AppState {
+  return update((s) => {
+    const child = s.children.find((c) => c.id === childId);
+    if (child) child.focusAreas = focusAreas;
+  });
 }
 
 /**
@@ -118,13 +135,27 @@ export function setActiveChild(childId: string): AppState {
 }
 
 /**
- * A lesson is unlocked if it is the first lesson, OR the lesson immediately
- * before it (in skill-tree order) has at least one star.
+ * A lesson is unlocked if it is the first lesson in the child's active set,
+ * OR the lesson immediately before it has at least one star. We restrict
+ * the ordering to the child's focus areas (if any) so unlock progression
+ * makes sense — a kid focused only on R shouldn't have to clear S lessons
+ * to unlock R-blends.
  */
 export function isLessonUnlocked(child: Child, lessonId: string): boolean {
-  const order = allLessonsInOrder();
+  const focus = child.focusAreas ?? [];
+  const order =
+    focus.length > 0
+      ? allLessonsInOrder().filter((o) => focus.includes(o.skillId))
+      : allLessonsInOrder();
   const idx = order.findIndex((o) => o.lessonId === lessonId);
   if (idx <= 0) return true;
   const prev = order[idx - 1];
   return (child.progress[prev.lessonId]?.stars ?? 0) > 0;
+}
+
+/** Skills currently visible to a child, based on focus selection. */
+export function visibleSkills(child: Child): Skill[] {
+  const focus = child.focusAreas ?? [];
+  if (focus.length === 0) return SKILLS;
+  return SKILLS.filter((s) => focus.includes(s.id));
 }

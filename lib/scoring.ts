@@ -22,7 +22,20 @@
 
 import type { RecognitionAlternative } from "./speech";
 
-export type TargetSound = "S" | "R" | "L" | "SH" | "TH" | "CH";
+export type TargetSound =
+  | "S"
+  | "R"
+  | "L"
+  | "SH"
+  | "TH"
+  | "CH"
+  | "K"
+  | "G"
+  | "F"
+  | "P"
+  | "T"
+  | "M"
+  | "N";
 export type SoundPosition = "initial" | "medial" | "final";
 
 export type ScoreOptions = {
@@ -30,6 +43,8 @@ export type ScoreOptions = {
   accepts?: string[];
   targetSound: TargetSound;
   position: SoundPosition;
+  /** if set, the heard word must begin with this letter cluster to count */
+  blend?: string;
 };
 
 export type ScoreResult = {
@@ -98,6 +113,20 @@ function patternsFor(sound: TargetSound): RegExp[] {
       return [/th/];
     case "CH":
       return [/ch/, /tch/];
+    case "K":
+      return [/k/, /c(?=[aou])/, /ck/];
+    case "G":
+      return [/g(?![h])/];
+    case "F":
+      return [/f/, /ph/];
+    case "P":
+      return [/p(?!h)/];
+    case "T":
+      return [/t(?!h)/];
+    case "M":
+      return [/m/];
+    case "N":
+      return [/n(?!g)/];
   }
 }
 
@@ -125,25 +154,18 @@ function hasTargetSound(
  * they show up in early speech. The `wrong` field is a spelling pattern that
  * the recognizer would likely produce if the kid made the substitution.
  */
-const SUBSTITUTIONS: Record<
-  TargetSound,
-  Array<{ wrong: RegExp; hint: string }>
+const SUBSTITUTIONS: Partial<
+  Record<TargetSound, Array<{ wrong: RegExp; hint: string }>>
 > = {
   R: [
-    {
-      wrong: /\bw/,
-      hint: "I heard a W. Try roaring like a lion — rrrr!",
-    },
+    { wrong: /\bw/, hint: "I heard a W. Try roaring like a lion — rrrr!" },
   ],
   L: [
     {
       wrong: /\bw/,
       hint: "I heard a W. Lift your tongue tip up to the bumpy spot — laaa!",
     },
-    {
-      wrong: /\by/,
-      hint: "Try with the tip of your tongue up — laaa, not yaaa!",
-    },
+    { wrong: /\by/, hint: "Tip of your tongue up — laaa, not yaaa!" },
   ],
   TH: [
     {
@@ -161,21 +183,26 @@ const SUBSTITUTIONS: Record<
       hint: "Keep your tongue behind your teeth — sss, not th!",
     },
   ],
-  SH: [
+  SH: [{ wrong: /\bs/, hint: "Round your lips like a fish — shhhh!" }],
+  CH: [
+    { wrong: /\bsh/, hint: "Pop the train sound — ch ch choo!" },
+    { wrong: /\bt(?!h)/, hint: "Squish T and SH together — ch!" },
+  ],
+  K: [
     {
-      wrong: /\bs/,
-      hint: "Round your lips like a fish — shhhh!",
+      wrong: /\bt(?!h)/,
+      hint: "I heard a T. Try saying it from the back of your throat — k!",
     },
   ],
-  CH: [
+  G: [
     {
-      wrong: /\bsh/,
-      hint: "Pop the train sound — ch ch choo!",
+      wrong: /\bd/,
+      hint: "I heard a D. From the back of your throat — g!",
     },
-    {
-      wrong: /\bt/,
-      hint: "Squish T and SH together — ch!",
-    },
+  ],
+  F: [
+    { wrong: /\bp/, hint: "Top teeth on bottom lip — fffff, not p!" },
+    { wrong: /\bb/, hint: "Top teeth on bottom lip — fffff, not b!" },
   ],
 };
 
@@ -204,6 +231,7 @@ function scoreOne(
   targets: string[],
   sound: TargetSound,
   position: SoundPosition,
+  blend: string | undefined,
 ): { score: number; matchedAgainst: string } {
   const heard = normalize(heardRaw);
   const heardTokens = heard.split(" ").filter(Boolean);
@@ -228,17 +256,23 @@ function scoreOne(
     }
   }
 
+  // For cluster-reduction lessons (e.g. "spoon"), require the full blend
+  // in the heard word — saying "soon" should not get full credit even if
+  // it's similar in spelling.
+  const blendOk = blend
+    ? heardTokens.some((tok) => tok.startsWith(blend.toLowerCase()))
+    : true;
+
   // Did at least one heard token contain the target sound in the right slot?
   const soundOk = heardTokens.some((tok) =>
     hasTargetSound(tok, sound, position),
   );
 
-  // Combine: word match weighted more than sound presence, but if the kid's
-  // word doesn't match but DOES contain the target sound (e.g. recognizer
-  // misheard "soup" as "scoop"), they still get partial credit.
   let combined = 0.7 * bestWord + 0.3 * (soundOk ? 1 : 0);
-  // Bonus if both signals agree.
   if (bestWord >= 0.8 && soundOk) combined = Math.max(combined, bestWord);
+  // Penalize a reduced cluster — even a perfect spelling match without the
+  // blend can't earn a "great" rating.
+  if (!blendOk) combined = Math.min(combined, 0.6);
 
   return { score: combined, matchedAgainst: bestAgainst };
 }
@@ -272,6 +306,7 @@ export function scoreUtterance(
       targets,
       opts.targetSound,
       opts.position,
+      opts.blend,
     );
     // Confidence floors at 0.4 so a strong word-match with no confidence
     // still beats noise, but a 1.0 match at high confidence wins.
@@ -294,6 +329,21 @@ export function scoreUtterance(
   let hint: string | undefined;
   if (rating !== "great") {
     hint = detectSubstitution(best!.heard, opts.targetSound, opts.position);
+    if (!hint && opts.blend) {
+      const heardLc = best!.heard.toLowerCase();
+      const firstLetter = opts.blend[0];
+      // Detect a reduced cluster — e.g. "soon" when target was "spoon".
+      if (heardLc.startsWith(firstLetter) && !heardLc.startsWith(opts.blend)) {
+        hint = `Don't drop a sound — say both letters: ${opts.blend.toUpperCase()}!`;
+      }
+    }
+    if (
+      !hint &&
+      opts.position === "final" &&
+      !hasTargetSound(best!.heard, opts.targetSound, "final")
+    ) {
+      hint = `Don't forget the ${opts.targetSound} sound at the end!`;
+    }
   }
 
   return {

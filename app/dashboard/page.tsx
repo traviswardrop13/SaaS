@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { loadState, type AppState } from "@/lib/storage";
-import { SKILLS } from "@/lib/lessons";
+import { findSkill, SKILLS } from "@/lib/lessons";
 
 export default function DashboardPage() {
   const [state, setState] = useState<AppState | null>(null);
@@ -101,7 +101,11 @@ export default function DashboardPage() {
                     accent="text-sky-500"
                   />
                 </div>
-                <SkillBreakdown childProgress={child.progress} />
+                <FocusList focusAreas={child.focusAreas ?? []} />
+                <SkillBreakdown
+                  childProgress={child.progress}
+                  focusAreas={child.focusAreas ?? []}
+                />
               </Link>
             );
           })}
@@ -132,18 +136,56 @@ function Stat({
   );
 }
 
+function FocusList({ focusAreas }: { focusAreas: string[] }) {
+  if (focusAreas.length === 0) {
+    return (
+      <div className="rounded-2xl bg-brand-50 px-3 py-2 text-xs text-brand-700">
+        No focus picked — showing all goals.
+      </div>
+    );
+  }
+  return (
+    <div>
+      <p className="mb-1 text-xs uppercase tracking-wide text-gray-500">
+        Working on
+      </p>
+      <div className="flex flex-wrap gap-1.5">
+        {focusAreas.map((id) => {
+          const skill = findSkill(id);
+          if (!skill) return null;
+          return (
+            <span
+              key={id}
+              className="rounded-full bg-grass-500 px-3 py-1 text-xs font-bold text-white"
+            >
+              {skill.emoji} {skill.title}
+            </span>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function SkillBreakdown({
   childProgress,
+  focusAreas,
 }: {
   childProgress: Record<string, { stars: number }>;
+  focusAreas: string[];
 }) {
+  const skills =
+    focusAreas.length > 0
+      ? SKILLS.filter((s) => focusAreas.includes(s.id))
+      : SKILLS;
+  if (skills.length === 0) return null;
   return (
     <div className="border-t pt-3">
       <p className="mb-2 text-xs uppercase tracking-wide text-gray-500">
-        By sound
+        Progress
       </p>
       <div className="flex flex-wrap gap-2">
-        {SKILLS.map((skill) => {
+        {skills.map((skill) => {
           const earned = skill.lessons.reduce(
             (n, l) => n + (childProgress[l.id]?.stars ?? 0),
             0,

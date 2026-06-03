@@ -46,7 +46,7 @@ export default function SetupPage() {
       s.children.push(child);
       s.activeChildId = child.id;
     });
-    router.push(`/kid/${child.id}`);
+    router.push(`/kid/${child.id}/focus?onboarding=1`);
   }
 
   return (

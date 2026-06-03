@@ -3,10 +3,10 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { SKILLS } from "@/lib/lessons";
 import {
   isLessonUnlocked,
   loadState,
+  visibleSkills,
   type Child,
 } from "@/lib/storage";
 
@@ -34,6 +34,9 @@ export default function KidHome() {
   }
   if (!child) return null;
 
+  const skills = visibleSkills(child);
+  const hasFocus = (child.focusAreas?.length ?? 0) > 0;
+
   return (
     <main className="mx-auto max-w-3xl px-4 py-8">
       <header className="mb-6 flex items-center justify-between">
@@ -55,8 +58,36 @@ export default function KidHome() {
         </div>
       </header>
 
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-2 rounded-2xl bg-white/60 px-4 py-3 shadow-chunky-sm">
+        <p className="text-sm text-gray-600">
+          {hasFocus
+            ? `Working on ${skills.length} goal${skills.length === 1 ? "" : "s"}`
+            : "Showing all goals — pick what to focus on for a tailored plan."}
+        </p>
+        <Link
+          href={`/kid/${child.id}/focus`}
+          className="rounded-full bg-brand-100 px-4 py-1 text-sm font-bold text-brand-700 hover:bg-brand-50"
+        >
+          {hasFocus ? "Change focus" : "Choose focus"}
+        </Link>
+      </div>
+
+      {skills.length === 0 && (
+        <div className="card text-center">
+          <p className="text-gray-600">
+            No goals selected yet — pick what you want to work on.
+          </p>
+          <Link
+            href={`/kid/${child.id}/focus`}
+            className="btn-primary mt-4 inline-flex"
+          >
+            Pick goals
+          </Link>
+        </div>
+      )}
+
       <div className="space-y-10">
-        {SKILLS.map((skill) => (
+        {skills.map((skill) => (
           <section key={skill.id}>
             <div className="mb-4 flex items-center gap-3">
               <div
