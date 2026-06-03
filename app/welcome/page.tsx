@@ -6,6 +6,8 @@ import {
   DIAGNOSTIC_CHALLENGES,
   diagnosticToFocus,
   findSkill,
+  GOAL_TILES,
+  tilesToFocus,
 } from "@/lib/lessons";
 import {
   loadState,
@@ -14,14 +16,17 @@ import {
   type Child,
 } from "@/lib/storage";
 import Mascot from "@/components/Mascot";
-import OnboardingShell, { ChoiceCard } from "@/components/OnboardingShell";
+import OnboardingShell, {
+  ChoiceCard,
+  SquareTile,
+} from "@/components/OnboardingShell";
 
 const AVATARS = ["🦁", "🐸", "🐼", "🦊", "🐨", "🐵", "🦄", "🐙", "🐧", "🦉"];
 const DAILY_GOALS = [
-  { minutes: 5, label: "5 min", subtitle: "Quick & casual" },
-  { minutes: 10, label: "10 min", subtitle: "A great habit" },
-  { minutes: 15, label: "15 min", subtitle: "Steady progress" },
-  { minutes: 20, label: "20 min", subtitle: "Big leaps!" },
+  { minutes: 5, label: "5 min / day", subtitle: "Casual" },
+  { minutes: 10, label: "10 min / day", subtitle: "Regular" },
+  { minutes: 15, label: "15 min / day", subtitle: "Serious" },
+  { minutes: 20, label: "20 min / day", subtitle: "Intense" },
 ];
 
 type Step =
@@ -29,9 +34,10 @@ type Step =
   | "parent"
   | "childName"
   | "childAvatar"
-  | "pathChoice"
+  | "goalTiles"
   | "diagnostic"
   | "focusReview"
+  | "routineIntro"
   | "dailyGoal"
   | "motivation"
   | "reminders"
@@ -49,6 +55,7 @@ export default function WelcomePage() {
   const [childName, setChildName] = useState("");
   const [avatar, setAvatar] = useState(AVATARS[0]);
   const [path, setPath] = useState<"diagnostic" | "manual" | null>(null);
+  const [selectedTiles, setSelectedTiles] = useState<Set<string>>(new Set());
   const [challenges, setChallenges] = useState<Set<string>>(new Set());
   const [focus, setFocus] = useState<Set<string>>(new Set());
   const [dailyGoal, setDailyGoal] = useState<number>(10);
@@ -73,9 +80,16 @@ export default function WelcomePage() {
   const steps = useMemo<Step[]>(() => {
     const base: Step[] = ["welcome"];
     if (!hasExistingParent) base.push("parent");
-    base.push("childName", "childAvatar", "pathChoice");
+    base.push("childName", "childAvatar", "goalTiles");
     if (path === "diagnostic") base.push("diagnostic");
-    base.push("focusReview", "dailyGoal", "motivation", "reminders", "done");
+    base.push(
+      "focusReview",
+      "routineIntro",
+      "dailyGoal",
+      "motivation",
+      "reminders",
+      "done",
+    );
     return base;
   }, [hasExistingParent, path]);
 
@@ -95,14 +109,16 @@ export default function WelcomePage() {
     return n;
   }
 
-  // When the user is mid-diagnostic, treat focus auto-derive as the source of
-  // truth — we re-derive each time challenges change so the review step
-  // matches expectations. The user can then add/remove on review.
+  // Auto-derive focus areas from whichever picker the parent used so the
+  // review step always reflects the latest choice. Diagnostic wins if the
+  // parent took that branch; otherwise tile selections drive focus.
   useEffect(() => {
     if (path === "diagnostic") {
       setFocus(new Set(diagnosticToFocus(Array.from(challenges))));
+    } else {
+      setFocus(new Set(tilesToFocus(Array.from(selectedTiles))));
     }
-  }, [challenges, path]);
+  }, [challenges, selectedTiles, path]);
 
   function commitAndFinish() {
     const child: Child = {
@@ -248,34 +264,48 @@ export default function WelcomePage() {
     );
   }
 
-  if (step === "pathChoice") {
+  if (step === "goalTiles") {
     return (
       <OnboardingShell
         step={stepIdx}
         totalSteps={steps.length}
         onBack={back}
         stepKey={step}
-        ctaLabel="Continue"
-        ctaDisabled={!path}
-        onContinue={() => go(1)}
+        ctaLabel={
+          selectedTiles.size === 0 ? "Pick at least one" : "Continue"
+        }
+        ctaDisabled={selectedTiles.size === 0}
+        onContinue={() => {
+          setPath("manual");
+          go(1);
+        }}
+        secondaryAction={{
+          label: "Not sure? Help me figure it out",
+          onClick: () => {
+            setSelectedTiles(new Set());
+            setPath("diagnostic");
+            // After re-render, "diagnostic" will be at idx+1.
+            go(1);
+          },
+        }}
       >
-        <Mascot message={`Where would you like to start with ${childName}?`} />
-        <div className="mt-8 space-y-4">
-          <ChoiceCard
-            selected={path === "diagnostic"}
-            onClick={() => setPath("diagnostic")}
-            emoji="🧭"
-            title={`Find ${childName || "their"} level`}
-            description={`I'll ask a few questions about ${childName || "your child"}'s speech.`}
-            recommended
-          />
-          <ChoiceCard
-            selected={path === "manual"}
-            onClick={() => setPath("manual")}
-            emoji="📚"
-            title="I know what to practice"
-            description="Pick the sounds and skills myself."
-          />
+        <Mascot
+          message={`What does ${childName || "your child"} want to work on?`}
+          align="center"
+        />
+        <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3">
+          {GOAL_TILES.map((tile) => (
+            <SquareTile
+              key={tile.id}
+              selected={selectedTiles.has(tile.id)}
+              onClick={() =>
+                setSelectedTiles((prev) => toggleSet(prev, tile.id))
+              }
+              emoji={tile.emoji}
+              title={tile.title}
+              subtitle={tile.subtitle}
+            />
+          ))}
         </div>
       </OnboardingShell>
     );
@@ -401,7 +431,7 @@ export default function WelcomePage() {
     );
   }
 
-  if (step === "dailyGoal") {
+  if (step === "routineIntro") {
     return (
       <OnboardingShell
         step={stepIdx}
@@ -412,9 +442,24 @@ export default function WelcomePage() {
         onContinue={() => go(1)}
       >
         <Mascot
-          message={`How long should ${childName || "your child"} practice each day?`}
+          message={`Let's set up ${childName || "their"} learning routine!`}
         />
-        <div className="mt-8 grid gap-3 sm:grid-cols-2">
+      </OnboardingShell>
+    );
+  }
+
+  if (step === "dailyGoal") {
+    return (
+      <OnboardingShell
+        step={stepIdx}
+        totalSteps={steps.length}
+        onBack={back}
+        stepKey={step}
+        ctaLabel="I'm committed"
+        onContinue={() => go(1)}
+      >
+        <Mascot message="What's your daily learning goal?" />
+        <div className="mt-8 space-y-3">
           {DAILY_GOALS.map((g) => (
             <ChoiceCard
               key={g.minutes}

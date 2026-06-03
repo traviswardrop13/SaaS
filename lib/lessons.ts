@@ -732,6 +732,84 @@ export const DIAGNOSTIC_CHALLENGES: DiagnosticChallenge[] = [
   },
 ];
 
+/**
+ * Top-level goal tiles for the onboarding picker — matches Duolingo's
+ * "I want to learn…" big-tile grid. Each tile expands to one or more skill
+ * IDs so multi-selecting a few tiles still picks a meaningful focus set.
+ */
+export type GoalTile = {
+  id: string;
+  emoji: string;
+  title: string;
+  subtitle: string;
+  skillIds: string[];
+};
+
+export const GOAL_TILES: GoalTile[] = [
+  {
+    id: "single-sounds",
+    emoji: "🔤",
+    title: "Single Sounds",
+    subtitle: "S, R, L, SH, TH, CH, K, G, F",
+    skillIds: [
+      "s-sounds",
+      "r-sounds",
+      "l-sounds",
+      "sh-sounds",
+      "th-sounds",
+      "ch-sounds",
+      "k-sounds",
+      "g-sounds",
+      "f-sounds",
+    ],
+  },
+  {
+    id: "s-blends",
+    emoji: "🌟",
+    title: "S-Blends",
+    subtitle: "sp, st, sk, sl",
+    skillIds: ["s-blends"],
+  },
+  {
+    id: "l-blends",
+    emoji: "🌸",
+    title: "L-Blends",
+    subtitle: "bl, cl, fl, pl",
+    skillIds: ["l-blends"],
+  },
+  {
+    id: "r-blends",
+    emoji: "🌈",
+    title: "R-Blends",
+    subtitle: "br, cr, dr, tr",
+    skillIds: ["r-blends"],
+  },
+  {
+    id: "endings",
+    emoji: "🎯",
+    title: "Word Endings",
+    subtitle: "for dropped final sounds",
+    skillIds: ["final-sounds"],
+  },
+  {
+    id: "kg",
+    emoji: "🦘",
+    title: "K & G Sounds",
+    subtitle: "for fronting",
+    skillIds: ["k-sounds", "g-sounds"],
+  },
+];
+
+export function tilesToFocus(tileIds: string[]): string[] {
+  const out = new Set<string>();
+  for (const id of tileIds) {
+    const t = GOAL_TILES.find((g) => g.id === id);
+    if (!t) continue;
+    for (const sid of t.skillIds) out.add(sid);
+  }
+  return Array.from(out);
+}
+
 /** Resolve picked diagnostic options into a deduplicated skill-id list. */
 export function diagnosticToFocus(challengeIds: string[]): string[] {
   const out = new Set<string>();

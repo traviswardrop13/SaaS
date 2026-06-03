@@ -93,6 +93,56 @@ export default function OnboardingShell({
   );
 }
 
+/**
+ * Big square tile — Duolingo's "I want to learn…" grid pattern. Used for
+ * top-level multi-select choices where a row of long cards would feel less
+ * inviting than chunky tappable squares.
+ */
+export function SquareTile({
+  selected,
+  onClick,
+  emoji,
+  title,
+  subtitle,
+}: {
+  selected: boolean;
+  onClick: () => void;
+  emoji: string;
+  title: string;
+  subtitle?: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={selected}
+      className={`relative flex aspect-square flex-col items-center justify-center gap-1 rounded-3xl border-4 p-3 text-center transition ${
+        selected
+          ? "border-grass-500 bg-grass-500/10"
+          : "border-gray-100 bg-white hover:border-gray-200"
+      }`}
+    >
+      <span className="text-5xl" aria-hidden>
+        {emoji}
+      </span>
+      <span className="mt-1 font-display text-sm font-extrabold text-gray-800 sm:text-base">
+        {title}
+      </span>
+      {subtitle && (
+        <span className="text-[11px] text-gray-500 sm:text-xs">{subtitle}</span>
+      )}
+      {selected && (
+        <span
+          className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-grass-500 text-xs font-bold text-white"
+          aria-hidden
+        >
+          ✓
+        </span>
+      )}
+    </button>
+  );
+}
+
 export function ChoiceCard({
   selected,
   onClick,
