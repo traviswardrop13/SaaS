@@ -47,7 +47,7 @@ export default function OnboardingShell({
         >
           ←
         </button>
-        <div className="h-3 flex-1 overflow-hidden rounded-full bg-white shadow-inner">
+        <div className="h-3 flex-1 overflow-hidden rounded-full bg-gray-100">
           <div
             className="h-full rounded-full bg-grass-500 transition-all duration-300"
             style={{ width: `${pct}%` }}

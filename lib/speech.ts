@@ -149,7 +149,16 @@ function pickVoice(): SpeechSynthesisVoice | null {
   return cachedVoice;
 }
 
-export function speak(text: string, opts?: { rate?: number; pitch?: number }) {
+export function speak(
+  text: string,
+  opts?: {
+    rate?: number;
+    pitch?: number;
+    onStart?: () => void;
+    onEnd?: () => void;
+    onWord?: () => void;
+  },
+) {
   if (typeof window === "undefined") return;
   const synth = window.speechSynthesis;
   if (!synth) return;
@@ -159,5 +168,10 @@ export function speak(text: string, opts?: { rate?: number; pitch?: number }) {
   u.pitch = opts?.pitch ?? 1.15;
   const voice = pickVoice();
   if (voice) u.voice = voice;
+  u.onstart = () => opts?.onStart?.();
+  u.onend = () => opts?.onEnd?.();
+  u.onboundary = (e: SpeechSynthesisEvent) => {
+    if (e.name === "word") opts?.onWord?.();
+  };
   synth.speak(u);
 }
