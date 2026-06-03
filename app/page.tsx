@@ -14,7 +14,11 @@ export default function LandingPage() {
     setHasChildren(s.children.length > 0);
   }, []);
 
-  const ctaHref = !hasParent ? "/setup" : hasChildren ? "/dashboard" : "/setup";
+  const ctaHref = !hasParent
+    ? "/welcome"
+    : hasChildren
+      ? "/dashboard"
+      : "/welcome";
   const ctaLabel = !hasParent
     ? "Get started"
     : hasChildren

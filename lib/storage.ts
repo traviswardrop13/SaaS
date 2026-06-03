@@ -14,12 +14,11 @@ export type Child = {
   lastActiveDay: string | null;
   /** lessonId -> { stars 0..3, attempts, bestScore } */
   progress: Record<string, LessonProgress>;
-  /**
-   * Skill IDs (from lib/lessons.ts) this child is actively working on.
-   * Empty/missing means "show everything" (good default for new profiles
-   * before the parent has gone through focus selection).
-   */
   focusAreas?: string[];
+  /** target daily practice in minutes (5/10/15/20) */
+  dailyGoalMinutes?: number;
+  /** parent asked for reminder notifications */
+  remindersEnabled?: boolean;
 };
 
 export type LessonProgress = {

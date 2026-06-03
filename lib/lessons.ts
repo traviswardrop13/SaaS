@@ -653,6 +653,96 @@ export const CATEGORY_INFO: Record<
   },
 };
 
+/**
+ * Diagnostic options for the "Find my level" onboarding step. Each option
+ * describes a pattern a parent might actually recognize in their child's
+ * speech, and maps it to one or more skills we should put in their plan.
+ */
+export type DiagnosticChallenge = {
+  id: string;
+  label: string;
+  example: string;
+  emoji: string;
+  focusSkillIds: string[];
+};
+
+export const DIAGNOSTIC_CHALLENGES: DiagnosticChallenge[] = [
+  {
+    id: "r",
+    label: "R sound is tricky",
+    example: "“wabbit” for “rabbit”",
+    emoji: "🦁",
+    focusSkillIds: ["r-sounds", "r-blends"],
+  },
+  {
+    id: "l",
+    label: "L sound is tricky",
+    example: "“wion” for “lion”",
+    emoji: "🍋",
+    focusSkillIds: ["l-sounds", "l-blends"],
+  },
+  {
+    id: "s-lisp",
+    label: "Lisps on S",
+    example: "“thun” for “sun”",
+    emoji: "🐍",
+    focusSkillIds: ["s-sounds"],
+  },
+  {
+    id: "fronting",
+    label: "Says T/D instead of K/G",
+    example: "“tat” for “cat”",
+    emoji: "🦘",
+    focusSkillIds: ["k-sounds", "g-sounds"],
+  },
+  {
+    id: "final",
+    label: "Drops the end of words",
+    example: "“ca” for “cat”",
+    emoji: "🎯",
+    focusSkillIds: ["final-sounds"],
+  },
+  {
+    id: "clusters",
+    label: "Skips sounds in clusters",
+    example: "“poon” for “spoon”",
+    emoji: "🌟",
+    focusSkillIds: ["s-blends", "l-blends", "r-blends"],
+  },
+  {
+    id: "th",
+    label: "TH sound is tricky",
+    example: "“fumb” for “thumb”",
+    emoji: "🦷",
+    focusSkillIds: ["th-sounds"],
+  },
+  {
+    id: "sh",
+    label: "SH sound is tricky",
+    example: "“sip” for “ship”",
+    emoji: "🤫",
+    focusSkillIds: ["sh-sounds"],
+  },
+  {
+    id: "ch",
+    label: "CH sound is tricky",
+    example: "“sip” for “chip”",
+    emoji: "🚂",
+    focusSkillIds: ["ch-sounds"],
+  },
+];
+
+/** Resolve picked diagnostic options into a deduplicated skill-id list. */
+export function diagnosticToFocus(challengeIds: string[]): string[] {
+  const out = new Set<string>();
+  for (const id of challengeIds) {
+    const c = DIAGNOSTIC_CHALLENGES.find((d) => d.id === id);
+    if (!c) continue;
+    for (const sid of c.focusSkillIds) out.add(sid);
+  }
+  return Array.from(out);
+}
+
 export function skillsByCategory(category: SkillCategory): Skill[] {
   if (category === "fronting") {
     // "Fronting" therapy targets initial K and G — surface those single-sound skills.
