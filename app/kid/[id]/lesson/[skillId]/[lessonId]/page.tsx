@@ -21,6 +21,7 @@ import {
 } from "@/lib/speech";
 import { scoreUtterance, type ScoreResult } from "@/lib/scoring";
 import TalkingFace from "@/components/TalkingFace";
+import MouthDiagram from "@/components/MouthDiagram";
 
 type Phase = "intro" | "prompt" | "listening" | "result" | "done";
 
@@ -41,6 +42,7 @@ export default function LessonPage() {
   const [result, setResult] = useState<ScoreResult | null>(null);
   const [scores, setScores] = useState<number[]>([]);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [showDiagram, setShowDiagram] = useState(false);
   const recRef = useRef<RecognitionHandle | null>(null);
   const alternativesRef = useRef<RecognitionAlternative[]>([]);
 
@@ -277,10 +279,48 @@ export default function LessonPage() {
                 </div>
               </div>
 
-              {/* Talking face */}
-              <div className="mt-4 flex justify-center">
-                <TalkingFace speaking={isSpeaking} size={220} />
-              </div>
+              {/* Visual teaching model — at the isolation level the sagittal
+                  mouth diagram is the primary visual (it shows what's happening
+                  inside the mouth). At higher levels we lean on the talking
+                  face and offer the diagram as a "Show me how" expansion. */}
+              {lesson.level === "isolation" ? (
+                <div className="mt-2 flex flex-col items-center">
+                  <MouthDiagram
+                    sound={lesson.targetSound}
+                    size={200}
+                    showHint
+                  />
+                </div>
+              ) : (
+                <>
+                  <div className="mt-4 flex justify-center">
+                    <TalkingFace speaking={isSpeaking} size={200} />
+                  </div>
+                  <div className="mt-2 flex justify-center">
+                    <button
+                      type="button"
+                      onClick={() => setShowDiagram((v) => !v)}
+                      className="rounded-full bg-gray-100 px-4 py-1.5 text-xs font-extrabold uppercase tracking-wider text-gray-600 hover:bg-gray-200"
+                    >
+                      {showDiagram ? "Hide tongue guide" : "Show me how"}
+                    </button>
+                  </div>
+                  {showDiagram && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="mt-2 flex justify-center overflow-hidden"
+                    >
+                      <MouthDiagram
+                        sound={lesson.targetSound}
+                        size={160}
+                        showHint
+                      />
+                    </motion.div>
+                  )}
+                </>
+              )}
 
               {/* Mic / self-rate area */}
               <div className="mt-auto flex flex-col items-center gap-2 pb-4">
