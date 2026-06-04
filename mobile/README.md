@@ -6,7 +6,7 @@ repo root stays as a marketing/demo surface.
 
 ## Stack
 
-- **Expo** (SDK 52) + **Expo Router** (file-based routing, like Next.js)
+- **Expo** (SDK 54) + **Expo Router** (file-based routing, like Next.js)
 - **NativeWind** (Tailwind for React Native)
 - **react-native-svg** for the talking face + sagittal mouth diagram
 - **expo-speech** for text-to-speech
