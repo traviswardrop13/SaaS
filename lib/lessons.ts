@@ -1,10 +1,10 @@
-import type { SoundPosition, TargetSound } from "./scoring";
+import type { LessonLevel, SoundPosition, TargetSound } from "./scoring";
 
 export type Word = {
-  /** the target word the child should say */
+  /** the target word/syllable/phrase the child should say */
   text: string;
-  /** emoji used as the picture cue */
-  emoji: string;
+  /** optional emoji picture cue (skipped for isolation/syllables) */
+  emoji?: string;
   /** acceptable transcription variants (lowercase, no punctuation) */
   accepts?: string[];
 };
@@ -16,8 +16,10 @@ export type Lesson = {
   hint: string;
   /** Which phoneme this lesson is targeting. */
   targetSound: TargetSound;
-  /** Where the target sound sits in each word. */
+  /** Where the target sound sits in each item. */
   position: SoundPosition;
+  /** Articulation-hierarchy level — controls UI + unlock gating. */
+  level: LessonLevel;
   /**
    * If set, the recognized word must begin with this consonant cluster
    * (e.g. "sp", "br", "bl") to count. Used by cluster-reduction lessons to
@@ -27,10 +29,18 @@ export type Lesson = {
   words: Word[];
 };
 
-/**
- * High-level category — used in the focus-picker so a parent can say
- * "my kid is working on S-blends" without having to know every lesson.
- */
+/** Friendly label and ordering rank for hierarchy levels. */
+export const LEVEL_INFO: Record<
+  LessonLevel,
+  { label: string; rank: number; short: string }
+> = {
+  isolation: { label: "Isolation", rank: 1, short: "1" },
+  syllables: { label: "Syllables", rank: 2, short: "2" },
+  words: { label: "Words", rank: 3, short: "3" },
+  phrases: { label: "Phrases", rank: 4, short: "4" },
+  sentences: { label: "Sentences", rank: 5, short: "5" },
+};
+
 export type SkillCategory =
   | "single-sound"
   | "s-blend"
@@ -63,11 +73,40 @@ export const SKILLS: Skill[] = [
     emoji: "🐍",
     lessons: [
       {
-        id: "s-initial",
-        title: "S at the start",
+        id: "s-isolation",
+        title: "Just the S sound",
         hint: "Hiss like a snake — sssss!",
         targetSound: "S",
         position: "initial",
+        level: "isolation",
+        words: [
+          { text: "sssss" },
+          { text: "sssss" },
+          { text: "sssss" },
+        ],
+      },
+      {
+        id: "s-syllables",
+        title: "S syllables",
+        hint: "Add a vowel — sah, see, sigh, so, sue.",
+        targetSound: "S",
+        position: "initial",
+        level: "syllables",
+        words: [
+          { text: "sah", accepts: ["sa", "saw"] },
+          { text: "see", accepts: ["sea", "si"] },
+          { text: "sigh", accepts: ["sy", "psi"] },
+          { text: "so", accepts: ["sow", "sew"] },
+          { text: "sue", accepts: ["soo", "su"] },
+        ],
+      },
+      {
+        id: "s-initial",
+        title: "S at the start of words",
+        hint: "Start strong — ssssss!",
+        targetSound: "S",
+        position: "initial",
+        level: "words",
         words: [
           { text: "sun", emoji: "☀️", accepts: ["son"] },
           { text: "sock", emoji: "🧦", accepts: ["socks"] },
@@ -78,10 +117,11 @@ export const SKILLS: Skill[] = [
       },
       {
         id: "s-medial",
-        title: "S in the middle",
+        title: "S in the middle of words",
         hint: "Keep the snake hiss going in the middle.",
         targetSound: "S",
         position: "medial",
+        level: "words",
         words: [
           { text: "pencil", emoji: "✏️" },
           { text: "racing", emoji: "🏁" },
@@ -91,15 +131,30 @@ export const SKILLS: Skill[] = [
       },
       {
         id: "s-final",
-        title: "S at the end",
+        title: "S at the end of words",
         hint: "Finish strong with a long ssss.",
         targetSound: "S",
         position: "final",
+        level: "words",
         words: [
           { text: "bus", emoji: "🚌", accepts: ["buss"] },
           { text: "house", emoji: "🏠" },
           { text: "mouse", emoji: "🐭" },
           { text: "ice", emoji: "🧊", accepts: ["eyes"] },
+        ],
+      },
+      {
+        id: "s-phrases",
+        title: "S in short phrases",
+        hint: "Two S words together!",
+        targetSound: "S",
+        position: "initial",
+        level: "phrases",
+        words: [
+          { text: "see the sun" },
+          { text: "soft soap" },
+          { text: "six seals" },
+          { text: "sing a song" },
         ],
       },
     ],
@@ -114,11 +169,40 @@ export const SKILLS: Skill[] = [
     emoji: "🦁",
     lessons: [
       {
-        id: "r-initial",
-        title: "R at the start",
-        hint: "Roar like a lion — rrrrr!",
+        id: "r-isolation",
+        title: "Just the R sound",
+        hint: "Roar like a lion — rrrrrr!",
         targetSound: "R",
         position: "initial",
+        level: "isolation",
+        words: [
+          { text: "rrrrr" },
+          { text: "rrrrr" },
+          { text: "rrrrr" },
+        ],
+      },
+      {
+        id: "r-syllables",
+        title: "R syllables",
+        hint: "Add a vowel — rah, ree, rye, row, roo.",
+        targetSound: "R",
+        position: "initial",
+        level: "syllables",
+        words: [
+          { text: "rah", accepts: ["ra", "raw"] },
+          { text: "ree", accepts: ["re"] },
+          { text: "rye", accepts: ["ry", "ri"] },
+          { text: "row", accepts: ["ro"] },
+          { text: "roo", accepts: ["ru", "rue"] },
+        ],
+      },
+      {
+        id: "r-initial",
+        title: "R at the start of words",
+        hint: "Roar like a lion — rrrrrr!",
+        targetSound: "R",
+        position: "initial",
+        level: "words",
         words: [
           { text: "rain", emoji: "🌧️", accepts: ["rein", "reign"] },
           { text: "robot", emoji: "🤖" },
@@ -129,15 +213,30 @@ export const SKILLS: Skill[] = [
       },
       {
         id: "r-medial",
-        title: "R in the middle",
+        title: "R in the middle of words",
         hint: "Keep the roar going in the middle.",
         targetSound: "R",
         position: "medial",
+        level: "words",
         words: [
           { text: "carrot", emoji: "🥕", accepts: ["caret", "karat"] },
           { text: "parrot", emoji: "🦜" },
           { text: "berry", emoji: "🍓", accepts: ["bury"] },
           { text: "story", emoji: "📖" },
+        ],
+      },
+      {
+        id: "r-phrases",
+        title: "R in short phrases",
+        hint: "Two R words together!",
+        targetSound: "R",
+        position: "initial",
+        level: "phrases",
+        words: [
+          { text: "red rain" },
+          { text: "run fast" },
+          { text: "ride a bike" },
+          { text: "round and round" },
         ],
       },
     ],
@@ -152,11 +251,40 @@ export const SKILLS: Skill[] = [
     emoji: "🍋",
     lessons: [
       {
+        id: "l-isolation",
+        title: "Just the L sound",
+        hint: "Tongue tip up — llllll!",
+        targetSound: "L",
+        position: "initial",
+        level: "isolation",
+        words: [
+          { text: "lllll" },
+          { text: "lllll" },
+          { text: "lllll" },
+        ],
+      },
+      {
+        id: "l-syllables",
+        title: "L syllables",
+        hint: "Add a vowel — lah, lee, lye, low, loo.",
+        targetSound: "L",
+        position: "initial",
+        level: "syllables",
+        words: [
+          { text: "lah", accepts: ["la", "law"] },
+          { text: "lee", accepts: ["lea"] },
+          { text: "lye", accepts: ["lie", "li"] },
+          { text: "low", accepts: ["lo"] },
+          { text: "loo", accepts: ["lou", "lu"] },
+        ],
+      },
+      {
         id: "l-initial",
-        title: "L at the start",
+        title: "L at the start of words",
         hint: "Tongue up — la la la!",
         targetSound: "L",
         position: "initial",
+        level: "words",
         words: [
           { text: "lion", emoji: "🦁" },
           { text: "leaf", emoji: "🍃" },
@@ -167,15 +295,30 @@ export const SKILLS: Skill[] = [
       },
       {
         id: "l-final",
-        title: "L at the end",
+        title: "L at the end of words",
         hint: "Tongue tip up at the end — ball!",
         targetSound: "L",
         position: "final",
+        level: "words",
         words: [
           { text: "ball", emoji: "⚽", accepts: ["bawl"] },
           { text: "bell", emoji: "🔔", accepts: ["belle"] },
           { text: "owl", emoji: "🦉" },
           { text: "snail", emoji: "🐌" },
+        ],
+      },
+      {
+        id: "l-phrases",
+        title: "L in short phrases",
+        hint: "Two L words together!",
+        targetSound: "L",
+        position: "initial",
+        level: "phrases",
+        words: [
+          { text: "look at me" },
+          { text: "lemon ice" },
+          { text: "let me see" },
+          { text: "low light" },
         ],
       },
     ],
@@ -190,17 +333,59 @@ export const SKILLS: Skill[] = [
     emoji: "🤫",
     lessons: [
       {
+        id: "sh-isolation",
+        title: "Just the SH sound",
+        hint: "Round your lips — shhhh!",
+        targetSound: "SH",
+        position: "initial",
+        level: "isolation",
+        words: [
+          { text: "shhhh" },
+          { text: "shhhh" },
+          { text: "shhhh" },
+        ],
+      },
+      {
+        id: "sh-syllables",
+        title: "SH syllables",
+        hint: "Add a vowel — shah, she, shy, show, shoe.",
+        targetSound: "SH",
+        position: "initial",
+        level: "syllables",
+        words: [
+          { text: "shah", accepts: ["sha"] },
+          { text: "she" },
+          { text: "shy", accepts: ["shi"] },
+          { text: "show", accepts: ["sho"] },
+          { text: "shoe", accepts: ["shoo", "shu"] },
+        ],
+      },
+      {
         id: "sh-initial",
-        title: "SH at the start",
+        title: "SH at the start of words",
         hint: "Like telling someone to be quiet — shhh!",
         targetSound: "SH",
         position: "initial",
+        level: "words",
         words: [
           { text: "shoe", emoji: "👟", accepts: ["shoo"] },
           { text: "ship", emoji: "🚢" },
           { text: "shark", emoji: "🦈" },
           { text: "sheep", emoji: "🐑" },
           { text: "shell", emoji: "🐚" },
+        ],
+      },
+      {
+        id: "sh-phrases",
+        title: "SH in short phrases",
+        hint: "Two SH words together!",
+        targetSound: "SH",
+        position: "initial",
+        level: "phrases",
+        words: [
+          { text: "shiny shoes" },
+          { text: "sheep on a ship" },
+          { text: "shake the shell" },
         ],
       },
     ],
@@ -215,16 +400,58 @@ export const SKILLS: Skill[] = [
     emoji: "🦷",
     lessons: [
       {
+        id: "th-isolation",
+        title: "Just the TH sound",
+        hint: "Tongue between your teeth — thhh!",
+        targetSound: "TH",
+        position: "initial",
+        level: "isolation",
+        words: [
+          { text: "thhh" },
+          { text: "thhh" },
+          { text: "thhh" },
+        ],
+      },
+      {
+        id: "th-syllables",
+        title: "TH syllables",
+        hint: "Add a vowel — thah, thee, thigh, thoe, thoo.",
+        targetSound: "TH",
+        position: "initial",
+        level: "syllables",
+        words: [
+          { text: "thah", accepts: ["tha"] },
+          { text: "thee", accepts: ["the"] },
+          { text: "thigh", accepts: ["thi"] },
+          { text: "thoe", accepts: ["tho", "though"] },
+          { text: "thoo", accepts: ["thu"] },
+        ],
+      },
+      {
         id: "th-initial",
-        title: "TH at the start",
+        title: "TH at the start of words",
         hint: "Tongue peeks out between your teeth.",
         targetSound: "TH",
         position: "initial",
+        level: "words",
         words: [
           { text: "thumb", emoji: "👍", accepts: ["thum"] },
           { text: "think", emoji: "🤔" },
           { text: "three", emoji: "3️⃣" },
           { text: "thirsty", emoji: "🥤" },
+        ],
+      },
+      {
+        id: "th-phrases",
+        title: "TH in short phrases",
+        hint: "Two TH words together!",
+        targetSound: "TH",
+        position: "initial",
+        level: "phrases",
+        words: [
+          { text: "three thumbs" },
+          { text: "think and thank" },
+          { text: "thick and thin" },
         ],
       },
     ],
@@ -239,17 +466,59 @@ export const SKILLS: Skill[] = [
     emoji: "🚂",
     lessons: [
       {
+        id: "ch-isolation",
+        title: "Just the CH sound",
+        hint: "Like a train — ch ch ch!",
+        targetSound: "CH",
+        position: "initial",
+        level: "isolation",
+        words: [
+          { text: "ch ch ch" },
+          { text: "ch ch ch" },
+          { text: "ch ch ch" },
+        ],
+      },
+      {
+        id: "ch-syllables",
+        title: "CH syllables",
+        hint: "Add a vowel — chah, chee, chy, cho, choo.",
+        targetSound: "CH",
+        position: "initial",
+        level: "syllables",
+        words: [
+          { text: "chah", accepts: ["cha"] },
+          { text: "chee", accepts: ["che"] },
+          { text: "chy", accepts: ["chi", "chai"] },
+          { text: "cho" },
+          { text: "choo", accepts: ["chu", "chew"] },
+        ],
+      },
+      {
         id: "ch-initial",
-        title: "CH at the start",
+        title: "CH at the start of words",
         hint: "Like a train — choo choo!",
         targetSound: "CH",
         position: "initial",
+        level: "words",
         words: [
           { text: "chair", emoji: "🪑" },
           { text: "cheese", emoji: "🧀" },
           { text: "cherry", emoji: "🍒" },
           { text: "chicken", emoji: "🐔" },
           { text: "chocolate", emoji: "🍫" },
+        ],
+      },
+      {
+        id: "ch-phrases",
+        title: "CH in short phrases",
+        hint: "Two CH words together!",
+        targetSound: "CH",
+        position: "initial",
+        level: "phrases",
+        words: [
+          { text: "chocolate chip" },
+          { text: "cheesy chips" },
+          { text: "chase the chicken" },
         ],
       },
     ],
@@ -264,11 +533,40 @@ export const SKILLS: Skill[] = [
     emoji: "🦘",
     lessons: [
       {
+        id: "k-isolation",
+        title: "Just the K sound",
+        hint: "From the back of your throat — k k k!",
+        targetSound: "K",
+        position: "initial",
+        level: "isolation",
+        words: [
+          { text: "k k k" },
+          { text: "k k k" },
+          { text: "k k k" },
+        ],
+      },
+      {
+        id: "k-syllables",
+        title: "K syllables",
+        hint: "Add a vowel — kah, kee, kye, ko, koo.",
+        targetSound: "K",
+        position: "initial",
+        level: "syllables",
+        words: [
+          { text: "kah", accepts: ["ka", "caw"] },
+          { text: "kee", accepts: ["key"] },
+          { text: "kye", accepts: ["ki"] },
+          { text: "ko", accepts: ["coe"] },
+          { text: "koo", accepts: ["coo", "ku"] },
+        ],
+      },
+      {
         id: "k-initial",
-        title: "K at the start",
+        title: "K at the start of words",
         hint: "Sound from the back of the throat — k, k, k!",
         targetSound: "K",
         position: "initial",
+        level: "words",
         words: [
           { text: "key", emoji: "🔑" },
           { text: "cat", emoji: "🐱" },
@@ -279,15 +577,29 @@ export const SKILLS: Skill[] = [
       },
       {
         id: "k-final",
-        title: "K at the end",
+        title: "K at the end of words",
         hint: "Pop the K at the end — book!",
         targetSound: "K",
         position: "final",
+        level: "words",
         words: [
           { text: "book", emoji: "📚" },
           { text: "duck", emoji: "🦆" },
           { text: "rock", emoji: "🪨" },
           { text: "sock", emoji: "🧦" },
+        ],
+      },
+      {
+        id: "k-phrases",
+        title: "K in short phrases",
+        hint: "Two K words together!",
+        targetSound: "K",
+        position: "initial",
+        level: "phrases",
+        words: [
+          { text: "kick the can" },
+          { text: "cool cookie" },
+          { text: "cat in a coat" },
         ],
       },
     ],
@@ -302,17 +614,59 @@ export const SKILLS: Skill[] = [
     emoji: "🐊",
     lessons: [
       {
+        id: "g-isolation",
+        title: "Just the G sound",
+        hint: "Back of your throat — g g g!",
+        targetSound: "G",
+        position: "initial",
+        level: "isolation",
+        words: [
+          { text: "g g g" },
+          { text: "g g g" },
+          { text: "g g g" },
+        ],
+      },
+      {
+        id: "g-syllables",
+        title: "G syllables",
+        hint: "Add a vowel — gah, gee, guy, go, goo.",
+        targetSound: "G",
+        position: "initial",
+        level: "syllables",
+        words: [
+          { text: "gah", accepts: ["ga"] },
+          { text: "gee", accepts: ["ge"] },
+          { text: "guy", accepts: ["gi"] },
+          { text: "go" },
+          { text: "goo", accepts: ["gu"] },
+        ],
+      },
+      {
         id: "g-initial",
-        title: "G at the start",
+        title: "G at the start of words",
         hint: "From the back of your throat — g, g, g!",
         targetSound: "G",
         position: "initial",
+        level: "words",
         words: [
           { text: "girl", emoji: "👧" },
           { text: "goat", emoji: "🐐" },
           { text: "goose", emoji: "🦢" },
           { text: "guitar", emoji: "🎸" },
           { text: "gum", emoji: "🍬" },
+        ],
+      },
+      {
+        id: "g-phrases",
+        title: "G in short phrases",
+        hint: "Two G words together!",
+        targetSound: "G",
+        position: "initial",
+        level: "phrases",
+        words: [
+          { text: "go get gum" },
+          { text: "good girl" },
+          { text: "great goal" },
         ],
       },
     ],
@@ -327,11 +681,40 @@ export const SKILLS: Skill[] = [
     emoji: "🐟",
     lessons: [
       {
+        id: "f-isolation",
+        title: "Just the F sound",
+        hint: "Top teeth on bottom lip — ffffff!",
+        targetSound: "F",
+        position: "initial",
+        level: "isolation",
+        words: [
+          { text: "fffff" },
+          { text: "fffff" },
+          { text: "fffff" },
+        ],
+      },
+      {
+        id: "f-syllables",
+        title: "F syllables",
+        hint: "Add a vowel — fah, fee, fye, fo, foo.",
+        targetSound: "F",
+        position: "initial",
+        level: "syllables",
+        words: [
+          { text: "fah", accepts: ["fa"] },
+          { text: "fee" },
+          { text: "fye", accepts: ["fi", "fie"] },
+          { text: "fo", accepts: ["foe"] },
+          { text: "foo", accepts: ["fu"] },
+        ],
+      },
+      {
         id: "f-initial",
-        title: "F at the start",
+        title: "F at the start of words",
         hint: "Top teeth on bottom lip — fffff!",
         targetSound: "F",
         position: "initial",
+        level: "words",
         words: [
           { text: "fish", emoji: "🐟" },
           { text: "frog", emoji: "🐸" },
@@ -340,10 +723,25 @@ export const SKILLS: Skill[] = [
           { text: "fire", emoji: "🔥" },
         ],
       },
+      {
+        id: "f-phrases",
+        title: "F in short phrases",
+        hint: "Two F words together!",
+        targetSound: "F",
+        position: "initial",
+        level: "phrases",
+        words: [
+          { text: "fish fingers" },
+          { text: "fast fox" },
+          { text: "five fingers" },
+        ],
+      },
     ],
   },
 
   // ───────────────────────── S-Blends ─────────────────────────
+  // Cluster reduction work is inherently about combining two sounds — no
+  // isolation/syllables level. Practice goes straight to words + phrases.
   {
     id: "s-blends",
     sound: "S",
@@ -359,6 +757,7 @@ export const SKILLS: Skill[] = [
         hint: "Both sounds — ssss + p — together!",
         targetSound: "S",
         position: "initial",
+        level: "words",
         blend: "sp",
         words: [
           { text: "spoon", emoji: "🥄" },
@@ -373,6 +772,7 @@ export const SKILLS: Skill[] = [
         hint: "Don't drop the S — ssss + t!",
         targetSound: "S",
         position: "initial",
+        level: "words",
         blend: "st",
         words: [
           { text: "star", emoji: "⭐" },
@@ -387,6 +787,7 @@ export const SKILLS: Skill[] = [
         hint: "Two sounds — ssss + k!",
         targetSound: "S",
         position: "initial",
+        level: "words",
         blend: "sk",
         words: [
           { text: "sky", emoji: "🌤️" },
@@ -401,6 +802,7 @@ export const SKILLS: Skill[] = [
         hint: "Both sounds — ssss + l!",
         targetSound: "S",
         position: "initial",
+        level: "words",
         blend: "sl",
         words: [
           { text: "slide", emoji: "🛝" },
@@ -428,6 +830,7 @@ export const SKILLS: Skill[] = [
         hint: "B and L together — bl!",
         targetSound: "L",
         position: "initial",
+        level: "words",
         blend: "bl",
         words: [
           { text: "blue", emoji: "🔵" },
@@ -442,6 +845,7 @@ export const SKILLS: Skill[] = [
         hint: "C and L together — cl!",
         targetSound: "L",
         position: "initial",
+        level: "words",
         blend: "cl",
         words: [
           { text: "clock", emoji: "🕰️" },
@@ -456,6 +860,7 @@ export const SKILLS: Skill[] = [
         hint: "F and L together — fl!",
         targetSound: "L",
         position: "initial",
+        level: "words",
         blend: "fl",
         words: [
           { text: "flag", emoji: "🚩" },
@@ -470,6 +875,7 @@ export const SKILLS: Skill[] = [
         hint: "P and L together — pl!",
         targetSound: "L",
         position: "initial",
+        level: "words",
         blend: "pl",
         words: [
           { text: "plane", emoji: "✈️" },
@@ -497,6 +903,7 @@ export const SKILLS: Skill[] = [
         hint: "B and R together — br!",
         targetSound: "R",
         position: "initial",
+        level: "words",
         blend: "br",
         words: [
           { text: "bread", emoji: "🍞" },
@@ -511,6 +918,7 @@ export const SKILLS: Skill[] = [
         hint: "C and R together — cr!",
         targetSound: "R",
         position: "initial",
+        level: "words",
         blend: "cr",
         words: [
           { text: "crab", emoji: "🦀" },
@@ -525,6 +933,7 @@ export const SKILLS: Skill[] = [
         hint: "D and R together — dr!",
         targetSound: "R",
         position: "initial",
+        level: "words",
         blend: "dr",
         words: [
           { text: "drum", emoji: "🥁" },
@@ -539,6 +948,7 @@ export const SKILLS: Skill[] = [
         hint: "T and R together — tr!",
         targetSound: "R",
         position: "initial",
+        level: "words",
         blend: "tr",
         words: [
           { text: "tree", emoji: "🌳" },
@@ -550,7 +960,7 @@ export const SKILLS: Skill[] = [
     ],
   },
 
-  // ───────────────────────── Final sounds (final consonant deletion) ─────────
+  // ───────────────── Final sounds (final consonant deletion) ─────────────────
   {
     id: "final-sounds",
     sound: "P",
@@ -566,6 +976,7 @@ export const SKILLS: Skill[] = [
         hint: "Pop your lips at the end — p!",
         targetSound: "P",
         position: "final",
+        level: "words",
         words: [
           { text: "cup", emoji: "☕" },
           { text: "sheep", emoji: "🐑" },
@@ -579,6 +990,7 @@ export const SKILLS: Skill[] = [
         hint: "Tap your tongue at the end — t!",
         targetSound: "T",
         position: "final",
+        level: "words",
         words: [
           { text: "boat", emoji: "⛵" },
           { text: "hat", emoji: "🎩" },
@@ -592,6 +1004,7 @@ export const SKILLS: Skill[] = [
         hint: "Close your lips at the end — mmm!",
         targetSound: "M",
         position: "final",
+        level: "words",
         words: [
           { text: "drum", emoji: "🥁" },
           { text: "broom", emoji: "🧹" },
@@ -605,6 +1018,7 @@ export const SKILLS: Skill[] = [
         hint: "Tongue tip up at the end — nnn!",
         targetSound: "N",
         position: "final",
+        level: "words",
         words: [
           { text: "moon", emoji: "🌙" },
           { text: "rain", emoji: "🌧️" },
@@ -823,7 +1237,6 @@ export function diagnosticToFocus(challengeIds: string[]): string[] {
 
 export function skillsByCategory(category: SkillCategory): Skill[] {
   if (category === "fronting") {
-    // "Fronting" therapy targets initial K and G — surface those single-sound skills.
     return SKILLS.filter((s) => s.id === "k-sounds" || s.id === "g-sounds");
   }
   return SKILLS.filter((s) => s.category === category);

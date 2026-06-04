@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import { LEVEL_INFO, type Lesson } from "@/lib/lessons";
 import {
   isLessonUnlocked,
   loadState,
@@ -124,11 +125,15 @@ export default function KidHome() {
                           {skill.sound}
                         </div>
                         <div className="flex-1">
-                          <div className="font-display text-lg font-bold">
-                            {lesson.title}
+                          <div className="flex items-center gap-2">
+                            <LevelChip level={lesson.level} />
+                            <div className="font-display text-lg font-bold">
+                              {lesson.title}
+                            </div>
                           </div>
-                          <div className="text-sm text-gray-500">
-                            {lesson.words.length} words
+                          <div className="mt-0.5 text-sm text-gray-500">
+                            {lesson.words.length}{" "}
+                            {labelForCount(lesson)}
                           </div>
                         </div>
                         <Stars value={progress?.stars ?? 0} />
@@ -139,11 +144,14 @@ export default function KidHome() {
                           🔒
                         </div>
                         <div className="flex-1">
-                          <div className="font-display text-lg font-bold">
-                            {lesson.title}
+                          <div className="flex items-center gap-2">
+                            <LevelChip level={lesson.level} />
+                            <div className="font-display text-lg font-bold">
+                              {lesson.title}
+                            </div>
                           </div>
-                          <div className="text-sm text-gray-500">
-                            Finish the previous lesson to unlock
+                          <div className="mt-0.5 text-sm text-gray-500">
+                            Earn 2⭐ on the previous lesson to unlock
                           </div>
                         </div>
                       </div>
@@ -157,6 +165,30 @@ export default function KidHome() {
       </div>
     </main>
   );
+}
+
+function LevelChip({ level }: { level: Lesson["level"] }) {
+  const info = LEVEL_INFO[level];
+  return (
+    <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-gray-500">
+      {info.short}·{info.label}
+    </span>
+  );
+}
+
+function labelForCount(lesson: Lesson) {
+  switch (lesson.level) {
+    case "isolation":
+      return "reps";
+    case "syllables":
+      return "syllables";
+    case "phrases":
+      return "phrases";
+    case "sentences":
+      return "sentences";
+    default:
+      return "words";
+  }
 }
 
 function Stars({ value }: { value: number }) {

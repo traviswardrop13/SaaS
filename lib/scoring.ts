@@ -38,6 +38,22 @@ export type TargetSound =
   | "N";
 export type SoundPosition = "initial" | "medial" | "final";
 
+/**
+ * Articulation hierarchy — the evidence-based progression a child works
+ * through for any new sound. Each level builds on the one before it, and
+ * the child must demonstrate good accuracy at one level before unlocking
+ * the next.
+ *
+ * Sentences and conversation aren't shipped yet; they'll appear in a later
+ * pass once we have content / an AI prompt loop for spontaneous use.
+ */
+export type LessonLevel =
+  | "isolation"
+  | "syllables"
+  | "words"
+  | "phrases"
+  | "sentences";
+
 export type ScoreOptions = {
   target: string;
   accepts?: string[];

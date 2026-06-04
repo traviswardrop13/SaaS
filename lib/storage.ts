@@ -133,12 +133,17 @@ export function setActiveChild(childId: string): AppState {
   });
 }
 
+/** Minimum stars on the previous lesson required to unlock the next one. */
+const UNLOCK_STAR_THRESHOLD = 2;
+
 /**
  * A lesson is unlocked if it is the first lesson in the child's active set,
- * OR the lesson immediately before it has at least one star. We restrict
- * the ordering to the child's focus areas (if any) so unlock progression
- * makes sense — a kid focused only on R shouldn't have to clear S lessons
- * to unlock R-blends.
+ * OR the lesson immediately before it has the unlock-threshold number of
+ * stars. We restrict the ordering to the child's focus areas (if any) so
+ * unlock progression makes sense — a kid focused only on R shouldn't have
+ * to clear S lessons to unlock R-blends. The hierarchy (isolation →
+ * syllables → words → phrases) is encoded by the order of lessons within
+ * each skill in lib/lessons.ts.
  */
 export function isLessonUnlocked(child: Child, lessonId: string): boolean {
   const focus = child.focusAreas ?? [];
@@ -149,7 +154,7 @@ export function isLessonUnlocked(child: Child, lessonId: string): boolean {
   const idx = order.findIndex((o) => o.lessonId === lessonId);
   if (idx <= 0) return true;
   const prev = order[idx - 1];
-  return (child.progress[prev.lessonId]?.stars ?? 0) > 0;
+  return (child.progress[prev.lessonId]?.stars ?? 0) >= UNLOCK_STAR_THRESHOLD;
 }
 
 /** Skills currently visible to a child, based on focus selection. */

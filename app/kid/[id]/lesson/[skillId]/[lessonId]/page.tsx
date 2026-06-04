@@ -5,7 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import confetti from "canvas-confetti";
-import { findLesson } from "@/lib/lessons";
+import { findLesson, LEVEL_INFO } from "@/lib/lessons";
 import {
   loadState,
   recordLessonComplete,
@@ -88,6 +88,9 @@ export default function LessonPage() {
   const word = lesson.words[wordIdx];
   const totalWords = lesson.words.length;
   const progressPct = Math.round((wordIdx / totalWords) * 100);
+  // Browser speech recognition is unreliable on isolated phonemes ("ssss"),
+  // so isolation lessons always use the self-rate UI instead of the mic.
+  const useSelfRate = !supported || lesson.level === "isolation";
 
   function playWord() {
     if (!word) return;
@@ -230,10 +233,18 @@ export default function LessonPage() {
               transition={{ duration: 0.2 }}
               className="flex flex-1 flex-col"
             >
-              {/* Top heading */}
-              <h2 className="text-center font-display text-2xl font-extrabold text-gray-800 sm:text-3xl">
-                Say it out loud
-              </h2>
+              {/* Level badge + heading */}
+              <div className="text-center">
+                <span className="inline-block rounded-full bg-gray-100 px-3 py-1 text-xs font-extrabold uppercase tracking-wider text-gray-500">
+                  Level {LEVEL_INFO[lesson.level].short} ·{" "}
+                  {LEVEL_INFO[lesson.level].label}
+                </span>
+                <h2 className="mt-2 font-display text-2xl font-extrabold text-gray-800 sm:text-3xl">
+                  {lesson.level === "isolation"
+                    ? "Make the sound"
+                    : "Say it out loud"}
+                </h2>
+              </div>
 
               {/* Speech bubble with the target word */}
               <div className="mx-auto mt-6 max-w-md">
@@ -254,9 +265,11 @@ export default function LessonPage() {
                       {word.text}
                     </span>
                   </span>
-                  <span className="text-4xl" aria-hidden>
-                    {word.emoji}
-                  </span>
+                  {word.emoji && (
+                    <span className="text-4xl" aria-hidden>
+                      {word.emoji}
+                    </span>
+                  )}
                 </button>
                 {/* Bubble pointer */}
                 <div className="relative mx-auto h-3 w-6">
@@ -271,7 +284,7 @@ export default function LessonPage() {
 
               {/* Mic / self-rate area */}
               <div className="mt-auto flex flex-col items-center gap-2 pb-4">
-                {supported ? (
+                {!useSelfRate ? (
                   <>
                     <MicButton
                       listening={phase === "listening"}
@@ -297,9 +310,10 @@ export default function LessonPage() {
                   </>
                 ) : (
                   <div className="w-full space-y-2">
-                    <p className="text-center text-sm text-gray-500">
-                      Speech recognition isn&apos;t available here. How did it
-                      sound?
+                    <p className="text-center text-sm font-bold text-gray-500">
+                      {lesson.level === "isolation"
+                        ? "How did your child sound?"
+                        : "Speech recognition isn't available here. How did it sound?"}
                     </p>
                     <div className="grid grid-cols-3 gap-2">
                       <button
