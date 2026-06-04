@@ -1,0 +1,27 @@
+{
+  "expo": {
+    "name": "Sona",
+    "slug": "sona",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "sona",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.sona.app",
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "Sona uses the microphone so your child can practice saying speech sounds.",
+        "NSSpeechRecognitionUsageDescription": "Sona uses speech recognition to check how your child says each sound."
+      }
+    },
+    "android": {
+      "package": "com.sona.app",
+      "permissions": ["RECORD_AUDIO"]
+    },
+    "plugins": ["expo-router"],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
