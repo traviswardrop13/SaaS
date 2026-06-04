@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <!-- Android adaptive icon foreground: centered lion within the safe zone
+       (Android masks the outer ~25% off the edges). Background is supplied
+       separately by app.json (#ffffff) so we leave the canvas transparent. -->
+  <g transform="translate(512 512)">
+    <circle r="280" fill="#ea580c"/>
+    <g fill="#c2410c">
+      <circle cx="280" cy="0" r="44"/>
+      <circle cx="242" cy="140" r="44"/>
+      <circle cx="140" cy="242" r="44"/>
+      <circle cx="0" cy="280" r="44"/>
+      <circle cx="-140" cy="242" r="44"/>
+      <circle cx="-242" cy="140" r="44"/>
+      <circle cx="-280" cy="0" r="44"/>
+      <circle cx="-242" cy="-140" r="44"/>
+      <circle cx="-140" cy="-242" r="44"/>
+      <circle cx="0" cy="-280" r="44"/>
+      <circle cx="140" cy="-242" r="44"/>
+      <circle cx="242" cy="-140" r="44"/>
+    </g>
+
+    <circle r="200" fill="#fef3c7"/>
+
+    <ellipse cx="-115" cy="45" rx="35" ry="22" fill="#fbcfe8"/>
+    <ellipse cx="115" cy="45" rx="35" ry="22" fill="#fbcfe8"/>
+
+    <circle cx="-72" cy="-35" r="24" fill="#1f2937"/>
+    <circle cx="72" cy="-35" r="24" fill="#1f2937"/>
+    <circle cx="-65" cy="-44" r="9" fill="#ffffff"/>
+    <circle cx="80" cy="-44" r="9" fill="#ffffff"/>
+
+    <path d="M-16 22 L16 22 L0 50 Z" fill="#c2410c"/>
+
+    <path
+      d="M-50 85 Q0 130 50 85"
+      stroke="#7c2d12"
+      stroke-width="10"
+      stroke-linecap="round"
+      fill="none"
+    />
+  </g>
+</svg>

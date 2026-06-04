@@ -51,13 +51,22 @@ Until then, isolation lessons (which use parent self-rating anyway) work
 everywhere, and word/phrase lessons fall back to self-rating when
 recognition is unavailable.
 
+## App icon & splash
+
+Sources live in `assets/*.svg`. To regenerate the PNGs Expo consumes
+(`icon.png`, `adaptive-icon.png`, `splash.png`, `favicon.png`):
+
+```bash
+node scripts/generate-assets.js
+```
+
+Edit the SVGs, re-run the script, commit the PNGs. The script uses
+`sharp` (devDependency).
+
 ## Still TODO before App Store submission
 
-- App icon + splash (`assets/icon.png`, `assets/splash.png`) and re-add the
-  references in `app.json`.
 - Wire `@react-native-voice/voice` via a dev build and test on a real
   device.
-- Full onboarding parity (diagnostic flow, motivation screen, reminders).
 - Apple Developer account ($99/yr) + EAS Build for store binaries.
 
 ## Building store binaries (later)
