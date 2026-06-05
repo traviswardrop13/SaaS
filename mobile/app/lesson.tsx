@@ -504,9 +504,11 @@ function ResultBanner({
       {/* Calibration debug line (temporary) */}
       {cloud ? (
         <Text className="mt-2 text-[11px] font-bold text-wolf">
-          {`debug · score ${cloud.score ?? "?"} · overall ${
-            cloud.overall ?? "?"
-          } · ${targetSound} ${cloud.targetPhoneme ?? "?"}${
+          {`debug · score ${cloud.score ?? "?"} · phoneAvg ${
+            cloud.phoneAvg ?? "?"
+          } · wordAvg ${cloud.wordAvg ?? "?"} · ${targetSound} ${
+            cloud.targetPhoneme ?? "?"
+          }${
             cloud.phones?.length
               ? ` · ${cloud.phones
                   .map((p) => `${p.phone}:${p.score ?? "?"}`)

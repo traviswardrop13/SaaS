@@ -13,10 +13,14 @@ const API_URL =
 
 export type CloudScore = {
   ok: boolean;
-  /** primary 0..100 score the rating is based on (whole-utterance match) */
+  /** primary 0..100 score the rating is based on (avg of all phonemes) */
   score?: number;
-  /** word/utterance-level score 0..100, or null if Speechace declined */
+  /** text-level quality_score from Speechace (often null for single words) */
   overall: number | null;
+  /** average of word-level quality_scores */
+  wordAvg?: number | null;
+  /** average of all phoneme quality_scores — the calibration signal */
+  phoneAvg?: number | null;
   /** target-phoneme score 0..100 — the specific sound being taught */
   targetPhoneme: number | null;
   /** per-phoneme breakdown, for calibration/debug */

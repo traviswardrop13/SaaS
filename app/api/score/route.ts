@@ -46,9 +46,15 @@ const PHONEME_FOR: Record<string, string[]> = {
   N: ["N"],
 };
 
-// Scoring thresholds — tunable knobs. `score` is the whole-utterance match
-// (how well the child said the *prompt*), `PHONEME_MIN` guards that the target
-// sound itself is decent before we award a "great".
+// Scoring thresholds — tunable knobs.
+// Calibrated against real Speechace responses for the R-isolation lesson:
+//   "rah"     → word 67 / R 99   → all phones ≈ 80+ avg  → great
+//   "ree"     → word 67 / R 98   → R high but AH weak    → tryAgain
+//   "rye"     → word 34 / R 60   → both phones weak      → tryAgain
+// The discriminator that actually works is the *average* phoneme score
+// across the prompt's phones — Speechace's word-level quality_score is too
+// lenient for vowel substitutions (rah and ree both yielded 67), while the
+// target-phoneme score alone is too forgiving (any R word scores R ~98).
 const GREAT = 75;
 const OK = 50;
 const PHONEME_MIN = 55;
@@ -218,11 +224,33 @@ export async function POST(req: NextRequest) {
     })),
   );
 
-  // Primary score = how well the child pronounced the *expected text as a
-  // whole*. This requires matching the actual prompt ("rah", not "ree"),
-  // unlike scoring the target phoneme alone. Fall back to the phoneme score
-  // only if Speechace didn't return an overall.
-  const score = overall ?? targetPhoneme ?? 0;
+  // Speechace also returns a word-level quality_score; useful as a fallback
+  // and visible in debug for comparison.
+  const wordAvg = (() => {
+    const scs = words
+      .map((w) => w.quality_score)
+      .filter((s): s is number => typeof s === "number");
+    return scs.length
+      ? Math.round(scs.reduce((a, b) => a + b, 0) / scs.length)
+      : null;
+  })();
+
+  // Average ALL expected phonemes. This is the right primary signal: when a
+  // kid says "ree" for "rah", R scores ~98 but AH scores low, so the average
+  // (~50–60) tells us the prompt as a whole wasn't matched — unlike the word
+  // score (67 for both) or the target-phoneme score (always ~98 for an R).
+  const phoneAvg = (() => {
+    const scs = phones
+      .map((p) => p.score)
+      .filter((s): s is number => typeof s === "number");
+    return scs.length
+      ? Math.round(scs.reduce((a, b) => a + b, 0) / scs.length)
+      : null;
+  })();
+
+  // Priority: phoneAvg (most discriminating) → text-level overall (rarely
+  // returned for single words) → word average → target phoneme alone.
+  const score = phoneAvg ?? overall ?? wordAvg ?? targetPhoneme ?? 0;
   const { rating, feedback } = rate({
     score,
     overall,
@@ -235,6 +263,8 @@ export async function POST(req: NextRequest) {
     ok: true,
     score: Math.round(score),
     overall,
+    wordAvg,
+    phoneAvg,
     targetPhoneme,
     phones,
     rating,
