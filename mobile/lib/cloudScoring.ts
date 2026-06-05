@@ -13,11 +13,17 @@ const API_URL =
 
 export type CloudScore = {
   ok: boolean;
-  /** word-level score 0..100, or null if Speechace declined */
+  /** primary 0..100 score the rating is based on (whole-utterance match) */
+  score?: number;
+  /** word/utterance-level score 0..100, or null if Speechace declined */
   overall: number | null;
-  /** target-phoneme score 0..100 — what the lesson is actually teaching */
+  /** target-phoneme score 0..100 — the specific sound being taught */
   targetPhoneme: number | null;
+  /** per-phoneme breakdown, for calibration/debug */
+  phones?: { phone: string; score: number | null }[];
   rating: "great" | "ok" | "tryAgain";
+  /** kid-friendly coaching line from the backend, if not a "great" */
+  feedback?: string | null;
   /** what the recognizer heard */
   transcript: string;
   error?: string;

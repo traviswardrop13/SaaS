@@ -10,7 +10,7 @@ import {
   isRecordingSupported,
   type RecorderHandle,
 } from "@/lib/recorder";
-import { scoreAudio } from "@/lib/cloudScoring";
+import { scoreAudio, type CloudScore } from "@/lib/cloudScoring";
 import { useStore } from "@/lib/store";
 import { Button } from "@/components/ui";
 import TalkingFace from "@/components/TalkingFace";
@@ -33,6 +33,9 @@ export default function Lesson() {
   const [result, setResult] = useState<ScoreResult | null>(null);
   const [scores, setScores] = useState<number[]>([]);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  // TEMP: holds the last raw cloud score so we can show the numbers on the
+  // result screen while we calibrate strictness. Remove once dialed in.
+  const [lastCloud, setLastCloud] = useState<CloudScore | null>(null);
   const recorderRef = useRef<RecorderHandle | null>(null);
 
   const lesson = info?.lesson;
@@ -128,22 +131,17 @@ export default function Lesson() {
       return;
     }
 
-    // Map Speechace's 0..100 to the existing ScoreResult shape so the rest
-    // of the flow (xp, stars, ResultBar) stays unchanged.
-    const primary = cloud.targetPhoneme ?? cloud.overall ?? 0;
-    const similarity = Math.max(0, Math.min(1, primary / 100));
+    // The backend now scores the whole utterance against the prompt (so
+    // "ree" no longer passes for "rah") and returns a coaching line.
+    const similarity = Math.max(0, Math.min(1, (cloud.score ?? 0) / 100));
     const s: ScoreResult = {
       similarity,
       rating: cloud.rating,
       matchedAgainst: word!.text,
       bestHeard: cloud.transcript,
-      hint:
-        cloud.rating === "great"
-          ? undefined
-          : cloud.transcript
-              ? `I heard "${cloud.transcript}". Try the ${lesson!.targetSound} sound!`
-              : "I didn't catch that — tap the mic and try again.",
+      hint: cloud.rating === "great" ? undefined : cloud.feedback ?? undefined,
     };
+    setLastCloud(cloud);
     setResult(s);
     setScores((p) => [...p, s.similarity]);
     setPhase("result");
@@ -250,6 +248,19 @@ export default function Lesson() {
               {errorMsg}
             </Text>
           </View>
+        ) : null}
+        {phase === "result" && result && lastCloud ? (
+          <Text className="mb-2 text-center text-[11px] font-bold text-gray-400">
+            {`debug · score ${lastCloud.score ?? "?"} · overall ${
+              lastCloud.overall ?? "?"
+            } · ${lesson.targetSound} ${lastCloud.targetPhoneme ?? "?"}${
+              lastCloud.phones?.length
+                ? ` · ${lastCloud.phones
+                    .map((p) => `${p.phone}:${p.score ?? "?"}`)
+                    .join(" ")}`
+                : ""
+            }${lastCloud.transcript ? ` · heard "${lastCloud.transcript}"` : ""}`}
+          </Text>
         ) : null}
         {phase === "result" && result ? (
           <ResultBar result={result} onNext={nextWord} onRetry={() => {

@@ -46,10 +46,44 @@ const PHONEME_FOR: Record<string, string[]> = {
   N: ["N"],
 };
 
-function ratingFor(score: number): "great" | "ok" | "tryAgain" {
-  if (score >= 80) return "great";
-  if (score >= 55) return "ok";
-  return "tryAgain";
+// Scoring thresholds — tunable knobs. `score` is the whole-utterance match
+// (how well the child said the *prompt*), `PHONEME_MIN` guards that the target
+// sound itself is decent before we award a "great".
+const GREAT = 75;
+const OK = 50;
+const PHONEME_MIN = 55;
+
+function rate(opts: {
+  score: number;
+  overall: number | null;
+  targetPhoneme: number | null;
+  targetSound: string | null;
+  text: string;
+}): { rating: "great" | "ok" | "tryAgain"; feedback: string | null } {
+  const { score, targetPhoneme, targetSound, text } = opts;
+  const sound = targetSound ?? "sound";
+
+  let rating: "great" | "ok" | "tryAgain";
+  if (score >= GREAT && (targetPhoneme == null || targetPhoneme >= PHONEME_MIN)) {
+    rating = "great";
+  } else if (score >= OK) {
+    rating = "ok";
+  } else {
+    rating = "tryAgain";
+  }
+
+  let feedback: string | null = null;
+  if (rating !== "great") {
+    if (targetPhoneme != null && targetPhoneme < PHONEME_MIN) {
+      // The target sound itself was weak.
+      feedback = `Let's work on the ${sound} sound — listen, then say "${text}" again!`;
+    } else {
+      // Target sound was fine but the whole syllable didn't match (e.g. said
+      // "ree" for "rah") — nudge toward the exact prompt.
+      feedback = `Good ${sound}! Now say the whole sound: "${text}".`;
+    }
+  }
+  return { rating, feedback };
 }
 
 type SpeechacePhone = { phone?: string; quality_score?: number };
@@ -175,15 +209,36 @@ export async function POST(req: NextRequest) {
     .filter(Boolean)
     .join(" ");
 
-  // Use the target phoneme score when we have one (it's what the lesson is
-  // teaching); otherwise fall back to the overall word score.
-  const primary = targetPhoneme ?? overall ?? 0;
+  // Compact per-phoneme breakdown — handy for tuning and on-device debugging.
+  const phones = words.flatMap((w) =>
+    (w.phone_score_list ?? []).map((p) => ({
+      phone: (p.phone ?? "").toUpperCase().replace(/[0-9]/g, ""),
+      score:
+        typeof p.quality_score === "number" ? Math.round(p.quality_score) : null,
+    })),
+  );
+
+  // Primary score = how well the child pronounced the *expected text as a
+  // whole*. This requires matching the actual prompt ("rah", not "ree"),
+  // unlike scoring the target phoneme alone. Fall back to the phoneme score
+  // only if Speechace didn't return an overall.
+  const score = overall ?? targetPhoneme ?? 0;
+  const { rating, feedback } = rate({
+    score,
+    overall,
+    targetPhoneme,
+    targetSound,
+    text,
+  });
 
   return NextResponse.json({
     ok: true,
+    score: Math.round(score),
     overall,
     targetPhoneme,
-    rating: ratingFor(primary),
+    phones,
+    rating,
+    feedback,
     transcript,
     raw,
   });
