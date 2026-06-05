@@ -53,12 +53,33 @@ lib/
   storage.ts    # localStorage state, XP/streak logic
 ```
 
+## Cloud scoring API (`/api/score`)
+
+The mobile app posts a child's recording to `POST /api/score` and gets back a
+word- and phoneme-level score. This route proxies to Speechace using a
+server-side key — the API key is never sent to the device.
+
+**Setup in Vercel:**
+
+1. Speechace dashboard → copy your product key.
+2. Vercel → `sona` project → Settings → Environment Variables.
+3. Add `SPEECHACE_API_KEY` with the key value. Check Production + Preview +
+   Development.
+4. Redeploy (any new commit triggers it).
+
+**Smoke test the deployed endpoint:**
+
+```bash
+API_URL=https://sona-yourdeploy.vercel.app ./scripts/test-speechace.sh rabbit R
+```
+
+Records 3s from the default mic, uploads, and prints Speechace's response.
+
 ## Roadmap (post-MVP)
 
 - Real accounts + sync (Supabase / Clerk) so progress moves between devices.
 - Therapist accounts that can assign exercises and review recordings.
 - Minimal-pair discrimination games (ship vs chip).
-- Server-side scoring with an actual pronunciation model for better accuracy.
 - Sticker / collectible reward layer for younger / less competitive kids.
 
 ## A note on COPPA / privacy

@@ -1,0 +1,176 @@
+import { NextRequest, NextResponse } from "next/server";
+
+/**
+ * Speechace scoring proxy.
+ *
+ * The mobile app uploads the kid's recording here; this route forwards it to
+ * Speechace's scoring API using a server-side key (never sent to the device),
+ * then normalizes the response down to what the lesson screen actually needs.
+ *
+ * Expected multipart fields from the client:
+ *   - `audio`         (file)   the kid's recording
+ *   - `text`          (string) the target word or phrase, e.g. "rabbit"
+ *   - `targetSound`   (string) one of S/R/L/SH/TH/CH/K/G/F/P/T/M/N (optional)
+ *   - `userId`        (string) stable id for the child (helps Speechace tune)
+ *
+ * Response shape (kid-friendly, framework-agnostic):
+ *   {
+ *     ok: true,
+ *     overall: 0..100,            // word-level score
+ *     targetPhoneme: 0..100|null, // score for the target sound specifically
+ *     rating: "great" | "ok" | "tryAgain",
+ *     transcript: string,         // what Speechace heard
+ *     raw: { ... }                // full Speechace payload for debugging
+ *   }
+ */
+
+const SPEECHACE_URL =
+  "https://api.speechace.co/api/scoring/text/v9/json";
+
+// Map of our internal sound codes to the phoneme labels Speechace returns.
+// Speechace uses ARPAbet-style labels — single phones for most, digraphs for
+// the others. We compare case-insensitively and ignore stress digits.
+const PHONEME_FOR: Record<string, string[]> = {
+  S: ["S"],
+  R: ["R"],
+  L: ["L"],
+  SH: ["SH"],
+  TH: ["TH", "DH"],
+  CH: ["CH"],
+  K: ["K"],
+  G: ["G"],
+  F: ["F"],
+  P: ["P"],
+  T: ["T"],
+  M: ["M"],
+  N: ["N"],
+};
+
+function ratingFor(score: number): "great" | "ok" | "tryAgain" {
+  if (score >= 80) return "great";
+  if (score >= 55) return "ok";
+  return "tryAgain";
+}
+
+type SpeechacePhone = { phone?: string; quality_score?: number };
+type SpeechaceWord = {
+  word?: string;
+  quality_score?: number;
+  phone_score_list?: SpeechacePhone[];
+};
+
+function pickTargetPhonemeScore(
+  words: SpeechaceWord[],
+  targetSound: string | null,
+): number | null {
+  if (!targetSound) return null;
+  const labels = PHONEME_FOR[targetSound.toUpperCase()];
+  if (!labels) return null;
+  // Best (highest) target-phoneme score across all words — if the kid says
+  // "rabbit," there's only one R; if they say "round red," we take the
+  // strongest one so a single mumble doesn't tank the score.
+  let best: number | null = null;
+  for (const w of words) {
+    for (const p of w.phone_score_list ?? []) {
+      const phone = (p.phone ?? "").toUpperCase().replace(/[0-9]/g, "");
+      if (!labels.includes(phone)) continue;
+      const s = p.quality_score;
+      if (typeof s !== "number") continue;
+      if (best === null || s > best) best = s;
+    }
+  }
+  return best;
+}
+
+export async function POST(req: NextRequest) {
+  const key = process.env.SPEECHACE_API_KEY;
+  if (!key) {
+    return NextResponse.json(
+      { ok: false, error: "Server is missing SPEECHACE_API_KEY." },
+      { status: 500 },
+    );
+  }
+
+  let inForm: FormData;
+  try {
+    inForm = await req.formData();
+  } catch {
+    return NextResponse.json(
+      { ok: false, error: "Expected multipart/form-data." },
+      { status: 400 },
+    );
+  }
+
+  const audio = inForm.get("audio");
+  const text = (inForm.get("text") as string | null)?.trim();
+  const targetSound = (inForm.get("targetSound") as string | null)?.trim() || null;
+  const userId = (inForm.get("userId") as string | null)?.trim() || "anonymous";
+
+  if (!(audio instanceof Blob) || !text) {
+    return NextResponse.json(
+      { ok: false, error: "audio file and text are required." },
+      { status: 400 },
+    );
+  }
+
+  // Speechace wants the key + dialect + user_id as query params, and the audio
+  // + text as multipart fields.
+  const url = `${SPEECHACE_URL}?key=${encodeURIComponent(
+    key,
+  )}&dialect=en-us&user_id=${encodeURIComponent(userId)}`;
+
+  const outForm = new FormData();
+  outForm.append("text", text);
+  outForm.append(
+    "user_audio_file",
+    audio,
+    (audio as File).name || "audio.m4a",
+  );
+
+  let raw: any;
+  try {
+    const r = await fetch(url, { method: "POST", body: outForm });
+    raw = await r.json();
+    if (!r.ok || raw.status === "error") {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: raw?.short_message || raw?.detail_message || "Scoring failed.",
+          raw,
+        },
+        { status: 502 },
+      );
+    }
+  } catch (e: any) {
+    return NextResponse.json(
+      { ok: false, error: e?.message ?? "Network error talking to Speechace." },
+      { status: 502 },
+    );
+  }
+
+  // Speechace's v9 response nests the score under text_score.
+  const ts = raw.text_score ?? {};
+  const overall =
+    typeof ts.quality_score === "number" ? ts.quality_score : null;
+  const words: SpeechaceWord[] = Array.isArray(ts.word_score_list)
+    ? ts.word_score_list
+    : [];
+  const targetPhoneme = pickTargetPhonemeScore(words, targetSound);
+  const transcript = words
+    .map((w) => w.word)
+    .filter(Boolean)
+    .join(" ");
+
+  // Use the target phoneme score when we have one (it's what the lesson is
+  // teaching); otherwise fall back to the overall word score.
+  const primary = targetPhoneme ?? overall ?? 0;
+
+  return NextResponse.json({
+    ok: true,
+    overall,
+    targetPhoneme,
+    rating: ratingFor(primary),
+    transcript,
+    raw,
+  });
+}
