@@ -12,8 +12,8 @@ import {
 } from "@/lib/recorder";
 import { scoreAudio, type CloudScore } from "@/lib/cloudScoring";
 import { useStore } from "@/lib/store";
-import { Button } from "@/components/ui";
-import TalkingFace from "@/components/TalkingFace";
+import { Button, ProgressBar } from "@/components/ui";
+import TalkingFace, { type Mood } from "@/components/TalkingFace";
 
 type Phase = "prompt" | "listening" | "scoring" | "result" | "done";
 
@@ -77,6 +77,17 @@ export default function Lesson() {
   const { skill } = info;
   const total = lesson.words.length;
   const pct = Math.round((wordIdx / total) * 100);
+
+  // The mascot reacts to the result: celebrate on great, gently encourage on
+  // ok, kindly commiserate on try-again. Neutral otherwise.
+  const mascotMood: Mood =
+    phase === "result" && result
+      ? result.rating === "great"
+        ? "celebrate"
+        : result.rating === "ok"
+          ? "encourage"
+          : "sad"
+      : "neutral";
 
   function playWord() {
     if (word)
@@ -174,22 +185,37 @@ export default function Lesson() {
   if (phase === "done") {
     const avg = scores.reduce((a, b) => a + b, 0) / Math.max(1, scores.length);
     const stars = avg >= 0.85 ? 3 : avg >= 0.65 ? 2 : 1;
+    const xp = 10 + stars * 5;
     return (
       <SafeAreaView className="flex-1 items-center justify-center bg-white px-6">
-        <Text className="text-7xl">🎉</Text>
-        <Text className="mt-4 text-4xl font-extrabold text-brand-600">
+        <TalkingFace speaking={false} mood="celebrate" size={170} />
+        <Text className="mt-5 text-3xl font-extrabold text-feather-edge">
           Lesson complete!
         </Text>
-        <Text className="mt-2 text-center text-gray-600">
-          Amazing work, {activeChild.name}!
+        <Text className="mt-1 text-center text-base text-wolf">
+          Amazing work, {activeChild.name}! 🎉
         </Text>
-        <View className="mt-6 flex-row gap-3">
-          <Stat label="Stars" value={`${stars}⭐`} />
+        <View className="mt-5 flex-row gap-2">
+          {[0, 1, 2].map((i) => (
+            <Text
+              key={i}
+              className="text-5xl"
+              style={{ opacity: i < stars ? 1 : 0.18 }}
+            >
+              ⭐
+            </Text>
+          ))}
+        </View>
+        <View className="mt-7 w-full max-w-sm flex-row gap-3">
+          <Stat label="Stars" value={`${stars}/3`} />
           <Stat label="Accuracy" value={`${Math.round(avg * 100)}%`} />
-          <Stat label="XP" value={`+${10 + stars * 5}`} />
+          <Stat label="XP" value={`+${xp}`} />
         </View>
         <View className="mt-8 w-full max-w-sm">
-          <Button label="Back to map" onPress={() => router.replace("/home")} />
+          <Button
+            label="Back to map"
+            onPress={() => router.replace("/home")}
+          />
         </View>
       </SafeAreaView>
     );
@@ -201,32 +227,30 @@ export default function Lesson() {
       <View className="flex-row items-center gap-3 px-4 py-3">
         <Pressable
           onPress={() => router.back()}
-          className="h-9 w-9 items-center justify-center rounded-full bg-gray-100"
+          className="h-9 w-9 items-center justify-center rounded-full bg-polar"
         >
-          <Text className="text-gray-500">✕</Text>
+          <Text className="text-lg font-bold text-hare">✕</Text>
         </Pressable>
-        <View className="h-3 flex-1 overflow-hidden rounded-full bg-gray-100">
-          <View className="h-full rounded-full bg-grass-500" style={{ width: `${pct}%` }} />
-        </View>
+        <ProgressBar value={pct / 100} />
       </View>
 
       <ScrollView className="flex-1 px-4" contentContainerStyle={{ flexGrow: 1 }}>
-        <Text className="text-center text-xs font-extrabold uppercase tracking-widest text-gray-400">
+        <Text className="text-center text-xs font-extrabold uppercase tracking-widest text-hare">
           Level {LEVEL_INFO[lesson.level].short} · {LEVEL_INFO[lesson.level].label}
         </Text>
-        <Text className="mt-1 text-center text-2xl font-extrabold text-gray-800">
+        <Text className="mt-1 text-center text-2xl font-extrabold text-ink">
           {lesson.level === "isolation" ? "Make the sound" : "Say it out loud"}
         </Text>
 
-        {/* Word bubble */}
+        {/* Word bubble — tap to hear it */}
         <Pressable
           onPress={playWord}
-          className="mt-6 flex-row items-center gap-3 rounded-3xl border-2 border-gray-100 bg-white px-5 py-4"
+          className="mt-6 flex-row items-center gap-3 rounded-3xl border-2 border-swan bg-white px-5 py-4"
         >
-          <View className={`h-9 w-9 items-center justify-center rounded-full ${skill.color}`}>
-            <Text className="text-white">🔊</Text>
+          <View className={`h-10 w-10 items-center justify-center rounded-full ${skill.color}`}>
+            <Text className="text-base text-white">🔊</Text>
           </View>
-          <Text className="flex-1 text-2xl font-extrabold text-gray-800">
+          <Text className="flex-1 text-2xl font-extrabold text-ink">
             {word.text}
           </Text>
           {word.emoji ? <Text className="text-4xl">{word.emoji}</Text> : null}
@@ -236,7 +260,7 @@ export default function Lesson() {
             word plays. (The tongue-position diagram is being redesigned and
             will return as a polished "show me how" later.) */}
         <View className="mt-4 items-center">
-          <TalkingFace speaking={speaking} size={210} />
+          <TalkingFace speaking={speaking} size={210} mood={mascotMood} />
         </View>
       </ScrollView>
 
@@ -288,23 +312,56 @@ export default function Lesson() {
             </View>
           </View>
         ) : (
-          <Pressable
-            disabled={phase === "scoring"}
-            onPress={() =>
-              phase === "listening" ? stopAndScore() : listen()
-            }
-            className={`mx-auto h-24 w-24 items-center justify-center rounded-full ${
-              phase === "listening"
-                ? "bg-brand-500"
+          <View className="items-center">
+            <Text className="mb-3 text-sm font-extrabold uppercase tracking-wide text-hare">
+              {phase === "listening"
+                ? "Listening… tap to stop"
                 : phase === "scoring"
-                  ? "bg-gray-300"
-                  : "bg-grass-500"
-            }`}
-          >
-            <Text className="text-4xl">
-              {phase === "listening" ? "⏹" : phase === "scoring" ? "…" : "🎤"}
+                  ? "Checking…"
+                  : "Tap to speak"}
             </Text>
-          </Pressable>
+            <Pressable
+              disabled={phase === "scoring"}
+              onPress={() =>
+                phase === "listening" ? stopAndScore() : listen()
+              }
+            >
+              {({ pressed }) => {
+                const face =
+                  phase === "listening"
+                    ? "#ff4b4b"
+                    : phase === "scoring"
+                      ? "#e5e5e5"
+                      : "#58cc02";
+                const edge =
+                  phase === "listening"
+                    ? "#e63232"
+                    : phase === "scoring"
+                      ? "#cfcfcf"
+                      : "#58a700";
+                return (
+                  <View style={{ backgroundColor: edge, borderRadius: 999 }}>
+                    <View
+                      className="h-24 w-24 items-center justify-center rounded-full"
+                      style={{
+                        backgroundColor: face,
+                        transform: [{ translateY: pressed ? 5 : 0 }],
+                        marginBottom: pressed ? 0 : 6,
+                      }}
+                    >
+                      <Text className="text-4xl">
+                        {phase === "listening"
+                          ? "⏹"
+                          : phase === "scoring"
+                            ? "⏳"
+                            : "🎤"}
+                      </Text>
+                    </View>
+                  </View>
+                );
+              }}
+            </Pressable>
+          </View>
         )}
       </View>
     </SafeAreaView>
@@ -321,31 +378,42 @@ function ResultBar({
   onRetry: () => void;
 }) {
   const great = result.rating === "great";
-  const title = great ? "Good job!" : result.rating === "ok" ? "Nice try!" : "Let's try again";
+  const ok = result.rating === "ok";
+  const title = great ? "Perfect! 🎉" : ok ? "Almost there!" : "Good try!";
+  const tint = great ? "#f0fde4" : ok ? "#e8f7ff" : "#fff0f0";
+  const titleColor = great ? "#58a700" : ok ? "#1899d6" : "#e63232";
+  const starCount = great ? 3 : ok ? 2 : 1;
   return (
-    <View>
-      <Text
-        className={`text-2xl font-extrabold ${
-          great ? "text-grass-600" : result.rating === "ok" ? "text-sky-600" : "text-brand-600"
-        }`}
-      >
-        {great ? "✓ " : ""}
-        {title}
-      </Text>
+    <View className="rounded-3xl p-4" style={{ backgroundColor: tint }}>
+      <View className="flex-row items-center justify-between">
+        <Text className="text-2xl font-extrabold" style={{ color: titleColor }}>
+          {title}
+        </Text>
+        <Text className="text-lg">
+          {"⭐".repeat(starCount)}
+          <Text style={{ opacity: 0.2 }}>{"⭐".repeat(3 - starCount)}</Text>
+        </Text>
+      </View>
       {result.hint ? (
-        <Text className="mt-1 text-sm font-bold text-gray-700">{result.hint}</Text>
+        <Text className="mt-1 text-sm font-bold text-ink">{result.hint}</Text>
       ) : null}
       {result.bestHeard ? (
-        <Text className="mt-1 text-sm text-gray-500">I heard: “{result.bestHeard}”</Text>
+        <Text className="mt-1 text-xs text-wolf">
+          I heard: “{result.bestHeard}”
+        </Text>
       ) : null}
       <View className="mt-3 flex-row gap-2">
         {!great && (
           <View className="flex-1">
-            <Button label="Try again" variant="ghost" onPress={onRetry} />
+            <Button label="Try again" variant="ghost" icon="🔁" onPress={onRetry} />
           </View>
         )}
         <View className="flex-1">
-          <Button label="Continue" variant={great ? "primary" : "secondary"} onPress={onNext} />
+          <Button
+            label={great ? "Continue" : "Next"}
+            variant={great ? "primary" : "secondary"}
+            onPress={onNext}
+          />
         </View>
       </View>
     </View>
@@ -354,9 +422,11 @@ function ResultBar({
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <View className="rounded-2xl bg-brand-50 px-4 py-3">
-      <Text className="text-center text-xl font-extrabold text-brand-600">{value}</Text>
-      <Text className="text-center text-xs uppercase tracking-wide text-gray-500">{label}</Text>
+    <View className="flex-1 rounded-2xl border-2 border-swan bg-polar px-3 py-3">
+      <Text className="text-center text-xl font-extrabold text-ink">{value}</Text>
+      <Text className="text-center text-[11px] font-bold uppercase tracking-wide text-hare">
+        {label}
+      </Text>
     </View>
   );
 }
