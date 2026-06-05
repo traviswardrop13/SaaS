@@ -1,49 +1,172 @@
 import React from "react";
 import { Pressable, Text, View, ActivityIndicator } from "react-native";
 
-/** Chunky Duolingo-style primary button. */
+/**
+ * Sona's design system — chunky, rounded, Duolingo-flavored primitives.
+ *
+ * The signature element is the 3D button: a colored "face" sitting on a
+ * darker "edge". At rest the edge peeks out the bottom; on press the face
+ * drops down onto the edge so it feels physically clickable.
+ */
+
+type Variant = "primary" | "secondary" | "ghost" | "warn" | "danger";
+
+const VARIANTS: Record<
+  Exclude<Variant, "ghost">,
+  { face: string; edge: string; text: string }
+> = {
+  primary: { face: "#58cc02", edge: "#58a700", text: "#ffffff" },
+  secondary: { face: "#1cb0f6", edge: "#1899d6", text: "#ffffff" },
+  warn: { face: "#ff9600", edge: "#e08600", text: "#ffffff" },
+  danger: { face: "#ff4b4b", edge: "#e63232", text: "#ffffff" },
+};
+
 export function Button({
   label,
   onPress,
   variant = "primary",
   disabled,
+  icon,
+  size = "lg",
 }: {
   label: string;
   onPress: () => void;
-  variant?: "primary" | "secondary" | "ghost" | "warn";
+  variant?: Variant;
   disabled?: boolean;
+  icon?: string;
+  size?: "lg" | "md";
 }) {
-  const bg =
-    disabled
-      ? "bg-gray-300"
-      : variant === "primary"
-        ? "bg-grass-500"
-        : variant === "secondary"
-          ? "bg-sky-500"
-          : variant === "warn"
-            ? "bg-brand-500"
-            : "bg-white border-2 border-gray-200";
-  const fg =
-    variant === "ghost" ? "text-gray-700" : disabled ? "text-gray-500" : "text-white";
+  const pad = size === "lg" ? 16 : 12;
+  const radius = 16;
+
+  // Ghost = flat outlined button (used for secondary "Try again" actions).
+  if (variant === "ghost") {
+    return (
+      <Pressable
+        onPress={disabled ? undefined : onPress}
+        style={({ pressed }) => ({
+          opacity: disabled ? 0.5 : 1,
+          transform: [{ translateY: pressed ? 1 : 0 }],
+        })}
+        className="w-full items-center rounded-2xl border-2 border-swan bg-white"
+      >
+        <View style={{ paddingVertical: pad }} className="flex-row items-center gap-2">
+          {icon ? <Text className="text-lg">{icon}</Text> : null}
+          <Text className="text-base font-extrabold uppercase tracking-wide text-wolf">
+            {label}
+          </Text>
+        </View>
+      </Pressable>
+    );
+  }
+
+  const v = disabled
+    ? { face: "#e5e5e5", edge: "#cfcfcf", text: "#afafaf" }
+    : VARIANTS[variant];
+
   return (
     <Pressable
       onPress={disabled ? undefined : onPress}
-      className={`w-full items-center rounded-2xl py-4 ${bg}`}
-      style={({ pressed }) => ({
-        transform: [{ translateY: pressed && !disabled ? 2 : 0 }],
-      })}
+      style={{ width: "100%" }}
     >
-      <Text className={`text-base font-extrabold uppercase tracking-wide ${fg}`}>
-        {label}
-      </Text>
+      {({ pressed }) => (
+        <View style={{ backgroundColor: v.edge, borderRadius: radius }}>
+          <View
+            className="w-full flex-row items-center justify-center gap-2"
+            style={{
+              backgroundColor: v.face,
+              borderRadius: radius,
+              paddingVertical: pad,
+              transform: [{ translateY: pressed ? 4 : 0 }],
+              marginBottom: pressed ? 0 : 4,
+            }}
+          >
+            {icon ? <Text className="text-lg">{icon}</Text> : null}
+            <Text
+              style={{ color: v.text }}
+              className="text-base font-extrabold uppercase tracking-wide"
+            >
+              {label}
+            </Text>
+          </View>
+        </View>
+      )}
     </Pressable>
+  );
+}
+
+/** Chunky rounded progress bar with an inner highlight. value: 0..1 */
+export function ProgressBar({
+  value,
+  color = "#58cc02",
+  height = 16,
+}: {
+  value: number;
+  color?: string;
+  height?: number;
+}) {
+  const pct = Math.max(0, Math.min(1, value)) * 100;
+  return (
+    <View
+      className="flex-1 overflow-hidden rounded-full bg-swan"
+      style={{ height }}
+    >
+      <View
+        style={{ width: `${pct}%`, backgroundColor: color, height }}
+        className="rounded-full"
+      >
+        {/* glossy highlight */}
+        {pct > 6 ? (
+          <View
+            className="rounded-full bg-white/40"
+            style={{ height: Math.max(2, height * 0.22), marginHorizontal: 6, marginTop: 4 }}
+          />
+        ) : null}
+      </View>
+    </View>
+  );
+}
+
+/** Small rounded stat/label pill, e.g. "120 XP" or "5 🔥". */
+export function Pill({
+  children,
+  color = "#fff7ed",
+  text = "#ea580c",
+}: {
+  children: React.ReactNode;
+  color?: string;
+  text?: string;
+}) {
+  return (
+    <View
+      className="flex-row items-center gap-1 rounded-full px-3 py-1"
+      style={{ backgroundColor: color }}
+    >
+      <Text className="text-sm font-extrabold" style={{ color: text }}>
+        {children}
+      </Text>
+    </View>
+  );
+}
+
+export function Card({
+  children,
+  className = "",
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <View className={`rounded-3xl border-2 border-swan bg-white p-4 ${className}`}>
+      {children}
+    </View>
   );
 }
 
 export function Loading() {
   return (
     <View className="flex-1 items-center justify-center bg-white">
-      <ActivityIndicator size="large" color="#f97316" />
+      <ActivityIndicator size="large" color="#58cc02" />
     </View>
   );
 }
