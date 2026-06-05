@@ -36,11 +36,11 @@ export default function Lesson() {
 
   const lesson = info?.lesson;
   const word = lesson?.words[wordIdx];
-  // Cloud scoring needs both the recorder (dev build) and a gradeable target.
-  // "Isolation" lessons (sustained "rrrr") can't be scored phonetically, so
-  // they always fall back to parent self-rating.
-  const useCloud =
-    isRecordingSupported() && lesson?.level !== "isolation";
+  // Cloud scoring is used whenever the recorder is available (dev build with
+  // expo-av installed). Isolation lessons now use simple CV syllables like
+  // "sah" / "rah" which Speechace can score, so every level is gradeable.
+  // Falls back to parent self-rating only when recording isn't supported.
+  const useCloud = isRecordingSupported();
   const useSelfRate = !useCloud;
 
   // Auto-play the word when arriving at a new prompt.
