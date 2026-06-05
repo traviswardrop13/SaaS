@@ -40,10 +40,17 @@ export async function configurePlaybackAudio(): Promise<void> {
   if (!av?.Audio?.setAudioModeAsync) return;
   try {
     await av.Audio.setAudioModeAsync({
-      allowsRecordingIOS: false,
-      playsInSilentModeIOS: true,
+      allowsRecordingIOS: false, // force the .playback category → main speaker
+      playsInSilentModeIOS: true, // play even if the ring switch is silent
       staysActiveInBackground: false,
-      shouldDuckAndroid: true,
+      // DoNotMix keeps us out of a ducked/quiet mixed session.
+      ...(av.Audio.InterruptionModeIOS?.DoNotMix !== undefined
+        ? { interruptionModeIOS: av.Audio.InterruptionModeIOS.DoNotMix }
+        : {}),
+      ...(av.Audio.InterruptionModeAndroid?.DoNotMix !== undefined
+        ? { interruptionModeAndroid: av.Audio.InterruptionModeAndroid.DoNotMix }
+        : {}),
+      shouldDuckAndroid: false,
       playThroughEarpieceAndroid: false,
     });
   } catch (e: any) {
