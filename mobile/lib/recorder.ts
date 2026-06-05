@@ -2,42 +2,21 @@
  * Audio recorder for the Speechace scoring path. Records a short clip of the
  * child's voice and returns its file URI so cloudScoring can upload it.
  *
- * Uses expo-av (stable Recording API). The module is dynamically required so
- * the JS bundle still loads cleanly when the package isn't installed yet —
- * callers get `supported: false` instead of a crash, and fall back to the
- * existing on-device path. After `npx expo install expo-av` and a dev build,
- * everything just works.
+ * Uses expo-av's documented Recording flow with the HIGH_QUALITY preset —
+ * deliberately the simplest, most-compatible configuration (custom encoder
+ * settings were rejected by the native module on device). The module is
+ * dynamically required so the JS bundle still loads even if the package
+ * isn't installed; callers get `supported: false` and fall back to self-rate.
  */
 
-type ExpoAvAudio = {
-  Audio: {
-    requestPermissionsAsync: () => Promise<{ granted: boolean }>;
-    setAudioModeAsync: (mode: Record<string, unknown>) => Promise<void>;
-    Recording: {
-      createAsync: (
-        options: unknown,
-        onStatus?: (s: unknown) => void,
-      ) => Promise<{ recording: AvRecording }>;
-    };
-    RecordingOptionsPresets: { HIGH_QUALITY: unknown };
-    InterruptionModeIOS: { DoNotMix: number };
-    InterruptionModeAndroid: { DoNotMix: number };
-  };
-};
-
-type AvRecording = {
-  stopAndUnloadAsync: () => Promise<void>;
-  getURI: () => string | null;
-};
-
-let mod: ExpoAvAudio | null = null;
+let mod: any = null;
 let modTried = false;
-function getAv(): ExpoAvAudio | null {
+function getAv(): any {
   if (modTried) return mod;
   modTried = true;
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    mod = require("expo-av") as ExpoAvAudio;
+    mod = require("expo-av");
   } catch {
     mod = null;
   }
@@ -45,7 +24,8 @@ function getAv(): ExpoAvAudio | null {
 }
 
 export function isRecordingSupported(): boolean {
-  return getAv() != null;
+  const av = getAv();
+  return Boolean(av?.Audio?.Recording);
 }
 
 export type RecorderHandle = {
@@ -53,79 +33,54 @@ export type RecorderHandle = {
   stop: () => Promise<string | null>;
 };
 
-/**
- * Start recording the mic. Caller is responsible for stopping it.
- *
- * The recording config matches what Speechace expects (mono, 16kHz, 16-bit).
- * Higher bitrates don't improve scoring and just waste upload bandwidth.
- */
 export async function startRecording(opts?: {
   onError?: (err: string) => void;
 }): Promise<RecorderHandle | null> {
   const av = getAv();
-  if (!av) {
-    opts?.onError?.("expo-av not installed — dev build required");
+  if (!av?.Audio?.Recording) {
+    opts?.onError?.("Recorder unavailable (expo-av not loaded).");
     return null;
   }
+  const { Audio } = av;
 
   try {
-    const perm = await av.Audio.requestPermissionsAsync();
+    const perm = await Audio.requestPermissionsAsync();
     if (!perm.granted) {
-      opts?.onError?.("microphone permission denied");
+      opts?.onError?.("Microphone permission denied. Enable it in Settings.");
       return null;
     }
 
-    await av.Audio.setAudioModeAsync({
+    // Minimal, well-supported audio mode: just allow recording on iOS and
+    // play in silent mode. Anything fancier (interruption modes) is what was
+    // throwing before.
+    await Audio.setAudioModeAsync({
       allowsRecordingIOS: true,
       playsInSilentModeIOS: true,
-      interruptionModeIOS: av.Audio.InterruptionModeIOS.DoNotMix,
-      interruptionModeAndroid: av.Audio.InterruptionModeAndroid.DoNotMix,
-      shouldDuckAndroid: true,
-      playThroughEarpieceAndroid: false,
     });
 
-    const options = {
-      isMeteringEnabled: false,
-      android: {
-        extension: ".m4a",
-        outputFormat: 2, // MPEG_4
-        audioEncoder: 3, // AAC
-        sampleRate: 16000,
-        numberOfChannels: 1,
-        bitRate: 64000,
-      },
-      ios: {
-        extension: ".m4a",
-        outputFormat: "aac ",
-        audioQuality: 0x60, // MAX
-        sampleRate: 16000,
-        numberOfChannels: 1,
-        bitRate: 64000,
-        linearPCMBitDepth: 16,
-        linearPCMIsBigEndian: false,
-        linearPCMIsFloat: false,
-      },
-      web: {
-        mimeType: "audio/webm",
-        bitsPerSecond: 64000,
-      },
-    };
-
-    const { recording } = await av.Audio.Recording.createAsync(options);
+    const { recording } = await Audio.Recording.createAsync(
+      Audio.RecordingOptionsPresets.HIGH_QUALITY,
+    );
 
     return {
       stop: async () => {
         try {
           await recording.stopAndUnloadAsync();
+          // Restore normal playback audio mode after recording.
+          try {
+            await Audio.setAudioModeAsync({ allowsRecordingIOS: false });
+          } catch {
+            // non-fatal
+          }
           return recording.getURI();
         } catch (e: any) {
-          opts?.onError?.(e?.message ?? "stop failed");
+          opts?.onError?.(e?.message ?? "Failed to stop recording.");
           return null;
         }
       },
     };
   } catch (e: any) {
-    opts?.onError?.(e?.message ?? "start failed");
+    opts?.onError?.(e?.message ?? "Failed to start recording.");
     return null;
   }
 }

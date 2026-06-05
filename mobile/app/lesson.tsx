@@ -32,6 +32,7 @@ export default function Lesson() {
   const [speaking, setSpeaking] = useState(false);
   const [result, setResult] = useState<ScoreResult | null>(null);
   const [scores, setScores] = useState<number[]>([]);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const recorderRef = useRef<RecorderHandle | null>(null);
 
   const lesson = info?.lesson;
@@ -84,9 +85,13 @@ export default function Lesson() {
 
   async function listen() {
     setResult(null);
+    setErrorMsg(null);
     setPhase("listening");
     const handle = await startRecording({
-      onError: () => setPhase("prompt"),
+      onError: (e) => {
+        setErrorMsg(e);
+        setPhase("prompt");
+      },
     });
     if (!handle) {
       setPhase("prompt");
@@ -114,6 +119,14 @@ export default function Lesson() {
       targetSound: lesson!.targetSound,
       userId: activeChild?.id,
     });
+
+    // Surface a backend / network failure so it's diagnosable on-device
+    // rather than silently bouncing back to the prompt.
+    if (!cloud.ok) {
+      setErrorMsg(cloud.error ?? "Scoring failed. Check your connection.");
+      setPhase("prompt");
+      return;
+    }
 
     // Map Speechace's 0..100 to the existing ScoreResult shape so the rest
     // of the flow (xp, stars, ResultBar) stays unchanged.
@@ -231,6 +244,11 @@ export default function Lesson() {
 
       {/* Action area */}
       <View className="px-4 pb-4">
+        {errorMsg ? (
+          <Text className="mb-3 text-center text-xs font-bold text-red-500">
+            {errorMsg}
+          </Text>
+        ) : null}
         {phase === "result" && result ? (
           <ResultBar result={result} onNext={nextWord} onRetry={() => {
             setResult(null);
