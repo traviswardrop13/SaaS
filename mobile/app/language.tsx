@@ -4,6 +4,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import {
   LANGUAGE_SKILLS,
   languageLessonsInOrder,
+  languageSections,
   type LanguageLesson,
 } from "@/lib/language";
 import { useStore, type Child } from "@/lib/store";
@@ -40,37 +41,44 @@ export default function LanguageHome() {
         <View className="w-16" />
       </View>
 
-      <ScrollView contentContainerStyle={{ paddingBottom: 50, paddingTop: 10 }}>
-        {LANGUAGE_SKILLS.map((skill) => (
-          <View key={skill.id} className="mb-6">
-            <View
-              className={`mx-4 mb-3 flex-row items-center gap-3 rounded-3xl px-4 py-3 ${skill.color}`}
-            >
-              <Text className="text-3xl">{skill.emoji}</Text>
-              <View className="flex-1">
-                <Text className="text-lg font-extrabold text-white">
-                  {skill.title}
-                </Text>
-                <Text className="text-xs font-bold uppercase tracking-wide text-white/80">
-                  {skill.subtitle}
-                </Text>
+      <ScrollView contentContainerStyle={{ paddingBottom: 60, paddingTop: 12 }}>
+        {languageSections().map((section) => (
+          <View key={section} className="mb-3">
+            <Text className="mb-2 px-4 text-xl font-extrabold text-ink">
+              {section}
+            </Text>
+            {LANGUAGE_SKILLS.filter((s) => s.section === section).map((skill) => (
+              <View key={skill.id} className="mb-5">
+                <View
+                  className={`mx-4 mb-3 flex-row items-center gap-3 rounded-3xl px-4 py-3 ${skill.color}`}
+                >
+                  <Text className="text-3xl">{skill.emoji}</Text>
+                  <View className="flex-1">
+                    <Text className="text-lg font-extrabold text-white">
+                      {skill.title}
+                    </Text>
+                    <Text className="text-xs font-bold uppercase tracking-wide text-white/80">
+                      {skill.subtitle}
+                    </Text>
+                  </View>
+                </View>
+                <View className="px-4">
+                  {skill.lessons.map((lesson) => (
+                    <LessonRow
+                      key={lesson.id}
+                      lesson={lesson}
+                      child={activeChild}
+                      onOpen={() =>
+                        router.push({
+                          pathname: "/language-lesson",
+                          params: { skillId: skill.id, lessonId: lesson.id },
+                        })
+                      }
+                    />
+                  ))}
+                </View>
               </View>
-            </View>
-            <View className="px-4">
-              {skill.lessons.map((lesson) => (
-                <LessonRow
-                  key={lesson.id}
-                  lesson={lesson}
-                  child={activeChild}
-                  onOpen={() =>
-                    router.push({
-                      pathname: "/language-lesson",
-                      params: { skillId: skill.id, lessonId: lesson.id },
-                    })
-                  }
-                />
-              ))}
-            </View>
+            ))}
           </View>
         ))}
       </ScrollView>
