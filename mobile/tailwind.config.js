@@ -38,6 +38,7 @@ module.exports = {
         bee: {
           DEFAULT: "#ffc800", // stars / streak / XP
           edge: "#e0a800",
+          50: "#fff8e0",
         },
         // Neutrals (Duolingo "eel/wolf/hare/swan/polar").
         ink: "#3c3c3c",

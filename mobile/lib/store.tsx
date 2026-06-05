@@ -37,6 +37,10 @@ export type Child = {
   focusAreas?: string[];
   dailyGoalMinutes?: number;
   remindersEnabled?: boolean;
+  /** Soft currency earned from practice, spent in Leo's World. */
+  coins?: number;
+  /** Ids of world items the child has unlocked/placed. */
+  world?: string[];
 };
 
 export type AppState = {
@@ -72,6 +76,8 @@ export function newChild(name: string, avatar: string): Child {
     lastActiveDay: null,
     progress: {},
     focusAreas: [],
+    coins: 0,
+    world: [],
   };
 }
 
@@ -110,8 +116,16 @@ type StoreValue = {
   recordLessonComplete: (
     childId: string,
     lessonId: string,
-    result: { stars: number; score: number; xpEarned: number },
+    result: {
+      stars: number;
+      score: number;
+      xpEarned: number;
+      coinsEarned?: number;
+    },
   ) => void;
+  /** Spend coins to unlock a world item. Returns true if the purchase went
+   *  through (enough coins, not already owned). */
+  purchaseItem: (childId: string, itemId: string, cost: number) => boolean;
 };
 
 const StoreContext = createContext<StoreValue | null>(null);
@@ -195,6 +209,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
             bestScore: Math.max(prev?.bestScore ?? 0, result.score),
           };
           c.xp += result.xpEarned;
+          c.coins = (c.coins ?? 0) + (result.coinsEarned ?? 0);
           const today = todayISO();
           if (c.lastActiveDay === today) {
             // already counted today
@@ -205,6 +220,20 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           }
           c.lastActiveDay = today;
         }),
+      purchaseItem: (childId, itemId, cost) => {
+        let ok = false;
+        mutate((s) => {
+          const c = s.children.find((x) => x.id === childId);
+          if (!c) return;
+          const world = c.world ?? (c.world = []);
+          if (world.includes(itemId)) return; // already owned
+          if ((c.coins ?? 0) < cost) return; // can't afford
+          c.coins = (c.coins ?? 0) - cost;
+          world.push(itemId);
+          ok = true;
+        });
+        return ok;
+      },
     };
   }, [state, ready, mutate]);
 

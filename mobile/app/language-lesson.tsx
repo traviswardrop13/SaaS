@@ -9,8 +9,14 @@ import { hapticSuccess, hapticWarning, hapticSelect } from "@/lib/haptics";
 import { useStore } from "@/lib/store";
 import { Button, ProgressBar } from "@/components/ui";
 import TalkingFace from "@/components/TalkingFace";
+import Confetti from "@/components/Confetti";
 
 type Phase = "answer" | "feedback" | "done";
+
+// Coins reward for finishing a lesson — base plus per-star bonus, matching the
+// speech track so both products feed the same Leo's World reward loop.
+const COINS_BASE = 10;
+const COINS_PER_STAR = 10;
 
 export default function LanguageLesson() {
   const router = useRouter();
@@ -28,6 +34,8 @@ export default function LanguageLesson() {
   const [speaking, setSpeaking] = useState(false);
   // build-exercise state: ids of placed tiles, in order
   const [placed, setPlaced] = useState<number[]>([]);
+  // Bumped to fire the celebratory coin/confetti burst on the done screen.
+  const [fireKey, setFireKey] = useState(0);
 
   const lesson = info?.lesson;
   const ex = lesson?.exercises[idx];
@@ -108,8 +116,10 @@ export default function LanguageLesson() {
         stars,
         score: Math.round(score * 100),
         xpEarned: 10 + stars * 5,
+        coinsEarned: COINS_BASE + stars * COINS_PER_STAR,
       });
       hapticSuccess();
+      setFireKey((k) => k + 1);
       setPhase("done");
     } else {
       setIdx((i) => i + 1);
@@ -120,6 +130,7 @@ export default function LanguageLesson() {
   if (phase === "done") {
     const score = results.filter(Boolean).length / Math.max(1, results.length);
     const stars = score >= 0.85 ? 3 : score >= 0.6 ? 2 : 1;
+    const coins = COINS_BASE + stars * COINS_PER_STAR;
     return (
       <SafeAreaView className="flex-1 items-center justify-center bg-white px-6">
         <TalkingFace speaking={false} mood="celebrate" size={170} />
@@ -136,9 +147,19 @@ export default function LanguageLesson() {
             </Text>
           ))}
         </View>
-        <View className="mt-8 w-full max-w-sm">
+        <Pressable
+          onPress={() => router.replace("/world")}
+          className="mt-6 flex-row items-center gap-2 rounded-2xl border-2 border-bee-edge bg-bee-50 px-4 py-2.5"
+        >
+          <Text className="text-xl">🪙</Text>
+          <Text className="text-sm font-extrabold text-ink">
+            +{coins} coins — build Leo's World
+          </Text>
+        </Pressable>
+        <View className="mt-6 w-full max-w-sm">
           <Button label="Back to map" onPress={() => router.replace("/language")} />
         </View>
+        <Confetti fireKey={fireKey} />
       </SafeAreaView>
     );
   }

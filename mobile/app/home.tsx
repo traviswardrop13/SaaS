@@ -64,7 +64,9 @@ export default function Home() {
           </View>
           <View className="flex-row gap-2">
             <StatChip icon="🔥" value={String(activeChild.streak)} color="#ff9600" />
-            <StatChip icon="⚡" value={String(activeChild.xp)} color="#ffc800" />
+            <Pressable onPress={() => router.push("/world")}>
+              <StatChip icon="🪙" value={String(activeChild.coins ?? 0)} color="#e0a800" />
+            </Pressable>
           </View>
         </View>
 
@@ -91,6 +93,30 @@ export default function Home() {
             <Text className="rounded-full bg-grass-500 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-white">
               New
             </Text>
+          </Pressable>
+
+          {/* Reward loop: spend earned coins to build Leo's World */}
+          <Pressable
+            onPress={() => router.push("/world")}
+            className="mx-4 mb-4 flex-row items-center gap-3 rounded-3xl border-2 border-bee-edge bg-bee-50 px-4 py-3"
+          >
+            <View className="h-11 w-11 items-center justify-center rounded-2xl bg-bee">
+              <Text className="text-xl">🌳</Text>
+            </View>
+            <View className="flex-1">
+              <Text className="text-base font-extrabold text-ink">
+                Leo's World
+              </Text>
+              <Text className="text-xs font-bold text-wolf">
+                Spend coins to build Leo's backyard
+              </Text>
+            </View>
+            <View className="flex-row items-center gap-1 rounded-full bg-white px-2.5 py-1">
+              <Text className="text-sm">🪙</Text>
+              <Text className="text-sm font-extrabold text-bee-edge">
+                {activeChild.coins ?? 0}
+              </Text>
+            </View>
           </Pressable>
 
           {skills.map((skill) => (
