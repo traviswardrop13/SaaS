@@ -5,7 +5,15 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { findLanguageLesson, type Exercise, type LangOption } from "@/lib/language";
 import { speak } from "@/lib/speech";
 import { configurePlaybackAudio } from "@/lib/recorder";
-import { hapticSuccess, hapticWarning, hapticSelect } from "@/lib/haptics";
+import {
+  hapticSuccess,
+  hapticWarning,
+  hapticSelect,
+  hapticLight,
+  hapticStarReveal,
+  hapticCoinAward,
+  hapticCelebrate,
+} from "@/lib/haptics";
 import { useStore } from "@/lib/store";
 import { Button, ProgressBar } from "@/components/ui";
 import TalkingFace from "@/components/TalkingFace";
@@ -43,6 +51,22 @@ export default function LanguageLesson() {
   useEffect(() => {
     configurePlaybackAudio();
   }, []);
+
+  // Celebration buzz pattern when the done screen lands — matches the speech
+  // track so both products feel the same.
+  useEffect(() => {
+    if (phase !== "done") return;
+    const score = results.filter(Boolean).length / Math.max(1, results.length);
+    const stars = score >= 0.85 ? 3 : score >= 0.6 ? 2 : 1;
+    hapticCelebrate();
+    const starsT = setTimeout(() => hapticStarReveal(stars), 380);
+    const coinsT = setTimeout(() => hapticCoinAward(), 380 + stars * 220 + 120);
+    return () => {
+      clearTimeout(starsT);
+      clearTimeout(coinsT);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase]);
 
   // Auto-play the prompt audio when a new exercise appears.
   useEffect(() => {
@@ -84,6 +108,7 @@ export default function LanguageLesson() {
   const pct = idx / total;
 
   function replay() {
+    hapticLight();
     const say = (ex as any)?.say as string | undefined;
     if (say)
       speak(say, {
@@ -118,7 +143,6 @@ export default function LanguageLesson() {
         xpEarned: 10 + stars * 5,
         coinsEarned: COINS_BASE + stars * COINS_PER_STAR,
       });
-      hapticSuccess();
       setFireKey((k) => k + 1);
       setPhase("done");
     } else {

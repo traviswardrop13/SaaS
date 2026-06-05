@@ -5,6 +5,7 @@ import { LEVEL_INFO, type Skill, type Lesson } from "@/lib/lessons";
 import { useStore, visibleSkills, isLessonUnlocked, type Child } from "@/lib/store";
 import { Loading, Pill, Button } from "@/components/ui";
 import TalkingFace from "@/components/TalkingFace";
+import { hapticLight } from "@/lib/haptics";
 
 // Horizontal offsets that make the node column gently wind like a path.
 const OFFSETS = [0, 60, 88, 60, 0, -60, -88, -60];
@@ -64,7 +65,12 @@ export default function Home() {
           </View>
           <View className="flex-row gap-2">
             <StatChip icon="🔥" value={String(activeChild.streak)} color="#ff9600" />
-            <Pressable onPress={() => router.push("/world")}>
+            <Pressable
+              onPress={() => {
+                hapticLight();
+                router.push("/world");
+              }}
+            >
               <StatChip icon="🪙" value={String(activeChild.coins ?? 0)} color="#e0a800" />
             </Pressable>
           </View>
@@ -76,7 +82,10 @@ export default function Home() {
         >
           {/* Cross-track entry: the Language product */}
           <Pressable
-            onPress={() => router.push("/language")}
+            onPress={() => {
+              hapticLight();
+              router.push("/language");
+            }}
             className="mx-4 mb-4 flex-row items-center gap-3 rounded-3xl border-2 border-swan bg-polar px-4 py-3"
           >
             <View className="h-11 w-11 items-center justify-center rounded-2xl bg-grass-500">
@@ -97,7 +106,10 @@ export default function Home() {
 
           {/* Reward loop: spend earned coins to build Leo's World */}
           <Pressable
-            onPress={() => router.push("/world")}
+            onPress={() => {
+              hapticLight();
+              router.push("/world");
+            }}
             className="mx-4 mb-4 flex-row items-center gap-3 rounded-3xl border-2 border-bee-edge bg-bee-50 px-4 py-3"
           >
             <View className="h-11 w-11 items-center justify-center rounded-2xl bg-bee">
@@ -125,12 +137,13 @@ export default function Home() {
               skill={skill}
               child={activeChild}
               currentLessonId={currentLessonId}
-              onOpen={(lesson) =>
+              onOpen={(lesson) => {
+                hapticLight();
                 router.push({
                   pathname: "/lesson",
                   params: { skillId: skill.id, lessonId: lesson.id },
-                })
-              }
+                });
+              }}
             />
           ))}
         </ScrollView>

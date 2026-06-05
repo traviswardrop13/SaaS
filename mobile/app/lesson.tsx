@@ -18,7 +18,15 @@ import TalkingFace, { type Mood } from "@/components/TalkingFace";
 import MouthModel from "@/components/MouthModel";
 import { MicIcon } from "@/components/icons";
 import Confetti from "@/components/Confetti";
-import { hapticSuccess, hapticWarning, hapticSelect } from "@/lib/haptics";
+import {
+  hapticSuccess,
+  hapticWarning,
+  hapticLight,
+  hapticListenStart,
+  hapticStarReveal,
+  hapticCoinAward,
+  hapticCelebrate,
+} from "@/lib/haptics";
 
 type Phase = "prompt" | "listening" | "scoring" | "result" | "done";
 
@@ -93,6 +101,23 @@ export default function Lesson() {
     [],
   );
 
+  // Celebration buzz pattern when the done screen appears: heavy thump +
+  // success ding for the confetti, a tap per star as they reveal, then a
+  // coin chime for the reward. Lands in sync with the visuals.
+  useEffect(() => {
+    if (phase !== "done") return;
+    const avg = scores.reduce((a, b) => a + b, 0) / Math.max(1, scores.length);
+    const stars = avg >= 0.85 ? 3 : avg >= 0.65 ? 2 : 1;
+    hapticCelebrate();
+    const starsT = setTimeout(() => hapticStarReveal(stars), 380);
+    const coinsT = setTimeout(() => hapticCoinAward(), 380 + stars * 220 + 120);
+    return () => {
+      clearTimeout(starsT);
+      clearTimeout(coinsT);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase]);
+
   if (!info || !lesson || !word || !activeChild) {
     return (
       <SafeAreaView className="flex-1 items-center justify-center bg-white px-6">
@@ -118,6 +143,7 @@ export default function Lesson() {
       : "neutral";
 
   function playWord() {
+    hapticLight();
     if (word)
       speak(word.text, {
         onStart: () => setSpeaking(true),
@@ -131,7 +157,7 @@ export default function Lesson() {
   async function beginListening() {
     setResult(null);
     setErrorMsg(null);
-    hapticSelect();
+    hapticListenStart();
     setPhase("listening");
     const handle = await startRecording({
       onError: (e) => {

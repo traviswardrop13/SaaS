@@ -5,7 +5,7 @@ import { useRouter } from "expo-router";
 import { useStore } from "@/lib/store";
 import { WORLD_ITEMS, type WorldItem } from "@/lib/world";
 import { Loading } from "@/components/ui";
-import { hapticSuccess, hapticWarning } from "@/lib/haptics";
+import { hapticNope, hapticUnlock, hapticLight } from "@/lib/haptics";
 import TalkingFace from "@/components/TalkingFace";
 import Confetti from "@/components/Confetti";
 
@@ -37,15 +37,18 @@ export default function World() {
   }
 
   function tryBuy(item: WorldItem) {
-    if (owned.has(item.id)) return;
+    if (owned.has(item.id)) {
+      hapticLight();
+      return;
+    }
     if (coins < item.cost) {
-      hapticWarning();
+      hapticNope();
       flashToast(`${item.cost - coins} more coins for the ${item.name}!`);
       return;
     }
     const ok = purchaseItem(activeChild!.id, item.id, item.cost);
     if (ok) {
-      hapticSuccess();
+      hapticUnlock();
       setFireKey((k) => k + 1);
       flashToast(`You got the ${item.name}! 🎉`);
     }
