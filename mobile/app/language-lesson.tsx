@@ -5,6 +5,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { findLanguageLesson, type Exercise, type LangOption } from "@/lib/language";
 import { speak } from "@/lib/speech";
 import { configurePlaybackAudio } from "@/lib/recorder";
+import { hapticSuccess, hapticWarning, hapticSelect } from "@/lib/haptics";
 import { useStore } from "@/lib/store";
 import { Button, ProgressBar } from "@/components/ui";
 import TalkingFace from "@/components/TalkingFace";
@@ -84,9 +85,19 @@ export default function LanguageLesson() {
   }
 
   function answer(isCorrect: boolean) {
+    if (isCorrect) hapticSuccess();
+    else hapticWarning();
     setCorrect(isCorrect);
     setResults((r) => [...r, isCorrect]);
     setPhase("feedback");
+  }
+
+  // Audio-first: tapping a picture/word also speaks it, so a pre-reader hears
+  // the word as they choose. (Then `answer` evaluates.)
+  function chooseOption(o: LangOption) {
+    hapticSelect();
+    if (o.label) speak(o.label);
+    answer(!!o.correct);
   }
 
   function next() {
@@ -98,6 +109,7 @@ export default function LanguageLesson() {
         score: Math.round(score * 100),
         xpEarned: 10 + stars * 5,
       });
+      hapticSuccess();
       setPhase("done");
     } else {
       setIdx((i) => i + 1);
@@ -173,7 +185,7 @@ export default function LanguageLesson() {
                 key={i}
                 option={o}
                 disabled={phase !== "answer"}
-                onPress={() => answer(!!o.correct)}
+                onPress={() => chooseOption(o)}
               />
             ))}
           </View>
@@ -186,7 +198,7 @@ export default function LanguageLesson() {
               <Pressable
                 key={i}
                 disabled={phase !== "answer"}
-                onPress={() => answer(!!o.correct)}
+                onPress={() => chooseOption(o)}
                 className="flex-row items-center gap-3 rounded-2xl border-2 border-swan bg-white px-5 py-4"
               >
                 {o.emoji ? <Text className="text-3xl">{o.emoji}</Text> : null}

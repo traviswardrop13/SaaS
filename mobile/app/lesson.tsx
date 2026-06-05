@@ -17,6 +17,7 @@ import { Button, ProgressBar } from "@/components/ui";
 import TalkingFace, { type Mood } from "@/components/TalkingFace";
 import MouthModel from "@/components/MouthModel";
 import { MicIcon } from "@/components/icons";
+import { hapticSuccess, hapticWarning, hapticSelect } from "@/lib/haptics";
 
 type Phase = "prompt" | "listening" | "scoring" | "result" | "done";
 
@@ -122,6 +123,7 @@ export default function Lesson() {
   async function beginListening() {
     setResult(null);
     setErrorMsg(null);
+    hapticSelect();
     setPhase("listening");
     const handle = await startRecording({
       onError: (e) => {
@@ -184,6 +186,8 @@ export default function Lesson() {
       bestHeard: cloud.transcript,
       hint: cloud.rating === "great" ? undefined : cloud.feedback ?? undefined,
     };
+    if (cloud.rating === "great") hapticSuccess();
+    else if (cloud.rating === "tryAgain") hapticWarning();
     setLastCloud(cloud);
     setResult(s);
     setScores((p) => [...p, s.similarity]);
