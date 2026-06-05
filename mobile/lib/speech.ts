@@ -1,18 +1,13 @@
 import * as Speech from "expo-speech";
+import { configurePlaybackAudio } from "./recorder";
 
 /**
  * Native speech layer for Sona.
  *
- * Text-to-speech uses expo-speech (works in Expo Go today).
- *
- * Speech *recognition* on-device uses the platform recognizers
- * (iOS SFSpeechRecognizer / Android SpeechRecognizer) via
- * @react-native-voice/voice. That library needs a custom dev build
- * (it won't run in plain Expo Go), so it's wired behind the
- * `recognizeOnce` interface below and activated once we create a dev
- * client. The native recognizers are dramatically better at children's
- * speech than the browser Web Speech API was — this is the main reason
- * we went native.
+ * Text-to-speech uses expo-speech. iOS routes TTS through the shared audio
+ * session, which by default can be quiet (earpiece / silenced on the ring
+ * switch). So before *every* utterance we force a loud playback session
+ * (speaker, plays on silent) and set volume to max.
  */
 
 export type RecognitionAlternative = {
@@ -25,14 +20,20 @@ export function speak(
   opts?: { onStart?: () => void; onEnd?: () => void; rate?: number },
 ) {
   Speech.stop();
-  Speech.speak(text, {
-    language: "en-US",
-    rate: opts?.rate ?? 0.8,
-    pitch: 1.15,
-    onStart: () => opts?.onStart?.(),
-    onDone: () => opts?.onEnd?.(),
-    onStopped: () => opts?.onEnd?.(),
-    onError: () => opts?.onEnd?.(),
+  // Make sure the audio session is loud playback BEFORE speaking, then speak.
+  configurePlaybackAudio().finally(() => {
+    const options: Speech.SpeechOptions = {
+      language: "en-US",
+      rate: opts?.rate ?? 0.75,
+      pitch: 1.12,
+      onStart: () => opts?.onStart?.(),
+      onDone: () => opts?.onEnd?.(),
+      onStopped: () => opts?.onEnd?.(),
+      onError: () => opts?.onEnd?.(),
+    };
+    // `volume` isn't in every expo-speech type version but is honored at runtime.
+    (options as Record<string, unknown>).volume = 1.0;
+    Speech.speak(text, options);
   });
 }
 

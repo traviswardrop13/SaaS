@@ -16,6 +16,7 @@ import { useStore } from "@/lib/store";
 import { Button, ProgressBar } from "@/components/ui";
 import TalkingFace, { type Mood } from "@/components/TalkingFace";
 import MouthModel from "@/components/MouthModel";
+import { MicIcon } from "@/components/icons";
 
 type Phase = "prompt" | "listening" | "scoring" | "result" | "done";
 
@@ -364,18 +365,12 @@ export default function Lesson() {
               }
             >
               {({ pressed }) => {
-                const face =
-                  phase === "listening"
-                    ? "#ff4b4b"
-                    : phase === "scoring" || speaking
-                      ? "#e5e5e5"
-                      : "#1cb0f6";
-                const edge =
-                  phase === "listening"
-                    ? "#e63232"
-                    : phase === "scoring" || speaking
-                      ? "#cfcfcf"
-                      : "#1899d6";
+                // Blue when ready to speak or actively listening; grey only
+                // while Leo is talking or while checking. Never red.
+                const blue =
+                  phase === "listening" || (phase === "prompt" && !speaking);
+                const face = blue ? "#1cb0f6" : "#e5e5e5";
+                const edge = blue ? "#1899d6" : "#cfcfcf";
                 return (
                   <View style={{ backgroundColor: edge, borderRadius: 20 }}>
                     <View
@@ -392,8 +387,10 @@ export default function Lesson() {
                         <Text className="text-base font-extrabold uppercase tracking-wide text-white">
                           Checking…
                         </Text>
+                      ) : phase === "listening" ? (
+                        <Waveform active />
                       ) : (
-                        <Waveform />
+                        <MicIcon size={30} color="#ffffff" />
                       )}
                     </View>
                   </View>
@@ -402,12 +399,12 @@ export default function Lesson() {
             </Pressable>
             <Text
               className="mt-3 text-center text-sm font-extrabold uppercase tracking-wide"
-              style={{ color: phase === "listening" ? "#e63232" : "#afafaf" }}
+              style={{ color: phase === "listening" ? "#1899d6" : "#afafaf" }}
             >
               {speaking
                 ? "Listen to Leo…"
                 : phase === "listening"
-                  ? "Your turn — speak! (tap when done)"
+                  ? "Speak now — tap when done"
                   : phase === "scoring"
                     ? "Checking…"
                     : "Tap to speak"}
@@ -421,11 +418,23 @@ export default function Lesson() {
 }
 
 // Waveform bars shown inside the speak button (Duolingo speaking style).
+// When `active`, the bars jitter to read as "listening to you."
 const WAVE_BARS = [12, 22, 32, 18, 34, 16, 28, 14, 24, 30, 16];
-function Waveform() {
+function Waveform({ active = false }: { active?: boolean }) {
+  const [bars, setBars] = useState<number[]>(WAVE_BARS);
+  useEffect(() => {
+    if (!active) {
+      setBars(WAVE_BARS);
+      return;
+    }
+    const id = setInterval(() => {
+      setBars(WAVE_BARS.map(() => 8 + Math.round(Math.random() * 28)));
+    }, 130);
+    return () => clearInterval(id);
+  }, [active]);
   return (
     <View className="flex-row items-center" style={{ height: 34, gap: 6 }}>
-      {WAVE_BARS.map((h, i) => (
+      {bars.map((h, i) => (
         <View
           key={i}
           style={{ width: 5, height: h, borderRadius: 3, backgroundColor: "#ffffff" }}
