@@ -82,6 +82,20 @@ function pickTargetPhonemeScore(
   return best;
 }
 
+/**
+ * Lightweight health check. Open this URL in a browser (a GET request) to
+ * confirm the route is deployed and whether the Speechace key is configured.
+ * Never returns the key itself — just whether it's present.
+ */
+export async function GET() {
+  return NextResponse.json({
+    ok: true,
+    service: "score",
+    hasKey: Boolean(process.env.SPEECHACE_API_KEY),
+    hint: "POST audio + text here to score pronunciation.",
+  });
+}
+
 export async function POST(req: NextRequest) {
   const key = process.env.SPEECHACE_API_KEY;
   if (!key) {
