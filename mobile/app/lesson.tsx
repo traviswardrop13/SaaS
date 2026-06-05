@@ -267,54 +267,48 @@ export default function Lesson() {
       </ScrollView>
 
       {/* Action area */}
-      <View className="px-4 pb-4">
-        {errorMsg ? (
-          <View className="mb-3 rounded-2xl border-2 border-red-300 bg-red-50 px-4 py-3">
-            <Text className="text-center text-sm font-extrabold text-red-600">
-              {errorMsg}
-            </Text>
-          </View>
-        ) : null}
-        {phase === "result" && result && lastCloud ? (
-          <Text className="mb-2 text-center text-[11px] font-bold text-gray-400">
-            {`debug · score ${lastCloud.score ?? "?"} · overall ${
-              lastCloud.overall ?? "?"
-            } · ${lesson.targetSound} ${lastCloud.targetPhoneme ?? "?"}${
-              lastCloud.phones?.length
-                ? ` · ${lastCloud.phones
-                    .map((p) => `${p.phone}:${p.score ?? "?"}`)
-                    .join(" ")}`
-                : ""
-            }${lastCloud.transcript ? ` · heard "${lastCloud.transcript}"` : ""}`}
-          </Text>
-        ) : null}
-        {phase === "result" && result ? (
-          <ResultBar result={result} onNext={nextWord} onRetry={() => {
+      {phase === "result" && result ? (
+        <ResultBanner
+          result={result}
+          cloud={lastCloud}
+          targetSound={lesson.targetSound}
+          onNext={nextWord}
+          onRetry={() => {
             setResult(null);
             setScores((p) => p.slice(0, -1));
             setPhase("prompt");
-          }} />
-        ) : useSelfRate ? (
-          <View>
-            <Text className="mb-2 text-center text-sm font-bold text-gray-500">
-              {lesson.level === "isolation"
-                ? "How did your child sound?"
-                : "How did it sound?"}
-            </Text>
-            <View className="flex-row gap-2">
-              <View className="flex-1">
-                <Button label="Again" variant="warn" onPress={() => selfRate("tryAgain")} />
-              </View>
-              <View className="flex-1">
-                <Button label="Okay" variant="secondary" onPress={() => selfRate("ok")} />
-              </View>
-              <View className="flex-1">
-                <Button label="Great!" onPress={() => selfRate("great")} />
+          }}
+        />
+      ) : (
+        <View className="px-6 pb-6">
+          {errorMsg ? (
+            <View className="mb-3 rounded-2xl border-2 border-cardinal bg-cardinal-50 px-4 py-3">
+              <Text className="text-center text-sm font-extrabold text-cardinal">
+                {errorMsg}
+              </Text>
+            </View>
+          ) : null}
+          {useSelfRate ? (
+            <View>
+              <Text className="mb-2 text-center text-sm font-bold text-wolf">
+                {lesson.level === "isolation"
+                  ? "How did your child sound?"
+                  : "How did it sound?"}
+              </Text>
+              <View className="flex-row gap-2">
+                <View className="flex-1">
+                  <Button label="Again" variant="danger" onPress={() => selfRate("tryAgain")} />
+                </View>
+                <View className="flex-1">
+                  <Button label="Okay" variant="secondary" onPress={() => selfRate("ok")} />
+                </View>
+                <View className="flex-1">
+                  <Button label="Great!" onPress={() => selfRate("great")} />
+                </View>
               </View>
             </View>
-          </View>
-        ) : (
-          <View>
+          ) : (
+            <View>
             <Pressable
               disabled={phase === "scoring"}
               onPress={() =>
@@ -365,9 +359,10 @@ export default function Lesson() {
                   ? "Listening to you…"
                   : "Tap to speak"}
             </Text>
-          </View>
-        )}
-      </View>
+            </View>
+          )}
+        </View>
+      )}
     </SafeAreaView>
   );
 }
@@ -451,53 +446,100 @@ function SpeechBubble({
   );
 }
 
-function ResultBar({
+function ResultBanner({
   result,
+  cloud,
+  targetSound,
   onNext,
   onRetry,
 }: {
   result: ScoreResult;
+  cloud: CloudScore | null;
+  targetSound: string;
   onNext: () => void;
   onRetry: () => void;
 }) {
   const great = result.rating === "great";
   const ok = result.rating === "ok";
-  const title = great ? "Perfect! 🎉" : ok ? "Almost there!" : "Good try!";
-  const tint = great ? "#f0fde4" : ok ? "#e8f7ff" : "#fff0f0";
-  const titleColor = great ? "#58a700" : ok ? "#1899d6" : "#e63232";
+  const cfg = great
+    ? { tint: "#d7ffb8", color: "#58a700", icon: "✓", title: "Perfect!" }
+    : ok
+      ? { tint: "#ddf4ff", color: "#1899d6", icon: "✓", title: "Almost!" }
+      : { tint: "#ffdfe0", color: "#e63232", icon: "↻", title: "Good try!" };
   const starCount = great ? 3 : ok ? 2 : 1;
+
   return (
-    <View className="rounded-3xl p-4" style={{ backgroundColor: tint }}>
-      <View className="flex-row items-center justify-between">
-        <Text className="text-2xl font-extrabold" style={{ color: titleColor }}>
-          {title}
-        </Text>
-        <Text className="text-lg">
-          {"⭐".repeat(starCount)}
-          <Text style={{ opacity: 0.2 }}>{"⭐".repeat(3 - starCount)}</Text>
-        </Text>
-      </View>
-      {result.hint ? (
-        <Text className="mt-1 text-sm font-bold text-ink">{result.hint}</Text>
-      ) : null}
-      {result.bestHeard ? (
-        <Text className="mt-1 text-xs text-wolf">
-          I heard: “{result.bestHeard}”
-        </Text>
-      ) : null}
-      <View className="mt-3 flex-row gap-2">
-        {!great && (
-          <View className="flex-1">
-            <Button label="Try again" variant="ghost" icon="🔁" onPress={onRetry} />
-          </View>
-        )}
-        <View className="flex-1">
-          <Button
-            label={great ? "Continue" : "Next"}
-            variant={great ? "primary" : "secondary"}
-            onPress={onNext}
-          />
+    <View
+      className="px-6 pt-5 pb-6"
+      style={{
+        backgroundColor: cfg.tint,
+        borderTopLeftRadius: 28,
+        borderTopRightRadius: 28,
+      }}
+    >
+      <View className="flex-row items-center gap-3">
+        <View
+          className="h-12 w-12 items-center justify-center rounded-full"
+          style={{ backgroundColor: cfg.color }}
+        >
+          <Text className="text-2xl font-extrabold text-white">{cfg.icon}</Text>
         </View>
+        <View className="flex-1">
+          <Text className="text-2xl font-extrabold" style={{ color: cfg.color }}>
+            {cfg.title}
+          </Text>
+          {result.hint ? (
+            <Text className="mt-0.5 text-sm font-bold text-ink">{result.hint}</Text>
+          ) : null}
+        </View>
+        <View className="flex-row gap-0.5">
+          {[0, 1, 2].map((i) => (
+            <Text key={i} className="text-base" style={{ opacity: i < starCount ? 1 : 0.2 }}>
+              ⭐
+            </Text>
+          ))}
+        </View>
+      </View>
+
+      {/* Calibration debug line (temporary) */}
+      {cloud ? (
+        <Text className="mt-2 text-[11px] font-bold text-wolf">
+          {`debug · score ${cloud.score ?? "?"} · overall ${
+            cloud.overall ?? "?"
+          } · ${targetSound} ${cloud.targetPhoneme ?? "?"}${
+            cloud.phones?.length
+              ? ` · ${cloud.phones
+                  .map((p) => `${p.phone}:${p.score ?? "?"}`)
+                  .join(" ")}`
+              : ""
+          }${cloud.transcript ? ` · heard "${cloud.transcript}"` : ""}`}
+        </Text>
+      ) : null}
+
+      <View className="mt-4 flex-row gap-3">
+        {great ? (
+          <View className="flex-1">
+            <Button label="Continue" variant="primary" onPress={onNext} />
+          </View>
+        ) : ok ? (
+          <>
+            <View className="flex-1">
+              <Button label="Try again" variant="ghost" icon="🔁" onPress={onRetry} />
+            </View>
+            <View className="flex-1">
+              <Button label="Continue" variant="secondary" onPress={onNext} />
+            </View>
+          </>
+        ) : (
+          <>
+            <View className="flex-1">
+              <Button label="Skip" variant="ghost" onPress={onNext} />
+            </View>
+            <View className="flex-1">
+              <Button label="Try again" variant="primary" icon="🔁" onPress={onRetry} />
+            </View>
+          </>
+        )}
       </View>
     </View>
   );
