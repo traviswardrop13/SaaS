@@ -2,11 +2,11 @@
  * Audio recorder for the Speechace scoring path. Records a short clip of the
  * child's voice and returns its file URI so cloudScoring can upload it.
  *
- * Uses expo-av's documented Recording flow with the HIGH_QUALITY preset —
- * deliberately the simplest, most-compatible configuration (custom encoder
- * settings were rejected by the native module on device). The module is
- * dynamically required so the JS bundle still loads even if the package
- * isn't installed; callers get `supported: false` and fall back to self-rate.
+ * Uses expo-av's documented Recording flow with the HIGH_QUALITY preset.
+ * Verbose console logging (prefixed [REC]) is intentional while we debug the
+ * on-device recording path — it surfaces the exact failure point in the Metro
+ * terminal. The module is dynamically required so the bundle loads even if the
+ * package is missing; callers then fall back to self-rate.
  */
 
 let mod: any = null;
@@ -17,7 +17,8 @@ function getAv(): any {
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     mod = require("expo-av");
-  } catch {
+  } catch (e: any) {
+    console.log("[REC] require(expo-av) failed:", e?.message);
     mod = null;
   }
   return mod;
@@ -37,6 +38,14 @@ export async function startRecording(opts?: {
   onError?: (err: string) => void;
 }): Promise<RecorderHandle | null> {
   const av = getAv();
+  console.log(
+    "[REC] startRecording — av:",
+    !!av,
+    "Audio:",
+    !!av?.Audio,
+    "Recording:",
+    !!av?.Audio?.Recording,
+  );
   if (!av?.Audio?.Recording) {
     opts?.onError?.("Recorder unavailable (expo-av not loaded).");
     return null;
@@ -45,42 +54,49 @@ export async function startRecording(opts?: {
 
   try {
     const perm = await Audio.requestPermissionsAsync();
+    console.log("[REC] permission:", JSON.stringify(perm));
     if (!perm.granted) {
       opts?.onError?.("Microphone permission denied. Enable it in Settings.");
       return null;
     }
 
-    // Minimal, well-supported audio mode: just allow recording on iOS and
-    // play in silent mode. Anything fancier (interruption modes) is what was
-    // throwing before.
     await Audio.setAudioModeAsync({
       allowsRecordingIOS: true,
       playsInSilentModeIOS: true,
     });
+    console.log("[REC] audio mode set");
 
+    console.log(
+      "[REC] presets available:",
+      Object.keys(Audio.RecordingOptionsPresets ?? {}),
+    );
     const { recording } = await Audio.Recording.createAsync(
       Audio.RecordingOptionsPresets.HIGH_QUALITY,
     );
+    console.log("[REC] recording created OK");
 
     return {
       stop: async () => {
         try {
           await recording.stopAndUnloadAsync();
-          // Restore normal playback audio mode after recording.
           try {
             await Audio.setAudioModeAsync({ allowsRecordingIOS: false });
           } catch {
             // non-fatal
           }
-          return recording.getURI();
+          const uri = recording.getURI();
+          console.log("[REC] stopped, uri:", uri);
+          return uri;
         } catch (e: any) {
+          console.log("[REC] stop error:", e?.message, e);
           opts?.onError?.(e?.message ?? "Failed to stop recording.");
           return null;
         }
       },
     };
   } catch (e: any) {
-    opts?.onError?.(e?.message ?? "Failed to start recording.");
+    console.log("[REC] start error:", e?.message, e);
+    opts?.onError?.(`Record failed: ${e?.message ?? "unknown"}`);
     return null;
   }
 }

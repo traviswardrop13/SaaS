@@ -245,9 +245,11 @@ export default function Lesson() {
       {/* Action area */}
       <View className="px-4 pb-4">
         {errorMsg ? (
-          <Text className="mb-3 text-center text-xs font-bold text-red-500">
-            {errorMsg}
-          </Text>
+          <View className="mb-3 rounded-2xl border-2 border-red-300 bg-red-50 px-4 py-3">
+            <Text className="text-center text-sm font-extrabold text-red-600">
+              {errorMsg}
+            </Text>
+          </View>
         ) : null}
         {phase === "result" && result ? (
           <ResultBar result={result} onNext={nextWord} onRetry={() => {

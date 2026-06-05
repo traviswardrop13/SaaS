@@ -44,13 +44,16 @@ export async function scoreAudio(opts: {
   if (opts.userId) form.append("userId", opts.userId);
 
   try {
+    console.log("[SCORE] POST", `${API_URL}/api/score`, "audio:", opts.audioUri);
     const r = await fetch(`${API_URL}/api/score`, {
       method: "POST",
       body: form,
     });
     const json = (await r.json()) as CloudScore;
+    console.log("[SCORE] response", r.status, JSON.stringify(json).slice(0, 300));
     return json;
   } catch (e: any) {
+    console.log("[SCORE] fetch error:", e?.message);
     return {
       ok: false,
       overall: null,
