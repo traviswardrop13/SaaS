@@ -72,6 +72,27 @@ export default function Home() {
           className="flex-1"
           contentContainerStyle={{ paddingBottom: 100, paddingTop: 10 }}
         >
+          {/* Cross-track entry: the Language product */}
+          <Pressable
+            onPress={() => router.push("/language")}
+            className="mx-4 mb-4 flex-row items-center gap-3 rounded-3xl border-2 border-swan bg-polar px-4 py-3"
+          >
+            <View className="h-11 w-11 items-center justify-center rounded-2xl bg-grass-500">
+              <Text className="text-xl">🧠</Text>
+            </View>
+            <View className="flex-1">
+              <Text className="text-base font-extrabold text-ink">
+                Language practice
+              </Text>
+              <Text className="text-xs font-bold text-wolf">
+                Words, questions & sentences
+              </Text>
+            </View>
+            <Text className="rounded-full bg-grass-500 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-white">
+              New
+            </Text>
+          </Pressable>
+
           {skills.map((skill) => (
             <SkillSection
               key={skill.id}

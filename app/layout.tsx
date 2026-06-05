@@ -2,9 +2,9 @@ import "./globals.css";
 import type { Metadata, Viewport } from "next";
 
 export const metadata: Metadata = {
-  title: "SpeakUp Kids — speech therapy practice",
+  title: "Sona — speech practice for kids",
   description:
-    "A friendly Duolingo-style app that helps kids practice tricky speech sounds.",
+    "A friendly, game-style app that helps kids practice tricky speech sounds — built with a licensed speech-language pathologist.",
 };
 
 export const viewport: Viewport = {
