@@ -14,7 +14,6 @@ import {
 import { useStore } from "@/lib/store";
 import { Button } from "@/components/ui";
 import TalkingFace from "@/components/TalkingFace";
-import MouthDiagram from "@/components/MouthDiagram";
 
 type Phase = "prompt" | "listening" | "result" | "done";
 
@@ -33,7 +32,6 @@ export default function Lesson() {
   const [speaking, setSpeaking] = useState(false);
   const [result, setResult] = useState<ScoreResult | null>(null);
   const [scores, setScores] = useState<number[]>([]);
-  const [showDiagram, setShowDiagram] = useState(false);
   const recRef = useRef<RecognitionHandle | null>(null);
   const altsRef = useRef<RecognitionAlternative[]>([]);
 
@@ -195,28 +193,11 @@ export default function Lesson() {
           {word.emoji ? <Text className="text-4xl">{word.emoji}</Text> : null}
         </Pressable>
 
-        {/* Visual */}
+        {/* Visual — the mascot models the sound; its mouth moves while the
+            word plays. (The tongue-position diagram is being redesigned and
+            will return as a polished "show me how" later.) */}
         <View className="mt-4 items-center">
-          {lesson.level === "isolation" ? (
-            <MouthDiagram sound={lesson.targetSound} size={200} />
-          ) : (
-            <>
-              <TalkingFace speaking={speaking} size={190} />
-              <Pressable
-                onPress={() => setShowDiagram((v) => !v)}
-                className="mt-2 rounded-full bg-gray-100 px-4 py-1.5"
-              >
-                <Text className="text-xs font-extrabold uppercase tracking-wider text-gray-600">
-                  {showDiagram ? "Hide tongue guide" : "Show me how"}
-                </Text>
-              </Pressable>
-              {showDiagram && (
-                <View className="mt-2">
-                  <MouthDiagram sound={lesson.targetSound} size={150} />
-                </View>
-              )}
-            </>
-          )}
+          <TalkingFace speaking={speaking} size={210} />
         </View>
       </ScrollView>
 

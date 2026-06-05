@@ -3,6 +3,7 @@ import { useRouter } from "expo-router";
 import { View, Text } from "react-native";
 import { useStore } from "@/lib/store";
 import { Button, Loading } from "@/components/ui";
+import TalkingFace from "@/components/TalkingFace";
 
 /**
  * Entry screen. Once the persisted store has loaded, route returning
@@ -23,7 +24,7 @@ export default function Index() {
 
   return (
     <View className="flex-1 items-center justify-center bg-white px-6">
-      <Text className="text-7xl">🦁</Text>
+      <TalkingFace speaking={false} size={150} />
       <Text className="mt-4 text-5xl font-extrabold text-brand-600">Sona</Text>
       <Text className="mt-3 max-w-xs text-center text-base text-gray-600">
         A friendly, game-style way for kids to practice tricky speech sounds.

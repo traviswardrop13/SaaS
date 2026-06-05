@@ -1,70 +1,137 @@
 import React, { useEffect, useState } from "react";
-import Svg, { Circle, Ellipse, Path, Rect, G } from "react-native-svg";
+import Svg, { Circle, Ellipse, Path, G } from "react-native-svg";
 
 /**
- * Friendly lion face with a mouth that opens/closes while speaking, so kids
- * see the mouth move as they hear the word. Mouth height is driven by a
- * simple interval (no reanimated dependency) for reliability.
+ * Sona's mascot lion. A clean, flat character whose mouth animates open and
+ * closed while speaking so a child sees the mouth move as they hear the
+ * sound. Designed in scripts/preview-mascot.js and ported here.
+ *
+ * `speaking` drives the mouth: when true it cycles through open states on a
+ * short interval; when false it rests in a gentle closed smile.
  */
+const MANE_OUTER = Array.from({ length: 14 }).map((_, i) => {
+  const a = (i / 14) * Math.PI * 2;
+  return { cx: 176 + Math.cos(a) * 132, cy: 168 + Math.sin(a) * 132 };
+});
+const MANE_INNER = Array.from({ length: 12 }).map((_, i) => {
+  const a = (i / 12) * Math.PI * 2 + 0.26;
+  return { cx: 176 + Math.cos(a) * 104, cy: 168 + Math.sin(a) * 104 };
+});
+
+// Frames of mouth-openness (in px ry) cycled while speaking.
+const FRAMES = [4, 12, 22, 14, 24, 8];
+
 export default function TalkingFace({
   speaking,
-  size = 220,
+  size = 200,
 }: {
   speaking: boolean;
   size?: number;
 }) {
-  const [mouthRy, setMouthRy] = useState(5);
+  const [open, setOpen] = useState(0);
 
   useEffect(() => {
     if (!speaking) {
-      setMouthRy(5);
+      setOpen(0);
       return;
     }
-    const frames = [4, 18, 8, 15, 6];
     let i = 0;
     const id = setInterval(() => {
-      setMouthRy(frames[i % frames.length]);
+      setOpen(FRAMES[i % FRAMES.length]);
       i += 1;
-    }, 130);
+    }, 120);
     return () => clearInterval(id);
   }, [speaking]);
 
-  const tuftCount = 12;
-
   return (
-    <Svg viewBox="0 0 240 240" width={size} height={size}>
-      <Circle cx={120} cy={120} r={115} fill="#fb923c" />
-      <G fill="#f97316">
-        {Array.from({ length: tuftCount }).map((_, i) => {
-          const angle = (i * Math.PI * 2) / tuftCount;
-          return (
-            <Circle
-              key={i}
-              cx={120 + Math.cos(angle) * 110}
-              cy={120 + Math.sin(angle) * 110}
-              r={14}
-            />
-          );
-        })}
+    <Svg viewBox="0 0 352 352" width={size} height={size}>
+      {/* Mane */}
+      <G>
+        {MANE_OUTER.map((p, i) => (
+          <Circle key={`o${i}`} cx={p.cx} cy={p.cy} r={34} fill="#d9620a" />
+        ))}
+        <Circle cx={176} cy={168} r={140} fill="#ef7c1a" />
+        {MANE_INNER.map((p, i) => (
+          <Circle key={`i${i}`} cx={p.cx} cy={p.cy} r={26} fill="#f59e0b" />
+        ))}
       </G>
 
-      <Circle cx={120} cy={120} r={82} fill="#fef3c7" />
-      <Ellipse cx={68} cy={140} rx={14} ry={9} fill="#fbcfe8" />
-      <Ellipse cx={172} cy={140} rx={14} ry={9} fill="#fbcfe8" />
+      {/* Ears */}
+      <Circle cx={96} cy={92} r={26} fill="#f4b942" />
+      <Circle cx={256} cy={92} r={26} fill="#f4b942" />
+      <Circle cx={96} cy={92} r={13} fill="#e07b39" />
+      <Circle cx={256} cy={92} r={13} fill="#e07b39" />
 
-      <Circle cx={92} cy={108} r={10} fill="#1f2937" />
-      <Circle cx={148} cy={108} r={10} fill="#1f2937" />
-      <Circle cx={95} cy={104} r={3.5} fill="#ffffff" />
-      <Circle cx={151} cy={104} r={3.5} fill="#ffffff" />
+      {/* Face */}
+      <Circle cx={176} cy={168} r={98} fill="#ffe7a8" />
 
-      <Path d="M114 132 L126 132 L120 144 Z" fill="#c2410c" />
+      {/* Cheeks */}
+      <Ellipse cx={104} cy={186} rx={22} ry={14} fill="#ffb3a7" opacity={0.75} />
+      <Ellipse cx={248} cy={186} rx={22} ry={14} fill="#ffb3a7" opacity={0.75} />
+
+      {/* Eyes */}
+      <Ellipse cx={138} cy={146} rx={24} ry={28} fill="#ffffff" />
+      <Ellipse cx={214} cy={146} rx={24} ry={28} fill="#ffffff" />
+      <Circle cx={142} cy={150} r={13} fill="#2b2118" />
+      <Circle cx={210} cy={150} r={13} fill="#2b2118" />
+      <Circle cx={146} cy={145} r={4.5} fill="#ffffff" />
+      <Circle cx={214} cy={145} r={4.5} fill="#ffffff" />
+
+      {/* Brows */}
+      <Path
+        d="M120 116 Q138 106 158 114"
+        stroke="#b45309"
+        strokeWidth={7}
+        fill="none"
+        strokeLinecap="round"
+      />
+      <Path
+        d="M194 114 Q214 106 232 116"
+        stroke="#b45309"
+        strokeWidth={7}
+        fill="none"
+        strokeLinecap="round"
+      />
+
+      {/* Muzzle */}
+      <Ellipse cx={176} cy={196} rx={66} ry={52} fill="#fff4d6" />
+      <Path
+        d="M160 168 Q176 160 192 168 Q188 182 176 186 Q164 182 160 168 Z"
+        fill="#7c3a12"
+      />
+      <Path
+        d="M176 186 L176 198"
+        stroke="#7c3a12"
+        strokeWidth={5}
+        strokeLinecap="round"
+      />
 
       {/* Mouth */}
-      <Ellipse cx={120} cy={172} rx={30} ry={mouthRy} fill="#7c2d12" />
-      {speaking && mouthRy > 8 && (
-        <Ellipse cx={120} cy={178} rx={18} ry={mouthRy / 3} fill="#ef4444" />
+      {open === 0 ? (
+        <Path
+          d="M150 178 Q176 196 202 178"
+          stroke="#7c3a12"
+          strokeWidth={7}
+          fill="none"
+          strokeLinecap="round"
+        />
+      ) : (
+        <>
+          <Ellipse cx={176} cy={184} rx={30} ry={open} fill="#7c2d12" />
+          <Ellipse
+            cx={176}
+            cy={184 + open * 0.35}
+            rx={20}
+            ry={Math.max(3, open * 0.55)}
+            fill="#fb6f92"
+          />
+          <Path
+            d={`M146 184 Q176 ${184 - open} 206 184`}
+            fill="#ffffff"
+            opacity={0.95}
+          />
+        </>
       )}
-      <Rect x={100} y={168} width={40} height={3} fill="#fef3c7" rx={1.5} />
     </Svg>
   );
 }

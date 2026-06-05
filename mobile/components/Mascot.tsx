@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, Pressable } from "react-native";
+import TalkingFace from "./TalkingFace";
 
 /**
  * Friendly mascot with a chat-bubble caption. The lion does a gentle idle
@@ -26,9 +27,9 @@ export default function Mascot({
         align === "center" ? "justify-center" : "justify-start"
       }`}
     >
-      <Text className="text-6xl" style={{ transform: [{ translateY: offset }] }}>
-        🦁
-      </Text>
+      <View style={{ transform: [{ translateY: offset }] }}>
+        <TalkingFace speaking={false} size={72} />
+      </View>
       {message ? (
         <View className="max-w-[260px] flex-1 rounded-3xl rounded-bl-md border-2 border-gray-100 bg-white px-4 py-3">
           <Text className="text-lg font-extrabold text-gray-800">
