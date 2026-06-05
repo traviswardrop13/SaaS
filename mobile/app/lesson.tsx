@@ -242,6 +242,16 @@ export default function Lesson() {
           {lesson.level === "isolation" ? "Make the sound" : "Say it out loud"}
         </Text>
 
+        {/* Coaching cue — the articulation tip for this sound. */}
+        {phase !== "result" ? (
+          <View className="mt-3 flex-row items-center gap-2 rounded-2xl bg-brand-50 px-4 py-2">
+            <Text className="text-base">💡</Text>
+            <Text className="flex-1 text-sm font-bold text-brand-700">
+              {lesson.hint}
+            </Text>
+          </View>
+        ) : null}
+
         {/* Word bubble — tap to hear it */}
         <Pressable
           onPress={playWord}
