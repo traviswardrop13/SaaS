@@ -15,6 +15,7 @@ import { scoreAudio, type CloudScore } from "@/lib/cloudScoring";
 import { useStore } from "@/lib/store";
 import { Button, ProgressBar } from "@/components/ui";
 import TalkingFace, { type Mood } from "@/components/TalkingFace";
+import MouthModel from "@/components/MouthModel";
 
 type Phase = "prompt" | "listening" | "scoring" | "result" | "done";
 
@@ -272,9 +273,12 @@ export default function Lesson() {
             {LEVEL_INFO[lesson.level].label}
           </Text>
         </View>
-        <Text className="mt-2 text-2xl font-extrabold text-ink">
-          Repeat after Leo
-        </Text>
+        <View className="mt-2 flex-row items-center gap-2">
+          <TalkingFace speaking={speaking} size={38} />
+          <Text className="text-2xl font-extrabold text-ink">
+            Repeat after Leo
+          </Text>
+        </View>
 
         {/* Speech bubble — tap the speaker to hear it; segmented underline
             dots under each word, like Duolingo's speaking prompts. */}
@@ -282,10 +286,24 @@ export default function Lesson() {
           <SpeechBubble text={word.text} emoji={word.emoji} onPlay={playWord} />
         </View>
 
-        {/* The lion "says" it (mouth animates) and reacts to the result. */}
+        {/* During the prompt/your-turn, the mouth model shows HOW to make the
+            sound (lips/teeth/tongue). On the result, Leo reacts. */}
         <View className="mt-1 items-center">
-          <TalkingFace speaking={speaking} size={200} mood={mascotMood} />
+          {phase === "result" ? (
+            <TalkingFace speaking={false} size={200} mood={mascotMood} />
+          ) : (
+            <MouthModel
+              sound={lesson.targetSound}
+              playing={phase === "prompt" || phase === "listening"}
+              size={210}
+            />
+          )}
         </View>
+        {phase !== "result" ? (
+          <Text className="mt-1 text-center text-xs font-extrabold uppercase tracking-widest text-hare">
+            Watch the mouth
+          </Text>
+        ) : null}
 
         {/* Coaching cue — the articulation tip for this sound. */}
         {phase !== "result" ? (
