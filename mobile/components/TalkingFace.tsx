@@ -2,23 +2,19 @@ import React, { useEffect, useState } from "react";
 import Svg, { Circle, Ellipse, Path, G } from "react-native-svg";
 
 /**
- * Sona's mascot lion. A clean, flat character whose mouth animates open and
- * closed while speaking so a child sees the mouth move as they hear the
- * sound. Designed in scripts/preview-mascot.js and ported here.
+ * Sona's mascot lion. This matches the app logo (assets/splash.svg) exactly
+ * and only adds an animated mouth: while `speaking` is true the mouth cycles
+ * open/closed so a child sees it move as they hear the sound; otherwise it
+ * rests in the logo's gentle smile.
  *
- * `speaking` drives the mouth: when true it cycles through open states on a
- * short interval; when false it rests in a gentle closed smile.
+ * The look is proofed in scripts/preview-mascot.js (renders states to PNG).
  */
-const MANE_OUTER = Array.from({ length: 14 }).map((_, i) => {
-  const a = (i / 14) * Math.PI * 2;
-  return { cx: 176 + Math.cos(a) * 132, cy: 168 + Math.sin(a) * 132 };
-});
-const MANE_INNER = Array.from({ length: 12 }).map((_, i) => {
-  const a = (i / 12) * Math.PI * 2 + 0.26;
-  return { cx: 176 + Math.cos(a) * 104, cy: 168 + Math.sin(a) * 104 };
-});
+const MANE: [number, number][] = [
+  [240, 0], [208, 120], [120, 208], [0, 240], [-120, 208], [-208, 120],
+  [-240, 0], [-208, -120], [-120, -208], [0, -240], [120, -208], [208, -120],
+];
 
-// Frames of mouth-openness (in px ry) cycled while speaking.
+// Frames of mouth-openness (px ry) cycled while speaking.
 const FRAMES = [4, 12, 22, 14, 24, 8];
 
 export default function TalkingFace({
@@ -44,91 +40,47 @@ export default function TalkingFace({
   }, [speaking]);
 
   return (
-    <Svg viewBox="0 0 352 352" width={size} height={size}>
+    <Svg viewBox="-256 -256 512 512" width={size} height={size}>
       {/* Mane */}
-      <G>
-        {MANE_OUTER.map((p, i) => (
-          <Circle key={`o${i}`} cx={p.cx} cy={p.cy} r={34} fill="#d9620a" />
-        ))}
-        <Circle cx={176} cy={168} r={140} fill="#ef7c1a" />
-        {MANE_INNER.map((p, i) => (
-          <Circle key={`i${i}`} cx={p.cx} cy={p.cy} r={26} fill="#f59e0b" />
+      <Circle r={240} fill="#ea580c" />
+      <G fill="#c2410c">
+        {MANE.map(([x, y], i) => (
+          <Circle key={i} cx={x} cy={y} r={38} />
         ))}
       </G>
 
-      {/* Ears */}
-      <Circle cx={96} cy={92} r={26} fill="#f4b942" />
-      <Circle cx={256} cy={92} r={26} fill="#f4b942" />
-      <Circle cx={96} cy={92} r={13} fill="#e07b39" />
-      <Circle cx={256} cy={92} r={13} fill="#e07b39" />
-
       {/* Face */}
-      <Circle cx={176} cy={168} r={98} fill="#ffe7a8" />
-
-      {/* Cheeks */}
-      <Ellipse cx={104} cy={186} rx={22} ry={14} fill="#ffb3a7" opacity={0.75} />
-      <Ellipse cx={248} cy={186} rx={22} ry={14} fill="#ffb3a7" opacity={0.75} />
+      <Circle r={172} fill="#fef3c7" />
+      <Ellipse cx={-99} cy={40} rx={30} ry={19} fill="#fbcfe8" />
+      <Ellipse cx={99} cy={40} rx={30} ry={19} fill="#fbcfe8" />
 
       {/* Eyes */}
-      <Ellipse cx={138} cy={146} rx={24} ry={28} fill="#ffffff" />
-      <Ellipse cx={214} cy={146} rx={24} ry={28} fill="#ffffff" />
-      <Circle cx={142} cy={150} r={13} fill="#2b2118" />
-      <Circle cx={210} cy={150} r={13} fill="#2b2118" />
-      <Circle cx={146} cy={145} r={4.5} fill="#ffffff" />
-      <Circle cx={214} cy={145} r={4.5} fill="#ffffff" />
+      <Circle cx={-62} cy={-30} r={21} fill="#1f2937" />
+      <Circle cx={62} cy={-30} r={21} fill="#1f2937" />
+      <Circle cx={-56} cy={-38} r={8} fill="#ffffff" />
+      <Circle cx={69} cy={-38} r={8} fill="#ffffff" />
 
-      {/* Brows */}
-      <Path
-        d="M120 116 Q138 106 158 114"
-        stroke="#b45309"
-        strokeWidth={7}
-        fill="none"
-        strokeLinecap="round"
-      />
-      <Path
-        d="M194 114 Q214 106 232 116"
-        stroke="#b45309"
-        strokeWidth={7}
-        fill="none"
-        strokeLinecap="round"
-      />
-
-      {/* Muzzle */}
-      <Ellipse cx={176} cy={196} rx={66} ry={52} fill="#fff4d6" />
-      <Path
-        d="M160 168 Q176 160 192 168 Q188 182 176 186 Q164 182 160 168 Z"
-        fill="#7c3a12"
-      />
-      <Path
-        d="M176 186 L176 198"
-        stroke="#7c3a12"
-        strokeWidth={5}
-        strokeLinecap="round"
-      />
+      {/* Nose */}
+      <Path d="M-14 19 L14 19 L0 43 Z" fill="#c2410c" />
 
       {/* Mouth */}
       {open === 0 ? (
         <Path
-          d="M150 178 Q176 196 202 178"
-          stroke="#7c3a12"
-          strokeWidth={7}
-          fill="none"
+          d="M-43 73 Q0 112 43 73"
+          stroke="#7c2d12"
+          strokeWidth={9}
           strokeLinecap="round"
+          fill="none"
         />
       ) : (
         <>
-          <Ellipse cx={176} cy={184} rx={30} ry={open} fill="#7c2d12" />
+          <Ellipse cx={0} cy={82} rx={34} ry={open} fill="#7c2d12" />
           <Ellipse
-            cx={176}
-            cy={184 + open * 0.35}
-            rx={20}
-            ry={Math.max(3, open * 0.55)}
-            fill="#fb6f92"
-          />
-          <Path
-            d={`M146 184 Q176 ${184 - open} 206 184`}
-            fill="#ffffff"
-            opacity={0.95}
+            cx={0}
+            cy={82 + open * 0.4}
+            rx={22}
+            ry={Math.max(3, open * 0.5)}
+            fill="#fb7185"
           />
         </>
       )}
