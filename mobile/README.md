@@ -10,9 +10,8 @@ repo root stays as a marketing/demo surface.
 - **NativeWind** (Tailwind for React Native)
 - **react-native-svg** for the talking face + sagittal mouth diagram
 - **expo-speech** for text-to-speech
-- **@react-native-voice/voice** for on-device speech recognition (iOS
-  `SFSpeechRecognizer` / Android `SpeechRecognizer`) — much better at
-  children's speech than the browser API. Requires a dev build (below).
+- **expo-av** for microphone recording (used by the Speechace cloud-scoring
+  flow described below). Works in Expo Go; a dev build is required to publish.
 - **AsyncStorage** for local persistence
 
 ## Shared logic
@@ -35,21 +34,34 @@ npx expo start
 Then press `i` for the iOS simulator (Mac + Xcode required) or scan the QR
 code with the **Expo Go** app on your phone.
 
-### Speech recognition needs a dev build
+### Cloud scoring (Speechace)
 
-`@react-native-voice/voice` is a native module, so it does **not** run in
-the standard Expo Go app. Text-to-speech and the whole UI work in Expo Go,
-but to test the microphone scoring you need a custom dev client:
+The lesson player records the child's voice and uploads it to the
+`/api/score` route in the Next.js web app, which forwards to Speechace
+(server-side key, never on the device). The phoneme-level score that
+comes back drives the great/ok/try-again rating.
+
+To enable it locally:
 
 ```bash
-npx expo install @react-native-voice/voice
+cd mobile
+npx expo install expo-av
+# point the app at your deployed scoring API
+echo "EXPO_PUBLIC_API_URL=https://your-vercel-preview.vercel.app" > .env
+npx expo start --clear
+```
+
+`expo-av` is supported in Expo Go for recording, so you can iterate without
+a dev build. For TestFlight / App Store you'll still want a dev build:
+
+```bash
 npx expo prebuild
 npx expo run:ios      # builds + installs the dev client on a simulator/device
 ```
 
-Until then, isolation lessons (which use parent self-rating anyway) work
-everywhere, and word/phrase lessons fall back to self-rating when
-recognition is unavailable.
+Isolation lessons (which can't be scored phonetically) keep the parent
+self-rating UI. Word/phrase lessons go through Speechace. If the recorder
+isn't available (no `expo-av`), the app gracefully falls back to self-rate.
 
 ## App icon & splash
 
@@ -65,8 +77,8 @@ Edit the SVGs, re-run the script, commit the PNGs. The script uses
 
 ## Still TODO before App Store submission
 
-- Wire `@react-native-voice/voice` via a dev build and test on a real
-  device.
+- Run `npx expo install expo-av`, set `EXPO_PUBLIC_API_URL`, and test
+  recording → cloud scoring on a real device.
 - Apple Developer account ($99/yr) + EAS Build for store binaries.
 
 ## Building store binaries (later)

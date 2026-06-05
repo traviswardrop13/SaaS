@@ -3,19 +3,19 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { View, Text, Pressable, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { findLesson, LEVEL_INFO } from "@/lib/lessons";
-import { scoreUtterance, type ScoreResult } from "@/lib/scoring";
+import { type ScoreResult } from "@/lib/scoring";
+import { speak } from "@/lib/speech";
 import {
-  speak,
-  startRecognition,
-  isRecognitionSupported,
-  type RecognitionAlternative,
-  type RecognitionHandle,
-} from "@/lib/speech";
+  startRecording,
+  isRecordingSupported,
+  type RecorderHandle,
+} from "@/lib/recorder";
+import { scoreAudio } from "@/lib/cloudScoring";
 import { useStore } from "@/lib/store";
 import { Button } from "@/components/ui";
 import TalkingFace from "@/components/TalkingFace";
 
-type Phase = "prompt" | "listening" | "result" | "done";
+type Phase = "prompt" | "listening" | "scoring" | "result" | "done";
 
 export default function Lesson() {
   const router = useRouter();
@@ -32,13 +32,16 @@ export default function Lesson() {
   const [speaking, setSpeaking] = useState(false);
   const [result, setResult] = useState<ScoreResult | null>(null);
   const [scores, setScores] = useState<number[]>([]);
-  const recRef = useRef<RecognitionHandle | null>(null);
-  const altsRef = useRef<RecognitionAlternative[]>([]);
+  const recorderRef = useRef<RecorderHandle | null>(null);
 
   const lesson = info?.lesson;
   const word = lesson?.words[wordIdx];
-  const useSelfRate =
-    !isRecognitionSupported() || lesson?.level === "isolation";
+  // Cloud scoring needs both the recorder (dev build) and a gradeable target.
+  // "Isolation" lessons (sustained "rrrr") can't be scored phonetically, so
+  // they always fall back to parent self-rating.
+  const useCloud =
+    isRecordingSupported() && lesson?.level !== "isolation";
+  const useSelfRate = !useCloud;
 
   // Auto-play the word when arriving at a new prompt.
   useEffect(() => {
@@ -51,7 +54,12 @@ export default function Lesson() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase, wordIdx]);
 
-  useEffect(() => () => recRef.current?.stop(), []);
+  useEffect(
+    () => () => {
+      recorderRef.current?.stop().catch(() => {});
+    },
+    [],
+  );
 
   if (!info || !lesson || !word || !activeChild) {
     return (
@@ -74,38 +82,58 @@ export default function Lesson() {
       });
   }
 
-  function listen() {
+  async function listen() {
     setResult(null);
-    altsRef.current = [];
     setPhase("listening");
-    recRef.current = startRecognition({
-      onResult: (alts, isFinal) => {
-        altsRef.current = alts;
-        if (isFinal) finish(alts);
-      },
+    const handle = await startRecording({
       onError: () => setPhase("prompt"),
-      onEnd: () => {
-        setPhase((p) => {
-          if (p !== "listening") return p;
-          finish(altsRef.current);
-          return "result";
-        });
-      },
     });
+    if (!handle) {
+      setPhase("prompt");
+      return;
+    }
+    recorderRef.current = handle;
   }
 
-  function finish(alts: RecognitionAlternative[]) {
-    const s = scoreUtterance(alts, {
-      target: word!.text,
-      accepts: word!.accepts,
+  async function stopAndScore() {
+    const handle = recorderRef.current;
+    recorderRef.current = null;
+    if (!handle) {
+      setPhase("prompt");
+      return;
+    }
+    setPhase("scoring");
+    const uri = await handle.stop();
+    if (!uri) {
+      setPhase("prompt");
+      return;
+    }
+    const cloud = await scoreAudio({
+      audioUri: uri,
+      text: word!.text,
       targetSound: lesson!.targetSound,
-      position: lesson!.position,
-      blend: lesson!.blend,
+      userId: activeChild?.id,
     });
+
+    // Map Speechace's 0..100 to the existing ScoreResult shape so the rest
+    // of the flow (xp, stars, ResultBar) stays unchanged.
+    const primary = cloud.targetPhoneme ?? cloud.overall ?? 0;
+    const similarity = Math.max(0, Math.min(1, primary / 100));
+    const s: ScoreResult = {
+      similarity,
+      rating: cloud.rating,
+      matchedAgainst: word!.text,
+      bestHeard: cloud.transcript,
+      hint:
+        cloud.rating === "great"
+          ? undefined
+          : cloud.transcript
+              ? `I heard "${cloud.transcript}". Try the ${lesson!.targetSound} sound!`
+              : "I didn't catch that — tap the mic and try again.",
+    };
     setResult(s);
     setScores((p) => [...p, s.similarity]);
     setPhase("result");
-    recRef.current?.stop();
   }
 
   function selfRate(rating: ScoreResult["rating"]) {
@@ -230,12 +258,21 @@ export default function Lesson() {
           </View>
         ) : (
           <Pressable
-            onPress={() => (phase === "listening" ? recRef.current?.stop() : listen())}
+            disabled={phase === "scoring"}
+            onPress={() =>
+              phase === "listening" ? stopAndScore() : listen()
+            }
             className={`mx-auto h-24 w-24 items-center justify-center rounded-full ${
-              phase === "listening" ? "bg-brand-500" : "bg-grass-500"
+              phase === "listening"
+                ? "bg-brand-500"
+                : phase === "scoring"
+                  ? "bg-gray-300"
+                  : "bg-grass-500"
             }`}
           >
-            <Text className="text-4xl">{phase === "listening" ? "⏹" : "🎤"}</Text>
+            <Text className="text-4xl">
+              {phase === "listening" ? "⏹" : phase === "scoring" ? "…" : "🎤"}
+            </Text>
           </Pressable>
         )}
       </View>
