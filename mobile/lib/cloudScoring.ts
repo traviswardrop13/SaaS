@@ -41,6 +41,9 @@ export async function scoreAudio(opts: {
   targetSound?: TargetSound;
   /** stable id for the child — helps Speechace tune to the speaker */
   userId?: string;
+  /** "phoneme" = lenient (isolation: did they make the sound?),
+   *  "full" = strict whole-utterance match (syllables and up). */
+  mode?: "phoneme" | "full";
 }): Promise<CloudScore> {
   const form = new FormData();
   // React Native FormData accepts the { uri, name, type } object shape.
@@ -52,6 +55,7 @@ export async function scoreAudio(opts: {
   form.append("text", opts.text);
   if (opts.targetSound) form.append("targetSound", opts.targetSound);
   if (opts.userId) form.append("userId", opts.userId);
+  if (opts.mode) form.append("mode", opts.mode);
 
   try {
     console.log("[SCORE] POST", `${API_URL}/api/score`, "audio:", opts.audioUri);

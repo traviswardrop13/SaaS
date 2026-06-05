@@ -8,6 +8,7 @@ import { speak } from "@/lib/speech";
 import {
   startRecording,
   isRecordingSupported,
+  configurePlaybackAudio,
   type RecorderHandle,
 } from "@/lib/recorder";
 import { scoreAudio, type CloudScore } from "@/lib/cloudScoring";
@@ -37,6 +38,9 @@ export default function Lesson() {
   // result screen while we calibrate strictness. Remove once dialed in.
   const [lastCloud, setLastCloud] = useState<CloudScore | null>(null);
   const recorderRef = useRef<RecorderHandle | null>(null);
+  // Auto-stop timer for the hands-free flow (records for a fixed window after
+  // Leo speaks, so the child never has to press a button to record).
+  const autoStopRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const lesson = info?.lesson;
   const word = lesson?.words[wordIdx];
@@ -47,12 +51,24 @@ export default function Lesson() {
   const useCloud = isRecordingSupported();
   const useSelfRate = !useCloud;
 
-  // Auto-play the word when arriving at a new prompt.
+  // Loud playback so Leo is actually audible (speaker, not earpiece; plays
+  // even on silent). Runs once when the lesson opens.
+  useEffect(() => {
+    configurePlaybackAudio();
+  }, []);
+
+  // Hands-free flow: when arriving at a new prompt, Leo says the word
+  // automatically, and the moment he finishes the mic goes live and starts
+  // listening — the child just repeats, no buttons. (Falls back to the manual
+  // mic / self-rate when the recorder isn't available.)
   useEffect(() => {
     if (phase === "prompt" && word) {
       speak(word.text, {
         onStart: () => setSpeaking(true),
-        onEnd: () => setSpeaking(false),
+        onEnd: () => {
+          setSpeaking(false);
+          if (useCloud) beginListening();
+        },
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -60,6 +76,7 @@ export default function Lesson() {
 
   useEffect(
     () => () => {
+      if (autoStopRef.current) clearTimeout(autoStopRef.current);
       recorderRef.current?.stop().catch(() => {});
     },
     [],
@@ -97,7 +114,10 @@ export default function Lesson() {
       });
   }
 
-  async function listen() {
+  // Max time we listen before auto-scoring, so a child never has to tap stop.
+  const LISTEN_MS = 4500;
+
+  async function beginListening() {
     setResult(null);
     setErrorMsg(null);
     setPhase("listening");
@@ -112,9 +132,16 @@ export default function Lesson() {
       return;
     }
     recorderRef.current = handle;
+    // Auto-stop + score after the window (child can also tap to finish early).
+    if (autoStopRef.current) clearTimeout(autoStopRef.current);
+    autoStopRef.current = setTimeout(() => stopAndScore(), LISTEN_MS);
   }
 
   async function stopAndScore() {
+    if (autoStopRef.current) {
+      clearTimeout(autoStopRef.current);
+      autoStopRef.current = null;
+    }
     const handle = recorderRef.current;
     recorderRef.current = null;
     if (!handle) {
@@ -132,6 +159,9 @@ export default function Lesson() {
       text: word!.text,
       targetSound: lesson!.targetSound,
       userId: activeChild?.id,
+      // Isolation = "can you make the sound at all?" → lenient (target
+      // phoneme). Syllables and up → strict (whole-utterance match).
+      mode: lesson!.level === "isolation" ? "phoneme" : "full",
     });
 
     // Surface a backend / network failure so it's diagnosable on-device
@@ -310,22 +340,22 @@ export default function Lesson() {
           ) : (
             <View>
             <Pressable
-              disabled={phase === "scoring"}
+              disabled={phase === "scoring" || speaking}
               onPress={() =>
-                phase === "listening" ? stopAndScore() : listen()
+                phase === "listening" ? stopAndScore() : beginListening()
               }
             >
               {({ pressed }) => {
                 const face =
                   phase === "listening"
                     ? "#ff4b4b"
-                    : phase === "scoring"
+                    : phase === "scoring" || speaking
                       ? "#e5e5e5"
                       : "#1cb0f6";
                 const edge =
                   phase === "listening"
                     ? "#e63232"
-                    : phase === "scoring"
+                    : phase === "scoring" || speaking
                       ? "#cfcfcf"
                       : "#1899d6";
                 return (
@@ -352,12 +382,17 @@ export default function Lesson() {
                 );
               }}
             </Pressable>
-            <Text className="mt-3 text-center text-sm font-extrabold uppercase tracking-wide text-hare">
-              {phase === "listening"
-                ? "Tap to stop"
-                : phase === "scoring"
-                  ? "Listening to you…"
-                  : "Tap to speak"}
+            <Text
+              className="mt-3 text-center text-sm font-extrabold uppercase tracking-wide"
+              style={{ color: phase === "listening" ? "#e63232" : "#afafaf" }}
+            >
+              {speaking
+                ? "Listen to Leo…"
+                : phase === "listening"
+                  ? "Your turn — speak! (tap when done)"
+                  : phase === "scoring"
+                    ? "Checking…"
+                    : "Tap to speak"}
             </Text>
             </View>
           )}

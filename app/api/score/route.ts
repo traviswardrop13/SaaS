@@ -159,6 +159,10 @@ export async function POST(req: NextRequest) {
   const text = (inForm.get("text") as string | null)?.trim();
   const targetSound = (inForm.get("targetSound") as string | null)?.trim() || null;
   const userId = (inForm.get("userId") as string | null)?.trim() || "anonymous";
+  const mode =
+    (inForm.get("mode") as string | null)?.trim() === "phoneme"
+      ? "phoneme"
+      : "full";
 
   if (!(audio instanceof Blob) || !text) {
     return NextResponse.json(
@@ -248,9 +252,15 @@ export async function POST(req: NextRequest) {
       : null;
   })();
 
-  // Priority: phoneAvg (most discriminating) → text-level overall (rarely
-  // returned for single words) → word average → target phoneme alone.
-  const score = phoneAvg ?? overall ?? wordAvg ?? targetPhoneme ?? 0;
+  // "phoneme" mode (isolation): lenient — did the child make the target
+  // sound at all? Score on the target phoneme. "full" mode (syllables+):
+  // strict — the whole utterance must match, so average all phonemes.
+  const score =
+    mode === "phoneme"
+      ? // Lenient. If a held sound (e.g. "sss") can't be parsed at all, give
+        // the benefit of the doubt (75) — isolation is an imitation warm-up.
+        (targetPhoneme ?? phoneAvg ?? wordAvg ?? 75)
+      : (phoneAvg ?? overall ?? wordAvg ?? targetPhoneme ?? 0);
   const { rating, feedback } = rate({
     score,
     overall,
@@ -261,6 +271,7 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json({
     ok: true,
+    mode,
     score: Math.round(score),
     overall,
     wordAvg,

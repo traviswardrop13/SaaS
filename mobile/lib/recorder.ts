@@ -29,6 +29,28 @@ export function isRecordingSupported(): boolean {
   return Boolean(av?.Audio?.Recording);
 }
 
+/**
+ * Put the audio session into loud playback mode: route to the main speaker
+ * (not the quiet earpiece) and play even when the phone's ringer is on
+ * silent. Call this before TTS so Leo is actually audible. Safe no-op if
+ * expo-av isn't present.
+ */
+export async function configurePlaybackAudio(): Promise<void> {
+  const av = getAv();
+  if (!av?.Audio?.setAudioModeAsync) return;
+  try {
+    await av.Audio.setAudioModeAsync({
+      allowsRecordingIOS: false,
+      playsInSilentModeIOS: true,
+      staysActiveInBackground: false,
+      shouldDuckAndroid: true,
+      playThroughEarpieceAndroid: false,
+    });
+  } catch (e: any) {
+    console.log("[REC] configurePlaybackAudio failed:", e?.message);
+  }
+}
+
 export type RecorderHandle = {
   /** stop and unload. resolves with the file URI of the captured clip. */
   stop: () => Promise<string | null>;
@@ -79,8 +101,13 @@ export async function startRecording(opts?: {
       stop: async () => {
         try {
           await recording.stopAndUnloadAsync();
+          // Restore loud playback mode so the next prompt is audible.
           try {
-            await Audio.setAudioModeAsync({ allowsRecordingIOS: false });
+            await Audio.setAudioModeAsync({
+              allowsRecordingIOS: false,
+              playsInSilentModeIOS: true,
+              playThroughEarpieceAndroid: false,
+            });
           } catch {
             // non-fatal
           }

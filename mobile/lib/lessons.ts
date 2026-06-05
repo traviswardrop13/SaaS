@@ -75,14 +75,14 @@ export const SKILLS: Skill[] = [
       {
         id: "s-isolation",
         title: "Just the S sound",
-        hint: "Hiss the snake sound and add ah — sah!",
+        hint: "Hiss like a snake — sssss!",
         targetSound: "S",
         position: "initial",
         level: "isolation",
         words: [
-          { text: "sah", accepts: ["sa", "saw"] },
-          { text: "sah", accepts: ["sa", "saw"] },
-          { text: "sah", accepts: ["sa", "saw"] },
+          { text: "sss", accepts: ["s", "ss"] },
+          { text: "sss", accepts: ["s", "ss"] },
+          { text: "sss", accepts: ["s", "ss"] },
         ],
       },
       {
@@ -171,14 +171,14 @@ export const SKILLS: Skill[] = [
       {
         id: "r-isolation",
         title: "Just the R sound",
-        hint: "Roar like a lion — rah!",
+        hint: "Make the R sound by itself — errr!",
         targetSound: "R",
         position: "initial",
         level: "isolation",
         words: [
-          { text: "rah", accepts: ["ra", "raw"] },
-          { text: "rah", accepts: ["ra", "raw"] },
-          { text: "rah", accepts: ["ra", "raw"] },
+          { text: "er", accepts: ["err", "ur", "ir"] },
+          { text: "er", accepts: ["err", "ur", "ir"] },
+          { text: "er", accepts: ["err", "ur", "ir"] },
         ],
       },
       {
@@ -253,14 +253,14 @@ export const SKILLS: Skill[] = [
       {
         id: "l-isolation",
         title: "Just the L sound",
-        hint: "Tongue tip up — lah!",
+        hint: "Tongue tip up behind your teeth — llll!",
         targetSound: "L",
         position: "initial",
         level: "isolation",
         words: [
-          { text: "lah", accepts: ["la", "law"] },
-          { text: "lah", accepts: ["la", "law"] },
-          { text: "lah", accepts: ["la", "law"] },
+          { text: "lll", accepts: ["l", "ll", "el"] },
+          { text: "lll", accepts: ["l", "ll", "el"] },
+          { text: "lll", accepts: ["l", "ll", "el"] },
         ],
       },
       {
@@ -335,14 +335,14 @@ export const SKILLS: Skill[] = [
       {
         id: "sh-isolation",
         title: "Just the SH sound",
-        hint: "Round your lips and add ah — shah!",
+        hint: "Quiet sound — shhhh!",
         targetSound: "SH",
         position: "initial",
         level: "isolation",
         words: [
-          { text: "shah", accepts: ["sha", "shaw"] },
-          { text: "shah", accepts: ["sha", "shaw"] },
-          { text: "shah", accepts: ["sha", "shaw"] },
+          { text: "shh", accepts: ["sh", "shhh"] },
+          { text: "shh", accepts: ["sh", "shhh"] },
+          { text: "shh", accepts: ["sh", "shhh"] },
         ],
       },
       {
@@ -402,14 +402,14 @@ export const SKILLS: Skill[] = [
       {
         id: "th-isolation",
         title: "Just the TH sound",
-        hint: "Tongue between your teeth — thuh!",
+        hint: "Tongue between your teeth — thhh!",
         targetSound: "TH",
         position: "initial",
         level: "isolation",
         words: [
-          { text: "thuh", accepts: ["thu", "the"] },
-          { text: "thuh", accepts: ["thu", "the"] },
-          { text: "thuh", accepts: ["thu", "the"] },
+          { text: "th", accepts: ["thh", "thhh"] },
+          { text: "th", accepts: ["thh", "thhh"] },
+          { text: "th", accepts: ["thh", "thhh"] },
         ],
       },
       {
@@ -468,14 +468,14 @@ export const SKILLS: Skill[] = [
       {
         id: "ch-isolation",
         title: "Just the CH sound",
-        hint: "Pop the train sound — cha!",
+        hint: "Pop the train sound — ch! ch! ch!",
         targetSound: "CH",
         position: "initial",
         level: "isolation",
         words: [
-          { text: "cha", accepts: ["chah", "chaw"] },
-          { text: "cha", accepts: ["chah", "chaw"] },
-          { text: "cha", accepts: ["chah", "chaw"] },
+          { text: "ch", accepts: ["chh", "tch"] },
+          { text: "ch", accepts: ["chh", "tch"] },
+          { text: "ch", accepts: ["chh", "tch"] },
         ],
       },
       {
@@ -535,14 +535,14 @@ export const SKILLS: Skill[] = [
       {
         id: "k-isolation",
         title: "Just the K sound",
-        hint: "From the back of your throat — kah!",
+        hint: "From the back of your throat — k! k! k!",
         targetSound: "K",
         position: "initial",
         level: "isolation",
         words: [
-          { text: "kah", accepts: ["ka", "caw"] },
-          { text: "kah", accepts: ["ka", "caw"] },
-          { text: "kah", accepts: ["ka", "caw"] },
+          { text: "kuh", accepts: ["k", "cuh"] },
+          { text: "kuh", accepts: ["k", "cuh"] },
+          { text: "kuh", accepts: ["k", "cuh"] },
         ],
       },
       {
@@ -616,14 +616,14 @@ export const SKILLS: Skill[] = [
       {
         id: "g-isolation",
         title: "Just the G sound",
-        hint: "Back of your throat — gah!",
+        hint: "Back of your throat — g! g! g!",
         targetSound: "G",
         position: "initial",
         level: "isolation",
         words: [
-          { text: "gah", accepts: ["ga", "gaw"] },
-          { text: "gah", accepts: ["ga", "gaw"] },
-          { text: "gah", accepts: ["ga", "gaw"] },
+          { text: "guh", accepts: ["g", "gah"] },
+          { text: "guh", accepts: ["g", "gah"] },
+          { text: "guh", accepts: ["g", "gah"] },
         ],
       },
       {
@@ -683,14 +683,14 @@ export const SKILLS: Skill[] = [
       {
         id: "f-isolation",
         title: "Just the F sound",
-        hint: "Top teeth on bottom lip — fah!",
+        hint: "Top teeth on bottom lip — ffff!",
         targetSound: "F",
         position: "initial",
         level: "isolation",
         words: [
-          { text: "fah", accepts: ["fa", "faw"] },
-          { text: "fah", accepts: ["fa", "faw"] },
-          { text: "fah", accepts: ["fa", "faw"] },
+          { text: "fff", accepts: ["f", "ff"] },
+          { text: "fff", accepts: ["f", "ff"] },
+          { text: "fff", accepts: ["f", "ff"] },
         ],
       },
       {
