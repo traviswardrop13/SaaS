@@ -234,44 +234,36 @@ export default function Lesson() {
         <ProgressBar value={pct / 100} />
       </View>
 
-      <ScrollView className="flex-1 px-4" contentContainerStyle={{ flexGrow: 1 }}>
-        <Text className="text-center text-xs font-extrabold uppercase tracking-widest text-hare">
-          Level {LEVEL_INFO[lesson.level].short} · {LEVEL_INFO[lesson.level].label}
+      <ScrollView className="flex-1 px-6" contentContainerStyle={{ flexGrow: 1 }}>
+        {/* Level tag (Duolingo "NEW WORD" style) */}
+        <View className="mt-1 flex-row items-center gap-1.5">
+          <View className={`h-2.5 w-2.5 rounded-full ${skill.color}`} />
+          <Text className="text-xs font-extrabold uppercase tracking-widest text-hare">
+            {LEVEL_INFO[lesson.level].label}
+          </Text>
+        </View>
+        <Text className="mt-2 text-2xl font-extrabold text-ink">
+          Repeat after Leo
         </Text>
-        <Text className="mt-1 text-center text-2xl font-extrabold text-ink">
-          {lesson.level === "isolation" ? "Make the sound" : "Say it out loud"}
-        </Text>
+
+        {/* Speech bubble — tap the speaker to hear it; segmented underline
+            dots under each word, like Duolingo's speaking prompts. */}
+        <View className="mt-7">
+          <SpeechBubble text={word.text} emoji={word.emoji} onPlay={playWord} />
+        </View>
+
+        {/* The lion "says" it (mouth animates) and reacts to the result. */}
+        <View className="mt-1 items-center">
+          <TalkingFace speaking={speaking} size={200} mood={mascotMood} />
+        </View>
 
         {/* Coaching cue — the articulation tip for this sound. */}
         {phase !== "result" ? (
-          <View className="mt-3 flex-row items-center gap-2 rounded-2xl bg-brand-50 px-4 py-2">
+          <View className="mt-1 flex-row items-center gap-2 self-center rounded-2xl bg-brand-50 px-4 py-2">
             <Text className="text-base">💡</Text>
-            <Text className="flex-1 text-sm font-bold text-brand-700">
-              {lesson.hint}
-            </Text>
+            <Text className="text-sm font-bold text-brand-700">{lesson.hint}</Text>
           </View>
         ) : null}
-
-        {/* Word bubble — tap to hear it */}
-        <Pressable
-          onPress={playWord}
-          className="mt-6 flex-row items-center gap-3 rounded-3xl border-2 border-swan bg-white px-5 py-4"
-        >
-          <View className={`h-10 w-10 items-center justify-center rounded-full ${skill.color}`}>
-            <Text className="text-base text-white">🔊</Text>
-          </View>
-          <Text className="flex-1 text-2xl font-extrabold text-ink">
-            {word.text}
-          </Text>
-          {word.emoji ? <Text className="text-4xl">{word.emoji}</Text> : null}
-        </Pressable>
-
-        {/* Visual — the mascot models the sound; its mouth moves while the
-            word plays. (The tongue-position diagram is being redesigned and
-            will return as a polished "show me how" later.) */}
-        <View className="mt-4 items-center">
-          <TalkingFace speaking={speaking} size={210} mood={mascotMood} />
-        </View>
       </ScrollView>
 
       {/* Action area */}
@@ -322,14 +314,7 @@ export default function Lesson() {
             </View>
           </View>
         ) : (
-          <View className="items-center">
-            <Text className="mb-3 text-sm font-extrabold uppercase tracking-wide text-hare">
-              {phase === "listening"
-                ? "Listening… tap to stop"
-                : phase === "scoring"
-                  ? "Checking…"
-                  : "Tap to speak"}
-            </Text>
+          <View>
             <Pressable
               disabled={phase === "scoring"}
               onPress={() =>
@@ -342,39 +327,127 @@ export default function Lesson() {
                     ? "#ff4b4b"
                     : phase === "scoring"
                       ? "#e5e5e5"
-                      : "#58cc02";
+                      : "#1cb0f6";
                 const edge =
                   phase === "listening"
                     ? "#e63232"
                     : phase === "scoring"
                       ? "#cfcfcf"
-                      : "#58a700";
+                      : "#1899d6";
                 return (
-                  <View style={{ backgroundColor: edge, borderRadius: 999 }}>
+                  <View style={{ backgroundColor: edge, borderRadius: 20 }}>
                     <View
-                      className="h-24 w-24 items-center justify-center rounded-full"
+                      className="items-center justify-center"
                       style={{
                         backgroundColor: face,
-                        transform: [{ translateY: pressed ? 5 : 0 }],
-                        marginBottom: pressed ? 0 : 6,
+                        borderRadius: 20,
+                        paddingVertical: 20,
+                        transform: [{ translateY: pressed ? 4 : 0 }],
+                        marginBottom: pressed ? 0 : 5,
                       }}
                     >
-                      <Text className="text-4xl">
-                        {phase === "listening"
-                          ? "⏹"
-                          : phase === "scoring"
-                            ? "⏳"
-                            : "🎤"}
-                      </Text>
+                      {phase === "scoring" ? (
+                        <Text className="text-base font-extrabold uppercase tracking-wide text-white">
+                          Checking…
+                        </Text>
+                      ) : (
+                        <Waveform />
+                      )}
                     </View>
                   </View>
                 );
               }}
             </Pressable>
+            <Text className="mt-3 text-center text-sm font-extrabold uppercase tracking-wide text-hare">
+              {phase === "listening"
+                ? "Tap to stop"
+                : phase === "scoring"
+                  ? "Listening to you…"
+                  : "Tap to speak"}
+            </Text>
           </View>
         )}
       </View>
     </SafeAreaView>
+  );
+}
+
+// Waveform bars shown inside the speak button (Duolingo speaking style).
+const WAVE_BARS = [12, 22, 32, 18, 34, 16, 28, 14, 24, 30, 16];
+function Waveform() {
+  return (
+    <View className="flex-row items-center" style={{ height: 34, gap: 6 }}>
+      {WAVE_BARS.map((h, i) => (
+        <View
+          key={i}
+          style={{ width: 5, height: h, borderRadius: 3, backgroundColor: "#ffffff" }}
+        />
+      ))}
+    </View>
+  );
+}
+
+// Dotted underline segment under each word in the prompt bubble.
+function Dots({ count }: { count: number }) {
+  return (
+    <View className="mt-1.5 flex-row" style={{ gap: 4 }}>
+      {Array.from({ length: count }).map((_, i) => (
+        <View
+          key={i}
+          style={{ width: 3, height: 3, borderRadius: 2, backgroundColor: "#c7ccd1" }}
+        />
+      ))}
+    </View>
+  );
+}
+
+function SpeechBubble({
+  text,
+  emoji,
+  onPlay,
+}: {
+  text: string;
+  emoji?: string;
+  onPlay: () => void;
+}) {
+  const tokens = text.split(" ").filter(Boolean);
+  return (
+    <View className="items-center">
+      <View className="w-full flex-row items-center gap-3 rounded-3xl border-2 border-swan bg-white px-5 py-5">
+        <Pressable
+          onPress={onPlay}
+          className="h-11 w-11 items-center justify-center rounded-2xl"
+          style={{ backgroundColor: "#1cb0f6" }}
+        >
+          <Text className="text-lg text-white">🔊</Text>
+        </Pressable>
+        <View
+          className="flex-1 flex-row flex-wrap items-end"
+          style={{ columnGap: 14, rowGap: 8 }}
+        >
+          {tokens.map((tok, i) => (
+            <View key={i} className="items-center">
+              <Text className="text-3xl font-extrabold text-ink">{tok}</Text>
+              <Dots count={Math.max(4, Math.round(tok.length * 1.6))} />
+            </View>
+          ))}
+        </View>
+        {emoji ? <Text className="text-3xl">{emoji}</Text> : null}
+      </View>
+      {/* Tail pointing down to the lion */}
+      <View
+        style={{
+          marginTop: -10,
+          width: 18,
+          height: 18,
+          backgroundColor: "#ffffff",
+          borderRightWidth: 2,
+          borderBottomWidth: 2,
+          borderColor: "#e5e5e5",
+          transform: [{ rotate: "45deg" }],
+        }}
+      />
+    </View>
   );
 }
 
