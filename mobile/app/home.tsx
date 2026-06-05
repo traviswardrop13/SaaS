@@ -72,33 +72,6 @@ export default function Home() {
           className="flex-1"
           contentContainerStyle={{ paddingBottom: 100, paddingTop: 10 }}
         >
-          {/* Talk with Leo — the AI conversation companion */}
-          <Pressable
-            onPress={() => router.push("/talk")}
-            className="mx-4 mb-3"
-            style={{ backgroundColor: "#c2410c", borderRadius: 24 }}
-          >
-            <View
-              className="flex-row items-center gap-3 rounded-3xl px-4 py-3"
-              style={{ backgroundColor: "#ea580c", marginBottom: 4 }}
-            >
-              <View className="h-11 w-11 items-center justify-center rounded-2xl bg-white/25">
-                <Text className="text-xl">💬</Text>
-              </View>
-              <View className="flex-1">
-                <Text className="text-base font-extrabold text-white">
-                  Talk with Leo
-                </Text>
-                <Text className="text-xs font-bold text-white/85">
-                  Have a real conversation
-                </Text>
-              </View>
-              <Text className="rounded-full bg-white/25 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-white">
-                AI
-              </Text>
-            </View>
-          </Pressable>
-
           {/* Cross-track entry: the Language product */}
           <Pressable
             onPress={() => router.push("/language")}
