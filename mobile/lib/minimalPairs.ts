@@ -83,6 +83,45 @@ export const MINIMAL_PAIR_SETS: MinimalPairSet[] = [
       { target: { word: "chop", emoji: "🪓" }, foil: { word: "shop", emoji: "🛍️" } },
     ],
   },
+  {
+    id: "mp-th-f",
+    title: "TH vs F",
+    process: "Thinky TH (stopping/fronting)",
+    emoji: "🦷",
+    targetSound: "TH",
+    skillId: "th-sounds",
+    pairs: [
+      { target: { word: "thumb", emoji: "👍" }, foil: { word: "fum", emoji: "🤔" } },
+      { target: { word: "thin", emoji: "📏" }, foil: { word: "fin", emoji: "🐟" } },
+      { target: { word: "three", emoji: "3️⃣" }, foil: { word: "free", emoji: "🆓" } },
+    ],
+  },
+  {
+    id: "mp-thv-d",
+    title: "Voicey TH vs D",
+    process: "Voiced TH (stopping)",
+    emoji: "👅",
+    targetSound: "THV",
+    skillId: "th-voiced-sounds",
+    pairs: [
+      { target: { word: "this", emoji: "👇" }, foil: { word: "dis", emoji: "❌" } },
+      { target: { word: "they", emoji: "👫" }, foil: { word: "day", emoji: "🌞" } },
+      { target: { word: "than", emoji: "⚖️" }, foil: { word: "dan", emoji: "👤" } },
+    ],
+  },
+  {
+    id: "mp-final-cluster",
+    title: "Two sounds vs one (end)",
+    process: "Don't drop the ending (final cluster reduction)",
+    emoji: "🏁",
+    targetSound: "T",
+    skillId: "final-clusters",
+    pairs: [
+      { target: { word: "hand", emoji: "✋" }, foil: { word: "han", emoji: "🫳" } },
+      { target: { word: "fast", emoji: "🏃" }, foil: { word: "fass", emoji: "🐢" } },
+      { target: { word: "jump", emoji: "🤸" }, foil: { word: "jum", emoji: "🚷" } },
+    ],
+  },
 ];
 
 export function findPairSet(id: string): MinimalPairSet | undefined {

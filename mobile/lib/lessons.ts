@@ -26,6 +26,11 @@ export type Lesson = {
    * distinguish "spoon" from "soon" (cluster reduced).
    */
   blend?: string;
+  /**
+   * Same idea but for final-position clusters (e.g. "nd" / "mp" / "st") —
+   * "hand" → "han" should not pass.
+   */
+  endBlend?: string;
   words: Word[];
 };
 
@@ -47,6 +52,7 @@ export type SkillCategory =
   | "r-blend"
   | "l-blend"
   | "final-sound"
+  | "final-cluster"
   | "fronting";
 
 export type Skill = {
@@ -952,6 +958,72 @@ export const SKILLS: Skill[] = [
     ],
   },
 
+  {
+    id: "th-voiced-sounds",
+    sound: "THV",
+    category: "single-sound",
+    title: "Voicey TH",
+    subtitle: "the voiced /th/ — this, that, the",
+    color: "bg-brand-500",
+    emoji: "👅",
+    lessons: [
+      {
+        id: "thv-isolation",
+        title: "Just the voiced TH",
+        hint: "Tongue between teeth and turn your voice on — thhh!",
+        targetSound: "THV",
+        position: "initial",
+        level: "isolation",
+        words: [
+          { text: "thh", accepts: ["th", "thhh"] },
+          { text: "thh", accepts: ["th", "thhh"] },
+          { text: "thh", accepts: ["th", "thhh"] },
+        ],
+      },
+      {
+        id: "thv-syllables",
+        title: "Voicey TH syllables",
+        hint: "Buzz the TH into a vowel — thee, thoo, thah.",
+        targetSound: "THV",
+        position: "initial",
+        level: "syllables",
+        words: [
+          { text: "thee", accepts: ["the"] },
+          { text: "thoo", accepts: ["thu"] },
+          { text: "thah", accepts: ["tha"] },
+        ],
+      },
+      {
+        id: "thv-initial",
+        title: "Voicey TH at the start of words",
+        hint: "Tongue peeks out — voice on!",
+        targetSound: "THV",
+        position: "initial",
+        level: "words",
+        words: [
+          { text: "this", emoji: "👇", accepts: ["thiss"] },
+          { text: "that", emoji: "👉" },
+          { text: "the", emoji: "🅰️", accepts: ["thuh"] },
+          { text: "they", emoji: "👫" },
+          { text: "them", emoji: "👨‍👩‍👧" },
+        ],
+      },
+      {
+        id: "thv-phrases",
+        title: "Voicey TH in short phrases",
+        hint: "Two voiced TH words in a row!",
+        targetSound: "THV",
+        position: "initial",
+        level: "phrases",
+        words: [
+          { text: "this and that" },
+          { text: "the other day" },
+          { text: "they are there" },
+        ],
+      },
+    ],
+  },
+
   // ───────────────────────── S-Blends ─────────────────────────
   // Cluster reduction work is inherently about combining two sounds — no
   // isolation/syllables level. Practice goes straight to words + phrases.
@@ -1342,6 +1414,82 @@ export const SKILLS: Skill[] = [
       },
     ],
   },
+
+  // ───────────────── Final clusters (two sounds at the end) ─────────────────
+  // Different from initial blends — these target *end* clusters where the
+  // child commonly reduces ("hand" → "han"). endBlend in the scorer enforces
+  // both sounds are pronounced at the end.
+  {
+    id: "final-clusters",
+    sound: "T",
+    category: "final-cluster",
+    title: "Finishing Clusters",
+    subtitle: "two sounds at the end — st, nd, mp, nk",
+    color: "bg-grass-500",
+    emoji: "🏁",
+    lessons: [
+      {
+        id: "fc-st",
+        title: "-ST words",
+        hint: "Don't drop the T — finish strong with ST!",
+        targetSound: "T",
+        position: "final",
+        level: "words",
+        endBlend: "st",
+        words: [
+          { text: "fast", emoji: "🏃" },
+          { text: "nest", emoji: "🪺" },
+          { text: "ghost", emoji: "👻" },
+          { text: "list", emoji: "📋" },
+        ],
+      },
+      {
+        id: "fc-nd",
+        title: "-ND words",
+        hint: "Don't drop the D — finish with ND!",
+        targetSound: "T",
+        position: "final",
+        level: "words",
+        endBlend: "nd",
+        words: [
+          { text: "hand", emoji: "✋" },
+          { text: "sand", emoji: "🏖️" },
+          { text: "wind", emoji: "💨" },
+          { text: "band", emoji: "🎸" },
+        ],
+      },
+      {
+        id: "fc-mp",
+        title: "-MP words",
+        hint: "Pop the P at the end — say MP!",
+        targetSound: "P",
+        position: "final",
+        level: "words",
+        endBlend: "mp",
+        words: [
+          { text: "jump", emoji: "🤸" },
+          { text: "lamp", emoji: "💡" },
+          { text: "stamp", emoji: "📮" },
+          { text: "bump", emoji: "🥴" },
+        ],
+      },
+      {
+        id: "fc-nk",
+        title: "-NK words",
+        hint: "Don't drop the K — finish with NK!",
+        targetSound: "K",
+        position: "final",
+        level: "words",
+        endBlend: "nk",
+        words: [
+          { text: "bank", emoji: "🏦" },
+          { text: "pink", emoji: "🩷" },
+          { text: "drink", emoji: "🥤" },
+          { text: "skunk", emoji: "🦨" },
+        ],
+      },
+    ],
+  },
 ];
 
 /** Friendly group labels for the focus picker. */
@@ -1373,6 +1521,11 @@ export const CATEGORY_INFO: Record<
     label: "Finishing sounds",
     description: "Working on producing the ends of words (cup, hat, drum).",
     emoji: "🎯",
+  },
+  "final-cluster": {
+    label: "Ending clusters",
+    description: "Two-sound endings — -st, -nd, -mp, -nk (fast, hand, jump).",
+    emoji: "🏁",
   },
   fronting: {
     label: "Back sounds (K & G)",
@@ -1479,6 +1632,20 @@ export const DIAGNOSTIC_CHALLENGES: DiagnosticChallenge[] = [
     emoji: "🤸",
     focusSkillIds: ["j-sounds"],
   },
+  {
+    id: "thv",
+    label: "Voiced TH is tricky",
+    example: "“dis” for “this”",
+    emoji: "👅",
+    focusSkillIds: ["th-voiced-sounds"],
+  },
+  {
+    id: "final-clusters",
+    label: "Drops end-of-word clusters",
+    example: "“han” for “hand”",
+    emoji: "🏁",
+    focusSkillIds: ["final-clusters"],
+  },
 ];
 
 /**
@@ -1513,6 +1680,7 @@ export const GOAL_TILES: GoalTile[] = [
       "z-sounds",
       "v-sounds",
       "j-sounds",
+      "th-voiced-sounds",
     ],
   },
   {
@@ -1542,6 +1710,13 @@ export const GOAL_TILES: GoalTile[] = [
     title: "Word Endings",
     subtitle: "for dropped final sounds",
     skillIds: ["final-sounds"],
+  },
+  {
+    id: "endings-clusters",
+    emoji: "🏁",
+    title: "End Clusters",
+    subtitle: "-st, -nd, -mp, -nk",
+    skillIds: ["final-clusters"],
   },
   {
     id: "kg",
@@ -1594,7 +1769,9 @@ const DEV_RANK: Record<string, number> = {
   "l-blends": 5,
   "r-sounds": 6,
   "th-sounds": 6,
+  "th-voiced-sounds": 6,
   "r-blends": 7,
+  "final-clusters": 7,
   "big-blends": 8,
 };
 

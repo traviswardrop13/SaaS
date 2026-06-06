@@ -10,7 +10,7 @@ import { NextRequest, NextResponse } from "next/server";
  * Expected multipart fields from the client:
  *   - `audio`         (file)   the kid's recording
  *   - `text`          (string) the target word or phrase, e.g. "rabbit"
- *   - `targetSound`   (string) one of S/R/L/SH/TH/CH/K/G/F/Z/V/J/P/T/M/N (optional)
+ *   - `targetSound`   (string) one of S/R/L/SH/TH/THV/CH/K/G/F/Z/V/J/P/T/M/N (optional)
  *   - `userId`        (string) stable id for the child (helps Speechace tune)
  *
  * Response shape (kid-friendly, framework-agnostic):
@@ -35,7 +35,8 @@ const PHONEME_FOR: Record<string, string[]> = {
   R: ["R"],
   L: ["L"],
   SH: ["SH"],
-  TH: ["TH", "DH"],
+  TH: ["TH"],
+  THV: ["DH"],
   CH: ["CH"],
   K: ["K"],
   G: ["G"],

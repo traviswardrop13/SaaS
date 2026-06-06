@@ -54,7 +54,9 @@ export const SCREENER_PROBES: Probe[] = [
   { id: "pr-j", word: "juice", emoji: "🧃", targetSound: "J", position: "initial", skillId: "j-sounds", mode: "phoneme" },
   { id: "pr-r", word: "rabbit", emoji: "🐰", targetSound: "R", position: "initial", skillId: "r-sounds", mode: "phoneme" },
   { id: "pr-th", word: "thumb", emoji: "👍", targetSound: "TH", position: "initial", skillId: "th-sounds", mode: "phoneme" },
+  { id: "pr-thv", word: "this", emoji: "👇", targetSound: "THV", position: "initial", skillId: "th-voiced-sounds", mode: "phoneme" },
   { id: "pr-rblend", word: "tree", emoji: "🌳", targetSound: "R", position: "initial", skillId: "r-blends", mode: "full" },
+  { id: "pr-fc", word: "hand", emoji: "✋", targetSound: "T", position: "final", skillId: "final-clusters", mode: "full" },
 ];
 
 export type ProbeResult = {

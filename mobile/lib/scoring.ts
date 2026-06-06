@@ -28,6 +28,7 @@ export type TargetSound =
   | "L"
   | "SH"
   | "TH"
+  | "THV"
   | "CH"
   | "K"
   | "G"
@@ -64,6 +65,8 @@ export type ScoreOptions = {
   position: SoundPosition;
   /** if set, the heard word must begin with this letter cluster to count */
   blend?: string;
+  /** if set, the heard word must END with this cluster (final clusters) */
+  endBlend?: string;
 };
 
 export type ScoreResult = {
@@ -129,6 +132,9 @@ function patternsFor(sound: TargetSound): RegExp[] {
     case "SH":
       return [/sh/, /ti(?=on)/, /ci/];
     case "TH":
+      return [/th/];
+    case "THV":
+      // Voiced TH — same spelling, just a different scoring/target sound.
       return [/th/];
     case "CH":
       return [/ch/, /tch/];
@@ -202,6 +208,16 @@ const SUBSTITUTIONS: Partial<
       hint: "Tongue peeks between your teeth, not behind them — th!",
     },
   ],
+  THV: [
+    {
+      wrong: /\bd/,
+      hint: "Tongue between your teeth and turn your voice on — th!",
+    },
+    {
+      wrong: /\bz/,
+      hint: "Stick your tongue between your teeth — th, not zz!",
+    },
+  ],
   S: [
     {
       wrong: /\bth/,
@@ -269,6 +285,7 @@ function scoreOne(
   sound: TargetSound,
   position: SoundPosition,
   blend: string | undefined,
+  endBlend: string | undefined,
 ): { score: number; matchedAgainst: string } {
   const heard = normalize(heardRaw);
   const heardTokens = heard.split(" ").filter(Boolean);
@@ -299,6 +316,10 @@ function scoreOne(
   const blendOk = blend
     ? heardTokens.some((tok) => tok.startsWith(blend.toLowerCase()))
     : true;
+  // Same idea for final clusters ("hand" → "han" should not get full credit).
+  const endBlendOk = endBlend
+    ? heardTokens.some((tok) => tok.endsWith(endBlend.toLowerCase()))
+    : true;
 
   // Did at least one heard token contain the target sound in the right slot?
   const soundOk = heardTokens.some((tok) =>
@@ -308,8 +329,8 @@ function scoreOne(
   let combined = 0.7 * bestWord + 0.3 * (soundOk ? 1 : 0);
   if (bestWord >= 0.8 && soundOk) combined = Math.max(combined, bestWord);
   // Penalize a reduced cluster — even a perfect spelling match without the
-  // blend can't earn a "great" rating.
-  if (!blendOk) combined = Math.min(combined, 0.6);
+  // (initial or final) blend can't earn a "great" rating.
+  if (!blendOk || !endBlendOk) combined = Math.min(combined, 0.6);
 
   return { score: combined, matchedAgainst: bestAgainst };
 }
@@ -344,6 +365,7 @@ export function scoreUtterance(
       opts.targetSound,
       opts.position,
       opts.blend,
+      opts.endBlend,
     );
     // Confidence floors at 0.4 so a strong word-match with no confidence
     // still beats noise, but a 1.0 match at high confidence wins.
@@ -372,6 +394,13 @@ export function scoreUtterance(
       // Detect a reduced cluster — e.g. "soon" when target was "spoon".
       if (heardLc.startsWith(firstLetter) && !heardLc.startsWith(opts.blend)) {
         hint = `Don't drop a sound — say both letters: ${opts.blend.toUpperCase()}!`;
+      }
+    }
+    if (!hint && opts.endBlend) {
+      const heardLc = best!.heard.toLowerCase();
+      // Detect a reduced final cluster — e.g. "han" when target was "hand".
+      if (!heardLc.endsWith(opts.endBlend.toLowerCase())) {
+        hint = `Don't drop the ending — finish with ${opts.endBlend.toUpperCase()}!`;
       }
     }
     if (

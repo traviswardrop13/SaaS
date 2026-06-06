@@ -41,6 +41,7 @@ const MAP: Record<TargetSound, Viseme> = {
   L: "tipUp",
   SH: "round",
   TH: "th",
+  THV: "th",
   CH: "round",
   K: "back",
   G: "back",
