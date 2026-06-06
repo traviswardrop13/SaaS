@@ -1,11 +1,18 @@
 import { View, Text, Pressable, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
+import { useState } from "react";
+import { Alert } from "react-native";
 import { useStore, visibleSkills, type Child } from "@/lib/store";
-import { SKILLS, findSkill } from "@/lib/lessons";
+import { findSkill } from "@/lib/lessons";
 import { Button, Loading, ProgressBar } from "@/components/ui";
 import LeoImage from "@/components/LeoImage";
 import { hapticLight } from "@/lib/haptics";
+import {
+  requestNotifPermission,
+  scheduleDailyReminder,
+  cancelDailyReminder,
+} from "@/lib/notifications";
 
 /**
  * Parent dashboard — the grown-up's view: progress at a glance, the current
@@ -14,7 +21,8 @@ import { hapticLight } from "@/lib/haptics";
  */
 export default function Parent() {
   const router = useRouter();
-  const { ready, state, activeChild, setActiveChild } = useStore();
+  const { ready, state, activeChild, setActiveChild, setReminders } = useStore();
+  const [busy, setBusy] = useState(false);
 
   if (!ready) return <Loading />;
   if (!activeChild) {
@@ -37,6 +45,33 @@ export default function Parent() {
     (n, p) => n + Math.min(3, p.stars),
     0,
   );
+
+  async function toggleReminder() {
+    if (busy) return;
+    setBusy(true);
+    hapticLight();
+    try {
+      if (child.remindersEnabled) {
+        await cancelDailyReminder();
+        setReminders(child.id, false);
+      } else {
+        const ok = await requestNotifPermission();
+        if (!ok) {
+          Alert.alert(
+            "Notifications off",
+            "Turn on notifications for Sona in your phone's Settings to get daily reminders.",
+          );
+          setBusy(false);
+          return;
+        }
+        const hour = 17;
+        await scheduleDailyReminder(child.name, hour, 0);
+        setReminders(child.id, true);
+      }
+    } finally {
+      setBusy(false);
+    }
+  }
 
   return (
     <SafeAreaView className="flex-1 bg-polar" edges={["top", "bottom"]}>
@@ -154,6 +189,38 @@ export default function Parent() {
             </Text>
           </Pressable>
         </View>
+
+        {/* Settings */}
+        <Text className="mb-2 mt-7 px-1 text-base font-extrabold font-display text-ink">
+          Settings
+        </Text>
+        <Pressable
+          onPress={toggleReminder}
+          disabled={busy}
+          className="flex-row items-center gap-3 rounded-4xl bg-white px-4 py-3.5"
+        >
+          <Text className="text-2xl">🔔</Text>
+          <View className="flex-1">
+            <Text className="text-base font-extrabold font-display text-ink">
+              Daily reminder
+            </Text>
+            <Text className="text-xs font-bold font-heading text-wolf">
+              {child.remindersEnabled
+                ? "On — a gentle nudge at 5:00 PM"
+                : "Off — turn on a daily practice nudge"}
+            </Text>
+          </View>
+          {/* pill toggle */}
+          <View
+            className="h-7 w-12 justify-center rounded-full px-0.5"
+            style={{ backgroundColor: child.remindersEnabled ? "#58cc02" : "#e5e5e5" }}
+          >
+            <View
+              className="h-6 w-6 rounded-full bg-white"
+              style={{ alignSelf: child.remindersEnabled ? "flex-end" : "flex-start" }}
+            />
+          </View>
+        </Pressable>
 
         {/* Credit */}
         <View className="mt-8 flex-row items-center justify-center gap-2 px-6">

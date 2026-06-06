@@ -115,6 +115,7 @@ type StoreValue = {
   ) => Child;
   setParent: (parent: { name: string; email: string }) => void;
   setChildFocus: (childId: string, focusAreas: string[]) => void;
+  setReminders: (childId: string, enabled: boolean) => void;
   recordLessonComplete: (
     childId: string,
     lessonId: string,
@@ -199,6 +200,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         mutate((s) => {
           const c = s.children.find((x) => x.id === childId);
           if (c) c.focusAreas = focusAreas;
+        }),
+      setReminders: (childId, enabled) =>
+        mutate((s) => {
+          const c = s.children.find((x) => x.id === childId);
+          if (c) c.remindersEnabled = enabled;
         }),
       recordLessonComplete: (childId, lessonId, result) =>
         mutate((s) => {
