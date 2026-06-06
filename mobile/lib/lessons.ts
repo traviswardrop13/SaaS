@@ -1235,6 +1235,36 @@ export function diagnosticToFocus(challengeIds: string[]): string[] {
   return Array.from(out);
 }
 
+/**
+ * Developmental order (early-acquired → late-acquired) used to sequence a
+ * child's plan so they start with achievable sounds. Lower = earlier. Roughly
+ * follows typical English acquisition norms; ties keep their natural grouping.
+ */
+const DEV_RANK: Record<string, number> = {
+  "k-sounds": 1,
+  "g-sounds": 1,
+  "f-sounds": 2,
+  "final-sounds": 2,
+  "s-sounds": 3,
+  "l-sounds": 3,
+  "sh-sounds": 4,
+  "ch-sounds": 4,
+  "s-blends": 5,
+  "l-blends": 5,
+  "r-sounds": 6,
+  "th-sounds": 6,
+  "r-blends": 7,
+};
+
+export function skillDevRank(id: string): number {
+  return DEV_RANK[id] ?? 99;
+}
+
+/** All skills, ordered easiest-first by developmental norm. */
+export function skillsInDevOrder(): Skill[] {
+  return [...SKILLS].sort((a, b) => skillDevRank(a.id) - skillDevRank(b.id));
+}
+
 export function skillsByCategory(category: SkillCategory): Skill[] {
   if (category === "fronting") {
     return SKILLS.filter((s) => s.id === "k-sounds" || s.id === "g-sounds");
@@ -1257,10 +1287,14 @@ export function findLesson(
   return { skill, lesson };
 }
 
-/** Stable ordered list of lessons across all skills, for unlock logic. */
+/**
+ * Stable ordered list of lessons across all skills, for unlock logic. Ordered
+ * by developmental rank so the unlock ladder matches the easiest-first order
+ * the home screen shows.
+ */
 export function allLessonsInOrder(): { skillId: string; lessonId: string }[] {
   const out: { skillId: string; lessonId: string }[] = [];
-  for (const skill of SKILLS) {
+  for (const skill of skillsInDevOrder()) {
     for (const lesson of skill.lessons) {
       out.push({ skillId: skill.id, lessonId: lesson.id });
     }

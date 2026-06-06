@@ -89,6 +89,44 @@ export default function Home() {
           className="flex-1"
           contentContainerStyle={{ paddingBottom: 100, paddingTop: 10 }}
         >
+          {/* Personalization: the sound-check screener. Prominent until the
+              child has a plan; a slim "re-check" entry afterwards. */}
+          {(activeChild.focusAreas?.length ?? 0) === 0 ? (
+            <Pressable
+              onPress={() => {
+                hapticLight();
+                router.push("/screener");
+              }}
+              className="mx-4 mb-4 flex-row items-center gap-3 rounded-3xl bg-brand-500 px-4 py-4"
+            >
+              <View className="h-12 w-12 items-center justify-center rounded-2xl bg-white/25">
+                <Text className="text-2xl">🎧</Text>
+              </View>
+              <View className="flex-1">
+                <Text className="text-lg font-extrabold font-display text-white">
+                  Find {activeChild.name}'s sounds
+                </Text>
+                <Text className="text-xs font-bold font-heading text-white/90">
+                  Leo listens and builds a personal plan
+                </Text>
+              </View>
+              <Text className="text-2xl">›</Text>
+            </Pressable>
+          ) : (
+            <Pressable
+              onPress={() => {
+                hapticLight();
+                router.push("/screener");
+              }}
+              className="mx-4 mb-4 flex-row items-center justify-center gap-2 rounded-3xl border-2 border-swan bg-white px-4 py-2.5"
+            >
+              <Text className="text-base">🎧</Text>
+              <Text className="text-sm font-extrabold font-display text-wolf">
+                Re-check sounds
+              </Text>
+            </Pressable>
+          )}
+
           {/* Cross-track entry: the Language product */}
           <Pressable
             onPress={() => {

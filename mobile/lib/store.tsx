@@ -7,7 +7,7 @@ import React, {
   useMemo,
   useState,
 } from "react";
-import { allLessonsInOrder, SKILLS, type Skill } from "./lessons";
+import { allLessonsInOrder, SKILLS, skillDevRank, type Skill } from "./lessons";
 
 /**
  * Persistent app state for Sona. Web used synchronous localStorage; React
@@ -95,8 +95,10 @@ export function isLessonUnlocked(child: Child, lessonId: string): boolean {
 
 export function visibleSkills(child: Child): Skill[] {
   const focus = child.focusAreas ?? [];
-  if (focus.length === 0) return SKILLS;
-  return SKILLS.filter((s) => focus.includes(s.id));
+  const list = focus.length === 0 ? SKILLS : SKILLS.filter((s) => focus.includes(s.id));
+  // Easiest-first, so a child's personalized plan starts with achievable
+  // sounds before late-developing ones (R, TH).
+  return [...list].sort((a, b) => skillDevRank(a.id) - skillDevRank(b.id));
 }
 
 // ───────────────────────── context ─────────────────────────
