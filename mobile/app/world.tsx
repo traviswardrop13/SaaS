@@ -7,7 +7,7 @@ import { WORLD_ITEMS, type WorldItem } from "@/lib/world";
 import { Loading } from "@/components/ui";
 import { hapticNope, hapticUnlock, hapticLight } from "@/lib/haptics";
 import { leoWelcomeWorld, leoPurchaseCheer } from "@/lib/leo";
-import TalkingFace from "@/components/TalkingFace";
+import LeoImage from "@/components/LeoImage";
 import Confetti from "@/components/Confetti";
 
 const SCENE_H = 460;
@@ -147,11 +147,11 @@ export default function World() {
               position: "absolute",
               left: "50%",
               bottom: 8,
-              transform: [{ translateX: -55 }],
+              transform: [{ translateX: -60 }],
               alignItems: "center",
             }}
           >
-            <TalkingFace speaking={false} mood="happy" size={110} />
+            <LeoImage speaking={false} mood="idle" size={120} />
           </View>
 
           {/* celebration burst */}

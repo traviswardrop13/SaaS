@@ -14,7 +14,7 @@ import {
 import { scoreAudio, type CloudScore } from "@/lib/cloudScoring";
 import { useStore } from "@/lib/store";
 import { Button, ProgressBar } from "@/components/ui";
-import TalkingFace, { type Mood } from "@/components/TalkingFace";
+import LeoImage, { type LeoMood } from "@/components/LeoImage";
 import MouthModel from "@/components/MouthModel";
 import { MicIcon } from "@/components/icons";
 import Confetti from "@/components/Confetti";
@@ -140,7 +140,7 @@ export default function Lesson() {
 
   // The mascot reacts to the result: celebrate on great, gently encourage on
   // ok, kindly commiserate on try-again. Neutral otherwise.
-  const mascotMood: Mood =
+  const mascotMood: LeoMood =
     phase === "result" && result
       ? result.rating === "great"
         ? "celebrate"
@@ -268,7 +268,11 @@ export default function Lesson() {
     const coins = COINS_BASE + stars * COINS_PER_STAR;
     return (
       <SafeAreaView className="flex-1 items-center justify-center bg-white px-6">
-        <TalkingFace speaking={false} mood="celebrate" size={170} />
+        <LeoImage
+          speaking={false}
+          mood={stars >= 3 ? "holding-star" : "celebrate"}
+          size={190}
+        />
         <Text className="mt-5 text-3xl font-extrabold text-feather-edge">
           Lesson complete!
         </Text>
@@ -334,7 +338,7 @@ export default function Lesson() {
           </Text>
         </View>
         <View className="mt-2 flex-row items-center gap-2">
-          <TalkingFace speaking={speaking} size={38} />
+          <LeoImage speaking={speaking} size={44} />
           <Text className="text-2xl font-extrabold text-ink">
             Repeat after Leo
           </Text>
@@ -350,7 +354,7 @@ export default function Lesson() {
             sound (lips/teeth/tongue). On the result, Leo reacts. */}
         <View className="mt-1 items-center">
           {phase === "result" ? (
-            <TalkingFace speaking={false} size={200} mood={mascotMood} />
+            <LeoImage speaking={false} size={200} mood={mascotMood} />
           ) : (
             <MouthModel
               sound={lesson.targetSound}

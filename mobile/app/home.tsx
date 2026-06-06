@@ -5,7 +5,6 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { LEVEL_INFO, type Skill, type Lesson } from "@/lib/lessons";
 import { useStore, visibleSkills, isLessonUnlocked, type Child } from "@/lib/store";
 import { Loading, Pill, Button } from "@/components/ui";
-import TalkingFace from "@/components/TalkingFace";
 import { hapticLight } from "@/lib/haptics";
 import { leoGreetHome } from "@/lib/leo";
 

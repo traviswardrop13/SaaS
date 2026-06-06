@@ -15,7 +15,7 @@ import { speak } from "@/lib/speech";
 import { configurePlaybackAudio } from "@/lib/recorder";
 import { talkToLeo, type ChatTurn } from "@/lib/chat";
 import { hapticSelect } from "@/lib/haptics";
-import TalkingFace from "@/components/TalkingFace";
+import LeoImage from "@/components/LeoImage";
 import type { TargetSound } from "@/lib/scoring";
 
 /**
@@ -90,7 +90,7 @@ export default function Talk() {
         >
           <Text className="text-lg font-bold text-hare">✕</Text>
         </Pressable>
-        <TalkingFace speaking={speaking} size={40} />
+        <LeoImage speaking={speaking} size={48} />
         <View className="flex-1">
           <Text className="text-lg font-extrabold text-ink">Talk with Leo</Text>
           <Text className="text-xs font-bold text-hare">

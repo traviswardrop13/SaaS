@@ -1,11 +1,11 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { View, Text, Pressable } from "react-native";
-import TalkingFace from "./TalkingFace";
+import LeoImage from "./LeoImage";
 
 /**
- * Friendly mascot with a chat-bubble caption. The lion does a gentle idle
- * bounce so the onboarding screens feel alive. Used across the native
- * onboarding to mirror the web "Mascot" component.
+ * Friendly mascot with a chat-bubble caption. Leo does a gentle idle bounce
+ * (handled inside LeoImage) so the onboarding screens feel alive. Used across
+ * the native onboarding to mirror the web "Mascot" component.
  */
 export default function Mascot({
   message,
@@ -14,22 +14,13 @@ export default function Mascot({
   message?: string;
   align?: "left" | "center";
 }) {
-  const [offset, setOffset] = useState(0);
-  useEffect(() => {
-    const id = setInterval(() => {
-      setOffset((v) => (v === 0 ? -4 : 0));
-    }, 1100);
-    return () => clearInterval(id);
-  }, []);
   return (
     <View
       className={`w-full flex-row items-end gap-2 ${
         align === "center" ? "justify-center" : "justify-start"
       }`}
     >
-      <View style={{ transform: [{ translateY: offset }] }}>
-        <TalkingFace speaking={false} size={72} />
-      </View>
+      <LeoImage speaking={false} mood="idle" size={76} />
       {message ? (
         <View className="max-w-[260px] flex-1 rounded-3xl rounded-bl-md border-2 border-gray-100 bg-white px-4 py-3">
           <Text className="text-lg font-extrabold text-gray-800">

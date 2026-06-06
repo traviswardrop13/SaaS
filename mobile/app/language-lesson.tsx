@@ -17,7 +17,7 @@ import {
 import { leoLessonCheer } from "@/lib/leo";
 import { useStore } from "@/lib/store";
 import { Button, ProgressBar } from "@/components/ui";
-import TalkingFace from "@/components/TalkingFace";
+import LeoImage from "@/components/LeoImage";
 import Confetti from "@/components/Confetti";
 
 type Phase = "answer" | "feedback" | "done";
@@ -163,7 +163,11 @@ export default function LanguageLesson() {
     const coins = COINS_BASE + stars * COINS_PER_STAR;
     return (
       <SafeAreaView className="flex-1 items-center justify-center bg-white px-6">
-        <TalkingFace speaking={false} mood="celebrate" size={170} />
+        <LeoImage
+          speaking={false}
+          mood={stars >= 3 ? "holding-star" : "celebrate"}
+          size={190}
+        />
         <Text className="mt-5 text-3xl font-extrabold text-feather-edge">
           Lesson complete!
         </Text>
