@@ -1,4 +1,4 @@
-import { useRouter, usePathname } from "expo-router";
+import { useRouter } from "expo-router";
 import { useEffect } from "react";
 import { View, Text, Pressable, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -8,10 +8,9 @@ import { hapticLight } from "@/lib/haptics";
 import { leoGreetHome } from "@/lib/leo";
 
 /**
- * Session-first home. The hero is "today's session" with your coach; progress
- * is a humane weekly goal (not a guilt-inducing daily streak). The gamified
- * skill town + games have receded into the Practice tab — this screen stays
- * focused on the one thing that matters: press go and practice.
+ * Home — deliberately almost nothing. Two things only: start today's session,
+ * and your weekly goal. Everything that isn't those two lives behind the
+ * parent area, so the child's screen never competes with the core loop.
  */
 export default function Home() {
   const router = useRouter();
@@ -39,11 +38,12 @@ export default function Home() {
   const done = weeklySessionCount(child);
   const goal = weeklyGoal(child);
   const hasPlan = (child.focusAreas?.length ?? 0) > 0;
+  const goalMet = done >= goal;
 
   return (
     <View className="flex-1 bg-white">
       <SafeAreaView className="flex-1" edges={["top"]}>
-        {/* Top bar */}
+        {/* Top bar — just the profile + the weekly goal */}
         <View className="flex-row items-center justify-between px-4 pb-3 pt-1">
           <Pressable
             onPress={() => {
@@ -64,7 +64,7 @@ export default function Home() {
 
         <ScrollView
           className="flex-1"
-          contentContainerStyle={{ paddingBottom: 100, paddingTop: 8 }}
+          contentContainerStyle={{ paddingBottom: 32, paddingTop: 8 }}
         >
           {/* Today's session — the hero */}
           <Pressable
@@ -91,12 +91,10 @@ export default function Home() {
                   </Text>
                 </View>
               </View>
-              <View className="mt-4">
-                <View className="items-center rounded-3xl bg-white py-3.5">
-                  <Text className="text-base font-extrabold font-display text-macaw">
-                    ▶  Start session
-                  </Text>
-                </View>
+              <View className="mt-4 items-center rounded-3xl bg-white py-3.5">
+                <Text className="text-base font-extrabold font-display text-macaw">
+                  ▶  Start session
+                </Text>
               </View>
             </View>
           </Pressable>
@@ -108,7 +106,7 @@ export default function Home() {
                 This week
               </Text>
               <Text className="text-sm font-extrabold font-display text-feather-edge">
-                {done >= goal ? "Goal reached! 🎉" : `${done} of ${goal}`}
+                {goalMet ? "Goal reached! 🎉" : `${done} of ${goal}`}
               </Text>
             </View>
             <View className="mt-3 flex-row gap-2">
@@ -120,9 +118,14 @@ export default function Home() {
                 />
               ))}
             </View>
+            <Text className="mt-2.5 text-xs font-bold font-heading text-wolf">
+              {goalMet
+                ? "Amazing consistency this week!"
+                : `${goal - done} more session${goal - done === 1 ? "" : "s"} to hit ${child.name}'s goal.`}
+            </Text>
           </View>
 
-          {/* Find sounds — only if no plan yet */}
+          {/* Find sounds — only until there's a plan (it personalizes sessions) */}
           {!hasPlan ? (
             <Pressable
               onPress={() => {
@@ -145,71 +148,8 @@ export default function Home() {
               <Text className="text-2xl text-white">›</Text>
             </Pressable>
           ) : null}
-
-          {/* Extra practice → the Practice tab */}
-          <Pressable
-            onPress={() => {
-              hapticLight();
-              router.push("/library");
-            }}
-            className="mx-4 mt-4 flex-row items-center gap-3 rounded-4xl border-2 border-swan bg-white px-4 py-3.5"
-          >
-            <View className="h-11 w-11 items-center justify-center rounded-3xl bg-polar">
-              <Text className="text-xl">🎯</Text>
-            </View>
-            <View className="flex-1">
-              <Text className="text-base font-extrabold font-display text-ink">
-                Extra practice
-              </Text>
-              <Text className="text-xs font-bold font-heading text-wolf">
-                Games &amp; sound-by-sound practice
-              </Text>
-            </View>
-            <Text className="text-xl text-hare">›</Text>
-          </Pressable>
         </ScrollView>
-
-        <BottomNav />
       </SafeAreaView>
-    </View>
-  );
-}
-
-function BottomNav() {
-  const router = useRouter();
-  const pathname = usePathname();
-  const tabs: { icon: string; label: string; path: "/home" | "/library" | "/parent" }[] = [
-    { icon: "🏠", label: "Home", path: "/home" },
-    { icon: "🎯", label: "Practice", path: "/library" },
-    { icon: "👤", label: "Parent", path: "/parent" },
-  ];
-  return (
-    <View className="absolute bottom-0 left-0 right-0 border-t-2 border-swan bg-white">
-      <View className="flex-row items-center justify-around px-2 py-2">
-        {tabs.map((t, i) => {
-          const active = pathname === t.path || (t.path === "/home" && pathname === "/");
-          return (
-            <Pressable
-              key={i}
-              onPress={() => {
-                if (active) return;
-                hapticLight();
-                router.push(t.path);
-              }}
-              className={`flex-1 items-center rounded-2xl py-2 ${active ? "bg-macaw-50" : ""}`}
-            >
-              <Text className="text-2xl">{t.icon}</Text>
-              <Text
-                className={`mt-0.5 text-[10px] font-extrabold font-display uppercase tracking-wider ${
-                  active ? "text-macaw" : "text-hare"
-                }`}
-              >
-                {t.label}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
     </View>
   );
 }

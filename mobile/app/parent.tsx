@@ -180,6 +180,24 @@ export default function Parent() {
               router.push("/screener");
             }}
           />
+          <Pressable
+            onPress={() => {
+              hapticLight();
+              router.push("/library");
+            }}
+            className="flex-row items-center gap-3 rounded-4xl border-2 border-swan bg-white px-4 py-3"
+          >
+            <Text className="text-xl">🎯</Text>
+            <View className="flex-1">
+              <Text className="text-base font-extrabold font-display text-ink">
+                Extra practice
+              </Text>
+              <Text className="text-xs font-bold font-heading text-wolf">
+                Optional games &amp; sound-by-sound activities
+              </Text>
+            </View>
+            <Text className="text-xl text-hare">›</Text>
+          </Pressable>
         </View>
 
         {/* Profiles */}
