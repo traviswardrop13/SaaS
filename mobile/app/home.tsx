@@ -1,25 +1,23 @@
 import { useRouter, usePathname } from "expo-router";
-import { useEffect, type ReactNode } from "react";
-import { View, Text, Pressable, ScrollView } from "react-native";
+import { useEffect, useRef } from "react";
+import { View, Text, Pressable, ScrollView, Animated } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { LEVEL_INFO, type Skill, type Lesson } from "@/lib/lessons";
+import { type Skill } from "@/lib/lessons";
 import { useStore, visibleSkills, isLessonUnlocked, type Child } from "@/lib/store";
-import { Loading, Pill, Button, Coin } from "@/components/ui";
+import { Loading, Button, Coin } from "@/components/ui";
 import { hapticLight } from "@/lib/haptics";
 import { leoGreetHome } from "@/lib/leo";
-import { pairSetsForFocus } from "@/lib/minimalPairs";
 
-// Horizontal offsets that make the node column gently wind like a path.
-const OFFSETS = [0, 60, 88, 60, 0, -60, -88, -60];
-
-type NodeState = "locked" | "current" | "done" | "available";
-
+/**
+ * Town overview — the home. Stripped down per ABC-style design: minimal text,
+ * each skill is a single "building" tile, no inline lesson trails. Tapping a
+ * building opens its own screen (the path with locks). The cross-tracks
+ * (Library, Leo's World, parent dashboard) live in the top-right + bottom nav.
+ */
 export default function Home() {
   const router = useRouter();
   const { ready, activeChild } = useStore();
 
-  // Leo greets the kid by name the first time Home loads this session — the
-  // Khan Academy Kids cue that makes a non-reader feel oriented.
   useEffect(() => {
     if (ready && activeChild) {
       leoGreetHome(activeChild.name, activeChild.id);
@@ -40,46 +38,23 @@ export default function Home() {
   }
 
   const skills = visibleSkills(activeChild);
-
-  // The single "current" lesson — first unlocked one not yet mastered — gets
-  // the progress ring + START banner. The next unlocked one is "available".
-  let currentLessonId: string | null = null;
-  outer: for (const skill of skills) {
-    for (const lesson of skill.lessons) {
-      const unlocked = isLessonUnlocked(activeChild, lesson.id);
-      const stars = activeChild.progress[lesson.id]?.stars ?? 0;
-      if (unlocked && stars < 2) {
-        currentLessonId = lesson.id;
-        break outer;
-      }
-    }
-  }
+  const hasPlan = (activeChild.focusAreas?.length ?? 0) > 0;
 
   return (
     <View className="flex-1 bg-white">
       <SafeAreaView className="flex-1" edges={["top"]}>
-        {/* Header */}
-        <View className="flex-row items-center justify-between border-b-2 border-swan px-4 pb-3 pt-1">
+        {/* Top bar — icon-driven, minimal text */}
+        <View className="flex-row items-center justify-between px-4 pb-3 pt-1">
           <Pressable
             onPress={() => {
               hapticLight();
               router.push("/parent");
             }}
-            className="flex-row items-center gap-2"
+            className="h-11 w-11 items-center justify-center rounded-2xl border-2 border-swan bg-polar"
           >
-            <View className="h-10 w-10 items-center justify-center rounded-2xl border-2 border-swan bg-polar">
-              <Text className="text-xl">{activeChild.avatar || "🦁"}</Text>
-            </View>
-            <View>
-              <Text className="text-base font-extrabold font-display text-ink">
-                {activeChild.name}
-              </Text>
-              <Text className="text-[11px] font-extrabold font-display uppercase tracking-wider text-hare">
-                Parent ›
-              </Text>
-            </View>
+            <Text className="text-2xl">{activeChild.avatar || "🦁"}</Text>
           </Pressable>
-          <View className="flex-row gap-2">
+          <View className="flex-row items-center gap-2">
             <StatChip icon="🔥" value={String(activeChild.streak)} color="#ff9600" />
             <Pressable
               onPress={() => {
@@ -89,183 +64,65 @@ export default function Home() {
             >
               <StatChip iconNode={<Coin size={16} />} value={String(activeChild.coins ?? 0)} color="#e0a800" />
             </Pressable>
+            <Pressable
+              onPress={() => {
+                hapticLight();
+                router.push("/library");
+              }}
+              className="h-11 w-11 items-center justify-center rounded-2xl border-2 border-macaw bg-macaw-50"
+            >
+              <Text className="text-xl">📚</Text>
+            </Pressable>
           </View>
         </View>
 
         <ScrollView
           className="flex-1"
-          contentContainerStyle={{ paddingBottom: 100, paddingTop: 10 }}
+          contentContainerStyle={{ paddingBottom: 100, paddingTop: 6 }}
         >
-          {/* Personalization: the sound-check screener. Prominent until the
-              child has a plan; a slim "re-check" entry afterwards. */}
-          {(activeChild.focusAreas?.length ?? 0) === 0 ? (
+          {/* Find sounds — prominent ONLY when there's no plan yet */}
+          {!hasPlan ? (
             <Pressable
               onPress={() => {
                 hapticLight();
                 router.push("/screener");
               }}
-              className="mx-4 mb-4 flex-row items-center gap-3 rounded-3xl bg-brand-500 px-4 py-4"
+              className="mx-4 mb-4 flex-row items-center gap-3 rounded-4xl bg-brand-500 px-4 py-4"
             >
               <View className="h-12 w-12 items-center justify-center rounded-2xl bg-white/25">
                 <Text className="text-2xl">🎧</Text>
               </View>
               <View className="flex-1">
                 <Text className="text-lg font-extrabold font-display text-white">
-                  Find {activeChild.name}'s sounds
+                  Find {activeChild.name}&apos;s sounds
                 </Text>
                 <Text className="text-xs font-bold font-heading text-white/90">
                   Leo listens and builds a personal plan
                 </Text>
               </View>
-              <Text className="text-2xl">›</Text>
+              <Text className="text-2xl text-white">›</Text>
             </Pressable>
-          ) : (
-            <Pressable
-              onPress={() => {
-                hapticLight();
-                router.push("/screener");
-              }}
-              className="mx-4 mb-4 flex-row items-center justify-center gap-2 rounded-3xl border-2 border-swan bg-white px-4 py-2.5"
-            >
-              <Text className="text-base">🎧</Text>
-              <Text className="text-sm font-extrabold font-display text-wolf">
-                Re-check sounds
-              </Text>
-            </Pressable>
-          )}
+          ) : null}
 
-          {/* Cross-track entry: the Language product */}
-          <Pressable
-            onPress={() => {
-              hapticLight();
-              router.push("/language");
-            }}
-            className="mx-4 mb-4 flex-row items-center gap-3 rounded-3xl border-2 border-swan bg-polar px-4 py-3"
-          >
-            <View className="h-11 w-11 items-center justify-center rounded-2xl bg-grass-500">
-              <Text className="text-xl">🧠</Text>
-            </View>
-            <View className="flex-1">
-              <Text className="text-base font-extrabold font-display text-ink">
-                Language practice
-              </Text>
-              <Text className="text-xs font-bold font-heading text-wolf">
-                Words, questions & sentences
-              </Text>
-            </View>
-            <Text className="rounded-full bg-grass-500 px-2 py-0.5 text-[10px] font-extrabold font-display uppercase tracking-wide text-white">
-              New
-            </Text>
-          </Pressable>
-
-          {/* Reward loop: spend earned coins to build Leo's World */}
-          <Pressable
-            onPress={() => {
-              hapticLight();
-              router.push("/world");
-            }}
-            className="mx-4 mb-4 flex-row items-center gap-3 rounded-3xl border-2 border-bee-edge bg-bee-50 px-4 py-3"
-          >
-            <View className="h-11 w-11 items-center justify-center rounded-2xl bg-bee">
-              <Text className="text-xl">🌳</Text>
-            </View>
-            <View className="flex-1">
-              <Text className="text-base font-extrabold font-display text-ink">
-                Leo's World
-              </Text>
-              <Text className="text-xs font-bold font-heading text-wolf">
-                Spend coins to build Leo's backyard
-              </Text>
-            </View>
-            <View className="flex-row items-center gap-1 rounded-full bg-white px-2.5 py-1">
-              <Coin size={15} />
-              <Text className="text-sm font-extrabold font-display text-bee-edge">
-                {activeChild.coins ?? 0}
-              </Text>
-            </View>
-          </Pressable>
-
-          {skills.map((skill) => (
-            <SkillSection
-              key={skill.id}
-              skill={skill}
-              child={activeChild}
-              currentLessonId={currentLessonId}
-              onOpen={(lesson) => {
-                hapticLight();
-                router.push({
-                  pathname: "/lesson",
-                  params: { skillId: skill.id, lessonId: lesson.id },
-                });
-              }}
-              onListen={() => {
-                hapticLight();
-                router.push({
-                  pathname: "/listen",
-                  params: { skillId: skill.id },
-                });
-              }}
-            />
-          ))}
-
-          {/* Sound Match — minimal-pairs listening games tied to the plan */}
-          <SoundMatchSection
-            focusAreas={activeChild.focusAreas ?? []}
-            onOpen={(setId) => {
-              hapticLight();
-              router.push({ pathname: "/minimal-pair", params: { setId } });
-            }}
-          />
+          {/* The town — one building per skill */}
+          <View className="px-3">
+            {skills.map((skill, i) => (
+              <Building
+                key={skill.id}
+                skill={skill}
+                child={activeChild}
+                index={i}
+                onOpen={() => {
+                  hapticLight();
+                  router.push({ pathname: "/skill/[id]", params: { id: skill.id } });
+                }}
+              />
+            ))}
+          </View>
         </ScrollView>
 
         <BottomNav />
       </SafeAreaView>
-    </View>
-  );
-}
-
-function SoundMatchSection({
-  focusAreas,
-  onOpen,
-}: {
-  focusAreas: string[];
-  onOpen: (setId: string) => void;
-}) {
-  const sets = pairSetsForFocus(focusAreas);
-  if (sets.length === 0) return null;
-  return (
-    <View className="mx-3 mb-8 mt-1">
-      <View className="mb-3 flex-row items-center gap-2 px-2">
-        <Text className="text-xl">🎧</Text>
-        <Text className="text-lg font-extrabold font-display text-ink">
-          Sound Match
-        </Text>
-        <Text className="text-xs font-bold font-heading text-hare">
-          listening games
-        </Text>
-      </View>
-      <View className="gap-3">
-        {sets.map((s) => (
-          <Pressable
-            key={s.id}
-            onPress={() => onOpen(s.id)}
-            className="flex-row items-center gap-3 rounded-4xl border-2 border-macaw bg-macaw-50 px-4 py-3"
-          >
-            <View className="h-11 w-11 items-center justify-center rounded-3xl bg-white">
-              <Text className="text-2xl">{s.emoji}</Text>
-            </View>
-            <View className="flex-1">
-              <Text className="text-base font-extrabold font-display text-ink">
-                {s.title}
-              </Text>
-              <Text className="text-xs font-bold font-heading text-wolf">
-                {s.process}
-              </Text>
-            </View>
-            <Text className="text-xl text-macaw">▶</Text>
-          </Pressable>
-        ))}
-      </View>
     </View>
   );
 }
@@ -277,12 +134,12 @@ function StatChip({
   color,
 }: {
   icon?: string;
-  iconNode?: ReactNode;
+  iconNode?: React.ReactNode;
   value: string;
   color: string;
 }) {
   return (
-    <View className="flex-row items-center gap-1 rounded-xl border-2 border-swan bg-white px-2.5 py-1">
+    <View className="flex-row items-center gap-1 rounded-xl border-2 border-swan bg-white px-2.5 py-1.5">
       {iconNode ?? <Text className="text-base">{icon}</Text>}
       <Text className="text-base font-extrabold font-display" style={{ color }}>
         {value}
@@ -291,277 +148,134 @@ function StatChip({
   );
 }
 
-function SkillSection({
+/**
+ * A "town building" tile — the icon-driven, text-free home representation of
+ * one skill. Tap → opens the inside-a-level path screen.
+ */
+function Building({
   skill,
   child,
-  currentLessonId,
+  index,
   onOpen,
-  onListen,
 }: {
   skill: Skill;
   child: Child;
-  currentLessonId: string | null;
-  onOpen: (lesson: Lesson) => void;
-  onListen: () => void;
+  index: number;
+  onOpen: () => void;
 }) {
-  // Each skill is a "land" in Leo's world: a chunky rounded panel with a soft
-  // sky above and grass below, a signpost, and the winding trail of stops.
   const land = skillLandTint(skill.color);
-  const doneCount = skill.lessons.filter(
-    (l) => (child.progress[l.id]?.stars ?? 0) >= 2,
-  ).length;
-  return (
-    <View
-      className="mx-3 mb-6 overflow-hidden rounded-5xl"
-      style={{ backgroundColor: land.sky }}
-    >
-      {/* grass band */}
-      <View
-        style={{
-          position: "absolute",
-          left: 0,
-          right: 0,
-          bottom: 0,
-          height: "46%",
-          backgroundColor: land.grass,
-        }}
-      />
-      {/* scenery */}
-      <Text style={{ position: "absolute", right: 18, top: 14, fontSize: 28 }}>
-        ☁️
-      </Text>
-      <Text style={{ position: "absolute", left: 10, bottom: 14, fontSize: 40 }}>
-        🌳
-      </Text>
-      <Text style={{ position: "absolute", right: 14, bottom: 10, fontSize: 26 }}>
-        🌷
-      </Text>
-
-      {/* signpost header */}
-      <View className="flex-row items-center gap-3 px-5 pb-2 pt-5">
-        <View className="h-14 w-14 items-center justify-center rounded-4xl bg-white/75">
-          <Text style={{ fontSize: 30 }}>{skill.emoji}</Text>
-        </View>
-        <View className="flex-1">
-          <Text
-            className="text-[11px] font-extrabold font-display uppercase tracking-widest"
-            style={{ color: land.label }}
-          >
-            {doneCount}/{skill.lessons.length} stops
-          </Text>
-          <Text className="text-2xl font-extrabold font-display text-ink">
-            {skill.title}
-          </Text>
-        </View>
-        <Pressable
-          onPress={onListen}
-          className="flex-row items-center gap-1 rounded-full bg-white/80 px-3 py-1.5"
-        >
-          <Text className="text-sm">👂</Text>
-          <Text className="text-xs font-extrabold font-display" style={{ color: land.label }}>
-            Listen
-          </Text>
-        </Pressable>
-      </View>
-
-      {/* winding trail of stops */}
-      <View className="items-center pb-7 pt-1">
-        {skill.lessons.map((lesson, i) => {
-          const unlocked = isLessonUnlocked(child, lesson.id);
-          const stars = child.progress[lesson.id]?.stars ?? 0;
-          const isCurrent = lesson.id === currentLessonId;
-          const state: NodeState = !unlocked
-            ? "locked"
-            : stars >= 2
-              ? "done"
-              : isCurrent
-                ? "current"
-                : "available";
-          const ringProgress =
-            state === "current"
-              ? (child.progress[lesson.id]?.bestScore ?? 0) / 100
-              : 0;
-          return (
-            <View
-              key={lesson.id}
-              style={{ transform: [{ translateX: OFFSETS[i % OFFSETS.length] }] }}
-              className="my-3 items-center"
-            >
-              <LessonNode
-                state={state}
-                isCurrent={isCurrent}
-                level={LEVEL_INFO[lesson.level].short}
-                stars={stars}
-                ringProgress={ringProgress}
-                onPress={() => unlocked && onOpen(lesson)}
-              />
-            </View>
-          );
-        })}
-      </View>
-    </View>
+  const earnedStars = skill.lessons.reduce(
+    (n, l) => n + Math.min(3, child.progress[l.id]?.stars ?? 0),
+    0,
   );
-}
+  const totalStars = skill.lessons.length * 3;
+  const allLocked = skill.lessons.every(
+    (l) => !isLessonUnlocked(child, l.id),
+  );
 
-/** Soft per-skill "land" palette: a tinted sky, grass, and signpost label. */
-function skillLandTint(bg: string): {
-  sky: string;
-  grass: string;
-  label: string;
-} {
-  if (bg.includes("sky")) return { sky: "#eaf6ff", grass: "#cdeeb0", label: "#1899d6" };
-  if (bg.includes("brand")) return { sky: "#fff3ea", grass: "#ffdcb8", label: "#c2410c" };
-  if (bg.includes("grass")) return { sky: "#eefce2", grass: "#c5ebab", label: "#58a700" };
-  return { sky: "#f3f2ff", grass: "#dfe6c8", label: "#7c6fd6" };
-}
-
-function LessonNode({
-  state,
-  isCurrent,
-  level,
-  stars,
-  ringProgress,
-  onPress,
-}: {
-  state: NodeState;
-  isCurrent: boolean;
-  level: string;
-  stars: number;
-  ringProgress: number;
-  onPress: () => void;
-}) {
-  const SIZE = isCurrent ? 96 : 84;
-  const palette =
-    state === "done"
-      ? { face: "#58cc02", edge: "#58a700" }
-      : state === "current" || state === "available"
-        ? { face: "#ff9600", edge: "#e08600" }
-        : { face: "#e5e5e5", edge: "#cfcfcf" };
-
-  const icon =
-    state === "locked"
-      ? "🔒"
-      : state === "done"
-        ? "⭐"
-        : "🎤";
+  // Idle bob — odd buildings sway opposite for variety.
+  const bob = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    const dir = index % 2 === 0 ? 1 : -1;
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(bob, { toValue: 1, duration: 1800, useNativeDriver: true }),
+        Animated.timing(bob, { toValue: 0, duration: 1800, useNativeDriver: true }),
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const translateY = bob.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, index % 2 === 0 ? -4 : 4],
+  });
 
   return (
-    <View className="items-center">
-      {isCurrent ? (
-        <View className="mb-2 items-center">
-          <View
-            className="rounded-xl px-3 py-1"
-            style={{ backgroundColor: "#ffffff", borderWidth: 2, borderColor: "#e5e5e5" }}
-          >
-            <Text className="text-[11px] font-extrabold font-display uppercase tracking-wider text-ink">
-              Start
-            </Text>
-          </View>
+    <Pressable onPress={onOpen} disabled={allLocked}>
+      {({ pressed }) => (
+        <View
+          className="mb-4 overflow-hidden rounded-5xl"
+          style={{
+            backgroundColor: land.sky,
+            opacity: allLocked ? 0.55 : 1,
+            transform: [{ scale: pressed ? 0.97 : 1 }],
+            shadowColor: "#3c3c3c",
+            shadowOpacity: 0.1,
+            shadowRadius: 14,
+            shadowOffset: { width: 0, height: 6 },
+            elevation: 4,
+          }}
+        >
+          {/* grass band */}
           <View
             style={{
-              width: 0,
-              height: 0,
-              borderLeftWidth: 6,
-              borderRightWidth: 6,
-              borderTopWidth: 6,
-              borderLeftColor: "transparent",
-              borderRightColor: "transparent",
-              borderTopColor: "#ffffff",
+              position: "absolute",
+              left: 0,
+              right: 0,
+              bottom: 0,
+              height: 60,
+              backgroundColor: land.grass,
             }}
           />
-        </View>
-      ) : null}
+          {/* scenery */}
+          <Text style={{ position: "absolute", right: 18, top: 16, fontSize: 22 }}>
+            ☁️
+          </Text>
+          <Text style={{ position: "absolute", left: 14, top: 18, fontSize: 22 }}>
+            ☁️
+          </Text>
 
-      {/* Progress ring for the active node — a thin track with a green arc
-          that fills as the kid scores higher on this lesson. */}
-      {state === "current" ? (
-        <View
-          style={{
-            position: "absolute",
-            top: 28,
-            width: SIZE + 22,
-            height: SIZE + 22,
-            borderRadius: (SIZE + 22) / 2,
-            borderWidth: 5,
-            borderColor: "#e5e5e5",
-          }}
-        />
-      ) : null}
-      {state === "current" && ringProgress > 0 ? (
-        <View
-          style={{
-            position: "absolute",
-            top: 28,
-            width: SIZE + 22,
-            height: SIZE + 22,
-            borderRadius: (SIZE + 22) / 2,
-            borderWidth: 5,
-            borderColor: "#58cc02",
-            borderRightColor: ringProgress < 0.75 ? "transparent" : "#58cc02",
-            borderBottomColor: ringProgress < 0.5 ? "transparent" : "#58cc02",
-            borderLeftColor: ringProgress < 0.25 ? "transparent" : "#58cc02",
-            transform: [{ rotate: "-45deg" }],
-          }}
-        />
-      ) : null}
-
-      <Pressable onPress={onPress} disabled={state === "locked"}>
-        {({ pressed }) => (
-          <View style={{ backgroundColor: palette.edge, borderRadius: 999 }}>
-            <View
-              className="items-center justify-center rounded-full"
-              style={{
-                width: SIZE,
-                height: SIZE,
-                backgroundColor: palette.face,
-                transform: [{ translateY: pressed ? 6 : 0 }],
-                marginBottom: pressed ? 0 : 7,
-              }}
-            >
-              <Text style={{ fontSize: SIZE * 0.42 }}>
-                {icon}
-              </Text>
-              {/* Tiny level badge so the hierarchy is still visible */}
-              {state !== "locked" ? (
-                <View
-                  className="absolute rounded-full bg-white px-1.5"
-                  style={{ bottom: -4, borderWidth: 2, borderColor: palette.edge }}
-                >
-                  <Text className="text-[10px] font-extrabold font-display" style={{ color: palette.edge }}>
-                    L{level}
-                  </Text>
-                </View>
-              ) : null}
-            </View>
+          {/* the "building" — gently bobs */}
+          <View style={{ height: 200, alignItems: "center", justifyContent: "center" }}>
+            <Animated.View style={{ transform: [{ translateY }] }}>
+              <View
+                style={{
+                  width: 130,
+                  height: 130,
+                  borderRadius: 36,
+                  backgroundColor: "rgba(255,255,255,0.75)",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Text style={{ fontSize: 84 }}>{skill.emoji}</Text>
+              </View>
+            </Animated.View>
           </View>
-        )}
-      </Pressable>
 
-      {/* Stars earned */}
-      {state !== "locked" ? (
-        <View className="mt-3 flex-row gap-0.5">
-          {[0, 1, 2].map((i) => (
-            <Text
-              key={i}
-              className="text-xs"
-              style={{ opacity: i < stars ? 1 : 0.18 }}
-            >
-              ⭐
-            </Text>
-          ))}
+          {/* progress strip — the only text on the tile, tiny */}
+          <View
+            className="flex-row items-center justify-center gap-1 pb-3"
+            style={{ position: "relative", zIndex: 1 }}
+          >
+            {allLocked ? (
+              <Text className="text-xs">🔒</Text>
+            ) : (
+              <>
+                <Text className="text-xs">⭐</Text>
+                <Text
+                  className="text-xs font-extrabold font-display"
+                  style={{ color: land.label }}
+                >
+                  {earnedStars}/{totalStars}
+                </Text>
+              </>
+            )}
+          </View>
         </View>
-      ) : null}
-    </View>
+      )}
+    </Pressable>
   );
 }
 
 function BottomNav() {
   const router = useRouter();
   const pathname = usePathname();
-  // Every tab goes somewhere real — no placeholder self-loops.
-  const tabs: { icon: string; label: string; path: "/home" | "/language" | "/world" }[] = [
+  const tabs: { icon: string; label: string; path: "/home" | "/library" | "/world" }[] = [
     { icon: "🏠", label: "Learn", path: "/home" },
-    { icon: "🧠", label: "Language", path: "/language" },
+    { icon: "📚", label: "Library", path: "/library" },
     { icon: "🦁", label: "Leo's World", path: "/world" },
   ];
   return (
@@ -596,4 +310,11 @@ function BottomNav() {
       </View>
     </View>
   );
+}
+
+function skillLandTint(bg: string): { sky: string; grass: string; label: string } {
+  if (bg.includes("sky")) return { sky: "#eaf6ff", grass: "#cdeeb0", label: "#1899d6" };
+  if (bg.includes("brand")) return { sky: "#fff3ea", grass: "#ffdcb8", label: "#c2410c" };
+  if (bg.includes("grass")) return { sky: "#eefce2", grass: "#c5ebab", label: "#58a700" };
+  return { sky: "#f3f2ff", grass: "#dfe6c8", label: "#7c6fd6" };
 }
