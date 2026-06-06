@@ -231,33 +231,59 @@ function SkillSection({
   currentLessonId: string | null;
   onOpen: (lesson: Lesson) => void;
 }) {
-  // Section banner is a chunky 3D card with title hierarchy mirroring
-  // Duolingo's section/unit pattern.
-  const bannerEdge = skillEdgeColor(skill.color);
+  // Each skill is a "land" in Leo's world: a chunky rounded panel with a soft
+  // sky above and grass below, a signpost, and the winding trail of stops.
+  const land = skillLandTint(skill.color);
+  const doneCount = skill.lessons.filter(
+    (l) => (child.progress[l.id]?.stars ?? 0) >= 2,
+  ).length;
   return (
-    <View className="mb-5">
-      {/* Section banner */}
-      <View className="mx-4 mb-5" style={{ backgroundColor: bannerEdge, borderRadius: 20 }}>
-        <View
-          className={`flex-row items-center gap-3 rounded-[20px] px-4 py-3 ${skill.color}`}
-          style={{ marginBottom: 4 }}
-        >
-          <View className="flex-1">
-            <Text className="text-[11px] font-extrabold font-display uppercase tracking-widest text-white/80">
-              Skill · {skill.lessons.length} lessons
-            </Text>
-            <Text className="mt-0.5 text-2xl font-extrabold font-display text-white">
-              {skill.title}
-            </Text>
-          </View>
-          <View className="h-12 w-12 items-center justify-center rounded-2xl bg-white/25">
-            <Text className="text-2xl">{skill.emoji}</Text>
-          </View>
+    <View
+      className="mx-3 mb-6 overflow-hidden rounded-5xl"
+      style={{ backgroundColor: land.sky }}
+    >
+      {/* grass band */}
+      <View
+        style={{
+          position: "absolute",
+          left: 0,
+          right: 0,
+          bottom: 0,
+          height: "46%",
+          backgroundColor: land.grass,
+        }}
+      />
+      {/* scenery */}
+      <Text style={{ position: "absolute", right: 18, top: 14, fontSize: 28 }}>
+        ☁️
+      </Text>
+      <Text style={{ position: "absolute", left: 10, bottom: 14, fontSize: 40 }}>
+        🌳
+      </Text>
+      <Text style={{ position: "absolute", right: 14, bottom: 10, fontSize: 26 }}>
+        🌷
+      </Text>
+
+      {/* signpost header */}
+      <View className="flex-row items-center gap-3 px-5 pb-2 pt-5">
+        <View className="h-14 w-14 items-center justify-center rounded-4xl bg-white/75">
+          <Text style={{ fontSize: 30 }}>{skill.emoji}</Text>
+        </View>
+        <View className="flex-1">
+          <Text
+            className="text-[11px] font-extrabold font-display uppercase tracking-widest"
+            style={{ color: land.label }}
+          >
+            {doneCount}/{skill.lessons.length} stops
+          </Text>
+          <Text className="text-2xl font-extrabold font-display text-ink">
+            {skill.title}
+          </Text>
         </View>
       </View>
 
-      {/* Path of lesson nodes */}
-      <View className="items-center">
+      {/* winding trail of stops */}
+      <View className="items-center pb-7 pt-1">
         {skill.lessons.map((lesson, i) => {
           const unlocked = isLessonUnlocked(child, lesson.id);
           const stars = child.progress[lesson.id]?.stars ?? 0;
@@ -293,6 +319,18 @@ function SkillSection({
       </View>
     </View>
   );
+}
+
+/** Soft per-skill "land" palette: a tinted sky, grass, and signpost label. */
+function skillLandTint(bg: string): {
+  sky: string;
+  grass: string;
+  label: string;
+} {
+  if (bg.includes("sky")) return { sky: "#eaf6ff", grass: "#cdeeb0", label: "#1899d6" };
+  if (bg.includes("brand")) return { sky: "#fff3ea", grass: "#ffdcb8", label: "#c2410c" };
+  if (bg.includes("grass")) return { sky: "#eefce2", grass: "#c5ebab", label: "#58a700" };
+  return { sky: "#f3f2ff", grass: "#dfe6c8", label: "#7c6fd6" };
 }
 
 function LessonNode({
@@ -476,12 +514,4 @@ function BottomNav() {
       </View>
     </View>
   );
-}
-
-/** Pick a sensible darker edge color from a tailwind bg- class like "bg-sky-500". */
-function skillEdgeColor(bg: string): string {
-  if (bg.includes("sky")) return "#1899d6";
-  if (bg.includes("brand")) return "#c2410c";
-  if (bg.includes("grass")) return "#58a700";
-  return "#3c3c3c";
 }
