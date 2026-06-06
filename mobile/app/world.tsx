@@ -4,7 +4,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useStore } from "@/lib/store";
 import { WORLD_ITEMS, type WorldItem } from "@/lib/world";
-import { Loading } from "@/components/ui";
+import { Loading, Button } from "@/components/ui";
 import { hapticNope, hapticUnlock, hapticLight } from "@/lib/haptics";
 import { leoWelcomeWorld, leoPurchaseCheer } from "@/lib/leo";
 import LeoImage from "@/components/LeoImage";
@@ -27,8 +27,11 @@ export default function World() {
   if (!ready) return <Loading />;
   if (!activeChild) {
     return (
-      <SafeAreaView className="flex-1 items-center justify-center bg-white">
-        <Text className="text-wolf">No profile yet.</Text>
+      <SafeAreaView className="flex-1 items-center justify-center bg-white px-6">
+        <Text className="text-base text-wolf">No profile yet.</Text>
+        <View className="mt-4 w-full max-w-xs">
+          <Button label="Back to home" onPress={() => router.replace("/home")} />
+        </View>
       </SafeAreaView>
     );
   }

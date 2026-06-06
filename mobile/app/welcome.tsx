@@ -101,7 +101,8 @@ export default function Welcome() {
   }
   function back() {
     if (stepIdx > 0) go(-1);
-    else router.back();
+    else if (router.canGoBack()) router.back();
+    else router.replace("/");
   }
 
   function toggleIn(set: Set<string>, id: string): Set<string> {

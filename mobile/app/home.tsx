@@ -400,20 +400,26 @@ function LessonNode({
 function BottomNav() {
   const router = useRouter();
   const pathname = usePathname();
-  const tabs: { icon: string; label: string; path: string }[] = [
+  // Every tab goes somewhere real — no placeholder self-loops.
+  const tabs: { icon: string; label: string; path: "/home" | "/language" | "/world" }[] = [
     { icon: "🏠", label: "Learn", path: "/home" },
-    { icon: "🦁", label: "Lion", path: "/home" }, // placeholder — TODO: profile
-    { icon: "📊", label: "Stats", path: "/home" }, // placeholder — TODO: progress
+    { icon: "🧠", label: "Language", path: "/language" },
+    { icon: "🦁", label: "Leo's World", path: "/world" },
   ];
   return (
     <View className="absolute bottom-0 left-0 right-0 border-t-2 border-swan bg-white">
       <View className="flex-row items-center justify-around px-2 py-2">
         {tabs.map((t, i) => {
-          const active = i === 0 && (pathname === "/home" || pathname === "/");
+          const active =
+            pathname === t.path || (t.path === "/home" && pathname === "/");
           return (
             <Pressable
               key={i}
-              onPress={() => router.push(t.path as never)}
+              onPress={() => {
+                if (active) return;
+                hapticLight();
+                router.push(t.path);
+              }}
               className={`flex-1 items-center rounded-2xl py-2 ${
                 active ? "bg-macaw-50" : ""
               }`}

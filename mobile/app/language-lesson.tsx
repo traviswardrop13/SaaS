@@ -104,7 +104,7 @@ export default function LanguageLesson() {
       <SafeAreaView className="flex-1 items-center justify-center bg-white px-6">
         <Text className="text-lg text-wolf">Lesson not found.</Text>
         <View className="mt-4 w-full max-w-xs">
-          <Button label="Back" onPress={() => router.back()} />
+          <Button label="Back to map" onPress={() => router.replace("/language")} />
         </View>
       </SafeAreaView>
     );

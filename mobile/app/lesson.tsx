@@ -129,7 +129,9 @@ export default function Lesson() {
     return (
       <SafeAreaView className="flex-1 items-center justify-center bg-white px-6">
         <Text className="text-lg text-gray-600">Lesson not found.</Text>
-        <Button label="Back" onPress={() => router.back()} />
+        <View className="mt-4 w-full max-w-xs">
+          <Button label="Back to map" onPress={() => router.replace("/home")} />
+        </View>
       </SafeAreaView>
     );
   }
