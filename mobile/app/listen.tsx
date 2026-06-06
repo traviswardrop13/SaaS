@@ -6,7 +6,7 @@ import { findSkill, type Word } from "@/lib/lessons";
 import { speak } from "@/lib/speech";
 import { configurePlaybackAudio } from "@/lib/recorder";
 import { useStore } from "@/lib/store";
-import { Button, ProgressBar, Loading } from "@/components/ui";
+import { Button, ProgressBar, Loading, Coin } from "@/components/ui";
 import LeoImage from "@/components/LeoImage";
 import { hapticLight, hapticSuccess } from "@/lib/haptics";
 
@@ -112,7 +112,7 @@ export default function Listen() {
           You heard lots of {skill.title}. Now it's your turn!
         </Text>
         <View className="mt-6 flex-row items-center gap-2 rounded-2xl border-2 border-bee-edge bg-bee-50 px-4 py-2.5">
-          <Text className="text-xl">🪙</Text>
+          <Coin size={20} />
           <Text className="text-sm font-extrabold font-display text-ink">
             +{COINS} coins
           </Text>

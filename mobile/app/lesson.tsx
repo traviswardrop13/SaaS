@@ -13,7 +13,7 @@ import {
 } from "@/lib/recorder";
 import { scoreAudio, type CloudScore } from "@/lib/cloudScoring";
 import { useStore } from "@/lib/store";
-import { Button, ProgressBar } from "@/components/ui";
+import { Button, ProgressBar, Coin } from "@/components/ui";
 import LeoImage, { type LeoMood } from "@/components/LeoImage";
 import MouthModel from "@/components/MouthModel";
 import { MicIcon } from "@/components/icons";
@@ -302,7 +302,7 @@ export default function Lesson() {
           onPress={() => router.replace("/world")}
           className="mt-4 flex-row items-center gap-2 rounded-2xl border-2 border-bee-edge bg-bee-50 px-4 py-2.5"
         >
-          <Text className="text-xl">🪙</Text>
+          <Coin size={20} />
           <Text className="text-sm font-extrabold font-display text-ink">
             +{coins} coins — build Leo's World
           </Text>

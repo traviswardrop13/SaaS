@@ -183,3 +183,33 @@ export function Loading() {
     </View>
   );
 }
+
+/** A crisp drawn gold coin — renders identically on every device (the 🪙
+ *  emoji shows as a grey disc on some iOS versions). */
+export function Coin({ size = 18 }: { size?: number }) {
+  return (
+    <View
+      style={{
+        width: size,
+        height: size,
+        borderRadius: size / 2,
+        backgroundColor: "#ffc800",
+        borderWidth: Math.max(1.5, size * 0.12),
+        borderColor: "#e0a800",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      <View
+        style={{
+          width: size * 0.46,
+          height: size * 0.46,
+          borderRadius: size * 0.23,
+          borderWidth: Math.max(1, size * 0.07),
+          borderColor: "#e0a800",
+          opacity: 0.7,
+        }}
+      />
+    </View>
+  );
+}

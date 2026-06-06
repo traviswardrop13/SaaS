@@ -16,7 +16,7 @@ import {
 } from "@/lib/haptics";
 import { leoLessonCheer } from "@/lib/leo";
 import { useStore } from "@/lib/store";
-import { Button, ProgressBar } from "@/components/ui";
+import { Button, ProgressBar, Coin } from "@/components/ui";
 import LeoImage from "@/components/LeoImage";
 import Confetti from "@/components/Confetti";
 
@@ -185,7 +185,7 @@ export default function LanguageLesson() {
           onPress={() => router.replace("/world")}
           className="mt-6 flex-row items-center gap-2 rounded-2xl border-2 border-bee-edge bg-bee-50 px-4 py-2.5"
         >
-          <Text className="text-xl">🪙</Text>
+          <Coin size={20} />
           <Text className="text-sm font-extrabold font-display text-ink">
             +{coins} coins — build Leo's World
           </Text>

@@ -1,11 +1,11 @@
 import { View, Text, Pressable, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { Alert } from "react-native";
 import { useStore, visibleSkills, type Child } from "@/lib/store";
 import { findSkill } from "@/lib/lessons";
-import { Button, Loading, ProgressBar } from "@/components/ui";
+import { Button, Loading, ProgressBar, Coin } from "@/components/ui";
 import LeoImage from "@/components/LeoImage";
 import { hapticLight } from "@/lib/haptics";
 import {
@@ -113,7 +113,7 @@ export default function Parent() {
         <View className="mt-3 flex-row gap-3">
           <StatTile icon="⭐" value={totalStars} label="Stars" color="#ffc800" />
           <StatTile icon="✅" value={mastered} label="Mastered" color="#58cc02" />
-          <StatTile icon="🪙" value={child.coins ?? 0} label="Coins" color="#e0a800" />
+          <StatTile iconNode={<Coin size={22} />} value={child.coins ?? 0} label="Coins" color="#e0a800" />
         </View>
 
         {/* Plan / progress */}
@@ -238,18 +238,20 @@ export default function Parent() {
 
 function StatTile({
   icon,
+  iconNode,
   value,
   label,
   color,
 }: {
-  icon: string;
+  icon?: string;
+  iconNode?: ReactNode;
   value: number;
   label: string;
   color: string;
 }) {
   return (
     <View className="flex-1 items-center rounded-4xl bg-white py-3">
-      <Text className="text-2xl">{icon}</Text>
+      {iconNode ?? <Text className="text-2xl">{icon}</Text>}
       <Text className="mt-1 text-xl font-extrabold font-display" style={{ color }}>
         {value}
       </Text>

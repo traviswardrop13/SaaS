@@ -1,10 +1,10 @@
 import { useRouter, usePathname } from "expo-router";
-import { useEffect } from "react";
+import { useEffect, type ReactNode } from "react";
 import { View, Text, Pressable, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LEVEL_INFO, type Skill, type Lesson } from "@/lib/lessons";
 import { useStore, visibleSkills, isLessonUnlocked, type Child } from "@/lib/store";
-import { Loading, Pill, Button } from "@/components/ui";
+import { Loading, Pill, Button, Coin } from "@/components/ui";
 import { hapticLight } from "@/lib/haptics";
 import { leoGreetHome } from "@/lib/leo";
 import { pairSetsForFocus } from "@/lib/minimalPairs";
@@ -87,7 +87,7 @@ export default function Home() {
                 router.push("/world");
               }}
             >
-              <StatChip icon="🪙" value={String(activeChild.coins ?? 0)} color="#e0a800" />
+              <StatChip iconNode={<Coin size={16} />} value={String(activeChild.coins ?? 0)} color="#e0a800" />
             </Pressable>
           </View>
         </View>
@@ -178,7 +178,7 @@ export default function Home() {
               </Text>
             </View>
             <View className="flex-row items-center gap-1 rounded-full bg-white px-2.5 py-1">
-              <Text className="text-sm">🪙</Text>
+              <Coin size={15} />
               <Text className="text-sm font-extrabold font-display text-bee-edge">
                 {activeChild.coins ?? 0}
               </Text>
@@ -272,16 +272,18 @@ function SoundMatchSection({
 
 function StatChip({
   icon,
+  iconNode,
   value,
   color,
 }: {
-  icon: string;
+  icon?: string;
+  iconNode?: ReactNode;
   value: string;
   color: string;
 }) {
   return (
     <View className="flex-row items-center gap-1 rounded-xl border-2 border-swan bg-white px-2.5 py-1">
-      <Text className="text-base">{icon}</Text>
+      {iconNode ?? <Text className="text-base">{icon}</Text>}
       <Text className="text-base font-extrabold font-display" style={{ color }}>
         {value}
       </Text>

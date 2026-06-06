@@ -4,7 +4,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useStore } from "@/lib/store";
 import { WORLD_ITEMS, type WorldItem } from "@/lib/world";
-import { Loading, Button } from "@/components/ui";
+import { Loading, Button, Coin } from "@/components/ui";
 import { hapticNope, hapticUnlock, hapticLight } from "@/lib/haptics";
 import { leoWelcomeWorld, leoPurchaseCheer } from "@/lib/leo";
 import LeoImage from "@/components/LeoImage";
@@ -76,7 +76,7 @@ export default function World() {
         </Pressable>
         <Text className="text-lg font-extrabold font-display text-ink">Leo's World</Text>
         <View className="flex-row items-center gap-1 rounded-xl border-2 border-swan bg-white px-2.5 py-1">
-          <Text className="text-base">🪙</Text>
+          <Coin size={16} />
           <Text className="text-base font-extrabold font-display text-bee-edge">{coins}</Text>
         </View>
       </View>
@@ -131,7 +131,7 @@ export default function World() {
                     className="mt-0.5 flex-row items-center gap-0.5 rounded-full px-2 py-0.5"
                     style={{ backgroundColor: affordable ? "#fff" : "#f1f1f1" }}
                   >
-                    <Text style={{ fontSize: 11 }}>🪙</Text>
+                    <Coin size={12} />
                     <Text
                       className="text-[11px] font-extrabold font-display"
                       style={{ color: affordable ? "#e0a800" : "#afafaf" }}
@@ -174,7 +174,7 @@ export default function World() {
         </View>
 
         <Text className="mt-4 px-5 text-center text-sm font-bold font-heading text-wolf">
-          Tap a faded item to add it with coins. Earn coins by practicing! 🪙
+          Tap a faded item to add it with coins. Earn coins by practicing!
         </Text>
       </ScrollView>
     </SafeAreaView>
