@@ -1,4 +1,5 @@
 import { useRouter, usePathname } from "expo-router";
+import { useEffect } from "react";
 import { View, Text, Pressable, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LEVEL_INFO, type Skill, type Lesson } from "@/lib/lessons";
@@ -6,6 +7,7 @@ import { useStore, visibleSkills, isLessonUnlocked, type Child } from "@/lib/sto
 import { Loading, Pill, Button } from "@/components/ui";
 import TalkingFace from "@/components/TalkingFace";
 import { hapticLight } from "@/lib/haptics";
+import { leoGreetHome } from "@/lib/leo";
 
 // Horizontal offsets that make the node column gently wind like a path.
 const OFFSETS = [0, 60, 88, 60, 0, -60, -88, -60];
@@ -15,6 +17,14 @@ type NodeState = "locked" | "current" | "done" | "available";
 export default function Home() {
   const router = useRouter();
   const { ready, activeChild } = useStore();
+
+  // Leo greets the kid by name the first time Home loads this session — the
+  // Khan Academy Kids cue that makes a non-reader feel oriented.
+  useEffect(() => {
+    if (ready && activeChild) {
+      leoGreetHome(activeChild.name, activeChild.id);
+    }
+  }, [ready, activeChild?.id, activeChild?.name]);
 
   if (!ready) return <Loading />;
 

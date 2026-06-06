@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { View, Text, Pressable, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -6,6 +6,7 @@ import { useStore } from "@/lib/store";
 import { WORLD_ITEMS, type WorldItem } from "@/lib/world";
 import { Loading } from "@/components/ui";
 import { hapticNope, hapticUnlock, hapticLight } from "@/lib/haptics";
+import { leoWelcomeWorld, leoPurchaseCheer } from "@/lib/leo";
 import TalkingFace from "@/components/TalkingFace";
 import Confetti from "@/components/Confetti";
 
@@ -17,6 +18,11 @@ export default function World() {
   const [fireKey, setFireKey] = useState(0);
   const [toast, setToast] = useState<string | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // First time this child arrives in Leo's World, Leo explains it out loud.
+  useEffect(() => {
+    if (ready && activeChild) leoWelcomeWorld(activeChild.id);
+  }, [ready, activeChild?.id]);
 
   if (!ready) return <Loading />;
   if (!activeChild) {
@@ -51,6 +57,7 @@ export default function World() {
       hapticUnlock();
       setFireKey((k) => k + 1);
       flashToast(`You got the ${item.name}! 🎉`);
+      leoPurchaseCheer(item.name);
     }
   }
 

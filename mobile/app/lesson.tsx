@@ -27,6 +27,7 @@ import {
   hapticCoinAward,
   hapticCelebrate,
 } from "@/lib/haptics";
+import { leoLessonCheer } from "@/lib/leo";
 
 type Phase = "prompt" | "listening" | "scoring" | "result" | "done";
 
@@ -111,9 +112,15 @@ export default function Lesson() {
     hapticCelebrate();
     const starsT = setTimeout(() => hapticStarReveal(stars), 380);
     const coinsT = setTimeout(() => hapticCoinAward(), 380 + stars * 220 + 120);
+    // Let the buzz pattern land first, then Leo cheers out loud.
+    const cheerT = setTimeout(
+      () => leoLessonCheer(activeChild?.name),
+      380 + stars * 220 + 300,
+    );
     return () => {
       clearTimeout(starsT);
       clearTimeout(coinsT);
+      clearTimeout(cheerT);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase]);

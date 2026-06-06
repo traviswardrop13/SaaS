@@ -14,6 +14,7 @@ import {
   hapticCoinAward,
   hapticCelebrate,
 } from "@/lib/haptics";
+import { leoLessonCheer } from "@/lib/leo";
 import { useStore } from "@/lib/store";
 import { Button, ProgressBar } from "@/components/ui";
 import TalkingFace from "@/components/TalkingFace";
@@ -61,9 +62,14 @@ export default function LanguageLesson() {
     hapticCelebrate();
     const starsT = setTimeout(() => hapticStarReveal(stars), 380);
     const coinsT = setTimeout(() => hapticCoinAward(), 380 + stars * 220 + 120);
+    const cheerT = setTimeout(
+      () => leoLessonCheer(activeChild?.name),
+      380 + stars * 220 + 300,
+    );
     return () => {
       clearTimeout(starsT);
       clearTimeout(coinsT);
+      clearTimeout(cheerT);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase]);
