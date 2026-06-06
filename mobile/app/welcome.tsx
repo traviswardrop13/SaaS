@@ -50,7 +50,9 @@ export default function Welcome() {
   const [parentName, setParentName] = useState(state.parent?.name ?? "");
   const [childName, setChildName] = useState("");
   const [avatar, setAvatar] = useState(AVATARS[0]);
-  const [path, setPath] = useState<"diagnostic" | "manual" | null>(null);
+  const [path, setPath] = useState<"diagnostic" | "manual" | "screener" | null>(
+    null,
+  );
   const [selectedTiles, setSelectedTiles] = useState<Set<string>>(new Set());
   const [challenges, setChallenges] = useState<Set<string>>(new Set());
   const [focus, setFocus] = useState<Set<string>>(new Set());
@@ -71,8 +73,10 @@ export default function Welcome() {
     base.push("childName", "childAvatar", "pathChoice");
     if (path === "diagnostic") base.push("diagnostic");
     else if (path === "manual") base.push("goalTiles");
+    // The screener picks the focus areas *after* onboarding (the child does an
+    // AI sound check), so skip the in-onboarding focus picker + review.
+    if (path !== "screener") base.push("focusReview");
     base.push(
-      "focusReview",
       "routineIntro",
       "dailyGoal",
       "motivation",
@@ -165,12 +169,17 @@ export default function Welcome() {
   function finish() {
     const child = addChild({
       name: childName.trim() || "Friend",
+      // Screener path leaves focus empty here; the AI sound check fills it in.
+      focusAreas: path === "screener" ? [] : Array.from(focus),
       avatar,
-      focusAreas: Array.from(focus),
       dailyGoalMinutes: dailyGoal,
       remindersEnabled: remindersEnabled ?? false,
     });
-    router.replace({ pathname: "/home", params: { childId: child.id } });
+    if (path === "screener") {
+      router.replace("/screener");
+    } else {
+      router.replace({ pathname: "/home", params: { childId: child.id } });
+    }
   }
 
   return (
@@ -273,6 +282,7 @@ export default function Welcome() {
               dailyGoal={dailyGoal}
               focusCount={focus.size}
               remindersEnabled={remindersEnabled === true}
+              screener={path === "screener"}
             />
           )}
         </ScrollView>
@@ -387,20 +397,27 @@ function PathStep({
   onPick,
 }: {
   childName: string;
-  value: "diagnostic" | "manual" | null;
-  onPick: (v: "diagnostic" | "manual") => void;
+  value: "diagnostic" | "manual" | "screener" | null;
+  onPick: (v: "diagnostic" | "manual" | "screener") => void;
 }) {
   return (
     <View>
       <Mascot message={`Where would you like to start with ${childName}?`} />
       <View className="mt-6">
         <ChoiceCard
+          selected={value === "screener"}
+          onPress={() => onPick("screener")}
+          emoji="🎧"
+          title="Let Leo listen"
+          description={`${childName || "Your child"} names a few pictures and Leo finds the tricky sounds automatically.`}
+          recommended
+        />
+        <ChoiceCard
           selected={value === "diagnostic"}
           onPress={() => onPick("diagnostic")}
           emoji="🧭"
-          title={`Find ${childName || "their"} level`}
-          description={`I'll ask a few questions about ${childName || "your child"}'s speech.`}
-          recommended
+          title="Answer a few questions"
+          description={`I'll ask about ${childName || "your child"}'s speech instead.`}
         />
         <ChoiceCard
           selected={value === "manual"}
@@ -649,11 +666,13 @@ function DoneStep({
   dailyGoal,
   focusCount,
   remindersEnabled,
+  screener,
 }: {
   childName: string;
   dailyGoal: number;
   focusCount: number;
   remindersEnabled: boolean;
+  screener: boolean;
 }) {
   return (
     <View className="items-center pt-6">
@@ -662,16 +681,19 @@ function DoneStep({
         All set!
       </Text>
       <Text className="mt-3 text-center text-base text-gray-600">
-        {childName || "Your child"} is ready to roar. Tap below to open their
-        map and start the first lesson.
+        {screener
+          ? `${childName || "Your child"} is ready! Next, Leo will listen to find the tricky sounds.`
+          : `${childName || "Your child"} is ready to roar. Tap below to open their map and start the first lesson.`}
       </Text>
       <View className="mt-6 flex-row flex-wrap justify-center gap-2">
         <RecapPill text={`${dailyGoal} min/day`} />
         <RecapPill
           text={
-            focusCount > 0
-              ? `${focusCount} goal${focusCount === 1 ? "" : "s"} picked`
-              : "All goals available"
+            screener
+              ? "🎧 Sound check next"
+              : focusCount > 0
+                ? `${focusCount} goal${focusCount === 1 ? "" : "s"} picked`
+                : "All goals available"
           }
         />
         {remindersEnabled ? <RecapPill text="🔔 Reminders on" /> : null}
