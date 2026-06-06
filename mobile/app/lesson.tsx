@@ -13,7 +13,7 @@ import {
 } from "@/lib/recorder";
 import { scoreAudio, type CloudScore } from "@/lib/cloudScoring";
 import { useStore } from "@/lib/store";
-import { Button, ProgressBar, Coin } from "@/components/ui";
+import { Button, ProgressBar } from "@/components/ui";
 import LeoImage, { type LeoMood } from "@/components/LeoImage";
 import MouthModel from "@/components/MouthModel";
 import { MicIcon } from "@/components/icons";
@@ -267,7 +267,6 @@ export default function Lesson() {
     const avg = scores.reduce((a, b) => a + b, 0) / Math.max(1, scores.length);
     const stars = avg >= 0.85 ? 3 : avg >= 0.65 ? 2 : 1;
     const xp = 10 + stars * 5;
-    const coins = COINS_BASE + stars * COINS_PER_STAR;
     return (
       <SafeAreaView className="flex-1 items-center justify-center bg-white px-6">
         <LeoImage
@@ -295,19 +294,9 @@ export default function Lesson() {
         <View className="mt-7 w-full max-w-sm flex-row gap-3">
           <Stat label="Stars" value={`${stars}/3`} />
           <Stat label="XP" value={`+${xp}`} />
-          <Stat label="Coins" value={`+${coins}`} />
+          <Stat label="Accuracy" value={`${Math.round(avg * 100)}%`} />
         </View>
-        {/* Coins earned → nudge toward the reward loop */}
-        <Pressable
-          onPress={() => router.replace("/world")}
-          className="mt-4 flex-row items-center gap-2 rounded-2xl border-2 border-bee-edge bg-bee-50 px-4 py-2.5"
-        >
-          <Coin size={20} />
-          <Text className="text-sm font-extrabold font-display text-ink">
-            +{coins} coins — build Leo's World
-          </Text>
-        </Pressable>
-        <View className="mt-6 w-full max-w-sm">
+        <View className="mt-7 w-full max-w-sm">
           <Button
             label="Back to map"
             onPress={() => router.replace("/home")}

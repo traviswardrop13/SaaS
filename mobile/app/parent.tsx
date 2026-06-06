@@ -3,9 +3,15 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useState, type ReactNode } from "react";
 import { Alert } from "react-native";
-import { useStore, visibleSkills, type Child } from "@/lib/store";
+import {
+  useStore,
+  visibleSkills,
+  weeklySessionCount,
+  weeklyGoal,
+  type Child,
+} from "@/lib/store";
 import { findSkill } from "@/lib/lessons";
-import { Button, Loading, ProgressBar, Coin } from "@/components/ui";
+import { Button, Loading, ProgressBar } from "@/components/ui";
 import LeoImage from "@/components/LeoImage";
 import { hapticLight } from "@/lib/haptics";
 import {
@@ -21,8 +27,26 @@ import {
  */
 export default function Parent() {
   const router = useRouter();
-  const { ready, state, activeChild, setActiveChild, setReminders } = useStore();
+  const { ready, state, activeChild, setActiveChild, setReminders, reset } = useStore();
   const [busy, setBusy] = useState(false);
+
+  function startOver() {
+    Alert.alert(
+      "Start over?",
+      "This clears all profiles and progress and takes you back to the beginning. (Good for trying the onboarding.)",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Start over",
+          style: "destructive",
+          onPress: () => {
+            reset();
+            router.replace("/welcome");
+          },
+        },
+      ],
+    );
+  }
 
   if (!ready) return <Loading />;
   if (!activeChild) {
@@ -107,13 +131,12 @@ export default function Parent() {
 
         {/* Stat tiles */}
         <View className="mt-3 flex-row gap-3">
-          <StatTile icon="🔥" value={child.streak} label="Day streak" color="#ff9600" />
+          <StatTile icon="📅" value={weeklySessionCount(child)} label={`of ${weeklyGoal(child)} this week`} color="#58a700" />
           <StatTile icon="⚡" value={child.xp} label="XP" color="#ffc800" />
         </View>
         <View className="mt-3 flex-row gap-3">
           <StatTile icon="⭐" value={totalStars} label="Stars" color="#ffc800" />
           <StatTile icon="✅" value={mastered} label="Mastered" color="#58cc02" />
-          <StatTile iconNode={<Coin size={22} />} value={child.coins ?? 0} label="Coins" color="#e0a800" />
         </View>
 
         {/* Plan / progress */}
@@ -220,6 +243,16 @@ export default function Parent() {
               style={{ alignSelf: child.remindersEnabled ? "flex-end" : "flex-start" }}
             />
           </View>
+        </Pressable>
+
+        {/* Start over (also the way to experience onboarding again) */}
+        <Pressable
+          onPress={startOver}
+          className="mt-4 items-center rounded-4xl border-2 border-swan bg-white py-3.5"
+        >
+          <Text className="text-sm font-extrabold font-display text-cardinal">
+            Start over
+          </Text>
         </Pressable>
 
         {/* Credit */}

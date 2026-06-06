@@ -16,7 +16,7 @@ import {
 } from "@/lib/haptics";
 import { leoLessonCheer } from "@/lib/leo";
 import { useStore } from "@/lib/store";
-import { Button, ProgressBar, Coin } from "@/components/ui";
+import { Button, ProgressBar } from "@/components/ui";
 import LeoImage from "@/components/LeoImage";
 import Confetti from "@/components/Confetti";
 
@@ -160,7 +160,6 @@ export default function LanguageLesson() {
   if (phase === "done") {
     const score = results.filter(Boolean).length / Math.max(1, results.length);
     const stars = score >= 0.85 ? 3 : score >= 0.6 ? 2 : 1;
-    const coins = COINS_BASE + stars * COINS_PER_STAR;
     return (
       <SafeAreaView className="flex-1 items-center justify-center bg-white px-6">
         <LeoImage
@@ -181,16 +180,7 @@ export default function LanguageLesson() {
             </Text>
           ))}
         </View>
-        <Pressable
-          onPress={() => router.replace("/world")}
-          className="mt-6 flex-row items-center gap-2 rounded-2xl border-2 border-bee-edge bg-bee-50 px-4 py-2.5"
-        >
-          <Coin size={20} />
-          <Text className="text-sm font-extrabold font-display text-ink">
-            +{coins} coins — build Leo's World
-          </Text>
-        </Pressable>
-        <View className="mt-6 w-full max-w-sm">
+        <View className="mt-7 w-full max-w-sm">
           <Button label="Back to map" onPress={() => router.replace("/language")} />
         </View>
         <Confetti fireKey={fireKey} />

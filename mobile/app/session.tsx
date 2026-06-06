@@ -13,10 +13,9 @@ import {
   type RecorderHandle,
 } from "@/lib/recorder";
 import { scoreAudio } from "@/lib/cloudScoring";
-import { Button, Loading, ProgressBar, Coin } from "@/components/ui";
+import { Button, Loading, ProgressBar } from "@/components/ui";
 import LeoImage from "@/components/LeoImage";
 import CoachFace from "@/components/CoachFace";
-import MouthModel from "@/components/MouthModel";
 import Confetti from "@/components/Confetti";
 import { MicIcon } from "@/components/icons";
 import { hapticSuccess, hapticWarning, hapticLight, hapticCelebrate } from "@/lib/haptics";
@@ -40,7 +39,6 @@ export default function Session() {
   const [idx, setIdx] = useState(0);
   const [total, setTotal] = useState(0);
   const [stats, setStats] = useState({ practiced: 0, great: 0 });
-  const [coins, setCoins] = useState(0);
   const [fireKey, setFireKey] = useState(0);
 
   const aliveRef = useRef(true);
@@ -233,7 +231,6 @@ export default function Session() {
       coinsEarned: earned,
     });
     recordSession(child.id); // weekly goal + marks the free session used
-    setCoins(earned);
     hapticCelebrate();
     setFireKey((k) => k + 1);
     setPhase("done");
@@ -300,6 +297,8 @@ export default function Session() {
 
   // ─────────────────────────── DONE ───────────────────────────
   if (phase === "done") {
+    const greatRatio = stats.practiced ? stats.great / stats.practiced : 0;
+    const stars = greatRatio >= 0.8 ? 3 : greatRatio >= 0.5 ? 2 : 1;
     return (
       <SafeAreaView className="flex-1 items-center justify-center bg-white px-6">
         <LeoImage speaking={false} mood="celebrate" size={180} />
@@ -309,11 +308,12 @@ export default function Session() {
         <Text className="mt-1 text-center text-base text-wolf">
           You practiced {stats.practiced} words, {child.name}! 🎉
         </Text>
-        <View className="mt-5 flex-row items-center gap-2 rounded-2xl border-2 border-bee-edge bg-bee-50 px-4 py-2.5">
-          <Coin size={20} />
-          <Text className="text-sm font-extrabold font-display text-ink">
-            +{coins} coins
-          </Text>
+        <View className="mt-5 flex-row gap-2">
+          {[0, 1, 2].map((i) => (
+            <Text key={i} className="text-4xl" style={{ opacity: i < stars ? 1 : 0.18 }}>
+              ⭐
+            </Text>
+          ))}
         </View>
         <View className="mt-7 w-full max-w-sm gap-3">
           <Button label="Done" onPress={() => router.replace("/home")} />
@@ -323,71 +323,96 @@ export default function Session() {
     );
   }
 
-  // ─────────────────────────── RUNNING ───────────────────────────
-  const showMouth = (step === "say" || step === "listen") && target;
+  // ─────────────────────────── RUNNING (immersive) ───────────────────────────
+  const showWord = (step === "say" || step === "listen") && target;
+  const statusText =
+    step === "score" ? "Checking…" : step === "listen" ? "Your turn!" : "";
   return (
-    <SafeAreaView className="flex-1 bg-white" edges={["top", "bottom"]}>
-      <View className="flex-row items-center gap-3 px-4 py-3">
-        <Pressable
-          onPress={quit}
-          className="h-9 w-9 items-center justify-center rounded-full bg-polar"
-        >
-          <Text className="text-lg font-bold font-heading text-hare">✕</Text>
-        </Pressable>
-        <ProgressBar value={total ? idx / total : 0} />
-      </View>
+    <View className="flex-1" style={{ backgroundColor: "#e9f5ff" }}>
+      {/* backdrop "stage": soft sky over a warm ground */}
+      <View
+        style={{
+          position: "absolute",
+          left: 0,
+          right: 0,
+          bottom: 0,
+          height: "40%",
+          backgroundColor: "#fdf1e3",
+          borderTopLeftRadius: 48,
+          borderTopRightRadius: 48,
+        }}
+      />
+      <Text style={{ position: "absolute", left: 26, top: 96, fontSize: 34 }}>☁️</Text>
+      <Text style={{ position: "absolute", right: 30, top: 140, fontSize: 26 }}>☁️</Text>
 
-      <View className="flex-1 items-center px-6 pt-2">
-        {/* Coach + speech bubble */}
-        <CoachFace style={child.coachStyle} speaking={speaking} mood="idle" size={130} />
-        {coachText ? (
-          <View className="mt-3 max-w-[90%] rounded-3xl border-2 border-swan bg-white px-4 py-3">
-            <Text className="text-center text-base font-extrabold font-display text-ink">
-              {coachText}
-            </Text>
-          </View>
-        ) : null}
-
-        {/* The word + how-to mouth (during say / listen) */}
-        {showMouth ? (
-          <View className="mt-4 items-center">
-            <Text className="text-3xl font-extrabold font-display text-ink">
-              {target!.emoji ? `${target!.emoji}  ` : ""}
-              {target!.word}
-            </Text>
-            <View className="mt-2">
-              <MouthModel sound={target!.targetSound} playing size={150} />
-            </View>
-          </View>
-        ) : null}
-
-        {step === "score" ? (
-          <Text className="mt-8 text-sm font-extrabold font-display uppercase tracking-widest text-hare">
-            Listening…
-          </Text>
-        ) : null}
-      </View>
-
-      {/* Bottom: the kid's mic during their turn */}
-      {step === "listen" ? (
-        <View className="px-6 pb-8">
-          <Pressable onPress={tapDone}>
-            <View style={{ backgroundColor: "#1899d6", borderRadius: 20 }}>
-              <View
-                className="items-center justify-center"
-                style={{ backgroundColor: "#1cb0f6", borderRadius: 20, paddingVertical: 18, marginBottom: 5 }}
-              >
-                <MicIcon size={30} color="#ffffff" />
-              </View>
-            </View>
+      <SafeAreaView className="flex-1" edges={["top", "bottom"]}>
+        {/* top overlay: close + progress */}
+        <View className="flex-row items-center gap-3 px-4 py-3">
+          <Pressable
+            onPress={quit}
+            className="h-9 w-9 items-center justify-center rounded-full bg-white/80"
+          >
+            <Text className="text-lg font-bold font-heading text-hare">✕</Text>
           </Pressable>
-          <Text className="mt-3 text-center text-sm font-extrabold font-display uppercase tracking-wide text-macaw">
-            Your turn — tap when done
-          </Text>
+          <ProgressBar value={total ? idx / total : 0} />
         </View>
-      ) : (
-        <View className="pb-8" />
-      )}
-    </SafeAreaView>
+
+        {/* center: the coach fills the stage */}
+        <View className="flex-1 items-center justify-center px-6">
+          <CoachFace
+            style={child.coachStyle}
+            speaking={speaking}
+            mood="idle"
+            size={250}
+          />
+
+          {/* speech bubble — what the coach is saying */}
+          {coachText ? (
+            <View className="mt-2 max-w-[92%] rounded-4xl bg-white px-5 py-3.5" style={{ shadowColor: "#3c3c3c", shadowOpacity: 0.1, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 3 }}>
+              <Text className="text-center text-lg font-extrabold font-display text-ink">
+                {coachText}
+              </Text>
+            </View>
+          ) : null}
+
+          {/* the word to repeat */}
+          {showWord ? (
+            <View className="mt-4 flex-row items-center gap-2 rounded-full bg-white px-5 py-2">
+              {target!.emoji ? <Text className="text-2xl">{target!.emoji}</Text> : null}
+              <Text className="text-2xl font-extrabold font-display text-macaw">
+                {target!.word}
+              </Text>
+            </View>
+          ) : null}
+        </View>
+
+        {/* bottom: the kid's mic during their turn */}
+        {step === "listen" ? (
+          <View className="px-6 pb-8">
+            <Pressable onPress={tapDone}>
+              <View style={{ backgroundColor: "#1899d6", borderRadius: 22 }}>
+                <View
+                  className="items-center justify-center"
+                  style={{ backgroundColor: "#1cb0f6", borderRadius: 22, paddingVertical: 20, marginBottom: 5 }}
+                >
+                  <MicIcon size={32} color="#ffffff" />
+                </View>
+              </View>
+            </Pressable>
+            <Text className="mt-3 text-center text-sm font-extrabold font-display uppercase tracking-wide text-macaw">
+              {statusText} — tap when done
+            </Text>
+          </View>
+        ) : (
+          <View className="items-center pb-10">
+            {statusText ? (
+              <Text className="text-sm font-extrabold font-display uppercase tracking-widest text-hare">
+                {statusText}
+              </Text>
+            ) : null}
+          </View>
+        )}
+      </SafeAreaView>
+    </View>
   );
 }

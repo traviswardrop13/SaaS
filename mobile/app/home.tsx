@@ -3,7 +3,7 @@ import { useEffect } from "react";
 import { View, Text, Pressable, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useStore, weeklySessionCount, weeklyGoal } from "@/lib/store";
-import { Loading, Button, Coin } from "@/components/ui";
+import { Loading, Button } from "@/components/ui";
 import { hapticLight } from "@/lib/haptics";
 import { leoGreetHome } from "@/lib/leo";
 
@@ -54,25 +54,11 @@ export default function Home() {
           >
             <Text className="text-2xl">{child.avatar || "🌟"}</Text>
           </Pressable>
-          <View className="flex-row items-center gap-2">
-            <View className="flex-row items-center gap-1 rounded-xl border-2 border-swan bg-white px-2.5 py-1.5">
-              <Text className="text-base">📅</Text>
-              <Text className="text-base font-extrabold font-display text-feather-edge">
-                {done}/{goal}
-              </Text>
-            </View>
-            <Pressable
-              onPress={() => {
-                hapticLight();
-                router.push("/world");
-              }}
-              className="flex-row items-center gap-1 rounded-xl border-2 border-swan bg-white px-2.5 py-1.5"
-            >
-              <Coin size={16} />
-              <Text className="text-base font-extrabold font-display text-bee-edge">
-                {child.coins ?? 0}
-              </Text>
-            </Pressable>
+          <View className="flex-row items-center gap-1 rounded-xl border-2 border-swan bg-white px-3 py-1.5">
+            <Text className="text-base">📅</Text>
+            <Text className="text-base font-extrabold font-display text-feather-edge">
+              {done}/{goal} this week
+            </Text>
           </View>
         </View>
 

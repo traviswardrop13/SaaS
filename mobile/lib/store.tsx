@@ -177,6 +177,8 @@ type StoreValue = {
   /** Whether the account has an active subscription (local stub until IAP). */
   subscribed: boolean;
   setSubscribed: (on: boolean) => void;
+  /** Wipe everything and return to first-run onboarding. */
+  reset: () => void;
 };
 
 const StoreContext = createContext<StoreValue | null>(null);
@@ -309,6 +311,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         mutate((s) => {
           s.subscribed = on;
         }),
+      reset: () => {
+        setState(EMPTY);
+        AsyncStorage.removeItem(KEY).catch(() => {});
+      },
     };
   }, [state, ready, mutate]);
 
