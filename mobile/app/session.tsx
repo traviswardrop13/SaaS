@@ -15,6 +15,7 @@ import {
 import { scoreAudio } from "@/lib/cloudScoring";
 import { Button, Loading, ProgressBar, Coin } from "@/components/ui";
 import LeoImage from "@/components/LeoImage";
+import CoachFace from "@/components/CoachFace";
 import MouthModel from "@/components/MouthModel";
 import Confetti from "@/components/Confetti";
 import { MicIcon } from "@/components/icons";
@@ -29,7 +30,7 @@ const MAX_TRIES = 2;
 
 export default function Session() {
   const router = useRouter();
-  const { ready, activeChild, recordLessonComplete } = useStore();
+  const { ready, activeChild, recordLessonComplete, recordSession, subscribed } = useStore();
 
   const [phase, setPhase] = useState<Phase>("intro");
   const [step, setStep] = useState<Step>("coach");
@@ -231,6 +232,7 @@ export default function Session() {
       xpEarned: 15,
       coinsEarned: earned,
     });
+    recordSession(child.id); // weekly goal + marks the free session used
     setCoins(earned);
     hapticCelebrate();
     setFireKey((k) => k + 1);
@@ -246,6 +248,8 @@ export default function Session() {
 
   // ─────────────────────────── INTRO ───────────────────────────
   if (phase === "intro") {
+    // Free first session, then the paywall.
+    const gated = !!child.freeSessionUsed && !subscribed;
     return (
       <SafeAreaView className="flex-1 bg-white" edges={["top", "bottom"]}>
         <View className="flex-row px-4 pt-1">
@@ -257,24 +261,37 @@ export default function Session() {
           </Pressable>
         </View>
         <View className="flex-1 items-center justify-center px-8">
-          <LeoImage speaking={false} mood="idle" size={180} />
+          <LeoImage speaking={false} mood={gated ? "encourage" : "idle"} size={180} />
           <Text className="mt-5 text-center text-3xl font-extrabold font-display text-ink">
-            Practice with Leo
+            {gated ? "Ready for more?" : "Practice with Leo"}
           </Text>
           <Text className="mt-2 text-center text-base font-bold font-heading text-wolf">
-            Leo will say a word, you say it back. He listens and helps you — just
-            like a real coach!
+            {gated
+              ? `${child.name}'s free session is done! Unlock unlimited sessions to keep going.`
+              : "Leo will say a word, you say it back. He listens and helps you — just like a real coach!"}
           </Text>
           <View className="mt-8 w-full max-w-sm gap-3">
-            <Button
-              label={`Quick session · ${SESSION_WORDS.quick} words`}
-              onPress={() => startSession("quick")}
-            />
-            <Button
-              label={`Full session · ${SESSION_WORDS.full} words`}
-              variant="secondary"
-              onPress={() => startSession("full")}
-            />
+            {gated ? (
+              <Button
+                label="Unlock unlimited sessions"
+                onPress={() => {
+                  hapticLight();
+                  router.push("/paywall");
+                }}
+              />
+            ) : (
+              <>
+                <Button
+                  label={`Quick session · ${SESSION_WORDS.quick} words`}
+                  onPress={() => startSession("quick")}
+                />
+                <Button
+                  label={`Full session · ${SESSION_WORDS.full} words`}
+                  variant="secondary"
+                  onPress={() => startSession("full")}
+                />
+              </>
+            )}
           </View>
         </View>
       </SafeAreaView>
@@ -321,8 +338,8 @@ export default function Session() {
       </View>
 
       <View className="flex-1 items-center px-6 pt-2">
-        {/* Leo + speech bubble */}
-        <LeoImage speaking={speaking} mood="idle" size={130} />
+        {/* Coach + speech bubble */}
+        <CoachFace style={child.coachStyle} speaking={speaking} mood="idle" size={130} />
         {coachText ? (
           <View className="mt-3 max-w-[90%] rounded-3xl border-2 border-swan bg-white px-4 py-3">
             <Text className="text-center text-base font-extrabold font-display text-ink">

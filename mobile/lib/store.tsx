@@ -62,9 +62,16 @@ export type AppState = {
   parent: { name: string; email: string } | null;
   children: Child[];
   activeChildId: string | null;
+  /** account-level subscription flag (local stub until App Store IAP) */
+  subscribed?: boolean;
 };
 
-const EMPTY: AppState = { parent: null, children: [], activeChildId: null };
+const EMPTY: AppState = {
+  parent: null,
+  children: [],
+  activeChildId: null,
+  subscribed: false,
+};
 
 // ───────────────────────── pure helpers (no I/O) ─────────────────────────
 
@@ -75,6 +82,26 @@ function yesterdayISO(): string {
   const d = new Date();
   d.setDate(d.getDate() - 1);
   return d.toISOString().slice(0, 10);
+}
+
+/** Monday of the current week, as an ISO date (for the weekly goal). */
+function startOfWeekISO(): string {
+  const d = new Date();
+  const mondayOffset = (d.getDay() + 6) % 7; // Sun=0 -> 6, Mon=1 -> 0 …
+  d.setDate(d.getDate() - mondayOffset);
+  return d.toISOString().slice(0, 10);
+}
+
+/** Distinct days a session was completed this (Mon-start) week. */
+export function weeklySessionCount(child: Child): number {
+  const start = startOfWeekISO();
+  const days = child.sessionDays ?? [];
+  return new Set(days.filter((d) => d >= start)).size;
+}
+
+/** The family's weekly session goal (defaults to 3 if unset). */
+export function weeklyGoal(child: Child): number {
+  return child.sessionsPerWeek ?? 3;
 }
 
 let idCounter = 0;
@@ -144,6 +171,12 @@ type StoreValue = {
   /** Spend coins to unlock a world item. Returns true if the purchase went
    *  through (enough coins, not already owned). */
   purchaseItem: (childId: string, itemId: string, cost: number) => boolean;
+  /** Record that a full coaching session was completed today (drives the
+   *  weekly goal and marks the free session as used). */
+  recordSession: (childId: string) => void;
+  /** Whether the account has an active subscription (local stub until IAP). */
+  subscribed: boolean;
+  setSubscribed: (on: boolean) => void;
 };
 
 const StoreContext = createContext<StoreValue | null>(null);
@@ -262,6 +295,20 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         });
         return ok;
       },
+      recordSession: (childId) =>
+        mutate((s) => {
+          const c = s.children.find((x) => x.id === childId);
+          if (!c) return;
+          const today = todayISO();
+          const days = c.sessionDays ?? (c.sessionDays = []);
+          if (!days.includes(today)) days.push(today);
+          c.freeSessionUsed = true;
+        }),
+      subscribed: state.subscribed ?? false,
+      setSubscribed: (on) =>
+        mutate((s) => {
+          s.subscribed = on;
+        }),
     };
   }, [state, ready, mutate]);
 

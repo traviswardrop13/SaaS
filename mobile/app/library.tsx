@@ -45,12 +45,46 @@ export default function Library() {
           <Text className="text-lg font-extrabold font-display text-macaw">←</Text>
         </Pressable>
         <Text className="text-lg font-extrabold font-display text-ink">
-          Library
+          Practice
         </Text>
         <View className="h-10 w-10" />
       </View>
 
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 36 }}>
+        {/* Your sounds — the leveled practice paths (moved off the home) */}
+        <Section title="Your sounds" subtitle="step-by-step practice">
+          {planSkills.map((skill) => {
+            const earned = skill.lessons.reduce(
+              (n, l) => n + Math.min(3, activeChild.progress[l.id]?.stars ?? 0),
+              0,
+            );
+            const total = skill.lessons.length * 3;
+            return (
+              <Pressable
+                key={skill.id}
+                onPress={() => {
+                  hapticLight();
+                  router.push({ pathname: "/skill/[id]", params: { id: skill.id } });
+                }}
+                className="flex-row items-center gap-3 rounded-4xl border-2 border-swan bg-white px-4 py-3"
+              >
+                <View className="h-11 w-11 items-center justify-center rounded-3xl bg-polar">
+                  <Text className="text-2xl">{skill.emoji}</Text>
+                </View>
+                <View className="flex-1">
+                  <Text className="text-base font-extrabold font-display text-ink">
+                    {skill.title}
+                  </Text>
+                  <Text className="text-xs font-bold font-heading text-wolf">
+                    ⭐ {earned}/{total}
+                  </Text>
+                </View>
+                <Text className="text-xl text-hare">›</Text>
+              </Pressable>
+            );
+          })}
+        </Section>
+
         {/* Sound Match */}
         <Section title="Sound Match" subtitle="listening games">
           {pairSets.map((s) => (
