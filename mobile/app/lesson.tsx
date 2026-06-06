@@ -275,7 +275,7 @@ export default function Lesson() {
           mood={stars >= 3 ? "holding-star" : "celebrate"}
           size={190}
         />
-        <Text className="mt-5 text-3xl font-extrabold text-feather-edge">
+        <Text className="mt-5 text-3xl font-extrabold font-display text-feather-edge">
           Lesson complete!
         </Text>
         <Text className="mt-1 text-center text-base text-wolf">
@@ -303,7 +303,7 @@ export default function Lesson() {
           className="mt-4 flex-row items-center gap-2 rounded-2xl border-2 border-bee-edge bg-bee-50 px-4 py-2.5"
         >
           <Text className="text-xl">🪙</Text>
-          <Text className="text-sm font-extrabold text-ink">
+          <Text className="text-sm font-extrabold font-display text-ink">
             +{coins} coins — build Leo's World
           </Text>
         </Pressable>
@@ -326,7 +326,7 @@ export default function Lesson() {
           onPress={() => router.back()}
           className="h-9 w-9 items-center justify-center rounded-full bg-polar"
         >
-          <Text className="text-lg font-bold text-hare">✕</Text>
+          <Text className="text-lg font-bold font-heading text-hare">✕</Text>
         </Pressable>
         <ProgressBar value={pct / 100} />
       </View>
@@ -335,13 +335,13 @@ export default function Lesson() {
         {/* Level tag (Duolingo "NEW WORD" style) */}
         <View className="mt-1 flex-row items-center gap-1.5">
           <View className={`h-2.5 w-2.5 rounded-full ${skill.color}`} />
-          <Text className="text-xs font-extrabold uppercase tracking-widest text-hare">
+          <Text className="text-xs font-extrabold font-display uppercase tracking-widest text-hare">
             {LEVEL_INFO[lesson.level].label}
           </Text>
         </View>
         <View className="mt-2 flex-row items-center gap-2">
           <LeoImage speaking={speaking} size={44} />
-          <Text className="text-2xl font-extrabold text-ink">
+          <Text className="text-2xl font-extrabold font-display text-ink">
             Repeat after Leo
           </Text>
         </View>
@@ -366,7 +366,7 @@ export default function Lesson() {
           )}
         </View>
         {phase !== "result" ? (
-          <Text className="mt-1 text-center text-xs font-extrabold uppercase tracking-widest text-hare">
+          <Text className="mt-1 text-center text-xs font-extrabold font-display uppercase tracking-widest text-hare">
             Watch the mouth
           </Text>
         ) : null}
@@ -375,7 +375,7 @@ export default function Lesson() {
         {phase !== "result" ? (
           <View className="mt-1 flex-row items-center gap-2 self-center rounded-2xl bg-brand-50 px-4 py-2">
             <Text className="text-base">💡</Text>
-            <Text className="text-sm font-bold text-brand-700">{lesson.hint}</Text>
+            <Text className="text-sm font-bold font-heading text-brand-700">{lesson.hint}</Text>
           </View>
         ) : null}
       </ScrollView>
@@ -397,14 +397,14 @@ export default function Lesson() {
         <View className="px-6 pb-6">
           {errorMsg ? (
             <View className="mb-3 rounded-2xl border-2 border-cardinal bg-cardinal-50 px-4 py-3">
-              <Text className="text-center text-sm font-extrabold text-cardinal">
+              <Text className="text-center text-sm font-extrabold font-display text-cardinal">
                 {errorMsg}
               </Text>
             </View>
           ) : null}
           {useSelfRate ? (
             <View>
-              <Text className="mb-2 text-center text-sm font-bold text-wolf">
+              <Text className="mb-2 text-center text-sm font-bold font-heading text-wolf">
                 {lesson.level === "isolation"
                   ? "How did your child sound?"
                   : "How did it sound?"}
@@ -449,7 +449,7 @@ export default function Lesson() {
                       }}
                     >
                       {phase === "scoring" ? (
-                        <Text className="text-base font-extrabold uppercase tracking-wide text-white">
+                        <Text className="text-base font-extrabold font-display uppercase tracking-wide text-white">
                           Checking…
                         </Text>
                       ) : phase === "listening" ? (
@@ -463,7 +463,7 @@ export default function Lesson() {
               }}
             </Pressable>
             <Text
-              className="mt-3 text-center text-sm font-extrabold uppercase tracking-wide"
+              className="mt-3 text-center text-sm font-extrabold font-display uppercase tracking-wide"
               style={{ color: phase === "listening" ? "#1899d6" : "#afafaf" }}
             >
               {speaking
@@ -549,7 +549,7 @@ function SpeechBubble({
         >
           {tokens.map((tok, i) => (
             <View key={i} className="items-center">
-              <Text className="text-3xl font-extrabold text-ink">{tok}</Text>
+              <Text className="text-3xl font-extrabold font-display text-ink">{tok}</Text>
               <Dots count={Math.max(4, Math.round(tok.length * 1.6))} />
             </View>
           ))}
@@ -609,14 +609,14 @@ function ResultBanner({
           className="h-12 w-12 items-center justify-center rounded-full"
           style={{ backgroundColor: cfg.color }}
         >
-          <Text className="text-2xl font-extrabold text-white">{cfg.icon}</Text>
+          <Text className="text-2xl font-extrabold font-display text-white">{cfg.icon}</Text>
         </View>
         <View className="flex-1">
-          <Text className="text-2xl font-extrabold" style={{ color: cfg.color }}>
+          <Text className="text-2xl font-extrabold font-display" style={{ color: cfg.color }}>
             {cfg.title}
           </Text>
           {result.hint ? (
-            <Text className="mt-0.5 text-sm font-bold text-ink">{result.hint}</Text>
+            <Text className="mt-0.5 text-sm font-bold font-heading text-ink">{result.hint}</Text>
           ) : null}
         </View>
         <View className="flex-row gap-0.5">
@@ -630,7 +630,7 @@ function ResultBanner({
 
       {/* Calibration debug line (temporary) */}
       {cloud ? (
-        <Text className="mt-2 text-[11px] font-bold text-wolf">
+        <Text className="mt-2 text-[11px] font-bold font-heading text-wolf">
           {`debug · score ${cloud.score ?? "?"} · phoneAvg ${
             cloud.phoneAvg ?? "?"
           } · wordAvg ${cloud.wordAvg ?? "?"} · ${targetSound} ${
@@ -677,8 +677,8 @@ function ResultBanner({
 function Stat({ label, value }: { label: string; value: string }) {
   return (
     <View className="flex-1 rounded-2xl border-2 border-swan bg-polar px-3 py-3">
-      <Text className="text-center text-xl font-extrabold text-ink">{value}</Text>
-      <Text className="text-center text-[11px] font-bold uppercase tracking-wide text-hare">
+      <Text className="text-center text-xl font-extrabold font-display text-ink">{value}</Text>
+      <Text className="text-center text-[11px] font-bold font-heading uppercase tracking-wide text-hare">
         {label}
       </Text>
     </View>

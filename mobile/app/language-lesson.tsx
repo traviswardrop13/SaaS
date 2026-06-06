@@ -168,7 +168,7 @@ export default function LanguageLesson() {
           mood={stars >= 3 ? "holding-star" : "celebrate"}
           size={190}
         />
-        <Text className="mt-5 text-3xl font-extrabold text-feather-edge">
+        <Text className="mt-5 text-3xl font-extrabold font-display text-feather-edge">
           Lesson complete!
         </Text>
         <Text className="mt-1 text-center text-base text-wolf">
@@ -186,7 +186,7 @@ export default function LanguageLesson() {
           className="mt-6 flex-row items-center gap-2 rounded-2xl border-2 border-bee-edge bg-bee-50 px-4 py-2.5"
         >
           <Text className="text-xl">🪙</Text>
-          <Text className="text-sm font-extrabold text-ink">
+          <Text className="text-sm font-extrabold font-display text-ink">
             +{coins} coins — build Leo's World
           </Text>
         </Pressable>
@@ -209,7 +209,7 @@ export default function LanguageLesson() {
           onPress={() => router.back()}
           className="h-9 w-9 items-center justify-center rounded-full bg-polar"
         >
-          <Text className="text-lg font-bold text-hare">✕</Text>
+          <Text className="text-lg font-bold font-heading text-hare">✕</Text>
         </Pressable>
         <ProgressBar value={pct} />
       </View>
@@ -224,7 +224,7 @@ export default function LanguageLesson() {
           >
             <Text className="text-lg text-white">🔊</Text>
           </Pressable>
-          <Text className="flex-1 text-2xl font-extrabold text-ink">{ex.prompt}</Text>
+          <Text className="flex-1 text-2xl font-extrabold font-display text-ink">{ex.prompt}</Text>
         </View>
 
         {/* Picture cue for build exercises */}
@@ -257,7 +257,7 @@ export default function LanguageLesson() {
                 className="flex-row items-center gap-3 rounded-2xl border-2 border-swan bg-white px-5 py-4"
               >
                 {o.emoji ? <Text className="text-3xl">{o.emoji}</Text> : null}
-                <Text className="text-xl font-extrabold text-ink">{o.label}</Text>
+                <Text className="text-xl font-extrabold font-display text-ink">{o.label}</Text>
               </Pressable>
             ))}
           </View>
@@ -321,7 +321,7 @@ export default function LanguageLesson() {
               }
             />
           ) : (
-            <Text className="text-center text-sm font-bold text-hare">
+            <Text className="text-center text-sm font-bold font-heading text-hare">
               {ex.kind === "pickImage" ? "Tap the picture" : "Tap your answer"}
             </Text>
           )}
@@ -381,7 +381,7 @@ function Tile({
         variant === "bank" ? "border-swan bg-white" : "border-macaw bg-macaw-50"
       }`}
     >
-      <Text className="text-lg font-extrabold text-ink">{word}</Text>
+      <Text className="text-lg font-extrabold font-display text-ink">{word}</Text>
     </Pressable>
   );
 }
@@ -412,14 +412,14 @@ function FeedbackBanner({
           className="h-12 w-12 items-center justify-center rounded-full"
           style={{ backgroundColor: cfg.color }}
         >
-          <Text className="text-2xl font-extrabold text-white">{cfg.icon}</Text>
+          <Text className="text-2xl font-extrabold font-display text-white">{cfg.icon}</Text>
         </View>
         <View className="flex-1">
-          <Text className="text-2xl font-extrabold" style={{ color: cfg.color }}>
+          <Text className="text-2xl font-extrabold font-display" style={{ color: cfg.color }}>
             {cfg.title}
           </Text>
           {!correct && answerText ? (
-            <Text className="mt-0.5 text-sm font-bold text-ink">
+            <Text className="mt-0.5 text-sm font-bold font-heading text-ink">
               Answer: {answerText}
             </Text>
           ) : null}

@@ -291,7 +291,7 @@ export default function Welcome() {
               }}
               className="mt-2 items-center py-2"
             >
-              <Text className="font-extrabold uppercase tracking-wide text-gray-400">
+              <Text className="font-extrabold font-display uppercase tracking-wide text-gray-400">
                 Not now
               </Text>
             </Pressable>
@@ -314,7 +314,7 @@ function ParentStep({
   return (
     <View>
       <Mascot message="Hi grown-up! What should I call you?" />
-      <Text className="mb-1 mt-6 font-extrabold text-gray-700">Your name</Text>
+      <Text className="mb-1 mt-6 font-extrabold font-display text-gray-700">Your name</Text>
       <TextInput
         value={name}
         onChangeText={onChange}
@@ -336,7 +336,7 @@ function ChildNameStep({
   return (
     <View>
       <Mascot message="Who are we practicing with?" />
-      <Text className="mb-1 mt-6 font-extrabold text-gray-700">
+      <Text className="mb-1 mt-6 font-extrabold font-display text-gray-700">
         Child&apos;s first name
       </Text>
       <TextInput
@@ -442,7 +442,7 @@ function GoalTilesStep({
               }`}
             >
               <Text className="text-4xl">{tile.emoji}</Text>
-              <Text className="mt-1 text-center text-sm font-extrabold text-gray-800">
+              <Text className="mt-1 text-center text-sm font-extrabold font-display text-gray-800">
                 {tile.title}
               </Text>
               <Text className="text-center text-[11px] text-gray-500">
@@ -524,7 +524,7 @@ function FocusReviewStep({
               >
                 <Text className="text-3xl">{s.emoji}</Text>
                 <View className="flex-1">
-                  <Text className="text-base font-extrabold text-gray-800">
+                  <Text className="text-base font-extrabold font-display text-gray-800">
                     {s.title}
                   </Text>
                   <Text className="text-xs text-gray-500">{s.subtitle}</Text>
@@ -533,7 +533,7 @@ function FocusReviewStep({
                   onPress={() => onRemove(id)}
                   className="rounded-full bg-gray-100 px-3 py-1"
                 >
-                  <Text className="text-xs font-extrabold text-gray-500">
+                  <Text className="text-xs font-extrabold font-display text-gray-500">
                     Remove
                   </Text>
                 </Pressable>
@@ -607,7 +607,7 @@ function MotivationStep({
           >
             <Text className="text-3xl">{it.emoji}</Text>
             <View className="flex-1">
-              <Text className="text-base font-extrabold text-gray-800">
+              <Text className="text-base font-extrabold font-display text-gray-800">
                 {it.title}
               </Text>
               <Text className="text-sm text-gray-600">{it.body}</Text>
@@ -633,7 +633,7 @@ function RemindersStep({
       />
       <View className="mt-6 items-center rounded-3xl border-2 border-gray-100 p-6">
         <Text className="text-6xl">🔔</Text>
-        <Text className="mt-3 text-2xl font-extrabold text-gray-800">
+        <Text className="mt-3 text-2xl font-extrabold font-display text-gray-800">
           Daily reminder
         </Text>
         <Text className="mt-2 text-center text-gray-500">
@@ -658,7 +658,7 @@ function DoneStep({
   return (
     <View className="items-center pt-6">
       <Text className="text-7xl">🎉</Text>
-      <Text className="mt-4 text-4xl font-extrabold text-brand-600">
+      <Text className="mt-4 text-4xl font-extrabold font-display text-brand-600">
         All set!
       </Text>
       <Text className="mt-3 text-center text-base text-gray-600">
@@ -683,7 +683,7 @@ function DoneStep({
 function RecapPill({ text }: { text: string }) {
   return (
     <View className="rounded-full border-2 border-gray-100 bg-white px-3 py-1">
-      <Text className="font-extrabold text-gray-700">{text}</Text>
+      <Text className="font-extrabold font-display text-gray-700">{text}</Text>
     </View>
   );
 }

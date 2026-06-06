@@ -72,12 +72,12 @@ export default function World() {
           onPress={() => router.back()}
           className="h-9 w-9 items-center justify-center rounded-full bg-polar"
         >
-          <Text className="text-lg font-bold text-hare">✕</Text>
+          <Text className="text-lg font-bold font-heading text-hare">✕</Text>
         </Pressable>
-        <Text className="text-lg font-extrabold text-ink">Leo's World</Text>
+        <Text className="text-lg font-extrabold font-display text-ink">Leo's World</Text>
         <View className="flex-row items-center gap-1 rounded-xl border-2 border-swan bg-white px-2.5 py-1">
           <Text className="text-base">🪙</Text>
-          <Text className="text-base font-extrabold text-bee-edge">{coins}</Text>
+          <Text className="text-base font-extrabold font-display text-bee-edge">{coins}</Text>
         </View>
       </View>
 
@@ -133,7 +133,7 @@ export default function World() {
                   >
                     <Text style={{ fontSize: 11 }}>🪙</Text>
                     <Text
-                      className="text-[11px] font-extrabold"
+                      className="text-[11px] font-extrabold font-display"
                       style={{ color: affordable ? "#e0a800" : "#afafaf" }}
                     >
                       {item.cost}
@@ -167,13 +167,13 @@ export default function World() {
               style={{ top: 16 }}
             >
               <View className="rounded-full bg-ink px-4 py-2">
-                <Text className="text-sm font-extrabold text-white">{toast}</Text>
+                <Text className="text-sm font-extrabold font-display text-white">{toast}</Text>
               </View>
             </View>
           ) : null}
         </View>
 
-        <Text className="mt-4 px-5 text-center text-sm font-bold text-wolf">
+        <Text className="mt-4 px-5 text-center text-sm font-bold font-heading text-wolf">
           Tap a faded item to add it with coins. Earn coins by practicing! 🪙
         </Text>
       </ScrollView>

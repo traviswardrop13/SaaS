@@ -64,10 +64,10 @@ export default function Home() {
               <Text className="text-xl">{activeChild.avatar || "🦁"}</Text>
             </View>
             <View>
-              <Text className="text-base font-extrabold text-ink">
+              <Text className="text-base font-extrabold font-display text-ink">
                 {activeChild.name}
               </Text>
-              <Text className="text-[11px] font-extrabold uppercase tracking-wider text-hare">
+              <Text className="text-[11px] font-extrabold font-display uppercase tracking-wider text-hare">
                 Learner
               </Text>
             </View>
@@ -101,14 +101,14 @@ export default function Home() {
               <Text className="text-xl">🧠</Text>
             </View>
             <View className="flex-1">
-              <Text className="text-base font-extrabold text-ink">
+              <Text className="text-base font-extrabold font-display text-ink">
                 Language practice
               </Text>
-              <Text className="text-xs font-bold text-wolf">
+              <Text className="text-xs font-bold font-heading text-wolf">
                 Words, questions & sentences
               </Text>
             </View>
-            <Text className="rounded-full bg-grass-500 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-white">
+            <Text className="rounded-full bg-grass-500 px-2 py-0.5 text-[10px] font-extrabold font-display uppercase tracking-wide text-white">
               New
             </Text>
           </Pressable>
@@ -125,16 +125,16 @@ export default function Home() {
               <Text className="text-xl">🌳</Text>
             </View>
             <View className="flex-1">
-              <Text className="text-base font-extrabold text-ink">
+              <Text className="text-base font-extrabold font-display text-ink">
                 Leo's World
               </Text>
-              <Text className="text-xs font-bold text-wolf">
+              <Text className="text-xs font-bold font-heading text-wolf">
                 Spend coins to build Leo's backyard
               </Text>
             </View>
             <View className="flex-row items-center gap-1 rounded-full bg-white px-2.5 py-1">
               <Text className="text-sm">🪙</Text>
-              <Text className="text-sm font-extrabold text-bee-edge">
+              <Text className="text-sm font-extrabold font-display text-bee-edge">
                 {activeChild.coins ?? 0}
               </Text>
             </View>
@@ -175,7 +175,7 @@ function StatChip({
   return (
     <View className="flex-row items-center gap-1 rounded-xl border-2 border-swan bg-white px-2.5 py-1">
       <Text className="text-base">{icon}</Text>
-      <Text className="text-base font-extrabold" style={{ color }}>
+      <Text className="text-base font-extrabold font-display" style={{ color }}>
         {value}
       </Text>
     </View>
@@ -205,10 +205,10 @@ function SkillSection({
           style={{ marginBottom: 4 }}
         >
           <View className="flex-1">
-            <Text className="text-[11px] font-extrabold uppercase tracking-widest text-white/80">
+            <Text className="text-[11px] font-extrabold font-display uppercase tracking-widest text-white/80">
               Skill · {skill.lessons.length} lessons
             </Text>
-            <Text className="mt-0.5 text-2xl font-extrabold text-white">
+            <Text className="mt-0.5 text-2xl font-extrabold font-display text-white">
               {skill.title}
             </Text>
           </View>
@@ -295,7 +295,7 @@ function LessonNode({
             className="rounded-xl px-3 py-1"
             style={{ backgroundColor: "#ffffff", borderWidth: 2, borderColor: "#e5e5e5" }}
           >
-            <Text className="text-[11px] font-extrabold uppercase tracking-wider text-ink">
+            <Text className="text-[11px] font-extrabold font-display uppercase tracking-wider text-ink">
               Start
             </Text>
           </View>
@@ -369,7 +369,7 @@ function LessonNode({
                   className="absolute rounded-full bg-white px-1.5"
                   style={{ bottom: -4, borderWidth: 2, borderColor: palette.edge }}
                 >
-                  <Text className="text-[10px] font-extrabold" style={{ color: palette.edge }}>
+                  <Text className="text-[10px] font-extrabold font-display" style={{ color: palette.edge }}>
                     L{level}
                   </Text>
                 </View>
@@ -426,7 +426,7 @@ function BottomNav() {
             >
               <Text className="text-2xl">{t.icon}</Text>
               <Text
-                className={`mt-0.5 text-[10px] font-extrabold uppercase tracking-wider ${
+                className={`mt-0.5 text-[10px] font-extrabold font-display uppercase tracking-wider ${
                   active ? "text-macaw" : "text-hare"
                 }`}
               >

@@ -23,7 +23,7 @@ export default function Mascot({
       <LeoImage speaking={false} mood="idle" size={76} />
       {message ? (
         <View className="max-w-[260px] flex-1 rounded-3xl rounded-bl-md border-2 border-gray-100 bg-white px-4 py-3">
-          <Text className="text-lg font-extrabold text-gray-800">
+          <Text className="text-lg font-extrabold font-display text-gray-800">
             {message}
           </Text>
         </View>
@@ -60,10 +60,10 @@ export function ChoiceCard({
       {emoji ? <Text className="text-4xl">{emoji}</Text> : null}
       <View className="flex-1">
         <View className="flex-row items-center gap-2">
-          <Text className="text-lg font-extrabold text-gray-800">{title}</Text>
+          <Text className="text-lg font-extrabold font-display text-gray-800">{title}</Text>
           {recommended ? (
             <View className="rounded-full bg-sky-500 px-2 py-0.5">
-              <Text className="text-[10px] font-extrabold uppercase tracking-wider text-white">
+              <Text className="text-[10px] font-extrabold font-display uppercase tracking-wider text-white">
                 Recommended
               </Text>
             </View>
@@ -75,7 +75,7 @@ export function ChoiceCard({
       </View>
       {selected ? (
         <View className="h-6 w-6 items-center justify-center rounded-full bg-grass-500">
-          <Text className="text-xs font-bold text-white">✓</Text>
+          <Text className="text-xs font-bold font-heading text-white">✓</Text>
         </View>
       ) : null}
     </Pressable>

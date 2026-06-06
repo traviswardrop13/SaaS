@@ -52,6 +52,17 @@ module.exports = {
       },
       borderRadius: {
         "4xl": "28px",
+        "5xl": "36px",
+      },
+      // Baloo 2 — the fat, round, friendly face that makes the app read like
+      // Duolingo ABC instead of Duolingo (main). Loaded in app/_layout.tsx.
+      // Family keys are deliberately NOT named after weights (bold/semibold)
+      // so the `font-<name>` utilities don't collide with weight utilities.
+      fontFamily: {
+        display: ["Baloo2_800ExtraBold"], // headings, buttons, big numbers
+        heading: ["Baloo2_700Bold"], // sub-headings, bold labels
+        soft: ["Baloo2_600SemiBold"], // medium emphasis
+        body: ["Baloo2_500Medium"], // body copy
       },
     },
   },

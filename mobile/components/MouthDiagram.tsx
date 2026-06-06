@@ -212,7 +212,7 @@ export default function MouthDiagram({
       </Svg>
 
       {showHint && HINTS[sound] && (
-        <Text className="mt-3 max-w-xs text-center text-sm font-bold text-gray-700">
+        <Text className="mt-3 max-w-xs text-center text-sm font-bold font-heading text-gray-700">
           {HINTS[sound]}
         </Text>
       )}

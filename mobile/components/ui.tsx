@@ -36,8 +36,8 @@ export function Button({
   icon?: string;
   size?: "lg" | "md";
 }) {
-  const pad = size === "lg" ? 16 : 12;
-  const radius = 16;
+  const pad = size === "lg" ? 17 : 13;
+  const radius = 22;
 
   // Ghost = flat outlined button (used for secondary "Try again" actions).
   if (variant === "ghost") {
@@ -47,12 +47,13 @@ export function Button({
         style={({ pressed }) => ({
           opacity: disabled ? 0.5 : 1,
           transform: [{ translateY: pressed ? 1 : 0 }],
+          borderRadius: radius,
         })}
-        className="w-full items-center rounded-2xl border-2 border-swan bg-white"
+        className="w-full items-center border-2 border-swan bg-white"
       >
         <View style={{ paddingVertical: pad }} className="flex-row items-center gap-2">
           {icon ? <Text className="text-lg">{icon}</Text> : null}
-          <Text className="text-base font-extrabold uppercase tracking-wide text-wolf">
+          <Text className="text-lg font-extrabold font-display text-wolf">
             {label}
           </Text>
         </View>
@@ -77,14 +78,14 @@ export function Button({
               backgroundColor: v.face,
               borderRadius: radius,
               paddingVertical: pad,
-              transform: [{ translateY: pressed ? 4 : 0 }],
-              marginBottom: pressed ? 0 : 4,
+              transform: [{ translateY: pressed ? 5 : 0 }],
+              marginBottom: pressed ? 0 : 5,
             }}
           >
             {icon ? <Text className="text-lg">{icon}</Text> : null}
             <Text
               style={{ color: v.text }}
-              className="text-base font-extrabold uppercase tracking-wide"
+              className="text-lg font-extrabold font-display"
             >
               {label}
             </Text>
@@ -142,7 +143,7 @@ export function Pill({
       className="flex-row items-center gap-1 rounded-full px-3 py-1"
       style={{ backgroundColor: color }}
     >
-      <Text className="text-sm font-extrabold" style={{ color: text }}>
+      <Text className="text-sm font-extrabold font-display" style={{ color: text }}>
         {children}
       </Text>
     </View>
@@ -157,11 +158,23 @@ export function Card({
   className?: string;
 }) {
   return (
-    <View className={`rounded-3xl border-2 border-swan bg-white p-4 ${className}`}>
+    <View
+      className={`rounded-4xl bg-white p-4 ${className}`}
+      style={CARD_SHADOW}
+    >
       {children}
     </View>
   );
 }
+
+/** Soft drop shadow used on chunky, ABC-style cards (replaces hard borders). */
+export const CARD_SHADOW = {
+  shadowColor: "#3c3c3c",
+  shadowOpacity: 0.08,
+  shadowRadius: 12,
+  shadowOffset: { width: 0, height: 6 },
+  elevation: 3,
+} as const;
 
 export function Loading() {
   return (

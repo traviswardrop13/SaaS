@@ -88,12 +88,12 @@ export default function Talk() {
           onPress={() => router.back()}
           className="h-9 w-9 items-center justify-center rounded-full bg-polar"
         >
-          <Text className="text-lg font-bold text-hare">✕</Text>
+          <Text className="text-lg font-bold font-heading text-hare">✕</Text>
         </Pressable>
         <LeoImage speaking={speaking} size={48} />
         <View className="flex-1">
-          <Text className="text-lg font-extrabold text-ink">Talk with Leo</Text>
-          <Text className="text-xs font-bold text-hare">
+          <Text className="text-lg font-extrabold font-display text-ink">Talk with Leo</Text>
+          <Text className="text-xs font-bold font-heading text-hare">
             {speaking ? "Leo is talking…" : thinking ? "Leo is thinking…" : "Your turn!"}
           </Text>
         </View>
@@ -119,7 +119,7 @@ export default function Talk() {
               }`}
             >
               <Text
-                className={`text-base font-bold ${
+                className={`text-base font-bold font-heading ${
                   t.role === "leo" ? "text-brand-700" : "text-ink"
                 }`}
               >
@@ -129,7 +129,7 @@ export default function Talk() {
           ))}
           {thinking ? (
             <View className="max-w-[60%] self-start rounded-3xl bg-brand-50 px-4 py-3">
-              <Text className="text-base font-bold text-brand-700">…</Text>
+              <Text className="text-base font-bold font-heading text-brand-700">…</Text>
             </View>
           ) : null}
         </ScrollView>
@@ -143,7 +143,7 @@ export default function Talk() {
             placeholderTextColor="#afafaf"
             onSubmitEditing={onSend}
             returnKeyType="send"
-            className="flex-1 rounded-2xl border-2 border-swan bg-white px-4 py-3 text-base font-bold text-ink"
+            className="flex-1 rounded-2xl border-2 border-swan bg-white px-4 py-3 text-base font-bold font-heading text-ink"
           />
           <Pressable
             onPress={onSend}

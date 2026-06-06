@@ -33,18 +33,18 @@ export default function LanguageHome() {
           className="flex-row items-center gap-1.5"
         >
           <Text className="text-lg text-hare">‹</Text>
-          <Text className="text-sm font-extrabold uppercase tracking-wide text-hare">
+          <Text className="text-sm font-extrabold font-display uppercase tracking-wide text-hare">
             Speech
           </Text>
         </Pressable>
-        <Text className="text-lg font-extrabold text-ink">Language 🧠</Text>
+        <Text className="text-lg font-extrabold font-display text-ink">Language 🧠</Text>
         <View className="w-16" />
       </View>
 
       <ScrollView contentContainerStyle={{ paddingBottom: 60, paddingTop: 12 }}>
         {languageSections().map((section) => (
           <View key={section} className="mb-3">
-            <Text className="mb-2 px-4 text-xl font-extrabold text-ink">
+            <Text className="mb-2 px-4 text-xl font-extrabold font-display text-ink">
               {section}
             </Text>
             {LANGUAGE_SKILLS.filter((s) => s.section === section).map((skill) => (
@@ -54,10 +54,10 @@ export default function LanguageHome() {
                 >
                   <Text className="text-3xl">{skill.emoji}</Text>
                   <View className="flex-1">
-                    <Text className="text-lg font-extrabold text-white">
+                    <Text className="text-lg font-extrabold font-display text-white">
                       {skill.title}
                     </Text>
-                    <Text className="text-xs font-bold uppercase tracking-wide text-white/80">
+                    <Text className="text-xs font-bold font-heading uppercase tracking-wide text-white/80">
                       {skill.subtitle}
                     </Text>
                   </View>
@@ -111,7 +111,7 @@ function LessonRow({
       >
         <Text className="text-lg">{unlocked ? "🧩" : "🔒"}</Text>
       </View>
-      <Text className="flex-1 text-base font-extrabold text-ink">
+      <Text className="flex-1 text-base font-extrabold font-display text-ink">
         {lesson.title}
       </Text>
       <View className="flex-row gap-0.5">
