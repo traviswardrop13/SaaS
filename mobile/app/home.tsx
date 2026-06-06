@@ -198,6 +198,13 @@ export default function Home() {
                   params: { skillId: skill.id, lessonId: lesson.id },
                 });
               }}
+              onListen={() => {
+                hapticLight();
+                router.push({
+                  pathname: "/listen",
+                  params: { skillId: skill.id },
+                });
+              }}
             />
           ))}
 
@@ -287,11 +294,13 @@ function SkillSection({
   child,
   currentLessonId,
   onOpen,
+  onListen,
 }: {
   skill: Skill;
   child: Child;
   currentLessonId: string | null;
   onOpen: (lesson: Lesson) => void;
+  onListen: () => void;
 }) {
   // Each skill is a "land" in Leo's world: a chunky rounded panel with a soft
   // sky above and grass below, a signpost, and the winding trail of stops.
@@ -342,6 +351,15 @@ function SkillSection({
             {skill.title}
           </Text>
         </View>
+        <Pressable
+          onPress={onListen}
+          className="flex-row items-center gap-1 rounded-full bg-white/80 px-3 py-1.5"
+        >
+          <Text className="text-sm">👂</Text>
+          <Text className="text-xs font-extrabold font-display" style={{ color: land.label }}>
+            Listen
+          </Text>
+        </Pressable>
       </View>
 
       {/* winding trail of stops */}
