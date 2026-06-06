@@ -41,6 +41,21 @@ export type Child = {
   coins?: number;
   /** Ids of world items the child has unlocked/placed. */
   world?: string[];
+  // ── session-first model ──
+  /** child's age in years, used to suggest the coach style */
+  age?: number;
+  /** which coach the parent picked for this child */
+  coachStyle?: "animated" | "realistic";
+  /** high-level goals from onboarding (see lib/goals.ts) */
+  goals?: string[];
+  /** weekly cadence the family committed to (2, 3, or 4) */
+  sessionsPerWeek?: number;
+  /** session length in minutes (10, 15, 20) */
+  sessionMinutes?: number;
+  /** has the free first session been used (then the paywall applies) */
+  freeSessionUsed?: boolean;
+  /** ISO dates a session was completed — drives the weekly goal */
+  sessionDays?: string[];
 };
 
 export type AppState = {
@@ -189,6 +204,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           focusAreas: partial.focusAreas ?? [],
           dailyGoalMinutes: partial.dailyGoalMinutes,
           remindersEnabled: partial.remindersEnabled,
+          age: partial.age,
+          coachStyle: partial.coachStyle,
+          goals: partial.goals ?? [],
+          sessionsPerWeek: partial.sessionsPerWeek,
+          sessionMinutes: partial.sessionMinutes,
         };
         mutate((s) => {
           s.children.push(child);

@@ -1,107 +1,64 @@
-import React, { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   View,
   Text,
   TextInput,
   Pressable,
   ScrollView,
-  Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
-import {
-  DIAGNOSTIC_CHALLENGES,
-  diagnosticToFocus,
-  findSkill,
-  GOAL_TILES,
-  tilesToFocus,
-} from "@/lib/lessons";
 import { useStore } from "@/lib/store";
-import { Button } from "@/components/ui";
-import Mascot, { ChoiceCard } from "@/components/Mascot";
+import {
+  GOALS,
+  goalsWantScreener,
+  SESSIONS_PER_WEEK,
+  SESSION_MINUTES,
+  RECOMMENDED_PER_WEEK,
+  RECOMMENDED_MINUTES,
+} from "@/lib/goals";
+import { Button, ProgressBar } from "@/components/ui";
+import { hapticLight } from "@/lib/haptics";
 
-const AVATARS = ["🦁", "🐸", "🐼", "🦊", "🐨", "🐵", "🦄", "🐙", "🐧", "🦉"];
-const DAILY_GOALS = [
-  { minutes: 5, label: "5 min / day", subtitle: "Casual" },
-  { minutes: 10, label: "10 min / day", subtitle: "Regular" },
-  { minutes: 15, label: "15 min / day", subtitle: "Serious" },
-  { minutes: 20, label: "20 min / day", subtitle: "Intense" },
-];
+/**
+ * Session-first onboarding. Short and simple: parent → child + age → goals →
+ * coach → schedule → free first session. Practice-safe language throughout
+ * (no "therapy"/"diagnosis" claims). Ends by dropping the family straight
+ * into their free session — the magic moment.
+ */
+type Step = "parent" | "child" | "goals" | "coach" | "schedule" | "done";
 
-type Step =
-  | "parent"
-  | "childName"
-  | "childAvatar"
-  | "pathChoice"
-  | "goalTiles"
-  | "diagnostic"
-  | "focusReview"
-  | "routineIntro"
-  | "dailyGoal"
-  | "motivation"
-  | "reminders"
-  | "done";
+const AGES = [3, 4, 5, 6, 7, 8, 9];
 
 export default function Welcome() {
   const router = useRouter();
   const { state, setParent, addChild } = useStore();
 
-  // Local-only form state (committed on the "done" step).
   const [parentName, setParentName] = useState(state.parent?.name ?? "");
   const [childName, setChildName] = useState("");
-  const [avatar, setAvatar] = useState(AVATARS[0]);
-  const [path, setPath] = useState<"diagnostic" | "manual" | "screener" | null>(
-    null,
-  );
-  const [selectedTiles, setSelectedTiles] = useState<Set<string>>(new Set());
-  const [challenges, setChallenges] = useState<Set<string>>(new Set());
-  const [focus, setFocus] = useState<Set<string>>(new Set());
-  const [dailyGoal, setDailyGoal] = useState(10);
-  const [remindersEnabled, setRemindersEnabled] = useState<boolean | null>(
-    null,
-  );
+  const [age, setAge] = useState<number | null>(null);
+  const [goals, setGoals] = useState<Set<string>>(new Set());
+  const [coach, setCoach] = useState<"animated" | "realistic" | null>(null);
+  const [perWeek, setPerWeek] = useState<number>(RECOMMENDED_PER_WEEK);
+  const [minutes, setMinutes] = useState<number>(RECOMMENDED_MINUTES);
   const [stepIdx, setStepIdx] = useState(0);
 
-  const hasExistingParent = !!state.parent;
-
-  // Build the step list — branches on whether a parent already exists (so
-  // the same flow handles "add another child") and on the path choice
-  // (diagnostic vs. tile picker).
+  const hasParent = !!state.parent;
   const steps = useMemo<Step[]>(() => {
-    const base: Step[] = [];
-    if (!hasExistingParent) base.push("parent");
-    base.push("childName", "childAvatar", "pathChoice");
-    if (path === "diagnostic") base.push("diagnostic");
-    else if (path === "manual") base.push("goalTiles");
-    // The screener picks the focus areas *after* onboarding (the child does an
-    // AI sound check), so skip the in-onboarding focus picker + review.
-    if (path !== "screener") base.push("focusReview");
-    base.push(
-      "routineIntro",
-      "dailyGoal",
-      "motivation",
-      "reminders",
-      "done",
-    );
-    return base;
-  }, [hasExistingParent, path]);
-
-  // Keep focus auto-derived from whichever picker the parent used.
-  useEffect(() => {
-    if (path === "diagnostic") {
-      setFocus(new Set(diagnosticToFocus(Array.from(challenges))));
-    } else if (path === "manual") {
-      setFocus(new Set(tilesToFocus(Array.from(selectedTiles))));
-    } else {
-      setFocus(new Set());
-    }
-  }, [challenges, selectedTiles, path]);
+    const s: Step[] = [];
+    if (!hasParent) s.push("parent");
+    s.push("child", "goals", "coach", "schedule", "done");
+    return s;
+  }, [hasParent]);
 
   const step = steps[stepIdx] ?? "done";
-  const pct = Math.round(((stepIdx + 1) / Math.max(1, steps.length)) * 100);
+  const pct = (stepIdx + 1) / steps.length;
 
-  function go(delta: number) {
-    setStepIdx((i) => Math.min(steps.length - 1, Math.max(0, i + delta)));
+  // Suggest a coach style from age (younger → animated buddy).
+  const suggested: "animated" | "realistic" = (age ?? 5) <= 6 ? "animated" : "realistic";
+
+  function go(d: number) {
+    setStepIdx((i) => Math.min(steps.length - 1, Math.max(0, i + d)));
   }
   function back() {
     if (stepIdx > 0) go(-1);
@@ -109,97 +66,78 @@ export default function Welcome() {
     else router.replace("/");
   }
 
-  function toggleIn(set: Set<string>, id: string): Set<string> {
-    const n = new Set(set);
-    if (n.has(id)) n.delete(id);
-    else n.add(id);
-    return n;
-  }
-
-  // ─────── per-step CTA wiring ───────
-
   function canContinue(): boolean {
     switch (step) {
       case "parent":
         return parentName.trim().length > 0;
-      case "childName":
-        return childName.trim().length > 0;
-      case "pathChoice":
-        return path != null;
-      case "goalTiles":
-        return selectedTiles.size > 0;
-      case "diagnostic":
-        return challenges.size > 0;
+      case "child":
+        return childName.trim().length > 0 && age != null;
+      case "goals":
+        return goals.size > 0;
+      case "coach":
+        return coach != null;
       default:
         return true;
     }
   }
 
-  function ctaLabel(): string {
-    switch (step) {
-      case "dailyGoal":
-        return "I'm committed";
-      case "reminders":
-        return remindersEnabled === false ? "Continue" : "Yes, remind me";
-      case "done":
-        return `Let's start ${childName || "practicing"}!`;
-      default:
-        return "Continue";
-    }
+  function toggleGoal(id: string) {
+    hapticLight();
+    setGoals((prev) => {
+      const n = new Set(prev);
+      if (n.has(id)) n.delete(id);
+      else n.add(id);
+      return n;
+    });
   }
 
-  async function ctaPress() {
-    // Special handling per step.
-    if (step === "parent") {
+  function next() {
+    hapticLight();
+    if (step === "parent" && parentName.trim()) {
       setParent({ name: parentName.trim(), email: "" });
-    }
-    if (step === "reminders" && remindersEnabled !== false) {
-      // Native notification permission flow is deferred — store the intent
-      // and prompt for real later. We mark intent here so the recap shows
-      // the right pill.
-      setRemindersEnabled(true);
     }
     if (step === "done") {
       finish();
       return;
     }
+    // entering coach step with nothing picked → preselect the suggestion
+    if (steps[stepIdx + 1] === "coach" && coach == null) setCoach(suggested);
     go(1);
   }
 
   function finish() {
-    const child = addChild({
+    const goalIds = Array.from(goals);
+    addChild({
       name: childName.trim() || "Friend",
-      // Screener path leaves focus empty here; the AI sound check fills it in.
-      focusAreas: path === "screener" ? [] : Array.from(focus),
-      avatar,
-      dailyGoalMinutes: dailyGoal,
-      remindersEnabled: remindersEnabled ?? false,
+      avatar: "🌟",
+      age: age ?? undefined,
+      goals: goalIds,
+      coachStyle: coach ?? suggested,
+      sessionsPerWeek: perWeek,
+      sessionMinutes: minutes,
+      focusAreas: [],
     });
-    if (path === "screener") {
+    // Speech/unsure goals → personalize with the sound check first; otherwise
+    // drop straight into the free session.
+    if (goalsWantScreener(goalIds)) {
       router.replace("/screener");
     } else {
-      router.replace({ pathname: "/home", params: { childId: child.id } });
+      router.replace("/session");
     }
   }
 
   return (
     <SafeAreaView className="flex-1 bg-white">
-      <View className="flex-1 px-4 pt-2">
+      <View className="flex-1 px-5 pt-2">
         {/* Top bar */}
         <View className="mb-6 flex-row items-center gap-3">
           <Pressable
             onPress={back}
-            className="h-9 w-9 items-center justify-center rounded-full bg-gray-100"
-            accessibilityLabel="Back"
+            className="h-9 w-9 items-center justify-center rounded-full bg-polar"
           >
-            <Text className="text-gray-500">←</Text>
+            <Text className="text-lg font-extrabold font-display text-hare">←</Text>
           </Pressable>
-          <View className="h-3 flex-1 overflow-hidden rounded-full bg-gray-100">
-            <View
-              className="h-full rounded-full bg-grass-500"
-              style={{ width: `${pct}%` }}
-            />
-          </View>
+          <ProgressBar value={pct} />
         </View>
 
         <ScrollView
@@ -209,503 +147,316 @@ export default function Welcome() {
           showsVerticalScrollIndicator={false}
         >
           {step === "parent" && (
-            <ParentStep
-              name={parentName}
+            <Field
+              title="Hi! Who's setting this up?"
+              label="Your name"
+              value={parentName}
               onChange={setParentName}
+              placeholder="e.g. Sam"
             />
           )}
-          {step === "childName" && (
-            <ChildNameStep name={childName} onChange={setChildName} />
+
+          {step === "child" && (
+            <View>
+              <H title="Who are we practicing with?" />
+              <Text className="mb-1 mt-5 font-extrabold font-display text-ink">
+                Child&apos;s first name
+              </Text>
+              <TextInput
+                value={childName}
+                onChangeText={setChildName}
+                placeholder="e.g. Mia"
+                className="rounded-2xl border-2 border-swan px-4 py-3 text-lg"
+                autoFocus
+              />
+              <Text className="mb-2 mt-6 font-extrabold font-display text-ink">
+                How old?
+              </Text>
+              <View className="flex-row flex-wrap gap-2">
+                {AGES.map((a) => (
+                  <Pressable
+                    key={a}
+                    onPress={() => {
+                      hapticLight();
+                      setAge(a);
+                    }}
+                    className={`h-12 w-12 items-center justify-center rounded-2xl border-2 ${
+                      age === a ? "border-macaw bg-macaw-50" : "border-swan bg-white"
+                    }`}
+                  >
+                    <Text
+                      className={`text-lg font-extrabold font-display ${
+                        age === a ? "text-macaw" : "text-ink"
+                      }`}
+                    >
+                      {a}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+            </View>
           )}
-          {step === "childAvatar" && (
-            <AvatarStep
-              childName={childName}
-              avatar={avatar}
-              onPick={setAvatar}
-            />
+
+          {step === "goals" && (
+            <View>
+              <H
+                title={`What should we work on with ${childName || "your child"}?`}
+                sub="Pick all that apply."
+              />
+              <View className="mt-5 gap-3">
+                {GOALS.map((g) => {
+                  const on = goals.has(g.id);
+                  return (
+                    <Pressable
+                      key={g.id}
+                      onPress={() => toggleGoal(g.id)}
+                      className={`flex-row items-center gap-3 rounded-4xl border-2 px-4 py-3.5 ${
+                        on ? "border-feather bg-feather-50" : "border-swan bg-white"
+                      }`}
+                    >
+                      <Text className="text-2xl">{g.emoji}</Text>
+                      <Text className="flex-1 text-base font-extrabold font-display text-ink">
+                        {g.label}
+                      </Text>
+                      <View
+                        className={`h-7 w-7 items-center justify-center rounded-full ${
+                          on ? "bg-feather" : "bg-swan"
+                        }`}
+                      >
+                        {on ? (
+                          <Text className="text-sm font-extrabold text-white">✓</Text>
+                        ) : null}
+                      </View>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </View>
           )}
-          {step === "pathChoice" && (
-            <PathStep childName={childName} value={path} onPick={setPath} />
+
+          {step === "coach" && (
+            <View>
+              <H
+                title="Choose your coach"
+                sub="You can change this later."
+              />
+              <View className="mt-5 gap-3">
+                <CoachCard
+                  emoji="🦁"
+                  title="Animated buddy"
+                  desc="A friendly character — great for younger kids."
+                  recommended={suggested === "animated"}
+                  selected={coach === "animated"}
+                  onPress={() => {
+                    hapticLight();
+                    setCoach("animated");
+                  }}
+                />
+                <CoachCard
+                  emoji="🧑‍🏫"
+                  title="Realistic coach"
+                  desc="A lifelike on-screen coach — best for older kids."
+                  recommended={suggested === "realistic"}
+                  selected={coach === "realistic"}
+                  onPress={() => {
+                    hapticLight();
+                    setCoach("realistic");
+                  }}
+                />
+              </View>
+            </View>
           )}
-          {step === "goalTiles" && (
-            <GoalTilesStep
-              childName={childName}
-              selected={selectedTiles}
-              onToggle={(id) =>
-                setSelectedTiles((prev) => toggleIn(prev, id))
-              }
-            />
+
+          {step === "schedule" && (
+            <View>
+              <H
+                title="How often?"
+                sub="Short and consistent beats long and rare. 3 a week is the sweet spot."
+              />
+              <Text className="mb-2 mt-6 font-extrabold font-display text-ink">
+                Sessions per week
+              </Text>
+              <View className="flex-row gap-2">
+                {SESSIONS_PER_WEEK.map((n) => (
+                  <Chip
+                    key={n}
+                    label={`${n}`}
+                    sub={n === RECOMMENDED_PER_WEEK ? "best" : undefined}
+                    selected={perWeek === n}
+                    onPress={() => {
+                      hapticLight();
+                      setPerWeek(n);
+                    }}
+                  />
+                ))}
+              </View>
+              <Text className="mb-2 mt-6 font-extrabold font-display text-ink">
+                Session length
+              </Text>
+              <View className="flex-row gap-2">
+                {SESSION_MINUTES.map((m) => (
+                  <Chip
+                    key={m}
+                    label={`${m} min`}
+                    sub={m === RECOMMENDED_MINUTES ? "best" : undefined}
+                    selected={minutes === m}
+                    onPress={() => {
+                      hapticLight();
+                      setMinutes(m);
+                    }}
+                  />
+                ))}
+              </View>
+            </View>
           )}
-          {step === "diagnostic" && (
-            <DiagnosticStep
-              childName={childName}
-              selected={challenges}
-              onToggle={(id) =>
-                setChallenges((prev) => toggleIn(prev, id))
-              }
-            />
-          )}
-          {step === "focusReview" && (
-            <FocusReviewStep
-              childName={childName}
-              focus={focus}
-              onRemove={(id) =>
-                setFocus((prev) => {
-                  const n = new Set(prev);
-                  n.delete(id);
-                  return n;
-                })
-              }
-            />
-          )}
-          {step === "routineIntro" && (
-            <Mascot
-              message={`Let's set up ${childName || "their"} learning routine!`}
-            />
-          )}
-          {step === "dailyGoal" && (
-            <DailyGoalStep value={dailyGoal} onPick={setDailyGoal} />
-          )}
-          {step === "motivation" && (
-            <MotivationStep childName={childName} dailyGoal={dailyGoal} />
-          )}
-          {step === "reminders" && (
-            <RemindersStep
-              childName={childName}
-              optedIn={remindersEnabled}
-              onSkip={() => setRemindersEnabled(false)}
-            />
-          )}
+
           {step === "done" && (
-            <DoneStep
-              childName={childName}
-              dailyGoal={dailyGoal}
-              focusCount={focus.size}
-              remindersEnabled={remindersEnabled === true}
-              screener={path === "screener"}
-            />
+            <View className="items-center pt-6">
+              <Text className="text-7xl">🎉</Text>
+              <Text className="mt-4 text-center text-3xl font-extrabold font-display text-brand-600">
+                {childName || "Your child"} is all set!
+              </Text>
+              <Text className="mt-3 text-center text-base font-bold font-heading text-wolf">
+                {perWeek} sessions a week · {minutes} min each. The first one&apos;s
+                on us — free.
+              </Text>
+              <Text className="mt-6 text-center text-xs font-bold font-heading text-hare">
+                Sona is speech &amp; language practice designed with a licensed
+                speech-language pathologist. It supports practice and is not a
+                substitute for professional care.
+              </Text>
+            </View>
           )}
         </ScrollView>
 
         <View className="pb-4 pt-2">
           <Button
-            label={ctaLabel()}
-            onPress={ctaPress}
+            label={step === "done" ? "Start free session" : "Continue"}
+            onPress={next}
             disabled={!canContinue()}
           />
-          {step === "reminders" && remindersEnabled !== false ? (
-            <Pressable
-              onPress={() => {
-                setRemindersEnabled(false);
-                go(1);
-              }}
-              className="mt-2 items-center py-2"
-            >
-              <Text className="font-extrabold font-display uppercase tracking-wide text-gray-400">
-                Not now
-              </Text>
-            </Pressable>
-          ) : null}
         </View>
       </View>
     </SafeAreaView>
   );
 }
 
-// ───────────────────────── individual step bodies ─────────────────────────
-
-function ParentStep({
-  name,
-  onChange,
-}: {
-  name: string;
-  onChange: (s: string) => void;
-}) {
+function H({ title, sub }: { title: string; sub?: string }) {
   return (
     <View>
-      <Mascot message="Hi grown-up! What should I call you?" />
-      <Text className="mb-1 mt-6 font-extrabold font-display text-gray-700">Your name</Text>
-      <TextInput
-        value={name}
-        onChangeText={onChange}
-        placeholder="e.g. Sam"
-        className="rounded-2xl border-2 border-gray-200 px-4 py-3 text-lg"
-        autoFocus
-      />
+      <Text className="text-2xl font-extrabold font-display text-ink">{title}</Text>
+      {sub ? (
+        <Text className="mt-1 text-sm font-bold font-heading text-wolf">{sub}</Text>
+      ) : null}
     </View>
   );
 }
 
-function ChildNameStep({
-  name,
-  onChange,
-}: {
-  name: string;
-  onChange: (s: string) => void;
-}) {
-  return (
-    <View>
-      <Mascot message="Who are we practicing with?" />
-      <Text className="mb-1 mt-6 font-extrabold font-display text-gray-700">
-        Child&apos;s first name
-      </Text>
-      <TextInput
-        value={name}
-        onChangeText={onChange}
-        placeholder="e.g. Mia"
-        className="rounded-2xl border-2 border-gray-200 px-4 py-3 text-lg"
-        autoFocus
-      />
-    </View>
-  );
-}
-
-function AvatarStep({
-  childName,
-  avatar,
-  onPick,
-}: {
-  childName: string;
-  avatar: string;
-  onPick: (a: string) => void;
-}) {
-  return (
-    <View>
-      <Mascot message={`Pick a buddy for ${childName || "your child"}!`} />
-      <View className="mt-6 flex-row flex-wrap justify-between">
-        {AVATARS.map((a) => (
-          <Pressable
-            key={a}
-            onPress={() => onPick(a)}
-            className={`mb-3 h-16 w-16 items-center justify-center rounded-2xl ${
-              avatar === a
-                ? "border-4 border-brand-500 bg-brand-100"
-                : "bg-gray-50"
-            }`}
-          >
-            <Text className="text-3xl">{a}</Text>
-          </Pressable>
-        ))}
-      </View>
-    </View>
-  );
-}
-
-function PathStep({
-  childName,
+function Field({
+  title,
+  label,
   value,
-  onPick,
+  onChange,
+  placeholder,
 }: {
-  childName: string;
-  value: "diagnostic" | "manual" | "screener" | null;
-  onPick: (v: "diagnostic" | "manual" | "screener") => void;
+  title: string;
+  label: string;
+  value: string;
+  onChange: (s: string) => void;
+  placeholder: string;
 }) {
   return (
     <View>
-      <Mascot message={`Where would you like to start with ${childName}?`} />
-      <View className="mt-6">
-        <ChoiceCard
-          selected={value === "screener"}
-          onPress={() => onPick("screener")}
-          emoji="🎧"
-          title="Let Leo listen"
-          description={`${childName || "Your child"} names a few pictures and Leo finds the tricky sounds automatically.`}
-          recommended
-        />
-        <ChoiceCard
-          selected={value === "diagnostic"}
-          onPress={() => onPick("diagnostic")}
-          emoji="🧭"
-          title="Answer a few questions"
-          description={`I'll ask about ${childName || "your child"}'s speech instead.`}
-        />
-        <ChoiceCard
-          selected={value === "manual"}
-          onPress={() => onPick("manual")}
-          emoji="📚"
-          title="I know what to practice"
-          description="Pick the sounds and skills myself."
-        />
-      </View>
+      <H title={title} />
+      <Text className="mb-1 mt-5 font-extrabold font-display text-ink">{label}</Text>
+      <TextInput
+        value={value}
+        onChangeText={onChange}
+        placeholder={placeholder}
+        className="rounded-2xl border-2 border-swan px-4 py-3 text-lg"
+        autoFocus
+      />
     </View>
   );
 }
 
-function GoalTilesStep({
-  childName,
+function CoachCard({
+  emoji,
+  title,
+  desc,
+  recommended,
   selected,
-  onToggle,
+  onPress,
 }: {
-  childName: string;
-  selected: Set<string>;
-  onToggle: (id: string) => void;
+  emoji: string;
+  title: string;
+  desc: string;
+  recommended?: boolean;
+  selected: boolean;
+  onPress: () => void;
 }) {
   return (
-    <View>
-      <Mascot
-        message={`What does ${childName || "your child"} want to work on?`}
-      />
-      <View className="mt-6 flex-row flex-wrap justify-between">
-        {GOAL_TILES.map((tile) => {
-          const on = selected.has(tile.id);
-          return (
-            <Pressable
-              key={tile.id}
-              onPress={() => onToggle(tile.id)}
-              className={`mb-3 w-[48%] items-center rounded-3xl border-4 p-3 ${
-                on
-                  ? "border-grass-500 bg-grass-500/10"
-                  : "border-gray-100 bg-white"
-              }`}
-            >
-              <Text className="text-4xl">{tile.emoji}</Text>
-              <Text className="mt-1 text-center text-sm font-extrabold font-display text-gray-800">
-                {tile.title}
-              </Text>
-              <Text className="text-center text-[11px] text-gray-500">
-                {tile.subtitle}
-              </Text>
-            </Pressable>
-          );
-        })}
+    <Pressable
+      onPress={onPress}
+      className={`flex-row items-center gap-3 rounded-4xl border-2 px-4 py-4 ${
+        selected ? "border-macaw bg-macaw-50" : "border-swan bg-white"
+      }`}
+    >
+      <View className="h-14 w-14 items-center justify-center rounded-3xl bg-polar">
+        <Text className="text-3xl">{emoji}</Text>
       </View>
-    </View>
-  );
-}
-
-function DiagnosticStep({
-  childName,
-  selected,
-  onToggle,
-}: {
-  childName: string;
-  selected: Set<string>;
-  onToggle: (id: string) => void;
-}) {
-  return (
-    <View>
-      <Mascot
-        message={`Which of these sounds like ${childName || "your child"}?`}
-      />
-      <Text className="mt-3 text-sm text-gray-500">
-        Pick all that apply. We&apos;ll build a custom plan from these.
-      </Text>
-      <View className="mt-4">
-        {DIAGNOSTIC_CHALLENGES.map((c) => (
-          <ChoiceCard
-            key={c.id}
-            selected={selected.has(c.id)}
-            onPress={() => onToggle(c.id)}
-            emoji={c.emoji}
-            title={c.label}
-            description={c.example}
-          />
-        ))}
-      </View>
-    </View>
-  );
-}
-
-function FocusReviewStep({
-  childName,
-  focus,
-  onRemove,
-}: {
-  childName: string;
-  focus: Set<string>;
-  onRemove: (id: string) => void;
-}) {
-  const ids = Array.from(focus);
-  return (
-    <View>
-      <Mascot
-        message={
-          focus.size > 0
-            ? `Here's ${childName || "their"} starter plan!`
-            : "We'll show everything for now."
-        }
-      />
-      {focus.size === 0 ? (
-        <Text className="mt-6 text-center text-gray-500">
-          No worries — you can pick goals later from the parent dashboard.
-        </Text>
-      ) : (
-        <View className="mt-6">
-          {ids.map((id) => {
-            const s = findSkill(id);
-            if (!s) return null;
-            return (
-              <View
-                key={id}
-                className="mb-3 flex-row items-center gap-3 rounded-2xl border-2 border-gray-100 p-3"
-              >
-                <Text className="text-3xl">{s.emoji}</Text>
-                <View className="flex-1">
-                  <Text className="text-base font-extrabold font-display text-gray-800">
-                    {s.title}
-                  </Text>
-                  <Text className="text-xs text-gray-500">{s.subtitle}</Text>
-                </View>
-                <Pressable
-                  onPress={() => onRemove(id)}
-                  className="rounded-full bg-gray-100 px-3 py-1"
-                >
-                  <Text className="text-xs font-extrabold font-display text-gray-500">
-                    Remove
-                  </Text>
-                </Pressable>
-              </View>
-            );
-          })}
+      <View className="flex-1">
+        <View className="flex-row items-center gap-2">
+          <Text className="text-base font-extrabold font-display text-ink">{title}</Text>
+          {recommended ? (
+            <Text className="rounded-full bg-feather px-2 py-0.5 text-[10px] font-extrabold font-display uppercase tracking-wide text-white">
+              Suggested
+            </Text>
+          ) : null}
         </View>
-      )}
-    </View>
-  );
-}
-
-function DailyGoalStep({
-  value,
-  onPick,
-}: {
-  value: number;
-  onPick: (n: number) => void;
-}) {
-  return (
-    <View>
-      <Mascot message="What's your daily learning goal?" />
-      <View className="mt-6">
-        {DAILY_GOALS.map((g) => (
-          <ChoiceCard
-            key={g.minutes}
-            selected={value === g.minutes}
-            onPress={() => onPick(g.minutes)}
-            title={g.label}
-            description={g.subtitle}
-            recommended={g.minutes === 10}
-          />
-        ))}
+        <Text className="mt-0.5 text-xs font-bold font-heading text-wolf">{desc}</Text>
       </View>
-    </View>
-  );
-}
-
-function MotivationStep({
-  childName,
-  dailyGoal,
-}: {
-  childName: string;
-  dailyGoal: number;
-}) {
-  const items: Array<{ emoji: string; title: string; body: string }> = [
-    {
-      emoji: "🗣️",
-      title: "Clearer everyday speech",
-      body: "Targeted practice on the exact sounds that need work.",
-    },
-    {
-      emoji: "💪",
-      title: "Confidence to speak up",
-      body: "Short, fun wins so practice never feels like a chore.",
-    },
-    {
-      emoji: "📅",
-      title: "A daily speech habit",
-      body: `Just ${dailyGoal} minutes a day keeps the streak alive.`,
-    },
-  ];
-  return (
-    <View>
-      <Mascot message={`Here's what ${childName || "your child"} can build!`} />
-      <View className="mt-6">
-        {items.map((it) => (
-          <View
-            key={it.title}
-            className="mb-3 flex-row items-start gap-3 rounded-2xl border-2 border-gray-100 p-4"
-          >
-            <Text className="text-3xl">{it.emoji}</Text>
-            <View className="flex-1">
-              <Text className="text-base font-extrabold font-display text-gray-800">
-                {it.title}
-              </Text>
-              <Text className="text-sm text-gray-600">{it.body}</Text>
-            </View>
-          </View>
-        ))}
+      <View
+        className={`h-6 w-6 items-center justify-center rounded-full ${
+          selected ? "bg-macaw" : "bg-swan"
+        }`}
+      >
+        {selected ? <Text className="text-xs font-extrabold text-white">✓</Text> : null}
       </View>
-    </View>
+    </Pressable>
   );
 }
 
-function RemindersStep({
-  childName,
+function Chip({
+  label,
+  sub,
+  selected,
+  onPress,
 }: {
-  childName: string;
-  optedIn: boolean | null;
-  onSkip: () => void;
+  label: string;
+  sub?: string;
+  selected: boolean;
+  onPress: () => void;
 }) {
   return (
-    <View>
-      <Mascot
-        message={`I'll remind ${childName || "you"} to practice — so it becomes a habit!`}
-      />
-      <View className="mt-6 items-center rounded-3xl border-2 border-gray-100 p-6">
-        <Text className="text-6xl">🔔</Text>
-        <Text className="mt-3 text-2xl font-extrabold font-display text-gray-800">
-          Daily reminder
-        </Text>
-        <Text className="mt-2 text-center text-gray-500">
-          One gentle nudge a day. You can turn it off anytime.
-        </Text>
-      </View>
-    </View>
-  );
-}
-
-function DoneStep({
-  childName,
-  dailyGoal,
-  focusCount,
-  remindersEnabled,
-  screener,
-}: {
-  childName: string;
-  dailyGoal: number;
-  focusCount: number;
-  remindersEnabled: boolean;
-  screener: boolean;
-}) {
-  return (
-    <View className="items-center pt-6">
-      <Text className="text-7xl">🎉</Text>
-      <Text className="mt-4 text-4xl font-extrabold font-display text-brand-600">
-        All set!
+    <Pressable
+      onPress={onPress}
+      className={`flex-1 items-center rounded-2xl border-2 py-3 ${
+        selected ? "border-macaw bg-macaw-50" : "border-swan bg-white"
+      }`}
+    >
+      <Text
+        className={`text-lg font-extrabold font-display ${
+          selected ? "text-macaw" : "text-ink"
+        }`}
+      >
+        {label}
       </Text>
-      <Text className="mt-3 text-center text-base text-gray-600">
-        {screener
-          ? `${childName || "Your child"} is ready! Next, Leo will listen to find the tricky sounds.`
-          : `${childName || "Your child"} is ready to roar. Tap below to open their map and start the first lesson.`}
-      </Text>
-      <View className="mt-6 flex-row flex-wrap justify-center gap-2">
-        <RecapPill text={`${dailyGoal} min/day`} />
-        <RecapPill
-          text={
-            screener
-              ? "🎧 Sound check next"
-              : focusCount > 0
-                ? `${focusCount} goal${focusCount === 1 ? "" : "s"} picked`
-                : "All goals available"
-          }
-        />
-        {remindersEnabled ? <RecapPill text="🔔 Reminders on" /> : null}
-      </View>
-    </View>
-  );
-}
-
-function RecapPill({ text }: { text: string }) {
-  return (
-    <View className="rounded-full border-2 border-gray-100 bg-white px-3 py-1">
-      <Text className="font-extrabold font-display text-gray-700">{text}</Text>
-    </View>
+      {sub ? (
+        <Text className="text-[10px] font-extrabold font-display uppercase tracking-wide text-feather-edge">
+          {sub}
+        </Text>
+      ) : null}
+    </Pressable>
   );
 }
