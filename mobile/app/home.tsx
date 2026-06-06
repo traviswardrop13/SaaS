@@ -80,6 +80,32 @@ export default function Home() {
           className="flex-1"
           contentContainerStyle={{ paddingBottom: 100, paddingTop: 6 }}
         >
+          {/* Flagship: the live session with Leo */}
+          <Pressable
+            onPress={() => {
+              hapticLight();
+              router.push("/session");
+            }}
+            className="mx-4 mb-4 overflow-hidden rounded-5xl bg-macaw"
+          >
+            <View className="flex-row items-center gap-3 px-5 py-5">
+              <View className="h-16 w-16 items-center justify-center rounded-3xl bg-white/25">
+                <Text className="text-3xl">🎙️</Text>
+              </View>
+              <View className="flex-1">
+                <Text className="text-xl font-extrabold font-display text-white">
+                  Practice with Leo
+                </Text>
+                <Text className="text-xs font-bold font-heading text-white/90">
+                  A live coaching session — press go & talk
+                </Text>
+              </View>
+              <View className="h-11 w-11 items-center justify-center rounded-full bg-white">
+                <Text className="text-xl text-macaw">▶</Text>
+              </View>
+            </View>
+          </Pressable>
+
           {/* Find sounds — prominent ONLY when there's no plan yet */}
           {!hasPlan ? (
             <Pressable
