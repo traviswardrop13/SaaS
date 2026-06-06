@@ -32,6 +32,9 @@ export type TargetSound =
   | "K"
   | "G"
   | "F"
+  | "Z"
+  | "V"
+  | "J"
   | "P"
   | "T"
   | "M"
@@ -135,6 +138,12 @@ function patternsFor(sound: TargetSound): RegExp[] {
       return [/g(?![h])/];
     case "F":
       return [/f/, /ph/];
+    case "Z":
+      return [/z/];
+    case "V":
+      return [/v/];
+    case "J":
+      return [/j/, /dg/, /g(?=[eiy])/];
     case "P":
       return [/p(?!h)/];
     case "T":
@@ -219,6 +228,18 @@ const SUBSTITUTIONS: Partial<
   F: [
     { wrong: /\bp/, hint: "Top teeth on bottom lip — fffff, not p!" },
     { wrong: /\bb/, hint: "Top teeth on bottom lip — fffff, not b!" },
+  ],
+  Z: [
+    { wrong: /\bd/, hint: "I heard a D. Buzz like a bee — zzz!" },
+    { wrong: /\bs/, hint: "Turn your voice on — zzz, not sss!" },
+  ],
+  V: [
+    { wrong: /\bb/, hint: "Top teeth on bottom lip and buzz — vvv, not b!" },
+    { wrong: /\bf/, hint: "Turn your voice on — vvv, not fff!" },
+  ],
+  J: [
+    { wrong: /\bd/, hint: "Squish D and the SH sound together — j!" },
+    { wrong: /\bch/, hint: "Turn your voice on — j, not ch!" },
   ],
 };
 
