@@ -60,7 +60,13 @@ export default function Home() {
       <SafeAreaView className="flex-1" edges={["top"]}>
         {/* Header */}
         <View className="flex-row items-center justify-between border-b-2 border-swan px-4 pb-3 pt-1">
-          <View className="flex-row items-center gap-2">
+          <Pressable
+            onPress={() => {
+              hapticLight();
+              router.push("/parent");
+            }}
+            className="flex-row items-center gap-2"
+          >
             <View className="h-10 w-10 items-center justify-center rounded-2xl border-2 border-swan bg-polar">
               <Text className="text-xl">{activeChild.avatar || "🦁"}</Text>
             </View>
@@ -69,10 +75,10 @@ export default function Home() {
                 {activeChild.name}
               </Text>
               <Text className="text-[11px] font-extrabold font-display uppercase tracking-wider text-hare">
-                Learner
+                Parent ›
               </Text>
             </View>
-          </View>
+          </Pressable>
           <View className="flex-row gap-2">
             <StatChip icon="🔥" value={String(activeChild.streak)} color="#ff9600" />
             <Pressable
