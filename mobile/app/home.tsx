@@ -7,6 +7,7 @@ import { useStore, visibleSkills, isLessonUnlocked, type Child } from "@/lib/sto
 import { Loading, Pill, Button } from "@/components/ui";
 import { hapticLight } from "@/lib/haptics";
 import { leoGreetHome } from "@/lib/leo";
+import { pairSetsForFocus } from "@/lib/minimalPairs";
 
 // Horizontal offsets that make the node column gently wind like a path.
 const OFFSETS = [0, 60, 88, 60, 0, -60, -88, -60];
@@ -193,10 +194,65 @@ export default function Home() {
               }}
             />
           ))}
+
+          {/* Sound Match — minimal-pairs listening games tied to the plan */}
+          <SoundMatchSection
+            focusAreas={activeChild.focusAreas ?? []}
+            onOpen={(setId) => {
+              hapticLight();
+              router.push({ pathname: "/minimal-pair", params: { setId } });
+            }}
+          />
         </ScrollView>
 
         <BottomNav />
       </SafeAreaView>
+    </View>
+  );
+}
+
+function SoundMatchSection({
+  focusAreas,
+  onOpen,
+}: {
+  focusAreas: string[];
+  onOpen: (setId: string) => void;
+}) {
+  const sets = pairSetsForFocus(focusAreas);
+  if (sets.length === 0) return null;
+  return (
+    <View className="mx-3 mb-8 mt-1">
+      <View className="mb-3 flex-row items-center gap-2 px-2">
+        <Text className="text-xl">🎧</Text>
+        <Text className="text-lg font-extrabold font-display text-ink">
+          Sound Match
+        </Text>
+        <Text className="text-xs font-bold font-heading text-hare">
+          listening games
+        </Text>
+      </View>
+      <View className="gap-3">
+        {sets.map((s) => (
+          <Pressable
+            key={s.id}
+            onPress={() => onOpen(s.id)}
+            className="flex-row items-center gap-3 rounded-4xl border-2 border-macaw bg-macaw-50 px-4 py-3"
+          >
+            <View className="h-11 w-11 items-center justify-center rounded-3xl bg-white">
+              <Text className="text-2xl">{s.emoji}</Text>
+            </View>
+            <View className="flex-1">
+              <Text className="text-base font-extrabold font-display text-ink">
+                {s.title}
+              </Text>
+              <Text className="text-xs font-bold font-heading text-wolf">
+                {s.process}
+              </Text>
+            </View>
+            <Text className="text-xl text-macaw">▶</Text>
+          </Pressable>
+        ))}
+      </View>
     </View>
   );
 }
