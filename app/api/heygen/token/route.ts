@@ -40,6 +40,9 @@ export async function POST(req: NextRequest) {
       method: "POST",
       headers: { "X-API-KEY": key, "Content-Type": "application/json" },
       body: JSON.stringify({
+        // LITE = LiveAvatar streams the avatar only; we drive her lines (our
+        // Claude coach) and do our own scoring. FULL would run their own LLM.
+        mode: "LITE",
         avatar_id: avatarId,
         avatar_persona: { voice_id: voiceId, language: "en" },
       }),
