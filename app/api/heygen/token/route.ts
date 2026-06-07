@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 
 /**
- * Creates a HeyGen **LiveAvatar** session token (api.liveavatar.com) from the
- * server-side HEYGEN_API_KEY. The classic Streaming Avatar API was sunset, so
+ * Creates a **LiveAvatar** session token (api.liveavatar.com) from the
+ * server-side LIVEAVATAR_API_KEY. The classic Streaming Avatar API was sunset, so
  * we use LiveAvatar's /v1/sessions/token. The avatar + voice can be passed via
  * ?avatar=&voice= (or JSON body); they default to the configured coach.
  */
@@ -10,10 +10,12 @@ const DEFAULT_AVATAR = "7f89caae735346619beafd1bc541ae42";
 const DEFAULT_VOICE = "2b5d5579ca074543942d7c9b85fa743c";
 
 export async function POST(req: NextRequest) {
-  const key = process.env.HEYGEN_API_KEY;
+  // LiveAvatar uses its OWN key (from app.liveavatar.com/developers) — the old
+  // HeyGen key is NOT compatible. Accept either env name so the rename is clean.
+  const key = process.env.LIVEAVATAR_API_KEY || process.env.HEYGEN_API_KEY;
   if (!key) {
     return NextResponse.json(
-      { ok: false, error: "Server is missing HEYGEN_API_KEY." },
+      { ok: false, error: "Server is missing LIVEAVATAR_API_KEY." },
       { status: 500 },
     );
   }
