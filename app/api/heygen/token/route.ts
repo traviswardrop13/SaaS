@@ -6,8 +6,9 @@ import { NextRequest, NextResponse } from "next/server";
  * we use LiveAvatar's /v1/sessions/token. The avatar + voice can be passed via
  * ?avatar=&voice= (or JSON body); they default to the configured coach.
  */
-const DEFAULT_AVATAR = "7f89caae735346619beafd1bc541ae42";
-const DEFAULT_VOICE = "2b5d5579ca074543942d7c9b85fa743c";
+// Valid LiveAvatar IDs (HeyGen IDs don't carry over). "Ann" — warm female coach.
+const DEFAULT_AVATAR = "513fd1b7-7ef9-466d-9af2-344e51eeb833";
+const DEFAULT_VOICE = "de5574fc-009e-4a01-a881-9919ef8f5a0c";
 
 export async function POST(req: NextRequest) {
   // LiveAvatar uses its OWN key (from app.liveavatar.com/developers) — the old
@@ -40,9 +41,10 @@ export async function POST(req: NextRequest) {
       method: "POST",
       headers: { "X-API-KEY": key, "Content-Type": "application/json" },
       body: JSON.stringify({
-        // LITE = LiveAvatar streams the avatar only; we drive her lines (our
-        // Claude coach) and do our own scoring. FULL would run their own LLM.
-        mode: "LITE",
+        // FULL = LiveAvatar does the TTS, so we can hand her text and she speaks
+        // it (repeat()). We puppet her with our Claude coach's exact lines and
+        // never enable their LLM/voice-chat. LITE blocks text-to-speech.
+        mode: "FULL",
         avatar_id: avatarId,
         avatar_persona: { voice_id: voiceId, language: "en" },
       }),
