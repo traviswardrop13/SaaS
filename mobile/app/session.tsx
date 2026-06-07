@@ -3,7 +3,7 @@ import { View, Text, Pressable } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useStore } from "@/lib/store";
-import { buildSession, SESSION_WORDS, type SessionLength, type SessionTarget } from "@/lib/session";
+import { buildSession, type SessionLength, type SessionTarget } from "@/lib/session";
 import { coachLine } from "@/lib/coach";
 import { speak } from "@/lib/speech";
 import {
@@ -14,7 +14,6 @@ import {
 } from "@/lib/recorder";
 import { scoreAudio } from "@/lib/cloudScoring";
 import { Button, Loading, ProgressBar } from "@/components/ui";
-import LeoImage from "@/components/LeoImage";
 import CoachFace from "@/components/CoachFace";
 import Confetti from "@/components/Confetti";
 import { MicIcon } from "@/components/icons";
@@ -247,6 +246,9 @@ export default function Session() {
   if (phase === "intro") {
     // Free first session, then the paywall.
     const gated = !!child.freeSessionUsed && !subscribed;
+    // Length comes from the onboarding choice — no per-session decision.
+    const minutes = child.sessionMinutes ?? 15;
+    const length: SessionLength = minutes <= 10 ? "quick" : "full";
     return (
       <SafeAreaView className="flex-1 bg-white" edges={["top", "bottom"]}>
         <View className="flex-row px-4 pt-1">
@@ -258,14 +260,19 @@ export default function Session() {
           </Pressable>
         </View>
         <View className="flex-1 items-center justify-center px-8">
-          <LeoImage speaking={false} mood={gated ? "encourage" : "idle"} size={180} />
-          <Text className="mt-5 text-center text-3xl font-extrabold font-display text-ink">
-            {gated ? "Ready for more?" : "Practice with Leo"}
+          <CoachFace
+            style={child.coachStyle}
+            speaking={false}
+            mood={gated ? "encourage" : "idle"}
+            size={180}
+          />
+          <Text className="mt-6 text-center text-3xl font-extrabold font-display text-ink">
+            {gated ? "Ready for more?" : `Today's session`}
           </Text>
           <Text className="mt-2 text-center text-base font-bold font-heading text-wolf">
             {gated
               ? `${child.name}'s free session is done! Unlock unlimited sessions to keep going.`
-              : "Leo will say a word, you say it back. He listens and helps you — just like a real coach!"}
+              : "Your coach says a word, then it's your turn. You'll get help right when you need it — just like a real coach."}
           </Text>
           <View className="mt-8 w-full max-w-sm gap-3">
             {gated ? (
@@ -279,14 +286,12 @@ export default function Session() {
             ) : (
               <>
                 <Button
-                  label={`Quick session · ${SESSION_WORDS.quick} words`}
-                  onPress={() => startSession("quick")}
+                  label="▶  Start session"
+                  onPress={() => startSession(length)}
                 />
-                <Button
-                  label={`Full session · ${SESSION_WORDS.full} words`}
-                  variant="secondary"
-                  onPress={() => startSession("full")}
-                />
+                <Text className="text-center text-xs font-bold font-heading text-hare">
+                  About {minutes} minutes · {child.name}
+                </Text>
               </>
             )}
           </View>
@@ -301,7 +306,7 @@ export default function Session() {
     const stars = greatRatio >= 0.8 ? 3 : greatRatio >= 0.5 ? 2 : 1;
     return (
       <SafeAreaView className="flex-1 items-center justify-center bg-white px-6">
-        <LeoImage speaking={false} mood="celebrate" size={180} />
+        <CoachFace style={child.coachStyle} speaking={false} mood="celebrate" size={180} />
         <Text className="mt-5 text-3xl font-extrabold font-display text-feather-edge">
           Session done!
         </Text>

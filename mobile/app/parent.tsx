@@ -124,7 +124,7 @@ export default function Parent() {
               {child.name}
             </Text>
             <Text className="text-xs font-bold font-heading text-wolf">
-              {child.dailyGoalMinutes ?? 10} min/day goal
+              {child.sessionMinutes ?? 15} min · {child.sessionsPerWeek ?? 3}× a week
             </Text>
           </View>
         </View>
@@ -337,7 +337,7 @@ function ProfileRow({
           {child.name}
         </Text>
         <Text className="text-xs font-bold font-heading text-wolf">
-          🔥 {child.streak} · ⚡ {child.xp}
+          📅 {weeklySessionCount(child)}/{weeklyGoal(child)} sessions this week
         </Text>
       </View>
       {active ? (

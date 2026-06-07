@@ -22,10 +22,10 @@ function once(key: string): boolean {
 
 const RATE = 0.85; // a touch faster than the lesson read rate — friendlier.
 
-/** First time the home screen sees this child, Leo says hi by name. */
+/** First time the home screen sees this child, greet them by name. */
 export function leoGreetHome(name: string, childId: string) {
   if (!once(`home:${childId}`)) return;
-  speak(`Hi ${name}! Tap a lesson to start.`, { rate: RATE });
+  speak(`Hi ${name}! Ready for today's session?`, { rate: RATE });
 }
 
 /** First arrival in Leo's World — explains the mechanic out loud. */
