@@ -40,8 +40,7 @@
   </div>
 
   <script type="module">
-    // IDs you gave me. Override in the URL if reversed:
-    //   /avatar.html?avatar=XXXX&voice=YYYY
+    // IDs default to the configured coach; override via /avatar.html?avatar=…&voice=…
     const params = new URLSearchParams(location.search);
     const AVATAR_ID = params.get("avatar") || "7f89caae735346619beafd1bc541ae42";
     const VOICE_ID  = params.get("voice")  || "2b5d5579ca074543942d7c9b85fa743c";
@@ -49,75 +48,59 @@
     const video = document.getElementById("video");
     const statusEl = document.getElementById("status");
     const placeholder = document.getElementById("placeholder");
-    let avatar = null;
-    let SDK = null; // { StreamingAvatar, AvatarQuality, StreamingEvents, TaskType }
+    let session = null;
+    let SDK = null;
 
     const setStatus = (s) => { statusEl.textContent = s; };
 
     async function loadSDK() {
       if (SDK) return SDK;
       setStatus("loading sdk…");
-      // Try a couple of CDNs in case one can't build the package.
       const urls = [
-        "https://esm.sh/@heygen/streaming-avatar@2.0.16",
-        "https://cdn.jsdelivr.net/npm/@heygen/streaming-avatar@2.0.16/+esm",
+        "https://esm.sh/@heygen/liveavatar-web-sdk",
+        "https://cdn.jsdelivr.net/npm/@heygen/liveavatar-web-sdk/+esm",
       ];
       let lastErr;
       for (const u of urls) {
         try {
           const m = await import(/* @vite-ignore */ u);
-          if (m && (m.default || m.StreamingAvatar)) {
-            SDK = {
-              StreamingAvatar: m.default || m.StreamingAvatar,
-              AvatarQuality: m.AvatarQuality,
-              StreamingEvents: m.StreamingEvents,
-              TaskType: m.TaskType,
-            };
-            console.log("SDK loaded from", u);
+          if (m && m.LiveAvatarSession) {
+            SDK = { LiveAvatarSession: m.LiveAvatarSession, SessionEvent: m.SessionEvent };
+            console.log("LiveAvatar SDK loaded from", u);
             return SDK;
           }
-          lastErr = new Error("SDK module had no StreamingAvatar export");
-        } catch (e) {
-          console.warn("SDK load failed from", u, e);
-          lastErr = e;
-        }
+          lastErr = new Error("module had no LiveAvatarSession export");
+        } catch (e) { console.warn("sdk load failed", u, e); lastErr = e; }
       }
       throw lastErr || new Error("SDK failed to load");
     }
 
     async function start() {
       try {
-        const { StreamingAvatar, AvatarQuality, StreamingEvents, TaskType } = await loadSDK();
+        const { LiveAvatarSession, SessionEvent } = await loadSDK();
 
         setStatus("getting token…");
-        const res = await fetch("/api/heygen/token", { method: "POST" });
+        const res = await fetch(`/api/heygen/token?avatar=${encodeURIComponent(AVATAR_ID)}&voice=${encodeURIComponent(VOICE_ID)}`, { method: "POST" });
         const data = await res.json();
         if (!data.ok || !data.token) {
           setStatus("token error");
-          alert("Token error: " + (data.error || "unknown") + "\n" + JSON.stringify(data.raw || {}));
+          alert("Token error: " + (data.error || "unknown") + "\nHTTP " + (data.status ?? res.status) + "\n" + JSON.stringify(data.raw || {}, null, 2));
           return;
         }
-        setStatus("connecting avatar…");
-        avatar = new StreamingAvatar({ token: data.token });
 
-        avatar.on(StreamingEvents.STREAM_READY, (e) => {
-          video.srcObject = e.detail;
+        setStatus("connecting avatar…");
+        session = new LiveAvatarSession(data.token, { voiceChat: false });
+        session.attach(video);
+        session.on(SessionEvent.SESSION_STREAM_READY, () => {
           placeholder.style.display = "none";
           setStatus("live ✓");
           video.play().catch(() => {});
         });
-        avatar.on(StreamingEvents.STREAM_DISCONNECTED, () => setStatus("disconnected"));
-        avatar.on(StreamingEvents.AVATAR_START_TALKING, () => setStatus("talking…"));
-        avatar.on(StreamingEvents.AVATAR_STOP_TALKING, () => setStatus("live ✓"));
+        session.on(SessionEvent.SESSION_DISCONNECTED, () => setStatus("disconnected"));
 
-        await avatar.createStartAvatar({
-          quality: AvatarQuality.Low,
-          avatarName: AVATAR_ID,
-          voice: { voiceId: VOICE_ID, rate: 1.0 },
-          language: "en",
-        });
-
-        await avatar.speak({ text: "Hi! I'm so happy to meet you. Let's practice together!", task_type: SDK.TaskType.REPEAT });
+        await session.start();
+        // greet
+        try { session.repeat("Hi! I'm so happy to meet you. Let's practice together!"); } catch (e) { console.warn(e); }
       } catch (err) {
         console.error(err);
         setStatus("error");
@@ -128,13 +111,13 @@
 
     async function say() {
       const t = document.getElementById("text").value.trim();
-      if (!t || !avatar || !SDK) return;
-      try { await avatar.speak({ text: t, task_type: SDK.TaskType.REPEAT }); }
+      if (!t || !session) return;
+      try { session.repeat(t); }
       catch (e) { alert("Speak error: " + (e?.message || e)); }
     }
 
     async function stop() {
-      try { if (avatar) await avatar.stopAvatar(); } catch {}
+      try { if (session) await session.stop(); } catch {}
       setStatus("stopped");
       placeholder.style.display = "block";
     }
@@ -143,7 +126,7 @@
     document.getElementById("sayBtn").onclick = say;
     document.getElementById("stopBtn").onclick = stop;
     document.getElementById("text").addEventListener("keydown", (e) => { if (e.key === "Enter") say(); });
-    console.log("avatar.html ready · avatar", AVATAR_ID, "voice", VOICE_ID);
+    console.log("avatar.html (LiveAvatar) ready · avatar", AVATAR_ID, "voice", VOICE_ID);
   </script>
 </body>
 </html>
