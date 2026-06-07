@@ -286,40 +286,28 @@ function Pricing() {
       <div className="mx-auto max-w-6xl px-5 py-20">
         <SectionHead
           kicker="Pricing"
-          title="Simple plans, cancel anytime"
-          sub="Start with a free session — no card needed. Pick a plan when you're ready. Yearly billing saves about two months."
+          title="One simple plan"
+          sub="Start with a free session — no card needed. One premium plan, everything included, cancel anytime. Yearly billing saves about two months."
         />
-        <div className="mx-auto mt-12 grid max-w-4xl gap-6 lg:grid-cols-2">
+        <div className="mx-auto mt-12 max-w-md">
           <PlanCard
             name="Sona"
-            price="$49"
-            yearly="$39/mo billed yearly"
-            blurb="Everything you need for steady, guided practice."
-            features={[
-              "2 coaching sessions a week",
-              "15-minute sessions",
-              "Personalized plan from the sound check",
-              "Real-time feedback every session",
-              "Parent progress dashboard",
-              "1 child profile",
-            ]}
-            cta="Start free"
-          />
-          <PlanCard
-            name="Sona Plus"
+            badge="Everything included"
             price="$99"
             yearly="$79/mo billed yearly"
-            blurb="The full live experience for faster momentum."
+            blurb="Your child's personal speech coach, on screen the whole session."
             highlight
             features={[
-              "4 coaching sessions a week",
-              "20-minute sessions",
-              "Full realistic live coach",
-              "Weekly progress report",
+              "Live realistic coach — on screen the entire session",
+              "Up to 4 coaching sessions a week",
+              "15-minute sessions",
+              "Personalized plan from the sound check",
+              "Real-time feedback on every sound",
+              "Weekly progress report for parents",
               "Up to 3 children",
-              "Priority support",
+              "Cancel anytime",
             ]}
-            cta="Go Plus"
+            cta="Start free"
           />
         </div>
         <p className="mx-auto mt-8 max-w-xl text-center text-sm text-gray-500">
@@ -339,6 +327,7 @@ function PlanCard({
   features,
   cta,
   highlight,
+  badge,
 }: {
   name: string;
   price: string;
@@ -347,6 +336,7 @@ function PlanCard({
   features: string[];
   cta: string;
   highlight?: boolean;
+  badge?: string;
 }) {
   return (
     <div
@@ -354,9 +344,9 @@ function PlanCard({
         highlight ? "ring-2 ring-brand-500" : ""
       }`}
     >
-      {highlight ? (
+      {badge ? (
         <span className="absolute -top-3 right-6 rounded-full bg-brand-500 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-white">
-          Most popular
+          {badge}
         </span>
       ) : null}
       <h3 className="font-display text-2xl font-extrabold text-gray-900">{name}</h3>
