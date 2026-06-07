@@ -42,8 +42,9 @@
   <script type="module">
     // IDs default to the configured coach; override via /avatar.html?avatar=…&voice=…
     const params = new URLSearchParams(location.search);
-    const AVATAR_ID = params.get("avatar") || "7f89caae735346619beafd1bc541ae42";
-    const VOICE_ID  = params.get("voice")  || "2b5d5579ca074543942d7c9b85fa743c";
+    const AVATAR_ID = params.get("avatar") || "513fd1b7-7ef9-466d-9af2-344e51eeb833"; // Ann (LiveAvatar)
+    const VOICE_ID  = params.get("voice")  || "de5574fc-009e-4a01-a881-9919ef8f5a0c";
+    const MODE = (params.get("mode") || "FULL").toUpperCase(); // LITE = our TTS via repeatAudio
 
     const video = document.getElementById("video");
     const statusEl = document.getElementById("status");
@@ -104,8 +105,9 @@
         session.on(SessionEvent.SESSION_DISCONNECTED, () => setStatus("disconnected"));
 
         await session.start();
-        // greet
-        try { session.repeat("Hi! I'm so happy to meet you. Let's practice together!"); } catch (e) { console.warn(e); }
+        // greet (LITE → our TTS via repeatAudio; FULL → avatar's own TTS via repeat)
+        coachSpeak("Hi! I'm so happy to meet you. Let's practice together!")
+          .catch((e) => console.warn("greet failed", e));
       } catch (err) {
         console.error(err);
         setStatus("error");
@@ -114,10 +116,41 @@
       }
     }
 
+    // Make her speak. In LITE we synthesize the audio ourselves (our voice) and
+    // stream raw PCM to the avatar via repeatAudio; in FULL the avatar TTSes text.
+    async function speakViaTTS(text) {
+      setStatus("synthesizing…");
+      const res = await fetch("/api/tts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text }),
+      });
+      if (!res.ok) {
+        let msg = "TTS error " + res.status;
+        try { const j = await res.json(); msg = j.error || msg; if (j.detail) msg += "\n" + j.detail; } catch {}
+        throw new Error(msg);
+      }
+      const buf = new Uint8Array(await res.arrayBuffer());
+      // bytes -> binary string (each char = one PCM byte), in slices to be safe
+      let bin = "";
+      const CH = 0x8000;
+      for (let i = 0; i < buf.length; i += CH) {
+        bin += String.fromCharCode.apply(null, buf.subarray(i, i + CH));
+      }
+      setStatus("live ✓");
+      session.repeatAudio(bin);
+    }
+
+    async function coachSpeak(text) {
+      if (!session) return;
+      if (MODE === "LITE") return speakViaTTS(text);
+      return session.repeat(text); // FULL: avatar's own TTS
+    }
+
     async function say() {
       const t = document.getElementById("text").value.trim();
       if (!t || !session) return;
-      try { session.repeat(t); }
+      try { await coachSpeak(t); }
       catch (e) { alert("Speak error: " + (e?.message || e)); }
     }
 
@@ -131,7 +164,7 @@
     document.getElementById("sayBtn").onclick = say;
     document.getElementById("stopBtn").onclick = stop;
     document.getElementById("text").addEventListener("keydown", (e) => { if (e.key === "Enter") say(); });
-    console.log("avatar.html (LiveAvatar v2) ready · avatar", AVATAR_ID, "voice", VOICE_ID);
+    console.log("avatar.html (LiveAvatar v3 · mode " + MODE + ") ready · avatar", AVATAR_ID, "voice", VOICE_ID);
   </script>
 </body>
 </html>
