@@ -307,7 +307,8 @@ function Pricing() {
               "Up to 3 children",
               "Cancel anytime",
             ]}
-            cta="Start free"
+            cta="Start 7-day free trial"
+            href="/subscribe"
           />
         </div>
         <p className="mx-auto mt-8 max-w-xl text-center text-sm text-gray-500">
@@ -328,6 +329,7 @@ function PlanCard({
   cta,
   highlight,
   badge,
+  href = "/welcome",
 }: {
   name: string;
   price: string;
@@ -337,6 +339,7 @@ function PlanCard({
   cta: string;
   highlight?: boolean;
   badge?: string;
+  href?: string;
 }) {
   return (
     <div
@@ -359,7 +362,7 @@ function PlanCard({
       </div>
       <p className="mt-1 text-sm font-bold text-grass-600">{yearly}</p>
       <Link
-        href="/welcome"
+        href={href}
         className="mt-6 block w-full rounded-2xl bg-grass-500 px-6 py-3 text-center font-display font-extrabold uppercase tracking-wide text-white shadow-chunky transition hover:bg-grass-600 active:translate-y-1 active:shadow-chunky-sm"
       >
         {cta}
