@@ -4,33 +4,44 @@ import { NextRequest, NextResponse } from "next/server";
  * Text-to-speech for the live coach (LITE avatar path).
  *
  * Returns raw PCM audio — 24 kHz, 16-bit signed, mono — which is exactly the
- * format LiveAvatar's `repeatAudio()` expects, and exactly what OpenAI's TTS
- * `response_format: "pcm"` produces. The browser converts these bytes to a
- * binary string and hands them to the avatar to lip-sync.
+ * format LiveAvatar's `repeatAudio()` expects. The browser turns these bytes
+ * into a binary string and hands them to the avatar to lip-sync.
  *
- * This is the seam that keeps us vendor-independent: the avatar only renders a
- * face; the words (Claude) and the voice (here) are ours. Swap the provider
- * below (e.g. ElevenLabs `pcm_24000`) without touching the client.
+ * Provider auto-selects by which key is set (ElevenLabs preferred for warmth):
+ *   - ELEVENLABS_API_KEY  -> ElevenLabs (pcm_24000)
+ *   - OPENAI_API_KEY      -> OpenAI TTS (pcm)
  *
- * Needs env: OPENAI_API_KEY. Optional: OPENAI_TTS_MODEL, OPENAI_TTS_VOICE.
+ * This is the vendor-independence seam: the avatar only renders a face; the
+ * words (Claude) and the voice (here) are ours, and swappable.
+ *
+ * Optional env:
+ *   ELEVENLABS_VOICE_ID (default "21m00Tcm4TlvDq8ikWAM" — Rachel, warm female)
+ *   ELEVENLABS_MODEL    (default "eleven_turbo_v2_5" — low latency)
+ *   OPENAI_TTS_VOICE / OPENAI_TTS_MODEL
  */
 export const runtime = "nodejs";
 
+const PCM_HEADERS = {
+  "Content-Type": "audio/L16; rate=24000; channels=1",
+  "Cache-Control": "no-store",
+} as const;
+
 export async function POST(req: NextRequest) {
-  const key = process.env.OPENAI_API_KEY;
-  if (!key) {
+  const elevenKey = process.env.ELEVENLABS_API_KEY;
+  const openaiKey = process.env.OPENAI_API_KEY;
+  if (!elevenKey && !openaiKey) {
     return NextResponse.json(
-      { ok: false, error: "Server is missing OPENAI_API_KEY." },
+      { ok: false, error: "Server is missing ELEVENLABS_API_KEY (or OPENAI_API_KEY)." },
       { status: 500 },
     );
   }
 
   let text = "";
-  let voice = process.env.OPENAI_TTS_VOICE || "shimmer";
+  let voiceOverride: string | undefined;
   try {
     const b = await req.json();
     text = typeof b?.text === "string" ? b.text.slice(0, 800) : "";
-    if (typeof b?.voice === "string" && b.voice) voice = b.voice;
+    if (typeof b?.voice === "string" && b.voice) voiceOverride = b.voice;
   } catch {
     // no body
   }
@@ -38,43 +49,59 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: "text is required" }, { status: 400 });
   }
 
-  const model = process.env.OPENAI_TTS_MODEL || "gpt-4o-mini-tts";
-
   try {
+    if (elevenKey) {
+      const voiceId =
+        voiceOverride || process.env.ELEVENLABS_VOICE_ID || "21m00Tcm4TlvDq8ikWAM"; // Rachel
+      const model = process.env.ELEVENLABS_MODEL || "eleven_turbo_v2_5";
+      const r = await fetch(
+        `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?output_format=pcm_24000`,
+        {
+          method: "POST",
+          headers: { "xi-api-key": elevenKey, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            text,
+            model_id: model,
+            voice_settings: {
+              stability: 0.5,
+              similarity_boost: 0.75,
+              style: 0.0,
+              use_speaker_boost: true,
+            },
+          }),
+        },
+      );
+      if (!r.ok) {
+        const detail = await r.text().catch(() => "");
+        return NextResponse.json(
+          {
+            ok: false,
+            error: `ElevenLabs error (${r.status})`,
+            // pcm_24000 output needs a paid ElevenLabs plan — surfaced here if so
+            detail: detail.slice(0, 500),
+          },
+          { status: 502 },
+        );
+      }
+      return new NextResponse(await r.arrayBuffer(), { status: 200, headers: PCM_HEADERS });
+    }
+
+    // Fallback: OpenAI TTS (pcm = 24kHz/16-bit/mono)
+    const voice = voiceOverride || process.env.OPENAI_TTS_VOICE || "shimmer";
+    const model = process.env.OPENAI_TTS_MODEL || "gpt-4o-mini-tts";
     const r = await fetch("https://api.openai.com/v1/audio/speech", {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${key}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model,
-        voice, // warm, friendly female by default ("shimmer")
-        input: text,
-        response_format: "pcm", // 24kHz, 16-bit signed, mono — matches LiveAvatar
-        // a gentle, encouraging children's-coach delivery (supported by gpt-4o-mini-tts)
-        instructions:
-          "You are a warm, upbeat speech coach for a young child. Speak slowly and clearly, gently emphasizing target sounds, with a friendly, encouraging tone.",
-      }),
+      headers: { Authorization: `Bearer ${openaiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ model, voice, input: text, response_format: "pcm" }),
     });
-
     if (!r.ok) {
       const detail = await r.text().catch(() => "");
       return NextResponse.json(
-        { ok: false, error: `TTS provider error (${r.status})`, detail: detail.slice(0, 500) },
+        { ok: false, error: `OpenAI TTS error (${r.status})`, detail: detail.slice(0, 500) },
         { status: 502 },
       );
     }
-
-    const audio = await r.arrayBuffer();
-    return new NextResponse(audio, {
-      status: 200,
-      headers: {
-        // raw little-endian 16-bit PCM @ 24kHz, mono
-        "Content-Type": "audio/L16; rate=24000; channels=1",
-        "Cache-Control": "no-store",
-      },
-    });
+    return new NextResponse(await r.arrayBuffer(), { status: 200, headers: PCM_HEADERS });
   } catch (e: unknown) {
     return NextResponse.json(
       { ok: false, error: e instanceof Error ? e.message : "TTS request failed." },
