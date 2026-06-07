@@ -23,7 +23,11 @@ async function getJson(url: string, key: string) {
 function simplify(json: unknown): Array<Record<string, unknown>> {
   const j = json as Record<string, any>;
   const arr =
-    j?.data?.avatars ?? j?.data?.list ?? j?.avatars ?? (Array.isArray(j?.data) ? j.data : null);
+    j?.data?.results ??
+    j?.data?.avatars ??
+    j?.data?.list ??
+    j?.avatars ??
+    (Array.isArray(j?.data) ? j.data : null);
   if (!Array.isArray(arr)) return [];
   return arr.map((a: Record<string, any>) => ({
     avatar_id: a.avatar_id ?? a.id ?? a.avatarId,
