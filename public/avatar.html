@@ -40,9 +40,6 @@
   </div>
 
   <script type="module">
-    import StreamingAvatar, { AvatarQuality, StreamingEvents, TaskType }
-      from "https://esm.sh/@heygen/streaming-avatar@2.0.16";
-
     // IDs you gave me. Override in the URL if reversed:
     //   /avatar.html?avatar=XXXX&voice=YYYY
     const params = new URLSearchParams(location.search);
@@ -53,11 +50,45 @@
     const statusEl = document.getElementById("status");
     const placeholder = document.getElementById("placeholder");
     let avatar = null;
+    let SDK = null; // { StreamingAvatar, AvatarQuality, StreamingEvents, TaskType }
 
     const setStatus = (s) => { statusEl.textContent = s; };
 
+    async function loadSDK() {
+      if (SDK) return SDK;
+      setStatus("loading sdk…");
+      // Try a couple of CDNs in case one can't build the package.
+      const urls = [
+        "https://esm.sh/@heygen/streaming-avatar@2.0.16",
+        "https://cdn.jsdelivr.net/npm/@heygen/streaming-avatar@2.0.16/+esm",
+      ];
+      let lastErr;
+      for (const u of urls) {
+        try {
+          const m = await import(/* @vite-ignore */ u);
+          if (m && (m.default || m.StreamingAvatar)) {
+            SDK = {
+              StreamingAvatar: m.default || m.StreamingAvatar,
+              AvatarQuality: m.AvatarQuality,
+              StreamingEvents: m.StreamingEvents,
+              TaskType: m.TaskType,
+            };
+            console.log("SDK loaded from", u);
+            return SDK;
+          }
+          lastErr = new Error("SDK module had no StreamingAvatar export");
+        } catch (e) {
+          console.warn("SDK load failed from", u, e);
+          lastErr = e;
+        }
+      }
+      throw lastErr || new Error("SDK failed to load");
+    }
+
     async function start() {
       try {
+        const { StreamingAvatar, AvatarQuality, StreamingEvents, TaskType } = await loadSDK();
+
         setStatus("getting token…");
         const res = await fetch("/api/heygen/token", { method: "POST" });
         const data = await res.json();
@@ -86,20 +117,19 @@
           language: "en",
         });
 
-        // greet
-        await avatar.speak({ text: "Hi! I'm so happy to meet you. Let's practice together!", task_type: TaskType.REPEAT });
+        await avatar.speak({ text: "Hi! I'm so happy to meet you. Let's practice together!", task_type: SDK.TaskType.REPEAT });
       } catch (err) {
         console.error(err);
         setStatus("error");
         alert("Avatar error: " + (err?.message || err) +
-          "\n\nIf this says the avatar is invalid, your IDs may be swapped — try /avatar.html?avatar=" + VOICE_ID + "&voice=" + AVATAR_ID);
+          "\n\nIf it mentions the avatar is invalid, the IDs may be swapped — try /avatar.html?avatar=" + VOICE_ID + "&voice=" + AVATAR_ID);
       }
     }
 
     async function say() {
       const t = document.getElementById("text").value.trim();
-      if (!t || !avatar) return;
-      try { await avatar.speak({ text: t, task_type: TaskType.REPEAT }); }
+      if (!t || !avatar || !SDK) return;
+      try { await avatar.speak({ text: t, task_type: SDK.TaskType.REPEAT }); }
       catch (e) { alert("Speak error: " + (e?.message || e)); }
     }
 
@@ -113,6 +143,7 @@
     document.getElementById("sayBtn").onclick = say;
     document.getElementById("stopBtn").onclick = stop;
     document.getElementById("text").addEventListener("keydown", (e) => { if (e.key === "Enter") say(); });
+    console.log("avatar.html ready · avatar", AVATAR_ID, "voice", VOICE_ID);
   </script>
 </body>
 </html>
