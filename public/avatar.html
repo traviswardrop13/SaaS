@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <title>Sona — Avatar test</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, "Segoe UI", Roboto, sans-serif; }
+    html, body { height: 100%; background: #0b1220; color: #fff; }
+    #stage { position: relative; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
+      background: radial-gradient(1200px 800px at 50% 30%, #1b2a4a, #0b1220); }
+    video { max-width: 100%; max-height: 100%; border-radius: 18px; background: #000; }
+    #placeholder { position: absolute; text-align: center; opacity: .85; }
+    #placeholder h1 { font-size: 22px; font-weight: 800; }
+    #placeholder p { margin-top: 8px; font-size: 14px; opacity: .7; max-width: 320px; }
+    #bar { position: absolute; left: 0; right: 0; bottom: 0; padding: 14px;
+      display: flex; gap: 8px; background: linear-gradient(to top, rgba(0,0,0,.6), transparent); }
+    input { flex: 1; padding: 13px 14px; border-radius: 12px; border: none; font-size: 15px; }
+    button { padding: 13px 16px; border-radius: 12px; border: none; font-weight: 800; font-size: 15px; cursor: pointer; }
+    .primary { background: #1cb0f6; color: #fff; }
+    .ghost { background: rgba(255,255,255,.15); color: #fff; }
+    #status { position: absolute; top: 12px; left: 12px; font-size: 12px; font-weight: 700;
+      background: rgba(0,0,0,.45); padding: 6px 10px; border-radius: 99px; }
+  </style>
+</head>
+<body>
+  <div id="stage">
+    <div id="placeholder">
+      <h1>Meet your coach 👋</h1>
+      <p>Tap <b>Start</b> to connect the live avatar. (You'll be asked to allow audio.)</p>
+    </div>
+    <video id="video" autoplay playsinline></video>
+    <div id="status">idle</div>
+    <div id="bar">
+      <button id="startBtn" class="primary">▶ Start</button>
+      <input id="text" placeholder="Type something for her to say…" />
+      <button id="sayBtn" class="ghost">Say it</button>
+      <button id="stopBtn" class="ghost">Stop</button>
+    </div>
+  </div>
+
+  <script type="module">
+    import StreamingAvatar, { AvatarQuality, StreamingEvents, TaskType }
+      from "https://esm.sh/@heygen/streaming-avatar@2.0.16";
+
+    // IDs you gave me. Override in the URL if reversed:
+    //   /avatar.html?avatar=XXXX&voice=YYYY
+    const params = new URLSearchParams(location.search);
+    const AVATAR_ID = params.get("avatar") || "7f89caae735346619beafd1bc541ae42";
+    const VOICE_ID  = params.get("voice")  || "2b5d5579ca074543942d7c9b85fa743c";
+
+    const video = document.getElementById("video");
+    const statusEl = document.getElementById("status");
+    const placeholder = document.getElementById("placeholder");
+    let avatar = null;
+
+    const setStatus = (s) => { statusEl.textContent = s; };
+
+    async function start() {
+      try {
+        setStatus("getting token…");
+        const res = await fetch("/api/heygen/token", { method: "POST" });
+        const data = await res.json();
+        if (!data.ok || !data.token) {
+          setStatus("token error");
+          alert("Token error: " + (data.error || "unknown") + "\n" + JSON.stringify(data.raw || {}));
+          return;
+        }
+        setStatus("connecting avatar…");
+        avatar = new StreamingAvatar({ token: data.token });
+
+        avatar.on(StreamingEvents.STREAM_READY, (e) => {
+          video.srcObject = e.detail;
+          placeholder.style.display = "none";
+          setStatus("live ✓");
+          video.play().catch(() => {});
+        });
+        avatar.on(StreamingEvents.STREAM_DISCONNECTED, () => setStatus("disconnected"));
+        avatar.on(StreamingEvents.AVATAR_START_TALKING, () => setStatus("talking…"));
+        avatar.on(StreamingEvents.AVATAR_STOP_TALKING, () => setStatus("live ✓"));
+
+        await avatar.createStartAvatar({
+          quality: AvatarQuality.Low,
+          avatarName: AVATAR_ID,
+          voice: { voiceId: VOICE_ID, rate: 1.0 },
+          language: "en",
+        });
+
+        // greet
+        await avatar.speak({ text: "Hi! I'm so happy to meet you. Let's practice together!", task_type: TaskType.REPEAT });
+      } catch (err) {
+        console.error(err);
+        setStatus("error");
+        alert("Avatar error: " + (err?.message || err) +
+          "\n\nIf this says the avatar is invalid, your IDs may be swapped — try /avatar.html?avatar=" + VOICE_ID + "&voice=" + AVATAR_ID);
+      }
+    }
+
+    async function say() {
+      const t = document.getElementById("text").value.trim();
+      if (!t || !avatar) return;
+      try { await avatar.speak({ text: t, task_type: TaskType.REPEAT }); }
+      catch (e) { alert("Speak error: " + (e?.message || e)); }
+    }
+
+    async function stop() {
+      try { if (avatar) await avatar.stopAvatar(); } catch {}
+      setStatus("stopped");
+      placeholder.style.display = "block";
+    }
+
+    document.getElementById("startBtn").onclick = start;
+    document.getElementById("sayBtn").onclick = say;
+    document.getElementById("stopBtn").onclick = stop;
+    document.getElementById("text").addEventListener("keydown", (e) => { if (e.key === "Enter") say(); });
+  </script>
+</body>
+</html>
