@@ -21,9 +21,15 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // Everything is URL-driven so we can iterate in the browser without redeploys:
+  //   ?avatar=&voice=&mode=FULL|LITE&sandbox=1
   const { searchParams } = new URL(req.url);
   let avatarId = searchParams.get("avatar");
   let voiceId = searchParams.get("voice");
+  const mode = (searchParams.get("mode") || "FULL").toUpperCase();
+  const sandbox = ["1", "true", "yes"].includes(
+    (searchParams.get("sandbox") || "").toLowerCase(),
+  );
   if (req.method === "POST") {
     try {
       const b = await req.json();
@@ -37,17 +43,19 @@ export async function POST(req: NextRequest) {
   voiceId = voiceId || DEFAULT_VOICE;
 
   try {
+    const body: Record<string, unknown> = {
+      // FULL = LiveAvatar does the TTS, so we can hand her text and she speaks it
+      // (repeat()). We puppet her with our Claude coach's exact lines and never
+      // enable their LLM/voice-chat. LITE blocks text-to-speech (needs audio).
+      mode,
+      avatar_id: avatarId,
+      avatar_persona: { voice_id: voiceId, language: "en" },
+    };
+    if (sandbox) body.is_sandbox = true;
     const r = await fetch("https://api.liveavatar.com/v1/sessions/token", {
       method: "POST",
       headers: { "X-API-KEY": key, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        // FULL = LiveAvatar does the TTS, so we can hand her text and she speaks
-        // it (repeat()). We puppet her with our Claude coach's exact lines and
-        // never enable their LLM/voice-chat. LITE blocks text-to-speech.
-        mode: "FULL",
-        avatar_id: avatarId,
-        avatar_persona: { voice_id: voiceId, language: "en" },
-      }),
+      body: JSON.stringify(body),
     });
     const json = await r.json().catch(() => ({}));
     // Token field name isn't documented for us yet — try the likely spots and

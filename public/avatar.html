@@ -80,7 +80,12 @@
         const { LiveAvatarSession, SessionEvent } = await loadSDK();
 
         setStatus("getting token…");
-        const res = await fetch(`/api/heygen/token?avatar=${encodeURIComponent(AVATAR_ID)}&voice=${encodeURIComponent(VOICE_ID)}`, { method: "POST" });
+        // Forward avatar/voice + any mode=&sandbox= flags straight through so we
+        // can experiment from the URL without redeploying.
+        const tokenParams = new URLSearchParams(location.search);
+        tokenParams.set("avatar", AVATAR_ID);
+        tokenParams.set("voice", VOICE_ID);
+        const res = await fetch(`/api/heygen/token?${tokenParams.toString()}`, { method: "POST" });
         const data = await res.json();
         if (!data.ok || !data.token) {
           setStatus("token error");
