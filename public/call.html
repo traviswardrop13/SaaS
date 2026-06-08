@@ -294,18 +294,22 @@
     const FRAMES = { idle:"/coach/idle.png", open:"/coach/talk-open.png", closed:"/coach/talk-closed.png",
                      listening:"/coach/listening.png", celebrate:"/coach/celebrate.png", encourage:"/coach/encourage.png" };
     const coachImg = document.getElementById("coachImg");
+    const FRAME_OK = {};
     let imgReady = false, restState = "idle";
-    function setFrame(key){ if(imgReady && FRAMES[key]) coachImg.src = FRAMES[key]; }
+    // use the requested frame only if it actually loaded, else fall back to idle
+    function setFrame(key){ if(!imgReady) return; const k = FRAME_OK[key] ? key : "idle"; if(FRAMES[k]) coachImg.src = FRAMES[k]; }
     (function preloadCoach(){
-      const test = new Image();
-      test.onload = function(){
-        imgReady = true;
-        Object.values(FRAMES).forEach(function(u){ const im = new Image(); im.src = u; }); // warm cache
-        coachImg.src = FRAMES.idle; coachImg.style.display = "block";
-        const svg = document.getElementById("lion"); if(svg) svg.style.display = "none";
-      };
-      test.onerror = function(){ imgReady = false; }; // no files yet → keep the built-in SVG
-      test.src = FRAMES.idle;
+      Object.keys(FRAMES).forEach(function(key){
+        const im = new Image();
+        im.onload = function(){
+          FRAME_OK[key] = true;
+          if(key === "idle"){ // idle present → switch from SVG to the PNG coach
+            imgReady = true; coachImg.src = FRAMES.idle; coachImg.style.display = "block";
+            const svg = document.getElementById("lion"); if(svg) svg.style.display = "none";
+          }
+        };
+        im.src = FRAMES[key];
+      });
     })();
 
     let mouthRAF = null;
