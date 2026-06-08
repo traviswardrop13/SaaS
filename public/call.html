@@ -19,12 +19,14 @@
     #coachStage{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;
       background:radial-gradient(1100px 800px at 50% 30%, #ffffff, #e8f1ff);}
     #coachStage.show{display:flex;}
-    #orb{width:180px;height:180px;border-radius:50%;overflow:hidden;background:linear-gradient(160deg,#dbeafe,#fef9c3);
-      box-shadow:0 22px 60px rgba(30,64,175,.18);transition:transform .2s;}
-    #orb.speaking{animation:talk 1s ease-in-out infinite;}
-    @keyframes talk{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
+    #lionWrap{width:min(62vw,260px);animation:bob 3.6s ease-in-out infinite;}
+    #lionWrap.speaking{animation:bob 1.7s ease-in-out infinite;}
+    @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+    #lion{width:100%;height:auto;display:block;filter:drop-shadow(0 18px 40px rgba(30,64,175,.18));}
+    #mouth{transform-box:fill-box;transform-origin:center top;transform:scaleY(.18);}
+    #eyeL,#eyeR{transform-box:fill-box;transform-origin:center;transition:transform .08s;}
     .coachpic{width:100%;height:100%;object-fit:cover;display:block;}
-    #coachStage .who{margin-top:16px;font-family:"Baloo 2";font-weight:800;color:#0f2742;font-size:20px;opacity:.85;}
+    #coachStage .who{margin-top:14px;font-family:"Baloo 2";font-weight:800;color:#0f2742;font-size:20px;opacity:.85;}
 
     #bar{position:fixed;top:0;left:0;right:0;z-index:30;display:flex;justify-content:space-between;align-items:center;
       padding:14px 16px;opacity:0;transition:opacity .35s;pointer-events:none;}
@@ -96,7 +98,27 @@
 <body>
   <div id="stage">
     <video id="video" autoplay playsinline></video>
-    <div id="coachStage"><div id="orb"><img class="coachpic" src="/coach.jpg" onerror="this.onerror=null;this.src='/coach-avatar.svg'" alt="coach" /></div><div class="who" id="coachWho">Coach</div></div>
+    <div id="coachStage">
+      <div id="lionWrap">
+        <svg id="lion" viewBox="0 0 240 256" width="240" height="256" aria-label="Coach Leo">
+          <g id="mane" fill="#df8f3a">
+            <circle cx="202" cy="128" r="15"/><circle cx="178" cy="186" r="15"/><circle cx="120" cy="210" r="15"/>
+            <circle cx="62" cy="186" r="15"/><circle cx="38" cy="128" r="15"/><circle cx="62" cy="70" r="15"/>
+            <circle cx="120" cy="46" r="15"/><circle cx="178" cy="70" r="15"/>
+            <circle cx="120" cy="128" r="80"/>
+          </g>
+          <circle cx="74" cy="86" r="15" fill="#df8f3a"/><circle cx="166" cy="86" r="15" fill="#df8f3a"/>
+          <circle cx="74" cy="88" r="7" fill="#f7cf91"/><circle cx="166" cy="88" r="7" fill="#f7cf91"/>
+          <circle cx="120" cy="128" r="62" fill="#f7cf91"/>
+          <g id="eyeL"><ellipse cx="100" cy="118" rx="8" ry="11" fill="#fff"/><circle cx="100" cy="120" r="4.5" fill="#33261a"/></g>
+          <g id="eyeR"><ellipse cx="140" cy="118" rx="8" ry="11" fill="#fff"/><circle cx="140" cy="120" r="4.5" fill="#33261a"/></g>
+          <circle cx="88" cy="150" r="8" fill="#f7b3a3" opacity=".5"/><circle cx="152" cy="150" r="8" fill="#f7b3a3" opacity=".5"/>
+          <path d="M111 139 h18 l-9 9 z" fill="#7a4a2a"/>
+          <ellipse id="mouth" cx="120" cy="166" rx="17" ry="11" fill="#7a3b28"/>
+        </svg>
+      </div>
+      <div class="who" id="coachWho">Coach</div>
+    </div>
 
     <div id="caption" class="onlight"></div>
 
@@ -121,7 +143,7 @@
 
     <!-- JOIN -->
     <div id="join" class="screen">
-      <div class="bigorb"><img class="coachpic" src="/coach.jpg" onerror="this.onerror=null;this.src='/coach-avatar.svg'" alt="coach" /></div>
+      <div class="bigorb">🦁</div>
       <h1>Your coach is ready to meet you!</h1>
       <p class="sub">Pop on your headphones and tap below — your coach will say hello and practice some words with you.</p>
       <button id="joinBtn">▶&nbsp;&nbsp;Start meeting</button>
@@ -163,6 +185,7 @@
     const VOICE_ON = profile.voiceOn !== false;
     const CLOUD_SCORING = profile.cloudScoring !== false;
     let useSpeechAce = false;
+    const LIVE_MODE = params.get("live") === "1"; // animated coach is the default; ?live=1 uses the realistic avatar
 
     const focus = (profile.focusSounds || []);
     const TARGET = (params.get("sound") || focus[0] || "R").toUpperCase();
@@ -209,7 +232,10 @@
 
     const video = document.getElementById("video");
     const coachStage = document.getElementById("coachStage");
-    const orb = document.getElementById("orb");
+    const lionWrap = document.getElementById("lionWrap");
+    const mouthEl = document.getElementById("mouth");
+    const eyeL = document.getElementById("eyeL");
+    const eyeR = document.getElementById("eyeR");
     const captionEl = document.getElementById("caption");
     const wordCard = document.getElementById("wordCard");
     const wcEmoji = document.getElementById("wcEmoji");
@@ -250,7 +276,7 @@
     }
     function buildDots(){ dotsEl.innerHTML=""; (SCREENER?SCREEN_PROBES:STEPS).forEach(()=>{ const d=document.createElement("div"); d.className="dot"; dotsEl.appendChild(d); }); }
     function setDot(i){ [...dotsEl.children].forEach((d,k)=>{ d.className = "dot" + (k<i?" done":k===i?" cur":""); }); }
-    const pulse = (on) => orb.classList.toggle("speaking", !!on);
+    const pulse = (on) => lionWrap && lionWrap.classList.toggle("speaking", !!on);
 
     let hideT;
     function unmuteVideo(){ try{ video.muted = false; video.play().catch(()=>{}); }catch{} unmuteBtn.classList.remove("show"); }
@@ -260,6 +286,20 @@
 
     function getCtx(){ if(!audioCtx){ const AC = window.AudioContext || window.webkitAudioContext; audioCtx = new AC(); }
       if(audioCtx.state === "suspended") audioCtx.resume(); return audioCtx; }
+    // Amplitude-driven lip-sync: open the lion's mouth to the loudness of the audio.
+    let mouthRAF = null;
+    function setMouthOpen(o){ if(mouthEl) mouthEl.style.transform = "scaleY(" + (0.18 + Math.min(1, o) * 1.05) + ")"; }
+    function startMouthLoop(analyser){
+      const data = new Uint8Array(analyser.fftSize);
+      (function tick(){
+        analyser.getByteTimeDomainData(data);
+        let sum = 0; for(let i=0;i<data.length;i++){ const v = (data[i] - 128) / 128; sum += v * v; }
+        setMouthOpen(Math.min(1, Math.sqrt(sum / data.length) * 3.4));
+        mouthRAF = requestAnimationFrame(tick);
+      })();
+    }
+    function stopMouthLoop(){ if(mouthRAF) cancelAnimationFrame(mouthRAF); mouthRAF = null; setMouthOpen(0); }
+
     function playPCM(bytes){
       return new Promise((resolve)=>{
         try{
@@ -269,11 +309,13 @@
           const ch = ab.getChannelData(0);
           const dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
           for(let i=0;i<n;i++) ch[i] = dv.getInt16(i*2, true) / 32768;
-          const src = ctx.createBufferSource();
-          src.buffer = ab; src.connect(ctx.destination);
-          src.onended = () => resolve();
+          const src = ctx.createBufferSource(); src.buffer = ab;
+          const analyser = ctx.createAnalyser(); analyser.fftSize = 256;
+          src.connect(analyser); analyser.connect(ctx.destination);
+          startMouthLoop(analyser);
+          src.onended = () => { stopMouthLoop(); resolve(); };
           src.start();
-        }catch(e){ console.warn("playPCM failed", e); resolve(); }
+        }catch(e){ console.warn("playPCM failed", e); stopMouthLoop(); resolve(); }
       });
     }
 
@@ -393,21 +435,21 @@
       if(!avatarLive) throw new Error("stream not ready (avatar didn't send video)");
     }
 
-    async function join(useAvatar){
+    async function join(){
       joinBtn.disabled = true; previewLink.disabled = true;
       errEl.classList.remove("show"); errEl.textContent = "";
       getCtx();
-      try { video.play().catch(()=>{}); } catch {} // prime within the gesture
       // mic up front (for recording the child's turns)
       try { micStream = await navigator.mediaDevices.getUserMedia({ audio:true }); } catch(e){ micStream = null; showDbg("mic: " + (e && e.message || e)); }
       joinScreen.classList.add("hidden");
-      connScreen.classList.remove("hidden");
       try{
-        if(useAvatar){
+        if(LIVE_MODE){
+          try { video.play().catch(()=>{}); } catch {} // prime within the gesture
+          connScreen.classList.remove("hidden");
           try{ await startAvatar(); }
-          catch(e){ console.warn("avatar unavailable — voice-only:", e); avatarLive = false; showDbg("avatar → audio-only: " + String(e && e.message || e)); }
+          catch(e){ console.warn("live avatar unavailable — animated coach:", e); avatarLive = false; showDbg("live avatar → animated: " + String(e && e.message || e)); }
+          connScreen.classList.add("hidden");
         }
-        connScreen.classList.add("hidden");
         if(avatarLive){ video.classList.add("show"); } else { coachStage.classList.add("show"); }
         pokeBar();
         await detectScorer();
@@ -506,8 +548,10 @@
     function leave(){ alive = false; try{ session?.stop(); }catch{} try{ micStream?.getTracks().forEach(t=>t.stop()); }catch{} location.href = "/home.html"; }
 
     buildDots();
-    joinBtn.onclick = () => join(true);
-    previewLink.onclick = () => join(false);
+    setInterval(function(){ if(!eyeL) return; eyeL.style.transform = eyeR.style.transform = "scaleY(0.1)"; setTimeout(function(){ eyeL.style.transform = eyeR.style.transform = ""; }, 130); }, 4200);
+    joinBtn.onclick = () => join();
+    previewLink.textContent = LIVE_MODE ? "Use the animated coach instead" : "Use the realistic video coach instead";
+    previewLink.onclick = () => { const u = new URL(location.href); if(LIVE_MODE) u.searchParams.delete("live"); else u.searchParams.set("live", "1"); location.href = u.toString(); };
     document.getElementById("leave").onclick = leave;
     unmuteBtn.onclick = unmuteVideo;
     window.addEventListener("pagehide", () => { try{ session?.stop(); }catch{} try{ micStream?.getTracks().forEach(t=>t.stop()); }catch{} });
