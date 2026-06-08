@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
   try {
     if (elevenKey) {
       const voiceId =
-        voiceOverride || process.env.ELEVENLABS_VOICE_ID || "21m00Tcm4TlvDq8ikWAM"; // Rachel
+        voiceOverride || process.env.ELEVENLABS_VOICE_ID || "RJ94BzgbkIV3dGoYvkpb"; // Sona brand voice
       const model = process.env.ELEVENLABS_MODEL || "eleven_turbo_v2_5";
       const r = await fetch(
         `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?output_format=pcm_24000`,
