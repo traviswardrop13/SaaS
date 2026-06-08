@@ -63,9 +63,10 @@ export async function POST(req: NextRequest) {
             text,
             model_id: model,
             voice_settings: {
-              stability: 0.5,
-              similarity_boost: 0.75,
+              stability: 0.6,
+              similarity_boost: 0.8,
               style: 0.0,
+              speed: 0.9, // a little slower / more relaxed for young kids
               use_speaker_boost: true,
             },
           }),

@@ -270,10 +270,10 @@
           for(let i=0;i<buf.length;i+=CH) bin += String.fromCharCode.apply(null, buf.subarray(i, i+CH));
           const durMs = (buf.length/(24000*2))*1000;
           session.repeatAudio(bin);
-          await sleep(durMs + 700);
+          await sleep(durMs + 900);
         } else {
           await playPCM(buf);
-          await sleep(250);
+          await sleep(550);
         }
       }catch(e){ console.warn("speak failed", e); }
       finally{ pulse(false); }
