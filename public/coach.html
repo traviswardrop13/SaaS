@@ -145,6 +145,14 @@
 
     let session = null, SDK = null, micStream = null, alive = true;
 
+    // Readiness gate: the avatar only accepts speak/repeatAudio once the live
+    // stream is up. Resolved on SESSION_STREAM_READY so the greeting waits
+    // instead of racing the connection ("Session needs to be connected…").
+    let streamReady = false, readyResolve = null, readyPromise = null;
+    const resetReady = ()=>{ streamReady = false; readyPromise = new Promise(r=>readyResolve=r); };
+    const waitReady = (ms=12000)=> streamReady ? Promise.resolve()
+      : Promise.race([readyPromise || Promise.resolve(), new Promise(r=>setTimeout(r,ms))]);
+
     const setStatus = (s)=> statusEl.textContent = s || "";
     const setCaption = (t)=>{ captionEl.textContent = t || ""; captionEl.classList.toggle("show", !!t); };
     function showWord(w){
@@ -198,6 +206,7 @@
     async function coachSpeak(text){
       if(!text || !session) return;
       setCaption(text);
+      await waitReady(8000); // never send a command before the stream is live
       if(MODE!=="LITE"){ try{ session.repeat(text); }catch(e){} await sleep(Math.min(8000, 600 + text.length*55)); return; }
       const res = await fetch("/api/tts",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text})});
       if(!res.ok){
@@ -227,12 +236,20 @@
 
     /* ---------------- session ---------------- */
     async function start(){
+      const startBtn = document.getElementById("startBtn");
+      startBtn.disabled = true;
       errBox.classList.add("hidden"); errBox.textContent="";
       try{
         // mic permission up front (used for the child's turns / future scoring)
         try{ micStream = await navigator.mediaDevices.getUserMedia({audio:true}); }catch(e){ /* allow no-mic demo */ }
 
         const { LiveAvatarSession, SessionEvent } = await loadSDK();
+
+        // Close any prior session first so a re-Start doesn't trip the account's
+        // concurrent-session limit.
+        if(session){ try{ await session.stop(); }catch{} session=null; }
+        resetReady();
+
         setStatus("connecting…");
         const tp = new URLSearchParams(location.search);
         tp.set("avatar",AVATAR_ID); tp.set("voice",VOICE_ID); if(!tp.get("mode")) tp.set("mode",MODE);
@@ -242,17 +259,23 @@
 
         session = new LiveAvatarSession(data.token, { voiceChat:false });
         session.attach(video);
-        session.on(SessionEvent.SESSION_STREAM_READY, ()=>{ video.play().catch(()=>{}); });
-        session.on(SessionEvent.SESSION_DISCONNECTED, ()=>{ if(alive) setStatus("disconnected"); });
+        session.on(SessionEvent.SESSION_STREAM_READY, ()=>{ streamReady=true; readyResolve&&readyResolve(); video.play().catch(()=>{}); });
+        session.on(SessionEvent.SESSION_DISCONNECTED, ()=>{ streamReady=false; if(alive) setStatus("disconnected"); });
         await session.start();
+        await waitReady(); // wait until the stream is live before the first line
 
         startOverlay.classList.add("hidden");
         await runSession();
       }catch(err){
         console.error(err);
-        errBox.textContent = String(err?.message||err);
+        const m = String(err?.message||err);
+        errBox.textContent = /concurren/i.test(m)
+          ? "Coach busy: a previous session is still open (your plan allows one at a time).\nClose other tabs running the coach, wait ~30–60 seconds, then try again."
+          : m;
         errBox.classList.remove("hidden");
         setStatus("error");
+      }finally{
+        startBtn.disabled = false;
       }
     }
 
@@ -289,6 +312,9 @@
     document.getElementById("startBtn").onclick = start;
     document.getElementById("close").onclick = quit;
     document.getElementById("againBtn").onclick = ()=> location.reload();
+    // Release the session if the tab is closed/navigated away so the avatar
+    // slot frees immediately instead of lingering against the concurrency cap.
+    window.addEventListener("pagehide", ()=>{ try{ session?.stop(); }catch{} });
     console.log("coach.html ready · mode", MODE, "· avatar", AVATAR_ID);
   </script>
 </body>

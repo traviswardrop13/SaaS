@@ -17,6 +17,7 @@
       display: flex; gap: 8px; background: linear-gradient(to top, rgba(0,0,0,.6), transparent); }
     input { flex: 1; padding: 13px 14px; border-radius: 12px; border: none; font-size: 15px; }
     button { padding: 13px 16px; border-radius: 12px; border: none; font-weight: 800; font-size: 15px; cursor: pointer; }
+    button:disabled { opacity: .5; cursor: default; }
     .primary { background: #1cb0f6; color: #fff; }
     .ghost { background: rgba(255,255,255,.15); color: #fff; }
     #status { position: absolute; top: 12px; left: 12px; font-size: 12px; font-weight: 700;
@@ -49,8 +50,21 @@
     const video = document.getElementById("video");
     const statusEl = document.getElementById("status");
     const placeholder = document.getElementById("placeholder");
+    const startBtn = document.getElementById("startBtn");
     let session = null;
     let SDK = null;
+
+    // Readiness gate: the avatar only accepts speak/repeatAudio once the live
+    // stream is up. We resolve readyPromise on SESSION_STREAM_READY so the
+    // greeting (and "Say it") wait instead of racing the connection — which is
+    // what caused "Session needs to be connected to send command event".
+    let streamReady = false;
+    let readyResolve = null;
+    let readyPromise = null;
+    const resetReady = () => { streamReady = false; readyPromise = new Promise((r) => (readyResolve = r)); };
+    const waitReady = (ms = 12000) =>
+      streamReady ? Promise.resolve()
+      : Promise.race([readyPromise || Promise.resolve(), new Promise((r) => setTimeout(r, ms))]);
 
     const setStatus = (s) => { statusEl.textContent = s; };
 
@@ -77,8 +91,14 @@
     }
 
     async function start() {
+      startBtn.disabled = true;
       try {
         const { LiveAvatarSession, SessionEvent } = await loadSDK();
+
+        // Close any prior session first so a second Start doesn't trip the
+        // account's concurrent-session limit.
+        if (session) { try { await session.stop(); } catch {} session = null; }
+        resetReady();
 
         setStatus("getting token…");
         // Forward avatar/voice + any mode=&sandbox= flags straight through so we
@@ -98,21 +118,32 @@
         session = new LiveAvatarSession(data.token, { voiceChat: false });
         session.attach(video);
         session.on(SessionEvent.SESSION_STREAM_READY, () => {
+          streamReady = true;
+          readyResolve && readyResolve();
           placeholder.style.display = "none";
           setStatus("live ✓");
           video.play().catch(() => {});
         });
-        session.on(SessionEvent.SESSION_DISCONNECTED, () => setStatus("disconnected"));
+        session.on(SessionEvent.SESSION_DISCONNECTED, () => { streamReady = false; setStatus("disconnected"); });
 
         await session.start();
+        // Wait until the stream is actually live before speaking.
+        await waitReady();
         // greet (LITE → our TTS via repeatAudio; FULL → avatar's own TTS via repeat)
         coachSpeak("Hi! I'm so happy to meet you. Let's practice together!")
           .catch((e) => console.warn("greet failed", e));
       } catch (err) {
         console.error(err);
         setStatus("error");
-        alert("Avatar error: " + (err?.message || err) +
-          "\n\nIf it mentions the avatar is invalid, the IDs may be swapped — try /avatar.html?avatar=" + VOICE_ID + "&voice=" + AVATAR_ID);
+        const m = String(err?.message || err);
+        if (/concurren/i.test(m)) {
+          alert("Avatar busy: a previous session is still open (your plan allows one at a time).\n\nTap Stop, wait ~30–60 seconds for it to close, then Start again. Closing other tabs running the avatar also frees it.");
+        } else {
+          alert("Avatar error: " + m +
+            "\n\nIf it mentions the avatar is invalid, the IDs may be swapped — try /avatar.html?avatar=" + VOICE_ID + "&voice=" + AVATAR_ID);
+        }
+      } finally {
+        startBtn.disabled = false;
       }
     }
 
@@ -137,6 +168,7 @@
       for (let i = 0; i < buf.length; i += CH) {
         bin += String.fromCharCode.apply(null, buf.subarray(i, i + CH));
       }
+      await waitReady(8000); // don't send audio before the stream is live
       setStatus("live ✓");
       session.repeatAudio(bin);
     }
@@ -144,6 +176,7 @@
     async function coachSpeak(text) {
       if (!session) return;
       if (MODE === "LITE") return speakViaTTS(text);
+      await waitReady(8000);
       return session.repeat(text); // FULL: avatar's own TTS
     }
 
@@ -156,9 +189,15 @@
 
     async function stop() {
       try { if (session) await session.stop(); } catch {}
+      session = null;
+      streamReady = false;
       setStatus("stopped");
       placeholder.style.display = "block";
     }
+
+    // Release the session if the tab is closed/navigated away so the slot frees
+    // immediately instead of lingering against the concurrency cap.
+    window.addEventListener("pagehide", () => { try { session?.stop(); } catch {} });
 
     document.getElementById("startBtn").onclick = start;
     document.getElementById("sayBtn").onclick = say;
