@@ -179,7 +179,9 @@
         connScreen.classList.add("hidden");
         joinScreen.classList.remove("hidden");
         const m = String(err?.message || err);
-        errEl.textContent = /concurren/i.test(m)
+        errEl.textContent = /credit/i.test(m)
+          ? "Your coach is out of session time right now. (The avatar account is out of credits — top up your LiveAvatar plan, then try again.)"
+          : /concurren/i.test(m)
           ? "Your coach is just finishing another call. Please wait about a minute, then tap Start meeting again."
           : m;
         errEl.classList.add("show");

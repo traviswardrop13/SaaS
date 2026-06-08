@@ -269,7 +269,9 @@
       }catch(err){
         console.error(err);
         const m = String(err?.message||err);
-        errBox.textContent = /concurren/i.test(m)
+        errBox.textContent = /credit/i.test(m)
+          ? "Coach is out of session credits right now — top up / upgrade your LiveAvatar plan, then try again."
+          : /concurren/i.test(m)
           ? "Coach busy: a previous session is still open (your plan allows one at a time).\nClose other tabs running the coach, wait ~30–60 seconds, then try again."
           : m;
         errBox.classList.remove("hidden");

@@ -136,7 +136,9 @@
         console.error(err);
         setStatus("error");
         const m = String(err?.message || err);
-        if (/concurren/i.test(m)) {
+        if (/credit/i.test(m)) {
+          alert("Avatar out of credits: the LiveAvatar account has no session credits left.\n\nTop up / upgrade your LiveAvatar plan, then try again.");
+        } else if (/concurren/i.test(m)) {
           alert("Avatar busy: a previous session is still open (your plan allows one at a time).\n\nTap Stop, wait ~30–60 seconds for it to close, then Start again. Closing other tabs running the avatar also frees it.");
         } else {
           alert("Avatar error: " + m +
