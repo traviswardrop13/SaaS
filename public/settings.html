@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sona — Settings</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/sona.css" />
+</head>
+<body>
+  <div class="wrap">
+    <header class="app">
+      <div class="brand"><span class="dot"></span> Sona</div>
+      <nav class="app"><a href="/home.html">Home</a><a href="/progress.html">Progress</a><a class="active" href="/settings.html">Settings</a></nav>
+    </header>
+
+    <div class="card">
+      <h1>Settings</h1>
+      <label class="field" for="childName">Child's name</label>
+      <input id="childName" type="text" placeholder="e.g. Mia" />
+
+      <div class="field">Focus sounds</div>
+      <div class="sounds" id="sounds"></div>
+
+      <div class="toggle"><input type="checkbox" id="voiceOn" /><label for="voiceOn">Coach speaks out loud</label></div>
+
+      <label class="field" for="coachName">Coach name</label>
+      <input id="coachName" type="text" placeholder="Coach" />
+
+      <div style="margin-top:24px;display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
+        <button class="btn" id="save">Save</button>
+        <a class="btn ghost" href="/home.html">Back to Home</a>
+        <span id="saved" class="muted" style="display:none;font-weight:800;">Saved ✓</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Coach picture</h2>
+      <p class="muted">Drop a headshot at <code>public/coach.jpg</code> to use it as the coach's profile picture. Until then a friendly placeholder is shown.</p>
+    </div>
+
+    <div class="card">
+      <h2>Account</h2>
+      <p class="muted">Subscription &amp; billing coming soon. <a href="/subscribe">Manage plan →</a></p>
+      <p style="margin-top:10px;font-size:14px;"><a href="/privacy">Privacy</a> · <a href="/terms">Terms</a> · <a href="/support">Support</a></p>
+    </div>
+
+    <div class="card">
+      <h2>Reset</h2>
+      <p class="muted" style="margin-bottom:10px;">Clear all saved progress on this device.</p>
+      <button class="btn ghost" id="reset">Reset progress</button>
+    </div>
+  </div>
+
+  <script src="/sona.js"></script>
+  <script>
+    var p = Sona.getProfile();
+    var childEl = document.getElementById("childName"),
+        coachEl = document.getElementById("coachName"),
+        voiceEl = document.getElementById("voiceOn"),
+        wrap = document.getElementById("sounds");
+    childEl.value = p.childName || "";
+    coachEl.value = p.coachName || "";
+    voiceEl.checked = p.voiceOn !== false;
+    var sel = new Set(p.focusSounds || []);
+    Sona.ALL_SOUNDS.forEach(function (s) {
+      var b = document.createElement("div");
+      b.className = "sound" + (sel.has(s) ? " on" : "");
+      b.textContent = s;
+      b.onclick = function () { if (sel.has(s)) sel.delete(s); else sel.add(s); b.classList.toggle("on"); };
+      wrap.appendChild(b);
+    });
+    document.getElementById("save").onclick = function () {
+      Sona.saveProfile({ childName: childEl.value.trim(), coachName: coachEl.value.trim() || "Coach", voiceOn: voiceEl.checked, focusSounds: [].concat(Array.from(sel)) });
+      var s = document.getElementById("saved"); s.style.display = "inline"; setTimeout(function () { s.style.display = "none"; }, 1800);
+    };
+    document.getElementById("reset").onclick = function () {
+      if (confirm("Reset all progress on this device? This cannot be undone.")) { Sona.resetProgress(); alert("Progress reset."); }
+    };
+  </script>
+</body>
+</html>

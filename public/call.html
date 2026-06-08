@@ -13,21 +13,19 @@
     html,body{height:100%;overflow:hidden;background:#eef5ff;color:#1f2937;}
     #stage{position:fixed;inset:0;}
 
-    /* full-bleed avatar — like a video call */
     #video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#0b1220;display:none;}
     #video.show{display:block;}
 
-    /* voice-only "coach stage" (no avatar face) — a calm light scene + orb */
     #coachStage{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;
       background:radial-gradient(1100px 800px at 50% 30%, #ffffff, #e8f1ff);}
     #coachStage.show{display:flex;}
-    #orb{width:180px;height:180px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:96px;
-      background:linear-gradient(160deg,#dbeafe,#fef9c3);box-shadow:0 22px 60px rgba(30,64,175,.18);transition:transform .2s;}
+    #orb{width:180px;height:180px;border-radius:50%;overflow:hidden;background:linear-gradient(160deg,#dbeafe,#fef9c3);
+      box-shadow:0 22px 60px rgba(30,64,175,.18);transition:transform .2s;}
     #orb.speaking{animation:talk 1s ease-in-out infinite;}
-    @keyframes talk{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
-    #coachStage .who{margin-top:18px;font-family:"Baloo 2";font-weight:800;color:#0f2742;font-size:20px;opacity:.85;}
+    @keyframes talk{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
+    .coachpic{width:100%;height:100%;object-fit:cover;display:block;}
+    #coachStage .who{margin-top:16px;font-family:"Baloo 2";font-weight:800;color:#0f2742;font-size:20px;opacity:.85;}
 
-    /* top bar (auto-hides like Zoom) */
     #bar{position:fixed;top:0;left:0;right:0;z-index:30;display:flex;justify-content:space-between;align-items:center;
       padding:14px 16px;opacity:0;transition:opacity .35s;pointer-events:none;}
     #bar.show{opacity:1;}
@@ -37,7 +35,6 @@
     #leave{pointer-events:auto;border:none;cursor:pointer;width:42px;height:42px;border-radius:50%;
       background:rgba(255,255,255,.92);color:#ef4444;font-size:17px;font-weight:800;box-shadow:0 6px 18px rgba(0,0,0,.22);}
 
-    /* caption (what the coach is saying) */
     #caption{position:fixed;left:50%;bottom:7%;transform:translateX(-50%);z-index:25;
       max-width:min(90vw,640px);text-align:center;font-family:"Baloo 2";font-weight:800;
       font-size:clamp(18px,2.7vw,28px);line-height:1.25;padding:0 12px;opacity:0;transition:opacity .25s;}
@@ -45,7 +42,6 @@
     #caption.onvideo{color:#fff;text-shadow:0 2px 16px rgba(0,0,0,.6);}
     #caption.onlight{color:#0f2742;}
 
-    /* word card (the "card the coach holds up") */
     #wordCard{position:fixed;left:50%;top:46%;transform:translate(-50%,-50%) scale(.9);z-index:26;
       background:#fff;border-radius:28px;padding:22px 30px;display:flex;flex-direction:column;align-items:center;gap:6px;
       box-shadow:0 22px 60px rgba(15,39,66,.28);opacity:0;pointer-events:none;transition:.3s;}
@@ -55,25 +51,29 @@
     #wordCard .chip{margin-top:4px;font-family:"Baloo 2";font-weight:800;font-size:13px;letter-spacing:.08em;
       color:#16a34a;background:#dcfce7;padding:5px 12px;border-radius:99px;text-transform:uppercase;}
 
-    /* child's turn mic — only visible on their turn */
     #mic{position:fixed;left:50%;bottom:14%;transform:translateX(-50%);z-index:27;width:84px;height:84px;border-radius:50%;
       background:#1cb0f6;border:none;cursor:pointer;display:none;align-items:center;justify-content:center;
       box-shadow:0 10px 30px rgba(28,176,246,.45);}
     #mic.show{display:flex;animation:pulse 1.4s infinite;}
+    #mic.rec{background:#ef4444;}
     @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(28,176,246,.5)}70%{box-shadow:0 0 0 24px rgba(28,176,246,0)}100%{box-shadow:0 0 0 0 rgba(28,176,246,0)}}
     #mic svg{width:38px;height:38px;}
     #micHint{position:fixed;left:50%;bottom:9%;transform:translateX(-50%);z-index:27;font-family:"Baloo 2";font-weight:800;
       font-size:14px;color:#0f2742;background:rgba(255,255,255,.85);padding:6px 14px;border-radius:99px;display:none;}
     #micHint.show{display:block;}
+
     #unmute{position:fixed;left:50%;top:16%;transform:translateX(-50%);z-index:35;border:none;cursor:pointer;display:none;
       background:rgba(0,0,0,.62);color:#fff;font-family:"Baloo 2";font-weight:800;font-size:15px;padding:12px 20px;border-radius:99px;}
     #unmute.show{display:block;}
 
-    /* light pre/post screens */
+    #dbg{position:fixed;left:10px;bottom:10px;z-index:50;max-width:60vw;font:600 11px/1.4 ui-monospace,monospace;
+      color:#8aa0bd;background:rgba(255,255,255,.6);padding:5px 9px;border-radius:8px;display:none;}
+    #dbg.show{display:block;}
+
     .screen{position:fixed;inset:0;z-index:40;display:flex;flex-direction:column;align-items:center;justify-content:center;
       text-align:center;padding:30px;background:radial-gradient(1000px 760px at 50% 28%, #ffffff, #e8f1ff);}
     .screen.hidden{display:none;}
-    .bigorb{width:128px;height:128px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:68px;
+    .bigorb{width:128px;height:128px;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:68px;
       background:linear-gradient(160deg,#dbeafe,#fef9c3);box-shadow:0 18px 50px rgba(30,64,175,.18);margin-bottom:22px;}
     h1{font-family:"Baloo 2";font-weight:800;font-size:clamp(26px,4.6vw,40px);color:#0f2742;}
     p.sub{margin-top:10px;max-width:430px;color:#475569;font-weight:600;font-size:16px;line-height:1.4;}
@@ -89,13 +89,13 @@
       color:#b42323;font-size:13px;white-space:pre-wrap;text-align:left;display:none;}
     #err.show{display:block;}
     #doneBtn{margin-top:24px;border:none;cursor:pointer;font-family:"Baloo 2";font-weight:800;font-size:18px;color:#fff;
-      background:#1cb0f6;padding:16px 38px;border-radius:20px;box-shadow:0 5px 0 0 #0e9add;}
+      background:#1cb0f6;padding:16px 38px;border-radius:20px;box-shadow:0 5px 0 0 #0e9add;text-decoration:none;}
   </style>
 </head>
 <body>
   <div id="stage">
     <video id="video" autoplay playsinline></video>
-    <div id="coachStage"><div id="orb">🦁</div><div class="who">Coach Leo</div></div>
+    <div id="coachStage"><div id="orb"><img class="coachpic" src="/coach.jpg" onerror="this.onerror=null;this.src='/coach-avatar.svg'" alt="coach" /></div><div class="who" id="coachWho">Coach</div></div>
 
     <div id="caption" class="onlight"></div>
 
@@ -108,7 +108,7 @@
     <button id="mic" title="I'm done">
       <svg viewBox="0 0 24 24" fill="none"><path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v6a3 3 0 0 0 3 3Z" fill="#fff"/><path d="M6 11a6 6 0 0 0 12 0M12 18v3" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>
     </button>
-    <div id="micHint">Your turn — tap when you're done</div>
+    <div id="micHint">Your turn — say it!</div>
     <button id="unmute">🔊&nbsp;&nbsp;Tap for sound</button>
 
     <div id="bar">
@@ -116,9 +116,11 @@
       <button id="leave" title="Leave the call">&#10005;</button>
     </div>
 
+    <div id="dbg"></div>
+
     <!-- JOIN -->
     <div id="join" class="screen">
-      <div class="bigorb">🦁</div>
+      <div class="bigorb"><img class="coachpic" src="/coach.jpg" onerror="this.onerror=null;this.src='/coach-avatar.svg'" alt="coach" /></div>
       <h1>Your coach is ready to meet you!</h1>
       <p class="sub">Pop on your headphones and tap below — your coach will say hello and practice some words with you.</p>
       <button id="joinBtn">▶&nbsp;&nbsp;Start meeting</button>
@@ -138,23 +140,27 @@
       <div class="bigorb">🎉</div>
       <h1>Great session!</h1>
       <p class="sub" id="doneSub">You practiced so well today.</p>
-      <button id="doneBtn">Done</button>
+      <a class="btn" id="doneBtn" href="/home.html">Done</a>
     </div>
   </div>
 
+  <script src="/sona.js"></script>
   <script type="module">
-    /* Zoom-style "video call with your coach" + real practice lesson.
-       - Avatar path (LITE): our ElevenLabs TTS streamed to the live avatar face.
-       - Voice-only path: same lesson + voice via Web Audio, no avatar (0 credits).
-       Tapping "Start meeting" tries the avatar and falls back to voice-only if it
-       can't start (e.g. out of credits); "Just listen" goes straight to voice. */
+    /* Zoom-style video call + practice lesson with recording.
+       - Avatar (LITE): our ElevenLabs TTS -> live avatar face (when available).
+       - Voice-only fallback: same lesson with voice via Web Audio + cards (0 credits).
+       - On the child's turn we record their attempt (MediaRecorder) and score it
+         (Web Speech) to mark each word correct / try-again, saving the audio for review. */
     const params = new URLSearchParams(location.search);
+    const profile = (window.Sona ? Sona.getProfile() : { childName:"", focusSounds:[], voiceOn:true, coachName:"Coach" });
     const AVATAR_ID = params.get("avatar") || "7f89caae735346619beafd1bc541ae42"; // custom coach
     const VOICE_ID  = params.get("voice")  || "de5574fc-009e-4a01-a881-9919ef8f5a0c";
     const MODE = (params.get("mode") || "LITE").toUpperCase();
-    const CHILD = (params.get("name") || "friend");
+    const CHILD = params.get("name") || profile.childName || "friend";
+    const COACH = (profile.coachName || "Coach").trim() || "Coach";
+    const VOICE_ON = profile.voiceOn !== false;
 
-    const WORDS = [
+    const ALL_WORDS = [
       { word:"rabbit", emoji:"🐰", sound:"R", cue:"Pull your tongue back and turn your voice on." },
       { word:"sun",    emoji:"☀️", sound:"S", cue:"Put your teeth together and smile." },
       { word:"lion",   emoji:"🦁", sound:"L", cue:"Lift your tongue up behind your front teeth." },
@@ -162,7 +168,13 @@
       { word:"snake",  emoji:"🐍", sound:"S", cue:"Long quiet snake sound — ssss." },
       { word:"ball",   emoji:"⚽", sound:"L", cue:"Tongue up, let your voice flow — llll." },
     ];
+    const focus = (profile.focusSounds || []);
+    let WORDS = focus.length ? ALL_WORDS.filter(w => focus.includes(w.sound)) : ALL_WORDS.slice();
+    if (!WORDS.length) WORDS = ALL_WORDS.slice();
+    WORDS = WORDS.slice(0, 6);
+
     const PRAISE = ["Yay! That was wonderful.","Great job — I heard it!","Awesome work!","So good! High five!","You're doing amazing."];
+    const ENCOURAGE = ["Good try! Let's keep going.","Nice effort — on to the next one!","You're working so hard. Let's try another."];
 
     const video = document.getElementById("video");
     const coachStage = document.getElementById("coachStage");
@@ -183,15 +195,18 @@
     const previewLink = document.getElementById("previewLink");
     const errEl = document.getElementById("err");
     const unmuteBtn = document.getElementById("unmute");
+    const dbgEl = document.getElementById("dbg");
+    document.getElementById("coachWho").textContent = COACH;
 
-    let session = null, SDK = null, alive = true, avatarLive = false;
+    let session = null, SDK = null, alive = true, avatarLive = false, micStream = null;
     let streamReady = false, readyResolve = null, readyPromise = null;
     let audioCtx = null;
     const resetReady = () => { streamReady = false; readyPromise = new Promise(r => readyResolve = r); };
     const waitReady = (ms = 12000) => streamReady ? Promise.resolve()
       : Promise.race([readyPromise || Promise.resolve(), new Promise(r => setTimeout(r, ms))]);
     const sleep = (ms) => new Promise(r => setTimeout(r, ms));
-    const pick = (a) => a[Math.floor(Math.random()*a.length)];
+    const pick = (a) => a[Math.floor(Math.random() * a.length)];
+    const showDbg = (t) => { dbgEl.textContent = t; dbgEl.classList.add("show"); };
 
     function setCaption(t){ captionEl.textContent = t || ""; captionEl.classList.toggle("show", !!t);
       captionEl.classList.toggle("onvideo", avatarLive); captionEl.classList.toggle("onlight", !avatarLive); }
@@ -203,14 +218,12 @@
     function setDot(i){ [...dotsEl.children].forEach((d,k)=>{ d.className = "dot" + (k<i?" done":k===i?" cur":""); }); }
     const pulse = (on) => orb.classList.toggle("speaking", !!on);
 
-    // auto-hide top bar
     let hideT;
     function unmuteVideo(){ try{ video.muted = false; video.play().catch(()=>{}); }catch{} unmuteBtn.classList.remove("show"); }
     function pokeBar(){ bar.classList.add("show"); clearTimeout(hideT); hideT = setTimeout(()=>bar.classList.remove("show"), 2800);
       if(avatarLive && video.muted) unmuteVideo(); }
     ["mousemove","touchstart","click"].forEach(ev => window.addEventListener(ev, pokeBar));
 
-    /* ---- audio (voice-only playback of ElevenLabs PCM: 16-bit LE, 24k, mono) ---- */
     function getCtx(){ if(!audioCtx){ const AC = window.AudioContext || window.webkitAudioContext; audioCtx = new AC(); }
       if(audioCtx.state === "suspended") audioCtx.resume(); return audioCtx; }
     function playPCM(bytes){
@@ -242,10 +255,11 @@
       throw lastErr || new Error("SDK failed to load");
     }
 
-    /* speak a line — through the avatar if live, else through our own audio */
     async function speak(text){
       if(!text || !alive) return;
-      setCaption(text); pulse(true);
+      setCaption(text);
+      if(!VOICE_ON){ await sleep(Math.min(4500, 700 + text.length*45)); return; }
+      pulse(true);
       try{
         const res = await fetch("/api/tts",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text})});
         if(!res.ok){ let m = "TTS error " + res.status; try{ const j = await res.json(); m = j.error || m; if(j.detail) m += "\n"+j.detail; }catch{} throw new Error(m); }
@@ -265,11 +279,33 @@
       finally{ pulse(false); }
     }
 
-    /* the child's turn: show mic, resolve on tap or after a window */
-    function childTurn(maxMs=6000){
+    /* Score the child's attempt from a transcript. true = match, false = miss, null = no speech. */
+    function norm(s){ return (s||"").toLowerCase().replace(/[^a-z]/g,""); }
+    function scoreMatch(transcript, target){
+      const t = norm(transcript), w = norm(target);
+      if(!t) return null;
+      if(t.includes(w) || w.includes(t)) return true;
+      let i=0; while(i<Math.min(t.length,w.length) && t[i]===w[i]) i++;
+      return i >= 3;
+    }
+
+    /* the child's turn: record audio + recognize speech, resolve on tap / final result / timeout */
+    function recordTurn(word, maxMs=7000){
       return new Promise((resolve)=>{
-        let done = false;
-        const finish = () => { if(done) return; done = true; mic.classList.remove("show"); micHint.classList.remove("show"); mic.onclick = null; resolve(); };
+        let done=false, chunks=[], rec=null, sr=null, transcript="";
+        const cleanup=()=>{ try{ rec && rec.state!=="inactive" && rec.stop(); }catch{} try{ sr && sr.stop(); }catch{}
+          mic.classList.remove("show","rec"); micHint.classList.remove("show"); mic.onclick=null; };
+        const finish=()=>{ if(done) return; done=true; cleanup();
+          setTimeout(()=>{
+            const blob = chunks.length ? new Blob(chunks, { type:(rec&&rec.mimeType)||"audio/webm" }) : null;
+            resolve({ transcript, ok: scoreMatch(transcript, word.word), blob });
+          }, 150);
+        };
+        try{ if(micStream && window.MediaRecorder){ rec = new MediaRecorder(micStream); rec.ondataavailable = e=>{ if(e.data && e.data.size) chunks.push(e.data); }; rec.start(); mic.classList.add("rec"); } }catch(e){ console.warn("recorder", e); }
+        try{ const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+          if(SR){ sr = new SR(); sr.lang="en-US"; sr.interimResults=false; sr.maxAlternatives=3;
+            sr.onresult = (ev)=>{ for(const r of ev.results){ for(let i=0;i<r.length;i++) transcript += " " + r[i].transcript; } finish(); };
+            sr.onerror = ()=>{}; sr.start(); } }catch(e){ console.warn("speech-rec", e); }
         mic.classList.add("show"); micHint.classList.add("show"); mic.onclick = finish;
         setTimeout(finish, maxMs);
       });
@@ -283,37 +319,33 @@
       tp.set("avatar", AVATAR_ID); tp.set("voice", VOICE_ID); if(!tp.get("mode")) tp.set("mode", MODE);
       const res = await fetch(`/api/heygen/token?${tp.toString()}`, { method:"POST" });
       const data = await res.json();
-      if(!data.ok || !data.token) throw new Error(data.error || "token error");
+      if(!data.ok || !data.token) throw new Error((data && data.error) || "token error");
       session = new LiveAvatarSession(data.token, { voiceChat:false });
       session.on(SessionEvent.SESSION_STREAM_READY, () => {
         streamReady = true; avatarLive = true; readyResolve && readyResolve();
-        // Attach the <video> only once the stream is ready — attaching before
-        // start() binds to a stream that doesn't exist yet (the black+silent bug).
+        // attach AFTER the stream is ready (attaching before start() binds nothing)
         try { session.attach(video); } catch(e){ console.warn("attach failed", e); }
-        // Bring the avatar video up robustly: try with sound; if the browser
-        // blocks autoplay, show the face muted + a one-tap "sound" button.
-        video.play().catch(async () => {
-          video.muted = true;
-          try { await video.play(); } catch(e){ console.warn("avatar video play failed", e); }
-          unmuteBtn.classList.add("show");
-        });
+        video.play().catch(async () => { video.muted = true; try { await video.play(); } catch(e){} unmuteBtn.classList.add("show"); });
       });
       session.on(SessionEvent.SESSION_DISCONNECTED, () => { streamReady = false; });
       await session.start();
       await waitReady();
+      if(!avatarLive) throw new Error("stream not ready (avatar didn't send video)");
     }
 
     async function join(useAvatar){
       joinBtn.disabled = true; previewLink.disabled = true;
       errEl.classList.remove("show"); errEl.textContent = "";
-      getCtx(); // unlock audio on the tap (user gesture)
-      try { video.play().catch(()=>{}); } catch {} // prime video within the gesture so it can autoplay when the stream attaches
+      getCtx();
+      try { video.play().catch(()=>{}); } catch {} // prime within the gesture
+      // mic up front (for recording the child's turns)
+      try { micStream = await navigator.mediaDevices.getUserMedia({ audio:true }); } catch(e){ micStream = null; showDbg("mic: " + (e && e.message || e)); }
       joinScreen.classList.add("hidden");
       connScreen.classList.remove("hidden");
       try{
         if(useAvatar){
           try{ await startAvatar(); }
-          catch(e){ console.warn("avatar unavailable — voice-only:", e); avatarLive = false; }
+          catch(e){ console.warn("avatar unavailable — voice-only:", e); avatarLive = false; showDbg("avatar → audio-only: " + String(e && e.message || e)); }
         }
         connScreen.classList.add("hidden");
         if(avatarLive){ video.classList.add("show"); } else { coachStage.classList.add("show"); }
@@ -322,7 +354,7 @@
       }catch(err){
         console.error(err);
         connScreen.classList.add("hidden"); joinScreen.classList.remove("hidden");
-        errEl.textContent = friendly(String(err?.message || err));
+        errEl.textContent = friendly(String(err && err.message || err));
         errEl.classList.add("show");
       }finally{
         joinBtn.disabled = false; previewLink.disabled = false;
@@ -336,39 +368,45 @@
     }
 
     async function runLesson(){
-      await speak(`Hi ${CHILD}! I'm so happy to see you. I'm Coach Leo.`);
+      await speak(`Hi ${CHILD}! I'm so happy to see you. I'm your speech coach.`);
       await speak(`Let's practice some fun words together. Listen first, then it's your turn!`);
+      const practiced = [];
       for(let i=0;i<WORDS.length && alive;i++){
         const w = WORDS[i]; setDot(i);
         showCard(null);
         await speak(`Let's try ${w.word}. ${w.cue}`);
         showCard(w);
         await speak(`Now you say it — ${w.word}!`);
-        await childTurn();
+        const res = await recordTurn(w);
         showCard(null);
-        await speak(pick(PRAISE));
+        const ok = res.ok === true;
+        practiced.push({ word:w.word, sound:w.sound, ok });
+        if(res.blob && window.Sona && Sona.saveRecording){ Sona.saveRecording({ word:w.word, sound:w.sound, ok, transcript:res.transcript||"", blob:res.blob }); }
+        await speak(ok ? pick(PRAISE) : pick(ENCOURAGE));
       }
       setDot(WORDS.length); setCaption("");
       await speak(`You did so well today, ${CHILD}! I'm so proud of you. See you next time!`);
-      endSession();
+      if(window.Sona) Sona.recordSession({ words: practiced });
+      endSession(practiced);
     }
 
-    function endSession(){
-      document.getElementById("doneSub").textContent = `You practiced ${WORDS.length} words, ${CHILD}! 🎉`;
+    function endSession(practiced){
+      const great = practiced.filter(p=>p.ok).length;
+      document.getElementById("doneSub").textContent = `You practiced ${practiced.length} words, ${CHILD} — ${great} sounded great! 🎉`;
       doneScreen.classList.remove("hidden");
       try{ session?.stop(); }catch{}
+      try{ micStream?.getTracks().forEach(t=>t.stop()); }catch{}
     }
 
-    function leave(){ alive = false; try{ session?.stop(); }catch{} location.href = "/"; }
+    function leave(){ alive = false; try{ session?.stop(); }catch{} try{ micStream?.getTracks().forEach(t=>t.stop()); }catch{} location.href = "/home.html"; }
 
     buildDots();
     joinBtn.onclick = () => join(true);
     previewLink.onclick = () => join(false);
     document.getElementById("leave").onclick = leave;
-    document.getElementById("doneBtn").onclick = () => location.reload();
     unmuteBtn.onclick = unmuteVideo;
-    window.addEventListener("pagehide", () => { try{ session?.stop(); }catch{} });
-    console.log("call.html (lesson) ready · mode", MODE, "· avatar", AVATAR_ID);
+    window.addEventListener("pagehide", () => { try{ session?.stop(); }catch{} try{ micStream?.getTracks().forEach(t=>t.stop()); }catch{} });
+    console.log("call.html (lesson+recording) ready · mode", MODE, "· avatar", AVATAR_ID);
   </script>
 </body>
 </html>

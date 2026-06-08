@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sona — Home</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/sona.css" />
+</head>
+<body>
+  <div class="wrap">
+    <header class="app">
+      <div class="brand"><span class="dot"></span> Sona</div>
+      <nav class="app"><a class="active" href="/home.html">Home</a><a href="/progress.html">Progress</a><a href="/settings.html">Settings</a></nav>
+    </header>
+
+    <div class="card" style="display:flex;gap:18px;align-items:center;">
+      <div class="avatar-ring" style="width:86px;height:86px;">
+        <img class="coachpic" src="/coach.jpg" onerror="this.onerror=null;this.src='/coach-avatar.svg'" alt="coach" />
+      </div>
+      <div style="flex:1;min-width:0;">
+        <h1 id="hello">Welcome to Sona! 👋</h1>
+        <p class="muted" id="sub">Add your child in Settings to personalize.</p>
+      </div>
+    </div>
+
+    <div class="card" style="text-align:center;">
+      <h2 style="margin-bottom:4px;">Today's practice</h2>
+      <p class="muted" id="focusLine" style="margin-bottom:18px;">A few fun words with your coach.</p>
+      <a class="btn" id="startBtn" href="/call.html">▶&nbsp;&nbsp;Start session</a>
+    </div>
+
+    <div class="row" style="margin-top:16px;">
+      <div class="stat"><div class="n" id="sStreak">0</div><div class="l">Day streak</div></div>
+      <div class="stat"><div class="n" id="sSessions">0</div><div class="l">Sessions</div></div>
+      <div class="stat"><div class="n" id="sWords">0</div><div class="l">Words</div></div>
+      <div class="stat"><div class="n" id="sStars">0</div><div class="l">Stars</div></div>
+    </div>
+
+    <p class="muted" style="text-align:center;margin-top:22px;font-size:13px;">
+      <a href="/progress.html">See full progress →</a>
+    </p>
+  </div>
+
+  <script src="/sona.js"></script>
+  <script>
+    var p = Sona.getProfile(), g = Sona.getProgress();
+    var name = (p.childName || "").trim();
+    document.getElementById("hello").textContent = name ? ("Hi, " + name + "! 👋") : "Welcome to Sona! 👋";
+    document.getElementById("sub").textContent = name ? "Ready for today's speech practice?" : "Add your child in Settings to personalize.";
+    var focus = p.focusSounds || [];
+    document.getElementById("focusLine").textContent = focus.length ? ("Focus sounds: " + focus.join(", ")) : "A few fun words with your coach.";
+    document.getElementById("startBtn").href = "/call.html" + (name ? ("?name=" + encodeURIComponent(name)) : "");
+    document.getElementById("sStreak").textContent = g.streak.count || 0;
+    document.getElementById("sSessions").textContent = g.totals.sessions || 0;
+    document.getElementById("sWords").textContent = g.totals.words || 0;
+    document.getElementById("sStars").textContent = g.totals.stars || 0;
+  </script>
+</body>
+</html>

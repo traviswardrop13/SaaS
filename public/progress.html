@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sona — Progress</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/sona.css" />
+</head>
+<body>
+  <div class="wrap">
+    <header class="app">
+      <div class="brand"><span class="dot"></span> Sona</div>
+      <nav class="app"><a href="/home.html">Home</a><a class="active" href="/progress.html">Progress</a><a href="/settings.html">Settings</a></nav>
+    </header>
+
+    <div class="card"><h1>Progress</h1><p class="muted">How practice is going on this device.</p></div>
+
+    <div class="row" style="margin-top:16px;">
+      <div class="stat"><div class="n" id="sStreak">0</div><div class="l">Day streak</div></div>
+      <div class="stat"><div class="n" id="sSessions">0</div><div class="l">Sessions</div></div>
+      <div class="stat"><div class="n" id="sWords">0</div><div class="l">Words</div></div>
+      <div class="stat"><div class="n" id="sStars">0</div><div class="l">Stars</div></div>
+    </div>
+
+    <div class="card"><h2>Sounds practiced</h2><div id="bysound" style="margin-top:10px;"></div></div>
+    <div class="card"><h2>Recent sessions</h2><div id="recent" style="margin-top:4px;"></div></div>
+
+    <p class="muted" style="text-align:center;margin-top:22px;font-size:13px;"><a href="/home.html">← Back to Home</a></p>
+  </div>
+
+  <script src="/sona.js"></script>
+  <script>
+    var g = Sona.getProgress();
+    document.getElementById("sStreak").textContent = g.streak.count || 0;
+    document.getElementById("sSessions").textContent = g.totals.sessions || 0;
+    document.getElementById("sWords").textContent = g.totals.words || 0;
+    document.getElementById("sStars").textContent = g.totals.stars || 0;
+
+    var bs = document.getElementById("bysound");
+    var keys = Object.keys(g.bySound || {});
+    if (!keys.length) {
+      bs.innerHTML = '<p class="muted">No practice yet — start a session from Home!</p>';
+    } else {
+      var max = Math.max.apply(null, keys.map(function (k) { return g.bySound[k]; }).concat([1]));
+      keys.sort(function (a, b) { return g.bySound[b] - g.bySound[a]; }).forEach(function (k) {
+        var n = g.bySound[k];
+        var d = document.createElement("div"); d.style.margin = "12px 0";
+        d.innerHTML = '<div style="display:flex;justify-content:space-between;font-weight:800;margin-bottom:5px;"><span>' + k + ' sound</span><span class="muted">' + n + '</span></div><div class="bar"><span style="width:' + Math.round(n / max * 100) + '%"></span></div>';
+        bs.appendChild(d);
+      });
+    }
+
+    var rc = document.getElementById("recent");
+    var sessions = g.sessions || [];
+    if (!sessions.length) {
+      rc.innerHTML = '<p class="muted">No sessions yet.</p>';
+    } else {
+      sessions.slice(0, 12).forEach(function (s) {
+        var dt = new Date(s.date);
+        var row = document.createElement("div");
+        row.style.cssText = "display:flex;justify-content:space-between;padding:11px 0;border-top:1px solid var(--line);font-weight:700;";
+        row.innerHTML = '<span>' + dt.toLocaleDateString(undefined, { month: "short", day: "numeric" }) + ' · ' + (s.count || 0) + ' words</span><span class="muted">' + ((s.sounds || []).join(", ")) + '</span>';
+        rc.appendChild(row);
+      });
+    }
+  </script>
+</body>
+</html>
