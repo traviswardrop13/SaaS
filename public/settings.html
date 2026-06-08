@@ -25,6 +25,7 @@
       <div class="sounds" id="sounds"></div>
 
       <div class="toggle"><input type="checkbox" id="voiceOn" /><label for="voiceOn">Coach speaks out loud</label></div>
+      <div class="toggle"><input type="checkbox" id="cloudScoring" /><label for="cloudScoring">Score pronunciation in the cloud (SpeechAce) — sends the child's recording for phoneme‑level scoring</label></div>
 
       <label class="field" for="coachName">Coach name</label>
       <input id="coachName" type="text" placeholder="Coach" />
@@ -60,10 +61,12 @@
     var childEl = document.getElementById("childName"),
         coachEl = document.getElementById("coachName"),
         voiceEl = document.getElementById("voiceOn"),
+        cloudEl = document.getElementById("cloudScoring"),
         wrap = document.getElementById("sounds");
     childEl.value = p.childName || "";
     coachEl.value = p.coachName || "";
     voiceEl.checked = p.voiceOn !== false;
+    cloudEl.checked = p.cloudScoring !== false;
     var sel = new Set(p.focusSounds || []);
     Sona.ALL_SOUNDS.forEach(function (s) {
       var b = document.createElement("div");
@@ -73,7 +76,7 @@
       wrap.appendChild(b);
     });
     document.getElementById("save").onclick = function () {
-      Sona.saveProfile({ childName: childEl.value.trim(), coachName: coachEl.value.trim() || "Coach", voiceOn: voiceEl.checked, focusSounds: [].concat(Array.from(sel)) });
+      Sona.saveProfile({ childName: childEl.value.trim(), coachName: coachEl.value.trim() || "Coach", voiceOn: voiceEl.checked, cloudScoring: cloudEl.checked, focusSounds: [].concat(Array.from(sel)) });
       var s = document.getElementById("saved"); s.style.display = "inline"; setTimeout(function () { s.style.display = "none"; }, 1800);
     };
     document.getElementById("reset").onclick = function () {

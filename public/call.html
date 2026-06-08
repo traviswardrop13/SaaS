@@ -159,6 +159,8 @@
     const CHILD = params.get("name") || profile.childName || "friend";
     const COACH = (profile.coachName || "Coach").trim() || "Coach";
     const VOICE_ON = profile.voiceOn !== false;
+    const CLOUD_SCORING = profile.cloudScoring !== false;
+    let useSpeechAce = false;
 
     const ALL_WORDS = [
       { word:"rabbit", emoji:"🐰", sound:"R", cue:"Pull your tongue back and turn your voice on." },
@@ -289,6 +291,32 @@
       return i >= 3;
     }
 
+    async function detectScorer(){
+      if(!CLOUD_SCORING){ useSpeechAce = false; return; }
+      try{ const r = await fetch("/api/score"); const j = await r.json(); useSpeechAce = !!(j && j.hasKey); }
+      catch{ useSpeechAce = false; }
+    }
+
+    /* Score the attempt: SpeechAce (phoneme-level) when available, else the browser transcript. */
+    async function scoreAttempt(word, blob, transcript){
+      if(useSpeechAce && blob){
+        try{
+          setCaption("Let me listen…");
+          const fd = new FormData();
+          fd.append("audio", new File([blob], "attempt.webm", { type: blob.type || "audio/webm" }));
+          fd.append("text", word.word);
+          fd.append("targetSound", word.sound);
+          fd.append("userId", CHILD || "child");
+          fd.append("mode", "full");
+          const r = await fetch("/api/score", { method: "POST", body: fd });
+          const j = await r.json();
+          if(j && j.ok){ return { ok: j.rating !== "tryAgain", score: j.score, rating: j.rating, feedback: j.feedback, transcript: j.transcript || transcript, source: "speechace" }; }
+          console.warn("speechace not ok:", j && j.error);
+        }catch(e){ console.warn("speechace error", e); }
+      }
+      return { ok: scoreMatch(transcript, word.word) === true, transcript, source: "browser" };
+    }
+
     /* the child's turn: record audio + recognize speech, resolve on tap / final result / timeout */
     function recordTurn(word, maxMs=7000){
       return new Promise((resolve)=>{
@@ -298,7 +326,7 @@
         const finish=()=>{ if(done) return; done=true; cleanup();
           setTimeout(()=>{
             const blob = chunks.length ? new Blob(chunks, { type:(rec&&rec.mimeType)||"audio/webm" }) : null;
-            resolve({ transcript, ok: scoreMatch(transcript, word.word), blob });
+            resolve({ transcript, blob });
           }, 150);
         };
         try{ if(micStream && window.MediaRecorder){ rec = new MediaRecorder(micStream); rec.ondataavailable = e=>{ if(e.data && e.data.size) chunks.push(e.data); }; rec.start(); mic.classList.add("rec"); } }catch(e){ console.warn("recorder", e); }
@@ -350,6 +378,7 @@
         connScreen.classList.add("hidden");
         if(avatarLive){ video.classList.add("show"); } else { coachStage.classList.add("show"); }
         pokeBar();
+        await detectScorer();
         await runLesson();
       }catch(err){
         console.error(err);
@@ -378,11 +407,12 @@
         showCard(w);
         await speak(`Now you say it — ${w.word}!`);
         const res = await recordTurn(w);
+        const sc = await scoreAttempt(w, res.blob, res.transcript);
         showCard(null);
-        const ok = res.ok === true;
-        practiced.push({ word:w.word, sound:w.sound, ok });
-        if(res.blob && window.Sona && Sona.saveRecording){ Sona.saveRecording({ word:w.word, sound:w.sound, ok, transcript:res.transcript||"", blob:res.blob }); }
-        await speak(ok ? pick(PRAISE) : pick(ENCOURAGE));
+        const ok = sc.ok;
+        practiced.push({ word:w.word, sound:w.sound, ok, score: sc.score });
+        if(res.blob && window.Sona && Sona.saveRecording){ Sona.saveRecording({ word:w.word, sound:w.sound, ok, score: sc.score || null, transcript: sc.transcript || "", source: sc.source, blob: res.blob }); }
+        await speak(ok ? pick(PRAISE) : (sc.feedback || pick(ENCOURAGE)));
       }
       setDot(WORDS.length); setCaption("");
       await speak(`You did so well today, ${CHILD}! I'm so proud of you. See you next time!`);
