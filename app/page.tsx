@@ -496,6 +496,9 @@ function Footer() {
           <Link href="/privacy" className="hover:text-gray-800">
             Privacy
           </Link>
+          <Link href="/terms" className="hover:text-gray-800">
+            Terms
+          </Link>
           <Link href="/support" className="hover:text-gray-800">
             Support
           </Link>
