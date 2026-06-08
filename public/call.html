@@ -285,9 +285,11 @@
       const data = await res.json();
       if(!data.ok || !data.token) throw new Error(data.error || "token error");
       session = new LiveAvatarSession(data.token, { voiceChat:false });
-      session.attach(video);
       session.on(SessionEvent.SESSION_STREAM_READY, () => {
         streamReady = true; avatarLive = true; readyResolve && readyResolve();
+        // Attach the <video> only once the stream is ready — attaching before
+        // start() binds to a stream that doesn't exist yet (the black+silent bug).
+        try { session.attach(video); } catch(e){ console.warn("attach failed", e); }
         // Bring the avatar video up robustly: try with sound; if the browser
         // blocks autoplay, show the face muted + a one-tap "sound" button.
         video.play().catch(async () => {

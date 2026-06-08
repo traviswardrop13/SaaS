@@ -116,10 +116,10 @@
 
         setStatus("connecting avatar…");
         session = new LiveAvatarSession(data.token, { voiceChat: false });
-        session.attach(video);
         session.on(SessionEvent.SESSION_STREAM_READY, () => {
           streamReady = true;
           readyResolve && readyResolve();
+          try { session.attach(video); } catch(e){ console.warn("attach failed", e); } // attach after stream is ready
           placeholder.style.display = "none";
           setStatus("live ✓");
           video.play().catch(() => {});

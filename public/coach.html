@@ -258,8 +258,7 @@
         if(!data.ok || !data.token) throw new Error("Token: "+(data.error||"unknown")+"\n"+JSON.stringify(data.raw||{},null,2));
 
         session = new LiveAvatarSession(data.token, { voiceChat:false });
-        session.attach(video);
-        session.on(SessionEvent.SESSION_STREAM_READY, ()=>{ streamReady=true; readyResolve&&readyResolve(); video.play().catch(()=>{}); });
+        session.on(SessionEvent.SESSION_STREAM_READY, ()=>{ streamReady=true; readyResolve&&readyResolve(); try{ session.attach(video); }catch(e){ console.warn("attach failed", e); } video.play().catch(()=>{}); });
         session.on(SessionEvent.SESSION_DISCONNECTED, ()=>{ streamReady=false; if(alive) setStatus("disconnected"); });
         await session.start();
         await waitReady(); // wait until the stream is live before the first line
