@@ -42,12 +42,13 @@
     #caption.onvideo{color:#fff;text-shadow:0 2px 16px rgba(0,0,0,.6);}
     #caption.onlight{color:#0f2742;}
 
-    #wordCard{position:fixed;left:50%;top:46%;transform:translate(-50%,-50%) scale(.9);z-index:26;
-      background:#fff;border-radius:28px;padding:22px 30px;display:flex;flex-direction:column;align-items:center;gap:6px;
+    /* sits in the lower third so it never covers the coach's face */
+    #wordCard{position:fixed;left:50%;bottom:20%;transform:translate(-50%,0) scale(.9);z-index:26;
+      background:#fff;border-radius:24px;padding:16px 26px;display:flex;flex-direction:column;align-items:center;gap:5px;
       box-shadow:0 22px 60px rgba(15,39,66,.28);opacity:0;pointer-events:none;transition:.3s;}
-    #wordCard.show{opacity:1;transform:translate(-50%,-50%) scale(1);}
-    #wordCard .emoji{font-size:84px;line-height:1;}
-    #wordCard .word{font-family:"Baloo 2";font-weight:800;font-size:46px;color:#0e9add;letter-spacing:.5px;}
+    #wordCard.show{opacity:1;transform:translate(-50%,0) scale(1);}
+    #wordCard .emoji{font-size:60px;line-height:1;}
+    #wordCard .word{font-family:"Baloo 2";font-weight:800;font-size:40px;color:#0e9add;letter-spacing:.5px;}
     #wordCard .chip{margin-top:4px;font-family:"Baloo 2";font-weight:800;font-size:13px;letter-spacing:.08em;
       color:#16a34a;background:#dcfce7;padding:5px 12px;border-radius:99px;text-transform:uppercase;}
 
