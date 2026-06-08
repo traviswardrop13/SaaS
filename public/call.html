@@ -162,18 +162,31 @@
     const CLOUD_SCORING = profile.cloudScoring !== false;
     let useSpeechAce = false;
 
-    const ALL_WORDS = [
-      { word:"rabbit", emoji:"🐰", sound:"R", cue:"Pull your tongue back and turn your voice on." },
-      { word:"sun",    emoji:"☀️", sound:"S", cue:"Put your teeth together and smile." },
-      { word:"lion",   emoji:"🦁", sound:"L", cue:"Lift your tongue up behind your front teeth." },
-      { word:"cat",    emoji:"🐱", sound:"K", cue:"Lift the back of your tongue, way in the back." },
-      { word:"snake",  emoji:"🐍", sound:"S", cue:"Long quiet snake sound — ssss." },
-      { word:"ball",   emoji:"⚽", sound:"L", cue:"Tongue up, let your voice flow — llll." },
-    ];
     const focus = (profile.focusSounds || []);
-    let WORDS = focus.length ? ALL_WORDS.filter(w => focus.includes(w.sound)) : ALL_WORDS.slice();
-    if (!WORDS.length) WORDS = ALL_WORDS.slice();
-    WORDS = WORDS.slice(0, 6);
+    const TARGET = (params.get("sound") || focus[0] || "R").toUpperCase();
+
+    // Articulation hierarchy: isolation -> syllables -> words for ONE target sound.
+    const SOUND_PLAN = {
+      R: { isolation:{ display:"rrr", say:"Let's make a big R sound. Pull your tongue back and turn your voice on — rrrr. Now you try!", scoreText:"rah" },
+        syllables:[ {display:"rah",scoreText:"rah",say:"Now let's add a vowel — say rah!"},{display:"ray",scoreText:"ray",say:"Try ray!"},{display:"roo",scoreText:"roo",say:"And roo!"} ],
+        words:[ {display:"rabbit",emoji:"🐰",scoreText:"rabbit",say:"Now the whole word — rabbit!"},{display:"rocket",emoji:"🚀",scoreText:"rocket",say:"Say rocket!"},{display:"ring",emoji:"💍",scoreText:"ring",say:"Say ring!"} ] },
+      S: { isolation:{ display:"sss", say:"Let's make a quiet snake sound. Teeth together and smile — ssss. Your turn!", scoreText:"sah" },
+        syllables:[ {display:"sah",scoreText:"sah",say:"Add a vowel — sah!"},{display:"see",scoreText:"see",say:"Try see!"},{display:"so",scoreText:"so",say:"And so!"} ],
+        words:[ {display:"sun",emoji:"☀️",scoreText:"sun",say:"Whole word — sun!"},{display:"snake",emoji:"🐍",scoreText:"snake",say:"Say snake!"},{display:"soap",emoji:"🧼",scoreText:"soap",say:"Say soap!"} ] },
+      L: { isolation:{ display:"lll", say:"Let's make the L sound. Tongue tip up behind your teeth — llll. Now you!", scoreText:"lah" },
+        syllables:[ {display:"lah",scoreText:"lah",say:"Say lah!"},{display:"lee",scoreText:"lee",say:"Try lee!"},{display:"low",scoreText:"low",say:"And low!"} ],
+        words:[ {display:"lion",emoji:"🦁",scoreText:"lion",say:"Whole word — lion!"},{display:"leaf",emoji:"🍃",scoreText:"leaf",say:"Say leaf!"},{display:"ball",emoji:"⚽",scoreText:"ball",say:"Say ball!"} ] },
+      K: { isolation:{ display:"k! k!", say:"Let's make the K sound. Lift the back of your tongue — k! k! Now you!", scoreText:"kah" },
+        syllables:[ {display:"kah",scoreText:"kah",say:"Say kah!"},{display:"key",scoreText:"key",say:"Try key!"},{display:"ko",scoreText:"ko",say:"And ko!"} ],
+        words:[ {display:"cat",emoji:"🐱",scoreText:"cat",say:"Whole word — cat!"},{display:"key",emoji:"🔑",scoreText:"key",say:"Say key!"},{display:"cake",emoji:"🍰",scoreText:"cake",say:"Say cake!"} ] },
+    };
+    const PLAN = SOUND_PLAN[TARGET] || SOUND_PLAN.R;
+    const TARGET_SOUND = SOUND_PLAN[TARGET] ? TARGET : "R";
+    const STEPS = [
+      { level:"isolation", sound:TARGET_SOUND, mode:"phoneme", display:PLAN.isolation.display, say:PLAN.isolation.say, scoreText:PLAN.isolation.scoreText },
+      ...PLAN.syllables.map(s => ({ level:"syllable", sound:TARGET_SOUND, mode:"phoneme", display:s.display, say:s.say, scoreText:s.scoreText })),
+      ...PLAN.words.map(w => ({ level:"word", sound:TARGET_SOUND, mode:"full", display:w.display, say:w.say, scoreText:w.scoreText, emoji:w.emoji })),
+    ];
 
     const PRAISE = ["Yay! That was wonderful.","Great job — I heard it!","Awesome work!","So good! High five!","You're doing amazing."];
     const ENCOURAGE = ["Good try! Let's keep going.","Nice effort — on to the next one!","You're working so hard. Let's try another."];
@@ -212,11 +225,14 @@
 
     function setCaption(t){ captionEl.textContent = t || ""; captionEl.classList.toggle("show", !!t);
       captionEl.classList.toggle("onvideo", avatarLive); captionEl.classList.toggle("onlight", !avatarLive); }
-    function showCard(w){
-      if(w){ wcEmoji.textContent = w.emoji||""; wcWord.textContent = w.word; wcChip.textContent = w.sound + " sound"; wordCard.classList.add("show"); }
-      else wordCard.classList.remove("show");
+    function showStep(s){
+      if(!s){ wordCard.classList.remove("show"); return; }
+      if(s.level === "word"){ wcEmoji.style.display = ""; wcEmoji.textContent = s.emoji || ""; wcWord.textContent = s.display; }
+      else { wcEmoji.style.display = "none"; wcWord.textContent = s.display; } // isolation/syllable: big text, no emoji
+      wcChip.textContent = s.sound + " sound";
+      wordCard.classList.add("show");
     }
-    function buildDots(){ dotsEl.innerHTML=""; WORDS.forEach(()=>{ const d=document.createElement("div"); d.className="dot"; dotsEl.appendChild(d); }); }
+    function buildDots(){ dotsEl.innerHTML=""; STEPS.forEach(()=>{ const d=document.createElement("div"); d.className="dot"; dotsEl.appendChild(d); }); }
     function setDot(i){ [...dotsEl.children].forEach((d,k)=>{ d.className = "dot" + (k<i?" done":k===i?" cur":""); }); }
     const pulse = (on) => orb.classList.toggle("speaking", !!on);
 
@@ -298,23 +314,23 @@
     }
 
     /* Score the attempt: SpeechAce (phoneme-level) when available, else the browser transcript. */
-    async function scoreAttempt(word, blob, transcript){
+    async function scoreAttempt(step, blob, transcript){
       if(useSpeechAce && blob){
         try{
           setCaption("Let me listen…");
           const fd = new FormData();
           fd.append("audio", new File([blob], "attempt.webm", { type: blob.type || "audio/webm" }));
-          fd.append("text", word.word);
-          fd.append("targetSound", word.sound);
+          fd.append("text", step.scoreText);
+          fd.append("targetSound", step.sound);
           fd.append("userId", CHILD || "child");
-          fd.append("mode", "full");
+          fd.append("mode", step.mode || "full"); // lenient phoneme mode for isolation/syllables
           const r = await fetch("/api/score", { method: "POST", body: fd });
           const j = await r.json();
           if(j && j.ok){ return { ok: j.rating !== "tryAgain", score: j.score, rating: j.rating, feedback: j.feedback, transcript: j.transcript || transcript, source: "speechace" }; }
           console.warn("speechace not ok:", j && j.error);
         }catch(e){ console.warn("speechace error", e); }
       }
-      return { ok: scoreMatch(transcript, word.word) === true, transcript, source: "browser" };
+      return { ok: scoreMatch(transcript, step.scoreText) === true, transcript, source: "browser" };
     }
 
     /* the child's turn: record audio + recognize speech, resolve on tap / final result / timeout */
@@ -398,31 +414,36 @@
 
     async function runLesson(){
       await speak(`Hi ${CHILD}! I'm so happy to see you. I'm your speech coach.`);
-      await speak(`Let's practice some fun words together. Listen first, then it's your turn!`);
+      await speak(`Today we're working on the ${TARGET_SOUND} sound. Watch me first, then it's your turn!`);
       const practiced = [];
-      for(let i=0;i<WORDS.length && alive;i++){
-        const w = WORDS[i]; setDot(i);
-        showCard(null);
-        await speak(`Let's try ${w.word}. ${w.cue}`);
-        showCard(w);
-        await speak(`Now you say it — ${w.word}!`);
-        const res = await recordTurn(w);
-        const sc = await scoreAttempt(w, res.blob, res.transcript);
-        showCard(null);
+      let lastLevel = "";
+      for(let i=0;i<STEPS.length && alive;i++){
+        const s = STEPS[i]; setDot(i);
+        // a gentle level transition the first time we reach syllables / words
+        if(s.level !== lastLevel){
+          if(s.level === "syllable") await speak("Great! Now let's put it together.");
+          else if(s.level === "word") await speak("You're ready for whole words!");
+          lastLevel = s.level;
+        }
+        showStep(s);
+        await speak(s.say);
+        const res = await recordTurn(s);
+        const sc = await scoreAttempt(s, res.blob, res.transcript);
         const ok = sc.ok;
-        practiced.push({ word:w.word, sound:w.sound, ok, score: sc.score });
-        if(res.blob && window.Sona && Sona.saveRecording){ Sona.saveRecording({ word:w.word, sound:w.sound, ok, score: sc.score || null, transcript: sc.transcript || "", source: sc.source, blob: res.blob }); }
+        practiced.push({ word:s.display, sound:s.sound, level:s.level, ok, score:sc.score });
+        if(res.blob && window.Sona && Sona.saveRecording){ Sona.saveRecording({ word:s.display, sound:s.sound, level:s.level, ok, score:sc.score||null, transcript:sc.transcript||"", source:sc.source, blob:res.blob }); }
+        showStep(null);
         await speak(ok ? pick(PRAISE) : (sc.feedback || pick(ENCOURAGE)));
       }
-      setDot(WORDS.length); setCaption("");
-      await speak(`You did so well today, ${CHILD}! I'm so proud of you. See you next time!`);
+      setDot(STEPS.length); setCaption("");
+      await speak(`Awesome work on your ${TARGET_SOUND} sounds today, ${CHILD}! I'm so proud of you!`);
       if(window.Sona) Sona.recordSession({ words: practiced });
       endSession(practiced);
     }
 
     function endSession(practiced){
       const great = practiced.filter(p=>p.ok).length;
-      document.getElementById("doneSub").textContent = `You practiced ${practiced.length} words, ${CHILD} — ${great} sounded great! 🎉`;
+      document.getElementById("doneSub").textContent = `Great ${TARGET_SOUND} practice, ${CHILD} — ${great} of ${practiced.length} sounded great! 🎉`;
       doneScreen.classList.remove("hidden");
       try{ session?.stop(); }catch{}
       try{ micStream?.getTracks().forEach(t=>t.stop()); }catch{}
