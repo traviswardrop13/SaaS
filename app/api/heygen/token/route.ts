@@ -69,8 +69,13 @@ export async function POST(req: NextRequest) {
       json?.data?.access_token ??
       json?.data?.session_access_token;
     if (!token) {
+      const apiMsg =
+        (typeof json?.message === "string" && json.message) ||
+        (Array.isArray(json?.data) && json.data[0] && json.data[0].message) ||
+        (typeof json?.error === "string" && json.error) ||
+        "";
       return NextResponse.json(
-        { ok: false, error: "No token field found in LiveAvatar response.", status: r.status, raw: json },
+        { ok: false, error: apiMsg ? `LiveAvatar: ${apiMsg}` : "No token field found in LiveAvatar response.", status: r.status, raw: json },
         { status: 502 },
       );
     }
