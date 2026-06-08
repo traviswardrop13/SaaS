@@ -141,6 +141,7 @@
       <div class="bigorb">🎉</div>
       <h1>Great session!</h1>
       <p class="sub" id="doneSub">You practiced so well today.</p>
+      <div id="screenResults" style="max-width:340px;width:100%;"></div>
       <a class="btn" id="doneBtn" href="/home.html">Done</a>
     </div>
   </div>
@@ -189,6 +190,20 @@
       ...PLAN.words.map(w => ({ level:"word", sound:TARGET_SOUND, mode:"full", display:w.display, say:w.say, scoreText:w.scoreText, emoji:w.emoji })),
     ];
 
+    // Evaluation screener: one probe word per sound to find what needs work.
+    const SCREENER = params.get("screener") === "1";
+    const SCREEN_PROBES = [
+      { word:"rabbit", emoji:"🐰", sound:"R" },
+      { word:"sun",    emoji:"☀️", sound:"S" },
+      { word:"lion",   emoji:"🦁", sound:"L" },
+      { word:"cake",   emoji:"🍰", sound:"K" },
+      { word:"goat",   emoji:"🐐", sound:"G" },
+      { word:"fish",   emoji:"🐟", sound:"F" },
+      { word:"shoe",   emoji:"👟", sound:"SH" },
+      { word:"cheese", emoji:"🧀", sound:"CH" },
+      { word:"thumb",  emoji:"👍", sound:"TH" },
+    ];
+
     const PRAISE = ["Yay! That was wonderful.","Great job — I heard it!","Awesome work!","So good! High five!","You're doing amazing."];
     const ENCOURAGE = ["Good try! Let's keep going.","Nice effort — on to the next one!","You're working so hard. Let's try another."];
 
@@ -233,7 +248,7 @@
       wcChip.textContent = s.sound + " sound";
       wordCard.classList.add("show");
     }
-    function buildDots(){ dotsEl.innerHTML=""; STEPS.forEach(()=>{ const d=document.createElement("div"); d.className="dot"; dotsEl.appendChild(d); }); }
+    function buildDots(){ dotsEl.innerHTML=""; (SCREENER?SCREEN_PROBES:STEPS).forEach(()=>{ const d=document.createElement("div"); d.className="dot"; dotsEl.appendChild(d); }); }
     function setDot(i){ [...dotsEl.children].forEach((d,k)=>{ d.className = "dot" + (k<i?" done":k===i?" cur":""); }); }
     const pulse = (on) => orb.classList.toggle("speaking", !!on);
 
@@ -396,7 +411,7 @@
         if(avatarLive){ video.classList.add("show"); } else { coachStage.classList.add("show"); }
         pokeBar();
         await detectScorer();
-        await runLesson();
+        await (SCREENER ? runScreener() : runLesson());
       }catch(err){
         console.error(err);
         connScreen.classList.add("hidden"); joinScreen.classList.remove("hidden");
@@ -448,6 +463,44 @@
       doneScreen.classList.remove("hidden");
       try{ session?.stop(); }catch{}
       try{ micStream?.getTracks().forEach(t=>t.stop()); }catch{}
+    }
+
+    // ---- Evaluation screener: probe each sound once, recommend a focus ----
+    async function runScreener(){
+      await speak(`Hi ${CHILD}! Let's play a quick listening game. I'll show a picture — you say the word. Ready?`);
+      const results = [];
+      for(let i=0;i<SCREEN_PROBES.length && alive;i++){
+        const w = SCREEN_PROBES[i]; setDot(i);
+        showStep({ level:"word", display:w.word, emoji:w.emoji, sound:w.sound });
+        await speak(`Can you say ${w.word}?`);
+        const res = await recordTurn(w);
+        const sc = await scoreAttempt({ scoreText:w.word, sound:w.sound, mode:"full" }, res.blob, res.transcript);
+        showStep(null);
+        results.push({ sound:w.sound, word:w.word, score:(typeof sc.score === "number" ? sc.score : null) });
+        if(res.blob && window.Sona && Sona.saveRecording){ Sona.saveRecording({ word:w.word, sound:w.sound, level:"screener", ok:sc.ok, score:sc.score||null, transcript:sc.transcript||"", source:sc.source, blob:res.blob }); }
+        await speak(pick(["Nice try!","Good job!","Awesome!","Thank you!"])); // neutral — this is assessment, not correction
+      }
+      setDot(SCREEN_PROBES.length); setCaption("");
+      const recommended = [...new Set(results.filter(r => r.score == null || r.score < 65).map(r => r.sound))];
+      if(recommended.length && window.Sona) Sona.saveProfile({ focusSounds: recommended });
+      await speak(`Great job, ${CHILD}! That was so helpful. Let's go practice!`);
+      endScreener(results, recommended);
+    }
+
+    function endScreener(results, recommended){
+      const rows = results.map(function(r){
+        const strong = (r.score != null && r.score >= 65);
+        return '<div style="display:flex;justify-content:space-between;padding:7px 2px;font-weight:700;border-top:1px solid rgba(15,39,66,.08);"><span>'+r.sound+' sound</span><span style="color:'+(strong?'#16a34a':'#0e9add')+'">'+(strong?'✓ strong':'● practice')+'</span></div>';
+      }).join("");
+      document.querySelector("#done h1").textContent = "All done!";
+      document.getElementById("doneSub").textContent = "Here's what we heard, " + CHILD + ":";
+      document.getElementById("screenResults").innerHTML = rows + (recommended.length
+        ? '<p style="margin-top:12px;font-weight:800;">We’ll focus on: ' + recommended.join(", ") + '</p>'
+        : '<p style="margin-top:12px;font-weight:800;">Everything sounded great! 🎉</p>');
+      const b = document.getElementById("doneBtn"); b.textContent = "Start practicing →";
+      doneScreen.classList.remove("hidden");
+      try{ session?.stop(); }catch{}
+      try{ micStream?.getTracks().forEach(function(t){ t.stop(); }); }catch{}
     }
 
     function leave(){ alive = false; try{ session?.stop(); }catch{} try{ micStream?.getTracks().forEach(t=>t.stop()); }catch{} location.href = "/home.html"; }
