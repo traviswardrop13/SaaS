@@ -30,6 +30,25 @@
       <label class="field" for="coachName">Coach name</label>
       <input id="coachName" type="text" placeholder="Coach" />
 
+      <label class="field" for="focusArea">Main focus</label>
+      <select id="focusArea">
+        <option value="articulation">Speech sounds (articulation)</option>
+        <option value="expressive">Talking (expressive language)</option>
+        <option value="receptive">Understanding (receptive language)</option>
+        <option value="unsure">Not sure yet</option>
+      </select>
+
+      <label class="field" for="slpEvaluated">Evaluated by an SLP?</label>
+      <select id="slpEvaluated">
+        <option value="">—</option>
+        <option value="yes">Yes</option>
+        <option value="no">Not yet</option>
+        <option value="unsure">Not sure</option>
+      </select>
+
+      <label class="field" for="goals">Goals (optional)</label>
+      <input id="goals" type="text" placeholder="e.g. clear R and S sounds in words" />
+
       <div style="margin-top:24px;display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
         <button class="btn" id="save">Save</button>
         <a class="btn ghost" href="/home.html">Back to Home</a>
@@ -62,11 +81,17 @@
         coachEl = document.getElementById("coachName"),
         voiceEl = document.getElementById("voiceOn"),
         cloudEl = document.getElementById("cloudScoring"),
+        focusAreaEl = document.getElementById("focusArea"),
+        slpEl = document.getElementById("slpEvaluated"),
+        goalsEl = document.getElementById("goals"),
         wrap = document.getElementById("sounds");
     childEl.value = p.childName || "";
     coachEl.value = p.coachName || "";
     voiceEl.checked = p.voiceOn !== false;
     cloudEl.checked = p.cloudScoring !== false;
+    focusAreaEl.value = p.focusArea || "articulation";
+    slpEl.value = p.slpEvaluated || "";
+    goalsEl.value = p.goals || "";
     var sel = new Set(p.focusSounds || []);
     Sona.ALL_SOUNDS.forEach(function (s) {
       var b = document.createElement("div");
@@ -76,7 +101,7 @@
       wrap.appendChild(b);
     });
     document.getElementById("save").onclick = function () {
-      Sona.saveProfile({ childName: childEl.value.trim(), coachName: coachEl.value.trim() || "Coach", voiceOn: voiceEl.checked, cloudScoring: cloudEl.checked, focusSounds: [].concat(Array.from(sel)) });
+      Sona.saveProfile({ childName: childEl.value.trim(), coachName: coachEl.value.trim() || "Coach", voiceOn: voiceEl.checked, cloudScoring: cloudEl.checked, focusArea: focusAreaEl.value, slpEvaluated: slpEl.value, goals: goalsEl.value.trim(), focusSounds: [].concat(Array.from(sel)) });
       var s = document.getElementById("saved"); s.style.display = "inline"; setTimeout(function () { s.style.display = "none"; }, 1800);
     };
     document.getElementById("reset").onclick = function () {

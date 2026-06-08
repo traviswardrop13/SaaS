@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sona — Welcome</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/sona.css" />
+</head>
+<body>
+  <div class="wrap">
+    <header class="app">
+      <div class="brand"><span class="dot"></span> Sona</div>
+    </header>
+
+    <div class="card">
+      <h1>Welcome to Sona! 👋</h1>
+      <p class="muted">A few quick questions so we can personalize your child's practice.</p>
+
+      <label class="field" for="childName">Your child's name</label>
+      <input id="childName" type="text" placeholder="e.g. Mia" />
+
+      <div class="field">Has your child been evaluated by a speech‑language pathologist (SLP)?</div>
+      <div class="sounds" id="slp">
+        <div class="sound" data-val="yes">Yes</div>
+        <div class="sound" data-val="no">Not yet</div>
+        <div class="sound" data-val="unsure">Not sure</div>
+      </div>
+
+      <div id="goalsWrap" style="display:none;">
+        <label class="field" for="goals">What are their goals? (optional)</label>
+        <input id="goals" type="text" placeholder="e.g. clear R and S sounds in words" />
+      </div>
+
+      <div class="field">What's the main focus right now?</div>
+      <div class="sounds" id="focus">
+        <div class="sound" data-val="articulation">Speech sounds</div>
+        <div class="sound" data-val="expressive">Talking</div>
+        <div class="sound" data-val="receptive">Understanding</div>
+        <div class="sound" data-val="unsure">Not sure yet</div>
+      </div>
+
+      <div class="field">Which sounds are you working on? <span class="muted">(pick any)</span></div>
+      <div class="sounds" id="sounds"></div>
+
+      <div style="margin-top:26px;">
+        <button class="btn" id="go">Let's go! &rarr;</button>
+      </div>
+    </div>
+
+    <p class="muted" style="text-align:center;margin-top:18px;font-size:13px;">You can change all of this later in Settings.</p>
+  </div>
+
+  <script src="/sona.js"></script>
+  <script>
+    var p = Sona.getProfile();
+    var childEl = document.getElementById("childName");
+    var goalsEl = document.getElementById("goals");
+    var goalsWrap = document.getElementById("goalsWrap");
+    childEl.value = p.childName || "";
+    goalsEl.value = p.goals || "";
+
+    // exclusive (single-select) button group
+    function single(id, initial, onChange){
+      var el = document.getElementById(id);
+      var val = initial || "";
+      var items = [].slice.call(el.querySelectorAll(".sound"));
+      function render(){ items.forEach(function(i){ i.classList.toggle("on", i.dataset.val === val); }); }
+      items.forEach(function(i){ i.onclick = function(){ val = i.dataset.val; render(); if(onChange) onChange(val); }; });
+      render();
+      return function(){ return val; };
+    }
+    var getSlp = single("slp", p.slpEvaluated || "", function(v){ goalsWrap.style.display = (v === "yes") ? "block" : "none"; });
+    if((p.slpEvaluated || "") === "yes") goalsWrap.style.display = "block";
+    var getFocus = single("focus", p.focusArea || "articulation");
+
+    // multi-select sounds
+    var sel = new Set(p.focusSounds || []);
+    var wrap = document.getElementById("sounds");
+    Sona.ALL_SOUNDS.forEach(function(s){
+      var b = document.createElement("div");
+      b.className = "sound" + (sel.has(s) ? " on" : "");
+      b.textContent = s;
+      b.onclick = function(){ if(sel.has(s)) sel.delete(s); else sel.add(s); b.classList.toggle("on"); };
+      wrap.appendChild(b);
+    });
+
+    document.getElementById("go").onclick = function(){
+      Sona.saveProfile({
+        childName: childEl.value.trim(),
+        slpEvaluated: getSlp(),
+        goals: goalsEl.value.trim(),
+        focusArea: getFocus(),
+        focusSounds: [].concat(Array.from(sel)),
+        onboarded: true,
+      });
+      location.href = "/home.html";
+    };
+  </script>
+</body>
+</html>

@@ -46,7 +46,9 @@
 
   <script src="/sona.js"></script>
   <script>
-    var p = Sona.getProfile(), g = Sona.getProgress();
+    var p = Sona.getProfile();
+    if(!p.onboarded){ location.replace("/onboarding.html"); }
+    var g = Sona.getProgress();
     var name = (p.childName || "").trim();
     document.getElementById("hello").textContent = name ? ("Hi, " + name + "! 👋") : "Welcome to Sona! 👋";
     document.getElementById("sub").textContent = name ? "Ready for today's speech practice?" : "Add your child in Settings to personalize.";

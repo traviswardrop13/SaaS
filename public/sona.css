@@ -36,6 +36,7 @@ h1{font-size:26px;} h2{font-size:20px;}
 .muted{color:var(--muted);}
 label.field{display:block;margin-top:16px;font-weight:800;color:var(--ink);}
 input[type=text]{width:100%;margin-top:6px;padding:13px 14px;border:1px solid var(--line);border-radius:12px;font-size:16px;background:#fff;}
+select{width:100%;margin-top:6px;padding:13px 14px;border:1px solid var(--line);border-radius:12px;font-size:16px;background:#fff;}
 .sounds{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;}
 .sound{cursor:pointer;user-select:none;padding:10px 16px;border-radius:12px;border:1px solid var(--line);background:#fff;font-weight:800;font-family:"Baloo 2",sans-serif;color:var(--muted);}
 .sound.on{background:#dcfce7;border-color:#86efac;color:var(--grass-d);}

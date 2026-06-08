@@ -3,7 +3,7 @@
 (function (global) {
   const PKEY = "sona.profile.v1", GKEY = "sona.progress.v1";
   const ALL_SOUNDS = ["R", "S", "L", "K", "SH", "CH", "TH", "G", "F"];
-  const DEFAULT_PROFILE = { childName: "", focusSounds: ["R", "S", "L", "K"], voiceOn: true, coachName: "Coach", cloudScoring: true };
+  const DEFAULT_PROFILE = { childName: "", focusSounds: ["R", "S", "L", "K"], voiceOn: true, coachName: "Coach", cloudScoring: true, slpEvaluated: "", goals: "", focusArea: "articulation", onboarded: false };
   const DEFAULT_PROGRESS = { sessions: [], totals: { sessions: 0, words: 0, stars: 0 }, streak: { count: 0, lastDate: "" }, bySound: {} };
 
   const clone = (o) => JSON.parse(JSON.stringify(o));
