@@ -217,7 +217,7 @@
       let bin=""; const CH=0x8000;
       for(let i=0;i<buf.length;i+=CH) bin+=String.fromCharCode.apply(null, buf.subarray(i,i+CH));
       const durationMs = (buf.length/(24000*2))*1000;
-      session.repeatAudio(bin);
+      session.repeatAudio(btoa(bin)); // LiveAvatar expects base64 PCM-24000
       await awaitSpeakEnded(durationMs + 1400);
     }
 

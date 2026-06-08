@@ -172,7 +172,7 @@
       }
       await waitReady(8000); // don't send audio before the stream is live
       setStatus("live ✓");
-      session.repeatAudio(bin);
+      session.repeatAudio(btoa(bin)); // LiveAvatar expects base64 PCM-24000
     }
 
     async function coachSpeak(text) {
