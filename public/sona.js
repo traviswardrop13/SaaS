@@ -1,5 +1,5 @@
 /* Tiny shared state for the Sona parent prototype — localStorage only (no backend yet).
-   Used by home.html, progress.html, settings.html and the call.html lesson. */
+   Used by home.html, lesson.html, customize.html, progress.html and settings.html. */
 (function (global) {
   const PKEY = "sona.profile.v1", GKEY = "sona.progress.v1";
   const ALL_SOUNDS = ["R", "S", "L", "K", "SH", "CH", "TH", "G", "F"];

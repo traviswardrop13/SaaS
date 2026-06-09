@@ -319,6 +319,8 @@
     function leave(){ alive=false; try{ micStream?.getTracks().forEach(t=>t.stop()); }catch{} location.href="/home.html"; }
 
     buildDots();
+    const BUDDY = (window.Sona ? Sona.characterById(profile.character) : null);
+    if (BUDDY) { const se=$("startEmoji"); if(se) se.textContent=BUDDY.emoji; }
     $("startTitle").textContent = `Let's practice the ${TARGET_SOUND} sound!`;
     startBtn.onclick=start;
     hearBtn.onclick=()=>{ if(alive && currentHear) speak(currentHear); };

@@ -15,7 +15,7 @@ import { NextRequest, NextResponse } from "next/server";
  * words (Claude) and the voice (here) are ours, and swappable.
  *
  * Optional env:
- *   ELEVENLABS_VOICE_ID (default "21m00Tcm4TlvDq8ikWAM" — Rachel, warm female)
+ *   ELEVENLABS_VOICE_ID (default "EXAVITQu4vr4xnSDxMaL" — Sarah, warm/clear female)
  *   ELEVENLABS_MODEL    (default "eleven_turbo_v2_5" — low latency)
  *   OPENAI_TTS_VOICE / OPENAI_TTS_MODEL
  */
@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
   try {
     if (elevenKey) {
       const voiceId =
-        voiceOverride || process.env.ELEVENLABS_VOICE_ID || "RJ94BzgbkIV3dGoYvkpb"; // Sona brand voice
+        voiceOverride || process.env.ELEVENLABS_VOICE_ID || "EXAVITQu4vr4xnSDxMaL"; // Sarah — warm, clear female (premade). Override with ELEVENLABS_VOICE_ID.
       const model = process.env.ELEVENLABS_MODEL || "eleven_turbo_v2_5";
       const r = await fetch(
         `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?output_format=pcm_24000`,
