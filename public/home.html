@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Sona — Home</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>Sona</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet" />
@@ -12,52 +12,70 @@
 <body>
   <div class="wrap">
     <header class="app">
-      <div class="brand"><span class="dot"></span> Sona</div>
-      <nav class="app"><a class="active" href="/home.html">Home</a><a href="/progress.html">Progress</a><a href="/settings.html">Settings</a></nav>
+      <div class="brand"><span class="leo">🦁</span> Sona</div>
+      <div class="pills">
+        <span class="pill flame">🔥 <span id="streak">0</span></span>
+        <span class="pill xp">⭐ <span id="xp">0</span></span>
+        <a class="iconbtn" href="/settings.html" title="Settings" style="display:flex;align-items:center;justify-content:center;">⚙️</a>
+      </div>
     </header>
 
-    <div class="card" style="display:flex;gap:18px;align-items:center;">
-      <div class="avatar-ring" style="width:86px;height:86px;display:flex;align-items:center;justify-content:center;font-size:48px;">🦁</div>
+    <div class="card" style="display:flex;gap:14px;align-items:center;">
+      <div class="leo" style="width:64px;height:64px;font-size:40px;flex:0 0 auto;">🦁</div>
       <div style="flex:1;min-width:0;">
-        <h1 id="hello">Welcome to Sona! 👋</h1>
-        <p class="muted" id="sub">Add your child in Settings to personalize.</p>
+        <h1 id="hello">Ready to practice?</h1>
+        <p class="muted" id="sub">A few minutes a day keeps the streak going!</p>
       </div>
     </div>
 
-    <div class="card" style="text-align:center;">
-      <h2 style="margin-bottom:4px;">Today's practice</h2>
-      <p class="muted" id="focusLine" style="margin-bottom:18px;">A few fun words with your coach.</p>
-      <a class="btn" id="startBtn" href="/call.html">▶&nbsp;&nbsp;Start session</a>
-      <div style="margin-top:14px;"><a href="/call.html?screener=1" style="font-weight:700;font-size:14px;">Or do a quick check‑up first →</a></div>
-    </div>
+    <a class="btn" id="startBtn" href="#" style="margin-top:14px;">▶&nbsp;&nbsp;Start today's practice</a>
 
-    <div class="row" style="margin-top:16px;">
-      <div class="stat"><div class="n" id="sStreak">0</div><div class="l">Day streak</div></div>
-      <div class="stat"><div class="n" id="sSessions">0</div><div class="l">Sessions</div></div>
-      <div class="stat"><div class="n" id="sWords">0</div><div class="l">Words</div></div>
-      <div class="stat"><div class="n" id="sStars">0</div><div class="l">Stars</div></div>
-    </div>
+    <h2 style="margin:22px 2px 6px;">Your sounds</h2>
+    <div class="path" id="path"></div>
 
-    <p class="muted" style="text-align:center;margin-top:22px;font-size:13px;">
-      <a href="/progress.html">See full progress →</a>
+    <p class="muted" style="text-align:center;margin-top:18px;font-size:13px;">
+      <a href="/progress.html">Progress</a> · <a href="/settings.html">Settings</a>
     </p>
   </div>
 
   <script src="/sona.js"></script>
   <script>
     var p = Sona.getProfile();
-    if(!p.onboarded){ location.replace("/onboarding.html"); }
+    if (!p.onboarded) { location.replace("/onboarding.html"); }
     var g = Sona.getProgress();
     var name = (p.childName || "").trim();
-    document.getElementById("hello").textContent = name ? ("Hi, " + name + "! 👋") : "Welcome to Sona! 👋";
-    document.getElementById("sub").textContent = name ? "Ready for today's speech practice?" : "Add your child in Settings to personalize.";
-    var focus = p.focusSounds || [];
-    document.getElementById("focusLine").textContent = focus.length ? ("Focus sounds: " + focus.join(", ")) : "A few fun words with your coach.";
-    document.getElementById("startBtn").href = "/call.html" + (name ? ("?name=" + encodeURIComponent(name)) : "");
-    document.getElementById("sStreak").textContent = g.streak.count || 0;
-    document.getElementById("sSessions").textContent = g.totals.sessions || 0;
-    document.getElementById("sWords").textContent = g.totals.words || 0;
-    document.getElementById("sStars").textContent = g.totals.stars || 0;
+    var today = new Date().toISOString().slice(0, 10);
+    var practicedToday = g.streak.lastDate === today;
+
+    document.getElementById("streak").textContent = g.streak.count || 0;
+    document.getElementById("xp").textContent = g.totals.stars || 0;
+    document.getElementById("hello").textContent = name ? ("Hi, " + name + "!") : "Ready to practice?";
+    document.getElementById("sub").textContent = practicedToday
+      ? "Nice — you practiced today! 🎉"
+      : "A few minutes a day keeps the streak going!";
+
+    var SOUNDS = (p.focusSounds && p.focusSounds.length) ? p.focusSounds.slice() : ["R", "S", "L", "K"];
+    function starsFor(s) { return Math.min(3, Math.floor((g.bySound[s] || 0) / 3)); }
+    function unlocked(i) { return i === 0 || (g.bySound[SOUNDS[i - 1]] || 0) >= 3; }
+    function go(s) { location.href = "/call.html?sound=" + encodeURIComponent(s) + (name ? "&name=" + encodeURIComponent(name) : ""); }
+
+    var pathEl = document.getElementById("path");
+    var firstPlay = null;
+    SOUNDS.forEach(function (s, i) {
+      var open = unlocked(i), st = starsFor(s), done = st >= 3;
+      if (open && firstPlay === null && !done) firstPlay = s;
+      var node = document.createElement("div");
+      node.className = "node" + (done ? " done" : "") + (open ? "" : " locked");
+      node.innerHTML =
+        (i > 0 ? '<span class="connector"></span>' : '') +
+        '<button class="bubble">' + (open ? s : '🔒') + '</button>' +
+        '<div class="label">' + s + ' sound</div>' +
+        '<div class="stars">' + (open ? ("★".repeat(st) + "☆".repeat(3 - st)) : '') + '</div>';
+      if (open) node.querySelector(".bubble").onclick = function () { go(s); };
+      pathEl.appendChild(node);
+    });
+    if (firstPlay === null) firstPlay = SOUNDS[0];
+    document.getElementById("startBtn").onclick = function (e) { e.preventDefault(); go(firstPlay); };
   </script>
 </body>
 </html>
