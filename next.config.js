@@ -5,7 +5,7 @@ const nextConfig = {
   // immediately instead of serving a stale edge copy.
   async headers() {
     const noStore = [{ key: "Cache-Control", value: "no-store, max-age=0, must-revalidate" }];
-    const pages = ["home", "call", "onboarding", "progress", "settings", "avatar", "coach"];
+    const pages = ["home", "lesson", "call", "onboarding", "progress", "settings", "avatar", "coach"];
     return [
       ...pages.map((p) => ({ source: `/${p}.html`, headers: noStore })),
       { source: "/sona.js", headers: noStore },
