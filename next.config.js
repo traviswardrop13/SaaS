@@ -12,6 +12,7 @@ const nextConfig = {
       { source: "/sona.css", headers: noStore },
       { source: "/", headers: noStore },
       { source: "/subscribe", headers: noStore },
+      { source: "/subscribe/success", headers: noStore },
     ];
   },
 };

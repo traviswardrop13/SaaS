@@ -13,9 +13,9 @@ import Link from "next/link";
  * audio isn't stored. No medical/outcome claims.
  */
 export const metadata = {
-  title: "Sona — your child's at-home speech coach",
+  title: "Sona — fun daily speech practice for kids",
   description:
-    "A premium at-home speech coach for kids, designed with a licensed speech-language pathologist. Live coaching sessions, a personalized plan, and progress parents can see.",
+    "A fun daily speech-practice app for kids, designed with a licensed speech-language pathologist. A friendly buddy, a personalized plan, streaks and stars, and progress parents can see.",
 };
 
 export default function Landing() {
@@ -61,15 +61,15 @@ function Header() {
           </a>
         </nav>
         <div className="flex items-center gap-3">
-          <Link
-            href="/dashboard"
+          <a
+            href="/home.html"
             className="hidden text-sm font-bold text-gray-600 hover:text-gray-900 sm:block"
           >
-            Sign in
-          </Link>
-          <Link href="/welcome" className="btn-primary text-sm">
+            Open app
+          </a>
+          <a href="/onboarding.html" className="btn-primary text-sm">
             Start free
-          </Link>
+          </a>
         </div>
       </div>
     </header>
@@ -87,24 +87,24 @@ function Hero() {
             Designed with a licensed speech-language pathologist
           </span>
           <h1 className="mt-5 font-display text-4xl font-extrabold leading-[1.05] text-gray-900 sm:text-6xl">
-            Your child&apos;s at-home{" "}
-            <span className="text-sky-600">speech coach</span>.
+            Speech practice your kid{" "}
+            <span className="text-sky-600">actually wants to do</span>.
           </h1>
           <p className="mt-5 max-w-xl text-lg leading-relaxed text-gray-600">
-            Sona is a live, friendly coach that practices tricky sounds with your
-            child — listening, guiding, and cheering them on in real time. A
-            personalized plan, daily-life practice, and progress you can see.
+            Sona turns tricky sounds into a daily game — a friendly buddy,
+            bite-size practice, streaks and stars. A personalized plan, built with
+            a speech-language pathologist, and progress you can see.
           </p>
           <div className="mt-8 flex flex-wrap items-center gap-4">
-            <Link href="/welcome" className="btn-primary text-lg">
-              Start a free session
-            </Link>
+            <a href="/onboarding.html" className="btn-primary text-lg">
+              Start free
+            </a>
             <a href="#pricing" className="btn-ghost text-lg">
               See plans
             </a>
           </div>
           <p className="mt-4 text-sm font-semibold text-gray-500">
-            No credit card to try · Works right in your browser
+            No card to try · Works in your browser · iPhone app coming soon
           </p>
         </div>
 
@@ -131,7 +131,7 @@ function CoachStage() {
             </div>
           </div>
           <span className="absolute left-4 top-4 flex items-center gap-1.5 rounded-full bg-white/90 px-3 py-1 text-xs font-extrabold text-grass-600 shadow-chunky-sm">
-            <span className="h-2 w-2 rounded-full bg-grass-500" /> live
+            <span className="h-2 w-2 rounded-full bg-grass-500" /> today
           </span>
         </div>
       </div>
@@ -174,9 +174,9 @@ function HowItWorks() {
       body: "Your child says a few words and Sona builds a personalized plan — so practice targets exactly the sounds that need it.",
     },
     {
-      emoji: "🎙️",
-      title: "Live coaching sessions",
-      body: "Press go and a friendly coach appears, says a word, listens to your child, and gives warm, real-time feedback — like a coach in their pocket.",
+      emoji: "🎮",
+      title: "Play a quick round",
+      body: "Leo says a word, your child says it back out loud, and gets instant stars and gentle feedback — bite-size, playful, and confidence-building.",
     },
     {
       emoji: "📈",
@@ -188,8 +188,8 @@ function HowItWorks() {
     <section id="how" className="mx-auto max-w-6xl px-5 py-20">
       <SectionHead
         kicker="How it works"
-        title="A real coaching session, at home"
-        sub="Short, consistent practice beats long and rare. Sona makes it a few friendly minutes your child looks forward to."
+        title="A daily habit kids look forward to"
+        sub="Short, consistent practice beats long and rare. Sona makes it a few friendly minutes a day your child actually wants to do."
       />
       <div className="mt-12 grid gap-6 sm:grid-cols-3">
         {steps.map((s, i) => (
@@ -214,10 +214,10 @@ function HowItWorks() {
 /* ─────────────────────────── Live coach ─────────────────────────── */
 function LiveCoach() {
   const points = [
-    "Says each word clearly and models the sound",
-    "Listens to your child and responds in the moment",
-    "Encourages and adapts — never frustrated, always patient",
-    "Keeps sessions short, playful, and confidence-building",
+    "Models each sound clearly, then listens to your child",
+    "Instant stars and gentle feedback on every try",
+    "Adapts to your child — patient, playful, never frustrated",
+    "Streaks and rewards keep them coming back each day",
   ];
   return (
     <section id="coach" className="bg-gray-50">
@@ -228,13 +228,13 @@ function LiveCoach() {
             The difference
           </p>
           <h2 className="mt-2 font-display text-3xl font-extrabold text-gray-900 sm:text-4xl">
-            Not flashcards. A coach that talks back.
+            Not flashcards. A game they talk to.
           </h2>
           <p className="mt-4 text-lg text-gray-600">
-            Most apps make kids tap pictures. Sona holds an actual back-and-forth
-            — the coach speaks, your child answers out loud, and the coach helps
-            on the very next breath. It&apos;s the closest thing to a 1-on-1
-            session, available whenever your child is ready.
+            Most apps make kids tap pictures. Sona has them say sounds out loud —
+            Leo models each one, listens, and rewards every try with stars. It
+            feels like a game, and it&apos;s practice that actually moves the
+            needle, whenever your child is ready.
           </p>
           <ul className="mt-6 space-y-3">
             {points.map((p) => (
@@ -263,7 +263,7 @@ function ParentValue() {
       />
       <div className="mt-12 grid gap-6 sm:grid-cols-3">
         <Stat big="$100–250" small="Typical cost of one private session" />
-        <Stat big="2–4×" small="Coaching sessions a week with Sona" />
+        <Stat big="5 min" small="Bite-size daily practice" />
         <Stat big="Every week" small="Progress updates in your dashboard" />
       </div>
     </section>
@@ -298,11 +298,11 @@ function Pricing() {
             blurb="Your child's personal speech coach — listens, adapts, and makes practice fun."
             highlight
             features={[
-              "Friendly coach who listens, adapts, and cheers them on",
-              "Real-time feedback on every sound",
+              "A friendly buddy who listens, adapts, and cheers them on",
+              "Instant feedback and stars on every sound",
               "Personalized plan from a quick sound check",
-              "Progress report you can share with your SLP",
-              "Up to 4 sessions a week · up to 3 children",
+              "Streaks, rewards, and a progress report for your SLP",
+              "Unlimited practice · up to 3 children",
               "Cancel anytime",
             ]}
             cta="Start 7-day free trial"
@@ -461,17 +461,17 @@ function FinalCTA() {
     <section className="mx-auto max-w-6xl px-5 py-20">
       <div className="overflow-hidden rounded-[2rem] bg-gradient-to-br from-sky-500 to-sky-600 px-8 py-14 text-center shadow-chunky">
         <h2 className="font-display text-3xl font-extrabold text-white sm:text-4xl">
-          Try a free session today
+          Start the daily habit today
         </h2>
         <p className="mx-auto mt-3 max-w-xl text-lg text-sky-50">
-          See your child light up when the coach says hello. No card required.
+          See your child light up when Leo says hello. No card required.
         </p>
-        <Link
-          href="/welcome"
+        <a
+          href="/onboarding.html"
           className="mt-8 inline-block rounded-2xl bg-white px-8 py-4 font-display text-lg font-extrabold uppercase tracking-wide text-sky-600 shadow-chunky transition active:translate-y-1 active:shadow-chunky-sm"
         >
           Start free
-        </Link>
+        </a>
       </div>
     </section>
   );
@@ -500,9 +500,9 @@ function Footer() {
           <Link href="/support" className="hover:text-gray-800">
             Support
           </Link>
-          <Link href="/dashboard" className="hover:text-gray-800">
-            Sign in
-          </Link>
+          <a href="/home.html" className="hover:text-gray-800">
+            Open app
+          </a>
         </div>
       </div>
       <p className="mx-auto max-w-2xl px-5 pb-10 text-center text-xs text-gray-400">

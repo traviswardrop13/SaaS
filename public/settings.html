@@ -77,7 +77,7 @@
 
     <div class="card">
       <h2>Account</h2>
-      <p class="muted">Subscription &amp; billing coming soon. <a href="/subscribe">Manage plan →</a></p>
+      <p class="muted" id="acct">Free trial · <a href="/subscribe">Subscribe →</a></p>
       <p style="margin-top:10px;font-size:14px;"><a href="/privacy">Privacy</a> · <a href="/terms">Terms</a> · <a href="/support">Support</a></p>
     </div>
 
@@ -91,6 +91,10 @@
   <script src="/sona.js"></script>
   <script>
     var p = Sona.getProfile();
+    if (Sona.isSubscribed && Sona.isSubscribed()) {
+      var ac = document.getElementById("acct");
+      if (ac) ac.innerHTML = 'Plan: <strong style="color:var(--good);">Active ✓</strong> · <a href="/subscribe">Manage →</a>';
+    }
     var childEl = document.getElementById("childName"),
         coachEl = document.getElementById("coachName"),
         voiceEl = document.getElementById("voiceOn"),

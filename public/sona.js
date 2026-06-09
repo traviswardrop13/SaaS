@@ -77,6 +77,13 @@
   }
   function resetProgress() { save(GKEY, clone(DEFAULT_PROGRESS)); }
 
+  // --- subscription (Stripe is the source of truth; this is a local cache so
+  //     the app can reflect "active" without a round-trip every load) ---
+  const SKEY = "sona.sub.v1";
+  function getSub() { return load(SKEY, { active: false, email: "", since: 0 }); }
+  function saveSub(patch) { save(SKEY, Object.assign(getSub(), patch || {})); }
+  function isSubscribed() { return !!getSub().active; }
+
   // --- recordings (the child's audio attempts) kept in IndexedDB so a parent
   //     can review them later. Best-effort: never throws into the lesson. ---
   function idb() {
@@ -175,5 +182,5 @@
     setTimeout(() => el.remove(), 950);
   }
 
-  global.Sona = { ALL_SOUNDS, CHARACTERS, OUTFITS, BACKDROPS, characterById, outfitById, backdropById, getProfile, saveProfile, getProgress, recordSession, resetProgress, saveRecording, listRecordings, sfx, confetti, pop };
+  global.Sona = { ALL_SOUNDS, CHARACTERS, OUTFITS, BACKDROPS, characterById, outfitById, backdropById, getProfile, saveProfile, getProgress, recordSession, resetProgress, getSub, saveSub, isSubscribed, saveRecording, listRecordings, sfx, confetti, pop };
 })(window);
