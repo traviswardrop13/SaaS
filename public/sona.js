@@ -38,7 +38,7 @@
   const outfitById = (id) => byId(OUTFITS, id);
   const backdropById = (id) => byId(BACKDROPS, id);
 
-  const DEFAULT_PROFILE = { childName: "", focusSounds: ["R", "S", "L", "K"], voiceOn: true, coachName: "Coach", cloudScoring: true, slpEvaluated: "", goals: "", focusArea: "articulation", language: "en", character: "leo", outfit: "none", backdrop: "sky", onboarded: false };
+  const DEFAULT_PROFILE = { childName: "", focusSounds: ["R", "S", "L", "K"], voiceOn: true, coachName: "Coach", cloudScoring: true, slpEvaluated: "", goals: "", focusArea: "articulation", language: "en", character: "leo", outfit: "none", backdrop: "sky", soundOn: true, onboarded: false };
   const DEFAULT_PROGRESS = { sessions: [], totals: { sessions: 0, words: 0, stars: 0 }, streak: { count: 0, lastDate: "" }, bySound: {} };
 
   const clone = (o) => JSON.parse(JSON.stringify(o));
@@ -130,6 +130,7 @@
     return _ac;
   }
   function tone(freq, start, dur, type, gain) {
+    try { if (getProfile().soundOn === false) return; } catch (e) {}
     const a = ac(); if (!a) return;
     const t0 = a.currentTime + start;
     const o = a.createOscillator(), g = a.createGain();

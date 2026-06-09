@@ -40,6 +40,15 @@
 
     <a class="btn" id="startBtn" href="#" style="margin-top:14px;">▶&nbsp;&nbsp;Start today's practice</a>
 
+    <div class="card" style="margin-top:14px;display:flex;align-items:center;gap:14px;">
+      <div style="font-size:30px;" id="goalIcon">🎯</div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-weight:800;" id="goalLabel">Today's goal</div>
+        <div class="bar" style="margin-top:8px;"><span id="goalBar" style="width:0%"></span></div>
+      </div>
+      <div style="font-weight:800;font-family:'Baloo 2';font-size:15px;" id="goalNum">0/10</div>
+    </div>
+
     <h2 style="margin:22px 2px 6px;">Your sounds</h2>
     <div class="path" id="path"></div>
 
@@ -82,6 +91,13 @@
     document.getElementById("sub").textContent = practicedToday
       ? "Nice — you practiced today! 🎉"
       : "A few minutes a day keeps the streak going!";
+
+    // today's goal — practiced reps today vs a daily target
+    var todayCount = (g.sessions || []).filter(function (s) { return new Date(s.date).toISOString().slice(0, 10) === today; }).reduce(function (n, s) { return n + (s.count || 0); }, 0);
+    var GOAL = 10, gpct = Math.min(100, Math.round(todayCount / GOAL * 100));
+    document.getElementById("goalBar").style.width = gpct + "%";
+    document.getElementById("goalNum").textContent = Math.min(todayCount, GOAL) + "/" + GOAL;
+    if (todayCount >= GOAL) { document.getElementById("goalIcon").textContent = "✅"; document.getElementById("goalLabel").textContent = "Goal complete!"; }
 
     var SOUNDS = (p.focusSounds && p.focusSounds.length) ? p.focusSounds.slice() : ["R", "S", "L", "K"];
     function starsFor(s) { return Math.min(3, Math.floor((g.bySound[s] || 0) / 3)); }
