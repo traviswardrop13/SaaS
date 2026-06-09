@@ -12,18 +12,9 @@
     *{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent;
       font-family:"Nunito",-apple-system,"Segoe UI",Roboto,sans-serif;}
     html,body{height:100%;overflow:hidden;background:#eaf3ff;color:var(--ink);}
-    #stage{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
-      background:radial-gradient(1100px 820px at 50% 26%, #ffffff, #e3eefc);}
+    #stage{position:fixed;inset:0;background:radial-gradient(1100px 820px at 50% 22%, #ffffff, #e3eefc);}
 
-    #lionWrap{width:min(58vw,240px);animation:bob 3.6s ease-in-out infinite;}
-    #lionWrap.speaking{animation:bob 1.7s ease-in-out infinite;}
-    @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
-    #lion{width:100%;height:auto;display:block;filter:drop-shadow(0 18px 40px rgba(20,128,224,.18));}
-    #coachImg{width:100%;height:auto;display:none;filter:drop-shadow(0 18px 40px rgba(20,128,224,.18));}
-    #mouth{transform-box:fill-box;transform-origin:center top;transform:scaleY(.18);}
-    #eyeL,#eyeR{transform-box:fill-box;transform-origin:center;transition:transform .08s;}
-
-    /* top bar: progress dots + close */
+    /* top: progress dots + close */
     #bar{position:fixed;top:0;left:0;right:0;z-index:30;display:flex;align-items:center;gap:12px;
       padding:calc(12px + env(safe-area-inset-top)) 16px 12px;}
     #dots{display:flex;gap:6px;flex:1;}
@@ -31,37 +22,43 @@
     .dot.done{background:var(--orange);} .dot.cur{background:var(--blue);}
     #close{border:none;cursor:pointer;width:36px;height:36px;border-radius:50%;background:#fff;color:#94a6bd;font-size:18px;font-weight:800;box-shadow:0 4px 12px rgba(15,39,66,.1);}
 
-    /* mouth-placement cue (how to make the sound) */
-    #mouthCue{position:fixed;top:9%;left:50%;transform:translateX(-50%) translateY(-8px);z-index:26;
-      display:none;align-items:center;gap:12px;background:#fff;border-radius:20px;padding:10px 16px;
-      box-shadow:0 16px 40px rgba(15,39,66,.18);max-width:min(86vw,420px);opacity:0;transition:.25s;}
-    #mouthCue.show{display:flex;opacity:1;transform:translateX(-50%) translateY(0);}
-    #mouthImg{width:58px;height:58px;object-fit:contain;border-radius:12px;background:#eef5ff;display:none;}
-    #mouthImg.show{display:block;}
-    #mouthCue .cueText{font-family:"Baloo 2";font-weight:800;color:var(--ink);font-size:15px;line-height:1.2;}
-    #mouthCue #cueHow{font-family:"Nunito";font-weight:700;color:#5b6b80;font-size:13px;margin-top:2px;}
+    /* Leo — the coach, smaller, up top */
+    #lionWrap{position:fixed;top:8%;left:50%;transform:translateX(-50%);width:min(36vw,140px);z-index:20;animation:bob 3.6s ease-in-out infinite;}
+    #lionWrap.speaking{animation:bob 1.7s ease-in-out infinite;}
+    @keyframes bob{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(-6px)}}
+    #lion{width:100%;height:auto;display:block;filter:drop-shadow(0 12px 26px rgba(20,128,224,.18));}
+    #coachImg{width:100%;height:auto;display:none;filter:drop-shadow(0 12px 26px rgba(20,128,224,.18));}
+    #mouth{transform-box:fill-box;transform-origin:center top;transform:scaleY(.18);}
+    #eyeL,#eyeR{transform-box:fill-box;transform-origin:center;transition:transform .08s;}
 
-    #caption{position:fixed;left:50%;bottom:7%;transform:translateX(-50%);z-index:25;max-width:min(90vw,620px);
-      text-align:center;font-family:"Baloo 2";font-weight:800;color:var(--ink);font-size:clamp(18px,2.7vw,26px);
+    /* THE practice card — what the child is practicing (the white square, center stage) */
+    #practice{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(.92);z-index:24;
+      width:min(78vw,320px);min-height:min(78vw,320px);background:#fff;border-radius:30px;
+      display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:26px 22px;
+      box-shadow:0 26px 70px rgba(15,39,66,.22);opacity:0;transition:.28s;}
+    #practice.show{opacity:1;transform:translate(-50%,-50%) scale(1);}
+    #pracPic{font-size:96px;line-height:1;}
+    #pracPic.letter{font-family:"Baloo 2";font-weight:800;color:var(--blue-d);font-size:90px;letter-spacing:1px;}
+    #pracWord{font-family:"Baloo 2";font-weight:800;font-size:34px;color:var(--blue-d);}
+    #pracCue{display:none;align-items:center;gap:10px;margin-top:2px;max-width:100%;}
+    #mouthImg{width:48px;height:48px;object-fit:contain;border-radius:10px;background:#eef5ff;display:none;}
+    #mouthImg.show{display:block;}
+    #cueHow{font-family:"Nunito";font-weight:700;color:#5b6b80;font-size:13px;line-height:1.2;text-align:left;}
+    #pracChip{font-family:"Baloo 2";font-weight:800;font-size:12px;letter-spacing:.08em;text-transform:uppercase;
+      color:var(--orange-d);background:#ffe7d3;padding:5px 12px;border-radius:99px;}
+
+    #caption{position:fixed;left:50%;bottom:18%;transform:translateX(-50%);z-index:25;max-width:min(90vw,560px);
+      text-align:center;font-family:"Baloo 2";font-weight:800;color:var(--ink);font-size:clamp(17px,2.6vw,24px);
       line-height:1.25;padding:0 12px;opacity:0;transition:opacity .25s;}
     #caption.show{opacity:1;}
 
-    #wordCard{position:fixed;left:50%;bottom:19%;transform:translate(-50%,0) scale(.9);z-index:26;background:#fff;
-      border-radius:24px;padding:16px 26px;display:flex;flex-direction:column;align-items:center;gap:5px;
-      box-shadow:0 22px 60px rgba(15,39,66,.26);opacity:0;pointer-events:none;transition:.3s;}
-    #wordCard.show{opacity:1;transform:translate(-50%,0) scale(1);}
-    #wordCard .emoji{font-size:58px;line-height:1;}
-    #wordCard .word{font-family:"Baloo 2";font-weight:800;font-size:40px;color:var(--blue-d);letter-spacing:.5px;}
-    #wordCard .chip{margin-top:4px;font-family:"Baloo 2";font-weight:800;font-size:13px;letter-spacing:.08em;
-      color:var(--orange-d);background:#ffe7d3;padding:5px 12px;border-radius:99px;text-transform:uppercase;}
-
-    #mic{position:fixed;left:50%;bottom:13%;transform:translateX(-50%);z-index:27;width:84px;height:84px;border-radius:50%;
+    #mic{position:fixed;left:50%;bottom:7%;transform:translateX(-50%);z-index:27;width:84px;height:84px;border-radius:50%;
       background:var(--blue);border:none;cursor:pointer;display:none;align-items:center;justify-content:center;box-shadow:0 10px 30px rgba(42,157,244,.45);}
     #mic.show{display:flex;animation:pulse 1.4s infinite;}
     #mic.rec{background:#ef4444;}
-    @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(42,157,244,.5)}70%{box-shadow:0 0 0 24px rgba(42,157,244,0)}100%{box-shadow:0 0 0 0 rgba(42,157,244,0)}}
+    @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(42,157,244,.5)}70%{box-shadow:0 0 0 22px rgba(42,157,244,0)}100%{box-shadow:0 0 0 0 rgba(42,157,244,0)}}
     #mic svg{width:38px;height:38px;}
-    #micHint{position:fixed;left:50%;bottom:8%;transform:translateX(-50%);z-index:27;font-family:"Baloo 2";font-weight:800;
+    #micHint{position:fixed;left:50%;bottom:2.5%;transform:translateX(-50%);z-index:27;font-family:"Baloo 2";font-weight:800;
       font-size:14px;color:var(--ink);background:rgba(255,255,255,.9);padding:6px 14px;border-radius:99px;display:none;}
     #micHint.show{display:block;}
 
@@ -106,14 +103,15 @@
       </svg>
     </div>
 
-    <div id="mouthCue"><img id="mouthImg" alt="" /><div class="cueText"><span id="cueSound">R</span> sound<div id="cueHow"></div></div></div>
-    <div id="caption" class="onlight"></div>
-
-    <div id="wordCard">
-      <span class="emoji" id="wcEmoji">🐰</span>
-      <span class="word" id="wcWord">rabbit</span>
-      <span class="chip" id="wcChip">R sound</span>
+    <!-- the white practice card: what to say (letter / word + picture) + how (mouth cue) -->
+    <div id="practice">
+      <div id="pracPic">🐰</div>
+      <div id="pracWord">rabbit</div>
+      <div id="pracCue"><img id="mouthImg" alt="" /><span id="cueHow"></span></div>
+      <div id="pracChip">R sound</div>
     </div>
+
+    <div id="caption"></div>
 
     <button id="mic" title="I'm done">
       <svg viewBox="0 0 24 24" fill="none"><path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v6a3 3 0 0 0 3 3Z" fill="#fff"/><path d="M6 11a6 6 0 0 0 12 0M12 18v3" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>
@@ -129,7 +127,7 @@
     <div id="start" class="screen">
       <div class="bigorb"><img id="startPic" alt="Leo" /><span id="startEmoji">🦁</span></div>
       <h1 id="startTitle">Let's practice!</h1>
-      <p class="sub">Tap below, then say each word after Leo. Allow the mic so he can hear you!</p>
+      <p class="sub">Tap below, then say each one after Leo. Allow the mic so he can hear you!</p>
       <button class="cta" id="startBtn">▶&nbsp;&nbsp;Start lesson</button>
       <div id="err"></div>
     </div>
@@ -155,16 +153,16 @@
     let useSpeechAce = false;
 
     const SOUND_PLAN = {
-      R: { isolation:{ display:"rrr", say:"Let's make a big R sound. Pull your tongue back and turn your voice on — rrrr. Now you try!", scoreText:"rah" },
+      R: { isolation:{ display:"R", say:"Let's make a big R sound. Pull your tongue back and turn your voice on — rrrr. Now you try!", scoreText:"rah" },
         syllables:[ {display:"rah",scoreText:"rah",say:"Now let's add a vowel — say rah!"},{display:"ray",scoreText:"ray",say:"Try ray!"},{display:"roo",scoreText:"roo",say:"And roo!"} ],
         words:[ {display:"rabbit",emoji:"🐰",scoreText:"rabbit",say:"Now the whole word — rabbit!"},{display:"rocket",emoji:"🚀",scoreText:"rocket",say:"Say rocket!"},{display:"ring",emoji:"💍",scoreText:"ring",say:"Say ring!"} ] },
-      S: { isolation:{ display:"sss", say:"Let's make a quiet snake sound. Teeth together and smile — ssss. Your turn!", scoreText:"sah" },
+      S: { isolation:{ display:"S", say:"Let's make a quiet snake sound. Teeth together and smile — ssss. Your turn!", scoreText:"sah" },
         syllables:[ {display:"sah",scoreText:"sah",say:"Add a vowel — sah!"},{display:"see",scoreText:"see",say:"Try see!"},{display:"so",scoreText:"so",say:"And so!"} ],
         words:[ {display:"sun",emoji:"☀️",scoreText:"sun",say:"Whole word — sun!"},{display:"snake",emoji:"🐍",scoreText:"snake",say:"Say snake!"},{display:"soap",emoji:"🧼",scoreText:"soap",say:"Say soap!"} ] },
-      L: { isolation:{ display:"lll", say:"Let's make the L sound. Tongue tip up behind your teeth — llll. Now you!", scoreText:"lah" },
+      L: { isolation:{ display:"L", say:"Let's make the L sound. Tongue tip up behind your teeth — llll. Now you!", scoreText:"lah" },
         syllables:[ {display:"lah",scoreText:"lah",say:"Say lah!"},{display:"lee",scoreText:"lee",say:"Try lee!"},{display:"low",scoreText:"low",say:"And low!"} ],
         words:[ {display:"lion",emoji:"🦁",scoreText:"lion",say:"Whole word — lion!"},{display:"leaf",emoji:"🍃",scoreText:"leaf",say:"Say leaf!"},{display:"ball",emoji:"⚽",scoreText:"ball",say:"Say ball!"} ] },
-      K: { isolation:{ display:"k! k!", say:"Let's make the K sound. Lift the back of your tongue — k! k! Now you!", scoreText:"kah" },
+      K: { isolation:{ display:"K", say:"Let's make the K sound. Lift the back of your tongue — k! k! Now you!", scoreText:"kah" },
         syllables:[ {display:"kah",scoreText:"kah",say:"Say kah!"},{display:"key",scoreText:"key",say:"Try key!"},{display:"ko",scoreText:"ko",say:"And ko!"} ],
         words:[ {display:"cat",emoji:"🐱",scoreText:"cat",say:"Whole word — cat!"},{display:"key",emoji:"🔑",scoreText:"key",say:"Say key!"},{display:"cake",emoji:"🍰",scoreText:"cake",say:"Say cake!"} ] },
     };
@@ -179,11 +177,11 @@
     ];
     const PRAISE = ["Yay! That was wonderful.","Great job — I heard it!","Awesome work!","So good! High five!","You're doing amazing."];
     const ENCOURAGE = ["Good try! Let's keep going.","Nice effort — on to the next one!","You're working so hard. Let's try another."];
+    const CUE = { R:"Tongue back, voice on — rrr", S:"Teeth together, smile — sss", L:"Tongue tip up — lll", K:"Back of tongue up — k!", G:"Back of tongue, voice on — g", F:"Teeth on lip — fff", SH:"Round lips, quiet — shh", CH:"Round lips, pop — ch", TH:"Tongue peeks out — th" };
 
     const $ = (id) => document.getElementById(id);
     const lionWrap=$("lionWrap"), mouthEl=$("mouth"), eyeL=$("eyeL"), eyeR=$("eyeR"), coachImg=$("coachImg");
-    const captionEl=$("caption"), wordCard=$("wordCard"), wcEmoji=$("wcEmoji"), wcWord=$("wcWord"), wcChip=$("wcChip");
-    const mouthCue=$("mouthCue"), mouthImg=$("mouthImg"), cueSound=$("cueSound"), cueHow=$("cueHow");
+    const captionEl=$("caption"), practice=$("practice"), pracPic=$("pracPic"), pracWord=$("pracWord"), pracCue=$("pracCue"), pracChip=$("pracChip"), mouthImg=$("mouthImg"), cueHow=$("cueHow");
     const mic=$("mic"), micHint=$("micHint"), dotsEl=$("dots");
     const startScreen=$("start"), doneScreen=$("done"), startBtn=$("startBtn"), errEl=$("err");
 
@@ -193,19 +191,16 @@
     const setCaption=(t)=>{ captionEl.textContent=t||""; captionEl.classList.toggle("show",!!t); };
     const pulse=(on)=> lionWrap && lionWrap.classList.toggle("speaking",!!on);
 
-    /* ── Coach Leo frames (PNG if present, else SVG) ── */
-    const FRAMES={ idle:"/coach/idle.png", open:"/coach/talk-open.png", closed:"/coach/talk-closed.png",
-      listening:"/coach/listening.png", celebrate:"/coach/celebrate.png", encourage:"/coach/encourage.png" };
+    /* Coach Leo frames (PNG if present, else SVG) */
+    const FRAMES={ idle:"/coach/idle.png", open:"/coach/talk-open.png", closed:"/coach/talk-closed.png", listening:"/coach/listening.png", celebrate:"/coach/celebrate.png", encourage:"/coach/encourage.png" };
     const FRAME_OK={}; let imgReady=false, restState="idle";
     function setFrame(key){ if(!imgReady) return; const k=FRAME_OK[key]?key:"idle"; if(FRAMES[k]) coachImg.src=FRAMES[k]; }
-    (function preloadCoach(){
-      Object.keys(FRAMES).forEach(function(key){ const im=new Image();
-        im.onload=function(){ FRAME_OK[key]=true; if(key==="idle"){ imgReady=true; coachImg.src=FRAMES.idle; coachImg.style.display="block"; const s=$("lion"); if(s) s.style.display="none";
-          const sp=$("startPic"), se=$("startEmoji"); if(sp){ sp.src=FRAMES.idle; sp.style.display="block"; } if(se) se.style.display="none"; } };
-        im.src=FRAMES[key]; });
-    })();
+    (function preloadCoach(){ Object.keys(FRAMES).forEach(function(key){ const im=new Image();
+      im.onload=function(){ FRAME_OK[key]=true; if(key==="idle"){ imgReady=true; coachImg.src=FRAMES.idle; coachImg.style.display="block"; const s=$("lion"); if(s) s.style.display="none";
+        const sp=$("startPic"), se=$("startEmoji"); if(sp){ sp.src=FRAMES.idle; sp.style.display="block"; } if(se) se.style.display="none"; } };
+      im.src=FRAMES[key]; }); })();
 
-    /* ── audio + amplitude lip-sync ── */
+    /* audio + amplitude lip-sync */
     function getCtx(){ if(!audioCtx){ const AC=window.AudioContext||window.webkitAudioContext; audioCtx=new AC(); } if(audioCtx.state==="suspended") audioCtx.resume(); return audioCtx; }
     let mouthRAF=null;
     function setMouthOpen(o){ if(imgReady){ setFrame(o>0.12?"open":"closed"); return; } if(mouthEl) mouthEl.style.transform="scaleY("+(0.18+Math.min(1,o)*1.05)+")"; }
@@ -214,37 +209,42 @@
     function playPCM(bytes){ return new Promise((resolve)=>{ try{ const ctx=getCtx(); const n=bytes.byteLength>>1; const ab=ctx.createBuffer(1,n,24000); const ch=ab.getChannelData(0); const dv=new DataView(bytes.buffer,bytes.byteOffset,bytes.byteLength); for(let i=0;i<n;i++) ch[i]=dv.getInt16(i*2,true)/32768; const src=ctx.createBufferSource(); src.buffer=ab; const an=ctx.createAnalyser(); an.fftSize=256; src.connect(an); an.connect(ctx.destination); startMouthLoop(an); src.onended=()=>{ stopMouthLoop(); resolve(); }; src.start(); }catch(e){ console.warn("playPCM",e); stopMouthLoop(); resolve(); } }); }
     setInterval(function(){ if(!eyeL) return; eyeL.style.transform=eyeR.style.transform="scaleY(0.1)"; setTimeout(function(){ eyeL.style.transform=eyeR.style.transform=""; },130); }, 4200);
 
-    /* ── coach speaks (voice only — no live avatar) ── */
     async function speak(text){
       if(!text || !alive) return;
       setCaption(text);
       if(!VOICE_ON){ await sleep(Math.min(4500, 700+text.length*45)); return; }
       pulse(true);
-      try{
-        const res=await fetch("/api/tts",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text})});
+      try{ const res=await fetch("/api/tts",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text})});
         if(!res.ok){ let m="TTS "+res.status; try{const j=await res.json();m=j.error||m;}catch{} throw new Error(m); }
-        await playPCM(new Uint8Array(await res.arrayBuffer()));
-        await sleep(300);
+        await playPCM(new Uint8Array(await res.arrayBuffer())); await sleep(300);
       }catch(e){ console.warn("speak failed",e); }
       finally{ pulse(false); }
     }
 
-    /* ── cards ── */
-    const CUE={ R:"Tongue back, turn your voice on — rrr", S:"Teeth together, smile — sss", L:"Tongue tip up behind your teeth — lll",
-      K:"Lift the back of your tongue — k!", G:"Back of tongue up, voice on — g", F:"Top teeth on bottom lip — fff",
-      SH:"Round your lips, stay quiet — shh", CH:"Round lips, then pop — ch", TH:"Tongue peeks between teeth — th" };
-    function showMouthCue(sound){ if(!sound){ mouthCue.classList.remove("show"); return; }
-      cueSound.textContent=sound; cueHow.textContent=CUE[sound]||"";
-      mouthImg.classList.remove("show"); mouthImg.onload=function(){ mouthImg.classList.add("show"); }; mouthImg.onerror=function(){ mouthImg.classList.remove("show"); };
-      mouthImg.src="/coach/mouth/"+sound+".png"; mouthCue.classList.add("show"); }
-    function showStep(s){ if(!s){ wordCard.classList.remove("show"); showMouthCue(null); return; }
-      if(s.level==="word"){ wcEmoji.style.display=""; wcEmoji.textContent=s.emoji||""; wcWord.textContent=s.display; }
-      else { wcEmoji.style.display="none"; wcWord.textContent=s.display; }
-      wcChip.textContent=s.sound+" sound"; wordCard.classList.add("show"); showMouthCue(s.sound); }
+    /* practice card: show what to practice (letter / word+picture) + how (mouth cue) */
+    function showStep(s){
+      if(!s){ practice.classList.remove("show"); return; }
+      pracChip.textContent = s.sound + " sound";
+      if(s.level === "word"){
+        pracPic.className=""; pracPic.textContent = s.emoji || "🗣️";
+        pracWord.style.display=""; pracWord.textContent = s.display;
+        pracCue.style.display="none";
+      } else {
+        pracPic.className="letter"; pracPic.textContent = s.display;
+        pracWord.style.display="none";
+        cueHow.textContent = CUE[s.sound] || "";
+        mouthImg.classList.remove("show");
+        mouthImg.onload=function(){ mouthImg.classList.add("show"); };
+        mouthImg.onerror=function(){ mouthImg.classList.remove("show"); };
+        mouthImg.src = "/coach/mouth/" + s.sound + ".png";
+        pracCue.style.display="flex";
+      }
+      practice.classList.add("show");
+    }
     function buildDots(){ dotsEl.innerHTML=""; STEPS.forEach(()=>{ const d=document.createElement("div"); d.className="dot"; dotsEl.appendChild(d); }); }
     function setDot(i){ [...dotsEl.children].forEach((d,k)=>{ d.className="dot"+(k<i?" done":k===i?" cur":""); }); }
 
-    /* ── scoring ── */
+    /* scoring */
     function norm(s){ return (s||"").toLowerCase().replace(/[^a-z]/g,""); }
     function scoreMatch(t,w){ t=norm(t); w=norm(w); if(!t) return null; if(t.includes(w)||w.includes(t)) return true; let i=0; while(i<Math.min(t.length,w.length)&&t[i]===w[i]) i++; return i>=3; }
     async function detectScorer(){ if(!CLOUD_SCORING){ useSpeechAce=false; return; } try{ const r=await fetch("/api/score"); const j=await r.json(); useSpeechAce=!!(j&&j.hasKey); }catch{ useSpeechAce=false; } }
@@ -254,12 +254,10 @@
         fd.append("text",step.scoreText); fd.append("targetSound",step.sound); fd.append("userId",CHILD||"child"); fd.append("mode",step.mode||"full");
         const r=await fetch("/api/score",{method:"POST",body:fd}); const j=await r.json();
         if(j&&j.ok) return { ok:j.rating!=="tryAgain", score:j.score, feedback:j.feedback, transcript:j.transcript||transcript, source:"speechace" };
-        console.warn("speechace",j&&j.error);
       }catch(e){ console.warn("speechace err",e); } }
       return { ok:scoreMatch(transcript,step.scoreText)===true, transcript, source:"browser" };
     }
 
-    /* ── child's turn: record + recognize ── */
     function recordTurn(maxMs=7000){
       return new Promise((resolve)=>{
         let done=false, chunks=[], rec=null, sr=null, transcript="";
@@ -272,7 +270,6 @@
       });
     }
 
-    /* ── lesson loop ── */
     async function runLesson(){
       await speak(`Hi ${CHILD}! Today we're working on the ${TARGET_SOUND} sound. Watch me, then it's your turn!`);
       const practiced=[]; let lastLevel="";
@@ -313,7 +310,6 @@
       try{ await detectScorer(); await runLesson(); }
       catch(err){ console.error(err); startScreen.classList.remove("hidden"); errEl.textContent=String(err&&err.message||err); errEl.classList.add("show"); startBtn.disabled=false; }
     }
-
     function leave(){ alive=false; try{ micStream?.getTracks().forEach(t=>t.stop()); }catch{} location.href="/home.html"; }
 
     buildDots();
