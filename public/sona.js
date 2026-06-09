@@ -113,5 +113,67 @@
     } catch (e) { return []; }
   }
 
-  global.Sona = { ALL_SOUNDS, CHARACTERS, OUTFITS, BACKDROPS, characterById, outfitById, backdropById, getProfile, saveProfile, getProgress, recordSession, resetProgress, saveRecording, listRecordings };
+  // ── juice: tiny sound effects + confetti (Web Audio + canvas, no assets) ──
+  // What gives the app its Duolingo "feel": a satisfying chime on success, a
+  // soft buzz on a miss, and confetti on a win. Synthesized so there are no
+  // files to ship and nothing to wait on.
+  let _ac = null;
+  function ac() {
+    try { if (!_ac) _ac = new (window.AudioContext || window.webkitAudioContext)(); if (_ac.state === "suspended") _ac.resume(); } catch (e) {}
+    return _ac;
+  }
+  function tone(freq, start, dur, type, gain) {
+    const a = ac(); if (!a) return;
+    const t0 = a.currentTime + start;
+    const o = a.createOscillator(), g = a.createGain();
+    o.type = type || "sine"; o.frequency.setValueAtTime(freq, t0);
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(gain || 0.2, t0 + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    o.connect(g); g.connect(a.destination);
+    o.start(t0); o.stop(t0 + dur + 0.03);
+  }
+  const sfx = {
+    tap()      { tone(440, 0, 0.07, "triangle", 0.10); },
+    correct()  { [523.25, 659.25, 783.99].forEach((f, i) => tone(f, i * 0.10, 0.16, "sine", 0.18)); },     // C-E-G
+    wrong()    { tone(311.13, 0, 0.18, "sawtooth", 0.08); tone(233.08, 0.12, 0.22, "sawtooth", 0.08); },
+    complete() { [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => tone(f, i * 0.11, 0.22, "sine", 0.18)); },
+    reward()   { [659.25, 783.99, 1046.5, 1318.5].forEach((f, i) => tone(f, i * 0.09, 0.26, "triangle", 0.16)); },
+    star()     { tone(880, 0, 0.12, "sine", 0.16); tone(1318.5, 0.08, 0.18, "sine", 0.16); },
+  };
+  function confetti(opts) {
+    opts = opts || {};
+    const cv = document.createElement("canvas");
+    cv.style.cssText = "position:fixed;inset:0;pointer-events:none;z-index:9999;";
+    cv.width = innerWidth; cv.height = innerHeight;
+    document.body.appendChild(cv);
+    const ctx = cv.getContext("2d");
+    const colors = opts.colors || ["#2a9df4", "#ff8a3d", "#22c55e", "#ffd33d", "#ef6f23", "#1480e0"];
+    const n = opts.count || 130, P = [];
+    for (let i = 0; i < n; i++) P.push({ x: Math.random() * cv.width, y: -20 - Math.random() * cv.height * 0.4, r: 4 + Math.random() * 7, c: colors[i % colors.length], vx: (Math.random() - 0.5) * 3, vy: 2 + Math.random() * 4.5, rot: Math.random() * 6, vr: (Math.random() - 0.5) * 0.35 });
+    let last = performance.now(), tEnd = last + (opts.duration || 2600);
+    (function frame(now) {
+      ctx.clearRect(0, 0, cv.width, cv.height);
+      let alive = false;
+      for (const p of P) { p.x += p.vx; p.y += p.vy; p.vy += 0.05; p.rot += p.vr;
+        if (p.y < cv.height + 20) alive = true;
+        ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot); ctx.fillStyle = p.c; ctx.fillRect(-p.r / 2, -p.r / 2, p.r, p.r * 0.6); ctx.restore();
+      }
+      if (alive && now < tEnd) requestAnimationFrame(frame); else cv.remove();
+    })(last);
+  }
+  // floating "+N XP" style popup near an element (or screen center)
+  function pop(text, opts) {
+    opts = opts || {};
+    const el = document.createElement("div");
+    el.textContent = text;
+    el.style.cssText = "position:fixed;z-index:9998;font-family:'Baloo 2',sans-serif;font-weight:800;pointer-events:none;" +
+      "font-size:" + (opts.size || 26) + "px;color:" + (opts.color || "#ff8a3d") + ";text-shadow:0 2px 0 rgba(255,255,255,.7);" +
+      "left:" + (opts.x != null ? opts.x : innerWidth / 2) + "px;top:" + (opts.y != null ? opts.y : innerHeight / 2) + "px;transform:translate(-50%,-50%);transition:transform .9s ease-out,opacity .9s ease-out;opacity:1;";
+    document.body.appendChild(el);
+    requestAnimationFrame(() => { el.style.transform = "translate(-50%,-160%)"; el.style.opacity = "0"; });
+    setTimeout(() => el.remove(), 950);
+  }
+
+  global.Sona = { ALL_SOUNDS, CHARACTERS, OUTFITS, BACKDROPS, characterById, outfitById, backdropById, getProfile, saveProfile, getProgress, recordSession, resetProgress, saveRecording, listRecordings, sfx, confetti, pop };
 })(window);

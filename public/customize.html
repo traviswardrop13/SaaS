@@ -101,6 +101,7 @@
         el.className = "opt" + render.cls(it) + (sel[key] === it.id && !locked ? " on" : "") + (locked ? " locked" : "");
         el.innerHTML = render.inner(it) + (locked ? '<span class="soon">SOON</span>' : "");
         if (!locked) el.onclick = function () {
+          if (window.Sona) Sona.sfx.tap();
           sel[key] = it.id;
           host.querySelectorAll(".opt").forEach(function (n) { n.classList.remove("on"); });
           el.classList.add("on");

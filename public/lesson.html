@@ -38,6 +38,8 @@
       display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:26px 22px;
       box-shadow:0 26px 70px rgba(15,39,66,.22);opacity:0;transition:.28s;}
     #practice.show{opacity:1;transform:translate(-50%,-50%) scale(1);}
+    #practice.good{box-shadow:0 0 0 6px rgba(34,197,94,.55),0 26px 70px rgba(15,39,66,.22);}
+    #practice.bad{box-shadow:0 0 0 6px rgba(239,68,68,.5),0 26px 70px rgba(15,39,66,.22);}
     #pracPic{font-size:96px;line-height:1;}
     #pracPic.letter{font-family:"Baloo 2";font-weight:800;color:var(--blue-d);font-size:90px;letter-spacing:1px;}
     #pracWord{font-family:"Baloo 2";font-weight:800;font-size:34px;color:var(--blue-d);}
@@ -289,6 +291,10 @@
         const ok=sc.ok;
         practiced.push({ word:s.display, sound:s.sound, level:s.level, ok, score:sc.score });
         if(res.blob && window.Sona && Sona.saveRecording){ Sona.saveRecording({ word:s.display, sound:s.sound, level:s.level, ok, score:sc.score||null, transcript:sc.transcript||"", source:sc.source, blob:res.blob }); }
+        if(window.Sona){ if(ok){ Sona.sfx.correct(); Sona.pop("+10 XP",{color:"#22c55e",y:window.innerHeight*0.3}); } else { Sona.sfx.wrong(); } }
+        practice.classList.add(ok?"good":"bad");
+        await sleep(450);
+        practice.classList.remove("good","bad");
         showStep(null);
         await speak(ok ? pick(PRAISE) : (sc.feedback || pick(ENCOURAGE)));
       }
@@ -305,6 +311,7 @@
       $("doneStars").textContent="★".repeat(stars)+"☆".repeat(3-stars);
       $("doneSub").textContent=`${great} of ${practiced.length} sounded great, ${CHILD}! 🎉`;
       doneScreen.classList.remove("hidden");
+      if(window.Sona){ Sona.confetti(); Sona.sfx.complete(); setTimeout(()=>Sona.sfx.star(), 500); }
       try{ micStream?.getTracks().forEach(t=>t.stop()); }catch{}
     }
 
