@@ -90,6 +90,36 @@ function resize(s, sw, sh, dw, dh) {
   return { data: out, width: dw, height: dh };
 }
 
+// Some AI "transparent" PNGs leave the eye whites/highlights see-through, so a
+// colored background bleeds through the eyes. Flood-fill from the border to find
+// the true outside, then composite any *enclosed* see-through pixels over white.
+function fillHoles(d, w, h) {
+  const TH = 200, ext = new Uint8Array(w * h), st = [];
+  const isT = (i) => d[i * 4 + 3] < TH;
+  const push = (i) => { if (isT(i) && !ext[i]) { ext[i] = 1; st.push(i); } };
+  for (let x = 0; x < w; x++) { push(x); push((h - 1) * w + x); }
+  for (let y = 0; y < h; y++) { push(y * w); push(y * w + w - 1); }
+  while (st.length) { const i = st.pop(), x = i % w, y = (i / w) | 0; if (x > 0) push(i - 1); if (x < w - 1) push(i + 1); if (y > 0) push(i - w); if (y < h - 1) push(i + w); }
+  for (let i = 0; i < w * h; i++) { const a = d[i * 4 + 3]; if (a < 255 && !ext[i]) { const f = a / 255; d[i * 4] = Math.round(d[i * 4] * f + 255 * (1 - f)); d[i * 4 + 1] = Math.round(d[i * 4 + 1] * f + 255 * (1 - f)); d[i * 4 + 2] = Math.round(d[i * 4 + 2] * f + 255 * (1 - f)); d[i * 4 + 3] = 255; } }
+}
+
+// isolate head + mane: crop to the alpha bbox, then cut at the "neck" — the row
+// below the widest mane where the opaque width pinches in before the body.
+function headCrop(src) {
+  const { data: d, width: w } = src;
+  const bb = bbox(d, w, src.height);
+  let maxW = 1, maxRow = bb.y0; const rowW = [];
+  for (let y = bb.y0; y <= bb.y1; y++) {
+    let lo = -1, hi = -1;
+    for (let x = bb.x0; x <= bb.x1; x++) if (d[(y * w + x) * 4 + 3] > 40) { if (lo < 0) lo = x; hi = x; }
+    const ww = hi < 0 ? 0 : hi - lo + 1; rowW.push(ww); if (ww > maxW) { maxW = ww; maxRow = y; }
+  }
+  let neck = bb.y1;
+  for (let y = maxRow; y <= bb.y1; y++) { if (rowW[y - bb.y0] < maxW * 0.6) { neck = y; break; } }
+  const bottom = Math.min(bb.y1, neck + Math.round((neck - bb.y0) * 0.05));
+  return crop(d, w, { x0: bb.x0, y0: bb.y0, x1: bb.x1, y1: bottom });
+}
+
 // transparent web character: tight-crop + fit into maxDim
 function webChar(src, maxDim) {
   const bb = bbox(src.data, src.width, src.height), c = crop(src.data, src.width, bb);
@@ -99,15 +129,14 @@ function webChar(src, maxDim) {
   return { buf: encodePNG(dw, dh, r.data, 4), w: dw, h: dh };
 }
 
-// opaque icon: Leo centered on a blue gradient square
-function icon(src, size) {
+// opaque icon: Leo's HEAD filling the frame (cover) on a blue gradient
+function icon(head, size) {
   const out = Buffer.alloc(size * size * 3);
   for (let y = 0; y < size; y++) { const t = y / size, r = Math.round(58 + (24 - 58) * t), g = Math.round(167 + (128 - 167) * t), b = Math.round(255 + (224 - 255) * t); for (let x = 0; x < size; x++) { const i = (y * size + x) * 3; out[i] = r; out[i + 1] = g; out[i + 2] = b; } }
-  const bb = bbox(src.data, src.width, src.height), c = crop(src.data, src.width, bb);
-  const inner = size * 0.84, scale = Math.min(inner / c.width, inner / c.height), dw = Math.round(c.width * scale), dh = Math.round(c.height * scale);
-  const lion = resize(c.data, c.width, c.height, dw, dh).data;
+  const scale = Math.max(size / head.width, size / head.height), dw = Math.round(head.width * scale), dh = Math.round(head.height * scale);
+  const lion = resize(head.data, head.width, head.height, dw, dh).data;
   const ox = Math.round((size - dw) / 2), oy = Math.round((size - dh) / 2);
-  for (let y = 0; y < dh; y++) for (let x = 0; x < dw; x++) { const a = lion[(y * dw + x) * 4 + 3] / 255; if (a <= 0) continue; const di = ((oy + y) * size + (ox + x)) * 3, si = (y * dw + x) * 4; out[di] = Math.round(lion[si] * a + out[di] * (1 - a)); out[di + 1] = Math.round(lion[si + 1] * a + out[di + 1] * (1 - a)); out[di + 2] = Math.round(lion[si + 2] * a + out[di + 2] * (1 - a)); }
+  for (let y = 0; y < dh; y++) { const py = oy + y; if (py < 0 || py >= size) continue; for (let x = 0; x < dw; x++) { const px = ox + x; if (px < 0 || px >= size) continue; const a = lion[(y * dw + x) * 4 + 3] / 255; if (a <= 0) continue; const di = (py * size + px) * 3, si = (y * dw + x) * 4; out[di] = Math.round(lion[si] * a + out[di] * (1 - a)); out[di + 1] = Math.round(lion[si + 1] * a + out[di + 1] * (1 - a)); out[di + 2] = Math.round(lion[si + 2] * a + out[di + 2] * (1 - a)); } }
   return encodePNG(size, size, out, 3);
 }
 
@@ -115,21 +144,26 @@ const PUB = path.join(__dirname, "..", "public");
 const COACH = path.join(PUB, "coach");
 fs.mkdirSync(COACH, { recursive: true });
 
-const frontSrc = process.argv[2] || (fs.existsSync("/tmp/leo2.png") ? "/tmp/leo2.png" : path.join(COACH, "leo.png"));
+const frontSrc = process.argv[2] || (fs.existsSync("/tmp/leo_new.png") ? "/tmp/leo_new.png" : path.join(COACH, "leo.png"));
 const waveSrc = process.argv[3] || (fs.existsSync("/tmp/leo1.png") ? "/tmp/leo1.png" : null);
 
 const front = decodePNG(fs.readFileSync(frontSrc));
+fillHoles(front.data, front.width, front.height); // fix see-through eyes
 const leo = webChar(front, 512);
 fs.writeFileSync(path.join(COACH, "leo.png"), leo.buf);
 console.log("wrote coach/leo.png", leo.w + "x" + leo.h, leo.buf.length + "B");
 
 if (waveSrc && fs.existsSync(waveSrc)) {
-  const wave = webChar(decodePNG(fs.readFileSync(waveSrc)), 512);
+  const wv = decodePNG(fs.readFileSync(waveSrc));
+  fillHoles(wv.data, wv.width, wv.height);
+  const wave = webChar(wv, 512);
   fs.writeFileSync(path.join(COACH, "leo-wave.png"), wave.buf);
   console.log("wrote coach/leo-wave.png", wave.w + "x" + wave.h, wave.buf.length + "B");
 }
 
+const head = headCrop(front);
+console.log("head crop", head.width + "x" + head.height);
 for (const [sz, name] of [[180, "apple-touch-icon.png"], [192, "icon-192.png"], [512, "icon-512.png"]]) {
-  fs.writeFileSync(path.join(PUB, name), icon(front, sz));
+  fs.writeFileSync(path.join(PUB, name), icon(head, sz));
   console.log("wrote", name, sz + "x" + sz);
 }
