@@ -52,6 +52,15 @@
     #wordCard.show{opacity:1;transform:translate(-50%,0) scale(1);}
     #wordCard .emoji{font-size:60px;line-height:1;}
     #wordCard .word{font-family:"Baloo 2";font-weight:800;font-size:40px;color:#0e9add;letter-spacing:.5px;}
+    /* mouth-placement cue card — "how to make the sound", near the top */
+    #mouthCue{position:fixed;top:7%;left:50%;transform:translateX(-50%) translateY(-8px);z-index:26;
+      display:none;align-items:center;gap:12px;background:#fff;border-radius:20px;padding:10px 16px;
+      box-shadow:0 16px 40px rgba(15,39,66,.22);max-width:min(86vw,420px);opacity:0;transition:.25s;}
+    #mouthCue.show{display:flex;opacity:1;transform:translateX(-50%) translateY(0);}
+    #mouthImg{width:60px;height:60px;object-fit:contain;border-radius:12px;background:#f3f7ff;display:none;}
+    #mouthImg.show{display:block;}
+    #mouthCue .cueText{font-family:"Baloo 2";font-weight:800;color:#0f2742;font-size:15px;line-height:1.2;}
+    #mouthCue #cueHow{font-family:"Nunito";font-weight:700;color:#5b6b80;font-size:13px;margin-top:2px;}
     #wordCard .chip{margin-top:4px;font-family:"Baloo 2";font-weight:800;font-size:13px;letter-spacing:.08em;
       color:#16a34a;background:#dcfce7;padding:5px 12px;border-radius:99px;text-transform:uppercase;}
 
@@ -127,6 +136,11 @@
       <span class="emoji" id="wcEmoji">🐰</span>
       <span class="word" id="wcWord">rabbit</span>
       <span class="chip" id="wcChip">R sound</span>
+    </div>
+
+    <div id="mouthCue">
+      <img id="mouthImg" alt="" />
+      <div class="cueText"><span id="cueSound">R</span> sound<div id="cueHow"></div></div>
     </div>
 
     <button id="mic" title="I'm done">
@@ -241,6 +255,10 @@
     const wcEmoji = document.getElementById("wcEmoji");
     const wcWord = document.getElementById("wcWord");
     const wcChip = document.getElementById("wcChip");
+    const mouthCue = document.getElementById("mouthCue");
+    const mouthImg = document.getElementById("mouthImg");
+    const cueSound = document.getElementById("cueSound");
+    const cueHow = document.getElementById("cueHow");
     const mic = document.getElementById("mic");
     const micHint = document.getElementById("micHint");
     const bar = document.getElementById("bar");
@@ -266,12 +284,35 @@
 
     function setCaption(t){ captionEl.textContent = t || ""; captionEl.classList.toggle("show", !!t);
       captionEl.classList.toggle("onvideo", avatarLive); captionEl.classList.toggle("onlight", !avatarLive); }
+    // Short placement cues (text fallback shown until a /coach/mouth/<SOUND>.png diagram exists)
+    const CUE = {
+      R:"Tongue back, turn your voice on — rrr",
+      S:"Teeth together, smile — sss",
+      L:"Tongue tip up behind your teeth — lll",
+      K:"Lift the back of your tongue — k!",
+      G:"Back of tongue up, voice on — g",
+      F:"Top teeth on bottom lip — fff",
+      SH:"Round your lips, stay quiet — shh",
+      CH:"Round lips, then pop — ch",
+      TH:"Tongue peeks between teeth — th",
+    };
+    function showMouthCue(sound){
+      if(!sound){ mouthCue.classList.remove("show"); return; }
+      cueSound.textContent = sound;
+      cueHow.textContent = CUE[sound] || "";
+      mouthImg.classList.remove("show");
+      mouthImg.onload = function(){ mouthImg.classList.add("show"); };
+      mouthImg.onerror = function(){ mouthImg.classList.remove("show"); }; // no diagram yet → text-only
+      mouthImg.src = "/coach/mouth/" + sound + ".png";
+      mouthCue.classList.add("show");
+    }
     function showStep(s){
-      if(!s){ wordCard.classList.remove("show"); return; }
+      if(!s){ wordCard.classList.remove("show"); showMouthCue(null); return; }
       if(s.level === "word"){ wcEmoji.style.display = ""; wcEmoji.textContent = s.emoji || ""; wcWord.textContent = s.display; }
       else { wcEmoji.style.display = "none"; wcWord.textContent = s.display; } // isolation/syllable: big text, no emoji
       wcChip.textContent = s.sound + " sound";
       wordCard.classList.add("show");
+      showMouthCue(s.sound);
     }
     function buildDots(){ dotsEl.innerHTML=""; (SCREENER?SCREEN_PROBES:STEPS).forEach(()=>{ const d=document.createElement("div"); d.className="dot"; dotsEl.appendChild(d); }); }
     function setDot(i){ [...dotsEl.children].forEach((d,k)=>{ d.className = "dot" + (k<i?" done":k===i?" cur":""); }); }
