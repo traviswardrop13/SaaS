@@ -5,10 +5,10 @@ import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
 const FEATURES = [
-  "Live realistic coach — on screen the entire session",
-  "Up to 4 coaching sessions a week",
-  "Personalized plan from the sound check",
-  "Weekly progress report for parents",
+  "Friendly coach who listens, adapts, and cheers your child on",
+  "Real-time feedback on every sound (speech scoring)",
+  "Personalized plan from a quick sound check",
+  "Progress report you can share with your SLP",
   "Up to 3 children",
   "Cancel anytime",
 ];
@@ -17,6 +17,7 @@ function SubscribeInner() {
   const params = useSearchParams();
   const canceled = params.get("canceled") === "1";
   const [email, setEmail] = useState("");
+  const [annual, setAnnual] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -31,7 +32,7 @@ function SubscribeInner() {
       const res = await fetch("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email, plan: annual ? "annual" : "monthly" }),
       });
       const data = await res.json();
       if (data.ok && data.url) {
@@ -66,11 +67,29 @@ function SubscribeInner() {
           <p className="text-sm font-extrabold uppercase tracking-wide text-sky-600">
             Sona Premium
           </p>
-          <div className="mt-2 flex items-end gap-1">
-            <span className="font-display text-5xl font-extrabold text-gray-900">$99</span>
+          <div className="mt-3 inline-flex rounded-full bg-gray-100 p-1 text-sm font-bold">
+            <button
+              type="button"
+              onClick={() => setAnnual(false)}
+              className={`rounded-full px-4 py-1.5 ${!annual ? "bg-white text-gray-900 shadow" : "text-gray-500"}`}
+            >
+              Monthly
+            </button>
+            <button
+              type="button"
+              onClick={() => setAnnual(true)}
+              className={`rounded-full px-4 py-1.5 ${annual ? "bg-white text-gray-900 shadow" : "text-gray-500"}`}
+            >
+              Yearly <span className="text-grass-600">· save</span>
+            </button>
+          </div>
+          <div className="mt-3 flex items-end gap-1">
+            <span className="font-display text-5xl font-extrabold text-gray-900">{annual ? "$79" : "$99"}</span>
             <span className="mb-1.5 font-bold text-gray-500">/mo</span>
           </div>
-          <p className="mt-1 text-sm font-bold text-grass-600">7-day free trial · cancel anytime</p>
+          <p className="mt-1 text-sm font-bold text-grass-600">
+            {annual ? "Billed yearly ($948) · saves ~2 months" : "7-day free trial · cancel anytime"}
+          </p>
           <ul className="mt-6 space-y-3">
             {FEATURES.map((f) => (
               <li key={f} className="flex items-start gap-3">

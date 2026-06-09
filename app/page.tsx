@@ -295,16 +295,14 @@ function Pricing() {
             badge="Everything included"
             price="$99"
             yearly="$79/mo billed yearly"
-            blurb="Your child's personal speech coach, on screen the whole session."
+            blurb="Your child's personal speech coach — listens, adapts, and makes practice fun."
             highlight
             features={[
-              "Live realistic coach — on screen the entire session",
-              "Up to 4 coaching sessions a week",
-              "15-minute sessions",
-              "Personalized plan from the sound check",
+              "Friendly coach who listens, adapts, and cheers them on",
               "Real-time feedback on every sound",
-              "Weekly progress report for parents",
-              "Up to 3 children",
+              "Personalized plan from a quick sound check",
+              "Progress report you can share with your SLP",
+              "Up to 4 sessions a week · up to 3 children",
               "Cancel anytime",
             ]}
             cta="Start 7-day free trial"

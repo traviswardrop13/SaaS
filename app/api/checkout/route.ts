@@ -12,7 +12,8 @@ import Stripe from "stripe";
  */
 export const runtime = "nodejs";
 
-const PRICE_CENTS = 9900; // $99.00 / month
+const MONTHLY_CENTS = 9900; // $99 / month
+const ANNUAL_CENTS = 94800; // $948 / year (~$79/mo — saves ~2 months)
 
 export async function POST(req: NextRequest) {
   const key = process.env.STRIPE_SECRET_KEY;
@@ -25,19 +26,22 @@ export async function POST(req: NextRequest) {
   const stripe = new Stripe(key);
 
   let email: string | undefined;
+  let plan = "monthly";
   try {
     const b = await req.json();
     email = typeof b?.email === "string" ? b.email.trim() : undefined;
+    if (b?.plan === "annual") plan = "annual";
   } catch {
     // no body — fine; Checkout will collect the email
   }
+  const annual = plan === "annual";
 
   const origin =
     req.headers.get("origin") ||
     process.env.NEXT_PUBLIC_SITE_URL ||
     new URL(req.url).origin;
 
-  const priceId = process.env.STRIPE_PRICE_ID;
+  const priceId = annual ? process.env.STRIPE_PRICE_ID_ANNUAL : process.env.STRIPE_PRICE_ID;
   const line_items: Stripe.Checkout.SessionCreateParams.LineItem[] = priceId
     ? [{ price: priceId, quantity: 1 }]
     : [
@@ -45,12 +49,12 @@ export async function POST(req: NextRequest) {
           quantity: 1,
           price_data: {
             currency: "usd",
-            unit_amount: PRICE_CENTS,
-            recurring: { interval: "month" },
+            unit_amount: annual ? ANNUAL_CENTS : MONTHLY_CENTS,
+            recurring: { interval: annual ? "year" : "month" },
             product_data: {
-              name: "Sona — Premium",
+              name: annual ? "Sona — Yearly" : "Sona — Monthly",
               description:
-                "Your child's at-home speech coach. Live coaching sessions, personalized plan, and parent progress.",
+                "Your child's at-home speech coach — friendly coaching sessions, a personalized plan, and progress parents can see.",
             },
           },
         },

@@ -149,7 +149,6 @@
       <h1>Your coach is ready to meet you!</h1>
       <p class="sub">Pop on your headphones and tap below — your coach will say hello and practice some words with you.</p>
       <button id="joinBtn">▶&nbsp;&nbsp;Start meeting</button>
-      <button id="previewLink">Just listen (no video) — saves credits</button>
       <div id="err"></div>
     </div>
 
@@ -251,7 +250,6 @@
     const connScreen = document.getElementById("connecting");
     const doneScreen = document.getElementById("done");
     const joinBtn = document.getElementById("joinBtn");
-    const previewLink = document.getElementById("previewLink");
     const errEl = document.getElementById("err");
     const unmuteBtn = document.getElementById("unmute");
     const dbgEl = document.getElementById("dbg");
@@ -466,7 +464,7 @@
     }
 
     async function join(){
-      joinBtn.disabled = true; previewLink.disabled = true;
+      joinBtn.disabled = true;
       errEl.classList.remove("show"); errEl.textContent = "";
       getCtx();
       // mic up front (for recording the child's turns)
@@ -490,7 +488,7 @@
         errEl.textContent = friendly(String(err && err.message || err));
         errEl.classList.add("show");
       }finally{
-        joinBtn.disabled = false; previewLink.disabled = false;
+        joinBtn.disabled = false;
       }
     }
 
@@ -582,8 +580,6 @@
     buildDots();
     setInterval(function(){ if(!eyeL) return; eyeL.style.transform = eyeR.style.transform = "scaleY(0.1)"; setTimeout(function(){ eyeL.style.transform = eyeR.style.transform = ""; }, 130); }, 4200);
     joinBtn.onclick = () => join();
-    previewLink.textContent = LIVE_MODE ? "Use the animated coach instead" : "Use the realistic video coach instead";
-    previewLink.onclick = () => { const u = new URL(location.href); if(LIVE_MODE) u.searchParams.delete("live"); else u.searchParams.set("live", "1"); location.href = u.toString(); };
     document.getElementById("leave").onclick = leave;
     unmuteBtn.onclick = unmuteVideo;
     window.addEventListener("pagehide", () => { try{ session?.stop(); }catch{} try{ micStream?.getTracks().forEach(t=>t.stop()); }catch{} });
