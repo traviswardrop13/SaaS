@@ -8,37 +8,79 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/sona.css" />
+  <style>
+    .week{display:flex;gap:8px;margin-top:12px;}
+    .day{flex:1;text-align:center;}
+    .day .d{width:34px;height:34px;margin:0 auto 5px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+      font-size:16px;background:#eef3fb;color:var(--muted);}
+    .day .d.on{background:var(--orange);color:#fff;box-shadow:0 4px 0 0 var(--orange-d);}
+    .day .lbl{font-size:11px;font-weight:800;color:var(--muted);}
+    .ms{display:flex;justify-content:space-between;align-items:center;margin:14px 0 5px;font-weight:800;}
+    .ms .stars{color:var(--orange);letter-spacing:1px;}
+    @media print{ header.app,.noprint{display:none!important;} body{background:#fff;} }
+  </style>
 </head>
 <body>
   <div class="wrap">
     <header class="app">
-      <div class="brand"><span class="dot"></span> Sona</div>
-      <nav class="app"><a href="/home.html">Home</a><a class="active" href="/progress.html">Progress</a><a href="/settings.html">Settings</a></nav>
+      <div class="brand"><span class="leo">🦁</span> Sona</div>
+      <div class="pills">
+        <a class="iconbtn" href="/home.html" title="Home" style="display:flex;align-items:center;justify-content:center;">🏠</a>
+        <a class="iconbtn" href="/settings.html" title="Settings" style="display:flex;align-items:center;justify-content:center;">⚙️</a>
+      </div>
     </header>
 
-    <div class="card"><h1>Progress</h1><p class="muted">How practice is going on this device.</p></div>
-
-    <div class="row" style="margin-top:16px;">
-      <div class="stat"><div class="n" id="sStreak">0</div><div class="l">Day streak</div></div>
-      <div class="stat"><div class="n" id="sSessions">0</div><div class="l">Sessions</div></div>
-      <div class="stat"><div class="n" id="sWords">0</div><div class="l">Words</div></div>
-      <div class="stat"><div class="n" id="sStars">0</div><div class="l">Stars</div></div>
+    <div class="card">
+      <h1 id="title">Progress</h1>
+      <p class="muted">A snapshot of practice on this device — built with a speech-language pathologist in mind, so you can share it with yours.</p>
+      <button class="btn ghost noprint" id="share" style="margin-top:14px;width:auto;padding:12px 20px;">📤&nbsp;&nbsp;Share / Print</button>
     </div>
 
-    <div class="card"><h2>Sounds practiced</h2><div id="bysound" style="margin-top:10px;"></div></div>
+    <div class="row" style="margin-top:14px;">
+      <div class="stat"><div class="n" id="sStreak">0</div><div class="l">🔥 Day streak</div></div>
+      <div class="stat"><div class="n" id="sSessions">0</div><div class="l">Sessions</div></div>
+      <div class="stat"><div class="n" id="sWords">0</div><div class="l">Words</div></div>
+      <div class="stat"><div class="n" id="sStars">0</div><div class="l">⭐ Stars</div></div>
+    </div>
+
+    <div class="card">
+      <h2>This week</h2>
+      <div class="week" id="week"></div>
+    </div>
+
+    <div class="card"><h2>Sounds &amp; mastery</h2><div id="bysound" style="margin-top:6px;"></div></div>
     <div class="card"><h2>Recent sessions</h2><div id="recent" style="margin-top:4px;"></div></div>
 
-    <p class="muted" style="text-align:center;margin-top:22px;font-size:13px;"><a href="/home.html">← Back to Home</a></p>
+    <p class="muted noprint" style="text-align:center;margin-top:22px;font-size:13px;"><a href="/home.html">← Back to Home</a></p>
   </div>
 
   <script src="/sona.js"></script>
   <script>
+    var p = Sona.getProfile();
     var g = Sona.getProgress();
+    var name = (p.childName || "").trim();
+    document.getElementById("title").textContent = name ? (name + "'s progress") : "Progress";
     document.getElementById("sStreak").textContent = g.streak.count || 0;
     document.getElementById("sSessions").textContent = g.totals.sessions || 0;
     document.getElementById("sWords").textContent = g.totals.words || 0;
     document.getElementById("sStars").textContent = g.totals.stars || 0;
+    document.getElementById("share").onclick = function () { window.print(); };
 
+    // this week — 7 day dots, lit on days with a session
+    var practiced = {};
+    (g.sessions || []).forEach(function (s) { practiced[new Date(s.date).toISOString().slice(0, 10)] = true; });
+    var DOW = ["S", "M", "T", "W", "T", "F", "S"];
+    var wk = document.getElementById("week");
+    for (var i = 6; i >= 0; i--) {
+      var dt = new Date(Date.now() - i * 86400000);
+      var iso = dt.toISOString().slice(0, 10);
+      var on = !!practiced[iso];
+      var cell = document.createElement("div"); cell.className = "day";
+      cell.innerHTML = '<div class="d' + (on ? ' on' : '') + '">' + (on ? '🔥' : '·') + '</div><div class="lbl">' + DOW[dt.getDay()] + '</div>';
+      wk.appendChild(cell);
+    }
+
+    // sounds & mastery (stars = practiced reps / 3, capped at 3 — matches the home map)
     var bs = document.getElementById("bysound");
     var keys = Object.keys(g.bySound || {});
     if (!keys.length) {
@@ -46,9 +88,12 @@
     } else {
       var max = Math.max.apply(null, keys.map(function (k) { return g.bySound[k]; }).concat([1]));
       keys.sort(function (a, b) { return g.bySound[b] - g.bySound[a]; }).forEach(function (k) {
-        var n = g.bySound[k];
-        var d = document.createElement("div"); d.style.margin = "12px 0";
-        d.innerHTML = '<div style="display:flex;justify-content:space-between;font-weight:800;margin-bottom:5px;"><span>' + k + ' sound</span><span class="muted">' + n + '</span></div><div class="bar"><span style="width:' + Math.round(n / max * 100) + '%"></span></div>';
+        var n = g.bySound[k], st = Math.min(3, Math.floor(n / 3));
+        var d = document.createElement("div"); d.style.margin = "0 0 14px";
+        d.innerHTML =
+          '<div class="ms"><span>' + k + ' sound</span><span class="stars">' + "★".repeat(st) + "☆".repeat(3 - st) + '</span></div>' +
+          '<div class="bar"><span style="width:' + Math.round(n / max * 100) + '%"></span></div>' +
+          '<div class="muted" style="font-size:12px;margin-top:4px;">' + n + ' practiced</div>';
         bs.appendChild(d);
       });
     }
