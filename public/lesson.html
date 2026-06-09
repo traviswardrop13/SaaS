@@ -333,7 +333,10 @@
 
     buildDots();
     const BUDDY = (window.Sona ? Sona.characterById(profile.character) : null);
-    if (BUDDY) { const se=$("startEmoji"); if(se) se.textContent=BUDDY.emoji; }
+    if (BUDDY) { const se=$("startEmoji"), sp=$("startPic");
+      if (BUDDY.img && sp) { sp.src = BUDDY.img; sp.style.display="block"; sp.style.objectFit="contain"; if(se) se.style.display="none"; }
+      else if (se) se.textContent = BUDDY.emoji;
+    }
     $("startTitle").textContent = `Let's practice the ${TARGET_SOUND} sound!`;
     startBtn.onclick=start;
     hearBtn.onclick=()=>{ if(alive && currentHear) speak(currentHear); };

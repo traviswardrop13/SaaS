@@ -148,10 +148,11 @@
     Sona.CHARACTERS.forEach(function(c){
       var el=document.createElement("div");
       el.className="bopt"+(c.id===draft.character?" on":"")+(c.locked?" locked":"");
-      el.innerHTML='<span class="be">'+c.emoji+'</span><span class="bn">'+c.name+'</span>'+(c.locked?'<span class="soon">SOON</span>':'');
-      if(!c.locked) el.onclick=function(){ Sona.sfx.tap(); draft.character=c.id; bg.querySelectorAll(".bopt").forEach(function(n){n.classList.remove("on");}); el.classList.add("on"); leo.textContent=c.emoji; };
+      el.innerHTML='<span class="be">'+Sona.buddyMarkup(c.id,38)+'</span><span class="bn">'+c.name+'</span>'+(c.locked?'<span class="soon">SOON</span>':'');
+      if(!c.locked) el.onclick=function(){ Sona.sfx.tap(); draft.character=c.id; bg.querySelectorAll(".bopt").forEach(function(n){n.classList.remove("on");}); el.classList.add("on"); leo.innerHTML=Sona.buddyMarkup(c.id,64); };
       bg.appendChild(el);
     });
+    leo.innerHTML = Sona.buddyMarkup(draft.character, 64);
 
     // sound chips
     var selSounds = new Set(draft.focusSounds);

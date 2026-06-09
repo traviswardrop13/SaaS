@@ -9,7 +9,7 @@
   // chooser already looks like a real Duolingo-style roster. Swap emoji for art
   // (e.g. /coach/leo.png) once the separated character poses arrive.
   const CHARACTERS = [
-    { id: "leo",    name: "Leo",   emoji: "🦁", locked: false },
+    { id: "leo",    name: "Leo",   emoji: "🦁", img: "/coach/leo.png", locked: false },
     { id: "frog",   name: "Pip",   emoji: "🐸", locked: true },
     { id: "bear",   name: "Bruno", emoji: "🐻", locked: true },
     { id: "fox",    name: "Fern",  emoji: "🦊", locked: true },
@@ -37,6 +37,12 @@
   const characterById = (id) => byId(CHARACTERS, id);
   const outfitById = (id) => byId(OUTFITS, id);
   const backdropById = (id) => byId(BACKDROPS, id);
+  // Render a buddy as art if it has an image, else fall back to its emoji.
+  function buddyMarkup(id, px) {
+    const c = characterById(id), s = px || 40;
+    if (c.img) return '<img src="' + c.img + '" alt="' + c.name + '" style="width:' + s + 'px;height:' + s + 'px;object-fit:contain;display:inline-block;vertical-align:middle;" />';
+    return '<span style="font-size:' + Math.round(s * 0.92) + 'px;line-height:1;">' + c.emoji + '</span>';
+  }
 
   const DEFAULT_PROFILE = { childName: "", focusSounds: ["R", "S", "L", "K"], voiceOn: true, coachName: "Coach", cloudScoring: true, slpEvaluated: "", goals: "", focusArea: "articulation", language: "en", character: "leo", outfit: "none", backdrop: "sky", soundOn: true, onboarded: false };
   const DEFAULT_PROGRESS = { sessions: [], totals: { sessions: 0, words: 0, stars: 0 }, streak: { count: 0, lastDate: "" }, bySound: {} };
@@ -183,5 +189,5 @@
     setTimeout(() => el.remove(), 950);
   }
 
-  global.Sona = { ALL_SOUNDS, CHARACTERS, OUTFITS, BACKDROPS, characterById, outfitById, backdropById, getProfile, saveProfile, getProgress, recordSession, resetProgress, getSub, saveSub, isSubscribed, saveRecording, listRecordings, sfx, confetti, pop };
+  global.Sona = { ALL_SOUNDS, CHARACTERS, OUTFITS, BACKDROPS, characterById, outfitById, backdropById, buddyMarkup, getProfile, saveProfile, getProgress, recordSession, resetProgress, getSub, saveSub, isSubscribed, saveRecording, listRecordings, sfx, confetti, pop };
 })(window);

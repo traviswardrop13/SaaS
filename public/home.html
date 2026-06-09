@@ -77,9 +77,9 @@
     document.body.style.background = bd.css + " fixed";
     var buddy = Sona.characterById(p.character);
     var outfit = Sona.outfitById(p.outfit);
-    document.getElementById("heroChar").textContent = buddy.emoji;
+    document.getElementById("heroChar").innerHTML = Sona.buddyMarkup(p.character, 58);
     document.getElementById("heroOutfit").textContent = outfit.emoji || "";
-    var BUDDY = buddy.emoji;
+    var BUDDY = Sona.buddyMarkup(p.character, 40);
 
     var name = (p.childName || "").trim();
     var today = new Date().toISOString().slice(0, 10);

@@ -88,7 +88,7 @@
       var c = Sona.characterById(sel.character),
           o = Sona.outfitById(sel.outfit),
           b = Sona.backdropById(sel.backdrop);
-      heroChar.textContent = c.emoji;
+      heroChar.innerHTML = Sona.buddyMarkup(sel.character, 132);
       heroName.textContent = c.name;
       heroOutfit.textContent = o.emoji || "";
       previewEl.style.background = b.css;
@@ -119,7 +119,7 @@
 
     buildGrid("chars", Sona.CHARACTERS, "character", {
       cls: function () { return ""; },
-      inner: function (it) { return '<span class="em">' + it.emoji + '</span><span class="nm">' + it.name + '</span>'; },
+      inner: function (it) { return '<span class="em">' + Sona.buddyMarkup(it.id, 40) + '</span><span class="nm">' + it.name + '</span>'; },
     });
     buildGrid("outfits", Sona.OUTFITS, "outfit", {
       cls: function (it) { return it.id === "none" ? " none-outfit" : ""; },
