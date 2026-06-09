@@ -20,13 +20,17 @@
       </div>
     </header>
 
-    <div class="card" style="display:flex;gap:14px;align-items:center;">
-      <div class="leo" style="width:64px;height:64px;font-size:40px;flex:0 0 auto;">🦁</div>
+    <a class="card" href="/customize.html" style="display:flex;gap:14px;align-items:center;color:inherit;">
+      <div class="leo" style="width:64px;height:64px;font-size:40px;flex:0 0 auto;position:relative;">
+        <span id="heroChar">🦁</span>
+        <span id="heroOutfit" style="position:absolute;top:-6px;left:50%;transform:translateX(-50%);font-size:24px;"></span>
+      </div>
       <div style="flex:1;min-width:0;">
         <h1 id="hello">Ready to practice?</h1>
         <p class="muted" id="sub">A few minutes a day keeps the streak going!</p>
       </div>
-    </div>
+      <span class="pill" title="Customize" style="flex:0 0 auto;">✨</span>
+    </a>
 
     <a class="btn" id="startBtn" href="#" style="margin-top:14px;">▶&nbsp;&nbsp;Start today's practice</a>
 
@@ -43,6 +47,16 @@
     var p = Sona.getProfile();
     if (!p.onboarded) { location.replace("/onboarding.html"); }
     var g = Sona.getProgress();
+
+    // fun world layer: apply the child's chosen backdrop + buddy
+    var bd = Sona.backdropById(p.backdrop);
+    document.body.style.background = bd.css + " fixed";
+    var buddy = Sona.characterById(p.character);
+    var outfit = Sona.outfitById(p.outfit);
+    document.getElementById("heroChar").textContent = buddy.emoji;
+    document.getElementById("heroOutfit").textContent = outfit.emoji || "";
+    var BUDDY = buddy.emoji;
+
     var name = (p.childName || "").trim();
     var today = new Date().toISOString().slice(0, 10);
     var practicedToday = g.streak.lastDate === today;
@@ -70,7 +84,7 @@
       node.className = "node" + (done ? " done" : "") + (open ? "" : " locked") + (current ? " cur" : "");
       node.innerHTML =
         (i > 0 ? '<span class="connector"></span>' : '') +
-        (current ? '<div class="leoToken">🦁</div>' : '') +
+        (current ? '<div class="leoToken">' + BUDDY + '</div>' : '') +
         '<button class="bubble">' + (done ? '✓' : (open ? s : '🔒')) + '</button>' +
         '<div class="label">' + s + ' sound</div>' +
         '<div class="stars">' + (open ? ("★".repeat(st) + "☆".repeat(3 - st)) : '') + '</div>';

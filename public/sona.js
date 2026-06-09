@@ -3,7 +3,42 @@
 (function (global) {
   const PKEY = "sona.profile.v1", GKEY = "sona.progress.v1";
   const ALL_SOUNDS = ["R", "S", "L", "K", "SH", "CH", "TH", "G", "F"];
-  const DEFAULT_PROFILE = { childName: "", focusSounds: ["R", "S", "L", "K"], voiceOn: true, coachName: "Coach", cloudScoring: true, slpEvaluated: "", goals: "", focusArea: "articulation", onboarded: false };
+
+  // --- fun world layer: who the child plays as + where ---
+  // Only Leo is unlocked today; the rest are "coming soon" placeholders so the
+  // chooser already looks like a real Duolingo-style roster. Swap emoji for art
+  // (e.g. /coach/leo.png) once the separated character poses arrive.
+  const CHARACTERS = [
+    { id: "leo",    name: "Leo",   emoji: "🦁", locked: false },
+    { id: "frog",   name: "Pip",   emoji: "🐸", locked: true },
+    { id: "bear",   name: "Bruno", emoji: "🐻", locked: true },
+    { id: "fox",    name: "Fern",  emoji: "🦊", locked: true },
+    { id: "panda",  name: "Bao",   emoji: "🐼", locked: true },
+    { id: "rabbit", name: "Hop",   emoji: "🐰", locked: true },
+  ];
+  const OUTFITS = [
+    { id: "none",   name: "None",   emoji: "" },
+    { id: "crown",  name: "Crown",  emoji: "👑" },
+    { id: "tophat", name: "Top hat",emoji: "🎩" },
+    { id: "cap",    name: "Cap",    emoji: "🧢" },
+    { id: "shades", name: "Cool",   emoji: "🕶️" },
+    { id: "bow",    name: "Bow",    emoji: "🎀" },
+    { id: "party",  name: "Party",  emoji: "🥳" },
+  ];
+  const BACKDROPS = [
+    { id: "sky",      name: "Sky",       css: "linear-gradient(180deg,#bfe3ff,#eaf3ff)", scene: ["☁️", "🌤️", "☁️"] },
+    { id: "jungle",   name: "Jungle",    css: "linear-gradient(180deg,#bdf0c8,#e7fbe9)", scene: ["🌴", "🌿", "🦜"] },
+    { id: "forest",   name: "Forest",    css: "linear-gradient(180deg,#cbe8c0,#eef7e6)", scene: ["🌲", "🍄", "🐿️"] },
+    { id: "mountain", name: "Mountains", css: "linear-gradient(180deg,#d6e6ff,#f0f5ff)", scene: ["🏔️", "⛰️", "🌲"] },
+    { id: "space",    name: "Space",     css: "linear-gradient(180deg,#cdd6ff,#eef1ff)", scene: ["🚀", "⭐", "🪐"] },
+    { id: "beach",    name: "Beach",     css: "linear-gradient(180deg,#bfefff,#fff6e0)", scene: ["🏖️", "🌊", "🐚"] },
+  ];
+  const byId = (list, id) => list.find((x) => x.id === id) || list[0];
+  const characterById = (id) => byId(CHARACTERS, id);
+  const outfitById = (id) => byId(OUTFITS, id);
+  const backdropById = (id) => byId(BACKDROPS, id);
+
+  const DEFAULT_PROFILE = { childName: "", focusSounds: ["R", "S", "L", "K"], voiceOn: true, coachName: "Coach", cloudScoring: true, slpEvaluated: "", goals: "", focusArea: "articulation", language: "en", character: "leo", outfit: "none", backdrop: "sky", onboarded: false };
   const DEFAULT_PROGRESS = { sessions: [], totals: { sessions: 0, words: 0, stars: 0 }, streak: { count: 0, lastDate: "" }, bySound: {} };
 
   const clone = (o) => JSON.parse(JSON.stringify(o));
@@ -78,5 +113,5 @@
     } catch (e) { return []; }
   }
 
-  global.Sona = { ALL_SOUNDS, getProfile, saveProfile, getProgress, recordSession, resetProgress, saveRecording, listRecordings };
+  global.Sona = { ALL_SOUNDS, CHARACTERS, OUTFITS, BACKDROPS, characterById, outfitById, backdropById, getProfile, saveProfile, getProgress, recordSession, resetProgress, saveRecording, listRecordings };
 })(window);
