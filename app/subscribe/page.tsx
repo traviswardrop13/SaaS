@@ -20,6 +20,36 @@ function SubscribeInner() {
   const [annual, setAnnual] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [restoreMsg, setRestoreMsg] = useState<string | null>(null);
+
+  // Already subscribed (new device / cleared storage)? Verify by email and unlock.
+  async function restore() {
+    setError(null);
+    setRestoreMsg(null);
+    if (!/^\S+@\S+\.\S+$/.test(email)) {
+      setError("Enter the email you subscribed with, then tap Restore.");
+      return;
+    }
+    setBusy(true);
+    try {
+      const res = await fetch("/api/subscription?email=" + encodeURIComponent(email));
+      const data = await res.json();
+      if (data.ok && data.active) {
+        try {
+          localStorage.setItem("sona.sub.v1", JSON.stringify({ active: true, email, since: Date.now() }));
+        } catch {
+          // ignore
+        }
+        window.location.href = "/home.html";
+        return;
+      }
+      setRestoreMsg(data.ok ? "No active subscription found for that email." : data.error || "Couldn’t check right now.");
+    } catch {
+      setRestoreMsg("Network error. Please try again.");
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function subscribe() {
     setError(null);
@@ -147,6 +177,20 @@ function SubscribeInner() {
           <p className="mt-3 text-center text-xs text-gray-400">
             Secure payment by Stripe. We never see your card details.
           </p>
+
+          <p className="mt-4 text-center text-sm text-gray-500">
+            Already subscribed?{" "}
+            <button
+              onClick={restore}
+              disabled={busy}
+              className="font-bold text-sky-600 underline disabled:opacity-60"
+            >
+              Restore access
+            </button>
+          </p>
+          {restoreMsg ? (
+            <p className="mt-2 text-center text-sm font-bold text-red-500">{restoreMsg}</p>
+          ) : null}
         </div>
       </div>
     </main>

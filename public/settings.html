@@ -84,7 +84,14 @@
 
     <div class="card">
       <h2>Account</h2>
-      <p class="muted" id="acct">Free trial · <a href="/subscribe">Subscribe →</a></p>
+      <p class="muted" id="acct">Free trial · <a href="/subscribe">Subscribe →</a> · <a href="#" id="restoreLink">Restore</a></p>
+      <div id="restoreBox" style="display:none;margin-top:10px;">
+        <input id="restoreEmail" type="email" inputmode="email" placeholder="Email you subscribed with" />
+        <div style="display:flex;gap:10px;align-items:center;margin-top:8px;">
+          <button class="btn" id="restoreBtn" style="width:auto;padding:12px 20px;">Restore access</button>
+          <span id="restoreMsg" class="muted" style="font-weight:800;"></span>
+        </div>
+      </div>
       <p style="margin-top:10px;font-size:14px;"><a href="/privacy">Privacy</a> · <a href="/terms">Terms</a> · <a href="/support">Support</a></p>
     </div>
 
@@ -98,10 +105,6 @@
   <script src="/sona.js"></script>
   <script>
     var p = Sona.getProfile();
-    if (Sona.isSubscribed && Sona.isSubscribed()) {
-      var ac = document.getElementById("acct");
-      if (ac) ac.innerHTML = 'Plan: <strong style="color:var(--good);">Active ✓</strong> · <a href="/subscribe">Manage →</a>';
-    }
     var childEl = document.getElementById("childName"),
         coachEl = document.getElementById("coachName"),
         voiceEl = document.getElementById("voiceOn"),
@@ -133,6 +136,27 @@
     };
     document.getElementById("reset").onclick = function () {
       if (confirm("Reset all progress on this device? This cannot be undone.")) { Sona.resetProgress(); alert("Progress reset."); }
+    };
+
+    // account / subscription
+    function paintAcct() {
+      var ac = document.getElementById("acct");
+      if (Sona.isSubscribed && Sona.isSubscribed()) {
+        ac.innerHTML = 'Plan: <strong style="color:var(--good);">Active ✓</strong> · <a href="/subscribe">Manage →</a>';
+        document.getElementById("restoreBox").style.display = "none";
+      } else {
+        ac.innerHTML = 'Free trial · <a href="/subscribe">Subscribe →</a> · <a href="#" id="restoreLink">Restore</a>';
+        document.getElementById("restoreLink").onclick = function (e) { e.preventDefault(); document.getElementById("restoreBox").style.display = "block"; document.getElementById("restoreEmail").focus(); };
+      }
+    }
+    paintAcct();
+    document.getElementById("restoreBtn").onclick = async function () {
+      var em = document.getElementById("restoreEmail").value, msg = document.getElementById("restoreMsg");
+      msg.style.color = "var(--muted)"; msg.textContent = "Checking…";
+      var res = await Sona.restore(em);
+      if (res.ok && res.active) { msg.style.color = "var(--good)"; msg.textContent = "Restored ✓"; paintAcct(); }
+      else if (res.ok) { msg.style.color = "#b42323"; msg.textContent = "No active subscription for that email."; }
+      else { msg.style.color = "#b42323"; msg.textContent = res.error || "Couldn’t check."; }
     };
   </script>
 </body>

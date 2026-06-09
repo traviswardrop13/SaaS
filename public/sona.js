@@ -89,6 +89,19 @@
   function getSub() { return load(SKEY, { active: false, email: "", since: 0 }); }
   function saveSub(patch) { save(SKEY, Object.assign(getSub(), patch || {})); }
   function isSubscribed() { return !!getSub().active; }
+  // Verify a subscription by email (Stripe is the source of truth) and cache it,
+  // so a paid family can unlock on a new device / after clearing storage.
+  async function restore(email) {
+    email = (email || "").trim();
+    if (!/^\S+@\S+\.\S+$/.test(email)) return { ok: false, error: "Enter a valid email." };
+    try {
+      const r = await fetch("/api/subscription?email=" + encodeURIComponent(email));
+      const j = await r.json();
+      if (j && j.ok && j.active) { saveSub({ active: true, email: email }); return { ok: true, active: true }; }
+      if (j && j.ok) return { ok: true, active: false };
+      return { ok: false, error: (j && j.error) || "Couldn’t check right now." };
+    } catch (e) { return { ok: false, error: "Network error. Try again." }; }
+  }
 
   // --- recordings (the child's audio attempts) kept in IndexedDB so a parent
   //     can review them later. Best-effort: never throws into the lesson. ---
@@ -189,5 +202,5 @@
     setTimeout(() => el.remove(), 950);
   }
 
-  global.Sona = { ALL_SOUNDS, CHARACTERS, OUTFITS, BACKDROPS, characterById, outfitById, backdropById, buddyMarkup, getProfile, saveProfile, getProgress, recordSession, resetProgress, getSub, saveSub, isSubscribed, saveRecording, listRecordings, sfx, confetti, pop };
+  global.Sona = { ALL_SOUNDS, CHARACTERS, OUTFITS, BACKDROPS, characterById, outfitById, backdropById, buddyMarkup, getProfile, saveProfile, getProgress, recordSession, resetProgress, getSub, saveSub, isSubscribed, restore, saveRecording, listRecordings, sfx, confetti, pop };
 })(window);
