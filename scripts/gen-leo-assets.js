@@ -161,9 +161,5 @@ if (waveSrc && fs.existsSync(waveSrc)) {
   console.log("wrote coach/leo-wave.png", wave.w + "x" + wave.h, wave.buf.length + "B");
 }
 
-const head = headCrop(front);
-console.log("head crop", head.width + "x" + head.height);
-for (const [sz, name] of [[180, "apple-touch-icon.png"], [192, "icon-192.png"], [512, "icon-512.png"]]) {
-  fs.writeFileSync(path.join(PUB, name), icon(head, sz));
-  console.log("wrote", name, sz + "x" + sz);
-}
+// NOTE: the app icon is generated separately from the dedicated head art
+// ("Leo - APP Icon") so it isn't overwritten here:  node scripts/gen-app-icon.js
