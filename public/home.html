@@ -60,21 +60,30 @@
     function go(s) { location.href = "/lesson.html?sound=" + encodeURIComponent(s) + (name ? "&name=" + encodeURIComponent(name) : ""); }
 
     var pathEl = document.getElementById("path");
-    var firstPlay = null;
+    var firstPlay = null, allDone = true;
     SOUNDS.forEach(function (s, i) {
       var open = unlocked(i), st = starsFor(s), done = st >= 3;
-      if (open && firstPlay === null && !done) firstPlay = s;
+      if (!done) allDone = false;
+      var current = open && firstPlay === null && !done;
+      if (current) firstPlay = s;
       var node = document.createElement("div");
-      node.className = "node" + (done ? " done" : "") + (open ? "" : " locked");
+      node.className = "node" + (done ? " done" : "") + (open ? "" : " locked") + (current ? " cur" : "");
       node.innerHTML =
         (i > 0 ? '<span class="connector"></span>' : '') +
-        '<button class="bubble">' + (open ? s : '🔒') + '</button>' +
+        (current ? '<div class="leoToken">🦁</div>' : '') +
+        '<button class="bubble">' + (done ? '✓' : (open ? s : '🔒')) + '</button>' +
         '<div class="label">' + s + ' sound</div>' +
         '<div class="stars">' + (open ? ("★".repeat(st) + "☆".repeat(3 - st)) : '') + '</div>';
       if (open) node.querySelector(".bubble").onclick = function () { go(s); };
       pathEl.appendChild(node);
     });
     if (firstPlay === null) firstPlay = SOUNDS[0];
+    // prize chest at the end of the path
+    var chest = document.createElement("div");
+    chest.className = "node chest " + (allDone ? "ready" : "locked");
+    chest.innerHTML = '<span class="connector"></span><button class="bubble">' + (allDone ? '🎁' : '🔒') + '</button><div class="label">Prize</div>';
+    if (allDone) chest.querySelector(".bubble").onclick = function () { alert("🎉 You mastered all your sounds! Amazing job!"); };
+    pathEl.appendChild(chest);
     document.getElementById("startBtn").onclick = function (e) { e.preventDefault(); go(firstPlay); };
   </script>
 </body>

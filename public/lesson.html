@@ -23,7 +23,8 @@
     #close{border:none;cursor:pointer;width:36px;height:36px;border-radius:50%;background:#fff;color:#94a6bd;font-size:18px;font-weight:800;box-shadow:0 4px 12px rgba(15,39,66,.1);}
 
     /* Leo — the coach, smaller, up top */
-    #lionWrap{position:fixed;top:8%;left:50%;transform:translateX(-50%);width:min(36vw,140px);z-index:20;animation:bob 3.6s ease-in-out infinite;}
+    #lionWrap{display:none;} /* exercise stays clean — Leo is voice-only here */
+    #lionWrap.x{position:fixed;top:8%;left:50%;transform:translateX(-50%);width:min(36vw,140px);z-index:20;animation:bob 3.6s ease-in-out infinite;}
     #lionWrap.speaking{animation:bob 1.7s ease-in-out infinite;}
     @keyframes bob{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(-6px)}}
     #lion{width:100%;height:auto;display:block;filter:drop-shadow(0 12px 26px rgba(20,128,224,.18));}
@@ -46,6 +47,9 @@
     #cueHow{font-family:"Nunito";font-weight:700;color:#5b6b80;font-size:13px;line-height:1.2;text-align:left;}
     #pracChip{font-family:"Baloo 2";font-weight:800;font-size:12px;letter-spacing:.08em;text-transform:uppercase;
       color:var(--orange-d);background:#ffe7d3;padding:5px 12px;border-radius:99px;}
+    #hearBtn{margin-top:12px;border:none;cursor:pointer;font-family:"Baloo 2";font-weight:800;font-size:15px;color:#fff;
+      background:var(--blue);padding:10px 20px;border-radius:99px;box-shadow:0 4px 0 0 var(--blue-d);}
+    #hearBtn:active{transform:translateY(3px);box-shadow:0 1px 0 0 var(--blue-d);}
 
     #caption{position:fixed;left:50%;bottom:18%;transform:translateX(-50%);z-index:25;max-width:min(90vw,560px);
       text-align:center;font-family:"Baloo 2";font-weight:800;color:var(--ink);font-size:clamp(17px,2.6vw,24px);
@@ -109,6 +113,7 @@
       <div id="pracWord">rabbit</div>
       <div id="pracCue"><img id="mouthImg" alt="" /><span id="cueHow"></span></div>
       <div id="pracChip">R sound</div>
+      <button id="hearBtn" aria-label="Hear it">🔊&nbsp;&nbsp;Hear it</button>
     </div>
 
     <div id="caption"></div>
@@ -183,9 +188,9 @@
     const lionWrap=$("lionWrap"), mouthEl=$("mouth"), eyeL=$("eyeL"), eyeR=$("eyeR"), coachImg=$("coachImg");
     const captionEl=$("caption"), practice=$("practice"), pracPic=$("pracPic"), pracWord=$("pracWord"), pracCue=$("pracCue"), pracChip=$("pracChip"), mouthImg=$("mouthImg"), cueHow=$("cueHow");
     const mic=$("mic"), micHint=$("micHint"), dotsEl=$("dots");
-    const startScreen=$("start"), doneScreen=$("done"), startBtn=$("startBtn"), errEl=$("err");
+    const startScreen=$("start"), doneScreen=$("done"), startBtn=$("startBtn"), errEl=$("err"), hearBtn=$("hearBtn");
 
-    let alive=true, micStream=null, audioCtx=null;
+    let alive=true, micStream=null, audioCtx=null, currentHear="";
     const sleep=(ms)=>new Promise(r=>setTimeout(r,ms));
     const pick=(a)=>a[Math.floor(Math.random()*a.length)];
     const setCaption=(t)=>{ captionEl.textContent=t||""; captionEl.classList.toggle("show",!!t); };
@@ -224,6 +229,7 @@
     /* practice card: show what to practice (letter / word+picture) + how (mouth cue) */
     function showStep(s){
       if(!s){ practice.classList.remove("show"); return; }
+      currentHear = s.scoreText || s.display;
       pracChip.textContent = s.sound + " sound";
       if(s.level === "word"){
         pracPic.className=""; pracPic.textContent = s.emoji || "🗣️";
@@ -315,6 +321,7 @@
     buildDots();
     $("startTitle").textContent = `Let's practice the ${TARGET_SOUND} sound!`;
     startBtn.onclick=start;
+    hearBtn.onclick=()=>{ if(alive && currentHear) speak(currentHear); };
     $("close").onclick=leave;
     $("doneBtn").onclick=function(e){ e.preventDefault(); leave(); };
     $("againBtn").onclick=()=>location.reload();

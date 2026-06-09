@@ -49,6 +49,11 @@ h1{font-size:24px;} h2{font-size:19px;}
 .node .label{margin-top:6px;font-weight:800;font-size:13px;color:var(--ink);}
 .node .stars{margin-top:3px;font-size:13px;color:var(--orange);letter-spacing:1px;height:16px;}
 .node .connector{position:absolute;top:-26px;left:50%;transform:translateX(-50%);width:5px;height:24px;border-radius:99px;background:var(--line);}
+.node.cur .bubble{animation:bobnode 1.2s ease-in-out infinite;}
+@keyframes bobnode{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+.leoToken{position:absolute;top:-42px;left:50%;transform:translateX(-50%);font-size:34px;z-index:2;filter:drop-shadow(0 4px 6px rgba(0,0,0,.18));animation:bobnode 1.6s ease-in-out infinite;}
+.node.chest.locked .bubble{background:#cdd9e8;box-shadow:0 6px 0 0 #b3c2d6;cursor:default;}
+.node.chest.ready .bubble{background:linear-gradient(160deg,#ffd33d,#ff9f1c);box-shadow:0 6px 0 0 #e08a13;animation:bobnode 1.2s ease-in-out infinite;}
 .node.zig{margin-left:-96px;} .node.zag{margin-left:96px;}
 /* forms (settings/onboarding) */
 label.field{display:block;margin-top:16px;font-weight:800;}
