@@ -147,7 +147,7 @@ function TrustBar() {
   const items = [
     "Built with a licensed SLP",
     "Camera never used — audio only",
-    "Audio is never stored",
+    "Recordings stay on your device",
     "Ages 3–9",
   ];
   return (
@@ -397,8 +397,8 @@ function Safety() {
     },
     {
       emoji: "🔒",
-      title: "Audio is never stored",
-      body: "We process speech to give feedback, then discard it — only practice scores are kept.",
+      title: "Recordings stay on your device",
+      body: "Practice clips save only to your own device so you can hear progress — we don't keep audio on our servers.",
     },
     {
       emoji: "👩‍⚕️",
