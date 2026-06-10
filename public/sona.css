@@ -64,7 +64,7 @@ h1{font-size:24px;} h2{font-size:19px;}
 .hrow{position:relative;z-index:1;display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:20px;}
 .hrow.zag{flex-direction:row-reverse;}
 .hrow.zag .hMeta{text-align:right;}
-.houseBtn{border:none;background:none;cursor:pointer;width:156px;padding:0;transition:transform .08s;
+.houseBtn{border:none;background:none;cursor:pointer;width:178px;padding:0;position:relative;transition:transform .08s;
   filter:drop-shadow(0 12px 16px rgba(15,39,66,.2));}
 .houseBtn:active{transform:scale(.93) translateY(4px);}
 .houseBtn svg{width:100%;height:auto;display:block;}

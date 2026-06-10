@@ -44,6 +44,60 @@
     return '<span style="font-size:' + Math.round(s * 0.92) + 'px;line-height:1;">' + c.emoji + '</span>';
   }
 
+  // ── Sound Town houses: shared art + per-sound color theme ──
+  // Each entry: house wall + roof colors (with shaded variants) and the room
+  // theme used inside the unit (wall tints + watermark color).
+  const HOUSE_PALETTE = [
+    { body: "#ff7a6e", bodyD: "#ef6557", roof: "#4db6ff", roofD: "#2f9be4", wallA: "#fff3ee", wallB: "#ffe4dc", wm: "rgba(77,182,255,.13)" },
+    { body: "#ffd45e", bodyD: "#f4be38", roof: "#ff9446", roofD: "#ef7d2c", wallA: "#fff9e8", wallB: "#ffeecb", wm: "rgba(255,148,70,.13)" },
+    { body: "#7dd470", bodyD: "#63bd57", roof: "#ff7fab", roofD: "#ef6595", wallA: "#f1fbea", wallB: "#e1f5d6", wm: "rgba(255,127,171,.13)" },
+    { body: "#62bdff", bodyD: "#46a6ec", roof: "#ffd45e", roofD: "#f0bb33", wallA: "#eef8ff", wallB: "#dcf0ff", wm: "rgba(255,212,94,.17)" },
+  ];
+  // Illustrated house button art (3 building styles, rotating colors).
+  function houseArt(i, letter) {
+    const P = HOUSE_PALETTE[i % HOUSE_PALETTE.length];
+    const B = P.body, BD = P.bodyD, R = P.roof, RD = P.roofD, v = i % 3;
+    const badge = (cx, cy) =>
+      '<circle cx="' + cx + '" cy="' + cy + '" r="20" fill="#fff"/>' +
+      '<circle cx="' + cx + '" cy="' + cy + '" r="20" fill="none" stroke="' + R + '" stroke-width="5"/>' +
+      '<text x="' + cx + '" y="' + (cy + 9) + '" text-anchor="middle" font-family="Baloo 2, Nunito, sans-serif" font-weight="800" font-size="26" fill="' + R + '">' + letter + '</text>';
+    const win = (x, y, w, h) =>
+      '<rect x="' + x + '" y="' + y + '" width="' + w + '" height="' + h + '" rx="7" fill="#fff"/>' +
+      '<rect x="' + (x + 4) + '" y="' + (y + 4) + '" width="' + (w - 8) + '" height="' + (h - 8) + '" rx="4" fill="#bfe7ff"/>' +
+      '<line x1="' + (x + w / 2) + '" y1="' + (y + 4) + '" x2="' + (x + w / 2) + '" y2="' + (y + h - 4) + '" stroke="#fff" stroke-width="3"/>' +
+      '<rect x="' + (x - 3) + '" y="' + (y + h) + '" width="' + (w + 6) + '" height="7" rx="3.5" fill="#fff"/>';
+    const shadow = '<ellipse cx="100" cy="181" rx="74" ry="8" fill="rgba(15,39,66,.12)"/>';
+    if (v === 0) return '<svg viewBox="0 0 200 192">' + shadow +
+      '<rect x="34" y="80" width="132" height="98" rx="12" fill="' + B + '"/>' +
+      '<path d="M140 80 h14 a12 12 0 0 1 12 12 v74 a12 12 0 0 1 -12 12 h-14 z" fill="' + BD + '"/>' +
+      '<rect x="138" y="34" width="17" height="34" rx="5" fill="' + RD + '"/>' +
+      '<path d="M20 84 L100 22 L180 84 Z" fill="' + R + '"/>' +
+      '<rect x="16" y="78" width="168" height="13" rx="6.5" fill="' + RD + '"/>' +
+      win(46, 102, 34, 28) + win(120, 102, 34, 28) +
+      '<rect x="86" y="120" width="28" height="58" rx="13" fill="#8a5a2e"/><rect x="90" y="126" width="20" height="52" rx="9" fill="#a97044"/><circle cx="108" cy="152" r="3" fill="#ffd33d"/>' +
+      '<circle cx="42" cy="174" r="11" fill="#6ecb63"/><circle cx="57" cy="177" r="13" fill="#58b34f"/><circle cx="160" cy="176" r="11" fill="#6ecb63"/>' +
+      badge(100, 56) + '</svg>';
+    if (v === 1) return '<svg viewBox="0 0 200 192">' + shadow +
+      '<rect x="56" y="56" width="88" height="122" rx="12" fill="' + B + '"/>' +
+      '<path d="M120 56 h12 a12 12 0 0 1 12 12 v98 a12 12 0 0 1 -12 12 h-12 z" fill="' + BD + '"/>' +
+      '<path d="M46 62 L100 14 L154 62 Z" fill="' + R + '"/>' +
+      '<rect x="42" y="56" width="116" height="12" rx="6" fill="' + RD + '"/>' +
+      '<line x1="100" y1="14" x2="100" y2="3" stroke="' + RD + '" stroke-width="4" stroke-linecap="round"/><path d="M100 2 h22 l-7 7 7 7 h-22 z" fill="' + RD + '"/>' +
+      win(72, 78, 56, 24) + win(72, 112, 56, 24) +
+      '<rect x="83" y="144" width="34" height="34" rx="10" fill="#8a5a2e"/><circle cx="110" cy="162" r="3" fill="#ffd33d"/>' +
+      '<circle cx="64" cy="176" r="10" fill="#6ecb63"/>' +
+      badge(100, 44) + '</svg>';
+    return '<svg viewBox="0 0 200 192">' + shadow +
+      '<rect x="30" y="74" width="140" height="104" rx="12" fill="' + B + '"/>' +
+      '<path d="M144 74 h14 a12 12 0 0 1 12 12 v80 a12 12 0 0 1 -12 12 h-14 z" fill="' + BD + '"/>' +
+      '<rect x="22" y="66" width="156" height="14" rx="7" fill="' + R + '"/>' +
+      '<circle cx="38" cy="80" r="11" fill="#fff"/><circle cx="62" cy="80" r="11" fill="' + R + '"/><circle cx="86" cy="80" r="11" fill="#fff"/><circle cx="110" cy="80" r="11" fill="' + R + '"/><circle cx="134" cy="80" r="11" fill="#fff"/><circle cx="158" cy="80" r="11" fill="' + R + '"/>' +
+      win(42, 104, 56, 36) +
+      '<rect x="44" y="150" width="52" height="10" rx="5" fill="#8a5a2e"/><circle cx="52" cy="148" r="5" fill="#ff6b9a"/><circle cx="66" cy="146" r="5" fill="#ffd14a"/><circle cx="82" cy="148" r="5" fill="#ff6b9a"/>' +
+      '<rect x="116" y="102" width="36" height="76" rx="10" fill="#8a5a2e"/><rect x="121" y="108" width="26" height="70" rx="8" fill="#a97044"/><circle cx="144" cy="142" r="3" fill="#ffd33d"/>' +
+      badge(100, 52) + '</svg>';
+  }
+
   const DEFAULT_PROFILE = { childName: "", focusSounds: ["R", "S", "L", "K"], voiceOn: true, coachName: "Coach", cloudScoring: true, slpEvaluated: "", goals: "", focusArea: "articulation", language: "en", character: "leo", outfit: "none", backdrop: "sky", soundOn: true, voiceId: "cgSgspJ2msm6clMCkdW9", owned: { outfits: ["none"], backdrops: ["sky"] }, onboarded: false };
   // stage per sound: 0 = isolation (the letter), 1 = syllables, 2 = words, 3 = mastered.
   const STAGES = ["isolation", "syllables", "words"];
@@ -233,5 +287,5 @@
     setTimeout(() => el.remove(), 950);
   }
 
-  global.Sona = { ALL_SOUNDS, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, characterById, outfitById, backdropById, buddyMarkup, getProfile, saveProfile, getProgress, recordSession, resetProgress, stageOf, completeStage, chestClaimed, claimChest, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, restore, saveRecording, listRecordings, sfx, confetti, pop };
+  global.Sona = { ALL_SOUNDS, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, HOUSE_PALETTE, houseArt, characterById, outfitById, backdropById, buddyMarkup, getProfile, saveProfile, getProgress, recordSession, resetProgress, stageOf, completeStage, chestClaimed, claimChest, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, restore, saveRecording, listRecordings, sfx, confetti, pop };
 })(window);

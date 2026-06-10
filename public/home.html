@@ -119,34 +119,7 @@
 
     // Sound Town: one pressable house per sound. Tapping a house opens its
     // unit (/unit.html) — the steps inside that lead to that sound's prize.
-    var PALETTE = [["#ff6f61", "#3fb0ff"], ["#ffd14a", "#ff8a3d"], ["#6ecb63", "#ff6b9a"], ["#58b7ff", "#ffd14a"]];
-    function houseSVG(i, letter) {
-      var c = PALETTE[i % PALETTE.length], body = c[0], roof = c[1], v = i % 3;
-      var sign = '<circle cx="85" cy="SIGNY" r="21" fill="#fff" stroke="rgba(0,0,0,.12)" stroke-width="3"/>' +
-                 '<text x="85" y="SIGNTY" text-anchor="middle" font-family="Baloo 2, Nunito, sans-serif" font-weight="800" font-size="27" fill="' + roof + '">' + letter + '</text>';
-      if (v === 0) return '<svg viewBox="0 0 170 160">' +
-        '<rect x="120" y="22" width="15" height="32" rx="5" fill="' + roof + '"/>' +
-        '<path d="M12 68 L85 12 L158 68 Z" fill="' + roof + '"/>' +
-        '<rect x="26" y="64" width="118" height="88" rx="10" fill="' + body + '"/>' +
-        '<rect x="40" y="80" width="27" height="23" rx="5" fill="#cdeeff" stroke="#fff" stroke-width="3.5"/>' +
-        '<rect x="103" y="80" width="27" height="23" rx="5" fill="#cdeeff" stroke="#fff" stroke-width="3.5"/>' +
-        '<rect x="70" y="104" width="31" height="48" rx="9" fill="#8a5a2e"/><circle cx="95" cy="130" r="3" fill="#ffd33d"/>' +
-        sign.replace("SIGNY", "64").replace("SIGNTY", "73") + '</svg>';
-      if (v === 1) return '<svg viewBox="0 0 170 160">' +
-        '<path d="M46 50 L85 8 L124 50 Z" fill="' + roof + '"/>' +
-        '<rect x="48" y="46" width="74" height="108" rx="10" fill="' + body + '"/>' +
-        '<rect x="62" y="64" width="46" height="25" rx="6" fill="#cdeeff" stroke="#fff" stroke-width="3.5"/>' +
-        '<rect x="62" y="96" width="46" height="25" rx="6" fill="#cdeeff" stroke="#fff" stroke-width="3.5"/>' +
-        '<rect x="70" y="128" width="30" height="26" rx="8" fill="#8a5a2e"/>' +
-        sign.replace("SIGNY", "46").replace("SIGNTY", "55") + '</svg>';
-      return '<svg viewBox="0 0 170 160">' +
-        '<rect x="22" y="60" width="126" height="94" rx="10" fill="' + body + '"/>' +
-        '<rect x="14" y="46" width="142" height="18" rx="9" fill="' + roof + '"/>' +
-        '<circle cx="36" cy="72" r="11" fill="#fff"/><circle cx="58" cy="72" r="11" fill="' + roof + '"/><circle cx="80" cy="72" r="11" fill="#fff"/><circle cx="102" cy="72" r="11" fill="' + roof + '"/><circle cx="124" cy="72" r="11" fill="#fff"/><circle cx="142" cy="72" r="11" fill="' + roof + '"/>' +
-        '<rect x="34" y="94" width="54" height="36" rx="6" fill="#cdeeff" stroke="#fff" stroke-width="3.5"/>' +
-        '<rect x="102" y="94" width="32" height="60" rx="9" fill="#8a5a2e"/><circle cx="128" cy="126" r="3" fill="#ffd33d"/>' +
-        sign.replace("SIGNY", "44").replace("SIGNTY", "53") + '</svg>';
-    }
+    // house art is shared in sona.js (Sona.houseArt)
 
     var townEl = document.getElementById("town");
     var firstPlay = null, allMastered = true;
@@ -158,7 +131,7 @@
       var row = document.createElement("div");
       row.className = "hrow " + (i % 2 ? "zag" : "zig");
       row.innerHTML =
-        '<button class="houseBtn" title="' + s + ' sound">' + houseSVG(i, s) +
+        '<button class="houseBtn" title="' + s + ' sound">' + Sona.houseArt(i, s) +
           (current ? '<span class="hLeo">' + Sona.buddyMarkup(p.character, 48) + '</span>' : '') +
         '</button>' +
         '<div class="hMeta"><b>' + s + ' sound</b>' +

@@ -10,48 +10,56 @@
   <link rel="stylesheet" href="/sona.css" />
   <link rel="manifest" href="/manifest.webmanifest" />
   <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-  <meta name="theme-color" content="#7a5238" />
+  <meta name="theme-color" content="#ffffff" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="mobile-web-app-capable" content="yes" />
   <style>
-    /* inside the sound house: warm wood planks */
-    body{background:
-      repeating-linear-gradient(90deg, rgba(0,0,0,.07) 0 2px, transparent 2px 54px),
-      repeating-linear-gradient(180deg, rgba(255,255,255,.03) 0 3px, transparent 3px 90px),
-      linear-gradient(180deg,#83573b,#6e4730) fixed;}
-    .wrap{max-width:560px;}
-    header.unit{display:flex;align-items:center;gap:12px;padding:10px 2px 4px;}
-    .backbtn{width:46px;height:46px;border-radius:50%;border:none;background:#fff;cursor:pointer;font-size:20px;color:#1cb0f6;
-      box-shadow:0 4px 0 0 rgba(0,0,0,.18);display:flex;align-items:center;justify-content:center;transition:transform .05s;}
-    .backbtn:active{transform:translateY(3px);box-shadow:0 1px 0 0 rgba(0,0,0,.18);}
-    .unitTitle{flex:1;text-align:center;}
-    .unitTitle b{font-family:"Baloo 2";font-weight:800;font-size:20px;color:#fff;text-shadow:0 2px 0 rgba(0,0,0,.25);}
-    .unitTitle span{display:block;font-weight:800;font-size:12px;color:#e8cdb6;letter-spacing:.05em;text-transform:uppercase;}
-    .coinsPill{display:flex;align-items:center;gap:5px;background:rgba(255,255,255,.92);border-radius:99px;padding:8px 14px;
-      font-family:"Baloo 2";font-weight:800;color:#e08600;font-size:15px;box-shadow:0 4px 0 0 rgba(0,0,0,.18);}
+    /* inside a sound house: bright playroom tinted with the house's colors */
+    :root{ --ring:#4db6ff; --ringD:#2f9be4; --wallA:#fff3ee; --wallB:#ffe4dc; --wm:rgba(77,182,255,.13); }
+    body{background:linear-gradient(180deg,var(--wallA),var(--wallB)) fixed;}
+    /* giant letter on the wall */
+    #wm{position:fixed;top:46%;left:50%;transform:translate(-50%,-50%);z-index:0;pointer-events:none;
+      font-family:"Baloo 2";font-weight:800;font-size:min(80vw,430px);line-height:1;color:var(--wm);}
+    /* party bunting along the top */
+    #bunting{position:fixed;top:0;left:0;right:0;z-index:0;pointer-events:none;}
+    .wrap{position:relative;z-index:1;max-width:560px;}
 
-    /* path overrides for the wood room */
-    .path{margin-top:26px;padding-bottom:30px;}
-    .path:before{background:repeating-linear-gradient(rgba(255,231,200,.45) 0 9px,transparent 9px 22px);top:0;bottom:40px;}
-    .node{margin-bottom:34px;}
-    .node .bubble{width:96px;height:96px;font-size:38px;background:#fff;color:#1cb0f6;box-shadow:0 7px 0 0 rgba(0,0,0,.22);}
-    .node .bubble:active{box-shadow:0 2px 0 0 rgba(0,0,0,.22);}
-    .node.done .bubble{background:#ffd33d;color:#9a6a00;box-shadow:0 7px 0 0 #c79b18;}
-    .node.locked .bubble{background:#5d3d2a;color:#8a6a55;box-shadow:0 7px 0 0 #4a2f1f;cursor:default;}
-    .node .label{color:#fff;font-family:"Baloo 2";font-size:15px;text-shadow:0 2px 0 rgba(0,0,0,.25);}
-    .node .lvl{color:#e8cdb6;}
-    .node.cur .bubble{box-shadow:0 0 0 7px rgba(255,255,255,.25),0 7px 0 0 rgba(0,0,0,.22);}
-    .node.chest .bubble{font-size:44px;}
-    .node.chest.ready .bubble{background:linear-gradient(160deg,#ffd33d,#ff9f1c);box-shadow:0 7px 0 0 #b97a10;}
-    .leoToken{top:-46px;font-size:0;}
-    .leoToken img{width:46px;height:46px;object-fit:contain;}
+    header.unit{display:flex;align-items:center;gap:12px;padding:14px 2px 4px;}
+    .backbtn{width:46px;height:46px;border-radius:50%;border:none;background:#fff;cursor:pointer;font-size:20px;color:var(--ring);
+      box-shadow:0 4px 0 0 rgba(15,39,66,.14);display:flex;align-items:center;justify-content:center;transition:transform .05s;flex:0 0 auto;}
+    .backbtn:active{transform:translateY(3px);box-shadow:0 1px 0 0 rgba(15,39,66,.14);}
+    .unitTitle{flex:1;text-align:center;}
+    .unitTitle b{display:inline-block;font-family:"Baloo 2";font-weight:800;font-size:16px;letter-spacing:.04em;text-transform:uppercase;
+      color:#fff;background:var(--ring);padding:8px 20px;border-radius:99px;box-shadow:0 4px 0 0 var(--ringD);}
+    .unitTitle span{display:block;font-weight:800;font-size:12.5px;color:var(--muted);margin-top:7px;letter-spacing:.03em;}
+    .coinsPill{display:flex;align-items:center;gap:5px;background:#fff;border-radius:99px;padding:8px 14px;flex:0 0 auto;
+      font-family:"Baloo 2";font-weight:800;color:#e08600;font-size:15px;box-shadow:0 4px 0 0 rgba(15,39,66,.14);}
+
+    /* the step path */
+    .path{margin-top:30px;padding-bottom:36px;}
+    .path:before{background:repeating-linear-gradient(rgba(16,36,58,.16) 0 10px,transparent 10px 24px);top:0;bottom:46px;}
+    .node{margin-bottom:36px;}
+    .node .bubble{width:104px;height:104px;font-size:40px;background:#fff;color:var(--ring);
+      border:5px solid var(--ring);box-shadow:0 7px 0 0 rgba(15,39,66,.14);}
+    .node .bubble:active{box-shadow:0 2px 0 0 rgba(15,39,66,.14);}
+    .node.cur .bubble{box-shadow:0 0 0 8px rgba(255,255,255,.75),0 7px 0 0 rgba(15,39,66,.14);}
+    .node.done .bubble{background:linear-gradient(160deg,#ffd95e,#ffb627);border-color:#e0a51c;color:#7a5600;}
+    .node.locked .bubble{background:#f3ede2;border-color:#ddd2bc;color:#bfae90;cursor:default;}
+    .node .label{color:var(--ink);font-family:"Baloo 2";font-size:15px;}
+    .node.chest .bubble{font-size:46px;}
+    .node.chest.ready .bubble{background:linear-gradient(160deg,#ffd33d,#ff9f1c);border-color:#cf8c12;}
+    .leoToken{top:-48px;font-size:0;}
+    .leoToken img{width:48px;height:48px;object-fit:contain;}
   </style>
 </head>
 <body>
+  <div id="wm">R</div>
+  <svg id="bunting" viewBox="0 0 600 64" preserveAspectRatio="xMidYMin slice" height="64"></svg>
+
   <div class="wrap">
     <header class="unit">
       <button class="backbtn" id="back" title="Back">←</button>
-      <div class="unitTitle"><b id="uTitle">R sound</b><span id="uSub">3 steps to the prize!</span></div>
+      <div class="unitTitle"><b id="uTitle">R SOUND</b><span id="uSub">3 steps to the prize!</span></div>
       <span class="coinsPill">🪙 <span id="coins">0</span></span>
     </header>
 
@@ -72,11 +80,31 @@
     var params = new URLSearchParams(location.search);
     var p = Sona.getProfile();
     var name = (p.childName || "").trim();
-    var SOUND = (params.get("sound") || (p.focusSounds && p.focusSounds[0]) || "R").toUpperCase();
+    var SOUNDS = (p.focusSounds && p.focusSounds.length) ? p.focusSounds : ["R", "S", "L", "K"];
+    var SOUND = (params.get("sound") || SOUNDS[0] || "R").toUpperCase();
     var st = Sona.stageOf(SOUND); // 0..3
     var claimed = Sona.chestClaimed(SOUND);
 
-    document.getElementById("uTitle").textContent = SOUND + " sound";
+    // theme the room with this sound's house colors
+    var idx = Math.max(0, SOUNDS.indexOf(SOUND));
+    var TH = Sona.HOUSE_PALETTE[idx % Sona.HOUSE_PALETTE.length];
+    var rootSt = document.documentElement.style;
+    rootSt.setProperty("--ring", TH.roof); rootSt.setProperty("--ringD", TH.roofD);
+    rootSt.setProperty("--wallA", TH.wallA); rootSt.setProperty("--wallB", TH.wallB);
+    rootSt.setProperty("--wm", TH.wm);
+    document.getElementById("wm").textContent = SOUND;
+
+    // bunting flags in the room's colors
+    (function () {
+      var colors = [TH.roof, TH.body, "#ffd14a", "#6ecb63", "#ff6b9a"];
+      var svg = '<path d="M0 8 H600" stroke="rgba(16,36,58,.18)" stroke-width="3"/>';
+      for (var x = 6, k = 0; x < 600; x += 46, k++) {
+        svg += '<path d="M' + x + ' 8 h36 l-18 38 z" fill="' + colors[k % colors.length] + '" opacity=".92"/>';
+      }
+      document.getElementById("bunting").innerHTML = svg;
+    })();
+
+    document.getElementById("uTitle").textContent = SOUND + " SOUND";
     document.getElementById("uSub").textContent = claimed ? "Prize collected — keep practicing!" : (st >= 3 ? "Open your prize!" : (3 - st) + " step" + (3 - st === 1 ? "" : "s") + " to the prize!");
     document.getElementById("coins").textContent = Sona.getCoins();
     document.getElementById("back").onclick = function () { location.href = "/home.html"; };
