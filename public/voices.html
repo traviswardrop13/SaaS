@@ -49,13 +49,12 @@
 
   <script src="/sona.js"></script>
   <script>
-    var SAMPLE = "Hi! I'm Leo. Let's practice the R sound together — ready? Rabbit!";
+    var SAMPLE = "Roar! Hi, I'm Leo the lion! Let's practice together. Ready? Rabbit! Rocket! Ring!";
     var VOICES = [
-      { id: "", name: "App default", vibe: "Whatever the app is set to" },
+      { id: "cgSgspJ2msm6clMCkdW9", name: "Leo (default)", vibe: "Young, playful — Leo's voice" },
       { id: "EXAVITQu4vr4xnSDxMaL", name: "Sarah", vibe: "Warm, clear female" },
       { id: "XrExE9yKIg1WjnnlVkGX", name: "Matilda", vibe: "Friendly female — great for kids" },
       { id: "pFZP5JQG7iQjIQuC4Bku", name: "Lily", vibe: "Soft British female" },
-      { id: "cgSgspJ2msm6clMCkdW9", name: "Jessica", vibe: "Young, playful female" },
       { id: "21m00Tcm4TlvDq8ikWAM", name: "Rachel", vibe: "Calm, gentle female" },
       { id: "Xb7hH8MSUJpSbSDYk0k2", name: "Alice", vibe: "Clear British female" },
       { id: "FGY2WhTYpPnrIDTdsKH5", name: "Laura", vibe: "Upbeat female" },
@@ -72,7 +71,7 @@
       return new Promise(function (resolve) {
         try { var ctx = getCtx(), n = bytes.byteLength >> 1, ab = ctx.createBuffer(1, n, 24000), ch = ab.getChannelData(0), dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
           for (var i = 0; i < n; i++) ch[i] = dv.getInt16(i * 2, true) / 32768;
-          var src = ctx.createBufferSource(); src.buffer = ab; src.connect(ctx.destination); src.onended = resolve; src.start();
+          var src = ctx.createBufferSource(); src.buffer = ab; src.playbackRate.value = (window.Sona && Sona.VOICE_PITCH) || 1; src.connect(ctx.destination); src.onended = resolve; src.start();
         } catch (e) { resolve(); }
       });
     }

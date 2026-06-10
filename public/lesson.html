@@ -234,7 +234,7 @@
     /* ---- audio ---- */
     let audioCtx=null;
     function getCtx(){ if(!audioCtx){ const AC=window.AudioContext||window.webkitAudioContext; audioCtx=new AC(); } if(audioCtx.state==="suspended") audioCtx.resume(); return audioCtx; }
-    function playPCM(bytes){ return new Promise((res)=>{ try{ const ctx=getCtx(); const n=bytes.byteLength>>1; const ab=ctx.createBuffer(1,n,24000); const ch=ab.getChannelData(0); const dv=new DataView(bytes.buffer,bytes.byteOffset,bytes.byteLength); for(let i=0;i<n;i++) ch[i]=dv.getInt16(i*2,true)/32768; const s=ctx.createBufferSource(); s.buffer=ab; s.connect(ctx.destination); s.onended=res; s.start(); }catch(e){ res(); } }); }
+    function playPCM(bytes){ return new Promise((res)=>{ try{ const ctx=getCtx(); const n=bytes.byteLength>>1; const ab=ctx.createBuffer(1,n,24000); const ch=ab.getChannelData(0); const dv=new DataView(bytes.buffer,bytes.byteOffset,bytes.byteLength); for(let i=0;i<n;i++) ch[i]=dv.getInt16(i*2,true)/32768; const s=ctx.createBufferSource(); s.buffer=ab; s.playbackRate.value=(window.Sona&&Sona.VOICE_PITCH)||1; s.connect(ctx.destination); s.onended=res; s.start(); }catch(e){ res(); } }); }
     let speaking=false;
     async function say(text){ if(!text||!VOICE_ON) return; if(speaking) return; speaking=true;
       try{ const r=await fetch("/api/tts",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text,voice:profile.voiceId||""})}); if(r.ok) await playPCM(new Uint8Array(await r.arrayBuffer())); }catch(e){} finally{ speaking=false; } }

@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
   try {
     if (elevenKey) {
       const voiceId =
-        voiceOverride || process.env.ELEVENLABS_VOICE_ID || "EXAVITQu4vr4xnSDxMaL"; // Sarah — warm, clear female (premade). Override with ELEVENLABS_VOICE_ID.
+        voiceOverride || process.env.ELEVENLABS_VOICE_ID || "cgSgspJ2msm6clMCkdW9"; // Jessica — young & playful; clients pitch playback up slightly for Leo's kid voice.
       const model = process.env.ELEVENLABS_MODEL || "eleven_multilingual_v2";
       const r = await fetch(
         `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?output_format=pcm_24000`,
@@ -63,10 +63,10 @@ export async function POST(req: NextRequest) {
             text,
             model_id: model,
             voice_settings: {
-              stability: 0.45,        // lower = more natural variation (less monotone)
+              stability: 0.4,         // lower = more lively variation (less monotone)
               similarity_boost: 0.75,
-              style: 0.35,            // a touch of expressiveness/warmth
-              speed: 0.95,            // slightly slower for young kids
+              style: 0.55,            // expressive, animated — cartoon-kid energy
+              speed: 0.9,             // slower for young kids; client pitch-up restores tempo
               use_speaker_boost: true,
             },
           }),
