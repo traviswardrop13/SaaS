@@ -207,6 +207,9 @@
   function getSub() { return load(SKEY, { active: false, email: "", since: 0 }); }
   function saveSub(patch) { save(SKEY, Object.assign(getSub(), patch || {})); }
   function isSubscribed() { return !!getSub().active; }
+  // Launch gate: one full free session, then practice/calls require the trial.
+  // (Library, customize, and progress stay open — goodwill + no marginal cost.)
+  function gated() { return !isSubscribed() && (getProgress().totals.sessions >= 1); }
   // Verify a subscription by email (Stripe is the source of truth) and cache it,
   // so a paid family can unlock on a new device / after clearing storage.
   async function restore(email) {
@@ -320,5 +323,5 @@
     setTimeout(() => el.remove(), 950);
   }
 
-  global.Sona = { ALL_SOUNDS, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, HOUSE_PALETTE, WORDS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, getProfile, saveProfile, getProgress, recordSession, resetProgress, stageOf, completeStage, chestClaimed, claimChest, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, restore, saveRecording, listRecordings, sfx, confetti, pop };
+  global.Sona = { ALL_SOUNDS, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, HOUSE_PALETTE, WORDS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, getProfile, saveProfile, getProgress, recordSession, resetProgress, stageOf, completeStage, chestClaimed, claimChest, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, gated, restore, saveRecording, listRecordings, sfx, confetti, pop };
 })(window);

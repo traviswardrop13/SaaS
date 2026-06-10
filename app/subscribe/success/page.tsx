@@ -34,6 +34,11 @@ export default function SubscribeSuccess() {
         Your subscription is active. Let&apos;s set up your child&apos;s plan and
         meet Leo.
       </p>
+      <div className="mt-5 max-w-md rounded-2xl bg-sky-50 px-5 py-4 text-left text-sm font-semibold text-sky-800">
+        📱 <strong>Using a different device for your child?</strong> On their
+        iPad/phone, open Sona → <strong>Settings → Restore access</strong> and
+        enter the email you just used. That unlocks Sona there too.
+      </div>
       <a
         href="/onboarding.html"
         className="mt-8 inline-block rounded-2xl bg-grass-500 px-8 py-4 font-display text-lg font-extrabold uppercase tracking-wide text-white shadow-chunky transition hover:bg-grass-600 active:translate-y-1 active:shadow-chunky-sm"

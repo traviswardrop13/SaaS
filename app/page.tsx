@@ -443,6 +443,10 @@ function FAQ() {
       a: "No — Sona runs right in your browser on a computer or tablet. A free app is coming for phones.",
     },
     {
+      q: "What's still cooking? (beta honesty)",
+      a: "Progress currently lives on each device (cloud accounts are coming), there are no push reminders yet, and we cover 9 speech sounds at launch with more on the way. Founding Circle members get every update as it ships — and your feedback steers what we build next.",
+    },
+    {
       q: "Can I cancel anytime?",
       a: "Yes. You can cancel whenever you like, and the 7-day free trial means you can try Sona before you're ever charged.",
     },

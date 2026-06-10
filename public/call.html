@@ -80,6 +80,7 @@
     #err{margin-top:14px;max-width:400px;background:#fff0f0;border:1px solid #ffd2d2;border-radius:12px;padding:10px 12px;color:#b42323;font-size:13px;display:none;}
     #err.show{display:block;}
   </style>
+  <script defer src="/_vercel/insights/script.js"></script>
 </head>
 <body>
   <div id="wrap">
@@ -132,6 +133,7 @@
 
   <script src="/sona.js"></script>
   <script>
+    if (Sona.gated && Sona.gated()) location.replace("/trial.html");
     var profile = Sona.getProfile();
     var CHILD = (profile.childName || "").trim();
     var TARGET = (profile.focusSounds && profile.focusSounds[0]) || "R";

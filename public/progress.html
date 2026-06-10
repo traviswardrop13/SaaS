@@ -25,6 +25,7 @@
     .ms .stars{color:var(--orange);letter-spacing:1px;}
     @media print{ header.app,.noprint{display:none!important;} body{background:#fff;} }
   </style>
+  <script defer src="/_vercel/insights/script.js"></script>
 </head>
 <body>
   <div class="wrap">
@@ -52,6 +53,12 @@
     <div class="card">
       <h2>This week</h2>
       <div class="week" id="week"></div>
+    </div>
+
+    <div class="card">
+      <h2>Listen to their progress 🎧</h2>
+      <p class="muted" style="font-size:13px;font-weight:700;">Real recordings from practice — play their first try next to their latest and hear the difference.</p>
+      <div id="recList" style="margin-top:10px;"></div>
     </div>
 
     <div class="card"><h2>Sounds &amp; mastery</h2><div id="bysound" style="margin-top:6px;"></div></div>
@@ -103,6 +110,42 @@
         bs.appendChild(d);
       });
     }
+
+    // recordings: group by word, offer first vs latest playback
+    (function () {
+      var host = document.getElementById("recList");
+      if (!Sona.listRecordings) { host.innerHTML = '<p class="muted">No recordings yet.</p>'; return; }
+      Sona.listRecordings(400).then(function (recs) {
+        recs = (recs || []).filter(function (r) { return r && r.blob; });
+        if (!recs.length) { host.innerHTML = '<p class="muted">No recordings yet — they appear after practice with the mic.</p>'; return; }
+        var byWord = {}; // recs are newest-first
+        recs.forEach(function (r) {
+          var k = r.word || "practice";
+          (byWord[k] = byWord[k] || []).push(r);
+        });
+        var player = null;
+        function play(rec, btn) {
+          try { if (player) { player.pause(); } } catch (e) {}
+          var url = URL.createObjectURL(rec.blob);
+          player = new Audio(url);
+          var old = btn.textContent; btn.textContent = "🔊";
+          player.onended = function () { btn.textContent = old; URL.revokeObjectURL(url); };
+          player.play().catch(function () { btn.textContent = old; });
+        }
+        Object.keys(byWord).slice(0, 12).forEach(function (w) {
+          var list = byWord[w], latest = list[0], first = list[list.length - 1];
+          var d1 = new Date(first.date), d2 = new Date(latest.date);
+          var row = document.createElement("div");
+          row.style.cssText = "display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--line);";
+          row.innerHTML = '<div style="flex:1;min-width:0;"><b style="font-family:\'Baloo 2\';">' + w + '</b><span class="muted" style="font-size:12px;font-weight:700;"> · ' + list.length + ' tr' + (list.length === 1 ? 'y' : 'ies') + '</span></div>' +
+            '<button class="btn ghost recbtn" style="width:auto;padding:8px 12px;font-size:13px;">▶ First <small style="font-weight:700;color:var(--muted);">' + d1.toLocaleDateString(undefined, { month: "short", day: "numeric" }) + '</small></button>' +
+            (list.length > 1 ? '<button class="btn ghost recbtn2" style="width:auto;padding:8px 12px;font-size:13px;">▶ Latest <small style="font-weight:700;color:var(--muted);">' + d2.toLocaleDateString(undefined, { month: "short", day: "numeric" }) + '</small></button>' : '');
+          row.querySelector(".recbtn").onclick = function () { play(first, this); };
+          var b2 = row.querySelector(".recbtn2"); if (b2) b2.onclick = function () { play(latest, this); };
+          host.appendChild(row);
+        });
+      });
+    })();
 
     var rc = document.getElementById("recent");
     var sessions = g.sessions || [];

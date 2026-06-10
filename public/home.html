@@ -14,6 +14,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-title" content="Sona" />
+  <script defer src="/_vercel/insights/script.js"></script>
 </head>
 <body>
   <div class="wrap">
@@ -25,6 +26,12 @@
         <a class="iconbtn" href="/settings.html" title="Settings" style="display:flex;align-items:center;justify-content:center;">⚙️</a>
       </div>
     </header>
+
+    <div id="iosTip" class="card" style="display:none;align-items:center;gap:10px;background:#eef7ff;border-color:#bfe3ff;padding:12px 14px;margin-bottom:14px;">
+      <span style="font-size:24px;flex:0 0 auto;">📲</span>
+      <span style="flex:1;font-weight:700;font-size:13.5px;">Make Sona an app: tap <b>Share</b> below, then <b>“Add to Home Screen.”</b></span>
+      <button id="iosTipClose" class="iconbtn" style="width:30px;height:30px;font-size:16px;flex:0 0 auto;">×</button>
+    </div>
 
     <div id="subBanner" class="card" style="display:none;align-items:center;gap:10px;background:#fff7ef;border-color:#ffd9b0;padding:12px 14px;margin-bottom:14px;">
       <span style="flex:1;font-weight:700;font-size:14px;">✨ Enjoying Sona? <a href="/subscribe">Start your subscription</a> to keep Leo going.</span>
@@ -169,6 +176,14 @@
       document.getElementById("prize").classList.add("show");
     }
     document.getElementById("prizeClose").onclick = function () { document.getElementById("prize").classList.remove("show"); };
+
+    // iOS install tip (once, Safari only, until installed)
+    var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    var standalone = window.navigator.standalone || (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches);
+    if (isIOS && !standalone && localStorage.getItem("sona.iosTipDismissed") !== "1") {
+      var tip = document.getElementById("iosTip"); tip.style.display = "flex";
+      document.getElementById("iosTipClose").onclick = function () { tip.style.display = "none"; try { localStorage.setItem("sona.iosTipDismissed", "1"); } catch (e) {} };
+    }
 
     // gentle, dismissible subscribe prompt (non-blocking)
     if (!(Sona.isSubscribed && Sona.isSubscribed()) && localStorage.getItem("sona.subPromptDismissed") !== "1") {
