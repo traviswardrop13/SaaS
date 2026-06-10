@@ -21,7 +21,6 @@ export const metadata = {
 export default function Landing() {
   return (
     <main className="min-h-screen bg-white text-gray-800">
-      <Header />
       <Hero />
       <TrustBar />
       <HowItWorks />
@@ -45,7 +44,7 @@ function Header() {
           <span className="text-2xl" aria-hidden>
             🦁
           </span>
-          <span className="font-display text-2xl font-extrabold text-sky-600">
+          <span className="font-display text-2xl font-extrabold text-brand-600">
             Sona
           </span>
           <span className="rounded-full bg-amber-400 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-amber-900">
@@ -80,30 +79,31 @@ function Header() {
 function Hero() {
   return (
     <section className="relative overflow-hidden">
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-sky-50 to-white" />
-      <div className="relative mx-auto max-w-2xl px-5 py-20 text-center sm:py-28">
-        <img
-          src="/coach/leo-icon.png"
-          alt="Leo the lion"
-          className="mx-auto h-28 w-28 object-contain drop-shadow"
-        />
-        <h1 className="mt-6 font-display text-4xl font-extrabold leading-[1.05] text-gray-900 sm:text-6xl">
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-brand-50 to-white" />
+      <div className="relative mx-auto max-w-2xl px-5 py-14 text-center sm:py-20">
+        {/* logo lockup: Leo + Sona */}
+        <div className="flex items-center justify-center gap-3">
+          <img src="/coach/leo-icon.png" alt="Leo" className="h-14 w-14 object-contain" />
+          <span className="font-display text-4xl font-extrabold text-gray-900">Sona</span>
+          <span className="rounded-full bg-brand-400 px-2 py-0.5 text-[11px] font-extrabold uppercase tracking-wide text-white">
+            Beta
+          </span>
+        </div>
+
+        <h1 className="mt-12 font-display text-4xl font-extrabold leading-[1.05] text-gray-900 sm:text-6xl">
           Help your child find their words.
         </h1>
         <p className="mx-auto mt-5 max-w-xl text-lg leading-relaxed text-gray-600">
           A daily 10-minute speech-practice app — fun, gamified, and built with a
           licensed speech-language pathologist.
         </p>
-        <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
+        <div className="mt-8 flex justify-center">
           <a href="/onboarding.html" className="btn-primary text-lg">
             Start free
           </a>
-          <a href="#pricing" className="btn-ghost text-lg">
-            See pricing
-          </a>
         </div>
         <div className="mx-auto mt-7 inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-bold text-gray-600 shadow-chunky-sm">
-          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-grass-500 text-xs font-extrabold text-white">
+          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-brand-500 text-xs font-extrabold text-white">
             ✓
           </span>
           Built by a licensed speech-language pathologist
@@ -121,24 +121,24 @@ function CoachStage() {
   return (
     <div className="relative mx-auto w-full max-w-md">
       <div className="rounded-[2rem] bg-white p-3 shadow-chunky">
-        <div className="relative overflow-hidden rounded-[1.5rem] bg-gradient-to-b from-sky-400/20 to-sky-50">
+        <div className="relative overflow-hidden rounded-[1.5rem] bg-gradient-to-b from-brand-400/20 to-brand-50">
           <div className="flex aspect-[4/5] flex-col items-center justify-center px-6">
             <div className="text-[7rem] leading-none" aria-hidden>
               🦁
             </div>
             <div className="mt-4 rounded-2xl bg-white px-5 py-3 shadow-chunky-sm">
               <p className="font-display text-lg font-extrabold text-gray-800">
-                &ldquo;Let&apos;s try <span className="text-sky-600">rabbit</span> — your turn!&rdquo;
+                &ldquo;Let&apos;s try <span className="text-brand-600">rabbit</span> — your turn!&rdquo;
               </p>
             </div>
           </div>
-          <span className="absolute left-4 top-4 flex items-center gap-1.5 rounded-full bg-white/90 px-3 py-1 text-xs font-extrabold text-grass-600 shadow-chunky-sm">
-            <span className="h-2 w-2 rounded-full bg-grass-500" /> today
+          <span className="absolute left-4 top-4 flex items-center gap-1.5 rounded-full bg-white/90 px-3 py-1 text-xs font-extrabold text-brand-600 shadow-chunky-sm">
+            <span className="h-2 w-2 rounded-full bg-brand-500" /> today
           </span>
         </div>
       </div>
       {/* floating "score" chip */}
-      <div className="absolute -bottom-4 -right-3 rotate-3 rounded-2xl bg-grass-500 px-4 py-2 text-white shadow-chunky">
+      <div className="absolute -bottom-4 -right-3 rotate-3 rounded-2xl bg-brand-500 px-4 py-2 text-white shadow-chunky">
         <p className="font-display text-sm font-extrabold">Great job! ⭐⭐⭐</p>
       </div>
     </div>
@@ -158,7 +158,7 @@ function TrustBar() {
       <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-center gap-x-8 gap-y-2 px-5 py-4 text-center text-sm font-bold text-gray-500">
         {items.map((t) => (
           <span key={t} className="flex items-center gap-2">
-            <span className="text-grass-500">✓</span>
+            <span className="text-brand-500">✓</span>
             {t}
           </span>
         ))}
@@ -196,10 +196,10 @@ function HowItWorks() {
       <div className="mt-12 grid gap-6 sm:grid-cols-3">
         {steps.map((s, i) => (
           <div key={s.title} className="card">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-sky-50 text-2xl">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-50 text-2xl">
               {s.emoji}
             </div>
-            <p className="mt-4 text-xs font-extrabold uppercase tracking-wide text-sky-500">
+            <p className="mt-4 text-xs font-extrabold uppercase tracking-wide text-brand-500">
               Step {i + 1}
             </p>
             <h3 className="mt-1 font-display text-xl font-extrabold text-gray-900">
@@ -226,7 +226,7 @@ function LiveCoach() {
       <div className="mx-auto grid max-w-6xl items-center gap-12 px-5 py-20 lg:grid-cols-2">
         <CoachStage />
         <div>
-          <p className="text-sm font-extrabold uppercase tracking-wide text-sky-500">
+          <p className="text-sm font-extrabold uppercase tracking-wide text-brand-500">
             The difference
           </p>
           <h2 className="mt-2 font-display text-3xl font-extrabold text-gray-900 sm:text-4xl">
@@ -241,7 +241,7 @@ function LiveCoach() {
           <ul className="mt-6 space-y-3">
             {points.map((p) => (
               <li key={p} className="flex items-start gap-3">
-                <span className="mt-0.5 flex h-6 w-6 flex-none items-center justify-center rounded-full bg-grass-500 text-sm font-extrabold text-white">
+                <span className="mt-0.5 flex h-6 w-6 flex-none items-center justify-center rounded-full bg-brand-500 text-sm font-extrabold text-white">
                   ✓
                 </span>
                 <span className="font-semibold text-gray-700">{p}</span>
@@ -275,7 +275,7 @@ function ParentValue() {
 function Stat({ big, small }: { big: string; small: string }) {
   return (
     <div className="card text-center">
-      <p className="font-display text-4xl font-extrabold text-sky-600">{big}</p>
+      <p className="font-display text-4xl font-extrabold text-brand-600">{big}</p>
       <p className="mt-2 font-semibold text-gray-600">{small}</p>
     </div>
   );
@@ -347,11 +347,11 @@ function PlanCard({
   return (
     <div
       className={`relative rounded-3xl bg-white p-7 shadow-chunky ${
-        highlight ? "ring-2 ring-sky-500" : ""
+        highlight ? "ring-2 ring-brand-500" : ""
       }`}
     >
       {badge ? (
-        <span className="absolute -top-3 right-6 rounded-full bg-sky-500 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-white">
+        <span className="absolute -top-3 right-6 rounded-full bg-brand-500 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-white">
           {badge}
         </span>
       ) : null}
@@ -363,17 +363,17 @@ function PlanCard({
         </span>
         <span className="mb-1.5 font-bold text-gray-500">{priceSuffix}</span>
       </div>
-      <p className="mt-1 text-sm font-bold text-grass-600">{yearly}</p>
+      <p className="mt-1 text-sm font-bold text-brand-600">{yearly}</p>
       <Link
         href={href}
-        className="mt-6 block w-full rounded-2xl bg-grass-500 px-6 py-3 text-center font-display font-extrabold uppercase tracking-wide text-white shadow-chunky transition hover:bg-grass-600 active:translate-y-1 active:shadow-chunky-sm"
+        className="mt-6 block w-full rounded-2xl bg-brand-500 px-6 py-3 text-center font-display font-extrabold uppercase tracking-wide text-white shadow-chunky transition hover:bg-brand-600 active:translate-y-1 active:shadow-chunky-sm"
       >
         {cta}
       </Link>
       <ul className="mt-7 space-y-3">
         {features.map((f) => (
           <li key={f} className="flex items-start gap-3">
-            <span className="mt-0.5 flex h-5 w-5 flex-none items-center justify-center rounded-full bg-grass-500 text-xs font-extrabold text-white">
+            <span className="mt-0.5 flex h-5 w-5 flex-none items-center justify-center rounded-full bg-brand-500 text-xs font-extrabold text-white">
               ✓
             </span>
             <span className="font-semibold text-gray-700">{f}</span>
@@ -464,16 +464,16 @@ function FAQ() {
 function FinalCTA() {
   return (
     <section className="mx-auto max-w-6xl px-5 py-20">
-      <div className="overflow-hidden rounded-[2rem] bg-gradient-to-br from-sky-500 to-sky-600 px-8 py-14 text-center shadow-chunky">
+      <div className="overflow-hidden rounded-[2rem] bg-gradient-to-br from-brand-500 to-brand-600 px-8 py-14 text-center shadow-chunky">
         <h2 className="font-display text-3xl font-extrabold text-white sm:text-4xl">
           Become a founding family
         </h2>
-        <p className="mx-auto mt-3 max-w-xl text-lg text-sky-50">
+        <p className="mx-auto mt-3 max-w-xl text-lg text-brand-50">
           See your child light up when Leo says hello. 7-day free trial, cancel anytime.
         </p>
         <a
           href="/onboarding.html"
-          className="mt-8 inline-block rounded-2xl bg-white px-8 py-4 font-display text-lg font-extrabold uppercase tracking-wide text-sky-600 shadow-chunky transition active:translate-y-1 active:shadow-chunky-sm"
+          className="mt-8 inline-block rounded-2xl bg-white px-8 py-4 font-display text-lg font-extrabold uppercase tracking-wide text-brand-600 shadow-chunky transition active:translate-y-1 active:shadow-chunky-sm"
         >
           Start free
         </a>
@@ -491,7 +491,7 @@ function Footer() {
           <span className="text-xl" aria-hidden>
             🦁
           </span>
-          <span className="font-display text-lg font-extrabold text-sky-600">
+          <span className="font-display text-lg font-extrabold text-brand-600">
             Sona
           </span>
         </div>
@@ -531,7 +531,7 @@ function SectionHead({
 }) {
   return (
     <div className="mx-auto max-w-2xl text-center">
-      <p className="text-sm font-extrabold uppercase tracking-wide text-sky-500">
+      <p className="text-sm font-extrabold uppercase tracking-wide text-brand-500">
         {kicker}
       </p>
       <h2 className="mt-2 font-display text-3xl font-extrabold text-gray-900 sm:text-4xl">
