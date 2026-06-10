@@ -288,27 +288,26 @@ function Pricing() {
       <div className="mx-auto max-w-6xl px-5 py-20">
         <SectionHead
           kicker="Pricing"
-          title="Founding Family — beta pricing"
-          sub="Lock in $59/year (about $4.92/mo) for life as a founding family. 7-day free trial, cancel anytime, full refund if it's not a fit."
+          title="Sona Founding Circle"
+          sub="For the first 100 families."
         />
         <div className="mx-auto mt-12 max-w-md">
           <PlanCard
-            name="Founding Family"
-            badge="Beta · founding price"
+            name="Founding Circle"
+            badge="First 100 families"
+            was="$119.99"
             price="$59"
             priceSuffix="/yr"
-            yearly="≈ $4.92/mo · locked for life · 7-day free trial"
-            blurb="Your child's speech buddy, Leo — listens, adapts, and makes practice fun. (We're in beta and improving every week.)"
+            yearly="7-day free trial · cancel anytime"
+            blurb="Everything in Sona, plus founding perks — locked in for life."
             highlight
             features={[
-              "A friendly buddy (Leo) who cheers them on",
-              "Instant feedback and stars on every sound",
-              "Personalized plan from a quick sound check",
-              "Streaks, rewards & a progress report for your SLP",
-              "Unlimited practice · up to 3 kids",
-              "Cancel anytime · full refund if it's not a fit",
+              "Every new feature and update as it ships",
+              "Priority support",
+              "Your suggestions shape Sona for your child",
+              "Founding price locked for life",
             ]}
-            cta="Become a founding family"
+            cta="Start free trial"
             href="/subscribe"
           />
         </div>
@@ -325,6 +324,7 @@ function PlanCard({
   name,
   price,
   priceSuffix = "/mo",
+  was,
   yearly,
   blurb,
   features,
@@ -336,6 +336,7 @@ function PlanCard({
   name: string;
   price: string;
   priceSuffix?: string;
+  was?: string;
   yearly: string;
   blurb: string;
   features: string[];
@@ -357,7 +358,12 @@ function PlanCard({
       ) : null}
       <h3 className="font-display text-2xl font-extrabold text-gray-900">{name}</h3>
       <p className="mt-1 text-gray-600">{blurb}</p>
-      <div className="mt-5 flex items-end gap-1">
+      <div className="mt-5 flex items-end gap-2">
+        {was ? (
+          <span className="mb-2 text-2xl font-bold text-gray-400 line-through">
+            {was}
+          </span>
+        ) : null}
         <span className="font-display text-5xl font-extrabold text-gray-900">
           {price}
         </span>

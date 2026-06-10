@@ -5,12 +5,10 @@ import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
 const FEATURES = [
-  "A friendly buddy (Leo) who cheers your child on",
-  "Instant feedback and stars on every sound",
-  "Personalized plan from a quick sound check",
-  "Streaks, rewards & a progress report for your SLP",
-  "Unlimited practice · up to 3 kids",
-  "Cancel anytime",
+  "Every new feature and update as it ships",
+  "Priority support",
+  "Your suggestions shape Sona for your child",
+  "Founding price locked for life",
 ];
 
 function SubscribeInner() {
@@ -66,21 +64,19 @@ function SubscribeInner() {
         <div className="rounded-3xl bg-white p-7 shadow-chunky ring-2 ring-sky-500">
           <div className="flex items-center gap-2">
             <p className="text-sm font-extrabold uppercase tracking-wide text-sky-600">
-              Founding Family
+              Sona Founding Circle
             </p>
             <span className="rounded-full bg-amber-400 px-2 py-0.5 text-[11px] font-extrabold uppercase tracking-wide text-amber-900">
-              Beta
+              First 100
             </span>
           </div>
-          <div className="mt-3 flex items-end gap-1">
+          <div className="mt-3 flex items-end gap-2">
+            <span className="mb-2 text-2xl font-bold text-gray-400 line-through">$119.99</span>
             <span className="font-display text-5xl font-extrabold text-gray-900">$59</span>
             <span className="mb-1.5 font-bold text-gray-500">/year</span>
           </div>
           <p className="mt-1 text-sm font-bold text-grass-600">
-            ≈ $4.92/mo · 7-day free trial · founding price locked for life
-          </p>
-          <p className="mt-1 text-xs font-semibold text-gray-400">
-            Founding Families — limited early spots
+            7-day free trial · cancel anytime
           </p>
           <ul className="mt-6 space-y-3">
             {FEATURES.map((f) => (
