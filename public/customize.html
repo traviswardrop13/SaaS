@@ -39,6 +39,8 @@
     .opt.locked .em{filter:grayscale(.7);}
     .opt .soon{position:absolute;top:6px;right:6px;font-size:9px;font-weight:800;letter-spacing:.04em;color:var(--muted);
       background:#eef3fb;border-radius:99px;padding:2px 7px;}
+    .opt .price{position:absolute;top:6px;right:6px;font-size:10px;font-weight:800;color:var(--orange-d);background:#ffe7c8;border-radius:99px;padding:2px 7px;}
+    .opt .em{position:relative;}
     /* backdrop swatches */
     .opt.bd .em{width:100%;height:46px;border-radius:12px;font-size:22px;}
     .opt.none-outfit .em{color:var(--muted);font-size:13px;font-weight:800;font-family:"Baloo 2";}
@@ -48,7 +50,10 @@
   <div class="wrap">
     <header class="app">
       <div class="brand"><span class="leo">🦁</span> Make it yours</div>
-      <a class="iconbtn" href="/home.html" title="Home" style="display:flex;align-items:center;justify-content:center;">✕</a>
+      <div class="pills">
+        <span class="pill" style="color:var(--orange-d);">🪙 <span id="coinBal">0</span></span>
+        <a class="iconbtn" href="/home.html" title="Home" style="display:flex;align-items:center;justify-content:center;">✕</a>
+      </div>
     </header>
 
     <div id="preview">
@@ -97,35 +102,52 @@
 
     function persist() { Sona.saveProfile({ character: sel.character, outfit: sel.outfit, backdrop: sel.backdrop }); }
 
-    // generic chooser: builds a grid, marks the selected, handles locked items
-    function buildGrid(elId, items, key, render) {
-      var host = document.getElementById(elId);
-      host.innerHTML = "";
-      items.forEach(function (it) {
-        var el = document.createElement("div");
+    var coins = Sona.getCoins();
+    function setCoinBal() { document.getElementById("coinBal").textContent = coins; }
+    // grandfather whatever the child already has selected (don't charge for it)
+    Sona.addOwned("outfits", sel.outfit); Sona.addOwned("backdrops", sel.backdrop);
+
+    // characters: Leo free, others "coming soon" (not buyable yet)
+    function buildChars() {
+      var host = document.getElementById("chars"); host.innerHTML = "";
+      Sona.CHARACTERS.forEach(function (it) {
         var locked = !!it.locked;
-        el.className = "opt" + render.cls(it) + (sel[key] === it.id && !locked ? " on" : "") + (locked ? " locked" : "");
-        el.innerHTML = render.inner(it) + (locked ? '<span class="soon">SOON</span>' : "");
-        if (!locked) el.onclick = function () {
-          if (window.Sona) Sona.sfx.tap();
-          sel[key] = it.id;
-          host.querySelectorAll(".opt").forEach(function (n) { n.classList.remove("on"); });
-          el.classList.add("on");
-          renderPreview(); persist();
+        var el = document.createElement("div");
+        el.className = "opt" + (sel.character === it.id && !locked ? " on" : "") + (locked ? " locked" : "");
+        el.innerHTML = '<span class="em">' + Sona.buddyMarkup(it.id, 40) + '</span><span class="nm">' + it.name + '</span>' + (locked ? '<span class="soon">SOON</span>' : "");
+        if (!locked) el.onclick = function () { if (window.Sona) Sona.sfx.tap(); sel.character = it.id; host.querySelectorAll(".opt").forEach(function (n) { n.classList.remove("on"); }); el.classList.add("on"); renderPreview(); persist(); };
+        host.appendChild(el);
+      });
+    }
+
+    // shop grid: owned items select; locked items cost coins to unlock
+    function buildShop(elId, items, key, kind, render) {
+      var host = document.getElementById(elId); host.innerHTML = "";
+      items.forEach(function (it) {
+        var owned = it.cost === 0 || Sona.owns(kind, it.id);
+        var el = document.createElement("div");
+        el.className = "opt" + render.cls(it) + (sel[key] === it.id ? " on" : "");
+        el.innerHTML = render.inner(it) + (owned ? "" : '<span class="price">🪙 ' + it.cost + '</span>');
+        el.onclick = function () {
+          if (owned) { if (window.Sona) Sona.sfx.tap(); sel[key] = it.id; host.querySelectorAll(".opt").forEach(function (n) { n.classList.remove("on"); }); el.classList.add("on"); renderPreview(); persist(); return; }
+          if (coins >= it.cost) {
+            if (confirm("Unlock " + it.name + " for " + it.cost + " 🪙?")) {
+              Sona.spendCoins(it.cost); Sona.addOwned(kind, it.id); coins = Sona.getCoins(); setCoinBal();
+              if (window.Sona) { Sona.sfx.reward(); Sona.confetti({ count: 90, duration: 1600 }); }
+              sel[key] = it.id; persist(); buildShop(elId, items, key, kind, render); renderPreview();
+            }
+          } else { alert("You need " + (it.cost - coins) + " more 🪙 — practice to earn coins!"); }
         };
         host.appendChild(el);
       });
     }
 
-    buildGrid("chars", Sona.CHARACTERS, "character", {
-      cls: function () { return ""; },
-      inner: function (it) { return '<span class="em">' + Sona.buddyMarkup(it.id, 40) + '</span><span class="nm">' + it.name + '</span>'; },
-    });
-    buildGrid("outfits", Sona.OUTFITS, "outfit", {
+    buildChars();
+    buildShop("outfits", Sona.OUTFITS, "outfit", "outfits", {
       cls: function (it) { return it.id === "none" ? " none-outfit" : ""; },
       inner: function (it) { return '<span class="em">' + (it.emoji || "None") + '</span><span class="nm">' + it.name + '</span>'; },
     });
-    buildGrid("backdrops", Sona.BACKDROPS, "backdrop", {
+    buildShop("backdrops", Sona.BACKDROPS, "backdrop", "backdrops", {
       cls: function () { return " bd"; },
       inner: function (it) {
         var sc = (it.scene || [])[0] || "";
@@ -133,6 +155,7 @@
       },
     });
 
+    setCoinBal();
     renderPreview();
   </script>
 </body>

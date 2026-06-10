@@ -17,21 +17,21 @@
     { id: "rabbit", name: "Hop",   emoji: "🐰", locked: true },
   ];
   const OUTFITS = [
-    { id: "none",   name: "None",   emoji: "" },
-    { id: "crown",  name: "Crown",  emoji: "👑" },
-    { id: "tophat", name: "Top hat",emoji: "🎩" },
-    { id: "cap",    name: "Cap",    emoji: "🧢" },
-    { id: "shades", name: "Cool",   emoji: "🕶️" },
-    { id: "bow",    name: "Bow",    emoji: "🎀" },
-    { id: "party",  name: "Party",  emoji: "🥳" },
+    { id: "none",   name: "None",   emoji: "",   cost: 0 },
+    { id: "crown",  name: "Crown",  emoji: "👑", cost: 30 },
+    { id: "tophat", name: "Top hat",emoji: "🎩", cost: 25 },
+    { id: "cap",    name: "Cap",    emoji: "🧢", cost: 20 },
+    { id: "shades", name: "Cool",   emoji: "🕶️", cost: 25 },
+    { id: "bow",    name: "Bow",    emoji: "🎀", cost: 20 },
+    { id: "party",  name: "Party",  emoji: "🥳", cost: 40 },
   ];
   const BACKDROPS = [
-    { id: "sky",      name: "Sky",       css: "linear-gradient(180deg,#bfe3ff,#eaf3ff)", scene: ["☁️", "🌤️", "☁️"] },
-    { id: "jungle",   name: "Jungle",    css: "linear-gradient(180deg,#bdf0c8,#e7fbe9)", scene: ["🌴", "🌿", "🦜"] },
-    { id: "forest",   name: "Forest",    css: "linear-gradient(180deg,#cbe8c0,#eef7e6)", scene: ["🌲", "🍄", "🐿️"] },
-    { id: "mountain", name: "Mountains", css: "linear-gradient(180deg,#d6e6ff,#f0f5ff)", scene: ["🏔️", "⛰️", "🌲"] },
-    { id: "space",    name: "Space",     css: "linear-gradient(180deg,#cdd6ff,#eef1ff)", scene: ["🚀", "⭐", "🪐"] },
-    { id: "beach",    name: "Beach",     css: "linear-gradient(180deg,#bfefff,#fff6e0)", scene: ["🏖️", "🌊", "🐚"] },
+    { id: "sky",      name: "Sky",       cost: 0,  css: "linear-gradient(180deg,#bfe3ff,#eaf3ff)", scene: ["☁️", "🌤️", "☁️"] },
+    { id: "jungle",   name: "Jungle",    cost: 40, css: "linear-gradient(180deg,#bdf0c8,#e7fbe9)", scene: ["🌴", "🌿", "🦜"] },
+    { id: "forest",   name: "Forest",    cost: 40, css: "linear-gradient(180deg,#cbe8c0,#eef7e6)", scene: ["🌲", "🍄", "🐿️"] },
+    { id: "mountain", name: "Mountains", cost: 50, css: "linear-gradient(180deg,#d6e6ff,#f0f5ff)", scene: ["🏔️", "⛰️", "🌲"] },
+    { id: "space",    name: "Space",     cost: 60, css: "linear-gradient(180deg,#cdd6ff,#eef1ff)", scene: ["🚀", "⭐", "🪐"] },
+    { id: "beach",    name: "Beach",     cost: 50, css: "linear-gradient(180deg,#bfefff,#fff6e0)", scene: ["🏖️", "🌊", "🐚"] },
   ];
   const byId = (list, id) => list.find((x) => x.id === id) || list[0];
   const characterById = (id) => byId(CHARACTERS, id);
@@ -44,10 +44,10 @@
     return '<span style="font-size:' + Math.round(s * 0.92) + 'px;line-height:1;">' + c.emoji + '</span>';
   }
 
-  const DEFAULT_PROFILE = { childName: "", focusSounds: ["R", "S", "L", "K"], voiceOn: true, coachName: "Coach", cloudScoring: true, slpEvaluated: "", goals: "", focusArea: "articulation", language: "en", character: "leo", outfit: "none", backdrop: "sky", soundOn: true, voiceId: "", onboarded: false };
+  const DEFAULT_PROFILE = { childName: "", focusSounds: ["R", "S", "L", "K"], voiceOn: true, coachName: "Coach", cloudScoring: true, slpEvaluated: "", goals: "", focusArea: "articulation", language: "en", character: "leo", outfit: "none", backdrop: "sky", soundOn: true, voiceId: "", owned: { outfits: ["none"], backdrops: ["sky"] }, onboarded: false };
   // stage per sound: 0 = isolation (the letter), 1 = syllables, 2 = words, 3 = mastered.
   const STAGES = ["isolation", "syllables", "words"];
-  const DEFAULT_PROGRESS = { sessions: [], totals: { sessions: 0, words: 0, stars: 0 }, streak: { count: 0, lastDate: "" }, bySound: {}, stage: {} };
+  const DEFAULT_PROGRESS = { sessions: [], totals: { sessions: 0, words: 0, stars: 0, coins: 0 }, streak: { count: 0, lastDate: "" }, bySound: {}, stage: {} };
 
   const clone = (o) => JSON.parse(JSON.stringify(o));
   function load(key, def) { try { const v = JSON.parse(localStorage.getItem(key)); return (v && typeof v === "object") ? v : clone(def); } catch { return clone(def); } }
@@ -58,7 +58,7 @@
 
   function getProgress() {
     const g = load(GKEY, DEFAULT_PROGRESS);
-    g.totals = Object.assign({ sessions: 0, words: 0, stars: 0 }, g.totals || {});
+    g.totals = Object.assign({ sessions: 0, words: 0, stars: 0, coins: 0 }, g.totals || {});
     g.streak = Object.assign({ count: 0, lastDate: "" }, g.streak || {});
     g.bySound = g.bySound || {}; g.sessions = g.sessions || []; g.stage = g.stage || {};
     return g;
@@ -73,6 +73,14 @@
     if (passed && stage >= cur && cur < 3) { g.stage[sound] = Math.min(3, stage + 1); save(GKEY, g); }
     return g.stage[sound] || 0;
   }
+
+  // --- coins (earned in lessons, spent in the shop) ---
+  function getCoins() { return getProgress().totals.coins || 0; }
+  function addCoins(n) { const g = getProgress(); g.totals.coins = (g.totals.coins || 0) + (n || 0); save(GKEY, g); return g.totals.coins; }
+  function spendCoins(n) { const g = getProgress(); if ((g.totals.coins || 0) < n) return false; g.totals.coins -= n; save(GKEY, g); return true; }
+  // --- owned cosmetics (shop) ---
+  function owns(kind, id) { const o = getProfile().owned || {}; return (o[kind] || []).indexOf(id) !== -1; }
+  function addOwned(kind, id) { const p = getProfile(); const o = p.owned || { outfits: [], backdrops: [] }; o[kind] = o[kind] || []; if (o[kind].indexOf(id) === -1) o[kind].push(id); saveProfile({ owned: o }); }
 
   // rec: { words: [{ word, sound, ok }] }
   function recordSession(rec) {
@@ -213,5 +221,5 @@
     setTimeout(() => el.remove(), 950);
   }
 
-  global.Sona = { ALL_SOUNDS, STAGES, CHARACTERS, OUTFITS, BACKDROPS, characterById, outfitById, backdropById, buddyMarkup, getProfile, saveProfile, getProgress, recordSession, resetProgress, stageOf, completeStage, getSub, saveSub, isSubscribed, restore, saveRecording, listRecordings, sfx, confetti, pop };
+  global.Sona = { ALL_SOUNDS, STAGES, CHARACTERS, OUTFITS, BACKDROPS, characterById, outfitById, backdropById, buddyMarkup, getProfile, saveProfile, getProgress, recordSession, resetProgress, stageOf, completeStage, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, restore, saveRecording, listRecordings, sfx, confetti, pop };
 })(window);

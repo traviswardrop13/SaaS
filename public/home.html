@@ -21,7 +21,7 @@
       <div class="brand"><span class="leo">🦁</span> Sona <span class="beta">BETA</span></div>
       <div class="pills">
         <span class="pill flame">🔥 <span id="streak">0</span></span>
-        <span class="pill xp">⭐ <span id="xp">0</span></span>
+        <span class="pill" style="color:var(--orange-d);">🪙 <span id="coins">0</span></span>
         <a class="iconbtn" href="/settings.html" title="Settings" style="display:flex;align-items:center;justify-content:center;">⚙️</a>
       </div>
     </header>
@@ -91,7 +91,7 @@
     var practicedToday = g.streak.lastDate === today;
 
     document.getElementById("streak").textContent = g.streak.count || 0;
-    document.getElementById("xp").textContent = g.totals.stars || 0;
+    document.getElementById("coins").textContent = g.totals.coins || 0;
     document.getElementById("hello").textContent = name ? ("Hi, " + name + "!") : "Ready to practice?";
     document.getElementById("sub").textContent = practicedToday
       ? "Nice — you practiced today! 🎉"
