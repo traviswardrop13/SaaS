@@ -12,8 +12,8 @@ import Stripe from "stripe";
  */
 export const runtime = "nodejs";
 
-const MONTHLY_CENTS = 9900; // $99 / month
-const ANNUAL_CENTS = 94800; // $948 / year (~$79/mo — saves ~2 months)
+const MONTHLY_CENTS = 1699; // $16.99 / month (no free trial)
+const ANNUAL_CENTS = 11999; // $119.99 / year (~$10/mo) with a 7-day free trial
 
 export async function POST(req: NextRequest) {
   const key = process.env.STRIPE_SECRET_KEY;
@@ -69,10 +69,8 @@ export async function POST(req: NextRequest) {
       billing_address_collection: "auto",
       success_url: `${origin}/subscribe/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/subscribe?canceled=1`,
-      subscription_data: {
-        // a few days to try; remove or tune as you like
-        trial_period_days: 7,
-      },
+      // 7-day free trial on the annual plan only; monthly charges right away (Duolingo-style)
+      ...(annual ? { subscription_data: { trial_period_days: 7 } } : {}),
     });
     return NextResponse.json({ ok: true, url: session.url });
   } catch (e: unknown) {
