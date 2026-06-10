@@ -27,18 +27,17 @@
     .dotLive{width:9px;height:9px;border-radius:50%;background:var(--red);animation:blinkdot 1.2s infinite;}
     @keyframes blinkdot{0%,100%{opacity:1}50%{opacity:.25}}
 
-    /* Leo stage */
+    /* Leo stage — the real Leo, talking */
     #stage{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%;padding:0 18px;}
-    #leoWrap{width:min(72vw,300px);animation:bob 3.4s ease-in-out infinite;filter:drop-shadow(0 18px 30px rgba(140,60,0,.25));}
-    #leoWrap.talking{animation:bob 1.7s ease-in-out infinite;}
+    #leoWrap{width:min(76vw,330px);animation:bob 3.4s ease-in-out infinite;filter:drop-shadow(0 20px 32px rgba(140,60,0,.3));}
+    #leoWrap.talking{animation:bob 1.8s ease-in-out infinite;}
     @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-9px)}}
-    #leoSvg{width:100%;height:auto;display:block;}
-    #mouthO{transform-box:fill-box;transform-origin:center top;transform:scaleY(.18);}
+    #leoImg{width:100%;height:auto;display:block;transform-origin:50% 80%;}
 
     /* captions */
-    #cap{min-height:64px;margin-top:10px;max-width:92%;text-align:center;}
+    #cap{min-height:64px;margin-top:12px;max-width:92%;text-align:center;}
     #leoSays{font-family:"Baloo 2";font-weight:800;font-size:clamp(17px,4.6vw,22px);color:#5b2d05;line-height:1.3;
-      background:rgba(255,255,255,.88);border-radius:18px;padding:10px 16px;display:none;box-shadow:0 6px 18px rgba(120,60,0,.12);}
+      background:rgba(255,255,255,.9);border-radius:18px;padding:10px 16px;display:none;box-shadow:0 6px 18px rgba(120,60,0,.12);}
     #youSaid{margin-top:8px;font-weight:800;font-size:14px;color:rgba(91,45,5,.75);display:none;}
 
     /* status row (listening / thinking) */
@@ -50,6 +49,10 @@
     #thinkChip{display:none;font-family:"Baloo 2";font-weight:800;color:rgba(91,45,5,.7);}
     #doneTalk{display:none;border:none;border-radius:99px;padding:10px 20px;margin-left:10px;font-family:"Baloo 2";font-weight:800;
       color:#fff;background:var(--green);box-shadow:0 4px 0 0 var(--green-d);cursor:pointer;}
+
+    /* error toast — if anything breaks, SAY so instead of dead air */
+    #toast{position:fixed;left:50%;bottom:130px;transform:translateX(-50%);z-index:60;max-width:88vw;display:none;
+      background:#3c3c3c;color:#fff;font-weight:800;font-size:13px;border-radius:14px;padding:10px 16px;box-shadow:0 10px 24px rgba(0,0,0,.3);}
 
     /* bottom controls */
     #controls{padding:10px 0 calc(24px + env(safe-area-inset-bottom));display:flex;align-items:center;justify-content:center;gap:26px;}
@@ -85,42 +88,7 @@
     </div>
 
     <div id="stage">
-      <div id="leoWrap">
-        <svg id="leoSvg" viewBox="0 0 240 240" aria-label="Leo">
-          <!-- mane -->
-          <circle cx="120" cy="124" r="92" fill="#e8742a"/>
-          <g fill="#ef8a2e">
-            <circle cx="120" cy="36" r="26"/><circle cx="172" cy="50" r="26"/><circle cx="202" cy="92" r="26"/>
-            <circle cx="206" cy="146" r="26"/><circle cx="180" cy="192" r="26"/><circle cx="120" cy="210" r="26"/>
-            <circle cx="60" cy="192" r="26"/><circle cx="34" cy="146" r="26"/><circle cx="38" cy="92" r="26"/><circle cx="68" cy="50" r="26"/>
-            <circle cx="120" cy="124" r="84"/>
-          </g>
-          <!-- ears -->
-          <circle cx="58" cy="42" r="16" fill="#ef8a2e"/><circle cx="182" cy="42" r="16" fill="#ef8a2e"/>
-          <circle cx="58" cy="45" r="8" fill="#ffd9a8"/><circle cx="182" cy="45" r="8" fill="#ffd9a8"/>
-          <!-- face -->
-          <circle cx="120" cy="128" r="70" fill="#ffe9c8"/>
-          <!-- brows -->
-          <path d="M82 100 Q94 92 106 98" stroke="#c98a3f" stroke-width="4.5" fill="none" stroke-linecap="round"/>
-          <path d="M134 98 Q146 92 158 100" stroke="#c98a3f" stroke-width="4.5" fill="none" stroke-linecap="round"/>
-          <!-- eyes -->
-          <g id="eyes">
-            <ellipse cx="96" cy="116" rx="10" ry="12" fill="#fff"/><circle cx="97" cy="118" r="6" fill="#4a3120"/><circle cx="99" cy="115" r="2.2" fill="#fff"/>
-            <ellipse cx="144" cy="116" rx="10" ry="12" fill="#fff"/><circle cx="145" cy="118" r="6" fill="#4a3120"/><circle cx="147" cy="115" r="2.2" fill="#fff"/>
-            <g id="lids" opacity="0"><rect x="84" y="102" width="24" height="26" rx="10" fill="#ffe9c8"/><rect x="132" y="102" width="24" height="26" rx="10" fill="#ffe9c8"/></g>
-          </g>
-          <!-- cheeks -->
-          <circle cx="84" cy="144" r="9" fill="#f7b3a3" opacity=".55"/><circle cx="156" cy="144" r="9" fill="#f7b3a3" opacity=".55"/>
-          <!-- muzzle + nose -->
-          <ellipse cx="120" cy="158" rx="30" ry="23" fill="#fff3dd"/>
-          <path d="M111 147 Q120 139 129 147 Q127 156 120 159 Q113 156 111 147 Z" fill="#d96a4e"/>
-          <!-- mouth -->
-          <g id="mouthG">
-            <path id="smile" d="M106 166 Q120 176 134 166" stroke="#a35e2a" stroke-width="4.5" fill="none" stroke-linecap="round"/>
-            <ellipse id="mouthO" cx="120" cy="168" rx="13" ry="12" fill="#7a3340" opacity="0"/>
-          </g>
-        </svg>
-      </div>
+      <div id="leoWrap"><img id="leoImg" src="/coach/leo-icon.png" alt="Leo" /></div>
       <div id="cap">
         <div id="leoSays"></div>
         <div id="youSaid"></div>
@@ -136,6 +104,8 @@
       <button id="hangup" title="End call"><svg viewBox="0 0 24 24"><path d="M6.6 10.8c1.5 3 3.6 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.2.4 2.4.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1C10.6 21 3 13.4 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.2.2 2.4.6 3.6.1.3 0 .7-.2 1l-2.3 2.2z"/></svg></button>
     </div>
   </div>
+
+  <div id="toast"></div>
 
   <!-- PRE-CALL -->
   <div id="pre" class="screen">
@@ -164,51 +134,65 @@
   <script>
     var profile = Sona.getProfile();
     var CHILD = (profile.childName || "").trim();
-    var SOUNDLIST = profile.focusSounds || [];
-    var TARGET = SOUNDLIST[0] || "R";
+    var TARGET = (profile.focusSounds && profile.focusSounds[0]) || "R";
     var PITCH = Sona.VOICE_PITCH || 1.08;
     var TOTAL = 5 * 60; // seconds
 
     var $ = function (id) { return document.getElementById(id); };
     var live = false, secsLeft = TOTAL, wrapSent = false, kidTurns = 0;
     var history = []; // {role:"user"|"leo", text}
-    var curSrc = null, sr = null, srActive = false, timerIv = null, blinkIv = null, mouthRAF = null;
+    var curSrc = null, sr = null, timerIv = null, talkRAF = null;
+    var leoImg = $("leoImg");
+
+    function toast(msg) {
+      var t = $("toast"); t.textContent = msg; t.style.display = "block";
+      clearTimeout(t._h); t._h = setTimeout(function () { t.style.display = "none"; }, 5000);
+    }
 
     /* ---------- audio ---------- */
     var audioCtx = null;
     function getCtx() { if (!audioCtx) { var AC = window.AudioContext || window.webkitAudioContext; audioCtx = new AC(); } if (audioCtx.state === "suspended") audioCtx.resume(); return audioCtx; }
+    function unlockAudio() { // play a 1-sample silent buffer inside the tap gesture
+      try { var ctx = getCtx(), b = ctx.createBuffer(1, 1, 24000), s = ctx.createBufferSource(); s.buffer = b; s.connect(ctx.destination); s.start(); } catch (e) {}
+    }
     function ringTone() {
       try {
         var ctx = getCtx(), t0 = ctx.currentTime;
-        [0, 2].forEach(function (off) {
+        [0, 1.8].forEach(function (off) {
           [440, 480].forEach(function (f) {
             var o = ctx.createOscillator(), g = ctx.createGain();
             o.frequency.value = f; o.type = "sine";
             g.gain.setValueAtTime(0.0001, t0 + off);
             g.gain.linearRampToValueAtTime(0.06, t0 + off + 0.05);
-            g.gain.setValueAtTime(0.06, t0 + off + 1.2);
-            g.gain.linearRampToValueAtTime(0.0001, t0 + off + 1.35);
-            o.connect(g); g.connect(ctx.destination); o.start(t0 + off); o.stop(t0 + off + 1.4);
+            g.gain.setValueAtTime(0.06, t0 + off + 1.1);
+            g.gain.linearRampToValueAtTime(0.0001, t0 + off + 1.25);
+            o.connect(g); g.connect(ctx.destination); o.start(t0 + off); o.stop(t0 + off + 1.3);
           });
         });
       } catch (e) {}
     }
-    function setMouth(open) {
-      var m = $("mouthO"), s = $("smile");
-      if (open == null) { m.setAttribute("opacity", "0"); s.setAttribute("opacity", "1"); return; }
-      m.setAttribute("opacity", "1"); s.setAttribute("opacity", "0");
-      m.style.transform = "scaleY(" + (0.15 + Math.min(1, open) * 1.05) + ")";
-    }
+
+    /* Leo "talks": squash-and-stretch + wiggle driven by the real audio level */
     function speak(text) {
       return new Promise(function (resolve) {
         if (!live || !text) return resolve();
         showLeoSays(text);
+        status(null);
         $("leoWrap").classList.add("talking");
+        function fallback() {
+          // voice failed — keep the caption up about as long as Leo would talk
+          $("leoWrap").classList.remove("talking");
+          setTimeout(resolve, Math.min(5000, 800 + text.length * 50));
+        }
         fetch("/api/tts", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text: text, voice: profile.voiceId || "" }) })
-          .then(function (r) { if (!r.ok) throw 0; return r.arrayBuffer(); })
+          .then(function (r) {
+            if (!r.ok) return r.json().catch(function () { return {}; }).then(function (j) { throw new Error(j.error || ("voice " + r.status)); });
+            return r.arrayBuffer();
+          })
           .then(function (buf) {
             if (!live) return resolve();
             var bytes = new Uint8Array(buf), ctx = getCtx(), n = bytes.byteLength >> 1;
+            if (!n) throw new Error("empty audio");
             var ab = ctx.createBuffer(1, n, 24000), ch = ab.getChannelData(0);
             var dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
             for (var i = 0; i < n; i++) ch[i] = dv.getInt16(i * 2, true) / 32768;
@@ -220,16 +204,17 @@
             (function tick() {
               an.getByteTimeDomainData(data);
               var sum = 0; for (var i = 0; i < data.length; i++) { var v = (data[i] - 128) / 128; sum += v * v; }
-              setMouth(Math.min(1, Math.sqrt(sum / data.length) * 3.6));
-              mouthRAF = requestAnimationFrame(tick);
+              var amp = Math.min(1, Math.sqrt(sum / data.length) * 3.6);
+              leoImg.style.transform = "scaleY(" + (1 + amp * 0.08) + ") scaleX(" + (1 - amp * 0.05) + ") rotate(" + (Math.sin(Date.now() / 85) * amp * 2.6) + "deg)";
+              talkRAF = requestAnimationFrame(tick);
             })();
             src.onended = function () {
-              cancelAnimationFrame(mouthRAF); setMouth(null);
+              cancelAnimationFrame(talkRAF); leoImg.style.transform = "";
               $("leoWrap").classList.remove("talking"); curSrc = null; resolve();
             };
             src.start();
           })
-          .catch(function () { setMouth(null); $("leoWrap").classList.remove("talking"); setTimeout(resolve, Math.min(4000, 600 + text.length * 45)); });
+          .catch(function (e) { toast("🔇 Leo's voice hiccuped: " + (e && e.message ? e.message : e)); fallback(); });
       });
     }
 
@@ -237,7 +222,7 @@
     function showLeoSays(t) { var el = $("leoSays"); el.textContent = t; el.style.display = "inline-block"; $("youSaid").style.display = "none"; }
     function showYouSaid(t) { var el = $("youSaid"); el.textContent = "You: " + t; el.style.display = "block"; }
     function status(mode) {
-      $("listenChip").style.display = mode === "listen" ? "flex" : "none";
+      $("listenChip").style.display = (mode === "listen" || mode === "fallback") ? "flex" : "none";
       $("thinkChip").style.display = mode === "think" ? "block" : "none";
       $("doneTalk").style.display = mode === "fallback" ? "inline-block" : "none";
     }
@@ -248,9 +233,7 @@
       return new Promise(function (resolve) {
         if (!live) return resolve(null);
         if (!SRClass) {
-          // No speech recognition (some browsers): let the child talk freely,
-          // then they tap "I'm done" and Leo keeps the chat moving.
-          status("fallback"); $("listenChip").style.display = "flex";
+          status("fallback");
           var t = setTimeout(done, maxMs);
           function done() { clearTimeout(t); $("doneTalk").onclick = null; resolve(""); }
           $("doneTalk").onclick = done;
@@ -260,15 +243,15 @@
         var finished = false, text = "";
         sr = new SRClass(); sr.lang = "en-US"; sr.interimResults = false; sr.maxAlternatives = 1;
         var t = setTimeout(function () { try { sr.stop(); } catch (e) {} }, maxMs);
-        function finish() { if (finished) return; finished = true; clearTimeout(t); srActive = false; resolve(text || null); }
+        function finish() { if (finished) return; finished = true; clearTimeout(t); resolve(text || null); }
         sr.onresult = function (ev) { for (var i = 0; i < ev.results.length; i++) text += " " + ev.results[i][0].transcript; text = text.trim(); try { sr.stop(); } catch (e) {} };
         sr.onerror = function () { finish(); };
         sr.onend = function () { finish(); };
-        try { srActive = true; sr.start(); } catch (e) { finish(); }
+        try { sr.start(); } catch (e) { finish(); }
       });
     }
 
-    /* ---------- the conversation loop ---------- */
+    /* ---------- the conversation ---------- */
     function chat(extra) {
       var msgs = history.slice(-14);
       if (extra) msgs = msgs.concat([{ role: "user", text: extra }]);
@@ -276,53 +259,64 @@
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ messages: msgs, child: { name: CHILD, sound: TARGET } }),
       }).then(function (r) { return r.json(); })
-        .then(function (j) { return (j && j.ok && j.reply) ? j.reply : "Let's keep playing! What's your favorite animal?"; })
-        .catch(function () { return "Hmm, my ears wiggled! Tell me, what's your favorite color?"; });
+        .then(function (j) {
+          if (j && j.ok && j.reply) return j.reply;
+          throw new Error((j && j.error) || "no reply");
+        })
+        .catch(function (e) {
+          toast("💬 Chat hiccup: " + (e && e.message ? e.message : e));
+          return "Let's keep playing! What's your favorite animal?";
+        });
     }
 
-    async function loop() {
-      // Leo opens the call
-      status("think");
-      var opener = await chat("(The call just connected. Say a short, excited hello" + (CHILD ? " to " + CHILD : "") + " and ask one easy, fun question.)");
-      history.push({ role: "leo", text: opener });
-      await speak(opener);
-
-      var silence = 0;
-      while (live && secsLeft > 0 && kidTurns < 40) {
-        var heard = await listenOnce(9000);
-        if (!live) break;
+    async function loop(openerP) {
+      try {
         status("think");
-        var prompt;
-        if (heard && heard.trim()) {
-          silence = 0; kidTurns++;
-          showYouSaid(heard.trim());
-          history.push({ role: "user", text: heard.trim() });
-          prompt = null;
-        } else {
-          silence++;
-          prompt = silence >= 2
-            ? "(The child has been quiet for a while. Warmly invite them to just say any word they like, or ask a super easy yes/no question.)"
-            : "(You couldn't hear the child clearly. Kindly say you didn't catch that and ask your question again, shorter.)";
+        var opener = await openerP;
+        history.push({ role: "leo", text: opener });
+        await speak(opener);
+
+        var silence = 0;
+        while (live && secsLeft > 0 && kidTurns < 40) {
+          var heard = await listenOnce(9000);
+          if (!live) break;
+          status("think");
+          var prompt = null;
+          if (heard && heard.trim()) {
+            silence = 0; kidTurns++;
+            showYouSaid(heard.trim());
+            history.push({ role: "user", text: heard.trim() });
+          } else {
+            silence++;
+            prompt = silence >= 2
+              ? "(The child has been quiet for a while. Warmly invite them to just say any word they like, or ask a super easy yes/no question.)"
+              : "(You couldn't hear the child clearly. Kindly say you didn't catch that and ask your question again, shorter.)";
+          }
+          if (!live) break;
+          if (secsLeft <= 35 && !wrapSent) {
+            wrapSent = true;
+            prompt = "(The call is almost over. Praise the child for talking with you, mention one fun thing from the chat if you can, and say a short, warm goodbye.)";
+          }
+          var reply = await chat(prompt);
+          if (!live) break;
+          history.push({ role: "leo", text: reply });
+          await speak(reply);
+          if (wrapSent) { endCall(true); return; }
         }
-        if (!live) break;
-        if (secsLeft <= 35 && !wrapSent) {
-          wrapSent = true;
-          prompt = "(The call is almost over. Praise the child for talking with you, mention one fun thing from the chat if you can, and say a short, warm goodbye.)";
-        }
-        var reply = await chat(prompt);
-        if (!live) break;
-        history.push({ role: "leo", text: reply });
-        await speak(reply);
-        if (wrapSent) { endCall(true); return; }
+        if (live) endCall(true);
+      } catch (err) {
+        toast("⚠️ Call error: " + (err && err.message ? err.message : err));
+        if (live) endCall(true);
       }
-      if (live) endCall(true);
     }
 
     /* ---------- call lifecycle ---------- */
     function fmt(s) { var m = Math.floor(s / 60), x = s % 60; return m + ":" + (x < 10 ? "0" : "") + x; }
     async function startCall() {
       $("callBtn").disabled = true; $("err").classList.remove("show");
-      getCtx(); ringTone();
+      unlockAudio(); ringTone();
+      // fetch Leo's opener DURING the ring so he speaks the moment we connect
+      var openerP = chat("(The call just connected. Say a short, excited hello" + (CHILD ? " to " + CHILD : "") + " and ask one easy, fun question.)");
       try { await navigator.mediaDevices.getUserMedia({ audio: true }); } catch (e) {}
       setTimeout(function () {
         $("pre").classList.add("hidden");
@@ -330,21 +324,17 @@
         timerIv = setInterval(function () {
           if (!live) return;
           secsLeft--; $("timer").textContent = fmt(Math.max(0, secsLeft));
-          if (secsLeft <= 0) { clearInterval(timerIv); }
+          if (secsLeft <= 0) clearInterval(timerIv);
         }, 1000);
-        blinkIv = setInterval(function () {
-          $("lids").setAttribute("opacity", "1");
-          setTimeout(function () { $("lids").setAttribute("opacity", "0"); }, 150);
-        }, 3800);
-        loop();
-      }, 2300); // let it "ring"
+        loop(openerP);
+      }, 2000);
     }
     function endCall(completed) {
       if (!live) return;
       live = false;
       try { curSrc && curSrc.stop(); } catch (e) {}
       try { sr && sr.stop(); } catch (e) {}
-      clearInterval(timerIv); clearInterval(blinkIv); cancelAnimationFrame(mouthRAF);
+      clearInterval(timerIv); cancelAnimationFrame(talkRAF);
       var talked = TOTAL - Math.max(0, secsLeft);
       $("endTime").innerHTML = fmt(talked) + "<small>talk time</small>";
       $("endTurns").innerHTML = kidTurns + "<small>your turns</small>";
