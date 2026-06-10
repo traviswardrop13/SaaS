@@ -139,16 +139,18 @@
     ];
 
     /* ---- speech (no scoring, just listening) ---- */
-    var audioCtx = null, playing = false, curSrc = null;
+    var audioCtx = null, playing = false, curSrc = null, sayToken = 0;
     function getCtx() { if (!audioCtx) { var AC = window.AudioContext || window.webkitAudioContext; audioCtx = new AC(); } if (audioCtx.state === "suspended") audioCtx.resume(); return audioCtx; }
-    function stopSpeech() { try { curSrc && curSrc.stop(); } catch (e) {} curSrc = null; playing = false; }
+    function stopSpeech() { sayToken++; try { curSrc && curSrc.stop(); } catch (e) {} curSrc = null; playing = false; }
     function say(text) {
       return new Promise(function (resolve) {
         if (!text) return resolve();
+        var tok = ++sayToken;
         playing = true;
         fetch("/api/tts", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text: text, voice: profile.voiceId || "" }) })
           .then(function (r) { if (!r.ok) throw 0; return r.arrayBuffer(); })
           .then(function (buf) {
+            if (tok !== sayToken) { playing = false; return resolve(); } // superseded — don't overlap
             var bytes = new Uint8Array(buf), ctx = getCtx(), n = bytes.byteLength >> 1;
             var ab = ctx.createBuffer(1, n, 24000), ch = ab.getChannelData(0);
             var dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);

@@ -115,7 +115,7 @@
   }
   // Leo speaks slightly pitched-up (cartoon-kid brightness). Players multiply
   // playbackRate by this when playing /api/tts audio.
-  const VOICE_PITCH = 1.15;
+  const VOICE_PITCH = 1.06;
   function saveProfile(patch) { save(PKEY, Object.assign(getProfile(), patch || {})); }
 
   function getProgress() {

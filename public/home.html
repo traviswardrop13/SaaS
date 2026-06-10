@@ -178,7 +178,7 @@
 
     // gentle, dismissible subscribe prompt (non-blocking)
     var iosTipShowing = document.getElementById("iosTip") && document.getElementById("iosTip").style.display === "flex";
-    if (!iosTipShowing && !(Sona.isSubscribed && Sona.isSubscribed()) && localStorage.getItem("sona.subPromptDismissed") !== "1") {
+    if (!iosTipShowing && (g.totals.sessions || 0) >= 1 && !(Sona.isSubscribed && Sona.isSubscribed()) && localStorage.getItem("sona.subPromptDismissed") !== "1") {
       var sb = document.getElementById("subBanner"); sb.style.display = "flex";
       document.getElementById("subDismiss").onclick = function () { sb.style.display = "none"; try { localStorage.setItem("sona.subPromptDismissed", "1"); } catch (e) {} };
     }

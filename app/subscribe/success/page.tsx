@@ -35,9 +35,22 @@ export default function SubscribeSuccess() {
         meet Leo.
       </p>
       <div className="mt-5 max-w-md rounded-2xl bg-sky-50 px-5 py-4 text-left text-sm font-semibold text-sky-800">
-        📱 <strong>Using a different device for your child?</strong> On their
-        iPad/phone, open Sona → <strong>Settings → Restore access</strong> and
-        enter the email you just used. That unlocks Sona there too.
+        <p>
+          📱 <strong>Sona is unlocked on this device.</strong> To unlock it
+          anywhere else (your child&apos;s iPad, the other parent&apos;s phone):
+        </p>
+        <ol className="mt-2 list-decimal space-y-1 pl-5">
+          <li>Open Sona on that device.</li>
+          <li>
+            Tap <strong>⚙️ Settings → Restore access</strong>.
+          </li>
+          <li>Type the email you just paid with — done.</li>
+        </ol>
+        <p className="mt-2">
+          Heads up: when you <strong>add Sona to your home screen</strong>,
+          iPhone treats that app like a brand-new device the first time you
+          open it — just do the same Restore step once and you&apos;re set.
+        </p>
       </div>
       <a
         href="/onboarding.html"

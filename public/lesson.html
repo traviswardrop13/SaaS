@@ -147,7 +147,6 @@
     <div class="bigorb"><img id="startPic" alt="Leo" src="/coach/leo.png" /></div>
     <h1 id="startTitle">Let's practice!</h1>
     <div id="themeTag" style="margin-top:10px;font-family:'Baloo 2';font-weight:800;font-size:14px;color:#e08600;background:#fff3df;border-radius:99px;padding:7px 16px;">⭐ Practice Day</div>
-    <p>Tap below — Leo will say each one, then it's your turn. Allow the mic so he can hear you!</p>
     <button class="cta" id="startBtn">Start</button>
     <div id="err"></div>
   </div>
@@ -329,7 +328,7 @@
               wraf=requestAnimationFrame(tick); })();
           }
         }catch(e){}
-        const ms=document.getElementById("micState"); if(ms) ms.textContent="Listening… tap when you’re done!";
+        const ms=document.getElementById("micState"); if(ms) ms.textContent="Say it now! (tap when done)";
         stopWave=()=>{ if(wraf)cancelAnimationFrame(wraf); try{msrc&&msrc.disconnect();}catch(e){} if(bars)bars.remove(); if(ico)ico.style.display=""; if(ms)ms.textContent=""; };
         micBtn.classList.add("rec"); micBtn.onclick=finish; setTimeout(finish,maxMs);
       });
@@ -381,14 +380,22 @@
         '<div class="cue">'+(window.Mouth?Mouth.hint(a.snd||SOUND):(CUE[a.snd||SOUND]||""))+'</div>'+
         '<button class="audiobtn sm" id="replay" title="Hear it">'+audioSVG()+'</button>'+
         '<button class="mic" id="micBtn" title="Say it">'+micSVG()+'</button>'+
-        '<div class="micstate" id="micState">Tap the mic, then say it!</div>'+
-        '<button class="skip" id="skipBtn">Can’t say it now</button>';
+        '<div class="micstate" id="micState">Listen…</div>'+
+        '<button class="skip" id="skipBtn">Skip</button>';
       act.appendChild(wrap);
-      $("replay").onclick=()=>say(a.text);
-      $("skipBtn").onclick=()=>answer(true,"Skipped — that’s okay!");
-      $("micBtn").onclick=async()=>{ if(speaking) return; const mb=$("micBtn"); mb.onclick=null;
-        const res=await recordTurn(mb); const ok=await scoreSay(a,res.blob,res.transcript); answer(ok, ok?("You said “"+a.label+"”"):("Try “"+a.label+"” again")); };
-      setTimeout(async()=>{ if(a.intro) await say(a.intro); if(a.say) await say(a.say); else say(a.text); }, 250);
+      // Leo speaks, then the mic starts LISTENING by itself — no tap needed.
+      let started=false, answered=false;
+      const doRecord=async()=>{
+        if(started || answered) return; started=true;
+        const res=await recordTurn($("micBtn"));
+        if(answered) return; answered=true;
+        const ok=await scoreSay(a,res.blob,res.transcript);
+        answer(ok, ok?("You said “"+a.label+"”"):("Try “"+a.label+"” again"));
+      };
+      $("replay").onclick=()=>{ if(!started) say(a.text); };
+      $("skipBtn").onclick=()=>{ if(answered) return; answered=true; answer(true,"Skipped — that’s okay!"); };
+      $("micBtn").onclick=doRecord;
+      setTimeout(async()=>{ if(a.intro) await say(a.intro); if(a.say) await say(a.say); else await say(a.text); doRecord(); }, 250);
     }
 
     /* PICK THE PICTURE (hear word -> tap emoji) */

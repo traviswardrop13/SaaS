@@ -91,7 +91,7 @@ fs.mkdirSync(COACH, { recursive: true });
 const srcPath = process.argv[2] || (fs.existsSync("/tmp/leo_icon_src.png") ? "/tmp/leo_icon_src.png" : path.join(COACH, "leo-icon.png"));
 
 const src = decodePNG(fs.readFileSync(srcPath));
-if (process.argv[2] !== path.join(COACH, "leo-icon.png")) keyOutBackground(src.data, src.width, src.height);
+if (path.resolve(srcPath) !== path.join(COACH, "leo-icon.png")) keyOutBackground(src.data, src.width, src.height);
 const head = crop(src.data, src.width, bbox(src.data, src.width, src.height));
 // save a transparent, downscaled head for re-runs / reuse (area-averaged = crisp)
 const m = Math.min(1, 1280 / Math.max(head.width, head.height)), hw = Math.round(head.width * m), hh = Math.round(head.height * m);
@@ -101,6 +101,6 @@ console.log("wrote coach/leo-icon.png", hw + "x" + hh);
 
 // icons are rendered straight from the full-res head in a single area-downscale
 for (const [sz, name] of [[180, "apple-touch-icon.png"], [192, "icon-192.png"], [512, "icon-512.png"]]) {
-  fs.writeFileSync(path.join(PUB, name), icon(head, sz, 0.92));
+  fs.writeFileSync(path.join(PUB, name), icon(head, sz, 0.85));
   console.log("wrote", name, sz + "x" + sz);
 }
