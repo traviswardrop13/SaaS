@@ -212,13 +212,18 @@
     let STAGE = params.has("stage") ? parseInt(params.get("stage"),10) : (window.Sona ? Sona.stageOf(SOUND) : 0);
     if (isNaN(STAGE) || STAGE < 0) STAGE = 0;
     if (STAGE > 2) STAGE = 2;
+    // daily mode: one time-budgeted session across every focus sound
+    const DAILY = params.get("daily") === "1";
+    const MINUTES = Math.max(3, parseInt(profile.dailyMinutes, 10) || 5);
 
     // daily variety: a fresh pick from the sound's word pool + theme of the day
     const POOL = (window.Sona && Sona.WORDS && Sona.WORDS[SOUND]) ? Sona.WORDS[SOUND] : PLAN.words.map(w=>({w:w.display,e:w.emoji}));
     const DAYWORDS = (window.Sona && Sona.dailyPick) ? Sona.dailyPick(POOL, 4, SOUND.charCodeAt(0)) : POOL.slice(0,4);
     const THEME = (window.Sona && Sona.dayTheme) ? Sona.dayTheme() : { e:"⭐", n:"Practice Day" };
+    const planOf = (s)=> SOUND_PLAN[s] || SOUND_PLAN.R;
+    const poolOf = (s)=> (window.Sona && Sona.WORDS && Sona.WORDS[s]) ? Sona.WORDS[s] : POOL;
     const BUDDY = (window.Sona ? Sona.characterById(profile.character) : { img:"/coach/leo.png", emoji:"🦁" });
-    const ISO_AGAIN = ["Again — say it!","One more big "+SOUND+"!","Nice — again!","Keep going!","One more time!","Last one!"];
+    const ISO_AGAIN = (s)=>["Again — say it!","One more big "+s+"!","Nice — again!","Keep going!","One more time!","Last one!"];
     const PRAISE = ["Nice job!","Great!","Awesome!","Perfect!","You got it!","Woohoo!"];
     const TRYAGAIN = ["Good try!","Almost!","Keep going!","Nice effort!"];
 
@@ -226,32 +231,53 @@
     const pick = (a)=>a[Math.floor(Math.random()*a.length)];
     const shuffle = (a)=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));const t=a[i];a[i]=a[j];a[j]=t;}return a;};
 
-    function otherWords(){ const o=[]; const W=(window.Sona&&Sona.WORDS)||{}; Object.keys(W).forEach(k=>{ if(k!==SOUND) W[k].forEach(w=>o.push(w.e)); }); return o.length?o:EXTRA; }
-    function distractors(exclude, n){
-      const pool = shuffle(POOL.map(w=>w.e).concat(otherWords()).concat(EXTRA).filter(e=>e!==exclude));
+    function otherWords(s){ const o=[]; const W=(window.Sona&&Sona.WORDS)||{}; Object.keys(W).forEach(k=>{ if(k!==s) W[k].forEach(w=>o.push(w.e)); }); return o.length?o:EXTRA; }
+    function distractors(exclude, n, s){
+      const pool = shuffle(poolOf(s).map(w=>w.e).concat(otherWords(s)).concat(EXTRA).filter(e=>e!==exclude));
       const out=[]; for(const e of pool){ if(out.indexOf(e)===-1){ out.push(e); if(out.length>=n) break; } } return out;
     }
 
-    function buildQueue(stage){
-      let q=[];
-      if(stage===0){
-        for(let k=0;k<5;k++) q.push({type:"say",text:PLAN.isolation.scoreText,label:PLAN.isolation.display,level:"isolation",mode:"phoneme",isLetter:true,say:k===0?PLAN.isolation.say:pick(ISO_AGAIN)});
-        q.push({type:"findSound"});
-        return q;
+    // generate n activities for one sound at one stage (cycles material, so it
+    // can stretch to fill any time budget)
+    function genFor(s, stage, n){
+      const plan=planOf(s), pool=poolOf(s);
+      const words=(window.Sona&&Sona.dailyPick)?Sona.dailyPick(pool, Math.min(pool.length,8), s.charCodeAt(0)):pool.slice(0,8);
+      const q=[]; let wi=0, si=0, k=0;
+      while(q.length<n){
+        if(stage===0){
+          if(k%4===3) q.push({type:"findSound",snd:s});
+          else q.push({type:"say",snd:s,text:plan.isolation.scoreText,label:plan.isolation.display,level:"isolation",mode:"phoneme",isLetter:true,say:(k===0?plan.isolation.say:pick(ISO_AGAIN(s)))});
+        } else if(stage===1){
+          if(k%4===3) q.push({type:"findSound",snd:s});
+          else { const sy=plan.syllables[si++ % plan.syllables.length]; q.push({type:"say",snd:s,text:sy.scoreText,label:sy.display,level:"syllable",mode:"phoneme",isLetter:true}); }
+        } else {
+          const m=k%4;
+          if(m===1) q.push({type:"pick",snd:s});
+          else if(m===3) q.push({type:"findSound",snd:s});
+          else { const w=words[wi++ % words.length]; q.push({type:"say",snd:s,text:w.w,label:w.w,emoji:w.e,level:"word",mode:"full"}); }
+        }
+        k++;
       }
-      if(stage===1){
-        PLAN.syllables.forEach(s=>q.push({type:"say",text:s.scoreText,label:s.display,level:"syllable",mode:"phoneme",isLetter:true}));
-        PLAN.syllables.forEach(s=>q.push({type:"say",text:s.scoreText,label:s.display,level:"syllable",mode:"phoneme",isLetter:true}));
-        q.push({type:"findSound"});
-        return shuffle(q).slice(0,7);
-      }
-      DAYWORDS.forEach(w=>q.push({type:"say",text:w.w,label:w.w,emoji:w.e,level:"word",mode:"full"}));
-      q.push({type:"pick"}); q.push({type:"pick"}); q.push({type:"findSound"});
-      // Game Day Friday: trade a say-it for an extra round of games
-      if (new Date().getDay() === 5) { q.push({type:"pick"}); q = q.filter((x,k)=>!(x.type==="say"&&k===0)); }
-      return shuffle(q).slice(0,8);
+      return q;
     }
-    const QUEUE = buildQueue(STAGE);
+    // assemble: a focused stage session, or the daily mix — same total length
+    // whether the child works on one sound or five (expand vs split)
+    const STAGE_USED = {};
+    let QUEUE;
+    if (DAILY) {
+      const targets = ((profile.focusSounds&&profile.focusSounds.length)?profile.focusSounds:[SOUND]).filter(s=>SOUND_PLAN[s]);
+      const list = targets.length?targets:[SOUND];
+      const total = Math.max(8, Math.round(MINUTES*60/24)); // ≈24s per activity
+      const base = Math.floor(total/list.length), extra = total%list.length;
+      QUEUE = [];
+      list.forEach((s,ix)=>{ const st=Math.min(window.Sona?Sona.stageOf(s):0,2); STAGE_USED[s]=st; QUEUE=QUEUE.concat(genFor(s,st, base+(ix<extra?1:0))); });
+      let prev=null;
+      QUEUE.forEach((a2,k2)=>{ if(a2.snd!==prev){ if(k2>0) a2.intro="Now the "+a2.snd+" sound!"; prev=a2.snd; } });
+    } else {
+      STAGE_USED[SOUND]=STAGE;
+      QUEUE = genFor(SOUND, STAGE, [6,7,8][STAGE]||8);
+    }
+
 
     /* ---- audio ---- */
     let audioCtx=null;
@@ -276,7 +302,7 @@
       });
     }
     async function scoreSay(a,blob,transcript){
-      if(useSpeechAce && blob){ try{ const fd=new FormData(); fd.append("audio",new File([blob],"a.webm",{type:blob.type||"audio/webm"})); fd.append("text",a.text); fd.append("targetSound",SOUND); fd.append("userId",CHILD||"child"); fd.append("mode",a.mode||"full"); const r=await fetch("/api/score",{method:"POST",body:fd}); const j=await r.json(); if(j&&j.ok) return j.rating!=="tryAgain"; }catch(e){} }
+      if(useSpeechAce && blob){ try{ const fd=new FormData(); fd.append("audio",new File([blob],"a.webm",{type:blob.type||"audio/webm"})); fd.append("text",a.text); fd.append("targetSound",(a.snd||SOUND)); fd.append("userId",CHILD||"child"); fd.append("mode",a.mode||"full"); const r=await fetch("/api/score",{method:"POST",body:fd}); const j=await r.json(); if(j&&j.ok) return j.rating!=="tryAgain"; }catch(e){} }
       return matchText(transcript,a.text);
     }
 
@@ -292,7 +318,7 @@
     function hideCheck(){ checkBtn.classList.add("disabled"); checkBtn.onclick=null; }
 
     function answer(ok, sub){
-      results.push({ word: (QUEUE[i].label||SOUND), sound: SOUND, level:(QUEUE[i].level||"word"), ok });
+      results.push({ word: (QUEUE[i].label||QUEUE[i].snd||SOUND), sound: (QUEUE[i].snd||SOUND), level:(QUEUE[i].level||"word"), ok });
       if(ok){ combo++; const bonus=combo>=3?1:0; xp+=10; coins+=2+bonus; if(window.Sona){Sona.sfx.correct(); Sona.pop("+"+(2+bonus)+" 🪙",{color:"#ff9600",y:window.innerHeight*0.28});} if(combo>=2) showCombo(combo); }
       else { combo=0; if(window.Sona) Sona.sfx.wrong(); }
       setCoins();
@@ -319,8 +345,8 @@
       wrap.innerHTML =
         '<div class="leobubble"><img src="'+(BUDDY.img||"/coach/leo.png")+'" alt="Leo"/><div class="bub">'+a.label+'</div></div>'+
         (showPic ? '<div class="bigpic">'+a.emoji+'</div>' : '<div class="bigword">'+a.label+'</div>')+
-        (a.isLetter && window.Mouth ? '<div id="mouthCue">'+Mouth.svg(SOUND)+'</div>' : '')+
-        '<div class="cue">'+(window.Mouth?Mouth.hint(SOUND):(CUE[SOUND]||""))+'</div>'+
+        (a.isLetter && window.Mouth ? '<div id="mouthCue">'+Mouth.svg(a.snd||SOUND)+'</div>' : '')+
+        '<div class="cue">'+(window.Mouth?Mouth.hint(a.snd||SOUND):(CUE[a.snd||SOUND]||""))+'</div>'+
         '<button class="audiobtn sm" id="replay" title="Hear it">'+audioSVG()+'</button>'+
         '<button class="mic" id="micBtn" title="Say it">'+micSVG()+'</button>'+
         '<button class="skip" id="skipBtn">Can’t say it now</button>';
@@ -329,13 +355,13 @@
       $("skipBtn").onclick=()=>answer(true,"Skipped — that’s okay!");
       $("micBtn").onclick=async()=>{ if(speaking) return; const mb=$("micBtn"); mb.onclick=null;
         const res=await recordTurn(mb); const ok=await scoreSay(a,res.blob,res.transcript); answer(ok, ok?("You said “"+a.label+"”"):("Try “"+a.label+"” again")); };
-      setTimeout(()=>say(a.text), 250);
+      setTimeout(async()=>{ if(a.intro) await say(a.intro); if(a.say) await say(a.say); else say(a.text); }, 250);
     }
 
     /* PICK THE PICTURE (hear word -> tap emoji) */
     function renderPick(a){
-      const wd=pick(POOL); const w={ display:wd.w, emoji:wd.e, scoreText:wd.w };
-      const opts=shuffle([{e:w.emoji,ok:true}].concat(distractors(w.emoji,3).map(e=>({e,ok:false}))));
+      const wd=pick(poolOf(a.snd||SOUND)); const w={ display:wd.w, emoji:wd.e, scoreText:wd.w };
+      const opts=shuffle([{e:w.emoji,ok:true}].concat(distractors(w.emoji,3,a.snd||SOUND).map(e=>({e,ok:false}))));
       const head=document.createElement("div");
       head.innerHTML='<div class="qtitle">Tap what you hear</div><div class="audiorow"><button class="audiobtn" id="play">'+audioSVG()+'</button><div class="wave"></div></div>';
       act.appendChild(head);
@@ -345,24 +371,24 @@
       act.appendChild(grid);
       $("play").onclick=()=>say(w.scoreText);
       function armCheck(){ checkBtn.classList.remove("disabled"); checkBtn.onclick=()=>{ hideCheck(); const cards=[...grid.children]; cards.forEach((c,k)=>{ if(opts[k].ok)c.classList.add("right"); }); if(!sel.ok){ const idx=opts.indexOf(sel); cards[idx].classList.add("wrong"); } answer(!!sel.ok, sel.ok?("That’s "+w.display+"!"):("It was "+w.display)); }; }
-      setTimeout(()=>say(w.scoreText), 250);
+      setTimeout(async()=>{ if(a.intro) await say(a.intro); say(w.scoreText); }, 250);
     }
 
     /* FIND THE SOUND (tap all pictures with the target sound) */
     function renderFind(a){
-      const tgs=shuffle(POOL).slice(0,2).map(w=>({e:w.e,ok:true}));
-      const others=shuffle(otherWords()).slice(0,2).map(e=>({e,ok:false}));
+      const tgs=shuffle(poolOf(a.snd||SOUND)).slice(0,2).map(w=>({e:w.e,ok:true}));
+      const others=shuffle(otherWords(a.snd||SOUND)).slice(0,2).map(e=>({e,ok:false}));
       const opts=shuffle(tgs.concat(others));
       const head=document.createElement("div");
-      head.innerHTML='<div class="qtitle">Tap the '+SOUND+' pictures</div><div class="qsub">Pick every picture that starts with the '+SOUND+' sound.</div><div class="audiorow"><button class="audiobtn sm" id="play">'+audioSVG()+'</button><div class="wave"></div></div>';
+      head.innerHTML='<div class="qtitle">Tap the '+(a.snd||SOUND)+' pictures</div><div class="qsub">Pick every picture that starts with the '+(a.snd||SOUND)+' sound.</div><div class="audiorow"><button class="audiobtn sm" id="play">'+audioSVG()+'</button><div class="wave"></div></div>';
       act.appendChild(head);
       const grid=document.createElement("div"); grid.className="cards";
       const chosen=new Set();
       opts.forEach((o,k)=>{ const c=document.createElement("div"); c.className="card"; c.textContent=o.e; c.onclick=()=>{ if(window.Sona)Sona.sfx.tap(); if(chosen.has(k)){chosen.delete(k);c.classList.remove("sel");}else{chosen.add(k);c.classList.add("sel");} const has=chosen.size>0; checkBtn.classList.toggle("disabled",!has); checkBtn.onclick=has?doCheck:null; }; grid.appendChild(c); });
       act.appendChild(grid);
-      $("play").onclick=()=>say(PLAN.isolation.scoreText);
-      function doCheck(){ hideCheck(); const cards=[...grid.children]; let allRight=true; opts.forEach((o,k)=>{ if(o.ok){ cards[k].classList.add("right"); if(!chosen.has(k)) allRight=false; } else if(chosen.has(k)){ cards[k].classList.add("wrong"); allRight=false; } }); answer(allRight, allRight?"You found them all!":("Those are the "+SOUND+" sounds")); }
-      setTimeout(()=>say(PLAN.isolation.scoreText), 250);
+      $("play").onclick=()=>say(planOf(a.snd||SOUND).isolation.scoreText);
+      function doCheck(){ hideCheck(); const cards=[...grid.children]; let allRight=true; opts.forEach((o,k)=>{ if(o.ok){ cards[k].classList.add("right"); if(!chosen.has(k)) allRight=false; } else if(chosen.has(k)){ cards[k].classList.add("wrong"); allRight=false; } }); answer(allRight, allRight?"You found them all!":("Those are the "+(a.snd||SOUND)+" sounds")); }
+      setTimeout(async()=>{ if(a.intro) await say(a.intro); say(planOf(a.snd||SOUND).isolation.scoreText); }, 250);
     }
 
     /* ---- finish ---- */
@@ -375,11 +401,15 @@
       const firstToday = !!(window.Sona && Sona.getProgress().streak.lastDate !== new Date().toISOString().slice(0,10));
       if(firstToday) coins+=10;
       setCoins();
-      if(window.Sona){ Sona.recordSession({words:results}); Sona.completeStage(SOUND,STAGE,passed); Sona.addCoins(coins); }
+      if(window.Sona){ Sona.recordSession({words:results});
+        const bys={}; results.forEach(r=>{ (bys[r.sound]=bys[r.sound]||[]).push(r.ok); });
+        Object.keys(bys).forEach(s=>{ const arr=bys[s]; if(arr.length>=3){ const p=arr.filter(Boolean).length/arr.length>=0.6; Sona.completeStage(s, (STAGE_USED[s]!=null?STAGE_USED[s]:STAGE), p); } });
+        Sona.addCoins(coins); }
       if(firstToday){ const r=document.createElement("div"); r.className="reward"; r.innerHTML="+10<small>☀️ daily bonus</small>"; document.querySelector(".rewards").appendChild(r); }
       $("doneStars").textContent="★".repeat(stars)+"☆".repeat(3-stars);
       const NEXT=["the letter","syllables","words"];
-      $("doneSub").textContent = passed&&STAGE<2 ? ("Next up: "+NEXT[STAGE+1]+"! 🎉") : passed ? ("You finished the "+SOUND+" sound! 🏆") : ("Let’s practice this one again. 💪");
+      $("doneSub").textContent = DAILY ? ("Daily practice done, "+CHILD+" — "+correct+" of "+results.length+" sounded great! 🎉")
+        : (passed&&STAGE<2 ? ("Next up: "+NEXT[STAGE+1]+"! 🎉") : passed ? ("You finished the "+SOUND+" sound! 🏆") : ("Let’s practice this one again. 💪"));
       $("xpReward").innerHTML="+"+xp+"<small>XP</small>";
       $("coinReward").innerHTML="+"+coins+"<small>🪙 coins</small>";
       $("done").classList.remove("hidden");
@@ -399,13 +429,13 @@
     function leave(){ try{ micStream&&micStream.getTracks().forEach(t=>t.stop()); }catch{} location.href="/home.html"; }
 
     const TITLES=["Warm up the "+SOUND+" sound!", SOUND+" syllables!", SOUND+" words!"];
-    $("startTitle").textContent=TITLES[STAGE]||("Practice "+SOUND+"!");
-    $("themeTag").textContent = THEME.e + " " + THEME.n + " — new words today!";
+    $("startTitle").textContent = DAILY ? ("Today's "+MINUTES+"-minute practice!") : (TITLES[STAGE]||("Practice "+SOUND+"!"));
+    $("themeTag").textContent = THEME.e + " " + THEME.n + (DAILY ? (" — about " + MINUTES + " minutes") : " — new words today!");
     if(BUDDY.img){ $("startPic").src=BUDDY.img; }
     $("startBtn").onclick=start;
     $("close").onclick=leave;
     $("doneBtn").onclick=(e)=>{ e.preventDefault(); leave(); };
-    $("againBtn").onclick=()=>{ location.href="/lesson.html?sound="+encodeURIComponent(SOUND)+"&stage="+STAGE+(CHILD?("&name="+encodeURIComponent(CHILD)):""); };
+    $("againBtn").onclick=()=>{ location.href = DAILY ? ("/lesson.html?daily=1"+(CHILD?("&name="+encodeURIComponent(CHILD)):"")) : ("/lesson.html?sound="+encodeURIComponent(SOUND)+"&stage="+STAGE+(CHILD?("&name="+encodeURIComponent(CHILD)):"")); };
     window.addEventListener("pagehide",()=>{ try{ micStream&&micStream.getTracks().forEach(t=>t.stop()); }catch{} });
     console.log("lesson ready ·",SOUND,"stage",STAGE,"·",QUEUE.length,"activities");
   </script>

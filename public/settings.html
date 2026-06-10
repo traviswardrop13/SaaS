@@ -34,6 +34,12 @@
       <div class="toggle"><input type="checkbox" id="soundOn" /><label for="soundOn">Sound effects (taps, chimes, celebrations)</label></div>
       <div class="toggle"><input type="checkbox" id="cloudScoring" /><label for="cloudScoring">Score pronunciation in the cloud (SpeechAce) — sends the child's recording for phoneme‑level scoring</label></div>
 
+      <label class="field" for="dailyMinutes">Daily practice length</label>
+      <select id="dailyMinutes">
+        <option value="5">5 minutes a day</option>
+        <option value="10">10 minutes a day</option>
+      </select>
+
       <label class="field" for="coachName">Coach name</label>
       <input id="coachName" type="text" placeholder="Coach" />
 
@@ -119,6 +125,7 @@
         voiceEl = document.getElementById("voiceOn"),
         soundEl = document.getElementById("soundOn"),
         cloudEl = document.getElementById("cloudScoring"),
+        dailyEl = document.getElementById("dailyMinutes"),
         focusAreaEl = document.getElementById("focusArea"),
         slpEl = document.getElementById("slpEvaluated"),
         goalsEl = document.getElementById("goals"),
@@ -128,6 +135,7 @@
     voiceEl.checked = p.voiceOn !== false;
     soundEl.checked = p.soundOn !== false;
     cloudEl.checked = p.cloudScoring !== false;
+    dailyEl.value = String(p.dailyMinutes || 5);
     focusAreaEl.value = p.focusArea || "articulation";
     slpEl.value = p.slpEvaluated || "";
     goalsEl.value = p.goals || "";
@@ -140,7 +148,7 @@
       wrap.appendChild(b);
     });
     document.getElementById("save").onclick = function () {
-      Sona.saveProfile({ childName: childEl.value.trim(), coachName: coachEl.value.trim() || "Coach", voiceOn: voiceEl.checked, soundOn: soundEl.checked, cloudScoring: cloudEl.checked, focusArea: focusAreaEl.value, slpEvaluated: slpEl.value, goals: goalsEl.value.trim(), focusSounds: [].concat(Array.from(sel)) });
+      Sona.saveProfile({ childName: childEl.value.trim(), coachName: coachEl.value.trim() || "Coach", voiceOn: voiceEl.checked, soundOn: soundEl.checked, cloudScoring: cloudEl.checked, dailyMinutes: parseInt(dailyEl.value, 10) || 5, focusArea: focusAreaEl.value, slpEvaluated: slpEl.value, goals: goalsEl.value.trim(), focusSounds: [].concat(Array.from(sel)) });
       var s = document.getElementById("saved"); s.style.display = "inline"; setTimeout(function () { s.style.display = "none"; }, 1800);
     };
     document.getElementById("reset").onclick = function () {
