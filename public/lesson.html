@@ -47,12 +47,12 @@
     #practice.good{box-shadow:0 0 0 6px rgba(34,197,94,.55),0 26px 70px rgba(15,39,66,.22);}
     #practice.bad{box-shadow:0 0 0 6px rgba(239,68,68,.5),0 26px 70px rgba(15,39,66,.22);}
     #pracPic{font-size:96px;line-height:1;}
-    #pracPic.letter{font-family:"Baloo 2";font-weight:800;color:var(--blue-d);font-size:90px;letter-spacing:1px;}
+    #pracPic.letter{font-family:"Baloo 2";font-weight:800;color:var(--blue-d);font-size:66px;letter-spacing:1px;}
     #pracWord{font-family:"Baloo 2";font-weight:800;font-size:34px;color:var(--blue-d);}
-    #pracCue{display:none;align-items:center;gap:10px;margin-top:2px;max-width:100%;}
-    #mouthImg{width:48px;height:48px;object-fit:contain;border-radius:10px;background:#eef5ff;display:none;}
-    #mouthImg.show{display:block;}
-    #cueHow{font-family:"Nunito";font-weight:700;color:#5b6b80;font-size:13px;line-height:1.2;text-align:left;}
+    #pracCue{display:none;flex-direction:column;align-items:center;gap:6px;margin-top:2px;max-width:100%;}
+    #mouthCue{width:118px;height:116px;}
+    #mouthCue .mc{width:100%;height:100%;display:block;}
+    #cueHow{font-family:"Nunito";font-weight:700;color:#5b6b80;font-size:13px;line-height:1.25;text-align:center;max-width:210px;}
     #pracChip{font-family:"Baloo 2";font-weight:800;font-size:12px;letter-spacing:.08em;text-transform:uppercase;
       color:var(--orange-d);background:#ffe7d3;padding:5px 12px;border-radius:99px;}
     #hearBtn{margin-top:12px;border:none;cursor:pointer;font-family:"Baloo 2";font-weight:800;font-size:15px;color:#fff;
@@ -119,7 +119,7 @@
     <div id="practice">
       <div id="pracPic">🐰</div>
       <div id="pracWord">rabbit</div>
-      <div id="pracCue"><img id="mouthImg" alt="" /><span id="cueHow"></span></div>
+      <div id="pracCue"><div id="mouthCue"></div><span id="cueHow"></span></div>
       <div id="pracChip">R sound</div>
       <button id="hearBtn" aria-label="Hear it">🔊&nbsp;&nbsp;Hear it</button>
     </div>
@@ -157,6 +157,7 @@
   </div>
 
   <script src="/sona.js"></script>
+  <script src="/mouthcue.js"></script>
   <script type="module">
     const params = new URLSearchParams(location.search);
     const profile = (window.Sona ? Sona.getProfile() : { childName:"", focusSounds:[], voiceOn:true, cloudScoring:true });
@@ -207,7 +208,7 @@
 
     const $ = (id) => document.getElementById(id);
     const lionWrap=$("lionWrap"), mouthEl=$("mouth"), eyeL=$("eyeL"), eyeR=$("eyeR"), coachImg=$("coachImg");
-    const captionEl=$("caption"), practice=$("practice"), pracPic=$("pracPic"), pracWord=$("pracWord"), pracCue=$("pracCue"), pracChip=$("pracChip"), mouthImg=$("mouthImg"), cueHow=$("cueHow");
+    const captionEl=$("caption"), practice=$("practice"), pracPic=$("pracPic"), pracWord=$("pracWord"), pracCue=$("pracCue"), pracChip=$("pracChip"), mouthCue=$("mouthCue"), cueHow=$("cueHow");
     const mic=$("mic"), micHint=$("micHint"), dotsEl=$("dots");
     const startScreen=$("start"), doneScreen=$("done"), startBtn=$("startBtn"), errEl=$("err"), hearBtn=$("hearBtn");
 
@@ -259,11 +260,8 @@
       } else {
         pracPic.className="letter"; pracPic.textContent = s.display;
         pracWord.style.display="none";
-        cueHow.textContent = CUE[s.sound] || "";
-        mouthImg.classList.remove("show");
-        mouthImg.onload=function(){ mouthImg.classList.add("show"); };
-        mouthImg.onerror=function(){ mouthImg.classList.remove("show"); };
-        mouthImg.src = "/coach/mouth/" + s.sound + ".png";
+        mouthCue.innerHTML = (window.Mouth ? Mouth.svg(s.sound) : "");
+        cueHow.textContent = (window.Mouth && Mouth.hint(s.sound)) || CUE[s.sound] || "";
         pracCue.style.display="flex";
       }
       practice.classList.add("show");
