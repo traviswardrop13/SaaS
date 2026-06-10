@@ -81,34 +81,36 @@ function Hero() {
   return (
     <section className="relative overflow-hidden">
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-sky-50 to-white" />
-      <div className="relative mx-auto grid max-w-6xl items-center gap-12 px-5 py-16 sm:py-24 lg:grid-cols-2">
-        <div>
-          <span className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-sky-600 shadow-chunky-sm">
-            Designed with a licensed speech-language pathologist
-          </span>
-          <h1 className="mt-5 font-display text-4xl font-extrabold leading-[1.05] text-gray-900 sm:text-6xl">
-            Speech practice your kid{" "}
-            <span className="text-sky-600">actually wants to do</span>.
-          </h1>
-          <p className="mt-5 max-w-xl text-lg leading-relaxed text-gray-600">
-            Sona turns tricky sounds into a daily game with a friendly buddy, Leo
-            — bite-size practice, streaks, and stars. Built with a licensed
-            speech-language pathologist. (Now in beta.)
-          </p>
-          <div className="mt-8 flex flex-wrap items-center gap-4">
-            <a href="/onboarding.html" className="btn-primary text-lg">
-              Start free
-            </a>
-            <a href="#pricing" className="btn-ghost text-lg">
-              See pricing
-            </a>
-          </div>
-          <p className="mt-4 text-sm font-semibold text-gray-500">
-            7-day free trial · works in your browser · iPhone app coming soon
-          </p>
+      <div className="relative mx-auto max-w-2xl px-5 py-20 text-center sm:py-28">
+        <img
+          src="/coach/leo-icon.png"
+          alt="Leo the lion"
+          className="mx-auto h-28 w-28 object-contain drop-shadow"
+        />
+        <h1 className="mt-6 font-display text-4xl font-extrabold leading-[1.05] text-gray-900 sm:text-6xl">
+          Help your child find their words.
+        </h1>
+        <p className="mx-auto mt-5 max-w-xl text-lg leading-relaxed text-gray-600">
+          A daily 10-minute speech-practice app — fun, gamified, and built with a
+          licensed speech-language pathologist.
+        </p>
+        <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
+          <a href="/onboarding.html" className="btn-primary text-lg">
+            Start free
+          </a>
+          <a href="#pricing" className="btn-ghost text-lg">
+            See pricing
+          </a>
         </div>
-
-        <CoachStage />
+        <div className="mx-auto mt-7 inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-bold text-gray-600 shadow-chunky-sm">
+          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-grass-500 text-xs font-extrabold text-white">
+            ✓
+          </span>
+          Built by a licensed speech-language pathologist
+        </div>
+        <p className="mt-4 text-sm font-semibold text-gray-500">
+          7-day free trial · works in your browser · add to your home screen
+        </p>
       </div>
     </section>
   );
