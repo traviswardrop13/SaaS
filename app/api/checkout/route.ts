@@ -12,8 +12,8 @@ import Stripe from "stripe";
  */
 export const runtime = "nodejs";
 
-const MONTHLY_CENTS = 1699; // $16.99 / month (no free trial)
-const ANNUAL_CENTS = 11999; // $119.99 / year (~$10/mo) with a 7-day free trial
+const MONTHLY_CENTS = 799; // $7.99 / month (not offered during beta)
+const ANNUAL_CENTS = 5900; // $59 / year (~$4.92/mo) — founding beta, 7-day free trial
 
 export async function POST(req: NextRequest) {
   const key = process.env.STRIPE_SECRET_KEY;

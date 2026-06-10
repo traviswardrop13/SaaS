@@ -15,6 +15,7 @@ header.app{display:flex;align-items:center;justify-content:space-between;gap:10p
 .brand{display:flex;align-items:center;gap:9px;font-weight:800;font-size:22px;color:var(--ink);}
 .brand .leo{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;
   background:linear-gradient(160deg,#ffd9b0,#ffedd5);}
+.brand .beta{font-size:10px;font-weight:800;letter-spacing:.06em;color:#92400e;background:#fde68a;border-radius:99px;padding:2px 7px;align-self:center;}
 /* streak + xp pills */
 .pills{display:flex;align-items:center;gap:8px;}
 .pill{display:flex;align-items:center;gap:5px;font-weight:800;font-size:15px;background:#fff;border:1px solid var(--line);

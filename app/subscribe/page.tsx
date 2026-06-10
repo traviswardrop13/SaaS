@@ -17,7 +17,7 @@ function SubscribeInner() {
   const params = useSearchParams();
   const canceled = params.get("canceled") === "1";
   const [email, setEmail] = useState("");
-  const [annual, setAnnual] = useState(false);
+  const annual = true; // founding beta is annual-only
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -64,31 +64,23 @@ function SubscribeInner() {
       <div className="mx-auto grid max-w-4xl items-start gap-8 px-5 py-10 lg:grid-cols-2">
         {/* Plan summary */}
         <div className="rounded-3xl bg-white p-7 shadow-chunky ring-2 ring-sky-500">
-          <p className="text-sm font-extrabold uppercase tracking-wide text-sky-600">
-            Sona Premium
-          </p>
-          <div className="mt-3 inline-flex rounded-full bg-gray-100 p-1 text-sm font-bold">
-            <button
-              type="button"
-              onClick={() => setAnnual(false)}
-              className={`rounded-full px-4 py-1.5 ${!annual ? "bg-white text-gray-900 shadow" : "text-gray-500"}`}
-            >
-              Monthly
-            </button>
-            <button
-              type="button"
-              onClick={() => setAnnual(true)}
-              className={`rounded-full px-4 py-1.5 ${annual ? "bg-white text-gray-900 shadow" : "text-gray-500"}`}
-            >
-              Yearly <span className="text-grass-600">· save</span>
-            </button>
+          <div className="flex items-center gap-2">
+            <p className="text-sm font-extrabold uppercase tracking-wide text-sky-600">
+              Founding Family
+            </p>
+            <span className="rounded-full bg-amber-400 px-2 py-0.5 text-[11px] font-extrabold uppercase tracking-wide text-amber-900">
+              Beta
+            </span>
           </div>
           <div className="mt-3 flex items-end gap-1">
-            <span className="font-display text-5xl font-extrabold text-gray-900">{annual ? "$9.99" : "$16.99"}</span>
-            <span className="mb-1.5 font-bold text-gray-500">/mo</span>
+            <span className="font-display text-5xl font-extrabold text-gray-900">$59</span>
+            <span className="mb-1.5 font-bold text-gray-500">/year</span>
           </div>
           <p className="mt-1 text-sm font-bold text-grass-600">
-            {annual ? "Billed yearly ($119.99) · 7-day free trial · cancel anytime" : "Billed monthly · cancel anytime"}
+            ≈ $4.92/mo · 7-day free trial · founding price locked for life
+          </p>
+          <p className="mt-1 text-xs font-semibold text-gray-400">
+            Founding Families — limited early spots
           </p>
           <ul className="mt-6 space-y-3">
             {FEATURES.map((f) => (
@@ -110,6 +102,12 @@ function SubscribeInner() {
           <p className="mt-1 text-gray-600">
             Enter your email and we&apos;ll take you to secure checkout.
           </p>
+
+          <div className="mt-4 rounded-2xl bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800">
+            <strong>Beta:</strong> Sona is brand new — built with a licensed SLP and
+            improving every week. Cancel anytime, and we&apos;ll refund you if it&apos;s
+            not a fit.
+          </div>
 
           {canceled ? (
             <div className="mt-4 rounded-2xl bg-sky-50 px-4 py-3 text-sm font-semibold text-sky-700">
@@ -141,7 +139,7 @@ function SubscribeInner() {
             disabled={busy}
             className="mt-5 w-full rounded-2xl bg-grass-500 px-6 py-3.5 font-display font-extrabold uppercase tracking-wide text-white shadow-chunky transition hover:bg-grass-600 active:translate-y-1 active:shadow-chunky-sm disabled:opacity-60"
           >
-            {busy ? "Loading…" : annual ? "Start 7-day free trial" : "Subscribe — $16.99/mo"}
+            {busy ? "Loading…" : "Start 7-day free trial"}
           </button>
 
           <p className="mt-3 text-center text-xs text-gray-400">

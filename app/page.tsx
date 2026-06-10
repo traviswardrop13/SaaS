@@ -13,9 +13,9 @@ import Link from "next/link";
  * audio isn't stored. No medical/outcome claims.
  */
 export const metadata = {
-  title: "Sona — your child's at-home speech coach",
+  title: "Sona — fun daily speech practice for kids (beta)",
   description:
-    "A premium at-home speech coach for kids, designed with a licensed speech-language pathologist. Live coaching sessions, a personalized plan, and progress parents can see.",
+    "A friendly daily speech-practice app for kids, built with a licensed speech-language pathologist. A buddy named Leo, a personalized plan, streaks, and progress parents can see. Now in beta.",
 };
 
 export default function Landing() {
@@ -48,28 +48,28 @@ function Header() {
           <span className="font-display text-2xl font-extrabold text-sky-600">
             Sona
           </span>
+          <span className="rounded-full bg-amber-400 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-amber-900">
+            Beta
+          </span>
         </Link>
         <nav className="hidden items-center gap-7 text-sm font-bold text-gray-600 sm:flex">
           <a href="#how" className="hover:text-gray-900">
             How it works
-          </a>
-          <a href="#coach" className="hover:text-gray-900">
-            The coach
           </a>
           <a href="#pricing" className="hover:text-gray-900">
             Pricing
           </a>
         </nav>
         <div className="flex items-center gap-3">
-          <Link
-            href="/dashboard"
+          <a
+            href="/home.html"
             className="hidden text-sm font-bold text-gray-600 hover:text-gray-900 sm:block"
           >
-            Sign in
-          </Link>
-          <Link href="/welcome" className="btn-primary text-sm">
+            Open app
+          </a>
+          <a href="/onboarding.html" className="btn-primary text-sm">
             Start free
-          </Link>
+          </a>
         </div>
       </div>
     </header>
@@ -87,24 +87,24 @@ function Hero() {
             Designed with a licensed speech-language pathologist
           </span>
           <h1 className="mt-5 font-display text-4xl font-extrabold leading-[1.05] text-gray-900 sm:text-6xl">
-            Your child&apos;s at-home{" "}
-            <span className="text-sky-600">speech coach</span>.
+            Speech practice your kid{" "}
+            <span className="text-sky-600">actually wants to do</span>.
           </h1>
           <p className="mt-5 max-w-xl text-lg leading-relaxed text-gray-600">
-            Sona is a live, friendly coach that practices tricky sounds with your
-            child — listening, guiding, and cheering them on in real time. A
-            personalized plan, daily-life practice, and progress you can see.
+            Sona turns tricky sounds into a daily game with a friendly buddy, Leo
+            — bite-size practice, streaks, and stars. Built with a licensed
+            speech-language pathologist. (Now in beta.)
           </p>
           <div className="mt-8 flex flex-wrap items-center gap-4">
-            <Link href="/welcome" className="btn-primary text-lg">
-              Start a free session
-            </Link>
+            <a href="/onboarding.html" className="btn-primary text-lg">
+              Start free
+            </a>
             <a href="#pricing" className="btn-ghost text-lg">
-              See plans
+              See pricing
             </a>
           </div>
           <p className="mt-4 text-sm font-semibold text-gray-500">
-            No credit card to try · Works right in your browser
+            7-day free trial · works in your browser · iPhone app coming soon
           </p>
         </div>
 
@@ -131,7 +131,7 @@ function CoachStage() {
             </div>
           </div>
           <span className="absolute left-4 top-4 flex items-center gap-1.5 rounded-full bg-white/90 px-3 py-1 text-xs font-extrabold text-grass-600 shadow-chunky-sm">
-            <span className="h-2 w-2 rounded-full bg-grass-500" /> live
+            <span className="h-2 w-2 rounded-full bg-grass-500" /> today
           </span>
         </div>
       </div>
@@ -174,9 +174,9 @@ function HowItWorks() {
       body: "Your child says a few words and Sona builds a personalized plan — so practice targets exactly the sounds that need it.",
     },
     {
-      emoji: "🎙️",
-      title: "Live coaching sessions",
-      body: "Press go and a friendly coach appears, says a word, listens to your child, and gives warm, real-time feedback — like a coach in their pocket.",
+      emoji: "🎮",
+      title: "Play a quick round",
+      body: "Leo says a word, your child says it back out loud, and gets instant stars and gentle feedback — bite-size, playful, and confidence-building.",
     },
     {
       emoji: "📈",
@@ -188,8 +188,8 @@ function HowItWorks() {
     <section id="how" className="mx-auto max-w-6xl px-5 py-20">
       <SectionHead
         kicker="How it works"
-        title="A real coaching session, at home"
-        sub="Short, consistent practice beats long and rare. Sona makes it a few friendly minutes your child looks forward to."
+        title="A daily habit kids look forward to"
+        sub="Short, consistent practice beats long and rare. Sona makes it a few friendly minutes a day your child actually wants to do."
       />
       <div className="mt-12 grid gap-6 sm:grid-cols-3">
         {steps.map((s, i) => (
@@ -214,10 +214,10 @@ function HowItWorks() {
 /* ─────────────────────────── Live coach ─────────────────────────── */
 function LiveCoach() {
   const points = [
-    "Says each word clearly and models the sound",
-    "Listens to your child and responds in the moment",
-    "Encourages and adapts — never frustrated, always patient",
-    "Keeps sessions short, playful, and confidence-building",
+    "Models each sound clearly, then listens to your child",
+    "Instant stars and gentle feedback on every try",
+    "Adapts to your child — patient, playful, never frustrated",
+    "Streaks and rewards keep them coming back each day",
   ];
   return (
     <section id="coach" className="bg-gray-50">
@@ -228,13 +228,13 @@ function LiveCoach() {
             The difference
           </p>
           <h2 className="mt-2 font-display text-3xl font-extrabold text-gray-900 sm:text-4xl">
-            Not flashcards. A coach that talks back.
+            Not flashcards. A game they talk to.
           </h2>
           <p className="mt-4 text-lg text-gray-600">
-            Most apps make kids tap pictures. Sona holds an actual back-and-forth
-            — the coach speaks, your child answers out loud, and the coach helps
-            on the very next breath. It&apos;s the closest thing to a 1-on-1
-            session, available whenever your child is ready.
+            Most apps make kids tap pictures. Sona has them say sounds out loud —
+            Leo models each one, listens, and rewards every try with stars. It
+            feels like a game, and it&apos;s practice that actually moves the
+            needle, whenever your child is ready.
           </p>
           <ul className="mt-6 space-y-3">
             {points.map((p) => (
@@ -286,16 +286,17 @@ function Pricing() {
       <div className="mx-auto max-w-6xl px-5 py-20">
         <SectionHead
           kicker="Pricing"
-          title="One simple plan"
-          sub="Go month-to-month at $16.99, or save with yearly — $119.99 with a 7-day free trial. Cancel anytime."
+          title="Founding Family — beta pricing"
+          sub="Lock in $59/year (about $4.92/mo) for life as a founding family. 7-day free trial, cancel anytime, full refund if it's not a fit."
         />
         <div className="mx-auto mt-12 max-w-md">
           <PlanCard
-            name="Sona"
-            badge="Everything included"
-            price="$16.99"
-            yearly="or $119.99/yr — 7-day free trial"
-            blurb="Your child's speech buddy, Leo — listens, adapts, and makes practice fun."
+            name="Founding Family"
+            badge="Beta · founding price"
+            price="$59"
+            priceSuffix="/yr"
+            yearly="≈ $4.92/mo · locked for life · 7-day free trial"
+            blurb="Your child's speech buddy, Leo — listens, adapts, and makes practice fun. (We're in beta and improving every week.)"
             highlight
             features={[
               "A friendly buddy (Leo) who cheers them on",
@@ -303,9 +304,9 @@ function Pricing() {
               "Personalized plan from a quick sound check",
               "Streaks, rewards & a progress report for your SLP",
               "Unlimited practice · up to 3 kids",
-              "Cancel anytime",
+              "Cancel anytime · full refund if it's not a fit",
             ]}
-            cta="Get started"
+            cta="Become a founding family"
             href="/subscribe"
           />
         </div>
@@ -321,16 +322,18 @@ function Pricing() {
 function PlanCard({
   name,
   price,
+  priceSuffix = "/mo",
   yearly,
   blurb,
   features,
   cta,
   highlight,
   badge,
-  href = "/welcome",
+  href = "/subscribe",
 }: {
   name: string;
   price: string;
+  priceSuffix?: string;
   yearly: string;
   blurb: string;
   features: string[];
@@ -356,7 +359,7 @@ function PlanCard({
         <span className="font-display text-5xl font-extrabold text-gray-900">
           {price}
         </span>
-        <span className="mb-1.5 font-bold text-gray-500">/mo</span>
+        <span className="mb-1.5 font-bold text-gray-500">{priceSuffix}</span>
       </div>
       <p className="mt-1 text-sm font-bold text-grass-600">{yearly}</p>
       <Link
@@ -461,17 +464,17 @@ function FinalCTA() {
     <section className="mx-auto max-w-6xl px-5 py-20">
       <div className="overflow-hidden rounded-[2rem] bg-gradient-to-br from-sky-500 to-sky-600 px-8 py-14 text-center shadow-chunky">
         <h2 className="font-display text-3xl font-extrabold text-white sm:text-4xl">
-          Try a free session today
+          Become a founding family
         </h2>
         <p className="mx-auto mt-3 max-w-xl text-lg text-sky-50">
-          See your child light up when the coach says hello. No card required.
+          See your child light up when Leo says hello. 7-day free trial, cancel anytime.
         </p>
-        <Link
-          href="/welcome"
+        <a
+          href="/onboarding.html"
           className="mt-8 inline-block rounded-2xl bg-white px-8 py-4 font-display text-lg font-extrabold uppercase tracking-wide text-sky-600 shadow-chunky transition active:translate-y-1 active:shadow-chunky-sm"
         >
           Start free
-        </Link>
+        </a>
       </div>
     </section>
   );
@@ -500,9 +503,9 @@ function Footer() {
           <Link href="/support" className="hover:text-gray-800">
             Support
           </Link>
-          <Link href="/dashboard" className="hover:text-gray-800">
-            Sign in
-          </Link>
+          <a href="/home.html" className="hover:text-gray-800">
+            Open app
+          </a>
         </div>
       </div>
       <p className="mx-auto max-w-2xl px-5 pb-10 text-center text-xs text-gray-400">
