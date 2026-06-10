@@ -16,7 +16,7 @@ import { NextRequest, NextResponse } from "next/server";
  *
  * Optional env:
  *   ELEVENLABS_VOICE_ID (default "EXAVITQu4vr4xnSDxMaL" — Sarah, warm/clear female)
- *   ELEVENLABS_MODEL    (default "eleven_turbo_v2_5" — low latency)
+ *   ELEVENLABS_MODEL    (default "eleven_multilingual_v2" — natural; turbo = faster)
  *   OPENAI_TTS_VOICE / OPENAI_TTS_MODEL
  */
 export const runtime = "nodejs";
@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
     if (elevenKey) {
       const voiceId =
         voiceOverride || process.env.ELEVENLABS_VOICE_ID || "EXAVITQu4vr4xnSDxMaL"; // Sarah — warm, clear female (premade). Override with ELEVENLABS_VOICE_ID.
-      const model = process.env.ELEVENLABS_MODEL || "eleven_turbo_v2_5";
+      const model = process.env.ELEVENLABS_MODEL || "eleven_multilingual_v2";
       const r = await fetch(
         `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?output_format=pcm_24000`,
         {
@@ -63,10 +63,10 @@ export async function POST(req: NextRequest) {
             text,
             model_id: model,
             voice_settings: {
-              stability: 0.6,
-              similarity_boost: 0.8,
-              style: 0.0,
-              speed: 0.9, // a little slower / more relaxed for young kids
+              stability: 0.45,        // lower = more natural variation (less monotone)
+              similarity_boost: 0.75,
+              style: 0.35,            // a touch of expressiveness/warmth
+              speed: 0.95,            // slightly slower for young kids
               use_speaker_boost: true,
             },
           }),

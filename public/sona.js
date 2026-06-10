@@ -44,8 +44,10 @@
     return '<span style="font-size:' + Math.round(s * 0.92) + 'px;line-height:1;">' + c.emoji + '</span>';
   }
 
-  const DEFAULT_PROFILE = { childName: "", focusSounds: ["R", "S", "L", "K"], voiceOn: true, coachName: "Coach", cloudScoring: true, slpEvaluated: "", goals: "", focusArea: "articulation", language: "en", character: "leo", outfit: "none", backdrop: "sky", soundOn: true, onboarded: false };
-  const DEFAULT_PROGRESS = { sessions: [], totals: { sessions: 0, words: 0, stars: 0 }, streak: { count: 0, lastDate: "" }, bySound: {} };
+  const DEFAULT_PROFILE = { childName: "", focusSounds: ["R", "S", "L", "K"], voiceOn: true, coachName: "Coach", cloudScoring: true, slpEvaluated: "", goals: "", focusArea: "articulation", language: "en", character: "leo", outfit: "none", backdrop: "sky", soundOn: true, voiceId: "", onboarded: false };
+  // stage per sound: 0 = isolation (the letter), 1 = syllables, 2 = words, 3 = mastered.
+  const STAGES = ["isolation", "syllables", "words"];
+  const DEFAULT_PROGRESS = { sessions: [], totals: { sessions: 0, words: 0, stars: 0 }, streak: { count: 0, lastDate: "" }, bySound: {}, stage: {} };
 
   const clone = (o) => JSON.parse(JSON.stringify(o));
   function load(key, def) { try { const v = JSON.parse(localStorage.getItem(key)); return (v && typeof v === "object") ? v : clone(def); } catch { return clone(def); } }
@@ -58,10 +60,19 @@
     const g = load(GKEY, DEFAULT_PROGRESS);
     g.totals = Object.assign({ sessions: 0, words: 0, stars: 0 }, g.totals || {});
     g.streak = Object.assign({ count: 0, lastDate: "" }, g.streak || {});
-    g.bySound = g.bySound || {}; g.sessions = g.sessions || [];
+    g.bySound = g.bySound || {}; g.sessions = g.sessions || []; g.stage = g.stage || {};
     return g;
   }
   const today = () => new Date().toISOString().slice(0, 10);
+  // current stage to practice for a sound (0..3); 3 = mastered
+  function stageOf(sound) { const g = getProgress(); return Math.min(3, g.stage[sound] || 0); }
+  // advance a sound's stage after finishing that stage's session (if they passed)
+  function completeStage(sound, stage, passed) {
+    const g = getProgress();
+    const cur = g.stage[sound] || 0;
+    if (passed && stage >= cur && cur < 3) { g.stage[sound] = Math.min(3, stage + 1); save(GKEY, g); }
+    return g.stage[sound] || 0;
+  }
 
   // rec: { words: [{ word, sound, ok }] }
   function recordSession(rec) {
@@ -202,5 +213,5 @@
     setTimeout(() => el.remove(), 950);
   }
 
-  global.Sona = { ALL_SOUNDS, CHARACTERS, OUTFITS, BACKDROPS, characterById, outfitById, backdropById, buddyMarkup, getProfile, saveProfile, getProgress, recordSession, resetProgress, getSub, saveSub, isSubscribed, restore, saveRecording, listRecordings, sfx, confetti, pop };
+  global.Sona = { ALL_SOUNDS, STAGES, CHARACTERS, OUTFITS, BACKDROPS, characterById, outfitById, backdropById, buddyMarkup, getProfile, saveProfile, getProgress, recordSession, resetProgress, stageOf, completeStage, getSub, saveSub, isSubscribed, restore, saveRecording, listRecordings, sfx, confetti, pop };
 })(window);
