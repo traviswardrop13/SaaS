@@ -444,7 +444,7 @@ function FAQ() {
     },
     {
       q: "Can I cancel anytime?",
-      a: "Yes. Plans are month-to-month (or yearly) and you can cancel whenever you like.",
+      a: "Yes. You can cancel whenever you like, and the 7-day free trial means you can try Sona before you're ever charged.",
     },
   ];
   return (
