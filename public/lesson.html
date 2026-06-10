@@ -177,31 +177,31 @@
     let useSpeechAce = false;
 
     const SOUND_PLAN = {
-      R: { isolation:{ display:"R", say:"Let's make a big R sound. Pull your tongue back and turn your voice on — rrrr. Now you try!", scoreText:"rah" },
+      R: { isolation:{ display:"R", say:"Let's make a big R sound. Pull your tongue back and turn your voice on — rrrr. Now you try.", scoreText:"rah" },
         syllables:[ {display:"rah",scoreText:"rah"},{display:"ray",scoreText:"ray"},{display:"roo",scoreText:"roo"} ],
         words:[ {display:"rabbit",emoji:"🐰",scoreText:"rabbit"},{display:"rocket",emoji:"🚀",scoreText:"rocket"},{display:"ring",emoji:"💍",scoreText:"ring"} ] },
-      S: { isolation:{ display:"S", say:"Let's make a quiet snake sound. Teeth together and smile — ssss. Your turn!", scoreText:"sah" },
+      S: { isolation:{ display:"S", say:"Let's make a quiet snake sound. Teeth together and smile — ssss. Your turn.", scoreText:"sah" },
         syllables:[ {display:"sah",scoreText:"sah"},{display:"see",scoreText:"see"},{display:"so",scoreText:"so"} ],
         words:[ {display:"sun",emoji:"☀️",scoreText:"sun"},{display:"snake",emoji:"🐍",scoreText:"snake"},{display:"soap",emoji:"🧼",scoreText:"soap"} ] },
-      L: { isolation:{ display:"L", say:"Let's make the L sound. Tongue tip up behind your teeth — llll. Now you!", scoreText:"lah" },
+      L: { isolation:{ display:"L", say:"Let's make the L sound. Tongue tip up behind your teeth — llll. Now you.", scoreText:"lah" },
         syllables:[ {display:"lah",scoreText:"lah"},{display:"lee",scoreText:"lee"},{display:"low",scoreText:"low"} ],
         words:[ {display:"lion",emoji:"🦁",scoreText:"lion"},{display:"leaf",emoji:"🍃",scoreText:"leaf"},{display:"ball",emoji:"⚽",scoreText:"ball"} ] },
-      G: { isolation:{ display:"G", say:"Let's make the G sound. Lift the back of your tongue and turn your voice on — g! g! Now you!", scoreText:"gah" },
+      G: { isolation:{ display:"G", say:"Let's make the G sound. Lift the back of your tongue and turn your voice on — g! g! Now you.", scoreText:"gah" },
         syllables:[ {display:"gah",scoreText:"gah"},{display:"go",scoreText:"go"},{display:"gee",scoreText:"gee"} ],
         words:[ {display:"goat",emoji:"🐐",scoreText:"goat"},{display:"gift",emoji:"🎁",scoreText:"gift"},{display:"dog",emoji:"🐶",scoreText:"dog"} ] },
-      F: { isolation:{ display:"F", say:"Let's make the F sound. Gently rest your top teeth on your bottom lip and blow — fff. Your turn!", scoreText:"fah" },
+      F: { isolation:{ display:"F", say:"Let's make the F sound. Gently rest your top teeth on your bottom lip and blow — fff. Your turn.", scoreText:"fah" },
         syllables:[ {display:"fah",scoreText:"fah"},{display:"fee",scoreText:"fee"},{display:"foe",scoreText:"foe"} ],
         words:[ {display:"fish",emoji:"🐟",scoreText:"fish"},{display:"fox",emoji:"🦊",scoreText:"fox"},{display:"leaf",emoji:"🍂",scoreText:"leaf"} ] },
-      SH: { isolation:{ display:"SH", say:"Let's make the quiet sound. Round your lips and blow soft air — shhh. Now you!", scoreText:"shah" },
+      SH: { isolation:{ display:"SH", say:"Let's make the quiet sound. Round your lips and blow soft air — shhh. Now you.", scoreText:"shah" },
         syllables:[ {display:"shah",scoreText:"shah"},{display:"she",scoreText:"she"},{display:"show",scoreText:"show"} ],
         words:[ {display:"shoe",emoji:"👟",scoreText:"shoe"},{display:"shark",emoji:"🦈",scoreText:"shark"},{display:"fish",emoji:"🐠",scoreText:"fish"} ] },
-      CH: { isolation:{ display:"CH", say:"Let's make the choo-choo sound. Round your lips and pop — ch! ch! Your turn!", scoreText:"chah" },
+      CH: { isolation:{ display:"CH", say:"Let's make the choo-choo sound. Round your lips and pop — ch! ch! Your turn.", scoreText:"chah" },
         syllables:[ {display:"chah",scoreText:"chah"},{display:"chee",scoreText:"chee"},{display:"choo",scoreText:"choo"} ],
         words:[ {display:"cheese",emoji:"🧀",scoreText:"cheese"},{display:"chair",emoji:"🪑",scoreText:"chair"},{display:"peach",emoji:"🍑",scoreText:"peach"} ] },
-      TH: { isolation:{ display:"TH", say:"Let's make the TH sound. Peek your tongue between your teeth and blow — th, th. Now you!", scoreText:"thah" },
+      TH: { isolation:{ display:"TH", say:"Let's make the TH sound. Peek your tongue between your teeth and blow — th, th. Now you.", scoreText:"thah" },
         syllables:[ {display:"thah",scoreText:"thah"},{display:"thee",scoreText:"thee"},{display:"thaw",scoreText:"thaw"} ],
         words:[ {display:"thumb",emoji:"👍",scoreText:"thumb"},{display:"bath",emoji:"🛁",scoreText:"bath"},{display:"tooth",emoji:"🦷",scoreText:"tooth"} ] },
-      K: { isolation:{ display:"K", say:"Let's make the K sound. Lift the back of your tongue — k! k! Now you!", scoreText:"kah" },
+      K: { isolation:{ display:"K", say:"Let's make the K sound. Lift the back of your tongue — k! k! Now you.", scoreText:"kah" },
         syllables:[ {display:"kah",scoreText:"kah"},{display:"key",scoreText:"key"},{display:"ko",scoreText:"ko"} ],
         words:[ {display:"cat",emoji:"🐱",scoreText:"cat"},{display:"key",emoji:"🔑",scoreText:"key"},{display:"cake",emoji:"🍰",scoreText:"cake"} ] },
     };
@@ -227,7 +227,7 @@
     const planOf = (s)=> SOUND_PLAN[s] || SOUND_PLAN.R;
     const poolOf = (s)=> (window.Sona && Sona.WORDS && Sona.WORDS[s]) ? Sona.WORDS[s] : POOL;
     const BUDDY = (window.Sona ? Sona.characterById(profile.character) : { img:"/coach/leo.png", emoji:"🦁" });
-    const ISO_AGAIN = (s)=>["Again — say it!","One more big "+s+"!","Nice — again!","Keep going!","One more time!","Last one!"];
+    const ISO_AGAIN = (s)=>["Again — say it.","One more big "+s+".","Nice. Again.","Keep going.","One more time.","Last one."];
     const PRAISE = ["Nice job!","Great!","Awesome!","Perfect!","You got it!","Woohoo!"];
     const TRYAGAIN = ["Good try!","Almost!","Keep going!","Nice effort!"];
 
@@ -307,30 +307,49 @@
     async function detectScorer(){ if(!CLOUD){ useSpeechAce=false; return; } try{ const r=await fetch("/api/score"); const j=await r.json(); useSpeechAce=!!(j&&j.hasKey); }catch{ useSpeechAce=false; } }
     function norm(s){ return (s||"").toLowerCase().replace(/[^a-z]/g,""); }
     function matchText(t,w){ t=norm(t); w=norm(w); if(!t) return false; if(t.includes(w)||w.includes(t)) return true; let i=0; while(i<Math.min(t.length,w.length)&&t[i]===w[i]) i++; return i>=3; }
-    function recordTurn(micBtn,maxMs=6000){
+    function recordTurn(micBtn,maxMs=8000){
       return new Promise((resolve)=>{
         let done=false,chunks=[],rec=null,sr=null,transcript=""; var stopWave=function(){};
+        let spoke=false,lastVoice=0,extended=false;
         const finish=()=>{ if(done)return; done=true; try{rec&&rec.state!=="inactive"&&rec.stop();}catch{} try{sr&&sr.stop();}catch{} micBtn.classList.remove("rec"); stopWave(); setTimeout(()=>{ const blob=chunks.length?new Blob(chunks,{type:(rec&&rec.mimeType)||"audio/webm"}):null; resolve({transcript,blob}); },150); };
         try{ if(micStream&&window.MediaRecorder){ rec=new MediaRecorder(micStream); rec.ondataavailable=e=>{ if(e.data&&e.data.size) chunks.push(e.data); }; rec.start(); } }catch(e){}
         try{ const SR=window.SpeechRecognition||window.webkitSpeechRecognition; if(SR){ sr=new SR(); sr.lang="en-US"; sr.interimResults=false; sr.maxAlternatives=3; sr.onresult=(ev)=>{ for(const r of ev.results){ for(let i=0;i<r.length;i++) transcript+=" "+r[i].transcript; } finish(); }; sr.onerror=()=>{}; sr.start(); } }catch(e){}
-        // live waveform inside the mic button — the kid SEES it hearing them
+        // live waveform inside the mic button — the kid SEES it hearing them.
+        // The same analyser doubles as a voice-activity detector: once they've
+        // spoken and ~0.9s of quiet follows, the turn ends itself (tap = backstop).
         let wraf=null, msrc=null, bars=null, ico=micBtn.querySelector("svg");
         try{
           if(micStream){
             const ctx=getCtx(); msrc=ctx.createMediaStreamSource(micStream);
-            const an=ctx.createAnalyser(); an.fftSize=64; msrc.connect(an);
+            const an=ctx.createAnalyser(); an.fftSize=512; msrc.connect(an);
             const data=new Uint8Array(an.frequencyBinCount);
+            const td=new Uint8Array(an.fftSize);
             bars=document.createElement("div"); bars.className="wavebars";
             for(let b=0;b<7;b++) bars.appendChild(document.createElement("i"));
             if(ico) ico.style.display="none"; micBtn.appendChild(bars);
-            (function tick(){ an.getByteFrequencyData(data);
+            const t0=performance.now(); let noiseSum=0,noiseN=0,thr=0,voiced=0;
+            (function tick(){ if(done) return;
+              an.getByteFrequencyData(data);
               [...bars.children].forEach((el,k)=>{ const v=data[2+k*3]/255; el.style.height=(8+v*30)+"px"; });
+              // RMS vs an ambient baseline sampled in the first 300ms
+              an.getByteTimeDomainData(td);
+              let sum=0; for(let k=0;k<td.length;k++){ const dv=(td[k]-128)/128; sum+=dv*dv; }
+              const rms=Math.sqrt(sum/td.length), now=performance.now();
+              if(now-t0<300){ noiseSum+=rms; noiseN++; }
+              else{
+                if(!thr) thr=Math.min(0.09, Math.max(0.016, (noiseSum/Math.max(1,noiseN))*2.6));
+                if(rms>thr){ voiced++; lastVoice=now; if(voiced>=3 && !spoke){ spoke=true; const m=document.getElementById("micState"); if(m) m.textContent="I hear you! 👂"; } }
+                else if(rms<thr*0.7) voiced=0;
+                if(spoke && now-lastVoice>=900){ finish(); return; }
+              }
               wraf=requestAnimationFrame(tick); })();
           }
         }catch(e){}
-        const ms=document.getElementById("micState"); if(ms) ms.textContent="Say it now! (tap when done)";
+        const ms=document.getElementById("micState"); if(ms) ms.textContent="Say it now!";
         stopWave=()=>{ if(wraf)cancelAnimationFrame(wraf); try{msrc&&msrc.disconnect();}catch(e){} if(bars)bars.remove(); if(ico)ico.style.display=""; if(ms)ms.textContent=""; };
-        micBtn.classList.add("rec"); micBtn.onclick=finish; setTimeout(finish,maxMs);
+        micBtn.classList.add("rec"); micBtn.onclick=finish;
+        // hard cap — but if they're mid-word right at the cap, allow a moment to finish
+        setTimeout(()=>{ if(done) return; if(spoke && (performance.now()-lastVoice)<450 && !extended){ extended=true; setTimeout(finish,1500); } else finish(); },maxMs);
       });
     }
     async function scoreSay(a,blob,transcript){

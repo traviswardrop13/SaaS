@@ -63,10 +63,10 @@ export async function POST(req: NextRequest) {
             text,
             model_id: model,
             voice_settings: {
-              stability: 0.4,         // lower = more lively variation (less monotone)
-              similarity_boost: 0.75,
-              style: 0.55,            // expressive, animated — cartoon-kid energy
-              speed: 0.87,            // slower for young kids; the client pitch-up restores tempo
+              stability: 0.72,        // high = calm, consistent delivery (low values get theatrical)
+              similarity_boost: 0.85, // stay close to the voice's natural sample
+              style: 0.06,            // near zero — style exaggeration is what sounded fake
+              speed: 0.96,            // barely slowed; clients no longer pitch playback
               use_speaker_boost: true,
             },
           }),
