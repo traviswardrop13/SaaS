@@ -52,7 +52,6 @@
     <header class="app">
       <div class="brand"><span class="leo">🦁</span> Make it yours</div>
       <div class="pills">
-        <span class="pill" style="color:var(--orange-d);">🪙 <span id="coinBal">0</span></span>
         <a class="iconbtn" href="/home.html" title="Home" style="display:flex;align-items:center;justify-content:center;">✕</a>
       </div>
     </header>
@@ -103,8 +102,7 @@
 
     function persist() { Sona.saveProfile({ character: sel.character, outfit: sel.outfit, backdrop: sel.backdrop }); }
 
-    var coins = Sona.getCoins();
-    function setCoinBal() { document.getElementById("coinBal").textContent = coins; }
+
     // grandfather whatever the child already has selected (don't charge for it)
     Sona.addOwned("outfits", sel.outfit); Sona.addOwned("backdrops", sel.backdrop);
 
@@ -125,7 +123,7 @@
     function buildShop(elId, items, key, kind, render) {
       var host = document.getElementById(elId); host.innerHTML = "";
       items.forEach(function (it) {
-        var owned = it.cost === 0 || Sona.owns(kind, it.id);
+        var owned = true; // beta: everything's unlocked — just pick what you like
         var el = document.createElement("div");
         el.className = "opt" + render.cls(it) + (sel[key] === it.id ? " on" : "");
         el.innerHTML = render.inner(it) + (owned ? "" : '<span class="price">🪙 ' + it.cost + '</span>');
@@ -156,7 +154,6 @@
       },
     });
 
-    setCoinBal();
     renderPreview();
   </script>
 </body>

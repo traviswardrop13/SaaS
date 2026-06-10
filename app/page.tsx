@@ -22,7 +22,6 @@ export default function Landing() {
   return (
     <main className="min-h-screen bg-white text-gray-800">
       <Hero />
-      <TrustBar />
       <HowItWorks />
       <LiveCoach />
       <ParentValue />
@@ -123,9 +122,7 @@ function CoachStage() {
       <div className="rounded-[2rem] bg-white p-3 shadow-chunky">
         <div className="relative overflow-hidden rounded-[1.5rem] bg-gradient-to-b from-brand-400/20 to-brand-50">
           <div className="flex aspect-[4/5] flex-col items-center justify-center px-6">
-            <div className="text-[7rem] leading-none" aria-hidden>
-              🦁
-            </div>
+            <img src="/coach/leo-icon.png" alt="Leo" className="h-36 w-36 object-contain" />
             <div className="mt-4 rounded-2xl bg-white px-5 py-3 shadow-chunky-sm">
               <p className="font-display text-lg font-extrabold text-gray-800">
                 &ldquo;Let&apos;s try <span className="text-brand-600">rabbit</span> — your turn!&rdquo;
@@ -261,12 +258,12 @@ function ParentValue() {
       <SectionHead
         kicker="For parents"
         title="Less than a single private session"
-        sub="Private 1-on-1 speech support often runs $100–250 a session. Sona is unlimited, guided practice at home — for a fraction of that, every month."
+        sub="Private 1-on-1 speech support often runs $80+ a session. Sona is unlimited, guided practice at home — for a fraction of that, every month."
       />
       <div className="mt-12 grid gap-6 sm:grid-cols-3">
-        <Stat big="$100–250" small="Typical cost of one private session" />
-        <Stat big="2–4×" small="Coaching sessions a week with Sona" />
-        <Stat big="Every week" small="Progress updates in your dashboard" />
+        <Stat big="$80+" small="Typical cost of one private session" />
+        <Stat big="Daily" small="Coaching sessions with Sona" />
+        <Stat big="Weekly" small="Progress updates in your dashboard" />
       </div>
     </section>
   );
@@ -498,9 +495,7 @@ function Footer() {
     <footer className="border-t border-gray-100">
       <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-5 py-10 sm:flex-row">
         <div className="flex items-center gap-2">
-          <span className="text-xl" aria-hidden>
-            🦁
-          </span>
+          <img src="/coach/leo-icon.png" alt="Leo" className="h-7 w-7 object-contain" />
           <span className="font-display text-lg font-extrabold text-brand-600">
             Sona
           </span>

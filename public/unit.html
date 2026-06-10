@@ -61,7 +61,7 @@
     <header class="unit">
       <button class="backbtn" id="back" title="Back">←</button>
       <div class="unitTitle"><b id="uTitle">R SOUND</b><span id="uSub">3 steps to the prize!</span></div>
-      <span class="coinsPill">🪙 <span id="coins">0</span></span>
+      <span style="width:46px;flex:0 0 auto;"></span>
     </header>
 
     <div class="path" id="path"></div>
@@ -72,7 +72,7 @@
       <div class="big">🎁</div>
       <h2 id="przTitle">You did it!</h2>
       <p id="przMsg">You finished every step!</p>
-      <button class="btn" id="przClose" style="margin-top:18px;">Collect +25 🪙</button>
+      <button class="btn" id="przClose" style="margin-top:18px;">Yay! 🎉</button>
     </div>
   </div>
 
@@ -107,7 +107,7 @@
 
     document.getElementById("uTitle").textContent = SOUND + " SOUND";
     document.getElementById("uSub").textContent = claimed ? "Prize collected — keep practicing!" : (st >= 3 ? "Open your prize!" : (3 - st) + " step" + (3 - st === 1 ? "" : "s") + " to the prize!");
-    document.getElementById("coins").textContent = Sona.getCoins();
+
     document.getElementById("back").onclick = function () { location.href = "/home.html"; };
 
     var STEPS = [
@@ -148,7 +148,6 @@
 
     function openChest() {
       if (!Sona.claimChest(SOUND)) return;
-      Sona.addCoins(25);
       Sona.sfx.reward();
       Sona.confetti({ count: 220, duration: 3200 });
       document.getElementById("przTitle").textContent = "You mastered " + SOUND + "!";

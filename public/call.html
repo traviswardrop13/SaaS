@@ -126,7 +126,7 @@
     <div class="rewards">
       <div class="reward" id="endTime">5:00<small>talk time</small></div>
       <div class="reward" id="endTurns">0<small>your turns</small></div>
-      <div class="reward">+15<small>🪙 coins</small></div>
+
     </div>
     <a class="cta" href="/home.html">Back home</a>
   </div>
@@ -134,6 +134,7 @@
   <script src="/sona.js"></script>
   <script>
     if (Sona.gated && Sona.gated()) location.replace("/trial.html");
+    window.addEventListener("error", function (e) { try { toast("⚠️ " + (e.message || "page error")); } catch (x) {} });
     var profile = Sona.getProfile();
     var CHILD = (profile.childName || "").trim();
     var TARGET = (profile.focusSounds && profile.focusSounds[0]) || "R";
@@ -225,7 +226,8 @@
     function showYouSaid(t) { var el = $("youSaid"); el.textContent = "You: " + t; el.style.display = "block"; }
     function status(mode) {
       $("listenChip").style.display = (mode === "listen" || mode === "fallback") ? "flex" : "none";
-      $("thinkChip").style.display = mode === "think" ? "block" : "none";
+      $("thinkChip").style.display = (mode === "think" || mode === "ring") ? "block" : "none";
+      $("thinkChip").textContent = mode === "ring" ? "Ringing… 📞" : "Leo is thinking…";
       $("doneTalk").style.display = mode === "fallback" ? "inline-block" : "none";
     }
 
@@ -314,22 +316,26 @@
 
     /* ---------- call lifecycle ---------- */
     function fmt(s) { var m = Math.floor(s / 60), x = s % 60; return m + ":" + (x < 10 ? "0" : "") + x; }
-    async function startCall() {
-      $("callBtn").disabled = true; $("err").classList.remove("show");
-      unlockAudio(); ringTone();
-      // fetch Leo's opener DURING the ring so he speaks the moment we connect
-      var openerP = chat("(The call just connected. Say a short, excited hello" + (CHILD ? " to " + CHILD : "") + " and ask one easy, fun question.)");
-      try { await navigator.mediaDevices.getUserMedia({ audio: true }); } catch (e) {}
-      setTimeout(function () {
+    function startCall() {
+      try {
+        $("callBtn").disabled = true; $("err").classList.remove("show");
+        unlockAudio();
+        // switch screens RIGHT AWAY — never leave the tap feeling dead
         $("pre").classList.add("hidden");
         live = true; secsLeft = TOTAL;
+        status("ring");
+        ringTone();
+        // fetch Leo's opener DURING the ring so he speaks at connect
+        var openerP = chat("(The call just connected. Say a short, excited hello" + (CHILD ? " to " + CHILD : "") + " and ask one easy, fun question.)");
+        // mic permission in parallel — don't block the call on the prompt
+        try { if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) navigator.mediaDevices.getUserMedia({ audio: true }).catch(function () {}); } catch (e) {}
         timerIv = setInterval(function () {
           if (!live) return;
           secsLeft--; $("timer").textContent = fmt(Math.max(0, secsLeft));
           if (secsLeft <= 0) clearInterval(timerIv);
         }, 1000);
-        loop(openerP);
-      }, 2000);
+        setTimeout(function () { loop(openerP); }, 1900);
+      } catch (e) { toast("⚠️ Couldn't start the call: " + (e && e.message ? e.message : e)); $("callBtn").disabled = false; }
     }
     function endCall(completed) {
       if (!live) return;
@@ -343,7 +349,6 @@
       $("endSub").textContent = kidTurns > 0
         ? "You talked with Leo " + kidTurns + " time" + (kidTurns === 1 ? "" : "s") + "! Amazing!"
         : "Leo loved seeing you!";
-      Sona.addCoins(15);
       Sona.recordSession({ words: [] });
       $("ended").classList.remove("hidden");
       Sona.confetti(); Sona.sfx.complete();

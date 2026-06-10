@@ -92,6 +92,26 @@
       <div class="schips" id="obSounds"></div>
     </div>
 
+    <!-- daily goal -->
+    <div class="step" data-step="goal">
+      <div class="qh">What's the daily practice goal?</div>
+      <p class="muted">Sona fits each day's practice to this — same length whether it's one sound or five.</p>
+      <div class="choices" id="obGoal">
+        <div class="choice" data-val="5"><span class="ce">⏱️</span> 5 min / day <span style="margin-left:auto;color:var(--muted);font-size:13px;font-family:Nunito;">Casual</span></div>
+        <div class="choice" data-val="10"><span class="ce">🔥</span> 10 min / day <span style="margin-left:auto;color:var(--muted);font-size:13px;font-family:Nunito;">Regular</span></div>
+      </div>
+    </div>
+
+    <!-- what's ahead -->
+    <div class="step" data-step="achieve">
+      <div class="qh">Here's what's ahead for <span id="achName">your child</span> 🌟</div>
+      <div class="choices">
+        <div class="choice" style="cursor:default;"><span class="ce">🗣️</span> <span>Clearer sounds<br/><span style="font-family:Nunito;font-weight:700;font-size:13px;color:var(--muted);">A few fun minutes of real practice, every day</span></span></div>
+        <div class="choice" style="cursor:default;"><span class="ce">💪</span> <span>Confidence<br/><span style="font-family:Nunito;font-weight:700;font-size:13px;color:var(--muted);">Leo cheers every single try — no failing here</span></span></div>
+        <div class="choice" style="cursor:default;"><span class="ce">🎧</span> <span>Progress you can hear<br/><span style="font-family:Nunito;font-weight:700;font-size:13px;color:var(--muted);">Recordings + a report you can share with your SLP</span></span></div>
+      </div>
+    </div>
+
     <!-- slp -->
     <div class="step" data-step="slp">
       <div class="qh">Has your child seen a speech therapist?</div>
@@ -110,7 +130,7 @@
 
   <div class="obfoot">
     <div class="inner">
-      <button class="skip" id="backBtn" style="visibility:hidden;">← Back</button>
+      <button class="skip" id="backBtn" style="display:none;">← Back</button>
       <button class="btn" id="nextBtn" style="flex:1;">Let's go!</button>
     </div>
   </div>
@@ -126,12 +146,14 @@
       goals: p.goals || "",
     };
 
-    var ORDER = ["welcome","name","buddy","sounds","slp"];
+    var ORDER = ["welcome","name","buddy","sounds","goal","achieve","slp"];
     var BUBBLES = {
-      welcome: "Hi! I'm Leo. 🦁",
+      welcome: "Hi! I'm Leo!",
       name:    "Nice to meet you!",
       buddy:   "Who should practice with you?",
       sounds:  "Let's pick our sounds!",
+      goal:    "How long each day?",
+      achieve: "Here's what's ahead! ✨",
       slp:     "Almost done! 🌟",
     };
     var CTA = { slp: "Start practicing! 🎉" };
@@ -144,16 +166,21 @@
     var bubble = document.getElementById("bubble"), leo = document.getElementById("leo");
     var nextBtn = document.getElementById("nextBtn"), backBtn = document.getElementById("backBtn");
 
+    function mascotMarkup(id) {
+      if (id === "leo") return '<img src="/coach/leo-icon.png" alt="Leo" style="width:62px;height:62px;object-fit:contain;display:block;" />';
+      return Sona.buddyMarkup(id, 64);
+    }
+
     // buddy grid
     var bg = document.getElementById("obBuddies");
     Sona.CHARACTERS.forEach(function(c){
       var el=document.createElement("div");
       el.className="bopt"+(c.id===draft.character?" on":"")+(c.locked?" locked":"");
       el.innerHTML='<span class="be">'+Sona.buddyMarkup(c.id,38)+'</span><span class="bn">'+c.name+'</span>'+(c.locked?'<span class="soon">SOON</span>':'');
-      if(!c.locked) el.onclick=function(){ Sona.sfx.tap(); draft.character=c.id; bg.querySelectorAll(".bopt").forEach(function(n){n.classList.remove("on");}); el.classList.add("on"); leo.innerHTML=Sona.buddyMarkup(c.id,64); };
+      if(!c.locked) el.onclick=function(){ Sona.sfx.tap(); draft.character=c.id; bg.querySelectorAll(".bopt").forEach(function(n){n.classList.remove("on");}); el.classList.add("on"); leo.innerHTML=mascotMarkup(c.id); };
       bg.appendChild(el);
     });
-    leo.innerHTML = Sona.buddyMarkup(draft.character, 64);
+    leo.innerHTML = mascotMarkup(draft.character);
 
     // sound chips
     var selSounds = new Set(draft.focusSounds);
@@ -162,6 +189,14 @@
       var b=document.createElement("div"); b.className="sound"+(selSounds.has(s)?" on":""); b.textContent=s;
       b.onclick=function(){ Sona.sfx.tap(); if(selSounds.has(s)) selSounds.delete(s); else selSounds.add(s); b.classList.toggle("on"); };
       sc.appendChild(b);
+    });
+
+    // daily goal (single select, default 5)
+    var goalVal = String(p.dailyMinutes || 5);
+    var goalWrap = document.getElementById("obGoal");
+    goalWrap.querySelectorAll(".choice").forEach(function (ch) {
+      if (ch.dataset.val === goalVal) ch.classList.add("on");
+      ch.onclick = function () { Sona.sfx.tap(); goalVal = ch.dataset.val; goalWrap.querySelectorAll(".choice").forEach(function (n) { n.classList.remove("on"); }); ch.classList.add("on"); };
     });
 
     // slp choices
@@ -180,8 +215,9 @@
       ORDER.forEach(function(k,i){ steps[k].classList.toggle("on", i===idx); segEl.children[i].classList.toggle("on", i<=idx); });
       bubble.textContent = BUBBLES[key] || "";
       nextBtn.textContent = CTA[key] || "Continue";
-      backBtn.style.visibility = idx===0 ? "hidden" : "visible";
+      backBtn.style.display = idx === 0 ? "none" : "block";
       if(key==="name") setTimeout(function(){ nameEl.focus(); }, 80);
+      if(key==="achieve"){ var nm=(nameEl.value||draft.childName||"").trim(); document.getElementById("achName").textContent = nm || "your child"; }
     }
 
     function next(){
@@ -203,6 +239,7 @@
         slpEvaluated: draft.slpEvaluated,
         goals: (document.getElementById("obGoals")||{}).value ? document.getElementById("obGoals").value.trim() : draft.goals,
         focusArea: "articulation",
+        dailyMinutes: parseInt(goalVal, 10) || 5,
         onboarded: true,
       });
       if(window.Sona){ Sona.sfx.complete(); Sona.confetti({count:160}); }

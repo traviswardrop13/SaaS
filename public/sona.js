@@ -98,10 +98,10 @@
       badge(100, 52) + '</svg>';
   }
 
-  const DEFAULT_PROFILE = { childName: "", focusSounds: ["R", "S", "L", "K"], voiceOn: true, coachName: "Coach", cloudScoring: true, slpEvaluated: "", goals: "", focusArea: "articulation", language: "en", character: "leo", outfit: "none", backdrop: "sky", soundOn: true, voiceId: "cgSgspJ2msm6clMCkdW9", dailyMinutes: 5, owned: { outfits: ["none"], backdrops: ["sky"] }, onboarded: false };
+  const DEFAULT_PROFILE = { childName: "", focusSounds: ["R", "S", "L", "K"], voiceOn: true, coachName: "Coach", cloudScoring: true, slpEvaluated: "", goals: "", focusArea: "articulation", language: "en", character: "leo", outfit: "none", backdrop: "sky", soundOn: true, voiceId: "bIHbv24MWmeRgasZH58o", dailyMinutes: 5, owned: { outfits: ["none"], backdrops: ["sky"] }, onboarded: false };
   // stage per sound: 0 = isolation (the letter), 1 = syllables, 2 = words, 3 = mastered.
   const STAGES = ["isolation", "syllables", "words"];
-  const DEFAULT_PROGRESS = { sessions: [], totals: { sessions: 0, words: 0, stars: 0, coins: 0 }, streak: { count: 0, lastDate: "" }, bySound: {}, stage: {}, chests: {} };
+  const DEFAULT_PROGRESS = { sessions: [], totals: { sessions: 0, words: 0, stars: 0, coins: 0 }, streak: { count: 0, lastDate: "" }, bySound: {}, stage: {}, chests: {}, missed: [] };
 
   const clone = (o) => JSON.parse(JSON.stringify(o));
   function load(key, def) { try { const v = JSON.parse(localStorage.getItem(key)); return (v && typeof v === "object") ? v : clone(def); } catch { return clone(def); } }
@@ -109,20 +109,20 @@
 
   function getProfile() {
     const p = Object.assign(clone(DEFAULT_PROFILE), load(PKEY, {}));
-    // profiles saved before the Leo voice existed have voiceId:"" — give them Leo
-    if (!p.voiceId) p.voiceId = DEFAULT_PROFILE.voiceId;
+    // migrate old/empty defaults to Leo's current voice (a young boy)
+    if (!p.voiceId || p.voiceId === "cgSgspJ2msm6clMCkdW9") p.voiceId = DEFAULT_PROFILE.voiceId;
     return p;
   }
   // Leo speaks slightly pitched-up (cartoon-kid brightness). Players multiply
   // playbackRate by this when playing /api/tts audio.
-  const VOICE_PITCH = 1.08;
+  const VOICE_PITCH = 1.15;
   function saveProfile(patch) { save(PKEY, Object.assign(getProfile(), patch || {})); }
 
   function getProgress() {
     const g = load(GKEY, DEFAULT_PROGRESS);
     g.totals = Object.assign({ sessions: 0, words: 0, stars: 0, coins: 0 }, g.totals || {});
     g.streak = Object.assign({ count: 0, lastDate: "" }, g.streak || {});
-    g.bySound = g.bySound || {}; g.sessions = g.sessions || []; g.stage = g.stage || {}; g.chests = g.chests || {};
+    g.bySound = g.bySound || {}; g.sessions = g.sessions || []; g.stage = g.stage || {}; g.chests = g.chests || {}; g.missed = g.missed || [];
     return g;
   }
   const today = () => new Date().toISOString().slice(0, 10);
@@ -190,6 +190,14 @@
     g.sessions = g.sessions.slice(0, 50);
     g.totals.sessions += 1; g.totals.words += words.length; g.totals.stars += stars;
     words.forEach((w) => { if (w && w.sound) g.bySound[w.sound] = (g.bySound[w.sound] || 0) + 1; });
+    // keep a short "try again" list: add words they missed, clear ones they nailed
+    words.forEach((w) => {
+      if (!w || !w.word || w.level === "isolation") return;
+      const i = g.missed.findIndex((m) => m.w === w.word);
+      if (w.ok === false && i === -1) g.missed.push({ w: w.word, sound: w.sound || "R" });
+      if (w.ok !== false && i !== -1) g.missed.splice(i, 1);
+    });
+    g.missed = g.missed.slice(-15);
     const t = today();
     if (g.streak.lastDate !== t) {
       const y = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
@@ -323,5 +331,5 @@
     setTimeout(() => el.remove(), 950);
   }
 
-  global.Sona = { ALL_SOUNDS, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, HOUSE_PALETTE, WORDS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, getProfile, saveProfile, getProgress, recordSession, resetProgress, stageOf, completeStage, chestClaimed, claimChest, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, gated, restore, saveRecording, listRecordings, sfx, confetti, pop };
+  global.Sona = { ALL_SOUNDS, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, HOUSE_PALETTE, WORDS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, getProfile, saveProfile, getProgress, recordSession, resetProgress, stageOf, completeStage, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, gated, restore, saveRecording, listRecordings, sfx, confetti, pop };
 })(window);

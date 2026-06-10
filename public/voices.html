@@ -29,7 +29,7 @@
 <body>
   <div class="wrap" style="padding-bottom:110px;">
     <header class="app">
-      <div class="brand"><span class="leo">🦁</span> Coach voice</div>
+      <div class="brand"><span class="leo"><img src="/coach/leo-icon.png" alt="Leo" /></span> Coach voice</div>
       <a class="iconbtn" href="/settings.html" title="Back" style="display:flex;align-items:center;justify-content:center;">✕</a>
     </header>
 
@@ -52,7 +52,8 @@
   <script>
     var SAMPLE = "Roar! Hi, I'm Leo the lion! Let's practice together. Ready? Rabbit! Rocket! Ring!";
     var VOICES = [
-      { id: "cgSgspJ2msm6clMCkdW9", name: "Leo (default)", vibe: "Young, playful — Leo's voice" },
+      { id: "bIHbv24MWmeRgasZH58o", name: "Leo (default)", vibe: "Young boy — Leo's voice" },
+      { id: "cgSgspJ2msm6clMCkdW9", name: "Jessica", vibe: "Young, playful female" },
       { id: "EXAVITQu4vr4xnSDxMaL", name: "Sarah", vibe: "Warm, clear female" },
       { id: "XrExE9yKIg1WjnnlVkGX", name: "Matilda", vibe: "Friendly female — great for kids" },
       { id: "pFZP5JQG7iQjIQuC4Bku", name: "Lily", vibe: "Soft British female" },
@@ -62,7 +63,6 @@
       { id: "JBFqnCBsd6RMkjVDRZzb", name: "George", vibe: "Warm British male" },
       { id: "nPczCjzI2devNBz1zQrb", name: "Brian", vibe: "Friendly, deeper male" },
       { id: "pqHfZKP75CvOlQylNhV4", name: "Bill", vibe: "Kind, older male" },
-      { id: "bIHbv24MWmeRgasZH58o", name: "Will", vibe: "Easygoing young male" },
     ];
 
     var sel = (Sona.getProfile().voiceId) || "";

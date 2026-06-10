@@ -19,10 +19,10 @@
 <body>
   <div class="wrap">
     <header class="app">
-      <div class="brand"><span class="leo">🦁</span> Sona <span class="beta">BETA</span></div>
+      <div class="brand"><span class="leo"><img src="/coach/leo-icon.png" alt="Leo" /></span> Sona <span class="beta">BETA</span></div>
       <div class="pills">
         <span class="pill flame">🔥 <span id="streak">0</span></span>
-        <a class="iconbtn" href="/library.html" title="Library" style="display:flex;align-items:center;justify-content:center;">📚</a>
+        <a class="iconbtn" href="/practice.html" title="Practice" style="display:flex;align-items:center;justify-content:center;">🎯</a>
         <a class="iconbtn" href="/settings.html" title="Settings" style="display:flex;align-items:center;justify-content:center;">⚙️</a>
       </div>
     </header>
@@ -38,38 +38,27 @@
       <button id="subDismiss" class="iconbtn" title="Dismiss" style="width:30px;height:30px;font-size:16px;flex:0 0 auto;">×</button>
     </div>
 
-    <a class="card" href="/customize.html" style="display:flex;gap:14px;align-items:center;color:inherit;">
-      <div class="leo" style="width:64px;height:64px;font-size:40px;flex:0 0 auto;position:relative;">
+    <a href="/customize.html" style="display:flex;gap:12px;align-items:center;color:inherit;padding:2px 4px;">
+      <div style="width:52px;height:52px;flex:0 0 auto;position:relative;">
         <span id="heroChar">🦁</span>
-        <span id="heroOutfit" style="position:absolute;top:-6px;left:50%;transform:translateX(-50%);font-size:24px;"></span>
+        <span id="heroOutfit" style="position:absolute;top:-8px;left:50%;transform:translateX(-50%);font-size:20px;"></span>
       </div>
       <div style="flex:1;min-width:0;">
-        <h1 id="hello">Ready to practice?</h1>
-        <p class="muted" id="sub">A few minutes a day keeps the streak going!</p>
+        <h1 id="hello" style="font-size:21px;">Ready to practice?</h1>
+        <p class="muted" id="sub" style="font-size:13px;font-weight:700;">A few minutes a day keeps the streak going!</p>
       </div>
-      <span class="pill" title="Customize" style="flex:0 0 auto;">✨</span>
     </a>
 
     <a class="btn" id="startBtn" href="#" style="margin-top:14px;">▶&nbsp;&nbsp;Start today's practice</a>
     <p id="themeLine" class="muted" style="text-align:center;margin-top:8px;font-size:13px;font-weight:800;"></p>
 
-    <a class="card" href="/call.html" style="margin-top:14px;display:flex;align-items:center;gap:14px;color:inherit;">
-      <div style="width:54px;height:54px;border-radius:50%;background:linear-gradient(160deg,#ffd9b0,#ffedd5);display:flex;align-items:center;justify-content:center;font-size:28px;flex:0 0 auto;">📞</div>
-      <div style="flex:1;min-width:0;">
-        <div style="font-weight:800;font-family:'Baloo 2';font-size:17px;">Video call Leo <span class="soon" style="background:#d7ffb8;color:#46a302;">NEW</span></div>
-        <div class="muted" style="font-size:13px;font-weight:700;">Have a real 5-minute chat — Leo listens and talks back!</div>
-      </div>
-      <span style="font-size:22px;color:var(--muted);">›</span>
-    </a>
 
 
-    <div class="card" style="margin-top:14px;display:flex;align-items:center;gap:14px;">
-      <div style="font-size:30px;" id="goalIcon">🎯</div>
-      <div style="flex:1;min-width:0;">
-        <div style="font-weight:800;" id="goalLabel">Today's goal</div>
-        <div class="bar" style="margin-top:8px;"><span id="goalBar" style="width:0%"></span></div>
-      </div>
-      <div style="font-weight:800;font-family:'Baloo 2';font-size:15px;" id="goalNum">0/10</div>
+    <div style="margin-top:12px;display:flex;align-items:center;gap:10px;padding:0 4px;">
+      <span style="font-size:18px;" id="goalIcon">🎯</span>
+      <span style="font-weight:800;font-size:13px;color:var(--muted);" id="goalLabel">Today's goal</span>
+      <div class="bar" style="flex:1;height:9px;"><span id="goalBar" style="width:0%"></span></div>
+      <span style="font-weight:800;font-family:'Baloo 2';font-size:13px;" id="goalNum">0/10</span>
     </div>
 
     <h2 style="margin:22px 2px 6px;">Your sound town 🏘️</h2>
@@ -125,7 +114,7 @@
     // today's theme — fresh words + a daily bonus on the first session
     if (Sona.dayTheme) {
       var th = Sona.dayTheme();
-      document.getElementById("themeLine").textContent = th.e + " " + th.n + " — new words today" + (practicedToday ? "!" : " · +10 🪙 daily bonus!");
+      document.getElementById("themeLine").textContent = th.e + " " + th.n + " — new words today!";
     }
 
     var SOUNDS = (p.focusSounds && p.focusSounds.length) ? p.focusSounds.slice() : ["R", "S", "L", "K"];
@@ -180,13 +169,16 @@
     // iOS install tip (once, Safari only, until installed)
     var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
     var standalone = window.navigator.standalone || (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches);
-    if (isIOS && !standalone && localStorage.getItem("sona.iosTipDismissed") !== "1") {
+    try { if (standalone) localStorage.setItem("sona.iosTipDone", "1"); } catch (e) {}
+    if (isIOS && !standalone && localStorage.getItem("sona.iosTipDone") !== "1") {
+      try { localStorage.setItem("sona.iosTipDone", "1"); } catch (e) {} // show once, ever
       var tip = document.getElementById("iosTip"); tip.style.display = "flex";
-      document.getElementById("iosTipClose").onclick = function () { tip.style.display = "none"; try { localStorage.setItem("sona.iosTipDismissed", "1"); } catch (e) {} };
+      document.getElementById("iosTipClose").onclick = function () { tip.style.display = "none"; };
     }
 
     // gentle, dismissible subscribe prompt (non-blocking)
-    if (!(Sona.isSubscribed && Sona.isSubscribed()) && localStorage.getItem("sona.subPromptDismissed") !== "1") {
+    var iosTipShowing = document.getElementById("iosTip") && document.getElementById("iosTip").style.display === "flex";
+    if (!iosTipShowing && !(Sona.isSubscribed && Sona.isSubscribed()) && localStorage.getItem("sona.subPromptDismissed") !== "1") {
       var sb = document.getElementById("subBanner"); sb.style.display = "flex";
       document.getElementById("subDismiss").onclick = function () { sb.style.display = "none"; try { localStorage.setItem("sona.subPromptDismissed", "1"); } catch (e) {} };
     }
