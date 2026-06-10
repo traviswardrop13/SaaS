@@ -98,7 +98,7 @@
       badge(100, 52) + '</svg>';
   }
 
-  const DEFAULT_PROFILE = { childName: "", focusSounds: ["R", "S", "L", "K"], voiceOn: true, coachName: "Coach", cloudScoring: true, slpEvaluated: "", goals: "", focusArea: "articulation", language: "en", character: "leo", outfit: "none", backdrop: "sky", soundOn: true, voiceId: "bIHbv24MWmeRgasZH58o", dailyMinutes: 5, owned: { outfits: ["none"], backdrops: ["sky"] }, onboarded: false };
+  const DEFAULT_PROFILE = { childName: "", focusSounds: ["R", "S", "L", "K"], voiceOn: true, coachName: "Coach", cloudScoring: true, slpEvaluated: "", goals: "", focusArea: "articulation", language: "en", character: "leo", outfit: "none", backdrop: "sky", soundOn: true, voiceId: "SF6OznV7UB2AxeidTpie", dailyMinutes: 5, owned: { outfits: ["none"], backdrops: ["sky"] }, onboarded: false };
   // stage per sound: 0 = isolation (the letter), 1 = syllables, 2 = words, 3 = mastered.
   const STAGES = ["isolation", "syllables", "words"];
   const DEFAULT_PROGRESS = { sessions: [], totals: { sessions: 0, words: 0, stars: 0, coins: 0 }, streak: { count: 0, lastDate: "" }, bySound: {}, stage: {}, chests: {}, missed: [] };
@@ -109,13 +109,13 @@
 
   function getProfile() {
     const p = Object.assign(clone(DEFAULT_PROFILE), load(PKEY, {}));
-    // migrate old/empty defaults to Leo's current voice (a young boy)
-    if (!p.voiceId || p.voiceId === "cgSgspJ2msm6clMCkdW9") p.voiceId = DEFAULT_PROFILE.voiceId;
+    // migrate old/empty default voices (Jessica, Will) to Leo's real voice
+    if (!p.voiceId || p.voiceId === "cgSgspJ2msm6clMCkdW9" || p.voiceId === "bIHbv24MWmeRgasZH58o") p.voiceId = DEFAULT_PROFILE.voiceId;
     return p;
   }
-  // Leo speaks slightly pitched-up (cartoon-kid brightness). Players multiply
-  // playbackRate by this when playing /api/tts audio.
-  const VOICE_PITCH = 1.06;
+  // Playback-rate multiplier for /api/tts audio. Leo's ElevenLabs voice is
+  // already a kid — no pitch-shift needed.
+  const VOICE_PITCH = 1;
   function saveProfile(patch) { save(PKEY, Object.assign(getProfile(), patch || {})); }
 
   function getProgress() {

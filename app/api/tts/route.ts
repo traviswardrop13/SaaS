@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
   try {
     if (elevenKey) {
       const voiceId =
-        voiceOverride || process.env.ELEVENLABS_VOICE_ID || "bIHbv24MWmeRgasZH58o"; // Will — young male; clients pitch playback up ~15% for Leo's boy voice.
+        voiceOverride || process.env.ELEVENLABS_VOICE_ID || "SF6OznV7UB2AxeidTpie"; // Leo's voice — a real kid, no client pitch-shift needed.
       const model = process.env.ELEVENLABS_MODEL || "eleven_multilingual_v2";
       const r = await fetch(
         `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?output_format=pcm_24000`,
