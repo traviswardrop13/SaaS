@@ -136,6 +136,39 @@
     return g.stage[sound] || 0;
   }
 
+  // ── the daily variety engine ──
+  // Sessions are assembled from rotating ingredients seeded by the date, so
+  // every day feels different without hand-authoring a 30-day curriculum:
+  // a theme of the day + a daily pick from each sound's word pool.
+  const THEMES = [
+    { e: "🐾", n: "Animal Day" }, { e: "🚀", n: "Space Day" }, { e: "🍎", n: "Snack Day" },
+    { e: "🌈", n: "Color Day" }, { e: "🦸", n: "Hero Day" }, { e: "🎵", n: "Music Day" }, { e: "🤪", n: "Silly Day" },
+  ];
+  function dayNum() { const d = new Date(); return d.getFullYear() * 366 + Math.floor((d - new Date(d.getFullYear(), 0, 0)) / 864e5); }
+  function dayTheme() { return THEMES[dayNum() % THEMES.length]; }
+  // deterministic per-day shuffle-and-take (salt keeps picks different per sound)
+  function dailyPick(arr, n, salt) {
+    let seed = (dayNum() * 9301 + (salt || 0)) | 0;
+    const rand = function () { seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+    const a = arr.slice();
+    for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rand() * (i + 1)); const tmp = a[i]; a[i] = a[j]; a[j] = tmp; }
+    return a.slice(0, Math.min(n, a.length));
+  }
+
+  // Word pools per sound (beginning / middle / end positions) — the lesson
+  // picks a few per day; the Library's Word Box shows them all.
+  const WORDS = {
+    R: [{ w: "rabbit", e: "🐰" }, { w: "rocket", e: "🚀" }, { w: "ring", e: "💍" }, { w: "rain", e: "🌧️" }, { w: "robot", e: "🤖" }, { w: "rose", e: "🌹" }, { w: "rock", e: "🪨" }, { w: "carrot", e: "🥕" }, { w: "pirate", e: "🏴‍☠️" }, { w: "car", e: "🚗" }, { w: "star", e: "⭐" }, { w: "door", e: "🚪" }],
+    S: [{ w: "sun", e: "☀️" }, { w: "snake", e: "🐍" }, { w: "soap", e: "🧼" }, { w: "sock", e: "🧦" }, { w: "sandwich", e: "🥪" }, { w: "seal", e: "🦭" }, { w: "spoon", e: "🥄" }, { w: "dinosaur", e: "🦖" }, { w: "glasses", e: "👓" }, { w: "bus", e: "🚌" }, { w: "house", e: "🏠" }, { w: "grass", e: "🌱" }],
+    L: [{ w: "lion", e: "🦁" }, { w: "leaf", e: "🍃" }, { w: "lemon", e: "🍋" }, { w: "ladder", e: "🪜" }, { w: "lamp", e: "💡" }, { w: "lollipop", e: "🍭" }, { w: "log", e: "🪵" }, { w: "balloon", e: "🎈" }, { w: "jello", e: "🍮" }, { w: "ball", e: "⚽" }, { w: "bell", e: "🔔" }, { w: "owl", e: "🦉" }],
+    K: [{ w: "cat", e: "🐱" }, { w: "key", e: "🔑" }, { w: "cake", e: "🍰" }, { w: "kite", e: "🪁" }, { w: "king", e: "👑" }, { w: "koala", e: "🐨" }, { w: "cow", e: "🐮" }, { w: "corn", e: "🌽" }, { w: "monkey", e: "🐵" }, { w: "cookie", e: "🍪" }, { w: "duck", e: "🦆" }, { w: "book", e: "📖" }],
+    G: [{ w: "goat", e: "🐐" }, { w: "girl", e: "👧" }, { w: "game", e: "🎮" }, { w: "gift", e: "🎁" }, { w: "guitar", e: "🎸" }, { w: "gorilla", e: "🦍" }, { w: "wagon", e: "🛒" }, { w: "tiger", e: "🐯" }, { w: "dog", e: "🐶" }, { w: "frog", e: "🐸" }, { w: "pig", e: "🐷" }, { w: "egg", e: "🥚" }],
+    F: [{ w: "fish", e: "🐟" }, { w: "fox", e: "🦊" }, { w: "fan", e: "🪭" }, { w: "fire", e: "🔥" }, { w: "feather", e: "🪶" }, { w: "fork", e: "🍴" }, { w: "flower", e: "🌸" }, { w: "elephant", e: "🐘" }, { w: "dolphin", e: "🐬" }, { w: "leaf", e: "🍂" }, { w: "giraffe", e: "🦒" }, { w: "wolf", e: "🐺" }],
+    SH: [{ w: "shoe", e: "👟" }, { w: "ship", e: "🚢" }, { w: "shark", e: "🦈" }, { w: "sheep", e: "🐑" }, { w: "shell", e: "🐚" }, { w: "shirt", e: "👕" }, { w: "milkshake", e: "🥤" }, { w: "sunshine", e: "🌞" }, { w: "fish", e: "🐠" }, { w: "brush", e: "🪥" }, { w: "splash", e: "💦" }, { w: "trash", e: "🗑️" }],
+    CH: [{ w: "cheese", e: "🧀" }, { w: "chair", e: "🪑" }, { w: "cherry", e: "🍒" }, { w: "chicken", e: "🐔" }, { w: "chocolate", e: "🍫" }, { w: "cheetah", e: "🐆" }, { w: "lunchbox", e: "🍱" }, { w: "teacher", e: "🧑‍🏫" }, { w: "peach", e: "🍑" }, { w: "beach", e: "🏖️" }, { w: "watch", e: "⌚" }, { w: "sandwich", e: "🥪" }],
+    TH: [{ w: "thumb", e: "👍" }, { w: "three", e: "3️⃣" }, { w: "throne", e: "🪑" }, { w: "thunder", e: "⛈️" }, { w: "think", e: "💭" }, { w: "thirty", e: "🔢" }, { w: "toothbrush", e: "🪥" }, { w: "birthday", e: "🎂" }, { w: "bath", e: "🛁" }, { w: "tooth", e: "🦷" }, { w: "earth", e: "🌍" }, { w: "moth", e: "🦋" }],
+  };
+
   // --- prize chests (one at the end of each sound's path) ---
   function chestClaimed(sound) { return !!getProgress().chests[sound]; }
   function claimChest(sound) { const g = getProgress(); if (g.chests[sound]) return false; g.chests[sound] = true; save(GKEY, g); return true; }
@@ -287,5 +320,5 @@
     setTimeout(() => el.remove(), 950);
   }
 
-  global.Sona = { ALL_SOUNDS, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, HOUSE_PALETTE, houseArt, characterById, outfitById, backdropById, buddyMarkup, getProfile, saveProfile, getProgress, recordSession, resetProgress, stageOf, completeStage, chestClaimed, claimChest, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, restore, saveRecording, listRecordings, sfx, confetti, pop };
+  global.Sona = { ALL_SOUNDS, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, HOUSE_PALETTE, WORDS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, getProfile, saveProfile, getProgress, recordSession, resetProgress, stageOf, completeStage, chestClaimed, claimChest, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, restore, saveRecording, listRecordings, sfx, confetti, pop };
 })(window);

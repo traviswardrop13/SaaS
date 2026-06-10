@@ -143,6 +143,7 @@
   <div id="start" class="screen">
     <div class="bigorb"><img id="startPic" alt="Leo" src="/coach/leo.png" /></div>
     <h1 id="startTitle">Let's practice!</h1>
+    <div id="themeTag" style="margin-top:10px;font-family:'Baloo 2';font-weight:800;font-size:14px;color:#e08600;background:#fff3df;border-radius:99px;padding:7px 16px;">⭐ Practice Day</div>
     <p>Tap below — Leo will say each one, then it's your turn. Allow the mic so he can hear you!</p>
     <button class="cta" id="startBtn">Start</button>
     <div id="err"></div>
@@ -197,6 +198,10 @@
     if (isNaN(STAGE) || STAGE < 0) STAGE = 0;
     if (STAGE > 2) STAGE = 2;
 
+    // daily variety: a fresh pick from the sound's word pool + theme of the day
+    const POOL = (window.Sona && Sona.WORDS && Sona.WORDS[SOUND]) ? Sona.WORDS[SOUND] : PLAN.words.map(w=>({w:w.display,e:w.emoji}));
+    const DAYWORDS = (window.Sona && Sona.dailyPick) ? Sona.dailyPick(POOL, 4, SOUND.charCodeAt(0)) : POOL.slice(0,4);
+    const THEME = (window.Sona && Sona.dayTheme) ? Sona.dayTheme() : { e:"⭐", n:"Practice Day" };
     const BUDDY = (window.Sona ? Sona.characterById(profile.character) : { img:"/coach/leo.png", emoji:"🦁" });
     const ISO_AGAIN = ["Again — say it!","One more big "+SOUND+"!","Nice — again!","Keep going!","One more time!","Last one!"];
     const PRAISE = ["Nice job!","Great!","Awesome!","Perfect!","You got it!","Woohoo!"];
@@ -206,9 +211,9 @@
     const pick = (a)=>a[Math.floor(Math.random()*a.length)];
     const shuffle = (a)=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));const t=a[i];a[i]=a[j];a[j]=t;}return a;};
 
-    function otherWords(){ const o=[]; Object.keys(SOUND_PLAN).forEach(k=>{ if(k!==SOUND) SOUND_PLAN[k].words.forEach(w=>o.push(w.emoji)); }); return o; }
+    function otherWords(){ const o=[]; const W=(window.Sona&&Sona.WORDS)||{}; Object.keys(W).forEach(k=>{ if(k!==SOUND) W[k].forEach(w=>o.push(w.e)); }); return o.length?o:EXTRA; }
     function distractors(exclude, n){
-      const pool = shuffle(PLAN.words.map(w=>w.emoji).concat(otherWords()).concat(EXTRA).filter(e=>e!==exclude));
+      const pool = shuffle(POOL.map(w=>w.e).concat(otherWords()).concat(EXTRA).filter(e=>e!==exclude));
       const out=[]; for(const e of pool){ if(out.indexOf(e)===-1){ out.push(e); if(out.length>=n) break; } } return out;
     }
 
@@ -225,8 +230,10 @@
         q.push({type:"findSound"});
         return shuffle(q).slice(0,7);
       }
-      PLAN.words.forEach(w=>q.push({type:"say",text:w.scoreText,label:w.display,emoji:w.emoji,level:"word",mode:"full"}));
+      DAYWORDS.forEach(w=>q.push({type:"say",text:w.w,label:w.w,emoji:w.e,level:"word",mode:"full"}));
       q.push({type:"pick"}); q.push({type:"pick"}); q.push({type:"findSound"});
+      // Game Day Friday: trade a say-it for an extra round of games
+      if (new Date().getDay() === 5) { q.push({type:"pick"}); q = q.filter((x,k)=>!(x.type==="say"&&k===0)); }
       return shuffle(q).slice(0,8);
     }
     const QUEUE = buildQueue(STAGE);
@@ -312,7 +319,7 @@
 
     /* PICK THE PICTURE (hear word -> tap emoji) */
     function renderPick(a){
-      const w=pick(PLAN.words);
+      const wd=pick(POOL); const w={ display:wd.w, emoji:wd.e, scoreText:wd.w };
       const opts=shuffle([{e:w.emoji,ok:true}].concat(distractors(w.emoji,3).map(e=>({e,ok:false}))));
       const head=document.createElement("div");
       head.innerHTML='<div class="qtitle">Tap what you hear</div><div class="audiorow"><button class="audiobtn" id="play">'+audioSVG()+'</button><div class="wave"></div></div>';
@@ -328,7 +335,7 @@
 
     /* FIND THE SOUND (tap all pictures with the target sound) */
     function renderFind(a){
-      const tgs=shuffle(PLAN.words).slice(0,2).map(w=>({e:w.emoji,ok:true}));
+      const tgs=shuffle(POOL).slice(0,2).map(w=>({e:w.e,ok:true}));
       const others=shuffle(otherWords()).slice(0,2).map(e=>({e,ok:false}));
       const opts=shuffle(tgs.concat(others));
       const head=document.createElement("div");
@@ -348,8 +355,13 @@
       const correct=results.filter(r=>r.ok).length;
       const stars=Math.max(1,Math.min(3,Math.round(correct/Math.max(1,results.length)*3)));
       const passed=correct>=Math.ceil(results.length*0.5);
-      coins+=10; setCoins();
+      coins+=10;
+      // daily bonus: the first session each day pays extra (streak fuel)
+      const firstToday = !!(window.Sona && Sona.getProgress().streak.lastDate !== new Date().toISOString().slice(0,10));
+      if(firstToday) coins+=10;
+      setCoins();
       if(window.Sona){ Sona.recordSession({words:results}); Sona.completeStage(SOUND,STAGE,passed); Sona.addCoins(coins); }
+      if(firstToday){ const r=document.createElement("div"); r.className="reward"; r.innerHTML="+10<small>☀️ daily bonus</small>"; document.querySelector(".rewards").appendChild(r); }
       $("doneStars").textContent="★".repeat(stars)+"☆".repeat(3-stars);
       const NEXT=["the letter","syllables","words"];
       $("doneSub").textContent = passed&&STAGE<2 ? ("Next up: "+NEXT[STAGE+1]+"! 🎉") : passed ? ("You finished the "+SOUND+" sound! 🏆") : ("Let’s practice this one again. 💪");
@@ -373,6 +385,7 @@
 
     const TITLES=["Warm up the "+SOUND+" sound!", SOUND+" syllables!", SOUND+" words!"];
     $("startTitle").textContent=TITLES[STAGE]||("Practice "+SOUND+"!");
+    $("themeTag").textContent = THEME.e + " " + THEME.n + " — new words today!";
     if(BUDDY.img){ $("startPic").src=BUDDY.img; }
     $("startBtn").onclick=start;
     $("close").onclick=leave;

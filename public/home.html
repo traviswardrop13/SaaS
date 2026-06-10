@@ -44,12 +44,22 @@
     </a>
 
     <a class="btn" id="startBtn" href="#" style="margin-top:14px;">▶&nbsp;&nbsp;Start today's practice</a>
+    <p id="themeLine" class="muted" style="text-align:center;margin-top:8px;font-size:13px;font-weight:800;"></p>
 
     <a class="card" href="/call.html" style="margin-top:14px;display:flex;align-items:center;gap:14px;color:inherit;">
       <div style="width:54px;height:54px;border-radius:50%;background:linear-gradient(160deg,#ffd9b0,#ffedd5);display:flex;align-items:center;justify-content:center;font-size:28px;flex:0 0 auto;">📞</div>
       <div style="flex:1;min-width:0;">
         <div style="font-weight:800;font-family:'Baloo 2';font-size:17px;">Video call Leo <span class="soon" style="background:#d7ffb8;color:#46a302;">NEW</span></div>
         <div class="muted" style="font-size:13px;font-weight:700;">Have a real 5-minute chat — Leo listens and talks back!</div>
+      </div>
+      <span style="font-size:22px;color:var(--muted);">›</span>
+    </a>
+
+    <a class="card" href="/library.html" style="margin-top:14px;display:flex;align-items:center;gap:14px;color:inherit;">
+      <div style="width:54px;height:54px;border-radius:50%;background:linear-gradient(160deg,#ffe9c8,#fff3df);display:flex;align-items:center;justify-content:center;font-size:28px;flex:0 0 auto;">📚</div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-weight:800;font-family:'Baloo 2';font-size:17px;">Library <span class="soon" style="background:#ffe7c8;color:#e08600;">JUST FOR FUN</span></div>
+        <div class="muted" style="font-size:13px;font-weight:700;">Stories Leo reads out loud + a word box to explore — no scores!</div>
       </div>
       <span style="font-size:22px;color:var(--muted);">›</span>
     </a>
@@ -113,6 +123,12 @@
     document.getElementById("goalBar").style.width = gpct + "%";
     document.getElementById("goalNum").textContent = Math.min(todayCount, GOAL) + "/" + GOAL;
     if (todayCount >= GOAL) { document.getElementById("goalIcon").textContent = "✅"; document.getElementById("goalLabel").textContent = "Goal complete!"; }
+
+    // today's theme — fresh words + a daily bonus on the first session
+    if (Sona.dayTheme) {
+      var th = Sona.dayTheme();
+      document.getElementById("themeLine").textContent = th.e + " " + th.n + " — new words today" + (practicedToday ? "!" : " · +10 🪙 daily bonus!");
+    }
 
     var SOUNDS = (p.focusSounds && p.focusSounds.length) ? p.focusSounds.slice() : ["R", "S", "L", "K"];
     function stageFor(s) { return window.Sona ? Sona.stageOf(s) : Math.min(3, Math.floor((g.bySound[s] || 0) / 3)); }
