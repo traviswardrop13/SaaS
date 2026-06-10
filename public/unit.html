@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>Sona — practice path</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/sona.css" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <meta name="theme-color" content="#7a5238" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <style>
+    /* inside the sound house: warm wood planks */
+    body{background:
+      repeating-linear-gradient(90deg, rgba(0,0,0,.07) 0 2px, transparent 2px 54px),
+      repeating-linear-gradient(180deg, rgba(255,255,255,.03) 0 3px, transparent 3px 90px),
+      linear-gradient(180deg,#83573b,#6e4730) fixed;}
+    .wrap{max-width:560px;}
+    header.unit{display:flex;align-items:center;gap:12px;padding:10px 2px 4px;}
+    .backbtn{width:46px;height:46px;border-radius:50%;border:none;background:#fff;cursor:pointer;font-size:20px;color:#1cb0f6;
+      box-shadow:0 4px 0 0 rgba(0,0,0,.18);display:flex;align-items:center;justify-content:center;transition:transform .05s;}
+    .backbtn:active{transform:translateY(3px);box-shadow:0 1px 0 0 rgba(0,0,0,.18);}
+    .unitTitle{flex:1;text-align:center;}
+    .unitTitle b{font-family:"Baloo 2";font-weight:800;font-size:20px;color:#fff;text-shadow:0 2px 0 rgba(0,0,0,.25);}
+    .unitTitle span{display:block;font-weight:800;font-size:12px;color:#e8cdb6;letter-spacing:.05em;text-transform:uppercase;}
+    .coinsPill{display:flex;align-items:center;gap:5px;background:rgba(255,255,255,.92);border-radius:99px;padding:8px 14px;
+      font-family:"Baloo 2";font-weight:800;color:#e08600;font-size:15px;box-shadow:0 4px 0 0 rgba(0,0,0,.18);}
+
+    /* path overrides for the wood room */
+    .path{margin-top:26px;padding-bottom:30px;}
+    .path:before{background:repeating-linear-gradient(rgba(255,231,200,.45) 0 9px,transparent 9px 22px);top:0;bottom:40px;}
+    .node{margin-bottom:34px;}
+    .node .bubble{width:96px;height:96px;font-size:38px;background:#fff;color:#1cb0f6;box-shadow:0 7px 0 0 rgba(0,0,0,.22);}
+    .node .bubble:active{box-shadow:0 2px 0 0 rgba(0,0,0,.22);}
+    .node.done .bubble{background:#ffd33d;color:#9a6a00;box-shadow:0 7px 0 0 #c79b18;}
+    .node.locked .bubble{background:#5d3d2a;color:#8a6a55;box-shadow:0 7px 0 0 #4a2f1f;cursor:default;}
+    .node .label{color:#fff;font-family:"Baloo 2";font-size:15px;text-shadow:0 2px 0 rgba(0,0,0,.25);}
+    .node .lvl{color:#e8cdb6;}
+    .node.cur .bubble{box-shadow:0 0 0 7px rgba(255,255,255,.25),0 7px 0 0 rgba(0,0,0,.22);}
+    .node.chest .bubble{font-size:44px;}
+    .node.chest.ready .bubble{background:linear-gradient(160deg,#ffd33d,#ff9f1c);box-shadow:0 7px 0 0 #b97a10;}
+    .leoToken{top:-46px;font-size:0;}
+    .leoToken img{width:46px;height:46px;object-fit:contain;}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="unit">
+      <button class="backbtn" id="back" title="Back">←</button>
+      <div class="unitTitle"><b id="uTitle">R sound</b><span id="uSub">3 steps to the prize!</span></div>
+      <span class="coinsPill">🪙 <span id="coins">0</span></span>
+    </header>
+
+    <div class="path" id="path"></div>
+  </div>
+
+  <div id="prize" class="cele">
+    <div class="box">
+      <div class="big">🎁</div>
+      <h2 id="przTitle">You did it!</h2>
+      <p id="przMsg">You finished every step!</p>
+      <button class="btn" id="przClose" style="margin-top:18px;">Collect +25 🪙</button>
+    </div>
+  </div>
+
+  <script src="/sona.js"></script>
+  <script>
+    var params = new URLSearchParams(location.search);
+    var p = Sona.getProfile();
+    var name = (p.childName || "").trim();
+    var SOUND = (params.get("sound") || (p.focusSounds && p.focusSounds[0]) || "R").toUpperCase();
+    var st = Sona.stageOf(SOUND); // 0..3
+    var claimed = Sona.chestClaimed(SOUND);
+
+    document.getElementById("uTitle").textContent = SOUND + " sound";
+    document.getElementById("uSub").textContent = claimed ? "Prize collected — keep practicing!" : (st >= 3 ? "Open your prize!" : (3 - st) + " step" + (3 - st === 1 ? "" : "s") + " to the prize!");
+    document.getElementById("coins").textContent = Sona.getCoins();
+    document.getElementById("back").onclick = function () { location.href = "/home.html"; };
+
+    var STEPS = [
+      { label: "Say the sound", icon: SOUND },
+      { label: "Syllables", icon: (SOUND.toLowerCase() + "a·" + SOUND.toLowerCase() + "o") },
+      { label: "Words", icon: { R: "🐰", S: "☀️", L: "🦁", K: "🐱", G: "🐐", F: "🐟", SH: "👟", CH: "🧀", TH: "👍" }[SOUND] || "⭐" },
+    ];
+    var BUDDY = Sona.characterById(p.character);
+
+    var pathEl = document.getElementById("path");
+    STEPS.forEach(function (s, i) {
+      var done = st > i, open = st >= i, current = open && !done;
+      var node = document.createElement("div");
+      node.className = "node" + (done ? " done" : "") + (open ? "" : " locked") + (current ? " cur" : "");
+      node.style.transform = "translateX(" + Math.round(Math.sin((i + 1) * 1.7) * 70) + "px)";
+      var face = done ? "✓" : (open ? s.icon : "🔒");
+      var small = (typeof face === "string" && face.length > 2) ? ' style="font-size:24px;"' : "";
+      node.innerHTML =
+        (current ? '<div class="leoToken">' + (BUDDY.img ? '<img src="' + BUDDY.img + '" alt=""/>' : BUDDY.emoji) + '</div>' : "") +
+        '<button class="bubble"' + small + ">" + face + "</button>" +
+        '<div class="label">' + s.label + "</div>" +
+        '<div class="lvl">Level ' + (i + 1) + "</div>";
+      if (open) node.querySelector(".bubble").onclick = function () {
+        if (window.Sona) Sona.sfx.tap();
+        location.href = "/lesson.html?sound=" + encodeURIComponent(SOUND) + "&stage=" + i + (name ? "&name=" + encodeURIComponent(name) : "");
+      };
+      pathEl.appendChild(node);
+    });
+
+    // the prize chest at the end of this sound's path
+    var ready = st >= 3 && !claimed;
+    var chest = document.createElement("div");
+    chest.className = "node chest " + (ready ? "ready cur" : (claimed ? "done" : "locked"));
+    chest.style.transform = "translateX(" + Math.round(Math.sin(4 * 1.7) * 70) + "px)";
+    chest.innerHTML = '<button class="bubble">' + (claimed ? "⭐" : (ready ? "🎁" : "🔒")) + '</button><div class="label">' + (claimed ? "Collected!" : "Prize") + "</div>";
+    if (ready) chest.querySelector(".bubble").onclick = openChest;
+    pathEl.appendChild(chest);
+
+    function openChest() {
+      if (!Sona.claimChest(SOUND)) return;
+      Sona.addCoins(25);
+      Sona.sfx.reward();
+      Sona.confetti({ count: 220, duration: 3200 });
+      document.getElementById("przTitle").textContent = "You mastered " + SOUND + "!";
+      document.getElementById("przMsg").textContent = (name ? name + ", you" : "You") + " finished every step. Amazing!";
+      document.getElementById("prize").classList.add("show");
+    }
+    document.getElementById("przClose").onclick = function () {
+      document.getElementById("prize").classList.remove("show");
+      location.reload();
+    };
+  </script>
+</body>
+</html>

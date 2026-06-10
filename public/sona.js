@@ -47,7 +47,7 @@
   const DEFAULT_PROFILE = { childName: "", focusSounds: ["R", "S", "L", "K"], voiceOn: true, coachName: "Coach", cloudScoring: true, slpEvaluated: "", goals: "", focusArea: "articulation", language: "en", character: "leo", outfit: "none", backdrop: "sky", soundOn: true, voiceId: "cgSgspJ2msm6clMCkdW9", owned: { outfits: ["none"], backdrops: ["sky"] }, onboarded: false };
   // stage per sound: 0 = isolation (the letter), 1 = syllables, 2 = words, 3 = mastered.
   const STAGES = ["isolation", "syllables", "words"];
-  const DEFAULT_PROGRESS = { sessions: [], totals: { sessions: 0, words: 0, stars: 0, coins: 0 }, streak: { count: 0, lastDate: "" }, bySound: {}, stage: {} };
+  const DEFAULT_PROGRESS = { sessions: [], totals: { sessions: 0, words: 0, stars: 0, coins: 0 }, streak: { count: 0, lastDate: "" }, bySound: {}, stage: {}, chests: {} };
 
   const clone = (o) => JSON.parse(JSON.stringify(o));
   function load(key, def) { try { const v = JSON.parse(localStorage.getItem(key)); return (v && typeof v === "object") ? v : clone(def); } catch { return clone(def); } }
@@ -68,7 +68,7 @@
     const g = load(GKEY, DEFAULT_PROGRESS);
     g.totals = Object.assign({ sessions: 0, words: 0, stars: 0, coins: 0 }, g.totals || {});
     g.streak = Object.assign({ count: 0, lastDate: "" }, g.streak || {});
-    g.bySound = g.bySound || {}; g.sessions = g.sessions || []; g.stage = g.stage || {};
+    g.bySound = g.bySound || {}; g.sessions = g.sessions || []; g.stage = g.stage || {}; g.chests = g.chests || {};
     return g;
   }
   const today = () => new Date().toISOString().slice(0, 10);
@@ -81,6 +81,10 @@
     if (passed && stage >= cur && cur < 3) { g.stage[sound] = Math.min(3, stage + 1); save(GKEY, g); }
     return g.stage[sound] || 0;
   }
+
+  // --- prize chests (one at the end of each sound's path) ---
+  function chestClaimed(sound) { return !!getProgress().chests[sound]; }
+  function claimChest(sound) { const g = getProgress(); if (g.chests[sound]) return false; g.chests[sound] = true; save(GKEY, g); return true; }
 
   // --- coins (earned in lessons, spent in the shop) ---
   function getCoins() { return getProgress().totals.coins || 0; }
@@ -229,5 +233,5 @@
     setTimeout(() => el.remove(), 950);
   }
 
-  global.Sona = { ALL_SOUNDS, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, characterById, outfitById, backdropById, buddyMarkup, getProfile, saveProfile, getProgress, recordSession, resetProgress, stageOf, completeStage, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, restore, saveRecording, listRecordings, sfx, confetti, pop };
+  global.Sona = { ALL_SOUNDS, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, characterById, outfitById, backdropById, buddyMarkup, getProfile, saveProfile, getProgress, recordSession, resetProgress, stageOf, completeStage, chestClaimed, claimChest, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, restore, saveRecording, listRecordings, sfx, confetti, pop };
 })(window);
