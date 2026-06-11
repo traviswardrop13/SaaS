@@ -53,38 +53,43 @@ export async function POST(req: NextRequest) {
     if (elevenKey) {
       const voiceId =
         voiceOverride || process.env.ELEVENLABS_VOICE_ID || "SF6OznV7UB2AxeidTpie"; // Leo's voice — a real kid, no client pitch-shift needed.
-      const model = process.env.ELEVENLABS_MODEL || "eleven_multilingual_v2";
-      const r = await fetch(
-        `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?output_format=pcm_24000`,
+      // Try v3 first (far more natural cadence/inflection), fall back to the
+      // workhorse v2 if v3 rejects the request — Leo must never go silent.
+      const fallbackModel = process.env.ELEVENLABS_MODEL || "eleven_multilingual_v2";
+      const attempts = [
+        // v3 only takes coarse stability modes (0=creative, 0.5=natural, 1=robust)
+        { model: process.env.ELEVENLABS_V3_MODEL || "eleven_v3", settings: { stability: 0.5, use_speaker_boost: true } },
         {
-          method: "POST",
-          headers: { "xi-api-key": elevenKey, "Content-Type": "application/json" },
-          body: JSON.stringify({
-            text,
-            model_id: model,
-            voice_settings: {
-              stability: 0.72,        // high = calm, consistent delivery (low values get theatrical)
-              similarity_boost: 0.85, // stay close to the voice's natural sample
-              style: 0.06,            // near zero — style exaggeration is what sounded fake
-              speed: 0.96,            // barely slowed; clients no longer pitch playback
-              use_speaker_boost: true,
-            },
-          }),
-        },
-      );
-      if (!r.ok) {
-        const detail = await r.text().catch(() => "");
-        return NextResponse.json(
-          {
-            ok: false,
-            error: `ElevenLabs error (${r.status})`,
-            // pcm_24000 output needs a paid ElevenLabs plan — surfaced here if so
-            detail: detail.slice(0, 500),
+          model: fallbackModel,
+          settings: {
+            stability: 0.72,        // high = calm, consistent delivery (low values get theatrical)
+            similarity_boost: 0.85, // stay close to the voice's natural sample
+            style: 0.06,            // near zero — style exaggeration is what sounded fake
+            speed: 0.96,            // barely slowed; clients no longer pitch playback
+            use_speaker_boost: true,
           },
-          { status: 502 },
+        },
+      ].filter((a, i, arr) => arr.findIndex((b) => b.model === a.model) === i);
+
+      let lastErr = "";
+      for (const a of attempts) {
+        const r = await fetch(
+          `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?output_format=pcm_24000`,
+          {
+            method: "POST",
+            headers: { "xi-api-key": elevenKey, "Content-Type": "application/json" },
+            body: JSON.stringify({ text, model_id: a.model, voice_settings: a.settings }),
+          },
         );
+        if (r.ok) {
+          return new NextResponse(await r.arrayBuffer(), { status: 200, headers: PCM_HEADERS });
+        }
+        lastErr = `${a.model}: ${r.status} ${(await r.text().catch(() => "")).slice(0, 200)}`;
       }
-      return new NextResponse(await r.arrayBuffer(), { status: 200, headers: PCM_HEADERS });
+      return NextResponse.json(
+        { ok: false, error: "ElevenLabs error", detail: lastErr },
+        { status: 502 },
+      );
     }
 
     // Fallback: OpenAI TTS (pcm = 24kHz/16-bit/mono)

@@ -41,6 +41,9 @@
         <option value="10">10 minutes a day</option>
       </select>
 
+      <label class="field" for="volume">Leo's voice volume <span id="volVal" style="font-weight:800;color:var(--muted);"></span></label>
+      <input id="volume" type="range" min="0.3" max="1" step="0.05" style="width:100%;max-width:340px;display:block;" />
+
       <label class="field" for="coachName">Coach name</label>
       <input id="coachName" type="text" placeholder="Coach" />
 
@@ -139,6 +142,10 @@
     soundEl.checked = p.soundOn !== false;
     cloudEl.checked = p.cloudScoring !== false;
     dailyEl.value = String(p.dailyMinutes || 5);
+    var volEl = document.getElementById("volume"), volVal = document.getElementById("volVal");
+    volEl.value = (p.volume != null ? p.volume : 0.8);
+    var paintVol = function () { volVal.textContent = Math.round(parseFloat(volEl.value) * 100) + "%"; };
+    volEl.oninput = paintVol; paintVol();
     focusAreaEl.value = p.focusArea || "articulation";
     slpEl.value = p.slpEvaluated || "";
     goalsEl.value = p.goals || "";
@@ -151,7 +158,7 @@
       wrap.appendChild(b);
     });
     document.getElementById("save").onclick = function () {
-      Sona.saveProfile({ childName: childEl.value.trim(), coachName: coachEl.value.trim() || "Coach", voiceOn: voiceEl.checked, soundOn: soundEl.checked, cloudScoring: cloudEl.checked, dailyMinutes: parseInt(dailyEl.value, 10) || 5, focusArea: focusAreaEl.value, slpEvaluated: slpEl.value, goals: goalsEl.value.trim(), focusSounds: [].concat(Array.from(sel)) });
+      Sona.saveProfile({ childName: childEl.value.trim(), coachName: coachEl.value.trim() || "Coach", voiceOn: voiceEl.checked, soundOn: soundEl.checked, cloudScoring: cloudEl.checked, dailyMinutes: parseInt(dailyEl.value, 10) || 5, volume: parseFloat(volEl.value) || 0.8, focusArea: focusAreaEl.value, slpEvaluated: slpEl.value, goals: goalsEl.value.trim(), focusSounds: [].concat(Array.from(sel)) });
       var s = document.getElementById("saved"); s.style.display = "inline"; setTimeout(function () { s.style.display = "none"; }, 1800);
     };
     document.getElementById("reset").onclick = function () {

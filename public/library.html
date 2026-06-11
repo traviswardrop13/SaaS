@@ -190,7 +190,7 @@
             var ab = ctx.createBuffer(1, n, 24000), ch = ab.getChannelData(0);
             var dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
             for (var i = 0; i < n; i++) ch[i] = dv.getInt16(i * 2, true) / 32768;
-            var s = ctx.createBufferSource(); s.buffer = ab; s.playbackRate.value = PITCH; s.connect(ctx.destination);
+            var s = ctx.createBufferSource(); s.buffer = ab; s.playbackRate.value = PITCH; var g = ctx.createGain(); g.gain.value = (profile.volume != null ? profile.volume : 0.8); s.connect(g); g.connect(ctx.destination);
             curSrc = s;
             s.onended = function () { playing = false; curSrc = null; resolve(); };
             s.start();

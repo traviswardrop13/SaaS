@@ -1,14 +1,13 @@
-# Mouth-cue art (drop-in)
+# Mouth/tongue demos shown during letter practice
 
-One image per sound showing HOW to make it (side-view mouth/face, tongue and
-teeth visible, kid-friendly cartoon, transparent or white background).
+The lesson shows, per sound, the first of these that exists (else nothing):
 
-Save as PNG with these exact names — the lesson picks them up automatically
-(no code change). If a file is missing, the lesson just shows the text cue.
+1. `R.mp4` (or S/L/K/G/F/SH/CH/TH .mp4) — a short looping VIDEO, autoplay/muted.
+   Best asset: Rachel filming a 4–6s close-up of her mouth making the sound,
+   straight on, good light, looped. Real SLP mouth >> any cartoon.
+2. `R.png` etc. — a still illustration as fallback.
 
-  R.png  S.png  L.png  K.png  G.png  F.png  SH.png  CH.png  TH.png
-
-Recommended: square-ish, ~600x600. Generation prompt that works well:
-"Cute cartoon side-view cutaway of a lion's open mouth showing the tongue
-tip lifting up behind the top teeth, simple flat style, white background"
-(adjust the tongue/teeth/lips action per sound).
+Filming checklist (per sound, ~1 take each):
+- frame: lips + chin + tip of nose; phone in landscape is fine
+- do the sound 2–3 times slowly in one clip
+- name the file exactly like the sound: R.mp4, SH.mp4, TH.mp4 …

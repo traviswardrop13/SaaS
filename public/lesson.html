@@ -297,7 +297,7 @@
     /* ---- audio ---- */
     let audioCtx=null;
     function getCtx(){ if(!audioCtx){ const AC=window.AudioContext||window.webkitAudioContext; audioCtx=new AC(); } if(audioCtx.state==="suspended") audioCtx.resume(); return audioCtx; }
-    function playPCM(bytes){ return new Promise((res)=>{ try{ const ctx=getCtx(); const n=bytes.byteLength>>1; const ab=ctx.createBuffer(1,n,24000); const ch=ab.getChannelData(0); const dv=new DataView(bytes.buffer,bytes.byteOffset,bytes.byteLength); for(let i=0;i<n;i++) ch[i]=dv.getInt16(i*2,true)/32768; const s=ctx.createBufferSource(); s.buffer=ab; s.playbackRate.value=(window.Sona&&Sona.VOICE_PITCH)||1; s.connect(ctx.destination); s.onended=res; s.start(); }catch(e){ res(); } }); }
+    function playPCM(bytes){ return new Promise((res)=>{ try{ const ctx=getCtx(); const n=bytes.byteLength>>1; const ab=ctx.createBuffer(1,n,24000); const ch=ab.getChannelData(0); const dv=new DataView(bytes.buffer,bytes.byteOffset,bytes.byteLength); for(let i=0;i<n;i++) ch[i]=dv.getInt16(i*2,true)/32768; const s=ctx.createBufferSource(); s.buffer=ab; s.playbackRate.value=(window.Sona&&Sona.VOICE_PITCH)||1; const g=ctx.createGain(); g.gain.value=(profile.volume!=null?profile.volume:0.8); s.connect(g); g.connect(ctx.destination); s.onended=res; s.start(); }catch(e){ res(); } }); }
     let speaking=false;
     async function say(text){ if(!text||!VOICE_ON) return; if(speaking) return; speaking=true;
       try{ const r=await fetch("/api/tts",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text,voice:profile.voiceId||""})}); if(r.ok) await playPCM(new Uint8Array(await r.arrayBuffer())); }catch(e){} finally{ speaking=false; } }
@@ -337,10 +337,10 @@
               const rms=Math.sqrt(sum/td.length), now=performance.now();
               if(now-t0<300){ noiseSum+=rms; noiseN++; }
               else{
-                if(!thr) thr=Math.min(0.09, Math.max(0.016, (noiseSum/Math.max(1,noiseN))*2.6));
-                if(rms>thr){ voiced++; lastVoice=now; if(voiced>=3 && !spoke){ spoke=true; const m=document.getElementById("micState"); if(m) m.textContent="I hear you! 👂"; } }
+                if(!thr) thr=Math.min(0.09, Math.max(0.012, (noiseSum/Math.max(1,noiseN))*2.6));
+                if(rms>thr){ voiced++; lastVoice=now; if(voiced>=2 && !spoke){ spoke=true; const m=document.getElementById("micState"); if(m) m.textContent="I hear you! 👂"; } }
                 else if(rms<thr*0.7) voiced=0;
-                if(spoke && now-lastVoice>=900){ finish(); return; }
+                if(spoke && now-lastVoice>=1000){ finish(); return; }
               }
               wraf=requestAnimationFrame(tick); })();
           }
@@ -354,6 +354,10 @@
     }
     async function scoreSay(a,blob,transcript){
       if(useSpeechAce && blob){ try{ const fd=new FormData(); fd.append("audio",new File([blob],"a.webm",{type:blob.type||"audio/webm"})); fd.append("text",a.text); fd.append("targetSound",(a.snd||SOUND)); fd.append("userId",CHILD||"child"); fd.append("mode",a.mode||"full"); const r=await fetch("/api/score",{method:"POST",body:fd}); const j=await r.json(); if(j&&j.ok) return j.rating!=="tryAgain"; }catch(e){} }
+      // no usable transcript from the browser? transcribe the recording ourselves
+      if(!norm(transcript) && blob && blob.size>1200){
+        try{ const fd=new FormData(); fd.append("audio",new File([blob],"turn."+(((blob.type||"").includes("webm"))?"webm":"m4a"),{type:blob.type||"audio/mp4"})); const r=await fetch("/api/stt",{method:"POST",body:fd}); const j=await r.json(); if(j&&j.ok&&j.text) transcript=j.text; }catch(e){}
+      }
       return matchText(transcript,a.text);
     }
 
@@ -395,7 +399,7 @@
       wrap.innerHTML =
         '<div class="leobubble"><img src="'+(BUDDY.img||"/coach/leo.png")+'" alt="Leo"/><div class="bub">'+a.label+'</div></div>'+
         (showPic ? '<div class="bigpic">'+a.emoji+'</div>' : '<div class="bigword">'+a.label+'</div>')+
-        (a.isLetter ? '<img class="mouthImg" src="/coach/mouth/'+(a.snd||SOUND)+'.png" alt="" onerror="this.style.display=\'none\'"/>' : '')+
+        (a.isLetter ? '<video class="mouthImg" src="/coach/mouth/'+(a.snd||SOUND)+'.mp4" autoplay muted loop playsinline onerror="this.style.display=\'none\';if(this.nextElementSibling)this.nextElementSibling.style.display=\'block\';"></video><img class="mouthImg" src="/coach/mouth/'+(a.snd||SOUND)+'.png" alt="" style="display:none" onerror="this.style.display=\'none\'"/>' : '')+
         '<div class="cue">'+(window.Mouth?Mouth.hint(a.snd||SOUND):(CUE[a.snd||SOUND]||""))+'</div>'+
         '<button class="audiobtn sm" id="replay" title="Hear it">'+audioSVG()+'</button>'+
         '<button class="mic" id="micBtn" title="Say it">'+micSVG()+'</button>'+
