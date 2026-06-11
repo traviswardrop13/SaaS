@@ -145,6 +145,7 @@
     var live = false, secsLeft = TOTAL, wrapSent = false, kidTurns = 0;
     var convo = []; // {role:"user"|"leo", text}
     var curSrc = null, sr = null, timerIv = null, talkRAF = null;
+    var micStream = null; // live mic stream — drives the voice-activity detector
     var leoImg = $("leoImg");
 
     function toast(msg) {
@@ -233,21 +234,56 @@
 
     /* ---------- listening ---------- */
     var SRClass = window.SpeechRecognition || window.webkitSpeechRecognition;
+    var SPOKE = "__spoke__"; // child clearly talked, but this device has no speech-to-text
+    // Voice-activity detector on the live mic: after the child speaks and then
+    // goes quiet for ~1.1s, onDone(spokeAtAll) fires — no tap needed.
+    function watchVoice(maxMs, onDone) {
+      if (!micStream) return null;
+      try {
+        var ctx = getCtx(), src = ctx.createMediaStreamSource(micStream);
+        var an = ctx.createAnalyser(); an.fftSize = 512; src.connect(an);
+        var td = new Uint8Array(an.fftSize);
+        var t0 = performance.now(), noiseSum = 0, noiseN = 0, thr = 0, voiced = 0, spoke = false, lastVoice = 0, raf = null, dead = false;
+        function stop() { if (dead) return; dead = true; if (raf) cancelAnimationFrame(raf); try { src.disconnect(); } catch (e) {} }
+        (function tick() {
+          if (dead) return;
+          an.getByteTimeDomainData(td);
+          var sum = 0; for (var k = 0; k < td.length; k++) { var d = (td[k] - 128) / 128; sum += d * d; }
+          var rms = Math.sqrt(sum / td.length), now = performance.now();
+          if (now - t0 < 300) { noiseSum += rms; noiseN++; }
+          else {
+            if (!thr) thr = Math.min(0.09, Math.max(0.016, (noiseSum / Math.max(1, noiseN)) * 2.6));
+            if (rms > thr) { voiced++; lastVoice = now; if (voiced >= 3) spoke = true; }
+            else if (rms < thr * 0.7) voiced = 0;
+            if (spoke && now - lastVoice >= 1100) { stop(); onDone(true); return; }
+            if (now - t0 >= maxMs) { stop(); onDone(spoke); return; }
+          }
+          raf = requestAnimationFrame(tick);
+        })();
+        return { stop: stop };
+      } catch (e) { return null; }
+    }
     function listenOnce(maxMs) {
       return new Promise(function (resolve) {
         if (!live) return resolve(null);
         if (!SRClass) {
+          // no speech-to-text on this device: the VAD ends the turn by itself;
+          // the "I'm done talking" button stays as a backstop
           status("fallback");
-          var t = setTimeout(done, maxMs);
-          function done() { clearTimeout(t); $("doneTalk").onclick = null; resolve(""); }
-          $("doneTalk").onclick = done;
+          var vw = null, t = setTimeout(function () { done(false); }, maxMs);
+          function done(spoke) { clearTimeout(t); if (vw) vw.stop(); $("doneTalk").onclick = null; resolve(spoke ? SPOKE : ""); }
+          $("doneTalk").onclick = function () { done(true); };
+          vw = watchVoice(maxMs, done);
           return;
         }
         status("listen");
         var finished = false, text = "";
         sr = new SRClass(); sr.lang = "en-US"; sr.interimResults = false; sr.maxAlternatives = 1;
+        // VAD nudges a hung recognizer: speech ended → sr.stop() flushes the
+        // final result (longer silence window than SR's own, so SR usually wins)
+        var vw = watchVoice(maxMs + 1500, function () { try { sr.stop(); } catch (e) {} });
         var t = setTimeout(function () { try { sr.stop(); } catch (e) {} }, maxMs);
-        function finish() { if (finished) return; finished = true; clearTimeout(t); resolve(text || null); }
+        function finish() { if (finished) return; finished = true; clearTimeout(t); if (vw) vw.stop(); resolve(text || null); }
         sr.onresult = function (ev) { for (var i = 0; i < ev.results.length; i++) text += " " + ev.results[i][0].transcript; text = text.trim(); try { sr.stop(); } catch (e) {} };
         sr.onerror = function () { finish(); };
         sr.onend = function () { finish(); };
@@ -286,7 +322,12 @@
           if (!live) break;
           status("think");
           var prompt = null;
-          if (heard && heard.trim()) {
+          if (heard === SPOKE) {
+            // they talked, we just can't transcribe on this device — keep the
+            // chat moving instead of telling them "I couldn't hear you"
+            silence = 0; kidTurns++;
+            prompt = "(The child said something happily, but this device cannot turn their words into text. React warmly as if you enjoyed hearing them, and ask the next short, easy question.)";
+          } else if (heard && heard.trim()) {
             silence = 0; kidTurns++;
             showYouSaid(heard.trim());
             convo.push({ role: "user", text: heard.trim() });
@@ -327,8 +368,9 @@
         ringTone();
         // fetch Leo's opener DURING the ring so he speaks at connect
         var openerP = chat("(The call just connected. Say a short, excited hello" + (CHILD ? " to " + CHILD : "") + " and ask one easy, fun question.)");
-        // mic permission in parallel — don't block the call on the prompt
-        try { if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) navigator.mediaDevices.getUserMedia({ audio: true }).catch(function () {}); } catch (e) {}
+        // mic permission in parallel — don't block the call on the prompt; keep
+        // the stream so the voice-activity detector can end turns hands-free
+        try { if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) navigator.mediaDevices.getUserMedia({ audio: true }).then(function (s) { micStream = s; }).catch(function () {}); } catch (e) {}
         timerIv = setInterval(function () {
           if (!live) return;
           secsLeft--; $("timer").textContent = fmt(Math.max(0, secsLeft));
@@ -342,6 +384,7 @@
       live = false;
       try { curSrc && curSrc.stop(); } catch (e) {}
       try { sr && sr.stop(); } catch (e) {}
+      try { if (micStream) { micStream.getTracks().forEach(function (tr) { tr.stop(); }); micStream = null; } } catch (e) {}
       clearInterval(timerIv); cancelAnimationFrame(talkRAF);
       var talked = TOTAL - Math.max(0, secsLeft);
       $("endTime").innerHTML = fmt(talked) + "<small>talk time</small>";
@@ -356,7 +399,7 @@
 
     $("callBtn").onclick = startCall;
     $("hangup").onclick = function () { endCall(false); };
-    window.addEventListener("pagehide", function () { live = false; try { curSrc && curSrc.stop(); } catch (e) {} try { sr && sr.stop(); } catch (e) {} });
+    window.addEventListener("pagehide", function () { live = false; try { curSrc && curSrc.stop(); } catch (e) {} try { sr && sr.stop(); } catch (e) {} try { if (micStream) micStream.getTracks().forEach(function (tr) { tr.stop(); }); } catch (e) {} });
   </script>
 </body>
 </html>

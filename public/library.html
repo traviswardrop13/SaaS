@@ -136,6 +136,41 @@
         { e: "🍪", t: "Kiki gives the king a cookie." },
         { e: "🐮", t: "A cat and a cow come to play." },
         { e: "🌞", t: "What a cool day for Kiki!" } ] },
+      { sound: "SH", emoji: "🐑", title: "Shelly the Sheep", colors: ["#c08cf0", "#a86fe0"], pages: [
+        { e: "👟", t: "Shelly the sheep shines her shoes." },
+        { e: "🐚", t: "She shows a shiny shell to a fish." },
+        { e: "🚢", t: "They sail on a big ship. Shhh!" },
+        { e: "⭐", t: "Shelly makes a wish on a star." },
+        { e: "🥤", t: "She sips a milkshake — so fresh." },
+        { e: "😴", t: "Shhh… Shelly is sleeping now." } ] },
+      { sound: "CH", emoji: "🐥", title: "Charlie the Chick", colors: ["#ff9446", "#ef7d2c"], pages: [
+        { e: "🍒", t: "Charlie the chick chews chewy cherries." },
+        { e: "🚂", t: "Charlie rides the choo-choo train." },
+        { e: "🧀", t: "He munches cheese at lunch." },
+        { e: "🐿️", t: "A chipmunk sits on a chair." },
+        { e: "🍫", t: "They share chocolate chips. Crunch!" },
+        { e: "😁", t: "Charlie chirps: cheep, cheep, cheep." } ] },
+      { sound: "TH", emoji: "🦥", title: "Theo the Sloth", colors: ["#9aa7ff", "#7f8eef"], pages: [
+        { e: "💭", t: "Theo the sloth thinks happy thoughts." },
+        { e: "3️⃣", t: "Theo counts: one, two, three!" },
+        { e: "👍", t: "He gives a big thumbs up." },
+        { e: "🦷", t: "Theo brushes his three teeth." },
+        { e: "🛁", t: "Then a warm bath — both feet in." },
+        { e: "🌙", t: "Thank you, moon. Theo says goodnight." } ] },
+      { sound: "G", emoji: "🐐", title: "Gus the Goat", colors: ["#58c7b5", "#3fae9c"], pages: [
+        { e: "🌱", t: "Gus the goat grows a green garden." },
+        { e: "🎁", t: "A goose gives Gus a gift." },
+        { e: "🎸", t: "Gus plays a goofy guitar." },
+        { e: "🍇", t: "They gobble grapes by the gate." },
+        { e: "🐛", t: "A bug giggles on the grass." },
+        { e: "🌟", t: "Good game, Gus. Goodnight!" } ] },
+      { sound: "F", emoji: "🦊", title: "Fifi the Fox", colors: ["#ff7fab", "#ef6595"], pages: [
+        { e: "🪶", t: "Fifi the fox finds four feathers." },
+        { e: "🐟", t: "Fifi feeds a funny fish." },
+        { e: "🔥", t: "They warm five feet by the fire." },
+        { e: "🦋", t: "A butterfly flies fast — wow!" },
+        { e: "🎉", t: "Fifi has fun with her friends." },
+        { e: "👋", t: "Fifi waves: farewell, farewell!" } ] },
     ];
 
     /* ---- speech (no scoring, just listening) ---- */
@@ -165,6 +200,12 @@
     }
 
     /* ---- shelf ---- */
+    // the child's focus-sound books come first; the rest keep their order
+    var focusOrder = profile.focusSounds || [];
+    STORIES.sort(function (a, b) {
+      var ai = focusOrder.indexOf(a.sound), bi = focusOrder.indexOf(b.sound);
+      return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
+    });
     var shelf = document.getElementById("shelf");
     STORIES.forEach(function (st) {
       var b = document.createElement("button");
