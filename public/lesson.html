@@ -387,6 +387,8 @@
 
     function render(a){
       act.innerHTML=""; hideCheck(); fb.className="";
+      // say-screens auto-advance — the footer Check button is noise there
+      checkBtn.style.visibility = (a.type==="say") ? "hidden" : "visible";
       if(a.type==="say") return renderSay(a);
       if(a.type==="pick") return renderPick(a);
       if(a.type==="findSound") return renderFind(a);
@@ -399,13 +401,22 @@
       wrap.innerHTML =
         '<div class="leobubble"><img src="'+(BUDDY.img||"/coach/leo.png")+'" alt="Leo"/><div class="bub">'+a.label+'</div></div>'+
         (showPic ? '<div class="bigpic">'+a.emoji+'</div>' : '<div class="bigword">'+a.label+'</div>')+
-        (a.isLetter ? '<video class="mouthImg" src="/coach/mouth/'+(a.snd||SOUND)+'.mp4" autoplay muted loop playsinline onerror="this.style.display=\'none\';if(this.nextElementSibling)this.nextElementSibling.style.display=\'block\';"></video><img class="mouthImg" src="/coach/mouth/'+(a.snd||SOUND)+'.png" alt="" style="display:none" onerror="this.style.display=\'none\'"/>' : '')+
+        (a.isLetter ? '<div id="mouthSlot"></div>' : '')+
         '<div class="cue">'+(window.Mouth?Mouth.hint(a.snd||SOUND):(CUE[a.snd||SOUND]||""))+'</div>'+
-        '<button class="audiobtn sm" id="replay" title="Hear it">'+audioSVG()+'</button>'+
         '<button class="mic" id="micBtn" title="Say it">'+micSVG()+'</button>'+
         '<div class="micstate" id="micState">Listen…</div>'+
         '<button class="skip" id="skipBtn">Skip</button>';
       act.appendChild(wrap);
+      // mouth demo: only attach media that actually loads — video first
+      // (/coach/mouth/R.mp4), then the still (R.png), else nothing at all
+      if(a.isLetter){
+        const slot=wrap.querySelector("#mouthSlot"), mSrc="/coach/mouth/"+(a.snd||SOUND);
+        const v=document.createElement("video");
+        v.muted=true; v.loop=true; v.autoplay=true; v.playsInline=true; v.setAttribute("playsinline",""); v.className="mouthImg";
+        v.addEventListener("loadeddata",()=>{ slot.appendChild(v); v.play().catch(()=>{}); },{once:true});
+        v.addEventListener("error",()=>{ const im=new Image(); im.className="mouthImg"; im.onload=()=>slot.appendChild(im); im.src=mSrc+".png"; },{once:true});
+        v.src=mSrc+".mp4";
+      }
       // Leo speaks, then the mic starts LISTENING by itself — no tap needed.
       let started=false, answered=false;
       const doRecord=async()=>{
@@ -415,7 +426,6 @@
         const ok=await scoreSay(a,res.blob,res.transcript);
         answer(ok, ok?("You said “"+a.label+"”"):("Try “"+a.label+"” again"));
       };
-      $("replay").onclick=()=>{ if(!started) say(a.text); };
       $("skipBtn").onclick=()=>{ if(answered) return; answered=true; answer(true,"Skipped — that’s okay!"); };
       $("micBtn").onclick=doRecord;
       setTimeout(async()=>{ if(a.intro) await say(a.intro); if(a.say) await say(a.say); else await say(a.text); doRecord(); }, 250);
