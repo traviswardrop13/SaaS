@@ -59,6 +59,10 @@
     .saywrap{display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px;margin-top:4px;}
     .leobubble{display:flex;align-items:flex-end;gap:10px;}
     .leobubble img{width:74px;height:74px;object-fit:contain;}
+    .leobubble img.hop{animation:leohop .55s ease;}
+    .leobubble img.cheer{animation:leocheer .7s ease;}
+    @keyframes leohop{0%,100%{transform:translateY(0)}35%{transform:translateY(-16px) rotate(-4deg)}65%{transform:translateY(-4px) rotate(3deg)}}
+    @keyframes leocheer{0%,100%{transform:rotate(0)}25%{transform:rotate(-6deg) scale(1.06)}60%{transform:rotate(5deg) scale(1.04)}}
     .bub{position:relative;background:#fff;border:2px solid var(--line);border-radius:16px;padding:10px 14px;
       font-family:"Baloo 2";font-weight:800;font-size:26px;color:var(--blue-d);}
     .bub:before{content:"";position:absolute;left:-9px;bottom:14px;width:15px;height:15px;background:#fff;border-left:2px solid var(--line);border-bottom:2px solid var(--line);transform:rotate(45deg);}
@@ -378,6 +382,8 @@
       else { combo=0; if(window.Sona) Sona.sfx.tap(); }
       fb.className = "show";
       $("fbIcon").textContent = ok?"⭐":"👍";
+      const lb=document.querySelector(".leobubble img");
+      if(lb){ lb.classList.remove("hop","cheer"); void lb.offsetWidth; lb.classList.add(ok?"hop":"cheer"); }
       $("fbTitle").textContent = ok?pick(PRAISE):pick(TRYAGAIN);
       $("fbSub").textContent = sub||"";
       $("fbBtn").onclick = ()=>{ fb.className=""; i++; setProgress(); next(); };
@@ -473,11 +479,19 @@
         const bys={}; results.forEach(r=>{ (bys[r.sound]=bys[r.sound]||[]).push(r.ok); });
         if(!RETRY) Object.keys(bys).forEach(s=>{ const arr=bys[s]; if(arr.length>=3){ const p=arr.filter(Boolean).length/arr.length>=0.6; Sona.completeStage(s, (STAGE_USED[s]!=null?STAGE_USED[s]:STAGE), p); } });
       }
-      $("doneStars").textContent="★".repeat(stars)+"☆".repeat(3-stars);
+      // celebration choreography: stars land one by one, XP counts up
+      $("doneStars").textContent="☆☆☆";
+      let si=0; const starIv=setInterval(()=>{ si++;
+        $("doneStars").textContent="★".repeat(Math.min(si,stars))+"☆".repeat(3-Math.min(si,stars));
+        if(si<=stars && window.Sona){ Sona.sfx.star(); Sona.pop("⭐",{color:"#ff9600",y:window.innerHeight*0.3}); }
+        if(si>=3) clearInterval(starIv);
+      },430);
       const NEXT=["the letter","syllables","words"];
       $("doneSub").textContent = DAILY ? ("Daily practice done, "+CHILD+" — "+correct+" of "+results.length+" sounded great! 🎉")
         : (passed&&STAGE<2 ? ("Next up: "+NEXT[STAGE+1]+"! 🎉") : passed ? ("You finished the "+SOUND+" sound! 🏆") : ("Let’s practice this one again. 💪"));
-      $("xpReward").innerHTML="+"+xp+"<small>XP</small>";
+      const xpEl=$("xpReward"); xpEl.innerHTML="+0<small>XP</small>";
+      let shown=0; const stepXp=Math.max(1,Math.round(xp/26));
+      const xpIv=setInterval(()=>{ shown=Math.min(xp,shown+stepXp); xpEl.innerHTML="+"+shown+"<small>XP</small>"; if(shown>=xp) clearInterval(xpIv); },42);
 
       $("done").classList.remove("hidden");
       if(window.Sona){ Sona.confetti(); Sona.sfx.complete(); setTimeout(()=>Sona.sfx.star(),500); }
