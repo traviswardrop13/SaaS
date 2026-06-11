@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>Sona — Make it yours</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/sona.css" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <meta name="theme-color" content="#2a9df4" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Sona" />
+  <style>
+    /* live preview stage */
+    #preview{position:relative;border-radius:24px;overflow:hidden;height:230px;display:flex;align-items:flex-end;justify-content:center;
+      box-shadow:inset 0 -2px 0 rgba(15,39,66,.06),0 10px 30px rgba(15,39,66,.08);}
+    #scene{position:absolute;inset:0;font-size:30px;}
+    #scene span{position:absolute;opacity:.9;}
+    #scene .s0{top:14px;left:16px;} #scene .s1{top:22px;right:20px;font-size:24px;} #scene .s2{bottom:54px;left:24px;font-size:26px;}
+    .hero{position:relative;margin-bottom:18px;animation:bob 3.2s ease-in-out infinite;}
+    @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+    #heroChar{font-size:104px;line-height:1;filter:drop-shadow(0 10px 14px rgba(0,0,0,.16));}
+    #heroOutfit{position:absolute;top:-14px;left:50%;transform:translateX(-50%);font-size:46px;line-height:1;}
+    #heroName{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);font-family:"Baloo 2";font-weight:800;
+      font-size:15px;color:#10243a;background:rgba(255,255,255,.92);padding:4px 14px;border-radius:99px;box-shadow:0 4px 12px rgba(15,39,66,.12);white-space:nowrap;}
+
+    .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:10px;}
+    .opt{position:relative;border:2px solid var(--line);background:#fff;border-radius:18px;padding:12px 6px 9px;cursor:pointer;
+      display:flex;flex-direction:column;align-items:center;gap:4px;transition:transform .05s,border-color .12s;}
+    .opt:active{transform:translateY(2px);}
+    .opt.on{border-color:var(--blue);box-shadow:0 0 0 3px rgba(42,157,244,.16);}
+    .opt .em{font-size:40px;line-height:1;height:44px;display:flex;align-items:center;}
+    .opt .nm{font-family:"Baloo 2";font-weight:800;font-size:12px;color:var(--ink);}
+    .opt.locked{opacity:.7;cursor:default;}
+    .opt.locked .em{filter:grayscale(.7);}
+    .opt .soon{position:absolute;top:6px;right:6px;font-size:9px;font-weight:800;letter-spacing:.04em;color:var(--muted);
+      background:#eef3fb;border-radius:99px;padding:2px 7px;}
+    .opt .price{position:absolute;top:6px;right:6px;font-size:10px;font-weight:800;color:var(--orange-d);background:#ffe7c8;border-radius:99px;padding:2px 7px;}
+    .opt .em{position:relative;}
+    /* backdrop swatches */
+    .opt.bd .em{width:100%;height:46px;border-radius:12px;font-size:22px;}
+    .opt.none-outfit .em{color:var(--muted);font-size:13px;font-weight:800;font-family:"Baloo 2";}
+  </style>
+  <script defer src="/_vercel/insights/script.js"></script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="app">
+      <div class="brand"><span class="leo">🦁</span> Make it yours</div>
+      <div class="pills">
+        <a class="iconbtn" href="/home.html" title="Home" style="display:flex;align-items:center;justify-content:center;">✕</a>
+      </div>
+    </header>
+
+    <div id="preview">
+      <div id="scene"></div>
+      <div class="hero">
+        <span id="heroOutfit"></span>
+        <span id="heroChar">🦁</span>
+        <span id="heroName">Leo</span>
+      </div>
+    </div>
+
+    <h2 style="margin:20px 2px 2px;">Choose your buddy</h2>
+    <div class="grid" id="chars"></div>
+
+    <h2 style="margin:22px 2px 2px;">Add an outfit</h2>
+    <div class="grid" id="outfits"></div>
+
+    <h2 style="margin:22px 2px 2px;">Pick a place</h2>
+    <div class="grid" id="backdrops"></div>
+
+    <a class="btn" id="done" href="/home.html" style="margin-top:22px;">Done&nbsp;&nbsp;✓</a>
+    <p class="muted" style="text-align:center;margin-top:12px;font-size:13px;">More buddies coming soon! 🐸🐻🦊</p>
+  </div>
+
+  <script src="/sona.js"></script>
+  <script>
+    var p = Sona.getProfile();
+    var sel = { character: p.character || "leo", outfit: p.outfit || "none", backdrop: p.backdrop || "sky" };
+
+    var heroChar = document.getElementById("heroChar"),
+        heroOutfit = document.getElementById("heroOutfit"),
+        heroName = document.getElementById("heroName"),
+        previewEl = document.getElementById("preview"),
+        sceneEl = document.getElementById("scene");
+
+    function renderPreview() {
+      var c = Sona.characterById(sel.character),
+          o = Sona.outfitById(sel.outfit),
+          b = Sona.backdropById(sel.backdrop);
+      heroChar.innerHTML = Sona.buddyMarkup(sel.character, 132);
+      heroName.textContent = c.name;
+      heroOutfit.textContent = o.emoji || "";
+      previewEl.style.background = b.css;
+      sceneEl.innerHTML = (b.scene || []).map(function (e, i) { return '<span class="s' + i + '">' + e + '</span>'; }).join("");
+    }
+
+    function persist() { Sona.saveProfile({ character: sel.character, outfit: sel.outfit, backdrop: sel.backdrop }); }
+
+
+    // grandfather whatever the child already has selected (don't charge for it)
+    Sona.addOwned("outfits", sel.outfit); Sona.addOwned("backdrops", sel.backdrop);
+
+    // characters: Leo free, others "coming soon" (not buyable yet)
+    function buildChars() {
+      var host = document.getElementById("chars"); host.innerHTML = "";
+      Sona.CHARACTERS.forEach(function (it) {
+        var locked = !!it.locked;
+        var el = document.createElement("div");
+        el.className = "opt" + (sel.character === it.id && !locked ? " on" : "") + (locked ? " locked" : "");
+        el.innerHTML = '<span class="em">' + Sona.buddyMarkup(it.id, 40) + '</span><span class="nm">' + it.name + '</span>' + (locked ? '<span class="soon">SOON</span>' : "");
+        if (!locked) el.onclick = function () { if (window.Sona) Sona.sfx.tap(); sel.character = it.id; host.querySelectorAll(".opt").forEach(function (n) { n.classList.remove("on"); }); el.classList.add("on"); renderPreview(); persist(); };
+        host.appendChild(el);
+      });
+    }
+
+    // shop grid: owned items select; locked items cost coins to unlock
+    function buildShop(elId, items, key, kind, render) {
+      var host = document.getElementById(elId); host.innerHTML = "";
+      items.forEach(function (it) {
+        var owned = true; // beta: everything's unlocked — just pick what you like
+        var el = document.createElement("div");
+        el.className = "opt" + render.cls(it) + (sel[key] === it.id ? " on" : "");
+        el.innerHTML = render.inner(it) + (owned ? "" : '<span class="price">🪙 ' + it.cost + '</span>');
+        el.onclick = function () {
+          if (owned) { if (window.Sona) Sona.sfx.tap(); sel[key] = it.id; host.querySelectorAll(".opt").forEach(function (n) { n.classList.remove("on"); }); el.classList.add("on"); renderPreview(); persist(); return; }
+          if (coins >= it.cost) {
+            if (confirm("Unlock " + it.name + " for " + it.cost + " 🪙?")) {
+              Sona.spendCoins(it.cost); Sona.addOwned(kind, it.id); coins = Sona.getCoins(); setCoinBal();
+              if (window.Sona) { Sona.sfx.reward(); Sona.confetti({ count: 90, duration: 1600 }); }
+              sel[key] = it.id; persist(); buildShop(elId, items, key, kind, render); renderPreview();
+            }
+          } else { alert("You need " + (it.cost - coins) + " more 🪙 — practice to earn coins!"); }
+        };
+        host.appendChild(el);
+      });
+    }
+
+    buildChars();
+    buildShop("outfits", Sona.OUTFITS, "outfit", "outfits", {
+      cls: function (it) { return it.id === "none" ? " none-outfit" : ""; },
+      inner: function (it) { return '<span class="em">' + (it.emoji || "None") + '</span><span class="nm">' + it.name + '</span>'; },
+    });
+    buildShop("backdrops", Sona.BACKDROPS, "backdrop", "backdrops", {
+      cls: function () { return " bd"; },
+      inner: function (it) {
+        var sc = (it.scene || [])[0] || "";
+        return '<span class="em" style="background:' + it.css + ';display:flex;align-items:center;justify-content:center;">' + sc + '</span><span class="nm">' + it.name + '</span>';
+      },
+    });
+
+    renderPreview();
+  </script>
+</body>
+</html>

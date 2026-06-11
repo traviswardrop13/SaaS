@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>Sona — Library</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/sona.css" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <meta name="theme-color" content="#fff7ec" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <style>
+    body{background:linear-gradient(180deg,#fff7ec,#ffe9d2) fixed;}
+    .shelfhead{display:flex;align-items:center;gap:10px;margin:18px 2px 8px;}
+    .shelfhead h2{margin:0;}
+    .shelfhead .tag{font-size:11px;font-weight:800;color:#46a302;background:#d7ffb8;border-radius:99px;padding:3px 9px;}
+    /* story shelf */
+    .shelf{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+    .bookBtn{border:none;cursor:pointer;border-radius:18px;padding:16px 12px;text-align:center;color:#fff;
+      font-family:"Baloo 2";font-weight:800;transition:transform .06s;box-shadow:0 6px 0 0 rgba(0,0,0,.16);}
+    .bookBtn:active{transform:translateY(4px);box-shadow:0 1px 0 0 rgba(0,0,0,.16);}
+    .bookBtn .be{font-size:44px;display:block;}
+    .bookBtn .bt{display:block;font-size:15px;margin-top:6px;line-height:1.2;}
+    .bookBtn .bs{display:block;font-size:11px;opacity:.85;margin-top:3px;letter-spacing:.05em;text-transform:uppercase;}
+    /* word box */
+    .wordgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:10px;}
+    .wcard{border:2px solid var(--line);border-bottom-width:4px;background:#fff;border-radius:16px;padding:14px 6px 10px;cursor:pointer;
+      display:flex;flex-direction:column;align-items:center;gap:5px;transition:transform .06s;}
+    .wcard:active{transform:scale(.94);}
+    .wcard .we{font-size:42px;line-height:1;}
+    .wcard .ww{font-family:"Baloo 2";font-weight:800;font-size:13px;color:var(--blue-d);}
+
+    /* ── full-screen picture book ── */
+    #book{position:fixed;inset:0;z-index:50;display:none;flex-direction:column;background:linear-gradient(180deg,#fffdf7,#fff1dc);}
+    #book.show{display:flex;}
+    .bktop{display:flex;align-items:center;gap:12px;padding:calc(14px + env(safe-area-inset-top)) 16px 6px;}
+    .bkclose{width:42px;height:42px;border-radius:50%;border:none;background:#fff;color:#b9a98c;font-size:18px;font-weight:800;cursor:pointer;
+      box-shadow:0 3px 0 0 rgba(120,80,20,.15);flex:0 0 auto;}
+    .bkdots{flex:1;display:flex;gap:6px;justify-content:center;}
+    .bkdots i{width:9px;height:9px;border-radius:50%;background:#ead9bd;transition:.2s;}
+    .bkdots i.on{background:var(--orange);transform:scale(1.25);}
+    .bkstage{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:0 26px;}
+    .bkpic{font-size:clamp(110px,38vw,190px);line-height:1;filter:drop-shadow(0 14px 22px rgba(150,90,10,.18));animation:bkfloat 3.4s ease-in-out infinite;}
+    @keyframes bkfloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+    .bktext{margin-top:26px;font-family:"Baloo 2";font-weight:800;font-size:clamp(22px,6vw,30px);color:#5b2d05;line-height:1.35;max-width:480px;}
+    .bktext span{cursor:pointer;border-radius:8px;padding:0 2px;}
+    .bktext span:active{background:#ffe2b3;}
+    .bktitle{font-family:"Baloo 2";font-weight:800;font-size:clamp(30px,8vw,40px);color:#5b2d05;margin-top:18px;}
+    .bksub{font-weight:800;color:rgba(91,45,5,.7);margin-top:8px;}
+    .bkbottom{display:flex;align-items:center;justify-content:center;gap:14px;padding:12px 18px calc(22px + env(safe-area-inset-bottom));}
+    .bknav{border:none;border-radius:16px;padding:15px 26px;font-family:"Baloo 2";font-weight:800;font-size:17px;cursor:pointer;
+      text-transform:uppercase;letter-spacing:.04em;transition:transform .05s;}
+    .bknav:active{transform:translateY(3px);}
+    .bknext{flex:1;max-width:280px;color:#fff;background:var(--orange);box-shadow:0 5px 0 0 var(--orange-d);}
+    .bknext:active{box-shadow:0 1px 0 0 var(--orange-d);}
+    .bkback{background:#fff;color:#a5854f;box-shadow:0 5px 0 0 rgba(120,80,20,.18);}
+    .bkhear{width:56px;height:56px;border-radius:50%;border:none;background:var(--blue);color:#fff;font-size:22px;cursor:pointer;
+      box-shadow:0 5px 0 0 var(--blue-d);flex:0 0 auto;}
+    .bkhear:active{transform:translateY(3px);box-shadow:0 1px 0 0 var(--blue-d);}
+  </style>
+  <script defer src="/_vercel/insights/script.js"></script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="app">
+      <div class="brand"><span class="leo">📚</span> Library</div>
+      <div class="pills">
+        <a class="iconbtn" href="/home.html" title="Home" style="display:flex;align-items:center;justify-content:center;">✕</a>
+      </div>
+    </header>
+
+    <div class="card" style="display:flex;gap:12px;align-items:center;">
+      <img src="/coach/leo.png" alt="Leo" style="width:58px;height:58px;object-fit:contain;flex:0 0 auto;" />
+      <div><b style="font-family:'Baloo 2';font-size:17px;">Just for fun!</b>
+      <p class="muted" style="font-size:13px;font-weight:700;">No scores in here — read picture books with Leo and play with words.</p></div>
+    </div>
+
+    <div class="shelfhead"><h2>Sound stories</h2><span class="tag">LEO READS</span></div>
+    <div class="shelf" id="shelf"></div>
+
+    <div class="shelfhead"><h2>Word box</h2><span class="tag">TAP TO HEAR</span></div>
+    <div class="sounds" id="wbSounds" style="margin-top:2px;"></div>
+    <div class="wordgrid" id="wordgrid"></div>
+  </div>
+
+  <!-- full-screen picture book -->
+  <div id="book">
+    <div class="bktop">
+      <button class="bkclose" id="bkClose">✕</button>
+      <div class="bkdots" id="bkDots"></div>
+      <div style="width:42px;flex:0 0 auto;"></div>
+    </div>
+    <div class="bkstage" id="bkStage"></div>
+    <div class="bkbottom">
+      <button class="bknav bkback" id="bkPrev">←</button>
+      <button class="bkhear" id="bkHear" title="Hear it again">🔊</button>
+      <button class="bknav bknext" id="bkNext">Next →</button>
+    </div>
+  </div>
+
+  <script src="/sona.js"></script>
+  <script>
+    var profile = Sona.getProfile();
+    var PITCH = Sona.VOICE_PITCH || 1.15;
+
+    var STORIES = [
+      { sound: "R", emoji: "🐰", title: "Rory the Rabbit", colors: ["#ff7a6e", "#ef6557"], pages: [
+        { e: "🚀", t: "Rory the rabbit rides a red rocket." },
+        { e: "🌈", t: "The rocket roars over the rainbow." },
+        { e: "🤖", t: "Rory sees a robot on a rock." },
+        { e: "💍", t: "The robot gives Rory a ring." },
+        { e: "🌊", t: "They race around the river." },
+        { e: "🎉", t: "Rory roars: hooray, hooray!" } ] },
+      { sound: "S", emoji: "🦭", title: "Sunny the Seal", colors: ["#62bdff", "#46a6ec"], pages: [
+        { e: "☀️", t: "Sunny the seal sits in the sun." },
+        { e: "🐍", t: "Sunny sees a silly snake." },
+        { e: "🏖️", t: "The snake slides on the soft sand." },
+        { e: "🥄", t: "They sip soup with a silver spoon." },
+        { e: "🎵", t: "Sunny sings a silly song." },
+        { e: "😴", t: "So sleepy! Sunny says goodnight." } ] },
+      { sound: "L", emoji: "🦁", title: "Lily the Lion", colors: ["#ffd45e", "#f0bb33"], pages: [
+        { e: "🍭", t: "Lily the lion licks a lemon lollipop." },
+        { e: "🪵", t: "Lily leaps over a little log." },
+        { e: "🐞", t: "A ladybug lands on a leaf." },
+        { e: "😄", t: "Lily laughs: la la la!" },
+        { e: "🎈", t: "They look at a yellow balloon." },
+        { e: "💛", t: "Lily loves to play all day." } ] },
+      { sound: "K", emoji: "🐨", title: "Kiki the Koala", colors: ["#7dd470", "#63bd57"], pages: [
+        { e: "🍰", t: "Kiki the koala bakes a cake." },
+        { e: "🔑", t: "A kind king comes with a key." },
+        { e: "🪁", t: "The king flies a colorful kite." },
+        { e: "🍪", t: "Kiki gives the king a cookie." },
+        { e: "🐮", t: "A cat and a cow come to play." },
+        { e: "🌞", t: "What a cool day for Kiki!" } ] },
+    ];
+
+    /* ---- speech (no scoring, just listening) ---- */
+    var audioCtx = null, playing = false, curSrc = null, sayToken = 0;
+    function getCtx() { if (!audioCtx) { var AC = window.AudioContext || window.webkitAudioContext; audioCtx = new AC(); } if (audioCtx.state === "suspended") audioCtx.resume(); return audioCtx; }
+    function stopSpeech() { sayToken++; try { curSrc && curSrc.stop(); } catch (e) {} curSrc = null; playing = false; }
+    function say(text) {
+      return new Promise(function (resolve) {
+        if (!text) return resolve();
+        var tok = ++sayToken;
+        playing = true;
+        fetch("/api/tts", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text: text, voice: profile.voiceId || "" }) })
+          .then(function (r) { if (!r.ok) throw 0; return r.arrayBuffer(); })
+          .then(function (buf) {
+            if (tok !== sayToken) { playing = false; return resolve(); } // superseded — don't overlap
+            var bytes = new Uint8Array(buf), ctx = getCtx(), n = bytes.byteLength >> 1;
+            var ab = ctx.createBuffer(1, n, 24000), ch = ab.getChannelData(0);
+            var dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+            for (var i = 0; i < n; i++) ch[i] = dv.getInt16(i * 2, true) / 32768;
+            var s = ctx.createBufferSource(); s.buffer = ab; s.playbackRate.value = PITCH; s.connect(ctx.destination);
+            curSrc = s;
+            s.onended = function () { playing = false; curSrc = null; resolve(); };
+            s.start();
+          })
+          .catch(function () { setTimeout(function () { playing = false; resolve(); }, 600 + text.length * 40); });
+      });
+    }
+
+    /* ---- shelf ---- */
+    var shelf = document.getElementById("shelf");
+    STORIES.forEach(function (st) {
+      var b = document.createElement("button");
+      b.className = "bookBtn";
+      b.style.background = "linear-gradient(160deg," + st.colors[0] + "," + st.colors[1] + ")";
+      b.innerHTML = '<span class="be">' + st.emoji + '</span><span class="bt">' + st.title + '</span><span class="bs">' + st.sound + ' sound</span>';
+      b.onclick = function () { if (window.Sona) Sona.sfx.tap(); openBook(st); };
+      shelf.appendChild(b);
+    });
+
+    /* ---- the picture book: one picture + one line per page ---- */
+    var BOOK = null, page = -1; // -1 = cover, pages.length = The End
+    var bkStage = document.getElementById("bkStage"), bkDots = document.getElementById("bkDots");
+
+    function openBook(st) {
+      BOOK = st; page = -1;
+      document.getElementById("book").classList.add("show");
+      bkDots.innerHTML = "";
+      for (var i = 0; i < st.pages.length; i++) bkDots.appendChild(document.createElement("i"));
+      showPage();
+    }
+    function closeBook() { stopSpeech(); document.getElementById("book").classList.remove("show"); BOOK = null; }
+
+    function tappable(t) {
+      return t.split(" ").map(function (w) { return "<span>" + w + "</span>"; }).join(" ");
+    }
+    function showPage() {
+      stopSpeech();
+      [].forEach.call(bkDots.children, function (d, k) { d.className = k === page ? "on" : ""; });
+      var prev = document.getElementById("bkPrev"), next = document.getElementById("bkNext"), hear = document.getElementById("bkHear");
+      prev.style.visibility = page <= -1 ? "hidden" : "visible";
+      if (page === -1) {
+        bkStage.innerHTML = '<div class="bkpic">' + BOOK.emoji + '</div><div class="bktitle">' + BOOK.title + '</div><div class="bksub">A story full of ' + BOOK.sound + ' sounds — Leo reads it to you!</div>';
+        next.textContent = "Start →"; hear.style.visibility = "hidden";
+        say(BOOK.title + "! A story full of " + BOOK.sound + " sounds.");
+      } else if (page >= BOOK.pages.length) {
+        bkStage.innerHTML = '<div class="bkpic">🎉</div><div class="bktitle">The End!</div><div class="bksub">Great listening! Read it again or pick another story.</div>';
+        next.textContent = "All done ✓"; hear.style.visibility = "hidden";
+        if (window.Sona) { Sona.confetti({ count: 130, duration: 2200 }); Sona.sfx.star(); }
+        say("The end! Great listening!");
+      } else {
+        var pg = BOOK.pages[page];
+        bkStage.innerHTML = '<div class="bkpic">' + pg.e + '</div><div class="bktext">' + tappable(pg.t) + '</div>';
+        next.textContent = "Next →"; hear.style.visibility = "visible";
+        bkStage.querySelectorAll(".bktext span").forEach(function (sp) {
+          sp.onclick = function () { if (playing) return; say(sp.textContent.replace(/[^a-zA-Z']/g, "")); };
+        });
+        say(pg.t);
+      }
+    }
+    document.getElementById("bkNext").onclick = function () {
+      if (window.Sona) Sona.sfx.tap();
+      if (BOOK && page >= BOOK.pages.length) { closeBook(); return; }
+      page++; showPage();
+    };
+    document.getElementById("bkPrev").onclick = function () { if (page > -1) { page--; showPage(); } };
+    document.getElementById("bkHear").onclick = function () { if (BOOK && page >= 0 && page < BOOK.pages.length && !playing) say(BOOK.pages[page].t); };
+    document.getElementById("bkClose").onclick = closeBook;
+
+    /* ---- word box ---- */
+    var wbHost = document.getElementById("wbSounds"), grid = document.getElementById("wordgrid");
+    var allSounds = Object.keys(Sona.WORDS);
+    var focus = (profile.focusSounds || []).filter(function (s) { return allSounds.indexOf(s) !== -1; });
+    var order = focus.concat(allSounds.filter(function (s) { return focus.indexOf(s) === -1; }));
+    var curSound = order[0];
+    function paintChips() {
+      wbHost.innerHTML = "";
+      order.forEach(function (s) {
+        var c = document.createElement("div");
+        c.className = "sound" + (s === curSound ? " on" : "");
+        c.textContent = s;
+        c.onclick = function () { if (window.Sona) Sona.sfx.tap(); curSound = s; paintChips(); paintGrid(); };
+        wbHost.appendChild(c);
+      });
+    }
+    function paintGrid() {
+      grid.innerHTML = "";
+      (Sona.WORDS[curSound] || []).forEach(function (w) {
+        var c = document.createElement("div");
+        c.className = "wcard";
+        c.innerHTML = '<span class="we">' + w.e + '</span><span class="ww">' + w.w + '</span>';
+        c.onclick = function () { if (playing) return; if (window.Sona) Sona.pop(w.e, { y: window.innerHeight * 0.3 }); say(w.w); };
+        grid.appendChild(c);
+      });
+    }
+    paintChips(); paintGrid();
+  </script>
+</body>
+</html>

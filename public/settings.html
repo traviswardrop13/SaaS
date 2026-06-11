@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sona — Settings</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/sona.css" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <meta name="theme-color" content="#2a9df4" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Sona" />
+  <script defer src="/_vercel/insights/script.js"></script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="app">
+      <div class="brand"><span class="dot"></span> Sona</div>
+      <nav class="app"><a href="/home.html">Home</a><a href="/progress.html">Progress</a><a class="active" href="/settings.html">Settings</a></nav>
+    </header>
+
+    <div class="card">
+      <h1>Settings</h1>
+      <label class="field" for="childName">Child's name</label>
+      <input id="childName" type="text" placeholder="e.g. Mia" />
+
+      <div class="field">Focus sounds</div>
+      <div class="sounds" id="sounds"></div>
+
+      <div class="toggle"><input type="checkbox" id="voiceOn" /><label for="voiceOn">Coach speaks out loud</label></div>
+      <div class="toggle"><input type="checkbox" id="soundOn" /><label for="soundOn">Sound effects (taps, chimes, celebrations)</label></div>
+      <div class="toggle"><input type="checkbox" id="cloudScoring" /><label for="cloudScoring">Score pronunciation in the cloud (SpeechAce) — sends the child's recording for phoneme‑level scoring</label></div>
+
+      <label class="field" for="dailyMinutes">Daily practice length</label>
+      <select id="dailyMinutes">
+        <option value="5">5 minutes a day</option>
+        <option value="10">10 minutes a day</option>
+      </select>
+
+      <label class="field" for="coachName">Coach name</label>
+      <input id="coachName" type="text" placeholder="Coach" />
+
+      <label class="field">Coach voice</label>
+      <a class="btn ghost" href="/voices.html" style="width:auto;padding:12px 18px;">🔊&nbsp;&nbsp;Choose coach voice →</a>
+
+      <label class="field" for="focusArea">Main focus</label>
+      <select id="focusArea">
+        <option value="articulation">Speech sounds (articulation)</option>
+        <option value="expressive">Talking (expressive language)</option>
+        <option value="receptive">Understanding (receptive language)</option>
+        <option value="unsure">Not sure yet</option>
+      </select>
+
+      <label class="field">Language skills <span class="soon">Coming soon</span></label>
+      <p class="muted" style="margin-top:6px;font-size:13px;font-weight:700;line-height:1.45;">
+        Sona currently focuses on <b>speech</b> — how clearly your child says their
+        sounds. <b>Language</b> support (understanding words, building sentences,
+        and following directions) is coming soon.
+      </p>
+
+      <label class="field" for="slpEvaluated">Evaluated by an SLP?</label>
+      <select id="slpEvaluated">
+        <option value="">—</option>
+        <option value="yes">Yes</option>
+        <option value="no">Not yet</option>
+        <option value="unsure">Not sure</option>
+      </select>
+
+      <label class="field" for="goals">Goals (optional)</label>
+      <input id="goals" type="text" placeholder="e.g. clear R and S sounds in words" />
+
+      <div style="margin-top:24px;display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
+        <button class="btn" id="save">Save</button>
+        <a class="btn ghost" href="/home.html">Back to Home</a>
+        <span id="saved" class="muted" style="display:none;font-weight:800;">Saved ✓</span>
+      </div>
+    </div>
+
+    <a class="card" href="/customize.html" style="display:flex;gap:14px;align-items:center;color:inherit;">
+      <div class="leo" style="width:56px;height:56px;flex:0 0 auto;"><img src="/coach/leo.png" alt="Leo" style="width:52px;height:52px;object-fit:contain;" /></div>
+      <div style="flex:1;min-width:0;">
+        <h2>Character &amp; world ✨</h2>
+        <p class="muted">Choose your buddy, an outfit, and a backdrop.</p>
+      </div>
+      <span style="font-size:22px;color:var(--muted);">›</span>
+    </a>
+
+    <div class="card">
+      <h2>Coach picture</h2>
+      <p class="muted">Drop a headshot at <code>public/coach.jpg</code> to use it as the coach's profile picture. Until then a friendly placeholder is shown.</p>
+    </div>
+
+    <div class="card">
+      <h2>Account</h2>
+      <p class="muted" id="acct">Free trial · <a href="/subscribe">Subscribe →</a> · <a href="#" id="restoreLink">Restore</a></p>
+      <div id="restoreBox" style="display:none;margin-top:10px;">
+        <input id="restoreEmail" type="email" inputmode="email" placeholder="Email you subscribed with" />
+        <div style="display:flex;gap:10px;align-items:center;margin-top:8px;">
+          <button class="btn" id="restoreBtn" style="width:auto;padding:12px 20px;">Restore access</button>
+          <span id="restoreMsg" class="muted" style="font-weight:800;"></span>
+        </div>
+      </div>
+      <p style="margin-top:10px;font-size:14px;"><a href="/privacy">Privacy</a> · <a href="/terms">Terms</a> · <a href="/support">Support</a></p>
+    </div>
+
+    <div class="card">
+      <h2>Help us improve 💬</h2>
+      <p class="muted" style="margin-bottom:10px;">Sona is in beta — tell us what's confusing or what you'd love to see next.</p>
+      <a class="btn ghost" href="mailto:wardroptravis@gmail.com?subject=Sona%20feedback" style="width:auto;padding:12px 18px;">Send feedback</a>
+    </div>
+
+    <div class="card">
+      <h2>Reset</h2>
+      <p class="muted" style="margin-bottom:10px;">Clear all saved progress on this device.</p>
+      <button class="btn ghost" id="reset">Reset progress</button>
+    </div>
+  </div>
+
+  <script src="/sona.js"></script>
+  <script>
+    var p = Sona.getProfile();
+    var childEl = document.getElementById("childName"),
+        coachEl = document.getElementById("coachName"),
+        voiceEl = document.getElementById("voiceOn"),
+        soundEl = document.getElementById("soundOn"),
+        cloudEl = document.getElementById("cloudScoring"),
+        dailyEl = document.getElementById("dailyMinutes"),
+        focusAreaEl = document.getElementById("focusArea"),
+        slpEl = document.getElementById("slpEvaluated"),
+        goalsEl = document.getElementById("goals"),
+        wrap = document.getElementById("sounds");
+    childEl.value = p.childName || "";
+    coachEl.value = p.coachName || "";
+    voiceEl.checked = p.voiceOn !== false;
+    soundEl.checked = p.soundOn !== false;
+    cloudEl.checked = p.cloudScoring !== false;
+    dailyEl.value = String(p.dailyMinutes || 5);
+    focusAreaEl.value = p.focusArea || "articulation";
+    slpEl.value = p.slpEvaluated || "";
+    goalsEl.value = p.goals || "";
+    var sel = new Set(p.focusSounds || []);
+    Sona.ALL_SOUNDS.forEach(function (s) {
+      var b = document.createElement("div");
+      b.className = "sound" + (sel.has(s) ? " on" : "");
+      b.textContent = s;
+      b.onclick = function () { if (sel.has(s)) sel.delete(s); else sel.add(s); b.classList.toggle("on"); };
+      wrap.appendChild(b);
+    });
+    document.getElementById("save").onclick = function () {
+      Sona.saveProfile({ childName: childEl.value.trim(), coachName: coachEl.value.trim() || "Coach", voiceOn: voiceEl.checked, soundOn: soundEl.checked, cloudScoring: cloudEl.checked, dailyMinutes: parseInt(dailyEl.value, 10) || 5, focusArea: focusAreaEl.value, slpEvaluated: slpEl.value, goals: goalsEl.value.trim(), focusSounds: [].concat(Array.from(sel)) });
+      var s = document.getElementById("saved"); s.style.display = "inline"; setTimeout(function () { s.style.display = "none"; }, 1800);
+    };
+    document.getElementById("reset").onclick = function () {
+      if (confirm("Reset all progress on this device? This cannot be undone.")) { Sona.resetProgress(); alert("Progress reset."); }
+    };
+
+    // account / subscription
+    function paintAcct() {
+      var ac = document.getElementById("acct");
+      if (Sona.isSubscribed && Sona.isSubscribed()) {
+        ac.innerHTML = 'Plan: <strong style="color:var(--good);">Active ✓</strong> · <a href="/subscribe">Manage →</a>';
+        document.getElementById("restoreBox").style.display = "none";
+      } else {
+        ac.innerHTML = 'Free trial · <a href="/subscribe">Subscribe →</a> · <a href="#" id="restoreLink">Restore</a>';
+        document.getElementById("restoreLink").onclick = function (e) { e.preventDefault(); document.getElementById("restoreBox").style.display = "block"; document.getElementById("restoreEmail").focus(); };
+      }
+    }
+    paintAcct();
+    document.getElementById("restoreBtn").onclick = async function () {
+      var em = document.getElementById("restoreEmail").value, msg = document.getElementById("restoreMsg");
+      msg.style.color = "var(--muted)"; msg.textContent = "Checking…";
+      var res = await Sona.restore(em);
+      if (res.ok && res.active) { msg.style.color = "var(--good)"; msg.textContent = "Restored ✓"; paintAcct(); }
+      else if (res.ok) { msg.style.color = "#b42323"; msg.textContent = "No active subscription for that email."; }
+      else { msg.style.color = "#b42323"; msg.textContent = res.error || "Couldn’t check."; }
+    };
+  </script>
+</body>
+</html>

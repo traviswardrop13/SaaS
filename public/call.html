@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>Sona — Call Leo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <meta name="theme-color" content="#ff9d5c" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <style>
+    :root{ --green:#58cc02; --green-d:#46a302; --red:#ff4b4b; --red-d:#e63a3a; --ink:#3c3c3c; }
+    *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;
+      font-family:"Nunito",-apple-system,"Segoe UI",Roboto,sans-serif;}
+    html,body{height:100%;overflow:hidden;}
+    body{background:linear-gradient(180deg,#ffe2b8 0%,#ffb35c 60%,#ff9d5c 100%);}
+    #wrap{height:100vh;max-width:560px;margin:0 auto;display:flex;flex-direction:column;align-items:center;position:relative;}
+
+    /* top status */
+    #top{display:flex;align-items:center;gap:10px;margin-top:calc(14px + env(safe-area-inset-top));}
+    .pillT{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.85);border-radius:99px;padding:8px 16px;
+      font-family:"Baloo 2";font-weight:800;font-size:15px;color:var(--ink);box-shadow:0 4px 14px rgba(120,60,0,.15);}
+    .dotLive{width:9px;height:9px;border-radius:50%;background:var(--red);animation:blinkdot 1.2s infinite;}
+    @keyframes blinkdot{0%,100%{opacity:1}50%{opacity:.25}}
+
+    /* Leo stage — the real Leo, talking */
+    #stage{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%;padding:0 18px;}
+    #leoWrap{width:min(76vw,330px);animation:bob 3.4s ease-in-out infinite;filter:drop-shadow(0 20px 32px rgba(140,60,0,.3));}
+    #leoWrap.talking{animation:bob 1.8s ease-in-out infinite;}
+    @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-9px)}}
+    #leoImg{width:100%;height:auto;display:block;transform-origin:50% 80%;}
+
+    /* captions */
+    #cap{min-height:64px;margin-top:12px;max-width:92%;text-align:center;}
+    #leoSays{font-family:"Baloo 2";font-weight:800;font-size:clamp(17px,4.6vw,22px);color:#5b2d05;line-height:1.3;
+      background:rgba(255,255,255,.9);border-radius:18px;padding:10px 16px;display:none;box-shadow:0 6px 18px rgba(120,60,0,.12);}
+    #youSaid{margin-top:8px;font-weight:800;font-size:14px;color:rgba(91,45,5,.75);display:none;}
+
+    /* status row (listening / thinking) */
+    #status{height:54px;display:flex;align-items:center;justify-content:center;margin-top:6px;}
+    #listenChip{display:none;align-items:center;gap:10px;background:#fff;border-radius:99px;padding:10px 18px;
+      font-family:"Baloo 2";font-weight:800;color:var(--green-d);box-shadow:0 0 0 0 rgba(88,204,2,.45);animation:listenpulse 1.4s infinite;}
+    @keyframes listenpulse{0%{box-shadow:0 0 0 0 rgba(88,204,2,.45)}70%{box-shadow:0 0 0 16px rgba(88,204,2,0)}100%{box-shadow:0 0 0 0 rgba(88,204,2,0)}}
+    #listenChip .micdot{width:12px;height:12px;border-radius:50%;background:var(--green);}
+    #thinkChip{display:none;font-family:"Baloo 2";font-weight:800;color:rgba(91,45,5,.7);}
+    #doneTalk{display:none;border:none;border-radius:99px;padding:10px 20px;margin-left:10px;font-family:"Baloo 2";font-weight:800;
+      color:#fff;background:var(--green);box-shadow:0 4px 0 0 var(--green-d);cursor:pointer;}
+
+    /* error toast — if anything breaks, SAY so instead of dead air */
+    #toast{position:fixed;left:50%;bottom:130px;transform:translateX(-50%);z-index:60;max-width:88vw;display:none;
+      background:#3c3c3c;color:#fff;font-weight:800;font-size:13px;border-radius:14px;padding:10px 16px;box-shadow:0 10px 24px rgba(0,0,0,.3);}
+
+    /* bottom controls */
+    #controls{padding:10px 0 calc(24px + env(safe-area-inset-bottom));display:flex;align-items:center;justify-content:center;gap:26px;}
+    #hangup{width:70px;height:70px;border-radius:50%;border:none;background:var(--red);box-shadow:0 6px 0 0 var(--red-d);
+      cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .05s;}
+    #hangup:active{transform:translateY(4px);box-shadow:0 2px 0 0 var(--red-d);}
+    #hangup svg{width:34px;height:34px;fill:#fff;transform:rotate(135deg);}
+
+    /* screens */
+    .screen{position:fixed;inset:0;z-index:30;display:flex;flex-direction:column;align-items:center;justify-content:center;
+      text-align:center;padding:30px;background:linear-gradient(180deg,#ffe2b8,#ff9d5c);}
+    .screen.hidden{display:none;}
+    .screen img{width:150px;height:150px;object-fit:contain;filter:drop-shadow(0 14px 24px rgba(140,60,0,.3));}
+    .screen h1{font-family:"Baloo 2";font-weight:800;font-size:clamp(26px,6vw,36px);color:#5b2d05;margin-top:14px;}
+    .screen p{color:rgba(91,45,5,.8);font-weight:700;margin-top:8px;max-width:330px;}
+    .callbtn{margin-top:26px;width:78px;height:78px;border-radius:50%;border:none;background:var(--green);box-shadow:0 6px 0 0 var(--green-d);
+      cursor:pointer;display:flex;align-items:center;justify-content:center;animation:ringring 1.6s ease-in-out infinite;}
+    .callbtn svg{width:36px;height:36px;fill:#fff;}
+    @keyframes ringring{0%,100%{transform:rotate(0)}6%{transform:rotate(-12deg)}12%{transform:rotate(10deg)}18%{transform:rotate(-8deg)}24%{transform:rotate(0)}}
+    .rewards{display:flex;gap:14px;margin-top:18px;}
+    .reward{background:rgba(255,255,255,.9);border-radius:16px;padding:12px 18px;font-family:"Baloo 2";font-weight:800;font-size:20px;color:#5b2d05;}
+    .reward small{display:block;font-family:"Nunito";font-weight:700;font-size:12px;color:rgba(91,45,5,.7);text-transform:uppercase;letter-spacing:.04em;}
+    .cta{margin-top:24px;border:none;border-radius:16px;padding:15px 40px;font-family:"Baloo 2";font-weight:800;font-size:17px;
+      text-transform:uppercase;letter-spacing:.04em;color:#fff;background:var(--green);box-shadow:0 5px 0 0 var(--green-d);cursor:pointer;text-decoration:none;}
+    #err{margin-top:14px;max-width:400px;background:#fff0f0;border:1px solid #ffd2d2;border-radius:12px;padding:10px 12px;color:#b42323;font-size:13px;display:none;}
+    #err.show{display:block;}
+  </style>
+  <script defer src="/_vercel/insights/script.js"></script>
+</head>
+<body>
+  <div id="wrap">
+    <div id="top">
+      <span class="pillT"><span class="dotLive"></span> Leo · <span id="timer">5:00</span></span>
+    </div>
+
+    <div id="stage">
+      <div id="leoWrap"><img id="leoImg" src="/coach/leo-icon.png" alt="Leo" /></div>
+      <div id="cap">
+        <div id="leoSays"></div>
+        <div id="youSaid"></div>
+      </div>
+      <div id="status">
+        <span id="listenChip"><span class="micdot"></span> Your turn — talk to Leo!</span>
+        <span id="thinkChip">Leo is thinking…</span>
+        <button id="doneTalk">I'm done</button>
+      </div>
+    </div>
+
+    <div id="controls">
+      <button id="hangup" title="End call"><svg viewBox="0 0 24 24"><path d="M6.6 10.8c1.5 3 3.6 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.2.4 2.4.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1C10.6 21 3 13.4 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.2.2 2.4.6 3.6.1.3 0 .7-.2 1l-2.3 2.2z"/></svg></button>
+    </div>
+  </div>
+
+  <div id="toast"></div>
+
+  <!-- PRE-CALL -->
+  <div id="pre" class="screen">
+    <img src="/coach/leo-icon.png" alt="Leo" />
+    <h1>Video call Leo? 📞</h1>
+    <p>Have a real chat with Leo! He'll ask fun questions — just talk back. About 5 minutes.</p>
+    <button class="callbtn" id="callBtn" title="Call Leo"><svg viewBox="0 0 24 24"><path d="M6.6 10.8c1.5 3 3.6 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.2.4 2.4.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1C10.6 21 3 13.4 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.2.2 2.4.6 3.6.1.3 0 .7-.2 1l-2.3 2.2z"/></svg></button>
+    <p style="font-size:13px;margin-top:16px;">Allow the microphone so Leo can hear you!</p>
+    <div id="err"></div>
+  </div>
+
+  <!-- ENDED -->
+  <div id="ended" class="screen hidden">
+    <img src="/coach/leo-icon.png" alt="Leo" />
+    <h1>Great call! 🎉</h1>
+    <p id="endSub">You talked with Leo!</p>
+    <div class="rewards">
+      <div class="reward" id="endTime">5:00<small>talk time</small></div>
+      <div class="reward" id="endTurns">0<small>your turns</small></div>
+
+    </div>
+    <a class="cta" href="/home.html">Back home</a>
+  </div>
+
+  <script src="/sona.js"></script>
+  <script>
+    if (Sona.gated && Sona.gated()) location.replace("/trial.html");
+    window.addEventListener("error", function (e) { try { toast("⚠️ " + (e.message || "page error")); } catch (x) {} });
+    var profile = Sona.getProfile();
+    var CHILD = (profile.childName || "").trim();
+    var TARGET = (profile.focusSounds && profile.focusSounds[0]) || "R";
+    var PITCH = Sona.VOICE_PITCH || 1.08;
+    var TOTAL = 5 * 60; // seconds
+
+    var $ = function (id) { return document.getElementById(id); };
+    var live = false, secsLeft = TOTAL, wrapSent = false, kidTurns = 0;
+    var convo = []; // {role:"user"|"leo", text}
+    var curSrc = null, sr = null, timerIv = null, talkRAF = null;
+    var leoImg = $("leoImg");
+
+    function toast(msg) {
+      var t = $("toast"); t.textContent = msg; t.style.display = "block";
+      clearTimeout(t._h); t._h = setTimeout(function () { t.style.display = "none"; }, 5000);
+    }
+
+    /* ---------- audio ---------- */
+    var audioCtx = null;
+    function getCtx() { if (!audioCtx) { var AC = window.AudioContext || window.webkitAudioContext; audioCtx = new AC(); } if (audioCtx.state === "suspended") audioCtx.resume(); return audioCtx; }
+    function unlockAudio() { // play a 1-sample silent buffer inside the tap gesture
+      try { var ctx = getCtx(), b = ctx.createBuffer(1, 1, 24000), s = ctx.createBufferSource(); s.buffer = b; s.connect(ctx.destination); s.start(); } catch (e) {}
+    }
+    function ringTone() {
+      try {
+        var ctx = getCtx(), t0 = ctx.currentTime;
+        [0, 1.8].forEach(function (off) {
+          [440, 480].forEach(function (f) {
+            var o = ctx.createOscillator(), g = ctx.createGain();
+            o.frequency.value = f; o.type = "sine";
+            g.gain.setValueAtTime(0.0001, t0 + off);
+            g.gain.linearRampToValueAtTime(0.06, t0 + off + 0.05);
+            g.gain.setValueAtTime(0.06, t0 + off + 1.1);
+            g.gain.linearRampToValueAtTime(0.0001, t0 + off + 1.25);
+            o.connect(g); g.connect(ctx.destination); o.start(t0 + off); o.stop(t0 + off + 1.3);
+          });
+        });
+      } catch (e) {}
+    }
+
+    /* Leo "talks": squash-and-stretch + wiggle driven by the real audio level */
+    function speak(text) {
+      return new Promise(function (resolve) {
+        if (!live || !text) return resolve();
+        showLeoSays(text);
+        status(null);
+        $("leoWrap").classList.add("talking");
+        function fallback() {
+          // voice failed — keep the caption up about as long as Leo would talk
+          $("leoWrap").classList.remove("talking");
+          setTimeout(resolve, Math.min(5000, 800 + text.length * 50));
+        }
+        fetch("/api/tts", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text: text, voice: profile.voiceId || "" }) })
+          .then(function (r) {
+            if (!r.ok) return r.json().catch(function () { return {}; }).then(function (j) { throw new Error(j.error || ("voice " + r.status)); });
+            return r.arrayBuffer();
+          })
+          .then(function (buf) {
+            if (!live) return resolve();
+            var bytes = new Uint8Array(buf), ctx = getCtx(), n = bytes.byteLength >> 1;
+            if (!n) throw new Error("empty audio");
+            var ab = ctx.createBuffer(1, n, 24000), ch = ab.getChannelData(0);
+            var dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+            for (var i = 0; i < n; i++) ch[i] = dv.getInt16(i * 2, true) / 32768;
+            var src = ctx.createBufferSource(); src.buffer = ab; src.playbackRate.value = PITCH;
+            var an = ctx.createAnalyser(); an.fftSize = 256;
+            src.connect(an); an.connect(ctx.destination);
+            curSrc = src;
+            var data = new Uint8Array(an.fftSize);
+            (function tick() {
+              an.getByteTimeDomainData(data);
+              var sum = 0; for (var i = 0; i < data.length; i++) { var v = (data[i] - 128) / 128; sum += v * v; }
+              var amp = Math.min(1, Math.sqrt(sum / data.length) * 3.6);
+              leoImg.style.transform = "scaleY(" + (1 + amp * 0.08) + ") scaleX(" + (1 - amp * 0.05) + ") rotate(" + (Math.sin(Date.now() / 85) * amp * 2.6) + "deg)";
+              talkRAF = requestAnimationFrame(tick);
+            })();
+            src.onended = function () {
+              cancelAnimationFrame(talkRAF); leoImg.style.transform = "";
+              $("leoWrap").classList.remove("talking"); curSrc = null; resolve();
+            };
+            src.start();
+          })
+          .catch(function (e) { toast("🔇 Leo's voice hiccuped: " + (e && e.message ? e.message : e)); fallback(); });
+      });
+    }
+
+    /* ---------- captions / status ---------- */
+    function showLeoSays(t) { var el = $("leoSays"); el.textContent = t; el.style.display = "inline-block"; $("youSaid").style.display = "none"; }
+    function showYouSaid(t) { var el = $("youSaid"); el.textContent = "You: " + t; el.style.display = "block"; }
+    function status(mode) {
+      $("listenChip").style.display = (mode === "listen" || mode === "fallback") ? "flex" : "none";
+      $("thinkChip").style.display = (mode === "think" || mode === "ring") ? "block" : "none";
+      $("thinkChip").textContent = mode === "ring" ? "Ringing… 📞" : "Leo is thinking…";
+      $("doneTalk").style.display = mode === "fallback" ? "inline-block" : "none";
+    }
+
+    /* ---------- listening ---------- */
+    var SRClass = window.SpeechRecognition || window.webkitSpeechRecognition;
+    function listenOnce(maxMs) {
+      return new Promise(function (resolve) {
+        if (!live) return resolve(null);
+        if (!SRClass) {
+          status("fallback");
+          var t = setTimeout(done, maxMs);
+          function done() { clearTimeout(t); $("doneTalk").onclick = null; resolve(""); }
+          $("doneTalk").onclick = done;
+          return;
+        }
+        status("listen");
+        var finished = false, text = "";
+        sr = new SRClass(); sr.lang = "en-US"; sr.interimResults = false; sr.maxAlternatives = 1;
+        var t = setTimeout(function () { try { sr.stop(); } catch (e) {} }, maxMs);
+        function finish() { if (finished) return; finished = true; clearTimeout(t); resolve(text || null); }
+        sr.onresult = function (ev) { for (var i = 0; i < ev.results.length; i++) text += " " + ev.results[i][0].transcript; text = text.trim(); try { sr.stop(); } catch (e) {} };
+        sr.onerror = function () { finish(); };
+        sr.onend = function () { finish(); };
+        try { sr.start(); } catch (e) { finish(); }
+      });
+    }
+
+    /* ---------- the conversation ---------- */
+    function chat(extra) {
+      var msgs = convo.slice(-14);
+      if (extra) msgs = msgs.concat([{ role: "user", text: extra }]);
+      return fetch("/api/chat", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages: msgs, child: { name: CHILD, sound: TARGET } }),
+      }).then(function (r) { return r.json(); })
+        .then(function (j) {
+          if (j && j.ok && j.reply) return j.reply;
+          throw new Error((j && j.error) || "no reply");
+        })
+        .catch(function (e) {
+          toast("💬 Chat hiccup: " + (e && e.message ? e.message : e));
+          return "Let's keep playing! What's your favorite animal?";
+        });
+    }
+
+    async function loop(openerP) {
+      try {
+        status("think");
+        var opener = await openerP;
+        convo.push({ role: "leo", text: opener });
+        await speak(opener);
+
+        var silence = 0;
+        while (live && secsLeft > 0 && kidTurns < 40) {
+          var heard = await listenOnce(9000);
+          if (!live) break;
+          status("think");
+          var prompt = null;
+          if (heard && heard.trim()) {
+            silence = 0; kidTurns++;
+            showYouSaid(heard.trim());
+            convo.push({ role: "user", text: heard.trim() });
+          } else {
+            silence++;
+            prompt = silence >= 2
+              ? "(The child has been quiet for a while. Warmly invite them to just say any word they like, or ask a super easy yes/no question.)"
+              : "(You couldn't hear the child clearly. Kindly say you didn't catch that and ask your question again, shorter.)";
+          }
+          if (!live) break;
+          if (secsLeft <= 35 && !wrapSent) {
+            wrapSent = true;
+            prompt = "(The call is almost over. Praise the child for talking with you, mention one fun thing from the chat if you can, and say a short, warm goodbye.)";
+          }
+          var reply = await chat(prompt);
+          if (!live) break;
+          convo.push({ role: "leo", text: reply });
+          await speak(reply);
+          if (wrapSent) { endCall(true); return; }
+        }
+        if (live) endCall(true);
+      } catch (err) {
+        toast("⚠️ Call error: " + (err && err.message ? err.message : err));
+        if (live) endCall(true);
+      }
+    }
+
+    /* ---------- call lifecycle ---------- */
+    function fmt(s) { var m = Math.floor(s / 60), x = s % 60; return m + ":" + (x < 10 ? "0" : "") + x; }
+    function startCall() {
+      try {
+        $("callBtn").disabled = true; $("err").classList.remove("show");
+        unlockAudio();
+        // switch screens RIGHT AWAY — never leave the tap feeling dead
+        $("pre").classList.add("hidden");
+        live = true; secsLeft = TOTAL;
+        status("ring");
+        ringTone();
+        // fetch Leo's opener DURING the ring so he speaks at connect
+        var openerP = chat("(The call just connected. Say a short, excited hello" + (CHILD ? " to " + CHILD : "") + " and ask one easy, fun question.)");
+        // mic permission in parallel — don't block the call on the prompt
+        try { if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) navigator.mediaDevices.getUserMedia({ audio: true }).catch(function () {}); } catch (e) {}
+        timerIv = setInterval(function () {
+          if (!live) return;
+          secsLeft--; $("timer").textContent = fmt(Math.max(0, secsLeft));
+          if (secsLeft <= 0) clearInterval(timerIv);
+        }, 1000);
+        setTimeout(function () { loop(openerP); }, 1900);
+      } catch (e) { toast("⚠️ Couldn't start the call: " + (e && e.message ? e.message : e)); $("callBtn").disabled = false; }
+    }
+    function endCall(completed) {
+      if (!live) return;
+      live = false;
+      try { curSrc && curSrc.stop(); } catch (e) {}
+      try { sr && sr.stop(); } catch (e) {}
+      clearInterval(timerIv); cancelAnimationFrame(talkRAF);
+      var talked = TOTAL - Math.max(0, secsLeft);
+      $("endTime").innerHTML = fmt(talked) + "<small>talk time</small>";
+      $("endTurns").innerHTML = kidTurns + "<small>your turns</small>";
+      $("endSub").textContent = kidTurns > 0
+        ? "You talked with Leo " + kidTurns + " time" + (kidTurns === 1 ? "" : "s") + "! Amazing!"
+        : "Leo loved seeing you!";
+      Sona.recordSession({ words: [] });
+      $("ended").classList.remove("hidden");
+      Sona.confetti(); Sona.sfx.complete();
+    }
+
+    $("callBtn").onclick = startCall;
+    $("hangup").onclick = function () { endCall(false); };
+    window.addEventListener("pagehide", function () { live = false; try { curSrc && curSrc.stop(); } catch (e) {} try { sr && sr.stop(); } catch (e) {} });
+  </script>
+</body>
+</html>

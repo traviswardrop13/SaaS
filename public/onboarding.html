@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>Sona — Welcome</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/sona.css" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <meta name="theme-color" content="#2a9df4" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Sona" />
+  <style>
+    html,body{height:100%;}
+    .ob{min-height:100vh;display:flex;flex-direction:column;max-width:560px;margin:0 auto;
+      padding:14px 18px calc(110px + env(safe-area-inset-bottom));}
+    /* progress segments */
+    .seg{display:flex;gap:6px;margin:6px 0 18px;}
+    .seg > i{height:9px;flex:1;border-radius:99px;background:#e6eef8;transition:.3s;}
+    .seg > i.on{background:var(--orange);}
+    /* mascot + speech bubble */
+    .mascot{display:flex;align-items:flex-end;gap:10px;margin-bottom:18px;}
+    .mascot .leo{font-size:64px;line-height:1;flex:0 0 auto;animation:bobnode 3s ease-in-out infinite;}
+    .bubble2{position:relative;background:#fff;border:2px solid var(--line);border-radius:18px;padding:13px 15px;
+      font-family:"Baloo 2";font-weight:800;color:var(--ink);font-size:17px;line-height:1.25;box-shadow:0 8px 22px rgba(15,39,66,.08);}
+    .bubble2:before{content:"";position:absolute;left:-9px;bottom:14px;width:16px;height:16px;background:#fff;
+      border-left:2px solid var(--line);border-bottom:2px solid var(--line);transform:rotate(45deg);}
+    .step{display:none;animation:fade .25s ease;} .step.on{display:block;}
+    @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+    .qh{font-family:"Baloo 2";font-weight:800;font-size:22px;margin:2px 0 4px;}
+    /* big choice cards */
+    .choices{display:flex;flex-direction:column;gap:10px;margin-top:14px;}
+    .choice{display:flex;align-items:center;gap:12px;border:2px solid var(--line);background:#fff;border-radius:16px;
+      padding:14px 16px;cursor:pointer;font-weight:800;font-family:"Baloo 2";font-size:17px;transition:transform .05s,border-color .12s;}
+    .choice:active{transform:translateY(2px);}
+    .choice.on{border-color:var(--blue);box-shadow:0 0 0 3px rgba(42,157,244,.16);}
+    .choice .ce{font-size:26px;}
+    /* buddy grid */
+    .bgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px;}
+    .bopt{position:relative;border:2px solid var(--line);background:#fff;border-radius:18px;padding:14px 6px 10px;cursor:pointer;
+      display:flex;flex-direction:column;align-items:center;gap:4px;}
+    .bopt.on{border-color:var(--blue);box-shadow:0 0 0 3px rgba(42,157,244,.16);}
+    .bopt.locked{opacity:.65;cursor:default;}
+    .bopt .be{font-size:38px;} .bopt .bn{font-family:"Baloo 2";font-weight:800;font-size:12px;}
+    .bopt .soon{position:absolute;top:6px;right:6px;font-size:9px;font-weight:800;color:var(--muted);background:#eef3fb;border-radius:99px;padding:2px 6px;}
+    /* sound chips */
+    .schips{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;}
+    /* fixed footer */
+    .obfoot{position:fixed;left:0;right:0;bottom:0;background:linear-gradient(180deg,rgba(255,255,255,0),#fff 30%);
+      padding:16px 18px calc(18px + env(safe-area-inset-bottom));}
+    .obfoot .inner{max-width:560px;margin:0 auto;display:flex;gap:10px;align-items:center;}
+    .skip{background:none;border:none;color:var(--muted);font-weight:800;font-size:15px;cursor:pointer;padding:10px;}
+  </style>
+  <script defer src="/_vercel/insights/script.js"></script>
+</head>
+<body>
+  <div class="ob">
+    <div class="seg" id="seg"></div>
+
+    <div class="mascot">
+      <span class="leo" id="leo">🦁</span>
+      <div class="bubble2" id="bubble">Hi! I'm Leo. 🦁</div>
+    </div>
+
+    <!-- welcome -->
+    <div class="step on" data-step="welcome">
+      <div class="qh">Let's make talking fun! 🎉</div>
+      <p class="muted">Short, friendly practice — a few minutes a day. Designed with a speech-language pathologist.</p>
+      <p class="muted" style="margin-top:12px;font-size:13px;"><a href="/trial.html">Already subscribed? Restore access →</a></p>
+    </div>
+
+    <!-- name -->
+    <div class="step" data-step="name">
+      <div class="qh">Who's practicing today?</div>
+      <input id="obName" type="text" placeholder="First name" autocomplete="off" />
+    </div>
+
+    <!-- buddy -->
+    <div class="step" data-step="buddy">
+      <div class="qh">Pick your buddy</div>
+      <p class="muted">You can change this anytime.</p>
+      <div class="bgrid" id="obBuddies"></div>
+    </div>
+
+    <!-- sounds -->
+    <div class="step" data-step="sounds">
+      <div class="qh">Which sounds are we working on?</div>
+      <p class="muted">Pick any — the most common are already chosen.</p>
+      <div class="schips" id="obSounds"></div>
+    </div>
+
+    <!-- daily goal -->
+    <div class="step" data-step="goal">
+      <div class="qh">What's the daily practice goal?</div>
+      <p class="muted">Sona fits each day's practice to this — same length whether it's one sound or five.</p>
+      <div class="choices" id="obGoal">
+        <div class="choice" data-val="5"><span class="ce">⏱️</span> 5 min / day <span style="margin-left:auto;color:var(--muted);font-size:13px;font-family:Nunito;">Casual</span></div>
+        <div class="choice" data-val="10"><span class="ce">🔥</span> 10 min / day <span style="margin-left:auto;color:var(--muted);font-size:13px;font-family:Nunito;">Regular</span></div>
+      </div>
+    </div>
+
+    <!-- what's ahead -->
+    <div class="step" data-step="achieve">
+      <div class="qh">Here's what's ahead for <span id="achName">your child</span> 🌟</div>
+      <div class="choices">
+        <div class="choice" style="cursor:default;"><span class="ce">🗣️</span> <span>Clearer sounds<br/><span style="font-family:Nunito;font-weight:700;font-size:13px;color:var(--muted);">A few fun minutes of real practice, every day</span></span></div>
+        <div class="choice" style="cursor:default;"><span class="ce">💪</span> <span>Confidence<br/><span style="font-family:Nunito;font-weight:700;font-size:13px;color:var(--muted);">Leo cheers every single try — no failing here</span></span></div>
+        <div class="choice" style="cursor:default;"><span class="ce">🎧</span> <span>Progress you can hear<br/><span style="font-family:Nunito;font-weight:700;font-size:13px;color:var(--muted);">Recordings + a report you can share with your SLP</span></span></div>
+      </div>
+    </div>
+
+    <!-- slp -->
+    <div class="step" data-step="slp">
+      <div class="qh">Has your child seen a speech therapist?</div>
+      <p class="muted">Optional — helps us tailor the plan. (For parents.)</p>
+      <div class="choices" id="obSlp">
+        <div class="choice" data-val="yes"><span class="ce">✅</span> Yes</div>
+        <div class="choice" data-val="no"><span class="ce">🕒</span> Not yet</div>
+        <div class="choice" data-val="unsure"><span class="ce">🤔</span> Not sure</div>
+      </div>
+      <div id="obGoalsWrap" style="display:none;margin-top:14px;">
+        <label class="field" for="obGoals">Goals (optional)</label>
+        <input id="obGoals" type="text" placeholder="e.g. clear R and S sounds in words" />
+      </div>
+    </div>
+  </div>
+
+  <div class="obfoot">
+    <div class="inner">
+      <button class="skip" id="backBtn" style="display:none;">← Back</button>
+      <button class="btn" id="nextBtn" style="flex:1;">Let's go!</button>
+    </div>
+  </div>
+
+  <script src="/sona.js"></script>
+  <script>
+    var p = Sona.getProfile();
+    var draft = {
+      childName: p.childName || "",
+      character: p.character || "leo",
+      focusSounds: (p.focusSounds && p.focusSounds.length) ? p.focusSounds.slice() : ["R","S","L","K"],
+      slpEvaluated: p.slpEvaluated || "",
+      goals: p.goals || "",
+    };
+
+    var ORDER = ["welcome","name","buddy","sounds","goal","achieve","slp"];
+    var BUBBLES = {
+      welcome: "Hi! I'm Leo!",
+      name:    "Nice to meet you!",
+      buddy:   "Who should practice with you?",
+      sounds:  "Let's pick our sounds!",
+      goal:    "How long each day?",
+      achieve: "Here's what's ahead! ✨",
+      slp:     "Almost done! 🌟",
+    };
+    var CTA = { slp: "Start practicing! 🎉" };
+    var idx = 0;
+
+    var segEl = document.getElementById("seg");
+    ORDER.forEach(function(){ var i=document.createElement("i"); segEl.appendChild(i); });
+    var steps = {};
+    document.querySelectorAll(".step").forEach(function(s){ steps[s.dataset.step]=s; });
+    var bubble = document.getElementById("bubble"), leo = document.getElementById("leo");
+    var nextBtn = document.getElementById("nextBtn"), backBtn = document.getElementById("backBtn");
+
+    function mascotMarkup(id) {
+      if (id === "leo") return '<img src="/coach/leo-icon.png" alt="Leo" style="width:62px;height:62px;object-fit:contain;display:block;" />';
+      return Sona.buddyMarkup(id, 64);
+    }
+
+    // buddy grid
+    var bg = document.getElementById("obBuddies");
+    Sona.CHARACTERS.forEach(function(c){
+      var el=document.createElement("div");
+      el.className="bopt"+(c.id===draft.character?" on":"")+(c.locked?" locked":"");
+      el.innerHTML='<span class="be">'+Sona.buddyMarkup(c.id,38)+'</span><span class="bn">'+c.name+'</span>'+(c.locked?'<span class="soon">SOON</span>':'');
+      if(!c.locked) el.onclick=function(){ Sona.sfx.tap(); draft.character=c.id; bg.querySelectorAll(".bopt").forEach(function(n){n.classList.remove("on");}); el.classList.add("on"); leo.innerHTML=mascotMarkup(c.id); };
+      bg.appendChild(el);
+    });
+    leo.innerHTML = mascotMarkup(draft.character);
+
+    // sound chips
+    var selSounds = new Set(draft.focusSounds);
+    var sc = document.getElementById("obSounds");
+    Sona.ALL_SOUNDS.forEach(function(s){
+      var b=document.createElement("div"); b.className="sound"+(selSounds.has(s)?" on":""); b.textContent=s;
+      b.onclick=function(){ Sona.sfx.tap(); if(selSounds.has(s)) selSounds.delete(s); else selSounds.add(s); b.classList.toggle("on"); };
+      sc.appendChild(b);
+    });
+
+    // daily goal (single select, default 5)
+    var goalVal = String(p.dailyMinutes || 5);
+    var goalWrap = document.getElementById("obGoal");
+    goalWrap.querySelectorAll(".choice").forEach(function (ch) {
+      if (ch.dataset.val === goalVal) ch.classList.add("on");
+      ch.onclick = function () { Sona.sfx.tap(); goalVal = ch.dataset.val; goalWrap.querySelectorAll(".choice").forEach(function (n) { n.classList.remove("on"); }); ch.classList.add("on"); };
+    });
+
+    // slp choices
+    var slpWrap=document.getElementById("obSlp"), goalsWrap=document.getElementById("obGoalsWrap");
+    slpWrap.querySelectorAll(".choice").forEach(function(ch){
+      if(ch.dataset.val===draft.slpEvaluated) ch.classList.add("on");
+      ch.onclick=function(){ Sona.sfx.tap(); draft.slpEvaluated=ch.dataset.val; slpWrap.querySelectorAll(".choice").forEach(function(n){n.classList.remove("on");}); ch.classList.add("on"); goalsWrap.style.display=(ch.dataset.val==="yes")?"block":"none"; };
+    });
+    if(draft.slpEvaluated==="yes") goalsWrap.style.display="block";
+
+    // name prefill
+    var nameEl=document.getElementById("obName"); nameEl.value=draft.childName;
+
+    function render(){
+      var key=ORDER[idx];
+      ORDER.forEach(function(k,i){ steps[k].classList.toggle("on", i===idx); segEl.children[i].classList.toggle("on", i<=idx); });
+      bubble.textContent = BUBBLES[key] || "";
+      nextBtn.textContent = CTA[key] || "Continue";
+      backBtn.style.display = idx === 0 ? "none" : "block";
+      if(key==="name") setTimeout(function(){ nameEl.focus(); }, 80);
+      if(key==="achieve"){ var nm=(nameEl.value||draft.childName||"").trim(); document.getElementById("achName").textContent = nm || "your child"; }
+    }
+
+    function next(){
+      var key=ORDER[idx];
+      if(key==="name"){ draft.childName=nameEl.value.trim(); if(!draft.childName){ nameEl.focus(); nameEl.style.borderColor="#ef6f23"; return; } }
+      if(key==="sounds" && selSounds.size===0){ selSounds.add("R"); }
+      Sona.sfx.tap();
+      if(idx < ORDER.length-1){ idx++; render(); return; }
+      finish();
+    }
+    function back(){ if(idx>0){ Sona.sfx.tap(); idx--; render(); } }
+
+    function finish(){
+      draft.focusSounds = Array.from(selSounds);
+      Sona.saveProfile({
+        childName: draft.childName,
+        character: draft.character,
+        focusSounds: draft.focusSounds,
+        slpEvaluated: draft.slpEvaluated,
+        goals: (document.getElementById("obGoals")||{}).value ? document.getElementById("obGoals").value.trim() : draft.goals,
+        focusArea: "articulation",
+        dailyMinutes: parseInt(goalVal, 10) || 5,
+        onboarded: true,
+      });
+      if(window.Sona){ Sona.sfx.complete(); Sona.confetti({count:160}); }
+      bubble.textContent = "You're all set! 🎉";
+      nextBtn.disabled = true; nextBtn.textContent = "Let's practice!";
+      setTimeout(function(){ location.href="/home.html"; }, 1100);
+    }
+
+    nextBtn.onclick=next; backBtn.onclick=back;
+    nameEl.addEventListener("keydown",function(e){ if(e.key==="Enter") next(); });
+    render();
+  </script>
+</body>
+</html>

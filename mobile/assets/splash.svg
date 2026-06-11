@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1242 2688" width="1242" height="2688">
+  <!-- Splash screen: white background with the lion mark + "Sona" wordmark
+       centered. Expo's resizeMode "contain" handles the various device
+       aspect ratios. -->
+  <rect width="1242" height="2688" fill="#ffffff"/>
+
+  <g transform="translate(621 1180)">
+    <!-- Mane -->
+    <circle r="240" fill="#ea580c"/>
+    <g fill="#c2410c">
+      <circle cx="240" cy="0" r="38"/>
+      <circle cx="208" cy="120" r="38"/>
+      <circle cx="120" cy="208" r="38"/>
+      <circle cx="0" cy="240" r="38"/>
+      <circle cx="-120" cy="208" r="38"/>
+      <circle cx="-208" cy="120" r="38"/>
+      <circle cx="-240" cy="0" r="38"/>
+      <circle cx="-208" cy="-120" r="38"/>
+      <circle cx="-120" cy="-208" r="38"/>
+      <circle cx="0" cy="-240" r="38"/>
+      <circle cx="120" cy="-208" r="38"/>
+      <circle cx="208" cy="-120" r="38"/>
+    </g>
+
+    <!-- Face -->
+    <circle r="172" fill="#fef3c7"/>
+    <ellipse cx="-99" cy="40" rx="30" ry="19" fill="#fbcfe8"/>
+    <ellipse cx="99" cy="40" rx="30" ry="19" fill="#fbcfe8"/>
+    <circle cx="-62" cy="-30" r="21" fill="#1f2937"/>
+    <circle cx="62" cy="-30" r="21" fill="#1f2937"/>
+    <circle cx="-56" cy="-38" r="8" fill="#ffffff"/>
+    <circle cx="69" cy="-38" r="8" fill="#ffffff"/>
+    <path d="M-14 19 L14 19 L0 43 Z" fill="#c2410c"/>
+    <path
+      d="M-43 73 Q0 112 43 73"
+      stroke="#7c2d12"
+      stroke-width="9"
+      stroke-linecap="round"
+      fill="none"
+    />
+  </g>
+
+  <!-- Wordmark -->
+  <text
+    x="621"
+    y="1620"
+    font-family="-apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif"
+    font-size="160"
+    font-weight="900"
+    text-anchor="middle"
+    fill="#ea580c"
+  >Sona</text>
+</svg>

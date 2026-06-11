@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>Sona — Coach voice</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/sona.css" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <meta name="theme-color" content="#2a9df4" />
+  <style>
+    .vrow{display:flex;align-items:center;gap:12px;border:2px solid var(--line);background:#fff;border-radius:16px;padding:12px 14px;margin-top:10px;cursor:pointer;transition:border-color .12s,transform .05s;}
+    .vrow:active{transform:translateY(1px);}
+    .vrow.on{border-color:var(--blue);box-shadow:0 0 0 3px rgba(42,157,244,.16);}
+    .vrow .info{flex:1;min-width:0;}
+    .vrow .nm{font-family:"Baloo 2";font-weight:800;font-size:16px;}
+    .vrow .vibe{font-size:13px;color:var(--muted);font-weight:700;}
+    .vrow .play{flex:0 0 auto;width:44px;height:44px;border-radius:50%;border:none;background:var(--blue);color:#fff;font-size:18px;cursor:pointer;box-shadow:0 4px 0 0 var(--blue-d);}
+    .vrow .play:active{transform:translateY(3px);box-shadow:0 1px 0 0 var(--blue-d);}
+    .vrow .play.err{background:#e7ecf3;color:#94a6bd;box-shadow:none;}
+    .vfoot{position:fixed;left:0;right:0;bottom:0;background:linear-gradient(180deg,rgba(255,255,255,0),#fff 35%);padding:16px 16px calc(16px + env(safe-area-inset-bottom));}
+    .vfoot .inner{max-width:560px;margin:0 auto;}
+  </style>
+  <script defer src="/_vercel/insights/script.js"></script>
+</head>
+<body>
+  <div class="wrap" style="padding-bottom:110px;">
+    <header class="app">
+      <div class="brand"><span class="leo"><img src="/coach/leo-icon.png" alt="Leo" /></span> Coach voice</div>
+      <a class="iconbtn" href="/settings.html" title="Back" style="display:flex;align-items:center;justify-content:center;">✕</a>
+    </header>
+
+    <div class="card">
+      <h1>Pick Leo's voice</h1>
+      <p class="muted">Tap ▶ to hear each one, then choose. This is the voice the coach uses in lessons (saved on this device).</p>
+    </div>
+
+    <div id="list"></div>
+  </div>
+
+  <div class="vfoot">
+    <div class="inner">
+      <button class="btn" id="save">Use this voice</button>
+      <p class="muted" id="saveMsg" style="text-align:center;margin-top:8px;font-size:13px;display:none;font-weight:800;color:var(--good);">Saved ✓ — Leo will use this voice.</p>
+    </div>
+  </div>
+
+  <script src="/sona.js"></script>
+  <script>
+    var SAMPLE = "Hi, I'm Leo the lion. Let's practice together — ready? Rabbit. Rocket. Ring.";
+    var VOICES = [
+      { id: "SF6OznV7UB2AxeidTpie", name: "Leo (default)", vibe: "Leo's real voice — young & playful" },
+      { id: "EXAVITQu4vr4xnSDxMaL", name: "Sarah", vibe: "Warm, clear female" },
+      { id: "XrExE9yKIg1WjnnlVkGX", name: "Matilda", vibe: "Friendly female — great for kids" },
+      { id: "pFZP5JQG7iQjIQuC4Bku", name: "Lily", vibe: "Soft British female" },
+      { id: "21m00Tcm4TlvDq8ikWAM", name: "Rachel", vibe: "Calm, gentle female" },
+      { id: "Xb7hH8MSUJpSbSDYk0k2", name: "Alice", vibe: "Clear British female" },
+      { id: "FGY2WhTYpPnrIDTdsKH5", name: "Laura", vibe: "Upbeat female" },
+      { id: "JBFqnCBsd6RMkjVDRZzb", name: "George", vibe: "Warm British male" },
+      { id: "nPczCjzI2devNBz1zQrb", name: "Brian", vibe: "Friendly, deeper male" },
+      { id: "pqHfZKP75CvOlQylNhV4", name: "Bill", vibe: "Kind, older male" },
+    ];
+
+    var sel = (Sona.getProfile().voiceId) || "";
+    var audioCtx = null;
+    function getCtx() { if (!audioCtx) { var AC = window.AudioContext || window.webkitAudioContext; audioCtx = new AC(); } if (audioCtx.state === "suspended") audioCtx.resume(); return audioCtx; }
+    function playPCM(bytes) {
+      return new Promise(function (resolve) {
+        try { var ctx = getCtx(), n = bytes.byteLength >> 1, ab = ctx.createBuffer(1, n, 24000), ch = ab.getChannelData(0), dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+          for (var i = 0; i < n; i++) ch[i] = dv.getInt16(i * 2, true) / 32768;
+          var src = ctx.createBufferSource(); src.buffer = ab; src.playbackRate.value = (window.Sona && Sona.VOICE_PITCH) || 1; src.connect(ctx.destination); src.onended = resolve; src.start();
+        } catch (e) { resolve(); }
+      });
+    }
+    var playing = false;
+    async function play(v, btn) {
+      if (playing) return; playing = true;
+      var old = btn.textContent; btn.textContent = "…"; btn.classList.remove("err");
+      try {
+        var res = await fetch("/api/tts", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text: SAMPLE, voice: v.id || "" }) });
+        if (!res.ok) throw new Error("tts " + res.status);
+        await playPCM(new Uint8Array(await res.arrayBuffer()));
+        btn.textContent = old;
+      } catch (e) { btn.textContent = "—"; btn.classList.add("err"); btn.title = "Unavailable on your account"; }
+      finally { playing = false; }
+    }
+
+    var list = document.getElementById("list");
+    function paint() { [].forEach.call(list.children, function (el) { el.classList.toggle("on", el.dataset.id === sel); }); }
+    VOICES.forEach(function (v) {
+      var row = document.createElement("div");
+      row.className = "vrow"; row.dataset.id = v.id;
+      row.innerHTML = '<div class="info"><div class="nm">' + v.name + '</div><div class="vibe">' + v.vibe + '</div></div><button class="play" aria-label="Play">▶</button>';
+      var btn = row.querySelector(".play");
+      btn.onclick = function (e) { e.stopPropagation(); if (window.Sona) Sona.sfx && Sona.sfx.tap(); play(v, btn); };
+      row.onclick = function () { sel = v.id; paint(); };
+      list.appendChild(row);
+    });
+    paint();
+
+    document.getElementById("save").onclick = function () {
+      Sona.saveProfile({ voiceId: sel });
+      var m = document.getElementById("saveMsg"); m.style.display = "block";
+      setTimeout(function () { location.href = "/settings.html"; }, 900);
+    };
+  </script>
+</body>
+</html>

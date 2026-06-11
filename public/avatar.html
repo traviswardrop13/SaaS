@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <title>Sona — Avatar test</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, "Segoe UI", Roboto, sans-serif; }
+    html, body { height: 100%; background: #0b1220; color: #fff; }
+    #stage { position: relative; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
+      background: radial-gradient(1200px 800px at 50% 30%, #1b2a4a, #0b1220); }
+    video { max-width: 100%; max-height: 100%; border-radius: 18px; background: #000; }
+    #placeholder { position: absolute; text-align: center; opacity: .85; }
+    #placeholder h1 { font-size: 22px; font-weight: 800; }
+    #placeholder p { margin-top: 8px; font-size: 14px; opacity: .7; max-width: 320px; }
+    #bar { position: absolute; left: 0; right: 0; bottom: 0; padding: 14px;
+      display: flex; gap: 8px; background: linear-gradient(to top, rgba(0,0,0,.6), transparent); }
+    input { flex: 1; padding: 13px 14px; border-radius: 12px; border: none; font-size: 15px; }
+    button { padding: 13px 16px; border-radius: 12px; border: none; font-weight: 800; font-size: 15px; cursor: pointer; }
+    button:disabled { opacity: .5; cursor: default; }
+    .primary { background: #1cb0f6; color: #fff; }
+    .ghost { background: rgba(255,255,255,.15); color: #fff; }
+    #status { position: absolute; top: 12px; left: 12px; font-size: 12px; font-weight: 700;
+      background: rgba(0,0,0,.45); padding: 6px 10px; border-radius: 99px; }
+  </style>
+</head>
+<body>
+  <div id="stage">
+    <div id="placeholder">
+      <h1>Meet your coach 👋</h1>
+      <p>Tap <b>Start</b> to connect the live avatar. (You'll be asked to allow audio.)</p>
+    </div>
+    <video id="video" autoplay playsinline></video>
+    <div id="status">idle</div>
+    <div id="bar">
+      <button id="startBtn" class="primary">▶ Start</button>
+      <input id="text" placeholder="Type something for her to say…" />
+      <button id="sayBtn" class="ghost">Say it</button>
+      <button id="stopBtn" class="ghost">Stop</button>
+    </div>
+  </div>
+
+  <script type="module">
+    // IDs default to the configured coach; override via /avatar.html?avatar=…&voice=…
+    const params = new URLSearchParams(location.search);
+    const AVATAR_ID = params.get("avatar") || "513fd1b7-7ef9-466d-9af2-344e51eeb833"; // built-in "Ann" until a valid custom LiveAvatar id is set
+    const VOICE_ID  = params.get("voice")  || "de5574fc-009e-4a01-a881-9919ef8f5a0c";
+    const MODE = (params.get("mode") || "FULL").toUpperCase(); // LITE = our TTS via repeatAudio
+
+    const video = document.getElementById("video");
+    const statusEl = document.getElementById("status");
+    const placeholder = document.getElementById("placeholder");
+    const startBtn = document.getElementById("startBtn");
+    let session = null;
+    let SDK = null;
+
+    // Readiness gate: the avatar only accepts speak/repeatAudio once the live
+    // stream is up. We resolve readyPromise on SESSION_STREAM_READY so the
+    // greeting (and "Say it") wait instead of racing the connection — which is
+    // what caused "Session needs to be connected to send command event".
+    let streamReady = false;
+    let readyResolve = null;
+    let readyPromise = null;
+    const resetReady = () => { streamReady = false; readyPromise = new Promise((r) => (readyResolve = r)); };
+    const waitReady = (ms = 12000) =>
+      streamReady ? Promise.resolve()
+      : Promise.race([readyPromise || Promise.resolve(), new Promise((r) => setTimeout(r, ms))]);
+
+    const setStatus = (s) => { statusEl.textContent = s; };
+
+    async function loadSDK() {
+      if (SDK) return SDK;
+      setStatus("loading sdk…");
+      const urls = [
+        "https://esm.sh/@heygen/liveavatar-web-sdk",
+        "https://cdn.jsdelivr.net/npm/@heygen/liveavatar-web-sdk/+esm",
+      ];
+      let lastErr;
+      for (const u of urls) {
+        try {
+          const m = await import(/* @vite-ignore */ u);
+          if (m && m.LiveAvatarSession) {
+            SDK = { LiveAvatarSession: m.LiveAvatarSession, SessionEvent: m.SessionEvent };
+            console.log("LiveAvatar SDK loaded from", u);
+            return SDK;
+          }
+          lastErr = new Error("module had no LiveAvatarSession export");
+        } catch (e) { console.warn("sdk load failed", u, e); lastErr = e; }
+      }
+      throw lastErr || new Error("SDK failed to load");
+    }
+
+    async function start() {
+      startBtn.disabled = true;
+      try {
+        const { LiveAvatarSession, SessionEvent } = await loadSDK();
+
+        // Close any prior session first so a second Start doesn't trip the
+        // account's concurrent-session limit.
+        if (session) { try { await session.stop(); } catch {} session = null; }
+        resetReady();
+
+        setStatus("getting token…");
+        // Forward avatar/voice + any mode=&sandbox= flags straight through so we
+        // can experiment from the URL without redeploying.
+        const tokenParams = new URLSearchParams(location.search);
+        tokenParams.set("avatar", AVATAR_ID);
+        tokenParams.set("voice", VOICE_ID);
+        const res = await fetch(`/api/heygen/token?${tokenParams.toString()}`, { method: "POST" });
+        const data = await res.json();
+        if (!data.ok || !data.token) {
+          setStatus("token error");
+          alert("Token error: " + (data.error || "unknown") + "\nHTTP " + (data.status ?? res.status) + "\n" + JSON.stringify(data.raw || {}, null, 2));
+          return;
+        }
+
+        setStatus("connecting avatar…");
+        session = new LiveAvatarSession(data.token, { voiceChat: false });
+        session.on(SessionEvent.SESSION_STREAM_READY, () => {
+          streamReady = true;
+          readyResolve && readyResolve();
+          try { session.attach(video); } catch(e){ console.warn("attach failed", e); } // attach after stream is ready
+          placeholder.style.display = "none";
+          setStatus("live ✓");
+          video.play().catch(() => {});
+        });
+        session.on(SessionEvent.SESSION_DISCONNECTED, () => { streamReady = false; setStatus("disconnected"); });
+
+        await session.start();
+        // Wait until the stream is actually live before speaking.
+        await waitReady();
+        // greet (LITE → our TTS via repeatAudio; FULL → avatar's own TTS via repeat)
+        coachSpeak("Hi! I'm so happy to meet you. Let's practice together!")
+          .catch((e) => console.warn("greet failed", e));
+      } catch (err) {
+        console.error(err);
+        setStatus("error");
+        const m = String(err?.message || err);
+        if (/credit/i.test(m)) {
+          alert("Avatar out of credits: the LiveAvatar account has no session credits left.\n\nTop up / upgrade your LiveAvatar plan, then try again.");
+        } else if (/concurren/i.test(m)) {
+          alert("Avatar busy: a previous session is still open (your plan allows one at a time).\n\nTap Stop, wait ~30–60 seconds for it to close, then Start again. Closing other tabs running the avatar also frees it.");
+        } else {
+          alert("Avatar error: " + m +
+            "\n\nIf it mentions the avatar is invalid, the IDs may be swapped — try /avatar.html?avatar=" + VOICE_ID + "&voice=" + AVATAR_ID);
+        }
+      } finally {
+        startBtn.disabled = false;
+      }
+    }
+
+    // Make her speak. In LITE we synthesize the audio ourselves (our voice) and
+    // stream raw PCM to the avatar via repeatAudio; in FULL the avatar TTSes text.
+    async function speakViaTTS(text) {
+      setStatus("synthesizing…");
+      const res = await fetch("/api/tts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text }),
+      });
+      if (!res.ok) {
+        let msg = "TTS error " + res.status;
+        try { const j = await res.json(); msg = j.error || msg; if (j.detail) msg += "\n" + j.detail; } catch {}
+        throw new Error(msg);
+      }
+      const buf = new Uint8Array(await res.arrayBuffer());
+      // bytes -> binary string (each char = one PCM byte), in slices to be safe
+      let bin = "";
+      const CH = 0x8000;
+      for (let i = 0; i < buf.length; i += CH) {
+        bin += String.fromCharCode.apply(null, buf.subarray(i, i + CH));
+      }
+      await waitReady(8000); // don't send audio before the stream is live
+      setStatus("live ✓");
+      session.repeatAudio(btoa(bin)); // LiveAvatar expects base64 PCM-24000
+    }
+
+    async function coachSpeak(text) {
+      if (!session) return;
+      if (MODE === "LITE") return speakViaTTS(text);
+      await waitReady(8000);
+      return session.repeat(text); // FULL: avatar's own TTS
+    }
+
+    async function say() {
+      const t = document.getElementById("text").value.trim();
+      if (!t || !session) return;
+      try { await coachSpeak(t); }
+      catch (e) { alert("Speak error: " + (e?.message || e)); }
+    }
+
+    async function stop() {
+      try { if (session) await session.stop(); } catch {}
+      session = null;
+      streamReady = false;
+      setStatus("stopped");
+      placeholder.style.display = "block";
+    }
+
+    // Release the session if the tab is closed/navigated away so the slot frees
+    // immediately instead of lingering against the concurrency cap.
+    window.addEventListener("pagehide", () => { try { session?.stop(); } catch {} });
+
+    document.getElementById("startBtn").onclick = start;
+    document.getElementById("sayBtn").onclick = say;
+    document.getElementById("stopBtn").onclick = stop;
+    document.getElementById("text").addEventListener("keydown", (e) => { if (e.key === "Enter") say(); });
+    console.log("avatar.html (LiveAvatar v4 · mode " + MODE + ") ready · avatar", AVATAR_ID, "voice", VOICE_ID);
+  </script>
+</body>
+</html>
