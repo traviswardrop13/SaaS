@@ -71,7 +71,7 @@
       return new Promise(function (resolve) {
         try { var ctx = getCtx(), n = bytes.byteLength >> 1, ab = ctx.createBuffer(1, n, 24000), ch = ab.getChannelData(0), dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
           for (var i = 0; i < n; i++) ch[i] = dv.getInt16(i * 2, true) / 32768;
-          var src = ctx.createBufferSource(); src.buffer = ab; src.playbackRate.value = (window.Sona && Sona.VOICE_PITCH) || 1; src.connect(ctx.destination); src.onended = resolve; src.start();
+          var src = ctx.createBufferSource(); src.buffer = ab; src.playbackRate.value = (window.Sona && Sona.VOICE_PITCH) || 1; var g = ctx.createGain(); g.gain.value = (Sona.getProfile().volume != null ? Sona.getProfile().volume : 0.8); src.connect(g); g.connect(ctx.destination); src.onended = resolve; src.start();
         } catch (e) { resolve(); }
       });
     }
