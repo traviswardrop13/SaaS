@@ -12,8 +12,8 @@ import Stripe from "stripe";
  */
 export const runtime = "nodejs";
 
-const MONTHLY_CENTS = 799; // $7.99 / month (not offered during beta)
-const ANNUAL_CENTS = 5900; // $59 / year (~$4.92/mo) — founding beta, 7-day free trial
+const MONTHLY_CENTS = 900; // $9 / month — the low-commitment on-ramp
+const ANNUAL_CENTS = 5900; // $59 / year (~$4.92/mo) — Founding Circle hero plan
 
 export async function POST(req: NextRequest) {
   const key = process.env.STRIPE_SECRET_KEY;
@@ -69,8 +69,9 @@ export async function POST(req: NextRequest) {
       billing_address_collection: "auto",
       success_url: `${origin}/subscribe/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/subscribe?canceled=1`,
-      // 7-day free trial on the annual plan only; monthly charges right away (Duolingo-style)
-      ...(annual ? { subscription_data: { trial_period_days: 7 } } : {}),
+      // 7-day free trial on BOTH plans — the marketing promises "free trial"
+      // unconditionally, so monthly must honor it too
+      subscription_data: { trial_period_days: 7 },
     });
     return NextResponse.json({ ok: true, url: session.url });
   } catch (e: unknown) {

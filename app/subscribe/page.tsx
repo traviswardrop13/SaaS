@@ -15,7 +15,7 @@ function SubscribeInner() {
   const params = useSearchParams();
   const canceled = params.get("canceled") === "1";
   const [email, setEmail] = useState("");
-  const annual = true; // founding beta is annual-only
+  const [annual, setAnnual] = useState(true); // annual is the hero; monthly is the on-ramp
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -70,13 +70,36 @@ function SubscribeInner() {
               First 100
             </span>
           </div>
-          <div className="mt-3 flex items-end gap-2">
-            <span className="mb-2 text-2xl font-bold text-gray-400 line-through">$119.99</span>
-            <span className="font-display text-5xl font-extrabold text-gray-900">$59</span>
-            <span className="mb-1.5 font-bold text-gray-500">/year</span>
+          <div className="mt-4 grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => setAnnual(true)}
+              className={`rounded-2xl border-2 p-3 text-left transition ${annual ? "border-sky-500 bg-sky-50" : "border-gray-200 bg-white hover:border-gray-300"}`}
+            >
+              <span className="block text-xs font-extrabold uppercase tracking-wide text-grass-600">
+                Save 45%
+              </span>
+              <span className="block font-display text-2xl font-extrabold text-gray-900">
+                $59<span className="text-sm font-bold text-gray-500">/yr</span>
+              </span>
+              <span className="block text-xs font-bold text-gray-500">$4.92/mo · price locked for life</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setAnnual(false)}
+              className={`rounded-2xl border-2 p-3 text-left transition ${!annual ? "border-sky-500 bg-sky-50" : "border-gray-200 bg-white hover:border-gray-300"}`}
+            >
+              <span className="block text-xs font-extrabold uppercase tracking-wide text-gray-400">
+                Flexible
+              </span>
+              <span className="block font-display text-2xl font-extrabold text-gray-900">
+                $9<span className="text-sm font-bold text-gray-500">/mo</span>
+              </span>
+              <span className="block text-xs font-bold text-gray-500">cancel anytime</span>
+            </button>
           </div>
-          <p className="mt-1 text-sm font-bold text-grass-600">
-            7-day free trial · cancel anytime
+          <p className="mt-2 text-sm font-bold text-grass-600">
+            7-day free trial on both · cancel anytime
           </p>
           <ul className="mt-6 space-y-3">
             {FEATURES.map((f) => (
