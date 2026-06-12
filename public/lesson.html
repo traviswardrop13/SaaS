@@ -87,6 +87,10 @@
       text-transform:uppercase;letter-spacing:.04em;color:#fff;cursor:pointer;transition:transform .05s;}
     .btn.green{background:var(--green);box-shadow:0 5px 0 0 var(--green-d);} .btn.green:active{transform:translateY(4px);box-shadow:0 1px 0 0 var(--green-d);}
     .btn.disabled{background:#e5e5e5;color:#afafaf;box-shadow:none;cursor:default;pointer-events:none;}
+    /* armed Check = unmistakably pressable */
+    #checkBtn{background:var(--blue);box-shadow:0 5px 0 0 var(--blue-d);}
+    #checkBtn:active{transform:translateY(4px);box-shadow:0 1px 0 0 var(--blue-d);}
+    #checkBtn.disabled{background:#e5e5e5;color:#afafaf;box-shadow:none;}
 
     /* feedback sheet */
     #fb{position:fixed;left:0;right:0;bottom:0;z-index:40;transform:translateY(110%);transition:transform .25s ease;}
@@ -450,7 +454,7 @@
       act.appendChild(grid);
       $("play").onclick=()=>say(w.scoreText);
       function armCheck(){ checkBtn.classList.remove("disabled"); checkBtn.onclick=()=>{ hideCheck(); const cards=[...grid.children]; cards.forEach((c,k)=>{ if(opts[k].ok)c.classList.add("right"); }); if(!sel.ok){ const idx=opts.indexOf(sel); cards[idx].classList.add("wrong"); } answer(!!sel.ok, sel.ok?("That’s "+w.display+"!"):("It was "+w.display)); }; }
-      setTimeout(async()=>{ if(a.intro) await say(a.intro); say(w.scoreText); }, 250);
+      setTimeout(async()=>{ if(a.intro) await say(a.intro); await say("Tap the picture of the word you hear."); say(w.scoreText); }, 250);
     }
 
     /* FIND THE SOUND (tap all pictures with the target sound) */
@@ -465,9 +469,9 @@
       const chosen=new Set();
       opts.forEach((o,k)=>{ const c=document.createElement("div"); c.className="card"; c.textContent=o.e; c.onclick=()=>{ if(window.Sona)Sona.sfx.tap(); if(chosen.has(k)){chosen.delete(k);c.classList.remove("sel");}else{chosen.add(k);c.classList.add("sel");} const has=chosen.size>0; checkBtn.classList.toggle("disabled",!has); checkBtn.onclick=has?doCheck:null; }; grid.appendChild(c); });
       act.appendChild(grid);
-      $("play").onclick=()=>say(planOf(a.snd||SOUND).isolation.scoreText);
+      $("play").onclick=()=>say("Find every picture that starts with "+(a.snd||SOUND)+".");
       function doCheck(){ hideCheck(); const cards=[...grid.children]; let allRight=true; opts.forEach((o,k)=>{ if(o.ok){ cards[k].classList.add("right"); if(!chosen.has(k)) allRight=false; } else if(chosen.has(k)){ cards[k].classList.add("wrong"); allRight=false; } }); answer(allRight, allRight?"You found them all!":("Those are the "+(a.snd||SOUND)+" sounds")); }
-      setTimeout(async()=>{ if(a.intro) await say(a.intro); say(planOf(a.snd||SOUND).isolation.scoreText); }, 250);
+      setTimeout(async()=>{ if(a.intro) await say(a.intro); say("Can you find every picture that starts with "+(a.snd||SOUND)+"? Tap them all, then press the blue button."); }, 250);
     }
 
     /* ---- finish ---- */
