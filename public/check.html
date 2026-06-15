@@ -53,6 +53,7 @@
     .rcard .tag{margin-left:auto;font-size:22px;}
     .summary{background:#fff;border-radius:20px;padding:18px;margin-top:6px;box-shadow:0 10px 26px -16px rgba(20,90,160,.5);text-align:center;}
     .summary h2{font-family:"Baloo 2";font-weight:800;font-size:20px;}
+    @keyframes floaty{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
   </style>
 </head>
 <body>
@@ -62,7 +63,7 @@
     <!-- INTRO -->
     <section class="screen on" id="sIntro">
       <div class="center">
-        <div class="bigEmoji">🦁</div>
+        <img src="/coach/leo.png" alt="Leo" style="width:132px;height:132px;object-fit:contain;filter:drop-shadow(0 10px 16px rgba(20,90,160,.22));animation:floaty 4s ease-in-out infinite;" />
         <h1>Free 2-minute<br/>Speech Check</h1>
         <p class="lead">Your child says a few words, and we'll show you which sounds are on track and which to practice — designed with a licensed speech-language pathologist.</p>
         <span class="slptag">✓ Built with an SLP</span>
@@ -109,7 +110,7 @@
     <!-- DONE -->
     <section class="screen" id="sDone">
       <div class="center">
-        <div class="bigEmoji">🎉</div>
+        <img src="/coach/poses/leo-celebrate.png" alt="Leo celebrating" style="width:140px;height:140px;object-fit:contain;filter:drop-shadow(0 10px 16px rgba(20,90,160,.22));" onerror="this.onerror=null;this.src='/coach/leo.png';" />
         <h1 id="doneTitle">You're all set!</h1>
         <p class="lead" id="doneText">Leo will turn these sounds into 5 minutes of daily play. Start your free week.</p>
         <a class="btn" id="startTrial" href="/subscribe">Start free week →</a>
