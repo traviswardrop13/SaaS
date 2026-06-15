@@ -134,26 +134,40 @@
     var NODES = [
       { id:"cupstack", emoji:"🥤", label:"Cup Stack", live:true, href:"/cupstack.html" },
       { id:"racer",    emoji:"🏎️", label:"Rev Racer", live:true, href:"/racer.html" },
-      { id:"match",    emoji:"🃏", label:"Match-Up", live:false, note:"Say it to flip" },
-      { id:"chest",    emoji:"🎁", label:"Prize Chest", live:false, note:"Finish the world" }
+      { id:"match",    emoji:"🃏", label:"Match-Up", live:true, href:"/match.html" },
+      { id:"chest",    emoji:"🎁", label:"Prize Chest", chest:true }
     ];
+    var allGamesDone = (GS.cupstack&&GS.cupstack.done) && (GS.racer&&GS.racer.done) && (GS.match&&GS.match.done);
 
     var path = document.getElementById("path");
     NODES.forEach(function(n, idx){
       if(idx>0){ var c=document.createElement("div"); c.className="connector"; path.appendChild(c); }
-      var done = GS[n.id] && GS[n.id].done;
-      var cls = n.live ? (done?"node done":"node live") : "node locked";
-      var el = document.createElement(n.live?"a":"div");
-      el.className = cls;
-      if(n.live) el.href = n.href;
-      var startTag = (n.live && !done) ? '<span class="start">START</span>' : '';
-      var check = done ? '<span class="checkmini">⭐</span>' : (n.live?'':'<span class="checkmini">🔒</span>');
-      el.innerHTML =
-        '<button class="disc">'+n.emoji+check+'</button>'+
-        startTag+
-        '<span class="label">'+n.label+'</span>'+
-        (n.live?'':'<span class="soon">'+(n.note||"Coming soon")+'</span>');
-      if(!n.live){ el.querySelector(".disc").onclick=function(){ if(window.Sona&&Sona.sfx) Sona.sfx.tap&&Sona.sfx.tap(); }; }
+      var el, cls, inner, onTap=null;
+      if(n.chest){
+        var claimed = GS.chest && GS.chest.claimed;
+        var ready = allGamesDone && !claimed;
+        cls = claimed ? "node done" : (ready ? "node live" : "node locked");
+        var chk = claimed ? '<span class="checkmini">⭐</span>' : (ready?'':'<span class="checkmini">🔒</span>');
+        inner = '<button class="disc">'+n.emoji+chk+'</button>'+(ready?'<span class="start">OPEN!</span>':'')+'<span class="label">'+n.label+'</span>'+(ready||claimed?'':'<span class="soon">Finish all 3 games</span>');
+        el=document.createElement("div"); el.className=cls; el.innerHTML=inner;
+        onTap=function(){
+          if(!ready) { if(window.Sona&&Sona.sfx)Sona.sfx.tap&&Sona.sfx.tap(); return; }
+          var bonus=50; if(window.Sona&&Sona.addCoins)Sona.addCoins(bonus);
+          try{ GS.chest={claimed:true}; localStorage.setItem("sona.games.v1",JSON.stringify(GS)); }catch(e){}
+          if(window.Sona){ Sona.confetti&&Sona.confetti(); Sona.sfx&&Sona.sfx.complete&&Sona.sfx.complete(); }
+          document.getElementById("coins").textContent=Sona.getCoins?Sona.getCoins():0;
+          el.className="node done"; el.querySelector(".start")&&el.querySelector(".start").remove();
+          el.querySelector(".disc").innerHTML=n.emoji+'<span class="checkmini">⭐</span>';
+        };
+      } else {
+        var done = GS[n.id] && GS[n.id].done;
+        cls = n.live ? (done?"node done":"node live") : "node locked";
+        el = document.createElement(n.live?"a":"div"); el.className=cls; if(n.live) el.href=n.href;
+        var startTag = (n.live && !done) ? '<span class="start">START</span>' : '';
+        var check = done ? '<span class="checkmini">⭐</span>' : (n.live?'':'<span class="checkmini">🔒</span>');
+        el.innerHTML='<button class="disc">'+n.emoji+check+'</button>'+startTag+'<span class="label">'+n.label+'</span>'+(n.live?'':'<span class="soon">'+(n.note||"Coming soon")+'</span>');
+      }
+      if(onTap) el.querySelector(".disc").onclick=onTap;
       path.appendChild(el);
     });
 
