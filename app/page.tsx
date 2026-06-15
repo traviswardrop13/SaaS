@@ -93,12 +93,16 @@ function Hero() {
           Help your child find their words.
         </h1>
         <p className="mx-auto mt-5 max-w-xl text-lg leading-relaxed text-gray-600">
-          A daily 10-minute speech-practice app — fun, gamified, and built with a
-          licensed speech-language pathologist.
+          Check your child&apos;s speech sounds free in 2 minutes — then fix them
+          with 5 minutes of daily play. Built with a licensed speech-language
+          pathologist.
         </p>
-        <div className="mt-8 flex justify-center">
-          <a href="/onboarding.html" className="btn-primary text-lg">
-            Start free
+        <div className="mt-8 flex flex-col items-center gap-3">
+          <a href="/check.html" className="btn-primary text-lg">
+            🦁 Free 2-minute Speech Check
+          </a>
+          <a href="/onboarding.html" className="text-sm font-bold text-gray-500 hover:text-gray-800">
+            or jump straight into the app →
           </a>
         </div>
         <div className="mx-auto mt-7 inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-bold text-gray-600 shadow-chunky-sm">
