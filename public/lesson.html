@@ -234,6 +234,8 @@
     const THEME = (window.Sona && Sona.dayTheme) ? Sona.dayTheme() : { e:"⭐", n:"Practice Day" };
     const planOf = (s)=> SOUND_PLAN[s] || SOUND_PLAN.R;
     const poolOf = (s)=> (window.Sona && Sona.WORDS && Sona.WORDS[s]) ? Sona.WORDS[s] : POOL;
+    // words that START with the sound (for "find pictures that start with X")
+    const initialsOf = (s)=> poolOf(s).filter(w=>w.i);
     const BUDDY = (window.Sona ? Sona.characterById(profile.character) : { img:"/coach/leo.png", emoji:"🦁" });
     // Leo's reaction poses — preloaded so the swap on answer is instant
     const POSES = { celebrate:"/coach/poses/leo-celebrate.png", listen:"/coach/poses/leo-listen.png" };
@@ -247,6 +249,8 @@
     const shuffle = (a)=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));const t=a[i];a[i]=a[j];a[j]=t;}return a;};
 
     function otherWords(s){ const o=[]; const W=(window.Sona&&Sona.WORDS)||{}; Object.keys(W).forEach(k=>{ if(k!==s) W[k].forEach(w=>o.push(w.e)); }); return o.length?o:EXTRA; }
+    // emojis of words that start with SOME OTHER sound — safe "doesn't start with X" distractors
+    function otherInitials(s){ const o=[]; const W=(window.Sona&&Sona.WORDS)||{}; Object.keys(W).forEach(k=>{ if(k!==s) W[k].forEach(w=>{ if(w.i) o.push(w.e); }); }); return o.length?o:EXTRA; }
     function distractors(exclude, n, s){
       const pool = shuffle(poolOf(s).map(w=>w.e).concat(otherWords(s)).concat(EXTRA).filter(e=>e!==exclude));
       const out=[]; for(const e of pool){ if(out.indexOf(e)===-1){ out.push(e); if(out.length>=n) break; } } return out;
@@ -465,8 +469,10 @@
 
     /* FIND THE SOUND (tap all pictures with the target sound) */
     function renderFind(a){
-      const tgs=shuffle(poolOf(a.snd||SOUND)).slice(0,2).map(w=>({e:w.e,ok:true}));
-      const others=shuffle(otherWords(a.snd||SOUND)).slice(0,2).map(e=>({e,ok:false}));
+      const s=a.snd||SOUND;
+      const tgs=shuffle(initialsOf(s)).slice(0,2).map(w=>({e:w.e,ok:true}));
+      const tgSet=new Set(tgs.map(t=>t.e)); // never let the same emoji be both right and wrong
+      const others=shuffle(otherInitials(s).filter(e=>!tgSet.has(e))).slice(0,2).map(e=>({e,ok:false}));
       const opts=shuffle(tgs.concat(others));
       const head=document.createElement("div");
       head.innerHTML='<div class="qtitle">Tap the '+(a.snd||SOUND)+' pictures</div><div class="qsub">Pick every picture that starts with the '+(a.snd||SOUND)+' sound.</div><div class="audiorow"><button class="audiobtn sm" id="play">'+audioSVG()+'</button><div class="wave"></div></div>';
