@@ -84,7 +84,9 @@
   <script src="/sona.js"></script>
   <script>
     var profile = (window.Sona ? Sona.getProfile() : { focusSounds:["R"], voiceId:"", volume:0.8 });
-    var SOUND = (profile.focusSounds && profile.focusSounds[0]) || "R";
+    var params = new URLSearchParams(location.search);
+    var SOUND = (params.get("sound") || (profile.focusSounds && profile.focusSounds[0]) || "R").toUpperCase();
+    if(!(window.Sona && Sona.WORDS && Sona.WORDS[SOUND])) SOUND="R";
     var POOL = (window.Sona && Sona.WORDS && Sona.WORDS[SOUND]) ? Sona.WORDS[SOUND].filter(function(w){return w.i;}) : [{w:"rabbit",e:"🐰"},{w:"rocket",e:"🚀"},{w:"ring",e:"💍"}];
     var PAIRS = 3;
 
@@ -164,7 +166,7 @@
       $("winReps").textContent=reps; $("winFlips").textContent=flips;
       var earned=15 + reps*2;
       if(window.Sona&&Sona.addCoins)Sona.addCoins(earned);
-      try{ var GS=JSON.parse(localStorage.getItem("sona.games.v1")||"{}"); GS.match={done:true,lastDay:new Date().toISOString().slice(0,10)}; localStorage.setItem("sona.games.v1",JSON.stringify(GS)); }catch(e){}
+      try{ var GS=JSON.parse(localStorage.getItem("sona.games.v1")||"{}"); GS[SOUND]=GS[SOUND]||{}; GS[SOUND].match={done:true}; GS.lastPlayDay=new Date().toISOString().slice(0,10); localStorage.setItem("sona.games.v1",JSON.stringify(GS)); }catch(e){}
       $("winUnlock").textContent="+"+earned+" 🪙";
       $("coins").textContent=Sona.getCoins?Sona.getCoins():0;
       $("win").classList.add("show");

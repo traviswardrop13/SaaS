@@ -116,7 +116,9 @@
   <script>
     /* ---- config (the clinical seam: swap this array for assigned targets) ---- */
     var profile = (window.Sona ? Sona.getProfile() : { focusSounds:["R"], voiceId:"", volume:0.8 });
-    var SOUND = (profile.focusSounds && profile.focusSounds[0]) || "R";
+    var params = new URLSearchParams(location.search);
+    var SOUND = (params.get("sound") || (profile.focusSounds && profile.focusSounds[0]) || "R").toUpperCase();
+    if(!(window.Sona && Sona.WORDS && Sona.WORDS[SOUND])) SOUND="R";
     // hardcoded ~10 target words for ONE sound — all START with it (initial position).
     // To use your wife's assigned list, replace WORDS with [{w:"rabbit",e:"🐰"},...].
     var POOL = (window.Sona && Sona.WORDS && Sona.WORDS[SOUND]) ? Sona.WORDS[SOUND].filter(function(w){return w.i;}) : [{w:"rabbit",e:"🐰"},{w:"rocket",e:"🚀"}];
@@ -282,8 +284,10 @@
       // mark the level done + complete today's daily quest (read by the map)
       try{
         var GS=JSON.parse(localStorage.getItem("sona.games.v1")||"{}");
-        var best=Math.max(placed,(GS.cupstack&&GS.cupstack.best)||0);
-        GS.cupstack={ done:true, best:best, lastDay:new Date().toISOString().slice(0,10) };
+        GS[SOUND]=GS[SOUND]||{};
+        var best=Math.max(placed,(GS[SOUND].cupstack&&GS[SOUND].cupstack.best)||0);
+        GS[SOUND].cupstack={ done:true, best:best };
+        GS.lastPlayDay=new Date().toISOString().slice(0,10);
         localStorage.setItem("sona.games.v1",JSON.stringify(GS));
       }catch(e){}
       // unlock the next cup color as the single reward

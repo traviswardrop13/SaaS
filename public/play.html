@@ -15,55 +15,40 @@
     *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;font-family:"Nunito",-apple-system,"Segoe UI",Roboto,sans-serif;}
     body{background:linear-gradient(180deg,#eaf6ff,#dff0ff 40%,#eafbe9);color:var(--ink);min-height:100vh;}
     #wrap{max-width:560px;margin:0 auto;padding-bottom:96px;}
-
-    /* HUD */
-    #hud{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:10px;padding:calc(10px + env(safe-area-inset-top)) 16px 10px;
-      background:linear-gradient(180deg,rgba(234,246,255,.96),rgba(234,246,255,.75));backdrop-filter:blur(6px);}
+    #hud{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:10px;padding:calc(10px + env(safe-area-inset-top)) 16px 10px;background:linear-gradient(180deg,rgba(234,246,255,.96),rgba(234,246,255,.75));backdrop-filter:blur(6px);}
     .chip{display:flex;align-items:center;gap:6px;background:#fff;border-radius:99px;padding:7px 13px;font-family:"Baloo 2";font-weight:800;font-size:15px;box-shadow:0 3px 10px rgba(20,120,200,.12);}
-    .chip.streak{color:var(--orange-d);} .chip.coins{color:var(--orange-d);} .chip.gems{color:#9b6bff;}
+    .chip.streak,.chip.coins{color:var(--orange-d);}
     #gear{margin-left:auto;width:42px;height:42px;border-radius:50%;border:none;background:#fff;box-shadow:0 3px 10px rgba(20,120,200,.12);font-size:18px;cursor:pointer;}
-
-    /* world banner */
-    #world{margin:6px 16px 2px;background:linear-gradient(135deg,var(--wc1,#ff7a6e),var(--wc2,#ef6557));border-radius:22px;padding:16px 18px;color:#fff;display:flex;align-items:center;gap:14px;box-shadow:0 8px 20px rgba(120,40,30,.18);}
-    #world img{width:62px;height:62px;object-fit:contain;filter:drop-shadow(0 4px 8px rgba(0,0,0,.18));}
-    #world .wt{font-family:"Baloo 2";font-weight:800;font-size:22px;}
-    #world .ws{font-weight:700;font-size:13px;opacity:.92;}
-
-    /* daily quest */
     #quest{margin:12px 16px 0;background:#fff;border-radius:18px;padding:12px 16px;display:flex;align-items:center;gap:12px;box-shadow:0 4px 14px rgba(20,120,200,.08);}
-    #quest .qe{font-size:26px;}
-    #quest b{font-family:"Baloo 2";font-size:15px;}
-    #quest .qbar{height:8px;background:#eef2f6;border-radius:99px;margin-top:5px;overflow:hidden;}
-    #quest .qbar span{display:block;height:100%;background:var(--green);border-radius:99px;}
+    #quest .qe{font-size:26px;} #quest b{font-family:"Baloo 2";font-size:15px;}
+    #quest .qbar{height:8px;background:#eef2f6;border-radius:99px;margin-top:5px;overflow:hidden;} #quest .qbar span{display:block;height:100%;background:var(--green);border-radius:99px;}
     #quest .qsub{color:var(--muted);font-weight:700;font-size:12px;}
 
-    /* path */
-    #path{position:relative;margin:18px 0 0;display:flex;flex-direction:column;align-items:center;gap:6px;}
+    .world{margin:18px 16px 2px;border-radius:22px;padding:16px 18px;color:#fff;display:flex;align-items:center;gap:14px;box-shadow:0 8px 20px rgba(60,60,90,.16);}
+    .world.locked{filter:grayscale(.7);opacity:.7;}
+    .world img{width:54px;height:54px;object-fit:contain;filter:drop-shadow(0 4px 8px rgba(0,0,0,.18));}
+    .world .wt{font-family:"Baloo 2";font-weight:800;font-size:20px;} .world .ws{font-weight:700;font-size:12.5px;opacity:.92;}
+
+    .wpath{position:relative;display:flex;flex-direction:column;align-items:center;gap:6px;margin-top:14px;}
     .node{position:relative;display:flex;flex-direction:column;align-items:center;gap:6px;text-decoration:none;color:inherit;}
-    .disc{width:88px;height:88px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:42px;
-      border:none;cursor:pointer;transition:transform .06s;position:relative;}
+    .disc{width:84px;height:84px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:40px;border:none;cursor:pointer;transition:transform .06s;position:relative;}
     .disc:active{transform:translateY(3px);}
-    .node.live .disc{background:var(--green);box-shadow:0 7px 0 0 var(--green-d), 0 0 0 8px rgba(88,204,2,.18);animation:bounce 2.2s ease-in-out infinite;}
+    .node.live .disc{background:var(--green);box-shadow:0 7px 0 0 var(--green-d),0 0 0 8px rgba(88,204,2,.18);}
+    .node.live.cur .disc{animation:bounce 2.2s ease-in-out infinite;}
     .node.done .disc{background:var(--gold);box-shadow:0 7px 0 0 #e0a800;}
     .node.locked .disc{background:var(--lock);box-shadow:0 7px 0 0 #b6bec8;cursor:default;filter:grayscale(.3);}
     @keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
-    .node .label{font-family:"Baloo 2";font-weight:800;font-size:14px;background:#fff;border-radius:99px;padding:5px 14px;box-shadow:0 3px 8px rgba(20,120,200,.1);}
+    .node .label{font-family:"Baloo 2";font-weight:800;font-size:13.5px;background:#fff;border-radius:99px;padding:5px 13px;box-shadow:0 3px 8px rgba(20,120,200,.1);}
     .node.locked .label{color:var(--muted);background:#f1f4f7;}
-    .node .soon{font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;}
     .node .start{position:absolute;top:-22px;background:#fff;color:var(--green-d);font-family:"Baloo 2";font-weight:800;font-size:12px;padding:3px 12px;border-radius:99px;box-shadow:0 3px 8px rgba(20,120,200,.14);animation:nod 1.4s ease-in-out infinite;}
     @keyframes nod{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
-    .connector{width:5px;height:26px;background:repeating-linear-gradient(180deg,#cfe0ef 0 7px,transparent 7px 14px);border-radius:3px;}
-    .node:nth-child(4n+2){align-self:flex-start;margin-left:22%;}
-    .node:nth-child(4n+4){align-self:flex-end;margin-right:22%;}
+    .connector{width:5px;height:24px;background:repeating-linear-gradient(180deg,#cfe0ef 0 7px,transparent 7px 14px);border-radius:3px;}
+    .wpath .node:nth-child(4n+2){align-self:flex-start;margin-left:24%;}
+    .wpath .node:nth-child(4n+4){align-self:flex-end;margin-right:24%;}
+    .checkmini{position:absolute;right:-2px;bottom:-2px;width:26px;height:26px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;box-shadow:0 2px 6px rgba(0,0,0,.15);}
 
-    .checkmini{position:absolute;right:-2px;bottom:-2px;width:28px;height:28px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;font-size:15px;box-shadow:0 2px 6px rgba(0,0,0,.15);}
-
-    /* bottom nav */
-    #nav{position:fixed;bottom:0;left:0;right:0;z-index:30;max-width:560px;margin:0 auto;display:flex;background:#fff;
-      border-top:1px solid #e8eef4;padding:8px 0 calc(8px + env(safe-area-inset-bottom));}
-    #nav a{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;text-decoration:none;color:var(--muted);font-weight:800;font-size:11px;}
-    #nav a.on{color:var(--blue-d);}
-    #nav a .ic{font-size:22px;}
+    #nav{position:fixed;bottom:0;left:0;right:0;z-index:30;max-width:560px;margin:0 auto;display:flex;background:#fff;border-top:1px solid #e8eef4;padding:8px 0 calc(8px + env(safe-area-inset-bottom));}
+    #nav a{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;text-decoration:none;color:var(--muted);font-weight:800;font-size:11px;} #nav a.on{color:var(--blue-d);} #nav a .ic{font-size:22px;}
   </style>
 </head>
 <body>
@@ -71,32 +56,22 @@
     <div id="hud">
       <span class="chip streak">🔥 <span id="streak">0</span></span>
       <span class="chip coins">🪙 <span id="coins">0</span></span>
-      <button id="gear" title="Parents">⚙️</button>
+      <button id="gear" title="Grown-ups">⚙️</button>
     </div>
-
-    <div id="world">
-      <img src="/coach/leo.png" alt="Leo" />
-      <div>
-        <div class="wt" id="worldTitle">R World</div>
-        <div class="ws" id="worldSub">Play games, practice your sound!</div>
-      </div>
-    </div>
-
     <div id="quest">
       <span class="qe">🎯</span>
       <div style="flex:1;min-width:0;">
-        <b id="questText">Stack a tower today</b>
+        <b id="questText">Play a game today</b>
         <div class="qbar"><span id="questBar" style="width:0%"></span></div>
-        <div class="qsub" id="questSub">+15 🪙 reward</div>
+        <div class="qsub" id="questSub">+15 🪙</div>
       </div>
     </div>
-
-    <div id="path"></div>
+    <div id="worlds"></div>
   </div>
 
   <nav id="nav">
     <a class="on" href="/play.html"><span class="ic">🎮</span>Play</a>
-    <a href="/customize.html"><span class="ic">🛍️</span>Shop</a>
+    <a href="/shop.html"><span class="ic">🛍️</span>Shop</a>
     <a href="/progress.html"><span class="ic">📈</span>Grown-ups</a>
   </nav>
 
@@ -104,9 +79,11 @@
   <script>
     var profile = Sona.getProfile();
     var g = Sona.getProgress();
-    var SOUND = (profile.focusSounds && profile.focusSounds[0]) || "R";
+    var ALL = (window.Sona && Sona.WORDS) ? Sona.WORDS : {};
+    var sounds = (profile.focusSounds || ["R"]).filter(function(s){ return ALL[s]; });
+    if(!sounds.length) sounds=["R"];
+    sounds = sounds.slice(0,5);
 
-    // per-sound world theming (name + colors). Templates re-skin per sound.
     var WORLDS = {
       R:{name:"Rocket World",c:["#ff7a6e","#ef6557"]}, S:{name:"Sea World",c:["#62bdff","#46a6ec"]},
       L:{name:"Lemon World",c:["#ffd45e","#f0bb33"]}, K:{name:"Castle World",c:["#7dd470","#63bd57"]},
@@ -114,64 +91,69 @@
       SH:{name:"Ship World",c:["#c08cf0","#a86fe0"]}, CH:{name:"Choo-Choo World",c:["#ff9446","#ef7d2c"]},
       TH:{name:"Thunder World",c:["#9aa7ff","#7f8eef"]}
     };
-    var W = WORLDS[SOUND] || WORLDS.R;
-    document.documentElement.style.setProperty("--wc1", W.c[0]);
-    document.documentElement.style.setProperty("--wc2", W.c[1]);
-    document.getElementById("worldTitle").textContent = W.name;
-    document.getElementById("streak").textContent = (g.streak && g.streak.count) || 0;
-    document.getElementById("coins").textContent = Sona.getCoins ? Sona.getCoins() : 0;
-
-    // game progress (which levels are done) — local for now
-    var GS = {}; try{ GS = JSON.parse(localStorage.getItem("sona.games.v1")||"{}"); }catch(e){}
-
-    // daily quest: stack a tower today
-    var todayKey = new Date().toISOString().slice(0,10);
-    var questDone = GS.cupstack && GS.cupstack.lastDay === todayKey;
-    document.getElementById("questBar").style.width = questDone ? "100%" : "0%";
-    document.getElementById("questSub").textContent = questDone ? "Done! +15 🪙 earned 🎉" : "Play Cup Stack · +15 🪙";
-
-    // the level path (templates; live ones are playable, rest are Coming soon)
-    var NODES = [
-      { id:"cupstack", emoji:"🥤", label:"Cup Stack", live:true, href:"/cupstack.html" },
-      { id:"racer",    emoji:"🏎️", label:"Rev Racer", live:true, href:"/racer.html" },
-      { id:"match",    emoji:"🃏", label:"Match-Up", live:true, href:"/match.html" },
-      { id:"chest",    emoji:"🎁", label:"Prize Chest", chest:true }
+    var GAMES = [
+      { id:"cupstack", emoji:"🥤", label:"Cup Stack", href:"/cupstack.html" },
+      { id:"racer",    emoji:"🏎️", label:"Rev Racer", href:"/racer.html" },
+      { id:"match",    emoji:"🃏", label:"Match-Up",  href:"/match.html" },
+      { id:"whack",    emoji:"🦔", label:"Pop-a-Word",href:"/whack.html" }
     ];
-    var allGamesDone = (GS.cupstack&&GS.cupstack.done) && (GS.racer&&GS.racer.done) && (GS.match&&GS.match.done);
 
-    var path = document.getElementById("path");
-    NODES.forEach(function(n, idx){
-      if(idx>0){ var c=document.createElement("div"); c.className="connector"; path.appendChild(c); }
-      var el, cls, inner, onTap=null;
-      if(n.chest){
-        var claimed = GS.chest && GS.chest.claimed;
-        var ready = allGamesDone && !claimed;
-        cls = claimed ? "node done" : (ready ? "node live" : "node locked");
-        var chk = claimed ? '<span class="checkmini">⭐</span>' : (ready?'':'<span class="checkmini">🔒</span>');
-        inner = '<button class="disc">'+n.emoji+chk+'</button>'+(ready?'<span class="start">OPEN!</span>':'')+'<span class="label">'+n.label+'</span>'+(ready||claimed?'':'<span class="soon">Finish all 3 games</span>');
-        el=document.createElement("div"); el.className=cls; el.innerHTML=inner;
-        onTap=function(){
-          if(!ready) { if(window.Sona&&Sona.sfx)Sona.sfx.tap&&Sona.sfx.tap(); return; }
-          var bonus=50; if(window.Sona&&Sona.addCoins)Sona.addCoins(bonus);
-          try{ GS.chest={claimed:true}; localStorage.setItem("sona.games.v1",JSON.stringify(GS)); }catch(e){}
-          if(window.Sona){ Sona.confetti&&Sona.confetti(); Sona.sfx&&Sona.sfx.complete&&Sona.sfx.complete(); }
-          document.getElementById("coins").textContent=Sona.getCoins?Sona.getCoins():0;
-          el.className="node done"; el.querySelector(".start")&&el.querySelector(".start").remove();
-          el.querySelector(".disc").innerHTML=n.emoji+'<span class="checkmini">⭐</span>';
-        };
-      } else {
-        var done = GS[n.id] && GS[n.id].done;
-        cls = n.live ? (done?"node done":"node live") : "node locked";
-        el = document.createElement(n.live?"a":"div"); el.className=cls; if(n.live) el.href=n.href;
-        var startTag = (n.live && !done) ? '<span class="start">START</span>' : '';
-        var check = done ? '<span class="checkmini">⭐</span>' : (n.live?'':'<span class="checkmini">🔒</span>');
-        el.innerHTML='<button class="disc">'+n.emoji+check+'</button>'+startTag+'<span class="label">'+n.label+'</span>'+(n.live?'':'<span class="soon">'+(n.note||"Coming soon")+'</span>');
-      }
-      if(onTap) el.querySelector(".disc").onclick=onTap;
-      path.appendChild(el);
+    var GS={}; try{ GS=JSON.parse(localStorage.getItem("sona.games.v1")||"{}"); }catch(e){}
+    function saveGS(){ try{ localStorage.setItem("sona.games.v1",JSON.stringify(GS)); }catch(e){} }
+    var today=new Date().toISOString().slice(0,10);
+
+    document.getElementById("streak").textContent=(g.streak&&g.streak.count)||0;
+    document.getElementById("coins").textContent=Sona.getCoins?Sona.getCoins():0;
+    var questDone = GS.lastPlayDay===today;
+    document.getElementById("questBar").style.width=questDone?"100%":"0%";
+    document.getElementById("questSub").textContent=questDone?"Done! played today 🎉":"+15 🪙 · play any game";
+
+    function worldDone(snd){ var w=GS[snd]||{}; return GAMES.every(function(gm){ return w[gm.id]&&w[gm.id].done; }); }
+    function chestClaimed(snd){ return GS[snd]&&GS[snd].chest&&GS[snd].chest.claimed; }
+
+    var host=document.getElementById("worlds");
+    sounds.forEach(function(snd, wi){
+      var W=WORLDS[snd]||{name:snd+" World",c:["#1cb0f6","#1597d4"]};
+      var unlocked = (wi===0) || chestClaimed(sounds[wi-1]) || worldDone(sounds[wi-1]);
+      // banner
+      var ban=document.createElement("div"); ban.className="world"+(unlocked?"":" locked");
+      ban.style.background="linear-gradient(135deg,"+W.c[0]+","+W.c[1]+")";
+      ban.innerHTML='<img src="/coach/leo.png" alt="Leo"/><div><div class="wt">World '+(wi+1)+": "+W.name+'</div><div class="ws">'+(unlocked?("Practice your "+snd+" sound!"):("🔒 Finish World "+wi+" to unlock"))+'</div></div>';
+      host.appendChild(ban);
+      // path
+      var wp=document.createElement("div"); wp.className="wpath";
+      var nodes=GAMES.concat([{id:"chest",emoji:"🎁",label:"Prize Chest",chest:true}]);
+      var firstUndone=true;
+      nodes.forEach(function(n, idx){
+        if(idx>0){ var c=document.createElement("div"); c.className="connector"; wp.appendChild(c); }
+        var el, done, live, cls, inner, tap=null;
+        if(n.chest){
+          var ready = unlocked && worldDone(snd) && !chestClaimed(snd);
+          done = chestClaimed(snd);
+          cls = done?"node done":(ready?"node live cur":"node locked");
+          inner='<button class="disc">'+n.emoji+(done?'<span class="checkmini">⭐</span>':(ready?'':'<span class="checkmini">🔒</span>'))+'</button>'+(ready?'<span class="start">OPEN!</span>':'')+'<span class="label">'+n.label+'</span>';
+          el=document.createElement("div"); el.className=cls; el.innerHTML=inner;
+          tap=function(){ if(!ready){ if(Sona.sfx)Sona.sfx.tap&&Sona.sfx.tap(); return; }
+            if(Sona.addCoins)Sona.addCoins(50); GS[snd]=GS[snd]||{}; GS[snd].chest={claimed:true}; saveGS();
+            if(Sona.confetti)Sona.confetti(); if(Sona.sfx)Sona.sfx.complete&&Sona.sfx.complete();
+            document.getElementById("coins").textContent=Sona.getCoins?Sona.getCoins():0;
+            el.className="node done"; el.innerHTML='<button class="disc">'+n.emoji+'<span class="checkmini">⭐</span></button><span class="label">'+n.label+'</span>'; };
+        } else {
+          done = GS[snd]&&GS[snd][n.id]&&GS[snd][n.id].done;
+          live = unlocked;
+          var cur = live && !done && firstUndone; if(live && !done) firstUndone=false;
+          cls = live ? (done?"node done":("node live"+(cur?" cur":""))) : "node locked";
+          el=document.createElement(live?"a":"div"); el.className=cls; if(live) el.href=n.href+"?sound="+snd;
+          inner='<button class="disc">'+n.emoji+(done?'<span class="checkmini">⭐</span>':(live?'':'<span class="checkmini">🔒</span>'))+'</button>'+(cur?'<span class="start">START</span>':'')+'<span class="label">'+n.label+'</span>';
+          el.innerHTML=inner;
+        }
+        if(tap) el.querySelector(".disc").onclick=tap;
+        wp.appendChild(el);
+      });
+      host.appendChild(wp);
     });
 
-    document.getElementById("gear").onclick = function(){ location.href="/settings.html"; };
+    document.getElementById("gear").onclick=function(){ location.href="/settings.html"; };
   </script>
 </body>
 </html>
