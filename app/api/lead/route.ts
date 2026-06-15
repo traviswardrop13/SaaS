@@ -27,11 +27,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: "A valid email is required." }, { status: 400 });
   }
 
+  const child = typeof body?.child === "string" ? body.child.slice(0, 60) : "";
+  const practice = Array.isArray(body?.practice) ? body!.practice!.slice(0, 12) : [];
   const lead = {
     email,
-    child: typeof body?.child === "string" ? body.child.slice(0, 60) : "",
+    name: child,                       // easy First Name mapping in GHL
+    child,
     age: body?.age != null ? String(body.age).slice(0, 4) : "",
-    practice: Array.isArray(body?.practice) ? body!.practice!.slice(0, 12) : [],
+    practice,                          // array (for Kit etc.)
+    practice_text: practice.join(", "), // flat string — easy GHL field mapping
     source: "speech-check",
     at: new Date().toISOString(),
   };
