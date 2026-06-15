@@ -89,7 +89,19 @@
       </div>
     </section>
 
-    <!-- RESULTS -->
+    <!-- EMAIL GATE (after the test, before results — peak motivation) -->
+    <section class="screen" id="sGate">
+      <div class="center">
+        <img src="/coach/poses/leo-celebrate.png" alt="Leo" style="width:122px;height:122px;object-fit:contain;filter:drop-shadow(0 10px 16px rgba(20,90,160,.22));" onerror="this.onerror=null;this.src='/coach/leo.png';" />
+        <h1 id="gateTitle">The results are ready! 🎉</h1>
+        <p class="lead" id="gateText">Pop in your email to see which sounds are on track and which to practice — plus a simple at-home plan from Leo.</p>
+        <div class="field"><label for="email">📧 Your email</label><input id="email" type="email" inputmode="email" placeholder="you@email.com" /></div>
+        <button class="btn blue" id="gateBtn">See the results →</button>
+        <p class="disclaimer" id="gateMsg">We'll send the results + tips. No spam — unsubscribe anytime.</p>
+      </div>
+    </section>
+
+    <!-- RESULTS (report + start) -->
     <section class="screen" id="sResults">
       <div style="overflow-y:auto;flex:1;">
         <div class="summary">
@@ -98,24 +110,9 @@
           <p class="lead" id="sumText" style="margin:6px auto 0;"></p>
         </div>
         <div id="rlist" style="margin-top:8px;"></div>
-        <div class="field" style="max-width:none;margin-top:18px;">
-          <label for="email">📧 Save the results + get the at-home practice plan</label>
-          <input id="email" type="email" inputmode="email" placeholder="Your email" />
-        </div>
-        <button class="btn blue" id="saveBtn">Get the practice plan →</button>
-        <p class="disclaimer" id="saveMsg"></p>
-      </div>
-    </section>
-
-    <!-- DONE -->
-    <section class="screen" id="sDone">
-      <div class="center">
-        <img src="/coach/poses/leo-celebrate.png" alt="Leo celebrating" style="width:140px;height:140px;object-fit:contain;filter:drop-shadow(0 10px 16px rgba(20,90,160,.22));" onerror="this.onerror=null;this.src='/coach/leo.png';" />
-        <h1 id="doneTitle">You're all set!</h1>
-        <p class="lead" id="doneText">Leo will turn these sounds into 5 minutes of daily play. Start your free week.</p>
-        <a class="btn" id="startTrial" href="/subscribe">Start free week →</a>
-        <a class="skip" href="/play.html" style="margin-top:14px;">Just let me play first →</a>
-        <div id="installTip" style="display:none;background:#fff;border-radius:16px;padding:14px 16px;margin-top:18px;max-width:340px;box-shadow:0 8px 22px -14px rgba(20,90,160,.4);text-align:left;">
+        <a class="btn" id="startTrial" href="/subscribe" style="margin-top:18px;">Start free week →</a>
+        <a class="skip" href="/play.html" style="display:block;text-align:center;margin-top:14px;">Just let me play first →</a>
+        <div id="installTip" style="display:none;background:#fff;border-radius:16px;padding:14px 16px;margin-top:18px;box-shadow:0 8px 22px -14px rgba(20,90,160,.4);text-align:left;">
           <div style="font-weight:800;font-size:14px;">📲 Make Sona an app</div>
           <div id="installText" style="color:var(--muted);font-weight:700;font-size:13px;margin-top:4px;line-height:1.4;">Add Sona to your home screen so daily practice — and reminders — are one tap away.</div>
           <button id="installBtn" class="btn blue" style="display:none;margin-top:10px;padding:12px;font-size:14px;">Add to home screen</button>
@@ -219,19 +216,19 @@
         card.innerHTML='<span class="e">'+wd.e+'</span><div><div class="nm">'+SOUNDNAME[r.s]+' sound</div><div class="st '+cl+'">'+lab+'</div></div><span class="tag">'+tag+'</span>';
         rlist.appendChild(card);
       });
-      show("sResults");
+      // report is built but hidden — email gate stands between the kid and the payoff
+      $("gateTitle").textContent=(CHILD?CHILD+"'s":"Your child's")+" results are ready! 🎉";
+      show("sGate");
     }
 
-    $("saveBtn").onclick=async function(){
+    $("gateBtn").onclick=async function(){
       var email=$("email").value.trim();
-      if(!/^\S+@\S+\.\S+$/.test(email)){ $("saveMsg").textContent="Please enter a valid email."; return; }
-      $("saveBtn").disabled=true; $("saveMsg").textContent="Saving…";
+      if(!/^\S+@\S+\.\S+$/.test(email)){ $("gateMsg").style.color="#e0457b"; $("gateMsg").textContent="Please enter a valid email to see the results."; return; }
+      $("gateBtn").disabled=true; $("gateBtn").textContent="Loading results…";
       try{ await fetch("/api/lead",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:email,child:CHILD,age:AGE,practice:window._practice||[]})}); }catch(e){}
       // seed the profile so the app is tailored to what the check found
       try{ if(window.Sona){ var focus=(window._practice&&window._practice.length)?window._practice:WORDS.map(function(w){return w.s;}); Sona.saveProfile({ childName:CHILD, focusSounds:focus.slice(0,4), checkEmail:email }); } }catch(e){}
-      var pl=window._practice||[];
-      $("doneText").textContent=pl.length? ("Leo will turn "+pl.join(", ")+" into 5 minutes of daily play. Start your free week."):("Leo will keep "+(CHILD||"your child")+"'s sounds sharp with 5 minutes of daily play. Start your free week.");
-      show("sDone"); setupInstall();
+      show("sResults"); setupInstall();
     };
 
     // "Add to home screen" — Android fires beforeinstallprompt (real button);
