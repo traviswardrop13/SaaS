@@ -114,6 +114,11 @@
         <p class="lead" id="doneText">Leo will turn these sounds into 5 minutes of daily play. Start your free week.</p>
         <a class="btn" id="startTrial" href="/subscribe">Start free week →</a>
         <a class="skip" href="/play.html" style="margin-top:14px;">Just let me play first →</a>
+        <div id="installTip" style="display:none;background:#fff;border-radius:16px;padding:14px 16px;margin-top:18px;max-width:340px;box-shadow:0 8px 22px -14px rgba(20,90,160,.4);text-align:left;">
+          <div style="font-weight:800;font-size:14px;">📲 Make Sona an app</div>
+          <div id="installText" style="color:var(--muted);font-weight:700;font-size:13px;margin-top:4px;line-height:1.4;">Add Sona to your home screen so daily practice — and reminders — are one tap away.</div>
+          <button id="installBtn" class="btn blue" style="display:none;margin-top:10px;padding:12px;font-size:14px;">Add to home screen</button>
+        </div>
       </div>
     </section>
   </div>
@@ -225,8 +230,27 @@
       try{ if(window.Sona){ var focus=(window._practice&&window._practice.length)?window._practice:WORDS.map(function(w){return w.s;}); Sona.saveProfile({ childName:CHILD, focusSounds:focus.slice(0,4), checkEmail:email }); } }catch(e){}
       var pl=window._practice||[];
       $("doneText").textContent=pl.length? ("Leo will turn "+pl.join(", ")+" into 5 minutes of daily play. Start your free week."):("Leo will keep "+(CHILD||"your child")+"'s sounds sharp with 5 minutes of daily play. Start your free week.");
-      show("sDone");
+      show("sDone"); setupInstall();
     };
+
+    // "Add to home screen" — Android fires beforeinstallprompt (real button);
+    // iOS Safari needs the manual Share→Add steps. Hidden if already installed.
+    var deferredPrompt=null;
+    window.addEventListener("beforeinstallprompt", function(e){ e.preventDefault(); deferredPrompt=e; });
+    function setupInstall(){
+      var tip=$("installTip"); if(!tip) return;
+      var standalone = window.navigator.standalone || (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches);
+      if(standalone){ tip.style.display="none"; return; }
+      var isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent);
+      if(deferredPrompt){
+        $("installText").textContent="One tap and Sona lives on your home screen.";
+        var b=$("installBtn"); b.style.display="block"; b.onclick=function(){ deferredPrompt.prompt(); deferredPrompt=null; };
+        tip.style.display="block";
+      } else if(isIOS){
+        $("installText").textContent='Tap the Share button below, then "Add to Home Screen" — so daily practice and reminders are one tap away.';
+        $("installBtn").style.display="none"; tip.style.display="block";
+      } else { tip.style.display="none"; }
+    }
 
     $("startBtn").onclick=async function(){
       CHILD=$("cName").value.trim(); AGE=parseInt($("cAge").value,10)||0;
