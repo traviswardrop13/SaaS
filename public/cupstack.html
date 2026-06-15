@@ -75,7 +75,7 @@
 <body>
   <div id="app">
     <div id="top">
-      <button id="close" onclick="location.href='/home.html'">✕</button>
+      <button id="close" onclick="location.href='/play.html'">✕</button>
       <span class="stat cups">🥤 <span id="cupCount">0</span>/<span id="cupGoal">10</span></span>
       <span class="stat combo" id="comboStat" style="visibility:hidden;">🔥 <span id="comboPop">x2</span></span>
     </div>
@@ -109,7 +109,7 @@
     </div>
     <div class="unlock" id="winUnlock"></div>
     <button class="btn" id="again">Play again</button>
-    <a href="/home.html">Done for now →</a>
+    <a href="/play.html">Done for now →</a>
   </div>
 
   <script src="/sona.js"></script>
@@ -276,9 +276,19 @@
     function finishGame(){
       $("winHeight").textContent=placed;
       $("winCombo").textContent=bestCombo;
+      // pay coins into the meta-economy (base + combo bonus)
+      var earned = 15 + bestCombo*2;
+      if(window.Sona && Sona.addCoins) Sona.addCoins(earned);
+      // mark the level done + complete today's daily quest (read by the map)
+      try{
+        var GS=JSON.parse(localStorage.getItem("sona.games.v1")||"{}");
+        var best=Math.max(placed,(GS.cupstack&&GS.cupstack.best)||0);
+        GS.cupstack={ done:true, best:best, lastDay:new Date().toISOString().slice(0,10) };
+        localStorage.setItem("sona.games.v1",JSON.stringify(GS));
+      }catch(e){}
       // unlock the next cup color as the single reward
       colorIdx=(colorIdx+1)%CUP_COLORS.length;
-      $("winUnlock").textContent="🎉 New cup color unlocked!";
+      $("winUnlock").textContent="+"+earned+" 🪙   ·   🎉 New cup color unlocked!";
       $("winTitle").textContent = bestCombo>=4 ? "Amazing tower!" : "Great stacking!";
       $("win").classList.add("show");
       if(window.Sona){ Sona.confetti&&Sona.confetti(); Sona.sfx&&Sona.sfx.complete&&Sona.sfx.complete(); }
