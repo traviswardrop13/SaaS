@@ -31,26 +31,11 @@ export default function SubscribeSuccess() {
         You&apos;re in!
       </h1>
       <p className="mt-3 max-w-md text-lg text-gray-600">
-        Your subscription is active. Let&apos;s set up your child&apos;s plan and
-        meet Leo.
+        Subscription active. Let&apos;s meet Leo.
       </p>
-      <div className="mt-5 max-w-md rounded-2xl bg-sky-50 px-5 py-4 text-left text-sm font-semibold text-sky-800">
-        <p>
-          📱 <strong>Sona is unlocked on this device.</strong> To unlock it
-          anywhere else (your child&apos;s iPad, the other parent&apos;s phone):
-        </p>
-        <ol className="mt-2 list-decimal space-y-1 pl-5">
-          <li>Open Sona on that device.</li>
-          <li>
-            Tap <strong>⚙️ Settings → Restore access</strong>.
-          </li>
-          <li>Type the email you just paid with — done.</li>
-        </ol>
-        <p className="mt-2">
-          Heads up: when you <strong>add Sona to your home screen</strong>,
-          iPhone treats that app like a brand-new device the first time you
-          open it — just do the same Restore step once and you&apos;re set.
-        </p>
+      <div className="mt-5 max-w-sm rounded-2xl bg-sky-50 px-5 py-4 text-left text-sm font-semibold text-sky-800">
+        📱 Using another device? Open Sona there →{" "}
+        <strong>⚙️ Settings → Restore access</strong> → enter this email.
       </div>
       <a
         href="/onboarding.html"
