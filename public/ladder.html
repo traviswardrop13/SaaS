@@ -168,12 +168,12 @@
     /* ---- the articulation ladder (the curriculum spine) ---- */
     var RUNGS = [
       {id:"isolation",  label:"Isolation",    sub:"The sound by itself", color:"#46c6b8", dark:"#2fa99c", icon:IC.drop,   live:true},
-      {id:"syllables",  label:"Syllables",    sub:"Sound + a vowel",     color:"#ffc107", dark:"#e0a800", icon:IC.beads,  live:false},
+      {id:"syllables",  label:"Syllables",    sub:"Sound + a vowel",     color:"#ffc107", dark:"#e0a800", icon:IC.beads,  live:true},
       {id:"words",      label:"Words",        sub:"Say whole words",     color:"#ff6b6b", dark:"#e85555", icon:IC.tag,    live:true},
-      {id:"phrases",    label:"Phrases",      sub:"Two words together",  color:"#2ec4d6", dark:"#1fa9ba", icon:IC.lines2, live:false},
-      {id:"sentences",  label:"Sentences",    sub:"Full sentences",      color:"#1cb0f6", dark:"#1597d4", icon:IC.lines3, live:false},
-      {id:"stories",    label:"Stories",      sub:"Read-along stories",  color:"#7cc40a", dark:"#66a406", icon:IC.book,   live:false},
-      {id:"conversation",label:"Conversation",sub:"Talk it out",         color:"#9b7bff", dark:"#8260f0", icon:IC.chat,   live:false}
+      {id:"phrases",    label:"Phrases",      sub:"Two words together",  color:"#2ec4d6", dark:"#1fa9ba", icon:IC.lines2, live:true},
+      {id:"sentences",  label:"Sentences",    sub:"Full sentences",      color:"#1cb0f6", dark:"#1597d4", icon:IC.lines3, live:true},
+      {id:"stories",    label:"Stories",      sub:"Read-along stories",  color:"#7cc40a", dark:"#66a406", icon:IC.book,   live:true},
+      {id:"conversation",label:"Conversation",sub:"Talk it out",         color:"#9b7bff", dark:"#8260f0", icon:IC.chat,   live:true}
     ];
 
     /* ---- activities per live rung (the games are the activities) ---- */
@@ -182,11 +182,26 @@
       isolation: [
         {name:"Sound Rocket", sub:"Say the sound to launch the rocket", href:"/rocket.html"+q, color:"#46c6b8", icon:IC.rocket}
       ],
+      syllables: [
+        {name:"Bubble Pop", sub:"Pop the syllables you say", href:"/bubble.html"+q, color:"#ffc107", icon:IC.beads}
+      ],
       words: [
         {name:"Cup Stack",  sub:"Stack a cup for every clean word", href:"/cupstack.html"+q, color:"#ff7a6e", icon:IC.cup},
         {name:"Rev Racer",  sub:"Say words to win the race",        href:"/racer.html"+q,    color:"#1cb0f6", icon:IC.car},
         {name:"Match-Up",   sub:"Find the matching pairs",          href:"/match.html"+q,    color:"#9b7bff", icon:IC.cards},
         {name:"Pop-a-Word", sub:"Pop every word you say",           href:"/whack.html"+q,    color:"#ffb02e", icon:IC.star}
+      ],
+      phrases: [
+        {name:"Grocery Grab", sub:"Say the phrase to grab it", href:"/grocery.html"+q, color:"#2ec4d6", icon:IC.lines2}
+      ],
+      sentences: [
+        {name:"Story Train", sub:"Say the sentence to roll on", href:"/train.html"+q, color:"#1cb0f6", icon:IC.lines3}
+      ],
+      stories: [
+        {name:"Story Time", sub:"Read along with Leo", href:"/story.html"+q, color:"#7cc40a", icon:IC.book}
+      ],
+      conversation: [
+        {name:"Chat with Leo", sub:"Answer Leo out loud", href:"/chat.html"+q, color:"#9b7bff", icon:IC.chat}
       ]
     };
 
@@ -198,7 +213,12 @@
     function rungDone(id){
       if(id==="words") return wordsDoneCount() >= WORD_GAME_IDS.length;
       if(id==="isolation") return !!(W.rocket && W.rocket.done);
-      return false; // other live rungs aren't completion-tracked yet
+      if(id==="syllables") return !!(W.bubble && W.bubble.done);
+      if(id==="phrases") return !!(W.grocery && W.grocery.done);
+      if(id==="sentences") return !!(W.train && W.train.done);
+      if(id==="stories") return !!(W.story && W.story.done);
+      if(id==="conversation") return !!(W.chat && W.chat.done);
+      return false;
     }
 
     /* ---- paint header ---- */
