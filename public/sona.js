@@ -98,7 +98,7 @@
       badge(100, 52) + '</svg>';
   }
 
-  const DEFAULT_PROFILE = { childName: "", focusSounds: ["R", "S", "L", "K"], voiceOn: true, coachName: "Coach", cloudScoring: true, slpEvaluated: "", goals: "", focusArea: "articulation", language: "en", character: "leo", outfit: "none", backdrop: "sky", soundOn: true, voiceId: "SF6OznV7UB2AxeidTpie", volume: 0.8, dailyMinutes: 5, owned: { outfits: ["none"], backdrops: ["sky"] }, onboarded: false };
+  const DEFAULT_PROFILE = { childName: "", focusSounds: ["R", "S", "L", "K"], voiceOn: true, coachName: "Coach", cloudScoring: true, slpEvaluated: "", goals: "", focusArea: "articulation", language: "en", character: "leo", outfit: "none", backdrop: "sky", soundOn: true, voiceId: "SF6OznV7UB2AxeidTpie", volume: 0.8, musicOn: false, dailyMinutes: 5, owned: { outfits: ["none"], backdrops: ["sky"] }, onboarded: false };
   // stage per sound: 0 = isolation (the letter), 1 = syllables, 2 = words, 3 = mastered.
   const STAGES = ["isolation", "syllables", "words"];
   const DEFAULT_PROGRESS = { sessions: [], totals: { sessions: 0, words: 0, stars: 0, coins: 0 }, streak: { count: 0, lastDate: "" }, bySound: {}, stage: {}, chests: {}, missed: [] };
@@ -276,30 +276,44 @@
   // What gives the app its Duolingo "feel": a satisfying chime on success, a
   // soft buzz on a miss, and confetti on a win. Synthesized so there are no
   // files to ship and nothing to wait on.
-  let _ac = null;
+  let _ac = null, _master = null;
   function ac() {
-    try { if (!_ac) _ac = new (window.AudioContext || window.webkitAudioContext)(); if (_ac.state === "suspended") _ac.resume(); } catch (e) {}
+    try { if (!_ac) { _ac = new (window.AudioContext || window.webkitAudioContext)(); _master = _ac.createGain(); _master.gain.value = 0.9; _master.connect(_ac.destination); } if (_ac.state === "suspended") _ac.resume(); } catch (e) {}
     return _ac;
   }
-  function tone(freq, start, dur, type, gain) {
-    try { if (getProfile().soundOn === false) return; } catch (e) {}
-    const a = ac(); if (!a) return;
+  // master volume from the profile (so the volume slider also controls SFX); 0 = muted
+  function sfxVol() { try { const p = getProfile(); if (p.soundOn === false) return 0; return (p.volume != null ? p.volume : 0.8); } catch (e) { return 0.8; } }
+  function note(freq, start, dur, type, gain) {
+    const a = ac(); const v = sfxVol(); if (!a || v === 0) return;
     const t0 = a.currentTime + start;
     const o = a.createOscillator(), g = a.createGain();
     o.type = type || "sine"; o.frequency.setValueAtTime(freq, t0);
+    const peak = (gain || 0.18) * v;
     g.gain.setValueAtTime(0.0001, t0);
-    g.gain.exponentialRampToValueAtTime(gain || 0.2, t0 + 0.02);
+    g.gain.exponentialRampToValueAtTime(peak, t0 + 0.015);
     g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
-    o.connect(g); g.connect(a.destination);
+    o.connect(g); g.connect(_master || a.destination);
     o.start(t0); o.stop(t0 + dur + 0.03);
   }
+  const tone = note; // back-comat
+  // richer than plain beeps: core note + a soft octave/overtone shimmer
   const sfx = {
-    tap()      { tone(440, 0, 0.07, "triangle", 0.10); },
-    correct()  { [523.25, 659.25, 783.99].forEach((f, i) => tone(f, i * 0.10, 0.16, "sine", 0.18)); },     // C-E-G
-    wrong()    { tone(311.13, 0, 0.18, "sawtooth", 0.08); tone(233.08, 0.12, 0.22, "sawtooth", 0.08); },
-    complete() { [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => tone(f, i * 0.11, 0.22, "sine", 0.18)); },
-    reward()   { [659.25, 783.99, 1046.5, 1318.5].forEach((f, i) => tone(f, i * 0.09, 0.26, "triangle", 0.16)); },
-    star()     { tone(880, 0, 0.12, "sine", 0.16); tone(1318.5, 0.08, 0.18, "sine", 0.16); },
+    tap()      { note(660, 0, 0.06, "triangle", 0.10); note(990, 0.005, 0.05, "sine", 0.04); },
+    correct()  { [523.25, 659.25, 783.99].forEach((f, i) => { note(f, i * 0.08, 0.18, "sine", 0.16); note(f * 2, i * 0.08, 0.12, "sine", 0.05); }); }, // warm C-E-G + shimmer
+    wrong()    { note(330, 0, 0.16, "sine", 0.07); note(247, 0.1, 0.2, "sine", 0.07); },                  // gentle, never harsh
+    complete() { [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => { note(f, i * 0.1, 0.26, "sine", 0.16); note(f * 1.5, i * 0.1, 0.15, "sine", 0.04); }); },
+    reward()   { [659.25, 783.99, 1046.5, 1318.5].forEach((f, i) => note(f, i * 0.08, 0.28, "triangle", 0.14)); },
+    star()     { note(1046.5, 0, 0.1, "sine", 0.14); note(1568, 0.06, 0.16, "sine", 0.12); },
+    coin()     { note(988, 0, 0.07, "square", 0.09); note(1319, 0.06, 0.12, "square", 0.09); },           // coin "ching"
+    drop()     { note(210, 0, 0.16, "sine", 0.16); note(120, 0.04, 0.18, "sine", 0.10); },                // soft thunk
+  };
+  // Optional background music — plays a real track if /sfx/music.mp3 is added,
+  // gated on a profile toggle (off by default). No synth music (would sound cheap).
+  let _music = null;
+  const music = {
+    start() { try { const p = getProfile(); if (p.musicOn !== true || p.soundOn === false) return; if (!_music) { _music = new Audio("/sfx/music.mp3"); _music.loop = true; _music.volume = 0.18; } _music.play().catch(() => {}); } catch (e) {} },
+    stop()  { try { if (_music) _music.pause(); } catch (e) {} },
+    toggle(on) { try { saveProfile({ musicOn: !!on }); if (on) music.start(); else music.stop(); } catch (e) {} },
   };
   function confetti(opts) {
     opts = opts || {};
@@ -335,5 +349,5 @@
     setTimeout(() => el.remove(), 950);
   }
 
-  global.Sona = { ALL_SOUNDS, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, HOUSE_PALETTE, WORDS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, getProfile, saveProfile, getProgress, recordSession, resetProgress, stageOf, completeStage, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, gated, restore, saveRecording, listRecordings, sfx, confetti, pop };
+  global.Sona = { ALL_SOUNDS, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, HOUSE_PALETTE, WORDS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, getProfile, saveProfile, getProgress, recordSession, resetProgress, stageOf, completeStage, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, gated, restore, saveRecording, listRecordings, sfx, music, confetti, pop };
 })(window);

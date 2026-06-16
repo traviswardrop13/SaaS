@@ -88,7 +88,7 @@
           if(owned){ var patch={}; patch[profKey]=it.id; Sona.saveProfile(patch); if(Sona.sfx)Sona.sfx.tap&&Sona.sfx.tap(); refresh(); return; }
           // buy
           if((Sona.getCoins?Sona.getCoins():0) < it.cost){ toast("Need "+(it.cost-(Sona.getCoins?Sona.getCoins():0))+" more 🪙 — play a game!"); return; }
-          if(Sona.spendCoins&&Sona.spendCoins(it.cost)){ Sona.addOwned&&Sona.addOwned(kind,it.id); var patch={}; patch[profKey]=it.id; Sona.saveProfile(patch); if(Sona.sfx)Sona.sfx.correct&&Sona.sfx.correct(); if(Sona.pop)Sona.pop("🎉",{color:"#ff9600",y:window.innerHeight*0.4}); toast("Unlocked "+it.name+"!"); refresh(); }
+          if(Sona.spendCoins&&Sona.spendCoins(it.cost)){ Sona.addOwned&&Sona.addOwned(kind,it.id); var patch={}; patch[profKey]=it.id; Sona.saveProfile(patch); if(Sona.sfx){Sona.sfx.coin&&Sona.sfx.coin(); Sona.sfx.reward&&Sona.sfx.reward();} if(Sona.pop)Sona.pop("🎉",{color:"#ff9600",y:window.innerHeight*0.4}); toast("Unlocked "+it.name+"!"); refresh(); }
         };
         host.appendChild(el);
       });

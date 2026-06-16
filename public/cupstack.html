@@ -326,7 +326,7 @@
       $("winUnlock").textContent="+"+earned+" 🪙   ·   🎉 New cup color unlocked!";
       $("winTitle").textContent = bestCombo>=4 ? "Amazing tower!" : "Great stacking!";
       $("win").classList.add("show");
-      if(window.Sona){ Sona.confetti&&Sona.confetti(); Sona.sfx&&Sona.sfx.complete&&Sona.sfx.complete(); }
+      if(window.Sona){ Sona.confetti&&Sona.confetti(); Sona.sfx&&Sona.sfx.complete&&Sona.sfx.complete(); Sona.sfx&&Sona.sfx.coin&&Sona.sfx.coin(); }
     }
 
     function startGame(){
@@ -348,6 +348,7 @@
       try{ if(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia) micStream=await navigator.mediaDevices.getUserMedia({audio:true}); }catch(e){ micStream=null; }
       $("hear").onclick=function(){ if(current) say(current.w); };
       $("again").onclick=startGame;
+      if(window.Sona&&Sona.music) Sona.music.start();
       startGame();
     })();
     window.addEventListener("pagehide",function(){ try{ if(micStream) micStream.getTracks().forEach(function(t){t.stop();}); }catch(e){} });

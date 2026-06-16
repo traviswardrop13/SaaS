@@ -136,7 +136,7 @@
           el=document.createElement("div"); el.className=cls; el.innerHTML=inner;
           tap=function(){ if(!ready){ if(Sona.sfx)Sona.sfx.tap&&Sona.sfx.tap(); return; }
             if(Sona.addCoins)Sona.addCoins(50); GS[snd]=GS[snd]||{}; GS[snd].chest={claimed:true}; saveGS();
-            if(Sona.confetti)Sona.confetti(); if(Sona.sfx)Sona.sfx.complete&&Sona.sfx.complete();
+            if(Sona.confetti)Sona.confetti(); if(Sona.sfx){Sona.sfx.complete&&Sona.sfx.complete(); Sona.sfx.coin&&Sona.sfx.coin();}
             document.getElementById("coins").textContent=Sona.getCoins?Sona.getCoins():0;
             el.className="node done"; el.innerHTML='<button class="disc">'+n.emoji+'<span class="checkmini">⭐</span></button><span class="label">'+n.label+'</span>'; };
         } else if(n.soon){
@@ -157,6 +157,7 @@
       host.appendChild(wp);
     });
 
+    if(window.Sona&&Sona.music) Sona.music.start();
     document.getElementById("gear").onclick=function(){ location.href="/settings.html"; };
   </script>
 </body>
