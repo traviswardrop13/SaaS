@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>Sona — Free Speech Check</title>
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <meta name="theme-color" content="#1cb0f6" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <style>
+    :root{ --blue:#1cb0f6; --blue-d:#1597d4; --green:#58cc02; --green-d:#46a302; --orange:#ff9600; --orange-d:#e08600; --ink:#16384f; --muted:#6b86a3; }
+    *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;font-family:"Nunito",-apple-system,"Segoe UI",Roboto,sans-serif;}
+    html,body{min-height:100%;}
+    body{background:linear-gradient(180deg,#eef7ff,#e7f1ff 50%,#eafbe9);color:var(--ink);}
+    #app{max-width:480px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;padding:calc(16px + env(safe-area-inset-top)) 20px calc(24px + env(safe-area-inset-bottom));}
+    .brand{display:flex;align-items:center;gap:8px;font-family:"Baloo 2";font-weight:800;font-size:18px;color:var(--blue-d);}
+    .brand img{width:30px;height:30px;}
+    .screen{flex:1;display:none;flex-direction:column;}
+    .screen.on{display:flex;}
+    .center{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:6px;}
+    h1{font-family:"Baloo 2";font-weight:800;font-size:27px;line-height:1.15;margin-top:8px;}
+    p.lead{color:var(--muted);font-weight:700;font-size:15px;max-width:340px;line-height:1.45;}
+    .field{width:100%;max-width:320px;margin-top:14px;}
+    .field label{display:block;font-weight:800;font-size:13px;color:var(--muted);margin-bottom:5px;text-align:left;}
+    input,select{width:100%;border:2px solid #d9e6f2;border-radius:14px;padding:14px;font-size:16px;font-weight:700;background:#fff;color:var(--ink);}
+    .btn{margin-top:18px;width:100%;max-width:340px;border:none;border-radius:18px;padding:17px;font-family:"Baloo 2";font-weight:800;font-size:18px;text-transform:uppercase;letter-spacing:.03em;color:#fff;cursor:pointer;
+      background:linear-gradient(180deg,#5fd216,#46a302);box-shadow:0 7px 0 0 #3c8c02;transition:transform .06s,box-shadow .06s;}
+    .btn:active{transform:translateY(4px);box-shadow:0 3px 0 0 #3c8c02;}
+    .btn.blue{background:linear-gradient(180deg,#36bdff,#1597d4);box-shadow:0 7px 0 0 #0f7fb5;}
+    .btn:disabled{opacity:.5;}
+    .disclaimer{color:var(--muted);font-weight:700;font-size:11.5px;max-width:330px;margin:14px auto 0;line-height:1.4;}
+    .slptag{display:inline-flex;align-items:center;gap:6px;background:#eafce9;color:var(--green-d);font-weight:800;font-size:12px;border-radius:99px;padding:6px 12px;margin-top:10px;}
+
+    /* test screen */
+    #bar{height:12px;background:#dbe8f3;border-radius:99px;overflow:hidden;margin-bottom:14px;}
+    #fill{height:100%;width:0;background:var(--green);border-radius:99px;transition:width .3s;}
+    .bigEmoji{font-size:clamp(80px,28vw,128px);line-height:1;}
+    .sayWord{font-family:"Baloo 2";font-weight:800;font-size:34px;color:var(--blue-d);}
+    .mic{width:104px;height:104px;border-radius:50%;border:none;background:var(--blue);cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 7px 0 0 var(--blue-d);margin-top:8px;}
+    .mic:active{transform:translateY(4px);box-shadow:0 3px 0 0 var(--blue-d);}
+    .mic.rec{animation:pulse 1.4s infinite;} .mic svg{width:46px;height:46px;fill:#fff;}
+    .wavebars{display:flex;gap:4px;align-items:center;height:46px;} .wavebars i{width:6px;height:8px;background:#fff;border-radius:99px;transition:height .07s;}
+    @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(28,176,246,.45),0 7px 0 0 var(--blue-d)}70%{box-shadow:0 0 0 18px rgba(28,176,246,0),0 7px 0 0 var(--blue-d)}100%{box-shadow:0 0 0 0 rgba(28,176,246,0),0 7px 0 0 var(--blue-d)}}
+    .micstate{font-family:"Baloo 2";font-weight:800;font-size:14px;color:var(--blue-d);min-height:20px;margin-top:8px;}
+    .skip{background:none;border:none;color:#9fb4c6;font-weight:800;font-size:13px;text-transform:uppercase;cursor:pointer;margin-top:6px;}
+
+    /* results */
+    .rcard{width:100%;background:#fff;border-radius:18px;padding:14px 16px;margin-top:10px;display:flex;align-items:center;gap:12px;box-shadow:0 8px 22px -14px rgba(20,90,160,.4);}
+    .rcard .e{font-size:30px;} .rcard .nm{font-family:"Baloo 2";font-weight:800;font-size:16px;}
+    .rcard .st{font-weight:800;font-size:12.5px;margin-top:1px;}
+    .st.ok{color:var(--green-d);} .st.dev{color:var(--orange-d);} .st.prac{color:#e0457b;}
+    .rcard .tag{margin-left:auto;font-size:22px;}
+    .summary{background:#fff;border-radius:20px;padding:18px;margin-top:6px;box-shadow:0 10px 26px -16px rgba(20,90,160,.5);text-align:center;}
+    .summary h2{font-family:"Baloo 2";font-weight:800;font-size:20px;}
+    @keyframes floaty{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+  </style>
+</head>
+<body>
+  <div id="app">
+    <div class="brand"><img src="/coach/leo-icon.png" alt="Sona"/> Sona</div>
+
+    <!-- INTRO -->
+    <section class="screen on" id="sIntro">
+      <div class="center">
+        <img src="/coach/leo.png" alt="Leo" style="width:132px;height:132px;object-fit:contain;filter:drop-shadow(0 10px 16px rgba(20,90,160,.22));animation:floaty 4s ease-in-out infinite;" />
+        <h1>Free 2-minute<br/>Speech Check</h1>
+        <p class="lead">Your child says a few words, and we'll show you which sounds are on track and which to practice — designed with a licensed speech-language pathologist.</p>
+        <span class="slptag">✓ Built with an SLP</span>
+        <div class="field"><label for="cName">Child's first name</label><input id="cName" type="text" placeholder="e.g. Mia" /></div>
+        <div class="field"><label for="cAge">Child's age</label>
+          <select id="cAge"><option value="">Choose…</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option></select>
+        </div>
+        <button class="btn" id="startBtn">Start the check →</button>
+        <p class="disclaimer">This is a quick check, not a diagnosis. It shows which sounds to practice at home. If you have concerns, talk to a licensed speech-language pathologist.</p>
+      </div>
+    </section>
+
+    <!-- TEST -->
+    <section class="screen" id="sTest">
+      <div id="bar"><div id="fill"></div></div>
+      <div class="center">
+        <div class="micstate" id="stepLabel"></div>
+        <div class="bigEmoji" id="wEmoji">🐰</div>
+        <div class="sayWord" id="wWord">rabbit</div>
+        <button class="mic" id="micBtn" title="Say it"><svg viewBox="0 0 24 24"><path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v6a3 3 0 0 0 3 3Z"/><path d="M6 11a6 6 0 0 0 12 0M12 18v3" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round"/></svg></button>
+        <div class="micstate" id="micState">Tap, then say the word</div>
+        <button class="skip" id="skipBtn">Skip this one</button>
+      </div>
+    </section>
+
+    <!-- EMAIL GATE (after the test, before results — peak motivation) -->
+    <section class="screen" id="sGate">
+      <div class="center">
+        <img src="/coach/poses/leo-celebrate.png" alt="Leo" style="width:122px;height:122px;object-fit:contain;filter:drop-shadow(0 10px 16px rgba(20,90,160,.22));" onerror="this.onerror=null;this.src='/coach/leo.png';" />
+        <h1 id="gateTitle">The results are ready! 🎉</h1>
+        <p class="lead" id="gateText">Pop in your email to see which sounds are on track and which to practice — plus a simple at-home plan from Leo.</p>
+        <div class="field"><label for="email">📧 Your email</label><input id="email" type="email" inputmode="email" placeholder="you@email.com" /></div>
+        <button class="btn blue" id="gateBtn">See the results →</button>
+        <p class="disclaimer" id="gateMsg">We'll send the results + tips. No spam — unsubscribe anytime.</p>
+      </div>
+    </section>
+
+    <!-- RESULTS (report + start) -->
+    <section class="screen" id="sResults">
+      <div style="overflow-y:auto;flex:1;">
+        <div class="summary">
+          <div style="font-size:44px;">📋</div>
+          <h2 id="sumTitle">Mia's Speech Check</h2>
+          <p class="lead" id="sumText" style="margin:6px auto 0;"></p>
+        </div>
+        <div id="rlist" style="margin-top:8px;"></div>
+        <a class="btn" id="startTrial" href="/subscribe" style="margin-top:18px;">Start free week →</a>
+        <a class="skip" href="/play.html" style="display:block;text-align:center;margin-top:14px;">Just let me play first →</a>
+        <div id="installTip" style="display:none;background:#fff;border-radius:16px;padding:14px 16px;margin-top:18px;box-shadow:0 8px 22px -14px rgba(20,90,160,.4);text-align:left;">
+          <div style="font-weight:800;font-size:14px;">📲 Make Sona an app</div>
+          <div id="installText" style="color:var(--muted);font-weight:700;font-size:13px;margin-top:4px;line-height:1.4;">Add Sona to your home screen so daily practice — and reminders — are one tap away.</div>
+          <button id="installBtn" class="btn blue" style="display:none;margin-top:10px;padding:12px;font-size:14px;">Add to home screen</button>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script src="/sona.js"></script>
+  <script>
+    var $=function(id){return document.getElementById(id);};
+    // one clear initial-position word per sound + rough age sounds are typically mastered (tunable w/ SLP)
+    var WORDS=[
+      {s:"K", w:"cat",    e:"🐱", norm:4},
+      {s:"G", w:"goat",   e:"🐐", norm:4},
+      {s:"F", w:"fish",   e:"🐟", norm:4},
+      {s:"L", w:"lion",   e:"🦁", norm:6},
+      {s:"SH",w:"shoe",   e:"👟", norm:6},
+      {s:"CH",w:"cheese", e:"🧀", norm:6},
+      {s:"S", w:"sun",    e:"☀️", norm:6},
+      {s:"R", w:"rabbit", e:"🐰", norm:7},
+      {s:"TH",w:"thumb",  e:"👍", norm:7}
+    ];
+    var CHILD="", AGE=0, useSpeechAce=false, micStream=null;
+    var results=[]; // {s, got:true/false/null}
+
+    /* audio + mic (reused proven pattern) */
+    var audioCtx=null;
+    function getCtx(){ if(!audioCtx){var AC=window.AudioContext||window.webkitAudioContext;audioCtx=new AC();} if(audioCtx.state==="suspended")audioCtx.resume(); return audioCtx; }
+    function playPCM(b){ return new Promise(function(res){ try{ var c=getCtx(),n=b.byteLength>>1,ab=c.createBuffer(1,n,24000),ch=ab.getChannelData(0),dv=new DataView(b.buffer,b.byteOffset,b.byteLength); for(var i=0;i<n;i++)ch[i]=dv.getInt16(i*2,true)/32768; var s=c.createBufferSource();s.buffer=ab;var g=c.createGain();g.gain.value=0.9;s.connect(g);g.connect(c.destination);s.onended=res;s.start(); }catch(e){res();} }); }
+    var speaking=false;
+    function say(t){ return new Promise(function(res){ if(!t||speaking)return res(); speaking=true; fetch("/api/tts",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text:t})}).then(function(r){return r.ok?r.arrayBuffer():null;}).then(function(b){return b?playPCM(new Uint8Array(b)):null;}).catch(function(){}).finally(function(){speaking=false;res();}); }); }
+    function norm(s){return (s||"").toLowerCase().replace(/[^a-z]/g,"");}
+    function matchText(t,w){t=norm(t);w=norm(w);if(!t)return false;if(t.indexOf(w)>=0||w.indexOf(t)>=0)return true;var i=0;while(i<Math.min(t.length,w.length)&&t[i]===w[i])i++;return i>=3;}
+
+    function recordTurn(maxMs){ maxMs=maxMs||7000; return new Promise(function(resolve){
+      var done=false,chunks=[],rec=null,sr=null,transcript="",spoke=false,lastV=0,raf=null,msrc=null,bars=null;
+      var micBtn=$("micBtn"),ico=micBtn.querySelector("svg");
+      function finish(){ if(done)return; done=true; try{rec&&rec.state!=="inactive"&&rec.stop();}catch(e){} try{sr&&sr.stop();}catch(e){} micBtn.classList.remove("rec"); if(raf)cancelAnimationFrame(raf); try{msrc&&msrc.disconnect();}catch(e){} if(bars)bars.remove(); if(ico)ico.style.display=""; $("micState").textContent=""; setTimeout(function(){ resolve({transcript:transcript,blob:chunks.length?new Blob(chunks,{type:(rec&&rec.mimeType)||"audio/webm"}):null,spoke:spoke}); },120); }
+      try{ if(micStream&&window.MediaRecorder){ rec=new MediaRecorder(micStream); rec.ondataavailable=function(e){if(e.data&&e.data.size)chunks.push(e.data);}; rec.start(); } }catch(e){}
+      try{ var SR=window.SpeechRecognition||window.webkitSpeechRecognition; if(SR){ sr=new SR(); sr.lang="en-US"; sr.interimResults=false; sr.maxAlternatives=3; sr.onresult=function(ev){for(var i=0;i<ev.results.length;i++)for(var k=0;k<ev.results[i].length;k++)transcript+=" "+ev.results[i][k].transcript; finish();}; sr.onerror=function(){}; sr.start(); } }catch(e){}
+      try{ if(micStream){ var c=getCtx(); msrc=c.createMediaStreamSource(micStream); var an=c.createAnalyser(); an.fftSize=512; msrc.connect(an); var fdt=new Uint8Array(an.frequencyBinCount),td=new Uint8Array(an.fftSize); bars=document.createElement("div"); bars.className="wavebars"; for(var b2=0;b2<7;b2++)bars.appendChild(document.createElement("i")); if(ico)ico.style.display="none"; micBtn.appendChild(bars); var t0=performance.now(),nS=0,nN=0,thr=0,v=0;
+        (function tick(){ if(done)return; an.getByteFrequencyData(fdt); [].forEach.call(bars.children,function(el,k){el.style.height=(8+fdt[2+k*3]/255*30)+"px";}); an.getByteTimeDomainData(td); var sum=0; for(var i=0;i<td.length;i++){var d=(td[i]-128)/128;sum+=d*d;} var rms=Math.sqrt(sum/td.length),now=performance.now(); if(now-t0<300){nS+=rms;nN++;} else { if(!thr)thr=Math.min(0.1,Math.max(0.014,(nS/Math.max(1,nN))*2.6)); if(rms>thr){v++;lastV=now;if(v>=2){spoke=true;$("micState").textContent="I hear you! 👂";}}else if(rms<thr*0.7)v=0; if(spoke&&now-lastV>=1000){finish();return;} } raf=requestAnimationFrame(tick); })();
+      } }catch(e){}
+      $("micState").textContent="Say it now!"; micBtn.classList.add("rec"); micBtn.onclick=finish;
+      setTimeout(function(){ if(!done)finish(); }, maxMs);
+    }); }
+
+    async function scoreWord(item,res){
+      if(!res.spoke && !res.transcript && !res.blob) return null; // no attempt
+      if(useSpeechAce && res.blob){ try{ var fd=new FormData(); fd.append("audio",new File([res.blob],"a.webm",{type:res.blob.type||"audio/webm"})); fd.append("text",item.w); fd.append("targetSound",item.s); fd.append("userId","check"); fd.append("mode","full"); var r=await fetch("/api/score",{method:"POST",body:fd}); var j=await r.json(); if(j&&j.ok&&j.rating) return j.rating!=="tryAgain"; }catch(e){} }
+      if(res.transcript) return matchText(res.transcript,item.w);
+      return res.spoke ? true : null; // heard something but can't score -> give benefit of the doubt
+    }
+
+    /* flow */
+    function show(id){ document.querySelectorAll(".screen").forEach(function(s){s.classList.remove("on");}); $(id).classList.add("on"); }
+    var idx=0;
+    async function runStep(){
+      if(idx>=WORDS.length) return finishTest();
+      var it=WORDS[idx];
+      $("fill").style.width=Math.round(idx/WORDS.length*100)+"%";
+      $("stepLabel").textContent="Word "+(idx+1)+" of "+WORDS.length;
+      $("wEmoji").textContent=it.e; $("wWord").textContent=it.w; $("micState").textContent="Listen…";
+      await say("Say: "+it.w);
+      var res=await recordTurn();
+      var got=await scoreWord(it,res);
+      results.push({s:it.s, got:got, norm:it.norm});
+      idx++; runStep();
+    }
+    $("skipBtn").onclick=function(){ var m=$("micBtn"); if(m&&m.onclick) m.onclick(); }; // end the current turn as no-attempt
+
+    function classify(r){
+      if(r.got===true) return "ok";
+      if(r.got===null) return "skip";
+      return AGE>=r.norm ? "prac" : "dev";
+    }
+    function finishTest(){
+      $("fill").style.width="100%";
+      var practice=[];
+      var byStatus={ok:[],dev:[],prac:[],skip:[]};
+      results.forEach(function(r){ var c=classify(r); byStatus[c].push(r.s); if(c==="prac")practice.push(r.s); });
+      window._practice=practice;
+      $("sumTitle").textContent=(CHILD?CHILD+"'s":"Your child's")+" Speech Check";
+      var txt;
+      if(practice.length===0) txt="Great news — every sound we checked is on track or right on schedule for age "+AGE+". Keep it up with daily play!";
+      else txt="A few sounds are ready to practice: "+practice.join(", ")+". That's totally normal — and exactly what daily play with Leo fixes.";
+      $("sumText").textContent=txt;
+      // render per-sound cards
+      var SOUNDNAME={R:"R",S:"S",L:"L",K:"K",G:"G",F:"F",SH:"SH",CH:"CH",TH:"TH"};
+      var rlist=$("rlist"); rlist.innerHTML="";
+      var order={prac:0,dev:1,ok:2,skip:3};
+      results.slice().sort(function(a,b){return order[classify(a)]-order[classify(b)];}).forEach(function(r){
+        var c=classify(r); var lab,tag,cl;
+        if(c==="ok"){lab="On track";tag="✓";cl="ok";}
+        else if(c==="prac"){lab="Ready to practice";tag="🎯";cl="prac";}
+        else if(c==="dev"){lab="Still developing — normal at "+AGE;tag="🌱";cl="dev";}
+        else {lab="Didn't catch it";tag="•";cl="ok";}
+        var wd=WORDS.filter(function(w){return w.s===r.s;})[0]||{e:"⭐"};
+        var card=document.createElement("div"); card.className="rcard";
+        card.innerHTML='<span class="e">'+wd.e+'</span><div><div class="nm">'+SOUNDNAME[r.s]+' sound</div><div class="st '+cl+'">'+lab+'</div></div><span class="tag">'+tag+'</span>';
+        rlist.appendChild(card);
+      });
+      // report is built but hidden — email gate stands between the kid and the payoff
+      $("gateTitle").textContent=(CHILD?CHILD+"'s":"Your child's")+" results are ready! 🎉";
+      show("sGate");
+    }
+
+    $("gateBtn").onclick=async function(){
+      var email=$("email").value.trim();
+      if(!/^\S+@\S+\.\S+$/.test(email)){ $("gateMsg").style.color="#e0457b"; $("gateMsg").textContent="Please enter a valid email to see the results."; return; }
+      $("gateBtn").disabled=true; $("gateBtn").textContent="Loading results…";
+      try{ await fetch("/api/lead",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:email,child:CHILD,age:AGE,practice:window._practice||[]})}); }catch(e){}
+      // seed the profile so the app is tailored to what the check found
+      try{ if(window.Sona){ var focus=(window._practice&&window._practice.length)?window._practice:WORDS.map(function(w){return w.s;}); Sona.saveProfile({ childName:CHILD, focusSounds:focus.slice(0,4), checkEmail:email }); } }catch(e){}
+      show("sResults"); setupInstall();
+    };
+
+    // "Add to home screen" — Android fires beforeinstallprompt (real button);
+    // iOS Safari needs the manual Share→Add steps. Hidden if already installed.
+    var deferredPrompt=null;
+    window.addEventListener("beforeinstallprompt", function(e){ e.preventDefault(); deferredPrompt=e; });
+    function setupInstall(){
+      var tip=$("installTip"); if(!tip) return;
+      var standalone = window.navigator.standalone || (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches);
+      if(standalone){ tip.style.display="none"; return; }
+      var isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent);
+      if(deferredPrompt){
+        $("installText").textContent="One tap and Sona lives on your home screen.";
+        var b=$("installBtn"); b.style.display="block"; b.onclick=function(){ deferredPrompt.prompt(); deferredPrompt=null; };
+        tip.style.display="block";
+      } else if(isIOS){
+        $("installText").textContent='Tap the Share button below, then "Add to Home Screen" — so daily practice and reminders are one tap away.';
+        $("installBtn").style.display="none"; tip.style.display="block";
+      } else { tip.style.display="none"; }
+    }
+
+    $("startBtn").onclick=async function(){
+      CHILD=$("cName").value.trim(); AGE=parseInt($("cAge").value,10)||0;
+      if(!AGE){ $("cAge").style.borderColor="#e0457b"; return; }
+      $("startBtn").disabled=true; $("startBtn").textContent="Starting…";
+      try{ var r=await fetch("/api/score"); var j=await r.json(); useSpeechAce=!!(j&&j.hasKey); }catch(e){ useSpeechAce=false; }
+      try{ if(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia) micStream=await navigator.mediaDevices.getUserMedia({audio:true}); }catch(e){ micStream=null; }
+      show("sTest"); idx=0; results=[]; runStep();
+    };
+  </script>
+</body>
+</html>

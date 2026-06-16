@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>Sona — Shop</title>
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <meta name="theme-color" content="#1cb0f6" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <style>
+    :root{ --blue:#1cb0f6; --blue-d:#1597d4; --green:#58cc02; --green-d:#46a302; --orange:#ff9600; --orange-d:#e08600; --ink:#3c3c3c; --muted:#777; }
+    *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;font-family:"Nunito",-apple-system,"Segoe UI",Roboto,sans-serif;}
+    body{background:linear-gradient(180deg,#eaf6ff,#eafbff);color:var(--ink);min-height:100vh;}
+    #wrap{max-width:560px;margin:0 auto;padding-bottom:96px;}
+    #hud{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:10px;padding:calc(10px + env(safe-area-inset-top)) 16px 10px;background:linear-gradient(180deg,rgba(234,246,255,.96),rgba(234,246,255,.7));backdrop-filter:blur(6px);}
+    #back{border:none;background:#fff;border-radius:50%;width:42px;height:42px;font-size:18px;font-weight:800;cursor:pointer;box-shadow:0 3px 10px rgba(20,120,200,.12);color:var(--blue-d);}
+    .coins{margin-left:auto;display:flex;align-items:center;gap:6px;background:#fff;border-radius:99px;padding:8px 16px;font-family:"Baloo 2";font-weight:800;font-size:17px;color:var(--orange-d);box-shadow:0 3px 10px rgba(20,120,200,.12);}
+    #leoPrev{display:flex;flex-direction:column;align-items:center;margin:6px 0 2px;}
+    #leoPrev .stage{position:relative;width:130px;height:130px;display:flex;align-items:center;justify-content:center;border-radius:26px;}
+    #leoPrev img{width:110px;height:110px;object-fit:contain;}
+    #leoPrev .ot{position:absolute;top:2px;font-size:34px;}
+    #leoPrev .nm{font-family:"Baloo 2";font-weight:800;color:var(--blue-d);margin-top:4px;}
+    h2{font-family:"Baloo 2";font-weight:800;font-size:18px;margin:18px 16px 2px;}
+    .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;padding:8px 16px 0;}
+    .item{background:#fff;border:2px solid #e8eef4;border-bottom-width:4px;border-radius:18px;padding:12px 6px 10px;text-align:center;cursor:pointer;transition:transform .05s;}
+    .item:active{transform:translateY(2px);}
+    .item .ic{font-size:36px;line-height:1;height:42px;display:flex;align-items:center;justify-content:center;}
+    .item .nm{font-family:"Baloo 2";font-weight:800;font-size:13px;margin-top:4px;}
+    .item .price{font-weight:800;font-size:13px;color:var(--orange-d);margin-top:3px;}
+    .item.owned{border-color:#bdebca;} .item.equipped{border-color:var(--blue);background:#eaf7ff;}
+    .item .tag{font-weight:800;font-size:12px;border-radius:99px;padding:2px 8px;margin-top:3px;display:inline-block;}
+    .item.equipped .tag{background:var(--blue);color:#fff;} .item.owned .tag{background:#d7ffe2;color:var(--green-d);}
+    .item.cant{opacity:.55;}
+    #toast{position:fixed;left:50%;bottom:110px;transform:translateX(-50%);background:#3c3c3c;color:#fff;font-weight:800;font-size:13px;border-radius:14px;padding:10px 16px;opacity:0;transition:opacity .2s;z-index:40;}
+    #toast.show{opacity:1;}
+    #nav{position:fixed;bottom:0;left:0;right:0;z-index:30;max-width:560px;margin:0 auto;display:flex;background:#fff;border-top:1px solid #e8eef4;padding:8px 0 calc(8px + env(safe-area-inset-bottom));}
+    #nav a{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;text-decoration:none;color:var(--muted);font-weight:800;font-size:11px;} #nav a.on{color:var(--blue-d);} #nav a .ic{font-size:22px;}
+  </style>
+</head>
+<body>
+  <div id="wrap">
+    <div id="hud"><button id="back" onclick="location.href='/play.html'">←</button><span class="coins">🪙 <span id="coins">0</span></span></div>
+    <div id="leoPrev"><div class="stage" id="stage"><span class="ot" id="prevOutfit"></span><img src="/coach/leo.png" alt="Leo" /></div><div class="nm" id="prevName">Leo</div></div>
+    <h2>🎩 Leo's outfits</h2>
+    <div class="grid" id="outfits"></div>
+    <h2>🌄 Backdrops</h2>
+    <div class="grid" id="backdrops"></div>
+  </div>
+  <div id="toast"></div>
+  <nav id="nav">
+    <a href="/play.html"><span class="ic">🎮</span>Play</a>
+    <a class="on" href="/shop.html"><span class="ic">🛍️</span>Shop</a>
+    <a href="/progress.html"><span class="ic">📈</span>Grown-ups</a>
+  </nav>
+
+  <script src="/sona.js"></script>
+  <script>
+    var $=function(id){return document.getElementById(id);};
+    function toast(t){ var el=$("toast"); el.textContent=t; el.classList.add("show"); clearTimeout(el._t); el._t=setTimeout(function(){el.classList.remove("show");},1600); }
+    function refresh(){
+      var p=Sona.getProfile();
+      $("coins").textContent=Sona.getCoins?Sona.getCoins():0;
+      // Leo preview with equipped outfit
+      var of=(Sona.OUTFITS||[]).filter(function(o){return o.id===p.outfit;})[0];
+      $("prevOutfit").textContent=(of&&of.emoji)||"";
+      var bd=Sona.backdropById?Sona.backdropById(p.backdrop):null;
+      $("stage").style.background=(bd&&bd.css)||"#eaf3ff";
+
+      paint("outfits", Sona.OUTFITS||[], "outfits", "outfit", p.outfit);
+      paint("backdrops", Sona.BACKDROPS||[], "backdrops", "backdrop", p.backdrop);
+    }
+    function paint(hostId, list, kind, profKey, equippedId){
+      var host=$(hostId); host.innerHTML="";
+      list.forEach(function(it){
+        var owned = it.cost===0 || (Sona.owns&&Sona.owns(kind,it.id));
+        var equipped = equippedId===it.id;
+        var coins = Sona.getCoins?Sona.getCoins():0;
+        var afford = coins>=it.cost;
+        var el=document.createElement("div");
+        el.className="item"+(equipped?" equipped":(owned?" owned":(afford?"":" cant")));
+        var icon = it.emoji!==undefined ? (it.emoji||"🚫") : "🎨";
+        var bottom = equipped ? '<div class="tag">Wearing</div>' : (owned ? '<div class="tag">Tap to wear</div>' : '<div class="price">🪙 '+it.cost+'</div>');
+        el.innerHTML='<div class="ic">'+(it.id==="none"?"🚫":(it.emoji||"🌄"))+'</div><div class="nm">'+it.name+'</div>'+bottom;
+        el.onclick=function(){
+          var pNow=Sona.getProfile();
+          if(equipped) return;
+          if(owned){ var patch={}; patch[profKey]=it.id; Sona.saveProfile(patch); if(Sona.sfx)Sona.sfx.tap&&Sona.sfx.tap(); refresh(); return; }
+          // buy
+          if((Sona.getCoins?Sona.getCoins():0) < it.cost){ toast("Need "+(it.cost-(Sona.getCoins?Sona.getCoins():0))+" more 🪙 — play a game!"); return; }
+          if(Sona.spendCoins&&Sona.spendCoins(it.cost)){ Sona.addOwned&&Sona.addOwned(kind,it.id); var patch={}; patch[profKey]=it.id; Sona.saveProfile(patch); if(Sona.sfx){Sona.sfx.coin&&Sona.sfx.coin(); Sona.sfx.reward&&Sona.sfx.reward();} if(Sona.pop)Sona.pop("🎉",{color:"#ff9600",y:window.innerHeight*0.4}); toast("Unlocked "+it.name+"!"); refresh(); }
+        };
+        host.appendChild(el);
+      });
+    }
+    refresh();
+  </script>
+</body>
+</html>

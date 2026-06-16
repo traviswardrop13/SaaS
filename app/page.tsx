@@ -93,7 +93,7 @@ function Hero() {
           Help your child find their words.
         </h1>
         <p className="mx-auto mt-5 max-w-xl text-lg leading-relaxed text-gray-600">
-          A daily 10-minute speech-practice app — fun, gamified, and built with a
+          A daily 5-minute speech-practice app — fun, gamified, and built with a
           licensed speech-language pathologist.
         </p>
         <div className="mt-8 flex justify-center">

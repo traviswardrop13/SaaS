@@ -14,6 +14,26 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-title" content="Sona" />
+  <style>
+    /* premium launchpad polish */
+    body{background:linear-gradient(180deg,#eef7ff 0%,#e7f1ff 45%,#eafbe9 100%) fixed;}
+    .hero{position:relative;margin-top:8px;background:#fff;border-radius:28px;padding:26px 22px 24px;text-align:center;
+      box-shadow:0 18px 40px -18px rgba(20,90,160,.35), 0 2px 0 rgba(255,255,255,.6) inset;overflow:hidden;}
+    .hero:before{content:"";position:absolute;inset:0;background:radial-gradient(120% 80% at 50% -20%,rgba(28,176,246,.12),transparent 60%);pointer-events:none;}
+    .hero .leoBig{width:118px;height:118px;object-fit:contain;filter:drop-shadow(0 12px 18px rgba(20,90,160,.22));animation:floaty 4s ease-in-out infinite;}
+    @keyframes floaty{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+    .hero h1{font-family:"Baloo 2";font-weight:800;font-size:26px;margin-top:6px;color:#0e2a44;}
+    .hero .sub{color:#6b86a3;font-weight:700;font-size:14px;margin-top:2px;}
+    .playBtn{display:flex;align-items:center;justify-content:center;gap:10px;margin-top:18px;width:100%;border:none;border-radius:20px;
+      padding:18px;font-family:"Baloo 2";font-weight:800;font-size:19px;text-transform:uppercase;letter-spacing:.03em;color:#fff;cursor:pointer;text-decoration:none;
+      background:linear-gradient(180deg,#5fd216,#46a302);box-shadow:0 8px 0 0 #3c8c02, 0 14px 22px -8px rgba(70,163,2,.6);transition:transform .06s,box-shadow .06s;}
+    .playBtn:active{transform:translateY(5px);box-shadow:0 3px 0 0 #3c8c02, 0 8px 14px -8px rgba(70,163,2,.6);}
+    .glance{display:flex;gap:10px;margin-top:14px;}
+    .glance .g{flex:1;background:#fff;border-radius:18px;padding:12px 8px;text-align:center;box-shadow:0 8px 22px -14px rgba(20,90,160,.4);}
+    .glance .g .n{font-family:"Baloo 2";font-weight:800;font-size:22px;color:#0e2a44;}
+    .glance .g .l{font-weight:800;font-size:11px;color:#6b86a3;text-transform:uppercase;letter-spacing:.05em;margin-top:2px;}
+    .themeChip{display:block;text-align:center;margin-top:14px;font-weight:800;font-size:13px;color:#3c8c02;}
+  </style>
   <script defer src="/_vercel/insights/script.js"></script>
 </head>
 <body>
@@ -22,7 +42,6 @@
       <div class="brand"><span class="leo"><img src="/coach/leo-icon.png" alt="Leo" /></span> Sona <span class="beta">BETA</span></div>
       <div class="pills">
         <span class="pill flame">🔥 <span id="streak">0</span></span>
-        <a class="iconbtn" href="/practice.html" title="Practice" style="display:flex;align-items:center;justify-content:center;">🎯</a>
         <a class="iconbtn" href="/settings.html" title="Settings" style="display:flex;align-items:center;justify-content:center;">⚙️</a>
       </div>
     </header>
@@ -38,45 +57,23 @@
       <button id="subDismiss" class="iconbtn" title="Dismiss" style="width:30px;height:30px;font-size:16px;flex:0 0 auto;">×</button>
     </div>
 
-    <a href="/customize.html" style="display:flex;gap:12px;align-items:center;color:inherit;padding:2px 4px;">
-      <div style="width:52px;height:52px;flex:0 0 auto;position:relative;">
-        <span id="heroChar">🦁</span>
-        <span id="heroOutfit" style="position:absolute;top:-8px;left:50%;transform:translateX(-50%);font-size:20px;"></span>
-      </div>
-      <div style="flex:1;min-width:0;">
-        <h1 id="hello" style="font-size:21px;">Ready to practice?</h1>
-        <p class="muted" id="sub" style="font-size:13px;font-weight:700;">A few minutes a day keeps the streak going!</p>
-      </div>
-    </a>
-
-    <a class="btn" id="startBtn" href="#" style="margin-top:14px;">▶&nbsp;&nbsp;Start today's practice</a>
-    <p id="themeLine" class="muted" style="text-align:center;margin-top:8px;font-size:13px;font-weight:800;"></p>
-
-
-
-    <div style="margin-top:12px;display:flex;align-items:center;gap:10px;padding:0 4px;">
-      <span style="font-size:18px;" id="goalIcon">🎯</span>
-      <span style="font-weight:800;font-size:13px;color:var(--muted);" id="goalLabel">Today's goal</span>
-      <div class="bar" style="flex:1;height:9px;"><span id="goalBar" style="width:0%"></span></div>
-      <span style="font-weight:800;font-family:'Baloo 2';font-size:13px;" id="goalNum">0/10</span>
+    <div class="hero">
+      <img class="leoBig" id="leoBig" src="/coach/leo.png" alt="Leo" />
+      <h1 id="hello">Ready to play?</h1>
+      <div class="sub" id="sub">A few minutes a day keeps the streak going!</div>
+      <a class="playBtn" href="/play.html">🎮 Play</a>
+      <span class="themeChip" id="themeLine"></span>
     </div>
 
-    <h2 style="margin:22px 2px 6px;">Your sound town 🏘️</h2>
-    <p class="muted" style="margin:0 2px 8px;font-size:13px;font-weight:700;">Tap a house to see the steps to its prize!</p>
-    <div class="town" id="town"></div>
+    <div class="glance">
+      <a class="g" href="/play.html" style="text-decoration:none;"><div class="n" id="gStreak">0</div><div class="l">🔥 Day streak</div></a>
+      <a class="g" href="/shop.html" style="text-decoration:none;"><div class="n" id="gCoins">0</div><div class="l">🪙 Coins</div></a>
+      <a class="g" href="/progress.html" style="text-decoration:none;"><div class="n" id="gStars">0</div><div class="l">⭐ Stars</div></a>
+    </div>
 
     <p class="muted" style="text-align:center;margin-top:18px;font-size:13px;">
       <a href="/progress.html">Progress</a> · <a href="/settings.html">Settings</a> · <a href="mailto:wardroptravis@gmail.com?subject=Sona%20feedback">Send feedback</a>
     </p>
-  </div>
-
-  <div id="prize" class="cele">
-    <div class="box">
-      <div class="big">🏆</div>
-      <h2>Champion!</h2>
-      <p id="prizeMsg">You mastered all your sounds. Amazing work!</p>
-      <button class="btn" id="prizeClose" style="margin-top:18px;">Yay! 🎉</button>
-    </div>
   </div>
 
   <script src="/sona.js"></script>
@@ -85,86 +82,29 @@
     if (!p.onboarded) { location.replace("/onboarding.html"); }
     var g = Sona.getProgress();
 
-    // fun world layer: apply the child's chosen backdrop + buddy
-    var bd = Sona.backdropById(p.backdrop);
-    document.body.style.background = bd.css + " fixed";
-    var buddy = Sona.characterById(p.character);
-    var outfit = Sona.outfitById(p.outfit);
-    document.getElementById("heroChar").innerHTML = Sona.buddyMarkup(p.character, 58);
-    document.getElementById("heroOutfit").textContent = outfit.emoji || "";
-    var BUDDY = Sona.buddyMarkup(p.character, 40);
+    // real Leo art for the chosen buddy
+    document.getElementById("leoBig").src = (Sona.characterById(p.character).img) || "/coach/leo.png";
 
     var name = (p.childName || "").trim();
     var today = new Date().toISOString().slice(0, 10);
     var practicedToday = g.streak.lastDate === today;
 
     document.getElementById("streak").textContent = g.streak.count || 0;
-    document.getElementById("hello").textContent = name ? ("Hi, " + name + "!") : "Ready to practice?";
+    document.getElementById("hello").textContent = name ? ("Hi, " + name + "!") : "Ready to play?";
     document.getElementById("sub").textContent = practicedToday
-      ? "Nice — you practiced today! 🎉"
+      ? "Nice — you played today! 🎉"
       : "A few minutes a day keeps the streak going!";
 
-    // today's goal — practiced reps today vs a daily target
-    var todayCount = (g.sessions || []).filter(function (s) { return new Date(s.date).toISOString().slice(0, 10) === today; }).reduce(function (n, s) { return n + (s.count || 0); }, 0);
-    var GOAL = 10, gpct = Math.min(100, Math.round(todayCount / GOAL * 100));
-    document.getElementById("goalBar").style.width = gpct + "%";
-    document.getElementById("goalNum").textContent = Math.min(todayCount, GOAL) + "/" + GOAL;
-    if (todayCount >= GOAL) { document.getElementById("goalIcon").textContent = "✅"; document.getElementById("goalLabel").textContent = "Goal complete!"; }
+    // glance stats
+    document.getElementById("gStreak").textContent = g.streak.count || 0;
+    document.getElementById("gCoins").textContent = (Sona.getCoins ? Sona.getCoins() : 0);
+    document.getElementById("gStars").textContent = (g.totals && g.totals.stars) || 0;
 
-    // today's theme — fresh words + a daily bonus on the first session
+    // today's theme — fresh words today
     if (Sona.dayTheme) {
       var th = Sona.dayTheme();
       document.getElementById("themeLine").textContent = th.e + " " + th.n + " — new words today!";
     }
-
-    var SOUNDS = (p.focusSounds && p.focusSounds.length) ? p.focusSounds.slice() : ["R", "S", "L", "K"];
-    function stageFor(s) { return window.Sona ? Sona.stageOf(s) : Math.min(3, Math.floor((g.bySound[s] || 0) / 3)); }
-
-    // Sound Town: one pressable house per sound. Tapping a house opens its
-    // unit (/unit.html) — the steps inside that lead to that sound's prize.
-    // house art is shared in sona.js (Sona.houseArt)
-
-    var townEl = document.getElementById("town");
-    var firstPlay = null, allMastered = true;
-    SOUNDS.forEach(function (s, i) {
-      var st = stageFor(s), done = st >= 3, claimed = window.Sona && Sona.chestClaimed ? Sona.chestClaimed(s) : false;
-      if (!done) allMastered = false;
-      var current = firstPlay === null && !done;
-      if (current) firstPlay = { s: s, stage: Math.min(st, 2) };
-      var row = document.createElement("div");
-      row.className = "hrow " + (i % 2 ? "zag" : "zig");
-      row.innerHTML =
-        '<button class="houseBtn" title="' + s + ' sound">' + Sona.houseArt(i, s) +
-          (current ? '<span class="hLeo">' + Sona.buddyMarkup(p.character, 48) + '</span>' : '') +
-        '</button>' +
-        '<div class="hMeta"><b>' + s + ' sound</b>' +
-        '<span class="stars2">' + "★".repeat(Math.min(3, st)) + "☆".repeat(Math.max(0, 3 - st)) + '</span>' +
-        '<span class="sub2">' + (claimed ? "⭐ Prize collected" : (done ? "🎁 Prize ready!" : "Level " + (Math.min(st, 2) + 1) + " of 3")) + '</span></div>';
-      row.querySelector(".houseBtn").onclick = function () {
-        if (window.Sona) Sona.sfx.tap();
-        location.href = "/unit.html?sound=" + encodeURIComponent(s);
-      };
-      townEl.appendChild(row);
-    });
-    if (firstPlay === null) firstPlay = { s: SOUNDS[0], stage: 0 };
-    // champion trophy at the end of the street
-    var trow = document.createElement("div");
-    trow.className = "trophyRow";
-    trow.innerHTML = '<button class="trophyBtn' + (allMastered ? '' : ' locked') + '">' + (allMastered ? '🏆' : '🔒') + '</button><div class="label">Champion</div>';
-    if (allMastered) trow.querySelector(".trophyBtn").onclick = claimPrize;
-    townEl.appendChild(trow);
-    document.getElementById("startBtn").onclick = function (e) {
-      e.preventDefault();
-      if (window.Sona) Sona.sfx.tap();
-      location.href = "/lesson.html?daily=1" + (name ? "&name=" + encodeURIComponent(name) : "");
-    };
-
-    function claimPrize() {
-      if (window.Sona) { Sona.sfx.reward(); Sona.confetti({ count: 200, duration: 3400 }); }
-      Sona.saveProfile({ champion: true });
-      document.getElementById("prize").classList.add("show");
-    }
-    document.getElementById("prizeClose").onclick = function () { document.getElementById("prize").classList.remove("show"); };
 
     // iOS install tip (once, Safari only, until installed)
     var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
