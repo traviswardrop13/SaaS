@@ -39,6 +39,11 @@
     #win .unlock{margin-top:14px;font-weight:800;color:var(--orange-d);}
     #win .btn{margin-top:22px;border:none;border-radius:16px;padding:15px 44px;font-family:"Baloo 2";font-weight:800;font-size:18px;text-transform:uppercase;color:#fff;background:var(--green);box-shadow:0 5px 0 0 var(--green-d);cursor:pointer;}
     #win a{margin-top:14px;color:var(--muted);font-weight:800;font-size:14px;text-decoration:none;}
+    #win .leoWin{width:140px;height:140px;object-fit:contain;filter:drop-shadow(0 10px 16px rgba(40,140,80,.25));animation:leoPop .6s ease;}
+    #leo{width:64px;height:64px;object-fit:contain;display:block;margin:2px auto 0;filter:drop-shadow(0 5px 7px rgba(40,140,80,.2));animation:leoBob 3.2s ease-in-out infinite;}
+    #leo.react{animation:leoPop .55s ease;}
+    @keyframes leoBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+    @keyframes leoPop{0%{transform:scale(1)}30%{transform:scale(1.15) translateY(-8px)}60%{transform:scale(.95)}100%{transform:scale(1)}}
   </style>
 </head>
 <body>
@@ -48,13 +53,14 @@
       <span class="stat score">⭐ <span id="score">0</span>/<span id="goal">8</span></span>
       <span class="stat coins">🪙 <span id="coins">0</span></span>
     </div>
+    <img id="leo" src="/coach/leo.png" alt="Leo" />
     <div id="prompt">Pop the word Leo says!</div>
     <div id="hearRow"><button id="hear">🔊 Say it again</button></div>
     <div id="grid"></div>
     <div id="micline"><span class="dot"></span><span id="micText"></span></div>
   </div>
   <div id="win">
-    <div style="font-size:64px;">🎉</div>
+    <img class="leoWin" src="/coach/poses/leo-celebrate.png" alt="Leo celebrating" onerror="this.onerror=null;this.src='/coach/leo.png';" />
     <h1>Great popping!</h1>
     <div class="reward"><span id="winScore">0</span><small>words popped</small></div>
     <div class="unlock" id="winUnlock"></div>
@@ -74,6 +80,10 @@
     var $=function(id){return document.getElementById(id);};
     var pick=function(a){return a[Math.floor(Math.random()*a.length)];};
     var shuffle=function(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t;}return a;};
+    var LEO={ idle:"/coach/leo.png", cheer:"/coach/poses/leo-celebrate.png" };
+    Object.keys(LEO).forEach(function(k){ var im=new Image(); im.src=LEO[k]; });
+    function setLeo(s){ var el=$("leo"); if(el&&LEO[s]) el.src=LEO[s]; }
+    function leoReact(){ var el=$("leo"); if(!el)return; el.classList.remove("react"); void el.offsetWidth; el.classList.add("react"); }
 
     var audioCtx=null;
     function getCtx(){ if(!audioCtx){var AC=window.AudioContext||window.webkitAudioContext;audioCtx=new AC();} if(audioCtx.state==="suspended")audioCtx.resume(); return audioCtx; }
@@ -116,10 +126,11 @@
       await hearRep();  // say it to pop (rep) — always proceeds
       cr.classList.remove("right"); cr.classList.add("bop");
       if(window.Sona){ Sona.sfx&&Sona.sfx.correct&&Sona.sfx.correct(); Sona.pop&&Sona.pop("⭐",{color:"#46a302",y:window.innerHeight*0.4}); }
+      setLeo("cheer"); leoReact();
       score++; $("score").textContent=score; $("prompt").textContent="Pop! 🎉";
       // lower the others
       slots.forEach(function(s){ if(s!==cr) s.classList.remove("up"); });
-      setTimeout(round, 600);
+      setTimeout(function(){ setLeo("idle"); round(); }, 600);
     }
 
     function finishGame(){

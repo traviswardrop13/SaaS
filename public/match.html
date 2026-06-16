@@ -53,6 +53,11 @@
     #win .btn{margin-top:22px;border:none;border-radius:16px;padding:15px 44px;font-family:"Baloo 2";font-weight:800;font-size:18px;text-transform:uppercase;letter-spacing:.04em;color:#fff;background:var(--green);box-shadow:0 5px 0 0 var(--green-d);cursor:pointer;}
     #win .btn:active{transform:translateY(4px);box-shadow:0 1px 0 0 var(--green-d);}
     #win a{margin-top:14px;color:var(--muted);font-weight:800;font-size:14px;text-decoration:none;}
+    #win .leoWin{width:140px;height:140px;object-fit:contain;filter:drop-shadow(0 10px 16px rgba(120,80,200,.25));animation:leoPop .6s ease;}
+    #leo{width:74px;height:74px;object-fit:contain;display:block;margin:2px auto 2px;filter:drop-shadow(0 6px 8px rgba(120,80,200,.2));animation:leoBob 3.2s ease-in-out infinite;}
+    #leo.react{animation:leoPop .55s ease;}
+    @keyframes leoBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+    @keyframes leoPop{0%{transform:scale(1)}30%{transform:scale(1.15) translateY(-8px)}60%{transform:scale(.95)}100%{transform:scale(1)}}
   </style>
 </head>
 <body>
@@ -63,6 +68,7 @@
       <span class="stat coins">🪙 <span id="coins">0</span></span>
     </div>
     <div id="stage">
+      <img id="leo" src="/coach/leo.png" alt="Leo" />
       <div id="prompt">Find the matching pairs!</div>
       <div id="grid"></div>
       <div id="micline"><span class="dot"></span><span id="micText">Tap a card to start</span></div>
@@ -70,7 +76,7 @@
   </div>
 
   <div id="win">
-    <div style="font-size:64px;" aria-hidden>🎉</div>
+    <img class="leoWin" src="/coach/poses/leo-celebrate.png" alt="Leo celebrating" onerror="this.onerror=null;this.src='/coach/leo.png';" />
     <h1 id="winTitle">All matched!</h1>
     <div class="rewards">
       <div class="reward"><span id="winReps">0</span><small>words said</small></div>
@@ -92,6 +98,11 @@
 
     var $=function(id){return document.getElementById(id);};
     var shuffle=function(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t;}return a;};
+    // Leo reacts (real poses, no new art)
+    var LEO={ idle:"/coach/leo.png", cheer:"/coach/poses/leo-celebrate.png", encourage:"/coach/poses/leo-listen.png" };
+    Object.keys(LEO).forEach(function(k){ var im=new Image(); im.src=LEO[k]; });
+    function setLeo(s){ var el=$("leo"); if(el&&LEO[s]) el.src=LEO[s]; }
+    function leoReact(){ var el=$("leo"); if(!el)return; el.classList.remove("react"); void el.offsetWidth; el.classList.add("react"); }
 
     var audioCtx=null;
     function getCtx(){ if(!audioCtx){var AC=window.AudioContext||window.webkitAudioContext;audioCtx=new AC();} if(audioCtx.state==="suspended")audioCtx.resume(); return audioCtx; }
@@ -151,14 +162,16 @@
         el.classList.add("matched"); first.el.classList.add("matched");
         matched++; $("pairsFound").textContent=matched;
         if(window.Sona){ Sona.sfx&&Sona.sfx.correct&&Sona.sfx.correct(); Sona.pop&&Sona.pop("⭐",{color:"#8b5cf6",y:window.innerHeight*0.35}); }
+        setLeo("cheer"); leoReact();
         $("prompt").textContent="Match! 🎉";
         first=null; busy=false;
         if(matched>=PAIRS) setTimeout(finishGame,650);
       } else {
         // no match — flip both back
+        setLeo("encourage");
         $("prompt").textContent="Try again!";
         var a=first.el, b=el; first=null;
-        setTimeout(function(){ a.classList.remove("up"); b.classList.remove("up"); busy=false; $("prompt").textContent="Find the matching pairs!"; }, 950);
+        setTimeout(function(){ a.classList.remove("up"); b.classList.remove("up"); busy=false; setLeo("idle"); $("prompt").textContent="Find the matching pairs!"; }, 950);
       }
     }
 
