@@ -2,18 +2,20 @@ import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 
 /**
- * Creates a Stripe Checkout Session for the Sona subscription ($99/mo).
+ * Creates a Stripe Checkout Session for the Sona founding preorder.
  *
- * Charging on the web (Stripe) instead of in-app keeps ~97% of revenue vs.
- * Apple's cut. Uses an inline price ($99/mo) by default so no Stripe dashboard
- * setup is required to test; set STRIPE_PRICE_ID to use a real Price object.
+ * Pre-launch: the product is "coming soon", so this is a founder preorder — an
+ * annual plan at 50% off ($39.99/yr, anchored against $79.99), charged now, with
+ * NO free trial. Charging on the web (Stripe) keeps ~97% of revenue vs Apple's
+ * cut. Set STRIPE_PRICE_ID_ANNUAL to use a real Price object instead of the
+ * inline price below.
  *
- * Needs env: STRIPE_SECRET_KEY (test or live). Optional: STRIPE_PRICE_ID.
+ * Needs env: STRIPE_SECRET_KEY (live). Optional: STRIPE_PRICE_ID_ANNUAL.
  */
 export const runtime = "nodejs";
 
-const MONTHLY_CENTS = 900; // $9 / month — the low-commitment on-ramp
-const ANNUAL_CENTS = 5900; // $59 / year (~$4.92/mo) — Founding Circle hero plan
+const MONTHLY_CENTS = 450;  // $4.50/mo — unused while we preorder annual-only
+const ANNUAL_CENTS = 3999;  // $39.99/yr founding preorder (50% off the $79.99 anchor)
 
 export async function POST(req: NextRequest) {
   const key = process.env.STRIPE_SECRET_KEY;
@@ -52,9 +54,9 @@ export async function POST(req: NextRequest) {
             unit_amount: annual ? ANNUAL_CENTS : MONTHLY_CENTS,
             recurring: { interval: annual ? "year" : "month" },
             product_data: {
-              name: annual ? "Sona — Yearly" : "Sona — Monthly",
+              name: annual ? "Sona — Founding Preorder (Yearly)" : "Sona — Monthly",
               description:
-                "Your child's at-home speech coach — friendly coaching sessions, a personalized plan, and progress parents can see.",
+                "Founding-family preorder for Sona — your child's at-home speech-practice games, built with a licensed SLP. Locks in 50% off for life; early access as Sona launches.",
             },
           },
         },
@@ -69,9 +71,7 @@ export async function POST(req: NextRequest) {
       billing_address_collection: "auto",
       success_url: `${origin}/subscribe/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/subscribe?canceled=1`,
-      // 7-day free trial on BOTH plans — the marketing promises "free trial"
-      // unconditionally, so monthly must honor it too
-      subscription_data: { trial_period_days: 7 },
+      // No free trial — this is a founder preorder; the 50%-off price IS the offer.
     });
     return NextResponse.json({ ok: true, url: session.url });
   } catch (e: unknown) {
