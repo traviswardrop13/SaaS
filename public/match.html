@@ -202,6 +202,11 @@
       $("again").onclick=startGame;
       startGame();
     })();
+    // return to this sound's ladder (Sound → ladder → games)
+    (function(){ var lad="/ladder.html?sound="+SOUND;
+      var c=document.getElementById("close"); if(c) c.onclick=function(){ location.href=lad; };
+      Array.prototype.forEach.call(document.querySelectorAll('a[href="/play.html"]'),function(a){ a.setAttribute("href",lad); });
+    })();
     window.addEventListener("pagehide",function(){ try{ if(micStream)micStream.getTracks().forEach(function(t){t.stop();}); }catch(e){} });
   </script>
 </body>
