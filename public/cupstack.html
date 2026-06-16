@@ -100,11 +100,11 @@
     </div>
 
     <div id="bottom">
-      <div id="micState">Tap the cup and say the word!</div>
+      <div id="micState">Get ready!</div>
       <div id="wordCard">
         <span id="wordEmoji">🐰</span>
         <span id="wordText">rabbit</span>
-        <button id="hear" title="Hear it">🔊</button>
+        <button id="hear" title="Hear it"><svg viewBox="0 0 24 24" fill="none" stroke="#1597d4" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="width:24px;height:24px;display:block;"><path d="M11 5 6 9H3v6h3l5 4V5Z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/></svg></button>
       </div>
       <button class="mic" id="micBtn" title="Say it">
         <svg viewBox="0 0 24 24"><path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v6a3 3 0 0 0 3 3Z"/><path d="M6 11a6 6 0 0 0 12 0M12 18v3" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
@@ -299,19 +299,22 @@
         busy=false;
         if(placed>=GOAL){ return finishGame(); }
         showWord(nextWord());
-        $("micBtn").onclick=attempt;
-        $("micState").textContent="Tap the cup and say the word!";
-        say(current.w); // Leo models the next word
+        $("micState").textContent="Listen…";
+        await say(current.w); // Leo models the next word
+        $("micState").textContent="Your turn — say it!";
+        attempt(); // auto-listen — no tap to speak
       } else {
         // Wrong — strict: no cup. Same word again.
         if(window.Sona){Sona.sfx&&Sona.sfx.tap&&Sona.sfx.tap();}
         setCombo(0); setLeo("encourage");
-        $("micState").textContent="Not quite — try again!";
+        $("micState").textContent="Try again!";
         await new Promise(function(r){ setTimeout(r,700); });
         setLeo("idle");
         busy=false;
-        $("micBtn").onclick=attempt;
-        say(w.w); // model the same word again
+        $("micState").textContent="Listen…";
+        await say(w.w); // model the same word again
+        $("micState").textContent="Your turn — say it!";
+        attempt(); // auto-listen — no tap to speak
       }
     }
 
@@ -345,9 +348,8 @@
       $("cupCount").textContent="0"; $("cupGoal").textContent=GOAL; $("towerWrap").style.transform="scale(1)";
       setLeo("idle");
       buildQueue(); showWord(nextWord());
-      $("micBtn").onclick=attempt;
-      $("micState").textContent="Tap the cup and say the word!";
-      say(current.w);
+      $("micState").textContent="Listen…";
+      (async function(){ await say(current.w); $("micState").textContent="Your turn — say it!"; attempt(); })();
     }
 
     /* ---- boot ---- */

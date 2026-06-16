@@ -23,10 +23,14 @@
       background:radial-gradient(circle at 32% 28%,rgba(255,255,255,.95),rgba(150,210,255,.65) 45%,rgba(80,170,240,.5));
       box-shadow:inset 0 -6px 12px rgba(0,80,150,.18),0 6px 16px rgba(20,120,200,.2);font-size:26px;animation:float 4s ease-in-out infinite;}
     .bubble.target{outline:4px solid #ffd23d;outline-offset:3px;animation:float 4s ease-in-out infinite, pulse 1.1s ease-in-out infinite;}
-    .bubble.pop{animation:pop .4s ease forwards;}
+    .bubble.pop{animation:pop .34s cubic-bezier(.3,.7,.4,1) forwards;}
     @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
     @keyframes pulse{0%,100%{box-shadow:inset 0 -6px 12px rgba(0,80,150,.18),0 0 0 0 rgba(255,210,61,.6)}50%{box-shadow:inset 0 -6px 12px rgba(0,80,150,.18),0 0 0 14px rgba(255,210,61,0)}}
-    @keyframes pop{0%{transform:scale(1);opacity:1}40%{transform:scale(1.25);opacity:1}100%{transform:scale(.2);opacity:0}}
+    /* a real burst: expand fast + vanish (not shrink away) */
+    @keyframes pop{0%{transform:scale(1);opacity:1;filter:blur(0)}22%{transform:scale(1.18);opacity:1}100%{transform:scale(1.55);opacity:0;filter:blur(1.5px)}}
+    .popring{position:absolute;border:3px solid rgba(255,255,255,.92);border-radius:50%;pointer-events:none;z-index:3;animation:popring .42s ease-out forwards;}
+    @keyframes popring{0%{transform:scale(.55);opacity:.95}100%{transform:scale(1.8);opacity:0}}
+    .drop{position:absolute;border-radius:50%;pointer-events:none;z-index:3;background:radial-gradient(circle at 35% 30%,#ffffff,#bfe6ff 72%);box-shadow:0 1px 3px rgba(20,120,200,.25);}
     #leoWrap{position:absolute;left:8px;bottom:6px;width:80px;z-index:4;pointer-events:none;} #leoWrap.react{animation:lpop .55s ease;}
     #leo{width:100%;filter:drop-shadow(0 6px 8px rgba(20,90,160,.25));} @keyframes lpop{0%{transform:scale(1)}30%{transform:scale(1.15) translateY(-8px)}100%{transform:scale(1)}}
     #bottom{padding:8px 18px calc(16px + env(safe-area-inset-bottom));display:flex;flex-direction:column;align-items:center;gap:8px;background:linear-gradient(180deg,rgba(255,255,255,0),rgba(255,255,255,.6));z-index:6;}
@@ -56,7 +60,7 @@
     <div id="stage"><div id="leoWrap"><img id="leo" src="/coach/leo.png" alt="Leo" /></div></div>
     <div id="bottom">
       <div id="prompt">Say the syllable to pop the bubble!</div>
-      <div id="sayCard"><b id="sayText">rah</b><button id="hear" title="Hear it">🔊</button></div>
+      <div id="sayCard"><b id="sayText">rah</b><button id="hear" title="Hear it"><svg viewBox="0 0 24 24" fill="none" stroke="#1597d4" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="width:26px;height:26px;display:block;"><path d="M11 5 6 9H3v6h3l5 4V5Z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/></svg></button></div>
       <button class="mic" id="micBtn" title="Say it"><svg viewBox="0 0 24 24"><path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v6a3 3 0 0 0 3 3Z"/><path d="M6 11a6 6 0 0 0 12 0M12 18v3" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round"/></svg></button>
     </div>
   </div>
@@ -85,6 +89,17 @@
     Object.keys(LEO).forEach(function(k){var im=new Image();im.src=LEO[k];});
     function setLeo(s){var el=$("leo");if(el&&LEO[s])el.src=LEO[s];}
     function leoReact(){var w=$("leoWrap");if(!w)return;w.classList.remove("react");void w.offsetWidth;w.classList.add("react");}
+    // bubble burst: a "ploop" + a splash ring + droplets flying out
+    function popSound(){ try{ var ctx=getCtx(),o=ctx.createOscillator(),g=ctx.createGain(); o.type="sine"; o.frequency.setValueAtTime(740,ctx.currentTime); o.frequency.exponentialRampToValueAtTime(170,ctx.currentTime+0.12); g.gain.setValueAtTime(0.0001,ctx.currentTime); g.gain.exponentialRampToValueAtTime((profile.volume!=null?profile.volume:0.8)*0.5,ctx.currentTime+0.01); g.gain.exponentialRampToValueAtTime(0.0001,ctx.currentTime+0.16); o.connect(g);g.connect(ctx.destination); o.start(); o.stop(ctx.currentTime+0.18); }catch(e){} }
+    function popFx(bub){ try{ var stage=$("stage"), cx=bub.offsetLeft+bub.offsetWidth/2, cy=bub.offsetTop+bub.offsetHeight/2, rs=bub.offsetWidth;
+      var ring=document.createElement("div"); ring.className="popring"; ring.style.width=rs+"px"; ring.style.height=rs+"px"; ring.style.left=(cx-rs/2)+"px"; ring.style.top=(cy-rs/2)+"px"; stage.appendChild(ring); setTimeout(function(){ring.remove();},460);
+      var N=9; for(var i=0;i<N;i++){ var d=document.createElement("div"); d.className="drop"; var sz=6+Math.random()*9; d.style.width=sz+"px"; d.style.height=sz+"px"; d.style.left=(cx-sz/2)+"px"; d.style.top=(cy-sz/2)+"px"; stage.appendChild(d);
+        var ang=(Math.PI*2*i/N)+Math.random()*0.5, dist=38+Math.random()*48, dx=Math.cos(ang)*dist, dy=Math.sin(ang)*dist;
+        if(d.animate){ d.animate([{transform:"translate(0,0) scale(1)",opacity:1},{transform:"translate("+dx+"px,"+(dy+22)+"px) scale(.35)",opacity:0}],{duration:480+Math.random()*180,easing:"cubic-bezier(.3,.6,.5,1)"}); }
+        (function(el){ setTimeout(function(){el.remove();},740); })(d);
+      }
+      popSound();
+    }catch(e){} }
 
     var micStream=null;
     // listen for an attempt; resolve {spoke} when the child says something (VAD)
@@ -131,7 +146,7 @@
       var res=await listen();
       if(res.spoke){
         if(window.Sona&&Sona.sfx&&Sona.sfx.correct)Sona.sfx.correct();
-        setLeo("cheer"); leoReact(); if(bub){ bub.classList.remove("target"); bub.classList.add("pop"); }
+        setLeo("cheer"); leoReact(); if(bub){ bub.classList.remove("target"); bub.classList.add("pop"); popFx(bub); }
         popped++; $("count").textContent=popped; $("prompt").textContent="Nice one!";
       } else { setLeo("idle"); $("prompt").textContent="Have a go — say “"+s.t+"”."; }
       await new Promise(function(r){setTimeout(r,520);});

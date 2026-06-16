@@ -41,6 +41,13 @@
     #kart.zoom .car{animation:shake .25s linear infinite;}
     @keyframes shake{0%,100%{transform:translateX(0)}50%{transform:translateX(2px)}}
     #dust{position:absolute;bottom:16%;font-size:22px;opacity:0;}
+    #kart{z-index:4;}
+    /* rival racers — the player has to beat them to the finish */
+    .rival{position:absolute;left:6%;transition:left 1s linear;z-index:2;pointer-events:none;}
+    .rival .body{display:block;width:46px;height:19px;border-radius:11px 13px 7px 7px;position:relative;box-shadow:0 3px 0 rgba(0,0,0,.18);}
+    .rival .body:before{content:"";position:absolute;top:-7px;left:12px;right:10px;height:10px;border-radius:7px 6px 0 0;background:rgba(255,255,255,.5);}
+    .rival .body i{position:absolute;bottom:-5px;width:11px;height:11px;border-radius:50%;background:#222;box-shadow:inset 0 0 0 3px #555;}
+    .rival .body i.l{left:5px;} .rival .body i.r{right:5px;}
 
     /* traffic light */
     #signal{position:absolute;top:10px;left:50%;transform:translateX(-50%);background:#222;border-radius:14px;padding:8px 6px;display:flex;flex-direction:column;gap:6px;box-shadow:0 6px 16px rgba(0,0,0,.3);}
@@ -99,13 +106,15 @@
       <div id="road"></div>
       <div id="lane"></div>
       <div id="finish"></div>
+      <div class="rival" id="r1" style="bottom:30%;"><span class="body" style="background:linear-gradient(180deg,#ff9a5c,#e8643a);"><i class="l"></i><i class="r"></i></span></div>
+      <div class="rival" id="r2" style="bottom:3%;"><span class="body" style="background:linear-gradient(180deg,#9b7bff,#7a55e0);"><i class="l"></i><i class="r"></i></span></div>
       <span id="dust">💨</span>
       <div id="kart"><img class="leo" src="/coach/leo.png" alt="Leo" /><span class="car">🏎️</span></div>
     </div>
 
     <div id="bottom">
       <div id="prompt">Say your sound to rev up!</div>
-      <div id="wordCard"><span id="wordEmoji">🔊</span><span id="wordText">R</span><button id="hear" title="Hear it">🔊</button></div>
+      <div id="wordCard"><span id="wordEmoji">🔊</span><span id="wordText">R</span><button id="hear" title="Hear it"><svg viewBox="0 0 24 24" fill="none" stroke="#1597d4" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="width:24px;height:24px;display:block;"><path d="M11 5 6 9H3v6h3l5 4V5Z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/></svg></button></div>
       <button class="mic" id="micBtn" title="Say it">
         <svg viewBox="0 0 24 24"><path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v6a3 3 0 0 0 3 3Z"/><path d="M6 11a6 6 0 0 0 12 0M12 18v3" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
       </button>
@@ -223,6 +232,9 @@
 
     /* game */
     var progress=0, gateIdx=0, totalReps=0, cleanWords=0, queue=[];
+    var RDUR=[24,34], raceStart=0; // seconds each rival takes to finish from GO
+    function startRivals(){ raceStart=performance.now(); ["r1","r2"].forEach(function(id,i){ var el=$(id); if(!el)return; el.style.transition="left "+RDUR[i]+"s linear"; el.style.left="88%"; }); }
+    function resetRivals(){ ["r1","r2"].forEach(function(id){ var el=$(id); if(!el)return; el.style.transition="none"; el.style.left="6%"; void el.offsetWidth; }); }
     function setKart(p){ $("kart").style.left=(6+p*0.82*100/100*84)+"%"; } // 6%..~90%
     function kartTo(pct){ $("kart").style.left=pct+"%"; }
     function showWord(w){ $("wordEmoji").style.display=""; $("wordEmoji").textContent=w.e||"⭐"; $("wordText").textContent=w.w; }
@@ -245,6 +257,7 @@
       lights("g"); $("prompt").textContent="GREEN LIGHT — GO! 🏎️💨"; $("rpmTxt").textContent="GOOO!";
       $("kart").classList.add("zoom"); $("dust").style.left="4%"; $("dust").style.opacity="1";
       if(window.Sona&&Sona.sfx)Sona.sfx.correct&&Sona.sfx.correct(); vroom(1);
+      startRivals(); // the other racers take off — beat them to the finish!
       $("rpmWrap").style.display="none";
       progress=0.25; kartTo(28);
       await new Promise(function(r){setTimeout(r,900);});
@@ -268,7 +281,7 @@
             vroom(1); $("prompt").textContent="Nice one! 🏎️";
           } else {
             if(window.Sona&&Sona.sfx)Sona.sfx.tap&&Sona.sfx.tap();
-            $("prompt").textContent="Not quite — try again!";
+            $("prompt").textContent="Try again!";
             await say(w.w); // re-model the same word
           }
         }
@@ -281,13 +294,22 @@
     }
 
     function finishGame(){
-      kartTo(90);
+      kartTo(92);
+      // placement vs the rivals (they race from GO over RDUR seconds)
+      var elapsed=(performance.now()-raceStart)/1000;
+      var beaten=RDUR.filter(function(d){return d<=elapsed;}).length;
+      var place=beaten+1;
+      ["r1","r2"].forEach(function(id,i){ var el=$(id); if(!el)return; var p=Math.min(1,elapsed/RDUR[i]); el.style.transition="none"; el.style.left=(6+p*82)+"%"; });
+      var medal=place===1?"🥇":place===2?"🥈":"🥉";
+      var ptxt=place===1?"1st place!":place===2?"2nd place!":"3rd place!";
       $("winReps").textContent=totalReps;
       $("winStars").textContent=cleanWords;
-      var earned=20 + totalReps*2 + cleanWords*3;
+      var bonus=place===1?20:place===2?10:0;
+      var earned=20 + totalReps*2 + cleanWords*3 + bonus;
       if(window.Sona&&Sona.addCoins)Sona.addCoins(earned);
       try{ var GS=JSON.parse(localStorage.getItem("sona.games.v1")||"{}"); GS[SOUND]=GS[SOUND]||{}; GS[SOUND].racer={done:true}; GS.lastPlayDay=new Date().toISOString().slice(0,10); localStorage.setItem("sona.games.v1",JSON.stringify(GS)); }catch(e){}
-      $("winUnlock").textContent="+"+earned+" 🪙";
+      $("winTitle").textContent=(place===1?"You won the race! ":"Race done! ")+medal;
+      $("winUnlock").textContent=ptxt+"  ·  +"+earned+" 🪙";
       $("win").classList.add("show");
       if(window.Sona){ Sona.confetti&&Sona.confetti(); Sona.sfx&&Sona.sfx.complete&&Sona.sfx.complete(); }
     }
@@ -295,6 +317,7 @@
     function startGame(){
       $("win").classList.remove("show"); $("rpmWrap").style.display=""; $("rpmFill").style.width="0%";
       progress=0; gateIdx=0; totalReps=0; cleanWords=0; $("gateNum").textContent="0";
+      resetRivals();
       run();
     }
 

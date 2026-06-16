@@ -54,8 +54,8 @@
       <span class="stat coins">🪙 <span id="coins">0</span></span>
     </div>
     <img id="leo" src="/coach/leo.png" alt="Leo" />
-    <div id="prompt">Pop the word Leo says!</div>
-    <div id="hearRow"><button id="hear">🔊 Say it again</button></div>
+    <div id="prompt">Say the words to pop them!</div>
+    <div id="hearRow"><button id="hear"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;vertical-align:-3px;margin-right:5px;"><path d="M11 5 6 9H3v6h3l5 4V5Z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/></svg>Say it again</button></div>
     <div id="grid"></div>
     <div id="micline"><span class="dot"></span><span id="micText"></span></div>
   </div>
@@ -105,18 +105,26 @@
     var score=0, busy=false, target=null, slots=[];
     function layout(){ var grid=$("grid"); grid.innerHTML=""; slots=[]; for(var i=0;i<6;i++){ var hole=document.createElement("div"); hole.className="hole"; var cr=document.createElement("div"); cr.className="critter"; cr.innerHTML='<span class="e"></span><span class="w"></span>'; hole.appendChild(cr); grid.appendChild(hole); slots.push(cr); } }
 
-    function round(){
+    async function round(){
       if(score>=GOAL) return finishGame();
-      busy=false; target=pick(POOL);
-      // choose 4-5 critters to show, including the target, rest distractors from pool
+      target=pick(POOL);
+      // a few critters pop up for life; the kid pops the one Leo names by SAYING it
       var others=shuffle(POOL.filter(function(w){return w.w!==target.w;}));
-      var show=shuffle([target].concat(others.slice(0,4))).slice(0,Math.min(5,POOL.length));
-      // place into random holes
+      var show=shuffle([target].concat(others.slice(0,3))).slice(0,Math.min(4,POOL.length));
       var holes=shuffle([0,1,2,3,4,5]).slice(0,show.length);
-      slots.forEach(function(cr){ cr.className="critter"; cr.dataset.word=""; });
-      show.forEach(function(w,k){ var cr=slots[holes[k]]; cr.dataset.word=w.w; cr.querySelector(".e").textContent=w.e; cr.querySelector(".w").textContent=w.w; setTimeout(function(){cr.classList.add("up");}, 80*k); cr.onclick=function(){ tap(cr,w); }; });
-      $("prompt").textContent="Pop the "+target.w+"!";
-      say("Pop the "+target.w+"!");
+      slots.forEach(function(cr){ cr.className="critter"; cr.dataset.word=""; cr.onclick=null; });
+      show.forEach(function(w,k){ var cr=slots[holes[k]]; cr.dataset.word=w.w; cr.querySelector(".e").textContent=w.e; cr.querySelector(".w").textContent=w.w; setTimeout(function(){cr.classList.add("up");}, 90*k); });
+      $("prompt").textContent="Say “"+target.w+"” to pop it!";
+      setLeo("listen");
+      await say(target.w);            // Leo models the word
+      await hearRep();                // kid says it — auto-listen, no tapping
+      var tcr=null; slots.forEach(function(cr){ if(cr.dataset.word===target.w) tcr=cr; });
+      if(tcr) tcr.classList.add("right");
+      if(window.Sona){ Sona.sfx&&Sona.sfx.correct&&Sona.sfx.correct(); Sona.pop&&Sona.pop("⭐",{color:"#46a302",y:window.innerHeight*0.4}); }
+      setLeo("cheer"); leoReact();
+      score++; $("score").textContent=score; $("prompt").textContent="Pop! 🎉";
+      setTimeout(function(){ if(tcr){ tcr.classList.remove("right"); tcr.classList.add("bop"); } slots.forEach(function(s){ if(s!==tcr) s.classList.remove("up"); }); }, 120);
+      setTimeout(function(){ setLeo("idle"); round(); }, 750);
     }
 
     async function tap(cr, w){
@@ -149,7 +157,7 @@
       $("coins").textContent=Sona.getCoins?Sona.getCoins():0;
       layout(); round();
     }
-    $("hear").onclick=function(){ if(target) say("Pop the "+target.w+"!"); };
+    $("hear").onclick=function(){ if(target) say(target.w); };
 
     (async function(){
       try{ if(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia) micStream=await navigator.mediaDevices.getUserMedia({audio:true}); }catch(e){ micStream=null; }

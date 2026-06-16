@@ -152,9 +152,10 @@
       busy=true; flips++;
       el.classList.add("up");
       if(window.Sona&&Sona.sfx)Sona.sfx.tap&&Sona.sfx.tap();
-      await say(c.w);                 // Leo models the word
-      var said=await hearRep();       // kid repeats — a speech rep (always proceeds)
+      $("prompt").textContent="What's this? Say it!";
+      var said=await hearRep();       // kid names the picture out loud (speech production)
       if(said) reps++;
+      await say(c.w);                 // Leo says it back to confirm
       if(!first){ first={el:el,c:c}; busy=false; $("prompt").textContent="Find its match!"; return; }
       // second card chosen
       if(first.c.id===c.id && first.el!==el){
