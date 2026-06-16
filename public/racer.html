@@ -134,7 +134,7 @@
     var SAYIT = { R:"rrr", S:"sss", L:"lll", K:"k, k, k", G:"g, g, g", F:"fff", SH:"shh", CH:"ch, ch", TH:"th, th" };
     var REV_NEED = 5;     // say the sound 5x to launch (massed practice burst)
     var GATES = 3;        // word gates after launch (distributed practice)
-    var GREAT = 80, OK = 50;
+    // Strict: a gate only opens on a clean rep (SpeechAce "great" rating). Wrong → try again.
 
     var $=function(id){return document.getElementById(id);};
     var pick=function(a){return a[Math.floor(Math.random()*a.length)];};
@@ -189,7 +189,7 @@
       });
     }
 
-    // GATE PHASE: say one word, kart boosts. Always advances (no-fail). Returns score.
+    // GATE PHASE: say one word; the kart only advances on a clean rep (strict). Returns the recording.
     function recordTurn(maxMs){
       maxMs=maxMs||8000;
       return new Promise(function(resolve){
@@ -214,10 +214,11 @@
         setTimeout(function(){ if(!done)finish(); }, maxMs);
       });
     }
+    // Strict scoring: returns {score, pass}. "pass" = a clean (great) rep of the word.
     async function scoreWord(word,res){
-      if(useSpeechAce && res.blob){ try{ var fd=new FormData(); fd.append("audio",new File([res.blob],"a.webm",{type:res.blob.type||"audio/webm"})); fd.append("text",word.w); fd.append("targetSound",SOUND); fd.append("userId","child"); fd.append("mode","full"); var r=await fetch("/api/score",{method:"POST",body:fd}); var j=await r.json(); if(j&&j.ok&&typeof j.score==="number")return j.score; }catch(e){} }
-      if(res.transcript && matchText(res.transcript,word.w)) return 88;
-      if(res.transcript) return 64; return 60;
+      if(useSpeechAce && res.blob){ try{ var fd=new FormData(); fd.append("audio",new File([res.blob],"a.webm",{type:res.blob.type||"audio/webm"})); fd.append("text",word.w); fd.append("targetSound",SOUND); fd.append("userId","child"); fd.append("mode","full"); var r=await fetch("/api/score",{method:"POST",body:fd}); var j=await r.json(); if(j&&j.ok&&typeof j.score==="number")return { score:j.score, pass:j.rating==="great" }; }catch(e){} }
+      if(res.transcript){ var ok=matchText(res.transcript,word.w); return { score: ok?85:30, pass: ok }; }
+      return { score:70, pass:true };
     }
 
     /* game */
@@ -249,18 +250,28 @@
       await new Promise(function(r){setTimeout(r,900);});
       $("kart").classList.remove("zoom"); $("dust").style.opacity="0";
 
-      // GATES (distributed practice)
+      // GATES (distributed practice) — strict: must say each word right to pass the gate.
       queue=shuffle(POOL); $("gateTot").textContent=GATES;
       for(gateIdx=0; gateIdx<GATES; gateIdx++){
         var w=queue[gateIdx%queue.length];
         $("gateNum").textContent=gateIdx;
-        showWord(w); $("prompt").textContent="Say the word to zoom!"; $("hear").onclick=(function(ww){return function(){say(ww.w);};})(w);
+        showWord(w); $("hear").onclick=(function(ww){return function(){say(ww.w);};})(w);
         await say(w.w);
-        var res=await recordTurn(); var sc=await scoreWord(w,res);
-        if(sc>=GREAT){ cleanWords++; if(window.Sona&&Sona.sfx)Sona.sfx.correct&&Sona.sfx.correct();
-          var kl=document.querySelector("#kart .leo"); if(kl){ kl.src="/coach/poses/leo-celebrate.png"; kl.classList.remove("cheer"); void kl.offsetWidth; kl.classList.add("cheer"); setTimeout(function(){ kl.src="/coach/leo.png"; kl.classList.remove("cheer"); }, 700); } }
-        else { if(window.Sona&&Sona.sfx)Sona.sfx.tap&&Sona.sfx.tap(); }
-        vroom(sc/100);
+        var passed=false;
+        while(!passed){
+          $("prompt").textContent="Say the word to zoom!";
+          var res=await recordTurn(); var sa=await scoreWord(w,res);
+          if(sa.pass){
+            passed=true; cleanWords++;
+            if(window.Sona&&Sona.sfx)Sona.sfx.correct&&Sona.sfx.correct();
+            var kl=document.querySelector("#kart .leo"); if(kl){ kl.src="/coach/poses/leo-celebrate.png"; kl.classList.remove("cheer"); void kl.offsetWidth; kl.classList.add("cheer"); setTimeout(function(){ kl.src="/coach/leo.png"; kl.classList.remove("cheer"); }, 700); }
+            vroom(1); $("prompt").textContent="Nice one! 🏎️";
+          } else {
+            if(window.Sona&&Sona.sfx)Sona.sfx.tap&&Sona.sfx.tap();
+            $("prompt").textContent="Not quite — try again!";
+            await say(w.w); // re-model the same word
+          }
+        }
         progress=0.25+ (gateIdx+1)/GATES*0.7;
         kartTo(28 + (gateIdx+1)/GATES*60);
         $("gateNum").textContent=gateIdx+1;

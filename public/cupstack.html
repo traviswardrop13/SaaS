@@ -138,8 +138,7 @@
     // cup colors (one unlocks on a win)
     var CUP_COLORS = ["#ff7a6e","#ffb24d","#ffd33d","#7dd470","#4cc6ff","#b08cff","#ff8fc7"];
 
-    // placeholder score thresholds — TUNE WITH RACHEL (spec: always place, prettier when cleaner)
-    var GREAT = 80, OK = 50;
+    // Strict: a cup only stacks on a clean rep (SpeechAce "great" rating). Wrong → try again.
 
     var $ = function(id){ return document.getElementById(id); };
     var pick = function(a){ return a[Math.floor(Math.random()*a.length)]; };
@@ -213,9 +212,9 @@
       });
     }
 
-    // returns a 0..100 score. Always succeeds with SOME number (never blocks a kid).
+    // Strict scoring: a rep only counts when it's actually right. Returns {score, pass}.
     async function scoreAttempt(word, res){
-      // try SpeechAce for a real 0-100
+      // SpeechAce is the real judge — "pass" means a clean rep of the sound (great rating).
       if(useSpeechAce && res.blob){
         try{
           var fd=new FormData();
@@ -223,13 +222,13 @@
           fd.append("text", word.w); fd.append("targetSound", SOUND); fd.append("userId","child"); fd.append("mode","full");
           var r=await fetch("/api/score",{method:"POST",body:fd});
           var j=await r.json();
-          if(j&&j.ok && typeof j.score==="number") return j.score;
+          if(j&&j.ok && typeof j.score==="number") return { score:j.score, pass: j.rating==="great" };
         }catch(e){}
       }
-      // fallback (no SpeechAce / error): never punish for tech. Heard the word -> great-ish; heard something -> mid; silence -> mid.
-      if(res.transcript && matchText(res.transcript, word.w)) return 88;
-      if(res.transcript) return 64;
-      return 60;
+      // No SpeechAce: judge on the transcript when we have one — say it right, or try again.
+      if(res.transcript){ var ok=matchText(res.transcript, word.w); return { score: ok?85:30, pass: ok }; }
+      // No way to score at all (scoring offline / no speech engine): don't hard-block the kid.
+      return { score:70, pass:true };
     }
 
     /* ---- game state ---- */
@@ -288,21 +287,32 @@
       var w=current;
       setLeo("listen"); // Leo leans in while the kid talks
       var res=await recordTurn($("micBtn"));
-      var score=await scoreAttempt(w, res);
-      var band = score>=GREAT?"great" : score>=OK?"ok":"low";
-      // feedback + Leo reaction + sound
-      if(band==="great"){ if(window.Sona){Sona.sfx&&Sona.sfx.correct&&Sona.sfx.correct();} setCombo(combo+1); setLeo("cheer"); leoReact(); $("micState").textContent="Perfect! 🌟"; }
-      else if(band==="ok"){ if(window.Sona){Sona.sfx&&Sona.sfx.tap&&Sona.sfx.tap();} setCombo(0); setLeo("encourage"); leoReact(); $("micState").textContent="Nice — it stacked!"; }
-      else { if(window.Sona){Sona.sfx&&Sona.sfx.tap&&Sona.sfx.tap();} setCombo(0); setLeo("encourage"); $("micState").textContent="Good try — it counts!"; }
-      dropCup(band);
-      await new Promise(function(r){ setTimeout(r,700); });
-      setLeo("idle");
-      busy=false;
-      if(placed>=GOAL){ return finishGame(); }
-      showWord(nextWord());
-      $("micBtn").onclick=attempt;
-      $("micState").textContent="Tap the cup and say the word!";
-      say(current.w); // Leo models the next word
+      var sa=await scoreAttempt(w, res);
+      if(sa.pass){
+        // Right — said cleanly, so a cup stacks.
+        if(window.Sona){Sona.sfx&&Sona.sfx.correct&&Sona.sfx.correct();}
+        setCombo(combo+1); setLeo("cheer"); leoReact();
+        $("micState").textContent="Nice one!";
+        dropCup("great");
+        await new Promise(function(r){ setTimeout(r,700); });
+        setLeo("idle");
+        busy=false;
+        if(placed>=GOAL){ return finishGame(); }
+        showWord(nextWord());
+        $("micBtn").onclick=attempt;
+        $("micState").textContent="Tap the cup and say the word!";
+        say(current.w); // Leo models the next word
+      } else {
+        // Wrong — strict: no cup. Same word again.
+        if(window.Sona){Sona.sfx&&Sona.sfx.tap&&Sona.sfx.tap();}
+        setCombo(0); setLeo("encourage");
+        $("micState").textContent="Not quite — try again!";
+        await new Promise(function(r){ setTimeout(r,700); });
+        setLeo("idle");
+        busy=false;
+        $("micBtn").onclick=attempt;
+        say(w.w); // model the same word again
+      }
     }
 
     function finishGame(){
