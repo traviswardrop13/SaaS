@@ -147,7 +147,8 @@
       cards:'<svg viewBox="0 0 24 24"><rect x="4" y="6" width="10" height="13" rx="2"/><path d="M9 6l2.5-1.3a2 2 0 0 1 2.7.9L19 14"/></svg>',
       star:'<svg viewBox="0 0 24 24"><path d="M12 4l2.3 4.8 5.2.7-3.8 3.6.9 5.2L12 16.9 7.4 18.3l.9-5.2L4.5 9.5l5.2-.7L12 4Z"/></svg>',
       check:'<svg viewBox="0 0 24 24" fill="none" stroke="#46a302" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.2 4.2L19 7"/></svg>',
-      lock:'<svg viewBox="0 0 24 24" fill="none" stroke="#aab4c0" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>'
+      lock:'<svg viewBox="0 0 24 24" fill="none" stroke="#aab4c0" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>',
+      rocket:'<svg viewBox="0 0 24 24"><path d="M12 3c3 1.6 4.5 4.6 4.5 8 0 2-.6 3.6-1.2 4.6H8.7C8.1 14.6 7.5 13 7.5 11c0-3.4 1.5-6.4 4.5-8Z"/><circle cx="12" cy="9.5" r="1.5"/><path d="M9 16l-2.3 3.2L9 18.4M15 16l2.3 3.2L15 18.4"/></svg>'
     };
 
     /* ---- per-sound info (cue powers the lightbulb) ---- */
@@ -179,7 +180,7 @@
     var q = "?sound="+SOUND;
     var ACTS = {
       isolation: [
-        {name:"Say the Sound", sub:"Warm up the sound on its own", href:"/lesson.html"+q, color:"#46c6b8", icon:IC.mic}
+        {name:"Sound Rocket", sub:"Say the sound to launch the rocket", href:"/rocket.html"+q, color:"#46c6b8", icon:IC.rocket}
       ],
       words: [
         {name:"Cup Stack",  sub:"Stack a cup for every clean word", href:"/cupstack.html"+q, color:"#ff7a6e", icon:IC.cup},
@@ -196,6 +197,7 @@
     function wordsDoneCount(){ return WORD_GAME_IDS.filter(function(id){ return W[id]&&W[id].done; }).length; }
     function rungDone(id){
       if(id==="words") return wordsDoneCount() >= WORD_GAME_IDS.length;
+      if(id==="isolation") return !!(W.rocket && W.rocket.done);
       return false; // other live rungs aren't completion-tracked yet
     }
 
