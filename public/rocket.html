@@ -134,7 +134,7 @@
   <div id="win">
     <img class="leoWin" src="/coach/poses/leo-celebrate.png" alt="Leo celebrating" onerror="this.onerror=null;this.src='/coach/leo.png';" />
     <h1 id="winTitle">You reached the Moon! 🌙</h1>
-    <div class="reward"><span id="winCount">0</span><small>boosts to the moon</small></div>
+    <div class="reward"><span id="winCount">0</span><small>space boosts</small></div>
     <div class="reward" id="winUnlock" style="color:var(--orange-d);background:rgba(255,200,0,.16);"></div>
     <button class="btn" id="again">Fly again</button>
     <a href="/play.html">Done for now →</a>
@@ -149,9 +149,17 @@
     if(!(window.Sona && Sona.WORDS && Sona.WORDS[SOUND])) SOUND="R";
     var SAYIT = { R:"rrr", S:"sss", L:"lll", K:"k, k, k", G:"g, g, g", F:"fff", SH:"shh", CH:"ch, ch", TH:"th, th", Z:"zzz", V:"vvv", J:"j, j" };
     var SAY = SAYIT[SOUND] || SOUND.toLowerCase();
-    var GOAL = 4; // legs of the journey
-    var WAYPOINTS = ["Land","the Sky","above the clouds","Space","the Moon"];
-    var RAIL = ["Land","Sky","Clouds","Space","Moon"];
+    var DIFF=(window.Sona&&Sona.diff)?Sona.diff():1;
+    // farther destinations as levels climb: Moon → Mars → Saturn (same game, longer trip)
+    var DEST = DIFF<=3 ? { title:"You reached the Moon! 🌙", color:"radial-gradient(circle at 38% 34%,#ffffff,#e3e9f4 55%,#c4cddd)",
+        way:["Land","the Sky","above the clouds","Space","the Moon"], rail:["Land","Sky","Clouds","Space","Moon"] }
+      : DIFF<=6 ? { title:"You landed on Mars! 🔴", color:"radial-gradient(circle at 38% 34%,#ffd2a8,#e8794a 55%,#b8472a)",
+        way:["Land","the Sky","above the clouds","Space","deep space","Mars"], rail:["Land","Sky","Clouds","Space","Deep","Mars"] }
+      : { title:"You orbited Saturn! 🪐", color:"radial-gradient(circle at 38% 34%,#fff0c2,#e8c878 55%,#c89a4a)",
+        way:["Land","the Sky","above the clouds","Space","into orbit","deep space","Saturn"], rail:["Land","Sky","Clouds","Space","Orbit","Deep","Saturn"] };
+    var WAYPOINTS = DEST.way;
+    var RAIL = DEST.rail;
+    var GOAL = WAYPOINTS.length - 1; // legs of the journey
 
     /* build the tall world: stars (upper bands), clouds (low-mid band), altitude rail */
     (function(){
@@ -162,6 +170,7 @@
       clouds.forEach(function(c){ html+='<span class="cloud" style="left:'+c[0]+'%;bottom:'+c[1]+'%;width:'+c[2]+'px;height:'+(c[2]*0.42)+'px;"></span>'; });
       $("moon").insertAdjacentHTML("afterend", html);
       var r=$("rail"); RAIL.forEach(function(name,i){ var t=document.createElement("div"); t.className="tick"+(i===0?" on":""); t.id="tick"+i; t.innerHTML='<span class="tl">'+name+'</span><span class="dot"></span>'; r.appendChild(t); });
+      var mn=$("moon"); if(mn&&DEST.color)mn.style.background=DEST.color;
     })();
     function markRail(level){ for(var i=0;i<=level;i++){ var t=$("tick"+i); if(t)t.classList.add("on"); } }
 
@@ -225,7 +234,7 @@
         setLeo("cheer"); leoReact();
         var fl=$("flame"); setFlame(1); fl.classList.add("on");
         var rw=$("rocketWrap"); rw.classList.add("boost");
-        $("world").style.transform="translateY("+(level*20)+"%)";
+        $("world").style.transform="translateY("+((level/GOAL)*80)+"%)";
         markRail(level);
         if(level>=GOAL && window.Sona&&Sona.confetti) Sona.confetti();
         setTimeout(function(){ rw.classList.remove("boost"); setFlame(0); resolve(); }, 1300);
@@ -258,7 +267,9 @@
       try{ var GS=JSON.parse(localStorage.getItem("sona.games.v1")||"{}"); GS[SOUND]=GS[SOUND]||{}; GS[SOUND].rocket={done:true}; GS.lastPlayDay=new Date().toISOString().slice(0,10); localStorage.setItem("sona.games.v1",JSON.stringify(GS)); }catch(e){}
       $("winCount").textContent=done;
       $("winUnlock").textContent="+"+earned+" 🪙";
+      var _wt=$("winTitle"); if(_wt)_wt.textContent=DEST.title;
       $("win").classList.add("show");
+      if(window.Sona&&Sona.sessionButtons)Sona.sessionButtons($("win"));
       if(window.Sona){ Sona.confetti&&Sona.confetti(); Sona.sfx&&Sona.sfx.coin&&Sona.sfx.coin(); }
     }
 

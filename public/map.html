@@ -146,7 +146,18 @@
       scene.style.transformOrigin=nd.x+"% "+nd.y+"%";
       screen.classList.add("zoomed"); zoomedScreen=screen;
       $("zoomLvl").textContent="Level "+nd.n;
-      $("playBtn").onclick=function(){ if(window.Sona&&Sona.sfx&&Sona.sfx.correct)Sona.sfx.correct(); location.href=nd.href; };
+      // a level = a playlist of games. Tap Play → start the session and open game 1.
+      var queue=(nd.queue&&nd.queue.length)?nd.queue:((window.Sona&&Sona.LEVEL_GAMES)||null);
+      var qlen=(queue&&queue.length)||5;
+      $("playBtn").innerHTML="▶&nbsp; Start · "+qlen+" games";
+      $("playBtn").onclick=function(){
+        if(window.Sona&&Sona.sfx&&Sona.sfx.correct)Sona.sfx.correct();
+        if(window.Sona&&Sona.session){
+          var snd=((window.Sona.getProfile&&Sona.getProfile().focusSounds)||[])[0]||"R";
+          Sona.session.start(nd.n, snd, queue, nd.n);
+          location.href=Sona.session.url();
+        } else { location.href=nd.href; }
+      };
       $("zoomUI").classList.add("show");
       $("dots").style.display="none"; $("nav").style.display="none"; $("gear").style.display="none"; $("back").style.display="flex";
       pager.style.overflowX="hidden";

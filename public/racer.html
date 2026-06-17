@@ -146,8 +146,14 @@
     if(!(window.Sona && Sona.WORDS && Sona.WORDS[SOUND])) SOUND="R";
     var POOL = (window.Sona && Sona.WORDS && Sona.WORDS[SOUND]) ? Sona.WORDS[SOUND].filter(function(w){return w.i;}) : [{w:"rabbit",e:"🐰"}];
     var SAYIT = { R:"rrr", S:"sss", L:"lll", K:"k, k, k", G:"g, g, g", F:"fff", SH:"shh", CH:"ch, ch", TH:"th, th" };
-    var REV_NEED = 5;     // say the sound 5x to launch (massed practice burst)
-    var GATES = 3;        // word gates after launch (distributed practice)
+    var DIFF=(window.Sona&&Sona.diff)?Sona.diff():1;
+    // a longer race in a different setting as levels climb (sunny → desert → night)
+    var SETTING = DIFF<=3 ? {body:"linear-gradient(180deg,#bfe9ff 0%,#dff4ff 55%,#cdeffd 100%)",road:"linear-gradient(180deg,#6b7280,#4b5563)"}
+      : DIFF<=6 ? {body:"linear-gradient(180deg,#ffd9a0 0%,#ffe9c6 55%,#ffcf86 100%)",road:"linear-gradient(180deg,#caa36a,#9c7740)"}
+      : {body:"linear-gradient(180deg,#26264f 0%,#3a3a74 55%,#202044 100%)",road:"linear-gradient(180deg,#3a3a4a,#23232f)"};
+    try{ document.body.style.background=SETTING.body; var _rd=document.getElementById("road"); if(_rd)_rd.style.background=SETTING.road; }catch(e){}
+    var REV_NEED = Math.min(8, 4 + Math.floor(DIFF/2));  // say the sound to launch (massed practice)
+    var GATES = Math.min(7, 2 + DIFF);                   // word gates after launch (distributed practice)
     // Strict: a gate only opens on a clean rep (SpeechAce "great" rating). Wrong → try again.
 
     var $=function(id){return document.getElementById(id);};
@@ -316,6 +322,7 @@
       $("winTitle").textContent=(place===1?"You won the race! ":"Race done! ")+medal;
       $("winUnlock").textContent=ptxt+"  ·  +"+earned+" 🪙";
       $("win").classList.add("show");
+      if(window.Sona&&Sona.sessionButtons)Sona.sessionButtons($("win"));
       if(window.Sona){ Sona.confetti&&Sona.confetti(); Sona.sfx&&Sona.sfx.complete&&Sona.sfx.complete(); }
     }
 

@@ -94,7 +94,8 @@
     var SOUND = (params.get("sound") || (profile.focusSounds && profile.focusSounds[0]) || "R").toUpperCase();
     if(!(window.Sona && Sona.WORDS && Sona.WORDS[SOUND])) SOUND="R";
     var POOL = (window.Sona && Sona.WORDS && Sona.WORDS[SOUND]) ? Sona.WORDS[SOUND].filter(function(w){return w.i;}) : [{w:"rabbit",e:"🐰"},{w:"rocket",e:"🚀"},{w:"ring",e:"💍"}];
-    var PAIRS = 3;
+    var DIFF=(window.Sona&&Sona.diff)?Sona.diff():1;
+    var PAIRS = Math.min(POOL.length, Math.max(2, 2+Math.floor(DIFF/2)));
 
     var $=function(id){return document.getElementById(id);};
     var shuffle=function(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t;}return a;};
@@ -184,6 +185,7 @@
       $("winUnlock").textContent="+"+earned+" 🪙";
       $("coins").textContent=Sona.getCoins?Sona.getCoins():0;
       $("win").classList.add("show");
+      if(window.Sona&&Sona.sessionButtons)Sona.sessionButtons($("win"));
       if(window.Sona){ Sona.confetti&&Sona.confetti(); Sona.sfx&&Sona.sfx.complete&&Sona.sfx.complete(); }
     }
 

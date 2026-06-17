@@ -134,7 +134,8 @@
     // hardcoded ~10 target words for ONE sound — all START with it (initial position).
     // To use your wife's assigned list, replace WORDS with [{w:"rabbit",e:"🐰"},...].
     var POOL = (window.Sona && Sona.WORDS && Sona.WORDS[SOUND]) ? Sona.WORDS[SOUND].filter(function(w){return w.i;}) : [{w:"rabbit",e:"🐰"},{w:"rocket",e:"🚀"}];
-    var GOAL = 10;
+    var DIFF=(window.Sona&&Sona.diff)?Sona.diff():1;
+    var GOAL = Math.min(20,8+DIFF*2);
     // cup colors (one unlocks on a win)
     var CUP_COLORS = ["#ff7a6e","#ffb24d","#ffd33d","#7dd470","#4cc6ff","#b08cff","#ff8fc7"];
 
@@ -339,6 +340,7 @@
       $("winUnlock").textContent="+"+earned+" 🪙   ·   🎉 New cup color unlocked!";
       $("winTitle").textContent = bestCombo>=4 ? "Amazing tower!" : "Great stacking!";
       $("win").classList.add("show");
+      if(window.Sona&&Sona.sessionButtons)Sona.sessionButtons($("win"));
       if(window.Sona){ Sona.confetti&&Sona.confetti(); Sona.sfx&&Sona.sfx.complete&&Sona.sfx.complete(); Sona.sfx&&Sona.sfx.coin&&Sona.sfx.coin(); }
     }
 

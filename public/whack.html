@@ -75,7 +75,8 @@
     var SOUND = (params.get("sound") || (profile.focusSounds && profile.focusSounds[0]) || "R").toUpperCase();
     if(!(window.Sona && Sona.WORDS && Sona.WORDS[SOUND])) SOUND="R";
     var POOL = (window.Sona && Sona.WORDS && Sona.WORDS[SOUND]) ? Sona.WORDS[SOUND].filter(function(w){return w.i;}) : [{w:"rabbit",e:"🐰"}];
-    var GOAL = 8;
+    var DIFF=(window.Sona&&Sona.diff)?Sona.diff():1;
+    var GOAL = Math.min(16,6+DIFF*2);
 
     var $=function(id){return document.getElementById(id);};
     var pick=function(a){return a[Math.floor(Math.random()*a.length)];};
@@ -149,6 +150,7 @@
       $("winUnlock").textContent="+"+earned+" 🪙";
       $("coins").textContent=Sona.getCoins?Sona.getCoins():0;
       $("win").classList.add("show");
+      if(window.Sona&&Sona.sessionButtons)Sona.sessionButtons($("win"));
       if(window.Sona){ Sona.confetti&&Sona.confetti(); Sona.sfx&&Sona.sfx.complete&&Sona.sfx.complete(); }
     }
 
