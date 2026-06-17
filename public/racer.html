@@ -242,7 +242,7 @@
     function resetRivals(){ ["r1","r2"].forEach(function(id){ var el=$(id); if(!el)return; el.style.transition="none"; el.style.left="6%"; void el.offsetWidth; }); }
     function setKart(p){ $("kart").style.left=(6+p*0.82*100/100*84)+"%"; } // 6%..~90%
     function kartTo(pct){ $("kart").style.left=pct+"%"; }
-    function showWord(w){ $("wordEmoji").style.display=""; $("wordEmoji").textContent=w.e||"⭐"; $("wordText").textContent=w.w; }
+    function showWord(w){ $("wordEmoji").style.display=""; $("wordEmoji").innerHTML=(window.Sona&&Sona.pic)?Sona.pic(w.w,w.e,38):(w.e||"⭐"); $("wordText").textContent=w.w; }
     function showSound(){ $("wordEmoji").style.display="none"; $("wordText").textContent=SOUND; }
 
     function lights(state){

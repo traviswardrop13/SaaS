@@ -93,7 +93,7 @@
 
     var micStream=null;
     function hearRep(maxMs){ maxMs=maxMs||4000; return new Promise(function(resolve){ var done=false,spoke=false,raf=null,src=null;
-      $("micline").classList.add("live"); $("micText").textContent="Say it! 🎤";
+      $("micline").classList.add("live"); $("micText").textContent="Say it!";
       function fin(){ if(done)return; done=true; if(raf)cancelAnimationFrame(raf); try{src&&src.disconnect();}catch(e){} $("micline").classList.remove("live"); $("micText").textContent=""; resolve(spoke); }
       try{ if(micStream){ var ctx=getCtx(); src=ctx.createMediaStreamSource(micStream); var an=ctx.createAnalyser(); an.fftSize=512; src.connect(an); var td=new Uint8Array(an.fftSize); var t0=performance.now(),nS=0,nN=0,thr=0,v=0,lv=0;
         (function tick(){ if(done)return; an.getByteTimeDomainData(td); var sum=0; for(var i=0;i<td.length;i++){var d=(td[i]-128)/128;sum+=d*d;} var rms=Math.sqrt(sum/td.length),now=performance.now();
@@ -113,7 +113,7 @@
       var show=shuffle([target].concat(others.slice(0,3))).slice(0,Math.min(4,POOL.length));
       var holes=shuffle([0,1,2,3,4,5]).slice(0,show.length);
       slots.forEach(function(cr){ cr.className="critter"; cr.dataset.word=""; cr.onclick=null; });
-      show.forEach(function(w,k){ var cr=slots[holes[k]]; cr.dataset.word=w.w; cr.querySelector(".e").textContent=w.e; cr.querySelector(".w").textContent=w.w; setTimeout(function(){cr.classList.add("up");}, 90*k); });
+      show.forEach(function(w,k){ var cr=slots[holes[k]]; cr.dataset.word=w.w; cr.querySelector(".e").innerHTML=(window.Sona&&Sona.pic?Sona.pic(w.w,w.e,38):w.e); cr.querySelector(".w").textContent=w.w; setTimeout(function(){cr.classList.add("up");}, 90*k); });
       $("prompt").textContent="Say “"+target.w+"” to pop it!";
       setLeo("listen");
       await say(target.w);            // Leo models the word
@@ -122,7 +122,7 @@
       if(tcr) tcr.classList.add("right");
       if(window.Sona){ Sona.sfx&&Sona.sfx.correct&&Sona.sfx.correct(); Sona.pop&&Sona.pop("⭐",{color:"#46a302",y:window.innerHeight*0.4}); }
       setLeo("cheer"); leoReact();
-      score++; $("score").textContent=score; $("prompt").textContent="Pop! 🎉";
+      score++; $("score").textContent=score; $("prompt").textContent="Pop!";
       setTimeout(function(){ if(tcr){ tcr.classList.remove("right"); tcr.classList.add("bop"); } slots.forEach(function(s){ if(s!==tcr) s.classList.remove("up"); }); }, 120);
       setTimeout(function(){ setLeo("idle"); round(); }, 750);
     }
@@ -135,7 +135,7 @@
       cr.classList.remove("right"); cr.classList.add("bop");
       if(window.Sona){ Sona.sfx&&Sona.sfx.correct&&Sona.sfx.correct(); Sona.pop&&Sona.pop("⭐",{color:"#46a302",y:window.innerHeight*0.4}); }
       setLeo("cheer"); leoReact();
-      score++; $("score").textContent=score; $("prompt").textContent="Pop! 🎉";
+      score++; $("score").textContent=score; $("prompt").textContent="Pop!";
       // lower the others
       slots.forEach(function(s){ if(s!==cr) s.classList.remove("up"); });
       setTimeout(function(){ setLeo("idle"); round(); }, 600);

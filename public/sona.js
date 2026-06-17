@@ -349,5 +349,18 @@
     setTimeout(() => el.remove(), 950);
   }
 
-  global.Sona = { ALL_SOUNDS, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, HOUSE_PALETTE, WORDS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, getProfile, saveProfile, getProgress, recordSession, resetProgress, stageOf, completeStage, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, gated, restore, saveRecording, listRecordings, sfx, music, confetti, pop };
+  function slugify(w) { return String(w || "").toLowerCase().replace(/[^a-z0-9]+/g, ""); }
+  // word -> picture. The emoji shows instantly; /coach/items/<word>.png swaps in ONLY
+  // if it actually loads (no manifest, no broken-icon if it's missing). Drop a keyed PNG
+  // in that folder named after the word (e.g. rabbit.png) and it appears everywhere — zero code.
+  function pic(word, emoji, size) {
+    size = size || 64; var em = emoji || "⭐"; var slug = slugify(word);
+    var sp = '<span style="font-size:' + size + 'px;line-height:1;vertical-align:middle;">' + em + '</span>';
+    if (!slug) return sp;
+    return '<img src="/coach/items/' + slug + '.png" alt="" aria-hidden="true" ' +
+      'style="width:' + size + 'px;height:' + size + 'px;object-fit:contain;display:none;vertical-align:middle;" ' +
+      'onload="this.style.display=\'inline-block\';if(this.nextElementSibling)this.nextElementSibling.style.display=\'none\';" ' +
+      'onerror="this.remove();">' + sp;
+  }
+  global.Sona = { pic, ALL_SOUNDS, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, HOUSE_PALETTE, WORDS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, getProfile, saveProfile, getProgress, recordSession, resetProgress, stageOf, completeStage, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, gated, restore, saveRecording, listRecordings, sfx, music, confetti, pop };
 })(window);

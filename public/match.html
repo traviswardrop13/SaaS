@@ -116,7 +116,7 @@
       maxMs=maxMs||4500;
       return new Promise(function(resolve){
         var done=false, spoke=false, raf=null, src=null;
-        $("micline").classList.add("live"); $("micText").textContent="Say it! 🎤";
+        $("micline").classList.add("live"); $("micText").textContent="Say it!";
         function fin(){ if(done)return; done=true; if(raf)cancelAnimationFrame(raf); try{src&&src.disconnect();}catch(e){} $("micline").classList.remove("live"); $("micText").textContent=""; resolve(spoke); }
         try{
           if(micStream){
@@ -141,7 +141,7 @@
       cards=[];
       deck.forEach(function(c,i){
         var el=document.createElement("div"); el.className="card";
-        el.innerHTML='<div class="face back">❓</div><div class="face front"><span class="e">'+c.e+'</span><span class="w">'+c.w+'</span></div>';
+        el.innerHTML='<div class="face back">?</div><div class="face front"><span class="e">'+(window.Sona&&Sona.pic?Sona.pic(c.w,c.e,44):c.e)+'</span><span class="w">'+c.w+'</span></div>';
         el.onclick=function(){ flip(el,c); };
         grid.appendChild(el); cards.push({el:el,c:c,done:false});
       });
@@ -164,7 +164,7 @@
         matched++; $("pairsFound").textContent=matched;
         if(window.Sona){ Sona.sfx&&Sona.sfx.correct&&Sona.sfx.correct(); Sona.pop&&Sona.pop("⭐",{color:"#8b5cf6",y:window.innerHeight*0.35}); }
         setLeo("cheer"); leoReact();
-        $("prompt").textContent="Match! 🎉";
+        $("prompt").textContent="Match!";
         first=null; busy=false;
         if(matched>=PAIRS) setTimeout(finishGame,650);
       } else {

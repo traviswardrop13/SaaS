@@ -239,7 +239,7 @@
 
     function showWord(w){
       current=w;
-      $("wordEmoji").textContent=w.e||"⭐";
+      $("wordEmoji").innerHTML=(window.Sona&&Sona.pic)?Sona.pic(w.w,w.e,40):(w.e||"⭐");
       $("wordText").textContent=w.w;
     }
 

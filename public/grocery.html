@@ -114,7 +114,7 @@
     }
 
     var queue=[], qi=0, got=0, busy=false;
-    function showItem(it){ $("item").classList.remove("fly"); void $("item").offsetWidth; $("item").textContent=it.e||"🛍️"; $("phrase").textContent=it.t; }
+    function showItem(it){ $("item").classList.remove("fly"); void $("item").offsetWidth; $("item").innerHTML=(window.Sona&&Sona.pic)?Sona.pic(it.word,it.e,120):(it.e||"🛍️"); $("phrase").textContent=it.t; }
     async function turn(){
       if(busy) return; busy=true; $("micBtn").onclick=null;
       var it=queue[qi%queue.length];

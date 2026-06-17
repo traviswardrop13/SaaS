@@ -109,7 +109,7 @@
 
     var ci=0, answered=0, busy=false;
     function renderChat(){ var c=CHATS[ci%CHATS.length]; $("qText").textContent=c.q;
-      var ow=$("opts"); ow.innerHTML=""; c.options.forEach(function(o){ var el=document.createElement("div"); el.className="opt"; el.innerHTML='<span class="e">'+(o.e||"⭐")+'</span><span class="w">'+o.w+'</span>'; el.dataset.w=o.w; ow.appendChild(el); }); }
+      var ow=$("opts"); ow.innerHTML=""; c.options.forEach(function(o){ var el=document.createElement("div"); el.className="opt"; el.innerHTML='<span class="e">'+((window.Sona&&Sona.pic)?Sona.pic(o.w,o.e,42):(o.e||"⭐"))+'</span><span class="w">'+o.w+'</span>'; el.dataset.w=o.w; ow.appendChild(el); }); }
     function chooseChip(word){ var hit=null; Array.prototype.forEach.call($("opts").children,function(el){ if(norm(el.dataset.w)===norm(word)) { el.classList.add("chosen"); hit=el; } }); return hit; }
     async function ask(){ var c=CHATS[ci%CHATS.length]; setLeo("idle"); $("prompt").textContent="Listen to Leo…"; await say(c.q); $("prompt").textContent="Tap the mic and tell Leo your pick!"; $("micBtn").onclick=turn; }
     async function turn(){
