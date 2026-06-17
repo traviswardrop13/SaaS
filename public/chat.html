@@ -50,8 +50,8 @@
   <div id="app">
     <div id="top">
       <button id="close" onclick="location.href='/play.html'">✕</button>
-      <span class="stat">💬 Conversation</span>
-      <span class="stat count">💬 <span id="count">0</span>/<span id="goal">4</span></span>
+      <span class="stat">Conversation</span>
+      <span class="stat count"><span id="count">0</span>/<span id="goal">4</span></span>
     </div>
     <div id="stage">
       <img id="leoBig" src="/coach/leo.png" alt="Leo" />
@@ -66,7 +66,7 @@
   </div>
   <div id="win">
     <img class="leoWin" src="/coach/poses/leo-celebrate.png" alt="Leo" onerror="this.onerror=null;this.src='/coach/leo.png';" />
-    <h1>Great chatting! 💬</h1>
+    <h1>Great chatting!</h1>
     <div class="reward"><span id="winCount">0</span><small>answers to Leo</small></div>
     <div class="reward" id="winUnlock" style="background:#fff7df;color:#e08600;"></div>
     <button class="btn" id="again">Chat again</button><a href="/play.html">Done for now →</a>
@@ -81,7 +81,7 @@
     if(!(window.Sona&&Sona.WORDS&&Sona.WORDS[SOUND])) SOUND="R";
     var CHATS=(window.SonaContent?SonaContent.chats(SOUND):[{q:"A rabbit or a rocket?",options:[{w:"rabbit",e:"🐰"},{w:"rocket",e:"🚀"}]}]);
     var GOAL=Math.min(4,CHATS.length)||4;
-    var REPLIES=["Ooh, a {w} — great choice!","Nice! I love a {w} too.","A {w}? Awesome pick!","Yes! {w} it is. 🎉"];
+    var REPLIES=["Ooh, a {w} — great choice!","Nice! I love a {w} too.","A {w}? Awesome pick!","Yes! {w} it is."];
 
     var audioCtx=null; function getCtx(){if(!audioCtx){var AC=window.AudioContext||window.webkitAudioContext;audioCtx=new AC();}if(audioCtx.state==="suspended")audioCtx.resume();return audioCtx;}
     function playPCM(b){return new Promise(function(res){try{var c=getCtx(),n=b.byteLength>>1,ab=c.createBuffer(1,n,24000),ch=ab.getChannelData(0),dv=new DataView(b.buffer,b.byteOffset,b.byteLength);for(var i=0;i<n;i++)ch[i]=dv.getInt16(i*2,true)/32768;var s=c.createBufferSource();s.buffer=ab;s.playbackRate.value=(window.Sona&&Sona.VOICE_PITCH)||1;var g=c.createGain();g.gain.value=(profile.volume!=null?profile.volume:0.8);s.connect(g);g.connect(c.destination);s.onended=res;s.start();}catch(e){res();}});}

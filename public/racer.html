@@ -98,8 +98,8 @@
   <div id="app">
     <div id="top">
       <button id="close" onclick="location.href='/play.html'">✕</button>
-      <span class="stat gate">🏁 <span id="gateNum">0</span>/<span id="gateTot">3</span></span>
-      <span class="stat light" id="speedTag">🏎️</span>
+      <span class="stat gate"><span id="gateNum">0</span>/<span id="gateTot">3</span></span>
+      <span class="stat light" id="speedTag" style="display:none;"></span>
     </div>
 
     <div id="track">
@@ -220,7 +220,7 @@
           var t0=performance.now(),nSum=0,nN=0,thr=0,voiced=0;
           (function tick(){ if(done)return; an.getByteFrequencyData(data); [].forEach.call(bars.children,function(el,k){var v=data[2+k*3]/255;el.style.height=(8+v*30)+"px";});
             an.getByteTimeDomainData(tdv); var sum=0; for(var k=0;k<tdv.length;k++){var d=(tdv[k]-128)/128;sum+=d*d;} var rms=Math.sqrt(sum/tdv.length),now=performance.now();
-            if(now-t0<300){nSum+=rms;nN++;} else { if(!thr)thr=Math.min(0.09,Math.max(0.012,(nSum/Math.max(1,nN))*2.6)); if(rms>thr){voiced++;lastVoice=now;if(voiced>=2&&!spoke){spoke=true;$("prompt").textContent="Zoom! 🏎️";}}else if(rms<thr*0.7)voiced=0; if(spoke&&now-lastVoice>=1000){finish();return;} }
+            if(now-t0<300){nSum+=rms;nN++;} else { if(!thr)thr=Math.min(0.09,Math.max(0.012,(nSum/Math.max(1,nN))*2.6)); if(rms>thr){voiced++;lastVoice=now;if(voiced>=2&&!spoke){spoke=true;$("prompt").textContent="Zoom!";}}else if(rms<thr*0.7)voiced=0; if(spoke&&now-lastVoice>=1000){finish();return;} }
             wraf=requestAnimationFrame(tick); })();
         } }catch(e){}
         stopWave=function(){ if(wraf)cancelAnimationFrame(wraf); try{msrc&&msrc.disconnect();}catch(e){} if(bars)bars.remove(); if(ico)ico.style.display=""; };
@@ -259,7 +259,7 @@
       var reps=await revPhase(); totalReps+=reps;
       // GO!
       lights("y"); await new Promise(function(r){setTimeout(r,300);});
-      lights("g"); $("prompt").textContent="GREEN LIGHT — GO! 🏎️💨"; $("rpmTxt").textContent="GOOO!";
+      lights("g"); $("prompt").textContent="GREEN LIGHT — GO!"; $("rpmTxt").textContent="GOOO!";
       $("kart").classList.add("zoom"); $("dust").style.left="4%"; $("dust").style.opacity="1";
       if(window.Sona&&Sona.sfx)Sona.sfx.correct&&Sona.sfx.correct(); vroom(1);
       startRivals(); // the other racers take off — beat them to the finish!
@@ -283,7 +283,7 @@
             passed=true; cleanWords++;
             if(window.Sona&&Sona.sfx)Sona.sfx.correct&&Sona.sfx.correct();
             var kl=document.querySelector("#kart .leo"); if(kl){ kl.src="/coach/poses/leo-celebrate.png"; kl.classList.remove("cheer"); void kl.offsetWidth; kl.classList.add("cheer"); setTimeout(function(){ kl.src="/coach/leo.png"; kl.classList.remove("cheer"); }, 700); }
-            vroom(1); $("prompt").textContent="Nice one! 🏎️";
+            vroom(1); $("prompt").textContent="Nice one!";
           } else {
             if(window.Sona&&Sona.sfx)Sona.sfx.tap&&Sona.sfx.tap();
             $("prompt").textContent="Try again!";

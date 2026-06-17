@@ -23,7 +23,7 @@
     #item.fly{animation:fly .7s cubic-bezier(.5,0,.7,1) forwards;}
     @keyframes fly{0%{transform:scale(1)}30%{transform:scale(1.1) rotate(-6deg)}100%{transform:translate(40vw,46vh) scale(.2) rotate(20deg);opacity:0}}
     #phrase{margin-top:16px;font-family:"Baloo 2";font-weight:800;font-size:34px;color:var(--orange-d);}
-    #cart{position:absolute;right:16px;bottom:10px;font-size:54px;} #cartCount{position:absolute;right:14px;bottom:6px;background:var(--green);color:#fff;font-family:"Baloo 2";font-weight:800;font-size:14px;border-radius:99px;padding:2px 9px;}
+    #cart{position:absolute;right:16px;bottom:10px;width:54px;height:54px;color:var(--green-d);} #cartCount{position:absolute;right:14px;bottom:6px;background:var(--green);color:#fff;font-family:"Baloo 2";font-weight:800;font-size:14px;border-radius:99px;padding:2px 9px;}
     #leoWrap{position:absolute;left:8px;bottom:6px;width:78px;z-index:4;pointer-events:none;} #leoWrap.react{animation:lpop .55s ease;}
     #leo{width:100%;filter:drop-shadow(0 6px 8px rgba(120,80,20,.25));} @keyframes lpop{0%{transform:scale(1)}30%{transform:scale(1.15) translateY(-8px)}100%{transform:scale(1)}}
     #bottom{padding:8px 18px calc(16px + env(safe-area-inset-bottom));display:flex;flex-direction:column;align-items:center;gap:8px;background:linear-gradient(180deg,rgba(255,243,218,0),rgba(255,243,218,.7));z-index:6;}
@@ -46,14 +46,14 @@
   <div id="app">
     <div id="top">
       <button id="close" onclick="location.href='/play.html'">✕</button>
-      <span class="stat">🛒 Phrases</span>
-      <span class="stat count">🧺 <span id="count">0</span>/<span id="goal">6</span></span>
+      <span class="stat">Phrases</span>
+      <span class="stat count"><span id="count">0</span>/<span id="goal">6</span></span>
     </div>
     <div id="stage">
       <div id="leoWrap"><img id="leo" src="/coach/leo.png" alt="Leo" /></div>
       <div id="item">🐰</div>
       <div id="phrase">a rabbit</div>
-      <div id="cart">🛒</div><span id="cartCount">0</span>
+      <div id="cart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:54px;height:54px;"><circle cx="9" cy="20" r="1.6"/><circle cx="18" cy="20" r="1.6"/><path d="M2 3h3l2.2 11.2a1.5 1.5 0 0 0 1.5 1.2h8.1a1.5 1.5 0 0 0 1.5-1.2L21 7H6"/></svg></div><span id="cartCount">0</span>
     </div>
     <div id="bottom">
       <div id="prompt">Say the whole phrase to grab it!</div>
@@ -63,7 +63,7 @@
   </div>
   <div id="win">
     <img class="leoWin" src="/coach/poses/leo-celebrate.png" alt="Leo" onerror="this.onerror=null;this.src='/coach/leo.png';" />
-    <h1>Shopping done! 🛒</h1>
+    <h1>Shopping done!</h1>
     <div class="reward"><span id="winCount">0</span><small>items grabbed</small></div>
     <div class="reward" id="winUnlock" style="background:#fff7df;color:#e08600;"></div>
     <button class="btn" id="again">Play again</button><a href="/play.html">Done for now →</a>

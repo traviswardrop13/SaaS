@@ -23,11 +23,21 @@
     #hills{position:absolute;left:0;right:0;bottom:64px;height:120px;background:radial-gradient(120px 80px at 20% 100%,#bfe39a 60%,transparent 61%),radial-gradient(160px 95px at 60% 100%,#a9d985 60%,transparent 61%),radial-gradient(130px 85px at 95% 100%,#bfe39a 60%,transparent 61%);}
     #track{position:absolute;left:0;right:0;bottom:54px;height:8px;background:#6b5b73;}
     #track:before{content:"";position:absolute;left:0;right:0;bottom:-6px;height:6px;background:repeating-linear-gradient(90deg,#5a4b62 0 10px,transparent 10px 26px);}
-    #station{position:absolute;right:5%;bottom:62px;font-size:44px;}
-    #train{position:absolute;bottom:60px;left:6%;transition:left 1s cubic-bezier(.3,.7,.4,1);display:flex;align-items:flex-end;}
-    #train .loco{font-size:52px;} #train.chug .loco{animation:chug .2s linear infinite;}
+    #station{position:absolute;right:5%;bottom:62px;width:54px;height:48px;}
+    #station .roof{position:absolute;top:0;left:-4px;right:-4px;height:16px;background:#ef6f6f;border-radius:7px 7px 3px 3px;}
+    #station .wall{position:absolute;top:13px;left:3px;right:3px;bottom:0;background:#ffe1b0;border-radius:3px;box-shadow:inset 0 -6px 0 rgba(0,0,0,.06);}
+    #station .door{position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:16px;height:24px;background:#8a6038;border-radius:6px 6px 0 0;}
+    #train{position:absolute;bottom:58px;left:6%;transition:left 1s cubic-bezier(.3,.7,.4,1);}
+    #train .loco{position:relative;display:block;width:62px;height:40px;}
+    #train.chug .loco{animation:chug .2s linear infinite;}
     @keyframes chug{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
-    #smoke{position:absolute;bottom:104px;left:7%;font-size:20px;opacity:0;transition:left 1s;}
+    #train .cab{position:absolute;left:0;bottom:6px;width:30px;height:30px;background:linear-gradient(180deg,#ff8a8a,#e8484a);border-radius:8px 8px 4px 4px;}
+    #train .cab:before{content:"";position:absolute;top:6px;left:6px;width:15px;height:11px;background:#dff3ff;border-radius:3px;}
+    #train .nose{position:absolute;left:26px;bottom:6px;width:30px;height:20px;background:linear-gradient(180deg,#ffab5e,#ef7a2a);border-radius:5px 10px 4px 4px;}
+    #train .stack{position:absolute;left:47px;bottom:24px;width:9px;height:14px;background:#5b4b62;border-radius:3px;}
+    #train .wheel{position:absolute;bottom:-3px;width:16px;height:16px;border-radius:50%;background:#333;box-shadow:inset 0 0 0 4px #888;}
+    #train .wheel.a{left:3px;} #train .wheel.b{left:23px;} #train .wheel.c{left:41px;}
+    #smoke{position:absolute;bottom:100px;left:9%;width:13px;height:13px;border-radius:50%;background:rgba(255,255,255,.85);opacity:0;transition:left 1s,opacity .3s;box-shadow:7px -9px 0 -2px rgba(255,255,255,.72),14px -20px 0 -4px rgba(255,255,255,.55);}
     #leoWrap{position:absolute;left:8px;top:8px;width:74px;z-index:4;pointer-events:none;} #leoWrap.react{animation:lpop .55s ease;}
     #leo{width:100%;filter:drop-shadow(0 6px 8px rgba(20,110,120,.25));} @keyframes lpop{0%{transform:scale(1)}30%{transform:scale(1.15) translateY(-8px)}100%{transform:scale(1)}}
     #bottom{padding:8px 18px calc(16px + env(safe-area-inset-bottom));display:flex;flex-direction:column;align-items:center;gap:9px;background:linear-gradient(180deg,rgba(216,246,251,0),rgba(216,246,251,.75));z-index:6;}
@@ -52,15 +62,15 @@
   <div id="app">
     <div id="top">
       <button id="close" onclick="location.href='/play.html'">✕</button>
-      <span class="stat">🚂 Sentences</span>
-      <span class="stat count">🚉 <span id="count">0</span>/<span id="goal">5</span></span>
+      <span class="stat">Sentences</span>
+      <span class="stat count"><span id="count">0</span>/<span id="goal">5</span></span>
     </div>
     <div id="stage">
       <div id="leoWrap"><img id="leo" src="/coach/leo.png" alt="Leo" /></div>
       <div id="hills"></div><div id="track"></div>
-      <div id="station">🚉</div>
-      <span id="smoke">💨</span>
-      <div id="train"><span class="loco">🚂</span></div>
+      <div id="station"><span class="roof"></span><span class="wall"></span><span class="door"></span></div>
+      <span id="smoke"></span>
+      <div id="train"><span class="loco"><span class="cab"></span><span class="nose"></span><span class="stack"></span><span class="wheel a"></span><span class="wheel b"></span><span class="wheel c"></span></span></div>
     </div>
     <div id="bottom">
       <div id="sentCard"><b id="sentText">I see a rabbit.</b></div>
@@ -71,7 +81,7 @@
   </div>
   <div id="win">
     <img class="leoWin" src="/coach/poses/leo-celebrate.png" alt="Leo" onerror="this.onerror=null;this.src='/coach/leo.png';" />
-    <h1>All aboard — you made it! 🚉</h1>
+    <h1>All aboard — you made it!</h1>
     <div class="reward"><span id="winCount">0</span><small>sentences said</small></div>
     <div class="reward" id="winUnlock" style="background:#fff7df;color:#e08600;"></div>
     <button class="btn" id="again">Ride again</button><a href="/play.html">Done for now →</a>
@@ -132,7 +142,7 @@
       var res=await recordTurn(); var sa=await scoreUtterance(res, it.say);
       if(sa.pass){
         if(window.Sona&&Sona.sfx&&Sona.sfx.correct)Sona.sfx.correct();
-        setLeo("cheer"); leoReact(); $("prompt").textContent="Nice one! 🚂";
+        setLeo("cheer"); leoReact(); $("prompt").textContent="Nice one!";
         done2++; qi++; $("count").textContent=done2;
         var tr=$("train"); tr.classList.add("chug"); var pos=carPct(done2); tr.style.left=pos+"%"; $("smoke").style.left=(pos+1)+"%"; $("smoke").style.opacity="1";
         await new Promise(function(r){setTimeout(r,1050);}); tr.classList.remove("chug"); $("smoke").style.opacity="0";
