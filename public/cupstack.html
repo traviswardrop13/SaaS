@@ -364,7 +364,7 @@
       startGame();
     })();
     // return to this sound's ladder (Sound → ladder → games)
-    (function(){ var lad="/ladder.html?sound="+SOUND;
+    (function(){ var lad="/map.html";
       var c=document.getElementById("close"); if(c) c.onclick=function(){ location.href=lad; };
       Array.prototype.forEach.call(document.querySelectorAll('a[href="/play.html"]'),function(a){ a.setAttribute("href",lad); });
     })();

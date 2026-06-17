@@ -171,7 +171,7 @@
       $("hear").onclick=function(){ say($("sayText").textContent); }; $("again").onclick=startGame;
       if(window.Sona&&Sona.music)Sona.music.start(); startGame();
     })();
-    (function(){ var lad="/ladder.html?sound="+SOUND; var c=$("close"); if(c)c.onclick=function(){location.href=lad;}; Array.prototype.forEach.call(document.querySelectorAll('a[href="/play.html"]'),function(a){a.setAttribute("href",lad);}); })();
+    (function(){ var lad="/map.html"; var c=$("close"); if(c)c.onclick=function(){location.href=lad;}; Array.prototype.forEach.call(document.querySelectorAll('a[href="/play.html"]'),function(a){a.setAttribute("href",lad);}); })();
     window.addEventListener("pagehide",function(){ try{ if(micStream)micStream.getTracks().forEach(function(t){t.stop();}); }catch(e){} });
   
     /* art drop-in: a background swaps in when /coach/bubble/bg.png exists (zero code) */
