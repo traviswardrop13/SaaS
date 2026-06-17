@@ -6,100 +6,132 @@
   <title>Sona — Map</title>
   <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet" />
   <link rel="manifest" href="/manifest.webmanifest" />
-  <meta name="theme-color" content="#9ed8ff" />
+  <meta name="theme-color" content="#1cb0f6" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="mobile-web-app-capable" content="yes" />
   <style>
     *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;font-family:"Nunito",-apple-system,"Segoe UI",Roboto,sans-serif;}
     html,body{height:100%;}
-    body{background:linear-gradient(180deg,#9ed8ff,#bfe6ff);display:flex;align-items:center;justify-content:center;overflow:hidden;}
-    /* stage matches the art's 9:16 ratio, so % badge positions line up exactly */
-    #stage{position:relative;width:100%;max-width:430px;aspect-ratio:9/16;max-height:100vh;overflow:hidden;
-      background:linear-gradient(180deg,#a9d9fb 0%,#bfe6ff 38%,#8fd07a 60%,#7ac466 100%);}
-    #scene{position:absolute;inset:0;background-size:cover;background-position:center;}
-    #hint{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;color:#3a6b86;font-weight:800;font-size:13px;opacity:.6;padding:0 40px;line-height:1.5;}
+    body{background:#0b1437;display:flex;justify-content:center;overflow:hidden;}
+    #app{position:relative;width:100%;max-width:430px;height:100vh;overflow:hidden;background:#bfe6ff;}
 
-    /* top bar — real UI on top of the art */
-    #top{position:absolute;top:0;left:0;right:0;display:flex;align-items:center;gap:10px;padding:calc(10px + env(safe-area-inset-top)) 14px 8px;z-index:5;}
-    #back{width:40px;height:40px;border-radius:50%;border:none;background:rgba(255,255,255,.9);box-shadow:0 3px 8px rgba(20,90,150,.18);color:#3a6b86;font-size:24px;font-weight:800;cursor:pointer;line-height:1;}
-    #title{flex:1;text-align:center;}
-    #title b{display:block;font-family:"Baloo 2";font-weight:800;font-size:18px;color:#fff;text-shadow:0 2px 7px rgba(20,80,130,.4);}
-    #title span{display:block;font-family:"Baloo 2";font-weight:700;font-size:12.5px;color:#fff;opacity:.95;text-shadow:0 1px 5px rgba(20,80,130,.4);}
-    #spacer{width:40px;}
+    /* horizontal pager — one panel per level group */
+    #pager{display:flex;height:100%;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+    #pager::-webkit-scrollbar{display:none;}
+    .screen{position:relative;flex:0 0 100%;width:100%;height:100%;scroll-snap-align:center;overflow:hidden;}
+    .scene{position:absolute;inset:0;background-size:cover;background-position:center;transition:filter .3s;}
+    .hint{position:absolute;left:0;right:0;top:42%;text-align:center;color:#3a6b86;font-weight:800;font-size:13px;opacity:.6;padding:0 40px;line-height:1.5;}
 
-    /* level badges — real UI over each building */
+    /* per-panel title */
+    .titleBar{position:absolute;top:calc(10px + env(safe-area-inset-top));left:0;right:0;text-align:center;z-index:5;pointer-events:none;}
+    .titleBar b{display:block;font-family:"Baloo 2";font-weight:800;font-size:19px;color:#fff;text-shadow:0 2px 7px rgba(20,80,130,.45);}
+    .titleBar span{display:block;font-family:"Baloo 2";font-weight:700;font-size:12.5px;color:#fff;opacity:.95;text-shadow:0 1px 5px rgba(20,80,130,.45);}
+
+    /* level badges */
     .node{position:absolute;transform:translate(-50%,-50%);z-index:4;cursor:pointer;border:none;background:none;padding:0;}
-    .node .pin{display:flex;align-items:center;justify-content:center;width:54px;height:54px;border-radius:50%;background:#fff;
-      font-family:"Baloo 2";font-weight:800;font-size:23px;color:#16384f;border:4px solid var(--c,#1cb0f6);
+    .node .pin{display:flex;align-items:center;justify-content:center;width:52px;height:52px;border-radius:50%;background:#fff;
+      font-family:"Baloo 2";font-weight:800;font-size:22px;color:#16384f;border:4px solid var(--c,#1cb0f6);
       box-shadow:0 5px 0 rgba(20,90,150,.18),0 9px 15px rgba(20,90,150,.22);animation:bob 2.8s ease-in-out infinite;}
     .node:active .pin{transform:translateY(3px) scale(.94);box-shadow:0 2px 0 rgba(20,90,150,.18);}
     .node .lk{display:none;}
     @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
 
-    /* locked state — the gray + center-lock demo */
-    #stage.locked #scene{filter:grayscale(1) brightness(.82) contrast(.95);}
-    #stage.locked .node .pin{background:#e9eef3;border-color:#bcc8d4;color:#bcc8d4;animation:none;}
-    #stage.locked .node .num{display:none;} #stage.locked .node .lk{display:block;color:#9fb0bf;}
-    #lockCenter{position:absolute;top:45%;left:50%;transform:translate(-50%,-50%);z-index:6;display:none;flex-direction:column;align-items:center;}
-    #stage.locked #lockCenter{display:flex;}
-    #lockCenter .ring{width:96px;height:96px;border-radius:50%;background:rgba(255,255,255,.94);box-shadow:0 12px 28px rgba(20,60,90,.32);display:flex;align-items:center;justify-content:center;}
-    #lockCenter .cap{margin-top:12px;background:rgba(18,40,60,.66);color:#fff;font-family:"Baloo 2";font-weight:800;font-size:14px;padding:8px 16px;border-radius:99px;}
+    /* locked group */
+    .screen.locked .scene{filter:grayscale(1) brightness(.82) contrast(.95);}
+    .screen.locked .node .pin{background:#e9eef3;border-color:#bcc8d4;color:#bcc8d4;animation:none;}
+    .screen.locked .node .num{display:none;} .screen.locked .node .lk{display:block;color:#9fb0bf;}
+    .lockCenter{position:absolute;top:45%;left:50%;transform:translate(-50%,-50%);z-index:6;display:none;flex-direction:column;align-items:center;}
+    .screen.locked .lockCenter{display:flex;}
+    .lockCenter .ring{width:92px;height:92px;border-radius:50%;background:rgba(255,255,255,.94);box-shadow:0 12px 28px rgba(20,60,90,.32);display:flex;align-items:center;justify-content:center;}
+    .lockCenter .cap{margin-top:12px;background:rgba(18,40,60,.66);color:#fff;font-family:"Baloo 2";font-weight:800;font-size:13.5px;padding:8px 16px;border-radius:99px;}
 
-    /* demo control — preview the locked look */
-    #toggle{position:absolute;bottom:calc(16px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);z-index:7;
+    /* fixed chrome */
+    #back{position:absolute;top:calc(10px + env(safe-area-inset-top));left:14px;z-index:8;width:40px;height:40px;border-radius:50%;border:none;background:rgba(255,255,255,.9);box-shadow:0 3px 8px rgba(20,90,150,.18);color:#3a6b86;font-size:24px;font-weight:800;cursor:pointer;line-height:1;}
+    #dots{position:absolute;bottom:calc(64px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);z-index:8;display:flex;gap:8px;}
+    #dots i{width:9px;height:9px;border-radius:50%;background:rgba(255,255,255,.55);box-shadow:0 1px 4px rgba(0,0,0,.2);transition:transform .2s,background .2s;}
+    #dots i.on{background:#fff;transform:scale(1.3);}
+    #toggle{position:absolute;bottom:calc(16px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);z-index:8;
       border:none;border-radius:99px;background:rgba(18,40,60,.74);color:#fff;font-family:"Baloo 2";font-weight:800;font-size:13px;padding:11px 18px;cursor:pointer;box-shadow:0 5px 14px rgba(0,0,0,.25);}
   </style>
 </head>
 <body>
-  <div id="stage">
-    <div id="scene"></div>
-    <div id="hint">Drop your map art at<br/>/coach/map/academy.png</div>
-
-    <div id="top">
-      <button id="back" title="Back" onclick="location.href='/play.html'">‹</button>
-      <div id="title"><b>The Academy Grounds</b><span>Levels 5–7</span></div>
-      <div id="spacer"></div>
-    </div>
-
-    <div id="lockCenter">
-      <div class="ring"><svg viewBox="0 0 24 24" width="44" height="44" fill="none" stroke="#3a6b86" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></div>
-      <div class="cap">Keep practicing to unlock!</div>
-    </div>
-
-    <button id="toggle">Preview: Unlocked</button>
+  <div id="app">
+    <button id="back" title="Back" onclick="location.href='/play.html'">‹</button>
+    <div id="pager"></div>
+    <div id="dots"></div>
+    <button id="toggle">Preview: unlock all</button>
   </div>
 
   <script src="/sona.js"></script>
   <script>
     var $=function(id){return document.getElementById(id);};
-    // art auto-upgrade — the generated screen swaps in the moment the PNG exists
-    (function(){ var im=new Image(); im.onload=function(){ $("scene").style.backgroundImage="url(/coach/map/academy.png)"; var h=$("hint"); if(h) h.style.display="none"; }; im.src="/coach/map/academy.png"; })();
-
-    // Buildings = levels. Positions are % of the screen, tuned to the locked 5–7 art (easy to nudge).
-    // href is placeholder routing into existing games until the level model is finalized.
-    var NODES=[
-      { n:5, name:"Science Lab", x:21, y:47, c:"#27c2c2", href:"/rocket.html?sound=R" },
-      { n:6, name:"Observatory", x:66, y:31, c:"#ff9600", href:"/cupstack.html?sound=R" },
-      { n:7, name:"Art Studio",  x:78, y:57, c:"#ff5d6c", href:"/racer.html?sound=R" }
-    ];
     var lockSvg='<svg class="lk" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>';
-    NODES.forEach(function(nd,i){
-      var b=document.createElement("button"); b.className="node"; b.style.left=nd.x+"%"; b.style.top=nd.y+"%"; b.title="Level "+nd.n+" — "+nd.name;
-      b.innerHTML='<span class="pin" style="--c:'+nd.c+';animation-delay:'+(i*0.4)+'s;"><span class="num">'+nd.n+'</span>'+lockSvg+'</span>';
-      b.onclick=function(){
-        var locked=$("stage").classList.contains("locked");
-        if(window.Sona&&Sona.sfx&&Sona.sfx.tap)Sona.sfx.tap();
-        if(locked) return; // locked levels don't open
-        var pin=b.querySelector(".pin"); pin.style.transition="transform .12s"; pin.style.transform="translateY(3px) scale(.9)";
-        setTimeout(function(){ location.href=nd.href; }, 200);
-      };
-      $("stage").appendChild(b);
+
+    // Three level groups. Each shows its art (drops in from /coach/map/<art>) with the
+    // group's buildings as tappable level badges. Buildings = levels; tap → game (placeholder
+    // routing until the zoom-in level screen is built). Badge positions are % of the screen,
+    // tuned per art (easy to nudge once final art is in).
+    var GROUPS=[
+      { title:"Starter Town", range:"Levels 1–4", locked:false,
+        art:"/coach/map/levels1-4.png",
+        sky:"linear-gradient(180deg,#bfe9ff 0%,#dff4ff 46%,#8fd07a 66%,#7ac466 100%)",
+        nodes:[ {n:1,x:20,y:56,c:"#ff8a3d",href:"/rocket.html?sound=R"},
+                {n:2,x:43,y:42,c:"#2ec4d6",href:"/cupstack.html?sound=R"},
+                {n:3,x:64,y:54,c:"#9b7bff",href:"/racer.html?sound=R"},
+                {n:4,x:83,y:40,c:"#ff5d6c",href:"/match.html?sound=R"} ] },
+      { title:"The Academy Grounds", range:"Levels 5–7", locked:true,
+        art:"/coach/map/academy.png",
+        sky:"linear-gradient(180deg,#a9d9fb 0%,#bfe6ff 40%,#8fd07a 62%,#7ac466 100%)",
+        nodes:[ {n:5,x:21,y:47,c:"#27c2c2",href:"/whack.html?sound=R"},
+                {n:6,x:66,y:31,c:"#ff9600",href:"/bubble.html?sound=R"},
+                {n:7,x:78,y:57,c:"#ff5d6c",href:"/grocery.html?sound=R"} ] },
+      { title:"Champion's Arena", range:"Levels 8–10", locked:true,
+        art:"/coach/map/levels8-10.png",
+        sky:"linear-gradient(180deg,#ffd79a 0%,#ffe9c2 44%,#9ad07a 70%,#7ac466 100%)",
+        nodes:[ {n:8,x:24,y:50,c:"#ffb02e",href:"/train.html?sound=R"},
+                {n:9,x:52,y:36,c:"#1cb0f6",href:"/story.html?sound=R"},
+                {n:10,x:78,y:50,c:"#9b7bff",href:"/chat.html?sound=R"} ] },
+    ];
+
+    var pager=$("pager");
+    GROUPS.forEach(function(g,gi){
+      var s=document.createElement("section"); s.className="screen"+(g.locked?" locked":""); s.dataset.i=gi;
+      s.style.background=g.sky;
+      var scene=document.createElement("div"); scene.className="scene"; s.appendChild(scene);
+      var hint=document.createElement("div"); hint.className="hint"; hint.textContent="Drop art at "+g.art; s.appendChild(hint);
+      // art auto-upgrade — the group's map art swaps in the moment the PNG exists
+      (function(sc,art,h){ var im=new Image(); im.onload=function(){ sc.style.backgroundImage="url("+art+")"; h.style.display="none"; }; im.src=art; })(scene, g.art, hint);
+
+      var tb=document.createElement("div"); tb.className="titleBar"; tb.innerHTML='<b>'+g.title+'</b><span>'+g.range+'</span>'; s.appendChild(tb);
+
+      var lc=document.createElement("div"); lc.className="lockCenter";
+      lc.innerHTML='<div class="ring"><svg viewBox="0 0 24 24" width="42" height="42" fill="none" stroke="#3a6b86" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></div><div class="cap">Finish the last levels to unlock!</div>';
+      s.appendChild(lc);
+
+      g.nodes.forEach(function(nd,i){
+        var b=document.createElement("button"); b.className="node"; b.style.left=nd.x+"%"; b.style.top=nd.y+"%"; b.title="Level "+nd.n;
+        b.innerHTML='<span class="pin" style="--c:'+nd.c+';animation-delay:'+(i*0.35)+'s;"><span class="num">'+nd.n+'</span>'+lockSvg+'</span>';
+        b.onclick=function(){
+          if(window.Sona&&Sona.sfx&&Sona.sfx.tap)Sona.sfx.tap();
+          if(s.classList.contains("locked")){ b.querySelector(".pin").animate&&b.querySelector(".pin").animate([{transform:"translateX(-3px)"},{transform:"translateX(3px)"},{transform:"translateX(0)"}],{duration:180}); return; }
+          var pin=b.querySelector(".pin"); pin.style.transition="transform .12s"; pin.style.transform="translateY(3px) scale(.9)";
+          setTimeout(function(){ location.href=nd.href; }, 200);
+        };
+        s.appendChild(b);
+      });
+      pager.appendChild(s);
     });
 
-    // demo: preview the locked group look
+    // page dots
+    var dots=$("dots"); GROUPS.forEach(function(_,i){ var d=document.createElement("i"); if(i===0)d.className="on"; dots.appendChild(d); });
+    pager.addEventListener("scroll",function(){ var i=Math.round(pager.scrollLeft/pager.clientWidth); [].forEach.call(dots.children,function(d,k){ d.className=(k===i?"on":""); }); });
+
+    // preview toggle — flip all groups locked/unlocked so you can see them in color
+    var forceUnlock=false;
     $("toggle").onclick=function(){
-      var s=$("stage"); s.classList.toggle("locked");
-      $("toggle").textContent = s.classList.contains("locked") ? "Preview: Locked" : "Preview: Unlocked";
+      forceUnlock=!forceUnlock;
+      [].forEach.call(document.querySelectorAll(".screen"),function(s,i){ if(forceUnlock) s.classList.remove("locked"); else if(GROUPS[i].locked) s.classList.add("locked"); });
+      $("toggle").textContent=forceUnlock?"Preview: show locks":"Preview: unlock all";
       if(window.Sona&&Sona.sfx&&Sona.sfx.tap)Sona.sfx.tap();
     };
   </script>
