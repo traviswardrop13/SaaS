@@ -149,6 +149,9 @@
     })();
     (function(){ var lad="/ladder.html?sound="+SOUND; var c=$("close"); if(c)c.onclick=function(){location.href=lad;}; Array.prototype.forEach.call(document.querySelectorAll('a[href="/play.html"]'),function(a){a.setAttribute("href",lad);}); })();
     window.addEventListener("pagehide",function(){ try{ if(micStream)micStream.getTracks().forEach(function(t){t.stop();}); }catch(e){} });
-  </script>
+  
+    /* art drop-in: a background swaps in when /coach/chat/bg.png exists (zero code) */
+    (function(){var im=new Image();im.onload=function(){var s=document.getElementById("stage");if(s){s.style.backgroundImage="url(/coach/chat/bg.png)";s.style.backgroundSize="cover";s.style.backgroundPosition="center";}};im.src="/coach/chat/bg.png";})();
+</script>
 </body>
 </html>

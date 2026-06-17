@@ -338,6 +338,9 @@
       Array.prototype.forEach.call(document.querySelectorAll('a[href="/play.html"]'),function(a){ a.setAttribute("href",lad); });
     })();
     window.addEventListener("pagehide",function(){ try{ if(micStream)micStream.getTracks().forEach(function(t){t.stop();}); }catch(e){} });
-  </script>
+  
+    /* art drop-in: a background swaps in when /coach/racer/bg.png exists (zero code) */
+    (function(){var im=new Image();im.onload=function(){var s=document.getElementById("track");if(s){s.style.backgroundImage="url(/coach/racer/bg.png)";s.style.backgroundSize="cover";s.style.backgroundPosition="center";}};im.src="/coach/racer/bg.png";})();
+</script>
 </body>
 </html>
