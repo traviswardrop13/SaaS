@@ -52,6 +52,18 @@
     #nav{position:absolute;left:0;right:0;bottom:0;z-index:9;display:flex;justify-content:space-around;align-items:center;background:rgba(255,255,255,.97);box-shadow:0 -4px 16px rgba(20,90,150,.13);padding:8px 6px calc(8px + env(safe-area-inset-bottom));}
     #nav a{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;text-decoration:none;color:#9ab0c2;font-family:"Baloo 2";font-weight:800;font-size:11px;}
     #nav a.on{color:#1cb0f6;} #nav a svg{width:24px;height:24px;}
+
+    /* start-level confirm card (tap a level → Start → games) */
+    #startOv{position:fixed;inset:0;z-index:20;background:rgba(11,20,55,.55);display:none;align-items:center;justify-content:center;padding:28px;}
+    #startOv.show{display:flex;}
+    #startCard{background:#fff;border-radius:26px;padding:26px 24px 22px;max-width:330px;width:100%;text-align:center;box-shadow:0 22px 50px rgba(10,30,60,.45);animation:spop .28s ease;}
+    @keyframes spop{0%{transform:scale(.85);opacity:0}100%{transform:scale(1);opacity:1}}
+    #startNum{width:64px;height:64px;border-radius:50%;margin:0 auto 12px;display:flex;align-items:center;justify-content:center;font-family:"Baloo 2";font-weight:800;font-size:30px;color:#fff;background:#1cb0f6;box-shadow:0 6px 0 rgba(0,0,0,.12);}
+    #startCard h2{font-family:"Baloo 2";font-weight:800;font-size:24px;color:#16384f;}
+    #startCard p{color:#6b86a3;font-weight:700;margin-top:4px;font-size:14px;}
+    #startGo{margin-top:20px;width:100%;border:none;border-radius:16px;padding:15px;font-family:"Baloo 2";font-weight:800;font-size:19px;text-transform:uppercase;letter-spacing:.04em;color:#fff;background:#58cc02;box-shadow:0 5px 0 0 #46a302;cursor:pointer;}
+    #startGo:active{transform:translateY(4px);box-shadow:0 1px 0 0 #46a302;}
+    #startCancel{margin-top:12px;background:none;border:none;color:#9ab0c2;font-family:"Baloo 2";font-weight:800;font-size:14px;cursor:pointer;}
   </style>
 </head>
 <body>
@@ -63,6 +75,13 @@
       <a href="/shop.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>Shop</a>
       <a href="/progress.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></svg>Grown-ups</a>
     </nav>
+    <div id="startOv"><div id="startCard">
+      <div id="startNum">1</div>
+      <h2 id="startTitle">Level 1</h2>
+      <p id="startSub">3 games to play</p>
+      <button id="startGo">▶&nbsp; Start</button>
+      <button id="startCancel">Not now</button>
+    </div></div>
   </div>
 
   <script src="/sona.js"></script>
@@ -117,7 +136,7 @@
         b.onclick=function(){
           if(window.Sona&&Sona.sfx&&Sona.sfx.tap)Sona.sfx.tap();
           if(s.classList.contains("locked")){ b.querySelector(".pin").animate&&b.querySelector(".pin").animate([{transform:"translateX(-3px)"},{transform:"translateX(3px)"},{transform:"translateX(0)"}],{duration:180}); return; }
-          startLevel(nd);
+          showStart(nd);
         };
         s.appendChild(b);
       });
@@ -134,6 +153,19 @@
         location.href=Sona.session.url();
       } else { location.href=nd.href; }
     }
+
+    // confirm card: tap a level → show Start → begin the games
+    function showStart(nd){
+      var num=$("startNum"); num.textContent=nd.n; num.style.background=nd.c||"#1cb0f6";
+      $("startTitle").textContent="Level "+nd.n;
+      var q=(window.Sona&&Sona.levelGames)?Sona.levelGames(nd.n):((window.Sona&&Sona.LEVEL_GAMES)||[]);
+      $("startSub").textContent=(q.length||3)+" games to play";
+      $("startGo").onclick=function(){ startLevel(nd); };
+      $("startOv").classList.add("show");
+    }
+    function hideStart(){ $("startOv").classList.remove("show"); }
+    $("startCancel").onclick=hideStart;
+    $("startOv").onclick=function(e){ if(e.target===$("startOv")) hideStart(); };
 
     // page dots
     var dots=$("dots"); GROUPS.forEach(function(_,i){ var d=document.createElement("i"); if(i===0)d.className="on"; dots.appendChild(d); });
