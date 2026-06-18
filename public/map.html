@@ -45,18 +45,7 @@
     .lockCenter .ring{width:92px;height:92px;border-radius:50%;background:rgba(255,255,255,.94);box-shadow:0 12px 28px rgba(20,60,90,.32);display:flex;align-items:center;justify-content:center;}
     .lockCenter .cap{margin-top:12px;background:rgba(18,40,60,.66);color:#fff;font-family:"Baloo 2";font-weight:800;font-size:13.5px;padding:8px 16px;border-radius:99px;}
 
-    /* zoom-into-level */
-    .screen.zoomed .scene{transform:scale(2.5);}
-    .screen.zoomed .node,.screen.zoomed .titleBar{opacity:0;pointer-events:none;transition:opacity .25s;}
-    #zoomUI{position:absolute;inset:0;z-index:9;display:none;flex-direction:column;justify-content:space-between;align-items:center;pointer-events:none;}
-    #zoomUI.show{display:flex;}
-    #zoomUI .lvl{margin-top:calc(66px + env(safe-area-inset-top));background:rgba(18,40,60,.7);color:#fff;font-family:"Baloo 2";font-weight:800;font-size:15px;letter-spacing:.07em;text-transform:uppercase;padding:8px 20px;border-radius:99px;}
-    #zoomUI .playWrap{align-self:stretch;padding:40px 24px calc(34px + env(safe-area-inset-bottom));background:linear-gradient(180deg,rgba(11,20,55,0),rgba(11,20,55,.5));pointer-events:auto;}
-    #playBtn{width:100%;max-width:340px;margin:0 auto;display:block;border:none;border-radius:18px;padding:16px;font-family:"Baloo 2";font-weight:800;font-size:19px;text-transform:uppercase;letter-spacing:.04em;color:#fff;background:#58cc02;box-shadow:0 6px 0 0 #46a302;cursor:pointer;}
-    #playBtn:active{transform:translateY(4px);box-shadow:0 2px 0 0 #46a302;}
-
     /* fixed chrome */
-    #back{position:absolute;top:calc(10px + env(safe-area-inset-top));left:14px;z-index:10;width:40px;height:40px;border-radius:50%;border:none;background:rgba(255,255,255,.9);box-shadow:0 3px 8px rgba(20,90,150,.18);color:#3a6b86;font-size:24px;font-weight:800;cursor:pointer;line-height:1;display:none;align-items:center;justify-content:center;}
     #dots{position:absolute;bottom:calc(80px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);z-index:8;display:flex;gap:8px;}
     #dots i{width:9px;height:9px;border-radius:50%;background:rgba(255,255,255,.55);box-shadow:0 1px 4px rgba(0,0,0,.2);transition:transform .2s,background .2s;}
     #dots i.on{background:#fff;transform:scale(1.3);}
@@ -67,9 +56,7 @@
 </head>
 <body>
   <div id="app">
-    <button id="back" title="Back" onclick="location.href='/play.html'">‹</button>
     <div id="pager"></div>
-    <div id="zoomUI"><div class="lvl" id="zoomLvl">Level 1</div><div class="playWrap"><button id="playBtn">▶&nbsp; Play</button></div></div>
     <div id="dots"></div>
     <nav id="nav">
       <a class="on" href="/map.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2Z"/><path d="M9 4v14M15 6v14"/></svg>Map</a>
@@ -130,43 +117,23 @@
         b.onclick=function(){
           if(window.Sona&&Sona.sfx&&Sona.sfx.tap)Sona.sfx.tap();
           if(s.classList.contains("locked")){ b.querySelector(".pin").animate&&b.querySelector(".pin").animate([{transform:"translateX(-3px)"},{transform:"translateX(3px)"},{transform:"translateX(0)"}],{duration:180}); return; }
-          enterZoom(s, scene, nd);
+          startLevel(nd);
         };
         s.appendChild(b);
       });
       pager.appendChild(s);
     });
 
-    // zoom into a building → show Play → enter the game (back zooms out)
-    var zoomedScreen=null;
-    function enterZoom(screen, scene, nd){
-      scene.style.transformOrigin=nd.x+"% "+nd.y+"%";
-      screen.classList.add("zoomed"); zoomedScreen=screen;
-      $("zoomLvl").textContent="Level "+nd.n;
-      // a level = a playlist of games. Tap Play → start the session and open game 1.
+    // tap a level → go straight into its playlist of games (no zoom step)
+    function startLevel(nd){
+      if(window.Sona&&Sona.sfx&&Sona.sfx.correct)Sona.sfx.correct();
       var queue=(nd.queue&&nd.queue.length)?nd.queue:((window.Sona&&Sona.LEVEL_GAMES)||null);
-      var qlen=(queue&&queue.length)||5;
-      $("playBtn").innerHTML="▶&nbsp; Start · "+qlen+" games";
-      $("playBtn").onclick=function(){
-        if(window.Sona&&Sona.sfx&&Sona.sfx.correct)Sona.sfx.correct();
-        if(window.Sona&&Sona.session){
-          var snd=((window.Sona.getProfile&&Sona.getProfile().focusSounds)||[])[0]||"R";
-          Sona.session.start(nd.n, snd, queue, nd.n);
-          location.href=Sona.session.url();
-        } else { location.href=nd.href; }
-      };
-      $("zoomUI").classList.add("show");
-      $("dots").style.display="none"; $("nav").style.display="none"; $("back").style.display="flex";
-      pager.style.overflowX="hidden";
+      if(window.Sona&&Sona.session){
+        var snd=((window.Sona.getProfile&&Sona.getProfile().focusSounds)||[])[0]||"R";
+        Sona.session.start(nd.n, snd, queue, nd.n);
+        location.href=Sona.session.url();
+      } else { location.href=nd.href; }
     }
-    function exitZoom(){
-      if(!zoomedScreen)return;
-      zoomedScreen.classList.remove("zoomed"); zoomedScreen=null;
-      $("zoomUI").classList.remove("show");
-      $("dots").style.display=""; $("nav").style.display=""; $("back").style.display="none";
-      pager.style.overflowX="auto";
-    }
-    $("back").onclick=function(){ exitZoom(); };
 
     // page dots
     var dots=$("dots"); GROUPS.forEach(function(_,i){ var d=document.createElement("i"); if(i===0)d.className="on"; dots.appendChild(d); });
