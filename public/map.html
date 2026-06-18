@@ -127,7 +127,7 @@
     // tap a level → go straight into its playlist of games (no zoom step)
     function startLevel(nd){
       if(window.Sona&&Sona.sfx&&Sona.sfx.correct)Sona.sfx.correct();
-      var queue=(nd.queue&&nd.queue.length)?nd.queue:((window.Sona&&Sona.LEVEL_GAMES)||null);
+      var queue=(nd.queue&&nd.queue.length)?nd.queue:((window.Sona&&Sona.levelGames)?Sona.levelGames(nd.n):((window.Sona&&Sona.LEVEL_GAMES)||null));
       if(window.Sona&&Sona.session){
         var snd=((window.Sona.getProfile&&Sona.getProfile().focusSounds)||[])[0]||"R";
         Sona.session.start(nd.n, snd, queue, nd.n);

@@ -92,15 +92,27 @@
     var speaking=false;
     function say(text){ return new Promise(function(res){ if(!text){return res();} if(speaking){return res();} speaking=true; fetch("/api/tts",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text:text,voice:profile.voiceId||""})}).then(function(r){return r.ok?r.arrayBuffer():null;}).then(function(b){ if(b) return playPCM(new Uint8Array(b)); }).catch(function(){}).finally(function(){speaking=false;res();}); }); }
 
-    var micStream=null;
-    function hearRep(maxMs){ maxMs=maxMs||4000; return new Promise(function(resolve){ var done=false,spoke=false,raf=null,src=null;
+    var micStream=null, useSpeechAce=false;
+    function norm(s){ return (s||"").toLowerCase().replace(/[^a-z]/g,""); }
+    function matchText(t,w){ t=norm(t); w=norm(w); if(!t)return false; if(t.indexOf(w)>=0||w.indexOf(t)>=0)return true; var i=0; while(i<Math.min(t.length,w.length)&&t[i]===w[i])i++; return i>=3; }
+    // record the attempt (audio for SpeechAce + transcript + voice-activity auto-stop)
+    function recordTurn(maxMs){ maxMs=maxMs||7000; return new Promise(function(resolve){
+      var done=false,chunks=[],rec=null,sr=null,transcript="",spoke=false,lastV=0,raf=null,src=null;
       $("micline").classList.add("live"); $("micText").textContent="Say it!";
-      function fin(){ if(done)return; done=true; if(raf)cancelAnimationFrame(raf); try{src&&src.disconnect();}catch(e){} $("micline").classList.remove("live"); $("micText").textContent=""; resolve(spoke); }
-      try{ if(micStream){ var ctx=getCtx(); src=ctx.createMediaStreamSource(micStream); var an=ctx.createAnalyser(); an.fftSize=512; src.connect(an); var td=new Uint8Array(an.fftSize); var t0=performance.now(),nS=0,nN=0,thr=0,v=0,lv=0;
+      function fin(){ if(done)return; done=true; try{rec&&rec.state!=="inactive"&&rec.stop();}catch(e){} try{sr&&sr.stop();}catch(e){} if(raf)cancelAnimationFrame(raf); try{src&&src.disconnect();}catch(e){} $("micline").classList.remove("live"); $("micText").textContent=""; setTimeout(function(){resolve({transcript:transcript,blob:chunks.length?new Blob(chunks,{type:(rec&&rec.mimeType)||"audio/webm"}):null,spoke:spoke});},120); }
+      try{ if(micStream&&window.MediaRecorder){ rec=new MediaRecorder(micStream); rec.ondataavailable=function(e){if(e.data&&e.data.size)chunks.push(e.data);}; rec.start(); } }catch(e){}
+      try{ var SR=window.SpeechRecognition||window.webkitSpeechRecognition; if(SR){ sr=new SR(); sr.lang="en-US"; sr.interimResults=false; sr.maxAlternatives=3; sr.onresult=function(ev){for(var i=0;i<ev.results.length;i++)for(var k=0;k<ev.results[i].length;k++)transcript+=" "+ev.results[i][k].transcript; fin();}; sr.onerror=function(){}; sr.start(); } }catch(e){}
+      try{ if(micStream){ var ctx=getCtx(); src=ctx.createMediaStreamSource(micStream); var an=ctx.createAnalyser(); an.fftSize=512; src.connect(an); var td=new Uint8Array(an.fftSize); var t0=performance.now(),nS=0,nN=0,thr=0,vms=0,lt=0;
         (function tick(){ if(done)return; an.getByteTimeDomainData(td); var sum=0; for(var i=0;i<td.length;i++){var d=(td[i]-128)/128;sum+=d*d;} var rms=Math.sqrt(sum/td.length),now=performance.now();
-          if(now-t0<300){nS+=rms;nN++;} else { if(!thr)thr=Math.min(0.1,Math.max(0.014,(nS/Math.max(1,nN))*2.6)); if(rms>thr){v++;lv=now;if(v>=2)spoke=true;}else if(rms<thr*0.7)v=0; if(spoke&&now-lv>=800){fin();return;} }
+          if(now-t0<450){nS+=rms;nN++;lt=now;} else { if(!thr)thr=Math.max(0.05,(nS/Math.max(1,nN))*3.2); var dt=now-lt;lt=now; if(rms>thr){vms+=dt;lastV=now;if(vms>=250)spoke=true;}else if(rms<thr*0.65)vms=Math.max(0,vms-dt*0.5); if(spoke&&now-lastV>=800){fin();return;} }
           raf=requestAnimationFrame(tick); })(); } }catch(e){}
       setTimeout(fin,maxMs); }); }
+    // strict word scoring: SpeechAce "great" = a clean rep; wrong word/silence → no pop
+    async function scoreWord(word,res){
+      if(useSpeechAce && res.blob){ try{ var fd=new FormData(); fd.append("audio",new File([res.blob],"a.webm",{type:res.blob.type||"audio/webm"})); fd.append("text",word.w); fd.append("targetSound",SOUND); fd.append("userId","child"); fd.append("mode","full"); var r=await fetch("/api/score",{method:"POST",body:fd}); var j=await r.json(); if(j&&j.ok&&j.rating) return j.rating==="great"; }catch(e){} }
+      if(res.transcript) return matchText(res.transcript,word.w);
+      return false;
+    }
 
     /* game */
     var score=0, busy=false, target=null, slots=[];
@@ -109,16 +121,24 @@
     async function round(){
       if(score>=GOAL) return finishGame();
       target=pick(POOL);
-      // a few critters pop up for life; the kid pops the one Leo names by SAYING it
+      // a few critters pop up; the kid pops the one Leo names by SAYING it correctly
       var others=shuffle(POOL.filter(function(w){return w.w!==target.w;}));
       var show=shuffle([target].concat(others.slice(0,3))).slice(0,Math.min(4,POOL.length));
       var holes=shuffle([0,1,2,3,4,5]).slice(0,show.length);
       slots.forEach(function(cr){ cr.className="critter"; cr.dataset.word=""; cr.onclick=null; });
       show.forEach(function(w,k){ var cr=slots[holes[k]]; cr.dataset.word=w.w; cr.querySelector(".e").innerHTML=(window.Sona&&Sona.pic?Sona.pic(w.w,w.e,38):w.e); cr.querySelector(".w").textContent=w.w; setTimeout(function(){cr.classList.add("up");}, 90*k); });
+      attempt();
+    }
+    async function attempt(){
       $("prompt").textContent="Say “"+target.w+"” to pop it!";
       setLeo("listen");
       await say(target.w);            // Leo models the word
-      await hearRep();                // kid says it — auto-listen, no tapping
+      var res=await recordTurn(); var ok=await scoreWord(target,res);
+      if(!ok){
+        if(window.Sona&&Sona.sfx)Sona.sfx.tap&&Sona.sfx.tap();
+        setLeo("idle"); $("prompt").textContent="Not quite — try again!"; await say(target.w);
+        setTimeout(attempt, 350); return;   // same word again
+      }
       var tcr=null; slots.forEach(function(cr){ if(cr.dataset.word===target.w) tcr=cr; });
       if(tcr) tcr.classList.add("right");
       if(window.Sona){ Sona.sfx&&Sona.sfx.correct&&Sona.sfx.correct(); Sona.pop&&Sona.pop("⭐",{color:"#46a302",y:window.innerHeight*0.4}); }
@@ -126,20 +146,6 @@
       score++; $("score").textContent=score; $("prompt").textContent="Pop!";
       setTimeout(function(){ if(tcr){ tcr.classList.remove("right"); tcr.classList.add("bop"); } slots.forEach(function(s){ if(s!==tcr) s.classList.remove("up"); }); }, 120);
       setTimeout(function(){ setLeo("idle"); round(); }, 750);
-    }
-
-    async function tap(cr, w){
-      if(busy) return;
-      if(w.w!==target.w){ $("prompt").textContent="That's "+w.w+" — find "+target.w+"!"; if(window.Sona&&Sona.sfx)Sona.sfx.tap&&Sona.sfx.tap(); return; }
-      busy=true; cr.classList.add("right");
-      await hearRep();  // say it to pop (rep) — always proceeds
-      cr.classList.remove("right"); cr.classList.add("bop");
-      if(window.Sona){ Sona.sfx&&Sona.sfx.correct&&Sona.sfx.correct(); Sona.pop&&Sona.pop("⭐",{color:"#46a302",y:window.innerHeight*0.4}); }
-      setLeo("cheer"); leoReact();
-      score++; $("score").textContent=score; $("prompt").textContent="Pop!";
-      // lower the others
-      slots.forEach(function(s){ if(s!==cr) s.classList.remove("up"); });
-      setTimeout(function(){ setLeo("idle"); round(); }, 600);
     }
 
     function finishGame(){
@@ -162,6 +168,7 @@
     $("hear").onclick=function(){ if(target) say(target.w); };
 
     (async function(){
+      try{ var r=await fetch("/api/score"); var j=await r.json(); useSpeechAce=!!(j&&j.hasKey); }catch(e){ useSpeechAce=false; }
       try{ if(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia) micStream=await navigator.mediaDevices.getUserMedia({audio:true}); }catch(e){ micStream=null; }
       $("again").onclick=startGame;
       startGame();

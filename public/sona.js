@@ -370,6 +370,19 @@
   // flies farther, races get longer, more bubbles to pop…). Add new games over time
   // by appending here (or give a map node its own `queue`).
   const LEVEL_GAMES = ["rocket.html", "bubble.html", "racer.html", "grocery.html", "train.html"];
+  // ── rotating game deck ──
+  // All ten games, ordered so each level mixes complexity bands (warm-up · word ·
+  // connected speech). Each level deals GAMES_PER_LEVEL games from the deck, so a
+  // given game doesn't reappear for ~4 levels; and since difficulty = the level
+  // number, each time a game comes back around it's the harder version.
+  const GAME_DECK = ["rocket.html", "racer.html", "grocery.html", "bubble.html", "cupstack.html", "train.html", "whack.html", "story.html", "match.html", "chat.html"];
+  const GAMES_PER_LEVEL = 3;
+  function levelGames(level) {
+    level = level || 1;
+    const start = ((level - 1) * GAMES_PER_LEVEL) % GAME_DECK.length, out = [];
+    for (let i = 0; i < GAMES_PER_LEVEL; i++) out.push(GAME_DECK[(start + i) % GAME_DECK.length]);
+    return out;
+  }
   const SESKEY = "sona.session.v1";
   const session = {
     start(level, sound, queue, diffLevel) {
@@ -437,5 +450,5 @@
     return true;
   }
 
-  global.Sona = { pic, ALL_SOUNDS, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, HOUSE_PALETTE, WORDS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, getProfile, saveProfile, getProgress, recordSession, resetProgress, stageOf, completeStage, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, gated, restore, saveRecording, listRecordings, sfx, music, confetti, pop, LEVEL_GAMES, session, diff, markLevelDone, levelDone, sessionButtons };
+  global.Sona = { pic, ALL_SOUNDS, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, HOUSE_PALETTE, WORDS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, getProfile, saveProfile, getProgress, recordSession, resetProgress, stageOf, completeStage, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, gated, restore, saveRecording, listRecordings, sfx, music, confetti, pop, LEVEL_GAMES, GAME_DECK, GAMES_PER_LEVEL, levelGames, session, diff, markLevelDone, levelDone, sessionButtons };
 })(window);

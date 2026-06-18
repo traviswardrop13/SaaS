@@ -113,29 +113,32 @@
       var ow=$("opts"); ow.innerHTML=""; c.options.forEach(function(o){ var el=document.createElement("div"); el.className="opt"; el.innerHTML='<span class="e">'+((window.Sona&&Sona.pic)?Sona.pic(o.w,o.e,42):(o.e||"⭐"))+'</span><span class="w">'+o.w+'</span>'; el.dataset.w=o.w; ow.appendChild(el); }); }
     function chooseChip(word){ var hit=null; Array.prototype.forEach.call($("opts").children,function(el){ if(norm(el.dataset.w)===norm(word)) { el.classList.add("chosen"); hit=el; } }); return hit; }
     async function ask(){ var c=CHATS[ci%CHATS.length]; setLeo("idle"); $("prompt").textContent="Listen to Leo…"; await say(c.q); $("prompt").textContent="Tap the mic and tell Leo your pick!"; $("micBtn").onclick=turn; }
+    var hasSR=!!(window.SpeechRecognition||window.webkitSpeechRecognition);
     async function turn(){
       if(busy) return; busy=true; $("micBtn").onclick=null; setLeo("listen");
       var c=CHATS[ci%CHATS.length];
       var res=await listen();
-      if(res.spoke){
-        // figure out which option they picked (transcript match), else default to first
-        var pick=c.options[0].w;
-        if(res.transcript){ for(var i=0;i<c.options.length;i++){ if(norm(res.transcript).indexOf(norm(c.options[i].w))>=0){ pick=c.options[i].w; break; } } }
-        chooseChip(pick);
-        if(window.Sona&&Sona.sfx&&Sona.sfx.correct)Sona.sfx.correct();
-        setLeo("cheer"); leoReact();
-        var reply=REPLIES[answered%REPLIES.length].replace(/\{w\}/g,pick);
-        $("qText").textContent=reply; $("prompt").textContent="Nice one!";
-        answered++; ci++; $("count").textContent=answered;
-        await say(reply);
-        await new Promise(function(r){setTimeout(r,400);});
-        busy=false;
-        if(answered>=GOAL) return finishGame();
-        renderChat(); ask();
-      } else {
-        setLeo("idle"); $("prompt").textContent="I didn't catch that — tell me your pick!";
-        await new Promise(function(r){setTimeout(r,500);}); busy=false; $("micBtn").onclick=turn;
+      // the child has to actually say one of the choices
+      var pick=null;
+      if(res.transcript){ for(var i=0;i<c.options.length;i++){ if(norm(res.transcript).indexOf(norm(c.options[i].w))>=0){ pick=c.options[i].w; break; } } }
+      if(!pick && !hasSR && res.spoke) pick=c.options[0].w; // no speech engine → can't tell which; accept effort
+      if(!pick){
+        if(window.Sona&&Sona.sfx)Sona.sfx.tap&&Sona.sfx.tap();
+        setLeo("idle");
+        $("prompt").textContent="Tell Leo: "+c.options.map(function(o){return o.w;}).join(" or ")+"?";
+        await new Promise(function(r){setTimeout(r,500);}); busy=false; $("micBtn").onclick=turn; return;
       }
+      chooseChip(pick);
+      if(window.Sona&&Sona.sfx&&Sona.sfx.correct)Sona.sfx.correct();
+      setLeo("cheer"); leoReact();
+      var reply=REPLIES[answered%REPLIES.length].replace(/\{w\}/g,pick);
+      $("qText").textContent=reply; $("prompt").textContent="Nice one!";
+      answered++; ci++; $("count").textContent=answered;
+      await say(reply);
+      await new Promise(function(r){setTimeout(r,400);});
+      busy=false;
+      if(answered>=GOAL) return finishGame();
+      renderChat(); ask();
     }
     function finishGame(){
       var earned=18; if(window.Sona&&Sona.addCoins)Sona.addCoins(earned);
