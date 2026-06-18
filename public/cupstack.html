@@ -50,7 +50,7 @@
     #wordEmoji{font-size:40px;line-height:1;}
     #wordText{font-family:"Baloo 2";font-weight:800;font-size:34px;color:var(--blue-d);line-height:1;}
     #hear{border:none;background:none;cursor:pointer;font-size:24px;padding:4px;}
-    .mic{width:96px;height:96px;border-radius:50%;border:none;background:var(--blue);cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 0 0 var(--blue-d);transition:transform .05s;}
+    .mic{width:96px;height:96px;border-radius:50%;border:none;background:radial-gradient(circle at 50% 30%,#5cc6ff,#1cb0f6 60%,#1597d4);cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 0 0 var(--blue-d),inset 0 3px 7px rgba(255,255,255,.45);transition:transform .05s;}
     .mic:active{transform:translateY(4px);box-shadow:0 2px 0 0 var(--blue-d);}
     .mic.rec{animation:pulse 1.5s infinite;}
     .mic svg{width:42px;height:42px;fill:#fff;}
@@ -87,8 +87,8 @@
   <div id="app">
     <div id="top">
       <button id="close" onclick="location.href='/play.html'">✕</button>
-      <span class="stat cups">🥤 <span id="cupCount">0</span>/<span id="cupGoal">10</span></span>
-      <span class="stat combo" id="comboStat" style="visibility:hidden;">🔥 <span id="comboPop">x2</span></span>
+      <span class="stat cups"><span id="cupCount">0</span>/<span id="cupGoal">10</span></span>
+      <span class="stat combo" id="comboStat" style="visibility:hidden;"><span id="comboPop">x2</span></span>
     </div>
 
     <div id="stage">
@@ -100,11 +100,11 @@
     </div>
 
     <div id="bottom">
-      <div id="micState">Tap the cup and say the word!</div>
+      <div id="micState">Get ready!</div>
       <div id="wordCard">
         <span id="wordEmoji">🐰</span>
         <span id="wordText">rabbit</span>
-        <button id="hear" title="Hear it">🔊</button>
+        <button id="hear" title="Hear it"><svg viewBox="0 0 24 24" fill="none" stroke="#1597d4" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="width:24px;height:24px;display:block;"><path d="M11 5 6 9H3v6h3l5 4V5Z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/></svg></button>
       </div>
       <button class="mic" id="micBtn" title="Say it">
         <svg viewBox="0 0 24 24"><path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v6a3 3 0 0 0 3 3Z"/><path d="M6 11a6 6 0 0 0 12 0M12 18v3" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
@@ -134,12 +134,12 @@
     // hardcoded ~10 target words for ONE sound — all START with it (initial position).
     // To use your wife's assigned list, replace WORDS with [{w:"rabbit",e:"🐰"},...].
     var POOL = (window.Sona && Sona.WORDS && Sona.WORDS[SOUND]) ? Sona.WORDS[SOUND].filter(function(w){return w.i;}) : [{w:"rabbit",e:"🐰"},{w:"rocket",e:"🚀"}];
-    var GOAL = 10;
+    var DIFF=(window.Sona&&Sona.diff)?Sona.diff():1;
+    var GOAL = Math.min(20,8+DIFF*2);
     // cup colors (one unlocks on a win)
     var CUP_COLORS = ["#ff7a6e","#ffb24d","#ffd33d","#7dd470","#4cc6ff","#b08cff","#ff8fc7"];
 
-    // placeholder score thresholds — TUNE WITH RACHEL (spec: always place, prettier when cleaner)
-    var GREAT = 80, OK = 50;
+    // Strict: a cup only stacks on a clean rep (SpeechAce "great" rating). Wrong → try again.
 
     var $ = function(id){ return document.getElementById(id); };
     var pick = function(a){ return a[Math.floor(Math.random()*a.length)]; };
@@ -213,9 +213,9 @@
       });
     }
 
-    // returns a 0..100 score. Always succeeds with SOME number (never blocks a kid).
+    // Strict scoring: a rep only counts when it's actually right. Returns {score, pass}.
     async function scoreAttempt(word, res){
-      // try SpeechAce for a real 0-100
+      // SpeechAce is the real judge — "pass" means a clean rep of the sound (great rating).
       if(useSpeechAce && res.blob){
         try{
           var fd=new FormData();
@@ -223,13 +223,13 @@
           fd.append("text", word.w); fd.append("targetSound", SOUND); fd.append("userId","child"); fd.append("mode","full");
           var r=await fetch("/api/score",{method:"POST",body:fd});
           var j=await r.json();
-          if(j&&j.ok && typeof j.score==="number") return j.score;
+          if(j&&j.ok && typeof j.score==="number") return { score:j.score, pass: j.rating==="great" };
         }catch(e){}
       }
-      // fallback (no SpeechAce / error): never punish for tech. Heard the word -> great-ish; heard something -> mid; silence -> mid.
-      if(res.transcript && matchText(res.transcript, word.w)) return 88;
-      if(res.transcript) return 64;
-      return 60;
+      // No SpeechAce: judge on the transcript when we have one — say it right, or try again.
+      if(res.transcript){ var ok=matchText(res.transcript, word.w); return { score: ok?85:30, pass: ok }; }
+      // No way to score at all (scoring offline / no speech engine): don't hard-block the kid.
+      return { score:70, pass:true };
     }
 
     /* ---- game state ---- */
@@ -240,7 +240,7 @@
 
     function showWord(w){
       current=w;
-      $("wordEmoji").textContent=w.e||"⭐";
+      $("wordEmoji").innerHTML=(window.Sona&&Sona.pic)?Sona.pic(w.w,w.e,40):(w.e||"⭐");
       $("wordText").textContent=w.w;
     }
 
@@ -288,21 +288,35 @@
       var w=current;
       setLeo("listen"); // Leo leans in while the kid talks
       var res=await recordTurn($("micBtn"));
-      var score=await scoreAttempt(w, res);
-      var band = score>=GREAT?"great" : score>=OK?"ok":"low";
-      // feedback + Leo reaction + sound
-      if(band==="great"){ if(window.Sona){Sona.sfx&&Sona.sfx.correct&&Sona.sfx.correct();} setCombo(combo+1); setLeo("cheer"); leoReact(); $("micState").textContent="Perfect! 🌟"; }
-      else if(band==="ok"){ if(window.Sona){Sona.sfx&&Sona.sfx.tap&&Sona.sfx.tap();} setCombo(0); setLeo("encourage"); leoReact(); $("micState").textContent="Nice — it stacked!"; }
-      else { if(window.Sona){Sona.sfx&&Sona.sfx.tap&&Sona.sfx.tap();} setCombo(0); setLeo("encourage"); $("micState").textContent="Good try — it counts!"; }
-      dropCup(band);
-      await new Promise(function(r){ setTimeout(r,700); });
-      setLeo("idle");
-      busy=false;
-      if(placed>=GOAL){ return finishGame(); }
-      showWord(nextWord());
-      $("micBtn").onclick=attempt;
-      $("micState").textContent="Tap the cup and say the word!";
-      say(current.w); // Leo models the next word
+      var sa=await scoreAttempt(w, res);
+      if(sa.pass){
+        // Right — said cleanly, so a cup stacks.
+        if(window.Sona){Sona.sfx&&Sona.sfx.correct&&Sona.sfx.correct();}
+        setCombo(combo+1); setLeo("cheer"); leoReact();
+        $("micState").textContent="Nice one!";
+        dropCup("great");
+        await new Promise(function(r){ setTimeout(r,700); });
+        setLeo("idle");
+        busy=false;
+        if(placed>=GOAL){ return finishGame(); }
+        showWord(nextWord());
+        $("micState").textContent="Listen…";
+        await say(current.w); // Leo models the next word
+        $("micState").textContent="Your turn — say it!";
+        attempt(); // auto-listen — no tap to speak
+      } else {
+        // Wrong — strict: no cup. Same word again.
+        if(window.Sona){Sona.sfx&&Sona.sfx.tap&&Sona.sfx.tap();}
+        setCombo(0); setLeo("encourage");
+        $("micState").textContent="Try again!";
+        await new Promise(function(r){ setTimeout(r,700); });
+        setLeo("idle");
+        busy=false;
+        $("micState").textContent="Listen…";
+        await say(w.w); // model the same word again
+        $("micState").textContent="Your turn — say it!";
+        attempt(); // auto-listen — no tap to speak
+      }
     }
 
     function finishGame(){
@@ -326,6 +340,7 @@
       $("winUnlock").textContent="+"+earned+" 🪙   ·   🎉 New cup color unlocked!";
       $("winTitle").textContent = bestCombo>=4 ? "Amazing tower!" : "Great stacking!";
       $("win").classList.add("show");
+      if(window.Sona&&Sona.sessionButtons)Sona.sessionButtons($("win"));
       if(window.Sona){ Sona.confetti&&Sona.confetti(); Sona.sfx&&Sona.sfx.complete&&Sona.sfx.complete(); Sona.sfx&&Sona.sfx.coin&&Sona.sfx.coin(); }
     }
 
@@ -335,9 +350,8 @@
       $("cupCount").textContent="0"; $("cupGoal").textContent=GOAL; $("towerWrap").style.transform="scale(1)";
       setLeo("idle");
       buildQueue(); showWord(nextWord());
-      $("micBtn").onclick=attempt;
-      $("micState").textContent="Tap the cup and say the word!";
-      say(current.w);
+      $("micState").textContent="Listen…";
+      (async function(){ await say(current.w); $("micState").textContent="Your turn — say it!"; attempt(); })();
     }
 
     /* ---- boot ---- */
@@ -350,6 +364,11 @@
       $("again").onclick=startGame;
       if(window.Sona&&Sona.music) Sona.music.start();
       startGame();
+    })();
+    // return to this sound's ladder (Sound → ladder → games)
+    (function(){ var lad="/map.html";
+      var c=document.getElementById("close"); if(c) c.onclick=function(){ location.href=lad; };
+      Array.prototype.forEach.call(document.querySelectorAll('a[href="/play.html"]'),function(a){ a.setAttribute("href",lad); });
     })();
     window.addEventListener("pagehide",function(){ try{ if(micStream) micStream.getTracks().forEach(function(t){t.stop();}); }catch(e){} });
   </script>

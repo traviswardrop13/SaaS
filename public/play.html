@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <script>location.replace("/map.html");</script>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
   <title>Sona — Play</title>
@@ -24,10 +25,13 @@
     #quest .qbar{height:8px;background:#eef2f6;border-radius:99px;margin-top:5px;overflow:hidden;} #quest .qbar span{display:block;height:100%;background:var(--green);border-radius:99px;}
     #quest .qsub{color:var(--muted);font-weight:700;font-size:12px;}
 
-    .world{margin:18px 16px 2px;border-radius:22px;padding:16px 18px;color:#fff;display:flex;align-items:center;gap:14px;box-shadow:0 8px 20px rgba(60,60,90,.16);}
+    .world{margin:14px 16px;border-radius:22px;padding:16px 18px;color:#fff;display:flex;align-items:center;gap:14px;box-shadow:0 8px 20px rgba(60,60,90,.16);text-decoration:none;transition:transform .06s;}
+    .world:active{transform:translateY(2px);}
     .world.locked{filter:grayscale(.7);opacity:.7;}
     .world img{width:54px;height:54px;object-fit:contain;filter:drop-shadow(0 4px 8px rgba(0,0,0,.18));}
     .world .wt{font-family:"Baloo 2";font-weight:800;font-size:20px;} .world .ws{font-weight:700;font-size:12.5px;opacity:.92;}
+    .world .chev{margin-left:auto;font-size:24px;font-weight:800;opacity:.92;flex:0 0 auto;}
+    .pickhead{margin:16px 18px 0;font-family:"Baloo 2";font-weight:800;font-size:20px;color:var(--ink);}
 
     .wpath{position:relative;display:flex;flex-direction:column;align-items:center;gap:6px;margin-top:14px;}
     .node{position:relative;display:flex;flex-direction:column;align-items:center;gap:6px;text-decoration:none;color:inherit;}
@@ -113,48 +117,21 @@
     function chestClaimed(snd){ return GS[snd]&&GS[snd].chest&&GS[snd].chest.claimed; }
 
     var host=document.getElementById("worlds");
+    var head=document.createElement("div"); head.className="pickhead"; head.textContent="Choose a sound"; host.appendChild(head);
     sounds.forEach(function(snd, wi){
       var W=WORLDS[snd]||{name:snd+" World",c:["#1cb0f6","#1597d4"]};
-      var unlocked = (wi===0) || chestClaimed(sounds[wi-1]) || worldDone(sounds[wi-1]);
-      // banner
-      var ban=document.createElement("div"); ban.className="world"+(unlocked?"":" locked");
-      ban.style.background="linear-gradient(135deg,"+W.c[0]+","+W.c[1]+")";
-      ban.innerHTML='<img src="/coach/leo.png" alt="Leo"/><div><div class="wt">World '+(wi+1)+": "+W.name+'</div><div class="ws">'+(unlocked?("Practice your "+snd+" sound!"):("🔒 Finish World "+wi+" to unlock"))+'</div></div>';
-      host.appendChild(ban);
-      // path
-      var wp=document.createElement("div"); wp.className="wpath";
-      var nodes=GAMES.concat([{id:"chest",emoji:"🎁",label:"Prize Chest",chest:true}]);
-      var firstUndone=true;
-      nodes.forEach(function(n, idx){
-        if(idx>0){ var c=document.createElement("div"); c.className="connector"; wp.appendChild(c); }
-        var el, done, live, cls, inner, tap=null;
-        if(n.chest){
-          var ready = unlocked && worldDone(snd) && !chestClaimed(snd);
-          done = chestClaimed(snd);
-          cls = done?"node done":(ready?"node live cur":"node locked");
-          inner='<button class="disc">'+n.emoji+(done?'<span class="checkmini">⭐</span>':(ready?'':'<span class="checkmini">🔒</span>'))+'</button>'+(ready?'<span class="start">OPEN!</span>':'')+'<span class="label">'+n.label+'</span>';
-          el=document.createElement("div"); el.className=cls; el.innerHTML=inner;
-          tap=function(){ if(!ready){ if(Sona.sfx)Sona.sfx.tap&&Sona.sfx.tap(); return; }
-            if(Sona.addCoins)Sona.addCoins(50); GS[snd]=GS[snd]||{}; GS[snd].chest={claimed:true}; saveGS();
-            if(Sona.confetti)Sona.confetti(); if(Sona.sfx){Sona.sfx.complete&&Sona.sfx.complete(); Sona.sfx.coin&&Sona.sfx.coin();}
-            document.getElementById("coins").textContent=Sona.getCoins?Sona.getCoins():0;
-            el.className="node done"; el.innerHTML='<button class="disc">'+n.emoji+'<span class="checkmini">⭐</span></button><span class="label">'+n.label+'</span>'; };
-        } else if(n.soon){
-          el=document.createElement("div"); el.className="node locked";
-          el.innerHTML='<button class="disc">'+n.emoji+'</button><span class="label">'+n.label+'</span><span style="font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;">Coming soon</span>';
-        } else {
-          done = GS[snd]&&GS[snd][n.id]&&GS[snd][n.id].done;
-          live = unlocked;
-          var cur = live && !done && firstUndone; if(live && !done) firstUndone=false;
-          cls = live ? (done?"node done":("node live"+(cur?" cur":""))) : "node locked";
-          el=document.createElement(live?"a":"div"); el.className=cls; if(live) el.href=n.href+"?sound="+snd;
-          inner='<button class="disc">'+n.emoji+(done?'<span class="checkmini">⭐</span>':(live?'':'<span class="checkmini">🔒</span>'))+'</button>'+(cur?'<span class="start">START</span>':'')+'<span class="label">'+n.label+'</span>';
-          el.innerHTML=inner;
-        }
-        if(tap) el.querySelector(".disc").onclick=tap;
-        wp.appendChild(el);
-      });
-      host.appendChild(wp);
+      var unlocked = (wi===0) || worldDone(sounds[wi-1]);
+      var prevName = (WORLDS[sounds[wi-1]]||{}).name || "the last world";
+      // each sound opens its ladder (Sound → ladder → games)
+      var el=document.createElement(unlocked?"a":"div"); el.className="world"+(unlocked?"":" locked");
+      el.style.background="linear-gradient(135deg,"+W.c[0]+","+W.c[1]+")";
+      if(unlocked) el.href="/ladder.html?sound="+snd;
+      var doneAll = worldDone(snd);
+      var sub = unlocked ? (doneAll ? "All games done — great work!" : "Practice your "+snd+" sound") : ("Finish "+prevName+" to unlock");
+      el.innerHTML='<img src="/coach/leo.png" alt="Leo"/>'+
+        '<div style="flex:1;min-width:0;"><div class="wt">'+W.name+'</div><div class="ws">'+sub+'</div></div>'+
+        '<span class="chev">'+(unlocked?"›":"🔒")+'</span>';
+      host.appendChild(el);
     });
 
     if(window.Sona&&Sona.music) Sona.music.start();

@@ -34,10 +34,25 @@
       background:repeating-conic-gradient(#000 0 25%, #fff 0 50%) 0 0/14px 14px;opacity:.9;border-radius:3px;}
     #kart{position:absolute;bottom:14%;left:6%;transition:left .9s cubic-bezier(.3,.8,.4,1);display:flex;flex-direction:column;align-items:center;}
     #kart .leo{width:78px;height:78px;object-fit:contain;filter:drop-shadow(0 6px 6px rgba(0,0,0,.25));}
-    #kart .car{font-size:46px;margin-top:-12px;}
-    #kart.zoom .car{animation:shake .25s linear infinite;}
+    #kart .leo.cheer{animation:kartPop .6s ease;}
+    @keyframes kartPop{0%{transform:scale(1)}30%{transform:scale(1.2) translateY(-8px) rotate(-6deg)}60%{transform:scale(.95)}100%{transform:scale(1)}}
+    #win .leoWin{width:140px;height:140px;object-fit:contain;filter:drop-shadow(0 10px 16px rgba(20,90,160,.25));animation:kartPop .6s ease;}
+    #kart .car{margin-top:-8px;display:block;}
+    #kart .kbody{display:block;width:66px;height:26px;border-radius:13px 17px 8px 8px;position:relative;margin:0 auto;
+      background:linear-gradient(180deg,#41c0ff,#1597d4);box-shadow:0 4px 0 rgba(0,0,0,.2);}
+    #kart .kbody:before{content:"";position:absolute;top:-9px;left:18px;right:12px;height:13px;border-radius:8px 7px 0 0;background:rgba(255,255,255,.55);}
+    #kart .kbody i{position:absolute;bottom:-6px;width:16px;height:16px;border-radius:50%;background:#222;box-shadow:inset 0 0 0 4px #565b66;}
+    #kart .kbody i.l{left:6px;} #kart .kbody i.r{right:8px;}
+    #kart.zoom .kbody{animation:shake .2s linear infinite;}
     @keyframes shake{0%,100%{transform:translateX(0)}50%{transform:translateX(2px)}}
     #dust{position:absolute;bottom:16%;font-size:22px;opacity:0;}
+    #kart{z-index:4;}
+    /* rival racers — the player has to beat them to the finish */
+    .rival{position:absolute;left:6%;transition:left 1s linear;z-index:2;pointer-events:none;}
+    .rival .body{display:block;width:46px;height:19px;border-radius:11px 13px 7px 7px;position:relative;box-shadow:0 3px 0 rgba(0,0,0,.18);}
+    .rival .body:before{content:"";position:absolute;top:-7px;left:12px;right:10px;height:10px;border-radius:7px 6px 0 0;background:rgba(255,255,255,.5);}
+    .rival .body i{position:absolute;bottom:-5px;width:11px;height:11px;border-radius:50%;background:#222;box-shadow:inset 0 0 0 3px #555;}
+    .rival .body i.l{left:5px;} .rival .body i.r{right:5px;}
 
     /* traffic light */
     #signal{position:absolute;top:10px;left:50%;transform:translateX(-50%);background:#222;border-radius:14px;padding:8px 6px;display:flex;flex-direction:column;gap:6px;box-shadow:0 6px 16px rgba(0,0,0,.3);}
@@ -58,7 +73,7 @@
     #wordCard{background:#fff;border:2px solid #e5e5e5;border-bottom-width:4px;border-radius:20px;padding:10px 24px;display:flex;align-items:center;gap:14px;box-shadow:0 6px 18px rgba(20,120,200,.1);min-height:64px;}
     #wordEmoji{font-size:38px;line-height:1;} #wordText{font-family:"Baloo 2";font-weight:800;font-size:32px;color:var(--blue-d);line-height:1;}
     #hear{border:none;background:none;cursor:pointer;font-size:22px;}
-    .mic{width:96px;height:96px;border-radius:50%;border:none;background:var(--blue);cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 0 0 var(--blue-d);transition:transform .05s;}
+    .mic{width:92px;height:92px;border-radius:50%;border:none;background:radial-gradient(circle at 50% 30%,#5cc6ff,#1cb0f6 60%,#1597d4);cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 0 0 var(--blue-d),inset 0 3px 7px rgba(255,255,255,.45);transition:transform .05s;}
     .mic:active{transform:translateY(4px);box-shadow:0 2px 0 0 var(--blue-d);}
     .mic.rec{animation:pulse 1.4s infinite;}
     .mic svg{width:42px;height:42px;fill:#fff;}
@@ -83,8 +98,8 @@
   <div id="app">
     <div id="top">
       <button id="close" onclick="location.href='/play.html'">✕</button>
-      <span class="stat gate">🏁 <span id="gateNum">0</span>/<span id="gateTot">3</span></span>
-      <span class="stat light" id="speedTag">🏎️</span>
+      <span class="stat gate"><span id="gateNum">0</span>/<span id="gateTot">3</span></span>
+      <span class="stat light" id="speedTag" style="display:none;"></span>
     </div>
 
     <div id="track">
@@ -96,13 +111,15 @@
       <div id="road"></div>
       <div id="lane"></div>
       <div id="finish"></div>
+      <div class="rival" id="r1" style="bottom:30%;"><span class="body" style="background:linear-gradient(180deg,#ff9a5c,#e8643a);"><i class="l"></i><i class="r"></i></span></div>
+      <div class="rival" id="r2" style="bottom:3%;"><span class="body" style="background:linear-gradient(180deg,#9b7bff,#7a55e0);"><i class="l"></i><i class="r"></i></span></div>
       <span id="dust">💨</span>
-      <div id="kart"><img class="leo" src="/coach/leo.png" alt="Leo" /><span class="car">🏎️</span></div>
+      <div id="kart"><img class="leo" src="/coach/leo.png" alt="Leo" /><span class="car"><span class="kbody"><i class="l"></i><i class="r"></i></span></span></div>
     </div>
 
     <div id="bottom">
       <div id="prompt">Say your sound to rev up!</div>
-      <div id="wordCard"><span id="wordEmoji">🔊</span><span id="wordText">R</span><button id="hear" title="Hear it">🔊</button></div>
+      <div id="wordCard"><span id="wordEmoji"></span><span id="wordText">R</span><button id="hear" title="Hear it"><svg viewBox="0 0 24 24" fill="none" stroke="#1597d4" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="width:24px;height:24px;display:block;"><path d="M11 5 6 9H3v6h3l5 4V5Z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/></svg></button></div>
       <button class="mic" id="micBtn" title="Say it">
         <svg viewBox="0 0 24 24"><path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v6a3 3 0 0 0 3 3Z"/><path d="M6 11a6 6 0 0 0 12 0M12 18v3" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
       </button>
@@ -110,7 +127,7 @@
   </div>
 
   <div id="win">
-    <div style="font-size:64px;" aria-hidden>🏁</div>
+    <img class="leoWin" src="/coach/poses/leo-celebrate.png" alt="Leo celebrating" onerror="this.onerror=null;this.src='/coach/leo.png';" />
     <h1 id="winTitle">You won the race!</h1>
     <div class="rewards">
       <div class="reward"><span id="winReps">0</span><small>sound reps</small></div>
@@ -129,9 +146,15 @@
     if(!(window.Sona && Sona.WORDS && Sona.WORDS[SOUND])) SOUND="R";
     var POOL = (window.Sona && Sona.WORDS && Sona.WORDS[SOUND]) ? Sona.WORDS[SOUND].filter(function(w){return w.i;}) : [{w:"rabbit",e:"🐰"}];
     var SAYIT = { R:"rrr", S:"sss", L:"lll", K:"k, k, k", G:"g, g, g", F:"fff", SH:"shh", CH:"ch, ch", TH:"th, th" };
-    var REV_NEED = 5;     // say the sound 5x to launch (massed practice burst)
-    var GATES = 3;        // word gates after launch (distributed practice)
-    var GREAT = 80, OK = 50;
+    var DIFF=(window.Sona&&Sona.diff)?Sona.diff():1;
+    // a longer race in a different setting as levels climb (sunny → desert → night)
+    var SETTING = DIFF<=3 ? {body:"linear-gradient(180deg,#bfe9ff 0%,#dff4ff 55%,#cdeffd 100%)",road:"linear-gradient(180deg,#6b7280,#4b5563)"}
+      : DIFF<=6 ? {body:"linear-gradient(180deg,#ffd9a0 0%,#ffe9c6 55%,#ffcf86 100%)",road:"linear-gradient(180deg,#caa36a,#9c7740)"}
+      : {body:"linear-gradient(180deg,#26264f 0%,#3a3a74 55%,#202044 100%)",road:"linear-gradient(180deg,#3a3a4a,#23232f)"};
+    try{ document.body.style.background=SETTING.body; var _rd=document.getElementById("road"); if(_rd)_rd.style.background=SETTING.road; }catch(e){}
+    var REV_NEED = Math.min(8, 4 + Math.floor(DIFF/2));  // say the sound to launch (massed practice)
+    var GATES = Math.min(7, 2 + DIFF);                   // word gates after launch (distributed practice)
+    // Strict: a gate only opens on a clean rep (SpeechAce "great" rating). Wrong → try again.
 
     var $=function(id){return document.getElementById(id);};
     var pick=function(a){return a[Math.floor(Math.random()*a.length)];};
@@ -186,7 +209,7 @@
       });
     }
 
-    // GATE PHASE: say one word, kart boosts. Always advances (no-fail). Returns score.
+    // GATE PHASE: say one word; the kart only advances on a clean rep (strict). Returns the recording.
     function recordTurn(maxMs){
       maxMs=maxMs||8000;
       return new Promise(function(resolve){
@@ -203,7 +226,7 @@
           var t0=performance.now(),nSum=0,nN=0,thr=0,voiced=0;
           (function tick(){ if(done)return; an.getByteFrequencyData(data); [].forEach.call(bars.children,function(el,k){var v=data[2+k*3]/255;el.style.height=(8+v*30)+"px";});
             an.getByteTimeDomainData(tdv); var sum=0; for(var k=0;k<tdv.length;k++){var d=(tdv[k]-128)/128;sum+=d*d;} var rms=Math.sqrt(sum/tdv.length),now=performance.now();
-            if(now-t0<300){nSum+=rms;nN++;} else { if(!thr)thr=Math.min(0.09,Math.max(0.012,(nSum/Math.max(1,nN))*2.6)); if(rms>thr){voiced++;lastVoice=now;if(voiced>=2&&!spoke){spoke=true;$("prompt").textContent="Zoom! 🏎️";}}else if(rms<thr*0.7)voiced=0; if(spoke&&now-lastVoice>=1000){finish();return;} }
+            if(now-t0<300){nSum+=rms;nN++;} else { if(!thr)thr=Math.min(0.09,Math.max(0.012,(nSum/Math.max(1,nN))*2.6)); if(rms>thr){voiced++;lastVoice=now;if(voiced>=2&&!spoke){spoke=true;$("prompt").textContent="Zoom!";}}else if(rms<thr*0.7)voiced=0; if(spoke&&now-lastVoice>=1000){finish();return;} }
             wraf=requestAnimationFrame(tick); })();
         } }catch(e){}
         stopWave=function(){ if(wraf)cancelAnimationFrame(wraf); try{msrc&&msrc.disconnect();}catch(e){} if(bars)bars.remove(); if(ico)ico.style.display=""; };
@@ -211,17 +234,21 @@
         setTimeout(function(){ if(!done)finish(); }, maxMs);
       });
     }
+    // Strict scoring: returns {score, pass}. "pass" = a clean (great) rep of the word.
     async function scoreWord(word,res){
-      if(useSpeechAce && res.blob){ try{ var fd=new FormData(); fd.append("audio",new File([res.blob],"a.webm",{type:res.blob.type||"audio/webm"})); fd.append("text",word.w); fd.append("targetSound",SOUND); fd.append("userId","child"); fd.append("mode","full"); var r=await fetch("/api/score",{method:"POST",body:fd}); var j=await r.json(); if(j&&j.ok&&typeof j.score==="number")return j.score; }catch(e){} }
-      if(res.transcript && matchText(res.transcript,word.w)) return 88;
-      if(res.transcript) return 64; return 60;
+      if(useSpeechAce && res.blob){ try{ var fd=new FormData(); fd.append("audio",new File([res.blob],"a.webm",{type:res.blob.type||"audio/webm"})); fd.append("text",word.w); fd.append("targetSound",SOUND); fd.append("userId","child"); fd.append("mode","full"); var r=await fetch("/api/score",{method:"POST",body:fd}); var j=await r.json(); if(j&&j.ok&&typeof j.score==="number")return { score:j.score, pass:j.rating==="great" }; }catch(e){} }
+      if(res.transcript){ var ok=matchText(res.transcript,word.w); return { score: ok?85:30, pass: ok }; }
+      return { score:70, pass:true };
     }
 
     /* game */
     var progress=0, gateIdx=0, totalReps=0, cleanWords=0, queue=[];
+    var RDUR=[24,34], raceStart=0; // seconds each rival takes to finish from GO
+    function startRivals(){ raceStart=performance.now(); ["r1","r2"].forEach(function(id,i){ var el=$(id); if(!el)return; el.style.transition="left "+RDUR[i]+"s linear"; el.style.left="88%"; }); }
+    function resetRivals(){ ["r1","r2"].forEach(function(id){ var el=$(id); if(!el)return; el.style.transition="none"; el.style.left="6%"; void el.offsetWidth; }); }
     function setKart(p){ $("kart").style.left=(6+p*0.82*100/100*84)+"%"; } // 6%..~90%
     function kartTo(pct){ $("kart").style.left=pct+"%"; }
-    function showWord(w){ $("wordEmoji").style.display=""; $("wordEmoji").textContent=w.e||"⭐"; $("wordText").textContent=w.w; }
+    function showWord(w){ $("wordEmoji").style.display=""; $("wordEmoji").innerHTML=(window.Sona&&Sona.pic)?Sona.pic(w.w,w.e,38):(w.e||"⭐"); $("wordText").textContent=w.w; }
     function showSound(){ $("wordEmoji").style.display="none"; $("wordText").textContent=SOUND; }
 
     function lights(state){
@@ -238,25 +265,37 @@
       var reps=await revPhase(); totalReps+=reps;
       // GO!
       lights("y"); await new Promise(function(r){setTimeout(r,300);});
-      lights("g"); $("prompt").textContent="GREEN LIGHT — GO! 🏎️💨"; $("rpmTxt").textContent="GOOO!";
+      lights("g"); $("prompt").textContent="GREEN LIGHT — GO!"; $("rpmTxt").textContent="GOOO!";
       $("kart").classList.add("zoom"); $("dust").style.left="4%"; $("dust").style.opacity="1";
       if(window.Sona&&Sona.sfx)Sona.sfx.correct&&Sona.sfx.correct(); vroom(1);
+      startRivals(); // the other racers take off — beat them to the finish!
       $("rpmWrap").style.display="none";
       progress=0.25; kartTo(28);
       await new Promise(function(r){setTimeout(r,900);});
       $("kart").classList.remove("zoom"); $("dust").style.opacity="0";
 
-      // GATES (distributed practice)
+      // GATES (distributed practice) — strict: must say each word right to pass the gate.
       queue=shuffle(POOL); $("gateTot").textContent=GATES;
       for(gateIdx=0; gateIdx<GATES; gateIdx++){
         var w=queue[gateIdx%queue.length];
         $("gateNum").textContent=gateIdx;
-        showWord(w); $("prompt").textContent="Say the word to zoom!"; $("hear").onclick=(function(ww){return function(){say(ww.w);};})(w);
+        showWord(w); $("hear").onclick=(function(ww){return function(){say(ww.w);};})(w);
         await say(w.w);
-        var res=await recordTurn(); var sc=await scoreWord(w,res);
-        if(sc>=GREAT){ cleanWords++; if(window.Sona&&Sona.sfx)Sona.sfx.correct&&Sona.sfx.correct(); }
-        else { if(window.Sona&&Sona.sfx)Sona.sfx.tap&&Sona.sfx.tap(); }
-        vroom(sc/100);
+        var passed=false;
+        while(!passed){
+          $("prompt").textContent="Say the word to zoom!";
+          var res=await recordTurn(); var sa=await scoreWord(w,res);
+          if(sa.pass){
+            passed=true; cleanWords++;
+            if(window.Sona&&Sona.sfx)Sona.sfx.correct&&Sona.sfx.correct();
+            var kl=document.querySelector("#kart .leo"); if(kl){ kl.src="/coach/poses/leo-celebrate.png"; kl.classList.remove("cheer"); void kl.offsetWidth; kl.classList.add("cheer"); setTimeout(function(){ kl.src="/coach/leo.png"; kl.classList.remove("cheer"); }, 700); }
+            vroom(1); $("prompt").textContent="Nice one!";
+          } else {
+            if(window.Sona&&Sona.sfx)Sona.sfx.tap&&Sona.sfx.tap();
+            $("prompt").textContent="Try again!";
+            await say(w.w); // re-model the same word
+          }
+        }
         progress=0.25+ (gateIdx+1)/GATES*0.7;
         kartTo(28 + (gateIdx+1)/GATES*60);
         $("gateNum").textContent=gateIdx+1;
@@ -266,20 +305,31 @@
     }
 
     function finishGame(){
-      kartTo(90);
+      kartTo(92);
+      // placement vs the rivals (they race from GO over RDUR seconds)
+      var elapsed=(performance.now()-raceStart)/1000;
+      var beaten=RDUR.filter(function(d){return d<=elapsed;}).length;
+      var place=beaten+1;
+      ["r1","r2"].forEach(function(id,i){ var el=$(id); if(!el)return; var p=Math.min(1,elapsed/RDUR[i]); el.style.transition="none"; el.style.left=(6+p*82)+"%"; });
+      var medal=place===1?"🥇":place===2?"🥈":"🥉";
+      var ptxt=place===1?"1st place!":place===2?"2nd place!":"3rd place!";
       $("winReps").textContent=totalReps;
       $("winStars").textContent=cleanWords;
-      var earned=20 + totalReps*2 + cleanWords*3;
+      var bonus=place===1?20:place===2?10:0;
+      var earned=20 + totalReps*2 + cleanWords*3 + bonus;
       if(window.Sona&&Sona.addCoins)Sona.addCoins(earned);
       try{ var GS=JSON.parse(localStorage.getItem("sona.games.v1")||"{}"); GS[SOUND]=GS[SOUND]||{}; GS[SOUND].racer={done:true}; GS.lastPlayDay=new Date().toISOString().slice(0,10); localStorage.setItem("sona.games.v1",JSON.stringify(GS)); }catch(e){}
-      $("winUnlock").textContent="+"+earned+" 🪙";
+      $("winTitle").textContent=(place===1?"You won the race! ":"Race done! ")+medal;
+      $("winUnlock").textContent=ptxt+"  ·  +"+earned+" 🪙";
       $("win").classList.add("show");
+      if(window.Sona&&Sona.sessionButtons)Sona.sessionButtons($("win"));
       if(window.Sona){ Sona.confetti&&Sona.confetti(); Sona.sfx&&Sona.sfx.complete&&Sona.sfx.complete(); }
     }
 
     function startGame(){
       $("win").classList.remove("show"); $("rpmWrap").style.display=""; $("rpmFill").style.width="0%";
       progress=0; gateIdx=0; totalReps=0; cleanWords=0; $("gateNum").textContent="0";
+      resetRivals();
       run();
     }
 
@@ -289,7 +339,15 @@
       $("again").onclick=startGame;
       startGame();
     })();
+    // return to this sound's ladder (Sound → ladder → games)
+    (function(){ var lad="/map.html";
+      var c=document.getElementById("close"); if(c) c.onclick=function(){ location.href=lad; };
+      Array.prototype.forEach.call(document.querySelectorAll('a[href="/play.html"]'),function(a){ a.setAttribute("href",lad); });
+    })();
     window.addEventListener("pagehide",function(){ try{ if(micStream)micStream.getTracks().forEach(function(t){t.stop();}); }catch(e){} });
-  </script>
+  
+    /* art drop-in: a background swaps in when /coach/racer/bg.png exists (zero code) */
+    (function(){var im=new Image();im.onload=function(){var s=document.getElementById("track");if(s){s.style.backgroundImage="url(/coach/racer/bg.png)";s.style.backgroundSize="cover";s.style.backgroundPosition="center";}};im.src="/coach/racer/bg.png";})();
+</script>
 </body>
 </html>

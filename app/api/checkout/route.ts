@@ -2,18 +2,19 @@ import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 
 /**
- * Creates a Stripe Checkout Session for the Sona subscription ($99/mo).
+ * Creates a Stripe Checkout Session for the Sona founding preorder.
  *
- * Charging on the web (Stripe) instead of in-app keeps ~97% of revenue vs.
- * Apple's cut. Uses an inline price ($99/mo) by default so no Stripe dashboard
- * setup is required to test; set STRIPE_PRICE_ID to use a real Price object.
+ * Pre-launch: the product is "coming soon", so this is a founder preorder — an
+ * annual plan at 50% off ($39.99/yr, anchored against $79.99), charged now, with
+ * NO free trial. Charging on the web (Stripe) keeps ~97% of revenue vs Apple's
+ * cut. Set STRIPE_PRICE_ID_ANNUAL to use a real Price object instead of the
+ * inline price below.
  *
- * Needs env: STRIPE_SECRET_KEY (test or live). Optional: STRIPE_PRICE_ID.
+ * Needs env: STRIPE_SECRET_KEY (live). Optional: STRIPE_PRICE_ID_ANNUAL.
  */
 export const runtime = "nodejs";
 
-const MONTHLY_CENTS = 900; // $9 / month — the low-commitment on-ramp
-const ANNUAL_CENTS = 5900; // $59 / year (~$4.92/mo) — Founding Circle hero plan
+const ANNUAL_CENTS = 3999;  // $39.99/yr — the single founding plan (67% off the $119.99 anchor); annual-only, no trial
 
 export async function POST(req: NextRequest) {
   const key = process.env.STRIPE_SECRET_KEY;
@@ -26,22 +27,19 @@ export async function POST(req: NextRequest) {
   const stripe = new Stripe(key);
 
   let email: string | undefined;
-  let plan = "monthly";
   try {
     const b = await req.json();
     email = typeof b?.email === "string" ? b.email.trim() : undefined;
-    if (b?.plan === "annual") plan = "annual";
   } catch {
     // no body — fine; Checkout will collect the email
   }
-  const annual = plan === "annual";
 
   const origin =
     req.headers.get("origin") ||
     process.env.NEXT_PUBLIC_SITE_URL ||
     new URL(req.url).origin;
 
-  const priceId = annual ? process.env.STRIPE_PRICE_ID_ANNUAL : process.env.STRIPE_PRICE_ID;
+  const priceId = process.env.STRIPE_PRICE_ID_ANNUAL;
   const line_items: Stripe.Checkout.SessionCreateParams.LineItem[] = priceId
     ? [{ price: priceId, quantity: 1 }]
     : [
@@ -49,12 +47,12 @@ export async function POST(req: NextRequest) {
           quantity: 1,
           price_data: {
             currency: "usd",
-            unit_amount: annual ? ANNUAL_CENTS : MONTHLY_CENTS,
-            recurring: { interval: annual ? "year" : "month" },
+            unit_amount: ANNUAL_CENTS,
+            recurring: { interval: "year" },
             product_data: {
-              name: annual ? "Sona — Yearly" : "Sona — Monthly",
+              name: "Sona — Founding Member (Yearly)",
               description:
-                "Your child's at-home speech coach — friendly coaching sessions, a personalized plan, and progress parents can see.",
+                "Sona founding membership — your child's at-home speech-practice games, built with a licensed SLP. Locks in the founding price (67% off) for life.",
             },
           },
         },
@@ -69,9 +67,7 @@ export async function POST(req: NextRequest) {
       billing_address_collection: "auto",
       success_url: `${origin}/subscribe/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/subscribe?canceled=1`,
-      // 7-day free trial on BOTH plans — the marketing promises "free trial"
-      // unconditionally, so monthly must honor it too
-      subscription_data: { trial_period_days: 7 },
+      // No free trial — this is a founder preorder; the 50%-off price IS the offer.
     });
     return NextResponse.json({ ok: true, url: session.url });
   } catch (e: unknown) {

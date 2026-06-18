@@ -13,9 +13,9 @@ import Link from "next/link";
  * audio isn't stored. No medical/outcome claims.
  */
 export const metadata = {
-  title: "Sona — fun daily speech practice for kids (beta)",
+  title: "Sona — free 2-minute speech check for kids",
   description:
-    "A friendly daily speech-practice app for kids, built with a licensed speech-language pathologist. A buddy named Leo, a personalized plan, streaks, and progress parents can see. Now in beta.",
+    "Get a free 2-minute speech check for your child, built with a licensed speech-language pathologist — see which sounds are on track and which to practice, and we'll email you the report. Sona's full speech-games app is live — join as a founding member at 67% off.",
 };
 
 export default function Landing() {
@@ -60,7 +60,7 @@ function Header() {
         </nav>
         <div className="flex items-center gap-3">
           <a
-            href="/home.html"
+            href="/map.html"
             className="hidden text-sm font-bold text-gray-600 hover:text-gray-900 sm:block"
           >
             Open app
@@ -90,15 +90,16 @@ function Hero() {
         </div>
 
         <h1 className="mt-12 font-display text-4xl font-extrabold leading-[1.05] text-gray-900 sm:text-6xl">
-          Help your child find their words.
+          Which sounds does your child need?
         </h1>
         <p className="mx-auto mt-5 max-w-xl text-lg leading-relaxed text-gray-600">
-          A daily 5-minute speech-practice app — fun, gamified, and built with a
-          licensed speech-language pathologist.
+          Take a free 2-minute speech check, built with a licensed
+          speech-language pathologist. See which sounds are on track and which to
+          practice — we&apos;ll email you the report.
         </p>
         <div className="mt-8 flex justify-center">
-          <a href="/onboarding.html" className="btn-primary text-lg">
-            Start free
+          <a href="/check.html" className="btn-primary text-lg">
+            Start the free speech check
           </a>
         </div>
         <div className="mx-auto mt-7 inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-bold text-gray-600 shadow-chunky-sm">
@@ -108,7 +109,7 @@ function Hero() {
           Built by a licensed speech-language pathologist
         </div>
         <p className="mt-4 text-sm font-semibold text-gray-500">
-          7-day free trial · works in your browser · add to your home screen
+          Free · 2 minutes · the full speech-games app is live
         </p>
       </div>
     </section>
@@ -284,27 +285,29 @@ function Pricing() {
     <section id="pricing" className="bg-gray-50">
       <div className="mx-auto max-w-6xl px-5 py-20">
         <SectionHead
-          kicker="Pricing"
-          title="Sona Founding Circle"
-          sub="For the first 100 families."
+          kicker="Founding offer"
+          title="Become a founding family"
+          sub="Sona is live. Join now to lock in 67% off for life — for the first 100 founding families."
         />
         <div className="mx-auto mt-12 max-w-md">
           <PlanCard
-            name="Founding Circle"
+            name="Founding Member"
             badge="First 100 families"
             was="$119.99"
-            price="$59"
+            price="$39.99"
             priceSuffix="/yr"
-            yearly="7-day free trial · cancel anytime"
-            blurb="Everything in Sona, plus founding perks — locked in for life."
+            coupon="67% off"
+            yearly="Founding price · billed yearly · cancel anytime"
+            blurb="Lock in 67% off for life and start playing today."
             highlight
             features={[
+              "Founding access to every level as it unlocks",
+              "Founding price — 67% off, locked for life",
               "Every new feature and update as it ships",
-              "Priority support",
               "Your suggestions shape Sona for your child",
-              "Founding price locked for life",
+              "Priority support",
             ]}
-            cta="Start free trial"
+            cta="Start — 67% off"
             href="/subscribe"
           />
         </div>
@@ -322,6 +325,7 @@ function PlanCard({
   price,
   priceSuffix = "/mo",
   was,
+  coupon,
   yearly,
   blurb,
   features,
@@ -334,6 +338,7 @@ function PlanCard({
   price: string;
   priceSuffix?: string;
   was?: string;
+  coupon?: string;
   yearly: string;
   blurb: string;
   features: string[];
@@ -355,7 +360,7 @@ function PlanCard({
       ) : null}
       <h3 className="font-display text-2xl font-extrabold text-gray-900">{name}</h3>
       <p className="mt-1 text-gray-600">{blurb}</p>
-      <div className="mt-5 flex items-end gap-2">
+      <div className="mt-5 flex flex-wrap items-end gap-2">
         {was ? (
           <span className="mb-2 text-2xl font-bold text-gray-400 line-through">
             {was}
@@ -365,6 +370,11 @@ function PlanCard({
           {price}
         </span>
         <span className="mb-1.5 font-bold text-gray-500">{priceSuffix}</span>
+        {coupon ? (
+          <span className="mb-2 rounded-full bg-grass-500 px-2.5 py-1 text-xs font-extrabold uppercase tracking-wide text-white shadow-chunky-sm">
+            {coupon}
+          </span>
+        ) : null}
       </div>
       <p className="mt-1 text-sm font-bold text-brand-600">{yearly}</p>
       <Link
@@ -436,16 +446,16 @@ function FAQ() {
       a: "No. Sona is a practice and coaching tool designed with a licensed speech-language pathologist. It supports practice at home and is not a substitute for professional care.",
     },
     {
-      q: "Do I need to download anything?",
-      a: "No — Sona runs right in your browser on a computer or tablet. A free app is coming for phones.",
+      q: "When can my child start?",
+      a: "Right away. Take the free 2-minute speech check today and we'll email you the report — then join as a founding member to start playing, with new levels rolling out.",
     },
     {
-      q: "What's still cooking? (beta honesty)",
-      a: "Progress currently lives on each device (cloud accounts are coming), there are no push reminders yet, and we cover 9 speech sounds at launch with more on the way. Founding Circle members get every update as it ships — and your feedback steers what we build next.",
+      q: "Is the app ready today?",
+      a: "Yes — Sona's speech games are live now. Start with the free speech check, then join as a founding member to start playing, and you'll get every new level and feature as it ships.",
     },
     {
-      q: "Can I cancel anytime?",
-      a: "Yes. You can cancel whenever you like, and the 7-day free trial means you can try Sona before you're ever charged.",
+      q: "How does the founding price work?",
+      a: "Sona is live. Joining now locks in the founding price — 67% off for life ($39.99/yr instead of $119.99) — for the first 100 families. There's no free trial; the founding price is the deal, and you can cancel anytime.",
     },
   ];
   return (
@@ -473,16 +483,17 @@ function FinalCTA() {
     <section className="mx-auto max-w-6xl px-5 py-20">
       <div className="overflow-hidden rounded-[2rem] bg-gradient-to-br from-brand-500 to-brand-600 px-8 py-14 text-center shadow-chunky">
         <h2 className="font-display text-3xl font-extrabold text-white sm:text-4xl">
-          Become a founding family
+          Start with a free speech check
         </h2>
         <p className="mx-auto mt-3 max-w-xl text-lg text-brand-50">
-          See your child light up when Leo says hello. 7-day free trial, cancel anytime.
+          Two minutes, and you&apos;ll know exactly which sounds to focus on. We&apos;ll
+          email you the report — then you can start playing right away.
         </p>
         <a
-          href="/onboarding.html"
+          href="/check.html"
           className="mt-8 inline-block rounded-2xl bg-white px-8 py-4 font-display text-lg font-extrabold uppercase tracking-wide text-brand-600 shadow-chunky transition active:translate-y-1 active:shadow-chunky-sm"
         >
-          Start free
+          Free speech check
         </a>
       </div>
     </section>
@@ -510,9 +521,6 @@ function Footer() {
           <Link href="/support" className="hover:text-gray-800">
             Support
           </Link>
-          <a href="/home.html" className="hover:text-gray-800">
-            Open app
-          </a>
         </div>
       </div>
       <p className="mx-auto max-w-2xl px-5 pb-10 text-center text-xs text-gray-400">

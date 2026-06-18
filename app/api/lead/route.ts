@@ -15,7 +15,14 @@ import { NextRequest, NextResponse } from "next/server";
 export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
-  let body: { email?: string; child?: string; age?: string | number; practice?: string[] };
+  let body: {
+    email?: string;
+    child?: string;
+    age?: string | number;
+    practice?: string[];
+    report?: string;
+    summary?: string;
+  };
   try {
     body = await req.json();
   } catch {
@@ -29,6 +36,8 @@ export async function POST(req: NextRequest) {
 
   const child = typeof body?.child === "string" ? body.child.slice(0, 60) : "";
   const practice = Array.isArray(body?.practice) ? body!.practice!.slice(0, 12) : [];
+  const report = typeof body?.report === "string" ? body.report.slice(0, 2000) : "";
+  const summary = typeof body?.summary === "string" ? body.summary.slice(0, 600) : "";
   const lead = {
     email,
     name: child,                       // easy First Name mapping in GHL
@@ -36,6 +45,8 @@ export async function POST(req: NextRequest) {
     age: body?.age != null ? String(body.age).slice(0, 4) : "",
     practice,                          // array (for Kit etc.)
     practice_text: practice.join(", "), // flat string — easy GHL field mapping
+    summary,                           // one-line headline (good email subject/preview)
+    report,                            // full readable report body — drop into the GHL email
     source: "speech-check",
     at: new Date().toISOString(),
   };

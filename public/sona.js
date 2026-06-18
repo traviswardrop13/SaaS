@@ -349,5 +349,106 @@
     setTimeout(() => el.remove(), 950);
   }
 
-  global.Sona = { ALL_SOUNDS, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, HOUSE_PALETTE, WORDS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, getProfile, saveProfile, getProgress, recordSession, resetProgress, stageOf, completeStage, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, gated, restore, saveRecording, listRecordings, sfx, music, confetti, pop };
+  function slugify(w) { return String(w || "").toLowerCase().replace(/[^a-z0-9]+/g, ""); }
+  // word -> picture. The emoji shows instantly; /coach/items/<word>.png swaps in ONLY
+  // if it actually loads (no manifest, no broken-icon if it's missing). Drop a keyed PNG
+  // in that folder named after the word (e.g. rabbit.png) and it appears everywhere — zero code.
+  function pic(word, emoji, size) {
+    size = size || 64; var em = emoji || "⭐"; var slug = slugify(word);
+    var sp = '<span style="font-size:' + size + 'px;line-height:1;vertical-align:middle;">' + em + '</span>';
+    if (!slug) return sp;
+    return '<img src="/coach/items/' + slug + '.png" alt="" aria-hidden="true" ' +
+      'style="width:' + size + 'px;height:' + size + 'px;object-fit:contain;display:none;vertical-align:middle;" ' +
+      'onload="this.style.display=\'inline-block\';if(this.nextElementSibling)this.nextElementSibling.style.display=\'none\';" ' +
+      'onerror="this.remove();">' + sp;
+  }
+  // ── levels = a playlist of mini-games ──
+  // A level is a short playlist of games played back-to-back. Tapping a level on
+  // the map starts a "session"; finishing a game auto-advances to the next; after
+  // the last game the child lands on the level-complete screen. The SAME games are
+  // reused at every level but scale in difficulty with the level number (the rocket
+  // flies farther, races get longer, more bubbles to pop…). Add new games over time
+  // by appending here (or give a map node its own `queue`).
+  const LEVEL_GAMES = ["rocket.html", "bubble.html", "racer.html", "grocery.html", "train.html"];
+  // ── rotating game deck ──
+  // All ten games, ordered so each level mixes complexity bands (warm-up · word ·
+  // connected speech). Each level deals GAMES_PER_LEVEL games from the deck, so a
+  // given game doesn't reappear for ~4 levels; and since difficulty = the level
+  // number, each time a game comes back around it's the harder version.
+  const GAME_DECK = ["rocket.html", "racer.html", "grocery.html", "bubble.html", "cupstack.html", "train.html", "whack.html", "story.html", "match.html", "chat.html"];
+  const GAMES_PER_LEVEL = 3;
+  function levelGames(level) {
+    level = level || 1;
+    const start = ((level - 1) * GAMES_PER_LEVEL) % GAME_DECK.length, out = [];
+    for (let i = 0; i < GAMES_PER_LEVEL; i++) out.push(GAME_DECK[(start + i) % GAME_DECK.length]);
+    return out;
+  }
+  const SESKEY = "sona.session.v1";
+  const session = {
+    start(level, sound, queue, diffLevel) {
+      const s = { level: level || 1, sound: (sound || "R"), diff: (diffLevel != null ? diffLevel : (level || 1)),
+                  queue: (queue && queue.length ? queue.slice() : LEVEL_GAMES.slice()), idx: 0, ts: Date.now() };
+      save(SESKEY, s); return s;
+    },
+    get() { return load(SESKEY, null); },
+    active() { const s = load(SESKEY, null); return !!(s && s.queue && s.idx < s.queue.length); },
+    pos() { const s = load(SESKEY, null); return s ? { i: s.idx + 1, n: s.queue.length } : null; },
+    // full URL (with sound + difficulty + session flag) for the current game in the queue
+    url(s) {
+      s = s || load(SESKEY, null); if (!s || !s.queue) return null;
+      const g = s.queue[s.idx]; if (!g) return null;
+      const path = "/" + String(g).replace(/^\//, "");
+      const sep = path.indexOf("?") >= 0 ? "&" : "?";
+      return path + sep + "sound=" + encodeURIComponent(s.sound) + "&diff=" + s.diff + "&session=1";
+    },
+    // advance; returns the next game's URL, or null when the level is finished
+    next() {
+      const s = load(SESKEY, null); if (!s) return null;
+      s.idx = (s.idx || 0) + 1; save(SESKEY, s);
+      return s.idx < s.queue.length ? session.url(s) : null;
+    },
+    end() { try { localStorage.removeItem(SESKEY); } catch (e) {} }
+  };
+  // ?diff= from the URL (1 = easiest). Games read this to scale length/goals.
+  function diff() { try { const d = parseInt(new URLSearchParams(location.search).get("diff"), 10); return (d && d > 0) ? d : 1; } catch (e) { return 1; } }
+
+  // completed-level tracking (for future progress-gated locks on the map)
+  const LVLKEY = "sona.levels.v1";
+  function levelsState() { const s = load(LVLKEY, { done: {} }); s.done = s.done || {}; return s; }
+  function markLevelDone(level) { const s = levelsState(); s.done[level] = true; s.ts = Date.now(); save(LVLKEY, s); return s; }
+  function levelDone(level) { return !!levelsState().done[level]; }
+
+  // On a game's win screen, when it was launched as part of a level session, swap
+  // the standalone "play again / done for now" controls for a single "Next game →"
+  // that advances the level (or finishes it). Returns true if it took over.
+  function sessionButtons(winEl) {
+    if (!winEl || !session.active()) return false;
+    try { if (!/[?&]session=1\b/.test(location.search)) return false; } catch (e) { return false; }
+    const pos = session.pos(); const last = pos && pos.i >= pos.n;
+    // hide the per-game replay + exit controls
+    const ag = winEl.querySelector("#again"); if (ag) ag.style.display = "none";
+    Array.prototype.forEach.call(winEl.querySelectorAll("a"), function (a) {
+      const h = a.getAttribute("href") || "";
+      if (/play\.html|map\.html/.test(h) || /done for now/i.test(a.textContent || "")) a.style.display = "none";
+    });
+    if (winEl.querySelector(".sona-next")) return true; // already added
+    const chip = document.createElement("div");
+    chip.textContent = "Game " + pos.i + " of " + pos.n;
+    chip.style.cssText = "margin-top:16px;font-family:'Baloo 2',sans-serif;font-weight:800;font-size:13px;color:#8aa0b5;letter-spacing:.05em;text-transform:uppercase;";
+    const proto = winEl.querySelector(".btn");
+    const btn = document.createElement("button");
+    btn.className = (proto ? proto.className : "btn") + " sona-next";
+    if (!proto) btn.style.cssText = "margin-top:14px;border:none;border-radius:16px;padding:15px 44px;font-family:'Baloo 2',sans-serif;font-weight:800;font-size:18px;color:#fff;background:#58cc02;box-shadow:0 5px 0 0 #46a302;cursor:pointer;";
+    else btn.style.marginTop = "14px";
+    btn.textContent = last ? "Finish level →" : "Next game →";
+    btn.onclick = function () {
+      try { sfx && sfx.tap && sfx.tap(); } catch (e) {}
+      const u = session.next();
+      location.href = u || "/levelcomplete.html";
+    };
+    winEl.appendChild(chip); winEl.appendChild(btn);
+    return true;
+  }
+
+  global.Sona = { pic, ALL_SOUNDS, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, HOUSE_PALETTE, WORDS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, getProfile, saveProfile, getProgress, recordSession, resetProgress, stageOf, completeStage, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, gated, restore, saveRecording, listRecordings, sfx, music, confetti, pop, LEVEL_GAMES, GAME_DECK, GAMES_PER_LEVEL, levelGames, session, diff, markLevelDone, levelDone, sessionButtons };
 })(window);

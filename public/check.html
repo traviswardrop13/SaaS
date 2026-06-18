@@ -37,7 +37,7 @@
     #fill{height:100%;width:0;background:var(--green);border-radius:99px;transition:width .3s;}
     .bigEmoji{font-size:clamp(80px,28vw,128px);line-height:1;}
     .sayWord{font-family:"Baloo 2";font-weight:800;font-size:34px;color:var(--blue-d);}
-    .mic{width:104px;height:104px;border-radius:50%;border:none;background:var(--blue);cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 7px 0 0 var(--blue-d);margin-top:8px;}
+    .mic{width:104px;height:104px;border-radius:50%;border:none;background:radial-gradient(circle at 50% 30%,#5cc6ff,#1cb0f6 60%,#1597d4);cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 7px 0 0 var(--blue-d),inset 0 3px 7px rgba(255,255,255,.45);margin-top:8px;}
     .mic:active{transform:translateY(4px);box-shadow:0 3px 0 0 var(--blue-d);}
     .mic.rec{animation:pulse 1.4s infinite;} .mic svg{width:46px;height:46px;fill:#fff;}
     .wavebars{display:flex;gap:4px;align-items:center;height:46px;} .wavebars i{width:6px;height:8px;background:#fff;border-radius:99px;transition:height .07s;}
@@ -97,7 +97,7 @@
         <p class="lead" id="gateText">Pop in your email to see which sounds are on track and which to practice — plus a simple at-home plan from Leo.</p>
         <div class="field"><label for="email">📧 Your email</label><input id="email" type="email" inputmode="email" placeholder="you@email.com" /></div>
         <button class="btn blue" id="gateBtn">See the results →</button>
-        <p class="disclaimer" id="gateMsg">We'll send the results + tips. No spam — unsubscribe anytime.</p>
+        <p class="disclaimer" id="gateMsg">We'll email your child's report and let you know when Sona launches. No spam — unsubscribe anytime.</p>
       </div>
     </section>
 
@@ -110,12 +110,17 @@
           <p class="lead" id="sumText" style="margin:6px auto 0;"></p>
         </div>
         <div id="rlist" style="margin-top:8px;"></div>
-        <a class="btn" id="startTrial" href="/subscribe" style="margin-top:18px;">Start free week →</a>
-        <a class="skip" href="/play.html" style="display:block;text-align:center;margin-top:14px;">Just let me play first →</a>
-        <div id="installTip" style="display:none;background:#fff;border-radius:16px;padding:14px 16px;margin-top:18px;box-shadow:0 8px 22px -14px rgba(20,90,160,.4);text-align:left;">
-          <div style="font-weight:800;font-size:14px;">📲 Make Sona an app</div>
-          <div id="installText" style="color:var(--muted);font-weight:700;font-size:13px;margin-top:4px;line-height:1.4;">Add Sona to your home screen so daily practice — and reminders — are one tap away.</div>
-          <button id="installBtn" class="btn blue" style="display:none;margin-top:10px;padding:12px;font-size:14px;">Add to home screen</button>
+
+        <div style="background:#fff;border-radius:18px;padding:15px 16px;margin-top:18px;box-shadow:0 8px 22px -14px rgba(20,90,160,.4);text-align:center;">
+          <div style="font-weight:800;font-size:15px;color:var(--blue-d);">📬 Report on the way</div>
+          <div id="emailedText" style="color:var(--muted);font-weight:700;font-size:13.5px;margin-top:4px;line-height:1.45;">We just emailed this report — check your inbox in a minute.</div>
+        </div>
+
+        <div style="background:linear-gradient(180deg,#ffffff,#f1faff);border:2px solid #d9ecff;border-radius:18px;padding:18px 16px;margin-top:14px;text-align:center;">
+          <div style="font-family:'Baloo 2';font-weight:800;font-size:18px;color:var(--ink);">The full Sona is live 🎉</div>
+          <div id="comingText" style="color:var(--muted);font-weight:700;font-size:13.5px;margin-top:5px;line-height:1.45;">A whole world of speech games — say it right to power the game. Join as a founding member and start playing today.</div>
+          <a class="btn blue" href="/subscribe" style="margin-top:14px;">Start playing — $39.99/yr →</a>
+          <div style="color:var(--muted);font-weight:700;font-size:11.5px;margin-top:8px;"><b style="color:#46a302;">67% off</b> · founding price locked for life · was $119.99 · first 100 families.</div>
         </div>
       </div>
     </section>
@@ -201,6 +206,15 @@
       if(practice.length===0) txt="Great news — every sound we checked is on track or right on schedule for age "+AGE+". Keep it up with daily play!";
       else txt="A few sounds are ready to practice: "+practice.join(", ")+". That's totally normal — and exactly what daily play with Leo fixes.";
       $("sumText").textContent=txt;
+      // build a readable report for the emailed version (forwarded to GHL)
+      var onTrack=[],dev=[];
+      results.forEach(function(r){ var c=classify(r); if(c==="ok")onTrack.push(r.s); else if(c==="dev")dev.push(r.s); });
+      var rl=[(CHILD?CHILD+"'s":"Your child's")+" Speech Check — age "+AGE, "", txt, ""];
+      if(onTrack.length) rl.push("On track: "+onTrack.join(", "));
+      if(practice.length) rl.push("Ready to practice: "+practice.join(", "));
+      if(dev.length) rl.push("Still developing (typical at age "+AGE+"): "+dev.join(", "));
+      rl.push("","This is a quick check, not a diagnosis. If you have concerns, talk to a licensed speech-language pathologist.");
+      window._report=rl.join("\n"); window._summary=txt;
       // render per-sound cards
       var SOUNDNAME={R:"R",S:"S",L:"L",K:"K",G:"G",F:"F",SH:"SH",CH:"CH",TH:"TH"};
       var rlist=$("rlist"); rlist.innerHTML="";
@@ -225,10 +239,12 @@
       var email=$("email").value.trim();
       if(!/^\S+@\S+\.\S+$/.test(email)){ $("gateMsg").style.color="#e0457b"; $("gateMsg").textContent="Please enter a valid email to see the results."; return; }
       $("gateBtn").disabled=true; $("gateBtn").textContent="Loading results…";
-      try{ await fetch("/api/lead",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:email,child:CHILD,age:AGE,practice:window._practice||[]})}); }catch(e){}
-      // seed the profile so the app is tailored to what the check found
+      try{ await fetch("/api/lead",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:email,child:CHILD,age:AGE,practice:window._practice||[],report:window._report||"",summary:window._summary||""})}); }catch(e){}
+      // seed the profile so the app is tailored to what the check found (used at launch)
       try{ if(window.Sona){ var focus=(window._practice&&window._practice.length)?window._practice:WORDS.map(function(w){return w.s;}); Sona.saveProfile({ childName:CHILD, focusSounds:focus.slice(0,4), checkEmail:email }); } }catch(e){}
-      show("sResults"); setupInstall();
+      var et=$("emailedText"); if(et) et.textContent="We just emailed "+(CHILD?CHILD+"'s":"your child's")+" report to "+email+" — check your inbox in a minute.";
+      var ct=$("comingText"); if(ct) ct.textContent="A whole world of speech games for "+(CHILD||"your child")+"'s sounds — say it right to power the game. We'll email you the moment it's ready.";
+      show("sResults");
     };
 
     // "Add to home screen" — Android fires beforeinstallprompt (real button);

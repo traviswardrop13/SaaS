@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>Sona — Map</title>
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <meta name="theme-color" content="#1cb0f6" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;font-family:"Nunito",-apple-system,"Segoe UI",Roboto,sans-serif;}
+    html,body{height:100%;}
+    body{background:#0b1437;display:flex;justify-content:center;overflow:hidden;}
+    #app{position:relative;width:100%;max-width:430px;height:100vh;overflow:hidden;background:#bfe6ff;}
+
+    /* horizontal pager — one panel per level group */
+    #pager{display:flex;height:100%;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+    #pager::-webkit-scrollbar{display:none;}
+    .screen{position:relative;flex:0 0 100%;width:100%;height:100%;scroll-snap-align:center;overflow:hidden;}
+    .scene{position:absolute;inset:0;background-size:cover;background-position:center;transition:transform .55s cubic-bezier(.4,0,.2,1),filter .3s;}
+    .hint{position:absolute;left:0;right:0;top:42%;text-align:center;color:#3a6b86;font-weight:800;font-size:13px;opacity:.6;padding:0 40px;line-height:1.5;}
+
+    /* per-panel title */
+    .titleBar{position:absolute;top:calc(10px + env(safe-area-inset-top));left:0;right:0;text-align:center;z-index:5;pointer-events:none;}
+    .titleBar b{display:block;font-family:"Baloo 2";font-weight:800;font-size:19px;color:#fff;text-shadow:0 2px 7px rgba(20,80,130,.45);}
+    .titleBar span{display:block;font-family:"Baloo 2";font-weight:700;font-size:12.5px;color:#fff;opacity:.95;text-shadow:0 1px 5px rgba(20,80,130,.45);}
+
+    /* level badges */
+    .node{position:absolute;transform:translate(-50%,-50%);z-index:4;cursor:pointer;border:none;background:none;padding:0;}
+    .node .pin{display:flex;align-items:center;justify-content:center;width:52px;height:52px;border-radius:50%;background:#fff;
+      font-family:"Baloo 2";font-weight:800;font-size:22px;color:#16384f;border:4px solid var(--c,#1cb0f6);
+      box-shadow:0 5px 0 rgba(20,90,150,.18),0 9px 15px rgba(20,90,150,.22);animation:bob 2.8s ease-in-out infinite;}
+    .node:active .pin{transform:translateY(3px) scale(.94);box-shadow:0 2px 0 rgba(20,90,150,.18);}
+    .node .lk{display:none;}
+    .node.locked .pin{background:#eaf0f6;border-color:#c2ccd6;color:#aab6c2;animation:none;box-shadow:0 4px 0 rgba(20,90,150,.12);}
+    .node.locked .num{display:none;} .node.locked .lk{display:block;color:#8fa0b0;}
+    @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+
+    /* locked group */
+    .screen.locked .scene{filter:grayscale(1) brightness(.82) contrast(.95);}
+    .screen.locked .node .pin{background:#e9eef3;border-color:#bcc8d4;color:#bcc8d4;animation:none;}
+    .screen.locked .node .num{display:none;} .screen.locked .node .lk{display:block;color:#9fb0bf;}
+    .lockCenter{position:absolute;top:45%;left:50%;transform:translate(-50%,-50%);z-index:6;display:none;flex-direction:column;align-items:center;}
+    .screen.locked .lockCenter{display:flex;}
+    .lockCenter .ring{width:92px;height:92px;border-radius:50%;background:rgba(255,255,255,.94);box-shadow:0 12px 28px rgba(20,60,90,.32);display:flex;align-items:center;justify-content:center;}
+    .lockCenter .cap{margin-top:12px;background:rgba(18,40,60,.66);color:#fff;font-family:"Baloo 2";font-weight:800;font-size:13.5px;padding:8px 16px;border-radius:99px;}
+
+    /* fixed chrome */
+    #dots{position:absolute;bottom:calc(80px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);z-index:8;display:flex;gap:8px;}
+    #dots i{width:9px;height:9px;border-radius:50%;background:rgba(255,255,255,.55);box-shadow:0 1px 4px rgba(0,0,0,.2);transition:transform .2s,background .2s;}
+    #dots i.on{background:#fff;transform:scale(1.3);}
+    #nav{position:absolute;left:0;right:0;bottom:0;z-index:9;display:flex;justify-content:space-around;align-items:center;background:rgba(255,255,255,.97);box-shadow:0 -4px 16px rgba(20,90,150,.13);padding:8px 6px calc(8px + env(safe-area-inset-bottom));}
+    #nav a{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;text-decoration:none;color:#9ab0c2;font-family:"Baloo 2";font-weight:800;font-size:11px;}
+    #nav a.on{color:#1cb0f6;} #nav a svg{width:24px;height:24px;}
+
+    /* start-level confirm card (tap a level → Start → games) */
+    #startOv{position:fixed;inset:0;z-index:20;background:rgba(11,20,55,.55);display:none;align-items:center;justify-content:center;padding:28px;}
+    #startOv.show{display:flex;}
+    #startCard{background:#fff;border-radius:26px;padding:26px 24px 22px;max-width:330px;width:100%;text-align:center;box-shadow:0 22px 50px rgba(10,30,60,.45);animation:spop .28s ease;}
+    @keyframes spop{0%{transform:scale(.85);opacity:0}100%{transform:scale(1);opacity:1}}
+    #startNum{width:64px;height:64px;border-radius:50%;margin:0 auto 12px;display:flex;align-items:center;justify-content:center;font-family:"Baloo 2";font-weight:800;font-size:30px;color:#fff;background:#1cb0f6;box-shadow:0 6px 0 rgba(0,0,0,.12);}
+    #startCard h2{font-family:"Baloo 2";font-weight:800;font-size:24px;color:#16384f;}
+    #startCard p{color:#6b86a3;font-weight:700;margin-top:4px;font-size:14px;}
+    #startGo{margin-top:20px;width:100%;border:none;border-radius:16px;padding:15px;font-family:"Baloo 2";font-weight:800;font-size:19px;text-transform:uppercase;letter-spacing:.04em;color:#fff;background:#58cc02;box-shadow:0 5px 0 0 #46a302;cursor:pointer;}
+    #startGo:active{transform:translateY(4px);box-shadow:0 1px 0 0 #46a302;}
+    #startCancel{margin-top:12px;background:none;border:none;color:#9ab0c2;font-family:"Baloo 2";font-weight:800;font-size:14px;cursor:pointer;}
+  </style>
+</head>
+<body>
+  <div id="app">
+    <div id="pager"></div>
+    <div id="dots"></div>
+    <nav id="nav">
+      <a class="on" href="/map.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2Z"/><path d="M9 4v14M15 6v14"/></svg>Map</a>
+      <a href="/shop.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>Shop</a>
+      <a href="/progress.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></svg>Grown-ups</a>
+    </nav>
+    <div id="startOv"><div id="startCard">
+      <div id="startNum">1</div>
+      <h2 id="startTitle">Level 1</h2>
+      <p id="startSub">3 games to play</p>
+      <button id="startGo">▶&nbsp; Start</button>
+      <button id="startCancel">Not now</button>
+    </div></div>
+  </div>
+
+  <script src="/sona.js"></script>
+  <script>
+    var $=function(id){return document.getElementById(id);};
+    var lockSvg='<svg class="lk" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>';
+    var UNLOCKED_THRU = 1; // levels above this show a lock for now (bump as you release more)
+
+    // Three level groups. Each shows its art (drops in from /coach/map/<art>) with the
+    // group's buildings as tappable level badges. Buildings = levels; tap → game (placeholder
+    // routing until the zoom-in level screen is built). Badge positions are % of the screen,
+    // tuned per art (easy to nudge once final art is in).
+    var GROUPS=[
+      { title:"Starter Town", range:"Levels 1–4", locked:false,
+        art:"/coach/map/levels1-4.png",
+        sky:"linear-gradient(180deg,#bfe9ff 0%,#dff4ff 46%,#8fd07a 66%,#7ac466 100%)",
+        nodes:[ {n:1,x:44,y:86,c:"#ff8a3d",href:"/rocket.html?sound=R"},
+                {n:2,x:28,y:68,c:"#2ec4d6",href:"/cupstack.html?sound=R"},
+                {n:3,x:59,y:52,c:"#9b7bff",href:"/racer.html?sound=R"},
+                {n:4,x:48,y:34,c:"#ff5d6c",href:"/match.html?sound=R"} ] },
+      { title:"The Academy Grounds", range:"Levels 5–7", locked:false,
+        art:"/coach/map/academy.png",
+        sky:"linear-gradient(180deg,#a9d9fb 0%,#bfe6ff 40%,#8fd07a 62%,#7ac466 100%)",
+        nodes:[ {n:5,x:56,y:80,c:"#ff5d6c",href:"/whack.html?sound=R"},
+                {n:6,x:36,y:63,c:"#27c2c2",href:"/bubble.html?sound=R"},
+                {n:7,x:54,y:45,c:"#ff9600",href:"/grocery.html?sound=R"} ] },
+      { title:"Champion's Arena", range:"Levels 8–10", locked:false,
+        art:"/coach/map/levels8-10.png",
+        sky:"linear-gradient(180deg,#ffd79a 0%,#ffe9c2 44%,#9ad07a 70%,#7ac466 100%)",
+        nodes:[ {n:8,x:52,y:80,c:"#ffb02e",href:"/train.html?sound=R"},
+                {n:9,x:38,y:62,c:"#e0457b",href:"/story.html?sound=R"},
+                {n:10,x:52,y:47,c:"#1cb0f6",href:"/chat.html?sound=R"} ] },
+    ];
+
+    var pager=$("pager");
+    GROUPS.forEach(function(g,gi){
+      var s=document.createElement("section"); s.className="screen"+(g.locked?" locked":""); s.dataset.i=gi;
+      s.style.background=g.sky;
+      var scene=document.createElement("div"); scene.className="scene"; s.appendChild(scene);
+      var hint=document.createElement("div"); hint.className="hint"; hint.textContent="Drop art at "+g.art; s.appendChild(hint);
+      // art auto-upgrade — the group's map art swaps in the moment the PNG exists
+      (function(sc,art,h){ var im=new Image(); im.onload=function(){ sc.style.backgroundImage="url("+art+")"; h.style.display="none"; }; im.src=art; })(scene, g.art, hint);
+
+      var tb=document.createElement("div"); tb.className="titleBar"; tb.innerHTML='<b>'+g.title+'</b><span>'+g.range+'</span>'; s.appendChild(tb);
+
+      var lc=document.createElement("div"); lc.className="lockCenter";
+      lc.innerHTML='<div class="ring"><svg viewBox="0 0 24 24" width="42" height="42" fill="none" stroke="#3a6b86" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></div><div class="cap">Finish the last levels to unlock!</div>';
+      s.appendChild(lc);
+
+      g.nodes.forEach(function(nd,i){
+        var locked = nd.n > UNLOCKED_THRU; // only level 1 open for now
+        var b=document.createElement("button"); b.className="node"+(locked?" locked":""); b.style.left=nd.x+"%"; b.style.top=nd.y+"%"; b.title="Level "+nd.n+(locked?" — locked":"");
+        b.innerHTML='<span class="pin" style="--c:'+nd.c+';animation-delay:'+(i*0.35)+'s;"><span class="num">'+nd.n+'</span>'+lockSvg+'</span>';
+        b.onclick=function(){
+          if(window.Sona&&Sona.sfx&&Sona.sfx.tap)Sona.sfx.tap();
+          if(locked || s.classList.contains("locked")){ var p=b.querySelector(".pin"); p.animate&&p.animate([{transform:"translateX(-3px)"},{transform:"translateX(3px)"},{transform:"translateX(0)"}],{duration:180}); return; }
+          showStart(nd);
+        };
+        s.appendChild(b);
+      });
+      pager.appendChild(s);
+    });
+
+    // tap a level → go straight into its playlist of games (no zoom step)
+    function startLevel(nd){
+      if(window.Sona&&Sona.sfx&&Sona.sfx.correct)Sona.sfx.correct();
+      var queue=(nd.queue&&nd.queue.length)?nd.queue:((window.Sona&&Sona.levelGames)?Sona.levelGames(nd.n):((window.Sona&&Sona.LEVEL_GAMES)||null));
+      if(window.Sona&&Sona.session){
+        var snd=((window.Sona.getProfile&&Sona.getProfile().focusSounds)||[])[0]||"R";
+        Sona.session.start(nd.n, snd, queue, nd.n);
+        location.href=Sona.session.url();
+      } else { location.href=nd.href; }
+    }
+
+    // confirm card: tap a level → show Start → begin the games
+    function showStart(nd){
+      var num=$("startNum"); num.textContent=nd.n; num.style.background=nd.c||"#1cb0f6";
+      $("startTitle").textContent="Level "+nd.n;
+      var q=(window.Sona&&Sona.levelGames)?Sona.levelGames(nd.n):((window.Sona&&Sona.LEVEL_GAMES)||[]);
+      $("startSub").textContent=(q.length||3)+" games to play";
+      $("startGo").onclick=function(){ startLevel(nd); };
+      $("startOv").classList.add("show");
+    }
+    function hideStart(){ $("startOv").classList.remove("show"); }
+    $("startCancel").onclick=hideStart;
+    $("startOv").onclick=function(e){ if(e.target===$("startOv")) hideStart(); };
+
+    // page dots
+    var dots=$("dots"); GROUPS.forEach(function(_,i){ var d=document.createElement("i"); if(i===0)d.className="on"; dots.appendChild(d); });
+    pager.addEventListener("scroll",function(){ var i=Math.round(pager.scrollLeft/pager.clientWidth); [].forEach.call(dots.children,function(d,k){ d.className=(k===i?"on":""); }); });
+
+  </script>
+</body>
+</html>

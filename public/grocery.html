@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>Sona — Grocery Grab</title>
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <meta name="theme-color" content="#ffb02e" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <style>
+    :root{ --blue:#1cb0f6; --blue-d:#1597d4; --green:#58cc02; --green-d:#46a302; --orange:#ff9600; --orange-d:#e08600; --ink:#4a3a1f; }
+    *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;font-family:"Nunito",-apple-system,sans-serif;}
+    html,body{height:100%;overflow:hidden;} body{background:linear-gradient(180deg,#fff3da,#ffe7bd 60%,#ffd99a);color:var(--ink);}
+    #app{height:100vh;max-width:560px;margin:0 auto;display:flex;flex-direction:column;position:relative;}
+    #top{display:flex;align-items:center;gap:12px;padding:calc(12px + env(safe-area-inset-top)) 18px 4px;z-index:6;}
+    #close{border:none;background:rgba(255,255,255,.6);color:#b08743;width:38px;height:38px;border-radius:50%;font-size:20px;font-weight:800;cursor:pointer;}
+    .stat{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.9);border-radius:99px;padding:7px 14px;font-family:"Baloo 2";font-weight:800;font-size:15px;color:var(--orange-d);}
+    .stat.count{margin-left:auto;}
+    #stage{flex:1;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;padding:0 18px;}
+    #item{width:170px;height:170px;border-radius:28px;background:#fff;display:flex;align-items:center;justify-content:center;font-size:96px;box-shadow:0 12px 30px rgba(180,120,20,.18);transition:transform .3s;}
+    #item.fly{animation:fly .7s cubic-bezier(.5,0,.7,1) forwards;}
+    @keyframes fly{0%{transform:scale(1)}30%{transform:scale(1.1) rotate(-6deg)}100%{transform:translate(40vw,46vh) scale(.2) rotate(20deg);opacity:0}}
+    #phrase{margin-top:16px;font-family:"Baloo 2";font-weight:800;font-size:34px;color:var(--orange-d);}
+    #cart{position:absolute;right:16px;bottom:10px;width:54px;height:54px;color:var(--green-d);} #cartCount{position:absolute;right:14px;bottom:6px;background:var(--green);color:#fff;font-family:"Baloo 2";font-weight:800;font-size:14px;border-radius:99px;padding:2px 9px;}
+    #leoWrap{position:absolute;left:8px;bottom:6px;width:78px;z-index:4;pointer-events:none;} #leoWrap.react{animation:lpop .55s ease;}
+    #leo{width:100%;filter:drop-shadow(0 6px 8px rgba(120,80,20,.25));} @keyframes lpop{0%{transform:scale(1)}30%{transform:scale(1.15) translateY(-8px)}100%{transform:scale(1)}}
+    #bottom{padding:8px 18px calc(16px + env(safe-area-inset-bottom));display:flex;flex-direction:column;align-items:center;gap:8px;background:linear-gradient(180deg,rgba(255,243,218,0),rgba(255,243,218,.7));z-index:6;}
+    #prompt{font-family:"Baloo 2";font-weight:800;font-size:15px;color:var(--orange-d);min-height:20px;text-align:center;}
+    #hearRow{display:flex;gap:10px;align-items:center;} #hear{border:2px solid #f0cf95;background:#fff;border-radius:14px;padding:8px 14px;font-weight:800;color:var(--orange-d);cursor:pointer;font-size:14px;}
+    .mic{width:90px;height:90px;border-radius:50%;border:none;background:radial-gradient(circle at 50% 30%,#5cc6ff,#1cb0f6 60%,#1597d4);cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 0 0 var(--blue-d),inset 0 3px 7px rgba(255,255,255,.45);transition:transform .05s;}
+    .mic:active{transform:translateY(4px);box-shadow:0 2px 0 0 var(--blue-d);} .mic.rec{animation:mpulse 1.4s infinite;} .mic svg{width:40px;height:40px;fill:#fff;}
+    .wavebars{display:flex;gap:4px;align-items:center;justify-content:center;height:40px;} .wavebars i{width:6px;height:8px;background:#fff;border-radius:99px;transition:height .07s linear;}
+    @keyframes mpulse{0%{box-shadow:0 0 0 0 rgba(28,176,246,.45),0 6px 0 0 var(--blue-d)}70%{box-shadow:0 0 0 16px rgba(28,176,246,0),0 6px 0 0 var(--blue-d)}100%{box-shadow:0 0 0 0 rgba(28,176,246,0),0 6px 0 0 var(--blue-d)}}
+    #win{position:fixed;inset:0;z-index:50;background:linear-gradient(180deg,#fff3da,#ffd99a);display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:30px;}
+    #win.show{display:flex;} #win .leoWin{width:140px;height:140px;object-fit:contain;filter:drop-shadow(0 10px 16px rgba(120,80,20,.25));animation:lpop .6s ease;}
+    #win h1{font-family:"Baloo 2";font-weight:800;font-size:30px;color:var(--orange-d);margin-top:10px;}
+    #win .reward{background:#fff;border-radius:18px;padding:14px 22px;font-family:"Baloo 2";font-weight:800;font-size:22px;color:var(--orange-d);margin-top:18px;box-shadow:0 6px 16px rgba(180,120,20,.15);}
+    #win .reward small{display:block;font-family:"Nunito";font-weight:700;font-size:12px;color:#9a8050;text-transform:uppercase;}
+    #win .btn{margin-top:22px;border:none;border-radius:16px;padding:15px 44px;font-family:"Baloo 2";font-weight:800;font-size:18px;text-transform:uppercase;color:#fff;background:var(--green);box-shadow:0 5px 0 0 var(--green-d);cursor:pointer;}
+    #win .btn:active{transform:translateY(4px);box-shadow:0 1px 0 0 var(--green-d);} #win a{margin-top:14px;color:#9a8050;font-weight:800;font-size:14px;text-decoration:none;}
+  </style>
+</head>
+<body>
+  <div id="app">
+    <div id="top">
+      <button id="close" onclick="location.href='/play.html'">✕</button>
+      <span class="stat">Phrases</span>
+      <span class="stat count"><span id="count">0</span>/<span id="goal">6</span></span>
+    </div>
+    <div id="stage">
+      <div id="leoWrap"><img id="leo" src="/coach/leo.png" alt="Leo" /></div>
+      <div id="item">🐰</div>
+      <div id="phrase">a rabbit</div>
+      <div id="cart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:54px;height:54px;"><circle cx="9" cy="20" r="1.6"/><circle cx="18" cy="20" r="1.6"/><path d="M2 3h3l2.2 11.2a1.5 1.5 0 0 0 1.5 1.2h8.1a1.5 1.5 0 0 0 1.5-1.2L21 7H6"/></svg></div><span id="cartCount">0</span>
+    </div>
+    <div id="bottom">
+      <div id="prompt">Say the whole phrase to grab it!</div>
+      <div id="hearRow"><button id="hear"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;vertical-align:-3px;margin-right:5px;"><path d="M11 5 6 9H3v6h3l5 4V5Z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/></svg>Hear it</button></div>
+      <button class="mic" id="micBtn" title="Say it"><svg viewBox="0 0 24 24"><path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v6a3 3 0 0 0 3 3Z"/><path d="M6 11a6 6 0 0 0 12 0M12 18v3" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round"/></svg></button>
+    </div>
+  </div>
+  <div id="win">
+    <img class="leoWin" src="/coach/poses/leo-celebrate.png" alt="Leo" onerror="this.onerror=null;this.src='/coach/leo.png';" />
+    <h1>Shopping done!</h1>
+    <div class="reward"><span id="winCount">0</span><small>items grabbed</small></div>
+    <div class="reward" id="winUnlock" style="background:#fff7df;color:#e08600;"></div>
+    <button class="btn" id="again">Play again</button><a href="/play.html">Done for now →</a>
+  </div>
+
+  <script src="/sona.js"></script>
+  <script src="/gamecontent.js"></script>
+  <script>
+    var $=function(id){return document.getElementById(id);};
+    var profile=(window.Sona?Sona.getProfile():{focusSounds:["R"],voiceId:"",volume:0.8});
+    var SOUND=(new URLSearchParams(location.search).get("sound")||(profile.focusSounds&&profile.focusSounds[0])||"R").toUpperCase();
+    if(!(window.Sona&&Sona.WORDS&&Sona.WORDS[SOUND])) SOUND="R";
+    var LIST=(window.SonaContent?SonaContent.phrases(SOUND):[{t:"a rabbit",say:"a rabbit",e:"🐰"}]);
+    var DIFF=(window.Sona&&Sona.diff)?Sona.diff():1;
+    var GOAL=Math.min(14,(Math.min(LIST.length,6)||6)+(DIFF-1));
+
+    var audioCtx=null; function getCtx(){if(!audioCtx){var AC=window.AudioContext||window.webkitAudioContext;audioCtx=new AC();}if(audioCtx.state==="suspended")audioCtx.resume();return audioCtx;}
+    function playPCM(b){return new Promise(function(res){try{var c=getCtx(),n=b.byteLength>>1,ab=c.createBuffer(1,n,24000),ch=ab.getChannelData(0),dv=new DataView(b.buffer,b.byteOffset,b.byteLength);for(var i=0;i<n;i++)ch[i]=dv.getInt16(i*2,true)/32768;var s=c.createBufferSource();s.buffer=ab;s.playbackRate.value=(window.Sona&&Sona.VOICE_PITCH)||1;var g=c.createGain();g.gain.value=(profile.volume!=null?profile.volume:0.8);s.connect(g);g.connect(c.destination);s.onended=res;s.start();}catch(e){res();}});}
+    var speaking=false; function say(t){return new Promise(function(res){if(!t||speaking)return res();speaking=true;fetch("/api/tts",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text:t,voice:profile.voiceId||""})}).then(function(r){return r.ok?r.arrayBuffer():null;}).then(function(b){return b?playPCM(new Uint8Array(b)):null;}).catch(function(){}).finally(function(){speaking=false;res();});});}
+    var LEO={idle:"/coach/leo.png",cheer:"/coach/poses/leo-celebrate.png",listen:"/coach/poses/leo-listen.png"};
+    Object.keys(LEO).forEach(function(k){var im=new Image();im.src=LEO[k];});
+    function setLeo(s){var el=$("leo");if(el&&LEO[s])el.src=LEO[s];}
+    function leoReact(){var w=$("leoWrap");if(!w)return;w.classList.remove("react");void w.offsetWidth;w.classList.add("react");}
+    function norm(s){return (s||"").toLowerCase().replace(/[^a-z]/g,"");}
+
+    var micStream=null, useSpeechAce=false;
+    function recordTurn(maxMs){ maxMs=maxMs||8000; return new Promise(function(resolve){
+      var done=false,chunks=[],rec=null,sr=null,transcript="",spoke=false,lastV=0,raf=null,src=null,bars=null,micBtn=$("micBtn"),ico=micBtn.querySelector("svg");
+      function finish(){ if(done)return; done=true; try{rec&&rec.state!=="inactive"&&rec.stop();}catch(e){} try{sr&&sr.stop();}catch(e){} micBtn.classList.remove("rec");micBtn.onclick=null; if(raf)cancelAnimationFrame(raf); try{src&&src.disconnect();}catch(e){} if(bars)bars.remove(); if(ico)ico.style.display=""; setTimeout(function(){resolve({transcript:transcript,blob:chunks.length?new Blob(chunks,{type:(rec&&rec.mimeType)||"audio/webm"}):null,spoke:spoke});},120); }
+      try{ if(micStream&&window.MediaRecorder){ rec=new MediaRecorder(micStream); rec.ondataavailable=function(e){if(e.data&&e.data.size)chunks.push(e.data);}; rec.start(); } }catch(e){}
+      try{ var SR=window.SpeechRecognition||window.webkitSpeechRecognition; if(SR){ sr=new SR(); sr.lang="en-US"; sr.interimResults=false; sr.maxAlternatives=3; sr.onresult=function(ev){for(var i=0;i<ev.results.length;i++)for(var k=0;k<ev.results[i].length;k++)transcript+=" "+ev.results[i][k].transcript; finish();}; sr.onerror=function(){}; sr.start(); } }catch(e){}
+      micBtn.classList.add("rec"); micBtn.onclick=finish;
+      try{ if(micStream){ var ctx=getCtx();src=ctx.createMediaStreamSource(micStream);var an=ctx.createAnalyser();an.fftSize=512;src.connect(an);
+        var fd=new Uint8Array(an.frequencyBinCount),td=new Uint8Array(an.fftSize);bars=document.createElement("div");bars.className="wavebars";for(var b=0;b<7;b++)bars.appendChild(document.createElement("i"));if(ico)ico.style.display="none";micBtn.appendChild(bars);
+        var t0=performance.now(),nS=0,nN=0,thr=0,v=0;
+        (function tick(){ if(done)return; an.getByteFrequencyData(fd);[].forEach.call(bars.children,function(el,k){el.style.height=(8+fd[2+k*3]/255*30)+"px";});
+          an.getByteTimeDomainData(td);var sum=0;for(var i=0;i<td.length;i++){var d=(td[i]-128)/128;sum+=d*d;}var rms=Math.sqrt(sum/td.length),now=performance.now();
+          if(now-t0<300){nS+=rms;nN++;}else{if(!thr)thr=Math.min(0.1,Math.max(0.014,(nS/Math.max(1,nN))*2.6));if(rms>thr){v++;lastV=now;if(v>=2)spoke=true;}else if(rms<thr*0.7)v=0;if(spoke&&now-lastV>=1100){finish();return;}}
+          raf=requestAnimationFrame(tick);})();
+      } }catch(e){}
+      setTimeout(function(){ if(!done)finish(); }, maxMs);
+    }); }
+    // phrase-level pass: SpeechAce rating other than tryAgain; else heard speech
+    async function scoreUtterance(res,text){
+      if(!res.spoke && !res.transcript && !res.blob) return {pass:false};
+      if(useSpeechAce && res.blob){ try{ var fd=new FormData(); fd.append("audio",new File([res.blob],"a.webm",{type:res.blob.type||"audio/webm"})); fd.append("text",text); fd.append("targetSound",SOUND); fd.append("userId","child"); fd.append("mode","full"); var r=await fetch("/api/score",{method:"POST",body:fd}); var j=await r.json(); if(j&&j.ok&&j.rating) return {pass:j.rating!=="tryAgain"}; }catch(e){} }
+      if(res.transcript) return {pass:true};
+      return {pass:!!res.spoke};
+    }
+
+    var queue=[], qi=0, got=0, busy=false;
+    function showItem(it){ $("item").classList.remove("fly"); void $("item").offsetWidth; $("item").innerHTML=(window.Sona&&Sona.pic)?Sona.pic(it.word,it.e,120):(it.e||"🛍️"); $("phrase").textContent=it.t; }
+    async function turn(){
+      if(busy) return; busy=true; $("micBtn").onclick=null;
+      var it=queue[qi%queue.length];
+      setLeo("listen"); $("prompt").textContent="Say “"+it.t+"”";
+      var res=await recordTurn(); var sa=await scoreUtterance(res, it.say);
+      if(sa.pass){
+        if(window.Sona&&Sona.sfx&&Sona.sfx.correct)Sona.sfx.correct();
+        setLeo("cheer"); leoReact(); $("item").classList.add("fly"); $("prompt").textContent="Nice one!";
+        got++; qi++; $("count").textContent=got; $("cartCount").textContent=got;
+        await new Promise(function(r){setTimeout(r,720);});
+        setLeo("idle"); busy=false;
+        if(got>=GOAL) return finishGame();
+        showItem(queue[qi%queue.length]); $("micBtn").onclick=turn; $("prompt").textContent="Say the whole phrase to grab it!";
+        say(queue[qi%queue.length].say);
+      } else {
+        if(window.Sona&&Sona.sfx&&Sona.sfx.tap)Sona.sfx.tap();
+        setLeo("idle"); $("prompt").textContent="Not quite — try again!";
+        await new Promise(function(r){setTimeout(r,650);}); busy=false; $("micBtn").onclick=turn; say(it.say);
+      }
+    }
+    function finishGame(){
+      var earned=20; if(window.Sona&&Sona.addCoins)Sona.addCoins(earned);
+      try{var GS=JSON.parse(localStorage.getItem("sona.games.v1")||"{}");GS[SOUND]=GS[SOUND]||{};GS[SOUND].grocery={done:true};GS.lastPlayDay=new Date().toISOString().slice(0,10);localStorage.setItem("sona.games.v1",JSON.stringify(GS));}catch(e){}
+      $("winCount").textContent=got; $("winUnlock").textContent="+"+earned+" 🪙"; $("win").classList.add("show");
+      if(window.Sona&&Sona.sessionButtons)Sona.sessionButtons($("win"));
+      if(window.Sona){Sona.confetti&&Sona.confetti();Sona.sfx&&Sona.sfx.complete&&Sona.sfx.complete();Sona.sfx&&Sona.sfx.coin&&Sona.sfx.coin();}
+    }
+    function shuffle(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t;}return a;}
+    function startGame(){ $("win").classList.remove("show"); got=0; qi=0; busy=false; $("count").textContent="0"; $("cartCount").textContent="0"; $("goal").textContent=GOAL;
+      queue=shuffle(LIST); setLeo("idle"); showItem(queue[0]); $("micBtn").onclick=turn; $("prompt").textContent="Say the whole phrase to grab it!"; say(queue[0].say);
+    }
+    (async function(){ try{var r=await fetch("/api/score");var j=await r.json();useSpeechAce=!!(j&&j.hasKey);}catch(e){useSpeechAce=false;}
+      try{ if(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia) micStream=await navigator.mediaDevices.getUserMedia({audio:true}); }catch(e){micStream=null;}
+      $("hear").onclick=function(){ say($("phrase").textContent); }; $("again").onclick=startGame;
+      if(window.Sona&&Sona.music)Sona.music.start(); startGame();
+    })();
+    (function(){ var lad="/map.html"; var c=$("close"); if(c)c.onclick=function(){location.href=lad;}; Array.prototype.forEach.call(document.querySelectorAll('a[href="/play.html"]'),function(a){a.setAttribute("href",lad);}); })();
+    window.addEventListener("pagehide",function(){ try{ if(micStream)micStream.getTracks().forEach(function(t){t.stop();}); }catch(e){} });
+  
+    /* art drop-in: a background swaps in when /coach/grocery/bg.png exists (zero code) */
+    (function(){var im=new Image();im.onload=function(){var s=document.getElementById("stage");if(s){s.style.backgroundImage="url(/coach/grocery/bg.png)";s.style.backgroundSize="cover";s.style.backgroundPosition="center";}};im.src="/coach/grocery/bg.png";})();
+</script>
+</body>
+</html>

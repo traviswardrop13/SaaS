@@ -53,16 +53,22 @@
     #win .btn{margin-top:22px;border:none;border-radius:16px;padding:15px 44px;font-family:"Baloo 2";font-weight:800;font-size:18px;text-transform:uppercase;letter-spacing:.04em;color:#fff;background:var(--green);box-shadow:0 5px 0 0 var(--green-d);cursor:pointer;}
     #win .btn:active{transform:translateY(4px);box-shadow:0 1px 0 0 var(--green-d);}
     #win a{margin-top:14px;color:var(--muted);font-weight:800;font-size:14px;text-decoration:none;}
+    #win .leoWin{width:140px;height:140px;object-fit:contain;filter:drop-shadow(0 10px 16px rgba(120,80,200,.25));animation:leoPop .6s ease;}
+    #leo{width:74px;height:74px;object-fit:contain;display:block;margin:2px auto 2px;filter:drop-shadow(0 6px 8px rgba(120,80,200,.2));animation:leoBob 3.2s ease-in-out infinite;}
+    #leo.react{animation:leoPop .55s ease;}
+    @keyframes leoBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+    @keyframes leoPop{0%{transform:scale(1)}30%{transform:scale(1.15) translateY(-8px)}60%{transform:scale(.95)}100%{transform:scale(1)}}
   </style>
 </head>
 <body>
   <div id="app">
     <div id="top">
       <button id="close" onclick="location.href='/play.html'">✕</button>
-      <span class="stat pairs">🃏 <span id="pairsFound">0</span>/<span id="pairsTot">3</span></span>
-      <span class="stat coins">🪙 <span id="coins">0</span></span>
+      <span class="stat pairs"><span id="pairsFound">0</span>/<span id="pairsTot">3</span></span>
+      <span class="stat coins"><span style="display:inline-block;width:13px;height:13px;border-radius:50%;background:linear-gradient(180deg,#ffd84d,#f4b400);box-shadow:inset 0 0 0 2px #e0a400;vertical-align:-2px;margin-right:3px;"></span><span id="coins">0</span></span>
     </div>
     <div id="stage">
+      <img id="leo" src="/coach/leo.png" alt="Leo" />
       <div id="prompt">Find the matching pairs!</div>
       <div id="grid"></div>
       <div id="micline"><span class="dot"></span><span id="micText">Tap a card to start</span></div>
@@ -70,7 +76,7 @@
   </div>
 
   <div id="win">
-    <div style="font-size:64px;" aria-hidden>🎉</div>
+    <img class="leoWin" src="/coach/poses/leo-celebrate.png" alt="Leo celebrating" onerror="this.onerror=null;this.src='/coach/leo.png';" />
     <h1 id="winTitle">All matched!</h1>
     <div class="rewards">
       <div class="reward"><span id="winReps">0</span><small>words said</small></div>
@@ -88,10 +94,16 @@
     var SOUND = (params.get("sound") || (profile.focusSounds && profile.focusSounds[0]) || "R").toUpperCase();
     if(!(window.Sona && Sona.WORDS && Sona.WORDS[SOUND])) SOUND="R";
     var POOL = (window.Sona && Sona.WORDS && Sona.WORDS[SOUND]) ? Sona.WORDS[SOUND].filter(function(w){return w.i;}) : [{w:"rabbit",e:"🐰"},{w:"rocket",e:"🚀"},{w:"ring",e:"💍"}];
-    var PAIRS = 3;
+    var DIFF=(window.Sona&&Sona.diff)?Sona.diff():1;
+    var PAIRS = Math.min(POOL.length, Math.max(2, 2+Math.floor(DIFF/2)));
 
     var $=function(id){return document.getElementById(id);};
     var shuffle=function(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t;}return a;};
+    // Leo reacts (real poses, no new art)
+    var LEO={ idle:"/coach/leo.png", cheer:"/coach/poses/leo-celebrate.png", encourage:"/coach/poses/leo-listen.png" };
+    Object.keys(LEO).forEach(function(k){ var im=new Image(); im.src=LEO[k]; });
+    function setLeo(s){ var el=$("leo"); if(el&&LEO[s]) el.src=LEO[s]; }
+    function leoReact(){ var el=$("leo"); if(!el)return; el.classList.remove("react"); void el.offsetWidth; el.classList.add("react"); }
 
     var audioCtx=null;
     function getCtx(){ if(!audioCtx){var AC=window.AudioContext||window.webkitAudioContext;audioCtx=new AC();} if(audioCtx.state==="suspended")audioCtx.resume(); return audioCtx; }
@@ -99,25 +111,26 @@
     var speaking=false;
     function say(text){ return new Promise(function(res){ if(!text){return res();} if(speaking){return res();} speaking=true; fetch("/api/tts",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text:text,voice:profile.voiceId||""})}).then(function(r){return r.ok?r.arrayBuffer():null;}).then(function(b){ if(b) return playPCM(new Uint8Array(b)); }).catch(function(){}).finally(function(){speaking=false;res();}); }); }
 
-    // lightweight "say it" listen — counts a rep when they speak; never blocks. No scoring (snappy + cheap).
-    var micStream=null;
-    function hearRep(maxMs){
-      maxMs=maxMs||4500;
-      return new Promise(function(resolve){
-        var done=false, spoke=false, raf=null, src=null;
-        $("micline").classList.add("live"); $("micText").textContent="Say it! 🎤";
-        function fin(){ if(done)return; done=true; if(raf)cancelAnimationFrame(raf); try{src&&src.disconnect();}catch(e){} $("micline").classList.remove("live"); $("micText").textContent=""; resolve(spoke); }
-        try{
-          if(micStream){
-            var ctx=getCtx(); src=ctx.createMediaStreamSource(micStream); var an=ctx.createAnalyser(); an.fftSize=512; src.connect(an);
-            var td=new Uint8Array(an.fftSize); var t0=performance.now(),nSum=0,nN=0,thr=0,voiced=0,lastV=0;
-            (function tick(){ if(done)return; an.getByteTimeDomainData(td); var sum=0; for(var i=0;i<td.length;i++){var d=(td[i]-128)/128;sum+=d*d;} var rms=Math.sqrt(sum/td.length),now=performance.now();
-              if(now-t0<300){nSum+=rms;nN++;} else { if(!thr)thr=Math.min(0.1,Math.max(0.014,(nSum/Math.max(1,nN))*2.6)); if(rms>thr){voiced++;lastV=now;if(voiced>=2)spoke=true;}else if(rms<thr*0.7)voiced=0; if(spoke&&now-lastV>=800){fin();return;} }
-              raf=requestAnimationFrame(tick); })();
-          }
-        }catch(e){}
-        setTimeout(fin,maxMs); // always advance (no-fail)
-      });
+    var micStream=null, useSpeechAce=false;
+    function norm(s){ return (s||"").toLowerCase().replace(/[^a-z]/g,""); }
+    function matchText(t,w){ t=norm(t); w=norm(w); if(!t)return false; if(t.indexOf(w)>=0||w.indexOf(t)>=0)return true; var i=0; while(i<Math.min(t.length,w.length)&&t[i]===w[i])i++; return i>=3; }
+    // record the attempt (audio for SpeechAce + transcript + voice-activity auto-stop)
+    function recordTurn(maxMs){ maxMs=maxMs||7000; return new Promise(function(resolve){
+      var done=false,chunks=[],rec=null,sr=null,transcript="",spoke=false,lastV=0,raf=null,src=null;
+      $("micline").classList.add("live"); $("micText").textContent="Say it!";
+      function fin(){ if(done)return; done=true; try{rec&&rec.state!=="inactive"&&rec.stop();}catch(e){} try{sr&&sr.stop();}catch(e){} if(raf)cancelAnimationFrame(raf); try{src&&src.disconnect();}catch(e){} $("micline").classList.remove("live"); $("micText").textContent=""; setTimeout(function(){resolve({transcript:transcript,blob:chunks.length?new Blob(chunks,{type:(rec&&rec.mimeType)||"audio/webm"}):null,spoke:spoke});},120); }
+      try{ if(micStream&&window.MediaRecorder){ rec=new MediaRecorder(micStream); rec.ondataavailable=function(e){if(e.data&&e.data.size)chunks.push(e.data);}; rec.start(); } }catch(e){}
+      try{ var SR=window.SpeechRecognition||window.webkitSpeechRecognition; if(SR){ sr=new SR(); sr.lang="en-US"; sr.interimResults=false; sr.maxAlternatives=3; sr.onresult=function(ev){for(var i=0;i<ev.results.length;i++)for(var k=0;k<ev.results[i].length;k++)transcript+=" "+ev.results[i][k].transcript; fin();}; sr.onerror=function(){}; sr.start(); } }catch(e){}
+      try{ if(micStream){ var ctx=getCtx(); src=ctx.createMediaStreamSource(micStream); var an=ctx.createAnalyser(); an.fftSize=512; src.connect(an); var td=new Uint8Array(an.fftSize); var t0=performance.now(),nSum=0,nN=0,thr=0,vms=0,lt=0;
+        (function tick(){ if(done)return; an.getByteTimeDomainData(td); var sum=0; for(var i=0;i<td.length;i++){var d=(td[i]-128)/128;sum+=d*d;} var rms=Math.sqrt(sum/td.length),now=performance.now();
+          if(now-t0<450){nSum+=rms;nN++;lt=now;} else { if(!thr)thr=Math.max(0.05,(nSum/Math.max(1,nN))*3.2); var dt=now-lt;lt=now; if(rms>thr){vms+=dt;lastV=now;if(vms>=250)spoke=true;}else if(rms<thr*0.65)vms=Math.max(0,vms-dt*0.5); if(spoke&&now-lastV>=800){fin();return;} }
+          raf=requestAnimationFrame(tick); })(); } }catch(e){}
+      setTimeout(fin,maxMs); }); }
+    // a card only stays up if the word is said well enough (SpeechAce); wrong/silence → flip back
+    async function scoreWord(word,res){
+      if(useSpeechAce && res.blob){ try{ var fd=new FormData(); fd.append("audio",new File([res.blob],"a.webm",{type:res.blob.type||"audio/webm"})); fd.append("text",word.w); fd.append("targetSound",SOUND); fd.append("userId","child"); fd.append("mode","full"); var r=await fetch("/api/score",{method:"POST",body:fd}); var j=await r.json(); if(j&&j.ok&&j.rating) return j.rating!=="tryAgain"; }catch(e){} }
+      if(res.transcript) return matchText(res.transcript,word.w);
+      return false;
     }
 
     /* game */
@@ -130,7 +143,7 @@
       cards=[];
       deck.forEach(function(c,i){
         var el=document.createElement("div"); el.className="card";
-        el.innerHTML='<div class="face back">❓</div><div class="face front"><span class="e">'+c.e+'</span><span class="w">'+c.w+'</span></div>';
+        el.innerHTML='<div class="face back">?</div><div class="face front"><span class="e">'+(window.Sona&&Sona.pic?Sona.pic(c.w,c.e,44):c.e)+'</span><span class="w">'+c.w+'</span></div>';
         el.onclick=function(){ flip(el,c); };
         grid.appendChild(el); cards.push({el:el,c:c,done:false});
       });
@@ -141,9 +154,15 @@
       busy=true; flips++;
       el.classList.add("up");
       if(window.Sona&&Sona.sfx)Sona.sfx.tap&&Sona.sfx.tap();
-      await say(c.w);                 // Leo models the word
-      var said=await hearRep();       // kid repeats — a speech rep (always proceeds)
-      if(said) reps++;
+      $("prompt").textContent="What's this? Say it!";
+      var res=await recordTurn(); var ok=await scoreWord(c,res);   // must say it right to keep the card up
+      if(!ok){
+        if(window.Sona&&Sona.sfx)Sona.sfx.tap&&Sona.sfx.tap();
+        $("prompt").textContent="Not quite — say “"+c.w+"”."; await say(c.w);
+        el.classList.remove("up"); busy=false; return;
+      }
+      reps++;
+      await say(c.w);                 // Leo says it back to confirm
       if(!first){ first={el:el,c:c}; busy=false; $("prompt").textContent="Find its match!"; return; }
       // second card chosen
       if(first.c.id===c.id && first.el!==el){
@@ -151,14 +170,16 @@
         el.classList.add("matched"); first.el.classList.add("matched");
         matched++; $("pairsFound").textContent=matched;
         if(window.Sona){ Sona.sfx&&Sona.sfx.correct&&Sona.sfx.correct(); Sona.pop&&Sona.pop("⭐",{color:"#8b5cf6",y:window.innerHeight*0.35}); }
-        $("prompt").textContent="Match! 🎉";
+        setLeo("cheer"); leoReact();
+        $("prompt").textContent="Match!";
         first=null; busy=false;
         if(matched>=PAIRS) setTimeout(finishGame,650);
       } else {
         // no match — flip both back
+        setLeo("encourage");
         $("prompt").textContent="Try again!";
         var a=first.el, b=el; first=null;
-        setTimeout(function(){ a.classList.remove("up"); b.classList.remove("up"); busy=false; $("prompt").textContent="Find the matching pairs!"; }, 950);
+        setTimeout(function(){ a.classList.remove("up"); b.classList.remove("up"); busy=false; setLeo("idle"); $("prompt").textContent="Find the matching pairs!"; }, 950);
       }
     }
 
@@ -170,6 +191,7 @@
       $("winUnlock").textContent="+"+earned+" 🪙";
       $("coins").textContent=Sona.getCoins?Sona.getCoins():0;
       $("win").classList.add("show");
+      if(window.Sona&&Sona.sessionButtons)Sona.sessionButtons($("win"));
       if(window.Sona){ Sona.confetti&&Sona.confetti(); Sona.sfx&&Sona.sfx.complete&&Sona.sfx.complete(); }
     }
 
@@ -185,11 +207,20 @@
     }
 
     (async function(){
+      try{ var r=await fetch("/api/score"); var j=await r.json(); useSpeechAce=!!(j&&j.hasKey); }catch(e){ useSpeechAce=false; }
       try{ if(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia) micStream=await navigator.mediaDevices.getUserMedia({audio:true}); }catch(e){ micStream=null; }
       $("again").onclick=startGame;
       startGame();
     })();
+    // return to this sound's ladder (Sound → ladder → games)
+    (function(){ var lad="/map.html";
+      var c=document.getElementById("close"); if(c) c.onclick=function(){ location.href=lad; };
+      Array.prototype.forEach.call(document.querySelectorAll('a[href="/play.html"]'),function(a){ a.setAttribute("href",lad); });
+    })();
     window.addEventListener("pagehide",function(){ try{ if(micStream)micStream.getTracks().forEach(function(t){t.stop();}); }catch(e){} });
-  </script>
+  
+    /* art drop-in: a background swaps in when /coach/match/bg.png exists (zero code) */
+    (function(){var im=new Image();im.onload=function(){var s=document.getElementById("stage");if(s){s.style.backgroundImage="url(/coach/match/bg.png)";s.style.backgroundSize="cover";s.style.backgroundPosition="center";}};im.src="/coach/match/bg.png";})();
+</script>
 </body>
 </html>
