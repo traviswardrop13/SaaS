@@ -5,7 +5,7 @@ import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
 const FEATURES = [
-  "Every game in Sona — unlocked today",
+  "Founding access to every level as it unlocks",
   "Founding price — 50% off, locked for life",
   "Every new feature and update as it ships",
   "Your suggestions shape Sona for your child",
@@ -82,8 +82,8 @@ function SubscribeInner() {
           </p>
           <p className="mt-3 rounded-2xl bg-sky-50 px-4 py-3 text-sm font-semibold text-sky-700">
             Sona is live. Join as a founding member to lock in 67% off for life and
-            start playing every game today. No free trial — the founding price is the
-            deal, and you can cancel anytime.
+            start playing today, with new levels rolling out. No free trial — the
+            founding price is the deal, and you can cancel anytime.
           </p>
 
           <ul className="mt-6 space-y-3">

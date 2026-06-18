@@ -298,10 +298,10 @@ function Pricing() {
             priceSuffix="/yr"
             coupon="67% off"
             yearly="Founding price · billed yearly · cancel anytime"
-            blurb="Lock in 67% off for life and start playing every game today."
+            blurb="Lock in 67% off for life and start playing today."
             highlight
             features={[
-              "Every game in Sona — unlocked today",
+              "Founding access to every level as it unlocks",
               "Founding price — 67% off, locked for life",
               "Every new feature and update as it ships",
               "Your suggestions shape Sona for your child",
@@ -447,11 +447,11 @@ function FAQ() {
     },
     {
       q: "When can my child start?",
-      a: "Right away. Take the free 2-minute speech check today and we'll email you the report — then join as a founding member to play the full set of speech games.",
+      a: "Right away. Take the free 2-minute speech check today and we'll email you the report — then join as a founding member to start playing, with new levels rolling out.",
     },
     {
       q: "Is the app ready today?",
-      a: "Yes — Sona's speech games are live now. Start with the free speech check, then join as a founding member to play the full set, and you'll get every new feature as it ships.",
+      a: "Yes — Sona's speech games are live now. Start with the free speech check, then join as a founding member to start playing, and you'll get every new level and feature as it ships.",
     },
     {
       q: "How does the founding price work?",
