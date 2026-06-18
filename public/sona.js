@@ -469,5 +469,24 @@
     return true;
   }
 
-  global.Sona = { pic, ALL_SOUNDS, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, HOUSE_PALETTE, WORDS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, getProfile, saveProfile, getProgress, recordSession, resetProgress, stageOf, completeStage, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, gated, restore, saveRecording, listRecordings, sfx, music, confetti, pop, LEVEL_GAMES, GAME_DECK, GAMES_PER_LEVEL, levelGames, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons };
+  // ── first-touch attribution: remember the UTM tags / referrer that brought this
+  //    visitor, so the speech-check lead can show which content actually converted. ──
+  const UTMKEY = "sona.utm.v1";
+  function captureUTM() {
+    try {
+      if (localStorage.getItem(UTMKEY)) return; // keep the first touch
+      const p = new URLSearchParams(location.search); const o = {}; let any = false;
+      ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term"].forEach(function (k) {
+        const v = p.get(k); if (v) { o[k] = v.slice(0, 120); any = true; }
+      });
+      const ref = document.referrer || "";
+      if (!any && !ref) return;            // a plain direct hit — nothing to attribute
+      o.referrer = ref.slice(0, 200); o.landing = location.pathname.slice(0, 120); o.ts = new Date().toISOString();
+      localStorage.setItem(UTMKEY, JSON.stringify(o));
+    } catch (e) {}
+  }
+  function utm() { try { return JSON.parse(localStorage.getItem(UTMKEY) || "{}"); } catch (e) { return {}; } }
+  try { captureUTM(); } catch (e) {}
+
+  global.Sona = { pic, ALL_SOUNDS, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, HOUSE_PALETTE, WORDS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, getProfile, saveProfile, getProgress, recordSession, resetProgress, stageOf, completeStage, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, gated, restore, saveRecording, listRecordings, sfx, music, confetti, pop, LEVEL_GAMES, GAME_DECK, GAMES_PER_LEVEL, levelGames, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm };
 })(window);

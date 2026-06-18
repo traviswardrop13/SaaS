@@ -25,6 +25,12 @@ export default function RootLayout({
     <html lang="en">
       <body className="min-h-screen">
         {children}
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              '(function(){try{var K="sona.utm.v1";if(localStorage.getItem(K))return;var p=new URLSearchParams(location.search),o={},a=false;["utm_source","utm_medium","utm_campaign","utm_content","utm_term"].forEach(function(k){var v=p.get(k);if(v){o[k]=v.slice(0,120);a=true;}});var r=document.referrer||"";if(!a&&!r)return;o.referrer=r.slice(0,200);o.landing=location.pathname.slice(0,120);o.ts=new Date().toISOString();localStorage.setItem(K,JSON.stringify(o));}catch(e){}})();',
+          }}
+        />
         <script defer src="/_vercel/insights/script.js" />
       </body>
     </html>

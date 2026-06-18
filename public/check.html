@@ -8,6 +8,7 @@
   <link rel="manifest" href="/manifest.webmanifest" />
   <meta name="theme-color" content="#1cb0f6" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
+  <script defer src="/_vercel/insights/script.js"></script>
   <style>
     :root{ --blue:#1cb0f6; --blue-d:#1597d4; --green:#58cc02; --green-d:#46a302; --orange:#ff9600; --orange-d:#e08600; --ink:#16384f; --muted:#6b86a3; }
     *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;font-family:"Nunito",-apple-system,"Segoe UI",Roboto,sans-serif;}
@@ -239,7 +240,8 @@
       var email=$("email").value.trim();
       if(!/^\S+@\S+\.\S+$/.test(email)){ $("gateMsg").style.color="#e0457b"; $("gateMsg").textContent="Please enter a valid email to see the results."; return; }
       $("gateBtn").disabled=true; $("gateBtn").textContent="Loading results…";
-      try{ await fetch("/api/lead",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:email,child:CHILD,age:AGE,practice:window._practice||[],report:window._report||"",summary:window._summary||""})}); }catch(e){}
+      var _utm=(window.Sona&&Sona.utm)?Sona.utm():{};
+      try{ await fetch("/api/lead",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(Object.assign({email:email,child:CHILD,age:AGE,practice:window._practice||[],report:window._report||"",summary:window._summary||""},_utm))}); }catch(e){}
       // seed the profile so the app is tailored to what the check found (used at launch)
       try{ if(window.Sona){ var focus=(window._practice&&window._practice.length)?window._practice:WORDS.map(function(w){return w.s;}); Sona.saveProfile({ childName:CHILD, focusSounds:focus.slice(0,4), checkEmail:email }); } }catch(e){}
       var et=$("emailedText"); if(et) et.textContent="We just emailed "+(CHILD?CHILD+"'s":"your child's")+" report to "+email+" — check your inbox in a minute.";

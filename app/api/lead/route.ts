@@ -22,6 +22,13 @@ export async function POST(req: NextRequest) {
     practice?: string[];
     report?: string;
     summary?: string;
+    utm_source?: string;
+    utm_medium?: string;
+    utm_campaign?: string;
+    utm_content?: string;
+    utm_term?: string;
+    referrer?: string;
+    landing?: string;
   };
   try {
     body = await req.json();
@@ -38,6 +45,7 @@ export async function POST(req: NextRequest) {
   const practice = Array.isArray(body?.practice) ? body!.practice!.slice(0, 12) : [];
   const report = typeof body?.report === "string" ? body.report.slice(0, 2000) : "";
   const summary = typeof body?.summary === "string" ? body.summary.slice(0, 600) : "";
+  const clamp = (v?: string, n = 120) => (typeof v === "string" ? v.slice(0, n) : "");
   const lead = {
     email,
     name: child,                       // easy First Name mapping in GHL
@@ -47,6 +55,13 @@ export async function POST(req: NextRequest) {
     practice_text: practice.join(", "), // flat string — easy GHL field mapping
     summary,                           // one-line headline (good email subject/preview)
     report,                            // full readable report body — drop into the GHL email
+    utm_source: clamp(body?.utm_source),   // which content brought them (map these in GHL)
+    utm_medium: clamp(body?.utm_medium),
+    utm_campaign: clamp(body?.utm_campaign),
+    utm_content: clamp(body?.utm_content),
+    utm_term: clamp(body?.utm_term),
+    referrer: clamp(body?.referrer, 200),
+    landing: clamp(body?.landing),
     source: "speech-check",
     at: new Date().toISOString(),
   };
