@@ -169,7 +169,7 @@
       <div class="reward" id="xpReward">+0<small>XP</small></div>
 
     </div>
-    <a class="cta" id="doneBtn" href="/home.html">Keep going →</a>
+    <a class="cta" id="doneBtn" href="/map.html">Keep going →</a>
     <button class="againlink" id="againBtn">Practice again</button>
   </div>
 
@@ -523,7 +523,7 @@
       try{ await detectScorer(); }catch(e){}
       setProgress(); next();
     }
-    function leave(){ try{ micStream&&micStream.getTracks().forEach(t=>t.stop()); }catch{} location.href="/home.html"; }
+    function leave(){ try{ micStream&&micStream.getTracks().forEach(t=>t.stop()); }catch{} location.href="/map.html"; }
 
     const TITLES=["Warm up the "+SOUND+" sound!", SOUND+" syllables!", SOUND+" words!"];
     $("startTitle").textContent = RETRY ? "Fix-it round! 🔁" : DAILY ? ("Today's "+MINUTES+"-minute practice!") : (TITLES[STAGE]||("Practice "+SOUND+"!"));

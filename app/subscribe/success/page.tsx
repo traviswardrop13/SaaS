@@ -44,7 +44,7 @@ export default function SubscribeSuccess() {
         Start setup
       </a>
       <a
-        href="/home.html"
+        href="/map.html"
         className="mt-4 text-sm font-bold text-gray-500 hover:text-gray-800"
       >
         Skip to the app →

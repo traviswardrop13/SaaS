@@ -64,7 +64,7 @@
       The <a href="/library.html">Library 📚</a> is always free — stories and the word box are open anytime.
     </p>
     <p class="muted" style="text-align:center;margin-top:8px;font-size:12.5px;">
-      <a href="/home.html">← Back home</a>
+      <a href="/map.html">← Back home</a>
     </p>
   </div>
 
@@ -74,7 +74,7 @@
     var name = (p.childName || "").trim();
     if (name) document.getElementById("headline").textContent = name + ", that was just the start! 🎉";
     // already unlocked? straight back to the fun
-    if (Sona.isSubscribed && Sona.isSubscribed()) location.replace("/home.html");
+    if (Sona.isSubscribed && Sona.isSubscribed()) location.replace("/map.html");
 
     document.getElementById("restoreLink").onclick = function (e) {
       e.preventDefault();
@@ -85,7 +85,7 @@
       var msg = document.getElementById("resMsg");
       msg.style.color = "var(--muted)"; msg.textContent = "Checking…";
       var r = await Sona.restore(document.getElementById("resEmail").value);
-      if (r.ok && r.active) { msg.style.color = "var(--good)"; msg.textContent = "Welcome back! ✓"; setTimeout(function(){ location.href = "/home.html"; }, 700); }
+      if (r.ok && r.active) { msg.style.color = "var(--good)"; msg.textContent = "Welcome back! ✓"; setTimeout(function(){ location.href = "/map.html"; }, 700); }
       else if (r.ok) { msg.style.color = "#b42323"; msg.textContent = "No active subscription for that email."; }
       else { msg.style.color = "#b42323"; msg.textContent = r.error || "Couldn’t check."; }
     };

@@ -2,7 +2,7 @@
   "name": "Sona — speech practice",
   "short_name": "Sona",
   "description": "Fun daily speech practice for kids, built with a speech-language pathologist.",
-  "start_url": "/home.html",
+  "start_url": "/map.html",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait",

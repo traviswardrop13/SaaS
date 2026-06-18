@@ -60,7 +60,7 @@ function Header() {
         </nav>
         <div className="flex items-center gap-3">
           <a
-            href="/home.html"
+            href="/map.html"
             className="hidden text-sm font-bold text-gray-600 hover:text-gray-900 sm:block"
           >
             Open app
