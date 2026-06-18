@@ -23,6 +23,18 @@
     .day .lbl{font-size:11px;font-weight:800;color:var(--muted);}
     .ms{display:flex;justify-content:space-between;align-items:center;margin:14px 0 5px;font-weight:800;}
     .ms .stars{color:var(--orange);letter-spacing:1px;}
+    /* accuracy by sound */
+    .accrow{padding:13px 0;border-top:1px solid var(--line);}
+    .accrow:first-child{border-top:none;}
+    .acctop{display:flex;align-items:center;gap:8px;}
+    .accname{font-family:"Baloo 2";font-weight:800;font-size:16px;}
+    .accpct{margin-left:auto;font-family:"Baloo 2";font-weight:800;font-size:20px;color:#46a302;}
+    .accchip{font-weight:800;font-size:11.5px;border-radius:99px;padding:3px 9px;}
+    .accchip.up{background:#eafce9;color:#46a302;} .accchip.flat{background:#eef3fb;color:#6b86a3;}
+    .accsub{font-weight:700;font-size:12px;color:var(--muted);margin-top:3px;}
+    .spark{display:flex;align-items:flex-end;gap:3px;height:36px;margin-top:9px;}
+    .spark i{flex:1;max-width:16px;border-radius:3px 3px 0 0;min-height:4px;background:#cfe0c4;}
+    .spark i.hi{background:#7ac96a;} .spark i.mid{background:#ffd36a;} .spark i.lo{background:#f3a9a0;}
     @media print{ header.app,.noprint{display:none!important;} body{background:#fff;} }
   </style>
   <script defer src="/_vercel/insights/script.js"></script>
@@ -48,6 +60,13 @@
       <div class="stat"><div class="n" id="sSessions">0</div><div class="l">Sessions</div></div>
       <div class="stat"><div class="n" id="sWords">0</div><div class="l">Words</div></div>
       <div class="stat"><div class="n" id="sStars">0</div><div class="l">⭐ Stars</div></div>
+    </div>
+
+    <div class="card" id="accCard">
+      <h2>Accuracy by sound 📈</h2>
+      <p class="muted" style="font-size:13px;font-weight:700;">How clearly each sound is coming along — and how it's trending with practice.</p>
+      <div id="acc" style="margin-top:6px;"></div>
+      <button class="btn noprint" id="sendProg" style="display:none;margin-top:14px;width:auto;padding:12px 20px;">📨&nbsp;&nbsp;Send progress to my SLP</button>
     </div>
 
     <div class="card">
@@ -160,6 +179,38 @@
         rc.appendChild(row);
       });
     }
+
+    // ── accuracy by sound (from the captured outcome data — the "does it work" proof) ──
+    (function () {
+      var host = document.getElementById("acc");
+      var out = (Sona.outcomes ? Sona.outcomes() : {}) || {};
+      var ks = Object.keys(out);
+      if (!ks.length) {
+        host.innerHTML = '<p class="muted">Play a few games and accuracy shows up here — per sound, trending over time.</p>';
+      } else {
+        ks.sort(function (a, b) { return (out[b].attempts || 0) - (out[a].attempts || 0); }).forEach(function (k) {
+          var o = out[k], pct = Math.round((o.passes || 0) / Math.max(1, o.attempts || 0) * 100);
+          var days = Object.keys(o.days || {}).sort();
+          var dayAcc = days.map(function (d) { var x = o.days[d]; return Math.round((x.p || 0) / Math.max(1, x.a || 0) * 100); });
+          var chip = "";
+          if (dayAcc.length >= 2) {
+            var delta = dayAcc[dayAcc.length - 1] - dayAcc[0];
+            chip = '<span class="accchip ' + (delta > 0 ? 'up' : 'flat') + '">' + (delta > 0 ? '▲ +' + delta + ' pts' : (delta < 0 ? delta + ' pts' : 'steady')) + '</span>';
+          }
+          var bars = dayAcc.slice(-14).map(function (v) { var c = v >= 80 ? 'hi' : (v >= 50 ? 'mid' : 'lo'); return '<i class="' + c + '" style="height:' + Math.max(4, v) + '%;" title="' + v + '%"></i>'; }).join("");
+          var d = document.createElement("div"); d.className = "accrow";
+          d.innerHTML =
+            '<div class="acctop"><span class="accname">' + k + ' sound</span>' + chip + '<span class="accpct">' + pct + '%</span></div>' +
+            '<div class="accsub">' + (o.attempts || 0) + ' tries · ' + days.length + ' day' + (days.length === 1 ? '' : 's') + (dayAcc.length >= 2 ? ' · started at ' + dayAcc[0] + '%' : '') + '</div>' +
+            (bars ? '<div class="spark">' + bars + '</div>' : '');
+          host.appendChild(d);
+        });
+      }
+      if (Sona.isPilot && Sona.isPilot()) {
+        var btn = document.getElementById("sendProg");
+        if (btn) { btn.style.display = ""; btn.onclick = function () { try { Sona.sendProgress && Sona.sendProgress("manual"); } catch (e) {} btn.textContent = "Sent ✓"; setTimeout(function () { btn.textContent = "📨  Send progress to my SLP"; }, 2200); }; }
+      }
+    })();
   </script>
 </body>
 </html>

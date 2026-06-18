@@ -516,7 +516,7 @@
   function sendProgress(kind) {
     try {
       if (!isPilot()) return;
-      const now = Date.now(); if (kind !== "enroll" && now - _lastSent < 60000) return; _lastSent = now;
+      const now = Date.now(); if (kind !== "enroll" && kind !== "manual" && now - _lastSent < 60000) return; _lastSent = now;
       const p = getProfile(), g = getProgress();
       const payload = {
         source: kind === "enroll" ? "pilot-enroll" : "pilot-progress",
