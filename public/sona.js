@@ -383,6 +383,23 @@
     for (let i = 0; i < GAMES_PER_LEVEL; i++) out.push(GAME_DECK[(start + i) % GAME_DECK.length]);
     return out;
   }
+  // Per-game display info for the level-path screen (icon · name · skill band · color).
+  const GAME_META = {
+    "rocket.html":   { name: "Sound Rocket",  icon: "🚀",  band: "Warm-up",   c: "#1cb0f6" },
+    "bubble.html":   { name: "Bubble Pop",    icon: "🫧",  band: "Syllables", c: "#27c2c2" },
+    "racer.html":    { name: "Rev Racer",     icon: "🏎️", band: "Words",     c: "#9b7bff" },
+    "cupstack.html": { name: "Cup Stack",     icon: "🥤",  band: "Words",     c: "#ff5d6c" },
+    "whack.html":    { name: "Pop-a-Word",    icon: "🔨",  band: "Words",     c: "#58cc02" },
+    "match.html":    { name: "Match-Up",      icon: "🃏",  band: "Words",     c: "#8b5cf6" },
+    "grocery.html":  { name: "Grocery Grab",  icon: "🛒",  band: "Phrases",   c: "#ff9600" },
+    "train.html":    { name: "Story Train",   icon: "🚂",  band: "Sentences", c: "#2ec4d6" },
+    "story.html":    { name: "Story Time",    icon: "📖",  band: "Story",     c: "#7cc40a" },
+    "chat.html":     { name: "Chat with Leo", icon: "💬",  band: "Talking",   c: "#e0457b" },
+  };
+  function gameMeta(file) {
+    const k = String(file || "").replace(/^\//, "").split("?")[0];
+    return GAME_META[k] || { name: "Game", icon: "🎮", band: "", c: "#1cb0f6" };
+  }
   const SESKEY = "sona.session.v1";
   const session = {
     start(level, sound, queue, diffLevel) {
@@ -450,5 +467,5 @@
     return true;
   }
 
-  global.Sona = { pic, ALL_SOUNDS, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, HOUSE_PALETTE, WORDS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, getProfile, saveProfile, getProgress, recordSession, resetProgress, stageOf, completeStage, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, gated, restore, saveRecording, listRecordings, sfx, music, confetti, pop, LEVEL_GAMES, GAME_DECK, GAMES_PER_LEVEL, levelGames, session, diff, markLevelDone, levelDone, sessionButtons };
+  global.Sona = { pic, ALL_SOUNDS, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, HOUSE_PALETTE, WORDS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, getProfile, saveProfile, getProgress, recordSession, resetProgress, stageOf, completeStage, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, gated, restore, saveRecording, listRecordings, sfx, music, confetti, pop, LEVEL_GAMES, GAME_DECK, GAMES_PER_LEVEL, levelGames, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons };
 })(window);
