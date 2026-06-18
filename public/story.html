@@ -123,6 +123,7 @@
       if(busy) return; busy=true; $("micBtn").onclick=null;
       var p=PAGES[pi];
       var res=await recordTurn(); var sa=await scoreUtterance(res, p.word);
+      if(window.Sona&&Sona.logAttempt)Sona.logAttempt({game:"story",sound:SOUND,pass:sa.pass});
       if(sa.pass){
         if(window.Sona&&Sona.sfx&&Sona.sfx.correct)Sona.sfx.correct();
         setLeo("cheer"); leoReact(); $("prompt").textContent="Nice one!";

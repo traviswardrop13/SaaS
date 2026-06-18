@@ -488,5 +488,51 @@
   function utm() { try { return JSON.parse(localStorage.getItem(UTMKEY) || "{}"); } catch (e) { return {}; } }
   try { captureUTM(); } catch (e) {}
 
-  global.Sona = { pic, ALL_SOUNDS, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, HOUSE_PALETTE, WORDS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, getProfile, saveProfile, getProgress, recordSession, resetProgress, stageOf, completeStage, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, gated, restore, saveRecording, listRecordings, sfx, music, confetti, pop, LEVEL_GAMES, GAME_DECK, GAMES_PER_LEVEL, levelGames, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm };
+  // ── SLP/parent pilot: free full access + (consented) outcome capture ──
+  const PILOTKEY = "sona.pilot.v1";
+  function pilotInfo() { return load(PILOTKEY, { consent: false }); }
+  function isPilot() { return !!pilotInfo().consent; }
+  function startPilot(code) { try { const cur = pilotInfo(); save(PILOTKEY, { code: (code || cur.code || "pilot"), consent: true, consentAt: new Date().toISOString(), ver: 1 }); } catch (e) {} }
+  // how many levels are open: pilot families get the whole town; everyone else Level 1 for now.
+  function unlockedThru() { return isPilot() ? 10 : 1; }
+
+  // outcome capture: every scored attempt → per-sound accuracy over time (the "does it work" data).
+  const ATTKEY = "sona.attempts.v1", OUTKEY = "sona.outcomes.v1";
+  function logAttempt(a) {
+    try {
+      a = a || {}; const sound = a.sound || "?", pass = !!a.pass, day = today();
+      const log = load(ATTKEY, []); log.push({ g: a.game || "", s: sound, p: pass, sc: (typeof a.score === "number" ? Math.round(a.score) : null), t: Date.now() });
+      save(ATTKEY, log.slice(-600));
+      const o = load(OUTKEY, {}); const bs = o[sound] || (o[sound] = { attempts: 0, passes: 0, firstAt: day, lastAt: day, days: {} });
+      bs.attempts++; if (pass) bs.passes++; bs.lastAt = day;
+      const d = bs.days[day] || (bs.days[day] = { a: 0, p: 0 }); d.a++; if (pass) d.p++;
+      save(OUTKEY, o);
+    } catch (e) {}
+  }
+  function outcomes() { return load(OUTKEY, {}); }
+
+  // best-effort: send the pilot child's (consented) progress back to the founder. Debounced.
+  let _lastSent = 0;
+  function sendProgress(kind) {
+    try {
+      if (!isPilot()) return;
+      const now = Date.now(); if (kind !== "enroll" && now - _lastSent < 60000) return; _lastSent = now;
+      const p = getProfile(), g = getProgress();
+      const payload = {
+        source: kind === "enroll" ? "pilot-enroll" : "pilot-progress",
+        code: pilotInfo().code || "pilot",
+        child: (p.childName || "").slice(0, 60),
+        age: p.childAge || "",
+        focus: (p.focusSounds || []).join(", "),
+        outcomes: outcomes(),
+        sessions: (g.totals && g.totals.sessions) || 0,
+        streak: (g.streak && g.streak.count) || 0,
+        consentAt: pilotInfo().consentAt || "",
+        at: new Date().toISOString(),
+      };
+      fetch("/api/pilot", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload), keepalive: true }).catch(function () {});
+    } catch (e) {}
+  }
+
+  global.Sona = { pic, ALL_SOUNDS, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, HOUSE_PALETTE, WORDS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, getProfile, saveProfile, getProgress, recordSession, resetProgress, stageOf, completeStage, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, gated, restore, saveRecording, listRecordings, sfx, music, confetti, pop, LEVEL_GAMES, GAME_DECK, GAMES_PER_LEVEL, levelGames, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, sendProgress };
 })(window);

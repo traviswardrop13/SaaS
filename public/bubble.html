@@ -154,6 +154,7 @@
       setLeo("listen"); $("prompt").textContent="Listen…"; await say(s.say);
       $("prompt").textContent="Say “"+s.t+"” to pop it!";
       var res=await recordTurn(); var sa=await scoreSyllable(res, s.say);
+      if(window.Sona&&Sona.logAttempt)Sona.logAttempt({game:"bubble",sound:SOUND,pass:sa.pass});
       if(sa.pass){
         if(window.Sona&&Sona.sfx&&Sona.sfx.correct)Sona.sfx.correct();
         setLeo("cheer"); leoReact(); if(bub){ bub.classList.remove("target"); bub.classList.add("pop"); popFx(bub); }

@@ -141,6 +141,7 @@
       var it=queue[qi%queue.length];
       setLeo("listen"); $("prompt").textContent="Say the sentence";
       var res=await recordTurn(); var sa=await scoreUtterance(res, it.say);
+      if(window.Sona&&Sona.logAttempt)Sona.logAttempt({game:"train",sound:SOUND,pass:sa.pass});
       if(sa.pass){
         if(window.Sona&&Sona.sfx&&Sona.sfx.correct)Sona.sfx.correct();
         setLeo("cheer"); leoReact(); $("prompt").textContent="Nice one!";

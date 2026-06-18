@@ -54,6 +54,7 @@
       $("bonus").textContent="+0 🪙";
     }
     if(window.Sona){ Sona.confetti&&Sona.confetti(); Sona.sfx&&Sona.sfx.reward&&Sona.sfx.reward(); }
+    if(window.Sona&&Sona.sendProgress)Sona.sendProgress();   // pilot: report progress back (consented)
     if(window.Sona&&Sona.session)Sona.session.end();
     $("map").onclick=function(){ location.href="/map.html"; };
   </script>
