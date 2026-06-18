@@ -457,11 +457,13 @@
     btn.className = (proto ? proto.className : "btn") + " sona-next";
     if (!proto) btn.style.cssText = "margin-top:14px;border:none;border-radius:16px;padding:15px 44px;font-family:'Baloo 2',sans-serif;font-weight:800;font-size:18px;color:#fff;background:#58cc02;box-shadow:0 5px 0 0 #46a302;cursor:pointer;";
     else btn.style.marginTop = "14px";
-    btn.textContent = last ? "Finish level →" : "Next game →";
+    btn.textContent = last ? "See your path →" : "Next step →";
     btn.onclick = function () {
       try { sfx && sfx.tap && sfx.tap(); } catch (e) {}
-      const u = session.next();
-      location.href = u || "/levelcomplete.html";
+      const s0 = load(SESKEY, null); const lvl = s0 ? s0.level : null;
+      session.next();                       // mark this step done
+      // return to the level path so it fills in toward the prize (path handles the finale)
+      location.href = lvl ? ("/level.html?level=" + lvl) : "/levelcomplete.html";
     };
     winEl.appendChild(chip); winEl.appendChild(btn);
     return true;
