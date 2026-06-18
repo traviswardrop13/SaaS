@@ -102,23 +102,32 @@
       popSound();
     }catch(e){} }
 
-    var micStream=null;
-    // listen for an attempt; resolve {spoke} when the child says something (VAD)
-    function listen(maxMs){ maxMs=maxMs||7000; return new Promise(function(resolve){
-      var done=false,raf=null,src=null,micBtn=$("micBtn"),ico=micBtn.querySelector("svg"),bars=null,spoke=false,lastV=0;
-      function finish(){ if(done)return; done=true; if(raf)cancelAnimationFrame(raf); try{src&&src.disconnect();}catch(e){} micBtn.classList.remove("rec"); micBtn.onclick=null; if(bars)bars.remove(); if(ico)ico.style.display=""; resolve({spoke:spoke}); }
-      micBtn.classList.add("rec"); micBtn.onclick=function(){ spoke=true; finish(); }; // tap = count it
+    var micStream=null, useSpeechAce=false;
+    function norm(s){return (s||"").toLowerCase().replace(/[^a-z]/g,"");}
+    function matchSyl(t,w){t=norm(t);w=norm(w);return !!t && (t.indexOf(w)>=0 || w.indexOf(t)>=0);}
+    // record the attempt (audio for SpeechAce + transcript + a voice-activity auto-stop)
+    function recordTurn(maxMs){ maxMs=maxMs||7000; return new Promise(function(resolve){
+      var done=false,chunks=[],rec=null,sr=null,transcript="",spoke=false,lastV=0,raf=null,src=null,bars=null,micBtn=$("micBtn"),ico=micBtn.querySelector("svg");
+      function finish(){ if(done)return; done=true; try{rec&&rec.state!=="inactive"&&rec.stop();}catch(e){} try{sr&&sr.stop();}catch(e){} micBtn.classList.remove("rec");micBtn.onclick=null; if(raf)cancelAnimationFrame(raf); try{src&&src.disconnect();}catch(e){} if(bars)bars.remove(); if(ico)ico.style.display=""; setTimeout(function(){resolve({transcript:transcript,blob:chunks.length?new Blob(chunks,{type:(rec&&rec.mimeType)||"audio/webm"}):null,spoke:spoke});},120); }
+      try{ if(micStream&&window.MediaRecorder){ rec=new MediaRecorder(micStream); rec.ondataavailable=function(e){if(e.data&&e.data.size)chunks.push(e.data);}; rec.start(); } }catch(e){}
+      try{ var SR=window.SpeechRecognition||window.webkitSpeechRecognition; if(SR){ sr=new SR(); sr.lang="en-US"; sr.interimResults=false; sr.maxAlternatives=3; sr.onresult=function(ev){for(var i=0;i<ev.results.length;i++)for(var k=0;k<ev.results[i].length;k++)transcript+=" "+ev.results[i][k].transcript; finish();}; sr.onerror=function(){}; sr.start(); } }catch(e){}
+      micBtn.classList.add("rec"); micBtn.onclick=finish;
       try{ if(micStream){ var ctx=getCtx();src=ctx.createMediaStreamSource(micStream);var an=ctx.createAnalyser();an.fftSize=512;src.connect(an);
-        var fd=new Uint8Array(an.frequencyBinCount),td=new Uint8Array(an.fftSize);
-        bars=document.createElement("div");bars.className="wavebars";for(var b=0;b<7;b++)bars.appendChild(document.createElement("i"));if(ico)ico.style.display="none";micBtn.appendChild(bars);
-        var t0=performance.now(),nS=0,nN=0,thr=0,v=0;
+        var fd=new Uint8Array(an.frequencyBinCount),td=new Uint8Array(an.fftSize);bars=document.createElement("div");bars.className="wavebars";for(var b=0;b<7;b++)bars.appendChild(document.createElement("i"));if(ico)ico.style.display="none";micBtn.appendChild(bars);
+        var t0=performance.now(),nS=0,nN=0,thr=0,vms=0,lt=0;
         (function tick(){ if(done)return; an.getByteFrequencyData(fd);[].forEach.call(bars.children,function(el,k){el.style.height=(8+fd[2+k*3]/255*30)+"px";});
           an.getByteTimeDomainData(td);var sum=0;for(var i=0;i<td.length;i++){var d=(td[i]-128)/128;sum+=d*d;}var rms=Math.sqrt(sum/td.length),now=performance.now();
-          if(now-t0<300){nS+=rms;nN++;}else{if(!thr)thr=Math.min(0.1,Math.max(0.014,(nS/Math.max(1,nN))*2.6));if(rms>thr){v++;lastV=now;if(v>=2)spoke=true;}else if(rms<thr*0.7)v=0;if(spoke&&now-lastV>=900){finish();return;}}
+          if(now-t0<450){nS+=rms;nN++;lt=now;}else{if(!thr)thr=Math.max(0.05,(nS/Math.max(1,nN))*3.2);var dt=now-lt;lt=now;if(rms>thr){vms+=dt;lastV=now;if(vms>=250)spoke=true;}else if(rms<thr*0.65)vms=Math.max(0,vms-dt*0.5);if(spoke&&now-lastV>=850){finish();return;}}
           raf=requestAnimationFrame(tick);})();
       } }catch(e){}
       setTimeout(function(){ if(!done)finish(); }, maxMs);
     }); }
+    // honest scoring: SpeechAce is the judge — a wrong syllable or silence → try again
+    async function scoreSyllable(res,text){
+      if(useSpeechAce && res.blob){ try{ var fd=new FormData(); fd.append("audio",new File([res.blob],"a.webm",{type:res.blob.type||"audio/webm"})); fd.append("text",text); fd.append("targetSound",SOUND); fd.append("userId","child"); fd.append("mode","full"); var r=await fetch("/api/score",{method:"POST",body:fd}); var j=await r.json(); if(j&&j.ok&&j.rating) return {pass:j.rating!=="tryAgain"}; }catch(e){} }
+      if(res.transcript) return {pass:matchSyl(res.transcript,text)};
+      return {pass:false};
+    }
 
     var queue=[], qi=0, popped=0, bubbleEls=[];
     function layoutBubbles(){
@@ -139,20 +148,24 @@
 
     async function step(){
       if(popped>=GOAL) return finishGame();
-      var s=queue[qi%queue.length]; qi++;
+      var s=queue[qi%queue.length];
       $("sayText").textContent=s.t;
       var bub=bubbleFor(s.t); clearTarget(); if(bub){ bub.classList.add("target"); }
       setLeo("listen"); $("prompt").textContent="Listen…"; await say(s.say);
       $("prompt").textContent="Say “"+s.t+"” to pop it!";
-      var res=await listen();
-      if(res.spoke){
+      var res=await recordTurn(); var sa=await scoreSyllable(res, s.say);
+      if(sa.pass){
         if(window.Sona&&Sona.sfx&&Sona.sfx.correct)Sona.sfx.correct();
         setLeo("cheer"); leoReact(); if(bub){ bub.classList.remove("target"); bub.classList.add("pop"); popFx(bub); }
-        popped++; $("count").textContent=popped; $("prompt").textContent="Nice one!";
-      } else { setLeo("idle"); $("prompt").textContent="Have a go — say “"+s.t+"”."; }
-      await new Promise(function(r){setTimeout(r,520);});
-      setLeo("idle");
-      step();
+        popped++; qi++; $("count").textContent=popped; $("prompt").textContent="Nice one!";
+        await new Promise(function(r){setTimeout(r,520);});
+        setLeo("idle"); step();
+      } else {
+        if(window.Sona&&Sona.sfx&&Sona.sfx.tap)Sona.sfx.tap();
+        setLeo("idle"); $("prompt").textContent="Not quite — try again!"; await say(s.say);
+        await new Promise(function(r){setTimeout(r,320);});
+        step();
+      }
     }
 
     function finishGame(){
@@ -169,7 +182,8 @@
       queue=[]; while(queue.length<GOAL){ queue=queue.concat(shuffle(SYL)); } queue=queue.slice(0,GOAL);
       setLeo("idle"); step();
     }
-    (async function(){ try{ if(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia) micStream=await navigator.mediaDevices.getUserMedia({audio:true}); }catch(e){micStream=null;}
+    (async function(){ try{var r=await fetch("/api/score");var j=await r.json();useSpeechAce=!!(j&&j.hasKey);}catch(e){useSpeechAce=false;}
+      try{ if(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia) micStream=await navigator.mediaDevices.getUserMedia({audio:true}); }catch(e){micStream=null;}
       $("hear").onclick=function(){ say($("sayText").textContent); }; $("again").onclick=startGame;
       if(window.Sona&&Sona.music)Sona.music.start(); startGame();
     })();
