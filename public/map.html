@@ -34,6 +34,8 @@
       box-shadow:0 5px 0 rgba(20,90,150,.18),0 9px 15px rgba(20,90,150,.22);animation:bob 2.8s ease-in-out infinite;}
     .node:active .pin{transform:translateY(3px) scale(.94);box-shadow:0 2px 0 rgba(20,90,150,.18);}
     .node .lk{display:none;}
+    .node.locked .pin{background:#eaf0f6;border-color:#c2ccd6;color:#aab6c2;animation:none;box-shadow:0 4px 0 rgba(20,90,150,.12);}
+    .node.locked .num{display:none;} .node.locked .lk{display:block;color:#8fa0b0;}
     @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
 
     /* locked group */
@@ -88,6 +90,7 @@
   <script>
     var $=function(id){return document.getElementById(id);};
     var lockSvg='<svg class="lk" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>';
+    var UNLOCKED_THRU = 1; // levels above this show a lock for now (bump as you release more)
 
     // Three level groups. Each shows its art (drops in from /coach/map/<art>) with the
     // group's buildings as tappable level badges. Buildings = levels; tap → game (placeholder
@@ -131,11 +134,12 @@
       s.appendChild(lc);
 
       g.nodes.forEach(function(nd,i){
-        var b=document.createElement("button"); b.className="node"; b.style.left=nd.x+"%"; b.style.top=nd.y+"%"; b.title="Level "+nd.n;
+        var locked = nd.n > UNLOCKED_THRU; // only level 1 open for now
+        var b=document.createElement("button"); b.className="node"+(locked?" locked":""); b.style.left=nd.x+"%"; b.style.top=nd.y+"%"; b.title="Level "+nd.n+(locked?" — locked":"");
         b.innerHTML='<span class="pin" style="--c:'+nd.c+';animation-delay:'+(i*0.35)+'s;"><span class="num">'+nd.n+'</span>'+lockSvg+'</span>';
         b.onclick=function(){
           if(window.Sona&&Sona.sfx&&Sona.sfx.tap)Sona.sfx.tap();
-          if(s.classList.contains("locked")){ b.querySelector(".pin").animate&&b.querySelector(".pin").animate([{transform:"translateX(-3px)"},{transform:"translateX(3px)"},{transform:"translateX(0)"}],{duration:180}); return; }
+          if(locked || s.classList.contains("locked")){ var p=b.querySelector(".pin"); p.animate&&p.animate([{transform:"translateX(-3px)"},{transform:"translateX(3px)"},{transform:"translateX(0)"}],{duration:180}); return; }
           showStart(nd);
         };
         s.appendChild(b);

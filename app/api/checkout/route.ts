@@ -15,7 +15,7 @@ import Stripe from "stripe";
 export const runtime = "nodejs";
 
 const MONTHLY_CENTS = 450;  // $4.50/mo — unused while we preorder annual-only
-const ANNUAL_CENTS = 3999;  // $39.99/yr founding preorder (50% off the $79.99 anchor)
+const ANNUAL_CENTS = 3999;  // $39.99/yr founding price (67% off the $119.99 anchor)
 
 export async function POST(req: NextRequest) {
   const key = process.env.STRIPE_SECRET_KEY;
@@ -54,9 +54,9 @@ export async function POST(req: NextRequest) {
             unit_amount: annual ? ANNUAL_CENTS : MONTHLY_CENTS,
             recurring: { interval: annual ? "year" : "month" },
             product_data: {
-              name: annual ? "Sona — Founding Preorder (Yearly)" : "Sona — Monthly",
+              name: annual ? "Sona — Founding Member (Yearly)" : "Sona — Monthly",
               description:
-                "Founding-family preorder for Sona — your child's at-home speech-practice games, built with a licensed SLP. Locks in 50% off for life; early access as Sona launches.",
+                "Sona founding membership — your child's at-home speech-practice games, built with a licensed SLP. Locks in the founding price (67% off) for life.",
             },
           },
         },

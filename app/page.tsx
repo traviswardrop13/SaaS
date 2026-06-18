@@ -15,7 +15,7 @@ import Link from "next/link";
 export const metadata = {
   title: "Sona — free 2-minute speech check for kids",
   description:
-    "Get a free 2-minute speech check for your child, built with a licensed speech-language pathologist — see which sounds are on track and which to practice, and we'll email you the report. The full speech-games app is launching soon; preorder now at 50% off.",
+    "Get a free 2-minute speech check for your child, built with a licensed speech-language pathologist — see which sounds are on track and which to practice, and we'll email you the report. Sona's full speech-games app is live — join as a founding member at 67% off.",
 };
 
 export default function Landing() {
@@ -109,7 +109,7 @@ function Hero() {
           Built by a licensed speech-language pathologist
         </div>
         <p className="mt-4 text-sm font-semibold text-gray-500">
-          Free · 2 minutes · the full speech-games app is launching soon
+          Free · 2 minutes · the full speech-games app is live
         </p>
       </div>
     </section>
@@ -285,28 +285,29 @@ function Pricing() {
     <section id="pricing" className="bg-gray-50">
       <div className="mx-auto max-w-6xl px-5 py-20">
         <SectionHead
-          kicker="Preorder"
+          kicker="Founding offer"
           title="Become a founding family"
-          sub="Sona launches soon. Preorder now to lock in 50% off for life — for the first 100 families."
+          sub="Sona is live. Join now to lock in 67% off for life — for the first 100 founding families."
         />
         <div className="mx-auto mt-12 max-w-md">
           <PlanCard
-            name="Founding Preorder"
+            name="Founding Member"
             badge="First 100 families"
-            was="$79.99"
+            was="$119.99"
             price="$39.99"
             priceSuffix="/yr"
-            yearly="50% off · billed yearly · no free trial"
-            blurb="Launching soon. Preorder to lock in 50% off for life and get early access."
+            coupon="67% off"
+            yearly="Founding price · billed yearly · cancel anytime"
+            blurb="Lock in 67% off for life and start playing every game today."
             highlight
             features={[
-              "Early access the moment Sona launches",
-              "Founding price — 50% off, locked for life",
+              "Every game in Sona — unlocked today",
+              "Founding price — 67% off, locked for life",
               "Every new feature and update as it ships",
               "Your suggestions shape Sona for your child",
               "Priority support",
             ]}
-            cta="Preorder — 50% off"
+            cta="Start — 67% off"
             href="/subscribe"
           />
         </div>
@@ -324,6 +325,7 @@ function PlanCard({
   price,
   priceSuffix = "/mo",
   was,
+  coupon,
   yearly,
   blurb,
   features,
@@ -336,6 +338,7 @@ function PlanCard({
   price: string;
   priceSuffix?: string;
   was?: string;
+  coupon?: string;
   yearly: string;
   blurb: string;
   features: string[];
@@ -357,7 +360,7 @@ function PlanCard({
       ) : null}
       <h3 className="font-display text-2xl font-extrabold text-gray-900">{name}</h3>
       <p className="mt-1 text-gray-600">{blurb}</p>
-      <div className="mt-5 flex items-end gap-2">
+      <div className="mt-5 flex flex-wrap items-end gap-2">
         {was ? (
           <span className="mb-2 text-2xl font-bold text-gray-400 line-through">
             {was}
@@ -367,6 +370,11 @@ function PlanCard({
           {price}
         </span>
         <span className="mb-1.5 font-bold text-gray-500">{priceSuffix}</span>
+        {coupon ? (
+          <span className="mb-2 rounded-full bg-grass-500 px-2.5 py-1 text-xs font-extrabold uppercase tracking-wide text-white shadow-chunky-sm">
+            {coupon}
+          </span>
+        ) : null}
       </div>
       <p className="mt-1 text-sm font-bold text-brand-600">{yearly}</p>
       <Link
@@ -439,15 +447,15 @@ function FAQ() {
     },
     {
       q: "When can my child start?",
-      a: "Take the free 2-minute speech check today and we'll email you the report. The full speech-games app is launching soon — preorder now to lock in 50% off and get early access the moment it's ready.",
+      a: "Right away. Take the free 2-minute speech check today and we'll email you the report — then join as a founding member to play the full set of speech games.",
     },
     {
       q: "Is the app ready today?",
-      a: "Not yet — we're putting the finishing touches on the speech games and launching soon. The free speech check works today, and founding families get every update as it ships, with your feedback steering what we build next.",
+      a: "Yes — Sona's speech games are live now. Start with the free speech check, then join as a founding member to play the full set, and you'll get every new feature as it ships.",
     },
     {
-      q: "How does the preorder work?",
-      a: "Sona is launching soon. Preordering locks in the founding price — 50% off for life ($39.99/yr instead of $79.99) — and gets you early access as soon as it's ready. There's no free trial during preorder; the founder price is the deal, and you can cancel anytime.",
+      q: "How does the founding price work?",
+      a: "Sona is live. Joining now locks in the founding price — 67% off for life ($39.99/yr instead of $119.99) — for the first 100 families. There's no free trial; the founding price is the deal, and you can cancel anytime.",
     },
   ];
   return (
@@ -479,7 +487,7 @@ function FinalCTA() {
         </h2>
         <p className="mx-auto mt-3 max-w-xl text-lg text-brand-50">
           Two minutes, and you&apos;ll know exactly which sounds to focus on. We&apos;ll
-          email you the report — and tell you the moment Sona launches.
+          email you the report — then you can start playing right away.
         </p>
         <a
           href="/check.html"
