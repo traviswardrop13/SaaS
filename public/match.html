@@ -93,7 +93,7 @@
     var params = new URLSearchParams(location.search);
     var SOUND = (params.get("sound") || (profile.focusSounds && profile.focusSounds[0]) || "R").toUpperCase();
     if(!(window.Sona && Sona.WORDS && Sona.WORDS[SOUND])) SOUND="R";
-    var POOL = (window.Sona && Sona.WORDS && Sona.WORDS[SOUND]) ? Sona.WORDS[SOUND].filter(function(w){return w.i;}) : [{w:"rabbit",e:"🐰"},{w:"rocket",e:"🚀"},{w:"ring",e:"💍"}];
+    var POOL = (window.Sona && Sona.wordsFor) ? Sona.wordsFor(SOUND, profile.practicePosition) : [{w:"rabbit",e:"🐰"},{w:"rocket",e:"🚀"},{w:"ring",e:"💍"}];
     var DIFF=(window.Sona&&Sona.diff)?Sona.diff():1;
     var PAIRS = Math.min(POOL.length, Math.max(2, 2+Math.floor(DIFF/2)));
 

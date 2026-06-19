@@ -31,6 +31,16 @@
       <div class="field">Focus sounds</div>
       <div class="sounds" id="sounds"></div>
 
+      <label class="field" for="practicePos">Word position</label>
+      <select id="practicePos">
+        <option value="i">Beginning of word</option>
+        <option value="m">Middle of word</option>
+        <option value="f">End of word</option>
+        <option value="v">Vocalic R (er, ar, or…)</option>
+        <option value="b">Blends (tr, st, bl…)</option>
+        <option value="mix">Mixed — all positions</option>
+      </select>
+
       <div class="toggle"><input type="checkbox" id="voiceOn" /><label for="voiceOn">Coach speaks out loud</label></div>
       <div class="toggle"><input type="checkbox" id="soundOn" /><label for="soundOn">Sound effects (taps, chimes, celebrations)</label></div>
       <div class="toggle"><input type="checkbox" id="musicOn" /><label for="musicOn">Background music</label></div>
@@ -137,6 +147,7 @@
         focusAreaEl = document.getElementById("focusArea"),
         slpEl = document.getElementById("slpEvaluated"),
         goalsEl = document.getElementById("goals"),
+        posEl = document.getElementById("practicePos"),
         wrap = document.getElementById("sounds");
     childEl.value = p.childName || "";
     coachEl.value = p.coachName || "";
@@ -152,6 +163,7 @@
     focusAreaEl.value = p.focusArea || "articulation";
     slpEl.value = p.slpEvaluated || "";
     goalsEl.value = p.goals || "";
+    posEl.value = p.practicePosition || "i";
     var sel = new Set(p.focusSounds || []);
     Sona.ALL_SOUNDS.forEach(function (s) {
       var b = document.createElement("div");
@@ -161,7 +173,7 @@
       wrap.appendChild(b);
     });
     document.getElementById("save").onclick = function () {
-      Sona.saveProfile({ childName: childEl.value.trim(), coachName: coachEl.value.trim() || "Coach", voiceOn: voiceEl.checked, soundOn: soundEl.checked, musicOn: musicEl.checked, cloudScoring: cloudEl.checked, dailyMinutes: parseInt(dailyEl.value, 10) || 5, volume: parseFloat(volEl.value) || 0.8, focusArea: focusAreaEl.value, slpEvaluated: slpEl.value, goals: goalsEl.value.trim(), focusSounds: [].concat(Array.from(sel)) });
+      Sona.saveProfile({ childName: childEl.value.trim(), coachName: coachEl.value.trim() || "Coach", voiceOn: voiceEl.checked, soundOn: soundEl.checked, musicOn: musicEl.checked, cloudScoring: cloudEl.checked, dailyMinutes: parseInt(dailyEl.value, 10) || 5, volume: parseFloat(volEl.value) || 0.8, focusArea: focusAreaEl.value, slpEvaluated: slpEl.value, goals: goalsEl.value.trim(), practicePosition: posEl.value, focusSounds: [].concat(Array.from(sel)) });
       var s = document.getElementById("saved"); s.style.display = "inline"; setTimeout(function () { s.style.display = "none"; }, 1800);
     };
     document.getElementById("reset").onclick = function () {

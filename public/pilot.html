@@ -61,6 +61,16 @@
       <label class="fl">Sounds to practice <span style="font-weight:700;color:#aab9c8;">(pick what your SLP suggested)</span></label>
       <div class="sounds" id="sounds"></div>
 
+      <label class="fl" for="pos">Word position <span style="font-weight:700;color:#aab9c8;">(where the sound sits)</span></label>
+      <select id="pos">
+        <option value="i">Beginning of word</option>
+        <option value="m">Middle of word</option>
+        <option value="f">End of word</option>
+        <option value="v">Vocalic R (er, ar, or…)</option>
+        <option value="b">Blends (tr, st, bl…)</option>
+        <option value="mix">Mixed — all positions</option>
+      </select>
+
       <div class="consent">
         <input id="consent" type="checkbox" />
         <label for="consent">I'm this child's parent or guardian. I agree Sona can record and score my child's spoken practice to give feedback and track progress. Recordings stay on this device; anonymized practice results (which sounds, how often, accuracy) help improve Sona and let my SLP see progress. I can stop anytime. <a href="/privacy" target="_blank">Privacy</a>.</label>
@@ -96,7 +106,7 @@
       if(!$("consent").checked){ $("err").textContent="Please check the consent box to continue."; return; }
       try{
         if(window.Sona){
-          Sona.saveProfile({ childName:name, childAge:String(age), focusSounds:sounds.slice(0,4), onboarded:true });
+          Sona.saveProfile({ childName:name, childAge:String(age), focusSounds:sounds.slice(0,4), practicePosition:($("pos")?$("pos").value:"i"), onboarded:true });
           if(Sona.startPilot) Sona.startPilot(CODE);
           if(Sona.sendProgress) Sona.sendProgress("enroll");
           if(Sona.sfx&&Sona.sfx.correct) Sona.sfx.correct();

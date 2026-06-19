@@ -131,9 +131,8 @@
     var params = new URLSearchParams(location.search);
     var SOUND = (params.get("sound") || (profile.focusSounds && profile.focusSounds[0]) || "R").toUpperCase();
     if(!(window.Sona && Sona.WORDS && Sona.WORDS[SOUND])) SOUND="R";
-    // hardcoded ~10 target words for ONE sound — all START with it (initial position).
-    // To use your wife's assigned list, replace WORDS with [{w:"rabbit",e:"🐰"},...].
-    var POOL = (window.Sona && Sona.WORDS && Sona.WORDS[SOUND]) ? Sona.WORDS[SOUND].filter(function(w){return w.i;}) : [{w:"rabbit",e:"🐰"},{w:"rocket",e:"🚀"}];
+    // target words for ONE sound at the chosen position (initial/medial/final/vocalic/blends).
+    var POOL = (window.Sona && Sona.wordsFor) ? Sona.wordsFor(SOUND, profile.practicePosition) : [{w:"rabbit",e:"🐰"},{w:"rocket",e:"🚀"}];
     var DIFF=(window.Sona&&Sona.diff)?Sona.diff():1;
     var GOAL = Math.min(20,8+DIFF*2);
     // cup colors (one unlocks on a win)
