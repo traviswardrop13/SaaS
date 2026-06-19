@@ -89,12 +89,16 @@
     var CODE=(qp.get("code")||qp.get("slp")||"pilot").slice(0,40);
     var ALL=(window.Sona&&Sona.ALL_SOUNDS)?Sona.ALL_SOUNDS:["R","S","L","K","SH","CH","TH","G","F"];
     var picked={};
+    // pre-fill from an SLP assignment link (?sound=R,S  &pos=v  &goal=15)
+    (qp.get("sound")||"").toUpperCase().split(",").forEach(function(s){ s=s.trim(); if(s&&ALL.indexOf(s)>=0) picked[s]=true; });
+    var ASSIGN_GOAL=parseInt(qp.get("goal"),10)||0;
     var wrap=$("sounds");
     ALL.forEach(function(s){
-      var b=document.createElement("div"); b.className="snd"; b.textContent=(window.Sona&&Sona.soundLabel)?Sona.soundLabel(s):s;
+      var b=document.createElement("div"); b.className="snd"+(picked[s]?" on":""); b.textContent=(window.Sona&&Sona.soundLabel)?Sona.soundLabel(s):s;
       b.onclick=function(){ if(picked[s]){delete picked[s];b.classList.remove("on");} else {picked[s]=true;b.classList.add("on");} };
       wrap.appendChild(b);
     });
+    var _pp=qp.get("pos"); if(_pp&&$("pos")) $("pos").value=_pp;
 
     $("go").onclick=function(){
       var name=$("cName").value.trim();
@@ -106,7 +110,7 @@
       if(!$("consent").checked){ $("err").textContent="Please check the consent box to continue."; return; }
       try{
         if(window.Sona){
-          Sona.saveProfile({ childName:name, childAge:String(age), focusSounds:sounds.slice(0,4), practicePosition:($("pos")?$("pos").value:"i"), onboarded:true });
+          Sona.saveProfile({ childName:name, childAge:String(age), focusSounds:sounds.slice(0,4), practicePosition:($("pos")?$("pos").value:"i"), dailyGoal:ASSIGN_GOAL, onboarded:true });
           if(Sona.startPilot) Sona.startPilot(CODE);
           if(Sona.sendProgress) Sona.sendProgress("enroll");
           if(Sona.sfx&&Sona.sfx.correct) Sona.sfx.correct();

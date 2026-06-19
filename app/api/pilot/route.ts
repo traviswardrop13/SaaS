@@ -64,6 +64,7 @@ export async function POST(req: NextRequest) {
         child: b.child || "",
         age: b.age || "",
         focus: b.focus || "",
+        goal: b.goal || "",
         outcomes: b.outcomes || {},
         sessions: b.sessions || 0,
         streak: b.streak || 0,

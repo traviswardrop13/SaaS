@@ -20,7 +20,7 @@
     .card{background:#fff;border-radius:18px;padding:18px;margin-top:16px;box-shadow:0 10px 26px -18px rgba(20,90,160,.5);}
     .card h2{font-family:"Baloo 2";font-weight:800;font-size:17px;}
     label.fl{display:block;font-weight:800;font-size:12.5px;color:var(--muted);margin:10px 0 5px;}
-    input{width:100%;border:2px solid #d9e6f2;border-radius:12px;padding:12px;font-size:15px;font-weight:700;color:var(--ink);background:#fff;}
+    input,select{width:100%;border:2px solid #d9e6f2;border-radius:12px;padding:12px;font-size:15px;font-weight:700;color:var(--ink);background:#fff;}
     .linkbox{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;}
     .linkbox input{flex:1;min-width:200px;background:#f6fbff;}
     .btn{border:none;border-radius:12px;padding:12px 16px;font-family:"Baloo 2";font-weight:800;font-size:14px;color:#fff;background:var(--blue);cursor:pointer;white-space:nowrap;}
@@ -60,6 +60,16 @@
       <div class="linkbox"><input id="codeIn" type="text" placeholder="e.g. dr-smith" /><button class="btn green" id="setCode">Use this</button></div>
     </div>
 
+    <div class="card" id="assignCard">
+      <h2>Set what they practice 🎯</h2>
+      <p class="muted small" style="margin-top:4px;">Optional — pre-fill the child's setup so the family starts on the right target. Leave on “Any” to let them choose. The family link below updates as you change this.</p>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:6px;">
+        <div style="flex:1;min-width:120px;"><label class="fl" for="aSound">Sound</label><select id="aSound"></select></div>
+        <div style="flex:1;min-width:120px;"><label class="fl" for="aPos">Position</label><select id="aPos"></select></div>
+        <div style="flex:1;min-width:120px;"><label class="fl" for="aGoal">Daily goal</label><select id="aGoal"></select></div>
+      </div>
+    </div>
+
     <div class="card" id="shareCard">
       <h2>Family link 🔗</h2>
       <p class="muted small" style="margin-top:4px;">Send this to each family. They set up their child in ~30 seconds and start practicing free.</p>
@@ -78,20 +88,45 @@
     <p class="note">Pilot access is by code (no login yet) — keep this page link private. Sona is an at-home practice tool, not a diagnosis or a substitute for professional care. Secure SLP logins are coming.</p>
   </div>
 
+  <script src="/sona.js"></script>
   <script>
     var $=function(id){return document.getElementById(id);};
     function slug(s){return (s||"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"").slice(0,40);}
     var qp=new URLSearchParams(location.search);
     var code=slug(qp.get("code")||localStorage.getItem("sona.slp.code")||"");
 
+    var ASSIGNKEY="sona.slp.assign";
+    function populateAssign(){
+      var aSound=$("aSound"), aPos=$("aPos"), aGoal=$("aGoal");
+      if(!aSound||aSound.dataset.ready) return;
+      var sounds=(window.Sona&&Sona.ALL_SOUNDS)?Sona.ALL_SOUNDS:["R","S","L","K","SH","CH","TH","G","F"];
+      var lbl=function(s){return (window.Sona&&Sona.soundLabel)?Sona.soundLabel(s):s;};
+      aSound.innerHTML='<option value="">Any sound</option>'+sounds.map(function(s){return '<option value="'+s+'">'+lbl(s)+'</option>';}).join("");
+      var positions=[["i","Beginning"],["m","Middle"],["f","End"],["v","Vocalic R"],["b","Blends"],["mix","Mixed"]];
+      aPos.innerHTML='<option value="">Any position</option>'+positions.map(function(p){return '<option value="'+p[0]+'">'+p[1]+'</option>';}).join("");
+      aGoal.innerHTML='<option value="">No daily goal</option>'+[10,15,20,30].map(function(n){return '<option value="'+n+'">'+n+' words a day</option>';}).join("");
+      try{ var saved=JSON.parse(localStorage.getItem(ASSIGNKEY)||"{}"); if(saved.sound)aSound.value=saved.sound; if(saved.pos)aPos.value=saved.pos; if(saved.goal)aGoal.value=saved.goal; }catch(e){}
+      [aSound,aPos,aGoal].forEach(function(el){ el.onchange=function(){ try{localStorage.setItem(ASSIGNKEY,JSON.stringify({sound:aSound.value,pos:aPos.value,goal:aGoal.value}));}catch(e){} buildLink(); }; });
+      aSound.dataset.ready="1";
+    }
+    function buildLink(){
+      var link=location.origin+"/pilot.html?code="+encodeURIComponent(code);
+      var s=$("aSound")?$("aSound").value:"", p=$("aPos")?$("aPos").value:"", g=$("aGoal")?$("aGoal").value:"";
+      if(s) link+="&sound="+encodeURIComponent(s);
+      if(p) link+="&pos="+encodeURIComponent(p);
+      if(g) link+="&goal="+encodeURIComponent(g);
+      $("famLink").value=link;
+      var tgt="";
+      if(s){ var lbl=(window.Sona&&Sona.soundLabel)?Sona.soundLabel(s):s; var pn={i:"beginning",m:"middle",f:"end",v:"vocalic R",b:"blends",mix:"all positions"}[p]||""; tgt=" I set it up to practice the "+lbl+" sound"+(pn?" ("+pn+")":"")+(g?", about "+g+" words a day":"")+"."; }
+      $("snip").value="Hi! Here's the Sona link I mentioned — a fun app where your child can practice their speech sounds at home, free during our pilot. It listens and gives feedback as they play."+tgt+" Quick setup:\n\n"+link;
+    }
     function render(){
       if(!code){ $("codeCard").style.display="block"; $("hi").textContent="Set up your dashboard"; return; }
       localStorage.setItem("sona.slp.code", code);
       $("codeCard").style.display="none";
       $("hi").textContent="Dashboard · "+code;
-      var link=location.origin+"/pilot.html?code="+encodeURIComponent(code);
-      $("famLink").value=link;
-      $("snip").value="Hi! Here's the Sona link I mentioned — a fun app where your child can practice their speech sounds at home, free during our pilot. It listens and gives feedback as they play. Quick setup:\n\n"+link;
+      populateAssign();
+      buildLink();
       loadRoster();
     }
 
@@ -126,8 +161,9 @@
         host.innerHTML="";
         kids.forEach(function(k){
           var d=document.createElement("div"); d.className="kid";
+          var goalLine = k.goal ? '<div class="muted small" style="margin-top:6px;">🎯 Assigned: '+k.goal+' words a day</div>' : '';
           d.innerHTML='<div class="kidtop"><span class="kidname">'+(k.child||"Child")+'</span>'+(k.age?'<span class="muted small">age '+k.age+'</span>':'')+'<span class="kidwhen">'+ago(k.at)+'</span></div>'+
-                      '<div class="chips">'+soundChips(k.outcomes)+'</div>';
+                      '<div class="chips">'+soundChips(k.outcomes)+'</div>'+goalLine;
           host.appendChild(d);
         });
       }).catch(function(){ host.innerHTML='<p class="muted small">Couldn’t load right now.</p>'; });

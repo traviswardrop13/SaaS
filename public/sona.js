@@ -678,6 +678,7 @@
         child: (p.childName || "").slice(0, 60),
         age: p.childAge || "",
         focus: (p.focusSounds || []).join(", "),
+        goal: p.dailyGoal || "",
         outcomes: outcomes(),
         sessions: (g.totals && g.totals.sessions) || 0,
         streak: (g.streak && g.streak.count) || 0,
