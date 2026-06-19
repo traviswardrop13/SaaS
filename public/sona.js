@@ -492,7 +492,7 @@
   const PILOTKEY = "sona.pilot.v1";
   function pilotInfo() { return load(PILOTKEY, { consent: false }); }
   function isPilot() { return !!pilotInfo().consent; }
-  function startPilot(code) { try { const cur = pilotInfo(); save(PILOTKEY, { code: (code || cur.code || "pilot"), consent: true, consentAt: new Date().toISOString(), ver: 1 }); } catch (e) {} }
+  function startPilot(code) { try { const cur = pilotInfo(); save(PILOTKEY, { code: (code || cur.code || "pilot"), childId: cur.childId || (Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4)), consent: true, consentAt: new Date().toISOString(), ver: 1 }); } catch (e) {} }
   // how many levels are open: pilot families get the whole town; everyone else Level 1 for now.
   function unlockedThru() { return isPilot() ? 10 : 1; }
 
@@ -521,6 +521,7 @@
       const payload = {
         source: kind === "enroll" ? "pilot-enroll" : "pilot-progress",
         code: pilotInfo().code || "pilot",
+        childId: pilotInfo().childId || "",
         child: (p.childName || "").slice(0, 60),
         age: p.childAge || "",
         focus: (p.focusSounds || []).join(", "),

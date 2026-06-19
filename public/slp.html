@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sona — SLP Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <meta name="theme-color" content="#1cb0f6" />
+  <script defer src="/_vercel/insights/script.js"></script>
+  <style>
+    :root{ --blue:#1cb0f6; --blue-d:#1597d4; --green:#58cc02; --green-d:#46a302; --ink:#16384f; --muted:#6b86a3; --line:#e6eef6; }
+    *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;font-family:"Nunito",-apple-system,"Segoe UI",Roboto,sans-serif;}
+    body{background:linear-gradient(180deg,#eef7ff,#eafbe9 70%);color:var(--ink);min-height:100vh;}
+    .wrap{max-width:680px;margin:0 auto;padding:calc(18px + env(safe-area-inset-top)) 18px 40px;}
+    .brand{display:flex;align-items:center;gap:8px;font-family:"Baloo 2";font-weight:800;font-size:18px;color:var(--blue-d);}
+    .brand img{width:30px;height:30px;}
+    h1{font-family:"Baloo 2";font-weight:800;font-size:25px;margin-top:8px;}
+    p.lead{color:var(--muted);font-weight:700;font-size:14.5px;line-height:1.5;margin-top:4px;}
+    .card{background:#fff;border-radius:18px;padding:18px;margin-top:16px;box-shadow:0 10px 26px -18px rgba(20,90,160,.5);}
+    .card h2{font-family:"Baloo 2";font-weight:800;font-size:17px;}
+    label.fl{display:block;font-weight:800;font-size:12.5px;color:var(--muted);margin:10px 0 5px;}
+    input{width:100%;border:2px solid #d9e6f2;border-radius:12px;padding:12px;font-size:15px;font-weight:700;color:var(--ink);background:#fff;}
+    .linkbox{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;}
+    .linkbox input{flex:1;min-width:200px;background:#f6fbff;}
+    .btn{border:none;border-radius:12px;padding:12px 16px;font-family:"Baloo 2";font-weight:800;font-size:14px;color:#fff;background:var(--blue);cursor:pointer;white-space:nowrap;}
+    .btn.green{background:var(--green);box-shadow:0 4px 0 var(--green-d);}
+    .btn:active{transform:translateY(2px);}
+    .snippet{width:100%;border:2px solid #d9e6f2;border-radius:12px;padding:12px;font-size:13.5px;font-weight:600;color:var(--ink);background:#f6fbff;min-height:92px;line-height:1.5;resize:vertical;}
+    .muted{color:var(--muted);font-weight:700;}
+    .small{font-size:12px;}
+    .kid{padding:13px 0;border-top:1px solid var(--line);}
+    .kid:first-child{border-top:none;}
+    .kidtop{display:flex;align-items:baseline;gap:8px;}
+    .kidname{font-family:"Baloo 2";font-weight:800;font-size:16px;}
+    .kidwhen{margin-left:auto;font-size:11.5px;font-weight:700;color:var(--muted);}
+    .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:7px;}
+    .chip{font-family:"Baloo 2";font-weight:800;font-size:12.5px;border-radius:99px;padding:4px 10px;background:#eef3fb;color:#46627a;}
+    .chip b{color:#16384f;}
+    .chip.hi{background:#eafce9;color:#46a302;} .chip.mid{background:#fff5e0;color:#b07908;} .chip.lo{background:#fdecea;color:#c0392b;}
+    .banner{background:#fff7e6;border:1px solid #ffe2a8;border-radius:12px;padding:11px 13px;font-size:12.5px;font-weight:700;color:#8a6400;margin-top:10px;line-height:1.5;}
+    .note{font-size:11.5px;color:var(--muted);font-weight:700;line-height:1.5;margin-top:12px;}
+    code{background:#eef3fb;border-radius:6px;padding:1px 6px;font-size:12px;}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="brand"><img src="/coach/leo-icon.png" alt="Sona"/> Sona · SLP</div>
+    <h1 id="hi">Your Sona dashboard</h1>
+    <p class="lead">Hand Sona to as many of your families as you like — free during the pilot — and watch their practice add up here. This page is yours; share the <b>family link</b> below, not this page.</p>
+
+    <div class="card" id="codeCard" style="display:none;">
+      <h2>Set your code</h2>
+      <p class="muted small" style="margin-top:4px;">A short tag so we can group your families (e.g. your name or clinic).</p>
+      <label class="fl" for="codeIn">Your code</label>
+      <div class="linkbox"><input id="codeIn" type="text" placeholder="e.g. dr-smith" /><button class="btn green" id="setCode">Use this</button></div>
+    </div>
+
+    <div class="card" id="shareCard">
+      <h2>Family link 🔗</h2>
+      <p class="muted small" style="margin-top:4px;">Send this to each family. They set up their child in ~30 seconds and start practicing free.</p>
+      <div class="linkbox"><input id="famLink" type="text" readonly /><button class="btn" id="copyLink">Copy</button></div>
+      <label class="fl" for="snip">A message you can send</label>
+      <textarea class="snippet" id="snip"></textarea>
+      <div style="margin-top:8px;"><button class="btn green" id="copySnip">Copy message</button> <span class="muted small" id="copyMsg"></span></div>
+    </div>
+
+    <div class="card">
+      <div style="display:flex;align-items:center;gap:8px;"><h2>Your families' progress 📈</h2><button class="btn" id="refresh" style="margin-left:auto;background:#eef3fb;color:#46627a;box-shadow:none;padding:8px 12px;">↻ Refresh</button></div>
+      <div id="roster" style="margin-top:6px;"><p class="muted small">Loading…</p></div>
+      <div class="banner" id="kvBanner" style="display:none;">Live roster is off until a data store is connected. Add a <b>Vercel KV</b> store to this project (Storage → Create → KV) and redeploy — then families' progress shows here automatically. Until then, you'll still get each child's progress from us directly.</div>
+    </div>
+
+    <p class="note">Pilot access is by code (no login yet) — keep this page link private. Sona is an at-home practice tool, not a diagnosis or a substitute for professional care. Secure SLP logins are coming.</p>
+  </div>
+
+  <script>
+    var $=function(id){return document.getElementById(id);};
+    function slug(s){return (s||"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"").slice(0,40);}
+    var qp=new URLSearchParams(location.search);
+    var code=slug(qp.get("code")||localStorage.getItem("sona.slp.code")||"");
+
+    function render(){
+      if(!code){ $("codeCard").style.display="block"; $("hi").textContent="Set up your dashboard"; return; }
+      localStorage.setItem("sona.slp.code", code);
+      $("codeCard").style.display="none";
+      $("hi").textContent="Dashboard · "+code;
+      var link=location.origin+"/pilot.html?code="+encodeURIComponent(code);
+      $("famLink").value=link;
+      $("snip").value="Hi! Here's the Sona link I mentioned — a fun app where your child can practice their speech sounds at home, free during our pilot. It listens and gives feedback as they play. Quick setup:\n\n"+link;
+      loadRoster();
+    }
+
+    $("setCode").onclick=function(){ var c=slug($("codeIn").value); if(!c){return;} code=c; render(); };
+    $("copyLink").onclick=function(){ copy($("famLink").value, $("copyLink")); };
+    $("copySnip").onclick=function(){ copy($("snip").value, $("copySnip")); $("copyMsg").textContent="Copied ✓"; setTimeout(function(){$("copyMsg").textContent="";},1800); };
+    $("refresh").onclick=loadRoster;
+    function copy(t,btn){ try{ navigator.clipboard.writeText(t); var o=btn.textContent; btn.textContent="Copied ✓"; setTimeout(function(){btn.textContent=o;},1500);}catch(e){ try{ var i=document.createElement("textarea"); i.value=t; document.body.appendChild(i); i.select(); document.execCommand("copy"); i.remove(); }catch(_){} } }
+
+    function ago(iso){ if(!iso)return ""; var d=(Date.now()-new Date(iso).getTime())/86400000; if(d<1)return "today"; if(d<2)return "yesterday"; return Math.floor(d)+" days ago"; }
+    function soundChips(out){
+      out=out||{}; var keys=Object.keys(out); if(!keys.length) return '<span class="muted small">no practice yet</span>';
+      return keys.sort(function(a,b){return (out[b].attempts||0)-(out[a].attempts||0);}).map(function(k){
+        var o=out[k], pct=Math.round((o.passes||0)/Math.max(1,o.attempts||0)*100);
+        var c=pct>=80?'hi':(pct>=50?'mid':'lo');
+        return '<span class="chip '+c+'">'+k+' <b>'+pct+'%</b></span>';
+      }).join("");
+    }
+    function loadRoster(){
+      var host=$("roster"); host.innerHTML='<p class="muted small">Loading…</p>'; $("kvBanner").style.display="none";
+      fetch("/api/slp?code="+encodeURIComponent(code)).then(function(r){return r.json();}).then(function(j){
+        if(!j||!j.ok){ host.innerHTML='<p class="muted small">Couldn’t load right now.</p>'; return; }
+        if(!j.configured){ host.innerHTML='<p class="muted small">No live roster yet.</p>'; $("kvBanner").style.display="block"; return; }
+        var kids=j.kids||[];
+        if(!kids.length){ host.innerHTML='<p class="muted small">No families yet — once you share the link and a child practices, they’ll appear here.</p>'; return; }
+        host.innerHTML="";
+        kids.forEach(function(k){
+          var d=document.createElement("div"); d.className="kid";
+          d.innerHTML='<div class="kidtop"><span class="kidname">'+(k.child||"Child")+'</span>'+(k.age?'<span class="muted small">age '+k.age+'</span>':'')+'<span class="kidwhen">'+ago(k.at)+'</span></div>'+
+                      '<div class="chips">'+soundChips(k.outcomes)+'</div>';
+          host.appendChild(d);
+        });
+      }).catch(function(){ host.innerHTML='<p class="muted small">Couldn’t load right now.</p>'; });
+    }
+
+    render();
+  </script>
+</body>
+</html>
