@@ -493,6 +493,36 @@
   function markLevelDone(level) { const s = levelsState(); s.done[level] = true; s.ts = Date.now(); save(LVLKEY, s); return s; }
   function levelDone(level) { return !!levelsState().done[level]; }
 
+  // ── in-the-moment, per-game feedback (pilot/SLP + debug) — optional, never blocks "Next" ──
+  function sendFeedback(o) {
+    try {
+      o = o || {}; o.at = new Date().toISOString(); o.text = String(o.text || "").slice(0, 1000);
+      fetch("/api/feedback", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(o), keepalive: true }).catch(function () {});
+    } catch (e) {}
+  }
+  function gameFeedbackCard() {
+    const game = gameMeta(location.pathname).name;
+    let sound = "", code = "", childId = "", level = "";
+    try { sound = new URLSearchParams(location.search).get("sound") || ""; } catch (e) {}
+    try { const pi = pilotInfo(); code = pi.code || ""; childId = pi.childId || ""; } catch (e) {}
+    try { const s0 = load(SESKEY, null); level = s0 ? s0.level : ""; } catch (e) {}
+    const card = document.createElement("div");
+    card.className = "sona-fb";
+    card.style.cssText = "margin:16px auto 0;width:100%;max-width:360px;background:#f6fbff;border:1.5px solid #dcebf8;border-radius:16px;padding:13px 14px;text-align:left;";
+    card.innerHTML =
+      '<div style="font-family:\'Baloo 2\',sans-serif;font-weight:800;font-size:14.5px;color:#16384f;">💭 Quick thought on ' + game + '?</div>' +
+      '<div style="font-weight:700;font-size:12px;color:#6b86a3;margin-top:2px;">Optional — a knee-jerk reaction is perfect. Or just hit Next.</div>' +
+      '<textarea rows="2" placeholder="Too easy? Confusing? Loved it?" style="width:100%;margin-top:8px;border:1.5px solid #d9e6f2;border-radius:10px;padding:9px;font:700 13px/1.4 Nunito,sans-serif;color:#16384f;resize:vertical;box-sizing:border-box;"></textarea>' +
+      '<div style="display:flex;align-items:center;gap:10px;margin-top:6px;"><button type="button" style="border:none;border-radius:10px;padding:9px 16px;font-family:\'Baloo 2\',sans-serif;font-weight:800;font-size:13px;color:#fff;background:#1cb0f6;cursor:pointer;">Send</button><span style="font-weight:800;font-size:12px;color:#46a302;"></span></div>';
+    const ta = card.querySelector("textarea"), send = card.querySelector("button"), msg = card.querySelector("span");
+    send.onclick = function () {
+      const text = (ta.value || "").trim(); if (!text) { ta.focus(); return; }
+      sendFeedback({ game: game, sound: sound, text: text, code: code, childId: childId, level: level });
+      msg.textContent = "Thanks! ✓"; send.disabled = true; send.style.opacity = ".5"; ta.disabled = true;
+    };
+    return card;
+  }
+
   // On a game's win screen, when it was launched as part of a level session, swap
   // the standalone "play again / done for now" controls for a single "Next game →"
   // that advances the level (or finishes it). Returns true if it took over.
@@ -523,7 +553,9 @@
       // return to the level path so it fills in toward the prize (path handles the finale)
       location.href = lvl ? ("/level.html?level=" + lvl) : "/levelcomplete.html";
     };
-    winEl.appendChild(chip); winEl.appendChild(btn);
+    winEl.appendChild(chip);
+    if (isPilot() || debugOn()) { try { winEl.appendChild(gameFeedbackCard()); } catch (e) {} }
+    winEl.appendChild(btn);
     return true;
   }
 
@@ -593,5 +625,51 @@
     } catch (e) {}
   }
 
-  global.Sona = { pic, ALL_SOUNDS, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, getProfile, saveProfile, getProgress, recordSession, resetProgress, stageOf, completeStage, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, gated, restore, saveRecording, listRecordings, sfx, music, confetti, pop, LEVEL_GAMES, GAME_DECK, GAMES_PER_LEVEL, levelGames, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, sendProgress };
+  // ── debug HUD: with ?debug=1 (sticky; ?debug=0 to clear), show the SpeechAce score on screen ──
+  function debugOn() {
+    try {
+      const q = new URLSearchParams(location.search);
+      if (q.get("debug") === "1") localStorage.setItem("sona.debug", "1");
+      if (q.get("debug") === "0") localStorage.removeItem("sona.debug");
+      return localStorage.getItem("sona.debug") === "1";
+    } catch (e) { return false; }
+  }
+  let _dbgBox = null;
+  function debugBox() {
+    if (_dbgBox) return _dbgBox;
+    _dbgBox = document.createElement("div");
+    _dbgBox.id = "sonaDebug";
+    _dbgBox.style.cssText = "position:fixed;left:8px;bottom:8px;z-index:99999;max-width:64vw;background:rgba(8,20,33,.9);color:#fff;font:700 12px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace;padding:8px 10px;border-radius:10px;border-left:4px solid #4aa3ff;pointer-events:none;white-space:pre-wrap;box-shadow:0 6px 18px rgba(0,0,0,.35);";
+    _dbgBox.textContent = "🛈 debug on — a score appears here after each attempt";
+    (document.body || document.documentElement).appendChild(_dbgBox);
+    return _dbgBox;
+  }
+  function debugScore(req, j) {
+    try {
+      const el = debugBox(), rating = (j && j.rating) || "?";
+      el.style.borderLeftColor = rating === "great" ? "#74d174" : (rating === "ok" ? "#ffd36a" : (rating === "tryAgain" ? "#ff8f8f" : "#9fb6d6"));
+      let ph = "";
+      if (j && Array.isArray(j.phones)) ph = j.phones.map(function (p) { return p.phone + (p.score != null ? p.score : "–"); }).join(" ");
+      el.textContent = "🛈 " + (req.text || "") + (req.sound ? " [" + req.sound + "]" : "") +
+        "\nscore " + (j && j.score != null ? j.score : "–") + " · " + rating +
+        (j && j.targetPhoneme != null ? "  (" + (req.sound || "tgt") + ":" + Math.round(j.targetPhoneme) + ")" : "") +
+        (ph ? "\n" + ph : "");
+    } catch (e) {}
+  }
+  function installDebug() {
+    if (!debugOn() || global.__sonaDbg) return; global.__sonaDbg = true;
+    const _fetch = global.fetch; if (typeof _fetch !== "function") return;
+    global.fetch = function (input, init) {
+      let url = ""; try { url = typeof input === "string" ? input : (input && input.url) || ""; } catch (e) {}
+      const req = { text: "", sound: "" };
+      try { if (init && init.body && typeof init.body.get === "function") { req.text = init.body.get("text") || ""; req.sound = init.body.get("targetSound") || ""; } } catch (e) {}
+      const p = _fetch.apply(this, arguments);
+      if (url.indexOf("/api/score") !== -1) { try { p.then(function (r) { try { r.clone().json().then(function (j) { debugScore(req, j); }).catch(function () {}); } catch (e) {} return r; }).catch(function () {}); } catch (e) {} }
+      return p;
+    };
+    try { if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", debugBox); else debugBox(); } catch (e) {}
+  }
+  try { installDebug(); } catch (e) {}
+
+  global.Sona = { pic, ALL_SOUNDS, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, getProfile, saveProfile, getProgress, recordSession, resetProgress, stageOf, completeStage, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, gated, restore, saveRecording, listRecordings, sfx, music, confetti, pop, LEVEL_GAMES, GAME_DECK, GAMES_PER_LEVEL, levelGames, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, sendProgress, sendFeedback, debugOn };
 })(window);
