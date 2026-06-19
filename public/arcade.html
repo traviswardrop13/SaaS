@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>Sona — Prize Machine</title>
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <meta name="theme-color" content="#1cb0f6" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <script defer src="/_vercel/insights/script.js"></script>
+  <style>
+    :root{ --blue:#1cb0f6; --blue-d:#1597d4; --green:#58cc02; --green-d:#46a302; --gold:#ffc01e; --gold-d:#e0a200; --ink:#16384f; --muted:#6b86a3; }
+    *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;font-family:"Nunito",-apple-system,"Segoe UI",Roboto,sans-serif;}
+    body{background:linear-gradient(180deg,#eef7ff,#eafbe9 70%);color:var(--ink);min-height:100vh;}
+    .wrap{max-width:460px;margin:0 auto;padding:calc(14px + env(safe-area-inset-top)) 18px 40px;text-align:center;}
+    header{display:flex;align-items:center;gap:10px;text-align:left;}
+    #back{width:40px;height:40px;border:none;border-radius:50%;background:#fff;box-shadow:0 3px 8px rgba(20,90,150,.18);color:#3a6b86;font-size:24px;font-weight:800;cursor:pointer;line-height:1;flex:0 0 auto;}
+    h1{font-family:"Baloo 2";font-weight:800;font-size:22px;}
+    .coins{margin-left:auto;font-family:"Baloo 2";font-weight:800;font-size:16px;background:#fff;border-radius:99px;padding:7px 14px;box-shadow:0 3px 8px rgba(20,90,150,.15);}
+    .machine{margin:24px auto 0;width:230px;background:linear-gradient(180deg,#ff8fb0,#ff5d8a);border-radius:26px;padding:18px;box-shadow:0 14px 30px -14px rgba(200,40,90,.6);}
+    .window{background:#fff;border-radius:18px;height:170px;display:flex;align-items:center;justify-content:center;overflow:hidden;box-shadow:inset 0 4px 14px rgba(0,0,0,.12);}
+    .reel{font-size:96px;line-height:1;}
+    .reel.spin{animation:spin .12s steps(1) infinite;}
+    @keyframes spin{0%{opacity:.4;transform:translateY(-4px) scale(.96);}50%{opacity:1;transform:translateY(4px) scale(1.04);}100%{opacity:.4;transform:translateY(-4px) scale(.96);}}
+    .reel.win{animation:win .5s ease;}
+    @keyframes win{0%{transform:scale(.4);}70%{transform:scale(1.18);}100%{transform:scale(1);}}
+    .slot{margin-top:14px;height:14px;border-radius:99px;background:rgba(0,0,0,.18);}
+    .msg{font-family:"Baloo 2";font-weight:800;font-size:16px;margin-top:18px;min-height:24px;color:var(--ink);}
+    .sub{font-weight:700;font-size:13px;color:var(--muted);margin-top:4px;min-height:18px;}
+    .btn{display:inline-block;margin-top:18px;border:none;border-radius:18px;padding:16px 30px;font-family:"Baloo 2";font-weight:800;font-size:19px;text-transform:uppercase;letter-spacing:.03em;color:#fff;background:linear-gradient(180deg,#ffd23e,var(--gold-d));box-shadow:0 7px 0 0 #b88200;cursor:pointer;}
+    .btn:active{transform:translateY(4px);box-shadow:0 3px 0 0 #b88200;}
+    .btn:disabled{opacity:.5;box-shadow:0 7px 0 0 #b88200;}
+    .link{display:inline-block;margin-top:16px;font-family:"Baloo 2";font-weight:800;color:var(--blue-d);text-decoration:none;font-size:14px;}
+    .cost{font-weight:800;color:var(--muted);font-size:13px;margin-top:8px;}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <button id="back" title="Back">‹</button>
+      <h1>Prize Machine</h1>
+      <span class="coins" id="coins">🪙 0</span>
+    </header>
+
+    <div class="machine">
+      <div class="window"><div class="reel" id="reel">🎁</div></div>
+      <div class="slot"></div>
+    </div>
+
+    <div class="msg" id="msg">Spin to win a sticker!</div>
+    <div class="sub" id="sub"></div>
+    <button class="btn" id="spin">Spin</button>
+    <div class="cost" id="cost"></div>
+    <div><a class="link" href="/stickers.html">📖 My Sticker Book →</a></div>
+  </div>
+
+  <script src="/sona.js"></script>
+  <script>
+    var $=function(id){return document.getElementById(id);};
+    var COST=20;
+    var FACES=["⭐","🏆","🚀","🏅","👑","🌈","🦄","🐉","🎂","🎈","💎","🔥","⚡","❤️","🌙","🌸","🤖","🔮","🍀","🦋"];
+    $("back").onclick=function(){ try{ if(window.Sona&&Sona.sfx&&Sona.sfx.tap)Sona.sfx.tap(); }catch(e){} location.href="/map.html"; };
+
+    function coins(){ return (window.Sona&&Sona.getCoins)?Sona.getCoins():0; }
+    function paint(){ $("coins").textContent="🪙 "+coins(); $("cost").textContent=COST+" 🪙 per spin"; }
+    function allDone(){ var all=(window.Sona&&Sona.STICKERS)?Sona.STICKERS:[]; var e=(window.Sona&&Sona.stickersEarned)?Sona.stickersEarned():{}; return all.length && all.every(function(s){return e[s.id];}); }
+    paint();
+
+    var spinning=false;
+    $("spin").onclick=function(){
+      if(spinning) return;
+      if(allDone()){ $("msg").textContent="You collected them all! 🏆"; $("sub").textContent="Amazing work."; return; }
+      if(coins()<COST){ $("msg").textContent="Not enough coins yet"; $("sub").textContent="Play a game to earn more 🪙"; return; }
+      if(!(window.Sona&&Sona.spendCoins&&Sona.spendCoins(COST))){ $("msg").textContent="Not enough coins yet"; return; }
+      spinning=true; paint();
+      $("msg").textContent="Spinning…"; $("sub").textContent=""; $("spin").disabled=true;
+      var reel=$("reel"); reel.className="reel spin";
+      var tick=setInterval(function(){ reel.textContent=FACES[Math.floor(Math.random()*FACES.length)]; }, 110);
+      try{ if(window.Sona&&Sona.sfx&&Sona.sfx.tap)Sona.sfx.tap(); }catch(e){}
+      setTimeout(function(){
+        clearInterval(tick);
+        var won=(window.Sona&&Sona.awardRandomSticker)?Sona.awardRandomSticker():null;
+        reel.className="reel win";
+        reel.textContent=won?won.e:"🎁";
+        $("msg").textContent=won?("You won the "+won.name+"!"):"You won a prize!";
+        $("sub").innerHTML=won?('Added to your <a class="link" style="margin-top:0;font-size:13px;" href="/stickers.html?new='+won.id+'">sticker book</a> ✨'):"";
+        try{ if(window.Sona){ Sona.confetti&&Sona.confetti(); Sona.sfx&&Sona.sfx.coin&&Sona.sfx.coin(); } }catch(e){}
+        spinning=false; $("spin").disabled=false;
+      }, 1300);
+    };
+  </script>
+</body>
+</html>

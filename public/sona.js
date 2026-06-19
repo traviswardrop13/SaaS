@@ -285,7 +285,7 @@
 
   // --- prize chests (one at the end of each sound's path) ---
   function chestClaimed(sound) { return !!getProgress().chests[sound]; }
-  function claimChest(sound) { const g = getProgress(); if (g.chests[sound]) return false; g.chests[sound] = true; save(GKEY, g); return true; }
+  function claimChest(sound) { const g = getProgress(); if (g.chests[sound]) return false; g.chests[sound] = true; save(GKEY, g); try { awardNextSticker(); } catch (e) {} return true; }
 
   // --- coins (earned in lessons, spent in the shop) ---
   function getCoins() { return getProgress().totals.coins || 0; }
@@ -542,8 +542,51 @@
   // completed-level tracking (for future progress-gated locks on the map)
   const LVLKEY = "sona.levels.v1";
   function levelsState() { const s = load(LVLKEY, { done: {} }); s.done = s.done || {}; return s; }
-  function markLevelDone(level) { const s = levelsState(); s.done[level] = true; s.ts = Date.now(); save(LVLKEY, s); return s; }
+  function markLevelDone(level) { const s = levelsState(); const was = !!s.done[level]; s.done[level] = true; s.ts = Date.now(); save(LVLKEY, s); if (!was) { try { awardNextSticker(); } catch (e) {} } return s; }
   function levelDone(level) { return !!levelsState().done[level]; }
+
+  // ── sticker book: a collectible reward shelf kids fill as they practice ──
+  const STICKERS = [
+    { id: "star", e: "⭐", name: "Star" }, { id: "trophy", e: "🏆", name: "Trophy" }, { id: "rocket", e: "🚀", name: "Rocket" },
+    { id: "medal", e: "🏅", name: "Gold Medal" }, { id: "crown", e: "👑", name: "Crown" }, { id: "rainbow", e: "🌈", name: "Rainbow" },
+    { id: "unicorn", e: "🦄", name: "Unicorn" }, { id: "dragon", e: "🐉", name: "Dragon" }, { id: "cake", e: "🎂", name: "Cake" },
+    { id: "balloon", e: "🎈", name: "Balloon" }, { id: "gift", e: "🎁", name: "Gift" }, { id: "gem", e: "💎", name: "Diamond" },
+    { id: "fire", e: "🔥", name: "On Fire" }, { id: "bolt", e: "⚡", name: "Lightning" }, { id: "heart", e: "❤️", name: "Heart" },
+    { id: "sun", e: "☀️", name: "Sunshine" }, { id: "moon", e: "🌙", name: "Moon" }, { id: "flower", e: "🌸", name: "Flower" },
+    { id: "robot", e: "🤖", name: "Robot" }, { id: "crystal", e: "🔮", name: "Crystal Ball" }, { id: "ribbon", e: "🎀", name: "Ribbon" },
+    { id: "clover", e: "🍀", name: "Lucky Clover" }, { id: "butterfly", e: "🦋", name: "Butterfly" }, { id: "whale", e: "🐳", name: "Whale" },
+  ];
+  const STKKEY = "sona.stickers.v1";
+  function stickersEarned() { return load(STKKEY, {}); }
+  function hasSticker(id) { return !!stickersEarned()[id]; }
+  function awardSticker(id) { try { const e = load(STKKEY, {}); if (e[id]) return false; e[id] = { at: Date.now() }; save(STKKEY, e); return true; } catch (_) { return false; } }
+  // award the next not-yet-earned sticker (milestone reward); returns the sticker or null
+  function awardNextSticker() { const e = stickersEarned(); for (let i = 0; i < STICKERS.length; i++) { if (!e[STICKERS[i].id]) { awardSticker(STICKERS[i].id); return STICKERS[i]; } } return null; }
+  function awardRandomSticker() { const e = stickersEarned(); const left = STICKERS.filter(function (s) { return !e[s.id]; }); if (!left.length) return null; const s = left[Math.floor(Math.random() * left.length)]; awardSticker(s.id); return s; }
+
+  // ── "how to make this sound" — kid-friendly placement cues (SLP-informed) ──
+  const CUES = {
+    R: { mouth: "🐯", tip: "Pull your tongue back and up like a tiger growl — rrr!" },
+    S: { mouth: "🐍", tip: "Teeth together, big smile, let the air hiss out — sss like a snake." },
+    L: { mouth: "🦁", tip: "Tongue tip up behind your top teeth — lll, la la la." },
+    K: { mouth: "🐸", tip: "The back of your tongue pops up in the back — k! k! k!" },
+    G: { mouth: "🐊", tip: "Like K, but turn your voice on — g! g! g!" },
+    F: { mouth: "🐰", tip: "Top teeth on your bottom lip, blow soft — ffff." },
+    V: { mouth: "🚐", tip: "Like F, but buzz your voice — vvvv." },
+    SH: { mouth: "🤫", tip: "Round your lips and whisper quiet — shhh." },
+    CH: { mouth: "🚂", tip: "Pop it like a little train — ch! ch! ch!" },
+    J: { mouth: "🦘", tip: "Like CH, but turn your voice on — j! j! j!" },
+    TH: { mouth: "👅", tip: "Peek your tongue between your teeth and blow soft — th." },
+    THV: { mouth: "👅", tip: "Tongue between your teeth and buzz — th, like in 'the'." },
+    Z: { mouth: "🐝", tip: "Teeth together and buzz like a bee — zzzz." },
+    P: { mouth: "💨", tip: "Press your lips and pop a little puff — p! p! p!" },
+    B: { mouth: "🫧", tip: "Lips together, turn your voice on — b! b! b!" },
+    M: { mouth: "😋", tip: "Lips together and hum — mmmm." },
+    N: { mouth: "👃", tip: "Tongue up behind your teeth and hum — nnnn." },
+    T: { mouth: "⏰", tip: "Tongue taps behind your top teeth — t! t! t!" },
+    D: { mouth: "🥁", tip: "Like T, but turn your voice on — d! d! d!" },
+  };
+  function cue(sound) { return CUES[sound] || { mouth: "👄", tip: "Listen to Leo, then copy the sound!" }; }
 
   // ── in-the-moment, per-game feedback (pilot/SLP + debug) — optional, never blocks "Next" ──
   function sendFeedback(o) {
@@ -735,5 +778,5 @@
   }
   try { installDebug(); } catch (e) {}
 
-  global.Sona = { pic, ALL_SOUNDS, soundLabel, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, getProfile, saveProfile, getProgress, recordSession, resetProgress, stageOf, completeStage, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, gated, restore, saveRecording, listRecordings, sfx, music, confetti, pop, LEVEL_GAMES, GAME_DECK, GAMES_PER_LEVEL, levelGames, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, sendProgress, sendFeedback, debugOn };
+  global.Sona = { pic, ALL_SOUNDS, soundLabel, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, getProfile, saveProfile, getProgress, recordSession, resetProgress, stageOf, completeStage, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, gated, restore, saveRecording, listRecordings, sfx, music, confetti, pop, LEVEL_GAMES, GAME_DECK, GAMES_PER_LEVEL, levelGames, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, sendProgress, sendFeedback, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES };
 })(window);

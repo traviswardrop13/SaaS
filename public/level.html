@@ -57,6 +57,7 @@
       <button id="back" title="Back">‹</button>
       <div class="htitle"><b id="htitle">Level</b><span id="hsub"></span></div>
     </header>
+    <div id="cue" style="display:none;margin:2px 16px 0;background:#fff;border-radius:14px;padding:11px 13px;box-shadow:0 4px 12px rgba(20,90,150,.12);"></div>
     <div id="path"></div>
     <div id="cta"><button id="go">▶&nbsp; Start</button></div>
   </div>
@@ -81,6 +82,7 @@
 
     $("htitle").textContent="Level "+level;
     $("hsub").textContent=TOWN+" · "+games.length+" games";
+    (function(){ var SND=((window.Sona&&Sona.getProfile&&Sona.getProfile().focusSounds)||[])[0]||"R"; var c=(window.Sona&&Sona.cue)?Sona.cue(SND):null; if(c){ var cu=$("cue"); cu.style.display="block"; cu.innerHTML='<div style="font-family:\'Baloo 2\';font-weight:800;font-size:13.5px;color:#16384f;">'+c.mouth+'&nbsp; How to make the '+((window.Sona&&Sona.soundLabel)?Sona.soundLabel(SND):SND)+' sound</div><div style="font-weight:700;font-size:12.5px;color:#6b86a3;margin-top:3px;line-height:1.4;">'+c.tip+'</div>'; } })();
     $("back").onclick=function(){ if(window.Sona&&Sona.sfx&&Sona.sfx.tap)Sona.sfx.tap(); location.href="/map.html"; };
 
     function go(){
