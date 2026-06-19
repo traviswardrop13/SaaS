@@ -643,11 +643,22 @@
   function logAttempt(a) {
     try {
       a = a || {}; const sound = a.sound || "?", pass = !!a.pass, day = today();
-      const log = load(ATTKEY, []); log.push({ g: a.game || "", s: sound, p: pass, sc: (typeof a.score === "number" ? Math.round(a.score) : null), t: Date.now() });
+      const word = String(a.word || "").toLowerCase();
+      const log = load(ATTKEY, []); log.push({ g: a.game || "", s: sound, p: pass, sc: (typeof a.score === "number" ? Math.round(a.score) : null), w: word, t: Date.now() });
       save(ATTKEY, log.slice(-600));
       const o = load(OUTKEY, {}); const bs = o[sound] || (o[sound] = { attempts: 0, passes: 0, firstAt: day, lastAt: day, days: {} });
       bs.attempts++; if (pass) bs.passes++; bs.lastAt = day;
       const d = bs.days[day] || (bs.days[day] = { a: 0, p: 0 }); d.a++; if (pass) d.p++;
+      // by word position (initial/medial/final/vocalic/blends) — the clinical breakdown.
+      // Prefer the word's own tagged position; else fall back to the practice setting.
+      let pos = a.pos || "";
+      if (!pos && word) { const hit = (WORDS[sound] || []).filter(function (x) { return x.w === word; })[0]; if (hit) pos = hit.pos || "i"; }
+      if (!pos) { try { pos = getProfile().practicePosition || ""; } catch (e) { pos = ""; } }
+      if (pos && pos !== "mix" && pos !== "all") {
+        bs.byPos = bs.byPos || {}; const bp = bs.byPos[pos] || (bs.byPos[pos] = { a: 0, p: 0 }); bp.a++; if (pass) bp.p++;
+      }
+      // by target word — per-word accuracy (word games pass a.word)
+      if (word) { bs.byWord = bs.byWord || {}; const bw = bs.byWord[word] || (bs.byWord[word] = { a: 0, p: 0 }); bw.a++; if (pass) bw.p++; }
       save(OUTKEY, o);
     } catch (e) {}
   }

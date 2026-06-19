@@ -156,7 +156,7 @@
       if(window.Sona&&Sona.sfx)Sona.sfx.tap&&Sona.sfx.tap();
       $("prompt").textContent="What's this? Say it!";
       var res=await recordTurn(); var ok=await scoreWord(c,res);   // must say it right to keep the card up
-      if(window.Sona&&Sona.logAttempt)Sona.logAttempt({game:"match",sound:SOUND,pass:ok});
+      if(window.Sona&&Sona.logAttempt)Sona.logAttempt({game:"match",sound:SOUND,pass:ok,word:c.w});
       if(!ok){
         if(window.Sona&&Sona.sfx)Sona.sfx.tap&&Sona.sfx.tap();
         $("prompt").textContent="Not quite — say “"+c.w+"”."; await say(c.w);

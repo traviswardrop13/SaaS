@@ -288,7 +288,7 @@
       setLeo("listen"); // Leo leans in while the kid talks
       var res=await recordTurn($("micBtn"));
       var sa=await scoreAttempt(w, res);
-      if(window.Sona&&Sona.logAttempt)Sona.logAttempt({game:"cupstack",sound:SOUND,pass:sa.pass,score:sa.score});
+      if(window.Sona&&Sona.logAttempt)Sona.logAttempt({game:"cupstack",sound:SOUND,pass:sa.pass,score:sa.score,word:w.w});
       if(sa.pass){
         // Right — said cleanly, so a cup stacks.
         if(window.Sona){Sona.sfx&&Sona.sfx.correct&&Sona.sfx.correct();}

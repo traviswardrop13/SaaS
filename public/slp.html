@@ -38,6 +38,10 @@
     .chip{font-family:"Baloo 2";font-weight:800;font-size:12.5px;border-radius:99px;padding:4px 10px;background:#eef3fb;color:#46627a;}
     .chip b{color:#16384f;}
     .chip.hi{background:#eafce9;color:#46a302;} .chip.mid{background:#fff5e0;color:#b07908;} .chip.lo{background:#fdecea;color:#c0392b;}
+    .sndblock{display:inline-block;vertical-align:top;margin:0 8px 8px 0;}
+    .pchips{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;}
+    .pchip{font-weight:800;font-size:10.5px;border-radius:99px;padding:2px 7px;background:#eef3fb;color:#6b86a3;}
+    .pchip.hi{background:#eafce9;color:#46a302;} .pchip.mid{background:#fff5e0;color:#b07908;} .pchip.lo{background:#fdecea;color:#c0392b;}
     .banner{background:#fff7e6;border:1px solid #ffe2a8;border-radius:12px;padding:11px 13px;font-size:12.5px;font-weight:700;color:#8a6400;margin-top:10px;line-height:1.5;}
     .note{font-size:11.5px;color:var(--muted);font-weight:700;line-height:1.5;margin-top:12px;}
     code{background:#eef3fb;border-radius:6px;padding:1px 6px;font-size:12px;}
@@ -98,12 +102,18 @@
     function copy(t,btn){ try{ navigator.clipboard.writeText(t); var o=btn.textContent; btn.textContent="Copied ✓"; setTimeout(function(){btn.textContent=o;},1500);}catch(e){ try{ var i=document.createElement("textarea"); i.value=t; document.body.appendChild(i); i.select(); document.execCommand("copy"); i.remove(); }catch(_){} } }
 
     function ago(iso){ if(!iso)return ""; var d=(Date.now()-new Date(iso).getTime())/86400000; if(d<1)return "today"; if(d<2)return "yesterday"; return Math.floor(d)+" days ago"; }
+    var POSN={i:"Init",m:"Med",f:"Fin",v:"Voc R",b:"Blend"};
+    function posBits(byPos){
+      if(!byPos) return "";
+      var bits=["i","m","f","v","b"].map(function(pk){ var x=byPos[pk]; if(!x||!x.a) return ""; var v=Math.round((x.p||0)/Math.max(1,x.a)*100); var c=v>=80?'hi':(v>=50?'mid':'lo'); return '<span class="pchip '+c+'">'+POSN[pk]+' '+v+'%</span>'; }).filter(Boolean);
+      return bits.length? '<div class="pchips">'+bits.join("")+'</div>' : "";
+    }
     function soundChips(out){
       out=out||{}; var keys=Object.keys(out); if(!keys.length) return '<span class="muted small">no practice yet</span>';
       return keys.sort(function(a,b){return (out[b].attempts||0)-(out[a].attempts||0);}).map(function(k){
         var o=out[k], pct=Math.round((o.passes||0)/Math.max(1,o.attempts||0)*100);
         var c=pct>=80?'hi':(pct>=50?'mid':'lo');
-        return '<span class="chip '+c+'">'+k+' <b>'+pct+'%</b></span>';
+        return '<div class="sndblock"><span class="chip '+c+'">'+k+' <b>'+pct+'%</b></span>'+posBits(o.byPos)+'</div>';
       }).join("");
     }
     function loadRoster(){

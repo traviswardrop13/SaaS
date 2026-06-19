@@ -35,6 +35,9 @@
     .spark{display:flex;align-items:flex-end;gap:3px;height:36px;margin-top:9px;}
     .spark i{flex:1;max-width:16px;border-radius:3px 3px 0 0;min-height:4px;background:#cfe0c4;}
     .spark i.hi{background:#7ac96a;} .spark i.mid{background:#ffd36a;} .spark i.lo{background:#f3a9a0;}
+    .poschips{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px;}
+    .poschip{font-weight:800;font-size:11px;border-radius:99px;padding:3px 8px;background:#eef3fb;color:#46627a;}
+    .poschip.hi{background:#eafce9;color:#46a302;} .poschip.mid{background:#fff5e0;color:#b07908;} .poschip.lo{background:#fdecea;color:#c0392b;}
     @media print{ header.app,.noprint{display:none!important;} body{background:#fff;} }
   </style>
   <script defer src="/_vercel/insights/script.js"></script>
@@ -183,6 +186,16 @@
     // ── accuracy by sound (from the captured outcome data — the "does it work" proof) ──
     (function () {
       var host = document.getElementById("acc");
+      var POSNAME = { i: "Beginning", m: "Middle", f: "End", v: "Vocalic R", b: "Blends" };
+      function posChips(byPos) {
+        if (!byPos) return "";
+        var out = ["i", "m", "f", "v", "b"].map(function (pk) {
+          var x = byPos[pk]; if (!x || !x.a) return "";
+          var pp = Math.round((x.p || 0) / Math.max(1, x.a) * 100), cl = pp >= 80 ? "hi" : (pp >= 50 ? "mid" : "lo");
+          return '<span class="poschip ' + cl + '">' + POSNAME[pk] + " " + pp + "%</span>";
+        }).filter(Boolean);
+        return out.length ? '<div class="poschips">' + out.join("") + "</div>" : "";
+      }
       var out = (Sona.outcomes ? Sona.outcomes() : {}) || {};
       var ks = Object.keys(out);
       if (!ks.length) {
@@ -200,8 +213,9 @@
           var bars = dayAcc.slice(-14).map(function (v) { var c = v >= 80 ? 'hi' : (v >= 50 ? 'mid' : 'lo'); return '<i class="' + c + '" style="height:' + Math.max(4, v) + '%;" title="' + v + '%"></i>'; }).join("");
           var d = document.createElement("div"); d.className = "accrow";
           d.innerHTML =
-            '<div class="acctop"><span class="accname">' + k + ' sound</span>' + chip + '<span class="accpct">' + pct + '%</span></div>' +
+            '<div class="acctop"><span class="accname">' + (Sona.soundLabel ? Sona.soundLabel(k) : k) + ' sound</span>' + chip + '<span class="accpct">' + pct + '%</span></div>' +
             '<div class="accsub">' + (o.attempts || 0) + ' tries · ' + days.length + ' day' + (days.length === 1 ? '' : 's') + (dayAcc.length >= 2 ? ' · started at ' + dayAcc[0] + '%' : '') + '</div>' +
+            posChips(o.byPos) +
             (bars ? '<div class="spark">' + bars + '</div>' : '');
           host.appendChild(d);
         });

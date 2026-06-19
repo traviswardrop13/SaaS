@@ -285,7 +285,7 @@
         while(!passed){
           $("prompt").textContent="Say the word to zoom!";
           var res=await recordTurn(); var sa=await scoreWord(w,res);
-          if(window.Sona&&Sona.logAttempt)Sona.logAttempt({game:"racer",sound:SOUND,pass:sa.pass,score:sa.score});
+          if(window.Sona&&Sona.logAttempt)Sona.logAttempt({game:"racer",sound:SOUND,pass:sa.pass,score:sa.score,word:w.w});
           if(sa.pass){
             passed=true; cleanWords++;
             if(window.Sona&&Sona.sfx)Sona.sfx.correct&&Sona.sfx.correct();
