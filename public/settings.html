@@ -168,7 +168,7 @@
     Sona.ALL_SOUNDS.forEach(function (s) {
       var b = document.createElement("div");
       b.className = "sound" + (sel.has(s) ? " on" : "");
-      b.textContent = s;
+      b.textContent = (Sona.soundLabel ? Sona.soundLabel(s) : s);
       b.onclick = function () { if (sel.has(s)) sel.delete(s); else sel.add(s); b.classList.toggle("on"); };
       wrap.appendChild(b);
     });

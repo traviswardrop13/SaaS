@@ -145,7 +145,7 @@
     var SOUND = (params.get("sound") || (profile.focusSounds && profile.focusSounds[0]) || "R").toUpperCase();
     if(!(window.Sona && Sona.WORDS && Sona.WORDS[SOUND])) SOUND="R";
     var POOL = (window.Sona && Sona.wordsFor) ? Sona.wordsFor(SOUND, profile.practicePosition) : [{w:"rabbit",e:"🐰"}];
-    var SAYIT = { R:"rrr", S:"sss", L:"lll", K:"k, k, k", G:"g, g, g", F:"fff", SH:"shh", CH:"ch, ch", TH:"th, th" };
+    var SAYIT = { R:"rrr", S:"sss", L:"lll", K:"k, k, k", G:"g, g, g", F:"fff", SH:"shh", CH:"ch, ch", TH:"th, th", THV:"the, the", Z:"zzz", V:"vvv", J:"j, j", P:"p, p, p", B:"b, b, b", M:"mmm", N:"nnn", T:"t, t, t", D:"d, d, d" };
     var DIFF=(window.Sona&&Sona.diff)?Sona.diff():1;
     // a longer race in a different setting as levels climb (sunny → desert → night)
     var SETTING = DIFF<=3 ? {body:"linear-gradient(180deg,#bfe9ff 0%,#dff4ff 55%,#cdeffd 100%)",road:"linear-gradient(180deg,#6b7280,#4b5563)"}

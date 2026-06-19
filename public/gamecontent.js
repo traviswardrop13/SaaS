@@ -4,9 +4,9 @@
    the Articulation-Station "depth", without hand-authoring each sound.
    Exposes window.SonaContent. */
 (function () {
-  var ONSET = { R: "r", S: "s", L: "l", K: "k", G: "g", F: "f", SH: "sh", CH: "ch", TH: "th", Z: "z", V: "v", J: "j" };
+  var ONSET = { R: "r", S: "s", L: "l", K: "k", G: "g", F: "f", SH: "sh", CH: "ch", TH: "th", THV: "th", Z: "z", V: "v", J: "j", P: "p", B: "b", M: "m", N: "n", T: "t", D: "d" };
   // initial-position matcher per sound (what reads cleanly as "starts with the sound")
-  var INIT = { R: /^r/, S: /^s(?!h)/, L: /^l/, K: /^(c|k)/, G: /^g/, F: /^f/, SH: /^sh/, CH: /^ch/, TH: /^th/, Z: /^z/, V: /^v/, J: /^j/ };
+  var INIT = { R: /^r/, S: /^s(?!h)/, L: /^l/, K: /^(c|k)/, G: /^g/, F: /^f/, SH: /^sh/, CH: /^ch/, TH: /^th/, THV: /^th/, Z: /^z/, V: /^v/, J: /^(j|g)/, P: /^p/, B: /^b/, M: /^m/, N: /^n/, T: /^t(?!h)/, D: /^d/ };
 
   function words(sound) { return (window.Sona && Sona.WORDS && Sona.WORDS[sound]) ? Sona.WORDS[sound] : []; }
   function initialWords(sound) {

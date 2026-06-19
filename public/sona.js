@@ -2,7 +2,10 @@
    Used by home.html, lesson.html, customize.html, progress.html and settings.html. */
 (function (global) {
   const PKEY = "sona.profile.v1", GKEY = "sona.progress.v1";
-  const ALL_SOUNDS = ["R", "S", "L", "K", "SH", "CH", "TH", "G", "F"];
+  const ALL_SOUNDS = ["P", "B", "M", "N", "T", "D", "K", "G", "F", "V", "S", "Z", "SH", "CH", "J", "L", "R", "TH", "THV"];
+  // Friendly labels for the sound pickers (most are just the letter; voiced TH needs marking).
+  const SOUND_LABELS = { THV: "TH (v)" };
+  function soundLabel(s) { return SOUND_LABELS[s] || s; }
 
   // --- fun world layer: who the child plays as + where ---
   // Only Leo is unlocked today; the rest are "coming soon" placeholders so the
@@ -215,6 +218,55 @@
       { w: "toothbrush", e: "🪥", pos: "m" }, { w: "birthday", e: "🎂", pos: "m" }, { w: "bathtub", e: "🛁", pos: "m" }, { w: "feather", e: "🪶", pos: "m" },
       { w: "bath", e: "🛁", pos: "f" }, { w: "tooth", e: "🦷", pos: "f" }, { w: "mouth", e: "👄", pos: "f" }, { w: "math", e: "➗", pos: "f" }, { w: "moth", e: "🦋", pos: "f" }, { w: "teeth", e: "🦷", pos: "f" }
     ],
+    P: [
+      { w: "pig", e: "🐷", i: 1, pos: "i" }, { w: "pizza", e: "🍕", i: 1, pos: "i" }, { w: "pen", e: "🖊️", i: 1, pos: "i" }, { w: "paint", e: "🎨", i: 1, pos: "i" }, { w: "pumpkin", e: "🎃", i: 1, pos: "i" }, { w: "pie", e: "🥧", i: 1, pos: "i" }, { w: "pan", e: "🍳", i: 1, pos: "i" },
+      { w: "apple", e: "🍎", pos: "m" }, { w: "puppy", e: "🐶", pos: "m" }, { w: "happy", e: "😊", pos: "m" }, { w: "zipper", e: "🤐", pos: "m" }, { w: "paper", e: "📄", pos: "m" },
+      { w: "cup", e: "☕", pos: "f" }, { w: "map", e: "🗺️", pos: "f" }, { w: "soap", e: "🧼", pos: "f" }, { w: "sheep", e: "🐑", pos: "f" }, { w: "rope", e: "🪢", pos: "f" }, { w: "top", e: "🔝", pos: "f" }
+    ],
+    B: [
+      { w: "ball", e: "⚽", i: 1, pos: "i" }, { w: "banana", e: "🍌", i: 1, pos: "i" }, { w: "bear", e: "🐻", i: 1, pos: "i" }, { w: "bus", e: "🚌", i: 1, pos: "i" }, { w: "bed", e: "🛏️", i: 1, pos: "i" }, { w: "book", e: "📖", i: 1, pos: "i" }, { w: "bee", e: "🐝", i: 1, pos: "i" }, { w: "boat", e: "⛵", i: 1, pos: "i" },
+      { w: "baby", e: "👶", pos: "m" }, { w: "rabbit", e: "🐰", pos: "m" }, { w: "ribbon", e: "🎀", pos: "m" }, { w: "robot", e: "🤖", pos: "m" }, { w: "table", e: "🪑", pos: "m" },
+      { w: "crab", e: "🦀", pos: "f" }, { w: "web", e: "🕸️", pos: "f" }, { w: "tub", e: "🛁", pos: "f" }, { w: "cob", e: "🌽", pos: "f" }, { w: "cab", e: "🚕", pos: "f" }
+    ],
+    M: [
+      { w: "moon", e: "🌙", i: 1, pos: "i" }, { w: "mouse", e: "🐭", i: 1, pos: "i" }, { w: "milk", e: "🥛", i: 1, pos: "i" }, { w: "mom", e: "👩", i: 1, pos: "i" }, { w: "monkey", e: "🐵", i: 1, pos: "i" }, { w: "mountain", e: "⛰️", i: 1, pos: "i" }, { w: "mug", e: "☕", i: 1, pos: "i" },
+      { w: "hammer", e: "🔨", pos: "m" }, { w: "camel", e: "🐫", pos: "m" }, { w: "lemon", e: "🍋", pos: "m" }, { w: "tomato", e: "🍅", pos: "m" }, { w: "drummer", e: "🥁", pos: "m" },
+      { w: "drum", e: "🥁", pos: "f" }, { w: "gum", e: "🍬", pos: "f" }, { w: "ham", e: "🍖", pos: "f" }, { w: "broom", e: "🧹", pos: "f" }, { w: "arm", e: "💪", pos: "f" }, { w: "jam", e: "🍓", pos: "f" }
+    ],
+    N: [
+      { w: "nose", e: "👃", i: 1, pos: "i" }, { w: "nest", e: "🪺", i: 1, pos: "i" }, { w: "net", e: "🥅", i: 1, pos: "i" }, { w: "nut", e: "🥜", i: 1, pos: "i" }, { w: "noodle", e: "🍜", i: 1, pos: "i" }, { w: "nail", e: "💅", i: 1, pos: "i" }, { w: "nine", e: "9️⃣", i: 1, pos: "i" },
+      { w: "banana", e: "🍌", pos: "m" }, { w: "peanut", e: "🥜", pos: "m" }, { w: "panda", e: "🐼", pos: "m" }, { w: "dinner", e: "🍽️", pos: "m" }, { w: "tennis", e: "🎾", pos: "m" },
+      { w: "sun", e: "☀️", pos: "f" }, { w: "can", e: "🥫", pos: "f" }, { w: "train", e: "🚂", pos: "f" }, { w: "pin", e: "📌", pos: "f" }, { w: "bone", e: "🦴", pos: "f" }, { w: "lion", e: "🦁", pos: "f" }
+    ],
+    T: [
+      { w: "top", e: "🔝", i: 1, pos: "i" }, { w: "toe", e: "🦶", i: 1, pos: "i" }, { w: "tiger", e: "🐯", i: 1, pos: "i" }, { w: "tooth", e: "🦷", i: 1, pos: "i" }, { w: "toy", e: "🧸", i: 1, pos: "i" }, { w: "ten", e: "🔟", i: 1, pos: "i" }, { w: "turtle", e: "🐢", i: 1, pos: "i" }, { w: "table", e: "🪑", i: 1, pos: "i" },
+      { w: "water", e: "💧", pos: "m" }, { w: "guitar", e: "🎸", pos: "m" }, { w: "potato", e: "🥔", pos: "m" }, { w: "button", e: "🔘", pos: "m" }, { w: "letter", e: "✉️", pos: "m" },
+      { w: "cat", e: "🐱", pos: "f" }, { w: "hat", e: "🎩", pos: "f" }, { w: "boat", e: "⛵", pos: "f" }, { w: "gate", e: "🚪", pos: "f" }, { w: "kite", e: "🪁", pos: "f" }, { w: "foot", e: "🦶", pos: "f" }
+    ],
+    D: [
+      { w: "dog", e: "🐶", i: 1, pos: "i" }, { w: "duck", e: "🦆", i: 1, pos: "i" }, { w: "door", e: "🚪", i: 1, pos: "i" }, { w: "doll", e: "🪆", i: 1, pos: "i" }, { w: "deer", e: "🦌", i: 1, pos: "i" }, { w: "dinosaur", e: "🦕", i: 1, pos: "i" }, { w: "desk", e: "🪑", i: 1, pos: "i" }, { w: "dad", e: "👨", i: 1, pos: "i" },
+      { w: "ladder", e: "🪜", pos: "m" }, { w: "spider", e: "🕷️", pos: "m" }, { w: "radio", e: "📻", pos: "m" }, { w: "medal", e: "🏅", pos: "m" }, { w: "soda", e: "🥤", pos: "m" },
+      { w: "bed", e: "🛏️", pos: "f" }, { w: "road", e: "🛣️", pos: "f" }, { w: "cloud", e: "☁️", pos: "f" }, { w: "hand", e: "✋", pos: "f" }, { w: "food", e: "🍔", pos: "f" }, { w: "salad", e: "🥗", pos: "f" }
+    ],
+    V: [
+      { w: "van", e: "🚐", i: 1, pos: "i" }, { w: "violin", e: "🎻", i: 1, pos: "i" }, { w: "vase", e: "🏺", i: 1, pos: "i" }, { w: "vest", e: "🦺", i: 1, pos: "i" }, { w: "volcano", e: "🌋", i: 1, pos: "i" }, { w: "vegetable", e: "🥦", i: 1, pos: "i" }, { w: "video", e: "📹", i: 1, pos: "i" },
+      { w: "river", e: "🏞️", pos: "m" }, { w: "oven", e: "🍳", pos: "m" }, { w: "seven", e: "7️⃣", pos: "m" }, { w: "gloves", e: "🧤", pos: "m" }, { w: "driver", e: "🚗", pos: "m" },
+      { w: "five", e: "5️⃣", pos: "f" }, { w: "cave", e: "🕳️", pos: "f" }, { w: "glove", e: "🧤", pos: "f" }, { w: "wave", e: "🌊", pos: "f" }, { w: "dove", e: "🕊️", pos: "f" }, { w: "stove", e: "🍳", pos: "f" }
+    ],
+    Z: [
+      { w: "zebra", e: "🦓", i: 1, pos: "i" }, { w: "zoo", e: "🦁", i: 1, pos: "i" }, { w: "zipper", e: "🤐", i: 1, pos: "i" }, { w: "zero", e: "0️⃣", i: 1, pos: "i" }, { w: "zigzag", e: "➰", i: 1, pos: "i" }, { w: "zip", e: "🧥", i: 1, pos: "i" },
+      { w: "lizard", e: "🦎", pos: "m" }, { w: "puzzle", e: "🧩", pos: "m" }, { w: "dizzy", e: "😵", pos: "m" }, { w: "scissors", e: "✂️", pos: "m" }, { w: "bulldozer", e: "🚜", pos: "m" },
+      { w: "nose", e: "👃", pos: "f" }, { w: "rose", e: "🌹", pos: "f" }, { w: "cheese", e: "🧀", pos: "f" }, { w: "hose", e: "🚿", pos: "f" }, { w: "bees", e: "🐝", pos: "f" }
+    ],
+    J: [
+      { w: "jam", e: "🍓", i: 1, pos: "i" }, { w: "juice", e: "🧃", i: 1, pos: "i" }, { w: "jet", e: "✈️", i: 1, pos: "i" }, { w: "jeep", e: "🚙", i: 1, pos: "i" }, { w: "jar", e: "🫙", i: 1, pos: "i" }, { w: "jacket", e: "🧥", i: 1, pos: "i" }, { w: "giraffe", e: "🦒", i: 1, pos: "i" },
+      { w: "magic", e: "🪄", pos: "m" }, { w: "pajamas", e: "🩳", pos: "m" }, { w: "engine", e: "🚂", pos: "m" }, { w: "pigeon", e: "🕊️", pos: "m" }, { w: "angel", e: "😇", pos: "m" },
+      { w: "cage", e: "🦜", pos: "f" }, { w: "page", e: "📄", pos: "f" }, { w: "bridge", e: "🌉", pos: "f" }, { w: "orange", e: "🍊", pos: "f" }, { w: "badge", e: "🎖️", pos: "f" }
+    ],
+    THV: [
+      { w: "mother", e: "👩", pos: "m" }, { w: "father", e: "👨", pos: "m" }, { w: "brother", e: "👦", pos: "m" }, { w: "feather", e: "🪶", pos: "m" }, { w: "weather", e: "🌦️", pos: "m" }, { w: "leather", e: "🧥", pos: "m" },
+      { w: "bathe", e: "🛁", pos: "f" }, { w: "smooth", e: "🧈", pos: "f" }, { w: "teethe", e: "🦷", pos: "f" }, { w: "breathe", e: "😮‍💨", pos: "f" }
+    ]
   };
   // Word positions for targeted practice — SLPs pick where in the word the sound sits.
   const POSITIONS = [
@@ -671,5 +723,5 @@
   }
   try { installDebug(); } catch (e) {}
 
-  global.Sona = { pic, ALL_SOUNDS, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, getProfile, saveProfile, getProgress, recordSession, resetProgress, stageOf, completeStage, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, gated, restore, saveRecording, listRecordings, sfx, music, confetti, pop, LEVEL_GAMES, GAME_DECK, GAMES_PER_LEVEL, levelGames, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, sendProgress, sendFeedback, debugOn };
+  global.Sona = { pic, ALL_SOUNDS, soundLabel, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, getProfile, saveProfile, getProgress, recordSession, resetProgress, stageOf, completeStage, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, gated, restore, saveRecording, listRecordings, sfx, music, confetti, pop, LEVEL_GAMES, GAME_DECK, GAMES_PER_LEVEL, levelGames, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, sendProgress, sendFeedback, debugOn };
 })(window);

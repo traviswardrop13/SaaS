@@ -91,7 +91,7 @@
     var picked={};
     var wrap=$("sounds");
     ALL.forEach(function(s){
-      var b=document.createElement("div"); b.className="snd"; b.textContent=s;
+      var b=document.createElement("div"); b.className="snd"; b.textContent=(window.Sona&&Sona.soundLabel)?Sona.soundLabel(s):s;
       b.onclick=function(){ if(picked[s]){delete picked[s];b.classList.remove("on");} else {picked[s]=true;b.classList.add("on");} };
       wrap.appendChild(b);
     });
