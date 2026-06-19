@@ -209,13 +209,17 @@
             var ctx=getCtx(); src=ctx.createMediaStreamSource(micStream); var an=ctx.createAnalyser(); an.fftSize=512; src.connect(an);
             var fd=new Uint8Array(an.frequencyBinCount), td=new Uint8Array(an.fftSize);
             bars=document.createElement("div"); bars.className="wavebars"; for(var b=0;b<7;b++)bars.appendChild(document.createElement("i")); if(ico)ico.style.display="none"; micBtn.appendChild(bars);
-            var t0=performance.now(), nSum=0, nN=0, thr=0;
+            var sr=(ctx.sampleRate||48000), binHz=sr/an.fftSize;
+            var loBin=Math.max(2,Math.round(2200/binHz)), hiBin=Math.min(fd.length-1,Math.round(9000/binHz));
+            var t0=performance.now(), nSum=0, nN=0, thr=0, hfSum=0, hfThr=0;
             (function tick(){ if(done)return;
               an.getByteFrequencyData(fd); [].forEach.call(bars.children,function(el,k){ el.style.height=(8+fd[2+k*3]/255*30)+"px"; });
+              // high-frequency energy — this is where quiet fricatives (sh, s, f, th) live, and where plain loudness misses them
+              var hsum=0; for(var h=loBin;h<=hiBin;h++) hsum+=fd[h]; var hf=hsum/Math.max(1,(hiBin-loBin+1))/255;
               an.getByteTimeDomainData(td); var sum=0; for(var i=0;i<td.length;i++){var x=(td[i]-128)/128;sum+=x*x;} var rms=Math.sqrt(sum/td.length), now=performance.now();
-              if(now-t0<300){ nSum+=rms; nN++; }
-              else{ if(!thr) thr=Math.max(0.05,(nSum/Math.max(1,nN))*3.2);
-                if(rms>thr){ if(!voicedEver){ voicedEver=true; $("prompt").textContent="Keep going! 🚀"; } setFuel(fuel+0.9); }
+              if(now-t0<300){ nSum+=rms; hfSum+=hf; nN++; }
+              else{ if(!thr){ thr=Math.max(0.045,(nSum/Math.max(1,nN))*3.0); hfThr=Math.max(0.10,(hfSum/Math.max(1,nN))*1.8); }
+                if(rms>thr || hf>hfThr){ if(!voicedEver){ voicedEver=true; $("prompt").textContent="Keep going! 🚀"; } setFuel(fuel+0.9); }
                 else { setFuel(fuel-0.12); }
                 if(fuel>=100){ finish(); return; }
               }
