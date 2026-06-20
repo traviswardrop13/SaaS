@@ -49,18 +49,23 @@
 </head>
 <body>
   <div class="wrap">
-    <div class="brand"><img src="/coach/leo-icon.png" alt="Sona"/> Sona · SLP</div>
+    <div class="brand"><img src="/coach/leo-icon.png" alt="Sona"/> Sona · SLP <a href="#" id="logout" style="margin-left:auto;font-size:13px;color:var(--muted);text-decoration:none;font-weight:800;display:none;">Sign out</a></div>
     <h1 id="hi">Your Sona dashboard</h1>
     <p class="lead">Hand Sona to as many of your families as you like — free during the pilot — and watch their practice add up here. This page is yours; share the <b>family link</b> below, not this page.</p>
 
     <div class="card" id="codeCard" style="display:none;">
-      <h2>Set your code</h2>
-      <p class="muted small" style="margin-top:4px;">A short tag so we can group your families (e.g. your name or clinic).</p>
-      <label class="fl" for="codeIn">Your code</label>
-      <div class="linkbox"><input id="codeIn" type="text" placeholder="e.g. dr-smith" /><button class="btn green" id="setCode">Use this</button></div>
+      <h2>Finish your setup</h2>
+      <p class="muted small" style="margin-top:4px;">A few quick details so we can set up your dashboard and group your families.</p>
+      <label class="fl" for="nameIn">Your name</label>
+      <input id="nameIn" type="text" placeholder="e.g. Sarah Smith, CCC-SLP" />
+      <label class="fl" for="clinicIn">Clinic / school <span style="font-weight:700;color:#aab9c8;">(optional)</span></label>
+      <input id="clinicIn" type="text" placeholder="e.g. Bright Steps Therapy" />
+      <label class="fl" for="codeIn">Pick a short code <span style="font-weight:700;color:#aab9c8;">(used in your family links)</span></label>
+      <div class="linkbox"><input id="codeIn" type="text" placeholder="e.g. dr-smith" /><button class="btn green" id="setCode">Save &amp; continue</button></div>
+      <div id="onbErr" style="color:#e0457b;font-weight:800;font-size:12.5px;margin-top:8px;min-height:16px;"></div>
     </div>
 
-    <div class="card" id="assignCard">
+    <div class="card" id="assignCard" style="display:none;">
       <h2>Set what they practice 🎯</h2>
       <p class="muted small" style="margin-top:4px;">Optional — pre-fill the child's setup so the family starts on the right target. Leave on “Any” to let them choose. The family link below updates as you change this.</p>
       <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:6px;">
@@ -70,7 +75,7 @@
       </div>
     </div>
 
-    <div class="card" id="shareCard">
+    <div class="card" id="shareCard" style="display:none;">
       <h2>Family link 🔗</h2>
       <p class="muted small" style="margin-top:4px;">Send this to each family. They set up their child in ~30 seconds and start practicing free.</p>
       <div class="linkbox"><input id="famLink" type="text" readonly /><button class="btn" id="copyLink">Copy</button></div>
@@ -79,21 +84,21 @@
       <div style="margin-top:8px;"><button class="btn green" id="copySnip">Copy message</button> <span class="muted small" id="copyMsg"></span></div>
     </div>
 
-    <div class="card">
+    <div class="card" id="rosterCard" style="display:none;">
       <div style="display:flex;align-items:center;gap:8px;"><h2>Your families' progress 📈</h2><button class="btn" id="refresh" style="margin-left:auto;background:#eef3fb;color:#46627a;box-shadow:none;padding:8px 12px;">↻ Refresh</button></div>
       <div id="roster" style="margin-top:6px;"><p class="muted small">Loading…</p></div>
       <div class="banner" id="kvBanner" style="display:none;">Live roster is off until a data store is connected. Add a <b>Vercel KV</b> store to this project (Storage → Create → KV) and redeploy — then families' progress shows here automatically. Until then, you'll still get each child's progress from us directly.</div>
     </div>
 
-    <p class="note">Pilot access is by code (no login yet) — keep this page link private. Sona is an at-home practice tool, not a diagnosis or a substitute for professional care. Secure SLP logins are coming.</p>
+    <p class="note" id="footNote" style="display:none;">Signed in to your free SLP account. Share the <b>family link</b> with families — not this page. Sona is an at-home practice tool, not a diagnosis or a substitute for professional care.</p>
   </div>
 
   <script src="/sona.js"></script>
   <script>
     var $=function(id){return document.getElementById(id);};
     function slug(s){return (s||"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"").slice(0,40);}
-    var qp=new URLSearchParams(location.search);
-    var code=slug(qp.get("code")||localStorage.getItem("sona.slp.code")||"");
+    var code="";       // set from the signed-in account
+    var account=null;
 
     var ASSIGNKEY="sona.slp.assign";
     function populateAssign(){
@@ -121,16 +126,26 @@
       $("snip").value="Hi! Here's the Sona link I mentioned — a fun app where your child can practice their speech sounds at home, free during our pilot. It listens and gives feedback as they play."+tgt+" Quick setup:\n\n"+link;
     }
     function render(){
-      if(!code){ $("codeCard").style.display="block"; $("hi").textContent="Set up your dashboard"; return; }
-      localStorage.setItem("sona.slp.code", code);
+      if(!code){ $("codeCard").style.display="block"; $("hi").textContent="Finish your setup"; return; }
       $("codeCard").style.display="none";
+      ["assignCard","shareCard","rosterCard","footNote"].forEach(function(id){ var el=$(id); if(el) el.style.display=""; });
       $("hi").textContent="Dashboard · "+code;
       populateAssign();
       buildLink();
       loadRoster();
     }
 
-    $("setCode").onclick=function(){ var c=slug($("codeIn").value); if(!c){return;} code=c; render(); };
+    $("setCode").onclick=function(){
+      var c=slug($("codeIn").value); if(!c){ $("onbErr").textContent="Pick a short code."; return; }
+      $("setCode").disabled=true; $("onbErr").textContent="";
+      fetch("/api/slp/account",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:$("nameIn").value.trim(),clinic:$("clinicIn").value.trim(),code:c})})
+        .then(function(r){return r.json();})
+        .then(function(j){ $("setCode").disabled=false;
+          if(!j||!j.ok){ $("onbErr").textContent=(j&&j.error)||"Couldn’t save — try again."; return; }
+          account=j; code=j.code; render();
+        })
+        .catch(function(){ $("setCode").disabled=false; $("onbErr").textContent="Network error — try again."; });
+    };
     $("copyLink").onclick=function(){ copy($("famLink").value, $("copyLink")); };
     $("copySnip").onclick=function(){ copy($("snip").value, $("copySnip")); $("copyMsg").textContent="Copied ✓"; setTimeout(function(){$("copyMsg").textContent="";},1800); };
     $("refresh").onclick=loadRoster;
@@ -169,7 +184,18 @@
       }).catch(function(){ host.innerHTML='<p class="muted small">Couldn’t load right now.</p>'; });
     }
 
-    render();
+    function boot(){
+      fetch("/api/slp/auth/me").then(function(r){return r.json();}).then(function(j){
+        if(!j||!j.ok){ location.replace("/slp-login.html"); return; }
+        account=j; code=j.code||"";
+        $("logout").style.display="inline";
+        if(j.name) $("nameIn").value=j.name;
+        if(j.clinic) $("clinicIn").value=j.clinic;
+        render();
+      }).catch(function(){ location.replace("/slp-login.html"); });
+    }
+    $("logout").onclick=function(e){ e.preventDefault(); fetch("/api/slp/auth/logout",{method:"POST"}).then(function(){ location.replace("/slp-login.html"); }).catch(function(){ location.replace("/slp-login.html"); }); };
+    boot();
   </script>
 </body>
 </html>
