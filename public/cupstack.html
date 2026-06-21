@@ -222,7 +222,7 @@
           fd.append("text", word.w); fd.append("targetSound", SOUND); fd.append("userId","child"); fd.append("mode","full");
           var r=await fetch("/api/score",{method:"POST",body:fd});
           var j=await r.json();
-          if(j&&j.ok && typeof j.score==="number") return { score:j.score, pass: j.rating==="great" };
+          if(j&&j.ok && typeof j.score==="number") return { score:j.score, pass: j.rating==="great", feedback: j.feedback };
         }catch(e){}
       }
       // No SpeechAce: judge on the transcript when we have one — say it right, or try again.
@@ -308,7 +308,7 @@
         // Wrong — strict: no cup. Same word again.
         if(window.Sona){Sona.sfx&&Sona.sfx.tap&&Sona.sfx.tap();}
         setCombo(0); setLeo("encourage");
-        $("micState").textContent="Try again!";
+        $("micState").textContent=(window.Sona&&Sona.coachLine)?Sona.coachLine(SOUND,sa.feedback):"Try again!";
         await new Promise(function(r){ setTimeout(r,700); });
         setLeo("idle");
         busy=false;

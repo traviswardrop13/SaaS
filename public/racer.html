@@ -236,7 +236,7 @@
     }
     // Strict scoring: returns {score, pass}. "pass" = a clean (great) rep of the word.
     async function scoreWord(word,res){
-      if(useSpeechAce && res.blob){ try{ var fd=new FormData(); fd.append("audio",new File([res.blob],"a.webm",{type:res.blob.type||"audio/webm"})); fd.append("text",word.w); fd.append("targetSound",SOUND); fd.append("userId","child"); fd.append("mode","full"); var r=await fetch("/api/score",{method:"POST",body:fd}); var j=await r.json(); if(j&&j.ok&&typeof j.score==="number")return { score:j.score, pass:j.rating==="great" }; }catch(e){} }
+      if(useSpeechAce && res.blob){ try{ var fd=new FormData(); fd.append("audio",new File([res.blob],"a.webm",{type:res.blob.type||"audio/webm"})); fd.append("text",word.w); fd.append("targetSound",SOUND); fd.append("userId","child"); fd.append("mode","full"); var r=await fetch("/api/score",{method:"POST",body:fd}); var j=await r.json(); if(j&&j.ok&&typeof j.score==="number")return { score:j.score, pass:j.rating==="great", feedback:j.feedback }; }catch(e){} }
       if(res.transcript){ var ok=matchText(res.transcript,word.w); return { score: ok?85:30, pass: ok }; }
       return { score:70, pass:true };
     }
@@ -293,8 +293,8 @@
             vroom(1); $("prompt").textContent="Nice one!";
           } else {
             if(window.Sona&&Sona.sfx)Sona.sfx.tap&&Sona.sfx.tap();
-            $("prompt").textContent="Try again!";
-            await say(w.w); // re-model the same word
+            $("prompt").textContent=(window.Sona&&Sona.coachLine)?Sona.coachLine(SOUND,sa.feedback):"Try again!";
+            await say(sa.feedback||("Let's try the "+SOUND+" sound again. "+w.w)); // coach + re-model
           }
         }
         progress=0.25+ (gateIdx+1)/GATES*0.7;

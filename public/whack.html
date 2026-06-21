@@ -108,8 +108,9 @@
           raf=requestAnimationFrame(tick); })(); } }catch(e){}
       setTimeout(fin,maxMs); }); }
     // strict word scoring: SpeechAce "great" = a clean rep; wrong word/silence → no pop
-    async function scoreWord(word,res){
-      if(useSpeechAce && res.blob){ try{ var fd=new FormData(); fd.append("audio",new File([res.blob],"a.webm",{type:res.blob.type||"audio/webm"})); fd.append("text",word.w); fd.append("targetSound",SOUND); fd.append("userId","child"); fd.append("mode","full"); var r=await fetch("/api/score",{method:"POST",body:fd}); var j=await r.json(); if(j&&j.ok&&j.rating) return j.rating==="great"; }catch(e){} }
+    var lastFb="";
+    async function scoreWord(word,res){ lastFb="";
+      if(useSpeechAce && res.blob){ try{ var fd=new FormData(); fd.append("audio",new File([res.blob],"a.webm",{type:res.blob.type||"audio/webm"})); fd.append("text",word.w); fd.append("targetSound",SOUND); fd.append("userId","child"); fd.append("mode","full"); var r=await fetch("/api/score",{method:"POST",body:fd}); var j=await r.json(); if(j&&j.ok&&j.rating){ lastFb=j.feedback||""; return j.rating==="great"; } }catch(e){} }
       if(res.transcript) return matchText(res.transcript,word.w);
       return false;
     }
@@ -137,7 +138,7 @@
       if(window.Sona&&Sona.logAttempt)Sona.logAttempt({game:"whack",sound:SOUND,pass:ok,word:target.w});
       if(!ok){
         if(window.Sona&&Sona.sfx)Sona.sfx.tap&&Sona.sfx.tap();
-        setLeo("idle"); $("prompt").textContent="Not quite — try again!"; await say(target.w);
+        setLeo("idle"); $("prompt").textContent=(window.Sona&&Sona.coachLine)?Sona.coachLine(SOUND,lastFb):"Not quite — try again!"; await say(lastFb||target.w);
         setTimeout(attempt, 350); return;   // same word again
       }
       var tcr=null; slots.forEach(function(cr){ if(cr.dataset.word===target.w) tcr=cr; });

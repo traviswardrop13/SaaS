@@ -259,12 +259,21 @@ export async function POST(req: NextRequest) {
   // "phoneme" mode (isolation): lenient — did the child make the target
   // sound at all? Score on the target phoneme. "full" mode (syllables+):
   // strict — the whole utterance must match, so average all phonemes.
+  // "full" mode (words+): weight the TARGET sound heavily — articulation practice is
+  // about the target phoneme, not the incidental ones. A kid who nails the R in
+  // "rabbit" but has a still-developing B/T should pass on R; a w-for-r substitution
+  // (weak R) should fail. Blend 70% target + 30% overall intelligibility so they
+  // can't pass by mumbling. "phoneme" mode (isolation) stays lenient.
+  const TARGET_WEIGHT = 0.7;
+  const wordScore = phoneAvg ?? overall ?? wordAvg ?? 0;
   const score =
     mode === "phoneme"
       ? // Lenient. If a held sound (e.g. "sss") can't be parsed at all, give
         // the benefit of the doubt (75) — isolation is an imitation warm-up.
         (targetPhoneme ?? phoneAvg ?? wordAvg ?? 75)
-      : (phoneAvg ?? overall ?? wordAvg ?? targetPhoneme ?? 0);
+      : targetPhoneme != null
+        ? Math.round(TARGET_WEIGHT * targetPhoneme + (1 - TARGET_WEIGHT) * wordScore)
+        : (wordScore || targetPhoneme || 0);
   const { rating, feedback } = rate({
     score,
     overall,

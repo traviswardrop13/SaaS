@@ -587,6 +587,12 @@
     D: { mouth: "🥁", tip: "Like T, but turn your voice on — d! d! d!" },
   };
   function cue(sound) { return CUES[sound] || { mouth: "👄", tip: "Listen to Leo, then copy the sound!" }; }
+  // Corrective line for a missed attempt: the scorer's feedback + a placement cue.
+  function coachLine(sound, feedback) {
+    var base = feedback || ("Let's try the " + soundLabel(sound) + " sound again!");
+    var c = cue(sound);
+    return c && c.tip ? (base + "  " + (c.mouth ? c.mouth + " " : "") + c.tip) : base;
+  }
 
   // ── in-the-moment, per-game feedback (pilot/SLP + debug) — optional, never blocks "Next" ──
   function sendFeedback(o) {
@@ -778,5 +784,5 @@
   }
   try { installDebug(); } catch (e) {}
 
-  global.Sona = { pic, ALL_SOUNDS, soundLabel, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, getProfile, saveProfile, getProgress, recordSession, resetProgress, stageOf, completeStage, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, gated, restore, saveRecording, listRecordings, sfx, music, confetti, pop, LEVEL_GAMES, GAME_DECK, GAMES_PER_LEVEL, levelGames, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, sendProgress, sendFeedback, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES };
+  global.Sona = { pic, ALL_SOUNDS, soundLabel, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, getProfile, saveProfile, getProgress, recordSession, resetProgress, stageOf, completeStage, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, gated, restore, saveRecording, listRecordings, sfx, music, confetti, pop, LEVEL_GAMES, GAME_DECK, GAMES_PER_LEVEL, levelGames, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, sendProgress, sendFeedback, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine };
 })(window);
