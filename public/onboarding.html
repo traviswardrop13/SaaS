@@ -127,6 +127,15 @@
         <input id="obGoals" type="text" placeholder="e.g. clear R and S sounds in words" />
       </div>
     </div>
+
+    <!-- email (last — capture after the questions) -->
+    <div class="step" data-step="email">
+      <div class="qh">Save <span id="emName">your child</span>'s progress 💾</div>
+      <p class="muted">Add your email so we can save progress across devices and send a free starter guide + progress report.</p>
+      <input id="obEmail" type="email" inputmode="email" autocomplete="email" placeholder="you@email.com" style="margin-top:12px;" />
+      <p id="emErr" style="display:none;color:#ef6f23;font-weight:800;font-size:13px;margin-top:8px;"></p>
+      <p class="muted" style="font-size:12px;margin-top:10px;">No spam — just your child's progress. <a href="/privacy" target="_blank">Privacy</a>.</p>
+    </div>
   </div>
 
   <div class="obfoot">
@@ -145,9 +154,10 @@
       focusSounds: (p.focusSounds && p.focusSounds.length) ? p.focusSounds.slice() : ["R","S","L","K"],
       slpEvaluated: p.slpEvaluated || "",
       goals: p.goals || "",
+      email: p.email || "",
     };
 
-    var ORDER = ["welcome","name","buddy","sounds","goal","achieve","slp"];
+    var ORDER = ["welcome","name","buddy","sounds","goal","achieve","slp","email"];
     var BUBBLES = {
       welcome: "Hi! I'm Leo!",
       name:    "Nice to meet you!",
@@ -156,8 +166,9 @@
       goal:    "How long each day?",
       achieve: "Here's what's ahead! ✨",
       slp:     "Almost done! 🌟",
+      email:   "One last thing! 💌",
     };
-    var CTA = { slp: "Start practicing! 🎉" };
+    var CTA = { email: "Start practicing! 🎉" };
     var idx = 0;
 
     var segEl = document.getElementById("seg");
@@ -210,6 +221,7 @@
 
     // name prefill
     var nameEl=document.getElementById("obName"); nameEl.value=draft.childName;
+    var emailEl=document.getElementById("obEmail"); emailEl.value=draft.email;
 
     function render(){
       var key=ORDER[idx];
@@ -219,12 +231,14 @@
       backBtn.style.display = idx === 0 ? "none" : "block";
       if(key==="name") setTimeout(function(){ nameEl.focus(); }, 80);
       if(key==="achieve"){ var nm=(nameEl.value||draft.childName||"").trim(); document.getElementById("achName").textContent = nm || "your child"; }
+      if(key==="email"){ var nm2=(nameEl.value||draft.childName||"").trim(); document.getElementById("emName").textContent = nm2 || "your child"; setTimeout(function(){ emailEl.focus(); }, 80); }
     }
 
     function next(){
       var key=ORDER[idx];
       if(key==="name"){ draft.childName=nameEl.value.trim(); if(!draft.childName){ nameEl.focus(); nameEl.style.borderColor="#ef6f23"; return; } }
       if(key==="sounds" && selSounds.size===0){ selSounds.add("R"); }
+      if(key==="email"){ var em=(emailEl.value||"").trim(); if(!/^\S+@\S+\.\S+$/.test(em)){ emailEl.focus(); emailEl.style.borderColor="#ef6f23"; var ee=document.getElementById("emErr"); ee.style.display="block"; ee.textContent="Please enter a valid email to save progress."; return; } draft.email=em; }
       Sona.sfx.tap();
       if(idx < ORDER.length-1){ idx++; render(); return; }
       finish();
@@ -241,8 +255,20 @@
         goals: (document.getElementById("obGoals")||{}).value ? document.getElementById("obGoals").value.trim() : draft.goals,
         focusArea: "articulation",
         dailyMinutes: parseInt(goalVal, 10) || 5,
+        email: draft.email || "",
         onboarded: true,
       });
+      // capture the lead (email + answers) → GHL via /api/lead (fire-and-forget)
+      try{
+        if(draft.email){
+          var utm=(window.Sona&&Sona.utm)?(Sona.utm()||{}):{};
+          fetch("/api/lead",{method:"POST",headers:{"Content-Type":"application/json"},keepalive:true,body:JSON.stringify({
+            email:draft.email, child:draft.childName, practice:draft.focusSounds, source:"onboarding",
+            summary:"New parent signup — practicing "+((draft.focusSounds||[]).join(", ")||"sounds"),
+            utm_source:utm.utm_source, utm_medium:utm.utm_medium, utm_campaign:utm.utm_campaign, utm_content:utm.utm_content, utm_term:utm.utm_term, referrer:utm.referrer, landing:utm.landing
+          })}).catch(function(){});
+        }
+      }catch(e){}
       if(window.Sona){ Sona.sfx.complete(); Sona.confetti({count:160}); }
       bubble.textContent = "You're all set! 🎉";
       nextBtn.disabled = true; nextBtn.textContent = "Let's practice!";

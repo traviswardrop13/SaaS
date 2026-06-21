@@ -66,7 +66,7 @@ function Header() {
             Open app
           </a>
           <a href="/onboarding.html" className="btn-primary text-sm">
-            Start free
+            Get started
           </a>
         </div>
       </div>
@@ -90,16 +90,19 @@ function Hero() {
         </div>
 
         <h1 className="mt-12 font-display text-4xl font-extrabold leading-[1.05] text-gray-900 sm:text-6xl">
-          Which sounds does your child need?
+          Speech practice your child will actually want to do.
         </h1>
         <p className="mx-auto mt-5 max-w-xl text-lg leading-relaxed text-gray-600">
-          Take a free 2-minute speech check, built with a licensed
-          speech-language pathologist. See which sounds are on track and which to
-          practice — we&apos;ll email you the report.
+          Sona turns speech sounds into a game your child loves — Leo listens,
+          gives feedback, and tracks real progress. Built with a licensed
+          speech-language pathologist.
         </p>
-        <div className="mt-8 flex justify-center">
-          <a href="/check.html" className="btn-primary text-lg">
-            Start the free speech check
+        <div className="mt-8 flex flex-col items-center gap-3">
+          <a href="/onboarding.html" className="btn-primary text-lg">
+            Get started free
+          </a>
+          <a href="/check.html" className="text-sm font-bold text-brand-600 hover:text-brand-700">
+            Or take the free 2-minute speech check →
           </a>
         </div>
         <div className="mx-auto mt-7 inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-bold text-gray-600 shadow-chunky-sm">
@@ -109,7 +112,7 @@ function Hero() {
           Built by a licensed speech-language pathologist
         </div>
         <p className="mt-4 text-sm font-semibold text-gray-500">
-          Free · 2 minutes · the full speech-games app is live
+          Free to start · works on any device · the full app is live
         </p>
       </div>
     </section>
@@ -483,17 +486,17 @@ function FinalCTA() {
     <section className="mx-auto max-w-6xl px-5 py-20">
       <div className="overflow-hidden rounded-[2rem] bg-gradient-to-br from-brand-500 to-brand-600 px-8 py-14 text-center shadow-chunky">
         <h2 className="font-display text-3xl font-extrabold text-white sm:text-4xl">
-          Start with a free speech check
+          Ready to make speech practice fun?
         </h2>
         <p className="mx-auto mt-3 max-w-xl text-lg text-brand-50">
-          Two minutes, and you&apos;ll know exactly which sounds to focus on. We&apos;ll
-          email you the report — then you can start playing right away.
+          Set up your child in about a minute and start playing today — free.
+          Not sure where to start? Take the free 2-minute speech check first.
         </p>
         <a
-          href="/check.html"
+          href="/onboarding.html"
           className="mt-8 inline-block rounded-2xl bg-white px-8 py-4 font-display text-lg font-extrabold uppercase tracking-wide text-brand-600 shadow-chunky transition active:translate-y-1 active:shadow-chunky-sm"
         >
-          Free speech check
+          Get started free
         </a>
       </div>
     </section>

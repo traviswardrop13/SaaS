@@ -29,6 +29,7 @@ export async function POST(req: NextRequest) {
     utm_term?: string;
     referrer?: string;
     landing?: string;
+    source?: string;
   };
   try {
     body = await req.json();
@@ -62,7 +63,7 @@ export async function POST(req: NextRequest) {
     utm_term: clamp(body?.utm_term),
     referrer: clamp(body?.referrer, 200),
     landing: clamp(body?.landing),
-    source: "speech-check",
+    source: typeof body?.source === "string" ? body.source.slice(0, 40) : "speech-check",
     at: new Date().toISOString(),
   };
 
