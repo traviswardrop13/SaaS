@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>Sona</title>
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <meta name="theme-color" content="#bfe3ff" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <script defer src="/_vercel/insights/script.js"></script>
+  <style>
+    /* ── PROTOTYPE of the reimagined kid hub (Concept A+B). Picture-first, audio-narrated,
+       Rive-ready: #leo and the .tile arts are placeholders a .riv canvas can replace. ── */
+    :root{ --ink:#16384f; --green:#58cc02; --green-d:#46a302; --gold:#ffc01e; }
+    *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;font-family:"Nunito",-apple-system,"Segoe UI",Roboto,sans-serif;user-select:none;}
+    html,body{height:100%;overflow:hidden;}
+    #sky{position:fixed;inset:0;background:linear-gradient(180deg,#bfe3ff,#eaf6ff 55%,#dff3c8);}
+    #app{position:relative;height:100%;max-width:480px;margin:0 auto;display:flex;flex-direction:column;}
+
+    /* top bar — streak + coins, big and glanceable, no words needed */
+    .top{display:flex;gap:10px;padding:calc(12px + env(safe-area-inset-top)) 16px 0;z-index:5;}
+    .stat{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.86);backdrop-filter:blur(4px);border-radius:99px;padding:7px 14px;font-family:"Baloo 2";font-weight:800;font-size:17px;color:var(--ink);box-shadow:0 4px 12px rgba(20,90,150,.16);}
+    .stat .e{font-size:19px;}
+    .spacer{flex:1;}
+
+    /* the world scene */
+    #scene{position:relative;flex:1;overflow:hidden;}
+    .cloud,.tree{position:absolute;}
+    .cloud{font-size:40px;opacity:.92;animation:drift 26s linear infinite;}
+    .tree{font-size:34px;bottom:90px;}
+    @keyframes drift{from{transform:translateX(-60px);}to{transform:translateX(520px);}}
+    #ground{position:absolute;left:0;right:0;bottom:0;height:120px;background:linear-gradient(180deg,#9fe06a,#7fce4e);border-radius:50% 50% 0 0/14px 14px 0 0;}
+
+    /* Leo — the companion (tap to greet). Replace #leo with a Rive canvas later. */
+    #leoWrap{position:absolute;left:50%;bottom:96px;transform:translateX(-50%);text-align:center;z-index:3;cursor:pointer;}
+    #leo{width:148px;height:148px;object-fit:contain;filter:drop-shadow(0 12px 14px rgba(20,90,160,.28));animation:bob 3.2s ease-in-out infinite;}
+    @keyframes bob{0%,100%{transform:translateY(0);}50%{transform:translateY(-8px);}}
+    #speech{position:absolute;left:50%;top:-10px;transform:translate(-50%,-100%);background:#fff;border-radius:16px;padding:9px 14px;font-family:"Baloo 2";font-weight:800;font-size:15px;color:var(--ink);box-shadow:0 6px 16px rgba(20,90,150,.22);white-space:nowrap;opacity:0;transition:opacity .25s;}
+    #speech:after{content:"";position:absolute;left:50%;bottom:-8px;transform:translateX(-50%);border:8px solid transparent;border-top-color:#fff;border-bottom:0;}
+    #speech.show{opacity:1;}
+
+    /* PLAY — the one glowing primary action */
+    #play{position:absolute;left:50%;bottom:18px;transform:translateX(-50%);z-index:6;border:none;border-radius:24px;padding:18px 46px;font-family:"Baloo 2";font-weight:800;font-size:24px;letter-spacing:.02em;color:#fff;background:linear-gradient(180deg,#6fe024,var(--green-d));box-shadow:0 8px 0 #3c8c02,0 0 0 0 rgba(88,204,2,.5);cursor:pointer;animation:glow 1.8s ease-in-out infinite;}
+    #play:active{transform:translateX(-50%) translateY(5px);box-shadow:0 3px 0 #3c8c02;}
+    @keyframes glow{0%,100%{box-shadow:0 8px 0 #3c8c02,0 0 0 0 rgba(88,204,2,.45);}50%{box-shadow:0 8px 0 #3c8c02,0 0 0 16px rgba(88,204,2,0);}}
+    #play .sub{display:block;font-size:11px;font-weight:800;opacity:.92;text-transform:uppercase;letter-spacing:.08em;margin-top:1px;}
+
+    /* destination tiles — big, picture-first */
+    .dock{display:flex;justify-content:center;gap:12px;padding:10px 12px calc(16px + env(safe-area-inset-bottom));z-index:5;}
+    .tile{flex:1;max-width:92px;background:rgba(255,255,255,.92);border:none;border-radius:20px;padding:12px 6px 9px;display:flex;flex-direction:column;align-items:center;gap:5px;box-shadow:0 6px 16px -6px rgba(20,90,150,.4);cursor:pointer;transition:transform .08s;}
+    .tile:active{transform:translateY(3px) scale(.97);}
+    .tile .ic{font-size:30px;line-height:1;}
+    .tile .lb{font-family:"Baloo 2";font-weight:800;font-size:12px;color:#46627a;}
+    .tile.locked{opacity:.55;}
+
+    /* parent gate */
+    #gate{position:fixed;inset:0;background:rgba(12,28,46,.55);backdrop-filter:blur(3px);display:none;align-items:center;justify-content:center;z-index:20;padding:24px;}
+    #gate.show{display:flex;}
+    .gcard{background:#fff;border-radius:22px;padding:24px 22px;max-width:340px;text-align:center;box-shadow:0 20px 50px -20px rgba(0,0,0,.5);}
+    .gcard h2{font-family:"Baloo 2";font-weight:800;font-size:20px;color:var(--ink);}
+    .gcard p{color:#6b86a3;font-weight:700;font-size:14px;line-height:1.5;margin-top:6px;}
+    #hold{margin-top:16px;width:100%;border:none;border-radius:16px;padding:16px;font-family:"Baloo 2";font-weight:800;font-size:16px;color:#fff;background:#1cb0f6;position:relative;overflow:hidden;cursor:pointer;}
+    #holdfill{position:absolute;inset:0;background:rgba(255,255,255,.28);width:0;}
+    #gclose{margin-top:12px;background:none;border:none;color:#6b86a3;font-weight:800;font-size:14px;cursor:pointer;}
+    .proto{position:fixed;top:calc(10px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);z-index:8;background:rgba(255,255,255,.8);border-radius:99px;padding:3px 10px;font-size:10.5px;font-weight:800;color:#8aa0b5;}
+  </style>
+</head>
+<body>
+  <div id="sky"></div>
+  <div id="app">
+    <div class="proto">✨ new home — preview</div>
+    <div class="top">
+      <div class="stat"><span class="e">🔥</span><span id="streak">0</span></div>
+      <div class="spacer"></div>
+      <div class="stat"><span class="e">🪙</span><span id="coins">0</span></div>
+    </div>
+
+    <div id="scene">
+      <span class="cloud" style="top:14%;left:8%;animation-delay:0s;">☁️</span>
+      <span class="cloud" style="top:26%;left:40%;font-size:30px;animation-delay:-9s;">☁️</span>
+      <span class="cloud" style="top:9%;left:62%;font-size:34px;animation-delay:-16s;">⛅</span>
+      <span class="tree" style="left:6%;">🌳</span>
+      <span class="tree" style="right:8%;font-size:30px;">🌲</span>
+      <span class="tree" style="left:24%;font-size:24px;bottom:96px;">🌷</span>
+      <span class="tree" style="right:26%;font-size:24px;bottom:96px;">🌼</span>
+      <div id="ground"></div>
+
+      <div id="leoWrap">
+        <div id="speech"></div>
+        <img id="leo" src="/coach/leo.png" alt="Leo" onerror="this.style.display='none';" />
+      </div>
+
+      <button id="play">PLAY<span class="sub" id="playSub">Start</span></button>
+    </div>
+
+    <div class="dock">
+      <button class="tile" id="tStickers"><span class="ic">⭐</span><span class="lb">Stickers</span></button>
+      <button class="tile" id="tArcade"><span class="ic">🎰</span><span class="lb">Prizes</span></button>
+      <button class="tile" id="tRoom"><span class="ic">🎨</span><span class="lb">My Room</span></button>
+      <button class="tile" id="tGrown"><span class="ic">👨‍👩‍👧</span><span class="lb">Grown-ups</span></button>
+    </div>
+  </div>
+
+  <div id="gate">
+    <div class="gcard">
+      <h2>Grown-ups only 👋</h2>
+      <p>Press and hold the button to go to progress &amp; settings.</p>
+      <button id="hold"><span id="holdfill"></span><span style="position:relative;">Press &amp; hold</span></button>
+      <button id="gclose">Back to play</button>
+    </div>
+  </div>
+
+  <script src="/sona.js"></script>
+  <script>
+    var $=function(id){return document.getElementById(id);};
+    var S=window.Sona||null;
+    var profile=S?S.getProfile():{childName:"",voiceOn:true,volume:0.8,character:"leo"};
+
+    // ── stats ──
+    try{ $("coins").textContent=(S&&S.getCoins)?S.getCoins():0; }catch(e){}
+    try{ var g=S?S.getProgress():null; $("streak").textContent=(g&&g.streak&&g.streak.count)||0; }catch(e){}
+
+    // ── buddy art (respect chosen character/outfit) ──
+    try{
+      if(S&&S.characterById&&profile.character){ var c=S.characterById(profile.character); if(c&&c.img){ $("leo").src=c.img; } }
+    }catch(e){}
+
+    // ── backdrop (use the child's chosen world if any) ──
+    try{
+      if(S&&S.backdropById&&profile.backdrop){ var bd=S.backdropById(profile.backdrop); if(bd&&bd.css){ $("sky").style.background=bd.css; } }
+    }catch(e){}
+
+    // ── audio: Leo greets + names things (only if "coach speaks" is on) ──
+    var audioCtx=null, speaking=false;
+    function getCtx(){ if(!audioCtx){var AC=window.AudioContext||window.webkitAudioContext;audioCtx=new AC();} if(audioCtx.state==="suspended")audioCtx.resume(); return audioCtx; }
+    function playPCM(b){ return new Promise(function(res){ try{ var c=getCtx(),n=b.byteLength>>1,ab=c.createBuffer(1,n,24000),ch=ab.getChannelData(0),dv=new DataView(b.buffer,b.byteOffset,b.byteLength); for(var i=0;i<n;i++)ch[i]=dv.getInt16(i*2,true)/32768; var s=c.createBufferSource();s.buffer=ab;s.playbackRate.value=(S&&S.VOICE_PITCH)||1;var gn=c.createGain();gn.gain.value=(profile.volume!=null?profile.volume:0.8);s.connect(gn);gn.connect(c.destination);s.onended=res;s.start(); }catch(e){res();} }); }
+    function say(t){ return new Promise(function(res){ if(!t||speaking||profile.voiceOn===false)return res(); speaking=true; fetch("/api/tts",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text:t,voice:profile.voiceId||""})}).then(function(r){return r.ok?r.arrayBuffer():null;}).then(function(b){return b?playPCM(new Uint8Array(b)):null;}).catch(function(){}).finally(function(){speaking=false;res();}); }); }
+    function bubble(t){ var s=$("speech"); s.textContent=t; s.classList.add("show"); clearTimeout(bubble._t); bubble._t=setTimeout(function(){ s.classList.remove("show"); },2600); }
+    function sfx(n){ try{ if(S&&S.sfx&&S.sfx[n])S.sfx[n](); }catch(e){} }
+
+    function greet(){ var nm=(profile.childName||"").trim(); var hi=nm?("Hi "+nm+"! Ready to play?"):"Hi! Ready to play?"; bubble(nm?("Hi "+nm+"! 👋"):"Hi! 👋"); say(hi); }
+    // first tap anywhere unlocks audio on mobile, then greet
+    var greeted=false;
+    function maybeGreet(){ if(greeted)return; greeted=true; greet(); }
+    document.addEventListener("pointerdown",maybeGreet,{once:true});
+
+    $("leoWrap").onclick=function(){ sfx("tap"); var lines=["Let's practice!","You can do it!","I'm so proud of you!","Tap Play to start!"]; var l=lines[Math.floor(Math.random()*lines.length)]; bubble(l); say(l); };
+
+    // ── PLAY → today's path (next unfinished, unlocked level) ──
+    function nextLevel(){
+      var unlocked=(S&&S.unlockedThru)?S.unlockedThru():1, lvl=1;
+      for(var i=1;i<=unlocked;i++){ lvl=i; if(!(S&&S.levelDone&&S.levelDone(i))){ break; } }
+      return lvl;
+    }
+    (function(){ // resume vs start label
+      var active=(S&&S.session&&S.session.active&&S.session.active());
+      $("playSub").textContent=active?"Continue":"Start";
+    })();
+    $("play").onclick=function(){ sfx("tap"); var active=(S&&S.session&&S.session.active&&S.session.active()); var lvl= active? ((S.session.get()||{}).level||nextLevel()) : nextLevel(); location.href="/level.html?level="+lvl; };
+
+    // ── destinations ──
+    $("tStickers").onclick=function(){ sfx("tap"); location.href="/stickers.html"; };
+    $("tArcade").onclick=function(){ sfx("tap"); location.href="/arcade.html"; };
+    $("tRoom").onclick=function(){ sfx("tap"); location.href="/customize.html"; };
+
+    // ── parent gate ──
+    $("tGrown").onclick=function(){ sfx("tap"); $("gate").classList.add("show"); };
+    $("gclose").onclick=function(){ $("gate").classList.remove("show"); $("holdfill").style.width="0"; };
+    (function(){
+      var hold=$("hold"), fill=$("holdfill"), t0=0, raf=null, done=false;
+      function tick(){ var p=Math.min(1,(performance.now()-t0)/1400); fill.style.width=(p*100)+"%"; if(p>=1){ done=true; location.href="/progress.html"; return; } raf=requestAnimationFrame(tick); }
+      function start(e){ e.preventDefault(); done=false; t0=performance.now(); raf=requestAnimationFrame(tick); }
+      function end(){ if(done)return; if(raf)cancelAnimationFrame(raf); fill.style.width="0"; }
+      hold.addEventListener("pointerdown",start); hold.addEventListener("pointerup",end); hold.addEventListener("pointerleave",end);
+    })();
+
+    try{ if(S&&S.music&&S.music.start)S.music.start(); }catch(e){}
+  </script>
+</body>
+</html>
