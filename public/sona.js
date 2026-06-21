@@ -485,7 +485,7 @@
   // connected speech). Each level deals GAMES_PER_LEVEL games from the deck, so a
   // given game doesn't reappear for ~4 levels; and since difficulty = the level
   // number, each time a game comes back around it's the harder version.
-  const GAME_DECK = ["rocket.html", "racer.html", "grocery.html", "bubble.html", "cupstack.html", "train.html", "whack.html", "story.html", "match.html", "chat.html"];
+  const GAME_DECK = ["rocket.html", "racer.html", "grocery.html", "bubble.html", "cupstack.html", "builder.html", "train.html", "whack.html", "story.html", "match.html", "chat.html"];
   const GAMES_PER_LEVEL = 3;
   function levelGames(level) {
     level = level || 1;
@@ -501,6 +501,7 @@
     "cupstack.html": { name: "Cup Stack",     icon: "🥤",  band: "Words",     c: "#ff5d6c" },
     "whack.html":    { name: "Pop-a-Word",    icon: "🔨",  band: "Words",     c: "#58cc02" },
     "match.html":    { name: "Match-Up",      icon: "🃏",  band: "Words",     c: "#8b5cf6" },
+    "builder.html":  { name: "Block Builder",  icon: "🧱",  band: "Words",     c: "#ff8c42" },
     "grocery.html":  { name: "Grocery Grab",  icon: "🛒",  band: "Phrases",   c: "#ff9600" },
     "train.html":    { name: "Story Train",   icon: "🚂",  band: "Sentences", c: "#2ec4d6" },
     "story.html":    { name: "Story Time",    icon: "📖",  band: "Story",     c: "#7cc40a" },

@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>Sona — Warm up</title>
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <meta name="theme-color" content="#1cb0f6" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <script defer src="/_vercel/insights/script.js"></script>
+  <style>
+    :root{ --blue:#1cb0f6; --blue-d:#1597d4; --green:#58cc02; --green-d:#46a302; --ink:#16384f; }
+    *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;font-family:"Nunito",-apple-system,"Segoe UI",Roboto,sans-serif;user-select:none;}
+    html,body{height:100%;}
+    body{background:radial-gradient(circle at 50% 18%,#dff4ff,#bfe3ff 55%,#a9d8ff);display:flex;align-items:center;justify-content:center;overflow:hidden;}
+    #app{width:100%;max-width:460px;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center;}
+    .badge{font-family:"Baloo 2";font-weight:800;font-size:13px;color:var(--blue-d);text-transform:uppercase;letter-spacing:.08em;}
+    h1{font-family:"Baloo 2";font-weight:800;font-size:30px;color:var(--ink);margin-top:6px;line-height:1.1;}
+    .say{font-family:"Baloo 2";font-weight:800;font-size:74px;color:var(--blue-d);margin:6px 0 2px;text-shadow:0 4px 0 rgba(28,176,246,.18);}
+    #leo{width:120px;height:120px;object-fit:contain;filter:drop-shadow(0 10px 14px rgba(20,90,160,.28));animation:bob 2.6s ease-in-out infinite;}
+    @keyframes bob{0%,100%{transform:translateY(0);}50%{transform:translateY(-7px);}}
+    #leo.pulse{animation:pop .3s ease;}
+    @keyframes pop{0%{transform:scale(1);}50%{transform:scale(1.12);}100%{transform:scale(1);}}
+    .barwrap{width:100%;max-width:320px;margin-top:18px;}
+    .pips{display:flex;gap:6px;justify-content:center;margin-bottom:10px;}
+    .pip{width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:inset 0 2px 4px rgba(0,0,0,.12);transition:transform .2s,background .2s;}
+    .pip.on{background:var(--green);transform:scale(1.15);box-shadow:0 3px 8px rgba(70,160,0,.4);}
+    .bar{height:18px;border-radius:99px;background:#fff;overflow:hidden;box-shadow:inset 0 2px 5px rgba(0,0,0,.12);}
+    .bar span{display:block;height:100%;width:0;background:linear-gradient(90deg,#7ad131,var(--green));border-radius:99px;transition:width .3s;}
+    .hint{font-weight:800;font-size:15px;color:var(--ink);margin-top:16px;min-height:22px;}
+    .mic{margin-top:16px;width:78px;height:78px;border-radius:50%;border:none;background:var(--blue);color:#fff;box-shadow:0 6px 0 var(--blue-d);cursor:pointer;font-size:34px;display:flex;align-items:center;justify-content:center;}
+    .mic.live{animation:mglow 1.2s ease-in-out infinite;}
+    @keyframes mglow{0%,100%{box-shadow:0 6px 0 var(--blue-d),0 0 0 0 rgba(28,176,246,.5);}50%{box-shadow:0 6px 0 var(--blue-d),0 0 0 16px rgba(28,176,246,0);}}
+    .skip{margin-top:14px;background:none;border:none;color:#5a86a6;font-weight:800;font-size:13px;cursor:pointer;}
+  </style>
+</head>
+<body>
+  <div id="app">
+    <div class="badge">Warm up 🎙️</div>
+    <h1 id="title">Say it to start!</h1>
+    <div class="say" id="say">rrr</div>
+    <img id="leo" src="/coach/leo.png" alt="Leo" onerror="this.style.display='none';" />
+    <div class="barwrap">
+      <div class="pips" id="pips"></div>
+      <div class="bar"><span id="fill"></span></div>
+    </div>
+    <div class="hint" id="hint">Tap the mic and say it!</div>
+    <button class="mic" id="mic" title="Say it">🎤</button>
+    <button class="skip" id="skip">Skip warm-up →</button>
+  </div>
+
+  <script src="/sona.js"></script>
+  <script>
+    var $=function(id){return document.getElementById(id);};
+    var qp=new URLSearchParams(location.search);
+    var S=window.Sona||null;
+    var profile=S?S.getProfile():{voiceId:"",volume:0.8};
+    var SOUND=(qp.get("sound")||((profile.focusSounds&&profile.focusSounds[0])||"R")).toUpperCase();
+    if(!(S&&S.WORDS&&S.WORDS[SOUND])) SOUND="R";
+    var LEVEL=parseInt(qp.get("level"),10)||1;
+    var SAYIT={ R:"rrr", S:"sss", L:"lll", K:"k, k, k", G:"g, g, g", F:"fff", SH:"shh", CH:"ch, ch", TH:"th, th", THV:"the, the", Z:"zzz", V:"vvv", J:"j, j", P:"p, p, p", B:"b, b, b", M:"mmm", N:"nnn", T:"t, t, t", D:"d, d, d" };
+    var SAY=SAYIT[SOUND]||SOUND.toLowerCase();
+    $("say").textContent=SAY;
+    var GOAL=8, reps=0;
+
+    // pips
+    var pips=$("pips"); for(var i=0;i<GOAL;i++){ var p=document.createElement("div"); p.className="pip"; pips.appendChild(p); }
+    function paint(){ $("fill").style.width=Math.min(100,reps/GOAL*100)+"%"; var kids=pips.children; for(var i=0;i<kids.length;i++) kids[i].className="pip"+(i<reps?" on":""); }
+
+    // audio (Leo models the sound)
+    var audioCtx=null,speaking=false;
+    function getCtx(){ if(!audioCtx){var AC=window.AudioContext||window.webkitAudioContext;audioCtx=new AC();} if(audioCtx.state==="suspended")audioCtx.resume(); return audioCtx; }
+    function playPCM(b){ return new Promise(function(res){ try{ var c=getCtx(),n=b.byteLength>>1,ab=c.createBuffer(1,n,24000),ch=ab.getChannelData(0),dv=new DataView(b.buffer,b.byteOffset,b.byteLength); for(var i=0;i<n;i++)ch[i]=dv.getInt16(i*2,true)/32768; var s=c.createBufferSource();s.buffer=ab;s.playbackRate.value=(S&&S.VOICE_PITCH)||1;var g=c.createGain();g.gain.value=(profile.volume!=null?profile.volume:0.8);s.connect(g);g.connect(c.destination);s.onended=res;s.start(); }catch(e){res();} }); }
+    function say(t){ return new Promise(function(res){ if(!t||speaking||profile.voiceOn===false)return res(); speaking=true; fetch("/api/tts",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text:t,voice:profile.voiceId||""})}).then(function(r){return r.ok?r.arrayBuffer():null;}).then(function(b){return b?playPCM(new Uint8Array(b)):null;}).catch(function(){}).finally(function(){speaking=false;res();}); }); }
+    function sfx(n){ try{ if(S&&S.sfx&&S.sfx[n])S.sfx[n](); }catch(e){} }
+
+    function addRep(){
+      if(reps>=GOAL) return; reps++; paint();
+      sfx("tap"); var l=$("leo"); l.classList.remove("pulse"); void l.offsetWidth; l.classList.add("pulse");
+      if(reps>=GOAL){ done(); }
+      else if(reps===Math.ceil(GOAL/2)){ $("hint").textContent="Halfway — keep going!"; }
+    }
+    var finished=false;
+    function done(){
+      if(finished)return; finished=true;
+      $("hint").textContent="Blast off! 🚀"; sfx("complete"); try{ if(S&&S.confetti)S.confetti(); }catch(e){}
+      // start the level session, then go to the first game
+      setTimeout(function(){
+        try{
+          if(S&&S.session){ S.session.start(LEVEL, SOUND, (S.levelGames?S.levelGames(LEVEL):["rocket.html"]), LEVEL); location.href=S.session.url(); return; }
+        }catch(e){}
+        location.href="/level.html?level="+LEVEL;
+      }, 650);
+    }
+
+    // mic: count each spoken burst toward the goal (rms + high-freq so fricatives count)
+    var micStream=null, listening=false;
+    function startMic(){
+      if(listening) return; listening=true;
+      $("mic").classList.add("live"); $("hint").textContent="Say "+SAY+"!";
+      navigator.mediaDevices.getUserMedia({audio:true}).then(function(stream){
+        micStream=stream; var ctx=getCtx(); var src=ctx.createMediaStreamSource(stream); var an=ctx.createAnalyser(); an.fftSize=512; src.connect(an);
+        var fd=new Uint8Array(an.frequencyBinCount), td=new Uint8Array(an.fftSize);
+        var sr=ctx.sampleRate||48000, binHz=sr/an.fftSize;
+        var loBin=Math.max(2,Math.round(2200/binHz)), hiBin=Math.min(fd.length-1,Math.round(9000/binHz));
+        var t0=performance.now(), nS=0,nN=0, thr=0, hfThr=0, hfS=0, above=false, lastRep=0;
+        (function tick(){ if(finished)return;
+          an.getByteFrequencyData(fd); var hs=0; for(var h=loBin;h<=hiBin;h++) hs+=fd[h]; var hf=hs/Math.max(1,(hiBin-loBin+1))/255;
+          an.getByteTimeDomainData(td); var sum=0; for(var i=0;i<td.length;i++){var x=(td[i]-128)/128;sum+=x*x;} var rms=Math.sqrt(sum/td.length), now=performance.now();
+          if(now-t0<350){ nS+=rms; hfS+=hf; nN++; }
+          else{ if(!thr){ thr=Math.max(0.05,(nS/Math.max(1,nN))*3.0); hfThr=Math.max(0.11,(hfS/Math.max(1,nN))*1.9); }
+            var loud = rms>thr || hf>hfThr;
+            if(loud && !above && (now-lastRep)>420){ above=true; lastRep=now; addRep(); }
+            else if(!loud && (now-lastRep)>180){ above=false; }
+          }
+          requestAnimationFrame(tick);
+        })();
+      }).catch(function(){ $("hint").textContent="No mic — tap the mic button to count!"; listening=false; $("mic").classList.remove("live"); });
+    }
+    // first model + auto-start listening
+    (async function(){ await say("Say "+SAY+" "+GOAL+" times to start!"); startMic(); })();
+    $("mic").onclick=function(){ if(!listening){ startMic(); } else { addRep(); } }; // tap = manual count / fallback
+    $("skip").onclick=function(){ done(); };
+    window.addEventListener("pagehide",function(){ try{ if(micStream)micStream.getTracks().forEach(function(t){t.stop();}); }catch(e){} });
+  </script>
+</body>
+</html>

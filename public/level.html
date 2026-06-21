@@ -90,8 +90,8 @@
       if(allDone){ location.href="/levelcomplete.html"; return; }   // claim the prize
       if(window.Sona&&Sona.session){
         var snd=((window.Sona.getProfile&&Sona.getProfile().focusSounds)||[])[0]||"R";
-        if(!mine) Sona.session.start(level, snd, games, level);     // fresh start
-        location.href=Sona.session.url();                          // current step's game
+        if(!mine){ location.href="/warmup.html?sound="+encodeURIComponent(snd)+"&level="+level; return; } // warm up the sound, then start
+        location.href=Sona.session.url();                          // continue the current step
       } else {
         location.href="/"+String(games[doneCount]||games[0]).replace(/^\//,"")+"?sound=R";
       }
