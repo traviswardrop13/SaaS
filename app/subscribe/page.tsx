@@ -81,9 +81,8 @@ function SubscribeInner() {
             Founding price · billed yearly · locked for life
           </p>
           <p className="mt-3 rounded-2xl bg-sky-50 px-4 py-3 text-sm font-semibold text-sky-700">
-            Sona is live. Join as a founding member to lock in 67% off for life and
-            start playing today, with new levels rolling out. No free trial — the
-            founding price is the deal, and you can cancel anytime.
+            Start with a <b>free 3-day trial</b>, then $39.99/yr (67% off, locked for
+            life). Cancel anytime before day 3 and you won&apos;t be charged.
           </p>
 
           <ul className="mt-6 space-y-3">
@@ -104,7 +103,7 @@ function SubscribeInner() {
             Join as a founding member
           </h1>
           <p className="mt-1 text-gray-600">
-            Enter your email and we&apos;ll take you to secure checkout.
+            Enter your email to start your free 3-day trial — no charge for 3 days.
           </p>
 
           {canceled ? (
@@ -135,7 +134,7 @@ function SubscribeInner() {
             disabled={busy}
             className="mt-5 w-full rounded-2xl bg-grass-500 px-6 py-3.5 font-display font-extrabold uppercase tracking-wide text-white shadow-chunky transition hover:bg-grass-600 active:translate-y-1 active:shadow-chunky-sm disabled:opacity-60"
           >
-            {busy ? "Loading…" : "Subscribe — $39.99/yr"}
+            {busy ? "Loading…" : "Start my free 3-day trial"}
           </button>
 
           <p className="mt-3 text-center text-xs text-gray-400">

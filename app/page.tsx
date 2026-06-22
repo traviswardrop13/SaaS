@@ -310,7 +310,7 @@ function Pricing() {
               "Your suggestions shape Sona for your child",
               "Priority support",
             ]}
-            cta="Start — 67% off"
+            cta="Start free 3-day trial"
             href="/subscribe"
           />
         </div>
@@ -458,7 +458,7 @@ function FAQ() {
     },
     {
       q: "How does the founding price work?",
-      a: "Sona is live. Joining now locks in the founding price — 67% off for life ($39.99/yr instead of $119.99) — for the first 100 families. There's no free trial; the founding price is the deal, and you can cancel anytime.",
+      a: "Sona is live. Start with a free 3-day trial, then the founding price — 67% off for life ($39.99/yr instead of $119.99) — locked in for the first 100 families. Cancel anytime before day 3 and you won't be charged.",
     },
   ];
   return (

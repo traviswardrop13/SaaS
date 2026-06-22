@@ -67,7 +67,7 @@ export async function POST(req: NextRequest) {
       billing_address_collection: "auto",
       success_url: `${origin}/subscribe/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/subscribe?canceled=1`,
-      // No free trial — this is a founder preorder; the 50%-off price IS the offer.
+      subscription_data: { trial_period_days: 3 }, // free 3-day trial, then $39.99/yr
     });
     return NextResponse.json({ ok: true, url: session.url });
   } catch (e: unknown) {
