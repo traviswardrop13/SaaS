@@ -32,6 +32,7 @@ export default function RootLayout({
           }}
         />
         <script defer src="/_vercel/insights/script.js" />
+        <script src="/pixel.js" />
       </body>
     </html>
   );

@@ -14,6 +14,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-title" content="Sona" />
+  <script src="/pixel.js"></script>
   <style>
     html,body{height:100%;}
     .ob{min-height:100vh;display:flex;flex-direction:column;max-width:560px;margin:0 auto;
@@ -258,6 +259,7 @@
         email: draft.email || "",
         onboarded: true,
       });
+      try{ if(window.sonaTrack){ sonaTrack("Lead"); sonaTrack("CompleteRegistration"); } }catch(e){}
       // capture the lead (email + answers) → GHL via /api/lead (fire-and-forget)
       try{
         if(draft.email){
