@@ -118,10 +118,10 @@
         </div>
 
         <div style="background:linear-gradient(180deg,#ffffff,#f1faff);border:2px solid #d9ecff;border-radius:18px;padding:18px 16px;margin-top:14px;text-align:center;">
-          <div style="font-family:'Baloo 2';font-weight:800;font-size:18px;color:var(--ink);">The full Sona is live 🎉</div>
-          <div id="comingText" style="color:var(--muted);font-weight:700;font-size:13.5px;margin-top:5px;line-height:1.45;">A whole world of speech games — say it right to power the game. Join as a founding member and start playing today.</div>
-          <a class="btn blue" href="/subscribe" style="margin-top:14px;">Start playing — $39.99/yr →</a>
-          <div style="color:var(--muted);font-weight:700;font-size:11.5px;margin-top:8px;"><b style="color:#46a302;">67% off</b> · founding price locked for life · was $119.99 · first 100 families.</div>
+          <div style="font-family:'Baloo 2';font-weight:800;font-size:18px;color:var(--ink);">Start practicing — free 🎉</div>
+          <div id="comingText" style="color:var(--muted);font-weight:700;font-size:13.5px;margin-top:5px;line-height:1.45;">A whole world of speech games, already set to your child's sounds — say it right to power the game. Jump in and start playing right now.</div>
+          <a class="btn blue" id="playBtn" href="/map.html" style="margin-top:14px;">Start practicing free →</a>
+          <div style="color:var(--muted);font-weight:700;font-size:11.5px;margin-top:8px;">Free to start · works on any device · no credit card.</div>
         </div>
       </div>
     </section>
@@ -243,7 +243,7 @@
       var _utm=(window.Sona&&Sona.utm)?Sona.utm():{};
       try{ await fetch("/api/lead",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(Object.assign({email:email,child:CHILD,age:AGE,practice:window._practice||[],report:window._report||"",summary:window._summary||""},_utm))}); }catch(e){}
       // seed the profile so the app is tailored to what the check found (used at launch)
-      try{ if(window.Sona){ var focus=(window._practice&&window._practice.length)?window._practice:WORDS.map(function(w){return w.s;}); Sona.saveProfile({ childName:CHILD, focusSounds:focus.slice(0,4), checkEmail:email }); } }catch(e){}
+      try{ if(window.Sona){ var focus=(window._practice&&window._practice.length)?window._practice:WORDS.map(function(w){return w.s;}); Sona.saveProfile({ childName:CHILD, childAge:String(AGE||""), focusSounds:focus.slice(0,4), checkEmail:email, email:email, onboarded:true }); } }catch(e){}
       var et=$("emailedText"); if(et) et.textContent="We just emailed "+(CHILD?CHILD+"'s":"your child's")+" report to "+email+" — check your inbox in a minute.";
       var ct=$("comingText"); if(ct) ct.textContent="A whole world of speech games for "+(CHILD||"your child")+"'s sounds — say it right to power the game. We'll email you the moment it's ready.";
       show("sResults");
