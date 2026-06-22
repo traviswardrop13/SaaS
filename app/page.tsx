@@ -98,8 +98,8 @@ function Hero() {
           speech-language pathologist.
         </p>
         <div className="mt-8 flex flex-col items-center gap-3">
-          <a href="/onboarding.html" className="btn-primary text-lg">
-            Get started free
+          <a href="/subscribe" className="btn-primary text-lg">
+            Start free 3-day trial
           </a>
           <a href="/check.html" className="text-sm font-bold text-brand-600 hover:text-brand-700">
             Or take the free 2-minute speech check →
@@ -112,7 +112,7 @@ function Hero() {
           Built by a licensed speech-language pathologist
         </div>
         <p className="mt-4 text-sm font-semibold text-gray-500">
-          Free to start · works on any device · the full app is live
+          Free 3-day trial, then $39.99/yr · cancel anytime
         </p>
       </div>
     </section>
