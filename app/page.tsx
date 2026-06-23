@@ -40,9 +40,7 @@ function Header() {
     <header className="sticky top-0 z-20 border-b border-gray-100 bg-white/85 backdrop-blur">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-3">
         <Link href="/" className="flex items-center gap-2">
-          <span className="text-2xl" aria-hidden>
-            🦁
-          </span>
+          <img src="/coach/leo-icon.png" alt="Sona" className="h-8 w-8 object-contain" />
           <span className="font-display text-2xl font-extrabold text-brand-600">
             Sona
           </span>
