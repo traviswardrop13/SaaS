@@ -91,9 +91,8 @@ function Hero() {
           Speech practice kids<br />actually want to do.
         </h1>
         <p className="mx-auto mt-5 max-w-xl text-lg leading-relaxed text-gray-600">
-          Sona turns speech sounds into a game your child loves — Leo listens,
-          gives feedback, and tracks real progress. Built with a licensed
-          speech-language pathologist.
+          Sona turns speech sounds into a game your child loves — AI listens to
+          every word, gives feedback, and tracks real progress.
         </p>
         <div className="mt-8 flex justify-center">
           <a href="/subscribe" className="btn-primary text-lg">
