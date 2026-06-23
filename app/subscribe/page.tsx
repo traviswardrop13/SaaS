@@ -81,8 +81,7 @@ function SubscribeInner() {
             Founding price · billed yearly · locked for life
           </p>
           <p className="mt-3 rounded-2xl bg-sky-50 px-4 py-3 text-sm font-semibold text-sky-700">
-            Start with a <b>free 3-day trial</b>, then $39.99/yr (67% off, locked for
-            life). Cancel anytime before day 3 and you won&apos;t be charged.
+            <b>Free for 3 days</b>, then $39.99/yr (67% off, locked for life). Cancel anytime.
           </p>
 
           <ul className="mt-6 space-y-3">
