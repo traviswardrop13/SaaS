@@ -78,10 +78,10 @@ function SubscribeInner() {
             <span className="mb-2 rounded-full bg-grass-500 px-2.5 py-1 text-xs font-extrabold uppercase tracking-wide text-white shadow-chunky-sm">67% off</span>
           </div>
           <p className="mt-1 text-sm font-bold text-grass-600">
-            Founding price · billed yearly · locked for life
+            Your founding price — locked in for life
           </p>
           <p className="mt-3 rounded-2xl bg-sky-50 px-4 py-3 text-sm font-semibold text-sky-700">
-            <b>Free for 3 days</b>, then $39.99/yr (67% off, locked for life). Cancel anytime.
+            <b>Free for 3 days</b>, then $39.99/yr. Cancel anytime.
           </p>
 
           <ul className="mt-6 space-y-3">
