@@ -90,7 +90,7 @@ function Hero() {
         </div>
 
         <h1 className="mt-12 font-display text-4xl font-extrabold leading-[1.05] text-gray-900 sm:text-6xl">
-          Speech practice kids actually love.
+          Speech practice kids<br />actually want to do.
         </h1>
         <p className="mx-auto mt-5 max-w-xl text-lg leading-relaxed text-gray-600">
           Sona turns speech sounds into a game your child loves — Leo listens,
