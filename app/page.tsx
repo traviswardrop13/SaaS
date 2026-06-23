@@ -13,9 +13,9 @@ import Link from "next/link";
  * audio isn't stored. No medical/outcome claims.
  */
 export const metadata = {
-  title: "Sona — free 2-minute speech check for kids",
+  title: "Sona — speech practice kids actually love",
   description:
-    "Get a free 2-minute speech check for your child, built with a licensed speech-language pathologist — see which sounds are on track and which to practice, and we'll email you the report. Sona's full speech-games app is live — join as a founding member at 67% off.",
+    "Sona turns speech sounds into a game kids love — a friendly coach listens to each try and gives feedback, built with a licensed speech-language pathologist. Try it free.",
 };
 
 export default function Landing() {
@@ -90,19 +90,16 @@ function Hero() {
         </div>
 
         <h1 className="mt-12 font-display text-4xl font-extrabold leading-[1.05] text-gray-900 sm:text-6xl">
-          Speech practice your child will actually want to do.
+          Speech practice kids actually love.
         </h1>
         <p className="mx-auto mt-5 max-w-xl text-lg leading-relaxed text-gray-600">
           Sona turns speech sounds into a game your child loves — Leo listens,
           gives feedback, and tracks real progress. Built with a licensed
           speech-language pathologist.
         </p>
-        <div className="mt-8 flex flex-col items-center gap-3">
+        <div className="mt-8 flex justify-center">
           <a href="/subscribe" className="btn-primary text-lg">
-            Start free 3-day trial
-          </a>
-          <a href="/check.html" className="text-sm font-bold text-brand-600 hover:text-brand-700">
-            Or take the free 2-minute speech check →
+            Try it free
           </a>
         </div>
         <div className="mx-auto mt-7 inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-bold text-gray-600 shadow-chunky-sm">
@@ -450,11 +447,11 @@ function FAQ() {
     },
     {
       q: "When can my child start?",
-      a: "Right away. Take the free 2-minute speech check today and we'll email you the report — then join as a founding member to start playing, with new levels rolling out.",
+      a: "Right away — start your free 3-day trial and your child can play today, with new levels rolling out.",
     },
     {
       q: "Is the app ready today?",
-      a: "Yes — Sona's speech games are live now. Start with the free speech check, then join as a founding member to start playing, and you'll get every new level and feature as it ships.",
+      a: "Yes — Sona's speech games are live now. Start a free 3-day trial to play today, and you'll get every new level and feature as it ships.",
     },
     {
       q: "How does the founding price work?",
@@ -489,8 +486,8 @@ function FinalCTA() {
           Ready to make speech practice fun?
         </h2>
         <p className="mx-auto mt-3 max-w-xl text-lg text-brand-50">
-          Set up your child in about a minute and start playing today — free.
-          Not sure where to start? Take the free 2-minute speech check first.
+          Start your free 3-day trial and your child can play today. Cancel
+          anytime before day 3 and you won&apos;t be charged.
         </p>
         <a
           href="/onboarding.html"
