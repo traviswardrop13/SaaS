@@ -103,7 +103,7 @@ function SubscribeInner() {
             Join as a founding member
           </h1>
           <p className="mt-1 text-gray-600">
-            Enter your email to start your free 3-day trial — no charge for 3 days.
+            Enter your email to start your free 3-day trial.
           </p>
 
           {canceled ? (

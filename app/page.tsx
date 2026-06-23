@@ -109,7 +109,7 @@ function Hero() {
           Built by a licensed speech-language pathologist
         </div>
         <p className="mt-4 text-sm font-semibold text-gray-500">
-          Free 3-day trial, then $39.99/yr · cancel anytime
+          Free 3-day trial · cancel anytime
         </p>
       </div>
     </section>
