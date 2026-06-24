@@ -85,7 +85,7 @@
     </div>
 
     <div class="card" id="rosterCard" style="display:none;">
-      <div style="display:flex;align-items:center;gap:8px;"><h2>Your families' progress 📈</h2><button class="btn" id="refresh" style="margin-left:auto;background:#eef3fb;color:#46627a;box-shadow:none;padding:8px 12px;">↻ Refresh</button></div>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;"><h2>Your families' progress 📈</h2><a href="/slp-families.html" class="btn" style="margin-left:auto;text-decoration:none;padding:8px 12px;">📋 Full caseload →</a><button class="btn" id="refresh" style="background:#eef3fb;color:#46627a;box-shadow:none;padding:8px 12px;">↻ Refresh</button></div>
       <div id="roster" style="margin-top:6px;"><p class="muted small">Loading…</p></div>
       <div class="banner" id="kvBanner" style="display:none;">Live roster is off until a data store is connected. Add a <b>Vercel KV</b> store to this project (Storage → Create → KV) and redeploy — then families' progress shows here automatically. Until then, you'll still get each child's progress from us directly.</div>
     </div>
