@@ -23,7 +23,7 @@ import { scoreUtterance, type ScoreResult } from "@/lib/scoring";
 import TalkingFace from "@/components/TalkingFace";
 import MouthDiagram from "@/components/MouthDiagram";
 
-type Phase = "intro" | "prompt" | "listening" | "result" | "done";
+type Phase = "intro" | "practice" | "prompt" | "listening" | "result" | "done";
 
 export default function LessonPage() {
   const params = useParams<{ id: string; skillId: string; lessonId: string }>();
@@ -102,8 +102,24 @@ export default function LessonPage() {
     });
   }
 
+  /** Play a demo of the target sound for the Watch & Practice screen */
+  function playTargetSound() {
+    const demoText = lesson.level === "isolation"
+      ? lesson.words[0]?.text ?? lesson.targetSound.toLowerCase()
+      : lesson.targetSound.toLowerCase();
+    speak(demoText, {
+      onStart: () => setIsSpeaking(true),
+      onEnd: () => setIsSpeaking(false),
+    });
+  }
+
   function beginLesson() {
     if (supported) void prewarmMicrophone();
+    // Go to Watch & Practice screen first
+    setPhase("practice");
+  }
+
+  function finishPractice() {
     setPhase("prompt");
   }
 
@@ -222,6 +238,18 @@ export default function LessonPage() {
             hint={lesson.hint}
             supported={supported}
             onStart={beginLesson}
+          />
+        )}
+
+        {phase === "practice" && (
+          <PracticePanel
+            key="practice"
+            targetSound={lesson.targetSound}
+            skillEmoji={skill.emoji}
+            skillColor={skill.color}
+            isSpeaking={isSpeaking}
+            onPlaySound={playTargetSound}
+            onReady={finishPractice}
           />
         )}
 
@@ -418,6 +446,86 @@ export default function LessonPage() {
         )}
       </AnimatePresence>
     </main>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Watch & Practice — shown once before the first challenge.
+   Shows the MouthDiagram, plays the sound, lets the kid practice
+   silently before diving in. Quick (~5s) so it doesn't feel like
+   a lecture.
+   ═══════════════════════════════════════════════════════════════════ */
+
+function PracticePanel({
+  targetSound,
+  skillEmoji,
+  skillColor,
+  isSpeaking,
+  onPlaySound,
+  onReady,
+}: {
+  targetSound: import("@/lib/scoring").TargetSound;
+  skillEmoji: string;
+  skillColor: string;
+  isSpeaking: boolean;
+  onPlaySound: () => void;
+  onReady: () => void;
+}) {
+  // Auto-play the sound once on mount
+  useEffect(() => {
+    const timer = setTimeout(onPlaySound, 400);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -16 }}
+      transition={{ duration: 0.25 }}
+      className="flex flex-1 flex-col items-center justify-center text-center"
+    >
+      {/* Header */}
+      <div className="mb-2 text-4xl">{skillEmoji}</div>
+      <h1 className="font-display text-2xl font-extrabold text-gray-800 sm:text-3xl">
+        Watch &amp; Practice
+      </h1>
+      <p className="mt-1 max-w-sm text-sm text-gray-500">
+        See how the sound is made, then try it yourself!
+      </p>
+
+      {/* Mouth diagram — the star of this screen */}
+      <div className="mt-6">
+        <MouthDiagram sound={targetSound} size={220} showHint showAirflow />
+      </div>
+
+      {/* Play sound button */}
+      <button
+        type="button"
+        onClick={onPlaySound}
+        className={`mt-6 flex items-center gap-2 rounded-full px-6 py-3 font-display text-lg font-bold text-white shadow-chunky transition active:translate-y-1 ${skillColor}`}
+      >
+        <span className="text-xl">🔊</span>
+        {isSpeaking ? "Playing…" : "Hear the sound"}
+      </button>
+
+      {/* Tip */}
+      <div className="mx-auto mt-6 max-w-xs rounded-2xl bg-sky-50 px-4 py-3">
+        <p className="text-sm font-bold text-sky-700">
+          💡 Practice tip: Try making the sound 2-3 times before
+          you start the challenge!
+        </p>
+      </div>
+
+      {/* Ready button */}
+      <button
+        onClick={onReady}
+        className="btn-primary mt-8 w-full max-w-sm uppercase"
+      >
+        I&apos;m ready! 💪
+      </button>
+    </motion.div>
   );
 }
 

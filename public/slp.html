@@ -45,6 +45,13 @@
     .banner{background:#fff7e6;border:1px solid #ffe2a8;border-radius:12px;padding:11px 13px;font-size:12.5px;font-weight:700;color:#8a6400;margin-top:10px;line-height:1.5;}
     .note{font-size:11.5px;color:var(--muted);font-weight:700;line-height:1.5;margin-top:12px;}
     code{background:#eef3fb;border-radius:6px;padding:1px 6px;font-size:12px;}
+    .fb-cats{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
+    .fb-cat{border:2px solid var(--line);border-radius:10px;padding:8px 14px;font-family:"Baloo 2";font-weight:800;font-size:13px;color:var(--muted);background:#fff;cursor:pointer;transition:all .15s;}
+    .fb-cat:hover{border-color:var(--blue);color:var(--blue);}
+    .fb-cat.on{border-color:var(--blue);background:#e8f5ff;color:var(--blue-d);}
+    .fb-text{width:100%;border:2px solid #d9e6f2;border-radius:12px;padding:12px;font-size:14px;font-weight:600;color:var(--ink);background:#fff;min-height:80px;resize:vertical;margin-top:8px;line-height:1.5;}
+    .fb-text:focus{outline:none;border-color:var(--blue);}
+    .fb-success{background:#eafce9;border:1px solid #b6f2b0;border-radius:12px;padding:14px;text-align:center;font-weight:800;color:#46a302;font-size:14px;margin-top:8px;}
   </style>
 </head>
 <body>
@@ -90,6 +97,24 @@
       <div class="banner" id="kvBanner" style="display:none;">Live roster is off until a data store is connected. Add a <b>Vercel KV</b> store to this project (Storage → Create → KV) and redeploy — then families' progress shows here automatically. Until then, you'll still get each child's progress from us directly.</div>
     </div>
 
+    <div class="card" id="feedbackCard" style="display:none;">
+      <h2>💬 Share your feedback</h2>
+      <p class="muted small" style="margin-top:4px;">Your suggestions get built fast — we mean it. Tell us what's working, what's broken, or what you wish existed.</p>
+      <div class="fb-cats" id="fbCats">
+        <button type="button" class="fb-cat on" data-cat="general">💬 General</button>
+        <button type="button" class="fb-cat" data-cat="feature">💡 Feature idea</button>
+        <button type="button" class="fb-cat" data-cat="bug">🐛 Bug report</button>
+        <button type="button" class="fb-cat" data-cat="content">📝 Content</button>
+        <button type="button" class="fb-cat" data-cat="praise">🌟 Praise</button>
+      </div>
+      <textarea class="fb-text" id="fbText" placeholder="What's on your mind? Be as specific as you like…"></textarea>
+      <div style="margin-top:8px;display:flex;align-items:center;gap:10px;">
+        <button class="btn green" id="fbSend">Send feedback</button>
+        <span class="muted small" id="fbStatus"></span>
+      </div>
+      <div class="fb-success" id="fbSuccess" style="display:none;">✅ Thank you! Your feedback was sent directly to our founder. We read every message.</div>
+    </div>
+
     <p class="note" id="footNote" style="display:none;">Signed in to your free SLP account. Share the <b>family link</b> with families — not this page. Sona is an at-home practice tool, not a diagnosis or a substitute for professional care.</p>
   </div>
 
@@ -128,7 +153,7 @@
     function render(){
       if(!code){ $("codeCard").style.display="block"; $("hi").textContent="Finish your setup"; return; }
       $("codeCard").style.display="none";
-      ["assignCard","shareCard","rosterCard","footNote"].forEach(function(id){ var el=$(id); if(el) el.style.display=""; });
+      ["assignCard","shareCard","rosterCard","feedbackCard","footNote"].forEach(function(id){ var el=$(id); if(el) el.style.display=""; });
       $("hi").textContent="Dashboard · "+code;
       populateAssign();
       buildLink();
@@ -183,6 +208,46 @@
         });
       }).catch(function(){ host.innerHTML='<p class="muted small">Couldn’t load right now.</p>'; });
     }
+
+    // ── Feedback ────────────────────────────────────────────────
+    var fbCat="general";
+    document.querySelectorAll(".fb-cat").forEach(function(btn){
+      btn.onclick=function(){
+        document.querySelectorAll(".fb-cat").forEach(function(b){b.classList.remove("on");});
+        btn.classList.add("on");
+        fbCat=btn.dataset.cat;
+      };
+    });
+    $("fbSend").onclick=function(){
+      var text=($("fbText").value||"").trim();
+      if(!text){$("fbStatus").textContent="Please write something first."; return;}
+      $("fbSend").disabled=true; $("fbStatus").textContent="Sending…";
+      fetch("/api/slp/feedback",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({
+          text:text,
+          category:fbCat,
+          slpName:(account&&account.name)||"Unknown",
+          slpCode:code
+        })
+      })
+      .then(function(r){return r.json();})
+      .then(function(j){
+        $("fbSend").disabled=false; $("fbStatus").textContent="";
+        if(j&&j.ok){
+          $("fbText").value="";
+          $("fbSuccess").style.display="block";
+          setTimeout(function(){$("fbSuccess").style.display="none";},5000);
+        } else {
+          $("fbStatus").textContent="Couldn't send — try again.";
+        }
+      })
+      .catch(function(){
+        $("fbSend").disabled=false;
+        $("fbStatus").textContent="Network error — try again.";
+      });
+    };
 
     function boot(){
       fetch("/api/slp/auth/me").then(function(r){return r.json();}).then(function(j){
