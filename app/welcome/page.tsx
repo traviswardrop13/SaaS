@@ -158,7 +158,7 @@ export default function WelcomePage() {
         <div className="flex flex-1 flex-col items-center justify-center text-center">
           <div className="text-7xl">🦁</div>
           <h1 className="mt-4 font-display text-4xl font-extrabold text-brand-600 sm:text-5xl">
-            SpeakUp Kids
+            Sona
           </h1>
           <p className="mt-3 max-w-sm text-gray-600">
             A friendly, game-style way for kids to practice tricky speech
