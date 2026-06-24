@@ -9,36 +9,84 @@
   <meta name="theme-color" content="#1cb0f6" />
   <script defer src="/_vercel/insights/script.js"></script>
   <style>
-    :root{ --blue:#1cb0f6; --blue-d:#1597d4; --green:#58cc02; --green-d:#46a302; --ink:#16384f; --muted:#6b86a3; }
-    *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;font-family:"Nunito",-apple-system,"Segoe UI",Roboto,sans-serif;}
-    body{background:linear-gradient(180deg,#eef7ff,#eafbe9 70%);color:var(--ink);min-height:100vh;display:flex;align-items:flex-start;justify-content:center;}
-    .wrap{width:100%;max-width:420px;padding:calc(40px + env(safe-area-inset-top)) 20px 40px;}
-    .brand{display:flex;align-items:center;gap:8px;font-family:"Baloo 2";font-weight:800;font-size:18px;color:var(--blue-d);justify-content:center;}
-    .brand img{width:30px;height:30px;}
-    .card{background:#fff;border-radius:20px;padding:22px 20px;margin-top:18px;box-shadow:0 12px 30px -18px rgba(20,90,160,.6);}
-    h1{font-family:"Baloo 2";font-weight:800;font-size:23px;text-align:center;}
-    p.lead{color:var(--muted);font-weight:700;font-size:14px;line-height:1.5;text-align:center;margin-top:6px;}
-    label.fl{display:block;font-weight:800;font-size:12.5px;color:var(--muted);margin:16px 0 6px;}
-    input{width:100%;border:2px solid #d9e6f2;border-radius:12px;padding:13px;font-size:16px;font-weight:700;color:var(--ink);background:#fff;}
-    .btn{margin-top:14px;width:100%;border:none;border-radius:14px;padding:15px;font-family:"Baloo 2";font-weight:800;font-size:16px;color:#fff;background:linear-gradient(180deg,#5fd216,#46a302);box-shadow:0 5px 0 #3c8c02;cursor:pointer;}
-    .btn:active{transform:translateY(3px);box-shadow:0 2px 0 #3c8c02;}
-    .btn:disabled{opacity:.6;}
-    .err{color:#e0457b;font-weight:800;font-size:13px;margin-top:10px;min-height:18px;text-align:center;}
-    .ok{text-align:center;}
-    .ok .big{font-size:44px;}
-    .ok h2{font-family:"Baloo 2";font-weight:800;font-size:20px;margin-top:8px;}
-    .note{font-size:11.5px;color:var(--muted);font-weight:700;text-align:center;margin-top:16px;line-height:1.5;}
-    a{color:var(--blue-d);}
-    .devbox{margin-top:14px;background:#fff7e6;border:1px solid #ffe2a8;border-radius:12px;padding:11px 13px;font-size:12px;font-weight:700;color:#8a6400;line-height:1.5;word-break:break-all;}
+    :root { --blue:#1cb0f6; --blue-d:#1597d4; --green:#58cc02; --green-d:#46a302; --ink:#16384f; --muted:#6b86a3; }
+    * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent;
+        font-family:"Nunito",-apple-system,"Segoe UI",Roboto,sans-serif; }
+    body {
+      background:#f4f8fc; color:var(--ink); min-height:100vh;
+      display:flex; align-items:center; justify-content:center;
+    }
+    .wrap { width:100%; max-width:420px; padding:40px 20px; }
+
+    .brand {
+      display:flex; align-items:center; gap:8px; justify-content:center;
+      font-family:"Baloo 2"; font-weight:800; font-size:20px; color:var(--blue-d);
+    }
+    .brand img { width:32px; height:32px; }
+    .brand small { font-size:12px; color:var(--muted); font-weight:700; }
+
+    .card {
+      background:#fff; border-radius:20px; padding:28px 24px; margin-top:20px;
+      box-shadow:0 12px 30px -18px rgba(20,90,160,.5);
+    }
+    h1 { font-family:"Baloo 2"; font-weight:800; font-size:24px; text-align:center; }
+    p.lead { color:var(--muted); font-weight:700; font-size:14px; line-height:1.5; text-align:center; margin-top:6px; }
+
+    .features {
+      display:flex; gap:8px; margin-top:16px; flex-wrap:wrap; justify-content:center;
+    }
+    .feat {
+      background:#f4f8fc; border-radius:10px; padding:6px 12px;
+      font-size:12px; font-weight:800; color:var(--muted);
+    }
+    .feat span { margin-right:4px; }
+
+    .divider { height:1px; background:#e6eef6; margin:20px 0; }
+
+    label.fl { display:block; font-weight:800; font-size:12.5px; color:var(--muted); margin:0 0 6px; }
+    input {
+      width:100%; border:2px solid #d9e6f2; border-radius:12px;
+      padding:14px; font-size:16px; font-weight:700; color:var(--ink); background:#fff;
+    }
+    input:focus { outline:none; border-color:var(--blue); }
+    .btn {
+      margin-top:14px; width:100%; border:none; border-radius:14px; padding:15px;
+      font-family:"Baloo 2"; font-weight:800; font-size:16px; color:#fff;
+      background:linear-gradient(180deg,#5fd216,#46a302);
+      box-shadow:0 5px 0 #3c8c02; cursor:pointer; transition:transform .1s;
+    }
+    .btn:active { transform:translateY(3px); box-shadow:0 2px 0 #3c8c02; }
+    .btn:disabled { opacity:.6; }
+    .err { color:#e0457b; font-weight:800; font-size:13px; margin-top:10px; min-height:18px; text-align:center; }
+    .ok { text-align:center; }
+    .ok .big { font-size:48px; }
+    .ok h2 { font-family:"Baloo 2"; font-weight:800; font-size:20px; margin-top:10px; }
+    .note { font-size:11.5px; color:var(--muted); font-weight:700; text-align:center; margin-top:18px; line-height:1.6; }
+    a { color:var(--blue-d); }
+    .devbox {
+      margin-top:14px; background:#fff7e6; border:1px solid #ffe2a8;
+      border-radius:12px; padding:11px 13px; font-size:12px; font-weight:700;
+      color:#8a6400; line-height:1.5; word-break:break-all;
+    }
   </style>
 </head>
 <body>
   <div class="wrap">
-    <div class="brand"><img src="/coach/leo-icon.png" alt="Sona"/> Sona · for SLPs</div>
+    <div class="brand"><img src="/coach/leo-icon.png" alt="Sona"/> Sona <small>for SLPs</small></div>
 
     <div class="card" id="formCard">
-      <h1>Sign in</h1>
-      <p class="lead">Free, forever, for speech-language pathologists. Enter your email and we'll send a one-tap sign-in link — no password.</p>
+      <h1>Welcome, clinician 👋</h1>
+      <p class="lead">Free forever for SLPs. Sign in with your email — no password needed.</p>
+
+      <div class="features">
+        <div class="feat"><span>📊</span> Patient dashboard</div>
+        <div class="feat"><span>🔗</span> Family practice links</div>
+        <div class="feat"><span>🛠️</span> SLP toolkit</div>
+        <div class="feat"><span>💬</span> Direct feature requests</div>
+      </div>
+
+      <div class="divider"></div>
+
       <label class="fl" for="email">Your email</label>
       <input id="email" type="email" inputmode="email" autocomplete="email" placeholder="you@clinic.com" />
       <button class="btn" id="send">Send my sign-in link</button>
@@ -49,46 +97,45 @@
     <div class="card ok" id="sentCard" style="display:none;">
       <div class="big">✉️</div>
       <h2>Check your email</h2>
-      <p class="lead" id="sentMsg">We sent a sign-in link to your inbox. Tap it to open your dashboard — it expires in 15 minutes.</p>
-      <button class="btn" id="again" style="background:#eef3fb;color:#46627a;box-shadow:none;">Use a different email</button>
+      <p class="lead" id="sentMsg">We sent a sign-in link to your inbox. Tap it to open your portal — it expires in 15 minutes.</p>
+      <button class="btn" id="again" style="margin-top:16px;background:#eef3fb;color:#46627a;box-shadow:none;">Use a different email</button>
     </div>
 
-    <p class="note">New here? Signing in creates your free SLP account. <a href="/for-slps.html">Learn what you get →</a><br/>Sona is an at-home practice tool, not a diagnosis or a substitute for professional care.</p>
+    <p class="note">
+      New here? Signing in creates your free SLP account automatically.<br/>
+      <a href="/for-slps.html">Learn what you get →</a><br/>
+      Sona is an at-home practice tool, not a diagnosis or a substitute for professional care.
+    </p>
   </div>
 
   <script>
     var $=function(id){return document.getElementById(id);};
     var qp=new URLSearchParams(location.search);
-    var admin=qp.get("admin")||"";
-    function esc(s){ return String(s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];}); }
-    if(qp.get("err")==="expired"){ $("err").textContent="That link expired — enter your email for a fresh one."; }
-    if(admin){ $("devbox").style.display="block"; $("devbox").innerHTML="Admin mode — sign-in links will appear here so you can send them out."; }
+    if(qp.get("err")==="expired") $("err").textContent="That link expired — enter your email for a fresh one.";
 
     function send(){
       var email=($("email").value||"").trim();
       $("err").textContent="";
-      if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){ $("err").textContent="Enter a valid email."; return; }
-      $("send").disabled=true; $("send").textContent="Sending…";
-      fetch("/api/slp/auth/request",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:email,adminKey:admin})})
+      if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){$("err").textContent="Enter a valid email.";return;}
+      $("send").disabled=true;$("send").textContent="Sending…";
+      fetch("/api/slp/auth/request",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:email})})
         .then(function(r){return r.json();})
         .then(function(j){
-          $("send").disabled=false; $("send").textContent="Send my sign-in link";
-          if(!j||!j.ok){ $("err").textContent=(j&&j.error)||"Couldn’t send right now."; return; }
-          $("sentMsg").textContent="We sent a sign-in link to "+email+". Tap it to open your dashboard — it expires in 15 minutes.";
-          $("formCard").style.display="none"; $("sentCard").style.display="block";
+          $("send").disabled=false;$("send").textContent="Send my sign-in link";
+          if(!j||!j.ok){$("err").textContent=(j&&j.error)||"Couldn't send right now.";return;}
+          $("sentMsg").textContent="We sent a sign-in link to "+email+". Tap it to open your portal — it expires in 15 minutes.";
+          $("formCard").style.display="none";$("sentCard").style.display="block";
           if(j.devLink){
-            $("sentCard").style.display="none"; $("formCard").style.display="block";
+            $("sentCard").style.display="none";$("formCard").style.display="block";
             $("devbox").style.display="block";
-            $("devbox").innerHTML = admin
-              ? 'Sign-in link for <b>'+esc(email)+'</b> — copy and send it to them (expires in 15 min):<br><a href="'+esc(j.devLink)+'">'+esc(j.devLink)+'</a>'
-              : 'Email isn’t configured yet, so here’s your link (preview only): <a href="'+esc(j.devLink)+'">Open it →</a>';
+            $("devbox").innerHTML='Email isn\'t configured yet, so here\'s your link (preview only): <a href="'+j.devLink+'">Open it →</a>';
           }
         })
-        .catch(function(){ $("send").disabled=false; $("send").textContent="Send my sign-in link"; $("err").textContent="Network error — try again."; });
+        .catch(function(){$("send").disabled=false;$("send").textContent="Send my sign-in link";$("err").textContent="Network error — try again.";});
     }
     $("send").onclick=send;
-    $("email").addEventListener("keydown",function(e){ if(e.key==="Enter") send(); });
-    $("again").onclick=function(){ $("sentCard").style.display="none"; $("formCard").style.display="block"; $("email").focus(); };
+    $("email").addEventListener("keydown",function(e){if(e.key==="Enter")send();});
+    $("again").onclick=function(){$("sentCard").style.display="none";$("formCard").style.display="block";$("email").focus();};
   </script>
 </body>
 </html>
