@@ -46,8 +46,11 @@ export async function POST(req: NextRequest) {
   const rec = {
     text,
     slpName: String((body.slpName as string) || "Unknown SLP").slice(0, 120),
+    slpEmail: String((body.slpEmail as string) || "").slice(0, 200),
     slpCode: String((body.slpCode as string) || "").slice(0, 48),
     category: String((body.category as string) || "general").slice(0, 40),
+    priority: String((body.priority as string) || "normal").slice(0, 20),
+    screenshotUrl: String((body.screenshotUrl as string) || "").slice(0, 500),
     at: new Date().toISOString(),
   };
 
@@ -64,40 +67,72 @@ export async function POST(req: NextRequest) {
         general: "💬",
         praise: "🌟",
       };
-      const emoji = categoryEmoji[rec.category] || "💬";
-
-      const slackPayload = {
-        blocks: [
-          {
-            type: "header",
-            text: {
-              type: "plain_text",
-              text: `${emoji} SLP Feedback — ${rec.category.charAt(0).toUpperCase() + rec.category.slice(1)}`,
-              emoji: true,
-            },
-          },
-          {
-            type: "section",
-            fields: [
-              { type: "mrkdwn", text: `*From:*\n${rec.slpName}` },
-              { type: "mrkdwn", text: `*Code:*\n\`${rec.slpCode || "n/a"}\`` },
-            ],
-          },
-          {
-            type: "section",
-            text: {
-              type: "mrkdwn",
-              text: `*Feedback:*\n> ${rec.text.replace(/\n/g, "\n> ")}`,
-            },
-          },
-          {
-            type: "context",
-            elements: [
-              { type: "mrkdwn", text: `Sent at ${rec.at}` },
-            ],
-          },
-        ],
+      const priorityLabel: Record<string, string> = {
+        critical: "🔴 Critical",
+        important: "🟡 Important",
+        normal: "🟢 Nice-to-have",
       };
+      const emoji = categoryEmoji[rec.category] || "💬";
+      const pLabel = priorityLabel[rec.priority] || "🟢 Nice-to-have";
+
+      const blocks: Record<string, unknown>[] = [
+        {
+          type: "header",
+          text: {
+            type: "plain_text",
+            text: `${emoji} SLP Feedback — ${rec.category.charAt(0).toUpperCase() + rec.category.slice(1)}`,
+            emoji: true,
+          },
+        },
+        {
+          type: "section",
+          fields: [
+            { type: "mrkdwn", text: `*From:*\n${rec.slpName}${rec.slpEmail ? ` (${rec.slpEmail})` : ""}` },
+            { type: "mrkdwn", text: `*Priority:*\n${pLabel}` },
+          ],
+        },
+        {
+          type: "section",
+          fields: [
+            { type: "mrkdwn", text: `*Code:*\n\`${rec.slpCode || "n/a"}\`` },
+            { type: "mrkdwn", text: `*Category:*\n${emoji} ${rec.category}` },
+          ],
+        },
+        {
+          type: "section",
+          text: {
+            type: "mrkdwn",
+            text: `*Feedback:*\n> ${rec.text.replace(/\n/g, "\n> ")}`,
+          },
+        },
+      ];
+
+      // Add screenshot if provided
+      if (rec.screenshotUrl) {
+        blocks.push({
+          type: "image",
+          image_url: rec.screenshotUrl,
+          alt_text: "Screenshot from SLP",
+        });
+      }
+
+      // Action prompt
+      blocks.push({
+        type: "section",
+        text: {
+          type: "mrkdwn",
+          text: "React with ✅ to approve, 🔄 to iterate, or ❌ to reject. Tag `@Viktor` with \"build this\" to start implementation.",
+        },
+      });
+
+      blocks.push({
+        type: "context",
+        elements: [
+          { type: "mrkdwn", text: `Sent at ${rec.at}` },
+        ],
+      });
+
+      const slackPayload = { blocks };
 
       const slackRes = await fetch(slackUrl, {
         method: "POST",

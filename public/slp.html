@@ -172,6 +172,33 @@
     }
     .fb-cat:hover { border-color:var(--blue); color:var(--blue); }
     .fb-cat.on { border-color:var(--blue); background:var(--blue-bg); color:var(--blue-d); }
+    .fb-priority { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
+    .fb-pri {
+      border:2px solid var(--line); border-radius:10px; padding:8px 14px;
+      font-family:"Baloo 2"; font-weight:800; font-size:13px;
+      color:var(--muted); background:#fff; cursor:pointer; transition:all .15s;
+    }
+    .fb-pri:hover { border-color:var(--green); color:var(--green); }
+    .fb-pri.on[data-pri="normal"] { border-color:var(--green); background:var(--green-bg); color:var(--green-d); }
+    .fb-pri.on[data-pri="important"] { border-color:var(--amber); background:#fef3c7; color:#92400e; }
+    .fb-pri.on[data-pri="critical"] { border-color:#ef4444; background:#fef2f2; color:#b91c1c; }
+    .fb-screenshot {
+      margin-top:10px; display:flex; align-items:center; gap:10px;
+    }
+    .fb-screenshot label {
+      display:inline-flex; align-items:center; gap:6px; padding:8px 14px;
+      border:2px dashed var(--line); border-radius:10px; cursor:pointer;
+      font-weight:800; font-size:13px; color:var(--muted); transition:all .15s;
+    }
+    .fb-screenshot label:hover { border-color:var(--blue); color:var(--blue); }
+    .fb-screenshot input[type="file"] { display:none; }
+    .fb-screenshot .preview {
+      max-width:120px; max-height:80px; border-radius:8px; object-fit:cover;
+      border:2px solid var(--line);
+    }
+    .fb-screenshot .remove-ss {
+      background:none; border:none; cursor:pointer; font-size:16px; color:var(--muted);
+    }
     .fb-success {
       background:var(--green-bg); border:1px solid #b6f2b0; border-radius:12px;
       padding:14px; text-align:center; font-weight:800; color:var(--green-d);
@@ -533,14 +560,30 @@
             <button type="button" class="fb-cat" data-cat="content">📝 Content</button>
             <button type="button" class="fb-cat" data-cat="praise">🌟 Praise</button>
           </div>
+
+          <h2 style="margin-top:16px;">How important is this?</h2>
+          <div class="fb-priority" id="fbPriority">
+            <button type="button" class="fb-pri on" data-pri="normal">🟢 Nice-to-have</button>
+            <button type="button" class="fb-pri" data-pri="important">🟡 Important</button>
+            <button type="button" class="fb-pri" data-pri="critical">🔴 Critical</button>
+          </div>
+
           <label class="fl">Your message</label>
           <textarea id="fbText" placeholder="What's on your mind? Be as specific as you like…"></textarea>
+
+          <div class="fb-screenshot">
+            <label for="fbScreenshot">📷 Add screenshot</label>
+            <input type="file" id="fbScreenshot" accept="image/*" />
+            <img class="preview" id="fbScreenshotPreview" style="display:none;" alt="Screenshot preview" />
+            <button type="button" class="remove-ss" id="fbRemoveSS" style="display:none;" title="Remove screenshot">✕</button>
+          </div>
+
           <div style="margin-top:10px;display:flex;align-items:center;gap:10px;">
             <button class="btn green" id="fbSend">Send feedback</button>
             <span class="sub" id="fbStatus"></span>
           </div>
           <div class="fb-success" id="fbSuccess" style="display:none;">
-            ✅ Thank you! Your feedback was sent directly to our founder. We read every message.
+            ✅ Thank you! Your feedback was sent directly to our founder. We read every message and build fast.
           </div>
         </div>
       </div>
@@ -651,16 +694,51 @@
 
     /* ── Feedback ──────────────────────────────────── */
     var fbCat="general";
+    var fbPri="normal";
+    var fbScreenshotDataUrl="";
+
     document.querySelectorAll(".fb-cat").forEach(function(btn){btn.onclick=function(){document.querySelectorAll(".fb-cat").forEach(function(b){b.classList.remove("on");});btn.classList.add("on");fbCat=btn.dataset.cat;};});
+    document.querySelectorAll(".fb-pri").forEach(function(btn){btn.onclick=function(){document.querySelectorAll(".fb-pri").forEach(function(b){b.classList.remove("on");});btn.classList.add("on");fbPri=btn.dataset.pri;};});
+
+    // Screenshot handling
+    $("fbScreenshot").onchange=function(e){
+      var file=e.target.files&&e.target.files[0];
+      if(!file)return;
+      if(file.size>5*1024*1024){$("fbStatus").textContent="Screenshot must be under 5 MB.";return;}
+      var reader=new FileReader();
+      reader.onload=function(ev){
+        fbScreenshotDataUrl=ev.target.result;
+        $("fbScreenshotPreview").src=fbScreenshotDataUrl;
+        $("fbScreenshotPreview").style.display="block";
+        $("fbRemoveSS").style.display="inline-block";
+      };
+      reader.readAsDataURL(file);
+    };
+    $("fbRemoveSS").onclick=function(){
+      fbScreenshotDataUrl="";
+      $("fbScreenshot").value="";
+      $("fbScreenshotPreview").style.display="none";
+      $("fbRemoveSS").style.display="none";
+    };
+
     $("fbSend").onclick=function(){
       var text=($("fbText").value||"").trim();
       if(!text){$("fbStatus").textContent="Please write something first.";return;}
       $("fbSend").disabled=true;$("fbStatus").textContent="Sending…";
-      fetch("/api/slp/feedback",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text:text,category:fbCat,slpName:(account&&account.name)||"Unknown",slpCode:code})})
+      var payload={text:text,category:fbCat,priority:fbPri,slpName:(account&&account.name)||"Unknown",slpEmail:(account&&account.email)||"",slpCode:code};
+      if(fbScreenshotDataUrl) payload.screenshotUrl=fbScreenshotDataUrl;
+      fetch("/api/slp/feedback",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)})
       .then(function(r){return r.json();})
       .then(function(j){
         $("fbSend").disabled=false;$("fbStatus").textContent="";
-        if(j&&j.ok){$("fbText").value="";$("fbSuccess").style.display="block";setTimeout(function(){$("fbSuccess").style.display="none";},5000);markPhase(4);}
+        if(j&&j.ok){
+          $("fbText").value="";fbScreenshotDataUrl="";$("fbScreenshot").value="";
+          $("fbScreenshotPreview").style.display="none";$("fbRemoveSS").style.display="none";
+          // Reset priority to normal
+          document.querySelectorAll(".fb-pri").forEach(function(b){b.classList.remove("on");});
+          document.querySelector('.fb-pri[data-pri="normal"]').classList.add("on");fbPri="normal";
+          $("fbSuccess").style.display="block";setTimeout(function(){$("fbSuccess").style.display="none";},5000);markPhase(4);
+        }
         else{$("fbStatus").textContent="Couldn't send — try again.";}
       }).catch(function(){$("fbSend").disabled=false;$("fbStatus").textContent="Network error — try again.";});
     };
