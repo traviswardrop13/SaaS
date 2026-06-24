@@ -3,198 +3,766 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Sona — SLP Dashboard</title>
+  <title>Sona — SLP Portal</title>
   <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet" />
   <link rel="manifest" href="/manifest.webmanifest" />
   <meta name="theme-color" content="#1cb0f6" />
   <script defer src="/_vercel/insights/script.js"></script>
   <style>
-    :root{ --blue:#1cb0f6; --blue-d:#1597d4; --green:#58cc02; --green-d:#46a302; --ink:#16384f; --muted:#6b86a3; --line:#e6eef6; }
-    *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;font-family:"Nunito",-apple-system,"Segoe UI",Roboto,sans-serif;}
-    body{background:linear-gradient(180deg,#eef7ff,#eafbe9 70%);color:var(--ink);min-height:100vh;}
-    .wrap{max-width:680px;margin:0 auto;padding:calc(18px + env(safe-area-inset-top)) 18px 40px;}
-    .brand{display:flex;align-items:center;gap:8px;font-family:"Baloo 2";font-weight:800;font-size:18px;color:var(--blue-d);}
-    .brand img{width:30px;height:30px;}
-    h1{font-family:"Baloo 2";font-weight:800;font-size:25px;margin-top:8px;}
-    p.lead{color:var(--muted);font-weight:700;font-size:14.5px;line-height:1.5;margin-top:4px;}
-    .card{background:#fff;border-radius:18px;padding:18px;margin-top:16px;box-shadow:0 10px 26px -18px rgba(20,90,160,.5);}
-    .card h2{font-family:"Baloo 2";font-weight:800;font-size:17px;}
-    label.fl{display:block;font-weight:800;font-size:12.5px;color:var(--muted);margin:10px 0 5px;}
-    input,select{width:100%;border:2px solid #d9e6f2;border-radius:12px;padding:12px;font-size:15px;font-weight:700;color:var(--ink);background:#fff;}
-    .linkbox{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;}
-    .linkbox input{flex:1;min-width:200px;background:#f6fbff;}
-    .btn{border:none;border-radius:12px;padding:12px 16px;font-family:"Baloo 2";font-weight:800;font-size:14px;color:#fff;background:var(--blue);cursor:pointer;white-space:nowrap;}
-    .btn.green{background:var(--green);box-shadow:0 4px 0 var(--green-d);}
-    .btn:active{transform:translateY(2px);}
-    .snippet{width:100%;border:2px solid #d9e6f2;border-radius:12px;padding:12px;font-size:13.5px;font-weight:600;color:var(--ink);background:#f6fbff;min-height:92px;line-height:1.5;resize:vertical;}
-    .muted{color:var(--muted);font-weight:700;}
-    .small{font-size:12px;}
-    .kid{padding:13px 0;border-top:1px solid var(--line);}
-    .kid:first-child{border-top:none;}
-    .kidtop{display:flex;align-items:baseline;gap:8px;}
-    .kidname{font-family:"Baloo 2";font-weight:800;font-size:16px;}
-    .kidwhen{margin-left:auto;font-size:11.5px;font-weight:700;color:var(--muted);}
-    .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:7px;}
-    .chip{font-family:"Baloo 2";font-weight:800;font-size:12.5px;border-radius:99px;padding:4px 10px;background:#eef3fb;color:#46627a;}
-    .chip b{color:#16384f;}
-    .chip.hi{background:#eafce9;color:#46a302;} .chip.mid{background:#fff5e0;color:#b07908;} .chip.lo{background:#fdecea;color:#c0392b;}
-    .sndblock{display:inline-block;vertical-align:top;margin:0 8px 8px 0;}
-    .pchips{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;}
-    .pchip{font-weight:800;font-size:10.5px;border-radius:99px;padding:2px 7px;background:#eef3fb;color:#6b86a3;}
-    .pchip.hi{background:#eafce9;color:#46a302;} .pchip.mid{background:#fff5e0;color:#b07908;} .pchip.lo{background:#fdecea;color:#c0392b;}
-    .banner{background:#fff7e6;border:1px solid #ffe2a8;border-radius:12px;padding:11px 13px;font-size:12.5px;font-weight:700;color:#8a6400;margin-top:10px;line-height:1.5;}
-    .note{font-size:11.5px;color:var(--muted);font-weight:700;line-height:1.5;margin-top:12px;}
-    code{background:#eef3fb;border-radius:6px;padding:1px 6px;font-size:12px;}
+    :root {
+      --blue: #1cb0f6; --blue-d: #1597d4; --blue-bg: #e8f5ff;
+      --green: #58cc02; --green-d: #46a302; --green-bg: #eafce9;
+      --ink: #16384f; --muted: #6b86a3; --line: #e6eef6;
+      --bg: #f4f8fc; --card: #fff;
+      --sidebar-w: 240px;
+      --purple: #a855f7; --amber: #f59e0b;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent;
+        font-family:"Nunito",-apple-system,"Segoe UI",Roboto,sans-serif; }
+
+    /* ── Layout ──────────────────────────────────── */
+    body { background:var(--bg); color:var(--ink); min-height:100vh; display:flex; }
+
+    .sidebar {
+      width: var(--sidebar-w); min-height:100vh; background:#fff;
+      border-right:1px solid var(--line); display:flex; flex-direction:column;
+      position:fixed; left:0; top:0; bottom:0; z-index:90;
+      transition: transform .25s ease;
+    }
+    .sidebar .brand {
+      display:flex; align-items:center; gap:8px; padding:20px 18px 16px;
+      font-family:"Baloo 2"; font-weight:800; font-size:19px; color:var(--blue-d);
+    }
+    .sidebar .brand img { width:28px; height:28px; }
+    .sidebar .brand small { font-size:11px; color:var(--muted); font-weight:700; margin-left:2px; }
+    .sidebar nav { flex:1; padding:4px 10px; }
+    .sidebar .nav-section {
+      font-family:"Baloo 2"; font-weight:800; font-size:10.5px;
+      color:var(--muted); text-transform:uppercase; letter-spacing:.8px;
+      padding:14px 8px 6px; margin-top:4px;
+    }
+    .sidebar .nav-section:first-child { margin-top:0; padding-top:6px; }
+    .nav-item {
+      display:flex; align-items:center; gap:10px; padding:10px 12px;
+      border-radius:12px; cursor:pointer; font-weight:800; font-size:14px;
+      color:var(--muted); transition:all .15s; text-decoration:none;
+    }
+    .nav-item:hover { background:var(--bg); color:var(--ink); }
+    .nav-item.active { background:var(--blue-bg); color:var(--blue-d); }
+    .nav-item .icon { font-size:18px; width:24px; text-align:center; flex-shrink:0; }
+    .nav-item .badge {
+      margin-left:auto; background:var(--green-bg); color:var(--green-d);
+      font-size:11px; font-weight:800; border-radius:99px; padding:2px 8px;
+    }
+    .sidebar-bottom {
+      padding:14px 16px; border-top:1px solid var(--line);
+      font-size:12px; color:var(--muted); font-weight:700;
+    }
+    .sidebar-bottom .slp-name { font-family:"Baloo 2"; font-weight:800; font-size:14px; color:var(--ink); }
+    .sidebar-bottom a { color:var(--muted); text-decoration:none; font-weight:800; }
+    .sidebar-bottom a:hover { color:var(--ink); }
+
+    /* Mobile hamburger */
+    .mobile-bar {
+      display:none; position:fixed; top:0; left:0; right:0; z-index:80;
+      background:#fff; border-bottom:1px solid var(--line); padding:12px 16px;
+    }
+    .mobile-bar .brand { display:flex; align-items:center; gap:6px; font-family:"Baloo 2"; font-weight:800; font-size:17px; color:var(--blue-d); }
+    .mobile-bar .brand img { width:24px; height:24px; }
+    .hamburger { background:none; border:none; font-size:22px; cursor:pointer; padding:4px; color:var(--ink); }
+    .overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.3); z-index:85; }
+
+    .main { margin-left:var(--sidebar-w); flex:1; min-height:100vh; }
+    .main-inner { max-width:780px; padding:28px 28px 60px; margin:0 auto; }
+
+    /* ── Cards ────────────────────────────────────── */
+    .card { background:var(--card); border-radius:16px; padding:20px; margin-bottom:16px; box-shadow:0 1px 4px rgba(20,80,140,.06); }
+    .card h2 { font-family:"Baloo 2"; font-weight:800; font-size:17px; }
+    .card h3 { font-family:"Baloo 2"; font-weight:800; font-size:15px; }
+    .card .sub { color:var(--muted); font-weight:700; font-size:13px; line-height:1.5; margin-top:4px; }
+
+    /* ── Page header ─────────────────────────────── */
+    .page-header { margin-bottom:20px; }
+    .page-header h1 { font-family:"Baloo 2"; font-weight:800; font-size:26px; }
+    .page-header p { color:var(--muted); font-weight:700; font-size:14px; margin-top:2px; }
+
+    /* ── Onboarding phases ────────────────────────── */
+    .phases { display:flex; flex-direction:column; gap:0; }
+    .phase-item {
+      display:flex; align-items:flex-start; gap:14px; padding:14px 0;
+      border-bottom:1px solid var(--line);
+    }
+    .phase-item:last-child { border-bottom:none; }
+    .phase-num {
+      width:32px; height:32px; border-radius:50%; display:flex;
+      align-items:center; justify-content:center; font-family:"Baloo 2";
+      font-weight:800; font-size:14px; flex-shrink:0; margin-top:2px;
+      background:#eef3fb; color:var(--muted);
+    }
+    .phase-item.done .phase-num { background:var(--green-bg); color:var(--green-d); }
+    .phase-item.current .phase-num { background:var(--blue-bg); color:var(--blue-d); box-shadow:0 0 0 3px rgba(28,176,246,.2); }
+    .phase-body { flex:1; }
+    .phase-title { font-family:"Baloo 2"; font-weight:800; font-size:14.5px; }
+    .phase-desc { font-size:12.5px; color:var(--muted); font-weight:700; line-height:1.4; margin-top:2px; }
+    .phase-item.done .phase-title { color:var(--green-d); }
+    .phase-item.done .phase-title::after { content:" ✓"; }
+
+    /* ── Progress bar ────────────────────────────── */
+    .progress-bar { height:8px; background:#eef3fb; border-radius:99px; overflow:hidden; margin-top:10px; }
+    .progress-fill { height:100%; background:linear-gradient(90deg,var(--green),#7ed957); border-radius:99px; transition:width .4s; }
+
+    /* ── Stats row ────────────────────────────────── */
+    .stat-row { display:flex; gap:12px; flex-wrap:wrap; }
+    .stat-box {
+      flex:1; min-width:120px; background:var(--bg); border-radius:12px;
+      padding:14px 16px; text-align:center;
+    }
+    .stat-val { font-family:"Baloo 2"; font-weight:800; font-size:28px; color:var(--ink); }
+    .stat-label { font-size:11.5px; font-weight:800; color:var(--muted); text-transform:uppercase; letter-spacing:.4px; }
+
+    /* ── Shared form styling ─────────────────────── */
+    label.fl { display:block; font-weight:800; font-size:12.5px; color:var(--muted); margin:12px 0 5px; }
+    input, select, textarea {
+      width:100%; border:2px solid var(--line); border-radius:12px;
+      padding:12px; font-size:15px; font-weight:700; color:var(--ink); background:#fff;
+    }
+    input:focus, select:focus, textarea:focus { outline:none; border-color:var(--blue); }
+    textarea { min-height:80px; resize:vertical; line-height:1.5; }
+    .linkbox { display:flex; gap:8px; margin-top:8px; flex-wrap:wrap; }
+    .linkbox input { flex:1; min-width:200px; background:#f6fbff; }
+
+    .btn {
+      border:none; border-radius:12px; padding:12px 18px;
+      font-family:"Baloo 2"; font-weight:800; font-size:14px;
+      color:#fff; background:var(--blue); cursor:pointer; white-space:nowrap;
+      transition:transform .1s;
+    }
+    .btn:active { transform:translateY(2px); }
+    .btn:disabled { opacity:.5; cursor:default; }
+    .btn.green { background:var(--green); box-shadow:0 4px 0 var(--green-d); }
+    .btn.green:active { box-shadow:0 2px 0 var(--green-d); }
+    .btn.ghost { background:#eef3fb; color:var(--ink); box-shadow:none; }
+    .err { color:#e0457b; font-weight:800; font-size:12.5px; margin-top:8px; min-height:16px; }
+
+    /* ── Roster / kids ───────────────────────────── */
+    .kid { padding:14px 0; border-top:1px solid var(--line); }
+    .kid:first-child { border-top:none; }
+    .kidtop { display:flex; align-items:baseline; gap:8px; }
+    .kidname { font-family:"Baloo 2"; font-weight:800; font-size:16px; }
+    .kidwhen { margin-left:auto; font-size:11.5px; font-weight:700; color:var(--muted); }
+    .chips { display:flex; flex-wrap:wrap; gap:6px; margin-top:7px; }
+    .chip { font-family:"Baloo 2"; font-weight:800; font-size:12.5px; border-radius:99px; padding:4px 10px; background:#eef3fb; color:#46627a; }
+    .chip b { color:#16384f; }
+    .chip.hi { background:var(--green-bg); color:var(--green-d); }
+    .chip.mid { background:#fff5e0; color:#b07908; }
+    .chip.lo { background:#fdecea; color:#c0392b; }
+    .sndblock { display:inline-block; vertical-align:top; margin:0 8px 8px 0; }
+    .pchips { display:flex; flex-wrap:wrap; gap:4px; margin-top:4px; }
+    .pchip { font-weight:800; font-size:10.5px; border-radius:99px; padding:2px 7px; background:#eef3fb; color:#6b86a3; }
+    .pchip.hi { background:var(--green-bg); color:var(--green-d); }
+    .pchip.mid { background:#fff5e0; color:#b07908; }
+    .pchip.lo { background:#fdecea; color:#c0392b; }
+
+    /* ── Feedback ─────────────────────────────────── */
+    .fb-cats { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
+    .fb-cat {
+      border:2px solid var(--line); border-radius:10px; padding:8px 14px;
+      font-family:"Baloo 2"; font-weight:800; font-size:13px;
+      color:var(--muted); background:#fff; cursor:pointer; transition:all .15s;
+    }
+    .fb-cat:hover { border-color:var(--blue); color:var(--blue); }
+    .fb-cat.on { border-color:var(--blue); background:var(--blue-bg); color:var(--blue-d); }
+    .fb-success {
+      background:var(--green-bg); border:1px solid #b6f2b0; border-radius:12px;
+      padding:14px; text-align:center; font-weight:800; color:var(--green-d);
+      font-size:14px; margin-top:8px;
+    }
+
+    /* ── Profile form ────────────────────────────── */
+    .profile-grid { display:grid; grid-template-columns:1fr 1fr; gap:0 16px; }
+    .profile-full { grid-column:1/-1; }
+    .specialty-tags { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
+    .spec-tag {
+      border:2px solid var(--line); border-radius:10px; padding:6px 12px;
+      font-weight:800; font-size:13px; color:var(--muted); background:#fff;
+      cursor:pointer; transition:all .15s;
+    }
+    .spec-tag:hover { border-color:var(--purple); }
+    .spec-tag.on { border-color:var(--purple); background:#f3e8ff; color:#7c3aed; }
+
+    /* ── Toolkit ──────────────────────────────────── */
+    .tool-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    .tool-card {
+      background:var(--bg); border-radius:14px; padding:18px;
+      cursor:pointer; transition:all .15s; border:2px solid transparent;
+    }
+    .tool-card:hover { border-color:var(--blue); transform:translateY(-2px); }
+    .tool-card .tool-icon { font-size:28px; margin-bottom:8px; }
+    .tool-card .tool-title { font-family:"Baloo 2"; font-weight:800; font-size:15px; }
+    .tool-card .tool-desc { font-size:12px; color:var(--muted); font-weight:700; line-height:1.4; margin-top:2px; }
+    .tool-card .tool-badge {
+      display:inline-block; margin-top:8px; font-size:10.5px; font-weight:800;
+      padding:3px 8px; border-radius:99px;
+    }
+    .tool-card .tool-badge.ready { background:var(--green-bg); color:var(--green-d); }
+    .tool-card .tool-badge.soon { background:#fff5e0; color:#b07908; }
+
+    /* ── Banner ───────────────────────────────────── */
+    .banner {
+      background:#fff7e6; border:1px solid #ffe2a8; border-radius:12px;
+      padding:12px 14px; font-size:12.5px; font-weight:700; color:#8a6400;
+      margin-top:12px; line-height:1.5;
+    }
+
+    /* ── Hide pages ───────────────────────────────── */
+    .page { display:none; }
+    .page.active { display:block; }
+
+    /* ── Responsive ───────────────────────────────── */
+    @media (max-width: 768px) {
+      .sidebar { transform:translateX(-100%); }
+      .sidebar.open { transform:translateX(0); }
+      .overlay.open { display:block; }
+      .mobile-bar { display:flex; align-items:center; justify-content:space-between; }
+      .main { margin-left:0; padding-top:54px; }
+      .main-inner { padding:18px 16px 60px; }
+      .stat-row { gap:8px; }
+      .stat-box { min-width:80px; padding:10px 8px; }
+      .stat-val { font-size:22px; }
+      .tool-grid { grid-template-columns:1fr; }
+      .profile-grid { grid-template-columns:1fr; }
+    }
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <div class="brand"><img src="/coach/leo-icon.png" alt="Sona"/> Sona · SLP <a href="#" id="logout" style="margin-left:auto;font-size:13px;color:var(--muted);text-decoration:none;font-weight:800;display:none;">Sign out</a></div>
-    <h1 id="hi">Your Sona dashboard</h1>
-    <p class="lead">Hand Sona to as many of your families as you like — free during the pilot — and watch their practice add up here. This page is yours; share the <b>family link</b> below, not this page.</p>
-
-    <div class="card" id="codeCard" style="display:none;">
-      <h2>Finish your setup</h2>
-      <p class="muted small" style="margin-top:4px;">A few quick details so we can set up your dashboard and group your families.</p>
-      <label class="fl" for="nameIn">Your name</label>
-      <input id="nameIn" type="text" placeholder="e.g. Sarah Smith, CCC-SLP" />
-      <label class="fl" for="clinicIn">Clinic / school <span style="font-weight:700;color:#aab9c8;">(optional)</span></label>
-      <input id="clinicIn" type="text" placeholder="e.g. Bright Steps Therapy" />
-      <label class="fl" for="codeIn">Pick a short code <span style="font-weight:700;color:#aab9c8;">(used in your family links)</span></label>
-      <div class="linkbox"><input id="codeIn" type="text" placeholder="e.g. dr-smith" /><button class="btn green" id="setCode">Save &amp; continue</button></div>
-      <div id="onbErr" style="color:#e0457b;font-weight:800;font-size:12.5px;margin-top:8px;min-height:16px;"></div>
-    </div>
-
-    <div class="card" id="assignCard" style="display:none;">
-      <h2>Set what they practice 🎯</h2>
-      <p class="muted small" style="margin-top:4px;">Optional — pre-fill the child's setup so the family starts on the right target. Leave on “Any” to let them choose. The family link below updates as you change this.</p>
-      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:6px;">
-        <div style="flex:1;min-width:120px;"><label class="fl" for="aSound">Sound</label><select id="aSound"></select></div>
-        <div style="flex:1;min-width:120px;"><label class="fl" for="aPos">Position</label><select id="aPos"></select></div>
-        <div style="flex:1;min-width:120px;"><label class="fl" for="aGoal">Daily goal</label><select id="aGoal"></select></div>
-      </div>
-    </div>
-
-    <div class="card" id="shareCard" style="display:none;">
-      <h2>Family link 🔗</h2>
-      <p class="muted small" style="margin-top:4px;">Send this to each family. They set up their child in ~30 seconds and start practicing free.</p>
-      <div class="linkbox"><input id="famLink" type="text" readonly /><button class="btn" id="copyLink">Copy</button></div>
-      <label class="fl" for="snip">A message you can send</label>
-      <textarea class="snippet" id="snip"></textarea>
-      <div style="margin-top:8px;"><button class="btn green" id="copySnip">Copy message</button> <span class="muted small" id="copyMsg"></span></div>
-    </div>
-
-    <div class="card" id="rosterCard" style="display:none;">
-      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;"><h2>Your families' progress 📈</h2><a href="/slp-families.html" class="btn" style="margin-left:auto;text-decoration:none;padding:8px 12px;">📋 Full caseload →</a><button class="btn" id="refresh" style="background:#eef3fb;color:#46627a;box-shadow:none;padding:8px 12px;">↻ Refresh</button></div>
-      <div id="roster" style="margin-top:6px;"><p class="muted small">Loading…</p></div>
-      <div class="banner" id="kvBanner" style="display:none;">Live roster is off until a data store is connected. Add a <b>Vercel KV</b> store to this project (Storage → Create → KV) and redeploy — then families' progress shows here automatically. Until then, you'll still get each child's progress from us directly.</div>
-    </div>
-
-    <p class="note" id="footNote" style="display:none;">Signed in to your free SLP account. Share the <b>family link</b> with families — not this page. Sona is an at-home practice tool, not a diagnosis or a substitute for professional care.</p>
+  <!-- Mobile bar -->
+  <div class="mobile-bar">
+    <div class="brand"><img src="/coach/leo-icon.png" alt="Sona"/> Sona</div>
+    <button class="hamburger" id="menuBtn">☰</button>
   </div>
+  <div class="overlay" id="overlay"></div>
+
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="brand"><img src="/coach/leo-icon.png" alt="Sona"/> Sona <small>for SLPs</small></div>
+    <nav>
+      <div class="nav-section">Home</div>
+      <a class="nav-item active" data-page="dashboard" href="#">
+        <span class="icon">📊</span> Dashboard
+      </a>
+
+      <div class="nav-section">Practice</div>
+      <a class="nav-item" data-page="families" href="#">
+        <span class="icon">👨‍👩‍👧‍👦</span> My Families
+        <span class="badge" id="familyCount" style="display:none;">0</span>
+      </a>
+      <a class="nav-item" data-page="familylink" href="#">
+        <span class="icon">🔗</span> Family Link
+      </a>
+      <a class="nav-item" data-page="toolkit" href="#">
+        <span class="icon">🛠️</span> Toolkit
+      </a>
+
+      <div class="nav-section">Account</div>
+      <a class="nav-item" data-page="profile" href="#">
+        <span class="icon">👤</span> Your Profile
+      </a>
+      <a class="nav-item" data-page="feedback" href="#">
+        <span class="icon">💬</span> Feedback
+      </a>
+    </nav>
+    <div class="sidebar-bottom">
+      <div class="slp-name" id="sidebarName">Loading…</div>
+      <div style="margin-top:6px;"><a href="#" id="logout">Sign out →</a></div>
+    </div>
+  </aside>
+
+  <!-- Main content -->
+  <main class="main">
+    <div class="main-inner">
+
+      <!-- ════════ ONBOARDING (shown instead of dashboard when no code) ════════ -->
+      <div class="page" id="page-onboarding">
+        <div class="page-header">
+          <h1>Welcome to Sona 🎉</h1>
+          <p>Let's get you set up in 60 seconds. One form, then your families can start practicing.</p>
+        </div>
+        <div class="card">
+          <h2>Create your SLP profile</h2>
+          <p class="sub">This info powers your family links and dashboard.</p>
+          <label class="fl" for="onbName">Your name</label>
+          <input id="onbName" type="text" placeholder="e.g. Sarah Smith, CCC-SLP" />
+          <label class="fl" for="onbClinic">Clinic / school <span style="font-weight:700;color:#aab9c8;">(optional)</span></label>
+          <input id="onbClinic" type="text" placeholder="e.g. Bright Steps Therapy" />
+          <label class="fl" for="onbCode">Pick a short code <span style="font-weight:700;color:#aab9c8;">(used in your family links)</span></label>
+          <input id="onbCode" type="text" placeholder="e.g. dr-smith" style="margin-bottom:4px;" />
+          <p class="sub" style="font-size:11px;">Families will see: speaksona.com/pilot?code=<b id="codePreview">your-code</b></p>
+          <button class="btn green" id="onbSave" style="margin-top:14px;width:100%;">Save & open my dashboard →</button>
+          <div class="err" id="onbErr"></div>
+        </div>
+      </div>
+
+      <!-- ════════ DASHBOARD ════════ -->
+      <div class="page" id="page-dashboard">
+        <div class="page-header">
+          <h1 id="dashHi">Dashboard</h1>
+          <p>Your overview — share the family link and watch practice add up.</p>
+        </div>
+
+        <!-- Quick stats -->
+        <div class="card">
+          <div class="stat-row">
+            <div class="stat-box"><div class="stat-val" id="statFamilies">0</div><div class="stat-label">Families</div></div>
+            <div class="stat-box"><div class="stat-val" id="statSessions">0</div><div class="stat-label">Sessions</div></div>
+            <div class="stat-box"><div class="stat-val" id="statAccuracy">—</div><div class="stat-label">Avg Accuracy</div></div>
+          </div>
+        </div>
+
+        <!-- Getting started phases -->
+        <div class="card" id="phasesCard">
+          <h2>Getting Started</h2>
+          <div class="progress-bar" style="margin-bottom:8px;">
+            <div class="progress-fill" id="phaseProgress" style="width:20%;"></div>
+          </div>
+          <div class="phases">
+            <div class="phase-item done" id="ph1">
+              <div class="phase-num">1</div>
+              <div class="phase-body">
+                <div class="phase-title">Create your profile</div>
+                <div class="phase-desc">Set up your name, clinic, and unique code</div>
+              </div>
+            </div>
+            <div class="phase-item current" id="ph2">
+              <div class="phase-num">2</div>
+              <div class="phase-body">
+                <div class="phase-title">Share your first family link</div>
+                <div class="phase-desc">Copy your link and send it to a family</div>
+              </div>
+            </div>
+            <div class="phase-item" id="ph3">
+              <div class="phase-num">3</div>
+              <div class="phase-body">
+                <div class="phase-title">Review a family's progress</div>
+                <div class="phase-desc">Once a child practices, check their accuracy here</div>
+              </div>
+            </div>
+            <div class="phase-item" id="ph4">
+              <div class="phase-num">4</div>
+              <div class="phase-body">
+                <div class="phase-title">Give us feedback</div>
+                <div class="phase-desc">Your suggestions get built fast — we mean it</div>
+              </div>
+            </div>
+            <div class="phase-item" id="ph5">
+              <div class="phase-num">5</div>
+              <div class="phase-body">
+                <div class="phase-title">Refer a colleague</div>
+                <div class="phase-desc">Every SLP you bring in gets free access too</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick action: family link -->
+        <div class="card">
+          <h2>🔗 Your Family Link</h2>
+          <p class="sub">Send this to families — they set up in 30 seconds.</p>
+          <div class="linkbox" style="margin-top:10px;">
+            <input id="dashLink" type="text" readonly />
+            <button class="btn" id="dashCopy">Copy</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════ MY FAMILIES ════════ -->
+      <div class="page" id="page-families">
+        <div class="page-header">
+          <h1>My Families 👨‍👩‍👧‍👦</h1>
+          <p>Children practicing through your link appear here automatically.</p>
+        </div>
+        <div class="card">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <h2>Practice Progress</h2>
+            <button class="btn ghost" id="rosterRefresh" style="margin-left:auto;padding:8px 14px;">↻ Refresh</button>
+          </div>
+          <div id="roster" style="margin-top:10px;"><p class="sub">Loading…</p></div>
+          <div class="banner" id="kvBanner" style="display:none;">
+            Live roster is off until a data store is connected. Add a <b>Vercel KV</b> store to this project and redeploy.
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════ FAMILY LINK ════════ -->
+      <div class="page" id="page-familylink">
+        <div class="page-header">
+          <h1>Family Link 🔗</h1>
+          <p>Customize what the family practices, then share the link.</p>
+        </div>
+        <div class="card">
+          <h2>🎯 Pre-set the practice target</h2>
+          <p class="sub">Optional — pre-fill the child's setup so the family starts on the right sound. Leave "Any" for them to choose.</p>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px;">
+            <div style="flex:1;min-width:120px;"><label class="fl" for="aSound">Sound</label><select id="aSound"></select></div>
+            <div style="flex:1;min-width:120px;"><label class="fl" for="aPos">Position</label><select id="aPos"></select></div>
+            <div style="flex:1;min-width:120px;"><label class="fl" for="aGoal">Daily goal</label><select id="aGoal"></select></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>📋 Copy & share</h2>
+          <div class="linkbox"><input id="famLink" type="text" readonly /><button class="btn" id="copyLink">Copy link</button></div>
+          <label class="fl" for="snip">Ready-to-send message</label>
+          <textarea id="snip" style="font-size:13.5px;"></textarea>
+          <div style="margin-top:10px;display:flex;align-items:center;gap:10px;">
+            <button class="btn green" id="copySnip">Copy message</button>
+            <span class="sub" id="copyMsg"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════ TOOLKIT ════════ -->
+      <div class="page" id="page-toolkit">
+        <div class="page-header">
+          <h1>Toolkit 🛠️</h1>
+          <p>Tools to save you time and help your families practice more effectively.</p>
+        </div>
+        <div class="tool-grid">
+          <div class="tool-card" data-page="familylink">
+            <div class="tool-icon">🔗</div>
+            <div class="tool-title">Family Link Generator</div>
+            <div class="tool-desc">Create customized practice links for each family with sound and position pre-set.</div>
+            <span class="tool-badge ready">Ready</span>
+          </div>
+          <div class="tool-card" onclick="switchPage('families')">
+            <div class="tool-icon">📈</div>
+            <div class="tool-title">Progress Tracker</div>
+            <div class="tool-desc">See every child's accuracy by sound and position — updated after each session.</div>
+            <span class="tool-badge ready">Ready</span>
+          </div>
+          <div class="tool-card" style="opacity:.65;cursor:default;" title="Coming soon">
+            <div class="tool-icon">📄</div>
+            <div class="tool-title">Progress Report PDF</div>
+            <div class="tool-desc">Generate a 1-page report to share with parents showing their child's improvement.</div>
+            <span class="tool-badge soon">Coming soon</span>
+          </div>
+          <div class="tool-card" style="opacity:.65;cursor:default;" title="Coming soon">
+            <div class="tool-icon">📝</div>
+            <div class="tool-title">Home Practice Templates</div>
+            <div class="tool-desc">Pre-written messages to send parents with practice tips and encouragement.</div>
+            <span class="tool-badge soon">Coming soon</span>
+          </div>
+          <div class="tool-card" style="opacity:.65;cursor:default;" title="Coming soon">
+            <div class="tool-icon">🏆</div>
+            <div class="tool-title">Practice Leaderboard</div>
+            <div class="tool-desc">Friendly competition — which of your families practiced the most this week?</div>
+            <span class="tool-badge soon">Coming soon</span>
+          </div>
+          <div class="tool-card" onclick="switchPage('feedback')">
+            <div class="tool-icon">💡</div>
+            <div class="tool-title">Request a Feature</div>
+            <div class="tool-desc">Your suggestions get built in minutes, not months. Tell us what you need.</div>
+            <span class="tool-badge ready">Ready</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════ YOUR PROFILE ════════ -->
+      <div class="page" id="page-profile">
+        <div class="page-header">
+          <h1>Your Profile 👤</h1>
+          <p>Help us personalize your experience and build features you actually need.</p>
+        </div>
+        <div class="card">
+          <h2>About you</h2>
+          <div class="profile-grid">
+            <div><label class="fl" for="profName">Your name</label><input id="profName" type="text" placeholder="e.g. Sarah Smith, CCC-SLP" /></div>
+            <div><label class="fl" for="profClinic">Clinic / school</label><input id="profClinic" type="text" placeholder="e.g. Bright Steps Therapy" /></div>
+            <div><label class="fl" for="profCode">Your code</label><input id="profCode" type="text" readonly style="background:#f6fbff;color:var(--muted);" /></div>
+            <div><label class="fl" for="profCaseload">Caseload size</label>
+              <select id="profCaseload">
+                <option value="">Select…</option>
+                <option value="1-10">1–10 students</option>
+                <option value="11-30">11–30 students</option>
+                <option value="31-50">31–50 students</option>
+                <option value="50+">50+ students</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>Your specialties</h2>
+          <p class="sub">Tap all that apply — helps us prioritize what to build next.</p>
+          <div class="specialty-tags" id="specTags">
+            <button type="button" class="spec-tag" data-spec="artic">Articulation</button>
+            <button type="button" class="spec-tag" data-spec="phono">Phonology</button>
+            <button type="button" class="spec-tag" data-spec="fluency">Fluency</button>
+            <button type="button" class="spec-tag" data-spec="language">Language</button>
+            <button type="button" class="spec-tag" data-spec="aac">AAC</button>
+            <button type="button" class="spec-tag" data-spec="feeding">Feeding</button>
+            <button type="button" class="spec-tag" data-spec="early-int">Early intervention</button>
+            <button type="button" class="spec-tag" data-spec="apraxia">Apraxia</button>
+            <button type="button" class="spec-tag" data-spec="voice">Voice</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>What sounds do your kids struggle with most?</h2>
+          <p class="sub">Select the top sounds on your caseload so we can prioritize content.</p>
+          <div class="specialty-tags" id="soundPriority"></div>
+        </div>
+
+        <div style="margin-top:8px;">
+          <button class="btn green" id="profSave">Save profile</button>
+          <span class="sub" id="profMsg" style="margin-left:10px;"></span>
+        </div>
+      </div>
+
+      <!-- ════════ FEEDBACK ════════ -->
+      <div class="page" id="page-feedback">
+        <div class="page-header">
+          <h1>Feedback 💬</h1>
+          <p>Your suggestions get built fast — we mean it. Every message goes straight to our founder.</p>
+        </div>
+        <div class="card">
+          <h2>What type of feedback?</h2>
+          <div class="fb-cats" id="fbCats">
+            <button type="button" class="fb-cat on" data-cat="general">💬 General</button>
+            <button type="button" class="fb-cat" data-cat="feature">💡 Feature idea</button>
+            <button type="button" class="fb-cat" data-cat="bug">🐛 Bug report</button>
+            <button type="button" class="fb-cat" data-cat="content">📝 Content</button>
+            <button type="button" class="fb-cat" data-cat="praise">🌟 Praise</button>
+          </div>
+          <label class="fl">Your message</label>
+          <textarea id="fbText" placeholder="What's on your mind? Be as specific as you like…"></textarea>
+          <div style="margin-top:10px;display:flex;align-items:center;gap:10px;">
+            <button class="btn green" id="fbSend">Send feedback</button>
+            <span class="sub" id="fbStatus"></span>
+          </div>
+          <div class="fb-success" id="fbSuccess" style="display:none;">
+            ✅ Thank you! Your feedback was sent directly to our founder. We read every message.
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /main-inner -->
+  </main>
 
   <script src="/sona.js"></script>
   <script>
+    /* ── Helpers ───────────────────────────────────── */
     var $=function(id){return document.getElementById(id);};
-    function slug(s){return (s||"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"").slice(0,40);}
-    var code="";       // set from the signed-in account
-    var account=null;
+    function slug(s){return(s||"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"").slice(0,40);}
+    function copy(t,btn){try{navigator.clipboard.writeText(t);var o=btn.textContent;btn.textContent="Copied ✓";setTimeout(function(){btn.textContent=o;},1500);}catch(e){}}
+    function ago(iso){if(!iso)return"";var d=(Date.now()-new Date(iso).getTime())/86400000;if(d<1)return"today";if(d<2)return"yesterday";return Math.floor(d)+" days ago";}
 
+    var code="", account=null;
+
+    /* ── Page navigation ──────────────────────────── */
+    function switchPage(name){
+      document.querySelectorAll(".page").forEach(function(p){p.classList.remove("active");});
+      var el=$("page-"+name);
+      if(el) el.classList.add("active");
+      document.querySelectorAll(".nav-item").forEach(function(n){
+        n.classList.toggle("active",n.dataset.page===name);
+      });
+      // close mobile sidebar
+      $("sidebar").classList.remove("open");
+      $("overlay").classList.remove("open");
+      // lazy load
+      if(name==="families") loadRoster();
+    }
+    document.querySelectorAll(".nav-item[data-page]").forEach(function(n){
+      n.onclick=function(e){e.preventDefault();switchPage(n.dataset.page);};
+    });
+    document.querySelectorAll(".tool-card[data-page]").forEach(function(tc){
+      tc.onclick=function(){switchPage(tc.dataset.page);};
+    });
+    // Mobile
+    $("menuBtn").onclick=function(){$("sidebar").classList.toggle("open");$("overlay").classList.toggle("open");};
+    $("overlay").onclick=function(){$("sidebar").classList.remove("open");$("overlay").classList.remove("open");};
+
+    /* ── Onboarding code preview ──────────────────── */
+    $("onbCode").oninput=function(){$("codePreview").textContent=slug($("onbCode").value)||"your-code";};
+
+    /* ── Assignment & Link Builder ─────────────────── */
     var ASSIGNKEY="sona.slp.assign";
     function populateAssign(){
-      var aSound=$("aSound"), aPos=$("aPos"), aGoal=$("aGoal");
+      var aSound=$("aSound"),aPos=$("aPos"),aGoal=$("aGoal");
       if(!aSound||aSound.dataset.ready) return;
       var sounds=(window.Sona&&Sona.ALL_SOUNDS)?Sona.ALL_SOUNDS:["R","S","L","K","SH","CH","TH","G","F"];
-      var lbl=function(s){return (window.Sona&&Sona.soundLabel)?Sona.soundLabel(s):s;};
-      aSound.innerHTML='<option value="">Any sound</option>'+sounds.map(function(s){return '<option value="'+s+'">'+lbl(s)+'</option>';}).join("");
+      var lbl=function(s){return(window.Sona&&Sona.soundLabel)?Sona.soundLabel(s):s;};
+      aSound.innerHTML='<option value="">Any sound</option>'+sounds.map(function(s){return'<option value="'+s+'">'+lbl(s)+'</option>';}).join("");
       var positions=[["i","Beginning"],["m","Middle"],["f","End"],["v","Vocalic R"],["b","Blends"],["mix","Mixed"]];
-      aPos.innerHTML='<option value="">Any position</option>'+positions.map(function(p){return '<option value="'+p[0]+'">'+p[1]+'</option>';}).join("");
-      aGoal.innerHTML='<option value="">No daily goal</option>'+[10,15,20,30].map(function(n){return '<option value="'+n+'">'+n+' words a day</option>';}).join("");
-      try{ var saved=JSON.parse(localStorage.getItem(ASSIGNKEY)||"{}"); if(saved.sound)aSound.value=saved.sound; if(saved.pos)aPos.value=saved.pos; if(saved.goal)aGoal.value=saved.goal; }catch(e){}
-      [aSound,aPos,aGoal].forEach(function(el){ el.onchange=function(){ try{localStorage.setItem(ASSIGNKEY,JSON.stringify({sound:aSound.value,pos:aPos.value,goal:aGoal.value}));}catch(e){} buildLink(); }; });
+      aPos.innerHTML='<option value="">Any position</option>'+positions.map(function(p){return'<option value="'+p[0]+'">'+p[1]+'</option>';}).join("");
+      aGoal.innerHTML='<option value="">No daily goal</option>'+[10,15,20,30].map(function(n){return'<option value="'+n+'">'+n+' words a day</option>';}).join("");
+      try{var saved=JSON.parse(localStorage.getItem(ASSIGNKEY)||"{}");if(saved.sound)aSound.value=saved.sound;if(saved.pos)aPos.value=saved.pos;if(saved.goal)aGoal.value=saved.goal;}catch(e){}
+      [aSound,aPos,aGoal].forEach(function(el){el.onchange=function(){try{localStorage.setItem(ASSIGNKEY,JSON.stringify({sound:aSound.value,pos:aPos.value,goal:aGoal.value}));}catch(e){}buildLink();};});
       aSound.dataset.ready="1";
     }
     function buildLink(){
       var link=location.origin+"/pilot.html?code="+encodeURIComponent(code);
-      var s=$("aSound")?$("aSound").value:"", p=$("aPos")?$("aPos").value:"", g=$("aGoal")?$("aGoal").value:"";
-      if(s) link+="&sound="+encodeURIComponent(s);
-      if(p) link+="&pos="+encodeURIComponent(p);
-      if(g) link+="&goal="+encodeURIComponent(g);
+      var s=$("aSound")?$("aSound").value:"",p=$("aPos")?$("aPos").value:"",g=$("aGoal")?$("aGoal").value:"";
+      if(s)link+="&sound="+encodeURIComponent(s);
+      if(p)link+="&pos="+encodeURIComponent(p);
+      if(g)link+="&goal="+encodeURIComponent(g);
       $("famLink").value=link;
+      $("dashLink").value=link;
       var tgt="";
-      if(s){ var lbl=(window.Sona&&Sona.soundLabel)?Sona.soundLabel(s):s; var pn={i:"beginning",m:"middle",f:"end",v:"vocalic R",b:"blends",mix:"all positions"}[p]||""; tgt=" I set it up to practice the "+lbl+" sound"+(pn?" ("+pn+")":"")+(g?", about "+g+" words a day":"")+"."; }
+      if(s){var ll=(window.Sona&&Sona.soundLabel)?Sona.soundLabel(s):s;var pn={i:"beginning",m:"middle",f:"end",v:"vocalic R",b:"blends",mix:"all positions"}[p]||"";tgt=" I set it up to practice the "+ll+" sound"+(pn?" ("+pn+")":"")+(g?", about "+g+" words a day":"")+"."; }
       $("snip").value="Hi! Here's the Sona link I mentioned — a fun app where your child can practice their speech sounds at home, free during our pilot. It listens and gives feedback as they play."+tgt+" Quick setup:\n\n"+link;
     }
-    function render(){
-      if(!code){ $("codeCard").style.display="block"; $("hi").textContent="Finish your setup"; return; }
-      $("codeCard").style.display="none";
-      ["assignCard","shareCard","rosterCard","footNote"].forEach(function(id){ var el=$(id); if(el) el.style.display=""; });
-      $("hi").textContent="Dashboard · "+code;
-      populateAssign();
-      buildLink();
-      loadRoster();
-    }
 
-    $("setCode").onclick=function(){
-      var c=slug($("codeIn").value); if(!c){ $("onbErr").textContent="Pick a short code."; return; }
-      $("setCode").disabled=true; $("onbErr").textContent="";
-      fetch("/api/slp/account",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:$("nameIn").value.trim(),clinic:$("clinicIn").value.trim(),code:c})})
-        .then(function(r){return r.json();})
-        .then(function(j){ $("setCode").disabled=false;
-          if(!j||!j.ok){ $("onbErr").textContent=(j&&j.error)||"Couldn’t save — try again."; return; }
-          account=j; code=j.code; render();
-        })
-        .catch(function(){ $("setCode").disabled=false; $("onbErr").textContent="Network error — try again."; });
-    };
-    $("copyLink").onclick=function(){ copy($("famLink").value, $("copyLink")); };
-    $("copySnip").onclick=function(){ copy($("snip").value, $("copySnip")); $("copyMsg").textContent="Copied ✓"; setTimeout(function(){$("copyMsg").textContent="";},1800); };
-    $("refresh").onclick=loadRoster;
-    function copy(t,btn){ try{ navigator.clipboard.writeText(t); var o=btn.textContent; btn.textContent="Copied ✓"; setTimeout(function(){btn.textContent=o;},1500);}catch(e){ try{ var i=document.createElement("textarea"); i.value=t; document.body.appendChild(i); i.select(); document.execCommand("copy"); i.remove(); }catch(_){} } }
-
-    function ago(iso){ if(!iso)return ""; var d=(Date.now()-new Date(iso).getTime())/86400000; if(d<1)return "today"; if(d<2)return "yesterday"; return Math.floor(d)+" days ago"; }
+    /* ── Roster ────────────────────────────────────── */
     var POSN={i:"Init",m:"Med",f:"Fin",v:"Voc R",b:"Blend"};
-    function posBits(byPos){
-      if(!byPos) return "";
-      var bits=["i","m","f","v","b"].map(function(pk){ var x=byPos[pk]; if(!x||!x.a) return ""; var v=Math.round((x.p||0)/Math.max(1,x.a)*100); var c=v>=80?'hi':(v>=50?'mid':'lo'); return '<span class="pchip '+c+'">'+POSN[pk]+' '+v+'%</span>'; }).filter(Boolean);
-      return bits.length? '<div class="pchips">'+bits.join("")+'</div>' : "";
-    }
-    function soundChips(out){
-      out=out||{}; var keys=Object.keys(out); if(!keys.length) return '<span class="muted small">no practice yet</span>';
-      return keys.sort(function(a,b){return (out[b].attempts||0)-(out[a].attempts||0);}).map(function(k){
-        var o=out[k], pct=Math.round((o.passes||0)/Math.max(1,o.attempts||0)*100);
-        var c=pct>=80?'hi':(pct>=50?'mid':'lo');
-        return '<div class="sndblock"><span class="chip '+c+'">'+k+' <b>'+pct+'%</b></span>'+posBits(o.byPos)+'</div>';
-      }).join("");
-    }
+    function posBits(byPos){if(!byPos)return"";var bits=["i","m","f","v","b"].map(function(pk){var x=byPos[pk];if(!x||!x.a)return"";var v=Math.round((x.p||0)/Math.max(1,x.a)*100);var c=v>=80?'hi':(v>=50?'mid':'lo');return'<span class="pchip '+c+'">'+POSN[pk]+' '+v+'%</span>';}).filter(Boolean);return bits.length?'<div class="pchips">'+bits.join("")+'</div>':"";}
+    function soundChips(out){out=out||{};var keys=Object.keys(out);if(!keys.length)return'<span class="sub">no practice yet</span>';return keys.sort(function(a,b){return(out[b].attempts||0)-(out[a].attempts||0);}).map(function(k){var o=out[k],pct=Math.round((o.passes||0)/Math.max(1,o.attempts||0)*100);var c=pct>=80?'hi':(pct>=50?'mid':'lo');return'<div class="sndblock"><span class="chip '+c+'">'+k+' <b>'+pct+'%</b></span>'+posBits(o.byPos)+'</div>';}).join("");}
+
     function loadRoster(){
-      var host=$("roster"); host.innerHTML='<p class="muted small">Loading…</p>'; $("kvBanner").style.display="none";
+      var host=$("roster");host.innerHTML='<p class="sub">Loading…</p>';$("kvBanner").style.display="none";
       fetch("/api/slp?code="+encodeURIComponent(code)).then(function(r){return r.json();}).then(function(j){
-        if(!j||!j.ok){ host.innerHTML='<p class="muted small">Couldn’t load right now.</p>'; return; }
-        if(!j.configured){ host.innerHTML='<p class="muted small">No live roster yet.</p>'; $("kvBanner").style.display="block"; return; }
+        if(!j||!j.ok){host.innerHTML='<p class="sub">Couldn\'t load right now.</p>';return;}
+        if(!j.configured){host.innerHTML='<p class="sub">No live roster yet.</p>';$("kvBanner").style.display="block";return;}
         var kids=j.kids||[];
-        if(!kids.length){ host.innerHTML='<p class="muted small">No families yet — once you share the link and a child practices, they’ll appear here.</p>'; return; }
+
+        // Update stats
+        $("statFamilies").textContent=kids.length;
+        if(kids.length)$("familyCount").style.display="";
+        $("familyCount").textContent=kids.length;
+        var totalSessions=0,totalPct=0,totalSounds=0;
+        kids.forEach(function(k){var out=k.outcomes||{};Object.keys(out).forEach(function(s){var o=out[s];totalSessions+=(o.attempts||0);var pct=Math.round((o.passes||0)/Math.max(1,o.attempts||0)*100);totalPct+=pct;totalSounds++;});});
+        $("statSessions").textContent=totalSessions;
+        $("statAccuracy").textContent=totalSounds?Math.round(totalPct/totalSounds)+"%":"—";
+
+        // Update phases
+        if(kids.length>0) markPhase(3);
+
+        if(!kids.length){host.innerHTML='<p class="sub">No families yet — once you share the link and a child practices, they\'ll appear here.</p>';return;}
         host.innerHTML="";
         kids.forEach(function(k){
-          var d=document.createElement("div"); d.className="kid";
-          var goalLine = k.goal ? '<div class="muted small" style="margin-top:6px;">🎯 Assigned: '+k.goal+' words a day</div>' : '';
-          d.innerHTML='<div class="kidtop"><span class="kidname">'+(k.child||"Child")+'</span>'+(k.age?'<span class="muted small">age '+k.age+'</span>':'')+'<span class="kidwhen">'+ago(k.at)+'</span></div>'+
-                      '<div class="chips">'+soundChips(k.outcomes)+'</div>'+goalLine;
+          var d=document.createElement("div");d.className="kid";
+          var goalLine=k.goal?'<div class="sub" style="margin-top:6px;">🎯 Assigned: '+k.goal+' words a day</div>':'';
+          d.innerHTML='<div class="kidtop"><span class="kidname">'+(k.child||"Child")+'</span>'+(k.age?'<span class="sub">age '+k.age+'</span>':'')+'<span class="kidwhen">'+ago(k.at)+'</span></div><div class="chips">'+soundChips(k.outcomes)+'</div>'+goalLine;
           host.appendChild(d);
         });
-      }).catch(function(){ host.innerHTML='<p class="muted small">Couldn’t load right now.</p>'; });
+      }).catch(function(){host.innerHTML='<p class="sub">Couldn\'t load right now.</p>';});
     }
+    $("rosterRefresh").onclick=loadRoster;
+
+    /* ── Feedback ──────────────────────────────────── */
+    var fbCat="general";
+    document.querySelectorAll(".fb-cat").forEach(function(btn){btn.onclick=function(){document.querySelectorAll(".fb-cat").forEach(function(b){b.classList.remove("on");});btn.classList.add("on");fbCat=btn.dataset.cat;};});
+    $("fbSend").onclick=function(){
+      var text=($("fbText").value||"").trim();
+      if(!text){$("fbStatus").textContent="Please write something first.";return;}
+      $("fbSend").disabled=true;$("fbStatus").textContent="Sending…";
+      fetch("/api/slp/feedback",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text:text,category:fbCat,slpName:(account&&account.name)||"Unknown",slpCode:code})})
+      .then(function(r){return r.json();})
+      .then(function(j){
+        $("fbSend").disabled=false;$("fbStatus").textContent="";
+        if(j&&j.ok){$("fbText").value="";$("fbSuccess").style.display="block";setTimeout(function(){$("fbSuccess").style.display="none";},5000);markPhase(4);}
+        else{$("fbStatus").textContent="Couldn't send — try again.";}
+      }).catch(function(){$("fbSend").disabled=false;$("fbStatus").textContent="Network error — try again.";});
+    };
+
+    /* ── Profile ──────────────────────────────────── */
+    // Specialty tags
+    var selectedSpecs=[];
+    document.querySelectorAll(".spec-tag").forEach(function(t){
+      t.onclick=function(){t.classList.toggle("on");selectedSpecs=Array.from(document.querySelectorAll(".spec-tag.on")).map(function(s){return s.dataset.spec;});};
+    });
+    // Sound priority tags
+    function buildSoundPriority(){
+      var sounds=["R","S","L","K","SH","CH","TH","G","F","Z","J","V","B","D","N","M","P","T","W","H"];
+      var el=$("soundPriority");
+      el.innerHTML=sounds.map(function(s){return'<button type="button" class="spec-tag" data-sound="'+s+'">'+s+'</button>';}).join("");
+      el.querySelectorAll(".spec-tag").forEach(function(t){t.onclick=function(){t.classList.toggle("on");};});
+    }
+    buildSoundPriority();
+
+    $("profSave").onclick=function(){
+      var data={
+        name:$("profName").value.trim(),
+        clinic:$("profClinic").value.trim(),
+        caseload:$("profCaseload").value,
+        specialties:selectedSpecs,
+        soundPriority:Array.from($("soundPriority").querySelectorAll(".spec-tag.on")).map(function(t){return t.dataset.sound;}),
+      };
+      $("profSave").disabled=true;$("profMsg").textContent="Saving…";
+      fetch("/api/slp/account",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(data)})
+      .then(function(r){return r.json();})
+      .then(function(j){
+        $("profSave").disabled=false;
+        if(j&&j.ok){$("profMsg").textContent="Saved ✓";$("sidebarName").textContent=data.name||code;setTimeout(function(){$("profMsg").textContent="";},2000);}
+        else{$("profMsg").textContent="Couldn't save — try again.";}
+      }).catch(function(){$("profSave").disabled=false;$("profMsg").textContent="Network error.";});
+    };
+
+    /* ── Phases tracking ──────────────────────────── */
+    var PHASE_KEY="sona.slp.phases";
+    function getPhases(){try{return JSON.parse(localStorage.getItem(PHASE_KEY)||"{}}");}catch(e){return {};}}
+    function markPhase(n){
+      var p=getPhases();p[n]=true;try{localStorage.setItem(PHASE_KEY,JSON.stringify(p));}catch(e){}
+      updatePhaseUI();
+    }
+    function updatePhaseUI(){
+      var p=getPhases();var done=Object.keys(p).length;
+      var total=5;var pct=Math.round(Math.max(done,1)/total*100); // phase 1 always done if they're here
+      $("phaseProgress").style.width=pct+"%";
+      for(var i=1;i<=5;i++){
+        var el=$("ph"+i);if(!el)continue;
+        el.classList.remove("done","current");
+        if(p[i]||i===1) el.classList.add("done");
+        else if(!el.classList.contains("done")){el.classList.add("current");break;}
+      }
+      if(done>=4)$("phasesCard").style.display="none"; // hide when mostly done
+    }
+
+    /* ── Copy buttons ─────────────────────────────── */
+    $("copyLink").onclick=function(){copy($("famLink").value,$("copyLink"));markPhase(2);};
+    $("dashCopy").onclick=function(){copy($("dashLink").value,$("dashCopy"));markPhase(2);};
+    $("copySnip").onclick=function(){copy($("snip").value,$("copySnip"));$("copyMsg").textContent="Copied ✓";setTimeout(function(){$("copyMsg").textContent="";},1800);markPhase(2);};
+
+    /* ── Render (after auth) ──────────────────────── */
+    function render(){
+      if(!code){
+        switchPage("onboarding");
+        return;
+      }
+      $("dashHi").textContent="Welcome back 👋";
+      $("sidebarName").textContent=(account&&account.name)||code;
+      if(account&&account.name) $("profName").value=account.name;
+      if(account&&account.clinic) $("profClinic").value=account.clinic;
+      $("profCode").value=code;
+      populateAssign();
+      buildLink();
+      updatePhaseUI();
+      switchPage("dashboard");
+    }
+
+    /* ── Onboarding save ──────────────────────────── */
+    $("onbSave").onclick=function(){
+      var c=slug($("onbCode").value);if(!c){$("onbErr").textContent="Pick a short code.";return;}
+      $("onbSave").disabled=true;$("onbErr").textContent="";
+      fetch("/api/slp/account",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:$("onbName").value.trim(),clinic:$("onbClinic").value.trim(),code:c})})
+      .then(function(r){return r.json();})
+      .then(function(j){
+        $("onbSave").disabled=false;
+        if(!j||!j.ok){$("onbErr").textContent=(j&&j.error)||"Couldn't save — try again.";return;}
+        account=j;code=j.code;render();
+      }).catch(function(){$("onbSave").disabled=false;$("onbErr").textContent="Network error — try again.";});
+    };
+
+    /* ── Auth boot ─────────────────────────────────── */
+    $("logout").onclick=function(e){e.preventDefault();fetch("/api/slp/auth/logout",{method:"POST"}).then(function(){location.replace("/slp-login.html");}).catch(function(){location.replace("/slp-login.html");});};
 
     function boot(){
       fetch("/api/slp/auth/me").then(function(r){return r.json();}).then(function(j){
-        if(!j||!j.ok){ location.replace("/slp-login.html"); return; }
-        account=j; code=j.code||"";
-        $("logout").style.display="inline";
-        if(j.name) $("nameIn").value=j.name;
-        if(j.clinic) $("clinicIn").value=j.clinic;
+        if(!j||!j.ok){location.replace("/slp-login.html");return;}
+        account=j;code=j.code||"";
         render();
-      }).catch(function(){ location.replace("/slp-login.html"); });
+      }).catch(function(){location.replace("/slp-login.html");});
     }
-    $("logout").onclick=function(e){ e.preventDefault(); fetch("/api/slp/auth/logout",{method:"POST"}).then(function(){ location.replace("/slp-login.html"); }).catch(function(){ location.replace("/slp-login.html"); }); };
     boot();
   </script>
 </body>
