@@ -1,11 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
+import crypto from "node:crypto";
 import { kvCmd, kvConfigured, randomToken, hashToken, sendMagicEmail } from "@/lib/slpAuth";
 
 export const runtime = "nodejs";
 
-// POST { email } → email a single-use magic sign-in link.
+// Constant-time string compare (avoids leaking the admin key via timing).
+function safeEqual(a: string, b: string): boolean {
+  const ba = Buffer.from(a);
+  const bb = Buffer.from(b);
+  if (ba.length !== bb.length) return false;
+  return crypto.timingSafeEqual(ba, bb);
+}
+
+// POST { email, adminKey? } → email a single-use magic sign-in link.
+//
+// Admin override: when SLP_ADMIN_KEY is set (>= 8 chars) AND a matching adminKey
+// is supplied, the link is returned in the response so the operator can hand it
+// to a pilot SLP directly — before Resend/email is configured. Without the key
+// the link is only ever emailed; it is never returned to the caller.
 export async function POST(req: NextRequest) {
-  let body: { email?: string };
+  let body: { email?: string; adminKey?: string };
   try {
     body = await req.json();
   } catch {
@@ -22,17 +36,27 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Light rate limit: max 5 link requests per email per hour.
-  const rl = "slprl:" + email;
-  const n = await kvCmd(["INCR", rl]);
-  if (n === 1) await kvCmd(["EXPIRE", rl, 3600]);
-  if (typeof n === "number" && n > 5) {
-    return NextResponse.json({ ok: true, sent: true, devLink: null }); // silently cap
+  const adminSecret = process.env.SLP_ADMIN_KEY || "";
+  const isAdmin =
+    adminSecret.length >= 8 &&
+    typeof body.adminKey === "string" &&
+    safeEqual(body.adminKey, adminSecret);
+
+  // Light rate limit: max 5 link requests per email per hour (admins bypass).
+  if (!isAdmin) {
+    const rl = "slprl:" + email;
+    const n = await kvCmd(["INCR", rl]);
+    if (n === 1) await kvCmd(["EXPIRE", rl, 3600]);
+    if (typeof n === "number" && n > 5) {
+      return NextResponse.json({ ok: true, sent: true, devLink: null }); // silently cap
+    }
   }
 
   const token = randomToken();
   await kvCmd(["SET", "slptok:" + hashToken(token), email, "EX", 900]); // 15 min
   const link = new URL(req.url).origin + "/api/slp/auth/verify?token=" + encodeURIComponent(token);
   const res = await sendMagicEmail(email, link);
-  return NextResponse.json({ ok: true, sent: res.sent, devLink: res.devLink });
+  // Admins always get the link back; otherwise honor sendMagicEmail's devLink
+  // (null on production unless email is unconfigured on a preview deploy).
+  return NextResponse.json({ ok: true, sent: res.sent, devLink: isAdmin ? link : res.devLink });
 }

@@ -59,24 +59,29 @@
   <script>
     var $=function(id){return document.getElementById(id);};
     var qp=new URLSearchParams(location.search);
+    var admin=qp.get("admin")||"";
+    function esc(s){ return String(s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];}); }
     if(qp.get("err")==="expired"){ $("err").textContent="That link expired — enter your email for a fresh one."; }
+    if(admin){ $("devbox").style.display="block"; $("devbox").innerHTML="Admin mode — sign-in links will appear here so you can send them out."; }
 
     function send(){
       var email=($("email").value||"").trim();
       $("err").textContent="";
       if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){ $("err").textContent="Enter a valid email."; return; }
       $("send").disabled=true; $("send").textContent="Sending…";
-      fetch("/api/slp/auth/request",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:email})})
+      fetch("/api/slp/auth/request",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:email,adminKey:admin})})
         .then(function(r){return r.json();})
         .then(function(j){
           $("send").disabled=false; $("send").textContent="Send my sign-in link";
           if(!j||!j.ok){ $("err").textContent=(j&&j.error)||"Couldn’t send right now."; return; }
           $("sentMsg").textContent="We sent a sign-in link to "+email+". Tap it to open your dashboard — it expires in 15 minutes.";
           $("formCard").style.display="none"; $("sentCard").style.display="block";
-          if(j.devLink){ // preview only, before email is configured
+          if(j.devLink){
             $("sentCard").style.display="none"; $("formCard").style.display="block";
             $("devbox").style.display="block";
-            $("devbox").innerHTML='Email isn’t configured yet, so here’s your link (preview only): <a href="'+j.devLink+'">Open it →</a>';
+            $("devbox").innerHTML = admin
+              ? 'Sign-in link for <b>'+esc(email)+'</b> — copy and send it to them (expires in 15 min):<br><a href="'+esc(j.devLink)+'">'+esc(j.devLink)+'</a>'
+              : 'Email isn’t configured yet, so here’s your link (preview only): <a href="'+esc(j.devLink)+'">Open it →</a>';
           }
         })
         .catch(function(){ $("send").disabled=false; $("send").textContent="Send my sign-in link"; $("err").textContent="Network error — try again."; });
