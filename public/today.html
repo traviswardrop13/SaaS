@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>Sona — Today</title>
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <meta name="theme-color" content="#1cb0f6" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <style>
+    :root{--blue:#1cb0f6;--blue-d:#1597d4;--green:#58cc02;--green-d:#46a302;--amber:#ffb703;--amber-d:#e08600;--ink:#1f2a37;--muted:#6b7a8d;--card:#ffffff;}
+    *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;font-family:"Nunito",-apple-system,"Segoe UI",Roboto,sans-serif;}
+    html,body{height:100%;}
+    body{background:linear-gradient(180deg,#eaf6ff 0%,#dff1ff 40%,#eafbe4 100%);color:var(--ink);display:flex;justify-content:center;}
+    #app{width:100%;max-width:430px;min-height:100vh;display:flex;flex-direction:column;padding:calc(14px + env(safe-area-inset-top)) 18px calc(96px + env(safe-area-inset-bottom));}
+    /* top bar */
+    .top{display:flex;align-items:center;gap:10px;}
+    .hi{flex:1;}
+    .hi b{font-family:"Baloo 2";font-weight:800;font-size:22px;color:var(--ink);display:block;line-height:1.1;}
+    .hi span{font-size:13px;color:var(--muted);font-weight:700;}
+    .pill{display:flex;align-items:center;gap:5px;background:#fff;border-radius:99px;padding:7px 12px;font-family:"Baloo 2";font-weight:800;font-size:15px;box-shadow:0 3px 0 rgba(20,90,150,.10);}
+    .pill.streak{color:var(--amber-d);} .pill.coins{color:var(--amber-d);}
+    .avatar{width:44px;height:44px;border-radius:50%;background:radial-gradient(circle at 50% 35%,#ffe08a,#ffb703);display:flex;align-items:center;justify-content:center;font-size:24px;box-shadow:0 3px 0 rgba(20,90,150,.12);}
+    /* hero adventure card */
+    .hero{margin-top:18px;border-radius:26px;padding:20px 20px 22px;color:#fff;position:relative;overflow:hidden;background:linear-gradient(150deg,#2bb8ff 0%,#1597d4 60%,#0e7fbe 100%);box-shadow:0 12px 0 rgba(14,127,190,.28),0 18px 30px rgba(20,90,150,.28);}
+    .hero .sheen{position:absolute;right:-30px;top:-30px;width:160px;height:160px;background:radial-gradient(circle,rgba(255,255,255,.28),rgba(255,255,255,0) 70%);}
+    .hero .tag{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.22);border-radius:99px;padding:5px 11px;font-weight:800;font-size:12px;letter-spacing:.02em;}
+    .hero h1{font-family:"Baloo 2";font-weight:800;font-size:27px;line-height:1.12;margin-top:12px;text-shadow:0 2px 8px rgba(11,71,110,.35);}
+    .hero .sub{margin-top:8px;font-weight:800;font-size:14px;opacity:.95;display:flex;flex-wrap:wrap;gap:6px;}
+    .hero .chip{background:rgba(255,255,255,.2);border-radius:99px;padding:4px 10px;}
+    .hero .scene{font-size:54px;margin-top:14px;filter:drop-shadow(0 6px 8px rgba(11,71,110,.3));}
+    .start{margin-top:16px;width:100%;border:none;border-radius:18px;padding:16px;font-family:"Baloo 2";font-weight:800;font-size:18px;text-transform:uppercase;letter-spacing:.03em;color:var(--green-d);background:#fff;box-shadow:0 6px 0 rgba(11,71,110,.25);cursor:pointer;transition:transform .05s;}
+    .start:active{transform:translateY(4px);box-shadow:0 2px 0 rgba(11,71,110,.25);}
+    /* minutes selector */
+    .mins{margin-top:14px;}
+    .mins .lbl{font-size:12px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;}
+    .mins .row{display:flex;gap:10px;}
+    .seg{flex:1;border:2px solid #cfe6f7;background:#fff;border-radius:14px;padding:11px 0;text-align:center;font-family:"Baloo 2";font-weight:800;font-size:15px;color:var(--blue-d);cursor:pointer;}
+    .seg.on{background:var(--blue);border-color:var(--blue);color:#fff;box-shadow:0 3px 0 var(--blue-d);}
+    .seg small{display:block;font-family:"Nunito";font-weight:700;font-size:10px;opacity:.8;text-transform:uppercase;}
+    /* secondary cards */
+    .grid{margin-top:16px;display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+    .mini{background:#fff;border-radius:20px;padding:15px;box-shadow:0 5px 0 rgba(20,90,150,.08);cursor:pointer;}
+    .mini .ico{font-size:26px;}
+    .mini b{display:block;font-family:"Baloo 2";font-weight:800;font-size:15px;margin-top:7px;color:var(--ink);}
+    .mini span{font-size:12px;color:var(--muted);font-weight:700;}
+    .mini.wide{grid-column:1/3;display:flex;align-items:center;gap:14px;background:linear-gradient(120deg,#fff 0%,#fff7e6 100%);}
+    .mini.wide .ico{font-size:30px;}
+    .mini.wide .txt{flex:1;} .mini.wide .go{font-family:"Baloo 2";font-weight:800;color:var(--amber-d);font-size:13px;}
+    /* progress dots */
+    .plan{margin-top:18px;background:#fff;border-radius:20px;padding:16px;box-shadow:0 5px 0 rgba(20,90,150,.08);}
+    .plan .hd{display:flex;align-items:center;justify-content:between;}
+    .plan .hd b{font-family:"Baloo 2";font-weight:800;font-size:15px;flex:1;}
+    .plan .hd a{font-size:12px;font-weight:800;color:var(--blue-d);text-decoration:none;}
+    .days{display:flex;gap:8px;margin-top:12px;align-items:center;}
+    .day{flex:1;height:8px;border-radius:99px;background:#e6eef5;}
+    .day.done{background:var(--green);} .day.today{background:var(--amber);}
+    .plan .cap{margin-top:10px;font-size:12.5px;color:var(--muted);font-weight:700;line-height:1.45;}
+    /* bottom nav */
+    .nav{position:fixed;bottom:0;left:0;right:0;max-width:430px;margin:0 auto;background:#fff;border-top:1px solid #e8eef4;display:flex;justify-content:space-around;padding:9px 0 calc(9px + env(safe-area-inset-bottom));}
+    .nav a{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;font-weight:800;color:#9fb0c0;text-decoration:none;}
+    .nav a .ni{font-size:21px;} .nav a.on{color:var(--blue-d);}
+  </style>
+</head>
+<body>
+  <div id="app">
+    <div class="top">
+      <div class="avatar" id="av">🦁</div>
+      <div class="hi"><b id="hello">Hi Mia!</b><span id="date">Tuesday · Day 3 of your plan</span></div>
+      <div class="pill streak">🔥 <span id="streak">3</span></div>
+      <div class="pill coins">🪙 <span id="coins">120</span></div>
+    </div>
+
+    <div class="hero">
+      <div class="sheen"></div>
+      <span class="tag">✨ Today's Adventure · made for <span id="who">Mia</span></span>
+      <h1 id="title">Mia &amp; the Rainbow River Dragon</h1>
+      <div class="sub">
+        <span class="chip" id="soundChip">R sound · start of words</span>
+        <span class="chip" id="minChip">~10 min</span>
+        <span class="chip" id="themeChip">🐉 dragons</span>
+      </div>
+      <div class="scene" id="scene">🐉🌈</div>
+      <button class="start" id="startBtn">▶ Start today's story</button>
+    </div>
+
+    <div class="mins">
+      <div class="lbl">How long today?</div>
+      <div class="row" id="minsRow">
+        <div class="seg" data-m="5">5 min<small>quick</small></div>
+        <div class="seg on" data-m="10">10 min<small>just right</small></div>
+        <div class="seg" data-m="15">15 min<small>power</small></div>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="mini wide" id="thenNow">
+        <div class="ico">🎧</div>
+        <div class="txt"><b>Then vs Now</b><span>Hear how much clearer Mia's "rabbit" is since week 1</span></div>
+        <div class="go">Listen →</div>
+      </div>
+      <div class="mini" id="checkCard">
+        <div class="ico">🔎</div>
+        <b>Speech Check</b><span>2-min sound scan</span>
+      </div>
+      <div class="mini" id="mapCard">
+        <div class="ico">🗺️</div>
+        <b>Adventure Map</b><span>See the journey</span>
+      </div>
+    </div>
+
+    <div class="plan">
+      <div class="hd"><b>This week's plan</b><a href="/progress.html">Details</a></div>
+      <div class="days">
+        <div class="day done"></div><div class="day done"></div>
+        <div class="day today"></div>
+        <div class="day"></div><div class="day"></div><div class="day"></div><div class="day"></div>
+      </div>
+      <div class="cap" id="cap">Mia's R is getting strong at the start of words 💪 Next up: R in the middle. The plan adjusts as she improves.</div>
+    </div>
+  </div>
+
+  <div class="nav">
+    <a class="on" href="/today.html"><span class="ni">🏠</span>Today</a>
+    <a href="/map.html"><span class="ni">🗺️</span>Map</a>
+    <a href="/progress.html"><span class="ni">📈</span>Progress</a>
+    <a href="/settings.html"><span class="ni">⚙️</span>Settings</a>
+  </div>
+
+  <script src="/sona.js"></script>
+  <script>
+    var $=function(id){return document.getElementById(id);};
+    var P=(window.Sona?Sona.getProfile():{});
+    var INTERESTS=["dragons","space","dinosaurs","mermaids","puppies","race cars","unicorns","pirates","jungle animals","robots"];
+    var THEME_EMOJI={dragons:"🐉🌈",space:"🚀🪐",dinosaurs:"🦕🌋",mermaids:"🧜‍♀️🐚",puppies:"🐶🦴","race cars":"🏎️🏁",unicorns:"🦄✨",pirates:"🏴‍☠️🪙","jungle animals":"🐵🌴",robots:"🤖⚡"};
+    var name=(P.childName||"Mia").trim();
+    var sound=((P.focusSounds&&P.focusSounds[0])||"R").toUpperCase();
+    var interest=((P.interests&&P.interests[0])||P.interest||((window.Sona&&Sona.dayNum)?INTERESTS[Sona.dayNum()%INTERESTS.length]:"dragons"));
+    var minutes=P.dailyMinutes||10;
+    var pos="initial", posLabel="start of words";
+
+    // Title is a friendly placeholder; the real one comes from /api/story when the kid starts.
+    var TITLES={dragons:name+" & the Rainbow River Dragon",space:name+"'s Rocket to the Red Stars",dinosaurs:name+" and the Roaring Dino",mermaids:name+" and the Coral Reef",puppies:name+"'s Puppy Park Day",unicorns:name+" and the Rainbow Unicorn",pirates:name+"'s Treasure Map",robots:name+" and the Racing Robot"};
+    function applyTheme(){
+      $("hello").textContent="Hi "+name+"!";
+      $("who").textContent=name; 
+      $("title").textContent=TITLES[interest]||(name+"'s "+interest+" Adventure");
+      $("soundChip").textContent=sound+" sound · "+posLabel;
+      $("minChip").textContent="~"+minutes+" min";
+      $("themeChip").textContent=(THEME_EMOJI[interest]?THEME_EMOJI[interest].slice(0,2):"⭐")+" "+interest;
+      $("scene").textContent=THEME_EMOJI[interest]||"⭐";
+      $("coins").textContent=(window.Sona&&Sona.getCoins)?Sona.getCoins():120;
+      var g=(window.Sona&&Sona.getProgress)?Sona.getProgress():null;
+      if(g&&g.streak)$("streak").textContent=g.streak.count||0;
+      if(window.Sona&&Sona.characterById){try{var c=Sona.characterById(P.character||"leo");}catch(e){}}
+    }
+    function storyHref(){return "/story.html?sound="+encodeURIComponent(sound)+"&position="+pos+"&interest="+encodeURIComponent(interest)+"&name="+encodeURIComponent(name)+"&minutes="+minutes;}
+    function go(){location.href=storyHref();}
+    $("startBtn").onclick=go; $("scene").onclick=go;
+    Array.prototype.forEach.call($("minsRow").children,function(el){el.onclick=function(){
+      Array.prototype.forEach.call($("minsRow").children,function(x){x.classList.remove("on");});
+      el.classList.add("on"); minutes=Number(el.getAttribute("data-m"))||10;
+      if(window.Sona&&Sona.saveProfile)Sona.saveProfile({dailyMinutes:minutes});
+      $("minChip").textContent="~"+minutes+" min";
+    };});
+    $("checkCard").onclick=function(){location.href="/check.html";};
+    $("mapCard").onclick=function(){location.href="/map.html";};
+    $("thenNow").onclick=function(){location.href="/progress.html";};
+    // mark the picked minutes segment from profile
+    Array.prototype.forEach.call($("minsRow").children,function(el){el.classList.toggle("on",Number(el.getAttribute("data-m"))===minutes);});
+    applyTheme();
+  </script>
+</body>
+</html>

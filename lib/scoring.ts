@@ -146,7 +146,7 @@ function patternsFor(sound: TargetSound): RegExp[] {
   }
 }
 
-function hasTargetSound(
+export function hasTargetSound(
   word: string,
   sound: TargetSound,
   position: SoundPosition,
