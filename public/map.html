@@ -41,7 +41,8 @@
     .node.boss .pin{width:64px;height:64px;font-size:31px;border-width:5px;border-color:#f5b500;background:linear-gradient(180deg,#fff,#fff6dc);}
     .node:active .pin{transform:translateY(3px) scale(.94);box-shadow:0 2px 0 rgba(20,90,150,.18);}
     @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
-    .node.locked .pin{background:#eaf0f6;border-color:#c2ccd6;color:#aab6c2;animation:none;box-shadow:0 4px 0 rgba(20,90,150,.12);}
+    /* locked: frosted glass beats flat gray (the .frost treatment) */
+    .node.locked .pin{background:rgba(238,244,250,.55);backdrop-filter:blur(4px) saturate(.72);-webkit-backdrop-filter:blur(4px) saturate(.72);border-color:rgba(176,192,210,.85);color:#9fb0c0;animation:none;box-shadow:0 4px 0 rgba(20,90,150,.1),inset 0 1px 2px rgba(255,255,255,.6);}
     .node .stars{display:flex;gap:2px;background:rgba(255,255,255,.82);border-radius:99px;padding:2px 6px;box-shadow:0 2px 6px rgba(20,90,150,.18);}
     .node.locked .stars{display:none;}
     .node .stars i{font-size:11px;line-height:1;filter:grayscale(1);opacity:.45;}
@@ -65,12 +66,118 @@
     #toast h3{font-family:"Baloo 2";font-weight:800;font-size:19px;color:#16384f;margin-top:6px;}
     #toast p{font-weight:800;color:#f0a500;font-size:14px;margin-top:3px;}
 
-    #dots{position:absolute;bottom:calc(80px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);z-index:8;display:flex;gap:7px;}
-    #dots i{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.55);box-shadow:0 1px 4px rgba(0,0,0,.2);transition:transform .2s,background .2s;}
-    #dots i.on{background:#fff;transform:scale(1.35);}
+    #dots{position:absolute;bottom:calc(80px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);z-index:8;display:flex;gap:9px;padding:7px 11px;border-radius:99px;background:rgba(16,36,58,.16);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);}
+    /* chunkier dots w/ active glow — matches .dotchunk in sona.css */
+    #dots i{width:9px;height:9px;border-radius:99px;background:rgba(255,255,255,.6);box-shadow:0 1px 4px rgba(0,0,0,.18);transition:transform .25s cubic-bezier(.2,.8,.3,1),box-shadow .25s,background .25s;}
+    #dots i.on{background:#fff;transform:scale(1.5);box-shadow:0 0 0 4px rgba(255,255,255,.3),0 1px 5px rgba(0,0,0,.18);}
     #nav{position:absolute;left:0;right:0;bottom:0;z-index:9;display:flex;justify-content:space-around;align-items:center;background:rgba(255,255,255,.97);box-shadow:0 -4px 16px rgba(20,90,150,.13);padding:8px 6px calc(8px + env(safe-area-inset-bottom));}
     #nav a{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;text-decoration:none;color:#9ab0c2;font-family:"Baloo 2";font-weight:800;font-size:11px;}
     #nav a.on{color:#1cb0f6;} #nav a svg{width:24px;height:24px;}
+
+    /* ════════════════════════════════════════════════════════════════
+       VISUAL POLISH — warm, premium, Duolingo-style scenery (CSS only).
+       All scenery is layered ON TOP of the JS-set sky via pseudo-elements,
+       sits behind the nodes, and is pointer-events:none. Reuses the shared
+       keyframes from sona.css (sona-drift, sona-floatY, sona-twinkle) so
+       the map matches the rest of the app. No DOM/JS changes.
+       ════════════════════════════════════════════════════════════════ */
+
+    /* App column gets a soft sky base so it reads warm even before JS paints
+       the per-world sky onto each .screen. */
+    #app{background:linear-gradient(180deg,#cdecff 0%,#bfe6ff 38%,#e9f9d8 100%);}
+
+    /* --- SKY DEPTH: a soft sun-glow high up + a hazy horizon band --- */
+    .scene::before{content:"";position:absolute;inset:0;z-index:0;pointer-events:none;
+      background:
+        radial-gradient(120px 120px at 80% 14%, rgba(255,243,205,.85), rgba(255,243,205,0) 70%),
+        radial-gradient(60% 30% at 50% 0%, rgba(255,255,255,.35), rgba(255,255,255,0) 70%),
+        linear-gradient(180deg, rgba(255,255,255,0) 52%, rgba(255,255,255,.18) 66%, rgba(255,255,255,0) 78%);}
+
+    /* --- GRADIENT BANDS at sky→ground transition + rolling hills --- */
+    /* Far + near hills: big-radius blobs overlapping at the bottom. The
+       .screen::after carries the layered ground; ::before carries clouds. */
+    .screen::after{content:"";position:absolute;left:-12%;right:-12%;bottom:-6%;height:46%;z-index:1;pointer-events:none;
+      background:
+        /* near hill (front, warmer green) */
+        radial-gradient(140% 90% at 22% 130%, #8fd36b 0 60%, transparent 61%),
+        /* mid hill */
+        radial-gradient(150% 95% at 80% 138%, #a6dd7d 0 58%, transparent 59%),
+        /* far hill (back, hazier) */
+        radial-gradient(160% 100% at 50% 150%, #c3ead0 0 54%, transparent 55%),
+        /* ground wash + horizon haze band for depth */
+        linear-gradient(180deg, rgba(195,234,208,0) 0%, rgba(195,234,208,.55) 30%, #bfe79b 70%, #aadd86 100%);
+      filter:drop-shadow(0 -2px 6px rgba(40,110,60,.12));}
+
+    /* --- CLOUD: a fluffy drifting puff built from overlapping radial blobs.
+       Reuses sona-drift. Decorative + behind nodes + non-interactive. --- */
+    .screen::before{content:"";position:absolute;top:12%;left:0;width:220px;height:60px;z-index:1;pointer-events:none;opacity:.9;
+      will-change:transform;animation:sona-drift 46s linear infinite;
+      background:
+        radial-gradient(42px 42px at 40px 38px, #fff 60%, transparent 62%),
+        radial-gradient(54px 54px at 92px 30px, #fff 60%, transparent 62%),
+        radial-gradient(40px 40px at 140px 40px, #fff 60%, transparent 62%),
+        radial-gradient(64px 30px at 92px 50px, #fff 60%, transparent 62%);}
+    /* --- SCATTERED SCENERY: flowers + a tree sitting low on the hills.
+       Hosted on .scene::after (.scene does NOT form a stacking context, so
+       this stays BELOW the nodes). Spans the foreground; non-interactive;
+       gently bobs with the shared sona-floatY. The leading spaces splay the
+       emoji across the foreground; ✨ adds a little sparkle. --- */
+    .scene::after{content:"🌳        🌼     🌷        ✨      🌻     🌼        🌲";
+      position:absolute;left:0;right:0;bottom:7%;z-index:1;pointer-events:none;
+      text-align:center;white-space:nowrap;font-size:22px;opacity:.92;line-height:1;
+      will-change:transform;animation:sona-floatY 5.5s ease-in-out infinite;
+      filter:drop-shadow(0 3px 4px rgba(40,90,60,.2));}
+
+    /* --- TITLE BANNER: a soft ribbon shape behind the world name (clip-path).
+       Lives on .titleBar b so it hugs the heading; keeps text crisp on top. --- */
+    .titleBar b{position:relative;display:inline-block;padding:7px 26px;margin:0 auto;z-index:1;}
+    .titleBar b::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;
+      background:linear-gradient(180deg,#ffa05a,var(--orange,#ff8a3d));
+      box-shadow:0 5px 0 var(--orange-d,#ef6f23),0 9px 16px rgba(20,90,150,.25);
+      clip-path:polygon(6% 0, 94% 0, 100% 50%, 94% 100%, 6% 100%, 0 50%);}
+    /* ribbon "tails" hanging off each end of the banner */
+    .titleBar b::after{content:"";position:absolute;left:8px;right:8px;bottom:-7px;height:12px;z-index:-2;pointer-events:none;
+      background:var(--orange-d,#ef6f23);
+      clip-path:polygon(0 0,12px 100%,24px 0, calc(100% - 24px) 0, calc(100% - 12px) 100%, 100% 0);
+      opacity:.9;}
+
+    /* --- NODES: hover/focus scale-up + a glow ring on the CURRENT level
+       (the node JS marks with a 📍 .now child). Reuses sona-glow-warm. --- */
+    .node .pin{transition:transform .18s cubic-bezier(.2,.8,.3,1),box-shadow .18s,filter .18s;}
+    .node:not(.locked):hover .pin,
+    .node:not(.locked):focus-visible .pin{transform:scale(1.1);filter:brightness(1.04);}
+    .node:focus-visible{outline:none;}
+    .node:focus-visible .pin{box-shadow:0 5px 0 rgba(20,90,150,.18),0 0 0 5px rgba(42,157,244,.35);}
+
+    /* gentle one-time bounce when an unlocked (non-boss) node enters */
+    @keyframes sona-node-pop-in{0%{transform:scale(.4);opacity:0}60%{transform:scale(1.12)}100%{transform:scale(1);opacity:1}}
+    .node:not(.locked) .pin{animation:bob 2.8s ease-in-out infinite, sona-node-pop-in .5s cubic-bezier(.2,1.4,.4,1) both;}
+
+    /* CURRENT level: soft warm glow ring + a halo behind the pin.
+       :has() targets the node that owns the "you are here" 📍 marker. */
+    .node:has(.now) .pin{animation:bob 2.8s ease-in-out infinite, sona-glow-warm 2.2s ease-in-out infinite;will-change:transform,box-shadow;}
+    .node:has(.now)::before{content:"";position:absolute;top:28px;left:50%;width:86px;height:86px;transform:translate(-50%,-50%);z-index:-1;pointer-events:none;border-radius:50%;
+      background:radial-gradient(circle, rgba(255,138,61,.32) 0%, rgba(255,138,61,0) 70%);
+      will-change:transform,opacity;animation:sona-twinkle 2.4s ease-in-out infinite;}
+
+    /* boss node keeps its gold; give it a faint warm aura too */
+    .node.boss:not(.locked) .pin{box-shadow:0 5px 0 rgba(180,120,0,.22),0 9px 18px rgba(200,140,0,.28);}
+
+    /* lock-center ring: lift it from flat white to a frosted, glowing badge */
+    .lockCenter .ring{backdrop-filter:blur(2px);box-shadow:0 12px 28px rgba(20,60,90,.32),0 0 0 6px rgba(255,255,255,.35);}
+
+    /* the worldlocked overlay reads nicer with a cool frost than pure gray */
+    .screen.worldlocked::after{filter:grayscale(.7) brightness(.92) drop-shadow(0 -2px 6px rgba(40,110,60,.12));}
+
+    /* keep total-stars pill consistent w/ app pills: subtle 2-layer shadow */
+    #starTot{box-shadow:0 3px 10px rgba(20,90,150,.18),0 1px 3px rgba(20,90,150,.12);}
+
+    /* Respect reduced motion (mirrors sona.css guard for this page's keyframes) */
+    @media (prefers-reduced-motion: reduce){
+      .screen::before,.scene::after,
+      .node .pin,.node:not(.locked) .pin,.node:has(.now) .pin,.node:has(.now)::before,.node .now{
+        animation:none !important;}
+    }
   </style>
 </head>
 <body>
