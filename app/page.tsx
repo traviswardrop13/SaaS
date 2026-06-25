@@ -1,4 +1,5 @@
 import Link from "next/link";
+import InteractiveDemo from "./components/InteractiveDemo";
 
 /**
  * Sona — marketing landing page (web-first product surface).
@@ -22,6 +23,7 @@ export default function Landing() {
   return (
     <main className="min-h-screen bg-white text-gray-800">
       <Hero />
+      <InteractiveDemo />
       <HowItWorks />
       <LiveCoach />
       <ParentValue />
