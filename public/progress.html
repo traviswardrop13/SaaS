@@ -17,7 +17,7 @@
   <style>
     .week{display:flex;gap:8px;margin-top:12px;}
     .day{flex:1;text-align:center;}
-    .day .d{width:34px;height:34px;margin:0 auto 5px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    .day .d{position:relative;width:34px;height:34px;margin:0 auto 5px;border-radius:50%;display:flex;align-items:center;justify-content:center;
       font-size:16px;background:#eef3fb;color:var(--muted);}
     .day .d.on{background:var(--orange);color:#fff;box-shadow:0 4px 0 0 var(--orange-d);}
     .day .lbl{font-size:11px;font-weight:800;color:var(--muted);}
@@ -38,7 +38,179 @@
     .poschips{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px;}
     .poschip{font-weight:800;font-size:11px;border-radius:99px;padding:3px 8px;background:#eef3fb;color:#46627a;}
     .poschip.hi{background:#eafce9;color:#46a302;} .poschip.mid{background:#fff5e0;color:#b07908;} .poschip.lo{background:#fdecea;color:#c0392b;}
-    @media print{ header.app,.noprint{display:none!important;} body{background:#fff;} }
+
+    /* ═══════════════════════════════════════════════════════════════════
+       PROGRESS — visual polish (CSS-only, additive). Builds on /sona.css
+       shared system. Reuses sona-slide-up / sona-floatY / sona-twinkle
+       names + the brand palette. Animates transform/opacity only.
+       ═══════════════════════════════════════════════════════════════════ */
+
+    /* ── Stat cards: warm per-stat gradients, entrance, better icon scale ──
+       JS only sets .stat .n textContent, so we can style the existing
+       selectors directly + stagger via :nth-child (no DOM/JS change). */
+    .row > .stat{
+      position:relative;overflow:hidden;border:none;
+      box-shadow:0 8px 22px rgba(15,39,66,.07),0 2px 5px rgba(15,39,66,.05);
+      animation:sona-slide-up .5s cubic-bezier(.2,.8,.3,1) both;
+      will-change:transform,opacity;
+    }
+    .row > .stat:nth-child(1){animation-delay:.04s;background:linear-gradient(160deg,#fff3e8,#ffe6d0);}
+    .row > .stat:nth-child(2){animation-delay:.10s;background:linear-gradient(160deg,#eaf4ff,#d8ecff);}
+    .row > .stat:nth-child(3){animation-delay:.16s;background:linear-gradient(160deg,#eafaf0,#d6f3e2);}
+    .row > .stat:nth-child(4){animation-delay:.22s;background:linear-gradient(160deg,#fff7e0,#ffeebf);}
+    /* a soft glaze of light across the top of each tile for depth */
+    .row > .stat::before{
+      content:"";position:absolute;inset:0;pointer-events:none;border-radius:inherit;
+      background:linear-gradient(180deg,rgba(255,255,255,.55),rgba(255,255,255,0) 58%);
+    }
+    .row > .stat > *{position:relative;z-index:1;}
+    .row > .stat .n{font-size:30px;}
+    .row > .stat .l{font-size:12px;line-height:1.35;}
+    /* tint each big number to match its tile for a richer, on-brand look */
+    .row > .stat:nth-child(1) .n{color:var(--orange-d);}
+    .row > .stat:nth-child(2) .n{color:var(--blue-d);}
+    .row > .stat:nth-child(3) .n{color:#2e9e5b;}
+    .row > .stat:nth-child(4) .n{color:#c98a06;}
+
+    /* ── Weekly grid: proper activity circles. Filled = colored + check,
+       empty = light ring. The dot text ('🔥' / '·') from JS is hidden so
+       the CSS treatment reads cleanly. ── */
+    .week .day .d{
+      font-size:0;background:#fff;border:2px solid #e3ecf8;color:transparent;
+      box-shadow:none;transition:transform .2s ease;
+    }
+    .week .day .d::before{ /* inner light fill so empty reads as a soft ring */
+      content:"";position:absolute;inset:3px;border-radius:50%;
+      background:radial-gradient(circle at 50% 38%,#f6f9ff,#eef3fb);
+    }
+    .week .day .d.on{
+      background:linear-gradient(160deg,#ffb072,var(--orange));
+      border-color:transparent;
+      box-shadow:0 4px 0 0 var(--orange-d),0 6px 12px rgba(255,138,61,.35);
+    }
+    .week .day .d.on::before{ /* check mark drawn from a rotated box */
+      content:"";position:absolute;inset:auto;left:11px;top:7px;width:7px;height:13px;
+      border:solid #fff;border-width:0 3px 3px 0;border-radius:1px;
+      transform:rotate(45deg);background:none;
+    }
+    .week .day .d.on:hover{transform:translateY(-2px);}
+    .week .day .lbl{transition:color .2s;}
+
+    /* ── Accuracy by sound: clean gradient bars + rounded caps. Values are
+       set inline by JS (height %); we only restyle the bar fills. ── */
+    .accpct{text-shadow:0 1px 0 rgba(70,163,2,.08);}
+    .spark{gap:4px;height:38px;padding:2px 0;}
+    .spark i{
+      max-width:18px;border-radius:5px 5px 2px 2px;min-height:5px;
+      will-change:transform;transform-origin:bottom;
+      animation:sona-bar-rise .55s cubic-bezier(.2,.9,.3,1) both;
+    }
+    .spark i.hi{background:linear-gradient(180deg,#9be08a,#6bbf57);}
+    .spark i.mid{background:linear-gradient(180deg,#ffe08a,#ffc94d);}
+    .spark i.lo{background:linear-gradient(180deg,#ffb3aa,#f08a7f);}
+    .spark i:nth-child(2){animation-delay:.03s}.spark i:nth-child(3){animation-delay:.06s}
+    .spark i:nth-child(4){animation-delay:.09s}.spark i:nth-child(5){animation-delay:.12s}
+    .spark i:nth-child(6){animation-delay:.15s}.spark i:nth-child(7){animation-delay:.18s}
+    .spark i:nth-child(n+8){animation-delay:.2s}
+    @keyframes sona-bar-rise{from{transform:scaleY(0);opacity:0}to{transform:scaleY(1);opacity:1}}
+    /* prepared bar styling for any future horizontal accuracy bars */
+    .accrow .bar{height:13px;}
+    .accrow .bar > span{background:linear-gradient(90deg,#7ac96a,#46a302);border-radius:99px;
+      transition:width .8s cubic-bezier(.2,.9,.3,1);}
+
+    /* ── "Listen to their progress": waveform decoration above the list.
+       Pure CSS bars from the #recList host's ::before — no DOM added.
+       Each "bar" is a vertical gradient: a tall center band + transparent
+       gaps via repeating-linear-gradient; a vertical fade gives the rounded
+       waveform silhouette. ── */
+    #recList{position:relative;}
+    #recList::before{
+      content:"";display:block;height:32px;margin:0 2px 14px;border-radius:8px;
+      background:
+        /* the equaliser bars */
+        repeating-linear-gradient(90deg,
+          var(--blue) 0 4px,
+          transparent 4px 10px),
+        /* alternating warm tint over every other bar for life */
+        repeating-linear-gradient(90deg,
+          transparent 0 10px,
+          var(--orange) 10px 14px,
+          transparent 14px 20px);
+      -webkit-mask:linear-gradient(180deg,transparent,#000 22%,#000 78%,transparent),
+        radial-gradient(120% 75% at 50% 100%,#000 60%,transparent 78%);
+      -webkit-mask-composite:source-in;
+      mask:linear-gradient(180deg,transparent,#000 22%,#000 78%,transparent),
+        radial-gradient(120% 75% at 50% 100%,#000 60%,transparent 78%);
+      mask-composite:intersect;
+      opacity:.85;
+      animation:sona-wave 2.6s ease-in-out infinite alternate;
+      will-change:transform;transform-origin:center bottom;
+    }
+    @keyframes sona-wave{0%{transform:scaleY(.72)}100%{transform:scaleY(1)}}
+    /* recording rows: make the play buttons feel a touch more inviting */
+    .recbtn,.recbtn2{transition:transform .12s ease,filter .12s ease;}
+    .recbtn:hover,.recbtn2:hover{transform:translateY(-1px);}
+
+    /* ── Empty states: turn the plain <p class="muted"> that JS injects
+       into the four data containers into a friendly speech bubble with Leo.
+       We can't add DOM, so the avatar + bubble tail are pure pseudo-elements.
+       Scoped to #acc/#recList/#recent/#bysound so the page's intro copy and
+       the footer link are never touched. These containers only ever hold an
+       empty-state <p> OR real data rows (divs), so the match is exact. */
+    #acc > p.muted,
+    #recList > p.muted,
+    #recent > p.muted,
+    #bysound > p.muted{
+      position:relative;
+      margin:34px auto 6px;max-width:340px;
+      padding:16px 18px;
+      text-align:center;font-weight:800;font-size:14.5px;color:#5b6b80;
+      background:linear-gradient(170deg,#fbfdff,#eef5ff);
+      border:1px solid var(--line);border-radius:18px;
+      box-shadow:0 6px 18px rgba(15,39,66,.06);
+      animation:sona-fade-in .5s ease both;
+    }
+    /* Leo, floating just above the bubble */
+    #acc > p.muted::before,
+    #recList > p.muted::before,
+    #recent > p.muted::before,
+    #bysound > p.muted::before{
+      content:"🦁";
+      position:absolute;left:50%;top:-26px;transform:translateX(-50%);
+      width:46px;height:46px;line-height:46px;font-size:26px;text-align:center;
+      background:linear-gradient(160deg,#ffd9b0,#ffedd5);
+      border-radius:50%;box-shadow:0 5px 12px rgba(239,111,35,.22);
+      animation:sona-floatY 3.4s ease-in-out infinite;will-change:transform;
+    }
+    /* speech-bubble tail pointing up toward Leo */
+    #acc > p.muted::after,
+    #recList > p.muted::after,
+    #recent > p.muted::after,
+    #bysound > p.muted::after{
+      content:"";position:absolute;left:50%;top:-8px;transform:translateX(-50%) rotate(45deg);
+      width:16px;height:16px;background:#fbfdff;
+      border-left:1px solid var(--line);border-top:1px solid var(--line);border-radius:3px;
+    }
+
+    /* ── Share / Print button: more prominent with a subtle warm gradient.
+       It's .btn.ghost (flat white by default) — promote to a soft blue. ── */
+    #share.btn.ghost{
+      color:#fff;font-size:16px;
+      background:linear-gradient(180deg,#56b4ff,var(--blue));
+      box-shadow:0 5px 0 0 var(--blue-d),0 8px 18px rgba(42,157,244,.28);
+    }
+    #share.btn.ghost:hover{filter:brightness(1.04);}
+    #share.btn.ghost:active{transform:translateY(3px);box-shadow:0 2px 0 0 var(--blue-d);}
+    /* the existing "Send progress to my SLP" CTA: a gentle glow to draw the eye */
+    #sendProg{box-shadow:0 5px 0 0 var(--orange-d),0 8px 18px rgba(255,138,61,.26);}
+
+    @media print{
+      header.app,.noprint{display:none!important;} body{background:#fff;}
+      /* keep print clean + ink-light: drop decoration & motion */
+      .row > .stat,.card{box-shadow:none!important;animation:none!important;}
+      .row > .stat::before,#recList::before{display:none!important;}
+      .spark i{animation:none!important;}
+    }
   </style>
   <script defer src="/_vercel/insights/script.js"></script>
 </head>
