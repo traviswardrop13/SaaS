@@ -20,6 +20,13 @@ export default function SubscribeSuccess() {
     } catch {
       // ignore — non-blocking
     }
+    // Fire the conversion event for both PostHog and the Meta Pixel.
+    try {
+      const w = window as unknown as { sonaTrack?: (e: string, p?: Record<string, unknown>) => void };
+      if (typeof w.sonaTrack === "function") w.sonaTrack("Purchase", { value: 39.99, currency: "USD" });
+    } catch {
+      // ignore — non-blocking
+    }
   }, []);
 
   return (
