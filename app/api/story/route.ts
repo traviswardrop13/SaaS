@@ -219,29 +219,45 @@ export async function POST(req: NextRequest) {
   for (let attempt = 0; attempt < 2; attempt++) {
     let rawText = "";
     try {
-      const msg = await client.messages.create({
-        model: "claude-opus-4-8",
-        max_tokens: 1600,
-        thinking: { type: "disabled" },
-        output_config: { effort: "low" },
-        system: buildSystemPrompt({
-          name,
-          interest,
-          sound,
-          position,
-          lineCount,
-          wordsPerLine,
-        }),
-        messages: [
-          {
-            role: "user",
-            content:
-              attempt === 0
-                ? `Write the adventure now for ${name}, theme: ${interest}, sound: ${sound} (${position}).`
-                : `Try again. Every page's blankWord MUST contain a ${position}-position ${sound} sound and appear in its sentence. Theme: ${interest}, child: ${name}.`,
-          },
-        ],
+      const system = buildSystemPrompt({
+        name,
+        interest,
+        sound,
+        position,
+        lineCount,
+        wordsPerLine,
       });
+      const messages: Anthropic.MessageParam[] = [
+        {
+          role: "user",
+          content:
+            attempt === 0
+              ? `Write the adventure now for ${name}, theme: ${interest}, sound: ${sound} (${position}).`
+              : `Try again. Every page's blankWord MUST contain a ${position}-position ${sound} sound and appear in its sentence. Theme: ${interest}, child: ${name}.`,
+        },
+      ];
+      let msg: Anthropic.Message;
+      try {
+        // Preferred path: newer low-effort / no-thinking params (cheaper + faster).
+        msg = await client.messages.create({
+          model: "claude-opus-4-8",
+          max_tokens: 1600,
+          thinking: { type: "disabled" },
+          output_config: { effort: "low" },
+          system,
+          messages,
+        });
+      } catch (paramErr) {
+        // Some API versions reject those newer params for this model — retry with
+        // a plain call so generation still works instead of falling back to the
+        // generic story.
+        msg = await client.messages.create({
+          model: "claude-opus-4-8",
+          max_tokens: 1600,
+          system,
+          messages,
+        });
+      }
       rawText = msg.content
         .filter((b): b is Anthropic.TextBlock => b.type === "text")
         .map((b) => b.text)
