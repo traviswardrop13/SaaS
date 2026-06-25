@@ -77,6 +77,7 @@
   <script src="/gamecontent.js"></script>
   <script>
     var $=function(id){return document.getElementById(id);};
+    if(window.Sona&&Sona.gated&&Sona.gated()){ location.replace("/trial.html"); }
     var Q=new URLSearchParams(location.search);
     var profile=(window.Sona?Sona.getProfile():{focusSounds:["R"],voiceId:"",volume:0.8});
     var SOUND=(Q.get("sound")||(profile.focusSounds&&profile.focusSounds[0])||"R").toUpperCase();

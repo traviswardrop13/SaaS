@@ -329,9 +329,30 @@
   function getSub() { return load(SKEY, { active: false, email: "", since: 0 }); }
   function saveSub(patch) { save(SKEY, Object.assign(getSub(), patch || {})); }
   function isSubscribed() { return !!getSub().active; }
-  // Launch gate: one full free session, then practice/calls require the trial.
-  // (Library, customize, and progress stay open — goodwill + no marginal cost.)
-  function gated() { return !isSubscribed() && (getProgress().totals.sessions >= 1); }
+
+  // --- free trial (no card): email-gated 7-day window, then the paywall ---
+  // Maximizes signups while the product is being validated. Stored locally and
+  // mirrored to KV (/api/trial) so it survives a device switch and the day-6
+  // nudge job can find expiring trials. Stripe charges only on conversion.
+  const TRIALKEY = "sona.trial.v1", TRIAL_DAYS = 7;
+  function getTrial() { return load(TRIALKEY, null); }
+  function trialMs(t) { return (((t && t.days) || TRIAL_DAYS)) * 86400000; }
+  function mirrorTrial(t) { try { fetch("/api/trial", { method: "POST", headers: { "Content-Type": "application/json" }, keepalive: true, body: JSON.stringify({ email: t.email || "", start: t.start, days: t.days || TRIAL_DAYS }) }); } catch (e) {} }
+  function startTrial(email) {
+    let t = getTrial();
+    if (!t || !t.start) { t = { start: Date.now(), email: (email || "").trim(), days: TRIAL_DAYS }; save(TRIALKEY, t); mirrorTrial(t); }
+    else if (email && !t.email) { t.email = String(email).trim(); save(TRIALKEY, t); mirrorTrial(t); }
+    return t;
+  }
+  // start the clock lazily so nobody is gated before they've had their days
+  function ensureTrial() { if (isSubscribed() || isPilot()) return null; let t = getTrial(); if (!t || !t.start) t = startTrial(""); return t; }
+  function trialActive() { const t = getTrial(); return !!(t && t.start && Date.now() < t.start + trialMs(t)); }
+  function trialExpired() { const t = getTrial(); return !!(t && t.start && Date.now() >= t.start + trialMs(t)); }
+  function trialDaysLeft() { const t = getTrial(); if (!t || !t.start) return TRIAL_DAYS; return Math.max(0, Math.ceil((t.start + trialMs(t) - Date.now()) / 86400000)); }
+
+  // Launch gate: subscribers/pilots are always in; everyone else gets a 7-day
+  // free trial, then the paywall. (Library, customize, progress stay open.)
+  function gated() { if (isSubscribed() || isPilot()) return false; ensureTrial(); return trialExpired(); }
   // Verify a subscription by email (Stripe is the source of truth) and cache it,
   // so a paid family can unlock on a new device / after clearing storage.
   async function restore(email) {
@@ -868,5 +889,5 @@
   }
   try { installDebug(); } catch (e) {}
 
-  global.Sona = { pic, ALL_SOUNDS, soundLabel, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, getProfile, saveProfile, getProgress, recordSession, resetProgress, stageOf, completeStage, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, gated, restore, saveRecording, listRecordings, sfx, music, confetti, pop, LEVEL_GAMES, GAME_DECK, GAMES_PER_LEVEL, levelGames, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, WORLDS, LEVELS_PER_WORLD, campaignLevels, campaignSounds, campaignState, levelStars, setLevelStars, totalStars, worldUnlocked, levelUnlocked, campaignLaunch, campaignResolve, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, sendProgress, sendFeedback, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine };
+  global.Sona = { pic, ALL_SOUNDS, soundLabel, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, getProfile, saveProfile, getProgress, recordSession, resetProgress, stageOf, completeStage, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, gated, getTrial, startTrial, ensureTrial, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, LEVEL_GAMES, GAME_DECK, GAMES_PER_LEVEL, levelGames, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, WORLDS, LEVELS_PER_WORLD, campaignLevels, campaignSounds, campaignState, levelStars, setLevelStars, totalStars, worldUnlocked, levelUnlocked, campaignLaunch, campaignResolve, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, sendProgress, sendFeedback, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine };
 })(window);

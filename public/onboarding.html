@@ -289,7 +289,8 @@
         email: draft.email || "",
         onboarded: true,
       });
-      try{ if(window.sonaTrack){ sonaTrack("Lead"); sonaTrack("CompleteRegistration"); } }catch(e){}
+      try{ if(window.Sona&&Sona.startTrial) Sona.startTrial(draft.email||""); }catch(e){}
+      try{ if(window.sonaTrack){ sonaTrack("Lead"); sonaTrack("CompleteRegistration"); sonaTrack("trial_started"); } }catch(e){}
       // capture the lead (email + answers) → GHL via /api/lead (fire-and-forget)
       try{
         if(draft.email){
