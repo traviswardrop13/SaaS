@@ -92,6 +92,143 @@
     #win .btn{margin-top:22px;border:none;border-radius:16px;padding:15px 44px;font-family:"Baloo 2";font-weight:800;font-size:18px;text-transform:uppercase;letter-spacing:.04em;color:#fff;background:var(--green);box-shadow:0 5px 0 0 var(--green-d);cursor:pointer;}
     #win .btn:active{transform:translateY(4px);box-shadow:0 1px 0 0 var(--green-d);}
     #win a{margin-top:14px;color:var(--muted);font-weight:800;font-size:14px;text-decoration:none;}
+
+    /* ═══════════════════════════════════════════════════════════════════
+       VISUAL POLISH LAYER — additive, CSS-only. Mirrors the shared Sona
+       design system (sona-drift / sona-glow / glow-pulse look) so the game
+       speaks the same visual language as the app. Animates transform/opacity
+       (box-shadow sparingly); never touches game logic or the DOM. All depth
+       is painted on ::before/::after + background layers on existing nodes.
+       NOTE: JS sets body & #road background inline per level setting — we
+       never fight those; texture rides on top via pseudo-elements.
+       ═══════════════════════════════════════════════════════════════════ */
+
+    /* Reused scenery keyframes (same names/values as /public/sona.css) */
+    @keyframes sona-drift{from{transform:translateX(0)}to{transform:translateX(-130vw)}}
+    @keyframes sona-floatY{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+    @keyframes sona-twinkle{0%,100%{opacity:.35;transform:scale(.9)}50%{opacity:1;transform:scale(1.12)}}
+
+    /* ── SKY + GRASS ── warmer layered sky with a sun glow, soft rolling
+       hills, and a green verge band sitting right where road meets sky.
+       Painted on #track::before (z-index:0 → tree order keeps it behind the
+       road/lane/finish/kart siblings). */
+    #track::before{
+      content:"";position:absolute;inset:0;z-index:0;pointer-events:none;
+      background:
+        /* warm sun glow, upper area */
+        radial-gradient(70% 48% at 78% -6%, rgba(255,214,150,.55), rgba(255,214,150,0) 60%),
+        radial-gradient(60% 40% at 16% 2%, rgba(255,170,120,.20), rgba(255,170,120,0) 55%),
+        /* distant rolling hills sitting just above the road horizon */
+        radial-gradient(38% 16% at 20% 58%, #8fd06a 0 60%, rgba(143,208,106,0) 62%),
+        radial-gradient(46% 18% at 72% 58.5%, #7ec85e 0 60%, rgba(126,200,94,0) 62%),
+        /* grass verge band + a darker line at the road edge, then warm sky */
+        linear-gradient(180deg,
+          #bfe9ff 0%, #d7f1ff 30%, #eaf6ef 50%,
+          #b6e398 53%, #8fce6a 56.5%, #5fae3e 57.6%, #3f7f2a 58% );
+    }
+    /* ── FAR CLOUD LAYER ── second, slower parallax layer (the emoji .cloud
+       spans are the near/fast layer). Soft CSS puffs drifting via sona-drift
+       at a long duration → clear depth against the near clouds. */
+    #track::after{
+      content:"";position:absolute;top:0;left:0;width:260vw;height:46%;z-index:0;pointer-events:none;opacity:.7;
+      background:
+        radial-gradient(46px 20px at 12% 30%, #fff 0 60%, rgba(255,255,255,0) 64%),
+        radial-gradient(64px 26px at 30% 52%, rgba(255,255,255,.92) 0 60%, rgba(255,255,255,0) 64%),
+        radial-gradient(40px 18px at 52% 22%, rgba(255,255,255,.85) 0 60%, rgba(255,255,255,0) 64%),
+        radial-gradient(70px 28px at 74% 44%, #fff 0 60%, rgba(255,255,255,0) 64%),
+        radial-gradient(48px 20px at 92% 28%, rgba(255,255,255,.9) 0 60%, rgba(255,255,255,0) 64%);
+      animation:sona-drift 46s linear infinite;will-change:transform;
+    }
+    /* Near clouds: re-point to the shared sona-drift, calmer premium pace.
+       (Inline animation-delay on the spans is preserved.) */
+    .cloud{animation:sona-drift 24s linear infinite;filter:drop-shadow(0 3px 4px rgba(60,110,160,.18));}
+
+    /* ── ROAD ── keep JS-set asphalt colour; layer a fine speckle/noise +
+       a soft centre sheen on top via #road::after. Stays readable (very low
+       contrast specks). #road:before (the curb lip) gets a warm highlight. */
+    #road:before{background:linear-gradient(180deg,#9aa6b6,#7c8898);box-shadow:0 1px 0 rgba(255,255,255,.25),0 2px 5px rgba(0,0,0,.25);}
+    #road::after{
+      content:"";position:absolute;inset:0;pointer-events:none;border-radius:inherit;
+      background:
+        /* drivable-area sheen so the lane reads clearly */
+        linear-gradient(180deg, rgba(255,255,255,.06), rgba(0,0,0,.10)),
+        /* fine asphalt speckle — two offset dot grids, kept subtle */
+        radial-gradient(rgba(255,255,255,.05) 0.5px, transparent 1px) 0 0/6px 6px,
+        radial-gradient(rgba(0,0,0,.10) 0.5px, transparent 1px) 3px 3px/7px 7px;
+      mix-blend-mode:soft-light;opacity:.9;
+    }
+    /* Soft contact shadow under the kart for grounding (no transform → safe
+       with the JS pop/shake/zoom animations on the kart's children). */
+    #kart::after{
+      content:"";position:absolute;left:50%;bottom:-6px;width:62px;height:12px;transform:translateX(-50%);
+      background:radial-gradient(closest-side, rgba(0,0,0,.30), rgba(0,0,0,0));z-index:-1;pointer-events:none;
+    }
+
+    /* ── RPM GAUGE → real tachometer ── tick marks via repeating-conic-
+       gradient fanning across the bar, a glowing multi-stop fill, and a
+       bright leading "needle" highlight at the fill edge. */
+    #rpm{position:relative;box-shadow:inset 0 2px 4px rgba(0,0,0,.18),0 1px 0 rgba(255,255,255,.7);}
+    #rpm::before{
+      content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:2;
+      background:repeating-conic-gradient(from 200deg at 50% 260%,
+        rgba(16,36,58,.28) 0 .5deg, transparent .5deg 3deg);
+      opacity:.6;mix-blend-mode:multiply;
+    }
+    #rpmFill{position:relative;box-shadow:0 0 10px rgba(255,150,0,.55),inset 0 1px 1px rgba(255,255,255,.45);}
+    #rpmFill::after{
+      content:"";position:absolute;top:0;right:0;width:5px;height:100%;border-radius:99px;
+      background:rgba(255,255,255,.9);box-shadow:0 0 9px 2px rgba(255,255,255,.8),0 0 14px rgba(255,120,0,.7);
+    }
+    #rpmTxt{text-shadow:0 1px 0 rgba(255,255,255,.7);}
+
+    /* ── TRAFFIC LIGHT ── a pole/stand beneath the housing (::after) + a
+       glass reflection (::before), with more dramatic layered glows on the
+       lit bulbs. */
+    #signal{box-shadow:0 6px 16px rgba(0,0,0,.35),inset 0 2px 3px rgba(255,255,255,.12),inset 0 -3px 6px rgba(0,0,0,.45);}
+    #signal::before{
+      content:"";position:absolute;top:6px;left:6px;right:6px;height:40%;border-radius:10px;pointer-events:none;
+      background:linear-gradient(180deg, rgba(255,255,255,.18), rgba(255,255,255,0));
+    }
+    #signal::after{
+      content:"";position:absolute;top:100%;left:50%;width:8px;height:34px;transform:translateX(-50%);pointer-events:none;
+      background:linear-gradient(90deg,#1a1a1a,#3a3a3a 45%,#1a1a1a);
+      border-radius:0 0 3px 3px;
+      box-shadow:0 30px 0 -22px rgba(0,0,0,.35); /* faint ground base */
+    }
+    #signal .bulb{box-shadow:inset 0 2px 3px rgba(0,0,0,.55);}
+    #signal .r.on{box-shadow:0 0 10px 1px var(--red),0 0 22px 4px rgba(255,75,75,.7),inset 0 1px 3px rgba(255,255,255,.4);}
+    #signal .y.on{box-shadow:0 0 10px 1px #ffd400,0 0 22px 4px rgba(255,212,0,.7),inset 0 1px 3px rgba(255,255,255,.4);}
+    #signal .g.on{box-shadow:0 0 11px 1px var(--green),0 0 24px 5px rgba(88,204,2,.7),inset 0 1px 3px rgba(255,255,255,.4);}
+
+    /* ── FINISH LINE ── a gentle flag flutter via transform (skew + tiny
+       squash) so the checkered banner feels alive. */
+    #finish{transform-origin:top center;animation:finishWave 2.6s ease-in-out infinite;will-change:transform;
+      box-shadow:-2px 0 6px rgba(0,0,0,.18);}
+    @keyframes finishWave{
+      0%,100%{transform:skewY(0deg) scaleX(1)}
+      25%{transform:skewY(-1.6deg) scaleX(.96)}
+      50%{transform:skewY(0deg) scaleX(1.04)}
+      75%{transform:skewY(1.6deg) scaleX(.96)}
+    }
+
+    /* ── MIC ── breathing glow while WAITING for input (mirrors the shared
+       glow-pulse look). Each keyframe preserves the chunky 3D base shadow,
+       exactly like the existing .rec pulse. .rec keeps its stronger pulse. */
+    .mic{animation:micBreath 2.4s ease-in-out infinite;will-change:box-shadow;}
+    @keyframes micBreath{
+      0%,100%{box-shadow:0 0 0 0 rgba(28,176,246,0),0 6px 0 0 var(--blue-d),inset 0 3px 7px rgba(255,255,255,.45)}
+      50%{box-shadow:0 0 0 9px rgba(28,176,246,.16),0 6px 0 0 var(--blue-d),inset 0 3px 7px rgba(255,255,255,.45)}
+    }
+
+    /* ── WIN SCREEN ── a soft celebratory radial wash behind the content. */
+    #win::before{content:"";position:absolute;inset:0;pointer-events:none;
+      background:radial-gradient(60% 45% at 50% 30%, rgba(255,214,150,.45), rgba(255,214,150,0) 70%);}
+    #win > *{position:relative;}
+
+    /* Accessibility: calm every loop for reduced-motion users. */
+    @media (prefers-reduced-motion: reduce){
+      .cloud,#track::after,#finish,.mic{animation:none !important;}
+    }
   </style>
 </head>
 <body>
