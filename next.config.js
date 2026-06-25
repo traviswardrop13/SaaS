@@ -20,6 +20,15 @@ const nextConfig = {
       { source: "/subscribe/success", headers: noStore },
     ];
   },
+  // Clean URLs for the SLP entry points so /for-slps (no .html) resolves to the
+  // static page instead of 404ing. Rewrite keeps the pretty URL in the address bar.
+  async rewrites() {
+    return [
+      { source: "/for-slps", destination: "/for-slps.html" },
+      { source: "/slp-login", destination: "/slp-login.html" },
+      { source: "/slp", destination: "/slp.html" },
+    ];
+  },
 };
 
 module.exports = nextConfig;
