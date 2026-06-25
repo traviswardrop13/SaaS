@@ -134,7 +134,7 @@
     var $=function(id){return document.getElementById(id);};
     var P=(window.Sona?Sona.getProfile():{});
     var INTERESTS=["dragons","space","dinosaurs","mermaids","puppies","race cars","unicorns","pirates","jungle animals","robots"];
-    var THEME_EMOJI={dragons:"🐉🌈",space:"🚀🪐",dinosaurs:"🦕🌋",mermaids:"🧜‍♀️🐚",puppies:"🐶🦴","race cars":"🏎️🏁",unicorns:"🦄✨",pirates:"🏴‍☠️🪙","jungle animals":"🐵🌴",robots:"🤖⚡"};
+    var THEME_EMOJI={dragons:"🐉🌈",space:"🚀🪐",dinosaurs:"🦕🌋",mermaids:"🧜‍♀️🐚",puppies:"🐶🦴",kittens:"🐱🧶","race cars":"🏎️🏁",unicorns:"🦄✨",pirates:"🏴‍☠️🪙","jungle animals":"🐵🌴",robots:"🤖⚡",superheroes:"🦸💥"};
     var name=(P.childName||"Mia").trim();
     var sound=((P.focusSounds&&P.focusSounds[0])||"R").toUpperCase();
     var interest=((P.interests&&P.interests[0])||P.interest||((window.Sona&&Sona.dayNum)?INTERESTS[Sona.dayNum()%INTERESTS.length]:"dragons"));
