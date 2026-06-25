@@ -13,7 +13,7 @@
  * calls like sonaTrack("Lead") are captured here too — alongside the Meta Pixel.
  */
 (function () {
-  var POSTHOG_KEY = ""; // ← PASTE YOUR POSTHOG PROJECT API KEY HERE (starts with "phc_")
+  var POSTHOG_KEY = "phc_xRPqirD2PznnvZrpeuLDwo7LtYegHsF2xWsDNLEEXdkw"; // PostHog Project API key (public)
   var POSTHOG_HOST = "https://us.i.posthog.com"; // EU project? use "https://eu.i.posthog.com"
 
   // Chain PostHog onto sonaTrack regardless of script load order with pixel.js.
