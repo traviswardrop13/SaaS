@@ -77,11 +77,22 @@
   <script src="/gamecontent.js"></script>
   <script>
     var $=function(id){return document.getElementById(id);};
+    var Q=new URLSearchParams(location.search);
     var profile=(window.Sona?Sona.getProfile():{focusSounds:["R"],voiceId:"",volume:0.8});
-    var SOUND=(new URLSearchParams(location.search).get("sound")||(profile.focusSounds&&profile.focusSounds[0])||"R").toUpperCase();
+    var SOUND=(Q.get("sound")||(profile.focusSounds&&profile.focusSounds[0])||"R").toUpperCase();
     if(!(window.Sona&&Sona.WORDS&&Sona.WORDS[SOUND])) SOUND="R";
-    var PAGES=(window.SonaContent?SonaContent.storyPages(SOUND):[{text:"Once, Leo saw a ___.",word:"rabbit",e:"🐰"}]);
+    var POS=(Q.get("position")||"initial").toLowerCase();
+    var NAME=(Q.get("name")||profile.childName||"").trim();
+    // What the kid loves — drives the AI theming. URL wins, then profile, then a daily-rotating default.
+    var INTERESTS=["dragons","space","dinosaurs","mermaids","puppies","race cars","unicorns","pirates","jungle animals","robots"];
+    var INTEREST=(Q.get("interest")||(profile.interests&&profile.interests[0])||profile.interest||((window.Sona&&Sona.dayNum)?INTERESTS[Sona.dayNum()%INTERESTS.length]:"dragons")).trim();
+    var MINUTES=Number(Q.get("minutes"))||profile.dailyMinutes||5;
+    // Static fallback so a child NEVER sees a broken adventure if generation fails.
+    var FALLBACK=(window.SonaContent?SonaContent.storyPages(SOUND):[{text:"Once, Leo saw a ___.",word:"rabbit",e:"🐰"}]);
+    var PAGES=FALLBACK, GENERATED=false;
     var GOAL=PAGES.length||5;
+    // Try to fetch a fresh, AI-written adventure themed to the kid's interest.
+    function loadStory(){return fetch("/api/story",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:NAME,interest:INTEREST,sound:SOUND,position:POS,minutes:MINUTES})}).then(function(r){return r.ok?r.json():null;}).then(function(j){if(j&&j.ok&&j.story&&j.story.pages&&j.story.pages.length>=4){PAGES=j.story.pages;GOAL=PAGES.length;GENERATED=true;}}).catch(function(){});}
 
     var audioCtx=null; function getCtx(){if(!audioCtx){var AC=window.AudioContext||window.webkitAudioContext;audioCtx=new AC();}if(audioCtx.state==="suspended")audioCtx.resume();return audioCtx;}
     function playPCM(b){return new Promise(function(res){try{var c=getCtx(),n=b.byteLength>>1,ab=c.createBuffer(1,n,24000),ch=ab.getChannelData(0),dv=new DataView(b.buffer,b.byteOffset,b.byteLength);for(var i=0;i<n;i++)ch[i]=dv.getInt16(i*2,true)/32768;var s=c.createBufferSource();s.buffer=ab;s.playbackRate.value=(window.Sona&&Sona.VOICE_PITCH)||1;var g=c.createGain();g.gain.value=(profile.volume!=null?profile.volume:0.8);s.connect(g);g.connect(c.destination);s.onended=res;s.start();}catch(e){res();}});}
@@ -149,6 +160,10 @@
     (async function(){ try{var r=await fetch("/api/score");var j=await r.json();useSpeechAce=!!(j&&j.hasKey);}catch(e){useSpeechAce=false;}
       try{ if(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia) micStream=await navigator.mediaDevices.getUserMedia({audio:true}); }catch(e){micStream=null;}
       $("hear").onclick=function(){ var p=PAGES[pi]; say(p.text.replace("___",p.word)); }; $("again").onclick=startGame;
+      // Show a quick "writing your adventure" beat while the AI story loads, then play.
+      $("pageEmoji").innerHTML="✨"; $("pageText").textContent="Writing "+(NAME?NAME+"'s":"your")+" "+INTEREST+" adventure…"; $("pageNo").textContent="";
+      await loadStory();
+      if(GENERATED){try{document.title="Sona — "+INTEREST+" adventure";}catch(e){}}
       if(window.Sona&&Sona.music)Sona.music.start(); startGame();
     })();
     (function(){ var lad="/map.html"; var c=$("close"); if(c)c.onclick=function(){location.href=lad;}; Array.prototype.forEach.call(document.querySelectorAll('a[href="/play.html"]'),function(a){a.setAttribute("href",lad);}); })();

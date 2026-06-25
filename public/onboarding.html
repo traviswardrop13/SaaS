@@ -88,6 +88,13 @@
       <div class="bgrid" id="obBuddies"></div>
     </div>
 
+    <!-- interests (drives AI story theming) -->
+    <div class="step" data-step="interests">
+      <div class="qh">What does <span id="intName">your child</span> love? ❤️</div>
+      <p class="muted">We turn this into a brand-new story every day — secretly packed with their practice sounds. Pick one or a few.</p>
+      <div class="bgrid" id="obInterests"></div>
+    </div>
+
     <!-- sounds -->
     <div class="step" data-step="sounds">
       <div class="qh">Which sounds are we working on?</div>
@@ -157,13 +164,15 @@
       slpEvaluated: p.slpEvaluated || "",
       goals: p.goals || "",
       email: p.email || "",
+      interests: (p.interests && p.interests.length) ? p.interests.slice() : [],
     };
 
-    var ORDER = ["welcome","name","buddy","sounds","goal","achieve","slp","email"];
+    var ORDER = ["welcome","name","buddy","interests","sounds","goal","achieve","slp","email"];
     var BUBBLES = {
       welcome: "Hi! I'm Leo!",
       name:    "Nice to meet you!",
       buddy:   "Who should practice with you?",
+      interests: "Ooh, what do you love? 😍",
       sounds:  "Let's pick our sounds!",
       goal:    "How long each day?",
       achieve: "Here's what's ahead! ✨",
@@ -195,6 +204,22 @@
       bg.appendChild(el);
     });
     leo.innerHTML = mascotMarkup(draft.character);
+
+    // interests (themes for AI Story Adventures). Keep in sync with today.html / story.html.
+    var INTEREST_OPTS = [
+      {id:"dragons",e:"🐉"},{id:"space",e:"🚀"},{id:"dinosaurs",e:"🦕"},{id:"mermaids",e:"🧜‍♀️"},
+      {id:"puppies",e:"🐶"},{id:"kittens",e:"🐱"},{id:"unicorns",e:"🦄"},{id:"race cars",e:"🏎️"},
+      {id:"pirates",e:"🏴‍☠️"},{id:"jungle animals",e:"🐵"},{id:"robots",e:"🤖"},{id:"superheroes",e:"🦸"}
+    ];
+    var selInterests = new Set(draft.interests);
+    var ig = document.getElementById("obInterests");
+    INTEREST_OPTS.forEach(function(it){
+      var el=document.createElement("div");
+      el.className="bopt"+(selInterests.has(it.id)?" on":"");
+      el.innerHTML='<span class="be" style="font-size:34px;">'+it.e+'</span><span class="bn" style="text-transform:capitalize;">'+it.id+'</span>';
+      el.onclick=function(){ Sona.sfx.tap(); if(selInterests.has(it.id)) selInterests.delete(it.id); else selInterests.add(it.id); el.classList.toggle("on"); };
+      ig.appendChild(el);
+    });
 
     // sound chips
     var selSounds = new Set(draft.focusSounds);
@@ -232,6 +257,7 @@
       nextBtn.textContent = CTA[key] || "Continue";
       backBtn.style.display = idx === 0 ? "none" : "block";
       if(key==="name") setTimeout(function(){ nameEl.focus(); }, 80);
+      if(key==="interests"){ var nmi=(nameEl.value||draft.childName||"").trim(); document.getElementById("intName").textContent = nmi || "your child"; }
       if(key==="achieve"){ var nm=(nameEl.value||draft.childName||"").trim(); document.getElementById("achName").textContent = nm || "your child"; }
       if(key==="email"){ var nm2=(nameEl.value||draft.childName||"").trim(); document.getElementById("emName").textContent = nm2 || "your child"; setTimeout(function(){ emailEl.focus(); }, 80); }
     }
@@ -239,6 +265,7 @@
     function next(){
       var key=ORDER[idx];
       if(key==="name"){ draft.childName=nameEl.value.trim(); if(!draft.childName){ nameEl.focus(); nameEl.style.borderColor="#ef6f23"; return; } }
+      if(key==="interests" && selInterests.size===0){ selInterests.add("dragons"); }
       if(key==="sounds" && selSounds.size===0){ selSounds.add("R"); }
       if(key==="email"){ var em=(emailEl.value||"").trim(); if(!/^\S+@\S+\.\S+$/.test(em)){ emailEl.focus(); emailEl.style.borderColor="#ef6f23"; var ee=document.getElementById("emErr"); ee.style.display="block"; ee.textContent="Please enter a valid email to save progress."; return; } draft.email=em; }
       Sona.sfx.tap();
@@ -249,10 +276,12 @@
 
     function finish(){
       draft.focusSounds = Array.from(selSounds);
+      draft.interests = Array.from(selInterests);
       Sona.saveProfile({
         childName: draft.childName,
         character: draft.character,
         focusSounds: draft.focusSounds,
+        interests: draft.interests,
         slpEvaluated: draft.slpEvaluated,
         goals: (document.getElementById("obGoals")||{}).value ? document.getElementById("obGoals").value.trim() : draft.goals,
         focusArea: "articulation",
