@@ -76,7 +76,23 @@
     if(!(window.Sona && Sona.WORDS && Sona.WORDS[SOUND])) SOUND="R";
     var POOL = (window.Sona && Sona.wordsFor) ? Sona.wordsFor(SOUND, profile.practicePosition) : [{w:"rabbit",e:"🐰"}];
     var DIFF=(window.Sona&&Sona.diff)?Sona.diff():1;
-    var GOAL = Math.min(16,6+DIFF*2);
+    /* ===== 10 distinct levels — a journey through The Garden ===== */
+    var LEVELS = [
+      { name:"Spring Garden",  bg:"linear-gradient(180deg,#dff3ff,#e6f8d8 60%,#c9efad)", accent:"#7cc63e", props:["🌱","🐝"],       goal:6,  showMax:2, popMs:7500 },
+      { name:"Veggie Patch",   bg:"linear-gradient(180deg,#eaf7d2,#d6efb0 60%,#b7e08a)", accent:"#6fb83a", props:["🥕","🥬"],       goal:7,  showMax:2, popMs:7200 },
+      { name:"Flower Field",   bg:"linear-gradient(180deg,#fde7f3,#ffe9c7 60%,#cfeeb0)", accent:"#e86fa6", props:["🌷","🌼","🐝"], goal:8,  showMax:3, popMs:6800 },
+      { name:"Berry Bushes",   bg:"linear-gradient(180deg,#ffe2ea,#f6cfe0 60%,#c4e6a8)", accent:"#d65a7e", props:["🍓","🫐"],       goal:9,  showMax:3, popMs:6500 },
+      { name:"Orchard",        bg:"linear-gradient(180deg,#fdeed0,#ffe0b0 60%,#bfe39a)", accent:"#e89a3c", props:["🍎","🍐","🦋"], goal:10, showMax:3, popMs:6200 },
+      { name:"Greenhouse",     bg:"linear-gradient(180deg,#d6f5ee,#c2efe2 60%,#a8e6c4)", accent:"#2fb89a", props:["🪴","💧"],       goal:11, showMax:3, popMs:6000 },
+      { name:"Sunflower Maze", bg:"linear-gradient(180deg,#fff3c4,#ffe48a 60%,#cfe07e)", accent:"#e8b021", props:["🌻","🐞"],       goal:12, showMax:4, popMs:5800 },
+      { name:"Pumpkin Patch",  bg:"linear-gradient(180deg,#ffe0b8,#ffc98a 60%,#e0c07a)", accent:"#e07c2a", props:["🎃","🍂"],       goal:13, showMax:4, popMs:5600 },
+      { name:"Night Garden",   bg:"linear-gradient(180deg,#3a4a7a,#5a6aa0 60%,#7a8ac0)", accent:"#8fa6ff", props:["🌙","🦉","✨"], goal:14, showMax:4, popMs:5400 },
+      { name:"Champion Bloom", bg:"linear-gradient(135deg,#ffd86b,#ff9ec4 50%,#9be0ff)", accent:"#ff7ab0", props:["🏆","🌈","🌟"], goal:16, showMax:4, popMs:5200 }
+    ];
+    var L = LEVELS[Math.min(9, Math.max(0, DIFF-1))];
+    var GOAL = L.goal;
+    var SHOWMAX = L.showMax;
+    var POPMS = L.popMs;
 
     var $=function(id){return document.getElementById(id);};
     var pick=function(a){return a[Math.floor(Math.random()*a.length)];};
@@ -124,7 +140,7 @@
       target=pick(POOL);
       // a few critters pop up; the kid pops the one Leo names by SAYING it correctly
       var others=shuffle(POOL.filter(function(w){return w.w!==target.w;}));
-      var show=shuffle([target].concat(others.slice(0,3))).slice(0,Math.min(4,POOL.length));
+      var show=shuffle([target].concat(others.slice(0,SHOWMAX-1))).slice(0,Math.min(SHOWMAX,POOL.length));
       var holes=shuffle([0,1,2,3,4,5]).slice(0,show.length);
       slots.forEach(function(cr){ cr.className="critter"; cr.dataset.word=""; cr.onclick=null; });
       show.forEach(function(w,k){ var cr=slots[holes[k]]; cr.dataset.word=w.w; cr.querySelector(".e").innerHTML=(window.Sona&&Sona.pic?Sona.pic(w.w,w.e,38):w.e); cr.querySelector(".w").textContent=w.w; setTimeout(function(){cr.classList.add("up");}, 90*k); });
@@ -134,7 +150,7 @@
       $("prompt").textContent="Say “"+target.w+"” to pop it!";
       setLeo("listen");
       await say(target.w);            // Leo models the word
-      var res=await recordTurn(); var ok=await scoreWord(target,res);
+      var res=await recordTurn(POPMS); var ok=await scoreWord(target,res);
       if(window.Sona&&Sona.logAttempt)Sona.logAttempt({game:"whack",sound:SOUND,pass:ok,word:target.w});
       if(!ok){
         if(window.Sona&&Sona.sfx)Sona.sfx.tap&&Sona.sfx.tap();
@@ -182,8 +198,23 @@
     })();
     window.addEventListener("pagehide",function(){ try{ if(micStream)micStream.getTracks().forEach(function(t){t.stop();}); }catch(e){} });
   
-    /* art drop-in: a background swaps in when /coach/whack/bg.png exists (zero code) */
-    (function(){var im=new Image();im.onload=function(){var s=document.getElementById("app");if(s){s.style.backgroundImage="url(/coach/whack/bg.png)";s.style.backgroundSize="cover";s.style.backgroundPosition="center";}};im.src="/coach/whack/bg.png";})();
+    /* ===== apply the chosen level's scene ===== */
+    (function(){
+      var stage=document.getElementById("app")||document.body;
+      if(L.bg){ stage.style.background=L.bg; document.body.style.background=L.bg; }
+      if(L.accent){ var rs=document.documentElement.style; rs.setProperty("--green",L.accent); rs.setProperty("--green-d",L.accent); }
+      // faint ambient props in the corner of the scene
+      if(L.props&&L.props.length){
+        var amb=document.createElement("div");
+        amb.style.cssText="position:fixed;top:60px;right:14px;font-size:22px;line-height:1.4;opacity:.28;pointer-events:none;z-index:0;text-align:right;";
+        amb.textContent=L.props.join("");
+        stage.appendChild(amb);
+      }
+      // per-level art-drop override: /coach/whack/lvlN.png wins; bg.png is the fallback
+      function dropArt(src){ var im=new Image(); im.onload=function(){ stage.style.backgroundImage="url("+src+")"; stage.style.backgroundSize="cover"; stage.style.backgroundPosition="center"; }; im.src=src; }
+      dropArt("/coach/whack/bg.png");
+      dropArt("/coach/whack/lvl"+DIFF+".png");
+    })();
 </script>
 </body>
 </html>

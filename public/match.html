@@ -95,7 +95,21 @@
     if(!(window.Sona && Sona.WORDS && Sona.WORDS[SOUND])) SOUND="R";
     var POOL = (window.Sona && Sona.wordsFor) ? Sona.wordsFor(SOUND, profile.practicePosition) : [{w:"rabbit",e:"🐰"},{w:"rocket",e:"🚀"},{w:"ring",e:"💍"}];
     var DIFF=(window.Sona&&Sona.diff)?Sona.diff():1;
-    var PAIRS = Math.min(POOL.length, Math.max(2, 2+Math.floor(DIFF/2)));
+    // 10 distinct levels — a journey down Memory Lane. Knob: pairs (number of card pairs).
+    var LEVELS=[
+      {name:"Cozy Nook",  bg:"linear-gradient(180deg,#fff4e6,#ffe8cf 60%,#ffe0d6)", accent:"#f0a04b", props:["🧸"],          pairs:2},
+      {name:"Sunny Yard", bg:"linear-gradient(180deg,#fff7d6,#ffe9a8 60%,#dff5c4)", accent:"#f5b400", props:["🌻"],          pairs:3},
+      {name:"Garden Path",bg:"linear-gradient(180deg,#eaffe0,#cdf3b8 60%,#aee6a0)", accent:"#5fae3f", props:["🌷","🦋"],      pairs:3},
+      {name:"Berry Wood", bg:"linear-gradient(180deg,#e6f7ea,#bfe8cc 60%,#9bd6b4)", accent:"#3f9e6a", props:["🍓","🌳"],      pairs:4},
+      {name:"Blue Brook", bg:"linear-gradient(180deg,#e2f6ff,#bfe6ff 60%,#9cd4f5)", accent:"#2aa6e0", props:["💧","🐟"],      pairs:4},
+      {name:"Pebble Cove",bg:"linear-gradient(180deg,#e6f0ff,#c7d8ff 60%,#bcd0f7)", accent:"#5a7fe0", props:["🐚","🌊"],      pairs:5},
+      {name:"Twilight Hill",bg:"linear-gradient(180deg,#efe6ff,#d6c4ff 60%,#bfa8f0)", accent:"#8b5cf6", props:["🌄","🪁"],     pairs:5},
+      {name:"Starry Lane",bg:"linear-gradient(180deg,#e9e2ff,#cdbcf5 55%,#b39ae6)", accent:"#7c4ddb", props:["⭐","🌙"],      pairs:6},
+      {name:"Moonlit Grove",bg:"linear-gradient(180deg,#dcd6f7,#b9a9e6 55%,#9b86d6)", accent:"#6d35d6", props:["🌙","🦉","🍃"],pairs:6},
+      {name:"Champion!",  bg:"linear-gradient(135deg,#3a2a6b,#6d35d6 50%,#b97cf0)",  accent:"#ffd84d", props:["🏆","✨","🃏"], pairs:8}
+    ];
+    var L=LEVELS[Math.min(9,Math.max(0,DIFF-1))];
+    var PAIRS = Math.min(POOL.length, Math.max(2, L.pairs));
 
     var $=function(id){return document.getElementById(id);};
     var shuffle=function(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t;}return a;};
@@ -221,8 +235,31 @@
     })();
     window.addEventListener("pagehide",function(){ try{ if(micStream)micStream.getTracks().forEach(function(t){t.stop();}); }catch(e){} });
   
-    /* art drop-in: a background swaps in when /coach/match/bg.png exists (zero code) */
-    (function(){var im=new Image();im.onload=function(){var s=document.getElementById("stage");if(s){s.style.backgroundImage="url(/coach/match/bg.png)";s.style.backgroundSize="cover";s.style.backgroundPosition="center";}};im.src="/coach/match/bg.png";})();
+    /* per-level scene: CSS theme now, real art swaps in when the PNG exists (zero code) */
+    (function(){
+      var s=document.getElementById("stage")||document.body;
+      if(L.bg) s.style.background=L.bg;
+      if(L.accent){
+        // re-tint the accent the game already uses (card backs, prompt, pairs stat)
+        try{
+          var st=document.createElement("style");
+          st.textContent=".card .back{background:linear-gradient(150deg,"+L.accent+","+L.accent+")!important;}"
+            +"#prompt{color:"+L.accent+"!important;}"
+            +".stat.pairs{color:"+L.accent+"!important;}";
+          document.head.appendChild(st);
+        }catch(e){}
+      }
+      // per-level art drop-in, then existing bg.png as fallback
+      function tryArt(srcs){
+        if(!srcs.length) return;
+        var src=srcs.shift();
+        var im=new Image();
+        im.onload=function(){ s.style.backgroundImage="url("+src+")"; s.style.backgroundSize="cover"; s.style.backgroundPosition="center"; };
+        im.onerror=function(){ tryArt(srcs); };
+        im.src=src;
+      }
+      tryArt(["/coach/match/lvl"+DIFF+".png","/coach/match/bg.png"]);
+    })();
 </script>
 </body>
 </html>

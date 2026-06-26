@@ -207,7 +207,25 @@
     if(!(window.Sona&&Sona.WORDS&&Sona.WORDS[SOUND])) SOUND="R";
     var LIST=(window.SonaContent?SonaContent.sentences(SOUND):[{t:"I see a rabbit.",say:"I see a rabbit",word:"rabbit"}]);
     var DIFF=(window.Sona&&Sona.diff)?Sona.diff():1;
-    var GOAL=Math.min(10,(Math.min(LIST.length,5)||5)+(DIFF-1));
+    /* ── 10 LEVELS ── a train journey: village → countryside → forest → mountains →
+       tunnel → snow pass → coast → desert → night express → grand station.
+       KNOB: rounds = how many sentences carry the train to the station (the old GOAL).
+       Gentle (3) at L1, climbing monotonically to a fair 12 at the boss. SCENE: bg
+       paints #stage, accent recolors the teal UI, props are ambient emoji for the sky. */
+    var LEVELS=[
+      {name:"Village",      bg:"linear-gradient(180deg,#dff7fc 0%,#cdeffa 42%,#bfeaf6 66%,#bfe7c6 80%,#a9dca0 100%)", accent:"#2ec4d6", props:["🏡","🌤️"],      rounds:3},
+      {name:"Countryside",  bg:"linear-gradient(180deg,#e3f8ff 0%,#cdefff 40%,#c6ecd0 70%,#a9dc8f 100%)",            accent:"#3bbf78", props:["🌻","🐄"],      rounds:4},
+      {name:"Greenwood",    bg:"linear-gradient(180deg,#d6f3e4 0%,#bfe9c8 44%,#9fd6a0 74%,#7bbf78 100%)",            accent:"#3aa86a", props:["🌲","🦋"],      rounds:5},
+      {name:"Mountains",    bg:"linear-gradient(180deg,#dcefff 0%,#c2dcf2 42%,#a9c2d6 72%,#cfd6dd 100%)",            accent:"#5b86b0", props:["⛰️","🦅"],      rounds:6},
+      {name:"Tunnel",       bg:"linear-gradient(180deg,#3a4658 0%,#2c3445 48%,#1f2636 100%)",                       accent:"#7fa6c8", props:["🚇","💡"],      rounds:7},
+      {name:"Snow Pass",    bg:"linear-gradient(180deg,#eef6ff 0%,#dce9f5 44%,#cfdcec 72%,#eaf2fb 100%)",            accent:"#6fa8d6", props:["❄️","🏔️"],      rounds:8},
+      {name:"Sunny Coast",  bg:"linear-gradient(180deg,#bff0ff 0%,#8fd9f2 42%,#7fd0e6 66%,#ffe7a8 100%)",            accent:"#1c9fd0", props:["🌊","⛵"],      rounds:9},
+      {name:"Desert Run",   bg:"linear-gradient(180deg,#ffe7b0 0%,#ffd28a 44%,#f5b86a 74%,#e8a25a 100%)",            accent:"#e08f3a", props:["🌵","☀️"],      rounds:10},
+      {name:"Night Express",bg:"linear-gradient(180deg,#1b2350 0%,#26306b 44%,#3a2c66 74%,#4a2f5e 100%)",            accent:"#9b8cf0", props:["🌙","⭐"],      rounds:11},
+      {name:"Grand Station",bg:"radial-gradient(70% 50% at 50% 30%,rgba(255,224,138,.55),rgba(255,224,138,0) 70%),linear-gradient(180deg,#fff2cf 0%,#ffe08a 40%,#ffc36a 72%,#ff9e6a 100%)", accent:"#e0820a", props:["🏆","🎆","✨"], rounds:12}
+    ];
+    var L=LEVELS[Math.min(9,Math.max(0,DIFF-1))];
+    var GOAL=L.rounds;
 
     var audioCtx=null; function getCtx(){if(!audioCtx){var AC=window.AudioContext||window.webkitAudioContext;audioCtx=new AC();}if(audioCtx.state==="suspended")audioCtx.resume();return audioCtx;}
     function playPCM(b){return new Promise(function(res){try{var c=getCtx(),n=b.byteLength>>1,ab=c.createBuffer(1,n,24000),ch=ab.getChannelData(0),dv=new DataView(b.buffer,b.byteOffset,b.byteLength);for(var i=0;i<n;i++)ch[i]=dv.getInt16(i*2,true)/32768;var s=c.createBufferSource();s.buffer=ab;s.playbackRate.value=(window.Sona&&Sona.VOICE_PITCH)||1;var g=c.createGain();g.gain.value=(profile.volume!=null?profile.volume:0.8);s.connect(g);g.connect(c.destination);s.onended=res;s.start();}catch(e){res();}});}
@@ -287,8 +305,35 @@
     (function(){ var lad="/map.html"; var c=$("close"); if(c)c.onclick=function(){location.href=lad;}; Array.prototype.forEach.call(document.querySelectorAll('a[href="/play.html"]'),function(a){a.setAttribute("href",lad);}); })();
     window.addEventListener("pagehide",function(){ try{ if(micStream)micStream.getTracks().forEach(function(t){t.stop();}); }catch(e){} });
   
-    /* art drop-in: a background swaps in when /coach/train/bg.png exists (zero code) */
-    (function(){var im=new Image();im.onload=function(){var s=document.getElementById("stage");if(s){s.style.backgroundImage="url(/coach/train/bg.png)";s.style.backgroundSize="cover";s.style.backgroundPosition="center";}};im.src="/coach/train/bg.png";})();
+    /* ── APPLY CHOSEN LEVEL'S SCENE ──
+       Paint L.bg on the real scene element (#stage), recolor the teal accent UI to
+       L.accent, and float L.props as faint ambient emoji in the sky. Then try a
+       per-level art-drop "/coach/train/lvl<DIFF>.png" (cover); if that's missing,
+       fall back to the original "/coach/train/bg.png" art. Real art wins over CSS. */
+    (function(){
+      var stage=document.getElementById("stage")||document.body;
+      if(L.bg){ stage.style.background=L.bg; }
+      if(L.accent){
+        try{ var rs=document.documentElement.style;
+          rs.setProperty("--teal",L.accent); rs.setProperty("--teal-d",L.accent); }catch(e){}
+      }
+      if(L.props&&L.props.length&&stage){
+        var amb=document.createElement("div");
+        amb.style.cssText="position:absolute;left:0;right:0;top:0;height:46%;z-index:0;pointer-events:none;font-size:26px;opacity:.5;";
+        for(var i=0;i<L.props.length;i++){
+          var sp=document.createElement("span");
+          sp.textContent=L.props[i];
+          sp.style.cssText="position:absolute;top:"+(8+i*11)+"%;left:"+(12+i*30)+"%;animation:sona-floatY "+(7+i*1.6)+"s ease-in-out infinite;will-change:transform;filter:drop-shadow(0 3px 5px rgba(0,0,0,.12));";
+          amb.appendChild(sp);
+        }
+        stage.appendChild(amb);
+      }
+      function applyArt(src){ var s=document.getElementById("stage"); if(s){ s.style.backgroundImage="url("+src+")"; s.style.backgroundSize="cover"; s.style.backgroundPosition="center"; } }
+      var lvlIm=new Image();
+      lvlIm.onload=function(){ applyArt(lvlIm.src); };
+      lvlIm.onerror=function(){ var bgIm=new Image(); bgIm.onload=function(){ applyArt("/coach/train/bg.png"); }; bgIm.src="/coach/train/bg.png"; };
+      lvlIm.src="/coach/train/lvl"+DIFF+".png";
+    })();
 </script>
 </body>
 </html>

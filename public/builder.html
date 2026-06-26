@@ -193,8 +193,52 @@
     if(!(window.Sona&&Sona.WORDS&&Sona.WORDS[SOUND])) SOUND="R";
     var POOL=(window.Sona&&Sona.wordsFor)?Sona.wordsFor(SOUND,profile.practicePosition):[{w:"rabbit",e:"🐰"},{w:"rocket",e:"🚀"}];
     var DIFF=(window.Sona&&Sona.diff)?Sona.diff():1;
-    var GOAL=Math.min(14,8+DIFF);                 // taller tower as levels climb (longer game)
+    // ── 10 DISTINCT LEVELS ── Build Site journey: sandbox → cottage → house →
+    //    tower → bridge → skyscraper → castle → ... → grand opening (boss).
+    //    KNOB: `blocks` = tower height = how many words to say (length/challenge),
+    //    gentle (5) at L1 up to a tall-but-fair 14 at L10. SCENE = the structure
+    //    you're building that day (distinct bg + accent + ambient props).
+    var LEVELS=[
+      {name:"Sandbox",     bg:"linear-gradient(180deg,#fff0c2 0%,#ffe39a 46%,#f6d27a 100%)", accent:"#e9a13b", props:["🪣","⛏️","🌤️"], blocks:5},
+      {name:"Cottage",     bg:"linear-gradient(180deg,#cdeffd 0%,#e6f7e2 58%,#cfe9b4 100%)", accent:"#5cb85c", props:["🏡","🌷","🐝"], blocks:6},
+      {name:"Garden Wall", bg:"linear-gradient(180deg,#c5ecff 0%,#e9f6d6 56%,#bfe49a 100%)", accent:"#7bbf3a", props:["🧱","🌻","🦋"], blocks:7},
+      {name:"Town House",  bg:"linear-gradient(180deg,#bfe0ff 0%,#dbeeff 60%,#cbe0c2 100%)", accent:"#1cb0f6", props:["🏠","🪟","🐦"], blocks:8},
+      {name:"River Bridge",bg:"linear-gradient(180deg,#aee0ff 0%,#cdeeff 52%,#8fd0ef 100%)", accent:"#2ea7c9", props:["🌉","🚤","🌊"], blocks:9},
+      {name:"Lighthouse",  bg:"linear-gradient(180deg,#ffd9a8 0%,#ffc08a 44%,#7fb6d6 100%)", accent:"#ff8a3d", props:["🗼","🌅","🕊️"], blocks:10},
+      {name:"Skyscraper",  bg:"linear-gradient(180deg,#9fd0ff 0%,#bfe1ff 50%,#cfd9e6 100%)", accent:"#3b7fd6", props:["🏙️","✈️","☁️"], blocks:11},
+      {name:"Castle",      bg:"linear-gradient(180deg,#cdb8ff 0%,#e2d3ff 54%,#bca4e6 100%)", accent:"#8b5cf6", props:["🏰","🛡️","🚩"], blocks:12},
+      {name:"Sky City",    bg:"linear-gradient(180deg,#ffc8e6 0%,#d6c8ff 48%,#aecdff 100%)", accent:"#d65cc0", props:["🌆","🎈","🌈"], blocks:13},
+      {name:"Grand Opening",bg:"radial-gradient(120% 100% at 50% 0%,#fff1b8 0%,#ffd36b 30%,#ff9ec4 64%,#9b7bff 100%)", accent:"#ffb000", props:["🏆","🎆","🎉"], blocks:14}
+    ];
+    var L=LEVELS[Math.min(9,Math.max(0,DIFF-1))];
+    var GOAL=Math.min(14,L.blocks);               // taller tower as levels climb (longer game)
     var COLORS=["#ff7a6e","#ffb24d","#ffd45e","#7dd470","#62bdff","#9b7bff","#ff8fb0"];
+    // Paint THIS level's scene on the real stage element + tint accents.
+    (function(){
+      var stage=document.getElementById("stage")||document.body;
+      if(L.bg) stage.style.background=L.bg;
+      if(L.accent){
+        try{ document.documentElement.style.setProperty("--blue",L.accent);
+             document.documentElement.style.setProperty("--blue-d",L.accent); }catch(e){}
+      }
+      // PER-LEVEL ART-DROP OVERRIDE: drop /coach/builder/lvl<N>.png to replace
+      // the CSS scene with real art (cover). Falls back to bg.png, then CSS.
+      function tryArt(src,next){ var im=new Image();
+        im.onload=function(){ stage.style.backgroundImage="url("+im.src+")"; stage.style.backgroundSize="cover"; stage.style.backgroundPosition="center"; };
+        im.onerror=function(){ if(next)next(); };
+        im.src=src; }
+      tryArt("/coach/builder/lvl"+DIFF+".png",function(){ tryArt("/coach/builder/bg.png",null); });
+      // Faint ambient props drifting on the existing sky layer feel.
+      if(L.props&&L.props.length){
+        var amb=document.createElement("div");
+        amb.style.cssText="position:absolute;inset:0;z-index:0;pointer-events:none;overflow:hidden;";
+        for(var i=0;i<L.props.length;i++){ var s=document.createElement("span");
+          s.textContent=L.props[i];
+          s.style.cssText="position:absolute;font-size:30px;opacity:.30;top:"+(10+i*22)+"%;left:"+(12+i*34)+"%;animation:sona-floatY "+(7+i*2)+"s ease-in-out infinite;";
+          amb.appendChild(s); }
+        stage.insertBefore(amb, stage.firstChild);
+      }
+    })();
     var placed=0, queue=[], current=null;
     $("count").textContent="0 / "+GOAL;
 
@@ -264,6 +308,7 @@
       attempt();
     }
     function finishGame(){
+      try{ var bigEl=document.querySelector("#win .big"); if(bigEl&&L.props&&L.props[0]) bigEl.textContent=L.props[0]; }catch(e){}
       $("topper").classList.add("show");
       sfx("complete"); if(window.Sona){ Sona.confetti&&Sona.confetti(); Sona.addCoins&&Sona.addCoins(10); }
       $("winSub").textContent="A "+GOAL+"-block tower! +10 🪙";

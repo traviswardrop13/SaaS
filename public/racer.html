@@ -283,13 +283,31 @@
     if(!(window.Sona && Sona.WORDS && Sona.WORDS[SOUND])) SOUND="R";
     var POOL = (window.Sona && Sona.wordsFor) ? Sona.wordsFor(SOUND, profile.practicePosition) : [{w:"rabbit",e:"🐰"}];
     var DIFF=(window.Sona&&Sona.diff)?Sona.diff():1;
-    // a longer race in a different setting as levels climb (sunny → desert → night)
-    var SETTING = DIFF<=3 ? {body:"linear-gradient(180deg,#bfe9ff 0%,#dff4ff 55%,#cdeffd 100%)",road:"linear-gradient(180deg,#6b7280,#4b5563)"}
-      : DIFF<=6 ? {body:"linear-gradient(180deg,#ffd9a0 0%,#ffe9c6 55%,#ffcf86 100%)",road:"linear-gradient(180deg,#caa36a,#9c7740)"}
-      : {body:"linear-gradient(180deg,#26264f 0%,#3a3a74 55%,#202044 100%)",road:"linear-gradient(180deg,#3a3a4a,#23232f)"};
-    try{ document.body.style.background=SETTING.body; var _rd=document.getElementById("road"); if(_rd)_rd.style.background=SETTING.road; }catch(e){}
-    var REV_NEED = Math.min(8, 4 + Math.floor(DIFF/2));  // say the sound to launch (massed practice)
-    var GATES = Math.min(7, 2 + DIFF);                   // word gates after launch (distributed practice)
+    // ── 10 DISTINCT SPEEDWAY LEVELS ── a journey across the racing world.
+    // Each level: its own scene (bg/road/accent/props) + scaled challenge.
+    //   revNeed = sound reps to launch (massed practice)
+    //   gates   = word gates after launch (distributed practice)
+    //   rdur    = [s,s] each rival takes to finish (smaller = tougher rivals)
+    var LEVELS = [
+      {name:"Sunny Circuit", bg:"linear-gradient(180deg,#bfe9ff 0%,#dff4ff 55%,#cdeffd 100%)", road:"linear-gradient(180deg,#6b7280,#4b5563)", accent:"#1cb0f6", props:["🌤️","🏁"], revNeed:3, gates:2, rdur:[30,40]},
+      {name:"Green Hills",   bg:"linear-gradient(180deg,#cdeeff 0%,#e6f7d8 55%,#bfe6a0 100%)", road:"linear-gradient(180deg,#6f7682,#4f5560)", accent:"#58cc02", props:["🌳","🐑"], revNeed:3, gates:3, rdur:[29,39]},
+      {name:"Sunset Drive",  bg:"linear-gradient(180deg,#ffb27a 0%,#ff8e6b 50%,#ffd09a 100%)", road:"linear-gradient(180deg,#7a5a52,#4a322c)", accent:"#ff7a00", props:["🌇","🌅"], revNeed:4, gates:4, rdur:[27,37]},
+      {name:"Desert Dash",   bg:"linear-gradient(180deg,#ffd9a0 0%,#ffe9c6 55%,#ffcf86 100%)", road:"linear-gradient(180deg,#caa36a,#9c7740)", accent:"#e08600", props:["🌵","🏜️"], revNeed:5, gates:4, rdur:[26,36]},
+      {name:"Snow Track",    bg:"linear-gradient(180deg,#e6f3ff 0%,#f7fbff 55%,#dceaf5 100%)", road:"linear-gradient(180deg,#9aa6b4,#6b7682)", accent:"#5cc6ff", props:["❄️","⛄"], revNeed:5, gates:5, rdur:[25,35]},
+      {name:"Neon Night",    bg:"linear-gradient(180deg,#1a1140 0%,#3a1f6e 55%,#160d33 100%)", road:"linear-gradient(180deg,#2a2440,#16122a)", accent:"#c46bff", props:["🌃","✨"], revNeed:6, gates:5, rdur:[24,34]},
+      {name:"Beach Sprint",  bg:"linear-gradient(180deg,#7fd6ff 0%,#cdeffd 50%,#ffe6a8 100%)", road:"linear-gradient(180deg,#c2b48a,#8f7e54)", accent:"#1cb0f6", props:["🏖️","🌴"], revNeed:6, gates:6, rdur:[23,33]},
+      {name:"Canyon Rally",  bg:"linear-gradient(180deg,#ffc27a 0%,#e87a4a 55%,#a8462a 100%)", road:"linear-gradient(180deg,#8a5040,#5a2f22)", accent:"#d85a2a", props:["🏞️","🪨"], revNeed:7, gates:6, rdur:[22,32]},
+      {name:"Storm Speedway",bg:"linear-gradient(180deg,#3a4458 0%,#5a6378 55%,#2a3142 100%)", road:"linear-gradient(180deg,#3a3f4a,#222630)", accent:"#7aa0c8", props:["⛈️","⚡"], revNeed:7, gates:7, rdur:[21,31]},
+      {name:"Champion Stadium",bg:"linear-gradient(180deg,#ffe28a 0%,#ffb14a 50%,#ff7a3a 100%)", road:"linear-gradient(180deg,#5a4a3a,#33271c)", accent:"#ff9600", props:["🏆","🎉"], revNeed:8, gates:7, rdur:[20,30]}
+    ];
+    var L = LEVELS[Math.min(9, Math.max(0, DIFF-1))];
+    // Apply this level's scene to the real scene elements (body + #road), and
+    // let real art override CSS later via /coach/racer/lvlN.png (zero code).
+    try{ document.body.style.background=L.bg; var _rd=document.getElementById("road"); if(_rd)_rd.style.background=L.road; }catch(e){}
+    try{ document.documentElement.style.setProperty("--blue",L.accent); document.documentElement.style.setProperty("--blue-d",L.accent); }catch(e){}
+    (function(){ var im=new Image(); im.onload=function(){ var s=document.getElementById("track"); if(s){ s.style.backgroundImage="url("+im.src+")"; s.style.backgroundSize="cover"; s.style.backgroundPosition="center"; } }; im.src="/coach/racer/lvl"+DIFF+".png"; })();
+    var REV_NEED = L.revNeed;   // say the sound to launch (massed practice)
+    var GATES = L.gates;        // word gates after launch (distributed practice)
     // Strict: a gate only opens on a clean rep (SpeechAce "great" rating). Wrong → try again.
 
     var $=function(id){return document.getElementById(id);};
@@ -379,7 +397,7 @@
 
     /* game */
     var progress=0, gateIdx=0, totalReps=0, cleanWords=0, queue=[];
-    var RDUR=[24,34], raceStart=0; // seconds each rival takes to finish from GO
+    var RDUR=L.rdur, raceStart=0; // seconds each rival takes to finish from GO (per level)
     function startRivals(){ raceStart=performance.now(); ["r1","r2"].forEach(function(id,i){ var el=$(id); if(!el)return; el.style.transition="left "+RDUR[i]+"s linear"; el.style.left="88%"; }); }
     function resetRivals(){ ["r1","r2"].forEach(function(id){ var el=$(id); if(!el)return; el.style.transition="none"; el.style.left="6%"; void el.offsetWidth; }); }
     function setKart(p){ $("kart").style.left=(6+p*0.82*100/100*84)+"%"; } // 6%..~90%
@@ -483,8 +501,9 @@
     })();
     window.addEventListener("pagehide",function(){ try{ if(micStream)micStream.getTracks().forEach(function(t){t.stop();}); }catch(e){} });
   
-    /* art drop-in: a background swaps in when /coach/racer/bg.png exists (zero code) */
-    (function(){var im=new Image();im.onload=function(){var s=document.getElementById("track");if(s){s.style.backgroundImage="url(/coach/racer/bg.png)";s.style.backgroundSize="cover";s.style.backgroundPosition="center";}};im.src="/coach/racer/bg.png";})();
+    /* art drop-in fallback: generic /coach/racer/bg.png swaps in (zero code).
+       Only applies if a per-level lvlN.png hasn't already painted the track. */
+    (function(){var im=new Image();im.onload=function(){var s=document.getElementById("track");if(s&&!s.style.backgroundImage){s.style.backgroundImage="url(/coach/racer/bg.png)";s.style.backgroundSize="cover";s.style.backgroundPosition="center";}};im.src="/coach/racer/bg.png";})();
 </script>
 </body>
 </html>

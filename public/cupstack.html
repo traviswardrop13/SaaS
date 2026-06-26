@@ -204,9 +204,25 @@
     // target words for ONE sound at the chosen position (initial/medial/final/vocalic/blends).
     var POOL = (window.Sona && Sona.wordsFor) ? Sona.wordsFor(SOUND, profile.practicePosition) : [{w:"rabbit",e:"🐰"},{w:"rocket",e:"🚀"}];
     var DIFF=(window.Sona&&Sona.diff)?Sona.diff():1;
-    var GOAL = Math.min(20,8+DIFF*2);
-    // cup colors (one unlocks on a win)
-    var CUP_COLORS = ["#ff7a6e","#ffb24d","#ffd33d","#7dd470","#4cc6ff","#b08cff","#ff8fc7"];
+    /* ---- 10 distinct levels: a journey through Stack Hall 🥤 ----
+       knob: GOAL = number of cups to stack (gentle→hard, capped at 20).
+       scene: bg gradient + accent + props painted on #stage. */
+    var LEVELS = [
+      { name:"Practice Table", bg:"linear-gradient(180deg,#fbf6ea 0%,#f3e9cf 60%,#e7d6a8 100%)", accent:"#c9a14a", props:["🥤","🪵"], goal:6 },
+      { name:"Snack Corner",   bg:"linear-gradient(180deg,#fff1e6 0%,#ffd9b8 60%,#ffbf8f 100%)", accent:"#ff9600", props:["🍪","🥤"], goal:8 },
+      { name:"Classroom",      bg:"linear-gradient(180deg,#eafbf0 0%,#cdeede 60%,#a8e0c4 100%)", accent:"#46a302", props:["✏️","📐"], goal:9 },
+      { name:"School Gym",     bg:"linear-gradient(180deg,#e9f7ff 0%,#c7e9ff 60%,#9fd5fb 100%)", accent:"#1cb0f6", props:["🏀","🥤"], goal:11 },
+      { name:"Practice Court", bg:"linear-gradient(180deg,#fef0f5 0%,#fbd0e0 60%,#f7aecb 100%)", accent:"#ff8fc7", props:["🎽","🥤"], goal:12 },
+      { name:"Town Arena",     bg:"linear-gradient(180deg,#f1eaff 0%,#dcc9ff 60%,#c2a8ff 100%)", accent:"#b08cff", props:["🎺","🥤"], goal:14 },
+      { name:"Big Stadium",    bg:"linear-gradient(180deg,#e6fbff 0%,#bff0f5 60%,#8fe0ea 100%)", accent:"#1fc7d6", props:["🏟️","📣"], goal:15 },
+      { name:"Night Lights",   bg:"linear-gradient(180deg,#26305e 0%,#3a4a8c 55%,#5b6fc0 100%)", accent:"#7da3ff", props:["🌙","🏟️"], goal:17 },
+      { name:"Finals Floor",   bg:"linear-gradient(180deg,#3a1f5e 0%,#6a2fa0 55%,#a05be0 100%)", accent:"#d39bff", props:["🎆","🥤"], goal:18 },
+      { name:"Champion Cup!",  bg:"radial-gradient(120% 90% at 50% 0%, #fff3c4 0%, #ffd84d 30%, #ff9d2e 65%, #e0731a 100%)", accent:"#ffcf2e", props:["🏆","🥇","🎉"], goal:20 }
+    ];
+    var L = LEVELS[Math.min(9, Math.max(0, DIFF-1))];
+    var GOAL = Math.min(20, L.goal);
+    // cup colors (one unlocks on a win) — lead with the level accent for a themed tower
+    var CUP_COLORS = [L.accent,"#ff7a6e","#ffb24d","#ffd33d","#7dd470","#4cc6ff","#b08cff","#ff8fc7"];
 
     // Strict: a cup only stacks on a clean rep (SpeechAce "great" rating). Wrong → try again.
 
@@ -228,7 +244,27 @@
     function leoReact(){ var w=document.getElementById("leoWrap"); if(!w)return; w.classList.remove("react"); void w.offsetWidth; w.classList.add("react"); }
     var CUP_ART=false;
     (function(){ var im=new Image(); im.onload=function(){ CUP_ART=true; }; im.src="/coach/cupstack/cup.png"; })();
-    (function(){ var im=new Image(); im.onload=function(){ var s=document.getElementById("stage"); s.style.backgroundImage="url(/coach/cupstack/bg.png)"; s.style.backgroundSize="cover"; s.style.backgroundPosition="center bottom"; }; im.src="/coach/cupstack/bg.png"; })();
+    (function(){
+      var s=document.getElementById("stage");
+      // 1) paint the level's CSS scene immediately
+      if(L.bg) s.style.background=L.bg;
+      // 2) ambient level props drifting faintly behind the tower
+      if(L.props&&L.props.length){
+        var amb=document.createElement("div");
+        amb.setAttribute("aria-hidden","true");
+        amb.style.cssText="position:absolute;inset:0;z-index:0;pointer-events:none;opacity:.16;font-size:38px;overflow:hidden;";
+        var spots=[["8%","18%"],["80%","12%"],["64%","26%"],["18%","40%"],["86%","48%"]];
+        for(var i=0;i<L.props.length;i++){ var sp=document.createElement("span"); sp.textContent=L.props[i];
+          var pos=spots[i%spots.length]; sp.style.cssText="position:absolute;left:"+pos[0]+";top:"+pos[1]+";animation:sona-floatY "+(5.5+i)+"s ease-in-out infinite;"; amb.appendChild(sp); }
+        s.insertBefore(amb, s.firstChild);
+      }
+      // 3) per-level art-drop override (real art replaces CSS when present)
+      var lvlImg=new Image();
+      lvlImg.onload=function(){ s.style.backgroundImage="url("+lvlImg.src+")"; s.style.backgroundSize="cover"; s.style.backgroundPosition="center bottom"; };
+      lvlImg.onerror=function(){ // fall back to the generic art-drop if a level image is absent
+        var bg=new Image(); bg.onload=function(){ s.style.backgroundImage="url(/coach/cupstack/bg.png)"; s.style.backgroundSize="cover"; s.style.backgroundPosition="center bottom"; }; bg.src="/coach/cupstack/bg.png"; };
+      lvlImg.src="/coach/cupstack/lvl"+DIFF+".png";
+    })();
     var speaking=false;
     function say(text){ return new Promise(function(res){ if(!text){return res();} if(speaking){return res();} speaking=true;
       fetch("/api/tts",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text:text,voice:profile.voiceId||""})})
