@@ -65,6 +65,12 @@
       <button class="mic" id="micBtn" title="Say it"><svg viewBox="0 0 24 24"><path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v6a3 3 0 0 0 3 3Z"/><path d="M6 11a6 6 0 0 0 12 0M12 18v3" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round"/></svg></button>
     </div>
   </div>
+  <div id="start" style="position:fixed;inset:0;z-index:40;display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:30px;background:linear-gradient(180deg,#eafff0,#dff6e6);">
+    <img src="/coach/poses/leo-celebrate.png" alt="" onerror="this.onerror=null;this.src='/coach/leo.png';" style="width:120px;height:120px;object-fit:contain;" />
+    <h1 id="startTitle" style="font-family:'Baloo 2';font-weight:800;font-size:26px;color:#3f8a06;margin-top:14px;">Story time!</h1>
+    <p style="font-weight:700;color:#5a7a3c;font-size:15px;margin-top:8px;max-width:300px;">I'll read each page out loud — then you read it back to me! 📖</p>
+    <button id="startBtn" style="margin-top:24px;border:none;border-radius:18px;padding:16px 44px;font-family:'Baloo 2';font-weight:800;font-size:20px;text-transform:uppercase;color:#fff;background:#58cc02;box-shadow:0 5px 0 #46a302;cursor:pointer;">📖 Start</button>
+  </div>
   <div id="win">
     <img class="leoWin" src="/coach/poses/leo-celebrate.png" alt="Leo" onerror="this.onerror=null;this.src='/coach/leo.png';" />
     <h1>The End!</h1>
@@ -96,6 +102,8 @@
     function loadStory(){return fetch("/api/story",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:NAME,interest:INTEREST,sound:SOUND,position:POS,minutes:MINUTES})}).then(function(r){return r.ok?r.json():null;}).then(function(j){if(j&&j.ok&&j.story&&j.story.pages&&j.story.pages.length>=4){PAGES=j.story.pages;GOAL=PAGES.length;GENERATED=true;}}).catch(function(){});}
 
     var audioCtx=null; function getCtx(){if(!audioCtx){var AC=window.AudioContext||window.webkitAudioContext;audioCtx=new AC();}if(audioCtx.state==="suspended")audioCtx.resume();return audioCtx;}
+    // Mobile browsers block audio until a tap ON THIS PAGE — call once from the Start tap so every page can then auto-read.
+    function unlockAudio(){ try{ var c=getCtx(); if(c.state==="suspended")c.resume(); var b=c.createBuffer(1,1,22050); var s=c.createBufferSource(); s.buffer=b; s.connect(c.destination); s.start(0); }catch(e){} }
     function playPCM(b){return new Promise(function(res){try{var c=getCtx(),n=b.byteLength>>1,ab=c.createBuffer(1,n,24000),ch=ab.getChannelData(0),dv=new DataView(b.buffer,b.byteOffset,b.byteLength);for(var i=0;i<n;i++)ch[i]=dv.getInt16(i*2,true)/32768;var s=c.createBufferSource();s.buffer=ab;s.playbackRate.value=(window.Sona&&Sona.VOICE_PITCH)||1;var g=c.createGain();g.gain.value=(profile.volume!=null?profile.volume:0.8);s.connect(g);g.connect(c.destination);s.onended=res;s.start();}catch(e){res();}});}
     var speaking=false; function say(t){return new Promise(function(res){if(!t||speaking)return res();speaking=true;fetch("/api/tts",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text:t,voice:profile.voiceId||""})}).then(function(r){return r.ok?r.arrayBuffer():null;}).then(function(b){return b?playPCM(new Uint8Array(b)):null;}).catch(function(){}).finally(function(){speaking=false;res();});});}
     var LEO={idle:"/coach/leo.png",cheer:"/coach/poses/leo-celebrate.png",listen:"/coach/poses/leo-listen.png"};
@@ -165,7 +173,11 @@
       $("pageEmoji").innerHTML="✨"; $("pageText").textContent="Writing "+(NAME?NAME+"'s":"your")+" "+INTEREST+" adventure…"; $("pageNo").textContent="";
       await loadStory();
       if(GENERATED){try{document.title="Sona — "+INTEREST+" adventure";}catch(e){}}
-      if(window.Sona&&Sona.music)Sona.music.start(); startGame();
+      // One tap to begin — unlocks audio on mobile so every page auto-reads (no clicking to hear).
+      $("pageEmoji").innerHTML="📖"; $("pageText").textContent=(NAME?NAME+"'s":"Your")+" "+INTEREST+" adventure is ready!"; $("pageNo").textContent="";
+      $("startTitle").textContent=(NAME?NAME+"'s":"Your")+" "+INTEREST+" story!";
+      $("start").style.display="flex";
+      $("startBtn").onclick=function(){ unlockAudio(); if(window.Sona&&Sona.music)Sona.music.start(); $("start").style.display="none"; startGame(); };
     })();
     (function(){ var lad="/map.html"; var c=$("close"); if(c)c.onclick=function(){location.href=lad;}; Array.prototype.forEach.call(document.querySelectorAll('a[href="/play.html"]'),function(a){a.setAttribute("href",lad);}); })();
     window.addEventListener("pagehide",function(){ try{ if(micStream)micStream.getTracks().forEach(function(t){t.stop();}); }catch(e){} });
