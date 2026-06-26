@@ -51,7 +51,7 @@
     #hearRow{display:flex;gap:10px;} #hear{border:2px solid #b8e3ea;background:#fff;border-radius:14px;padding:8px 14px;font-weight:800;color:var(--teal-d);cursor:pointer;font-size:14px;}
     .mic{width:88px;height:88px;border-radius:50%;border:none;background:radial-gradient(circle at 50% 30%,#5cc6ff,#1cb0f6 60%,#1597d4);cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 0 0 var(--blue-d),inset 0 3px 7px rgba(255,255,255,.45);transition:transform .05s;}
     .mic:active{transform:translateY(4px);box-shadow:0 2px 0 0 var(--blue-d);} .mic.rec{animation:mpulse 1.4s infinite;} .mic svg{width:38px;height:38px;fill:#fff;}
-    .wavebars{display:flex;gap:4px;align-items:center;justify-content:center;height:38px;} .wavebars i{width:6px;height:8px;background:#fff;border-radius:99px;transition:height .07s linear;}
+    .wavebars{display:flex;gap:4px;align-items:center;justify-content:center;height:38px;max-height:38px;overflow:hidden;} .wavebars i{width:6px;height:8px;background:#fff;border-radius:99px;transition:height .07s linear;}
     @keyframes mpulse{0%{box-shadow:0 0 0 0 rgba(28,176,246,.45),0 6px 0 0 var(--blue-d)}70%{box-shadow:0 0 0 16px rgba(28,176,246,0),0 6px 0 0 var(--blue-d)}100%{box-shadow:0 0 0 0 rgba(28,176,246,0),0 6px 0 0 var(--blue-d)}}
     #win{position:fixed;inset:0;z-index:50;background:linear-gradient(180deg,#d8f6fb,#a9e6f2);display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:30px;}
     #win.show{display:flex;} #win .leoWin{width:140px;height:140px;object-fit:contain;filter:drop-shadow(0 10px 16px rgba(20,110,120,.25));animation:lpop .6s ease;}
