@@ -265,7 +265,7 @@
       while(q.length<n){
         if(stage===0){
           if(k%4===3) q.push({type:"findSound",snd:s});
-          else q.push({type:"say",snd:s,text:plan.isolation.scoreText,label:plan.isolation.display,level:"isolation",mode:"phoneme",isLetter:true,say:(k===0?plan.isolation.say:pick(ISO_AGAIN(s)))});
+          else q.push({type:"say",snd:s,text:plan.isolation.scoreText,label:plan.isolation.display,level:"isolation",mode:"phoneme",isLetter:true,say:(window.Sona?window.Sona.repeatCue(s):plan.isolation.say)});
         } else if(stage===1){
           if(k%4===3) q.push({type:"findSound",snd:s});
           else { const sy=plan.syllables[si++ % plan.syllables.length]; q.push({type:"say",snd:s,text:sy.scoreText,label:sy.display,level:"syllable",mode:"phoneme",isLetter:true}); }

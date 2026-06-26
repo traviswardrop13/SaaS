@@ -282,7 +282,6 @@
     var SOUND = (params.get("sound") || (profile.focusSounds && profile.focusSounds[0]) || "R").toUpperCase();
     if(!(window.Sona && Sona.WORDS && Sona.WORDS[SOUND])) SOUND="R";
     var POOL = (window.Sona && Sona.wordsFor) ? Sona.wordsFor(SOUND, profile.practicePosition) : [{w:"rabbit",e:"🐰"}];
-    var SAYIT = { R:"rrr", S:"sss", L:"lll", K:"k, k, k", G:"g, g, g", F:"fff", SH:"shh", CH:"ch, ch", TH:"th, th", THV:"the, the", Z:"zzz", V:"vvv", J:"j, j", P:"p, p, p", B:"b, b, b", M:"mmm", N:"nnn", T:"t, t, t", D:"d, d, d" };
     var DIFF=(window.Sona&&Sona.diff)?Sona.diff():1;
     // a longer race in a different setting as levels climb (sunny → desert → night)
     var SETTING = DIFF<=3 ? {body:"linear-gradient(180deg,#bfe9ff 0%,#dff4ff 55%,#cdeffd 100%)",road:"linear-gradient(180deg,#6b7280,#4b5563)"}
@@ -314,7 +313,7 @@
     function revPhase(){
       return new Promise(function(resolve){
         var reps=0, done=false, NEED=REV_NEED;
-        $("prompt").textContent="Say "+SOUND+" to rev up!  ("+SOUND+"… "+SOUND+"… "+SOUND+"!)";
+        $("prompt").textContent=window.Sona.actionCue(SOUND, NEED, "rev your engine");
         $("micBtn").classList.add("rec");
         function setRpm(p){ $("rpmFill").style.width=Math.round(p*100)+"%"; }
         function addRep(){ if(done)return; reps++; vroom(reps/NEED); setRpm(Math.min(1,reps/NEED)); $("rpmTxt").textContent="VROOM! "+reps+"/"+NEED; if(reps>=NEED){ finish(); } }
@@ -397,8 +396,8 @@
     async function run(){
       // REV (massed practice)
       lights("r"); showSound(); kartTo(6);
-      $("hear").onclick=function(){ say(SAYIT[SOUND]||SOUND); };
-      await say("Say "+SOUND+" to rev your engine!");
+      $("hear").onclick=function(){ say(window.Sona.soundSay(SOUND)); };
+      await say(window.Sona.actionCue(SOUND, REV_NEED, "rev your engine"));
       var reps=await revPhase(); totalReps+=reps;
       // GO!
       lights("y"); await new Promise(function(r){setTimeout(r,300);});
@@ -431,7 +430,7 @@
           } else {
             if(window.Sona&&Sona.sfx)Sona.sfx.tap&&Sona.sfx.tap();
             $("prompt").textContent=(window.Sona&&Sona.coachLine)?Sona.coachLine(SOUND,sa.feedback):"Try again!";
-            await say(sa.feedback||("Let's try the "+SOUND+" sound again. "+w.w)); // coach + re-model
+            await say(sa.feedback||("Let's try again. "+window.Sona.soundSay(SOUND)+"… "+w.w)); // coach + re-model
           }
         }
         progress=0.25+ (gateIdx+1)/GATES*0.7;

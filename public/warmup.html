@@ -60,8 +60,7 @@
     var SOUND=(qp.get("sound")||((profile.focusSounds&&profile.focusSounds[0])||"R")).toUpperCase();
     if(!(S&&S.WORDS&&S.WORDS[SOUND])) SOUND="R";
     var LEVEL=parseInt(qp.get("level"),10)||1;
-    var SAYIT={ R:"rrr", S:"sss", L:"lll", K:"k, k, k", G:"g, g, g", F:"fff", SH:"shh", CH:"ch, ch", TH:"th, th", THV:"the, the", Z:"zzz", V:"vvv", J:"j, j", P:"p, p, p", B:"b, b, b", M:"mmm", N:"nnn", T:"t, t, t", D:"d, d, d" };
-    var SAY=SAYIT[SOUND]||SOUND.toLowerCase();
+    var SAY=window.Sona.soundSay(SOUND);
     $("say").textContent=SAY;
     var GOAL=8, reps=0;
 
@@ -120,7 +119,7 @@
       }).catch(function(){ $("hint").textContent="No mic — tap the mic button to count!"; listening=false; $("mic").classList.remove("live"); });
     }
     // first model + auto-start listening
-    (async function(){ await say("Say "+SAY+" "+GOAL+" times to start!"); startMic(); })();
+    (async function(){ await say(window.Sona.actionCue(SOUND,GOAL,"warm up and blast off")); startMic(); })();
     $("mic").onclick=function(){ if(!listening){ startMic(); } else { addRep(); } }; // tap = manual count / fallback
     $("skip").onclick=function(){ done(); };
     window.addEventListener("pagehide",function(){ try{ if(micStream)micStream.getTracks().forEach(function(t){t.stop();}); }catch(e){} });

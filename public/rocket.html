@@ -147,8 +147,7 @@
     var params = new URLSearchParams(location.search);
     var SOUND = (params.get("sound") || (profile.focusSounds && profile.focusSounds[0]) || "R").toUpperCase();
     if(!(window.Sona && Sona.WORDS && Sona.WORDS[SOUND])) SOUND="R";
-    var SAYIT = { R:"rrr", S:"sss", L:"lll", K:"k, k, k", G:"g, g, g", F:"fff", SH:"shh", CH:"ch, ch", TH:"th, th", THV:"the, the", Z:"zzz", V:"vvv", J:"j, j", P:"p, p, p", B:"b, b, b", M:"mmm", N:"nnn", T:"t, t, t", D:"d, d, d" };
-    var SAY = SAYIT[SOUND] || SOUND.toLowerCase();
+    var SAY = window.Sona.soundSay(SOUND);
     var DIFF=(window.Sona&&Sona.diff)?Sona.diff():1;
     // farther destinations as levels climb: Moon → Mars → Saturn (same game, longer trip)
     var DEST = DIFF<=3 ? { title:"You reached the Moon! 🌙", color:"radial-gradient(circle at 38% 34%,#ffffff,#e3e9f4 55%,#c4cddd)",
@@ -252,10 +251,10 @@
         var target=WAYPOINTS[done+1];
         $("sayText").textContent=SAY; setLeo("listen");
         $("prompt").textContent="Listen to Leo…";
-        await say("Say "+SAY+" to fly to "+target+"!");
-        $("prompt").textContent="Say "+SAY+" to fly to "+target+"!";
+        await say(window.Sona.actionCue(SOUND,1,"fly to "+target));
+        $("prompt").textContent="Make your "+SAY+" sound to fly to "+target+"! 🚀";
         await fuelPhase();
-        if(fuel<60){ $("prompt").textContent="Give it a try — say "+SAY+"!"; await wait(250); continue; }
+        if(fuel<60){ $("prompt").textContent="Give it a try — make your "+SAY+" sound!"; await wait(250); continue; }
         $("prompt").textContent="Whoosh — up to "+target+"! 🚀";
         await climbTo(done+1);
         done++; $("count").textContent=done;
