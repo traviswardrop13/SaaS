@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-  <title>Sona — Adventure Map</title>
+  <title>Sona — Worlds</title>
   <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet" />
   <link rel="manifest" href="/manifest.webmanifest" />
   <meta name="theme-color" content="#1cb0f6" />
@@ -11,296 +11,94 @@
   <meta name="mobile-web-app-capable" content="yes" />
   <script defer src="/_vercel/insights/script.js"></script>
   <style>
+    :root{--blue:#1cb0f6;--blue-d:#1597d4;--green:#58cc02;--green-d:#46a302;--amber:#ffb703;--amber-d:#e08600;--ink:#16384f;--muted:#6b86a3;}
     *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;font-family:"Nunito",-apple-system,"Segoe UI",Roboto,sans-serif;}
     html,body{height:100%;}
-    body{background:#0b1437;display:flex;justify-content:center;overflow:hidden;}
-    #app{position:relative;width:100%;max-width:430px;height:100vh;overflow:hidden;background:#bfe6ff;}
-
-    /* top bar: total stars + world name */
-    #hud{position:absolute;top:calc(8px + env(safe-area-inset-top));left:0;right:0;z-index:8;display:flex;align-items:center;justify-content:center;gap:8px;pointer-events:none;}
-    #starTot{background:rgba(255,255,255,.92);border-radius:99px;padding:6px 14px;font-family:"Baloo 2";font-weight:800;font-size:15px;color:#f0a500;box-shadow:0 3px 10px rgba(20,90,150,.18);}
-
-    /* horizontal pager — one panel per world */
-    #pager{display:flex;height:100%;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
-    #pager::-webkit-scrollbar{display:none;}
-    .screen{position:relative;flex:0 0 100%;width:100%;height:100%;scroll-snap-align:center;overflow:hidden;}
-    .scene{position:absolute;inset:0;background-size:cover;background-position:center;}
-
-    .titleBar{position:absolute;top:calc(46px + env(safe-area-inset-top));left:0;right:0;text-align:center;z-index:5;pointer-events:none;}
-    .titleBar b{display:block;font-family:"Baloo 2";font-weight:800;font-size:20px;color:#fff;text-shadow:0 2px 8px rgba(20,80,130,.5);}
-    .titleBar span{display:block;font-family:"Baloo 2";font-weight:700;font-size:12.5px;color:#fff;opacity:.95;text-shadow:0 1px 6px rgba(20,80,130,.5);}
-
-    /* curved dotted path behind the nodes */
-    .pathline{position:absolute;inset:0;z-index:2;pointer-events:none;}
-
-    /* level nodes */
-    .node{position:absolute;transform:translate(-50%,-50%);z-index:4;cursor:pointer;border:none;background:none;padding:0;display:flex;flex-direction:column;align-items:center;gap:5px;}
-    .node .pin{display:flex;align-items:center;justify-content:center;width:56px;height:56px;border-radius:50%;background:#fff;
-      font-size:27px;border:4px solid var(--c,#1cb0f6);
-      box-shadow:0 5px 0 rgba(20,90,150,.18),0 9px 15px rgba(20,90,150,.22);animation:bob 2.8s ease-in-out infinite;}
-    .node.boss .pin{width:64px;height:64px;font-size:31px;border-width:5px;border-color:#f5b500;background:linear-gradient(180deg,#fff,#fff6dc);}
-    .node:active .pin{transform:translateY(3px) scale(.94);box-shadow:0 2px 0 rgba(20,90,150,.18);}
-    @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
-    /* locked: frosted glass beats flat gray (the .frost treatment) */
-    .node.locked .pin{background:rgba(238,244,250,.55);backdrop-filter:blur(4px) saturate(.72);-webkit-backdrop-filter:blur(4px) saturate(.72);border-color:rgba(176,192,210,.85);color:#9fb0c0;animation:none;box-shadow:0 4px 0 rgba(20,90,150,.1),inset 0 1px 2px rgba(255,255,255,.6);}
-    .node .stars{display:flex;gap:2px;background:rgba(255,255,255,.82);border-radius:99px;padding:2px 6px;box-shadow:0 2px 6px rgba(20,90,150,.18);}
-    .node.locked .stars{display:none;}
-    .node .stars i{font-size:11px;line-height:1;filter:grayscale(1);opacity:.45;}
-    .node .stars i.on{filter:none;opacity:1;}
-    .node .now{position:absolute;top:-30px;left:50%;transform:translateX(-50%);font-size:24px;animation:bob 1.6s ease-in-out infinite;}
-    .node.pop .pin{animation:pop .6s ease;}
-    @keyframes pop{0%{transform:scale(1)}35%{transform:scale(1.25) rotate(-6deg)}70%{transform:scale(.95)}100%{transform:scale(1)}}
-
-    /* locked-world overlay */
-    .screen.worldlocked .scene{filter:grayscale(.85) brightness(.8);}
-    .lockCenter{position:absolute;top:46%;left:50%;transform:translate(-50%,-50%);z-index:6;display:none;flex-direction:column;align-items:center;text-align:center;padding:0 30px;}
-    .screen.worldlocked .lockCenter{display:flex;}
-    .lockCenter .ring{width:92px;height:92px;border-radius:50%;background:rgba(255,255,255,.95);box-shadow:0 12px 28px rgba(20,60,90,.32);display:flex;align-items:center;justify-content:center;font-size:42px;}
-    .lockCenter .cap{margin-top:14px;background:rgba(18,40,60,.72);color:#fff;font-family:"Baloo 2";font-weight:800;font-size:14px;padding:9px 16px;border-radius:14px;line-height:1.4;}
-    .lockCenter .cta{margin-top:12px;background:#58cc02;color:#fff;font-family:"Baloo 2";font-weight:800;font-size:15px;padding:11px 22px;border-radius:14px;box-shadow:0 5px 0 #46a302;text-decoration:none;}
-
-    /* star-earned toast */
-    #toast{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) scale(.8);z-index:20;background:#fff;border-radius:22px;padding:22px 30px;text-align:center;box-shadow:0 18px 44px rgba(20,60,90,.4);opacity:0;transition:opacity .25s,transform .25s;pointer-events:none;}
+    body{background:linear-gradient(180deg,#eaf6ff,#dff1ff 40%,#eafbe4);color:var(--ink);display:flex;justify-content:center;}
+    #app{width:100%;max-width:480px;min-height:100vh;padding:calc(14px + env(safe-area-inset-top)) 16px calc(92px + env(safe-area-inset-bottom));}
+    .top{display:flex;align-items:center;gap:10px;}
+    .top h1{font-family:"Baloo 2";font-weight:800;font-size:24px;flex:1;}
+    .stars{background:#fff;border-radius:99px;padding:6px 13px;font-family:"Baloo 2";font-weight:800;font-size:15px;color:var(--amber-d);box-shadow:0 3px 0 rgba(20,90,150,.1);}
+    .lead{color:var(--muted);font-weight:700;font-size:13.5px;margin:4px 0 14px;}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+    .house{position:relative;border:none;cursor:pointer;border-radius:22px;overflow:hidden;padding:0;text-align:left;
+      box-shadow:0 10px 0 -2px rgba(20,90,150,.12),0 16px 30px -16px rgba(20,90,150,.5);transition:transform .08s;}
+    .house:active{transform:translateY(3px) scale(.985);}
+    .house .scene{height:118px;position:relative;display:flex;align-items:center;justify-content:center;}
+    .house .emoji{font-size:58px;filter:drop-shadow(0 6px 8px rgba(15,50,80,.25));}
+    .house .art{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none;}
+    .house .meta{background:#fff;padding:10px 12px 12px;}
+    .house .nm{font-family:"Baloo 2";font-weight:800;font-size:16px;line-height:1;}
+    .house .pr{display:flex;align-items:center;gap:6px;margin-top:7px;}
+    .house .bar{flex:1;height:8px;border-radius:99px;background:#e9eff5;overflow:hidden;}
+    .house .bar span{display:block;height:100%;background:linear-gradient(90deg,var(--green),#7be23a);border-radius:99px;}
+    .house .pct{font-size:11px;font-weight:800;color:var(--muted);white-space:nowrap;}
+    .house .st{position:absolute;top:9px;right:10px;background:rgba(255,255,255,.92);border-radius:99px;padding:3px 9px;font-family:"Baloo 2";font-weight:800;font-size:12px;color:var(--amber-d);box-shadow:0 2px 6px rgba(20,90,150,.18);}
+    .nav{position:fixed;bottom:0;left:0;right:0;max-width:480px;margin:0 auto;background:#fff;border-top:1px solid #e8eef4;display:flex;justify-content:space-around;padding:9px 0 calc(9px + env(safe-area-inset-bottom));z-index:9;}
+    .nav a{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;font-weight:800;color:#9fb0c0;text-decoration:none;}
+    .nav a .ni{font-size:21px;} .nav a.on{color:var(--blue-d);}
+    /* toast on returning from a game */
+    #toast{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(.8);z-index:20;background:#fff;border-radius:22px;padding:22px 30px;text-align:center;box-shadow:0 18px 44px rgba(20,60,90,.4);opacity:0;transition:opacity .25s,transform .25s;pointer-events:none;}
     #toast.show{opacity:1;transform:translate(-50%,-50%) scale(1);}
-    #toast .big{font-size:34px;letter-spacing:3px;}
-    #toast h3{font-family:"Baloo 2";font-weight:800;font-size:19px;color:#16384f;margin-top:6px;}
-    #toast p{font-weight:800;color:#f0a500;font-size:14px;margin-top:3px;}
-
-    #dots{position:absolute;bottom:calc(80px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);z-index:8;display:flex;gap:9px;padding:7px 11px;border-radius:99px;background:rgba(16,36,58,.16);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);}
-    /* chunkier dots w/ active glow — matches .dotchunk in sona.css */
-    #dots i{width:9px;height:9px;border-radius:99px;background:rgba(255,255,255,.6);box-shadow:0 1px 4px rgba(0,0,0,.18);transition:transform .25s cubic-bezier(.2,.8,.3,1),box-shadow .25s,background .25s;}
-    #dots i.on{background:#fff;transform:scale(1.5);box-shadow:0 0 0 4px rgba(255,255,255,.3),0 1px 5px rgba(0,0,0,.18);}
-    #nav{position:absolute;left:0;right:0;bottom:0;z-index:9;display:flex;justify-content:space-around;align-items:center;background:rgba(255,255,255,.97);box-shadow:0 -4px 16px rgba(20,90,150,.13);padding:8px 6px calc(8px + env(safe-area-inset-bottom));}
-    #nav a{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;text-decoration:none;color:#9ab0c2;font-family:"Baloo 2";font-weight:800;font-size:11px;}
-    #nav a.on{color:#1cb0f6;} #nav a svg{width:24px;height:24px;}
-
-    /* ════════════════════════════════════════════════════════════════
-       VISUAL POLISH — warm, premium, Duolingo-style scenery (CSS only).
-       All scenery is layered ON TOP of the JS-set sky via pseudo-elements,
-       sits behind the nodes, and is pointer-events:none. Reuses the shared
-       keyframes from sona.css (sona-drift, sona-floatY, sona-twinkle) so
-       the map matches the rest of the app. No DOM/JS changes.
-       ════════════════════════════════════════════════════════════════ */
-
-    /* App column gets a soft sky base so it reads warm even before JS paints
-       the per-world sky onto each .screen. */
-    #app{background:linear-gradient(180deg,#cdecff 0%,#bfe6ff 38%,#e9f9d8 100%);}
-
-    /* --- SKY DEPTH: a soft sun-glow high up + a hazy horizon band --- */
-    .scene::before{content:"";position:absolute;inset:0;z-index:0;pointer-events:none;
-      background:
-        radial-gradient(120px 120px at 80% 14%, rgba(255,243,205,.85), rgba(255,243,205,0) 70%),
-        radial-gradient(60% 30% at 50% 0%, rgba(255,255,255,.35), rgba(255,255,255,0) 70%),
-        linear-gradient(180deg, rgba(255,255,255,0) 52%, rgba(255,255,255,.18) 66%, rgba(255,255,255,0) 78%);}
-
-    /* --- GRADIENT BANDS at sky→ground transition + rolling hills --- */
-    /* Far + near hills: big-radius blobs overlapping at the bottom. The
-       .screen::after carries the layered ground; ::before carries clouds. */
-    .screen::after{content:"";position:absolute;left:-12%;right:-12%;bottom:-6%;height:46%;z-index:1;pointer-events:none;
-      background:
-        /* near hill (front, warmer green) */
-        radial-gradient(140% 90% at 22% 130%, #8fd36b 0 60%, transparent 61%),
-        /* mid hill */
-        radial-gradient(150% 95% at 80% 138%, #a6dd7d 0 58%, transparent 59%),
-        /* far hill (back, hazier) */
-        radial-gradient(160% 100% at 50% 150%, #c3ead0 0 54%, transparent 55%),
-        /* ground wash + horizon haze band for depth */
-        linear-gradient(180deg, rgba(195,234,208,0) 0%, rgba(195,234,208,.55) 30%, #bfe79b 70%, #aadd86 100%);
-      filter:drop-shadow(0 -2px 6px rgba(40,110,60,.12));}
-
-    /* --- CLOUD: a fluffy drifting puff built from overlapping radial blobs.
-       Reuses sona-drift. Decorative + behind nodes + non-interactive. --- */
-    .screen::before{content:"";position:absolute;top:12%;left:0;width:220px;height:60px;z-index:1;pointer-events:none;opacity:.9;
-      will-change:transform;animation:sona-drift 46s linear infinite;
-      background:
-        radial-gradient(42px 42px at 40px 38px, #fff 60%, transparent 62%),
-        radial-gradient(54px 54px at 92px 30px, #fff 60%, transparent 62%),
-        radial-gradient(40px 40px at 140px 40px, #fff 60%, transparent 62%),
-        radial-gradient(64px 30px at 92px 50px, #fff 60%, transparent 62%);}
-    /* --- SCATTERED SCENERY: flowers + a tree sitting low on the hills.
-       Hosted on .scene::after (.scene does NOT form a stacking context, so
-       this stays BELOW the nodes). Spans the foreground; non-interactive;
-       gently bobs with the shared sona-floatY. The leading spaces splay the
-       emoji across the foreground; ✨ adds a little sparkle. --- */
-    .scene::after{content:"🌳        🌼     🌷        ✨      🌻     🌼        🌲";
-      position:absolute;left:0;right:0;bottom:7%;z-index:1;pointer-events:none;
-      text-align:center;white-space:nowrap;font-size:22px;opacity:.92;line-height:1;
-      will-change:transform;animation:sona-floatY 5.5s ease-in-out infinite;
-      filter:drop-shadow(0 3px 4px rgba(40,90,60,.2));}
-
-    /* --- TITLE BANNER: a soft ribbon shape behind the world name (clip-path).
-       Lives on .titleBar b so it hugs the heading; keeps text crisp on top. --- */
-    .titleBar b{position:relative;display:inline-block;padding:7px 26px;margin:0 auto;z-index:1;}
-    .titleBar b::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;
-      background:linear-gradient(180deg,#ffa05a,var(--orange,#ff8a3d));
-      box-shadow:0 5px 0 var(--orange-d,#ef6f23),0 9px 16px rgba(20,90,150,.25);
-      clip-path:polygon(6% 0, 94% 0, 100% 50%, 94% 100%, 6% 100%, 0 50%);}
-    /* ribbon "tails" hanging off each end of the banner */
-    .titleBar b::after{content:"";position:absolute;left:8px;right:8px;bottom:-7px;height:12px;z-index:-2;pointer-events:none;
-      background:var(--orange-d,#ef6f23);
-      clip-path:polygon(0 0,12px 100%,24px 0, calc(100% - 24px) 0, calc(100% - 12px) 100%, 100% 0);
-      opacity:.9;}
-
-    /* --- NODES: hover/focus scale-up + a glow ring on the CURRENT level
-       (the node JS marks with a 📍 .now child). Reuses sona-glow-warm. --- */
-    .node .pin{transition:transform .18s cubic-bezier(.2,.8,.3,1),box-shadow .18s,filter .18s;}
-    .node:not(.locked):hover .pin,
-    .node:not(.locked):focus-visible .pin{transform:scale(1.1);filter:brightness(1.04);}
-    .node:focus-visible{outline:none;}
-    .node:focus-visible .pin{box-shadow:0 5px 0 rgba(20,90,150,.18),0 0 0 5px rgba(42,157,244,.35);}
-
-    /* gentle one-time bounce when an unlocked (non-boss) node enters */
-    @keyframes sona-node-pop-in{0%{transform:scale(.4);opacity:0}60%{transform:scale(1.12)}100%{transform:scale(1);opacity:1}}
-    .node:not(.locked) .pin{animation:bob 2.8s ease-in-out infinite, sona-node-pop-in .5s cubic-bezier(.2,1.4,.4,1) both;}
-
-    /* CURRENT level: soft warm glow ring + a halo behind the pin.
-       :has() targets the node that owns the "you are here" 📍 marker. */
-    .node:has(.now) .pin{animation:bob 2.8s ease-in-out infinite, sona-glow-warm 2.2s ease-in-out infinite;will-change:transform,box-shadow;}
-    .node:has(.now)::before{content:"";position:absolute;top:28px;left:50%;width:86px;height:86px;transform:translate(-50%,-50%);z-index:-1;pointer-events:none;border-radius:50%;
-      background:radial-gradient(circle, rgba(255,138,61,.32) 0%, rgba(255,138,61,0) 70%);
-      will-change:transform,opacity;animation:sona-twinkle 2.4s ease-in-out infinite;}
-
-    /* boss node keeps its gold; give it a faint warm aura too */
-    .node.boss:not(.locked) .pin{box-shadow:0 5px 0 rgba(180,120,0,.22),0 9px 18px rgba(200,140,0,.28);}
-
-    /* lock-center ring: lift it from flat white to a frosted, glowing badge */
-    .lockCenter .ring{backdrop-filter:blur(2px);box-shadow:0 12px 28px rgba(20,60,90,.32),0 0 0 6px rgba(255,255,255,.35);}
-
-    /* the worldlocked overlay reads nicer with a cool frost than pure gray */
-    .screen.worldlocked::after{filter:grayscale(.7) brightness(.92) drop-shadow(0 -2px 6px rgba(40,110,60,.12));}
-
-    /* keep total-stars pill consistent w/ app pills: subtle 2-layer shadow */
-    #starTot{box-shadow:0 3px 10px rgba(20,90,150,.18),0 1px 3px rgba(20,90,150,.12);}
-
-    /* Respect reduced motion (mirrors sona.css guard for this page's keyframes) */
-    @media (prefers-reduced-motion: reduce){
-      .screen::before,.scene::after,
-      .node .pin,.node:not(.locked) .pin,.node:has(.now) .pin,.node:has(.now)::before,.node .now{
-        animation:none !important;}
-    }
+    #toast .big{font-size:34px;letter-spacing:3px;} #toast h3{font-family:"Baloo 2";font-weight:800;font-size:19px;margin-top:6px;} #toast p{font-weight:800;color:var(--amber-d);font-size:14px;margin-top:3px;}
   </style>
 </head>
 <body>
   <div id="app">
-    <div id="hud"><span id="starTot">⭐ 0</span></div>
-    <div id="pager"></div>
-    <div id="toast"><div class="big" id="toastStars">★★★</div><h3 id="toastTitle">Level clear!</h3><p id="toastSub"></p></div>
-    <div id="dots"></div>
-    <nav id="nav">
-      <a class="on" href="/map.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2Z"/><path d="M9 4v14M15 6v14"/></svg>Map</a>
-      <a href="/shop.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>Shop</a>
-      <a href="/stickers.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l2.6 5.3 5.8.8-4.2 4.1 1 5.8L12 16.9 6.8 19l1-5.8L3.6 9.1l5.8-.8L12 3Z"/></svg>Stickers</a>
-      <a href="/progress.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></svg>Grown-ups</a>
-    </nav>
+    <div class="top"><h1>Choose a world 🗺️</h1><span class="stars" id="starTot">⭐ 0</span></div>
+    <p class="lead">Each house is a different game. Tap one to start the path — clear a level to open the next!</p>
+    <div class="grid" id="grid"></div>
+  </div>
+  <div id="toast"><div class="big" id="tStars">★★★</div><h3 id="tTitle">Level clear!</h3><p id="tSub"></p></div>
+  <div class="nav">
+    <a href="/today.html"><span class="ni">🏠</span>Today</a>
+    <a class="on" href="/map.html"><span class="ni">🗺️</span>Worlds</a>
+    <a href="/progress.html"><span class="ni">📈</span>Progress</a>
+    <a href="/settings.html"><span class="ni">⚙️</span>Settings</a>
   </div>
 
   <script src="/sona.js"></script>
   <script>
     var $=function(id){return document.getElementById(id);};
     var S=window.Sona;
-    // serpentine node positions (bottom → top), % of screen
-    var POS=[{x:50,y:84},{x:30,y:71},{x:63,y:59},{x:35,y:46},{x:64,y:33},{x:50,y:19}];
+    var WORLDS=(S&&S.WORLDS)?S.WORLDS:[];
+    var PER=(S&&S.LEVELS_PER_WORLD)?S.LEVELS_PER_WORLD:10;
+    function esc(s){return String(s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];});}
 
-    function meta(game){ return (S&&S.gameMeta)?S.gameMeta(game):{name:"Game",icon:"🎮",c:"#1cb0f6"}; }
-    function lbl(s){ return (S&&S.soundLabel)?S.soundLabel(s):s; }
-
-    var WORLDS=(S&&S.WORLDS)?S.WORLDS:[{id:"town",name:"Sunny Town",theme:"🏡",sky:"#bfe6ff",free:true}];
-    var LEVELS=(S&&S.campaignLevels)?S.campaignLevels():[];
-    var byWorld=WORLDS.map(function(_,w){ return LEVELS.filter(function(l){return l.world===w;}); });
-
-    function starsRow(n){ var h=""; for(var i=0;i<3;i++){ h+='<i class="'+(i<n?"on":"")+'">⭐</i>'; } return '<div class="stars">'+h+'</div>'; }
-
-    function buildWorld(w){
-      var wd=WORLDS[w], levels=byWorld[w];
-      var unlocked=(S&&S.worldUnlocked)?S.worldUnlocked(w):(w===0);
-      var s=document.createElement("section"); s.className="screen"+(unlocked?"":" worldlocked"); s.dataset.w=w;
-      s.style.background=wd.sky||"#bfe6ff";
-      var scene=document.createElement("div"); scene.className="scene"; s.appendChild(scene);
-      // optional art auto-upgrade if a PNG is dropped in later
-      (function(sc,art){ var im=new Image(); im.onload=function(){ sc.style.backgroundImage="url("+art+")"; }; im.src="/coach/worlds/"+wd.id+".png"; })(scene,wd.id);
-
-      var tb=document.createElement("div"); tb.className="titleBar";
-      tb.innerHTML='<b>'+wd.theme+' '+wd.name+'</b><span>World '+(w+1)+' · '+(S&&S.campaignSounds?S.campaignSounds().map(lbl).join(" · "):"")+'</span>';
-      s.appendChild(tb);
-
-      levels.forEach(function(l,i){
-        var p=POS[i%POS.length];
-        var m=meta(l.game), st=(S&&S.levelStars)?S.levelStars(l.id):0;
-        var open=(S&&S.levelUnlocked)?S.levelUnlocked(l):(i===0);
-        var b=document.createElement("button");
-        b.className="node"+(l.boss?" boss":"")+(open?"":" locked"); b.dataset.id=l.id;
-        b.style.left=p.x+"%"; b.style.top=p.y+"%";
-        b.title=m.name+" · "+lbl(l.sound);
-        var face = open ? (l.boss?"👑":m.icon) : "🔒";
-        b.innerHTML='<span class="pin" style="--c:'+m.c+';animation-delay:'+(i*0.3)+'s;">'+face+'</span>'+starsRow(st);
-        b.onclick=function(){
-          if(S&&S.sfx&&S.sfx.tap)S.sfx.tap();
-          if(!open){ var pin=b.querySelector(".pin"); pin.animate&&pin.animate([{transform:"translateX(-4px)"},{transform:"translateX(4px)"},{transform:"translateX(0)"}],{duration:200}); return; }
-          if(S&&S.campaignLaunch)S.campaignLaunch(l);
-          var gameUrl="/"+String(l.game).replace(/^\//,"")+"?sound="+encodeURIComponent(l.sound)+"&diff="+(l.diff||1);
-          location.href="/model.html?sound="+encodeURIComponent(l.sound)+"&next="+encodeURIComponent(gameUrl);
-        };
-        s.appendChild(b);
-      });
-
-      if(!unlocked){
-        var lc=document.createElement("div"); lc.className="lockCenter";
-        var paid=(S&&(S.isSubscribed&&S.isSubscribed()||S.isPilot&&S.isPilot()));
-        if(!paid){
-          lc.innerHTML='<div class="ring">🔒</div><div class="cap">Unlock all the worlds with a Sona membership.</div><a class="cta" href="/subscribe">See plans →</a>';
-        } else {
-          lc.innerHTML='<div class="ring">'+wd.theme+'</div><div class="cap">Earn more ⭐ in '+(WORLDS[w-1]?WORLDS[w-1].name:"the last world")+' to open '+wd.name+'!</div>';
-        }
-        s.appendChild(lc);
-      }
-      return s;
-    }
-
-    var pager=$("pager");
-    WORLDS.forEach(function(_,w){ pager.appendChild(buildWorld(w)); });
-
-    // total stars
+    var grid=$("grid");
+    WORLDS.forEach(function(w){
+      var cleared=(S&&S.worldCleared)?S.worldCleared(w.id):0;
+      var stars=(S&&S.worldStars)?S.worldStars(w.id):0;
+      var pct=Math.round(cleared/PER*100);
+      var b=document.createElement("button"); b.className="house";
+      b.innerHTML=
+        '<div class="scene" style="background:'+(w.sky||"#cfe8fb")+';">'+
+          '<span class="emoji">'+(w.theme||"🎮")+'</span>'+
+          '<img class="art" alt="" />'+
+          '<span class="st">⭐ '+stars+'</span>'+
+        '</div>'+
+        '<div class="meta"><div class="nm">'+esc(w.name||w.id)+'</div>'+
+          '<div class="pr"><div class="bar"><span style="width:'+pct+'%"></span></div><span class="pct">'+cleared+'/'+PER+'</span></div>'+
+        '</div>';
+      // house art auto-upgrades the moment /coach/worlds/<id>.png exists
+      (function(card){ var im=new Image(); im.onload=function(){ var a=card.querySelector(".art"); var e=card.querySelector(".emoji"); a.src=im.src; a.style.display="block"; if(e)e.style.display="none"; }; im.src="/coach/worlds/"+w.id+".png"; })(b);
+      b.onclick=function(){ if(S&&S.sfx&&S.sfx.tap)S.sfx.tap(); location.href="/world.html?w="+encodeURIComponent(w.id); };
+      grid.appendChild(b);
+    });
     if(S&&S.totalStars) $("starTot").textContent="⭐ "+S.totalStars();
 
-    // dots
-    var dots=$("dots"); WORLDS.forEach(function(_,i){ var d=document.createElement("i"); if(i===0)d.className="on"; dots.appendChild(d); });
-    pager.addEventListener("scroll",function(){ var i=Math.round(pager.scrollLeft/pager.clientWidth); [].forEach.call(dots.children,function(d,k){ d.className=(k===i?"on":""); }); });
-
-    // find the "current" world = first world with an open, un-cleared level
-    function currentWorld(){
-      for(var w=0;w<WORLDS.length;w++){
-        var lv=byWorld[w];
-        for(var i=0;i<lv.length;i++){ if((S&&S.levelUnlocked&&S.levelUnlocked(lv[i]))&&(S&&S.levelStars&&S.levelStars(lv[i].id))===0) return w; }
-      }
-      return 0;
-    }
-    // place a "you are here" marker on the current level
-    (function(){ var w=currentWorld(); var lv=byWorld[w]||[];
-      for(var i=0;i<lv.length;i++){ if((S&&S.levelUnlocked&&S.levelUnlocked(lv[i]))&&(S&&S.levelStars&&S.levelStars(lv[i].id))===0){
-        var el=document.querySelector('.node[data-id="'+lv[i].id+'"]'); if(el){ var m=document.createElement("span"); m.className="now"; m.textContent="📍"; el.appendChild(m);} break; } }
-    })();
-
-    // resolve a just-finished level → award stars with a celebration
-    function showToast(res){
-      var t=$("toast");
-      $("toastStars").textContent="★★★".slice(0,res.stars)+"☆☆☆".slice(0,3-res.stars);
-      $("toastTitle").textContent=res.stars>=3?"Perfect! 3 stars!":(res.improved?"New best!":"Level clear!");
-      $("toastSub").textContent=res.improved?"+15 🪙 · "+Math.round(res.acc*100)+"% accurate":Math.round(res.acc*100)+"% accurate";
-      t.classList.add("show");
-      var el=document.querySelector('.node[data-id="'+res.id+'"]'); if(el){ el.classList.add("pop"); var sr=el.querySelector(".stars"); if(sr){ sr.innerHTML=""; for(var i=0;i<3;i++){ var ii=document.createElement("i"); if(i<res.stars)ii.className="on"; ii.textContent="⭐"; sr.appendChild(ii);} } }
-      if(S){ S.confetti&&S.confetti(); S.sfx&&S.sfx.complete&&S.sfx.complete(); }
-      setTimeout(function(){ t.classList.remove("show"); },2600);
-    }
-
-    // jump to the right world, then (if we just cleared a level) celebrate
-    requestAnimationFrame(function(){
+    // returning from a game (e.g. via exit) → award the star + celebrate here too
+    (function(){
       var res=(S&&S.campaignResolve)?S.campaignResolve():null;
-      var w=currentWorld();
-      if(res){ var lvl=LEVELS.filter(function(l){return l.id===res.id;})[0]; if(lvl) w=lvl.world; }
-      pager.scrollLeft=w*pager.clientWidth;
-      [].forEach.call(dots.children,function(d,k){ d.className=(k===w?"on":""); });
-      if(res){ $("starTot").textContent="⭐ "+(S&&S.totalStars?S.totalStars():0); setTimeout(function(){ showToast(res); },420); }
-    });
+      if(!res) return;
+      if(S&&S.totalStars)$("starTot").textContent="⭐ "+S.totalStars();
+      var t=$("toast");
+      $("tStars").textContent="★★★".slice(0,res.stars)+"☆☆☆".slice(0,3-res.stars);
+      $("tTitle").textContent=res.stars>=3?"Perfect! 3 stars!":(res.improved?"New best!":"Level clear!");
+      $("tSub").textContent=Math.round(res.acc*100)+"% accurate";
+      setTimeout(function(){ t.classList.add("show"); if(S.confetti)S.confetti(); },350);
+      setTimeout(function(){ t.classList.remove("show"); },3000);
+    })();
   </script>
 </body>
 </html>
