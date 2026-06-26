@@ -11,3 +11,6 @@ tsconfig.tsbuildinfo
 # native (Capacitor) — generated on your Mac
 /ios
 /android
+
+# Claude Code agent worktrees + local state
+.claude/
