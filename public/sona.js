@@ -101,7 +101,7 @@
       badge(100, 52) + '</svg>';
   }
 
-  const DEFAULT_PROFILE = { childName: "", focusSounds: ["R", "S", "L", "K"], voiceOn: true, coachName: "Coach", cloudScoring: true, slpEvaluated: "", goals: "", focusArea: "articulation", interests: [], language: "en", character: "leo", outfit: "none", backdrop: "sky", soundOn: true, voiceId: "SF6OznV7UB2AxeidTpie", volume: 0.8, musicOn: false, dailyMinutes: 5, owned: { outfits: ["none"], backdrops: ["sky"] }, onboarded: false };
+  const DEFAULT_PROFILE = { childName: "", focusSounds: ["R", "S", "L", "K"], voiceOn: true, coachName: "Coach", cloudScoring: true, slpEvaluated: "", goals: "", focusArea: "articulation", interests: [], language: "en", character: "leo", outfit: "none", backdrop: "sky", soundOn: true, voiceId: "qBDvhofpxp92JgXJxDjB", volume: 0.3, musicOn: false, dailyMinutes: 5, owned: { outfits: ["none"], backdrops: ["sky"] }, onboarded: false };
   // stage per sound: 0 = isolation (the letter), 1 = syllables, 2 = words, 3 = mastered.
   const STAGES = ["isolation", "syllables", "words"];
   const DEFAULT_PROGRESS = { sessions: [], totals: { sessions: 0, words: 0, stars: 0, coins: 0 }, streak: { count: 0, lastDate: "" }, bySound: {}, stage: {}, chests: {}, missed: [] };
@@ -112,8 +112,8 @@
 
   function getProfile() {
     const p = Object.assign(clone(DEFAULT_PROFILE), load(PKEY, {}));
-    // migrate old/empty default voices (Jessica, Will) to Leo's real voice
-    if (!p.voiceId || p.voiceId === "cgSgspJ2msm6clMCkdW9" || p.voiceId === "bIHbv24MWmeRgasZH58o") p.voiceId = DEFAULT_PROFILE.voiceId;
+    // migrate old/empty default voices (Jessica, Will, and the prior Leo) to the current voice
+    if (!p.voiceId || p.voiceId === "cgSgspJ2msm6clMCkdW9" || p.voiceId === "bIHbv24MWmeRgasZH58o" || p.voiceId === "SF6OznV7UB2AxeidTpie") p.voiceId = DEFAULT_PROFILE.voiceId;
     return p;
   }
   // Playback-rate multiplier for /api/tts audio. Leo's ElevenLabs voice is

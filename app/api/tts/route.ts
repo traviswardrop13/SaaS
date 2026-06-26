@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
   try {
     if (elevenKey) {
       const voiceId =
-        voiceOverride || process.env.ELEVENLABS_VOICE_ID || "SF6OznV7UB2AxeidTpie"; // Leo's voice — a real kid, no client pitch-shift needed.
+        voiceOverride || process.env.ELEVENLABS_VOICE_ID || "qBDvhofpxp92JgXJxDjB"; // Leo's voice — a real kid, no client pitch-shift needed.
       // Try v3 first (far more natural cadence/inflection), fall back to the
       // workhorse v2 if v3 rejects the request — Leo must never go silent.
       const fallbackModel = process.env.ELEVENLABS_MODEL || "eleven_multilingual_v2";
