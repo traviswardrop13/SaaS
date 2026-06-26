@@ -237,7 +237,8 @@
           if(S&&S.sfx&&S.sfx.tap)S.sfx.tap();
           if(!open){ var pin=b.querySelector(".pin"); pin.animate&&pin.animate([{transform:"translateX(-4px)"},{transform:"translateX(4px)"},{transform:"translateX(0)"}],{duration:200}); return; }
           if(S&&S.campaignLaunch)S.campaignLaunch(l);
-          location.href="/"+String(l.game).replace(/^\//,"")+"?sound="+encodeURIComponent(l.sound)+"&diff="+(l.diff||1);
+          var gameUrl="/"+String(l.game).replace(/^\//,"")+"?sound="+encodeURIComponent(l.sound)+"&diff="+(l.diff||1);
+          location.href="/model.html?sound="+encodeURIComponent(l.sound)+"&next="+encodeURIComponent(gameUrl);
         };
         s.appendChild(b);
       });
