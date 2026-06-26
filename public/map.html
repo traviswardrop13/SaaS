@@ -13,52 +13,48 @@
   <style>
     :root{--blue:#1cb0f6;--blue-d:#1597d4;--green:#58cc02;--green-d:#46a302;--amber:#ffb703;--amber-d:#e08600;--ink:#16384f;--muted:#6b86a3;}
     *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;font-family:"Nunito",-apple-system,"Segoe UI",Roboto,sans-serif;}
-    html,body{height:100%;overflow:hidden;}
-    body{background:#bfe6ff;color:var(--ink);}
-    /* one full screen per world, swipe horizontally */
-    #pager{display:flex;height:100dvh;height:100vh;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
-    #pager::-webkit-scrollbar{display:none;}
-    .screen{position:relative;flex:0 0 100%;width:100vw;height:100%;scroll-snap-align:center;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end;}
-    .scene{position:absolute;inset:0;background-size:cover;background-position:center bottom;z-index:0;}
-    .emoji{position:absolute;left:0;right:0;top:46%;transform:translateY(-50%);text-align:center;font-size:96px;z-index:1;filter:drop-shadow(0 12px 14px rgba(15,50,80,.25));}
-    /* bottom card: world name + progress + play */
-    .info{position:relative;z-index:2;margin:0 18px calc(40px + env(safe-area-inset-bottom));padding:18px;border-radius:24px;
-      background:rgba(255,255,255,.94);backdrop-filter:blur(6px);box-shadow:0 14px 34px -14px rgba(20,60,90,.5);text-align:center;}
-    .info .nm{font-family:"Baloo 2";font-weight:800;font-size:24px;}
-    .info .st{margin-top:5px;font-family:"Baloo 2";font-weight:800;font-size:14px;color:var(--amber-d);}
-    .info .bar{height:9px;border-radius:99px;background:#e9eff5;overflow:hidden;margin-top:10px;}
-    .info .bar span{display:block;height:100%;background:linear-gradient(90deg,var(--green),#7be23a);border-radius:99px;}
-    .info .play{margin-top:14px;width:100%;border:none;border-radius:16px;padding:15px;font-family:"Baloo 2";font-weight:800;font-size:18px;text-transform:uppercase;letter-spacing:.03em;color:#fff;background:var(--green);box-shadow:0 5px 0 var(--green-d);cursor:pointer;}
-    .info .play:active{transform:translateY(4px);box-shadow:0 1px 0 var(--green-d);}
-    /* top overlay bar */
-    .top{position:fixed;top:calc(10px + env(safe-area-inset-top));left:0;right:0;z-index:8;display:flex;align-items:center;gap:10px;padding:0 16px;}
-    .av{width:46px;height:46px;border-radius:50%;background:radial-gradient(circle at 50% 32%,#ffe08a,#ffb703);display:flex;align-items:center;justify-content:center;font-size:25px;box-shadow:0 4px 0 rgba(20,90,150,.18);border:none;cursor:pointer;}
-    .top .sp{flex:1;}
-    .pill{display:inline-flex;align-items:center;gap:6px;border:none;cursor:pointer;background:#fff;border-radius:99px;padding:9px 15px;font-family:"Baloo 2";font-weight:800;font-size:14px;color:var(--blue-d);box-shadow:0 4px 0 rgba(20,90,150,.14);text-decoration:none;}
-    .pill.today{background:linear-gradient(180deg,#ffd25e,var(--amber));color:#7a4d00;box-shadow:0 4px 0 #d99500;}
-    .gear{width:46px;height:46px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:0 4px 0 rgba(20,90,150,.14);border:none;cursor:pointer;text-decoration:none;}
-    /* page dots */
-    #dots{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom));z-index:8;display:flex;gap:7px;}
-    #dots i{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.6);box-shadow:0 1px 4px rgba(0,0,0,.2);transition:transform .2s,background .2s;}
-    #dots i.on{background:#fff;transform:scale(1.4);}
-    /* swipe hint chevrons */
-    .hint{position:absolute;top:46%;z-index:3;font-size:30px;color:rgba(255,255,255,.85);text-shadow:0 2px 6px rgba(20,60,90,.4);animation:nudge 1.6s ease-in-out infinite;pointer-events:none;}
-    .hint.r{right:10px;} .hint.l{left:10px;transform:scaleX(-1);}
-    @keyframes nudge{0%,100%{transform:translateX(0)}50%{transform:translateX(6px)}}
-    #toast{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(.8);z-index:30;background:#fff;border-radius:22px;padding:22px 30px;text-align:center;box-shadow:0 18px 44px rgba(20,60,90,.4);opacity:0;transition:opacity .25s,transform .25s;pointer-events:none;}
-    #toast.show{opacity:1;transform:translate(-50%,-50%) scale(1);} #toast .big{font-size:34px;letter-spacing:3px;} #toast h3{font-family:"Baloo 2";font-weight:800;font-size:19px;margin-top:6px;} #toast p{font-weight:800;color:var(--amber-d);font-size:14px;margin-top:3px;}
+    html,body{height:100%;}
+    body{background:linear-gradient(180deg,#eaf6ff,#dff1ff 40%,#eafbe4);color:var(--ink);display:flex;justify-content:center;}
+    #app{width:100%;max-width:480px;min-height:100vh;padding:calc(14px + env(safe-area-inset-top)) 16px calc(92px + env(safe-area-inset-bottom));}
+    .top{display:flex;align-items:center;gap:10px;}
+    .top h1{font-family:"Baloo 2";font-weight:800;font-size:24px;flex:1;}
+    .stars{background:#fff;border-radius:99px;padding:6px 13px;font-family:"Baloo 2";font-weight:800;font-size:15px;color:var(--amber-d);box-shadow:0 3px 0 rgba(20,90,150,.1);}
+    .lead{color:var(--muted);font-weight:700;font-size:13.5px;margin:4px 0 14px;}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+    .house{position:relative;border:none;cursor:pointer;border-radius:22px;overflow:hidden;padding:0;text-align:left;
+      box-shadow:0 10px 0 -2px rgba(20,90,150,.12),0 16px 30px -16px rgba(20,90,150,.5);transition:transform .08s;}
+    .house:active{transform:translateY(3px) scale(.985);}
+    .house .scene{height:118px;position:relative;display:flex;align-items:center;justify-content:center;}
+    .house .emoji{font-size:58px;filter:drop-shadow(0 6px 8px rgba(15,50,80,.25));}
+    .house .art{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none;}
+    .house .meta{background:#fff;padding:10px 12px 12px;}
+    .house .nm{font-family:"Baloo 2";font-weight:800;font-size:16px;line-height:1;}
+    .house .pr{display:flex;align-items:center;gap:6px;margin-top:7px;}
+    .house .bar{flex:1;height:8px;border-radius:99px;background:#e9eff5;overflow:hidden;}
+    .house .bar span{display:block;height:100%;background:linear-gradient(90deg,var(--green),#7be23a);border-radius:99px;}
+    .house .pct{font-size:11px;font-weight:800;color:var(--muted);white-space:nowrap;}
+    .house .st{position:absolute;top:9px;right:10px;background:rgba(255,255,255,.92);border-radius:99px;padding:3px 9px;font-family:"Baloo 2";font-weight:800;font-size:12px;color:var(--amber-d);box-shadow:0 2px 6px rgba(20,90,150,.18);}
+    .nav{position:fixed;bottom:0;left:0;right:0;max-width:480px;margin:0 auto;background:#fff;border-top:1px solid #e8eef4;display:flex;justify-content:space-around;padding:9px 0 calc(9px + env(safe-area-inset-bottom));z-index:9;}
+    .nav a{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;font-weight:800;color:#9fb0c0;text-decoration:none;}
+    .nav a .ni{font-size:21px;} .nav a.on{color:var(--blue-d);}
+    /* toast on returning from a game */
+    #toast{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(.8);z-index:20;background:#fff;border-radius:22px;padding:22px 30px;text-align:center;box-shadow:0 18px 44px rgba(20,60,90,.4);opacity:0;transition:opacity .25s,transform .25s;pointer-events:none;}
+    #toast.show{opacity:1;transform:translate(-50%,-50%) scale(1);}
+    #toast .big{font-size:34px;letter-spacing:3px;} #toast h3{font-family:"Baloo 2";font-weight:800;font-size:19px;margin-top:6px;} #toast p{font-weight:800;color:var(--amber-d);font-size:14px;margin-top:3px;}
   </style>
 </head>
 <body>
-  <div class="top">
-    <button class="av" id="av" title="Grown-ups">🦁</button>
-    <span class="sp"></span>
-    <a class="pill today" id="today" href="/today.html">✨ Today</a>
-    <a class="gear" id="gear" href="/progress.html" title="Grown-ups">⚙️</a>
+  <div id="app">
+    <div class="top"><h1>Choose a world 🗺️</h1><span class="stars" id="starTot">⭐ 0</span></div>
+    <p class="lead">Each house is a different game. Tap one to start the path — clear a level to open the next!</p>
+    <div class="grid" id="grid"></div>
   </div>
-  <div id="pager"></div>
-  <div id="dots"></div>
   <div id="toast"><div class="big" id="tStars">★★★</div><h3 id="tTitle">Level clear!</h3><p id="tSub"></p></div>
+  <div class="nav">
+    <a href="/today.html"><span class="ni">🏠</span>Today</a>
+    <a class="on" href="/map.html"><span class="ni">🗺️</span>Worlds</a>
+    <a href="/progress.html"><span class="ni">📈</span>Progress</a>
+  </div>
 
   <script src="/sona.js"></script>
   <script>
@@ -68,53 +64,40 @@
     var PER=(S&&S.LEVELS_PER_WORLD)?S.LEVELS_PER_WORLD:10;
     function esc(s){return String(s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];});}
 
-    var pager=$("pager");
-    WORLDS.forEach(function(w,i){
-      var cleared=(S&&S.worldCleared)?S.worldCleared(w.id):0, stars=(S&&S.worldStars)?S.worldStars(w.id):0;
+    var grid=$("grid");
+    WORLDS.forEach(function(w){
+      var cleared=(S&&S.worldCleared)?S.worldCleared(w.id):0;
+      var stars=(S&&S.worldStars)?S.worldStars(w.id):0;
       var pct=Math.round(cleared/PER*100);
-      var sec=document.createElement("section"); sec.className="screen"; sec.dataset.w=w.id;
-      sec.style.background=w.sky||"#bfe6ff";
-      sec.innerHTML=
-        '<div class="scene"></div>'+
-        '<div class="emoji">'+(w.theme||"🎮")+'</div>'+
-        (i<WORLDS.length-1?'<span class="hint r">›</span>':'')+
-        (i>0?'<span class="hint l">›</span>':'')+
-        '<div class="info"><div class="nm">'+esc(w.name||w.id)+'</div>'+
-          '<div class="st">⭐ '+stars+' · Level '+Math.min(cleared+1,PER)+' of '+PER+'</div>'+
-          '<div class="bar"><span style="width:'+pct+'%"></span></div>'+
-          '<button class="play">'+(cleared>0?"Keep going →":"Play →")+'</button>'+
+      var b=document.createElement("button"); b.className="house";
+      b.innerHTML=
+        '<div class="scene" style="background:'+(w.sky||"#cfe8fb")+';">'+
+          '<span class="emoji">'+(w.theme||"🎮")+'</span>'+
+          '<img class="art" alt="" />'+
+          '<span class="st">⭐ '+stars+'</span>'+
+        '</div>'+
+        '<div class="meta"><div class="nm">'+esc(w.name||w.id)+'</div>'+
+          '<div class="pr"><div class="bar"><span style="width:'+pct+'%"></span></div><span class="pct">'+cleared+'/'+PER+'</span></div>'+
         '</div>';
-      // full-bleed scene art drops in the moment /coach/worlds/<id>.png exists
-      (function(scene,emoji){ var im=new Image(); im.onload=function(){ scene.style.backgroundImage="url("+im.src+")"; emoji.style.display="none"; }; im.src="/coach/worlds/"+w.id+".png"; })(sec.querySelector(".scene"), sec.querySelector(".emoji"));
-      function enter(){ if(S&&S.sfx&&S.sfx.tap)S.sfx.tap(); location.href="/world.html?w="+encodeURIComponent(w.id); }
-      sec.querySelector(".play").onclick=enter;
-      sec.querySelector(".emoji").onclick=enter; sec.querySelector(".scene").onclick=enter;
-      pager.appendChild(sec);
+      // house art auto-upgrades the moment /coach/worlds/<id>.png exists
+      (function(card){ var im=new Image(); im.onload=function(){ var a=card.querySelector(".art"); var e=card.querySelector(".emoji"); a.src=im.src; a.style.display="block"; if(e)e.style.display="none"; }; im.src="/coach/worlds/"+w.id+".png"; })(b);
+      b.onclick=function(){ if(S&&S.sfx&&S.sfx.tap)S.sfx.tap(); location.href="/world.html?w="+encodeURIComponent(w.id); };
+      grid.appendChild(b);
     });
+    if(S&&S.totalStars) $("starTot").textContent="⭐ "+S.totalStars();
 
-    // dots
-    var dots=$("dots"); WORLDS.forEach(function(_,i){var d=document.createElement("i");if(i===0)d.className="on";dots.appendChild(d);});
-    pager.addEventListener("scroll",function(){var i=Math.round(pager.scrollLeft/pager.clientWidth);[].forEach.call(dots.children,function(d,k){d.className=(k===i?"on":"");});});
-
-    $("av").onclick=function(){ location.href="/progress.html"; };
-
-    // start on the world you're mid-way through; celebrate a just-finished level
-    requestAnimationFrame(function(){
+    // returning from a game (e.g. via exit) → award the star + celebrate here too
+    (function(){
       var res=(S&&S.campaignResolve)?S.campaignResolve():null;
-      var startW=0;
-      for(var i=0;i<WORLDS.length;i++){ var c=(S&&S.worldCleared)?S.worldCleared(WORLDS[i].id):0; if(c>0&&c<PER){ startW=i; break; } }
-      if(res){ for(var j=0;j<WORLDS.length;j++){ if(WORLDS[j].id===res.worldId){ startW=j; break; } } }
-      pager.scrollLeft=startW*pager.clientWidth;
-      [].forEach.call(dots.children,function(d,k){d.className=(k===startW?"on":"");});
-      if(res){
-        var t=$("toast");
-        $("tStars").textContent="★★★".slice(0,res.stars)+"☆☆☆".slice(0,3-res.stars);
-        $("tTitle").textContent=res.stars>=3?"Perfect! 3 stars!":(res.improved?"New best!":"Level clear!");
-        $("tSub").textContent=Math.round(res.acc*100)+"% accurate";
-        setTimeout(function(){t.classList.add("show");if(S.confetti)S.confetti();},350);
-        setTimeout(function(){t.classList.remove("show");},2800);
-      }
-    });
+      if(!res) return;
+      if(S&&S.totalStars)$("starTot").textContent="⭐ "+S.totalStars();
+      var t=$("toast");
+      $("tStars").textContent="★★★".slice(0,res.stars)+"☆☆☆".slice(0,3-res.stars);
+      $("tTitle").textContent=res.stars>=3?"Perfect! 3 stars!":(res.improved?"New best!":"Level clear!");
+      $("tSub").textContent=Math.round(res.acc*100)+"% accurate";
+      setTimeout(function(){ t.classList.add("show"); if(S.confetti)S.confetti(); },350);
+      setTimeout(function(){ t.classList.remove("show"); },3000);
+    })();
   </script>
 </body>
 </html>
