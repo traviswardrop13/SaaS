@@ -733,7 +733,21 @@
   // the standalone "play again / done for now" controls for a single "Next game →"
   // that advances the level (or finishes it). Returns true if it took over.
   function sessionButtons(winEl) {
-    if (!winEl || !session.active()) return false;
+    if (!winEl) return false;
+    // Adventure-Map (campaign) flow: a game launched from the map leaves a fresh
+    // campaign-pending marker. Turn the replay button into "Next →" that returns to
+    // the map — which is what records the win and unlocks the next level. Without
+    // this, tapping replay never returns, so the next level stays locked.
+    try {
+      var pend = load(CAMPPEND, null);
+      if (pend && pend.id && pend.ts && (Date.now() - pend.ts < 7200000) && !/[?&]session=1\b/.test(location.search)) {
+        var agc = winEl.querySelector("#again");
+        if (agc) { agc.textContent = "Next →"; agc.onclick = function () { try { sfx && sfx.tap && sfx.tap(); } catch (e) {} location.href = "/map.html"; }; }
+        Array.prototype.forEach.call(winEl.querySelectorAll("a"), function (a) { var h = a.getAttribute("href") || ""; if (/play\.html|map\.html/.test(h)) a.style.display = "none"; });
+        return true;
+      }
+    } catch (e) {}
+    if (!session.active()) return false;
     try { if (!/[?&]session=1\b/.test(location.search)) return false; } catch (e) { return false; }
     const pos = session.pos(); const last = pos && pos.i >= pos.n;
     // hide the per-game replay + exit controls
