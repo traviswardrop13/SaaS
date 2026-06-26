@@ -95,7 +95,7 @@ function Hero() {
           AI listens to every word, gives feedback, and tracks real progress.
         </p>
         <div className="mt-8 flex justify-center">
-          <a href="/subscribe" className="btn-primary text-lg">
+          <a href="/onboarding.html" className="btn-primary text-lg">
             Try it free
           </a>
         </div>
@@ -106,7 +106,7 @@ function Hero() {
           Built by a licensed speech-language pathologist
         </div>
         <p className="mt-4 text-sm font-semibold text-gray-500">
-          Free 3-day trial · cancel anytime
+          Free 7-day trial · no credit card
         </p>
       </div>
     </section>
@@ -304,8 +304,8 @@ function Pricing() {
               "Your suggestions shape Sona for your child",
               "Priority support",
             ]}
-            cta="Start free 3-day trial"
-            href="/subscribe"
+            cta="Start free 7-day trial"
+            href="/onboarding.html"
           />
         </div>
         <p className="mx-auto mt-8 max-w-xl text-center text-sm text-gray-500">
@@ -444,15 +444,15 @@ function FAQ() {
     },
     {
       q: "When can my child start?",
-      a: "Right away — start your free 3-day trial and your child can play today, with new levels rolling out.",
+      a: "Right away — start your free 7-day trial and your child can play today, with new levels rolling out.",
     },
     {
       q: "Is the app ready today?",
-      a: "Yes — Sona's speech games are live now. Start a free 3-day trial to play today, and you'll get every new level and feature as it ships.",
+      a: "Yes — Sona's speech games are live now. Start a free 7-day trial to play today, and you'll get every new level and feature as it ships.",
     },
     {
       q: "How does the founding price work?",
-      a: "Sona is live. Start with a free 3-day trial, then the founding price — 67% off for life ($39.99/yr instead of $119.99) — locked in for the first 100 families. Cancel anytime before day 3 and you won't be charged.",
+      a: "Sona is live. Start with a free 7-day trial — no credit card — then the founding price (67% off for life: $39.99/yr instead of $119.99), locked in for the first 100 families. Cancel anytime.",
     },
   ];
   return (
@@ -483,8 +483,8 @@ function FinalCTA() {
           Ready to make speech practice fun?
         </h2>
         <p className="mx-auto mt-3 max-w-xl text-lg text-brand-50">
-          Start your free 3-day trial and your child can play today. Cancel
-          anytime before day 3 and you won&apos;t be charged.
+          Start your free 7-day trial — no credit card. Your child can play
+          today, and you&apos;ll get every new level as it ships.
         </p>
         <a
           href="/onboarding.html"

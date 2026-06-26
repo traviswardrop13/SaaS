@@ -6,7 +6,7 @@ import { useSearchParams } from "next/navigation";
 
 const FEATURES = [
   "Founding access to every level as it unlocks",
-  "Founding price — 50% off, locked for life",
+  "Founding price — 67% off, locked for life",
   "Every new feature and update as it ships",
   "Your suggestions shape Sona for your child",
   "Priority support",
@@ -79,7 +79,7 @@ function SubscribeInner() {
             Your founding price — locked in for life
           </p>
           <p className="mt-3 rounded-2xl bg-sky-50 px-4 py-3 text-sm font-semibold text-sky-700">
-            <b>Free for 3 days</b>, then $39.99/yr. Cancel anytime.
+            <b>$39.99/yr</b>, billed today. Cancel anytime.
           </p>
 
           <ul className="mt-6 space-y-3">
@@ -100,7 +100,7 @@ function SubscribeInner() {
             Join as a founding member
           </h1>
           <p className="mt-1 text-gray-600">
-            Enter your email to start your free 3-day trial.
+            Enter your email to lock in your founding price.
           </p>
 
           {canceled ? (
@@ -131,7 +131,7 @@ function SubscribeInner() {
             disabled={busy}
             className="mt-5 w-full rounded-2xl bg-grass-500 px-6 py-3.5 font-display font-extrabold uppercase tracking-wide text-white shadow-chunky transition hover:bg-grass-600 active:translate-y-1 active:shadow-chunky-sm disabled:opacity-60"
           >
-            {busy ? "Loading…" : "Start my free 3-day trial"}
+            {busy ? "Loading…" : "Become a founding member"}
           </button>
 
           <p className="mt-3 text-center text-xs text-gray-400">
