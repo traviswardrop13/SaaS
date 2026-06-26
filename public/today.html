@@ -88,47 +88,15 @@
       <button class="start" id="startBtn">▶ Start today's story</button>
     </div>
 
-    <div class="mins">
-      <div class="lbl">How long today?</div>
-      <div class="row" id="minsRow">
-        <div class="seg" data-m="5">5 min<small>quick</small></div>
-        <div class="seg on" data-m="10">10 min<small>just right</small></div>
-        <div class="seg" data-m="15">15 min<small>power</small></div>
-      </div>
-    </div>
+    <!-- Kid-first home: just today's adventure. Parent tools (progress, speech
+         check, then-vs-now, plan) live in the Progress tab. -->
 
-    <div class="grid">
-      <div class="mini wide" id="thenNow">
-        <div class="ico">🎧</div>
-        <div class="txt"><b>Then vs Now</b><span>Hear how much clearer Mia's "rabbit" is since week 1</span></div>
-        <div class="go">Listen →</div>
-      </div>
-      <div class="mini" id="checkCard">
-        <div class="ico">🔎</div>
-        <b>Speech Check</b><span>2-min sound scan</span>
-      </div>
-      <div class="mini" id="mapCard">
-        <div class="ico">🗺️</div>
-        <b>Adventure Map</b><span>See the journey</span>
-      </div>
-    </div>
-
-    <div class="plan">
-      <div class="hd"><b>This week's plan</b><a href="/progress.html">Details</a></div>
-      <div class="days">
-        <div class="day done"></div><div class="day done"></div>
-        <div class="day today"></div>
-        <div class="day"></div><div class="day"></div><div class="day"></div><div class="day"></div>
-      </div>
-      <div class="cap" id="cap">Mia's R is getting strong at the start of words 💪 Next up: R in the middle. The plan adjusts as she improves.</div>
-    </div>
   </div>
 
   <div class="nav">
     <a class="on" href="/today.html"><span class="ni">🏠</span>Today</a>
     <a href="/map.html"><span class="ni">🗺️</span>Map</a>
     <a href="/progress.html"><span class="ni">📈</span>Progress</a>
-    <a href="/settings.html"><span class="ni">⚙️</span>Settings</a>
   </div>
 
   <script src="/sona.js"></script>
@@ -161,17 +129,6 @@
     function storyHref(){return "/story.html?sound="+encodeURIComponent(sound)+"&position="+pos+"&interest="+encodeURIComponent(interest)+"&name="+encodeURIComponent(name)+"&minutes="+minutes;}
     function go(){location.href=storyHref();}
     $("startBtn").onclick=go; $("scene").onclick=go;
-    Array.prototype.forEach.call($("minsRow").children,function(el){el.onclick=function(){
-      Array.prototype.forEach.call($("minsRow").children,function(x){x.classList.remove("on");});
-      el.classList.add("on"); minutes=Number(el.getAttribute("data-m"))||10;
-      if(window.Sona&&Sona.saveProfile)Sona.saveProfile({dailyMinutes:minutes});
-      $("minChip").textContent="~"+minutes+" min";
-    };});
-    $("checkCard").onclick=function(){location.href="/check.html";};
-    $("mapCard").onclick=function(){location.href="/map.html";};
-    $("thenNow").onclick=function(){location.href="/progress.html";};
-    // mark the picked minutes segment from profile
-    Array.prototype.forEach.call($("minsRow").children,function(el){el.classList.toggle("on",Number(el.getAttribute("data-m"))===minutes);});
     applyTheme();
     // free-trial banner (no card): show days left + lock-in founding price
     (function(){ if(!window.Sona)return; if((Sona.isSubscribed&&Sona.isSubscribed())||(Sona.isPilot&&Sona.isPilot()))return; if(Sona.ensureTrial)Sona.ensureTrial(); var b=$("trialBanner"),m=$("trialMsg"); if(!b||!m)return;
