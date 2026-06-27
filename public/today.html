@@ -126,9 +126,29 @@
       if(g&&g.streak)$("streak").textContent=g.streak.count||0;
       if(window.Sona&&Sona.characterById){try{var c=Sona.characterById(P.character||"leo");}catch(e){}}
     }
-    function storyHref(){return "/story.html?sound="+encodeURIComponent(sound)+"&position="+pos+"&interest="+encodeURIComponent(interest)+"&name="+encodeURIComponent(name)+"&minutes="+minutes;}
-    function go(){location.href=storyHref();}
-    $("startBtn").onclick=go; $("scene").onclick=go;
+    // "Start" launches the EXISTING 3-game session engine — the same pattern
+    // warmup.html uses: Sona.session.start(...) then go to Sona.session.url().
+    // Sound = the child's first focus sound (as warmup/level derive it); level =
+    // the lowest not-yet-finished unlocked level from the existing level state
+    // (Sona.levelDone / Sona.unlockedThru), default 1. No new source of truth.
+    // story.html stays a normal game in the deck — just no longer the daily entry.
+    function currentLevel(){
+      try{ var cap=(window.Sona&&Sona.unlockedThru)?Sona.unlockedThru():1;
+        for(var L=1; L<=cap; L++){ if(!(window.Sona&&Sona.levelDone&&Sona.levelDone(L))) return L; }
+        return cap||1;
+      }catch(e){ return 1; }
+    }
+    function startSession(){
+      var L=currentLevel();
+      try{
+        if(window.Sona&&Sona.session){
+          Sona.session.start(L, sound, (Sona.levelGames?Sona.levelGames(L):["rocket.html"]), L);
+          var u=Sona.session.url(); if(u){ location.href=u; return; }
+        }
+      }catch(e){}
+      location.href="/level.html?level="+L; // same fallback warmup.html uses
+    }
+    $("startBtn").onclick=startSession; $("scene").onclick=startSession;
     applyTheme();
     // free-trial banner (no card): show days left + lock-in founding price
     (function(){ if(!window.Sona)return; if((Sona.isSubscribed&&Sona.isSubscribed())||(Sona.isPilot&&Sona.isPilot()))return; if(Sona.ensureTrial)Sona.ensureTrial(); var b=$("trialBanner"),m=$("trialMsg"); if(!b||!m)return;
