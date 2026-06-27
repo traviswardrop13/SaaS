@@ -15,6 +15,10 @@
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-title" content="Sona" />
   <style>
+    /* standard 3-tab bottom nav (identical to Today / Play) */
+    .nav{position:fixed;bottom:0;left:0;right:0;max-width:480px;margin:0 auto;background:#fff;border-top:1px solid #e8eef4;display:flex;justify-content:space-around;padding:9px 0 calc(9px + env(safe-area-inset-bottom));z-index:9;}
+    .nav a{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;font-weight:800;color:#9fb0c0;text-decoration:none;}
+    .nav a .ni{font-size:21px;} .nav a.on{color:var(--blue-d);}
     .week{display:flex;gap:8px;margin-top:12px;}
     .day{flex:1;text-align:center;}
     .day .d{position:relative;width:34px;height:34px;margin:0 auto 5px;border-radius:50%;display:flex;align-items:center;justify-content:center;
@@ -215,11 +219,11 @@
   <script defer src="/_vercel/insights/script.js"></script>
 </head>
 <body>
-  <div class="wrap">
+  <div class="wrap" style="padding-bottom:96px;">
     <header class="app">
       <div class="brand"><span class="leo"><img src="/coach/leo-icon.png" alt="Leo" /></span> Sona</div>
       <div class="pills">
-        <a class="iconbtn" href="/map.html" title="Home" style="display:flex;align-items:center;justify-content:center;">🏠</a>
+        <a class="iconbtn" href="/today.html" title="Home" style="display:flex;align-items:center;justify-content:center;">🏠</a>
         <a class="iconbtn" href="/settings.html" title="Settings" style="display:flex;align-items:center;justify-content:center;">⚙️</a>
       </div>
     </header>
@@ -263,7 +267,13 @@
     <div class="card"><h2>Sounds &amp; mastery</h2><div id="bysound" style="margin-top:6px;"></div></div>
     <div class="card"><h2>Recent sessions</h2><div id="recent" style="margin-top:4px;"></div></div>
 
-    <p class="muted noprint" style="text-align:center;margin-top:22px;font-size:13px;"><a href="/map.html">← Back to Home</a></p>
+    <p class="muted noprint" style="text-align:center;margin-top:22px;font-size:13px;"><a href="/today.html">← Back to Home</a></p>
+  </div>
+
+  <div class="nav">
+    <a href="/today.html"><span class="ni">🏠</span>Today</a>
+    <a href="/map.html"><span class="ni">🎮</span>Play</a>
+    <a class="on" href="/progress.html"><span class="ni">📈</span>Progress</a>
   </div>
 
   <script src="/sona.js"></script>
