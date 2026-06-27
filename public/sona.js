@@ -139,6 +139,43 @@
     return g.stage[sound] || 0;
   }
 
+  // ── SLP content ladder: isolation → syllable → word → phrase → sentence → conversation ──
+  // The way real therapists sequence a target sound. Per-sound progress climbs
+  // the 6 rungs; a rung unlocks the next after a solid round (~80% — "encouraging"
+  // gating: only ever moves UP, and every lower rung stays replayable). We reuse
+  // g.stage[sound] as the rung index (0..6, 6 = all rungs cleared) so it stays in
+  // sync with the existing stage tracker (stageOf/completeStage keep their 0..3
+  // contract for the legacy lesson flow).
+  const LADDER = ["isolation", "syllable", "word", "phrase", "sentence", "conversation"];
+  const LADDER_LABEL = { isolation: "Sound", syllable: "Syllables", word: "Words", phrase: "Phrases", sentence: "Sentences", conversation: "Talking" };
+  const RUNG_MASTER = 0.8; // ~80% on a rung advances to the next
+  function rungOf(sound) { const g = getProgress(); return Math.min(LADDER.length, g.stage[sound] || 0); } // 0..6
+  function rungName(i) { return LADDER[i] || "mastered"; }
+  function rungLabel(i) { return LADDER_LABEL[LADDER[i]] || "Mastered"; }
+  // Record a finished round at `rung`. accuracy: 0..1 (or a pass boolean). Encouraging:
+  // advances only when solid and never regresses.
+  function recordRung(sound, rung, accuracy) {
+    const g = getProgress(); const cur = g.stage[sound] || 0;
+    const ok = (typeof accuracy === "number") ? accuracy >= RUNG_MASTER : !!accuracy;
+    if (ok && rung >= cur && cur < LADDER.length) { g.stage[sound] = Math.min(LADDER.length, rung + 1); save(GKEY, g); }
+    return g.stage[sound] || 0;
+  }
+  // Practice items for a (sound, rung), wired to the existing content sources.
+  // isolation/syllable score as "phoneme" (lenient); word+ score "full". Degrades
+  // gracefully to words if SonaContent (gamecontent.js) isn't loaded on a page.
+  function ladderContent(sound, rung) {
+    const SC = (typeof window !== "undefined") ? window.SonaContent : null;
+    const lvl = LADDER[Math.max(0, Math.min(LADDER.length - 1, rung || 0))];
+    const ws = () => wordsFor(sound) || [];
+    if (lvl === "isolation") return [{ t: soundSay(sound), say: soundSay(sound), display: soundLabel(sound), level: "isolation", mode: "phoneme" }];
+    if (lvl === "syllable") return (SC && SC.syllables ? SC.syllables(sound) : []).map((s) => ({ t: s.t, say: s.say, display: s.t, level: "syllable", mode: "phoneme" }));
+    if (lvl === "word") return ws().map((w) => ({ t: w.w, say: w.w, display: w.w, e: w.e, word: w.w, level: "word", mode: "full" }));
+    if (lvl === "phrase") return (SC && SC.phrases ? SC.phrases(sound) : ws().map((w) => ({ t: w.w, say: w.w, e: w.e, word: w.w }))).map((p) => ({ t: p.t, say: p.say, display: p.t, e: p.e, word: p.word, level: "phrase", mode: "full" }));
+    if (lvl === "sentence") return (SC && SC.sentences ? SC.sentences(sound) : ws().map((w) => ({ t: w.w, say: w.w, e: w.e, word: w.w }))).map((s) => ({ t: s.t, say: s.say, display: s.t, e: s.e, word: s.word, level: "sentence", mode: "full" }));
+    if (lvl === "conversation") return (SC && SC.chats ? SC.chats(sound) : []).map((c) => ({ q: c.q, options: c.options, level: "conversation", mode: "full" }));
+    return [];
+  }
+
   // ── the daily variety engine ──
   // Sessions are assembled from rotating ingredients seeded by the date, so
   // every day feels different without hand-authoring a 30-day curriculum:
@@ -912,5 +949,5 @@
   }
   try { installDebug(); } catch (e) {}
 
-  global.Sona = { pic, ALL_SOUNDS, soundLabel, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, getProfile, saveProfile, getProgress, recordSession, resetProgress, stageOf, completeStage, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, gated, getTrial, startTrial, ensureTrial, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, LEVEL_GAMES, GAME_DECK, GAMES_PER_LEVEL, levelGames, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, WORLDS, LEVELS_PER_WORLD, campaignLevels, campaignSounds, campaignState, worldById, worldLevels, worldStars, worldCleared, levelStars, setLevelStars, totalStars, worldUnlocked, levelUnlocked, campaignLaunch, campaignResolve, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, sendProgress, sendFeedback, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue };
+  global.Sona = { pic, ALL_SOUNDS, soundLabel, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, getProfile, saveProfile, getProgress, recordSession, resetProgress, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, ladderContent, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, gated, getTrial, startTrial, ensureTrial, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, LEVEL_GAMES, GAME_DECK, GAMES_PER_LEVEL, levelGames, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, WORLDS, LEVELS_PER_WORLD, campaignLevels, campaignSounds, campaignState, worldById, worldLevels, worldStars, worldCleared, levelStars, setLevelStars, totalStars, worldUnlocked, levelUnlocked, campaignLaunch, campaignResolve, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, sendProgress, sendFeedback, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue };
 })(window);
