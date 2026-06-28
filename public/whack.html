@@ -54,6 +54,7 @@
       <span class="stat coins"><span style="display:inline-block;width:13px;height:13px;border-radius:50%;background:linear-gradient(180deg,#ffd84d,#f4b400);box-shadow:inset 0 0 0 2px #e0a400;vertical-align:-2px;margin-right:3px;"></span><span id="coins">0</span></span>
     </div>
     <img id="leo" src="/coach/leo.png" alt="Leo" />
+    <div id="rungBadge" style="text-align:center;font-family:'Baloo 2';font-weight:800;font-size:12px;color:var(--blue-d);opacity:.85;margin-top:2px;"></div>
     <div id="prompt">Say the words to pop them!</div>
     <div id="hearRow"><button id="hear"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;vertical-align:-3px;margin-right:5px;"><path d="M11 5 6 9H3v6h3l5 4V5Z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/></svg>Say it again</button></div>
     <div id="grid"></div>
@@ -69,12 +70,19 @@
   </div>
 
   <script src="/sona.js"></script>
+  <script src="/gamecontent.js"></script>
   <script>
     var profile = (window.Sona ? Sona.getProfile() : { focusSounds:["R"], voiceId:"", volume:0.8 });
     var params = new URLSearchParams(location.search);
     var SOUND = (params.get("sound") || (profile.focusSounds && profile.focusSounds[0]) || "R").toUpperCase();
     if(!(window.Sona && Sona.WORDS && Sona.WORDS[SOUND])) SOUND="R";
-    var POOL = (window.Sona && Sona.wordsFor) ? Sona.wordsFor(SOUND, profile.practicePosition) : [{w:"rabbit",e:"🐰"}];
+    /* ===== SLP ladder: serve the child's CURRENT rung for this sound ===== */
+    var RUNG = (window.Sona&&Sona.rungOf)?Sona.rungOf(SOUND):2; if(RUNG>5)RUNG=5;
+    var ITEMS = (window.Sona&&Sona.ladderContent)?Sona.ladderContent(SOUND,RUNG):[];
+    if(RUNG>=5 && (!ITEMS.length || (ITEMS[0]&&ITEMS[0].q))){ RUNG=4; ITEMS=Sona.ladderContent(SOUND,4); } // arcade can't do conversation -> use sentences
+    if(!ITEMS.length){ ITEMS=((window.Sona&&Sona.wordsFor)?Sona.wordsFor(SOUND):[]).map(function(w){return {t:w.w,say:w.w,display:w.w,e:w.e,word:w.w,level:"word",mode:"full"};}); }
+    if(!ITEMS.length){ ITEMS=[{t:"rabbit",say:"rabbit",display:"rabbit",e:"🐰",word:"rabbit",level:"word",mode:"full"}]; }
+    var POOL = ITEMS;
     var DIFF=(window.Sona&&Sona.diff)?Sona.diff():1;
     /* ===== 10 distinct levels — a journey through The Garden ===== */
     var LEVELS = [
@@ -125,39 +133,54 @@
       setTimeout(fin,maxMs); }); }
     // strict word scoring: SpeechAce "great" = a clean rep; wrong word/silence → no pop
     var lastFb="";
-    async function scoreWord(word,res){ lastFb="";
-      if(useSpeechAce && res.blob){ try{ var fd=new FormData(); fd.append("audio",new File([res.blob],"a.webm",{type:res.blob.type||"audio/webm"})); fd.append("text",word.w); fd.append("targetSound",SOUND); fd.append("userId","child"); fd.append("mode","full"); var r=await fetch("/api/score",{method:"POST",body:fd}); var j=await r.json(); if(j&&j.ok&&j.rating){ lastFb=j.feedback||""; return j.rating==="great"; } }catch(e){} }
-      if(res.transcript) return matchText(res.transcript,word.w);
+    async function scoreWord(item,res){ lastFb="";
+      var txt=item.t, md=item.mode||"full";
+      if(useSpeechAce && res.blob){ try{ var fd=new FormData(); fd.append("audio",new File([res.blob],"a.webm",{type:res.blob.type||"audio/webm"})); fd.append("text",txt); fd.append("targetSound",SOUND); fd.append("userId","child"); fd.append("mode",md); var r=await fetch("/api/score",{method:"POST",body:fd}); var j=await r.json(); if(j&&j.ok&&j.rating){ lastFb=j.feedback||""; return j.rating==="great"; } }catch(e){} }
+      if(res.transcript) return matchText(res.transcript,txt);
+      // phoneme rungs: lenient — any spoken attempt counts when no scorer/transcript
+      if(md==="phoneme" && res.spoke) return true;
       return false;
     }
 
     /* game */
     var score=0, busy=false, target=null, slots=[];
+    var correct=0, total=0, turnIdx=0;
     function layout(){ var grid=$("grid"); grid.innerHTML=""; slots=[]; for(var i=0;i<6;i++){ var hole=document.createElement("div"); hole.className="hole"; var cr=document.createElement("div"); cr.className="critter"; cr.innerHTML='<span class="e"></span><span class="w"></span>'; hole.appendChild(cr); grid.appendChild(hole); slots.push(cr); } }
 
+    function itemKey(it){ return it.t; }
+    function itemShow(it){ return it.display||it.t; }
+    function itemEmoji(it){ return it.e || ((window.Sona&&Sona.soundSay)?"🔊":"⭐"); }
     async function round(){
       if(score>=GOAL) return finishGame();
-      target=pick(POOL);
+      target=POOL[turnIdx%POOL.length]; turnIdx++;   // cycle through ITEMS so short pools (isolation=1) still fill a round
       // a few critters pop up; the kid pops the one Leo names by SAYING it correctly
-      var others=shuffle(POOL.filter(function(w){return w.w!==target.w;}));
+      var tk=itemKey(target);
+      var others=shuffle(POOL.filter(function(w){return itemKey(w)!==tk;}));
       var show=shuffle([target].concat(others.slice(0,SHOWMAX-1))).slice(0,Math.min(SHOWMAX,POOL.length));
       var holes=shuffle([0,1,2,3,4,5]).slice(0,show.length);
       slots.forEach(function(cr){ cr.className="critter"; cr.dataset.word=""; cr.onclick=null; });
-      show.forEach(function(w,k){ var cr=slots[holes[k]]; cr.dataset.word=w.w; cr.querySelector(".e").innerHTML=(window.Sona&&Sona.pic?Sona.pic(w.w,w.e,38):w.e); cr.querySelector(".w").textContent=w.w; setTimeout(function(){cr.classList.add("up");}, 90*k); });
+      show.forEach(function(w,k){ var cr=slots[holes[k]]; cr.dataset.word=itemKey(w); var lbl=itemShow(w); cr.querySelector(".e").innerHTML=(window.Sona&&Sona.pic?Sona.pic(w.word||lbl,itemEmoji(w),38):itemEmoji(w)); cr.querySelector(".w").textContent=lbl; setTimeout(function(){cr.classList.add("up");}, 90*k); });
       attempt();
     }
+    var counted=false;
     async function attempt(){
-      $("prompt").textContent="Say “"+target.w+"” to pop it!";
+      var tk=itemKey(target), lbl=itemShow(target);
+      var isPhon=(target.level==="isolation"||target.level==="syllable");
+      $("prompt").textContent=isPhon?("Say “"+lbl+"” to pop it!"):("Say “"+lbl+"” to pop it!");
       setLeo("listen");
-      await say(target.w);            // Leo models the word
+      // model: at isolation/syllable still coach the sound; at word+ just present the item
+      if(isPhon && window.Sona && Sona.repeatCue){ await say(Sona.repeatCue(SOUND)); }
+      else { await say(target.say||target.t); }
+      if(!counted){ total++; counted=true; }
       var res=await recordTurn(POPMS); var ok=await scoreWord(target,res);
-      if(window.Sona&&Sona.logAttempt)Sona.logAttempt({game:"whack",sound:SOUND,pass:ok,word:target.w});
+      if(window.Sona&&Sona.logAttempt)Sona.logAttempt({game:"whack",sound:SOUND,pass:ok,word:tk});
       if(!ok){
         if(window.Sona&&Sona.sfx)Sona.sfx.tap&&Sona.sfx.tap();
-        setLeo("idle"); $("prompt").textContent=(window.Sona&&Sona.coachLine)?Sona.coachLine(SOUND,lastFb):"Not quite — try again!"; await say(lastFb||target.w);
-        setTimeout(attempt, 350); return;   // same word again
+        setLeo("idle"); $("prompt").textContent=(window.Sona&&Sona.coachLine)?Sona.coachLine(SOUND,lastFb):"Not quite — try again!"; await say(lastFb||target.say||target.t);
+        setTimeout(attempt, 350); return;   // same item again
       }
-      var tcr=null; slots.forEach(function(cr){ if(cr.dataset.word===target.w) tcr=cr; });
+      correct++; counted=false;
+      var tcr=null; slots.forEach(function(cr){ if(cr.dataset.word===tk) tcr=cr; });
       if(tcr) tcr.classList.add("right");
       if(window.Sona){ Sona.sfx&&Sona.sfx.correct&&Sona.sfx.correct(); Sona.pop&&Sona.pop("⭐",{color:"#46a302",y:window.innerHeight*0.4}); }
       setLeo("cheer"); leoReact();
@@ -167,6 +190,7 @@
     }
 
     function finishGame(){
+      window.Sona&&window.Sona.recordRung&&window.Sona.recordRung(SOUND,RUNG,correct/Math.max(1,total));
       $("winScore").textContent=score;
       var earned=15+score*2;
       if(window.Sona&&Sona.addCoins)Sona.addCoins(earned);
@@ -181,9 +205,11 @@
     function startGame(){
       $("win").classList.remove("show"); score=0; $("score").textContent="0"; $("goal").textContent=GOAL;
       $("coins").textContent=Sona.getCoins?Sona.getCoins():0;
+      var rb=$("rungBadge"); if(rb) rb.textContent="Practicing: "+((window.Sona&&Sona.rungLabel)?Sona.rungLabel(RUNG):"");
+      correct=0; total=0;
       layout(); round();
     }
-    $("hear").onclick=function(){ if(target) say(target.w); };
+    $("hear").onclick=function(){ if(target) say(target.say||target.t); };
 
     (async function(){
       try{ var r=await fetch("/api/score"); var j=await r.json(); useSpeechAce=!!(j&&j.hasKey); }catch(e){ useSpeechAce=false; }

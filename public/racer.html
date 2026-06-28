@@ -276,12 +276,22 @@
   </div>
 
   <script src="/sona.js"></script>
+  <script src="/gamecontent.js"></script>
   <script>
     var profile = (window.Sona ? Sona.getProfile() : { focusSounds:["R"], voiceId:"", volume:0.8 });
     var params = new URLSearchParams(location.search);
     var SOUND = (params.get("sound") || (profile.focusSounds && profile.focusSounds[0]) || "R").toUpperCase();
     if(!(window.Sona && Sona.WORDS && Sona.WORDS[SOUND])) SOUND="R";
-    var POOL = (window.Sona && Sona.wordsFor) ? Sona.wordsFor(SOUND, profile.practicePosition) : [{w:"rabbit",e:"🐰"}];
+    // ── SLP CONTENT LADDER ── serve the child's CURRENT rung for this sound,
+    // score it at that level, and record mastery on finish. Computed ONCE.
+    var RUNG = (window.Sona&&Sona.rungOf)?Sona.rungOf(SOUND):2; if(RUNG>5)RUNG=5;
+    var ITEMS = (window.Sona&&Sona.ladderContent)?Sona.ladderContent(SOUND,RUNG):[];
+    if(RUNG>=5 && (!ITEMS.length || (ITEMS[0]&&ITEMS[0].q))){ RUNG=4; ITEMS=Sona.ladderContent(SOUND,4); } // arcade can't do conversation -> use sentences
+    if(!ITEMS.length){ ITEMS=((window.Sona&&Sona.wordsFor)?Sona.wordsFor(SOUND):[]).map(function(w){return {t:w.w,say:w.w,display:w.w,e:w.e,word:w.w,level:"word",mode:"full"};}); }
+    if(!ITEMS.length){ ITEMS=[{t:"rabbit",say:"rabbit",display:"rabbit",e:"🐰",word:"rabbit",level:"word",mode:"full"}]; }
+    // helper: cycle through ITEMS (modulo) so short rungs (isolation = 1 item) still fill a round
+    function itemAt(i){ return ITEMS[((i%ITEMS.length)+ITEMS.length)%ITEMS.length]; }
+    var POOL = ITEMS; // back-compat alias; gates now read ITEMS via itemAt()
     var DIFF=(window.Sona&&Sona.diff)?Sona.diff():1;
     // ── 10 DISTINCT SPEEDWAY LEVELS ── a journey across the racing world.
     // Each level: its own scene (bg/road/accent/props) + scaled challenge.
@@ -301,6 +311,8 @@
       {name:"Champion Stadium",bg:"linear-gradient(180deg,#ffe28a 0%,#ffb14a 50%,#ff7a3a 100%)", road:"linear-gradient(180deg,#5a4a3a,#33271c)", accent:"#ff9600", props:["🏆","🎉"], revNeed:8, gates:7, rdur:[20,30]}
     ];
     var L = LEVELS[Math.min(9, Math.max(0, DIFF-1))];
+    // ── RUNG BADGE ── reuse the hidden #speedTag stat slot in the header.
+    try{ var _rb=document.getElementById("speedTag"); if(_rb){ _rb.style.display=""; _rb.textContent="Practicing: "+((window.Sona&&Sona.rungLabel)?Sona.rungLabel(RUNG):""); } }catch(e){}
     // Apply this level's scene to the real scene elements (body + #road), and
     // let real art override CSS later via /coach/racer/lvlN.png (zero code).
     try{ document.body.style.background=L.bg; var _rd=document.getElementById("road"); if(_rd)_rd.style.background=L.road; }catch(e){}
@@ -388,22 +400,36 @@
         setTimeout(function(){ if(!done)finish(); }, maxMs);
       });
     }
-    // Strict scoring: returns {score, pass}. "pass" = a clean (great) rep of the word.
-    async function scoreWord(word,res){
-      if(useSpeechAce && res.blob){ try{ var fd=new FormData(); fd.append("audio",new File([res.blob],"a.webm",{type:res.blob.type||"audio/webm"})); fd.append("text",word.w); fd.append("targetSound",SOUND); fd.append("userId","child"); fd.append("mode","full"); var r=await fetch("/api/score",{method:"POST",body:fd}); var j=await r.json(); if(j&&j.ok&&typeof j.score==="number")return { score:j.score, pass:j.rating==="great", feedback:j.feedback }; }catch(e){} }
-      if(res.transcript){ var ok=matchText(res.transcript,word.w); return { score: ok?85:30, pass: ok }; }
+    // Strict scoring: returns {score, pass}. "pass" = a clean (great) rep.
+    // Scores the ITEM's exact token (item.t) at the rung's mode (phoneme/full).
+    async function scoreItem(item,res){
+      var scoreText=item.t, mode=item.mode||"full";
+      if(useSpeechAce && res.blob){ try{ var fd=new FormData(); fd.append("audio",new File([res.blob],"a.webm",{type:res.blob.type||"audio/webm"})); fd.append("text",scoreText); fd.append("targetSound",SOUND); fd.append("userId","child"); fd.append("mode",mode); var r=await fetch("/api/score",{method:"POST",body:fd}); var j=await r.json(); if(j&&j.ok&&typeof j.score==="number")return { score:j.score, pass:j.rating==="great", feedback:j.feedback }; }catch(e){} }
+      // phoneme rungs: any voiced attempt that reached the transcript path is lenient.
+      if(mode==="phoneme"){ return { score: 80, pass: true }; }
+      if(res.transcript){ var ok=matchText(res.transcript,item.word||item.t); return { score: ok?85:30, pass: ok }; }
       return { score:70, pass:true };
     }
 
     /* game */
     var progress=0, gateIdx=0, totalReps=0, cleanWords=0, queue=[];
+    var gateCorrect=0, gateTotal=0; // rung accuracy this round → Sona.recordRung
     var RDUR=L.rdur, raceStart=0; // seconds each rival takes to finish from GO (per level)
     function startRivals(){ raceStart=performance.now(); ["r1","r2"].forEach(function(id,i){ var el=$(id); if(!el)return; el.style.transition="left "+RDUR[i]+"s linear"; el.style.left="88%"; }); }
     function resetRivals(){ ["r1","r2"].forEach(function(id){ var el=$(id); if(!el)return; el.style.transition="none"; el.style.left="6%"; void el.offsetWidth; }); }
     function setKart(p){ $("kart").style.left=(6+p*0.82*100/100*84)+"%"; } // 6%..~90%
     function kartTo(pct){ $("kart").style.left=pct+"%"; }
-    function showWord(w){ $("wordEmoji").style.display=""; $("wordEmoji").innerHTML=(window.Sona&&Sona.pic)?Sona.pic(w.w,w.e,38):(w.e||"⭐"); $("wordText").textContent=w.w; }
-    function showSound(){ $("wordEmoji").style.display="none"; $("wordText").textContent=SOUND; }
+    // SHOW a ladder item: display text + emoji (fall back to the sound icon when
+    // the rung has no emoji — isolation/syllable/sentence). Cycles via itemAt().
+    function showItem(it){
+      var disp=(it.display!=null?it.display:it.t);
+      var em=it.e;
+      $("wordEmoji").style.display="";
+      if(em){ $("wordEmoji").innerHTML=(window.Sona&&Sona.pic)?Sona.pic(it.word||it.t,em,38):em; }
+      else { $("wordEmoji").innerHTML=(window.Sona&&Sona.soundLabel)?Sona.soundLabel(SOUND):SOUND; }
+      $("wordText").textContent=disp;
+    }
+    function showSound(){ $("wordEmoji").style.display="none"; $("wordText").textContent=(window.Sona&&Sona.soundLabel)?Sona.soundLabel(SOUND):SOUND; }
 
     function lights(state){
       $("signal").querySelector(".r").className="bulb r"+(state==="r"?" on":"");
@@ -428,27 +454,35 @@
       await new Promise(function(r){setTimeout(r,900);});
       $("kart").classList.remove("zoom"); $("dust").style.opacity="0";
 
-      // GATES (distributed practice) — strict: must say each word right to pass the gate.
-      queue=shuffle(POOL); $("gateTot").textContent=GATES;
+      // GATES (distributed practice) — strict: must say each ITEM right to pass.
+      // Items come from the child's CURRENT rung; we CYCLE (itemAt) so short rungs
+      // (isolation = 1 item) still fill GATES turns without going out of bounds.
+      // Shuffle the cycle order only when there's more than one item.
+      var order=ITEMS.length>1?shuffle(ITEMS.map(function(_,i){return i;})):[0];
+      $("gateTot").textContent=GATES;
       for(gateIdx=0; gateIdx<GATES; gateIdx++){
-        var w=queue[gateIdx%queue.length];
+        var it=itemAt(order[gateIdx%order.length]);
+        var isSnd=(it.level==="isolation"||it.level==="syllable");
         $("gateNum").textContent=gateIdx;
-        showWord(w); $("hear").onclick=(function(ww){return function(){say(ww.w);};})(w);
-        await say(w.w);
+        showItem(it); $("hear").onclick=(function(ii){return function(){say(ii.say!=null?ii.say:ii.t);};})(it);
+        await say(it.say!=null?it.say:it.t);
         var passed=false;
         while(!passed){
-          $("prompt").textContent="Say the word to zoom!";
-          var res=await recordTurn(); var sa=await scoreWord(w,res);
-          if(window.Sona&&Sona.logAttempt)Sona.logAttempt({game:"racer",sound:SOUND,pass:sa.pass,score:sa.score,word:w.w});
+          gateTotal++;
+          $("prompt").textContent=isSnd?"Say the sound to zoom!":"Say it to zoom!";
+          var res=await recordTurn(); var sa=await scoreItem(it,res);
+          if(window.Sona&&Sona.logAttempt)Sona.logAttempt({game:"racer",sound:SOUND,pass:sa.pass,score:sa.score,word:it.t});
           if(sa.pass){
-            passed=true; cleanWords++;
+            passed=true; cleanWords++; gateCorrect++;
             if(window.Sona&&Sona.sfx)Sona.sfx.correct&&Sona.sfx.correct();
             var kl=document.querySelector("#kart .leo"); if(kl){ kl.src="/coach/poses/leo-celebrate.png"; kl.classList.remove("cheer"); void kl.offsetWidth; kl.classList.add("cheer"); setTimeout(function(){ kl.src="/coach/leo.png"; kl.classList.remove("cheer"); }, 700); }
             vroom(1); $("prompt").textContent="Nice one!";
           } else {
             if(window.Sona&&Sona.sfx)Sona.sfx.tap&&Sona.sfx.tap();
             $("prompt").textContent=(window.Sona&&Sona.coachLine)?Sona.coachLine(SOUND,sa.feedback):"Try again!";
-            await say(sa.feedback||("Let's try again. "+window.Sona.soundSay(SOUND)+"… "+w.w)); // coach + re-model
+            // keep sound-coaching at isolation/syllable: re-model the sound itself.
+            var remodel=isSnd?(window.Sona.repeatCue?window.Sona.repeatCue(SOUND):(window.Sona.soundSay(SOUND)+"… "+(it.say!=null?it.say:it.t))):("Let's try again. "+window.Sona.soundSay(SOUND)+"… "+(it.say!=null?it.say:it.t));
+            await say(sa.feedback||remodel); // coach + re-model
           }
         }
         progress=0.25+ (gateIdx+1)/GATES*0.7;
@@ -473,6 +507,8 @@
       var bonus=place===1?20:place===2?10:0;
       var earned=20 + totalReps*2 + cleanWords*3 + bonus;
       if(window.Sona&&Sona.addCoins)Sona.addCoins(earned);
+      // record this round's mastery on the ladder rung (encouraging gating ~80%)
+      if(window.Sona&&Sona.recordRung)Sona.recordRung(SOUND, RUNG, gateCorrect/Math.max(1,gateTotal));
       try{ var GS=JSON.parse(localStorage.getItem("sona.games.v1")||"{}"); GS[SOUND]=GS[SOUND]||{}; GS[SOUND].racer={done:true}; GS.lastPlayDay=new Date().toISOString().slice(0,10); localStorage.setItem("sona.games.v1",JSON.stringify(GS)); }catch(e){}
       $("winTitle").textContent=(place===1?"You won the race! ":"Race done! ")+medal;
       $("winUnlock").textContent=ptxt+"  ·  +"+earned+" 🪙";
@@ -483,7 +519,7 @@
 
     function startGame(){
       $("win").classList.remove("show"); $("rpmWrap").style.display=""; $("rpmFill").style.width="0%";
-      progress=0; gateIdx=0; totalReps=0; cleanWords=0; $("gateNum").textContent="0";
+      progress=0; gateIdx=0; totalReps=0; cleanWords=0; gateCorrect=0; gateTotal=0; $("gateNum").textContent="0";
       resetRivals();
       run();
     }

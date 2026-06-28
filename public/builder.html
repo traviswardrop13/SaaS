@@ -161,6 +161,7 @@
     <header>
       <button id="close" title="Back">‹</button>
       <span class="htitle">Build the tower! 🧱</span>
+      <span id="rungBadge" style="font-family:'Baloo 2';font-weight:800;font-size:11px;color:#3a6b86;background:rgba(255,255,255,.7);border-radius:99px;padding:3px 9px;margin-left:6px;white-space:nowrap;"></span>
       <span class="count" id="count">0 / 0</span>
     </header>
     <div id="stage">
@@ -183,6 +184,7 @@
   </div></div>
 
   <script src="/sona.js"></script>
+  <script src="/gamecontent.js"></script>
   <script>
     var $=function(id){return document.getElementById(id);};
     var pick=function(a){return a[Math.floor(Math.random()*a.length)];};
@@ -191,7 +193,14 @@
     var params=new URLSearchParams(location.search);
     var SOUND=(params.get("sound")||(profile.focusSounds&&profile.focusSounds[0])||"R").toUpperCase();
     if(!(window.Sona&&Sona.WORDS&&Sona.WORDS[SOUND])) SOUND="R";
-    var POOL=(window.Sona&&Sona.wordsFor)?Sona.wordsFor(SOUND,profile.practicePosition):[{w:"rabbit",e:"🐰"},{w:"rocket",e:"🚀"}];
+    // ── SLP CONTENT LADDER ── serve the child's CURRENT rung for this sound
+    //    (isolation→syllable→word→phrase→sentence) instead of always WORD level.
+    var RUNG=(window.Sona&&Sona.rungOf)?Sona.rungOf(SOUND):2; if(RUNG>5)RUNG=5;
+    var ITEMS=(window.Sona&&Sona.ladderContent)?Sona.ladderContent(SOUND,RUNG):[];
+    if(RUNG>=5 && (!ITEMS.length || (ITEMS[0]&&ITEMS[0].q))){ RUNG=4; ITEMS=Sona.ladderContent(SOUND,4); } // arcade can't do conversation -> use sentences
+    if(!ITEMS.length){ ITEMS=((window.Sona&&Sona.wordsFor)?Sona.wordsFor(SOUND):[]).map(function(w){return {t:w.w,say:w.w,display:w.w,e:w.e,word:w.w,level:"word",mode:"full"};}); }
+    // POOL is now the ladder ITEMS (same game mechanic, rung-aware content).
+    var POOL=ITEMS;
     var DIFF=(window.Sona&&Sona.diff)?Sona.diff():1;
     // ── 10 DISTINCT LEVELS ── Build Site journey: sandbox → cottage → house →
     //    tower → bridge → skyscraper → castle → ... → grand opening (boss).
@@ -240,7 +249,9 @@
       }
     })();
     var placed=0, queue=[], current=null;
+    var correct=0, total=0; // round mastery tracking for Sona.recordRung
     $("count").textContent="0 / "+GOAL;
+    try{ var rb=$("rungBadge"); if(rb) rb.textContent="Practicing: "+((window.Sona&&Sona.rungLabel)?Sona.rungLabel(RUNG):""); }catch(e){}
 
     var audioCtx=null;
     function getCtx(){ if(!audioCtx){var AC=window.AudioContext||window.webkitAudioContext;audioCtx=new AC();} if(audioCtx.state==="suspended")audioCtx.resume(); return audioCtx; }
@@ -267,16 +278,21 @@
       setTimeout(fin,maxMs); }); }
     var lastFb="";
     async function scoreWord(word,res){ lastFb="";
-      if(useSpeechAce && res.blob){ try{ var fd=new FormData(); fd.append("audio",new File([res.blob],"a.webm",{type:res.blob.type||"audio/webm"})); fd.append("text",word.w); fd.append("targetSound",SOUND); fd.append("userId","child"); fd.append("mode","full"); var r=await fetch("/api/score",{method:"POST",body:fd}); var j=await r.json(); if(j&&j.ok&&j.rating){ lastFb=j.feedback||""; return j.rating==="great"; } }catch(e){} }
-      if(res.transcript) return matchText(res.transcript,word.w);
+      var scoreText=word.t||word.w; var mode=word.mode||"full";
+      if(useSpeechAce && res.blob){ try{ var fd=new FormData(); fd.append("audio",new File([res.blob],"a.webm",{type:res.blob.type||"audio/webm"})); fd.append("text",scoreText); fd.append("targetSound",SOUND); fd.append("userId","child"); fd.append("mode",mode); var r=await fetch("/api/score",{method:"POST",body:fd}); var j=await r.json(); if(j&&j.ok&&j.rating){ lastFb=j.feedback||""; return j.rating==="great"; } }catch(e){} }
+      if(res.transcript) return matchText(res.transcript,scoreText);
       return false;
     }
 
-    function nextWord(){ if(!queue.length) queue=shuffle(POOL); return queue.pop(); }
-    function showWord(w){ current=w; $("wEmoji").textContent=w.e||"🧱"; $("wText").textContent=w.w; }
+    // Default emoji/icon when an item has none (isolation/syllable/sentence).
+    var ICON=(window.Sona&&Sona.soundEmoji&&Sona.soundEmoji(SOUND))||"🧱";
+    // CYCLE through ITEMS (modulo): refill the queue from a shuffle whenever
+    // empty, so short rungs (isolation = 1 item) still feed enough turns.
+    function nextWord(){ if(!queue.length) queue=shuffle(POOL.length?POOL:[{t:SOUND,say:SOUND,display:SOUND,mode:"full"}]); return queue.pop(); }
+    function showWord(w){ current=w; $("wEmoji").textContent=w.e||ICON; $("wText").textContent=w.display||w.t||w.w||""; }
     function addBlock(w){
       var b=document.createElement("div"); b.className="block"; b.style.background=COLORS[placed%COLORS.length];
-      b.textContent=w.e||"🧱"; $("tower").appendChild(b);
+      b.textContent=w.e||ICON; $("tower").appendChild(b);
       placed++; $("count").textContent=placed+" / "+GOAL;
     }
 
@@ -285,7 +301,8 @@
       setLeo("idle");
       var res=await recordTurn();
       var ok=await scoreWord(current,res);
-      if(window.Sona&&Sona.logAttempt)Sona.logAttempt({game:"builder",sound:SOUND,pass:ok,word:current.w});
+      total++; if(ok)correct++;
+      if(window.Sona&&Sona.logAttempt)Sona.logAttempt({game:"builder",sound:SOUND,pass:ok,word:current.t||current.w});
       if(ok){
         sfx("correct"); setLeo("cheer"); leoReact();
         addBlock(current);
@@ -297,17 +314,29 @@
       } else {
         sfx("tap"); setLeo("idle");
         $("prompt").textContent=(window.Sona&&Sona.coachLine)?Sona.coachLine(SOUND,lastFb):"Let's try again!";
-        await say(lastFb||("Let's try "+current.w+" again."));
+        await say(lastFb||("Let's try "+(current.say||current.t||current.w)+" again."));
         setTimeout(attempt,300); // same word again
       }
     }
     async function round(){
       showWord(nextWord());
-      $("prompt").textContent="Say the word to add a block!";
-      await say(current.w);
+      var lvl=current.level||"word";
+      // Sound-coaching at the lowest rungs: model the sound the way an SLP
+      // would; at word+ just present the word/phrase/sentence.
+      if(lvl==="isolation"||lvl==="syllable"){
+        $("prompt").textContent="Say the sound to add a block!";
+        var cue=(window.Sona&&Sona.repeatCue)?Sona.repeatCue(SOUND):(current.say||current.t);
+        await say(cue);
+      } else {
+        $("prompt").textContent="Say it to add a block!";
+        await say(current.say||current.t||current.w);
+      }
       attempt();
     }
     function finishGame(){
+      // Record this round's mastery at the served rung; encouraging gating in
+      // Sona advances the ladder at ~80% and never regresses.
+      try{ window.Sona&&Sona.recordRung&&Sona.recordRung(SOUND,RUNG,correct/Math.max(1,total)); }catch(e){}
       try{ var bigEl=document.querySelector("#win .big"); if(bigEl&&L.props&&L.props[0]) bigEl.textContent=L.props[0]; }catch(e){}
       $("topper").classList.add("show");
       sfx("complete"); if(window.Sona){ Sona.confetti&&Sona.confetti(); Sona.addCoins&&Sona.addCoins(10); }
@@ -315,7 +344,7 @@
       setTimeout(function(){ $("win").classList.add("show"); if(window.Sona&&Sona.sessionButtons)Sona.sessionButtons($("win")); }, 700);
     }
 
-    $("hear").onclick=function(){ if(current) say(current.w); };
+    $("hear").onclick=function(){ if(current) say(current.say||current.t||current.w); };
     $("mic").onclick=function(){ attempt(); };
     $("close").onclick=function(){ location.href="/map.html"; };
     window.addEventListener("pagehide",function(){ try{ if(micStream)micStream.getTracks().forEach(function(t){t.stop();}); }catch(e){} });
