@@ -318,7 +318,7 @@
     async function detectScorer(){ if(!CLOUD){ useSpeechAce=false; return; } try{ const r=await fetch("/api/score"); const j=await r.json(); useSpeechAce=!!(j&&j.hasKey); }catch{ useSpeechAce=false; } }
     function norm(s){ return (s||"").toLowerCase().replace(/[^a-z]/g,""); }
     function matchText(t,w){ t=norm(t); w=norm(w); if(!t) return false; if(t.includes(w)||w.includes(t)) return true; let i=0; while(i<Math.min(t.length,w.length)&&t[i]===w[i]) i++; return i>=3; }
-    function recordTurn(micBtn,maxMs=8000){
+    function recordTurn(micBtn,maxMs=8000){ if(window.Sona&&Sona.hasNativeAudio&&Sona.hasNativeAudio())return Sona.captureClip({maxMs:(maxMs||6000)});
       return new Promise((resolve)=>{
         let done=false,chunks=[],rec=null,sr=null,transcript=""; var stopWave=function(){};
         let spoke=false,lastVoice=0,extended=false;

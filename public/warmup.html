@@ -100,7 +100,7 @@
     var micStream=null, useSpeechAce=true;
     (function(){ try{ fetch("/api/score").then(function(r){return r.json();}).then(function(j){ useSpeechAce=!!(j&&j.hasKey); }).catch(function(){ useSpeechAce=false; }); }catch(e){ useSpeechAce=false; } })();
     function norm(s){ return (s||"").toLowerCase().replace(/[^a-z]/g,""); }
-    function recordRep(){
+    function recordRep(){ if(window.Sona&&Sona.hasNativeAudio&&Sona.hasNativeAudio())return Sona.captureClip({maxMs:6000});
       return new Promise(function(resolve){
         var done2=false,chunks=[],rec=null,sr=null,transcript="",micBtn=$("mic");
         function fin(){ if(done2)return; done2=true; try{rec&&rec.state!=="inactive"&&rec.stop();}catch(e){} try{sr&&sr.stop();}catch(e){} micBtn.classList.remove("live"); setTimeout(function(){ resolve({blob:chunks.length?new Blob(chunks,{type:(rec&&rec.mimeType)||"audio/webm"}):null, transcript:transcript}); },120); }

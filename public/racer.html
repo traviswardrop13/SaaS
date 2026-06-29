@@ -369,7 +369,7 @@
     }
 
     // GATE PHASE: say one word; the kart only advances on a clean rep (strict). Returns the recording.
-    function recordTurn(maxMs){
+    function recordTurn(maxMs){ if(window.Sona&&Sona.hasNativeAudio&&Sona.hasNativeAudio())return Sona.captureClip({maxMs:(maxMs||6000)});
       maxMs=maxMs||8000;
       return new Promise(function(resolve){
         var done=false,chunks=[],rec=null,sr=null,transcript="";var stopWave=function(){};

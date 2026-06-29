@@ -92,7 +92,7 @@
     function norm(s){return (s||"").toLowerCase().replace(/[^a-z]/g,"");}
 
     var micStream=null;
-    function listen(maxMs){ maxMs=maxMs||7000; return new Promise(function(resolve){
+    function listen(maxMs){ if(window.Sona&&Sona.hasNativeAudio&&Sona.hasNativeAudio())return Sona.captureClip({maxMs:(maxMs||6000)}); maxMs=maxMs||7000; return new Promise(function(resolve){
       var done=false,raf=null,src=null,sr=null,transcript="",spoke=false,lastV=0,micBtn=$("micBtn"),ico=micBtn.querySelector("svg"),bars=null;
       function finish(){ if(done)return; done=true; try{sr&&sr.stop();}catch(e){} if(raf)cancelAnimationFrame(raf); try{src&&src.disconnect();}catch(e){} micBtn.classList.remove("rec");micBtn.onclick=null; if(bars)bars.remove(); if(ico)ico.style.display=""; resolve({spoke:spoke,transcript:transcript}); }
       micBtn.classList.add("rec"); micBtn.onclick=function(){ spoke=true; finish(); };
