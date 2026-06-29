@@ -6,6 +6,12 @@
   // Friendly labels for the sound pickers (most are just the letter; voiced TH needs marking).
   const SOUND_LABELS = { THV: "TH (v)" };
   function soundLabel(s) { return SOUND_LABELS[s] || s; }
+  // Approximate developmental norms: the age (in years) by which most children
+  // typically produce the sound. Used to show "usually by age X" and gently flag
+  // a too-early target. Approximate consensus values that vary by reference — an
+  // SLP should always use clinical judgment.
+  const SOUND_NORM = { P: 3, B: 3, M: 3, N: 4, T: 4, D: 4, K: 4, G: 4, F: 4, V: 6, S: 5, Z: 6, SH: 6, CH: 6, J: 6, L: 6, R: 7, TH: 6, THV: 7 };
+  function soundNorm(s) { return SOUND_NORM[String(s || "").toUpperCase()] || null; }
 
   // --- fun world layer: who the child plays as + where ---
   // Only Leo is unlocked today; the rest are "coming soon" placeholders so the
@@ -101,7 +107,7 @@
       badge(100, 52) + '</svg>';
   }
 
-  const DEFAULT_PROFILE = { childName: "", focusSounds: ["R", "S", "L", "K"], voiceOn: true, coachName: "Coach", cloudScoring: true, slpEvaluated: "", goals: "", focusArea: "articulation", interests: [], language: "en", character: "leo", outfit: "none", backdrop: "sky", soundOn: true, voiceId: "SF6OznV7UB2AxeidTpie", volume: 0.8, musicOn: false, dailyMinutes: 5, owned: { outfits: ["none"], backdrops: ["sky"] }, onboarded: false };
+  const DEFAULT_PROFILE = { childName: "", childAge: "", focusSounds: ["R", "S", "L", "K"], voiceOn: true, coachName: "Coach", cloudScoring: true, slpEvaluated: "", goals: "", focusArea: "articulation", interests: [], language: "en", character: "leo", outfit: "none", backdrop: "sky", soundOn: true, voiceId: "qBDvhofpxp92JgXJxDjB", volume: 0.3, musicOn: false, dailyMinutes: 5, owned: { outfits: ["none"], backdrops: ["sky"] }, onboarded: false };
   // stage per sound: 0 = isolation (the letter), 1 = syllables, 2 = words, 3 = mastered.
   const STAGES = ["isolation", "syllables", "words"];
   const DEFAULT_PROGRESS = { sessions: [], totals: { sessions: 0, words: 0, stars: 0, coins: 0 }, streak: { count: 0, lastDate: "" }, bySound: {}, stage: {}, chests: {}, missed: [] };
@@ -112,8 +118,8 @@
 
   function getProfile() {
     const p = Object.assign(clone(DEFAULT_PROFILE), load(PKEY, {}));
-    // migrate old/empty default voices (Jessica, Will) to Leo's real voice
-    if (!p.voiceId || p.voiceId === "cgSgspJ2msm6clMCkdW9" || p.voiceId === "bIHbv24MWmeRgasZH58o") p.voiceId = DEFAULT_PROFILE.voiceId;
+    // migrate old/empty default voices (Jessica, Will, and the prior Leo) to the current voice
+    if (!p.voiceId || p.voiceId === "cgSgspJ2msm6clMCkdW9" || p.voiceId === "bIHbv24MWmeRgasZH58o" || p.voiceId === "SF6OznV7UB2AxeidTpie") p.voiceId = DEFAULT_PROFILE.voiceId;
     return p;
   }
   // Playback-rate multiplier for /api/tts audio. Leo's ElevenLabs voice is
@@ -137,6 +143,43 @@
     const cur = g.stage[sound] || 0;
     if (passed && stage >= cur && cur < 3) { g.stage[sound] = Math.min(3, stage + 1); save(GKEY, g); }
     return g.stage[sound] || 0;
+  }
+
+  // ── SLP content ladder: isolation → syllable → word → phrase → sentence → conversation ──
+  // The way real therapists sequence a target sound. Per-sound progress climbs
+  // the 6 rungs; a rung unlocks the next after a solid round (~80% — "encouraging"
+  // gating: only ever moves UP, and every lower rung stays replayable). We reuse
+  // g.stage[sound] as the rung index (0..6, 6 = all rungs cleared) so it stays in
+  // sync with the existing stage tracker (stageOf/completeStage keep their 0..3
+  // contract for the legacy lesson flow).
+  const LADDER = ["isolation", "syllable", "word", "phrase", "sentence", "conversation"];
+  const LADDER_LABEL = { isolation: "Sound", syllable: "Syllables", word: "Words", phrase: "Phrases", sentence: "Sentences", conversation: "Talking" };
+  const RUNG_MASTER = 0.8; // ~80% on a rung advances to the next
+  function rungOf(sound) { const g = getProgress(); return Math.min(LADDER.length, g.stage[sound] || 0); } // 0..6
+  function rungName(i) { return LADDER[i] || "mastered"; }
+  function rungLabel(i) { return LADDER_LABEL[LADDER[i]] || "Mastered"; }
+  // Record a finished round at `rung`. accuracy: 0..1 (or a pass boolean). Encouraging:
+  // advances only when solid and never regresses.
+  function recordRung(sound, rung, accuracy) {
+    const g = getProgress(); const cur = g.stage[sound] || 0;
+    const ok = (typeof accuracy === "number") ? accuracy >= RUNG_MASTER : !!accuracy;
+    if (ok && rung >= cur && cur < LADDER.length) { g.stage[sound] = Math.min(LADDER.length, rung + 1); save(GKEY, g); }
+    return g.stage[sound] || 0;
+  }
+  // Practice items for a (sound, rung), wired to the existing content sources.
+  // isolation/syllable score as "phoneme" (lenient); word+ score "full". Degrades
+  // gracefully to words if SonaContent (gamecontent.js) isn't loaded on a page.
+  function ladderContent(sound, rung) {
+    const SC = (typeof window !== "undefined") ? window.SonaContent : null;
+    const lvl = LADDER[Math.max(0, Math.min(LADDER.length - 1, rung || 0))];
+    const ws = () => wordsFor(sound) || [];
+    if (lvl === "isolation") return [{ t: soundSay(sound), say: soundSay(sound), display: soundLabel(sound), level: "isolation", mode: "phoneme" }];
+    if (lvl === "syllable") return (SC && SC.syllables ? SC.syllables(sound) : []).map((s) => ({ t: s.t, say: s.say, display: s.t, level: "syllable", mode: "phoneme" }));
+    if (lvl === "word") return ws().map((w) => ({ t: w.w, say: w.w, display: w.w, e: w.e, word: w.w, level: "word", mode: "full" }));
+    if (lvl === "phrase") return (SC && SC.phrases ? SC.phrases(sound) : ws().map((w) => ({ t: w.w, say: w.w, e: w.e, word: w.w }))).map((p) => ({ t: p.t, say: p.say, display: p.t, e: p.e, word: p.word, level: "phrase", mode: "full" }));
+    if (lvl === "sentence") return (SC && SC.sentences ? SC.sentences(sound) : ws().map((w) => ({ t: w.w, say: w.w, e: w.e, word: w.w }))).map((s) => ({ t: s.t, say: s.say, display: s.t, e: s.e, word: s.word, level: "sentence", mode: "full" }));
+    if (lvl === "conversation") return (SC && SC.chats ? SC.chats(sound) : []).map((c) => ({ q: c.q, options: c.options, level: "conversation", mode: "full" }));
+    return [];
   }
 
   // ── the daily variety engine ──
@@ -210,12 +253,12 @@
     ],
     CH: [
       { w: "cheese", e: "🧀", i: 1, pos: "i" }, { w: "chair", e: "🪑", i: 1, pos: "i" }, { w: "cherry", e: "🍒", i: 1, pos: "i" }, { w: "chicken", e: "🐔", i: 1, pos: "i" }, { w: "chocolate", e: "🍫", i: 1, pos: "i" }, { w: "chips", e: "🍟", i: 1, pos: "i" },
-      { w: "teacher", e: "🧑‍🏫", pos: "m" }, { w: "kitchen", e: "🍳", pos: "m" }, { w: "sandwich", e: "🥪", pos: "m" }, { w: "popcorn", e: "🍿", pos: "m" },
+      { w: "teacher", e: "🧑‍🏫", pos: "m" }, { w: "kitchen", e: "🍳", pos: "m" }, { w: "sandwich", e: "🥪", pos: "m" }, { w: "ketchup", e: "🍅", pos: "m" },
       { w: "beach", e: "🏖️", pos: "f" }, { w: "peach", e: "🍑", pos: "f" }, { w: "watch", e: "⌚", pos: "f" }, { w: "lunch", e: "🥪", pos: "f" }, { w: "branch", e: "🌿", pos: "f" }, { w: "couch", e: "🛋️", pos: "f" }
     ],
     TH: [
       { w: "thumb", e: "👍", i: 1, pos: "i" }, { w: "three", e: "3️⃣", i: 1, pos: "i" }, { w: "thread", e: "🧵", i: 1, pos: "i" }, { w: "think", e: "💭", i: 1, pos: "i" }, { w: "thirty", e: "🔢", i: 1, pos: "i" }, { w: "thorn", e: "🌹", i: 1, pos: "i" },
-      { w: "toothbrush", e: "🪥", pos: "m" }, { w: "birthday", e: "🎂", pos: "m" }, { w: "bathtub", e: "🛁", pos: "m" }, { w: "feather", e: "🪶", pos: "m" },
+      { w: "toothbrush", e: "🪥", pos: "m" }, { w: "birthday", e: "🎂", pos: "m" }, { w: "bathtub", e: "🛁", pos: "m" },
       { w: "bath", e: "🛁", pos: "f" }, { w: "tooth", e: "🦷", pos: "f" }, { w: "mouth", e: "👄", pos: "f" }, { w: "math", e: "➗", pos: "f" }, { w: "moth", e: "🦋", pos: "f" }, { w: "teeth", e: "🦷", pos: "f" }
     ],
     P: [
@@ -681,9 +724,33 @@
     D: { mouth: "🥁", tip: "Like T, but turn your voice on — d! d! d!" },
   };
   function cue(sound) { return CUES[sound] || { mouth: "👄", tip: "Listen to Leo, then copy the sound!" }; }
-  // Corrective line for a missed attempt: the scorer's feedback + a placement cue.
+
+  // ── SPOKEN sound cues — the SOUND, not the letter name ──
+  // Kids must hear "puh", never "pee". Continuants stretch (sss, rrrr); stops
+  // get a light schwa (puh, kuh). Used by every game so Leo always models the
+  // sound and asks the child to repeat it (never just "say R").
+  const SOUND_SAY = {
+    R: "rrrr", S: "sss", L: "lll", K: "kuh", G: "guh", F: "ffff", V: "vvvv",
+    SH: "shhh", CH: "chuh", J: "juh", TH: "thhh", THV: "thuh", Z: "zzz",
+    P: "puh", B: "buh", M: "mmm", N: "nnn", T: "tuh", D: "duh",
+  };
+  function soundSay(sound) { return SOUND_SAY[String(sound || "").toUpperCase()] || String(sound || "").toLowerCase(); }
+  // "Are you ready? Say rrrr 4 times to rev your engine!"  — reps>1 adds the
+  // count; action is the game's verb ("rev your engine", "pop the bubble").
+  function actionCue(sound, reps, action) {
+    var s = soundSay(sound), n = Math.max(1, parseInt(reps, 10) || 1);
+    return "Are you ready? Say " + s + (n > 1 ? (" " + n + " times") : "") + (action ? (" to " + action) : "") + "!";
+  }
+  // Model-then-try line for warm-ups and corrections: "Repeat after me… rrrr!  Now you try — rrrr!"
+  function repeatCue(sound) { var s = soundSay(sound); return "Repeat after me… " + s + "!  Now you try — " + s + "!"; }
+  // Short spoken praise for a correct rep — said before moving to the next prompt.
+  // Lightly varied (led by "Nice one!") so it doesn't feel robotic to a kid.
+  const PRAISES = ["Nice one!", "Nice!", "Great job!", "Awesome!", "You got it!", "Way to go!"];
+  function praiseLine() { return PRAISES[Math.floor(Math.random() * PRAISES.length)]; }
+
+  // Corrective line for a missed attempt: re-model the sound + a placement cue.
   function coachLine(sound, feedback) {
-    var base = feedback || ("Let's try the " + soundLabel(sound) + " sound again!");
+    var base = feedback || ("Let's try again. Say " + soundSay(sound) + "!");
     var c = cue(sound);
     return c && c.tip ? (base + "  " + (c.mouth ? c.mouth + " " : "") + c.tip) : base;
   }
@@ -892,5 +959,5 @@
   }
   try { installDebug(); } catch (e) {}
 
-  global.Sona = { pic, ALL_SOUNDS, soundLabel, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, getProfile, saveProfile, getProgress, recordSession, resetProgress, stageOf, completeStage, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, gated, getTrial, startTrial, ensureTrial, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, LEVEL_GAMES, GAME_DECK, GAMES_PER_LEVEL, levelGames, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, WORLDS, LEVELS_PER_WORLD, campaignLevels, campaignSounds, campaignState, worldById, worldLevels, worldStars, worldCleared, levelStars, setLevelStars, totalStars, worldUnlocked, levelUnlocked, campaignLaunch, campaignResolve, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, sendProgress, sendFeedback, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine };
+  global.Sona = { pic, ALL_SOUNDS, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, getProfile, saveProfile, getProgress, recordSession, resetProgress, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, ladderContent, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, gated, getTrial, startTrial, ensureTrial, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, LEVEL_GAMES, GAME_DECK, GAMES_PER_LEVEL, levelGames, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, WORLDS, LEVELS_PER_WORLD, campaignLevels, campaignSounds, campaignState, worldById, worldLevels, worldStars, worldCleared, levelStars, setLevelStars, totalStars, worldUnlocked, levelUnlocked, campaignLaunch, campaignResolve, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, sendProgress, sendFeedback, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES };
 })(window);

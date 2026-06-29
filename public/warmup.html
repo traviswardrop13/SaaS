@@ -60,10 +60,9 @@
     var SOUND=(qp.get("sound")||((profile.focusSounds&&profile.focusSounds[0])||"R")).toUpperCase();
     if(!(S&&S.WORDS&&S.WORDS[SOUND])) SOUND="R";
     var LEVEL=parseInt(qp.get("level"),10)||1;
-    var SAYIT={ R:"rrr", S:"sss", L:"lll", K:"k, k, k", G:"g, g, g", F:"fff", SH:"shh", CH:"ch, ch", TH:"th, th", THV:"the, the", Z:"zzz", V:"vvv", J:"j, j", P:"p, p, p", B:"b, b, b", M:"mmm", N:"nnn", T:"t, t, t", D:"d, d, d" };
-    var SAY=SAYIT[SOUND]||SOUND.toLowerCase();
+    var SAY=window.Sona.soundSay(SOUND);
     $("say").textContent=SAY;
-    var GOAL=8, reps=0;
+    var GOAL=4, reps=0;
 
     // pips
     var pips=$("pips"); for(var i=0;i<GOAL;i++){ var p=document.createElement("div"); p.className="pip"; pips.appendChild(p); }
@@ -95,33 +94,45 @@
       }, 650);
     }
 
-    // mic: count each spoken burst toward the goal (rms + high-freq so fricatives count)
-    var micStream=null, listening=false;
-    function startMic(){
-      if(listening) return; listening=true;
-      $("mic").classList.add("live"); $("hint").textContent="Say "+SAY+"!";
-      navigator.mediaDevices.getUserMedia({audio:true}).then(function(stream){
-        micStream=stream; var ctx=getCtx(); var src=ctx.createMediaStreamSource(stream); var an=ctx.createAnalyser(); an.fftSize=512; src.connect(an);
-        var fd=new Uint8Array(an.frequencyBinCount), td=new Uint8Array(an.fftSize);
-        var sr=ctx.sampleRate||48000, binHz=sr/an.fftSize;
-        var loBin=Math.max(2,Math.round(2200/binHz)), hiBin=Math.min(fd.length-1,Math.round(9000/binHz));
-        var t0=performance.now(), nS=0,nN=0, thr=0, hfThr=0, hfS=0, above=false, lastRep=0;
-        (function tick(){ if(finished)return;
-          an.getByteFrequencyData(fd); var hs=0; for(var h=loBin;h<=hiBin;h++) hs+=fd[h]; var hf=hs/Math.max(1,(hiBin-loBin+1))/255;
-          an.getByteTimeDomainData(td); var sum=0; for(var i=0;i<td.length;i++){var x=(td[i]-128)/128;sum+=x*x;} var rms=Math.sqrt(sum/td.length), now=performance.now();
-          if(now-t0<350){ nS+=rms; hfS+=hf; nN++; }
-          else{ if(!thr){ thr=Math.max(0.05,(nS/Math.max(1,nN))*3.0); hfThr=Math.max(0.11,(hfS/Math.max(1,nN))*1.9); }
-            var loud = rms>thr || hf>hfThr;
-            if(loud && !above && (now-lastRep)>420){ above=true; lastRep=now; addRep(); }
-            else if(!loud && (now-lastRep)>180){ above=false; }
-          }
-          requestAnimationFrame(tick);
-        })();
-      }).catch(function(){ $("hint").textContent="No mic — tap the mic button to count!"; listening=false; $("mic").classList.remove("live"); });
+    // mic: each rep is a real recorded attempt, SCORED — saying the sound (not
+    // noise or a tap) is what fills the gauge. Escape hatch after enough tries so
+    // a kid is never hard-stuck (held isolated sounds aren't perfectly scoreable).
+    var micStream=null, useSpeechAce=true;
+    (function(){ try{ fetch("/api/score").then(function(r){return r.json();}).then(function(j){ useSpeechAce=!!(j&&j.hasKey); }).catch(function(){ useSpeechAce=false; }); }catch(e){ useSpeechAce=false; } })();
+    function norm(s){ return (s||"").toLowerCase().replace(/[^a-z]/g,""); }
+    function recordRep(){
+      return new Promise(function(resolve){
+        var done2=false,chunks=[],rec=null,sr=null,transcript="",micBtn=$("mic");
+        function fin(){ if(done2)return; done2=true; try{rec&&rec.state!=="inactive"&&rec.stop();}catch(e){} try{sr&&sr.stop();}catch(e){} micBtn.classList.remove("live"); setTimeout(function(){ resolve({blob:chunks.length?new Blob(chunks,{type:(rec&&rec.mimeType)||"audio/webm"}):null, transcript:transcript}); },120); }
+        try{ if(micStream&&window.MediaRecorder){ rec=new MediaRecorder(micStream); rec.ondataavailable=function(e){if(e.data&&e.data.size)chunks.push(e.data);}; rec.start(); } }catch(e){}
+        try{ var SR=window.SpeechRecognition||window.webkitSpeechRecognition; if(SR){ sr=new SR(); sr.lang="en-US"; sr.interimResults=false; sr.onresult=function(ev){for(var i=0;i<ev.results.length;i++)for(var k=0;k<ev.results[i].length;k++)transcript+=" "+ev.results[i][k].transcript; fin();}; sr.onerror=function(){}; sr.start(); } }catch(e){}
+        try{ if(micStream){ var ctx=getCtx(); var msrc=ctx.createMediaStreamSource(micStream); var an=ctx.createAnalyser(); an.fftSize=512; msrc.connect(an); var td=new Uint8Array(an.fftSize); var t0=performance.now(),nS=0,nN=0,thr=0,spoke=false,lastV=0;
+          (function tick(){ if(done2)return; an.getByteTimeDomainData(td); var sum=0; for(var i=0;i<td.length;i++){var d=(td[i]-128)/128;sum+=d*d;} var rms=Math.sqrt(sum/td.length),now=performance.now();
+            if(now-t0<300){nS+=rms;nN++;} else { if(!thr)thr=Math.max(0.03,(nS/Math.max(1,nN))*2.6); if(rms>thr){spoke=true;lastV=now;} if(spoke&&now-lastV>=900){fin();return;} }
+            requestAnimationFrame(tick); })();
+        } }catch(e){}
+        micBtn.classList.add("live"); micBtn.onclick=fin;
+        setTimeout(function(){ if(!done2)fin(); }, 6000);
+      });
     }
-    // first model + auto-start listening
-    (async function(){ await say("Say "+SAY+" "+GOAL+" times to start!"); startMic(); })();
-    $("mic").onclick=function(){ if(!listening){ startMic(); } else { addRep(); } }; // tap = manual count / fallback
+    async function scoreRep(res){
+      if(useSpeechAce && res.blob){ try{ var fd=new FormData(); fd.append("audio",new File([res.blob],"a.webm",{type:res.blob.type||"audio/webm"})); fd.append("text",SAY); fd.append("targetSound",SOUND); fd.append("userId","child"); fd.append("mode","phoneme"); var r=await fetch("/api/score",{method:"POST",body:fd}); var j=await r.json(); if(j&&j.ok)return (j.rating!=="tryAgain")||(typeof j.score==="number"&&j.score>=50); }catch(e){} }
+      return !!(norm(res.transcript) || (res.blob&&res.blob.size>1500)); // no scorer: a genuine spoken attempt counts
+    }
+    (async function(){
+      try{ micStream=await navigator.mediaDevices.getUserMedia({audio:true}); }catch(e){ micStream=null; }
+      if(!micStream){ $("hint").textContent="No mic — tap Skip to start playing!"; return; }
+      await say(window.Sona.actionCue(SOUND,GOAL,"warm up and blast off"));
+      var tries=0;
+      while(reps<GOAL && tries<GOAL*3 && !finished){
+        tries++;
+        $("hint").textContent="Say "+SAY+"!";
+        var res=await recordRep();
+        var ok=await scoreRep(res);
+        if(ok){ addRep(); } else { $("hint").textContent="I need to hear your "+SAY+" — try again!"; await new Promise(function(r){setTimeout(r,250);}); }
+      }
+      if(!finished) done();
+    })();
     $("skip").onclick=function(){ done(); };
     window.addEventListener("pagehide",function(){ try{ if(micStream)micStream.getTracks().forEach(function(t){t.stop();}); }catch(e){} });
   </script>

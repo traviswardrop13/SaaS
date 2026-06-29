@@ -14,3 +14,6 @@ tsconfig.tsbuildinfo
 
 # Claude Code agent worktrees + local state
 .claude/
+
+# Local QA / scratch tooling (screenshots, smoke tests) — never ship
+scratchpad/

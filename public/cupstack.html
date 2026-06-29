@@ -158,6 +158,7 @@
     <div id="top">
       <button id="close" onclick="location.href='/play.html'">✕</button>
       <span class="stat cups"><span id="cupCount">0</span>/<span id="cupGoal">10</span></span>
+      <span class="stat rung" id="rungBadge" style="font-size:12px;background:rgba(255,255,255,.72);color:var(--blue-d);padding:6px 11px;"></span>
       <span class="stat combo" id="comboStat" style="visibility:hidden;"><span id="comboPop">x2</span></span>
     </div>
 
@@ -195,18 +196,49 @@
   </div>
 
   <script src="/sona.js"></script>
+  <script src="/gamecontent.js"></script>
   <script>
     /* ---- config (the clinical seam: swap this array for assigned targets) ---- */
     var profile = (window.Sona ? Sona.getProfile() : { focusSounds:["R"], voiceId:"", volume:0.8 });
     var params = new URLSearchParams(location.search);
     var SOUND = (params.get("sound") || (profile.focusSounds && profile.focusSounds[0]) || "R").toUpperCase();
     if(!(window.Sona && Sona.WORDS && Sona.WORDS[SOUND])) SOUND="R";
-    // target words for ONE sound at the chosen position (initial/medial/final/vocalic/blends).
-    var POOL = (window.Sona && Sona.wordsFor) ? Sona.wordsFor(SOUND, profile.practicePosition) : [{w:"rabbit",e:"🐰"},{w:"rocket",e:"🚀"}];
+    /* ---- SLP ladder: serve the child's CURRENT rung for this sound ---- */
+    var RUNG = (window.Sona&&Sona.rungOf)?Sona.rungOf(SOUND):2; if(RUNG>5)RUNG=5;
+    var ITEMS = (window.Sona&&Sona.ladderContent)?Sona.ladderContent(SOUND,RUNG):[];
+    if(RUNG>=5 && (!ITEMS.length || (ITEMS[0]&&ITEMS[0].q))){ RUNG=4; ITEMS=Sona.ladderContent(SOUND,4); } // arcade can't do conversation -> use sentences
+    if(!ITEMS.length){ ITEMS=((window.Sona&&Sona.wordsFor)?Sona.wordsFor(SOUND):[]).map(function(w){return {t:w.w,say:w.w,display:w.w,e:w.e,word:w.w,level:"word",mode:"full"};}); }
+    if(!ITEMS.length){ ITEMS=[{t:"rabbit",say:"rabbit",display:"rabbit",e:"🐰",word:"rabbit",level:"word",mode:"full"}]; }
+    var SOUND_ICON=(window.Sona&&Sona.soundSay)?Sona.soundSay(SOUND):SOUND.toLowerCase();
+    // helpers to read an item safely (single source of truth for the game mechanic)
+    function itDisplay(it){ return (it&&(it.display||it.t))||""; }
+    function itSay(it){ return (it&&(it.say||it.t))||""; }
+    function itScore(it){ return (it&&it.t)||""; }
+    function itEmoji(it){ return (it&&it.e)||SOUND_ICON; }
+    function itMode(it){ return (it&&it.mode)||"full"; }
+    function itPhoneme(it){ return it&&(it.level==="isolation"||it.level==="syllable"); }
+    // POOL kept as the per-turn content array for the existing mechanic.
+    var POOL = ITEMS;
     var DIFF=(window.Sona&&Sona.diff)?Sona.diff():1;
-    var GOAL = Math.min(20,8+DIFF*2);
-    // cup colors (one unlocks on a win)
-    var CUP_COLORS = ["#ff7a6e","#ffb24d","#ffd33d","#7dd470","#4cc6ff","#b08cff","#ff8fc7"];
+    /* ---- 10 distinct levels: a journey through Stack Hall 🥤 ----
+       knob: GOAL = number of cups to stack (gentle→hard, capped at 20).
+       scene: bg gradient + accent + props painted on #stage. */
+    var LEVELS = [
+      { name:"Practice Table", bg:"linear-gradient(180deg,#fbf6ea 0%,#f3e9cf 60%,#e7d6a8 100%)", accent:"#c9a14a", props:["🥤","🪵"], goal:6 },
+      { name:"Snack Corner",   bg:"linear-gradient(180deg,#fff1e6 0%,#ffd9b8 60%,#ffbf8f 100%)", accent:"#ff9600", props:["🍪","🥤"], goal:8 },
+      { name:"Classroom",      bg:"linear-gradient(180deg,#eafbf0 0%,#cdeede 60%,#a8e0c4 100%)", accent:"#46a302", props:["✏️","📐"], goal:9 },
+      { name:"School Gym",     bg:"linear-gradient(180deg,#e9f7ff 0%,#c7e9ff 60%,#9fd5fb 100%)", accent:"#1cb0f6", props:["🏀","🥤"], goal:11 },
+      { name:"Practice Court", bg:"linear-gradient(180deg,#fef0f5 0%,#fbd0e0 60%,#f7aecb 100%)", accent:"#ff8fc7", props:["🎽","🥤"], goal:12 },
+      { name:"Town Arena",     bg:"linear-gradient(180deg,#f1eaff 0%,#dcc9ff 60%,#c2a8ff 100%)", accent:"#b08cff", props:["🎺","🥤"], goal:14 },
+      { name:"Big Stadium",    bg:"linear-gradient(180deg,#e6fbff 0%,#bff0f5 60%,#8fe0ea 100%)", accent:"#1fc7d6", props:["🏟️","📣"], goal:15 },
+      { name:"Night Lights",   bg:"linear-gradient(180deg,#26305e 0%,#3a4a8c 55%,#5b6fc0 100%)", accent:"#7da3ff", props:["🌙","🏟️"], goal:17 },
+      { name:"Finals Floor",   bg:"linear-gradient(180deg,#3a1f5e 0%,#6a2fa0 55%,#a05be0 100%)", accent:"#d39bff", props:["🎆","🥤"], goal:18 },
+      { name:"Champion Cup!",  bg:"radial-gradient(120% 90% at 50% 0%, #fff3c4 0%, #ffd84d 30%, #ff9d2e 65%, #e0731a 100%)", accent:"#ffcf2e", props:["🏆","🥇","🎉"], goal:20 }
+    ];
+    var L = LEVELS[Math.min(9, Math.max(0, DIFF-1))];
+    var GOAL = Math.min(20, L.goal);
+    // cup colors (one unlocks on a win) — lead with the level accent for a themed tower
+    var CUP_COLORS = [L.accent,"#ff7a6e","#ffb24d","#ffd33d","#7dd470","#4cc6ff","#b08cff","#ff8fc7"];
 
     // Strict: a cup only stacks on a clean rep (SpeechAce "great" rating). Wrong → try again.
 
@@ -228,7 +260,27 @@
     function leoReact(){ var w=document.getElementById("leoWrap"); if(!w)return; w.classList.remove("react"); void w.offsetWidth; w.classList.add("react"); }
     var CUP_ART=false;
     (function(){ var im=new Image(); im.onload=function(){ CUP_ART=true; }; im.src="/coach/cupstack/cup.png"; })();
-    (function(){ var im=new Image(); im.onload=function(){ var s=document.getElementById("stage"); s.style.backgroundImage="url(/coach/cupstack/bg.png)"; s.style.backgroundSize="cover"; s.style.backgroundPosition="center bottom"; }; im.src="/coach/cupstack/bg.png"; })();
+    (function(){
+      var s=document.getElementById("stage");
+      // 1) paint the level's CSS scene immediately
+      if(L.bg) s.style.background=L.bg;
+      // 2) ambient level props drifting faintly behind the tower
+      if(L.props&&L.props.length){
+        var amb=document.createElement("div");
+        amb.setAttribute("aria-hidden","true");
+        amb.style.cssText="position:absolute;inset:0;z-index:0;pointer-events:none;opacity:.16;font-size:38px;overflow:hidden;";
+        var spots=[["8%","18%"],["80%","12%"],["64%","26%"],["18%","40%"],["86%","48%"]];
+        for(var i=0;i<L.props.length;i++){ var sp=document.createElement("span"); sp.textContent=L.props[i];
+          var pos=spots[i%spots.length]; sp.style.cssText="position:absolute;left:"+pos[0]+";top:"+pos[1]+";animation:sona-floatY "+(5.5+i)+"s ease-in-out infinite;"; amb.appendChild(sp); }
+        s.insertBefore(amb, s.firstChild);
+      }
+      // 3) per-level art-drop override (real art replaces CSS when present)
+      var lvlImg=new Image();
+      lvlImg.onload=function(){ s.style.backgroundImage="url("+lvlImg.src+")"; s.style.backgroundSize="cover"; s.style.backgroundPosition="center bottom"; };
+      lvlImg.onerror=function(){ // fall back to the generic art-drop if a level image is absent
+        var bg=new Image(); bg.onload=function(){ s.style.backgroundImage="url(/coach/cupstack/bg.png)"; s.style.backgroundSize="cover"; s.style.backgroundPosition="center bottom"; }; bg.src="/coach/cupstack/bg.png"; };
+      lvlImg.src="/coach/cupstack/lvl"+DIFF+".png";
+    })();
     var speaking=false;
     function say(text){ return new Promise(function(res){ if(!text){return res();} if(speaking){return res();} speaking=true;
       fetch("/api/tts",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text:text,voice:profile.voiceId||""})})
@@ -283,34 +335,38 @@
     }
 
     // Strict scoring: a rep only counts when it's actually right. Returns {score, pass}.
-    async function scoreAttempt(word, res){
+    async function scoreAttempt(it, res){
+      var scoreText=itScore(it), mode=itMode(it);
       // SpeechAce is the real judge — "pass" means a clean rep of the sound (great rating).
       if(useSpeechAce && res.blob){
         try{
           var fd=new FormData();
           fd.append("audio", new File([res.blob],"a.webm",{type:res.blob.type||"audio/webm"}));
-          fd.append("text", word.w); fd.append("targetSound", SOUND); fd.append("userId","child"); fd.append("mode","full");
+          fd.append("text", scoreText); fd.append("targetSound", SOUND); fd.append("userId","child"); fd.append("mode",mode);
           var r=await fetch("/api/score",{method:"POST",body:fd});
           var j=await r.json();
           if(j&&j.ok && typeof j.score==="number") return { score:j.score, pass: j.rating==="great", feedback: j.feedback };
         }catch(e){}
       }
       // No SpeechAce: judge on the transcript when we have one — say it right, or try again.
-      if(res.transcript){ var ok=matchText(res.transcript, word.w); return { score: ok?85:30, pass: ok }; }
+      if(res.transcript){ var ok=matchText(res.transcript, scoreText); return { score: ok?85:30, pass: ok }; }
       // No way to score at all (scoring offline / no speech engine): don't hard-block the kid.
       return { score:70, pass:true };
     }
 
     /* ---- game state ---- */
     var queue=[], qi=0, placed=0, combo=0, bestCombo=0, busy=false, colorIdx=0;
-    function buildQueue(){ queue=shuffle(POOL); qi=0; }
-    function nextWord(){ var w=queue[qi % queue.length]; qi++; return w; }
+    var roundCorrect=0, roundTotal=0; // ladder accuracy this round
+    function buildQueue(){ queue=shuffle(POOL); if(!queue.length) queue=POOL.slice(); qi=0; }
+    // CYCLE through ITEMS (modulo) so even a 1-item rung (isolation) yields enough turns.
+    function nextWord(){ var w=queue[qi % Math.max(1,queue.length)]; qi++; return w; }
     var current=null;
 
-    function showWord(w){
-      current=w;
-      $("wordEmoji").innerHTML=(window.Sona&&Sona.pic)?Sona.pic(w.w,w.e,40):(w.e||"⭐");
-      $("wordText").textContent=w.w;
+    function showWord(it){
+      current=it;
+      var word=(it&&it.word)||itScore(it);
+      $("wordEmoji").innerHTML=(window.Sona&&Sona.pic&&it.e)?Sona.pic(word,it.e,40):itEmoji(it);
+      $("wordText").textContent=itDisplay(it);
     }
 
     function setCombo(n){
@@ -351,6 +407,15 @@
       if(band==="great"){ sparkle(6); }
     }
 
+    // model the current item: at isolation/syllable still coach the SOUND, else present the word/phrase.
+    function modelItem(it){
+      if(itPhoneme(it) && window.Sona){
+        var cue=Sona.repeatCue?Sona.repeatCue(SOUND):itSay(it);
+        return say(cue);
+      }
+      return say(itSay(it));
+    }
+
     async function attempt(){
       if(busy) return; busy=true;
       $("micBtn").onclick=null;
@@ -358,12 +423,14 @@
       setLeo("listen"); // Leo leans in while the kid talks
       var res=await recordTurn($("micBtn"));
       var sa=await scoreAttempt(w, res);
-      if(window.Sona&&Sona.logAttempt)Sona.logAttempt({game:"cupstack",sound:SOUND,pass:sa.pass,score:sa.score,word:w.w});
+      roundTotal++; if(sa.pass) roundCorrect++;
+      if(window.Sona&&Sona.logAttempt)Sona.logAttempt({game:"cupstack",sound:SOUND,pass:sa.pass,score:sa.score,word:itScore(w)});
       if(sa.pass){
         // Right — said cleanly, so a cup stacks.
         if(window.Sona){Sona.sfx&&Sona.sfx.correct&&Sona.sfx.correct();}
         setCombo(combo+1); setLeo("cheer"); leoReact();
         $("micState").textContent="Nice one!";
+        if(window.Sona&&Sona.praiseLine)await say(Sona.praiseLine());
         dropCup("great");
         await new Promise(function(r){ setTimeout(r,700); });
         setLeo("idle");
@@ -371,7 +438,7 @@
         if(placed>=GOAL){ return finishGame(); }
         showWord(nextWord());
         $("micState").textContent="Listen…";
-        await say(current.w); // Leo models the next word
+        await modelItem(current); // Leo models the next item (sound coaching at isolation/syllable)
         $("micState").textContent="Your turn — say it!";
         attempt(); // auto-listen — no tap to speak
       } else {
@@ -383,13 +450,15 @@
         setLeo("idle");
         busy=false;
         $("micState").textContent="Listen…";
-        await say(w.w); // model the same word again
+        await modelItem(w); // model the same item again
         $("micState").textContent="Your turn — say it!";
         attempt(); // auto-listen — no tap to speak
       }
     }
 
     function finishGame(){
+      // SLP ladder: record this round's accuracy at the current rung (advances ~80%, never regresses).
+      if(window.Sona&&Sona.recordRung) Sona.recordRung(SOUND, RUNG, roundCorrect/Math.max(1,roundTotal));
       // count the rewards up for a satisfying payoff
       (function countUp(el,to){ var n=0,step=Math.max(1,Math.round(to/18)); var iv=setInterval(function(){ n=Math.min(to,n+step); el.textContent=n; if(n>=to)clearInterval(iv); },40); })($("winHeight"),placed);
       $("winCombo").textContent=bestCombo;
@@ -417,11 +486,12 @@
     function startGame(){
       $("win").classList.remove("show");
       $("tower").innerHTML=""; placed=0; combo=0; bestCombo=0; setCombo(0);
+      roundCorrect=0; roundTotal=0;
       $("cupCount").textContent="0"; $("cupGoal").textContent=GOAL; $("towerWrap").style.transform="scale(1)";
       setLeo("idle");
       buildQueue(); showWord(nextWord());
       $("micState").textContent="Listen…";
-      (async function(){ await say(current.w); $("micState").textContent="Your turn — say it!"; attempt(); })();
+      (async function(){ await modelItem(current); $("micState").textContent="Your turn — say it!"; attempt(); })();
     }
 
     /* ---- boot ---- */
@@ -430,8 +500,10 @@
       try{ var r=await fetch("/api/score"); var j=await r.json(); useSpeechAce=!!(j&&j.hasKey); }catch(e){ useSpeechAce=false; }
       // mic permission up front
       try{ if(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia) micStream=await navigator.mediaDevices.getUserMedia({audio:true}); }catch(e){ micStream=null; }
-      $("hear").onclick=function(){ if(current) say(current.w); };
+      $("hear").onclick=function(){ if(current) modelItem(current); };
       $("again").onclick=startGame;
+      // unobtrusive rung badge — what level the child is practicing for this sound
+      try{ var rb=$("rungBadge"); if(rb) rb.textContent="Practicing: "+((window.Sona&&Sona.rungLabel)?Sona.rungLabel(RUNG):""); }catch(e){}
       if(window.Sona&&Sona.music) Sona.music.start();
       startGame();
     })();

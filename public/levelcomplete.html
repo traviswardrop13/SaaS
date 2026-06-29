@@ -33,7 +33,7 @@
     <h1 id="title">Level complete!</h1>
     <p class="sub" id="sub">You finished all the games!</p>
     <div class="reward"><span id="bonus">+0 🪙</span><small>level bonus</small></div>
-    <button class="btn" id="map">Back to map</button>
+    <button class="btn" id="map">Done →</button>
   </div>
 
   <script src="/sona.js"></script>
@@ -56,7 +56,7 @@
     if(window.Sona){ Sona.confetti&&Sona.confetti(); Sona.sfx&&Sona.sfx.reward&&Sona.sfx.reward(); }
     if(window.Sona&&Sona.sendProgress)Sona.sendProgress();   // pilot: report progress back (consented)
     if(window.Sona&&Sona.session)Sona.session.end();
-    $("map").onclick=function(){ location.href="/map.html"; };
+    $("map").onclick=function(){ location.href="/today.html"; };  // daily loop closes on Today (the one home)
   </script>
 </body>
 </html>

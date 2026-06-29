@@ -73,10 +73,17 @@ function rate(opts: {
   const { score, targetPhoneme, targetSound, text } = opts;
   const sound = targetSound ?? "sound";
 
+  // Honest gating for clinician trust: never confidently pass unless the TARGET
+  // sound was actually heard. "great" needs the target strong; "ok" needs it at
+  // least detected; if the scorer couldn't confirm the target at all, it's
+  // "tryAgain" (no benefit-of-the-doubt pass). With no specific target set, fall
+  // back to the overall score.
+  const targetStrong = targetSound == null || (targetPhoneme != null && targetPhoneme >= PHONEME_MIN);
+  const targetHeard = targetSound == null || targetPhoneme != null;
   let rating: "great" | "ok" | "tryAgain";
-  if (score >= GREAT && (targetPhoneme == null || targetPhoneme >= PHONEME_MIN)) {
+  if (score >= GREAT && targetStrong) {
     rating = "great";
-  } else if (score >= OK) {
+  } else if (score >= OK && targetHeard) {
     rating = "ok";
   } else {
     rating = "tryAgain";
@@ -84,7 +91,10 @@ function rate(opts: {
 
   let feedback: string | null = null;
   if (rating !== "great") {
-    if (targetPhoneme != null && targetPhoneme < PHONEME_MIN) {
+    if (targetSound != null && targetPhoneme == null) {
+      // Couldn't confirm the target sound at all — don't pretend it was right.
+      feedback = `I didn't quite hear the ${sound} sound — listen, then try again!`;
+    } else if (targetPhoneme != null && targetPhoneme < PHONEME_MIN) {
       // The target sound itself was weak.
       feedback = `Let's work on the ${sound} sound — listen, then say "${text}" again!`;
     } else {
@@ -268,9 +278,10 @@ export async function POST(req: NextRequest) {
   const wordScore = phoneAvg ?? overall ?? wordAvg ?? 0;
   const score =
     mode === "phoneme"
-      ? // Lenient. If a held sound (e.g. "sss") can't be parsed at all, give
-        // the benefit of the doubt (75) — isolation is an imitation warm-up.
-        (targetPhoneme ?? phoneAvg ?? wordAvg ?? 75)
+      ? // Honest: only credit the rep when SpeechAce actually heard the TARGET
+        // sound. If it can't confirm the target, score 0 → "tryAgain" (no false
+        // "Great!" for noise or an unparseable/wrong production).
+        (targetPhoneme != null ? targetPhoneme : 0)
       : targetPhoneme != null
         ? Math.round(TARGET_WEIGHT * targetPhoneme + (1 - TARGET_WEIGHT) * wordScore)
         : (wordScore || targetPhoneme || 0);

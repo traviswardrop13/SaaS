@@ -88,14 +88,38 @@
   </div>
 
   <script src="/sona.js"></script>
+  <script src="/gamecontent.js"></script>
   <script>
     var profile = (window.Sona ? Sona.getProfile() : { focusSounds:["R"], voiceId:"", volume:0.8 });
     var params = new URLSearchParams(location.search);
     var SOUND = (params.get("sound") || (profile.focusSounds && profile.focusSounds[0]) || "R").toUpperCase();
     if(!(window.Sona && Sona.WORDS && Sona.WORDS[SOUND])) SOUND="R";
-    var POOL = (window.Sona && Sona.wordsFor) ? Sona.wordsFor(SOUND, profile.practicePosition) : [{w:"rabbit",e:"🐰"},{w:"rocket",e:"🚀"},{w:"ring",e:"💍"}];
+    // ── SLP content ladder: serve the child's CURRENT rung for this sound ──
+    var RUNG = (window.Sona&&Sona.rungOf)?Sona.rungOf(SOUND):2; if(RUNG>5)RUNG=5;
+    var ITEMS = (window.Sona&&Sona.ladderContent)?Sona.ladderContent(SOUND,RUNG):[];
+    if(RUNG>=5 && (!ITEMS.length || (ITEMS[0]&&ITEMS[0].q))){ RUNG=4; ITEMS=Sona.ladderContent(SOUND,4); } // arcade can't do conversation -> use sentences
+    if(!ITEMS.length){ ITEMS=((window.Sona&&Sona.wordsFor)?Sona.wordsFor(SOUND):[]).map(function(w){return {t:w.w,say:w.w,display:w.w,e:w.e,word:w.w,level:"word",mode:"full"};}); }
+    if(!ITEMS.length){ ITEMS=[{w:"rabbit",e:"🐰"},{w:"rocket",e:"🚀"},{w:"ring",e:"💍"}].map(function(w){return {t:w.w,say:w.w,display:w.w,e:w.e,word:w.w,level:"word",mode:"full"};}); }
+    var POOL = ITEMS;
     var DIFF=(window.Sona&&Sona.diff)?Sona.diff():1;
-    var PAIRS = Math.min(POOL.length, Math.max(2, 2+Math.floor(DIFF/2)));
+    // 10 distinct levels — a journey down Memory Lane. Knob: pairs (number of card pairs).
+    var LEVELS=[
+      {name:"Cozy Nook",  bg:"linear-gradient(180deg,#fff4e6,#ffe8cf 60%,#ffe0d6)", accent:"#f0a04b", props:["🧸"],          pairs:2},
+      {name:"Sunny Yard", bg:"linear-gradient(180deg,#fff7d6,#ffe9a8 60%,#dff5c4)", accent:"#f5b400", props:["🌻"],          pairs:3},
+      {name:"Garden Path",bg:"linear-gradient(180deg,#eaffe0,#cdf3b8 60%,#aee6a0)", accent:"#5fae3f", props:["🌷","🦋"],      pairs:3},
+      {name:"Berry Wood", bg:"linear-gradient(180deg,#e6f7ea,#bfe8cc 60%,#9bd6b4)", accent:"#3f9e6a", props:["🍓","🌳"],      pairs:4},
+      {name:"Blue Brook", bg:"linear-gradient(180deg,#e2f6ff,#bfe6ff 60%,#9cd4f5)", accent:"#2aa6e0", props:["💧","🐟"],      pairs:4},
+      {name:"Pebble Cove",bg:"linear-gradient(180deg,#e6f0ff,#c7d8ff 60%,#bcd0f7)", accent:"#5a7fe0", props:["🐚","🌊"],      pairs:5},
+      {name:"Twilight Hill",bg:"linear-gradient(180deg,#efe6ff,#d6c4ff 60%,#bfa8f0)", accent:"#8b5cf6", props:["🌄","🪁"],     pairs:5},
+      {name:"Starry Lane",bg:"linear-gradient(180deg,#e9e2ff,#cdbcf5 55%,#b39ae6)", accent:"#7c4ddb", props:["⭐","🌙"],      pairs:6},
+      {name:"Moonlit Grove",bg:"linear-gradient(180deg,#dcd6f7,#b9a9e6 55%,#9b86d6)", accent:"#6d35d6", props:["🌙","🦉","🍃"],pairs:6},
+      {name:"Champion!",  bg:"linear-gradient(135deg,#3a2a6b,#6d35d6 50%,#b97cf0)",  accent:"#ffd84d", props:["🏆","✨","🃏"], pairs:8}
+    ];
+    var L=LEVELS[Math.min(9,Math.max(0,DIFF-1))];
+    // Need distinct cards per pair. With few ladder items (isolation=1) cycle so the
+    // board still has >=2 pairs; ids stay unique per slot so matching never breaks.
+    var PAIRS = Math.max(2, Math.min(POOL.length>=2?POOL.length:2, L.pairs));
+    function itemAt(i){ return POOL[((i%POOL.length)+POOL.length)%POOL.length]; }
 
     var $=function(id){return document.getElementById(id);};
     var shuffle=function(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t;}return a;};
@@ -129,22 +153,32 @@
     // a card only stays up if the word is said well enough (SpeechAce); wrong/silence → flip back
     var lastFb="";
     async function scoreWord(word,res){ lastFb="";
-      if(useSpeechAce && res.blob){ try{ var fd=new FormData(); fd.append("audio",new File([res.blob],"a.webm",{type:res.blob.type||"audio/webm"})); fd.append("text",word.w); fd.append("targetSound",SOUND); fd.append("userId","child"); fd.append("mode","full"); var r=await fetch("/api/score",{method:"POST",body:fd}); var j=await r.json(); if(j&&j.ok&&j.rating){ lastFb=j.feedback||""; return j.rating!=="tryAgain"; } }catch(e){} }
-      if(res.transcript) return matchText(res.transcript,word.w);
+      var scoreText=word.t||word.word||word.display||"";
+      var mode=word.mode||"full";
+      if(useSpeechAce && res.blob){ try{ var fd=new FormData(); fd.append("audio",new File([res.blob],"a.webm",{type:res.blob.type||"audio/webm"})); fd.append("text",scoreText); fd.append("targetSound",SOUND); fd.append("userId","child"); fd.append("mode",mode); var r=await fetch("/api/score",{method:"POST",body:fd}); var j=await r.json(); if(j&&j.ok&&j.rating){ lastFb=j.feedback||""; return j.rating!=="tryAgain"; } }catch(e){} }
+      if(res.transcript) return matchText(res.transcript,scoreText);
       return false;
     }
 
     /* game */
-    var cards=[], first=null, busy=false, matched=0, reps=0, flips=0;
+    var cards=[], first=null, busy=false, matched=0, reps=0, flips=0, correct=0, total=0;
 
     function buildBoard(){
-      var chosen=shuffle(POOL).slice(0,PAIRS);
-      var deck=shuffle(chosen.concat(chosen).map(function(w,idx){return {w:w.w,e:w.e,id:w.w};}));
+      // pick PAIRS ladder items, cycling when the rung has fewer than PAIRS items
+      var order=shuffle(POOL.map(function(_,i){return i;}));
+      var chosen=[];
+      for(var p=0;p<PAIRS;p++){
+        var it = POOL.length>=PAIRS ? POOL[order[p]] : itemAt(p);
+        var disp = it.display||it.t||it.word||"";
+        var icon = (window.Sona&&Sona.pic) ? Sona.pic(disp, it.e, 44) : (it.e || ((window.Sona&&Sona.soundLabel)?Sona.soundLabel(SOUND):SOUND));
+        chosen.push({ t:it.t, say:it.say, display:disp, e:it.e, word:it.word, level:it.level, mode:it.mode, icon:icon, id:"p"+p });
+      }
+      var deck=shuffle(chosen.concat(chosen));
       var grid=$("grid"); grid.innerHTML="";
       cards=[];
       deck.forEach(function(c,i){
         var el=document.createElement("div"); el.className="card";
-        el.innerHTML='<div class="face back">?</div><div class="face front"><span class="e">'+(window.Sona&&Sona.pic?Sona.pic(c.w,c.e,44):c.e)+'</span><span class="w">'+c.w+'</span></div>';
+        el.innerHTML='<div class="face back">?</div><div class="face front"><span class="e">'+c.icon+'</span><span class="w">'+c.display+'</span></div>';
         el.onclick=function(){ flip(el,c); };
         grid.appendChild(el); cards.push({el:el,c:c,done:false});
       });
@@ -155,16 +189,26 @@
       busy=true; flips++;
       el.classList.add("up");
       if(window.Sona&&Sona.sfx)Sona.sfx.tap&&Sona.sfx.tap();
-      $("prompt").textContent="What's this? Say it!";
+      // sound-coaching at isolation/syllable: model the sound before they try
+      var isPhoneme=(c.level==="isolation"||c.level==="syllable");
+      if(isPhoneme){
+        $("prompt").textContent="Say it with me!";
+        if(window.Sona){ var cue = (c.level==="syllable"&&Sona.repeatCue)?Sona.repeatCue(SOUND):(Sona.actionCue?Sona.actionCue(SOUND,2):null); await say(cue||c.say||c.t); }
+        else { await say(c.say||c.t); }
+      } else {
+        $("prompt").textContent="What's this? Say it!";
+      }
       var res=await recordTurn(); var ok=await scoreWord(c,res);   // must say it right to keep the card up
-      if(window.Sona&&Sona.logAttempt)Sona.logAttempt({game:"match",sound:SOUND,pass:ok,word:c.w});
+      total++;
+      if(window.Sona&&Sona.logAttempt)Sona.logAttempt({game:"match",sound:SOUND,pass:ok,word:c.word||c.t});
       if(!ok){
         if(window.Sona&&Sona.sfx)Sona.sfx.tap&&Sona.sfx.tap();
-        $("prompt").textContent=(window.Sona&&Sona.coachLine)?Sona.coachLine(SOUND,lastFb):("Not quite — say “"+c.w+"”."); await say(lastFb||c.w);
+        $("prompt").textContent=(window.Sona&&Sona.coachLine)?Sona.coachLine(SOUND,lastFb):("Not quite — say “"+(c.display||c.t)+"”."); await say(lastFb||c.say||c.t);
         el.classList.remove("up"); busy=false; return;
       }
+      correct++;
       reps++;
-      await say(c.w);                 // Leo says it back to confirm
+      await say(c.say||c.t);                 // Leo says it back to confirm
       if(!first){ first={el:el,c:c}; busy=false; $("prompt").textContent="Find its match!"; return; }
       // second card chosen
       if(first.c.id===c.id && first.el!==el){
@@ -173,6 +217,7 @@
         matched++; $("pairsFound").textContent=matched;
         if(window.Sona){ Sona.sfx&&Sona.sfx.correct&&Sona.sfx.correct(); Sona.pop&&Sona.pop("⭐",{color:"#8b5cf6",y:window.innerHeight*0.35}); }
         setLeo("cheer"); leoReact();
+        if(window.Sona&&Sona.praiseLine)await say(Sona.praiseLine());
         $("prompt").textContent="Match!";
         first=null; busy=false;
         if(matched>=PAIRS) setTimeout(finishGame,650);
@@ -190,6 +235,8 @@
       var earned=15 + reps*2;
       if(window.Sona&&Sona.addCoins)Sona.addCoins(earned);
       try{ var GS=JSON.parse(localStorage.getItem("sona.games.v1")||"{}"); GS[SOUND]=GS[SOUND]||{}; GS[SOUND].match={done:true}; GS.lastPlayDay=new Date().toISOString().slice(0,10); localStorage.setItem("sona.games.v1",JSON.stringify(GS)); }catch(e){}
+      // record SLP ladder mastery for this round
+      if(window.Sona&&Sona.recordRung) Sona.recordRung(SOUND, RUNG, correct/Math.max(1,total));
       $("winUnlock").textContent="+"+earned+" 🪙";
       $("coins").textContent=Sona.getCoins?Sona.getCoins():0;
       $("win").classList.add("show");
@@ -199,7 +246,7 @@
 
     function startGame(){
       $("win").classList.remove("show");
-      first=null; busy=false; matched=0; reps=0; flips=0;
+      first=null; busy=false; matched=0; reps=0; flips=0; correct=0; total=0;
       $("pairsFound").textContent="0"; $("pairsTot").textContent=PAIRS;
       $("coins").textContent=Sona.getCoins?Sona.getCoins():0;
       $("prompt").textContent="Find the matching pairs!"; $("micText").textContent="Tap a card to start";
@@ -207,6 +254,19 @@
       // quick peek to help little ones, then flip down
       setTimeout(function(){ cards.forEach(function(c){c.el.classList.add("up");}); setTimeout(function(){ cards.forEach(function(c){ if(!c.el.classList.contains("matched")) c.el.classList.remove("up"); }); }, 1400); }, 300);
     }
+
+    // unobtrusive rung badge — shows which ladder level the child is practicing
+    (function(){ try{
+      var lbl=(window.Sona&&Sona.rungLabel)?Sona.rungLabel(RUNG):"";
+      if(!lbl) return;
+      var b=document.createElement("span");
+      b.className="stat";
+      b.style.cssText="color:#8b5cf6;font-size:13px;";
+      b.textContent="Practicing: "+lbl;
+      var coins=document.querySelector(".stat.coins");
+      var top=$("top");
+      if(coins&&top) top.insertBefore(b, coins); else if(top) top.appendChild(b);
+    }catch(e){} })();
 
     (async function(){
       try{ var r=await fetch("/api/score"); var j=await r.json(); useSpeechAce=!!(j&&j.hasKey); }catch(e){ useSpeechAce=false; }
@@ -221,8 +281,31 @@
     })();
     window.addEventListener("pagehide",function(){ try{ if(micStream)micStream.getTracks().forEach(function(t){t.stop();}); }catch(e){} });
   
-    /* art drop-in: a background swaps in when /coach/match/bg.png exists (zero code) */
-    (function(){var im=new Image();im.onload=function(){var s=document.getElementById("stage");if(s){s.style.backgroundImage="url(/coach/match/bg.png)";s.style.backgroundSize="cover";s.style.backgroundPosition="center";}};im.src="/coach/match/bg.png";})();
+    /* per-level scene: CSS theme now, real art swaps in when the PNG exists (zero code) */
+    (function(){
+      var s=document.getElementById("stage")||document.body;
+      if(L.bg) s.style.background=L.bg;
+      if(L.accent){
+        // re-tint the accent the game already uses (card backs, prompt, pairs stat)
+        try{
+          var st=document.createElement("style");
+          st.textContent=".card .back{background:linear-gradient(150deg,"+L.accent+","+L.accent+")!important;}"
+            +"#prompt{color:"+L.accent+"!important;}"
+            +".stat.pairs{color:"+L.accent+"!important;}";
+          document.head.appendChild(st);
+        }catch(e){}
+      }
+      // per-level art drop-in, then existing bg.png as fallback
+      function tryArt(srcs){
+        if(!srcs.length) return;
+        var src=srcs.shift();
+        var im=new Image();
+        im.onload=function(){ s.style.backgroundImage="url("+src+")"; s.style.backgroundSize="cover"; s.style.backgroundPosition="center"; };
+        im.onerror=function(){ tryArt(srcs); };
+        im.src=src;
+      }
+      tryArt(["/coach/match/lvl"+DIFF+".png","/coach/match/bg.png"]);
+    })();
 </script>
 </body>
 </html>
