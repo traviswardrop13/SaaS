@@ -339,40 +339,33 @@
     function norm(s){return (s||"").toLowerCase().replace(/[^a-z]/g,"");}
     function matchText(t,w){t=norm(t);w=norm(w);if(!t)return false;if(t.indexOf(w)>=0||w.indexOf(t)>=0)return true;var i=0;while(i<Math.min(t.length,w.length)&&t[i]===w[i])i++;return i>=3;}
 
-    // REV PHASE: count repetitions of the sound (onset detection). Fills the gauge.
-    function revPhase(){
-      return new Promise(function(resolve){
-        var reps=0, done=false, NEED=REV_NEED;
-        $("prompt").textContent=window.Sona.actionCue(SOUND, NEED, "rev your engine");
-        $("micBtn").classList.add("rec");
-        function setRpm(p){ $("rpmFill").style.width=Math.round(p*100)+"%"; }
-        function addRep(){ if(done)return; reps++; vroom(reps/NEED); setRpm(Math.min(1,reps/NEED)); $("rpmTxt").textContent="VROOM! "+reps+"/"+NEED; if(reps>=NEED){ finish(); } }
-        tapRev=addRep; $("micBtn").onclick=function(){ addRep(); };
-        var raf=null,src=null;
-        function finish(){ if(done)return; done=true; if(raf)cancelAnimationFrame(raf); try{src&&src.disconnect();}catch(e){} $("micBtn").classList.remove("rec"); tapRev=null; $("micBtn").onclick=null; resolve(reps); }
-        try{
-          if(micStream){
-            var ctx=getCtx(); src=ctx.createMediaStreamSource(micStream); var an=ctx.createAnalyser(); an.fftSize=512; src.connect(an);
-            var fd=new Uint8Array(an.frequencyBinCount), td=new Uint8Array(an.fftSize);
-            var bars=document.createElement("div"); bars.className="wavebars"; for(var b=0;b<7;b++)bars.appendChild(document.createElement("i"));
-            var ico=$("micBtn").querySelector("svg"); if(ico)ico.style.display="none"; $("micBtn").appendChild(bars);
-            var t0=performance.now(),nSum=0,nN=0,thr=0,state="below",up=0,dn=0;
-            (function tick(){ if(done)return;
-              an.getByteFrequencyData(fd); [].forEach.call(bars.children,function(el,k){var v=fd[2+k*3]/255;el.style.height=(8+v*30)+"px";});
-              an.getByteTimeDomainData(td); var sum=0; for(var i=0;i<td.length;i++){var d=(td[i]-128)/128;sum+=d*d;}
-              var rms=Math.sqrt(sum/td.length), now=performance.now();
-              if(now-t0<300){ nSum+=rms; nN++; }
-              else{
-                if(!thr) thr=Math.min(0.13, Math.max(0.02,(nSum/Math.max(1,nN))*3));
-                if(state==="below"){ if(rms>thr){ up++; if(up>=2){ state="above"; up=0; addRep(); } } else up=0; }
-                else { if(rms<thr*0.6){ dn++; if(dn>=3){ state="below"; dn=0; } } else dn=0; }
-              }
-              raf=requestAnimationFrame(tick); })();
-          }
-        }catch(e){}
-        // never get stuck: after 16s, launch with whatever they did (min 1)
-        setTimeout(function(){ if(!done){ if(reps<1){reps=1;setRpm(1);} finish(); } }, 16000);
-      });
+    // REV PHASE: the child must SAY the sound — each rep is a real recorded attempt
+    // routed through the same recorder+scorer as the gates. Loud noise or taps no
+    // longer fill the gauge: a rep only counts when the scorer actually hears a
+    // decent production (a confirmed "great" always counts). Escape hatch after a
+    // handful of tries so a kid is never hard-stuck (held isolated sounds are hard
+    // to score reliably — this is a warm-up, not the graded gate).
+    async function revPhase(){
+      var NEED=Math.min(REV_NEED,3), reps=0, tries=0;
+      var soundItem={ t: window.Sona.soundSay(SOUND), word: window.Sona.soundSay(SOUND), mode:"phoneme" };
+      function setRpm(p){ $("rpmFill").style.width=Math.round(p*100)+"%"; }
+      $("micBtn").classList.add("rec");
+      $("prompt").textContent=window.Sona.actionCue(SOUND, NEED, "rev your engine");
+      while(reps<NEED && tries<8){
+        tries++;
+        var res=await recordTurn();
+        var sa=await scoreItem(soundItem,res);
+        if(sa && (sa.pass || (typeof sa.score==="number" && sa.score>=50))){
+          reps++; vroom(reps/NEED); setRpm(Math.min(1,reps/NEED)); $("rpmTxt").textContent="VROOM! "+reps+"/"+NEED;
+        } else {
+          $("prompt").textContent="I need to hear your "+window.Sona.soundSay(SOUND)+" — say it again!";
+          await new Promise(function(r){setTimeout(r,250);});
+          $("prompt").textContent="Say "+window.Sona.soundSay(SOUND)+" to rev!";
+        }
+      }
+      if(reps<1){ reps=1; setRpm(1); } // never hard-stuck
+      $("micBtn").classList.remove("rec");
+      return reps;
     }
 
     // GATE PHASE: say one word; the kart only advances on a clean rep (strict). Returns the recording.
