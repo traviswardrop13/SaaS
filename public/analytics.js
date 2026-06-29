@@ -16,6 +16,13 @@
   var POSTHOG_KEY = "phc_xRPqirD2PznnvZrpeuLDwo7LtYegHsF2xWsDNLEEXdkw"; // PostHog Project API key (public)
   var POSTHOG_HOST = "https://us.i.posthog.com"; // EU project? use "https://eu.i.posthog.com"
 
+  // Native app (Capacitor): ship zero third-party analytics (kids/COPPA). Web is unaffected.
+  // Keep sonaTrack defined as a no-op so any page code that calls it doesn't error.
+  if (window.Capacitor) {
+    if (typeof window.sonaTrack !== "function") window.sonaTrack = function () {};
+    return;
+  }
+
   // Chain PostHog onto sonaTrack regardless of script load order with pixel.js.
   // If sonaTrack isn't defined yet, start from a no-op and forward to PostHog.
   var prior = typeof window.sonaTrack === "function" ? window.sonaTrack : function () {};

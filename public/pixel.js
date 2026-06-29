@@ -12,6 +12,9 @@
 
   window.sonaTrack = function () {}; // safe no-op until configured
 
+  // Native app (Capacitor): ship zero third-party tracking (kids/COPPA). Web is unaffected.
+  if (window.Capacitor) return;
+
   if (!META_PIXEL_ID) return;
 
   !(function (f, b, e, v, n, t, s) {
