@@ -28,6 +28,9 @@
       <label class="field" for="childName">Child's name</label>
       <input id="childName" type="text" placeholder="e.g. Mia" />
 
+      <label class="field" for="childAge">Child's age <span class="muted" style="font-weight:700;font-size:12px;">— helps pick developmentally-right sounds</span></label>
+      <input id="childAge" type="number" min="2" max="14" inputmode="numeric" placeholder="e.g. 5" />
+
       <div class="field">Focus sounds</div>
       <div class="sounds" id="sounds"></div>
 
@@ -150,6 +153,7 @@
         posEl = document.getElementById("practicePos"),
         wrap = document.getElementById("sounds");
     childEl.value = p.childName || "";
+    var ageEl = document.getElementById("childAge"); ageEl.value = p.childAge || "";
     coachEl.value = p.coachName || "";
     voiceEl.checked = p.voiceOn !== false;
     soundEl.checked = p.soundOn !== false;
@@ -165,15 +169,20 @@
     goalsEl.value = p.goals || "";
     posEl.value = p.practicePosition || "i";
     var sel = new Set(p.focusSounds || []);
+    var kidAge = parseInt(p.childAge, 10) || 0;
     Sona.ALL_SOUNDS.forEach(function (s) {
       var b = document.createElement("div");
+      var norm = Sona.soundNorm ? Sona.soundNorm(s) : null;
+      var early = !!(norm && kidAge && kidAge < norm);
       b.className = "sound" + (sel.has(s) ? " on" : "");
-      b.textContent = (Sona.soundLabel ? Sona.soundLabel(s) : s);
+      b.innerHTML = (Sona.soundLabel ? Sona.soundLabel(s) : s) +
+        (norm ? '<span style="display:block;font-size:9.5px;font-weight:800;margin-top:1px;color:' + (early ? "#c0392b" : "var(--muted)") + ';">' + (early ? "⚠ " : "") + "by ~" + norm + 'y</span>' : "");
+      if (norm) b.title = "Most children produce this sound by about age " + norm + (early ? " — older than your child, so check with your SLP before targeting it." : ".");
       b.onclick = function () { if (sel.has(s)) sel.delete(s); else sel.add(s); b.classList.toggle("on"); };
       wrap.appendChild(b);
     });
     document.getElementById("save").onclick = function () {
-      Sona.saveProfile({ childName: childEl.value.trim(), coachName: coachEl.value.trim() || "Coach", voiceOn: voiceEl.checked, soundOn: soundEl.checked, musicOn: musicEl.checked, cloudScoring: cloudEl.checked, dailyMinutes: parseInt(dailyEl.value, 10) || 5, volume: parseFloat(volEl.value) || 0.8, focusArea: focusAreaEl.value, slpEvaluated: slpEl.value, goals: goalsEl.value.trim(), practicePosition: posEl.value, focusSounds: [].concat(Array.from(sel)) });
+      Sona.saveProfile({ childName: childEl.value.trim(), childAge: ageEl.value, coachName: coachEl.value.trim() || "Coach", voiceOn: voiceEl.checked, soundOn: soundEl.checked, musicOn: musicEl.checked, cloudScoring: cloudEl.checked, dailyMinutes: parseInt(dailyEl.value, 10) || 5, volume: parseFloat(volEl.value) || 0.8, focusArea: focusAreaEl.value, slpEvaluated: slpEl.value, goals: goalsEl.value.trim(), practicePosition: posEl.value, focusSounds: [].concat(Array.from(sel)) });
       var s = document.getElementById("saved"); s.style.display = "inline"; setTimeout(function () { s.style.display = "none"; }, 1800);
     };
     document.getElementById("reset").onclick = function () {
