@@ -167,6 +167,7 @@
       if(sa.pass){
         if(window.Sona&&Sona.sfx&&Sona.sfx.correct)Sona.sfx.correct();
         setLeo("cheer"); leoReact(); $("prompt").textContent="Nice one!";
+        if(window.Sona&&Sona.praiseLine)await say(Sona.praiseLine());
         pi++; $("count").textContent=Math.min(pi,GOAL);
         await new Promise(function(r){setTimeout(r,500);});
         if(pi>=GOAL){ busy=false; return finishGame(); }

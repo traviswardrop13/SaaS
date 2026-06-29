@@ -306,6 +306,7 @@
         if(window.Sona&&Sona.sfx&&Sona.sfx.correct)Sona.sfx.correct();
         setLeo("cheer"); leoReact(); if(bub){ bub.classList.remove("target"); bub.classList.add("pop"); popFx(bub); }
         popped++; qi++; $("count").textContent=popped; $("prompt").textContent="Nice one!";
+        if(window.Sona&&Sona.praiseLine)await say(Sona.praiseLine());
         await new Promise(function(r){setTimeout(r,520);});
         setLeo("idle"); step();
       } else {

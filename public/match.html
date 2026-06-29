@@ -217,6 +217,7 @@
         matched++; $("pairsFound").textContent=matched;
         if(window.Sona){ Sona.sfx&&Sona.sfx.correct&&Sona.sfx.correct(); Sona.pop&&Sona.pop("⭐",{color:"#8b5cf6",y:window.innerHeight*0.35}); }
         setLeo("cheer"); leoReact();
+        if(window.Sona&&Sona.praiseLine)await say(Sona.praiseLine());
         $("prompt").textContent="Match!";
         first=null; busy=false;
         if(matched>=PAIRS) setTimeout(finishGame,650);

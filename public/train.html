@@ -296,6 +296,7 @@
         correct++;
         if(window.Sona&&Sona.sfx&&Sona.sfx.correct)Sona.sfx.correct();
         setLeo("cheer"); leoReact(); $("prompt").textContent="Nice one!";
+        if(window.Sona&&Sona.praiseLine)await say(Sona.praiseLine());
         done2++; qi++; $("count").textContent=done2;
         var tr=$("train"); tr.classList.add("chug"); var pos=carPct(done2); tr.style.left=pos+"%"; $("smoke").style.left=(pos+1)+"%"; $("smoke").style.opacity="1";
         await new Promise(function(r){setTimeout(r,1050);}); tr.classList.remove("chug"); $("smoke").style.opacity="0";

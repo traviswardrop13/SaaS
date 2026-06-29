@@ -307,6 +307,7 @@
         sfx("correct"); setLeo("cheer"); leoReact();
         addBlock(current);
         $("prompt").textContent=pick(["Nice block!","Up it goes!","Strong!","Keep building!"]);
+        if(window.Sona&&Sona.praiseLine)await say(Sona.praiseLine());
         if(placed>=GOAL){ return finishGame(); }
         if(placed===Math.ceil(GOAL/2)){ $("prompt").textContent="Halfway up! 🙌"; }
         await new Promise(function(r){ setTimeout(r,650); });

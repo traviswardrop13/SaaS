@@ -307,6 +307,7 @@
       if(sa.pass){
         if(window.Sona&&Sona.sfx&&Sona.sfx.correct)Sona.sfx.correct();
         setLeo("cheer"); leoReact(); $("item").classList.add("fly"); $("prompt").textContent="Nice one!";
+        if(window.Sona&&Sona.praiseLine)await say(Sona.praiseLine());
         got++; correct++; qi++; $("count").textContent=got; $("cartCount").textContent=got;
         await new Promise(function(r){setTimeout(r,720);});
         setLeo("idle"); busy=false;

@@ -184,6 +184,7 @@
       if(tcr) tcr.classList.add("right");
       if(window.Sona){ Sona.sfx&&Sona.sfx.correct&&Sona.sfx.correct(); Sona.pop&&Sona.pop("⭐",{color:"#46a302",y:window.innerHeight*0.4}); }
       setLeo("cheer"); leoReact();
+      if(window.Sona&&Sona.praiseLine)await say(Sona.praiseLine());
       score++; $("score").textContent=score; $("prompt").textContent="Pop!";
       setTimeout(function(){ if(tcr){ tcr.classList.remove("right"); tcr.classList.add("bop"); } slots.forEach(function(s){ if(s!==tcr) s.classList.remove("up"); }); }, 120);
       setTimeout(function(){ setLeo("idle"); round(); }, 750);

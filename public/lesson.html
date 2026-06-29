@@ -385,7 +385,7 @@
 
     function answer(ok, sub){
       results.push({ word: (QUEUE[i].label||QUEUE[i].snd||SOUND), sound: (QUEUE[i].snd||SOUND), level:(QUEUE[i].level||"word"), ok });
-      if(ok){ combo++; xp+=10; if(window.Sona){Sona.sfx.correct(); Sona.pop("⭐",{color:"#ff9600",y:window.innerHeight*0.28});} if(combo>=2) showCombo(combo); }
+      if(ok){ combo++; xp+=10; if(window.Sona){Sona.sfx.correct(); Sona.pop("⭐",{color:"#ff9600",y:window.innerHeight*0.28}); if(Sona.praiseLine)say(Sona.praiseLine());} if(combo>=2) showCombo(combo); }
       else { combo=0; if(window.Sona) Sona.sfx.tap(); }
       fb.className = "show";
       $("fbIcon").textContent = ok?"⭐":"👍";

@@ -477,6 +477,7 @@
             if(window.Sona&&Sona.sfx)Sona.sfx.correct&&Sona.sfx.correct();
             var kl=document.querySelector("#kart .leo"); if(kl){ kl.src="/coach/poses/leo-celebrate.png"; kl.classList.remove("cheer"); void kl.offsetWidth; kl.classList.add("cheer"); setTimeout(function(){ kl.src="/coach/leo.png"; kl.classList.remove("cheer"); }, 700); }
             vroom(1); $("prompt").textContent="Nice one!";
+            if(window.Sona&&Sona.praiseLine)await say(Sona.praiseLine());
           } else {
             if(window.Sona&&Sona.sfx)Sona.sfx.tap&&Sona.sfx.tap();
             $("prompt").textContent=(window.Sona&&Sona.coachLine)?Sona.coachLine(SOUND,sa.feedback):"Try again!";

@@ -133,6 +133,7 @@
       setLeo("cheer"); leoReact();
       var reply=REPLIES[answered%REPLIES.length].replace(/\{w\}/g,pick);
       $("qText").textContent=reply; $("prompt").textContent="Nice one!";
+      if(window.Sona&&Sona.praiseLine)await say(Sona.praiseLine());
       answered++; ci++; $("count").textContent=answered;
       await say(reply);
       await new Promise(function(r){setTimeout(r,400);});

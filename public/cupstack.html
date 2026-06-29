@@ -430,6 +430,7 @@
         if(window.Sona){Sona.sfx&&Sona.sfx.correct&&Sona.sfx.correct();}
         setCombo(combo+1); setLeo("cheer"); leoReact();
         $("micState").textContent="Nice one!";
+        if(window.Sona&&Sona.praiseLine)await say(Sona.praiseLine());
         dropCup("great");
         await new Promise(function(r){ setTimeout(r,700); });
         setLeo("idle");
