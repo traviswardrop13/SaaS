@@ -323,9 +323,11 @@
       var max = Math.max.apply(null, keys.map(function (k) { return g.bySound[k]; }).concat([1]));
       keys.sort(function (a, b) { return g.bySound[b] - g.bySound[a]; }).forEach(function (k) {
         var n = g.bySound[k], st = Math.min(3, Math.floor(n / 3));
+        var rung = (Sona.rungOf ? Sona.rungOf(k) : 0);
+        var rungTxt = rung >= 6 ? "Mastered ✓" : ("Level: " + (Sona.rungLabel ? Sona.rungLabel(rung) : ""));
         var d = document.createElement("div"); d.style.margin = "0 0 14px";
         d.innerHTML =
-          '<div class="ms"><span>' + k + ' sound</span><span class="stars">' + "★".repeat(st) + "☆".repeat(3 - st) + '</span></div>' +
+          '<div class="ms"><span>' + k + ' sound<span style="color:#1597d4;background:#e7f3ff;border-radius:99px;padding:2px 8px;margin-left:8px;font-weight:800;font-size:11px;">' + rungTxt + '</span></span><span class="stars">' + "★".repeat(st) + "☆".repeat(3 - st) + '</span></div>' +
           '<div class="bar"><span style="width:' + Math.round(n / max * 100) + '%"></span></div>' +
           '<div class="muted" style="font-size:12px;margin-top:4px;">' + n + ' practiced</div>';
         bs.appendChild(d);
