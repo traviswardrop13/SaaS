@@ -169,7 +169,7 @@
       <div class="reward" id="xpReward">+0<small>XP</small></div>
 
     </div>
-    <a class="cta" id="doneBtn" href="/map.html">Keep going →</a>
+    <a class="cta" id="doneBtn" href="/home.html">Keep going →</a>
     <button class="againlink" id="againBtn">Practice again</button>
   </div>
 
@@ -220,9 +220,9 @@
     const TARGET = (params.get("sound") || focus[0] || "R").toUpperCase();
     const SOUND = SOUND_PLAN[TARGET] ? TARGET : "R";
     const PLAN = SOUND_PLAN[SOUND];
-    let STAGE = params.has("stage") ? parseInt(params.get("stage"),10) : (window.Sona ? Sona.stageOf(SOUND) : 0);
+    let STAGE = params.has("stage") ? parseInt(params.get("stage"),10) : (window.Sona && Sona.rungOf ? Sona.rungOf(SOUND) : 0);
     if (isNaN(STAGE) || STAGE < 0) STAGE = 0;
-    if (STAGE > 2) STAGE = 2;
+    if (STAGE > 5) STAGE = 5;   // 6 SLP rungs (isolation..conversation); conversation runs as sentences in this say-queue
     // daily mode: one time-budgeted session across every focus sound
     const DAILY = params.get("daily") === "1";
     const RETRY = params.get("retry") === "1";
@@ -234,14 +234,9 @@
     const THEME = (window.Sona && Sona.dayTheme) ? Sona.dayTheme() : { e:"⭐", n:"Practice Day" };
     const planOf = (s)=> SOUND_PLAN[s] || SOUND_PLAN.R;
     const poolOf = (s)=> (window.Sona && Sona.WORDS && Sona.WORDS[s]) ? Sona.WORDS[s] : POOL;
-    // words that START with the sound (for "find pictures that start with X")
-    const initialsOf = (s)=> poolOf(s).filter(w=>w.i);
     const BUDDY = (window.Sona ? Sona.characterById(profile.character) : { img:"/coach/leo.png", emoji:"🦁" });
-    // Leo's reaction poses — preloaded so the swap on answer is instant
-    const POSES = { celebrate:"/coach/poses/leo-celebrate.png", listen:"/coach/poses/leo-listen.png" };
-    Object.values(POSES).forEach(s=>{ const im=new Image(); im.src=s; });
     const ISO_AGAIN = (s)=>["Again — say it.","One more big "+s+".","Nice. Again.","Keep going.","One more time.","Last one."];
-    const PRAISE = ["Nice job!","Great!","Awesome!","Nice one!","You got it!","Woohoo!"];
+    const PRAISE = ["Nice job!","Great!","Awesome!","Perfect!","You got it!","Woohoo!"];
     const TRYAGAIN = ["Good try!","Almost!","Keep going!","Nice effort!"];
 
     const $ = (id)=>document.getElementById(id);
@@ -249,8 +244,6 @@
     const shuffle = (a)=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));const t=a[i];a[i]=a[j];a[j]=t;}return a;};
 
     function otherWords(s){ const o=[]; const W=(window.Sona&&Sona.WORDS)||{}; Object.keys(W).forEach(k=>{ if(k!==s) W[k].forEach(w=>o.push(w.e)); }); return o.length?o:EXTRA; }
-    // emojis of words that start with SOME OTHER sound — safe "doesn't start with X" distractors
-    function otherInitials(s){ const o=[]; const W=(window.Sona&&Sona.WORDS)||{}; Object.keys(W).forEach(k=>{ if(k!==s) W[k].forEach(w=>{ if(w.i) o.push(w.e); }); }); return o.length?o:EXTRA; }
     function distractors(exclude, n, s){
       const pool = shuffle(poolOf(s).map(w=>w.e).concat(otherWords(s)).concat(EXTRA).filter(e=>e!==exclude));
       const out=[]; for(const e of pool){ if(out.indexOf(e)===-1){ out.push(e); if(out.length>=n) break; } } return out;
@@ -258,22 +251,26 @@
 
     // generate n activities for one sound at one stage (cycles material, so it
     // can stretch to fill any time budget)
-    function genFor(s, stage, n){
-      const plan=planOf(s), pool=poolOf(s);
-      const words=(window.Sona&&Sona.dailyPick)?Sona.dailyPick(pool, Math.min(pool.length,8), s.charCodeAt(0)):pool.slice(0,8);
-      const q=[]; let wi=0, si=0, k=0;
+    // Build n activities for one sound at its CURRENT SLP rung, sourced from the
+    // shared ladder engine (isolation→syllable→word→phrase→sentence). Picture
+    // mini-games (pick/findSound) only make sense at the word rung.
+    function genFor(s, rung, n){
+      rung = Math.max(0, Math.min(5, rung||0));
+      let items = (window.Sona&&Sona.ladderContent)?Sona.ladderContent(s,rung):[];
+      if(rung>=5 && (!items.length || (items[0]&&items[0].q))){ rung=4; items=(window.Sona&&Sona.ladderContent)?Sona.ladderContent(s,4):[]; } // conversation → sentences here
+      if(!items.length){ items=(poolOf(s)||[]).map(w=>({t:w.w,say:w.w,display:w.w,e:w.e,word:w.w,level:"word",mode:"full"})); }
+      STAGE_USED[s]=rung;
+      let seq=(window.Sona&&Sona.dailyPick)?Sona.dailyPick(items, Math.min(items.length,8), s.charCodeAt(0)):items.slice(0,8);
+      if(!seq.length) seq=items.slice();
+      const wordRung=(rung===2);
+      const q=[]; let wi=0, k=0;
       while(q.length<n){
-        if(stage===0){
-          if(k%4===3) q.push({type:"findSound",snd:s});
-          else q.push({type:"say",snd:s,text:plan.isolation.scoreText,label:plan.isolation.display,level:"isolation",mode:"phoneme",isLetter:true,say:(window.Sona?window.Sona.repeatCue(s):plan.isolation.say)});
-        } else if(stage===1){
-          if(k%4===3) q.push({type:"findSound",snd:s});
-          else { const sy=plan.syllables[si++ % plan.syllables.length]; q.push({type:"say",snd:s,text:sy.scoreText,label:sy.display,level:"syllable",mode:"phoneme",isLetter:true}); }
-        } else {
-          const m=k%4;
-          if(m===1) q.push({type:"pick",snd:s});
-          else if(m===3) q.push({type:"findSound",snd:s});
-          else { const w=words[wi++ % words.length]; q.push({type:"say",snd:s,text:w.w,label:w.w,emoji:w.e,level:"word",mode:"full"}); }
+        if(wordRung && k%4===1) q.push({type:"pick",snd:s});
+        else if(wordRung && k%4===3) q.push({type:"findSound",snd:s});
+        else {
+          const it=seq[wi++ % seq.length];
+          const sayText=(it.level==="isolation" && window.Sona && Sona.repeatCue)?Sona.repeatCue(s):(it.say||it.t);
+          q.push({type:"say",snd:s,text:it.t,label:(it.display||it.t),emoji:it.e,level:it.level,mode:it.mode,say:sayText,isLetter:(it.level==="isolation"||it.level==="syllable")});
         }
         k++;
       }
@@ -300,12 +297,11 @@
       const total = Math.max(8, Math.round(MINUTES*60/24)); // ≈24s per activity
       const base = Math.floor(total/list.length), extra = total%list.length;
       QUEUE = [];
-      list.forEach((s,ix)=>{ const st=Math.min(window.Sona?Sona.stageOf(s):0,2); STAGE_USED[s]=st; QUEUE=QUEUE.concat(genFor(s,st, base+(ix<extra?1:0))); });
+      list.forEach((s,ix)=>{ const st=(window.Sona&&Sona.rungOf)?Sona.rungOf(s):0; QUEUE=QUEUE.concat(genFor(s,st, base+(ix<extra?1:0))); }); // genFor records STAGE_USED[s]
       let prev=null;
       QUEUE.forEach((a2,k2)=>{ if(a2.snd!==prev){ if(k2>0) a2.intro="Now the "+a2.snd+" sound!"; prev=a2.snd; } });
     } else {
-      STAGE_USED[SOUND]=STAGE;
-      QUEUE = genFor(SOUND, STAGE, [6,7,8][STAGE]||8);
+      QUEUE = genFor(SOUND, STAGE, [6,7,8][STAGE]||8); // genFor records STAGE_USED[SOUND]
     }
 
 
@@ -394,10 +390,7 @@
       fb.className = "show";
       $("fbIcon").textContent = ok?"⭐":"👍";
       const lb=document.querySelector(".leobubble img");
-      if(lb){
-        if((profile.character||"leo")==="leo") lb.src = ok ? POSES.celebrate : POSES.listen;
-        lb.classList.remove("hop","cheer"); void lb.offsetWidth; lb.classList.add(ok?"hop":"cheer");
-      }
+      if(lb){ lb.classList.remove("hop","cheer"); void lb.offsetWidth; lb.classList.add(ok?"hop":"cheer"); }
       $("fbTitle").textContent = ok?pick(PRAISE):pick(TRYAGAIN);
       $("fbSub").textContent = sub||"";
       $("fbBtn").onclick = ()=>{ fb.className=""; i++; setProgress(); next(); };
@@ -469,10 +462,8 @@
 
     /* FIND THE SOUND (tap all pictures with the target sound) */
     function renderFind(a){
-      const s=a.snd||SOUND;
-      const tgs=shuffle(initialsOf(s)).slice(0,2).map(w=>({e:w.e,ok:true}));
-      const tgSet=new Set(tgs.map(t=>t.e)); // never let the same emoji be both right and wrong
-      const others=shuffle(otherInitials(s).filter(e=>!tgSet.has(e))).slice(0,2).map(e=>({e,ok:false}));
+      const tgs=shuffle(poolOf(a.snd||SOUND)).slice(0,2).map(w=>({e:w.e,ok:true}));
+      const others=shuffle(otherWords(a.snd||SOUND)).slice(0,2).map(e=>({e,ok:false}));
       const opts=shuffle(tgs.concat(others));
       const head=document.createElement("div");
       head.innerHTML='<div class="qtitle">Tap the '+(a.snd||SOUND)+' pictures</div><div class="qsub">Pick every picture that starts with the '+(a.snd||SOUND)+' sound.</div><div class="audiorow"><button class="audiobtn sm" id="play">'+audioSVG()+'</button><div class="wave"></div></div>';
@@ -493,7 +484,7 @@
       const passed=correct>=Math.ceil(results.length*0.5);
       if(window.Sona){ Sona.recordSession({words:results});
         const bys={}; results.forEach(r=>{ (bys[r.sound]=bys[r.sound]||[]).push(r.ok); });
-        if(!RETRY) Object.keys(bys).forEach(s=>{ const arr=bys[s]; if(arr.length>=3){ const p=arr.filter(Boolean).length/arr.length>=0.6; Sona.completeStage(s, (STAGE_USED[s]!=null?STAGE_USED[s]:STAGE), p); } });
+        if(!RETRY) Object.keys(bys).forEach(s=>{ const arr=bys[s]; if(arr.length>=3 && Sona.recordRung){ const acc=arr.filter(Boolean).length/arr.length; Sona.recordRung(s, (STAGE_USED[s]!=null?STAGE_USED[s]:STAGE), acc); } });
       }
       // celebration choreography: stars land one by one, XP counts up
       $("doneStars").textContent="☆☆☆";
@@ -502,9 +493,9 @@
         if(si<=stars && window.Sona){ Sona.sfx.star(); Sona.pop("⭐",{color:"#ff9600",y:window.innerHeight*0.3}); }
         if(si>=3) clearInterval(starIv);
       },430);
-      const NEXT=["the letter","syllables","words"];
+      const rlabel=(n)=>(window.Sona&&Sona.rungLabel)?Sona.rungLabel(n):"more";
       $("doneSub").textContent = DAILY ? ("Daily practice done, "+CHILD+" — "+correct+" of "+results.length+" sounded great! 🎉")
-        : (passed&&STAGE<2 ? ("Next up: "+NEXT[STAGE+1]+"! 🎉") : passed ? ("You finished the "+SOUND+" sound! 🏆") : ("Let’s practice this one again. 💪"));
+        : (passed&&STAGE<5 ? ("Next up: "+rlabel(STAGE+1)+"! 🎉") : passed ? ("You finished "+SOUND+" "+rlabel(STAGE)+"! 🏆") : ("Let’s practice this one again. 💪"));
       const xpEl=$("xpReward"); xpEl.innerHTML="+0<small>XP</small>";
       let shown=0; const stepXp=Math.max(1,Math.round(xp/26));
       const xpIv=setInterval(()=>{ shown=Math.min(xp,shown+stepXp); xpEl.innerHTML="+"+shown+"<small>XP</small>"; if(shown>=xp) clearInterval(xpIv); },42);
@@ -523,10 +514,10 @@
       try{ await detectScorer(); }catch(e){}
       setProgress(); next();
     }
-    function leave(){ try{ micStream&&micStream.getTracks().forEach(t=>t.stop()); }catch{} location.href="/map.html"; }
+    function leave(){ try{ micStream&&micStream.getTracks().forEach(t=>t.stop()); }catch{} location.href="/home.html"; }
 
-    const TITLES=["Warm up the "+SOUND+" sound!", SOUND+" syllables!", SOUND+" words!"];
-    $("startTitle").textContent = RETRY ? "Fix-it round! 🔁" : DAILY ? ("Today's "+MINUTES+"-minute practice!") : (TITLES[STAGE]||("Practice "+SOUND+"!"));
+    const rungTitle=(window.Sona&&Sona.rungLabel)?(SOUND+" · "+Sona.rungLabel(STAGE)):("Practice "+SOUND+"!");
+    $("startTitle").textContent = RETRY ? "Fix-it round! 🔁" : DAILY ? ("Today's "+MINUTES+"-minute practice!") : rungTitle;
     $("themeTag").textContent = RETRY ? "🔁 One more try on the tricky words!" : THEME.e + " " + THEME.n + (DAILY ? (" — about " + MINUTES + " minutes") : " — new words today!");
     if(BUDDY.img){ $("startPic").src=BUDDY.img; }
     $("startBtn").onclick=start;
