@@ -314,24 +314,51 @@
       wk.appendChild(cell);
     }
 
-    // sounds & mastery (stars = practiced reps / 3, capped at 3 — matches the home map)
+    // sounds & mastery — clinician view: accuracy + by-position breakdown from
+    // the real attempt log (Sona.outcomes), unioned with practiced-sound counts.
     var bs = document.getElementById("bysound");
-    var keys = Object.keys(g.bySound || {});
+    var out = (Sona.outcomes ? Sona.outcomes() : {}) || {};
+    var POSLBL = { i: "initial", m: "medial", f: "final", v: "vocalic R", b: "blends" };
+    var keys = Array.from(new Set(Object.keys(g.bySound || {}).concat(Object.keys(out))));
+    function accOf(k) { var o = out[k]; return (o && o.attempts) ? Math.round(o.passes / o.attempts * 100) : null; }
+    function posLineOf(k) { var o = out[k]; if (!o || !o.byPos) return ""; var parts = []; Object.keys(o.byPos).forEach(function (p) { var bp = o.byPos[p]; if (bp.a) parts.push((POSLBL[p] || p) + " " + Math.round(bp.p / bp.a * 100) + "%"); }); return parts.join(" · "); }
     if (!keys.length) {
       bs.innerHTML = '<p class="muted">No practice yet — start a session from Home!</p>';
     } else {
-      var max = Math.max.apply(null, keys.map(function (k) { return g.bySound[k]; }).concat([1]));
-      keys.sort(function (a, b) { return g.bySound[b] - g.bySound[a]; }).forEach(function (k) {
-        var n = g.bySound[k], st = Math.min(3, Math.floor(n / 3));
+      keys.sort(function (a, b) { return ((out[b] && out[b].attempts) || g.bySound[b] || 0) - ((out[a] && out[a].attempts) || g.bySound[a] || 0); }).forEach(function (k) {
+        var n = g.bySound[k] || 0, st = Math.min(3, Math.floor(n / 3));
         var rung = (Sona.rungOf ? Sona.rungOf(k) : 0);
         var rungTxt = rung >= 6 ? "Mastered ✓" : ("Level: " + (Sona.rungLabel ? Sona.rungLabel(rung) : ""));
+        var o = out[k], acc = accOf(k), pos = posLineOf(k);
+        var accColor = acc == null ? "" : (acc >= 80 ? "#46a302" : acc >= 50 ? "#e08600" : "#c0392b");
         var d = document.createElement("div"); d.style.margin = "0 0 14px";
         d.innerHTML =
-          '<div class="ms"><span>' + k + ' sound<span style="color:#1597d4;background:#e7f3ff;border-radius:99px;padding:2px 8px;margin-left:8px;font-weight:800;font-size:11px;">' + rungTxt + '</span></span><span class="stars">' + "★".repeat(st) + "☆".repeat(3 - st) + '</span></div>' +
-          '<div class="bar"><span style="width:' + Math.round(n / max * 100) + '%"></span></div>' +
-          '<div class="muted" style="font-size:12px;margin-top:4px;">' + n + ' practiced</div>';
+          '<div class="ms"><span>' + k + ' sound<span style="color:#1597d4;background:#e7f3ff;border-radius:99px;padding:2px 8px;margin-left:8px;font-weight:800;font-size:11px;">' + rungTxt + '</span></span>' +
+          (acc != null ? '<span class="stars" style="color:' + accColor + ';">' + acc + '%</span>' : '<span class="stars">' + "★".repeat(st) + "☆".repeat(3 - st) + '</span>') + '</div>' +
+          '<div class="bar"><span style="width:' + (acc != null ? acc : Math.round(n / (Math.max.apply(null, keys.map(function (x) { return g.bySound[x] || 1; }).concat([1]))) * 100)) + '%' + (accColor ? ';background:' + accColor : '') + '"></span></div>' +
+          '<div class="muted" style="font-size:12px;margin-top:4px;">' + (acc != null ? (o.passes + '/' + o.attempts + ' correct' + (pos ? ' · ' + pos : '')) : (n + ' practiced')) + '</div>';
         bs.appendChild(d);
       });
+      // Share with your SLP — a clean plain-text report from the real data.
+      var shareBtn = document.createElement("button");
+      shareBtn.className = "btn ghost"; shareBtn.style.cssText = "width:auto;padding:10px 16px;margin-top:6px;font-size:14px;";
+      shareBtn.textContent = "📋 Copy summary for your SLP";
+      shareBtn.onclick = function () {
+        var prof = (Sona.getProfile ? Sona.getProfile() : {});
+        var L = ["Sona — home-practice summary", (prof.childName || "Child") + (prof.childAge ? (", age " + prof.childAge) : ""),
+          "Streak: " + ((g.streak && g.streak.count) || 0) + " days · Sessions: " + ((g.totals && g.totals.sessions) || 0), ""];
+        keys.forEach(function (k) {
+          var o = out[k]; if (!o || !o.attempts) return;
+          var rung = Sona.rungOf ? Sona.rungOf(k) : 0, rl = Sona.rungLabel ? Sona.rungLabel(rung) : "", pos = posLineOf(k);
+          L.push("• " + k + " — " + (rung >= 6 ? "mastered" : rl + " level") + " — " + accOf(k) + "% (" + o.passes + "/" + o.attempts + ")" + (pos ? " — " + pos.replace(/ · /g, ", ") : "") + " — last practiced " + (o.lastAt || "—"));
+        });
+        L.push("", "Sona is an at-home practice tool, not a diagnosis. Scoring is a practice aid — please use your clinical judgment.");
+        var txt = L.join("\n");
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(txt).then(function () { shareBtn.textContent = "Copied ✓ — paste into your notes"; setTimeout(function () { shareBtn.textContent = "📋 Copy summary for your SLP"; }, 2600); }, function () { window.prompt("Copy this summary:", txt); });
+        } else { window.prompt("Copy this summary:", txt); }
+      };
+      bs.parentNode.appendChild(shareBtn);
     }
 
     // recordings: group by word, offer first vs latest playback
