@@ -16,11 +16,23 @@ import Capacitor
  *   SonaAudio.record({ maxMs }) -> { wav: <base64 16-bit PCM WAV>, sampleRate, spoke }
  *   SonaAudio.stop()            -> resolves the in-flight record() immediately
  *
+ * Registration: conforms to `CAPBridgedPlugin` (Capacitor 6+/Swift Package Manager
+ * native). No Objective-C `.m` file or `CAP_PLUGIN` macro is needed — Capacitor
+ * discovers the plugin at runtime from `jsName` + `pluginMethods` below.
+ *
  * Note: written to be correct but it has NOT been compiled on a Mac yet — build
  * it in Xcode and test on a device. Multi-channel inputs use channel 0 (mono).
  */
 @objc(SonaAudioPlugin)
-public class SonaAudioPlugin: CAPPlugin {
+public class SonaAudioPlugin: CAPPlugin, CAPBridgedPlugin {
+
+    // MARK: - Capacitor bridge registration (replaces the old CAP_PLUGIN .m macro)
+    public let identifier = "SonaAudioPlugin"
+    public let jsName = "SonaAudio"
+    public let pluginMethods: [CAPPluginMethod] = [
+        CAPPluginMethod(name: "record", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "stop", returnType: CAPPluginReturnPromise)
+    ]
 
     private let engine = AVAudioEngine()
     private var pcm = Data()
