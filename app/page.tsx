@@ -21,6 +21,13 @@ export const metadata = {
 export default function Landing() {
   return (
     <main className="min-h-screen bg-white text-gray-800">
+      {/* Native app (App Store build) opens straight into the app, not this
+          marketing/pricing page — Apple forbids non-IAP checkout in-app. */}
+      <script
+        dangerouslySetInnerHTML={{
+          __html: `if(typeof window!=="undefined"&&window.Capacitor)location.replace("/today.html");`,
+        }}
+      />
       <Hero />
       <HowItWorks />
       <LiveCoach />

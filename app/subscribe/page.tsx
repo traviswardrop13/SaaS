@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Suspense, useState } from "react";
+import { Suspense, useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 
 const FEATURES = [
@@ -18,6 +18,15 @@ function SubscribeInner() {
   const [email, setEmail] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Native app (App Store build): Apple forbids non-IAP checkout, so the iOS app
+  // ships with no in-app payment. If this page is reached inside the app, bounce
+  // to the app home instead of showing Stripe. Web checkout is unaffected.
+  useEffect(() => {
+    if (typeof window !== "undefined" && (window as { Capacitor?: unknown }).Capacitor) {
+      window.location.replace("/today.html");
+    }
+  }, []);
 
   async function preorder() {
     setError(null);

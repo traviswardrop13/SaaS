@@ -192,6 +192,11 @@
     // account / subscription
     function paintAcct() {
       var ac = document.getElementById("acct");
+      if (Sona.isNativeApp && Sona.isNativeApp()) {
+        ac.textContent = "Sona is free to use in the app.";
+        var rb = document.getElementById("restoreBox"); if (rb) rb.style.display = "none";
+        return;
+      }
       if (Sona.isSubscribed && Sona.isSubscribed()) {
         ac.innerHTML = 'Plan: <strong style="color:var(--good);">Active ✓</strong> · <a href="/subscribe">Manage →</a>';
         document.getElementById("restoreBox").style.display = "none";
