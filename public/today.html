@@ -151,7 +151,7 @@
     $("startBtn").onclick=startSession; $("scene").onclick=startSession;
     applyTheme();
     // free-trial banner (no card): show days left + lock-in founding price
-    (function(){ if(!window.Sona)return; if((Sona.isSubscribed&&Sona.isSubscribed())||(Sona.isPilot&&Sona.isPilot()))return; if(Sona.ensureTrial)Sona.ensureTrial(); var b=$("trialBanner"),m=$("trialMsg"); if(!b||!m)return;
+    (function(){ if(!window.Sona)return; if(Sona.isNativeApp&&Sona.isNativeApp())return; if((Sona.isSubscribed&&Sona.isSubscribed())||(Sona.isPilot&&Sona.isPilot()))return; if(Sona.ensureTrial)Sona.ensureTrial(); var b=$("trialBanner"),m=$("trialMsg"); if(!b||!m)return;
       if(Sona.trialActive&&Sona.trialActive()){ var d=Sona.trialDaysLeft?Sona.trialDaysLeft():7; m.innerHTML=d+" day"+(d===1?"":"s")+" left in your free trial · <u>Lock in founding $39.99/yr →</u>"; b.style.display="flex"; }
       else if(Sona.trialExpired&&Sona.trialExpired()){ m.innerHTML="Your free trial ended · <u>Keep going for $39.99/yr →</u>"; b.style.display="flex"; }
     })();
