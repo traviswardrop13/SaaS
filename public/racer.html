@@ -459,8 +459,12 @@
         $("gateNum").textContent=gateIdx;
         showItem(it); $("hear").onclick=(function(ii){return function(){say(ii.say!=null?ii.say:ii.t);};})(it);
         await say(it.say!=null?it.say:it.t);
-        var passed=false;
-        while(!passed){
+        var passed=false, tries=0;
+        // Fail-forward: at most 3 tries per gate. Every attempt is still scored
+        // and logged honestly, but a struggling kid is never trapped in an
+        // endless loop — after 3 we cheer the effort and roll on (as a miss).
+        while(!passed && tries<3){
+          tries++;
           gateTotal++;
           $("prompt").textContent=isSnd?"Say the sound to zoom!":"Say it to zoom!";
           var res=await recordTurn(); var sa=await scoreItem(it,res);
@@ -471,13 +475,20 @@
             var kl=document.querySelector("#kart .leo"); if(kl){ kl.src="/coach/poses/leo-celebrate.png"; kl.classList.remove("cheer"); void kl.offsetWidth; kl.classList.add("cheer"); setTimeout(function(){ kl.src="/coach/leo.png"; kl.classList.remove("cheer"); }, 700); }
             vroom(1); $("prompt").textContent="Nice one!";
             if(window.Sona&&Sona.praiseLine)await say(Sona.praiseLine());
-          } else {
+          } else if(tries<3){
             if(window.Sona&&Sona.sfx)Sona.sfx.tap&&Sona.sfx.tap();
             $("prompt").textContent=(window.Sona&&Sona.coachLine)?Sona.coachLine(SOUND,sa.feedback):"Try again!";
             // keep sound-coaching at isolation/syllable: re-model the sound itself.
             var remodel=isSnd?(window.Sona.repeatCue?window.Sona.repeatCue(SOUND):(window.Sona.soundSay(SOUND)+"… "+(it.say!=null?it.say:it.t))):("Let's try again. "+window.Sona.soundSay(SOUND)+"… "+(it.say!=null?it.say:it.t));
             await say(sa.feedback||remodel); // coach + re-model
           }
+        }
+        if(!passed){
+          // effort-forward: celebrate the try so the kart still moves on.
+          if(window.Sona&&Sona.sfx)Sona.sfx.correct&&Sona.sfx.correct();
+          var klf=document.querySelector("#kart .leo"); if(klf){ klf.src="/coach/poses/leo-celebrate.png"; klf.classList.remove("cheer"); void klf.offsetWidth; klf.classList.add("cheer"); setTimeout(function(){ klf.src="/coach/leo.png"; klf.classList.remove("cheer"); }, 700); }
+          vroom(1); $("prompt").textContent="Good trying! Keep going! 🏁";
+          await say("Good trying! Let's keep racing!");
         }
         progress=0.25+ (gateIdx+1)/GATES*0.7;
         kartTo(28 + (gateIdx+1)/GATES*60);

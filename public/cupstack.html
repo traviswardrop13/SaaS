@@ -416,6 +416,7 @@
       return say(itSay(it));
     }
 
+    var cupTries=0; // fail-forward: attempts on the current word
     async function attempt(){
       if(busy) return; busy=true;
       $("micBtn").onclick=null;
@@ -427,6 +428,7 @@
       if(window.Sona&&Sona.logAttempt)Sona.logAttempt({game:"cupstack",sound:SOUND,pass:sa.pass,score:sa.score,word:itScore(w)});
       if(sa.pass){
         // Right — said cleanly, so a cup stacks.
+        cupTries=0;
         if(window.Sona){Sona.sfx&&Sona.sfx.correct&&Sona.sfx.correct();}
         setCombo(combo+1); setLeo("cheer"); leoReact();
         $("micState").textContent="Nice one!";
@@ -441,8 +443,8 @@
         await modelItem(current); // Leo models the next item (sound coaching at isolation/syllable)
         $("micState").textContent="Your turn — say it!";
         attempt(); // auto-listen — no tap to speak
-      } else {
-        // Wrong — strict: no cup. Same word again.
+      } else if(++cupTries<3){
+        // Wrong — no cup yet. Re-model and try the same word again (up to 3x).
         if(window.Sona){Sona.sfx&&Sona.sfx.tap&&Sona.sfx.tap();}
         setCombo(0); setLeo("encourage");
         $("micState").textContent=(window.Sona&&Sona.coachLine)?Sona.coachLine(SOUND,sa.feedback):"Try again!";
@@ -453,6 +455,22 @@
         await modelItem(w); // model the same item again
         $("micState").textContent="Your turn — say it!";
         attempt(); // auto-listen — no tap to speak
+      } else {
+        // fail-forward: after 3 tries, cheer the effort and stack a cup so the
+        // kid moves on (the misses are already logged honestly above).
+        cupTries=0; setCombo(0);
+        if(window.Sona){Sona.sfx&&Sona.sfx.correct&&Sona.sfx.correct();}
+        setLeo("cheer"); $("micState").textContent="Good trying!";
+        if(window.Sona)await say("Good trying! Here's the next one.");
+        dropCup("great");
+        await new Promise(function(r){ setTimeout(r,700); });
+        setLeo("idle"); busy=false;
+        if(placed>=GOAL){ return finishGame(); }
+        showWord(nextWord());
+        $("micState").textContent="Listen…";
+        await modelItem(current);
+        $("micState").textContent="Your turn — say it!";
+        attempt();
       }
     }
 
