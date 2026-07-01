@@ -22,13 +22,20 @@ Xcode project once.
 ## Add it to the iOS project (one time, on your Mac)
 1. Generate the project if you haven't: `npx cap add ios && npx cap sync ios`.
 2. `npx cap open ios` → in Xcode's left navigator, expand the **App** group, then drag
-   `native/ios/SonaAudio/SonaAudioPlugin.swift` into it. In the dialog: check
+   **both** `native/ios/SonaAudio/SonaAudioPlugin.swift` **and**
+   `native/ios/App/MainViewController.swift` into it. In the dialog: check
    **"Copy items if needed"** and make sure the **App** target is ticked under
    "Add to targets". (No bridging-header prompt — it's pure Swift.)
-3. **Info.plist** → add `NSMicrophoneUsageDescription` =
+3. **Register the plugin (required — local plugins aren't auto-discovered on
+   SwiftPM):** open `App/Base.lproj/Main.storyboard`, select the *Bridge View
+   Controller* scene, and in the **Identity inspector** set **Custom Class** to
+   `MainViewController`. (That subclass calls `bridge.registerPluginInstance(...)`
+   in `capacitorDidLoad()`.) Without this, `window.Capacitor.Plugins.SonaAudio`
+   stays undefined and the app just uses the web mic.
+4. **Info.plist** → add `NSMicrophoneUsageDescription` =
    "Sona uses the microphone so your child can practice saying their sounds."
-4. Build/run on a device. Verify in Safari Web Inspector (Develop → your phone):
-   `window.Capacitor.Plugins.SonaAudio` is defined.
+5. Build/run on a device. Verify in Safari Web Inspector (Develop → your phone):
+   `window.Capacitor.Plugins.SonaAudio` is defined (not `undefined`).
 
 ## How the web uses it (already wired in `public/sona.js`)
 - `Sona.hasNativeAudio()` → true only inside the native app with the plugin present.

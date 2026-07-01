@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
   <title>Sona — Sound Ladder</title>
   <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet" />
   <link rel="manifest" href="/manifest.webmanifest" />
@@ -15,8 +15,8 @@
     :root{ --ink:#3c3c3c; --muted:#8a93a0; --line:#e8edf2; --paper:#fff; }
     *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;font-family:"Nunito",-apple-system,"Segoe UI",Roboto,sans-serif;}
     html,body{height:100%;}
-    body{background:linear-gradient(180deg,#f6fbff 0%,#eef6ff 50%,#f3fbf0 100%);color:var(--ink);min-height:100vh;}
-    #app{max-width:560px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;}
+    body{background:linear-gradient(180deg,#f6fbff 0%,#eef6ff 50%,#f3fbf0 100%);color:var(--ink);min-height:100vh;min-height:100dvh;}
+    #app{max-width:560px;margin:0 auto;min-height:100vh;min-height:100dvh;display:flex;flex-direction:column;}
 
     /* ---- header ---- */
     header{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:12px;

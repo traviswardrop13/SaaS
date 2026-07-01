@@ -41,6 +41,12 @@ public class SonaAudioPlugin: CAPPlugin, CAPBridgedPlugin {
     private var maxTimer: Timer?
     private var spoke = false
     private var lastVoice = Date()
+    // pcm/spoke/lastVoice are written on the realtime audio thread (append) and
+    // read on main (finish); serialize all access to avoid a data race.
+    private let ioQueue = DispatchQueue(label: "com.speaksona.audio.io")
+    // Recording generation: a stale queued finish() from a previous take must not
+    // kill the next recording. Each record() bumps this; callbacks check it.
+    private var gen = 0
 
     // MARK: - JS API
 
@@ -63,9 +69,9 @@ public class SonaAudioPlugin: CAPPlugin, CAPBridgedPlugin {
 
     private func start(_ call: CAPPluginCall) {
         pending = call
-        pcm.removeAll(keepingCapacity: true)
-        spoke = false
-        lastVoice = Date()
+        gen += 1
+        let myGen = gen
+        ioQueue.sync { pcm.removeAll(keepingCapacity: true); spoke = false; lastVoice = Date() }
         let maxMs = call.getInt("maxMs") ?? 6000
 
         let session = AVAudioSession.sharedInstance()
@@ -84,7 +90,7 @@ public class SonaAudioPlugin: CAPPlugin, CAPBridgedPlugin {
         sampleRate = format.sampleRate
 
         input.installTap(onBus: 0, bufferSize: 2048, format: format) { [weak self] buffer, _ in
-            self?.append(buffer)
+            self?.append(buffer, gen: myGen)
         }
 
         do { try engine.start() } catch {
@@ -96,11 +102,11 @@ public class SonaAudioPlugin: CAPPlugin, CAPBridgedPlugin {
         }
 
         maxTimer = Timer.scheduledTimer(withTimeInterval: Double(maxMs) / 1000.0, repeats: false) { [weak self] _ in
-            self?.finish()
+            self?.finish(gen: myGen)
         }
     }
 
-    private func append(_ buffer: AVAudioPCMBuffer) {
+    private func append(_ buffer: AVAudioPCMBuffer, gen bufGen: Int) {
         guard let chans = buffer.floatChannelData else { return }
         let n = Int(buffer.frameLength)
         if n == 0 { return }
@@ -114,28 +120,38 @@ public class SonaAudioPlugin: CAPPlugin, CAPBridgedPlugin {
             sum += Double(s) * Double(s)
         }
         let rms = (sum / Double(n)).squareRoot()
-        if rms > 0.02 { spoke = true; lastVoice = Date() }
-        ints.withUnsafeBytes { pcm.append(contentsOf: $0) }
-
-        // Auto-stop ~0.9s after speech ends (tap runs on an audio thread).
-        if spoke && Date().timeIntervalSince(lastVoice) > 0.9 {
-            DispatchQueue.main.async { [weak self] in self?.finish() }
+        var ended = false
+        ioQueue.sync {
+            guard bufGen == gen else { return }   // stale buffer from a finished take
+            if rms > 0.02 { spoke = true; lastVoice = Date() }
+            ints.withUnsafeBytes { pcm.append(contentsOf: $0) }
+            // Auto-stop ~0.9s after speech ends.
+            if spoke && Date().timeIntervalSince(lastVoice) > 0.9 { ended = true }
+        }
+        if ended {
+            DispatchQueue.main.async { [weak self] in self?.finish(gen: bufGen) }
         }
     }
 
-    private func finish() {
-        guard let call = pending else { return }   // already finished
+    private func finish(gen finishGen: Int? = nil) {
+        if let fg = finishGen, fg != gen { return }  // stale finish from a previous take
+        guard let call = pending else { return }     // already finished
         pending = nil
         maxTimer?.invalidate(); maxTimer = nil
         engine.inputNode.removeTap(onBus: 0)
         if engine.isRunning { engine.stop() }
         try? AVAudioSession.sharedInstance().setActive(false, options: [.notifyOthersOnDeactivation])
 
-        let wav = SonaAudioPlugin.makeWav(pcm: pcm, sampleRate: Int(sampleRate))
+        // Snapshot the shared buffer under the io queue (append writes it on the
+        // audio thread) before reading it here on main.
+        var pcmSnapshot = Data()
+        var didSpeak = false
+        ioQueue.sync { pcmSnapshot = pcm; didSpeak = spoke }
+        let wav = SonaAudioPlugin.makeWav(pcm: pcmSnapshot, sampleRate: Int(sampleRate))
         call.resolve([
             "wav": wav.base64EncodedString(),
             "sampleRate": Int(sampleRate),
-            "spoke": spoke
+            "spoke": didSpeak
         ])
     }
 

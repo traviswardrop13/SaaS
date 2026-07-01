@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { rateLimit } from "@/lib/rateLimit";
 
 /**
  * Speech-to-text for the app's listening side (the call + lesson fallback).
@@ -15,6 +16,7 @@ export const runtime = "nodejs";
 const MAX_BYTES = 8 * 1024 * 1024; // a 5-min call turn is far below this
 
 export async function POST(req: NextRequest) {
+  const _rl = await rateLimit(req, { key: "stt", limit: 120, windowSec: 60 }); if (_rl) return _rl;
   const key = process.env.ELEVENLABS_API_KEY;
   if (!key) {
     return NextResponse.json(

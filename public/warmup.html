@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
   <title>Sona — Warm up</title>
   <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet" />
   <link rel="manifest" href="/manifest.webmanifest" />
@@ -15,7 +15,7 @@
     *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;font-family:"Nunito",-apple-system,"Segoe UI",Roboto,sans-serif;user-select:none;}
     html,body{height:100%;}
     body{background:radial-gradient(circle at 50% 18%,#dff4ff,#bfe3ff 55%,#a9d8ff);display:flex;align-items:center;justify-content:center;overflow:hidden;}
-    #app{width:100%;max-width:460px;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center;}
+    #app{width:100%;max-width:460px;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:calc(24px + env(safe-area-inset-top)) 24px calc(24px + env(safe-area-inset-bottom));box-sizing:border-box;text-align:center;}
     .badge{font-family:"Baloo 2";font-weight:800;font-size:13px;color:var(--blue-d);text-transform:uppercase;letter-spacing:.08em;}
     h1{font-family:"Baloo 2";font-weight:800;font-size:30px;color:var(--ink);margin-top:6px;line-height:1.1;}
     .say{font-family:"Baloo 2";font-weight:800;font-size:74px;color:var(--blue-d);margin:6px 0 2px;text-shadow:0 4px 0 rgba(28,176,246,.18);}

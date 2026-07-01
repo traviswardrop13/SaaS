@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
   <title>Sona — practice path</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -24,7 +24,7 @@
     #bunting{position:fixed;top:0;left:0;right:0;z-index:0;pointer-events:none;}
     .wrap{position:relative;z-index:1;max-width:560px;}
 
-    header.unit{display:flex;align-items:center;gap:12px;padding:14px 2px 4px;}
+    header.unit{display:flex;align-items:center;gap:12px;padding:calc(14px + env(safe-area-inset-top)) 2px 4px;}
     .backbtn{width:46px;height:46px;border-radius:50%;border:none;background:#fff;cursor:pointer;font-size:20px;color:var(--ring);
       box-shadow:0 4px 0 0 rgba(15,39,66,.14);display:flex;align-items:center;justify-content:center;transition:transform .05s;flex:0 0 auto;}
     .backbtn:active{transform:translateY(3px);box-shadow:0 1px 0 0 rgba(15,39,66,.14);}

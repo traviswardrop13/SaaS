@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Sona — SLP Portal</title>
   <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet" />
   <link rel="manifest" href="/manifest.webmanifest" />
@@ -21,10 +21,10 @@
         font-family:"Nunito",-apple-system,"Segoe UI",Roboto,sans-serif; }
 
     /* ── Layout ──────────────────────────────────── */
-    body { background:var(--bg); color:var(--ink); min-height:100vh; display:flex; }
+    body { background:var(--bg); color:var(--ink); min-height:100vh;min-height:100dvh; display:flex; }
 
     .sidebar {
-      width: var(--sidebar-w); min-height:100vh; background:#fff;
+      width: var(--sidebar-w); min-height:100vh;min-height:100dvh; background:#fff;
       border-right:1px solid var(--line); display:flex; flex-direction:column;
       position:fixed; left:0; top:0; bottom:0; z-index:90;
       transition: transform .25s ease;
@@ -72,7 +72,7 @@
     .hamburger { background:none; border:none; font-size:22px; cursor:pointer; padding:4px; color:var(--ink); }
     .overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.3); z-index:85; }
 
-    .main { margin-left:var(--sidebar-w); flex:1; min-height:100vh; }
+    .main { margin-left:var(--sidebar-w); flex:1; min-height:100vh;min-height:100dvh; }
     .main-inner { max-width:780px; padding:28px 28px 60px; margin:0 auto; }
 
     /* ── Cards ────────────────────────────────────── */
@@ -555,6 +555,9 @@
     function slug(s){return(s||"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"").slice(0,40);}
     function copy(t,btn){try{navigator.clipboard.writeText(t);var o=btn.textContent;btn.textContent="Copied ✓";setTimeout(function(){btn.textContent=o;},1500);}catch(e){}}
     function ago(iso){if(!iso)return"";var d=(Date.now()-new Date(iso).getTime())/86400000;if(d<1)return"today";if(d<2)return"yesterday";return Math.floor(d)+" days ago";}
+    // Escape any roster value before innerHTML — child/age/goal/sound come from
+    // /api/pilot (child-submitted, unauthenticated); raw injection = stored XSS.
+    function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c];});}
 
     var code="", account=null;
 
@@ -616,7 +619,7 @@
     /* ── Roster ────────────────────────────────────── */
     var POSN={i:"Init",m:"Med",f:"Fin",v:"Voc R",b:"Blend"};
     function posBits(byPos){if(!byPos)return"";var bits=["i","m","f","v","b"].map(function(pk){var x=byPos[pk];if(!x||!x.a)return"";var v=Math.round((x.p||0)/Math.max(1,x.a)*100);var c=v>=80?'hi':(v>=50?'mid':'lo');return'<span class="pchip '+c+'">'+POSN[pk]+' '+v+'%</span>';}).filter(Boolean);return bits.length?'<div class="pchips">'+bits.join("")+'</div>':"";}
-    function soundChips(out){out=out||{};var keys=Object.keys(out);if(!keys.length)return'<span class="sub">no practice yet</span>';return keys.sort(function(a,b){return(out[b].attempts||0)-(out[a].attempts||0);}).map(function(k){var o=out[k],pct=Math.round((o.passes||0)/Math.max(1,o.attempts||0)*100);var c=pct>=80?'hi':(pct>=50?'mid':'lo');return'<div class="sndblock"><span class="chip '+c+'">'+k+' <b>'+pct+'%</b></span>'+posBits(o.byPos)+'</div>';}).join("");}
+    function soundChips(out){out=out||{};var keys=Object.keys(out);if(!keys.length)return'<span class="sub">no practice yet</span>';return keys.sort(function(a,b){return(out[b].attempts||0)-(out[a].attempts||0);}).map(function(k){var o=out[k],pct=Math.round((o.passes||0)/Math.max(1,o.attempts||0)*100);var c=pct>=80?'hi':(pct>=50?'mid':'lo');return'<div class="sndblock"><span class="chip '+c+'">'+esc(k)+' <b>'+pct+'%</b></span>'+posBits(o.byPos)+'</div>';}).join("");}
 
     function loadRoster(){
       var host=$("roster");host.innerHTML='<p class="sub">Loading…</p>';$("kvBanner").style.display="none";
@@ -641,8 +644,8 @@
         host.innerHTML="";
         kids.forEach(function(k){
           var d=document.createElement("div");d.className="kid";
-          var goalLine=k.goal?'<div class="sub" style="margin-top:6px;">🎯 Assigned: '+k.goal+' words a day</div>':'';
-          d.innerHTML='<div class="kidtop"><span class="kidname">'+(k.child||"Child")+'</span>'+(k.age?'<span class="sub">age '+k.age+'</span>':'')+'<span class="kidwhen">'+ago(k.at)+'</span></div><div class="chips">'+soundChips(k.outcomes)+'</div>'+goalLine;
+          var goalLine=k.goal?'<div class="sub" style="margin-top:6px;">🎯 Assigned: '+esc(k.goal)+' words a day</div>':'';
+          d.innerHTML='<div class="kidtop"><span class="kidname">'+esc(k.child||"Child")+'</span>'+(k.age?'<span class="sub">age '+esc(k.age)+'</span>':'')+'<span class="kidwhen">'+ago(k.at)+'</span></div><div class="chips">'+soundChips(k.outcomes)+'</div>'+goalLine;
           host.appendChild(d);
         });
       }).catch(function(){host.innerHTML='<p class="sub">Couldn\'t load right now.</p>';});

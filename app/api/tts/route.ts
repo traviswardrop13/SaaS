@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { rateLimit } from "@/lib/rateLimit";
 
 /**
  * Text-to-speech for the live coach (LITE avatar path).
@@ -27,6 +28,7 @@ const PCM_HEADERS = {
 } as const;
 
 export async function POST(req: NextRequest) {
+  const _rl = await rateLimit(req, { key: "tts", limit: 120, windowSec: 60 }); if (_rl) return _rl;
   const elevenKey = process.env.ELEVENLABS_API_KEY;
   const openaiKey = process.env.OPENAI_API_KEY;
   if (!elevenKey && !openaiKey) {
