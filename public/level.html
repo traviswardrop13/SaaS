@@ -73,7 +73,7 @@
     // otherwise show a fresh plan. doneCount = steps completed; allDone = ready for the prize.
     var sess=(window.Sona&&Sona.session)?Sona.session.get():null;
     var mine=!!(sess && sess.level===level && sess.queue && sess.queue.length);
-    var games = mine ? sess.queue.slice() : ((window.Sona&&Sona.levelGames)?Sona.levelGames(level):["rocket.html","bubble.html","racer.html"]);
+    var games = mine ? sess.queue.slice() : ((window.Sona&&Sona.levelGames)?Sona.levelGames(level):["racer.html","bubble.html","grocery.html"]);
     var doneCount = mine ? Math.min(sess.idx||0, games.length) : 0;
     var allDone = doneCount>=games.length;
     var started = doneCount>0;
