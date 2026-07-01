@@ -383,8 +383,13 @@
     function showCombo(n){ const c=$("combo"); c.textContent="COMBO x"+n; c.classList.remove("pop"); void c.offsetWidth; c.classList.add("pop"); }
     function hideCheck(){ checkBtn.classList.add("disabled"); checkBtn.onclick=null; }
 
-    function answer(ok, sub){
-      results.push({ word: (QUEUE[i].label||QUEUE[i].snd||SOUND), sound: (QUEUE[i].snd||SOUND), level:(QUEUE[i].level||"word"), ok });
+    function answer(ok, sub, opts){
+      opts = opts || {};
+      const _a = QUEUE[i], _expr = (_a.type === "say"), _skip = !!opts.skip;
+      results.push({ word: (_a.label||_a.snd||SOUND), sound: (_a.snd||SOUND), level:(_a.level||"word"), ok, expressive:_expr, skip:_skip });
+      // Feed the SLP accuracy dashboard from EXPRESSIVE (spoken) reps only — never
+      // receptive taps (pick/findSound) or skips.
+      if(_expr && !_skip && window.Sona && Sona.logAttempt){ Sona.logAttempt({ game:"lesson", sound:(_a.snd||SOUND), pass:!!ok, word:String(_a.text||_a.label||"").toLowerCase() }); }
       if(ok){ combo++; xp+=10; if(window.Sona){Sona.sfx.correct(); Sona.pop("⭐",{color:"#ff9600",y:window.innerHeight*0.28}); if(Sona.praiseLine)say(Sona.praiseLine());} if(combo>=2) showCombo(combo); }
       else { combo=0; if(window.Sona) Sona.sfx.tap(); }
       fb.className = "show";
@@ -439,7 +444,7 @@
         const ok=await scoreSay(a,res.blob,res.transcript);
         answer(ok, ok?("You said “"+a.label+"”"):("Try “"+a.label+"” again"));
       };
-      $("skipBtn").onclick=()=>{ if(answered) return; answered=true; answer(true,"Skipped — that’s okay!"); };
+      $("skipBtn").onclick=()=>{ if(answered) return; answered=true; answer(false,"Skipped — that’s okay!",{skip:true}); };
       $("micBtn").onclick=doRecord;
       setTimeout(async()=>{ if(a.intro) await say(a.intro); if(a.say) await say(a.say); else await say(a.text); doRecord(); }, 250);
     }
@@ -483,7 +488,7 @@
       const stars=Math.max(1,Math.min(3,Math.round(correct/Math.max(1,results.length)*3)));
       const passed=correct>=Math.ceil(results.length*0.5);
       if(window.Sona){ Sona.recordSession({words:results});
-        const bys={}; results.forEach(r=>{ (bys[r.sound]=bys[r.sound]||[]).push(r.ok); });
+        const bys={}; results.filter(r=>r.expressive && !r.skip).forEach(r=>{ (bys[r.sound]=bys[r.sound]||[]).push(r.ok); });
         if(!RETRY) Object.keys(bys).forEach(s=>{ const arr=bys[s]; if(arr.length>=3 && Sona.recordRung){ const acc=arr.filter(Boolean).length/arr.length; Sona.recordRung(s, (STAGE_USED[s]!=null?STAGE_USED[s]:STAGE), acc); } });
       }
       // celebration choreography: stars land one by one, XP counts up

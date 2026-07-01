@@ -559,7 +559,9 @@
   // Parked (still on disk, off the map + deck): rocket, builder, train, whack,
   // match — bring one back per release once it's rebuilt to the same bar.
   const GAME_DECK = ["racer.html", "grocery.html", "bubble.html", "cupstack.html", "story.html", "chat.html"];
-  const GAMES_PER_LEVEL = 3;
+  // A daily session = this many games. 4 pushes spoken reps toward a therapeutic
+  // dose (~30-50/session); final calibration for young attention spans needs an SLP.
+  const GAMES_PER_LEVEL = 4;
   function levelGames(level) {
     level = level || 1;
     const start = ((level - 1) * GAMES_PER_LEVEL) % GAME_DECK.length, out = [];

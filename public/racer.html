@@ -398,10 +398,13 @@
     async function scoreItem(item,res){
       var scoreText=item.t, mode=item.mode||"full";
       if(useSpeechAce && res.blob){ try{ var fd=new FormData(); fd.append("audio",new File([res.blob],"a.webm",{type:res.blob.type||"audio/webm"})); fd.append("text",scoreText); fd.append("targetSound",SOUND); fd.append("userId","child"); fd.append("mode",mode); var r=await fetch("/api/score",{method:"POST",body:fd}); var j=await r.json(); if(j&&j.ok&&typeof j.score==="number")return { score:j.score, pass:j.rating==="great", feedback:j.feedback }; }catch(e){} }
-      // phoneme rungs: any voiced attempt that reached the transcript path is lenient.
-      if(mode==="phoneme"){ return { score: 80, pass: true }; }
+      // No SpeechAce result — be honest, not generous. Require evidence of a real attempt.
+      var heard=!!(res&&(res.spoke||(res.blob&&res.blob.size)||res.transcript));
+      // isolation/syllable rungs are lenient: any real voiced try counts — but silence / no mic does NOT pass.
+      if(mode==="phoneme"){ return { score: heard?80:0, pass: heard }; }
       if(res.transcript){ var ok=matchText(res.transcript,item.word||item.t); return { score: ok?85:30, pass: ok }; }
-      return { score:70, pass:true };
+      // word/full rung with no scorer and no transcript: we genuinely can't verify — don't fake a pass.
+      return { score:0, pass:false, feedback: heard?"":"I didn't quite hear that — tap the mic and try again." };
     }
 
     /* game */
