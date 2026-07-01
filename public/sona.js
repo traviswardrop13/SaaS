@@ -915,22 +915,28 @@
   }
   function captureClip(opts) {
     opts = opts || {};
-    if (hasNativeAudio()) {
-      return global.Capacitor.Plugins.SonaAudio.record({ maxMs: opts.maxMs || 6000 })
-        .then((r) => ({ blob: (r && r.wav) ? _b64ToBlob(r.wav, "audio/wav") : null, transcript: "", spoke: !!(r && r.spoke), native: true }))
-        .catch(() => ({ blob: null, transcript: "", spoke: false, native: true }));
-    }
-    // web fallback: MediaRecorder on a provided MediaStream (opts.stream)
-    return new Promise((resolve) => {
+    // web MediaRecorder on a provided MediaStream (opts.stream) — also the
+    // fallback if native capture errors, so the child is never dead-ended.
+    const webCapture = () => new Promise((resolve) => {
       const stream = opts.stream;
       if (!stream || typeof MediaRecorder === "undefined") { resolve({ blob: null, transcript: "", spoke: false }); return; }
       let rec; const chunks = [];
       try { rec = new MediaRecorder(stream); } catch (e) { resolve({ blob: null, transcript: "", spoke: false }); return; }
       rec.ondataavailable = (e) => { if (e.data && e.data.size) chunks.push(e.data); };
       rec.onstop = () => resolve({ blob: chunks.length ? new Blob(chunks, { type: (rec && rec.mimeType) || "audio/webm" }) : null, transcript: "", spoke: chunks.length > 0 });
-      try { rec.start(); } catch (e) { resolve({ blob: null }); return; }
+      try { rec.start(); } catch (e) { resolve({ blob: null, transcript: "", spoke: false }); return; }
       setTimeout(() => { try { if (rec.state !== "inactive") rec.stop(); } catch (e) {} }, opts.maxMs || 6000);
     });
+    if (hasNativeAudio()) {
+      return global.Capacitor.Plugins.SonaAudio.record({ maxMs: opts.maxMs || 6000 })
+        .then((r) => {
+          const blob = (r && r.wav) ? _b64ToBlob(r.wav, "audio/wav") : null;
+          if (blob) return { blob, transcript: "", spoke: !!(r && r.spoke), native: true };
+          return webCapture(); // native gave us nothing usable — don't dead-end the kid
+        })
+        .catch(() => webCapture());
+    }
+    return webCapture();
   }
 
   // best-effort: send the pilot child's (consented) progress back to the founder. Debounced.
