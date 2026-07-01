@@ -286,6 +286,7 @@
 
     function clearTarget(){ bubbleEls.forEach(function(b){b.classList.remove("target");}); }
 
+    var stepTries=0; // fail-forward: attempts on the current bubble
     async function step(){
       if(popped>=GOAL) return finishGame();
       var s=queue[qi%queue.length];
@@ -302,18 +303,28 @@
       var res=await recordTurn(); roundTotal++; var sa=await scoreSyllable(res, s.t, s.mode);
       if(window.Sona&&Sona.logAttempt)Sona.logAttempt({game:"bubble",sound:SOUND,pass:sa.pass});
       if(sa.pass){
-        roundCorrect++;
+        stepTries=0; roundCorrect++;
         if(window.Sona&&Sona.sfx&&Sona.sfx.correct)Sona.sfx.correct();
         setLeo("cheer"); leoReact(); if(bub){ bub.classList.remove("target"); bub.classList.add("pop"); popFx(bub); }
         popped++; qi++; $("count").textContent=popped; $("prompt").textContent="Nice one!";
         if(window.Sona&&Sona.praiseLine)await say(Sona.praiseLine());
         await new Promise(function(r){setTimeout(r,520);});
         setLeo("idle"); step();
-      } else {
+      } else if(++stepTries<3){
         if(window.Sona&&Sona.sfx&&Sona.sfx.tap)Sona.sfx.tap();
         setLeo("idle"); $("prompt").textContent="Not quite — try again!"; await say(spk);
         await new Promise(function(r){setTimeout(r,320);});
         step();
+      } else {
+        // fail-forward: don't trap the kid on one bubble — pop it (logged as a
+        // miss above) and move on after 3 tries.
+        stepTries=0;
+        if(window.Sona&&Sona.sfx&&Sona.sfx.correct)Sona.sfx.correct();
+        setLeo("cheer"); if(bub){ bub.classList.remove("target"); bub.classList.add("pop"); popFx(bub); }
+        popped++; qi++; $("count").textContent=popped; $("prompt").textContent="Good trying! 🫧";
+        await say("Good trying! Here comes the next one.");
+        await new Promise(function(r){setTimeout(r,520);});
+        setLeo("idle"); step();
       }
     }
 

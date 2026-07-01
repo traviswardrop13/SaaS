@@ -88,7 +88,7 @@
       // start the level session, then go to the first game
       setTimeout(function(){
         try{
-          if(S&&S.session){ S.session.start(LEVEL, SOUND, (S.levelGames?S.levelGames(LEVEL):["rocket.html"]), LEVEL); location.href=S.session.url(); return; }
+          if(S&&S.session){ S.session.start(LEVEL, SOUND, (S.levelGames?S.levelGames(LEVEL):["racer.html"]), LEVEL); location.href=S.session.url(); return; }
         }catch(e){}
         location.href="/level.html?level="+LEVEL;
       }, 650);

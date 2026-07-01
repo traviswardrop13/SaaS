@@ -551,13 +551,14 @@
   // reused at every level but scale in difficulty with the level number (the rocket
   // flies farther, races get longer, more bubbles to pop…). Add new games over time
   // by appending here (or give a map node its own `queue`).
-  const LEVEL_GAMES = ["rocket.html", "bubble.html", "racer.html", "grocery.html", "train.html"];
+  const LEVEL_GAMES = ["racer.html", "bubble.html", "grocery.html", "cupstack.html", "story.html"];
   // ── rotating game deck ──
-  // All ten games, ordered so each level mixes complexity bands (warm-up · word ·
-  // connected speech). Each level deals GAMES_PER_LEVEL games from the deck, so a
-  // given game doesn't reappear for ~4 levels; and since difficulty = the level
-  // number, each time a game comes back around it's the harder version.
-  const GAME_DECK = ["rocket.html", "racer.html", "grocery.html", "bubble.html", "cupstack.html", "builder.html", "train.html", "whack.html", "story.html", "match.html", "chat.html"];
+  // The keeper roster (fewer, higher-quality games). Each level deals
+  // GAMES_PER_LEVEL from the deck, so a game doesn't reappear for a few levels;
+  // difficulty = the level number, so a returning game is the harder version.
+  // Parked (still on disk, off the map + deck): rocket, builder, train, whack,
+  // match — bring one back per release once it's rebuilt to the same bar.
+  const GAME_DECK = ["racer.html", "grocery.html", "bubble.html", "cupstack.html", "story.html", "chat.html"];
   const GAMES_PER_LEVEL = 3;
   function levelGames(level) {
     level = level || 1;
@@ -629,11 +630,8 @@
     { id: "bubble",   game: "bubble.html",   name: "Bubble Bay",  theme: "🫧", sky: "linear-gradient(180deg,#bfeeff,#7fd2f0 55%,#2b86bd)" },
     { id: "grocery",  game: "grocery.html",  name: "The Market",  theme: "🛒", sky: "linear-gradient(180deg,#fff1d6,#ffe1ad 55%,#ffcf86)" },
     { id: "cupstack", game: "cupstack.html", name: "Stack Hall",  theme: "🥤", sky: "linear-gradient(180deg,#e9f3ff,#cfe6ff 55%,#a9d2ff)" },
-    { id: "builder",  game: "builder.html",  name: "Build Site",  theme: "🧱", sky: "linear-gradient(180deg,#ffe9c9,#ffd79a 55%,#f0b35e)" },
-    { id: "train",    game: "train.html",    name: "Railroad",    theme: "🚂", sky: "linear-gradient(180deg,#cdeffd,#bdebc4 60%,#7fc36a)" },
-    { id: "whack",    game: "whack.html",    name: "The Garden",  theme: "🌻", sky: "linear-gradient(180deg,#dff4ff,#cdebb0 60%,#8fd07a)" },
-    { id: "match",    game: "match.html",    name: "Memory Lane", theme: "🃏", sky: "linear-gradient(180deg,#efe6ff,#d9c8ff 55%,#b79bff)" },
     { id: "story",    game: "story.html",    name: "Storybook",   theme: "📖", sky: "linear-gradient(180deg,#eafbe4,#cdebb0 60%,#9ad07a)" },
+    // Parked (files on disk; off the map until rebuilt): builder, train, whack, match.
   ];
   const LEVELS_PER_WORLD = 10;
   function campaignSounds() {
