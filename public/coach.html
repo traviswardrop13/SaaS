@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
   <title>Sona — coaching session</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -21,7 +21,7 @@
       box-shadow:0 24px 60px rgba(0,0,0,.45);object-fit:cover;}
 
     /* progress dots */
-    #top{position:absolute;top:0;left:0;right:0;padding:16px;display:flex;align-items:center;gap:12px;z-index:5;}
+    #top{position:absolute;top:0;left:0;right:0;padding:calc(16px + env(safe-area-inset-top)) 16px 16px;display:flex;align-items:center;gap:12px;z-index:5;}
     #dots{flex:1;display:flex;gap:7px;}
     .dot{height:7px;flex:1;border-radius:99px;background:rgba(255,255,255,.16);transition:.3s;}
     .dot.done{background:var(--grass);}

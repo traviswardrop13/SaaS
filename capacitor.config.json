@@ -8,6 +8,6 @@
     "allowNavigation": ["speaksona.com", "*.speaksona.com"]
   },
   "ios": {
-    "contentInset": "always"
+    "contentInset": "never"
   }
 }

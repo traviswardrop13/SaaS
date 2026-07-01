@@ -3,7 +3,7 @@
 <head>
   <script>location.replace("/map.html");</script>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
   <title>Sona — Play</title>
   <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet" />
   <link rel="manifest" href="/manifest.webmanifest" />
@@ -14,7 +14,7 @@
   <style>
     :root{ --blue:#1cb0f6; --blue-d:#1597d4; --green:#58cc02; --green-d:#46a302; --orange:#ff9600; --orange-d:#e08600; --gold:#ffc800; --ink:#3c3c3c; --muted:#7a7a7a; --lock:#cfd6de; }
     *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;font-family:"Nunito",-apple-system,"Segoe UI",Roboto,sans-serif;}
-    body{background:linear-gradient(180deg,#eaf6ff,#dff0ff 40%,#eafbe9);color:var(--ink);min-height:100vh;}
+    body{background:linear-gradient(180deg,#eaf6ff,#dff0ff 40%,#eafbe9);color:var(--ink);min-height:100vh;min-height:100dvh;}
     #wrap{max-width:560px;margin:0 auto;padding-bottom:96px;}
     #hud{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:10px;padding:calc(10px + env(safe-area-inset-top)) 16px 10px;background:linear-gradient(180deg,rgba(234,246,255,.96),rgba(234,246,255,.75));backdrop-filter:blur(6px);}
     .chip{display:flex;align-items:center;gap:6px;background:#fff;border-radius:99px;padding:7px 13px;font-family:"Baloo 2";font-weight:800;font-size:15px;box-shadow:0 3px 10px rgba(20,120,200,.12);}
