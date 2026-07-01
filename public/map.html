@@ -59,6 +59,8 @@
   <script src="/sona.js"></script>
   <script>
     var $=function(id){return document.getElementById(id);};
+    // First-run backstop: never show the app to a child who hasn't been set up.
+    if (window.Sona && Sona.getProfile && !Sona.getProfile().onboarded) { location.replace("/onboarding.html"); }
     var S=window.Sona;
     var WORLDS=(S&&S.WORLDS)?S.WORLDS:[];
     var PER=(S&&S.LEVELS_PER_WORLD)?S.LEVELS_PER_WORLD:10;

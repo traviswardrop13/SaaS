@@ -134,7 +134,13 @@
     g.bySound = g.bySound || {}; g.sessions = g.sessions || []; g.stage = g.stage || {}; g.chests = g.chests || {}; g.missed = g.missed || [];
     return g;
   }
-  const today = () => new Date().toISOString().slice(0, 10);
+  // Local calendar day (was toISOString = UTC, which broke evening streaks).
+  function _localDay(ms) { const d = ms != null ? new Date(ms) : new Date(); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); }
+  const today = () => _localDay();
+  // Idempotent per local day: counts a streak day the first time the child does
+  // anything real today; called from both recordSession and logAttempt so games
+  // keep Today's streak alive, not just the lesson flow.
+  function bumpStreak(g) { const t = today(); if (g.streak.lastDate !== t) { const y = _localDay(Date.now() - 86400000); g.streak.count = (g.streak.lastDate === y) ? (g.streak.count || 0) + 1 : 1; g.streak.lastDate = t; } }
   // current stage to practice for a sound (0..3); 3 = mastered
   function stageOf(sound) { const g = getProgress(); return Math.min(3, g.stage[sound] || 0); }
   // advance a sound's stage after finishing that stage's session (if they passed)
@@ -355,12 +361,7 @@
       if (w.ok !== false && i !== -1) g.missed.splice(i, 1);
     });
     g.missed = g.missed.slice(-15);
-    const t = today();
-    if (g.streak.lastDate !== t) {
-      const y = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
-      g.streak.count = (g.streak.lastDate === y) ? g.streak.count + 1 : 1;
-      g.streak.lastDate = t;
-    }
+    bumpStreak(g);
     save(GKEY, g);
     return g;
   }
@@ -891,6 +892,9 @@
       // by target word — per-word accuracy (word games pass a.word)
       if (word) { bs.byWord = bs.byWord || {}; const bw = bs.byWord[word] || (bs.byWord[word] = { a: 0, p: 0 }); bw.a++; if (pass) bw.p++; }
       save(OUTKEY, o);
+      // keep Today/Progress alive from real game play (not just the lesson flow):
+      // every scored attempt counts a word and keeps today's streak going.
+      try { const g = getProgress(); g.totals.words = (g.totals.words || 0) + 1; bumpStreak(g); save(GKEY, g); } catch (e2) {}
     } catch (e) {}
   }
   function outcomes() { return load(OUTKEY, {}); }

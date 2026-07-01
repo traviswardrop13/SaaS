@@ -68,17 +68,17 @@
   <div id="app">
     <div class="top">
       <div class="avatar" id="av">🦁</div>
-      <div class="hi"><b id="hello">Hi Mia!</b><span id="date">Tuesday · Day 3 of your plan</span></div>
-      <div class="pill streak">🔥 <span id="streak">3</span></div>
-      <div class="pill coins">🪙 <span id="coins">120</span></div>
+      <div class="hi"><b id="hello">Hi!</b><span id="date">Let's practice!</span></div>
+      <div class="pill streak">🔥 <span id="streak">0</span></div>
+      <div class="pill coins">🪙 <span id="coins">0</span></div>
     </div>
 
     <a id="trialBanner" href="/subscribe" style="display:none;margin-top:12px;text-decoration:none;align-items:center;gap:8px;background:linear-gradient(120deg,#fff7e6,#ffe9c2);border:1px solid #ffe2a8;border-radius:14px;padding:10px 14px;font-weight:800;font-size:13px;color:#8a6400;">🎁 <span id="trialMsg"></span></a>
 
     <div class="hero">
       <div class="sheen"></div>
-      <span class="tag">✨ Today's Practice · made for <span id="who">Mia</span></span>
-      <h1 id="title">Mia &amp; the Rainbow River Dragon</h1>
+      <span class="tag">✨ Today's Practice · made for <span id="who">you</span></span>
+      <h1 id="title">Today's Practice</h1>
       <div class="sub">
         <span class="chip" id="soundChip">R sound · start of words</span>
         <span class="chip" id="minChip">~10 min</span>
@@ -102,6 +102,9 @@
   <script src="/sona.js"></script>
   <script>
     var $=function(id){return document.getElementById(id);};
+    // First run: send brand-new installs through setup, so we never greet a
+    // stranger's child as "Mia". Onboarding sets profile.onboarded = true.
+    if (window.Sona && Sona.getProfile && !Sona.getProfile().onboarded) { location.replace("/onboarding.html"); }
     var P=(window.Sona?Sona.getProfile():{});
     var INTERESTS=["dragons","space","dinosaurs","mermaids","puppies","race cars","unicorns","pirates","jungle animals","robots"];
     var THEME_EMOJI={dragons:"🐉🌈",space:"🚀🪐",dinosaurs:"🦕🌋",mermaids:"🧜‍♀️🐚",puppies:"🐶🦴",kittens:"🐱🧶","race cars":"🏎️🏁",unicorns:"🦄✨",pirates:"🏴‍☠️🪙","jungle animals":"🐵🌴",robots:"🤖⚡",superheroes:"🦸💥"};
@@ -111,19 +114,24 @@
     var minutes=P.dailyMinutes||10;
     var pos="initial", posLabel="start of words";
 
-    // Title is a friendly placeholder; the real one comes from /api/story when the kid starts.
-    var TITLES={dragons:name+" & the Rainbow River Dragon",space:name+"'s Rocket to the Red Stars",dinosaurs:name+" and the Roaring Dino",mermaids:name+" and the Coral Reef",puppies:name+"'s Puppy Park Day",unicorns:name+" and the Rainbow Unicorn",pirates:name+"'s Treasure Map",robots:name+" and the Racing Robot"};
+    // Themed session name for today's practice (not a story promise — the games
+    // themselves carry the theme).
+    var TITLES={dragons:name+"'s Dragon Quest",space:name+"'s Space Mission",dinosaurs:name+"'s Dino Dig",mermaids:name+"'s Mermaid Lagoon",puppies:name+"'s Puppy Park",unicorns:name+"'s Unicorn Trail",pirates:name+"'s Treasure Hunt",robots:name+"'s Robot Workshop","race cars":name+"'s Grand Prix","jungle animals":name+"'s Jungle Trek"};
     function applyTheme(){
       $("hello").textContent="Hi "+name+"!";
-      $("who").textContent=name; 
+      $("who").textContent=name;
       $("title").textContent=TITLES[interest]||(name+"'s "+interest+" practice");
       $("soundChip").textContent=sound+" sound · "+posLabel;
       $("minChip").textContent="~"+minutes+" min";
       $("themeChip").textContent=(THEME_EMOJI[interest]?THEME_EMOJI[interest].slice(0,2):"⭐")+" "+interest;
       $("scene").textContent=THEME_EMOJI[interest]||"⭐";
-      $("coins").textContent=(window.Sona&&Sona.getCoins)?Sona.getCoins():120;
+      $("coins").textContent=(window.Sona&&Sona.getCoins)?Sona.getCoins():0;
       var g=(window.Sona&&Sona.getProgress)?Sona.getProgress():null;
-      if(g&&g.streak)$("streak").textContent=g.streak.count||0;
+      var sc=(g&&g.streak&&g.streak.count)||0;
+      if(g&&g.streak)$("streak").textContent=sc;
+      // real local weekday + streak line (was hardcoded "Tuesday · Day 3 of your plan")
+      var wd=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"][new Date().getDay()];
+      $("date").textContent=wd+(sc>0?" · "+sc+"-day streak 🔥":" · Let's practice!");
       if(window.Sona&&Sona.characterById){try{var c=Sona.characterById(P.character||"leo");}catch(e){}}
     }
     // "Start" launches the EXISTING 3-game session engine — the same pattern
