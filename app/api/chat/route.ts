@@ -1,5 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { NextRequest, NextResponse } from "next/server";
+import { rateLimit } from "@/lib/rateLimit";
 
 /**
  * "Talk with Leo" — the AI conversation companion. Leo (our mascot) holds a
@@ -55,6 +56,7 @@ function systemPrompt(child?: {
 }
 
 export async function POST(req: NextRequest) {
+  const _rl = await rateLimit(req, { key: "chat", limit: 40, windowSec: 60 }); if (_rl) return _rl;
   const key = process.env.ANTHROPIC_API_KEY;
   if (!key) {
     return NextResponse.json(

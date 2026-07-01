@@ -1,5 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { NextRequest, NextResponse } from "next/server";
+import { rateLimit } from "@/lib/rateLimit";
 
 /**
  * The Coach brain — the "speech pathologist in your pocket" voice for a live
@@ -112,6 +113,7 @@ function userPrompt(b: Body): string {
 }
 
 export async function POST(req: NextRequest) {
+  const _rl = await rateLimit(req, { key: "coach", limit: 40, windowSec: 60 }); if (_rl) return _rl;
   const key = process.env.ANTHROPIC_API_KEY;
   if (!key) {
     return NextResponse.json(

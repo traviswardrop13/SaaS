@@ -1,5 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { NextRequest, NextResponse } from "next/server";
+import { rateLimit } from "@/lib/rateLimit";
 import {
   hasTargetSound,
   type SoundPosition,
@@ -178,6 +179,7 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  const _rl = await rateLimit(req, { key: "story", limit: 30, windowSec: 60 }); if (_rl) return _rl;
   const key = process.env.ANTHROPIC_API_KEY;
   if (!key) {
     return NextResponse.json(
