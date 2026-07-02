@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <title>Sona — Charge up!</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <meta name="theme-color" content="#ffffff" />
+  <style>
+    :root{
+      --blue:#1cb0f6; --blue-d:#1597d4; --green:#58cc02; --green-d:#46a302;
+      --orange:#ff9600; --orange-d:#e08600; --ink:#3c3c3c; --muted:#777; --line:#e5e5e5;
+      --bolt:#ffd21c; --bolt-d:#f5b800;
+    }
+    *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;font-family:"Nunito",-apple-system,sans-serif;}
+    html,body{height:100%;overflow:hidden;background:linear-gradient(180deg,#eaf7ff 0%,#f7fcff 55%,#fff);color:var(--ink);}
+    #app{height:100vh;height:100dvh;max-width:560px;margin:0 auto;display:flex;flex-direction:column;overscroll-behavior:none;}
+
+    /* top bar */
+    #top{display:flex;align-items:center;gap:12px;padding:calc(12px + env(safe-area-inset-top)) 16px 8px;}
+    #close{border:none;background:none;color:#afafaf;font-size:26px;font-weight:800;cursor:pointer;line-height:1;padding:4px 8px;}
+    #sessTrack{flex:1;height:14px;background:#e5e5e5;border-radius:99px;overflow:hidden;}
+    #sessFill{height:100%;width:0;background:var(--green);border-radius:99px;transition:width .35s ease;}
+    #tix{display:flex;align-items:center;gap:5px;font-family:"Baloo 2";font-weight:800;color:var(--orange-d);font-size:17px;}
+
+    /* stage */
+    #stage{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:8px 22px;gap:8px;min-height:0;}
+    #leo{width:96px;height:96px;object-fit:contain;transition:transform .2s;}
+    #leo.listen{animation:sway 1.4s ease-in-out infinite;}
+    #leo.cheer{animation:hop .55s ease;}
+    @keyframes sway{0%,100%{transform:rotate(-3deg)}50%{transform:rotate(3deg)}}
+    @keyframes hop{0%,100%{transform:translateY(0)}40%{transform:translateY(-18px) rotate(-4deg)}70%{transform:translateY(-4px) rotate(3deg)}}
+    #bub{font-family:"Baloo 2";font-weight:800;font-size:19px;color:var(--blue-d);background:#fff;border:2px solid var(--line);border-radius:16px;padding:9px 16px;max-width:320px;min-height:44px;display:flex;align-items:center;justify-content:center;}
+    #word{font-family:"Baloo 2";font-weight:800;font-size:clamp(40px,14vw,72px);line-height:1.05;color:var(--ink);}
+    #pic{font-size:clamp(56px,20vw,96px);line-height:1;min-height:1em;}
+    #pic img{width:110px;height:110px;object-fit:contain;}
+    #cueRow{min-height:22px;color:var(--muted);font-weight:700;font-size:14px;max-width:300px;}
+    #mouth{display:none;width:120px;border-radius:16px;margin-top:2px;}
+
+    /* the ⚡ meter */
+    #meterWrap{display:flex;align-items:center;gap:10px;padding:0 26px 4px;}
+    #boltIcon{font-size:26px;filter:grayscale(1);transition:filter .2s, transform .2s;}
+    #boltIcon.hot{filter:none;animation:zap .5s ease;}
+    @keyframes zap{0%,100%{transform:scale(1)}50%{transform:scale(1.45) rotate(-8deg)}}
+    #meter{flex:1;height:22px;background:#e9eef2;border-radius:99px;overflow:hidden;border:2px solid #dfe6ea;}
+    #meterFill{height:100%;width:0;border-radius:99px;background:linear-gradient(90deg,var(--bolt),#ffb100);transition:width .4s cubic-bezier(.2,.9,.3,1.4);}
+    #meterTxt{font-family:"Baloo 2";font-weight:800;font-size:14px;color:var(--orange-d);min-width:38px;text-align:right;}
+
+    /* mic bottom */
+    #bottom{display:flex;flex-direction:column;align-items:center;gap:8px;padding:6px 18px calc(18px + env(safe-area-inset-bottom));}
+    #micBtn{width:92px;height:92px;border-radius:50%;border:none;background:var(--blue);cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 0 0 var(--blue-d);transition:transform .05s, background .2s;}
+    #micBtn:active{transform:translateY(4px);box-shadow:0 2px 0 0 var(--blue-d);}
+    #micBtn svg{width:40px;height:40px;fill:#fff;}
+    #micBtn.rec{animation:pulse 1.6s infinite;}
+    #micBtn.off{background:#cfd8df;box-shadow:0 6px 0 0 #b7c2ca;pointer-events:none;}
+    @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(28,176,246,.45),0 6px 0 0 var(--blue-d)}70%{box-shadow:0 0 0 18px rgba(28,176,246,0),0 6px 0 0 var(--blue-d)}100%{box-shadow:0 0 0 0 rgba(28,176,246,0),0 6px 0 0 var(--blue-d)}}
+    #micState{font-family:"Baloo 2";font-weight:800;font-size:14px;color:var(--blue-d);min-height:20px;}
+    #hear{border:none;background:none;color:var(--muted);font-weight:800;font-size:13px;text-transform:uppercase;letter-spacing:.04em;cursor:pointer;}
+    #hear:disabled{opacity:.4;}
+
+    /* ticket burst overlay */
+    .ovl{position:fixed;inset:0;z-index:60;background:rgba(255,255,255,.96);display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:28px;gap:10px;}
+    .ovl.show{display:flex;}
+    .ovl .big{font-size:74px;line-height:1;}
+    .ovl h2{font-family:"Baloo 2";font-weight:800;font-size:28px;color:var(--ink);}
+    .ovl p{color:var(--muted);font-weight:700;font-size:15px;max-width:300px;}
+    .pickRow{display:flex;gap:14px;margin-top:10px;}
+    .pick{width:132px;border:none;border-radius:20px;padding:16px 10px 14px;background:#fff;border:2px solid var(--line);border-bottom-width:5px;cursor:pointer;transition:transform .06s;}
+    .pick:active{transform:translateY(2px);}
+    .pick .em{font-size:44px;line-height:1.1;}
+    .pick .nm{font-family:"Baloo 2";font-weight:800;font-size:15px;color:var(--ink);margin-top:4px;}
+    .btn{border:none;border-radius:16px;padding:15px 34px;font-family:"Baloo 2";font-weight:800;font-size:17px;text-transform:uppercase;letter-spacing:.04em;color:#fff;background:var(--green);box-shadow:0 5px 0 0 var(--green-d);cursor:pointer;transition:transform .05s;}
+    .btn:active{transform:translateY(4px);box-shadow:0 1px 0 0 var(--green-d);}
+    .btn.ghost{background:none;color:var(--muted);box-shadow:none;text-transform:none;font-size:14px;}
+    #doneStars{font-size:44px;letter-spacing:6px;color:var(--orange);}
+  </style>
+</head>
+<body>
+  <div id="app">
+    <div id="top">
+      <button id="close" aria-label="Close">✕</button>
+      <div id="sessTrack"><div id="sessFill"></div></div>
+      <div id="tix">🎟 <span id="tixN">0</span></div>
+    </div>
+
+    <div id="stage">
+      <img id="leo" src="/coach/leo.png" alt="Leo" onerror="this.outerHTML='<div id=leo style=font-size:72px>🦁</div>'" />
+      <div id="bub">Let's charge up! ⚡</div>
+      <div id="pic"></div>
+      <div id="word"></div>
+      <div id="cueRow"></div>
+      <img id="mouth" alt="mouth position" />
+    </div>
+
+    <div id="meterWrap">
+      <span id="boltIcon">⚡</span>
+      <div id="meter"><div id="meterFill"></div></div>
+      <span id="meterTxt">0/8</span>
+    </div>
+
+    <div id="bottom">
+      <button id="micBtn" class="off" aria-label="Microphone">
+        <svg viewBox="0 0 24 24"><path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v5a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z"/></svg>
+      </button>
+      <div id="micState">Getting ready…</div>
+      <button id="hear">🔊 Hear it again</button>
+    </div>
+  </div>
+
+  <!-- ticket earned: pick your game -->
+  <div class="ovl" id="ticketOvl">
+    <div class="big">🎟</div>
+    <h2>You earned a ticket!</h2>
+    <p>Your sounds powered it up. Pick a game!</p>
+    <div class="pickRow">
+      <button class="pick" id="pickSlice"><div class="em">🍉</div><div class="nm">Fruit Slice</div></button>
+      <button class="pick" id="pickStack"><div class="em">🧱</div><div class="nm">Block Stacker</div></button>
+    </div>
+    <button class="btn ghost" id="keepCharging">Keep charging ⚡</button>
+  </div>
+
+  <!-- session complete -->
+  <div class="ovl" id="doneOvl">
+    <div id="doneStars">☆☆☆</div>
+    <h2>Practice complete! 🎉</h2>
+    <p id="doneSub"></p>
+    <button class="btn" id="doneBtn">Done</button>
+    <button class="btn ghost" id="doneMore">One more round 🎟</button>
+  </div>
+
+  <script src="/sona.js"></script>
+  <script src="/gamecontent.js"></script>
+  <script>
+    var $=function(id){return document.getElementById(id);};
+    var qp=new URLSearchParams(location.search);
+    var S=window.Sona;
+    var profile=S?S.getProfile():{volume:0.8};
+    var SOUND=(qp.get("sound")||((profile.focusSounds&&profile.focusSounds[0])||"R")).toUpperCase();
+    if(!(S&&S.WORDS&&S.WORDS[SOUND])) SOUND="R";
+    var LEVEL=parseInt(qp.get("level"),10)||1;
+    var RUNG=(S&&S.rungOf)?S.rungOf(SOUND):2;
+    var NEED=(S?S.chargeState().need:8);
+
+    // ---- session state (survives the arcade round-trips via sessionStorage) ----
+    // Daily session: target passes ≈ 3 tickets for 5 min, 5 tickets for 10 min.
+    var SKEY="sona.cp.session";
+    var sess=null;
+    try{ sess=JSON.parse(sessionStorage.getItem(SKEY)||"null"); }catch(e){}
+    if(qp.get("session")==="1" && !(sess&&sess.active)){
+      var mins=parseInt(profile.dailyMinutes,10)||5;
+      sess={active:true, target:NEED*(mins>=10?5:3), done:0, sound:SOUND, level:LEVEL, words:[]};
+      try{ sessionStorage.setItem(SKEY,JSON.stringify(sess)); }catch(e){}
+    }
+    if(sess&&sess.active){ SOUND=(sess.sound||SOUND).toUpperCase(); LEVEL=sess.level||LEVEL; }
+    function saveSess(){ try{ if(sess) sessionStorage.setItem(SKEY,JSON.stringify(sess)); }catch(e){} }
+    function sessPaint(){ var t=(sess&&sess.active)?sess.target:NEED; var d=(sess&&sess.active)?sess.done:passesThisVisit; $("sessFill").style.width=Math.min(100,(d/t)*100)+"%"; }
+
+    // ---- content: rung-appropriate items from the clinical ladder ----
+    var ITEMS=[];
+    try{ ITEMS=(S.ladderContent(SOUND,RUNG)||[]).filter(function(it){return it&&it.t;}); }catch(e){}
+    // conversation-rung items are Q&A shaped (no speakable .t) — charge practices at sentence level instead
+    if(!ITEMS.length){ try{ ITEMS=(S.ladderContent(SOUND,4)||[]).filter(function(it){return it&&it.t;}); }catch(e){} }
+    if(!ITEMS.length) ITEMS=[{t:S?S.soundSay(SOUND):"rrrr",mode:"phoneme",level:"isolation"}];
+    // shuffle lightly so repeat cycles don't feel identical
+    for(var _i=ITEMS.length-1;_i>0;_i--){ var _j=(Math.random()*(_i+1))|0, _t=ITEMS[_i]; ITEMS[_i]=ITEMS[_j]; ITEMS[_j]=_t; }
+    var qi=0;
+    function nextItem(){ var it=ITEMS[qi%ITEMS.length]; qi++; return it; }
+
+    // ---- audio (same proven pattern as warmup/lesson) ----
+    var audioCtx=null,speaking=false;
+    function getCtx(){ if(!audioCtx){var AC=window.AudioContext||window.webkitAudioContext;audioCtx=new AC();} if(audioCtx.state==="suspended")audioCtx.resume(); return audioCtx; }
+    function playPCM(b){ return new Promise(function(res){ try{ var c=getCtx(),n=b.byteLength>>1,ab=c.createBuffer(1,n,24000),ch=ab.getChannelData(0),dv=new DataView(b.buffer,b.byteOffset,b.byteLength); for(var i=0;i<n;i++)ch[i]=dv.getInt16(i*2,true)/32768; var s=c.createBufferSource();s.buffer=ab;var g=c.createGain();g.gain.value=(profile.volume!=null?profile.volume:0.8);s.connect(g);g.connect(c.destination);s.onended=res;s.start(); }catch(e){res();} }); }
+    function say(t){ return new Promise(function(res){ if(!t||profile.voiceOn===false)return res(); if(speaking)return res(); speaking=true; $("hear").disabled=true;
+      fetch("/api/tts",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text:t,voice:profile.voiceId||""})})
+        .then(function(r){return r.ok?r.arrayBuffer():null;}).then(function(b){return b?playPCM(new Uint8Array(b)):null;})
+        .catch(function(){}).finally(function(){speaking=false;$("hear").disabled=false;res();}); }); }
+    function sfx(n){ try{ if(S&&S.sfx&&S.sfx[n])S.sfx[n](); }catch(e){} }
+
+    // ---- mic (recordRep pattern; native captureClip short-circuit) ----
+    var micStream=null, useSpeechAce=true;
+    (function(){ try{ fetch("/api/score").then(function(r){return r.json();}).then(function(j){ useSpeechAce=!!(j&&j.hasKey); }).catch(function(){ useSpeechAce=false; }); }catch(e){ useSpeechAce=false; } })();
+    function norm(s){ return (s||"").toLowerCase().replace(/[^a-z]/g,""); }
+    function recordRep(){ if(S&&S.hasNativeAudio&&S.hasNativeAudio())return S.captureClip({maxMs:6000});
+      return new Promise(function(resolve){
+        var done2=false,chunks=[],rec=null,sr=null,transcript="";
+        function fin(){ if(done2)return; done2=true; try{rec&&rec.state!=="inactive"&&rec.stop();}catch(e){} try{sr&&sr.stop();}catch(e){} setTimeout(function(){ resolve({blob:chunks.length?new Blob(chunks,{type:(rec&&rec.mimeType)||"audio/webm"}):null, transcript:transcript}); },120); }
+        try{ if(micStream&&window.MediaRecorder){ rec=new MediaRecorder(micStream); rec.ondataavailable=function(e){if(e.data&&e.data.size)chunks.push(e.data);}; rec.start(); } }catch(e){}
+        try{ var SR=window.SpeechRecognition||window.webkitSpeechRecognition; if(SR){ sr=new SR(); sr.lang="en-US"; sr.interimResults=false; sr.onresult=function(ev){for(var i=0;i<ev.results.length;i++)for(var k=0;k<ev.results[i].length;k++)transcript+=" "+ev.results[i][k].transcript; fin();}; sr.onerror=function(){}; sr.start(); } }catch(e){}
+        try{ if(micStream){ var ctx=getCtx(); var msrc=ctx.createMediaStreamSource(micStream); var an=ctx.createAnalyser(); an.fftSize=512; msrc.connect(an); var td=new Uint8Array(an.fftSize); var t0=performance.now(),nS=0,nN=0,thr=0,spoke=false,lastV=0;
+          (function tick(){ if(done2)return; an.getByteTimeDomainData(td); var sum=0; for(var i=0;i<td.length;i++){var d=(td[i]-128)/128;sum+=d*d;} var rms=Math.sqrt(sum/td.length),now=performance.now();
+            if(now-t0<300){nS+=rms;nN++;} else { if(!thr)thr=Math.max(0.03,(nS/Math.max(1,nN))*2.6); if(rms>thr){spoke=true;lastV=now;} if(spoke&&now-lastV>=900){fin();return;} }
+            requestAnimationFrame(tick); })();
+        } }catch(e){}
+        $("micBtn").onclick=fin;
+        setTimeout(function(){ if(!done2)fin(); }, 6500);
+      });
+    }
+    async function scoreRep(it,res){
+      var text=it.t, mode=it.mode||"full";
+      if(useSpeechAce && res.blob){ try{ var fd=new FormData(); fd.append("audio",new File([res.blob],"a.webm",{type:res.blob.type||"audio/webm"})); fd.append("text",text); fd.append("targetSound",SOUND); fd.append("userId","child"); fd.append("mode",mode); var r=await fetch("/api/score",{method:"POST",body:fd}); var j=await r.json(); if(j&&j.ok) return j.rating!=="tryAgain"; }catch(e){} }
+      // no scorer: an honest real attempt counts on phoneme rungs; words need a transcript match
+      var heard=!!(norm(res.transcript)||(res.blob&&res.blob.size>1500)||res.spoke);
+      if(mode==="phoneme") return heard;
+      if(res.transcript) return norm(res.transcript).indexOf(norm(it.word||it.t).slice(0,4))>=0;
+      return false;
+    }
+
+    // ---- meter + UI paint ----
+    function meterPaint(){ var c=S.chargeState(); $("meterFill").style.width=(c.fill/c.need*100)+"%"; $("meterTxt").textContent=c.fill+"/"+c.need; $("tixN").textContent=S.tickets(); }
+    function showItem(it){
+      $("word").textContent=it.display||it.t;
+      var pic=$("pic"); pic.innerHTML="";
+      if(it.e){ pic.textContent=it.e; }
+      $("mouth").style.display="none";
+      $("cueRow").textContent="";
+    }
+    function bubble(t){ $("bub").textContent=t; }
+    function micState(t,cls){ $("micState").textContent=t; var m=$("micBtn"); m.className=cls||""; }
+
+    // ---- the loop ----
+    var passesThisVisit=0, running=true;
+    async function runLoop(){
+      // mic permission first — never a silent dead loop
+      try{ micStream=await navigator.mediaDevices.getUserMedia({audio:true}); }
+      catch(e){ if(!(S&&S.hasNativeAudio&&S.hasNativeAudio())){ micState("Mic is off",""); if(S&&S.micDenied)S.micDenied({back:"/today.html"}); return; } }
+      bubble("Say it after me — fill the bolt! ⚡");
+      await say((S&&S.actionCue)?S.actionCue(SOUND,NEED,"charge up your ticket"):("Say your sound "+NEED+" times to charge up!"));
+      while(running){
+        var it=nextItem(); showItem(it);
+        var tries=0, passed=false;
+        while(tries<3 && !passed && running){
+          tries++;
+          bubble(tries===1?("Say “"+(it.display||it.t)+"”!"):"Try once more!");
+          if(tries===1) await say(it.say||("Say "+(it.display||it.t)+"!"));
+          if(tries===2){ var cue=(S&&S.cue)?S.cue(SOUND):""; if(cue){ $("cueRow").textContent=cue; await say(cue); } var m=$("mouth"); m.src="/coach/mouth/"+SOUND+".png"; m.onerror=function(){this.style.display="none";}; m.style.display="block"; }
+          micState("Listening…","rec"); $("leo").classList.add("listen");
+          var res=await recordRep();
+          $("leo").classList.remove("listen");
+          micState("Thinking…","off");
+          passed=await scoreRep(it,res);
+          if(S&&S.logAttempt) S.logAttempt({game:"charge",sound:SOUND,pass:!!passed,word:String(it.word||it.t).toLowerCase()});
+          if(!passed&&tries<3){ sfx("tap"); }
+        }
+        if(!running) break;
+        // pass → real charge; 3 honest tries → effort spark (kind meter, truthful stats)
+        var praised = passed ? ((S&&S.praiseLine)?S.praiseLine():"Nice one!") : "Great trying — you worked hard!";
+        $("leo").classList.remove("cheer"); void $("leo").offsetWidth; $("leo").classList.add("cheer");
+        sfx(passed?"correct":"tap"); if(passed&&S&&S.pop)S.pop("⭐",{color:"#ff9600",y:innerHeight*0.35});
+        bubble(praised); micState("","off");
+        say(praised); // don't await — keep momentum
+        if(sess&&sess.active){ sess.done++; sess.words.push({word:String(it.word||it.t),ok:!!passed}); saveSess(); }
+        passesThisVisit++;
+        var r=S.chargeAdd(); meterPaint(); sessPaint();
+        $("boltIcon").classList.remove("hot"); void $("boltIcon").offsetWidth; $("boltIcon").classList.add("hot");
+        if(sess&&sess.active&&sess.done>=sess.target){ finishSession(); return; }
+        if(r.ticket){ ticketMoment(); return; }
+        await new Promise(function(res2){setTimeout(res2,420);});
+      }
+    }
+
+    // ---- ticket earned → pick a game ----
+    function ticketMoment(){
+      running=false; sfx("complete"); try{ if(S&&S.confetti)S.confetti(); }catch(e){}
+      $("tixN").textContent=S.tickets();
+      $("ticketOvl").classList.add("show");
+      say("You earned a ticket! Pick a game!");
+    }
+    function goArcade(page){ stopMic(); location.href="/"+page+"?from=charge"; }
+    $("pickSlice").onclick=function(){ goArcade("arcade-slice.html"); };
+    $("pickStack").onclick=function(){ goArcade("arcade-stack.html"); };
+    $("keepCharging").onclick=function(){ $("ticketOvl").classList.remove("show"); running=true; runLoop(); };
+
+    // ---- session complete ----
+    function finishSession(){
+      running=false; stopMic();
+      var words=(sess&&sess.words)||[]; var ok=words.filter(function(w){return w.ok;}).length;
+      var stars=Math.max(1,Math.min(3,Math.round(ok/Math.max(1,words.length)*3)));
+      try{ if(S&&S.recordSession)S.recordSession({words:words}); if(S&&S.markLevelDone)S.markLevelDone(LEVEL); if(S&&S.addCoins)S.addCoins(10+stars*5); }catch(e){}
+      if(sess){ sess.active=false; saveSess(); }
+      $("doneStars").textContent="★".repeat(stars)+"☆".repeat(3-stars);
+      $("doneSub").textContent="You said "+words.length+" sounds and earned "+(10+stars*5)+" coins! 🪙";
+      $("doneMore").style.display=S.tickets()>0?"":"none";
+      $("doneOvl").classList.add("show");
+      sfx("complete"); try{ if(S&&S.confetti)S.confetti(); }catch(e){}
+      say("Practice complete! Amazing work!");
+    }
+    $("doneBtn").onclick=function(){ location.href="/today.html"; };
+    $("doneMore").onclick=function(){ $("doneOvl").classList.remove("show"); $("ticketOvl").classList.add("show"); };
+
+    // ---- chrome ----
+    function stopMic(){ try{ if(micStream)micStream.getTracks().forEach(function(t){t.stop();}); }catch(e){} }
+    $("close").onclick=function(){ stopMic(); location.href="/today.html"; };
+    $("hear").onclick=function(){ var it=ITEMS[(qi-1+ITEMS.length)%ITEMS.length]; if(it) say(it.say||("Say "+(it.display||it.t)+"!")); };
+    window.addEventListener("pagehide",stopMic);
+
+    // ---- boot ----
+    meterPaint(); sessPaint();
+    if(qp.get("back")==="1"&&sess&&sess.active){ bubble("Welcome back! Let's keep charging ⚡"); }
+    micState("Tap anywhere to start!","off");
+    var booted=false;
+    function boot(){ if(booted)return; booted=true; getCtx(); micState("","off"); runLoop(); }
+    document.body.addEventListener("pointerdown",boot,{once:true});
+    setTimeout(function(){ if(!booted&&document.visibilityState==="visible") boot(); },2500);
+  </script>
+</body>
+</html>
