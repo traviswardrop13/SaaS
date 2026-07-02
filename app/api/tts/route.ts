@@ -27,6 +27,25 @@ const PCM_HEADERS = {
   "Cache-Control": "no-store",
 } as const;
 
+// Warm-instance memo + cache (module scope survives across requests on the same
+// serverless instance). Kills the two biggest sources of TTS dead air:
+//  1. v3Broken — once eleven_v3 rejects (account without v3 access), stop paying
+//     a doomed round trip before the v2 fallback on every single call.
+//  2. audioCache — the game loop repeats a small set of short prompts ("say rrrr",
+//     "your turn!", praise lines) constantly; serve identical clips instantly.
+let v3Broken = false;
+const audioCache = new Map<string, ArrayBuffer>();
+const CACHE_MAX = 48;
+function cacheGet(k: string): ArrayBuffer | undefined {
+  const v = audioCache.get(k);
+  if (v) { audioCache.delete(k); audioCache.set(k, v); } // LRU touch
+  return v;
+}
+function cacheSet(k: string, v: ArrayBuffer) {
+  audioCache.set(k, v);
+  while (audioCache.size > CACHE_MAX) audioCache.delete(audioCache.keys().next().value as string);
+}
+
 export async function POST(req: NextRequest) {
   const _rl = await rateLimit(req, { key: "tts", limit: 120, windowSec: 60 }); if (_rl) return _rl;
   const elevenKey = process.env.ELEVENLABS_API_KEY;
@@ -55,12 +74,20 @@ export async function POST(req: NextRequest) {
     if (elevenKey) {
       const voiceId =
         voiceOverride || process.env.ELEVENLABS_VOICE_ID || "qBDvhofpxp92JgXJxDjB"; // Leo's voice — a real kid, no client pitch-shift needed.
-      // Try v3 first (far more natural cadence/inflection), fall back to the
-      // workhorse v2 if v3 rejects the request — Leo must never go silent.
+
+      // Serve a cached clip instantly (short, repeated prompts only — never long/unique story text).
+      const cacheKey = `el|${voiceId}|${text}`;
+      const cacheable = text.length <= 120;
+      if (cacheable) { const hit = cacheGet(cacheKey); if (hit) return new NextResponse(hit.slice(0), { status: 200, headers: PCM_HEADERS }); }
+
+      const v3Model = process.env.ELEVENLABS_V3_MODEL || "eleven_v3";
       const fallbackModel = process.env.ELEVENLABS_MODEL || "eleven_multilingual_v2";
+      // Try v3 first (more natural cadence), fall back to the workhorse v2 — but
+      // once v3 is known-broken on this account, skip it so Leo never waits on a
+      // doomed request. Leo must never go silent.
       const attempts = [
         // v3 only takes coarse stability modes (0=creative, 0.5=natural, 1=robust)
-        { model: process.env.ELEVENLABS_V3_MODEL || "eleven_v3", settings: { stability: 0.5, use_speaker_boost: true } },
+        { model: v3Model, settings: { stability: 0.5, use_speaker_boost: true } },
         {
           model: fallbackModel,
           settings: {
@@ -71,7 +98,8 @@ export async function POST(req: NextRequest) {
             use_speaker_boost: true,
           },
         },
-      ].filter((a, i, arr) => arr.findIndex((b) => b.model === a.model) === i);
+      ].filter((a, i, arr) => arr.findIndex((b) => b.model === a.model) === i)
+       .filter((a) => !(v3Broken && a.model === v3Model));
 
       let lastErr = "";
       for (const a of attempts) {
@@ -84,8 +112,11 @@ export async function POST(req: NextRequest) {
           },
         );
         if (r.ok) {
-          return new NextResponse(await r.arrayBuffer(), { status: 200, headers: PCM_HEADERS });
+          const buf = await r.arrayBuffer();
+          if (cacheable) cacheSet(cacheKey, buf);
+          return new NextResponse(buf.slice(0), { status: 200, headers: PCM_HEADERS });
         }
+        if (a.model === v3Model && (r.status === 400 || r.status === 401 || r.status === 403 || r.status === 404 || r.status === 422)) v3Broken = true; // account lacks v3 — stop trying it
         lastErr = `${a.model}: ${r.status} ${(await r.text().catch(() => "")).slice(0, 200)}`;
       }
       return NextResponse.json(
