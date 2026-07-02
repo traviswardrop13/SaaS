@@ -86,7 +86,8 @@
     var BH=34;                       // block height
     var baseW=Math.min(W*0.62,240); // starting width
     var stack=[{x:(W-baseW)/2,w:baseW,c:COLORS[0]}];
-    var cur={x:0,w:baseW,dir:1,c:COLORS[1]}, speed=Math.max(3.2,W*0.009);
+    // kid pace: slow slide to start, gentle ramp per drop
+    var cur={x:0,w:baseW,dir:1,c:COLORS[1]}, speed=Math.max(2.1,W*0.0042);
     var playing=true, dropping=false, camY=0, score=0, perfectRun=0;
 
     function flash(t){ var f=$("flash"); f.textContent=t; f.style.opacity=1; f.style.transform="scale(1.18)"; setTimeout(function(){f.style.opacity=0;f.style.transform="scale(1)";},520); }
@@ -107,7 +108,7 @@
       score++; $("score").textContent="🧱 "+score;
       // next block
       cur={x:-overlap*0.6, w:overlap, dir:1, c:COLORS[stack.length%COLORS.length]};
-      speed=Math.min(W*0.02, speed+0.12);
+      speed=Math.min(W*0.011, speed+0.06);
       dropping=false;
       $("tapHint").style.display="none";
     }

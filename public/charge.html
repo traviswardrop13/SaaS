@@ -176,6 +176,29 @@
     if(!ITEMS.length){ try{ ITEMS=(S.ladderContent(SOUND,0)||[]).filter(function(it){return it&&it.t;}); }catch(e){} }
     if(!ITEMS.length) ITEMS=[{t:(S?S.soundSay(SOUND):"rrrr"),say:(S?S.soundSay(SOUND):"rrrr"),display:(S?S.soundSay(SOUND):"rrrr"),mode:"phoneme",level:"isolation"}];
     var ITEM=ITEMS[(Math.random()*ITEMS.length)|0];
+    var NUMWORD={2:"two",3:"three",4:"four",5:"five",6:"six"};
+    // What Leo SPEAKS. TTS cannot model a bare sound reliably (a synthesized
+    // long "rrrr" comes out weird), so for isolation Leo speaks the INSTRUCTION
+    // ("Make your R sound") and the human-recorded model clip — when one exists
+    // at /coach/say/<SOUND>.mp3 — does the actual modeling.
+    function sayLine(){
+      var times=(NUMWORD[NEED]||NEED)+" times";
+      if(ITEM.level==="isolation") return "Ready? Make your "+((S&&S.soundLabel)?S.soundLabel(SOUND):SOUND)+" sound — "+times+"!";
+      return "Ready? Say "+(ITEM.display||ITEM.t)+" — "+times+"!";
+    }
+    // Prefer a real human recording of the whole prompt (Rachel!) if present.
+    function playPrompt(){
+      return new Promise(function(res){
+        if(ITEM.level!=="isolation"){ say(sayLine()).then(res); return; }
+        try{
+          var a=new Audio("/coach/say/"+SOUND+".mp3");
+          var done=false; function fin(){ if(done)return; done=true; res(); }
+          a.onended=fin;
+          a.onerror=function(){ if(done)return; done=true; say(sayLine()).then(res); };
+          a.play().catch(function(){ if(done)return; done=true; say(sayLine()).then(res); });
+        }catch(e){ say(sayLine()).then(res); }
+      });
+    }
 
     // ---- consistent, instant TTS: on-device cache (IndexedDB "sona-tts").
     // Same text = the exact same audio every time — Leo's rrrr never wobbles.
@@ -190,7 +213,7 @@
       var key=(profile.voiceId||"leo")+"|"+t;
       ttsGet(key).then(function(cached){
         if(cached) return playPCM(new Uint8Array(cached));
-        return fetch("/api/tts",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text:t,voice:profile.voiceId||""})})
+        return fetch("/api/tts",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text:t,voice:profile.voiceId||"",stable:true})})
           .then(function(r){return r.ok?r.arrayBuffer():null;})
           .then(function(b){ if(!b)return null; ttsPut(key,b); return playPCM(new Uint8Array(b)); });
       }).catch(function(){}).finally(function(){speaking=false;res();});
@@ -222,7 +245,7 @@
         var td=new Uint8Array(an.fftSize);
         engineOn=true;
         function stopAll(){ engineOn=false; try{src.disconnect();}catch(e){} try{ if(rec&&rec.state!=="inactive")rec.stop(); }catch(e){} if(idleTimer)clearTimeout(idleTimer); }
-        function armIdle(){ if(idleTimer)clearTimeout(idleTimer); idleTimer=setTimeout(function(){ if(!engineOn)return; if(reps===0){ say(ITEM.say||("Say "+(ITEM.display||ITEM.t)+"!")); armIdle(); } },8000); }
+        function armIdle(){ if(idleTimer)clearTimeout(idleTimer); idleTimer=setTimeout(function(){ if(!engineOn)return; if(reps===0){ playPrompt(); armIdle(); } },8000); }
         armIdle();
         (function tick(){
           if(!engineOn) return;
@@ -248,44 +271,55 @@
     }
 
     function clipBlob(){ return chunks.length?new Blob(chunks,{type:(rec&&rec.mimeType)||"audio/webm"}):null; }
+    // Tri-state verdict: "pass" / "fail" (the scorer really heard a different
+    // sound) / "unknown" (no scorer, timeout, error — never punish the kid for
+    // infrastructure, and never log made-up data).
     async function verifyClip(){
       var blob=clipBlob();
       if(useSpeechAce&&blob){
         try{
-          var ctrl=new AbortController(); var to=setTimeout(function(){ctrl.abort();},3500);
+          var ctrl=new AbortController(); var to=setTimeout(function(){ctrl.abort();},8000);
           var fd=new FormData(); fd.append("audio",new File([blob],"a.webm",{type:blob.type||"audio/webm"}));
           fd.append("text",ITEM.t); fd.append("targetSound",SOUND); fd.append("userId","child"); fd.append("mode",ITEM.mode||"phoneme");
           var r=await fetch("/api/score",{method:"POST",body:fd,signal:ctrl.signal}); clearTimeout(to);
-          var j=await r.json(); if(j&&j.ok) return j.rating!=="tryAgain";
+          var j=await r.json(); if(j&&j.ok) return (j.rating!=="tryAgain")?"pass":"fail";
         }catch(e){}
+        return "unknown";
       }
-      return reps>=NEED; // no scorer: real voiced bursts (never silence) count
+      return "unknown";
     }
 
     // ---- the flow ----
     var launched=false;
+    function logV(v){ if(v!=="unknown" && S && S.logAttempt) S.logAttempt({game:"charge",sound:SOUND,pass:v==="pass",word:String(ITEM.word||ITEM.t).toLowerCase()}); }
+    async function burstAndVerify(n){
+      var save=NEED; if(n)NEED=n;
+      micGo(true, n?"GO!":("GO — say it "+(NUMWORD[NEED]||NEED)+" times!"));
+      await startEngine();
+      NEED=save;
+      micGo(false,""); $("gpState").textContent="Checking…";
+      var v=await verifyClip(); logV(v); return v;
+    }
     async function flow(){
       try{ micStream=await navigator.mediaDevices.getUserMedia({audio:true,video:false}); }
       catch(e){ micGo(false,"Mic is off"); if(S&&S.micDenied)S.micDenied({back:"/today.html"}); return; }
-      // Leo models ONCE, then the mic is instantly hot — no "are you ready".
-      await say(ITEM.say||("Say "+(ITEM.display||ITEM.t)+"!"));
-      micGo(true,"GO — say it "+NEED+" times!");
-      await startEngine();
-      micGo(false,"");
-      $("gpState").textContent="Checking…";
-      var pass=await verifyClip();
-      if(S&&S.logAttempt) S.logAttempt({game:"charge",sound:SOUND,pass:!!pass,word:String(ITEM.word||ITEM.t).toLowerCase()});
-      if(!pass){
-        // one quick coach moment, then play anyway (fail-forward; stats stay honest)
-        var cue=(S&&S.cue)?S.cue(SOUND):"";
-        if(cue){ $("cueRow").textContent=cue; }
-        var m=$("mouth"); m.src="/coach/mouth/"+SOUND+".png"; m.onerror=function(){this.style.display="none";}; m.style.display="block";
-        await say("Watch my mouth — "+(ITEM.say||ITEM.t)+"! Two more!");
-        micGo(true,"GO!");
-        var save=NEED; NEED=2; await startEngine(); NEED=save;
-        var pass2=await verifyClip();
-        if(S&&S.logAttempt) S.logAttempt({game:"charge",sound:SOUND,pass:!!pass2,word:String(ITEM.word||ITEM.t).toLowerCase()});
-        micGo(false,"");
+      // Leo speaks the prompt ONCE, then the mic is instantly hot.
+      await playPrompt();
+      var v=await burstAndVerify();
+      if(v==="fail"){
+        // The scorer really heard a different sound — the charge is NOT given
+        // away. Coach with the SLP cue (never "watch my mouth" — there is no
+        // mouth on screen), then re-try. Two honest fails still open the game
+        // (a kid is never hard-stuck) but the stats keep the truth.
+        var c=(S&&S.cue)?S.cue(SOUND):null;
+        var tip=(c&&c.tip)?c.tip:("Let's try our "+((S&&S.soundLabel)?S.soundLabel(SOUND):SOUND)+" sound again");
+        if(c&&c.tip)$("cueRow").textContent=c.tip;
+        $("gpState").textContent="Almost!";
+        await say("Hmm, that was a different sound! "+tip+". Try again!");
+        v=await burstAndVerify(3);
+        if(v==="fail"){
+          await say("Great practicing! Let's play — we'll keep working on it!");
+        }
       }
       launchGame();
     }
@@ -330,15 +364,16 @@
     $("skip").onclick=function(){ launchGame(); };
     window.addEventListener("pagehide",stopMic);
 
-    // ---- boot ----
+    // ---- boot: auto-start — the voice speaks, then it's GO. No tap gate. ----
     if(finishedNow){ finishRun(); }
     else if(isDaily && !(run&&run.active) && S&&S.dailyInfo&&S.dailyInfo().playedToday){ showPlayed(); }
     else {
-      micGo(false,"Tap to start!");
       var booted=false;
       function boot(){ if(booted||launched)return; booted=true; getCtx(); flow(); }
-      document.body.addEventListener("pointerdown",function(e){ if(e.target.closest&&e.target.closest(".ovl"))return; boot(); },{once:true});
-      setTimeout(function(){ if(!booted&&document.visibilityState==="visible") boot(); },2000);
+      // silent gesture hook: if the browser blocked audio, the first touch
+      // resumes it — no visible "tap to start" anywhere
+      document.body.addEventListener("pointerdown",function(){ try{ getCtx(); }catch(e){} },{passive:true});
+      setTimeout(boot,300);
     }
   </script>
 </body>

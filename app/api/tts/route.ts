@@ -59,10 +59,12 @@ export async function POST(req: NextRequest) {
 
   let text = "";
   let voiceOverride: string | undefined;
+  let stable = false; // kid prompts ("say rrrr") need the SAME rendering every time — skip expressive v3
   try {
     const b = await req.json();
     text = typeof b?.text === "string" ? b.text.slice(0, 800) : "";
     if (typeof b?.voice === "string" && b.voice) voiceOverride = b.voice;
+    stable = b?.stable === true;
   } catch {
     // no body
   }
@@ -99,7 +101,8 @@ export async function POST(req: NextRequest) {
           },
         },
       ].filter((a, i, arr) => arr.findIndex((b) => b.model === a.model) === i)
-       .filter((a) => !(v3Broken && a.model === v3Model));
+       .filter((a) => !(v3Broken && a.model === v3Model))
+       .filter((a) => !(stable && a.model === v3Model)); // kid prompts: calm v2 only
 
       let lastErr = "";
       for (const a of attempts) {

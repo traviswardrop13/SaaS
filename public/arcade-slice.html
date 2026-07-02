@@ -83,19 +83,21 @@
 
     var ROUND=45, tLeft=ROUND, playing=true, score=0, combo=0, comboT=0;
     var fruits=[], parts=[], trail=[];
-    var G=H*0.0011||0.62; // gravity scaled to screen
+    // Kid-tuned physics: floaty gravity + launch speed derived from the screen
+    // so every fruit rises to ~55-75% of the screen and hangs ~1.8s.
+    var G=H*0.00045||0.4;
 
     function toss(){
-      var n=1+((Math.random()*2)|0)+(tLeft<20?1:0); // ramps up late
+      var n=1+(Math.random()<0.3?1:0)+(tLeft<15?1:0); // gentle, ramps a little late
       for(var i=0;i<n;i++){
-        var x=W*(0.15+Math.random()*0.7);
+        var x=W*(0.18+Math.random()*0.64);
         fruits.push({ e:FRUITS[(Math.random()*FRUITS.length)|0], x:x, y:H+40,
-          vx:(W*0.5-x)*0.004+(Math.random()-0.5)*2.2,
-          vy:-(H*0.0165)*(0.92+Math.random()*0.22),
-          r:26+Math.random()*10, rot:Math.random()*6, vr:(Math.random()-0.5)*0.12, sliced:false });
+          vx:(W*0.5-x)*0.0025+(Math.random()-0.5)*1.2,
+          vy:-(H*(0.0225+Math.random()*0.004)),
+          r:32+Math.random()*12, rot:Math.random()*6, vr:(Math.random()-0.5)*0.08, sliced:false });
       }
     }
-    var tossIv=setInterval(function(){ if(playing) toss(); },1100);
+    var tossIv=setInterval(function(){ if(playing) toss(); },1700);
     toss();
 
     // slicing: pointer trail + segment-vs-circle hit
@@ -105,7 +107,7 @@
     function onMove(e){ if(!pDown||!playing)return; var p=pt(e); trail.push({x:p.x,y:p.y,t:performance.now()});
       var hit=0;
       for(var i=0;i<fruits.length;i++){ var f=fruits[i];
-        if(!f.sliced && segHit(lx,ly,p.x,p.y,f.x,f.y,f.r+8)){ f.sliced=true; hit++; score++; combo++;
+        if(!f.sliced && segHit(lx,ly,p.x,p.y,f.x,f.y,f.r+16)){ f.sliced=true; hit++; score++; combo++;
           for(var k=0;k<10;k++) parts.push({x:f.x,y:f.y,vx:(Math.random()-0.5)*7,vy:-Math.random()*6,r:3+Math.random()*4,life:1,col:["#ff6b6b","#ffd21c","#7bed8d","#74c0fc"][(Math.random()*4)|0]});
           parts.push({x:f.x,y:f.y,vx:-2.4,vy:-2,e:f.e,half:1,life:1}); parts.push({x:f.x,y:f.y,vx:2.4,vy:-2,e:f.e,half:2,life:1});
         } }
