@@ -2,103 +2,11 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
-  <title>Sona — Worlds</title>
-  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet" />
-  <link rel="manifest" href="/manifest.webmanifest" />
-  <meta name="theme-color" content="#1cb0f6" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="mobile-web-app-capable" content="yes" />
-  <script defer src="/_vercel/insights/script.js"></script>
-  <style>
-    :root{--blue:#1cb0f6;--blue-d:#1597d4;--green:#58cc02;--green-d:#46a302;--amber:#ffb703;--amber-d:#e08600;--ink:#16384f;--muted:#6b86a3;}
-    *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;font-family:"Nunito",-apple-system,"Segoe UI",Roboto,sans-serif;}
-    html,body{height:100%;}
-    body{background:linear-gradient(180deg,#eaf6ff,#dff1ff 40%,#eafbe4);color:var(--ink);display:flex;justify-content:center;}
-    #app{width:100%;max-width:480px;min-height:100vh;min-height:100dvh;padding:calc(14px + env(safe-area-inset-top)) 16px calc(92px + env(safe-area-inset-bottom));}
-    .top{display:flex;align-items:center;gap:10px;}
-    .top h1{font-family:"Baloo 2";font-weight:800;font-size:24px;flex:1;}
-    .stars{background:#fff;border-radius:99px;padding:6px 13px;font-family:"Baloo 2";font-weight:800;font-size:15px;color:var(--amber-d);box-shadow:0 3px 0 rgba(20,90,150,.1);}
-    .lead{color:var(--muted);font-weight:700;font-size:13.5px;margin:4px 0 14px;}
-    .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
-    .house{position:relative;border:none;cursor:pointer;border-radius:22px;overflow:hidden;padding:0;text-align:left;
-      box-shadow:0 10px 0 -2px rgba(20,90,150,.12),0 16px 30px -16px rgba(20,90,150,.5);transition:transform .08s;}
-    .house:active{transform:translateY(3px) scale(.985);}
-    .house .scene{height:118px;position:relative;display:flex;align-items:center;justify-content:center;}
-    .house .emoji{font-size:58px;filter:drop-shadow(0 6px 8px rgba(15,50,80,.25));}
-    .house .art{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none;}
-    .house .meta{background:#fff;padding:10px 12px 12px;}
-    .house .nm{font-family:"Baloo 2";font-weight:800;font-size:16px;line-height:1;}
-    .house .pr{display:flex;align-items:center;gap:6px;margin-top:7px;}
-    .house .bar{flex:1;height:8px;border-radius:99px;background:#e9eff5;overflow:hidden;}
-    .house .bar span{display:block;height:100%;background:linear-gradient(90deg,var(--green),#7be23a);border-radius:99px;}
-    .house .pct{font-size:11px;font-weight:800;color:var(--muted);white-space:nowrap;}
-    .house .st{position:absolute;top:9px;right:10px;background:rgba(255,255,255,.92);border-radius:99px;padding:3px 9px;font-family:"Baloo 2";font-weight:800;font-size:12px;color:var(--amber-d);box-shadow:0 2px 6px rgba(20,90,150,.18);}
-    .nav{position:fixed;bottom:0;left:0;right:0;max-width:480px;margin:0 auto;background:#fff;border-top:1px solid #e8eef4;display:flex;justify-content:space-around;padding:9px 0 calc(9px + env(safe-area-inset-bottom));z-index:9;}
-    .nav a{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;font-weight:800;color:#9fb0c0;text-decoration:none;}
-    .nav a .ni{font-size:21px;} .nav a.on{color:var(--blue-d);}
-    /* toast on returning from a game */
-    #toast{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(.8);z-index:20;background:#fff;border-radius:22px;padding:22px 30px;text-align:center;box-shadow:0 18px 44px rgba(20,60,90,.4);opacity:0;transition:opacity .25s,transform .25s;pointer-events:none;}
-    #toast.show{opacity:1;transform:translate(-50%,-50%) scale(1);}
-    #toast .big{font-size:34px;letter-spacing:3px;} #toast h3{font-family:"Baloo 2";font-weight:800;font-size:19px;margin-top:6px;} #toast p{font-weight:800;color:var(--amber-d);font-size:14px;margin-top:3px;}
-  </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Sona</title>
+  <!-- The Play tab is gone: the swipe city on today.html is the whole kid app.
+       This stub keeps every old /map.html link working. -->
+  <script>location.replace("/today.html#play");</script>
 </head>
-<body>
-  <div id="app">
-    <div class="top">
-      <h1>Play 🎮</h1>
-      <button id="libBtn" class="stars" style="border:none;cursor:pointer;font-size:20px;padding:6px 14px;" title="Book library">📚</button>
-    </div>
-    <div id="dailyCard" style="margin:2px 0 14px;border-radius:22px;padding:16px 18px;color:#fff;background:linear-gradient(150deg,#2bb8ff 0%,#1597d4 70%);box-shadow:0 8px 0 rgba(14,127,190,.25);cursor:pointer;">
-      <div style="font-family:'Baloo 2';font-weight:800;font-size:19px;" id="dcTitle">🏁 Today's Run</div>
-      <div style="font-weight:800;font-size:13px;opacity:.95;margin-top:3px;" id="dcSub">4 games · one shot · beat your best!</div>
-    </div>
-    <p class="lead">Free play — say your sound 5 times to charge a game:</p>
-    <div class="grid" id="grid"></div>
-  </div>
-  <div class="nav">
-    <a href="/today.html"><span class="ni">🏠</span>Today</a>
-    <a class="on" href="/map.html"><span class="ni">🎮</span>Play</a>
-    <a href="/progress.html"><span class="ni">📈</span>Progress</a>
-  </div>
-
-  <script src="/sona.js"></script>
-  <script>
-    var $=function(id){return document.getElementById(id);};
-    // First-run backstop: never show the app to a child who hasn't been set up.
-    if (window.Sona && Sona.getProfile && !Sona.getProfile().onboarded) { location.replace("/onboarding.html"); }
-    var S=window.Sona;
-
-    // 📚 book library (books by the sound they practice)
-    $("libBtn").onclick=function(){ if(S&&S.sfx&&S.sfx.tap)S.sfx.tap(); location.href="/library.html"; };
-
-    // Today's Run card — one shot a day, cumulative high score
-    (function(){
-      var d=(S&&S.dailyInfo)?S.dailyInfo():{playedToday:false,score:0,best:0};
-      if(d.playedToday){
-        $("dcTitle").textContent="🏁 Today's Run — done!";
-        $("dcSub").textContent="Score: "+d.score+" · Best: "+d.best+" · back tomorrow!";
-        $("dailyCard").style.background="linear-gradient(150deg,#9bb7cb,#7b98ad)";
-      } else if(d.best>0){
-        $("dcSub").textContent="4 games · one shot · beat your best: "+d.best+"!";
-      }
-      $("dailyCard").onclick=function(){ if(S&&S.sfx&&S.sfx.tap)S.sfx.tap(); location.href=d.playedToday?"/today.html":"/charge.html?daily=1"; };
-    })();
-
-    // Free-play arcade: every round starts with a 5-rep charge
-    var CARDS=[
-      {href:"/charge.html?game=arcade-slice.html", e:"🍉", n:"Fruit Slice", sub:"⚡ Say it 5× to play", sky:"#ffe3e3"},
-      {href:"/charge.html?game=arcade-stack.html", e:"🧱", n:"Block Stacker", sub:"⚡ Say it 5× to play", sky:"#dbeeff"},
-      {href:"/story.html", e:"📖", n:"Story Time", sub:"Read with Leo", sky:"#e6f7d9"}
-    ];
-    var grid=$("grid");
-    CARDS.forEach(function(cd){
-      var b=document.createElement("button"); b.className="house";
-      b.innerHTML='<div class="scene" style="background:'+cd.sky+';"><span class="emoji">'+cd.e+'</span></div>'+
-        '<div class="meta"><div class="nm">'+cd.n+'</div><div class="pr" style="font-weight:800;font-size:11.5px;color:#6b86a3;">'+cd.sub+'</div></div>';
-      b.onclick=function(){ if(S&&S.sfx&&S.sfx.tap)S.sfx.tap(); location.href=cd.href; };
-      grid.appendChild(b);
-    });
-  </script>
-</body>
+<body></body>
 </html>

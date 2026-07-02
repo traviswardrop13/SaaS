@@ -340,7 +340,7 @@
       $("playedSub").textContent="Today's score: "+d.score+" · Best ever: "+d.best+". One run a day — free play is always open!";
       $("playedOvl").classList.add("show");
     }
-    $("playedArcade").onclick=function(){ location.href="/map.html"; };
+    $("playedArcade").onclick=function(){ location.href="/today.html#play"; };
     $("playedHome").onclick=function(){ location.href="/today.html"; };
 
     function finishRun(){
@@ -356,7 +356,7 @@
       say(r.newBest?"New high score! Amazing!":"Run complete! Great work!");
     }
     $("runDone").onclick=function(){ location.href="/today.html"; };
-    $("runArcade").onclick=function(){ location.href="/map.html"; };
+    $("runArcade").onclick=function(){ location.href="/today.html#play"; };
 
     // ---- chrome ----
     function stopMic(){ try{ if(micStream)micStream.getTracks().forEach(function(t){t.stop();}); }catch(e){} }
