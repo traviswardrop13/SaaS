@@ -389,17 +389,17 @@
     } catch (e) { return { ok: false, error: "Couldn't read that backup code." }; }
   }
 
-  // ── Charge & Play: tickets + the ⚡ charge meter ──────────────────────────
-  // The core loop: honest PASSED reps fill the meter; a full meter earns one
-  // arcade ticket (a round of Fruit Slice / Block Stacker). Practice is the
-  // power source — never the penalty. Arcade time is NOT practice and never
-  // counts in the SLP stats (that stays logAttempt's job).
+  // ── Charge & Play: the ⚡ charge gate + the Daily Run ─────────────────────
+  // The core loop: a quick burst of ~5 real spoken reps "charges" the game the
+  // kid is about to play. Practice is the power source — never the penalty.
+  // Arcade time is NOT practice and never counts in the SLP stats (that stays
+  // logAttempt's job — one honest SpeechAce spot-check per charge).
   const TICKKEY = "sona.tickets.v1", CHARGEKEY = "sona.charge.v1";
-  const CHARGE_NEED = 8; // passed reps per ticket (~90s of practice buys ~45s of play)
+  const CHARGE_NEED = 5; // reps per charge — fast, drill-like, ~10s
   function tickets() { return Math.max(0, (load(TICKKEY, { n: 0 }).n | 0)); }
   function addTickets(k) { const t = load(TICKKEY, { n: 0 }); t.n = Math.max(0, (t.n | 0) + (k == null ? 1 : k | 0)); save(TICKKEY, t); return t.n; }
   function spendTicket() { const t = load(TICKKEY, { n: 0 }); if ((t.n | 0) < 1) return false; t.n = (t.n | 0) - 1; save(TICKKEY, t); return true; }
-  function chargeState() { const c = load(CHARGEKEY, { fill: 0, need: CHARGE_NEED }); if (!c.need) c.need = CHARGE_NEED; return c; }
+  function chargeState() { const c = load(CHARGEKEY, { fill: 0, need: CHARGE_NEED }); c.need = CHARGE_NEED; return c; }
   // One rep toward the meter. Honest data is logAttempt's; the METER may also be
   // fed by "effort sparks" (fail-forward after real tries) so a struggling kid
   // still reaches the fun — kind meter, truthful stats.
@@ -411,6 +411,25 @@
     return { ticket: false, tickets: tickets(), fill: c.fill, need: c.need };
   }
   function chargeReset() { save(CHARGEKEY, { fill: 0, need: CHARGE_NEED }); }
+
+  // ── the Daily Run: one shot per day, cumulative high score ───────────────
+  // 4 quick games, each unlocked by a 5-rep charge; the round scores add up to
+  // today's total. One attempt per day (the Wordle scarcity that makes it an
+  // event) — free play in the arcade stays unlimited, same charge gate.
+  const DAILYKEY = "sona.daily.v1";
+  function localDay() { const d = new Date(); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); }
+  function dailyInfo() {
+    const d = load(DAILYKEY, { date: "", played: false, score: 0, best: 0 });
+    const today = localDay();
+    return { playedToday: !!(d.played && d.date === today), score: (d.date === today ? d.score | 0 : 0), best: d.best | 0, date: today };
+  }
+  function dailyFinish(score) {
+    score = Math.max(0, score | 0);
+    const d = load(DAILYKEY, { date: "", played: false, score: 0, best: 0 });
+    const newBest = score > (d.best | 0);
+    save(DAILYKEY, { date: localDay(), played: true, score: score, best: newBest ? score : (d.best | 0) });
+    return { score: score, best: newBest ? score : (d.best | 0), newBest: newBest };
+  }
 
   // Friendly full-screen blocker when the mic is denied — a kid should never
   // sit in a silent loop. One shared implementation for every recording page.
@@ -1092,5 +1111,5 @@
   }
   try { installDebug(); } catch (e) {}
 
-  global.Sona = { pic, ALL_SOUNDS, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, ladderContent, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, gated, isNativeApp, getTrial, startTrial, ensureTrial, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, LEVEL_GAMES, GAME_DECK, GAMES_PER_LEVEL, levelGames, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, WORLDS, LEVELS_PER_WORLD, campaignLevels, campaignSounds, campaignState, worldById, worldLevels, worldStars, worldCleared, levelStars, setLevelStars, totalStars, worldUnlocked, levelUnlocked, campaignLaunch, campaignResolve, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES };
+  global.Sona = { pic, ALL_SOUNDS, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, ladderContent, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, gated, isNativeApp, getTrial, startTrial, ensureTrial, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, LEVEL_GAMES, GAME_DECK, GAMES_PER_LEVEL, levelGames, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, WORLDS, LEVELS_PER_WORLD, campaignLevels, campaignSounds, campaignState, worldById, worldLevels, worldStars, worldCleared, levelStars, setLevelStars, totalStars, worldUnlocked, levelUnlocked, campaignLaunch, campaignResolve, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES };
 })(window);

@@ -45,13 +45,17 @@
 </head>
 <body>
   <div id="app">
-    <div class="top"><h1>Play 🎮</h1><span class="stars" id="starTot">⭐ 0</span></div>
-    <p class="lead">Say your sounds to charge up ⚡ — tickets buy arcade rounds! <span id="tixLead" style="font-weight:800;color:#e08600;">🎟 0</span></p>
-    <div class="grid" id="shelf" style="margin-bottom:18px;"></div>
-    <p class="lead" style="margin-top:4px;">Your journey — clear levels to explore new worlds:</p>
+    <div class="top">
+      <h1>Play 🎮</h1>
+      <button id="libBtn" class="stars" style="border:none;cursor:pointer;font-size:20px;padding:6px 14px;" title="Book library">📚</button>
+    </div>
+    <div id="dailyCard" style="margin:2px 0 14px;border-radius:22px;padding:16px 18px;color:#fff;background:linear-gradient(150deg,#2bb8ff 0%,#1597d4 70%);box-shadow:0 8px 0 rgba(14,127,190,.25);cursor:pointer;">
+      <div style="font-family:'Baloo 2';font-weight:800;font-size:19px;" id="dcTitle">🏁 Today's Run</div>
+      <div style="font-weight:800;font-size:13px;opacity:.95;margin-top:3px;" id="dcSub">4 games · one shot · beat your best!</div>
+    </div>
+    <p class="lead">Free play — say your sound 5 times to charge a game:</p>
     <div class="grid" id="grid"></div>
   </div>
-  <div id="toast"><div class="big" id="tStars">★★★</div><h3 id="tTitle">Level clear!</h3><p id="tSub"></p></div>
   <div class="nav">
     <a href="/today.html"><span class="ni">🏠</span>Today</a>
     <a class="on" href="/map.html"><span class="ni">🎮</span>Play</a>
@@ -64,64 +68,37 @@
     // First-run backstop: never show the app to a child who hasn't been set up.
     if (window.Sona && Sona.getProfile && !Sona.getProfile().onboarded) { location.replace("/onboarding.html"); }
     var S=window.Sona;
-    var WORLDS=(S&&S.WORLDS)?S.WORLDS:[];
-    var PER=(S&&S.LEVELS_PER_WORLD)?S.LEVELS_PER_WORLD:10;
-    function esc(s){return String(s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];});}
 
-    // ── the Charge & Play shelf: practice powers the arcade ──
+    // 📚 book library (books by the sound they practice)
+    $("libBtn").onclick=function(){ if(S&&S.sfx&&S.sfx.tap)S.sfx.tap(); location.href="/library.html"; };
+
+    // Today's Run card — one shot a day, cumulative high score
     (function(){
-      var shelf=$("shelf"); if(!shelf) return;
-      var tix=(S&&S.tickets)?S.tickets():0;
-      var tl=$("tixLead"); if(tl) tl.textContent="🎟 "+tix;
-      var CARDS=[
-        {href:"/charge.html", e:"⚡", n:"Charge up", sub:"Say sounds · earn tickets", sky:"#fff3d1"},
-        {href:"/arcade-slice.html", e:"🍉", n:"Fruit Slice", sub:"1 🎟 a round", sky:"#ffe3e3"},
-        {href:"/arcade-stack.html", e:"🧱", n:"Block Stacker", sub:"1 🎟 a round", sky:"#dbeeff"},
-        {href:"/story.html", e:"📖", n:"Story Time", sub:"Read with Leo", sky:"#e6f7d9"}
-      ];
-      CARDS.forEach(function(cd){
-        var b=document.createElement("button"); b.className="house";
-        b.innerHTML='<div class="scene" style="background:'+cd.sky+';"><span class="emoji">'+cd.e+'</span></div>'+
-          '<div class="meta"><div class="nm">'+cd.n+'</div><div class="pr" style="font-weight:800;font-size:11.5px;color:#6b86a3;">'+cd.sub+'</div></div>';
-        b.onclick=function(){ if(S&&S.sfx&&S.sfx.tap)S.sfx.tap(); location.href=cd.href; };
-        shelf.appendChild(b);
-      });
+      var d=(S&&S.dailyInfo)?S.dailyInfo():{playedToday:false,score:0,best:0};
+      if(d.playedToday){
+        $("dcTitle").textContent="🏁 Today's Run — done!";
+        $("dcSub").textContent="Score: "+d.score+" · Best: "+d.best+" · back tomorrow!";
+        $("dailyCard").style.background="linear-gradient(150deg,#9bb7cb,#7b98ad)";
+      } else if(d.best>0){
+        $("dcSub").textContent="4 games · one shot · beat your best: "+d.best+"!";
+      }
+      $("dailyCard").onclick=function(){ if(S&&S.sfx&&S.sfx.tap)S.sfx.tap(); location.href=d.playedToday?"/today.html":"/charge.html?daily=1"; };
     })();
 
+    // Free-play arcade: every round starts with a 5-rep charge
+    var CARDS=[
+      {href:"/charge.html?game=arcade-slice.html", e:"🍉", n:"Fruit Slice", sub:"⚡ Say it 5× to play", sky:"#ffe3e3"},
+      {href:"/charge.html?game=arcade-stack.html", e:"🧱", n:"Block Stacker", sub:"⚡ Say it 5× to play", sky:"#dbeeff"},
+      {href:"/story.html", e:"📖", n:"Story Time", sub:"Read with Leo", sky:"#e6f7d9"}
+    ];
     var grid=$("grid");
-    WORLDS.forEach(function(w){
-      var cleared=(S&&S.worldCleared)?S.worldCleared(w.id):0;
-      var stars=(S&&S.worldStars)?S.worldStars(w.id):0;
-      var pct=Math.round(cleared/PER*100);
+    CARDS.forEach(function(cd){
       var b=document.createElement("button"); b.className="house";
-      b.innerHTML=
-        '<div class="scene" style="background:'+(w.sky||"#cfe8fb")+';">'+
-          '<span class="emoji">'+(w.theme||"🎮")+'</span>'+
-          '<img class="art" alt="" />'+
-          '<span class="st">⭐ '+stars+'</span>'+
-        '</div>'+
-        '<div class="meta"><div class="nm">'+esc(w.name||w.id)+'</div>'+
-          '<div class="pr"><div class="bar"><span style="width:'+pct+'%"></span></div><span class="pct">'+cleared+'/'+PER+'</span></div>'+
-        '</div>';
-      // house art auto-upgrades the moment /coach/worlds/<id>.png exists
-      (function(card){ var im=new Image(); im.onload=function(){ var a=card.querySelector(".art"); var e=card.querySelector(".emoji"); a.src=im.src; a.style.display="block"; if(e)e.style.display="none"; }; im.src="/coach/worlds/"+w.id+".png"; })(b);
-      b.onclick=function(){ if(S&&S.sfx&&S.sfx.tap)S.sfx.tap(); location.href="/world.html?w="+encodeURIComponent(w.id); };
+      b.innerHTML='<div class="scene" style="background:'+cd.sky+';"><span class="emoji">'+cd.e+'</span></div>'+
+        '<div class="meta"><div class="nm">'+cd.n+'</div><div class="pr" style="font-weight:800;font-size:11.5px;color:#6b86a3;">'+cd.sub+'</div></div>';
+      b.onclick=function(){ if(S&&S.sfx&&S.sfx.tap)S.sfx.tap(); location.href=cd.href; };
       grid.appendChild(b);
     });
-    if(S&&S.totalStars) $("starTot").textContent="⭐ "+S.totalStars();
-
-    // returning from a game (e.g. via exit) → award the star + celebrate here too
-    (function(){
-      var res=(S&&S.campaignResolve)?S.campaignResolve():null;
-      if(!res) return;
-      if(S&&S.totalStars)$("starTot").textContent="⭐ "+S.totalStars();
-      var t=$("toast");
-      $("tStars").textContent="★★★".slice(0,res.stars)+"☆☆☆".slice(0,3-res.stars);
-      $("tTitle").textContent=res.stars>=3?"Perfect! 3 stars!":(res.improved?"New best!":"Level clear!");
-      $("tSub").textContent=Math.round(res.acc*100)+"% accurate";
-      setTimeout(function(){ t.classList.add("show"); if(S.confetti)S.confetti(); },350);
-      setTimeout(function(){ t.classList.remove("show"); },3000);
-    })();
   </script>
 </body>
 </html>

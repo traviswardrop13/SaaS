@@ -66,9 +66,13 @@
     var S=window.Sona, qp=new URLSearchParams(location.search);
     var fromCharge=qp.get("from")==="charge";
     function sfx(n){ try{ if(S&&S.sfx&&S.sfx[n])S.sfx[n](); }catch(e){} }
-    function backToCharge(){ location.href="/charge.html?back=1"; }
+    // ---- charge gate: a round is unlocked by the 5-rep charge (play token) ----
+    var SELF="arcade-stack.html";
+    var isDaily=qp.get("daily")==="1";
+    function backToCharge(){ location.href="/charge.html?"+(isDaily?"daily=1":("game="+SELF)); }
     $("goCharge").onclick=backToCharge; $("needHome").onclick=function(){location.href="/today.html";};
-    if(!(S&&S.spendTicket&&S.spendTicket())){ $("needOvl").classList.add("show"); }
+    var tok=false; try{ tok=sessionStorage.getItem("sona.play.token")==="1"; sessionStorage.removeItem("sona.play.token"); }catch(e){}
+    if(!tok){ $("needOvl").classList.add("show"); }
 
     // best height (local, just for pride)
     var BKEY="sona.stack.best"; var best=0; try{ best=parseInt(localStorage.getItem(BKEY)||"0",10)||0; }catch(e){}
@@ -136,22 +140,31 @@
     function rr(x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
     draw();
 
+    function bankAndContinue(){ location.href="/charge.html?daily=1&banked="+score; }
     function endRound(){
       var coins=Math.min(10,(score/3)|0);
       try{ if(coins&&S&&S.addCoins)S.addCoins(coins); }catch(e){}
       if(score>best){ best=score; try{ localStorage.setItem(BKEY,String(best)); }catch(e){} flash("NEW BEST! 🏆"); }
       sfx("complete"); try{ if(S&&S.confetti)S.confetti(); }catch(e){}
+      if(isDaily){
+        // Daily Run: bank the score and keep the run moving — no buttons, no stall.
+        $("endTitle").textContent="+"+score+" points! 🏆";
+        $("endSub").textContent="Banking your score…";
+        $("endCharge").style.display="none"; $("endAgain").style.display="none"; $("endHome").style.display="none";
+        setTimeout(function(){ $("endOvl").classList.add("show"); },350);
+        setTimeout(bankAndContinue,1500);
+        return;
+      }
       $("endTitle").textContent=score>=14?"Sky-high tower! 🏆":"Nice tower!";
       $("endSub").textContent="You stacked "+score+" blocks"+(coins?(" · +"+coins+" 🪙"):"")+(best?(" · Best: "+best):"")+"!";
-      var t=(S&&S.tickets)?S.tickets():0;
-      $("endAgain").style.display=t>0?"":"none";
-      if(t>0)$("endAgain").textContent="🎟 Play again ("+t+" left)";
+      $("endAgain").style.display="none";
+      $("endCharge").textContent="⚡ Play again";
       setTimeout(function(){ $("endOvl").classList.add("show"); },450);
     }
     $("endCharge").onclick=backToCharge;
     $("endAgain").onclick=function(){ location.reload(); };
-    $("endHome").onclick=function(){ location.href="/today.html"; };
-    $("close").onclick=function(){ location.href=fromCharge?"/charge.html?back=1":"/today.html"; };
+    $("endHome").onclick=function(){ location.href="/map.html"; };
+    $("close").onclick=function(){ if(isDaily){ bankAndContinue(); return; } location.href="/map.html"; };
   </script>
 </body>
 </html>

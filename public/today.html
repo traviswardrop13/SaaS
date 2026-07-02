@@ -71,14 +71,13 @@
       <div class="hi"><b id="hello">Hi!</b><span id="date">Let's practice!</span></div>
       <div class="pill streak">🔥 <span id="streak">0</span></div>
       <div class="pill coins">🪙 <span id="coins">0</span></div>
-      <div class="pill coins">🎟 <span id="tixPill">0</span></div>
     </div>
 
     <a id="trialBanner" href="/subscribe" style="display:none;margin-top:12px;text-decoration:none;align-items:center;gap:8px;background:linear-gradient(120deg,#fff7e6,#ffe9c2);border:1px solid #ffe2a8;border-radius:14px;padding:10px 14px;font-weight:800;font-size:13px;color:#8a6400;">🎁 <span id="trialMsg"></span></a>
 
     <div class="hero">
       <div class="sheen"></div>
-      <span class="tag">⚡ Charge &amp; Play · made for <span id="who">you</span></span>
+      <span class="tag">🏁 Daily Run · made for <span id="who">you</span></span>
       <h1 id="title">Say your sounds, power up, play!</h1>
       <div class="sub">
         <span class="chip" id="soundChip">R sound · start of words</span>
@@ -120,14 +119,13 @@
     var TITLES={dragons:name+"'s Dragon Quest",space:name+"'s Space Mission",dinosaurs:name+"'s Dino Dig",mermaids:name+"'s Mermaid Lagoon",puppies:name+"'s Puppy Park",unicorns:name+"'s Unicorn Trail",pirates:name+"'s Treasure Hunt",robots:name+"'s Robot Workshop","race cars":name+"'s Grand Prix","jungle animals":name+"'s Jungle Trek"};
     function applyTheme(){
       $("hello").textContent="Hi "+name+"!";
-      $("who").textContent=name;
+      var whoEl=$("who"); if(whoEl)whoEl.textContent=name;
       $("title").textContent=TITLES[interest]||(name+"'s "+interest+" practice");
       $("soundChip").textContent=sound+" sound · "+posLabel;
       $("minChip").textContent="~"+minutes+" min";
       $("themeChip").textContent=(THEME_EMOJI[interest]?THEME_EMOJI[interest].slice(0,2):"⭐")+" "+interest;
       $("scene").textContent=THEME_EMOJI[interest]||"⭐";
       $("coins").textContent=(window.Sona&&Sona.getCoins)?Sona.getCoins():0;
-      $("tixPill").textContent=(window.Sona&&Sona.tickets)?Sona.tickets():0;
       var g=(window.Sona&&Sona.getProgress)?Sona.getProgress():null;
       var sc=(g&&g.streak&&g.streak.count)||0;
       if(g&&g.streak)$("streak").textContent=sc;
@@ -136,10 +134,9 @@
       $("date").textContent=wd+(sc>0?" · "+sc+"-day streak 🔥":" · Let's practice!");
       if(window.Sona&&Sona.characterById){try{var c=Sona.characterById(P.character||"leo");}catch(e){}}
     }
-    // "Start" launches the Charge & Play daily session: honest reps fill the ⚡
-    // meter → arcade tickets (Fruit Slice / Block Stacker) → repeat to target.
-    // Sound = the child's first focus sound; level = lowest unfinished level
-    // (kept so map progression still gets credit on completion).
+    // "Start" = the Daily Run: 4 quick games, each unlocked by a 5-rep charge,
+    // one shot per day, chasing a cumulative high score. Free play lives in the
+    // arcade (Play tab) — unlimited, same charge gate.
     function currentLevel(){
       try{ var cap=(window.Sona&&Sona.unlockedThru)?Sona.unlockedThru():1;
         for(var L=1; L<=cap; L++){ if(!(window.Sona&&Sona.levelDone&&Sona.levelDone(L))) return L; }
@@ -148,10 +145,29 @@
     }
     function startSession(){
       var L=currentLevel();
-      location.href="/charge.html?session=1&sound="+encodeURIComponent(sound)+"&level="+L;
+      location.href="/charge.html?daily=1&sound="+encodeURIComponent(sound)+"&level="+L;
     }
-    $("startBtn").onclick=startSession; $("scene").onclick=startSession;
+    // Daily Run hero states: fresh (one shot waiting) vs done (score + best)
     applyTheme();
+    // Daily Run hero states — AFTER applyTheme so the run title/button win over
+    // the theme title.
+    (function(){
+      var d=(window.Sona&&Sona.dailyInfo)?Sona.dailyInfo():{playedToday:false,score:0,best:0};
+      if(d.playedToday){
+        var tag=document.querySelector(".hero .tag");
+        if(tag)tag.textContent="🏁 Daily Run · done for today";
+        $("title").textContent="You scored "+d.score+" today!";
+        $("minChip").textContent="🏆 Best: "+d.best;
+        $("startBtn").textContent="🎮 Free play in the Arcade";
+        $("startBtn").onclick=function(){ location.href="/map.html"; };
+        $("scene").onclick=$("startBtn").onclick;
+      } else {
+        $("title").textContent="One shot. Four games. High score!";
+        if(d.best>0)$("minChip").textContent="🏆 Beat "+d.best+"!";
+        $("startBtn").textContent="🏁 Start today's run";
+        $("startBtn").onclick=startSession; $("scene").onclick=startSession;
+      }
+    })();
     // free-trial banner (no card): show days left + lock-in founding price
     (function(){ if(!window.Sona)return; if(Sona.isNativeApp&&Sona.isNativeApp())return; if((Sona.isSubscribed&&Sona.isSubscribed())||(Sona.isPilot&&Sona.isPilot()))return; if(Sona.ensureTrial)Sona.ensureTrial(); var b=$("trialBanner"),m=$("trialMsg"); if(!b||!m)return;
       if(Sona.trialActive&&Sona.trialActive()){ var d=Sona.trialDaysLeft?Sona.trialDaysLeft():7; m.innerHTML=d+" day"+(d===1?"":"s")+" left in your free trial · <u>Lock in founding $39.99/yr →</u>"; b.style.display="flex"; }
