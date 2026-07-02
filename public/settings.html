@@ -131,6 +131,24 @@
     </div>
 
     <div class="card">
+      <h2>Backup &amp; restore 💾</h2>
+      <p class="muted" style="margin-bottom:10px;">Save your child's progress somewhere safe. If this device is cleared or you switch phones, restore everything from the code or file.</p>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
+        <button class="btn ghost" id="backupCopy" style="width:auto;padding:12px 18px;">Copy backup code</button>
+        <button class="btn ghost" id="backupDl" style="width:auto;padding:12px 18px;">Download file</button>
+        <span id="backupMsg" class="muted" style="font-weight:800;"></span>
+      </div>
+      <details style="margin-top:12px;">
+        <summary style="cursor:pointer;font-weight:800;color:var(--muted);">Restore from a backup code →</summary>
+        <textarea id="restoreIn" placeholder="Paste your backup code here" style="width:100%;margin-top:10px;min-height:70px;border:2px solid #cfe6f7;border-radius:12px;padding:10px;font-family:monospace;font-size:12px;"></textarea>
+        <div style="display:flex;gap:10px;align-items:center;margin-top:8px;">
+          <button class="btn" id="restoreBk" style="width:auto;padding:12px 20px;">Restore</button>
+          <span id="restoreBkMsg" class="muted" style="font-weight:800;"></span>
+        </div>
+      </details>
+    </div>
+
+    <div class="card">
       <h2>Reset</h2>
       <p class="muted" style="margin-bottom:10px;">Clear all saved progress on this device.</p>
       <button class="btn ghost" id="reset">Reset progress</button>
@@ -188,6 +206,26 @@
     document.getElementById("reset").onclick = function () {
       if (confirm("Reset all progress on this device? This cannot be undone.")) { Sona.resetProgress(); alert("Progress reset."); }
     };
+
+    // Backup & restore — the data-loss safety net.
+    (function () {
+      var bmsg = document.getElementById("backupMsg");
+      var copyB = document.getElementById("backupCopy"), dlB = document.getElementById("backupDl"), rBtn = document.getElementById("restoreBk");
+      if (copyB) copyB.onclick = function () {
+        try { var s = Sona.exportString(); (navigator.clipboard ? navigator.clipboard.writeText(s) : Promise.reject()).then(function () { bmsg.textContent = "Copied ✓ — paste it somewhere safe."; }, function () { document.getElementById("restoreIn").value = s; bmsg.textContent = "Copy the code shown below ↓"; }); } catch (e) { bmsg.textContent = "Couldn't create a backup."; }
+      };
+      if (dlB) dlB.onclick = function () {
+        try { var s = Sona.exportString(); var blob = new Blob([s], { type: "application/json" }); var a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "sona-backup.json"; document.body.appendChild(a); a.click(); a.remove(); setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000); bmsg.textContent = "Downloaded ✓"; } catch (e) { bmsg.textContent = "Download failed."; }
+      };
+      if (rBtn) rBtn.onclick = function () {
+        var m = document.getElementById("restoreBkMsg"), v = document.getElementById("restoreIn").value;
+        if (!v.trim()) { m.style.color = "#b42323"; m.textContent = "Paste a backup code first."; return; }
+        if (!confirm("Restore this backup? It replaces the progress on this device.")) return;
+        var r = Sona.importData(v);
+        if (r.ok) { m.style.color = "var(--good)"; m.textContent = "Restored " + r.restored + " items ✓ Reloading…"; setTimeout(function () { location.reload(); }, 900); }
+        else { m.style.color = "#b42323"; m.textContent = r.error || "Couldn't restore."; }
+      };
+    })();
 
     // account / subscription
     function paintAcct() {

@@ -367,6 +367,28 @@
   }
   function resetProgress() { save(GKEY, clone(DEFAULT_PROGRESS)); }
 
+  // ── backup / restore ──────────────────────────────────────────────────────
+  // Everything the app persists lives under the "sona." key prefix, so a full
+  // backup is a sweep of those keys — the safety net for the data-loss risk
+  // (a cleared browser/app currently erases a child's whole history).
+  function exportData() {
+    const out = {};
+    try { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k && k.indexOf("sona.") === 0) out[k] = localStorage.getItem(k); } } catch (e) {}
+    return { app: "sona", v: 1, data: out };
+  }
+  function exportString() { try { return JSON.stringify(exportData()); } catch (e) { return "{}"; } }
+  function importData(payload) {
+    try {
+      const obj = (typeof payload === "string") ? JSON.parse(payload) : payload;
+      const data = (obj && obj.data && typeof obj.data === "object") ? obj.data : obj;
+      if (!data || typeof data !== "object") return { ok: false, error: "That backup didn't look right." };
+      let n = 0;
+      Object.keys(data).forEach((k) => { if (k.indexOf("sona.") === 0) { try { localStorage.setItem(k, String(data[k])); n++; } catch (e) {} } });
+      if (!n) return { ok: false, error: "No Sona data found in that backup." };
+      return { ok: true, restored: n };
+    } catch (e) { return { ok: false, error: "Couldn't read that backup code." }; }
+  }
+
   // --- subscription (Stripe is the source of truth; this is a local cache so
   //     the app can reflect "active" without a round-trip every load) ---
   const SKEY = "sona.sub.v1";
@@ -559,7 +581,9 @@
   // Parked (still on disk, off the map + deck): rocket, builder, train, whack,
   // match — bring one back per release once it's rebuilt to the same bar.
   const GAME_DECK = ["racer.html", "grocery.html", "bubble.html", "cupstack.html", "story.html", "chat.html"];
-  const GAMES_PER_LEVEL = 3;
+  // A daily session = this many games. 4 pushes spoken reps toward a therapeutic
+  // dose (~30-50/session); final calibration for young attention spans needs an SLP.
+  const GAMES_PER_LEVEL = 4;
   function levelGames(level) {
     level = level || 1;
     const start = ((level - 1) * GAMES_PER_LEVEL) % GAME_DECK.length, out = [];
@@ -768,6 +792,21 @@
       fetch("/api/feedback", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(o), keepalive: true }).catch(function () {});
     } catch (e) {}
   }
+
+  // Client error telemetry — surfaces pilot-week silent failures in the server
+  // logs. Capped per page load so a repeating error can't spam the beacon.
+  var _errSent = 0;
+  function reportError(msg) {
+    try {
+      if (_errSent >= 5) return; _errSent++;
+      fetch("/api/log", { method: "POST", headers: { "Content-Type": "application/json" }, keepalive: true,
+        body: JSON.stringify({ msg: String(msg || "").slice(0, 500), url: (window.location && location.pathname) || "" }) }).catch(function () {});
+    } catch (e) {}
+  }
+  try {
+    window.addEventListener("error", function (e) { reportError(((e && e.message) || "error") + (e && e.filename ? " @ " + String(e.filename).split("/").pop() + ":" + (e.lineno || "?") : "")); });
+    window.addEventListener("unhandledrejection", function (e) { var r = e && e.reason; reportError("unhandledrejection: " + ((r && (r.message || r)) || "")); });
+  } catch (e) {}
   function gameFeedbackCard() {
     const game = gameMeta(location.pathname).name;
     let sound = "", code = "", childId = "", level = "";
@@ -1008,5 +1047,5 @@
   }
   try { installDebug(); } catch (e) {}
 
-  global.Sona = { pic, ALL_SOUNDS, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, getProfile, saveProfile, getProgress, recordSession, resetProgress, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, ladderContent, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, gated, isNativeApp, getTrial, startTrial, ensureTrial, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, LEVEL_GAMES, GAME_DECK, GAMES_PER_LEVEL, levelGames, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, WORLDS, LEVELS_PER_WORLD, campaignLevels, campaignSounds, campaignState, worldById, worldLevels, worldStars, worldCleared, levelStars, setLevelStars, totalStars, worldUnlocked, levelUnlocked, campaignLaunch, campaignResolve, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, hasNativeAudio, captureClip, sendProgress, sendFeedback, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES };
+  global.Sona = { pic, ALL_SOUNDS, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, ladderContent, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, gated, isNativeApp, getTrial, startTrial, ensureTrial, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, LEVEL_GAMES, GAME_DECK, GAMES_PER_LEVEL, levelGames, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, WORLDS, LEVELS_PER_WORLD, campaignLevels, campaignSounds, campaignState, worldById, worldLevels, worldStars, worldCleared, levelStars, setLevelStars, totalStars, worldUnlocked, levelUnlocked, campaignLaunch, campaignResolve, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES };
 })(window);
