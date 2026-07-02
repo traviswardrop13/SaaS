@@ -445,7 +445,7 @@
   const TRIALKEY = "sona.trial.v1", TRIAL_DAYS = 7;
   function getTrial() { return load(TRIALKEY, null); }
   function trialMs(t) { return (((t && t.days) || TRIAL_DAYS)) * 86400000; }
-  function mirrorTrial(t) { try { fetch("/api/trial", { method: "POST", headers: { "Content-Type": "application/json" }, keepalive: true, body: JSON.stringify({ email: t.email || "", start: t.start, days: t.days || TRIAL_DAYS }) }); } catch (e) {} }
+  function mirrorTrial(t) { try { fetch("/api/trial", { method: "POST", headers: { "Content-Type": "application/json" }, keepalive: true, body: JSON.stringify({ email: t.email || "", start: t.start, days: t.days || TRIAL_DAYS }) }).catch(function () {}); } catch (e) {} }
   function startTrial(email) {
     let t = getTrial();
     if (!t || !t.start) { t = { start: Date.now(), email: (email || "").trim(), days: TRIAL_DAYS }; save(TRIALKEY, t); mirrorTrial(t); }
@@ -616,16 +616,16 @@
   // flies farther, races get longer, more bubbles to pop…). Add new games over time
   // by appending here (or give a map node its own `queue`).
   const LEVEL_GAMES = ["racer.html", "bubble.html", "grocery.html", "cupstack.html", "story.html"];
-  // ── rotating game deck ──
-  // The keeper roster (fewer, higher-quality games). Each level deals
-  // GAMES_PER_LEVEL from the deck, so a game doesn't reappear for a few levels;
-  // difficulty = the level number, so a returning game is the harder version.
-  // Parked (still on disk, off the map + deck): rocket, builder, train, whack,
-  // match — bring one back per release once it's rebuilt to the same bar.
-  const GAME_DECK = ["racer.html", "grocery.html", "bubble.html", "cupstack.html", "story.html", "chat.html"];
-  // A daily session = this many games. 4 pushes spoken reps toward a therapeutic
-  // dose (~30-50/session); final calibration for young attention spans needs an SLP.
-  const GAMES_PER_LEVEL = 4;
+  // ── the deck is now Charge & Play ──
+  // The core loop replaced the themed-game roster: honest reps charge the ⚡
+  // meter → arcade tickets (Fruit Slice / Block Stacker) → repeat to the daily
+  // target. charge.html runs the whole session itself, so a "level" is simply
+  // one charge session. Story Time stays as the calm second mode (reached from
+  // the shelf), and the old speech games are parked on disk (racer, bubble,
+  // grocery, cupstack, chat, rocket, builder, train, whack, match) — arcade
+  // payoffs are the expansion surface now, not new speech games.
+  const GAME_DECK = ["charge.html"];
+  const GAMES_PER_LEVEL = 1;
   function levelGames(level) {
     level = level || 1;
     const start = ((level - 1) * GAMES_PER_LEVEL) % GAME_DECK.length, out = [];
@@ -645,6 +645,9 @@
     "train.html":    { name: "Story Train",   icon: "🚂",  band: "Sentences", c: "#2ec4d6" },
     "story.html":    { name: "Story Time",    icon: "📖",  band: "Story",     c: "#7cc40a" },
     "chat.html":     { name: "Chat with Leo", icon: "💬",  band: "Talking",   c: "#e0457b" },
+    "charge.html":       { name: "Charge & Play", icon: "⚡", band: "Practice", c: "#ffb100" },
+    "arcade-slice.html": { name: "Fruit Slice",   icon: "🍉", band: "Arcade",   c: "#ff6b6b" },
+    "arcade-stack.html": { name: "Block Stacker", icon: "🧱", band: "Arcade",   c: "#4dabf7" },
   };
   function gameMeta(file) {
     const k = String(file || "").replace(/^\//, "").split("?")[0];

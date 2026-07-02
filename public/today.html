@@ -71,21 +71,22 @@
       <div class="hi"><b id="hello">Hi!</b><span id="date">Let's practice!</span></div>
       <div class="pill streak">🔥 <span id="streak">0</span></div>
       <div class="pill coins">🪙 <span id="coins">0</span></div>
+      <div class="pill coins">🎟 <span id="tixPill">0</span></div>
     </div>
 
     <a id="trialBanner" href="/subscribe" style="display:none;margin-top:12px;text-decoration:none;align-items:center;gap:8px;background:linear-gradient(120deg,#fff7e6,#ffe9c2);border:1px solid #ffe2a8;border-radius:14px;padding:10px 14px;font-weight:800;font-size:13px;color:#8a6400;">🎁 <span id="trialMsg"></span></a>
 
     <div class="hero">
       <div class="sheen"></div>
-      <span class="tag">✨ Today's Practice · made for <span id="who">you</span></span>
-      <h1 id="title">Today's Practice</h1>
+      <span class="tag">⚡ Charge &amp; Play · made for <span id="who">you</span></span>
+      <h1 id="title">Say your sounds, power up, play!</h1>
       <div class="sub">
         <span class="chip" id="soundChip">R sound · start of words</span>
         <span class="chip" id="minChip">~10 min</span>
         <span class="chip" id="themeChip">🐉 dragons</span>
       </div>
       <div class="scene" id="scene">🐉🌈</div>
-      <button class="start" id="startBtn">▶ Start today's practice</button>
+      <button class="start" id="startBtn">⚡ Charge up &amp; play</button>
     </div>
 
     <!-- Kid-first home: just today's practice. Parent tools (progress, speech
@@ -126,6 +127,7 @@
       $("themeChip").textContent=(THEME_EMOJI[interest]?THEME_EMOJI[interest].slice(0,2):"⭐")+" "+interest;
       $("scene").textContent=THEME_EMOJI[interest]||"⭐";
       $("coins").textContent=(window.Sona&&Sona.getCoins)?Sona.getCoins():0;
+      $("tixPill").textContent=(window.Sona&&Sona.tickets)?Sona.tickets():0;
       var g=(window.Sona&&Sona.getProgress)?Sona.getProgress():null;
       var sc=(g&&g.streak&&g.streak.count)||0;
       if(g&&g.streak)$("streak").textContent=sc;
@@ -134,12 +136,10 @@
       $("date").textContent=wd+(sc>0?" · "+sc+"-day streak 🔥":" · Let's practice!");
       if(window.Sona&&Sona.characterById){try{var c=Sona.characterById(P.character||"leo");}catch(e){}}
     }
-    // "Start" launches the EXISTING 3-game session engine — the same pattern
-    // warmup.html uses: Sona.session.start(...) then go to Sona.session.url().
-    // Sound = the child's first focus sound (as warmup/level derive it); level =
-    // the lowest not-yet-finished unlocked level from the existing level state
-    // (Sona.levelDone / Sona.unlockedThru), default 1. No new source of truth.
-    // story.html stays a normal game in the deck — just no longer the daily entry.
+    // "Start" launches the Charge & Play daily session: honest reps fill the ⚡
+    // meter → arcade tickets (Fruit Slice / Block Stacker) → repeat to target.
+    // Sound = the child's first focus sound; level = lowest unfinished level
+    // (kept so map progression still gets credit on completion).
     function currentLevel(){
       try{ var cap=(window.Sona&&Sona.unlockedThru)?Sona.unlockedThru():1;
         for(var L=1; L<=cap; L++){ if(!(window.Sona&&Sona.levelDone&&Sona.levelDone(L))) return L; }
@@ -148,13 +148,7 @@
     }
     function startSession(){
       var L=currentLevel();
-      try{
-        if(window.Sona&&Sona.session){
-          Sona.session.start(L, sound, (Sona.levelGames?Sona.levelGames(L):["racer.html"]), L);
-          var u=Sona.session.url(); if(u){ location.href=u; return; }
-        }
-      }catch(e){}
-      location.href="/level.html?level="+L; // same fallback warmup.html uses
+      location.href="/charge.html?session=1&sound="+encodeURIComponent(sound)+"&level="+L;
     }
     $("startBtn").onclick=startSession; $("scene").onclick=startSession;
     applyTheme();
