@@ -20,6 +20,9 @@
     #best{font-family:"Baloo 2";font-weight:800;font-size:15px;color:#9db8d0;}
     #flash{position:absolute;left:0;right:0;top:24%;text-align:center;font-family:"Baloo 2";font-weight:800;font-size:32px;color:#ffd21c;opacity:0;transition:opacity .12s, transform .3s;z-index:4;pointer-events:none;text-shadow:0 3px 0 rgba(0,0,0,.25);}
     #tapHint{position:absolute;left:0;right:0;bottom:calc(26px + env(safe-area-inset-bottom));text-align:center;font-family:"Baloo 2";font-weight:800;font-size:16px;color:#cfe3f7;z-index:4;pointer-events:none;}
+    #boostChip{position:absolute;left:50%;transform:translateX(-50%);top:calc(64px + env(safe-area-inset-top));z-index:5;background:rgba(255,255,255,.16);color:#fff;font-family:"Baloo 2";font-weight:800;font-size:13px;padding:7px 15px;border-radius:99px;pointer-events:none;white-space:nowrap;transition:background .2s,color .2s;}
+    #boostChip.hot{background:#ffd21c;color:#5c4500;animation:chipPop .4s ease;}
+    @keyframes chipPop{0%{transform:translateX(-50%) scale(1)}50%{transform:translateX(-50%) scale(1.18)}100%{transform:translateX(-50%) scale(1)}}
     .ovl{position:fixed;inset:0;z-index:50;background:rgba(10,26,44,.94);display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:28px;gap:10px;}
     .ovl.show{display:flex;}
     .ovl .big{font-size:70px;line-height:1;}
@@ -41,6 +44,7 @@
     </div>
     <div id="flash"></div>
     <div id="tapHint">Tap to drop the block!</div>
+    <div id="boostChip"></div>
   </div>
 
   <div class="ovl" id="needOvl">
@@ -106,6 +110,7 @@
       else { perfectRun=0; sfx("tap"); }
       stack.push({x:left,w:overlap,c:cur.c});
       score++; $("score").textContent="🧱 "+score;
+      endBoost(); // slow-mo is for one drop
       // next block
       cur={x:-overlap*0.6, w:overlap, dir:1, c:COLORS[stack.length%COLORS.length]};
       speed=Math.min(W*0.011, speed+0.06);
@@ -113,6 +118,43 @@
       $("tapHint").style.display="none";
     }
     cv.addEventListener("pointerdown",drop);
+
+    // ── VOICE BOOST: say your sound → SLOW-MO for the current drop. Optional,
+    // instant, pure local loudness detection — nothing recorded or uploaded.
+    var boost={on:false,cool:false};
+    function fireBoost(){
+      boost.on=true; boost.cool=true;
+      var ch=$("boostChip"); ch.textContent="SLOW-MO! 🐌✨"; ch.classList.add("hot");
+      sfx("correct"); flash("SLOW-MO! 🐌");
+      setTimeout(function(){ endBoost(); },4000); // safety end if they never drop
+      setTimeout(function(){ boost.cool=false; if(!boost.on)paintChip(); },8000);
+    }
+    function endBoost(){ if(!boost.on)return; boost.on=false; var ch=$("boostChip"); ch.classList.remove("hot"); if(!boost.cool)paintChip(); else ch.textContent="…"; }
+    var SAYTXT="";
+    function paintChip(){ $("boostChip").textContent="🎤 Say “"+SAYTXT+"” for SLOW-MO!"; }
+    (function(){
+      var snd=""; try{ snd=sessionStorage.getItem("sona.boost.sound")||""; }catch(e){}
+      if(!snd){ try{ snd=((S&&S.getProfile&&S.getProfile().focusSounds)||["R"])[0]; }catch(e){ snd="R"; } }
+      SAYTXT=(S&&S.soundSay)?S.soundSay(String(snd).toUpperCase()):"rrrr";
+      paintChip();
+      if(!(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia)){ $("boostChip").style.display="none"; return; }
+      navigator.mediaDevices.getUserMedia({audio:true}).then(function(st){
+        window.addEventListener("pagehide",function(){ try{ st.getTracks().forEach(function(t){t.stop();}); }catch(e){} });
+        var AC=window.AudioContext||window.webkitAudioContext, actx=new AC();
+        var src=actx.createMediaStreamSource(st), an=actx.createAnalyser(); an.fftSize=512; src.connect(an);
+        var td=new Uint8Array(an.fftSize), t0=performance.now(), calS=0,calN=0,thr=0,voiced=0;
+        (function tick(){
+          an.getByteTimeDomainData(td);
+          var sum=0; for(var i=0;i<td.length;i++){ var d=(td[i]-128)/128; sum+=d*d; }
+          var rms=Math.sqrt(sum/td.length), now=performance.now();
+          if(now-t0<450){ calS+=rms; calN++; }
+          else { if(!thr) thr=Math.max(0.05,(calS/Math.max(1,calN))*3.5);
+            if(rms>thr){ voiced++; if(voiced>=6 && playing && !boost.on && !boost.cool) fireBoost(); }
+            else voiced=0; }
+          requestAnimationFrame(tick);
+        })();
+      }).catch(function(){ $("boostChip").style.display="none"; });
+    })();
 
     function draw(){
       ctx.clearRect(0,0,W,H);
@@ -130,7 +172,7 @@
       }
       // moving block
       if(playing){
-        cur.x+=cur.dir*speed;
+        cur.x+=cur.dir*speed*(boost.on?0.35:1);
         if(cur.x<-8){cur.x=-8;cur.dir=1;} if(cur.x+cur.w>W+8){cur.x=W+8-cur.w;cur.dir=-1;}
         var y=H-80-(stack.length+1)*BH+camY;
         ctx.fillStyle=cur.c; rr(cur.x,y,cur.w,BH-3,7); ctx.fill();

@@ -19,6 +19,9 @@
     #score{font-family:"Baloo 2";font-weight:800;font-size:22px;color:#fff;flex:1;}
     #timer{font-family:"Baloo 2";font-weight:800;font-size:18px;color:#ffd21c;}
     #combo{position:absolute;left:0;right:0;top:26%;text-align:center;font-family:"Baloo 2";font-weight:800;font-size:34px;color:#ffd21c;opacity:0;transition:opacity .15s, transform .3s;z-index:4;pointer-events:none;text-shadow:0 3px 0 rgba(0,0,0,.25);}
+    #boostChip{position:absolute;left:50%;transform:translateX(-50%);top:calc(64px + env(safe-area-inset-top));z-index:5;background:rgba(255,255,255,.16);color:#fff;font-family:"Baloo 2";font-weight:800;font-size:13px;padding:7px 15px;border-radius:99px;pointer-events:none;white-space:nowrap;transition:background .2s,color .2s;}
+    #boostChip.hot{background:#ffd21c;color:#5c4500;animation:chipPop .4s ease;}
+    @keyframes chipPop{0%{transform:translateX(-50%) scale(1)}50%{transform:translateX(-50%) scale(1.18)}100%{transform:translateX(-50%) scale(1)}}
     .ovl{position:fixed;inset:0;z-index:50;background:rgba(10,26,44,.94);display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:28px;gap:10px;}
     .ovl.show{display:flex;}
     .ovl .big{font-size:70px;line-height:1;}
@@ -39,6 +42,7 @@
       <div id="timer">45</div>
     </div>
     <div id="combo"></div>
+    <div id="boostChip"></div>
   </div>
 
   <!-- needs a ticket -->
@@ -100,6 +104,53 @@
     var tossIv=setInterval(function(){ if(playing) toss(); },1700);
     toss();
 
+    // ── VOICE BOOST: say your sound mid-game → FRUIT FRENZY (3s golden rain,
+    // double points). 100% optional — the game never requires it. Pure local
+    // loudness detection: nothing is recorded, nothing leaves the device.
+    var boost={on:false,cool:false};
+    function spawnGold(){
+      for(var i=0;i<8;i++){
+        var x=W*(0.15+Math.random()*0.7);
+        fruits.push({ e:"🌟", gold:true, x:x, y:H+40,
+          vx:(W*0.5-x)*0.0025+(Math.random()-0.5)*1.2,
+          vy:-(H*(0.023+Math.random()*0.005)),
+          r:30+Math.random()*8, rot:Math.random()*6, vr:(Math.random()-0.5)*0.1, sliced:false });
+      }
+    }
+    function fireBoost(){
+      boost.on=true; boost.cool=true;
+      var ch=$("boostChip"); ch.textContent="FRUIT FRENZY!! 🌟"; ch.classList.add("hot");
+      sfx("complete"); spawnGold();
+      var c=$("combo"); c.textContent="⭐ FRENZY! 2× POINTS ⭐"; c.style.opacity=1; setTimeout(function(){c.style.opacity=0;},900);
+      setTimeout(function(){ boost.on=false; ch.classList.remove("hot"); ch.textContent="…"; },3000);
+      setTimeout(function(){ boost.cool=false; paintChip(); },9000);
+    }
+    var SAYTXT="";
+    function paintChip(){ $("boostChip").textContent="🎤 Say “"+SAYTXT+"” for a FRENZY!"; }
+    (function(){
+      var snd=""; try{ snd=sessionStorage.getItem("sona.boost.sound")||""; }catch(e){}
+      if(!snd){ try{ snd=((S&&S.getProfile&&S.getProfile().focusSounds)||["R"])[0]; }catch(e){ snd="R"; } }
+      SAYTXT=(S&&S.soundSay)?S.soundSay(String(snd).toUpperCase()):"rrrr";
+      paintChip();
+      if(!(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia)){ $("boostChip").style.display="none"; return; }
+      navigator.mediaDevices.getUserMedia({audio:true}).then(function(st){
+        window.addEventListener("pagehide",function(){ try{ st.getTracks().forEach(function(t){t.stop();}); }catch(e){} });
+        var AC=window.AudioContext||window.webkitAudioContext, actx=new AC();
+        var src=actx.createMediaStreamSource(st), an=actx.createAnalyser(); an.fftSize=512; src.connect(an);
+        var td=new Uint8Array(an.fftSize), t0=performance.now(), calS=0,calN=0,thr=0,voiced=0;
+        (function tick(){
+          an.getByteTimeDomainData(td);
+          var sum=0; for(var i=0;i<td.length;i++){ var d=(td[i]-128)/128; sum+=d*d; }
+          var rms=Math.sqrt(sum/td.length), now=performance.now();
+          if(now-t0<450){ calS+=rms; calN++; } // calibrate WITH game audio playing
+          else { if(!thr) thr=Math.max(0.05,(calS/Math.max(1,calN))*3.5);
+            if(rms>thr){ voiced++; if(voiced>=6 && playing && !boost.on && !boost.cool) fireBoost(); }
+            else voiced=0; }
+          requestAnimationFrame(tick);
+        })();
+      }).catch(function(){ $("boostChip").style.display="none"; }); // no mic → no boost; game unaffected
+    })();
+
     // slicing: pointer trail + segment-vs-circle hit
     var pDown=false,lx=0,ly=0;
     function pt(e){ var r=cv.getBoundingClientRect(); var t=(e.touches&&e.touches[0])||e; return {x:t.clientX-r.left, y:t.clientY-r.top}; }
@@ -107,7 +158,7 @@
     function onMove(e){ if(!pDown||!playing)return; var p=pt(e); trail.push({x:p.x,y:p.y,t:performance.now()});
       var hit=0;
       for(var i=0;i<fruits.length;i++){ var f=fruits[i];
-        if(!f.sliced && segHit(lx,ly,p.x,p.y,f.x,f.y,f.r+16)){ f.sliced=true; hit++; score++; combo++;
+        if(!f.sliced && segHit(lx,ly,p.x,p.y,f.x,f.y,f.r+16)){ f.sliced=true; hit++; score+=(f.gold||boost.on)?2:1; combo++;
           for(var k=0;k<10;k++) parts.push({x:f.x,y:f.y,vx:(Math.random()-0.5)*7,vy:-Math.random()*6,r:3+Math.random()*4,life:1,col:["#ff6b6b","#ffd21c","#7bed8d","#74c0fc"][(Math.random()*4)|0]});
           parts.push({x:f.x,y:f.y,vx:-2.4,vy:-2,e:f.e,half:1,life:1}); parts.push({x:f.x,y:f.y,vx:2.4,vy:-2,e:f.e,half:2,life:1});
         } }
@@ -137,7 +188,9 @@
       for(var i=fruits.length-1;i>=0;i--){ var f=fruits[i];
         f.x+=f.vx; f.y+=f.vy; f.vy+=G; f.rot+=f.vr;
         if(f.y>H+80||f.sliced){ fruits.splice(i,1); continue; }
-        ctx.save(); ctx.translate(f.x,f.y); ctx.rotate(f.rot); ctx.font=(f.r*2)+"px sans-serif"; ctx.fillText(f.e,0,0); ctx.restore();
+        ctx.save(); ctx.translate(f.x,f.y); ctx.rotate(f.rot);
+        if(f.gold){ ctx.fillStyle="rgba(255,210,28,.30)"; ctx.beginPath(); ctx.arc(0,0,f.r*1.35,0,7); ctx.fill(); }
+        ctx.font=(f.r*2)+"px sans-serif"; ctx.fillText(f.e,0,0); ctx.restore();
       }
       // particles + halves
       for(var i=parts.length-1;i>=0;i--){ var p=parts[i];
