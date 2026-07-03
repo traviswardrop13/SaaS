@@ -39,46 +39,6 @@
       }
     }
 
-    /* ── Top bar ── */
-    .top-bar {
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      z-index: 20;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 52px 20px 12px;
-      transition: background-color 0.4s ease;
-    }
-
-    .avatar-btn {
-      width: 44px;
-      height: 44px;
-      border-radius: 16px;
-      background: rgba(255,255,255,0.3);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 24px;
-      cursor: pointer;
-      backdrop-filter: blur(8px);
-    }
-
-    .weekly-badge {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      padding: 6px 14px;
-      border-radius: 14px;
-      background: rgba(255,255,255,0.3);
-      backdrop-filter: blur(8px);
-      font-weight: 800;
-      font-size: 15px;
-      color: white;
-    }
-
     /* ── Carousel ── */
     .carousel {
       width: 100%;
@@ -92,6 +52,7 @@
       height: 100%;
       position: relative;
       overflow: hidden;
+      cursor: pointer;
     }
 
     .scene-bg {
@@ -103,110 +64,59 @@
       object-fit: cover;
     }
 
-    /* ── Info card (floating at the bottom) ── */
-    .info-card {
+    /* ── Game label floating below the house ── */
+    .game-label {
       position: absolute;
-      bottom: 60px;
-      left: 16px;
-      right: 16px;
-      background: rgba(0, 0, 0, 0.65);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      border-radius: 28px;
-      padding: 20px 22px 22px;
+      bottom: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      text-align: center;
       z-index: 10;
+      pointer-events: none;
     }
 
-    .card-label {
-      font-size: 11px;
-      font-weight: 800;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      color: rgba(255,255,255,0.6);
-    }
-
-    .card-title {
-      font-size: 26px;
+    .game-label-title {
+      font-size: 24px;
       font-weight: 800;
       color: white;
-      line-height: 1.15;
-      margin-top: 4px;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.5), 0 1px 3px rgba(0,0,0,0.4);
+      white-space: nowrap;
     }
 
-    .card-subtitle {
+    .game-label-sub {
       font-size: 14px;
       font-weight: 600;
-      color: rgba(255,255,255,0.75);
-      margin-top: 4px;
+      color: rgba(255,255,255,0.9);
+      text-shadow: 0 1px 6px rgba(0,0,0,0.5);
+      margin-top: 2px;
     }
 
-    .card-title-row {
-      display: flex;
-      align-items: center;
-      gap: 10px;
+    /* ── Tap-the-house pulse effect ── */
+    .tap-ring {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 120px;
+      height: 120px;
+      margin-top: -60px;
+      margin-left: -60px;
+      border-radius: 50%;
+      border: 3px solid rgba(255,255,255,0.5);
+      z-index: 5;
+      animation: tap-pulse 2.5s ease-in-out infinite;
+      pointer-events: none;
     }
 
-    .card-emoji {
-      font-size: 32px;
+    @keyframes tap-pulse {
+      0%, 100% { transform: scale(0.8); opacity: 0; }
+      50% { transform: scale(1.3); opacity: 0.6; }
     }
 
-    /* ── Game pills (Today's Practice) ── */
-    .game-pills {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin-top: 14px;
+    /* ── Page press feedback ── */
+    .page:active .scene-bg {
+      transform: scale(1.02);
+      transition: transform 0.15s;
     }
-
-    .pill {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      padding: 6px 12px;
-      border-radius: 20px;
-      background: rgba(255,255,255,0.15);
-      font-size: 13px;
-      font-weight: 700;
-      color: white;
-    }
-
-    .pill-emoji {
-      font-size: 14px;
-    }
-
-    /* ── 3D Play button ── */
-    .play-btn-wrap {
-      margin-top: 16px;
-      cursor: pointer;
-    }
-
-    .play-btn-edge {
-      border-radius: 22px;
-      overflow: hidden;
-    }
-
-    .play-btn-face {
-      width: 100%;
-      padding: 16px 0;
-      text-align: center;
-      border-radius: 22px;
-      font-size: 18px;
-      font-weight: 800;
-      color: white;
-      transition: transform 0.1s, margin-bottom 0.1s;
-      margin-bottom: 5px;
-    }
-
-    .play-btn-wrap:active .play-btn-face {
-      transform: translateY(4px);
-      margin-bottom: 1px;
-    }
-
-    .play-btn--green .play-btn-edge { background: #58a700; }
-    .play-btn--green .play-btn-face { background: #58cc02; }
-
-    .play-btn--blue .play-btn-edge { background: #1899d6; }
-    .play-btn--blue .play-btn-face { background: #1cb0f6; }
 
     /* ── Dot nav ── */
     .dot-nav {
@@ -219,7 +129,7 @@
       justify-content: center;
       gap: 8px;
       padding: 14px 0 20px;
-      background: #2a2a2a;
+      background: linear-gradient(transparent, rgba(0,0,0,0.3));
       z-index: 20;
     }
 
@@ -227,7 +137,7 @@
       width: 8px;
       height: 8px;
       border-radius: 4px;
-      background: rgba(255,255,255,0.35);
+      background: rgba(255,255,255,0.4);
       cursor: pointer;
       transition: all 0.3s ease;
     }
@@ -271,31 +181,16 @@
 <body>
 
 <div class="phone-frame" id="phone">
-  <!-- Top bar -->
-  <div class="top-bar" id="topBar">
-    <div class="avatar-btn">🌟</div>
-    <div class="weekly-badge">📅 2/4 this week</div>
-  </div>
-
   <!-- Carousel -->
   <div class="carousel" id="carousel">
 
     <!-- Page 0: Today's Practice -->
     <div class="page" data-sky="#4A9FDF">
       <img class="scene-bg" src="/scenes/todays-practice.png" alt="Today's Practice">
-      <div class="info-card">
-        <div class="card-label">Wednesday's Challenge</div>
-        <div class="card-title">Today's Practice</div>
-        <div class="card-subtitle">4 games picked for today</div>
-        <div class="game-pills">
-          <div class="pill"><span class="pill-emoji">🎙️</span> Speech Clinic</div>
-          <div class="pill"><span class="pill-emoji">🍉</span> Fruit Ninja</div>
-          <div class="pill"><span class="pill-emoji">🧱</span> Stacks</div>
-          <div class="pill"><span class="pill-emoji">🏎️</span> Sound Racer</div>
-        </div>
-        <div class="play-btn-wrap play-btn--green">
-          <div class="play-btn-edge"><div class="play-btn-face">▶ Start Challenge</div></div>
-        </div>
+      <div class="tap-ring"></div>
+      <div class="game-label">
+        <div class="game-label-title">Today's Practice</div>
+        <div class="game-label-sub">4 games · tap the house to play!</div>
       </div>
       <div class="swipe-hint" id="swipeHint">Swipe →</div>
     </div>
@@ -303,85 +198,50 @@
     <!-- Page 1: Speech Clinic -->
     <div class="page" data-sky="#7EC8E3">
       <img class="scene-bg" src="/scenes/speech-clinic.png" alt="Speech Clinic">
-      <div class="info-card">
-        <div class="card-title-row">
-          <span class="card-emoji">🎙️</span>
-          <div>
-            <div class="card-title">Speech Clinic</div>
-            <div class="card-subtitle">Practice sounds with the coach</div>
-          </div>
-        </div>
-        <div class="play-btn-wrap play-btn--blue">
-          <div class="play-btn-edge"><div class="play-btn-face">▶ Play</div></div>
-        </div>
+      <div class="tap-ring"></div>
+      <div class="game-label">
+        <div class="game-label-title">🎙️ Speech Clinic</div>
+        <div class="game-label-sub">Practice sounds with the coach</div>
       </div>
     </div>
 
     <!-- Page 2: Sound Racer -->
     <div class="page" data-sky="#F4845F">
       <img class="scene-bg" src="/scenes/racing.png" alt="Sound Racer">
-      <div class="info-card">
-        <div class="card-title-row">
-          <span class="card-emoji">🏎️</span>
-          <div>
-            <div class="card-title">Sound Racer</div>
-            <div class="card-subtitle">Race by saying words fast</div>
-          </div>
-        </div>
-        <div class="play-btn-wrap play-btn--blue">
-          <div class="play-btn-edge"><div class="play-btn-face">▶ Play</div></div>
-        </div>
+      <div class="tap-ring"></div>
+      <div class="game-label">
+        <div class="game-label-title">🏎️ Sound Racer</div>
+        <div class="game-label-sub">Race by saying words fast</div>
       </div>
     </div>
 
     <!-- Page 3: Story Time -->
     <div class="page" data-sky="#9B72CF">
       <img class="scene-bg" src="/scenes/storybook.png" alt="Story Time">
-      <div class="info-card">
-        <div class="card-title-row">
-          <span class="card-emoji">📚</span>
-          <div>
-            <div class="card-title">Story Time</div>
-            <div class="card-subtitle">Read and speak through stories</div>
-          </div>
-        </div>
-        <div class="play-btn-wrap play-btn--blue">
-          <div class="play-btn-edge"><div class="play-btn-face">▶ Play</div></div>
-        </div>
+      <div class="tap-ring"></div>
+      <div class="game-label">
+        <div class="game-label-title">📚 Story Time</div>
+        <div class="game-label-sub">Read and speak through stories</div>
       </div>
     </div>
 
     <!-- Page 4: Fruit Ninja -->
     <div class="page" data-sky="#B8E550">
       <img class="scene-bg" src="/scenes/fruit-ninja.png" alt="Fruit Ninja">
-      <div class="info-card">
-        <div class="card-title-row">
-          <span class="card-emoji">🍉</span>
-          <div>
-            <div class="card-title">Fruit Ninja</div>
-            <div class="card-subtitle">Slash fruits by saying their names</div>
-          </div>
-        </div>
-        <div class="play-btn-wrap play-btn--blue">
-          <div class="play-btn-edge"><div class="play-btn-face">▶ Play</div></div>
-        </div>
+      <div class="tap-ring"></div>
+      <div class="game-label">
+        <div class="game-label-title">🍉 Fruit Ninja</div>
+        <div class="game-label-sub">Slash fruits by saying their names</div>
       </div>
     </div>
 
     <!-- Page 5: Stacks -->
     <div class="page" data-sky="#5CE1E6">
       <img class="scene-bg" src="/scenes/stacks.png" alt="Stacks">
-      <div class="info-card">
-        <div class="card-title-row">
-          <span class="card-emoji">🧱</span>
-          <div>
-            <div class="card-title">Stacks</div>
-            <div class="card-subtitle">Stack blocks with correct sounds</div>
-          </div>
-        </div>
-        <div class="play-btn-wrap play-btn--blue">
-          <div class="play-btn-edge"><div class="play-btn-face">▶ Play</div></div>
-        </div>
+      <div class="tap-ring"></div>
+      <div class="game-label">
+        <div class="game-label-title">🧱 Stacks</div>
+        <div class="game-label-sub">Stack blocks with correct sounds</div>
       </div>
     </div>
 
@@ -393,7 +253,6 @@
 
 <script>
   const carousel = document.getElementById('carousel');
-  const topBar = document.getElementById('topBar');
   const dotNav = document.getElementById('dotNav');
   const swipeHint = document.getElementById('swipeHint');
   const pages = document.querySelectorAll('.page');
@@ -412,10 +271,6 @@
     current = Math.max(0, Math.min(idx, totalPages - 1));
     carousel.style.transform = `translateX(-${current * 100}%)`;
 
-    // Update top bar sky color
-    const sky = pages[current].dataset.sky;
-    topBar.style.backgroundColor = sky;
-
     // Update dots
     dotNav.querySelectorAll('.dot').forEach((d, i) => {
       d.className = 'dot' + (i === current ? ' active' : '');
@@ -426,11 +281,10 @@
   }
 
   // Touch swipe
-  let startX = 0, startY = 0, isDragging = false;
+  let startX = 0, isDragging = false;
 
   carousel.addEventListener('touchstart', (e) => {
     startX = e.touches[0].clientX;
-    startY = e.touches[0].clientY;
     isDragging = true;
   }, { passive: true });
 
@@ -438,8 +292,7 @@
     if (!isDragging) return;
     isDragging = false;
     const dx = e.changedTouches[0].clientX - startX;
-    const dy = e.changedTouches[0].clientY - startY;
-    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 50) {
+    if (Math.abs(dx) > 50) {
       goTo(current + (dx < 0 ? 1 : -1));
     }
   }, { passive: true });
