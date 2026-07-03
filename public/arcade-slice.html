@@ -190,13 +190,14 @@
         if(f.y>H+80||f.sliced){ fruits.splice(i,1); continue; }
         ctx.save(); ctx.translate(f.x,f.y); ctx.rotate(f.rot);
         if(f.gold){ ctx.fillStyle="rgba(255,210,28,.30)"; ctx.beginPath(); ctx.arc(0,0,f.r*1.35,0,7); ctx.fill(); }
-        ctx.font=(f.r*2)+"px sans-serif"; ctx.fillText(f.e,0,0); ctx.restore();
+        // opaque paint before emoji — translucent fillStyle ghosts color glyphs
+        ctx.fillStyle="#000"; ctx.font=(f.r*2)+"px sans-serif"; ctx.fillText(f.e,0,0); ctx.restore();
       }
       // particles + halves
       for(var i=parts.length-1;i>=0;i--){ var p=parts[i];
         p.x+=p.vx; p.y+=p.vy; p.vy+=G*0.8; p.life-=0.02;
         if(p.life<=0||p.y>H+60){ parts.splice(i,1); continue; }
-        if(p.e){ ctx.save(); ctx.globalAlpha=Math.max(0,p.life); ctx.translate(p.x,p.y); ctx.font="34px sans-serif";
+        if(p.e){ ctx.save(); ctx.globalAlpha=Math.max(0,p.life); ctx.translate(p.x,p.y); ctx.fillStyle="#000"; ctx.font="34px sans-serif";
           ctx.beginPath(); if(p.half===1)ctx.rect(-30,-30,30,60); else ctx.rect(0,-30,30,60); ctx.clip(); ctx.fillText(p.e,0,0); ctx.restore(); }
         else { ctx.globalAlpha=Math.max(0,p.life); ctx.fillStyle=p.col; ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,7); ctx.fill(); ctx.globalAlpha=1; }
       }

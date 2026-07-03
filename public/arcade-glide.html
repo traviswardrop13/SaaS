@@ -145,12 +145,14 @@
       if(falling.on){
         var ft=(performance.now()-falling.t0)/1100;
         if(ft>=1){ falling.on=false; mercyT=performance.now(); py=H*0.45; vy=0; flash("Back in the sky! 🎈"); }
-        else{ ctx.save(); ctx.translate(px,py+ft*ft*320); ctx.rotate(ft*10); ctx.globalAlpha=1-ft*0.4; ctx.font="50px sans-serif"; ctx.textAlign="center"; ctx.textBaseline="middle"; ctx.fillText(RUNNER,0,0); ctx.restore(); }
+        else{ ctx.save(); ctx.translate(px,py+ft*ft*320); ctx.rotate(ft*10); ctx.globalAlpha=1-ft*0.4; ctx.fillStyle="#000"; ctx.font="50px sans-serif"; ctx.textAlign="center"; ctx.textBaseline="middle"; ctx.fillText(RUNNER,0,0); ctx.restore(); }
       } else {
         var blink=(performance.now()-mercyT<1200)&&(((performance.now()/120)|0)%2===0);
         if(!blink){
           if(boost.on){ ctx.fillStyle="rgba(255,210,28,.35)"; ctx.beginPath(); ctx.arc(px,py,46,0,7); ctx.fill(); }
-          ctx.textAlign="center"; ctx.textBaseline="middle";
+          // opaque paint before emoji: canvases modulate color glyphs by the
+          // fill's alpha, so a leftover translucent fillStyle ghosts the buddy
+          ctx.fillStyle="#000"; ctx.textAlign="center"; ctx.textBaseline="middle";
           ctx.font="34px sans-serif"; ctx.fillText("🎈",px,py-40+Math.sin(performance.now()/300)*3);
           ctx.save(); ctx.translate(px,py); ctx.rotate(Math.max(-0.3,Math.min(0.5,vy*0.03)));
           ctx.font="50px sans-serif"; ctx.fillText(RUNNER,0,0); ctx.restore();

@@ -160,7 +160,7 @@
         ctx.fillStyle=t.hit?"#fff":(t.gold?"#ffd21c":LCOL[t.lane]);
         rr(x,t.y,w,t.h,14); ctx.fill();
         ctx.fillStyle="rgba(255,255,255,.25)"; rr(x,t.y,w,10,6); ctx.fill();
-        if(t.gold&&!t.hit){ ctx.font="26px sans-serif"; ctx.textAlign="center"; ctx.fillText("⭐",x+w/2,t.y+t.h/2+8); }
+        if(t.gold&&!t.hit){ ctx.fillStyle="#000"; ctx.font="26px sans-serif"; ctx.textAlign="center"; ctx.fillText("⭐",x+w/2,t.y+t.h/2+8); } // opaque paint — translucent fillStyle ghosts color glyphs
       }
       requestAnimationFrame(draw);
     }

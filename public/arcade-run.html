@@ -135,8 +135,9 @@
       for(var l=1;l<LANES;l++){ for(var y=-56;y<H;y+=56){ ctx.fillRect(rx+lw*l-3,y+dashOff,6,30); } }
       // spawn pacing tied to speed
       spawnGap-=speed; if(spawnGap<=0){ spawnRow(); spawnGap=170+Math.random()*130; }
-      // things
-      ctx.textAlign="center"; ctx.textBaseline="middle"; ctx.font="44px sans-serif";
+      // things — opaque paint first: canvases modulate color-emoji glyphs by
+      // the fill's alpha, and the lane dashes just left a translucent white
+      ctx.fillStyle="#000"; ctx.textAlign="center"; ctx.textBaseline="middle"; ctx.font="44px sans-serif";
       var px=laneCX(laneX=laneX+(lane-laneX)*0.25), py=PLAYY();
       for(var i=things.length-1;i>=0;i--){ var t=things[i];
         t.y+=speed*(boost.on?1.6:1);
@@ -158,12 +159,12 @@
         if(ft>=1){ falling.on=false; hurtT=performance.now(); flash("Back in the race! 🫧"); }
         else{
           ctx.save(); ctx.translate(px,py+ft*ft*300); ctx.rotate(ft*12);
-          ctx.globalAlpha=1-ft*0.4; ctx.font=(54*(1-ft*0.45))+"px sans-serif"; ctx.fillText(RUNNER,0,0); ctx.restore();
+          ctx.globalAlpha=1-ft*0.4; ctx.fillStyle="#000"; ctx.font=(54*(1-ft*0.45))+"px sans-serif"; ctx.fillText(RUNNER,0,0); ctx.restore();
         }
       } else {
         if(boost.on){ ctx.fillStyle="rgba(255,210,28,.35)"; ctx.beginPath(); ctx.arc(px,py,44,0,7); ctx.fill(); }
         var blink=(performance.now()-hurtT<1200)&&(((performance.now()/120)|0)%2===0);
-        if(!blink){ ctx.font="54px sans-serif"; ctx.fillText(RUNNER,px,py); }
+        if(!blink){ ctx.fillStyle="#000"; ctx.font="54px sans-serif"; ctx.fillText(RUNNER,px,py); }
       }
       requestAnimationFrame(playing?draw:function(){});
     }
