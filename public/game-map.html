@@ -18,7 +18,6 @@
       user-select: none;
     }
 
-    /* ── Phone frame (for desktop viewing) ── */
     .phone-frame {
       width: 390px;
       height: 844px;
@@ -39,7 +38,6 @@
       }
     }
 
-    /* ── Carousel ── */
     .carousel {
       width: 100%;
       height: 100%;
@@ -64,61 +62,24 @@
       object-fit: cover;
     }
 
-    /* ── Game label floating below the house ── */
-    .game-label {
+    /* Game title — just the name, in the grey ground area */
+    .game-title {
       position: absolute;
-      bottom: 80px;
-      left: 50%;
-      transform: translateX(-50%);
+      bottom: 48px;
+      left: 0;
+      right: 0;
       text-align: center;
-      z-index: 10;
       pointer-events: none;
-    }
-
-    .game-label-title {
-      font-size: 24px;
+      font-size: 26px;
       font-weight: 800;
-      color: white;
-      text-shadow: 0 2px 8px rgba(0,0,0,0.5), 0 1px 3px rgba(0,0,0,0.4);
-      white-space: nowrap;
-    }
-
-    .game-label-sub {
-      font-size: 14px;
-      font-weight: 600;
       color: rgba(255,255,255,0.9);
-      text-shadow: 0 1px 6px rgba(0,0,0,0.5);
-      margin-top: 2px;
     }
 
-    /* ── Tap-the-house pulse effect ── */
-    .tap-ring {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      width: 120px;
-      height: 120px;
-      margin-top: -60px;
-      margin-left: -60px;
-      border-radius: 50%;
-      border: 3px solid rgba(255,255,255,0.5);
-      z-index: 5;
-      animation: tap-pulse 2.5s ease-in-out infinite;
-      pointer-events: none;
-    }
-
-    @keyframes tap-pulse {
-      0%, 100% { transform: scale(0.8); opacity: 0; }
-      50% { transform: scale(1.3); opacity: 0.6; }
-    }
-
-    /* ── Page press feedback ── */
     .page:active .scene-bg {
       transform: scale(1.02);
       transition: transform 0.15s;
     }
 
-    /* ── Dot nav ── */
     .dot-nav {
       position: absolute;
       bottom: 0;
@@ -129,7 +90,6 @@
       justify-content: center;
       gap: 8px;
       padding: 14px 0 20px;
-      background: linear-gradient(transparent, rgba(0,0,0,0.3));
       z-index: 20;
     }
 
@@ -147,7 +107,6 @@
       background: white;
     }
 
-    /* ── Swipe hint ── */
     .swipe-hint {
       position: absolute;
       top: 50%;
@@ -172,7 +131,6 @@
 
     .swipe-hint.hidden { display: none; }
 
-    /* ── Desktop bg ── */
     @media (min-width: 501px) {
       body { background: #111; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
     }
@@ -181,73 +139,41 @@
 <body>
 
 <div class="phone-frame" id="phone">
-  <!-- Carousel -->
   <div class="carousel" id="carousel">
 
-    <!-- Page 0: Today's Practice -->
-    <div class="page" data-sky="#4A9FDF">
+    <div class="page">
       <img class="scene-bg" src="/scenes/todays-practice.png" alt="Today's Practice">
-      <div class="tap-ring"></div>
-      <div class="game-label">
-        <div class="game-label-title">Today's Practice</div>
-        <div class="game-label-sub">4 games · tap the house to play!</div>
-      </div>
+      <div class="game-title">Today's Practice</div>
       <div class="swipe-hint" id="swipeHint">Swipe →</div>
     </div>
 
-    <!-- Page 1: Speech Clinic -->
-    <div class="page" data-sky="#7EC8E3">
+    <div class="page">
       <img class="scene-bg" src="/scenes/speech-clinic.png" alt="Speech Clinic">
-      <div class="tap-ring"></div>
-      <div class="game-label">
-        <div class="game-label-title">🎙️ Speech Clinic</div>
-        <div class="game-label-sub">Practice sounds with the coach</div>
-      </div>
+      <div class="game-title">Speech Clinic</div>
     </div>
 
-    <!-- Page 2: Sound Racer -->
-    <div class="page" data-sky="#F4845F">
+    <div class="page">
       <img class="scene-bg" src="/scenes/racing.png" alt="Sound Racer">
-      <div class="tap-ring"></div>
-      <div class="game-label">
-        <div class="game-label-title">🏎️ Sound Racer</div>
-        <div class="game-label-sub">Race by saying words fast</div>
-      </div>
+      <div class="game-title">Sound Racer</div>
     </div>
 
-    <!-- Page 3: Story Time -->
-    <div class="page" data-sky="#9B72CF">
+    <div class="page">
       <img class="scene-bg" src="/scenes/storybook.png" alt="Story Time">
-      <div class="tap-ring"></div>
-      <div class="game-label">
-        <div class="game-label-title">📚 Story Time</div>
-        <div class="game-label-sub">Read and speak through stories</div>
-      </div>
+      <div class="game-title">Story Time</div>
     </div>
 
-    <!-- Page 4: Fruit Ninja -->
-    <div class="page" data-sky="#B8E550">
+    <div class="page">
       <img class="scene-bg" src="/scenes/fruit-ninja.png" alt="Fruit Ninja">
-      <div class="tap-ring"></div>
-      <div class="game-label">
-        <div class="game-label-title">🍉 Fruit Ninja</div>
-        <div class="game-label-sub">Slash fruits by saying their names</div>
-      </div>
+      <div class="game-title">Fruit Ninja</div>
     </div>
 
-    <!-- Page 5: Stacks -->
-    <div class="page" data-sky="#5CE1E6">
+    <div class="page">
       <img class="scene-bg" src="/scenes/stacks.png" alt="Stacks">
-      <div class="tap-ring"></div>
-      <div class="game-label">
-        <div class="game-label-title">🧱 Stacks</div>
-        <div class="game-label-sub">Stack blocks with correct sounds</div>
-      </div>
+      <div class="game-title">Stacks</div>
     </div>
 
   </div>
 
-  <!-- Dot nav -->
   <div class="dot-nav" id="dotNav"></div>
 </div>
 
@@ -259,7 +185,6 @@
   const totalPages = pages.length;
   let current = 0;
 
-  // Build dots
   for (let i = 0; i < totalPages; i++) {
     const dot = document.createElement('div');
     dot.className = 'dot' + (i === 0 ? ' active' : '');
@@ -270,50 +195,33 @@
   function goTo(idx) {
     current = Math.max(0, Math.min(idx, totalPages - 1));
     carousel.style.transform = `translateX(-${current * 100}%)`;
-
-    // Update dots
     dotNav.querySelectorAll('.dot').forEach((d, i) => {
       d.className = 'dot' + (i === current ? ' active' : '');
     });
-
-    // Hide swipe hint after first swipe
     if (current > 0 && swipeHint) swipeHint.classList.add('hidden');
   }
 
-  // Touch swipe
   let startX = 0, isDragging = false;
-
-  carousel.addEventListener('touchstart', (e) => {
-    startX = e.touches[0].clientX;
-    isDragging = true;
-  }, { passive: true });
-
+  carousel.addEventListener('touchstart', (e) => { startX = e.touches[0].clientX; isDragging = true; }, { passive: true });
   carousel.addEventListener('touchend', (e) => {
-    if (!isDragging) return;
-    isDragging = false;
+    if (!isDragging) return; isDragging = false;
     const dx = e.changedTouches[0].clientX - startX;
-    if (Math.abs(dx) > 50) {
-      goTo(current + (dx < 0 ? 1 : -1));
-    }
+    if (Math.abs(dx) > 50) goTo(current + (dx < 0 ? 1 : -1));
   }, { passive: true });
 
-  // Mouse drag (desktop)
   let mouseDown = false, mouseStartX = 0;
   carousel.addEventListener('mousedown', (e) => { mouseDown = true; mouseStartX = e.clientX; e.preventDefault(); });
   document.addEventListener('mouseup', (e) => {
-    if (!mouseDown) return;
-    mouseDown = false;
+    if (!mouseDown) return; mouseDown = false;
     const dx = e.clientX - mouseStartX;
     if (Math.abs(dx) > 50) goTo(current + (dx < 0 ? 1 : -1));
   });
 
-  // Arrow keys
   document.addEventListener('keydown', (e) => {
     if (e.key === 'ArrowRight') goTo(current + 1);
     if (e.key === 'ArrowLeft') goTo(current - 1);
   });
 
-  // Init
   goTo(0);
 </script>
 
