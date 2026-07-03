@@ -667,6 +667,8 @@
     "charge.html":       { name: "Charge & Play", icon: "⚡", band: "Practice", c: "#ffb100" },
     "arcade-slice.html": { name: "Fruit Slice",   icon: "🍉", band: "Arcade",   c: "#ff6b6b" },
     "arcade-stack.html": { name: "Block Stacker", icon: "🧱", band: "Arcade",   c: "#4dabf7" },
+    "arcade-tiles.html": { name: "Piano Tiles",   icon: "🎹", band: "Arcade",   c: "#9775fa" },
+    "arcade-run.html":   { name: "Sound Sprint",  icon: "🏃", band: "Arcade",   c: "#2f9e44" },
   };
   function gameMeta(file) {
     const k = String(file || "").replace(/^\//, "").split("?")[0];

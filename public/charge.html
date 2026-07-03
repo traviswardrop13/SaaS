@@ -139,8 +139,9 @@
     if(!(S&&S.WORDS&&S.WORDS[SOUND])) SOUND="R";
     var LEVEL=parseInt(qp.get("level"),10)||1;
     var NEED=(S?S.chargeState().need:5);
-    var GAMES={ "arcade-slice.html":{e:"🍉",n:"Fruit Slice"}, "arcade-stack.html":{e:"🧱",n:"Block Stacker"} };
-    var DAILY_SEQ=["arcade-slice.html","arcade-stack.html","arcade-slice.html","arcade-stack.html"];
+    var GAMES={ "arcade-slice.html":{e:"🍉",n:"Fruit Slice"}, "arcade-stack.html":{e:"🧱",n:"Block Stacker"}, "arcade-tiles.html":{e:"🎹",n:"Piano Tiles"}, "arcade-run.html":{e:"🏃",n:"Sound Sprint"} };
+    // The Daily Run = one round of each game — real variety, cumulative score.
+    var DAILY_SEQ=["arcade-slice.html","arcade-tiles.html","arcade-stack.html","arcade-run.html"];
 
     // ---- mode: daily run vs free play ----
     var isDaily = qp.get("daily")==="1" || qp.get("session")==="1";
