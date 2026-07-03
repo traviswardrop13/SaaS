@@ -22,15 +22,6 @@ export type Game = {
 
 export const GAMES: Game[] = [
   {
-    id: "speech-clinic",
-    title: "Speech Clinic",
-    subtitle: "Practice sounds with the coach",
-    emoji: "🎙️",
-    route: "lesson",
-    scene: "/scenes/speech-clinic.png",
-    skyColor: "#7EC8E3",
-  },
-  {
     id: "racing",
     title: "Sound Racer",
     subtitle: "Race by saying words fast",
@@ -70,13 +61,13 @@ export const GAMES: Game[] = [
 
 /** 7-day rotation: index = day-of-week (0=Sunday … 6=Saturday) */
 const DAILY_COMBOS: string[][] = [
-  ["speech-clinic", "fruit-ninja", "stacks"],            // Sun
-  ["racing", "storybook", "speech-clinic", "stacks"],    // Mon
-  ["fruit-ninja", "racing", "storybook"],                // Tue
-  ["speech-clinic", "stacks", "racing", "fruit-ninja"],  // Wed
-  ["storybook", "speech-clinic", "fruit-ninja"],         // Thu
-  ["stacks", "racing", "storybook", "speech-clinic"],    // Fri
-  ["fruit-ninja", "storybook", "stacks"],                // Sat
+  ["racing", "fruit-ninja", "stacks"],              // Sun
+  ["storybook", "stacks", "racing"],                // Mon
+  ["fruit-ninja", "racing", "storybook", "stacks"], // Tue
+  ["stacks", "racing", "fruit-ninja"],              // Wed
+  ["storybook", "fruit-ninja", "stacks", "racing"], // Thu
+  ["stacks", "racing", "storybook"],                // Fri
+  ["fruit-ninja", "storybook", "stacks", "racing"], // Sat
 ];
 
 const DAY_NAMES = [

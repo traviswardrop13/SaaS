@@ -10,11 +10,10 @@ import { GAMES, todaysGames, type Game } from "@/lib/gameMap";
  * Game Map — Duolingo ABC–style horizontal scrolling world.
  *
  * Page 0 = Today's Practice (daily rotating challenge)
- * Pages 1-5 = Individual game screens
+ * Pages 1-4 = Individual game screens (Sound Racer, Story Time, Fruit Ninja, Stacks)
  *
- * Each page is a full-bleed illustrated scene.
- * Tap the scene (house) to launch the game.
- * No top bar chrome — just immersive scenes + small floating labels.
+ * Each page is a full-bleed illustrated scene with a grey ground band
+ * at the bottom showing the game title. Tap the scene to launch.
  */
 export default function PlayPage() {
   const params = useParams<{ id: string }>();
@@ -38,7 +37,6 @@ type PageData =
 
 function GameMap({ child }: { child: Child }) {
   const params = useParams<{ id: string }>();
-  const scrollRef = useRef<HTMLDivElement>(null);
   const [activePage, setActivePage] = useState(0);
   const dailyGames = todaysGames();
 
@@ -47,7 +45,7 @@ function GameMap({ child }: { child: Child }) {
     ...GAMES.map((g) => ({ kind: "game" as const, game: g })),
   ];
 
-  // ── Touch swipe handling ──
+  // ── Touch swipe ──
   const touchStartX = useRef(0);
   const touchStartY = useRef(0);
 
@@ -61,16 +59,15 @@ function GameMap({ child }: { child: Child }) {
       const dx = e.changedTouches[0].clientX - touchStartX.current;
       const dy = e.changedTouches[0].clientY - touchStartY.current;
       if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 50) {
-        const next = dx < 0
-          ? Math.min(activePage + 1, pages.length - 1)
-          : Math.max(activePage - 1, 0);
-        setActivePage(next);
+        setActivePage((p) =>
+          dx < 0 ? Math.min(p + 1, pages.length - 1) : Math.max(p - 1, 0),
+        );
       }
     },
-    [activePage, pages.length],
+    [pages.length],
   );
 
-  // ── Mouse drag handling (desktop) ──
+  // ── Mouse drag (desktop) ──
   const mouseStartX = useRef(0);
   const isDragging = useRef(false);
 
@@ -85,13 +82,12 @@ function GameMap({ child }: { child: Child }) {
       isDragging.current = false;
       const dx = e.clientX - mouseStartX.current;
       if (Math.abs(dx) > 50) {
-        const next = dx < 0
-          ? Math.min(activePage + 1, pages.length - 1)
-          : Math.max(activePage - 1, 0);
-        setActivePage(next);
+        setActivePage((p) =>
+          dx < 0 ? Math.min(p + 1, pages.length - 1) : Math.max(p - 1, 0),
+        );
       }
     },
-    [activePage, pages.length],
+    [pages.length],
   );
 
   // ── Keyboard nav ──
@@ -106,9 +102,6 @@ function GameMap({ child }: { child: Child }) {
     return () => window.removeEventListener("keydown", handler);
   }, [pages.length]);
 
-  const getSceneForPage = (page: PageData) =>
-    page.kind === "today" ? "/scenes/todays-practice.png" : page.game.scene;
-
   return (
     <div
       className="fixed inset-0 overflow-hidden bg-black select-none"
@@ -120,53 +113,53 @@ function GameMap({ child }: { child: Child }) {
     >
       {/* Carousel */}
       <div
-        ref={scrollRef}
         className="flex h-full transition-transform duration-[450ms] ease-out"
         style={{ transform: `translateX(-${activePage * 100}%)` }}
       >
-        {pages.map((page, i) => (
-          <div key={i} className="relative h-full min-w-full">
-            {/* Full-bleed scene background */}
-            <Link
-              href={
-                page.kind === "today"
-                  ? `/kid/${params.id}/lesson/${GAMES[0].id}/1`
-                  : `/kid/${params.id}/${page.game.route}`
-              }
-              className="absolute inset-0 block"
-              draggable={false}
-            >
-              <img
-                src={getSceneForPage(page)}
-                alt={page.kind === "today" ? "Today's Practice" : page.game.title}
-                className="h-full w-full object-cover"
+        {pages.map((page, i) => {
+          const href =
+            page.kind === "today"
+              ? `/kid/${params.id}/lesson/${GAMES[0].id}/1`
+              : `/kid/${params.id}/${page.game.route}`;
+          const scene =
+            page.kind === "today"
+              ? "/scenes/todays-practice.png"
+              : page.game.scene;
+          const title =
+            page.kind === "today" ? "Today's Practice" : page.game.title;
+
+          return (
+            <div key={i} className="flex h-full min-w-full flex-col">
+              {/* Scene image — fills the top area */}
+              <Link
+                href={href}
+                className="relative block flex-1 overflow-hidden"
                 draggable={false}
-              />
-            </Link>
-
-            {/* Game title — positioned in the grey ground area */}
-            <div className="pointer-events-none absolute inset-x-0 bottom-12 flex items-center justify-center px-6">
-              <h2 className="text-center font-display text-2xl font-extrabold text-white/90 sm:text-3xl">
-                {page.kind === "today"
-                  ? "Today's Practice"
-                  : page.game.title}
-              </h2>
-            </div>
-
-            {/* Swipe hint on first page */}
-            {i === 0 && activePage === 0 && (
-              <div
-                className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 animate-bounce rounded-2xl bg-black/40 px-3 py-2 text-sm font-bold text-white backdrop-blur"
               >
-                Swipe →
+                <img
+                  src={scene}
+                  alt={title}
+                  className="absolute inset-0 h-full w-full object-cover object-top"
+                  draggable={false}
+                />
+              </Link>
+
+              {/* Grey ground band with title */}
+              <div
+                className="px-5 pb-14 pt-3 text-center"
+                style={{ backgroundColor: "#6b7b87" }}
+              >
+                <h2 className="font-display text-2xl font-extrabold text-white/90">
+                  {title}
+                </h2>
               </div>
-            )}
-          </div>
-        ))}
+            </div>
+          );
+        })}
       </div>
 
-      {/* Dot navigation */}
-      <div className="absolute inset-x-0 bottom-0 flex items-center justify-center gap-2 pb-5 pt-3">
+      {/* Dot navigation — overlaid at the bottom */}
+      <div className="absolute inset-x-0 bottom-3 flex items-center justify-center gap-2">
         {pages.map((_, i) => (
           <button
             key={i}
@@ -176,7 +169,8 @@ function GameMap({ child }: { child: Child }) {
               width: i === activePage ? 24 : 8,
               height: 8,
               borderRadius: 4,
-              backgroundColor: i === activePage ? "#ffffff" : "rgba(255,255,255,0.4)",
+              backgroundColor:
+                i === activePage ? "#ffffff" : "rgba(255,255,255,0.4)",
             }}
           />
         ))}
