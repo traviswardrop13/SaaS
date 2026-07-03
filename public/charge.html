@@ -139,9 +139,12 @@
     if(!(S&&S.WORDS&&S.WORDS[SOUND])) SOUND="R";
     var LEVEL=parseInt(qp.get("level"),10)||1;
     var NEED=(S?S.chargeState().need:5);
-    var GAMES={ "arcade-slice.html":{e:"🍉",n:"Fruit Slice"}, "arcade-stack.html":{e:"🧱",n:"Block Stacker"}, "arcade-tiles.html":{e:"🎹",n:"Piano Tiles"}, "arcade-run.html":{e:"🏃",n:"Sound Sprint"} };
-    // The Daily Run = one round of each game — real variety, cumulative score.
-    var DAILY_SEQ=["arcade-slice.html","arcade-tiles.html","arcade-stack.html","arcade-run.html"];
+    var GAMES={ "arcade-slice.html":{e:"🍉",n:"Fruit Slice"}, "arcade-stack.html":{e:"🧱",n:"Block Stacker"}, "arcade-tiles.html":{e:"🎹",n:"Piano Tiles"}, "arcade-run.html":{e:"🏃",n:"Sound Sprint"}, "arcade-glide.html":{e:"🎈",n:"Flappy Glide"} };
+    // The Daily Run = 4 different games from the 5-game arcade, rotating with
+    // the date — tomorrow's run has a different lineup than today's.
+    var ALL_ARCADE=["arcade-slice.html","arcade-tiles.html","arcade-stack.html","arcade-run.html","arcade-glide.html"];
+    var _dayOff=(S&&S.dayNum)?(S.dayNum()%ALL_ARCADE.length):0;
+    var DAILY_SEQ=[0,1,2,3].map(function(i){ return ALL_ARCADE[(_dayOff+i)%ALL_ARCADE.length]; });
 
     // ---- mode: daily run vs free play ----
     var isDaily = qp.get("daily")==="1" || qp.get("session")==="1";
