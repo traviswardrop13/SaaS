@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <title>Sona — Flappy Glide</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@700;800&family=Nunito:wght@700;800&display=swap" rel="stylesheet" />
+  <meta name="theme-color" content="#2a5a8f" />
+  <style>
+    :root{ --blue:#1cb0f6; --blue-d:#1597d4; --green:#58cc02; --green-d:#46a302; }
+    *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;font-family:"Nunito",sans-serif;}
+    html,body{height:100%;overflow:hidden;background:linear-gradient(180deg,#2a5a8f,#4f8fc7 45%,#ffb98a 85%,#ffd7a8);}
+    #app{position:fixed;inset:0;max-width:560px;margin:0 auto;overscroll-behavior:none;touch-action:manipulation;}
+    canvas{position:absolute;inset:0;width:100%;height:100%;}
+    #top{position:absolute;left:0;right:0;top:0;display:flex;align-items:center;gap:12px;padding:calc(12px + env(safe-area-inset-top)) 16px 6px;z-index:5;}
+    #close{border:none;background:rgba(255,255,255,.16);color:#fff;font-size:20px;font-weight:800;cursor:pointer;line-height:1;border-radius:12px;padding:8px 12px;}
+    #score{font-family:"Baloo 2";font-weight:800;font-size:22px;color:#fff;flex:1;}
+    #timer{font-family:"Baloo 2";font-weight:800;font-size:18px;color:#ffd21c;}
+    #flash{position:absolute;left:0;right:0;top:24%;text-align:center;font-family:"Baloo 2";font-weight:800;font-size:32px;color:#ffd21c;opacity:0;transition:opacity .12s, transform .3s;z-index:4;pointer-events:none;text-shadow:0 3px 0 rgba(0,0,0,.3);}
+    #boostChip{position:absolute;left:50%;transform:translateX(-50%);top:calc(64px + env(safe-area-inset-top));z-index:5;background:rgba(255,255,255,.16);color:#fff;font-family:"Baloo 2";font-weight:800;font-size:13px;padding:7px 15px;border-radius:99px;pointer-events:none;white-space:nowrap;transition:background .2s,color .2s;}
+    #boostChip.hot{background:#ffd21c;color:#5c4500;animation:chipPop .4s ease;}
+    @keyframes chipPop{0%{transform:translateX(-50%) scale(1)}50%{transform:translateX(-50%) scale(1.18)}100%{transform:translateX(-50%) scale(1)}}
+    #tapHint{position:absolute;left:0;right:0;bottom:calc(26px + env(safe-area-inset-bottom));text-align:center;font-family:"Baloo 2";font-weight:800;font-size:15px;color:#ffe9cf;z-index:4;pointer-events:none;}
+    .ovl{position:fixed;inset:0;z-index:50;background:rgba(20,42,68,.94);display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:28px;gap:10px;}
+    .ovl.show{display:flex;}
+    .ovl .big{font-size:70px;line-height:1;}
+    .ovl h2{font-family:"Baloo 2";font-weight:800;font-size:28px;color:#fff;}
+    .ovl p{color:#cfe3f5;font-weight:700;font-size:15px;max-width:300px;}
+    .btn{border:none;border-radius:16px;padding:15px 32px;font-family:"Baloo 2";font-weight:800;font-size:17px;text-transform:uppercase;letter-spacing:.04em;color:#fff;background:var(--green);box-shadow:0 5px 0 0 var(--green-d);cursor:pointer;transition:transform .05s;margin-top:6px;}
+    .btn:active{transform:translateY(4px);box-shadow:0 1px 0 0 var(--green-d);}
+    .btn.blue{background:var(--blue);box-shadow:0 5px 0 0 var(--blue-d);}
+    .btn.ghost{background:none;box-shadow:none;color:#a8c4dc;text-transform:none;font-size:14px;}
+  </style>
+</head>
+<body>
+  <div id="app">
+    <canvas id="cv"></canvas>
+    <div id="top">
+      <button id="close">✕</button>
+      <div id="score">🎈 0</div>
+      <div id="timer">45</div>
+    </div>
+    <div id="flash"></div>
+    <div id="boostChip"></div>
+    <div id="tapHint">Tap to flap! Glide through the gaps!</div>
+  </div>
+
+  <div class="ovl" id="needOvl">
+    <div class="big">⚡</div>
+    <h2>Charge up first!</h2>
+    <p>Say your sound 5 times to fill your balloon.</p>
+    <button class="btn blue" id="goCharge">⚡ Charge up</button>
+    <button class="btn ghost" id="needHome">Back home</button>
+  </div>
+
+  <div class="ovl" id="endOvl">
+    <div class="big">🎈</div>
+    <h2 id="endTitle">Great gliding!</h2>
+    <p id="endSub"></p>
+    <button class="btn blue" id="endCharge">⚡ Glide again</button>
+    <button class="btn" id="endAgain" style="display:none;"></button>
+    <button class="btn ghost" id="endHome">Done for now</button>
+  </div>
+
+  <script src="/sona.js"></script>
+  <script>
+    var $=function(id){return document.getElementById(id);};
+    var S=window.Sona, qp=new URLSearchParams(location.search);
+    function sfx(n){ try{ if(S&&S.sfx&&S.sfx[n])S.sfx[n](); }catch(e){} }
+
+    // ---- charge gate + daily plumbing ----
+    var SELF="arcade-glide.html";
+    var isDaily=qp.get("daily")==="1";
+    function backToCharge(){ location.href="/charge.html?"+(isDaily?"daily=1":("game="+SELF)); }
+    $("goCharge").onclick=backToCharge; $("needHome").onclick=function(){location.href="/today.html";};
+    var tok=false; try{ tok=sessionStorage.getItem("sona.play.token")==="1"; sessionStorage.removeItem("sona.play.token"); }catch(e){}
+    if(!tok){ $("needOvl").classList.add("show"); }
+
+    var cv=$("cv"), ctx=cv.getContext("2d"), W=0,H=0,DPR=Math.min(2,window.devicePixelRatio||1);
+    function fit(){ var r=$("app").getBoundingClientRect(); W=r.width; H=r.height; cv.width=W*DPR; cv.height=H*DPR; ctx.setTransform(DPR,0,0,DPR,0,0); }
+    fit(); window.addEventListener("resize",fit);
+
+    // ---- game state ----
+    var boost={on:false,cool:false}; // declared with game state — draw() reads it from frame 1
+    var ROUND=45, tLeft=ROUND, playing=true, score=0;
+    var G=H*0.00075, FLAP=-H*0.0115;
+    var py=H*0.45, vy=0, px=W*0.32;
+    var gates=[], gapH=H*0.34, gspeed=W*0.0048, spawnMs=1650;
+    var falling={on:false,t0:0}, mercyT=0;
+    var RUNNER="🦊";
+    try{ var c=S.characterById((S.getProfile()||{}).character||"fox"); if(c&&c.emoji)RUNNER=c.emoji; }catch(e){}
+
+    function spawnGate(){
+      var cy=H*(0.30+Math.random()*0.40);
+      gates.push({x:W+70,cy:cy,passed:false,gold:boost.on});
+    }
+    var spawnTimer=setInterval(function(){ if(playing&&!falling.on) spawnGate(); },spawnMs);
+    var rampIv=setInterval(function(){ if(playing){ gspeed*=1.05; if(gapH>H*0.26) gapH*=0.985; } },9000);
+    var timeIv=setInterval(function(){ if(!playing)return; tLeft--; $("timer").textContent=tLeft; if(tLeft<=0) endRound(); },1000);
+
+    cv.addEventListener("pointerdown",function(){
+      if(!playing||falling.on)return;
+      vy=FLAP; sfx("tap"); $("tapHint").style.display="none";
+    });
+    function flash(t){ var f=$("flash"); f.textContent=t; f.style.opacity=1; f.style.transform="scale(1.15)"; setTimeout(function(){f.style.opacity=0;f.style.transform="scale(1)";},600); }
+
+    // Mario-Kart fall: bonk a tower → tumble off the sky (~1.1s) → float back
+    // in on the balloon, keep gliding. Never a "you lose" screen.
+    function startFall(){ falling={on:true,t0:performance.now()}; flash("WHOOOA! 🫧"); sfx("tap"); }
+
+    var COLW=74;
+    function draw(){
+      ctx.clearRect(0,0,W,H);
+      // drifting clouds
+      ctx.fillStyle="rgba(255,255,255,.35)";
+      for(var i=0;i<5;i++){ var cx=((i*173-performance.now()*0.02*(1+i*0.2))%(W+140)+W+140)%(W+140)-70; var cy2=H*0.12+i*H*0.14; ctx.beginPath(); ctx.ellipse(cx,cy2,52,20,0,0,7); ctx.fill(); }
+      // gates (hedge towers)
+      for(var i=gates.length-1;i>=0;i--){ var g=gates[i];
+        g.x-=gspeed*(boost.on?1.4:1);
+        if(g.x<-90){ gates.splice(i,1); continue; }
+        var topH=g.cy-gapH/2, botY=g.cy+gapH/2;
+        ctx.fillStyle=g.gold?"#ffd21c":"#2f9e44";
+        rr(g.x-COLW/2,-12,COLW,topH+12,18); ctx.fill();
+        rr(g.x-COLW/2,botY,COLW,H-botY+12,18); ctx.fill();
+        ctx.fillStyle="rgba(255,255,255,.22)";
+        rr(g.x-COLW/2,topH-14,COLW,14,7); ctx.fill();
+        rr(g.x-COLW/2,botY,COLW,14,7); ctx.fill();
+        // score when the gate passes the player
+        if(!g.passed && g.x<px-COLW/2){ g.passed=true; score+=(g.gold||boost.on)?2:1; $("score").textContent="🎈 "+score; sfx("tap"); if(score%10===0)flash(score+" GATES! 🎈"); }
+        // collide (skip during fall/mercy/boost)
+        if(!falling.on && !boost.on && performance.now()-mercyT>1200 &&
+           Math.abs(g.x-px)<(COLW/2+22) && (py<topH+22||py>botY-22)){
+          startFall();
+        }
+      }
+      // player physics
+      if(!falling.on){
+        vy+=G*(boost.on?0.4:1); py+=vy;
+        if(py<44){ py=44; vy=0; }
+        if(py>H-120){ py=H-120; vy=FLAP*0.6; } // soft bounce off the ground — no floor deaths
+      }
+      // player (balloon + buddy; falling = tumble)
+      if(falling.on){
+        var ft=(performance.now()-falling.t0)/1100;
+        if(ft>=1){ falling.on=false; mercyT=performance.now(); py=H*0.45; vy=0; flash("Back in the sky! 🎈"); }
+        else{ ctx.save(); ctx.translate(px,py+ft*ft*320); ctx.rotate(ft*10); ctx.globalAlpha=1-ft*0.4; ctx.font="50px sans-serif"; ctx.textAlign="center"; ctx.textBaseline="middle"; ctx.fillText(RUNNER,0,0); ctx.restore(); }
+      } else {
+        var blink=(performance.now()-mercyT<1200)&&(((performance.now()/120)|0)%2===0);
+        if(!blink){
+          if(boost.on){ ctx.fillStyle="rgba(255,210,28,.35)"; ctx.beginPath(); ctx.arc(px,py,46,0,7); ctx.fill(); }
+          ctx.textAlign="center"; ctx.textBaseline="middle";
+          ctx.font="34px sans-serif"; ctx.fillText("🎈",px,py-40+Math.sin(performance.now()/300)*3);
+          ctx.save(); ctx.translate(px,py); ctx.rotate(Math.max(-0.3,Math.min(0.5,vy*0.03)));
+          ctx.font="50px sans-serif"; ctx.fillText(RUNNER,0,0); ctx.restore();
+        }
+      }
+      requestAnimationFrame(playing?draw:function(){});
+    }
+    function rr(x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
+    spawnGate(); draw();
+
+    // ── VOICE BOOST: SUPER FLOAT — say your sound → 3s feather-fall,
+    // fly-through-anything, 2x gates. Optional; local loudness only.
+    function fireBoost(){
+      boost.on=true; boost.cool=true;
+      var ch=$("boostChip"); ch.textContent="SUPER FLOAT!! 🎈"; ch.classList.add("hot");
+      sfx("complete"); flash("🎈 SUPER FLOAT! 2× 🎈");
+      setTimeout(function(){ boost.on=false; ch.classList.remove("hot"); ch.textContent="…"; },3000);
+      setTimeout(function(){ boost.cool=false; paintChip(); },9000);
+    }
+    var SAYTXT="";
+    function paintChip(){ $("boostChip").textContent="🎤 Say “"+SAYTXT+"” for SUPER FLOAT!"; }
+    (function(){
+      var snd=""; try{ snd=sessionStorage.getItem("sona.boost.sound")||""; }catch(e){}
+      if(!snd){ try{ snd=((S&&S.getProfile&&S.getProfile().focusSounds)||["R"])[0]; }catch(e){ snd="R"; } }
+      SAYTXT=(S&&S.soundSay)?S.soundSay(String(snd).toUpperCase()):"rrrr";
+      paintChip();
+      if(!(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia)){ $("boostChip").style.display="none"; return; }
+      navigator.mediaDevices.getUserMedia({audio:true}).then(function(st){
+        window.addEventListener("pagehide",function(){ try{ st.getTracks().forEach(function(t){t.stop();}); }catch(e){} });
+        var AC=window.AudioContext||window.webkitAudioContext, bctx=new AC();
+        var src=bctx.createMediaStreamSource(st), an=bctx.createAnalyser(); an.fftSize=512; src.connect(an);
+        var td=new Uint8Array(an.fftSize), t0=performance.now(), calS=0,calN=0,thr=0,voiced=0;
+        (function tick(){
+          an.getByteTimeDomainData(td);
+          var sum=0; for(var i=0;i<td.length;i++){ var d=(td[i]-128)/128; sum+=d*d; }
+          var rms=Math.sqrt(sum/td.length), now=performance.now();
+          if(now-t0<450){ calS+=rms; calN++; }
+          else { if(!thr) thr=Math.max(0.05,(calS/Math.max(1,calN))*3.5);
+            if(rms>thr){ voiced++; if(voiced>=6 && playing && !boost.on && !boost.cool) fireBoost(); }
+            else voiced=0; }
+          requestAnimationFrame(tick);
+        })();
+      }).catch(function(){ $("boostChip").style.display="none"; });
+    })();
+
+    // ---- round over ----
+    function bankAndContinue(){ location.href="/charge.html?daily=1&banked="+score; }
+    function endRound(){
+      if(!playing)return; playing=false; clearInterval(spawnTimer); clearInterval(rampIv); clearInterval(timeIv);
+      var coins=Math.min(10,(score/3)|0);
+      try{ if(coins&&S&&S.addCoins)S.addCoins(coins); }catch(e){}
+      sfx("complete"); try{ if(S&&S.confetti)S.confetti(); }catch(e){}
+      if(isDaily){
+        $("endTitle").textContent="+"+score+" points! 🏆";
+        $("endSub").textContent="Banking your score…";
+        $("endCharge").style.display="none"; $("endAgain").style.display="none"; $("endHome").style.display="none";
+        $("endOvl").classList.add("show");
+        setTimeout(bankAndContinue,1400);
+        return;
+      }
+      $("endTitle").textContent=score>=18?"Sky master! 🌟":"Great gliding!";
+      $("endSub").textContent="You glided through "+score+" gates"+(coins?(" · +"+coins+" 🪙"):"")+"!";
+      $("endOvl").classList.add("show");
+    }
+    $("endCharge").onclick=backToCharge;
+    $("endHome").onclick=function(){ location.href="/today.html#play"; };
+    $("close").onclick=function(){ if(playing){ playing=false; clearInterval(spawnTimer); clearInterval(rampIv); clearInterval(timeIv); } if(isDaily){ bankAndContinue(); return; } location.href="/today.html#play"; };
+  </script>
+</body>
+</html>

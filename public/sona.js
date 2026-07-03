@@ -389,6 +389,67 @@
     } catch (e) { return { ok: false, error: "Couldn't read that backup code." }; }
   }
 
+  // ── Charge & Play: the ⚡ charge gate + the Daily Run ─────────────────────
+  // The core loop: a quick burst of ~5 real spoken reps "charges" the game the
+  // kid is about to play. Practice is the power source — never the penalty.
+  // Arcade time is NOT practice and never counts in the SLP stats (that stays
+  // logAttempt's job — one honest SpeechAce spot-check per charge).
+  const TICKKEY = "sona.tickets.v1", CHARGEKEY = "sona.charge.v1";
+  const CHARGE_NEED = 5; // reps per charge — fast, drill-like, ~10s
+  function tickets() { return Math.max(0, (load(TICKKEY, { n: 0 }).n | 0)); }
+  function addTickets(k) { const t = load(TICKKEY, { n: 0 }); t.n = Math.max(0, (t.n | 0) + (k == null ? 1 : k | 0)); save(TICKKEY, t); return t.n; }
+  function spendTicket() { const t = load(TICKKEY, { n: 0 }); if ((t.n | 0) < 1) return false; t.n = (t.n | 0) - 1; save(TICKKEY, t); return true; }
+  function chargeState() { const c = load(CHARGEKEY, { fill: 0, need: CHARGE_NEED }); c.need = CHARGE_NEED; return c; }
+  // One rep toward the meter. Honest data is logAttempt's; the METER may also be
+  // fed by "effort sparks" (fail-forward after real tries) so a struggling kid
+  // still reaches the fun — kind meter, truthful stats.
+  function chargeAdd() {
+    const c = chargeState();
+    c.fill = (c.fill | 0) + 1;
+    if (c.fill >= c.need) { c.fill = 0; save(CHARGEKEY, c); const n = addTickets(1); return { ticket: true, tickets: n, fill: 0, need: c.need }; }
+    save(CHARGEKEY, c);
+    return { ticket: false, tickets: tickets(), fill: c.fill, need: c.need };
+  }
+  function chargeReset() { save(CHARGEKEY, { fill: 0, need: CHARGE_NEED }); }
+
+  // ── the Daily Run: one shot per day, cumulative high score ───────────────
+  // 4 quick games, each unlocked by a 5-rep charge; the round scores add up to
+  // today's total. One attempt per day (the Wordle scarcity that makes it an
+  // event) — free play in the arcade stays unlimited, same charge gate.
+  const DAILYKEY = "sona.daily.v1";
+  function localDay() { const d = new Date(); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); }
+  function dailyInfo() {
+    const d = load(DAILYKEY, { date: "", played: false, score: 0, best: 0 });
+    const today = localDay();
+    return { playedToday: !!(d.played && d.date === today), score: (d.date === today ? d.score | 0 : 0), best: d.best | 0, date: today };
+  }
+  function dailyFinish(score) {
+    score = Math.max(0, score | 0);
+    const d = load(DAILYKEY, { date: "", played: false, score: 0, best: 0 });
+    const newBest = score > (d.best | 0);
+    save(DAILYKEY, { date: localDay(), played: true, score: score, best: newBest ? score : (d.best | 0) });
+    return { score: score, best: newBest ? score : (d.best | 0), newBest: newBest };
+  }
+
+  // Friendly full-screen blocker when the mic is denied — a kid should never
+  // sit in a silent loop. One shared implementation for every recording page.
+  function micDenied(opts) {
+    opts = opts || {};
+    try {
+      if (document.getElementById("sonaMicDenied")) return;
+      const d = document.createElement("div");
+      d.id = "sonaMicDenied";
+      d.style.cssText = "position:fixed;inset:0;z-index:9999;background:rgba(255,255,255,.97);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:30px;gap:10px;";
+      d.innerHTML =
+        '<img src="/coach/leo.png" alt="Leo" style="width:110px;height:110px;object-fit:contain;" onerror="this.outerHTML=\'<div style=&quot;font-size:64px&quot;>🦁</div>\'" />' +
+        '<div style="font-family:\'Baloo 2\',sans-serif;font-weight:800;font-size:24px;color:#3c3c3c;">I can’t hear you!</div>' +
+        '<div style="font-family:Nunito,sans-serif;font-weight:700;font-size:15px;color:#777;max-width:300px;">Ask a grown-up to turn on the microphone for Sona in your phone’s settings, then come back!</div>' +
+        '<button style="margin-top:10px;border:none;border-radius:16px;padding:14px 34px;font-family:\'Baloo 2\',sans-serif;font-weight:800;font-size:16px;text-transform:uppercase;color:#fff;background:#1cb0f6;box-shadow:0 5px 0 0 #1597d4;cursor:pointer;">OK</button>';
+      d.querySelector("button").onclick = function () { d.remove(); if (opts.onClose) opts.onClose(); else location.href = opts.back || "/today.html"; };
+      document.body.appendChild(d);
+    } catch (e) {}
+  }
+
   // --- subscription (Stripe is the source of truth; this is a local cache so
   //     the app can reflect "active" without a round-trip every load) ---
   const SKEY = "sona.sub.v1";
@@ -403,7 +464,7 @@
   const TRIALKEY = "sona.trial.v1", TRIAL_DAYS = 7;
   function getTrial() { return load(TRIALKEY, null); }
   function trialMs(t) { return (((t && t.days) || TRIAL_DAYS)) * 86400000; }
-  function mirrorTrial(t) { try { fetch("/api/trial", { method: "POST", headers: { "Content-Type": "application/json" }, keepalive: true, body: JSON.stringify({ email: t.email || "", start: t.start, days: t.days || TRIAL_DAYS }) }); } catch (e) {} }
+  function mirrorTrial(t) { try { fetch("/api/trial", { method: "POST", headers: { "Content-Type": "application/json" }, keepalive: true, body: JSON.stringify({ email: t.email || "", start: t.start, days: t.days || TRIAL_DAYS }) }).catch(function () {}); } catch (e) {} }
   function startTrial(email) {
     let t = getTrial();
     if (!t || !t.start) { t = { start: Date.now(), email: (email || "").trim(), days: TRIAL_DAYS }; save(TRIALKEY, t); mirrorTrial(t); }
@@ -574,16 +635,16 @@
   // flies farther, races get longer, more bubbles to pop…). Add new games over time
   // by appending here (or give a map node its own `queue`).
   const LEVEL_GAMES = ["racer.html", "bubble.html", "grocery.html", "cupstack.html", "story.html"];
-  // ── rotating game deck ──
-  // The keeper roster (fewer, higher-quality games). Each level deals
-  // GAMES_PER_LEVEL from the deck, so a game doesn't reappear for a few levels;
-  // difficulty = the level number, so a returning game is the harder version.
-  // Parked (still on disk, off the map + deck): rocket, builder, train, whack,
-  // match — bring one back per release once it's rebuilt to the same bar.
-  const GAME_DECK = ["racer.html", "grocery.html", "bubble.html", "cupstack.html", "story.html", "chat.html"];
-  // A daily session = this many games. 4 pushes spoken reps toward a therapeutic
-  // dose (~30-50/session); final calibration for young attention spans needs an SLP.
-  const GAMES_PER_LEVEL = 4;
+  // ── the deck is now Charge & Play ──
+  // The core loop replaced the themed-game roster: honest reps charge the ⚡
+  // meter → arcade tickets (Fruit Slice / Block Stacker) → repeat to the daily
+  // target. charge.html runs the whole session itself, so a "level" is simply
+  // one charge session. Story Time stays as the calm second mode (reached from
+  // the shelf), and the old speech games are parked on disk (racer, bubble,
+  // grocery, cupstack, chat, rocket, builder, train, whack, match) — arcade
+  // payoffs are the expansion surface now, not new speech games.
+  const GAME_DECK = ["charge.html"];
+  const GAMES_PER_LEVEL = 1;
   function levelGames(level) {
     level = level || 1;
     const start = ((level - 1) * GAMES_PER_LEVEL) % GAME_DECK.length, out = [];
@@ -603,6 +664,12 @@
     "train.html":    { name: "Story Train",   icon: "🚂",  band: "Sentences", c: "#2ec4d6" },
     "story.html":    { name: "Story Time",    icon: "📖",  band: "Story",     c: "#7cc40a" },
     "chat.html":     { name: "Chat with Leo", icon: "💬",  band: "Talking",   c: "#e0457b" },
+    "charge.html":       { name: "Charge & Play", icon: "⚡", band: "Practice", c: "#ffb100" },
+    "arcade-slice.html": { name: "Fruit Slice",   icon: "🍉", band: "Arcade",   c: "#ff6b6b" },
+    "arcade-stack.html": { name: "Block Stacker", icon: "🧱", band: "Arcade",   c: "#4dabf7" },
+    "arcade-tiles.html": { name: "Piano Tiles",   icon: "🎹", band: "Arcade",   c: "#9775fa" },
+    "arcade-run.html":   { name: "Sound Sprint",  icon: "🏃", band: "Arcade",   c: "#2f9e44" },
+    "arcade-glide.html": { name: "Flappy Glide",  icon: "🎈", band: "Arcade",   c: "#4f8fc7" },
   };
   function gameMeta(file) {
     const k = String(file || "").replace(/^\//, "").split("?")[0];
@@ -1047,5 +1114,5 @@
   }
   try { installDebug(); } catch (e) {}
 
-  global.Sona = { pic, ALL_SOUNDS, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, ladderContent, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, gated, isNativeApp, getTrial, startTrial, ensureTrial, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, LEVEL_GAMES, GAME_DECK, GAMES_PER_LEVEL, levelGames, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, WORLDS, LEVELS_PER_WORLD, campaignLevels, campaignSounds, campaignState, worldById, worldLevels, worldStars, worldCleared, levelStars, setLevelStars, totalStars, worldUnlocked, levelUnlocked, campaignLaunch, campaignResolve, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES };
+  global.Sona = { pic, ALL_SOUNDS, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, ladderContent, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, gated, isNativeApp, getTrial, startTrial, ensureTrial, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, LEVEL_GAMES, GAME_DECK, GAMES_PER_LEVEL, levelGames, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, WORLDS, LEVELS_PER_WORLD, campaignLevels, campaignSounds, campaignState, worldById, worldLevels, worldStars, worldCleared, levelStars, setLevelStars, totalStars, worldUnlocked, levelUnlocked, campaignLaunch, campaignResolve, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES };
 })(window);

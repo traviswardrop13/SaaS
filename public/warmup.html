@@ -85,12 +85,9 @@
     function done(){
       if(finished)return; finished=true;
       $("hint").textContent="Blast off! 🚀"; sfx("complete"); try{ if(S&&S.confetti)S.confetti(); }catch(e){}
-      // start the level session, then go to the first game
+      // warmed up → straight into the Charge & Play daily session
       setTimeout(function(){
-        try{
-          if(S&&S.session){ S.session.start(LEVEL, SOUND, (S.levelGames?S.levelGames(LEVEL):["racer.html"]), LEVEL); location.href=S.session.url(); return; }
-        }catch(e){}
-        location.href="/level.html?level="+LEVEL;
+        location.href="/charge.html?session=1&sound="+encodeURIComponent(SOUND)+"&level="+LEVEL;
       }, 650);
     }
 
