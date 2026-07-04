@@ -189,8 +189,28 @@
         '</div>'+
         '<div class="plate"><b>'+sc.name+'</b><span>'+sc.sub+'</span></div>';
       h.onclick=sc.tap;
-      // real art drop-in: /coach/houses/<key>.png replaces the CSS kit
-      (function(btn,key){ var im=new Image(); im.onload=function(){ var a=btn.querySelector(".art"); a.src=im.src; a.style.display="block"; btn.querySelector(".kit").style.display="none"; }; im.src="/coach/houses/"+key+".png"; })(h,sc.key);
+      // real art drop-ins, tried in order:
+      //   1) /coach/city/<key>.png — full scene panel: paints the whole page.
+      //      The CSS house goes invisible but keeps its box, so the painted
+      //      building stays the tap target (GO! badge is re-anchored to stay).
+      //   2) /coach/houses/<key>.png — transparent cutout replacing the CSS kit.
+      //   3) neither file exists → the CSS kit ships as-is.
+      (function(scene,clouds,gnd,btn,key){
+        var pan=new Image();
+        pan.onload=function(){
+          scene.style.background="url("+pan.src+") center bottom / cover no-repeat";
+          clouds.style.display="none"; gnd.style.display="none";
+          var k=btn.querySelector(".kit");
+          var go=k.querySelector(".go"); if(go) btn.appendChild(go);
+          k.style.opacity=0;
+        };
+        pan.onerror=function(){
+          var im=new Image();
+          im.onload=function(){ var a=btn.querySelector(".art"); a.src=im.src; a.style.display="block"; btn.querySelector(".kit").style.display="none"; };
+          im.src="/coach/houses/"+key+".png";
+        };
+        pan.src="/coach/city/"+key+".png";
+      })(s,cl,g,h,sc.key);
       s.appendChild(h); city.appendChild(s);
       var dot=document.createElement("i"); if(i===0)dot.className="on"; dots.appendChild(dot);
     });

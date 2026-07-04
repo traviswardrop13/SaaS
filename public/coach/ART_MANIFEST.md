@@ -5,7 +5,18 @@ Until then the app shows a placeholder (CSS kit / gradient / emoji). Names are e
 lowercase, **no spaces**. All visuals are AI-generated PNGs; images are scenery only —
 anything tappable or with text stays in code.
 
-## 1. City houses — TOP PRIORITY  (the main screen)
+## 1. City scene panels — TOP PRIORITY  (the main screen)
+`coach/city/<key>.png` — **full scene, no transparency** (2:3 vertical,
+~1024×1536). Paints the entire swipe-city page for that house: sky + clouds in
+the art, hero building centered, gray ground strip at the very bottom, neighbor
+buildings peeking at the edges. Phones are taller than 2:3, so the sides crop —
+keep everything important in the center ~70%. The name plate + GO! badge are
+drawn by code on top.
+
+Same `<key>` list as the cutouts below. A panel takes precedence over a cutout
+when both exist.
+
+## 1b. City house cutouts  (fallback style, only if no panel)
 `coach/houses/<key>.png` — transparent PNG, one house each. Replaces the CSS-kit
 house on the Sound Town swipe city (today.html). Rendered ~300px wide with a CSS
 drop-shadow; export **~1000px wide**, house centered, transparent background.
