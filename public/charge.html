@@ -150,6 +150,7 @@
     var isDaily = qp.get("daily")==="1" || qp.get("session")==="1";
     var freeGame = qp.get("game");
     if(freeGame && !GAMES[freeGame]) freeGame=null;
+    var LVL = parseInt(qp.get("lvl"),10)||0; // house-journey level — passed through to the game untouched
     var RUNKEY="sona.run.v1";
     function runGet(){ try{ return JSON.parse(sessionStorage.getItem(RUNKEY)||"null"); }catch(e){ return null; } }
     function runSave(r){ try{ sessionStorage.setItem(RUNKEY,JSON.stringify(r)); }catch(e){} }
@@ -335,7 +336,7 @@
       sfx("complete"); try{ if(S&&S.confetti)S.confetti(); }catch(e){}
       try{ sessionStorage.setItem("sona.play.token","1"); sessionStorage.setItem("sona.boost.sound",SOUND); }catch(e){}
       if(isDaily&&run){ run.pending=true; runSave(run); }
-      setTimeout(function(){ location.href="/"+GAME+"?from=charge"+(isDaily?"&daily=1":""); },700);
+      setTimeout(function(){ location.href="/"+GAME+"?from=charge"+(isDaily?"&daily=1":"")+(!isDaily&&LVL?"&lvl="+LVL:""); },700);
     }
 
     // ---- daily overlays ----

@@ -71,10 +71,15 @@
     // ---- charge gate + daily plumbing (same pattern as every arcade game) ----
     var SELF="arcade-tiles.html";
     var isDaily=qp.get("daily")==="1";
-    function backToCharge(){ location.href="/charge.html?"+(isDaily?"daily=1":("game="+SELF)); }
+    // house journey: ?lvl=N — score-gated level with a target + stars
+    var LVL=(!isDaily&&parseInt(qp.get("lvl"),10))||0;
+    var HKEY=SELF.replace(/^arcade-|\.html$/g,"");
+    var TGT=(LVL&&S&&S.houseTarget)?S.houseTarget(HKEY,LVL):0;
+    function backToCharge(){ location.href="/charge.html?"+(isDaily?"daily=1":("game="+SELF+(LVL?"&lvl="+LVL:""))); }
     $("goCharge").onclick=backToCharge; $("needHome").onclick=function(){location.href="/today.html";};
     var tok=false; try{ tok=sessionStorage.getItem("sona.play.token")==="1"; sessionStorage.removeItem("sona.play.token"); }catch(e){}
     if(!tok){ $("needOvl").classList.add("show"); }
+    if(LVL&&TGT){ var _gl=document.createElement("div"); _gl.textContent="\ud83c\udfaf "+TGT; _gl.style.cssText="font-family:'Baloo 2';font-weight:800;font-size:17px;color:#ffd21c;margin-right:8px;"; var _tm=$("timer"); if(_tm&&_tm.parentNode)_tm.parentNode.insertBefore(_gl,_tm); }
 
     var cv=$("cv"), ctx=cv.getContext("2d"), W=0,H=0,DPR=Math.min(2,window.devicePixelRatio||1);
     function fit(){ var r=$("app").getBoundingClientRect(); W=r.width; H=r.height; cv.width=W*DPR; cv.height=H*DPR; ctx.setTransform(DPR,0,0,DPR,0,0); }
@@ -217,13 +222,33 @@
         setTimeout(bankAndContinue,1400);
         return;
       }
+      if(LVL){
+        // journey round: stars vs the level goal; a miss is a retry, never a wall
+        var _st=(S&&S.houseStars)?S.houseStars(score,TGT):(score>=TGT?1:0);
+        if(_st){ try{ if(S&&S.houseDone)S.houseDone(HKEY,LVL,_st); }catch(e){}
+          $("endTitle").textContent="Level "+LVL+" done! "+"\u2b50".repeat(_st);
+          $("endSub").textContent="Score "+score+" \u00b7 goal "+TGT+(coins?(" \u00b7 +"+coins+" \ud83e\ude99"):"");
+          if(LVL<((S&&S.HOUSE_LEVELS)||10)){ $("endCharge").textContent="\u26a1 Level "+(LVL+1); $("endCharge").onclick=function(){ location.href="/charge.html?game="+SELF+"&lvl="+(LVL+1); }; }
+          else { $("endCharge").textContent="\ud83c\udfc6 House complete!"; $("endCharge").onclick=function(){ location.href="/house.html?g="+HKEY; }; }
+        } else {
+          $("endTitle").textContent="So close! \ud83c\udfaf";
+          $("endSub").textContent="Score "+score+" \u00b7 goal "+TGT+" \u2014 you've got this!";
+          $("endCharge").textContent="\u26a1 Try again";
+          $("endCharge").onclick=function(){ location.href="/charge.html?game="+SELF+"&lvl="+LVL; };
+        }
+        $("endAgain").style.display="none";
+        $("endHome").textContent="Back to the house";
+        $("endHome").onclick=function(){ location.href="/house.html?g="+HKEY; };
+        $("endOvl").classList.add("show");
+        return;
+      }
       $("endTitle").textContent=score>=30?"Piano star! 🌟":"Beautiful music!";
       $("endSub").textContent="You played "+score+" notes"+(coins?(" · +"+coins+" 🪙"):"")+"!";
       $("endOvl").classList.add("show");
     }
     $("endCharge").onclick=backToCharge;
     $("endHome").onclick=function(){ location.href="/today.html#play"; };
-    $("close").onclick=function(){ if(playing){ playing=false; clearInterval(spawnTimer); clearInterval(timeIv); clearInterval(rampIv); } if(isDaily){ bankAndContinue(); return; } location.href="/today.html#play"; };
+    $("close").onclick=function(){ if(playing){ playing=false; clearInterval(spawnTimer); clearInterval(timeIv); clearInterval(rampIv); } if(isDaily){ bankAndContinue(); return; } location.href=LVL?("/house.html?g="+HKEY):"/today.html#play"; };
   </script>
 </body>
 </html>

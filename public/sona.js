@@ -412,6 +412,28 @@
   }
   function chargeReset() { save(CHARGEKEY, { fill: 0, need: CHARGE_NEED }); }
 
+  // ── House journeys: 10 score-gated levels inside each arcade house ──
+  // The city house opens a room (house.html) with a path of level pucks.
+  // Speech stays the charge gate exactly as before — levels only gate GAME
+  // difficulty via a rising score target, so the journey never touches the
+  // SLP ladder. Stars: 1 = goal, 2 = 1.4×, 3 = 1.8×. Replay any done level.
+  const HOUSEKEY = "sona.house.v1", HOUSE_LEVELS = 10;
+  // per-house target curve [base, step]: target(n) = base + step·(n−1),
+  // tuned to each game's typical 45s score range.
+  const HOUSE_TARGETS = { slice: [8, 3], tiles: [8, 3], stack: [6, 2], run: [400, 30], glide: [5, 2] };
+  function houseTarget(g, n) { const t = HOUSE_TARGETS[g] || [8, 3]; return t[0] + t[1] * (Math.max(1, n | 0) - 1); }
+  function houseStars(sc, tgt) { return sc >= tgt * 1.8 ? 3 : sc >= tgt * 1.4 ? 2 : sc >= tgt ? 1 : 0; }
+  function houseProg(g) {
+    const all = load(HOUSEKEY, {}); const h = all[g] || { stars: {} }; h.stars = h.stars || {};
+    let un = 1; while (un < HOUSE_LEVELS && (h.stars[un] | 0) > 0) un++;
+    return { stars: h.stars, unlocked: un };
+  }
+  function houseDone(g, lvl, stars) {
+    const all = load(HOUSEKEY, {}); const h = all[g] || (all[g] = { stars: {} }); h.stars = h.stars || {};
+    h.stars[lvl] = Math.max(h.stars[lvl] | 0, stars | 0);
+    save(HOUSEKEY, all); return houseProg(g);
+  }
+
   // ── the Daily Run: one shot per day, cumulative high score ───────────────
   // 4 quick games, each unlocked by a 5-rep charge; the round scores add up to
   // today's total. One attempt per day (the Wordle scarcity that makes it an
@@ -1114,5 +1136,5 @@
   }
   try { installDebug(); } catch (e) {}
 
-  global.Sona = { pic, ALL_SOUNDS, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, ladderContent, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, gated, isNativeApp, getTrial, startTrial, ensureTrial, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, LEVEL_GAMES, GAME_DECK, GAMES_PER_LEVEL, levelGames, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, WORLDS, LEVELS_PER_WORLD, campaignLevels, campaignSounds, campaignState, worldById, worldLevels, worldStars, worldCleared, levelStars, setLevelStars, totalStars, worldUnlocked, levelUnlocked, campaignLaunch, campaignResolve, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES };
+  global.Sona = { pic, ALL_SOUNDS, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, HOUSE_LEVELS, houseTarget, houseStars, houseProg, houseDone, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, ladderContent, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, gated, isNativeApp, getTrial, startTrial, ensureTrial, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, LEVEL_GAMES, GAME_DECK, GAMES_PER_LEVEL, levelGames, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, WORLDS, LEVELS_PER_WORLD, campaignLevels, campaignSounds, campaignState, worldById, worldLevels, worldStars, worldCleared, levelStars, setLevelStars, totalStars, worldUnlocked, levelUnlocked, campaignLaunch, campaignResolve, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES };
 })(window);

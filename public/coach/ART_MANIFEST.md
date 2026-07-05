@@ -34,6 +34,16 @@ drop-shadow; export **~1000px wide**, house centered, transparent background.
 13 files total. The CSS kit stays as fallback — a missing file just keeps the
 current look, nothing breaks.
 
+## 1c. House rooms — the level-journey screens  (house.html)
+`coach/rooms/<key>.png` for: `slice`, `tiles`, `stack`, `run`, `glide`.
+Full scene, no transparency, 2:3 vertical ~1024×1536. **ROOM ONLY — no path,
+no level nodes, no locks, no checkmarks, no buttons, no numbers, no text.**
+Code draws the winding path, level pucks, back button and title on top, so
+keep the center column relatively calm (shelves/props to the sides, floor at
+the bottom). Think: inside the Fruit Slice market, the Piano Tiles concert
+hall, the Block Stacker workshop, the Sound Sprint garage, the Flappy Glide
+balloon loft.
+
 ## 2. Story Time backdrops  (live from the city)
 - `coach/story/lvl<n>.png` — per-level scene, n = 1…10 (preferred)
 - `coach/story/bg.png` — generic fallback used when a level file is missing
