@@ -81,7 +81,7 @@
     $("goCharge").onclick=backToCharge; $("needHome").onclick=function(){location.href="/today.html";};
     var tok=false; try{ tok=sessionStorage.getItem("sona.play.token")==="1"; sessionStorage.removeItem("sona.play.token"); }catch(e){}
     if(!tok){ $("needOvl").classList.add("show"); }
-    if(LVL&&TGT){ var _gl=document.createElement("div"); _gl.textContent="\ud83c\udfaf "+TGT; _gl.style.cssText="font-family:'Baloo 2';font-weight:800;font-size:17px;color:#ffd21c;margin-right:8px;"; var _tm=$("timer"); if(_tm&&_tm.parentNode)_tm.parentNode.insertBefore(_gl,_tm); }
+    if(LVL&&TGT){ var _gl=document.createElement("div"); _gl.textContent="\ud83c\udfaf "+TGT; _gl.style.cssText="font-family:'Baloo 2';font-weight:800;font-size:17px;color:#ffd21c;margin-right:8px;"; var _tm=$("best"); if(_tm&&_tm.parentNode)_tm.parentNode.insertBefore(_gl,_tm); } // stack has no timer \u2014 anchor on the best label
 
     // best height (local, just for pride)
     var BKEY="sona.stack.best"; var best=0; try{ best=parseInt(localStorage.getItem(BKEY)||"0",10)||0; }catch(e){}

@@ -419,8 +419,11 @@
   // SLP ladder. Stars: 1 = goal, 2 = 1.4×, 3 = 1.8×. Replay any done level.
   const HOUSEKEY = "sona.house.v1", HOUSE_LEVELS = 10;
   // per-house target curve [base, step]: target(n) = base + step·(n−1),
-  // tuned to each game's typical 45s score range.
-  const HOUSE_TARGETS = { slice: [8, 3], tiles: [8, 3], stack: [6, 2], run: [400, 30], glide: [5, 2] };
+  // tuned to each game's typical 45s score range. Every target must be
+  // reachable with NO voice boost (boost is always optional): run's distance
+  // ticks 10/s (450 clean max) + 5/coin, so its curve tops out under a good
+  // clean round, never a boosted one.
+  const HOUSE_TARGETS = { slice: [8, 3], tiles: [8, 3], stack: [6, 2], run: [380, 12], glide: [5, 2] };
   function houseTarget(g, n) { const t = HOUSE_TARGETS[g] || [8, 3]; return t[0] + t[1] * (Math.max(1, n | 0) - 1); }
   function houseStars(sc, tgt) { return sc >= tgt * 1.8 ? 3 : sc >= tgt * 1.4 ? 2 : sc >= tgt ? 1 : 0; }
   function houseProg(g) {

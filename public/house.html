@@ -82,7 +82,9 @@
     var doneCount=0; for(var i=1;i<=N;i++){ if((prog.stars[i]|0)>0) doneCount++; }
     $("tSub").textContent=doneCount+" of "+N+" levels done";
     var tgt=(S&&S.houseTarget)?S.houseTarget(KEY,prog.unlocked):10;
-    $("goalTxt").textContent="Level "+prog.unlocked+" · Goal "+tgt+" "+H.emo;
+    var allDone=doneCount>=N;
+    $("goalTxt").textContent=allDone ? "House complete! 🏆 Replay for ⭐⭐⭐"
+      : "Level "+prog.unlocked+" · Goal "+tgt+" "+H.emo;
 
     // serpentine positions (percent of room): rows of 3 from the bottom
     function pos(n){
