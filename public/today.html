@@ -153,15 +153,15 @@
         go:!d.playedToday, played:d.playedToday,
         tap:function(){ if(d.playedToday){ sfx("tap"); toast("Come back tomorrow! Free play 👉"); return; } sfx("correct"); location.href="/charge.html?daily=1&sound="+encodeURIComponent(sound)+"&level="+currentLevel(); } },
       { key:"slice", sky:"linear-gradient(180deg,#ff8787,#ffc9c9 70%,#ffe3e3)", kit:{roof:"#e03131",body:"#ffe3e3",emo:"🍉"}, name:"Fruit Slice", sub:"⚡ Say it 5× to play",
-        tap:function(){ sfx("tap"); location.href="/charge.html?game=arcade-slice.html"; } },
+        tap:function(){ sfx("tap"); location.href="/house.html?g=slice"; } },
       { key:"tiles", sky:"linear-gradient(180deg,#b197fc,#d0bfff 70%,#e5dbff)", kit:{roof:"#7048e8",body:"#e5dbff",emo:"🎹"}, name:"Piano Tiles", sub:"⚡ Say it 5× to play",
-        tap:function(){ sfx("tap"); location.href="/charge.html?game=arcade-tiles.html"; } },
+        tap:function(){ sfx("tap"); location.href="/house.html?g=tiles"; } },
       { key:"stack", sky:"linear-gradient(180deg,#4dabf7,#a5d8ff 70%,#d0ebff)", kit:{roof:"#1864ab",body:"#d0ebff",emo:"🧱"}, name:"Block Stacker", sub:"⚡ Say it 5× to play",
-        tap:function(){ sfx("tap"); location.href="/charge.html?game=arcade-stack.html"; } },
+        tap:function(){ sfx("tap"); location.href="/house.html?g=stack"; } },
       { key:"run", sky:"linear-gradient(180deg,#69db7c,#b2f2bb 70%,#d3f9d8)", kit:{roof:"#2b8a3e",body:"#d3f9d8",emo:"🏃"}, name:"Sound Sprint", sub:"⚡ Say it 5× to play",
-        tap:function(){ sfx("tap"); location.href="/charge.html?game=arcade-run.html"; } },
+        tap:function(){ sfx("tap"); location.href="/house.html?g=run"; } },
       { key:"glide", sky:"linear-gradient(180deg,#74a9e0,#a8c9ec 60%,#ffd7a8)", kit:{roof:"#3b76b5",body:"#dbe9f7",emo:"🎈"}, name:"Flappy Glide", sub:"⚡ Say it 5× to play",
-        tap:function(){ sfx("tap"); location.href="/charge.html?game=arcade-glide.html"; } },
+        tap:function(){ sfx("tap"); location.href="/house.html?g=glide"; } },
       { key:"story", sky:"linear-gradient(180deg,#ffd43b,#ffe58a 70%,#fff3bf)", kit:{roof:"#e67700",body:"#fff3bf",emo:"📖"}, name:"Story Time", sub:"Read with your buddy",
         tap:function(){ sfx("tap"); location.href="/story.html"; } },
     ];
@@ -189,8 +189,28 @@
         '</div>'+
         '<div class="plate"><b>'+sc.name+'</b><span>'+sc.sub+'</span></div>';
       h.onclick=sc.tap;
-      // real art drop-in: /coach/houses/<key>.png replaces the CSS kit
-      (function(btn,key){ var im=new Image(); im.onload=function(){ var a=btn.querySelector(".art"); a.src=im.src; a.style.display="block"; btn.querySelector(".kit").style.display="none"; }; im.src="/coach/houses/"+key+".png"; })(h,sc.key);
+      // real art drop-ins, tried in order:
+      //   1) /coach/city/<key>.png — full scene panel: paints the whole page.
+      //      The CSS house goes invisible but keeps its box, so the painted
+      //      building stays the tap target (GO! badge is re-anchored to stay).
+      //   2) /coach/houses/<key>.png — transparent cutout replacing the CSS kit.
+      //   3) neither file exists → the CSS kit ships as-is.
+      (function(scene,clouds,gnd,btn,key){
+        var pan=new Image();
+        pan.onload=function(){
+          scene.style.background="url("+pan.src+") center bottom / cover no-repeat";
+          clouds.style.display="none"; gnd.style.display="none";
+          var k=btn.querySelector(".kit");
+          var go=k.querySelector(".go"); if(go) btn.appendChild(go);
+          k.style.opacity=0;
+        };
+        pan.onerror=function(){
+          var im=new Image();
+          im.onload=function(){ var a=btn.querySelector(".art"); a.src=im.src; a.style.display="block"; btn.querySelector(".kit").style.display="none"; };
+          im.src="/coach/houses/"+key+".png";
+        };
+        pan.src="/coach/city/"+key+".png";
+      })(s,cl,g,h,sc.key);
       s.appendChild(h); city.appendChild(s);
       var dot=document.createElement("i"); if(i===0)dot.className="on"; dots.appendChild(dot);
     });
