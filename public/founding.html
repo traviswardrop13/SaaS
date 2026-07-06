@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Sona — Founding Families</title>
+  <meta name="description" content="25 founding-family spots: free speech practice games for 90 days, with weekly progress notes reviewed by a pediatric SLP." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet" />
+  <meta name="theme-color" content="#1cb0f6" />
+  <style>
+    :root{ --blue:#1cb0f6; --blue-d:#1597d4; --green:#58cc02; --green-d:#46a302; --ink:#243b53; --muted:#64748b; }
+    *{margin:0;padding:0;box-sizing:border-box;font-family:"Nunito",sans-serif;-webkit-tap-highlight-color:transparent;}
+    body{background:linear-gradient(180deg,#eaf6ff,#f7fbff 40%,#fff);color:var(--ink);}
+    .wrap{max-width:520px;margin:0 auto;padding:28px 20px 60px;}
+    .leo{width:84px;height:84px;display:block;margin:8px auto 2px;}
+    .badge{display:block;width:max-content;margin:0 auto 12px;background:#fff3bf;color:#8a6400;font-weight:800;font-size:12.5px;border-radius:99px;padding:6px 14px;border:1px solid #ffe08a;}
+    h1{font-family:"Baloo 2";font-weight:800;font-size:30px;text-align:center;line-height:1.15;}
+    .sub{text-align:center;font-weight:700;color:var(--muted);font-size:15.5px;margin:10px 0 22px;line-height:1.45;}
+    .card{background:#fff;border:1px solid #e6eef5;border-radius:20px;padding:18px;margin:12px 0;box-shadow:0 6px 18px rgba(15,40,70,.06);}
+    .card h3{font-family:"Baloo 2";font-size:17px;margin-bottom:8px;}
+    .card li{list-style:none;font-weight:700;font-size:14.5px;color:#3d5570;padding:5px 0 5px 2px;}
+    label{display:block;font-weight:800;font-size:13px;margin:14px 2px 5px;color:#3d5570;}
+    input,select{width:100%;border:2px solid #dbe7f0;border-radius:14px;padding:13px 14px;font-size:16px;font-weight:700;color:var(--ink);background:#fbfdff;outline:none;}
+    input:focus,select:focus{border-color:var(--blue);}
+    .row{display:flex;gap:10px;} .row>div{flex:1;}
+    .consent{display:flex;gap:10px;align-items:flex-start;margin:16px 2px 4px;font-size:13px;font-weight:700;color:var(--muted);line-height:1.45;}
+    .consent input{width:22px;height:22px;margin-top:1px;flex:none;accent-color:var(--green);}
+    .btn{width:100%;border:none;border-radius:16px;padding:16px;font-family:"Baloo 2";font-weight:800;font-size:18px;color:#fff;background:var(--green);box-shadow:0 5px 0 var(--green-d);cursor:pointer;margin-top:18px;}
+    .btn:active{transform:translateY(3px);box-shadow:0 2px 0 var(--green-d);}
+    .err{display:none;background:#fff0f0;border:1px solid #ffd4d4;color:#b02a2a;font-weight:800;font-size:13.5px;border-radius:12px;padding:10px 12px;margin-top:12px;}
+    #done{display:none;}
+    .link{background:#eefaff;border:2px dashed var(--blue);border-radius:14px;padding:14px;text-align:center;font-weight:800;font-size:17px;color:var(--blue-d);word-break:break-all;margin:12px 0;}
+    .small{font-size:12.5px;color:var(--muted);font-weight:700;text-align:center;margin-top:16px;line-height:1.5;}
+    .small a{color:var(--blue-d);}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <img class="leo" src="/coach/leo.png" alt="Leo the lion" />
+    <span class="badge">🎟 25 founding-family spots</span>
+
+    <div id="form">
+      <h1>Speech practice your kid begs to do</h1>
+      <p class="sub">Real arcade games powered by saying their sounds — built by a dad and a pediatric speech-language pathologist for their own kids.</p>
+
+      <div class="card">
+        <h3>Founding families get</h3>
+        <li>🎁 Free access for 90 days — no card</li>
+        <li>📈 A weekly progress note on your child's sounds</li>
+        <li>👩‍⚕️ A 15-minute progress call with our SLP</li>
+        <li>📱 A direct text line to the founders</li>
+      </div>
+      <div class="card">
+        <h3>What we ask</h3>
+        <li>🗓 Aim for ~10 minutes of play most days</li>
+        <li>💬 Tell us the honest truth by text each week</li>
+      </div>
+
+      <div class="card">
+        <label>Your first name</label>
+        <input id="parent" autocomplete="given-name" placeholder="Sam" />
+        <label>Your cell (this is how we send progress notes)</label>
+        <input id="cell" type="tel" autocomplete="tel" placeholder="(555) 123-4567" />
+        <div class="row">
+          <div><label>Child's first name</label><input id="child" placeholder="Ava" /></div>
+          <div><label>Age</label><input id="age" inputmode="numeric" placeholder="5" /></div>
+        </div>
+        <label>The sound they work on most</label>
+        <select id="sound">
+          <option value="R">R (like “rabbit”)</option><option value="S">S (like “sun”)</option>
+          <option value="L">L (like “lion”)</option><option value="K">K (like “cat”)</option>
+          <option value="G">G (like “go”)</option><option value="F">F (like “fish”)</option>
+          <option value="SH">SH (like “shoe”)</option><option value="CH">CH (like “cheese”)</option>
+          <option value="TH">TH (like “thumb”)</option><option value="Z">Z (like “zoo”)</option>
+          <option value="J">J (like “jump”)</option><option value="V">V (like “van”)</option>
+          <option value="?">Not sure yet</option>
+        </select>
+        <div class="consent">
+          <input type="checkbox" id="consent" />
+          <span>I'm this child's parent/guardian and I'm okay with Sona keeping a practice log (days practiced, words tried, accuracy — <b>never audio recordings</b>) so the team and I can see progress. <a href="/privacy.html" target="_blank" style="color:var(--blue-d)">Privacy</a></span>
+        </div>
+        <div class="err" id="err"></div>
+        <button class="btn" id="go">Claim a founding spot</button>
+      </div>
+    </div>
+
+    <div id="done">
+      <h1>You're in! 🎉</h1>
+      <p class="sub">One step left — open this link <b>on the device your child will play on</b> (iPad or phone). That's the whole setup.</p>
+      <div class="link" id="fflink"></div>
+      <button class="btn" id="copy">Copy the link</button>
+      <button class="btn" id="text" style="background:var(--blue);box-shadow:0 5px 0 var(--blue-d);">Text it to myself</button>
+      <p class="small">We'll text you within a day to say hi. Your free 90 days start the first time your child plays.</p>
+    </div>
+
+    <p class="small">Sona · built by Travis &amp; Rachel (pediatric SLP) · <a href="/privacy.html">privacy</a> — in-game voice detection happens on the device; nothing is recorded or uploaded.</p>
+  </div>
+
+  <script>
+    var $=function(id){return document.getElementById(id);};
+    $("go").onclick=async function(){
+      var b={ parent:$("parent").value.trim(), cell:$("cell").value.trim(), child:$("child").value.trim(),
+              age:$("age").value.trim(), sound:$("sound").value, consent:$("consent").checked };
+      var err=$("err"); err.style.display="none";
+      if(!b.parent||!b.child||b.cell.replace(/\D/g,"").length<7){ err.textContent="Please add your name, your child's name, and your cell number."; err.style.display="block"; return; }
+      if(!b.consent){ err.textContent="Please check the consent box — the practice log is how we send your progress notes."; err.style.display="block"; return; }
+      $("go").textContent="Saving…"; $("go").disabled=true;
+      try{
+        var r=await fetch("/api/founding",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(b)});
+        var j=await r.json();
+        if(!j.ok) throw new Error(j.error||"Something went wrong.");
+        var link=location.origin+"/?ff="+j.id;
+        $("fflink").textContent=link;
+        $("copy").onclick=function(){ try{ navigator.clipboard.writeText(link); $("copy").textContent="Copied ✓"; }catch(e){} };
+        $("text").onclick=function(){ location.href="sms:?&body="+encodeURIComponent("Sona for "+b.child+" — open on the kid device: "+link); };
+        $("form").style.display="none"; $("done").style.display="block"; window.scrollTo(0,0);
+      }catch(e){
+        err.textContent=e.message||"Something went wrong — try again?"; err.style.display="block";
+        $("go").textContent="Claim a founding spot"; $("go").disabled=false;
+      }
+    };
+  </script>
+</body>
+</html>

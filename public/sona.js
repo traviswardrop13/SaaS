@@ -1024,6 +1024,8 @@
       // keep Today/Progress alive from real game play (not just the lesson flow):
       // every scored attempt counts a word and keeps today's streak going.
       try { const g = getProgress(); g.totals.words = (g.totals.words || 0) + 1; bumpStreak(g); save(GKEY, g); } catch (e2) {}
+      // pilot/founding beacon: consented, counts-only, throttled to 1/min inside sendProgress
+      try { sendProgress("auto"); } catch (e3) {}
     } catch (e) {}
   }
   function outcomes() { return load(OUTKEY, {}); }
@@ -1092,6 +1094,16 @@
       fetch("/api/pilot", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload), keepalive: true }).catch(function () {});
     } catch (e) {}
   }
+
+  // ── Founding Families: opening any page with ?ff=CODE enrolls this device —
+  // free full access (pilot mode) + the consented practice beacon (counts
+  // only, never audio). The code comes from the /founding signup, so the
+  // founder dashboard can match this child to the parent's application.
+  try {
+    const _ffq = new URLSearchParams(location.search);
+    const _ff = (_ffq.get("ff") || "").replace(/[^a-zA-Z0-9-]/g, "").slice(0, 24).toLowerCase();
+    if (_ff) { startPilot("ff-" + _ff); setTimeout(function () { try { sendProgress("enroll"); } catch (e) {} }, 900); }
+  } catch (e) {}
 
   // ── debug HUD: with ?debug=1 (sticky; ?debug=0 to clear), show the SpeechAce score on screen ──
   function debugOn() {

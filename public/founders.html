@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sona — Founding Families HQ</title>
+  <meta name="robots" content="noindex" />
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root{ --ink:#243b53; --muted:#64748b; --green:#2f9e44; --yellow:#e8a100; --red:#d64545; }
+    *{margin:0;padding:0;box-sizing:border-box;font-family:"Nunito",sans-serif;}
+    body{background:#f2f6fa;color:var(--ink);padding:20px;}
+    .wrap{max-width:760px;margin:0 auto;}
+    h1{font-family:"Baloo 2";font-size:24px;margin-bottom:2px;}
+    .sum{font-weight:800;font-size:13.5px;color:var(--muted);margin-bottom:16px;}
+    .fam{background:#fff;border:1px solid #e2ebf2;border-left:6px solid #cbd7e1;border-radius:14px;padding:14px 16px;margin-bottom:10px;}
+    .fam.g{border-left-color:var(--green);} .fam.y{border-left-color:var(--yellow);} .fam.r{border-left-color:var(--red);}
+    .top{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap;}
+    .kid{font-family:"Baloo 2";font-weight:800;font-size:18px;}
+    .kid small{font-weight:800;color:var(--muted);font-size:12.5px;margin-left:6px;}
+    .last{font-weight:800;font-size:13px;color:var(--muted);}
+    .stats{font-weight:800;font-size:13.5px;color:#3d5570;margin:6px 0 10px;}
+    .btns{display:flex;gap:8px;flex-wrap:wrap;}
+    .btns a{flex:none;text-decoration:none;font-weight:800;font-size:13px;border-radius:99px;padding:8px 14px;background:#eaf4fd;color:#136aa8;border:1px solid #cfe6f7;}
+    .btns a.warm{background:#fff6e5;color:#8a5b00;border-color:#ffe2a8;}
+    #keybox{background:#fff;border:1px solid #e2ebf2;border-radius:14px;padding:16px;max-width:420px;margin:60px auto;}
+    #keybox input{width:100%;border:2px solid #dbe7f0;border-radius:12px;padding:12px;font-size:15px;font-weight:700;margin:10px 0;}
+    #keybox button{border:none;border-radius:12px;padding:12px 20px;font-weight:800;background:#1cb0f6;color:#fff;cursor:pointer;}
+    #err{color:var(--red);font-weight:800;font-size:13px;margin-top:8px;}
+    #refresh{float:right;border:none;background:none;color:#136aa8;font-weight:800;cursor:pointer;font-size:13px;}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div id="keybox">
+      <b>Founders HQ</b> — enter your key (FOUNDER_KEY in Vercel).
+      <input id="key" type="password" placeholder="key" />
+      <button id="enter">Open</button>
+      <div id="err"></div>
+    </div>
+    <div id="hq" style="display:none;">
+      <button id="refresh">↻ refresh</button>
+      <h1>Founding Families</h1>
+      <div class="sum" id="sum"></div>
+      <div id="list"></div>
+    </div>
+  </div>
+
+  <script>
+    var $=function(id){return document.getElementById(id);};
+    function daysAgo(iso){ if(!iso) return 9999; return Math.floor((Date.now()-new Date(iso).getTime())/864e5); }
+    function fmtLast(iso){ var d=daysAgo(iso); return d>=9999?"never practiced":(d<=0?"today":(d===1?"yesterday":d+"d ago")); }
+    function accLine(acc){ var parts=[]; for(var s in acc){ var a=acc[s]; if(a.a) parts.push(s+" "+Math.round(a.p/a.a*100)+"%"); } return parts.join(" · "); }
+    function sms(cell,body){ return "sms:"+cell.replace(/[^\d+]/g,"")+"?&body="+encodeURIComponent(body); }
+
+    async function loadHQ(key){
+      var r=await fetch("/api/founders?key="+encodeURIComponent(key));
+      var j=await r.json();
+      if(!j.ok) throw new Error(j.error||"failed");
+      var apps=j.apps||[];
+      // newest signups first, then quiet families float up within practiced ones
+      var rows=apps.map(function(a){
+        var kid=(a.children&&a.children[0])||null;
+        var last=kid?kid.at:"", quiet=daysAgo(last);
+        return { a:a, kid:kid, quiet:quiet };
+      });
+      rows.sort(function(x,y){ return y.quiet-x.quiet; });
+      var active=rows.filter(function(r){ return r.quiet<=1; }).length;
+      $("sum").textContent=apps.length+" families · "+active+" practiced in the last day";
+      var html="";
+      rows.forEach(function(rw){
+        var a=rw.a, k=rw.kid, q=rw.quiet;
+        var cls=q<=1?"g":(q<=4?"y":"r");
+        var praise=sms(a.cell||"", "Hi "+(a.parent||"")+"! "+(a.child||"Your kiddo")+" is on a roll in Sona — what's "+(a.child||"the kiddo")+" loving so far?");
+        var checkin=sms(a.cell||"", "Hi "+(a.parent||"")+"! Totally normal for practice to slip — anything getting in the way for "+(a.child||"your kiddo")+"? (honest answers help us most!)");
+        html+='<div class="fam '+cls+'">'
+          +'<div class="top"><span class="kid">'+(a.child||"?")+'<small>'+(a.age?a.age+"yo · ":"")+(a.sound||"?")+" sound · parent "+(a.parent||"?")+'</small></span>'
+          +'<span class="last">'+(k?fmtLast(k.at):"link never opened")+'</span></div>'
+          +'<div class="stats">'+(k?("🔥 "+(k.streak||0)+" streak · "+(k.sessions||0)+" sessions"+(accLine(k.acc)?" · "+accLine(k.acc):"")):"⚠️ signed up "+fmtLast(a.at)+" — hasn’t opened the kid link yet")+'</div>'
+          +'<div class="btns">'
+          +(a.cell?('<a href="'+(q<=1?praise:checkin)+'">💬 Text '+(a.parent||"")+'</a><a class="warm" href="tel:'+a.cell.replace(/[^\d+]/g,"")+'">📞 Call</a>'):"")
+          +(a.cell&&(!k)?('<a class="warm" href="'+sms(a.cell,"Hi "+(a.parent||"")+"! Quick nudge — open this on "+(a.child||"your kiddo")+"'s device to start: https://speaksona.com/?ff="+a.id)+'">🔗 Resend link</a>'):"")
+          +'</div></div>';
+      });
+      $("list").innerHTML=html||"<p style='font-weight:800;color:#64748b'>No applications yet — share /founding.</p>";
+      $("keybox").style.display="none"; $("hq").style.display="block";
+    }
+
+    var saved=localStorage.getItem("sona.founderKey");
+    function tryKey(k){ loadHQ(k).then(function(){ localStorage.setItem("sona.founderKey",k); }).catch(function(e){ $("err").textContent=e.message; $("keybox").style.display="block"; $("hq").style.display="none"; }); }
+    $("enter").onclick=function(){ tryKey($("key").value.trim()); };
+    $("refresh").onclick=function(){ tryKey(localStorage.getItem("sona.founderKey")||""); };
+    if(saved) tryKey(saved);
+  </script>
+</body>
+</html>
