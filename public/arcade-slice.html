@@ -89,6 +89,35 @@
 
     // ---- canvas game: swipe-slice tossed fruit, 45s ----
     var FRUITS=["🍉","🍎","🍊","🍋","🍇","🍓","🥝","🍑","🍍"];
+    // ── Hand-built vector fruit (SVG → Image), replacing the emoji set.
+    // Flat, thick-rounded, top-left light — matches the city panel style.
+    // Falls back to emoji per-sprite until its image decodes.
+    var SVGS={
+      watermelon:'<path d="M8 58 A44 44 0 0 1 92 58 L88 64 Q50 80 12 64 Z" fill="#2f9e44"/><path d="M14 57 A38 38 0 0 1 86 57 L83 61 Q50 74 17 61 Z" fill="#d3f9d8"/><path d="M20 55 A31 31 0 0 1 80 55 L78 58 Q50 69 22 58 Z" fill="#ff6b7a"/><ellipse cx="38" cy="46" rx="2.6" ry="4" fill="#343a40" transform="rotate(-18 38 46)"/><ellipse cx="55" cy="42" rx="2.6" ry="4" fill="#343a40" transform="rotate(8 55 42)"/><ellipse cx="68" cy="49" rx="2.6" ry="4" fill="#343a40" transform="rotate(24 68 49)"/><path d="M24 50 A26 26 0 0 1 44 34" stroke="#ffd0d6" stroke-width="5" fill="none" stroke-linecap="round"/>',
+      apple:'<circle cx="50" cy="56" r="34" fill="#fa5252"/><path d="M50 56 m-34 0 a34 34 0 0 1 34-34 v68 a34 34 0 0 1 -34 -34" fill="#ff8787"/><path d="M50 24 q-2 -10 6 -14" stroke="#8a5a2e" stroke-width="6" fill="none" stroke-linecap="round"/><path d="M58 14 q14 -4 16 8 q-14 6 -16 -8" fill="#69db7c"/><circle cx="38" cy="46" r="7" fill="#ffe3e3" opacity=".85"/>',
+      orange:'<circle cx="50" cy="56" r="34" fill="#ff922b"/><path d="M50 56 m-34 0 a34 34 0 0 1 34 -34 v68 a34 34 0 0 1 -34 -34" fill="#ffa94d"/><circle cx="38" cy="46" r="7" fill="#ffe8cc" opacity=".9"/><circle cx="62" cy="66" r="2.4" fill="#e8590c" opacity=".5"/><circle cx="54" cy="74" r="2.4" fill="#e8590c" opacity=".5"/><circle cx="68" cy="54" r="2.4" fill="#e8590c" opacity=".5"/><path d="M50 22 q0 -8 8 -10" stroke="#2f9e44" stroke-width="5" fill="none" stroke-linecap="round"/><ellipse cx="62" cy="12" rx="9" ry="5" fill="#51cf66" transform="rotate(20 62 12)"/>',
+      lemon:'<ellipse cx="50" cy="56" rx="36" ry="27" fill="#ffd43b" transform="rotate(-14 50 56)"/><ellipse cx="50" cy="56" rx="36" ry="27" fill="none" transform="rotate(-14 50 56)"/><circle cx="16" cy="47" r="6" fill="#ffd43b"/><circle cx="84" cy="65" r="6" fill="#ffd43b"/><ellipse cx="38" cy="46" rx="9" ry="6" fill="#fff3bf" opacity=".9" transform="rotate(-14 38 46)"/>',
+      grapes:'<circle cx="38" cy="42" r="12" fill="#9775fa"/><circle cx="62" cy="42" r="12" fill="#9775fa"/><circle cx="26" cy="60" r="12" fill="#845ef7"/><circle cx="50" cy="58" r="13" fill="#b197fc"/><circle cx="74" cy="60" r="12" fill="#845ef7"/><circle cx="38" cy="76" r="12" fill="#7048e8"/><circle cx="62" cy="76" r="12" fill="#7048e8"/><circle cx="50" cy="90" r="11" fill="#5f3dc4"/><path d="M50 30 q-2 -12 8 -16" stroke="#8a5a2e" stroke-width="5" fill="none" stroke-linecap="round"/><ellipse cx="63" cy="14" rx="10" ry="6" fill="#69db7c" transform="rotate(18 63 14)"/><circle cx="45" cy="52" r="4.5" fill="#e5dbff" opacity=".9"/>',
+      strawberry:'<path d="M50 92 Q18 68 22 42 Q26 24 50 26 Q74 24 78 42 Q82 68 50 92" fill="#fa5252"/><path d="M50 92 Q18 68 22 42 Q26 24 50 26 L50 92" fill="#ff8787"/><path d="M34 22 L50 30 L66 22 L58 34 L50 28 L42 34 Z" fill="#51cf66"/><path d="M50 16 l0 10" stroke="#2f9e44" stroke-width="5" stroke-linecap="round"/><circle cx="38" cy="48" r="2.2" fill="#fff3bf"/><circle cx="54" cy="44" r="2.2" fill="#fff3bf"/><circle cx="62" cy="58" r="2.2" fill="#fff3bf"/><circle cx="44" cy="64" r="2.2" fill="#fff3bf"/><circle cx="54" cy="76" r="2.2" fill="#fff3bf"/>',
+      kiwi:'<circle cx="50" cy="56" r="34" fill="#a9803f"/><circle cx="50" cy="56" r="29" fill="#94d82d"/><circle cx="50" cy="56" r="27" fill="#a9e34b"/><circle cx="50" cy="56" r="9" fill="#f4fce3"/><g fill="#343a40"><ellipse cx="50" cy="38" rx="2" ry="3.4"/><ellipse cx="62" cy="43" rx="2" ry="3.4" transform="rotate(40 62 43)"/><ellipse cx="67" cy="56" rx="2" ry="3.4" transform="rotate(90 67 56)"/><ellipse cx="62" cy="69" rx="2" ry="3.4" transform="rotate(140 62 69)"/><ellipse cx="50" cy="74" rx="2" ry="3.4"/><ellipse cx="38" cy="69" rx="2" ry="3.4" transform="rotate(40 38 69)"/><ellipse cx="33" cy="56" rx="2" ry="3.4" transform="rotate(90 33 56)"/><ellipse cx="38" cy="43" rx="2" ry="3.4" transform="rotate(140 38 43)"/></g>',
+      peach:'<circle cx="50" cy="58" r="32" fill="#ff9f9f"/><path d="M50 58 m-32 0 a32 32 0 0 1 32 -32 v64 a32 32 0 0 1 -32 -32" fill="#ffb8b0"/><path d="M50 30 Q58 54 50 86" stroke="#ef8080" stroke-width="4" fill="none" stroke-linecap="round"/><path d="M50 26 q-2 -10 6 -13" stroke="#8a5a2e" stroke-width="5" fill="none" stroke-linecap="round"/><ellipse cx="61" cy="16" rx="11" ry="6" fill="#69db7c" transform="rotate(22 61 16)"/><circle cx="38" cy="48" r="6.5" fill="#ffe0dc" opacity=".9"/>',
+      pineapple:'<defs><clipPath id="pb"><ellipse cx="50" cy="64" rx="25" ry="29"/></clipPath></defs><ellipse cx="50" cy="64" rx="25" ry="29" fill="#ffc93b"/><g clip-path="url(#pb)" stroke="#e0a400" stroke-width="3.5" opacity=".85"><path d="M20 44 L84 90" fill="none"/><path d="M16 62 L76 100" fill="none"/><path d="M32 34 L92 76" fill="none"/><path d="M80 44 L16 90" fill="none"/><path d="M84 62 L24 100" fill="none"/><path d="M68 34 L8 76" fill="none"/></g><circle cx="41" cy="52" r="5" fill="#ffe9a8" opacity=".85"/><path d="M50 40 C45 24 46 12 50 4 C54 12 55 24 50 40" fill="#2f9e44"/><path d="M48 40 C36 30 29 22 24 10 C37 15 46 25 51 36" fill="#51cf66"/><path d="M52 40 C64 30 71 22 76 10 C63 15 54 25 49 36" fill="#51cf66"/>',
+      star:'<path d="M50 8 L61 36 L92 38 L68 58 L76 90 L50 72 L24 90 L32 58 L8 38 L39 36 Z" fill="#ffd21c" stroke="#f0a500" stroke-width="4" stroke-linejoin="round"/><circle cx="42" cy="42" r="6" fill="#fff3bf" opacity=".95"/>'
+    };
+    var JUICE={ "🍉":"#ff6b7a","🍎":"#fa5252","🍊":"#ff922b","🍋":"#ffd43b","🍇":"#9775fa","🍓":"#fa5252","🥝":"#94d82d","🍑":"#ffa8a8","🍍":"#ffd43b","🌟":"#ffd21c" };
+    var SPRITEKEY={ "🍉":"watermelon","🍎":"apple","🍊":"orange","🍋":"lemon","🍇":"grapes","🍓":"strawberry","🥝":"kiwi","🍑":"peach","🍍":"pineapple","🌟":"star" };
+    var SPRITES={};
+    Object.keys(SVGS).forEach(function(k){
+      var im=new Image();
+      im.onload=function(){ SPRITES[k]=im; };
+      im.src="data:image/svg+xml;charset=utf-8,"+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 100 100">'+SVGS[k]+'</svg>');
+    });
+    function drawFruit(e,size){
+      var sp=SPRITES[SPRITEKEY[e]];
+      if(sp){ ctx.drawImage(sp,-size/2,-size/2,size,size); return; }
+      ctx.fillStyle="#000"; ctx.font=size+"px sans-serif"; ctx.fillText(e,0,0); // not decoded yet → emoji
+    }
+
     var cv=$("cv"), ctx=cv.getContext("2d"), W=0,H=0,DPR=Math.min(2,window.devicePixelRatio||1);
     function fit(){ var r=$("app").getBoundingClientRect(); W=r.width; H=r.height; cv.width=W*DPR; cv.height=H*DPR; ctx.setTransform(DPR,0,0,DPR,0,0); }
     fit(); window.addEventListener("resize",fit);
@@ -189,7 +218,7 @@
       var hit=0;
       for(var i=0;i<fruits.length;i++){ var f=fruits[i];
         if(!f.sliced && segHit(lx,ly,p.x,p.y,f.x,f.y,f.r+16)){ f.sliced=true; hit++; score+=(f.gold||boost.on)?2:1; combo++;
-          for(var k=0;k<10;k++) parts.push({x:f.x,y:f.y,vx:(Math.random()-0.5)*7,vy:-Math.random()*6,r:3+Math.random()*4,life:1,col:["#ff6b6b","#ffd21c","#7bed8d","#74c0fc"][(Math.random()*4)|0]});
+          for(var k=0;k<10;k++) parts.push({x:f.x,y:f.y,vx:(Math.random()-0.5)*7,vy:-Math.random()*6,r:3+Math.random()*4,life:1,col:(JUICE[f.e]||"#ffd21c")});
           parts.push({x:f.x,y:f.y,vx:-2.4,vy:-2,e:f.e,half:1,life:1}); parts.push({x:f.x,y:f.y,vx:2.4,vy:-2,e:f.e,half:2,life:1});
         } }
       if(hit){ sfx("tap"); $("score").textContent="🍉 "+score; comboT=performance.now();
@@ -219,14 +248,14 @@
         ctx.save(); ctx.translate(f.x,f.y); ctx.rotate(f.rot);
         if(f.gold){ ctx.fillStyle="rgba(255,210,28,.30)"; ctx.beginPath(); ctx.arc(0,0,f.r*1.35,0,7); ctx.fill(); }
         // opaque paint before emoji — translucent fillStyle ghosts color glyphs
-        ctx.fillStyle="#000"; ctx.font=(f.r*2)+"px sans-serif"; ctx.fillText(f.e,0,0); ctx.restore();
+        drawFruit(f.e,f.r*2.15); ctx.restore();
       }
       // particles + halves
       for(var i=parts.length-1;i>=0;i--){ var p=parts[i];
         p.x+=p.vx; p.y+=p.vy; p.vy+=G*0.8; p.life-=0.02;
         if(p.life<=0||p.y>H+60){ parts.splice(i,1); continue; }
-        if(p.e){ ctx.save(); ctx.globalAlpha=Math.max(0,p.life); ctx.translate(p.x,p.y); ctx.fillStyle="#000"; ctx.font="34px sans-serif";
-          ctx.beginPath(); if(p.half===1)ctx.rect(-30,-30,30,60); else ctx.rect(0,-30,30,60); ctx.clip(); ctx.fillText(p.e,0,0); ctx.restore(); }
+        if(p.e){ ctx.save(); ctx.globalAlpha=Math.max(0,p.life); ctx.translate(p.x,p.y);
+          ctx.beginPath(); if(p.half===1)ctx.rect(-30,-30,30,60); else ctx.rect(0,-30,30,60); ctx.clip(); drawFruit(p.e,52); ctx.restore(); }
         else { ctx.globalAlpha=Math.max(0,p.life); ctx.fillStyle=p.col; ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,7); ctx.fill(); ctx.globalAlpha=1; }
       }
       requestAnimationFrame(draw);
