@@ -118,6 +118,7 @@
   </div>
 
   <script src="/sona.js"></script>
+  <script src="/scenes.js"></script>
   <script>
     var $=function(id){return document.getElementById(id);};
     // First run: brand-new installs go through setup — never greet a stranger's child.
@@ -204,6 +205,20 @@
       //   2) /coach/houses/<key>.png — transparent cutout replacing the CSS kit.
       //   3) neither file exists → the CSS kit ships as-is.
       (function(scene,clouds,gnd,btn,key){
+        // 0) hand-built vector scene (scenes.js) — the default look
+        if(window.SonaScenes && SonaScenes.has(key)){
+          var wrap=document.createElement("div");
+          wrap.style.cssText="position:absolute;inset:0;pointer-events:none;";
+          wrap.innerHTML=SonaScenes.svg(key);
+          wrap.firstChild.style.cssText="width:100%;height:100%;display:block;";
+          scene.insertBefore(wrap,scene.firstChild);
+          clouds.style.display="none"; gnd.style.display="none";
+          var k0=btn.querySelector(".kit");
+          var go0=k0.querySelector(".go");
+          if(go0){ scene.appendChild(go0); go0.style.top="20%"; go0.style.zIndex="3"; go0.style.fontSize="19px"; go0.style.padding="10px 26px"; }
+          k0.style.opacity=0;
+          return;
+        }
         var pan=new Image();
         pan.onload=function(){
           scene.style.background="url("+pan.src+") center bottom / cover no-repeat";

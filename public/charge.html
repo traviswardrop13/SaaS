@@ -133,6 +133,7 @@
   </div>
 
   <script src="/sona.js"></script>
+  <script src="/scenes.js"></script>
   <script src="/gamecontent.js"></script>
   <script>
     var $=function(id){return document.getElementById(id);};
@@ -236,7 +237,11 @@
     $("gpEmoji").textContent=GMETA.e; $("gpName").textContent=GMETA.n;
     // the game "forms" as reps land: its city panel fades in and un-blurs
     var GKEY=GAME.replace(/^arcade-|\.html$/g,"");
-    (function(){ var im=new Image(); im.onload=function(){ var g=$("gameBg"); g.style.backgroundImage="url("+im.src+")"; g.style.opacity=.35; }; im.src="/coach/city/"+GKEY+".png"; })();
+    (function(){
+      var g=$("gameBg");
+      if(window.SonaScenes && SonaScenes.has(GKEY)){ g.style.backgroundImage="url('"+SonaScenes.uri(GKEY)+"')"; g.style.opacity=.35; return; }
+      var im=new Image(); im.onload=function(){ g.style.backgroundImage="url("+im.src+")"; g.style.opacity=.35; }; im.src="/coach/city/"+GKEY+".png";
+    })();
     function paintLoad(n){
       var g=$("gameBg"); if(!g.style.backgroundImage) return;
       var pct=Math.min(1,n/NEED);
