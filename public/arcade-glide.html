@@ -55,6 +55,14 @@
     <button class="btn ghost" id="needHome">Back home</button>
   </div>
 
+  <div class="ovl" id="revOvl">
+    <div class="big">😮</div>
+    <h2 id="revTitle">Say it!</h2>
+    <p id="revHearts" style="font-size:26px;">❤️❤️❤️</p>
+    <p>Say your sound for a new life!</p>
+    <button class="btn ghost" id="revDone">I'm done</button>
+  </div>
+
   <div class="ovl" id="endOvl">
     <div class="big">🎈</div>
     <h2 id="endTitle">Great gliding!</h2>
@@ -73,15 +81,10 @@
     // ---- charge gate + daily plumbing ----
     var SELF="arcade-glide.html";
     var isDaily=qp.get("daily")==="1";
-    // house journey: ?lvl=N — score-gated level with a target + stars
-    var LVL=(!isDaily&&parseInt(qp.get("lvl"),10))||0;
-    var HKEY=SELF.replace(/^arcade-|\.html$/g,"");
-    var TGT=(LVL&&S&&S.houseTarget)?S.houseTarget(HKEY,LVL):0;
-    function backToCharge(){ location.href="/charge.html?"+(isDaily?"daily=1":("game="+SELF+(LVL?"&lvl="+LVL:""))); }
+    function backToCharge(){ location.href="/charge.html?"+(isDaily?"daily=1":("game="+SELF)); }
     $("goCharge").onclick=backToCharge; $("needHome").onclick=function(){location.href="/today.html";};
     var tok=false; try{ tok=sessionStorage.getItem("sona.play.token")==="1"; sessionStorage.removeItem("sona.play.token"); }catch(e){}
     if(!tok){ $("needOvl").classList.add("show"); }
-    if(LVL&&TGT){ var _gl=document.createElement("div"); _gl.textContent="\ud83c\udfaf "+TGT; _gl.style.cssText="font-family:'Baloo 2';font-weight:800;font-size:17px;color:#ffd21c;margin-right:8px;"; var _tm=$("timer"); if(_tm&&_tm.parentNode)_tm.parentNode.insertBefore(_gl,_tm); }
 
     var cv=$("cv"), ctx=cv.getContext("2d"), W=0,H=0,DPR=Math.min(2,window.devicePixelRatio||1);
     function fit(){ var r=$("app").getBoundingClientRect(); W=r.width; H=r.height; cv.width=W*DPR; cv.height=H*DPR; ctx.setTransform(DPR,0,0,DPR,0,0); }
@@ -89,7 +92,29 @@
 
     // ---- game state ----
     var boost={on:false,cool:false}; // declared with game state — draw() reads it from frame 1
-    var ROUND=45, tLeft=ROUND, playing=true, score=0;
+    var playing=true, score=0;
+    var BESTK="sona.best.glide", BEST=0; try{ BEST=parseInt(localStorage.getItem(BESTK)||"0",10)||0; }catch(e){}
+    // ── lives: a crash → say your sound for a new life (3 per run) ──
+    var REV=3, reviveWait=false, MIC=false;
+    function hearts(){ $("timer").textContent="❤️ "+REV; }
+    function crash(){
+      if(!playing) return;
+      playing=false; gates=[]; sfx("tap");
+      if(REV>0 && MIC){
+        $("revTitle").textContent="Say \u201C"+SAYTXT+"\u201D!";
+        $("revHearts").textContent=Array(REV+1).join("\u2764\uFE0F");
+        reviveWait=true; $("revOvl").classList.add("show");
+      } else { endRound(); }
+    }
+    function doRevive(){
+      reviveWait=false; REV--; hearts();
+      $("revOvl").classList.remove("show");
+      sfx("complete"); try{ if(S&&S.confetti)S.confetti(); }catch(e){}
+      py=H*0.45; vy=0; mercyT=performance.now(); playing=true; draw(); // the gated rAF died on crash — restart it
+    }
+    $("revDone").onclick=function(){ reviveWait=false; $("revOvl").classList.remove("show"); endRound(); };
+    hearts();
+
     var G=H*0.00075, FLAP=-H*0.0115;
     var py=H*0.45, vy=0, px=W*0.32;
     var gates=[], gapH=H*0.34, gspeed=W*0.0048, spawnMs=1650;
@@ -103,7 +128,7 @@
     }
     var spawnTimer=setInterval(function(){ if(playing&&!falling.on) spawnGate(); },spawnMs);
     var rampIv=setInterval(function(){ if(playing){ gspeed*=1.05; if(gapH>H*0.26) gapH*=0.985; } },9000);
-    var timeIv=setInterval(function(){ if(!playing)return; tLeft--; $("timer").textContent=tLeft; if(tLeft<=0) endRound(); },1000);
+    
 
     cv.addEventListener("pointerdown",function(){
       if(!playing||falling.on)return;
@@ -115,6 +140,11 @@
     // in on the balloon, keep gliding. Never a "you lose" screen.
     function startFall(){ falling={on:true,t0:performance.now()}; flash("WHOOOA! 🫧"); sfx("tap"); }
 
+    
+    // vector hot-air balloon (SVG → Image) that carries the buddy
+    var BAL=new Image(), BALOK=false;
+    BAL.onload=function(){ BALOK=true; };
+    BAL.src="data:image/svg+xml;charset=utf-8,"+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="240" height="300" viewBox="0 0 100 125"><path d="M50 4 C24 4 12 24 12 42 C12 62 30 74 40 84 L60 84 C70 74 88 62 88 42 C88 24 76 4 50 4" fill="#fa5252"/><path d="M50 4 C36 4 28 24 28 42 C28 62 38 74 42 84 L50 84 Z" fill="#ff8787"/><path d="M50 4 C60 4 68 24 68 42 C68 62 60 74 56 84 L50 84 Z" fill="#ffd43b"/><path d="M50 4 C46 4 42 24 42 42 C42 62 46 74 48 84 L52 84 C54 74 58 62 58 42 C58 24 54 4 50 4" fill="#fff" opacity=".22"/><path d="M40 84 L37 96 M60 84 L63 96 M50 84 L50 96" stroke="#8a5a2e" stroke-width="2.5"/><rect x="34" y="96" width="32" height="22" rx="6" fill="#a97044"/><rect x="34" y="96" width="32" height="8" rx="4" fill="#c08a5a"/><path d="M38 104 h24 M38 111 h24" stroke="#8a5a2e" stroke-width="2" opacity=".6"/></svg>');
     var COLW=74;
     function draw(){
       ctx.clearRect(0,0,W,H);
@@ -137,7 +167,7 @@
         // collide (skip during fall/mercy/boost)
         if(!falling.on && !boost.on && performance.now()-mercyT>1200 &&
            Math.abs(g.x-px)<(COLW/2+22) && (py<topH+22||py>botY-22)){
-          startFall();
+          crash();
         }
       }
       // player physics
@@ -150,7 +180,9 @@
       if(falling.on){
         var ft=(performance.now()-falling.t0)/1100;
         if(ft>=1){ falling.on=false; mercyT=performance.now(); py=H*0.45; vy=0; flash("Back in the sky! 🎈"); }
-        else{ ctx.save(); ctx.translate(px,py+ft*ft*320); ctx.rotate(ft*10); ctx.globalAlpha=1-ft*0.4; ctx.fillStyle="#000"; ctx.font="50px sans-serif"; ctx.textAlign="center"; ctx.textBaseline="middle"; ctx.fillText(RUNNER,0,0); ctx.restore(); }
+        else{ ctx.save(); ctx.translate(px,py+ft*ft*320); ctx.rotate(ft*10); ctx.globalAlpha=1-ft*0.4; ctx.fillStyle="#000"; ctx.textAlign="center"; ctx.textBaseline="middle";
+          if(BALOK){ ctx.drawImage(BAL,-40,-78,80,100); ctx.font="34px sans-serif"; ctx.fillText(RUNNER,0,16); } else { ctx.font="50px sans-serif"; ctx.fillText(RUNNER,0,0); }
+          ctx.restore(); }
       } else {
         var blink=(performance.now()-mercyT<1200)&&(((performance.now()/120)|0)%2===0);
         if(!blink){
@@ -158,9 +190,11 @@
           // opaque paint before emoji: canvases modulate color glyphs by the
           // fill's alpha, so a leftover translucent fillStyle ghosts the buddy
           ctx.fillStyle="#000"; ctx.textAlign="center"; ctx.textBaseline="middle";
-          ctx.font="34px sans-serif"; ctx.fillText("🎈",px,py-40+Math.sin(performance.now()/300)*3);
-          ctx.save(); ctx.translate(px,py); ctx.rotate(Math.max(-0.3,Math.min(0.5,vy*0.03)));
-          ctx.font="50px sans-serif"; ctx.fillText(RUNNER,0,0); ctx.restore();
+          var bob=Math.sin(performance.now()/300)*3;
+          ctx.save(); ctx.translate(px,py+bob); ctx.rotate(Math.max(-0.22,Math.min(0.34,vy*0.02)));
+          if(BALOK){ ctx.drawImage(BAL,-40,-78,80,100); ctx.font="34px sans-serif"; ctx.fillText(RUNNER,0,16); }
+          else { ctx.font="34px sans-serif"; ctx.fillText("🎈",0,-40); ctx.font="50px sans-serif"; ctx.fillText(RUNNER,0,0); }
+          ctx.restore();
         }
       }
       requestAnimationFrame(playing?draw:function(){});
@@ -185,7 +219,7 @@
       SAYTXT=(S&&S.soundSay)?S.soundSay(String(snd).toUpperCase()):"rrrr";
       paintChip();
       if(!(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia)){ $("boostChip").style.display="none"; return; }
-      navigator.mediaDevices.getUserMedia({audio:true}).then(function(st){
+      navigator.mediaDevices.getUserMedia({audio:true}).then(function(st){ MIC=true;
         window.addEventListener("pagehide",function(){ try{ st.getTracks().forEach(function(t){t.stop();}); }catch(e){} });
         var AC=window.AudioContext||window.webkitAudioContext, bctx=new AC();
         var src=bctx.createMediaStreamSource(st), an=bctx.createAnalyser(); an.fftSize=512; src.connect(an);
@@ -196,7 +230,7 @@
           var rms=Math.sqrt(sum/td.length), now=performance.now();
           if(now-t0<450){ calS+=rms; calN++; }
           else { if(!thr) thr=Math.max(0.05,(calS/Math.max(1,calN))*3.5);
-            if(rms>thr){ voiced++; if(voiced>=6 && playing && !boost.on && !boost.cool) fireBoost(); }
+            if(rms>thr){ voiced++; if(voiced>=6){ if(reviveWait){ voiced=0; doRevive(); } else if(playing && !boost.on && !boost.cool) fireBoost(); } }
             else voiced=0; }
           requestAnimationFrame(tick);
         })();
@@ -206,7 +240,9 @@
     // ---- round over ----
     function bankAndContinue(){ location.href="/charge.html?daily=1&banked="+score; }
     function endRound(){
-      if(!playing)return; playing=false; clearInterval(spawnTimer); clearInterval(rampIv); clearInterval(timeIv);
+      if(window.__ended)return; window.__ended=true;
+      playing=false; reviveWait=false; clearInterval(spawnTimer); clearInterval(rampIv);
+      var isBest=score>BEST; if(isBest){ BEST=score; try{ localStorage.setItem(BESTK,String(BEST)); }catch(e){} }
       var coins=Math.min(10,(score/3)|0);
       try{ if(coins&&S&&S.addCoins)S.addCoins(coins); }catch(e){}
       sfx("complete"); try{ if(S&&S.confetti)S.confetti(); }catch(e){}
@@ -218,33 +254,13 @@
         setTimeout(bankAndContinue,1400);
         return;
       }
-      if(LVL){
-        // journey round: stars vs the level goal; a miss is a retry, never a wall
-        var _st=(S&&S.houseStars)?S.houseStars(score,TGT):(score>=TGT?1:0);
-        if(_st){ try{ if(S&&S.houseDone)S.houseDone(HKEY,LVL,_st); }catch(e){}
-          $("endTitle").textContent="Level "+LVL+" done! "+"\u2b50".repeat(_st);
-          $("endSub").textContent="Score "+score+" gates"+" \u00b7 goal "+TGT+(coins?(" \u00b7 +"+coins+" \ud83e\ude99"):"");
-          if(LVL<((S&&S.HOUSE_LEVELS)||10)){ $("endCharge").textContent="\u26a1 Level "+(LVL+1); $("endCharge").onclick=function(){ location.href="/charge.html?game="+SELF+"&lvl="+(LVL+1); }; }
-          else { $("endCharge").textContent="\ud83c\udfc6 House complete!"; $("endCharge").onclick=function(){ location.href="/house.html?g="+HKEY; }; }
-        } else {
-          $("endTitle").textContent="So close! \ud83c\udfaf";
-          $("endSub").textContent="Score "+score+" gates"+" \u00b7 goal "+TGT+" \u2014 you've got this!";
-          $("endCharge").textContent="\u26a1 Try again";
-          $("endCharge").onclick=function(){ location.href="/charge.html?game="+SELF+"&lvl="+LVL; };
-        }
-        $("endAgain").style.display="none";
-        $("endHome").textContent="Back to the house";
-        $("endHome").onclick=function(){ location.href="/house.html?g="+HKEY; };
-        $("endOvl").classList.add("show");
-        return;
-      }
       $("endTitle").textContent=score>=18?"Sky master! 🌟":"Great gliding!";
       $("endSub").textContent="You glided through "+score+" gates"+(coins?(" · +"+coins+" 🪙"):"")+"!";
       $("endOvl").classList.add("show");
     }
     $("endCharge").onclick=backToCharge;
     $("endHome").onclick=function(){ location.href="/today.html#play"; };
-    $("close").onclick=function(){ if(playing){ playing=false; clearInterval(spawnTimer); clearInterval(rampIv); clearInterval(timeIv); } if(isDaily){ bankAndContinue(); return; } location.href=LVL?("/house.html?g="+HKEY):"/today.html#play"; };
+    $("close").onclick=function(){ if(playing){ playing=false; clearInterval(spawnTimer); clearInterval(rampIv); } if(isDaily){ bankAndContinue(); return; } location.href="/today.html#play"; };
   </script>
 </body>
 </html>

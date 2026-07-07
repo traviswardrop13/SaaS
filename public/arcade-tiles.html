@@ -53,6 +53,14 @@
     <button class="btn ghost" id="needHome">Back home</button>
   </div>
 
+  <div class="ovl" id="revOvl">
+    <div class="big">😮</div>
+    <h2 id="revTitle">Say it!</h2>
+    <p id="revHearts" style="font-size:26px;">❤️❤️❤️</p>
+    <p>Say your sound for a new life!</p>
+    <button class="btn ghost" id="revDone">I'm done</button>
+  </div>
+
   <div class="ovl" id="endOvl">
     <div class="big">🎹</div>
     <h2 id="endTitle">Beautiful music!</h2>
@@ -71,15 +79,10 @@
     // ---- charge gate + daily plumbing (same pattern as every arcade game) ----
     var SELF="arcade-tiles.html";
     var isDaily=qp.get("daily")==="1";
-    // house journey: ?lvl=N — score-gated level with a target + stars
-    var LVL=(!isDaily&&parseInt(qp.get("lvl"),10))||0;
-    var HKEY=SELF.replace(/^arcade-|\.html$/g,"");
-    var TGT=(LVL&&S&&S.houseTarget)?S.houseTarget(HKEY,LVL):0;
-    function backToCharge(){ location.href="/charge.html?"+(isDaily?"daily=1":("game="+SELF+(LVL?"&lvl="+LVL:""))); }
+    function backToCharge(){ location.href="/charge.html?"+(isDaily?"daily=1":("game="+SELF)); }
     $("goCharge").onclick=backToCharge; $("needHome").onclick=function(){location.href="/today.html";};
     var tok=false; try{ tok=sessionStorage.getItem("sona.play.token")==="1"; sessionStorage.removeItem("sona.play.token"); }catch(e){}
     if(!tok){ $("needOvl").classList.add("show"); }
-    if(LVL&&TGT){ var _gl=document.createElement("div"); _gl.textContent="\ud83c\udfaf "+TGT; _gl.style.cssText="font-family:'Baloo 2';font-weight:800;font-size:17px;color:#ffd21c;margin-right:8px;"; var _tm=$("timer"); if(_tm&&_tm.parentNode)_tm.parentNode.insertBefore(_gl,_tm); }
 
     var cv=$("cv"), ctx=cv.getContext("2d"), W=0,H=0,DPR=Math.min(2,window.devicePixelRatio||1);
     function fit(){ var r=$("app").getBoundingClientRect(); W=r.width; H=r.height; cv.width=W*DPR; cv.height=H*DPR; ctx.setTransform(DPR,0,0,DPR,0,0); }
@@ -103,7 +106,29 @@
 
     // ---- game state ----
     var boost={on:false,cool:false}; // declared with game state — draw() reads it from frame 1
-    var LANES=4, ROUND=45, tLeft=ROUND, playing=true, score=0, comboN=0;
+    var LANES=4, playing=true, score=0, comboN=0;
+    var BESTK="sona.best.tiles", BEST=0; try{ BEST=parseInt(localStorage.getItem(BESTK)||"0",10)||0; }catch(e){}
+    // ── lives: a crash → say your sound for a new life (3 per run) ──
+    var REV=3, reviveWait=false, MIC=false;
+    function hearts(){ $("timer").textContent="❤️ "+REV; }
+    function crash(){
+      if(!playing) return;
+      playing=false; tiles=[]; sfx("tap");
+      if(REV>0 && MIC){
+        $("revTitle").textContent="Say \u201C"+SAYTXT+"\u201D!";
+        $("revHearts").textContent=Array(REV+1).join("\u2764\uFE0F");
+        reviveWait=true; $("revOvl").classList.add("show");
+      } else { endRound(); }
+    }
+    function doRevive(){
+      reviveWait=false; REV--; hearts();
+      $("revOvl").classList.remove("show");
+      sfx("complete"); try{ if(S&&S.confetti)S.confetti(); }catch(e){}
+       playing=true;
+    }
+    $("revDone").onclick=function(){ reviveWait=false; $("revOvl").classList.remove("show"); endRound(); };
+    hearts();
+
     var LCOL=["#ff6b8a","#4dabf7","#69db7c","#ffd43b"];
     var tiles=[], fall=H*0.0042, spawnMs=760, noteIx=0, melodyDir=1;
     var HITY=function(){ return H-140-Math.max(0,0); }; // hit line y (bar height 90 above bottom bar)
@@ -140,7 +165,7 @@
     function flash(t){ var f=$("flash"); f.textContent=t; f.style.opacity=1; f.style.transform="scale(1.15)"; setTimeout(function(){f.style.opacity=0;f.style.transform="scale(1)";},600); }
 
     // timer
-    var timeIv=setInterval(function(){ if(!playing)return; tLeft--; $("timer").textContent=tLeft; if(tLeft<=0) endRound(); },1000);
+    
 
     // ---- draw ----
     function draw(){
@@ -160,7 +185,7 @@
       for(var i=tiles.length-1;i>=0;i--){ var t=tiles[i];
         t.y+=fall*(boost.on?0.55:1)*(H/700);
         if(t.hit){ t.h-=10; t.y+=5; if(t.h<=6){ tiles.splice(i,1); continue; } }
-        if(t.y>H+20){ tiles.splice(i,1); continue; } // drifts away — no punishment
+        if(t.y>H+20){ tiles.splice(i,1); if(!t.gold&&!boost.on&&playing){ crash(); } continue; } // a missed tile costs a life
         var x=t.lane*lw+6+sh, w=lw-12;
         ctx.fillStyle=t.hit?"#fff":(t.gold?"#ffd21c":LCOL[t.lane]);
         rr(x,t.y,w,t.h,14); ctx.fill();
@@ -189,7 +214,7 @@
       SAYTXT=(S&&S.soundSay)?S.soundSay(String(snd).toUpperCase()):"rrrr";
       paintChip();
       if(!(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia)){ $("boostChip").style.display="none"; return; }
-      navigator.mediaDevices.getUserMedia({audio:true}).then(function(st){
+      navigator.mediaDevices.getUserMedia({audio:true}).then(function(st){ MIC=true;
         window.addEventListener("pagehide",function(){ try{ st.getTracks().forEach(function(t){t.stop();}); }catch(e){} });
         var AC=window.AudioContext||window.webkitAudioContext, bctx=new AC();
         var src=bctx.createMediaStreamSource(st), an=bctx.createAnalyser(); an.fftSize=512; src.connect(an);
@@ -200,7 +225,7 @@
           var rms=Math.sqrt(sum/td.length), now=performance.now();
           if(now-t0<450){ calS+=rms; calN++; }
           else { if(!thr) thr=Math.max(0.05,(calS/Math.max(1,calN))*3.5);
-            if(rms>thr){ voiced++; if(voiced>=6 && playing && !boost.on && !boost.cool) fireBoost(); }
+            if(rms>thr){ voiced++; if(voiced>=6){ if(reviveWait){ voiced=0; doRevive(); } else if(playing && !boost.on && !boost.cool) fireBoost(); } }
             else voiced=0; }
           requestAnimationFrame(tick);
         })();
@@ -210,7 +235,9 @@
     // ---- round over ----
     function bankAndContinue(){ location.href="/charge.html?daily=1&banked="+score; }
     function endRound(){
-      if(!playing)return; playing=false; clearInterval(spawnTimer); clearInterval(timeIv); clearInterval(rampIv);
+      if(window.__ended)return; window.__ended=true;
+      playing=false; reviveWait=false; clearInterval(spawnTimer); clearInterval(rampIv);
+      var isBest=score>BEST; if(isBest){ BEST=score; try{ localStorage.setItem(BESTK,String(BEST)); }catch(e){} }
       var coins=Math.min(10,(score/5)|0);
       try{ if(coins&&S&&S.addCoins)S.addCoins(coins); }catch(e){}
       sfx("complete"); try{ if(S&&S.confetti)S.confetti(); }catch(e){}
@@ -222,33 +249,13 @@
         setTimeout(bankAndContinue,1400);
         return;
       }
-      if(LVL){
-        // journey round: stars vs the level goal; a miss is a retry, never a wall
-        var _st=(S&&S.houseStars)?S.houseStars(score,TGT):(score>=TGT?1:0);
-        if(_st){ try{ if(S&&S.houseDone)S.houseDone(HKEY,LVL,_st); }catch(e){}
-          $("endTitle").textContent="Level "+LVL+" done! "+"\u2b50".repeat(_st);
-          $("endSub").textContent="Score "+score+" \u00b7 goal "+TGT+(coins?(" \u00b7 +"+coins+" \ud83e\ude99"):"");
-          if(LVL<((S&&S.HOUSE_LEVELS)||10)){ $("endCharge").textContent="\u26a1 Level "+(LVL+1); $("endCharge").onclick=function(){ location.href="/charge.html?game="+SELF+"&lvl="+(LVL+1); }; }
-          else { $("endCharge").textContent="\ud83c\udfc6 House complete!"; $("endCharge").onclick=function(){ location.href="/house.html?g="+HKEY; }; }
-        } else {
-          $("endTitle").textContent="So close! \ud83c\udfaf";
-          $("endSub").textContent="Score "+score+" \u00b7 goal "+TGT+" \u2014 you've got this!";
-          $("endCharge").textContent="\u26a1 Try again";
-          $("endCharge").onclick=function(){ location.href="/charge.html?game="+SELF+"&lvl="+LVL; };
-        }
-        $("endAgain").style.display="none";
-        $("endHome").textContent="Back to the house";
-        $("endHome").onclick=function(){ location.href="/house.html?g="+HKEY; };
-        $("endOvl").classList.add("show");
-        return;
-      }
       $("endTitle").textContent=score>=30?"Piano star! 🌟":"Beautiful music!";
       $("endSub").textContent="You played "+score+" notes"+(coins?(" · +"+coins+" 🪙"):"")+"!";
       $("endOvl").classList.add("show");
     }
     $("endCharge").onclick=backToCharge;
     $("endHome").onclick=function(){ location.href="/today.html#play"; };
-    $("close").onclick=function(){ if(playing){ playing=false; clearInterval(spawnTimer); clearInterval(timeIv); clearInterval(rampIv); } if(isDaily){ bankAndContinue(); return; } location.href=LVL?("/house.html?g="+HKEY):"/today.html#play"; };
+    $("close").onclick=function(){ if(playing){ playing=false; clearInterval(spawnTimer); clearInterval(rampIv); } if(isDaily){ bankAndContinue(); return; } location.href="/today.html#play"; };
   </script>
 </body>
 </html>

@@ -58,29 +58,11 @@
         <option value="10">10 minutes a day</option>
       </select>
 
-      <label class="field" for="volume">Leo's voice volume <span id="volVal" style="font-weight:800;color:var(--muted);"></span></label>
-      <input id="volume" type="range" min="0.3" max="1" step="0.05" style="width:100%;max-width:340px;display:block;" />
-
       <label class="field" for="coachName">Coach name</label>
       <input id="coachName" type="text" placeholder="Coach" />
 
       <label class="field">Coach voice</label>
       <a class="btn ghost" href="/voices.html" style="width:auto;padding:12px 18px;">🔊&nbsp;&nbsp;Choose coach voice →</a>
-
-      <label class="field" for="focusArea">Main focus</label>
-      <select id="focusArea">
-        <option value="articulation">Speech sounds (articulation)</option>
-        <option value="expressive">Talking (expressive language)</option>
-        <option value="receptive">Understanding (receptive language)</option>
-        <option value="unsure">Not sure yet</option>
-      </select>
-
-      <label class="field">Language skills <span class="soon">Coming soon</span></label>
-      <p class="muted" style="margin-top:6px;font-size:13px;font-weight:700;line-height:1.45;">
-        Sona currently focuses on <b>speech</b> — how clearly your child says their
-        sounds. <b>Language</b> support (understanding words, building sentences,
-        and following directions) is coming soon.
-      </p>
 
       <label class="field" for="slpEvaluated">Evaluated by an SLP?</label>
       <select id="slpEvaluated">
@@ -168,7 +150,7 @@
         musicEl = document.getElementById("musicOn"),
         cloudEl = document.getElementById("cloudScoring"),
         dailyEl = document.getElementById("dailyMinutes"),
-        focusAreaEl = document.getElementById("focusArea"),
+        focusAreaEl = { value: "articulation" }, // selector removed — articulation only
         slpEl = document.getElementById("slpEvaluated"),
         goalsEl = document.getElementById("goals"),
         posEl = document.getElementById("practicePos"),
@@ -182,11 +164,8 @@
     musicEl.checked = p.musicOn === true;
     cloudEl.checked = p.cloudScoring !== false;
     dailyEl.value = String(p.dailyMinutes || 5);
-    var volEl = document.getElementById("volume"), volVal = document.getElementById("volVal");
-    volEl.value = (p.volume != null ? p.volume : 0.8);
-    var paintVol = function () { volVal.textContent = Math.round(parseFloat(volEl.value) * 100) + "%"; };
-    volEl.oninput = paintVol; paintVol();
-    focusAreaEl.value = p.focusArea || "articulation";
+    var volEl = { value: (p.volume != null ? p.volume : 0.8) }; // volume UI removed — keeps the saved/default level
+    focusAreaEl.value = p.focusArea || "articulation"; // kept for the save payload
     slpEl.value = p.slpEvaluated || "";
     goalsEl.value = p.goals || "";
     posEl.value = p.practicePosition || "i";
