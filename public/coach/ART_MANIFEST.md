@@ -10,8 +10,8 @@ anything tappable or with text stays in code.
 ~1024×1536). Paints the entire swipe-city page for that house: sky + clouds in
 the art, hero building centered, gray ground strip at the very bottom, neighbor
 buildings peeking at the edges. Phones are taller than 2:3, so the sides crop —
-keep everything important in the center ~70%. The name plate + GO! badge are
-drawn by code on top.
+keep everything important in the center ~70%. The GO! badge on the daily house is drawn by code on top
+(name plates were removed — the house art speaks for itself).
 
 Same `<key>` list as the cutouts below. A panel takes precedence over a cutout
 when both exist.
@@ -33,16 +33,6 @@ drop-shadow; export **~1000px wide**, house centered, transparent background.
 
 13 files total. The CSS kit stays as fallback — a missing file just keeps the
 current look, nothing breaks.
-
-## 1c. House rooms — the level-journey screens  (house.html)
-`coach/rooms/<key>.png` for: `slice`, `tiles`, `stack`, `run`, `glide`.
-Full scene, no transparency, 2:3 vertical ~1024×1536. **ROOM ONLY — no path,
-no level nodes, no locks, no checkmarks, no buttons, no numbers, no text.**
-Code draws the winding path, level pucks, back button and title on top, so
-keep the center column relatively calm (shelves/props to the sides, floor at
-the bottom). Think: inside the Fruit Slice market, the Piano Tiles concert
-hall, the Block Stacker workshop, the Sound Sprint garage, the Flappy Glide
-balloon loft.
 
 ## 2. Story Time backdrops  (live from the city)
 - `coach/story/lvl<n>.png` — per-level scene, n = 1…10 (preferred)

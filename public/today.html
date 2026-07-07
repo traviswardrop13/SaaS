@@ -17,7 +17,7 @@
       --orange:#ff9600; --orange-d:#e08600; --ink:#3c3c3c; --muted:#777;
     }
     *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;font-family:"Nunito",-apple-system,sans-serif;user-select:none;}
-    html,body{height:100%;overflow:hidden;}
+    html,body{height:100%;overflow:hidden;background:#5b6a76;}
     /* ── the city: horizontal swipe pager, one scene per screen ── */
     #city{height:100vh;height:100dvh;display:flex;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
     #city::-webkit-scrollbar{display:none;}
@@ -162,15 +162,15 @@
         go:!d.playedToday, played:d.playedToday,
         tap:function(){ if(d.playedToday){ sfx("tap"); toast("Come back tomorrow! Free play 👉"); return; } sfx("correct"); location.href="/charge.html?daily=1&sound="+encodeURIComponent(sound)+"&level="+currentLevel(); } },
       { key:"slice", sky:"linear-gradient(180deg,#ff8787,#ffc9c9 70%,#ffe3e3)", kit:{roof:"#e03131",body:"#ffe3e3",emo:"🍉"}, name:"Fruit Slice", sub:"⚡ Say it 5× to play",
-        tap:function(){ sfx("tap"); location.href="/house.html?g=slice"; } },
+        tap:function(){ sfx("tap"); location.href="/charge.html?game=arcade-slice.html"; } },
       { key:"tiles", sky:"linear-gradient(180deg,#b197fc,#d0bfff 70%,#e5dbff)", kit:{roof:"#7048e8",body:"#e5dbff",emo:"🎹"}, name:"Piano Tiles", sub:"⚡ Say it 5× to play",
-        tap:function(){ sfx("tap"); location.href="/house.html?g=tiles"; } },
+        tap:function(){ sfx("tap"); location.href="/charge.html?game=arcade-tiles.html"; } },
       { key:"stack", sky:"linear-gradient(180deg,#4dabf7,#a5d8ff 70%,#d0ebff)", kit:{roof:"#1864ab",body:"#d0ebff",emo:"🧱"}, name:"Block Stacker", sub:"⚡ Say it 5× to play",
-        tap:function(){ sfx("tap"); location.href="/house.html?g=stack"; } },
+        tap:function(){ sfx("tap"); location.href="/charge.html?game=arcade-stack.html"; } },
       { key:"run", sky:"linear-gradient(180deg,#69db7c,#b2f2bb 70%,#d3f9d8)", kit:{roof:"#2b8a3e",body:"#d3f9d8",emo:"🏃"}, name:"Sound Sprint", sub:"⚡ Say it 5× to play",
-        tap:function(){ sfx("tap"); location.href="/house.html?g=run"; } },
+        tap:function(){ sfx("tap"); location.href="/charge.html?game=arcade-run.html"; } },
       { key:"glide", sky:"linear-gradient(180deg,#74a9e0,#a8c9ec 60%,#ffd7a8)", kit:{roof:"#3b76b5",body:"#dbe9f7",emo:"🎈"}, name:"Flappy Glide", sub:"⚡ Say it 5× to play",
-        tap:function(){ sfx("tap"); location.href="/house.html?g=glide"; } },
+        tap:function(){ sfx("tap"); location.href="/charge.html?game=arcade-glide.html"; } },
       { key:"story", sky:"linear-gradient(180deg,#ffd43b,#ffe58a 70%,#fff3bf)", kit:{roof:"#e67700",body:"#fff3bf",emo:"📖"}, name:"Story Time", sub:"Read with your buddy",
         tap:function(){ sfx("tap"); location.href="/story.html"; } },
     ];
@@ -195,8 +195,7 @@
           '<div class="door"></div>'+
           '<div class="emo">'+sc.kit.emo+'</div>'+
           (sc.go?'<div class="flag">🚩</div>':"")+
-        '</div>'+
-        '<div class="plate"><b>'+sc.name+'</b><span>'+sc.sub+'</span></div>';
+        '</div>';
       h.onclick=sc.tap;
       // real art drop-ins, tried in order:
       //   1) /coach/city/<key>.png — full scene panel: paints the whole page.

@@ -10,6 +10,9 @@
   <link rel="manifest" href="/manifest.webmanifest" />
   <meta name="theme-color" content="#ffffff" />
   <style>
+    #leoRow{background:rgba(255,255,255,.78);border-radius:22px;padding:8px 20px;box-shadow:0 4px 14px rgba(15,40,70,.08);}
+    #gameBg{position:fixed;inset:0;background:center/cover no-repeat;filter:blur(14px) brightness(1.06);transform:scale(1.1);opacity:0;transition:filter .6s ease,opacity .6s ease;pointer-events:none;}
+
     :root{
       --blue:#1cb0f6; --blue-d:#1597d4; --green:#58cc02; --green-d:#46a302;
       --orange:#ff9600; --orange-d:#e08600; --ink:#3c3c3c; --muted:#777; --line:#e5e5e5;
@@ -74,6 +77,7 @@
   </style>
 </head>
 <body>
+  <div id="gameBg"></div>
   <div id="app">
     <div id="top">
       <button id="close" aria-label="Close">✕</button>
@@ -93,7 +97,7 @@
         <div id="gpInner">
           <div id="gpEmoji">🍉</div>
           <div id="gpName">Fruit Slice</div>
-          <div id="gpState">Say it to charge!</div>
+          <div id="gpState">Say it to load the game!</div>
         </div>
       </div>
       <div id="pips"></div>
@@ -150,7 +154,6 @@
     var isDaily = qp.get("daily")==="1" || qp.get("session")==="1";
     var freeGame = qp.get("game");
     if(freeGame && !GAMES[freeGame]) freeGame=null;
-    var LVL = parseInt(qp.get("lvl"),10)||0; // house-journey level — passed through to the game untouched
     var RUNKEY="sona.run.v1";
     function runGet(){ try{ return JSON.parse(sessionStorage.getItem(RUNKEY)||"null"); }catch(e){ return null; } }
     function runSave(r){ try{ sessionStorage.setItem(RUNKEY,JSON.stringify(r)); }catch(e){} }
@@ -188,12 +191,16 @@
     // at /coach/say/<SOUND>.mp3 — does the actual modeling.
     function sayLine(){
       var times=(NUMWORD[NEED]||NEED)+" times";
-      if(ITEM.level==="isolation") return "Ready? Make your "+((S&&S.soundLabel)?S.soundLabel(SOUND):SOUND)+" sound — "+times+"!";
+      var sust=(S&&S.soundSay)?S.soundSay(SOUND):SOUND.toLowerCase();
+      if(ITEM.level==="isolation") return "Ready? Say "+sust+" — "+times+"!";
       return "Ready? Say "+(ITEM.display||ITEM.t)+" — "+times+"!";
     }
     // Prefer a real human recording of the whole prompt (Rachel!) if present.
+    var CUETIP=""; try{ CUETIP=(S&&S.cue)?(S.cue(SOUND).tip||""):""; }catch(e){}
     function playPrompt(){
-      return new Promise(function(res){
+      var pre=Promise.resolve();
+      if(!playPrompt._did && CUETIP){ playPrompt._did=true; pre=say(CUETIP); }
+      return pre.then(function(){ return new Promise(function(res){
         if(ITEM.level!=="isolation"){ say(sayLine()).then(res); return; }
         try{
           var a=new Audio("/coach/say/"+SOUND+".mp3");
@@ -202,7 +209,7 @@
           a.onerror=function(){ if(done)return; done=true; say(sayLine()).then(res); };
           a.play().catch(function(){ if(done)return; done=true; say(sayLine()).then(res); });
         }catch(e){ say(sayLine()).then(res); }
-      });
+      }); });
     }
 
     // ---- consistent, instant TTS: on-device cache (IndexedDB "sona-tts").
@@ -227,9 +234,18 @@
 
     // ---- UI ----
     $("gpEmoji").textContent=GMETA.e; $("gpName").textContent=GMETA.n;
+    // the game "forms" as reps land: its city panel fades in and un-blurs
+    var GKEY=GAME.replace(/^arcade-|\.html$/g,"");
+    (function(){ var im=new Image(); im.onload=function(){ var g=$("gameBg"); g.style.backgroundImage="url("+im.src+")"; g.style.opacity=.35; }; im.src="/coach/city/"+GKEY+".png"; })();
+    function paintLoad(n){
+      var g=$("gameBg"); if(!g.style.backgroundImage) return;
+      var pct=Math.min(1,n/NEED);
+      g.style.opacity=String(0.35+0.65*pct);
+      g.style.filter="blur("+Math.round(14-13*pct)+"px) brightness("+(1.06-0.06*pct)+")";
+    }
     $("prompt").textContent=ITEM.display||ITEM.t;
     var pipsEl=$("pips"); for(var i=0;i<NEED;i++){ var p=document.createElement("div"); p.className="pip"; pipsEl.appendChild(p); }
-    function paintReps(n){ var k=pipsEl.children; for(var i=0;i<k.length;i++) k[i].className="pip"+(i<n?" on":""); var pct=Math.min(100,Math.round(n/NEED*100)); $("gpFill").style.height=pct+"%"; $("gpState").textContent=n>=NEED?"CHARGED! ⚡":("Charging… "+n+"/"+NEED); }
+    function paintReps(n){ var k=pipsEl.children; for(var i=0;i<k.length;i++) k[i].className="pip"+(i<n?" on":""); var pct=Math.min(100,Math.round(n/NEED*100)); $("gpFill").style.height=pct+"%"; $("gpState").textContent=n>=NEED?"READY! 🚀":("Loading… "+pct+"%"); paintLoad(n); }
     if(isDaily&&run&&run.active){ $("roundLbl").textContent="Round "+Math.min(run.round+1,DAILY_SEQ.length)+" of "+DAILY_SEQ.length; $("sumLbl").textContent="🏆 "+run.sum; }
     function micGo(on,txt){ var m=$("micBtn"); m.className=on?"go":""; $("micState").textContent=txt||""; }
 
@@ -336,7 +352,7 @@
       sfx("complete"); try{ if(S&&S.confetti)S.confetti(); }catch(e){}
       try{ sessionStorage.setItem("sona.play.token","1"); sessionStorage.setItem("sona.boost.sound",SOUND); }catch(e){}
       if(isDaily&&run){ run.pending=true; runSave(run); }
-      setTimeout(function(){ location.href="/"+GAME+"?from=charge"+(isDaily?"&daily=1":"")+(!isDaily&&LVL?"&lvl="+LVL:""); },700);
+      setTimeout(function(){ location.href="/"+GAME+"?from=charge"+(isDaily?"&daily=1":""); },700);
     }
 
     // ---- daily overlays ----

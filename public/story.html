@@ -156,9 +156,15 @@
     }
 
     var pi=0, busy=false;
-    function renderPage(){ var p=PAGES[pi]; $("pageEmoji").innerHTML=(window.Sona&&Sona.pic)?Sona.pic(p.word,p.e,96):(p.e||"📖");
+    function fixText(t){ return String(t||"").replace(/^([B-HJ-Z])\s/,"I "); }
+    function renderPage(){ var p=PAGES[pi]; p.text=fixText(p.text); $("pageEmoji").innerHTML=(window.Sona&&Sona.pic)?Sona.pic(p.word,p.e,96):(p.e||"📖");
       $("pageText").innerHTML=p.text.replace("___",'<span class="hl">'+p.word+'</span>'); $("pageNo").textContent="Page "+(pi+1)+" of "+GOAL; }
-    async function readPage(){ var p=PAGES[pi]; setLeo("listen"); $("prompt").textContent="Listen…"; await say(p.text.replace("___",p.word)); $("prompt").textContent="Say “"+p.word+"” to turn the page!"; $("micBtn").onclick=turn; }
+    async function readPage(){ var p=PAGES[pi]; setLeo("listen"); $("prompt").textContent="Listen…";
+      await say(fixText(p.text).replace("___",p.word));
+      $("prompt").textContent="Say “"+p.word+"”!";
+      await say("Now you! Say... "+p.word+"!");
+      turn(); // mic turns on by itself — the button stays as a backup tap
+    }
     async function turn(){
       if(busy) return; busy=true; $("micBtn").onclick=null;
       var p=PAGES[pi];
@@ -176,7 +182,7 @@
       } else {
         if(window.Sona&&Sona.sfx&&Sona.sfx.tap)Sona.sfx.tap();
         setLeo("idle"); $("prompt").textContent="Not quite — try again!";
-        await new Promise(function(r){setTimeout(r,600);}); busy=false; $("micBtn").onclick=turn; say(p.word);
+        await new Promise(function(r){setTimeout(r,600);}); busy=false; say(p.word).then(function(){ turn(); });
       }
     }
     function finishGame(){
@@ -210,6 +216,7 @@
     (function(){
       var s=document.getElementById("stage"); if(!s)return;
       if(L.bg) s.style.background=L.bg;
+      try{ var mcol=(L.bg.match(/#[0-9a-fA-F]{6}(?!.*#)/)||[])[0]; if(mcol) document.body.style.background=mcol; }catch(e){}
       if(L.accent){ try{ document.documentElement.style.setProperty("--leaf",L.accent); document.documentElement.style.setProperty("--leaf-d",L.accent); }catch(e){} }
       // faint ambient props drifting behind the book
       try{

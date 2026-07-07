@@ -55,6 +55,14 @@
     <button class="btn ghost" id="needHome">Back home</button>
   </div>
 
+  <div class="ovl" id="revOvl">
+    <div class="big">😮</div>
+    <h2 id="revTitle">Say it!</h2>
+    <p id="revHearts" style="font-size:26px;">❤️❤️❤️</p>
+    <p>Say your sound for a new life!</p>
+    <button class="btn ghost" id="revDone">I'm done</button>
+  </div>
+
   <div class="ovl" id="endOvl">
     <div class="big">🏗️</div>
     <h2 id="endTitle">Nice tower!</h2>
@@ -73,15 +81,10 @@
     // ---- charge gate: a round is unlocked by the 5-rep charge (play token) ----
     var SELF="arcade-stack.html";
     var isDaily=qp.get("daily")==="1";
-    // house journey: ?lvl=N — score-gated level with a target + stars
-    var LVL=(!isDaily&&parseInt(qp.get("lvl"),10))||0;
-    var HKEY=SELF.replace(/^arcade-|\.html$/g,"");
-    var TGT=(LVL&&S&&S.houseTarget)?S.houseTarget(HKEY,LVL):0;
-    function backToCharge(){ location.href="/charge.html?"+(isDaily?"daily=1":("game="+SELF+(LVL?"&lvl="+LVL:""))); }
+    function backToCharge(){ location.href="/charge.html?"+(isDaily?"daily=1":("game="+SELF)); }
     $("goCharge").onclick=backToCharge; $("needHome").onclick=function(){location.href="/today.html";};
     var tok=false; try{ tok=sessionStorage.getItem("sona.play.token")==="1"; sessionStorage.removeItem("sona.play.token"); }catch(e){}
     if(!tok){ $("needOvl").classList.add("show"); }
-    if(LVL&&TGT){ var _gl=document.createElement("div"); _gl.textContent="\ud83c\udfaf "+TGT; _gl.style.cssText="font-family:'Baloo 2';font-weight:800;font-size:17px;color:#ffd21c;margin-right:8px;"; var _tm=$("best"); if(_tm&&_tm.parentNode)_tm.parentNode.insertBefore(_gl,_tm); } // stack has no timer \u2014 anchor on the best label
 
     // best height (local, just for pride)
     var BKEY="sona.stack.best"; var best=0; try{ best=parseInt(localStorage.getItem(BKEY)||"0",10)||0; }catch(e){}
@@ -98,6 +101,27 @@
     // kid pace: slow slide to start, gentle ramp per drop
     var cur={x:0,w:baseW,dir:1,c:COLORS[1]}, speed=Math.max(2.1,W*0.0042);
     var playing=true, dropping=false, camY=0, score=0, perfectRun=0;
+    // ── lives: a crash → say your sound for a new life (3 per run) ──
+    var REV=3, reviveWait=false, MIC=false;
+    function hearts(){ $("best").textContent="❤️ "+REV+(best?"  ·  Best: "+best:""); }
+    function crash(){
+      if(!playing) return;
+      playing=false;  sfx("tap");
+      if(REV>0 && MIC){
+        $("revTitle").textContent="Say \u201C"+SAYTXT+"\u201D!";
+        $("revHearts").textContent=Array(REV+1).join("\u2764\uFE0F");
+        reviveWait=true; $("revOvl").classList.add("show");
+      } else { endRound(); }
+    }
+    function doRevive(){
+      reviveWait=false; REV--; hearts();
+      $("revOvl").classList.remove("show");
+      sfx("complete"); try{ if(S&&S.confetti)S.confetti(); }catch(e){}
+      cur={x:-stack[stack.length-1].w*0.6, w:stack[stack.length-1].w, dir:1, c:COLORS[(stack.length+1)%COLORS.length]}; dropping=false; playing=true;
+    }
+    $("revDone").onclick=function(){ reviveWait=false; $("revOvl").classList.remove("show"); endRound(); };
+    hearts();
+
 
     function flash(t){ var f=$("flash"); f.textContent=t; f.style.opacity=1; f.style.transform="scale(1.18)"; setTimeout(function(){f.style.opacity=0;f.style.transform="scale(1)";},520); }
 
@@ -106,8 +130,8 @@
       var top=stack[stack.length-1];
       var left=Math.max(cur.x,top.x), right=Math.min(cur.x+cur.w,top.x+top.w);
       var overlap=right-left;
-      if(overlap<=6){ // missed
-        playing=false; sfx("tap"); endRound(); return;
+      if(overlap<=6){ // missed — a life, not the game
+        dropping=false; crash(); return;
       }
       var perfect=Math.abs(cur.x-top.x)<7;
       if(perfect){ overlap=top.w; left=top.x; perfectRun++; flash("PERFECT! ✨"); sfx("correct");
@@ -143,7 +167,7 @@
       SAYTXT=(S&&S.soundSay)?S.soundSay(String(snd).toUpperCase()):"rrrr";
       paintChip();
       if(!(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia)){ $("boostChip").style.display="none"; return; }
-      navigator.mediaDevices.getUserMedia({audio:true}).then(function(st){
+      navigator.mediaDevices.getUserMedia({audio:true}).then(function(st){ MIC=true;
         window.addEventListener("pagehide",function(){ try{ st.getTracks().forEach(function(t){t.stop();}); }catch(e){} });
         var AC=window.AudioContext||window.webkitAudioContext, actx=new AC();
         var src=actx.createMediaStreamSource(st), an=actx.createAnalyser(); an.fftSize=512; src.connect(an);
@@ -154,7 +178,7 @@
           var rms=Math.sqrt(sum/td.length), now=performance.now();
           if(now-t0<450){ calS+=rms; calN++; }
           else { if(!thr) thr=Math.max(0.05,(calS/Math.max(1,calN))*3.5);
-            if(rms>thr){ voiced++; if(voiced>=6 && playing && !boost.on && !boost.cool) fireBoost(); }
+            if(rms>thr){ voiced++; if(voiced>=6){ if(reviveWait){ voiced=0; doRevive(); } else if(playing && !boost.on && !boost.cool) fireBoost(); } }
             else voiced=0; }
           requestAnimationFrame(tick);
         })();
@@ -190,6 +214,8 @@
 
     function bankAndContinue(){ location.href="/charge.html?daily=1&banked="+score; }
     function endRound(){
+      if(window.__ended)return; window.__ended=true;
+      playing=false; reviveWait=false;
       var coins=Math.min(10,(score/3)|0);
       try{ if(coins&&S&&S.addCoins)S.addCoins(coins); }catch(e){}
       if(score>best){ best=score; try{ localStorage.setItem(BKEY,String(best)); }catch(e){} flash("NEW BEST! 🏆"); }
@@ -203,26 +229,6 @@
         setTimeout(bankAndContinue,1500);
         return;
       }
-      if(LVL){
-        // journey round: stars vs the level goal; a miss is a retry, never a wall
-        var _st=(S&&S.houseStars)?S.houseStars(score,TGT):(score>=TGT?1:0);
-        if(_st){ try{ if(S&&S.houseDone)S.houseDone(HKEY,LVL,_st); }catch(e){}
-          $("endTitle").textContent="Level "+LVL+" done! "+"\u2b50".repeat(_st);
-          $("endSub").textContent="Score "+score+" \u00b7 goal "+TGT+(coins?(" \u00b7 +"+coins+" \ud83e\ude99"):"");
-          if(LVL<((S&&S.HOUSE_LEVELS)||10)){ $("endCharge").textContent="\u26a1 Level "+(LVL+1); $("endCharge").onclick=function(){ location.href="/charge.html?game="+SELF+"&lvl="+(LVL+1); }; }
-          else { $("endCharge").textContent="\ud83c\udfc6 House complete!"; $("endCharge").onclick=function(){ location.href="/house.html?g="+HKEY; }; }
-        } else {
-          $("endTitle").textContent="So close! \ud83c\udfaf";
-          $("endSub").textContent="Score "+score+" \u00b7 goal "+TGT+" \u2014 you've got this!";
-          $("endCharge").textContent="\u26a1 Try again";
-          $("endCharge").onclick=function(){ location.href="/charge.html?game="+SELF+"&lvl="+LVL; };
-        }
-        $("endAgain").style.display="none";
-        $("endHome").textContent="Back to the house";
-        $("endHome").onclick=function(){ location.href="/house.html?g="+HKEY; };
-        $("endOvl").classList.add("show");
-        return;
-      }
       $("endTitle").textContent=score>=14?"Sky-high tower! 🏆":"Nice tower!";
       $("endSub").textContent="You stacked "+score+" blocks"+(coins?(" · +"+coins+" 🪙"):"")+(best?(" · Best: "+best):"")+"!";
       $("endAgain").style.display="none";
@@ -232,7 +238,7 @@
     $("endCharge").onclick=backToCharge;
     $("endAgain").onclick=function(){ location.reload(); };
     $("endHome").onclick=function(){ location.href="/today.html#play"; };
-    $("close").onclick=function(){ if(isDaily){ bankAndContinue(); return; } location.href=LVL?("/house.html?g="+HKEY):"/today.html#play"; };
+    $("close").onclick=function(){ if(isDaily){ bankAndContinue(); return; } location.href="/today.html#play"; };
   </script>
 </body>
 </html>
