@@ -128,7 +128,7 @@
       if(unlocked) el.href="/ladder.html?sound="+snd;
       var doneAll = worldDone(snd);
       var sub = unlocked ? (doneAll ? "All games done — great work!" : "Practice your "+snd+" sound") : ("Finish "+prevName+" to unlock");
-      el.innerHTML='<img src="/coach/leo.png" alt="Leo"/>'+
+      el.innerHTML='<img src="/coach/echo/echo-idle.svg" alt="Leo"/>'+
         '<div style="flex:1;min-width:0;"><div class="wt">'+W.name+'</div><div class="ws">'+sub+'</div></div>'+
         '<span class="chev">'+(unlocked?"›":"🔒")+'</span>';
       host.appendChild(el);

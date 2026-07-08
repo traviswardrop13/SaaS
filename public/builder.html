@@ -165,7 +165,7 @@
       <span class="count" id="count">0 / 0</span>
     </header>
     <div id="stage">
-      <img class="leoSide" id="leo" src="/coach/leo.png" alt="Leo" onerror="this.style.display='none';" />
+      <img class="leoSide" id="leo" src="/coach/echo/echo-idle.svg" alt="Leo" onerror="this.style.display='none';" />
       <div id="ground"></div>
       <div class="tower" id="tower"><div id="topper">🚩</div></div>
     </div>
@@ -258,7 +258,7 @@
     function playPCM(bytes){ return new Promise(function(res){ try{ var ctx=getCtx(); var n=bytes.byteLength>>1; var ab=ctx.createBuffer(1,n,24000); var ch=ab.getChannelData(0); var dv=new DataView(bytes.buffer,bytes.byteOffset,bytes.byteLength); for(var i=0;i<n;i++)ch[i]=dv.getInt16(i*2,true)/32768; var s=ctx.createBufferSource(); s.buffer=ab; s.playbackRate.value=(window.Sona&&Sona.VOICE_PITCH)||1; var g=ctx.createGain(); g.gain.value=(profile.volume!=null?profile.volume:0.8); s.connect(g); g.connect(ctx.destination); s.onended=res; s.start(); }catch(e){res();} }); }
     var speaking=false;
     function say(text){ return new Promise(function(res){ if(!text||speaking){return res();} speaking=true; fetch("/api/tts",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text:text,voice:profile.voiceId||""})}).then(function(r){return r.ok?r.arrayBuffer():null;}).then(function(b){ if(b) return playPCM(new Uint8Array(b)); }).catch(function(){}).finally(function(){speaking=false;res();}); }); }
-    function setLeo(s){ var L={idle:"/coach/leo.png",cheer:"/coach/poses/leo-celebrate.png"}; var el=$("leo"); if(el&&L[s])el.src=L[s]; }
+    function setLeo(s){ var L={idle:"/coach/echo/echo-idle.svg",cheer:"/coach/echo/echo-celebrate.svg"}; var el=$("leo"); if(el&&L[s])el.src=L[s]; }
     function leoReact(){ var el=$("leo"); if(!el)return; el.classList.remove("react"); void el.offsetWidth; el.classList.add("react"); }
     function sfx(n){ try{ if(window.Sona&&Sona.sfx&&Sona.sfx[n])Sona.sfx[n](); }catch(e){} }
 
