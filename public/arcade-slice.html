@@ -7,30 +7,40 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@700;800&family=Nunito:wght@700;800&display=swap" rel="stylesheet" />
-  <meta name="theme-color" content="#0f2740" />
+  <meta name="theme-color" content="#8fd0f5" />
   <style>
     :root{ --blue:#1cb0f6; --blue-d:#1597d4; --green:#58cc02; --green-d:#46a302; --orange:#ff9600; --orange-d:#e08600; --ink:#3c3c3c; --muted:#777; --line:#e5e5e5; }
     *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;font-family:"Nunito",sans-serif;}
-    html,body{height:100%;overflow:hidden;background:#0f2740;}
+    html,body{height:100%;overflow:hidden;background:linear-gradient(180deg,#8fd0f5,#ffe9b8 45%,#ffb066 75%,#ff8a5a);}
     #app{position:fixed;inset:0;max-width:560px;margin:0 auto;overscroll-behavior:none;touch-action:none;}
     canvas{position:absolute;inset:0;width:100%;height:100%;}
-    #top{position:absolute;left:0;right:0;top:0;display:flex;align-items:center;gap:12px;padding:calc(12px + env(safe-area-inset-top)) 16px 6px;z-index:5;}
-    #close{border:none;background:rgba(255,255,255,.14);color:#fff;font-size:20px;font-weight:800;cursor:pointer;line-height:1;border-radius:12px;padding:8px 12px;}
-    #score{font-family:"Baloo 2";font-weight:800;font-size:22px;color:#fff;flex:1;}
-    #timer{font-family:"Baloo 2";font-weight:800;font-size:18px;color:#ffd21c;}
     #combo{position:absolute;left:0;right:0;top:26%;text-align:center;font-family:"Baloo 2";font-weight:800;font-size:34px;color:#ffd21c;opacity:0;transition:opacity .15s, transform .3s;z-index:4;pointer-events:none;text-shadow:0 3px 0 rgba(0,0,0,.25);}
-    #boostChip{position:absolute;left:50%;transform:translateX(-50%);top:calc(64px + env(safe-area-inset-top));z-index:5;background:rgba(255,255,255,.16);color:#fff;font-family:"Baloo 2";font-weight:800;font-size:13px;padding:7px 15px;border-radius:99px;pointer-events:none;white-space:nowrap;transition:background .2s,color .2s;}
+    /* ── designed HUD kit (handoff section 4) ── */
+    #top{position:absolute;left:0;right:0;top:0;display:flex;align-items:center;gap:9px;padding:calc(12px + env(safe-area-inset-top)) 14px 6px;z-index:5;}
+    #close{border:none;width:44px;height:44px;border-radius:50%;background:#fff;color:#b08d63;font-size:19px;font-weight:800;cursor:pointer;line-height:1;box-shadow:0 4px 0 rgba(160,80,20,.35);}
+    .hudpill{display:flex;align-items:center;gap:6px;background:#fff;border-radius:99px;padding:9px 14px;box-shadow:0 4px 0 rgba(160,80,20,.35);font-family:"Baloo 2";font-weight:800;font-size:16px;color:#4a2c14;}
+    #score{flex:none;}
+    #hudspacer{flex:1;}
+    #timer{color:#ff5c74;letter-spacing:1px;}
+    #boostChip{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(64px + env(safe-area-inset-bottom));top:auto;z-index:5;background:#fff;color:#4a2c14;font-family:"Baloo 2";font-weight:800;font-size:13.5px;padding:9px 16px;border-radius:99px;pointer-events:none;white-space:nowrap;box-shadow:0 4px 0 rgba(160,80,20,.35);transition:background .2s,color .2s;}
     #boostChip.hot{background:#ffd21c;color:#5c4500;animation:chipPop .4s ease;}
     @keyframes chipPop{0%{transform:translateX(-50%) scale(1)}50%{transform:translateX(-50%) scale(1.18)}100%{transform:translateX(-50%) scale(1)}}
-    .ovl{position:fixed;inset:0;z-index:50;background:rgba(10,26,44,.94);display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:28px;gap:10px;}
+    /* ── warm-card overlays (handoff section 5) ── */
+    .ovl{position:fixed;inset:0;z-index:50;background:rgba(30,22,50,.55);display:none;align-items:center;justify-content:center;padding:24px;}
     .ovl.show{display:flex;}
-    .ovl .big{font-size:70px;line-height:1;}
-    .ovl h2{font-family:"Baloo 2";font-weight:800;font-size:28px;color:#fff;}
-    .ovl p{color:#bcd3e8;font-weight:700;font-size:15px;max-width:300px;}
-    .btn{border:none;border-radius:16px;padding:15px 32px;font-family:"Baloo 2";font-weight:800;font-size:17px;text-transform:uppercase;letter-spacing:.04em;color:#fff;background:var(--green);box-shadow:0 5px 0 0 var(--green-d);cursor:pointer;transition:transform .05s;margin-top:6px;}
-    .btn:active{transform:translateY(4px);box-shadow:0 1px 0 0 var(--green-d);}
-    .btn.blue{background:var(--blue);box-shadow:0 5px 0 0 var(--blue-d);}
-    .btn.ghost{background:none;box-shadow:none;color:#9db8d0;text-transform:none;font-size:14px;}
+    .ovlCard{background:#fff6e9;border-radius:28px;padding:58px 20px 22px;width:100%;max-width:330px;text-align:center;box-shadow:0 18px 40px rgba(30,22,50,.45);position:relative;display:flex;flex-direction:column;align-items:center;gap:9px;}
+    .ovlEcho{position:absolute;top:-54px;left:50%;transform:translateX(-50%);width:106px;height:106px;filter:drop-shadow(0 8px 12px rgba(30,22,50,.3));}
+    .ovl .big{font-size:56px;line-height:1;}
+    .ovl h2{font-family:"Baloo 2";font-weight:800;font-size:24px;color:#4a2c14;line-height:1.18;}
+    .ovl h2 b{color:#7048c9;}
+    .ovl p{color:#b08d63;font-weight:800;font-size:14.5px;max-width:270px;}
+    .statRow{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;}
+    .statPill{background:#fff;border-radius:99px;padding:8px 15px;font-family:"Baloo 2";font-weight:800;font-size:14.5px;color:#4a2c14;box-shadow:0 3px 0 rgba(120,80,20,.12);}
+    .btn{border:none;border-radius:20px;padding:15px 30px;font-family:"Baloo 2";font-weight:800;font-size:17px;text-transform:uppercase;letter-spacing:.04em;color:#fff;background:linear-gradient(180deg,#6edd18,#58cc02);box-shadow:0 6px 0 #46a302;cursor:pointer;transition:transform .05s;margin-top:4px;width:100%;}
+    .btn:active{transform:translateY(4px);box-shadow:0 2px 0 #46a302;}
+    .btn.blue{background:linear-gradient(180deg,#5cc6ff,#1cb0f6);box-shadow:0 6px 0 #1480c0;}
+    .btn.blue:active{box-shadow:0 2px 0 #1480c0;}
+    .btn.ghost{background:none;box-shadow:none;color:#b08d63;text-transform:none;font-size:13px;width:auto;padding:8px;}
   </style>
 </head>
 <body>
@@ -38,38 +48,44 @@
     <canvas id="cv"></canvas>
     <div id="top">
       <button id="close">✕</button>
-      <div id="score">🍉 0</div>
-      <div id="timer">45</div>
+      <div id="score" class="hudpill">🍉 0</div>
+      <div id="hudspacer"></div>
+      <div id="timer" class="hudpill">❤️ 3</div>
     </div>
     <div id="combo"></div>
     <div id="boostChip"></div>
   </div>
 
-  <!-- needs a ticket -->
   <div class="ovl" id="needOvl">
-    <div class="big">🎟</div>
-    <h2>You need a ticket!</h2>
-    <p>Charge up with your sounds to earn one — then come slice!</p>
-    <button class="btn blue" id="goCharge">⚡ Charge up</button>
-    <button class="btn ghost" id="needHome">Back home</button>
+    <div class="ovlCard">
+      <img class="ovlEcho" src="/coach/echo/echo-star.svg" alt="" />
+      <h2 id="needTitle">This game needs a ticket!</h2>
+      <p>Say your sound 5 times to charge it up</p>
+      <button class="btn" id="goCharge">⚡ Charge up</button>
+      <button class="btn ghost" id="needHome">Back home</button>
+    </div>
   </div>
 
-  <!-- round over -->
   <div class="ovl" id="revOvl">
-    <div class="big">😮</div>
-    <h2 id="revTitle">Say it!</h2>
-    <p id="revHearts" style="font-size:26px;">❤️❤️❤️</p>
-    <p>Say your sound for a new life!</p>
-    <button class="btn ghost" id="revDone">I'm done</button>
+    <div class="ovlCard">
+      <img class="ovlEcho" src="/coach/echo/echo-listening.svg" alt="" />
+      <h2 id="revTitle">Say it!</h2>
+      <p id="revHearts" style="font-size:26px;">❤️❤️❤️</p>
+      <p>Say your sound for a new life!</p>
+      <button class="btn ghost" id="revDone">I'm done playing</button>
+    </div>
   </div>
 
   <div class="ovl" id="endOvl">
-    <div class="big" id="endEmoji">🍉</div>
-    <h2 id="endTitle">Great slicing!</h2>
-    <p id="endSub"></p>
-    <button class="btn blue" id="endCharge">⚡ Charge up for more</button>
-    <button class="btn" id="endAgain" style="display:none;">🎟 Play again</button>
-    <button class="btn ghost" id="endHome">Done for now</button>
+    <div class="ovlCard">
+      <img class="ovlEcho" src="/coach/echo/echo-celebrate.svg" alt="" />
+      <div class="big" id="endEmoji">🍉</div>
+      <h2 id="endTitle">Great slicing!</h2>
+      <p id="endSub"></p>
+      <button class="btn blue" id="endCharge">⚡ Play again</button>
+      <button class="btn" id="endAgain" style="display:none;"></button>
+      <button class="btn ghost" id="endHome">Back to the house</button>
+    </div>
   </div>
 
   <script src="/sona.js"></script>
@@ -185,7 +201,7 @@
       setTimeout(function(){ boost.cool=false; paintChip(); },9000);
     }
     var SAYTXT="";
-    function paintChip(){ $("boostChip").textContent="🎤 Say “"+SAYTXT+"” for a FRENZY!"; }
+    function paintChip(){ $("boostChip").textContent="🎙 Say “"+SAYTXT+"” for a FRENZY!"; }
     (function(){
       var snd=""; try{ snd=sessionStorage.getItem("sona.boost.sound")||""; }catch(e){}
       if(!snd){ try{ snd=((S&&S.getProfile&&S.getProfile().focusSounds)||["R"])[0]; }catch(e){ snd="R"; } }
@@ -233,8 +249,11 @@
 
     function draw(){
       ctx.clearRect(0,0,W,H);
-      // night-sky bg stars
-      ctx.globalAlpha=0.25; ctx.fillStyle="#9fd0ff"; for(var i=0;i<20;i++){ ctx.fillRect(((i*97)%W),((i*211)%(H*0.6)),2,2); } ctx.globalAlpha=1;
+      // sunset skyline silhouettes (design 4: Fruit Slice sky)
+      ctx.fillStyle="rgba(200,90,60,.18)";
+      for(var i=0;i<6;i++){ var bw=W*0.16, bx=i*bw*1.05-10, bh=H*(0.10+((i*37)%3)*0.035); ctx.fillRect(bx,H-bh,bw,bh); }
+      ctx.fillStyle="rgba(160,60,40,.22)";
+      for(var i=0;i<5;i++){ var bw2=W*0.13, bx2=i*bw2*1.55+20, bh2=H*(0.06+((i*53)%3)*0.03); ctx.fillRect(bx2,H-bh2,bw2,bh2); }
       // trail
       if(trail.length>1){ ctx.strokeStyle="rgba(255,255,255,.85)"; ctx.lineWidth=5; ctx.lineCap="round"; ctx.beginPath();
         var now=performance.now(); var pts=trail.filter(function(p){return now-p.t<130;});
