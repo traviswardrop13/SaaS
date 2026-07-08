@@ -97,7 +97,7 @@
           node.dataset.id=l.id;
           node.style.transform="translateX("+(OFF[idx%OFF.length])+"px)";
           var face=open?(l.boss?"👑":m.icon):"🔒";
-          node.innerHTML=(isCur?'<span class="leo">🦁</span>':'')+'<span class="pin" style="--c:'+m.c+'">'+face+'</span>'+starsRow(st);
+          node.innerHTML=(isCur?'<span class="leo">🦜</span>':'')+'<span class="pin" style="--c:'+m.c+'">'+face+'</span>'+starsRow(st);
           node.onclick=function(){
             if(S&&S.sfx&&S.sfx.tap)S.sfx.tap();
             if(!open){ var p=node.querySelector(".pin"); p.animate&&p.animate([{transform:"translateX(-4px)"},{transform:"translateX(4px)"},{transform:"translateX(0)"}],{duration:200}); return; }

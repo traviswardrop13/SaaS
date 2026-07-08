@@ -68,7 +68,7 @@
       <span class="stat coins"><span style="display:inline-block;width:13px;height:13px;border-radius:50%;background:linear-gradient(180deg,#ffd84d,#f4b400);box-shadow:inset 0 0 0 2px #e0a400;vertical-align:-2px;margin-right:3px;"></span><span id="coins">0</span></span>
     </div>
     <div id="stage">
-      <img id="leo" src="/coach/leo.png" alt="Leo" />
+      <img id="leo" src="/coach/echo/echo-idle.svg" alt="Leo" />
       <div id="prompt">Find the matching pairs!</div>
       <div id="grid"></div>
       <div id="micline"><span class="dot"></span><span id="micText">Tap a card to start</span></div>
@@ -76,7 +76,7 @@
   </div>
 
   <div id="win">
-    <img class="leoWin" src="/coach/poses/leo-celebrate.png" alt="Leo celebrating" onerror="this.onerror=null;this.src='/coach/leo.png';" />
+    <img class="leoWin" src="/coach/echo/echo-celebrate.svg" alt="Leo celebrating" onerror="this.onerror=null;this.src='/coach/echo/echo-idle.svg';" />
     <h1 id="winTitle">All matched!</h1>
     <div class="rewards">
       <div class="reward"><span id="winReps">0</span><small>words said</small></div>
@@ -124,7 +124,7 @@
     var $=function(id){return document.getElementById(id);};
     var shuffle=function(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t;}return a;};
     // Leo reacts (real poses, no new art)
-    var LEO={ idle:"/coach/leo.png", cheer:"/coach/poses/leo-celebrate.png", encourage:"/coach/poses/leo-listen.png" };
+    var LEO={ idle:"/coach/echo/echo-idle.svg", cheer:"/coach/echo/echo-celebrate.svg", encourage:"/coach/echo/echo-listening.svg" };
     Object.keys(LEO).forEach(function(k){ var im=new Image(); im.src=LEO[k]; });
     function setLeo(s){ var el=$("leo"); if(el&&LEO[s]) el.src=LEO[s]; }
     function leoReact(){ var el=$("leo"); if(!el)return; el.classList.remove("react"); void el.offsetWidth; el.classList.add("react"); }

@@ -106,7 +106,7 @@
         <div id="ground"></div>
       </div>
       <div id="rail"></div>
-      <div id="leoWrap"><img id="leo" src="/coach/leo.png" alt="Leo" /></div>
+      <div id="leoWrap"><img id="leo" src="/coach/echo/echo-idle.svg" alt="Leo" /></div>
       <div id="rocketWrap">
         <img id="rocketArt" alt="" style="display:none;" />
         <svg id="rocketSvg" viewBox="0 0 80 150" fill="none">
@@ -132,7 +132,7 @@
   </div>
 
   <div id="win">
-    <img class="leoWin" src="/coach/poses/leo-celebrate.png" alt="Leo celebrating" onerror="this.onerror=null;this.src='/coach/leo.png';" />
+    <img class="leoWin" src="/coach/echo/echo-celebrate.svg" alt="Leo celebrating" onerror="this.onerror=null;this.src='/coach/echo/echo-idle.svg';" />
     <h1 id="winTitle">You reached the Moon! 🌙</h1>
     <div class="reward"><span id="winCount">0</span><small>space boosts</small></div>
     <div class="reward" id="winUnlock" style="color:var(--orange-d);background:rgba(255,200,0,.16);"></div>
@@ -185,7 +185,7 @@
     function whoosh(){ try{ var ctx=getCtx(),dur=1.0,n=Math.floor(ctx.sampleRate*dur),buf=ctx.createBuffer(1,n,ctx.sampleRate),d=buf.getChannelData(0); for(var i=0;i<n;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/n,1.5); var s=ctx.createBufferSource();s.buffer=buf; var f=ctx.createBiquadFilter();f.type="bandpass";f.frequency.setValueAtTime(260,ctx.currentTime);f.frequency.exponentialRampToValueAtTime(2400,ctx.currentTime+dur);f.Q.value=.7; var g=ctx.createGain();g.gain.value=(profile.volume!=null?profile.volume:0.8)*0.5; s.connect(f);f.connect(g);g.connect(ctx.destination);s.start(); }catch(e){} }
 
     /* Leo */
-    var LEO={ idle:"/coach/leo.png", cheer:"/coach/poses/leo-celebrate.png", listen:"/coach/poses/leo-listen.png" };
+    var LEO={ idle:"/coach/echo/echo-idle.svg", cheer:"/coach/echo/echo-celebrate.svg", listen:"/coach/echo/echo-listening.svg" };
     Object.keys(LEO).forEach(function(k){ var im=new Image(); im.src=LEO[k]; });
     function setLeo(s){ var el=$("leo"); if(el&&LEO[s]) el.src=LEO[s]; }
     function leoReact(){ var w=$("leoWrap"); if(!w)return; w.classList.remove("react"); void w.offsetWidth; w.classList.add("react"); }

@@ -165,7 +165,7 @@
     <div id="stage">
       <div id="heightTag"></div>
       <div id="towerWrap"><div id="tower"></div></div>
-      <div id="leoWrap"><img id="leo" src="/coach/leo.png" alt="Leo" /></div>
+      <div id="leoWrap"><img id="leo" src="/coach/echo/echo-idle.svg" alt="Leo" /></div>
       <div id="ground"></div>
       <div id="fx"></div>
     </div>
@@ -184,7 +184,7 @@
   </div>
 
   <div id="win">
-    <img class="leoWin" src="/coach/poses/leo-celebrate.png" alt="Leo celebrating" onerror="this.onerror=null;this.src='/coach/leo.png';" />
+    <img class="leoWin" src="/coach/echo/echo-celebrate.svg" alt="Leo celebrating" onerror="this.onerror=null;this.src='/coach/echo/echo-idle.svg';" />
     <h1 id="winTitle">Great stacking!</h1>
     <div class="rewards">
       <div class="reward"><span id="winHeight">0</span><small>cups tall</small></div>
@@ -254,7 +254,7 @@
     function thunk(p){ try{ var ctx=getCtx(); var o=ctx.createOscillator(),g=ctx.createGain(); o.type="sine"; o.frequency.setValueAtTime(180+(p||0)*160,ctx.currentTime); o.frequency.exponentialRampToValueAtTime(90,ctx.currentTime+0.18); g.gain.setValueAtTime(0.0001,ctx.currentTime); g.gain.exponentialRampToValueAtTime(0.16,ctx.currentTime+0.02); g.gain.exponentialRampToValueAtTime(0.0001,ctx.currentTime+0.22); o.connect(g); g.connect(ctx.destination); o.start(); o.stop(ctx.currentTime+0.24); }catch(e){} }
 
     /* ---- Leo (real art) reacts live; cup + background auto-upgrade from /coach/cupstack/ ---- */
-    var LEO={ idle:"/coach/leo.png", cheer:"/coach/poses/leo-celebrate.png", encourage:"/coach/poses/leo-listen.png", listen:"/coach/poses/leo-listen.png" };
+    var LEO={ idle:"/coach/echo/echo-idle.svg", cheer:"/coach/echo/echo-celebrate.svg", encourage:"/coach/echo/echo-listening.svg", listen:"/coach/echo/echo-listening.svg" };
     Object.keys(LEO).forEach(function(k){ var im=new Image(); im.src=LEO[k]; });
     function setLeo(state){ var el=document.getElementById("leo"); if(el&&LEO[state]) el.src=LEO[state]; }
     function leoReact(){ var w=document.getElementById("leoWrap"); if(!w)return; w.classList.remove("react"); void w.offsetWidth; w.classList.add("react"); }

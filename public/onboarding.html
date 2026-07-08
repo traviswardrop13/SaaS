@@ -77,6 +77,8 @@
       padding:16px 18px calc(18px + env(safe-area-inset-bottom));}
     .obfoot .inner{max-width:560px;margin:0 auto;display:flex;gap:10px;align-items:center;}
     .skip{background:none;border:none;color:var(--muted);font-weight:800;font-size:15px;cursor:pointer;padding:10px;}
+    .bopt.on{box-shadow:0 0 0 3px #fff,0 0 0 7px #58cc02 !important;position:relative;}
+    .bopt.on::after{content:"✓";position:absolute;top:-7px;right:-7px;width:24px;height:24px;border-radius:50%;background:#58cc02;color:#fff;font-weight:800;font-size:14px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 0 #46a302;}
   </style>
   <script defer src="/_vercel/insights/script.js"></script>
 </head>
@@ -85,8 +87,8 @@
     <div class="seg" id="seg"></div>
 
     <div class="mascot">
-      <span class="leo" id="leo">🦁</span>
-      <div class="bubble2" id="bubble">Hi! I'm Leo. 🦁</div>
+      <span class="leo" id="leo">🦜</span>
+      <div class="bubble2" id="bubble">Hi! I'm Echo! 🦜</div>
     </div>
 
     <!-- welcome -->
@@ -191,7 +193,7 @@
 
     var ORDER = ["welcome","name","buddy","interests","sounds","goal","achieve","slp","email"];
     var BUBBLES = {
-      welcome: "Hi! I'm Leo!",
+      welcome: "Hi! I'm Echo!",
       name:    "Nice to meet you!",
       buddy:   "Who should practice with you?",
       interests: "Ooh, what do you love? 😍",
@@ -212,7 +214,7 @@
     var nextBtn = document.getElementById("nextBtn"), backBtn = document.getElementById("backBtn");
 
     function mascotMarkup(id) {
-      if (id === "leo") return '<img src="/coach/leo-icon.png" alt="Leo" style="width:62px;height:62px;object-fit:contain;display:block;" />';
+      if (id === "leo") return '<img src="/coach/echo/echo-avatar.svg" alt="Leo" style="width:62px;height:62px;object-fit:contain;display:block;" />';
       return Sona.buddyMarkup(id, 64);
     }
 
@@ -225,6 +227,18 @@
       if(!c.locked) el.onclick=function(){ Sona.sfx.tap(); draft.character=c.id; bg.querySelectorAll(".bopt").forEach(function(n){n.classList.remove("on");}); el.classList.add("on"); leo.innerHTML=mascotMarkup(c.id); };
       bg.appendChild(el);
     });
+    (function(){
+      var el=document.createElement("div"); el.className="bopt";
+      el.innerHTML='<span class="be" style="font-size:26px;">⭐</span><span class="bn">Surprise me</span>';
+      el.onclick=function(){
+        var pick=Sona.CHARACTERS[(Math.random()*Sona.CHARACTERS.length)|0];
+        Sona.sfx.tap(); draft.character=pick.id;
+        bg.querySelectorAll(".bopt").forEach(function(n){n.classList.remove("on");});
+        bg.children[Array.prototype.findIndex.call(bg.children,function(n){return n.textContent.indexOf(pick.name)>=0;})].classList.add("on");
+        leo.innerHTML=mascotMarkup(pick.id);
+      };
+      bg.appendChild(el);
+    })();
     leo.innerHTML = mascotMarkup(draft.character);
 
     // interests (themes for AI Story Adventures). Keep in sync with today.html / story.html.

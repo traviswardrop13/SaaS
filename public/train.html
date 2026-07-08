@@ -177,7 +177,7 @@
       <span class="stat count"><span id="count">0</span>/<span id="goal">5</span></span>
     </div>
     <div id="stage">
-      <div id="leoWrap"><img id="leo" src="/coach/leo.png" alt="Leo" /></div>
+      <div id="leoWrap"><img id="leo" src="/coach/echo/echo-idle.svg" alt="Leo" /></div>
       <div id="hills"></div><div id="track"></div>
       <div id="station"><span class="roof"></span><span class="wall"></span><span class="door"></span></div>
       <span id="smoke"></span>
@@ -191,7 +191,7 @@
     </div>
   </div>
   <div id="win">
-    <img class="leoWin" src="/coach/poses/leo-celebrate.png" alt="Leo" onerror="this.onerror=null;this.src='/coach/leo.png';" />
+    <img class="leoWin" src="/coach/echo/echo-celebrate.svg" alt="Leo" onerror="this.onerror=null;this.src='/coach/echo/echo-idle.svg';" />
     <h1>All aboard — you made it!</h1>
     <div class="reward"><span id="winCount">0</span><small>sentences said</small></div>
     <div class="reward" id="winUnlock" style="background:#fff7df;color:#e08600;"></div>
@@ -240,7 +240,7 @@
     var audioCtx=null; function getCtx(){if(!audioCtx){var AC=window.AudioContext||window.webkitAudioContext;audioCtx=new AC();}if(audioCtx.state==="suspended")audioCtx.resume();return audioCtx;}
     function playPCM(b){return new Promise(function(res){try{var c=getCtx(),n=b.byteLength>>1,ab=c.createBuffer(1,n,24000),ch=ab.getChannelData(0),dv=new DataView(b.buffer,b.byteOffset,b.byteLength);for(var i=0;i<n;i++)ch[i]=dv.getInt16(i*2,true)/32768;var s=c.createBufferSource();s.buffer=ab;s.playbackRate.value=(window.Sona&&Sona.VOICE_PITCH)||1;var g=c.createGain();g.gain.value=(profile.volume!=null?profile.volume:0.8);s.connect(g);g.connect(c.destination);s.onended=res;s.start();}catch(e){res();}});}
     var speaking=false; function say(t){return new Promise(function(res){if(!t||speaking)return res();speaking=true;fetch("/api/tts",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text:t,voice:profile.voiceId||""})}).then(function(r){return r.ok?r.arrayBuffer():null;}).then(function(b){return b?playPCM(new Uint8Array(b)):null;}).catch(function(){}).finally(function(){speaking=false;res();});});}
-    var LEO={idle:"/coach/leo.png",cheer:"/coach/poses/leo-celebrate.png",listen:"/coach/poses/leo-listen.png"};
+    var LEO={idle:"/coach/echo/echo-idle.svg",cheer:"/coach/echo/echo-celebrate.svg",listen:"/coach/echo/echo-listening.svg"};
     Object.keys(LEO).forEach(function(k){var im=new Image();im.src=LEO[k];});
     function setLeo(s){var el=$("leo");if(el&&LEO[s])el.src=LEO[s];}
     function leoReact(){var w=$("leoWrap");if(!w)return;w.classList.remove("react");void w.offsetWidth;w.classList.add("react");}

@@ -7,31 +7,41 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@700;800&family=Nunito:wght@700;800&display=swap" rel="stylesheet" />
-  <meta name="theme-color" content="#12263f" />
+  <meta name="theme-color" content="#2b2e6b" />
   <style>
     :root{ --blue:#1cb0f6; --blue-d:#1597d4; --green:#58cc02; --green-d:#46a302; --orange:#ff9600; --orange-d:#e08600; }
     *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;font-family:"Nunito",sans-serif;}
-    html,body{height:100%;overflow:hidden;background:linear-gradient(180deg,#12263f,#1d3a5f 70%,#28517f);}
+    html,body{height:100%;overflow:hidden;background:linear-gradient(180deg,#2b2e6b,#5b3f8f 45%,#a45fae 75%,#e17aa4);}
     #app{position:fixed;inset:0;max-width:560px;margin:0 auto;overscroll-behavior:none;touch-action:manipulation;}
     canvas{position:absolute;inset:0;width:100%;height:100%;}
-    #top{position:absolute;left:0;right:0;top:0;display:flex;align-items:center;gap:12px;padding:calc(12px + env(safe-area-inset-top)) 16px 6px;z-index:5;}
-    #close{border:none;background:rgba(255,255,255,.14);color:#fff;font-size:20px;font-weight:800;cursor:pointer;line-height:1;border-radius:12px;padding:8px 12px;}
-    #score{font-family:"Baloo 2";font-weight:800;font-size:22px;color:#fff;flex:1;}
-    #best{font-family:"Baloo 2";font-weight:800;font-size:15px;color:#9db8d0;}
     #flash{position:absolute;left:0;right:0;top:24%;text-align:center;font-family:"Baloo 2";font-weight:800;font-size:32px;color:#ffd21c;opacity:0;transition:opacity .12s, transform .3s;z-index:4;pointer-events:none;text-shadow:0 3px 0 rgba(0,0,0,.25);}
     #tapHint{position:absolute;left:0;right:0;bottom:calc(26px + env(safe-area-inset-bottom));text-align:center;font-family:"Baloo 2";font-weight:800;font-size:16px;color:#cfe3f7;z-index:4;pointer-events:none;}
-    #boostChip{position:absolute;left:50%;transform:translateX(-50%);top:calc(64px + env(safe-area-inset-top));z-index:5;background:rgba(255,255,255,.16);color:#fff;font-family:"Baloo 2";font-weight:800;font-size:13px;padding:7px 15px;border-radius:99px;pointer-events:none;white-space:nowrap;transition:background .2s,color .2s;}
+    /* ── designed HUD kit (handoff section 4) ── */
+    #top{position:absolute;left:0;right:0;top:0;display:flex;align-items:center;gap:9px;padding:calc(12px + env(safe-area-inset-top)) 14px 6px;z-index:5;}
+    #close{border:none;width:44px;height:44px;border-radius:50%;background:#fff;color:#b08d63;font-size:19px;font-weight:800;cursor:pointer;line-height:1;box-shadow:0 4px 0 rgba(30,20,70,.45);}
+    .hudpill{display:flex;align-items:center;gap:6px;background:#fff;border-radius:99px;padding:9px 14px;box-shadow:0 4px 0 rgba(30,20,70,.45);font-family:"Baloo 2";font-weight:800;font-size:16px;color:#4a2c14;}
+    #score{flex:none;}
+    #hudspacer{flex:1;}
+    #timer{color:#ff5c74;letter-spacing:1px;}
+    #boostChip{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(64px + env(safe-area-inset-bottom));top:auto;z-index:5;background:#fff;color:#4a2c14;font-family:"Baloo 2";font-weight:800;font-size:13.5px;padding:9px 16px;border-radius:99px;pointer-events:none;white-space:nowrap;box-shadow:0 4px 0 rgba(30,20,70,.45);transition:background .2s,color .2s;}
     #boostChip.hot{background:#ffd21c;color:#5c4500;animation:chipPop .4s ease;}
     @keyframes chipPop{0%{transform:translateX(-50%) scale(1)}50%{transform:translateX(-50%) scale(1.18)}100%{transform:translateX(-50%) scale(1)}}
-    .ovl{position:fixed;inset:0;z-index:50;background:rgba(10,26,44,.94);display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:28px;gap:10px;}
+    /* ── warm-card overlays (handoff section 5) ── */
+    .ovl{position:fixed;inset:0;z-index:50;background:rgba(30,22,50,.55);display:none;align-items:center;justify-content:center;padding:24px;}
     .ovl.show{display:flex;}
-    .ovl .big{font-size:70px;line-height:1;}
-    .ovl h2{font-family:"Baloo 2";font-weight:800;font-size:28px;color:#fff;}
-    .ovl p{color:#bcd3e8;font-weight:700;font-size:15px;max-width:300px;}
-    .btn{border:none;border-radius:16px;padding:15px 32px;font-family:"Baloo 2";font-weight:800;font-size:17px;text-transform:uppercase;letter-spacing:.04em;color:#fff;background:var(--green);box-shadow:0 5px 0 0 var(--green-d);cursor:pointer;transition:transform .05s;margin-top:6px;}
-    .btn:active{transform:translateY(4px);box-shadow:0 1px 0 0 var(--green-d);}
-    .btn.blue{background:var(--blue);box-shadow:0 5px 0 0 var(--blue-d);}
-    .btn.ghost{background:none;box-shadow:none;color:#9db8d0;text-transform:none;font-size:14px;}
+    .ovlCard{background:#fff6e9;border-radius:28px;padding:58px 20px 22px;width:100%;max-width:330px;text-align:center;box-shadow:0 18px 40px rgba(30,22,50,.45);position:relative;display:flex;flex-direction:column;align-items:center;gap:9px;}
+    .ovlEcho{position:absolute;top:-54px;left:50%;transform:translateX(-50%);width:106px;height:106px;filter:drop-shadow(0 8px 12px rgba(30,22,50,.3));}
+    .ovl .big{font-size:56px;line-height:1;}
+    .ovl h2{font-family:"Baloo 2";font-weight:800;font-size:24px;color:#4a2c14;line-height:1.18;}
+    .ovl h2 b{color:#7048c9;}
+    .ovl p{color:#b08d63;font-weight:800;font-size:14.5px;max-width:270px;}
+    .statRow{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;}
+    .statPill{background:#fff;border-radius:99px;padding:8px 15px;font-family:"Baloo 2";font-weight:800;font-size:14.5px;color:#4a2c14;box-shadow:0 3px 0 rgba(120,80,20,.12);}
+    .btn{border:none;border-radius:20px;padding:15px 30px;font-family:"Baloo 2";font-weight:800;font-size:17px;text-transform:uppercase;letter-spacing:.04em;color:#fff;background:linear-gradient(180deg,#6edd18,#58cc02);box-shadow:0 6px 0 #46a302;cursor:pointer;transition:transform .05s;margin-top:4px;width:100%;}
+    .btn:active{transform:translateY(4px);box-shadow:0 2px 0 #46a302;}
+    .btn.blue{background:linear-gradient(180deg,#5cc6ff,#1cb0f6);box-shadow:0 6px 0 #1480c0;}
+    .btn.blue:active{box-shadow:0 2px 0 #1480c0;}
+    .btn.ghost{background:none;box-shadow:none;color:#b08d63;text-transform:none;font-size:13px;width:auto;padding:8px;}
   </style>
 </head>
 <body>
@@ -39,8 +49,9 @@
     <canvas id="cv"></canvas>
     <div id="top">
       <button id="close">✕</button>
-      <div id="score">🧱 0</div>
-      <div id="best"></div>
+      <div id="score" class="hudpill">🧱 0</div>
+      <div id="hudspacer"></div>
+      <div id="best" class="hudpill" style="font-size:13px;color:#b08d63;"></div>
     </div>
     <div id="flash"></div>
     <div id="tapHint">Tap to drop the block!</div>
@@ -48,29 +59,39 @@
   </div>
 
   <div class="ovl" id="needOvl">
-    <div class="big">🎟</div>
-    <h2>You need a ticket!</h2>
-    <p>Charge up with your sounds to earn one — then come stack!</p>
-    <button class="btn blue" id="goCharge">⚡ Charge up</button>
-    <button class="btn ghost" id="needHome">Back home</button>
+    <div class="ovlCard">
+      <img class="ovlEcho" src="/coach/echo/echo-star.svg" alt="" />
+      <h2 id="needTitle">This game needs a ticket!</h2>
+      <p>Say your sound 5 times to charge it up</p>
+      <button class="btn" id="goCharge">⚡ Charge up</button>
+      <button class="btn ghost" id="needHome">Back home</button>
+    </div>
   </div>
 
   <div class="ovl" id="revOvl">
-    <div class="big">😮</div>
-    <h2 id="revTitle">Say it!</h2>
-    <p id="revHearts" style="font-size:26px;">❤️❤️❤️</p>
-    <p>Say your sound for a new life!</p>
-    <button class="btn ghost" id="revDone">I'm done</button>
+    <div class="ovlCard">
+      <img class="ovlEcho" src="/coach/echo/echo-listening.svg" alt="" />
+      <h2 id="revTitle">Say it!</h2>
+      <p id="revHearts" style="font-size:26px;">❤️❤️❤️</p>
+      <p>Say your sound for a new life!</p>
+      <div style="width:56px;height:56px;border-radius:50%;background:linear-gradient(180deg,#ffa05a,#ff8a3d);box-shadow:0 4px 0 #ef6f23,0 0 0 10px rgba(255,138,61,.14);display:flex;align-items:center;justify-content:center;margin:2px 0;"><svg viewBox="0 0 24 24" style="width:24px;height:24px;fill:#fff"><path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v5a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z"/></svg></div>
+      <p style="font-size:13px;">I'm listening…</p>
+      <button class="btn ghost" id="revDone">I'm done playing</button>
+    </div>
   </div>
 
   <div class="ovl" id="endOvl">
-    <div class="big">🏗️</div>
-    <h2 id="endTitle">Nice tower!</h2>
-    <p id="endSub"></p>
-    <button class="btn blue" id="endCharge">⚡ Charge up for more</button>
-    <button class="btn" id="endAgain" style="display:none;">🎟 Play again</button>
-    <button class="btn ghost" id="endHome">Done for now</button>
+    <div class="ovlCard">
+      <img class="ovlEcho" src="/coach/echo/echo-celebrate.svg" alt="" />
+      <div class="big" id="endEmoji">🎉</div>
+      <h2 id="endTitle">Great round!</h2>
+      <p id="endSub"></p>
+      <button class="btn blue" id="endCharge">⚡ Play again</button>
+      <button class="btn" id="endAgain" style="display:none;"></button>
+      <button class="btn ghost" id="endHome">Back to the house</button>
+    </div>
   </div>
+
 
   <script src="/sona.js"></script>
   <script>
@@ -84,7 +105,7 @@
     function backToCharge(){ location.href="/charge.html?"+(isDaily?"daily=1":("game="+SELF)); }
     $("goCharge").onclick=backToCharge; $("needHome").onclick=function(){location.href="/today.html";};
     var tok=false; try{ tok=sessionStorage.getItem("sona.play.token")==="1"; sessionStorage.removeItem("sona.play.token"); }catch(e){}
-    if(!tok){ $("needOvl").classList.add("show"); }
+    if(!tok){ try{ $("needTitle").textContent="Block Stacker needs a ticket!"; }catch(e){} $("needOvl").classList.add("show"); }
 
     // best height (local, just for pride)
     var BKEY="sona.stack.best"; var best=0; try{ best=parseInt(localStorage.getItem(BKEY)||"0",10)||0; }catch(e){}
@@ -160,7 +181,7 @@
     }
     function endBoost(){ if(!boost.on)return; boost.on=false; var ch=$("boostChip"); ch.classList.remove("hot"); if(!boost.cool)paintChip(); else ch.textContent="…"; }
     var SAYTXT="";
-    function paintChip(){ $("boostChip").textContent="🎤 Say “"+SAYTXT+"” for SLOW-MO!"; }
+    function paintChip(){ $("boostChip").textContent="🎙 Say “"+SAYTXT+"” for SLOW-MO!"; }
     (function(){
       var snd=""; try{ snd=sessionStorage.getItem("sona.boost.sound")||""; }catch(e){}
       if(!snd){ try{ snd=((S&&S.getProfile&&S.getProfile().focusSounds)||["R"])[0]; }catch(e){ snd="R"; } }
@@ -187,6 +208,13 @@
 
     function draw(){
       ctx.clearRect(0,0,W,H);
+      // dusk scenery: stars, moon, toy-town lights (design 4: Block Stacker)
+      ctx.fillStyle="rgba(255,255,255,.5)"; for(var si=0;si<16;si++){ ctx.fillRect(((si*131)%W),((si*197)%(H*0.5)),2,2); }
+      ctx.fillStyle="#fff4d6"; ctx.beginPath(); ctx.arc(W*0.82,H*0.14,26,0,7); ctx.fill();
+      ctx.fillStyle="rgba(255,244,214,.25)"; ctx.beginPath(); ctx.arc(W*0.82,H*0.14,36,0,7); ctx.fill();
+      ctx.fillStyle="rgba(20,14,50,.45)";
+      for(var bi=0;bi<7;bi++){ var tw=W*0.15, tx=bi*tw*0.98-8, th=H*(0.08+((bi*29)%3)*0.04); ctx.fillRect(tx,H-th,tw,th);
+        ctx.fillStyle="#ffd88a"; for(var wi=0;wi<2;wi++){ ctx.fillRect(tx+6+wi*13, H-th+8, 6,7); } ctx.fillStyle="rgba(20,14,50,.45)"; }
       // parallax stars
       ctx.globalAlpha=0.22; ctx.fillStyle="#bfe0ff"; for(var i=0;i<24;i++){ ctx.fillRect(((i*89)%W),(((i*173)+camY*0.3)%H+H)%H,2,2); } ctx.globalAlpha=1;
       var towerTopY=H-80-stack.length*BH+camY;

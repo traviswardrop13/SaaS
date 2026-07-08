@@ -251,7 +251,7 @@
       <div class="rival" id="r1" style="bottom:30%;"><span class="body" style="background:linear-gradient(180deg,#ff9a5c,#e8643a);"><i class="l"></i><i class="r"></i></span></div>
       <div class="rival" id="r2" style="bottom:3%;"><span class="body" style="background:linear-gradient(180deg,#9b7bff,#7a55e0);"><i class="l"></i><i class="r"></i></span></div>
       <span id="dust">💨</span>
-      <div id="kart"><img class="leo" src="/coach/leo.png" alt="Leo" /><span class="car"><span class="kbody"><i class="l"></i><i class="r"></i></span></span></div>
+      <div id="kart"><img class="leo" src="/coach/echo/echo-idle.svg" alt="Leo" /><span class="car"><span class="kbody"><i class="l"></i><i class="r"></i></span></span></div>
     </div>
 
     <div id="bottom">
@@ -264,7 +264,7 @@
   </div>
 
   <div id="win">
-    <img class="leoWin" src="/coach/poses/leo-celebrate.png" alt="Leo celebrating" onerror="this.onerror=null;this.src='/coach/leo.png';" />
+    <img class="leoWin" src="/coach/echo/echo-celebrate.svg" alt="Leo celebrating" onerror="this.onerror=null;this.src='/coach/echo/echo-idle.svg';" />
     <h1 id="winTitle">You won the race!</h1>
     <div class="rewards">
       <div class="reward"><span id="winReps">0</span><small>sound reps</small></div>
@@ -475,7 +475,7 @@
           if(sa.pass){
             passed=true; cleanWords++; gateCorrect++;
             if(window.Sona&&Sona.sfx)Sona.sfx.correct&&Sona.sfx.correct();
-            var kl=document.querySelector("#kart .leo"); if(kl){ kl.src="/coach/poses/leo-celebrate.png"; kl.classList.remove("cheer"); void kl.offsetWidth; kl.classList.add("cheer"); setTimeout(function(){ kl.src="/coach/leo.png"; kl.classList.remove("cheer"); }, 700); }
+            var kl=document.querySelector("#kart .leo"); if(kl){ kl.src="/coach/echo/echo-celebrate.svg"; kl.classList.remove("cheer"); void kl.offsetWidth; kl.classList.add("cheer"); setTimeout(function(){ kl.src="/coach/echo/echo-idle.svg"; kl.classList.remove("cheer"); }, 700); }
             vroom(1); $("prompt").textContent="Nice one!";
             if(window.Sona&&Sona.praiseLine)await say(Sona.praiseLine());
           } else if(tries<3){
@@ -489,7 +489,7 @@
         if(!passed){
           // effort-forward: celebrate the try so the kart still moves on.
           if(window.Sona&&Sona.sfx)Sona.sfx.correct&&Sona.sfx.correct();
-          var klf=document.querySelector("#kart .leo"); if(klf){ klf.src="/coach/poses/leo-celebrate.png"; klf.classList.remove("cheer"); void klf.offsetWidth; klf.classList.add("cheer"); setTimeout(function(){ klf.src="/coach/leo.png"; klf.classList.remove("cheer"); }, 700); }
+          var klf=document.querySelector("#kart .leo"); if(klf){ klf.src="/coach/echo/echo-celebrate.svg"; klf.classList.remove("cheer"); void klf.offsetWidth; klf.classList.add("cheer"); setTimeout(function(){ klf.src="/coach/echo/echo-idle.svg"; klf.classList.remove("cheer"); }, 700); }
           vroom(1); $("prompt").textContent="Good trying! Keep going! 🏁";
           await say("Good trying! Let's keep racing!");
         }
