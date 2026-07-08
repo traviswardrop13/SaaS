@@ -205,14 +205,14 @@
     function sayLine(){
       var times=(NUMWORD[NEED]||NEED)+" times";
       var sust=(S&&S.soundSay)?S.soundSay(SOUND):SOUND.toLowerCase();
-      if(ITEM.level==="isolation") return "Ready? Say "+sust+" — "+times+"!";
-      return "Ready? Say "+(ITEM.display||ITEM.t)+" — "+times+"!";
+      if(ITEM.level==="isolation") return "Ready? ... Say "+sust+" ... "+times+"!";
+      return "Ready? ... Say "+(ITEM.display||ITEM.t)+" ... "+times+"!";
     }
     // Prefer a real human recording of the whole prompt (Rachel!) if present.
     var CUETIP=""; try{ CUETIP=(S&&S.cue)?(S.cue(SOUND).tip||""):""; }catch(e){}
     function playPrompt(){
       var pre=Promise.resolve();
-      if(!playPrompt._did && CUETIP){ playPrompt._did=true; pre=say(CUETIP); }
+      if(!playPrompt._did && CUETIP){ playPrompt._did=true; pre=say(CUETIP+" ..."); }
       return pre.then(function(){ return new Promise(function(res){
         if(ITEM.level!=="isolation"){ say(sayLine()).then(res); return; }
         try{
@@ -235,7 +235,7 @@
     function getCtx(){ if(!audioCtx){var AC=window.AudioContext||window.webkitAudioContext;audioCtx=new AC();} if(audioCtx.state==="suspended")audioCtx.resume(); return audioCtx; }
     function playPCM(b){ return new Promise(function(res){ try{ var c=getCtx(),n=b.byteLength>>1,ab=c.createBuffer(1,n,24000),ch=ab.getChannelData(0),dv=new DataView(b.buffer,b.byteOffset,b.byteLength); for(var i=0;i<n;i++)ch[i]=dv.getInt16(i*2,true)/32768; var s=c.createBufferSource();s.buffer=ab;var g=c.createGain();g.gain.value=(profile.volume!=null?profile.volume:0.8);s.connect(g);g.connect(c.destination);s.onended=res;s.start(); }catch(e){res();} }); }
     function say(t){ return new Promise(function(res){ if(!t||profile.voiceOn===false)return res(); if(speaking)return res(); speaking=true;
-      var key=(profile.voiceId||"leo")+"|"+t;
+      var key=(profile.voiceId||"leo")+"|v2|"+t; // v2: repaced delivery — old cached clips regenerate
       ttsGet(key).then(function(cached){
         if(cached) return playPCM(new Uint8Array(cached));
         return fetch("/api/tts",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text:t,voice:profile.voiceId||"",stable:true})})

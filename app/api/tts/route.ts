@@ -93,10 +93,10 @@ export async function POST(req: NextRequest) {
         {
           model: fallbackModel,
           settings: {
-            stability: 0.72,        // high = calm, consistent delivery (low values get theatrical)
+            stability: 0.78,        // high = calm, consistent delivery (low values get theatrical)
             similarity_boost: 0.85, // stay close to the voice's natural sample
-            style: 0.06,            // near zero — style exaggeration is what sounded fake
-            speed: 0.96,            // barely slowed; clients no longer pitch playback
+            style: 0.04,            // near zero — style exaggeration is what sounded fake
+            speed: 0.87,            // kid pace: noticeably slower, natural instruction rhythm
             use_speaker_boost: true,
           },
         },

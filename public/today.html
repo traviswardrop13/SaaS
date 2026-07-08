@@ -161,16 +161,18 @@
     if(location.hash==="#play") sel=1;
 
     function art(key){ try{ return (window.SonaScenes&&SonaScenes.has(key))?("url('"+SonaScenes.uri(key)+"')"):""; }catch(e){ return ""; } }
+    // illustrated panels (coach/city/<key>.png) take over the moment they load
+    function upgradeArt(el,key){ var im=new Image(); im.onload=function(){ el.style.backgroundImage="url('"+im.src+"')"; }; im.src="/coach/city/"+key+".png"; }
     function render(){
       var a=ACTS[sel];
-      $("heroCard").style.backgroundImage=art(a.key);
+      $("heroCard").style.backgroundImage=art(a.key); upgradeArt($("heroCard"),a.key);
       $("heroName").textContent=a.name;
       $("heroSub").innerHTML=a.sub.replace("★★★",'<b>★★★</b>');
       var t=$("thumbs"); t.innerHTML="";
       [1,2].forEach(function(off){
         var ix=(sel+off)%ACTS.length, act=ACTS[ix];
         var el=document.createElement("div"); el.className="thumb";
-        el.style.backgroundImage=art(act.key);
+        el.style.backgroundImage=art(act.key); upgradeArt(el,act.key);
         el.innerHTML="<b>"+act.name+"</b>";
         el.onclick=function(){ sfx("tap"); sel=ix; render(); };
         t.appendChild(el);
