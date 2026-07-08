@@ -1063,7 +1063,9 @@
         source: kind === "enroll" ? "pilot-enroll" : "pilot-progress",
         code: pilotInfo().code || "pilot",
         childId: pilotInfo().childId || "",
-        child: (p.childName || "").slice(0, 60),
+        // founding-family beacons carry NO name — the dashboard already has it
+        // from the parent's web signup; the app itself sends counts only.
+        child: (String(pilotInfo().code || "").indexOf("ff-") === 0 ? "" : (p.childName || "").slice(0, 60)),
         age: p.childAge || "",
         focus: (p.focusSounds || []).join(", "),
         goal: p.dailyGoal || "",
