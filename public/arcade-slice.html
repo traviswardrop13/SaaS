@@ -146,19 +146,19 @@
     var fruits=[], parts=[], trail=[];
     // Kid-tuned physics: floaty gravity + launch speed derived from the screen
     // so every fruit rises to ~55-75% of the screen and hangs ~1.8s.
-    var G=H*0.00045||0.4;
+    var G=H*0.0002||0.18; // kid-slow: same arc height as before, ~1.5x hang time
 
     function toss(){
-      var n=1+(Math.random()<0.3?1:0)+(score>25?1:0); // gentle, ramps with skill
+      var n=1+(Math.random()<0.2?1:0)+(score>35?1:0); // gentle, ramps with skill
       for(var i=0;i<n;i++){
         var x=W*(0.18+Math.random()*0.64);
         fruits.push({ e:FRUITS[(Math.random()*FRUITS.length)|0], x:x, y:H+40,
-          vx:(W*0.5-x)*0.0025+(Math.random()-0.5)*1.2,
-          vy:-(H*(0.0225+Math.random()*0.004)),
+          vx:(W*0.5-x)*0.0017+(Math.random()-0.5)*0.8,
+          vy:-(H*(0.015+Math.random()*0.0027)),
           r:32+Math.random()*12, rot:Math.random()*6, vr:(Math.random()-0.5)*0.08, sliced:false });
       }
     }
-    var tossIv=setInterval(function(){ if(playing) toss(); },1700);
+    var tossIv=setInterval(function(){ if(playing) toss(); },2100);
     toss();
 
     // ── lives: miss a fruit → say your sound for a new life (3 per run) ──
@@ -190,7 +190,7 @@
         var x=W*(0.15+Math.random()*0.7);
         fruits.push({ e:"🌟", gold:true, x:x, y:H+40,
           vx:(W*0.5-x)*0.0025+(Math.random()-0.5)*1.2,
-          vy:-(H*(0.023+Math.random()*0.005)),
+          vy:-(H*(0.0155+Math.random()*0.003)),
           r:30+Math.random()*8, rot:Math.random()*6, vr:(Math.random()-0.5)*0.1, sliced:false });
       }
     }

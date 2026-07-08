@@ -205,15 +205,17 @@
     function sayLine(){
       var times=(NUMWORD[NEED]||NEED)+" times";
       var sust=(S&&S.soundSay)?S.soundSay(SOUND):SOUND.toLowerCase();
-      if(ITEM.level==="isolation") return "Ready? ... Say "+sust+" ... "+times+"!";
-      return "Ready? ... Say "+(ITEM.display||ITEM.t)+" ... "+times+"!";
+      var what=ITEM.level==="isolation"?sust:(ITEM.display||ITEM.t);
+      // first prompt carries the mouth cue inline; repeats stay minimal
+      if(!sayLine._cued && CUESHORT && ITEM.level==="isolation"){ sayLine._cued=true; return "Ready? "+CUESHORT+", and say "+what+", "+times+". Go!"; }
+      return "Ready? Say "+what+", "+times+". Go!";
     }
     // Prefer a real human recording of the whole prompt (Rachel!) if present.
     var CUETIP=""; try{ CUETIP=(S&&S.cue)?(S.cue(SOUND).tip||""):""; }catch(e){}
+    // compact articulation cue: first clause only, no similes, no sound demos
+    var CUESHORT=(CUETIP.split("\u2014")[0].split(" like ")[0].split(",")[0]||"").trim().replace(/[.!]+$/,"");
     function playPrompt(){
-      var pre=Promise.resolve();
-      if(!playPrompt._did && CUETIP){ playPrompt._did=true; pre=say(CUETIP+" ..."); }
-      return pre.then(function(){ return new Promise(function(res){
+      return Promise.resolve().then(function(){ return new Promise(function(res){
         if(ITEM.level!=="isolation"){ say(sayLine()).then(res); return; }
         try{
           var a=new Audio("/coach/say/"+SOUND+".mp3");
