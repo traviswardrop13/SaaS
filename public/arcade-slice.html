@@ -72,6 +72,8 @@
       <h2 id="revTitle">Say it!</h2>
       <p id="revHearts" style="font-size:26px;">❤️❤️❤️</p>
       <p>Say your sound for a new life!</p>
+      <div style="width:56px;height:56px;border-radius:50%;background:linear-gradient(180deg,#ffa05a,#ff8a3d);box-shadow:0 4px 0 #ef6f23,0 0 0 10px rgba(255,138,61,.14);display:flex;align-items:center;justify-content:center;margin:2px 0;"><svg viewBox="0 0 24 24" style="width:24px;height:24px;fill:#fff"><path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v5a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z"/></svg></div>
+      <p style="font-size:13px;">I'm listening…</p>
       <button class="btn ghost" id="revDone">I'm done playing</button>
     </div>
   </div>
@@ -101,7 +103,7 @@
     function backToCharge(){ location.href="/charge.html?"+(isDaily?"daily=1":("game="+SELF)); }
     $("goCharge").onclick=backToCharge; $("needHome").onclick=function(){location.href="/today.html";};
     var tok=false; try{ tok=sessionStorage.getItem("sona.play.token")==="1"; sessionStorage.removeItem("sona.play.token"); }catch(e){}
-    if(!tok){ $("needOvl").classList.add("show"); }
+    if(!tok){ try{ $("needTitle").textContent="Fruit Slice needs a ticket!"; }catch(e){} $("needOvl").classList.add("show"); }
 
     // ---- canvas game: swipe-slice tossed fruit, 45s ----
     var FRUITS=["🍉","🍎","🍊","🍋","🍇","🍓","🥝","🍑","🍍"];
