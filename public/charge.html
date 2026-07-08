@@ -280,7 +280,10 @@
     // clip at the end keeps the SLP data honest without killing the pace.
     var micStream=null, reps=0, engineOn=false, chunks=[], rec=null;
     var useSpeechAce=true;
-    (function(){ try{ fetch("/api/score").then(function(r){return r.json();}).then(function(j){ useSpeechAce=!!(j&&j.hasKey); }).catch(function(){ useSpeechAce=false; }); }catch(e){ useSpeechAce=false; } })();
+    (function(){ try{ fetch("/api/score").then(function(r){return r.json();}).then(function(j){ useSpeechAce=!!(j&&j.hasKey);
+      // tripwire: honest scoring silently off = every sound "passes". Make it loud in the server logs.
+      if(!useSpeechAce){ try{ fetch("/api/log",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({msg:"SCORING OFFLINE — SpeechAce key missing/unreachable; charge gate is loudness-only",url:location.pathname})}); }catch(e){} }
+    }).catch(function(){ useSpeechAce=false; }); }catch(e){ useSpeechAce=false; } })();
 
     function startEngine(){
       return new Promise(function(resolve){
