@@ -198,17 +198,17 @@
     if(!ITEMS.length) ITEMS=[{t:(S?S.soundSay(SOUND):"rrrr"),say:(S?S.soundSay(SOUND):"rrrr"),display:(S?S.soundSay(SOUND):"rrrr"),mode:"phoneme",level:"isolation"}];
     var ITEM=ITEMS[(Math.random()*ITEMS.length)|0];
     var NUMWORD={2:"two",3:"three",4:"four",5:"five",6:"six"};
-    // What Leo SPEAKS. TTS cannot model a bare sound reliably (a synthesized
-    // long "rrrr" comes out weird), so for isolation Leo speaks the INSTRUCTION
-    // ("Make your R sound") and the human-recorded model clip — when one exists
-    // at /coach/say/<SOUND>.mp3 — does the actual modeling.
+    // What Leo SPEAKS. TTS cannot perform a bare sound — a synthesized long
+    // "rrrr"/"sssss" comes out mangled — so the voice asks for the sound BY
+    // NAME ("make your R sound"; letter names render cleanly) and the human
+    // recording at /coach/say/<SOUND>.mp3, when present, models the real thing.
+    function soundName(){ var s=String(SOUND).toUpperCase(); if(s==="THV")s="TH"; return s.length>1?s.split("").join(" "):s; }
     function sayLine(){
       var times=(NUMWORD[NEED]||NEED)+" times";
-      var sust=(S&&S.soundSay)?S.soundSay(SOUND):SOUND.toLowerCase();
-      var what=ITEM.level==="isolation"?sust:(ITEM.display||ITEM.t);
+      var ask=ITEM.level==="isolation"?("make your "+soundName()+" sound"):("say "+(ITEM.display||ITEM.t));
       // first prompt carries the mouth cue inline; repeats stay minimal
-      if(!sayLine._cued && CUESHORT && ITEM.level==="isolation"){ sayLine._cued=true; return "Ready? "+CUESHORT+", and say "+what+", "+times+". Go!"; }
-      return "Ready? Say "+what+", "+times+". Go!";
+      if(!sayLine._cued && CUESHORT && ITEM.level==="isolation"){ sayLine._cued=true; return "Ready? "+CUESHORT+", and "+ask+", "+times+". Go!"; }
+      return "Ready? "+ask.charAt(0).toUpperCase()+ask.slice(1)+", "+times+". Go!";
     }
     // Prefer a real human recording of the whole prompt (Rachel!) if present.
     var CUETIP=""; try{ CUETIP=(S&&S.cue)?(S.cue(SOUND).tip||""):""; }catch(e){}
@@ -364,9 +364,11 @@
         // mouth on screen), then re-try. Two honest fails still open the game
         // (a kid is never hard-stuck) but the stats keep the truth.
         var c=(S&&S.cue)?S.cue(SOUND):null;
-        var tip=(c&&c.tip)?c.tip:("Let's try our "+((S&&S.soundLabel)?S.soundLabel(SOUND):SOUND)+" sound again");
         if(c&&c.tip)$("cueRow").textContent=c.tip;
         $("gpState").textContent="Almost!";
+        // spoken coaching drops the "— rrr!" demo (screen keeps the full tip):
+        // TTS never performs the sound, it only describes the mouth move
+        var tip=(c&&c.tip?c.tip.split("—")[0]:"").trim().replace(/[.!,]+$/,"")||("Let's try our "+soundName()+" sound again");
         await say("Hmm, that was a different sound! "+tip+". Try again!");
         v=await burstAndVerify(3);
         if(v==="fail"){
