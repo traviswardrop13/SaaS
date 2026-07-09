@@ -128,11 +128,12 @@
 
     <!-- daily goal -->
     <div class="step" data-step="goal">
-      <div class="qh">What's the daily practice goal?</div>
-      <p class="muted">Sona fits each day's practice to this — same length whether it's one sound or five.</p>
+      <div class="qh">How often should practice happen?</div>
+      <p class="muted">This goal is yours, not your child's — pick what fits real life. Sona tracks the week for you and never pressures the kid.</p>
       <div class="choices" id="obGoal">
-        <div class="choice" data-val="5"><span class="ce">⏱️</span> 5 min / day <span style="margin-left:auto;color:var(--muted);font-size:13px;font-family:Nunito;">Casual</span></div>
-        <div class="choice" data-val="10"><span class="ce">🔥</span> 10 min / day <span style="margin-left:auto;color:var(--muted);font-size:13px;font-family:Nunito;">Regular</span></div>
+        <div class="choice" data-val="3"><span class="ce">🌱</span> 3 days a week <span style="margin-left:auto;color:var(--muted);font-size:13px;font-family:Nunito;">Light &amp; steady</span></div>
+        <div class="choice" data-val="5"><span class="ce">⭐</span> 5 days a week <span style="margin-left:auto;color:var(--muted);font-size:13px;font-family:Nunito;">School rhythm</span></div>
+        <div class="choice" data-val="7"><span class="ce">🔥</span> Every day <span style="margin-left:auto;color:var(--muted);font-size:13px;font-family:Nunito;">All in</span></div>
       </div>
     </div>
 
@@ -159,6 +160,27 @@
         <label class="field" for="obGoals">Goals (optional)</label>
         <input id="obGoals" type="text" placeholder="e.g. clear R and S sounds in words" />
       </div>
+    </div>
+
+    <!-- early adopter / beta survey -->
+    <div class="step" data-step="beta">
+      <div class="qh">You're a founding family 💛</div>
+      <p class="muted">Sona is in beta — and <b>free for you, forever</b>, as an early adopter. In return we'd love your honest take. Two quick ones (tap to answer, or skip ahead):</p>
+      <div style="font-family:'Baloo 2';font-weight:800;font-size:14.5px;margin-top:14px;">What would make Sona a no-brainer for your family?</div>
+      <div class="choices" id="obWant" style="margin-top:8px;">
+        <div class="choice" data-val="ai-coach" style="font-size:15px;padding:11px 14px;"><span class="ce">🗣️</span> A live AI speech coach</div>
+        <div class="choice" data-val="more-games" style="font-size:15px;padding:11px 14px;"><span class="ce">🎮</span> More mini-games</div>
+        <div class="choice" data-val="stories" style="font-size:15px;padding:11px 14px;"><span class="ce">📚</span> More stories &amp; books</div>
+        <div class="choice" data-val="slp-reports" style="font-size:15px;padding:11px 14px;"><span class="ce">📈</span> SLP-grade progress reports</div>
+      </div>
+      <div style="font-family:'Baloo 2';font-weight:800;font-size:14.5px;margin-top:14px;">Hardest part of practice at home?</div>
+      <div class="choices" id="obHard" style="margin-top:8px;">
+        <div class="choice" data-val="starting" style="font-size:15px;padding:11px 14px;"><span class="ce">🚪</span> Getting started</div>
+        <div class="choice" data-val="attention" style="font-size:15px;padding:11px 14px;"><span class="ce">🎈</span> Keeping attention</div>
+        <div class="choice" data-val="accuracy" style="font-size:15px;padding:11px 14px;"><span class="ce">👂</span> Knowing if it's said right</div>
+        <div class="choice" data-val="frustration" style="font-size:15px;padding:11px 14px;"><span class="ce">😮‍💨</span> Frustration &amp; tears</div>
+      </div>
+      <input id="obWish" type="text" placeholder="Anything you wish Sona did? (optional)" style="margin-top:14px;" />
     </div>
 
     <!-- email (last — capture after the questions) -->
@@ -191,16 +213,17 @@
       interests: (p.interests && p.interests.length) ? p.interests.slice() : [],
     };
 
-    var ORDER = ["welcome","name","buddy","interests","sounds","goal","achieve","slp","email"];
+    var ORDER = ["welcome","name","buddy","interests","sounds","goal","achieve","slp","beta","email"];
     var BUBBLES = {
       welcome: "Hi! I'm Echo!",
       name:    "Nice to meet you!",
       buddy:   "Who should practice with you?",
       interests: "Ooh, what do you love? 😍",
       sounds:  "Let's pick our sounds!",
-      goal:    "How long each day?",
+      goal: "Whatever you pick, I\u2019ll keep the week on track!",
       achieve: "Here's what's ahead! ✨",
       slp:     "Almost done! 🌟",
+      beta:    "You\u2019re helping build Sona!",
       email:   "One last thing! 💌",
     };
     var CTA = { email: "Start practicing! 🎉" };
@@ -267,7 +290,7 @@
     });
 
     // daily goal (single select, default 5)
-    var goalVal = String(p.dailyMinutes || 5);
+    var goalVal = String(p.weeklyGoal || 5);
     var goalWrap = document.getElementById("obGoal");
     goalWrap.querySelectorAll(".choice").forEach(function (ch) {
       if (ch.dataset.val === goalVal) ch.classList.add("on");
@@ -285,6 +308,26 @@
     // name prefill
     var nameEl=document.getElementById("obName"); nameEl.value=draft.childName;
     var emailEl=document.getElementById("obEmail"); emailEl.value=draft.email;
+
+    // beta survey — single pick per question, both optional
+    var betaWant="", betaHard="";
+    function wireBeta(wrapId, set){ var w=document.getElementById(wrapId); if(!w)return;
+      w.querySelectorAll(".choice").forEach(function(ch){ ch.onclick=function(){ Sona.sfx.tap(); set(ch.dataset.val);
+        w.querySelectorAll(".choice").forEach(function(n){n.classList.remove("on");}); ch.classList.add("on"); }; }); }
+    wireBeta("obWant",function(v){betaWant=v;}); wireBeta("obHard",function(v){betaHard=v;});
+    function sendBeta(){
+      try{
+        var code=""; try{ code=(Sona.pilotInfo&&Sona.pilotInfo().code)||""; }catch(e){}
+        var wish=(document.getElementById("obWish")||{}).value||"";
+        [ betaWant && {q:"onboarding.want", text:betaWant},
+          betaHard && {q:"onboarding.hardest", text:betaHard},
+          wish.trim() && {q:"onboarding.wish", text:wish.trim().slice(0,600)} ].forEach(function(m){
+          if(!m) return;
+          fetch("/api/feedback",{method:"POST",headers:{"Content-Type":"application/json"},keepalive:true,
+            body:JSON.stringify({q:m.q,text:m.text,src:"onboarding",code:code})}).catch(function(){});
+        });
+      }catch(e){}
+    }
 
     function render(){
       var key=ORDER[idx];
@@ -313,7 +356,9 @@
     function finish(){
       draft.focusSounds = Array.from(selSounds);
       draft.interests = Array.from(selInterests);
+      sendBeta();
       Sona.saveProfile({
+        earlyAdopter: true, // beta cohort — free forever, sees the founding banner
         childName: draft.childName,
         character: draft.character,
         focusSounds: draft.focusSounds,
@@ -321,7 +366,8 @@
         slpEvaluated: draft.slpEvaluated,
         goals: (document.getElementById("obGoals")||{}).value ? document.getElementById("obGoals").value.trim() : draft.goals,
         focusArea: "articulation",
-        dailyMinutes: parseInt(goalVal, 10) || 5,
+        dailyMinutes: 5,
+        weeklyGoal: parseInt(goalVal, 10) || 5,
         email: draft.email || "",
         onboarded: true,
       });

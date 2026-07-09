@@ -53,12 +53,12 @@
       <button id="close" onclick="location.href='/today.html'">✕</button>
       <span class="stat" id="titlePill" style="max-width:52vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Story Time</span>
       <span class="stat">Story</span>
-      <span class="stat count">📖 <span id="count">0</span>/<span id="goal">5</span></span>
+      <span class="stat count"><svg viewBox="0 0 64 64" style="width:17px;height:17px;vertical-align:-3px"><path d="M8 16c8-5 16-5 24 0v34c-8-5-16-5-24 0Z" fill="#4db3f2"/><path d="M56 16c-8-5-16-5-24 0v34c8-5 16-5 24 0Z" fill="#7cc9f7"/><line x1="32" y1="16" x2="32" y2="50" stroke="#1c6fa8" stroke-width="2"/></svg> <span id="count">0</span>/<span id="goal">5</span></span>
     </div>
     <div id="stage">
       <div id="leoWrap"><img id="leo" src="/coach/echo/echo-idle.svg" alt="Leo" /></div>
       <div id="book">
-        <div id="pageEmoji">🐰</div>
+        <div id="pageEmoji"></div>
         <div id="pageText">Once, Leo saw a <span class="hl">rabbit</span>.</div>
         <div id="dots"></div>
         <div id="pageNo">Page 1</div>
@@ -162,7 +162,7 @@
 
     var pi=0, busy=false;
     function fixText(t){ return String(t||"").replace(/^([B-HJ-Z])\s/,"I "); }
-    function renderPage(){ var p=PAGES[pi]; p.text=fixText(p.text); $("pageEmoji").innerHTML=(window.Sona&&Sona.pic)?Sona.pic(p.word,p.e,96):(p.e||"📖");
+    function renderPage(){ var p=PAGES[pi]; p.text=fixText(p.text); $("pageEmoji").innerHTML=(window.Sona&&Sona.pic)?Sona.pic(p.word,p.e,96):(p.e||"");
       $("pageText").innerHTML=p.text.replace("___",'<span class="hl">'+p.word+'</span>'); $("pageNo").textContent="Page "+(pi+1)+" of "+GOAL;
       var dt=$("dots"); if(dt){ dt.innerHTML=""; for(var di=0;di<GOAL;di++){ var ii=document.createElement("i"); if(di<=pi)ii.className="on"; dt.appendChild(ii); } } }
     async function readPage(){ var p=PAGES[pi]; setLeo("listen"); $("prompt").textContent="Listen…";
@@ -203,11 +203,11 @@
       try{ if(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia) micStream=await navigator.mediaDevices.getUserMedia({audio:true}); }catch(e){micStream=null;}
       $("hear").onclick=function(){ var p=PAGES[pi]; say(p.text.replace("___",p.word)); }; $("again").onclick=startGame;
       // Show a quick "writing your adventure" beat while the AI story loads, then play.
-      $("pageEmoji").innerHTML="✨"; $("pageText").textContent="Writing "+(NAME?NAME+"'s":"your")+" "+INTEREST+" adventure…"; $("pageNo").textContent="";
+      $("pageEmoji").innerHTML='<svg viewBox="0 0 64 64" style="width:74px;height:74px"><path d="M32 5l8.2 18.6L60 25.8 44.9 39.2 49.8 59 32 48.4 14.2 59l4.9-19.8L4 25.8l19.8-2.2Z" fill="#ffd21c"/><circle cx="25" cy="21" r="3" fill="#fff" opacity=".85"/></svg>'; $("pageText").textContent="Writing "+(NAME?NAME+"'s":"your")+" "+INTEREST+" adventure…"; $("pageNo").textContent="";
       await loadStory();
       if(GENERATED){try{document.title="Sona — "+INTEREST+" adventure";}catch(e){}}
       // One tap to begin — unlocks audio on mobile so every page auto-reads (no clicking to hear).
-      $("pageEmoji").innerHTML="📖"; $("pageText").textContent=(NAME?NAME+"'s":"Your")+" "+INTEREST+" adventure is ready!"; $("pageNo").textContent="";
+      $("pageEmoji").innerHTML='<svg viewBox="0 0 64 64" style="width:74px;height:74px"><path d="M8 16c8-5 16-5 24 0v34c-8-5-16-5-24 0Z" fill="#4db3f2"/><path d="M56 16c-8-5-16-5-24 0v34c8-5 16-5 24 0Z" fill="#7cc9f7"/><line x1="32" y1="16" x2="32" y2="50" stroke="#1c6fa8" stroke-width="2"/><circle cx="16" cy="24" r="3" fill="#fff" opacity=".8"/></svg>'; $("pageText").textContent=(NAME?NAME+"'s":"Your")+" "+INTEREST+" adventure is ready!"; $("pageNo").textContent="";
       $("startTitle").textContent=(NAME?NAME+"'s":"Your")+" "+INTEREST+" story!";
       try{ $("titlePill").textContent=(NAME?NAME+"'s ":"")+INTEREST.charAt(0).toUpperCase()+INTEREST.slice(1)+" Story"; }catch(e){}
       $("start").style.display="flex";

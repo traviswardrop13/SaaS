@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <title>Sona — Coach Call</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet" />
+  <meta name="theme-color" content="#35407e" />
+  <style>
+    :root{
+      --cream:#fff6e9; --ink:#4a2c14; --muted:#b08d63; --label:#c9a878; --track:#f0e4d2;
+      --green:#58cc02; --green-d:#46a302; --orange:#ff8a3d; --orange-d:#ef6f23; --gold:#ffd21c;
+      --tsh:rgba(30,24,70,.5);
+    }
+    *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;font-family:"Nunito",-apple-system,sans-serif;}
+    html,body{height:100%;overflow:hidden;}
+    body{background:linear-gradient(180deg,#35407e 0%,#6a5aa8 46%,#c98bb0 80%,#f2b8a2 100%);}
+    #app{height:100vh;height:100dvh;max-width:560px;margin:0 auto;position:relative;overflow:hidden;}
+
+    /* soft evening decor */
+    .cloud{position:absolute;border-radius:99px;background:rgba(255,255,255,.14);}
+    .star{position:absolute;border-radius:50%;background:#fff;opacity:.6;}
+
+    /* header */
+    #top{position:absolute;left:0;right:0;top:0;display:flex;align-items:center;gap:8px;padding:calc(14px + env(safe-area-inset-top)) 16px 0;z-index:5;}
+    #callLbl{display:flex;align-items:center;gap:7px;background:rgba(255,255,255,.16);border-radius:99px;padding:8px 14px;font-family:"Baloo 2";font-weight:800;font-size:13.5px;color:#fff;text-shadow:0 2px 0 var(--tsh);}
+    #callDot{width:9px;height:9px;border-radius:50%;background:#58cc02;box-shadow:0 0 8px #58cc02;animation:blink 1.4s ease infinite;}
+    @keyframes blink{0%,100%{opacity:1}50%{opacity:.35}}
+    #timer{margin-left:auto;background:#fff;border-radius:99px;padding:8px 13px;font-family:"Baloo 2";font-weight:800;font-size:14px;color:var(--ink);box-shadow:0 4px 0 rgba(30,24,70,.35);}
+
+    /* the kid's little window — their buddy with a live voice ring */
+    #pip{position:absolute;top:calc(74px + env(safe-area-inset-top));right:14px;width:86px;height:104px;border-radius:18px;background:rgba(255,255,255,.92);box-shadow:0 8px 20px rgba(30,24,70,.35);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;z-index:5;}
+    #pipRing{position:relative;width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;}
+    #pipRing::before{content:"";position:absolute;inset:calc(-1 * var(--lv,2px));border-radius:50%;border:3px solid rgba(88,204,2,.55);transition:inset .09s;}
+    #pipName{font-family:"Baloo 2";font-weight:800;font-size:11px;color:var(--ink);}
+
+    /* Echo center stage */
+    #stage{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:0 22px;}
+    #echoWrap{position:relative;width:min(56vw,240px);aspect-ratio:1;display:flex;align-items:center;justify-content:center;}
+    #echoWrap::before{content:"";position:absolute;inset:-8%;border-radius:50%;background:rgba(255,255,255,.10);}
+    #echo{width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 10px 16px rgba(30,24,70,.4));}
+    #echo.talk{animation:talkbob .46s ease-in-out infinite;}
+    @keyframes talkbob{0%,100%{transform:translateY(0) rotate(-1.2deg)}50%{transform:translateY(-7px) rotate(1.4deg)}}
+    #echo.cheer{animation:hop .55s ease;}
+    @keyframes hop{0%,100%{transform:translateY(0)}45%{transform:translateY(-16px) rotate(-5deg)}}
+    #caption{background:#fff;border-radius:18px;padding:12px 16px;max-width:340px;box-shadow:0 8px 22px rgba(30,24,70,.35);font-family:"Baloo 2";font-weight:800;font-size:16px;color:var(--ink);text-align:center;min-height:44px;}
+    #caption b{color:var(--orange-d);}
+
+    /* bottom: mic state + end call */
+    #bottom{position:absolute;left:0;right:0;bottom:calc(14px + env(safe-area-inset-bottom));display:flex;flex-direction:column;align-items:center;gap:10px;z-index:5;}
+    #micState{font-family:"Baloo 2";font-weight:800;font-size:15px;color:#fff;text-shadow:0 2px 0 var(--tsh);min-height:22px;}
+    #micGlow{width:74px;height:74px;border-radius:50%;background:linear-gradient(180deg,#e7d9c4,#d8c7ad);box-shadow:0 5px 0 #c4b193;display:flex;align-items:center;justify-content:center;position:relative;}
+    #micGlow.hot{background:linear-gradient(180deg,#ffa05a,#ff8a3d);box-shadow:0 5px 0 var(--orange-d);}
+    #micGlow.hot::before,#micGlow.hot::after{content:"";position:absolute;border-radius:50%;}
+    #micGlow.hot::before{inset:-12px;background:rgba(255,255,255,.16);animation:ring 1.6s ease-out infinite;}
+    #micGlow.hot::after{inset:-24px;background:rgba(255,255,255,.10);animation:ring 1.6s ease-out infinite .4s;}
+    @keyframes ring{0%{transform:scale(.85);opacity:0}30%{opacity:1}100%{transform:scale(1.1);opacity:0}}
+    #micGlow svg{width:32px;height:32px;fill:#fff;}
+    #hangup{border:none;background:rgba(255,255,255,.18);color:#fff;text-shadow:0 1.5px 0 var(--tsh);font-family:"Baloo 2";font-weight:800;font-size:13px;border-radius:99px;padding:9px 18px;cursor:pointer;}
+
+    /* ring screen (pickup = the audio-unlock gesture) */
+    #ringOvl{position:fixed;inset:0;z-index:40;background:linear-gradient(180deg,#35407e,#6a5aa8 60%,#c98bb0);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:24px;}
+    #ringEcho{position:relative;width:min(50vw,210px);aspect-ratio:1;}
+    #ringEcho img{width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 10px 16px rgba(30,24,70,.4));animation:wiggle 1.1s ease-in-out infinite;}
+    @keyframes wiggle{0%,100%{transform:rotate(-3deg)}50%{transform:rotate(3deg)}}
+    #ringEcho::before,#ringEcho::after{content:"";position:absolute;inset:-14%;border-radius:50%;border:3px solid rgba(255,255,255,.4);animation:ringout 1.6s ease-out infinite;}
+    #ringEcho::after{animation-delay:.55s;}
+    @keyframes ringout{0%{transform:scale(.8);opacity:0}30%{opacity:1}100%{transform:scale(1.25);opacity:0}}
+    #ringTitle{font-family:"Baloo 2";font-weight:800;font-size:26px;color:#fff;text-shadow:0 3px 0 var(--tsh);}
+    #ringSub{font-weight:800;font-size:14px;color:rgba(255,255,255,.85);}
+    #answer{border:none;width:84px;height:84px;border-radius:50%;background:linear-gradient(180deg,#6edd18,#58cc02);box-shadow:0 6px 0 var(--green-d);cursor:pointer;display:flex;align-items:center;justify-content:center;animation:pulse 1.2s ease infinite;}
+    @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.07)}}
+    #answer svg{width:38px;height:38px;fill:#fff;}
+    #notNow{border:none;background:none;color:rgba(255,255,255,.8);font-weight:800;font-size:13px;cursor:pointer;padding:8px;}
+
+    /* warm-card overlays */
+    .ovl{position:fixed;inset:0;z-index:60;background:rgba(30,24,70,.55);display:none;align-items:center;justify-content:center;padding:24px;}
+    .ovl.show{display:flex;}
+    .ovlCard{background:var(--cream);border-radius:28px;padding:56px 20px 22px;width:100%;max-width:340px;text-align:center;box-shadow:0 18px 40px rgba(30,24,70,.45);position:relative;display:flex;flex-direction:column;align-items:center;gap:10px;}
+    .ovlEcho{position:absolute;top:-52px;left:50%;transform:translateX(-50%);width:104px;height:104px;filter:drop-shadow(0 8px 12px rgba(30,24,70,.3));}
+    .ovl h2{font-family:"Baloo 2";font-weight:800;font-size:24px;color:var(--ink);line-height:1.15;}
+    .ovl p{color:var(--muted);font-weight:800;font-size:14.5px;max-width:280px;}
+    .btn{border:none;border-radius:20px;padding:15px 32px;font-family:"Baloo 2";font-weight:800;font-size:17px;text-transform:uppercase;letter-spacing:.04em;color:#fff;background:linear-gradient(180deg,#6edd18,#58cc02);box-shadow:0 6px 0 var(--green-d);cursor:pointer;width:100%;margin-top:4px;}
+    .btn:active{transform:translateY(4px);box-shadow:0 2px 0 var(--green-d);}
+    .btn.ghost{background:none;color:var(--muted);box-shadow:none;text-transform:none;font-size:13px;width:auto;}
+  </style>
+</head>
+<body>
+  <div id="app">
+    <i class="cloud" style="top:12%;left:-6%;width:34vw;height:28px;"></i>
+    <i class="cloud" style="top:20%;right:-8%;width:40vw;height:32px;"></i>
+    <i class="star" style="top:9%;left:24%;width:3px;height:3px;"></i>
+    <i class="star" style="top:15%;right:30%;width:2.5px;height:2.5px;"></i>
+    <i class="star" style="top:30%;left:12%;width:2.5px;height:2.5px;"></i>
+
+    <div id="top">
+      <div id="callLbl"><i id="callDot"></i> Coach Call</div>
+      <div id="timer">3:30</div>
+    </div>
+    <div id="pip">
+      <div id="pipRing"><span id="pipBuddy"></span></div>
+      <div id="pipName">You</div>
+    </div>
+
+    <div id="stage">
+      <div id="echoWrap"><img id="echo" src="/coach/echo/echo-idle.svg" alt="Echo" /></div>
+      <div id="caption">…</div>
+    </div>
+
+    <div id="bottom">
+      <div id="micGlow"><svg viewBox="0 0 24 24"><path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v5a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z"/></svg></div>
+      <div id="micState"></div>
+      <button id="hangup">Bye bye</button>
+    </div>
+  </div>
+
+  <!-- incoming call -->
+  <div id="ringOvl">
+    <div id="ringEcho"><img src="/coach/echo/echo-celebrate.svg" alt="Echo" /></div>
+    <div id="ringTitle">Echo is calling!</div>
+    <div id="ringSub" >Your speech buddy wants to hear you</div>
+    <button id="answer" aria-label="Answer"><svg viewBox="0 0 24 24"><path d="M6.6 10.8a15.9 15.9 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25 11.4 11.4 0 0 0 3.6.58 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1 11.4 11.4 0 0 0 .57 3.6 1 1 0 0 1-.25 1Z"/></svg></button>
+    <button id="notNow">Not now</button>
+  </div>
+
+  <!-- no calls left this week -->
+  <div class="ovl" id="capOvl">
+    <div class="ovlCard">
+      <img class="ovlEcho" src="/coach/echo/echo-idle.svg" alt="" />
+      <h2>Echo's beak needs a rest!</h2>
+      <p id="capSub">You used all your Coach Calls this week — they come back Monday. The games are always open!</p>
+      <button class="btn" id="capHome">Back home</button>
+    </div>
+  </div>
+
+  <!-- call finished -->
+  <div class="ovl" id="doneOvl">
+    <div class="ovlCard">
+      <img class="ovlEcho" src="/coach/echo/echo-celebrate.svg" alt="" />
+      <h2 id="doneTitle">Best call ever!</h2>
+      <p id="doneSub"></p>
+      <button class="btn" id="doneHome">Done</button>
+    </div>
+  </div>
+
+  <script src="/sona.js"></script>
+  <script>
+    var $=function(id){return document.getElementById(id);};
+    var S=window.Sona;
+    var profile=S?S.getProfile():{};
+    var NAME=(profile.childName||"friend");
+    var SOUND=((profile.focusSounds&&profile.focusSounds[0])||"R").toUpperCase();
+    if(!(S&&S.WORDS&&S.WORDS[SOUND])) SOUND="R";
+    var BUDDY=(S&&S.characterById)?(S.characterById(profile.character)||S.CHARACTERS[0]):{name:"Pip"};
+    var BUDDYNAME=BUDDY.name||"Pip";
+    var RUNG=(S&&S.rungOf)?S.rungOf(SOUND):0;
+    var LETTER=(S&&S.soundLabel)?S.soundLabel(SOUND):SOUND;
+    var CUETIP=""; try{ CUETIP=(S.cue(SOUND).tip||""); }catch(e){}
+    var CUESHORT=(CUETIP.split("—")[0].split(" like ")[0].split(",")[0]||"").trim().replace(/[.!]+$/,"");
+
+    // ---- weekly cap: 3 calls, resets Monday ----
+    var MAXCALLS=3;
+    function weekKey(){ var d=new Date(); var dow=(d.getDay()+6)%7; var m=new Date(d.getFullYear(),d.getMonth(),d.getDate()-dow); return m.getFullYear()+"-"+(m.getMonth()+1)+"-"+m.getDate(); }
+    function callState(){ try{ var s=JSON.parse(localStorage.getItem("sona.call.v1")||"{}"); if(s.week!==weekKey()) s={week:weekKey(),used:0}; return s; }catch(e){ return {week:weekKey(),used:0}; } }
+    function callSave(s){ try{ localStorage.setItem("sona.call.v1",JSON.stringify(s)); }catch(e){} }
+    window.SonaCallsLeft=function(){ return Math.max(0,MAXCALLS-callState().used); };
+
+    // ---- buddy PiP ----
+    try{ $("pipBuddy").innerHTML=S.buddyMarkup(profile.character,54); }catch(e){ $("pipBuddy").textContent="🦊"; }
+
+    // ---- audio: TTS with on-device cache (same pattern as practice) ----
+    function ttsDB(){ return new Promise(function(res,rej){ try{ var r=indexedDB.open("sona-tts",1); r.onupgradeneeded=function(){ r.result.createObjectStore("clips"); }; r.onsuccess=function(){res(r.result)}; r.onerror=function(){rej(r.error)}; }catch(e){rej(e);} }); }
+    function ttsGet(k){ return ttsDB().then(function(db){ return new Promise(function(res){ var tx=db.transaction("clips"); var rq=tx.objectStore("clips").get(k); rq.onsuccess=function(){res(rq.result||null)}; rq.onerror=function(){res(null)}; }); }).catch(function(){return null;}); }
+    function ttsPut(k,buf){ ttsDB().then(function(db){ try{ db.transaction("clips","readwrite").objectStore("clips").put(buf,k); }catch(e){} }).catch(function(){}); }
+    var audioCtx=null;
+    function getCtx(){ if(!audioCtx){var AC=window.AudioContext||window.webkitAudioContext;audioCtx=new AC();} if(audioCtx.state==="suspended")audioCtx.resume(); return audioCtx; }
+    function playPCM(b){ return new Promise(function(res){ try{ var c=getCtx(),n=b.byteLength>>1,ab=c.createBuffer(1,n,24000),ch=ab.getChannelData(0),dv=new DataView(b.buffer,b.byteOffset,b.byteLength); for(var i=0;i<n;i++)ch[i]=dv.getInt16(i*2,true)/32768; var s=c.createBufferSource();s.buffer=ab;var g=c.createGain();g.gain.value=(profile.volume!=null?profile.volume:0.85);s.connect(g);g.connect(c.destination);s.onended=res;s.start(); }catch(e){res();} }); }
+    var speaking=false;
+    function say(t){ return new Promise(function(res){ if(!t||profile.voiceOn===false)return res(); if(speaking)return res(); speaking=true;
+      pose("talk"); $("caption").innerHTML=t.replace(/\*(.+?)\*/g,"<b>$1</b>");
+      var plain=t.replace(/\*/g,"");
+      var key=(profile.voiceId||"leo")+"|v2|"+plain;
+      ttsGet(key).then(function(cached){
+        if(cached) return playPCM(new Uint8Array(cached));
+        return fetch("/api/tts",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text:plain,voice:profile.voiceId||"",stable:true})})
+          .then(function(r){return r.ok?r.arrayBuffer():null;})
+          .then(function(b){ if(!b)return null; ttsPut(key,b); return playPCM(new Uint8Array(b)); });
+      }).catch(function(){}).finally(function(){ speaking=false; pose("idle"); res(); });
+    }); }
+    // Rachel's human demo of the bare sound, when recorded (TTS never performs it)
+    function playDemo(){ return new Promise(function(res){ try{ var a=new Audio("/coach/say/"+SOUND+".mp3"); var done=false; function fin(ok){ if(done)return; done=true; res(ok); }
+      a.onended=function(){fin(true)}; a.onerror=function(){fin(false)}; a.play().catch(function(){fin(false)}); }catch(e){ res(false); } }); }
+    function pose(p){ var e=$("echo");
+      e.classList.remove("talk","cheer");
+      if(p==="talk"){ e.src="/coach/echo/echo-celebrate.svg"; e.classList.add("talk"); }
+      else if(p==="listen"){ e.src="/coach/echo/echo-listening.svg"; }
+      else if(p==="cheer"){ e.src="/coach/echo/echo-celebrate.svg"; void e.offsetWidth; e.classList.add("cheer"); }
+      else if(p==="star"){ e.src="/coach/echo/echo-star.svg"; }
+      else { e.src="/coach/echo/echo-idle.svg"; }
+    }
+
+    // ---- listening: VAD burst counter + one honest whole-clip check ----
+    var micStream=null, chunks=[], rec=null, pipLevel=0;
+    function listenFor(need,maxMs){
+      return new Promise(function(resolve){
+        var reps=0; chunks=[];
+        try{ if(window.MediaRecorder&&micStream){ rec=new MediaRecorder(micStream); rec.ondataavailable=function(e){ if(e.data&&e.data.size)chunks.push(e.data); }; rec.start(); } }catch(e){ rec=null; }
+        var ctx=getCtx(), src, an;
+        try{ src=ctx.createMediaStreamSource(micStream); an=ctx.createAnalyser(); an.fftSize=512; src.connect(an); }catch(e){ resolve(0); return; }
+        var td=new Uint8Array(an.fftSize), voiced=0, silent=0, inBurst=false, thr=0, calN=0, calSum=0, t0=performance.now(), lastRep=0, on=true;
+        $("micGlow").className="hot"; pose("listen");
+        function stopAll(){ on=false; try{src.disconnect();}catch(e){} try{ if(rec&&rec.state!=="inactive")rec.stop(); }catch(e){} $("micGlow").className=""; document.getElementById("pipRing").style.setProperty("--lv","2px"); }
+        (function tick(){
+          if(!on) return;
+          an.getByteTimeDomainData(td);
+          var sum=0; for(var i=0;i<td.length;i++){ var d=(td[i]-128)/128; sum+=d*d; }
+          var rms=Math.sqrt(sum/td.length), now=performance.now();
+          document.getElementById("pipRing").style.setProperty("--lv",(2+Math.min(10,rms*130))+"px");
+          if(now-t0<250){ calSum+=rms; calN++; requestAnimationFrame(tick); return; }
+          if(!thr) thr=Math.max(0.035,(calSum/Math.max(1,calN))*3.0);
+          if(rms>thr){ voiced++; silent=0;
+            if(!inBurst && voiced>=4 && now-lastRep>350){
+              inBurst=true; lastRep=now; reps++;
+              try{ S.sfx.tap(); }catch(e){}
+              $("micState").textContent=reps+" of "+need+"!";
+              if(reps>=need){ setTimeout(function(){ stopAll(); resolve(reps); },350); return; }
+            }
+          } else { silent++; voiced=0; if(silent>=8) inBurst=false; }
+          requestAnimationFrame(tick);
+        })();
+        setTimeout(function(){ if(on){ stopAll(); resolve(reps); } },maxMs||12000);
+      });
+    }
+    function verifyClip(text,mode){
+      var blob=chunks.length?new Blob(chunks,{type:(rec&&rec.mimeType)||"audio/webm"}):null;
+      if(!blob) return Promise.resolve("unknown");
+      var ctrl=new AbortController(); var to=setTimeout(function(){ctrl.abort();},8000);
+      var fd=new FormData(); fd.append("audio",new File([blob],"a.webm",{type:blob.type||"audio/webm"}));
+      fd.append("text",text); fd.append("targetSound",SOUND); fd.append("userId","child"); fd.append("mode",mode||"phoneme");
+      return fetch("/api/score",{method:"POST",body:fd,signal:ctrl.signal})
+        .then(function(r){ clearTimeout(to); return r.json(); })
+        .then(function(j){ if(j&&j.ok) return (j.rating!=="tryAgain")?"pass":"fail"; return "unknown"; })
+        .catch(function(){ return "unknown"; });
+    }
+    function logV(v,word){ if(v!=="unknown"&&S&&S.logAttempt) S.logAttempt({game:"coach-call",sound:SOUND,pass:v==="pass",word:String(word||"").toLowerCase()}); }
+
+    // ---- THE CALL SCRIPT (v0 — for Rachel to red-pen) ----
+    // *word* renders orange in the caption. {slots} are filled per kid.
+    // Every "ask" step: Echo says the line, then listens for `reps` bursts and
+    // honestly checks the whole clip. pass → praise; fail → cue tip, one retry,
+    // then a warm move-on. TTS never performs the bare sound — Echo asks by
+    // letter name, and Rachel's recorded demo plays when it exists.
+    var ITEMS=[]; try{ ITEMS=(S.ladderContent(SOUND,RUNG)||[]).filter(function(it){return it&&it.t&&it.level!=="isolation";}); }catch(e){}
+    var W1=ITEMS[0]||{t:"rabbit",display:"rabbit"}, W2=ITEMS[1]||ITEMS[0]||{t:"robot",display:"robot"};
+    var soundAsk="your *"+LETTER+" sound*";
+    var SCRIPT=[
+      { say:"Well HI, "+NAME+"! I was hoping you would call me all day!" },
+      { say:"First, a big dragon breath. Breathe in… and blow it out. One more big one… Wonderful!" },
+      { say:"Today is "+LETTER+" day! I have been practicing SO hard. Want to hear my try first?", demo:true },
+      { ask:{ line:"Now the real expert. Say "+soundAsk+" *three times* so I can hear how it's really done. Go!", reps:3, text:(S&&S.soundSay)?S.soundSay(SOUND):SOUND.toLowerCase(), mode:"phoneme", word:SOUND },
+        pass:"WOW. That was even better than I imagined!", fail:"Ooh, so close! "+(CUESHORT||"Let's try together")+". One more time — go!" },
+      { say:BUDDYNAME+" is on the call too! Psst — "+BUDDYNAME+" keeps getting the "+LETTER+" sound wrong. Can you teach him?" },
+      { ask:{ line:"Show "+BUDDYNAME+" your very best "+soundAsk+", *three more times*. Teach him. Go!", reps:3, text:(S&&S.soundSay)?S.soundSay(SOUND):SOUND.toLowerCase(), mode:"phoneme", word:SOUND },
+        pass:"LOOK! "+BUDDYNAME+" just said it! You TAUGHT him, "+NAME+"! You're a "+LETTER+" teacher now!", fail:"Almost! "+BUDDYNAME+" is watching your mouth. "+(CUESHORT||"Nice and easy")+" — go again!" },
+      { ask:{ line:"Word time! Say *"+(W1.display||W1.t)+"*, three times. Go!", reps:3, text:W1.t, mode:"full", word:W1.t },
+        pass:"That was a PERFECT "+(W1.display||W1.t)+"!", fail:"So close! Break it in half with me — "+(W1.display||W1.t)+". Again, go!" },
+      { ask:{ line:"One more word. Say *"+(W2.display||W2.t)+"*, three times. Go!", reps:3, text:W2.t, mode:"full", word:W2.t },
+        pass:"You are on FIRE today!", fail:"Good trying! That one's tricky — we'll practice it in the games too." },
+      { ask:{ line:"Last one. Show me how BIG-KID "+NAME+" says it — one giant "+soundAsk+". GO!", reps:1, text:(S&&S.soundSay)?S.soundSay(SOUND):SOUND.toLowerCase(), mode:"phoneme", word:SOUND },
+        pass:"THERE it is! That's the big-kid sound right there!", fail:"I heard it in there! It's getting stronger every single day." },
+      { say:"This was my favorite call ALL day. Practice in the games, and call me again soon. Bye bye, superstar!", end:true }
+    ];
+
+    // ---- run the call ----
+    var stepIx=0, passes=0, tries=0, over=false, timeLeft=210;
+    var timerIv=null;
+    function fmt(s){ return Math.floor(s/60)+":"+String(s%60).padStart(2,"0"); }
+    function startTimer(){ timerIv=setInterval(function(){ timeLeft--; $("timer").textContent=fmt(Math.max(0,timeLeft)); if(timeLeft<=0){ clearInterval(timerIv); jumpToEnd(); } },1000); }
+    function jumpToEnd(){ if(over)return; stepIx=SCRIPT.length-1; }
+
+    async function runStep(st){
+      if(st.say){ await say(st.say); if(st.demo){ var okDemo=await playDemo(); if(okDemo){ await new Promise(function(r){setTimeout(r,250);}); } } return; }
+      if(st.ask){
+        await say(st.ask.line);
+        $("micState").textContent="Your turn!";
+        var got=await listenFor(st.ask.reps, 12000);
+        $("micState").textContent="";
+        if(got<1){ await say("I couldn't hear you that time — scoot a little closer and we'll keep going!"); return; }
+        var v=await verifyClip(st.ask.text, st.ask.mode); logV(v, st.ask.word); tries++;
+        if(v==="pass"){ passes++; pose("cheer"); try{ S.sfx.correct(); }catch(e){} await say(st.pass); }
+        else if(v==="fail"){
+          await say(st.fail);
+          var got2=await listenFor(st.ask.reps, 10000);
+          if(got2>0){ var v2=await verifyClip(st.ask.text, st.ask.mode); logV(v2, st.ask.word); tries++;
+            if(v2==="pass"){ passes++; pose("cheer"); try{ S.sfx.correct(); }catch(e){} await say((S&&S.praiseLine)?S.praiseLine():"You got it!"); }
+            else { await say("You know what? That try made "+BUDDYNAME+" smile. We'll get it next call!"); } }
+        } else { passes++; pose("cheer"); await say((S&&S.praiseLine)?S.praiseLine():"Nice one!"); }
+      }
+    }
+    async function runCall(){
+      startTimer();
+      while(stepIx<SCRIPT.length && !over){
+        var st=SCRIPT[stepIx];
+        await runStep(st);
+        stepIx++;
+        if(st.end) break;
+      }
+      endCall(false);
+    }
+    function endCall(early){
+      if(over)return; over=true;
+      try{ clearInterval(timerIv); }catch(e){}
+      try{ if(micStream)micStream.getTracks().forEach(function(t){t.stop();}); }catch(e){}
+      try{ S.addCoins(5); if(S.awardNextSticker)S.awardNextSticker(); }catch(e){}
+      try{ S.confetti&&S.confetti({count:120}); S.sfx.complete(); }catch(e){}
+      $("doneTitle").textContent = early ? "Thanks for calling!" : "Best call ever!";
+      $("doneSub").textContent = passes>0 ? ("You taught "+BUDDYNAME+" the "+LETTER+" sound and earned 5 coins. Echo can't wait for next time!")
+                                          : ("Great practicing with Echo — 5 coins for showing up! See you next call.");
+      $("doneOvl").classList.add("show");
+    }
+
+    // ---- boot: cap gate, then the ring screen. Answering = the tap that
+    // unlocks audio + mic. "Not now" never burns a call. ----
+    var st0=callState();
+    if(st0.used>=MAXCALLS){
+      $("ringOvl").style.display="none";
+      $("capOvl").classList.add("show");
+    }
+    $("capHome").onclick=function(){ location.href="/today.html"; };
+    $("doneHome").onclick=function(){ location.href="/today.html"; };
+    $("notNow").onclick=function(){ location.href="/today.html"; };
+    $("hangup").onclick=function(){ jumpToEnd(); endCall(true); };
+    $("answer").onclick=async function(){
+      try{ S.sfx.tap(); }catch(e){}
+      getCtx();
+      try{ micStream=await navigator.mediaDevices.getUserMedia({audio:true,video:false}); }
+      catch(e){ if(S&&S.micDenied)S.micDenied({back:"/today.html"}); return; }
+      var s=callState(); s.used++; callSave(s);
+      $("ringOvl").style.display="none";
+      runCall();
+    };
+    window.__call={ get step(){return stepIx;}, script:SCRIPT, callsLeft:window.SonaCallsLeft }; // headless-test hook
+  </script>
+</body>
+</html>

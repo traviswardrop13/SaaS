@@ -82,7 +82,7 @@
         <div id="subLine"></div>
       </div>
       <div id="hdrBtns">
-        <button id="libBtn" aria-label="Book library">📚</button>
+        <button id="libBtn" aria-label="Book library"><svg viewBox="0 0 64 64" style="width:24px;height:24px;vertical-align:middle"><path d="M10 14c8-4 15-4 22 0v38c-7-4-14-4-22 0Z" fill="#4db3f2"/><path d="M54 14c-8-4-15-4-22 0v38c7-4 14-4 22 0Z" fill="#2a8fd4"/><line x1="32" y1="14" x2="32" y2="52" stroke="#1c6fa8" stroke-width="2"/><circle cx="19" cy="22" r="3" fill="#fff" opacity=".8"/></svg></button>
         <button id="parentBtn" aria-label="For grown-ups"><img src="/coach/echo/echo-idle.svg" alt="Echo" /></button>
       </div>
     </header>
@@ -119,9 +119,27 @@
   <div class="ovl" id="sheetOvl">
     <div class="modal">
       <h3>Parent corner</h3>
-      <button class="sheetBtn" id="goProgress">📈&nbsp; Progress &amp; SLP report</button>
-      <button class="sheetBtn" id="goSettings">⚙️&nbsp; Settings</button>
+      <div id="weekCard" style="background:var(--cream);border-radius:16px;padding:14px 16px;margin-top:12px;text-align:left;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <b style="font-family:'Baloo 2';font-size:15px;color:var(--ink);">This week</b>
+          <span id="wkStreak" style="margin-left:auto;font-family:'Baloo 2';font-weight:800;font-size:12.5px;color:var(--orange-d);"></span>
+        </div>
+        <div id="wkDots" style="display:flex;gap:7px;margin-top:10px;justify-content:space-between;"></div>
+        <div id="wkMsg" style="font-weight:800;font-size:12.5px;color:var(--muted);margin-top:9px;"></div>
+      </div>
+      <button class="sheetBtn" id="goProgress"><span class="pic-trend"></span>&nbsp; Progress &amp; SLP report</button>
+      <button class="sheetBtn" id="goSettings"><span class="pic-gear"></span>&nbsp; Settings</button>
       <button class="ghost" id="sheetClose">Close</button>
+    </div>
+  </div>
+
+  <!-- beta pulse — one quick question for founding families; X always works -->
+  <div class="ovl" id="pulseOvl">
+    <div class="modal" style="position:relative;text-align:left;">
+      <button id="pulseX" aria-label="Close" style="position:absolute;top:10px;right:10px;width:34px;height:34px;border:none;border-radius:50%;background:var(--cream);color:var(--label);font-weight:800;font-size:15px;cursor:pointer;box-shadow:0 2px 0 var(--track);">✕</button>
+      <div style="font-family:'Baloo 2';font-weight:800;font-size:12px;letter-spacing:.08em;color:var(--orange-d);padding-right:40px;">BETA · YOU'RE BUILDING SONA WITH US</div>
+      <h3 id="pulseQ" style="text-align:left;margin-top:8px;">How's it going?</h3>
+      <div id="pulseOpts"></div>
     </div>
   </div>
 
@@ -142,12 +160,17 @@
 
     $("hiName").textContent="Hi"+(P.childName?", "+P.childName:"")+"!";
     $("subLine").textContent="Let's practice your "+((S&&S.soundLabel)?S.soundLabel(sound):sound)+" sound";
+    try{ if(S&&S.momWeek&&S.momWeek().practicedToday) $("subLine").textContent="Practiced today ✓ — play anytime!"; }catch(e){}
 
     // ── the activity deck: hero + up-next, art from the vector scenes ──
+    function callsLeft(){ try{ var s=JSON.parse(localStorage.getItem("sona.call.v1")||"{}"); var dt=new Date(); var dow=(dt.getDay()+6)%7; var m=new Date(dt.getFullYear(),dt.getMonth(),dt.getDate()-dow); var wk=m.getFullYear()+"-"+(m.getMonth()+1)+"-"+m.getDate(); return Math.max(0,3-((s.week===wk?s.used:0)||0)); }catch(e){ return 3; } }
     var ACTS=[
-      { key:"daily-"+(((S&&S.dayNum)?S.dayNum():0)%7), name:"Today's Run",
+      { key:"daily-"+(((S&&S.dayNum)?S.dayNum():0)%7), name:"Let's play!",
         sub:d.playedToday?("Score "+d.score+" · Best "+d.best+" · back tomorrow!"):"One shot · 4 games · high score!",
-        tap:function(){ if(d.playedToday){ sfx("tap"); toast("Come back tomorrow! Pick another game 👉"); return; } sfx("correct"); location.href="/charge.html?daily=1&sound="+encodeURIComponent(sound)+"&level="+currentLevel(); } },
+        tap:function(){ if(d.playedToday){ sfx("tap"); toast("Come back tomorrow! Pick another game"); return; } sfx("correct"); location.href="/charge.html?daily=1&sound="+encodeURIComponent(sound)+"&level="+currentLevel(); } },
+      { key:"call", name:"Coach Call",
+        sub:callsLeft()>0?("Echo wants to hear you · "+callsLeft()+" left this week"):"Back Monday · Echo's beak is resting!",
+        tap:function(){ sfx("correct"); location.href="/coach-call.html"; } },
       { key:"slice", name:"Fruit Slice",   sub:"Say it 5× to play", tap:function(){ sfx("tap"); location.href="/charge.html?game=arcade-slice.html"; } },
       { key:"tiles", name:"Piano Tiles",   sub:"Say it 5× to play", tap:function(){ sfx("tap"); location.href="/charge.html?game=arcade-tiles.html"; } },
       { key:"stack", name:"Block Stacker", sub:"Say it 5× to play", tap:function(){ sfx("tap"); location.href="/charge.html?game=arcade-stack.html"; } },
@@ -161,18 +184,40 @@
     if(location.hash==="#play") sel=1;
 
     function art(key){ try{ return (window.SonaScenes&&SonaScenes.has(key))?("url('"+SonaScenes.uri(key)+"')"):""; }catch(e){ return ""; } }
-    // illustrated panels (coach/city/<key>.png) take over the moment they load
-    function upgradeArt(el,key){ var im=new Image(); im.onload=function(){ el.style.backgroundImage="url('"+im.src+"')"; }; im.src="/coach/city/"+key+".png"; }
+    // illustrated panels (coach/city/<key>.png) take over the moment they load.
+    // Two art shapes live side by side: FULL-BLEED painted scenes (tall 2:3 —
+    // the house-in-its-street style) simply cover the card; square sticker
+    // CUT-OUTS layer over the vector city until a full scene replaces them.
+    function upgradeArt(el,key){ var im=new Image(); im.onload=function(){
+      var fullBleed = im.naturalHeight > im.naturalWidth*1.2;
+      if(fullBleed){ el.style.backgroundImage="url('"+im.src+"')"; el.style.backgroundSize="cover"; el.style.backgroundPosition="center"; el.style.backgroundRepeat="no-repeat"; return; }
+      var base=art(key);
+      el.style.backgroundImage="url('"+im.src+"')"+(base?", "+base:"");
+      el.style.backgroundSize="88% auto"+(base?", cover":"");
+      el.style.backgroundPosition="center 62%"+(base?", center":"");
+      el.style.backgroundRepeat="no-repeat";
+    }; im.src="/coach/city/"+key+".png"; }
+    // Coach Call has no house panel yet — it gets the evening call sky + Echo
+    function applyArt(el,key){
+      if(key==="call"){
+        el.style.backgroundImage="url('/coach/echo/echo-celebrate.svg'), linear-gradient(180deg,#35407e,#6a5aa8 55%,#c98bb0)";
+        el.style.backgroundSize="54% auto, cover";
+        el.style.backgroundPosition="center 56%, center";
+        el.style.backgroundRepeat="no-repeat";
+        return;
+      }
+      el.style.backgroundImage=art(key); upgradeArt(el,key);
+    }
     function render(){
       var a=ACTS[sel];
-      $("heroCard").style.backgroundImage=art(a.key); upgradeArt($("heroCard"),a.key);
+      applyArt($("heroCard"),a.key);
       $("heroName").textContent=a.name;
       $("heroSub").innerHTML=a.sub.replace("★★★",'<b>★★★</b>');
       var t=$("thumbs"); t.innerHTML="";
       [1,2].forEach(function(off){
         var ix=(sel+off)%ACTS.length, act=ACTS[ix];
         var el=document.createElement("div"); el.className="thumb";
-        el.style.backgroundImage=art(act.key); upgradeArt(el,act.key);
+        applyArt(el,act.key);
         el.innerHTML="<b>"+act.name+"</b>";
         el.onclick=function(){ sfx("tap"); sel=ix; render(); };
         t.appendChild(el);
@@ -213,7 +258,7 @@
         b.onclick=function(){
           if(kk==="⌫"){ gateAns=gateAns.slice(0,-1); }
           else if(kk==="✓"){
-            if(gateAns===gateNeed){ $("gateOvl").classList.remove("show"); $("sheetOvl").classList.add("show"); sfx("correct"); }
+            if(gateAns===gateNeed){ $("gateOvl").classList.remove("show"); paintWeek(); $("sheetOvl").classList.add("show"); sfx("correct"); }
             else { var m=$("gateModal"); m.classList.remove("shake"); void m.offsetWidth; m.classList.add("shake"); gateAns=""; }
           }
           else { if(gateAns.length<6) gateAns+=String(kk); }
@@ -224,14 +269,78 @@
       });
     })();
     $("gateClose").onclick=function(){ $("gateOvl").classList.remove("show"); };
+    // Mom's week — her goal (3/5/7 days), her streak. Never shown to the kid.
+    function paintWeek(){
+      try{
+        var w=S.momWeek(), L=["M","T","W","T","F","S","S"], dots=$("wkDots"); dots.innerHTML="";
+        for(var i=0;i<7;i++){
+          var on=w.days[i], isToday=i===w.todayIx;
+          var d=document.createElement("div");
+          d.style.cssText="width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Baloo 2';font-weight:800;font-size:12px;"
+            +(on?"background:#58cc02;color:#fff;box-shadow:0 2px 0 #46a302;":"background:#fff;color:var(--label);box-shadow:inset 0 0 0 2px var(--track);")
+            +(isToday&&!on?"box-shadow:inset 0 0 0 2px var(--orange);color:var(--orange-d);":"");
+          d.textContent=on?"✓":L[i];
+          dots.appendChild(d);
+        }
+        var left=w.goal-w.done;
+        $("wkMsg").textContent = w.hit ? ("Goal met — "+Math.min(w.done,w.goal)+" of "+w.goal+" days. This week is won!")
+          : (w.practicedToday? "Practiced today ✓ — " : "")+(left===1? "1 more day and the week is won!" : left+" more days to hit your "+w.goal+"-day goal.");
+        $("wkStreak").innerHTML = w.weekStreak>0 ? ((S.icon?S.icon("flame",14):"")+" "+w.weekStreak+"-week streak") : "";
+      }catch(e){}
+    }
+    paintWeek();
+    try{ document.querySelectorAll(".pic-trend").forEach(function(n){ n.innerHTML=S.icon("trend",18); }); document.querySelectorAll(".pic-gear").forEach(function(n){ n.innerHTML=S.icon("gear",18); }); }catch(e){}
     $("goProgress").onclick=function(){ location.href="/progress.html"; };
     $("goSettings").onclick=function(){ location.href="/settings.html"; };
     $("sheetClose").onclick=function(){ $("sheetOvl").classList.remove("show"); };
 
     // ── trial banner (web only; the native app has no payments) ──
-    (function(){ if(!S)return; if(S.isNativeApp&&S.isNativeApp())return; if((S.isSubscribed&&S.isSubscribed())||(S.isPilot&&S.isPilot()))return; if(S.ensureTrial)S.ensureTrial(); var b=$("trialBanner"),m=$("trialMsg"); if(!b||!m)return;
+    // Early adopters never see a paywall: their banner says free-forever and
+    // taps straight into the feedback pulse instead of /subscribe.
+    (function(){ if(!S)return; if(S.isNativeApp&&S.isNativeApp())return;
+      var b=$("trialBanner"),m=$("trialMsg"); if(!b||!m)return;
+      if(P.earlyAdopter){ m.innerHTML="Founding family — Sona is <b>free for you</b>. Tap to tell us what to build!"; b.removeAttribute("href"); b.style.cursor="pointer"; b.onclick=function(ev){ ev.preventDefault(); showPulse(true); }; b.style.display="flex"; return; }
+      if((S.isSubscribed&&S.isSubscribed())||(S.isPilot&&S.isPilot()))return; if(S.ensureTrial)S.ensureTrial();
       if(S.trialActive&&S.trialActive()){ var dd=S.trialDaysLeft?S.trialDaysLeft():7; m.innerHTML=dd+" day"+(dd===1?"":"s")+" left in your free trial · <u>Lock in founding $39.99/yr →</u>"; b.style.display="flex"; }
       else if(S.trialExpired&&S.trialExpired()){ m.innerHTML="Your free trial ended · <u>Keep going for $39.99/yr →</u>"; b.style.display="flex"; }
+    })();
+
+    // ── beta pulse: every few visits, one quick question. X always dismisses. ──
+    var PULSE_QS=[
+      { id:"pulse.mood",   t:"How's practice going this week?", opts:[["great","😊 Great"],["okay","😐 Okay"],["rough","😣 Rough"]] },
+      { id:"pulse.excite", t:"Is your child excited to open Sona?", opts:[["yes","Yes!"],["sometimes","Sometimes"],["not-really","Not really"]] },
+      { id:"pulse.scoring",t:"Does the voice checking feel right?", opts:[["too-strict","Too strict"],["about-right","About right"],["too-easy","Too easy"]] },
+      { id:"pulse.next",   t:"What should we build next?", opts:[["ai-coach","Live AI coach"],["more-games","More games"],["stories","More stories"],["reports","Better reports"]] },
+      { id:"pulse.coach",  t:"Would a live AI speech coach be worth a higher plan?", opts:[["absolutely","Absolutely"],["maybe","Maybe"],["keep-simple","No — keep it simple"]] }
+    ];
+    function pulseState(){ try{ return JSON.parse(localStorage.getItem("sona.pulse.v1")||"{}"); }catch(e){ return {}; } }
+    function pulseSave(s){ try{ localStorage.setItem("sona.pulse.v1",JSON.stringify(s)); }catch(e){} }
+    function showPulse(force){
+      var st=pulseState(), qi=(st.qIx||0)%PULSE_QS.length, q=PULSE_QS[qi];
+      $("pulseQ").textContent=q.t;
+      var w=$("pulseOpts"); w.innerHTML="";
+      q.opts.forEach(function(o){
+        var btn=document.createElement("button");
+        btn.className="sheetBtn"; btn.style.marginTop="8px"; btn.textContent=o[1];
+        btn.onclick=function(){
+          var code=""; try{ code=(S.pilotInfo&&S.pilotInfo().code)||""; }catch(e){}
+          try{ fetch("/api/feedback",{method:"POST",headers:{"Content-Type":"application/json"},keepalive:true,
+            body:JSON.stringify({q:q.id,text:o[0],src:"pulse",code:code})}).catch(function(){}); }catch(e){}
+          st.qIx=qi+1; st.last=Date.now(); pulseSave(st);
+          $("pulseOvl").classList.remove("show"); sfx("correct"); toast("Thank you — this shapes Sona!");
+        };
+        w.appendChild(btn);
+      });
+      $("pulseOvl").classList.add("show");
+      if(force){ st.last=Date.now(); pulseSave(st); }
+    }
+    $("pulseX").onclick=function(){ var st=pulseState(); st.last=Date.now(); st.snooze=(st.visits||0)+5; pulseSave(st); $("pulseOvl").classList.remove("show"); sfx("tap"); };
+    (function(){
+      if(!P.earlyAdopter) return;
+      var st=pulseState(); st.visits=(st.visits||0)+1; pulseSave(st);
+      var dayAgo=!st.last || (Date.now()-st.last)>20*3600*1000;
+      var due=st.visits>=3 && st.visits%3===0 && dayAgo && st.visits>=(st.snooze||0);
+      if(due) setTimeout(function(){ showPulse(false); var s2=pulseState(); s2.last=Date.now(); pulseSave(s2); },900);
     })();
   </script>
 </body>

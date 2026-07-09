@@ -67,19 +67,19 @@
 <body>
   <div class="wrap">
     <header class="app">
-      <div class="brand"><span class="leo">📚</span> Library</div>
+      <div class="brand"><span class="leo"><svg viewBox="0 0 64 64" style="width:22px;height:22px;vertical-align:-4px"><path d="M10 14c8-4 15-4 22 0v38c-7-4-14-4-22 0Z" fill="#4db3f2"/><path d="M54 14c-8-4-15-4-22 0v38c7-4 14-4 22 0Z" fill="#2a8fd4"/><line x1="32" y1="14" x2="32" y2="52" stroke="#1c6fa8" stroke-width="2"/><circle cx="19" cy="22" r="3" fill="#fff" opacity=".8"/></svg></span> Library</div>
       <div class="pills">
         <a class="iconbtn" href="/today.html" title="Home" style="display:flex;align-items:center;justify-content:center;">✕</a>
       </div>
     </header>
 
     <div class="card" style="display:flex;gap:12px;align-items:center;">
-      <img src="/coach/echo/echo-idle.svg" alt="Leo" style="width:58px;height:58px;object-fit:contain;flex:0 0 auto;" />
+      <img src="/coach/echo/echo-idle.svg" alt="Echo" style="width:58px;height:58px;object-fit:contain;flex:0 0 auto;" />
       <div><b style="font-family:'Baloo 2';font-size:17px;">Just for fun!</b>
-      <p class="muted" style="font-size:13px;font-weight:700;">No scores in here — read picture books with Leo and play with words.</p></div>
+      <p class="muted" style="font-size:13px;font-weight:700;">No scores in here — read picture books with Echo and play with words.</p></div>
     </div>
 
-    <div class="shelfhead"><h2>Sound stories</h2><span class="tag">LEO READS</span></div>
+    <div class="shelfhead"><h2>Sound stories</h2><span class="tag">ECHO READS</span></div>
     <div class="shelf" id="shelf"></div>
 
     <div class="shelfhead"><h2>Word box</h2><span class="tag">TAP TO HEAR</span></div>
@@ -97,7 +97,7 @@
     <div class="bkstage" id="bkStage"></div>
     <div class="bkbottom">
       <button class="bknav bkback" id="bkPrev">←</button>
-      <button class="bkhear" id="bkHear" title="Hear it again">🔊</button>
+      <button class="bkhear" id="bkHear" title="Hear it again"><svg viewBox="0 0 64 64" style="width:20px;height:20px;vertical-align:-4px"><path d="M12 24h10l14-11v38L22 40H12Z" fill="#4db3f2"/><path d="M42 24q6 8 0 16" stroke="#2a8fd4" stroke-width="4.5" fill="none" stroke-linecap="round"/><path d="M48 18q10 14 0 28" stroke="#2a8fd4" stroke-width="4.5" fill="none" stroke-linecap="round" opacity=".7"/></svg></button>
       <button class="bknav bknext" id="bkNext">Next →</button>
     </div>
   </div>
@@ -211,12 +211,22 @@
       var b = document.createElement("button");
       b.className = "bookBtn";
       b.style.background = "linear-gradient(160deg," + st.colors[0] + "," + st.colors[1] + ")";
-      b.innerHTML = '<span class="be">' + st.emoji + '</span><span class="bt">' + st.title + '</span><span class="bs">' + st.sound + ' sound</span>';
+      b.innerHTML = '<span class="be">' + cover(st,46) + '</span><span class="bt">' + st.title + '</span><span class="bs">' + st.sound + ' sound</span>';
       b.onclick = function () { if (window.Sona) Sona.sfx.tap(); openBook(st); };
       shelf.appendChild(b);
     });
 
     /* ---- the picture book: one picture + one line per page ---- */
+    function cover(st,w){ var c0=st.colors[0],c1=st.colors[1];
+      var face=(window.Sona&&Sona.COVER_FACES&&Sona.COVER_FACES[st.sound])||"";
+      return '<svg viewBox="0 0 60 76" style="width:'+w+'px;height:'+Math.round(w*76/60)+'px;overflow:visible">'
+        +'<rect x="2" y="8" width="52" height="62" rx="7" fill="#fff" style="filter:drop-shadow(0 3px 5px rgba(0,0,0,.18))"/>'
+        +'<rect x="8" y="8" width="3" height="62" fill="'+c1+'" opacity=".3"/>'
+        +'<circle cx="30" cy="39" r="20" fill="'+c0+'" opacity=".16"/>'
+        +(face?('<g transform="translate(12,21) scale(0.56)">'+face+'</g>'):'')
+        +'<circle cx="52" cy="10" r="10" fill="'+c1+'"/>'
+        +'<text x="52" y="14" text-anchor="middle" font-family="Baloo 2" font-weight="800" font-size="'+(String(st.sound).length>1?8:10)+'" fill="#fff">'+st.sound+'</text>'
+        +'</svg>'; }
     var BOOK = null, page = -1; // -1 = cover, pages.length = The End
     var bkStage = document.getElementById("bkStage"), bkDots = document.getElementById("bkDots");
 
@@ -227,6 +237,14 @@
       for (var i = 0; i < st.pages.length; i++) bkDots.appendChild(document.createElement("i"));
       showPage();
     }
+    // color every target-sound letter in a sentence (design §8 reader)
+    function readerWord(t){ try{ var ws=String(t||"").toLowerCase().replace(/[^a-z ]/g," ").split(/\s+/);
+      for(var i=0;i<ws.length;i++){ if(window.Sona&&Sona.WORD_STICKERS&&Sona.WORD_STICKERS[ws[i]]) return ws[i]; }
+      return ""; }catch(e){ return ""; } }
+    function tintSound(html, snd){ try{ var L=String(snd||"").charAt(0);
+      return html.replace(/>([^<]+)</g, function(m, txt){
+        return ">"+txt.replace(new RegExp("(["+L.toLowerCase()+L.toUpperCase()+"])","g"), '<b style="color:#2a8fd4">$1</b>')+"<";
+      }); }catch(e){ return html; } }
     function closeBook() { stopSpeech(); document.getElementById("book").classList.remove("show"); BOOK = null; }
 
     function tappable(t) {
@@ -238,17 +256,17 @@
       var prev = document.getElementById("bkPrev"), next = document.getElementById("bkNext"), hear = document.getElementById("bkHear");
       prev.style.visibility = page <= -1 ? "hidden" : "visible";
       if (page === -1) {
-        bkStage.innerHTML = '<div class="bkpic">' + BOOK.emoji + '</div><div class="bktitle">' + BOOK.title + '</div><div class="bksub">A story full of ' + BOOK.sound + ' sounds — Leo reads it to you!</div>';
+        bkStage.innerHTML = '<div class="bkpic">' + cover(BOOK,150) + '</div><div class="bktitle">' + BOOK.title + '</div><div class="bksub">A story full of ' + BOOK.sound + ' sounds — Echo reads it to you!</div>';
         next.textContent = "Start →"; hear.style.visibility = "hidden";
         say(BOOK.title + "! A story full of " + BOOK.sound + " sounds.");
       } else if (page >= BOOK.pages.length) {
-        bkStage.innerHTML = '<div class="bkpic">🎉</div><div class="bktitle">The End!</div><div class="bksub">Great listening! Read it again or pick another story.</div>';
+        bkStage.innerHTML = '<div class="bkpic" style="filter:none"><svg viewBox="0 0 64 64" style="width:120px;height:120px"><path d="M32 5l8.2 18.6L60 25.8 44.9 39.2 49.8 59 32 48.4 14.2 59l4.9-19.8L4 25.8l19.8-2.2Z" fill="#ffd21c"/><circle cx="25" cy="21" r="3" fill="#fff" opacity=".85"/></svg></div><div class="bktitle">The End!</div><div class="bksub">Great listening! Read it again or pick another story.</div>';
         next.textContent = "All done ✓"; hear.style.visibility = "hidden";
         if (window.Sona) { Sona.confetti({ count: 130, duration: 2200 }); Sona.sfx.star(); }
         say("The end! Great listening!");
       } else {
         var pg = BOOK.pages[page];
-        bkStage.innerHTML = '<div class="bkpic">' + pg.e + '</div><div class="bktext">' + tappable(pg.t) + '</div>';
+        bkStage.innerHTML = '<div class="bkpic" style="filter:none"><span style="display:inline-block;padding:10px;border-radius:50%;background:radial-gradient(circle,rgba(255,210,28,.28),rgba(255,210,28,0) 70%)">' + ((window.Sona&&Sona.pic)?Sona.pic(readerWord(pg.t),pg.e,132):pg.e) + '</span></div>'+ '<div style="display:inline-block;background:#dcedfb;color:#1480e0;font-family:Baloo 2;font-weight:800;font-size:11px;letter-spacing:.08em;border-radius:99px;padding:4px 12px;margin-bottom:6px">' + BOOK.sound + ' SOUND</div>'+ '<div class="bktext">' + tintSound(tappable(pg.t), BOOK.sound) + '</div>';
         next.textContent = "Next →"; hear.style.visibility = "visible";
         bkStage.querySelectorAll(".bktext span").forEach(function (sp) {
           sp.onclick = function () { if (playing) return; say(sp.textContent.replace(/[^a-zA-Z']/g, "")); };
@@ -286,7 +304,7 @@
       (Sona.WORDS[curSound] || []).forEach(function (w) {
         var c = document.createElement("div");
         c.className = "wcard";
-        c.innerHTML = '<span class="we">' + w.e + '</span><span class="ww">' + w.w + '</span>';
+        c.innerHTML = '<span class="we">' + ((window.Sona&&Sona.pic)?Sona.pic(w.w,w.e,42):w.e) + '</span><span class="ww">' + w.w + '</span>';
         c.onclick = function () { if (playing) return; if (window.Sona) Sona.pop(w.e, { y: window.innerHeight * 0.3 }); say(w.w); };
         grid.appendChild(c);
       });

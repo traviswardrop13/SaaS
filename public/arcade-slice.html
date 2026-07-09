@@ -48,9 +48,9 @@
     <canvas id="cv"></canvas>
     <div id="top">
       <button id="close">✕</button>
-      <div id="score" class="hudpill">🍉 0</div>
+      <div class="hudpill"><svg viewBox="0 0 64 64" style="width:19px;height:19px;vertical-align:-4px"><path d="M5 25a27 27 0 0 0 54 0Z" fill="#58cc02"/><path d="M10 25a22 22 0 0 0 44 0Z" fill="#eefce2"/><path d="M14 25a18 18 0 0 0 36 0Z" fill="#ff5470"/><ellipse cx="26" cy="33" rx="2" ry="3" fill="#3d2317" transform="rotate(18 26 33)"/><ellipse cx="38" cy="33" rx="2" ry="3" fill="#3d2317" transform="rotate(-18 38 33)"/></svg> <b id="score">0</b></div>
       <div id="hudspacer"></div>
-      <div id="timer" class="hudpill">❤️ 3</div>
+      <div id="timer" class="hudpill"></div>
     </div>
     <div id="combo"></div>
     <div id="boostChip"></div>
@@ -61,7 +61,7 @@
       <img class="ovlEcho" src="/coach/echo/echo-star.svg" alt="" />
       <h2 id="needTitle">This game needs a ticket!</h2>
       <p>Say your sound 5 times to charge it up</p>
-      <button class="btn" id="goCharge">⚡ Charge up</button>
+      <button class="btn" id="goCharge"><svg viewBox="0 0 64 64" style="width:18px;height:18px;vertical-align:-3px"><path d="M36 4 14 36h13l-5 24 24-34H33Z" fill="#ffd21c" stroke="#f0a800" stroke-width="2.5" stroke-linejoin="round"/><circle cx="30" cy="15" r="2.5" fill="#fff" opacity=".9"/></svg> Charge up</button>
       <button class="btn ghost" id="needHome">Back home</button>
     </div>
   </div>
@@ -70,7 +70,7 @@
     <div class="ovlCard">
       <img class="ovlEcho" src="/coach/echo/echo-listening.svg" alt="" />
       <h2 id="revTitle">Say it!</h2>
-      <p id="revHearts" style="font-size:26px;">❤️❤️❤️</p>
+      <p id="revHearts" style="font-size:26px;"></p>
       <p>Say your sound for a new life!</p>
       <div style="width:56px;height:56px;border-radius:50%;background:linear-gradient(180deg,#ffa05a,#ff8a3d);box-shadow:0 4px 0 #ef6f23,0 0 0 10px rgba(255,138,61,.14);display:flex;align-items:center;justify-content:center;margin:2px 0;"><svg viewBox="0 0 24 24" style="width:24px;height:24px;fill:#fff"><path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v5a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z"/></svg></div>
       <p style="font-size:13px;">I'm listening…</p>
@@ -81,10 +81,10 @@
   <div class="ovl" id="endOvl">
     <div class="ovlCard">
       <img class="ovlEcho" src="/coach/echo/echo-celebrate.svg" alt="" />
-      <div class="big" id="endEmoji">🍉</div>
+      <div class="big" id="endEmoji"><svg viewBox="0 0 64 64" style="width:56px;height:56px"><path d="M32 5l8.2 18.6L60 25.8 44.9 39.2 49.8 59 32 48.4 14.2 59l4.9-19.8L4 25.8l19.8-2.2Z" fill="#ffd21c"/><circle cx="25" cy="21" r="3" fill="#fff" opacity=".85"/></svg></div>
       <h2 id="endTitle">Great slicing!</h2>
       <p id="endSub"></p>
-      <button class="btn blue" id="endCharge">⚡ Play again</button>
+      <button class="btn blue" id="endCharge"><svg viewBox="0 0 64 64" style="width:18px;height:18px;vertical-align:-3px"><path d="M36 4 14 36h13l-5 24 24-34H33Z" fill="#ffd21c" stroke="#f0a800" stroke-width="2.5" stroke-linejoin="round"/><circle cx="30" cy="15" r="2.5" fill="#fff" opacity=".9"/></svg> Play again</button>
       <button class="btn" id="endAgain" style="display:none;"></button>
       <button class="btn ghost" id="endHome">Back to the house</button>
     </div>
@@ -146,30 +146,30 @@
     var fruits=[], parts=[], trail=[];
     // Kid-tuned physics: floaty gravity + launch speed derived from the screen
     // so every fruit rises to ~55-75% of the screen and hangs ~1.8s.
-    var G=H*0.00045||0.4;
+    var G=H*0.0002||0.18; // kid-slow: same arc height as before, ~1.5x hang time
 
     function toss(){
-      var n=1+(Math.random()<0.3?1:0)+(score>25?1:0); // gentle, ramps with skill
+      var n=1+(Math.random()<0.2?1:0)+(score>35?1:0); // gentle, ramps with skill
       for(var i=0;i<n;i++){
         var x=W*(0.18+Math.random()*0.64);
         fruits.push({ e:FRUITS[(Math.random()*FRUITS.length)|0], x:x, y:H+40,
-          vx:(W*0.5-x)*0.0025+(Math.random()-0.5)*1.2,
-          vy:-(H*(0.0225+Math.random()*0.004)),
+          vx:(W*0.5-x)*0.0017+(Math.random()-0.5)*0.8,
+          vy:-(H*(0.015+Math.random()*0.0027)),
           r:32+Math.random()*12, rot:Math.random()*6, vr:(Math.random()-0.5)*0.08, sliced:false });
       }
     }
-    var tossIv=setInterval(function(){ if(playing) toss(); },1700);
+    var tossIv=setInterval(function(){ if(playing) toss(); },2100);
     toss();
 
     // ── lives: miss a fruit → say your sound for a new life (3 per run) ──
-    function hearts(){ $("timer").textContent="❤️ "+REV; }
+    function hearts(){ $("timer").innerHTML=(window.Sona&&Sona.heartRow)?Sona.heartRow(REV,3,17):String(REV); }
     hearts();
     function crash(){
       if(!playing) return;
       playing=false; fruits=[]; trail.length=0; sfx("tap");
       if(REV>0 && MIC){
         $("revTitle").textContent="Say \u201C"+SAYTXT+"\u201D!";
-        $("revHearts").textContent=Array(REV+1).join("\u2764\uFE0F");
+        $("revHearts").innerHTML=(window.Sona&&Sona.heartRow)?Sona.heartRow(REV,3,28):String(REV);
         reviveWait=true; $("revOvl").classList.add("show");
       } else { endRound(); }
     }
@@ -190,20 +190,20 @@
         var x=W*(0.15+Math.random()*0.7);
         fruits.push({ e:"🌟", gold:true, x:x, y:H+40,
           vx:(W*0.5-x)*0.0025+(Math.random()-0.5)*1.2,
-          vy:-(H*(0.023+Math.random()*0.005)),
+          vy:-(H*(0.0155+Math.random()*0.003)),
           r:30+Math.random()*8, rot:Math.random()*6, vr:(Math.random()-0.5)*0.1, sliced:false });
       }
     }
     function fireBoost(){
       boost.on=true; boost.cool=true;
-      var ch=$("boostChip"); ch.textContent="FRUIT FRENZY!! 🌟"; ch.classList.add("hot");
+      var ch=$("boostChip"); ch.textContent="FRUIT FRENZY!!"; ch.classList.add("hot");
       sfx("complete"); spawnGold();
-      var c=$("combo"); c.textContent="⭐ FRENZY! 2× POINTS ⭐"; c.style.opacity=1; setTimeout(function(){c.style.opacity=0;},900);
+      var c=$("combo"); c.textContent="FRENZY! 2× POINTS"; c.style.opacity=1; setTimeout(function(){c.style.opacity=0;},900);
       setTimeout(function(){ boost.on=false; ch.classList.remove("hot"); ch.textContent="…"; },3000);
       setTimeout(function(){ boost.cool=false; paintChip(); },9000);
     }
     var SAYTXT="";
-    function paintChip(){ $("boostChip").textContent="🎙 Say “"+SAYTXT+"” for a FRENZY!"; }
+    function paintChip(){ $("boostChip").innerHTML=((window.Sona&&Sona.icon)?Sona.icon("mic",17)+" ":"")+"Say “"+SAYTXT+"” for a FRENZY!"; }
     (function(){
       var snd=""; try{ snd=sessionStorage.getItem("sona.boost.sound")||""; }catch(e){}
       if(!snd){ try{ snd=((S&&S.getProfile&&S.getProfile().focusSounds)||["R"])[0]; }catch(e){ snd="R"; } }
@@ -239,7 +239,7 @@
           for(var k=0;k<10;k++) parts.push({x:f.x,y:f.y,vx:(Math.random()-0.5)*7,vy:-Math.random()*6,r:3+Math.random()*4,life:1,col:(JUICE[f.e]||"#ffd21c")});
           parts.push({x:f.x,y:f.y,vx:-2.4,vy:-2,e:f.e,half:1,life:1}); parts.push({x:f.x,y:f.y,vx:2.4,vy:-2,e:f.e,half:2,life:1});
         } }
-      if(hit){ sfx("tap"); $("score").textContent="🍉 "+score; comboT=performance.now();
+      if(hit){ sfx("tap"); $("score").textContent=score; comboT=performance.now();
         if(combo>=3){ var c=$("combo"); c.textContent=combo+" COMBO! 🔥"; c.style.opacity=1; c.style.transform="scale(1.15)"; setTimeout(function(){c.style.opacity=0;c.style.transform="scale(1)";},550); } }
       lx=p.x; ly=p.y; e.preventDefault&&e.preventDefault();
     }
@@ -294,17 +294,17 @@
       sfx("complete"); try{ if(S&&S.confetti)S.confetti(); }catch(e){}
       if(isDaily){
         // Daily Run: bank the score and keep the run moving — no buttons, no stall.
-        $("endTitle").textContent="+"+score+" points! 🏆";
+        $("endTitle").textContent="+"+score+" points!";
         $("endSub").textContent="Banking your score…";
         $("endCharge").style.display="none"; $("endAgain").style.display="none"; $("endHome").style.display="none";
         $("endOvl").classList.add("show");
         setTimeout(bankAndContinue,1400);
         return;
       }
-      $("endTitle").textContent=isBest&&score>0?"NEW BEST! 🏆":"Great slicing!";
+      $("endTitle").textContent=isBest&&score>0?"NEW BEST!":"Great slicing!";
       $("endSub").textContent="You sliced "+score+" fruits"+(coins?(" · +"+coins+" 🪙"):"")+" · Best: "+BEST;
       $("endAgain").style.display="none";
-      $("endCharge").textContent="⚡ Play again";
+      $("endCharge").innerHTML='<svg viewBox="0 0 64 64" style="width:18px;height:18px;vertical-align:-3px"><path d="M36 4 14 36h13l-5 24 24-34H33Z" fill="#ffd21c" stroke="#f0a800" stroke-width="2.5" stroke-linejoin="round"/><circle cx="30" cy="15" r="2.5" fill="#fff" opacity=".9"/></svg> Play again';
       $("endOvl").classList.add("show");
     }
     $("endCharge").onclick=backToCharge;

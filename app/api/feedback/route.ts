@@ -44,6 +44,8 @@ export async function POST(req: NextRequest) {
 
   const rec = {
     text,
+    q: String((body.q as string) || "").slice(0, 80), // survey/pulse question id
+    src: String((body.src as string) || "").slice(0, 24), // "onboarding" | "pulse" | ""
     game: String((body.game as string) || "").slice(0, 80),
     sound: String((body.sound as string) || "").slice(0, 16),
     code: String((body.code as string) || "").slice(0, 48),
@@ -80,5 +82,35 @@ export async function POST(req: NextRequest) {
     // list is best-effort
   }
 
+  // Beta survey/pulse answers also land in ONE global list so the founder can
+  // read every early-adopter signal in a single place.
+  try {
+    if (rec.src === "onboarding" || rec.src === "pulse") {
+      await kvCmd(["LPUSH", "fb:beta", JSON.stringify(rec).slice(0, 4000)]);
+      await kvCmd(["LTRIM", "fb:beta", 0, 1999]);
+    }
+  } catch {
+    // best-effort
+  }
+
   return NextResponse.json({ ok: true, captured });
+}
+
+// Founder-only read: newest beta answers (?key=FOUNDER_KEY[&n=200])
+export async function GET(req: NextRequest) {
+  const key = req.nextUrl.searchParams.get("key") || "";
+  const want = process.env.FOUNDER_KEY || "";
+  if (!want || key !== want) return NextResponse.json({ ok: false }, { status: 401 });
+  const n = Math.min(500, Math.max(1, parseInt(req.nextUrl.searchParams.get("n") || "200", 10) || 200));
+  const raw = (await kvCmd(["LRANGE", "fb:beta", 0, n - 1])) as string[] | undefined;
+  const items = (raw || [])
+    .map((s) => {
+      try {
+        return JSON.parse(s);
+      } catch {
+        return null;
+      }
+    })
+    .filter(Boolean);
+  return NextResponse.json({ ok: true, items });
 }
