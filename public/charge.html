@@ -540,6 +540,12 @@
       // Leo speaks the prompt ONCE, then the mic is instantly hot.
       await playPrompt();
       var v=await burstAndVerify();
+      // One honest PASSED clip a day is kept ON-DEVICE (never uploaded) so the
+      // parent can hear first-try vs today on the Progress "Listen" shelf.
+      if(v==="pass"){ try{
+        var rk="sona.reclast."+SOUND, tdy=new Date().toDateString();
+        if(localStorage.getItem(rk)!==tdy){ var rb=clipBlob(); if(rb&&S&&S.saveRecording){ S.saveRecording({sound:SOUND,word:String(ITEM.word||ITEM.t).toLowerCase(),level:ITEM.level,blob:rb}); localStorage.setItem(rk,tdy); } }
+      }catch(e){} }
       // SLP gating: the rung only ever advances on HONEST evidence — two clean
       // scored rounds at the stretch level, never on mercy or offline scoring.
       if(isDaily && v==="pass" && useRung>=RUNG && S && S.recordRung){

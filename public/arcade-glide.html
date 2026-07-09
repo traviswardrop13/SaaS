@@ -141,6 +141,10 @@
     var gates=[], gapH=H*0.34, gspeed=W*0.0048, spawnMs=1650;
     var falling={on:false,t0:0}, mercyT=0;
     var RUNNER="🦊";
+    // the kid's chosen buddy as a real sticker sprite (emoji stays the fallback)
+    var BUDDYIMG=(function(){ try{ var c=S.characterById((S.getProfile()||{}).character||"fox"); if(c&&c.svg){ var im=new Image(); im.src="data:image/svg+xml;utf8,"+encodeURIComponent(c.svg); return im; } }catch(e){} return null; })();
+    function drawBuddy(x,y,sz){ if(BUDDYIMG&&BUDDYIMG.complete&&BUDDYIMG.naturalWidth){ ctx.drawImage(BUDDYIMG,x-sz/2,y-sz/2,sz,sz); return true; } return false; }
+
     try{ var c=S.characterById((S.getProfile()||{}).character||"fox"); if(c&&c.emoji)RUNNER=c.emoji; }catch(e){}
 
     function spawnGate(){
@@ -206,7 +210,7 @@
         var ft=(performance.now()-falling.t0)/1100;
         if(ft>=1){ falling.on=false; mercyT=performance.now(); py=H*0.45; vy=0; flash("Back in the sky!"); }
         else{ ctx.save(); ctx.translate(px,py+ft*ft*320); ctx.rotate(ft*10); ctx.globalAlpha=1-ft*0.4; ctx.fillStyle="#000"; ctx.textAlign="center"; ctx.textBaseline="middle";
-          if(BALOK){ ctx.drawImage(BAL,-40,-78,80,100); ctx.font="34px sans-serif"; ctx.fillText(RUNNER,0,16); } else { ctx.font="50px sans-serif"; ctx.fillText(RUNNER,0,0); }
+          if(BALOK){ ctx.drawImage(BAL,-40,-78,80,100); if(!drawBuddy(0,6,34)){ ctx.font="34px sans-serif"; ctx.fillText(RUNNER,0,16); } } else if(!drawBuddy(0,-6,52)){ ctx.font="50px sans-serif"; ctx.fillText(RUNNER,0,0); }
           ctx.restore(); }
       } else {
         var blink=(performance.now()-mercyT<1200)&&(((performance.now()/120)|0)%2===0);
@@ -217,8 +221,8 @@
           ctx.fillStyle="#000"; ctx.textAlign="center"; ctx.textBaseline="middle";
           var bob=Math.sin(performance.now()/300)*3;
           ctx.save(); ctx.translate(px,py+bob); ctx.rotate(Math.max(-0.22,Math.min(0.34,vy*0.02)));
-          if(BALOK){ ctx.drawImage(BAL,-40,-78,80,100); ctx.font="34px sans-serif"; ctx.fillText(RUNNER,0,16); }
-          else { ctx.font="34px sans-serif"; ctx.fillText("🎈",0,-40); ctx.font="50px sans-serif"; ctx.fillText(RUNNER,0,0); }
+          if(BALOK){ ctx.drawImage(BAL,-40,-78,80,100); if(!drawBuddy(0,6,34)){ ctx.font="34px sans-serif"; ctx.fillText(RUNNER,0,16); } }
+          else { ctx.font="34px sans-serif"; ctx.fillText("🎈",0,-40); if(!drawBuddy(0,10,52)){ ctx.font="50px sans-serif"; ctx.fillText(RUNNER,0,0); } }
           ctx.restore();
         }
       }

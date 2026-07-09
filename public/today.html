@@ -126,6 +126,8 @@
         </div>
         <div id="wkDots" style="display:flex;gap:7px;margin-top:10px;justify-content:space-between;"></div>
         <div id="wkMsg" style="font-weight:800;font-size:12.5px;color:var(--muted);margin-top:9px;"></div>
+        <div id="wkWins" style="font-family:'Baloo 2';font-weight:800;font-size:13px;color:var(--ink);margin-top:6px;"></div>
+        <button id="shareWeek" style="display:none;width:100%;border:none;border-radius:14px;padding:12px;margin-top:10px;background:linear-gradient(180deg,#ffa05a,#ff8a3d);box-shadow:0 4px 0 var(--orange-d);color:#fff;font-family:'Baloo 2';font-weight:800;font-size:14px;cursor:pointer;">Share this week</button>
       </div>
       <button class="sheetBtn" id="goProgress"><span class="pic-trend"></span>&nbsp; Progress &amp; SLP report</button>
       <button class="sheetBtn" id="goSettings"><span class="pic-gear"></span>&nbsp; Settings</button>
@@ -176,7 +178,7 @@
       { key:"stack", name:"Block Stacker", sub:"Say it 5× to play", tap:function(){ sfx("tap"); location.href="/charge.html?game=arcade-stack.html"; } },
       { key:"run",   name:"Sound Sprint",  sub:"Say it 5× to play", tap:function(){ sfx("tap"); location.href="/charge.html?game=arcade-run.html"; } },
       { key:"glide", name:"Flappy Glide",  sub:"Say it 5× to play", tap:function(){ sfx("tap"); location.href="/charge.html?game=arcade-glide.html"; } },
-      { key:"story", name:"Story Time",    sub:"Read with Echo · ★★★", tap:function(){ sfx("tap"); location.href="/story.html"; } },
+      { key:"story", name:"Story Time",    sub:"A new story made for you · ★★★", tap:function(){ sfx("tap"); location.href="/story.html"; } },
     ];
     var sel=0;
     // if today's run is done, lead with the first game instead
@@ -258,7 +260,7 @@
         b.onclick=function(){
           if(kk==="⌫"){ gateAns=gateAns.slice(0,-1); }
           else if(kk==="✓"){
-            if(gateAns===gateNeed){ $("gateOvl").classList.remove("show"); paintWeek(); $("sheetOvl").classList.add("show"); sfx("correct"); }
+            if(gateAns===gateNeed){ $("gateOvl").classList.remove("show"); paintWeek(); paintWins(); $("sheetOvl").classList.add("show"); sfx("correct"); }
             else { var m=$("gateModal"); m.classList.remove("shake"); void m.offsetWidth; m.classList.add("shake"); gateAns=""; }
           }
           else { if(gateAns.length<6) gateAns+=String(kk); }
@@ -288,6 +290,62 @@
         $("wkStreak").innerHTML = w.weekStreak>0 ? ((S.icon?S.icon("flame",14):"")+" "+w.weekStreak+"-week streak") : "";
       }catch(e){}
     }
+    // weekly wins: reps + accuracy trend, plus a shareable card (mom's choice)
+    function paintWins(){
+      try{
+        var w=S.weekWins(); var el=$("wkWins"); if(!el)return; var bits=[];
+        if(w.reps>0) bits.push(w.reps+" sounds practiced");
+        if(w.acc!=null && w.accPrev!=null && w.acc!==w.accPrev) bits.push(w.label+" sound "+w.accPrev+"% \u2192 "+w.acc+"%");
+        else if(w.acc!=null) bits.push(w.label+" sound at "+w.acc+"%");
+        el.textContent=bits.join(" \u00b7 ");
+        $("shareWeek").style.display=(w.reps>0)?"block":"none";
+      }catch(e){}
+    }
+    function shareCard(){
+      try{
+        var w=S.weekWins(), name=(P.childName||"We");
+        var cv=document.createElement("canvas"); cv.width=1080; cv.height=1350; var c=cv.getContext("2d");
+        c.fillStyle="#fff6e9"; c.fillRect(0,0,1080,1350);
+        c.fillStyle="#ffffff"; c.beginPath(); c.roundRect(70,120,940,1110,48); c.fill();
+        c.fillStyle="#ef6f23"; c.font="800 44px 'Baloo 2', sans-serif"; c.textAlign="center";
+        c.fillText("SPEECH WINS THIS WEEK",540,230);
+        c.fillStyle="#4a2c14"; c.font="800 76px 'Baloo 2', sans-serif";
+        c.fillText(name+" practiced",540,360);
+        c.fillStyle="#ff8a3d"; c.font="800 150px 'Baloo 2', sans-serif";
+        c.fillText(w.week.done+(w.week.done===1?" day":" days"),540,540);
+        var L=["M","T","W","T","F","S","S"];
+        for(var i=0;i<7;i++){ var x=250+i*97, y=640;
+          c.beginPath(); c.arc(x,y,36,0,7);
+          c.fillStyle=w.week.days[i]?"#58cc02":"#f0e4d2"; c.fill();
+          c.fillStyle=w.week.days[i]?"#fff":"#c9a878"; c.font="800 34px 'Baloo 2', sans-serif"; c.fillText(w.week.days[i]?"\u2713":L[i],x,y+12);
+        }
+        c.fillStyle="#4a2c14"; c.font="800 58px 'Baloo 2', sans-serif";
+        c.fillText(w.reps>0?(w.reps+" sounds, honestly scored"):"Real practice, honestly scored",540,790);
+        if(w.acc!=null&&w.accPrev!=null&&w.acc!==w.accPrev){
+          c.fillStyle="#58cc02"; c.font="800 88px 'Baloo 2', sans-serif";
+          c.fillText(w.label+" sound: "+w.accPrev+"% \u2192 "+w.acc+"%",540,930);
+        } else if(w.acc!=null){
+          c.fillStyle="#58cc02"; c.font="800 88px 'Baloo 2', sans-serif";
+          c.fillText(w.label+" sound: "+w.acc+"%",540,930);
+        }
+        c.fillStyle="#b08d63"; c.font="800 42px 'Baloo 2', sans-serif";
+        c.fillText("Practicing with Echo on Sona",540,1080);
+        c.fillStyle="#ef6f23"; c.font="800 46px 'Baloo 2', sans-serif";
+        c.fillText("speaksona.com",540,1160);
+        cv.toBlob(function(blob){
+          if(!blob)return;
+          var file=new File([blob],"sona-week.png",{type:"image/png"});
+          if(navigator.share&&navigator.canShare&&navigator.canShare({files:[file]})){
+            navigator.share({files:[file],title:"Sona",text:name+"'s speech practice this week"}).catch(function(){});
+          } else {
+            var a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="sona-week.png"; a.click();
+            toast("Saved! Share it anywhere");
+          }
+        },"image/png");
+      }catch(e){}
+    }
+    $("shareWeek").onclick=function(){ sfx("tap"); shareCard(); };
+    paintWins();
     paintWeek();
     try{ document.querySelectorAll(".pic-trend").forEach(function(n){ n.innerHTML=S.icon("trend",18); }); document.querySelectorAll(".pic-gear").forEach(function(n){ n.innerHTML=S.icon("gear",18); }); }catch(e){}
     $("goProgress").onclick=function(){ location.href="/progress.html"; };

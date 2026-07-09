@@ -189,9 +189,11 @@
           .then(function(b){ if(!b)return null; ttsPut(key,b); return playPCM(new Uint8Array(b)); });
       }).catch(function(){}).finally(function(){ speaking=false; pose("idle"); res(); });
     }); }
-    // Rachel's human demo of the bare sound, when recorded (TTS never performs it)
-    function playDemo(){ return new Promise(function(res){ try{ var a=new Audio("/coach/say/"+SOUND+".mp3"); var done=false; function fin(ok){ if(done)return; done=true; res(ok); }
+    // Rachel's human demo of the bare sound, when recorded (TTS never performs
+    // it). Prefers the dedicated demo take, falls back to the full prompt clip.
+    function tryClip(src){ return new Promise(function(res){ try{ var a=new Audio(src); var done=false; function fin(ok){ if(done)return; done=true; res(ok); }
       a.onended=function(){fin(true)}; a.onerror=function(){fin(false)}; a.play().catch(function(){fin(false)}); }catch(e){ res(false); } }); }
+    function playDemo(){ return tryClip("/coach/say/"+SOUND+"-demo.mp3").then(function(ok){ return ok||tryClip("/coach/say/"+SOUND+".mp3"); }); }
     function pose(p){ var e=$("echo");
       e.classList.remove("talk","cheer");
       if(p==="talk"){ e.src="/coach/echo/echo-celebrate.svg"; e.classList.add("talk"); }
@@ -246,32 +248,84 @@
     }
     function logV(v,word){ if(v!=="unknown"&&S&&S.logAttempt) S.logAttempt({game:"coach-call",sound:SOUND,pass:v==="pass",word:String(word||"").toLowerCase()}); }
 
-    // ---- THE CALL SCRIPT (v0 — for Rachel to red-pen) ----
-    // *word* renders orange in the caption. {slots} are filled per kid.
+    // ---- THE CALL SCRIPT (for Rachel to red-pen) ----
+    // *word* renders orange in the caption; [tags] shape v3 delivery.
     // Every "ask" step: Echo says the line, then listens for `reps` bursts and
     // honestly checks the whole clip. pass → praise; fail → cue tip, one retry,
     // then a warm move-on. TTS never performs the bare sound — Echo asks by
     // letter name, and Rachel's recorded demo plays when it exists.
+    //
+    // VARIETY: calls rotate through three framings (classic / fix-Echo /
+    // sound detective) and Echo REMEMBERS the last call — so call #2 never
+    // sounds like a rerun of call #1.
     var ITEMS=[]; try{ ITEMS=(S.ladderContent(SOUND,RUNG)||[]).filter(function(it){return it&&it.t&&it.level!=="isolation";}); }catch(e){}
     var W1=ITEMS[0]||{t:"rabbit",display:"rabbit"}, W2=ITEMS[1]||ITEMS[0]||{t:"robot",display:"robot"};
     var soundAsk="your *"+LETTER+" sound*";
-    var SCRIPT=[
-      { say:"[excited] Well HI, "+NAME+"! I was hoping you would call me all day!" },
-      { say:"First, a big dragon breath. [whispers] Breathe in… and blow it out. One more big one… [happy] Wonderful!" },
-      { say:"Today is "+LETTER+" day! I have been practicing SO hard. Want to hear my try first?", demo:true },
-      { ask:{ line:"Now the real expert. Say "+soundAsk+" *three times* so I can hear how it's really done. Go!", reps:3, text:(S&&S.soundSay)?S.soundSay(SOUND):SOUND.toLowerCase(), mode:"phoneme", word:SOUND },
-        pass:"[excited] WOW. That was even better than I imagined!", fail:"Ooh, so close! "+(CUESHORT||"Let's try together")+". One more time — go!" },
+    var SUSTTXT=(S&&S.soundSay)?S.soundSay(SOUND):SOUND.toLowerCase();
+    var FIRSTCALL=new URLSearchParams(location.search).get("first")==="1";
+    var HIST=(function(){ try{ return JSON.parse(localStorage.getItem("sona.callhist.v1")||"{}"); }catch(e){ return {}; } })();
+    var CALLN=HIST.n||0, VAR=CALLN%3;
+
+    // memory-lite opener: Echo remembers yesterday
+    function opener(){
+      if(FIRSTCALL) return "[excited] Well HI, "+NAME+"! I'm Echo! I've been waiting ALL day to meet you!";
+      if(CALLN===0) return "[excited] Well HI, "+NAME+"! I was hoping you would call me all day!";
+      var days=HIST.last?Math.round((Date.now()-HIST.last)/86400000):99;
+      if((HIST.lastPasses||0)>=3) return "[excited] "+NAME+"! There you are! I told "+BUDDYNAME+" how amazing your "+((HIST.lastSound&&S.soundLabel)?S.soundLabel(HIST.lastSound):LETTER)+" sound was last time — he almost didn't believe me!";
+      if(days<=1) return "[excited] Back already?! Best part of my day. I think your "+LETTER+" sound got stronger overnight!";
+      return "[excited] "+NAME+"! I missed you! I kept your spot on my branch warm.";
+    }
+    var WARMUPS=[
+      "First, a big dragon breath. [whispers] Breathe in… and blow it out. One more big one… [happy] Wonderful!",
+      "Warm-up time! Wiggle your lips — blblblbl! Now a big lion yawn… aaah. [happy] Perfect. Your mouth is awake!",
+      "Quick! Drumroll on your knees… faster… and FREEZE. [whispers] Wow, you're so focused today."
+    ];
+    var BYES=[
+      "[happy] This was my favorite call ALL day. Practice in the games, and call me again soon. Bye bye, superstar!",
+      "[happy] "+BUDDYNAME+" says thank you for the lesson! Same branch, next call? Bye bye, "+NAME+"!",
+      "[happy] Case closed, detective "+NAME+"! Go play the games — I'll be listening for that famous "+LETTER+" sound. Bye bye!"
+    ];
+    var TEACH=[
       { say:BUDDYNAME+" is on the call too! [whispers] Psst — "+BUDDYNAME+" keeps getting the "+LETTER+" sound wrong. Can you teach him?" },
-      { ask:{ line:"Show "+BUDDYNAME+" your very best "+soundAsk+", *three more times*. Teach him. Go!", reps:3, text:(S&&S.soundSay)?S.soundSay(SOUND):SOUND.toLowerCase(), mode:"phoneme", word:SOUND },
-        pass:"[excited] LOOK! "+BUDDYNAME+" just said it! You TAUGHT him, "+NAME+"! You're a "+LETTER+" teacher now!", fail:"Almost! "+BUDDYNAME+" is watching your mouth. "+(CUESHORT||"Nice and easy")+" — go again!" },
+      { ask:{ line:"Show "+BUDDYNAME+" your very best "+soundAsk+", *three times*. Teach him. Go!", reps:3, text:SUSTTXT, mode:"phoneme", word:SOUND },
+        pass:"[excited] LOOK! "+BUDDYNAME+" just said it! You TAUGHT him, "+NAME+"! You're a "+LETTER+" teacher now!", fail:"Almost! "+BUDDYNAME+" is watching your mouth. "+(CUESHORT||"Nice and easy")+" — go again!" }
+    ];
+    var WORDS=[
       { ask:{ line:"Word time! Say *"+(W1.display||W1.t)+"*, three times. Go!", reps:3, text:W1.t, mode:"full", word:W1.t },
         pass:"That was a PERFECT "+(W1.display||W1.t)+"!", fail:"So close! Break it in half with me — "+(W1.display||W1.t)+". Again, go!" },
       { ask:{ line:"One more word. Say *"+(W2.display||W2.t)+"*, three times. Go!", reps:3, text:W2.t, mode:"full", word:W2.t },
-        pass:"You are on FIRE today!", fail:"Good trying! That one's tricky — we'll practice it in the games too." },
-      { ask:{ line:"Last one. Show me how BIG-KID "+NAME+" says it — one giant "+soundAsk+". GO!", reps:1, text:(S&&S.soundSay)?S.soundSay(SOUND):SOUND.toLowerCase(), mode:"phoneme", word:SOUND },
-        pass:"THERE it is! That's the big-kid sound right there!", fail:"I heard it in there! It's getting stronger every single day." },
-      { say:"[happy] This was my favorite call ALL day. Practice in the games, and call me again soon. Bye bye, superstar!", end:true }
+        pass:"You are on FIRE today!", fail:"Good trying! That one's tricky — we'll practice it in the games too." }
     ];
+    var BIGKID={ ask:{ line:"Last one. Show me how BIG-KID "+NAME+" says it — one giant "+soundAsk+". GO!", reps:1, text:SUSTTXT, mode:"phoneme", word:SOUND },
+        pass:"THERE it is! That's the big-kid sound right there!", fail:"I heard it in there! It's getting stronger every single day." };
+
+    var OPENING=[ { say:opener() }, { say:WARMUPS[CALLN%WARMUPS.length] } ];
+    var MIDDLE;
+    if(VAR===1 && !FIRSTCALL){
+      // "fix Echo" day — Echo gets it wrong on purpose; the kid is the expert
+      MIDDLE=[
+        { say:"Okay, "+NAME+", listen to MY practice today: wuh… wuh… [curious] hmm. That is NOT the "+LETTER+" sound, is it?" },
+        { ask:{ line:"Fix me! Say the REAL "+soundAsk+", *three times*, so I can copy you. Go!", reps:3, text:SUSTTXT, mode:"phoneme", word:SOUND },
+          pass:"[laughs] THAT'S the one! No wonder you're the teacher around here.", fail:"Ooh, close! "+(CUESHORT||"Try it with me")+". Show me again — go!" }
+      ].concat(TEACH.slice(1), WORDS.slice(0,1), [BIGKID]);
+    } else if(VAR===2 && !FIRSTCALL){
+      // "sound detective" day
+      MIDDLE=[
+        { say:"Today we're sound detectives. [whispers] The mystery sound is… the "+LETTER+" sound! Here's my evidence:", demo:true },
+        { ask:{ line:"Case number one: say "+soundAsk+" *three times* so I know you're on the case. Go!", reps:3, text:SUSTTXT, mode:"phoneme", word:SOUND },
+          pass:"[excited] Case CRACKED! You're the best detective I know.", fail:"Hmm, the clue slipped away! "+(CUESHORT||"Try again with me")+" — go!" },
+        { ask:{ line:"Clue word! Say *"+(W1.display||W1.t)+"*, three times. Go!", reps:3, text:W1.t, mode:"full", word:W1.t },
+          pass:"Another clue solved!", fail:"Tricky clue! We'll crack it in the games too." }
+      ].concat(TEACH, [BIGKID]);
+    } else {
+      // classic day (and always the first call)
+      MIDDLE=[
+        { say:"Today is "+LETTER+" day! I have been practicing SO hard. Want to hear my try first?", demo:true },
+        { ask:{ line:"Now the real expert. Say "+soundAsk+" *three times* so I can hear how it's really done. Go!", reps:3, text:SUSTTXT, mode:"phoneme", word:SOUND },
+          pass:"[excited] WOW. That was even better than I imagined!", fail:"Ooh, so close! "+(CUESHORT||"Let's try together")+". One more time — go!" }
+      ].concat(TEACH, WORDS, [BIGKID]);
+    }
+    var SCRIPT=OPENING.concat(MIDDLE, [{ say:BYES[CALLN%BYES.length], end:true }]);
 
     // ---- run the call ----
     var stepIx=0, passes=0, tries=0, over=false, timeLeft=210;
@@ -313,6 +367,8 @@
       if(over)return; over=true;
       try{ clearInterval(timerIv); }catch(e){}
       try{ if(micStream)micStream.getTracks().forEach(function(t){t.stop();}); }catch(e){}
+      // Echo remembers this call next time
+      try{ localStorage.setItem("sona.callhist.v1",JSON.stringify({n:CALLN+1,last:Date.now(),lastPasses:passes,lastSound:SOUND})); }catch(e){}
       try{ S.addCoins(5); if(S.awardNextSticker)S.awardNextSticker(); }catch(e){}
       try{ S.confetti&&S.confetti({count:120}); S.sfx.complete(); }catch(e){}
       $("doneTitle").textContent = early ? "Thanks for calling!" : "Best call ever!";
@@ -324,7 +380,7 @@
     // ---- boot: cap gate, then the ring screen. Answering = the tap that
     // unlocks audio + mic. "Not now" never burns a call. ----
     var st0=callState();
-    if(st0.used>=MAXCALLS){
+    if(st0.used>=MAXCALLS && !FIRSTCALL){
       $("ringOvl").style.display="none";
       $("capOvl").classList.add("show");
     }
@@ -337,7 +393,7 @@
       getCtx();
       try{ micStream=await navigator.mediaDevices.getUserMedia({audio:true,video:false}); }
       catch(e){ if(S&&S.micDenied)S.micDenied({back:"/today.html"}); return; }
-      var s=callState(); s.used++; callSave(s);
+      if(!FIRSTCALL){ var s=callState(); s.used++; callSave(s); } // the welcome call is on the house
       $("ringOvl").style.display="none";
       runCall();
     };

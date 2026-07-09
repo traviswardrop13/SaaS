@@ -385,9 +385,10 @@
         }
       }catch(e){}
       if(window.Sona){ Sona.sfx.complete(); Sona.confetti({count:160}); }
-      bubble.textContent = "You're all set! 🎉";
-      nextBtn.disabled = true; nextBtn.textContent = "Let's practice!";
-      setTimeout(function(){ location.href="/map.html"; }, 1100);
+      bubble.textContent = "Ring ring… it's Echo!";
+      nextBtn.disabled = true; nextBtn.textContent = "Echo is calling…";
+      // the magic moment: onboarding ends with Echo calling the child by name
+      setTimeout(function(){ location.href="/coach-call.html?first=1"; }, 1100);
     }
 
     nextBtn.onclick=next; backBtn.onclick=back;
