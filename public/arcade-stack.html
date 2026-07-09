@@ -217,13 +217,14 @@
         ctx.fillStyle="#ffd88a"; for(var wi=0;wi<2;wi++){ ctx.fillRect(tx+6+wi*13, H-th+8, 6,7); } ctx.fillStyle="rgba(20,14,50,.45)"; }
       // parallax stars
       ctx.globalAlpha=0.22; ctx.fillStyle="#bfe0ff"; for(var i=0;i<24;i++){ ctx.fillRect(((i*89)%W),(((i*173)+camY*0.3)%H+H)%H,2,2); } ctx.globalAlpha=1;
-      var towerTopY=H-80-stack.length*BH+camY;
+      var towerTopY=H-46-stack.length*BH+camY;
       var want= towerTopY<H*0.42 ? camY+(H*0.42-towerTopY) : camY;
       camY+=(want-camY)*0.08;
-      // ground
-      ctx.fillStyle="#0d1f35"; ctx.fillRect(0,H-80+camY,W,80);
+      // ground: a low street in the town's silhouette tone — blends into the
+      // dusk instead of reading as a dead navy band
+      ctx.fillStyle="rgba(20,14,50,.55)"; ctx.fillRect(0,H-46+camY,W,46);
       // stack
-      for(var i=0;i<stack.length;i++){ var b=stack[i], y=H-80-(i+1)*BH+camY;
+      for(var i=0;i<stack.length;i++){ var b=stack[i], y=H-46-(i+1)*BH+camY;
         ctx.fillStyle=b.c; rr(b.x,y,b.w,BH-3,7); ctx.fill();
         ctx.fillStyle="rgba(255,255,255,.18)"; rr(b.x,y,b.w,7,4); ctx.fill();
       }
@@ -231,7 +232,7 @@
       if(playing){
         cur.x+=cur.dir*speed*(boost.on?0.35:1);
         if(cur.x<-8){cur.x=-8;cur.dir=1;} if(cur.x+cur.w>W+8){cur.x=W+8-cur.w;cur.dir=-1;}
-        var y=H-80-(stack.length+1)*BH+camY;
+        var y=H-46-(stack.length+1)*BH+camY;
         ctx.fillStyle=cur.c; rr(cur.x,y,cur.w,BH-3,7); ctx.fill();
         ctx.fillStyle="rgba(255,255,255,.25)"; rr(cur.x,y,cur.w,7,4); ctx.fill();
       }

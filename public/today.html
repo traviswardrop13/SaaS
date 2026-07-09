@@ -145,7 +145,7 @@
 
     // ── the activity deck: hero + up-next, art from the vector scenes ──
     var ACTS=[
-      { key:"daily-"+(((S&&S.dayNum)?S.dayNum():0)%7), name:"Today's Run",
+      { key:"daily-"+(((S&&S.dayNum)?S.dayNum():0)%7), name:"Let's play!",
         sub:d.playedToday?("Score "+d.score+" · Best "+d.best+" · back tomorrow!"):"One shot · 4 games · high score!",
         tap:function(){ if(d.playedToday){ sfx("tap"); toast("Come back tomorrow! Pick another game 👉"); return; } sfx("correct"); location.href="/charge.html?daily=1&sound="+encodeURIComponent(sound)+"&level="+currentLevel(); } },
       { key:"slice", name:"Fruit Slice",   sub:"Say it 5× to play", tap:function(){ sfx("tap"); location.href="/charge.html?game=arcade-slice.html"; } },

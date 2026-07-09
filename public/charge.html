@@ -33,11 +33,11 @@
     #sumLbl{display:flex;align-items:center;gap:5px;background:#fff;border-radius:99px;padding:9px 13px;box-shadow:0 4px 0 rgba(120,80,20,.12);font-family:"Baloo 2";font-weight:800;font-size:14px;color:var(--ink);min-height:20px;}
 
     /* stage */
-    #stage{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:6px 22px;gap:14px;min-height:0;}
-    #wordCard{width:min(84vw,320px);background:var(--card);border-radius:26px;padding:20px 18px 22px;box-shadow:0 8px 20px rgba(90,50,10,.12);display:flex;flex-direction:column;align-items:center;gap:8px;}
+    #stage{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:6px 22px;gap:clamp(14px,2.6vh,28px);min-height:0;}
+    #wordCard{width:min(86vw,340px);background:var(--card);border-radius:26px;padding:20px 18px 22px;box-shadow:0 8px 20px rgba(90,50,10,.12);display:flex;flex-direction:column;align-items:center;gap:8px;}
     #soundChip{background:var(--chipbg);color:var(--chiptx);font-family:"Baloo 2";font-weight:800;font-size:12px;letter-spacing:.06em;border-radius:99px;padding:5px 13px;}
-    #wordPic{height:118px;display:flex;align-items:center;justify-content:center;font-size:96px;line-height:1;}
-    #wordPic img{width:118px;height:118px;object-fit:contain;}
+    #wordPic{height:clamp(118px,19vh,175px);display:flex;align-items:center;justify-content:center;font-size:96px;line-height:1;}
+    #wordPic img{height:100%;width:auto;max-width:100%;object-fit:contain;}
     #prompt{font-family:"Baloo 2";font-weight:800;font-size:clamp(30px,9.5vw,40px);line-height:1.05;color:var(--ink);}
     #hint{font-weight:800;font-size:15px;color:var(--muted);min-height:20px;}
     #hint b{color:var(--orange-d);}
@@ -53,7 +53,7 @@
     #gpState{font-family:"Baloo 2";font-weight:800;font-size:14.5px;color:var(--ink);text-align:left;}
 
     /* mic — auto-hot, pulsing rings */
-    #bottom{display:flex;flex-direction:column;align-items:center;gap:8px;padding:4px 18px calc(18px + env(safe-area-inset-bottom));}
+    #bottom{display:flex;flex-direction:column;align-items:center;gap:6px;padding:4px 18px calc(8px + env(safe-area-inset-bottom));}
     #micWrap{position:relative;width:86px;height:86px;}
     #micWrap::before,#micWrap::after{content:"";position:absolute;inset:-12px;border-radius:50%;background:rgba(255,138,61,.14);animation:ring 1.6s ease-out infinite;}
     #micWrap::after{inset:-24px;background:rgba(255,138,61,.10);animation-delay:.4s;}
@@ -62,7 +62,7 @@
     #micBtn svg{width:38px;height:38px;fill:#fff;}
     #micBtn.go{background:linear-gradient(180deg,#ffa05a,#ff8a3d);box-shadow:0 5px 0 var(--orange-d);}
     #micState{font-family:"Baloo 2";font-weight:800;font-size:14.5px;color:var(--orange-d);min-height:22px;}
-    #skip{border:none;background:none;color:var(--label);font-weight:800;font-size:12px;cursor:pointer;padding:6px;}
+    #skip{border:none;background:none;color:var(--label);font-weight:800;font-size:12px;cursor:pointer;padding:4px 6px;}
 
     /* warm-card overlays */
     .ovl{position:fixed;inset:0;z-index:60;background:rgba(74,44,20,.45);display:none;align-items:center;justify-content:center;padding:24px;}
@@ -123,7 +123,7 @@
   <div class="ovl" id="playedOvl">
     <div class="ovlCard">
       <img class="ovlEcho" src="/coach/echo/echo-celebrate.svg" alt="" />
-      <h2>You already ran today!</h2>
+      <h2>You already played today!</h2>
       <p id="playedSub"></p>
       <button class="btn blue" id="playedArcade">🎮 Free play</button>
       <button class="btn ghost" id="playedHome">Back home</button>
@@ -135,7 +135,7 @@
     <div class="ovlCard">
       <img class="ovlEcho" src="/coach/echo/echo-celebrate.svg" alt="" />
       <div class="big" id="runEmoji">🏆</div>
-      <h2 id="runTitle">Run complete!</h2>
+      <h2 id="runTitle">You did it!</h2>
       <div id="runScore">0</div>
       <div id="runBest"></div>
       <p>Come back tomorrow for another shot!</p>
@@ -188,15 +188,22 @@
     var GAME = isDaily ? DAILY_SEQ[Math.min(run?run.round:0,DAILY_SEQ.length-1)] : (freeGame||"arcade-slice.html");
     var GMETA=GAMES[GAME];
 
-    // ---- content: SLP progression. Daily rounds climb the ladder — round 1 =
-    // isolation, round 2 = syllables (rah/ree/roo), etc., capped at the child's rung.
+    // ---- content: SLP progression. Daily rounds climb the ladder the way a
+    // session would — round 1 warms up in isolation (rrr), round 2 moves to
+    // syllables (rah/ree/roo), then words, then phrases. The climb is capped
+    // ONE level above the child's mastered rung, so every run ends with a
+    // stretch level, and two clean stretch rounds advance the rung for good.
     var RUNG=(S&&S.rungOf)?S.rungOf(SOUND):0;
-    var useRung = isDaily ? Math.min(RUNG,(run?run.round:0)) : RUNG;
+    var useRung = isDaily ? Math.min((run?run.round:0), RUNG+1) : RUNG;
     var ITEMS=[];
     try{ ITEMS=(S.ladderContent(SOUND,useRung)||[]).filter(function(it){return it&&it.t;}); }catch(e){}
     if(!ITEMS.length){ try{ ITEMS=(S.ladderContent(SOUND,0)||[]).filter(function(it){return it&&it.t;}); }catch(e){} }
     if(!ITEMS.length) ITEMS=[{t:(S?S.soundSay(SOUND):"rrrr"),say:(S?S.soundSay(SOUND):"rrrr"),display:(S?S.soundSay(SOUND):"rrrr"),mode:"phoneme",level:"isolation"}];
-    var ITEM=ITEMS[(Math.random()*ITEMS.length)|0];
+    // syllable rounds drill the whole SET — the card flips to the next one
+    // after every counted rep (rah → ree → roo), like an SLP's drill list
+    var SEQ=ITEMS.slice(); for(var si=SEQ.length-1;si>0;si--){ var sj=(Math.random()*(si+1))|0, st=SEQ[si]; SEQ[si]=SEQ[sj]; SEQ[sj]=st; }
+    var ITEM=SEQ[0];
+    var ROTATE=(ITEM.level==="syllable"&&SEQ.length>1);
     var NUMWORD={2:"two",3:"three",4:"four",5:"five",6:"six"};
     // What Leo SPEAKS. TTS cannot perform a bare sound — a synthesized long
     // "rrrr"/"sssss" comes out mangled — so the voice asks for the sound BY
@@ -205,7 +212,10 @@
     function soundName(){ var s=String(SOUND).toUpperCase(); if(s==="THV")s="TH"; return s.length>1?s.split("").join(" "):s; }
     function sayLine(){
       var times=(NUMWORD[NEED]||NEED)+" times";
-      var ask=ITEM.level==="isolation"?("make your "+soundName()+" sound"):("say "+(ITEM.display||ITEM.t));
+      var ask;
+      if(ITEM.level==="isolation") ask="make your "+soundName()+" sound";
+      else if(ROTATE) ask="say "+SEQ.slice(0,3).map(function(it){return it.display||it.t;}).join(", ");
+      else ask="say "+(ITEM.display||ITEM.t);
       // first prompt carries the mouth cue inline; repeats stay minimal
       if(!sayLine._cued && CUESHORT && ITEM.level==="isolation"){ sayLine._cued=true; return "Ready? "+CUESHORT+", and "+ask+", "+times+". Go!"; }
       return "Ready? "+ask.charAt(0).toUpperCase()+ask.slice(1)+", "+times+". Go!";
@@ -248,22 +258,24 @@
     function sfx(n){ try{ if(S&&S.sfx&&S.sfx[n])S.sfx[n](); }catch(e){} }
 
     // ---- UI ----
-    $("soundChip").textContent=((S&&S.soundLabel)?S.soundLabel(SOUND):SOUND)+" SOUND";
-    $("prompt").textContent=ITEM.display||ITEM.t;
-    // illustration: the word picture when we have one; Echo's star for bare sounds
-    (function(){
+    $("soundChip").textContent=((S&&S.soundLabel)?S.soundLabel(SOUND):SOUND)+" SOUND"+((useRung>0&&S&&S.rungLabel)?(" · "+String(S.rungLabel(useRung)).toUpperCase()):"");
+    // the word card — repainted on every syllable flip
+    function paintCard(){
+      $("prompt").textContent=ITEM.display||ITEM.t;
+      // illustration: the word picture when we have one; Echo's star for bare sounds
       var pic=$("wordPic");
-      if(ITEM.level==="isolation"){ pic.innerHTML='<img src="/coach/echo/echo-star.svg" alt=""/>'; return; }
-      var w=String(ITEM.word||ITEM.t).toLowerCase();
-      try{ pic.innerHTML=(S&&S.pic)?S.pic(w,ITEM.e||"✨",118):(ITEM.e||"✨"); }catch(e){ pic.textContent=ITEM.e||"✨"; }
-    })();
-    // phonetic hint: "Rrrr—abbit" when the word starts with the sound
-    (function(){
-      var h=$("hint"); if(ITEM.level==="isolation"){ h.textContent="Nice and long — you got this!"; return; }
-      var w=String(ITEM.display||ITEM.t), sust=(S&&S.soundSay)?S.soundSay(SOUND):SOUND.toLowerCase();
-      if(w && w[0].toUpperCase()===SOUND[0]) h.innerHTML="<b>"+sust.charAt(0).toUpperCase()+sust.slice(1)+"</b>—"+w.slice(1).toLowerCase();
-      else h.innerHTML="Say it with your <b>"+((S&&S.soundLabel)?S.soundLabel(SOUND):SOUND)+"</b> sound!";
-    })();
+      if(ITEM.level==="isolation"||ITEM.level==="syllable"){ pic.innerHTML='<img src="/coach/echo/echo-star.svg" alt=""/>'; }
+      else { var w=String(ITEM.word||ITEM.t).toLowerCase();
+        try{ pic.innerHTML=(S&&S.pic)?S.pic(w,ITEM.e||"✨",118):(ITEM.e||"✨"); }catch(e){ pic.textContent=ITEM.e||"✨"; } }
+      // phonetic hint: "Rrrr—abbit" when the word starts with the sound
+      var h=$("hint");
+      if(ITEM.level==="isolation"){ h.textContent="Nice and long — you got this!"; }
+      else if(ITEM.level==="syllable"){ h.textContent="One after another — you got this!"; }
+      else { var wd=String(ITEM.display||ITEM.t), sust=(S&&S.soundSay)?S.soundSay(SOUND):SOUND.toLowerCase();
+        if(wd && wd[0].toUpperCase()===SOUND[0]) h.innerHTML="<b>"+sust.charAt(0).toUpperCase()+sust.slice(1)+"</b>—"+wd.slice(1).toLowerCase();
+        else h.innerHTML="Say it with your <b>"+((S&&S.soundLabel)?S.soundLabel(SOUND):SOUND)+"</b> sound!"; }
+    }
+    paintCard();
     var pipsEl=$("pips"); for(var i=0;i<NEED;i++){ var p=document.createElement("div"); p.className="pip"; pipsEl.appendChild(p); }
     function paintReps(n){
       var k=pipsEl.children; for(var i=0;i<k.length;i++) k[i].className="pip"+(i<n?" on":"");
@@ -280,7 +292,7 @@
     // ---- rapid-fire rep engine: continuous VAD, every voiced burst = a rep.
     // No per-rep scoring round-trips — ONE SpeechAce spot-check on the whole
     // clip at the end keeps the SLP data honest without killing the pace.
-    var micStream=null, reps=0, engineOn=false, chunks=[], rec=null;
+    var micStream=null, reps=0, engineOn=false, chunks=[], rec=null, SAID=[];
     var useSpeechAce=true;
     (function(){ try{ fetch("/api/score").then(function(r){return r.json();}).then(function(j){ useSpeechAce=!!(j&&j.hasKey);
       // tripwire: honest scoring silently off = every sound "passes". Make it loud in the server logs.
@@ -289,7 +301,7 @@
 
     function startEngine(){
       return new Promise(function(resolve){
-        reps=0; paintReps(0); chunks=[];
+        reps=0; paintReps(0); chunks=[]; SAID=[];
         var voiced=0, silent=0, inBurst=false, thr=0, calN=0, calSum=0, t0=performance.now(), lastRep=0, idleTimer=null;
         try{ if(window.MediaRecorder&&micStream){ rec=new MediaRecorder(micStream); rec.ondataavailable=function(e){ if(e.data&&e.data.size)chunks.push(e.data); }; rec.start(); } }catch(e){ rec=null; }
         var ctx=getCtx(), src=ctx.createMediaStreamSource(micStream), an=ctx.createAnalyser();
@@ -310,9 +322,10 @@
             // a real burst = ~4 voiced frames (~120ms) — silence NEVER counts
             if(!inBurst && voiced>=4 && now-lastRep>350){
               inBurst=true; lastRep=now; reps++;
-              paintReps(reps); sfx("tap");
+              SAID.push(ITEM.t); paintReps(reps); sfx("tap");
               var l=$("leo"); l.classList.remove("cheer"); void l.offsetWidth; l.classList.add("cheer");
               if(reps>=NEED){ setTimeout(function(){ stopAll(); resolve(); },350); return; }
+              if(ROTATE){ ITEM=SEQ[reps%SEQ.length]; paintCard(); }
             }
           } else { silent++; voiced=0; if(silent>=8) inBurst=false; }
           requestAnimationFrame(tick);
@@ -332,7 +345,7 @@
         try{
           var ctrl=new AbortController(); var to=setTimeout(function(){ctrl.abort();},8000);
           var fd=new FormData(); fd.append("audio",new File([blob],"a.webm",{type:blob.type||"audio/webm"}));
-          fd.append("text",ITEM.t); fd.append("targetSound",SOUND); fd.append("userId","child"); fd.append("mode",ITEM.mode||"phoneme");
+          fd.append("text",(ROTATE&&SAID.length)?SAID.join(" "):ITEM.t); fd.append("targetSound",SOUND); fd.append("userId","child"); fd.append("mode",ITEM.mode||"phoneme");
           var r=await fetch("/api/score",{method:"POST",body:fd,signal:ctrl.signal}); clearTimeout(to);
           var j=await r.json(); if(j&&j.ok) return (j.rating!=="tryAgain")?"pass":"fail";
         }catch(e){}
@@ -343,7 +356,7 @@
 
     // ---- the flow ----
     var launched=false;
-    function logV(v){ if(v!=="unknown" && S && S.logAttempt) S.logAttempt({game:"charge",sound:SOUND,pass:v==="pass",word:String(ITEM.word||ITEM.t).toLowerCase()}); }
+    function logV(v){ if(v!=="unknown" && S && S.logAttempt) S.logAttempt({game:"charge",sound:SOUND,pass:v==="pass",word:((ROTATE&&SAID.length)?SAID.join(" "):String(ITEM.word||ITEM.t)).toLowerCase()}); }
     async function burstAndVerify(n){
       var save=NEED; if(n)NEED=n;
       micGo(true, n?"GO!":("GO — say it "+(NUMWORD[NEED]||NEED)+" times!"));
@@ -358,6 +371,15 @@
       // Leo speaks the prompt ONCE, then the mic is instantly hot.
       await playPrompt();
       var v=await burstAndVerify();
+      // SLP gating: the rung only ever advances on HONEST evidence — two clean
+      // scored rounds at the stretch level, never on mercy or offline scoring.
+      if(isDaily && v==="pass" && useRung>=RUNG && S && S.recordRung){
+        try{
+          var wk="sona.rungwins."+SOUND+"."+useRung, w=1+(parseInt(localStorage.getItem(wk),10)||0);
+          if(w>=2){ S.recordRung(SOUND,useRung,1); localStorage.removeItem(wk); }
+          else localStorage.setItem(wk,String(w));
+        }catch(e){}
+      }
       if(v==="fail"){
         // The scorer really heard a different sound — the charge is NOT given
         // away. Coach with the SLP cue (never "watch my mouth" — there is no
@@ -391,7 +413,7 @@
     // ---- daily overlays ----
     function showPlayed(){
       var d=S.dailyInfo();
-      $("playedSub").textContent="Today's score: "+d.score+" · Best ever: "+d.best+". One run a day — free play is always open!";
+      $("playedSub").textContent="Today's score: "+d.score+" · Best ever: "+d.best+". Once a day — free play is always open!";
       $("playedOvl").classList.add("show");
     }
     $("playedArcade").onclick=function(){ location.href="/today.html#play"; };
@@ -404,10 +426,10 @@
       $("runScore").textContent=r.score;
       $("runBest").textContent=r.newBest?"🎉 NEW BEST!":("Best ever: "+r.best);
       $("runEmoji").textContent=r.newBest?"👑":"🏆";
-      $("runTitle").textContent=r.newBest?"NEW HIGH SCORE!":"Run complete!";
+      $("runTitle").textContent=r.newBest?"NEW HIGH SCORE!":"You did it!";
       $("runOvl").classList.add("show");
       sfx("complete"); try{ if(S.confetti)S.confetti(); }catch(e){}
-      say(r.newBest?"New high score! Amazing!":"Run complete! Great work!");
+      say(r.newBest?"New high score! Amazing!":"You did it! Great work!");
     }
     $("runDone").onclick=function(){ location.href="/today.html"; };
     $("runArcade").onclick=function(){ location.href="/today.html#play"; };

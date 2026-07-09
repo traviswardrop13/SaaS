@@ -199,14 +199,14 @@
       // lanes
       for(var l=0;l<LANES;l++){ ctx.fillStyle="rgba(255,255,255,"+(l%2?0.03:0.05)+")"; ctx.fillRect(l*lw,0,lw,H); }
       for(var l=1;l<LANES;l++){ ctx.fillStyle="rgba(255,255,255,.08)"; ctx.fillRect(l*lw-1,0,2,H); }
-      // hit bar
+      // hit bar — the keys run all the way to the screen bottom, no dead band
       ctx.fillStyle=boost.on?"rgba(255,210,28,.28)":"rgba(255,255,255,.12)";
-      ctx.fillRect(0,hitY-8,W,86);
+      ctx.fillRect(0,hitY-8,W,H-(hitY-8));
       // piano-key hit bar: white keys with hard shadows; gold when boosted
       for(var l=0;l<LANES;l++){
         var kx=l*lw+5, kw=lw-10;
-        ctx.fillStyle=boost.on?"#f0a800":"rgba(0,0,0,.28)"; rr(kx,hitY-4,kw,86,10); ctx.fill();
-        ctx.fillStyle=boost.on?"#ffd21c":"#ffffff"; rr(kx,hitY-8,kw,84,10); ctx.fill();
+        ctx.fillStyle=boost.on?"#f0a800":"rgba(0,0,0,.28)"; rr(kx,hitY-4,kw,H-(hitY-4)+12,10); ctx.fill();
+        ctx.fillStyle=boost.on?"#ffd21c":"#ffffff"; rr(kx,hitY-8,kw,H-(hitY-8)+12,10); ctx.fill();
         ctx.fillStyle="rgba(0,0,0,.07)"; ctx.fillRect(kx+kw*0.36,hitY-8,kw*0.28,30);
       }
       // screen shake on miss-tap
