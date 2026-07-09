@@ -180,9 +180,13 @@
     if(location.hash==="#play") sel=1;
 
     function art(key){ try{ return (window.SonaScenes&&SonaScenes.has(key))?("url('"+SonaScenes.uri(key)+"')"):""; }catch(e){ return ""; } }
-    // illustrated house stickers (coach/city/<key>.png, transparent cut-outs)
-    // layer OVER the vector city scene the moment they load
+    // illustrated panels (coach/city/<key>.png) take over the moment they load.
+    // Two art shapes live side by side: FULL-BLEED painted scenes (tall 2:3 —
+    // the house-in-its-street style) simply cover the card; square sticker
+    // CUT-OUTS layer over the vector city until a full scene replaces them.
     function upgradeArt(el,key){ var im=new Image(); im.onload=function(){
+      var fullBleed = im.naturalHeight > im.naturalWidth*1.2;
+      if(fullBleed){ el.style.backgroundImage="url('"+im.src+"')"; el.style.backgroundSize="cover"; el.style.backgroundPosition="center"; el.style.backgroundRepeat="no-repeat"; return; }
       var base=art(key);
       el.style.backgroundImage="url('"+im.src+"')"+(base?", "+base:"");
       el.style.backgroundSize="88% auto"+(base?", cover":"");
