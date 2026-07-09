@@ -15,54 +15,80 @@
       --track:#f0e4d2; --chipbg:#ffe7d3; --chiptx:#ef6f23;
       --green:#58cc02; --green-d:#46a302; --orange:#ff8a3d; --orange-d:#ef6f23;
       --gold:#ffd21c; --blue:#1cb0f6; --blue-d:#1597d4;
+      --hsh:rgba(120,50,10,.16); --tsh:rgba(200,80,20,.45); --bsh:rgba(120,50,10,.2);
     }
     *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;font-family:"Nunito",-apple-system,sans-serif;}
     html,body{height:100%;overflow:hidden;background:var(--cream);color:var(--ink);}
-    #app{height:100vh;height:100dvh;max-width:560px;margin:0 auto;display:flex;flex-direction:column;overscroll-behavior:none;}
+    /* per-game skies — same values as the games themselves */
+    body.g-slice{background:linear-gradient(180deg,#8fd0f5 0%,#ffe9b8 42%,#ffb066 76%,#ff8a5a 100%);}
+    body.g-run{background:linear-gradient(180deg,#aee6ff 0%,#cff2e2 26%,#7ed36f 34%,#7ed36f 100%);}
+    body.g-stack{background:linear-gradient(180deg,#2b2e6b 0%,#5b3f8f 44%,#a45fae 74%,#e17aa4 100%);}
+    body.g-tiles{background:linear-gradient(180deg,#231a4d 0%,#2f2266 40%,#43318c 72%,#54409e 100%);}
+    body.g-glide{background:linear-gradient(180deg,#3f74ab 0%,#6ea3d4 42%,#ffcf9a 78%,#ffe7c4 100%);}
+    body.g-slice{--hsh:rgba(120,50,10,.16);--tsh:rgba(200,80,20,.45);--bsh:rgba(120,50,10,.2);}
+    body.g-run{--hsh:rgba(40,80,120,.16);--tsh:rgba(40,90,140,.4);--bsh:rgba(40,80,120,.2);}
+    body.g-stack{--hsh:rgba(20,16,60,.28);--tsh:rgba(40,20,80,.45);--bsh:rgba(10,6,40,.4);}
+    body.g-tiles{--hsh:rgba(10,6,40,.4);--tsh:rgba(10,6,40,.5);--bsh:rgba(10,6,40,.45);}
+    body.g-glide{--hsh:rgba(40,70,120,.24);--tsh:rgba(40,70,120,.4);--bsh:rgba(40,50,90,.3);}
+    #app{height:100vh;height:100dvh;max-width:560px;margin:0 auto;position:relative;overflow:hidden;overscroll-behavior:none;}
+    #decor,#reveals{position:absolute;inset:0;pointer-events:none;}
+    #decor i,#reveals i{position:absolute;display:block;}
+    #reveals .slot{position:absolute;transition:opacity .2s;}
+    #reveals #stackCol .slot,#reveals .keyrow .slot{position:relative;left:auto;right:auto;top:auto;}
+    #reveals .slot.pop{animation:pop .45s cubic-bezier(.2,1.6,.4,1);}
+    @keyframes pop{0%{transform:scale(.25);opacity:0}70%{transform:scale(1.12)}100%{transform:scale(1);opacity:1}}
 
-    /* header: close circle · ticket pill · star pill */
-    #top{display:flex;align-items:center;gap:10px;padding:calc(14px + env(safe-area-inset-top)) 18px 6px;}
-    #close{border:none;width:44px;height:44px;border-radius:50%;background:#fff;color:#c9a878;font-size:20px;font-weight:800;cursor:pointer;line-height:1;box-shadow:0 4px 0 rgba(120,80,20,.15);}
-    #roundLbl{font-family:"Baloo 2";font-weight:800;font-size:13px;color:var(--muted);}
-    #gamePanel{margin-left:auto;display:flex;align-items:center;gap:8px;background:#fff;border-radius:99px;padding:9px 14px;box-shadow:0 4px 0 rgba(120,80,20,.12);}
+    /* header: close circle · ticket pill · star pill (shadows tinted per sky) */
+    #top{position:relative;z-index:3;display:flex;align-items:center;gap:8px;padding:calc(14px + env(safe-area-inset-top)) 16px 0;}
+    #close{border:none;width:44px;height:44px;border-radius:50%;background:#fff;color:#b9a98c;font-size:18px;font-weight:800;cursor:pointer;line-height:1;box-shadow:0 4px 0 var(--hsh);flex:0 0 auto;}
+    #gamePanel{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;background:#fff;border-radius:99px;padding:10px 14px;box-shadow:0 4px 0 var(--hsh);}
     #gamePanel.ready{box-shadow:0 4px 0 var(--green-d),0 0 0 3px rgba(88,204,2,.35);animation:readypulse 1s ease infinite;}
     @keyframes readypulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
-    #pips{display:flex;gap:5px;}
-    .pip{width:16px;height:11px;border-radius:4px;background:var(--track);transition:transform .15s,background .15s;}
+    #pips{display:flex;gap:6px;}
+    .pip{width:17px;height:12px;border-radius:4px;background:var(--track);transition:transform .15s,background .15s;}
     .pip.on{background:var(--orange);transform:scale(1.15);}
-    #sumLbl{display:flex;align-items:center;gap:5px;background:#fff;border-radius:99px;padding:9px 13px;box-shadow:0 4px 0 rgba(120,80,20,.12);font-family:"Baloo 2";font-weight:800;font-size:14px;color:var(--ink);min-height:20px;}
+    #sumLbl{display:flex;align-items:center;gap:6px;background:#fff;border-radius:99px;padding:10px 13px;box-shadow:0 4px 0 var(--hsh);font-family:"Baloo 2";font-weight:800;font-size:15px;color:var(--ink);flex:0 0 auto;min-height:22px;}
+    #roundLbl{position:relative;z-index:3;text-align:center;font-family:"Baloo 2";font-weight:800;font-size:12.5px;color:#fff;text-shadow:0 2px 0 var(--tsh);padding-top:6px;min-height:18px;}
 
-    /* stage */
-    #stage{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:6px 22px;gap:clamp(14px,2.6vh,28px);min-height:0;}
-    #wordCard{width:min(86vw,340px);background:var(--card);border-radius:26px;padding:20px 18px 22px;box-shadow:0 8px 20px rgba(90,50,10,.12);display:flex;flex-direction:column;align-items:center;gap:8px;}
-    #soundChip{background:var(--chipbg);color:var(--chiptx);font-family:"Baloo 2";font-weight:800;font-size:12px;letter-spacing:.06em;border-radius:99px;padding:5px 13px;}
-    #wordPic{height:clamp(118px,19vh,175px);display:flex;align-items:center;justify-content:center;font-size:96px;line-height:1;}
-    #wordPic img{height:100%;width:auto;max-width:100%;object-fit:contain;}
-    #prompt{font-family:"Baloo 2";font-weight:800;font-size:clamp(30px,9.5vw,40px);line-height:1.05;color:var(--ink);}
-    #hint{font-weight:800;font-size:15px;color:var(--muted);min-height:20px;}
-    #hint b{color:var(--orange-d);}
-    #cueRow{min-height:18px;color:var(--muted);font-weight:700;font-size:13.5px;max-width:300px;}
-    #mouth{display:none;width:110px;border-radius:14px;}
+    /* rotated title + prompt pill + level chip */
+    #titleWrap{position:relative;z-index:3;display:flex;flex-direction:column;align-items:center;gap:10px;padding-top:8px;}
+    #gameTitle{font-family:"Baloo 2";font-weight:800;font-size:clamp(28px,8.6vw,34px);color:#fff;text-shadow:0 3px 0 var(--tsh);transform:rotate(-3deg);letter-spacing:.02em;}
+    #promptPill{display:flex;align-items:center;gap:7px;background:#fff;border-radius:99px;padding:9px 16px;box-shadow:0 4px 0 var(--hsh);font-weight:800;font-size:15px;color:var(--ink);max-width:88vw;}
+    #promptPill svg{width:22px;height:22px;flex:0 0 auto;}
+    #prompt{color:var(--chiptx);}
+    #soundChip{background:rgba(255,255,255,.32);color:#fff;text-shadow:0 1.5px 0 var(--tsh);font-family:"Baloo 2";font-weight:800;font-size:11.5px;letter-spacing:.07em;border-radius:99px;padding:4px 12px;}
 
-    /* Echo + speech bubble */
-    #leoRow{display:flex;align-items:flex-end;gap:8px;max-width:340px;}
-    #leo{width:78px;height:78px;object-fit:contain;flex:none;}
+    /* Echo + speech bubble pinned above the mic */
+    #leoRow{position:absolute;left:16px;right:16px;bottom:calc(158px + env(safe-area-inset-bottom));display:flex;align-items:flex-end;gap:9px;z-index:3;}
+    #leo{width:88px;height:88px;object-fit:contain;flex:none;filter:drop-shadow(0 6px 8px var(--bsh));}
     #leo.cheer{animation:hop .5s ease;}
     @keyframes hop{0%,100%{transform:translateY(0)}45%{transform:translateY(-14px) rotate(-5deg)}}
-    #bubble{background:#fff;border-radius:16px;border-bottom-left-radius:4px;padding:10px 14px;box-shadow:0 5px 12px rgba(90,50,10,.12);}
-    #gpState{font-family:"Baloo 2";font-weight:800;font-size:14.5px;color:var(--ink);text-align:left;}
+    #bubble{background:#fff;border-radius:16px;border-bottom-left-radius:4px;padding:10px 14px;box-shadow:0 5px 12px var(--bsh);margin-bottom:10px;}
+    #gpState{font-family:"Baloo 2";font-weight:800;font-size:15px;color:var(--ink);text-align:left;}
+    #gpState b{color:var(--chiptx);}
 
-    /* mic — auto-hot, pulsing rings */
-    #bottom{display:flex;flex-direction:column;align-items:center;gap:6px;padding:4px 18px calc(8px + env(safe-area-inset-bottom));}
-    #micWrap{position:relative;width:86px;height:86px;}
-    #micWrap::before,#micWrap::after{content:"";position:absolute;inset:-12px;border-radius:50%;background:rgba(255,138,61,.14);animation:ring 1.6s ease-out infinite;}
-    #micWrap::after{inset:-24px;background:rgba(255,138,61,.10);animation-delay:.4s;}
-    @keyframes ring{0%{transform:scale(.85);opacity:0}30%{opacity:1}100%{transform:scale(1.15);opacity:0}}
-    #micBtn{position:relative;z-index:1;width:86px;height:86px;border-radius:50%;border:none;background:linear-gradient(180deg,#e7d9c4,#d8c7ad);box-shadow:0 5px 0 #c4b193;display:flex;align-items:center;justify-content:center;transition:background .15s;pointer-events:none;}
-    #micBtn svg{width:38px;height:38px;fill:#fff;}
+    /* mic — auto-hot, white pulse rings on the sky */
+    #bottom{position:absolute;left:0;right:0;bottom:calc(10px + env(safe-area-inset-bottom));display:flex;flex-direction:column;align-items:center;gap:4px;z-index:3;}
+    #micWrap{position:relative;width:104px;height:104px;display:flex;align-items:center;justify-content:center;}
+    #micWrap::before,#micWrap::after{content:"";position:absolute;border-radius:50%;}
+    #micWrap::before{inset:0;background:rgba(255,255,255,.18);animation:ring 1.6s ease-out infinite;}
+    #micWrap::after{inset:12px;background:rgba(255,255,255,.30);animation:ring 1.6s ease-out infinite .4s;}
+    @keyframes ring{0%{transform:scale(.85);opacity:0}30%{opacity:1}100%{transform:scale(1.12);opacity:0}}
+    #micBtn{position:relative;z-index:1;width:70px;height:70px;border-radius:50%;border:none;background:linear-gradient(180deg,#e7d9c4,#d8c7ad);box-shadow:0 5px 0 #c4b193;display:flex;align-items:center;justify-content:center;transition:background .15s;pointer-events:none;}
+    #micBtn svg{width:32px;height:32px;fill:#fff;}
     #micBtn.go{background:linear-gradient(180deg,#ffa05a,#ff8a3d);box-shadow:0 5px 0 var(--orange-d);}
-    #micState{font-family:"Baloo 2";font-weight:800;font-size:14.5px;color:var(--orange-d);min-height:22px;}
-    #skip{border:none;background:none;color:var(--label);font-weight:800;font-size:12px;cursor:pointer;padding:4px 6px;}
+    #micState{font-weight:800;font-size:14px;color:#fff;text-shadow:0 2px 0 var(--tsh);min-height:20px;}
+    #skip{border:none;background:none;color:rgba(255,255,255,.75);text-shadow:0 1.5px 0 var(--tsh);font-weight:800;font-size:12px;cursor:pointer;padding:4px 6px;}
+
+    /* reveal building blocks */
+    .slab{width:min(31vw,124px);height:min(15.5vw,62px);border-radius:12px;background:#b7c5d4;box-shadow:0 5px 0 rgba(40,80,120,.25);position:relative;}
+    .slab i{position:absolute;top:16%;bottom:16%;left:50%;width:4px;margin-left:-2px;background:repeating-linear-gradient(180deg,#fff 0 9px,transparent 9px 19px);opacity:.8;}
+    .ghostbox{background:rgba(255,255,255,.14)!important;border:2.5px dashed rgba(255,255,255,.75);box-shadow:none!important;}
+    .ghostbox i{display:none;}
+    .blockrow{border-radius:8px;box-shadow:inset 0 3px 0 rgba(255,255,255,.4);}
+    .keyrow{position:absolute;left:6.5%;right:6.5%;display:flex;gap:7px;}
+    .keyrow .key{flex:1;height:min(19vw,76px);border-radius:12px;background:linear-gradient(180deg,#ffe887,#ffc400);box-shadow:inset 0 3px 0 rgba(255,255,255,.5),0 5px 0 rgba(10,6,40,.5),0 0 18px rgba(255,210,28,.4);}
+    .keyrow .key.ghost{background:rgba(255,255,255,.14);border:2.5px dashed rgba(255,255,255,.75);box-shadow:none;}
 
     /* warm-card overlays */
     .ovl{position:fixed;inset:0;z-index:60;background:rgba(74,44,20,.45);display:none;align-items:center;justify-content:center;padding:24px;}
@@ -82,30 +108,31 @@
   </style>
 </head>
 <body>
-  <div id="app">
+    <div id="app">
+    <div id="decor"></div>
+    <div id="reveals"></div>
     <div id="top">
       <button id="close" aria-label="Close">✕</button>
-      <div id="roundLbl"></div>
       <div id="gamePanel" title="Ticket charge">
-        <svg width="20" height="16" viewBox="0 0 26 20"><path d="M2 4a2 2 0 0 1 2-2h18a2 2 0 0 1 2 2v3a3 3 0 0 0 0 6v3a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-3a3 3 0 0 0 0-6Z" fill="#ff8a3d"/><circle cx="9" cy="7" r="1.6" fill="#fff" opacity=".85"/><path d="M16 3v14" stroke="#ffe7d3" stroke-width="2" stroke-dasharray="2.5 3"/></svg>
+        <svg width="24" height="18" viewBox="0 0 64 64"><rect x="7" y="18" width="50" height="28" rx="7" fill="#ff8a3d"/><circle cx="7" cy="32" r="5" fill="#fff"/><circle cx="57" cy="32" r="5" fill="#fff"/><line x1="40" y1="21" x2="40" y2="43" stroke="#fff" stroke-width="2.5" stroke-dasharray="4 4" opacity=".85"/><path d="M24 24l2.2 5 5.4.6-4 3.6 1.2 5.3-4.8-2.8-4.8 2.8 1.2-5.3-4-3.6 5.4-.6Z" fill="#fff"/></svg>
         <div id="pips"></div>
       </div>
       <div id="sumLbl"></div>
     </div>
+    <div id="roundLbl"></div>
 
-    <div id="stage">
-      <div id="wordCard">
-        <div id="soundChip">R SOUND</div>
-        <div id="wordPic">✨</div>
-        <div id="prompt">…</div>
-        <div id="hint"></div>
+    <div id="titleWrap">
+      <div id="gameTitle"></div>
+      <div id="promptPill">
+        <svg viewBox="0 0 64 64"><ellipse cx="24" cy="17" rx="6.5" ry="15" fill="#f7f3ee" transform="rotate(-12 24 17)"/><ellipse cx="40" cy="17" rx="6.5" ry="15" fill="#f7f3ee" transform="rotate(12 40 17)"/><ellipse cx="24" cy="19" rx="3" ry="9" fill="#ffb9c8" transform="rotate(-12 24 19)"/><ellipse cx="40" cy="19" rx="3" ry="9" fill="#ffb9c8" transform="rotate(12 40 19)"/><circle cx="32" cy="41" r="17" fill="#f7f3ee"/><circle cx="26" cy="39" r="2.6" fill="#4a2c14"/><circle cx="38" cy="39" r="2.6" fill="#4a2c14"/><path d="M30 45h4l-2 3Z" fill="#ff8fa3"/></svg>
+        <b>Say <b id="prompt">…</b><span id="verb"></span></b>
       </div>
-      <div id="cueRow"></div>
-      <img id="mouth" alt="mouth position" />
-      <div id="leoRow">
-        <img id="leo" src="/coach/echo/echo-listening.svg" alt="Echo" onerror="this.outerHTML='<div id=leo style=font-size:52px>🦜</div>'" />
-        <div id="bubble"><div id="gpState">Say it to charge your ticket!</div></div>
-      </div>
+      <div id="soundChip">R SOUND</div>
+    </div>
+
+    <div id="leoRow">
+      <img id="leo" src="/coach/echo/echo-listening.svg" alt="Echo" onerror="this.outerHTML='<div id=leo style=font-size:52px>🦜</div>'" />
+      <div id="bubble"><div id="gpState">Say it to charge your ticket!</div></div>
     </div>
 
     <div id="bottom">
@@ -257,33 +284,175 @@
     }); }
     function sfx(n){ try{ if(S&&S.sfx&&S.sfx[n])S.sfx[n](); }catch(e){} }
 
-    // ---- UI ----
+    // ---- UI: the game's own loading scene. Saying the sound LOADS the game —
+    // each counted rep pops one more piece into the sky; the rest wait as
+    // white dashed ghosts. (Design handoff §3: there is no cream card screen.)
+    var FRUITS=[
+      '<svg viewBox="0 0 64 64"><path d="M5 25a27 27 0 0 0 54 0Z" fill="#58cc02"/><path d="M10 25a22 22 0 0 0 44 0Z" fill="#eefce2"/><path d="M14 25a18 18 0 0 0 36 0Z" fill="#ff5470"/><ellipse cx="26" cy="33" rx="2" ry="3" fill="#3d2317" transform="rotate(18 26 33)"/><ellipse cx="38" cy="33" rx="2" ry="3" fill="#3d2317" transform="rotate(-18 38 33)"/><ellipse cx="32" cy="39" rx="2" ry="3" fill="#3d2317"/></svg>',
+      '<svg viewBox="0 0 64 64"><path d="M32 15q0-7 7-9" stroke="#8a5a2a" stroke-width="3.5" fill="none" stroke-linecap="round"/><ellipse cx="25" cy="12" rx="7" ry="4" fill="#58cc02" transform="rotate(-20 25 12)"/><circle cx="22" cy="27" r="7.5" fill="#a86ee3"/><circle cx="42" cy="27" r="7.5" fill="#a86ee3"/><circle cx="32" cy="25" r="7.5" fill="#b985ea"/><circle cx="27" cy="37" r="7.5" fill="#a86ee3"/><circle cx="37" cy="37" r="7.5" fill="#b985ea"/><circle cx="32" cy="47" r="7.5" fill="#a86ee3"/><circle cx="29" cy="23" r="2.5" fill="#d9bcf5"/></svg>',
+      '<svg viewBox="0 0 64 64"><circle cx="32" cy="37" r="19" fill="#ff9d2e"/><circle cx="25" cy="30" r="4.5" fill="#ffc27a"/><circle cx="38" cy="42" r="1.4" fill="#e8801a"/><circle cx="28" cy="45" r="1.4" fill="#e8801a"/><ellipse cx="40" cy="15" rx="8" ry="4.5" fill="#58cc02" transform="rotate(18 40 15)"/><circle cx="32" cy="17" r="2.5" fill="#8a5a2a"/></svg>',
+      '<svg viewBox="0 0 64 64"><path d="M32 58C17 51 12 38 14 28c5-4 12-5 18-2 6-3 13-2 18 2 2 10-3 23-18 30Z" fill="#ff5470"/><path d="M32 58C17 51 12 38 14 28c5-4 12-5 18-2v32Z" fill="#ff6b8a"/><ellipse cx="32" cy="20" rx="9" ry="5" fill="#58cc02"/><circle cx="26" cy="36" r="1.5" fill="#ffe4a8"/><circle cx="36" cy="40" r="1.5" fill="#ffe4a8"/><circle cx="31" cy="47" r="1.5" fill="#ffe4a8"/></svg>',
+      '<svg viewBox="0 0 64 64"><ellipse cx="32" cy="36" rx="21" ry="15" fill="#ffd21c" transform="rotate(-16 32 36)"/><ellipse cx="24" cy="30" rx="5" ry="3.4" fill="#fff3b8" transform="rotate(-16 24 30)"/><ellipse cx="47" cy="26" rx="3" ry="2" fill="#8a5a2a" transform="rotate(-16 47 26)"/></svg>'
+    ];
+    var GHOSTS={
+      berry:'<svg viewBox="0 0 64 64"><path d="M32 58C17 51 12 38 14 28c5-4 12-5 18-2 6-3 13-2 18 2 2 10-3 23-18 30Z" fill="rgba(255,255,255,.16)" stroke="#fff" stroke-width="2.5" stroke-dasharray="5 5" opacity=".75"/></svg>',
+      lemon:'<svg viewBox="0 0 64 64"><ellipse cx="32" cy="38" rx="20" ry="14" fill="rgba(255,255,255,.16)" stroke="#fff" stroke-width="2.5" stroke-dasharray="5 5" opacity=".75" transform="rotate(-16 32 38)"/></svg>',
+      circle:'<svg viewBox="0 0 64 64"><circle cx="32" cy="36" r="19" fill="rgba(255,255,255,.16)" stroke="#fff" stroke-width="2.5" stroke-dasharray="5 5" opacity=".75"/></svg>'
+    };
+    var FOX='<svg viewBox="0 0 64 64"><path d="M12 40q-7 2-8 10 7 3 12-2Z" fill="#ff8a3d"/><circle cx="7" cy="49" r="3.5" fill="#fff"/><path d="M17 10l10 12-14 4Z" fill="#ff8a3d"/><path d="M47 10l-10 12 14 4Z" fill="#ff8a3d"/><path d="M20 15l6 8-9 2.5Z" fill="#e5672a"/><path d="M44 15l-6 8 9 2.5Z" fill="#e5672a"/><circle cx="32" cy="36" r="17" fill="#ff8a3d"/><ellipse cx="32" cy="44" rx="9" ry="7" fill="#fff"/><circle cx="25" cy="34" r="2.6" fill="#4a2c14"/><circle cx="39" cy="34" r="2.6" fill="#4a2c14"/><circle cx="32" cy="42" r="2.6" fill="#4a2c14"/></svg>';
+    var COIN='<svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="20" fill="#ffd21c"/><circle cx="32" cy="32" r="14.5" fill="none" stroke="#f0a800" stroke-width="3"/><path d="M32 24l2.6 5.9 6.4.7-4.8 4.3 1.5 6.3L32 37.9l-5.7 3.3 1.5-6.3-4.8-4.3 6.4-.7Z" fill="#f0a800"/><circle cx="24" cy="22" r="3" fill="#fff" opacity=".8"/></svg>',
+        SPARK='<svg viewBox="0 0 64 64"><path d="M32 8l6 18 18 6-18 6-6 18-6-18-18-6 18-6Z" fill="#ffe887"/></svg>',
+        NOTE='<svg viewBox="0 0 64 64"><ellipse cx="24" cy="46" rx="9" ry="7" fill="#fff" transform="rotate(-20 24 46)"/><rect x="30" y="14" width="4.5" height="32" rx="2" fill="#fff"/><path d="M34.5 14c8 2 12 7 10 14-1-4-5-7-10-8Z" fill="#fff"/></svg>',
+        BALLOON='<svg viewBox="0 0 100 130"><path d="M50 6C26 6 14 26 14 44c0 20 18 32 28 44h16c10-12 28-24 28-44C86 26 74 6 50 6Z" fill="#ff6b6b"/><path d="M50 6C40 6 33 26 33 44c0 20 8 32 12 44h10c4-12 12-24 12-44C67 26 60 6 50 6Z" fill="#fff4dd"/><path d="M50 6c-4 0-7 20-7 38 0 20 4 32 5.5 44h3c1.5-12 5.5-24 5.5-44C57 26 54 6 50 6Z" fill="#ffd43b"/><ellipse cx="34" cy="28" rx="8" ry="14" fill="#fff" opacity=".28" transform="rotate(-16 34 28)"/><line x1="42" y1="88" x2="40" y2="102" stroke="#a97044" stroke-width="2.5"/><line x1="58" y1="88" x2="60" y2="102" stroke="#a97044" stroke-width="2.5"/><path d="M43 88l4 6-6 1.5Z" fill="#ff8a3d"/><path d="M57 88l-4 6 6 1.5Z" fill="#ff8a3d"/><circle cx="50" cy="97" r="9" fill="#ff8a3d"/><ellipse cx="50" cy="101" rx="5" ry="4" fill="#fff"/><circle cx="46.5" cy="95.5" r="1.6" fill="#4a2c14"/><circle cx="53.5" cy="95.5" r="1.6" fill="#4a2c14"/><rect x="36" y="102" width="28" height="20" rx="6" fill="#b5875a"/><line x1="36" y1="109" x2="64" y2="109" stroke="#8f6a42" stroke-width="2.5"/></svg>',
+        BALLOON_GHOST='<svg viewBox="0 0 100 130"><path d="M50 6C26 6 14 26 14 44c0 20 18 32 28 44h16c10-12 28-24 28-44C86 26 74 6 50 6Z" fill="rgba(255,255,255,.12)" stroke="#fff" stroke-width="2.5" stroke-dasharray="6 6" opacity=".8"/><rect x="36" y="102" width="28" height="20" rx="6" fill="rgba(255,255,255,.12)" stroke="#fff" stroke-width="2.5" stroke-dasharray="6 6" opacity=".8"/></svg>';
+    // positions are % of the mock canvas (300×650) so they scale to any phone
+    function P(x,y,w,extra){ return 'position:absolute;left:'+(x/3)+'%;top:'+(y/6.5)+'%;width:'+(w/3)+'vw;max-width:'+(w*1.6)+'px;'+(extra||''); }
+    function PR(r,y,w,extra){ return 'position:absolute;right:'+(r/3)+'%;top:'+(y/6.5)+'%;width:'+(w/3)+'vw;max-width:'+(w*1.6)+'px;'+(extra||''); }
+    var BLOCKC=[["#85e099","#69db7c"],["#ffe066","#ffd43b"],["#ffb86b","#ffa94d"],["#ff8787","#ff6b6b"],["#b197fc","#9775fa"]];
+    var SCENES={
+      "arcade-slice.html":{cls:"g-slice",title:"FRUIT SLICE",verb:" to add fruit!",go:"and we slice!",
+        decor:'<i style="top:9%;right:10%;width:17vw;max-width:90px;aspect-ratio:1;border-radius:50%;background:#ffd21c;box-shadow:0 0 0 12px rgba(255,210,28,.18)"></i>'
+             +'<i style="top:16%;left:-6%;width:34vw;height:30px;border-radius:99px;background:rgba(255,255,255,.65)"></i>'
+             +'<i style="top:23%;right:-8%;width:40vw;height:34px;border-radius:99px;background:rgba(255,255,255,.45)"></i>'
+             +'<i style="bottom:calc(env(safe-area-inset-bottom) + 26px);left:4%;width:17vw;height:64px;border-radius:10px 10px 0 0;background:#79c4b7"></i>'
+             +'<i style="bottom:calc(env(safe-area-inset-bottom) + 26px);left:24%;width:20vw;height:88px;border-radius:12px 12px 0 0;background:#ffdf9e"></i>'
+             +'<i style="bottom:calc(env(safe-area-inset-bottom) + 26px);left:47%;width:18vw;height:56px;border-radius:10px 10px 0 0;background:#ff9d6e"></i>'
+             +'<i style="bottom:calc(env(safe-area-inset-bottom) + 26px);right:4%;width:22vw;height:76px;border-radius:12px 12px 0 0;background:#f2b56b"></i>'
+             +'<i style="bottom:0;left:0;right:0;height:calc(env(safe-area-inset-bottom) + 26px);background:#e8744a"></i>'
+             +'<i style="'+P(110,300,26).replace(/width:[^;]+;/,'width:26px;')+'aspect-ratio:1;filter:drop-shadow(0 0 8px rgba(255,210,28,.7))">'+SPARK+'</i>',
+        slots:[
+          {g:P(34,172,62,'transform:rotate(-12deg);aspect-ratio:1'),ghost:GHOSTS.circle,earn:FRUITS[0],sh:'filter:drop-shadow(0 5px 6px rgba(160,60,10,.25))'},
+          {g:PR(44,238,54,'transform:rotate(10deg);aspect-ratio:1'),ghost:GHOSTS.circle,earn:FRUITS[1],sh:'filter:drop-shadow(0 5px 6px rgba(160,60,10,.25))'},
+          {g:P(52,322,50,'transform:rotate(-8deg);aspect-ratio:1'),ghost:GHOSTS.circle,earn:FRUITS[2],sh:'filter:drop-shadow(0 5px 6px rgba(160,60,10,.25))'},
+          {g:P(142,196,46,'transform:rotate(8deg);aspect-ratio:1'),ghost:GHOSTS.berry,earn:FRUITS[3],sh:'filter:drop-shadow(0 5px 6px rgba(160,60,10,.25))'},
+          {g:PR(42,356,44,'transform:rotate(-6deg);aspect-ratio:1'),ghost:GHOSTS.lemon,earn:FRUITS[4],sh:'filter:drop-shadow(0 5px 6px rgba(160,60,10,.25))'}
+        ]},
+      "arcade-run.html":{cls:"g-run",title:"SOUND SPRINT",verb:" to build the road!",go:"and we run!",
+        decor:'<i style="top:9%;left:8%;width:16vw;max-width:84px;aspect-ratio:1;border-radius:50%;background:#ffd21c;box-shadow:0 0 0 12px rgba(255,210,28,.2)"></i>'
+             +'<i style="top:15%;right:-5%;width:33vw;height:28px;border-radius:99px;background:rgba(255,255,255,.85)"></i>'
+             +'<i style="top:11%;right:23%;width:23vw;height:22px;border-radius:99px;background:rgba(255,255,255,.65)"></i>'
+             +'<i style="top:23%;left:-10%;width:53vw;height:90px;border-radius:50%;background:#8fdc7a"></i>'
+             +'<i style="top:24.6%;right:-13%;width:63vw;height:100px;border-radius:50%;background:#6fcf62"></i>'
+             +'<i style="'+P(96,330,22).replace(/width:[^;]+;/,'width:24px;')+'aspect-ratio:1;filter:drop-shadow(0 3px 4px rgba(30,60,90,.25))">'+COIN+'</i>',
+        rider:{svg:FOX,w:58,dx:18,dy:-44},
+        slots:[
+          {g:PR(32,416,92,'height:min(11.8vw,50px)'),box:1},
+          {g:P(56,358,92,'height:min(11.8vw,50px)'),box:1},
+          {g:PR(48,300,92,'height:min(11.8vw,50px)'),box:1},
+          {g:P(68,242,92,'height:min(11.8vw,50px)'),box:1},
+          {g:PR(92,190,92,'height:min(11.8vw,50px)'),box:1}
+        ],boxCls:"slab"},
+      "arcade-stack.html":{cls:"g-stack",title:"BLOCK STACKER",verb:" to stack the blocks!",go:"and we stack!",
+        decor:(function(){ var s='<i style="top:9%;right:9%;width:16vw;max-width:84px;aspect-ratio:1;border-radius:50%;background:#fff4d6;box-shadow:0 0 0 12px rgba(255,244,214,.14)"></i>';
+             var st=[[13,38,3],[20,236,2.5],[26,84,2.5],[33,264,2.5],[38,44,2]];
+             for(var i2=0;i2<st.length;i2++){ s+='<i style="top:'+st[i2][0]+'%;left:'+(st[i2][1]/3)+'%;width:'+st[i2][2]+'px;height:'+st[i2][2]+'px;border-radius:50%;background:#fff;opacity:.7"></i>'; }
+             s+='<i style="bottom:calc(env(safe-area-inset-bottom) + 18px);left:3%;width:15vw;height:58px;border-radius:8px 8px 0 0;background:#221d4e"></i>'
+              +'<i style="bottom:calc(env(safe-area-inset-bottom) + 18px);left:20%;width:18vw;height:74px;border-radius:10px 10px 0 0;background:#2a2458"></i>'
+              +'<i style="bottom:calc(env(safe-area-inset-bottom) + 18px);right:21%;width:16vw;height:52px;border-radius:8px 8px 0 0;background:#221d4e"></i>'
+              +'<i style="bottom:calc(env(safe-area-inset-bottom) + 18px);right:3%;width:17vw;height:66px;border-radius:9px 9px 0 0;background:#2a2458"></i>'
+              +'<i style="bottom:0;left:0;right:0;height:calc(env(safe-area-inset-bottom) + 18px);background:#1b1740"></i>'
+              +'<i style="'+P(132,400,18).replace(/width:[^;]+;/,'width:18px;')+'aspect-ratio:1;opacity:.9">'+SPARK+'</i>';
+             return s; })(),
+        stackCol:1,
+        slots:[{w:128},{w:120},{w:112},{w:104},{w:96}]},
+      "arcade-tiles.html":{cls:"g-tiles",title:"PIANO TILES",verb:" to light the keys!",go:"and we play!",
+        decor:'<i style="top:-14%;left:50%;transform:translateX(-50%);width:140vw;height:320px;background:radial-gradient(ellipse,rgba(255,255,255,.10),transparent 65%)"></i>'
+             +'<i style="top:0;bottom:0;left:25%;width:1.5px;background:rgba(255,255,255,.07)"></i>'
+             +'<i style="top:0;bottom:0;left:50%;width:1.5px;background:rgba(255,255,255,.07)"></i>'
+             +'<i style="top:0;bottom:0;left:75%;width:1.5px;background:rgba(255,255,255,.07)"></i>'
+             +'<i style="'+P(30,196,26)+'aspect-ratio:1;opacity:.14">'+NOTE+'</i>'
+             +'<i style="'+PR(44,236,20)+'aspect-ratio:1;opacity:.12">'+NOTE+'</i>'
+             +'<i style="'+P(48,414,20)+'aspect-ratio:1;opacity:.12">'+NOTE+'</i>'
+             +'<i style="'+P(142,270,16).replace(/width:[^;]+;/,'width:16px;')+'aspect-ratio:1;opacity:.9">'+SPARK+'</i>',
+        keyRow:1,
+        slots:[{},{},{},{},{}]},
+      "arcade-glide.html":{cls:"g-glide",title:"FLAPPY GLIDE",verb:" to fill the balloon!",go:"and we fly!",
+        decor:'<i style="bottom:8%;left:50%;transform:translateX(-50%);width:50vw;max-width:240px;aspect-ratio:1;border-radius:50%;background:radial-gradient(circle,rgba(255,214,140,.9),rgba(255,214,140,0) 70%)"></i>'
+             +'<i style="top:14%;left:-6%;width:36vw;height:30px;border-radius:99px;background:rgba(255,255,255,.7)"></i>'
+             +'<i style="top:22%;right:-8%;width:43vw;height:34px;border-radius:99px;background:rgba(255,255,255,.55)"></i>'
+             +'<i style="top:50%;left:-8%;width:32vw;height:26px;border-radius:99px;background:rgba(255,255,255,.4)"></i>',
+        balloon:1,
+        slots:[{},{},{},{},{}]}
+    };
+    var SCENE=SCENES[GAME]||SCENES["arcade-slice.html"];
+    document.body.className=SCENE.cls;
+    $("gameTitle").textContent=SCENE.title;
+    $("verb").textContent=SCENE.verb;
+    $("decor").innerHTML=SCENE.decor||"";
+    // build the 5 reveal slots (one per rep)
+    (function(){
+      var R=$("reveals"), html="";
+      if(SCENE.stackCol){
+        html+='<div style="position:absolute;right:6%;bottom:calc(env(safe-area-inset-bottom) + 236px);display:flex;flex-direction:column-reverse;align-items:center" id="stackCol">';
+        for(var i3=0;i3<5;i3++){ var w=SCENE.slots[i3].w;
+          html+='<div class="slot blockrow" data-slot="'+i3+'" style="width:min('+(w/3)+'vw,'+(w*1.3)+'px);height:min(8.6vw,34px);margin-top:-1px"></div>'; }
+        html+='<div id="dropGuide" style="height:64px;border-left:2.5px dashed rgba(255,255,255,.4)"></div></div>';
+      } else if(SCENE.keyRow){
+        html+='<div class="keyrow" style="top:45%">';
+        for(var i4=0;i4<5;i4++) html+='<div class="slot key ghost" data-slot="'+i4+'"></div>';
+        html+='</div>';
+      } else if(SCENE.balloon){
+        html+='<div style="position:absolute;left:50%;top:29%;transform:translateX(-50%);width:min(44vw,190px);aspect-ratio:100/130">'
+            +'<div style="position:absolute;inset:0">'+BALLOON_GHOST+'</div>'
+            +'<div class="slot" data-slot="0" id="balloonEl" style="position:absolute;bottom:2%;left:50%;transform:translateX(-50%);width:34%;transition:width .45s cubic-bezier(.2,1.4,.4,1)">'+BALLOON+'</div>'
+            +'</div>';
+      } else {
+        for(var i5=0;i5<5;i5++){ var sl=SCENE.slots[i5];
+          if(sl.box) html+='<div class="slot '+(SCENE.boxCls||"")+' ghostbox" data-slot="'+i5+'" style="'+sl.g+'"><i></i></div>';
+          else html+='<div class="slot" data-slot="'+i5+'" style="'+sl.g+'">'+sl.ghost+'</div>';
+        }
+        if(SCENE.rider) html+='<div id="rider" style="position:absolute;width:'+(SCENE.rider.w/3)+'vw;max-width:'+(SCENE.rider.w*1.5)+'px;aspect-ratio:1;display:none;filter:drop-shadow(0 5px 6px rgba(30,60,90,.3));transition:left .4s,right .4s,top .4s">'+SCENE.rider.svg+'</div>';
+      }
+      R.innerHTML=html;
+    })();
+    function reveal(n){
+      var i,el;
+      if(SCENE.balloon){ el=$("balloonEl"); if(el) el.style.width=(34+n*13.2)+"%"; return; }
+      for(i=0;i<5;i++){
+        el=document.querySelector('[data-slot="'+i+'"]'); if(!el) continue;
+        var on=i<n, was=el._on;
+        if(SCENE.stackCol){
+          if(on){ var c=BLOCKC[i]; el.style.background="linear-gradient(180deg,"+c[0]+","+c[1]+")"; el.classList.remove("ghostbox"); }
+          else { el.style.background=""; el.classList.add("ghostbox"); }
+        } else if(SCENE.keyRow){ el.classList.toggle("ghost",!on); }
+        else if(SCENE.slots[i].box){ el.classList.toggle("ghostbox",!on); }
+        else { el.innerHTML=on?('<div style="'+(SCENE.slots[i].sh||'')+'">'+SCENE.slots[i].earn+'</div>'):SCENE.slots[i].ghost; }
+        if(on&&!was){ el.classList.remove("pop"); void el.offsetWidth; el.classList.add("pop"); }
+        el._on=on;
+      }
+      // the fox hops onto the newest road slab
+      if(SCENE.rider){ var rd=$("rider");
+        if(rd){ var host=n>0?document.querySelector('[data-slot="'+(n-1)+'"]'):null;
+          if(host){ rd.style.display="block";
+            rd.style.left=(host.offsetLeft+host.offsetWidth*0.28)+"px";
+            rd.style.top=(host.offsetTop-rd.offsetHeight*0.72)+"px";
+          } else rd.style.display="none"; } }
+    }
     $("soundChip").textContent=((S&&S.soundLabel)?S.soundLabel(SOUND):SOUND)+" SOUND"+((useRung>0&&S&&S.rungLabel)?(" · "+String(S.rungLabel(useRung)).toUpperCase()):"");
-    // the word card — repainted on every syllable flip
+    // the prompt pill — repainted on every syllable flip
     function paintCard(){
-      $("prompt").textContent=ITEM.display||ITEM.t;
-      // illustration: the word picture when we have one; Echo's star for bare sounds
-      var pic=$("wordPic");
-      if(ITEM.level==="isolation"||ITEM.level==="syllable"){ pic.innerHTML='<img src="/coach/echo/echo-star.svg" alt=""/>'; }
-      else { var w=String(ITEM.word||ITEM.t).toLowerCase();
-        try{ pic.innerHTML=(S&&S.pic)?S.pic(w,ITEM.e||"✨",118):(ITEM.e||"✨"); }catch(e){ pic.textContent=ITEM.e||"✨"; } }
-      // phonetic hint: "Rrrr—abbit" when the word starts with the sound
-      var h=$("hint");
-      if(ITEM.level==="isolation"){ h.textContent="Nice and long — you got this!"; }
-      else if(ITEM.level==="syllable"){ h.textContent="One after another — you got this!"; }
-      else { var wd=String(ITEM.display||ITEM.t), sust=(S&&S.soundSay)?S.soundSay(SOUND):SOUND.toLowerCase();
-        if(wd && wd[0].toUpperCase()===SOUND[0]) h.innerHTML="<b>"+sust.charAt(0).toUpperCase()+sust.slice(1)+"</b>—"+wd.slice(1).toLowerCase();
-        else h.innerHTML="Say it with your <b>"+((S&&S.soundLabel)?S.soundLabel(SOUND):SOUND)+"</b> sound!"; }
+      $("prompt").textContent = ITEM.level==="isolation" ? ("your "+((S&&S.soundLabel)?S.soundLabel(SOUND):SOUND)+" sound") : (ITEM.display||ITEM.t);
     }
     paintCard();
+    // Echo's bubble bridges the sound into the target: "Rrr—abbit! 2 more and we slice!"
+    function bridge(){
+      var sust=(S&&S.soundSay)?S.soundSay(SOUND):SOUND.toLowerCase(), cap=function(s){return s.charAt(0).toUpperCase()+s.slice(1);};
+      if(ITEM.level==="isolation") return cap(sust)+"!";
+      var wd=String(ITEM.display||ITEM.t);
+      if(ITEM.level!=="syllable" && wd && wd[0].toUpperCase()===SOUND[0]) return cap(sust)+"—"+wd.slice(1).toLowerCase()+"!";
+      return cap(wd)+"!";
+    }
     var pipsEl=$("pips"); for(var i=0;i<NEED;i++){ var p=document.createElement("div"); p.className="pip"; pipsEl.appendChild(p); }
     function paintReps(n){
       var k=pipsEl.children; for(var i=0;i<k.length;i++) k[i].className="pip"+(i<n?" on":"");
+      try{ reveal(n); }catch(e){}
       var left=NEED-n;
-      $("gpState").textContent = left<=0 ? (GMETA.n+" is ready! 🎉")
-        : (n===0 ? "Say it "+(NUMWORD[NEED]||NEED)+" times and "+GMETA.n+" unlocks!"
-                 : left+" more and "+GMETA.n+" unlocks!");
+      $("gpState").innerHTML = left<=0 ? "Here we go!"
+        : (n===0 ? "Say it <b>"+(NUMWORD[NEED]||NEED)+" times</b> "+SCENE.go
+                 : bridge()+" "+(left===1?"<b>Just 1 more!</b>":"<b>"+left+" more</b> "+SCENE.go));
     }
+    paintReps(0);
+    window.__paintReps=paintReps; // headless-test hook
 
     try{ var _g=S&&S.getProgress?S.getProgress():null; $("sumLbl").innerHTML='<svg width="15" height="15" viewBox="0 0 24 24"><path d="M12 2l2.9 6.2 6.6.8-4.9 4.6 1.3 6.6L12 16.9 6.1 20.2l1.3-6.6L2.5 9l6.6-.8Z" fill="#ffd21c" stroke="#f0a800" stroke-width="1.2"/></svg> '+((_g&&_g.totals&&_g.totals.stars)||0); }catch(e){}
     if(isDaily&&run&&run.active){ $("roundLbl").textContent="Round "+Math.min(run.round+1,DAILY_SEQ.length)+" of "+DAILY_SEQ.length+" · 🏆 "+run.sum; }
@@ -359,7 +528,7 @@
     function logV(v){ if(v!=="unknown" && S && S.logAttempt) S.logAttempt({game:"charge",sound:SOUND,pass:v==="pass",word:((ROTATE&&SAID.length)?SAID.join(" "):String(ITEM.word||ITEM.t)).toLowerCase()}); }
     async function burstAndVerify(n){
       var save=NEED; if(n)NEED=n;
-      micGo(true, n?"GO!":("GO — say it "+(NUMWORD[NEED]||NEED)+" times!"));
+      micGo(true,"I'm listening…");
       await startEngine();
       NEED=save;
       micGo(false,""); $("gpState").textContent="Checking…";
@@ -386,8 +555,7 @@
         // mouth on screen), then re-try. Two honest fails still open the game
         // (a kid is never hard-stuck) but the stats keep the truth.
         var c=(S&&S.cue)?S.cue(SOUND):null;
-        if(c&&c.tip)$("cueRow").textContent=c.tip;
-        $("gpState").textContent="Almost!";
+        $("gpState").textContent=(c&&c.tip)?("Almost! "+c.tip):"Almost!";
         // spoken coaching drops the "— rrr!" demo (screen keeps the full tip):
         // TTS never performs the sound, it only describes the mouth move
         var tip=(c&&c.tip?c.tip.split("—")[0]:"").trim().replace(/[.!,]+$/,"")||("Let's try our "+soundName()+" sound again");
@@ -403,7 +571,7 @@
     function launchGame(){
       if(launched)return; launched=true;
       stopMic();
-      paintReps(NEED); $("gamePanel").classList.add("ready"); $("gpState").textContent="Blast off! 🚀";
+      paintReps(NEED); $("gamePanel").classList.add("ready");
       sfx("complete"); try{ if(S&&S.confetti)S.confetti(); }catch(e){}
       try{ sessionStorage.setItem("sona.play.token","1"); sessionStorage.setItem("sona.boost.sound",SOUND); }catch(e){}
       if(isDaily&&run){ run.pending=true; runSave(run); }
