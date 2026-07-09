@@ -48,9 +48,9 @@
     <canvas id="cv"></canvas>
     <div id="top">
       <button id="close">✕</button>
-      <div id="score" class="hudpill">🎹 0</div>
+      <div class="hudpill"><svg viewBox="0 0 64 64" style="width:19px;height:19px;vertical-align:-4px"><rect x="8" y="14" width="48" height="36" rx="6" fill="#fff" stroke="#d8cfec" stroke-width="2"/><line x1="20" y1="14" x2="20" y2="50" stroke="#d8cfec" stroke-width="2.5"/><line x1="32" y1="14" x2="32" y2="50" stroke="#d8cfec" stroke-width="2.5"/><line x1="44" y1="14" x2="44" y2="50" stroke="#d8cfec" stroke-width="2.5"/><rect x="16" y="14" width="8" height="19" rx="2" fill="#2f2266"/><rect x="40" y="14" width="8" height="19" rx="2" fill="#2f2266"/></svg> <b id="score">0</b></div>
       <div id="hudspacer"></div>
-      <div id="timer" class="hudpill">❤️ 3</div>
+      <div id="timer" class="hudpill"></div>
     </div>
     <div id="flash"></div>
     <div id="boostChip"></div>
@@ -61,7 +61,7 @@
       <img class="ovlEcho" src="/coach/echo/echo-star.svg" alt="" />
       <h2 id="needTitle">This game needs a ticket!</h2>
       <p>Say your sound 5 times to charge it up</p>
-      <button class="btn" id="goCharge">⚡ Charge up</button>
+      <button class="btn" id="goCharge"><svg viewBox="0 0 64 64" style="width:18px;height:18px;vertical-align:-3px"><path d="M36 4 14 36h13l-5 24 24-34H33Z" fill="#ffd21c" stroke="#f0a800" stroke-width="2.5" stroke-linejoin="round"/><circle cx="30" cy="15" r="2.5" fill="#fff" opacity=".9"/></svg> Charge up</button>
       <button class="btn ghost" id="needHome">Back home</button>
     </div>
   </div>
@@ -70,7 +70,7 @@
     <div class="ovlCard">
       <img class="ovlEcho" src="/coach/echo/echo-listening.svg" alt="" />
       <h2 id="revTitle">Say it!</h2>
-      <p id="revHearts" style="font-size:26px;">❤️❤️❤️</p>
+      <p id="revHearts" style="font-size:26px;"></p>
       <p>Say your sound for a new life!</p>
       <div style="width:56px;height:56px;border-radius:50%;background:linear-gradient(180deg,#ffa05a,#ff8a3d);box-shadow:0 4px 0 #ef6f23,0 0 0 10px rgba(255,138,61,.14);display:flex;align-items:center;justify-content:center;margin:2px 0;"><svg viewBox="0 0 24 24" style="width:24px;height:24px;fill:#fff"><path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v5a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z"/></svg></div>
       <p style="font-size:13px;">I'm listening…</p>
@@ -81,10 +81,10 @@
   <div class="ovl" id="endOvl">
     <div class="ovlCard">
       <img class="ovlEcho" src="/coach/echo/echo-celebrate.svg" alt="" />
-      <div class="big" id="endEmoji">🎉</div>
+      <div class="big" id="endEmoji"><svg viewBox="0 0 64 64" style="width:56px;height:56px"><path d="M32 5l8.2 18.6L60 25.8 44.9 39.2 49.8 59 32 48.4 14.2 59l4.9-19.8L4 25.8l19.8-2.2Z" fill="#ffd21c"/><circle cx="25" cy="21" r="3" fill="#fff" opacity=".85"/></svg></div>
       <h2 id="endTitle">Great round!</h2>
       <p id="endSub"></p>
-      <button class="btn blue" id="endCharge">⚡ Play again</button>
+      <button class="btn blue" id="endCharge"><svg viewBox="0 0 64 64" style="width:18px;height:18px;vertical-align:-3px"><path d="M36 4 14 36h13l-5 24 24-34H33Z" fill="#ffd21c" stroke="#f0a800" stroke-width="2.5" stroke-linejoin="round"/><circle cx="30" cy="15" r="2.5" fill="#fff" opacity=".9"/></svg> Play again</button>
       <button class="btn" id="endAgain" style="display:none;"></button>
       <button class="btn ghost" id="endHome">Back to the house</button>
     </div>
@@ -131,13 +131,13 @@
     var BESTK="sona.best.tiles", BEST=0; try{ BEST=parseInt(localStorage.getItem(BESTK)||"0",10)||0; }catch(e){}
     // ── lives: a crash → say your sound for a new life (3 per run) ──
     var REV=3, reviveWait=false, MIC=false;
-    function hearts(){ $("timer").textContent="❤️ "+REV; }
+    function hearts(){ $("timer").innerHTML=(window.Sona&&Sona.heartRow)?Sona.heartRow(REV,3,17):String(REV); }
     function crash(){
       if(!playing) return;
       playing=false; tiles=[]; sfx("tap");
       if(REV>0 && MIC){
         $("revTitle").textContent="Say \u201C"+SAYTXT+"\u201D!";
-        $("revHearts").textContent=Array(REV+1).join("\u2764\uFE0F");
+        $("revHearts").innerHTML=(window.Sona&&Sona.heartRow)?Sona.heartRow(REV,3,28):String(REV);
         reviveWait=true; $("revOvl").classList.add("show");
       } else { endRound(); }
     }
@@ -177,8 +177,8 @@
       if(best){
         best.hit=true; comboN++;
         var pts=(best.gold||boost.on)?2:1; score+=pts;
-        $("score").textContent="🎹 "+score;
-        tone(best.note,0.5,0.24); if(comboN%8===0){ flash(comboN+" NOTE STREAK! 🎵"); }
+        $("score").textContent=score;
+        tone(best.note,0.5,0.24); if(comboN%8===0){ flash(comboN+" NOTE STREAK!"); }
       } else {
         comboN=0; shakeT=performance.now(); tone(130.8,0.18,0.06); // soft low thud, never a death
       }
@@ -220,11 +220,12 @@
         ctx.fillStyle=t.hit?"#fff":(t.gold?"#ffd21c":LCOL[t.lane]);
         rr(x,t.y,w,t.h,14); ctx.fill();
         ctx.fillStyle="rgba(255,255,255,.25)"; rr(x,t.y,w,10,6); ctx.fill();
-        if(t.gold&&!t.hit){ ctx.fillStyle="#000"; ctx.font="26px sans-serif"; ctx.textAlign="center"; ctx.fillText("⭐",x+w/2,t.y+t.h/2+8); } // opaque paint — translucent fillStyle ghosts color glyphs
+        if(t.gold&&!t.hit){ starPath(ctx,x+w/2,t.y+t.h/2+1,12); ctx.fillStyle="#b57e00"; ctx.fill(); }
         else if(!t.hit){ ctx.fillStyle="rgba(255,255,255,.9)"; ctx.font="800 24px 'Baloo 2',sans-serif"; ctx.textAlign="center"; ctx.fillText("♪",x+w/2,t.y+t.h/2+9); }
       }
       requestAnimationFrame(draw);
     }
+    function starPath(c,cx,cy,r){ c.beginPath(); for(var k=0;k<10;k++){ var an=-Math.PI/2+k*Math.PI/5, rr2=k%2?r*0.45:r; c[k?"lineTo":"moveTo"](cx+Math.cos(an)*rr2, cy+Math.sin(an)*rr2); } c.closePath(); }
     function rr(x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
     draw();
 
@@ -232,13 +233,13 @@
     // Optional; pure local loudness detection, nothing recorded or uploaded.
     function fireBoost(){
       boost.on=true; boost.cool=true;
-      var ch=$("boostChip"); ch.textContent="GOLDEN KEYS!! ⭐"; ch.classList.add("hot");
-      sfx("complete"); flash("⭐ GOLDEN KEYS! 2× ⭐");
+      var ch=$("boostChip"); ch.textContent="GOLDEN KEYS!!"; ch.classList.add("hot");
+      sfx("complete"); flash("GOLDEN KEYS! 2×");
       setTimeout(function(){ boost.on=false; ch.classList.remove("hot"); ch.textContent="…"; },3000);
       setTimeout(function(){ boost.cool=false; paintChip(); },9000);
     }
     var SAYTXT="";
-    function paintChip(){ $("boostChip").textContent="🎙 Say “"+SAYTXT+"” for GOLDEN KEYS!"; }
+    function paintChip(){ $("boostChip").innerHTML=((window.Sona&&Sona.icon)?Sona.icon("mic",17)+" ":"")+"Say “"+SAYTXT+"” for GOLDEN KEYS!"; }
     (function(){
       var snd=""; try{ snd=sessionStorage.getItem("sona.boost.sound")||""; }catch(e){}
       if(!snd){ try{ snd=((S&&S.getProfile&&S.getProfile().focusSounds)||["R"])[0]; }catch(e){ snd="R"; } }
@@ -273,15 +274,15 @@
       try{ if(coins&&S&&S.addCoins)S.addCoins(coins); }catch(e){}
       sfx("complete"); try{ if(S&&S.confetti)S.confetti(); }catch(e){}
       if(isDaily){
-        $("endTitle").textContent="+"+score+" points! 🏆";
+        $("endTitle").textContent="+"+score+" points!";
         $("endSub").textContent="Banking your score…";
         $("endCharge").style.display="none"; $("endAgain").style.display="none"; $("endHome").style.display="none";
         $("endOvl").classList.add("show");
         setTimeout(bankAndContinue,1400);
         return;
       }
-      $("endTitle").textContent=score>=30?"Piano star! 🌟":"Beautiful music!";
-      $("endSub").textContent="You played "+score+" notes"+(coins?(" · +"+coins+" 🪙"):"")+"!";
+      $("endTitle").textContent=score>=30?"Piano star!":"Beautiful music!";
+      $("endSub").textContent="You played "+score+" notes"+(coins?(" · +"+coins+" coins"):"")+"!";
       $("endOvl").classList.add("show");
     }
     $("endCharge").onclick=backToCharge;

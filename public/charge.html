@@ -152,7 +152,7 @@
       <img class="ovlEcho" src="/coach/echo/echo-celebrate.svg" alt="" />
       <h2>You already played today!</h2>
       <p id="playedSub"></p>
-      <button class="btn blue" id="playedArcade">🎮 Free play</button>
+      <button class="btn blue" id="playedArcade">Free play</button>
       <button class="btn ghost" id="playedHome">Back home</button>
     </div>
   </div>
@@ -161,7 +161,7 @@
   <div class="ovl" id="runOvl">
     <div class="ovlCard">
       <img class="ovlEcho" src="/coach/echo/echo-celebrate.svg" alt="" />
-      <div class="big" id="runEmoji">🏆</div>
+      <div class="big" id="runEmoji"><svg viewBox="0 0 64 64" style="width:56px;height:56px"><path d="M32 5l8.2 18.6L60 25.8 44.9 39.2 49.8 59 32 48.4 14.2 59l4.9-19.8L4 25.8l19.8-2.2Z" fill="#ffd21c"/><circle cx="25" cy="21" r="3" fill="#fff" opacity=".85"/></svg></div>
       <h2 id="runTitle">You did it!</h2>
       <div id="runScore">0</div>
       <div id="runBest"></div>
@@ -455,7 +455,7 @@
     window.__paintReps=paintReps; // headless-test hook
 
     try{ var _g=S&&S.getProgress?S.getProgress():null; $("sumLbl").innerHTML='<svg width="15" height="15" viewBox="0 0 24 24"><path d="M12 2l2.9 6.2 6.6.8-4.9 4.6 1.3 6.6L12 16.9 6.1 20.2l1.3-6.6L2.5 9l6.6-.8Z" fill="#ffd21c" stroke="#f0a800" stroke-width="1.2"/></svg> '+((_g&&_g.totals&&_g.totals.stars)||0); }catch(e){}
-    if(isDaily&&run&&run.active){ $("roundLbl").textContent="Round "+Math.min(run.round+1,DAILY_SEQ.length)+" of "+DAILY_SEQ.length+" · 🏆 "+run.sum; }
+    if(isDaily&&run&&run.active){ $("roundLbl").innerHTML="Round "+Math.min(run.round+1,DAILY_SEQ.length)+" of "+DAILY_SEQ.length+" · "+((window.Sona&&Sona.icon)?Sona.icon("coin",13):"")+" "+run.sum; }
     function micGo(on,txt){ var m=$("micBtn"); m.className=on?"go":""; $("micState").textContent=txt||""; }
 
     // ---- rapid-fire rep engine: continuous VAD, every voiced burst = a rep.
@@ -592,8 +592,8 @@
       try{ if(S.recordSession)S.recordSession({words:[]}); if(S.markLevelDone)S.markLevelDone(LEVEL); if(S.addCoins)S.addCoins(10+Math.min(20,(run.sum/10)|0)); }catch(e){}
       run.active=false; runSave(run);
       $("runScore").textContent=r.score;
-      $("runBest").textContent=r.newBest?"🎉 NEW BEST!":("Best ever: "+r.best);
-      $("runEmoji").textContent=r.newBest?"👑":"🏆";
+      $("runBest").textContent=r.newBest?"NEW BEST!":("Best ever: "+r.best);
+      $("runEmoji").innerHTML=(window.Sona&&Sona.icon)?Sona.icon("star",56):"";
       $("runTitle").textContent=r.newBest?"NEW HIGH SCORE!":"You did it!";
       $("runOvl").classList.add("show");
       sfx("complete"); try{ if(S.confetti)S.confetti(); }catch(e){}

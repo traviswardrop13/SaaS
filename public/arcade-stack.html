@@ -49,7 +49,7 @@
     <canvas id="cv"></canvas>
     <div id="top">
       <button id="close">✕</button>
-      <div id="score" class="hudpill">🧱 0</div>
+      <div class="hudpill"><svg viewBox="0 0 64 64" style="width:19px;height:19px;vertical-align:-4px"><rect x="8" y="19" width="48" height="27" rx="7" fill="#69db7c"/><rect x="8" y="19" width="48" height="9" rx="4.5" fill="#85e099"/><circle cx="18" cy="26" r="2.5" fill="#fff" opacity=".85"/></svg> <b id="score">0</b></div>
       <div id="hudspacer"></div>
       <div id="best" class="hudpill" style="font-size:13px;color:#b08d63;"></div>
     </div>
@@ -63,7 +63,7 @@
       <img class="ovlEcho" src="/coach/echo/echo-star.svg" alt="" />
       <h2 id="needTitle">This game needs a ticket!</h2>
       <p>Say your sound 5 times to charge it up</p>
-      <button class="btn" id="goCharge">⚡ Charge up</button>
+      <button class="btn" id="goCharge"><svg viewBox="0 0 64 64" style="width:18px;height:18px;vertical-align:-3px"><path d="M36 4 14 36h13l-5 24 24-34H33Z" fill="#ffd21c" stroke="#f0a800" stroke-width="2.5" stroke-linejoin="round"/><circle cx="30" cy="15" r="2.5" fill="#fff" opacity=".9"/></svg> Charge up</button>
       <button class="btn ghost" id="needHome">Back home</button>
     </div>
   </div>
@@ -72,7 +72,7 @@
     <div class="ovlCard">
       <img class="ovlEcho" src="/coach/echo/echo-listening.svg" alt="" />
       <h2 id="revTitle">Say it!</h2>
-      <p id="revHearts" style="font-size:26px;">❤️❤️❤️</p>
+      <p id="revHearts" style="font-size:26px;"></p>
       <p>Say your sound for a new life!</p>
       <div style="width:56px;height:56px;border-radius:50%;background:linear-gradient(180deg,#ffa05a,#ff8a3d);box-shadow:0 4px 0 #ef6f23,0 0 0 10px rgba(255,138,61,.14);display:flex;align-items:center;justify-content:center;margin:2px 0;"><svg viewBox="0 0 24 24" style="width:24px;height:24px;fill:#fff"><path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v5a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z"/></svg></div>
       <p style="font-size:13px;">I'm listening…</p>
@@ -83,10 +83,10 @@
   <div class="ovl" id="endOvl">
     <div class="ovlCard">
       <img class="ovlEcho" src="/coach/echo/echo-celebrate.svg" alt="" />
-      <div class="big" id="endEmoji">🎉</div>
+      <div class="big" id="endEmoji"><svg viewBox="0 0 64 64" style="width:56px;height:56px"><path d="M32 5l8.2 18.6L60 25.8 44.9 39.2 49.8 59 32 48.4 14.2 59l4.9-19.8L4 25.8l19.8-2.2Z" fill="#ffd21c"/><circle cx="25" cy="21" r="3" fill="#fff" opacity=".85"/></svg></div>
       <h2 id="endTitle">Great round!</h2>
       <p id="endSub"></p>
-      <button class="btn blue" id="endCharge">⚡ Play again</button>
+      <button class="btn blue" id="endCharge"><svg viewBox="0 0 64 64" style="width:18px;height:18px;vertical-align:-3px"><path d="M36 4 14 36h13l-5 24 24-34H33Z" fill="#ffd21c" stroke="#f0a800" stroke-width="2.5" stroke-linejoin="round"/><circle cx="30" cy="15" r="2.5" fill="#fff" opacity=".9"/></svg> Play again</button>
       <button class="btn" id="endAgain" style="display:none;"></button>
       <button class="btn ghost" id="endHome">Back to the house</button>
     </div>
@@ -124,13 +124,13 @@
     var playing=true, dropping=false, camY=0, score=0, perfectRun=0;
     // ── lives: a crash → say your sound for a new life (3 per run) ──
     var REV=3, reviveWait=false, MIC=false;
-    function hearts(){ $("best").textContent="❤️ "+REV+(best?"  ·  Best: "+best:""); }
+    function hearts(){ $("best").innerHTML=((window.Sona&&Sona.heartRow)?Sona.heartRow(REV,3,17):String(REV))+(best?' <b style="vertical-align:middle"> · Best '+best+"</b>":""); }
     function crash(){
       if(!playing) return;
       playing=false;  sfx("tap");
       if(REV>0 && MIC){
         $("revTitle").textContent="Say \u201C"+SAYTXT+"\u201D!";
-        $("revHearts").textContent=Array(REV+1).join("\u2764\uFE0F");
+        $("revHearts").innerHTML=(window.Sona&&Sona.heartRow)?Sona.heartRow(REV,3,28):String(REV);
         reviveWait=true; $("revOvl").classList.add("show");
       } else { endRound(); }
     }
@@ -155,11 +155,11 @@
         dropping=false; crash(); return;
       }
       var perfect=Math.abs(cur.x-top.x)<7;
-      if(perfect){ overlap=top.w; left=top.x; perfectRun++; flash("PERFECT! ✨"); sfx("correct");
-        if(perfectRun>=2&&overlap<baseW){ overlap=Math.min(baseW,overlap+12); flash("PERFECT! +GROW ✨"); } }
+      if(perfect){ overlap=top.w; left=top.x; perfectRun++; flash("PERFECT!"); sfx("correct");
+        if(perfectRun>=2&&overlap<baseW){ overlap=Math.min(baseW,overlap+12); flash("PERFECT! +GROW"); } }
       else { perfectRun=0; sfx("tap"); }
       stack.push({x:left,w:overlap,c:cur.c});
-      score++; $("score").textContent="🧱 "+score;
+      score++; $("score").textContent=score;
       endBoost(); // slow-mo is for one drop
       // next block
       cur={x:-overlap*0.6, w:overlap, dir:1, c:COLORS[stack.length%COLORS.length]};
@@ -174,14 +174,14 @@
     var boost={on:false,cool:false};
     function fireBoost(){
       boost.on=true; boost.cool=true;
-      var ch=$("boostChip"); ch.textContent="SLOW-MO! 🐌✨"; ch.classList.add("hot");
-      sfx("correct"); flash("SLOW-MO! 🐌");
+      var ch=$("boostChip"); ch.textContent="SLOW-MO!"; ch.classList.add("hot");
+      sfx("correct"); flash("SLOW-MO!");
       setTimeout(function(){ endBoost(); },4000); // safety end if they never drop
       setTimeout(function(){ boost.cool=false; if(!boost.on)paintChip(); },8000);
     }
     function endBoost(){ if(!boost.on)return; boost.on=false; var ch=$("boostChip"); ch.classList.remove("hot"); if(!boost.cool)paintChip(); else ch.textContent="…"; }
     var SAYTXT="";
-    function paintChip(){ $("boostChip").textContent="🎙 Say “"+SAYTXT+"” for SLOW-MO!"; }
+    function paintChip(){ $("boostChip").innerHTML=((window.Sona&&Sona.icon)?Sona.icon("mic",17)+" ":"")+"Say “"+SAYTXT+"” for SLOW-MO!"; }
     (function(){
       var snd=""; try{ snd=sessionStorage.getItem("sona.boost.sound")||""; }catch(e){}
       if(!snd){ try{ snd=((S&&S.getProfile&&S.getProfile().focusSounds)||["R"])[0]; }catch(e){ snd="R"; } }
@@ -247,21 +247,21 @@
       playing=false; reviveWait=false;
       var coins=Math.min(10,(score/3)|0);
       try{ if(coins&&S&&S.addCoins)S.addCoins(coins); }catch(e){}
-      if(score>best){ best=score; try{ localStorage.setItem(BKEY,String(best)); }catch(e){} flash("NEW BEST! 🏆"); }
+      if(score>best){ best=score; try{ localStorage.setItem(BKEY,String(best)); }catch(e){} flash("NEW BEST!"); }
       sfx("complete"); try{ if(S&&S.confetti)S.confetti(); }catch(e){}
       if(isDaily){
         // Daily Run: bank the score and keep the run moving — no buttons, no stall.
-        $("endTitle").textContent="+"+score+" points! 🏆";
+        $("endTitle").textContent="+"+score+" points!";
         $("endSub").textContent="Banking your score…";
         $("endCharge").style.display="none"; $("endAgain").style.display="none"; $("endHome").style.display="none";
         setTimeout(function(){ $("endOvl").classList.add("show"); },350);
         setTimeout(bankAndContinue,1500);
         return;
       }
-      $("endTitle").textContent=score>=14?"Sky-high tower! 🏆":"Nice tower!";
-      $("endSub").textContent="You stacked "+score+" blocks"+(coins?(" · +"+coins+" 🪙"):"")+(best?(" · Best: "+best):"")+"!";
+      $("endTitle").textContent=score>=14?"Sky-high tower!":"Nice tower!";
+      $("endSub").textContent="You stacked "+score+" blocks"+(coins?(" · +"+coins+" coins"):"")+(best?(" · Best: "+best):"")+"!";
       $("endAgain").style.display="none";
-      $("endCharge").textContent="⚡ Play again";
+      $("endCharge").innerHTML='<svg viewBox="0 0 64 64" style="width:18px;height:18px;vertical-align:-3px"><path d="M36 4 14 36h13l-5 24 24-34H33Z" fill="#ffd21c" stroke="#f0a800" stroke-width="2.5" stroke-linejoin="round"/><circle cx="30" cy="15" r="2.5" fill="#fff" opacity=".9"/></svg> Play again';
       setTimeout(function(){ $("endOvl").classList.add("show"); },450);
     }
     $("endCharge").onclick=backToCharge;

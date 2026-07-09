@@ -82,7 +82,7 @@
         <div id="subLine"></div>
       </div>
       <div id="hdrBtns">
-        <button id="libBtn" aria-label="Book library">📚</button>
+        <button id="libBtn" aria-label="Book library"><svg viewBox="0 0 64 64" style="width:24px;height:24px;vertical-align:middle"><path d="M10 14c8-4 15-4 22 0v38c-7-4-14-4-22 0Z" fill="#4db3f2"/><path d="M54 14c-8-4-15-4-22 0v38c7-4 14-4 22 0Z" fill="#2a8fd4"/><line x1="32" y1="14" x2="32" y2="52" stroke="#1c6fa8" stroke-width="2"/><circle cx="19" cy="22" r="3" fill="#fff" opacity=".8"/></svg></button>
         <button id="parentBtn" aria-label="For grown-ups"><img src="/coach/echo/echo-idle.svg" alt="Echo" /></button>
       </div>
     </header>
@@ -147,7 +147,7 @@
     var ACTS=[
       { key:"daily-"+(((S&&S.dayNum)?S.dayNum():0)%7), name:"Let's play!",
         sub:d.playedToday?("Score "+d.score+" · Best "+d.best+" · back tomorrow!"):"One shot · 4 games · high score!",
-        tap:function(){ if(d.playedToday){ sfx("tap"); toast("Come back tomorrow! Pick another game 👉"); return; } sfx("correct"); location.href="/charge.html?daily=1&sound="+encodeURIComponent(sound)+"&level="+currentLevel(); } },
+        tap:function(){ if(d.playedToday){ sfx("tap"); toast("Come back tomorrow! Pick another game"); return; } sfx("correct"); location.href="/charge.html?daily=1&sound="+encodeURIComponent(sound)+"&level="+currentLevel(); } },
       { key:"slice", name:"Fruit Slice",   sub:"Say it 5× to play", tap:function(){ sfx("tap"); location.href="/charge.html?game=arcade-slice.html"; } },
       { key:"tiles", name:"Piano Tiles",   sub:"Say it 5× to play", tap:function(){ sfx("tap"); location.href="/charge.html?game=arcade-tiles.html"; } },
       { key:"stack", name:"Block Stacker", sub:"Say it 5× to play", tap:function(){ sfx("tap"); location.href="/charge.html?game=arcade-stack.html"; } },
