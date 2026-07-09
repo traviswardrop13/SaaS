@@ -179,9 +179,9 @@
     function playPCM(b){ return new Promise(function(res){ try{ var c=getCtx(),n=b.byteLength>>1,ab=c.createBuffer(1,n,24000),ch=ab.getChannelData(0),dv=new DataView(b.buffer,b.byteOffset,b.byteLength); for(var i=0;i<n;i++)ch[i]=dv.getInt16(i*2,true)/32768; var s=c.createBufferSource();s.buffer=ab;var g=c.createGain();g.gain.value=(profile.volume!=null?profile.volume:0.85);s.connect(g);g.connect(c.destination);s.onended=res;s.start(); }catch(e){res();} }); }
     var speaking=false;
     function say(t){ return new Promise(function(res){ if(!t||profile.voiceOn===false)return res(); if(speaking)return res(); speaking=true;
-      pose("talk"); $("caption").innerHTML=t.replace(/\*(.+?)\*/g,"<b>$1</b>");
+      pose("talk"); $("caption").innerHTML=t.replace(/\[[a-z ]{2,24}\]\s*/gi,"").replace(/\*(.+?)\*/g,"<b>$1</b>");
       var plain=t.replace(/\*/g,"");
-      var key=(profile.voiceId||"leo")+"|v2|"+plain;
+      var key=(profile.voiceId||"leo")+"|v3|"+plain;
       ttsGet(key).then(function(cached){
         if(cached) return playPCM(new Uint8Array(cached));
         return fetch("/api/tts",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text:plain,voice:profile.voiceId||"",stable:true})})
@@ -256,21 +256,21 @@
     var W1=ITEMS[0]||{t:"rabbit",display:"rabbit"}, W2=ITEMS[1]||ITEMS[0]||{t:"robot",display:"robot"};
     var soundAsk="your *"+LETTER+" sound*";
     var SCRIPT=[
-      { say:"Well HI, "+NAME+"! I was hoping you would call me all day!" },
-      { say:"First, a big dragon breath. Breathe in… and blow it out. One more big one… Wonderful!" },
+      { say:"[excited] Well HI, "+NAME+"! I was hoping you would call me all day!" },
+      { say:"First, a big dragon breath. [whispers] Breathe in… and blow it out. One more big one… [happy] Wonderful!" },
       { say:"Today is "+LETTER+" day! I have been practicing SO hard. Want to hear my try first?", demo:true },
       { ask:{ line:"Now the real expert. Say "+soundAsk+" *three times* so I can hear how it's really done. Go!", reps:3, text:(S&&S.soundSay)?S.soundSay(SOUND):SOUND.toLowerCase(), mode:"phoneme", word:SOUND },
-        pass:"WOW. That was even better than I imagined!", fail:"Ooh, so close! "+(CUESHORT||"Let's try together")+". One more time — go!" },
-      { say:BUDDYNAME+" is on the call too! Psst — "+BUDDYNAME+" keeps getting the "+LETTER+" sound wrong. Can you teach him?" },
+        pass:"[excited] WOW. That was even better than I imagined!", fail:"Ooh, so close! "+(CUESHORT||"Let's try together")+". One more time — go!" },
+      { say:BUDDYNAME+" is on the call too! [whispers] Psst — "+BUDDYNAME+" keeps getting the "+LETTER+" sound wrong. Can you teach him?" },
       { ask:{ line:"Show "+BUDDYNAME+" your very best "+soundAsk+", *three more times*. Teach him. Go!", reps:3, text:(S&&S.soundSay)?S.soundSay(SOUND):SOUND.toLowerCase(), mode:"phoneme", word:SOUND },
-        pass:"LOOK! "+BUDDYNAME+" just said it! You TAUGHT him, "+NAME+"! You're a "+LETTER+" teacher now!", fail:"Almost! "+BUDDYNAME+" is watching your mouth. "+(CUESHORT||"Nice and easy")+" — go again!" },
+        pass:"[excited] LOOK! "+BUDDYNAME+" just said it! You TAUGHT him, "+NAME+"! You're a "+LETTER+" teacher now!", fail:"Almost! "+BUDDYNAME+" is watching your mouth. "+(CUESHORT||"Nice and easy")+" — go again!" },
       { ask:{ line:"Word time! Say *"+(W1.display||W1.t)+"*, three times. Go!", reps:3, text:W1.t, mode:"full", word:W1.t },
         pass:"That was a PERFECT "+(W1.display||W1.t)+"!", fail:"So close! Break it in half with me — "+(W1.display||W1.t)+". Again, go!" },
       { ask:{ line:"One more word. Say *"+(W2.display||W2.t)+"*, three times. Go!", reps:3, text:W2.t, mode:"full", word:W2.t },
         pass:"You are on FIRE today!", fail:"Good trying! That one's tricky — we'll practice it in the games too." },
       { ask:{ line:"Last one. Show me how BIG-KID "+NAME+" says it — one giant "+soundAsk+". GO!", reps:1, text:(S&&S.soundSay)?S.soundSay(SOUND):SOUND.toLowerCase(), mode:"phoneme", word:SOUND },
         pass:"THERE it is! That's the big-kid sound right there!", fail:"I heard it in there! It's getting stronger every single day." },
-      { say:"This was my favorite call ALL day. Practice in the games, and call me again soon. Bye bye, superstar!", end:true }
+      { say:"[happy] This was my favorite call ALL day. Practice in the games, and call me again soon. Bye bye, superstar!", end:true }
     ];
 
     // ---- run the call ----
