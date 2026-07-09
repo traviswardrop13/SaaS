@@ -20,6 +20,8 @@
     .nav a{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;font-weight:800;color:#9fb0c0;text-decoration:none;}
     .nav a .ni{font-size:21px;} .nav a.on{color:var(--blue-d);}
     .week{display:flex;gap:8px;margin-top:12px;}
+    .gbtn{border:2px solid #e2ecf7;background:#fff;border-radius:12px;padding:8px 14px;font-family:"Baloo 2";font-weight:800;font-size:13.5px;color:#6b86a3;cursor:pointer;}
+    .gbtn.on{background:#58cc02;border-color:#58cc02;color:#fff;}
     .day{flex:1;text-align:center;}
     .day .d{position:relative;width:34px;height:34px;margin:0 auto 5px;border-radius:50%;display:flex;align-items:center;justify-content:center;
       font-size:16px;background:#eef3fb;color:var(--muted);}
@@ -255,7 +257,14 @@
 
     <div class="card">
       <h2>This week</h2>
+      <p class="muted" style="font-size:13px;font-weight:700;">Your goal as the parent — the streak counts weeks that hit it, so 3 days a week is every bit a win.</p>
       <div class="week" id="week"></div>
+      <p id="wkGoalMsg" style="font-weight:800;font-size:13.5px;margin-top:10px;color:#6b86a3;"></p>
+      <div id="wkGoalPick" style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
+        <button class="gbtn" data-g="3">3 days/wk</button>
+        <button class="gbtn" data-g="5">5 days/wk</button>
+        <button class="gbtn" data-g="7">Every day</button>
+      </div>
     </div>
 
     <div class="card">
@@ -301,19 +310,31 @@
         '<div style="display:flex;justify-content:space-between;font-weight:800;margin-bottom:6px;"><span>' + reps + ' / ' + goal + ' words today</span><span style="color:' + (done ? "#46a302" : "#6b86a3") + ';">' + (done ? "Done! 🎉" : pct + "%") + '</span></div><div class="bar"><span style="width:' + pct + '%"></span></div>';
     })();
 
-    // this week — 7 day dots, lit on days with a session
-    var practiced = {};
-    (g.sessions || []).forEach(function (s) { practiced[new Date(s.date).toISOString().slice(0, 10)] = true; });
-    var DOW = ["S", "M", "T", "W", "T", "F", "S"];
-    var wk = document.getElementById("week");
-    for (var i = 6; i >= 0; i--) {
-      var dt = new Date(Date.now() - i * 86400000);
-      var iso = dt.toISOString().slice(0, 10);
-      var on = !!practiced[iso];
-      var cell = document.createElement("div"); cell.className = "day";
-      cell.innerHTML = '<div class="d' + (on ? ' on' : '') + '">' + (on ? '🔥' : '·') + '</div><div class="lbl">' + DOW[dt.getDay()] + '</div>';
-      wk.appendChild(cell);
-    }
+    // Mom's week — HER goal (3/5/7 days), her streak, switchable right here.
+    // A practice day = real logged attempts; the week starts Monday.
+    (function () {
+      var wk = document.getElementById("week");
+      function paintWk() {
+        var w = Sona.momWeek(); wk.innerHTML = "";
+        var L = ["M", "T", "W", "T", "F", "S", "S"];
+        for (var i = 0; i < 7; i++) {
+          var on = w.days[i], isT = i === w.todayIx;
+          var cell = document.createElement("div"); cell.className = "day";
+          cell.innerHTML = '<div class="d' + (on ? ' on' : '') + '"' + (isT && !on ? ' style="box-shadow:inset 0 0 0 2px #ff8a3d;"' : '') + '>' + (on ? '✓' : '·') + '</div><div class="lbl">' + L[i] + '</div>';
+          wk.appendChild(cell);
+        }
+        var left = w.goal - w.done;
+        document.getElementById("wkGoalMsg").innerHTML =
+          (w.hit ? '<b style="color:#46a302">Goal met — this week is won!</b>'
+                 : left + " more day" + (left === 1 ? "" : "s") + " to hit your " + w.goal + "-day goal")
+          + (w.weekStreak > 0 ? ' &nbsp;·&nbsp; <b style="color:#ef6f23">' + w.weekStreak + '-week streak</b>' : "");
+        document.querySelectorAll("#wkGoalPick .gbtn").forEach(function (b) { b.classList.toggle("on", parseInt(b.dataset.g, 10) === w.goal); });
+      }
+      document.querySelectorAll("#wkGoalPick .gbtn").forEach(function (b) {
+        b.onclick = function () { Sona.saveProfile({ weeklyGoal: parseInt(b.dataset.g, 10) }); paintWk(); };
+      });
+      paintWk();
+    })();
 
     // sounds & mastery — clinician view: accuracy + by-position breakdown from
     // the real attempt log (Sona.outcomes), unioned with practiced-sound counts.

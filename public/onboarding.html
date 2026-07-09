@@ -128,11 +128,12 @@
 
     <!-- daily goal -->
     <div class="step" data-step="goal">
-      <div class="qh">What's the daily practice goal?</div>
-      <p class="muted">Sona fits each day's practice to this — same length whether it's one sound or five.</p>
+      <div class="qh">How often should practice happen?</div>
+      <p class="muted">This goal is yours, not your child's — pick what fits real life. Sona tracks the week for you and never pressures the kid.</p>
       <div class="choices" id="obGoal">
-        <div class="choice" data-val="5"><span class="ce">⏱️</span> 5 min / day <span style="margin-left:auto;color:var(--muted);font-size:13px;font-family:Nunito;">Casual</span></div>
-        <div class="choice" data-val="10"><span class="ce">🔥</span> 10 min / day <span style="margin-left:auto;color:var(--muted);font-size:13px;font-family:Nunito;">Regular</span></div>
+        <div class="choice" data-val="3"><span class="ce">🌱</span> 3 days a week <span style="margin-left:auto;color:var(--muted);font-size:13px;font-family:Nunito;">Light &amp; steady</span></div>
+        <div class="choice" data-val="5"><span class="ce">⭐</span> 5 days a week <span style="margin-left:auto;color:var(--muted);font-size:13px;font-family:Nunito;">School rhythm</span></div>
+        <div class="choice" data-val="7"><span class="ce">🔥</span> Every day <span style="margin-left:auto;color:var(--muted);font-size:13px;font-family:Nunito;">All in</span></div>
       </div>
     </div>
 
@@ -198,7 +199,7 @@
       buddy:   "Who should practice with you?",
       interests: "Ooh, what do you love? 😍",
       sounds:  "Let's pick our sounds!",
-      goal:    "How long each day?",
+      goal: "Whatever you pick, I\u2019ll keep the week on track!",
       achieve: "Here's what's ahead! ✨",
       slp:     "Almost done! 🌟",
       email:   "One last thing! 💌",
@@ -267,7 +268,7 @@
     });
 
     // daily goal (single select, default 5)
-    var goalVal = String(p.dailyMinutes || 5);
+    var goalVal = String(p.weeklyGoal || 5);
     var goalWrap = document.getElementById("obGoal");
     goalWrap.querySelectorAll(".choice").forEach(function (ch) {
       if (ch.dataset.val === goalVal) ch.classList.add("on");
@@ -321,7 +322,8 @@
         slpEvaluated: draft.slpEvaluated,
         goals: (document.getElementById("obGoals")||{}).value ? document.getElementById("obGoals").value.trim() : draft.goals,
         focusArea: "articulation",
-        dailyMinutes: parseInt(goalVal, 10) || 5,
+        dailyMinutes: 5,
+        weeklyGoal: parseInt(goalVal, 10) || 5,
         email: draft.email || "",
         onboarded: true,
       });

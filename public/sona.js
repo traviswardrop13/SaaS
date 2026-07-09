@@ -146,7 +146,34 @@
   // Idempotent per local day: counts a streak day the first time the child does
   // anything real today; called from both recordSession and logAttempt so games
   // keep Today's streak alive, not just the lesson flow.
-  function bumpStreak(g) { const t = today(); if (g.streak.lastDate !== t) { const y = _localDay(Date.now() - 86400000); g.streak.count = (g.streak.lastDate === y) ? (g.streak.count || 0) + 1 : 1; g.streak.lastDate = t; } }
+  function bumpStreak(g) { const t = today(); if (g.streak.lastDate !== t) { const y = _localDay(Date.now() - 86400000); g.streak.count = (g.streak.lastDate === y) ? (g.streak.count || 0) + 1 : 1; g.streak.lastDate = t;
+    // per-day practice history for the parent's weekly goal (pruned ~4 months)
+    g.practiceDays = g.practiceDays || {}; g.practiceDays[t] = 1;
+    const cut = _localDay(Date.now() - 130 * 86400000); Object.keys(g.practiceDays).forEach(function (k) { if (k < cut) delete g.practiceDays[k]; });
+  } }
+
+  // ── The parent's week — streaks belong to MOM, not the kid ──
+  // She picks 3, 5, or 7 practice days a week in onboarding; a practice day is
+  // any day with real logged attempts. The week streak counts consecutive weeks
+  // that met HER goal, so a 3-day family feels every bit as on-track as a
+  // 7-day one. Nothing here is ever shown to (or pressures) the child.
+  function weeklyGoalDays() { const g = parseInt(getProfile().weeklyGoal, 10); return (g === 3 || g === 5 || g === 7) ? g : 5; }
+  function momWeek() {
+    const g = getProgress(); const pd = Object.assign({}, g.practiceDays || {});
+    if (g.streak && g.streak.lastDate) pd[g.streak.lastDate] = 1; // pre-history migration
+    const now = new Date(); const dow = (now.getDay() + 6) % 7; // 0 = Monday
+    const start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - dow);
+    const key = function (d) { return _localDay(d.getTime()); };
+    const days = []; for (let i = 0; i < 7; i++) { const d = new Date(start.getFullYear(), start.getMonth(), start.getDate() + i); days.push(!!pd[key(d)]); }
+    const goal = weeklyGoalDays(); const done = days.filter(Boolean).length;
+    let weekStreak = 0;
+    for (let w = 1; w <= 26; w++) {
+      let c = 0; for (let i = 0; i < 7; i++) { const d = new Date(start.getFullYear(), start.getMonth(), start.getDate() - 7 * w + i); if (pd[key(d)]) c++; }
+      if (c >= goal) weekStreak++; else break;
+    }
+    if (done >= goal) weekStreak++;
+    return { days: days, done: done, goal: goal, hit: done >= goal, weekStreak: weekStreak, todayIx: dow, practicedToday: days[dow] };
+  }
   // current stage to practice for a sound (0..3); 3 = mastered
   function stageOf(sound) { const g = getProgress(); return Math.min(3, g.stage[sound] || 0); }
   // advance a sound's stage after finishing that stage's session (if they passed)
@@ -832,6 +859,7 @@
     // ── Sticker icon kit (design §7): flat 2-tone SVGs with a white glint dot.
   // Replaces every kid-visible emoji — HUD pills, hearts, mic, bolts, covers.
   const ICONS = {
+    flame: '<path d="M32 4c6 10 14 14 14 26a14 14 0 0 1-28 0c0-6 3-10 6-14 0 5 2 8 5 9-1-8 0-15 3-21Z" fill="#ff8a3d"/><path d="M32 24c3 5 7 7 7 13a7 7 0 0 1-14 0c0-5 4-7 7-13Z" fill="#ffd21c"/><circle cx="26" cy="20" r="2.5" fill="#fff" opacity=".8"/>',
     heart: '<path d="M32 56C14 44 6 33 6 22 6 13 13 7 21 7c5 0 9 2 11 6 2-4 6-6 11-6 8 0 15 6 15 15 0 11-8 22-26 34Z" fill="#ff5c74"/><circle cx="22" cy="19" r="4" fill="#fff" opacity=".75"/>',
     heartLost: '<path d="M32 56C14 44 6 33 6 22 6 13 13 7 21 7c5 0 9 2 11 6 2-4 6-6 11-6 8 0 15 6 15 15 0 11-8 22-26 34Z" fill="rgba(255,255,255,.16)" stroke="#e0d2bc" stroke-width="3" stroke-dasharray="6 5"/>',
     mic: '<rect x="24" y="7" width="16" height="27" rx="8" fill="#4db3f2"/><path d="M15 30a17 17 0 0 0 34 0" fill="none" stroke="#2a8fd4" stroke-width="5" stroke-linecap="round"/><line x1="32" y1="47" x2="32" y2="53" stroke="#2a8fd4" stroke-width="5" stroke-linecap="round"/><line x1="25" y1="56" x2="39" y2="56" stroke="#2a8fd4" stroke-width="5" stroke-linecap="round"/><circle cx="28" cy="13" r="2.5" fill="#fff" opacity=".85"/>',
@@ -1170,5 +1198,5 @@
   }
   try { installDebug(); } catch (e) {}
 
-  global.Sona = { pic, ICONS, icon, heartRow, ALL_SOUNDS, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, ladderContent, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, gated, isNativeApp, getTrial, startTrial, ensureTrial, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, LEVEL_GAMES, GAME_DECK, GAMES_PER_LEVEL, levelGames, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, WORLDS, LEVELS_PER_WORLD, campaignLevels, campaignSounds, campaignState, worldById, worldLevels, worldStars, worldCleared, levelStars, setLevelStars, totalStars, worldUnlocked, levelUnlocked, campaignLaunch, campaignResolve, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES };
+  global.Sona = { pic, ICONS, icon, heartRow, momWeek, weeklyGoalDays, ALL_SOUNDS, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, ladderContent, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, gated, isNativeApp, getTrial, startTrial, ensureTrial, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, LEVEL_GAMES, GAME_DECK, GAMES_PER_LEVEL, levelGames, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, WORLDS, LEVELS_PER_WORLD, campaignLevels, campaignSounds, campaignState, worldById, worldLevels, worldStars, worldCleared, levelStars, setLevelStars, totalStars, worldUnlocked, levelUnlocked, campaignLaunch, campaignResolve, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES };
 })(window);

@@ -119,6 +119,14 @@
   <div class="ovl" id="sheetOvl">
     <div class="modal">
       <h3>Parent corner</h3>
+      <div id="weekCard" style="background:var(--cream);border-radius:16px;padding:14px 16px;margin-top:12px;text-align:left;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <b style="font-family:'Baloo 2';font-size:15px;color:var(--ink);">This week</b>
+          <span id="wkStreak" style="margin-left:auto;font-family:'Baloo 2';font-weight:800;font-size:12.5px;color:var(--orange-d);"></span>
+        </div>
+        <div id="wkDots" style="display:flex;gap:7px;margin-top:10px;justify-content:space-between;"></div>
+        <div id="wkMsg" style="font-weight:800;font-size:12.5px;color:var(--muted);margin-top:9px;"></div>
+      </div>
       <button class="sheetBtn" id="goProgress">📈&nbsp; Progress &amp; SLP report</button>
       <button class="sheetBtn" id="goSettings">⚙️&nbsp; Settings</button>
       <button class="ghost" id="sheetClose">Close</button>
@@ -142,6 +150,7 @@
 
     $("hiName").textContent="Hi"+(P.childName?", "+P.childName:"")+"!";
     $("subLine").textContent="Let's practice your "+((S&&S.soundLabel)?S.soundLabel(sound):sound)+" sound";
+    try{ if(S&&S.momWeek&&S.momWeek().practicedToday) $("subLine").textContent="Practiced today ✓ — play anytime!"; }catch(e){}
 
     // ── the activity deck: hero + up-next, art from the vector scenes ──
     var ACTS=[
@@ -220,7 +229,7 @@
         b.onclick=function(){
           if(kk==="⌫"){ gateAns=gateAns.slice(0,-1); }
           else if(kk==="✓"){
-            if(gateAns===gateNeed){ $("gateOvl").classList.remove("show"); $("sheetOvl").classList.add("show"); sfx("correct"); }
+            if(gateAns===gateNeed){ $("gateOvl").classList.remove("show"); paintWeek(); $("sheetOvl").classList.add("show"); sfx("correct"); }
             else { var m=$("gateModal"); m.classList.remove("shake"); void m.offsetWidth; m.classList.add("shake"); gateAns=""; }
           }
           else { if(gateAns.length<6) gateAns+=String(kk); }
@@ -231,6 +240,26 @@
       });
     })();
     $("gateClose").onclick=function(){ $("gateOvl").classList.remove("show"); };
+    // Mom's week — her goal (3/5/7 days), her streak. Never shown to the kid.
+    function paintWeek(){
+      try{
+        var w=S.momWeek(), L=["M","T","W","T","F","S","S"], dots=$("wkDots"); dots.innerHTML="";
+        for(var i=0;i<7;i++){
+          var on=w.days[i], isToday=i===w.todayIx;
+          var d=document.createElement("div");
+          d.style.cssText="width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Baloo 2';font-weight:800;font-size:12px;"
+            +(on?"background:#58cc02;color:#fff;box-shadow:0 2px 0 #46a302;":"background:#fff;color:var(--label);box-shadow:inset 0 0 0 2px var(--track);")
+            +(isToday&&!on?"box-shadow:inset 0 0 0 2px var(--orange);color:var(--orange-d);":"");
+          d.textContent=on?"✓":L[i];
+          dots.appendChild(d);
+        }
+        var left=w.goal-w.done;
+        $("wkMsg").textContent = w.hit ? ("Goal met — "+Math.min(w.done,w.goal)+" of "+w.goal+" days. This week is won!")
+          : (w.practicedToday? "Practiced today ✓ — " : "")+(left===1? "1 more day and the week is won!" : left+" more days to hit your "+w.goal+"-day goal.");
+        $("wkStreak").innerHTML = w.weekStreak>0 ? ((S.icon?S.icon("flame",14):"")+" "+w.weekStreak+"-week streak") : "";
+      }catch(e){}
+    }
+    paintWeek();
     $("goProgress").onclick=function(){ location.href="/progress.html"; };
     $("goSettings").onclick=function(){ location.href="/settings.html"; };
     $("sheetClose").onclick=function(){ $("sheetOvl").classList.remove("show"); };
