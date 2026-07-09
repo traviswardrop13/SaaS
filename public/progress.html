@@ -225,8 +225,8 @@
     <header class="app">
       <div class="brand"><span class="leo"><img src="/coach/echo/echo-avatar.svg" alt="Leo" /></span> Sona</div>
       <div class="pills">
-        <a class="iconbtn" href="/today.html" title="Home" style="display:flex;align-items:center;justify-content:center;">🏠</a>
-        <a class="iconbtn" href="/settings.html" title="Settings" style="display:flex;align-items:center;justify-content:center;">⚙️</a>
+        <a class="iconbtn" href="/today.html" title="Home" style="display:flex;align-items:center;justify-content:center;"><span class="pic-home"></span></a>
+        <a class="iconbtn" href="/settings.html" title="Settings" style="display:flex;align-items:center;justify-content:center;"><span class="pic-gear"></span></a>
       </div>
     </header>
 
@@ -249,10 +249,10 @@
     </div>
 
     <div class="card" id="accCard">
-      <h2>Accuracy by sound 📈</h2>
+      <h2>Accuracy by sound <span class="pic-trend"></span></h2>
       <p class="muted" style="font-size:13px;font-weight:700;">How clearly each sound is coming along — and how it's trending with practice.</p>
       <div id="acc" style="margin-top:6px;"></div>
-      <button class="btn noprint" id="sendProg" style="display:none;margin-top:14px;width:auto;padding:12px 20px;">📨&nbsp;&nbsp;Send progress to my SLP</button>
+      <button class="btn noprint" id="sendProg" style="display:none;margin-top:14px;width:auto;padding:12px 20px;"><svg viewBox="0 0 64 64" style="width:18px;height:18px;vertical-align:-4px"><rect x="8" y="16" width="48" height="34" rx="6" fill="none" stroke="#fff" stroke-width="3.5"/><path d="M10 20l22 17 22-17" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/></svg>&nbsp;&nbsp;Send progress to my SLP</button>
     </div>
 
     <div class="card">
@@ -282,8 +282,8 @@
   <!-- Progress is a parent page now (reached via the parent gate) — the kid
        tab bar is gone. -->
   <div class="nav">
-    <a class="on" href="/today.html"><span class="ni">🏠</span>Back to Sona</a>
-    <a href="/settings.html"><span class="ni">⚙️</span>Settings</a>
+    <a class="on" href="/today.html"><span class="ni pic-home"></span>Back to Sona</a>
+    <a href="/settings.html"><span class="ni pic-gear"></span>Settings</a>
   </div>
 
   <script src="/sona.js"></script>
@@ -400,7 +400,7 @@
           try { if (player) { player.pause(); } } catch (e) {}
           var url = URL.createObjectURL(rec.blob);
           player = new Audio(url);
-          var old = btn.textContent; btn.textContent = "🔊";
+          var old = btn.textContent; btn.innerHTML = '<svg viewBox="0 0 64 64" style="width:18px;height:18px;vertical-align:-4px"><path d="M12 24h10l14-11v38L22 40H12Z" fill="#4db3f2"/><path d="M42 24q6 8 0 16" stroke="#2a8fd4" stroke-width="4.5" fill="none" stroke-linecap="round"/></svg>';
           player.onended = function () { btn.textContent = old; URL.revokeObjectURL(url); };
           player.play().catch(function () { btn.textContent = old; });
         }
@@ -458,7 +458,7 @@
           var chip = "";
           if (dayAcc.length >= 2) {
             var delta = dayAcc[dayAcc.length - 1] - dayAcc[0];
-            chip = '<span class="accchip ' + (delta > 0 ? 'up' : 'flat') + '">' + (delta > 0 ? '▲ +' + delta + ' pts' : (delta < 0 ? delta + ' pts' : 'steady')) + '</span>';
+            chip = '<span class="accchip ' + (delta > 0 ? 'up' : 'flat') + '">' + (delta > 0 ? '<svg viewBox="0 0 64 64" style="width:11px;height:11px;vertical-align:-1px"><path d="M32 10 56 48H8Z" fill="#58cc02" rx="6"/><path d="M32 24 46 46H18Z" fill="#8ae05c"/></svg> +' + delta + ' pts' : (delta < 0 ? delta + ' pts' : 'steady')) + '</span>';
           }
           var bars = dayAcc.slice(-14).map(function (v) { var c = v >= 80 ? 'hi' : (v >= 50 ? 'mid' : 'lo'); return '<i class="' + c + '" style="height:' + Math.max(4, v) + '%;" title="' + v + '%"></i>'; }).join("");
           var d = document.createElement("div"); d.className = "accrow";
@@ -472,9 +472,16 @@
       }
       if (Sona.isPilot && Sona.isPilot()) {
         var btn = document.getElementById("sendProg");
-        if (btn) { btn.style.display = ""; btn.onclick = function () { try { Sona.sendProgress && Sona.sendProgress("manual"); } catch (e) {} btn.textContent = "Sent ✓"; setTimeout(function () { btn.textContent = "📨  Send progress to my SLP"; }, 2200); }; }
+        if (btn) { btn.style.display = ""; btn.onclick = function () { try { Sona.sendProgress && Sona.sendProgress("manual"); } catch (e) {} btn.textContent = "Sent ✓"; setTimeout(function () { btn.textContent = "Send progress to my SLP"; }, 2200); }; }
       }
     })();
+  
+    // parent-set stickers (design §9) — filled from the shared icon kit
+    (function(){ try{
+      document.querySelectorAll(".pic-home").forEach(function(n){ n.innerHTML=Sona.icon("home",20); });
+      document.querySelectorAll(".pic-gear").forEach(function(n){ n.innerHTML=Sona.icon("gear",20); });
+      document.querySelectorAll(".pic-trend").forEach(function(n){ n.innerHTML=Sona.icon("trend",17); });
+    }catch(e){} })();
   </script>
 </body>
 </html>

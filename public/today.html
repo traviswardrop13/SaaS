@@ -127,8 +127,8 @@
         <div id="wkDots" style="display:flex;gap:7px;margin-top:10px;justify-content:space-between;"></div>
         <div id="wkMsg" style="font-weight:800;font-size:12.5px;color:var(--muted);margin-top:9px;"></div>
       </div>
-      <button class="sheetBtn" id="goProgress">📈&nbsp; Progress &amp; SLP report</button>
-      <button class="sheetBtn" id="goSettings">⚙️&nbsp; Settings</button>
+      <button class="sheetBtn" id="goProgress"><span class="pic-trend"></span>&nbsp; Progress &amp; SLP report</button>
+      <button class="sheetBtn" id="goSettings"><span class="pic-gear"></span>&nbsp; Settings</button>
       <button class="ghost" id="sheetClose">Close</button>
     </div>
   </div>
@@ -289,6 +289,7 @@
       }catch(e){}
     }
     paintWeek();
+    try{ document.querySelectorAll(".pic-trend").forEach(function(n){ n.innerHTML=S.icon("trend",18); }); document.querySelectorAll(".pic-gear").forEach(function(n){ n.innerHTML=S.icon("gear",18); }); }catch(e){}
     $("goProgress").onclick=function(){ location.href="/progress.html"; };
     $("goSettings").onclick=function(){ location.href="/settings.html"; };
     $("sheetClose").onclick=function(){ $("sheetOvl").classList.remove("show"); };

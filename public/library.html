@@ -218,11 +218,15 @@
 
     /* ---- the picture book: one picture + one line per page ---- */
     function cover(st,w){ var c0=st.colors[0],c1=st.colors[1];
-      return '<svg viewBox="0 0 52 66" style="width:'+w+'px;height:'+Math.round(w*66/52)+'px;filter:drop-shadow(0 4px 7px rgba(90,50,10,.22))">'
-        +'<rect x="1" y="1" width="50" height="64" rx="7" fill="'+c0+'"/>'
-        +'<rect x="8" y="1" width="3" height="64" fill="'+c1+'"/>'
-        +'<text x="31" y="43" text-anchor="middle" font-family="Baloo 2" font-weight="800" font-size="26" fill="#fff">'+st.sound+'</text>'
-        +'<circle cx="42" cy="12" r="3.5" fill="#fff" opacity=".8"/></svg>'; }
+      var face=(window.Sona&&Sona.COVER_FACES&&Sona.COVER_FACES[st.sound])||"";
+      return '<svg viewBox="0 0 60 76" style="width:'+w+'px;height:'+Math.round(w*76/60)+'px;overflow:visible">'
+        +'<rect x="2" y="8" width="52" height="62" rx="7" fill="#fff" style="filter:drop-shadow(0 3px 5px rgba(0,0,0,.18))"/>'
+        +'<rect x="8" y="8" width="3" height="62" fill="'+c1+'" opacity=".3"/>'
+        +'<circle cx="30" cy="39" r="20" fill="'+c0+'" opacity=".16"/>'
+        +(face?('<g transform="translate(12,21) scale(0.56)">'+face+'</g>'):'')
+        +'<circle cx="52" cy="10" r="10" fill="'+c1+'"/>'
+        +'<text x="52" y="14" text-anchor="middle" font-family="Baloo 2" font-weight="800" font-size="'+(String(st.sound).length>1?8:10)+'" fill="#fff">'+st.sound+'</text>'
+        +'</svg>'; }
     var BOOK = null, page = -1; // -1 = cover, pages.length = The End
     var bkStage = document.getElementById("bkStage"), bkDots = document.getElementById("bkDots");
 
@@ -233,6 +237,14 @@
       for (var i = 0; i < st.pages.length; i++) bkDots.appendChild(document.createElement("i"));
       showPage();
     }
+    // color every target-sound letter in a sentence (design §8 reader)
+    function readerWord(t){ try{ var ws=String(t||"").toLowerCase().replace(/[^a-z ]/g," ").split(/\s+/);
+      for(var i=0;i<ws.length;i++){ if(window.Sona&&Sona.WORD_STICKERS&&Sona.WORD_STICKERS[ws[i]]) return ws[i]; }
+      return ""; }catch(e){ return ""; } }
+    function tintSound(html, snd){ try{ var L=String(snd||"").charAt(0);
+      return html.replace(/>([^<]+)</g, function(m, txt){
+        return ">"+txt.replace(new RegExp("(["+L.toLowerCase()+L.toUpperCase()+"])","g"), '<b style="color:#2a8fd4">$1</b>')+"<";
+      }); }catch(e){ return html; } }
     function closeBook() { stopSpeech(); document.getElementById("book").classList.remove("show"); BOOK = null; }
 
     function tappable(t) {
@@ -248,13 +260,13 @@
         next.textContent = "Start →"; hear.style.visibility = "hidden";
         say(BOOK.title + "! A story full of " + BOOK.sound + " sounds.");
       } else if (page >= BOOK.pages.length) {
-        bkStage.innerHTML = '<div class="bkpic">🎉</div><div class="bktitle">The End!</div><div class="bksub">Great listening! Read it again or pick another story.</div>';
+        bkStage.innerHTML = '<div class="bkpic" style="filter:none"><svg viewBox="0 0 64 64" style="width:120px;height:120px"><path d="M32 5l8.2 18.6L60 25.8 44.9 39.2 49.8 59 32 48.4 14.2 59l4.9-19.8L4 25.8l19.8-2.2Z" fill="#ffd21c"/><circle cx="25" cy="21" r="3" fill="#fff" opacity=".85"/></svg></div><div class="bktitle">The End!</div><div class="bksub">Great listening! Read it again or pick another story.</div>';
         next.textContent = "All done ✓"; hear.style.visibility = "hidden";
         if (window.Sona) { Sona.confetti({ count: 130, duration: 2200 }); Sona.sfx.star(); }
         say("The end! Great listening!");
       } else {
         var pg = BOOK.pages[page];
-        bkStage.innerHTML = '<div class="bkpic">' + pg.e + '</div><div class="bktext">' + tappable(pg.t) + '</div>';
+        bkStage.innerHTML = '<div class="bkpic" style="filter:none"><span style="display:inline-block;padding:10px;border-radius:50%;background:radial-gradient(circle,rgba(255,210,28,.28),rgba(255,210,28,0) 70%)">' + ((window.Sona&&Sona.pic)?Sona.pic(readerWord(pg.t),pg.e,132):pg.e) + '</span></div>'+ '<div style="display:inline-block;background:#dcedfb;color:#1480e0;font-family:Baloo 2;font-weight:800;font-size:11px;letter-spacing:.08em;border-radius:99px;padding:4px 12px;margin-bottom:6px">' + BOOK.sound + ' SOUND</div>'+ '<div class="bktext">' + tintSound(tappable(pg.t), BOOK.sound) + '</div>';
         next.textContent = "Next →"; hear.style.visibility = "visible";
         bkStage.querySelectorAll(".bktext span").forEach(function (sp) {
           sp.onclick = function () { if (playing) return; say(sp.textContent.replace(/[^a-zA-Z']/g, "")); };
@@ -292,7 +304,7 @@
       (Sona.WORDS[curSound] || []).forEach(function (w) {
         var c = document.createElement("div");
         c.className = "wcard";
-        c.innerHTML = '<span class="we">' + w.e + '</span><span class="ww">' + w.w + '</span>';
+        c.innerHTML = '<span class="we">' + ((window.Sona&&Sona.pic)?Sona.pic(w.w,w.e,42):w.e) + '</span><span class="ww">' + w.w + '</span>';
         c.onclick = function () { if (playing) return; if (window.Sona) Sona.pop(w.e, { y: window.innerHeight * 0.3 }); say(w.w); };
         grid.appendChild(c);
       });
