@@ -84,7 +84,7 @@
       <div class="big" id="endEmoji"><svg viewBox="0 0 64 64" style="width:56px;height:56px"><path d="M32 5l8.2 18.6L60 25.8 44.9 39.2 49.8 59 32 48.4 14.2 59l4.9-19.8L4 25.8l19.8-2.2Z" fill="#ffd21c"/><circle cx="25" cy="21" r="3" fill="#fff" opacity=".85"/></svg></div>
       <h2 id="endTitle">Great slicing!</h2>
       <p id="endSub"></p>
-      <button class="btn blue" id="endCharge"><svg viewBox="0 0 64 64" style="width:18px;height:18px;vertical-align:-3px"><path d="M36 4 14 36h13l-5 24 24-34H33Z" fill="#ffd21c" stroke="#f0a800" stroke-width="2.5" stroke-linejoin="round"/><circle cx="30" cy="15" r="2.5" fill="#fff" opacity=".9"/></svg> Play again</button>
+      <button class="btn blue" id="endCharge"><svg viewBox="0 0 64 64" style="width:18px;height:18px;vertical-align:-3px"><path d="M36 4 14 36h13l-5 24 24-34H33Z" fill="#ffd21c" stroke="#f0a800" stroke-width="2.5" stroke-linejoin="round"/><circle cx="30" cy="15" r="2.5" fill="#fff" opacity=".9"/></svg> Next game</button>
       <button class="btn" id="endAgain" style="display:none;"></button>
       <button class="btn ghost" id="endHome">Back to the house</button>
     </div>
@@ -304,10 +304,10 @@
       $("endTitle").textContent=isBest&&score>0?"NEW BEST!":"Great slicing!";
       $("endSub").textContent="You sliced "+score+" fruits"+(coins?(" · +"+coins+" 🪙"):"")+" · Best: "+BEST;
       $("endAgain").style.display="none";
-      $("endCharge").innerHTML='<svg viewBox="0 0 64 64" style="width:18px;height:18px;vertical-align:-3px"><path d="M36 4 14 36h13l-5 24 24-34H33Z" fill="#ffd21c" stroke="#f0a800" stroke-width="2.5" stroke-linejoin="round"/><circle cx="30" cy="15" r="2.5" fill="#fff" opacity=".9"/></svg> Play again';
+      $("endCharge").innerHTML='<svg viewBox="0 0 64 64" style="width:18px;height:18px;vertical-align:-3px"><path d="M36 4 14 36h13l-5 24 24-34H33Z" fill="#ffd21c" stroke="#f0a800" stroke-width="2.5" stroke-linejoin="round"/><circle cx="30" cy="15" r="2.5" fill="#fff" opacity=".9"/></svg> Next game';
       $("endOvl").classList.add("show");
     }
-    $("endCharge").onclick=backToCharge;
+    $("endCharge").onclick=function(){ location.href="/charge.html?"+(isDaily?"daily=1":("game=arcade-tiles.html")); };
     $("endAgain").onclick=function(){ location.reload(); };
     $("endHome").onclick=function(){ location.href="/today.html#play"; };
     $("close").onclick=function(){ if(playing){ playing=false; clearInterval(tossIv); clearInterval(timeIv); } if(isDaily){ bankAndContinue(); return; } location.href="/today.html#play"; };
