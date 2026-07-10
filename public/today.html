@@ -26,6 +26,7 @@
     #subLine{font-weight:800;font-size:12.5px;color:var(--muted);margin-top:2px;}
     #hdrBtns{margin-left:auto;display:flex;align-items:center;gap:8px;}
     #libBtn{border:none;width:44px;height:44px;border-radius:50%;background:#fff;font-size:20px;cursor:pointer;box-shadow:0 4px 0 rgba(120,80,20,.15);}
+    #ringBtn{border:none;width:44px;height:44px;border-radius:50%;background:#fff;cursor:pointer;box-shadow:0 4px 0 rgba(120,80,20,.15);padding:0;display:flex;align-items:center;justify-content:center;}
     #parentBtn{border:none;background:none;cursor:pointer;width:58px;height:58px;}
     #parentBtn img{width:58px;height:58px;object-fit:contain;}
 
@@ -82,6 +83,7 @@
         <div id="subLine"></div>
       </div>
       <div id="hdrBtns">
+        <button id="ringBtn" aria-label="Today's goal"><svg viewBox="0 0 44 44" style="width:36px;height:36px"><circle cx="22" cy="22" r="17" fill="none" stroke="#f0e2cc" stroke-width="5"/><circle id="ringArc" cx="22" cy="22" r="17" fill="none" stroke="#58cc02" stroke-width="5" stroke-linecap="round" transform="rotate(-90 22 22)"/><text id="ringTxt" x="22" y="26.5" text-anchor="middle" font-family="'Baloo 2',sans-serif" font-weight="800" font-size="12.5" fill="#4a2c14">0/5</text></svg></button>
         <button id="libBtn" aria-label="Book library"><svg viewBox="0 0 64 64" style="width:24px;height:24px;vertical-align:middle"><path d="M10 14c8-4 15-4 22 0v38c-7-4-14-4-22 0Z" fill="#4db3f2"/><path d="M54 14c-8-4-15-4-22 0v38c7-4 14-4 22 0Z" fill="#2a8fd4"/><line x1="32" y1="14" x2="32" y2="52" stroke="#1c6fa8" stroke-width="2"/><circle cx="19" cy="22" r="3" fill="#fff" opacity=".8"/></svg></button>
         <button id="parentBtn" aria-label="For grown-ups"><img src="/coach/echo/echo-idle.svg" alt="Echo" /></button>
       </div>
@@ -157,12 +159,15 @@
 
     var P=(S&&S.getProfile)?S.getProfile():{};
     var d=(S&&S.dailyInfo)?S.dailyInfo():{playedToday:false,score:0,best:0};
-    var sound=((P.focusSounds&&P.focusSounds[0])||"R").toUpperCase();
+    var sound=(((S&&S.rotSound)?S.rotSound():"")||((P.focusSounds&&P.focusSounds[0])||"R")).toUpperCase();
     function currentLevel(){ try{ return (S&&S.unlockedThru)?Math.max(1,S.unlockedThru()):1; }catch(e){ return 1; } }
 
     $("hiName").textContent="Hi"+(P.childName?", "+P.childName:"")+"!";
     $("subLine").textContent="Let's practice your "+((S&&S.soundLabel)?S.soundLabel(sound):sound)+" sound";
-    try{ if(S&&S.momWeek&&S.momWeek().practicedToday) $("subLine").textContent="Practiced today ✓ — play anytime!"; }catch(e){}
+    try{ var _tr=(S&&S.todayRing)?S.todayRing():null;
+      if(_tr&&_tr.done) $("subLine").textContent="Daily goal done ✓ — free play!";
+      else if(_tr&&_tr.n>0) $("subLine").textContent=(_tr.goal-_tr.n)+" more game"+((_tr.goal-_tr.n)===1?"":"s")+" to finish today's goal!";
+    }catch(e){}
 
     // ── the activity deck: hero + up-next, art from the vector scenes ──
     function callsLeft(){ try{ var s=JSON.parse(localStorage.getItem("sona.call.v1")||"{}"); var dt=new Date(); var dow=(dt.getDay()+6)%7; var m=new Date(dt.getFullYear(),dt.getMonth(),dt.getDate()-dow); var wk=m.getFullYear()+"-"+(m.getMonth()+1)+"-"+m.getDate(); return Math.max(0,3-((s.week===wk?s.used:0)||0)); }catch(e){ return 3; } }
@@ -235,6 +240,26 @@
 
     // ── library ──
     $("libBtn").onclick=function(){ sfx("tap"); location.href="/library.html"; };
+
+    // ── today's goal ring: one pass of the games = today's activity done.
+    // Fills a little more after every finished practice round so play has a
+    // finish line instead of feeling aimless. Gold star when it's done.
+    function paintRing(){
+      try{
+        var tr=S.todayRing(), C=2*Math.PI*17, n=Math.min(tr.n,tr.goal);
+        var arc=$("ringArc"); arc.setAttribute("stroke-dasharray",String(C)); arc.setAttribute("stroke-dashoffset",String(C*(1-n/tr.goal)));
+        if(tr.done){ arc.setAttribute("stroke","#ffb300"); $("ringTxt").textContent="★"; $("ringTxt").setAttribute("fill","#f0a800"); }
+        else $("ringTxt").textContent=n+"/"+tr.goal;
+      }catch(e){}
+    }
+    paintRing();
+    $("ringBtn").onclick=function(){
+      sfx("tap");
+      try{
+        var tr=S.todayRing(), snd=(S.soundLabel?S.soundLabel(S.rotSound()):S.rotSound());
+        toast(tr.done?"Today's goal is done — everything else is bonus!":(tr.n+" of "+tr.goal+" games done · "+snd+" sound today"));
+      }catch(e){}
+    };
 
     // ── parent gate: PIN if the parent set one, else a math question ──
     var gateAns="", gateNeed="", gateMode="math";
@@ -357,13 +382,13 @@
       else if(S.trialExpired&&S.trialExpired()){ m.innerHTML="Your free trial ended · <u>Keep going for $39.99/yr →</u>"; b.style.display="flex"; }
     })();
 
-    // ── beta pulse: an open box — request, complaint, or idea. X always dismisses. ──
+    // ── beta pulse: an open box — request, idea, or problem. X always dismisses. ──
     function pulseState(){ try{ return JSON.parse(localStorage.getItem("sona.pulse.v1")||"{}"); }catch(e){ return {}; } }
     function pulseSave(s){ try{ localStorage.setItem("sona.pulse.v1",JSON.stringify(s)); }catch(e){} }
     function showPulse(force){
       var st=pulseState();
       var w=$("pulseOpts");
-      w.innerHTML='<textarea id="pulseText" rows="4" placeholder="A request, a complaint, an idea — anything helps." '
+      w.innerHTML='<textarea id="pulseText" rows="4" placeholder="A request, an idea, a problem to fix — anything helps." '
         +'style="width:100%;border:2px solid var(--track);border-radius:14px;padding:12px;font-family:Nunito,sans-serif;font-weight:700;font-size:14px;color:var(--ink);resize:none;margin-top:10px;"></textarea>'
         +'<button id="pulseSend" class="sheetBtn" style="justify-content:center;background:linear-gradient(180deg,#ffa05a,#ff8a3d);color:#fff;box-shadow:0 4px 0 var(--orange-d);">Send it</button>';
       $("pulseSend").onclick=function(){
