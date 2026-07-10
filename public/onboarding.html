@@ -78,7 +78,7 @@
     .obfoot .inner{max-width:560px;margin:0 auto;display:flex;gap:10px;align-items:center;}
     .skip{background:none;border:none;color:var(--muted);font-weight:800;font-size:15px;cursor:pointer;padding:10px;}
     .bopt.on{box-shadow:0 0 0 3px #fff,0 0 0 7px #58cc02 !important;position:relative;}
-    .bopt.on::after{content:"✓";position:absolute;top:-7px;right:-7px;width:24px;height:24px;border-radius:50%;background:#58cc02;color:#fff;font-weight:800;font-size:14px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 0 #46a302;}
+    .bopt.on::after{content:"✓";position:absolute;top:6px;right:6px;width:24px;height:24px;border-radius:50%;background:#58cc02;color:#fff;font-weight:800;font-size:14px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 0 #46a302;z-index:2;}
   </style>
   <script defer src="/_vercel/insights/script.js"></script>
 </head>
@@ -184,7 +184,7 @@
     var p = Sona.getProfile();
     var draft = {
       childName: p.childName || "",
-      character: p.character || "fox", // Pip starts selected — one less decision
+      character: (window.Sona && Sona.characterById && Sona.characterById(p.character)) ? p.character : "fox", // Pip starts selected — legacy/unknown ids fall back too
       focusSounds: (p.focusSounds && p.focusSounds.length) ? p.focusSounds.slice() : ["R","S","L","K"],
       slpEvaluated: p.slpEvaluated || "",
       goals: p.goals || "",
@@ -228,6 +228,12 @@
       if(!c.locked) el.onclick=function(){ Sona.sfx.tap(); draft.character=c.id; bg.querySelectorAll(".bopt").forEach(function(n){n.classList.remove("on");}); el.classList.add("on"); leo.innerHTML=mascotMarkup(c.id); };
       bg.appendChild(el);
     });
+    // legacy/unknown ids (old 'leo' profiles) have no card — make sure ONE
+    // buddy always starts selected so the step is a single tap
+    if(!bg.querySelector(".bopt.on")){
+      var first=bg.querySelector(".bopt:not(.locked)");
+      if(first){ first.classList.add("on"); draft.character=Sona.CHARACTERS[0].id; }
+    }
     (function(){
       var el=document.createElement("div"); el.className="bopt";
       el.innerHTML='<span class="be" style="font-size:26px;">⭐</span><span class="bn">Surprise me</span>';
