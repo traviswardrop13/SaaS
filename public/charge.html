@@ -463,6 +463,41 @@
     else { try{ var _tr=S&&S.todayRing?S.todayRing():null; if(_tr) $("roundLbl").textContent=(_tr.done?"Goal done — bonus round!":"Game "+Math.min(_tr.n+1,_tr.goal)+" of "+_tr.goal+" today")+" · "+((S&&S.soundLabel)?S.soundLabel(SOUND):SOUND)+" sound"; }catch(e){} }
     function micGo(on,txt){ var m=$("micBtn"); m.className=on?"go":""; $("micState").textContent=txt||""; }
 
+    // ---- sound-shape gate (bare-sound rounds only). The cloud scorer force-
+    // aligns nonsense text like "rrrr" onto whatever it hears and is wrong in
+    // BOTH directions on isolation clips (measured: an S scored 99 as R; a
+    // correct TH scored 0 as TH). So isolation rounds are judged on-device by
+    // the SHAPE of the sound in the same analyser the rep counter already
+    // uses: hissy sounds (S/SH/F/CH...) put their energy high in the spectrum;
+    // voiced sounds (R/L/M/N...) sit low. A round is flagged only when it is
+    // CLEARLY the wrong family — borderline or same-family tries always pass
+    // (never punish a wobbly-but-honest attempt; R-vs-L stays SpeechAce's job
+    // from syllables up). Thresholds calibrated on the SLP's recorded sounds:
+    // voiced cluster ≤1318Hz/13% high-band vs hiss cluster ≥2044Hz/26%.
+    // Only frequency-shape NUMBERS are read; nothing extra is recorded.
+    var SHAPE={
+      low:{R:1,L:1,M:1,N:1,B:1,D:1,G:1,V:1,THV:1},  // voiced targets: flag if clearly hissy
+      hiss:{S:1,Z:1,SH:1,CH:1,J:1,F:1,TH:1},        // hissy targets: flag if clearly voiced-low
+      cent:0, mag:0, high:0, frames:0               // K/T/P aspirate legitimately: no gate
+    };
+    function shapeReset(){ SHAPE.cent=0; SHAPE.mag=0; SHAPE.high=0; SHAPE.frames=0; }
+    // analyser bytes are dB-scaled (-100..-30dB): map back to linear amplitude
+    var SHAPE_LUT=(function(){ var t=[],i; for(i=0;i<256;i++) t.push(Math.pow(10,(-100+i*70/255)/20)); return t; })();
+    function shapeFrame(fd,binHz){
+      var lo=Math.max(1,Math.round(90/binHz)), hi=Math.min(fd.length-1,Math.round(12000/binHz)), h0=Math.round(3500/binHz);
+      var m=0,fm=0,hm=0,i,v;
+      for(i=lo;i<=hi;i++){ v=SHAPE_LUT[fd[i]]; m+=v; fm+=v*i*binHz; if(i>=h0)hm+=v; }
+      if(m>0){ SHAPE.cent+=fm; SHAPE.mag+=m; SHAPE.high+=hm; SHAPE.frames++; }
+    }
+    function shapeVerdict(){
+      if(SHAPE.frames<12 || !(SHAPE.mag>0)) return "unknown"; // <~200ms of voice: don't judge
+      var cent=SHAPE.cent/SHAPE.mag, high=SHAPE.high/SHAPE.mag;
+      try{ window.__shape={cent:Math.round(cent),high:Math.round(high*100)/100,frames:SHAPE.frames}; }catch(e){}
+      if(SHAPE.low[SOUND] && cent>1800 && high>0.22) return "fail";
+      if(SHAPE.hiss[SOUND] && cent<1100 && high<0.10) return "fail";
+      return "pass";
+    }
+
     // ---- rapid-fire rep engine: continuous VAD, every voiced burst = a rep.
     // No per-rep scoring round-trips — ONE SpeechAce spot-check on the whole
     // clip at the end keeps the SLP data honest without killing the pace.
@@ -481,6 +516,8 @@
         var ctx=getCtx(), src=ctx.createMediaStreamSource(micStream), an=ctx.createAnalyser();
         an.fftSize=512; src.connect(an);
         var td=new Uint8Array(an.fftSize);
+        var fd=new Uint8Array(an.frequencyBinCount), binHz=ctx.sampleRate/an.fftSize;
+        shapeReset();
         engineOn=true;
         function stopAll(){ engineOn=false; try{src.disconnect();}catch(e){} try{ if(rec&&rec.state!=="inactive")rec.stop(); }catch(e){} if(idleTimer)clearTimeout(idleTimer); }
         function armIdle(){ if(idleTimer)clearTimeout(idleTimer); idleTimer=setTimeout(function(){ if(!engineOn)return; if(reps===0){ playPrompt(); armIdle(); } },8000); }
@@ -493,6 +530,7 @@
           if(now-t0<250){ calSum+=rms; calN++; requestAnimationFrame(tick); return; }
           if(!thr) thr=Math.max(0.035,(calSum/Math.max(1,calN))*3.0);
           if(rms>thr){ voiced++; silent=0;
+            an.getByteFrequencyData(fd); shapeFrame(fd,binHz); // shape sampled on voiced frames only
             // a real burst = ~4 voiced frames (~120ms) — silence NEVER counts
             if(!inBurst && voiced>=4 && now-lastRep>350){
               inBurst=true; lastRep=now; reps++;
@@ -514,6 +552,10 @@
     // sound) / "unknown" (no scorer, timeout, error — never punish the kid for
     // infrastructure, and never log made-up data).
     async function verifyClip(){
+      // bare-sound rounds: judged on-device by sound shape (SHAPE above) —
+      // the cloud scorer is unreliable on non-word text in both directions,
+      // and skipping it here saves credits. Syllables+ keep the honest gate.
+      if(ITEM.level==="isolation") return shapeVerdict();
       var blob=clipBlob();
       if(useSpeechAce&&blob){
         try{
