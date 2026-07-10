@@ -162,27 +162,6 @@
       </div>
     </div>
 
-    <!-- early adopter / beta survey -->
-    <div class="step" data-step="beta">
-      <div class="qh">You're a founding family 💛</div>
-      <p class="muted">Sona is in beta — and <b>free for you, forever</b>, as an early adopter. In return we'd love your honest take. Two quick ones (tap to answer, or skip ahead):</p>
-      <div style="font-family:'Baloo 2';font-weight:800;font-size:14.5px;margin-top:14px;">What would make Sona a no-brainer for your family?</div>
-      <div class="choices" id="obWant" style="margin-top:8px;">
-        <div class="choice" data-val="ai-coach" style="font-size:15px;padding:11px 14px;"><span class="ce">🗣️</span> A live AI speech coach</div>
-        <div class="choice" data-val="more-games" style="font-size:15px;padding:11px 14px;"><span class="ce">🎮</span> More mini-games</div>
-        <div class="choice" data-val="stories" style="font-size:15px;padding:11px 14px;"><span class="ce">📚</span> More stories &amp; books</div>
-        <div class="choice" data-val="slp-reports" style="font-size:15px;padding:11px 14px;"><span class="ce">📈</span> SLP-grade progress reports</div>
-      </div>
-      <div style="font-family:'Baloo 2';font-weight:800;font-size:14.5px;margin-top:14px;">Hardest part of practice at home?</div>
-      <div class="choices" id="obHard" style="margin-top:8px;">
-        <div class="choice" data-val="starting" style="font-size:15px;padding:11px 14px;"><span class="ce">🚪</span> Getting started</div>
-        <div class="choice" data-val="attention" style="font-size:15px;padding:11px 14px;"><span class="ce">🎈</span> Keeping attention</div>
-        <div class="choice" data-val="accuracy" style="font-size:15px;padding:11px 14px;"><span class="ce">👂</span> Knowing if it's said right</div>
-        <div class="choice" data-val="frustration" style="font-size:15px;padding:11px 14px;"><span class="ce">😮‍💨</span> Frustration &amp; tears</div>
-      </div>
-      <input id="obWish" type="text" placeholder="Anything you wish Sona did? (optional)" style="margin-top:14px;" />
-    </div>
-
     <!-- email (last — capture after the questions) -->
     <div class="step" data-step="email">
       <div class="qh">Save <span id="emName">your child</span>'s progress 💾</div>
@@ -205,7 +184,7 @@
     var p = Sona.getProfile();
     var draft = {
       childName: p.childName || "",
-      character: p.character || "leo",
+      character: p.character || "fox", // Pip starts selected — one less decision
       focusSounds: (p.focusSounds && p.focusSounds.length) ? p.focusSounds.slice() : ["R","S","L","K"],
       slpEvaluated: p.slpEvaluated || "",
       goals: p.goals || "",
@@ -213,7 +192,7 @@
       interests: (p.interests && p.interests.length) ? p.interests.slice() : [],
     };
 
-    var ORDER = ["welcome","name","buddy","interests","sounds","goal","achieve","slp","beta","email"];
+    var ORDER = ["welcome","name","buddy","interests","sounds","goal","slp","email"];
     var BUBBLES = {
       welcome: "Hi! I'm Echo!",
       name:    "Nice to meet you!",
@@ -223,7 +202,6 @@
       goal: "Whatever you pick, I\u2019ll keep the week on track!",
       achieve: "Here's what's ahead! ✨",
       slp:     "Almost done! 🌟",
-      beta:    "You\u2019re helping build Sona!",
       email:   "One last thing! 💌",
     };
     var CTA = { email: "Start practicing! 🎉" };
@@ -309,26 +287,6 @@
     var nameEl=document.getElementById("obName"); nameEl.value=draft.childName;
     var emailEl=document.getElementById("obEmail"); emailEl.value=draft.email;
 
-    // beta survey — single pick per question, both optional
-    var betaWant="", betaHard="";
-    function wireBeta(wrapId, set){ var w=document.getElementById(wrapId); if(!w)return;
-      w.querySelectorAll(".choice").forEach(function(ch){ ch.onclick=function(){ Sona.sfx.tap(); set(ch.dataset.val);
-        w.querySelectorAll(".choice").forEach(function(n){n.classList.remove("on");}); ch.classList.add("on"); }; }); }
-    wireBeta("obWant",function(v){betaWant=v;}); wireBeta("obHard",function(v){betaHard=v;});
-    function sendBeta(){
-      try{
-        var code=""; try{ code=(Sona.pilotInfo&&Sona.pilotInfo().code)||""; }catch(e){}
-        var wish=(document.getElementById("obWish")||{}).value||"";
-        [ betaWant && {q:"onboarding.want", text:betaWant},
-          betaHard && {q:"onboarding.hardest", text:betaHard},
-          wish.trim() && {q:"onboarding.wish", text:wish.trim().slice(0,600)} ].forEach(function(m){
-          if(!m) return;
-          fetch("/api/feedback",{method:"POST",headers:{"Content-Type":"application/json"},keepalive:true,
-            body:JSON.stringify({q:m.q,text:m.text,src:"onboarding",code:code})}).catch(function(){});
-        });
-      }catch(e){}
-    }
-
     function render(){
       var key=ORDER[idx];
       ORDER.forEach(function(k,i){ steps[k].classList.toggle("on", i===idx); segEl.children[i].classList.toggle("on", i<=idx); });
@@ -356,7 +314,6 @@
     function finish(){
       draft.focusSounds = Array.from(selSounds);
       draft.interests = Array.from(selInterests);
-      sendBeta();
       Sona.saveProfile({
         earlyAdopter: true, // beta cohort — free forever, sees the founding banner
         childName: draft.childName,
@@ -385,9 +342,15 @@
         }
       }catch(e){}
       if(window.Sona){ Sona.sfx.complete(); Sona.confetti({count:160}); }
-      bubble.textContent = "You're all set! 🎉";
-      nextBtn.disabled = true; nextBtn.textContent = "Let's practice!";
-      setTimeout(function(){ location.href="/map.html"; }, 1100);
+      // the finale (not a step): show "what's ahead", then Echo calls by name
+      ORDER.forEach(function(k){ steps[k].classList.remove("on"); });
+      var ach=document.querySelector('[data-step="achieve"]');
+      if(ach){ var nm3=(nameEl.value||draft.childName||"").trim(); document.getElementById("achName").textContent=nm3||"your child"; ach.classList.add("on"); }
+      bubble.textContent = "You're all set!";
+      nextBtn.disabled = true; nextBtn.textContent = "Echo is calling…";
+      backBtn.style.display = "none";
+      setTimeout(function(){ bubble.textContent = "Ring ring… it's Echo!"; }, 1800);
+      setTimeout(function(){ location.href="/coach-call.html?first=1"; }, 3200);
     }
 
     nextBtn.onclick=next; backBtn.onclick=back;

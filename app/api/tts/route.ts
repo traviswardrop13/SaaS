@@ -59,7 +59,11 @@ export async function POST(req: NextRequest) {
 
   let text = "";
   let voiceOverride: string | undefined;
-  let stable = false; // kid prompts ("say rrrr") need the SAME rendering every time — skip expressive v3
+  // `stable` used to force flat v2 delivery so repeats matched — but clips are
+  // cached on-device AND in the warm-instance LRU, so identical replays come
+  // from the cache, not from flat generation. Every line now gets the
+  // expressive path; `stable` only pins v3 to its "natural" mode.
+  let stable = false;
   try {
     const b = await req.json();
     text = typeof b?.text === "string" ? b.text.slice(0, 800) : "";
@@ -68,6 +72,7 @@ export async function POST(req: NextRequest) {
   } catch {
     // no body
   }
+  void stable; // accepted for back-compat; v3 always runs in its "natural" mode
   if (!text.trim()) {
     return NextResponse.json({ ok: false, error: "text is required" }, { status: 400 });
   }
@@ -88,30 +93,33 @@ export async function POST(req: NextRequest) {
       // once v3 is known-broken on this account, skip it so Leo never waits on a
       // doomed request. Leo must never go silent.
       const attempts = [
-        // v3 only takes coarse stability modes (0=creative, 0.5=natural, 1=robust)
+        // v3 = the natural-cadence model; audio tags like [excited]/[whispers]
+        // in the text become real delivery. Coarse stability only
+        // (0=creative, 0.5=natural, 1=robust) — `stable` pins natural.
         { model: v3Model, settings: { stability: 0.5, use_speaker_boost: true } },
         {
           model: fallbackModel,
           settings: {
-            stability: 0.78,        // high = calm, consistent delivery (low values get theatrical)
+            stability: 0.5,         // mid = real intonation (0.78 was the "robot" — flat by design)
             similarity_boost: 0.85, // stay close to the voice's natural sample
-            style: 0.04,            // near zero — style exaggeration is what sounded fake
-            speed: 0.87,            // kid pace: noticeably slower, natural instruction rhythm
+            style: 0.4,             // enough style for rises/falls without getting theatrical
+            speed: 1.0,             // natural pace — 0.87 smeared the rhythm into a drone
             use_speaker_boost: true,
           },
         },
       ].filter((a, i, arr) => arr.findIndex((b) => b.model === a.model) === i)
-       .filter((a) => !(v3Broken && a.model === v3Model))
-       .filter((a) => !(stable && a.model === v3Model)); // kid prompts: calm v2 only
+       .filter((a) => !(v3Broken && a.model === v3Model));
 
       let lastErr = "";
       for (const a of attempts) {
+        // v3 performs [tags]; older models would read them aloud — strip.
+        const sendText = a.model === v3Model ? text : text.replace(/\[[a-z ]{2,24}\]\s*/gi, "");
         const r = await fetch(
           `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?output_format=pcm_24000`,
           {
             method: "POST",
             headers: { "xi-api-key": elevenKey, "Content-Type": "application/json" },
-            body: JSON.stringify({ text, model_id: a.model, voice_settings: a.settings }),
+            body: JSON.stringify({ text: sendText, model_id: a.model, voice_settings: a.settings }),
           },
         );
         if (r.ok) {

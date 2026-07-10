@@ -79,6 +79,12 @@
       <p class="muted" style="font-size:13px;font-weight:700;">No scores in here — read picture books with Echo and play with words.</p></div>
     </div>
 
+    <button id="advTile" onclick="location.href='/story.html'" style="width:100%;border:none;cursor:pointer;border-radius:18px;padding:16px;margin-top:14px;text-align:left;display:flex;align-items:center;gap:14px;background:linear-gradient(120deg,#35407e,#6a5aa8 70%,#8a6fc4);box-shadow:0 6px 0 rgba(30,24,70,.35);">
+      <svg viewBox="0 0 64 64" style="width:44px;height:44px;flex:0 0 auto"><path d="M32 5l8.2 18.6L60 25.8 44.9 39.2 49.8 59 32 48.4 14.2 59l4.9-19.8L4 25.8l19.8-2.2Z" fill="#ffd21c"/><circle cx="25" cy="21" r="3" fill="#fff" opacity=".85"/></svg>
+      <span><b id="advTitle" style="display:block;font-family:'Baloo 2';font-weight:800;font-size:17px;color:#fff;">Your Adventure</b>
+      <span id="advSub" style="display:block;font-weight:800;font-size:12px;color:rgba(255,255,255,.85);margin-top:2px;">A brand-new story, written just for you — never the same twice</span></span>
+    </button>
+
     <div class="shelfhead"><h2>Sound stories</h2><span class="tag">ECHO READS</span></div>
     <div class="shelf" id="shelf"></div>
 
@@ -105,6 +111,10 @@
   <script src="/sona.js"></script>
   <script>
     var profile = Sona.getProfile();
+    try{ var nm=(profile.childName||"").trim(), it=(profile.interests&&profile.interests[0])||"";
+      if(nm) document.getElementById("advTitle").textContent=nm+"'s Adventure";
+      if(it) document.getElementById("advSub").textContent="A brand-new "+it+" story, made just for "+(nm||"you")+" — never the same twice";
+    }catch(e){}
     var PITCH = Sona.VOICE_PITCH || 1.15;
 
     var STORIES = [

@@ -159,6 +159,10 @@
 
     // the runner = the kid's own buddy character (mascot-neutral)
     var RUNNER="🦊";
+    // the kid's chosen buddy as a real sticker sprite (emoji stays the fallback)
+    var BUDDYIMG=(function(){ try{ var c=S.characterById((S.getProfile()||{}).character||"fox"); if(c&&c.svg){ var im=new Image(); im.src="data:image/svg+xml;utf8,"+encodeURIComponent(c.svg); return im; } }catch(e){} return null; })();
+    function drawBuddy(x,y,sz){ if(BUDDYIMG&&BUDDYIMG.complete&&BUDDYIMG.naturalWidth){ ctx.drawImage(BUDDYIMG,x-sz/2,y-sz/2,sz,sz); return true; } return false; }
+
     try{ var c=S.characterById((S.getProfile()||{}).character||"fox"); if(c&&c.emoji)RUNNER=c.emoji; }catch(e){}
 
     function laneCX(l){ var road=W*0.86, lw=road/LANES; return (W-road)/2+lw*l+lw/2; }
@@ -224,15 +228,15 @@
       // player (star mode = rainbow ring; falling = Mario-Kart tumble + rescue)
       if(falling.on){
         var ft=(performance.now()-falling.t0)/1100;
-        if(ft>=1){ falling.on=false; hurtT=performance.now(); flash("Back in the race! 🫧"); }
+        if(ft>=1){ falling.on=false; hurtT=performance.now(); flash("Back in the race!"); }
         else{
           ctx.save(); ctx.translate(px,py+ft*ft*300); ctx.rotate(ft*12);
-          ctx.globalAlpha=1-ft*0.4; ctx.fillStyle="#000"; ctx.font=(54*(1-ft*0.45))+"px sans-serif"; ctx.fillText(RUNNER,0,0); ctx.restore();
+          ctx.globalAlpha=1-ft*0.4; if(!drawBuddy(0,-8,58*(1-ft*0.45))){ ctx.fillStyle="#000"; ctx.font=(54*(1-ft*0.45))+"px sans-serif"; ctx.fillText(RUNNER,0,0); } ctx.restore();
         }
       } else {
         if(boost.on){ ctx.fillStyle="rgba(255,210,28,.35)"; ctx.beginPath(); ctx.arc(px,py,44,0,7); ctx.fill(); }
         var blink=(performance.now()-hurtT<1200)&&(((performance.now()/120)|0)%2===0);
-        if(!blink){ ctx.fillStyle="#000"; ctx.font="54px sans-serif"; ctx.fillText(RUNNER,px,py); }
+        if(!blink){ if(!drawBuddy(px,py-20,58)){ ctx.fillStyle="#000"; ctx.font="54px sans-serif"; ctx.fillText(RUNNER,px,py); } }
       }
       requestAnimationFrame(playing?draw:function(){});
     }
