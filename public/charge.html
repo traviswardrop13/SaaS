@@ -274,7 +274,7 @@
     function getCtx(){ if(!audioCtx){var AC=window.AudioContext||window.webkitAudioContext;audioCtx=new AC();} if(audioCtx.state==="suspended")audioCtx.resume(); return audioCtx; }
     function playPCM(b){ return new Promise(function(res){ try{ var c=getCtx(),n=b.byteLength>>1,ab=c.createBuffer(1,n,24000),ch=ab.getChannelData(0),dv=new DataView(b.buffer,b.byteOffset,b.byteLength); for(var i=0;i<n;i++)ch[i]=dv.getInt16(i*2,true)/32768; var s=c.createBufferSource();s.buffer=ab;var g=c.createGain();g.gain.value=(profile.volume!=null?profile.volume:0.8);s.connect(g);g.connect(c.destination);s.onended=res;s.start(); }catch(e){res();} }); }
     function say(t){ return new Promise(function(res){ if(!t||profile.voiceOn===false)return res(); if(speaking)return res(); speaking=true;
-      var key=(profile.voiceId||"leo")+"|v3|"+t; // v3: expressive delivery — old flat clips regenerate
+      var key=(profile.voiceId||"sarah")+"|v4|"+t; // v4: Sarah voice — every device regenerates
       ttsGet(key).then(function(cached){
         if(cached) return playPCM(new Uint8Array(cached));
         return fetch("/api/tts",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text:t,voice:profile.voiceId||"",stable:true})})

@@ -80,7 +80,7 @@ export async function POST(req: NextRequest) {
   try {
     if (elevenKey) {
       const voiceId =
-        voiceOverride || process.env.ELEVENLABS_VOICE_ID || "qBDvhofpxp92JgXJxDjB"; // Leo's voice — a real kid, no client pitch-shift needed.
+        voiceOverride || process.env.ELEVENLABS_VOICE_ID || "RJ94BzgbkIV3dGoYvkpb"; // Sarah — the app's coach voice (Travis-picked).
 
       // Serve a cached clip instantly (short, repeated prompts only — never long/unique story text).
       const cacheKey = `el|${voiceId}|${text}`;
