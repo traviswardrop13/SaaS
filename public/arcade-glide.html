@@ -136,9 +136,9 @@
     $("revDone").onclick=function(){ reviveWait=false; $("revOvl").classList.remove("show"); endRound(); };
     hearts();
 
-    var G=H*0.00075, FLAP=-H*0.0115;
+    var G=H*0.00052, FLAP=-H*0.0095; // floaty, kid-gentle physics
     var py=H*0.45, vy=0, px=W*0.32;
-    var gates=[], gapH=H*0.34, gspeed=W*0.0048, spawnMs=1650;
+    var gates=[], gapH=H*0.42, gspeed=W*0.0030, spawnMs=2300; // wide gaps, slow drift
     var falling={on:false,t0:0}, mercyT=0;
     var RUNNER="🦊";
     // the kid's chosen buddy as a real sticker sprite (emoji stays the fallback)
@@ -152,7 +152,7 @@
       gates.push({x:W+70,cy:cy,passed:false,gold:boost.on});
     }
     var spawnTimer=setInterval(function(){ if(playing&&!falling.on) spawnGate(); },spawnMs);
-    var rampIv=setInterval(function(){ if(playing){ gspeed*=1.05; if(gapH>H*0.26) gapH*=0.985; } },9000);
+    var rampIv=setInterval(function(){ if(playing){ gspeed*=1.03; if(gapH>H*0.32) gapH*=0.992; } },12000); // very gentle ramp
     
 
     cv.addEventListener("pointerdown",function(){

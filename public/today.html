@@ -140,7 +140,7 @@
     <div class="modal" style="position:relative;text-align:left;">
       <button id="pulseX" aria-label="Close" style="position:absolute;top:10px;right:10px;width:34px;height:34px;border:none;border-radius:50%;background:var(--cream);color:var(--label);font-weight:800;font-size:15px;cursor:pointer;box-shadow:0 2px 0 var(--track);">✕</button>
       <div style="font-family:'Baloo 2';font-weight:800;font-size:12px;letter-spacing:.08em;color:var(--orange-d);padding-right:40px;">BETA · YOU'RE BUILDING SONA WITH US</div>
-      <h3 id="pulseQ" style="text-align:left;margin-top:8px;">How's it going?</h3>
+      <h3 id="pulseQ" style="text-align:left;margin-top:8px;">What should we build for you?</h3>
       <div id="pulseOpts"></div>
     </div>
   </div>
@@ -171,8 +171,8 @@
         sub:d.playedToday?("Score "+d.score+" · Best "+d.best+" · back tomorrow!"):"One shot · 4 games · high score!",
         tap:function(){ if(d.playedToday){ sfx("tap"); toast("Come back tomorrow! Pick another game"); return; } sfx("correct"); location.href="/charge.html?daily=1&sound="+encodeURIComponent(sound)+"&level="+currentLevel(); } },
       { key:"call", name:"Coach Call",
-        sub:callsLeft()>0?("Echo wants to hear you · "+callsLeft()+" left this week"):"Back Monday · Echo's beak is resting!",
-        tap:function(){ sfx("correct"); location.href="/coach-call.html"; } },
+        sub:"Coming soon — real calls with Echo!",
+        tap:function(){ sfx("tap"); toast("Coach Call is coming soon!"); } },
       { key:"slice", name:"Fruit Slice",   sub:"Say it 5× to play", tap:function(){ sfx("tap"); location.href="/charge.html?game=arcade-slice.html"; } },
       { key:"tiles", name:"Piano Tiles",   sub:"Say it 5× to play", tap:function(){ sfx("tap"); location.href="/charge.html?game=arcade-tiles.html"; } },
       { key:"stack", name:"Block Stacker", sub:"Say it 5× to play", tap:function(){ sfx("tap"); location.href="/charge.html?game=arcade-stack.html"; } },
@@ -363,32 +363,24 @@
       else if(S.trialExpired&&S.trialExpired()){ m.innerHTML="Your free trial ended · <u>Keep going for $39.99/yr →</u>"; b.style.display="flex"; }
     })();
 
-    // ── beta pulse: every few visits, one quick question. X always dismisses. ──
-    var PULSE_QS=[
-      { id:"pulse.mood",   t:"How's practice going this week?", opts:[["great","😊 Great"],["okay","😐 Okay"],["rough","😣 Rough"]] },
-      { id:"pulse.excite", t:"Is your child excited to open Sona?", opts:[["yes","Yes!"],["sometimes","Sometimes"],["not-really","Not really"]] },
-      { id:"pulse.scoring",t:"Does the voice checking feel right?", opts:[["too-strict","Too strict"],["about-right","About right"],["too-easy","Too easy"]] },
-      { id:"pulse.next",   t:"What should we build next?", opts:[["ai-coach","Live AI coach"],["more-games","More games"],["stories","More stories"],["reports","Better reports"]] },
-      { id:"pulse.coach",  t:"Would a live AI speech coach be worth a higher plan?", opts:[["absolutely","Absolutely"],["maybe","Maybe"],["keep-simple","No — keep it simple"]] }
-    ];
+    // ── beta pulse: an open box — request, complaint, or idea. X always dismisses. ──
     function pulseState(){ try{ return JSON.parse(localStorage.getItem("sona.pulse.v1")||"{}"); }catch(e){ return {}; } }
     function pulseSave(s){ try{ localStorage.setItem("sona.pulse.v1",JSON.stringify(s)); }catch(e){} }
     function showPulse(force){
-      var st=pulseState(), qi=(st.qIx||0)%PULSE_QS.length, q=PULSE_QS[qi];
-      $("pulseQ").textContent=q.t;
-      var w=$("pulseOpts"); w.innerHTML="";
-      q.opts.forEach(function(o){
-        var btn=document.createElement("button");
-        btn.className="sheetBtn"; btn.style.marginTop="8px"; btn.textContent=o[1];
-        btn.onclick=function(){
-          var code=""; try{ code=(S.pilotInfo&&S.pilotInfo().code)||""; }catch(e){}
-          try{ fetch("/api/feedback",{method:"POST",headers:{"Content-Type":"application/json"},keepalive:true,
-            body:JSON.stringify({q:q.id,text:o[0],src:"pulse",code:code})}).catch(function(){}); }catch(e){}
-          st.qIx=qi+1; st.last=Date.now(); pulseSave(st);
-          $("pulseOvl").classList.remove("show"); sfx("correct"); toast("Thank you — this shapes Sona!");
-        };
-        w.appendChild(btn);
-      });
+      var st=pulseState();
+      var w=$("pulseOpts");
+      w.innerHTML='<textarea id="pulseText" rows="4" placeholder="A request, a complaint, an idea — anything helps." '
+        +'style="width:100%;border:2px solid var(--track);border-radius:14px;padding:12px;font-family:Nunito,sans-serif;font-weight:700;font-size:14px;color:var(--ink);resize:none;margin-top:10px;"></textarea>'
+        +'<button id="pulseSend" class="sheetBtn" style="justify-content:center;background:linear-gradient(180deg,#ffa05a,#ff8a3d);color:#fff;box-shadow:0 4px 0 var(--orange-d);">Send it</button>';
+      $("pulseSend").onclick=function(){
+        var txt=($("pulseText").value||"").trim();
+        if(!txt){ $("pulseText").focus(); return; }
+        var code=""; try{ code=(S.pilotInfo&&S.pilotInfo().code)||""; }catch(e){}
+        try{ fetch("/api/feedback",{method:"POST",headers:{"Content-Type":"application/json"},keepalive:true,
+          body:JSON.stringify({q:"pulse.open",text:txt.slice(0,600),src:"pulse",code:code})}).catch(function(){}); }catch(e){}
+        st.last=Date.now(); pulseSave(st);
+        $("pulseOvl").classList.remove("show"); sfx("correct"); toast("Thank you — this shapes Sona!");
+      };
       $("pulseOvl").classList.add("show");
       if(force){ st.last=Date.now(); pulseSave(st); }
     }

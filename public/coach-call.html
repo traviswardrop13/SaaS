@@ -125,6 +125,16 @@
     <button id="notNow">Not now</button>
   </div>
 
+  <!-- coming soon (feature parked until call quality is up to snuff) -->
+  <div class="ovl" id="soonOvl">
+    <div class="ovlCard">
+      <img class="ovlEcho" src="/coach/echo/echo-idle.svg" alt="" />
+      <h2>Coming soon!</h2>
+      <p>Echo's phone is almost ready. Keep practicing in the games — he's warming up his voice!</p>
+      <button class="btn" id="soonHome">Back home</button>
+    </div>
+  </div>
+
   <!-- no calls left this week -->
   <div class="ovl" id="capOvl">
     <div class="ovlCard">
@@ -181,7 +191,7 @@
     function say(t){ return new Promise(function(res){ if(!t||profile.voiceOn===false)return res(); if(speaking)return res(); speaking=true;
       pose("talk"); $("caption").innerHTML=t.replace(/\[[a-z ]{2,24}\]\s*/gi,"").replace(/\*(.+?)\*/g,"<b>$1</b>");
       var plain=t.replace(/\*/g,"");
-      var key=(profile.voiceId||"leo")+"|v3|"+plain;
+      var key=(profile.voiceId||"sarah")+"|v4|"+plain;
       ttsGet(key).then(function(cached){
         if(cached) return playPCM(new Uint8Array(cached));
         return fetch("/api/tts",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text:plain,voice:profile.voiceId||"",stable:true})})
@@ -379,11 +389,16 @@
 
     // ---- boot: cap gate, then the ring screen. Answering = the tap that
     // unlocks audio + mic. "Not now" never burns a call. ----
+    var DEVMODE=new URLSearchParams(location.search).get("dev")==="1";
     var st0=callState();
-    if(st0.used>=MAXCALLS && !FIRSTCALL){
+    if(!DEVMODE){
+      $("ringOvl").style.display="none";
+      $("soonOvl").classList.add("show");
+    } else if(st0.used>=MAXCALLS && !FIRSTCALL){
       $("ringOvl").style.display="none";
       $("capOvl").classList.add("show");
     }
+    $("soonHome").onclick=function(){ location.href="/today.html"; };
     $("capHome").onclick=function(){ location.href="/today.html"; };
     $("doneHome").onclick=function(){ location.href="/today.html"; };
     $("notNow").onclick=function(){ location.href="/today.html"; };
