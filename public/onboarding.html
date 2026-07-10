@@ -353,10 +353,9 @@
       var ach=document.querySelector('[data-step="achieve"]');
       if(ach){ var nm3=(nameEl.value||draft.childName||"").trim(); document.getElementById("achName").textContent=nm3||"your child"; ach.classList.add("on"); }
       bubble.textContent = "You're all set!";
-      nextBtn.disabled = true; nextBtn.textContent = "Echo is calling…";
+      nextBtn.disabled = true; nextBtn.textContent = "Let's practice!";
       backBtn.style.display = "none";
-      setTimeout(function(){ bubble.textContent = "Ring ring… it's Echo!"; }, 1800);
-      setTimeout(function(){ location.href="/coach-call.html?first=1"; }, 3200);
+      setTimeout(function(){ location.href="/today.html"; }, 2400);
     }
 
     nextBtn.onclick=next; backBtn.onclick=back;
