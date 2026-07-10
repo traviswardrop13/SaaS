@@ -167,13 +167,10 @@
     // ── the activity deck: hero + up-next, art from the vector scenes ──
     function callsLeft(){ try{ var s=JSON.parse(localStorage.getItem("sona.call.v1")||"{}"); var dt=new Date(); var dow=(dt.getDay()+6)%7; var m=new Date(dt.getFullYear(),dt.getMonth(),dt.getDate()-dow); var wk=m.getFullYear()+"-"+(m.getMonth()+1)+"-"+m.getDate(); return Math.max(0,3-((s.week===wk?s.used:0)||0)); }catch(e){ return 3; } }
     var ACTS=[
-      { key:"daily-"+(((S&&S.dayNum)?S.dayNum():0)%7), name:"Let's play!",
-        sub:d.playedToday?("Score "+d.score+" · Best "+d.best+" · back tomorrow!"):"One shot · 4 games · high score!",
-        tap:function(){ if(d.playedToday){ sfx("tap"); toast("Come back tomorrow! Pick another game"); return; } sfx("correct"); location.href="/charge.html?daily=1&sound="+encodeURIComponent(sound)+"&level="+currentLevel(); } },
+      { key:"slice", name:"Fruit Slice",   sub:"Say it 5× to play", tap:function(){ sfx("tap"); location.href="/charge.html?game=arcade-slice.html"; } },
       { key:"call", name:"Coach Call",
         sub:"Coming soon — real calls with Echo!",
         tap:function(){ sfx("tap"); toast("Coach Call is coming soon!"); } },
-      { key:"slice", name:"Fruit Slice",   sub:"Say it 5× to play", tap:function(){ sfx("tap"); location.href="/charge.html?game=arcade-slice.html"; } },
       { key:"tiles", name:"Piano Tiles",   sub:"Say it 5× to play", tap:function(){ sfx("tap"); location.href="/charge.html?game=arcade-tiles.html"; } },
       { key:"stack", name:"Block Stacker", sub:"Say it 5× to play", tap:function(){ sfx("tap"); location.href="/charge.html?game=arcade-stack.html"; } },
       { key:"run",   name:"Sound Sprint",  sub:"Say it 5× to play", tap:function(){ sfx("tap"); location.href="/charge.html?game=arcade-run.html"; } },
@@ -181,9 +178,6 @@
       { key:"story", name:"Story Time",    sub:"A new story made for you · ★★★", tap:function(){ sfx("tap"); location.href="/story.html"; } },
     ];
     var sel=0;
-    // if today's run is done, lead with the first game instead
-    if(d.playedToday) sel=1;
-    if(location.hash==="#play") sel=1;
 
     function art(key){ try{ return (window.SonaScenes&&SonaScenes.has(key))?("url('"+SonaScenes.uri(key)+"')"):""; }catch(e){ return ""; } }
     // illustrated panels (coach/city/<key>.png) take over the moment they load.

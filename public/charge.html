@@ -251,9 +251,10 @@
     var CUETIP=""; try{ CUETIP=(S&&S.cue)?(S.cue(SOUND).tip||""):""; }catch(e){}
     // compact articulation cue: first clause only, no similes, no sound demos
     var CUESHORT=(CUETIP.split("\u2014")[0].split(" like ")[0].split(",")[0]||"").trim().replace(/[.!]+$/,"");
+    var HUMANCLIPS=false; // Rachel's raw clips paused until re-voiced as Sarah (STS batch)
     function playPrompt(){
       return Promise.resolve().then(function(){ return new Promise(function(res){
-        if(ITEM.level!=="isolation"){ say(sayLine()).then(res); return; }
+        if(ITEM.level!=="isolation" || !HUMANCLIPS){ say(sayLine()).then(res); return; }
         try{
           var a=new Audio("/coach/say/"+SOUND+".mp3");
           var done=false; function fin(){ if(done)return; done=true; res(); }
