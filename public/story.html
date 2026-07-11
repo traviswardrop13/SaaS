@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
   <title>Sona — Story Time</title>
-  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet" />
+  <link href="/fonts.css" rel="stylesheet">
   <link rel="manifest" href="/manifest.webmanifest" />
   <meta name="theme-color" content="#7cc40a" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -70,11 +70,13 @@
       <button class="mic" id="micBtn" title="Say it"><svg viewBox="0 0 24 24"><path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v6a3 3 0 0 0 3 3Z"/><path d="M6 11a6 6 0 0 0 12 0M12 18v3" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round"/></svg></button>
     </div>
   </div>
-  <div id="start" style="position:fixed;inset:0;z-index:40;display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:30px;background:linear-gradient(180deg,#eafff0,#dff6e6);">
-    <img src="/coach/echo/echo-celebrate.svg" alt="" onerror="this.onerror=null;this.src='/coach/echo/echo-idle.svg';" style="width:120px;height:120px;object-fit:contain;" />
-    <h1 id="startTitle" style="font-family:'Baloo 2';font-weight:800;font-size:26px;color:#3f8a06;margin-top:14px;">Story time!</h1>
-    <p style="font-weight:700;color:#5a7a3c;font-size:15px;margin-top:8px;max-width:300px;">I'll read each page out loud — then you read it back to me! 📖</p>
-    <button id="startBtn" style="margin-top:24px;border:none;border-radius:18px;padding:16px 44px;font-family:'Baloo 2';font-weight:800;font-size:20px;text-transform:uppercase;color:#fff;background:#58cc02;box-shadow:0 5px 0 #46a302;cursor:pointer;">📖 Start</button>
+  <div id="start" style="position:fixed;inset:0;z-index:40;display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:30px;background:linear-gradient(180deg,#eafff0,#dff6e6 55%,#cdea9e);">
+    <div style="background:#fff;border-radius:26px;padding:30px 26px;max-width:340px;width:100%;box-shadow:10px 12px 0 rgba(124,196,10,.18),0 16px 40px rgba(90,120,20,.22);">
+      <img src="/coach/echo/echo-celebrate.svg" alt="" onerror="this.onerror=null;this.src='/coach/echo/echo-idle.svg';" style="width:170px;height:170px;object-fit:contain;filter:drop-shadow(0 10px 14px rgba(90,120,20,.22));" />
+      <h1 id="startTitle" style="font-family:'Baloo 2';font-weight:800;font-size:28px;color:#3f8a06;margin-top:12px;line-height:1.15;">Story time!</h1>
+      <p style="font-weight:700;color:#5a7a3c;font-size:15.5px;margin-top:8px;">I'll read each page out loud — then you read it back to me!</p>
+      <button id="startBtn" style="margin-top:22px;width:100%;border:none;border-radius:18px;padding:17px;font-family:'Baloo 2';font-weight:800;font-size:20px;color:#fff;background:linear-gradient(180deg,#6fd60e,#58cc02);box-shadow:0 5px 0 #46a302;cursor:pointer;">Start the story!</button>
+    </div>
   </div>
   <div id="win">
     <img class="leoWin" src="/coach/echo/echo-celebrate.svg" alt="Leo" onerror="this.onerror=null;this.src='/coach/echo/echo-idle.svg';" />

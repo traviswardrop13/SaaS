@@ -1,7 +1,9 @@
+/* Warm brand neutrals — the parent surfaces (settings/progress) share the
+   kid app's cream/ink language now; blue stays as a secondary accent. */
 :root{
   --blue:#2a9df4; --blue-d:#1480e0; --orange:#ff8a3d; --orange-d:#ef6f23;
-  --ink:#10243a; --muted:#5b6b80; --line:#e6eef8; --card:#ffffff;
-  --bg1:#ffffff; --bg2:#e8f2ff; --good:#22c55e;
+  --ink:#4a2c14; --muted:#8a6f52; --line:#f0e4d2; --card:#ffffff;
+  --bg1:#fffdf8; --bg2:#fff2df; --good:#58cc02;
 }
 *{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased;
   font-family:"Nunito",-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-tap-highlight-color:transparent;}
@@ -17,6 +19,10 @@ header.app{display:flex;align-items:center;justify-content:space-between;gap:10p
   background:linear-gradient(160deg,#ffd9b0,#ffedd5);}
 .brand .leo img{width:30px;height:30px;object-fit:contain;}
 .brand .beta{font-size:10px;font-weight:800;letter-spacing:.06em;color:#92400e;background:#fde68a;border-radius:99px;padding:2px 7px;align-self:center;}
+/* top nav (settings/progress) — spaced pills, active state in brand orange */
+nav.app{display:flex;align-items:center;gap:6px;}
+nav.app a{font-weight:800;font-size:13.5px;color:var(--muted);padding:7px 11px;border-radius:99px;}
+nav.app a.active{color:var(--orange-d);background:#ffe7d3;}
 /* streak + xp pills */
 .pills{display:flex;align-items:center;gap:8px;}
 .pill{display:flex;align-items:center;gap:5px;font-weight:800;font-size:15px;background:#fff;border:1px solid var(--line);
@@ -91,11 +97,11 @@ input[type=text],input[type=email],select{width:100%;margin-top:6px;padding:13px
 .sound{cursor:pointer;user-select:none;padding:10px 16px;border-radius:12px;border:1px solid var(--line);background:#fff;font-weight:800;font-family:"Baloo 2",sans-serif;color:var(--muted);}
 .sound.on{background:#ffe7d3;border-color:#ffc79a;color:var(--orange-d);}
 .toggle{display:flex;align-items:center;gap:10px;margin-top:16px;font-weight:700;}
-.toggle input{width:20px;height:20px;}
-.bar{height:12px;border-radius:99px;background:#eaf1fb;overflow:hidden;}
-.bar > span{display:block;height:100%;background:linear-gradient(90deg,var(--blue),var(--orange));}
-code{background:#eef3fb;padding:2px 6px;border-radius:6px;font-family:ui-monospace,monospace;font-size:13px;}
-.soon{font-size:11px;font-weight:800;color:var(--muted);background:#eef3fb;border-radius:99px;padding:3px 8px;margin-left:6px;}
+.toggle input{width:20px;height:20px;accent-color:var(--orange);flex:none;}
+.bar{height:12px;border-radius:99px;background:#f5ecdd;overflow:hidden;}
+.bar > span{display:block;height:100%;background:linear-gradient(90deg,var(--orange),#ffd21c);}
+code{background:#f7efe2;padding:2px 6px;border-radius:6px;font-family:ui-monospace,monospace;font-size:13px;}
+.soon{font-size:11px;font-weight:800;color:var(--muted);background:#f7efe2;border-radius:99px;padding:3px 8px;margin-left:6px;}
 /* celebration overlay (prize chest, milestones) */
 .cele{position:fixed;inset:0;z-index:9990;display:none;align-items:center;justify-content:center;padding:24px;background:rgba(16,36,58,.55);}
 .cele.show{display:flex;}

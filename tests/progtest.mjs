@@ -122,6 +122,23 @@ if (bn.shown) {
   await page.evaluate(() => document.getElementById("gateClose").click());
 }
 
+// ── retry ladder: Echo thinks while scoring; two misses step DOWN a rung ──
+ok("Echo's thinking state while the scorer runs", /Echo's thinking…/.test(chargeSrc) && /leo\.think\{animation:think/.test(chargeSrc.replace(/#/g, "")));
+ok("step-down retry offers an easier same-sound target", /Let's try something easier/.test(chargeSrc) && /ladderContent\(SOUND,useRung-1\)/.test(chargeSrc));
+
+// ── voice revive: "keep playing" copy + family-aware trigger in all 5 games ──
+{
+  const { readFileSync: rf } = await import("fs");
+  const games = ["arcade-slice", "arcade-tiles", "arcade-stack", "arcade-run", "arcade-glide"];
+  const all = games.every((g) => {
+    const src = rf(ROOT + "/" + g + ".html", "utf8");
+    return src.includes("to keep playing!") && src.includes("famOK") && src.includes("Sona.frameShape");
+  });
+  ok("all 5 games: revive says 'keep playing' + family-checked", all);
+  const sj = rf(ROOT + "/sona.js", "utf8");
+  ok("sona.js exports the shape helpers", /soundFamily, frameShape,/.test(sj));
+}
+
 // ── pulse open box: placeholder reads clean ──
 await page.evaluate(() => { try { window.showPulse && showPulse(true); } catch (e) {} });
 t = await page.evaluate(() => (document.getElementById("pulseText") || {}).placeholder || "");
