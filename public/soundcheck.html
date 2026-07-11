@@ -91,6 +91,8 @@
     // flat list of turns: one per word
     var TURNS=[]; GROUPS.forEach(function(g){ g.words.forEach(function(w){ TURNS.push({sound:g.sound,word:w}); }); });
     var ti=0, results={}; GROUPS.forEach(function(g){ results[g.sound]={words:g.words.slice(),scores:[]}; });
+    // best clip of the check gets pinned on-device as this week's Journey entry
+    var BEST={score:-1,blob:null,word:"",sound:""};
     window.__sc={mode:MODE,turns:TURNS.slice()}; // headless-test hook
 
     var dots=$("dots"); TURNS.forEach(function(){ dots.appendChild(document.createElement("i")); });
@@ -167,6 +169,7 @@
       var score=await Promise.race([p,new Promise(function(r){setTimeout(function(){r("slow");},2600);})]);
       if(score==="slow"){ results[t.sound].scores.push(null); p.then(function(v){ if(typeof v==="number") results[t.sound].scores[slot]=v; }); }
       else results[t.sound].scores.push(typeof score==="number"?score:null);
+      if(res.blob){ var sc=(typeof score==="number")?score:0; if(sc>=BEST.score){ BEST={score:sc,blob:res.blob,word:t.word,sound:t.sound}; } }
       ti++;
       setTimeout(runTurn,450);
     }
@@ -175,6 +178,7 @@
       try{
         if(S&&S.saveCheck){ S.saveCheck({mode:MODE,results:results}); }
         if(S&&S.buildPlan){ S.buildPlan(); }
+        if(BEST.blob&&S&&S.saveRecording){ S.saveRecording({sound:BEST.sound,word:BEST.word,level:"check",blob:BEST.blob}); }
       }catch(e){}
       $("doneSub").textContent="Echo heard "+TURNS.length+" words and updated the practice plan!";
       $("doneOvl").classList.add("show");

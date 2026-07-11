@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <title>Sona — Sound Journey</title>
+  <link href="/fonts.css" rel="stylesheet">
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <meta name="theme-color" content="#fff6e9" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <style>
+    :root{ --cream:#fff6e9; --ink:#4a2c14; --muted:#b08d63; --label:#c9a878; --track:#f0e4d2; --orange:#ff8a3d; --orange-d:#ef6f23; --green:#58cc02; --green-d:#46a302; --gold:#ffd21c; }
+    *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;font-family:"Nunito",-apple-system,sans-serif;}
+    html,body{min-height:100%;background:var(--cream);color:var(--ink);}
+    #wrap{max-width:560px;margin:0 auto;padding:calc(14px + env(safe-area-inset-top)) 20px calc(28px + env(safe-area-inset-bottom));}
+    header{display:flex;align-items:center;gap:12px;}
+    #close{border:none;background:#fff;width:40px;height:40px;border-radius:50%;font-size:18px;font-weight:800;color:var(--muted);cursor:pointer;box-shadow:0 3px 0 var(--track);flex:none;}
+    h1{font-family:"Baloo 2";font-weight:800;font-size:21px;}
+    #wkNow{font-weight:800;font-size:12.5px;color:var(--muted);}
+    #intro{font-weight:800;font-size:12.5px;color:var(--muted);margin:12px 2px 4px;line-height:1.5;}
+    /* timeline */
+    #tl{position:relative;margin-top:14px;padding-left:6px;}
+    #tl:before{content:"";position:absolute;left:24px;top:14px;bottom:14px;width:4px;border-radius:99px;background:repeating-linear-gradient(var(--track) 0 8px,transparent 8px 16px);}
+    .wk{position:relative;display:flex;align-items:flex-start;gap:14px;padding:10px 0;}
+    .dot{position:relative;z-index:1;width:38px;height:38px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;font-family:"Baloo 2";font-weight:800;font-size:15px;background:#fff;box-shadow:inset 0 0 0 3px var(--track);color:var(--label);}
+    .wk.done .dot{background:var(--green);box-shadow:0 3px 0 var(--green-d);color:#fff;}
+    .wk.now .dot{background:linear-gradient(180deg,#ffa05a,var(--orange));box-shadow:0 3px 0 var(--orange-d);color:#fff;animation:pulse 1.6s ease-in-out infinite;}
+    @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.09)}}
+    .card{flex:1;background:#fff;border-radius:16px;padding:11px 14px;box-shadow:0 4px 12px rgba(120,80,20,.08);}
+    .wk.future .card{background:transparent;box-shadow:inset 0 0 0 2px var(--track);}
+    .card b{font-family:"Baloo 2";font-weight:800;font-size:14px;display:block;}
+    .card .sub{font-weight:800;font-size:11.5px;color:var(--muted);margin-top:2px;line-height:1.45;}
+    .wk.future .card b{color:var(--muted);}
+    .chiprow{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px;}
+    .chip{font-family:"Baloo 2";font-weight:800;font-size:10.5px;padding:3px 9px;border-radius:99px;color:#fff;}
+    .play{margin-top:8px;display:inline-flex;align-items:center;gap:7px;border:none;border-radius:99px;padding:7px 14px;background:var(--cream);font-family:"Baloo 2";font-weight:800;font-size:12px;color:var(--ink);cursor:pointer;box-shadow:0 2px 0 var(--track);}
+    .play.playing{background:#ffe7d3;color:var(--orange-d);}
+    #goBtn{display:block;width:100%;border:none;border-radius:16px;padding:14px;margin-top:10px;background:linear-gradient(180deg,#ffa05a,var(--orange));box-shadow:0 4px 0 var(--orange-d);color:#fff;font-family:"Baloo 2";font-weight:800;font-size:15px;cursor:pointer;text-align:center;text-decoration:none;}
+    #byline{font-weight:800;font-size:10.5px;color:var(--label);margin-top:18px;text-align:center;line-height:1.6;}
+    .month{position:relative;z-index:1;margin:8px 0 2px 52px;font-family:"Baloo 2";font-weight:800;font-size:11px;letter-spacing:.08em;color:var(--label);text-transform:uppercase;}
+    /* empty state */
+    #empty{display:none;text-align:center;padding:40px 10px;}
+    #empty img{width:150px;height:150px;object-fit:contain;}
+    #empty h2{font-family:"Baloo 2";font-weight:800;font-size:22px;margin-top:10px;}
+    #empty p{font-weight:800;font-size:13.5px;color:var(--muted);margin-top:8px;}
+  </style>
+</head>
+<body>
+  <div id="wrap">
+    <header>
+      <button id="close">✕</button>
+      <div>
+        <h1 id="title">Sound Journey</h1>
+        <div id="wkNow"></div>
+      </div>
+    </header>
+    <p id="intro">One Sound Check a week builds the whole story — hear the difference week over week.</p>
+    <div id="tl"></div>
+    <div id="empty">
+      <img src="/coach/echo/echo-listening.svg" alt="" onerror="this.onerror=null;this.src='/coach/echo/echo-idle.svg';" />
+      <h2>The journey starts with one check</h2>
+      <p>Do the first Sound Check and Echo maps the 13 weeks ahead.</p>
+      <a id="goBtn" style="max-width:300px;margin:18px auto 0;" href="/soundcheck.html">Start the first Sound Check</a>
+    </div>
+    <p id="byline">Built with Rachel — licensed speech-language pathologist &amp; Sona co-founder.<br/>A practice snapshot, not an evaluation. Recordings stay on this device.</p>
+  </div>
+
+  <script src="/sona.js"></script>
+  <script>
+    var $=function(id){return document.getElementById(id);};
+    var S=window.Sona;
+    var profile=S?S.getProfile():{};
+    var NAME=profile.childName||"";
+    if(NAME) $("title").textContent=NAME+"'s Sound Journey";
+    $("close").onclick=function(){ location.href="/today.html"; };
+
+    var JW=(S&&S.journeyWeek)?S.journeyWeek():null;
+    // week k → the plan's phase label for its future slots
+    function phaseFor(k){
+      if(k<=2) return "Warm-ups — the sounds alone, then syllables";
+      if(k<=6) return "Words — the focus sounds at the start of words";
+      if(k<=10) return "Phrases — short two-word combos in the games";
+      return "Sentences & review — the sounds in real talking";
+    }
+    function weekStart(created,k){ var d=new Date(created); d.setUTCDate(d.getUTCDate()+(k-1)*7); return d; }
+    function fmt(d){ return (d.getUTCMonth()+1)+"/"+d.getUTCDate(); }
+
+    if(!JW){ $("tl").style.display="none"; $("intro").style.display="none"; $("empty").style.display="block"; }
+    else (async function(){
+      $("wkNow").textContent="Week "+JW.week+" of "+JW.total;
+      var checks=(S.checkHistory&&S.checkHistory())||[];
+      var recs=[]; try{ recs=await S.listRecordings(200); }catch(e){}
+      var COL={strong:"#58cc02",emerging:"#f0a500",needs:"#ef6f23",unknown:"#c9a878"};
+      var LBL={strong:"strong",emerging:"getting there",needs:"working on it",unknown:"not heard yet"};
+      var created=JW.created;
+      function inWeek(iso,k){
+        var t=new Date(iso.slice(0,10)); var a=weekStart(created,k), b=weekStart(created,k+1);
+        return t>=a&&t<b;
+      }
+      var tl=$("tl");
+      for(var k=1;k<=JW.total;k++){
+        if(k>1&&(k-1)%4===0){ var m=document.createElement("div"); m.className="month"; m.textContent="Month "+Math.floor((k-1)/4+1); tl.appendChild(m); }
+        var wkChecks=checks.filter(function(c){ return inWeek(c.d,k); });
+        var done=wkChecks.length>0, now=(k===JW.week);
+        var row=document.createElement("div"); row.className="wk "+(done?"done":(now?"now":(k<JW.week?"":"future")));
+        if(k<JW.week&&!done) row.className="wk future"; // missed weeks stay soft, never red
+        var dot=document.createElement("div"); dot.className="dot"; dot.innerHTML=done?"✓":k; row.appendChild(dot);
+        var card=document.createElement("div"); card.className="card";
+        var start=weekStart(created,k);
+        if(done){
+          var c=wkChecks[wkChecks.length-1];
+          card.innerHTML="<b>Week "+k+" · checked "+fmt(new Date(c.d))+"</b>";
+          var cr=document.createElement("div"); cr.className="chiprow";
+          Object.keys(c.statuses||{}).forEach(function(s){
+            var el=document.createElement("span"); el.className="chip"; var st=c.statuses[s];
+            el.style.background=COL[st]||COL.unknown;
+            el.textContent=(S.soundLabel?S.soundLabel(s):s)+" · "+(LBL[st]||st);
+            cr.appendChild(el);
+          });
+          card.appendChild(cr);
+          // this week's pinned clip (the Sound Check keeps one on-device)
+          var wr=recs.filter(function(r){ return r.date&&inWeek(r.date,k); });
+          var pin=wr.filter(function(r){ return r.level==="check"; })[0]||wr[0];
+          if(pin&&pin.blob){
+            var pb=document.createElement("button"); pb.className="play";
+            pb.innerHTML="▶ Hear week "+k+(pin.word?(" — “"+pin.word+"”"):"");
+            (function(blob,btn){ btn.onclick=function(){
+              try{ var u=URL.createObjectURL(blob); var a=new Audio(u);
+                document.querySelectorAll(".play.playing").forEach(function(x){x.classList.remove("playing");});
+                btn.classList.add("playing");
+                a.onended=function(){ btn.classList.remove("playing"); URL.revokeObjectURL(u); };
+                a.play();
+              }catch(e){}
+            }; })(pin.blob,pb);
+            card.appendChild(pb);
+          }
+          if(now){ var d2=document.createElement("div"); d2.className="sub"; d2.textContent="This week is done — see you next week!"; card.appendChild(d2); }
+        } else if(now){
+          card.innerHTML="<b>This week — Week "+k+"</b><div class='sub'>"+phaseFor(k)+"</div>";
+          var go=document.createElement("a"); go.id="goBtn"; go.href="/soundcheck.html"; go.textContent="Do this week's Sound Check";
+          card.appendChild(go);
+        } else {
+          card.innerHTML="<b>Week "+k+"</b><div class='sub'>"+phaseFor(k)+" · "+fmt(start)+"</div>";
+        }
+        row.appendChild(card); tl.appendChild(row);
+      }
+    })();
+  </script>
+</body>
+</html>

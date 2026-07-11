@@ -360,7 +360,7 @@
     function paintWins(){
       try{
         var w=S.weekWins(); var el=$("wkWins"); if(!el)return; var bits=[];
-        if(w.reps>0) bits.push(w.reps+" sounds practiced");
+        if(w.reps>0) bits.push(w.reps+(w.reps===1?" sound":" sounds")+" practiced");
         if(w.acc!=null && w.accPrev!=null && w.acc!==w.accPrev) bits.push(w.label+" sound "+w.accPrev+"% \u2192 "+w.acc+"%");
         else if(w.acc!=null) bits.push(w.label+" sound at "+w.acc+"%");
         el.textContent=bits.join(" \u00b7 ");
@@ -430,7 +430,7 @@
         $("planCard").style.display="block";
         $("scDate").textContent="checked "+c.d;
         var COL={strong:"#58cc02",emerging:"#f0a500",needs:"#ef6f23",unknown:"#c9a878"};
-        var LBL={strong:"strong",emerging:"getting there",needs:"working on it",unknown:"—"};
+        var LBL={strong:"strong",emerging:"getting there",needs:"working on it",unknown:"not heard yet"};
         var ch=$("scChips"); ch.innerHTML="";
         Object.keys(c.statuses||{}).forEach(function(s){
           var el=document.createElement("span"); var st=c.statuses[s];
@@ -438,7 +438,9 @@
           el.textContent=(S.soundLabel?S.soundLabel(s):s)+" · "+(LBL[st]||st);
           ch.appendChild(el);
         });
-        $("planArc").innerHTML=plan?plan.weeks.map(function(wk){ return "<b style='color:var(--ink)'>"+wk.w+":</b> "+wk.what; }).join("<br/>"):"";
+        // the wordy weeks-arc is now a picture: the Sound Journey timeline
+        var jw=(S.journeyWeek&&S.journeyWeek());
+        $("planArc").innerHTML=jw?('<a href="/journey.html" style="color:var(--orange-d);text-decoration:none;font-family:\'Baloo 2\';font-size:13px;">🗺️ Sound Journey — week '+jw.week+' of '+jw.total+' →</a>'):"";
         var story=(S.soundStory&&S.soundStory())||[];
         $("storyBits").innerHTML=story.map(function(b){ return "• "+b; }).join("<br/>");
       }catch(e){}
