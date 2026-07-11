@@ -122,6 +122,19 @@ if (bn.shown) {
   await page.evaluate(() => document.getElementById("gateClose").click());
 }
 
+// ── voice revive: "keep playing" copy + family-aware trigger in all 5 games ──
+{
+  const { readFileSync: rf } = await import("fs");
+  const games = ["arcade-slice", "arcade-tiles", "arcade-stack", "arcade-run", "arcade-glide"];
+  const all = games.every((g) => {
+    const src = rf(ROOT + "/" + g + ".html", "utf8");
+    return src.includes("to keep playing!") && src.includes("famOK") && src.includes("Sona.frameShape");
+  });
+  ok("all 5 games: revive says 'keep playing' + family-checked", all);
+  const sj = rf(ROOT + "/sona.js", "utf8");
+  ok("sona.js exports the shape helpers", /soundFamily, frameShape,/.test(sj));
+}
+
 // ── pulse open box: placeholder reads clean ──
 await page.evaluate(() => { try { window.showPulse && showPulse(true); } catch (e) {} });
 t = await page.evaluate(() => (document.getElementById("pulseText") || {}).placeholder || "");

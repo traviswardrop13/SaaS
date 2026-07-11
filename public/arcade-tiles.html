@@ -134,7 +134,7 @@
       if(!playing) return;
       playing=false; tiles=[]; sfx("tap");
       if(REV>0 && MIC){
-        $("revTitle").textContent="Say \u201C"+SAYTXT+"\u201D!";
+        $("revTitle").textContent="Say \u201C"+SAYTXT+"\u201D to keep playing!";
         $("revHearts").innerHTML=(window.Sona&&Sona.heartRow)?Sona.heartRow(REV,3,28):String(REV);
         reviveWait=true; $("revOvl").classList.add("show");
       } else { endRound(); }
@@ -228,7 +228,7 @@
     draw();
 
     // ── VOICE BOOST: GOLDEN KEYS — say your sound → 3s slow tiles + 2x points.
-    // Optional; pure local loudness detection, nothing recorded or uploaded.
+    // Optional; pure local detection (loudness + sound-shape numbers), nothing recorded or uploaded.
     function fireBoost(){
       boost.on=true; boost.cool=true;
       var ch=$("boostChip"); ch.textContent="GOLDEN KEYS!!"; ch.classList.add("hot");
@@ -241,22 +241,29 @@
     (function(){
       var snd=""; try{ snd=sessionStorage.getItem("sona.boost.sound")||""; }catch(e){}
       if(!snd){ try{ snd=((S&&S.getProfile&&S.getProfile().focusSounds)||["R"])[0]; }catch(e){ snd="R"; } }
-      SAYTXT=(S&&S.soundSay)?S.soundSay(String(snd).toUpperCase()):"rrrr";
+      var SND=String(snd).toUpperCase();
+      SAYTXT=(S&&S.soundSay)?S.soundSay(SND):"rrrr";
       paintChip();
       if(!(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia)){ $("boostChip").style.display="none"; return; }
       navigator.mediaDevices.getUserMedia({audio:true}).then(function(st){ MIC=true;
         window.addEventListener("pagehide",function(){ try{ st.getTracks().forEach(function(t){t.stop();}); }catch(e){} });
         var AC=window.AudioContext||window.webkitAudioContext, bctx=new AC();
         var src=bctx.createMediaStreamSource(st), an=bctx.createAnalyser(); an.fftSize=512; src.connect(an);
-        var td=new Uint8Array(an.fftSize), t0=performance.now(), calS=0,calN=0,thr=0,voiced=0;
+        var td=new Uint8Array(an.fftSize), fd=new Uint8Array(an.frequencyBinCount), binHz=an.context.sampleRate/an.fftSize, shp=null, t0=performance.now(), calS=0,calN=0,thr=0,voiced=0;
+        // family check: the burst must SOUND like the target's family (voiced
+        // vs hiss) to fire — a scream or an S can't revive an R kid. Shape
+        // numbers only; nothing recorded (see Sona.frameShape).
+        function famOK(){ if(!shp||!shp.m) return true; var cent=shp.fm/shp.m, high=shp.hm/shp.m, fam=(window.Sona&&Sona.soundFamily)?Sona.soundFamily(SND):"any"; if(fam==="low") return !(cent>1800&&high>0.22); if(fam==="hiss") return !(cent<1100&&high<0.10); return true; }
         (function tick(){
           an.getByteTimeDomainData(td);
           var sum=0; for(var i=0;i<td.length;i++){ var d=(td[i]-128)/128; sum+=d*d; }
           var rms=Math.sqrt(sum/td.length), now=performance.now();
           if(now-t0<450){ calS+=rms; calN++; }
           else { if(!thr) thr=Math.max(0.05,(calS/Math.max(1,calN))*3.5);
-            if(rms>thr){ voiced++; if(voiced>=6){ if(reviveWait){ voiced=0; doRevive(); } else if(playing && !boost.on && !boost.cool) fireBoost(); } }
-            else voiced=0; }
+            if(rms>thr){ voiced++;
+              if(window.Sona&&Sona.frameShape){ an.getByteFrequencyData(fd); var _s=Sona.frameShape(fd,binHz); if(_s){ if(!shp)shp={m:0,fm:0,hm:0}; shp.m+=_s.m; shp.fm+=_s.fm; shp.hm+=_s.hm; } }
+              if(voiced>=6){ if(!famOK()){ voiced=0; shp=null; } else { shp=null; if(reviveWait){ voiced=0; doRevive(); } else if(playing && !boost.on && !boost.cool) fireBoost(); } } }
+            else { voiced=0; shp=null; } }
           requestAnimationFrame(tick);
         })();
       }).catch(function(){ $("boostChip").style.display="none"; });
