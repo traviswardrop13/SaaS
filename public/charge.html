@@ -179,7 +179,7 @@
     var qp=new URLSearchParams(location.search);
     var S=window.Sona;
     var profile=S?S.getProfile():{volume:0.8};
-    var SOUND=(qp.get("sound")||((profile.focusSounds&&profile.focusSounds[0])||"R")).toUpperCase();
+    var SOUND=(qp.get("sound")||((S&&S.rotSound)?S.rotSound():((profile.focusSounds&&profile.focusSounds[0])||"R"))).toUpperCase();
     if(!(S&&S.WORDS&&S.WORDS[SOUND])) SOUND="R";
     var LEVEL=parseInt(qp.get("level"),10)||1;
     var NEED=(S?S.chargeState().need:5);
@@ -215,13 +215,16 @@
     var GAME = isDaily ? DAILY_SEQ[Math.min(run?run.round:0,DAILY_SEQ.length-1)] : (freeGame||"arcade-slice.html");
     var GMETA=GAMES[GAME];
 
-    // ---- content: SLP progression. Daily rounds climb the ladder the way a
+    // ---- content: SLP progression. Every round climbs the ladder the way a
     // session would — round 1 warms up in isolation (rrr), round 2 moves to
-    // syllables (rah/ree/roo), then words, then phrases. The climb is capped
-    // ONE level above the child's mastered rung, so every run ends with a
-    // stretch level, and two clean stretch rounds advance the rung for good.
+    // syllables (rah/ree/roo), then words, phrases, sentences. Free play rides
+    // the rotation (sona.js): 5 rounds on one sound, then the next sound takes
+    // over. The climb is capped ONE level above the child's mastered rung, so
+    // rounds end on a stretch level and two clean stretch rounds advance the
+    // rung for good — a kid who can't say R alone never gets pushed to phrases.
     var RUNG=(S&&S.rungOf)?S.rungOf(SOUND):0;
-    var useRung = isDaily ? Math.min((run?run.round:0), RUNG+1) : RUNG;
+    var ROTR=(S&&S.rotRound)?S.rotRound():0;
+    var useRung = Math.min(isDaily?(run?run.round:0):ROTR, RUNG+1);
     var ITEMS=[];
     try{ ITEMS=(S.ladderContent(SOUND,useRung)||[]).filter(function(it){return it&&it.t;}); }catch(e){}
     if(!ITEMS.length){ try{ ITEMS=(S.ladderContent(SOUND,0)||[]).filter(function(it){return it&&it.t;}); }catch(e){} }
@@ -257,11 +260,12 @@
         if(ITEM.level!=="isolation" || !HUMANCLIPS){ say(sayLine()).then(res); return; }
         try{
           var a=new Audio("/coach/say/"+SOUND+".mp3");
-          var done=false; function fin(){ if(done)return; done=true; res(); }
+          var done=false; function fin(){ if(done)return; done=true; speaking=false; res(); }
           a.onended=fin;
-          a.onerror=function(){ if(done)return; done=true; say(sayLine()).then(res); };
-          a.play().catch(function(){ if(done)return; done=true; say(sayLine()).then(res); });
-        }catch(e){ say(sayLine()).then(res); }
+          a.onerror=function(){ if(done)return; done=true; speaking=false; say(sayLine()).then(res); };
+          speaking=true; // human clip counts as Echo talking too — mic ignores it
+          a.play().catch(function(){ if(done)return; done=true; speaking=false; say(sayLine()).then(res); });
+        }catch(e){ speaking=false; say(sayLine()).then(res); }
       }); });
     }
 
@@ -457,12 +461,48 @@
 
     try{ var _g=S&&S.getProgress?S.getProgress():null; $("sumLbl").innerHTML='<svg width="15" height="15" viewBox="0 0 24 24"><path d="M12 2l2.9 6.2 6.6.8-4.9 4.6 1.3 6.6L12 16.9 6.1 20.2l1.3-6.6L2.5 9l6.6-.8Z" fill="#ffd21c" stroke="#f0a800" stroke-width="1.2"/></svg> '+((_g&&_g.totals&&_g.totals.stars)||0); }catch(e){}
     if(isDaily&&run&&run.active){ $("roundLbl").innerHTML="Round "+Math.min(run.round+1,DAILY_SEQ.length)+" of "+DAILY_SEQ.length+" · "+((window.Sona&&Sona.icon)?Sona.icon("coin",13):"")+" "+run.sum; }
+    else { try{ var _tr=S&&S.todayRing?S.todayRing():null; if(_tr) $("roundLbl").textContent=(_tr.done?"Goal done — bonus round!":"Game "+Math.min(_tr.n+1,_tr.goal)+" of "+_tr.goal+" today")+" · "+((S&&S.soundLabel)?S.soundLabel(SOUND):SOUND)+" sound"; }catch(e){} }
     function micGo(on,txt){ var m=$("micBtn"); m.className=on?"go":""; $("micState").textContent=txt||""; }
+
+    // ---- sound-shape gate (bare-sound rounds only). The cloud scorer force-
+    // aligns nonsense text like "rrrr" onto whatever it hears and is wrong in
+    // BOTH directions on isolation clips (measured: an S scored 99 as R; a
+    // correct TH scored 0 as TH). So isolation rounds are judged on-device by
+    // the SHAPE of the sound in the same analyser the rep counter already
+    // uses: hissy sounds (S/SH/F/CH...) put their energy high in the spectrum;
+    // voiced sounds (R/L/M/N...) sit low. A round is flagged only when it is
+    // CLEARLY the wrong family — borderline or same-family tries always pass
+    // (never punish a wobbly-but-honest attempt; R-vs-L stays SpeechAce's job
+    // from syllables up). Thresholds calibrated on the SLP's recorded sounds:
+    // voiced cluster ≤1318Hz/13% high-band vs hiss cluster ≥2044Hz/26%.
+    // Only frequency-shape NUMBERS are read; nothing extra is recorded.
+    var SHAPE={
+      low:{R:1,L:1,M:1,N:1,B:1,D:1,G:1,V:1,THV:1},  // voiced targets: flag if clearly hissy
+      hiss:{S:1,Z:1,SH:1,CH:1,J:1,F:1,TH:1},        // hissy targets: flag if clearly voiced-low
+      cent:0, mag:0, high:0, frames:0               // K/T/P aspirate legitimately: no gate
+    };
+    function shapeReset(){ SHAPE.cent=0; SHAPE.mag=0; SHAPE.high=0; SHAPE.frames=0; }
+    // analyser bytes are dB-scaled (-100..-30dB): map back to linear amplitude
+    var SHAPE_LUT=(function(){ var t=[],i; for(i=0;i<256;i++) t.push(Math.pow(10,(-100+i*70/255)/20)); return t; })();
+    function shapeFrame(fd,binHz){
+      var lo=Math.max(1,Math.round(90/binHz)), hi=Math.min(fd.length-1,Math.round(12000/binHz)), h0=Math.round(3500/binHz);
+      var m=0,fm=0,hm=0,i,v;
+      for(i=lo;i<=hi;i++){ v=SHAPE_LUT[fd[i]]; m+=v; fm+=v*i*binHz; if(i>=h0)hm+=v; }
+      if(m>0){ SHAPE.cent+=fm; SHAPE.mag+=m; SHAPE.high+=hm; SHAPE.frames++; }
+    }
+    function shapeVerdict(){
+      if(SHAPE.frames<12 || !(SHAPE.mag>0)) return "unknown"; // <~200ms of voice: don't judge
+      var cent=SHAPE.cent/SHAPE.mag, high=SHAPE.high/SHAPE.mag;
+      try{ window.__shape={cent:Math.round(cent),high:Math.round(high*100)/100,frames:SHAPE.frames}; }catch(e){}
+      if(SHAPE.low[SOUND] && cent>1800 && high>0.22) return "fail";
+      if(SHAPE.hiss[SOUND] && cent<1100 && high<0.10) return "fail";
+      return "pass";
+    }
 
     // ---- rapid-fire rep engine: continuous VAD, every voiced burst = a rep.
     // No per-rep scoring round-trips — ONE SpeechAce spot-check on the whole
     // clip at the end keeps the SLP data honest without killing the pace.
-    var micStream=null, reps=0, engineOn=false, chunks=[], rec=null, SAID=[];
+    var micStream=null, reps=0, engineOn=false, chunks=[], rec=null, SAID=[], anyReps=false;
     var useSpeechAce=true;
     (function(){ try{ fetch("/api/score").then(function(r){return r.json();}).then(function(j){ useSpeechAce=!!(j&&j.hasKey);
       // tripwire: honest scoring silently off = every sound "passes". Make it loud in the server logs.
@@ -477,18 +517,24 @@
         var ctx=getCtx(), src=ctx.createMediaStreamSource(micStream), an=ctx.createAnalyser();
         an.fftSize=512; src.connect(an);
         var td=new Uint8Array(an.fftSize);
+        var fd=new Uint8Array(an.frequencyBinCount), binHz=ctx.sampleRate/an.fftSize;
+        shapeReset();
         engineOn=true;
         function stopAll(){ engineOn=false; try{src.disconnect();}catch(e){} try{ if(rec&&rec.state!=="inactive")rec.stop(); }catch(e){} if(idleTimer)clearTimeout(idleTimer); }
         function armIdle(){ if(idleTimer)clearTimeout(idleTimer); idleTimer=setTimeout(function(){ if(!engineOn)return; if(reps===0){ playPrompt(); armIdle(); } },8000); }
         armIdle();
         (function tick(){
           if(!engineOn) return;
+          // Echo's own voice must never count: while TTS/a clip plays (e.g. the
+          // 8s idle re-prompt), the mic hears the speaker — treat it as silence.
+          if(speaking){ silent++; voiced=0; if(silent>=8)inBurst=false; requestAnimationFrame(tick); return; }
           an.getByteTimeDomainData(td);
           var sum=0; for(var i=0;i<td.length;i++){ var d=(td[i]-128)/128; sum+=d*d; }
           var rms=Math.sqrt(sum/td.length), now=performance.now();
           if(now-t0<250){ calSum+=rms; calN++; requestAnimationFrame(tick); return; }
           if(!thr) thr=Math.max(0.035,(calSum/Math.max(1,calN))*3.0);
           if(rms>thr){ voiced++; silent=0;
+            an.getByteFrequencyData(fd); shapeFrame(fd,binHz); // shape sampled on voiced frames only
             // a real burst = ~4 voiced frames (~120ms) — silence NEVER counts
             if(!inBurst && voiced>=4 && now-lastRep>350){
               inBurst=true; lastRep=now; reps++;
@@ -510,6 +556,10 @@
     // sound) / "unknown" (no scorer, timeout, error — never punish the kid for
     // infrastructure, and never log made-up data).
     async function verifyClip(){
+      // bare-sound rounds: judged on-device by sound shape (SHAPE above) —
+      // the cloud scorer is unreliable on non-word text in both directions,
+      // and skipping it here saves credits. Syllables+ keep the honest gate.
+      if(ITEM.level==="isolation") return shapeVerdict();
       var blob=clipBlob();
       if(useSpeechAce&&blob){
         try{
@@ -531,6 +581,7 @@
       var save=NEED; if(n)NEED=n;
       micGo(true,"I'm listening…");
       await startEngine();
+      if(reps>0)anyReps=true;
       NEED=save;
       micGo(false,""); $("gpState").textContent="Checking…";
       var v=await verifyClip(); logV(v); return v;
@@ -549,7 +600,7 @@
       }catch(e){} }
       // SLP gating: the rung only ever advances on HONEST evidence — two clean
       // scored rounds at the stretch level, never on mercy or offline scoring.
-      if(isDaily && v==="pass" && useRung>=RUNG && S && S.recordRung){
+      if(v==="pass" && useRung>=RUNG && S && S.recordRung){
         try{
           var wk="sona.rungwins."+SOUND+"."+useRung, w=1+(parseInt(localStorage.getItem(wk),10)||0);
           if(w>=2){ S.recordRung(SOUND,useRung,1); localStorage.removeItem(wk); }
@@ -572,6 +623,9 @@
           await say("Great practicing! Let's play — we'll keep working on it!");
         }
       }
+      // real reps happened → the rotation moves (skip button and mic-denied
+      // rounds never count; quality already gated the rung above)
+      if(!isDaily && anyReps && S && S.rotAdvance){ try{ S.rotAdvance(); }catch(e){} }
       launchGame();
     }
 

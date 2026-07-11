@@ -205,6 +205,42 @@
     if (ok && rung >= cur && cur < LADDER.length) { g.stage[sound] = Math.min(LADDER.length, rung + 1); save(GKEY, g); }
     return g.stage[sound] || 0;
   }
+  // ── free-play rotation: one letter at a time, one rung per game ──
+  // A rotation = ROT_LEN practice rounds (≈ one pass of the games — any games,
+  // any order) spent on ONE focus sound. Round r practices rung min(r, earned+1):
+  // warm up in isolation, climb a rung each game, stretch ONE level past
+  // mastery, never three. When a rotation completes, the NEXT focus sound takes
+  // over — so every sound the family picked gets worked, not just the first.
+  // The rotation persists across days (stop at round 3, resume at round 3);
+  // todayRing() below is the per-day goal and resets each morning.
+  const ROTKEY = "sona.rotation.v1", RINGKEY = "sona.today.v1", ROT_LEN = 5;
+  function rotSounds() {
+    const f = ((getProfile().focusSounds) || []).map((s) => String(s).toUpperCase()).filter((s) => WORDS[s]);
+    return f.length ? f : ["R"];
+  }
+  function rotState() {
+    const st = load(ROTKEY, {}); const f = rotSounds();
+    let i = parseInt(st.i, 10), r = parseInt(st.r, 10);
+    if (!(i >= 0 && i < f.length)) i = 0;
+    if (!(r >= 0 && r < ROT_LEN)) r = 0;
+    return { i, r, sound: f[i], len: ROT_LEN };
+  }
+  function rotSound() { return rotState().sound; }
+  function rotRound() { return rotState().r; }
+  // A practice round finished with real reps. The honesty split: QUALITY gates
+  // the rung (recordRung — scored passes only); showing up moves the rotation.
+  function rotAdvance() {
+    const f = rotSounds(); const st = rotState();
+    let i = st.i, r = st.r + 1;
+    if (r >= ROT_LEN) { r = 0; i = (i + 1) % f.length; }
+    save(ROTKEY, { i, r });
+    const t = today(); const dr = load(RINGKEY, {});
+    save(RINGKEY, { d: t, n: ((dr.d === t ? dr.n : 0) || 0) + 1 });
+    return { i, r };
+  }
+  // today's goal ring: rounds finished today; the goal = one full pass of the games
+  function todayRing() { const dr = load(RINGKEY, {}); const n = (dr.d === today() ? dr.n : 0) || 0; return { n, goal: ROT_LEN, done: n >= ROT_LEN }; }
+
   // Practice items for a (sound, rung), wired to the existing content sources.
   // isolation/syllable score as "phoneme" (lenient); word+ score "full". Degrades
   // gracefully to words if SonaContent (gamecontent.js) isn't loaded on a page.
@@ -1266,5 +1302,5 @@
   }
   try { installDebug(); } catch (e) {}
 
-  global.Sona = { pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, weekWins, ALL_SOUNDS, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, ladderContent, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, gated, isNativeApp, getTrial, startTrial, ensureTrial, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, LEVEL_GAMES, GAME_DECK, GAMES_PER_LEVEL, levelGames, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, WORLDS, LEVELS_PER_WORLD, campaignLevels, campaignSounds, campaignState, worldById, worldLevels, worldStars, worldCleared, levelStars, setLevelStars, totalStars, worldUnlocked, levelUnlocked, campaignLaunch, campaignResolve, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES };
+  global.Sona = { pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, weekWins, ALL_SOUNDS, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, ladderContent, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, gated, isNativeApp, getTrial, startTrial, ensureTrial, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, LEVEL_GAMES, GAME_DECK, GAMES_PER_LEVEL, levelGames, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, WORLDS, LEVELS_PER_WORLD, campaignLevels, campaignSounds, campaignState, worldById, worldLevels, worldStars, worldCleared, levelStars, setLevelStars, totalStars, worldUnlocked, levelUnlocked, campaignLaunch, campaignResolve, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES };
 })(window);
