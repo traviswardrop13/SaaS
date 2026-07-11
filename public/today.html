@@ -159,6 +159,16 @@
     </div>
   </div>
 
+  <!-- comeback greeting — numberless, warm; never a broken-streak screen -->
+  <div class="ovl" id="cbOvl">
+    <div class="modal">
+      <img src="/coach/echo/echo-celebrate.svg" alt="" onerror="this.onerror=null;this.src='/coach/echo/echo-idle.svg';" style="width:130px;height:130px;object-fit:contain;" />
+      <h3 style="margin-top:6px;">You're back!</h3>
+      <p>Echo missed you! Ready to play?</p>
+      <button id="cbBtn" style="width:100%;border:none;border-radius:16px;padding:15px;margin-top:14px;background:linear-gradient(180deg,#ffa05a,#ff8a3d);box-shadow:0 4px 0 var(--orange-d);color:#fff;font-family:'Baloo 2';font-weight:800;font-size:17px;cursor:pointer;">Let's play!</button>
+    </div>
+  </div>
+
   <div id="toast"></div>
 
   <script src="/sona.js"></script>
@@ -256,6 +266,27 @@
     // first-time Sound Check nudge — disappears forever once one check exists
     try{ if(S&&S.lastCheck&&!S.lastCheck()) $("checkNudge").style.display="flex"; }catch(e){}
 
+    // ── comeback greeting: 3+ days since the last practice day → Echo just
+    // says he missed you. No day counts, no broken anything — the fresh start
+    // is celebrated exactly like any other day. Shows at most once per day,
+    // and it owns the visit (the feedback pulse stays quiet).
+    (function(){
+      try{
+        var g=S&&S.getProgress?S.getProgress():null; if(!g)return;
+        var pd=Object.keys(g.practiceDays||{}); if(g.streak&&g.streak.lastDate)pd.push(g.streak.lastDate);
+        if(!pd.length) return; // never practiced — the first-time nudges own this
+        pd.sort(); var last=pd[pd.length-1];
+        var t=new Date(), tk=t.getFullYear()+"-"+("0"+(t.getMonth()+1)).slice(-2)+"-"+("0"+t.getDate()).slice(-2);
+        var days=Math.round((new Date(tk)-new Date(last))/864e5);
+        if(!(days>=3)) return;
+        if(localStorage.getItem("sona.comeback.v1")===tk) return;
+        localStorage.setItem("sona.comeback.v1",tk);
+        window.__comeback=true;
+        $("cbOvl").classList.add("show");
+        $("cbBtn").onclick=function(){ sfx("tap"); $("cbOvl").classList.remove("show"); };
+      }catch(e){}
+    })();
+
     // ── today's goal ring: one pass of the games = today's activity done.
     // Fills a little more after every finished practice round so play has a
     // finish line instead of feeling aimless. Gold star when it's done.
@@ -329,7 +360,7 @@
     function paintWins(){
       try{
         var w=S.weekWins(); var el=$("wkWins"); if(!el)return; var bits=[];
-        if(w.reps>0) bits.push(w.reps+" sounds practiced");
+        if(w.reps>0) bits.push(w.reps+(w.reps===1?" sound":" sounds")+" practiced");
         if(w.acc!=null && w.accPrev!=null && w.acc!==w.accPrev) bits.push(w.label+" sound "+w.accPrev+"% \u2192 "+w.acc+"%");
         else if(w.acc!=null) bits.push(w.label+" sound at "+w.acc+"%");
         el.textContent=bits.join(" \u00b7 ");
@@ -399,7 +430,7 @@
         $("planCard").style.display="block";
         $("scDate").textContent="checked "+c.d;
         var COL={strong:"#58cc02",emerging:"#f0a500",needs:"#ef6f23",unknown:"#c9a878"};
-        var LBL={strong:"strong",emerging:"getting there",needs:"working on it",unknown:"—"};
+        var LBL={strong:"strong",emerging:"getting there",needs:"working on it",unknown:"not heard yet"};
         var ch=$("scChips"); ch.innerHTML="";
         Object.keys(c.statuses||{}).forEach(function(s){
           var el=document.createElement("span"); var st=c.statuses[s];
@@ -407,7 +438,9 @@
           el.textContent=(S.soundLabel?S.soundLabel(s):s)+" · "+(LBL[st]||st);
           ch.appendChild(el);
         });
-        $("planArc").innerHTML=plan?plan.weeks.map(function(wk){ return "<b style='color:var(--ink)'>"+wk.w+":</b> "+wk.what; }).join("<br/>"):"";
+        // the wordy weeks-arc is now a picture: the Sound Journey timeline
+        var jw=(S.journeyWeek&&S.journeyWeek());
+        $("planArc").innerHTML=jw?('<a href="/journey.html" style="color:var(--orange-d);text-decoration:none;font-family:\'Baloo 2\';font-size:13px;">🗺️ Sound Journey — week '+jw.week+' of '+jw.total+' →</a>'):"";
         var story=(S.soundStory&&S.soundStory())||[];
         $("storyBits").innerHTML=story.map(function(b){ return "• "+b; }).join("<br/>");
       }catch(e){}
@@ -454,7 +487,7 @@
       if(!P.earlyAdopter) return;
       var st=pulseState(); st.visits=(st.visits||0)+1; pulseSave(st);
       var dayAgo=!st.last || (Date.now()-st.last)>20*3600*1000;
-      var due=st.visits>=3 && st.visits%3===0 && dayAgo && st.visits>=(st.snooze||0);
+      var due=st.visits>=3 && st.visits%3===0 && dayAgo && st.visits>=(st.snooze||0) && !window.__comeback;
       if(due) setTimeout(function(){ showPulse(false); var s2=pulseState(); s2.last=Date.now(); pulseSave(s2); },900);
     })();
   </script>

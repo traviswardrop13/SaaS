@@ -81,9 +81,50 @@ t = await page.evaluate(() => {
   };
 });
 ok("plan card paints with chips", t.shown && t.chips >= 1);
-ok("card shows the weekly arc", /Weeks 1–2/.test(t.arc));
+ok("card shows the journey link", /Sound Journey — week/.test(t.arc));
 ok("Sound Story narrates the week", /practiced/.test(t.story));
 ok("nudge disappears after first check", t.nudgeGone);
+
+// ── the Sound Journey: 13 slots, done weeks green, future weeks visible ──
+await page.evaluate(async () => {
+  // pin a tiny fake clip as this week's check recording
+  await Sona.saveRecording({ sound: "R", word: "rabbit", level: "check", blob: new Blob([new Uint8Array(64)], { type: "audio/webm" }) });
+});
+await page.goto("http://localhost:8137/journey.html"); await page.waitForTimeout(900);
+t = await page.evaluate(() => {
+  const rows = [...document.querySelectorAll("#tl .wk")];
+  return {
+    rows: rows.length,
+    wk1done: rows[0].classList.contains("done"),
+    wk1chips: rows[0].querySelectorAll(".chip").length,
+    wk1play: !!rows[0].querySelector(".play"),
+    wk2future: rows[1].classList.contains("future"),
+    futureLabeled: /Warm-ups/.test(rows[1].textContent),
+    header: document.getElementById("wkNow").textContent,
+    months: document.querySelectorAll(".month").length,
+  };
+});
+ok("journey renders 13 week slots", t.rows === 13);
+ok("this week is green-checked with grades", t.wk1done && t.wk1chips >= 1);
+ok("pinned clip is playable on the done week", t.wk1play);
+ok("future weeks visible with phase labels", t.wk2future && t.futureLabeled);
+ok("header shows week 1 of 13", /Week 1 of 13/.test(t.header));
+ok("month markers divide the timeline", t.months >= 2);
+
+// ── plan card: arc text replaced by the journey link ──
+await page.goto("http://localhost:8137/today.html"); await page.waitForTimeout(600);
+t = await page.evaluate(() => { paintPlan(); return { arc: document.getElementById("planArc").textContent, html: document.getElementById("planArc").innerHTML }; });
+ok("plan card links the journey instead of week paragraphs", /Sound Journey — week 1 of 13/.test(t.arc) && !/Weeks 7–10/.test(t.arc) && /journey\.html/.test(t.html));
+
+// ── journey empty state for families with no plan yet ──
+const page2 = await browser.newPage({ viewport: { width: 430, height: 932 } });
+await page2.goto("http://localhost:8137/journey.html"); await page2.waitForTimeout(700);
+t = await page2.evaluate(() => ({
+  empty: getComputedStyle(document.getElementById("empty")).display !== "none",
+  cta: /Sound Check/.test(document.getElementById("empty").textContent),
+}));
+ok("no plan → journey shows the first-check invitation", t.empty && t.cta);
+await page2.close();
 
 await browser.close(); srv.close();
 console.log(fails ? fails + " FAILURES" : "ALL GREEN");

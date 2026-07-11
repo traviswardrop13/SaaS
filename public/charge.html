@@ -147,6 +147,16 @@
   </div>
 
   <!-- already played today -->
+  <div class="ovl" id="micPrime">
+    <div class="ovlCard">
+      <img class="ovlEcho" src="/coach/echo/echo-listening.svg" alt="" />
+      <h2>Let Echo hear you practice!</h2>
+      <p style="font-weight:800;font-size:13.5px;color:var(--muted);line-height:1.5;">Echo listens while you practice and cheers the sounds you get right.</p>
+      <p style="font-weight:800;font-size:11.5px;color:var(--muted);line-height:1.5;">Grown-ups: the mic is on only during practice. Recordings never leave this device except a quick scoring check, and Sona doesn't keep them.</p>
+      <button class="btn" id="micPrimeBtn">Turn on Echo's ears</button>
+    </div>
+  </div>
+
   <div class="ovl" id="playedOvl">
     <div class="ovlCard">
       <img class="ovlEcho" src="/coach/echo/echo-celebrate.svg" alt="" />
@@ -589,8 +599,25 @@
       try{ l.classList.remove("think"); }catch(e){}
       return v;
     }
+    // First-ever mic ask gets a primer BEFORE the browser prompt: what Echo
+    // hears and what happens to it, in parent-readable words. Skipped forever
+    // once permission is granted (or after the first successful open).
+    function micPrimer(){
+      return Promise.resolve().then(function(){
+        try{ if(localStorage.getItem("sona.micok")==="1") return; }catch(e){}
+        var q=(navigator.permissions&&navigator.permissions.query)?navigator.permissions.query({name:"microphone"}).catch(function(){return null;}):Promise.resolve(null);
+        return q.then(function(st){
+          if(st&&st.state==="granted"){ try{ localStorage.setItem("sona.micok","1"); }catch(e){} return; }
+          return new Promise(function(res){
+            $("micPrime").classList.add("show");
+            $("micPrimeBtn").onclick=function(){ $("micPrime").classList.remove("show"); res(); };
+          });
+        });
+      });
+    }
     async function flow(){
-      try{ micStream=await navigator.mediaDevices.getUserMedia({audio:true,video:false}); }
+      await micPrimer();
+      try{ micStream=await navigator.mediaDevices.getUserMedia({audio:true,video:false}); try{ localStorage.setItem("sona.micok","1"); }catch(e){} }
       catch(e){ micGo(false,"Mic is off"); if(S&&S.micDenied)S.micDenied({back:"/today.html"}); return; }
       // Leo speaks the prompt ONCE, then the mic is instantly hot.
       await playPrompt();
