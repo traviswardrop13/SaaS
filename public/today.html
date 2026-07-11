@@ -4,9 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
   <title>Sona</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet" />
+  <link href="/fonts.css" rel="stylesheet">
   <link rel="manifest" href="/manifest.webmanifest" />
   <meta name="theme-color" content="#fff6e9" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -31,8 +29,10 @@
     #parentBtn img{width:58px;height:58px;object-fit:contain;}
 
     /* hero: today's activity as a tilted photo card */
-    #heroWrap{display:flex;flex-direction:column;align-items:center;padding:10px 0 2px;}
-    #heroCard{width:min(74vw,300px);aspect-ratio:234/290;border-radius:26px;border:7px solid #fff;box-shadow:0 12px 26px rgba(90,50,10,.2);transform:rotate(-2deg);background:#eee center/cover no-repeat;cursor:pointer;transition:transform .12s;}
+    /* flex:1 + centering lets the hero absorb tall-screen slack instead of
+       leaving one dead gap above the CTA */
+    #heroWrap{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;padding:10px 0 2px;}
+    #heroCard{width:min(78vw,330px);aspect-ratio:234/290;border-radius:26px;border:7px solid #fff;box-shadow:0 12px 26px rgba(90,50,10,.2);transform:rotate(-2deg);background:#eee center/cover no-repeat;cursor:pointer;transition:transform .12s;}
     #heroCard:active{transform:rotate(-2deg) scale(.98);}
     #heroCap{background:#fff;border-radius:16px;padding:10px 20px 12px;box-shadow:0 6px 16px rgba(90,50,10,.14);transform:rotate(1.5deg);margin-top:-26px;text-align:center;max-width:82vw;}
     #heroName{font-family:"Baloo 2";font-weight:800;font-size:19px;}
@@ -42,7 +42,7 @@
     /* up next thumbnails */
     #upNextLbl{font-family:"Baloo 2";font-weight:800;font-size:12px;letter-spacing:.1em;color:var(--label);}
     #thumbs{display:flex;gap:16px;}
-    .thumb{position:relative;width:106px;height:104px;border-radius:18px;border:5px solid #fff;box-shadow:0 6px 14px rgba(90,50,10,.16);background:#eee center/cover no-repeat;cursor:pointer;flex:none;transition:transform .12s;}
+    .thumb{position:relative;width:120px;height:116px;border-radius:18px;border:5px solid #fff;box-shadow:0 6px 14px rgba(90,50,10,.16);background:#eee center/cover no-repeat;cursor:pointer;flex:none;transition:transform .12s;margin-bottom:12px;}
     .thumb:nth-child(1){transform:rotate(-2deg);}
     .thumb:nth-child(2){transform:rotate(2deg);}
     .thumb:active{transform:scale(.95);}

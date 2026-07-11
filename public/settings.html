@@ -4,13 +4,11 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Sona — Settings</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet" />
+  <link href="/fonts.css" rel="stylesheet">
   <link rel="stylesheet" href="/sona.css" />
   <link rel="manifest" href="/manifest.webmanifest" />
   <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-  <meta name="theme-color" content="#2a9df4" />
+  <meta name="theme-color" content="#fff6e9" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-title" content="Sona" />
@@ -50,7 +48,7 @@
       <div class="toggle"><input type="checkbox" id="voiceOn" /><label for="voiceOn">Coach speaks out loud</label></div>
       <div class="toggle"><input type="checkbox" id="soundOn" /><label for="soundOn">Sound effects (taps, chimes, celebrations)</label></div>
       <div class="toggle"><input type="checkbox" id="musicOn" /><label for="musicOn">Background music</label></div>
-      <div class="toggle"><input type="checkbox" id="cloudScoring" /><label for="cloudScoring">Score pronunciation in the cloud (SpeechAce) — sends the child's recording for phoneme‑level scoring</label></div>
+      <div class="toggle"><input type="checkbox" id="cloudScoring" /><label for="cloudScoring">Honest pronunciation scoring<span class="muted" style="display:block;font-weight:700;font-size:12px;">Practice clips are checked by SpeechAce for the target sound. Off = loudness-only practice, no clips sent.</span></label></div>
 
       <label class="field" for="dailyMinutes">Daily practice length</label>
       <select id="dailyMinutes">
@@ -90,11 +88,6 @@
       </div>
       <span style="font-size:22px;color:var(--muted);">›</span>
     </a>
-
-    <div class="card">
-      <h2>Coach picture</h2>
-      <p class="muted">Drop a headshot at <code>public/coach.jpg</code> to use it as the coach's profile picture. Until then a friendly placeholder is shown.</p>
-    </div>
 
     <div class="card">
       <h2>Account</h2>

@@ -4,13 +4,11 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Sona — Progress</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet" />
+  <link href="/fonts.css" rel="stylesheet">
   <link rel="stylesheet" href="/sona.css" />
   <link rel="manifest" href="/manifest.webmanifest" />
   <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-  <meta name="theme-color" content="#2a9df4" />
+  <meta name="theme-color" content="#fff6e9" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-title" content="Sona" />
@@ -170,8 +168,8 @@
       position:relative;
       margin:34px auto 6px;max-width:340px;
       padding:16px 18px;
-      text-align:center;font-weight:800;font-size:14.5px;color:#5b6b80;
-      background:linear-gradient(170deg,#fbfdff,#eef5ff);
+      text-align:center;font-weight:800;font-size:14.5px;color:var(--muted);
+      background:linear-gradient(170deg,#fffdf8,#fff3e3);
       border:1px solid var(--line);border-radius:18px;
       box-shadow:0 6px 18px rgba(15,39,66,.06);
       animation:sona-fade-in .5s ease both;
@@ -181,10 +179,11 @@
     #recList > p.muted::before,
     #recent > p.muted::before,
     #bysound > p.muted::before{
-      content:"🦁";
+      content:"";
       position:absolute;left:50%;top:-26px;transform:translateX(-50%);
-      width:46px;height:46px;line-height:46px;font-size:26px;text-align:center;
-      background:linear-gradient(160deg,#ffd9b0,#ffedd5);
+      width:46px;height:46px;
+      background-image:url("/coach/echo/echo-avatar.svg"),linear-gradient(160deg,#ffd9b0,#ffedd5);
+      background-size:32px 32px,cover;background-position:center,center;background-repeat:no-repeat;
       border-radius:50%;box-shadow:0 5px 12px rgba(239,111,35,.22);
       animation:sona-floatY 3.4s ease-in-out infinite;will-change:transform;
     }
@@ -194,7 +193,7 @@
     #recent > p.muted::after,
     #bysound > p.muted::after{
       content:"";position:absolute;left:50%;top:-8px;transform:translateX(-50%) rotate(45deg);
-      width:16px;height:16px;background:#fbfdff;
+      width:16px;height:16px;background:#fffdf8;
       border-left:1px solid var(--line);border-top:1px solid var(--line);border-radius:3px;
     }
 
@@ -202,11 +201,11 @@
        It's .btn.ghost (flat white by default) — promote to a soft blue. ── */
     #share.btn.ghost{
       color:#fff;font-size:16px;
-      background:linear-gradient(180deg,#56b4ff,var(--blue));
-      box-shadow:0 5px 0 0 var(--blue-d),0 8px 18px rgba(42,157,244,.28);
+      background:linear-gradient(180deg,#ffa05a,var(--orange));
+      box-shadow:0 5px 0 0 var(--orange-d),0 8px 18px rgba(255,138,61,.28);
     }
     #share.btn.ghost:hover{filter:brightness(1.04);}
-    #share.btn.ghost:active{transform:translateY(3px);box-shadow:0 2px 0 0 var(--blue-d);}
+    #share.btn.ghost:active{transform:translateY(3px);box-shadow:0 2px 0 0 var(--orange-d);}
     /* the existing "Send progress to my SLP" CTA: a gentle glow to draw the eye */
     #sendProg{box-shadow:0 5px 0 0 var(--orange-d),0 8px 18px rgba(255,138,61,.26);}
 
@@ -232,7 +231,8 @@
 
     <div class="card">
       <h1 id="title">Progress</h1>
-      <p class="muted">A snapshot of practice on this device — built with a speech-language pathologist in mind, so you can share it with yours.</p>
+      <p class="muted">A snapshot of practice on this device — ready to share with your child's SLP.</p>
+      <p class="muted" style="margin-top:9px;font-size:12.5px;font-weight:800;display:flex;align-items:center;gap:8px;"><img src="/coach/echo/echo-avatar.svg" alt="" style="width:22px;height:22px;flex:none;" /> Built with Rachel — licensed speech-language pathologist &amp; Sona co-founder</p>
       <button class="btn ghost noprint" id="share" style="margin-top:14px;width:auto;padding:12px 20px;">📤&nbsp;&nbsp;Share / Print</button>
     </div>
 
