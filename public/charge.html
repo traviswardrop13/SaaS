@@ -260,11 +260,12 @@
         if(ITEM.level!=="isolation" || !HUMANCLIPS){ say(sayLine()).then(res); return; }
         try{
           var a=new Audio("/coach/say/"+SOUND+".mp3");
-          var done=false; function fin(){ if(done)return; done=true; res(); }
+          var done=false; function fin(){ if(done)return; done=true; speaking=false; res(); }
           a.onended=fin;
-          a.onerror=function(){ if(done)return; done=true; say(sayLine()).then(res); };
-          a.play().catch(function(){ if(done)return; done=true; say(sayLine()).then(res); });
-        }catch(e){ say(sayLine()).then(res); }
+          a.onerror=function(){ if(done)return; done=true; speaking=false; say(sayLine()).then(res); };
+          speaking=true; // human clip counts as Echo talking too — mic ignores it
+          a.play().catch(function(){ if(done)return; done=true; speaking=false; say(sayLine()).then(res); });
+        }catch(e){ speaking=false; say(sayLine()).then(res); }
       }); });
     }
 
@@ -524,6 +525,9 @@
         armIdle();
         (function tick(){
           if(!engineOn) return;
+          // Echo's own voice must never count: while TTS/a clip plays (e.g. the
+          // 8s idle re-prompt), the mic hears the speaker — treat it as silence.
+          if(speaking){ silent++; voiced=0; if(silent>=8)inBurst=false; requestAnimationFrame(tick); return; }
           an.getByteTimeDomainData(td);
           var sum=0; for(var i=0;i<td.length;i++){ var d=(td[i]-128)/128; sum+=d*d; }
           var rms=Math.sqrt(sum/td.length), now=performance.now();

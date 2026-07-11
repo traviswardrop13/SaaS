@@ -262,8 +262,9 @@
     };
 
     // ── parent gate: PIN if the parent set one, else a math question ──
-    var gateAns="", gateNeed="", gateMode="math";
-    function openGate(){
+    var gateAns="", gateNeed="", gateMode="math", gateNext=null;
+    function openGate(next){
+      gateNext=next||null; // pass a callback to run instead of the parent sheet
       var pin=(P.parentPin||"").trim();
       gateAns="";
       if(pin){ gateMode="pin"; gateNeed=pin; $("gateQ").textContent="🔒"; $("gateHint").textContent="Enter your parent code"; }
@@ -279,7 +280,7 @@
         b.onclick=function(){
           if(kk==="⌫"){ gateAns=gateAns.slice(0,-1); }
           else if(kk==="✓"){
-            if(gateAns===gateNeed){ $("gateOvl").classList.remove("show"); paintWeek(); paintWins(); $("sheetOvl").classList.add("show"); sfx("correct"); }
+            if(gateAns===gateNeed){ $("gateOvl").classList.remove("show"); sfx("correct"); if(gateNext){ var fn=gateNext; gateNext=null; fn(); } else { paintWeek(); paintWins(); $("sheetOvl").classList.add("show"); } }
             else { var m=$("gateModal"); m.classList.remove("shake"); void m.offsetWidth; m.classList.add("shake"); gateAns=""; }
           }
           else { if(gateAns.length<6) gateAns+=String(kk); }
@@ -378,8 +379,12 @@
       var b=$("trialBanner"),m=$("trialMsg"); if(!b||!m)return;
       if(P.earlyAdopter){ m.innerHTML="Founding family — Sona is <b>free for you</b>. Tap to tell us what to build!"; b.removeAttribute("href"); b.style.cursor="pointer"; b.onclick=function(ev){ ev.preventDefault(); showPulse(true); }; b.style.display="flex"; return; }
       if((S.isSubscribed&&S.isSubscribed())||(S.isPilot&&S.isPilot()))return; if(S.ensureTrial)S.ensureTrial();
-      if(S.trialActive&&S.trialActive()){ var dd=S.trialDaysLeft?S.trialDaysLeft():7; m.innerHTML=dd+" day"+(dd===1?"":"s")+" left in your free trial · <u>Lock in founding $39.99/yr →</u>"; b.style.display="flex"; }
-      else if(S.trialExpired&&S.trialExpired()){ m.innerHTML="Your free trial ended · <u>Keep going for $39.99/yr →</u>"; b.style.display="flex"; }
+      // Kids Category rule: no prices and no ungated commerce on a child
+      // screen — the banner stays kid-neutral and the tap runs the parent
+      // gate first; pricing lives on /subscribe, behind it.
+      var gated=function(ev){ ev.preventDefault(); openGate(function(){ location.href="/subscribe"; }); };
+      if(S.trialActive&&S.trialActive()){ var dd=S.trialDaysLeft?S.trialDaysLeft():7; m.innerHTML=dd+" day"+(dd===1?"":"s")+" left in your free trial · <u>Grown-ups tap here</u>"; b.removeAttribute("href"); b.style.cursor="pointer"; b.onclick=gated; b.style.display="flex"; }
+      else if(S.trialExpired&&S.trialExpired()){ m.innerHTML="Your free trial ended · <u>Grown-ups tap here</u>"; b.removeAttribute("href"); b.style.cursor="pointer"; b.onclick=gated; b.style.display="flex"; }
     })();
 
     // ── beta pulse: an open box — request, idea, or problem. X always dismisses. ──
