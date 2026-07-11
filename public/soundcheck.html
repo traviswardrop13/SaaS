@@ -67,7 +67,7 @@
     <h1>Sound Check!</h1>
     <p id="introSub">Echo says a word, you say it back — that's it! Echo listens and learns which sounds to practice.</p>
     <button id="introBtn">Let's go!</button>
-    <p id="introSmall">For grown-ups: a 2–5 minute practice snapshot, scored per sound. It updates the practice plan. Not an evaluation or diagnosis — share results with your SLP.</p>
+    <p id="introSmall">For grown-ups: a 2–5 minute practice snapshot, scored per sound — it updates the practice plan. The mic is on only during the check; clips are scored, not kept. Not an evaluation or diagnosis — share results with your SLP.</p>
   </div>
 
   <div id="doneOvl">
@@ -191,7 +191,7 @@
     $("introBtn").onclick=async function(){
       getCtx();
       $("intro").style.display="none";
-      try{ micStream=await navigator.mediaDevices.getUserMedia({audio:true,video:false}); }
+      try{ micStream=await navigator.mediaDevices.getUserMedia({audio:true,video:false}); try{ localStorage.setItem("sona.micok","1"); }catch(e){} }
       catch(e){ if(S&&S.micDenied)S.micDenied({back:"/today.html"}); return; }
       await say((profile.childName?profile.childName+", ":"")+"let's play the sound check! Say each word after me!");
       runTurn();

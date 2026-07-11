@@ -145,6 +145,50 @@ t = await page.evaluate(() => (document.getElementById("pulseText") || {}).place
 if (t) ok("pulse placeholder is the new copy", /A request, an idea, a problem to fix/.test(t));
 else ok("pulse placeholder is the new copy (source)", /A request, an idea, a problem to fix/.test(todaySrc));
 
+// ── comeback greeting: 3+ idle days → numberless "Echo missed you", once/day ──
+await page.evaluate(() => {
+  const g = Sona.getProgress(); g.practiceDays = { "2026-06-30": 1 }; g.streak = { lastDate: "2026-06-30", count: 1 };
+  localStorage.setItem("sona.progress.v1", JSON.stringify(g));
+  localStorage.removeItem("sona.comeback.v1");
+});
+await page.goto("http://localhost:8131/today.html"); await page.waitForTimeout(700);
+let cb = await page.evaluate(() => ({
+  shown: document.getElementById("cbOvl").classList.contains("show"),
+  txt: document.getElementById("cbOvl").textContent,
+}));
+ok("comeback greeting shows after 3+ days away", cb.shown);
+ok("comeback is numberless (no day counts)", !/\d/.test(cb.txt.replace(/Let's play!/, "")));
+await page.evaluate(() => document.getElementById("cbBtn").click());
+cb = await page.evaluate(() => document.getElementById("cbOvl").classList.contains("show"));
+ok("Let's play dismisses it", !cb);
+await page.goto("http://localhost:8131/today.html"); await page.waitForTimeout(600);
+cb = await page.evaluate(() => document.getElementById("cbOvl").classList.contains("show"));
+ok("shows at most once per day", !cb);
+
+// ── mic primer: first-ever mic ask explains before the browser prompt ──
+await page.addInitScript(() => {
+  navigator.permissions = navigator.permissions || {};
+  navigator.permissions.query = () => Promise.resolve({ state: "prompt" });
+});
+await page.evaluate(() => localStorage.removeItem("sona.micok")); // one-shot: fresh family
+await page.goto("http://localhost:8131/charge.html?game=arcade-slice.html"); await page.waitForTimeout(900);
+let mp = await page.evaluate(() => ({
+  shown: document.getElementById("micPrime").classList.contains("show"),
+  txt: document.getElementById("micPrime").textContent,
+}));
+ok("primer shows before the mic prompt", mp.shown);
+ok("primer explains listening honestly", /only during practice/.test(mp.txt) && /doesn't keep them/.test(mp.txt));
+await page.evaluate(() => document.getElementById("micPrimeBtn").click());
+await page.waitForTimeout(500);
+mp = await page.evaluate(() => ({
+  gone: !document.getElementById("micPrime").classList.contains("show"),
+  micok: localStorage.getItem("sona.micok"),
+}));
+ok("primer dismisses into the mic grant + remembers", mp.gone && mp.micok === "1");
+await page.goto("http://localhost:8131/charge.html?game=arcade-slice.html"); await page.waitForTimeout(800);
+mp = await page.evaluate(() => document.getElementById("micPrime").classList.contains("show"));
+ok("primer never shows again after grant", !mp);
+
 await browser.close(); srv.close();
 console.log(fails ? fails + " FAILURES" : "ALL GREEN");
 process.exit(fails ? 1 : 0);
