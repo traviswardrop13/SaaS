@@ -90,6 +90,7 @@
     </header>
 
     <a id="trialBanner" href="/subscribe">🎁 <span id="trialMsg"></span></a>
+    <a id="checkNudge" href="/soundcheck.html" style="display:none;align-items:center;gap:8px;background:linear-gradient(120deg,#eafbe2,#d5f3c4);border:1px solid #bce39f;border-radius:14px;padding:9px 14px;font-weight:800;font-size:12.5px;color:#3f7d0a;text-decoration:none;">🎯 <span>NEW — the 2-minute Sound Check: Echo listens and builds the practice plan!</span></a>
 
     <div id="heroWrap">
       <div id="heroCard"></div>
@@ -131,6 +132,17 @@
         <div id="wkWins" style="font-family:'Baloo 2';font-weight:800;font-size:13px;color:var(--ink);margin-top:6px;"></div>
         <button id="shareWeek" style="display:none;width:100%;border:none;border-radius:14px;padding:12px;margin-top:10px;background:linear-gradient(180deg,#ffa05a,#ff8a3d);box-shadow:0 4px 0 var(--orange-d);color:#fff;font-family:'Baloo 2';font-weight:800;font-size:14px;cursor:pointer;">Share this week</button>
       </div>
+      <div id="planCard" style="display:none;background:var(--cream);border-radius:16px;padding:14px 16px;margin-top:10px;text-align:left;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <b style="font-family:'Baloo 2';font-size:15px;color:var(--ink);">Sound Check &amp; plan</b>
+          <span id="scDate" style="margin-left:auto;font-weight:800;font-size:11.5px;color:var(--label);"></span>
+        </div>
+        <div id="scChips" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:9px;"></div>
+        <div id="planArc" style="font-weight:800;font-size:12px;color:var(--muted);margin-top:9px;line-height:1.55;"></div>
+        <div id="storyBits" style="font-weight:800;font-size:12px;color:var(--ink);margin-top:9px;line-height:1.55;border-top:2px solid var(--track);padding-top:9px;"></div>
+        <div style="font-weight:800;font-size:10.5px;color:var(--label);margin-top:8px;">Built with Rachel — licensed speech-language pathologist. A practice snapshot, not an evaluation.</div>
+      </div>
+      <button class="sheetBtn" id="goCheck"><span style="font-size:18px;">🎯</span>&nbsp; <span id="goCheckTxt">Weekly Sound Check</span></button>
       <button class="sheetBtn" id="goProgress"><span class="pic-trend"></span>&nbsp; Progress &amp; SLP report</button>
       <button class="sheetBtn" id="goSettings"><span class="pic-gear"></span>&nbsp; Settings</button>
       <button class="ghost" id="sheetClose">Close</button>
@@ -241,6 +253,9 @@
     // ── library ──
     $("libBtn").onclick=function(){ sfx("tap"); location.href="/library.html"; };
 
+    // first-time Sound Check nudge — disappears forever once one check exists
+    try{ if(S&&S.lastCheck&&!S.lastCheck()) $("checkNudge").style.display="flex"; }catch(e){}
+
     // ── today's goal ring: one pass of the games = today's activity done.
     // Fills a little more after every finished practice round so play has a
     // finish line instead of feeling aimless. Gold star when it's done.
@@ -280,7 +295,7 @@
         b.onclick=function(){
           if(kk==="⌫"){ gateAns=gateAns.slice(0,-1); }
           else if(kk==="✓"){
-            if(gateAns===gateNeed){ $("gateOvl").classList.remove("show"); sfx("correct"); if(gateNext){ var fn=gateNext; gateNext=null; fn(); } else { paintWeek(); paintWins(); $("sheetOvl").classList.add("show"); } }
+            if(gateAns===gateNeed){ $("gateOvl").classList.remove("show"); sfx("correct"); if(gateNext){ var fn=gateNext; gateNext=null; fn(); } else { paintWeek(); paintWins(); paintPlan(); $("sheetOvl").classList.add("show"); } }
             else { var m=$("gateModal"); m.classList.remove("shake"); void m.offsetWidth; m.classList.add("shake"); gateAns=""; }
           }
           else { if(gateAns.length<6) gateAns+=String(kk); }
@@ -370,7 +385,33 @@
     try{ document.querySelectorAll(".pic-trend").forEach(function(n){ n.innerHTML=S.icon("trend",18); }); document.querySelectorAll(".pic-gear").forEach(function(n){ n.innerHTML=S.icon("gear",18); }); }catch(e){}
     $("goProgress").onclick=function(){ location.href="/progress.html"; };
     $("goSettings").onclick=function(){ location.href="/settings.html"; };
+    $("goCheck").onclick=function(){ location.href="/soundcheck.html"; };
     $("sheetClose").onclick=function(){ $("sheetOvl").classList.remove("show"); };
+
+    // ── Sound Check & plan card (parent corner): last check's grades, the
+    // 90-day arc, and the week narrated (the Sound Story) — all from real data.
+    function paintPlan(){
+      try{
+        var c=S.lastCheck&&S.lastCheck(), plan=S.getPlan&&S.getPlan();
+        if(S.checkDue&&S.checkDue()&&c) $("goCheckTxt").textContent="Weekly Sound Check — due!";
+        else if(!c) $("goCheckTxt").textContent="First Sound Check (2 min)";
+        if(!c){ $("planCard").style.display="none"; return; }
+        $("planCard").style.display="block";
+        $("scDate").textContent="checked "+c.d;
+        var COL={strong:"#58cc02",emerging:"#f0a500",needs:"#ef6f23",unknown:"#c9a878"};
+        var LBL={strong:"strong",emerging:"getting there",needs:"working on it",unknown:"—"};
+        var ch=$("scChips"); ch.innerHTML="";
+        Object.keys(c.statuses||{}).forEach(function(s){
+          var el=document.createElement("span"); var st=c.statuses[s];
+          el.style.cssText="font-family:'Baloo 2';font-weight:800;font-size:11.5px;padding:5px 10px;border-radius:99px;color:#fff;background:"+(COL[st]||COL.unknown)+";";
+          el.textContent=(S.soundLabel?S.soundLabel(s):s)+" · "+(LBL[st]||st);
+          ch.appendChild(el);
+        });
+        $("planArc").innerHTML=plan?plan.weeks.map(function(wk){ return "<b style='color:var(--ink)'>"+wk.w+":</b> "+wk.what; }).join("<br/>"):"";
+        var story=(S.soundStory&&S.soundStory())||[];
+        $("storyBits").innerHTML=story.map(function(b){ return "• "+b; }).join("<br/>");
+      }catch(e){}
+    }
 
     // ── trial banner (web only; the native app has no payments) ──
     // Early adopters never see a paywall: their banner says free-forever and

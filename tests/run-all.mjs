@@ -13,6 +13,7 @@ const SUITES = [
   "voicetest3.mjs",// TTS line composition + syllable card rotation
   "progtest.mjs",  // sound rotation + ladder cap + daily goal ring
   "shapetest.mjs", // sound-shape gate vs real recorded sounds
+  "checktest.mjs", // Sound Check → plan loop + parent card
 ];
 
 let bad = 0;
