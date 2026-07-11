@@ -60,6 +60,8 @@
     #leoRow{position:absolute;left:16px;right:16px;bottom:calc(158px + env(safe-area-inset-bottom));display:flex;align-items:flex-end;gap:9px;z-index:3;}
     #leo{width:88px;height:88px;object-fit:contain;flex:none;filter:drop-shadow(0 6px 8px var(--bsh));}
     #leo.cheer{animation:hop .5s ease;}
+    #leo.think{animation:think 1.1s ease-in-out infinite;} /* head-tilt while the scorer runs */
+    @keyframes think{0%,100%{transform:rotate(-4deg)}50%{transform:rotate(5deg) translateY(-3px)}}
     @keyframes hop{0%,100%{transform:translateY(0)}45%{transform:translateY(-14px) rotate(-5deg)}}
     #bubble{background:#fff;border-radius:16px;border-bottom-left-radius:4px;padding:10px 14px;box-shadow:0 5px 12px var(--bsh);margin-bottom:10px;}
     #gpState{font-family:"Baloo 2";font-weight:800;font-size:15px;color:var(--ink);text-align:left;}
@@ -581,8 +583,11 @@
       await startEngine();
       if(reps>0)anyReps=true;
       NEED=save;
-      micGo(false,""); $("gpState").textContent="Checking…";
-      var v=await verifyClip(); logV(v); return v;
+      micGo(false,""); $("gpState").textContent="Echo's thinking…";
+      var l=$("leo"); try{ l.classList.add("think"); }catch(e){}
+      var v=await verifyClip(); logV(v);
+      try{ l.classList.remove("think"); }catch(e){}
+      return v;
     }
     async function flow(){
       try{ micStream=await navigator.mediaDevices.getUserMedia({audio:true,video:false}); }
@@ -617,6 +622,24 @@
         var tip=(c&&c.tip?c.tip.split("—")[0]:"").trim().replace(/[.!,]+$/,"")||("Let's try our "+soundName()+" sound again");
         await say("Hmm, that was a different sound! "+tip+". Try again!");
         v=await burstAndVerify(3);
+        if(v==="fail" && useRung>0){
+          // Step-down: two honest misses → Echo's OWN idea is an easier
+          // same-sound target from one rung below, so the round still ends
+          // on a real, honestly-scored win instead of a shrug. Framed as fun,
+          // never as demotion. The rung can't advance from down here (the
+          // stretch gating above already ran), and next round returns to the
+          // rotation's normal level.
+          var easier=[];
+          try{ easier=(S.ladderContent(SOUND,useRung-1)||[]).filter(function(it){return it&&it.t;}); }catch(e){}
+          if(easier.length){
+            ITEM=easier[0]; SEQ=easier.slice(0,3); ROTATE=(ITEM.level==="syllable"&&SEQ.length>1);
+            paintCard();
+            $("gpState").innerHTML="Echo's idea — try <b>"+(ITEM.level==="isolation"?("your "+((S&&S.soundLabel)?S.soundLabel(SOUND):SOUND)+" sound"):(ITEM.display||ITEM.t))+"</b>!";
+            await say("Okay, I have an idea! Let's try something easier. "+(ITEM.level==="isolation"?("Make your "+soundName()+" sound"):("Say "+(ITEM.say||ITEM.t)))+"!");
+            v=await burstAndVerify(3);
+            if(v==="pass"){ $("gpState").textContent="YES! That's the one!"; await say((S&&S.praiseLine)?S.praiseLine():"You did it!"); }
+          }
+        }
         if(v==="fail"){
           await say("Great practicing! Let's play — we'll keep working on it!");
         }

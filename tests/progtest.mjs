@@ -122,6 +122,10 @@ if (bn.shown) {
   await page.evaluate(() => document.getElementById("gateClose").click());
 }
 
+// ── retry ladder: Echo thinks while scoring; two misses step DOWN a rung ──
+ok("Echo's thinking state while the scorer runs", /Echo's thinking…/.test(chargeSrc) && /leo\.think\{animation:think/.test(chargeSrc.replace(/#/g, "")));
+ok("step-down retry offers an easier same-sound target", /Let's try something easier/.test(chargeSrc) && /ladderContent\(SOUND,useRung-1\)/.test(chargeSrc));
+
 // ── voice revive: "keep playing" copy + family-aware trigger in all 5 games ──
 {
   const { readFileSync: rf } = await import("fs");
