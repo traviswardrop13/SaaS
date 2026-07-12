@@ -106,7 +106,7 @@ ok("next rotation practices the S sound", /your S sound/.test(c.prompt));
 ok("charge label flips to bonus", /Goal done — bonus round!/.test(c.lbl));
 
 // ── Echo's voice never counts as reps; no prices on the kid's home ──
-ok("engine ignores mic while Echo speaks", /if\(speaking\)\{ silent\+\+; voiced=0;/.test(chargeSrc));
+ok("engine ignores mic while ANY app audio plays", /if\(speaking\|\|ttsPlaying\)\{ silent\+\+; voiced=0; inBurst=false;/.test(chargeSrc));
 ok("no dollar pricing in kid-facing today.html", !/\$\d/.test(todaySrc));
 await page.goto("http://localhost:8131/today.html"); await page.waitForTimeout(700);
 // this profile is NOT a founding family → trial banner path
