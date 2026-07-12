@@ -46,7 +46,7 @@
     });
   }
   function storyPages(sound) {
-    var frames = ["Once, Leo saw a ___.", "He really liked the ___.", "Then came a big ___.", "Leo and the ___ played all day.", "What a fun ___!"];
+    var frames = ["Once, Echo saw a ___.", "He really liked the ___.", "Then came a big ___.", "Echo and the ___ played all day.", "What a fun ___!"];
     return take(targetWords(sound), frames.length).map(function (w, i) {
       return { text: frames[i % frames.length], word: w.w, e: w.e };
     });

@@ -13,6 +13,23 @@
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-title" content="Sona" />
   <script defer src="/_vercel/insights/script.js"></script>
+  <script>
+    /* Parent gate, checked before anything paints: if sona.js is slow or
+       missing this page must fail CLOSED, not open. Mirrors the key + TTL of
+       Sona.requireGate() (sona.gate.v1, 10 min); sona.js re-checks on load. */
+    (function () {
+      var ok = false;
+      try {
+        var t = parseInt(sessionStorage.getItem("sona.gate.v1"), 10);
+        var age = Date.now() - t;
+        ok = !!t && age >= 0 && age < 10 * 60 * 1000;
+      } catch (e) { ok = false; }
+      if (!ok) {
+        try { document.documentElement.style.visibility = "hidden"; } catch (e) {}
+        location.replace("/today.html?gate=1");
+      }
+    })();
+  </script>
 </head>
 <body>
   <div class="wrap">
@@ -81,7 +98,7 @@
     </div>
 
     <a class="card" href="/customize.html" style="display:flex;gap:14px;align-items:center;color:inherit;">
-      <div class="leo" style="width:56px;height:56px;flex:0 0 auto;"><img src="/coach/echo/echo-idle.svg" alt="Leo" style="width:52px;height:52px;object-fit:contain;" /></div>
+      <div class="leo" style="width:56px;height:56px;flex:0 0 auto;"><img src="/coach/echo/echo-idle.svg" alt="Echo" style="width:52px;height:52px;object-fit:contain;" /></div>
       <div style="flex:1;min-width:0;">
         <h2>Character &amp; world ✨</h2>
         <p class="muted">Choose your buddy, an outfit, and a backdrop.</p>
@@ -135,6 +152,12 @@
 
   <script src="/sona.js"></script>
   <script>
+    // Parent-only page: a child arriving by direct URL or back-swipe (no fresh
+    // pass of the home screen's grown-ups gate) is sent back to the gate.
+    if (window.Sona && Sona.requireGate) Sona.requireGate();
+    // back-swipe can restore this page from the bfcache without re-running
+    // scripts — re-check the gate whenever the page is shown again.
+    window.addEventListener("pageshow", function (e) { if (e.persisted && window.Sona && Sona.requireGate) Sona.requireGate(); });
     var p = Sona.getProfile();
     var childEl = document.getElementById("childName"),
         coachEl = document.getElementById("coachName"),

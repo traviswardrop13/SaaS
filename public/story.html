@@ -56,10 +56,10 @@
       <span class="stat count"><svg viewBox="0 0 64 64" style="width:17px;height:17px;vertical-align:-3px"><path d="M8 16c8-5 16-5 24 0v34c-8-5-16-5-24 0Z" fill="#4db3f2"/><path d="M56 16c-8-5-16-5-24 0v34c8-5 16-5 24 0Z" fill="#7cc9f7"/><line x1="32" y1="16" x2="32" y2="50" stroke="#1c6fa8" stroke-width="2"/></svg> <span id="count">0</span>/<span id="goal">5</span></span>
     </div>
     <div id="stage">
-      <div id="leoWrap"><img id="leo" src="/coach/echo/echo-idle.svg" alt="Leo" /></div>
+      <div id="leoWrap"><img id="leo" src="/coach/echo/echo-idle.svg" alt="Echo" /></div>
       <div id="book">
         <div id="pageEmoji"></div>
-        <div id="pageText">Once, Leo saw a <span class="hl">rabbit</span>.</div>
+        <div id="pageText">Once, Echo saw a <span class="hl">rabbit</span>.</div>
         <div id="dots"></div>
         <div id="pageNo">Page 1</div>
       </div>
@@ -79,7 +79,7 @@
     </div>
   </div>
   <div id="win">
-    <img class="leoWin" src="/coach/echo/echo-celebrate.svg" alt="Leo" onerror="this.onerror=null;this.src='/coach/echo/echo-idle.svg';" />
+    <img class="leoWin" src="/coach/echo/echo-celebrate.svg" alt="Echo" onerror="this.onerror=null;this.src='/coach/echo/echo-idle.svg';" />
     <h1>The End!</h1>
     <div class="reward"><span id="winCount">0</span><small>pages read</small></div>
     <div class="reward" id="winUnlock" style="background:#fff7df;color:#e08600;"></div>
@@ -121,7 +121,7 @@
     MINUTES=Math.max(MINUTES,L.minutes);
     var LEVEL_GOAL=L.pages;
     // Static fallback so a child NEVER sees a broken adventure if generation fails.
-    var FALLBACK=(window.SonaContent?SonaContent.storyPages(SOUND):[{text:"Once, Leo saw a ___.",word:"rabbit",e:"🐰"}]);
+    var FALLBACK=(window.SonaContent?SonaContent.storyPages(SOUND):[{text:"Once, Echo saw a ___.",word:"rabbit",e:"🐰"}]);
     var PAGES=FALLBACK, GENERATED=false;
     // GOAL = how many pages this run asks for, never more than we actually have.
     var GOAL=Math.min(LEVEL_GOAL,PAGES.length)||PAGES.length||5;

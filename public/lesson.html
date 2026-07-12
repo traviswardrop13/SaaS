@@ -150,7 +150,7 @@
 
   <!-- START -->
   <div id="start" class="screen">
-    <div class="bigorb"><img id="startPic" alt="Leo" src="/coach/echo/echo-idle.svg" /></div>
+    <div class="bigorb"><img id="startPic" alt="Echo" src="/coach/echo/echo-idle.svg" /></div>
     <h1 id="startTitle">Let's practice!</h1>
     <div id="themeTag" style="margin-top:10px;font-family:'Baloo 2';font-weight:800;font-size:14px;color:#e08600;background:#fff3df;border-radius:99px;padding:7px 16px;">⭐ Practice Day</div>
     <button class="cta" id="startBtn">Start</button>
@@ -415,7 +415,7 @@
       const wrap=document.createElement("div"); wrap.className="saywrap";
       const showPic = a.level==="word" && a.emoji;
       wrap.innerHTML =
-        '<div class="leobubble"><img src="'+(BUDDY.img||"/coach/echo/echo-idle.svg")+'" alt="Leo"/><div class="bub">'+a.label+'</div></div>'+
+        '<div class="leobubble"><img src="'+(BUDDY.img||"/coach/echo/echo-idle.svg")+'" alt="Echo"/><div class="bub">'+a.label+'</div></div>'+
         (showPic ? '<div class="bigpic">'+a.emoji+'</div>' : '<div class="bigword">'+a.label+'</div>')+
         (a.isLetter ? '<div id="mouthSlot"></div>' : '')+
         '<div class="cue">'+(window.Mouth?Mouth.hint(a.snd||SOUND):(CUE[a.snd||SOUND]||""))+'</div>'+

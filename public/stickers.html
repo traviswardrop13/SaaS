@@ -23,14 +23,26 @@
     .bar span{display:block;height:100%;background:linear-gradient(90deg,#7ad131,var(--green));border-radius:99px;}
     .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:18px;}
     @media(max-width:380px){ .grid{grid-template-columns:repeat(3,1fr);} }
-    .st{aspect-ratio:1;border-radius:18px;background:#fff;box-shadow:0 6px 16px -10px rgba(20,90,160,.5);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:6px;}
+    .st{position:relative;aspect-ratio:1;border-radius:18px;background:#fff;box-shadow:0 6px 16px -10px rgba(20,90,160,.5);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:6px;}
     .st .e{font-size:34px;line-height:1;}
     .st .n{font-size:10px;font-weight:800;color:var(--muted);text-align:center;line-height:1.1;}
-    .st.locked{background:#eef3fb;box-shadow:none;}
-    .st.locked .e{filter:grayscale(1);opacity:.32;}
+    .st.locked{background:#eef3fb;box-shadow:none;cursor:pointer;}
+    /* silhouette tease: the real sticker, darkened to its exact shape — no padlocks */
+    .st.locked .e{filter:brightness(0);opacity:.16;}
     .st.locked .n{opacity:.5;}
+    /* the very next earnable sticker: gentle glow + "Next!" tag (page-local twin of sona.css .glow-pulse) */
+    .st.next{background:#fff;animation:glowNext 2.2s ease-in-out infinite;will-change:box-shadow;}
+    .st.next .e{opacity:.24;}
+    @keyframes glowNext{0%,100%{box-shadow:0 6px 16px -10px rgba(20,90,160,.5),0 0 0 0 rgba(28,176,246,0);}50%{box-shadow:0 6px 16px -10px rgba(20,90,160,.5),0 0 0 9px rgba(28,176,246,.16);}}
+    .st .tag{position:absolute;top:-8px;left:50%;transform:translateX(-50%);background:var(--blue);color:#fff;font-family:"Baloo 2";font-weight:800;font-size:10px;line-height:1;padding:3px 9px;border-radius:99px;box-shadow:0 2px 5px rgba(20,90,150,.3);white-space:nowrap;}
     .st.new{animation:pop .5s ease;}
     @keyframes pop{0%{transform:scale(.4);opacity:0;}70%{transform:scale(1.12);}100%{transform:scale(1);opacity:1;}}
+    #toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));transform:translateX(-50%) translateY(8px);background:#fff;color:var(--ink);font-weight:800;font-size:13.5px;padding:11px 18px;border-radius:99px;box-shadow:0 8px 24px -8px rgba(20,90,160,.45);opacity:0;pointer-events:none;transition:opacity .25s ease,transform .25s ease;max-width:88%;text-align:center;z-index:50;}
+    #toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+    @media (prefers-reduced-motion: reduce){
+      .st.next{animation:none;box-shadow:0 6px 16px -10px rgba(20,90,160,.5),0 0 0 3px rgba(28,176,246,.35);}
+      .st.new{animation:none;}
+    }
     .empty{margin-top:22px;text-align:center;color:var(--muted);font-weight:700;line-height:1.5;}
     .cta{display:block;margin:22px auto 0;text-align:center;}
     .btn{display:inline-block;border:none;border-radius:14px;padding:13px 22px;font-family:"Baloo 2";font-weight:800;font-size:15px;color:#fff;background:var(--blue);box-shadow:0 4px 0 var(--blue-d);text-decoration:none;cursor:pointer;}
@@ -47,6 +59,7 @@
     <p class="empty" id="empty" style="display:none;">No stickers yet — finish a level or visit the Prize Machine to earn your first one! ✨</p>
     <div class="cta"><a class="btn" href="/arcade.html">🎰 Prize Machine →</a></div>
   </div>
+  <div id="toast"></div>
 
   <script src="/sona.js"></script>
   <script>
@@ -60,11 +73,18 @@
     // highlight a sticker just won (arcade passes ?new=<id>)
     var justNew=new URLSearchParams(location.search).get("new")||"";
     var grid=$("grid");
+    function toast(t){ var el=$("toast"); if(!el)return; el.textContent=t; el.classList.add("show"); clearTimeout(toast._t); toast._t=setTimeout(function(){ el.classList.remove("show"); },1600); }
+    // the very next earnable sticker — awards go in STICKERS order (Sona.awardNextSticker)
+    var nextId="";
+    for(var ni=0;ni<all.length;ni++){ if(!earned[all[ni].id]){ nextId=all[ni].id; break; } }
     all.forEach(function(s){
       var has=!!earned[s.id];
+      var isNext=!has&&s.id===nextId;
       var d=document.createElement("div");
-      d.className="st"+(has?"":" locked")+(has&&s.id===justNew?" new":"");
-      d.innerHTML='<div class="e">'+(has?s.e:"❓")+'</div><div class="n">'+(has?s.name:"Locked")+'</div>';
+      d.className="st"+(has?"":" locked")+(isNext?" next":"")+(has&&s.id===justNew?" new":"");
+      // locked stickers show their real art as a dark silhouette (CSS) — a tease, no padlocks
+      d.innerHTML='<div class="e">'+s.e+'</div><div class="n">'+(has?s.name:"?")+'</div>'+(isNext?'<span class="tag">Next!</span>':"");
+      if(!has){ d.onclick=function(){ toast(isNext?"This one's next — keep playing!":"Keep playing to win this sticker!"); }; }
       grid.appendChild(d);
     });
     if(!got){ $("empty").style.display="block"; }

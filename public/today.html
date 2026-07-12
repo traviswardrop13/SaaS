@@ -32,7 +32,7 @@
     /* flex:1 + centering lets the hero absorb tall-screen slack instead of
        leaving one dead gap above the CTA */
     #heroWrap{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;padding:10px 0 2px;}
-    #heroCard{width:min(78vw,330px);aspect-ratio:234/290;border-radius:26px;border:7px solid #fff;box-shadow:0 12px 26px rgba(90,50,10,.2);transform:rotate(-2deg);background:#eee center/cover no-repeat;cursor:pointer;transition:transform .12s;}
+    #heroCard{position:relative;width:min(78vw,330px);aspect-ratio:234/290;border-radius:26px;border:7px solid #fff;box-shadow:0 12px 26px rgba(90,50,10,.2);transform:rotate(-2deg);background:#eee center/cover no-repeat;cursor:pointer;transition:transform .12s;}
     #heroCard:active{transform:rotate(-2deg) scale(.98);}
     #heroCap{background:#fff;border-radius:16px;padding:10px 20px 12px;box-shadow:0 6px 16px rgba(90,50,10,.14);transform:rotate(1.5deg);margin-top:-26px;text-align:center;max-width:82vw;}
     #heroName{font-family:"Baloo 2";font-weight:800;font-size:19px;}
@@ -52,7 +52,12 @@
     #goBtn{border:none;border-radius:20px;padding:17px;font-family:"Baloo 2";font-weight:800;font-size:19px;letter-spacing:.04em;color:#fff;background:linear-gradient(180deg,#ffa05a,#ff8a3d);box-shadow:0 6px 0 var(--orange-d);cursor:pointer;width:100%;margin-top:auto;transition:transform .05s;}
     #goBtn:active{transform:translateY(4px);box-shadow:0 2px 0 var(--orange-d);}
 
-    /* trial banner */
+    /* coming-soon tease (Coach Call): softly desaturated, gold ribbon, still tappable */
+    .soon{filter:saturate(.72);}
+    .soonTag{position:absolute;top:12px;left:-9px;background:linear-gradient(180deg,#ffe063,var(--gold));color:#7a5200;font-family:"Baloo 2";font-weight:800;font-size:12px;letter-spacing:.08em;padding:5px 13px;border-radius:99px;box-shadow:0 3px 0 rgba(120,80,20,.18);transform:rotate(-4deg);pointer-events:none;}
+    .thumb .soonTag{top:6px;left:-7px;font-size:10px;padding:3px 9px;}
+
+    /* founding banner (feedback invite — never pricing) */
     #trialBanner{display:none;align-items:center;gap:8px;background:linear-gradient(120deg,#fff7e6,#ffe9c2);border:1px solid #ffe2a8;border-radius:14px;padding:9px 14px;font-weight:800;font-size:12.5px;color:#8a6400;text-decoration:none;}
 
     /* parent gate + sheet (warm) */
@@ -142,6 +147,7 @@
         <div id="storyBits" style="font-weight:800;font-size:12px;color:var(--ink);margin-top:9px;line-height:1.55;border-top:2px solid var(--track);padding-top:9px;"></div>
         <div style="font-weight:800;font-size:10.5px;color:var(--label);margin-top:8px;">Built with Rachel — licensed speech-language pathologist. A practice snapshot, not an evaluation.</div>
       </div>
+      <div id="planNote" style="display:none;background:var(--cream);border-radius:16px;padding:12px 16px;margin-top:10px;text-align:left;font-weight:800;font-size:12.5px;color:var(--muted);"></div>
       <button class="sheetBtn" id="goCheck"><span style="font-size:18px;">🎯</span>&nbsp; <span id="goCheckTxt">Weekly Sound Check</span></button>
       <button class="sheetBtn" id="goProgress"><span class="pic-trend"></span>&nbsp; Progress &amp; SLP report</button>
       <button class="sheetBtn" id="goSettings"><span class="pic-gear"></span>&nbsp; Settings</button>
@@ -232,16 +238,18 @@
       el.style.backgroundImage=art(key); upgradeArt(el,key);
     }
     function render(){
-      var a=ACTS[sel];
-      applyArt($("heroCard"),a.key);
+      var a=ACTS[sel], hero=$("heroCard");
+      applyArt(hero,a.key);
+      if(a.key==="call"){ hero.classList.add("soon"); hero.innerHTML='<span class="soonTag">COMING SOON</span>'; }
+      else { hero.classList.remove("soon"); hero.innerHTML=""; }
       $("heroName").textContent=a.name;
       $("heroSub").innerHTML=a.sub.replace("★★★",'<b>★★★</b>');
       var t=$("thumbs"); t.innerHTML="";
       [1,2].forEach(function(off){
         var ix=(sel+off)%ACTS.length, act=ACTS[ix];
-        var el=document.createElement("div"); el.className="thumb";
+        var el=document.createElement("div"); el.className="thumb"+(act.key==="call"?" soon":"");
         applyArt(el,act.key);
-        el.innerHTML="<b>"+act.name+"</b>";
+        el.innerHTML="<b>"+act.name+"</b>"+(act.key==="call"?'<span class="soonTag">Soon!</span>':"");
         el.onclick=function(){ sfx("tap"); sel=ix; render(); };
         t.appendChild(el);
       });
@@ -326,7 +334,7 @@
         b.onclick=function(){
           if(kk==="⌫"){ gateAns=gateAns.slice(0,-1); }
           else if(kk==="✓"){
-            if(gateAns===gateNeed){ $("gateOvl").classList.remove("show"); sfx("correct"); if(gateNext){ var fn=gateNext; gateNext=null; fn(); } else { paintWeek(); paintWins(); paintPlan(); $("sheetOvl").classList.add("show"); } }
+            if(gateAns===gateNeed){ try{ if(S&&S.gateVerify)S.gateVerify(); }catch(e){} $("gateOvl").classList.remove("show"); sfx("correct"); if(gateNext){ var fn=gateNext; gateNext=null; fn(); } else { paintWeek(); paintWins(); paintPlan(); $("sheetOvl").classList.add("show"); } }
             else { var m=$("gateModal"); m.classList.remove("shake"); void m.offsetWidth; m.classList.add("shake"); gateAns=""; }
           }
           else { if(gateAns.length<6) gateAns+=String(kk); }
@@ -337,6 +345,8 @@
       });
     })();
     $("gateClose").onclick=function(){ $("gateOvl").classList.remove("show"); };
+    // bounced here from a parent-only page (Sona.requireGate)? Open the gate right away.
+    try{ if(/[?&]gate=1/.test(location.search)) openGate(); }catch(e){}
     // Mom's week — her goal (3/5/7 days), her streak. Never shown to the kid.
     function paintWeek(){
       try{
@@ -446,19 +456,22 @@
       }catch(e){}
     }
 
-    // ── trial banner (web only; the native app has no payments) ──
-    // Early adopters never see a paywall: their banner says free-forever and
-    // taps straight into the feedback pulse instead of /subscribe.
+    // ── plan status (web only; the native app has no payments) ──
+    // Hard rule: the kid home shows zero prices, trials, or countdowns.
+    // Trial status lives in the parent corner (#planNote), behind the gate.
+    // Founding families keep a kid-safe banner that opens the feedback pulse.
     (function(){ if(!S)return; if(S.isNativeApp&&S.isNativeApp())return;
-      var b=$("trialBanner"),m=$("trialMsg"); if(!b||!m)return;
-      if(P.earlyAdopter){ m.innerHTML="Founding family — Sona is <b>free for you</b>. Tap to tell us what to build!"; b.removeAttribute("href"); b.style.cursor="pointer"; b.onclick=function(ev){ ev.preventDefault(); showPulse(true); }; b.style.display="flex"; return; }
+      var b=$("trialBanner"),m=$("trialMsg"),note=$("planNote");
+      if(P.earlyAdopter){
+        if(b&&m){ m.innerHTML="Founding family — you're building Sona with us. <u>Tap to share an idea!</u>"; b.removeAttribute("href"); b.style.cursor="pointer"; b.onclick=function(ev){ if(ev&&ev.preventDefault)ev.preventDefault(); showPulse(true); }; b.style.display="flex"; }
+        if(note){ note.textContent="Your family has founding access while we build Sona together — thank you."; note.style.display="block"; }
+        return;
+      }
+      if(!note)return;
       if((S.isSubscribed&&S.isSubscribed())||(S.isPilot&&S.isPilot()))return; if(S.ensureTrial)S.ensureTrial();
-      // Kids Category rule: no prices and no ungated commerce on a child
-      // screen — the banner stays kid-neutral and the tap runs the parent
-      // gate first; pricing lives on /subscribe, behind it.
-      var gated=function(ev){ ev.preventDefault(); openGate(function(){ location.href="/subscribe"; }); };
-      if(S.trialActive&&S.trialActive()){ var dd=S.trialDaysLeft?S.trialDaysLeft():7; m.innerHTML=dd+" day"+(dd===1?"":"s")+" left in your free trial · <u>Grown-ups tap here</u>"; b.removeAttribute("href"); b.style.cursor="pointer"; b.onclick=gated; b.style.display="flex"; }
-      else if(S.trialExpired&&S.trialExpired()){ m.innerHTML="Your free trial ended · <u>Grown-ups tap here</u>"; b.removeAttribute("href"); b.style.cursor="pointer"; b.onclick=gated; b.style.display="flex"; }
+      var link=' <a href="/subscribe.html" style="color:var(--orange-d);font-weight:800;">';
+      if(S.trialActive&&S.trialActive()){ var dd=S.trialDaysLeft?S.trialDaysLeft():7; note.innerHTML="Your free trial: "+dd+" day"+(dd===1?"":"s")+" left."+link+"Lock in your founding price →</a>"; note.style.display="block"; }
+      else if(S.trialExpired&&S.trialExpired()){ note.innerHTML="Your free trial has ended."+link+"See membership options →</a>"; note.style.display="block"; }
     })();
 
     // ── beta pulse: an open box — request, idea, or problem. X always dismisses. ──
