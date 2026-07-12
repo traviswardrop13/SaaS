@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
-  <title>Sona — Chat with Leo</title>
+  <title>Sona — Chat with Echo</title>
   <link href="/fonts.css" rel="stylesheet">
   <link rel="manifest" href="/manifest.webmanifest" />
   <meta name="theme-color" content="#9b7bff" />
@@ -54,20 +54,20 @@
       <span class="stat count"><span id="count">0</span>/<span id="goal">4</span></span>
     </div>
     <div id="stage">
-      <img id="leoBig" src="/coach/echo/echo-idle.svg" alt="Leo" />
+      <img id="leoBig" src="/coach/echo/echo-idle.svg" alt="Echo" />
       <div id="bubble"><b id="qText">Which do you like — a rabbit or a rocket?</b></div>
       <div id="opts"></div>
     </div>
     <div id="bottom">
-      <div id="prompt">Tap the mic and tell Leo your pick!</div>
+      <div id="prompt">Tap the mic and tell Echo your pick!</div>
       <button id="hear"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;vertical-align:-3px;margin-right:5px;"><path d="M11 5 6 9H3v6h3l5 4V5Z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/></svg>Hear it again</button>
       <button class="mic" id="micBtn" title="Say it"><svg viewBox="0 0 24 24"><path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v6a3 3 0 0 0 3 3Z"/><path d="M6 11a6 6 0 0 0 12 0M12 18v3" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round"/></svg></button>
     </div>
   </div>
   <div id="win">
-    <img class="leoWin" src="/coach/echo/echo-celebrate.svg" alt="Leo" onerror="this.onerror=null;this.src='/coach/echo/echo-idle.svg';" />
+    <img class="leoWin" src="/coach/echo/echo-celebrate.svg" alt="Echo" onerror="this.onerror=null;this.src='/coach/echo/echo-idle.svg';" />
     <h1>Great chatting!</h1>
-    <div class="reward"><span id="winCount">0</span><small>answers to Leo</small></div>
+    <div class="reward"><span id="winCount">0</span><small>answers to Echo</small></div>
     <div class="reward" id="winUnlock" style="background:#fff7df;color:#e08600;"></div>
     <button class="btn" id="again">Chat again</button><a href="/play.html">Done for now →</a>
   </div>
@@ -112,7 +112,7 @@
     function renderChat(){ var c=CHATS[ci%CHATS.length]; $("qText").textContent=c.q;
       var ow=$("opts"); ow.innerHTML=""; c.options.forEach(function(o){ var el=document.createElement("div"); el.className="opt"; el.innerHTML='<span class="e">'+((window.Sona&&Sona.pic)?Sona.pic(o.w,o.e,42):(o.e||"⭐"))+'</span><span class="w">'+o.w+'</span>'; el.dataset.w=o.w; ow.appendChild(el); }); }
     function chooseChip(word){ var hit=null; Array.prototype.forEach.call($("opts").children,function(el){ if(norm(el.dataset.w)===norm(word)) { el.classList.add("chosen"); hit=el; } }); return hit; }
-    async function ask(){ var c=CHATS[ci%CHATS.length]; setLeo("idle"); $("prompt").textContent="Listen to Leo…"; await say(c.q); $("prompt").textContent="Tap the mic and tell Leo your pick!"; $("micBtn").onclick=turn; }
+    async function ask(){ var c=CHATS[ci%CHATS.length]; setLeo("idle"); $("prompt").textContent="Listen to Echo…"; await say(c.q); $("prompt").textContent="Tap the mic and tell Echo your pick!"; $("micBtn").onclick=turn; }
     var hasSR=!!(window.SpeechRecognition||window.webkitSpeechRecognition);
     async function turn(){
       if(busy) return; busy=true; $("micBtn").onclick=null; setLeo("listen");
@@ -125,7 +125,7 @@
       if(!pick){
         if(window.Sona&&Sona.sfx)Sona.sfx.tap&&Sona.sfx.tap();
         setLeo("idle");
-        $("prompt").textContent="Tell Leo: "+c.options.map(function(o){return o.w;}).join(" or ")+"?";
+        $("prompt").textContent="Tell Echo: "+c.options.map(function(o){return o.w;}).join(" or ")+"?";
         await new Promise(function(r){setTimeout(r,500);}); busy=false; $("micBtn").onclick=turn; return;
       }
       chooseChip(pick);

@@ -40,6 +40,20 @@
     .btn.blue{background:linear-gradient(180deg,#5cc6ff,#1cb0f6);box-shadow:0 6px 0 #1480c0;}
     .btn.blue:active{box-shadow:0 2px 0 #1480c0;}
     .btn.ghost{background:none;box-shadow:none;color:#b08d63;text-transform:none;font-size:13px;width:auto;padding:8px;}
+    /* Echo speaks the win: bubble with a tail toward the leap; numbers fade in later */
+    #endTitle{position:relative;background:#fff;border-radius:18px;padding:12px 18px;box-shadow:0 6px 16px rgba(74,44,20,.12);display:inline-block;}
+    #endTitle:after{content:"";position:absolute;left:50%;bottom:-8px;transform:translateX(-50%) rotate(45deg);width:16px;height:16px;background:#fff;border-radius:3px;}
+    #endSub.later{display:block!important;opacity:0;font-size:12.5px;color:var(--muted,#b08d63);transition:opacity .5s ease;margin-top:2px;}
+    #endSub.later.in{opacity:1;}
+    /* ── end-overlay celebration: star drop + Echo leap (Duolingo-ABC three-element stack) ── */
+    #endOvl .ovlCard{padding-top:24px;}
+    .endStar{animation:starDrop .35s cubic-bezier(.3,1.6,.5,1) both;}
+    @keyframes starDrop{0%{transform:translateY(-64px) scale(.4);opacity:0}70%{transform:translateY(6px) scale(1.08);opacity:1}100%{transform:translateY(0) scale(1);opacity:1}}
+    .echoWin{position:relative;width:100%;height:96px;overflow:hidden;pointer-events:none;}
+    .echoWin img{position:absolute;left:50%;bottom:-40px;width:118px;margin-left:-59px;filter:drop-shadow(0 6px 8px rgba(30,22,50,.18));animation:echoLeap .5s cubic-bezier(.3,1.4,.5,1) both,echoHop 1.5s ease-in-out .6s infinite;}
+    @keyframes echoLeap{0%{transform:translateY(110px)}100%{transform:translateY(0)}}
+    @keyframes echoHop{0%,100%{transform:translateY(0)}45%{transform:translateY(-14px) rotate(-5deg)}}
+    @media (prefers-reduced-motion: reduce){ .endStar,.echoWin img{animation:none;} }
   </style>
 </head>
 <body>
@@ -80,11 +94,11 @@
 
   <div class="ovl" id="endOvl">
     <div class="ovlCard">
-      <img class="ovlEcho" src="/coach/echo/echo-celebrate.svg" alt="" />
-      <div class="big" id="endEmoji"><svg viewBox="0 0 64 64" style="width:56px;height:56px"><path d="M32 5l8.2 18.6L60 25.8 44.9 39.2 49.8 59 32 48.4 14.2 59l4.9-19.8L4 25.8l19.8-2.2Z" fill="#ffd21c"/><circle cx="25" cy="21" r="3" fill="#fff" opacity=".85"/></svg></div>
+      <div class="big endStar" id="endEmoji"><svg viewBox="0 0 64 64" style="width:56px;height:56px"><path d="M32 5l8.2 18.6L60 25.8 44.9 39.2 49.8 59 32 48.4 14.2 59l4.9-19.8L4 25.8l19.8-2.2Z" fill="#ffd21c"/><circle cx="25" cy="21" r="3" fill="#fff" opacity=".85"/></svg></div>
       <h2 id="endTitle">Great round!</h2>
       <p id="endSub"></p>
-      <button class="btn blue" id="endCharge"><svg viewBox="0 0 64 64" style="width:18px;height:18px;vertical-align:-3px"><path d="M36 4 14 36h13l-5 24 24-34H33Z" fill="#ffd21c" stroke="#f0a800" stroke-width="2.5" stroke-linejoin="round"/><circle cx="30" cy="15" r="2.5" fill="#fff" opacity=".9"/></svg> Next game</button>
+      <div class="echoWin"><img src="/coach/echo/echo-celebrate.svg" alt="" /></div>
+      <button class="btn blue" id="endCharge">WOOHOO! Next →</button>
       <button class="btn" id="endAgain" style="display:none;"></button>
       <button class="btn ghost" id="endHome">Back to the house</button>
     </div>
@@ -256,17 +270,29 @@
       sfx("complete"); try{ if(S&&S.confetti)S.confetti(); }catch(e){}
       if(isDaily){
         // Daily Run: bank the score and keep the run moving — no buttons, no stall.
-        $("endTitle").textContent="+"+score+" points!";
-        $("endSub").textContent="Banking your score…";
+        if(score===0){ $("endEmoji").style.opacity=".25"; } // gentle zero tier: dim the star, keep it warm
+        $("endTitle").textContent=score===0?"Good try!":("+"+score+" points!");
+        $("endSub").textContent=score===0?"On to the next game…":"Banking your score…";
         $("endCharge").style.display="none"; $("endAgain").style.display="none"; $("endHome").style.display="none";
         setTimeout(function(){ $("endOvl").classList.add("show"); },350);
         setTimeout(bankAndContinue,1500);
         return;
       }
-      $("endTitle").textContent=score>=14?"Sky-high tower!":"Nice tower!";
-      $("endSub").textContent="You stacked "+score+" blocks"+(coins?(" · +"+coins+" coins"):"")+(best?(" · Best: "+best):"")+"!";
+      if(score===0){
+        // gentle zero tier: encouraging copy, dimmed star, happy Echo, one warm "again" button
+        $("endEmoji").style.opacity=".25";
+        $("endTitle").textContent="Good try! Wanna go again?";
+        $("endSub").className=""; $("endSub").style.display="none";
+        $("endCharge").style.display="none";
+        var ea=$("endAgain"); ea.textContent="Yes! Play again"; ea.style.display=""; ea.onclick=backToCharge;
+        setTimeout(function(){ $("endOvl").classList.add("show"); },450);
+        return;
+      }
+      // one reward per moment: star + one line + Echo — no stat rows or coin counters here
+      $("endTitle").textContent=score>=14?"We built it SKY-HIGH! "+score+" blocks!":"Look at our tower — "+score+" blocks!";
+      var _es=$("endSub"); _es.textContent=score+" blocks · Best: "+BEST; _es.className="later";
+      setTimeout(function(){ _es.classList.add("in"); },1000);
       $("endAgain").style.display="none";
-      $("endCharge").innerHTML='<svg viewBox="0 0 64 64" style="width:18px;height:18px;vertical-align:-3px"><path d="M36 4 14 36h13l-5 24 24-34H33Z" fill="#ffd21c" stroke="#f0a800" stroke-width="2.5" stroke-linejoin="round"/><circle cx="30" cy="15" r="2.5" fill="#fff" opacity=".9"/></svg> Next game';
       setTimeout(function(){ $("endOvl").classList.add("show"); },450);
     }
     $("endCharge").onclick=function(){ location.href="/charge.html?"+(isDaily?"daily=1":("game=arcade-run.html")); };

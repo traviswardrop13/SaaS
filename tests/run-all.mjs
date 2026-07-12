@@ -14,6 +14,7 @@ const SUITES = [
   "progtest.mjs",  // sound rotation + ladder cap + daily goal ring
   "shapetest.mjs", // sound-shape gate vs real recorded sounds
   "checktest.mjs", // Sound Check → plan loop + parent card
+  "gatecheck.mjs", // parent-gate hardening on adult-only pages
 ];
 
 let bad = 0;

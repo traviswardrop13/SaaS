@@ -66,7 +66,7 @@
     <!-- INTRO -->
     <section class="screen on" id="sIntro">
       <div class="center">
-        <img src="/coach/echo/echo-idle.svg" alt="Leo" style="width:132px;height:132px;object-fit:contain;filter:drop-shadow(0 10px 16px rgba(20,90,160,.22));animation:floaty 4s ease-in-out infinite;" />
+        <img src="/coach/echo/echo-idle.svg" alt="Echo" style="width:132px;height:132px;object-fit:contain;filter:drop-shadow(0 10px 16px rgba(20,90,160,.22));animation:floaty 4s ease-in-out infinite;" />
         <h1>Free 2-minute<br/>Speech Check</h1>
         <p class="lead">Your child says a few words, and we'll show you which sounds are on track and which to practice — designed with a licensed speech-language pathologist.</p>
         <span class="slptag">✓ Built with an SLP</span>
@@ -95,9 +95,9 @@
     <!-- EMAIL GATE (after the test, before results — peak motivation) -->
     <section class="screen" id="sGate">
       <div class="center">
-        <img src="/coach/echo/echo-celebrate.svg" alt="Leo" style="width:122px;height:122px;object-fit:contain;filter:drop-shadow(0 10px 16px rgba(20,90,160,.22));" onerror="this.onerror=null;this.src='/coach/echo/echo-idle.svg';" />
+        <img src="/coach/echo/echo-celebrate.svg" alt="Echo" style="width:122px;height:122px;object-fit:contain;filter:drop-shadow(0 10px 16px rgba(20,90,160,.22));" onerror="this.onerror=null;this.src='/coach/echo/echo-idle.svg';" />
         <h1 id="gateTitle">The results are ready! 🎉</h1>
-        <p class="lead" id="gateText">Pop in your email to see which sounds are on track and which to practice — plus a simple at-home plan from Leo.</p>
+        <p class="lead" id="gateText">Pop in your email to see which sounds are on track and which to practice — plus a simple at-home plan from Echo.</p>
         <div class="field"><label for="email">📧 Your email</label><input id="email" type="email" inputmode="email" placeholder="you@email.com" /></div>
         <button class="btn blue" id="gateBtn">See the results →</button>
         <p class="disclaimer" id="gateMsg">We'll email your child's report and let you know when Sona launches. No spam — unsubscribe anytime.</p>
@@ -207,7 +207,7 @@
       $("sumTitle").textContent=(CHILD?CHILD+"'s":"Your child's")+" Speech Check";
       var txt;
       if(practice.length===0) txt="Great news — every sound we checked is on track or right on schedule for age "+AGE+". Keep it up with daily play!";
-      else txt="A few sounds are ready to practice: "+practice.join(", ")+". That's totally normal — and exactly what daily play with Leo fixes.";
+      else txt="A few sounds are ready to practice: "+practice.join(", ")+". That's totally normal — and exactly what daily play with Echo helps with.";
       $("sumText").textContent=txt;
       // build a readable report for the emailed version (forwarded to GHL)
       var onTrack=[],dev=[];

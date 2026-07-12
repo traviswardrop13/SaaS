@@ -629,7 +629,7 @@
       d.id = "sonaMicDenied";
       d.style.cssText = "position:fixed;inset:0;z-index:9999;background:rgba(255,255,255,.97);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:30px;gap:10px;";
       d.innerHTML =
-        '<img src="/coach/echo/echo-idle.svg" alt="Leo" style="width:110px;height:110px;object-fit:contain;" onerror="this.outerHTML=\'<div style=&quot;font-size:64px&quot;>🦜</div>\'" />' +
+        '<img src="/coach/echo/echo-idle.svg" alt="Echo" style="width:110px;height:110px;object-fit:contain;" onerror="this.outerHTML=\'<div style=&quot;font-size:64px&quot;>🦜</div>\'" />' +
         '<div style="font-family:\'Baloo 2\',sans-serif;font-weight:800;font-size:24px;color:#3c3c3c;">I can’t hear you!</div>' +
         '<div style="font-family:Nunito,sans-serif;font-weight:700;font-size:15px;color:#777;max-width:300px;">Ask a grown-up to turn on the microphone for Sona in your phone’s settings, then come back!</div>' +
         '<button style="margin-top:10px;border:none;border-radius:16px;padding:14px 34px;font-family:\'Baloo 2\',sans-serif;font-weight:800;font-size:16px;text-transform:uppercase;color:#fff;background:#1cb0f6;box-shadow:0 5px 0 0 #1597d4;cursor:pointer;">OK</button>';
@@ -687,6 +687,51 @@
       if (j && j.ok) return { ok: true, active: false };
       return { ok: false, error: (j && j.error) || "Couldn’t check right now." };
     } catch (e) { return { ok: false, error: "Network error. Try again." }; }
+  }
+
+
+  // ── parent gate: adults-only pages ─────────────────────────────────────
+  // The home screen's grown-ups gate (PIN or math, in today.html) calls
+  // gateVerify() when the adult passes it. Parent-only pages (progress,
+  // settings, voices, subscribe) call requireGate() on load so a child can't
+  // reach them by direct URL or back-swipe: without a fresh pass they're sent
+  // back to the home screen with the gate open — never a scary error. The
+  // pass lives in sessionStorage (per tab, gone when the app closes) and
+  // expires after 10 quiet minutes; every gated page load refreshes it, so an
+  // adult who is actively reading is never kicked out mid-visit.
+  const GATEKEY = "sona.gate.v1", GATE_TTL = 10 * 60 * 1000;
+  // The pass is written to sessionStorage AND mirrored to an in-memory
+  // timestamp (window.__sonaGateOk). Some browsers (private modes, blocked
+  // storage) throw on sessionStorage — without the mirror, a parent who just
+  // passed the gate would be bounced straight back to it.
+  function gateVerify() {
+    var now = Date.now();
+    try { sessionStorage.setItem(GATEKEY, String(now)); } catch (e) {}
+    try { window.__sonaGateOk = now; } catch (e) {}
+  }
+  function gateStamp() {
+    var t = 0;
+    try { var s = parseInt(sessionStorage.getItem(GATEKEY), 10); if (s > t) t = s; } catch (e) {}
+    try { var m = window.__sonaGateOk; if (m > t) t = m; } catch (e) {}
+    return t;
+  }
+  function gateOk() { var t = gateStamp(); var age = Date.now() - t; return !!t && age >= 0 && age < GATE_TTL; }
+  // While a verified parent is on a gated page, any tap (or tab return) renews
+  // the still-fresh pass so reading never re-gates mid-visit.
+  var gateWatching = false;
+  function gateWatch() {
+    if (gateWatching) return; gateWatching = true;
+    function renew() { if (gateOk()) gateVerify(); }
+    try {
+      document.addEventListener("click", renew, { passive: true });
+      document.addEventListener("visibilitychange", renew, { passive: true });
+    } catch (e) {}
+  }
+  function requireGate(redirect) {
+    if (gateOk()) { gateVerify(); gateWatch(); return true; }
+    try { document.documentElement.style.visibility = "hidden"; } catch (e) {}
+    try { location.replace(redirect || "/today.html?gate=1"); } catch (e) {}
+    return false;
   }
 
   // --- recordings (the child's audio attempts) kept in IndexedDB so a parent
@@ -897,7 +942,7 @@
     "grocery.html":  { name: "Grocery Grab",  icon: "🛒",  band: "Phrases",   c: "#ff9600" },
     "train.html":    { name: "Story Train",   icon: "🚂",  band: "Sentences", c: "#2ec4d6" },
     "story.html":    { name: "Story Time",    icon: "📖",  band: "Story",     c: "#7cc40a" },
-    "chat.html":     { name: "Chat with Leo", icon: "💬",  band: "Talking",   c: "#e0457b" },
+    "chat.html":     { name: "Chat with Echo", icon: "💬",  band: "Talking",   c: "#e0457b" },
     "charge.html":       { name: "Charge & Play", icon: "⚡", band: "Practice", c: "#ffb100" },
     "arcade-slice.html": { name: "Fruit Slice",   icon: "🍉", band: "Arcade",   c: "#ff6b6b" },
     "arcade-stack.html": { name: "Block Stacker", icon: "🧱", band: "Arcade",   c: "#4dabf7" },
@@ -1054,7 +1099,7 @@
     T: { mouth: "⏰", tip: "Tongue taps behind your top teeth — t! t! t!" },
     D: { mouth: "🥁", tip: "Like T, but turn your voice on — d! d! d!" },
   };
-  function cue(sound) { return CUES[sound] || { mouth: "👄", tip: "Listen to Leo, then copy the sound!" }; }
+  function cue(sound) { return CUES[sound] || { mouth: "👄", tip: "Listen to Echo, then copy the sound!" }; }
 
     // ── The parent's weekly wins: reps + focus-sound accuracy, this week vs
   // last (local Monday weeks, honest scored attempts only via outcomes()).
@@ -1420,5 +1465,5 @@
   }
   try { installDebug(); } catch (e) {}
 
-  global.Sona = { pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, weekWins, ALL_SOUNDS, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, ladderContent, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, soundFamily, frameShape, checkSounds, checkItems, gradeSound, saveCheck, lastCheck, checkHistory, checkDue, buildPlan, getPlan, journeyWeek, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, gated, isNativeApp, getTrial, startTrial, ensureTrial, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, LEVEL_GAMES, GAME_DECK, GAMES_PER_LEVEL, levelGames, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, WORLDS, LEVELS_PER_WORLD, campaignLevels, campaignSounds, campaignState, worldById, worldLevels, worldStars, worldCleared, levelStars, setLevelStars, totalStars, worldUnlocked, levelUnlocked, campaignLaunch, campaignResolve, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES };
+  global.Sona = { pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, weekWins, ALL_SOUNDS, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, ladderContent, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, soundFamily, frameShape, checkSounds, checkItems, gradeSound, saveCheck, lastCheck, checkHistory, checkDue, buildPlan, getPlan, journeyWeek, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, gated, gateVerify, gateOk, requireGate, isNativeApp, getTrial, startTrial, ensureTrial, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, LEVEL_GAMES, GAME_DECK, GAMES_PER_LEVEL, levelGames, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, WORLDS, LEVELS_PER_WORLD, campaignLevels, campaignSounds, campaignState, worldById, worldLevels, worldStars, worldCleared, levelStars, setLevelStars, totalStars, worldUnlocked, levelUnlocked, campaignLaunch, campaignResolve, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES };
 })(window);

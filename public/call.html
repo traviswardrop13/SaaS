@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
-  <title>Sona — Call Leo</title>
+  <title>Sona — Call Echo</title>
   <link href="/fonts.css" rel="stylesheet">
   <link rel="manifest" href="/manifest.webmanifest" />
   <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
@@ -104,18 +104,18 @@
   </div>
   <div id="wrap">
     <div id="top">
-      <span class="pillT"><span class="dotLive"></span> Leo · <span id="timer">5:00</span></span>
+      <span class="pillT"><span class="dotLive"></span> Echo · <span id="timer">5:00</span></span>
     </div>
 
     <div id="stage">
-      <div id="leoWrap"><img id="leoImg" src="/coach/echo/echo-avatar.svg" alt="Leo" /></div>
+      <div id="leoWrap"><img id="leoImg" src="/coach/echo/echo-avatar.svg" alt="Echo" /></div>
       <div id="cap">
         <div id="leoSays"></div>
         <div id="youSaid"></div>
       </div>
       <div id="status">
-        <span id="listenChip"><span class="micdot"></span> Your turn — talk to Leo!</span>
-        <span id="thinkChip">Leo is thinking…</span>
+        <span id="listenChip"><span class="micdot"></span> Your turn — talk to Echo!</span>
+        <span id="thinkChip">Echo is thinking…</span>
         <button id="doneTalk">I'm done</button>
       </div>
     </div>
@@ -129,19 +129,19 @@
 
   <!-- PRE-CALL -->
   <div id="pre" class="screen">
-    <img src="/coach/echo/echo-avatar.svg" alt="Leo" />
-    <h1>Video call Leo? 📞</h1>
-    <p>Have a real chat with Leo! He'll ask fun questions — just talk back. About 5 minutes.</p>
-    <button class="callbtn" id="callBtn" title="Call Leo"><svg viewBox="0 0 24 24"><path d="M6.6 10.8c1.5 3 3.6 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.2.4 2.4.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1C10.6 21 3 13.4 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.2.2 2.4.6 3.6.1.3 0 .7-.2 1l-2.3 2.2z"/></svg></button>
-    <p style="font-size:13px;margin-top:16px;">Allow the microphone so Leo can hear you!</p>
+    <img src="/coach/echo/echo-avatar.svg" alt="Echo" />
+    <h1>Video call Echo? 📞</h1>
+    <p>Have a real chat with Echo! He'll ask fun questions — just talk back. About 5 minutes.</p>
+    <button class="callbtn" id="callBtn" title="Call Echo"><svg viewBox="0 0 24 24"><path d="M6.6 10.8c1.5 3 3.6 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.2.4 2.4.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1C10.6 21 3 13.4 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.2.2 2.4.6 3.6.1.3 0 .7-.2 1l-2.3 2.2z"/></svg></button>
+    <p style="font-size:13px;margin-top:16px;">Allow the microphone so Echo can hear you!</p>
     <div id="err"></div>
   </div>
 
   <!-- ENDED -->
   <div id="ended" class="screen hidden">
-    <img src="/coach/echo/echo-avatar.svg" alt="Leo" />
+    <img src="/coach/echo/echo-avatar.svg" alt="Echo" />
     <h1>Great call! 🎉</h1>
-    <p id="endSub">You talked with Leo!</p>
+    <p id="endSub">You talked with Echo!</p>
     <div class="rewards">
       <div class="reward" id="endTime">5:00<small>talk time</small></div>
       <div class="reward" id="endTurns">0<small>your turns</small></div>
@@ -257,7 +257,7 @@
             };
             src.start();
           })
-          .catch(function (e) { toast("🔇 Leo's voice hiccuped: " + (e && e.message ? e.message : e)); fallback(); });
+          .catch(function (e) { toast("🔇 Echo's voice hiccuped: " + (e && e.message ? e.message : e)); fallback(); });
       });
     }
 
@@ -267,7 +267,7 @@
     function status(mode) {
       $("listenChip").style.display = (mode === "listen" || mode === "fallback") ? "flex" : "none";
       $("thinkChip").style.display = (mode === "think" || mode === "ring") ? "block" : "none";
-      $("thinkChip").textContent = mode === "ring" ? "Ringing… 📞" : "Leo is thinking…";
+      $("thinkChip").textContent = mode === "ring" ? "Ringing… 📞" : "Echo is thinking…";
       $("doneTalk").style.display = mode === "fallback" ? "inline-block" : "none";
     }
 
@@ -457,7 +457,7 @@
       $("endTime").innerHTML = fmt(talked) + "<small>talk time</small>";
       $("endTurns").innerHTML = kidTurns + "<small>your turns</small>";
       $("endSub").textContent = kidTurns > 0
-        ? "You talked with Leo " + kidTurns + " time" + (kidTurns === 1 ? "" : "s") + "! Amazing!"
+        ? "You talked with Echo " + kidTurns + " time" + (kidTurns === 1 ? "" : "s") + "! Amazing!"
         : "Leo loved seeing you!";
       Sona.recordSession({ words: [] });
       $("ended").classList.remove("hidden");

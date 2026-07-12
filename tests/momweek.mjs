@@ -68,6 +68,7 @@ await page.screenshot({ path: OUT + "/mom-sheet.png" });
 
 // progress page
 errs = [];
+await page.evaluate(() => sessionStorage.setItem("sona.gate.v1", String(Date.now()))); // pass the parent gate
 await page.goto("http://localhost:8128/progress.html"); await page.waitForTimeout(1000);
 const prog = await page.evaluate(() => ({
   msg: document.getElementById("wkGoalMsg").textContent,

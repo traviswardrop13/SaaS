@@ -81,7 +81,10 @@
       try{ if(window.Sona&&Sona.sfx&&Sona.sfx.tap)Sona.sfx.tap(); }catch(e){}
       setTimeout(function(){
         clearInterval(tick);
-        var won=(window.Sona&&Sona.awardRandomSticker)?Sona.awardRandomSticker():null;
+        // award in STICKERS order (not random) so the Sticker Book's glowing
+        // "This one's next!" tease is a promise the machine actually keeps
+        var won=null;
+        if(window.Sona){ won=Sona.awardNextSticker?Sona.awardNextSticker():(Sona.awardRandomSticker?Sona.awardRandomSticker():null); }
         reel.className="reel win";
         reel.textContent=won?won.e:"🎁";
         $("msg").textContent=won?("You won the "+won.name+"!"):"You won a prize!";

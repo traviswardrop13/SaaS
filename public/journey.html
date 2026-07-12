@@ -24,7 +24,8 @@
     #tl:before{content:"";position:absolute;left:24px;top:14px;bottom:14px;width:4px;border-radius:99px;background:repeating-linear-gradient(var(--track) 0 8px,transparent 8px 16px);}
     .wk{position:relative;display:flex;align-items:flex-start;gap:14px;padding:10px 0;}
     .dot{position:relative;z-index:1;width:38px;height:38px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;font-family:"Baloo 2";font-weight:800;font-size:15px;background:#fff;box-shadow:inset 0 0 0 3px var(--track);color:var(--label);}
-    .wk.done .dot{background:var(--green);box-shadow:0 3px 0 var(--green-d);color:#fff;}
+    .wk.done .dot{background:var(--green);box-shadow:0 3px 0 var(--green-d);color:#fff;position:relative;}
+    .dotdate{position:absolute;top:100%;left:50%;transform:translateX(-50%);margin-top:5px;font-family:"Baloo 2";font-weight:800;font-size:9.5px;color:var(--green-d);background:#eafbe2;border-radius:99px;padding:1px 7px;white-space:nowrap;}
     .wk.now .dot{background:linear-gradient(180deg,#ffa05a,var(--orange));box-shadow:0 3px 0 var(--orange-d);color:#fff;animation:pulse 1.6s ease-in-out infinite;}
     @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.09)}}
     .card{flex:1;background:#fff;border-radius:16px;padding:11px 14px;box-shadow:0 4px 12px rgba(120,80,20,.08);}
@@ -106,6 +107,7 @@
         var row=document.createElement("div"); row.className="wk "+(done?"done":(now?"now":(k<JW.week?"":"future")));
         if(k<JW.week&&!done) row.className="wk future"; // missed weeks stay soft, never red
         var dot=document.createElement("div"); dot.className="dot"; dot.innerHTML=done?"✓":k; row.appendChild(dot);
+        if(done){ var wkC=wkChecks[wkChecks.length-1]; var db=document.createElement("div"); db.className="dotdate"; db.textContent=fmt(new Date(wkC.d)); dot.appendChild(db); }
         var card=document.createElement("div"); card.className="card";
         var start=weekStart(created,k);
         if(done){

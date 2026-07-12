@@ -106,7 +106,7 @@
         <div id="ground"></div>
       </div>
       <div id="rail"></div>
-      <div id="leoWrap"><img id="leo" src="/coach/echo/echo-idle.svg" alt="Leo" /></div>
+      <div id="leoWrap"><img id="leo" src="/coach/echo/echo-idle.svg" alt="Echo" /></div>
       <div id="rocketWrap">
         <img id="rocketArt" alt="" style="display:none;" />
         <svg id="rocketSvg" viewBox="0 0 80 150" fill="none">
@@ -132,7 +132,7 @@
   </div>
 
   <div id="win">
-    <img class="leoWin" src="/coach/echo/echo-celebrate.svg" alt="Leo celebrating" onerror="this.onerror=null;this.src='/coach/echo/echo-idle.svg';" />
+    <img class="leoWin" src="/coach/echo/echo-celebrate.svg" alt="Echo celebrating" onerror="this.onerror=null;this.src='/coach/echo/echo-idle.svg';" />
     <h1 id="winTitle">You reached the Moon! 🌙</h1>
     <div class="reward"><span id="winCount">0</span><small>space boosts</small></div>
     <div class="reward" id="winUnlock" style="color:var(--orange-d);background:rgba(255,200,0,.16);"></div>
@@ -250,7 +250,7 @@
         setFuel(0);
         var target=WAYPOINTS[done+1];
         $("sayText").textContent=SAY; setLeo("listen");
-        $("prompt").textContent="Listen to Leo…";
+        $("prompt").textContent="Listen to Echo…";
         await say(window.Sona.actionCue(SOUND,1,"fly to "+target));
         $("prompt").textContent="Make your "+SAY+" sound to fly to "+target+"! 🚀";
         await fuelPhase();

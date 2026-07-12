@@ -84,7 +84,7 @@ vis = await page.evaluate(() => document.getElementById("pulseOvl").classList.co
 ok("pulse closes after answer", !vis);
 // banner
 const banner = await page.evaluate(() => ({ show: getComputedStyle(document.getElementById("trialBanner")).display !== "none", txt: document.getElementById("trialMsg").textContent }));
-ok("founding banner shows", banner.show && /free for you/.test(banner.txt));
+ok("founding banner shows (kid-safe copy)", banner.show && /building Sona with us/.test(banner.txt) && !/\$/.test(banner.txt));
 console.log("      banner:", banner.txt);
 // banner tap opens pulse (force)
 await page.evaluate(() => document.getElementById("trialBanner").click());

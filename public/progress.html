@@ -38,10 +38,11 @@
     .accsub{font-weight:700;font-size:12px;color:var(--muted);margin-top:3px;}
     .spark{display:flex;align-items:flex-end;gap:3px;height:36px;margin-top:9px;}
     .spark i{flex:1;max-width:16px;border-radius:3px 3px 0 0;min-height:4px;background:#cfe0c4;}
-    .spark i.hi{background:#7ac96a;} .spark i.mid{background:#ffd36a;} .spark i.lo{background:#f3a9a0;}
+    .spark i.hi{background:#7ac96a;} .spark i.mid{background:#ffd36a;} .spark i.lo{background:#c8d9ec;}
     .poschips{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px;}
     .poschip{font-weight:800;font-size:11px;border-radius:99px;padding:3px 8px;background:#eef3fb;color:#46627a;}
-    .poschip.hi{background:#eafce9;color:#46a302;} .poschip.mid{background:#fff5e0;color:#b07908;} .poschip.lo{background:#fdecea;color:#c0392b;}
+    /* growth-only palette: "just starting" is a calm blue-gray, never red */
+    .poschip.hi{background:#eafce9;color:#46a302;} .poschip.mid{background:#fff5e0;color:#b07908;} .poschip.lo{background:#edf2f9;color:#5b7691;}
 
     /* ═══════════════════════════════════════════════════════════════════
        PROGRESS — visual polish (CSS-only, additive). Builds on /sona.css
@@ -111,7 +112,7 @@
     }
     .spark i.hi{background:linear-gradient(180deg,#9be08a,#6bbf57);}
     .spark i.mid{background:linear-gradient(180deg,#ffe08a,#ffc94d);}
-    .spark i.lo{background:linear-gradient(180deg,#ffb3aa,#f08a7f);}
+    .spark i.lo{background:linear-gradient(180deg,#d3e2f2,#aac4de);}
     .spark i:nth-child(2){animation-delay:.03s}.spark i:nth-child(3){animation-delay:.06s}
     .spark i:nth-child(4){animation-delay:.09s}.spark i:nth-child(5){animation-delay:.12s}
     .spark i:nth-child(6){animation-delay:.15s}.spark i:nth-child(7){animation-delay:.18s}
@@ -156,14 +157,15 @@
     .recbtn:hover,.recbtn2:hover{transform:translateY(-1px);}
 
     /* ── Empty states: turn the plain <p class="muted"> that JS injects
-       into the four data containers into a friendly speech bubble with Leo.
+       into the data containers into a friendly speech bubble with Echo.
        We can't add DOM, so the avatar + bubble tail are pure pseudo-elements.
-       Scoped to #acc/#recList/#recent/#bysound so the page's intro copy and
-       the footer link are never touched. These containers only ever hold an
-       empty-state <p> OR real data rows (divs), so the match is exact. */
+       Scoped to #acc/#recList/#recent/#bysound/#firsts so the page's intro
+       copy and the footer link are never touched. These containers only ever
+       hold an empty-state <p> OR real data rows (divs), so the match is exact. */
     #acc > p.muted,
     #recList > p.muted,
     #recent > p.muted,
+    #firsts > p.muted,
     #bysound > p.muted{
       position:relative;
       margin:34px auto 6px;max-width:340px;
@@ -174,10 +176,11 @@
       box-shadow:0 6px 18px rgba(15,39,66,.06);
       animation:sona-fade-in .5s ease both;
     }
-    /* Leo, floating just above the bubble */
+    /* Echo, floating just above the bubble */
     #acc > p.muted::before,
     #recList > p.muted::before,
     #recent > p.muted::before,
+    #firsts > p.muted::before,
     #bysound > p.muted::before{
       content:"";
       position:absolute;left:50%;top:-26px;transform:translateX(-50%);
@@ -187,10 +190,11 @@
       border-radius:50%;box-shadow:0 5px 12px rgba(239,111,35,.22);
       animation:sona-floatY 3.4s ease-in-out infinite;will-change:transform;
     }
-    /* speech-bubble tail pointing up toward Leo */
+    /* speech-bubble tail pointing up toward Echo */
     #acc > p.muted::after,
     #recList > p.muted::after,
     #recent > p.muted::after,
+    #firsts > p.muted::after,
     #bysound > p.muted::after{
       content:"";position:absolute;left:50%;top:-8px;transform:translateX(-50%) rotate(45deg);
       width:16px;height:16px;background:#fffdf8;
@@ -209,20 +213,86 @@
     /* the existing "Send progress to my SLP" CTA: a gentle glow to draw the eye */
     #sendProg{box-shadow:0 5px 0 0 var(--orange-d),0 8px 18px rgba(255,138,61,.26);}
 
+    /* ── Stat-tile baselines: this week vs last week, small and gray under
+       the lifetime number (Whoop-style self-comparison, growth-only). ── */
+    .stat .wk{font-size:10.5px;font-weight:800;color:var(--muted);margin-top:4px;line-height:1.4;}
+    .stat .wk:empty{display:none;}
+    .stat .wk .up{color:#46a302;}
+
+    /* ── Growth words on accuracy: plain word first, number second. ── */
+    .accpct{font-size:16px;}
+    .accpct .accnum{font-size:13px;color:var(--muted);font-weight:800;}
+
+    /* ── "How scoring works" explainer card (expandable, parent language) ── */
+    .howhead{display:flex;align-items:center;gap:12px;width:100%;background:none;border:none;padding:0;cursor:pointer;text-align:left;font-family:inherit;color:var(--ink);}
+    .howshield{width:40px;height:40px;flex:none;border-radius:50%;background:linear-gradient(160deg,#eaf4ff,#d8ecff);display:flex;align-items:center;justify-content:center;font-size:20px;}
+    .howttl{font-family:"Baloo 2";font-weight:800;font-size:17px;display:flex;flex-direction:column;line-height:1.25;}
+    .howsub{font-family:"Nunito";font-weight:800;font-size:12px;color:var(--muted);}
+    .howarrow{margin-left:auto;font-size:16px;color:#9fb0c0;transition:transform .25s ease;}
+    .howbody{margin-top:12px;border-top:1px solid var(--line);padding-top:4px;animation:sona-fade-in .35s ease both;}
+    .howbody p{font-size:13.5px;font-weight:700;color:#46627a;line-height:1.55;margin:10px 0 0;}
+    .howbody p b{color:var(--ink);}
+    .howby{display:flex;align-items:center;gap:10px;margin-top:14px;padding:10px 12px;background:linear-gradient(170deg,#fbfdff,#eef5ff);border:1px solid var(--line);border-radius:14px;font-weight:800;font-size:13px;color:var(--ink);}
+    .howava{width:34px;height:34px;flex:none;border-radius:50%;background:linear-gradient(160deg,#2a9df4,#1480e0);color:#fff;display:flex;align-items:center;justify-content:center;font-family:"Baloo 2";font-weight:800;font-size:11px;letter-spacing:.5px;}
+
+    /* ── Dated "Firsts" shelf ── */
+    .firstrow{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--line);}
+    .firstrow:first-child{border-top:none;}
+    .firstrow .fe{width:34px;height:34px;flex:none;border-radius:50%;background:linear-gradient(160deg,#fff3e8,#ffe2c8);display:flex;align-items:center;justify-content:center;font-size:16px;}
+    .firstrow b{font-family:"Baloo 2";font-weight:800;font-size:14.5px;}
+    .firstrow .fd{margin-left:auto;font-weight:800;font-size:12px;color:var(--muted);white-space:nowrap;}
+    .firstrow.next{opacity:.8;}
+    .firstrow.next .fe{background:#fff;border:2px dashed #cfdff0;}
+    .firstrow.next b{color:#6b86a3;font-weight:800;}
+
     @media print{
       header.app,.noprint{display:none!important;} body{background:#fff;}
       /* keep print clean + ink-light: drop decoration & motion */
       .row > .stat,.card{box-shadow:none!important;animation:none!important;}
       .row > .stat::before,#recList::before{display:none!important;}
       .spark i{animation:none!important;}
+      /* the scoring explainer prints expanded — useful context for an SLP */
+      #howBody{display:block!important;animation:none!important;}
+      .howarrow{display:none!important;}
     }
   </style>
   <script defer src="/_vercel/insights/script.js"></script>
+  <script>
+    // Parent gate, inline and dependency-free: runs before first paint and
+    // still protects this page if /sona.js ever fails to load. It mirrors
+    // Sona.requireGate(): the grown-ups gate (today.html) stores the pass
+    // timestamp in sessionStorage under "sona.gate.v1", valid for 10 quiet
+    // minutes, refreshed on every gated page load. No fresh pass → hidden
+    // page + straight back to the home screen with the gate open (never a
+    // scary error). Sona.requireGate() still runs later as belt-and-braces.
+    (function () {
+      function pass() {
+        try {
+          var t = parseInt(sessionStorage.getItem("sona.gate.v1"), 10);
+          var age = Date.now() - t;
+          return !!t && age >= 0 && age < 600000; // same 10-min TTL as sona.js
+        } catch (e) { return false; }
+      }
+      function check() {
+        document.documentElement.style.visibility = "hidden";
+        if (pass()) {
+          try { sessionStorage.setItem("sona.gate.v1", String(Date.now())); } catch (e) {}
+          document.documentElement.style.visibility = "";
+        } else {
+          try { location.replace("/today.html?gate=1"); } catch (e) {}
+        }
+      }
+      check();
+      // a back-swipe can restore this page from the bfcache without re-running
+      // scripts — re-check on pageshow so the inline guard holds on its own.
+      window.addEventListener("pageshow", function (ev) { if (ev.persisted) check(); });
+    })();
+  </script>
 </head>
 <body>
   <div class="wrap" style="padding-bottom:96px;">
     <header class="app">
-      <div class="brand"><span class="leo"><img src="/coach/echo/echo-avatar.svg" alt="Leo" /></span> Sona</div>
+      <div class="brand"><span class="leo"><img src="/coach/echo/echo-avatar.svg" alt="Echo" /></span> Sona</div>
       <div class="pills">
         <a class="iconbtn" href="/today.html" title="Home" style="display:flex;align-items:center;justify-content:center;"><span class="pic-home"></span></a>
         <a class="iconbtn" href="/settings.html" title="Settings" style="display:flex;align-items:center;justify-content:center;"><span class="pic-gear"></span></a>
@@ -238,8 +308,8 @@
 
     <div class="row" style="margin-top:14px;">
       <div class="stat"><div class="n" id="sStreak">0</div><div class="l">🔥 Day streak</div></div>
-      <div class="stat"><div class="n" id="sSessions">0</div><div class="l">Sessions</div></div>
-      <div class="stat"><div class="n" id="sWords">0</div><div class="l">Words</div></div>
+      <div class="stat"><div class="n" id="sSessions">0</div><div class="l">Sessions</div><div class="wk" id="wkSess"></div></div>
+      <div class="stat"><div class="n" id="sWords">0</div><div class="l">Words</div><div class="wk" id="wkWords"></div></div>
       <div class="stat"><div class="n" id="sStars">0</div><div class="l">⭐ Stars</div></div>
     </div>
 
@@ -253,6 +323,27 @@
       <p class="muted" style="font-size:13px;font-weight:700;">How clearly each sound is coming along — and how it's trending with practice.</p>
       <div id="acc" style="margin-top:6px;"></div>
       <button class="btn noprint" id="sendProg" style="display:none;margin-top:14px;width:auto;padding:12px 20px;"><svg viewBox="0 0 64 64" style="width:18px;height:18px;vertical-align:-4px"><rect x="8" y="16" width="48" height="34" rx="6" fill="none" stroke="#fff" stroke-width="3.5"/><path d="M10 20l22 17 22-17" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/></svg>&nbsp;&nbsp;Send progress to my SLP</button>
+    </div>
+
+    <!-- Honest-scoring explainer — plain parent language, expandable, SLP-reviewed.
+         Turns "why didn't that count?" from a support ticket into the differentiator. -->
+    <div class="card" id="howCard">
+      <button type="button" id="howToggle" class="howhead" aria-expanded="false" aria-controls="howBody">
+        <span class="howshield">🛡️</span>
+        <span class="howttl">How scoring works<span class="howsub">60-second read</span></span>
+        <span class="howarrow" id="howArrow">▾</span>
+      </button>
+      <div id="howBody" class="howbody" style="display:none;">
+        <p><b>Reps are counted by loudness, right on this device.</b> During games the mic listens in the moment for your child's voice — nothing is recorded and nothing is uploaded while they play.</p>
+        <p><b>Silence never counts.</b> A rep only counts when your child actually speaks up, so the numbers on this page are real tries — not screen time.</p>
+        <p><b>One honest spot-check per round.</b> Once each round, Sona listens for the actual sound. A miss simply becomes a warm try-again for your child — never a penalty, never a red mark.</p>
+        <p><b>No padding, ever.</b> Mercy retries, offline rounds, and unsure checks are logged as nothing at all — never as progress. If this page says it happened, it happened.</p>
+        <div class="howby">
+          <span class="howava">SLP</span>
+          <span>Reviewed by Rachel — licensed speech-language pathologist &amp; Sona co-founder</span>
+        </div>
+        <p class="muted" style="font-size:12.5px;font-weight:700;margin-top:10px;">Sona supports practice at home and is not a substitute for professional care.</p>
+      </div>
     </div>
 
     <div class="card">
@@ -274,6 +365,15 @@
     </div>
 
     <div class="card"><h2>Sounds &amp; mastery</h2><div id="bysound" style="margin-top:6px;"></div></div>
+
+    <!-- Dated "Firsts" shelf — proof in moments, not just numbers. Practice
+         notes for the family, never assessment records. -->
+    <div class="card" id="firstsCard">
+      <h2>Firsts ✨</h2>
+      <p class="muted" style="font-size:13px;font-weight:700;">Little milestones with their dates — the moments worth remembering.</p>
+      <div id="firsts" style="margin-top:8px;"></div>
+    </div>
+
     <div class="card"><h2>Recent sessions</h2><div id="recent" style="margin-top:4px;"></div></div>
 
     <p class="muted noprint" style="text-align:center;margin-top:22px;font-size:13px;"><a href="/today.html">← Back to Home</a></p>
@@ -288,15 +388,65 @@
 
   <script src="/sona.js"></script>
   <script>
+    // Parent-only page: a child arriving by direct URL or back-swipe (no fresh
+    // pass of the home screen's grown-ups gate) is sent back to the gate.
+    if (window.Sona && Sona.requireGate) Sona.requireGate();
+    // back-swipe can restore this page from the bfcache without re-running
+    // scripts — re-check the gate whenever the page is shown again.
+    window.addEventListener("pageshow", function (e) { if (e.persisted && window.Sona && Sona.requireGate) Sona.requireGate(); });
     var p = Sona.getProfile();
     var g = Sona.getProgress();
     var name = (p.childName || "").trim();
+    // Growth-only framing: plain words first, numbers second. Three bands that
+    // only ever climb — "Just starting" is a calm blue-gray, never red.
+    function bandLabel(a) { return a >= 80 ? "Strong" : (a >= 50 ? "Growing" : "Just starting"); }
+    function bandColor(a) { return a >= 80 ? "#46a302" : (a >= 50 ? "#1480e0" : "#6b86a3"); }
     document.getElementById("title").textContent = name ? (name + "'s progress") : "Progress";
     document.getElementById("sStreak").textContent = g.streak.count || 0;
     document.getElementById("sSessions").textContent = g.totals.sessions || 0;
     document.getElementById("sWords").textContent = g.totals.words || 0;
     document.getElementById("sStars").textContent = g.totals.stars || 0;
     document.getElementById("share").onclick = function () { window.print(); };
+
+    // ── last-week baselines under the lifetime tiles ─────────────────────────
+    // Whoop-style self-comparison: the only baseline is the family's own last
+    // week (Mon–Sun, same as momWeek). Sessions come from g.sessions dates,
+    // words from the per-day buckets in Sona.outcomes(). A down week reads
+    // neutral — "building back up" — never as debt or decline.
+    (function () {
+      function dkey(d) { return d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2); }
+      var now = new Date(), dow = (now.getDay() + 6) % 7; // 0 = Monday
+      var monKey = dkey(new Date(now.getFullYear(), now.getMonth(), now.getDate() - dow));
+      var prevKey = dkey(new Date(now.getFullYear(), now.getMonth(), now.getDate() - dow - 7));
+      var oo = (Sona.outcomes ? Sona.outcomes() : {}) || {};
+      var curW = 0, lastW = 0;
+      Object.keys(oo).forEach(function (k) {
+        var ds = (oo[k] && oo[k].days) || {};
+        Object.keys(ds).forEach(function (day) {
+          var x = ds[day] || {};
+          if (day >= monKey) { curW += x.a || 0; }
+          else if (day >= prevKey) { lastW += x.a || 0; }
+        });
+      });
+      var curS = 0, lastS = 0;
+      (g.sessions || []).forEach(function (s) {
+        try {
+          var day = dkey(new Date(s.date));
+          if (day >= monKey) { curS++; } else if (day >= prevKey) { lastS++; }
+        } catch (e) {}
+      });
+      function paint(id, cur, last) {
+        var el = document.getElementById(id);
+        if (!el) return;
+        if (!cur && !last) return; // nothing yet — keep the tile clean
+        var h = "this wk " + cur + ' · <span style="color:#9fb0c0;">last wk ' + last + "</span>";
+        if (cur > last) h += ' <span class="up">▲</span>';
+        else if (cur < last) h += "<br>building back up";
+        el.innerHTML = h;
+      }
+      paint("wkSess", curS, lastS);
+      paint("wkWords", curW, lastW);
+    })();
 
     // daily goal progress (shown only if the SLP/parent set one)
     (function () {
@@ -352,11 +502,11 @@
         var rung = (Sona.rungOf ? Sona.rungOf(k) : 0);
         var rungTxt = rung >= 6 ? "Mastered ✓" : ("Level: " + (Sona.rungLabel ? Sona.rungLabel(rung) : ""));
         var o = out[k], acc = accOf(k), pos = posLineOf(k);
-        var accColor = acc == null ? "" : (acc >= 80 ? "#46a302" : acc >= 50 ? "#e08600" : "#c0392b");
+        var accColor = acc == null ? "" : bandColor(acc);
         var d = document.createElement("div"); d.style.margin = "0 0 14px";
         d.innerHTML =
           '<div class="ms"><span>' + k + ' sound<span style="color:#1597d4;background:#e7f3ff;border-radius:99px;padding:2px 8px;margin-left:8px;font-weight:800;font-size:11px;">' + rungTxt + '</span></span>' +
-          (acc != null ? '<span class="stars" style="color:' + accColor + ';">' + acc + '%</span>' : '<span class="stars">' + "★".repeat(st) + "☆".repeat(3 - st) + '</span>') + '</div>' +
+          (acc != null ? '<span class="stars" style="color:' + accColor + ';letter-spacing:0;font-size:14.5px;">' + bandLabel(acc) + ' <span style="color:var(--muted);font-size:12.5px;">' + acc + '%</span></span>' : '<span class="stars">' + "★".repeat(st) + "☆".repeat(3 - st) + '</span>') + '</div>' +
           '<div class="bar"><span style="width:' + (acc != null ? acc : Math.round(n / (Math.max.apply(null, keys.map(function (x) { return g.bySound[x] || 1; }).concat([1]))) * 100)) + '%' + (accColor ? ';background:' + accColor : '') + '"></span></div>' +
           '<div class="muted" style="font-size:12px;margin-top:4px;">' + (acc != null ? (o.passes + '/' + o.attempts + ' correct' + (pos ? ' · ' + pos : '')) : (n + ' practiced')) + '</div>';
         bs.appendChild(d);
@@ -458,12 +608,13 @@
           var chip = "";
           if (dayAcc.length >= 2) {
             var delta = dayAcc[dayAcc.length - 1] - dayAcc[0];
-            chip = '<span class="accchip ' + (delta > 0 ? 'up' : 'flat') + '">' + (delta > 0 ? '<svg viewBox="0 0 64 64" style="width:11px;height:11px;vertical-align:-1px"><path d="M32 10 56 48H8Z" fill="#58cc02" rx="6"/><path d="M32 24 46 46H18Z" fill="#8ae05c"/></svg> +' + delta + ' pts' : (delta < 0 ? delta + ' pts' : 'steady')) + '</span>';
+            // a dip reads neutral ("building back up"), never as a minus
+            chip = '<span class="accchip ' + (delta > 0 ? 'up' : 'flat') + '">' + (delta > 0 ? '<svg viewBox="0 0 64 64" style="width:11px;height:11px;vertical-align:-1px"><path d="M32 10 56 48H8Z" fill="#58cc02" rx="6"/><path d="M32 24 46 46H18Z" fill="#8ae05c"/></svg> +' + delta + ' pts' : (delta < 0 ? 'building back up' : 'steady')) + '</span>';
           }
           var bars = dayAcc.slice(-14).map(function (v) { var c = v >= 80 ? 'hi' : (v >= 50 ? 'mid' : 'lo'); return '<i class="' + c + '" style="height:' + Math.max(4, v) + '%;" title="' + v + '%"></i>'; }).join("");
           var d = document.createElement("div"); d.className = "accrow";
           d.innerHTML =
-            '<div class="acctop"><span class="accname">' + (Sona.soundLabel ? Sona.soundLabel(k) : k) + ' sound</span>' + chip + '<span class="accpct">' + pct + '%</span></div>' +
+            '<div class="acctop"><span class="accname">' + (Sona.soundLabel ? Sona.soundLabel(k) : k) + ' sound</span>' + chip + '<span class="accpct" style="color:' + bandColor(pct) + ';">' + bandLabel(pct) + ' <span class="accnum">' + pct + '%</span></span></div>' +
             '<div class="accsub">' + (o.attempts || 0) + ' tries · ' + days.length + ' day' + (days.length === 1 ? '' : 's') + (dayAcc.length >= 2 ? ' · started at ' + dayAcc[0] + '%' : '') + '</div>' +
             posChips(o.byPos) +
             (bars ? '<div class="spark">' + bars + '</div>' : '');
@@ -476,6 +627,94 @@
       }
     })();
   
+    // ── "How scoring works" — tap to expand, plain ES5 class-free toggle ──
+    (function () {
+      var t = document.getElementById("howToggle"), b = document.getElementById("howBody"), a = document.getElementById("howArrow");
+      if (!t || !b) return;
+      t.onclick = function () {
+        var open = b.style.display !== "none";
+        b.style.display = open ? "none" : "block";
+        t.setAttribute("aria-expanded", open ? "false" : "true");
+        if (a) a.style.transform = open ? "" : "rotate(180deg)";
+      };
+    })();
+
+    // ── Dated "Firsts" shelf ─────────────────────────────────────────────────
+    // Two sources: (1) the first clear pass per sound is derivable from the
+    // per-day history already in Sona.outcomes(), so those firsts carry their
+    // real dates retroactively; (2) rung advances aren't stored with dates, so
+    // this page keeps its own log (sona.firsts.v1) — it snapshots each sound's
+    // rung and, on later visits, dates any climb it observes. Firsts accrue
+    // from now for rungs; nothing is ever invented.
+    (function () {
+      var host = document.getElementById("firsts");
+      if (!host) return;
+      var KEY = "sona.firsts.v1";
+      function loadF() { try { var v = JSON.parse(localStorage.getItem(KEY)); return (v && typeof v === "object") ? v : {}; } catch (e) { return {}; } }
+      function saveF(v) { try { localStorage.setItem(KEY, JSON.stringify(v)); } catch (e) {} }
+      function sl(k) { return Sona.soundLabel ? Sona.soundLabel(k) : k; }
+      function todayKey() { var d = new Date(); return d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2); }
+      function fmtDay(day) {
+        try {
+          var q = String(day).split("-"), d = new Date(parseInt(q[0], 10), parseInt(q[1], 10) - 1, parseInt(q[2], 10));
+          var opt = { month: "short", day: "numeric" };
+          if (d.getFullYear() !== new Date().getFullYear()) opt.year = "numeric";
+          return d.toLocaleDateString(undefined, opt);
+        } catch (e) { return day; }
+      }
+      var f = loadF(); f.entries = f.entries || []; f.rungs = f.rungs || {};
+      function has(id) { for (var i = 0; i < f.entries.length; i++) { if (f.entries[i].id === id) return true; } return false; }
+      var oo = (Sona.outcomes ? Sona.outcomes() : {}) || {};
+      var L = (Sona.LADDER ? Sona.LADDER.length : 6);
+      // 1) first clear pass per sound — real dates from stored per-day history
+      Object.keys(oo).forEach(function (k) {
+        var ds = (oo[k] && oo[k].days) || {}, dks = Object.keys(ds).sort();
+        for (var i = 0; i < dks.length; i++) {
+          var x = ds[dks[i]];
+          if (x && x.p > 0) {
+            var id = "pass-" + k;
+            if (!has(id)) f.entries.push({ id: id, e: "🎉", label: "First clear " + sl(k) + " sound", date: dks[i] });
+            break;
+          }
+        }
+      });
+      // 2) rung advances — dated from now, when this page first sees the climb
+      var seen = {}, sounds = [];
+      Object.keys(oo).concat(Object.keys(g.bySound || {})).forEach(function (k) { if (!seen[k]) { seen[k] = 1; sounds.push(k); } });
+      sounds.forEach(function (k) {
+        var r = Sona.rungOf ? Sona.rungOf(k) : 0, prev = f.rungs[k];
+        if (typeof prev === "number" && r > prev) {
+          var id = "rung-" + k + "-" + r;
+          var lbl = r >= L ? ("Every " + sl(k) + " level cleared") : ("First day at " + (Sona.rungLabel ? Sona.rungLabel(r) : "a new") + " level — " + sl(k) + " sound");
+          if (!has(id)) f.entries.push({ id: id, e: (r >= L ? "🏆" : "🚀"), label: lbl, date: todayKey() });
+        }
+        f.rungs[k] = r;
+      });
+      saveF(f);
+      // render — newest first, plus exactly one gentle "coming up" outline row
+      if (!f.entries.length) {
+        host.innerHTML = '<p class="muted">Firsts will appear here as they happen ✨</p>';
+        return;
+      }
+      var es = f.entries.slice().sort(function (a, b) { return a.date < b.date ? 1 : (a.date > b.date ? -1 : 0); }).slice(0, 12);
+      var html = "";
+      es.forEach(function (en) {
+        html += '<div class="firstrow"><span class="fe">' + (en.e || "🎉") + '</span><b>' + en.label + '</b><span class="fd">' + fmtDay(en.date) + '</span></div>';
+      });
+      var top = null, best = -1;
+      Object.keys(oo).forEach(function (k) { var a = (oo[k] && oo[k].attempts) || 0; if (a > best) { best = a; top = k; } });
+      if (top) {
+        var next = null;
+        if (!has("pass-" + top)) { next = "First clear " + sl(top) + " sound"; }
+        else {
+          var r2 = Sona.rungOf ? Sona.rungOf(top) : 0;
+          if (r2 < L) next = (r2 + 1 >= L) ? ("Every " + sl(top) + " level cleared") : ("First day at " + (Sona.rungLabel ? Sona.rungLabel(r2 + 1) : "the next") + " level — " + sl(top) + " sound");
+        }
+        if (next) html += '<div class="firstrow next"><span class="fe">✨</span><b>' + next + '</b><span class="fd">coming up</span></div>';
+      }
+      host.innerHTML = html;
+    })();
+
     // parent-set stickers (design §9) — filled from the shared icon kit
     (function(){ try{
       document.querySelectorAll(".pic-home").forEach(function(n){ n.innerHTML=Sona.icon("home",20); });
