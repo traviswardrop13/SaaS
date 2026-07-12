@@ -39,6 +39,11 @@
     .btn.blue{background:linear-gradient(180deg,#5cc6ff,#1cb0f6);box-shadow:0 6px 0 #1480c0;}
     .btn.blue:active{box-shadow:0 2px 0 #1480c0;}
     .btn.ghost{background:none;box-shadow:none;color:#b08d63;text-transform:none;font-size:13px;width:auto;padding:8px;}
+    /* Echo speaks the win: bubble with a tail toward the leap; numbers fade in later */
+    #endTitle{position:relative;background:#fff;border-radius:18px;padding:12px 18px;box-shadow:0 6px 16px rgba(74,44,20,.12);display:inline-block;}
+    #endTitle:after{content:"";position:absolute;left:50%;bottom:-8px;transform:translateX(-50%) rotate(45deg);width:16px;height:16px;background:#fff;border-radius:3px;}
+    #endSub.later{display:block!important;opacity:0;font-size:12.5px;color:var(--muted,#b08d63);transition:opacity .5s ease;margin-top:2px;}
+    #endSub.later.in{opacity:1;}
     /* ── end-overlay celebration: star drop + Echo leap (Duolingo-ABC three-element stack) ── */
     #endOvl .ovlCard{padding-top:24px;}
     .endStar{animation:starDrop .35s cubic-bezier(.3,1.6,.5,1) both;}
@@ -320,15 +325,16 @@
         // gentle zero tier: encouraging copy, dimmed star, happy Echo, one warm "again" button
         $("endEmoji").style.opacity=".25";
         $("endTitle").textContent="Good try! Wanna go again?";
-        $("endSub").style.display="none";
+        $("endSub").className=""; $("endSub").style.display="none";
         $("endCharge").style.display="none";
         var ea=$("endAgain"); ea.textContent="Yes! Play again"; ea.style.display=""; ea.onclick=backToCharge;
         $("endOvl").classList.add("show");
         return;
       }
       // one reward per moment: star + one line + Echo — no stat rows or coin counters here
-      $("endTitle").textContent=isBest&&score>0?"NEW BEST!":"Great slicing!";
-      $("endSub").style.display="none";
+      $("endTitle").textContent=isBest&&score>0?"WOW — a new best! I saw "+score+" fruits fly!":"I saw "+score+" fruits fly! So fun!";
+      var _es=$("endSub"); _es.textContent=score+" fruits · Best: "+BEST; _es.className="later";
+      setTimeout(function(){ _es.classList.add("in"); },1000);
       $("endAgain").style.display="none";
       $("endOvl").classList.add("show");
     }

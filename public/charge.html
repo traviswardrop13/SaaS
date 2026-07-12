@@ -636,6 +636,9 @@
             if(!inBurst && voiced>=4 && now-lastRep>350){
               inBurst=true; lastRep=now; reps++;
               SAID.push(ITEM.t); paintReps(reps); sfx("tap");
+              // mid-run checkpoint: a quick flourish at rep 3 keeps the last
+              // two reps fueled — visual only, the mic never pauses.
+              if(reps===3&&NEED>=5){ try{ if(S&&S.pop)S.pop("Way to go!",{color:"#ffd21c"}); }catch(e){} }
               var l=$("leo"); l.classList.remove("cheer"); void l.offsetWidth; l.classList.add("cheer");
               if(reps>=NEED){ setTimeout(function(){ stopAll(); resolve(); },350); return; }
               if(ROTATE){ ITEM=SEQ[reps%SEQ.length]; paintCard(); }
