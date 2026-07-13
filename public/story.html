@@ -132,7 +132,20 @@
     // Mobile browsers block audio until a tap ON THIS PAGE — call once from the Start tap so every page can then auto-read.
     function unlockAudio(){ try{ var c=getCtx(); if(c.state==="suspended")c.resume(); var b=c.createBuffer(1,1,22050); var s=c.createBufferSource(); s.buffer=b; s.connect(c.destination); s.start(0); }catch(e){} }
     function playPCM(b){return new Promise(function(res){try{var c=getCtx(),n=b.byteLength>>1,ab=c.createBuffer(1,n,24000),ch=ab.getChannelData(0),dv=new DataView(b.buffer,b.byteOffset,b.byteLength);for(var i=0;i<n;i++)ch[i]=dv.getInt16(i*2,true)/32768;var s=c.createBufferSource();s.buffer=ab;s.playbackRate.value=(window.Sona&&Sona.VOICE_PITCH)||1;var g=c.createGain();g.gain.value=(profile.volume!=null?profile.volume:0.8);s.connect(g);g.connect(c.destination);s.onended=res;s.start();}catch(e){res();}});}
-    var speaking=false; function say(t){return new Promise(function(res){if(!t||speaking)return res();speaking=true;fetch("/api/tts",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text:t,voice:profile.voiceId||""})}).then(function(r){return r.ok?r.arrayBuffer():null;}).then(function(b){return b?playPCM(new Uint8Array(b)):null;}).catch(function(){}).finally(function(){speaking=false;res();});});}
+    // Guaranteed-audio fallback: if cloud TTS fails (quota, network), the
+    // browser's built-in voice reads the line instead — lower quality, but a
+    // child is NEVER left with silent instructions. Runs under the speaker
+    // guard so it can't charge reps.
+    function speakFallback(t,slow){ return new Promise(function(res){ try{
+      if(!window.speechSynthesis||!window.SpeechSynthesisUtterance) return res();
+      var u=new SpeechSynthesisUtterance(String(t).replace(/\[[a-z ]{2,24}\]\s*/gi,""));
+      u.rate=slow?0.62:0.95; u.pitch=1.05; u.volume=(profile.volume!=null?profile.volume:0.8);
+      var done=false; function fin(){ if(done)return; done=true; try{ if(typeof ttsEnd==="function")ttsEnd(); }catch(e){} res(); }
+      u.onend=fin; u.onerror=fin; setTimeout(fin,(window.speechSynthesis.getVoices&&window.speechSynthesis.getVoices().length)?12000:1200);
+      try{ if(typeof ttsBegin==="function")ttsBegin(); }catch(e){}
+      window.speechSynthesis.speak(u);
+    }catch(e){ res(); } }); }
+    var speaking=false; function say(t){return new Promise(function(res){if(!t||speaking)return res();speaking=true;fetch("/api/tts",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text:t,voice:profile.voiceId||""})}).then(function(r){return r.ok?r.arrayBuffer():null;}).then(function(b){if(!b)return speakFallback(t);return playPCM(new Uint8Array(b));}).catch(function(){return speakFallback(t);}).finally(function(){speaking=false;res();});});}
     var LEO={idle:"/coach/echo/echo-idle.svg",cheer:"/coach/echo/echo-celebrate.svg",listen:"/coach/echo/echo-listening.svg"};
     Object.keys(LEO).forEach(function(k){var im=new Image();im.src=LEO[k];});
     function setLeo(s){var el=$("leo");if(el&&LEO[s])el.src=LEO[s];}

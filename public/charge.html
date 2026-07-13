@@ -332,14 +332,29 @@
     var audioCtx=null,speaking=false;
     function getCtx(){ if(!audioCtx){var AC=window.AudioContext||window.webkitAudioContext;audioCtx=new AC();} if(audioCtx.state==="suspended")audioCtx.resume(); return audioCtx; }
     function playPCM(b){ return new Promise(function(res){ var done=false; ttsBegin(); function fin(){ if(done)return; done=true; ttsEnd(); res(); } try{ var c=getCtx(),n=b.byteLength>>1,ab=c.createBuffer(1,n,24000),ch=ab.getChannelData(0),dv=new DataView(b.buffer,b.byteOffset,b.byteLength); for(var i=0;i<n;i++)ch[i]=dv.getInt16(i*2,true)/32768; var s=c.createBufferSource();s.buffer=ab;var g=c.createGain();g.gain.value=(profile.volume!=null?profile.volume:0.8);s.connect(g);g.connect(c.destination);s.onended=fin;s.start(); }catch(e){fin();} }); }
+    // Guaranteed-audio fallback: if cloud TTS fails (quota, network), the
+    // browser's built-in voice reads the line instead — lower quality, but a
+    // child is NEVER left with silent instructions. Runs under the speaker
+    // guard so it can't charge reps.
+    function speakFallback(t,slow){ return new Promise(function(res){ try{
+      if(!window.speechSynthesis||!window.SpeechSynthesisUtterance) return res();
+      var u=new SpeechSynthesisUtterance(String(t).replace(/\[[a-z ]{2,24}\]\s*/gi,""));
+      u.rate=slow?0.62:0.95; u.pitch=1.05; u.volume=(profile.volume!=null?profile.volume:0.8);
+      var done=false; function fin(){ if(done)return; done=true; try{ if(typeof ttsEnd==="function")ttsEnd(); }catch(e){} res(); }
+      u.onend=fin; u.onerror=fin; setTimeout(fin,(window.speechSynthesis.getVoices&&window.speechSynthesis.getVoices().length)?12000:1200);
+      try{ if(typeof ttsBegin==="function")ttsBegin(); }catch(e){}
+      window.speechSynthesis.speak(u);
+    }catch(e){ res(); } }); }
     function say(t){ return new Promise(function(res){ if(!t||profile.voiceOn===false)return res(); if(speaking)return res(); speaking=true;
       var key=(profile.voiceId||"sarah")+"|v4|"+t; // v4: Sarah voice — every device regenerates
       ttsGet(key).then(function(cached){
-        if(cached) return playPCM(new Uint8Array(cached));
+        if(cached) return playPCM(new Uint8Array(cached)).then(function(){ return true; });
         return fetch("/api/tts",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text:t,voice:profile.voiceId||"",stable:true})})
           .then(function(r){return r.ok?r.arrayBuffer():null;})
-          .then(function(b){ if(!b)return null; ttsPut(key,b); return playPCM(new Uint8Array(b)); });
-      }).catch(function(){}).finally(function(){speaking=false;res();});
+          .then(function(b){ if(!b)return false; ttsPut(key,b); return playPCM(new Uint8Array(b)).then(function(){ return true; }); });
+      }).then(function(played){ if(!played) return speakFallback(t); })
+      .catch(function(){ return speakFallback(t); })
+      .finally(function(){speaking=false;res();});
     }); }
     // ---- 🐢 slow replay: rebuild the cached PCM clip as a WAV and play it at
     // 0.7× (media elements keep pitch by default) — same Sarah model, sloooow.
@@ -370,8 +385,8 @@
         if(cached) return playSlowClip(new Uint8Array(cached));
         return fetch("/api/tts",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text:t,voice:profile.voiceId||"",stable:true})})
           .then(function(r){return r.ok?r.arrayBuffer():null;})
-          .then(function(b){ if(!b)return null; ttsPut(key,b); return playSlowClip(new Uint8Array(b)); });
-      }).catch(function(){}).finally(function(){speaking=false;res();});
+          .then(function(b){ if(!b)return speakFallback(t,true); ttsPut(key,b); return playSlowClip(new Uint8Array(b)); });
+      }).catch(function(){ return speakFallback(t,true); }).finally(function(){speaking=false;res();});
     }); }
     function sfx(n){ try{ if(S&&S.sfx&&S.sfx[n])S.sfx[n](); }catch(e){} }
 
