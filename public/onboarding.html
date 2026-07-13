@@ -94,6 +94,7 @@
       <div class="qh">Let's make talking fun! 🎉</div>
       <p class="muted">Short, friendly practice — a few minutes a day. Designed with a speech-language pathologist.</p>
       <p class="muted" id="restoreRow" style="margin-top:12px;font-size:13px;"><a href="/trial.html">Already subscribed? Restore access →</a></p>
+      <p class="muted" id="moveRow" style="margin-top:6px;font-size:13px;"><a href="#" id="moveLink">Set up in the browser already? Enter your move-in code →</a></p>
       <script>if(window.Capacitor){var _rr=document.getElementById("restoreRow");if(_rr)_rr.style.display="none";}</script>
     </div>
 
@@ -143,6 +144,7 @@
         <div class="choice" style="cursor:default;"><span class="ce">💪</span> <span>Confidence<br/><span style="font-family:Nunito;font-weight:700;font-size:13px;color:var(--muted);">Echo cheers every single try — no failing here</span></span></div>
         <div class="choice" style="cursor:default;"><span class="ce">🎧</span> <span>Progress you can hear<br/><span style="font-family:Nunito;font-weight:700;font-size:13px;color:var(--muted);">Recordings + a report you can share with your SLP</span></span></div>
       </div>
+      <div id="moveCode" style="display:none;margin-top:12px;background:#fff;border:2px solid #ffe2a8;border-radius:14px;padding:11px 14px;font-weight:800;font-size:12.5px;color:#8a6400;text-align:left;"></div>
     </div>
 
     <!-- slp -->
@@ -353,8 +355,43 @@
       bubble.textContent = "You're all set!";
       nextBtn.disabled = true; nextBtn.textContent = "Let's practice!";
       backBtn.style.display = "none";
-      setTimeout(function(){ location.href="/today.html"; }, 2400);
+      var goHome=function(){ location.href="/today.html"; };
+      var redirectT=setTimeout(goHome, 2400);
+      // stash the save for the added-to-home-screen app (iOS separates its
+      // storage): best-effort — no KV, no code line, nothing changes.
+      try{
+        var standalone=(window.matchMedia&&window.matchMedia("(display-mode: standalone)").matches)||window.navigator.standalone===true;
+        if(!standalone&&window.Sona&&Sona.exportString){
+          fetch("/api/pair",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({data:Sona.exportString()})})
+            .then(function(r){return r.json();}).then(function(j){
+              if(!(j&&j.ok&&j.code))return;
+              clearTimeout(redirectT);
+              var mc=document.getElementById("moveCode");
+              if(mc){ mc.innerHTML="📲 Adding Sona to your Home Screen? After you add it, open the app, tap \u201Cmove-in code\u201D on the first screen, and enter <b style='font-size:16px;letter-spacing:2px;'>"+j.code+"</b> — everything comes with you. (Good for 48 hours.)"; mc.style.display="block"; }
+              nextBtn.disabled=false; nextBtn.onclick=goHome;
+              setTimeout(goHome, 15000);
+            }).catch(function(){});
+        }
+      }catch(e){}
     }
+
+    // ── move-in code: onboarding done in Safari doesn't carry into the
+    // added-to-home-screen app (iOS gives it separate storage). Redeeming the
+    // code imports the whole save and skips onboarding.
+    (function(){
+      var ml=document.getElementById("moveLink"); if(!ml)return;
+      ml.onclick=function(ev){ ev.preventDefault();
+        var c=(window.prompt("Enter your 6-letter move-in code:")||"").trim().toUpperCase();
+        if(!c)return;
+        fetch("/api/pair?code="+encodeURIComponent(c)).then(function(r){return r.json();}).then(function(j){
+          if(j&&j.ok&&j.data&&window.Sona&&Sona.importData){
+            var res=Sona.importData(j.data);
+            if(res&&res.ok){ location.href="/today.html"; return; }
+          }
+          alert((j&&j.error)||"That code didn't work — codes last 48 hours and can only be used once.");
+        }).catch(function(){ alert("Couldn't check the code — are you online?"); });
+      };
+    })();
 
     nextBtn.onclick=next; backBtn.onclick=back;
     nameEl.addEventListener("keydown",function(e){ if(e.key==="Enter") next(); });

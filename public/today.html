@@ -194,7 +194,7 @@
     $("subLine").textContent="Let's practice your "+((S&&S.soundLabel)?S.soundLabel(sound):sound)+" sound";
     try{ var _tr=(S&&S.todayRing)?S.todayRing():null;
       if(_tr&&_tr.done) $("subLine").textContent="Daily goal done ✓ — free play!";
-      else if(_tr&&_tr.n>0) $("subLine").textContent=(_tr.goal-_tr.n)+" more game"+((_tr.goal-_tr.n)===1?"":"s")+" to finish today's goal!";
+      else if(_tr&&_tr.n>0) $("subLine").textContent=(_tr.goal-_tr.n)+" more round"+((_tr.goal-_tr.n)===1?"":"s")+" to finish today's goal!";
     }catch(e){}
 
     // ── the activity deck: hero + up-next, art from the vector scenes ──
@@ -311,7 +311,7 @@
       sfx("tap");
       try{
         var tr=S.todayRing(), snd=(S.soundLabel?S.soundLabel(S.rotSound()):S.rotSound());
-        toast(tr.done?"Today's goal is done — everything else is bonus!":(tr.n+" of "+tr.goal+" games done · "+snd+" sound today"));
+        toast(tr.done?"Today's goal is done — everything else is bonus!":(tr.n+" of "+tr.goal+" practice rounds done · "+snd+" sound today"));
       }catch(e){}
     };
 

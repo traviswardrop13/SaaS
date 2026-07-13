@@ -20,6 +20,22 @@ page.on("pageerror", (e) => errs.push(e.message));
 let fails = 0;
 const ok = (n, got, want) => { const p = JSON.stringify(got) === JSON.stringify(want); if (!p) fails++; console.log((p ? "PASS " : "FAIL ") + n + (p ? "" : `  got:${JSON.stringify(got)} want:${JSON.stringify(want)}`)); };
 
+// Freeze time mid-week (Thu 2026-07-16, 10:00 local): the week math below is
+// day-of-week dependent — on a real Monday, "yesterday" falls into LAST week
+// and the goal can never be hit. A fixed Thursday makes every run identical.
+// The shift is computed ONCE here (not per page): a per-page freeze would
+// snap back to 10:00:00 on every navigation, making time run BACKWARD across
+// pages — which the parent gate's clock-skew guard rightly rejects.
+const TIME_SHIFT = new Date(2026, 6, 16, 10, 0, 0).getTime() - Date.now();
+await page.addInitScript((SHIFT) => {
+  const RealDate = Date;
+  class ShiftedDate extends RealDate {
+    constructor(...a) { if (a.length === 0) { super(RealDate.now() + SHIFT); } else { super(...a); } }
+    static now() { return RealDate.now() + SHIFT; }
+  }
+  window.Date = ShiftedDate;
+}, TIME_SHIFT);
+
 // seed: goal 3; practiced Mon+Tue this week; prior two weeks had 3+ days each
 await page.goto("http://localhost:8128/today.html");
 const r = await page.evaluate(() => {
