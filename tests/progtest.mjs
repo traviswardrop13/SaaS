@@ -47,7 +47,7 @@ ok("rotation starts R round 0", t.sound === "R" && t.round === 0);
 await page.goto("http://localhost:8131/charge.html?game=arcade-slice.html"); await page.waitForTimeout(700);
 let c = await page.evaluate(() => ({ prompt: document.getElementById("prompt").textContent, lbl: document.getElementById("roundLbl").textContent }));
 ok("round 1 practices isolation", /your R sound/.test(c.prompt));
-ok('label "Game 1 of 5 today · R sound"', /Game 1 of 5 today/.test(c.lbl) && /R sound/.test(c.lbl));
+ok('label "Round 1 of 5 today · R sound"', /Round 1 of 5 today/.test(c.lbl) && /R sound/.test(c.lbl));
 
 // ── ?sound= override beats the rotation (SLP/deep-link escape hatch) ──
 await page.goto("http://localhost:8131/charge.html?game=arcade-slice.html&sound=T"); await page.waitForTimeout(700);
@@ -59,7 +59,7 @@ await page.evaluate(() => Sona.rotAdvance());
 await page.goto("http://localhost:8131/charge.html?game=arcade-tiles.html"); await page.waitForTimeout(700);
 c = await page.evaluate(() => ({ prompt: document.getElementById("prompt").textContent, lbl: document.getElementById("roundLbl").textContent }));
 ok("round 2 climbs to syllables", /^r(ah|ee|oo|oh|ay)$/i.test(c.prompt.trim()));
-ok('label "Game 2 of 5 today"', /Game 2 of 5 today/.test(c.lbl));
+ok('label "Round 2 of 5 today"', /Round 2 of 5 today/.test(c.lbl));
 
 // ── rounds 3-4 stay CAPPED at syllables while the rung is unearned ──
 await page.evaluate(() => { Sona.rotAdvance(); Sona.rotAdvance(); });
@@ -78,10 +78,10 @@ await page.evaluate(() => { const g = Sona.getProgress(); g.stage.R = 0; localSt
 await page.goto("http://localhost:8131/today.html"); await page.waitForTimeout(700);
 t = await page.evaluate(() => ({ ring: document.getElementById("ringTxt").textContent, sub: document.getElementById("subLine").textContent }));
 ok("ring shows 3/5 after 3 rounds", t.ring === "3/5");
-ok("subLine counts down the goal", /2 more games/.test(t.sub));
+ok("subLine counts down the goal", /2 more rounds/.test(t.sub));
 await page.evaluate(() => document.getElementById("ringBtn").click());
 let toast = await page.evaluate(() => document.getElementById("toast").textContent);
-ok("ring tap explains progress", /3 of 5 games done/.test(toast) && /R sound/.test(toast));
+ok("ring tap explains progress", /3 of 5 practice rounds done/.test(toast) && /R sound/.test(toast));
 await page.screenshot({ path: OUT + "/prog-ring-mid.png" });
 
 // ── finish the rotation: 5 rounds → next letter S, ring goes gold ──
@@ -144,6 +144,12 @@ await page.evaluate(() => { try { window.showPulse && showPulse(true); } catch (
 t = await page.evaluate(() => (document.getElementById("pulseText") || {}).placeholder || "");
 if (t) ok("pulse placeholder is the new copy", /A request, an idea, a problem to fix/.test(t));
 else ok("pulse placeholder is the new copy (source)", /A request, an idea, a problem to fix/.test(todaySrc));
+
+// ── the ring resets overnight: yesterday's rounds never survive to today ──
+await page.evaluate(() => localStorage.setItem("sona.today.v1", JSON.stringify({ d: "2026-07-10", n: 3 })));
+await page.goto("http://localhost:8131/today.html"); await page.waitForTimeout(600);
+t = await page.evaluate(() => ({ ring: document.getElementById("ringTxt").textContent, api: Sona.todayRing() }));
+ok("stale day → ring reads 0/5", t.ring === "0/5" && t.api.n === 0 && !t.api.done);
 
 // ── comeback greeting: 3+ idle days → numberless "Echo missed you", once/day ──
 await page.evaluate(() => {

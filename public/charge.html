@@ -562,7 +562,7 @@
 
     try{ var _g=S&&S.getProgress?S.getProgress():null; $("sumLbl").innerHTML='<svg width="15" height="15" viewBox="0 0 24 24"><path d="M12 2l2.9 6.2 6.6.8-4.9 4.6 1.3 6.6L12 16.9 6.1 20.2l1.3-6.6L2.5 9l6.6-.8Z" fill="#ffd21c" stroke="#f0a800" stroke-width="1.2"/></svg> '+((_g&&_g.totals&&_g.totals.stars)||0); }catch(e){}
     if(isDaily&&run&&run.active){ $("roundLbl").innerHTML="Round "+Math.min(run.round+1,DAILY_SEQ.length)+" of "+DAILY_SEQ.length+" · "+((window.Sona&&Sona.icon)?Sona.icon("coin",13):"")+" "+run.sum; }
-    else { try{ var _tr=S&&S.todayRing?S.todayRing():null; if(_tr){ $("roundLbl").textContent=(_tr.done?"Goal done — bonus round!":"Game "+Math.min(_tr.n+1,_tr.goal)+" of "+_tr.goal+" today")+" · "+((S&&S.soundLabel)?S.soundLabel(SOUND):SOUND)+" sound";
+    else { try{ var _tr=S&&S.todayRing?S.todayRing():null; if(_tr){ $("roundLbl").textContent=(_tr.done?"Goal done — bonus round!":"Round "+Math.min(_tr.n+1,_tr.goal)+" of "+_tr.goal+" today")+" · "+((S&&S.soundLabel)?S.soundLabel(SOUND):SOUND)+" sound";
       // warm goal-gradient bridge on the final round — no pressure, just the star
       if(!_tr.done&&_tr.n===_tr.goal-1){ $("roundLbl").innerHTML+='<div style="padding-top:3px;color:#ffd21c">'+((window.Sona&&Sona.icon)?Sona.icon("star",13):"")+' Last one — the treasure chest opens after this!</div>'; }
     } }catch(e){} }
