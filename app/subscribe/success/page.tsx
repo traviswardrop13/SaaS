@@ -23,7 +23,11 @@ export default function SubscribeSuccess() {
     // Fire the conversion event for both PostHog and the Meta Pixel.
     try {
       const w = window as unknown as { sonaTrack?: (e: string, p?: Record<string, unknown>) => void };
-      if (typeof w.sonaTrack === "function") w.sonaTrack("Purchase", { value: 39.99, currency: "USD" });
+      const plan = new URLSearchParams(window.location.search).get("plan") || "founding";
+      const value = plan === "annual" ? 69.99 : plan === "monthly" ? 12.99 : 39.99;
+      // Trialed annuals register as StartTrial (no charge today); paid-now plans as Purchase.
+      const ev = plan === "annual" ? "StartTrial" : "Purchase";
+      if (typeof w.sonaTrack === "function") w.sonaTrack(ev, { value, currency: "USD", predicted_ltv: 69.99 });
     } catch {
       // ignore — non-blocking
     }

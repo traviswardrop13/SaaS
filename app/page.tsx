@@ -113,7 +113,7 @@ function Hero() {
           Built with a licensed speech-language pathologist
         </div>
         <p className="mt-4 text-sm font-semibold text-gray-500">
-          Free founding access · no credit card
+          Try free for 7 days · no charge today
         </p>
       </div>
     </section>
@@ -311,7 +311,7 @@ function Pricing() {
               "Your suggestions shape Sona for your child",
               "Priority support",
             ]}
-            cta="Get free founding access"
+            cta="Start 7 days free"
             href="/onboarding.html"
           />
         </div>
@@ -451,15 +451,15 @@ function FAQ() {
     },
     {
       q: "When can my child start?",
-      a: "Right away — founding access is free while we build, and your child can play today, with new levels rolling out.",
+      a: "Right away — start the free 7-day trial and your child can play today, with new levels rolling out.",
     },
     {
       q: "Is the app ready today?",
-      a: "Yes — Sona's speech games are live now. Founding access is free today, and you'll get every new level and feature as it ships.",
+      a: "Yes — Sona's speech games are live now. Start free today, and you'll get every new level and feature as it ships.",
     },
     {
       q: "How does the founding price work?",
-      a: "Sona is free for founding families while we build together — no credit card. When the beta ends, founding families keep the founding price of $39.99/yr, locked for life, and can cancel anytime.",
+      a: "Sona is $69.99/yr (that's $5.83/month, billed yearly — 7 days free first) or $12.99/mo, cancel anytime. Families referred by their speech-language pathologist get free access while we build together.",
     },
   ];
   return (
@@ -490,8 +490,8 @@ function FinalCTA() {
           Ready to make speech practice fun?
         </h2>
         <p className="mx-auto mt-3 max-w-xl text-lg text-brand-50">
-          Free for founding families — no credit card. Your child can play
-          today, and you&apos;ll get every new level as it ships.
+          Try everything free for 7 days — no charge today. Your child can play
+          right now, and you&apos;ll get every new level as it ships.
         </p>
         <a
           href="/onboarding.html"
