@@ -16,8 +16,9 @@ import { rateLimit } from "@/lib/rateLimit";
  * words (Claude) and the voice (here) are ours, and swappable.
  *
  * Optional env:
- *   ELEVENLABS_VOICE_ID (default "EXAVITQu4vr4xnSDxMaL" — Sarah, warm/clear female)
+ *   ELEVENLABS_VOICE_ID (default "qBDvhofpxp92JgXJxDjB" — the app's kid coach voice)
  *   ELEVENLABS_MODEL    (default "eleven_multilingual_v2" — natural; turbo = faster)
+ *   ELEVENLABS_V3="1"   opt in to trying eleven_v3 first (different cadence)
  *   OPENAI_TTS_VOICE / OPENAI_TTS_MODEL
  */
 export const runtime = "nodejs";
@@ -80,7 +81,7 @@ export async function POST(req: NextRequest) {
   try {
     if (elevenKey) {
       const voiceId =
-        voiceOverride || process.env.ELEVENLABS_VOICE_ID || "RJ94BzgbkIV3dGoYvkpb"; // Sarah — the app's coach voice (Travis-picked).
+        voiceOverride || process.env.ELEVENLABS_VOICE_ID || "qBDvhofpxp92JgXJxDjB"; // the app's kid coach voice — matches the profile default every page sends.
 
       // Serve a cached clip instantly (short, repeated prompts only — never long/unique story text).
       const cacheKey = `el|${voiceId}|${text}`;
@@ -89,14 +90,17 @@ export async function POST(req: NextRequest) {
 
       const v3Model = process.env.ELEVENLABS_V3_MODEL || "eleven_v3";
       const fallbackModel = process.env.ELEVENLABS_MODEL || "eleven_multilingual_v2";
-      // Try v3 first (more natural cadence), fall back to the workhorse v2 — but
-      // once v3 is known-broken on this account, skip it so Leo never waits on a
-      // doomed request. Leo must never go silent.
+      // v2 IS the app's sound — the delivery every family has heard since the
+      // field tests. v3 renders the same voice with a different cadence, and a
+      // plan upgrade silently unlocking it must never change the coach's voice
+      // mid-week (that's how "why is the voice different?" happens). v3 stays
+      // opt-in via ELEVENLABS_V3=1 until it's been listened to and chosen.
+      const wantV3 = process.env.ELEVENLABS_V3 === "1";
       const attempts = [
         // v3 = the natural-cadence model; audio tags like [excited]/[whispers]
         // in the text become real delivery. Coarse stability only
-        // (0=creative, 0.5=natural, 1=robust) — `stable` pins natural.
-        { model: v3Model, settings: { stability: 0.5, use_speaker_boost: true } },
+        // (0=creative, 0.5=natural, 1=robust).
+        ...(wantV3 ? [{ model: v3Model, settings: { stability: 0.5, use_speaker_boost: true } }] : []),
         {
           model: fallbackModel,
           settings: {
