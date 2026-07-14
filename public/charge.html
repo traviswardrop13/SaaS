@@ -18,16 +18,16 @@
     *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;font-family:"Nunito",-apple-system,sans-serif;}
     html,body{height:100%;overflow:hidden;background:var(--cream);color:var(--ink);}
     /* per-game skies — same values as the games themselves */
-    body.g-slice{background:linear-gradient(180deg,#8fd0f5 0%,#ffe9b8 42%,#ffb066 76%,#ff8a5a 100%);}
-    body.g-run{background:linear-gradient(180deg,#aee6ff 0%,#cff2e2 26%,#7ed36f 34%,#7ed36f 100%);}
-    body.g-stack{background:linear-gradient(180deg,#2b2e6b 0%,#5b3f8f 44%,#a45fae 74%,#e17aa4 100%);}
-    body.g-tiles{background:linear-gradient(180deg,#231a4d 0%,#2f2266 40%,#43318c 72%,#54409e 100%);}
-    body.g-glide{background:linear-gradient(180deg,#3f74ab 0%,#6ea3d4 42%,#ffcf9a 78%,#ffe7c4 100%);}
-    body.g-slice{--hsh:rgba(120,50,10,.16);--tsh:rgba(200,80,20,.45);--bsh:rgba(120,50,10,.2);}
-    body.g-run{--hsh:rgba(40,80,120,.16);--tsh:rgba(40,90,140,.4);--bsh:rgba(40,80,120,.2);}
-    body.g-stack{--hsh:rgba(20,16,60,.28);--tsh:rgba(40,20,80,.45);--bsh:rgba(10,6,40,.4);}
-    body.g-tiles{--hsh:rgba(10,6,40,.4);--tsh:rgba(10,6,40,.5);--bsh:rgba(10,6,40,.45);}
-    body.g-glide{--hsh:rgba(40,70,120,.24);--tsh:rgba(40,70,120,.4);--bsh:rgba(40,50,90,.3);}
+    .g-slice{background:linear-gradient(180deg,#8fd0f5 0%,#ffe9b8 42%,#ffb066 76%,#ff8a5a 100%);}
+    .g-run{background:linear-gradient(180deg,#aee6ff 0%,#cff2e2 26%,#7ed36f 34%,#7ed36f 100%);}
+    .g-stack{background:linear-gradient(180deg,#2b2e6b 0%,#5b3f8f 44%,#a45fae 74%,#e17aa4 100%);}
+    .g-tiles{background:linear-gradient(180deg,#231a4d 0%,#2f2266 40%,#43318c 72%,#54409e 100%);}
+    .g-glide{background:linear-gradient(180deg,#3f74ab 0%,#6ea3d4 42%,#ffcf9a 78%,#ffe7c4 100%);}
+    .g-slice{--hsh:rgba(120,50,10,.16);--tsh:rgba(200,80,20,.45);--bsh:rgba(120,50,10,.2);}
+    .g-run{--hsh:rgba(40,80,120,.16);--tsh:rgba(40,90,140,.4);--bsh:rgba(40,80,120,.2);}
+    .g-stack{--hsh:rgba(20,16,60,.28);--tsh:rgba(40,20,80,.45);--bsh:rgba(10,6,40,.4);}
+    .g-tiles{--hsh:rgba(10,6,40,.4);--tsh:rgba(10,6,40,.5);--bsh:rgba(10,6,40,.45);}
+    .g-glide{--hsh:rgba(40,70,120,.24);--tsh:rgba(40,70,120,.4);--bsh:rgba(40,50,90,.3);}
     #app{height:100vh;height:100dvh;max-width:560px;margin:0 auto;position:relative;overflow:hidden;overscroll-behavior:none;}
     #decor,#reveals{position:absolute;inset:0;pointer-events:none;}
     #decor i,#reveals i{position:absolute;display:block;}
@@ -481,7 +481,7 @@
         slots:[{},{},{},{},{}]}
     };
     var SCENE=SCENES[GAME]||SCENES["arcade-slice.html"];
-    document.body.className=SCENE.cls;
+    document.body.className=SCENE.cls; try{ document.documentElement.classList.add(SCENE.cls); }catch(e){}
     $("gameTitle").textContent=SCENE.title;
     $("verb").textContent=SCENE.verb;
     $("decor").innerHTML=SCENE.decor||"";
