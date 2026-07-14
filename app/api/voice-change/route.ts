@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
   const audio = form.get("audio");
   if (!(audio instanceof File)) return NextResponse.json({ ok: false, error: "audio file required" }, { status: 400 });
   if (audio.size > 4 * 1024 * 1024) return NextResponse.json({ ok: false, error: "audio too large" }, { status: 413 });
-  const voiceId = String(form.get("voice") || process.env.ELEVENLABS_VOICE_ID || "RJ94BzgbkIV3dGoYvkpb").slice(0, 40);
+  const voiceId = String(form.get("voice") || process.env.ELEVENLABS_VOICE_ID || "qBDvhofpxp92JgXJxDjB").slice(0, 40);
 
   const out = new FormData();
   out.append("audio", audio, audio.name || "clip.mp3");

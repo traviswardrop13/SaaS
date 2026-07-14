@@ -277,11 +277,11 @@
     try{ ITEMS=(S.ladderContent(SOUND,useRung)||[]).filter(function(it){return it&&it.t;}); }catch(e){}
     if(!ITEMS.length){ try{ ITEMS=(S.ladderContent(SOUND,0)||[]).filter(function(it){return it&&it.t;}); }catch(e){} }
     if(!ITEMS.length) ITEMS=[{t:(S?S.soundSay(SOUND):"rrrr"),say:(S?S.soundSay(SOUND):"rrrr"),display:(S?S.soundSay(SOUND):"rrrr"),mode:"phoneme",level:"isolation"}];
-    // syllable rounds drill the whole SET — the card flips to the next one
-    // after every counted rep (rah → ree → roo), like an SLP's drill list
+    // ONE target per round: a single syllable said five times, never a
+    // rotating drill list (see → soh → soo confused kids mid-round). The
+    // shuffle still varies WHICH syllable each round gets.
     var SEQ=ITEMS.slice(); for(var si=SEQ.length-1;si>0;si--){ var sj=(Math.random()*(si+1))|0, st=SEQ[si]; SEQ[si]=SEQ[sj]; SEQ[sj]=st; }
     var ITEM=SEQ[0];
-    var ROTATE=(ITEM.level==="syllable"&&SEQ.length>1);
     var NUMWORD={2:"two",3:"three",4:"four",5:"five",6:"six"};
     // What Leo SPEAKS. TTS cannot perform a bare sound — a synthesized long
     // "rrrr"/"sssss" comes out mangled — so the voice asks for the sound BY
@@ -292,7 +292,6 @@
       var times=(NUMWORD[NEED]||NEED)+" times";
       var ask;
       if(ITEM.level==="isolation") ask="make your "+soundName()+" sound";
-      else if(ROTATE) ask="say "+SEQ.slice(0,3).map(function(it){return it.display||it.t;}).join(", ");
       else ask="say "+(ITEM.display||ITEM.t);
       // first prompt carries the mouth cue inline; repeats stay minimal
       if(!sayLine._cued && CUESHORT && ITEM.level==="isolation"){ sayLine._cued=true; return "Ready? "+CUESHORT+", and "+ask+", "+times+". Go!"; }
@@ -346,7 +345,7 @@
       window.speechSynthesis.speak(u);
     }catch(e){ res(); } }); }
     function say(t){ return new Promise(function(res){ if(!t||profile.voiceOn===false)return res(); if(speaking)return res(); speaking=true;
-      var key=(profile.voiceId||"sarah")+"|v4|"+t; // v4: Sarah voice — every device regenerates
+      var key=(profile.voiceId||"echo")+"|v5|"+t; // v5: v2 delivery restored — devices that cached v3 clips regenerate
       ttsGet(key).then(function(cached){
         if(cached) return playPCM(new Uint8Array(cached)).then(function(){ return true; });
         return fetch("/api/tts",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text:t,voice:profile.voiceId||"",stable:true})})
@@ -380,7 +379,7 @@
       }catch(e){ fin(); }
     }); }
     function saySlow(t){ return new Promise(function(res){ if(!t||profile.voiceOn===false)return res(); if(speaking)return res(); speaking=true;
-      var key=(profile.voiceId||"sarah")+"|v4|"+t; // same cache as say() — repeat plays are instant and free
+      var key=(profile.voiceId||"echo")+"|v5|"+t; // same cache as say() — repeat plays are instant and free
       ttsGet(key).then(function(cached){
         if(cached) return playSlowClip(new Uint8Array(cached));
         return fetch("/api/tts",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text:t,voice:profile.voiceId||"",stable:true})})
@@ -612,7 +611,7 @@
     // ---- rapid-fire rep engine: continuous VAD, every voiced burst = a rep.
     // No per-rep scoring round-trips — ONE SpeechAce spot-check on the whole
     // clip at the end keeps the SLP data honest without killing the pace.
-    var micStream=null, reps=0, engineOn=false, chunks=[], rec=null, SAID=[], anyReps=false;
+    var micStream=null, reps=0, engineOn=false, chunks=[], rec=null, anyReps=false;
     var useSpeechAce=true;
     (function(){ try{ fetch("/api/score").then(function(r){return r.json();}).then(function(j){ useSpeechAce=!!(j&&j.hasKey);
       // tripwire: honest scoring silently off = every sound "passes". Make it loud in the server logs.
@@ -621,7 +620,7 @@
 
     function startEngine(){
       return new Promise(function(resolve){
-        reps=0; paintReps(0); chunks=[]; SAID=[];
+        reps=0; paintReps(0); chunks=[];
         var voiced=0, silent=0, inBurst=false, thr=0, calN=0, calSum=0, t0=performance.now(), lastRep=0, idleTimer=null;
         try{ if(window.MediaRecorder&&micStream){ rec=new MediaRecorder(micStream); rec.ondataavailable=function(e){ if(e.data&&e.data.size)chunks.push(e.data); }; rec.start(); } }catch(e){ rec=null; }
         var ctx=getCtx(), src=ctx.createMediaStreamSource(micStream), an=ctx.createAnalyser();
@@ -650,13 +649,12 @@
             // a real burst = ~4 voiced frames (~120ms) — silence NEVER counts
             if(!inBurst && voiced>=4 && now-lastRep>350){
               inBurst=true; lastRep=now; reps++;
-              SAID.push(ITEM.t); paintReps(reps); sfx("tap");
+              paintReps(reps); sfx("tap");
               // mid-run checkpoint: a quick flourish at rep 3 keeps the last
               // two reps fueled — visual only, the mic never pauses.
               if(reps===3&&NEED>=5){ try{ if(S&&S.pop)S.pop("Way to go!",{color:"#ffd21c"}); }catch(e){} }
               var l=$("leo"); l.classList.remove("cheer"); void l.offsetWidth; l.classList.add("cheer");
               if(reps>=NEED){ setTimeout(function(){ stopAll(); resolve(); },350); return; }
-              if(ROTATE){ ITEM=SEQ[reps%SEQ.length]; paintCard(); }
             }
           } else { silent++; voiced=0; if(silent>=3){ try{ mw.classList.remove("hear"); }catch(e){} } if(silent>=8) inBurst=false; }
           requestAnimationFrame(tick);
@@ -680,7 +678,7 @@
         try{
           var ctrl=new AbortController(); var to=setTimeout(function(){ctrl.abort();},8000);
           var fd=new FormData(); fd.append("audio",new File([blob],"a.webm",{type:blob.type||"audio/webm"}));
-          fd.append("text",(ROTATE&&SAID.length)?SAID.join(" "):ITEM.t); fd.append("targetSound",SOUND); fd.append("userId","child"); fd.append("mode",ITEM.mode||"phoneme");
+          fd.append("text",ITEM.t); fd.append("targetSound",SOUND); fd.append("userId","child"); fd.append("mode",ITEM.mode||"phoneme");
           var r=await fetch("/api/score",{method:"POST",body:fd,signal:ctrl.signal}); clearTimeout(to);
           var j=await r.json(); if(j&&j.ok) return (j.rating!=="tryAgain")?"pass":"fail";
         }catch(e){}
@@ -691,7 +689,7 @@
 
     // ---- the flow ----
     var launched=false;
-    function logV(v){ if(v!=="unknown" && S && S.logAttempt) S.logAttempt({game:"charge",sound:SOUND,pass:v==="pass",word:((ROTATE&&SAID.length)?SAID.join(" "):String(ITEM.word||ITEM.t)).toLowerCase()}); }
+    function logV(v){ if(v!=="unknown" && S && S.logAttempt) S.logAttempt({game:"charge",sound:SOUND,pass:v==="pass",word:String(ITEM.word||ITEM.t).toLowerCase()}); }
     async function burstAndVerify(n){
       var save=NEED; if(n)NEED=n;
       micGo(true,"I'm listening…");
@@ -765,7 +763,7 @@
           var easier=[];
           try{ easier=(S.ladderContent(SOUND,useRung-1)||[]).filter(function(it){return it&&it.t;}); }catch(e){}
           if(easier.length){
-            ITEM=easier[0]; SEQ=easier.slice(0,3); ROTATE=(ITEM.level==="syllable"&&SEQ.length>1);
+            ITEM=easier[0];
             paintCard();
             $("gpState").innerHTML="Echo's idea — try <b>"+(ITEM.level==="isolation"?("your "+((S&&S.soundLabel)?S.soundLabel(SOUND):SOUND)+" sound"):(ITEM.display||ITEM.t))+"</b>!";
             await say("Okay, I have an idea! Let's try something easier. "+(ITEM.level==="isolation"?("Make your "+soundName()+" sound"):("Say "+(ITEM.say||ITEM.t)))+"!");
