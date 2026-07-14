@@ -12,7 +12,7 @@
   <style>
     :root{ --blue:#1cb0f6; --blue-d:#1597d4; --leaf:#7cc40a; --leaf-d:#66a406; --green:#58cc02; --green-d:#46a302; --ink:#33401a; }
     *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;font-family:"Nunito",-apple-system,sans-serif;}
-    html,body{height:100%;overflow:hidden;}
+    html,body{height:100%;overflow:hidden;} html{background:#cdea9e;}
     body{background:linear-gradient(180deg,#d8f2ff,#eef8d6 45%,#cdea9e);color:var(--ink);}
     #app{height:100vh;height:100dvh;max-width:560px;margin:0 auto;display:flex;flex-direction:column;position:relative;}
     #top{display:flex;align-items:center;gap:12px;padding:calc(12px + env(safe-area-inset-top)) 18px 4px;z-index:6;}
@@ -238,7 +238,7 @@
     (function(){
       var s=document.getElementById("stage"); if(!s)return;
       if(L.bg) s.style.background=L.bg;
-      try{ var mcol=(L.bg.match(/#[0-9a-fA-F]{6}(?!.*#)/)||[])[0]; if(mcol) document.body.style.background=mcol; }catch(e){}
+      try{ var mcol=(L.bg.match(/#[0-9a-fA-F]{6}(?!.*#)/)||[])[0]; if(mcol){ document.body.style.background=mcol; document.documentElement.style.background=mcol; } }catch(e){}
       if(L.accent){ try{ document.documentElement.style.setProperty("--leaf",L.accent); document.documentElement.style.setProperty("--leaf-d",L.accent); }catch(e){} }
       // faint ambient props drifting behind the book
       try{
