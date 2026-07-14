@@ -66,10 +66,7 @@ const card = await page.evaluate(() => {
   const t = [...document.querySelectorAll(".thumb b")].map((b) => b.textContent);
   return { heroOrThumb: t.concat([document.getElementById("heroName").textContent]) };
 });
-ok("Coach Call card in deck", card.heroOrThumb.some((x) => /Coach Call/.test(x)));
-await page.evaluate(() => { [...document.querySelectorAll(".thumb")].find((th) => /Coach Call/.test(th.textContent))?.click(); });
-await page.waitForTimeout(500);
-await page.screenshot({ path: OUT + "/call-card.png" });
+ok("Coach Call is OUT of the home deck (games only)", !card.heroOrThumb.some((x) => /Coach Call|Story Time/.test(x)));
 
 await browser.close(); srv.close();
 console.log(fails ? fails + " FAILURES" : "ALL GREEN");

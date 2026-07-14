@@ -201,14 +201,10 @@
     function callsLeft(){ try{ var s=JSON.parse(localStorage.getItem("sona.call.v1")||"{}"); var dt=new Date(); var dow=(dt.getDay()+6)%7; var m=new Date(dt.getFullYear(),dt.getMonth(),dt.getDate()-dow); var wk=m.getFullYear()+"-"+(m.getMonth()+1)+"-"+m.getDate(); return Math.max(0,3-((s.week===wk?s.used:0)||0)); }catch(e){ return 3; } }
     var ACTS=[
       { key:"slice", name:"Fruit Slice",   sub:"Say it 5× to play", tap:function(){ sfx("tap"); location.href="/charge.html?game=arcade-slice.html"; } },
-      { key:"call", name:"Coach Call",
-        sub:"Coming soon — real calls with Echo!",
-        tap:function(){ sfx("tap"); toast("Coach Call is coming soon!"); } },
       { key:"tiles", name:"Piano Tiles",   sub:"Say it 5× to play", tap:function(){ sfx("tap"); location.href="/charge.html?game=arcade-tiles.html"; } },
       { key:"stack", name:"Block Stacker", sub:"Say it 5× to play", tap:function(){ sfx("tap"); location.href="/charge.html?game=arcade-stack.html"; } },
       { key:"run",   name:"Sound Sprint",  sub:"Say it 5× to play", tap:function(){ sfx("tap"); location.href="/charge.html?game=arcade-run.html"; } },
       { key:"glide", name:"Flappy Glide",  sub:"Say it 5× to play", tap:function(){ sfx("tap"); location.href="/charge.html?game=arcade-glide.html"; } },
-      { key:"story", name:"Story Time",    sub:"A new story made for you · ★★★", tap:function(){ sfx("tap"); location.href="/story.html"; } },
     ];
     var sel=0;
 
