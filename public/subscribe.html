@@ -56,6 +56,14 @@
     .tli b{font-family:"Baloo 2";font-weight:800;font-size:16px;display:block;color:var(--ink);}
     .tli p{font-weight:700;font-size:13.5px;color:var(--muted);margin-top:3px;line-height:1.45;}
 
+    /* ── plan picker (trial cohort) ── */
+    .plan{position:relative;border:2px solid var(--line);border-radius:18px;padding:16px;margin-top:12px;cursor:pointer;background:#fff;}
+    .plan.best{border-color:var(--orange);box-shadow:0 6px 18px rgba(255,138,61,.15);}
+    .plan .tag{position:absolute;top:-11px;left:14px;background:linear-gradient(180deg,#ffe063,#ffd21c);color:#7a5200;font-family:"Baloo 2";font-weight:800;font-size:11px;letter-spacing:.06em;padding:3px 10px;border-radius:99px;}
+    .plan b{font-family:"Baloo 2";font-weight:800;font-size:17px;display:block;color:var(--ink);}
+    .plan .sub{font-weight:700;font-size:13px;color:var(--muted);margin-top:3px;line-height:1.45;}
+    .plan .go{margin-top:12px;}
+
     /* ── remind-me module ── */
     #remindDone{display:none;margin-top:14px;font-weight:800;font-size:15px;color:#2e7d32;
       background:linear-gradient(160deg,#eafaf0,#d6f3e2);border-radius:14px;padding:12px 16px;}
@@ -91,7 +99,24 @@
       <span class="planline" id="planLine">Today's plan: <b>free</b> — you're a founding family.</span>
     </div>
 
-    <div class="card">
+    <div class="card" id="pickCard" style="display:none;">
+      <h2>Pick your plan</h2>
+      <p class="muted" style="font-size:13.5px;font-weight:700;">Both include everything — every game, the Sound Check, the weekly plan, the progress report.</p>
+      <div class="plan best" id="planAnnual">
+        <span class="tag">BEST VALUE · 7 DAYS FREE</span>
+        <b>Yearly — $69.99/yr</b>
+        <span class="sub">$5.83/month, billed yearly — save 55% vs monthly. Try free for 7 days, cancel anytime before it starts.</span>
+        <button class="btn go" id="buyAnnual">Start 7 days free</button>
+      </div>
+      <div class="plan" id="planMonthly">
+        <b>Monthly — $12.99/mo</b>
+        <span class="sub">Cancel anytime.</span>
+        <button class="btn ghost go" id="buyMonthly">Choose monthly</button>
+      </div>
+      <p class="muted" id="pickMsg" style="margin-top:10px;font-weight:800;font-size:12.5px;"></p>
+    </div>
+
+    <div class="card" id="foundingCard">
       <h2>How pricing works here</h2>
       <div class="tl">
         <div class="tli now">
@@ -146,12 +171,41 @@
     <a class="on" href="/settings.html"><span class="ni pic-gear"></span>Settings</a>
   </div>
 
+  <script src="/pixel.js"></script>
+  <script src="/analytics.js"></script>
   <script src="/sona.js"></script>
   <script>
     // Parent-only page: re-check the gate once the shared helper is loaded, and
     // again on bfcache restores (back-swipe re-shows the page without scripts).
     if (window.Sona && Sona.requireGate) Sona.requireGate();
     window.addEventListener("pageshow", function (e) { if (e.persisted && window.Sona && Sona.requireGate) Sona.requireGate(); });
+
+    // Cohort routing: founding/SLP families keep the free story; the trial
+    // cohort (ad/organic signups) gets the plan picker. Subscribers see neither.
+    (function () {
+      try {
+        var P = Sona.getProfile ? Sona.getProfile() : {};
+        var subbed = Sona.isSubscribed && Sona.isSubscribed();
+        var founding = !!P.earlyAdopter;
+        if (!subbed && !founding) {
+          document.getElementById("pickCard").style.display = "block";
+          var fc = document.getElementById("foundingCard"); if (fc) fc.style.display = "none";
+        }
+      } catch (e) {}
+      function buy(plan, value) {
+        var msg = document.getElementById("pickMsg");
+        msg.textContent = "Opening secure checkout…";
+        try { if (window.sonaTrack) sonaTrack("InitiateCheckout", { value: value, currency: "USD", content_name: plan }); } catch (e) {}
+        var email = ""; try { email = (Sona.getProfile().email || "").trim(); } catch (e) {}
+        fetch("/api/checkout", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ plan: plan, email: email }) })
+          .then(function (r) { return r.json(); })
+          .then(function (j) { if (j && j.ok && j.url) { location.href = j.url; } else { msg.textContent = (j && j.error) || "Checkout couldn't open — try again in a minute."; } })
+          .catch(function () { msg.textContent = "Checkout couldn't open — are you online?"; });
+      }
+      var a = document.getElementById("buyAnnual"), m = document.getElementById("buyMonthly");
+      if (a) a.onclick = function () { buy("annual", 69.99); };
+      if (m) m.onclick = function () { buy("monthly", 12.99); };
+    })();
 
     // Plan line: reflect an active subscription if one was restored on this device.
     (function () {

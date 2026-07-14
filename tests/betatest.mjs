@@ -26,7 +26,8 @@ let fails = 0;
 const ok = (n, p) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL ") + n); };
 
 // ── onboarding: slim flow — 8 steps, Pip preselected, achieve as finale ──
-await page.goto("http://localhost:8129/onboarding.html");
+await page.evaluate(() => localStorage.setItem("sona.slp", "RACHEL1")).catch(() => {});
+await page.goto("http://localhost:8129/onboarding.html?slp=RACHEL1");
 await page.waitForTimeout(900);
 const ob = await page.evaluate(() => ({
   betaStep: !!document.querySelector('[data-step="beta"]'),
@@ -58,7 +59,7 @@ const fin = await page.evaluate(() => ({
 ok("achieve finale shows after email", fin.achieveShown && fin.achName === "Milo");
 ok("CTA says Let's practice", /Let's practice/.test(fin.cta));
 const prof = await page.evaluate(() => JSON.parse(localStorage.getItem("sona.profile.v1") || "{}"));
-ok("earlyAdopter + weeklyGoal saved", prof.earlyAdopter === true && prof.weeklyGoal === 3);
+ok("SLP-referred → founding access + weeklyGoal", prof.earlyAdopter === true && prof.slpCode === "RACHEL1" && prof.weeklyGoal === 3);
 ok("onboarding no pageerrors", errs.length === 0);
 
 // ── pulse: shows on 3rd visit for early adopters, X snoozes, answers post ──

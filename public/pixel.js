@@ -8,7 +8,7 @@
  *   sonaTrack("Lead")  ·  sonaTrack("Purchase", { value: 39.99, currency: "USD" })
  */
 (function () {
-  var META_PIXEL_ID = ""; // ← PASTE YOUR META PIXEL ID HERE (e.g. "1234567890123456")
+  var META_PIXEL_ID = "28886011914332605"; // Sona pixel (Meta Events Manager)
 
   window.sonaTrack = function () {}; // safe no-op until configured
 

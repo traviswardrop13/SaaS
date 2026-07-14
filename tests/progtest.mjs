@@ -195,6 +195,39 @@ await page.goto("http://localhost:8131/charge.html?game=arcade-slice.html"); awa
 mp = await page.evaluate(() => document.getElementById("micPrime").classList.contains("show"));
 ok("primer never shows again after grant", !mp);
 
+// ── ad rail: pixel armed, kid pages clean, SLP links split the cohorts ──
+{
+  const { readFileSync: rf } = await import("fs");
+  ok("pixel armed with the Sona ID", /28886011914332605/.test(rf(ROOT + "/pixel.js", "utf8")));
+  const kidPages = ["today.html", "charge.html", "journey.html", "soundcheck.html", "story.html", "arcade-slice.html", "arcade-tiles.html", "arcade-stack.html", "arcade-run.html", "arcade-glide.html"];
+  const clean = kidPages.every((f) => !/pixel\.js|analytics\.js|fbevents/.test(rf(ROOT + "/" + f, "utf8")));
+  ok("no tracking scripts on any kid page (COPPA)", clean);
+}
+await page.evaluate(() => { localStorage.removeItem("sona.slp"); });
+await page.goto("http://localhost:8131/today.html?slp=DrSmith22"); await page.waitForTimeout(500);
+t = await page.evaluate(() => localStorage.getItem("sona.slp"));
+ok("?slp= link sticks (uppercased)", t === "DRSMITH22");
+// trial-cohort family (no slp, not founding) sees the plan picker on subscribe
+await page.evaluate(() => {
+  localStorage.removeItem("sona.slp");
+  const p = JSON.parse(localStorage.getItem("sona.profile.v1")); p.earlyAdopter = false; delete p.slpCode;
+  localStorage.setItem("sona.profile.v1", JSON.stringify(p));
+  sessionStorage.setItem("sona.gate.v1", String(Date.now()));
+});
+await page.goto("http://localhost:8131/subscribe.html"); await page.waitForTimeout(700);
+t = await page.evaluate(() => ({
+  pick: document.getElementById("pickCard").style.display,
+  founding: document.getElementById("foundingCard").style.display,
+  annual: /69\.99/.test(document.getElementById("planAnnual").textContent),
+  monthly: /12\.99/.test(document.getElementById("planMonthly").textContent),
+}));
+ok("trial cohort sees the plan picker ($69.99 + $12.99)", t.pick === "block" && t.founding === "none" && t.annual && t.monthly);
+// founding family keeps the free story
+await page.evaluate(() => { const p = JSON.parse(localStorage.getItem("sona.profile.v1")); p.earlyAdopter = true; localStorage.setItem("sona.profile.v1", JSON.stringify(p)); });
+await page.goto("http://localhost:8131/subscribe.html"); await page.waitForTimeout(700);
+t = await page.evaluate(() => ({ pick: document.getElementById("pickCard").style.display, founding: document.getElementById("foundingCard").style.display }));
+ok("founding family keeps the free story", t.pick !== "block" && t.founding !== "none");
+
 await browser.close(); srv.close();
 console.log(fails ? fails + " FAILURES" : "ALL GREEN");
 process.exit(fails ? 1 : 0);

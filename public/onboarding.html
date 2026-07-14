@@ -318,8 +318,12 @@
     function finish(){
       draft.focusSounds = Array.from(selSounds);
       draft.interests = Array.from(selInterests);
+      var _slp=""; try{ _slp=(Sona.slpCode&&Sona.slpCode())||""; }catch(e){}
       Sona.saveProfile({
-        earlyAdopter: true, // beta cohort — free forever, sees the founding banner
+        // SLP-referred families get founding (free) access; ad/organic signups
+        // enter the 7-day-trial path. Existing founding profiles keep theirs.
+        earlyAdopter: !!_slp,
+        slpCode: _slp,
         childName: draft.childName,
         character: draft.character,
         focusSounds: draft.focusSounds,
