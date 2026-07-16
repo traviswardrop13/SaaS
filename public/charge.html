@@ -190,8 +190,9 @@
       <img class="ovlEcho" src="/coach/echo/echo-listening.svg" alt="" />
       <h2>Let Echo hear you practice!</h2>
       <p style="font-weight:800;font-size:13.5px;color:var(--muted);line-height:1.5;">Echo listens while you practice and cheers the sounds you get right.</p>
-      <p style="font-weight:800;font-size:11.5px;color:var(--muted);line-height:1.5;">Grown-ups: the mic is on only during practice. Recordings never leave this device except a quick scoring check, and Sona doesn't keep them.</p>
+      <p style="font-weight:800;font-size:11.5px;color:var(--muted);line-height:1.5;">Grown-ups: the mic is on only during practice, and sound is checked right on this device. In games nothing is recorded at all; practice words send one short clip for scoring — Sona doesn't keep them.</p>
       <button class="btn" id="micPrimeBtn">Turn on Echo's ears</button>
+      <button id="micPrimeSkip" style="border:none;background:none;font-family:Nunito,sans-serif;font-weight:800;font-size:13.5px;color:var(--muted);cursor:pointer;padding:8px;margin-top:2px;">Not now</button>
     </div>
   </div>
 
@@ -714,6 +715,10 @@
           return new Promise(function(res){
             $("micPrime").classList.add("show");
             $("micPrimeBtn").onclick=function(){ $("micPrime").classList.remove("show"); res(); };
+            // soft decline: a parent who isn't ready leaves WITHOUT burning the
+            // OS prompt (a denied OS dialog is near-unrecoverable) — the primer
+            // simply asks again next time.
+            var sk=$("micPrimeSkip"); if(sk) sk.onclick=function(){ location.href="/today.html"; };
           });
         });
       });

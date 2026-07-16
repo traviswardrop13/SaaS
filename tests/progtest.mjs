@@ -189,7 +189,8 @@ let mp = await page.evaluate(() => ({
   txt: document.getElementById("micPrime").textContent,
 }));
 ok("primer shows before the mic prompt", mp.shown);
-ok("primer explains listening honestly", /only during practice/.test(mp.txt) && /doesn't keep them/.test(mp.txt));
+ok("primer explains listening honestly", /only during practice/.test(mp.txt) && /doesn't keep them/.test(mp.txt) && /nothing is recorded/.test(mp.txt));
+ok("primer offers a soft decline (protects the OS prompt)", /Not now/.test(mp.txt));
 await page.evaluate(() => document.getElementById("micPrimeBtn").click());
 await page.waitForTimeout(500);
 mp = await page.evaluate(() => ({
@@ -200,6 +201,21 @@ ok("primer dismisses into the mic grant + remembers", mp.gone && mp.micok === "1
 await page.goto("http://localhost:8131/charge.html?game=arcade-slice.html"); await page.waitForTimeout(800);
 mp = await page.evaluate(() => document.getElementById("micPrime").classList.contains("show"));
 ok("primer never shows again after grant", !mp);
+
+// ── mic DENIED → recovery screen: grown-up steps + a Try Again that retries ──
+await page.evaluate(() => localStorage.removeItem("sona.micok"));
+await page.addInitScript(() => {
+  if (navigator.mediaDevices) navigator.mediaDevices.getUserMedia = () => Promise.reject(new Error("NotAllowedError"));
+});
+await page.goto("http://localhost:8131/charge.html?game=arcade-slice.html"); await page.waitForTimeout(900);
+await page.evaluate(() => document.getElementById("micPrimeBtn").click());
+await page.waitForTimeout(700);
+mp = await page.evaluate(() => ({
+  txt: (document.getElementById("sonaMicDenied") || {}).textContent || "",
+  retry: !!document.getElementById("sonaMicRetry"),
+}));
+ok("denied state shows grown-up recovery steps", /can’t hear you yet/.test(mp.txt) && /Settings/.test(mp.txt) && /Microphone/.test(mp.txt));
+ok("denied state offers try-again + back", mp.retry && /Back home/.test(mp.txt));
 
 // ── ad rail: pixel armed, kid pages clean, SLP links split the cohorts ──
 {
