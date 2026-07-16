@@ -536,10 +536,18 @@
     // recordings: group by word, offer first vs latest playback
     (function () {
       var host = document.getElementById("recList");
-      if (!Sona.listRecordings) { host.innerHTML = '<p class="muted">No recordings yet.</p>'; return; }
+      // First-run rescue: an empty list is the format most prone to reading as
+      // "dead" — Echo occupies the space, the copy stays future-tense ("yet"),
+      // and ONE action fills the void (the Collect/Canva empty-state pattern).
+      var EMPTY_REC = '<div style="text-align:center;padding:14px 6px;">'
+        + '<img src="/coach/echo/echo-listening.svg" alt="" style="width:86px;height:86px;object-fit:contain;" onerror="this.style.display=\'none\'" />'
+        + '<p class="muted" style="margin-top:8px;font-weight:800;">No recordings yet — once practice starts, Echo keeps one great try a day so you can hear the change week to week.</p>'
+        + '<a href="/today.html" style="display:inline-block;margin-top:12px;border-radius:14px;padding:12px 22px;font-family:\'Baloo 2\';font-weight:800;font-size:15px;color:#fff;background:linear-gradient(180deg,#ffa05a,#ff8a3d);box-shadow:0 4px 0 #e0762e;text-decoration:none;">Start today\'s practice</a>'
+        + '</div>';
+      if (!Sona.listRecordings) { host.innerHTML = EMPTY_REC; return; }
       Sona.listRecordings(400).then(function (recs) {
         recs = (recs || []).filter(function (r) { return r && r.blob; });
-        if (!recs.length) { host.innerHTML = '<p class="muted">No recordings yet — they appear after practice with the mic.</p>'; return; }
+        if (!recs.length) { host.innerHTML = EMPTY_REC; return; }
         var byWord = {}; // recs are newest-first
         recs.forEach(function (r) {
           var k = r.word || "practice";

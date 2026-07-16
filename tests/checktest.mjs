@@ -122,8 +122,14 @@ await page2.goto("http://localhost:8137/journey.html"); await page2.waitForTimeo
 t = await page2.evaluate(() => ({
   empty: getComputedStyle(document.getElementById("empty")).display !== "none",
   cta: /Sound Check/.test(document.getElementById("empty").textContent),
+  ghosts: document.querySelectorAll("#tl .wk").length,
+  weekOneLit: !!document.querySelector("#tl .wk.now"),
+  futureGhosted: document.querySelectorAll("#tl .wk.future").length,
+  phases: /Warm-ups/.test(document.getElementById("tl").textContent) && /Sentences/.test(document.getElementById("tl").textContent),
 }));
 ok("no plan → journey shows the first-check invitation", t.empty && t.cta);
+ok("day-one journey shows the full 13-week ghost path (week 1 lit)",
+  t.ghosts === 13 && t.weekOneLit && t.futureGhosted === 12 && t.phases);
 await page2.close();
 
 await browser.close(); srv.close();

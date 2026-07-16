@@ -84,7 +84,8 @@
       d.className="st"+(has?"":" locked")+(isNext?" next":"")+(has&&s.id===justNew?" new":"");
       // locked stickers show their real art as a dark silhouette (CSS) — a tease, no padlocks
       d.innerHTML='<div class="e">'+s.e+'</div><div class="n">'+(has?s.name:"?")+'</div>'+(isNext?'<span class="tag">Next!</span>':"");
-      if(!has){ d.onclick=function(){ toast(isNext?"This one's next — keep playing!":"Keep playing to win this sticker!"); }; }
+      // quest, not padlock: locked taps name the true unlock condition
+      if(!has){ d.onclick=function(){ toast(isNext?"This one's next — finish a practice round to win it!":"One new sticker for every round you finish!"); }; }
       grid.appendChild(d);
     });
     if(!got){ $("empty").style.display="block"; }

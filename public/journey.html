@@ -87,7 +87,22 @@
     function weekStart(created,k){ var d=new Date(created); d.setUTCDate(d.getUTCDate()+(k-1)*7); return d; }
     function fmt(d){ return (d.getUTCMonth()+1)+"/"+d.getUTCDate(); }
 
-    if(!JW){ $("tl").style.display="none"; $("intro").style.display="none"; $("empty").style.display="block"; }
+    if(!JW){
+      $("intro").style.display="none"; $("empty").style.display="block";
+      // Day-one scaffolding (the Duolingo ABC / Mimo path pattern): the whole
+      // 13-week shape is visible before any data exists — week 1 lit as the
+      // start, the rest ghosted with their phase labels. The empty state IS
+      // the preview of what's coming, so day one reads as a beginning.
+      var tl0=$("tl");
+      for(var k0=1;k0<=13;k0++){
+        if(k0>1&&(k0-1)%4===0){ var m0=document.createElement("div"); m0.className="month"; m0.textContent="Month "+Math.floor((k0-1)/4+1); tl0.appendChild(m0); }
+        var row0=document.createElement("div"); row0.className="wk "+(k0===1?"now":"future");
+        var dot0=document.createElement("div"); dot0.className="dot"; dot0.innerHTML=k0; row0.appendChild(dot0);
+        var card0=document.createElement("div"); card0.className="card";
+        card0.innerHTML="<b>Week "+k0+(k0===1?" — your journey starts here":"")+"</b><p>"+phaseFor(k0)+"</p>";
+        row0.appendChild(card0); tl0.appendChild(row0);
+      }
+    }
     else (async function(){
       $("wkNow").textContent="Week "+JW.week+" of "+JW.total;
       var checks=(S.checkHistory&&S.checkHistory())||[];
