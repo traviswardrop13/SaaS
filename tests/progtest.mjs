@@ -228,6 +228,15 @@ t = await page.evaluate(() => ({
   monthly: /12\.99/.test(document.getElementById("planMonthly").textContent),
 }));
 ok("trial cohort sees the plan picker ($69.99 + $12.99)", t.pick === "block" && t.founding === "none" && t.annual && t.monthly);
+// paywall trust: named-SLP proof strip above the plans + literal first-charge date
+t = await page.evaluate(() => ({
+  proof: (document.querySelector("#pickCard .proof") || {}).textContent || "",
+  math: (document.getElementById("trialMath") || {}).textContent || "",
+}));
+ok("proof strip: named SLP credential above the plans",
+  /Rachel/.test(t.proof) && /speech-language pathologist/.test(t.proof));
+ok("annual card names the literal first-charge date",
+  /first charge/i.test(t.math) && /(January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2}/.test(t.math) && /Cancel anytime/i.test(t.math));
 // founding family keeps the free story
 await page.evaluate(() => { const p = JSON.parse(localStorage.getItem("sona.profile.v1")); p.earlyAdopter = true; localStorage.setItem("sona.profile.v1", JSON.stringify(p)); });
 await page.goto("http://localhost:8131/subscribe.html"); await page.waitForTimeout(700);
