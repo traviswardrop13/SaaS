@@ -164,12 +164,12 @@
     </div>
   </div>
 
-  <!-- beta pulse — one quick question for founding families; X always works -->
+  <!-- beta pulse — chip-first ask for founding families; X always works -->
   <div class="ovl" id="pulseOvl">
     <div class="modal" style="position:relative;text-align:left;">
       <button id="pulseX" aria-label="Close" style="position:absolute;top:10px;right:10px;width:34px;height:34px;border:none;border-radius:50%;background:var(--cream);color:var(--label);font-weight:800;font-size:15px;cursor:pointer;box-shadow:0 2px 0 var(--track);">✕</button>
       <div style="font-family:'Baloo 2';font-weight:800;font-size:12px;letter-spacing:.08em;color:var(--orange-d);padding-right:40px;">BETA · YOU'RE BUILDING SONA WITH US</div>
-      <h3 id="pulseQ" style="text-align:left;margin-top:8px;">What should we build for you?</h3>
+      <h3 id="pulseQ" style="text-align:left;margin-top:8px;">What should we build next?</h3>
       <div id="pulseOpts"></div>
     </div>
   </div>
@@ -479,33 +479,60 @@
       else if(S.trialExpired&&S.trialExpired()){ note.innerHTML="Your free trial has ended."+link+"See membership options →</a>"; note.style.display="block"; }
     })();
 
-    // ── beta pulse: an open box — request, idea, or problem. X always dismisses. ──
+    // ── beta pulse: chip-first (a tap beats a blank box — the Mobbin study's
+    // one repeated pattern). Picking a chip reveals the optional note + Send.
+    // X always dismisses, and a send OR a dismiss quiets the auto-ask for two
+    // weeks — brand-new families must never feel nagged. Banner tap still
+    // opens it any time.
+    var PULSE_COOL=14*24*3600*1000;
+    var PULSE_CHIPS=["More games","New sounds to practice","Progress reports","Easier for my kid","Something's broken","Something else"];
     function pulseState(){ try{ return JSON.parse(localStorage.getItem("sona.pulse.v1")||"{}"); }catch(e){ return {}; } }
     function pulseSave(s){ try{ localStorage.setItem("sona.pulse.v1",JSON.stringify(s)); }catch(e){} }
     function showPulse(force){
       var st=pulseState();
       var w=$("pulseOpts");
-      w.innerHTML='<textarea id="pulseText" rows="4" placeholder="A request, an idea, a problem to fix — anything helps." '
+      var picked={};
+      w.innerHTML='<div id="pulseChips" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;"></div>'
+        +'<div id="pulseMore" style="display:none;">'
+        +'<textarea id="pulseText" rows="2" placeholder="Anything else? (optional)" '
         +'style="width:100%;border:2px solid var(--track);border-radius:14px;padding:12px;font-family:Nunito,sans-serif;font-weight:700;font-size:14px;color:var(--ink);resize:none;margin-top:10px;"></textarea>'
-        +'<button id="pulseSend" class="sheetBtn" style="justify-content:center;background:linear-gradient(180deg,#ffa05a,#ff8a3d);color:#fff;box-shadow:0 4px 0 var(--orange-d);">Send it</button>';
+        +'<button id="pulseSend" class="sheetBtn" style="justify-content:center;background:linear-gradient(180deg,#ffa05a,#ff8a3d);color:#fff;box-shadow:0 4px 0 var(--orange-d);">Send it</button>'
+        +'</div>';
+      var row=$("pulseChips");
+      PULSE_CHIPS.forEach(function(label){
+        var b=document.createElement("button");
+        b.type="button"; b.textContent=label; b.className="pulseChip";
+        b.style.cssText="border:2px solid var(--track);border-radius:999px;padding:9px 14px;background:#fff;color:var(--ink);font-family:'Baloo 2';font-weight:800;font-size:13px;cursor:pointer;";
+        b.onclick=function(){
+          picked[label]=!picked[label];
+          b.style.background=picked[label]?"linear-gradient(180deg,#ffa05a,#ff8a3d)":"#fff";
+          b.style.color=picked[label]?"#fff":"var(--ink)";
+          b.style.borderColor=picked[label]?"var(--orange-d)":"var(--track)";
+          var any=PULSE_CHIPS.some(function(k){ return picked[k]; });
+          $("pulseMore").style.display=any?"block":"none";
+        };
+        row.appendChild(b);
+      });
       $("pulseSend").onclick=function(){
-        var txt=($("pulseText").value||"").trim();
-        if(!txt){ $("pulseText").focus(); return; }
+        var chips=PULSE_CHIPS.filter(function(k){ return picked[k]; });
+        if(!chips.length) return;
+        var note=($("pulseText").value||"").trim().slice(0,600);
         var code=""; try{ code=(S.pilotInfo&&S.pilotInfo().code)||""; }catch(e){}
         try{ fetch("/api/feedback",{method:"POST",headers:{"Content-Type":"application/json"},keepalive:true,
-          body:JSON.stringify({q:"pulse.open",text:txt.slice(0,600),src:"pulse",code:code})}).catch(function(){}); }catch(e){}
-        st.last=Date.now(); pulseSave(st);
-        $("pulseOvl").classList.remove("show"); sfx("correct"); toast("Thank you — this shapes Sona!");
+          body:JSON.stringify({q:"pulse.chips",text:chips.join(" + ")+(note?" · "+note:""),src:"pulse",code:code})}).catch(function(){}); }catch(e){}
+        st.last=Date.now(); st.cool=Date.now()+PULSE_COOL; pulseSave(st);
+        $("pulseOvl").classList.remove("show"); sfx("correct"); toast("Thanks! We build fast ✓");
       };
       $("pulseOvl").classList.add("show");
       if(force){ st.last=Date.now(); pulseSave(st); }
     }
-    $("pulseX").onclick=function(){ var st=pulseState(); st.last=Date.now(); st.snooze=(st.visits||0)+5; pulseSave(st); $("pulseOvl").classList.remove("show"); sfx("tap"); };
+    $("pulseX").onclick=function(){ var st=pulseState(); st.last=Date.now(); st.cool=Date.now()+PULSE_COOL; pulseSave(st); $("pulseOvl").classList.remove("show"); sfx("tap"); };
     (function(){
       if(!P.earlyAdopter) return;
       var st=pulseState(); st.visits=(st.visits||0)+1; pulseSave(st);
       var dayAgo=!st.last || (Date.now()-st.last)>20*3600*1000;
-      var due=st.visits>=3 && st.visits%3===0 && dayAgo && st.visits>=(st.snooze||0) && !window.__comeback;
+      var cooling=!!st.cool && Date.now()<st.cool;
+      var due=st.visits>=3 && st.visits%3===0 && dayAgo && !cooling && !window.__comeback;
       if(due) setTimeout(function(){ showPulse(false); var s2=pulseState(); s2.last=Date.now(); pulseSave(s2); },900);
     })();
   </script>

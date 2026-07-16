@@ -139,11 +139,17 @@ ok("step-down retry offers an easier same-sound target", /Let's try something ea
   ok("sona.js exports the shape helpers", /soundFamily, frameShape,/.test(sj));
 }
 
-// ── pulse open box: placeholder reads clean ──
+// ── pulse: chip-first — chips render, note stays optional-and-hidden ──
 await page.evaluate(() => { try { window.showPulse && showPulse(true); } catch (e) {} });
-t = await page.evaluate(() => (document.getElementById("pulseText") || {}).placeholder || "");
-if (t) ok("pulse placeholder is the new copy", /A request, an idea, a problem to fix/.test(t));
-else ok("pulse placeholder is the new copy (source)", /A request, an idea, a problem to fix/.test(todaySrc));
+t = await page.evaluate(() => ({
+  chips: document.querySelectorAll("#pulseChips .pulseChip").length,
+  hidden: (document.getElementById("pulseMore") || {}).style ? document.getElementById("pulseMore").style.display === "none" : false,
+  ph: (document.getElementById("pulseText") || {}).placeholder || "",
+}));
+if (t.chips) {
+  ok("pulse opens chip-first with note hidden", t.chips >= 5 && t.hidden);
+  ok("pulse note reads optional", /optional/i.test(t.ph));
+} else ok("pulse chips in source", /PULSE_CHIPS/.test(todaySrc));
 
 // ── the ring resets overnight: yesterday's rounds never survive to today ──
 await page.evaluate(() => localStorage.setItem("sona.today.v1", JSON.stringify({ d: "2026-07-10", n: 3 })));

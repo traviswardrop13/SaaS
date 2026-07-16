@@ -62,7 +62,7 @@ const prof = await page.evaluate(() => JSON.parse(localStorage.getItem("sona.pro
 ok("SLP-referred → founding access + weeklyGoal", prof.earlyAdopter === true && prof.slpCode === "RACHEL1" && prof.weeklyGoal === 3);
 ok("onboarding no pageerrors", errs.length === 0);
 
-// ── pulse: shows on 3rd visit for early adopters, X snoozes, answers post ──
+// ── pulse: shows on 3rd visit for early adopters, chip-first, X cools 14d ──
 fbPosts = []; errs = [];
 await page.addInitScript(() => {
   localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Milo", focusSounds: ["R"], earlyAdopter: true }));
@@ -77,12 +77,24 @@ ok("pulse shows on visit 3", vis);
 const q1 = await page.evaluate(() => document.getElementById("pulseQ").textContent);
 console.log("      Q:", q1);
 await page.screenshot({ path: OUT + "/beta-pulse.png" });
-// type into the open box and send
-await page.evaluate(() => { document.getElementById("pulseText").value = "please add a dragon game"; document.getElementById("pulseSend").click(); });
+// chip-first: note+Send stay hidden until a chip is picked, then chips+note post together
+const preChip = await page.evaluate(() => ({
+  chips: document.querySelectorAll("#pulseChips .pulseChip").length,
+  moreHidden: document.getElementById("pulseMore").style.display === "none",
+}));
+ok("pulse offers chips with note hidden", preChip.chips >= 5 && preChip.moreHidden);
+await page.evaluate(() => {
+  const chips = [...document.querySelectorAll("#pulseChips .pulseChip")];
+  chips.find((c) => c.textContent === "More games").click();
+  document.getElementById("pulseText").value = "please add a dragon game";
+  document.getElementById("pulseSend").click();
+});
 await page.waitForTimeout(500);
-ok("pulse open-box posted", fbPosts.length === 1 && fbPosts[0].src === "pulse" && fbPosts[0].q === "pulse.open" && /dragon game/.test(fbPosts[0].text));
+ok("pulse chips posted", fbPosts.length === 1 && fbPosts[0].src === "pulse" && fbPosts[0].q === "pulse.chips" && /More games/.test(fbPosts[0].text) && /dragon game/.test(fbPosts[0].text));
 vis = await page.evaluate(() => document.getElementById("pulseOvl").classList.contains("show"));
 ok("pulse closes after answer", !vis);
+const coolSend = await page.evaluate(() => JSON.parse(localStorage.getItem("sona.pulse.v1")).cool || 0);
+ok("send cools the auto-ask ~14d", coolSend > Date.now() + 13 * 24 * 3600 * 1000);
 // banner
 const banner = await page.evaluate(() => ({ show: getComputedStyle(document.getElementById("trialBanner")).display !== "none", txt: document.getElementById("trialMsg").textContent }));
 ok("founding banner shows (kid-safe copy)", banner.show && /building Sona with us/.test(banner.txt) && !/\$/.test(banner.txt));
@@ -91,12 +103,12 @@ console.log("      banner:", banner.txt);
 await page.evaluate(() => document.getElementById("trialBanner").click());
 vis = await page.evaluate(() => document.getElementById("pulseOvl").classList.contains("show"));
 ok("banner tap opens pulse", vis);
-// X dismisses + snoozes
+// X dismisses + cools the auto-ask for ~14 days
 await page.evaluate(() => document.getElementById("pulseX").click());
 vis = await page.evaluate(() => document.getElementById("pulseOvl").classList.contains("show"));
 ok("X dismisses", !vis);
-const snooze = await page.evaluate(() => JSON.parse(localStorage.getItem("sona.pulse.v1")).snooze);
-ok("X snoozes future visits", snooze >= 8);
+const coolX = await page.evaluate(() => JSON.parse(localStorage.getItem("sona.pulse.v1")).cool || 0);
+ok("X cools future auto-asks ~14d", coolX > Date.now() + 13 * 24 * 3600 * 1000);
 ok("today no pageerrors", errs.length === 0);
 
 await browser.close(); srv.close();
