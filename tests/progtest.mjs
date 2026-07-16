@@ -275,6 +275,38 @@ t = await page.evaluate(() => ({
 }));
 ok("offer link reveals the founding card ($39.99, rate-lock, charged today)",
   t.shown === "block" && /39\.99/.test(t.txt) && /never rises/.test(t.txt) && /Charged today/.test(t.txt) && t.stored === "FOUNDING50");
+// ── progress report: narrative hero + non-clinical hedge + review pre-gate ──
+{
+  const iso = new Date().toISOString().slice(0, 10);
+  await page.evaluate((d) => {
+    sessionStorage.setItem("sona.gate.v1", String(Date.now()));
+    const g = JSON.parse(localStorage.getItem("sona.progress.v1") || "{}");
+    g.totals = Object.assign({}, g.totals, { sessions: 6, words: 40, stars: 3 });
+    g.streak = g.streak || { count: 1, lastDate: d };
+    localStorage.setItem("sona.progress.v1", JSON.stringify(g));
+    const out = {}; out.R = { days: {} }; out.R.days[d] = { a: 24, p: 20 };
+    localStorage.setItem("sona.outcomes.v1", JSON.stringify(out));
+    localStorage.removeItem("sona.rateask.v1");
+  }, iso);
+  await page.goto("http://localhost:8131/progress.html"); await page.waitForTimeout(800);
+  t = await page.evaluate(() => ({
+    story: document.getElementById("storyLine").textContent,
+    hedge: document.body.textContent.includes("A practice snapshot, not a clinical assessment"),
+    rate: document.getElementById("rateCard").style.display,
+    yesHref: document.getElementById("rateYes").getAttribute("href"),
+    noHref: document.getElementById("rateNo").getAttribute("href"),
+  }));
+  ok("report opens with a narrative sentence (name + sound + count)", /practiced the R sound 24 times this week/.test(t.story));
+  ok("non-clinical hedge present", t.hedge);
+  ok("review pre-gate shows after real value, Bear-style fork",
+    t.rate === "block" && /action=write-review/.test(t.yesHref) && /^mailto:/.test(t.noHref));
+  await page.evaluate(() => document.getElementById("rateX").click());
+  await page.goto("http://localhost:8131/progress.html"); await page.waitForTimeout(700);
+  t = await page.evaluate(() => document.getElementById("rateCard").style.display);
+  ok("dismissed pre-gate stays quiet on the next visit (60d cooldown)", t !== "block");
+  await page.evaluate(() => { localStorage.removeItem("sona.outcomes.v1"); localStorage.removeItem("sona.rateask.v1"); });
+}
+
 // founding family keeps the free story
 await page.evaluate(() => { const p = JSON.parse(localStorage.getItem("sona.profile.v1")); p.earlyAdopter = true; localStorage.setItem("sona.profile.v1", JSON.stringify(p)); });
 await page.goto("http://localhost:8131/subscribe.html"); await page.waitForTimeout(700);
