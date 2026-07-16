@@ -45,6 +45,13 @@ await clickNext(); // name →
 await clickNext(); // buddy →
 await clickNext(); // interests →
 await clickNext(); // sounds →
+// the "building the plan" beat fires over the next step, named + non-blocking
+const build = await page.evaluate(() => ({
+  shown: !!document.querySelector("#obBuild.show"),
+  txt: (document.getElementById("obBuild") || {}).textContent || "",
+  passthru: getComputedStyle(document.getElementById("obBuild")).pointerEvents === "none",
+}));
+ok("sound-plan build beat shows (named, non-blocking)", build.shown && /Milo's sound plan/.test(build.txt) && build.passthru);
 await page.evaluate(() => document.querySelector('#obGoal .choice[data-val="3"]').click());
 await clickNext(); // goal →
 await clickNext(); // slp →
@@ -61,6 +68,28 @@ ok("CTA says Let's practice", /Let's practice/.test(fin.cta));
 const prof = await page.evaluate(() => JSON.parse(localStorage.getItem("sona.profile.v1") || "{}"));
 ok("SLP-referred → founding access + weeklyGoal", prof.earlyAdopter === true && prof.slpCode === "RACHEL1" && prof.weeklyGoal === 3);
 ok("onboarding no pageerrors", errs.length === 0);
+
+// ── email is the default ask but never a gate: "Skip for now" still finishes ──
+await page.evaluate(() => { localStorage.clear(); sessionStorage.clear(); });
+await page.goto("http://localhost:8129/onboarding.html"); await page.waitForTimeout(900);
+const nameStep = await page.evaluate(() => document.querySelector('[data-step="name"]').textContent);
+ok("name question carries justification microcopy", /cheers them on by name/.test(nameStep));
+await clickNext(); // welcome →
+await page.evaluate(() => { document.getElementById("obName").value = "Zoe"; });
+await clickNext(); // name →
+await clickNext(); // buddy →
+await clickNext(); // interests →
+await clickNext(); // sounds →
+await page.evaluate(() => document.querySelector('#obGoal .choice[data-val="3"]').click());
+await clickNext(); // goal →
+await clickNext(); // slp →
+await page.evaluate(() => document.getElementById("obEmailSkip").click()); // skip, no email
+await page.waitForTimeout(500);
+const skipFin = await page.evaluate(() => ({
+  achieveShown: document.querySelector('[data-step="achieve"]').classList.contains("on"),
+  prof: JSON.parse(localStorage.getItem("sona.profile.v1") || "{}"),
+}));
+ok("email skip still finishes onboarding (no gate)", skipFin.achieveShown && skipFin.prof.onboarded === true && skipFin.prof.email === "" && skipFin.prof.childName === "Zoe");
 
 // ── pulse: shows on 3rd visit for early adopters, chip-first, X cools 14d ──
 fbPosts = []; errs = [];
