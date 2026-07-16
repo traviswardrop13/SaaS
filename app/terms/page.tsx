@@ -11,7 +11,7 @@ export const metadata: Metadata = {
  * sections and your governing-law choice.
  */
 const COMPANY = "[Your Company, LLC]";
-const SUPPORT_EMAIL = "support@[yourdomain].com";
+const SUPPORT_EMAIL = "wardroptravis@gmail.com";
 const GOVERNING_LAW = "[State/Country]";
 const EFFECTIVE = "June 2026";
 

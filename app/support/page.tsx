@@ -6,7 +6,7 @@ export const metadata: Metadata = {
 };
 
 // NOTE: replace with your real support email before launch.
-const SUPPORT_EMAIL = "support@[yourdomain].com";
+const SUPPORT_EMAIL = "wardroptravis@gmail.com";
 
 export default function SupportPage() {
   return (
