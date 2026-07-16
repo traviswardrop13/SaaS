@@ -237,6 +237,18 @@ ok("proof strip: named SLP credential above the plans",
   /Rachel/.test(t.proof) && /speech-language pathologist/.test(t.proof));
 ok("annual card names the literal first-charge date",
   /first charge/i.test(t.math) && /(January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2}/.test(t.math) && /Cancel anytime/i.test(t.math));
+// founding plan stays hidden without an offer link…
+t = await page.evaluate(() => document.getElementById("planFounding").style.display);
+ok("founding plan hidden for plain trial cohort", t !== "block");
+// …and appears (with the $39.99 lock story) after arriving via ?offer=founding50
+await page.goto("http://localhost:8131/subscribe.html?offer=founding50"); await page.waitForTimeout(700);
+t = await page.evaluate(() => ({
+  shown: document.getElementById("planFounding").style.display,
+  txt: document.getElementById("planFounding").textContent,
+  stored: localStorage.getItem("sona.offer.v1"),
+}));
+ok("offer link reveals the founding card ($39.99, rate-lock, charged today)",
+  t.shown === "block" && /39\.99/.test(t.txt) && /never rises/.test(t.txt) && /Charged today/.test(t.txt) && t.stored === "FOUNDING50");
 // founding family keeps the free story
 await page.evaluate(() => { const p = JSON.parse(localStorage.getItem("sona.profile.v1")); p.earlyAdopter = true; localStorage.setItem("sona.profile.v1", JSON.stringify(p)); });
 await page.goto("http://localhost:8131/subscribe.html"); await page.waitForTimeout(700);
