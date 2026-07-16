@@ -181,6 +181,7 @@
         <div id="chestStk">⭐</div>
         <h2 id="chestName">Sticker!</h2>
         <button class="btn" id="chestClaim">Put it in my sticker book!</button>
+        <p id="chestTmw" style="font-weight:800;font-size:13px;color:var(--muted);margin-top:10px;line-height:1.45;">Come back tomorrow — Echo will have a new adventure ready!</p>
       </div>
     </div>
   </div>
@@ -812,6 +813,9 @@
         $("chestStk").textContent=stk?stk.e:"⭐";
         $("chestName").textContent=stk?("You found the "+stk.name+" sticker!"):"Superstar!";
         $("chestReveal").style.display="block";
+        // the tomorrow-hook, in Echo's voice at the day's peak moment (the one
+        // safe streak borrowing: forward pull, no breakable number)
+        try{ say("You did all of today's practice! Come back tomorrow — I'll have a new adventure ready!"); }catch(e){}
       };
       $("chestClaim").onclick=function(){ $("chestOvl").classList.remove("show"); next(); };
     }

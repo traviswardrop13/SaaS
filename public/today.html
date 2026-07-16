@@ -202,7 +202,9 @@
     $("hiName").textContent="Hi"+(P.childName?", "+P.childName:"")+"!";
     $("subLine").textContent="Let's practice your "+((S&&S.soundLabel)?S.soundLabel(sound):sound)+" sound";
     try{ var _tr=(S&&S.todayRing)?S.todayRing():null;
-      if(_tr&&_tr.done) $("subLine").textContent="Daily goal done ✓ — free play!";
+      // tomorrow-hook (the one safe streak borrowing): the completed state
+      // points forward, never at a breakable number
+      if(_tr&&_tr.done) $("subLine").textContent="All done today ★ — Echo has a new adventure tomorrow! Free play's open.";
       else if(_tr&&_tr.n>0) $("subLine").textContent=(_tr.goal-_tr.n)+" more round"+((_tr.goal-_tr.n)===1?"":"s")+" to finish today's goal!";
     }catch(e){}
 

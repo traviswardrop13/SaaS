@@ -96,7 +96,7 @@ t = await page.evaluate(() => ({
   sub: document.getElementById("subLine").textContent,
 }));
 ok("ring shows the gold star", t.ring === "★" && t.stroke === "#ffb300");
-ok("subLine celebrates the goal", /Daily goal done/.test(t.sub));
+ok("subLine celebrates the goal with the tomorrow-hook", /All done today/.test(t.sub) && /tomorrow/.test(t.sub));
 await page.screenshot({ path: OUT + "/prog-ring-done.png" });
 
 // ── bonus rounds practice the NEXT letter from isolation ──
@@ -156,6 +156,16 @@ await page.evaluate(() => localStorage.setItem("sona.today.v1", JSON.stringify({
 await page.goto("http://localhost:8131/today.html"); await page.waitForTimeout(600);
 t = await page.evaluate(() => ({ ring: document.getElementById("ringTxt").textContent, api: Sona.todayRing() }));
 ok("stale day → ring reads 0/5", t.ring === "0/5" && t.api.n === 0 && !t.api.done);
+
+// ── done state carries the tomorrow-hook (forward pull, no breakable number) ──
+await page.evaluate(() => {
+  const d = new Date(); const iso = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  localStorage.setItem("sona.today.v1", JSON.stringify({ d: iso, n: 5 }));
+});
+await page.goto("http://localhost:8131/today.html"); await page.waitForTimeout(600);
+t = await page.evaluate(() => ({ sub: document.getElementById("subLine").textContent, star: document.getElementById("ringTxt").textContent }));
+ok("ring done → tomorrow-hook line + star", /tomorrow/.test(t.sub) && t.star === "★");
+await page.evaluate(() => localStorage.removeItem("sona.today.v1"));
 
 // ── comeback greeting: 3+ idle days → numberless "Echo missed you", once/day ──
 await page.evaluate(() => {
