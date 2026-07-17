@@ -1,7 +1,7 @@
 /* Warm brand neutrals — the parent surfaces (settings/progress) share the
    kid app's cream/ink language now; blue stays as a secondary accent. */
 :root{
-  --blue:#2a9df4; --blue-d:#1480e0; --orange:#ff8a3d; --orange-d:#ef6f23;
+  --blue:#1cb0f6; --blue-d:#1597d4; --orange:#ff8a3d; --orange-d:#ef6f23;
   --ink:#4a2c14; --muted:#8a6f52; --line:#f0e4d2; --card:#ffffff;
   --bg1:#fffdf8; --bg2:#fff2df; --good:#58cc02;
 }

@@ -852,7 +852,7 @@
     cv.width = innerWidth; cv.height = innerHeight;
     document.body.appendChild(cv);
     const ctx = cv.getContext("2d");
-    const colors = opts.colors || ["#2a9df4", "#ff8a3d", "#22c55e", "#ffd33d", "#ef6f23", "#1480e0"];
+    const colors = opts.colors || ["#1cb0f6", "#ff8a3d", "#22c55e", "#ffd33d", "#ef6f23", "#1480e0"];
     const n = opts.count || 130, P = [];
     for (let i = 0; i < n; i++) P.push({ x: Math.random() * cv.width, y: -20 - Math.random() * cv.height * 0.4, r: 4 + Math.random() * 7, c: colors[i % colors.length], vx: (Math.random() - 0.5) * 3, vy: 2 + Math.random() * 4.5, rot: Math.random() * 6, vr: (Math.random() - 0.5) * 0.35 });
     let last = performance.now(), tEnd = last + (opts.duration || 2600);
