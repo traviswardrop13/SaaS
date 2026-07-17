@@ -60,10 +60,17 @@
     @keyframes starDrop{0%{transform:translateY(-64px) scale(.4);opacity:0}70%{transform:translateY(6px) scale(1.08);opacity:1}100%{transform:translateY(0) scale(1);opacity:1}}
     .ovl h2{font-family:"Baloo 2";font-weight:800;font-size:24px;color:var(--ink);line-height:1.18;background:#fff;border-radius:18px;padding:12px 18px;box-shadow:0 6px 16px rgba(74,44,20,.12);}
     .ovl p{color:var(--muted);font-weight:800;font-size:14.5px;max-width:270px;}
-    .echoWin{position:relative;width:100%;height:96px;overflow:hidden;pointer-events:none;}
+    .echoWin{position:relative;width:100%;height:116px;overflow:hidden;pointer-events:none;}
     .echoWin img{position:absolute;left:50%;bottom:-40px;width:118px;margin-left:-59px;animation:echoLeap .5s cubic-bezier(.3,1.4,.5,1) both,echoHop 1.5s ease-in-out .6s infinite;}
     @keyframes echoLeap{0%{transform:translateY(110px)}100%{transform:translateY(0)}}
     @keyframes echoHop{0%,100%{transform:translateY(0)}45%{transform:translateY(-14px) rotate(-5deg)}}
+    /* the ukulele concert: Echo strums, notes float — music comes from real
+       synthesized string plucks (Karplus-Strong), scheduled in playUke() */
+    .uke{position:absolute;left:50%;bottom:6px;margin-left:-6px;font-size:44px;transform-origin:20% 80%;animation:strum .3s ease-in-out infinite alternate;filter:drop-shadow(0 4px 6px rgba(30,22,50,.25));}
+    @keyframes strum{0%{transform:rotate(-26deg)}100%{transform:rotate(-14deg)}}
+    .note{position:absolute;bottom:18px;font-size:20px;opacity:0;animation:noteUp 1.6s ease-out infinite;pointer-events:none;}
+    @keyframes noteUp{0%{opacity:0;transform:translateY(0) scale(.7) rotate(0deg)}20%{opacity:1}100%{opacity:0;transform:translateY(-86px) scale(1.15) rotate(14deg)}}
+    @media (prefers-reduced-motion: reduce){ .uke,.note{animation:none;} .note{opacity:.7;} }
     .btn{border:none;border-radius:20px;padding:15px 30px;font-family:"Baloo 2";font-weight:800;font-size:17px;text-transform:uppercase;letter-spacing:.04em;color:#fff;background:linear-gradient(180deg,#6edd18,#58cc02);box-shadow:0 6px 0 #46a302;cursor:pointer;width:100%;margin-top:4px;}
     .btn:active{transform:translateY(4px);box-shadow:0 2px 0 #46a302;}
     .ghost{background:none;border:none;box-shadow:none;color:var(--muted);font-family:"Baloo 2";font-weight:800;font-size:13.5px;cursor:pointer;padding:8px;}
@@ -98,7 +105,13 @@
       <div class="big endStar">🍎</div>
       <h2 id="endTitle">Yum! You fed Echo!</h2>
       <p id="endSub"></p>
-      <div class="echoWin"><img src="/coach/echo/echo-celebrate.svg" alt="" /></div>
+      <div class="echoWin" id="concert">
+        <img src="/coach/echo/echo-celebrate.svg" alt="" />
+        <span class="uke" aria-hidden>🪕</span>
+        <span class="note" style="left:22%;animation-delay:0s;">🎵</span>
+        <span class="note" style="left:70%;animation-delay:.5s;">🎶</span>
+        <span class="note" style="left:44%;animation-delay:1s;">🎵</span>
+      </div>
       <button class="btn" id="again">Play again</button>
       <button class="ghost" id="goHome">Back home</button>
     </div>
@@ -117,8 +130,11 @@
     var FEEDKEY="sona.feed.v1";
     function feedState(){ try{ return JSON.parse(localStorage.getItem(FEEDKEY)||"{}"); }catch(e){ return {}; } }
     function feedSave(s){ try{ localStorage.setItem(FEEDKEY,JSON.stringify(s)); }catch(e){} }
-    function echoScale(){ var f=feedState().fed||0; return 1+Math.min(f,80)*0.004; } // caps ~1.32×
-    function paintScale(){ var sc=echoScale(); var e=$("echo"); e.style.setProperty("--sc",sc); e.style.transform="scale("+sc+")"; }
+    function echoScale(){ var f=feedState().fed||0; return 1+Math.min(f,80)*0.004; } // lifetime base, caps ~1.32×
+    // every bite VISIBLY grows Echo within the round (+7% each) on top of the
+    // slow lifetime growth — balloon now, keep a little forever
+    var roundBump=0;
+    function paintScale(){ var sc=echoScale()*(1+roundBump); var e=$("echo"); e.style.setProperty("--sc",sc); e.style.transform="scale("+sc+")"; }
 
     // ── words: target from the CURRENT rotation sound (coherent with the
     // plan); distractors from other sounds with different first letters ──
@@ -218,6 +234,7 @@
         return; // no fail state, no strikes — littles just try again
       }
       turnLive=false; fed++;
+      roundBump=fed*0.07;
       var f=feedState(); f.fed=(f.fed||0)+1; feedSave(f);
       btn.classList.add("right"); sfx("correct");
       var e=$("echo"); e.classList.remove("munch"); void e.offsetWidth; e.classList.add("munch");
@@ -229,6 +246,39 @@
       if(fed>=NEED){ setTimeout(finish,900); } else { setTimeout(nextTurn,900); }
     }
     function toast(t){ var el=$("toast"); el.textContent=t; el.classList.add("show"); clearTimeout(toast._t); toast._t=setTimeout(function(){ el.classList.remove("show"); },1800); }
+
+    // ── Echo's ukulele: real plucked strings (Karplus-Strong), no assets.
+    // A celebration jingle, not background music: one pass (~4s), volume from
+    // the profile, silent when sounds are off, stopped when the overlay closes.
+    var ukeNodes=[];
+    function pluck(ctx,dest,freq,when,vel){
+      var sr=ctx.sampleRate, N=Math.round(sr/freq), len=Math.round(sr*0.9);
+      var buf=ctx.createBuffer(1,len,sr), ch=buf.getChannelData(0);
+      for(var i=0;i<N;i++) ch[i]=Math.random()*2-1;           // the pluck burst
+      for(var n=N;n<len;n++) ch[n]=0.996*0.5*(ch[n-N]+ch[n-N+1]); // string decay
+      var s=ctx.createBufferSource(); s.buffer=buf;
+      var g=ctx.createGain(); g.gain.setValueAtTime(vel,when); g.gain.exponentialRampToValueAtTime(0.001,when+0.85);
+      s.connect(g); g.connect(dest); s.start(when); ukeNodes.push(s);
+    }
+    function playUke(){
+      try{
+        if(profile.soundOn===false) return;
+        var ctx=getCtx(), t=ctx.currentTime+0.15;
+        var master=ctx.createGain(); master.gain.value=Math.min(0.5,(profile.volume!=null?profile.volume:0.8)*0.55); master.connect(ctx.destination);
+        // ukulele voicings (G4-C4-E4-A4 strings): C, F, G7, C — the campfire cadence
+        var CH={ C:[392,261.6,329.6,523.3], F:[349.2,261.6,349.2,440], G:[392,293.7,392,493.9] };
+        var pat=[CH.C,CH.C,CH.F,CH.F,CH.G,CH.G,CH.C];
+        pat.forEach(function(chord,i){
+          var when=t+i*0.42, up=(i%2===1);
+          chord=up?chord.slice().reverse():chord;              // down-up strum feel
+          chord.forEach(function(fq,k){ pluck(ctx,master,fq,when+k*0.022,up?0.5:0.7); });
+        });
+        // the last chord rings with a little flourish arpeggio
+        [523.3,659.3,784].forEach(function(fq,k){ pluck(ctx,master,fq,t+7*0.42+0.25+k*0.09,0.55); });
+        window.__ukePlayed=true;
+      }catch(e){}
+    }
+    function stopUke(){ try{ ukeNodes.forEach(function(n){ try{n.stop();}catch(e){} }); ukeNodes=[]; }catch(e){} }
 
     function finish(){
       // a finished round advances the rotation + ring (real taps + real words —
@@ -242,17 +292,19 @@
       }catch(e){}
       var stk=null; try{ stk=(S&&S.awardNextSticker)?S.awardNextSticker():null; }catch(e){}
       try{ if(S&&S.confetti)S.confetti({count:140}); }catch(e){}
-      $("endTitle").textContent=ringDone?"All of today's practice — done!":"Yum! You fed Echo 5 treats!";
+      $("endTitle").textContent=ringDone?"All of today's practice — done!":"Yum! Echo's full — concert time!";
       $("endSub").textContent=(stk?("You won the "+stk.name+" sticker! "):"")+(stars>0?("Echo heard you "+stars+" time"+(stars===1?"":"s")+"! ⭐ "):"")+(ringDone?"Come back tomorrow — Echo will have a new adventure ready!":"Echo's growing bigger every day you play!");
       $("endOvl").classList.add("show");
       sfx("complete");
-      if(ringDone){ say("You did all of today's practice! Come back tomorrow — I'll have a new adventure ready!"); }
-      else { say("Yum yum! Thank you!"); }
+      // the payoff: Echo's ukulele concert. On a goal-done day the tomorrow
+      // line speaks first, then the strumming; otherwise music leads.
+      if(ringDone){ say("You did all of today's practice! Come back tomorrow — I'll have a new adventure ready!").then(playUke); }
+      else { playUke(); }
     }
 
-    $("again").onclick=function(){ fed=0; stars=0; $("fedPill").textContent="🍎 0/5"; $("endOvl").classList.remove("show"); sfx("tap"); nextTurn(); };
-    $("goHome").onclick=function(){ location.href="/today.html"; };
-    $("close").onclick=function(){ location.href="/today.html"; };
+    $("again").onclick=function(){ stopUke(); fed=0; stars=0; roundBump=0; paintScale(); $("fedPill").textContent="🍎 0/5"; $("endOvl").classList.remove("show"); sfx("tap"); nextTurn(); };
+    $("goHome").onclick=function(){ stopUke(); location.href="/today.html"; };
+    $("close").onclick=function(){ stopUke(); location.href="/today.html"; };
 
     paintScale();
     nextTurn();

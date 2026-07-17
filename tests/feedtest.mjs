@@ -68,7 +68,18 @@ if (wrongIdx >= 0) {
   ok("wrong tap never fails the round", /0\/5/.test(t.fed) && t.cardsLeft >= 2 && /Almost/.test(t.hint));
 }
 
-// ── feed 5 times by always tapping the asked card ──
+// ── every bite VISIBLY grows Echo within the round ──
+const scaleBefore = await page.evaluate(() => parseFloat((document.getElementById("echo").style.transform.match(/scale\(([\d.]+)\)/) || [])[1] || "1"));
+await page.evaluate(() => {
+  const m = document.getElementById("bubble").textContent.match(/Where's the (.+)\?/);
+  const hit = [...document.querySelectorAll("#grid .cardBtn")].find((x) => x.querySelector(".w").textContent === m[1]);
+  if (hit) hit.click();
+});
+await page.waitForTimeout(400);
+const scaleAfter = await page.evaluate(() => parseFloat((document.getElementById("echo").style.transform.match(/scale\(([\d.]+)\)/) || [])[1] || "1"));
+ok("Echo grows with the bite (visible, not just banked)", scaleAfter > scaleBefore + 0.04, scaleBefore + " → " + scaleAfter);
+
+// ── feed the rest by always tapping the asked card ──
 for (let i = 0; i < 5; i++) {
   await page.waitForTimeout(1100);
   const done = await page.evaluate(() => {
@@ -92,6 +103,22 @@ t = await page.evaluate(() => ({
   stickers: Object.keys(window.Sona.stickersEarned ? window.Sona.stickersEarned() : {}).length,
 }));
 ok("5 feeds finish the round", t.end);
+// ── the ukulele concert: strumming Echo + floating notes + real plucks fired ──
+t = await page.evaluate(() => ({
+  uke: !!document.querySelector("#concert .uke"),
+  notes: document.querySelectorAll("#concert .note").length,
+  played: window.__ukePlayed === true,
+}));
+ok("concert scene: Echo strums with floating notes", t.uke && t.notes >= 2);
+ok("the ukulele actually plays (plucks scheduled)", t.played);
+t = await page.evaluate(() => ({
+  end: document.getElementById("endOvl").classList.contains("show"),
+  endSub: document.getElementById("endSub").textContent,
+  fedStore: JSON.parse(localStorage.getItem("sona.feed.v1") || "{}").fed || 0,
+  rot: window.Sona.rotRound(),
+  ring: window.Sona.todayRing().n,
+  stickers: Object.keys(window.Sona.stickersEarned ? window.Sona.stickersEarned() : {}).length,
+}));
 ok("growth persisted (5 feeds banked)", t.fedStore === 5, "fed=" + t.fedStore);
 ok("round advances the rotation + ring", t.rot >= 1 && t.ring >= 1, "rot=" + t.rot + " ring=" + t.ring);
 ok("a sticker landed", t.stickers >= 1);
