@@ -301,9 +301,11 @@
       var ask;
       if(ITEM.level==="isolation") ask="make your "+soundName()+" sound";
       else ask="say "+(ITEM.display||ITEM.t);
-      // first prompt carries the mouth cue inline; repeats stay minimal
-      if(!sayLine._cued && CUESHORT && ITEM.level==="isolation"){ sayLine._cued=true; return "Ready? "+CUESHORT+", and "+ask+", "+times+". Go!"; }
-      return "Ready? "+ask.charAt(0).toUpperCase()+ask.slice(1)+", "+times+". Go!";
+      // first prompt carries the mouth cue inline; repeats stay minimal.
+      // Ellipses are pacing: TTS sprints through comma-chained commands, and
+      // "…" makes it breathe ("Say soh... five times... Go!").
+      if(!sayLine._cued && CUESHORT && ITEM.level==="isolation"){ sayLine._cued=true; return "Ready? "+CUESHORT+", and "+ask+"... "+times+"... Go!"; }
+      return "Ready? "+ask.charAt(0).toUpperCase()+ask.slice(1)+"... "+times+"... Go!";
     }
     // Prefer a real human recording of the whole prompt (Rachel!) if present.
     var CUETIP=""; try{ CUETIP=(S&&S.cue)?(S.cue(SOUND).tip||""):""; }catch(e){}
@@ -353,7 +355,7 @@
       window.speechSynthesis.speak(u);
     }catch(e){ res(); } }); }
     function say(t){ return new Promise(function(res){ if(!t||profile.voiceOn===false)return res(); if(speaking)return res(); speaking=true;
-      var key=(profile.voiceId||"echo")+"|v5|"+t; // v5: v2 delivery restored — devices that cached v3 clips regenerate
+      var key=(profile.voiceId||"echo")+"|v6|"+t; // v6: calmer pacing — every device regenerates its cached clips
       ttsGet(key).then(function(cached){
         if(cached) return playPCM(new Uint8Array(cached)).then(function(){ return true; });
         return fetch("/api/tts",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text:t,voice:profile.voiceId||"",stable:true})})
@@ -387,7 +389,7 @@
       }catch(e){ fin(); }
     }); }
     function saySlow(t){ return new Promise(function(res){ if(!t||profile.voiceOn===false)return res(); if(speaking)return res(); speaking=true;
-      var key=(profile.voiceId||"echo")+"|v5|"+t; // same cache as say() — repeat plays are instant and free
+      var key=(profile.voiceId||"echo")+"|v6|"+t; // same cache as say() — repeat plays are instant and free
       ttsGet(key).then(function(cached){
         if(cached) return playSlowClip(new Uint8Array(cached));
         return fetch("/api/tts",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text:t,voice:profile.voiceId||"",stable:true})})

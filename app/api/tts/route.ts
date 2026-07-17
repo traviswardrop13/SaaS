@@ -83,8 +83,10 @@ export async function POST(req: NextRequest) {
       const voiceId =
         voiceOverride || process.env.ELEVENLABS_VOICE_ID || "qBDvhofpxp92JgXJxDjB"; // the app's kid coach voice — matches the profile default every page sends.
 
-      // Serve a cached clip instantly (short, repeated prompts only — never long/unique story text).
-      const cacheKey = `el|${voiceId}|${text}`;
+      // Serve a cached clip instantly (short, repeated prompts only — never
+      // long/unique story text). The `el2|` epoch busts clips rendered with
+      // the old rushed settings.
+      const cacheKey = `el2|${voiceId}|${text}`;
       const cacheable = text.length <= 120;
       if (cacheable) { const hit = cacheGet(cacheKey); if (hit) return new NextResponse(hit.slice(0), { status: 200, headers: PCM_HEADERS }); }
 
@@ -104,10 +106,13 @@ export async function POST(req: NextRequest) {
         {
           model: fallbackModel,
           settings: {
-            stability: 0.5,         // mid = real intonation (0.78 was the "robot" — flat by design)
+            stability: 0.55,        // calm-mid intonation (0.78 was the "robot" — flat by design)
             similarity_boost: 0.85, // stay close to the voice's natural sample
-            style: 0.4,             // enough style for rises/falls without getting theatrical
-            speed: 1.0,             // natural pace — 0.87 smeared the rhythm into a drone
+            style: 0.3,             // a little less pep — 0.4 rushed the short command lines
+            // Field report: "Ready? Say X five times. Go!" sounded fast-forwarded.
+            // 0.93 = gently unhurried without the 0.87 drone. Tunable live via
+            // ELEVENLABS_SPEED (0.85–1.05) — no deploy needed to adjust.
+            speed: Math.min(1.05, Math.max(0.85, parseFloat(process.env.ELEVENLABS_SPEED || "") || 0.93)),
             use_speaker_boost: true,
           },
         },
