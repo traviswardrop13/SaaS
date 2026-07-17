@@ -291,29 +291,39 @@ function Pricing() {
         <SectionHead
           kicker="Founding offer"
           title="Become a founding family"
-          sub="Sona is live. Join now to lock in 67% off for life — for the first 100 founding families."
+          sub="Sona is brand new, built in public. The first 50 founding families lock the founding rate — and steer what we build next."
         />
         <div className="mx-auto mt-12 max-w-md">
           <PlanCard
-            name="Founding Member"
-            badge="First 100 families"
-            was="$119.99"
+            name="Founding Family"
+            badge="First 50 families"
+            was="$69.99"
             price="$39.99"
             priceSuffix="/yr"
-            coupon="67% off"
-            yearly="Founding price · billed yearly · cancel anytime"
-            blurb="Lock in 67% off for life and start playing today."
+            coupon="43% off"
+            yearly="Founding rate · billed yearly · cancel anytime"
+            blurb="Locked while you stay — when the price is $69.99, yours never rises."
             highlight
             features={[
-              "Founding access to every level as it unlocks",
-              "Founding price — 67% off, locked for life",
+              "Everything in Sona — every game, the Sound Check, the weekly plan",
+              "Founding rate locked forever while you're subscribed",
               "Every new feature and update as it ships",
               "Your suggestions shape Sona for your child",
-              "Priority support",
+              "A direct line to the founders — we answer every email",
             ]}
-            cta="Start 7 days free"
-            href="/onboarding.html"
+            cta="Claim a founding spot"
+            href="/onboarding.html?offer=founding50"
           />
+        </div>
+        <div className="mx-auto mt-8 max-w-xl rounded-2xl bg-white p-5 text-left shadow-sm">
+          <p className="text-sm leading-relaxed text-gray-600">
+            &ldquo;Sona is two people: me, and my wife Rachel — a licensed
+            pediatric speech-language pathologist. There&apos;s no growth team
+            and no countdown timers. The 50-family limit is real: it&apos;s how
+            many we can listen to properly while we build. Prefer to try first?
+            The 7-day free trial is right below.&rdquo;
+          </p>
+          <p className="mt-2 text-sm font-bold text-gray-900">— Travis, Sona co-founder</p>
         </div>
         <p className="mx-auto mt-8 max-w-xl text-center text-sm text-gray-500">
           Designed with a licensed speech-language pathologist. Sona supports
@@ -459,7 +469,7 @@ function FAQ() {
     },
     {
       q: "How does the founding price work?",
-      a: "Sona is $69.99/yr (that's $5.83/month, billed yearly — 7 days free first) or $12.99/mo, cancel anytime. Families referred by their speech-language pathologist get free access while we build together.",
+      a: "Sona is $69.99/yr (that's $5.83/month, billed yearly — 7 days free first) or $12.99/mo, cancel anytime. The first 50 founding families lock $39.99/yr instead — that rate never rises while you stay subscribed. And families referred by their speech-language pathologist get free access while we build together.",
     },
   ];
   return (

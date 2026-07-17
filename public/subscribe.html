@@ -57,6 +57,14 @@
     .tli p{font-weight:700;font-size:13.5px;color:var(--muted);margin-top:3px;line-height:1.45;}
 
     /* ── plan picker (trial cohort) ── */
+    /* proof strip: the named-SLP credential ABOVE the plans — the strongest
+       paywall trust lever in the Mobbin teardown (Flo leads with proof; ours
+       is a real credentialed person, which the whole competitive set lacks). */
+    .proof{display:flex;align-items:flex-start;gap:10px;background:linear-gradient(160deg,#eafaf0,#d6f3e2);
+      border-radius:14px;padding:11px 14px;margin-top:12px;font-weight:700;font-size:13px;color:var(--ink);line-height:1.5;}
+    .proof .pem{font-size:19px;flex:none;line-height:1.2;}
+    .reassure{display:block;margin-top:9px;font-weight:700;font-size:12.5px;color:var(--muted);line-height:1.45;}
+    .plan .reassure b{display:inline;font-family:inherit;font-size:inherit;color:var(--ink);} /* outranks .plan b's display:block — the date stays inline */
     .plan{position:relative;border:2px solid var(--line);border-radius:18px;padding:16px;margin-top:12px;cursor:pointer;background:#fff;}
     .plan.best{border-color:var(--orange);box-shadow:0 6px 18px rgba(255,138,61,.15);}
     .plan .tag{position:absolute;top:-11px;left:14px;background:linear-gradient(180deg,#ffe063,#ffd21c);color:#7a5200;font-family:"Baloo 2";font-weight:800;font-size:11px;letter-spacing:.06em;padding:3px 10px;border-radius:99px;}
@@ -101,12 +109,24 @@
 
     <div class="card" id="pickCard" style="display:none;">
       <h2>Pick your plan</h2>
-      <p class="muted" style="font-size:13.5px;font-weight:700;">Both include everything — every game, the Sound Check, the weekly plan, the progress report.</p>
+      <div class="proof">
+        <span class="pem">🎓</span>
+        <span><b>Built with Rachel — licensed pediatric speech-language pathologist</b> &amp; Sona co-founder. Real speech practice, disguised as games kids ask to play.</span>
+      </div>
+      <p class="muted" style="font-size:13.5px;font-weight:700;">Every plan includes everything — every game, the Sound Check, the weekly plan, the progress report.</p>
+      <div class="plan" id="planFounding" style="display:none;border-color:var(--good);box-shadow:0 6px 18px rgba(88,204,2,.15);">
+        <span class="tag" style="background:linear-gradient(180deg,#8ae05c,#58cc02);color:#0e4d00;">FOUNDING · FIRST 50 FAMILIES</span>
+        <b>Founding — $39.99/yr</b>
+        <span class="sub">43% off the yearly price, locked while you stay — when Sona costs $69.99, your rate never rises.</span>
+        <button class="btn go" id="buyFounding" style="background:linear-gradient(180deg,#8ae05c,#58cc02);box-shadow:0 4px 0 #46a302;">Claim a founding spot</button>
+        <span class="reassure">Charged today — <b>$39.99</b> for the whole year. Cancel anytime, rate stays yours while subscribed.</span>
+      </div>
       <div class="plan best" id="planAnnual">
         <span class="tag">BEST VALUE · 7 DAYS FREE</span>
         <b>Yearly — $69.99/yr</b>
-        <span class="sub">$5.83/month, billed yearly — save 55% vs monthly. Try free for 7 days, cancel anytime before it starts.</span>
+        <span class="sub">$5.83/month, billed yearly — save 55% vs monthly.</span>
         <button class="btn go" id="buyAnnual">Start 7 days free</button>
+        <span class="reassure" id="trialMath">No charge today — cancel anytime during your free week.</span>
       </div>
       <div class="plan" id="planMonthly">
         <b>Monthly — $12.99/mo</b>
@@ -190,6 +210,16 @@
         if (!subbed && !founding) {
           document.getElementById("pickCard").style.display = "block";
           var fc = document.getElementById("foundingCard"); if (fc) fc.style.display = "none";
+          // the header line must match the picker, not the founding story
+          document.getElementById("planLine").innerHTML = "Today: <b>7 days free</b> — pick a plan below to start.";
+          // Founding-offer arrivals (landing "Claim a founding spot" link) see
+          // the real founding card. Honest scarcity: the 50-count is enforced
+          // by retiring the link, never by a countdown clock.
+          try {
+            if (Sona.offerCode && /^FOUNDING/.test(Sona.offerCode())) {
+              document.getElementById("planFounding").style.display = "block";
+            }
+          } catch (e) {}
         }
       } catch (e) {}
       function buy(plan, value) {
@@ -202,9 +232,19 @@
           .then(function (j) { if (j && j.ok && j.url) { location.href = j.url; } else { msg.textContent = (j && j.error) || "Checkout couldn't open — try again in a minute."; } })
           .catch(function () { msg.textContent = "Checkout couldn't open — are you online?"; });
       }
-      var a = document.getElementById("buyAnnual"), m = document.getElementById("buyMonthly");
+      var a = document.getElementById("buyAnnual"), m = document.getElementById("buyMonthly"), f = document.getElementById("buyFounding");
       if (a) a.onclick = function () { buy("annual", 69.99); };
       if (m) m.onclick = function () { buy("monthly", 12.99); };
+      if (f) f.onclick = function () { buy("founding", 39.99); };
+      // The exact-date pill (Nibble/Headway pattern): a trial started today ends
+      // on a knowable date — naming the date beats "after 7 days" for trust, and
+      // the success page repeats the same date off the real subscription.
+      try {
+        var d = new Date(Date.now() + 7 * 86400000);
+        var t = d.toLocaleDateString("en-US", { month: "long", day: "numeric" });
+        document.getElementById("trialMath").innerHTML =
+          "No charge today — first charge <b>" + t + "</b>, only if you keep Sona. Cancel anytime before then.";
+      } catch (e) {}
     })();
 
     // Plan line: reflect an active subscription if one was restored on this device.

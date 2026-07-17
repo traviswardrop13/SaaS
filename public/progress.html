@@ -301,7 +301,8 @@
 
     <div class="card">
       <h1 id="title">Progress</h1>
-      <p class="muted">A snapshot of practice on this device — ready to share with your child's SLP.</p>
+      <p id="storyLine" style="margin-top:8px;font-weight:800;font-size:15px;color:var(--ink);line-height:1.5;"></p>
+      <p class="muted" style="margin-top:8px;">A practice snapshot, not a clinical assessment — made to share with your child's SLP. Everything here stays on this device.</p>
       <p class="muted" style="margin-top:9px;font-size:12.5px;font-weight:800;display:flex;align-items:center;gap:8px;"><img src="/coach/echo/echo-avatar.svg" alt="" style="width:22px;height:22px;flex:none;" /> Built with Rachel — licensed speech-language pathologist &amp; Sona co-founder</p>
       <button class="btn ghost noprint" id="share" style="margin-top:14px;width:auto;padding:12px 20px;">📤&nbsp;&nbsp;Share / Print</button>
     </div>
@@ -358,8 +359,18 @@
       </div>
     </div>
 
+    <!-- review pre-gate (Bear template): parent surface only, shown after real
+         value, happy → App Store, unhappy → a private line. Never incentivized. -->
+    <div class="card noprint" id="rateCard" style="display:none;position:relative;">
+      <button id="rateX" aria-label="Close" style="position:absolute;top:12px;right:12px;width:32px;height:32px;border:none;border-radius:50%;background:#f1f5fa;color:var(--muted);font-weight:800;font-size:14px;cursor:pointer;">✕</button>
+      <h2>A quick favor? 💛</h2>
+      <p class="muted" style="margin-top:6px;">Parent to parent: if Sona's helping, a review helps other families find us. If something's off, tell us first — we fix fast.</p>
+      <a id="rateYes" class="btn" style="margin-top:12px;display:block;text-align:center;text-decoration:none;" href="https://apps.apple.com/app/id6785755867?action=write-review" target="_blank" rel="noopener">Rate Sona ⭐⭐⭐⭐⭐</a>
+      <a id="rateNo" style="display:block;text-align:center;margin-top:10px;font-weight:800;font-size:13.5px;color:var(--muted);" href="mailto:wardroptravis@gmail.com?subject=Sona%20—%20could%20be%20better">Could be better — tell Travis first</a>
+    </div>
+
     <div class="card">
-      <h2>Listen to their progress 🎧</h2>
+      <a id="listenCard"></a><h2>Listen to their progress 🎧</h2>
       <p class="muted" style="font-size:13px;font-weight:700;">Real recordings from practice — play their first try next to their latest and hear the difference.</p>
       <div id="recList" style="margin-top:10px;"></div>
     </div>
@@ -407,6 +418,57 @@
     document.getElementById("sWords").textContent = g.totals.words || 0;
     document.getElementById("sStars").textContent = g.totals.stars || 0;
     document.getElementById("share").onclick = function () { window.print(); };
+
+    // ── the narrative hero (Oura's rule: never open with a naked stat) ──────
+    // One plain-English sentence a parent can repeat, built from this week's
+    // real reps, pointing at the week's most-practiced sound and the clips.
+    (function () {
+      var el = document.getElementById("storyLine"); if (!el) return;
+      try {
+        var nm = name || "Your child";
+        var out = (Sona.outcomes ? Sona.outcomes() : {}) || {};
+        var now = new Date(), dow = (now.getDay() + 6) % 7;
+        var mon = new Date(now); mon.setDate(now.getDate() - dow); mon.setHours(0, 0, 0, 0);
+        var best = null, tot = 0;
+        Object.keys(out).forEach(function (s) {
+          var days = (out[s] && out[s].days) || {}, n = 0;
+          Object.keys(days).forEach(function (d) {
+            var t = new Date(d + "T12:00:00");
+            if (t >= mon) n += (days[d] && days[d].a) || 0;
+          });
+          tot += n;
+          if (n > 0 && (!best || n > best.n)) best = { s: s, n: n };
+        });
+        if (tot > 0 && best) {
+          var lbl = Sona.soundLabel ? Sona.soundLabel(best.s) : best.s;
+          var extra = tot > best.n ? " — " + tot + " reps in all" : "";
+          el.innerHTML = "<b>" + nm + " practiced the " + lbl + " sound " + best.n +
+            " time" + (best.n === 1 ? "" : "s") + " this week" + extra + ".</b> " +
+            'Showing up is how sounds change — <a href="#listenCard" style="color:var(--blue-d);">hear it below 🎧</a>';
+        } else {
+          el.innerHTML = "<b>A fresh week is ready.</b> " + nm + "'s next practice adds its first reps to this page.";
+        }
+      } catch (e) { el.style.display = "none"; }
+    })();
+
+    // ── review pre-gate logic: after real value (4+ sessions), quiet for 60
+    // days after any interaction, gone for good once they've rated. The gate
+    // page itself guarantees a child never triggers it. ──
+    (function () {
+      var KEY = "sona.rateask.v1";
+      function st() { try { return JSON.parse(localStorage.getItem(KEY) || "{}"); } catch (e) { return {}; } }
+      function put(s) { try { localStorage.setItem(KEY, JSON.stringify(s)); } catch (e) {} }
+      var card = document.getElementById("rateCard"); if (!card) return;
+      var s = st();
+      var sessions = (g.totals && g.totals.sessions) || 0;
+      var cooling = s.next && Date.now() < s.next;
+      if (s.rated || cooling || sessions < 4) return;
+      card.style.display = "block";
+      function quiet(days) { var s2 = st(); s2.next = Date.now() + days * 86400000; put(s2); card.style.display = "none"; }
+      document.getElementById("rateX").onclick = function () { quiet(60); };
+      document.getElementById("rateNo").onclick = function () { quiet(60); }; // the mailto still opens
+      document.getElementById("rateYes").onclick = function () { var s2 = st(); s2.rated = Date.now(); put(s2); card.style.display = "none"; };
+    })();
 
     // ── last-week baselines under the lifetime tiles ─────────────────────────
     // Whoop-style self-comparison: the only baseline is the family's own last
@@ -536,10 +598,18 @@
     // recordings: group by word, offer first vs latest playback
     (function () {
       var host = document.getElementById("recList");
-      if (!Sona.listRecordings) { host.innerHTML = '<p class="muted">No recordings yet.</p>'; return; }
+      // First-run rescue: an empty list is the format most prone to reading as
+      // "dead" — Echo occupies the space, the copy stays future-tense ("yet"),
+      // and ONE action fills the void (the Collect/Canva empty-state pattern).
+      var EMPTY_REC = '<div style="text-align:center;padding:14px 6px;">'
+        + '<img src="/coach/echo/echo-listening.svg" alt="" style="width:86px;height:86px;object-fit:contain;" onerror="this.style.display=\'none\'" />'
+        + '<p class="muted" style="margin-top:8px;font-weight:800;">No recordings yet — once practice starts, Echo keeps one great try a day so you can hear the change week to week.</p>'
+        + '<a href="/today.html" style="display:inline-block;margin-top:12px;border-radius:14px;padding:12px 22px;font-family:\'Baloo 2\';font-weight:800;font-size:15px;color:#fff;background:linear-gradient(180deg,#ffa05a,#ff8a3d);box-shadow:0 4px 0 #e0762e;text-decoration:none;">Start today\'s practice</a>'
+        + '</div>';
+      if (!Sona.listRecordings) { host.innerHTML = EMPTY_REC; return; }
       Sona.listRecordings(400).then(function (recs) {
         recs = (recs || []).filter(function (r) { return r && r.blob; });
-        if (!recs.length) { host.innerHTML = '<p class="muted">No recordings yet — they appear after practice with the mic.</p>'; return; }
+        if (!recs.length) { host.innerHTML = EMPTY_REC; return; }
         var byWord = {}; // recs are newest-first
         recs.forEach(function (r) {
           var k = r.word || "practice";

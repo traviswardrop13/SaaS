@@ -619,21 +619,32 @@
     return { score: score, best: newBest ? score : (d.best | 0), newBest: newBest };
   }
 
-  // Friendly full-screen blocker when the mic is denied — a kid should never
-  // sit in a silent loop. One shared implementation for every recording page.
+  // Denial-recovery blocker when the mic is denied — a kid should never sit
+  // in a silent loop, and a mic-less Sona is inert. The permission-priming
+  // study found this screen is an industry blind spot (1 of 24 apps designs
+  // the denied state), so: grown-up steps to re-enable + a Try Again that
+  // actually retries. One shared implementation for every recording page.
   function micDenied(opts) {
     opts = opts || {};
     try {
       if (document.getElementById("sonaMicDenied")) return;
+      const native = typeof isNativeApp === "function" && isNativeApp();
       const d = document.createElement("div");
       d.id = "sonaMicDenied";
       d.style.cssText = "position:fixed;inset:0;z-index:9999;background:rgba(255,255,255,.97);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:30px;gap:10px;";
       d.innerHTML =
-        '<img src="/coach/echo/echo-idle.svg" alt="Echo" style="width:110px;height:110px;object-fit:contain;" onerror="this.outerHTML=\'<div style=&quot;font-size:64px&quot;>🦜</div>\'" />' +
-        '<div style="font-family:\'Baloo 2\',sans-serif;font-weight:800;font-size:24px;color:#3c3c3c;">I can’t hear you!</div>' +
-        '<div style="font-family:Nunito,sans-serif;font-weight:700;font-size:15px;color:#777;max-width:300px;">Ask a grown-up to turn on the microphone for Sona in your phone’s settings, then come back!</div>' +
-        '<button style="margin-top:10px;border:none;border-radius:16px;padding:14px 34px;font-family:\'Baloo 2\',sans-serif;font-weight:800;font-size:16px;text-transform:uppercase;color:#fff;background:#1cb0f6;box-shadow:0 5px 0 0 #1597d4;cursor:pointer;">OK</button>';
-      d.querySelector("button").onclick = function () { d.remove(); if (opts.onClose) opts.onClose(); else location.href = opts.back || "/today.html"; };
+        '<img src="/coach/echo/echo-idle.svg" alt="Echo" style="width:100px;height:100px;object-fit:contain;" onerror="this.outerHTML=\'<div style=&quot;font-size:64px&quot;>🦜</div>\'" />' +
+        '<div style="font-family:\'Baloo 2\',sans-serif;font-weight:800;font-size:24px;color:#3c3c3c;">Echo can’t hear you yet!</div>' +
+        '<div style="font-family:Nunito,sans-serif;font-weight:700;font-size:15px;color:#777;max-width:300px;">Ask a grown-up to turn Echo’s ears back on:</div>' +
+        '<div style="text-align:left;background:#fff6e9;border-radius:16px;padding:13px 18px;font-family:Nunito,sans-serif;font-weight:800;font-size:14px;color:#5b4a36;line-height:1.9;max-width:300px;">' +
+          '1. Open the phone’s <b>Settings</b><br/>' +
+          (native ? '2. Find <b>Sona</b><br/>' : '2. Find <b>Safari</b> → <b>Microphone</b><br/>') +
+          '3. Turn the <b>Microphone</b> on' +
+        '</div>' +
+        '<button id="sonaMicRetry" style="margin-top:10px;border:none;border-radius:16px;padding:14px 30px;font-family:\'Baloo 2\',sans-serif;font-weight:800;font-size:16px;text-transform:uppercase;color:#fff;background:#1cb0f6;box-shadow:0 5px 0 0 #1597d4;cursor:pointer;">I turned it on — try again!</button>' +
+        '<button id="sonaMicBack" style="border:none;background:none;font-family:Nunito,sans-serif;font-weight:800;font-size:14px;color:#9fb0c0;cursor:pointer;padding:8px;">Back home</button>';
+      d.querySelector("#sonaMicRetry").onclick = function () { try { location.reload(); } catch (e) {} };
+      d.querySelector("#sonaMicBack").onclick = function () { d.remove(); if (opts.onClose) opts.onClose(); else location.href = opts.back || "/today.html"; };
       document.body.appendChild(d);
     } catch (e) {}
   }
@@ -699,6 +710,17 @@
     if (m) localStorage.setItem("sona.slp", m[1].toUpperCase());
   } catch (e) {}
   function slpCode() { try { return localStorage.getItem("sona.slp") || ""; } catch (e) { return ""; } }
+
+  // ── special-offer links: speaksona.com/…?offer=FOUNDING50 ────────────────
+  // The landing page's founding card links through with an offer code; it
+  // sticks like an SLP code so the paywall can show the founding plan to the
+  // families the offer was actually made to. Honest scarcity only: the count
+  // is enforced by a human retiring the link — never a countdown clock.
+  try {
+    const mo = (typeof location !== "undefined" ? location.search : "").match(/[?&]offer=([A-Za-z0-9_-]{2,24})/);
+    if (mo) localStorage.setItem("sona.offer.v1", mo[1].toUpperCase());
+  } catch (e) {}
+  function offerCode() { try { return localStorage.getItem("sona.offer.v1") || ""; } catch (e) { return ""; } }
 
   // ── parent gate: adults-only pages ─────────────────────────────────────
   // The home screen's grown-ups gate (PIN or math, in today.html) calls
@@ -1475,5 +1497,5 @@
   }
   try { installDebug(); } catch (e) {}
 
-  global.Sona = { pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, weekWins, ALL_SOUNDS, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, ladderContent, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, soundFamily, frameShape, checkSounds, checkItems, gradeSound, saveCheck, lastCheck, checkHistory, checkDue, buildPlan, getPlan, journeyWeek, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, gated, gateVerify, gateOk, requireGate, slpCode, isNativeApp, getTrial, startTrial, ensureTrial, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, LEVEL_GAMES, GAME_DECK, GAMES_PER_LEVEL, levelGames, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, WORLDS, LEVELS_PER_WORLD, campaignLevels, campaignSounds, campaignState, worldById, worldLevels, worldStars, worldCleared, levelStars, setLevelStars, totalStars, worldUnlocked, levelUnlocked, campaignLaunch, campaignResolve, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES };
+  global.Sona = { pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, weekWins, ALL_SOUNDS, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, ladderContent, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, soundFamily, frameShape, checkSounds, checkItems, gradeSound, saveCheck, lastCheck, checkHistory, checkDue, buildPlan, getPlan, journeyWeek, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, gated, gateVerify, gateOk, requireGate, slpCode, offerCode, isNativeApp, getTrial, startTrial, ensureTrial, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, LEVEL_GAMES, GAME_DECK, GAMES_PER_LEVEL, levelGames, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, WORLDS, LEVELS_PER_WORLD, campaignLevels, campaignSounds, campaignState, worldById, worldLevels, worldStars, worldCleared, levelStars, setLevelStars, totalStars, worldUnlocked, levelUnlocked, campaignLaunch, campaignResolve, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES };
 })(window);

@@ -96,7 +96,7 @@ t = await page.evaluate(() => ({
   sub: document.getElementById("subLine").textContent,
 }));
 ok("ring shows the gold star", t.ring === "★" && t.stroke === "#ffb300");
-ok("subLine celebrates the goal", /Daily goal done/.test(t.sub));
+ok("subLine celebrates the goal with the tomorrow-hook", /All done today/.test(t.sub) && /tomorrow/.test(t.sub));
 await page.screenshot({ path: OUT + "/prog-ring-done.png" });
 
 // ── bonus rounds practice the NEXT letter from isolation ──
@@ -139,17 +139,33 @@ ok("step-down retry offers an easier same-sound target", /Let's try something ea
   ok("sona.js exports the shape helpers", /soundFamily, frameShape,/.test(sj));
 }
 
-// ── pulse open box: placeholder reads clean ──
+// ── pulse: chip-first — chips render, note stays optional-and-hidden ──
 await page.evaluate(() => { try { window.showPulse && showPulse(true); } catch (e) {} });
-t = await page.evaluate(() => (document.getElementById("pulseText") || {}).placeholder || "");
-if (t) ok("pulse placeholder is the new copy", /A request, an idea, a problem to fix/.test(t));
-else ok("pulse placeholder is the new copy (source)", /A request, an idea, a problem to fix/.test(todaySrc));
+t = await page.evaluate(() => ({
+  chips: document.querySelectorAll("#pulseChips .pulseChip").length,
+  hidden: (document.getElementById("pulseMore") || {}).style ? document.getElementById("pulseMore").style.display === "none" : false,
+  ph: (document.getElementById("pulseText") || {}).placeholder || "",
+}));
+if (t.chips) {
+  ok("pulse opens chip-first with note hidden", t.chips >= 5 && t.hidden);
+  ok("pulse note reads optional", /optional/i.test(t.ph));
+} else ok("pulse chips in source", /PULSE_CHIPS/.test(todaySrc));
 
 // ── the ring resets overnight: yesterday's rounds never survive to today ──
 await page.evaluate(() => localStorage.setItem("sona.today.v1", JSON.stringify({ d: "2026-07-10", n: 3 })));
 await page.goto("http://localhost:8131/today.html"); await page.waitForTimeout(600);
 t = await page.evaluate(() => ({ ring: document.getElementById("ringTxt").textContent, api: Sona.todayRing() }));
 ok("stale day → ring reads 0/5", t.ring === "0/5" && t.api.n === 0 && !t.api.done);
+
+// ── done state carries the tomorrow-hook (forward pull, no breakable number) ──
+await page.evaluate(() => {
+  const d = new Date(); const iso = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  localStorage.setItem("sona.today.v1", JSON.stringify({ d: iso, n: 5 }));
+});
+await page.goto("http://localhost:8131/today.html"); await page.waitForTimeout(600);
+t = await page.evaluate(() => ({ sub: document.getElementById("subLine").textContent, star: document.getElementById("ringTxt").textContent }));
+ok("ring done → tomorrow-hook line + star", /tomorrow/.test(t.sub) && t.star === "★");
+await page.evaluate(() => localStorage.removeItem("sona.today.v1"));
 
 // ── comeback greeting: 3+ idle days → numberless "Echo missed you", once/day ──
 await page.evaluate(() => {
@@ -183,7 +199,8 @@ let mp = await page.evaluate(() => ({
   txt: document.getElementById("micPrime").textContent,
 }));
 ok("primer shows before the mic prompt", mp.shown);
-ok("primer explains listening honestly", /only during practice/.test(mp.txt) && /doesn't keep them/.test(mp.txt));
+ok("primer explains listening honestly", /only during practice/.test(mp.txt) && /doesn't keep them/.test(mp.txt) && /nothing is recorded/.test(mp.txt));
+ok("primer offers a soft decline (protects the OS prompt)", /Not now/.test(mp.txt));
 await page.evaluate(() => document.getElementById("micPrimeBtn").click());
 await page.waitForTimeout(500);
 mp = await page.evaluate(() => ({
@@ -194,6 +211,21 @@ ok("primer dismisses into the mic grant + remembers", mp.gone && mp.micok === "1
 await page.goto("http://localhost:8131/charge.html?game=arcade-slice.html"); await page.waitForTimeout(800);
 mp = await page.evaluate(() => document.getElementById("micPrime").classList.contains("show"));
 ok("primer never shows again after grant", !mp);
+
+// ── mic DENIED → recovery screen: grown-up steps + a Try Again that retries ──
+await page.evaluate(() => localStorage.removeItem("sona.micok"));
+await page.addInitScript(() => {
+  if (navigator.mediaDevices) navigator.mediaDevices.getUserMedia = () => Promise.reject(new Error("NotAllowedError"));
+});
+await page.goto("http://localhost:8131/charge.html?game=arcade-slice.html"); await page.waitForTimeout(900);
+await page.evaluate(() => document.getElementById("micPrimeBtn").click());
+await page.waitForTimeout(700);
+mp = await page.evaluate(() => ({
+  txt: (document.getElementById("sonaMicDenied") || {}).textContent || "",
+  retry: !!document.getElementById("sonaMicRetry"),
+}));
+ok("denied state shows grown-up recovery steps", /can’t hear you yet/.test(mp.txt) && /Settings/.test(mp.txt) && /Microphone/.test(mp.txt));
+ok("denied state offers try-again + back", mp.retry && /Back home/.test(mp.txt));
 
 // ── ad rail: pixel armed, kid pages clean, SLP links split the cohorts ──
 {
@@ -222,6 +254,59 @@ t = await page.evaluate(() => ({
   monthly: /12\.99/.test(document.getElementById("planMonthly").textContent),
 }));
 ok("trial cohort sees the plan picker ($69.99 + $12.99)", t.pick === "block" && t.founding === "none" && t.annual && t.monthly);
+// paywall trust: named-SLP proof strip above the plans + literal first-charge date
+t = await page.evaluate(() => ({
+  proof: (document.querySelector("#pickCard .proof") || {}).textContent || "",
+  math: (document.getElementById("trialMath") || {}).textContent || "",
+}));
+ok("proof strip: named SLP credential above the plans",
+  /Rachel/.test(t.proof) && /speech-language pathologist/.test(t.proof));
+ok("annual card names the literal first-charge date",
+  /first charge/i.test(t.math) && /(January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2}/.test(t.math) && /Cancel anytime/i.test(t.math));
+// founding plan stays hidden without an offer link…
+t = await page.evaluate(() => document.getElementById("planFounding").style.display);
+ok("founding plan hidden for plain trial cohort", t !== "block");
+// …and appears (with the $39.99 lock story) after arriving via ?offer=founding50
+await page.goto("http://localhost:8131/subscribe.html?offer=founding50"); await page.waitForTimeout(700);
+t = await page.evaluate(() => ({
+  shown: document.getElementById("planFounding").style.display,
+  txt: document.getElementById("planFounding").textContent,
+  stored: localStorage.getItem("sona.offer.v1"),
+}));
+ok("offer link reveals the founding card ($39.99, rate-lock, charged today)",
+  t.shown === "block" && /39\.99/.test(t.txt) && /never rises/.test(t.txt) && /Charged today/.test(t.txt) && t.stored === "FOUNDING50");
+// ── progress report: narrative hero + non-clinical hedge + review pre-gate ──
+{
+  const iso = new Date().toISOString().slice(0, 10);
+  await page.evaluate((d) => {
+    sessionStorage.setItem("sona.gate.v1", String(Date.now()));
+    const g = JSON.parse(localStorage.getItem("sona.progress.v1") || "{}");
+    g.totals = Object.assign({}, g.totals, { sessions: 6, words: 40, stars: 3 });
+    g.streak = g.streak || { count: 1, lastDate: d };
+    localStorage.setItem("sona.progress.v1", JSON.stringify(g));
+    const out = {}; out.R = { days: {} }; out.R.days[d] = { a: 24, p: 20 };
+    localStorage.setItem("sona.outcomes.v1", JSON.stringify(out));
+    localStorage.removeItem("sona.rateask.v1");
+  }, iso);
+  await page.goto("http://localhost:8131/progress.html"); await page.waitForTimeout(800);
+  t = await page.evaluate(() => ({
+    story: document.getElementById("storyLine").textContent,
+    hedge: document.body.textContent.includes("A practice snapshot, not a clinical assessment"),
+    rate: document.getElementById("rateCard").style.display,
+    yesHref: document.getElementById("rateYes").getAttribute("href"),
+    noHref: document.getElementById("rateNo").getAttribute("href"),
+  }));
+  ok("report opens with a narrative sentence (name + sound + count)", /practiced the R sound 24 times this week/.test(t.story));
+  ok("non-clinical hedge present", t.hedge);
+  ok("review pre-gate shows after real value, Bear-style fork",
+    t.rate === "block" && /action=write-review/.test(t.yesHref) && /^mailto:/.test(t.noHref));
+  await page.evaluate(() => document.getElementById("rateX").click());
+  await page.goto("http://localhost:8131/progress.html"); await page.waitForTimeout(700);
+  t = await page.evaluate(() => document.getElementById("rateCard").style.display);
+  ok("dismissed pre-gate stays quiet on the next visit (60d cooldown)", t !== "block");
+  await page.evaluate(() => { localStorage.removeItem("sona.outcomes.v1"); localStorage.removeItem("sona.rateask.v1"); });
+}
+
 // founding family keeps the free story
 await page.evaluate(() => { const p = JSON.parse(localStorage.getItem("sona.profile.v1")); p.earlyAdopter = true; localStorage.setItem("sona.profile.v1", JSON.stringify(p)); });
 await page.goto("http://localhost:8131/subscribe.html"); await page.waitForTimeout(700);
