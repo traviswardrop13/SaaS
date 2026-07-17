@@ -16,6 +16,7 @@ const SUITES = [
   "checktest.mjs", // Sound Check → plan loop + parent card
   "gatecheck.mjs", // parent-gate hardening on adult-only pages
   "fittest.mjs",   // device-matrix fit: SE→Pro Max, zoomed display, landscape
+  "feedtest.mjs",  // Feed Echo: littles tap-and-say loop, growth, deck placement
 ];
 
 let bad = 0;

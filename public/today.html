@@ -225,6 +225,13 @@
       { key:"run",   name:"Sound Sprint",  sub:"Say it 5× to play", tap:function(){ sfx("tap"); location.href="/charge.html?game=arcade-run.html"; } },
       { key:"glide", name:"Flappy Glide",  sub:"Say it 5× to play", tap:function(){ sfx("tap"); location.href="/charge.html?game=arcade-glide.html"; } },
     ];
+    // Feed Echo — the littles game (tap-and-say, no reading, no timer). It
+    // leads the deck for under-6 profiles and rides sixth for everyone else.
+    (function(){
+      var FEED={ key:"feed", name:"Feed Echo", sub:"Say it & tap — Echo's hungry!", tap:function(){ sfx("tap"); location.href="/arcade-feed.html"; } };
+      var age=0; try{ age=parseInt((S&&S.getProfile?S.getProfile():{}).childAge,10)||0; }catch(e){}
+      if(age&&age<6) ACTS.unshift(FEED); else ACTS.push(FEED);
+    })();
     var sel=0;
 
     function art(key){ try{ return (window.SonaScenes&&SonaScenes.has(key))?("url('"+SonaScenes.uri(key)+"')"):""; }catch(e){ return ""; } }
@@ -250,12 +257,18 @@
         el.style.backgroundRepeat="no-repeat";
         return;
       }
+      if(key==="feed"&&!art(key)){
+        // no painted scene yet — warm meadow gradient + big Echo-and-apple
+        el.style.backgroundImage="linear-gradient(160deg,#ffe9b8,#b6eca0)";
+        el.style.backgroundSize="cover"; upgradeArt(el,key); return;
+      }
       el.style.backgroundImage=art(key); upgradeArt(el,key);
     }
     function render(){
       var a=ACTS[sel], hero=$("heroCard");
       applyArt(hero,a.key);
       if(a.key==="call"){ hero.classList.add("soon"); hero.innerHTML='<span class="soonTag">COMING SOON</span>'; }
+      else if(a.key==="feed"&&!art(a.key)){ hero.classList.remove("soon"); hero.innerHTML='<span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:78px;text-shadow:0 8px 14px rgba(120,70,10,.25);">🦜🍎</span>'; }
       else { hero.classList.remove("soon"); hero.innerHTML=""; }
       $("heroName").textContent=a.name;
       $("heroSub").innerHTML=a.sub.replace("★★★",'<b>★★★</b>');
