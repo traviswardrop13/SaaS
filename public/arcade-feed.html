@@ -161,7 +161,7 @@
       u.onend=fin; u.onerror=fin; setTimeout(fin,9000); ttsPlaying=true; window.speechSynthesis.speak(u);
     }catch(e){ ttsPlaying=false; res(); } }); }
     function say(t){ return new Promise(function(res){ if(!t||profile.voiceOn===false||speaking)return res(); speaking=true;
-      var key=(profile.voiceId||"echo")+"|v5|"+t;
+      var key=(profile.voiceId||"echo")+"|v6|"+t;
       ttsGet(key).then(function(cached){
         if(cached) return playPCM(new Uint8Array(cached)).then(function(){return true;});
         return fetch("/api/tts",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text:t,voice:profile.voiceId||"",stable:true})})

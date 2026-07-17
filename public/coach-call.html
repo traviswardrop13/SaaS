@@ -189,7 +189,7 @@
     function say(t){ return new Promise(function(res){ if(!t||profile.voiceOn===false)return res(); if(speaking)return res(); speaking=true;
       pose("talk"); $("caption").innerHTML=t.replace(/\[[a-z ]{2,24}\]\s*/gi,"").replace(/\*(.+?)\*/g,"<b>$1</b>");
       var plain=t.replace(/\*/g,"");
-      var key=(profile.voiceId||"echo")+"|v5|"+plain;
+      var key=(profile.voiceId||"echo")+"|v6|"+plain;
       ttsGet(key).then(function(cached){
         if(cached) return playPCM(new Uint8Array(cached));
         return fetch("/api/tts",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text:plain,voice:profile.voiceId||"",stable:true})})

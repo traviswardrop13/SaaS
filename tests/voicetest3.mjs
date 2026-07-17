@@ -63,7 +63,7 @@ const noSustained = (name, s) => {
 // ---- E2E round 1: isolation — human clip 404s → TTS gets the clean line ----
 await page.goto("http://localhost:8123/charge.html?sound=R&game=arcade-slice.html");
 await page.waitForTimeout(2500);
-ok("E2E r1 first line (R)", ttsPosts[0], "Ready? Pull your tongue back and up, and make your R sound, five times. Go!");
+ok("E2E r1 first line (R)", ttsPosts[0], "Ready? Pull your tongue back and up, and make your R sound... five times... Go!");
 ok("E2E r1 chip", await page.evaluate(() => document.getElementById("soundChip").textContent), "R SOUND");
 
 // ---- E2E round 2 of a daily run: syllables — chip label + spoken set ----
@@ -81,7 +81,7 @@ console.log((r2.sylls.includes(r2.prompt) ? "PASS" : "FAIL") + "  E2E r2 card sh
 if (!r2.sylls.includes(r2.prompt)) fails++;
 const sylLine = ttsPosts[0] || "";
 // ONE syllable per round now — the card no longer rotates rah→ree→roo mid-round
-const sylWant = /^Ready\? Say [a-z]+, five times\. Go!$/;
+const sylWant = /^Ready\? Say [a-z]+\.\.\. five times\.\.\. Go!$/;
 console.log((sylWant.test(sylLine) ? "PASS" : "FAIL") + "  E2E r2 spoken one syllable  → " + JSON.stringify(sylLine));
 if (!sylWant.test(sylLine)) fails++;
 for (const t of ttsPosts) noSustained("E2E:" + t.slice(0, 24), t);
@@ -134,15 +134,15 @@ const cases = await page.evaluate(
   { soundNameSrc, sayLineSrc, cueShortSrc, failTipSrc, paintCardSrc }
 );
 
-ok("R first", cases.rFirst, "Ready? Pull your tongue back and up, and make your R sound, five times. Go!");
-ok("R repeat", cases.rRepeat, "Ready? Make your R sound, five times. Go!");
-ok("S first", cases.sFirst, "Ready? Teeth together, and make your S sound, five times. Go!");
-ok("S repeat", cases.sRepeat, "Ready? Make your S sound, five times. Go!");
-ok("SH first", cases.shFirst, "Ready? Round your lips and whisper quiet, and make your S H sound, five times. Go!");
-ok("THV first", cases.thvFirst, "Ready? Tongue between your teeth and buzz, and make your T H sound, five times. Go!");
-ok("word level", cases.word, "Ready? Say rabbit, five times. Go!");
-ok("syllable one target", cases.sylFirst, "Ready? Say rah, five times. Go!");
-ok("syllable one target repeat", cases.sylRepeat, "Ready? Say rah, five times. Go!");
+ok("R first", cases.rFirst, "Ready? Pull your tongue back and up, and make your R sound... five times... Go!");
+ok("R repeat", cases.rRepeat, "Ready? Make your R sound... five times... Go!");
+ok("S first", cases.sFirst, "Ready? Teeth together, and make your S sound... five times... Go!");
+ok("S repeat", cases.sRepeat, "Ready? Make your S sound... five times... Go!");
+ok("SH first", cases.shFirst, "Ready? Round your lips and whisper quiet, and make your S H sound... five times... Go!");
+ok("THV first", cases.thvFirst, "Ready? Tongue between your teeth and buzz, and make your T H sound... five times... Go!");
+ok("word level", cases.word, "Ready? Say rabbit... five times... Go!");
+ok("syllable one target", cases.sylFirst, "Ready? Say rah... five times... Go!");
+ok("syllable one target repeat", cases.sylRepeat, "Ready? Say rah... five times... Go!");
 ok("card flip prompt", cases.cardPrompt, "ree");
 ok("card isolation prompt", cases.cardIso, "your R sound");
 ok("fail R", cases.failR, "Hmm, that was a different sound! Pull your tongue back and up like a tiger growl. Try again!");
