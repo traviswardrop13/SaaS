@@ -15,6 +15,7 @@ const SUITES = [
   "shapetest.mjs", // sound-shape gate vs real recorded sounds
   "checktest.mjs", // Sound Check → plan loop + parent card
   "gatecheck.mjs", // parent-gate hardening on adult-only pages
+  "fittest.mjs",   // device-matrix fit: SE→Pro Max, zoomed display, landscape
 ];
 
 let bad = 0;

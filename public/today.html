@@ -80,6 +80,14 @@
     #toast{position:fixed;left:50%;bottom:calc(110px + env(safe-area-inset-bottom));transform:translateX(-50%);background:#fff;border-radius:99px;padding:10px 18px;font-family:"Baloo 2";font-weight:800;font-size:14px;color:var(--ink);box-shadow:0 8px 22px rgba(74,44,20,.3);opacity:0;transition:opacity .25s;pointer-events:none;z-index:20;white-space:nowrap;}
     #toast.show{opacity:1;}
     /* short screens: everything shrinks so the locked page never clips */
+    /* landscape rescue: with the height-driven hero, a rotated phone crushed
+       the play card to ~18px. Short-wide viewports unlock scrolling and give
+       the hero a real minimum — scrolling beats a broken-looking screen. */
+    @media (orientation:landscape) and (max-height:520px){
+      html,body{overflow:auto;height:auto;}
+      #wrap{height:auto;min-height:100dvh;overflow:visible;}
+      #heroCard{height:auto;min-height:230px;}
+    }
     @media (max-height:760px){
       #wrap{gap:10px;}
       #heroCard{height:min(38dvh,300px);}
