@@ -34,6 +34,8 @@ await page.addInitScript((SHIFT) => {
     static now() { return RealDate.now() + SHIFT; }
   }
   window.Date = ShiftedDate;
+  // set-up family — today.html's first-run guard must not bounce the harness
+  if (!localStorage.getItem("sona.profile.v1")) localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Milo", focusSounds: ["R"], weeklyGoal: 3, onboarded: true }));
 }, TIME_SHIFT);
 
 // seed: goal 3; practiced Mon+Tue this week; prior two weeks had 3+ days each
