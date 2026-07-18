@@ -22,10 +22,13 @@ export default function Landing() {
   return (
     <main className="min-h-screen bg-white text-gray-800">
       {/* Native app (App Store build) opens straight into the app, not this
-          marketing/pricing page — Apple forbids non-IAP checkout in-app. */}
+          marketing/pricing page — Apple forbids non-IAP checkout in-app.
+          Fresh installs route through onboarding FIRST (this was the "app
+          skips onboarding" bug: every download landed on today.html with a
+          blank default profile); set-up families go straight to today. */}
       <script
         dangerouslySetInnerHTML={{
-          __html: `if(typeof window!=="undefined"&&window.Capacitor)location.replace("/today.html");`,
+          __html: `if(typeof window!=="undefined"&&window.Capacitor){var p={};try{p=JSON.parse(localStorage.getItem("sona.profile.v1")||"{}")}catch(e){}location.replace((p.onboarded||p.childName)?"/today.html":"/onboarding.html");}`,
         }}
       />
       <Hero />

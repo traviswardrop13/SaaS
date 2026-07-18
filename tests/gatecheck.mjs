@@ -13,6 +13,10 @@ const srv = createServer((req, res) => {
 await new Promise((r) => srv.listen(8141, r));
 const browser = await chromium.launch(launchOpts());
 const page = await browser.newPage();
+// a set-up family — today.html's first-run guard must not bounce these visits
+await page.addInitScript(() => {
+  if (!localStorage.getItem("sona.profile.v1")) localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Milo", focusSounds: ["R"], onboarded: true }));
+});
 let ok = 0, bad = 0;
 const chk = (n, p) => { p ? ok++ : bad++; console.log((p ? "PASS " : "FAIL ") + n); };
 for (const f of ["settings.html", "progress.html", "voices.html", "subscribe.html"]) {

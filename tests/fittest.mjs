@@ -21,7 +21,9 @@ let fails = 0;
 const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL ") + n + (p ? "" : "  → " + (extra || ""))); };
 const HOME_BAR = 34; // real-device bottom inset headless runs don't simulate
 
-const PORTRAIT = [["SE", 375, 667], ["X", 375, 812], ["14", 390, 844], ["ProMax", 430, 932], ["X-zoomed", 320, 693]];
+const PORTRAIT = [["SE", 375, 667], ["X", 375, 812], ["14", 390, 844], ["ProMax", 430, 932], ["X-zoomed", 320, 693],
+  // active-call / hotspot pill steals height — the layout must absorb it
+  ["X-callpill", 375, 788], ["ProMax-callpill", 430, 908]];
 const LANDSCAPE = [["X-land", 812, 375], ["ProMax-land", 932, 430]];
 
 async function measure(page, url) {
@@ -34,7 +36,7 @@ async function measure(page, url) {
       oX: Math.round(doc.scrollWidth - innerWidth),
       oY: Math.round(doc.scrollHeight - innerHeight),
       scrollLocked: getComputedStyle(document.body).overflowY === "hidden" || getComputedStyle(doc).overflowY === "hidden",
-      thumbs: el("thumbs"), hero: el("heroCard"), mic: el("micWrap"), panel: el("gamePanel"),
+      thumbs: el("thumbs"), hero: el("heroCard"), mic: el("micWrap"), panel: el("gamePanel"), go: el("goBtn"),
       innerH: innerHeight,
     };
   });
@@ -50,6 +52,11 @@ for (const [dev, w, h] of PORTRAIT) {
   let m = await measure(page, "today.html");
   ok(dev + " today: no sideways overflow", m.oX <= 1, "oX=" + m.oX);
   ok(dev + " today: thumbs clear the home bar", m.thumbs && m.thumbs.bottom <= m.innerH - HOME_BAR + 1, m.thumbs && m.thumbs.bottom + "/" + (m.innerH - HOME_BAR));
+  // goBtn sits INSIDE the wrap's padded box; on hardware the wrap adds
+  // env(safe-area-inset-bottom) (0 in headless), so the honest check is
+  // "no overflow past the wrap's own padding floor" — home-bar clearance
+  // then comes from the env() padding on device.
+  ok(dev + " today: LET'S GO never overflows the page", m.go && m.go.bottom <= m.innerH - 20, m.go && m.go.bottom + "/" + (m.innerH - 20));
   ok(dev + " today: hero never collapses", m.hero && m.hero.h >= 150, m.hero && "heroH=" + m.hero.h);
   m = await measure(page, "charge.html?game=arcade-slice.html");
   ok(dev + " charge: mic clears the home bar", m.mic && m.mic.bottom <= m.innerH - HOME_BAR + 1, m.mic && m.mic.bottom + "/" + (m.innerH - HOME_BAR));
