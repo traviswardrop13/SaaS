@@ -5,8 +5,20 @@ import { createServer } from "http";
 import { readFileSync, existsSync } from "fs";
 import { chromium, ROOT, OUT, launchOpts } from "./_env.mjs";
 const MIME = { html: "text/html", js: "text/javascript", svg: "image/svg+xml", png: "image/png", css: "text/css" };
+let repsPosts = [];
+let repsQuery = { cohort: 0, pct: 0, nextPct: null, nextReps: null };
 const srv = createServer((req, res) => {
   const u = new URL(req.url, "http://x");
+  if (u.pathname === "/api/reps" && req.method === "POST") {
+    let b = ""; req.on("data", (c) => (b += c));
+    req.on("end", () => { try { repsPosts.push(JSON.parse(b)); } catch (e) {} res.writeHead(200, { "content-type": "application/json" }); res.end('{"ok":true}'); });
+    return;
+  }
+  if (u.pathname === "/api/reps") {
+    res.writeHead(200, { "content-type": "application/json" });
+    res.end(JSON.stringify({ ok: true, ...repsQuery }));
+    return;
+  }
   if (u.pathname.startsWith("/api/")) { res.writeHead(500); res.end("{}"); return; }
   const p = ROOT + u.pathname;
   if (!existsSync(p)) { res.writeHead(404); res.end(); return; }
@@ -275,6 +287,35 @@ t = await page.evaluate(() => ({
 }));
 ok("offer link reveals the founding card ($39.99, rate-lock, charged today)",
   t.shown === "block" && /39\.99/.test(t.txt) && /never rises/.test(t.txt) && /Charged today/.test(t.txt) && t.stored === "FOUNDING50");
+// ── practice volume: weekly reps + percentile chip (volume only, cohort-gated) ──
+{
+  const iso = new Date().toISOString().slice(0, 10);
+  await page.evaluate((d) => {
+    sessionStorage.setItem("sona.gate.v1", String(Date.now()));
+    const out = { R: { days: {} } }; out.R.days[d] = { a: 30, p: 24 };
+    localStorage.setItem("sona.outcomes.v1", JSON.stringify(out));
+    localStorage.removeItem("sona.repsync.v1");
+  }, iso);
+  repsPosts = []; repsQuery = { cohort: 40, pct: 80, nextPct: 90, nextReps: 12 };
+  await page.goto("http://localhost:8131/progress.html"); await page.waitForTimeout(900);
+  t = await page.evaluate(() => ({
+    reps: document.getElementById("volReps").textContent,
+    chip: document.getElementById("volChip").textContent,
+    chipShown: document.getElementById("volChip").style.display,
+    next: document.getElementById("volNext").textContent,
+  }));
+  ok("volume card shows the week's honest reps", t.reps === "30");
+  ok("percentile chip: top % + out-practicing framing", t.chipShown === "block" && /Top 20%/.test(t.chip) && /80%/.test(t.chip));
+  ok("bump line names the reps to the next decile", /12 more reps/.test(t.next) && /top 10%/.test(t.next));
+  ok("beacon posted anonymous volume", repsPosts.length >= 1 && repsPosts[0].reps === 30 && /^f[a-z0-9]+/.test(repsPosts[0].fid) && /^\d{4}-W\d{2}$/.test(repsPosts[0].week));
+  // tiny cohort → no percentile theater
+  repsQuery = { cohort: 7, pct: 80, nextPct: 90, nextReps: 3 };
+  await page.goto("http://localhost:8131/progress.html"); await page.waitForTimeout(900);
+  t = await page.evaluate(() => document.getElementById("volChip").style.display);
+  ok("percentile hides under 20 reporting families", t !== "block");
+  await page.evaluate(() => { localStorage.removeItem("sona.outcomes.v1"); localStorage.removeItem("sona.repsync.v1"); });
+}
+
 // ── progress report: narrative hero + non-clinical hedge + review pre-gate ──
 {
   const iso = new Date().toISOString().slice(0, 10);
