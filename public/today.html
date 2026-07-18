@@ -317,6 +317,10 @@
 
     // first-time Sound Check nudge — disappears forever once one check exists
     try{ if(S&&S.lastCheck&&!S.lastCheck()) $("checkNudge").style.display="flex"; }catch(e){}
+    // weekly volume sync — anonymous {id, week, rep count}, throttled in sona.js
+    try{ if(S&&S.repsBeacon) S.repsBeacon(); }catch(e){}
+    // App Store build: quiet entitlement sync (restores/reinstalls stay unlocked)
+    try{ if(S&&S.iapRefresh) S.iapRefresh(); }catch(e){}
 
     // ── comeback greeting: 3+ days since the last practice day → Echo just
     // says he missed you. No day counts, no broken anything — the fresh start

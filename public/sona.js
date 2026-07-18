@@ -1359,6 +1359,53 @@
   }
   function outcomes() { return load(OUTKEY, {}); }
 
+  // ── weekly practice volume (the parent's headline metric) ────────────────
+  // Total honest reps this Mon–Sun week, summed from the attempt log. Volume
+  // is a PARENT-side motivator: kids keep the ring, never rep quotas. The
+  // beacon ships {anonymous id, week, count} — no names, no audio, no
+  // accuracy — so families can see how their practice volume compares.
+  function fid() {
+    try {
+      let f = localStorage.getItem("sona.fid.v1");
+      if (!f) { f = "f" + Math.random().toString(36).slice(2, 10) + Date.now().toString(36); localStorage.setItem("sona.fid.v1", f); }
+      return f;
+    } catch (e) { return ""; }
+  }
+  function isoWeek(d) {
+    const t = d ? new Date(d) : new Date();
+    t.setHours(0, 0, 0, 0);
+    t.setDate(t.getDate() + 3 - ((t.getDay() + 6) % 7)); // nearest Thursday
+    const y = t.getFullYear();
+    const jan4 = new Date(y, 0, 4);
+    const wk = 1 + Math.round(((t - jan4) / 86400000 - 3 + ((jan4.getDay() + 6) % 7)) / 7);
+    return y + "-W" + String(wk).padStart(2, "0");
+  }
+  function weekReps(offsetWeeks) {
+    const now = new Date(); if (offsetWeeks) now.setDate(now.getDate() + offsetWeeks * 7);
+    const dow = (now.getDay() + 6) % 7;
+    const mon = new Date(now); mon.setDate(now.getDate() - dow); mon.setHours(0, 0, 0, 0);
+    const sun = new Date(mon); sun.setDate(mon.getDate() + 7);
+    const out = outcomes(); let total = 0;
+    Object.keys(out).forEach((s) => {
+      const days = (out[s] && out[s].days) || {};
+      Object.keys(days).forEach((d) => {
+        const t = new Date(d + "T12:00:00");
+        if (t >= mon && t < sun) total += (days[d] && days[d].a) || 0;
+      });
+    });
+    return total;
+  }
+  function repsBeacon() {
+    try {
+      const week = isoWeek(), reps = weekReps(), f = fid();
+      if (!f) return;
+      const st = load("sona.repsync.v1", {});
+      if (st.week === week && st.reps === reps && Date.now() - (st.at || 0) < 6 * 3600 * 1000) return;
+      save("sona.repsync.v1", { week, reps, at: Date.now() });
+      fetch("/api/reps", { method: "POST", headers: { "Content-Type": "application/json" }, keepalive: true, body: JSON.stringify({ fid: f, week, reps }) }).catch(() => {});
+    } catch (e) {}
+  }
+
   // ── Native audio capture (iOS) ──────────────────────────────────────────────
   // On the native iOS app (Capacitor) a custom `SonaAudio` plugin captures CLEAN
   // PCM via AVAudioSession `.measurement` mode (no auto-gain / noise-suppression
@@ -1397,6 +1444,78 @@
         .catch(() => webCapture());
     }
     return webCapture();
+  }
+
+  // ── Apple in-app purchases (RevenueCat, native shell only) ───────────────
+  // The App Store build sells "Sona Yearly" ($69.99/yr, 7-day free trial)
+  // through Apple's sheet via the @revenuecat/purchases-capacitor plugin —
+  // reached over the same remote-page bridge SonaAudio already uses. Web
+  // visitors never touch this (Stripe stays the web rail). We purchase
+  // DIRECTLY by product id (no offerings dependency) and unlock on the
+  // "full" entitlement. The appl_ key is publishable by design.
+  const IAP_KEY = "appl_nONRfALUCMiZczeCggXKEusmVtl";
+  const IAP_PRODUCT = "com.speaksona.app.annual";
+  const IAP_ENTITLEMENT = "full";
+  function iapPlugin() {
+    try { const C = global.Capacitor; return (C && C.isNativePlatform && C.isNativePlatform() && C.Plugins && C.Plugins.Purchases) ? C.Plugins.Purchases : null; } catch (e) { return null; }
+  }
+  function iapAvailable() { return !!iapPlugin(); }
+  let _iapReady = null;
+  function iapConfigure() {
+    const P = iapPlugin(); if (!P) return Promise.reject(new Error("no-iap"));
+    if (!_iapReady) _iapReady = Promise.resolve(P.configure({ apiKey: IAP_KEY })).catch(() => {}); // configure is idempotent enough; never block on it twice
+    return _iapReady.then(() => P);
+  }
+  function _iapActive(info) {
+    try { const e = info && (info.customerInfo || info); return !!(e && e.entitlements && e.entitlements.active && e.entitlements.active[IAP_ENTITLEMENT]); } catch (e2) { return false; }
+  }
+  function _iapUnlock() { saveSub({ active: true, source: "apple", since: Date.now() }); }
+  // fetch the live product (price string comes from the App Store, locale-correct)
+  function iapProduct() {
+    return iapConfigure().then((P) =>
+      Promise.resolve(P.getProducts({ productIdentifiers: [IAP_PRODUCT], type: "subs" }))
+        .catch(() => P.getProducts({ productIdentifiers: [IAP_PRODUCT] }))
+        .then((r) => (r && r.products && r.products[0]) || null)
+    );
+  }
+  // buy: try the modern API first, fall back across plugin versions
+  function iapPurchase() {
+    return iapConfigure().then((P) =>
+      iapProduct().then((product) => {
+        const attempts = [];
+        if (product && P.purchaseStoreProduct) attempts.push(() => P.purchaseStoreProduct({ product }));
+        if (P.purchaseProduct) attempts.push(() => P.purchaseProduct({ productIdentifier: IAP_PRODUCT, type: "subs" }));
+        let p = Promise.reject(new Error("no-purchase-api"));
+        attempts.forEach((fn) => { p = p.catch(fn); });
+        return p;
+      })
+    ).then((res) => {
+      if (res && res.userCancelled) throw Object.assign(new Error("cancelled"), { cancelled: true });
+      if (_iapActive(res)) { _iapUnlock(); return { ok: true }; }
+      // some plugin versions return only {productIdentifier}; verify via customer info
+      return iapRefresh(true).then((active) => { if (active) return { ok: true }; throw new Error("not-entitled"); });
+    }).catch((e) => {
+      if (e && (e.cancelled || e.userCancelled || /cancel/i.test(String(e && e.message)))) throw Object.assign(new Error("cancelled"), { cancelled: true });
+      throw e;
+    });
+  }
+  function iapRestore() {
+    return iapConfigure().then((P) => P.restorePurchases()).then((info) => {
+      const active = _iapActive(info);
+      if (active) _iapUnlock();
+      return active;
+    });
+  }
+  // quiet entitlement sync (today.html on load in the shell): keeps sub state
+  // honest across reinstalls/devices without any UI.
+  function iapRefresh(force) {
+    if (!iapAvailable()) return Promise.resolve(false);
+    if (!force && isSubscribed()) return Promise.resolve(true);
+    return iapConfigure().then((P) => P.getCustomerInfo()).then((info) => {
+      const active = _iapActive(info);
+      if (active) _iapUnlock();
+      return active;
+    }).catch(() => false);
   }
 
   // best-effort: send the pilot child's (consented) progress back to the founder. Debounced.
@@ -1497,5 +1616,5 @@
   }
   try { installDebug(); } catch (e) {}
 
-  global.Sona = { pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, weekWins, ALL_SOUNDS, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, ladderContent, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, soundFamily, frameShape, checkSounds, checkItems, gradeSound, saveCheck, lastCheck, checkHistory, checkDue, buildPlan, getPlan, journeyWeek, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, gated, gateVerify, gateOk, requireGate, slpCode, offerCode, isNativeApp, getTrial, startTrial, ensureTrial, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, LEVEL_GAMES, GAME_DECK, GAMES_PER_LEVEL, levelGames, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, WORLDS, LEVELS_PER_WORLD, campaignLevels, campaignSounds, campaignState, worldById, worldLevels, worldStars, worldCleared, levelStars, setLevelStars, totalStars, worldUnlocked, levelUnlocked, campaignLaunch, campaignResolve, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES };
+  global.Sona = { pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, weekWins, ALL_SOUNDS, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, ladderContent, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, soundFamily, frameShape, checkSounds, checkItems, gradeSound, saveCheck, lastCheck, checkHistory, checkDue, buildPlan, getPlan, journeyWeek, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, gated, gateVerify, gateOk, requireGate, slpCode, offerCode, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, LEVEL_GAMES, GAME_DECK, GAMES_PER_LEVEL, levelGames, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, WORLDS, LEVELS_PER_WORLD, campaignLevels, campaignSounds, campaignState, worldById, worldLevels, worldStars, worldCleared, levelStars, setLevelStars, totalStars, worldUnlocked, levelUnlocked, campaignLaunch, campaignResolve, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repsBeacon, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES };
 })(window);

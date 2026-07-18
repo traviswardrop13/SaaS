@@ -394,7 +394,12 @@
       bubble.textContent = "You're all set!";
       nextBtn.disabled = true; nextBtn.textContent = "Let's practice!";
       backBtn.style.display = "none";
-      var goHome=function(){ location.href="/today.html"; };
+      // App Store build: the plan screen follows onboarding (intent is hottest
+      // here); closing it still lands on today with the card-free usage week.
+      var goHome=function(){
+        var native=false; try{ native=!!(Sona.isNativeApp&&Sona.isNativeApp()&&Sona.iapAvailable&&Sona.iapAvailable()); }catch(e){}
+        location.href = native ? "/subscribe.html?welcome=1" : "/today.html";
+      };
       var redirectT=setTimeout(goHome, 2400);
       // stash the save for the added-to-home-screen app (iOS separates its
       // storage): best-effort — no KV, no code line, nothing changes.

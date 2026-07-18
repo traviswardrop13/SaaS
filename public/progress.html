@@ -319,6 +319,20 @@
       <div id="goalWrap" style="margin-top:6px;"></div>
     </div>
 
+    <!-- practice volume: the parent's headline metric. Volume percentile
+         compares parental EFFORT across families (opt-free, anonymous count);
+         accuracy is never ranked — children's development isn't a leaderboard. -->
+    <div class="card" id="volCard">
+      <h2>Practice volume 💪</h2>
+      <div style="display:flex;align-items:baseline;gap:10px;margin-top:6px;">
+        <div id="volReps" style="font-family:'Baloo 2';font-weight:800;font-size:44px;color:var(--orange-d);line-height:1;">0</div>
+        <div style="font-weight:800;color:var(--muted);">reps this week</div>
+      </div>
+      <div id="volLast" class="muted" style="font-weight:800;font-size:12.5px;margin-top:4px;"></div>
+      <div id="volChip" style="display:none;margin-top:10px;background:linear-gradient(160deg,#eafaf0,#d6f3e2);border-radius:14px;padding:10px 14px;font-weight:800;font-size:14px;color:#2e7d32;"></div>
+      <div id="volNext" class="muted" style="display:none;font-weight:800;font-size:12.5px;margin-top:8px;"></div>
+    </div>
+
     <div class="card" id="accCard">
       <h2>Accuracy by sound <span class="pic-trend"></span></h2>
       <p class="muted" style="font-size:13px;font-weight:700;">How clearly each sound is coming along — and how it's trending with practice.</p>
@@ -449,6 +463,36 @@
           el.innerHTML = "<b>A fresh week is ready.</b> " + nm + "'s next practice adds its first reps to this page.";
         }
       } catch (e) { el.style.display = "none"; }
+    })();
+
+    // ── practice volume: reps this week + family percentile (volume only) ──
+    (function () {
+      try {
+        var reps = Sona.weekReps ? Sona.weekReps() : 0;
+        var last = Sona.weekReps ? Sona.weekReps(-1) : 0;
+        document.getElementById("volReps").textContent = reps;
+        var vl = document.getElementById("volLast");
+        if (last > 0 && reps >= last) vl.textContent = "Up from " + last + " last week — that consistency is the whole game.";
+        else if (last > 0) vl.textContent = "Last week: " + last + ". Every rep this week builds it back.";
+        else vl.textContent = "Every honest rep lands here — say it, it counts.";
+        if (Sona.repsBeacon) Sona.repsBeacon();
+        // percentile chip only with a real cohort (20+ families reporting)
+        fetch("/api/reps?week=" + encodeURIComponent(Sona.isoWeek()) + "&reps=" + reps)
+          .then(function (r) { return r.ok ? r.json() : null; })
+          .then(function (j) {
+            if (!j || !j.ok || (j.cohort || 0) < 20) return;
+            var chip = document.getElementById("volChip");
+            var top = Math.max(1, 100 - j.pct);
+            chip.textContent = "🏅 Top " + top + "% of Sona families this week — out-practicing " + j.pct + "% of the app.";
+            chip.style.display = "block";
+            if (j.nextPct != null && j.nextReps != null && j.nextReps > 0 && j.nextReps <= 200) {
+              var nx = document.getElementById("volNext");
+              nx.textContent = "Just " + j.nextReps + " more rep" + (j.nextReps === 1 ? "" : "s") + " reaches the top " + (100 - j.nextPct) + "% — one practice round does it.";
+              nx.style.display = "block";
+            }
+          })
+          .catch(function () {});
+      } catch (e) {}
     })();
 
     // ── review pre-gate logic: after real value (4+ sessions), quiet for 60

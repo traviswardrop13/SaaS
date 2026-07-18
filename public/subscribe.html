@@ -107,6 +107,30 @@
       <span class="planline" id="planLine">Today's plan: <b>free</b> — you're a founding family.</span>
     </div>
 
+    <!-- native paywall (App Store build): one plan, Apple's sheet, required
+         restore + legal links. Stripe never shows inside the shell. -->
+    <div class="card" id="iapCard" style="display:none;">
+      <h2 id="iapTitle">Start your free week</h2>
+      <div class="proof">
+        <span class="pem">🎓</span>
+        <span><b>Built with Rachel — licensed pediatric speech-language pathologist</b> &amp; Sona co-founder. Real speech practice, disguised as games kids ask to play.</span>
+      </div>
+      <div class="plan best" id="iapPlan">
+        <span class="tag">7 DAYS FREE</span>
+        <b>Sona Yearly — <span id="iapPrice">$69.99/yr</span></b>
+        <span class="sub">Every game, the Sound Check, the weekly plan, and the progress report.</span>
+        <button class="btn go" id="iapBuy">Start 7 days free</button>
+        <span class="reassure" id="iapMath">No charge today — cancel anytime during your free week.</span>
+      </div>
+      <p class="muted" id="iapMsg" style="margin-top:10px;font-weight:800;font-size:12.5px;min-height:16px;"></p>
+      <p class="muted" style="margin-top:8px;font-size:11.5px;line-height:1.5;">$69.99/year after the 7-day free trial. Payment is charged to your Apple&nbsp;ID; the subscription renews yearly unless canceled at least 24 hours before the period ends. Manage or cancel in Settings&nbsp;→&nbsp;Subscriptions.</p>
+      <p style="margin-top:10px;font-weight:800;font-size:11px;">
+        <button id="iapRestore" style="border:none;background:none;color:var(--blue-d);font-weight:800;font-size:12px;cursor:pointer;padding:4px 6px;text-decoration:underline;">Restore Purchases</button>
+        · <a href="/terms" style="color:#8a6f52;">Terms of Use</a>
+        · <a href="/privacy" style="color:#8a6f52;">Privacy</a>
+      </p>
+    </div>
+
     <div class="card" id="pickCard" style="display:none;">
       <h2>Pick your plan</h2>
       <div class="proof">
@@ -200,6 +224,53 @@
     if (window.Sona && Sona.requireGate) Sona.requireGate();
     window.addEventListener("pageshow", function (e) { if (e.persisted && window.Sona && Sona.requireGate) Sona.requireGate(); });
 
+    // Native shell (App Store build): ONE paywall — Apple's sheet via
+    // RevenueCat. Stripe cards never render in the shell (3.1.1 hygiene).
+    (function () {
+      try {
+        if (!(Sona.isNativeApp && Sona.isNativeApp())) return;
+        var subbed = Sona.isSubscribed && Sona.isSubscribed();
+        document.getElementById("pickCard").style.display = "none";
+        var fc = document.getElementById("foundingCard"); if (fc) fc.style.display = "none";
+        if (subbed) { document.getElementById("planLine").innerHTML = 'Your plan: <b style="color:var(--good);">Active ✓</b> — thank you for backing Sona.'; return; }
+        if (!(Sona.iapAvailable && Sona.iapAvailable())) return; // old binary: no purchase UI at all
+        document.getElementById("iapCard").style.display = "block";
+        document.getElementById("planLine").innerHTML = "Today: <b>7 days free</b> — then $69.99/yr. Cancel anytime.";
+        // greet the onboarding hand-off warmly
+        if (/[?&]welcome=1/.test(location.search)) document.getElementById("iapTitle").textContent = "One last thing — start your free week";
+        // live price + exact first-charge date (the honest-date rule)
+        try {
+          var d = new Date(Date.now() + 7 * 86400000);
+          var t = d.toLocaleDateString("en-US", { month: "long", day: "numeric" });
+          document.getElementById("iapMath").innerHTML = "No charge today — first charge <b>" + t + "</b>, only if you keep Sona. Cancel anytime before then.";
+        } catch (e) {}
+        Sona.iapProduct().then(function (p) {
+          if (p && (p.priceString || p.price)) document.getElementById("iapPrice").textContent = (p.priceString || ("$" + p.price)) + "/yr";
+        }).catch(function () {});
+        var msg = document.getElementById("iapMsg");
+        document.getElementById("iapBuy").onclick = function () {
+          msg.textContent = "Opening the App Store…";
+          try { if (window.sonaTrack) sonaTrack("InitiateCheckout", { value: 69.99, currency: "USD", content_name: "iap_annual" }); } catch (e) {}
+          Sona.iapPurchase().then(function () {
+            msg.textContent = "";
+            try { if (Sona.confetti) Sona.confetti({ count: 160 }); if (Sona.sfx && Sona.sfx.complete) Sona.sfx.complete(); } catch (e) {}
+            document.getElementById("planLine").innerHTML = 'Your plan: <b style="color:var(--good);">Active ✓</b> — welcome to Sona!';
+            document.getElementById("iapCard").style.display = "none";
+            setTimeout(function () { location.href = "/today.html"; }, 1200);
+          }).catch(function (e) {
+            msg.textContent = (e && e.cancelled) ? "" : "That didn't go through — nothing was charged. Try again in a moment.";
+          });
+        };
+        document.getElementById("iapRestore").onclick = function () {
+          msg.textContent = "Checking your purchases…";
+          Sona.iapRestore().then(function (active) {
+            msg.textContent = active ? "Restored ✓ — welcome back!" : "No purchases found on this Apple ID.";
+            if (active) setTimeout(function () { location.href = "/today.html"; }, 1000);
+          }).catch(function () { msg.textContent = "Couldn't reach the App Store — try again in a moment."; });
+        };
+      } catch (e) {}
+    })();
+
     // Cohort routing: founding/SLP families keep the free story; the trial
     // cohort (ad/organic signups) gets the plan picker. Subscribers see neither.
     (function () {
@@ -207,6 +278,7 @@
         var P = Sona.getProfile ? Sona.getProfile() : {};
         var subbed = Sona.isSubscribed && Sona.isSubscribed();
         var founding = !!P.earlyAdopter;
+        if (Sona.isNativeApp && Sona.isNativeApp()) return; // shell handled above
         if (!subbed && !founding) {
           document.getElementById("pickCard").style.display = "block";
           var fc = document.getElementById("foundingCard"); if (fc) fc.style.display = "none";
