@@ -17,6 +17,7 @@ const SUITES = [
   "gatecheck.mjs", // parent-gate hardening on adult-only pages
   "fittest.mjs",   // device-matrix fit: SE→Pro Max, zoomed display, landscape
   "feedtest.mjs",  // Feed Echo: littles tap-and-say loop, growth, deck placement
+  "iaptest.mjs",   // Apple IAP rail: native paywall, purchase/restore, web untouched
 ];
 
 let bad = 0;
