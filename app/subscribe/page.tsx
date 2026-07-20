@@ -58,7 +58,7 @@ function SubscribeInner() {
     <main className="min-h-screen bg-gradient-to-b from-sky-50 to-white">
       <header className="mx-auto flex max-w-5xl items-center justify-between px-5 py-4">
         <Link href="/" className="flex items-center gap-2">
-          <img src="/coach/leo-icon.png" alt="Sona" className="h-8 w-8 object-contain" />
+          <img src="/coach/echo/echo-avatar.svg" alt="Sona" className="h-8 w-8 object-contain" />
           <span className="font-display text-2xl font-extrabold text-sky-600">Sona</span>
         </Link>
         <Link href="/" className="text-sm font-bold text-gray-500 hover:text-gray-800">

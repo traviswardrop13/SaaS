@@ -50,7 +50,7 @@ function Header() {
     <header className="sticky top-0 z-20 border-b border-gray-100 bg-white/85 backdrop-blur">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-3">
         <Link href="/" className="flex items-center gap-2">
-          <img src="/coach/leo-icon.png" alt="Sona" className="h-8 w-8 object-contain" />
+          <img src="/coach/echo/echo-avatar.svg" alt="Sona" className="h-8 w-8 object-contain" />
           <span className="font-display text-2xl font-extrabold text-brand-600">
             Sona
           </span>
@@ -90,7 +90,7 @@ function Hero() {
       <div className="relative mx-auto max-w-2xl px-5 py-14 text-center sm:py-20">
         {/* logo lockup: Leo + Sona */}
         <div className="flex items-center justify-center gap-3">
-          <img src="/coach/leo-icon.png" alt="Leo" className="h-14 w-14 object-contain" />
+          <img src="/coach/echo/echo-avatar.svg" alt="Echo" className="h-14 w-14 object-contain" />
           <span className="font-display text-4xl font-extrabold text-gray-900">Sona</span>
           <span className="rounded-full bg-brand-400 px-2 py-0.5 text-[11px] font-extrabold uppercase tracking-wide text-white">
             Beta
@@ -130,7 +130,7 @@ function CoachStage() {
       <div className="rounded-[2rem] bg-white p-3 shadow-chunky">
         <div className="relative overflow-hidden rounded-[1.5rem] bg-gradient-to-b from-brand-400/20 to-brand-50">
           <div className="flex aspect-[4/5] flex-col items-center justify-center px-6">
-            <img src="/coach/leo-icon.png" alt="Leo" className="h-36 w-36 object-contain" />
+            <img src="/coach/echo/echo-avatar.svg" alt="Echo" className="h-36 w-36 object-contain" />
             <div className="mt-4 rounded-2xl bg-white px-5 py-3 shadow-chunky-sm">
               <p className="font-display text-lg font-extrabold text-gray-800">
                 &ldquo;Let&apos;s try <span className="text-brand-600">rabbit</span> — your turn!&rdquo;
@@ -523,7 +523,7 @@ function Footer() {
     <footer className="border-t border-gray-100">
       <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-5 py-10 sm:flex-row">
         <div className="flex items-center gap-2">
-          <img src="/coach/leo-icon.png" alt="Leo" className="h-7 w-7 object-contain" />
+          <img src="/coach/echo/echo-avatar.svg" alt="Echo" className="h-7 w-7 object-contain" />
           <span className="font-display text-lg font-extrabold text-brand-600">
             Sona
           </span>
