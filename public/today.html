@@ -59,6 +59,20 @@
 
     /* up next thumbnails */
     #upNextLbl{font-family:"Baloo 2";font-weight:800;font-size:12px;letter-spacing:.1em;color:var(--label);}
+    /* Practice Path v1 — today's five steps on the lifelong trail (placeholder
+       look until the design bundle lands; mechanics are final) */
+    #pathStrip{margin:10px 0 4px;}
+    #pathHead{display:flex;justify-content:space-between;font-family:"Baloo 2";font-weight:800;font-size:11px;letter-spacing:.08em;color:var(--label);margin-bottom:7px;}
+    #pathRow{display:flex;align-items:center;}
+    .pnode{width:32px;height:32px;border-radius:50%;flex:none;border:none;display:flex;align-items:center;justify-content:center;font-family:"Baloo 2";font-weight:800;font-size:14px;cursor:default;padding:0;}
+    .pnode.done{background:#58cc02;box-shadow:0 3px 0 #46a302;color:#fff;}
+    .pnode.next{background:linear-gradient(180deg,#ffa05a,#ff8a3d);box-shadow:0 3px 0 var(--orange-d);color:#fff;cursor:pointer;animation:pnext 1.3s ease infinite;}
+    .pnode.todo{background:#fff;border:2px solid var(--track);color:var(--label);}
+    .pline{flex:1;height:4px;border-radius:99px;background:var(--track);margin:0 3px;}
+    .pline.on{background:#58cc02;}
+    @keyframes pnext{0%,100%{transform:scale(1)}50%{transform:scale(1.12)}}
+    @media (max-height:700px){ .pnode{width:27px;height:27px;font-size:12px;} #pathStrip{margin:6px 0 2px;} }
+    @media (prefers-reduced-motion:reduce){ .pnode.next{animation:none;} }
     #thumbs{display:flex;gap:16px;}
     .thumb{position:relative;width:120px;height:116px;border-radius:18px;border:5px solid #fff;box-shadow:0 6px 14px rgba(90,50,10,.16);background:#eee center/cover no-repeat;cursor:pointer;flex:none;transition:transform .12s;margin-bottom:12px;}
     .thumb:nth-child(1){transform:rotate(-2deg);}
@@ -138,6 +152,10 @@
       </div>
     </div>
 
+    <div id="pathStrip">
+      <div id="pathHead"><span id="pathStep"></span><span id="pathGate"></span></div>
+      <div id="pathRow"></div>
+    </div>
     <div id="upNextLbl">UP NEXT</div>
     <div id="thumbs"></div>
 
@@ -302,6 +320,27 @@
       });
     }
     render();
+    // Practice Path strip: today's 5 steps + where the trail stands. The
+    // pulsing next node is the same door as LET'S GO; done nodes are inert.
+    function paintPath(){
+      try{
+        var ps=S&&S.pathState?S.pathState():null, tr=S&&S.todayRing?S.todayRing():null;
+        if(!ps||!tr){ $("pathStrip").style.display="none"; return; }
+        $("pathStep").textContent="STEP "+ps.steps;
+        $("pathGate").textContent=(ps.into===0&&ps.steps>0)?"NEW DISTRICT TODAY!":("GATE IN "+ps.toGate);
+        var html="",i;
+        for(i=0;i<tr.goal;i++){
+          if(i) html+='<i class="pline'+(i<=tr.n?" on":"")+'"></i>';
+          var cls=i<tr.n?"done":(i===tr.n?"next":"todo");
+          var inner=i<tr.n?"✓":(i===tr.goal-1?((S&&S.icon)?S.icon("star",15):"★"):String(i+1));
+          html+='<button class="pnode '+cls+'" data-i="'+i+'" aria-label="Step '+(i+1)+'">'+inner+'</button>';
+        }
+        $("pathRow").innerHTML=html;
+        var nx=$("pathRow").querySelector(".pnode.next");
+        if(nx) nx.onclick=function(){ sfx("tap"); $("goBtn").click(); };
+      }catch(e){}
+    }
+    paintPath();
     $("heroCard").onclick=function(){ ACTS[sel].tap(); };
     $("goBtn").onclick=function(){ ACTS[sel].tap(); };
     // swipe the hero to browse
