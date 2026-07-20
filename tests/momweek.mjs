@@ -78,9 +78,10 @@ await page.reload(); await page.waitForTimeout(900);
 const sheet = await page.evaluate(() => {
   document.getElementById("sheetOvl").classList.add("show");
   // paintWeek runs on load; read what it rendered
-  return { dots: document.getElementById("wkDots").children.length, msg: document.getElementById("wkMsg").textContent, streak: document.getElementById("wkStreak").textContent, sub: document.getElementById("subLine").textContent };
+  return { dots: document.getElementById("wkDots").children.length, msg: document.getElementById("wkMsg").textContent, streak: document.getElementById("wkStreak").textContent, sub: document.getElementById("subLine").textContent, plan: (document.getElementById("goPlan") || {}).textContent || "" };
 });
 ok("sheet 7 dots", sheet.dots, 7);
+ok("sheet has Your plan entry", /Your plan/.test(sheet.plan), true);
 console.log("      msg:", sheet.msg, "| streak:", sheet.streak, "| subLine:", sheet.sub);
 await page.screenshot({ path: OUT + "/mom-sheet.png" });
 
