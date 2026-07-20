@@ -183,6 +183,7 @@
       <div id="planNote" style="display:none;background:var(--cream);border-radius:16px;padding:12px 16px;margin-top:10px;text-align:left;font-weight:800;font-size:12.5px;color:var(--muted);"></div>
       <button class="sheetBtn" id="goCheck"><span style="font-size:18px;">🎯</span>&nbsp; <span id="goCheckTxt">Weekly Sound Check</span></button>
       <button class="sheetBtn" id="goProgress"><span class="pic-trend"></span>&nbsp; Progress &amp; SLP report</button>
+      <button class="sheetBtn" id="goPlan"><span style="font-size:18px;">💛</span>&nbsp; Your plan</button>
       <button class="sheetBtn" id="goSettings"><span class="pic-gear"></span>&nbsp; Settings</button>
       <button class="ghost" id="sheetClose">Close</button>
     </div>
@@ -473,6 +474,7 @@
     paintWeek();
     try{ document.querySelectorAll(".pic-trend").forEach(function(n){ n.innerHTML=S.icon("trend",18); }); document.querySelectorAll(".pic-gear").forEach(function(n){ n.innerHTML=S.icon("gear",18); }); }catch(e){}
     $("goProgress").onclick=function(){ location.href="/progress.html"; };
+    $("goPlan").onclick=function(){ location.href="/subscribe.html"; };
     $("goSettings").onclick=function(){ location.href="/settings.html"; };
     $("goCheck").onclick=function(){ location.href="/soundcheck.html"; };
     $("sheetClose").onclick=function(){ $("sheetOvl").classList.remove("show"); };
