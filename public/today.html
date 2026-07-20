@@ -252,7 +252,9 @@
     var sel=0;
 
     function art(key){ try{ return (window.SonaScenes&&SonaScenes.has(key))?("url('"+SonaScenes.uri(key)+"')"):""; }catch(e){ return ""; } }
-    // illustrated panels (coach/city/<key>.png) take over the moment they load.
+    // illustrated panels (coach/city/<key>-{300|800}.webp) take over the moment
+    // they load — sized per slot (hero 800w, thumbs 300w) so the swap beats the
+    // eye; the old 1.2–1.7MB PNGs visibly popped in late on first open.
     // Two art shapes live side by side: FULL-BLEED painted scenes (tall 2:3 —
     // the house-in-its-street style) simply cover the card; square sticker
     // CUT-OUTS layer over the vector city until a full scene replaces them.
@@ -264,7 +266,7 @@
       el.style.backgroundSize="88% auto"+(base?", cover":"");
       el.style.backgroundPosition="center 62%"+(base?", center":"");
       el.style.backgroundRepeat="no-repeat";
-    }; im.src="/coach/city/"+key+".png"; }
+    }; im.src="/coach/city/"+key+"-"+(el.id==="heroCard"?"800":"300")+".webp"; }
     // Coach Call has no house panel yet — it gets the evening call sky + Echo
     function applyArt(el,key){
       if(key==="call"){
