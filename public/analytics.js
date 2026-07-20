@@ -1,37 +1,43 @@
 /*
- * Sona analytics — PostHog (clicks, funnels, optional session replay).
+ * Sona analytics — PostHog, privacy-hardened for a kids' speech app.
  *
- * IMPORTANT: load this ONLY on adult-facing pages (marketing, parent setup,
- * SLP entry) — never on the kids' practice games — so children's usage stays
- * out of analytics (COPPA).
+ * Runs on parent/marketing pages AND inside the iOS shell (the purchase
+ * funnel lives in-app), with different postures:
+ *   - web: pageviews on (ad-funnel diagnostics), autocapture OFF
+ *   - shell: no pageviews, no autocapture — only the whitelisted events below
+ * Both: session replay disabled, heatmaps off, no rage-click tracking.
  *
- * Setup: paste your PostHog Project API key below. It's a PUBLIC key (designed
- * to live in client code), so this is safe. Until it's set, this file is a
- * harmless no-op.
+ * Identity is the anonymous family id (Sona.fid) — never a name or an email.
+ * Event properties pass a hard whitelist; free-form data never leaves. Child
+ * names, recordings, transcripts, and typed text never reach this file.
+ * Loaded by: parent pages, onboarding, subscribe, and charge.html (practice
+ * telemetry only) — never the arcade game pages.
  *
- * Events: everything goes through window.sonaTrack(event, params), so existing
- * calls like sonaTrack("Lead") are captured here too — alongside the Meta Pixel.
+ * The phc_ key is a PUBLISHABLE client token (like a pixel id): safe in git.
+ * Events: window.SonaAnalytics.track(name, props). The legacy sonaTrack
+ * chain (Meta) is web-only and unchanged.
  */
 (function () {
   var POSTHOG_KEY = "phc_xRPqirD2PznnvZrpeuLDwo7LtYegHsF2xWsDNLEEXdkw"; // PostHog Project API key (public)
-  var POSTHOG_HOST = "https://us.i.posthog.com"; // EU project? use "https://eu.i.posthog.com"
+  var POSTHOG_HOST = "https://us.i.posthog.com";
+  var NATIVE = !!window.Capacitor;
+  var ALLOWED = { sound: 1, game: 1, duration_seconds: 1, attempts_count: 1, surface: 1, plan: 1, source: 1 };
 
-  // Native app (Capacitor): ship zero third-party analytics (kids/COPPA). Web is unaffected.
-  // Keep sonaTrack defined as a no-op so any page code that calls it doesn't error.
-  if (window.Capacitor) {
-    if (typeof window.sonaTrack !== "function") window.sonaTrack = function () {};
-    return;
-  }
+  window.SonaAnalytics = { track: function () {}, identify: function () {}, reset: function () {} }; // no-op until loaded
 
-  // Chain PostHog onto sonaTrack regardless of script load order with pixel.js.
-  // If sonaTrack isn't defined yet, start from a no-op and forward to PostHog.
-  var prior = typeof window.sonaTrack === "function" ? window.sonaTrack : function () {};
-  window.sonaTrack = function (event, params) {
-    try { prior(event, params); } catch (e) {}
-    try { if (window.posthog && window.posthog.capture) window.posthog.capture(event, params || {}); } catch (e) {}
-  };
+  // Shell: the Meta chain stays a no-op (ad pixels never ship in the app).
+  if (NATIVE && typeof window.sonaTrack !== "function") window.sonaTrack = function () {};
 
   if (!POSTHOG_KEY) return; // inert until configured
+
+  if (!NATIVE) {
+    // Web: chain PostHog onto sonaTrack regardless of load order with pixel.js.
+    var prior = typeof window.sonaTrack === "function" ? window.sonaTrack : function () {};
+    window.sonaTrack = function (event, params) {
+      try { prior(event, params); } catch (e) {}
+      try { if (window.posthog && window.posthog.capture) window.posthog.capture(event, params || {}); } catch (e) {}
+    };
+  }
 
   // Official PostHog loader snippet (queues calls, then loads posthog-js).
   !(function (t, e) {
@@ -79,9 +85,29 @@
 
   window.posthog.init(POSTHOG_KEY, {
     api_host: POSTHOG_HOST,
-    autocapture: true, // record every click/input automatically
-    capture_pageview: true,
-    capture_pageleave: true,
-    person_profiles: "identified_only", // don't create profiles for anonymous visitors
+    autocapture: false,                 // never record raw clicks/inputs
+    capture_pageview: !NATIVE,          // web funnel only; the shell sends events, not URLs
+    capture_pageleave: false,
+    disable_session_recording: true,    // never record a child's screen
+    enable_heatmaps: false,
+    rageclick: false,
+    person_profiles: "identified_only",
+    loaded: function (ph) {
+      // identity = the anonymous family id — never a name or email
+      try { if (window.Sona && window.Sona.fid) ph.identify(window.Sona.fid()); } catch (e) {}
+    },
   });
+
+  window.SonaAnalytics = {
+    track: function (name, props) {
+      try {
+        var clean = {};
+        for (var k in props || {}) if (ALLOWED[k]) clean[k] = props[k];
+        clean.native = NATIVE;
+        window.posthog.capture(name, clean);
+      } catch (e) {}
+    },
+    identify: function (id) { try { if (id) window.posthog.identify(String(id)); } catch (e) {} },
+    reset: function () { try { window.posthog.reset(); } catch (e) {} },
+  };
 })();

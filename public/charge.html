@@ -228,6 +228,7 @@
   </div>
 
   <script src="/sona.js"></script>
+  <script src="/analytics.js"></script>
   <script src="/scenes.js"></script>
   <script src="/gamecontent.js"></script>
   <script>
@@ -699,12 +700,16 @@
 
     // ---- the flow ----
     var launched=false;
+    // practice telemetry: aggregate counts only (sound/game/duration/attempts) —
+    // never audio, never transcripts, never the child's name
+    var T0=performance.now(), attemptsTotal=0;
     function logV(v){ if(v!=="unknown" && S && S.logAttempt) S.logAttempt({game:"charge",sound:SOUND,pass:v==="pass",word:String(ITEM.word||ITEM.t).toLowerCase()}); }
     async function burstAndVerify(n){
       var save=NEED; if(n)NEED=n;
       micGo(true,"I'm listening…");
       await startEngine();
       if(reps>0)anyReps=true;
+      attemptsTotal+=reps;
       NEED=save;
       micGo(false,""); $("gpState").textContent="Echo's thinking…";
       var l=$("leo"); try{ l.classList.add("think"); }catch(e){}
@@ -736,6 +741,7 @@
       await micPrimer();
       try{ micStream=await navigator.mediaDevices.getUserMedia({audio:true,video:false}); try{ localStorage.setItem("sona.micok","1"); }catch(e){} }
       catch(e){ micGo(false,"Mic is off"); if(S&&S.micDenied)S.micDenied({back:"/today.html"}); return; }
+      try{ if(window.SonaAnalytics)SonaAnalytics.track("practice started",{sound:SOUND,game:GMETA.n}); }catch(e){}
       // Leo speaks the prompt ONCE, then the mic is instantly hot.
       await playPrompt();
       var v=await burstAndVerify();
@@ -830,6 +836,7 @@
 
     function launchGame(){
       if(launched)return; launched=true;
+      try{ if(window.SonaAnalytics&&anyReps)SonaAnalytics.track("practice completed",{sound:SOUND,game:GMETA.n,duration_seconds:Math.round((performance.now()-T0)/1000),attempts_count:attemptsTotal}); }catch(e){}
       stopMic(); try{ showTurtle(false); }catch(e){}
       paintReps(NEED); $("gamePanel").classList.add("ready");
       sfx("complete"); try{ if(S&&S.confetti)S.confetti(); }catch(e){}

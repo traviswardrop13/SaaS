@@ -235,6 +235,7 @@
         if (subbed) { document.getElementById("planLine").innerHTML = 'Your plan: <b style="color:var(--good);">Active ✓</b> — thank you for backing Sona.'; return; }
         if (!(Sona.iapAvailable && Sona.iapAvailable())) return; // old binary: no purchase UI at all
         document.getElementById("iapCard").style.display = "block";
+        try { if (window.SonaAnalytics) SonaAnalytics.track("paywall viewed", { surface: "native" }); } catch (e) {}
         document.getElementById("planLine").innerHTML = "Today: <b>7 days free</b> — then $69.99/yr. Cancel anytime.";
         // greet the onboarding hand-off warmly
         if (/[?&]welcome=1/.test(location.search)) document.getElementById("iapTitle").textContent = "One last thing — start your free week";
@@ -253,6 +254,8 @@
           try { if (window.sonaTrack) sonaTrack("InitiateCheckout", { value: 69.99, currency: "USD", content_name: "iap_annual" }); } catch (e) {}
           Sona.iapPurchase().then(function () {
             msg.textContent = "";
+            // RevenueCat has confirmed the entitlement by the time this resolves
+            try { if (window.SonaAnalytics) SonaAnalytics.track("trial started", { source: "apple", plan: "annual" }); } catch (e) {}
             try { if (Sona.confetti) Sona.confetti({ count: 160 }); if (Sona.sfx && Sona.sfx.complete) Sona.sfx.complete(); } catch (e) {}
             document.getElementById("planLine").innerHTML = 'Your plan: <b style="color:var(--good);">Active ✓</b> — welcome to Sona!';
             document.getElementById("iapCard").style.display = "none";
@@ -304,6 +307,11 @@
           .then(function (j) { if (j && j.ok && j.url) { location.href = j.url; } else { msg.textContent = (j && j.error) || "Checkout couldn't open — try again in a minute."; } })
           .catch(function () { msg.textContent = "Checkout couldn't open — are you online?"; });
       }
+      // web paywall impression (native fires its own with surface:"native")
+      try {
+        if (window.SonaAnalytics && document.getElementById("pickCard").style.display !== "none" && !subbed)
+          SonaAnalytics.track("paywall viewed", { surface: "web" });
+      } catch (e) {}
       var a = document.getElementById("buyAnnual"), m = document.getElementById("buyMonthly"), f = document.getElementById("buyFounding");
       if (a) a.onclick = function () { buy("annual", 69.99); };
       if (m) m.onclick = function () { buy("monthly", 12.99); };
