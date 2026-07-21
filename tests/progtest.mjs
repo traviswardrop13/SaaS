@@ -282,10 +282,10 @@ await page.goto("http://localhost:8131/subscribe.html"); await page.waitForTimeo
 t = await page.evaluate(() => ({
   pick: document.getElementById("pickCard").style.display,
   founding: document.getElementById("foundingCard").style.display,
-  annual: /69\.99/.test(document.getElementById("planAnnual").textContent),
+  annual: /79\.99/.test(document.getElementById("planAnnual").textContent) && /119\.99/.test(document.getElementById("planAnnual").textContent),
   monthly: /12\.99/.test(document.getElementById("planMonthly").textContent),
 }));
-ok("trial cohort sees the plan picker ($69.99 + $12.99)", t.pick === "block" && t.founding === "none" && t.annual && t.monthly);
+ok("trial cohort sees the plan picker ($79.99 beta, anchored $119.99)", t.pick === "block" && t.founding === "none" && t.annual && t.monthly);
 // paywall trust: named-SLP proof strip above the plans + literal first-charge date
 t = await page.evaluate(() => ({
   proof: (document.querySelector("#pickCard .proof") || {}).textContent || "",
