@@ -125,8 +125,8 @@
 
     <!-- sounds -->
     <div class="step" data-step="sounds">
-      <div class="qh">Which sounds are we working on?</div>
-      <p class="muted">Pick any — the most common are already chosen.</p>
+      <div class="qh">We're starting with the R sound</div>
+      <p class="muted">Sona goes deep on R first — the hardest sound to learn. Every other sound is on the way, and you'll get them all as they ship.</p>
       <div class="schips" id="obSounds"></div>
     </div>
 
@@ -191,7 +191,7 @@
     var draft = {
       childName: p.childName || "",
       character: (window.Sona && Sona.characterById && Sona.characterById(p.character)) ? p.character : "fox", // Pip starts selected — legacy/unknown ids fall back too
-      focusSounds: (p.focusSounds && p.focusSounds.length) ? p.focusSounds.slice() : ["R","S","L","K"],
+      focusSounds: (p.focusSounds && p.focusSounds.length) ? p.focusSounds.slice() : ["R"],
       slpEvaluated: p.slpEvaluated || "",
       goals: p.goals || "",
       email: p.email || "",
@@ -271,11 +271,17 @@
     });
 
     // sound chips
+    // R-era: Sona goes deep on one sound at a time — new families start on R;
+    // SLP-referred families keep the full picker (clinics target any sound).
     var selSounds = new Set(draft.focusSounds);
+    var slpFull=false; try{ slpFull=!!(Sona.slpCode&&Sona.slpCode()); }catch(e){}
+    if(!slpFull){ selSounds=new Set(["R"]); draft.focusSounds=["R"]; }
     var sc = document.getElementById("obSounds");
     Sona.ALL_SOUNDS.forEach(function(s){
-      var b=document.createElement("div"); b.className="sound"+(selSounds.has(s)?" on":""); b.textContent=s;
-      b.onclick=function(){ Sona.sfx.tap(); if(selSounds.has(s)) selSounds.delete(s); else selSounds.add(s); b.classList.toggle("on"); };
+      var open = slpFull || s==="R";
+      var b=document.createElement("div"); b.className="sound"+(selSounds.has(s)?" on":"")+(open?"":" soon");
+      b.innerHTML=s+(open?"":'<span style="display:block;font-size:9px;font-weight:800;color:var(--label);letter-spacing:.05em;">SOON</span>');
+      if(open) b.onclick=function(){ Sona.sfx.tap(); if(selSounds.has(s)){ if(selSounds.size>1){ selSounds.delete(s); b.classList.remove("on"); } } else { selSounds.add(s); b.classList.add("on"); } };
       sc.appendChild(b);
     });
 
