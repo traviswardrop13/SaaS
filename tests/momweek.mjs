@@ -82,6 +82,9 @@ const sheet = await page.evaluate(() => {
 });
 ok("sheet 7 dots", sheet.dots, 7);
 ok("sheet has Your plan entry", /Your plan/.test(sheet.plan), true);
+// pre-path families get one step per practiced day — nobody restarts at zero
+const pcredit = await page.evaluate(() => window.Sona.pathState().steps);
+ok("path credits practiced days", pcredit >= 3, true);
 console.log("      msg:", sheet.msg, "| streak:", sheet.streak, "| subLine:", sheet.sub);
 await page.screenshot({ path: OUT + "/mom-sheet.png" });
 

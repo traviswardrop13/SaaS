@@ -835,6 +835,19 @@
       document.querySelectorAll(".pic-gear").forEach(function(n){ n.innerHTML=Sona.icon("gear",20); });
       document.querySelectorAll(".pic-trend").forEach(function(n){ n.innerHTML=Sona.icon("trend",17); });
     }catch(e){} })();
+
+    // R-era density cut: the archival cards (per-sound mastery, firsts,
+    // recent sessions) tuck behind one toggle — the page leads with volume,
+    // accuracy, and the week.
+    (function(){
+      var picks=["bysound","firstsCard","recent"], cards=[];
+      picks.forEach(function(id){ var el=document.getElementById(id); if(!el)return; var c=(el.classList&&el.classList.contains("card"))?el:(el.closest?el.closest(".card"):null); if(c&&cards.indexOf(c)<0){ c.style.display="none"; cards.push(c); } });
+      if(!cards.length)return;
+      var t=document.createElement("div"); t.className="card"; t.style.cssText="text-align:center;cursor:pointer;";
+      t.innerHTML='<b style="font-family:\'Baloo 2\';font-weight:800;font-size:14px;color:var(--muted);">More details \u25be</b>';
+      cards[0].parentNode.insertBefore(t,cards[0]);
+      t.onclick=function(){ var open=cards[0].style.display==="none"; cards.forEach(function(c){ c.style.display=open?"":"none"; }); t.firstChild.textContent=open?"Fewer details \u25b4":"More details \u25be"; };
+    })();
   </script>
 </body>
 </html>

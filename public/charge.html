@@ -699,12 +699,23 @@
 
     // ---- the flow ----
     var launched=false;
+    // practice telemetry: aggregate counts only (sound/game/duration/attempts),
+    // sent FIRST-PARTY to our own /api/track (kid pages ship zero third-party
+    // scripts — the server relays to product analytics). Never audio, never
+    // transcripts, never the child's name.
+    var T0=performance.now(), attemptsTotal=0;
+    function tele(ev,props){ try{
+      var body=JSON.stringify({e:ev,p:props||{},fid:(S&&S.fid)?S.fid():""});
+      if(navigator.sendBeacon) navigator.sendBeacon("/api/track",body);
+      else fetch("/api/track",{method:"POST",headers:{"Content-Type":"application/json"},body:body,keepalive:true}).catch(function(){});
+    }catch(e){} }
     function logV(v){ if(v!=="unknown" && S && S.logAttempt) S.logAttempt({game:"charge",sound:SOUND,pass:v==="pass",word:String(ITEM.word||ITEM.t).toLowerCase()}); }
     async function burstAndVerify(n){
       var save=NEED; if(n)NEED=n;
       micGo(true,"I'm listening…");
       await startEngine();
       if(reps>0)anyReps=true;
+      attemptsTotal+=reps;
       NEED=save;
       micGo(false,""); $("gpState").textContent="Echo's thinking…";
       var l=$("leo"); try{ l.classList.add("think"); }catch(e){}
@@ -736,6 +747,7 @@
       await micPrimer();
       try{ micStream=await navigator.mediaDevices.getUserMedia({audio:true,video:false}); try{ localStorage.setItem("sona.micok","1"); }catch(e){} }
       catch(e){ micGo(false,"Mic is off"); if(S&&S.micDenied)S.micDenied({back:"/today.html"}); return; }
+      tele("practice started",{sound:SOUND,game:GMETA.n});
       // Leo speaks the prompt ONCE, then the mic is instantly hot.
       await playPrompt();
       var v=await burstAndVerify();
@@ -830,6 +842,7 @@
 
     function launchGame(){
       if(launched)return; launched=true;
+      if(anyReps) tele("practice completed",{sound:SOUND,game:GMETA.n,duration_seconds:Math.round((performance.now()-T0)/1000),attempts_count:attemptsTotal});
       stopMic(); try{ showTurtle(false); }catch(e){}
       paintReps(NEED); $("gamePanel").classList.add("ready");
       sfx("complete"); try{ if(S&&S.confetti)S.confetti(); }catch(e){}

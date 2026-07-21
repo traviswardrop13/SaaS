@@ -48,6 +48,7 @@ export default function SubscribeSuccess() {
   const [info, setInfo] = useState<Info | null>(null);
   const [fetched, setFetched] = useState(false);
   const [portalDead, setPortalDead] = useState(false);
+  const [appCode, setAppCode] = useState<string>("");
 
   useEffect(() => {
     const q = new URLSearchParams(window.location.search);
@@ -66,14 +67,36 @@ export default function SubscribeSuccess() {
     } catch {
       // ignore — non-blocking
     }
+    // Mint the app hand-off code: the ad funnel buys HERE, then downloads the
+    // iOS app — the move-in code carries the subscription into the app so no
+    // paywall ever shows there. Best-effort (no KV → email-restore fallback).
+    try {
+      const subStr = localStorage.getItem("sona.sub.v1");
+      if (subStr) {
+        const blob = JSON.stringify({ app: "sona", v: 1, data: { "sona.sub.v1": subStr } });
+        fetch("/api/pair", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ data: blob }),
+        })
+          .then((r) => r.json())
+          .then((j: { ok?: boolean; code?: string }) => { if (j?.ok && j.code) setAppCode(j.code); })
+          .catch(() => {});
+      }
+    } catch {
+      // ignore — non-blocking
+    }
     // Fire the conversion event for both PostHog and the Meta Pixel — before
     // any fetch, so a slow Stripe read never costs the ad platforms the event.
     try {
       const w = window as unknown as { sonaTrack?: (e: string, p?: Record<string, unknown>) => void };
-      const value = p === "annual" ? 69.99 : p === "monthly" ? 12.99 : 39.99;
+      const value = p === "annual" ? 79.99 : p === "monthly" ? 12.99 : 39.99;
       // Trialed annuals register as StartTrial (no charge today); paid-now plans as Purchase.
       const ev = p === "annual" ? "StartTrial" : "Purchase";
-      if (typeof w.sonaTrack === "function") w.sonaTrack(ev, { value, currency: "USD", predicted_ltv: 69.99 });
+      if (typeof w.sonaTrack === "function") w.sonaTrack(ev, { value, currency: "USD", predicted_ltv: 79.99 });
+      // product analytics (whitelisted props; Stripe has already confirmed)
+      const wa = window as unknown as { SonaAnalytics?: { track: (e: string, p?: Record<string, unknown>) => void } };
+      if (wa.SonaAnalytics) wa.SonaAnalytics.track(p === "annual" ? "trial started" : "subscription started", { source: "stripe", plan: p });
     } catch {
       // ignore — non-blocking
     }
@@ -222,23 +245,41 @@ export default function SubscribeSuccess() {
         </div>
       )}
 
-      <div className="mt-5 max-w-sm rounded-2xl bg-sky-50 px-5 py-4 text-left text-sm font-semibold text-sky-800">
-        📱 Using another device? Open Sona there →{" "}
-        <strong>⚙️ Settings → Restore access</strong> → enter{" "}
-        {info?.email ? <strong>{info.email}</strong> : "this email"}.
+      {/* The hand-off: buy on the web → set up in the iOS app. */}
+      <div className="mt-6 w-full max-w-sm rounded-2xl border-2 border-grass-500/30 bg-white p-5 text-left shadow-sm">
+        <div className="font-display text-sm font-extrabold uppercase tracking-wide text-gray-400">
+          Next: get the app
+        </div>
+        <ol className="mt-3 space-y-3 text-sm font-semibold text-gray-700">
+          <li>
+            <strong>1.</strong> Download <strong>Sona Speech</strong> on the App Store
+          </li>
+          <li>
+            <strong>2.</strong> Open it and tap <strong>&ldquo;Have a code?&rdquo;</strong> on the first screen
+          </li>
+          <li>
+            <strong>3.</strong> Enter{" "}
+            {appCode ? (
+              <strong className="rounded-lg bg-amber-100 px-2 py-0.5 font-display text-lg tracking-[3px] text-amber-900">{appCode}</strong>
+            ) : (
+              <strong>the code we show here in a moment</strong>
+            )}{" "}
+            — your free week comes with you, and set-up happens in the app.
+          </li>
+        </ol>
       </div>
       <a
-        href="/onboarding.html"
-        className="mt-8 inline-block rounded-2xl bg-grass-500 px-8 py-4 font-display text-lg font-extrabold uppercase tracking-wide text-white shadow-chunky transition hover:bg-grass-600 active:translate-y-1 active:shadow-chunky-sm"
+        href="https://apps.apple.com/app/id6785755867"
+        className="mt-6 inline-block rounded-2xl bg-grass-500 px-8 py-4 font-display text-lg font-extrabold uppercase tracking-wide text-white shadow-chunky transition hover:bg-grass-600 active:translate-y-1 active:shadow-chunky-sm"
       >
-        Start setup
+        Download on the App Store
       </a>
-      <a
-        href="/map.html"
-        className="mt-4 text-sm font-bold text-gray-500 hover:text-gray-800"
-      >
-        Skip to the app →
-      </a>
+      <p className="mt-4 max-w-sm text-xs font-semibold text-gray-500">
+        No iPhone handy, or prefer the browser?{" "}
+        <a href="/onboarding.html" className="font-bold text-sky-700 underline">
+          Set up and play on the web →
+        </a>
+      </p>
     </main>
   );
 }

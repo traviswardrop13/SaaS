@@ -141,14 +141,14 @@
       <div class="plan" id="planFounding" style="display:none;border-color:var(--good);box-shadow:0 6px 18px rgba(88,204,2,.15);">
         <span class="tag" style="background:linear-gradient(180deg,#8ae05c,#58cc02);color:#0e4d00;">FOUNDING · FIRST 50 FAMILIES</span>
         <b>Founding — $39.99/yr</b>
-        <span class="sub">43% off the yearly price, locked while you stay — when Sona costs $69.99, your rate never rises.</span>
+        <span class="sub">Founding rate, locked while you stay — when Sona launches at $119.99, yours never rises.</span>
         <button class="btn go" id="buyFounding" style="background:linear-gradient(180deg,#8ae05c,#58cc02);box-shadow:0 4px 0 #46a302;">Claim a founding spot</button>
         <span class="reassure">Charged today — <b>$39.99</b> for the whole year. Cancel anytime, rate stays yours while subscribed.</span>
       </div>
       <div class="plan best" id="planAnnual">
         <span class="tag">BEST VALUE · 7 DAYS FREE</span>
-        <b>Yearly — $69.99/yr</b>
-        <span class="sub">$5.83/month, billed yearly — save 55% vs monthly.</span>
+        <b>Yearly — <s style="color:#b8a88f;font-weight:800;">$119.99</s> $79.99/yr</b>
+        <span class="sub">Beta price — $6.67/month billed yearly. Locked while you stay; $119.99 after launch.</span>
         <button class="btn go" id="buyAnnual">Start 7 days free</button>
         <span class="reassure" id="trialMath">No charge today — cancel anytime during your free week.</span>
       </div>
@@ -235,6 +235,7 @@
         if (subbed) { document.getElementById("planLine").innerHTML = 'Your plan: <b style="color:var(--good);">Active ✓</b> — thank you for backing Sona.'; return; }
         if (!(Sona.iapAvailable && Sona.iapAvailable())) return; // old binary: no purchase UI at all
         document.getElementById("iapCard").style.display = "block";
+        try { if (window.SonaAnalytics) SonaAnalytics.track("paywall viewed", { surface: "native" }); } catch (e) {}
         document.getElementById("planLine").innerHTML = "Today: <b>7 days free</b> — then $69.99/yr. Cancel anytime.";
         // greet the onboarding hand-off warmly
         if (/[?&]welcome=1/.test(location.search)) document.getElementById("iapTitle").textContent = "One last thing — start your free week";
@@ -253,6 +254,8 @@
           try { if (window.sonaTrack) sonaTrack("InitiateCheckout", { value: 69.99, currency: "USD", content_name: "iap_annual" }); } catch (e) {}
           Sona.iapPurchase().then(function () {
             msg.textContent = "";
+            // RevenueCat has confirmed the entitlement by the time this resolves
+            try { if (window.SonaAnalytics) SonaAnalytics.track("trial started", { source: "apple", plan: "annual" }); } catch (e) {}
             try { if (Sona.confetti) Sona.confetti({ count: 160 }); if (Sona.sfx && Sona.sfx.complete) Sona.sfx.complete(); } catch (e) {}
             document.getElementById("planLine").innerHTML = 'Your plan: <b style="color:var(--good);">Active ✓</b> — welcome to Sona!';
             document.getElementById("iapCard").style.display = "none";
@@ -304,8 +307,13 @@
           .then(function (j) { if (j && j.ok && j.url) { location.href = j.url; } else { msg.textContent = (j && j.error) || "Checkout couldn't open — try again in a minute."; } })
           .catch(function () { msg.textContent = "Checkout couldn't open — are you online?"; });
       }
+      // web paywall impression (native fires its own with surface:"native")
+      try {
+        if (window.SonaAnalytics && document.getElementById("pickCard").style.display !== "none" && !subbed)
+          SonaAnalytics.track("paywall viewed", { surface: "web" });
+      } catch (e) {}
       var a = document.getElementById("buyAnnual"), m = document.getElementById("buyMonthly"), f = document.getElementById("buyFounding");
-      if (a) a.onclick = function () { buy("annual", 69.99); };
+      if (a) a.onclick = function () { buy("annual", 79.99); };
       if (m) m.onclick = function () { buy("monthly", 12.99); };
       if (f) f.onclick = function () { buy("founding", 39.99); };
       // The exact-date pill (Nibble/Headway pattern): a trial started today ends

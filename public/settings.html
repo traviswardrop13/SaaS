@@ -51,6 +51,17 @@
 
       <div class="field">Focus sounds</div>
       <div class="sounds" id="sounds"></div>
+      <div id="voteRow" style="margin-top:12px;background:#fff6e9;border-radius:14px;padding:12px 14px;">
+        <b style="font-family:'Baloo 2';font-weight:800;font-size:14px;color:var(--ink);">Which sound should Sona learn next?</b>
+        <div style="display:flex;gap:8px;margin-top:8px;align-items:center;">
+          <select id="voteSel" style="flex:1;padding:10px;border-radius:10px;border:1px solid var(--line);font-weight:800;font-family:Nunito,sans-serif;background:#fff;">
+            <option value="">Pick a sound…</option>
+            <option>S</option><option>L</option><option>SH</option><option>CH</option><option>TH</option><option>F</option><option>K</option><option>Z</option>
+          </select>
+          <button id="voteBtn" style="flex:none;border:none;border-radius:12px;padding:11px 18px;background:linear-gradient(180deg,#ffa05a,#ff8a3d);box-shadow:0 3px 0 #ef6f23;color:#fff;font-family:'Baloo 2';font-weight:800;font-size:14px;cursor:pointer;">Vote</button>
+        </div>
+        <p id="voteDone" style="display:none;font-weight:800;font-size:12.5px;color:#2e7d32;margin-top:8px;"></p>
+      </div>
 
       <label class="field" for="practicePos">Word position</label>
       <select id="practicePos">
@@ -151,6 +162,7 @@
   </div>
 
   <script src="/sona.js"></script>
+  <script src="/analytics.js"></script>
   <script>
     // Parent-only page: a child arriving by direct URL or back-swipe (no fresh
     // pass of the home screen's grown-ups gate) is sent back to the gate.
@@ -185,17 +197,36 @@
     slpEl.value = p.slpEvaluated || "";
     goalsEl.value = p.goals || "";
     posEl.value = p.practicePosition || "i";
+    // next-sound vote: local echo + one whitelisted analytics event
+    (function(){
+      var vs=document.getElementById("voteSel"), vb=document.getElementById("voteBtn"), vd=document.getElementById("voteDone");
+      if(!vs||!vb)return;
+      var prev=""; try{ prev=localStorage.getItem("sona.soundvote.v1")||""; }catch(e){}
+      function done(v){ vd.textContent="Thanks — you voted "+v+"! We build new sounds in order of votes."; vd.style.display="block"; }
+      if(prev){ done(prev); try{ vs.value=prev; }catch(e){} }
+      vb.onclick=function(){
+        var v=vs.value; if(!v)return;
+        try{ localStorage.setItem("sona.soundvote.v1",v); }catch(e){}
+        try{ if(window.SonaAnalytics)SonaAnalytics.track("next sound vote",{sound:v}); }catch(e){}
+        done(v);
+      };
+    })();
     var sel = new Set(p.focusSounds || []);
     var kidAge = parseInt(p.childAge, 10) || 0;
     Sona.ALL_SOUNDS.forEach(function (s) {
       var b = document.createElement("div");
       var norm = Sona.soundNorm ? Sona.soundNorm(s) : null;
       var early = !!(norm && kidAge && kidAge < norm);
-      b.className = "sound" + (sel.has(s) ? " on" : "");
+      // R-era: R is open for everyone; sounds a family already selected stay
+      // grandfathered; everything else is "coming soon" (vote below steers it)
+      var open = s === "R" || sel.has(s);
+      b.className = "sound" + (sel.has(s) ? " on" : "") + (open ? "" : " soon");
       b.innerHTML = (Sona.soundLabel ? Sona.soundLabel(s) : s) +
-        (norm ? '<span style="display:block;font-size:9.5px;font-weight:800;margin-top:1px;color:' + (early ? "#c0392b" : "var(--muted)") + ';">' + (early ? "⚠ " : "") + "by ~" + norm + 'y</span>' : "");
-      if (norm) b.title = "Most children produce this sound by about age " + norm + (early ? " — older than your child, so check with your SLP before targeting it." : ".");
-      b.onclick = function () { if (sel.has(s)) sel.delete(s); else sel.add(s); b.classList.toggle("on"); };
+        (open
+          ? (norm ? '<span style="display:block;font-size:9.5px;font-weight:800;margin-top:1px;color:' + (early ? "#c0392b" : "var(--muted)") + ';">' + (early ? "⚠ " : "") + "by ~" + norm + 'y</span>' : "")
+          : '<span style="display:block;font-size:9px;font-weight:800;margin-top:1px;color:var(--label);letter-spacing:.05em;">SOON</span>');
+      if (open && norm) b.title = "Most children produce this sound by about age " + norm + (early ? " — older than your child, so check with your SLP before targeting it." : ".");
+      if (open) b.onclick = function () { if (sel.has(s)) { if (sel.size > 1) { sel.delete(s); b.classList.remove("on"); } } else { sel.add(s); b.classList.add("on"); } };
       wrap.appendChild(b);
     });
     document.getElementById("save").onclick = function () {

@@ -55,6 +55,15 @@ ok("ring starts 0/5", t.ring === "0/5");
 ok("subLine invites the R sound", /your R sound/.test(t.sub));
 ok("rotation starts R round 0", t.sound === "R" && t.round === 0);
 
+// ── Practice Path v1: fresh day = pulsing first node, four waiting ──
+let pp = await page.evaluate(() => ({
+  ps: Sona.pathState(),
+  nodes: [...document.querySelectorAll("#pathRow .pnode")].map((e) => (e.className.includes("done") ? "d" : e.className.includes("next") ? "n" : "t")).join(""),
+  head: document.getElementById("pathStep").textContent,
+}));
+ok("path: fresh day paints next+4 todo", pp.nodes === "ntttt");
+ok("path: fresh family starts at step 0", pp.ps.steps === 0 && /STEP 0/.test(pp.head));
+
 // ── charge free play: round 1 = isolation, label Game 1 of 5 ──
 await page.goto("http://localhost:8131/charge.html?game=arcade-slice.html"); await page.waitForTimeout(700);
 let c = await page.evaluate(() => ({ prompt: document.getElementById("prompt").textContent, lbl: document.getElementById("roundLbl").textContent }));
@@ -91,6 +100,12 @@ await page.goto("http://localhost:8131/today.html"); await page.waitForTimeout(7
 t = await page.evaluate(() => ({ ring: document.getElementById("ringTxt").textContent, sub: document.getElementById("subLine").textContent }));
 ok("ring shows 3/5 after 3 rounds", t.ring === "3/5");
 ok("subLine counts down the goal", /2 more rounds/.test(t.sub));
+pp = await page.evaluate(() => ({
+  ps: Sona.pathState(),
+  nodes: [...document.querySelectorAll("#pathRow .pnode")].map((e) => (e.className.includes("done") ? "d" : e.className.includes("next") ? "n" : "t")).join(""),
+}));
+ok("path: 3 rounds = 3 done, next pulsing", pp.nodes === "dddnt");
+ok("path: steps track the rotation", pp.ps.steps === 3);
 await page.evaluate(() => document.getElementById("ringBtn").click());
 let toast = await page.evaluate(() => document.getElementById("toast").textContent);
 ok("ring tap explains progress", /3 of 5 practice rounds done/.test(toast) && /R sound/.test(toast));
@@ -109,6 +124,11 @@ t = await page.evaluate(() => ({
 }));
 ok("ring shows the gold star", t.ring === "★" && t.stroke === "#ffb300");
 ok("subLine celebrates the goal with the tomorrow-hook", /All done today/.test(t.sub) && /tomorrow/.test(t.sub));
+pp = await page.evaluate(() => ({
+  ps: Sona.pathState(),
+  nodes: [...document.querySelectorAll("#pathRow .pnode")].map((e) => (e.className.includes("done") ? "d" : "x")).join(""),
+}));
+ok("path: full day = five done steps", pp.nodes === "ddddd" && pp.ps.steps === 5);
 await page.screenshot({ path: OUT + "/prog-ring-done.png" });
 
 // ── bonus rounds practice the NEXT letter from isolation ──
@@ -262,10 +282,10 @@ await page.goto("http://localhost:8131/subscribe.html"); await page.waitForTimeo
 t = await page.evaluate(() => ({
   pick: document.getElementById("pickCard").style.display,
   founding: document.getElementById("foundingCard").style.display,
-  annual: /69\.99/.test(document.getElementById("planAnnual").textContent),
+  annual: /79\.99/.test(document.getElementById("planAnnual").textContent) && /119\.99/.test(document.getElementById("planAnnual").textContent),
   monthly: /12\.99/.test(document.getElementById("planMonthly").textContent),
 }));
-ok("trial cohort sees the plan picker ($69.99 + $12.99)", t.pick === "block" && t.founding === "none" && t.annual && t.monthly);
+ok("trial cohort sees the plan picker ($79.99 beta, anchored $119.99)", t.pick === "block" && t.founding === "none" && t.annual && t.monthly);
 // paywall trust: named-SLP proof strip above the plans + literal first-charge date
 t = await page.evaluate(() => ({
   proof: (document.querySelector("#pickCard .proof") || {}).textContent || "",

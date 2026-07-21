@@ -61,6 +61,19 @@ for (const [dev, w, h] of PORTRAIT) {
   m = await measure(page, "charge.html?game=arcade-slice.html");
   ok(dev + " charge: mic clears the home bar", m.mic && m.mic.bottom <= m.innerH - HOME_BAR + 1, m.mic && m.mic.bottom + "/" + (m.innerH - HOME_BAR));
   ok(dev + " charge: no sideways overflow", m.oX <= 1, "oX=" + m.oX);
+  // Story Time: instruction pill must never overlap the controls (the old
+  // absolute anchor collided with Read-it-to-me on every device)
+  await page.goto("http://localhost:8143/story.html?sound=R", { waitUntil: "networkidle" });
+  await page.waitForTimeout(900);
+  const st = await page.evaluate(() => {
+    const r = (id) => { const e = document.getElementById(id); if (!e) return null; const b = e.getBoundingClientRect(); return { top: Math.round(b.top), bottom: Math.round(b.bottom) }; };
+    return { prompt: r("prompt"), hear: r("hear"), mic: r("micBtn"), oX: Math.round(document.documentElement.scrollWidth - innerWidth), innerH: innerHeight };
+  });
+  ok(dev + " story: prompt clears the buttons", st.prompt && st.hear && st.prompt.bottom <= st.hear.top + 1, JSON.stringify({ p: st.prompt, h: st.hear }));
+  // padding-floor rule (see goBtn note above): #bottom pads 16px + env(),
+  // env()=0 headless — assert against the page's own 16px, not the device inset
+  ok(dev + " story: mic never overflows the page", st.mic && st.mic.bottom <= st.innerH - 15, st.mic && st.mic.bottom + "/" + (st.innerH - 15));
+  ok(dev + " story: no sideways overflow", st.oX <= 1, "oX=" + st.oX);
   await page.close();
 }
 

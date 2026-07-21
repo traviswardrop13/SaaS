@@ -73,7 +73,7 @@ function Header() {
           >
             Open app
           </a>
-          <a href="/onboarding.html" className="btn-primary text-sm">
+          <a href="#pricing" className="btn-primary text-sm">
             Get started
           </a>
         </div>
@@ -98,17 +98,21 @@ function Hero() {
         </div>
 
         <h1 className="mt-12 font-display text-4xl font-extrabold leading-[1.05] text-gray-900 sm:text-6xl">
-          Speech practice kids<br />actually want to do.
+          Still saying &ldquo;wabbit&rdquo;<br />instead of rabbit?
         </h1>
         <p className="mx-auto mt-5 max-w-xl text-lg leading-relaxed text-gray-600">
-          Sona turns speech sounds into a game your child loves —<br />
-          AI listens to every word, gives feedback, and tracks real progress.
+          The R sound is the hardest one kids learn — and therapy waitlists run months.
+          Sona turns real R practice into games your child asks to play: live voice
+          detection scores every try, tracks progress, and counts weekly reps.
         </p>
         <div className="mt-8 flex justify-center">
-          <a href="/onboarding.html" className="btn-primary text-lg">
-            Try it free
+          <a href="#pricing" className="btn-primary text-lg">
+            Start 7 days free
           </a>
         </div>
+        <p className="mt-3 text-sm font-bold text-gray-500">
+          Focused on the R sound today — the rest of the alphabet is on the way, included.
+        </p>
         <div className="mx-auto mt-7 inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-bold text-gray-600 shadow-chunky-sm">
           <span className="flex h-5 w-5 items-center justify-center rounded-full bg-brand-500 text-xs font-extrabold text-white">
             ✓
@@ -292,30 +296,30 @@ function Pricing() {
     <section id="pricing" className="bg-gray-50">
       <div className="mx-auto max-w-6xl px-5 py-20">
         <SectionHead
-          kicker="Founding offer"
-          title="Become a founding family"
-          sub="Sona is brand new, built in public. The first 50 founding families lock the founding rate — and steer what we build next."
+          kicker="Beta pricing"
+          title="Lock the beta price for good"
+          sub="Sona is in beta, focused on the hardest sound first: R. Beta families get everything, keep this rate while they stay — and every new letter ships to them first, included."
         />
         <div className="mx-auto mt-12 max-w-md">
           <PlanCard
-            name="Founding Family"
-            badge="First 50 families"
-            was="$69.99"
-            price="$39.99"
+            name="Sona Beta — Everything"
+            badge="Beta price"
+            was="$119.99"
+            price="$79.99"
             priceSuffix="/yr"
-            coupon="43% off"
-            yearly="Founding rate · billed yearly · cancel anytime"
-            blurb="Locked while you stay — when the price is $69.99, yours never rises."
+            coupon="33% off"
+            yearly="7 days free · then billed yearly · cancel anytime"
+            blurb="Beta rate locked while you stay — when Sona launches at $119.99, yours never rises."
             highlight
             features={[
-              "Everything in Sona — every game, the Sound Check, the weekly plan",
-              "Founding rate locked forever while you're subscribed",
-              "Every new feature and update as it ships",
-              "Your suggestions shape Sona for your child",
-              "A direct line to the founders — we answer every email",
+              "The full R-sound curriculum, built with a licensed speech-language pathologist",
+              "Real voice detection — every rep is heard and scored, silence never counts",
+              "Games and a practice path your child actually asks for",
+              "Progress reports, accuracy by sound, and weekly rep counts",
+              "Every other letter as it ships — included, no upgrade",
             ]}
-            cta="Claim a founding spot"
-            href="/onboarding.html?offer=founding50"
+            cta="Start 7 days free"
+            href="/api/checkout?plan=annual"
           />
         </div>
         <div className="mx-auto mt-8 max-w-xl rounded-2xl bg-white p-5 text-left shadow-sm">
@@ -472,7 +476,7 @@ function FAQ() {
     },
     {
       q: "How does the founding price work?",
-      a: "Sona is $69.99/yr (that's $5.83/month, billed yearly — 7 days free first) or $12.99/mo, cancel anytime. The first 50 founding families lock $39.99/yr instead — that rate never rises while you stay subscribed. And families referred by their speech-language pathologist get free access while we build together.",
+      a: "During beta, Sona is $79.99/yr — 7 days free first, then $6.67/month billed yearly — marked down from the $119.99 launch price. Your beta rate never rises while you stay subscribed, and every new sound ships to you included. Families referred by their speech-language pathologist get free access while we build together.",
     },
   ];
   return (
@@ -507,7 +511,7 @@ function FinalCTA() {
           right now, and you&apos;ll get every new level as it ships.
         </p>
         <a
-          href="/onboarding.html"
+          href="#pricing"
           className="mt-8 inline-block rounded-2xl bg-white px-8 py-4 font-display text-lg font-extrabold uppercase tracking-wide text-brand-600 shadow-chunky transition active:translate-y-1 active:shadow-chunky-sm"
         >
           Get started free
