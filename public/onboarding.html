@@ -99,7 +99,7 @@
     <div class="step on" data-step="welcome">
       <div class="qh">Let's make talking fun! 🎉</div>
       <p class="muted">Short, friendly practice — a few minutes a day. Designed with a speech-language pathologist.</p>
-      <p class="muted" id="moveRow" style="margin-top:12px;font-size:13px;"><a href="#" id="moveLink">Set up in the browser already? Enter your move-in code →</a></p>
+      <p class="muted" id="moveRow" style="margin-top:12px;font-size:13px;"><a href="#" id="moveLink"><b>Have a code?</b> Bought Sona on the website or set up in a browser? Enter it here →</a></p>
     </div>
 
     <!-- name -->
@@ -398,7 +398,9 @@
       // here); closing it still lands on today with the card-free usage week.
       var goHome=function(){
         try{ if(window.SonaAnalytics)SonaAnalytics.track("onboarding completed"); }catch(e){}
-        var native=false; try{ native=!!(Sona.isNativeApp&&Sona.isNativeApp()&&Sona.iapAvailable&&Sona.iapAvailable()); }catch(e){}
+        // subscribed families (web purchase carried in by code, or restored)
+        // never see a paywall — straight to the kid's home screen
+        var native=false; try{ native=!!(Sona.isNativeApp&&Sona.isNativeApp()&&Sona.iapAvailable&&Sona.iapAvailable()&&!(Sona.isSubscribed&&Sona.isSubscribed())); }catch(e){}
         location.href = native ? "/subscribe.html?welcome=1" : "/today.html";
       };
       var redirectT=setTimeout(goHome, 2400);
@@ -426,12 +428,18 @@
     (function(){
       var ml=document.getElementById("moveLink"); if(!ml)return;
       ml.onclick=function(ev){ ev.preventDefault();
-        var c=(window.prompt("Enter your 6-letter move-in code:")||"").trim().toUpperCase();
+        var c=(window.prompt("Enter your 6-letter code:")||"").trim().toUpperCase();
         if(!c)return;
         fetch("/api/pair?code="+encodeURIComponent(c)).then(function(r){return r.json();}).then(function(j){
           if(j&&j.ok&&j.data&&window.Sona&&Sona.importData){
             var res=Sona.importData(j.data);
-            if(res&&res.ok){ location.href="/today.html"; return; }
+            if(res&&res.ok){
+              // web-purchase codes carry only the subscription — the family
+              // still onboards here; full saves skip straight to today
+              var prof={}; try{ prof=Sona.getProfile()||{}; }catch(e2){}
+              location.href=(prof.onboarded||prof.childName)?"/today.html":"/onboarding.html?paired=1";
+              return;
+            }
           }
           alert((j&&j.error)||"That code didn't work — codes last 48 hours and can only be used once.");
         }).catch(function(){ alert("Couldn't check the code — are you online?"); });

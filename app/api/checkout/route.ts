@@ -18,7 +18,7 @@ export const runtime = "nodejs";
 // ($12.99/mo decoy), and "founding" ($39.99/yr, no trial — the SLP/founding
 // locked rate, kept as the default for legacy callers).
 const PLANS = {
-  annual: { cents: 6999, interval: "year" as const, trialDays: 7, name: "Sona — Yearly", desc: "At-home speech-practice games, built with a licensed SLP. $5.83/mo billed yearly. 7 days free — cancel anytime." },
+  annual: { cents: 7999, interval: "year" as const, trialDays: 7, name: "Sona — Yearly (Beta Price)", desc: "At-home speech-practice games, built with a licensed SLP. $6.67/mo billed yearly — beta price, $119.99 after launch. 7 days free — cancel anytime." },
   monthly: { cents: 1299, interval: "month" as const, trialDays: 0, name: "Sona — Monthly", desc: "At-home speech-practice games, built with a licensed SLP. Cancel anytime." },
   founding: { cents: 3999, interval: "year" as const, trialDays: 0, name: "Sona — Founding Member (Yearly)", desc: "Sona founding membership — your child's at-home speech-practice games, built with a licensed SLP. Locks in the founding price for life." },
 };
@@ -50,8 +50,10 @@ export async function POST(req: NextRequest) {
     new URL(req.url).origin;
 
   // Optional per-plan Price IDs; without them, inline price_data just works.
+  // ANNUAL79: renamed on the $79.99 beta reprice so a stale $69.99 Price ID in
+  // the env can't silently override the new price. Inline price_data is fine.
   const priceId = {
-    annual: process.env.STRIPE_PRICE_ID_ANNUAL69,
+    annual: process.env.STRIPE_PRICE_ID_ANNUAL79,
     monthly: process.env.STRIPE_PRICE_ID_MONTHLY,
     founding: process.env.STRIPE_PRICE_ID_ANNUAL,
   }[plan];
@@ -87,4 +89,17 @@ export async function POST(req: NextRequest) {
       { status: 502 },
     );
   }
+}
+
+/**
+ * GET /api/checkout?plan=annual — plain-link checkout for landing-page CTAs
+ * (no client JS): creates the session and 303s straight to Stripe.
+ */
+export async function GET(req: NextRequest) {
+  const plan = new URL(req.url).searchParams.get("plan") || "annual";
+  const proxied = new NextRequest(req.url, { method: "POST", headers: req.headers, body: JSON.stringify({ plan }) });
+  const res = await POST(proxied);
+  const j = (await res.json()) as { ok?: boolean; url?: string };
+  if (j?.ok && j.url) return NextResponse.redirect(j.url, 303);
+  return NextResponse.redirect(new URL("/subscribe.html?checkout=failed", req.url), 303);
 }
