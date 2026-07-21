@@ -101,5 +101,7 @@ export async function GET(req: NextRequest) {
   const res = await POST(proxied);
   const j = (await res.json()) as { ok?: boolean; url?: string };
   if (j?.ok && j.url) return NextResponse.redirect(j.url, 303);
-  return NextResponse.redirect(new URL("/subscribe.html?checkout=failed", req.url), 303);
+  // cold ad traffic must land back on the marketing page — subscribe.html is
+  // parent-gated and would bounce a fresh visitor into the app's first-run flow
+  return NextResponse.redirect(new URL("/?checkout=failed", req.url), 303);
 }

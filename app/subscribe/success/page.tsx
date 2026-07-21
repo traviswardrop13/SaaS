@@ -258,13 +258,20 @@ export default function SubscribeSuccess() {
             <strong>2.</strong> Open it and tap <strong>&ldquo;Have a code?&rdquo;</strong> on the first screen
           </li>
           <li>
-            <strong>3.</strong> Enter{" "}
+            <strong>3.</strong>{" "}
             {appCode ? (
-              <strong className="rounded-lg bg-amber-100 px-2 py-0.5 font-display text-lg tracking-[3px] text-amber-900">{appCode}</strong>
+              <>
+                Enter{" "}
+                <strong className="rounded-lg bg-amber-100 px-2 py-0.5 font-display text-lg tracking-[3px] text-amber-900">{appCode}</strong>{" "}
+                — your free week comes with you, and set-up happens in the app.
+              </>
             ) : (
-              <strong>the code we show here in a moment</strong>
-            )}{" "}
-            — your free week comes with you, and set-up happens in the app.
+              <>
+                Enter the 6-letter code that appears here in a few seconds. If it
+                doesn&apos;t, no problem — your email works too: in the app,{" "}
+                <strong>Settings → Restore access</strong>.
+              </>
+            )}
           </li>
         </ol>
       </div>

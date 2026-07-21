@@ -89,6 +89,23 @@ await page.waitForTimeout(600);
 t = await page.evaluate(() => ({ n: window.__iap.restores, sub: JSON.parse(localStorage.getItem("sona.sub.v1") || "{}"), msg: document.getElementById("iapMsg").textContent }));
 ok("restore unlocks + confirms", t.n === 1 && t.sub.active === true && /Restored/.test(t.msg));
 
+// ── web-purchase hand-off: paired Stripe sub in the shell = NO paywall ──
+await page.evaluate(() => { localStorage.setItem("__iapEntitled", "0"); localStorage.setItem("sona.sub.v1", JSON.stringify({ active: true, source: "stripe", since: Date.now() })); });
+await page.goto("http://localhost:8147/subscribe.html"); await page.waitForTimeout(900);
+t = await page.evaluate(() => ({
+  iap: document.getElementById("iapCard").style.display,
+  pick: document.getElementById("pickCard").style.display,
+  line: document.getElementById("planLine").textContent,
+}));
+ok("web-bought sub pairs into the shell: no paywall anywhere", t.iap !== "block" && t.pick !== "block" && /Active/.test(t.line));
+// tripwires on the funnel's app half: code entry exists on onboarding's first
+// screen, and goHome routes subscribers straight home (never the paywall)
+{
+  const obSrc = readFileSync(ROOT + "/onboarding.html", "utf8");
+  ok("onboarding offers Have-a-code entry", /moveLink/.test(obSrc) && /Have a code\?/.test(obSrc));
+  ok("onboarding goHome skips paywall for subscribers", /!\(Sona\.isSubscribed&&Sona\.isSubscribed\(\)\)/.test(obSrc));
+}
+
 // ── today.html quiet entitlement sync ──
 await page.evaluate(() => { localStorage.removeItem("sona.sub.v1"); localStorage.setItem("__iapEntitled", "1"); });
 await page.goto("http://localhost:8147/today.html"); await page.waitForTimeout(900);

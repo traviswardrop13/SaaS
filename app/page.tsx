@@ -31,6 +31,13 @@ export default function Landing() {
           __html: `if(typeof window!=="undefined"&&window.Capacitor){var p={};try{p=JSON.parse(localStorage.getItem("sona.profile.v1")||"{}")}catch(e){}location.replace((p.onboarded||p.childName)?"/today.html":"/onboarding.html");}`,
         }}
       />
+      {/* Ad-funnel signal: fire InitiateCheckout the moment any checkout link
+          is tapped — this is the event Meta's optimizer learns buyers from. */}
+      <script
+        dangerouslySetInnerHTML={{
+          __html: `document.addEventListener("click",function(e){var a=e.target&&e.target.closest?e.target.closest('a[href^="/api/checkout"]'):null;if(!a)return;try{if(window.sonaTrack)window.sonaTrack("InitiateCheckout",{value:79.99,currency:"USD",content_name:"web_annual"});}catch(err){}try{if(window.SonaAnalytics)window.SonaAnalytics.track("paywall viewed",{surface:"landing"});}catch(err){}},true);`,
+        }}
+      />
       <Hero />
       <HowItWorks />
       <LiveCoach />
