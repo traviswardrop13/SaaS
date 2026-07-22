@@ -121,9 +121,48 @@
     }
     @media (max-height:760px){
       #wrap{gap:10px;}
-      .thumb{width:100px;height:96px;margin-bottom:10px;}
       #goBtn{padding:13px;font-size:17px;}
-      #hiName{font-size:20px;}
+    }
+
+    /* ── Practice Path (Workstream E) — the map is the home screen ── */
+    #wrap.path{background:linear-gradient(180deg,#8fd0f5 0%,#ffe9b8 46%,#ffb066 100%);gap:0;padding:0;}
+    #wrap.path header{position:relative;z-index:6;padding:calc(12px + env(safe-area-inset-top)) 14px 0;}
+    #wrap.path #hiName,#wrap.path #subLine{display:none;}
+    #wrap.path #hdrBtns{margin-left:auto;}
+    #wrap.path header>div:first-child{position:absolute;left:14px;top:calc(12px + env(safe-area-inset-top));}
+    #wrap.path #parentBtn,#wrap.path #ringBtn,#wrap.path #libBtn{background:#fff;box-shadow:0 4px 0 rgba(140,70,10,.2);}
+    #wrap.path #trialBanner,#wrap.path #checkNudge{position:relative;z-index:6;margin:8px 14px 0;}
+    #pathCanvas{position:relative;flex:1;min-height:400px;overflow:hidden;}
+    #roadSvg{position:absolute;inset:0;width:100%;height:100%;}
+    #skyScrim{position:absolute;top:0;left:0;right:0;height:100px;background:linear-gradient(180deg,rgba(143,208,245,.85),rgba(143,208,245,0));pointer-events:none;z-index:5;}
+    #pathNodes{position:absolute;inset:0;z-index:3;}
+    .pnode{position:absolute;transform:translate(-50%,-50%);border:none;padding:0;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:"Baloo 2";font-weight:800;}
+    .pnode.done{width:54px;height:54px;border-radius:50%;background:#58cc02;box-shadow:0 5px 0 #46a302;}
+    .pnode.done svg{width:22px;height:22px;}
+    .pnode.next{width:78px;height:78px;border-radius:50%;background:linear-gradient(180deg,#ffa05a,#ff8a3d);box-shadow:0 6px 0 #ef6f23;color:#fff;font-size:32px;z-index:4;}
+    .pnode.next::before{content:"";position:absolute;inset:-12px;border-radius:50%;border:4px solid rgba(255,210,28,.6);}
+    .pnode.next::after{content:"";position:absolute;inset:-22px;border-radius:50%;border:2.5px solid rgba(255,210,28,.25);}
+    .pnode.next{animation:pbreathe 2.2s ease-in-out infinite;}
+    @keyframes pbreathe{0%,100%{transform:translate(-50%,-50%) scale(1)}50%{transform:translate(-50%,-50%) scale(1.06)}}
+    .pnode.todo{width:54px;height:54px;border-radius:50%;background:rgba(255,255,255,.5);border:3px solid #fff;color:#b98a4e;font-size:22px;}
+    .pnode.todo.wob{animation:pwob .5s ease;}
+    @keyframes pwob{0%,100%{transform:translate(-50%,-50%) rotate(0)}25%{transform:translate(-50%,-50%) rotate(-7deg)}75%{transform:translate(-50%,-50%) rotate(7deg)}}
+    .pchest{position:absolute;transform:translate(-50%,-50%);width:64px;z-index:3;filter:drop-shadow(0 5px 0 rgba(180,110,20,.3));}
+    #gatePill{position:absolute;top:14px;left:50%;transform:translateX(-50%);z-index:5;background:rgba(255,255,255,.78);border-radius:99px;padding:5px 13px;font-family:"Baloo 2";font-weight:800;font-size:11px;color:#8a5a1a;white-space:nowrap;display:none;}
+    #echoWrap{position:absolute;z-index:5;display:flex;flex-direction:column;align-items:flex-start;transform:translate(-6px,-100%);pointer-events:none;}
+    #echoBubble{background:#fff;border-radius:16px;border-bottom-right-radius:5px;padding:9px 14px;box-shadow:0 6px 16px rgba(140,70,10,.2);font-family:"Baloo 2";font-weight:800;font-size:14px;line-height:1.3;color:#4a2c14;max-width:190px;margin-bottom:6px;}
+    #echoLeo{width:66px;height:66px;filter:drop-shadow(0 7px 9px rgba(140,70,10,.25));}
+    #echoLeo.bob{animation:leobob 3s ease-in-out infinite;}
+    @keyframes leobob{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+    #floatLib{position:absolute;left:16px;bottom:calc(84px + env(safe-area-inset-bottom));z-index:7;width:44px;height:44px;border-radius:50%;border:none;background:#fff;box-shadow:0 4px 0 rgba(140,70,10,.2);display:none;align-items:center;justify-content:center;cursor:pointer;}
+    #wrap.path #floatLib{display:flex;} #floatLib svg{width:22px;height:22px;}
+    #wrap.path #goBtn{position:absolute;left:16px;right:16px;bottom:calc(16px + env(safe-area-inset-bottom));z-index:7;width:auto;margin:0;text-transform:uppercase;letter-spacing:.04em;}
+    #confetti i{position:absolute;border-radius:3px;z-index:6;animation:cfall 1.2s ease-out forwards;}
+    @keyframes cfall{0%{opacity:1;transform:translateY(0) rotate(0)}100%{opacity:0;transform:translateY(60px) rotate(40deg)}}
+    @media (prefers-reduced-motion:reduce){
+      .pnode.next,#echoLeo.bob{animation:none;}
+      .pnode.next{transform:translate(-50%,-50%);}
+      #confetti i{animation:none;}
     }
   </style>
 </head>
@@ -144,21 +183,20 @@
     <a id="trialBanner" href="/subscribe">🎁 <span id="trialMsg"></span></a>
     <a id="checkNudge" href="/soundcheck.html" style="display:none;align-items:center;gap:8px;background:linear-gradient(120deg,#eafbe2,#d5f3c4);border:1px solid #bce39f;border-radius:14px;padding:9px 14px;font-weight:800;font-size:12.5px;color:#3f7d0a;text-decoration:none;">🎯 <span>NEW — the 2-minute Sound Check: Echo listens and builds the practice plan!</span></a>
 
-    <div id="heroWrap">
-      <div id="heroCard"></div>
-      <div id="heroCap">
-        <div id="heroName"></div>
-        <div id="heroSub"></div>
-      </div>
+    <!-- Practice Path: the map IS the home screen. Road + nodes laid out on
+         the district sky; Echo stands on the next step; chest is the day's 5th;
+         gate pill points to the next district. (Workstream E.) -->
+    <div id="pathCanvas">
+      <svg id="roadSvg" viewBox="0 0 300 650" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+        <path id="roadEdge" d="M118 668 C95 640 82 622 84 596 C86 570 74 556 76 530 C79 496 128 492 166 483 C207 473 224 446 226 414 C228 382 186 370 152 359 C114 347 90 323 88 291 C86 259 120 233 152 216 C186 198 170 158 152 118 C144 96 128 78 104 64" fill="none" stroke="#e8b25f" stroke-width="30" stroke-linecap="round" transform="translate(0,5)"></path>
+        <path id="road" d="M118 668 C95 640 82 622 84 596 C86 570 74 556 76 530 C79 496 128 492 166 483 C207 473 224 446 226 414 C228 382 186 370 152 359 C114 347 90 323 88 291 C86 259 120 233 152 216 C186 198 170 158 152 118 C144 96 128 78 104 64" fill="none" stroke="#ffdf9e" stroke-width="30" stroke-linecap="round"></path>
+      </svg>
+      <div id="gatePill"></div>
+      <div id="pathNodes"></div>
+      <div id="echoWrap"><div id="echoBubble"></div><img id="echoLeo" src="/coach/echo/echo-idle.svg" alt="Echo" /></div>
     </div>
-
-    <div id="pathStrip">
-      <div id="pathHead"><span id="pathStep"></span><span id="pathGate"></span></div>
-      <div id="pathRow"></div>
-    </div>
-    <div id="upNextLbl">UP NEXT</div>
-    <div id="thumbs"></div>
-
+    <div id="skyScrim"></div>
+    <button id="floatLib" aria-label="Book library"><svg viewBox="0 0 64 64"><path d="M10 14c8-4 15-4 22 0v38c-7-4-14-4-22 0Z" fill="#ffb066"/><path d="M54 14c-8-4-15-4-22 0v38c7-4 14-4 22 0Z" fill="#ef8b3d"/><line x1="32" y1="14" x2="32" y2="52" stroke="#b85e1e" stroke-width="2"/><circle cx="19" cy="22" r="3" fill="#fff" opacity=".8"/></svg></button>
     <button id="goBtn">LET'S GO!</button>
   </div>
 
@@ -251,108 +289,99 @@
       else if(_tr&&_tr.n>0) $("subLine").textContent=(_tr.goal-_tr.n)+" more round"+((_tr.goal-_tr.n)===1?"":"s")+" to finish today's goal!";
     }catch(e){}
 
-    // ── the activity deck: hero + up-next, art from the vector scenes ──
-    function callsLeft(){ try{ var s=JSON.parse(localStorage.getItem("sona.call.v1")||"{}"); var dt=new Date(); var dow=(dt.getDay()+6)%7; var m=new Date(dt.getFullYear(),dt.getMonth(),dt.getDate()-dow); var wk=m.getFullYear()+"-"+(m.getMonth()+1)+"-"+m.getDate(); return Math.max(0,3-((s.week===wk?s.used:0)||0)); }catch(e){ return 3; } }
-    var ACTS=[
-      { key:"slice", name:"Fruit Slice",   sub:"Say it 5× to play", tap:function(){ sfx("tap"); location.href="/charge.html?game=arcade-slice.html"; } },
-      { key:"tiles", name:"Piano Tiles",   sub:"Say it 5× to play", tap:function(){ sfx("tap"); location.href="/charge.html?game=arcade-tiles.html"; } },
-      { key:"stack", name:"Block Stacker", sub:"Say it 5× to play", tap:function(){ sfx("tap"); location.href="/charge.html?game=arcade-stack.html"; } },
-      { key:"run",   name:"Sound Sprint",  sub:"Say it 5× to play", tap:function(){ sfx("tap"); location.href="/charge.html?game=arcade-run.html"; } },
-      { key:"glide", name:"Flappy Glide",  sub:"Say it 5× to play", tap:function(){ sfx("tap"); location.href="/charge.html?game=arcade-glide.html"; } },
-    ];
-    // Feed Echo — the littles game (tap-and-say, no reading, no timer). It
-    // leads the deck for under-6 profiles and rides sixth for everyone else.
-    (function(){
-      var FEED={ key:"feed", name:"Feed Echo", sub:"Say it & tap — Echo's hungry!", tap:function(){ sfx("tap"); location.href="/arcade-feed.html"; } };
-      var age=0; try{ age=parseInt((S&&S.getProfile?S.getProfile():{}).childAge,10)||0; }catch(e){}
-      if(age&&age<6) ACTS.unshift(FEED); else ACTS.push(FEED);
-    })();
-    var sel=0;
+    // ── Practice Path: the map IS the home screen (Workstream E) ──
+    // Each node = one round in the daily rotation; 5 nodes = today's goal, the
+    // chest is the reward at the top of the day. Every launch is the same door:
+    // the daily run (charge.html), which advances the ring on each finished
+    // round — so re-visiting the path shows more green.
+    $("wrap").classList.add("path");
+    // the chest-closed / chest-open furniture (design 2b)
+    var CHEST_CLOSED='<svg viewBox="0 0 64 58"><rect x="6" y="26" width="52" height="26" rx="6" fill="#ffd21c"/><rect x="6" y="46" width="52" height="6" rx="3" fill="#f0a800"/><path d="M6 28v-6c0-9 11-16 26-16s26 7 26 16v6Z" fill="#f0a800"/><rect x="26" y="24" width="12" height="14" rx="4" fill="#b97900"/><circle cx="32" cy="30" r="3.4" fill="#7a5200"/><circle cx="16" cy="14" r="3" fill="#fff" opacity=".85"/></svg>';
+    var CHEST_OPEN='<svg viewBox="0 0 74 66"><path d="M16 30 L58 30 L70 4 L4 4 Z" fill="#ffe36b" opacity=".55"/><rect x="10" y="4" width="52" height="15" rx="7" fill="#f0a800" transform="rotate(-16 12 12)"/><rect x="10" y="28" width="54" height="11" rx="4" fill="#7a5200"/><rect x="10" y="33" width="54" height="25" rx="6" fill="#ffd21c"/><rect x="10" y="52" width="54" height="6" rx="3" fill="#f0a800"/><path d="M37 8l2.6 5.8 6.2.7-4.6 4.2 1.3 6.1-5.5-3.2-5.5 3.2 1.3-6.1-4.6-4.2 6.2-.7Z" fill="#ffd21c"/><circle cx="18" cy="40" r="3" fill="#fff" opacity=".85"/></svg>';
+    var CHECK='<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l5 5 9-11"/></svg>';
+    var tr=(S&&S.todayRing)?S.todayRing():{n:0,goal:5,done:false};
+    var GOAL=tr.goal||5;
+    var rung=0; try{ rung=(S&&S.rungOf)?S.rungOf(sound):0; }catch(e){}
+    // the next round's target word/letter (drives the pulsing node face + copy)
+    var target=sound; try{ var it=((S&&S.ladderContent)?S.ladderContent(sound,rung):[])[0]; if(it) target=(it.level==="isolation")?sound:(it.display||it.t); }catch(e){}
+    // under-6 littles practice through Feed Echo (tap-and-say, no reading);
+    // everyone else runs the daily rotation. Both advance today's ring.
+    var _age=0; try{ _age=parseInt(P.childAge,10)||0; }catch(e){}
+    var LAUNCH=(_age&&_age<6)?"/arcade-feed.html":"/charge.html?daily=1";
+    function launch(){ sfx("tap"); location.href=LAUNCH; }
 
-    function art(key){ try{ return (window.SonaScenes&&SonaScenes.has(key))?("url('"+SonaScenes.uri(key)+"')"):""; }catch(e){ return ""; } }
-    // illustrated panels (coach/city/<key>-{300|800}.webp) take over the moment
-    // they load — sized per slot (hero 800w, thumbs 300w) so the swap beats the
-    // eye; the old 1.2–1.7MB PNGs visibly popped in late on first open.
-    // Two art shapes live side by side: FULL-BLEED painted scenes (tall 2:3 —
-    // the house-in-its-street style) simply cover the card; square sticker
-    // CUT-OUTS layer over the vector city until a full scene replaces them.
-    function upgradeArt(el,key){ var im=new Image(); im.onload=function(){
-      var fullBleed = im.naturalHeight > im.naturalWidth*1.2;
-      if(fullBleed){ el.style.backgroundImage="url('"+im.src+"')"; el.style.backgroundSize="cover"; el.style.backgroundPosition="center"; el.style.backgroundRepeat="no-repeat"; return; }
-      var base=art(key);
-      el.style.backgroundImage="url('"+im.src+"')"+(base?", "+base:"");
-      el.style.backgroundSize="88% auto"+(base?", cover":"");
-      el.style.backgroundPosition="center 62%"+(base?", center":"");
-      el.style.backgroundRepeat="no-repeat";
-    }; im.src="/coach/city/"+key+"-"+(el.id==="heroCard"?"800":"300")+".webp"; }
-    // Coach Call has no house panel yet — it gets the evening call sky + Echo
-    function applyArt(el,key){
-      if(key==="call"){
-        el.style.backgroundImage="url('/coach/echo/echo-celebrate.svg'), linear-gradient(180deg,#35407e,#6a5aa8 55%,#c98bb0)";
-        el.style.backgroundSize="54% auto, cover";
-        el.style.backgroundPosition="center 56%, center";
-        el.style.backgroundRepeat="no-repeat";
-        return;
+    // lay the 5 nodes + chest on the road using getPointAtLength → the node
+    // always sits ON the drawn road, at any screen size (slice-mapped coords)
+    // low frac = bottom of the road (where the kid stands) → climb UP toward
+    // the chest near the top; the road's length-0 end sits just below-screen.
+    var FRACS=[0.17,0.31,0.45,0.585,0.72], CHEST_FRAC=0.83;
+    function layoutPath(){
+      var cv=$("pathCanvas"); if(!cv)return; var cw=cv.clientWidth, ch=cv.clientHeight; if(!cw||!ch)return;
+      var road=$("road"); var L; try{ L=road.getTotalLength(); }catch(e){ return; }
+      var scale=Math.max(cw/300,ch/650), ox=(cw-300*scale)/2, oy=(ch-650*scale)/2;
+      function pt(f){ var p=road.getPointAtLength(f*L); return {x:p.x*scale+ox, y:p.y*scale+oy}; }
+      var host=$("pathNodes"); host.innerHTML="";
+      var reduce=false; try{ reduce=window.matchMedia&&matchMedia("(prefers-reduced-motion:reduce)").matches; }catch(e){}
+      var nextPt=null;
+      for(var i=0;i<GOAL;i++){
+        var p=pt(FRACS[i]);
+        var cls=i<tr.n?"done":(i===tr.n?"next":"todo");
+        var face=(cls==="done")?CHECK:(cls==="next"?String(target).slice(0,4):String(sound).slice(0,2));
+        var b=document.createElement("button");
+        b.className="pnode "+cls+(reduce&&cls==="next"?" noanim":"");
+        b.style.left=p.x+"px"; b.style.top=p.y+"px";
+        b.setAttribute("aria-label","Step "+(i+1));
+        b.innerHTML=face;
+        (function(cls){ b.onclick=function(){
+          if(cls==="next"){ launch(); }
+          else if(cls==="todo"){ this.classList.remove("wob"); void this.offsetWidth; this.classList.add("wob"); toast("Finish this step first!"); }
+          else { sfx("correct"); }
+        }; })(cls);
+        host.appendChild(b);
+        if(cls==="next") nextPt=p;
       }
-      if(key==="feed"&&!art(key)){
-        // no painted scene yet — warm meadow gradient + big Echo-and-apple
-        el.style.backgroundImage="linear-gradient(160deg,#ffe9b8,#b6eca0)";
-        el.style.backgroundSize="cover"; upgradeArt(el,key); return;
+      // chest above the last node
+      var cp=pt(CHEST_FRAC);
+      var chest=document.createElement("div"); chest.className="pchest";
+      chest.style.left=cp.x+"px"; chest.style.top=cp.y+"px";
+      chest.innerHTML=tr.done?CHEST_OPEN:CHEST_CLOSED;
+      host.appendChild(chest);
+      // Echo stands on the next node (or by the chest when the day's done)
+      var ew=$("echoWrap"); var anchor=nextPt||cp;
+      ew.style.left=(anchor.x+30)+"px"; ew.style.top=(anchor.y-6)+"px";
+    }
+
+    // Echo's bubble + the bottom CTA carry the state's one sentence (E4 copy)
+    function renderState(){
+      var name=P.childName||""; var leo=$("echoLeo"), bubble=$("echoBubble"), go=$("goBtn");
+      var left=Math.max(0,GOAL-tr.n);
+      if(tr.done){
+        leo.src="/coach/echo/echo-celebrate.svg";
+        bubble.innerHTML="You did it! <b style='color:#46a302'>Chest time!</b>";
+        go.textContent="Free play is open!"; go.style.background="linear-gradient(180deg,#6fd60e,#58cc02)"; go.style.boxShadow="0 6px 0 #46a302";
+      } else if(tr.n>0){
+        leo.src="/coach/echo/echo-listening.svg";
+        bubble.innerHTML=left+" more — I can see the chest!";
+        go.textContent="Say “"+target+"” — let's go!";
+      } else {
+        leo.src="/coach/echo/echo-idle.svg";
+        bubble.innerHTML="Hi"+(name?" "+name:"")+"! <b style='color:#ef6f23'>"+left+" steps</b> to the chest!";
+        go.textContent="Start today's path!";
       }
-      el.style.backgroundImage=art(key); upgradeArt(el,key);
-    }
-    function render(){
-      var a=ACTS[sel], hero=$("heroCard");
-      applyArt(hero,a.key);
-      if(a.key==="call"){ hero.classList.add("soon"); hero.innerHTML='<span class="soonTag">COMING SOON</span>'; }
-      else if(a.key==="feed"&&!art(a.key)){ hero.classList.remove("soon"); hero.innerHTML='<span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:78px;text-shadow:0 8px 14px rgba(120,70,10,.25);">🦜🍎</span>'; }
-      else { hero.classList.remove("soon"); hero.innerHTML=""; }
-      $("heroName").textContent=a.name;
-      $("heroSub").innerHTML=a.sub.replace("★★★",'<b>★★★</b>');
-      var t=$("thumbs"); t.innerHTML="";
-      [1,2].forEach(function(off){
-        var ix=(sel+off)%ACTS.length, act=ACTS[ix];
-        var el=document.createElement("div"); el.className="thumb"+(act.key==="call"?" soon":"");
-        applyArt(el,act.key);
-        el.innerHTML="<b>"+act.name+"</b>"+(act.key==="call"?'<span class="soonTag">Soon!</span>':"");
-        el.onclick=function(){ sfx("tap"); sel=ix; render(); };
-        t.appendChild(el);
-      });
-    }
-    render();
-    // Practice Path strip: today's 5 steps + where the trail stands. The
-    // pulsing next node is the same door as LET'S GO; done nodes are inert.
-    function paintPath(){
-      try{
-        var ps=S&&S.pathState?S.pathState():null, tr=S&&S.todayRing?S.todayRing():null;
-        if(!ps||!tr){ $("pathStrip").style.display="none"; return; }
-        $("pathStep").textContent="STEP "+ps.steps;
-        $("pathGate").textContent=(ps.into===0&&ps.steps>0)?"NEW DISTRICT TODAY!":("GATE IN "+ps.toGate);
-        var html="",i;
-        for(i=0;i<tr.goal;i++){
-          if(i) html+='<i class="pline'+(i<=tr.n?" on":"")+'"></i>';
-          var cls=i<tr.n?"done":(i===tr.n?"next":"todo");
-          var inner=i<tr.n?"✓":(i===tr.goal-1?((S&&S.icon)?S.icon("star",15):"★"):String(i+1));
-          html+='<button class="pnode '+cls+'" data-i="'+i+'" aria-label="Step '+(i+1)+'">'+inner+'</button>';
-        }
-        $("pathRow").innerHTML=html;
-        var nx=$("pathRow").querySelector(".pnode.next");
-        if(nx) nx.onclick=function(){ sfx("tap"); $("goBtn").click(); };
+      try{ if(!(window.matchMedia&&matchMedia("(prefers-reduced-motion:reduce)").matches)) leo.classList.add("bob"); }catch(e){}
+      // gate pill: how far to the next district (pathState) — kid-visible, no numbers about streaks
+      try{ var ps=S&&S.pathState?S.pathState():null;
+        if(ps){ var gp=$("gatePill"); gp.textContent=(ps.into===0&&ps.steps>0)?"New place unlocked!":(ps.toGate+" steps to the next place!"); gp.style.display="block"; }
       }catch(e){}
+      go.onclick=launch; go.dataset.launch=LAUNCH; // dataset: test hook for the age-aware target
     }
-    paintPath();
-    $("heroCard").onclick=function(){ ACTS[sel].tap(); };
-    $("goBtn").onclick=function(){ ACTS[sel].tap(); };
-    // swipe the hero to browse
-    (function(){
-      var x0=null;
-      $("heroWrap").addEventListener("touchstart",function(e){ x0=e.touches[0].clientX; },{passive:true});
-      $("heroWrap").addEventListener("touchend",function(e){
-        if(x0==null)return; var dx=e.changedTouches[0].clientX-x0; x0=null;
-        if(Math.abs(dx)<40)return;
-        sel=(sel+(dx<0?1:ACTS.length-1))%ACTS.length; sfx("tap"); render();
-      },{passive:true});
-    })();
+    renderState();
+    layoutPath();
+    // relayout on resize/orientation (road geometry is size-dependent)
+    var _rl; window.addEventListener("resize",function(){ clearTimeout(_rl); _rl=setTimeout(layoutPath,150); });
+    // fonts/images can shift canvas height slightly on first paint
+    setTimeout(layoutPath,180); setTimeout(layoutPath,600);
+    $("floatLib").onclick=function(){ sfx("tap"); location.href="/library.html"; };
 
     // ── library ──
     $("libBtn").onclick=function(){ sfx("tap"); location.href="/library.html"; };

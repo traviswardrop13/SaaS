@@ -129,14 +129,15 @@ await page.goto("http://localhost:8145/arcade-feed.html"); await page.waitForTim
 t = await page.evaluate(() => document.getElementById("echo").style.transform);
 ok("Echo's size persists across visits", /scale\(1\.0[2-9]|scale\(1\.[1-9]/.test(t), t);
 
-// ── deck placement: under-6 leads with Feed Echo; older rides sixth ──
-await page.goto("http://localhost:8145/today.html"); await page.waitForTimeout(800);
-t = await page.evaluate(() => document.getElementById("heroName").textContent);
-ok("under-6 deck leads with Feed Echo", t === "Feed Echo", t);
+// ── Practice Path launch is age-aware: under-6 practices via Feed Echo,
+//    older kids run the daily rotation (charge). Both advance today's ring. ──
+await page.goto("http://localhost:8145/today.html"); await page.waitForTimeout(900);
+t = await page.evaluate(() => (document.getElementById("goBtn") || {}).dataset && document.getElementById("goBtn").dataset.launch);
+ok("under-6 path launches Feed Echo", /arcade-feed/.test(t || ""), t);
 await page.evaluate(() => { const p = JSON.parse(localStorage.getItem("sona.profile.v1")); p.childAge = "8"; localStorage.setItem("sona.profile.v1", JSON.stringify(p)); });
-await page.goto("http://localhost:8145/today.html"); await page.waitForTimeout(800);
-t = await page.evaluate(() => document.getElementById("heroName").textContent);
-ok("age 8 deck keeps the arcade first", t !== "Feed Echo", t);
+await page.goto("http://localhost:8145/today.html"); await page.waitForTimeout(900);
+t = await page.evaluate(() => document.getElementById("goBtn").dataset.launch);
+ok("age 8 path launches the daily run", /charge\.html\?daily/.test(t || ""), t);
 
 ok("no pageerrors", errs.length === 0, errs.join(" | "));
 await browser.close(); srv.close();

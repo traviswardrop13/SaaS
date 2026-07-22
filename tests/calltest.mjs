@@ -62,11 +62,12 @@ ok("cap overlay gates 4th call", await page.evaluate(() => document.getElementBy
 // home card
 await page.goto("http://localhost:8132/today.html");
 await page.waitForTimeout(1200);
-const card = await page.evaluate(() => {
-  const t = [...document.querySelectorAll(".thumb b")].map((b) => b.textContent);
-  return { heroOrThumb: t.concat([document.getElementById("heroName").textContent]) };
-});
-ok("Coach Call is OUT of the home deck (games only)", !card.heroOrThumb.some((x) => /Coach Call|Story Time/.test(x)));
+const card = await page.evaluate(() => ({
+  path: document.querySelectorAll("#pathNodes .pnode").length,
+  deck: document.querySelectorAll(".thumb").length,
+}));
+// home is now the Practice Path (no game deck), so Coach Call is not surfaced there
+ok("home is the Practice Path — no Coach Call deck", card.path === 5 && card.deck === 0, JSON.stringify(card));
 
 await browser.close(); srv.close();
 console.log(fails ? fails + " FAILURES" : "ALL GREEN");
