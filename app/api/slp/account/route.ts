@@ -34,12 +34,15 @@ export async function POST(req: NextRequest) {
   if (typeof body.code === "string" && body.code.trim()) {
     const c = slug(body.code);
     if (!c) return NextResponse.json({ ok: false, error: "Pick a valid code." }, { status: 400 });
-    // Codes must be unique across SLPs (they key the family roster).
+    // Codes must be unique across SLPs (they key the family roster). Claim
+    // atomically with SET NX so two SLPs can't win the same unclaimed code in a
+    // race (the old GET-then-SET was last-write-wins). NX no-ops if it exists,
+    // so re-confirm ownership afterward.
+    await kvCmd(["SET", "slpcode:" + c, s.email, "NX"]);
     const owner = await kvCmd(["GET", "slpcode:" + c]);
     if (owner && String(owner) !== s.email) {
       return NextResponse.json({ ok: false, error: "That code is taken — try another." }, { status: 409 });
     }
-    await kvCmd(["SET", "slpcode:" + c, s.email]);
     acct.code = c;
   }
   if (!acct.createdAt) acct.createdAt = new Date().toISOString();

@@ -1,12 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
+import { readSession } from "@/lib/slpAuth";
 
 /**
- * SLP master roster — returns each family's latest progress for an SLP's code,
- * read from the KV store that /api/pilot writes to (slp:<code> → { childId: record }).
+ * SLP master roster — returns each family's latest progress for the SIGNED-IN
+ * SLP's own code (slp:<code> → { childId: record }, written by /api/pilot).
+ *
+ * The roster holds children's names, ages and progress, so the code is derived
+ * from the authenticated session — NOT from a query param. The clinic slug is a
+ * public share slug (printed on every family link), so trusting ?code= let
+ * anyone holding a link read the whole roster.
  *
  * Degrades gracefully: if no KV store is configured, returns configured:false so
- * the SLP page can still show the share link + handout (the live roster lights up
- * once a Vercel KV store is added to the project).
+ * the SLP page can still show the share link + handout.
  */
 export const runtime = "nodejs";
 
@@ -35,9 +40,19 @@ function configured() {
 }
 
 export async function GET(req: NextRequest) {
-  const code = (new URL(req.url).searchParams.get("code") || "").trim().slice(0, 48);
-  if (!code) return NextResponse.json({ ok: false, error: "code required" }, { status: 400 });
+  // roster read requires the SLP's own session; the code comes from the
+  // authenticated account, never the query string.
+  const s = readSession(req);
+  if (!s) return NextResponse.json({ ok: false, error: "sign in required" }, { status: 401 });
   if (!configured()) return NextResponse.json({ ok: true, configured: false, kids: [] });
+  let code = "";
+  try {
+    const raw = await kvCmd(["GET", "slpacct:" + s.email]);
+    if (raw) code = (JSON.parse(String(raw)).code as string) || "";
+  } catch {
+    code = "";
+  }
+  if (!code) return NextResponse.json({ ok: true, configured: true, kids: [] });
 
   const flat = await kvCmd(["HGETALL", "slp:" + code]);
   const kids: { at?: string }[] = [];

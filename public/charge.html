@@ -639,7 +639,22 @@
         var fd=new Uint8Array(an.frequencyBinCount), binHz=ctx.sampleRate/an.fftSize;
         shapeReset();
         engineOn=true;
-        function stopAll(){ engineOn=false; try{src.disconnect();}catch(e){} try{ if(rec&&rec.state!=="inactive")rec.stop(); }catch(e){} if(idleTimer)clearTimeout(idleTimer); try{ $("micWrap").classList.remove("hear"); }catch(e){} }
+        // stop the mic graph AND resolve — but resolve only AFTER the recorder
+        // flushes its final chunk. rec.start() has no timeslice, so the whole
+        // clip arrives in a single dataavailable that the browser queues at
+        // stop(); resolving synchronously (the old bug) handed verifyClip an
+        // empty chunks[] and the SpeechAce spot-check never ran on word rounds.
+        // onstop fires after that final dataavailable, so chunks is populated.
+        var settled=false;
+        function stopAll(){
+          if(settled) return; settled=true;
+          engineOn=false; try{src.disconnect();}catch(e){} if(idleTimer)clearTimeout(idleTimer); try{ $("micWrap").classList.remove("hear"); }catch(e){}
+          if(rec && rec.state!=="inactive"){
+            rec.onstop=function(){ resolve(); };
+            try{ rec.stop(); }catch(e){ resolve(); }
+            setTimeout(function(){ resolve(); },1500); // safety: never hang if onstop is silent
+          } else { resolve(); }
+        }
         function armIdle(){ if(idleTimer)clearTimeout(idleTimer); idleTimer=setTimeout(function(){ if(!engineOn)return; if(reps===0){ playPrompt(); armIdle(); } },8000); }
         armIdle();
         var mw=$("micWrap");
@@ -664,13 +679,13 @@
               // two reps fueled — visual only, the mic never pauses.
               if(reps===3&&NEED>=5){ try{ if(S&&S.pop)S.pop("Way to go!",{color:"#ffd21c"}); }catch(e){} }
               var l=$("leo"); l.classList.remove("cheer"); void l.offsetWidth; l.classList.add("cheer");
-              if(reps>=NEED){ setTimeout(function(){ stopAll(); resolve(); },350); return; }
+              if(reps>=NEED){ setTimeout(function(){ stopAll(); },350); return; }
             }
           } else { silent++; voiced=0; if(silent>=3){ try{ mw.classList.remove("hear"); }catch(e){} } if(silent>=8) inBurst=false; }
           requestAnimationFrame(tick);
         })();
         // hard cap so nobody is ever stuck
-        setTimeout(function(){ if(engineOn){ stopAll(); resolve(); } },20000);
+        setTimeout(function(){ if(engineOn){ stopAll(); } },20000);
       });
     }
 

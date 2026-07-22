@@ -67,6 +67,11 @@
       rows.sort(function(x,y){ return y.quiet-x.quiet; });
       var active=rows.filter(function(r){ return r.quiet<=1; }).length;
       $("sum").textContent=apps.length+" families · "+active+" practiced in the last day";
+      // Parent/child names are attacker-supplied (public /api/founding form),
+      // so escape EVERY interpolation into innerHTML — an unescaped name like
+      // <img src=x onerror=...> would run in this authenticated admin session
+      // and could steal the founder key. sms/tel hrefs already encode/strip.
+      function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];}); }
       var html="";
       rows.forEach(function(rw){
         var a=rw.a, k=rw.kid, q=rw.quiet;
@@ -74,11 +79,11 @@
         var praise=sms(a.cell||"", "Hi "+(a.parent||"")+"! "+(a.child||"Your kiddo")+" is on a roll in Sona — what's "+(a.child||"the kiddo")+" loving so far?");
         var checkin=sms(a.cell||"", "Hi "+(a.parent||"")+"! Totally normal for practice to slip — anything getting in the way for "+(a.child||"your kiddo")+"? (honest answers help us most!)");
         html+='<div class="fam '+cls+'">'
-          +'<div class="top"><span class="kid">'+(a.child||"?")+'<small>'+(a.age?a.age+"yo · ":"")+(a.sound||"?")+" sound · parent "+(a.parent||"?")+'</small></span>'
+          +'<div class="top"><span class="kid">'+esc(a.child||"?")+'<small>'+(a.age?esc(a.age)+"yo · ":"")+esc(a.sound||"?")+" sound · parent "+esc(a.parent||"?")+'</small></span>'
           +'<span class="last">'+(k?fmtLast(k.at):"link never opened")+'</span></div>'
-          +'<div class="stats">'+(k?("🔥 "+(k.streak||0)+" streak · "+(k.sessions||0)+" sessions"+(accLine(k.acc)?" · "+accLine(k.acc):"")):"⚠️ signed up "+fmtLast(a.at)+" — hasn’t opened the kid link yet")+'</div>'
+          +'<div class="stats">'+(k?("🔥 "+(k.streak||0)+" streak · "+(k.sessions||0)+" sessions"+(accLine(k.acc)?" · "+esc(accLine(k.acc)):"")):"⚠️ signed up "+fmtLast(a.at)+" — hasn’t opened the kid link yet")+'</div>'
           +'<div class="btns">'
-          +(a.cell?('<a href="'+(q<=1?praise:checkin)+'">💬 Text '+(a.parent||"")+'</a><a class="warm" href="tel:'+a.cell.replace(/[^\d+]/g,"")+'">📞 Call</a>'):"")
+          +(a.cell?('<a href="'+(q<=1?praise:checkin)+'">💬 Text '+esc(a.parent||"")+'</a><a class="warm" href="tel:'+a.cell.replace(/[^\d+]/g,"")+'">📞 Call</a>'):"")
           +(a.cell&&(!k)?('<a class="warm" href="'+sms(a.cell,"Hi "+(a.parent||"")+"! Quick nudge — open this on "+(a.child||"your kiddo")+"'s device to start: https://speaksona.com/?ff="+a.id)+'">🔗 Resend link</a>'):"")
           +'</div></div>';
       });

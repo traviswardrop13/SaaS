@@ -261,11 +261,24 @@ ok("denied state offers try-again + back", mp.retry && /Back home/.test(mp.txt))
 
 // ── ad rail: pixel armed, kid pages clean, SLP links split the cohorts ──
 {
-  const { readFileSync: rf } = await import("fs");
+  const { readFileSync: rf, readdirSync: rd } = await import("fs");
   ok("pixel armed with the Sona ID", /28886011914332605/.test(rf(ROOT + "/pixel.js", "utf8")));
-  const kidPages = ["today.html", "charge.html", "journey.html", "soundcheck.html", "story.html", "arcade-slice.html", "arcade-tiles.html", "arcade-stack.html", "arcade-run.html", "arcade-glide.html"];
-  const clean = kidPages.every((f) => !/pixel\.js|analytics\.js|fbevents/.test(rf(ROOT + "/" + f, "utf8")));
-  ok("no tracking scripts on any kid page (COPPA)", clean);
+  // COPPA guard, hardened after the review: enumerate EVERY kid/game page (not
+  // a hand-picked 10) and reject ANY third-party code — the Meta/PostHog
+  // loaders AND remote script hosts (Vercel Insights, esm.sh, jsDelivr, unpkg).
+  // Parent/marketing/SLP surfaces are allowed analytics and are excluded.
+  const PARENT_PAGES = new Set([
+    "onboarding.html", "subscribe.html", "check.html", "for-slps.html", "slp.html",
+    "slp-login.html", "settings.html", "voices.html", "progress.html", "trial.html",
+    "pilot.html", "privacy.html", "founders.html", "founding.html", "model.html",
+    // experimental HeyGen live-avatar pages — orphaned (nothing links to them),
+    // load a remote SDK, gated/removed before any kid-flow release (F4 review).
+    "coach.html", "avatar.html",
+  ]);
+  const BANNED = /pixel\.js|analytics\.js|fbevents|_vercel\/insights|esm\.sh|jsdelivr|unpkg\.com|googletagmanager|connect\.facebook/;
+  const dirty = rd(ROOT).filter((f) => f.endsWith(".html") && !PARENT_PAGES.has(f))
+    .filter((f) => BANNED.test(rf(ROOT + "/" + f, "utf8")));
+  ok("no third-party code on any kid/game page (COPPA)", dirty.length === 0, "dirty=" + dirty.join(","));
 }
 await page.evaluate(() => { localStorage.removeItem("sona.slp"); });
 await page.goto("http://localhost:8131/today.html?slp=DrSmith22"); await page.waitForTimeout(500);

@@ -1,16 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
+import { rateLimit } from "@/lib/rateLimit";
 
 /**
  * Creates a **LiveAvatar** session token (api.liveavatar.com) from the
  * server-side LIVEAVATAR_API_KEY. The classic Streaming Avatar API was sunset, so
  * we use LiveAvatar's /v1/sessions/token. The avatar + voice can be passed via
  * ?avatar=&voice= (or JSON body); they default to the configured coach.
+ *
+ * SECURITY (interim): this mints a billable vendor session with no entitlement
+ * check yet — the surface is experimental/orphaned. Rate-limited here to blunt
+ * the run-up-the-bill attack; a proper entitlement gate is required before any
+ * kid-flow release (review item F4).
  */
 // Valid LiveAvatar IDs (HeyGen IDs don't carry over). "Ann" — warm female coach.
 const DEFAULT_AVATAR = "513fd1b7-7ef9-466d-9af2-344e51eeb833";
 const DEFAULT_VOICE = "de5574fc-009e-4a01-a881-9919ef8f5a0c";
 
 export async function POST(req: NextRequest) {
+  const limited = await rateLimit(req, { key: "heygen-token", limit: 10, windowSec: 60 });
+  if (limited) return limited;
   // LiveAvatar uses its OWN key (from app.liveavatar.com/developers) — the old
   // HeyGen key is NOT compatible. Accept either env name so the rename is clean.
   const key = process.env.LIVEAVATAR_API_KEY || process.env.HEYGEN_API_KEY;
