@@ -27,6 +27,22 @@ async function kvCmd(cmd: (string | number)[]): Promise<unknown> {
   }
 }
 
+/**
+ * GET ?id=<code> → { ok, valid } — does this founding code actually exist?
+ * The client validates before granting free pilot access, so a random
+ * ?ff=<anything> can no longer unlock the app. Fail-closed on the client: if
+ * this can't confirm valid:true (network error, KV down), no unlock happens.
+ * If KV isn't configured, valid:false (there are no real codes to honor).
+ */
+export async function GET(req: NextRequest) {
+  const rl = await rateLimit(req, { key: "founding-check", limit: 30, windowSec: 60 });
+  if (rl) return rl;
+  const id = (new URL(req.url).searchParams.get("id") || "").replace(/[^a-zA-Z0-9-]/g, "").slice(0, 24).toLowerCase();
+  if (!id) return NextResponse.json({ ok: true, valid: false });
+  const rec = await kvCmd(["GET", "ff:app:" + id]);
+  return NextResponse.json({ ok: true, valid: !!rec });
+}
+
 export async function POST(req: NextRequest) {
   const rl = await rateLimit(req, { key: "founding", limit: 10, windowSec: 3600 });
   if (rl) return rl;

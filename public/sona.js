@@ -704,6 +704,10 @@
   function gated() { if (isNativeApp()) return false; if (isSubscribed() || isPilot()) return false; ensureTrial(); return trialExpired(); }
   // Verify a subscription by email (Stripe is the source of truth) and cache it,
   // so a paid family can unlock on a new device / after clearing storage.
+  // SECURITY (F7, founder review): email-only is a weak second factor — the
+  // real fix is an emailed one-time code (needs RESEND_API_KEY). The endpoint
+  // is rate-limited server-side as the interim guard; the secure hand-off path
+  // is the single-use move-in code, not this.
   async function restore(email) {
     email = (email || "").trim();
     if (!/^\S+@\S+\.\S+$/.test(email)) return { ok: false, error: "Enter a valid email." };
@@ -1568,7 +1572,19 @@
   try {
     const _ffq = new URLSearchParams(location.search);
     const _ff = (_ffq.get("ff") || "").replace(/[^a-zA-Z0-9-]/g, "").slice(0, 24).toLowerCase();
-    if (_ff) { startPilot("ff-" + _ff); setTimeout(function () { try { sendProgress("enroll"); } catch (e) {} }, 900); }
+    // Fail-closed founding enrollment: only unlock if the server confirms the
+    // code is a real founding application. A random ?ff=anything no longer
+    // grants free access; a network error / KV-down also grants nothing.
+    if (_ff && !isPilot()) {
+      try {
+        fetch("/api/founding?id=" + encodeURIComponent(_ff))
+          .then(function (r) { return r.json(); })
+          .then(function (j) {
+            if (j && j.valid) { startPilot("ff-" + _ff); try { sendProgress("enroll"); } catch (e) {} }
+          })
+          .catch(function () {});
+      } catch (e) {}
+    }
   } catch (e) {}
 
   // ── Portrait-only guard: every kid surface loads sona.js, so one injected

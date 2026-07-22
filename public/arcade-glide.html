@@ -114,9 +114,9 @@
     // ---- charge gate + daily plumbing ----
     var SELF="arcade-glide.html";
     var isDaily=qp.get("daily")==="1";
-    function backToCharge(){ location.href="/charge.html?"+(isDaily?"daily=1":("game="+SELF)); }
+    function backToCharge(){ try{sessionStorage.removeItem("sona.play.active");}catch(e){} location.href="/charge.html?"+(isDaily?"daily=1":("game="+SELF)); }
     $("goCharge").onclick=backToCharge; $("needHome").onclick=function(){location.href="/today.html";};
-    var tok=false; try{ tok=sessionStorage.getItem("sona.play.token")==="1"; sessionStorage.removeItem("sona.play.token"); }catch(e){}
+    var tok=false; try{ var _t=sessionStorage.getItem("sona.play.token"); if(_t===SELF||_t==="1"){ tok=true; sessionStorage.setItem("sona.play.active",SELF); sessionStorage.removeItem("sona.play.token"); } else if(sessionStorage.getItem("sona.play.active")===SELF){ tok=true; } }catch(e){}
     if(!tok){ try{ $("needTitle").textContent="Flappy Glide needs a ticket!"; }catch(e){} $("needOvl").classList.add("show"); }
 
     var cv=$("cv"), ctx=cv.getContext("2d"), W=0,H=0,DPR=Math.min(2,window.devicePixelRatio||1);
