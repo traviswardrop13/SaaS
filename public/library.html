@@ -122,6 +122,34 @@
         { e: "💍", t: "The robot gives Rory a ring." },
         { e: "🌊", t: "They race around the river." },
         { e: "🎉", t: "Rory roars: hooray, hooray!" } ] },
+      { sound: "R", emoji: "🤖", title: "Reba the Robot", colors: ["#ff9a6e", "#ef7d47"], pages: [
+        { e: "🤖", t: "Reba the robot runs on a road." },
+        { e: "🌹", t: "Reba rolls past a red rose." },
+        { e: "🐇", t: "A rabbit races right by." },
+        { e: "🎀", t: "Reba wraps it in a ribbon." },
+        { e: "🌧️", t: "Rain! They run for the roof." },
+        { e: "🌈", t: "Reba the robot: ready, ready!" } ] },
+      { sound: "R", emoji: "🐓", title: "Ruby the Rooster", colors: ["#ff6e8e", "#ef5772"], pages: [
+        { e: "🐓", t: "Ruby the rooster rises at dawn." },
+        { e: "🌅", t: "Ruby crows: rise and shine!" },
+        { e: "🏃", t: "She runs around the red barn." },
+        { e: "🪱", t: "Ruby finds a wriggly worm." },
+        { e: "🌽", t: "The rooster pecks rows of corn." },
+        { e: "💤", t: "Ruby rests. What a great run!" } ] },
+      { sound: "R", emoji: "🦝", title: "Remy the Raccoon", colors: ["#ffb066", "#ef923c"], pages: [
+        { e: "🦝", t: "Remy the raccoon roams the river." },
+        { e: "🪨", t: "He reaches under a round rock." },
+        { e: "🍇", t: "Remy grabs a ripe, red grape." },
+        { e: "🚣", t: "He rows a raft in the rain." },
+        { e: "🌿", t: "Remy rests in the reeds." },
+        { e: "⭐", t: "Remy the raccoon: hooray!" } ] },
+      { sound: "R", emoji: "🦏", title: "Rex the Rhino", colors: ["#ff7a6e", "#e05a9c"], pages: [
+        { e: "🦏", t: "Rex the rhino runs really fast." },
+        { e: "🛣️", t: "He roars down the rocky road." },
+        { e: "🌳", t: "Rex rolls in the rich, green grass." },
+        { e: "🍎", t: "He reaches for a red apple." },
+        { e: "🤝", t: "Rex meets a friendly rabbit." },
+        { e: "🎉", t: "Run, Rex, run! Hooray!" } ] },
       { sound: "S", emoji: "🦭", title: "Sunny the Seal", colors: ["#62bdff", "#46a6ec"], pages: [
         { e: "☀️", t: "Sunny the seal sits in the sun." },
         { e: "🐍", t: "Sunny sees a silly snake." },
@@ -214,12 +242,20 @@
       return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
     });
     var shelf = document.getElementById("shelf");
+    // R-era: Sona goes deep on R first, so non-R books read as "coming soon"
+    // (locked). SLP-referred families keep the full library (clinics target
+    // any sound). New letters unlock their books as they ship.
+    var slpFull = false; try { slpFull = !!(Sona.slpCode && Sona.slpCode()); } catch (e) {}
     STORIES.forEach(function (st) {
+      var locked = !slpFull && st.sound !== "R";
       var b = document.createElement("button");
-      b.className = "bookBtn";
+      b.className = "bookBtn" + (locked ? " soon" : "");
       b.style.background = "linear-gradient(160deg," + st.colors[0] + "," + st.colors[1] + ")";
-      b.innerHTML = '<span class="be">' + cover(st,46) + '</span><span class="bt">' + st.title + '</span><span class="bs">' + st.sound + ' sound</span>';
-      b.onclick = function () { if (window.Sona) Sona.sfx.tap(); openBook(st); };
+      if (locked) { b.style.opacity = ".55"; b.style.position = "relative"; }
+      b.innerHTML = '<span class="be">' + cover(st,46) + '</span><span class="bt">' + st.title + '</span><span class="bs">' + (locked ? 'COMING SOON' : st.sound + ' sound') + '</span>';
+      b.onclick = locked
+        ? function () { if (window.Sona) { Sona.sfx.tap(); if (Sona.pop) Sona.pop("New books are on the way! 📚", { color: "#ff8a3d" }); } }
+        : function () { if (window.Sona) Sona.sfx.tap(); openBook(st); };
       shelf.appendChild(b);
     });
 
