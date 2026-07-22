@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
+import { rateLimit } from "@/lib/rateLimit";
 
 /**
  * Returns whether an email has an active (or trialing) Sona subscription.
@@ -7,11 +8,18 @@ import Stripe from "stripe";
  * access for the MVP — the app calls this to decide if a returning user is
  * paid. Later this can be backed by real accounts.
  *
+ * SECURITY (interim): knowing a subscriber's email is currently enough to
+ * unlock a new device (review item F7). Rate-limited here to stop email
+ * enumeration / Stripe-call abuse; a proper emailed one-time restore code is
+ * the real fix and is queued for review.
+ *
  * GET /api/subscription?email=foo@bar.com  ->  { ok, active }
  */
 export const runtime = "nodejs";
 
 export async function GET(req: NextRequest) {
+  const limited = await rateLimit(req, { key: "subscription-lookup", limit: 8, windowSec: 60 });
+  if (limited) return limited;
   const key = process.env.STRIPE_SECRET_KEY;
   if (!key) {
     return NextResponse.json(

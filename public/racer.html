@@ -517,7 +517,7 @@
       if(window.Sona&&Sona.addCoins)Sona.addCoins(earned);
       // record this round's mastery on the ladder rung (encouraging gating ~80%)
       if(window.Sona&&Sona.recordRung)Sona.recordRung(SOUND, RUNG, gateCorrect/Math.max(1,gateTotal));
-      try{ var GS=JSON.parse(localStorage.getItem("sona.games.v1")||"{}"); GS[SOUND]=GS[SOUND]||{}; GS[SOUND].racer={done:true}; GS.lastPlayDay=new Date().toISOString().slice(0,10); localStorage.setItem("sona.games.v1",JSON.stringify(GS)); }catch(e){}
+      try{ var GS=JSON.parse(localStorage.getItem("sona.games.v1")||"{}"); GS[SOUND]=GS[SOUND]||{}; GS[SOUND].racer={done:true}; GS.lastPlayDay=(window.Sona&&Sona.localDay?Sona.localDay():new Date().toISOString().slice(0,10)); localStorage.setItem("sona.games.v1",JSON.stringify(GS)); }catch(e){}
       $("winTitle").textContent=(place===1?"You won the race! ":"Race done! ")+medal;
       $("winUnlock").textContent=ptxt+"  ·  +"+earned+" 🪙";
       $("win").classList.add("show");

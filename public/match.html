@@ -234,7 +234,7 @@
       $("winReps").textContent=reps; $("winFlips").textContent=flips;
       var earned=15 + reps*2;
       if(window.Sona&&Sona.addCoins)Sona.addCoins(earned);
-      try{ var GS=JSON.parse(localStorage.getItem("sona.games.v1")||"{}"); GS[SOUND]=GS[SOUND]||{}; GS[SOUND].match={done:true}; GS.lastPlayDay=new Date().toISOString().slice(0,10); localStorage.setItem("sona.games.v1",JSON.stringify(GS)); }catch(e){}
+      try{ var GS=JSON.parse(localStorage.getItem("sona.games.v1")||"{}"); GS[SOUND]=GS[SOUND]||{}; GS[SOUND].match={done:true}; GS.lastPlayDay=(window.Sona&&Sona.localDay?Sona.localDay():new Date().toISOString().slice(0,10)); localStorage.setItem("sona.games.v1",JSON.stringify(GS)); }catch(e){}
       // record SLP ladder mastery for this round
       if(window.Sona&&Sona.recordRung) Sona.recordRung(SOUND, RUNG, correct/Math.max(1,total));
       $("winUnlock").textContent="+"+earned+" 🪙";

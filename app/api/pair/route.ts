@@ -74,9 +74,10 @@ export async function GET(req: NextRequest) {
   if (rl) return rl;
   const code = (req.nextUrl.searchParams.get("code") || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
   if (code.length !== 6) return NextResponse.json({ ok: false, error: "Bad code." }, { status: 400 });
-  const data = await kvCmd(["GET", `pair:${code}`]);
+  // GETDEL is atomic: two concurrent redemptions can't both read the payload
+  // before either deletes it (the old GET-then-DEL let a code be used twice).
+  const data = await kvCmd(["GETDEL", `pair:${code}`]);
   if (data === undefined) return NextResponse.json({ ok: false, error: "Not configured." }, { status: 501 });
   if (!data) return NextResponse.json({ ok: false, error: "That code isn't valid anymore." }, { status: 404 });
-  await kvCmd(["DEL", `pair:${code}`]); // single use
   return NextResponse.json({ ok: true, data });
 }

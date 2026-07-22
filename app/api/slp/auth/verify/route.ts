@@ -9,11 +9,12 @@ export async function GET(req: NextRequest) {
   const url = new URL(req.url);
   const token = url.searchParams.get("token") || "";
   const key = token ? "slptok:" + hashToken(token) : "";
-  const email = key ? await kvCmd(["GET", key]) : null;
+  // GETDEL is atomic: a magic link can't be verified twice concurrently (the
+  // old GET-then-DEL could mint two sessions from one single-use token).
+  const email = key ? await kvCmd(["GETDEL", key]) : null;
   if (!email || typeof email !== "string") {
     return NextResponse.redirect(url.origin + "/slp-login.html?err=expired");
   }
-  await kvCmd(["DEL", key]); // single use
 
   const acctKey = "slpacct:" + email;
   let acct: Record<string, unknown> | null = null;

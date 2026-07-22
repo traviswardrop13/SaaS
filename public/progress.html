@@ -256,7 +256,6 @@
       .howarrow{display:none!important;}
     }
   </style>
-  <script defer src="/_vercel/insights/script.js"></script>
   <script>
     // Parent gate, inline and dependency-free: runs before first paint and
     // still protects this page if /sona.js ever fails to load. It mirrors
@@ -558,7 +557,7 @@
     (function () {
       var goal = parseInt(p.dailyGoal, 10) || 0, card = document.getElementById("goalCard");
       if (!goal || !card) return;
-      var out = (Sona.outcomes ? Sona.outcomes() : {}) || {}, today = new Date().toISOString().slice(0, 10), reps = 0;
+      var out = (Sona.outcomes ? Sona.outcomes() : {}) || {}, today = (window.Sona&&Sona.localDay?Sona.localDay():new Date().toISOString().slice(0,10)), reps = 0;
       Object.keys(out).forEach(function (k) { var dd = out[k].days && out[k].days[today]; if (dd) reps += dd.a || 0; });
       var pct = Math.min(100, Math.round(reps / goal * 100)), done = reps >= goal;
       card.style.display = "block";

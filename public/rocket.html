@@ -268,7 +268,7 @@
     function finishGame(){
       var earned=20;
       if(window.Sona&&Sona.addCoins)Sona.addCoins(earned);
-      try{ var GS=JSON.parse(localStorage.getItem("sona.games.v1")||"{}"); GS[SOUND]=GS[SOUND]||{}; GS[SOUND].rocket={done:true}; GS.lastPlayDay=new Date().toISOString().slice(0,10); localStorage.setItem("sona.games.v1",JSON.stringify(GS)); }catch(e){}
+      try{ var GS=JSON.parse(localStorage.getItem("sona.games.v1")||"{}"); GS[SOUND]=GS[SOUND]||{}; GS[SOUND].rocket={done:true}; GS.lastPlayDay=(window.Sona&&Sona.localDay?Sona.localDay():new Date().toISOString().slice(0,10)); localStorage.setItem("sona.games.v1",JSON.stringify(GS)); }catch(e){}
       $("winCount").textContent=done;
       $("winUnlock").textContent="+"+earned+" 🪙";
       var _wt=$("winTitle"); if(_wt)_wt.textContent=DEST.title;

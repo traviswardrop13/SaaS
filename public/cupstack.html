@@ -489,7 +489,7 @@
         GS[SOUND]=GS[SOUND]||{};
         var best=Math.max(placed,(GS[SOUND].cupstack&&GS[SOUND].cupstack.best)||0);
         GS[SOUND].cupstack={ done:true, best:best };
-        GS.lastPlayDay=new Date().toISOString().slice(0,10);
+        GS.lastPlayDay=(window.Sona&&Sona.localDay?Sona.localDay():new Date().toISOString().slice(0,10));
         localStorage.setItem("sona.games.v1",JSON.stringify(GS));
       }catch(e){}
       // unlock the next cup color as the single reward

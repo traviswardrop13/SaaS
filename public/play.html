@@ -104,7 +104,7 @@
 
     var GS={}; try{ GS=JSON.parse(localStorage.getItem("sona.games.v1")||"{}"); }catch(e){}
     function saveGS(){ try{ localStorage.setItem("sona.games.v1",JSON.stringify(GS)); }catch(e){} }
-    var today=new Date().toISOString().slice(0,10);
+    var today=(window.Sona&&Sona.localDay?Sona.localDay():new Date().toISOString().slice(0,10));
 
     document.getElementById("streak").textContent=(g.streak&&g.streak.count)||0;
     document.getElementById("coins").textContent=Sona.getCoins?Sona.getCoins():0;
