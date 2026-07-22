@@ -1,6 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <script>
+  /* Experimental LiveAvatar page — loads a third-party SDK, so it is NOT for
+     kids. Founder/dev only: redirect out unless the founder key is present or
+     ?dev=1 is passed, so no child (or App reviewer) reaches the remote SDK. */
+  (function(){ try{ var ok=(localStorage.getItem("sona.founderKey"))||/[?&]dev=1/.test(location.search); if(!ok){ location.replace("/today.html"); } }catch(e){ location.replace("/today.html"); } })();
+  </script>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
   <title>Sona — coaching session</title>

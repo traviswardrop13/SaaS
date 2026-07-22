@@ -31,6 +31,14 @@ export default function Landing() {
           __html: `if(typeof window!=="undefined"&&window.Capacitor){var p={};try{p=JSON.parse(localStorage.getItem("sona.profile.v1")||"{}")}catch(e){}location.replace((p.onboarded||p.childName)?"/today.html":"/onboarding.html");}`,
         }}
       />
+      {/* Founding link (/?ff=<code>) lands on this marketing page, which never
+          loads sona.js, so enrollment never ran. Forward the code into the app
+          (onboarding), where sona.js validates it server-side and enrolls. */}
+      <script
+        dangerouslySetInnerHTML={{
+          __html: `if(typeof window!=="undefined"&&!window.Capacitor){var m=location.search.match(/[?&]ff=([A-Za-z0-9-]{2,24})/);if(m){location.replace("/onboarding.html?ff="+m[1]);}}`,
+        }}
+      />
       {/* Ad-funnel signal: fire InitiateCheckout the moment any checkout link
           is tapped — this is the event Meta's optimizer learns buyers from. */}
       <script

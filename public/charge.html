@@ -861,7 +861,7 @@
       stopMic(); try{ showTurtle(false); }catch(e){}
       paintReps(NEED); $("gamePanel").classList.add("ready");
       sfx("complete"); try{ if(S&&S.confetti)S.confetti(); }catch(e){}
-      try{ sessionStorage.setItem("sona.play.token","1"); sessionStorage.setItem("sona.boost.sound",SOUND); }catch(e){}
+      try{ sessionStorage.setItem("sona.play.token",GAME); sessionStorage.setItem("sona.boost.sound",SOUND); sessionStorage.removeItem("sona.play.active"); }catch(e){}
       if(isDaily&&run){ run.pending=true; runSave(run); }
       setTimeout(function(){ location.href="/"+GAME+"?from=charge"+(isDaily?"&daily=1":""); },700);
     }
