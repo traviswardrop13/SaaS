@@ -1,592 +1,324 @@
-import Link from "next/link";
+import type { CSSProperties } from "react";
 
 /**
- * Sona — marketing landing page (web-first product surface).
+ * Sona — R-sound marketing landing page (web-first funnel).
  *
- * Positioning: a premium at-home speech *coach* for kids, designed with a
- * licensed speech-language pathologist. Deliberately framed as a "program"
- * (web dashboard + live coach), which anchors perceived value to private
- * coaching rather than to the $5 app shelf — supporting a $49–99/mo price.
+ * One job: start free trials. Meta-ad parents of kids 4–9 working on the R
+ * sound, 90%+ on phones. Mobile-first single column, centered on desktop;
+ * every CTA calls the Stripe checkout start. Design: "Sunrise Storybook"
+ * handoff (README + Sona Landing Redesign.dc.html).
  *
- * Regulatory line (the founder's spouse is an SLP): we say "practice" and
- * "coach", never "therapy/therapist/diagnosis/treatment". Camera is never used;
- * audio isn't stored. No medical/outcome claims.
+ * Copy rule (founder's spouse is an SLP): "practice"/"coach" only — never
+ * therapy/treatment/diagnosis. Camera never used; audio isn't stored.
  */
+
 export const metadata = {
-  title: "Sona — speech practice kids actually love",
+  title: "Sona — R-sound practice kids actually love",
   description:
-    "Sona turns speech sounds into a game kids love — a friendly coach listens to each try and gives feedback, built with a licensed speech-language pathologist. Try it free.",
+    "Still saying “wabbit” instead of rabbit? Sona turns daily R practice into a game kids ask to play — built with a licensed speech-language pathologist. Start 7 days free.",
 };
+
+const CHECKOUT = "/api/checkout?plan=annual";
+const CREAM = "#fff6e9", INK = "#4a2c14", MUTED = "#8a6f52", LINE = "#f0e2cc";
+const B = "'Baloo 2', system-ui, sans-serif"; // display
+
+/* ---------- shared bits ---------- */
+function Parrot({ s }: { s: number }) {
+  return (
+    <svg width={s} height={s} viewBox="0 0 120 120" aria-hidden>
+      <rect x="0" y="62" width="38" height="13" rx="6.5" fill="#1cb0f6" transform="rotate(-34 19 68)" />
+      <rect x="-2" y="76" width="36" height="13" rx="6.5" fill="#58cc02" transform="rotate(-14 16 82)" />
+      <rect x="54" y="8" width="13" height="24" rx="6.5" fill="#ffd21c" transform="rotate(16 60 20)" />
+      <circle cx="62" cy="66" r="38" fill="#ff8a3d" />
+      <ellipse cx="54" cy="82" rx="20" ry="17" fill="#fff6e9" />
+      <ellipse cx="40" cy="70" rx="13" ry="20" fill="#58cc02" transform="rotate(16 40 70)" />
+      <circle cx="78" cy="54" r="14" fill="#fff" />
+      <circle cx="80" cy="56" r="6" fill="#4a2c14" />
+      <circle cx="82.5" cy="53.5" r="2.2" fill="#fff" />
+      <path d="M92 58 C106 56 113 65 106 74 C100 81 90 78 87 70 Z" fill="#ffd21c" />
+      <path d="M89 74 C94 80 101 81 105 77 C102 85 90 86 86 77 Z" fill="#e0b000" />
+      <circle cx="48" cy="46" r="4" fill="#fff" opacity="0.9" />
+    </svg>
+  );
+}
+function Check({ s = 16 }: { s?: number }) {
+  return (
+    <svg width={s} height={s} viewBox="0 0 20 20" style={{ flex: "none", marginTop: 2 }} aria-hidden>
+      <circle cx="10" cy="10" r="9" fill="#58cc02" />
+      <path d="M6 10.5 L9 13.5 L14.5 7.5" stroke="#fff" strokeWidth="2.6" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+function StarBadge({ s = 40 }: { s?: number }) {
+  return (
+    <svg width={s} height={s} viewBox="0 0 48 48" aria-hidden>
+      <rect x="15" y="26" width="7" height="16" rx="3.5" fill="#e0b000" transform="rotate(-16 18.5 34)" />
+      <rect x="26" y="26" width="7" height="16" rx="3.5" fill="#e0b000" transform="rotate(16 29.5 34)" />
+      <circle cx="24" cy="18" r="14" fill="#ffd21c" />
+      <path d="M18 18.5 L22.5 23 L30.5 13.5" stroke="#4a2c14" strokeWidth="3.4" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx="18" cy="12" r="2.4" fill="#fff" />
+    </svg>
+  );
+}
+function Mic({ s = 42 }: { s?: number }) {
+  return (
+    <svg width={s} height={s} viewBox="0 0 48 48" style={{ flex: "none" }} aria-hidden>
+      <rect x="17" y="4" width="14" height="25" rx="7" fill="#1cb0f6" />
+      <path d="M10 24 a14 14 0 0 0 28 0" stroke="#0d8ecc" strokeWidth="5" fill="none" strokeLinecap="round" />
+      <rect x="21.25" y="38" width="5.5" height="7" rx="2.75" fill="#0d8ecc" />
+      <circle cx="21" cy="9" r="2.4" fill="#fff" />
+    </svg>
+  );
+}
+function CtaButton({ label = "Start 7 days free", big = true }: { label?: string; big?: boolean }) {
+  return (
+    <a
+      href={CHECKOUT}
+      style={{
+        display: "block", textAlign: "center", textDecoration: "none",
+        background: "#ff8a3d", color: "#fff",
+        font: `700 ${big ? 19 : 16}px ${B}`,
+        padding: big ? 16 : "13px 16px", borderRadius: 22,
+        boxShadow: "0 5px 0 #ef6f23",
+      }}
+    >
+      {label}
+    </a>
+  );
+}
+const card: CSSProperties = { background: "#fff", borderRadius: 22, boxShadow: `0 5px 0 ${LINE}` };
+const kicker = (color: string): CSSProperties => ({ font: `700 11.5px 'Nunito', sans-serif`, letterSpacing: 1.8, color, marginBottom: 8 });
+const h2: CSSProperties = { margin: "0 0 16px", font: `800 26px/1.15 ${B}` };
 
 export default function Landing() {
   return (
-    <main className="min-h-screen bg-white text-gray-800">
-      {/* Native app (App Store build) opens straight into the app, not this
-          marketing/pricing page — Apple forbids non-IAP checkout in-app.
-          Fresh installs route through onboarding FIRST (this was the "app
-          skips onboarding" bug: every download landed on today.html with a
-          blank default profile); set-up families go straight to today. */}
+    <main style={{ background: CREAM, color: INK, minHeight: "100vh", overflowX: "hidden" }}>
+      {/* Native shell opens the app, never this pricing page (Apple 3.1.1). */}
       <script
         dangerouslySetInnerHTML={{
           __html: `if(typeof window!=="undefined"&&window.Capacitor){var p={};try{p=JSON.parse(localStorage.getItem("sona.profile.v1")||"{}")}catch(e){}location.replace((p.onboarded||p.childName)?"/today.html":"/onboarding.html");}`,
         }}
       />
-      {/* Founding link (/?ff=<code>) lands on this marketing page, which never
-          loads sona.js, so enrollment never ran. Forward the code into the app
-          (onboarding), where sona.js validates it server-side and enrolls. */}
+      {/* Founding link (/?ff=<code>) forwards into onboarding for server-side validation. */}
       <script
         dangerouslySetInnerHTML={{
           __html: `if(typeof window!=="undefined"&&!window.Capacitor){var m=location.search.match(/[?&]ff=([A-Za-z0-9-]{2,24})/);if(m){location.replace("/onboarding.html?ff="+m[1]);}}`,
         }}
       />
-      {/* Ad-funnel signal: fire InitiateCheckout the moment any checkout link
-          is tapped — this is the event Meta's optimizer learns buyers from. */}
+      {/* Ad-funnel signal: InitiateCheckout + paywall-viewed on any checkout tap. */}
       <script
         dangerouslySetInnerHTML={{
           __html: `document.addEventListener("click",function(e){var a=e.target&&e.target.closest?e.target.closest('a[href^="/api/checkout"]'):null;if(!a)return;try{if(window.sonaTrack)window.sonaTrack("InitiateCheckout",{value:79.99,currency:"USD",content_name:"web_annual"});}catch(err){}try{if(window.SonaAnalytics)window.SonaAnalytics.track("paywall viewed",{surface:"landing"});}catch(err){}},true);`,
         }}
       />
-      <Hero />
-      <HowItWorks />
-      <LiveCoach />
-      <ParentValue />
-      <Pricing />
-      <Safety />
-      <FAQ />
-      <FinalCTA />
-      <Footer />
-    </main>
-  );
-}
 
-/* ─────────────────────────── Header ─────────────────────────── */
-function Header() {
-  return (
-    <header className="sticky top-0 z-20 border-b border-gray-100 bg-white/85 backdrop-blur">
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-3">
-        <Link href="/" className="flex items-center gap-2">
-          <img src="/coach/echo/echo-avatar.svg" alt="Sona" className="h-8 w-8 object-contain" />
-          <span className="font-display text-2xl font-extrabold text-brand-600">
-            Sona
-          </span>
-          <span className="rounded-full bg-amber-400 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-amber-900">
-            Beta
-          </span>
-        </Link>
-        <nav className="hidden items-center gap-7 text-sm font-bold text-gray-600 sm:flex">
-          <a href="#how" className="hover:text-gray-900">
-            How it works
-          </a>
-          <a href="#pricing" className="hover:text-gray-900">
-            Pricing
-          </a>
-        </nav>
-        <div className="flex items-center gap-3">
-          <a
-            href="/map.html"
-            className="hidden text-sm font-bold text-gray-600 hover:text-gray-900 sm:block"
-          >
-            Open app
-          </a>
-          <a href="#pricing" className="btn-primary text-sm">
-            Get started
-          </a>
-        </div>
-      </div>
-    </header>
-  );
-}
+      {/* one centered column on every device (mobile source of truth) */}
+      <div style={{ maxWidth: 460, margin: "0 auto", paddingBottom: 92 }}>
 
-/* ─────────────────────────── Hero ─────────────────────────── */
-function Hero() {
-  return (
-    <section className="relative overflow-hidden">
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-brand-50 to-white" />
-      <div className="relative mx-auto max-w-2xl px-5 py-14 text-center sm:py-20">
-        {/* logo lockup: Leo + Sona */}
-        <div className="flex items-center justify-center gap-3">
-          <img src="/coach/echo/echo-avatar.svg" alt="Echo" className="h-14 w-14 object-contain" />
-          <span className="font-display text-4xl font-extrabold text-gray-900">Sona</span>
-          <span className="rounded-full bg-brand-400 px-2 py-0.5 text-[11px] font-extrabold uppercase tracking-wide text-white">
-            Beta
-          </span>
-        </div>
-
-        <h1 className="mt-12 font-display text-4xl font-extrabold leading-[1.05] text-gray-900 sm:text-6xl">
-          Still saying &ldquo;wabbit&rdquo;<br />instead of rabbit?
-        </h1>
-        <p className="mx-auto mt-5 max-w-xl text-lg leading-relaxed text-gray-600">
-          The R sound is the hardest one kids learn — and therapy waitlists run months.
-          Sona turns real R practice into games your child asks to play: live voice
-          detection scores every try, tracks progress, and counts weekly reps.
-        </p>
-        <div className="mt-8 flex justify-center">
-          <a href="#pricing" className="btn-primary text-lg">
-            Start 7 days free
-          </a>
-        </div>
-        <p className="mt-3 text-sm font-bold text-gray-500">
-          Focused on the R sound today — the rest of the alphabet is on the way, included.
-        </p>
-        <div className="mx-auto mt-7 inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-bold text-gray-600 shadow-chunky-sm">
-          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-brand-500 text-xs font-extrabold text-white">
-            ✓
-          </span>
-          Built with a licensed speech-language pathologist
-        </div>
-        <p className="mt-4 text-sm font-semibold text-gray-500">
-          Try free for 7 days · no charge today
-        </p>
-      </div>
-    </section>
-  );
-}
-
-/** A stylized "live session" stage — the product's signature moment. */
-function CoachStage() {
-  return (
-    <div className="relative mx-auto w-full max-w-md">
-      <div className="rounded-[2rem] bg-white p-3 shadow-chunky">
-        <div className="relative overflow-hidden rounded-[1.5rem] bg-gradient-to-b from-brand-400/20 to-brand-50">
-          <div className="flex aspect-[4/5] flex-col items-center justify-center px-6">
-            <img src="/coach/echo/echo-avatar.svg" alt="Echo" className="h-36 w-36 object-contain" />
-            <div className="mt-4 rounded-2xl bg-white px-5 py-3 shadow-chunky-sm">
-              <p className="font-display text-lg font-extrabold text-gray-800">
-                &ldquo;Let&apos;s try <span className="text-brand-600">rabbit</span> — your turn!&rdquo;
-              </p>
+        {/* 1 — HOOK */}
+        <section style={{ padding: "24px 20px 20px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 22 }}>
+            <Parrot s={34} />
+            <span style={{ font: `800 22px ${B}`, letterSpacing: 0.2 }}>sona</span>
+            <span style={{ font: `800 10px ${B}`, letterSpacing: 1.2, background: "#ffd21c", color: INK, padding: "3px 9px", borderRadius: 999, boxShadow: "0 2px 0 #e0b000" }}>BETA</span>
+          </div>
+          <h1 style={{ margin: "0 0 12px", font: `800 37px/1.08 ${B}` }}>
+            Still saying <span style={{ color: "#ef6f23" }}>&ldquo;wabbit&rdquo;</span> instead of rabbit?
+          </h1>
+          <p style={{ margin: "0 0 18px", fontSize: 15.5, lineHeight: 1.55, fontWeight: 600, color: MUTED }}>
+            R is the hardest sound in English — and speech-therapy waitlists run months. Sona turns daily R practice into a game your kid asks to play.
+          </p>
+          <div style={{ display: "flex", flexDirection: "column", gap: 9, marginBottom: 20 }}>
+            <CtaButton />
+            <div style={{ textAlign: "center", fontSize: 12.5, fontWeight: 700, color: MUTED }}>Then $79.99/yr — beta price · Cancel anytime</div>
+          </div>
+          {/* R-detection demo card */}
+          <div style={{ background: "#fff", borderRadius: 24, boxShadow: `0 5px 0 ${LINE}`, padding: "16px 18px", display: "flex", gap: 14, alignItems: "center" }}>
+            <div style={{ flex: "none" }}><Parrot s={96} /></div>
+            <div style={{ flex: 1 }}>
+              <div style={{ font: `700 15px 'Nunito', sans-serif`, color: MUTED }}><s>&ldquo;wabbit&rdquo;</s></div>
+              <div style={{ font: `800 24px ${B}`, margin: "2px 0 8px" }}>&ldquo;rabbit!&rdquo;</div>
+              <div style={{ display: "flex", alignItems: "flex-end", gap: 3, height: 22, marginBottom: 8 }}>
+                {[8, 16, 22, 12, 18, 9, 14].map((h, i) => (
+                  <div key={i} style={{ width: 5, height: h, borderRadius: 3, background: h >= 18 ? "#0d8ecc" : "#1cb0f6" }} />
+                ))}
+              </div>
+              <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "#58cc02", color: "#fff", font: `800 11.5px 'Nunito', sans-serif`, padding: "5px 10px", borderRadius: 999, boxShadow: "0 3px 0 #46a302" }}>
+                <svg width="12" height="12" viewBox="0 0 20 20" aria-hidden><path d="M4 10.5 L8.5 15 L16 6" stroke="#fff" strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                R detected · +1 rep
+              </div>
             </div>
           </div>
-          <span className="absolute left-4 top-4 flex items-center gap-1.5 rounded-full bg-white/90 px-3 py-1 text-xs font-extrabold text-brand-600 shadow-chunky-sm">
-            <span className="h-2 w-2 rounded-full bg-brand-500" /> today
-          </span>
-        </div>
-      </div>
-      {/* floating "score" chip */}
-      <div className="absolute -bottom-4 -right-3 rotate-3 rounded-2xl bg-brand-500 px-4 py-2 text-white shadow-chunky">
-        <p className="font-display text-sm font-extrabold">Great job! ⭐⭐⭐</p>
-      </div>
-    </div>
-  );
-}
+          <div style={{ display: "flex", gap: 8, marginTop: 14, flexWrap: "wrap" }}>
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "#fff", borderRadius: 999, padding: "6px 12px", boxShadow: `0 3px 0 ${LINE}`, fontSize: 11.5, fontWeight: 800 }}><StarBadge s={14} />Built with a licensed SLP</span>
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "#fff", borderRadius: 999, padding: "6px 12px", boxShadow: `0 3px 0 ${LINE}`, fontSize: 11.5, fontWeight: 800 }}><Mic s={14} />Really hears every rep</span>
+          </div>
+        </section>
 
-/* ─────────────────────────── Trust bar ─────────────────────────── */
-function TrustBar() {
-  const items = [
-    "Built with a licensed SLP",
-    "Camera never used — audio only",
-    "Recordings stay on your device",
-    "Ages 3–9",
-  ];
-  return (
-    <div className="border-y border-gray-100 bg-gray-50">
-      <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-center gap-x-8 gap-y-2 px-5 py-4 text-center text-sm font-bold text-gray-500">
-        {items.map((t) => (
-          <span key={t} className="flex items-center gap-2">
-            <span className="text-brand-500">✓</span>
-            {t}
-          </span>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-/* ─────────────────────────── How it works ─────────────────────────── */
-function HowItWorks() {
-  const steps = [
-    {
-      emoji: "🎧",
-      title: "A quick sound check",
-      body: "Your child says a few words and Sona builds a personalized plan — so practice targets exactly the sounds that need it.",
-    },
-    {
-      emoji: "🎮",
-      title: "Play a quick round",
-      body: "Leo says a word, your child says it back out loud, and gets instant stars and gentle feedback — bite-size, playful, and confidence-building.",
-    },
-    {
-      emoji: "📈",
-      title: "Progress you can see",
-      body: "Every session updates a parent dashboard, so you can watch tricky sounds get stronger week over week.",
-    },
-  ];
-  return (
-    <section id="how" className="mx-auto max-w-6xl px-5 py-20">
-      <SectionHead
-        kicker="How it works"
-        title="A daily habit kids look forward to"
-        sub="Short, consistent practice beats long and rare. Sona makes it a few friendly minutes a day your child actually wants to do."
-      />
-      <div className="mt-12 grid gap-6 sm:grid-cols-3">
-        {steps.map((s, i) => (
-          <div key={s.title} className="card">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-50 text-2xl">
-              {s.emoji}
-            </div>
-            <p className="mt-4 text-xs font-extrabold uppercase tracking-wide text-brand-500">
-              Step {i + 1}
+        {/* 2 — CREDIBILITY */}
+        <section style={{ background: "#fff", padding: "30px 20px" }}>
+          <div style={kicker("#46a302")}>THE COACH BEHIND IT</div>
+          <h2 style={h2}>Built with a licensed pediatric speech-language pathologist</h2>
+          <div style={{ background: CREAM, borderRadius: 24, padding: 18, position: "relative" }}>
+            <div style={{ position: "absolute", top: 14, right: 14 }}><StarBadge s={40} /></div>
+            <div style={{ font: `700 17px ${B}`, marginBottom: 10, paddingRight: 46 }}>Designed by a licensed pediatric SLP — not an algorithm</div>
+            <p style={{ margin: "0 0 14px", fontSize: 14.5, lineHeight: 1.55, fontWeight: 600 }}>
+              A licensed speech-language pathologist designed every game, cue, and level in Sona — the same step-by-step R practice used with kids 4–9, without the waitlist.
             </p>
-            <h3 className="mt-1 font-display text-xl font-extrabold text-gray-900">
-              {s.title}
-            </h3>
-            <p className="mt-2 text-gray-600">{s.body}</p>
-          </div>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-/* ─────────────────────────── Live coach ─────────────────────────── */
-function LiveCoach() {
-  const points = [
-    "Models each sound clearly, then listens to your child",
-    "Instant stars and gentle feedback on every try",
-    "Adapts to your child — patient, playful, never frustrated",
-    "Streaks and rewards keep them coming back each day",
-  ];
-  return (
-    <section id="coach" className="bg-gray-50">
-      <div className="mx-auto grid max-w-6xl items-center gap-12 px-5 py-20 lg:grid-cols-2">
-        <CoachStage />
-        <div>
-          <p className="text-sm font-extrabold uppercase tracking-wide text-brand-500">
-            The difference
-          </p>
-          <h2 className="mt-2 font-display text-3xl font-extrabold text-gray-900 sm:text-4xl">
-            Not flashcards. A game they talk to.
-          </h2>
-          <p className="mt-4 text-lg text-gray-600">
-            Most apps make kids tap pictures. Sona has them say sounds out loud —
-            Leo models each one, listens, and rewards every try with stars. It
-            feels like a game, and it&apos;s practice that actually moves the
-            needle, whenever your child is ready.
-          </p>
-          <ul className="mt-6 space-y-3">
-            {points.map((p) => (
-              <li key={p} className="flex items-start gap-3">
-                <span className="mt-0.5 flex h-6 w-6 flex-none items-center justify-center rounded-full bg-brand-500 text-sm font-extrabold text-white">
-                  ✓
-                </span>
-                <span className="font-semibold text-gray-700">{p}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-/* ─────────────────────────── Parent value ─────────────────────────── */
-function ParentValue() {
-  return (
-    <section className="mx-auto max-w-6xl px-5 py-20">
-      <SectionHead
-        kicker="For parents"
-        title="Less than a single private session"
-        sub="Private 1-on-1 speech support often runs $80+ a session. Sona is unlimited, guided practice at home — for a fraction of that, every month."
-      />
-      <div className="mt-12 grid gap-6 sm:grid-cols-3">
-        <Stat big="$80+" small="Typical cost of one private session" />
-        <Stat big="Daily" small="Coaching sessions with Sona" />
-        <Stat big="Weekly" small="Progress updates in your dashboard" />
-      </div>
-    </section>
-  );
-}
-
-function Stat({ big, small }: { big: string; small: string }) {
-  return (
-    <div className="card text-center">
-      <p className="font-display text-4xl font-extrabold text-brand-600">{big}</p>
-      <p className="mt-2 font-semibold text-gray-600">{small}</p>
-    </div>
-  );
-}
-
-/* ─────────────────────────── Pricing ─────────────────────────── */
-function Pricing() {
-  return (
-    <section id="pricing" className="bg-gray-50">
-      <div className="mx-auto max-w-6xl px-5 py-20">
-        <SectionHead
-          kicker="Beta pricing"
-          title="Lock the beta price for good"
-          sub="Sona is in beta, focused on the hardest sound first: R. Beta families get everything, keep this rate while they stay — and every new letter ships to them first, included."
-        />
-        <div className="mx-auto mt-12 max-w-md">
-          <PlanCard
-            name="Sona Beta — Everything"
-            badge="Beta price"
-            was="$119.99"
-            price="$79.99"
-            priceSuffix="/yr"
-            coupon="33% off"
-            yearly="7 days free · then billed yearly · cancel anytime"
-            blurb="Beta rate locked while you stay — when Sona launches at $119.99, yours never rises."
-            highlight
-            features={[
-              "The full R-sound curriculum, built with a licensed speech-language pathologist",
-              "Real voice detection — every rep is heard and scored, silence never counts",
-              "Games and a practice path your child actually asks for",
-              "Progress reports, accuracy by sound, and weekly rep counts",
-              "Every other letter as it ships — included, no upgrade",
-            ]}
-            cta="Start 7 days free"
-            href="/api/checkout?plan=annual"
-          />
-        </div>
-        <div className="mx-auto mt-8 max-w-xl rounded-2xl bg-white p-5 text-left shadow-sm">
-          <p className="text-sm leading-relaxed text-gray-600">
-            &ldquo;Sona is two people: me, and my wife Rachel — a licensed
-            pediatric speech-language pathologist. There&apos;s no growth team
-            and no countdown timers. The 50-family limit is real: it&apos;s how
-            many we can listen to properly while we build. Prefer to try first?
-            The 7-day free trial is right below.&rdquo;
-          </p>
-          <p className="mt-2 text-sm font-bold text-gray-900">— Travis, Sona co-founder</p>
-        </div>
-        <p className="mx-auto mt-8 max-w-xl text-center text-sm text-gray-500">
-          Designed with a licensed speech-language pathologist. Sona supports
-          practice at home and is not a substitute for professional care.
-        </p>
-      </div>
-    </section>
-  );
-}
-
-function PlanCard({
-  name,
-  price,
-  priceSuffix = "/mo",
-  was,
-  coupon,
-  yearly,
-  blurb,
-  features,
-  cta,
-  highlight,
-  badge,
-  href = "/subscribe",
-}: {
-  name: string;
-  price: string;
-  priceSuffix?: string;
-  was?: string;
-  coupon?: string;
-  yearly: string;
-  blurb: string;
-  features: string[];
-  cta: string;
-  highlight?: boolean;
-  badge?: string;
-  href?: string;
-}) {
-  return (
-    <div
-      className={`relative rounded-3xl bg-white p-7 shadow-chunky ${
-        highlight ? "ring-2 ring-brand-500" : ""
-      }`}
-    >
-      {badge ? (
-        <span className="absolute -top-3 right-6 rounded-full bg-brand-500 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-white">
-          {badge}
-        </span>
-      ) : null}
-      <h3 className="font-display text-2xl font-extrabold text-gray-900">{name}</h3>
-      <p className="mt-1 text-gray-600">{blurb}</p>
-      <div className="mt-5 flex flex-wrap items-end gap-2">
-        {was ? (
-          <span className="mb-2 text-2xl font-bold text-gray-400 line-through">
-            {was}
-          </span>
-        ) : null}
-        <span className="font-display text-5xl font-extrabold text-gray-900">
-          {price}
-        </span>
-        <span className="mb-1.5 font-bold text-gray-500">{priceSuffix}</span>
-        {coupon ? (
-          <span className="mb-2 rounded-full bg-grass-500 px-2.5 py-1 text-xs font-extrabold uppercase tracking-wide text-white shadow-chunky-sm">
-            {coupon}
-          </span>
-        ) : null}
-      </div>
-      <p className="mt-1 text-sm font-bold text-brand-600">{yearly}</p>
-      <Link
-        href={href}
-        className="mt-6 block w-full rounded-2xl bg-brand-500 px-6 py-3 text-center font-display font-extrabold uppercase tracking-wide text-white shadow-chunky transition hover:bg-brand-600 active:translate-y-1 active:shadow-chunky-sm"
-      >
-        {cta}
-      </Link>
-      <ul className="mt-7 space-y-3">
-        {features.map((f) => (
-          <li key={f} className="flex items-start gap-3">
-            <span className="mt-0.5 flex h-5 w-5 flex-none items-center justify-center rounded-full bg-brand-500 text-xs font-extrabold text-white">
-              ✓
-            </span>
-            <span className="font-semibold text-gray-700">{f}</span>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-
-/* ─────────────────────────── Safety ─────────────────────────── */
-function Safety() {
-  const items = [
-    {
-      emoji: "📷",
-      title: "Camera off, always",
-      body: "Sessions are audio only. Your child's camera is never used.",
-    },
-    {
-      emoji: "🔒",
-      title: "Recordings stay on your device",
-      body: "Practice clips save only to your own device so you can hear progress — we don't keep audio on our servers.",
-    },
-    {
-      emoji: "👩‍⚕️",
-      title: "Built with an SLP",
-      body: "Every activity is designed with a licensed speech-language pathologist.",
-    },
-  ];
-  return (
-    <section className="mx-auto max-w-6xl px-5 py-20">
-      <SectionHead kicker="Safe by design" title="Built for kids and trusted by parents" />
-      <div className="mt-12 grid gap-6 sm:grid-cols-3">
-        {items.map((i) => (
-          <div key={i.title} className="card">
-            <div className="text-3xl">{i.emoji}</div>
-            <h3 className="mt-3 font-display text-lg font-extrabold text-gray-900">
-              {i.title}
-            </h3>
-            <p className="mt-1 text-gray-600">{i.body}</p>
-          </div>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-/* ─────────────────────────── FAQ ─────────────────────────── */
-function FAQ() {
-  const qs = [
-    {
-      q: "What ages is Sona for?",
-      a: "Sona is built for children roughly ages 3 to 9 who are working on speech sounds and clear talking.",
-    },
-    {
-      q: "Is this speech therapy?",
-      a: "No. Sona is a practice and coaching tool designed with a licensed speech-language pathologist. It supports practice at home and is not a substitute for professional care.",
-    },
-    {
-      q: "When can my child start?",
-      a: "Right away — start the free 7-day trial and your child can play today, with new levels rolling out.",
-    },
-    {
-      q: "Is the app ready today?",
-      a: "Yes — Sona's speech games are live now. Start free today, and you'll get every new level and feature as it ships.",
-    },
-    {
-      q: "How does the founding price work?",
-      a: "During beta, Sona is $79.99/yr — 7 days free first, then $6.67/month billed yearly — marked down from the $119.99 launch price. Your beta rate never rises while you stay subscribed, and every new sound ships to you included. Families referred by their speech-language pathologist get free access while we build together.",
-    },
-  ];
-  return (
-    <section className="bg-gray-50">
-      <div className="mx-auto max-w-3xl px-5 py-20">
-        <SectionHead kicker="Questions" title="Good to know" />
-        <div className="mt-10 space-y-4">
-          {qs.map((item) => (
-            <div key={item.q} className="card">
-              <h3 className="font-display text-lg font-extrabold text-gray-900">
-                {item.q}
-              </h3>
-              <p className="mt-2 text-gray-600">{item.a}</p>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {["Licensed & board-certified (CCC-SLP)", "Specializes in kids ages 4–9", "Reviews every exercise before it ships"].map((t) => (
+                <div key={t} style={{ display: "flex", gap: 8, fontSize: 13.5, fontWeight: 700 }}><Check />{t}</div>
+              ))}
             </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
+          </div>
+        </section>
 
-/* ─────────────────────────── Final CTA ─────────────────────────── */
-function FinalCTA() {
-  return (
-    <section className="mx-auto max-w-6xl px-5 py-20">
-      <div className="overflow-hidden rounded-[2rem] bg-gradient-to-br from-brand-500 to-brand-600 px-8 py-14 text-center shadow-chunky">
-        <h2 className="font-display text-3xl font-extrabold text-white sm:text-4xl">
-          Ready to make speech practice fun?
-        </h2>
-        <p className="mx-auto mt-3 max-w-xl text-lg text-brand-50">
-          Try everything free for 7 days — no charge today. Your child can play
-          right now, and you&apos;ll get every new level as it ships.
-        </p>
-        <a
-          href="#pricing"
-          className="mt-8 inline-block rounded-2xl bg-white px-8 py-4 font-display text-lg font-extrabold uppercase tracking-wide text-brand-600 shadow-chunky transition active:translate-y-1 active:shadow-chunky-sm"
-        >
-          Get started free
-        </a>
-      </div>
-    </section>
-  );
-}
+        {/* 3 — HOW IT WORKS */}
+        <section style={{ padding: "30px 20px" }}>
+          <div style={kicker("#ef6f23")}>HOW SONA WORKS</div>
+          <h2 style={h2}>Ten minutes a day, really heard</h2>
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <div style={{ ...card, padding: "16px 18px", display: "flex", gap: 14 }}>
+              <svg width="42" height="42" viewBox="0 0 48 48" style={{ flex: "none" }} aria-hidden><rect x="3" y="12" width="42" height="27" rx="13.5" fill="#ff8a3d" /><rect x="10" y="21" width="15" height="5.5" rx="2.75" fill="#ef6f23" /><rect x="14.75" y="16.25" width="5.5" height="15" rx="2.75" fill="#ef6f23" /><circle cx="33" cy="21" r="3.4" fill="#ef6f23" /><circle cx="38.5" cy="27" r="3.4" fill="#ef6f23" /><circle cx="11" cy="17" r="2.4" fill="#fff" /></svg>
+              <div><div style={{ font: `700 17px ${B}`, marginBottom: 3 }}>Games they ask to play</div><div style={{ fontSize: 13.5, lineHeight: 1.5, fontWeight: 600, color: MUTED }}>Short, silly missions with Echo the parrot. Stars for every strong R — ten minutes feels like recess, not homework.</div></div>
+            </div>
+            <div style={{ ...card, padding: "16px 18px", display: "flex", gap: 14 }}>
+              <Mic s={42} />
+              <div><div style={{ font: `700 17px ${B}`, marginBottom: 3 }}>Silence never counts</div><div style={{ fontSize: 13.5, lineHeight: 1.5, fontWeight: 600, color: MUTED }}>Real voice detection listens to every rep and scores it on the spot. If Sona counts it, your child actually said it.</div></div>
+            </div>
+            <div style={{ ...card, padding: "16px 18px", display: "flex", gap: 14 }}>
+              <svg width="42" height="42" viewBox="0 0 48 48" style={{ flex: "none" }} aria-hidden><rect x="6" y="27" width="9.5" height="15" rx="4.5" fill="#58cc02" /><rect x="19.25" y="17" width="9.5" height="25" rx="4.75" fill="#46a302" /><rect x="32.5" y="7" width="9.5" height="35" rx="4.75" fill="#58cc02" /><circle cx="35.5" cy="11.5" r="2.4" fill="#fff" /></svg>
+              <div style={{ flex: 1 }}>
+                <div style={{ font: `700 17px ${B}`, marginBottom: 3 }}>Progress you can actually see</div>
+                <div style={{ fontSize: 13.5, lineHeight: 1.5, fontWeight: 600, color: MUTED, marginBottom: 10 }}>Weekly rep counts and a sound-by-sound report on your phone. Know it&apos;s working instead of hoping.</div>
+                <div style={{ background: CREAM, borderRadius: 14, padding: "10px 12px" }}>
+                  <div style={{ font: `800 13px ${B}`, marginBottom: 6 }}>214 reps this week</div>
+                  <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 34 }}>
+                    {[35, 55, 40, 70, 50, 100, 62].map((h, i) => (
+                      <div key={i} style={{ flex: 1, height: `${h}%`, borderRadius: 5, background: h === 100 ? "#46a302" : "#58cc02" }} />
+                    ))}
+                  </div>
+                  <div style={{ display: "flex", gap: 6, marginTop: 4, font: `700 9px 'Nunito', sans-serif`, color: MUTED }}>
+                    {["M", "T", "W", "T", "F", "S", "S"].map((d, i) => (<div key={i} style={{ flex: 1, textAlign: "center" }}>{d}</div>))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
 
-/* ─────────────────────────── Footer ─────────────────────────── */
-function Footer() {
-  return (
-    <footer className="border-t border-gray-100">
-      <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-5 py-10 sm:flex-row">
-        <div className="flex items-center gap-2">
-          <img src="/coach/echo/echo-avatar.svg" alt="Echo" className="h-7 w-7 object-contain" />
-          <span className="font-display text-lg font-extrabold text-brand-600">
-            Sona
-          </span>
-        </div>
-        <div className="flex items-center gap-6 text-sm font-bold text-gray-500">
-          <Link href="/privacy" className="hover:text-gray-800">
-            Privacy
-          </Link>
-          <Link href="/terms" className="hover:text-gray-800">
-            Terms
-          </Link>
-          <Link href="/support" className="hover:text-gray-800">
-            Support
-          </Link>
-        </div>
-      </div>
-      <p className="mx-auto max-w-2xl px-5 pb-10 text-center text-xs text-gray-400">
-        Sona is a speech &amp; language practice tool designed with a licensed
-        speech-language pathologist. It supports practice at home and is not a
-        substitute for professional care.
-      </p>
-    </footer>
-  );
-}
+        {/* 4 — ROADMAP */}
+        <section style={{ padding: "6px 20px 30px" }}>
+          <div style={{ ...card, borderRadius: 24, padding: "20px 18px", textAlign: "center" }}>
+            <h3 style={{ margin: "0 0 14px", font: `800 22px/1.2 ${B}` }}>R today. The whole alphabet on the way.</h3>
+            <div style={{ display: "flex", gap: 8, justifyContent: "center", alignItems: "center", marginBottom: 14 }}>
+              <div style={{ width: 52, height: 52, borderRadius: 16, background: "#ff8a3d", boxShadow: "0 4px 0 #ef6f23", color: "#fff", font: `800 26px ${B}`, display: "flex", alignItems: "center", justifyContent: "center" }}>R</div>
+              {["S", "L", "TH", "CH"].map((l) => (
+                <div key={l} style={{ width: 44, height: 44, borderRadius: 14, background: CREAM, outline: "2px solid #efe0c8", color: MUTED, font: `800 ${l.length > 1 ? 16 : 20}px ${B}`, display: "flex", alignItems: "center", justifyContent: "center" }}>{l}</div>
+              ))}
+              <div style={{ font: `800 18px ${B}`, color: MUTED }}>…Z</div>
+            </div>
+            <p style={{ margin: "0 0 12px", fontSize: 13.5, lineHeight: 1.5, fontWeight: 600, color: MUTED }}>Every new sound is included in your plan the day it ships — never an add-on.</p>
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "#ffd21c", color: INK, font: `800 11.5px 'Nunito', sans-serif`, padding: "6px 12px", borderRadius: 999, boxShadow: "0 3px 0 #e0b000" }}>All sounds included</div>
+          </div>
+        </section>
 
-/* ─────────────────────────── Shared ─────────────────────────── */
-function SectionHead({
-  kicker,
-  title,
-  sub,
-}: {
-  kicker: string;
-  title: string;
-  sub?: string;
-}) {
-  return (
-    <div className="mx-auto max-w-2xl text-center">
-      <p className="text-sm font-extrabold uppercase tracking-wide text-brand-500">
-        {kicker}
-      </p>
-      <h2 className="mt-2 font-display text-3xl font-extrabold text-gray-900 sm:text-4xl">
-        {title}
-      </h2>
-      {sub ? <p className="mt-3 text-lg text-gray-600">{sub}</p> : null}
-    </div>
+        {/* 5 — PRICING */}
+        <section id="pricing" style={{ background: "#fff", padding: "30px 20px" }}>
+          <div style={{ background: "#fff", border: `3px solid ${INK}`, borderRadius: 26, boxShadow: `0 7px 0 ${INK}`, padding: "22px 20px" }}>
+            <div style={{ display: "inline-flex", background: "#ffd21c", color: INK, font: `800 11px ${B}`, letterSpacing: 1.2, padding: "5px 12px", borderRadius: 999, boxShadow: "0 3px 0 #e0b000", marginBottom: 12 }}>BETA PRICE</div>
+            <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
+              <s style={{ fontSize: 17, fontWeight: 800, color: MUTED }}>$119.99</s>
+              <div style={{ font: `800 52px/1 ${B}` }}>$79.99</div>
+              <div style={{ fontSize: 15, fontWeight: 800, color: MUTED }}>/year</div>
+            </div>
+            <div style={{ fontSize: 12.5, fontWeight: 700, color: MUTED, margin: "4px 0 16px" }}>about $6.67 a month</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 9, marginBottom: 18 }}>
+              {["7-day free trial — full access from minute one", "Your beta rate is locked in forever", "R now — every new sound included", "Cancel anytime"].map((t) => (
+                <div key={t} style={{ display: "flex", gap: 9, fontSize: 14, fontWeight: 700 }}><Check />{t}</div>
+              ))}
+            </div>
+            <CtaButton />
+            <div style={{ display: "flex", gap: 6, justifyContent: "space-between", margin: "14px 0 10px" }}>
+              {[["1", "Start trial"], ["2", "Get 6-letter code"], ["3", "Download & play"]].map(([n, t]) => (
+                <div key={n} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 10.5, fontWeight: 800, color: MUTED }}>
+                  <div style={{ width: 17, height: 17, borderRadius: "50%", background: INK, color: CREAM, font: `800 10px ${B}`, display: "flex", alignItems: "center", justifyContent: "center", flex: "none" }}>{n}</div>{t}
+                </div>
+              ))}
+            </div>
+            <div style={{ textAlign: "center", fontSize: 11.5, fontWeight: 700, color: MUTED }}>Secure checkout by Stripe · iPhone &amp; iPad</div>
+          </div>
+        </section>
+
+        {/* 6 — SAFETY */}
+        <section style={{ background: INK, padding: "28px 20px", color: CREAM }}>
+          <h3 style={{ margin: "0 0 16px", font: `800 21px ${B}` }}>Kid-safe by design</h3>
+          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
+              <svg width="36" height="36" viewBox="0 0 48 48" style={{ flex: "none" }} aria-hidden><rect x="4" y="13" width="29" height="23" rx="7" fill="#1cb0f6" /><path d="M33 20 L43 14 V35 L33 29 Z" fill="#0d8ecc" /><circle cx="18" cy="24.5" r="7" fill="#0d8ecc" /><circle cx="18" cy="24.5" r="3" fill="#1cb0f6" /><rect x="21" y="-4" width="6" height="56" rx="3" fill="#fff6e9" transform="rotate(42 24 24)" /><circle cx="11" cy="18" r="2.4" fill="#fff" /></svg>
+              <div><div style={{ font: `700 15.5px ${B}` }}>No camera, ever</div><div style={{ fontSize: 12.5, lineHeight: 1.5, fontWeight: 600, opacity: 0.7 }}>Sona only listens during practice, with your permission.</div></div>
+            </div>
+            <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
+              <svg width="36" height="36" viewBox="0 0 48 48" style={{ flex: "none" }} aria-hidden><rect x="11" y="3" width="24" height="42" rx="7" fill="#58cc02" /><rect x="16" y="9" width="14" height="24" rx="4" fill="#46a302" /><rect x="19" y="36.5" width="8" height="4" rx="2" fill="#46a302" /><rect x="27" y="20" width="16" height="13" rx="4" fill="#ffd21c" /><path d="M31 20 v-3 a4 4 0 0 1 8 0 v3" stroke="#e0b000" strokeWidth="3.4" fill="none" /><circle cx="16" cy="7" r="2.2" fill="#fff" /></svg>
+              <div><div style={{ font: `700 15.5px ${B}` }}>Recordings stay on the device</div><div style={{ fontSize: 12.5, lineHeight: 1.5, fontWeight: 600, opacity: 0.7 }}>Practice audio is scored and stored right on your phone — it never leaves it.</div></div>
+            </div>
+            <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
+              <svg width="36" height="36" viewBox="0 0 48 48" style={{ flex: "none" }} aria-hidden><path d="M9 19 L28 10 V38 L9 29 Z" fill="#ff8a3d" /><rect x="4" y="18" width="7" height="12" rx="3" fill="#ef6f23" /><path d="M32 17 a9.5 9.5 0 0 1 0 14" stroke="#ef6f23" strokeWidth="4.5" fill="none" strokeLinecap="round" /><rect x="21" y="-4" width="6" height="56" rx="3" fill="#fff6e9" transform="rotate(42 24 24)" /><circle cx="13" cy="17" r="2.4" fill="#fff" /></svg>
+              <div><div style={{ font: `700 15.5px ${B}` }}>No ads inside</div><div style={{ fontSize: 12.5, lineHeight: 1.5, fontWeight: 600, opacity: 0.7 }}>Nothing to watch, click, or buy mid-game. Ever.</div></div>
+            </div>
+          </div>
+        </section>
+
+        {/* 7 — FAQ */}
+        <section style={{ padding: "30px 20px 10px" }}>
+          <h3 style={{ margin: "0 0 14px", font: `800 22px ${B}` }}>Quick answers</h3>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {[
+              ["Does Sona replace working with an SLP?", "No — it's daily practice designed by one. If your child already sees a speech professional, Sona is the between-sessions coach that makes each visit count."],
+              ["How does the free trial work?", "Full access for 7 days. Cancel anytime before it ends and you pay nothing."],
+              ["What do I need to start?", "An iPhone or iPad. After checkout you get a 6-letter code — enter it in the app and you're playing in minutes."],
+              ["My kid is 4 — too young?", "Sona is built for ages 4–9. Exercises adapt from first tries at the sound all the way to tricky words like “squirrel.”"],
+            ].map(([q, a]) => (
+              <div key={q} style={{ background: "#fff", borderRadius: 18, boxShadow: `0 4px 0 ${LINE}`, padding: "14px 16px" }}>
+                <div style={{ font: `700 15px ${B}`, marginBottom: 4 }}>{q}</div>
+                <div style={{ fontSize: 13, lineHeight: 1.5, fontWeight: 600, color: MUTED }}>{a}</div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* 8 — FINAL CTA */}
+        <section style={{ padding: "34px 20px 26px", textAlign: "center" }}>
+          <div style={{ display: "flex", justifyContent: "center" }}><Parrot s={76} /></div>
+          <h2 style={{ margin: "8px 0 6px", font: `800 30px/1.1 ${B}` }}>Ready to hear that R?</h2>
+          <div style={{ fontSize: 14, fontWeight: 700, color: MUTED, marginBottom: 16 }}><s>$119.99</s> <span style={{ color: INK, font: `800 20px ${B}` }}>$79.99/yr</span> · 7 days free</div>
+          <CtaButton />
+          <div style={{ fontSize: 11.5, fontWeight: 700, color: MUTED, margin: "12px 0 22px" }}>Beta rate locked forever · Cancel anytime</div>
+          <div style={{ fontSize: 11.5, fontWeight: 700, color: MUTED, borderTop: `2px solid ${LINE}`, paddingTop: 14 }}>
+            speaksona.com · <a href="/privacy" style={{ color: MUTED }}>Privacy</a> · <a href="/terms" style={{ color: MUTED }}>Terms</a><br />Made with a licensed pediatric SLP
+          </div>
+        </section>
+      </div>
+
+      {/* sticky mobile CTA — hidden on desktop */}
+      <a
+        href={CHECKOUT}
+        className="sona-sticky-cta"
+        style={{
+          position: "fixed", left: 12, right: 12, bottom: 12, zIndex: 40, textDecoration: "none",
+          background: "#fff", borderRadius: 18, boxShadow: "0 4px 0 rgba(74,44,20,.18)",
+          outline: `2px solid ${LINE}`, padding: "10px 14px", display: "flex", alignItems: "center", gap: 10,
+          maxWidth: 460, margin: "0 auto",
+        }}
+      >
+        <div style={{ flex: 1 }}>
+          <span style={{ font: `800 16px ${B}`, color: INK }}>$79.99/yr</span> <s style={{ fontSize: 11, fontWeight: 700, color: MUTED }}>$119.99</s>
+          <div style={{ fontSize: 10.5, fontWeight: 800, color: "#46a302" }}>7 days free · beta rate locked</div>
+        </div>
+        <span style={{ background: "#ff8a3d", color: "#fff", font: `700 14px ${B}`, padding: "10px 16px", borderRadius: 14, boxShadow: "0 4px 0 #ef6f23", flex: "none" }}>Start free</span>
+      </a>
+      {/* @media (min-width:768px){ hide the sticky bar — inline CTAs carry desktop } */}
+      <style dangerouslySetInnerHTML={{ __html: "@media(min-width:768px){.sona-sticky-cta{display:none!important}}" }} />
+    </main>
   );
 }
