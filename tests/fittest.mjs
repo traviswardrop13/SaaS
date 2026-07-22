@@ -36,7 +36,7 @@ async function measure(page, url) {
       oX: Math.round(doc.scrollWidth - innerWidth),
       oY: Math.round(doc.scrollHeight - innerHeight),
       scrollLocked: getComputedStyle(document.body).overflowY === "hidden" || getComputedStyle(doc).overflowY === "hidden",
-      thumbs: el("thumbs"), hero: el("heroCard"), mic: el("micWrap"), panel: el("gamePanel"), go: el("goBtn"),
+      pathCanvas: el("pathCanvas"), pnodes: (document.querySelectorAll("#pathNodes .pnode") || []).length, mic: el("micWrap"), panel: el("gamePanel"), go: el("goBtn"),
       innerH: innerHeight,
     };
   });
@@ -51,13 +51,12 @@ for (const [dev, w, h] of PORTRAIT) {
   });
   let m = await measure(page, "today.html");
   ok(dev + " today: no sideways overflow", m.oX <= 1, "oX=" + m.oX);
-  ok(dev + " today: thumbs clear the home bar", m.thumbs && m.thumbs.bottom <= m.innerH - HOME_BAR + 1, m.thumbs && m.thumbs.bottom + "/" + (m.innerH - HOME_BAR));
-  // goBtn sits INSIDE the wrap's padded box; on hardware the wrap adds
-  // env(safe-area-inset-bottom) (0 in headless), so the honest check is
-  // "no overflow past the wrap's own padding floor" — home-bar clearance
-  // then comes from the env() padding on device.
-  ok(dev + " today: LET'S GO never overflows the page", m.go && m.go.bottom <= m.innerH - 20, m.go && m.go.bottom + "/" + (m.innerH - 20));
-  ok(dev + " today: hero never collapses", m.hero && m.hero.h >= 150, m.hero && "heroH=" + m.hero.h);
+  // Practice Path: the road canvas fills real height and lays out all 5 nodes
+  ok(dev + " today: path canvas has a real size", m.pathCanvas && m.pathCanvas.h >= 150, m.pathCanvas && "pathH=" + (m.pathCanvas && m.pathCanvas.h));
+  ok(dev + " today: all 5 path nodes render", m.pnodes === 5, "nodes=" + m.pnodes);
+  // goBtn is the fixed bottom CTA; on hardware env(safe-area-inset-bottom)
+  // adds the home-bar gap (0 in headless), so assert against the page floor.
+  ok(dev + " today: START CTA never overflows the page", m.go && m.go.bottom <= m.innerH - 15, m.go && m.go.bottom + "/" + (m.innerH - 15));
   m = await measure(page, "charge.html?game=arcade-slice.html");
   ok(dev + " charge: mic clears the home bar", m.mic && m.mic.bottom <= m.innerH - HOME_BAR + 1, m.mic && m.mic.bottom + "/" + (m.innerH - HOME_BAR));
   ok(dev + " charge: no sideways overflow", m.oX <= 1, "oX=" + m.oX);
@@ -84,7 +83,7 @@ for (const [dev, w, h] of LANDSCAPE) {
     localStorage.setItem("sona.micok", "1");
   });
   let m = await measure(page, "today.html");
-  ok(dev + " today: hero has a real size in landscape", m.hero && m.hero.h >= 200, m.hero && "heroH=" + m.hero.h);
+  ok(dev + " today: path canvas has a real size in landscape", m.pathCanvas && m.pathCanvas.h >= 200, m.pathCanvas && "pathH=" + (m.pathCanvas && m.pathCanvas.h));
   ok(dev + " today: landscape scrolls instead of clipping", !m.scrollLocked, "overflow still hidden");
   m = await measure(page, "charge.html?game=arcade-slice.html");
   ok(dev + " charge: landscape scrolls instead of clipping", !m.scrollLocked, "overflow still hidden");

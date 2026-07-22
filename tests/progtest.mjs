@@ -58,11 +58,11 @@ ok("rotation starts R round 0", t.sound === "R" && t.round === 0);
 // ── Practice Path v1: fresh day = pulsing first node, four waiting ──
 let pp = await page.evaluate(() => ({
   ps: Sona.pathState(),
-  nodes: [...document.querySelectorAll("#pathRow .pnode")].map((e) => (e.className.includes("done") ? "d" : e.className.includes("next") ? "n" : "t")).join(""),
-  head: document.getElementById("pathStep").textContent,
+  nodes: [...document.querySelectorAll("#pathNodes .pnode")].map((e) => (e.className.includes("done") ? "d" : e.className.includes("next") ? "n" : "t")).join(""),
+  gate: (document.getElementById("gatePill")||{}).textContent||"",
 }));
 ok("path: fresh day paints next+4 todo", pp.nodes === "ntttt");
-ok("path: fresh family starts at step 0", pp.ps.steps === 0 && /STEP 0/.test(pp.head));
+ok("path: fresh family starts at step 0", pp.ps.steps === 0 && /steps to the next place/.test(pp.gate));
 
 // ── charge free play: round 1 = isolation, label Game 1 of 5 ──
 await page.goto("http://localhost:8131/charge.html?game=arcade-slice.html"); await page.waitForTimeout(700);
@@ -102,7 +102,7 @@ ok("ring shows 3/5 after 3 rounds", t.ring === "3/5");
 ok("subLine counts down the goal", /2 more rounds/.test(t.sub));
 pp = await page.evaluate(() => ({
   ps: Sona.pathState(),
-  nodes: [...document.querySelectorAll("#pathRow .pnode")].map((e) => (e.className.includes("done") ? "d" : e.className.includes("next") ? "n" : "t")).join(""),
+  nodes: [...document.querySelectorAll("#pathNodes .pnode")].map((e) => (e.className.includes("done") ? "d" : e.className.includes("next") ? "n" : "t")).join(""),
 }));
 ok("path: 3 rounds = 3 done, next pulsing", pp.nodes === "dddnt");
 ok("path: steps track the rotation", pp.ps.steps === 3);
@@ -126,7 +126,7 @@ ok("ring shows the gold star", t.ring === "★" && t.stroke === "#ffb300");
 ok("subLine celebrates the goal with the tomorrow-hook", /All done today/.test(t.sub) && /tomorrow/.test(t.sub));
 pp = await page.evaluate(() => ({
   ps: Sona.pathState(),
-  nodes: [...document.querySelectorAll("#pathRow .pnode")].map((e) => (e.className.includes("done") ? "d" : "x")).join(""),
+  nodes: [...document.querySelectorAll("#pathNodes .pnode")].map((e) => (e.className.includes("done") ? "d" : "x")).join(""),
 }));
 ok("path: full day = five done steps", pp.nodes === "ddddd" && pp.ps.steps === 5);
 await page.screenshot({ path: OUT + "/prog-ring-done.png" });
