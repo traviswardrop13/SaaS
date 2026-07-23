@@ -44,18 +44,23 @@ export default function TermsPage() {
       </Section>
 
       <Section title="Subscriptions, trials &amp; billing">
-        Sona is sold as a recurring subscription. By subscribing you authorize us
-        and our payment processor (Stripe) to charge your payment method the
-        then-current price (currently $99/month) plus any taxes, on a recurring
-        basis until you cancel. If a free trial is offered, you will be charged
-        when it ends unless you cancel before then. Prices may change with
-        reasonable notice.
+        Sona is an auto-renewable subscription. The <strong>Sona Yearly</strong> plan
+        is <strong>$79.99 per year</strong> (a beta price; $69.99 per year when
+        purchased through Apple), billed once per year, and begins with a{" "}
+        <strong>7-day free trial</strong>. After the trial your payment method is
+        charged the then-current price plus any applicable taxes, and the
+        subscription renews automatically each year until canceled. You are not
+        charged during the free trial if you cancel before it ends.
       </Section>
 
       <Section title="Cancellation &amp; refunds">
-        You can cancel anytime from your account or by emailing us; cancellation
-        stops future charges, and you keep access through the end of the current
-        billing period. Except where required by law, payments are non-refundable.
+        You can cancel anytime and keep access through the end of the current
+        billing period. For purchases made through Apple, manage or cancel in{" "}
+        <strong>Settings &rarr; your Apple ID &rarr; Subscriptions</strong>; auto-renewal
+        must be turned off at least 24 hours before the period ends to avoid the
+        next charge. For purchases made on speaksona.com, cancel from your billing
+        portal or by emailing us. Except where required by law, payments are
+        non-refundable.
       </Section>
 
       <Section title="Acceptable use">
