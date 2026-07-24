@@ -51,7 +51,7 @@ let t = await page.evaluate(() => ({
   sound: Sona.rotSound(), round: Sona.rotRound(),
   ph: (document.getElementById("pulseText") || {}).placeholder || "",
 }));
-ok("ring starts 0/5", t.ring === "0/5");
+ok("rep pill starts at 0", t.ring === "0");
 ok("subLine invites the R sound", /your R sound/.test(t.sub));
 ok("rotation starts R round 0", t.sound === "R" && t.round === 0);
 
@@ -97,10 +97,11 @@ c = await page.evaluate(() => document.getElementById("bTarget").textContent);
 ok("earned words → round 4 stretches to a phrase", c.trim().split(/\s+/).length >= 2);
 await page.evaluate(() => { const g = Sona.getProgress(); g.stage.R = 0; localStorage.setItem("sona.progress.v1", JSON.stringify(g)); });
 
-// ── ring mid-day on Today: 3 done → 3/5 + "2 more games" ──
+// ── rep pill mid-day: the number the kid watches only climbs (RING1) ──
+await page.evaluate(() => Sona.bumpReps(12));
 await page.goto("http://localhost:8131/today.html"); await page.waitForTimeout(700);
 t = await page.evaluate(() => ({ ring: document.getElementById("ringTxt").textContent, sub: document.getElementById("subLine").textContent }));
-ok("ring shows 3/5 after 3 rounds", t.ring === "3/5");
+ok("rep pill shows today's reps climbing", t.ring === "12", t.ring);
 ok("subLine counts down the goal", /2 more rounds/.test(t.sub));
 pp = await page.evaluate(() => ({
   ps: Sona.pathState(),
@@ -110,7 +111,7 @@ ok("path: 3 rounds = 3 done, next pulsing", pp.nodes === "dddnt");
 ok("path: steps track the rotation", pp.ps.steps === 3);
 await page.evaluate(() => document.getElementById("ringBtn").click());
 let toast = await page.evaluate(() => document.getElementById("toast").textContent);
-ok("ring tap explains progress", /3 of 5 practice rounds done/.test(toast) && /R sound/.test(toast));
+ok("pill tap explains reps + rounds honestly", /12 reps today/.test(toast) && /3 of 5 rounds done/.test(toast) && /R sound/.test(toast));
 await page.screenshot({ path: OUT + "/prog-ring-mid.png" });
 
 // ── finish the rotation: 5 rounds → next letter S, ring goes gold ──
@@ -121,10 +122,10 @@ ok("todayRing done at 5", t.ring.n === 5 && t.ring.done === true);
 await page.goto("http://localhost:8131/today.html"); await page.waitForTimeout(700);
 t = await page.evaluate(() => ({
   ring: document.getElementById("ringTxt").textContent,
-  stroke: document.getElementById("ringArc").getAttribute("stroke"),
+  gold: document.getElementById("ringBtn").className.includes("gold"),
   sub: document.getElementById("subLine").textContent,
 }));
-ok("ring shows the gold star", t.ring === "★" && t.stroke === "#ffb300");
+ok("rep pill goes gold when the day is done", t.gold === true && /^\d+$/.test(t.ring));
 ok("subLine celebrates the goal with the tomorrow-hook", /All done today/.test(t.sub) && /tomorrow/.test(t.sub));
 pp = await page.evaluate(() => ({
   ps: Sona.pathState(),
@@ -186,10 +187,10 @@ if (t.chips) {
 } else ok("pulse chips in source", /PULSE_CHIPS/.test(todaySrc));
 
 // ── the ring resets overnight: yesterday's rounds never survive to today ──
-await page.evaluate(() => localStorage.setItem("sona.today.v1", JSON.stringify({ d: "2026-07-10", n: 3 })));
+await page.evaluate(() => { localStorage.setItem("sona.today.v1", JSON.stringify({ d: "2026-07-10", n: 3 })); localStorage.setItem("sona.reps.v1", JSON.stringify({ d: "2026-07-10", n: 44 })); });
 await page.goto("http://localhost:8131/today.html"); await page.waitForTimeout(600);
 t = await page.evaluate(() => ({ ring: document.getElementById("ringTxt").textContent, api: Sona.todayRing() }));
-ok("stale day → ring reads 0/5", t.ring === "0/5" && t.api.n === 0 && !t.api.done);
+ok("stale day → rep pill and rounds reset to 0", t.ring === "0" && t.api.n === 0 && !t.api.done);
 
 // ── done state carries the tomorrow-hook (forward pull, no breakable number) ──
 await page.evaluate(() => {
@@ -197,8 +198,8 @@ await page.evaluate(() => {
   localStorage.setItem("sona.today.v1", JSON.stringify({ d: iso, n: 5 }));
 });
 await page.goto("http://localhost:8131/today.html"); await page.waitForTimeout(600);
-t = await page.evaluate(() => ({ sub: document.getElementById("subLine").textContent, star: document.getElementById("ringTxt").textContent }));
-ok("ring done → tomorrow-hook line + star", /tomorrow/.test(t.sub) && t.star === "★");
+t = await page.evaluate(() => ({ sub: document.getElementById("subLine").textContent, gold: document.getElementById("ringBtn").className.includes("gold") }));
+ok("ring done → tomorrow-hook line + gold pill", /tomorrow/.test(t.sub) && t.gold === true);
 await page.evaluate(() => localStorage.removeItem("sona.today.v1"));
 
 // ── comeback greeting: 3+ idle days → numberless "Echo missed you", once/day ──

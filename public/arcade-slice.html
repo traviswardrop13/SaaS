@@ -281,7 +281,9 @@
       // fruit
       ctx.textAlign="center"; ctx.textBaseline="middle";
       for(var i=fruits.length-1;i>=0;i--){ var f=fruits[i];
-        f.x+=f.vx; f.y+=f.vy; f.vy+=G; f.rot+=f.vr;
+        // FRENZY is also SLOW fruit: floatier gravity + eased motion while on
+        var bz=boost.on?0.62:1;
+        f.x+=f.vx*bz; f.y+=f.vy*bz; f.vy+=G*bz; f.rot+=f.vr;
         if(f.sliced){ fruits.splice(i,1); continue; }
         if(f.y>H+80){ fruits.splice(i,1); if(!f.gold&&!boost.on&&playing){ crash(); } continue; }
         ctx.save(); ctx.translate(f.x,f.y); ctx.rotate(f.rot);
