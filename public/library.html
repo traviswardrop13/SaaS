@@ -17,14 +17,16 @@
     .shelfhead h2{margin:0;}
     /* warm tag pair (fix pack 1c) — the green pair was legacy Duolingo chrome */
     .shelfhead .tag{font-size:11px;font-weight:800;color:#7a5200;background:#ffe7c4;border-radius:99px;padding:3px 9px;}
-    /* story shelf */
-    .shelf{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
-    .bookBtn{border:none;cursor:pointer;border-radius:18px;padding:16px 12px;text-align:center;color:#fff;
-      font-family:"Baloo 2";font-weight:800;transition:transform .06s;box-shadow:0 6px 0 0 rgba(0,0,0,.16);}
-    .bookBtn:active{transform:translateY(4px);box-shadow:0 1px 0 0 rgba(0,0,0,.16);}
-    .bookBtn .be{font-size:44px;display:block;}
-    .bookBtn .bt{display:block;font-size:15px;margin-top:6px;line-height:1.2;}
-    .bookBtn .bs{display:block;font-size:11px;opacity:.85;margin-top:3px;letter-spacing:.05em;text-transform:uppercase;}
+    /* story shelf (D1): covers standing on rails — no gradient buttons */
+    .shelf{display:grid;grid-template-columns:repeat(3,1fr);gap:14px 10px;}
+    .bookBtn{position:relative;border:none;cursor:pointer;background:none;padding:0;text-align:center;
+      font-family:"Baloo 2";font-weight:800;transition:transform .06s;display:flex;flex-direction:column;align-items:center;}
+    .bookBtn:active{transform:translateY(2px);}
+    .bookBtn .cvr{position:relative;display:block;z-index:1;}
+    .bookBtn .rail{display:block;width:100%;height:9px;border-radius:3px;background:#ecd2a8;box-shadow:0 3px 0 #d9bc8c;margin-top:-5px;}
+    .bookBtn .bt{display:block;font-size:13px;margin-top:8px;line-height:1.2;color:#4a2c14;}
+    .bookBtn .bs{display:block;font-size:9.5px;margin-top:2px;letter-spacing:.06em;text-transform:uppercase;color:#b08d63;}
+    .bookBtn .doneStar{position:absolute;top:-7px;left:2px;z-index:2;filter:drop-shadow(0 2px 2px rgba(120,60,10,.3));}
     /* word box */
     .wordgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:10px;}
     .wcard{border:2px solid var(--line);border-bottom-width:4px;background:#fff;border-radius:16px;padding:14px 6px 10px;cursor:pointer;
@@ -33,33 +35,46 @@
     .wcard .we{font-size:42px;line-height:1;}
     .wcard .ww{font-family:"Baloo 2";font-weight:800;font-size:13px;color:var(--blue-d);}
 
-    /* ── full-screen picture book ── */
-    #book{position:fixed;inset:0;z-index:50;display:none;flex-direction:column;background:linear-gradient(180deg,#fffdf7,#fff1dc);}
+    /* ── full-screen picture book (D2): the page is PAPER ── */
+    #book{position:fixed;inset:0;z-index:50;display:none;flex-direction:column;background:#fff6e9;}
     #book.show{display:flex;}
     .bktop{display:flex;align-items:center;gap:12px;padding:calc(14px + env(safe-area-inset-top)) 16px 6px;}
-    .bkclose{width:42px;height:42px;border-radius:50%;border:none;background:#fff;color:#b9a98c;font-size:18px;font-weight:800;cursor:pointer;
+    .bkclose{width:44px;height:44px;border-radius:50%;border:none;background:#fff;color:#b9a98c;font-size:18px;font-weight:800;cursor:pointer;
       box-shadow:0 3px 0 0 rgba(120,80,20,.15);flex:0 0 auto;}
-    .bkdots{flex:1;display:flex;gap:6px;justify-content:center;}
-    .bkdots i{width:9px;height:9px;border-radius:50%;background:#ead9bd;transition:.2s;}
-    .bkdots i.on{background:var(--orange);transform:scale(1.25);}
-    .bkstage{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:0 26px;}
-    .bkpic{font-size:clamp(110px,38vw,190px);line-height:1;filter:drop-shadow(0 14px 22px rgba(150,90,10,.18));animation:bkfloat 3.4s ease-in-out infinite;}
-    @keyframes bkfloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
-    .bktext{margin-top:26px;font-family:"Baloo 2";font-weight:800;font-size:clamp(22px,6vw,30px);color:#5b2d05;line-height:1.35;max-width:480px;}
+    #bkHead{flex:1;text-align:center;font-family:"Baloo 2";font-weight:800;font-size:14px;}
+    .bkstage{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:0 22px;}
+    /* the paper spread + the page-edge stack (progress you can feel) */
+    .paperWrap{position:relative;width:100%;max-width:420px;}
+    .pstack{position:absolute;inset:0;border-radius:18px;background:#f9efdc;transform:translate(5px,5px);}
+    .pstack.two{background:#f0e2c8;transform:translate(9px,9px);}
+    .paper{position:relative;background:#fffdf7;border-radius:18px;box-shadow:0 14px 30px rgba(140,90,20,.16);padding:22px 18px 24px 30px;overflow:visible;}
+    .paper::before{content:"";position:absolute;left:0;top:0;bottom:0;width:14px;border-radius:18px 0 0 18px;background:linear-gradient(90deg,rgba(150,95,30,.13),rgba(150,95,30,0));}
+    .ribbon{position:absolute;top:-2px;right:16px;width:31px;height:62px;background:#ff7a6e;
+      clip-path:polygon(0 0,100% 0,100% 100%,50% 84%,0 100%);display:flex;flex-direction:column;align-items:center;
+      font-family:"Baloo 2";font-weight:800;font-size:11px;color:#fff;padding-top:8px;line-height:1.25;filter:drop-shadow(0 2px 2px rgba(120,60,10,.2));}
+    .bkart{width:min(52vw,190px);height:min(52vw,190px);margin:0 auto 10px;border-radius:14px;display:flex;align-items:center;justify-content:center;}
+    .bkpic{line-height:1;filter:drop-shadow(0 10px 16px rgba(150,90,10,.16));animation:bkfloat 3.4s ease-in-out infinite;}
+    @keyframes bkfloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+    .bktext{margin-top:10px;font-family:"Baloo 2";font-weight:800;font-size:clamp(20px,5.8vw,25px);color:#5b2d05;line-height:1.4;}
     .bktext span{cursor:pointer;border-radius:8px;padding:0 2px;}
     .bktext span:active{background:#ffe2b3;}
+    .bkhint{margin-top:10px;font-weight:800;font-size:11px;letter-spacing:.08em;color:#a17c4a;}
+    .pgEcho{position:absolute;left:-12px;bottom:-16px;width:72px;height:72px;transform:rotate(-6deg);filter:drop-shadow(0 5px 7px rgba(120,60,10,.25));}
     .bktitle{font-family:"Baloo 2";font-weight:800;font-size:clamp(30px,8vw,40px);color:#5b2d05;margin-top:18px;}
     .bksub{font-weight:800;color:rgba(91,45,5,.7);margin-top:8px;}
-    .bkbottom{display:flex;align-items:center;justify-content:center;gap:14px;padding:12px 18px calc(22px + env(safe-area-inset-bottom));}
-    .bknav{border:none;border-radius:16px;padding:15px 26px;font-family:"Baloo 2";font-weight:800;font-size:17px;cursor:pointer;
-      text-transform:uppercase;letter-spacing:.04em;transition:transform .05s;}
+    .bkbottom{display:flex;align-items:center;justify-content:center;gap:12px;padding:12px 18px calc(22px + env(safe-area-inset-bottom));}
+    .bknav{border:none;border-radius:16px;padding:15px 22px;font-family:"Baloo 2";font-weight:800;font-size:16px;cursor:pointer;
+      letter-spacing:.03em;transition:transform .05s;}
     .bknav:active{transform:translateY(3px);}
-    .bknext{flex:1;max-width:280px;color:#fff;background:var(--orange);box-shadow:0 5px 0 0 var(--orange-d);}
-    .bknext:active{box-shadow:0 1px 0 0 var(--orange-d);}
-    .bkback{background:#fff;color:#a5854f;box-shadow:0 5px 0 0 rgba(120,80,20,.18);}
-    .bkhear{width:56px;height:56px;border-radius:50%;border:none;background:var(--blue);color:#fff;font-size:22px;cursor:pointer;
-      box-shadow:0 5px 0 0 var(--blue-d);flex:0 0 auto;}
-    .bkhear:active{transform:translateY(3px);box-shadow:0 1px 0 0 var(--blue-d);}
+    .bknext{flex:1;max-width:280px;color:#fff;text-transform:uppercase;white-space:nowrap;background:linear-gradient(180deg,#ffa05a,#ff8a3d);box-shadow:0 5px 0 0 #ef6f23;}
+    .bknext:active{box-shadow:0 1px 0 0 #ef6f23;}
+    .bkback{width:44px;height:44px;border-radius:50%;padding:0;background:#fff;color:#8a6f52;font-size:18px;box-shadow:0 5px 0 0 rgba(120,80,20,.18);flex:0 0 auto;}
+    .bkback.pill{width:auto;border-radius:16px;padding:15px 20px;font-size:15px;}
+    /* Hear it: white pill with the warm speaker (was a blue circle) */
+    .bkhear{display:flex;align-items:center;gap:7px;border:none;border-radius:99px;background:#fff;color:#ef6f23;
+      font-family:"Baloo 2";font-weight:800;font-size:14px;padding:12px 18px;cursor:pointer;box-shadow:0 5px 0 0 rgba(120,80,20,.18);flex:0 0 auto;}
+    .bkhear:active{transform:translateY(3px);box-shadow:0 1px 0 0 rgba(120,80,20,.18);}
+    @media (prefers-reduced-motion:reduce){ .bkpic{animation:none;} }
   </style>
 </head>
 <body>
@@ -95,13 +110,13 @@
   <div id="book">
     <div class="bktop">
       <button class="bkclose" id="bkClose">✕</button>
-      <div class="bkdots" id="bkDots"></div>
-      <div style="width:42px;flex:0 0 auto;"></div>
+      <div id="bkHead"></div>
+      <div style="width:44px;flex:0 0 auto;"></div>
     </div>
     <div class="bkstage" id="bkStage"></div>
     <div class="bkbottom">
-      <button class="bknav bkback" id="bkPrev">←</button>
-      <button class="bkhear" id="bkHear" title="Hear it again"><svg viewBox="0 0 64 64" style="width:20px;height:20px;vertical-align:-4px"><path d="M12 24h10l14-11v38L22 40H12Z" fill="#4db3f2"/><path d="M42 24q6 8 0 16" stroke="#2a8fd4" stroke-width="4.5" fill="none" stroke-linecap="round"/><path d="M48 18q10 14 0 28" stroke="#2a8fd4" stroke-width="4.5" fill="none" stroke-linecap="round" opacity=".7"/></svg></button>
+      <button class="bknav bkback" id="bkPrev" aria-label="Back a page">←</button>
+      <button class="bkhear" id="bkHear" title="Hear it again"><svg viewBox="0 0 24 24" style="width:18px;height:18px"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="#ef6f23"/><path d="M16 8.5a5 5 0 0 1 0 7" stroke="#ef6f23" stroke-width="2" fill="none" stroke-linecap="round"/></svg>Hear it</button>
       <button class="bknav bknext" id="bkNext">Next →</button>
     </div>
   </div>
@@ -247,15 +262,27 @@
     // (locked). SLP-referred families keep the full library (clinics target
     // any sound). New letters unlock their books as they ship.
     var slpFull = false; try { slpFull = !!(Sona.slpCode && Sona.slpCode()); } catch (e) {}
+    // read-through star (D1): a book read to The End pins the gold star to
+    // its cover. Local flag by title; Story Time's story.done counts too.
+    var LIBKEY = "sona.lib.read.v1";
+    function libRead() { try { return JSON.parse(localStorage.getItem(LIBKEY) || "{}"); } catch (e) { return {}; } }
+    function markRead(title) { try { var m = libRead(); if (!m[title]) { m[title] = 1; localStorage.setItem(LIBKEY, JSON.stringify(m)); } } catch (e) {} }
+    function wasRead(st) {
+      try { if (libRead()[st.title]) return true; } catch (e) {}
+      try { var g = JSON.parse(localStorage.getItem("sona.games.v1") || "{}"); return !!(g[st.sound] && g[st.sound].story && g[st.sound].story.done); } catch (e) { return false; }
+    }
     STORIES.forEach(function (st) {
       var locked = !slpFull && st.sound !== "R";
       var b = document.createElement("button");
       b.className = "bookBtn" + (locked ? " soon" : "");
-      b.style.background = "linear-gradient(160deg," + st.colors[0] + "," + st.colors[1] + ")";
-      if (locked) { b.style.opacity = ".55"; b.style.position = "relative"; }
-      b.innerHTML = '<span class="be">' + cover(st,46) + '</span><span class="bt">' + st.title + '</span><span class="bs">' + (locked ? 'COMING SOON' : st.sound + ' sound') + '</span>';
+      if (locked) b.style.opacity = ".55";
+      b.innerHTML = '<span class="cvr">' + cover(st, 76) + '</span>'
+        + (!locked && wasRead(st) ? '<span class="doneStar">' + ((window.Sona && Sona.icon) ? Sona.icon("star", 22) : "") + '</span>' : "")
+        + '<span class="rail"></span>'
+        + '<span class="bt">' + st.title + '</span>'
+        + '<span class="bs">' + (locked ? 'COMING SOON' : st.pages.length + ' pages') + '</span>';
       b.onclick = locked
-        ? function () { if (window.Sona) { Sona.sfx.tap(); if (Sona.pop) Sona.pop("New books are on the way! 📚", { color: "#ff8a3d" }); } }
+        ? function () { if (window.Sona) { Sona.sfx.tap(); if (Sona.pop) Sona.pop("New books are on the way!", { color: "#ff8a3d" }); } }
         : function () { if (window.Sona) Sona.sfx.tap(); openBook(st); };
       shelf.appendChild(b);
     });
@@ -265,20 +292,25 @@
       var face=(window.Sona&&Sona.COVER_FACES&&Sona.COVER_FACES[st.sound])||"";
       return '<svg viewBox="0 0 60 76" style="width:'+w+'px;height:'+Math.round(w*76/60)+'px;overflow:visible">'
         +'<rect x="2" y="8" width="52" height="62" rx="7" fill="#fff" style="filter:drop-shadow(0 3px 5px rgba(0,0,0,.18))"/>'
-        +'<rect x="8" y="8" width="3" height="62" fill="'+c1+'" opacity=".3"/>'
-        +'<circle cx="30" cy="39" r="20" fill="'+c0+'" opacity=".16"/>'
+        +'<rect x="2" y="8" width="6" height="62" rx="3" fill="'+c0+'"/>'
+        +'<circle cx="30" cy="39" r="20" fill="'+c0+'" opacity=".15"/>'
         +(face?('<g transform="translate(12,21) scale(0.56)">'+face+'</g>'):'')
         +'<circle cx="52" cy="10" r="10" fill="'+c1+'"/>'
         +'<text x="52" y="14" text-anchor="middle" font-family="Baloo 2" font-weight="800" font-size="'+(String(st.sound).length>1?8:10)+'" fill="#fff">'+st.sound+'</text>'
         +'</svg>'; }
+    // per-story wash for the reader background (D2): story tint over cream
+    function hexRgba(hex, a) { try { var h = hex.replace("#", ""); return "rgba(" + parseInt(h.substr(0, 2), 16) + "," + parseInt(h.substr(2, 2), 16) + "," + parseInt(h.substr(4, 2), 16) + "," + a + ")"; } catch (e) { return "rgba(255,122,110," + a + ")"; } }
     var BOOK = null, page = -1; // -1 = cover, pages.length = The End
-    var bkStage = document.getElementById("bkStage"), bkDots = document.getElementById("bkDots");
+    var bkStage = document.getElementById("bkStage"), bkHead = document.getElementById("bkHead");
 
     function openBook(st) {
       BOOK = st; page = -1;
-      document.getElementById("book").classList.add("show");
-      bkDots.innerHTML = "";
-      for (var i = 0; i < st.pages.length; i++) bkDots.appendChild(document.createElement("i"));
+      var bk = document.getElementById("book");
+      bk.classList.add("show");
+      // tint layers OVER the opaque cream (backgroundImage keeps the base color)
+      bk.style.backgroundImage = "linear-gradient(180deg," + hexRgba(st.colors[0], .18) + ", #fff6e9 52%, #ffedd8)";
+      bkHead.textContent = st.title + " · " + st.sound + " sound";
+      bkHead.style.color = st.colors[1];
       showPage();
     }
     // color every target-sound letter in a sentence (design §8 reader)
@@ -294,28 +326,53 @@
     function tappable(t) {
       return t.split(" ").map(function (w) { return "<span>" + w + "</span>"; }).join(" ");
     }
+    // Echo leans on the page corner and reads along: listening while the line
+    // plays, idle after (celebrate on The End).
+    function readAlong(text) {
+      var e = document.getElementById("pgEcho");
+      if (e) e.src = "/coach/echo/echo-listening.svg";
+      return say(text).then(function () { var e2 = document.getElementById("pgEcho"); if (e2) e2.src = "/coach/echo/echo-idle.svg"; });
+    }
     function showPage() {
       stopSpeech();
-      [].forEach.call(bkDots.children, function (d, k) { d.className = k === page ? "on" : ""; });
       var prev = document.getElementById("bkPrev"), next = document.getElementById("bkNext"), hear = document.getElementById("bkHear");
+      prev.classList.remove("pill"); prev.textContent = "←";
       prev.style.visibility = page <= -1 ? "hidden" : "visible";
+      var N = BOOK.pages.length, left = N - 1 - page; // pages after this one
       if (page === -1) {
-        bkStage.innerHTML = '<div class="bkpic">' + cover(BOOK,150) + '</div><div class="bktitle">' + BOOK.title + '</div><div class="bksub">A story full of ' + BOOK.sound + ' sounds — Echo reads it to you!</div>';
+        bkStage.innerHTML = '<div class="bkpic">' + cover(BOOK, 150) + '</div><div class="bktitle">' + BOOK.title + '</div><div class="bksub">A story full of ' + BOOK.sound + ' sounds — Echo reads it to you!</div>';
         next.textContent = "Start →"; hear.style.visibility = "hidden";
         say(BOOK.title + "! A story full of " + BOOK.sound + " sounds.");
-      } else if (page >= BOOK.pages.length) {
-        bkStage.innerHTML = '<div class="bkpic" style="filter:none"><svg viewBox="0 0 64 64" style="width:120px;height:120px"><path d="M32 5l8.2 18.6L60 25.8 44.9 39.2 49.8 59 32 48.4 14.2 59l4.9-19.8L4 25.8l19.8-2.2Z" fill="#ffd21c"/><circle cx="25" cy="21" r="3" fill="#fff" opacity=".85"/></svg></div><div class="bktitle">The End!</div><div class="bksub">Great listening! Read it again or pick another story.</div>';
+      } else if (page >= N) {
+        // The End: star burst IN the art panel, no page-edge stack left
+        bkStage.innerHTML = '<div class="paperWrap"><div class="paper">'
+          + '<div class="bkart" style="background:radial-gradient(circle,rgba(255,210,28,.3),rgba(255,210,28,0) 72%)"><div class="bkpic" style="filter:none"><svg viewBox="0 0 64 64" style="width:120px;height:120px"><path d="M32 5l8.2 18.6L60 25.8 44.9 39.2 49.8 59 32 48.4 14.2 59l4.9-19.8L4 25.8l19.8-2.2Z" fill="#ffd21c"/><circle cx="25" cy="21" r="3" fill="#fff" opacity=".85"/></svg></div></div>'
+          + '<div class="bktitle" style="margin-top:4px;">The End!</div><div class="bksub">Great listening! Read it again or pick another story.</div>'
+          + '<img class="pgEcho" id="pgEcho" src="/coach/echo/echo-celebrate.svg" alt="Echo" />'
+          + '</div></div>';
         next.textContent = "All done ✓"; hear.style.visibility = "hidden";
+        prev.classList.add("pill"); prev.textContent = "Read again"; prev.style.visibility = "visible";
+        markRead(BOOK.title);
         if (window.Sona) { Sona.confetti({ count: 130, duration: 2200 }); Sona.sfx.star(); }
         say("The end! Great listening!");
       } else {
         var pg = BOOK.pages[page];
-        bkStage.innerHTML = '<div class="bkpic" style="filter:none"><span style="display:inline-block;padding:10px;border-radius:50%;background:radial-gradient(circle,rgba(255,210,28,.28),rgba(255,210,28,0) 70%)">' + ((window.Sona&&Sona.pic)?Sona.pic(readerWord(pg.t),pg.e,132):pg.e) + '</span></div>'+ '<div style="display:inline-block;background:#ffe7d3;color:#ef6f23;font-family:Baloo 2;font-weight:800;font-size:11px;letter-spacing:.08em;border-radius:99px;padding:4px 12px;margin-bottom:6px">' + BOOK.sound + ' SOUND</div>'+ '<div class="bktext">' + tintSound(tappable(pg.t), BOOK.sound) + '</div>';
+        bkStage.innerHTML = '<div class="paperWrap">'
+          + (left >= 2 ? '<div class="pstack two"></div>' : "")
+          + (left >= 1 ? '<div class="pstack"></div>' : "")
+          + '<div class="paper">'
+          + '<span class="ribbon" style="background:' + BOOK.colors[0] + '">' + (page + 1) + '<span style="font-size:8.5px;opacity:.85">of ' + N + '</span></span>'
+          + '<div class="bkart" style="background:radial-gradient(circle,' + hexRgba(BOOK.colors[0], .16) + ',' + hexRgba(BOOK.colors[1], .05) + ' 75%)"><div class="bkpic" style="filter:none">' + ((window.Sona && Sona.pic) ? Sona.pic(readerWord(pg.t), pg.e, 118) : pg.e) + '</div></div>'
+          + '<div style="display:inline-block;background:#ffe7d3;color:#ef6f23;font-family:Baloo 2;font-weight:800;font-size:11px;letter-spacing:.08em;border-radius:99px;padding:4px 12px;">' + BOOK.sound + ' SOUND</div>'
+          + '<div class="bktext">' + tintSound(tappable(pg.t), BOOK.sound) + '</div>'
+          + '<div class="bkhint">TAP ANY WORD TO HEAR IT</div>'
+          + '<img class="pgEcho" id="pgEcho" src="/coach/echo/echo-listening.svg" alt="Echo" />'
+          + '</div></div>';
         next.textContent = "Next →"; hear.style.visibility = "visible";
         bkStage.querySelectorAll(".bktext span").forEach(function (sp) {
-          sp.onclick = function () { if (playing) return; say(sp.textContent.replace(/[^a-zA-Z']/g, "")); };
+          sp.onclick = function () { if (playing) return; readAlong(sp.textContent.replace(/[^a-zA-Z']/g, "")); };
         });
-        say(pg.t);
+        readAlong(pg.t);
       }
     }
     document.getElementById("bkNext").onclick = function () {
@@ -323,7 +380,10 @@
       if (BOOK && page >= BOOK.pages.length) { closeBook(); return; }
       page++; showPage();
     };
-    document.getElementById("bkPrev").onclick = function () { if (page > -1) { page--; showPage(); } };
+    document.getElementById("bkPrev").onclick = function () {
+      if (BOOK && page >= BOOK.pages.length) { page = -1; showPage(); return; } // Read again
+      if (page > -1) { page--; showPage(); }
+    };
     document.getElementById("bkHear").onclick = function () { if (BOOK && page >= 0 && page < BOOK.pages.length && !playing) say(BOOK.pages[page].t); };
     document.getElementById("bkClose").onclick = closeBook;
 
