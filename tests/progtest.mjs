@@ -64,34 +64,36 @@ let pp = await page.evaluate(() => ({
 ok("path: fresh day paints next+4 todo", pp.nodes === "ntttt");
 ok("path: fresh family starts at step 0", pp.ps.steps === 0 && /steps to the next place/.test(pp.gate));
 
-// ── charge free play: round 1 = isolation, label Game 1 of 5 ──
+// ── charge free play: round 1 = isolation, header context line ──
+// (Workstream A: the bubble target is the SUSTAINED sound — "rrrr", not
+// "your R sound" — and round context lives in the header #ctxLine.)
 await page.goto("http://localhost:8131/charge.html?game=arcade-slice.html"); await page.waitForTimeout(700);
-let c = await page.evaluate(() => ({ prompt: document.getElementById("prompt").textContent, lbl: document.getElementById("roundLbl").textContent }));
-ok("round 1 practices isolation", /your R sound/.test(c.prompt));
-ok('label "Round 1 of 5 today · R sound"', /Round 1 of 5 today/.test(c.lbl) && /R sound/.test(c.lbl));
+let c = await page.evaluate(() => ({ prompt: document.getElementById("bTarget").textContent, lbl: document.getElementById("ctxLine").textContent }));
+ok("round 1 practices isolation", /^r+$/i.test(c.prompt.trim()), c.prompt);
+ok('header "Round 1 of 5 · R sound"', /Round 1 of 5/.test(c.lbl) && /R sound/.test(c.lbl), c.lbl);
 
 // ── ?sound= override beats the rotation (SLP/deep-link escape hatch) ──
 await page.goto("http://localhost:8131/charge.html?game=arcade-slice.html&sound=T"); await page.waitForTimeout(700);
-c = await page.evaluate(() => document.getElementById("prompt").textContent);
-ok("?sound=T overrides rotation", /your T sound/.test(c));
+c = await page.evaluate(() => document.getElementById("bTarget").textContent);
+ok("?sound=T overrides rotation", /^tuh$/i.test(c.trim()), c);
 
 // ── one finished round → syllables (stretch = earned 0 + 1) ──
 await page.evaluate(() => Sona.rotAdvance());
 await page.goto("http://localhost:8131/charge.html?game=arcade-tiles.html"); await page.waitForTimeout(700);
-c = await page.evaluate(() => ({ prompt: document.getElementById("prompt").textContent, lbl: document.getElementById("roundLbl").textContent }));
+c = await page.evaluate(() => ({ prompt: document.getElementById("bTarget").textContent, lbl: document.getElementById("ctxLine").textContent }));
 ok("round 2 climbs to syllables", /^r(ah|ee|oo|oh|ay)$/i.test(c.prompt.trim()));
-ok('label "Round 2 of 5 today"', /Round 2 of 5 today/.test(c.lbl));
+ok('header "Round 2 of 5"', /Round 2 of 5/.test(c.lbl), c.lbl);
 
 // ── rounds 3-4 stay CAPPED at syllables while the rung is unearned ──
 await page.evaluate(() => { Sona.rotAdvance(); Sona.rotAdvance(); });
 await page.goto("http://localhost:8131/charge.html?game=arcade-run.html"); await page.waitForTimeout(700);
-c = await page.evaluate(() => document.getElementById("prompt").textContent);
+c = await page.evaluate(() => document.getElementById("bTarget").textContent);
 ok("round 4 capped at earned+1 (still syllables)", /^r(ah|ee|oo|oh|ay)$/i.test(c.trim()));
 
 // ── earned rung feeds the climb: stage.R=2 (words earned) → round 4 = phrase (2+1) ──
 await page.evaluate(() => { const g = Sona.getProgress(); g.stage = g.stage || {}; g.stage.R = 2; localStorage.setItem("sona.progress.v1", JSON.stringify(g)); });
 await page.goto("http://localhost:8131/charge.html?game=arcade-run.html"); await page.waitForTimeout(700);
-c = await page.evaluate(() => document.getElementById("prompt").textContent);
+c = await page.evaluate(() => document.getElementById("bTarget").textContent);
 ok("earned words → round 4 stretches to a phrase", c.trim().split(/\s+/).length >= 2);
 await page.evaluate(() => { const g = Sona.getProgress(); g.stage.R = 0; localStorage.setItem("sona.progress.v1", JSON.stringify(g)); });
 
@@ -133,9 +135,9 @@ await page.screenshot({ path: OUT + "/prog-ring-done.png" });
 
 // ── bonus rounds practice the NEXT letter from isolation ──
 await page.goto("http://localhost:8131/charge.html?game=arcade-glide.html"); await page.waitForTimeout(700);
-c = await page.evaluate(() => ({ prompt: document.getElementById("prompt").textContent, lbl: document.getElementById("roundLbl").textContent }));
-ok("next rotation practices the S sound", /your S sound/.test(c.prompt));
-ok("charge label flips to bonus", /Goal done — bonus round!/.test(c.lbl));
+c = await page.evaluate(() => ({ prompt: document.getElementById("bTarget").textContent, lbl: document.getElementById("ctxLine").textContent }));
+ok("next rotation practices the S sound", /^s+$/i.test(c.prompt.trim()), c.prompt);
+ok("charge header flips to bonus", /Goal done — bonus round!/.test(c.lbl), c.lbl);
 
 // ── Echo's voice never counts as reps; no prices on the kid's home ──
 ok("engine ignores mic while ANY app audio plays", /if\(speaking\|\|ttsPlaying\)\{ silent\+\+; voiced=0; inBurst=false;/.test(chargeSrc));
