@@ -10,9 +10,9 @@ export const metadata: Metadata = {
  * review before launch, especially the billing, liability, and arbitration
  * sections and your governing-law choice.
  */
-const COMPANY = "[Your Company, LLC]";
+const COMPANY = "Wardrop Ventures LLC";
 const SUPPORT_EMAIL = "wardroptravis@gmail.com";
-const GOVERNING_LAW = "[State/Country]";
+const GOVERNING_LAW = "the State of Florida, United States";
 const EFFECTIVE = "June 2026";
 
 export default function TermsPage() {
