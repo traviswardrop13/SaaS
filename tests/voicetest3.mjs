@@ -64,7 +64,8 @@ const noSustained = (name, s) => {
 await page.goto("http://localhost:8123/charge.html?sound=R&game=arcade-slice.html");
 await page.waitForTimeout(2500);
 ok("E2E r1 first line (R)", ttsPosts[0], "Ready? Pull your tongue back and up, and make your R sound... five times... Go!");
-ok("E2E r1 chip", await page.evaluate(() => document.getElementById("soundChip").textContent), "R SOUND");
+// Workstream A: the sound chip is gone — the header context line carries the sound
+ok("E2E r1 header names the sound", await page.evaluate(() => /R sound/.test(document.getElementById("ctxLine").textContent)), true);
 
 // ---- E2E round 2 of a daily run: syllables — chip label + spoken set ----
 ttsPosts = [];
@@ -72,11 +73,11 @@ await page.evaluate(() => sessionStorage.setItem("sona.run.v1", JSON.stringify({
 await page.goto("http://localhost:8123/charge.html?daily=1&sound=R");
 await page.waitForTimeout(2500);
 const r2 = await page.evaluate(() => ({
-  chip: document.getElementById("soundChip").textContent,
-  prompt: document.getElementById("prompt").textContent,
+  chip: document.getElementById("ctxLine").textContent,
+  prompt: document.getElementById("bTarget").textContent,
   sylls: (window.SonaContent && SonaContent.syllables) ? SonaContent.syllables("R").map((s) => s.t) : [],
 }));
-ok("E2E r2 chip", r2.chip, "R SOUND · SYLLABLES");
+ok("E2E r2 header (daily round 2)", /Round 2 of 4/.test(r2.chip) && /R sound/.test(r2.chip), true);
 console.log((r2.sylls.includes(r2.prompt) ? "PASS" : "FAIL") + "  E2E r2 card shows a syllable  (" + r2.prompt + " ∈ " + JSON.stringify(r2.sylls) + ")");
 if (!r2.sylls.includes(r2.prompt)) fails++;
 const sylLine = ttsPosts[0] || "";
@@ -122,13 +123,13 @@ const cases = await page.evaluate(
       return "Hmm, that was a different sound! " + tip + ". Try again!";
     };
     out.failR = failFor("R"); out.failS = failFor("S"); out.failZ = failFor("Z"); out.failM = failFor("M");
-    // card rotation: paintCard with a syllable ITEM must update the prompt pill
+    // card rotation: paintCard with a syllable ITEM must update the bubble target
     const $ = (id) => document.getElementById(id);
     const pc = new Function("ITEM", "SOUND", "S", "$", paintCardSrc + "\npaintCard();");
     pc(sq[1], "R", S, $);
-    out.cardPrompt = $("prompt").textContent;
+    out.cardPrompt = $("bTarget").textContent;
     pc({ level: "isolation", t: "rrrr", display: "R" }, "R", S, $);
-    out.cardIso = $("prompt").textContent;
+    out.cardIso = $("bTarget").textContent;
     return out;
   },
   { soundNameSrc, sayLineSrc, cueShortSrc, failTipSrc, paintCardSrc }
@@ -144,12 +145,14 @@ ok("word level", cases.word, "Ready? Say rabbit... five times... Go!");
 ok("syllable one target", cases.sylFirst, "Ready? Say rah... five times... Go!");
 ok("syllable one target repeat", cases.sylRepeat, "Ready? Say rah... five times... Go!");
 ok("card flip prompt", cases.cardPrompt, "ree");
-ok("card isolation prompt", cases.cardIso, "your R sound");
+// isolation shows the SUSTAINED target on screen (huge, orange) — the
+// no-sustained rule below guards SPOKEN lines only, so card* is excluded
+ok("card isolation prompt", cases.cardIso, "rrrr");
 ok("fail R", cases.failR, "Hmm, that was a different sound! Pull your tongue back and up like a tiger growl. Try again!");
 ok("fail S", cases.failS, "Hmm, that was a different sound! Teeth together, big smile, let the air hiss out. Try again!");
 ok("fail Z", cases.failZ, "Hmm, that was a different sound! Teeth together and buzz like a bee. Try again!");
 ok("fail M", cases.failM, "Hmm, that was a different sound! Lips together and hum. Try again!");
-for (const [k, v] of Object.entries(cases)) noSustained(k, v);
+for (const [k, v] of Object.entries(cases)) if (!/^card/.test(k)) noSustained(k, v);
 
 await browser.close();
 srv.close();

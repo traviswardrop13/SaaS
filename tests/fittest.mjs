@@ -36,7 +36,7 @@ async function measure(page, url) {
       oX: Math.round(doc.scrollWidth - innerWidth),
       oY: Math.round(doc.scrollHeight - innerHeight),
       scrollLocked: getComputedStyle(document.body).overflowY === "hidden" || getComputedStyle(doc).overflowY === "hidden",
-      pathCanvas: el("pathCanvas"), pnodes: (document.querySelectorAll("#pathNodes .pnode") || []).length, mic: el("micWrap"), panel: el("gamePanel"), go: el("goBtn"),
+      pathCanvas: el("pathCanvas"), pnodes: (document.querySelectorAll("#pathNodes .pnode") || []).length, mic: el("micWrap"), build: el("reveals"), go: el("goBtn"),
       innerH: innerHeight,
     };
   });
@@ -60,6 +60,8 @@ for (const [dev, w, h] of PORTRAIT) {
   m = await measure(page, "charge.html?game=arcade-slice.html");
   ok(dev + " charge: mic clears the home bar", m.mic && m.mic.bottom <= m.innerH - HOME_BAR + 1, m.mic && m.mic.bottom + "/" + (m.innerH - HOME_BAR));
   ok(dev + " charge: no sideways overflow", m.oX <= 1, "oX=" + m.oX);
+  // Workstream A: the build centerpiece must sit clear above the mic
+  ok(dev + " charge: build clears the mic", m.build && m.mic && m.build.bottom <= m.mic.top + 1, JSON.stringify({ b: m.build, mic: m.mic }));
   // Story Time: instruction pill must never overlap the controls (the old
   // absolute anchor collided with Read-it-to-me on every device)
   await page.goto("http://localhost:8143/story.html?sound=R", { waitUntil: "networkidle" });
