@@ -22,7 +22,7 @@
     .seg{display:flex;gap:6px;margin:6px 0 18px;}
     .seg > i{position:relative;height:9px;flex:1;border-radius:99px;background:#e6eef8;overflow:hidden;}
     .seg > i::after{content:"";position:absolute;inset:0;border-radius:inherit;
-      background:linear-gradient(90deg,#ffb073,var(--orange));
+      background:linear-gradient(90deg,#8ae05c,#58cc02); /* one progress color family app-wide (1b) */
       transform:scaleX(0);transform-origin:left;opacity:0;
       transition:transform .45s cubic-bezier(.2,.8,.3,1),opacity .25s ease;}
     .seg > i.on::after{transform:scaleX(1);opacity:1;}
@@ -52,7 +52,11 @@
       padding:14px 16px;cursor:pointer;font-weight:800;font-family:"Baloo 2";font-size:17px;
       transition:transform .05s,border-color .2s ease,box-shadow .2s ease;}
     .choice:active{transform:translateY(2px);}
-    .choice.on{border-color:var(--blue);box-shadow:0 0 0 3px rgba(42,157,244,.16);animation:sona-pop .26s cubic-bezier(.2,1.4,.4,1);}
+    /* ONE selection grammar app-wide: green (fix pack 1b) */
+    .choice{position:relative;}
+    .choice.on{border-color:#58cc02;background:#f4fce9;box-shadow:0 0 0 3px rgba(88,204,2,.14);padding-right:46px;animation:sona-pop .26s cubic-bezier(.2,1.4,.4,1);}
+    .choice.on::after,.bopt.on::after{content:"✓";position:absolute;top:6px;right:6px;width:24px;height:24px;border-radius:50%;background:#58cc02;color:#fff;font-weight:800;font-size:14px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 0 #46a302;z-index:2;}
+    .choice.on::after{top:50%;transform:translateY(-50%);right:12px;}
     .choice .ce{font-size:26px;transition:transform .2s cubic-bezier(.2,1.4,.4,1);}
     .choice.on .ce{transform:scale(1.12);}
     /* shared select "pop" — gentle scale that settles, runs once on .on */
@@ -63,7 +67,7 @@
       display:flex;flex-direction:column;align-items:center;gap:4px;overflow:hidden;
       transition:transform .05s,border-color .2s ease,box-shadow .2s ease;}
     .bopt:not(.locked):active{transform:translateY(2px);}
-    .bopt.on{border-color:var(--blue);box-shadow:0 0 0 3px rgba(42,157,244,.16);animation:sona-pop .26s cubic-bezier(.2,1.4,.4,1);}
+    .bopt.on{border-color:#58cc02;background:#f4fce9;box-shadow:0 0 0 3px rgba(88,204,2,.14);animation:sona-pop .26s cubic-bezier(.2,1.4,.4,1);}
     .bopt.locked{opacity:.65;cursor:default;}
     .bopt .be{font-size:38px;transition:transform .2s cubic-bezier(.2,1.4,.4,1);} .bopt .bn{font-family:"Baloo 2";font-weight:800;font-size:12px;}
     .bopt.on .be{transform:scale(1.1);}
@@ -81,8 +85,6 @@
       padding:16px 18px calc(18px + env(safe-area-inset-bottom));}
     .obfoot .inner{max-width:560px;margin:0 auto;display:flex;gap:10px;align-items:center;}
     .skip{background:none;border:none;color:var(--muted);font-weight:800;font-size:15px;cursor:pointer;padding:10px;}
-    .bopt.on{box-shadow:0 0 0 3px #fff,0 0 0 7px #58cc02 !important;position:relative;}
-    .bopt.on::after{content:"✓";position:absolute;top:6px;right:6px;width:24px;height:24px;border-radius:50%;background:#58cc02;color:#fff;font-weight:800;font-size:14px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 0 #46a302;z-index:2;}
   </style>
 </head>
 <body>
@@ -134,9 +136,9 @@
       <div class="qh">How often should practice happen?</div>
       <p class="muted">This goal is yours, not your child's — pick what fits real life. Sona tracks the week for you and never pressures the kid.</p>
       <div class="choices" id="obGoal">
-        <div class="choice" data-val="3"><span class="ce">🌱</span> 3 days a week <span style="margin-left:auto;color:var(--muted);font-size:13px;font-family:Nunito;">Light &amp; steady</span></div>
-        <div class="choice" data-val="5"><span class="ce">⭐</span> 5 days a week <span style="margin-left:auto;color:var(--muted);font-size:13px;font-family:Nunito;">School rhythm</span></div>
-        <div class="choice" data-val="7"><span class="ce">🔥</span> Every day <span style="margin-left:auto;color:var(--muted);font-size:13px;font-family:Nunito;">All in</span></div>
+        <div class="choice" data-val="3"><span class="ce" data-ic="sprout">🌱</span> 3 days a week <span style="margin-left:auto;color:var(--muted);font-size:13px;font-family:Nunito;">Light &amp; steady</span></div>
+        <div class="choice" data-val="5"><span class="ce" data-ic="star">⭐</span> 5 days a week <span style="margin-left:auto;color:var(--muted);font-size:13px;font-family:Nunito;">School rhythm</span></div>
+        <div class="choice" data-val="7"><span class="ce" data-ic="flame">🔥</span> Every day <span style="margin-left:auto;color:var(--muted);font-size:13px;font-family:Nunito;">All in</span></div>
       </div>
     </div>
 
@@ -239,9 +241,14 @@
       var first=bg.querySelector(".bopt:not(.locked)");
       if(first){ first.classList.add("on"); draft.character=Sona.CHARACTERS[0].id; }
     }
+    // kit icons replace the last chrome emoji (fix pack 1b/1e) — the emoji in
+    // the HTML stays as the fallback if the icon kit is ever missing
+    (function(){ try{
+      document.querySelectorAll("[data-ic]").forEach(function(n){ var m=Sona.icon(n.dataset.ic,26); if(m) n.innerHTML=m; });
+    }catch(e){} })();
     (function(){
       var el=document.createElement("div"); el.className="bopt";
-      el.innerHTML='<span class="be" style="font-size:26px;">⭐</span><span class="bn">Surprise me</span>';
+      el.innerHTML='<span class="be">'+((window.Sona&&Sona.icon&&Sona.icon("star",30))||"⭐")+'</span><span class="bn">Surprise me</span>';
       el.onclick=function(){
         var pick=Sona.CHARACTERS[(Math.random()*Sona.CHARACTERS.length)|0];
         Sona.sfx.tap(); draft.character=pick.id;

@@ -15,7 +15,8 @@
     body{background:linear-gradient(180deg,#fff7ec,#ffe9d2) fixed;}
     .shelfhead{display:flex;align-items:center;gap:10px;margin:18px 2px 8px;}
     .shelfhead h2{margin:0;}
-    .shelfhead .tag{font-size:11px;font-weight:800;color:#46a302;background:#d7ffb8;border-radius:99px;padding:3px 9px;}
+    /* warm tag pair (fix pack 1c) — the green pair was legacy Duolingo chrome */
+    .shelfhead .tag{font-size:11px;font-weight:800;color:#7a5200;background:#ffe7c4;border-radius:99px;padding:3px 9px;}
     /* story shelf */
     .shelf{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
     .bookBtn{border:none;cursor:pointer;border-radius:18px;padding:16px 12px;text-align:center;color:#fff;
@@ -286,7 +287,7 @@
       return ""; }catch(e){ return ""; } }
     function tintSound(html, snd){ try{ var L=String(snd||"").charAt(0);
       return html.replace(/>([^<]+)</g, function(m, txt){
-        return ">"+txt.replace(new RegExp("(["+L.toLowerCase()+L.toUpperCase()+"])","g"), '<b style="color:#2a8fd4">$1</b>')+"<";
+        return ">"+txt.replace(new RegExp("(["+L.toLowerCase()+L.toUpperCase()+"])","g"), '<b style="color:#ef6f23">$1</b>')+"<"; // kid accent, matches the sound chip (1c)
       }); }catch(e){ return html; } }
     function closeBook() { stopSpeech(); document.getElementById("book").classList.remove("show"); BOOK = null; }
 
@@ -309,7 +310,7 @@
         say("The end! Great listening!");
       } else {
         var pg = BOOK.pages[page];
-        bkStage.innerHTML = '<div class="bkpic" style="filter:none"><span style="display:inline-block;padding:10px;border-radius:50%;background:radial-gradient(circle,rgba(255,210,28,.28),rgba(255,210,28,0) 70%)">' + ((window.Sona&&Sona.pic)?Sona.pic(readerWord(pg.t),pg.e,132):pg.e) + '</span></div>'+ '<div style="display:inline-block;background:#dcedfb;color:#1480e0;font-family:Baloo 2;font-weight:800;font-size:11px;letter-spacing:.08em;border-radius:99px;padding:4px 12px;margin-bottom:6px">' + BOOK.sound + ' SOUND</div>'+ '<div class="bktext">' + tintSound(tappable(pg.t), BOOK.sound) + '</div>';
+        bkStage.innerHTML = '<div class="bkpic" style="filter:none"><span style="display:inline-block;padding:10px;border-radius:50%;background:radial-gradient(circle,rgba(255,210,28,.28),rgba(255,210,28,0) 70%)">' + ((window.Sona&&Sona.pic)?Sona.pic(readerWord(pg.t),pg.e,132):pg.e) + '</span></div>'+ '<div style="display:inline-block;background:#ffe7d3;color:#ef6f23;font-family:Baloo 2;font-weight:800;font-size:11px;letter-spacing:.08em;border-radius:99px;padding:4px 12px;margin-bottom:6px">' + BOOK.sound + ' SOUND</div>'+ '<div class="bktext">' + tintSound(tappable(pg.t), BOOK.sound) + '</div>';
         next.textContent = "Next →"; hear.style.visibility = "visible";
         bkStage.querySelectorAll(".bktext span").forEach(function (sp) {
           sp.onclick = function () { if (playing) return; say(sp.textContent.replace(/[^a-zA-Z']/g, "")); };

@@ -22,7 +22,9 @@
   </script>
   <style>
     :root{
-      --cream:#fff6e9; --ink:#4a2c14; --muted:#b08d63; --label:#c9a878; --track:#f0e4d2;
+      /* readable muted/label (fix pack 1a): 4.6:1 on cream — #b08d63/#c9a878
+         stay only in decorative spots */
+      --cream:#fff6e9; --ink:#4a2c14; --muted:#8a6f52; --label:#a17c4a; --track:#f0e4d2;
       --green:#58cc02; --green-d:#46a302; --orange:#ff8a3d; --orange-d:#ef6f23; --gold:#ffd21c;
     }
     *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;font-family:"Nunito",-apple-system,sans-serif;user-select:none;}
@@ -39,8 +41,8 @@
     #hdrBtns{margin-left:auto;display:flex;align-items:center;gap:8px;}
     #libBtn{border:none;width:44px;height:44px;border-radius:50%;background:#fff;font-size:20px;cursor:pointer;box-shadow:0 4px 0 rgba(120,80,20,.15);}
     #ringBtn{border:none;width:44px;height:44px;border-radius:50%;background:#fff;cursor:pointer;box-shadow:0 4px 0 rgba(120,80,20,.15);padding:0;display:flex;align-items:center;justify-content:center;}
-    #parentBtn{border:none;background:none;cursor:pointer;width:58px;height:58px;}
-    #parentBtn img{width:58px;height:58px;object-fit:contain;}
+    /* parent corner is a gear — Echo is never a locked door (fix pack 1a) */
+    #parentBtn{border:none;cursor:pointer;width:44px;height:44px;border-radius:50%;background:#fff;box-shadow:0 4px 0 rgba(140,70,10,.14);display:flex;align-items:center;justify-content:center;color:#8a6f52;}
 
     /* hero: today's activity as a tilted photo card */
     /* flex:1 + centering lets the hero absorb tall-screen slack instead of
@@ -151,7 +153,7 @@
     #gatePill{position:absolute;top:14px;left:50%;transform:translateX(-50%);z-index:5;background:rgba(255,255,255,.78);border-radius:99px;padding:5px 13px;font-family:"Baloo 2";font-weight:800;font-size:11px;color:#8a5a1a;white-space:nowrap;display:none;}
     #echoWrap{position:absolute;z-index:5;display:flex;flex-direction:column;align-items:flex-start;transform:translate(-6px,-100%);pointer-events:none;}
     #echoBubble{background:#fff;border-radius:16px;border-bottom-right-radius:5px;padding:9px 14px;box-shadow:0 6px 16px rgba(140,70,10,.2);font-family:"Baloo 2";font-weight:800;font-size:14px;line-height:1.3;color:#4a2c14;max-width:190px;margin-bottom:6px;}
-    #echoLeo{width:66px;height:66px;filter:drop-shadow(0 7px 9px rgba(140,70,10,.25));}
+    #echoLeo{width:66px;height:66px;filter:drop-shadow(0 7px 9px rgba(140,70,10,.25));pointer-events:auto;cursor:pointer;}
     #echoLeo.bob{animation:leobob 3s ease-in-out infinite;}
     @keyframes leobob{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
     #floatLib{position:absolute;left:16px;bottom:calc(84px + env(safe-area-inset-bottom));z-index:7;width:44px;height:44px;border-radius:50%;border:none;background:#fff;box-shadow:0 4px 0 rgba(140,70,10,.2);display:none;align-items:center;justify-content:center;cursor:pointer;}
@@ -176,11 +178,11 @@
       <div id="hdrBtns">
         <button id="ringBtn" aria-label="Today's goal"><svg viewBox="0 0 44 44" style="width:36px;height:36px"><circle cx="22" cy="22" r="17" fill="none" stroke="#f0e2cc" stroke-width="5"/><circle id="ringArc" cx="22" cy="22" r="17" fill="none" stroke="#58cc02" stroke-width="5" stroke-linecap="round" transform="rotate(-90 22 22)"/><text id="ringTxt" x="22" y="26.5" text-anchor="middle" font-family="'Baloo 2',sans-serif" font-weight="800" font-size="12.5" fill="#4a2c14">0/5</text></svg></button>
         <button id="libBtn" aria-label="Book library"><svg viewBox="0 0 64 64" style="width:24px;height:24px;vertical-align:middle"><path d="M10 14c8-4 15-4 22 0v38c-7-4-14-4-22 0Z" fill="#4db3f2"/><path d="M54 14c-8-4-15-4-22 0v38c7-4 14-4 22 0Z" fill="#2a8fd4"/><line x1="32" y1="14" x2="32" y2="52" stroke="#1c6fa8" stroke-width="2"/><circle cx="19" cy="22" r="3" fill="#fff" opacity=".8"/></svg></button>
-        <button id="parentBtn" aria-label="For grown-ups"><img src="/coach/echo/echo-idle.svg" alt="Echo" /></button>
+        <button id="parentBtn" aria-label="For grown-ups"><span class="pic-gear"></span></button>
       </div>
     </header>
 
-    <a id="trialBanner" href="/subscribe">🎁 <span id="trialMsg"></span></a>
+    <a id="trialBanner" href="/subscribe"><span data-ic="gift">🎁</span> <span id="trialMsg"></span></a>
     <a id="checkNudge" href="/soundcheck.html" style="display:none;align-items:center;gap:8px;background:linear-gradient(120deg,#eafbe2,#d5f3c4);border:1px solid #bce39f;border-radius:14px;padding:9px 14px;font-weight:800;font-size:12.5px;color:#3f7d0a;text-decoration:none;">🎯 <span>NEW — the 2-minute Sound Check: Echo listens and builds the practice plan!</span></a>
 
     <!-- Practice Path: the map IS the home screen. Road + nodes laid out on
@@ -374,6 +376,17 @@
         if(ps){ var gp=$("gatePill"); gp.textContent=(ps.into===0&&ps.steps>0)?"New place unlocked!":(ps.toGate+" steps to the next place!"); gp.style.display="block"; }
       }catch(e){}
       go.onclick=launch; go.dataset.launch=LAUNCH; // dataset: test hook for the age-aware target
+      // Echo is never a locked door (fix pack 1a): tapping him is a hello —
+      // a hop + a warm line in his bubble, then the state's sentence returns.
+      leo.onclick=function(){
+        sfx("tap");
+        var hi=["Hi"+(name?" "+name:"")+"!","Ready when you are!","Let's say some sounds!","You've got this!"];
+        var prev=bubble.innerHTML;
+        bubble.textContent=hi[(Math.random()*hi.length)|0];
+        leo.classList.remove("bob"); void leo.offsetWidth;
+        try{ if(!(window.matchMedia&&matchMedia("(prefers-reduced-motion:reduce)").matches)) leo.classList.add("bob"); }catch(e){}
+        clearTimeout(leo._hiT); leo._hiT=setTimeout(function(){ bubble.innerHTML=prev; },2600);
+      };
     }
     renderState();
     layoutPath();
@@ -542,7 +555,7 @@
     $("shareWeek").onclick=function(){ sfx("tap"); shareCard(); };
     paintWins();
     paintWeek();
-    try{ document.querySelectorAll(".pic-trend").forEach(function(n){ n.innerHTML=S.icon("trend",18); }); document.querySelectorAll(".pic-gear").forEach(function(n){ n.innerHTML=S.icon("gear",18); }); }catch(e){}
+    try{ document.querySelectorAll(".pic-trend").forEach(function(n){ n.innerHTML=S.icon("trend",18); }); document.querySelectorAll(".pic-gear").forEach(function(n){ n.innerHTML=S.icon("gear",18); }); document.querySelectorAll("[data-ic]").forEach(function(n){ var m=S.icon(n.dataset.ic,18); if(m) n.innerHTML=m; }); }catch(e){}
     $("goProgress").onclick=function(){ location.href="/progress.html"; };
     $("goPlan").onclick=function(){ location.href="/subscribe.html"; };
     $("goSettings").onclick=function(){ location.href="/settings.html"; };
