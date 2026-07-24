@@ -81,6 +81,10 @@
   </div>
 
   <div id="intro">
+    <!-- the intro overlays the whole page (including the header ✕), so it
+         needs its own exit — nobody gets trapped on a "Let's go" screen -->
+    <button id="introClose" aria-label="Back home" onclick="location.href='/today.html'"
+      style="position:absolute;top:calc(14px + env(safe-area-inset-top));left:16px;width:44px;height:44px;border:none;border-radius:50%;background:#fff;color:#b9a98c;font-size:18px;font-weight:800;cursor:pointer;box-shadow:0 3px 0 var(--track);">✕</button>
     <div class="halo"><img src="/coach/echo/echo-listening.svg" alt="" onerror="this.onerror=null;this.src='/coach/echo/echo-idle.svg';" /></div>
     <h1>Sound Check!</h1>
     <p id="introSub">Echo says a word, you say it back — that's it!</p>
