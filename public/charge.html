@@ -753,6 +753,8 @@
       await startEngine();
       if(reps>0)anyReps=true;
       attemptsTotal+=reps;
+      // RING1: every honest counted rep ticks the kid-visible daily number
+      try{ if(reps>0&&S&&S.bumpReps) S.bumpReps(reps); }catch(e){}
       NEED=save;
       micGo(false); $("gpState").textContent="Echo's thinking…";
       var l=$("leo"); try{ l.classList.add("think"); }catch(e){}
