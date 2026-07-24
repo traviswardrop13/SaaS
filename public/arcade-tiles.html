@@ -162,7 +162,8 @@
     hearts();
 
     var LCOL=["#ff6b8a","#4dabf7","#69db7c","#ffd43b"];
-    var tiles=[], fall=H*0.0042, spawnMs=760, noteIx=0, melodyDir=1;
+    // founder-tuned: start noticeably SLOWER, let the ramp do the work
+    var tiles=[], fall=H*0.0031, spawnMs=920, noteIx=0, melodyDir=1;
     var HITY=function(){ return H-140-Math.max(0,0); }; // hit line y (bar height 90 above bottom bar)
 
     function spawn(){
@@ -173,8 +174,8 @@
     }
     var spawnTimer=setInterval(function(){ if(playing) spawn(); },spawnMs);
     function retime(ms){ clearInterval(spawnTimer); spawnMs=ms; spawnTimer=setInterval(function(){ if(playing) spawn(); },spawnMs); }
-    // gentle ramp: a touch faster every 10s
-    var rampIv=setInterval(function(){ if(!playing)return; fall*=1.07; if(spawnMs>560) retime(spawnMs-60); },10000);
+    // gentle ramp: a touch faster every 12s, capped so it never gets frantic
+    var rampIv=setInterval(function(){ if(!playing)return; if(fall<H*0.0058) fall*=1.06; if(spawnMs>600) retime(spawnMs-50); },12000);
 
     // ---- input: tap a lane when a tile is over the hit bar ----
     function laneAt(x){ return Math.max(0,Math.min(LANES-1,(x/(W/LANES))|0)); }
