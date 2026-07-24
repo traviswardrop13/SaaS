@@ -1,10 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
+import { rateLimit } from "@/lib/rateLimit";
 
 /**
  * Records a no-card free-trial start, keyed by email, in KV — so a trial
  * survives a device switch and the day-6 conversion-nudge job can find trials
  * that are about to expire. Best-effort: with no KV configured it no-ops, and
  * the client still works off its localStorage copy.
+ *
+ * The `trials` set feeds the weekly parent email, so this endpoint is
+ * rate-limited and the set is size-capped: an attacker must not be able to
+ * enroll strangers en masse or flood the recipient list. (Full double
+ * opt-in is the tracked follow-up.)
  */
 export const runtime = "nodejs";
 
@@ -27,6 +33,8 @@ async function kvCmd(cmd: (string | number)[]): Promise<unknown> {
 }
 
 export async function POST(req: NextRequest) {
+  const _rl = await rateLimit(req, { key: "trial", limit: 10, windowSec: 60 });
+  if (_rl) return _rl;
   let body: { email?: string; start?: number; days?: number };
   try {
     body = await req.json();
@@ -45,7 +53,10 @@ export async function POST(req: NextRequest) {
     // Only set on first start so we never push the expiry out on repeat calls.
     await kvCmd(["SET", "trial:" + email, rec, "NX"]);
     await kvCmd(["EXPIRE", "trial:" + email, 60 * 60 * 24 * 60]); // ~2 months
-    await kvCmd(["SADD", "trials", email]); // index for the nudge job
+    // size-capped index for the nudge job + weekly email — a flooded set
+    // must never displace real families or blow up the cron's read
+    const size = Number(await kvCmd(["SCARD", "trials"])) || 0;
+    if (size < 5000) await kvCmd(["SADD", "trials", email]);
   } catch {
     // best-effort
   }

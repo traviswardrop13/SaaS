@@ -2,24 +2,31 @@ import { NextRequest, NextResponse } from "next/server";
 import { createHmac } from "crypto";
 
 /**
- * Friday parent email (Vercel cron → GET, or manual with ?key=FOUNDER_KEY).
+ * Friday parent email (Vercel cron → GET, or manual with the founder key).
  *
  * What it sends — and what it deliberately can't: per-child practice data
  * lives ON DEVICE (the reps beacon is anonymous by design), so this email is
  * a warm weekly nudge with COHORT-level stats plus a link to the in-app
- * report where the family's real numbers live. No child data ever leaves
- * the device to make this email possible.
+ * report where the family's real numbers live.
  *
- * Recipients: the `trials` KV set (families who left an email in the app),
- * minus the `email:unsub` set. Sends via Resend (RESEND_API_KEY). Set
- * RESEND_FROM once the domain is verified in Resend, e.g.
- * "Sona <hello@speaksona.com>" — until then the Resend sandbox sender is
- * used, which only reaches the account owner's own address.
+ * Required env (fails closed with a clear 503 if missing — a misconfigured
+ * week must never half-send or send non-compliantly):
+ *   RESEND_API_KEY  — Resend auth
+ *   RESEND_FROM     — verified-domain sender ("Sona <hello@speaksona.com>");
+ *                     without it only a manual single-recipient founder test
+ *                     is allowed (Resend sandbox reaches only the owner)
+ *   UNSUB_SECRET    — HMAC secret for unsubscribe tokens (never defaulted)
+ *   EMAIL_POSTAL    — physical mailing address line (CAN-SPAM §5(a)(5)),
+ *                     e.g. the LLC's registered-agent address
+ *   CRON_SECRET     — Vercel cron bearer (manual runs use FOUNDER_KEY via
+ *                     the X-Founder-Key header or ?key=)
  *
- * Safety: one send per ISO week (KV NX lock; ?force=1 with the founder key
- * overrides), 200-recipient cap per run, per-send failures never abort the
- * batch. Auth: Vercel cron's `Authorization: Bearer CRON_SECRET` when that
- * env is set, or ?key=FOUNDER_KEY for a manual run.
+ * Order of operations: auth → env checks → read recipients + suppression
+ * (fail closed) → take the once-per-week lock → send. Suppression is ONE
+ * SMEMBERS read; a KV blip aborts the run rather than emailing anyone who
+ * unsubscribed. Recipients are sorted for determinism and capped at 200
+ * (dropped count reported). Deferred, tracked: double opt-in on /api/trial
+ * and a Resend bounce/complaint webhook into the suppression set.
  */
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -43,7 +50,6 @@ async function kvCmd(cmd: (string | number)[]): Promise<unknown> {
 }
 
 function isoWeek(d = new Date()): string {
-  // same math as sona.js isoWeek: Thursday-anchored ISO week
   const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
   const day = t.getUTCDay() || 7;
   t.setUTCDate(t.getUTCDate() + 4 - day);
@@ -53,8 +59,7 @@ function isoWeek(d = new Date()): string {
   return y + "-W" + String(wk).padStart(2, "0");
 }
 
-function unsubToken(email: string): string {
-  const secret = process.env.UNSUB_SECRET || process.env.FOUNDER_KEY || "sona";
+function unsubToken(email: string, secret: string): string {
   return createHmac("sha256", secret).update(email).digest("hex").slice(0, 24);
 }
 
@@ -66,91 +71,139 @@ const TIPS = [
   "Same time every day beats twice as long every other day.",
 ];
 
-function emailHtml(opts: { cohortLine: string; tip: string; unsubUrl: string }): string {
+function emailHtml(o: { cohortLine: string; tip: string; unsubUrl: string; postal: string }): string {
   return `<!doctype html><body style="margin:0;padding:0;background:#fff6e9;font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#fff6e9;padding:28px 14px;"><tr><td align="center">
 <table role="presentation" width="480" cellpadding="0" cellspacing="0" style="max-width:480px;width:100%;">
 <tr><td style="text-align:center;padding-bottom:14px;font-size:26px;font-weight:800;color:#0e9add;">Sona</td></tr>
 <tr><td style="background:#ffffff;border-radius:20px;padding:26px 24px;">
   <div style="font-size:20px;font-weight:800;color:#4a2c14;">Your week of brave sounds 🧡</div>
-  <p style="margin:12px 0 0;font-size:14.5px;line-height:1.6;color:#6b5138;">${opts.cohortLine}</p>
+  <p style="margin:12px 0 0;font-size:14.5px;line-height:1.6;color:#6b5138;">${o.cohortLine}</p>
   <p style="margin:12px 0 0;font-size:14.5px;line-height:1.6;color:#6b5138;">Your child's own week — reps, sounds, and the clips worth hearing twice — is waiting in your report.</p>
   <table role="presentation" cellpadding="0" cellspacing="0" style="margin:20px auto 6px;"><tr><td style="border-radius:14px;background:#ff8a3d;">
     <a href="https://speaksona.com/progress.html" style="display:inline-block;padding:13px 30px;font-size:15px;font-weight:800;color:#ffffff;text-decoration:none;">Open your report</a>
   </td></tr></table>
-  <p style="margin:18px 0 0;padding:12px 14px;background:#fff6e9;border-radius:12px;font-size:13px;line-height:1.55;color:#6b5138;"><b style="color:#4a2c14;">Rachel's tip:</b> ${opts.tip}</p>
+  <p style="margin:18px 0 0;padding:12px 14px;background:#fff6e9;border-radius:12px;font-size:13px;line-height:1.55;color:#6b5138;"><b style="color:#4a2c14;">Rachel's tip:</b> ${o.tip}</p>
 </td></tr>
-<tr><td style="text-align:center;padding:16px 8px 0;font-size:11.5px;color:#b08d63;">
-  Sona · Wardrop Ventures LLC · <a href="${opts.unsubUrl}" style="color:#b08d63;">Unsubscribe</a>
+<tr><td style="text-align:center;padding:16px 8px 0;font-size:11.5px;line-height:1.6;color:#b08d63;">
+  Sona · Wardrop Ventures LLC<br>${o.postal}<br><a href="${o.unsubUrl}" style="color:#b08d63;">Unsubscribe</a>
 </td></tr>
 </table></td></tr></table></body>`;
 }
 
+function emailText(o: { cohortText: string; tip: string; unsubUrl: string; postal: string }): string {
+  return `Your week of brave sounds — Sona
+
+${o.cohortText}
+
+Your child's own week — reps, sounds, and the clips worth hearing twice — is in your report:
+https://speaksona.com/progress.html
+
+Rachel's tip: ${o.tip}
+
+—
+Sona · Wardrop Ventures LLC
+${o.postal}
+Unsubscribe: ${o.unsubUrl}`;
+}
+
 export async function GET(req: NextRequest) {
-  // auth: Vercel cron bearer, or the founder key for a manual run
+  // ── auth: Vercel cron bearer, or founder key (header preferred, query ok)
   const auth = req.headers.get("authorization") || "";
-  const key = req.nextUrl.searchParams.get("key") || "";
+  const keyIn = req.headers.get("x-founder-key") || req.nextUrl.searchParams.get("key") || "";
   const cronSecret = process.env.CRON_SECRET || "";
   const founderKey = process.env.FOUNDER_KEY || "";
-  const okCron = cronSecret && auth === `Bearer ${cronSecret}`;
-  const okManual = founderKey && key === founderKey;
-  if (!okCron && !okManual) return NextResponse.json({ ok: false }, { status: 401 });
+  const okCron = Boolean(cronSecret) && auth === `Bearer ${cronSecret}`;
+  const okManual = Boolean(founderKey) && keyIn === founderKey;
+  if (!okCron && !okManual) {
+    if (!cronSecret) console.error("weekly-email: request rejected AND CRON_SECRET is unset — the Friday cron cannot ever run until it is configured");
+    return NextResponse.json({ ok: false }, { status: 401 });
+  }
 
+  // ── env checks: every send-affecting secret must exist, or nothing sends
   const resendKey = process.env.RESEND_API_KEY;
-  if (!resendKey) return NextResponse.json({ ok: false, error: "RESEND_API_KEY missing." }, { status: 503 });
+  const unsubSecret = process.env.UNSUB_SECRET;
+  const postal = (process.env.EMAIL_POSTAL || "").trim();
+  const from = (process.env.RESEND_FROM || "").trim();
+  const missing = [
+    !resendKey && "RESEND_API_KEY",
+    !unsubSecret && "UNSUB_SECRET",
+    !postal && "EMAIL_POSTAL (physical mailing address — CAN-SPAM)",
+  ].filter(Boolean);
+  if (missing.length) return NextResponse.json({ ok: false, error: "Missing env: " + missing.join(", ") }, { status: 503 });
 
   const week = isoWeek();
   const force = req.nextUrl.searchParams.get("force") === "1" && okManual;
 
-  // once per week, ever — the lock is taken before any send
-  if (!force) {
-    const lock = await kvCmd(["SET", "weekly:sent:" + week, String(Date.now()), "NX"]);
-    if (lock === null) return NextResponse.json({ ok: true, skipped: "already sent " + week });
-    if (lock === undefined) return NextResponse.json({ ok: false, error: "No KV store." }, { status: 503 });
-    await kvCmd(["EXPIRE", "weekly:sent:" + week, 60 * 60 * 24 * 21]);
-  }
+  // ── reads first (so a failed read never burns the weekly lock)
+  // bounded, deterministic recipient read: one SSCAN page, sorted, capped
+  const scan = (await kvCmd(["SSCAN", "trials", 0, "COUNT", 1000])) as unknown;
+  const rawList: string[] = Array.isArray(scan) && Array.isArray(scan[1]) ? (scan[1] as string[]) : [];
+  if (!Array.isArray(scan)) return NextResponse.json({ ok: false, error: "KV unavailable (recipients)." }, { status: 503 });
+  const valid = rawList.filter((e) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(String(e))).sort();
+  const capped = valid.slice(0, 200);
+  const dropped = valid.length - capped.length;
 
-  // recipients: trial emails minus unsubscribes
-  const raw = (await kvCmd(["SMEMBERS", "trials"])) as string[] | undefined;
-  const emails = (raw || []).filter((e) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(String(e))).slice(0, 200);
-  const unsubbed = new Set<string>();
-  for (const e of emails) {
-    const u = await kvCmd(["SISMEMBER", "email:unsub", e]);
-    if (u === 1 || u === "1") unsubbed.add(e);
+  // suppression: ONE read, fail closed — never email an unsubscribed family
+  const unsubRaw = (await kvCmd(["SMEMBERS", "email:unsub"])) as unknown;
+  if (!Array.isArray(unsubRaw)) return NextResponse.json({ ok: false, error: "KV unavailable (suppression)." }, { status: 503 });
+  const unsubbed = new Set((unsubRaw as string[]).map((e) => String(e).toLowerCase()));
+  const to = capped.filter((e) => !unsubbed.has(e.toLowerCase()));
+
+  // sandbox guard: without a verified sender, only a manual 1-recipient test
+  if (!from && !(okManual && to.length <= 1)) {
+    return NextResponse.json({ ok: false, error: "RESEND_FROM unset — set the verified-domain sender before a real send. (Manual single-recipient sandbox test allowed with the founder key.)" }, { status: 503 });
   }
-  const to = emails.filter((e) => !unsubbed.has(e));
+  const sender = from || "Sona <onboarding@resend.dev>";
 
   // cohort stats from the anonymous weekly board
   const flat = (await kvCmd(["HGETALL", "reps:" + week])) as unknown;
   let cohort = 0, total = 0;
   if (Array.isArray(flat)) for (let i = 1; i < flat.length; i += 2) { cohort++; total += parseInt(String(flat[i]), 10) || 0; }
   else if (flat && typeof flat === "object") for (const v of Object.values(flat as Record<string, unknown>)) { cohort++; total += parseInt(String(v), 10) || 0; }
-  const cohortLine = cohort >= 3
+  const big = cohort >= 3;
+  const cohortLine = big
     ? `This week, Sona families logged <b style="color:#4a2c14;">${total.toLocaleString()} practice reps</b> — every one of them a brave little rep out loud.`
     : `Another week of brave sounds in the books — every rep out loud counts.`;
+  const cohortText = big
+    ? `This week, Sona families logged ${total.toLocaleString()} practice reps — every one of them a brave little rep out loud.`
+    : `Another week of brave sounds in the books — every rep out loud counts.`;
 
-  const from = process.env.RESEND_FROM || "Sona <onboarding@resend.dev>";
+  // ── the once-per-week lock: atomic SET NX EX, taken only after reads pass
+  if (!force) {
+    const lock = await kvCmd(["SET", "weekly:sent:" + week, String(Date.now()), "NX", "EX", 60 * 60 * 24 * 21]);
+    if (lock === null) return NextResponse.json({ ok: true, skipped: "already sent " + week });
+    if (lock === undefined) return NextResponse.json({ ok: false, error: "KV unavailable (lock)." }, { status: 503 });
+  }
+
   const tip = TIPS[Math.floor(Date.now() / 604800000) % TIPS.length];
   let sent = 0, failed = 0;
-  for (const email of to) {
+  for (let i = 0; i < to.length; i++) {
+    const email = to[i];
     try {
-      const unsubUrl = `https://speaksona.com/api/email/unsub?e=${encodeURIComponent(email)}&k=${unsubToken(email)}`;
+      const unsubUrl = `https://speaksona.com/api/email/unsub?e=${encodeURIComponent(email)}&k=${unsubToken(email.toLowerCase(), unsubSecret!)}`;
       const r = await fetch("https://api.resend.com/emails", {
         method: "POST",
         headers: { Authorization: `Bearer ${resendKey}`, "Content-Type": "application/json" },
         body: JSON.stringify({
-          from,
+          from: sender,
           to: email,
           subject: "Your week of brave sounds — Sona",
-          html: emailHtml({ cohortLine, tip, unsubUrl }),
-          headers: { "List-Unsubscribe": `<${unsubUrl}>` },
+          html: emailHtml({ cohortLine, tip, unsubUrl, postal }),
+          text: emailText({ cohortText, tip, unsubUrl, postal }),
+          headers: {
+            "List-Unsubscribe": `<${unsubUrl}>`,
+            "List-Unsubscribe-Post": "List-Unsubscribe=One-Click", // RFC 8058 — the unsub route accepts POST
+          },
         }),
       });
       if (r.ok) sent++; else failed++;
-      await new Promise((res) => setTimeout(res, 600)); // stay under Resend's rate limit
     } catch {
       failed++;
     }
+    if (i < to.length - 1) await new Promise((res) => setTimeout(res, 550)); // Resend rate limit; no trailing sleep
   }
-  return NextResponse.json({ ok: true, week, recipients: to.length, sent, failed, cohort, totalReps: total });
+  // a forced run still marks the week so Friday's cron can't double-send
+  if (force) await kvCmd(["SET", "weekly:sent:" + week, String(Date.now()), "EX", 60 * 60 * 24 * 21]);
+  return NextResponse.json({ ok: true, week, recipients: to.length, droppedOverCap: dropped, sent, failed, cohort, totalReps: total });
 }
