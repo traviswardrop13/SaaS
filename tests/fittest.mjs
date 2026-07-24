@@ -68,9 +68,9 @@ for (const [dev, w, h] of PORTRAIT) {
   await page.waitForTimeout(900);
   const st = await page.evaluate(() => {
     const r = (id) => { const e = document.getElementById(id); if (!e) return null; const b = e.getBoundingClientRect(); return { top: Math.round(b.top), bottom: Math.round(b.bottom) }; };
-    return { prompt: r("prompt"), hear: r("hear"), mic: r("micBtn"), oX: Math.round(document.documentElement.scrollWidth - innerWidth), innerH: innerHeight };
+    return { prompt: r("bubble"), hear: r("hear"), mic: r("micBtn"), oX: Math.round(document.documentElement.scrollWidth - innerWidth), innerH: innerHeight };
   });
-  ok(dev + " story: prompt clears the buttons", st.prompt && st.hear && st.prompt.bottom <= st.hear.top + 1, JSON.stringify({ p: st.prompt, h: st.hear }));
+  ok(dev + " story: Echo's bubble clears the buttons", st.prompt && st.hear && st.prompt.bottom <= st.hear.top + 1, JSON.stringify({ p: st.prompt, h: st.hear }));
   // padding-floor rule (see goBtn note above): #bottom pads 16px + env(),
   // env()=0 headless — assert against the page's own 16px, not the device inset
   ok(dev + " story: mic never overflows the page", st.mic && st.mic.bottom <= st.innerH - 15, st.mic && st.mic.bottom + "/" + (st.innerH - 15));
