@@ -63,7 +63,14 @@ const noSustained = (name, s) => {
 // ---- E2E round 1: isolation — human clip 404s → TTS gets the clean line ----
 await page.goto("http://localhost:8123/charge.html?sound=R&game=arcade-slice.html");
 await page.waitForTimeout(2500);
-ok("E2E r1 first line (R)", ttsPosts[0], "Ready? Pull your tongue back and up, and make your R sound... five times... Go!");
+// Isolation now plays the HUMAN model clip (/coach/say/R.mp3) — the real
+// sound, which TTS can't perform. So round 1 posts NO TTS prompt; if the
+// headless env can't decode the mp3, the exact TTS fallback line is the
+// only acceptable substitute (and noSustained still guards every post).
+const r1ok = ttsPosts.length === 0 || ttsPosts[0] === "Ready? Pull your tongue back and up, and make your R sound... five times... Go!";
+console.log((r1ok ? "PASS" : "FAIL") + "  E2E r1 human clip replaces TTS (or exact fallback)  → " + JSON.stringify(ttsPosts[0] || "(no TTS — clip played)"));
+if (!r1ok) fails++;
+ok("human model clips enabled in source", /var HUMANCLIPS=true/.test(html), true);
 // Workstream A: the sound chip is gone — the header context line carries the sound
 ok("E2E r1 header names the sound", await page.evaluate(() => /R sound/.test(document.getElementById("ctxLine").textContent)), true);
 

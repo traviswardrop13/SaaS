@@ -14,6 +14,21 @@ import { NextRequest, NextResponse } from "next/server";
  */
 export const runtime = "nodejs";
 
+/**
+ * Founder health check (same pattern as /api/score GET): presence booleans
+ * only, never values. Open in a browser to see which capture/email rails
+ * are actually configured in this deployment.
+ */
+export async function GET() {
+  return NextResponse.json({
+    ok: true,
+    service: "lead",
+    email: Boolean(process.env.RESEND_API_KEY),
+    hook: Boolean(process.env.LEAD_WEBHOOK_URL),
+    kit: Boolean(process.env.KIT_API_KEY && process.env.KIT_FORM_ID),
+  });
+}
+
 export async function POST(req: NextRequest) {
   let body: {
     email?: string;
