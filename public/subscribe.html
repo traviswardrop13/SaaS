@@ -150,6 +150,10 @@
         <span class="sub">Beta price — $6.67/month billed yearly. Locked while you stay; $119.99 after launch.</span>
         <button class="btn go" id="buyAnnual">Start 7 days free</button>
         <span class="reassure" id="trialMath">No charge today — cancel anytime during your free week.</span>
+        <span style="display:block;margin-top:9px;font-weight:800;font-size:11px;">
+          <a href="/terms" style="color:#8a6f52;text-decoration:underline;">Terms of Use</a>
+          · <a href="/privacy" style="color:#8a6f52;text-decoration:underline;">Privacy</a>
+        </span>
       </div>
       <div class="plan" id="planMonthly">
         <b>Monthly — $12.99/mo</b>
@@ -163,17 +167,17 @@
       <h2>How pricing works here</h2>
       <div class="tl">
         <div class="tli now">
-          <span class="tld">🌱</span>
+          <span class="tld" data-ic="sprout">🌱</span>
           <b>Today</b>
           <p>Free while we build together. No card on file, nothing to cancel — every game is open.</p>
         </div>
         <div class="tli mail">
-          <span class="tld">💌</span>
+          <span class="tld" data-ic="mail">💌</span>
           <b>Before anything changes</b>
           <p>We email you first. Nothing happens silently — no auto-charges, no fine print doing the talking.</p>
         </div>
         <div class="tli lock">
-          <span class="tld">🔒</span>
+          <span class="tld" data-ic="lock">🔒</span>
           <b>Founding families</b>
           <p>Your price locked for life. If Sona ever costs money, founding families keep the founding rate of $39.99/yr — and cancel anytime, no hoops.</p>
         </div>
@@ -181,10 +185,16 @@
     </div>
 
     <div class="card">
-      <h2>We'll tell you first 💌</h2>
+      <h2>We'll tell you first <span data-ic="mail">💌</span></h2>
       <p class="muted" style="font-size:13.5px;font-weight:700;">That's our promise either way — this just makes it official on your end too.</p>
       <button class="btn blue" id="remindBtn" style="margin-top:14px;">Remind me before anything changes</button>
-      <p id="remindDone">Done — you'll hear from us first.</p>
+      <div id="remindForm" style="display:none;margin-top:12px;">
+        <input id="remindEmail" type="email" inputmode="email" autocomplete="email" placeholder="you@email.com"
+               style="width:100%;border:2px solid var(--line);border-radius:14px;padding:13px 14px;font-family:Nunito,sans-serif;font-weight:800;font-size:15px;color:var(--ink);background:#fff;" />
+        <button class="btn blue" id="remindSend" style="margin-top:10px;">Email me first</button>
+        <p id="remindErr" style="display:none;margin-top:8px;font-weight:800;font-size:12.5px;color:#c2410c;"></p>
+      </div>
+      <p id="remindDone">Done — we'll email you before anything changes.</p>
     </div>
 
     <div class="card">
@@ -335,27 +345,49 @@
       } catch (e) {}
     })();
 
-    // "Remind me before anything changes" — a local pledge flag, nothing sent.
+    // "Remind me before anything changes" — now captures a real email so the
+    // promise has a mechanism (fix pack 1d). POSTs /api/lead {source:
+    // "remindPledge"}; the local flag still remembers the pledge on-device.
     (function () {
       var KEY = "sona.remindPledge.v1";
       var btn = document.getElementById("remindBtn");
+      var form = document.getElementById("remindForm");
+      var email = document.getElementById("remindEmail");
+      var send = document.getElementById("remindSend");
+      var err = document.getElementById("remindErr");
       var done = document.getElementById("remindDone");
       function paint() {
         var on = false;
         try { on = !!localStorage.getItem(KEY); } catch (e) {}
-        if (on) { btn.style.display = "none"; done.style.display = "block"; }
+        if (on) { btn.style.display = "none"; form.style.display = "none"; done.style.display = "block"; }
       }
       btn.onclick = function () {
-        try { localStorage.setItem(KEY, String(Date.now())); } catch (e) {}
-        paint();
+        btn.style.display = "none"; form.style.display = "block";
+        try { var pe = (Sona.getProfile().email || "").trim(); if (pe) email.value = pe; } catch (e) {}
+        email.focus();
+      };
+      send.onclick = function () {
+        var v = (email.value || "").trim();
+        if (!/^\S+@\S+\.\S+$/.test(v)) { err.style.display = "block"; err.textContent = "Please enter a valid email."; email.focus(); return; }
+        err.style.display = "none"; send.disabled = true; send.textContent = "Saving…";
+        fetch("/api/lead", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: v, source: "remindPledge" }) })
+          .then(function (r) { return r.json(); })
+          .then(function (j) {
+            if (!(j && j.ok)) throw new Error("bad");
+            try { localStorage.setItem(KEY, String(Date.now())); } catch (e) {}
+            try { var P = Sona.getProfile(); if (!P.email) Sona.saveProfile({ email: v }); } catch (e) {}
+            paint();
+          })
+          .catch(function () { send.disabled = false; send.textContent = "Email me first"; err.style.display = "block"; err.textContent = "Couldn't save that — try again in a moment."; });
       };
       paint();
     })();
 
-    // header + nav icons from the shared icon kit
+    // header + nav icons from the shared icon kit (emoji stay as fallback)
     (function () { try {
       document.querySelectorAll(".pic-home").forEach(function (n) { n.innerHTML = Sona.icon("home", 20); });
       document.querySelectorAll(".pic-gear").forEach(function (n) { n.innerHTML = Sona.icon("gear", 20); });
+      document.querySelectorAll("[data-ic]").forEach(function (n) { var m = Sona.icon(n.dataset.ic, 18); if (m) n.innerHTML = m; });
     } catch (e) {} })();
   </script>
 </body>
