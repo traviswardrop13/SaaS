@@ -175,6 +175,10 @@
     // ── tiny cached TTS (same on-device cache as charge; repeat asks are free)
     var audioCtx=null,speaking=false,ttsPlaying=false;
     function getCtx(){ if(!audioCtx){var AC=window.AudioContext||window.webkitAudioContext;audioCtx=new AC();} if(audioCtx.state==="suspended")audioCtx.resume(); return audioCtx; }
+    // iOS unlock: the first ask auto-plays at boot (no gesture) — any first
+    // tap unlocks the context so speech works from then on
+    (function(){ function un(){ try{ var c=getCtx(); if(c.state==="suspended")c.resume(); var b=c.createBuffer(1,1,22050), s=c.createBufferSource(); s.buffer=b; s.connect(c.destination); s.start(0); }catch(e){} }
+      document.addEventListener("pointerdown", un, { passive:true, capture:true }); })();
     function ttsDB(){ return new Promise(function(res,rej){ try{ var r=indexedDB.open("sona-tts",1); r.onupgradeneeded=function(){ r.result.createObjectStore("clips"); }; r.onsuccess=function(){res(r.result)}; r.onerror=function(){rej(r.error)}; }catch(e){rej(e);} }); }
     function ttsGet(k){ return ttsDB().then(function(db){ return new Promise(function(res){ var tx=db.transaction("clips"); var rq=tx.objectStore("clips").get(k); rq.onsuccess=function(){res(rq.result||null)}; rq.onerror=function(){res(null)}; }); }).catch(function(){return null;}); }
     function ttsPut(k,buf){ ttsDB().then(function(db){ try{ db.transaction("clips","readwrite").objectStore("clips").put(buf,k); }catch(e){} }).catch(function(){}); }

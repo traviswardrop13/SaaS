@@ -92,6 +92,14 @@
       <p class="muted" style="font-size:13px;font-weight:700;">No scores in here — read picture books with Echo and play with words.</p></div>
     </div>
 
+    <!-- Feed Echo lives here for EVERYONE (it's the littles' main game, but
+         big kids love feeding him too) — the library is the no-scores zone -->
+    <button id="feedTile" onclick="location.href='/arcade-feed.html'" style="width:100%;border:none;cursor:pointer;border-radius:18px;padding:14px 16px;margin-top:14px;text-align:left;display:flex;align-items:center;gap:14px;background:linear-gradient(120deg,#cef0b8,#a9e18f);box-shadow:0 6px 0 rgba(90,150,60,.35);">
+      <svg viewBox="0 0 64 64" style="width:40px;height:40px;flex:0 0 auto"><circle cx="32" cy="32" r="30" fill="#fff" opacity=".85"/><ellipse cx="32" cy="46" rx="16" ry="6" fill="#8fdc7a"/><circle cx="32" cy="30" r="13" fill="#ff5c5c"/><path d="M32 18q4-4 8-2-3 4-8 2Z" fill="#58cc02"/><rect x="31" y="14" width="2.5" height="6" rx="1.2" fill="#8a5a2a"/><circle cx="27" cy="26" r="2" fill="#fff" opacity=".85"/></svg>
+      <span><b style="display:block;font-family:'Baloo 2';font-weight:800;font-size:16px;color:#2e5c1a;">Feed Echo</b>
+      <span style="display:block;font-weight:800;font-size:12px;color:#3f7d2a;margin-top:2px;">Say the word, tap the picture — watch Echo grow!</span></span>
+    </button>
+
     <button id="advTile" onclick="location.href='/story.html'" style="width:100%;border:none;cursor:pointer;border-radius:18px;padding:16px;margin-top:14px;text-align:left;display:flex;align-items:center;gap:14px;background:linear-gradient(120deg,#35407e,#6a5aa8 70%,#8a6fc4);box-shadow:0 6px 0 rgba(30,24,70,.35);">
       <svg viewBox="0 0 64 64" style="width:44px;height:44px;flex:0 0 auto"><path d="M32 5l8.2 18.6L60 25.8 44.9 39.2 49.8 59 32 48.4 14.2 59l4.9-19.8L4 25.8l19.8-2.2Z" fill="#ffd21c"/><circle cx="25" cy="21" r="3" fill="#fff" opacity=".85"/></svg>
       <span><b id="advTitle" style="display:block;font-family:'Baloo 2';font-weight:800;font-size:17px;color:#fff;">Your Adventure</b>
@@ -227,6 +235,11 @@
     /* ---- speech (no scoring, just listening) ---- */
     var audioCtx = null, playing = false, curSrc = null, sayToken = 0;
     function getCtx() { if (!audioCtx) { var AC = window.AudioContext || window.webkitAudioContext; audioCtx = new AC(); } if (audioCtx.state === "suspended") audioCtx.resume(); return audioCtx; }
+    // iOS blocks audio that starts OUTSIDE a tap: the say() pipeline creates
+    // its context after an async fetch, which Safari treats as gesture-less →
+    // silence. Unlock synchronously inside every tap that leads to speech.
+    function unlockAudio(){ try{ var c=getCtx(); if(c.state==="suspended")c.resume(); var b=c.createBuffer(1,1,22050), s=c.createBufferSource(); s.buffer=b; s.connect(c.destination); s.start(0); }catch(e){} }
+    document.addEventListener("pointerdown", unlockAudio, { passive:true, capture:true });
     function stopSpeech() { sayToken++; try { curSrc && curSrc.stop(); } catch (e) {} curSrc = null; playing = false; }
     function say(text) {
       return new Promise(function (resolve) {
