@@ -46,8 +46,8 @@ await page.goto("http://localhost:8145/arcade-feed.html"); await page.waitForTim
 // ── the ask and the cards agree ──
 let t = await page.evaluate(() => ({
   cards: [...document.querySelectorAll("#grid .cardBtn")].map((b) => b.querySelector(".w").textContent),
-  bubble: document.getElementById("bubble").textContent,
-  fed: document.getElementById("fedPill").textContent,
+  bubble: document.getElementById("bMain").textContent,
+  fed: document.getElementById("plate").dataset.fed,
 }));
 ok("renders 2-4 picture cards", t.cards.length >= 2 && t.cards.length <= 4, JSON.stringify(t.cards));
 const target1 = (t.bubble.match(/Where's the (.+)\?/) || [])[1];
@@ -61,8 +61,8 @@ if (wrongIdx >= 0) {
   await page.evaluate((i) => document.querySelectorAll("#grid .cardBtn")[i].click(), wrongIdx);
   await page.waitForTimeout(300);
   t = await page.evaluate(() => ({
-    fed: document.getElementById("fedPill").textContent,
-    hint: document.getElementById("hint").textContent,
+    fed: document.getElementById("plate").dataset.fed,
+    hint: document.getElementById("bSub").textContent,
     cardsLeft: document.querySelectorAll("#grid .cardBtn").length,
   }));
   ok("wrong tap never fails the round", /0\/5/.test(t.fed) && t.cardsLeft >= 2 && /Almost/.test(t.hint));
@@ -71,7 +71,7 @@ if (wrongIdx >= 0) {
 // ── every bite VISIBLY grows Echo within the round ──
 const scaleBefore = await page.evaluate(() => parseFloat((document.getElementById("echo").style.transform.match(/scale\(([\d.]+)\)/) || [])[1] || "1"));
 await page.evaluate(() => {
-  const m = document.getElementById("bubble").textContent.match(/Where's the (.+)\?/);
+  const m = document.getElementById("bMain").textContent.match(/Where's the (.+)\?/);
   const hit = [...document.querySelectorAll("#grid .cardBtn")].find((x) => x.querySelector(".w").textContent === m[1]);
   if (hit) hit.click();
 });
@@ -83,7 +83,7 @@ ok("Echo grows with the bite (visible, not just banked)", scaleAfter > scaleBefo
 for (let i = 0; i < 5; i++) {
   await page.waitForTimeout(1100);
   const done = await page.evaluate(() => {
-    const b = document.getElementById("bubble").textContent;
+    const b = document.getElementById("bMain").textContent;
     const m = b.match(/Where's the (.+)\?/);
     if (!m) return false;
     const btns = [...document.querySelectorAll("#grid .cardBtn")];

@@ -21,9 +21,9 @@
     from taps (real actions), never from silence.
   -->
   <style>
-    :root{ --blue:#1cb0f6; --blue-d:#1597d4; --green:#58cc02; --green-d:#46a302; --orange:#ff9600; --orange-d:#e08600; --ink:#4a2c14; --muted:#b08d63; --cream:#fff6e9; }
+    :root{ --blue:#1cb0f6; --blue-d:#1597d4; --green:#58cc02; --green-d:#46a302; --orange:#ff9600; --orange-d:#e08600; --ink:#4a2c14; --muted:#8a6f52; --cream:#fff6e9; }
     *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;font-family:"Nunito",sans-serif;}
-    html,body{min-height:100%;background:linear-gradient(180deg,#fff6e9 0%,#ffeccb 40%,#c9efb2 100%);color:var(--ink);}
+    html,body{min-height:100%;background:linear-gradient(180deg,#fff6e9 0%,#ffeccb 30%,#cef0b8 56%,#a9e18f 100%);color:var(--ink);}
     #app{max-width:560px;margin:0 auto;min-height:100dvh;display:flex;flex-direction:column;padding:calc(12px + env(safe-area-inset-top)) 14px calc(18px + env(safe-area-inset-bottom));}
     /* HUD (shared kit) */
     #top{display:flex;align-items:center;gap:9px;}
@@ -32,10 +32,20 @@
     #spacer{flex:1;}
     /* Echo + bubble */
     #stage{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;min-height:186px;position:relative;padding-top:8px;}
-    #bubble{background:#fff;border-radius:18px;padding:11px 16px;font-family:"Baloo 2";font-weight:800;font-size:18px;box-shadow:0 6px 16px rgba(74,44,20,.12);position:relative;max-width:320px;text-align:center;line-height:1.3;}
+    #bubble{background:#fff;border-radius:18px;padding:10px 18px;font-family:"Baloo 2";font-weight:800;box-shadow:0 6px 16px rgba(74,44,20,.12);position:relative;max-width:320px;text-align:center;line-height:1.25;}
     #bubble:after{content:"";position:absolute;left:50%;bottom:-8px;transform:translateX(-50%) rotate(45deg);width:16px;height:16px;background:#fff;border-radius:3px;}
-    #bubble b{color:var(--orange-d);}
-    #echo{width:150px;height:150px;object-fit:contain;margin-top:12px;transition:transform .35s cubic-bezier(.3,1.5,.5,1);transform-origin:bottom center;filter:drop-shadow(0 10px 14px rgba(120,70,10,.18));}
+    #bMain{font-size:16px;color:var(--ink);}
+    #bMain b{color:#ef6f23;font-size:clamp(26px,8vw,32px);padding-left:2px;}
+    #bSub{font-family:Nunito,sans-serif;font-weight:800;font-size:12.5px;color:#8a6f52;min-height:16px;margin-top:1px;}
+    #echoSpot{position:relative;display:flex;flex-direction:column;align-items:center;margin-top:12px;}
+    #mound{position:absolute;bottom:-4px;left:50%;transform:translateX(-50%);width:210px;height:52px;border-radius:50%;background:#8fdc7a;box-shadow:inset 0 -6px 0 rgba(90,150,60,.4);}
+    #echo{position:relative;z-index:1;width:150px;height:150px;object-fit:contain;transition:transform .35s cubic-bezier(.3,1.5,.5,1);transform-origin:bottom center;filter:drop-shadow(0 10px 14px rgba(120,70,10,.18));}
+    /* the plate IS the counter (D5): a white picnic plate with five wells —
+       each right answer lands that word's picture in the next well */
+    #plate{position:relative;z-index:2;width:min(60vw,230px);height:52px;margin-top:-10px;background:#fff;border-radius:50%;box-shadow:0 6px 14px rgba(90,120,50,.25),inset 0 -4px 0 #f0e6d6;display:flex;align-items:center;justify-content:space-evenly;padding:0 14px;}
+    #plate .well{width:28px;height:28px;border-radius:50%;background:#f6ead6;box-shadow:inset 0 2.5px 4px rgba(120,80,20,.22);display:flex;align-items:center;justify-content:center;overflow:hidden;}
+    #plate .well .fd{animation:popIn .4s cubic-bezier(.2,1.5,.4,1) both;}
+    @keyframes popIn{0%{transform:scale(.2);opacity:0}100%{transform:scale(1);opacity:1}}
     #echo.munch{animation:munch .5s ease;}
     @keyframes munch{0%{transform:scale(var(--sc,1))}35%{transform:scale(calc(var(--sc,1)*1.12)) rotate(-3deg)}70%{transform:scale(calc(var(--sc,1)*.96))}100%{transform:scale(var(--sc,1))}}
     #heard{position:absolute;top:2px;right:6px;background:#ffd21c;color:#5c4500;font-family:"Baloo 2";font-weight:800;font-size:12.5px;padding:7px 12px;border-radius:99px;opacity:0;transform:scale(.6);transition:all .25s ease;pointer-events:none;box-shadow:0 3px 0 rgba(160,110,0,.35);}
@@ -45,7 +55,8 @@
     .cardBtn{border:none;background:#fff;border-radius:22px;padding:16px 8px 12px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;box-shadow:0 6px 0 rgba(160,80,20,.22);transition:transform .08s;min-height:118px;justify-content:center;}
     .cardBtn:active{transform:translateY(3px);box-shadow:0 3px 0 rgba(160,80,20,.22);}
     .cardBtn .e{font-size:52px;line-height:1;}
-    .cardBtn .w{font-family:"Baloo 2";font-weight:800;font-size:15.5px;color:var(--muted);}
+    .cardBtn .e{width:74px;height:74px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle,rgba(255,210,28,.2),rgba(255,210,28,.03) 75%);}
+    .cardBtn .w{font-family:"Baloo 2";font-weight:800;font-size:15.5px;color:var(--ink);}
     .cardBtn.right{animation:flyIn .55s ease both;}
     @keyframes flyIn{0%{transform:scale(1)}40%{transform:scale(1.15)}100%{transform:scale(.1) translateY(-160px);opacity:0;}}
     .cardBtn.wrong{animation:wob .4s ease;}
@@ -84,33 +95,36 @@
   <div id="app">
     <div id="top">
       <button id="close" aria-label="Back">✕</button>
-      <span class="hudpill">🦜 Feed Echo</span>
+      <span class="hudpill" id="ttl">Feed Echo</span>
       <span id="spacer"></span>
-      <span class="hudpill" id="fedPill">🍎 0/5</span>
+      <span class="hudpill" id="starPill" title="Echo heard you"><svg viewBox="0 0 24 24" style="width:16px;height:16px"><path d="M12 2l2.9 6.2 6.6.8-4.9 4.6 1.3 6.6L12 16.9 6.1 20.2l1.3-6.6L2.5 9l6.6-.8Z" fill="#ffd21c" stroke="#f0a800" stroke-width="1.2"/></svg> <span id="starN">0</span></span>
     </div>
 
     <div id="stage">
-      <span id="heard">Echo heard you! ⭐</span>
-      <div id="bubble">Ready?</div>
-      <img id="echo" src="/coach/echo/echo-listening.svg" alt="Echo"
-           onerror="this.onerror=null;this.src='/coach/echo/echo-idle.svg';" />
+      <span id="heard">Echo heard you! <svg viewBox="0 0 24 24" style="width:14px;height:14px;vertical-align:-2px"><path d="M12 2l2.9 6.2 6.6.8-4.9 4.6 1.3 6.6L12 16.9 6.1 20.2l1.3-6.6L2.5 9l6.6-.8Z" fill="#f0a800"/></svg></span>
+      <div id="bubble"><div id="bMain">Ready?</div><div id="bSub"></div></div>
+      <div id="echoSpot">
+        <div id="mound"></div>
+        <img id="echo" src="/coach/echo/echo-listening.svg" alt="Echo"
+             onerror="this.onerror=null;this.src='/coach/echo/echo-idle.svg';" />
+        <div id="plate" data-fed="0/5"><span class="well"></span><span class="well"></span><span class="well"></span><span class="well"></span><span class="well"></span></div>
+      </div>
     </div>
 
     <div id="grid"></div>
-    <div id="hint"></div>
   </div>
 
   <div class="ovl" id="endOvl">
     <div class="ovlCard">
-      <div class="big endStar">🍎</div>
+      <div class="big endStar"><svg viewBox="0 0 90 44" style="width:84px;height:40px"><ellipse cx="45" cy="22" rx="43" ry="20" fill="#fff"/><ellipse cx="45" cy="24" rx="43" ry="18" fill="none" stroke="#f0e6d6" stroke-width="3"/><circle cx="26" cy="20" r="8" fill="#ff5c5c"/><circle cx="45" cy="18" r="8" fill="#ffb100"/><circle cx="64" cy="20" r="8" fill="#a86ee3"/><circle cx="23" cy="17" r="2" fill="#fff" opacity=".8"/></svg></div>
       <h2 id="endTitle">Yum! You fed Echo!</h2>
       <p id="endSub"></p>
       <div class="echoWin" id="concert">
         <img src="/coach/echo/echo-celebrate.svg" alt="" />
-        <span class="uke" aria-hidden>🪕</span>
-        <span class="note" style="left:22%;animation-delay:0s;">🎵</span>
-        <span class="note" style="left:70%;animation-delay:.5s;">🎶</span>
-        <span class="note" style="left:44%;animation-delay:1s;">🎵</span>
+        <span class="uke" aria-hidden><svg viewBox="0 0 64 64" style="width:44px;height:44px"><ellipse cx="24" cy="42" rx="16" ry="14" fill="#e09a5a"/><circle cx="24" cy="42" r="5.5" fill="#7a4a22"/><rect x="34" y="10" width="7" height="26" rx="3" transform="rotate(35 37 23)" fill="#8a5a30"/><rect x="44" y="4" width="9" height="8" rx="2" transform="rotate(35 48 8)" fill="#6f4522"/><path d="M14 36l20 12M13 40l20 12M12 44l19 11" stroke="#fff" stroke-width="1.1" opacity=".85"/><circle cx="17" cy="33" r="2" fill="#fff" opacity=".75"/></svg></span>
+        <span class="note" style="left:22%;animation-delay:0s;"><svg viewBox="0 0 64 64" style="width:20px;height:20px"><ellipse cx="24" cy="46" rx="9" ry="7" fill="#ffd21c" transform="rotate(-20 24 46)"/><rect x="30" y="14" width="4.5" height="32" rx="2" fill="#ffd21c"/><path d="M34.5 14c8 2 12 7 10 14-1-4-5-7-10-8Z" fill="#f0a800"/></svg></span>
+        <span class="note" style="left:70%;animation-delay:.5s;"><svg viewBox="0 0 64 64" style="width:20px;height:20px"><ellipse cx="24" cy="46" rx="9" ry="7" fill="#fff" transform="rotate(-20 24 46)"/><rect x="30" y="14" width="4.5" height="32" rx="2" fill="#fff"/><path d="M34.5 14c8 2 12 7 10 14-1-4-5-7-10-8Z" fill="#fff" opacity=".85"/></svg></span>
+        <span class="note" style="left:44%;animation-delay:1s;"><svg viewBox="0 0 64 64" style="width:18px;height:18px"><ellipse cx="24" cy="46" rx="9" ry="7" fill="#ffd21c" transform="rotate(-20 24 46)"/><rect x="30" y="14" width="4.5" height="32" rx="2" fill="#ffd21c"/><path d="M34.5 14c8 2 12 7 10 14-1-4-5-7-10-8Z" fill="#f0a800"/></svg></span>
       </div>
       <button class="btn" id="again">Play again</button>
       <button class="ghost" id="goHome">Back home</button>
@@ -139,6 +153,17 @@
     // ── words: target from the CURRENT rotation sound (coherent with the
     // plan); distractors from other sounds with different first letters ──
     var SOUND=(S&&S.rotSound)?S.rotSound():"R";
+    try{ $("ttl").textContent="Feed Echo · "+((S&&S.soundLabel)?S.soundLabel(SOUND):SOUND)+" sound"; }catch(e){}
+    function paintPlate(){ try{
+      var wells=$("plate").querySelectorAll(".well");
+      $("plate").dataset.fed=fed+"/"+NEED;
+    }catch(e){} }
+    function landOnPlate(w){ try{
+      var wells=$("plate").querySelectorAll(".well");
+      var slot=wells[Math.min(fed-1,wells.length-1)];
+      if(slot) slot.innerHTML='<span class="fd">'+((S&&S.pic)?S.pic(w.w,w.e,20):w.e)+'</span>';
+      $("plate").dataset.fed=fed+"/"+NEED;
+    }catch(e){} }
     function pool(sound){ var ws=(S&&S.wordsFor)?(S.wordsFor(sound,"i")||[]):[]; return ws.filter(function(w){ return w&&w.w&&w.e; }).sort(function(a,b){ return a.w.length-b.w.length; }).slice(0,8); }
     var TARGETS=pool(SOUND);
     if(!TARGETS.length){ SOUND="R"; TARGETS=pool("R"); }
@@ -193,7 +218,7 @@
             var rms=Math.sqrt(sum/td.length),now=performance.now();
             if(now-t0<250){ calSum+=rms; calN++; requestAnimationFrame(tick); return; }
             if(!thr) thr=Math.max(0.035,(calSum/Math.max(1,calN))*3.0);
-            if(rms>thr){ voiced++; if(voiced>=4&&!heardThisTurn&&turnLive){ heardThisTurn=true; stars++; $("heard").classList.add("show"); setTimeout(function(){ $("heard").classList.remove("show"); },1400); sfx("tap"); } }
+            if(rms>thr){ voiced++; if(voiced>=4&&!heardThisTurn&&turnLive){ heardThisTurn=true; stars++; try{ $("starN").textContent=stars; }catch(e){} $("heard").classList.add("show"); setTimeout(function(){ $("heard").classList.remove("show"); },1400); sfx("tap"); } }
             else voiced=0;
             requestAnimationFrame(tick);
           })();
@@ -213,12 +238,12 @@
       var opts=[target].concat(shuffle(OTHERS.slice()).slice(0,3));
       if(opts.length<2){ opts=[target].concat(TARGETS.filter(function(w){return w.w!==target.w;}).slice(0,3)); }
       shuffle(opts);
-      $("bubble").innerHTML="Where's the <b>"+target.w+"</b>?";
-      $("hint").textContent="Say it out loud, then tap it!";
+      $("bMain").innerHTML="Where's the <b>"+target.w+"</b>?";
+      $("bSub").textContent="Say it out loud, then tap it!";
       var g=$("grid"); g.innerHTML="";
       opts.forEach(function(w){
         var b=document.createElement("button"); b.className="cardBtn"; b.type="button";
-        b.innerHTML='<span class="e">'+w.e+'</span><span class="w">'+w.w+"</span>";
+        b.innerHTML='<span class="e">'+((S&&S.pic)?S.pic(w.w,w.e,54):w.e)+'</span><span class="w">'+w.w+"</span>";
         b.onclick=function(){ pick(w,b); };
         g.appendChild(b);
       });
@@ -229,7 +254,7 @@
       if(!turnLive)return;
       if(w.w!==target.w){
         btn.classList.remove("wrong"); void btn.offsetWidth; btn.classList.add("wrong");
-        $("hint").textContent="Almost! Where's the "+target.w+"?";
+        $("bSub").textContent="Almost! Where's the "+target.w+"?";
         sfx("tap");
         return; // no fail state, no strikes — littles just try again
       }
@@ -239,9 +264,10 @@
       btn.classList.add("right"); sfx("correct");
       var e=$("echo"); e.classList.remove("munch"); void e.offsetWidth; e.classList.add("munch");
       paintScale();
-      $("fedPill").textContent="🍎 "+fed+"/"+NEED;
-      $("bubble").innerHTML=(fed>=NEED)?"YUM! All full!":["Yum!","Mmm, "+target.w+"!","So tasty!","More please!"][fed%4];
-      if((feedState().fed||0)%10===0){ toast("Echo grew bigger! 🦜✨"); }
+      landOnPlate(w);
+      $("bMain").innerHTML=(fed>=NEED)?"YUM! All full!":["Yum!","Mmm, "+target.w+"!","So tasty!","More please!"][fed%4];
+      $("bSub").textContent="";
+      if((feedState().fed||0)%10===0){ toast("Echo grew bigger!"); }
       if(fed===3) say("Mmm! "+target.w+"! More please!");
       if(fed>=NEED){ setTimeout(finish,900); } else { setTimeout(nextTurn,900); }
     }
@@ -293,7 +319,7 @@
       var stk=null; try{ stk=(S&&S.awardNextSticker)?S.awardNextSticker():null; }catch(e){}
       try{ if(S&&S.confetti)S.confetti({count:140}); }catch(e){}
       $("endTitle").textContent=ringDone?"All of today's practice — done!":"Yum! Echo's full — concert time!";
-      $("endSub").textContent=(stk?("You won the "+stk.name+" sticker! "):"")+(stars>0?("Echo heard you "+stars+" time"+(stars===1?"":"s")+"! ⭐ "):"")+(ringDone?"Come back tomorrow — Echo will have a new adventure ready!":"Echo's growing bigger every day you play!");
+      $("endSub").textContent=(stk?("You won the "+stk.name+" sticker! "):"")+(stars>0?("Echo heard you "+stars+" time"+(stars===1?"":"s")+"! "):"")+(ringDone?"Come back tomorrow — Echo will have a new adventure ready!":"Echo's growing bigger every day you play!");
       $("endOvl").classList.add("show");
       sfx("complete");
       // the payoff: Echo's ukulele concert. On a goal-done day the tomorrow
@@ -302,7 +328,9 @@
       else { playUke(); }
     }
 
-    $("again").onclick=function(){ stopUke(); fed=0; stars=0; roundBump=0; paintScale(); $("fedPill").textContent="🍎 0/5"; $("endOvl").classList.remove("show"); sfx("tap"); nextTurn(); };
+    $("again").onclick=function(){ stopUke(); fed=0; stars=0; roundBump=0; paintScale();
+      try{ $("plate").querySelectorAll(".well").forEach(function(w){ w.innerHTML=""; }); $("plate").dataset.fed="0/5"; $("starN").textContent="0"; }catch(e){}
+      $("endOvl").classList.remove("show"); sfx("tap"); nextTurn(); };
     $("goHome").onclick=function(){ stopUke(); location.href="/today.html"; };
     $("close").onclick=function(){ stopUke(); location.href="/today.html"; };
 
