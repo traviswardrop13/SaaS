@@ -108,6 +108,12 @@
       <div class="qh">Who's practicing today?</div>
       <input id="obName" type="text" placeholder="First name" autocomplete="off" />
       <p class="muted" style="font-size:13px;margin-top:10px;">Echo cheers them on by name — and the progress report uses it too.</p>
+      <p class="muted" style="font-size:13px;margin-top:16px;margin-bottom:2px;"><b style="color:var(--ink);">How old are they?</b> Little ones get simpler tap-and-say games.</p>
+      <div class="schips" id="obAge">
+        <div class="sound" data-age="4">3–4</div>
+        <div class="sound" data-age="6">5–6</div>
+        <div class="sound" data-age="8">7+</div>
+      </div>
     </div>
 
     <!-- buddy -->
@@ -324,6 +330,15 @@
 
     // name prefill
     var nameEl=document.getElementById("obName"); nameEl.value=draft.childName;
+    // age chips: 3-4 → the littles path (Feed Echo everywhere); 5+ → the games
+    draft.childAge = draft.childAge || (p.childAge ? String(p.childAge) : "");
+    (function(){
+      var host=document.getElementById("obAge"); if(!host) return;
+      host.querySelectorAll(".sound").forEach(function(ch){
+        if(draft.childAge && ch.dataset.age===String(draft.childAge)) ch.classList.add("on");
+        ch.onclick=function(){ Sona.sfx.tap(); draft.childAge=ch.dataset.age; host.querySelectorAll(".sound").forEach(function(n){n.classList.remove("on");}); ch.classList.add("on"); };
+      });
+    })();
     var emailEl=document.getElementById("obEmail"); emailEl.value=draft.email;
 
     function render(){
@@ -389,6 +404,7 @@
         earlyAdopter: !!_slp,
         slpCode: _slp,
         childName: draft.childName,
+        childAge: draft.childAge || "",
         character: draft.character,
         focusSounds: draft.focusSounds,
         interests: draft.interests,
@@ -425,10 +441,16 @@
       // here); closing it still lands on today with the card-free usage week.
       var goHome=function(){
         try{ if(window.SonaAnalytics)SonaAnalytics.track("onboarding completed"); }catch(e){}
-        // subscribed families (web purchase carried in by code, or restored)
-        // never see a paywall — straight to the kid's home screen
-        var native=false; try{ native=!!(Sona.isNativeApp&&Sona.isNativeApp()&&Sona.iapAvailable&&Sona.iapAvailable()&&!(Sona.isSubscribed&&Sona.isSubscribed())); }catch(e){}
-        location.href = native ? "/subscribe.html?welcome=1" : "/today.html";
+        // RESERVE: Sona is free during beta — the plan screen stays built but
+        // off. Flip PAYWALL_ON to true to meet unsubscribed families here
+        // (where intent is hottest) again; subscribed/pilot/early-adopter
+        // families skip it either way.
+        var PAYWALL_ON=false;
+        var pay=false; try{ pay=PAYWALL_ON&&!(Sona.isSubscribed&&Sona.isSubscribed())&&!(Sona.isPilot&&Sona.isPilot())&&!(Sona.getProfile&&Sona.getProfile().earlyAdopter); }catch(e){}
+        // the adult literally just finished the parent flow — grant the
+        // grown-ups gate pass so the plan screen opens instead of bouncing
+        if(pay){ try{ sessionStorage.setItem("sona.gate.v1",String(Date.now())); }catch(e){} }
+        location.href = pay ? "/subscribe.html?welcome=1" : "/today.html";
       };
       var redirectT=setTimeout(goHome, 2400);
       // stash the save for the added-to-home-screen app (iOS separates its

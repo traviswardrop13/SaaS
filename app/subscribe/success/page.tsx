@@ -90,10 +90,10 @@ export default function SubscribeSuccess() {
     // any fetch, so a slow Stripe read never costs the ad platforms the event.
     try {
       const w = window as unknown as { sonaTrack?: (e: string, p?: Record<string, unknown>) => void };
-      const value = p === "annual" ? 79.99 : p === "monthly" ? 12.99 : 39.99;
+      const value = p === "annual" ? 79.99 : p === "monthly" ? 12.99 : p === "lifetime" ? 149.99 : 39.99;
       // Trialed annuals register as StartTrial (no charge today); paid-now plans as Purchase.
       const ev = p === "annual" ? "StartTrial" : "Purchase";
-      if (typeof w.sonaTrack === "function") w.sonaTrack(ev, { value, currency: "USD", predicted_ltv: 79.99 });
+      if (typeof w.sonaTrack === "function") w.sonaTrack(ev, { value, currency: "USD", predicted_ltv: p === "lifetime" ? 149.99 : 79.99 });
       // product analytics (whitelisted props; Stripe has already confirmed)
       const wa = window as unknown as { SonaAnalytics?: { track: (e: string, p?: Record<string, unknown>) => void } };
       if (wa.SonaAnalytics) wa.SonaAnalytics.track(p === "annual" ? "trial started" : "subscription started", { source: "stripe", plan: p });

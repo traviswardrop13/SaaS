@@ -125,7 +125,8 @@
 
     // ---- the runner: 3 lanes, dodge rocks, grab coins ----
     var boost={on:false,cool:false}; // declared with game state — draw() reads it from frame 1
-    var LANES=3, playing=true, dist=0, coins=0, shields=1, speed=H*0.004, lane=1, laneX=1;
+    // founder-tuned: start noticeably SLOWER; the ramp does the work
+    var LANES=3, playing=true, dist=0, coins=0, shields=1, speed=H*0.0029, lane=1, laneX=1;
     var BESTK="sona.best.run", BEST=0; try{ BEST=parseInt(localStorage.getItem(BESTK)||"0",10)||0; }catch(e){}
     // ── lives: a crash → say your sound for a new life (3 per run) ──
     var REV=3, reviveWait=false, MIC=false;
@@ -195,7 +196,7 @@
     function flash(t){ var f=$("flash"); f.textContent=t; f.style.opacity=1; f.style.transform="scale(1.15)"; setTimeout(function(){f.style.opacity=0;f.style.transform="scale(1)";},600); }
 
     var distIv=setInterval(function(){ if(!playing||falling.on)return; dist+=(boost.on?2:1); $("score").textContent=dist+"m"; },100);
-    var rampIv=setInterval(function(){ if(playing) speed*=1.06; },8000);
+    var rampIv=setInterval(function(){ if(playing&&speed<H*0.0056) speed*=1.05; },10000); // gentle, hard-capped
     // the round ends on the CLOCK, never on a crash — crashing just costs time
     
 
