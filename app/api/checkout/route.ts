@@ -14,14 +14,16 @@ import Stripe from "stripe";
  */
 export const runtime = "nodejs";
 
-// Plans: "annual" ($69.99/yr, 7-day trial — the ad-funnel default), "monthly"
-// ($12.99/mo decoy), and "founding" ($39.99/yr, no trial — the SLP/founding
-// locked rate, kept as the default for legacy callers).
+// Plans: "annual" ($79.99/yr, 7-day trial — the ad-funnel default), "monthly"
+// ($12.99/mo decoy), "founding" ($39.99/yr, no trial — the SLP/founding locked
+// rate, kept as the default for legacy callers), and "lifetime" ($149.99 ONCE,
+// mode:payment — the beta LTV booster; retired when beta pricing ends).
 const PLANS = {
   annual: { cents: 7999, interval: "year" as const, trialDays: 7, name: "Sona — Yearly (Beta Price)", desc: "At-home speech-practice games, built with a licensed SLP. $6.67/mo billed yearly — beta price, $119.99 after launch. 7 days free — cancel anytime." },
   monthly: { cents: 1299, interval: "month" as const, trialDays: 0, name: "Sona — Monthly", desc: "At-home speech-practice games, built with a licensed SLP. Cancel anytime." },
   founding: { cents: 3999, interval: "year" as const, trialDays: 0, name: "Sona — Founding Member (Yearly)", desc: "Sona founding membership — your child's at-home speech-practice games, built with a licensed SLP. Locks in the founding price for life." },
-};
+  lifetime: { cents: 14999, interval: null, trialDays: 0, name: "Sona — Lifetime (Founding Families)", desc: "One payment, Sona forever — every game, every future sound and update. A founding-families offer while Sona is in beta." },
+} as const;
 
 export async function POST(req: NextRequest) {
   const key = process.env.STRIPE_SECRET_KEY;
@@ -38,7 +40,7 @@ export async function POST(req: NextRequest) {
   try {
     const b = await req.json();
     email = typeof b?.email === "string" ? b.email.trim() : undefined;
-    if (b?.plan === "annual" || b?.plan === "monthly" || b?.plan === "founding") plan = b.plan;
+    if (b?.plan === "annual" || b?.plan === "monthly" || b?.plan === "founding" || b?.plan === "lifetime") plan = b.plan;
   } catch {
     // no body — fine; Checkout will collect the email
   }
@@ -56,6 +58,7 @@ export async function POST(req: NextRequest) {
     annual: process.env.STRIPE_PRICE_ID_ANNUAL79,
     monthly: process.env.STRIPE_PRICE_ID_MONTHLY,
     founding: process.env.STRIPE_PRICE_ID_ANNUAL,
+    lifetime: process.env.STRIPE_PRICE_ID_LIFETIME,
   }[plan];
   const line_items: Stripe.Checkout.SessionCreateParams.LineItem[] = priceId
     ? [{ price: priceId, quantity: 1 }]
@@ -65,7 +68,8 @@ export async function POST(req: NextRequest) {
           price_data: {
             currency: "usd",
             unit_amount: P.cents,
-            recurring: { interval: P.interval },
+            // lifetime is a ONE-TIME payment — no recurring block
+            ...(P.interval ? { recurring: { interval: P.interval } } : {}),
             product_data: { name: P.name, description: P.desc },
           },
         },
@@ -73,7 +77,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const session = await stripe.checkout.sessions.create({
-      mode: "subscription",
+      mode: P.interval ? "subscription" : "payment",
       line_items,
       ...(P.trialDays > 0 ? { subscription_data: { trial_period_days: P.trialDays } } : {}),
       customer_email: email,

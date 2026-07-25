@@ -426,9 +426,14 @@
       var goHome=function(){
         try{ if(window.SonaAnalytics)SonaAnalytics.track("onboarding completed"); }catch(e){}
         // subscribed families (web purchase carried in by code, or restored)
-        // never see a paywall — straight to the kid's home screen
-        var native=false; try{ native=!!(Sona.isNativeApp&&Sona.isNativeApp()&&Sona.iapAvailable&&Sona.iapAvailable()&&!(Sona.isSubscribed&&Sona.isSubscribed())); }catch(e){}
-        location.href = native ? "/subscribe.html?welcome=1" : "/today.html";
+        // never see a paywall — straight to the kid's home screen. Everyone
+        // else meets the plan screen HERE, where intent is hottest — web and
+        // native alike (native shows Apple's card, web the Stripe picker).
+        var pay=false; try{ pay=!(Sona.isSubscribed&&Sona.isSubscribed())&&!(Sona.isPilot&&Sona.isPilot())&&!(Sona.getProfile&&Sona.getProfile().earlyAdopter); }catch(e){}
+        // the adult literally just finished the parent flow — grant the
+        // grown-ups gate pass so the plan screen opens instead of bouncing
+        if(pay){ try{ sessionStorage.setItem("sona.gate.v1",String(Date.now())); }catch(e){} }
+        location.href = pay ? "/subscribe.html?welcome=1" : "/today.html";
       };
       var redirectT=setTimeout(goHome, 2400);
       // stash the save for the added-to-home-screen app (iOS separates its

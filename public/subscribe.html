@@ -155,6 +155,13 @@
           · <a href="/privacy" style="color:#8a6f52;text-decoration:underline;">Privacy</a>
         </span>
       </div>
+      <div class="plan" id="planLife" style="border-color:var(--gold);box-shadow:0 6px 18px rgba(255,210,28,.2);">
+        <span class="tag" style="background:linear-gradient(180deg,#ffe063,#ffd21c);color:#7a5200;">FOUNDING · LIFETIME</span>
+        <b>Lifetime — $149.99 once</b>
+        <span class="sub">One payment, Sona forever — every game, every future sound and update. A founding-families offer while we're in beta; it goes away at launch.</span>
+        <button class="btn go" id="buyLife" style="background:linear-gradient(180deg,#ffe063,#ffd21c);color:#7a5200;box-shadow:0 4px 0 #f0a800;">Get lifetime access</button>
+        <span class="reassure">Charged today — <b>$149.99</b>, once. No renewals, ever.</span>
+      </div>
       <div class="plan" id="planMonthly">
         <b>Monthly — $12.99/mo</b>
         <span class="sub">Cancel anytime.</span>
@@ -293,6 +300,7 @@
         if (Sona.isNativeApp && Sona.isNativeApp()) return; // shell handled above
         if (!subbed && !founding) {
           document.getElementById("pickCard").style.display = "block";
+          try{ if(/[?&]welcome=1/.test(location.search)) document.querySelector("#pickCard h2").textContent = "One last thing — pick your plan"; }catch(e){}
           var fc = document.getElementById("foundingCard"); if (fc) fc.style.display = "none";
           // the header line must match the picker, not the founding story
           document.getElementById("planLine").innerHTML = "Today: <b>7 days free</b> — pick a plan below to start.";
@@ -321,10 +329,11 @@
         if (window.SonaAnalytics && document.getElementById("pickCard").style.display !== "none" && !subbed)
           SonaAnalytics.track("paywall viewed", { surface: "web" });
       } catch (e) {}
-      var a = document.getElementById("buyAnnual"), m = document.getElementById("buyMonthly"), f = document.getElementById("buyFounding");
+      var a = document.getElementById("buyAnnual"), m = document.getElementById("buyMonthly"), f = document.getElementById("buyFounding"), lf = document.getElementById("buyLife");
       if (a) a.onclick = function () { buy("annual", 79.99); };
       if (m) m.onclick = function () { buy("monthly", 12.99); };
       if (f) f.onclick = function () { buy("founding", 39.99); };
+      if (lf) lf.onclick = function () { buy("lifetime", 149.99); };
       // The exact-date pill (Nibble/Headway pattern): a trial started today ends
       // on a knowable date — naming the date beats "after 7 days" for trust, and
       // the success page repeats the same date off the real subscription.
