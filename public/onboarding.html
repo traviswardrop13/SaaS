@@ -132,8 +132,8 @@
 
     <!-- sounds -->
     <div class="step" data-step="sounds">
-      <div class="qh">We're starting with the R sound</div>
-      <p class="muted">Sona goes deep on R first — the hardest sound to learn. Every other sound is on the way, and you'll get them all as they ship.</p>
+      <div class="qh">Which sounds are we practicing?</div>
+      <p class="muted">Pick every sound your child is working on — their SLP's targets go right here. You can change these anytime in Settings.</p>
       <div class="schips" id="obSounds"></div>
     </div>
 
@@ -198,7 +198,9 @@
     var draft = {
       childName: p.childName || "",
       character: (window.Sona && Sona.characterById && Sona.characterById(p.character)) ? p.character : "fox", // Pip starts selected — legacy/unknown ids fall back too
-      focusSounds: (p.focusSounds && p.focusSounds.length) ? p.focusSounds.slice() : ["R"],
+      // only a profile that finished onboarding carries a real sound CHOICE —
+      // a fresh one holds the legacy default list, so new families start at R
+      focusSounds: (p.onboarded && p.focusSounds && p.focusSounds.length) ? p.focusSounds.slice() : ["R"],
       slpEvaluated: p.slpEvaluated || "",
       goals: p.goals || "",
       email: p.email || "",
@@ -297,18 +299,15 @@
       ig.appendChild(el);
     });
 
-    // sound chips
-    // R-era: Sona goes deep on one sound at a time — new families start on R;
-    // SLP-referred families keep the full picker (clinics target any sound).
+    // sound chips — every sound is open (SLPs put Sona in front of kids
+    // working letters beyond R); R stays the default for families who
+    // breeze past this step.
     var selSounds = new Set(draft.focusSounds);
-    var slpFull=false; try{ slpFull=!!(Sona.slpCode&&Sona.slpCode()); }catch(e){}
-    if(!slpFull){ selSounds=new Set(["R"]); draft.focusSounds=["R"]; }
     var sc = document.getElementById("obSounds");
     Sona.ALL_SOUNDS.forEach(function(s){
-      var open = slpFull || s==="R";
-      var b=document.createElement("div"); b.className="sound"+(selSounds.has(s)?" on":"")+(open?"":" soon");
-      b.innerHTML=s+(open?"":'<span style="display:block;font-size:9px;font-weight:800;color:var(--label);letter-spacing:.05em;">SOON</span>');
-      if(open) b.onclick=function(){ Sona.sfx.tap(); if(selSounds.has(s)){ if(selSounds.size>1){ selSounds.delete(s); b.classList.remove("on"); } } else { selSounds.add(s); b.classList.add("on"); } };
+      var b=document.createElement("div"); b.className="sound"+(selSounds.has(s)?" on":"");
+      b.innerHTML=(Sona.soundLabel?Sona.soundLabel(s):s);
+      b.onclick=function(){ Sona.sfx.tap(); if(selSounds.has(s)){ if(selSounds.size>1){ selSounds.delete(s); b.classList.remove("on"); } } else { selSounds.add(s); b.classList.add("on"); } };
       sc.appendChild(b);
     });
 

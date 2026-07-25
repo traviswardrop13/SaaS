@@ -271,10 +271,6 @@
       return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
     });
     var shelf = document.getElementById("shelf");
-    // R-era: Sona goes deep on R first, so non-R books read as "coming soon"
-    // (locked). SLP-referred families keep the full library (clinics target
-    // any sound). New letters unlock their books as they ship.
-    var slpFull = false; try { slpFull = !!(Sona.slpCode && Sona.slpCode()); } catch (e) {}
     // read-through star (D1): a book read to The End pins the gold star to
     // its cover. Local flag by title; Story Time's story.done counts too.
     var LIBKEY = "sona.lib.read.v1";
@@ -285,18 +281,14 @@
       try { var g = JSON.parse(localStorage.getItem("sona.games.v1") || "{}"); return !!(g[st.sound] && g[st.sound].story && g[st.sound].story.done); } catch (e) { return false; }
     }
     STORIES.forEach(function (st) {
-      var locked = !slpFull && st.sound !== "R";
       var b = document.createElement("button");
-      b.className = "bookBtn" + (locked ? " soon" : "");
-      if (locked) b.style.opacity = ".55";
+      b.className = "bookBtn";
       b.innerHTML = '<span class="cvr">' + cover(st, 76) + '</span>'
-        + (!locked && wasRead(st) ? '<span class="doneStar">' + ((window.Sona && Sona.icon) ? Sona.icon("star", 22) : "") + '</span>' : "")
+        + (wasRead(st) ? '<span class="doneStar">' + ((window.Sona && Sona.icon) ? Sona.icon("star", 22) : "") + '</span>' : "")
         + '<span class="rail"></span>'
         + '<span class="bt">' + st.title + '</span>'
-        + '<span class="bs">' + (locked ? 'COMING SOON' : st.pages.length + ' pages') + '</span>';
-      b.onclick = locked
-        ? function () { if (window.Sona) { Sona.sfx.tap(); if (Sona.pop) Sona.pop("New books are on the way!", { color: "#ff8a3d" }); } }
-        : function () { if (window.Sona) Sona.sfx.tap(); openBook(st); };
+        + '<span class="bs">' + st.pages.length + ' pages</span>';
+      b.onclick = function () { if (window.Sona) Sona.sfx.tap(); openBook(st); };
       shelf.appendChild(b);
     });
 
@@ -450,12 +442,9 @@
     /* ---- word box ---- */
     var wbHost = document.getElementById("wbSounds"), grid = document.getElementById("wordgrid");
     var allSounds = Object.keys(Sona.WORDS);
-    // R era (design board §8): the word box shows ONLY the R list — the
-    // sound-chip row is gone entirely, matching the locked non-R books.
-    // SLP-referred families keep the full box (clinics target any sound).
-    var slpBox = false; try { slpBox = !!(Sona.slpCode && Sona.slpCode()); } catch (e) {}
+    // the child's focus sounds lead the chip row; every other sound follows
     var focus = (profile.focusSounds || []).filter(function (s) { return allSounds.indexOf(s) !== -1; });
-    var order = slpBox ? focus.concat(allSounds.filter(function (s) { return focus.indexOf(s) === -1; })) : ["R"];
+    var order = focus.concat(allSounds.filter(function (s) { return focus.indexOf(s) === -1; }));
     var curSound = order[0];
     function paintChips() {
       wbHost.innerHTML = "";
