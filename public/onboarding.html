@@ -441,11 +441,12 @@
       // here); closing it still lands on today with the card-free usage week.
       var goHome=function(){
         try{ if(window.SonaAnalytics)SonaAnalytics.track("onboarding completed"); }catch(e){}
-        // subscribed families (web purchase carried in by code, or restored)
-        // never see a paywall — straight to the kid's home screen. Everyone
-        // else meets the plan screen HERE, where intent is hottest — web and
-        // native alike (native shows Apple's card, web the Stripe picker).
-        var pay=false; try{ pay=!(Sona.isSubscribed&&Sona.isSubscribed())&&!(Sona.isPilot&&Sona.isPilot())&&!(Sona.getProfile&&Sona.getProfile().earlyAdopter); }catch(e){}
+        // RESERVE: Sona is free during beta — the plan screen stays built but
+        // off. Flip PAYWALL_ON to true to meet unsubscribed families here
+        // (where intent is hottest) again; subscribed/pilot/early-adopter
+        // families skip it either way.
+        var PAYWALL_ON=false;
+        var pay=false; try{ pay=PAYWALL_ON&&!(Sona.isSubscribed&&Sona.isSubscribed())&&!(Sona.isPilot&&Sona.isPilot())&&!(Sona.getProfile&&Sona.getProfile().earlyAdopter); }catch(e){}
         // the adult literally just finished the parent flow — grant the
         // grown-ups gate pass so the plan screen opens instead of bouncing
         if(pay){ try{ sessionStorage.setItem("sona.gate.v1",String(Date.now())); }catch(e){} }
