@@ -5,9 +5,9 @@ import { Suspense, useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 
 const FEATURES = [
-  "Founding access to every level as it unlocks",
-  "Founding price — 67% off, locked for life",
-  "Every new feature and update as it ships",
+  "Every game and every level, unlocked",
+  "One payment — no subscription, no renewals",
+  "Every new sound and update as it ships",
   "Your suggestions shape Sona for your child",
   "Priority support",
 ];
@@ -39,7 +39,7 @@ function SubscribeInner() {
       const res = await fetch("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, plan: "annual" }),
+        body: JSON.stringify({ email }),
       });
       const data = await res.json();
       if (data.ok && data.url) {
@@ -71,24 +71,22 @@ function SubscribeInner() {
         <div className="rounded-3xl bg-white p-7 shadow-chunky ring-2 ring-sky-500">
           <div className="flex items-center gap-2">
             <p className="text-sm font-extrabold uppercase tracking-wide text-sky-600">
-              Founding Member
+              Sona Lifetime
             </p>
             <span className="rounded-full bg-amber-400 px-2 py-0.5 text-[11px] font-extrabold uppercase tracking-wide text-amber-900">
-              First 100
+              One-time
             </span>
           </div>
 
           <div className="mt-4 flex flex-wrap items-end gap-2">
-            <span className="mb-2 text-2xl font-bold text-gray-400 line-through">$119.99</span>
-            <span className="font-display text-5xl font-extrabold text-gray-900">$39.99</span>
-            <span className="mb-1.5 font-bold text-gray-500">/yr</span>
-            <span className="mb-2 rounded-full bg-grass-500 px-2.5 py-1 text-xs font-extrabold uppercase tracking-wide text-white shadow-chunky-sm">67% off</span>
+            <span className="font-display text-5xl font-extrabold text-gray-900">$79.99</span>
+            <span className="mb-1.5 font-bold text-gray-500">once</span>
           </div>
           <p className="mt-1 text-sm font-bold text-grass-600">
-            Your founding price — locked in for life
+            One payment — Sona is yours for good
           </p>
           <p className="mt-3 rounded-2xl bg-sky-50 px-4 py-3 text-sm font-semibold text-sky-700">
-            <b>$39.99/yr</b>, billed today. Cancel anytime.
+            <b>$79.99</b>, charged today. No renewals, ever.
           </p>
 
           <ul className="mt-6 space-y-3">
@@ -106,10 +104,10 @@ function SubscribeInner() {
         {/* Checkout */}
         <div className="rounded-3xl bg-white p-7 shadow-chunky">
           <h1 className="font-display text-2xl font-extrabold text-gray-900">
-            Join as a founding member
+            Get lifetime access
           </h1>
           <p className="mt-1 text-gray-600">
-            Enter your email to lock in your founding price.
+            Enter your email and Sona is yours for good.
           </p>
 
           {canceled ? (
@@ -140,11 +138,11 @@ function SubscribeInner() {
             disabled={busy}
             className="mt-5 w-full rounded-2xl bg-grass-500 px-6 py-3.5 font-display font-extrabold uppercase tracking-wide text-white shadow-chunky transition hover:bg-grass-600 active:translate-y-1 active:shadow-chunky-sm disabled:opacity-60"
           >
-            {busy ? "Loading…" : "Become a founding member"}
+            {busy ? "Loading…" : "Get lifetime access"}
           </button>
 
           <p className="mt-3 text-center text-xs text-gray-400">
-            Secure payment by Stripe. We never see your card details. Cancel anytime.
+            Secure payment by Stripe. We never see your card details.
           </p>
         </div>
       </div>

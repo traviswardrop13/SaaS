@@ -298,31 +298,18 @@ await page.goto("http://localhost:8131/subscribe.html"); await page.waitForTimeo
 t = await page.evaluate(() => ({
   pick: document.getElementById("pickCard").style.display,
   founding: document.getElementById("foundingCard").style.display,
-  annual: /79\.99/.test(document.getElementById("planAnnual").textContent) && /119\.99/.test(document.getElementById("planAnnual").textContent),
-  monthly: /12\.99/.test(document.getElementById("planMonthly").textContent),
+  life: document.getElementById("planLife").textContent,
+  cards: document.querySelectorAll("#pickCard .plan").length,
 }));
-ok("trial cohort sees the plan picker ($79.99 beta, anchored $119.99)", t.pick === "block" && t.founding === "none" && t.annual && t.monthly);
-// paywall trust: named-SLP proof strip above the plans + literal first-charge date
-t = await page.evaluate(() => ({
-  proof: (document.querySelector("#pickCard .proof") || {}).textContent || "",
-  math: (document.getElementById("trialMath") || {}).textContent || "",
-}));
-ok("proof strip: named SLP credential above the plans",
-  /Rachel/.test(t.proof) && /speech-language pathologist/.test(t.proof));
-ok("annual card names the literal first-charge date",
-  /first charge/i.test(t.math) && /(January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2}/.test(t.math) && /Cancel anytime/i.test(t.math));
-// founding plan stays hidden without an offer link…
-t = await page.evaluate(() => document.getElementById("planFounding").style.display);
-ok("founding plan hidden for plain trial cohort", t !== "block");
-// …and appears (with the $39.99 lock story) after arriving via ?offer=founding50
-await page.goto("http://localhost:8131/subscribe.html?offer=founding50"); await page.waitForTimeout(700);
-t = await page.evaluate(() => ({
-  shown: document.getElementById("planFounding").style.display,
-  txt: document.getElementById("planFounding").textContent,
-  stored: localStorage.getItem("sona.offer.v1"),
-}));
-ok("offer link reveals the founding card ($39.99, rate-lock, charged today)",
-  t.shown === "block" && /39\.99/.test(t.txt) && /never rises/.test(t.txt) && /Charged today/.test(t.txt) && t.stored === "FOUNDING50");
+ok("unpaid family sees the single lifetime card ($79.99 once)",
+  t.pick === "block" && t.founding === "none" && /79\.99/.test(t.life) && /once/i.test(t.life));
+ok("ONE offer only — no retired annual/monthly/founding tiers", t.cards === 1);
+ok("no subscription or trial language on the web card",
+  !/free week|free trial|\/yr|per year|renews/i.test(t.life) && /No renewals, ever/.test(t.life));
+// paywall trust: named-SLP proof strip above the plan
+t = await page.evaluate(() => (document.querySelector("#pickCard .proof") || {}).textContent || "");
+ok("proof strip: named SLP credential above the plan",
+  /Rachel/.test(t) && /speech-language pathologist/.test(t));
 // ── practice volume: weekly reps + percentile chip (volume only, cohort-gated) ──
 {
   const iso = new Date().toISOString().slice(0, 10);

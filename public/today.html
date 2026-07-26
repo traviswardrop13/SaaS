@@ -641,8 +641,8 @@
       if(!note)return;
       if((S.isSubscribed&&S.isSubscribed())||(S.isPilot&&S.isPilot()))return; if(S.ensureTrial)S.ensureTrial();
       var link=' <a href="/subscribe.html" style="color:var(--orange-d);font-weight:800;">';
-      if(S.trialActive&&S.trialActive()){ var dd=S.trialDaysLeft?S.trialDaysLeft():7; note.innerHTML="Your free trial: "+dd+" day"+(dd===1?"":"s")+" left."+link+"Lock in your founding price →</a>"; note.style.display="block"; }
-      else if(S.trialExpired&&S.trialExpired()){ note.innerHTML="Your free trial has ended."+link+"See membership options →</a>"; note.style.display="block"; }
+      if(S.trialActive&&S.trialActive()){ var dd=S.trialDaysLeft?S.trialDaysLeft():7; note.innerHTML="Your free trial: "+dd+" day"+(dd===1?"":"s")+" left."+link+"Get lifetime access →</a>"; note.style.display="block"; }
+      else if(S.trialExpired&&S.trialExpired()){ note.innerHTML="Your free trial has ended."+link+"Get lifetime access →</a>"; note.style.display="block"; }
     })();
 
     // ── beta pulse: chip-first (a tap beats a blank box — the Mobbin study's

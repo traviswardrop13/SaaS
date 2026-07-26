@@ -43,23 +43,21 @@ export default function TermsPage() {
         qualified professional.
       </Section>
 
-      <Section title="Subscriptions, trials &amp; billing">
-        Sona is an auto-renewable subscription. The <strong>Sona Yearly</strong> plan
-        is <strong>$79.99 per year</strong> (a beta price; $69.99 per year when
-        purchased through Apple), billed once per year, and begins with a{" "}
-        <strong>7-day free trial</strong>. After the trial your payment method is
-        charged the then-current price plus any applicable taxes, and the
-        subscription renews automatically each year until canceled. You are not
-        charged during the free trial if you cancel before it ends.
+      <Section title="Pricing &amp; billing">
+        Sona is a <strong>one-time purchase</strong>, not a subscription.{" "}
+        <strong>Sona Lifetime</strong> is <strong>$79.99 once</strong>, plus any
+        applicable taxes, and unlocks the app for as long as we operate it —
+        including every game and every new sound we ship. There is no trial, no
+        renewal, and nothing to cancel; your payment method is charged a single
+        time at purchase.
       </Section>
 
-      <Section title="Cancellation &amp; refunds">
-        You can cancel anytime and keep access through the end of the current
-        billing period. For purchases made through Apple, manage or cancel in{" "}
-        <strong>Settings &rarr; your Apple ID &rarr; Subscriptions</strong>; auto-renewal
-        must be turned off at least 24 hours before the period ends to avoid the
-        next charge. For purchases made on speaksona.com, cancel from your billing
-        portal or by emailing us. Except where required by law, payments are
+      <Section title="Refunds">
+        Because there is no recurring charge, there is nothing to cancel. For
+        purchases made through Apple, refunds are handled by Apple —{" "}
+        <strong>Settings &rarr; your Apple ID &rarr; Purchase History</strong>, or
+        reportaproblem.apple.com. For purchases made on speaksona.com, email us
+        and a human will sort it out. Except where required by law, payments are
         non-refundable.
       </Section>
 
