@@ -1487,14 +1487,16 @@
   }
 
   // ── Apple in-app purchases (RevenueCat, native shell only) ───────────────
-  // The App Store build sells "Sona Yearly" ($69.99/yr, 7-day free trial)
-  // through Apple's sheet via the @revenuecat/purchases-capacitor plugin —
-  // reached over the same remote-page bridge SonaAudio already uses. Web
-  // visitors never touch this (Stripe stays the web rail). We purchase
-  // DIRECTLY by product id (no offerings dependency) and unlock on the
-  // "full" entitlement. The appl_ key is publishable by design.
+  // The App Store build sells "Sona Lifetime" ($79.99 once, non-consumable —
+  // ONE offer, no subscription, no trial) through Apple's sheet via the
+  // @revenuecat/purchases-capacitor plugin — reached over the same
+  // remote-page bridge SonaAudio already uses. Web visitors never touch this
+  // (Stripe stays the web rail). We purchase DIRECTLY by product id (no
+  // offerings dependency) and unlock on the "full" entitlement. The appl_
+  // key is publishable by design.
   const IAP_KEY = "appl_nONRfALUCMiZczeCggXKEusmVtl";
-  const IAP_PRODUCT = "com.speaksona.app.annual";
+  const IAP_PRODUCT = "com.speaksona.app.lifetime";
+  const IAP_TYPE = "inapp"; // non-consumable — never "subs"
   const IAP_ENTITLEMENT = "full";
   function iapPlugin() {
     try { const C = global.Capacitor; return (C && C.isNativePlatform && C.isNativePlatform() && C.Plugins && C.Plugins.Purchases) ? C.Plugins.Purchases : null; } catch (e) { return null; }
@@ -1513,7 +1515,7 @@
   // fetch the live product (price string comes from the App Store, locale-correct)
   function iapProduct() {
     return iapConfigure().then((P) =>
-      Promise.resolve(P.getProducts({ productIdentifiers: [IAP_PRODUCT], type: "subs" }))
+      Promise.resolve(P.getProducts({ productIdentifiers: [IAP_PRODUCT], type: IAP_TYPE }))
         .catch(() => P.getProducts({ productIdentifiers: [IAP_PRODUCT] }))
         .then((r) => (r && r.products && r.products[0]) || null)
     );
@@ -1524,7 +1526,7 @@
       iapProduct().then((product) => {
         const attempts = [];
         if (product && P.purchaseStoreProduct) attempts.push(() => P.purchaseStoreProduct({ product }));
-        if (P.purchaseProduct) attempts.push(() => P.purchaseProduct({ productIdentifier: IAP_PRODUCT, type: "subs" }));
+        if (P.purchaseProduct) attempts.push(() => P.purchaseProduct({ productIdentifier: IAP_PRODUCT, type: IAP_TYPE }));
         let p = Promise.reject(new Error("no-purchase-api"));
         attempts.forEach((fn) => { p = p.catch(fn); });
         return p;

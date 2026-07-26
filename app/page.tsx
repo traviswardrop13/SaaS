@@ -3,7 +3,7 @@ import type { CSSProperties } from "react";
 /**
  * Sona — R-sound marketing landing page (web-first funnel).
  *
- * One job: start free trials. Meta-ad parents of kids 4–9 working on the R
+ * One job: sell the one-time lifetime unlock. Meta-ad parents of kids 4–9 on the R
  * sound, 90%+ on phones. Mobile-first single column, centered on desktop;
  * every CTA calls the Stripe checkout start. Design: "Sunrise Storybook"
  * handoff (README + Sona Landing Redesign.dc.html).
@@ -15,10 +15,10 @@ import type { CSSProperties } from "react";
 export const metadata = {
   title: "Sona — R-sound practice kids actually love",
   description:
-    "Still saying “wabbit” instead of rabbit? Sona turns daily R practice into a game kids ask to play — built with a licensed speech-language pathologist. Start 7 days free.",
+    "Still saying “wabbit” instead of rabbit? Sona turns daily R practice into a game kids ask to play — built with a licensed speech-language pathologist. One payment, yours forever.",
 };
 
-const CHECKOUT = "/api/checkout?plan=annual";
+const CHECKOUT = "/api/checkout";
 const CREAM = "#fff6e9", INK = "#4a2c14", MUTED = "#8a6f52", LINE = "#f0e2cc";
 const B = "'Baloo 2', system-ui, sans-serif"; // display
 
@@ -70,7 +70,7 @@ function Mic({ s = 42 }: { s?: number }) {
     </svg>
   );
 }
-function CtaButton({ label = "Start 7 days free", big = true }: { label?: string; big?: boolean }) {
+function CtaButton({ label = "Get lifetime access", big = true }: { label?: string; big?: boolean }) {
   return (
     <a
       href={CHECKOUT}
@@ -130,7 +130,7 @@ export default function Landing() {
           </p>
           <div style={{ display: "flex", flexDirection: "column", gap: 9, marginBottom: 20 }}>
             <CtaButton />
-            <div style={{ textAlign: "center", fontSize: 12.5, fontWeight: 700, color: MUTED }}>Then $79.99/yr — beta price · Cancel anytime</div>
+            <div style={{ textAlign: "center", fontSize: 12.5, fontWeight: 700, color: MUTED }}>$79.99 once — no subscription, no renewals</div>
           </div>
           {/* R-detection demo card */}
           <div style={{ background: "#fff", borderRadius: 24, boxShadow: `0 5px 0 ${LINE}`, padding: "16px 18px", display: "flex", gap: 14, alignItems: "center" }}>
@@ -226,21 +226,20 @@ export default function Landing() {
         {/* 5 — PRICING */}
         <section id="pricing" style={{ background: "#fff", padding: "30px 20px" }}>
           <div style={{ background: "#fff", border: `3px solid ${INK}`, borderRadius: 26, boxShadow: `0 7px 0 ${INK}`, padding: "22px 20px" }}>
-            <div style={{ display: "inline-flex", background: "#ffd21c", color: INK, font: `800 11px ${B}`, letterSpacing: 1.2, padding: "5px 12px", borderRadius: 999, boxShadow: "0 3px 0 #e0b000", marginBottom: 12 }}>BETA PRICE</div>
+            <div style={{ display: "inline-flex", background: "#ffd21c", color: INK, font: `800 11px ${B}`, letterSpacing: 1.2, padding: "5px 12px", borderRadius: 999, boxShadow: "0 3px 0 #e0b000", marginBottom: 12 }}>ONE-TIME · NO SUBSCRIPTION</div>
             <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
-              <s style={{ fontSize: 17, fontWeight: 800, color: MUTED }}>$119.99</s>
               <div style={{ font: `800 52px/1 ${B}` }}>$79.99</div>
-              <div style={{ fontSize: 15, fontWeight: 800, color: MUTED }}>/year</div>
+              <div style={{ fontSize: 15, fontWeight: 800, color: MUTED }}>once</div>
             </div>
-            <div style={{ fontSize: 12.5, fontWeight: 700, color: MUTED, margin: "4px 0 16px" }}>about $6.67 a month</div>
+            <div style={{ fontSize: 12.5, fontWeight: 700, color: MUTED, margin: "4px 0 16px" }}>one payment — Sona is yours for good</div>
             <div style={{ display: "flex", flexDirection: "column", gap: 9, marginBottom: 18 }}>
-              {["7-day free trial — full access from minute one", "Your beta rate is locked in forever", "R now — every new sound included", "Cancel anytime"].map((t) => (
+              {["Every game, every sound — full access from minute one", "One payment, no subscription, no renewals", "R now — every new sound included, free", "Works on iPhone and iPad"].map((t) => (
                 <div key={t} style={{ display: "flex", gap: 9, fontSize: 14, fontWeight: 700 }}><Check />{t}</div>
               ))}
             </div>
             <CtaButton />
             <div style={{ display: "flex", gap: 6, justifyContent: "space-between", margin: "14px 0 10px" }}>
-              {[["1", "Start trial"], ["2", "Get 6-letter code"], ["3", "Download & play"]].map(([n, t]) => (
+              {[["1", "Buy once"], ["2", "Get 6-letter code"], ["3", "Download & play"]].map(([n, t]) => (
                 <div key={n} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 10.5, fontWeight: 800, color: MUTED }}>
                   <div style={{ width: 17, height: 17, borderRadius: "50%", background: INK, color: CREAM, font: `800 10px ${B}`, display: "flex", alignItems: "center", justifyContent: "center", flex: "none" }}>{n}</div>{t}
                 </div>
@@ -275,7 +274,7 @@ export default function Landing() {
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {[
               ["Does Sona replace working with an SLP?", "No — it's daily practice designed by one. If your child already sees a speech professional, Sona is the between-sessions coach that makes each visit count."],
-              ["How does the free trial work?", "Full access for 7 days. Cancel anytime before it ends and you pay nothing."],
+              ["Is this a subscription?", "No. It's one payment of $79.99 and Sona is yours for good — no renewals, nothing to cancel."],
               ["What do I need to start?", "An iPhone or iPad. After checkout you get a 6-letter code — enter it in the app and you're playing in minutes."],
               ["My kid is 4 — too young?", "Sona is built for ages 4–9. Exercises adapt from first tries at the sound all the way to tricky words like “squirrel.”"],
             ].map(([q, a]) => (
@@ -291,9 +290,9 @@ export default function Landing() {
         <section style={{ padding: "34px 20px 26px", textAlign: "center" }}>
           <div style={{ display: "flex", justifyContent: "center" }}><Parrot s={76} /></div>
           <h2 style={{ margin: "8px 0 6px", font: `800 30px/1.1 ${B}` }}>Ready to hear that R?</h2>
-          <div style={{ fontSize: 14, fontWeight: 700, color: MUTED, marginBottom: 16 }}><s>$119.99</s> <span style={{ color: INK, font: `800 20px ${B}` }}>$79.99/yr</span> · 7 days free</div>
+          <div style={{ fontSize: 14, fontWeight: 700, color: MUTED, marginBottom: 16 }}><span style={{ color: INK, font: `800 20px ${B}` }}>$79.99 once</span> · yours forever</div>
           <CtaButton />
-          <div style={{ fontSize: 11.5, fontWeight: 700, color: MUTED, margin: "12px 0 22px" }}>Beta rate locked forever · Cancel anytime</div>
+          <div style={{ fontSize: 11.5, fontWeight: 700, color: MUTED, margin: "12px 0 22px" }}>One payment · No subscription, ever</div>
           <div style={{ fontSize: 11.5, fontWeight: 700, color: MUTED, borderTop: `2px solid ${LINE}`, paddingTop: 14 }}>
             speaksona.com · <a href="/privacy" style={{ color: MUTED }}>Privacy</a> · <a href="/terms" style={{ color: MUTED }}>Terms</a><br />Made with a licensed pediatric SLP
           </div>
@@ -312,10 +311,10 @@ export default function Landing() {
         }}
       >
         <div style={{ flex: 1 }}>
-          <span style={{ font: `800 16px ${B}`, color: INK }}>$79.99/yr</span> <s style={{ fontSize: 11, fontWeight: 700, color: MUTED }}>$119.99</s>
-          <div style={{ fontSize: 10.5, fontWeight: 800, color: "#46a302" }}>7 days free · beta rate locked</div>
+          <span style={{ font: `800 16px ${B}`, color: INK }}>$79.99 once</span>
+          <div style={{ fontSize: 10.5, fontWeight: 800, color: "#46a302" }}>No subscription · yours forever</div>
         </div>
-        <span style={{ background: "#ff8a3d", color: "#fff", font: `700 14px ${B}`, padding: "10px 16px", borderRadius: 14, boxShadow: "0 4px 0 #ef6f23", flex: "none" }}>Start free</span>
+        <span style={{ background: "#ff8a3d", color: "#fff", font: `700 14px ${B}`, padding: "10px 16px", borderRadius: 14, boxShadow: "0 4px 0 #ef6f23", flex: "none" }}>Get it</span>
       </a>
       {/* @media (min-width:768px){ hide the sticky bar — inline CTAs carry desktop } */}
       <style dangerouslySetInnerHTML={{ __html: "@media(min-width:768px){.sona-sticky-cta{display:none!important}}" }} />

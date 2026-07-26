@@ -84,6 +84,24 @@ await page.goto("http://localhost:8134/library.html");
 await page.waitForTimeout(900);
 const adv = await page.evaluate(() => ({ t: document.getElementById("advTitle").textContent, s: document.getElementById("advSub").textContent }));
 ok("adventure tile personalized", adv.t === "Milo's Adventure" && /dragons story/.test(adv.s));
+// SOUNDS1: every little book is open again — no COMING SOON, the word-box
+// chip row is back, and a non-R book really opens in the reader
+const lib = await page.evaluate(() => {
+  const shelf = document.getElementById("shelf");
+  const books = [...shelf.querySelectorAll(".bookBtn")];
+  books[books.length - 1].click(); // R books sort first (focus R), so last = non-R
+  return {
+    n: books.length,
+    soon: /COMING SOON/.test(shelf.textContent),
+    chips: document.querySelectorAll("#wbSounds .sound").length,
+    open: document.getElementById("book").classList.contains("show"),
+    head: document.getElementById("bkHead").textContent,
+  };
+});
+ok("all little books open, no COMING SOON", lib.n >= 10 && !lib.soon);
+ok("word-box sound chips are back", lib.chips >= 10);
+ok("non-R book opens in the reader", lib.open && !/· R sound/.test(lib.head));
+await page.evaluate(() => document.getElementById("bkClose").click());
 ok("library clean", errs.length === 0);
 
 // 6) onboarding redirects into the first call

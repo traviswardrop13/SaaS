@@ -1,9 +1,9 @@
 // Apple IAP rail (native shell): with a mocked Capacitor+Purchases bridge,
-// subscribe.html must show ONE Apple paywall (no Stripe cards — 3.1.1
-// hygiene), carry the required Restore + Terms/Privacy links and full
-// auto-renew terms, purchase → unlock on the "full" entitlement, restore →
-// unlock, and today.html must quiet-sync entitlements on load. Web (no
-// bridge) keeps the Stripe picker untouched.
+// subscribe.html must show ONE Apple paywall for the $79.99 lifetime
+// non-consumable (no Stripe cards — 3.1.1 hygiene), carry the required
+// Restore + Terms/Privacy links and one-time-purchase terms, purchase →
+// unlock on the "full" entitlement, restore → unlock, and today.html must
+// quiet-sync entitlements on load. Web (no bridge) keeps the Stripe card.
 import { createServer } from "http";
 import { readFileSync, existsSync } from "fs";
 import { chromium, ROOT, launchOpts } from "./_env.mjs";
@@ -39,7 +39,7 @@ await page.addInitScript(() => {
     Plugins: {
       Purchases: {
         configure: async () => { window.__iap.configured++; },
-        getProducts: async () => ({ products: [{ identifier: "com.speaksona.app.annual", priceString: "$69.99" }] }),
+        getProducts: async () => ({ products: [{ identifier: "com.speaksona.app.lifetime", priceString: "$79.99" }] }),
         purchaseStoreProduct: async () => { window.__iap.purchases++; setEnt(true); return info(); },
         restorePurchases: async () => { window.__iap.restores++; setEnt(true); return info(); },
         getCustomerInfo: async () => info(),
@@ -62,11 +62,11 @@ let t = await page.evaluate(() => ({
 }));
 ok("shell shows the Apple paywall", t.iap === "block");
 ok("Stripe cards never render in the shell", t.pick !== "block" && t.founding === "none");
-ok("live App Store price painted", /\$69\.99/.test(t.price));
-ok("required furniture: Restore + Terms + Privacy + renew terms",
-  t.restore && /Terms of Use/.test(t.body) && /Privacy/.test(t.body) && /renews yearly unless canceled/.test(t.body));
-ok("honest date: literal first-charge date on the card",
-  /first charge/.test(t.body) && /(January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2}/.test(t.body));
+ok("live App Store price painted", /\$79\.99/.test(t.price));
+ok("required furniture: Restore + Terms + Privacy + one-time terms",
+  t.restore && /Terms of Use/.test(t.body) && /Privacy/.test(t.body) && /one-time purchase/.test(t.body));
+ok("one-time offer: no subscription/trial language anywhere on the card",
+  !/free week|free trial|renews|\/yr|per year|cancel anytime/i.test(t.body) && /No renewals, ever/.test(t.body));
 ok("SLP proof strip on the native paywall", /Rachel/.test(t.body) && /speech-language pathologist/.test(t.body));
 
 // ── purchase → entitlement unlock → sub cached ──

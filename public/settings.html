@@ -51,7 +51,7 @@
       <div class="field">Focus sounds</div>
       <div class="sounds" id="sounds"></div>
       <div id="voteRow" style="margin-top:12px;background:#fff6e9;border-radius:14px;padding:12px 14px;">
-        <b style="font-family:'Baloo 2';font-weight:800;font-size:14px;color:var(--ink);">Which sound should Sona learn next?</b>
+        <b style="font-family:'Baloo 2';font-weight:800;font-size:14px;color:var(--ink);">Which sound should get new books &amp; games next?</b>
         <div style="display:flex;gap:8px;margin-top:8px;align-items:center;">
           <select id="voteSel" style="flex:1;padding:10px;border-radius:10px;border:1px solid var(--line);font-weight:800;font-family:Nunito,sans-serif;background:#fff;">
             <option value="">Pick a sound…</option>
@@ -118,7 +118,7 @@
 
     <div class="card">
       <h2>Account</h2>
-      <p class="muted" id="acct">Founding member · <a href="/subscribe">Subscribe →</a> · <a href="#" id="restoreLink">Restore</a></p>
+      <p class="muted" id="acct">Free during beta · <a href="/subscribe">Get lifetime access →</a> · <a href="#" id="restoreLink">Restore</a></p>
       <div id="restoreBox" style="display:none;margin-top:10px;">
         <input id="restoreEmail" type="email" inputmode="email" placeholder="Email you subscribed with" />
         <div style="display:flex;gap:10px;align-items:center;margin-top:8px;">
@@ -201,7 +201,7 @@
       var vs=document.getElementById("voteSel"), vb=document.getElementById("voteBtn"), vd=document.getElementById("voteDone");
       if(!vs||!vb)return;
       var prev=""; try{ prev=localStorage.getItem("sona.soundvote.v1")||""; }catch(e){}
-      function done(v){ vd.textContent="Thanks — you voted "+v+"! We build new sounds in order of votes."; vd.style.display="block"; }
+      function done(v){ vd.textContent="Thanks — you voted "+v+"! We build new books and games in order of votes."; vd.style.display="block"; }
       if(prev){ done(prev); try{ vs.value=prev; }catch(e){} }
       vb.onclick=function(){
         var v=vs.value; if(!v)return;
@@ -216,16 +216,13 @@
       var b = document.createElement("div");
       var norm = Sona.soundNorm ? Sona.soundNorm(s) : null;
       var early = !!(norm && kidAge && kidAge < norm);
-      // R-era: R is open for everyone; sounds a family already selected stay
-      // grandfathered; everything else is "coming soon" (vote below steers it)
-      var open = s === "R" || sel.has(s);
-      b.className = "sound" + (sel.has(s) ? " on" : "") + (open ? "" : " soon");
+      // every sound is selectable (SLP caseloads work letters beyond R);
+      // the age-norm hint stays so parents target developmentally-right sounds
+      b.className = "sound" + (sel.has(s) ? " on" : "");
       b.innerHTML = (Sona.soundLabel ? Sona.soundLabel(s) : s) +
-        (open
-          ? (norm ? '<span style="display:block;font-size:9.5px;font-weight:800;margin-top:1px;color:' + (early ? "#c0392b" : "var(--muted)") + ';">' + (early ? "⚠ " : "") + "by ~" + norm + 'y</span>' : "")
-          : '<span style="display:block;font-size:9px;font-weight:800;margin-top:1px;color:var(--label);letter-spacing:.05em;">SOON</span>');
-      if (open && norm) b.title = "Most children produce this sound by about age " + norm + (early ? " — older than your child, so check with your SLP before targeting it." : ".");
-      if (open) b.onclick = function () { if (sel.has(s)) { if (sel.size > 1) { sel.delete(s); b.classList.remove("on"); } } else { sel.add(s); b.classList.add("on"); } };
+        (norm ? '<span style="display:block;font-size:9.5px;font-weight:800;margin-top:1px;color:' + (early ? "#c0392b" : "var(--muted)") + ';">' + (early ? "⚠ " : "") + "by ~" + norm + 'y</span>' : "");
+      if (norm) b.title = "Most children produce this sound by about age " + norm + (early ? " — older than your child, so check with your SLP before targeting it." : ".");
+      b.onclick = function () { if (sel.has(s)) { if (sel.size > 1) { sel.delete(s); b.classList.remove("on"); } } else { sel.add(s); b.classList.add("on"); } };
       wrap.appendChild(b);
     });
     document.getElementById("save").onclick = function () {
@@ -268,7 +265,7 @@
         ac.innerHTML = 'Plan: <strong style="color:var(--good);">Active ✓</strong> · <a href="/subscribe">Manage →</a>';
         document.getElementById("restoreBox").style.display = "none";
       } else {
-        ac.innerHTML = 'Founding member · <a href="/subscribe">Subscribe →</a> · <a href="#" id="restoreLink">Restore</a>';
+        ac.innerHTML = 'Free during beta · <a href="/subscribe">Get lifetime access →</a> · <a href="#" id="restoreLink">Restore</a>';
         document.getElementById("restoreLink").onclick = function (e) { e.preventDefault(); document.getElementById("restoreBox").style.display = "block"; document.getElementById("restoreEmail").focus(); };
       }
     }

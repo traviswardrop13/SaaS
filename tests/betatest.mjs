@@ -79,6 +79,13 @@ await page.evaluate(() => { document.getElementById("obName").value = "Zoe"; });
 await clickNext(); // name →
 await clickNext(); // buddy →
 await clickNext(); // interests →
+// SOUNDS1: the picker is open for everyone (no SLP code) — add S next to R
+const pickState = await page.evaluate(() => {
+  const chips = [...document.querySelectorAll("#obSounds .sound")];
+  chips.find((b) => b.textContent.trim() === "S").click();
+  return { total: chips.length, soon: document.querySelectorAll("#obSounds .soon").length };
+});
+ok("every sound chip is open (no SOON)", pickState.total >= 15 && pickState.soon === 0);
 await clickNext(); // sounds →
 await page.evaluate(() => document.querySelector('#obGoal .choice[data-val="3"]').click());
 await clickNext(); // goal →
@@ -90,6 +97,7 @@ const skipFin = await page.evaluate(() => ({
   prof: JSON.parse(localStorage.getItem("sona.profile.v1") || "{}"),
 }));
 ok("email skip still finishes onboarding (no gate)", skipFin.achieveShown && skipFin.prof.onboarded === true && skipFin.prof.email === "" && skipFin.prof.childName === "Zoe");
+ok("open sound picker: S saved next to R", (skipFin.prof.focusSounds || []).includes("S") && (skipFin.prof.focusSounds || []).includes("R"));
 
 // ── pulse: shows on 3rd visit for early adopters, chip-first, X cools 14d ──
 fbPosts = []; errs = [];
