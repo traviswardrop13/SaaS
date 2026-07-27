@@ -44,21 +44,22 @@ export default function TermsPage() {
       </Section>
 
       <Section title="Pricing &amp; billing">
-        Sona is a <strong>one-time purchase</strong>, not a subscription.{" "}
-        <strong>Sona Lifetime</strong> is <strong>$79.99 once</strong>, plus any
-        applicable taxes, and unlocks the app for as long as we operate it —
-        including every game and every new sound we ship. There is no trial, no
-        renewal, and nothing to cancel; your payment method is charged a single
-        time at purchase.
+        <strong>Sona Yearly</strong> is <strong>$79.99 per year</strong>, plus any
+        applicable taxes, and includes every game and every new sound we ship.
+        Your first <strong>7 days are free</strong> — nothing is charged during
+        the trial, and the first charge lands only if you keep Sona past it. The
+        subscription renews yearly unless you cancel at least 24 hours before the
+        period ends. We show you the exact first-charge date at checkout.
       </Section>
 
-      <Section title="Refunds">
-        Because there is no recurring charge, there is nothing to cancel. For
-        purchases made through Apple, refunds are handled by Apple —{" "}
-        <strong>Settings &rarr; your Apple ID &rarr; Purchase History</strong>, or
-        reportaproblem.apple.com. For purchases made on speaksona.com, email us
-        and a human will sort it out. Except where required by law, payments are
-        non-refundable.
+      <Section title="Canceling &amp; refunds">
+        You can cancel anytime. For subscriptions bought through Apple, manage or
+        cancel in <strong>Settings &rarr; your Apple ID &rarr; Subscriptions</strong>, and
+        refunds are handled by Apple at reportaproblem.apple.com. For
+        subscriptions bought on speaksona.com, cancel from the link on your
+        confirmation page or email us and a human will sort it out same-day.
+        Cancel before your trial ends and you are never charged. Except where
+        required by law, payments already made are non-refundable.
       </Section>
 
       <Section title="Acceptable use">

@@ -7,12 +7,11 @@ import { rateLimit } from "@/lib/rateLimit";
  * we don't need our own database to gate access for the MVP — the app calls
  * this to decide if a returning user is paid.
  *
- * Sona now sells ONE thing: a $79.99 one-time lifetime unlock (checkout runs in
- * mode:"payment"). That creates NO Subscription object, so a subscription-only
- * lookup could never return true for a real buyer — every lifetime customer who
- * cleared their browser or switched devices was told "no active subscription".
- * We therefore check paid one-time Checkout Sessions FIRST and keep the
- * subscription scan as a fallback for legacy annual/monthly customers.
+ * Sona sells ONE thing: $79.99/yr with a 7-day free trial. We check for an
+ * active or trialing subscription, and ALSO honour paid one-time Checkout
+ * Sessions — the brief lifetime-pricing window sold a handful of those, and a
+ * subscription-only lookup would strand every one of those buyers. Neither
+ * check may be dropped without stranding real, paying customers.
  *
  * SECURITY (interim): knowing a buyer's email is currently enough to unlock a
  * new device (review item F7). Rate-limited here to stop email enumeration /
@@ -40,9 +39,10 @@ export async function GET(req: NextRequest) {
 
   const stripe = new Stripe(key);
   try {
-    // 1) The current product: a paid one-time purchase. Checkout Sessions carry
-    // the buyer's email in customer_details even when no Customer was created,
-    // which is why this scan — not a customer lookup — is the reliable path.
+    // 1) Paid one-time purchases from the brief lifetime-pricing window.
+    // Checkout Sessions carry the buyer's email in customer_details even when
+    // no Customer was created, which is why this scan — not a customer lookup —
+    // is the reliable path for them.
     const wanted = email.toLowerCase();
     let page = await stripe.checkout.sessions.list({ limit: 100 });
     for (let guard = 0; guard < 5; guard++) {
@@ -60,7 +60,7 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    // 2) Legacy annual/monthly subscribers from before the lifetime-only switch.
+    // 2) The current product: an active or trialing yearly subscription.
     const customers = await stripe.customers.list({ email, limit: 10 });
     for (const c of customers.data) {
       const subs = await stripe.subscriptions.list({

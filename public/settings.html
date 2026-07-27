@@ -118,7 +118,7 @@
 
     <div class="card">
       <h2>Account</h2>
-      <p class="muted" id="acct">Free during beta · <a href="/subscribe">Get lifetime access →</a> · <a href="#" id="restoreLink">Restore</a></p>
+      <p class="muted" id="acct">Free during beta · <a href="/subscribe">See plans →</a> · <a href="#" id="restoreLink">Restore</a></p>
       <div id="restoreBox" style="display:none;margin-top:10px;">
         <input id="restoreEmail" type="email" inputmode="email" placeholder="Email you subscribed with" />
         <div style="display:flex;gap:10px;align-items:center;margin-top:8px;">
@@ -265,7 +265,7 @@
         ac.innerHTML = 'Plan: <strong style="color:var(--good);">Active ✓</strong> · <a href="/subscribe">Manage →</a>';
         document.getElementById("restoreBox").style.display = "none";
       } else {
-        ac.innerHTML = 'Free during beta · <a href="/subscribe">Get lifetime access →</a> · <a href="#" id="restoreLink">Restore</a>';
+        ac.innerHTML = 'Free during beta · <a href="/subscribe">See plans →</a> · <a href="#" id="restoreLink">Restore</a>';
         document.getElementById("restoreLink").onclick = function (e) { e.preventDefault(); document.getElementById("restoreBox").style.display = "block"; document.getElementById("restoreEmail").focus(); };
       }
     }

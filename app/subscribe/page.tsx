@@ -6,7 +6,7 @@ import { useSearchParams } from "next/navigation";
 
 const FEATURES = [
   "Every game and every level, unlocked",
-  "One payment — no subscription, no renewals",
+  "7 days free — cancel anytime, no charge",
   "Every new sound and update as it ships",
   "Your suggestions shape Sona for your child",
   "Priority support",
@@ -71,22 +71,23 @@ function SubscribeInner() {
         <div className="rounded-3xl bg-white p-7 shadow-chunky ring-2 ring-sky-500">
           <div className="flex items-center gap-2">
             <p className="text-sm font-extrabold uppercase tracking-wide text-sky-600">
-              Sona Lifetime
+              Sona Yearly
             </p>
             <span className="rounded-full bg-amber-400 px-2 py-0.5 text-[11px] font-extrabold uppercase tracking-wide text-amber-900">
-              One-time
+              7 days free
             </span>
           </div>
 
           <div className="mt-4 flex flex-wrap items-end gap-2">
             <span className="font-display text-5xl font-extrabold text-gray-900">$79.99</span>
-            <span className="mb-1.5 font-bold text-gray-500">once</span>
+            <span className="mb-1.5 font-bold text-gray-500">/year</span>
           </div>
           <p className="mt-1 text-sm font-bold text-grass-600">
-            One payment — Sona is yours for good
+            That&apos;s $6.67 a month, billed yearly
           </p>
           <p className="mt-3 rounded-2xl bg-sky-50 px-4 py-3 text-sm font-semibold text-sky-700">
-            <b>$79.99</b>, charged today. No renewals, ever.
+            <b>$0 today.</b> Your first week is free — cancel anytime before it
+            ends and you won&apos;t be charged.
           </p>
 
           <ul className="mt-6 space-y-3">
@@ -104,7 +105,7 @@ function SubscribeInner() {
         {/* Checkout */}
         <div className="rounded-3xl bg-white p-7 shadow-chunky">
           <h1 className="font-display text-2xl font-extrabold text-gray-900">
-            Get lifetime access
+            Start 7 days free
           </h1>
           <p className="mt-1 text-gray-600">
             Enter your email and Sona is yours for good.
@@ -138,7 +139,7 @@ function SubscribeInner() {
             disabled={busy}
             className="mt-5 w-full rounded-2xl bg-grass-500 px-6 py-3.5 font-display font-extrabold uppercase tracking-wide text-white shadow-chunky transition hover:bg-grass-600 active:translate-y-1 active:shadow-chunky-sm disabled:opacity-60"
           >
-            {busy ? "Loading…" : "Get lifetime access"}
+            {busy ? "Loading…" : "Start 7 days free"}
           </button>
 
           <p className="mt-3 text-center text-xs text-gray-400">

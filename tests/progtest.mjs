@@ -301,11 +301,12 @@ t = await page.evaluate(() => ({
   life: document.getElementById("planLife").textContent,
   cards: document.querySelectorAll("#pickCard .plan").length,
 }));
-ok("unpaid family sees the single lifetime card ($79.99 once)",
-  t.pick === "block" && t.founding === "none" && /79\.99/.test(t.life) && /once/i.test(t.life));
-ok("ONE offer only — no retired annual/monthly/founding tiers", t.cards === 1);
-ok("no subscription or trial language on the web card",
-  !/free week|free trial|\/yr|per year|renews/i.test(t.life) && /No renewals, ever/.test(t.life));
+ok("unpaid family sees the single yearly card ($79.99/yr)",
+  t.pick === "block" && t.founding === "none" && /79\.99/.test(t.life) && /\/yr|per year|yearly/i.test(t.life));
+ok("ONE offer only — no retired monthly/founding/lifetime tiers", t.cards === 1);
+// the trial is the offer: it must be stated, with the cancel promise beside it
+ok("web card states the free week and the cancel promise",
+  /7 days free/i.test(t.life) && /cancel anytime/i.test(t.life));
 // paywall trust: named-SLP proof strip above the plan
 t = await page.evaluate(() => (document.querySelector("#pickCard .proof") || {}).textContent || "");
 ok("proof strip: named SLP credential above the plan",

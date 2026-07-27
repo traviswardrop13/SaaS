@@ -1487,16 +1487,17 @@
   }
 
   // ── Apple in-app purchases (RevenueCat, native shell only) ───────────────
-  // The App Store build sells "Sona Lifetime" ($79.99 once, non-consumable —
-  // ONE offer, no subscription, no trial) through Apple's sheet via the
-  // @revenuecat/purchases-capacitor plugin — reached over the same
-  // remote-page bridge SonaAudio already uses. Web visitors never touch this
-  // (Stripe stays the web rail). We purchase DIRECTLY by product id (no
-  // offerings dependency) and unlock on the "full" entitlement. The appl_
-  // key is publishable by design.
+  // The App Store build sells "Sona Yearly" ($79.99/yr, 7-day free trial —
+  // ONE offer) through Apple's sheet via the @revenuecat/purchases-capacitor
+  // plugin — reached over the same remote-page bridge SonaAudio already uses.
+  // Web visitors never touch this (Stripe stays the web rail). We purchase
+  // DIRECTLY by product id (no offerings dependency) and unlock on the "full"
+  // entitlement. The appl_ key is publishable by design.
+  // NOTE: this product id is already App Store-approved; the price lives in
+  // App Store Connect, and the paywall renders whatever ASC reports.
   const IAP_KEY = "appl_nONRfALUCMiZczeCggXKEusmVtl";
-  const IAP_PRODUCT = "com.speaksona.app.lifetime";
-  const IAP_TYPE = "inapp"; // non-consumable — never "subs"
+  const IAP_PRODUCT = "com.speaksona.app.annual";
+  const IAP_TYPE = "subs"; // auto-renewable subscription
   const IAP_ENTITLEMENT = "full";
   function iapPlugin() {
     try { const C = global.Capacitor; return (C && C.isNativePlatform && C.isNativePlatform() && C.Plugins && C.Plugins.Purchases) ? C.Plugins.Purchases : null; } catch (e) { return null; }
