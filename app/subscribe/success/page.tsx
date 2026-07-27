@@ -4,14 +4,14 @@ import { useEffect, useState } from "react";
 
 /**
  * Post-checkout confirmation. Stripe redirects here with ?session_id=… after a
- * successful subscription start. Sona is $79.99/yr with a 7-day free trial, so
+ * successful subscription start. Sona is $39.99/yr with a 7-day free trial, so
  * this page's real job is defusing the one fear every trial buyer has — "I'll
  * forget and get billed" — by showing the LITERAL first-charge date off the
  * real Stripe subscription. If the read-back is unreachable we fall back to
  * honest client-side math: a 7-day trial started now ends 7 days from now.
  */
 
-const PLAN_CENTS = 7999;
+const PLAN_CENTS = 3999;
 const TRIAL_DAYS = 7;
 
 type Info = {

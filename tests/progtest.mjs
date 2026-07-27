@@ -301,8 +301,8 @@ t = await page.evaluate(() => ({
   life: document.getElementById("planLife").textContent,
   cards: document.querySelectorAll("#pickCard .plan").length,
 }));
-ok("unpaid family sees the single yearly card ($79.99/yr)",
-  t.pick === "block" && t.founding === "none" && /79\.99/.test(t.life) && /\/yr|per year|yearly/i.test(t.life));
+ok("unpaid family sees the single yearly card ($39.99/yr)",
+  t.pick === "block" && t.founding === "none" && /39\.99/.test(t.life) && /\/yr|per year|yearly/i.test(t.life));
 ok("ONE offer only — no retired monthly/founding/lifetime tiers", t.cards === 1);
 // the trial is the offer: it must be stated, with the cancel promise beside it
 ok("web card states the free week and the cancel promise",

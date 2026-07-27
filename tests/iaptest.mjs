@@ -1,5 +1,5 @@
 // Apple IAP rail (native shell): with a mocked Capacitor+Purchases bridge,
-// subscribe.html must show ONE Apple paywall for the $79.99/yr plan
+// subscribe.html must show ONE Apple paywall for the $39.99/yr plan
 // non-consumable (no Stripe cards — 3.1.1 hygiene), carry the required
 // Restore + Terms/Privacy links and full auto-renew terms, purchase →
 // unlock on the "full" entitlement, restore → unlock, and today.html must
@@ -39,7 +39,7 @@ await page.addInitScript(() => {
     Plugins: {
       Purchases: {
         configure: async () => { window.__iap.configured++; },
-        getProducts: async () => ({ products: [{ identifier: "com.speaksona.app.annual", priceString: "$79.99" }] }),
+        getProducts: async () => ({ products: [{ identifier: "com.speaksona.app.annual", priceString: "$39.99" }] }),
         purchaseStoreProduct: async () => { window.__iap.purchases++; setEnt(true); return info(); },
         restorePurchases: async () => { window.__iap.restores++; setEnt(true); return info(); },
         getCustomerInfo: async () => info(),
@@ -62,12 +62,12 @@ let t = await page.evaluate(() => ({
 }));
 ok("shell shows the Apple paywall", t.iap === "block");
 ok("Stripe cards never render in the shell", t.pick !== "block" && t.founding === "none");
-ok("live App Store price painted", /\$79\.99/.test(t.price));
+ok("live App Store price painted", /\$39\.99/.test(t.price));
 ok("required furniture: Restore + Terms + Privacy + auto-renew terms",
   t.restore && /Terms of Use/.test(t.body) && /Privacy/.test(t.body) && /renews yearly unless canceled/.test(t.body));
 // Apple requires the price, period and cancellation terms on the paywall itself
 ok("yearly offer: price, trial and cancel terms all stated",
-  /\$79\.99/.test(t.body) && /7 days free/i.test(t.body) && /cancel/i.test(t.body));
+  /\$39\.99/.test(t.body) && /7 days free/i.test(t.body) && /cancel/i.test(t.body));
 ok("SLP proof strip on the native paywall", /Rachel/.test(t.body) && /speech-language pathologist/.test(t.body));
 
 // ── purchase → entitlement unlock → sub cached ──

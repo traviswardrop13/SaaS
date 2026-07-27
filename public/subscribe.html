@@ -116,13 +116,13 @@
       </div>
       <div class="plan best" id="iapPlan">
         <span class="tag">7 DAYS FREE</span>
-        <b>Sona Yearly — <span id="iapPrice">$79.99/yr</span></b>
+        <b>Sona Yearly — <span id="iapPrice">$39.99/yr</span></b>
         <span class="sub">Every game, the Sound Check, the weekly plan, and the progress report.</span>
         <button class="btn go" id="iapBuy">Start 7 days free</button>
         <span class="reassure" id="iapMath">No charge today — cancel anytime during your free week.</span>
       </div>
       <p class="muted" id="iapMsg" style="margin-top:10px;font-weight:800;font-size:12.5px;min-height:16px;"></p>
-      <p class="muted" style="margin-top:8px;font-size:11.5px;line-height:1.5;">$79.99/year after the 7-day free trial. Payment is charged to your Apple&nbsp;ID; the subscription renews yearly unless canceled at least 24 hours before the period ends. Manage or cancel in Settings&nbsp;→&nbsp;Subscriptions.</p>
+      <p class="muted" style="margin-top:8px;font-size:11.5px;line-height:1.5;">$39.99/year after the 7-day free trial. Payment is charged to your Apple&nbsp;ID; the subscription renews yearly unless canceled at least 24 hours before the period ends. Manage or cancel in Settings&nbsp;→&nbsp;Subscriptions.</p>
       <p style="margin-top:10px;font-weight:800;font-size:11px;">
         <button id="iapRestore" style="border:none;background:none;color:var(--blue-d);font-weight:800;font-size:12px;cursor:pointer;padding:4px 6px;text-decoration:underline;">Restore Purchases</button>
         · <a href="/terms" style="color:#8a6f52;">Terms of Use</a>
@@ -139,8 +139,8 @@
       <p class="muted" style="font-size:13.5px;font-weight:700;">One plan includes everything — every game, the Sound Check, the weekly plan, the progress report.</p>
       <div class="plan best" id="planLife">
         <span class="tag">7 DAYS FREE</span>
-        <b>Yearly — $79.99/yr</b>
-        <span class="sub">$6.67 a month, billed yearly. Every game, every sound, every update as it ships.</span>
+        <b>Yearly — $39.99/yr</b>
+        <span class="sub">$3.33 a month, billed yearly. Every game, every sound, every update as it ships.</span>
         <button class="btn go" id="buyLife">Start 7 days free</button>
         <span class="reassure" id="trialMath">No charge today — cancel anytime during your free week.</span>
         <span style="display:block;margin-top:9px;font-weight:800;font-size:11px;">
@@ -167,7 +167,7 @@
         <div class="tli lock">
           <span class="tld" data-ic="lock">🔒</span>
           <b>If Sona ever costs money</b>
-          <p>It's $79.99 a year, and your first week is always free — cancel anytime, no hoops.</p>
+          <p>It's $39.99 a year, and your first week is always free — cancel anytime, no hoops.</p>
         </div>
       </div>
     </div>
@@ -233,7 +233,7 @@
         if (!(Sona.iapAvailable && Sona.iapAvailable())) return; // old binary: no purchase UI at all
         document.getElementById("iapCard").style.display = "block";
         try { if (window.SonaAnalytics) SonaAnalytics.track("paywall viewed", { surface: "native" }); } catch (e) {}
-        document.getElementById("planLine").innerHTML = "Today: <b>7 days free</b> — then $79.99/yr. Cancel anytime.";
+        document.getElementById("planLine").innerHTML = "Today: <b>7 days free</b> — then $39.99/yr. Cancel anytime.";
         // greet the onboarding hand-off warmly
         if (/[?&]welcome=1/.test(location.search)) document.getElementById("iapTitle").textContent = "One last thing — start your free week";
         try {
@@ -247,7 +247,7 @@
         var msg = document.getElementById("iapMsg");
         document.getElementById("iapBuy").onclick = function () {
           msg.textContent = "Opening the App Store…";
-          try { if (window.sonaTrack) sonaTrack("InitiateCheckout", { value: 79.99, currency: "USD", content_name: "iap_annual" }); } catch (e) {}
+          try { if (window.sonaTrack) sonaTrack("InitiateCheckout", { value: 39.99, currency: "USD", content_name: "iap_annual" }); } catch (e) {}
           Sona.iapPurchase().then(function () {
             msg.textContent = "";
             // RevenueCat has confirmed the entitlement by the time this resolves
@@ -283,7 +283,7 @@
           try{ if(/[?&]welcome=1/.test(location.search)) document.querySelector("#pickCard h2").textContent = "One last thing — pick your plan"; }catch(e){}
           var fc = document.getElementById("foundingCard"); if (fc) fc.style.display = "none";
           // the header line must match the picker, not the founding story
-          document.getElementById("planLine").innerHTML = "Today: <b>7 days free</b> — then $79.99/yr.";
+          document.getElementById("planLine").innerHTML = "Today: <b>7 days free</b> — then $39.99/yr.";
         }
       } catch (e) {}
       function buy(plan, value) {
@@ -310,7 +310,7 @@
         if (_tm) _tm.innerHTML = "No charge today — first charge <b>" + _t + "</b>, only if you keep Sona. Cancel anytime before then.";
       } catch (e) {}
       var lf = document.getElementById("buyLife");
-      if (lf) lf.onclick = function () { buy("annual", 79.99); };
+      if (lf) lf.onclick = function () { buy("annual", 39.99); };
     })();
 
     // Plan line: reflect an active subscription if one was restored on this device.

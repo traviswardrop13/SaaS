@@ -4,7 +4,7 @@ import Stripe from "stripe";
 /**
  * Creates a Stripe Checkout Session for Sona.
  *
- * ONE offer: $79.99 per year with a 7-day free trial. Charging on the web
+ * ONE offer: $39.99 per year with a 7-day free trial. Charging on the web
  * (Stripe) keeps ~97% of revenue vs Apple's cut. Any legacy `plan` value
  * (monthly, founding, lifetime — retired tiers) is ignored; every checkout
  * sells the same yearly plan, so old links never break. Set
@@ -16,7 +16,7 @@ import Stripe from "stripe";
 export const runtime = "nodejs";
 
 const PLAN = {
-  cents: 7999,
+  cents: 3999,
   interval: "year" as const,
   trialDays: 7,
   name: "Sona — Yearly",

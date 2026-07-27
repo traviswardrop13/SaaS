@@ -79,11 +79,11 @@ function SubscribeInner() {
           </div>
 
           <div className="mt-4 flex flex-wrap items-end gap-2">
-            <span className="font-display text-5xl font-extrabold text-gray-900">$79.99</span>
+            <span className="font-display text-5xl font-extrabold text-gray-900">$39.99</span>
             <span className="mb-1.5 font-bold text-gray-500">/year</span>
           </div>
           <p className="mt-1 text-sm font-bold text-grass-600">
-            That&apos;s $6.67 a month, billed yearly
+            That&apos;s $3.33 a month, billed yearly
           </p>
           <p className="mt-3 rounded-2xl bg-sky-50 px-4 py-3 text-sm font-semibold text-sky-700">
             <b>$0 today.</b> Your first week is free — cancel anytime before it

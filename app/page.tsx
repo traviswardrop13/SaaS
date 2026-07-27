@@ -3,7 +3,7 @@ import type { CSSProperties } from "react";
 /**
  * Sona — R-sound marketing landing page (web-first funnel).
  *
- * One job: start the free week on the $79.99/yr plan. Meta-ad parents of kids 4–9 on the R
+ * One job: start the free week on the $39.99/yr plan. Meta-ad parents of kids 4–9 on the R
  * sound, 90%+ on phones. Mobile-first single column, centered on desktop;
  * every CTA calls the Stripe checkout start. Design: "Sunrise Storybook"
  * handoff (README + Sona Landing Redesign.dc.html).
@@ -108,7 +108,7 @@ export default function Landing() {
       {/* Ad-funnel signal: InitiateCheckout + paywall-viewed on any checkout tap. */}
       <script
         dangerouslySetInnerHTML={{
-          __html: `document.addEventListener("click",function(e){var a=e.target&&e.target.closest?e.target.closest('a[href^="/api/checkout"]'):null;if(!a)return;try{if(window.sonaTrack)window.sonaTrack("InitiateCheckout",{value:79.99,currency:"USD",content_name:"web_annual"});}catch(err){}try{if(window.SonaAnalytics)window.SonaAnalytics.track("paywall viewed",{surface:"landing"});}catch(err){}},true);`,
+          __html: `document.addEventListener("click",function(e){var a=e.target&&e.target.closest?e.target.closest('a[href^="/api/checkout"]'):null;if(!a)return;try{if(window.sonaTrack)window.sonaTrack("InitiateCheckout",{value:39.99,currency:"USD",content_name:"web_annual"});}catch(err){}try{if(window.SonaAnalytics)window.SonaAnalytics.track("paywall viewed",{surface:"landing"});}catch(err){}},true);`,
         }}
       />
 
@@ -130,7 +130,7 @@ export default function Landing() {
           </p>
           <div style={{ display: "flex", flexDirection: "column", gap: 9, marginBottom: 20 }}>
             <CtaButton />
-            <div style={{ textAlign: "center", fontSize: 12.5, fontWeight: 700, color: MUTED }}>7 days free, then $79.99/yr — cancel anytime</div>
+            <div style={{ textAlign: "center", fontSize: 12.5, fontWeight: 700, color: MUTED }}>7 days free, then $39.99/yr — cancel anytime</div>
           </div>
           {/* R-detection demo card */}
           <div style={{ background: "#fff", borderRadius: 24, boxShadow: `0 5px 0 ${LINE}`, padding: "16px 18px", display: "flex", gap: 14, alignItems: "center" }}>
@@ -228,7 +228,7 @@ export default function Landing() {
           <div style={{ background: "#fff", border: `3px solid ${INK}`, borderRadius: 26, boxShadow: `0 7px 0 ${INK}`, padding: "22px 20px" }}>
             <div style={{ display: "inline-flex", background: "#ffd21c", color: INK, font: `800 11px ${B}`, letterSpacing: 1.2, padding: "5px 12px", borderRadius: 999, boxShadow: "0 3px 0 #e0b000", marginBottom: 12 }}>ONE-TIME · NO SUBSCRIPTION</div>
             <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
-              <div style={{ font: `800 52px/1 ${B}` }}>$79.99</div>
+              <div style={{ font: `800 52px/1 ${B}` }}>$39.99</div>
               <div style={{ fontSize: 15, fontWeight: 800, color: MUTED }}>/year</div>
             </div>
             <div style={{ fontSize: 12.5, fontWeight: 700, color: MUTED, margin: "4px 0 16px" }}>one payment — Sona is yours for good</div>
@@ -274,7 +274,7 @@ export default function Landing() {
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {[
               ["Does Sona replace working with an SLP?", "No — it's daily practice designed by one. If your child already sees a speech professional, Sona is the between-sessions coach that makes each visit count."],
-              ["What happens after the free week?", "If you keep Sona it's $79.99 for the year. Cancel anytime before day 7 and you're never charged — we show you the exact date at checkout."],
+              ["What happens after the free week?", "If you keep Sona it's $39.99 for the year. Cancel anytime before day 7 and you're never charged — we show you the exact date at checkout."],
               ["What do I need to start?", "An iPhone or iPad. After checkout you get a 6-letter code — enter it in the app and you're playing in minutes."],
               ["My kid is 4 — too young?", "Sona is built for ages 4–9. Exercises adapt from first tries at the sound all the way to tricky words like “squirrel.”"],
             ].map(([q, a]) => (
@@ -290,7 +290,7 @@ export default function Landing() {
         <section style={{ padding: "34px 20px 26px", textAlign: "center" }}>
           <div style={{ display: "flex", justifyContent: "center" }}><Parrot s={76} /></div>
           <h2 style={{ margin: "8px 0 6px", font: `800 30px/1.1 ${B}` }}>Ready to hear that R?</h2>
-          <div style={{ fontSize: 14, fontWeight: 700, color: MUTED, marginBottom: 16 }}><span style={{ color: INK, font: `800 20px ${B}` }}>$79.99/yr</span> · 7 days free</div>
+          <div style={{ fontSize: 14, fontWeight: 700, color: MUTED, marginBottom: 16 }}><span style={{ color: INK, font: `800 20px ${B}` }}>$39.99/yr</span> · 7 days free</div>
           <CtaButton />
           <div style={{ fontSize: 11.5, fontWeight: 700, color: MUTED, margin: "12px 0 22px" }}>7 days free · Cancel anytime</div>
           <div style={{ fontSize: 11.5, fontWeight: 700, color: MUTED, borderTop: `2px solid ${LINE}`, paddingTop: 14 }}>
@@ -311,7 +311,7 @@ export default function Landing() {
         }}
       >
         <div style={{ flex: 1 }}>
-          <span style={{ font: `800 16px ${B}`, color: INK }}>$79.99/yr</span>
+          <span style={{ font: `800 16px ${B}`, color: INK }}>$39.99/yr</span>
           <div style={{ fontSize: 10.5, fontWeight: 800, color: "#46a302" }}>No subscription · yours forever</div>
         </div>
         <span style={{ background: "#ff8a3d", color: "#fff", font: `700 14px ${B}`, padding: "10px 16px", borderRadius: 14, boxShadow: "0 4px 0 #ef6f23", flex: "none" }}>Get it</span>

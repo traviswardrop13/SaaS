@@ -7,7 +7,7 @@ import { rateLimit } from "@/lib/rateLimit";
  * we don't need our own database to gate access for the MVP — the app calls
  * this to decide if a returning user is paid.
  *
- * Sona sells ONE thing: $79.99/yr with a 7-day free trial. We check for an
+ * Sona sells ONE thing: $39.99/yr with a 7-day free trial. We check for an
  * active or trialing subscription, and ALSO honour paid one-time Checkout
  * Sessions — the brief lifetime-pricing window sold a handful of those, and a
  * subscription-only lookup would strand every one of those buyers. Neither

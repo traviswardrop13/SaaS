@@ -44,7 +44,7 @@ export default function TermsPage() {
       </Section>
 
       <Section title="Pricing &amp; billing">
-        <strong>Sona Yearly</strong> is <strong>$79.99 per year</strong>, plus any
+        <strong>Sona Yearly</strong> is <strong>$39.99 per year</strong>, plus any
         applicable taxes, and includes every game and every new sound we ship.
         Your first <strong>7 days are free</strong> — nothing is charged during
         the trial, and the first charge lands only if you keep Sona past it. The
