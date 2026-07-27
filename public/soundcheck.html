@@ -111,6 +111,9 @@
     var $=function(id){return document.getElementById(id);};
     var S=window.Sona;
     var profile=S?S.getProfile():{volume:0.8};
+    // Settings promises "Off = loudness-only practice, no clips sent" — that
+    // toggle binds here too: no clip is recorded and none is ever uploaded.
+    var CLOUD=true; try{ CLOUD=(profile&&profile.cloudScoring)!==false; }catch(e){ CLOUD=true; }
     var qp=new URLSearchParams(location.search);
     // mini = weekly re-check of the focus sounds; full = the big first sweep.
     // Default: full until a full check exists, then mini.
@@ -167,7 +170,7 @@
       function finish(){ if(done)return; done=true; try{rec&&rec.state!=="inactive"&&rec.stop();}catch(e){}
         $("mic").classList.remove("rec"); if(raf)cancelAnimationFrame(raf); try{src&&src.disconnect();}catch(e){}
         setTimeout(function(){ resolve({blob:chunks.length?new Blob(chunks,{type:(rec&&rec.mimeType)||"audio/webm"}):null}); },140); }
-      try{ if(micStream&&window.MediaRecorder){ rec=new MediaRecorder(micStream); rec.ondataavailable=function(e){ if(e.data&&e.data.size)chunks.push(e.data); }; rec.start(); } }catch(e){}
+      try{ if(CLOUD&&micStream&&window.MediaRecorder){ rec=new MediaRecorder(micStream); rec.ondataavailable=function(e){ if(e.data&&e.data.size)chunks.push(e.data); }; rec.start(); } }catch(e){}
       $("mic").classList.add("rec"); $("mic").onclick=finish;
       try{ if(micStream){ var ctx=getCtx(); src=ctx.createMediaStreamSource(micStream); var an=ctx.createAnalyser(); an.fftSize=512; src.connect(an);
         var td=new Uint8Array(an.fftSize), t0=performance.now(), nS=0,nN=0,thr=0,v=0,spoke=false,lastV=0;
@@ -185,7 +188,7 @@
 
     // Score one word — returns targetPhoneme 0-100 or null (never blocks the kid).
     function scoreTurn(blob,word,sound){
-      if(!blob) return Promise.resolve(null);
+      if(!blob||!CLOUD) return Promise.resolve(null);
       var ctrl=new AbortController(); var to=setTimeout(function(){ctrl.abort();},8000);
       var fd=new FormData();
       fd.append("audio",new File([blob],"a.webm",{type:blob.type||"audio/webm"}));

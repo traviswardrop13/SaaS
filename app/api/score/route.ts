@@ -31,6 +31,11 @@ const SPEECHACE_URL =
 // Map of our internal sound codes to the phoneme labels Speechace returns.
 // Speechace uses ARPAbet-style labels — single phones for most, digraphs for
 // the others. We compare case-insensitively and ignore stress digits.
+// INVARIANT: every entry in Sona.ALL_SOUNDS (public/sona.js) must have a key
+// here. A missing one silently force-fails every attempt at that sound (the
+// child is marked wrong for a correct production, and the ladder never
+// advances) — B and D were missing for exactly that reason. tests/soundmap.mjs
+// asserts this map stays in sync; add the sound to BOTH places or neither.
 const PHONEME_FOR: Record<string, string[]> = {
   S: ["S"],
   R: ["R"],
@@ -49,6 +54,8 @@ const PHONEME_FOR: Record<string, string[]> = {
   T: ["T"],
   M: ["M"],
   N: ["N"],
+  B: ["B"],
+  D: ["D"],
 };
 
 // Scoring thresholds — tunable knobs.
@@ -184,6 +191,19 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       { ok: false, error: "audio file and text are required." },
       { status: 400 },
+    );
+  }
+
+  // A sound we can't measure must fail LOUDLY, never quietly. Without this the
+  // phoneme lookup returns null, targetHeard goes false, and the round is rated
+  // "tryAgain" — a fabricated miss logged against a child who said it right.
+  // ok:false makes every caller fall through to its "unknown" branch, which is
+  // never written to the attempt log.
+  if (targetSound && !PHONEME_FOR[targetSound.toUpperCase()]) {
+    console.error("[score] no phoneme mapping for targetSound=" + targetSound + " — add it to PHONEME_FOR");
+    return NextResponse.json(
+      { ok: false, error: "unscorable-sound", targetSound },
+      { status: 422 },
     );
   }
 

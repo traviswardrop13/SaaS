@@ -6,6 +6,7 @@ import path from "path";
 
 const dir = path.dirname(fileURLToPath(import.meta.url));
 const SUITES = [
+  "soundmap.mjs",  // every sound is scorable + the daily ring can actually fill
   "momweek.mjs",   // parent weekly goal + streak math + the three UIs
   "betatest.mjs",  // onboarding flow + beta pulse + founding banner
   "calltest.mjs",  // Coach Call script variants + weekly cap (dev-gated)

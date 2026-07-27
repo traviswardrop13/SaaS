@@ -84,7 +84,9 @@ const r2 = await page.evaluate(() => ({
   prompt: document.getElementById("bTarget").textContent,
   sylls: (window.SonaContent && SonaContent.syllables) ? SonaContent.syllables("R").map((s) => s.t) : [],
 }));
-ok("E2E r2 header (daily round 2)", /Round 2 of 4/.test(r2.chip) && /R sound/.test(r2.chip), true);
+// the daily run is ROT_LEN (5) rounds — same number the goal ring, the chest
+// and today.html's path all count to. A shorter run leaves the ring unfillable.
+ok("E2E r2 header (daily round 2 of 5)", /Round 2 of 5/.test(r2.chip) && /R sound/.test(r2.chip), true);
 console.log((r2.sylls.includes(r2.prompt) ? "PASS" : "FAIL") + "  E2E r2 card shows a syllable  (" + r2.prompt + " ∈ " + JSON.stringify(r2.sylls) + ")");
 if (!r2.sylls.includes(r2.prompt)) fails++;
 const sylLine = ttsPosts[0] || "";

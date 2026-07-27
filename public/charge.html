@@ -270,11 +270,15 @@
     var LEVEL=parseInt(qp.get("level"),10)||1;
     var NEED=(S?S.chargeState().need:5);
     var GAMES={ "arcade-slice.html":{e:"🍉",n:"Fruit Slice"}, "arcade-stack.html":{e:"🧱",n:"Block Stacker"}, "arcade-tiles.html":{e:"🎹",n:"Piano Tiles"}, "arcade-run.html":{e:"🏃",n:"Sound Sprint"}, "arcade-glide.html":{e:"🎈",n:"Flappy Glide"} };
-    // The Daily Run = 4 different games from the 5-game arcade, rotating with
-    // the date — tomorrow's run has a different lineup than today's.
+    // The Daily Run = one pass of the arcade, ordered by the date, so tomorrow
+    // opens on a different game than today. Its length MUST equal Sona.ROT_LEN
+    // (5) — the goal ring, the chest and today.html's path all count to that,
+    // so a 4-round run left the ring one short and the chest unreachable.
     var ALL_ARCADE=["arcade-slice.html","arcade-tiles.html","arcade-stack.html","arcade-run.html","arcade-glide.html"];
     var _dayOff=(S&&S.dayNum)?(S.dayNum()%ALL_ARCADE.length):0;
-    var DAILY_SEQ=[0,1,2,3].map(function(i){ return ALL_ARCADE[(_dayOff+i)%ALL_ARCADE.length]; });
+    var _runLen=Math.min((S&&S.ROT_LEN)||5,ALL_ARCADE.length);
+    var DAILY_SEQ=[];
+    for(var _q=0;_q<_runLen;_q++) DAILY_SEQ.push(ALL_ARCADE[(_dayOff+_q)%ALL_ARCADE.length]);
 
     // ---- mode: daily run vs free play ----
     var isDaily = qp.get("daily")==="1" || qp.get("session")==="1";
@@ -642,8 +646,13 @@
     // No per-rep scoring round-trips — ONE SpeechAce spot-check on the whole
     // clip at the end keeps the SLP data honest without killing the pace.
     var micStream=null, reps=0, engineOn=false, chunks=[], rec=null, anyReps=false;
-    var useSpeechAce=true;
-    (function(){ try{ fetch("/api/score").then(function(r){return r.json();}).then(function(j){ useSpeechAce=!!(j&&j.hasKey);
+    // Settings promises: "Off = loudness-only practice, no clips sent." That
+    // toggle is binding HERE, not just in lesson.html — when it's off we never
+    // ask the server, never record a clip, and never upload one.
+    var CLOUD=true; try{ CLOUD=(profile&&profile.cloudScoring)!==false; }catch(e){ CLOUD=true; }
+    var useSpeechAce=CLOUD;
+    (function(){ if(!CLOUD){ useSpeechAce=false; return; }
+      try{ fetch("/api/score").then(function(r){return r.json();}).then(function(j){ useSpeechAce=!!(j&&j.hasKey);
       // tripwire: honest scoring silently off = every sound "passes". Make it loud in the server logs.
       if(!useSpeechAce){ try{ fetch("/api/log",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({msg:"SCORING OFFLINE — SpeechAce key missing/unreachable; charge gate is loudness-only",url:location.pathname})}); }catch(e){} }
     }).catch(function(){ useSpeechAce=false; }); }catch(e){ useSpeechAce=false; } })();
@@ -652,7 +661,9 @@
       return new Promise(function(resolve){
         reps=0; paintReps(0); chunks=[];
         var voiced=0, silent=0, inBurst=false, thr=0, calN=0, calSum=0, t0=performance.now(), lastRep=0, idleTimer=null;
-        try{ if(window.MediaRecorder&&micStream){ rec=new MediaRecorder(micStream); rec.ondataavailable=function(e){ if(e.data&&e.data.size)chunks.push(e.data); }; rec.start(); } }catch(e){ rec=null; }
+        // no clip is even CREATED when honest scoring is off — the promise is
+        // "no clips sent", and the safest way to keep it is to have nothing to send
+        try{ if(CLOUD&&window.MediaRecorder&&micStream){ rec=new MediaRecorder(micStream); rec.ondataavailable=function(e){ if(e.data&&e.data.size)chunks.push(e.data); }; rec.start(); } }catch(e){ rec=null; }
         var ctx=getCtx(), src=ctx.createMediaStreamSource(micStream), an=ctx.createAnalyser();
         an.fftSize=512; src.connect(an);
         var td=new Uint8Array(an.fftSize);
@@ -846,12 +857,19 @@
         }
       }
       // real reps happened → the rotation moves (skip button and mic-denied
-      // rounds never count; quality already gated the rung above)
+      // rounds never count; quality already gated the rung above).
+      // The daily run counts too — it is how most children practice, and while
+      // it was excluded the ring, the chest and the sound rotation were frozen
+      // for every kid on the daily path. A round advances the ring at most
+      // once, so a refresh or a ?banked= re-entry can't double-count it.
       var ringDoneNow=false;
-      if(!isDaily && anyReps && S && S.rotAdvance){ try{
+      var roundKey=isDaily?(run?run.round:0):-1;
+      var alreadyRinged=isDaily&&run&&run.ringed===roundKey;
+      if(anyReps && !alreadyRinged && S && S.rotAdvance){ try{
         var preDone=S.todayRing&&S.todayRing().done;
         S.rotAdvance();
         ringDoneNow=!preDone&&S.todayRing&&S.todayRing().done;
+        if(isDaily&&run){ run.ringed=roundKey; runSave(run); }
       }catch(e){} }
       if(ringDoneNow){ showChest(launchGame); } else { launchGame(); }
     }
