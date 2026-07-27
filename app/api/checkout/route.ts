@@ -64,6 +64,9 @@ export async function POST(req: NextRequest) {
       mode: "payment",
       line_items,
       customer_email: email,
+      // one-time payments don't create a Customer by default; without one there
+      // is no durable email->purchase link for Settings -> Restore access
+      customer_creation: "always",
       allow_promotion_codes: true,
       billing_address_collection: "auto",
       success_url: `${origin}/subscribe/success?session_id={CHECKOUT_SESSION_ID}&plan=lifetime`,
