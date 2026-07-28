@@ -155,12 +155,26 @@
       try{ if(typeof ttsBegin==="function")ttsBegin(); }catch(e){}
       window.speechSynthesis.speak(u);
     }catch(e){ res(); } }); }
-    function say(t){ return new Promise(function(res){ if(!t||profile.voiceOn===false||speaking)return res(); speaking=true;
+    function _say1(t){ return new Promise(function(res){ if(!t)return res(); speaking=true;
       fetch("/api/tts",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text:t,voice:profile.voiceId||"",stable:true})})
         .then(function(r){return r.ok?r.arrayBuffer():null;})
         .then(function(b){ if(!b) return speakFallback(t); return playPCM(new Uint8Array(b)); })
         .catch(function(){ return speakFallback(t); }).finally(function(){ speaking=false; res(); });
     }); }
+
+    // QUEUE, never drop (Rachel's catch in Story Time — same bug lived here).
+    // A line that arrives while Echo is still talking must WAIT its turn, not
+    // silently vanish. Depth-capped so repeat taps can't stack a backlog.
+    var _sayQ=Promise.resolve(), _sayN=0;
+    function say(t){
+      if(!t||profile.voiceOn===false) return Promise.resolve();
+      if(_sayN>=2) return Promise.resolve();
+      _sayN++;
+      var run=function(){ return _say1(t); };
+      _sayQ=_sayQ.then(run,run).then(function(){ _sayN=Math.max(0,_sayN-1); },function(){ _sayN=Math.max(0,_sayN-1); });
+      return _sayQ;
+    }
+
     function sfx(n){ try{ if(S&&S.sfx&&S.sfx[n])S.sfx[n](); }catch(e){} }
 
     // ---- one recorded turn: VAD start/stop, ~6s cap (story.html pattern) ----

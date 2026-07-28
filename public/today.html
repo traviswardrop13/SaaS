@@ -145,6 +145,13 @@
     @keyframes pwob{0%,100%{transform:translate(-50%,-50%) rotate(0)}25%{transform:translate(-50%,-50%) rotate(-7deg)}75%{transform:translate(-50%,-50%) rotate(7deg)}}
     .pchest{position:absolute;transform:translate(-50%,-50%);width:64px;z-index:3;filter:drop-shadow(0 5px 0 rgba(180,110,20,.3));}
     #gatePill{position:absolute;top:14px;left:50%;transform:translateX(-50%);z-index:5;background:rgba(255,255,255,.78);border-radius:99px;padding:5px 13px;font-family:"Baloo 2";font-weight:800;font-size:11px;color:#8a5a1a;white-space:nowrap;display:none;}
+    /* STORY1 chapter ribbon — sits under the gate pill, same visual family */
+    #chapPill{position:absolute;top:14px;left:50%;transform:translateX(-50%);z-index:5;
+      background:linear-gradient(180deg,#ffe9b8,#ffd98a);border-radius:99px;padding:5px 14px;
+      font-family:"Baloo 2";font-weight:800;font-size:11px;color:#8a5a1a;white-space:nowrap;
+      max-width:86%;overflow:hidden;text-overflow:ellipsis;display:none;
+      box-shadow:0 3px 0 rgba(190,140,50,.35);}
+    #chapPill.show{display:block;}
     #echoWrap{position:absolute;z-index:5;display:flex;flex-direction:column;align-items:flex-start;transform:translate(-6px,-100%);pointer-events:none;}
     #echoBubble{background:#fff;border-radius:16px;border-bottom-right-radius:5px;padding:9px 14px;box-shadow:0 6px 16px rgba(140,70,10,.2);font-family:"Baloo 2";font-weight:800;font-size:14px;line-height:1.3;color:#4a2c14;max-width:190px;margin-bottom:6px;}
     #echoLeo{width:66px;height:66px;filter:drop-shadow(0 7px 9px rgba(140,70,10,.25));pointer-events:auto;cursor:pointer;}
@@ -193,6 +200,9 @@
         <path d="M118 668 C95 640 82 622 84 596 C86 570 74 556 76 530 C79 496 128 492 166 483 C207 473 224 446 226 414 C228 382 186 370 152 359 C114 347 90 323 88 291 C86 259 120 233 152 216 C186 198 170 158 152 118 C144 96 128 78 104 64" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-dasharray="1 14" opacity=".9"></path>
         <circle cx="252" cy="70" r="26" fill="#ffd21c" opacity=".85"></circle><ellipse cx="40" cy="640" rx="90" ry="34" fill="#ff9d6e" opacity=".5"></ellipse><ellipse cx="270" cy="655" rx="110" ry="40" fill="#ff9d6e" opacity=".4"></ellipse>
       </svg>
+      <!-- STORY1: which chapter today picks up. The kid sees the story is
+           still running before they've tapped anything. -->
+      <div id="chapPill"></div>
       <div id="gatePill"></div>
       <div id="pathNodes"></div>
       <div id="echoWrap"><div id="echoBubble"></div><img id="echoLeo" src="/coach/echo/echo-idle.svg" alt="Echo" /></div>
@@ -289,6 +299,21 @@
       // points forward, never at a breakable number
       if(_tr&&_tr.done) $("subLine").textContent="All done today ★ — Echo has a new adventure tomorrow! Free play's open.";
       else if(_tr&&_tr.n>0) $("subLine").textContent=(_tr.goal-_tr.n)+" more round"+((_tr.goal-_tr.n)===1?"":"s")+" to finish today's goal!";
+    }catch(e){}
+
+    // STORY1: name the chapter today picks up, so the story is visible before
+    // the child taps anything. Once the day is finished it points forward —
+    // the cliffhanger is the reason to come back, not a streak.
+    try{
+      if(S&&S.episode){
+        var _cp=$("chapPill"), _tr2=(S&&S.todayRing)?S.todayRing():null;
+        if(_cp){
+          _cp.textContent=(_tr2&&_tr2.done)
+            ? ("Next time · "+S.episodeHook().replace(/^Tomorrow:\s*/i,""))
+            : ("Chapter "+S.episodeNum()+" · "+S.episode().t);
+          _cp.classList.add("show");
+        }
+      }
     }catch(e){}
 
     // ── Practice Path: the map IS the home screen (Workstream E) ──
@@ -641,8 +666,8 @@
       if(!note)return;
       if((S.isSubscribed&&S.isSubscribed())||(S.isPilot&&S.isPilot()))return; if(S.ensureTrial)S.ensureTrial();
       var link=' <a href="/subscribe.html" style="color:var(--orange-d);font-weight:800;">';
-      if(S.trialActive&&S.trialActive()){ var dd=S.trialDaysLeft?S.trialDaysLeft():7; note.innerHTML="Your free trial: "+dd+" day"+(dd===1?"":"s")+" left."+link+"Get lifetime access →</a>"; note.style.display="block"; }
-      else if(S.trialExpired&&S.trialExpired()){ note.innerHTML="Your free trial has ended."+link+"Get lifetime access →</a>"; note.style.display="block"; }
+      if(S.trialActive&&S.trialActive()){ var dd=S.trialDaysLeft?S.trialDaysLeft():7; note.innerHTML="Your free trial: "+dd+" day"+(dd===1?"":"s")+" left."+link+"See plans →</a>"; note.style.display="block"; }
+      else if(S.trialExpired&&S.trialExpired()){ note.innerHTML="Your free trial has ended."+link+"See plans →</a>"; note.style.display="block"; }
     })();
 
     // ── beta pulse: chip-first (a tap beats a blank box — the Mobbin study's

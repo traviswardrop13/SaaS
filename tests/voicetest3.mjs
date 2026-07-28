@@ -78,7 +78,9 @@ ok("E2E r1 header names the sound", await page.evaluate(() => /R sound/.test(doc
 ttsPosts = [];
 await page.evaluate(() => sessionStorage.setItem("sona.run.v1", JSON.stringify({ active: true, round: 1, sum: 12, scores: [12], sound: "R", level: 1, pending: false })));
 await page.goto("http://localhost:8123/charge.html?daily=1&sound=R");
-await page.waitForTimeout(2500);
+// STORY1: a daily round opens with the spoken episode beat (~3.2s on a bridge
+// round) before the practice prompt, so this has to wait past it.
+await page.waitForTimeout(6000);
 const r2 = await page.evaluate(() => ({
   chip: document.getElementById("ctxLine").textContent,
   prompt: document.getElementById("bTarget").textContent,
@@ -89,7 +91,10 @@ const r2 = await page.evaluate(() => ({
 ok("E2E r2 header (daily round 2 of 5)", /Round 2 of 5/.test(r2.chip) && /R sound/.test(r2.chip), true);
 console.log((r2.sylls.includes(r2.prompt) ? "PASS" : "FAIL") + "  E2E r2 card shows a syllable  (" + r2.prompt + " ∈ " + JSON.stringify(r2.sylls) + ")");
 if (!r2.sylls.includes(r2.prompt)) fails++;
-const sylLine = ttsPosts[0] || "";
+// STORY1: a daily round now opens with the episode beat spoken aloud (a
+// pre-reader can't read the card), so the PRACTICE prompt is the first line
+// matching the prompt grammar — not simply the first thing said.
+const sylLine = ttsPosts.filter((l) => /^Ready\?/.test(l))[0] || ttsPosts[0] || "";
 // ONE syllable per round now — the card no longer rotates rah→ree→roo mid-round
 const sylWant = /^Ready\? Say [a-z]+\.\.\. five times\.\.\. Go!$/;
 console.log((sylWant.test(sylLine) ? "PASS" : "FAIL") + "  E2E r2 spoken one syllable  → " + JSON.stringify(sylLine));

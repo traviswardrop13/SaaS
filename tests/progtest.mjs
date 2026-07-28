@@ -294,18 +294,19 @@ await page.evaluate(() => {
   localStorage.setItem("sona.profile.v1", JSON.stringify(p));
   sessionStorage.setItem("sona.gate.v1", String(Date.now()));
 });
-await page.goto("http://localhost:8131/subscribe.html"); await page.waitForTimeout(700);
+await page.goto("http://localhost:8131/subscribe.html?paid=1"); await page.waitForTimeout(700);
 t = await page.evaluate(() => ({
   pick: document.getElementById("pickCard").style.display,
   founding: document.getElementById("foundingCard").style.display,
   life: document.getElementById("planLife").textContent,
   cards: document.querySelectorAll("#pickCard .plan").length,
 }));
-ok("unpaid family sees the single lifetime card ($79.99 once)",
-  t.pick === "block" && t.founding === "none" && /79\.99/.test(t.life) && /once/i.test(t.life));
-ok("ONE offer only — no retired annual/monthly/founding tiers", t.cards === 1);
-ok("no subscription or trial language on the web card",
-  !/free week|free trial|\/yr|per year|renews/i.test(t.life) && /No renewals, ever/.test(t.life));
+ok("unpaid family sees the single yearly card ($39.99/yr)",
+  t.pick === "block" && t.founding === "none" && /39\.99/.test(t.life) && /\/yr|per year|yearly/i.test(t.life));
+ok("ONE offer only — no retired monthly/founding/lifetime tiers", t.cards === 1);
+// the trial is the offer: it must be stated, with the cancel promise beside it
+ok("web card states the free week and the cancel promise",
+  /7 days free/i.test(t.life) && /cancel anytime/i.test(t.life));
 // paywall trust: named-SLP proof strip above the plan
 t = await page.evaluate(() => (document.querySelector("#pickCard .proof") || {}).textContent || "");
 ok("proof strip: named SLP credential above the plan",
@@ -373,7 +374,7 @@ ok("proof strip: named SLP credential above the plan",
 
 // founding family keeps the free story
 await page.evaluate(() => { const p = JSON.parse(localStorage.getItem("sona.profile.v1")); p.earlyAdopter = true; localStorage.setItem("sona.profile.v1", JSON.stringify(p)); });
-await page.goto("http://localhost:8131/subscribe.html"); await page.waitForTimeout(700);
+await page.goto("http://localhost:8131/subscribe.html?paid=1"); await page.waitForTimeout(700);
 t = await page.evaluate(() => ({ pick: document.getElementById("pickCard").style.display, founding: document.getElementById("foundingCard").style.display }));
 ok("founding family keeps the free story", t.pick !== "block" && t.founding !== "none");
 

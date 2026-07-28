@@ -243,6 +243,96 @@
   // today's goal ring: rounds finished today; the goal = one full pass of the games
   function todayRing() { const dr = load(RINGKEY, {}); const n = (dr.d === today() ? dr.n : 0) || 0; return { n, goal: ROT_LEN, done: n >= ROT_LEN }; }
 
+  // ── STORY1: the daily run is an EPISODE ────────────────────────────────
+  // Kids come back for "what happens next," not for streaks. Each daily run is
+  // one complete episode: an opening beat, a bridge before each round, and a
+  // cliffhanger that names tomorrow.
+  //
+  // EPISODIC on purpose, not one long arc. Three reasons:
+  //   1. articulation needs repetition; a linear story fights that
+  //   2. a child who misses three days must not lose the thread
+  //   3. content can grow forever by appending, with nothing to re-thread
+  // The prose is sound-agnostic — the practice word still comes from the
+  // child's own focus sound — so ONE arc serves all 19 sounds. Writing 19
+  // separate arcs would be a content project; this is a week.
+  const EPISODES = [
+    { id: "star", t: "The Star That Fell",
+      open: "A little star fell out of the sky and landed right in the meadow!",
+      beats: ["The star is scared. Your voice makes it glow brighter.",
+              "It glows! But it's still a long way from home.",
+              "The star hums along with you. It likes your voice.",
+              "Almost warm enough to float again…"],
+      hook: "Tomorrow: the star tries to fly — and the wind has other plans." },
+    { id: "river", t: "The River Crossing",
+      open: "The star floats away — and lands on a rock in the middle of the river!",
+      beats: ["Stepping stones! One appears every time you speak up.",
+              "Halfway across. The water is loud — be louder.",
+              "A fish pokes its head up to listen to you.",
+              "One more stone and you've made it…"],
+      hook: "Tomorrow: what's making that sound in the woods?" },
+    { id: "woods", t: "The Whispering Woods",
+      open: "The woods whisper back everything you say. Echo LOVES it here.",
+      beats: ["Say it and the trees say it right back.",
+              "Something small is following you. It's friendly. Probably.",
+              "It's a lost baby owl! It copies your sound.",
+              "The owl knows a shortcut — through the dark cave…"],
+      hook: "Tomorrow: inside the cave. Bring your loudest voice." },
+    { id: "cave", t: "The Cave of Echoes",
+      open: "It's dark. But every sound you make lights the walls up blue.",
+      beats: ["Your voice bounces around and lights the way.",
+              "Cave drawings! Someone else was here long ago.",
+              "The drawings show a door made of clouds.",
+              "There's light up ahead — you're nearly through…"],
+      hook: "Tomorrow: a ladder made of clouds. Yes, really." },
+    { id: "clouds", t: "The Cloud Ladder",
+      open: "Out of the cave and into the sky — a ladder of clouds goes up and up.",
+      beats: ["Each cloud puffs up solid when you use your voice.",
+              "Don't look down! (Echo looked down.)",
+              "A bird gives you a lift to the next one.",
+              "The top is close enough to touch…"],
+      hook: "Tomorrow: the windy ridge, where sounds get carried away." },
+    { id: "ridge", t: "The Windy Ridge",
+      open: "The wind up here is FAST. It steals sounds right out of the air.",
+      beats: ["Say it strong so the wind can't take it.",
+              "The star tucks into your pocket to stay safe.",
+              "The owl flies ahead to scout the way.",
+              "The wind is dropping. Something big is ahead…"],
+      hook: "Tomorrow: the Sky Door. Only one thing opens it." },
+    { id: "door", t: "The Sky Door",
+      open: "A huge door in the sky. No handle. No key. Just a listening ear carved in it.",
+      beats: ["The door leans in. It wants to hear you.",
+              "A crack of light! Keep going.",
+              "The owl hoots along to help.",
+              "It's opening… slowly… almost…"],
+      hook: "Tomorrow: the star finally goes home." },
+    { id: "home", t: "Home Again",
+      open: "Behind the door: the whole night sky, and a star-shaped gap waiting.",
+      beats: ["The star lifts out of your hands.",
+              "It's climbing! Your voice is carrying it up.",
+              "It settles into its gap and blazes bright.",
+              "The whole sky says thank you, in your voice…"],
+      hook: "Tomorrow: a brand-new adventure begins." },
+  ];
+  const EPKEY = "sona.episode.v1";
+  function _ep() { const v = load(EPKEY, {}); return { i: (v.i | 0) || 0, day: v.day || "" }; }
+  function episodeNum() { return (_ep().i % EPISODES.length) + 1; }        // 1-based, for "Chapter N"
+  function episode() { return EPISODES[_ep().i % EPISODES.length]; }
+  // The beat shown before round `r` (0-based). Round 0 gets the opening.
+  function episodeBeat(r) {
+    const e = episode(); const n = r | 0;
+    if (n <= 0) return e.open;
+    return e.beats[Math.min(n, e.beats.length) - 1] || e.beats[e.beats.length - 1];
+  }
+  function episodeHook() { return episode().hook; }
+  // Advance ONE episode per finished day — never twice for the same local day,
+  // so a replayed or refreshed run can't skip a chapter.
+  function episodeAdvance() {
+    const v = _ep(); const t = today();
+    if (v.day === t) return episode();
+    save(EPKEY, { i: (v.i + 1) % EPISODES.length, day: t });
+    return episode();
+  }
+
   // ── today's rep count (RING1): every honest VAD-counted rep ticks a
   // positive-only daily number the kid watches CLIMB (a kid does 40-60 real
   // reps a day — "47" beats "0/5"). Local-day keyed; silence never counts
@@ -714,7 +804,9 @@
   // Launch gate: subscribers/pilots are always in; everyone else gets a 7-day
   // free trial, then the paywall. (Library, customize, progress stay open.)
   // Native app: never gate — it's free with no in-app purchase.
-  function gated() { if (isNativeApp()) return false; if (isSubscribed() || isPilot()) return false; ensureTrial(); return trialExpired(); }
+  // FREE MODE first: nothing is gated, so a kid page can never bounce to a
+  // price screen mid-play (the audit caught Story Time doing exactly that).
+  function gated() { if (isFree()) return false; if (isNativeApp()) return false; if (isSubscribed() || isPilot()) return false; ensureTrial(); return trialExpired(); }
   // Verify a subscription by email (Stripe is the source of truth) and cache it,
   // so a paid family can unlock on a new device / after clearing storage.
   // SECURITY (F7, founder review): email-only is a weak second factor — the
@@ -1487,16 +1579,39 @@
   }
 
   // ── Apple in-app purchases (RevenueCat, native shell only) ───────────────
-  // The App Store build sells "Sona Lifetime" ($79.99 once, non-consumable —
-  // ONE offer, no subscription, no trial) through Apple's sheet via the
-  // @revenuecat/purchases-capacitor plugin — reached over the same
-  // remote-page bridge SonaAudio already uses. Web visitors never touch this
-  // (Stripe stays the web rail). We purchase DIRECTLY by product id (no
-  // offerings dependency) and unlock on the "full" entitlement. The appl_
-  // key is publishable by design.
+  // The App Store build sells "Sona Yearly" ($79.99/yr, 7-day free trial —
+  // ONE offer) through Apple's sheet via the @revenuecat/purchases-capacitor
+  // plugin — reached over the same remote-page bridge SonaAudio already uses.
+  // Web visitors never touch this (Stripe stays the web rail). We purchase
+  // DIRECTLY by product id (no offerings dependency) and unlock on the "full"
+  // entitlement. The appl_ key is publishable by design.
+  // NOTE: this product id is already App Store-approved; the price lives in
+  // App Store Connect, and the paywall renders whatever ASC reports.
+  // ── FREE MODE (SLP-first launch) ───────────────────────────────────────
+  // Sona is free right now: the go-to-market is clinicians handing it to their
+  // whole caseload, and a price on the door kills that at the first step.
+  // ONE switch, honoured by every purchase surface — onboarding's hand-off,
+  // the plan screen, Settings, and the trial page. Flip to false and the
+  // paid rails (already built and tested) come back with no other edits.
+  const FREE_MODE = true;
+  // QA seam: ?paid=1 (or the sticky sona.paidui flag) reveals the purchase
+  // rails on this device so the paid path stays exercisable — and TESTED —
+  // while free mode ships. It only controls VISIBILITY; it can't unlock
+  // anything, grant entitlement, or move money.
+  function isFree() {
+    if (!FREE_MODE) return false;
+    try {
+      const q = new URLSearchParams(global.location.search);
+      if (q.get("paid") === "1") localStorage.setItem("sona.paidui", "1");
+      if (q.get("paid") === "0") localStorage.removeItem("sona.paidui");
+      if (localStorage.getItem("sona.paidui") === "1") return false;
+    } catch (e) {}
+    return true;
+  }
+
   const IAP_KEY = "appl_nONRfALUCMiZczeCggXKEusmVtl";
-  const IAP_PRODUCT = "com.speaksona.app.lifetime";
-  const IAP_TYPE = "inapp"; // non-consumable — never "subs"
+  const IAP_PRODUCT = "com.speaksona.app.annual";
+  const IAP_TYPE = "subs"; // auto-renewable subscription
   const IAP_ENTITLEMENT = "full";
   function iapPlugin() {
     try { const C = global.Capacitor; return (C && C.isNativePlatform && C.isNativePlatform() && C.Plugins && C.Plugins.Purchases) ? C.Plugins.Purchases : null; } catch (e) { return null; }
@@ -1670,5 +1785,5 @@
   }
   try { installDebug(); } catch (e) {}
 
-  global.Sona = { pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, weekWins, ALL_SOUNDS, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, ladderContent, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, bumpReps, repsToday, pathState, localDay: () => _localDay(), soundFamily, frameShape, checkSounds, checkItems, gradeSound, saveCheck, lastCheck, checkHistory, checkDue, buildPlan, getPlan, journeyWeek, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, gated, gateVerify, gateOk, requireGate, slpCode, offerCode, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, LEVEL_GAMES, GAME_DECK, GAMES_PER_LEVEL, levelGames, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, WORLDS, LEVELS_PER_WORLD, campaignLevels, campaignSounds, campaignState, worldById, worldLevels, worldStars, worldCleared, levelStars, setLevelStars, totalStars, worldUnlocked, levelUnlocked, campaignLaunch, campaignResolve, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repsBeacon, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES };
+  global.Sona = { pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, weekWins, ALL_SOUNDS, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, ladderContent, FREE_MODE, isFree, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, bumpReps, repsToday, pathState, localDay: () => _localDay(), soundFamily, frameShape, checkSounds, checkItems, gradeSound, saveCheck, lastCheck, checkHistory, checkDue, buildPlan, getPlan, journeyWeek, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, gated, gateVerify, gateOk, requireGate, slpCode, offerCode, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, LEVEL_GAMES, GAME_DECK, GAMES_PER_LEVEL, levelGames, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, WORLDS, LEVELS_PER_WORLD, campaignLevels, campaignSounds, campaignState, worldById, worldLevels, worldStars, worldCleared, levelStars, setLevelStars, totalStars, worldUnlocked, levelUnlocked, campaignLaunch, campaignResolve, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repsBeacon, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES };
 })(window);

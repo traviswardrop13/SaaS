@@ -4,22 +4,23 @@ import Stripe from "stripe";
 /**
  * Creates a Stripe Checkout Session for Sona.
  *
- * ONE offer: a $79.99 one-time payment that unlocks Sona forever — no
- * subscription, no trial, no renewal. Charging on the web (Stripe) keeps
- * ~97% of revenue vs Apple's cut. Any legacy `plan` value (annual, monthly,
- * founding — retired tiers from before the lifetime-only simplification)
- * is ignored; every checkout sells the same lifetime unlock, so old links
- * never break. Set STRIPE_PRICE_ID_LIFETIME to use a real Price object
- * instead of the inline price below.
+ * ONE offer: $39.99 per year with a 7-day free trial. Charging on the web
+ * (Stripe) keeps ~97% of revenue vs Apple's cut. Any legacy `plan` value
+ * (monthly, founding, lifetime — retired tiers) is ignored; every checkout
+ * sells the same yearly plan, so old links never break. Set
+ * STRIPE_PRICE_ID_ANNUAL79 to use a real Price object instead of the inline
+ * price below.
  *
- * Needs env: STRIPE_SECRET_KEY (live). Optional: STRIPE_PRICE_ID_LIFETIME.
+ * Needs env: STRIPE_SECRET_KEY (live). Optional: STRIPE_PRICE_ID_ANNUAL79.
  */
 export const runtime = "nodejs";
 
-const LIFETIME = {
-  cents: 7999,
-  name: "Sona — Lifetime",
-  desc: "One payment, Sona forever — every game, every future sound and update. No subscription, no renewals.",
+const PLAN = {
+  cents: 3999,
+  interval: "year" as const,
+  trialDays: 7,
+  name: "Sona — Yearly",
+  desc: "At-home speech-practice games, built with a licensed SLP. Every game, every sound, every update. 7 days free — cancel anytime.",
 } as const;
 
 export async function POST(req: NextRequest) {
@@ -45,7 +46,7 @@ export async function POST(req: NextRequest) {
     process.env.NEXT_PUBLIC_SITE_URL ||
     new URL(req.url).origin;
 
-  const priceId = process.env.STRIPE_PRICE_ID_LIFETIME;
+  const priceId = process.env.STRIPE_PRICE_ID_ANNUAL79;
   const line_items: Stripe.Checkout.SessionCreateParams.LineItem[] = priceId
     ? [{ price: priceId, quantity: 1 }]
     : [
@@ -53,23 +54,22 @@ export async function POST(req: NextRequest) {
           quantity: 1,
           price_data: {
             currency: "usd",
-            unit_amount: LIFETIME.cents,
-            product_data: { name: LIFETIME.name, description: LIFETIME.desc },
+            unit_amount: PLAN.cents,
+            recurring: { interval: PLAN.interval },
+            product_data: { name: PLAN.name, description: PLAN.desc },
           },
         },
       ];
 
   try {
     const session = await stripe.checkout.sessions.create({
-      mode: "payment",
+      mode: "subscription",
       line_items,
+      subscription_data: { trial_period_days: PLAN.trialDays },
       customer_email: email,
-      // one-time payments don't create a Customer by default; without one there
-      // is no durable email->purchase link for Settings -> Restore access
-      customer_creation: "always",
       allow_promotion_codes: true,
       billing_address_collection: "auto",
-      success_url: `${origin}/subscribe/success?session_id={CHECKOUT_SESSION_ID}&plan=lifetime`,
+      success_url: `${origin}/subscribe/success?session_id={CHECKOUT_SESSION_ID}&plan=annual`,
       cancel_url: `${origin}/subscribe.html?canceled=1`,
     });
     return NextResponse.json({ ok: true, url: session.url });
@@ -83,7 +83,7 @@ export async function POST(req: NextRequest) {
 
 /**
  * GET /api/checkout — plain-link checkout for landing-page CTAs (no client
- * JS): creates the lifetime session and 303s straight to Stripe. The `plan`
+ * JS): creates the yearly session and 303s straight to Stripe. The `plan`
  * query param is accepted but ignored (back-compat with old links).
  */
 export async function GET(req: NextRequest) {

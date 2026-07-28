@@ -84,6 +84,11 @@
     .obfoot{position:fixed;left:0;right:0;bottom:0;background:linear-gradient(180deg,rgba(255,255,255,0),#fff 30%);
       padding:16px 18px calc(18px + env(safe-area-inset-bottom));}
     .obfoot .inner{max-width:560px;margin:0 auto;display:flex;gap:10px;align-items:center;}
+    /* role cards stack their label over the description — .choice is a flex
+       row by default, which put the two side by side and wrapped both */
+    #obRole .choice{flex-direction:column;align-items:flex-start;gap:3px;}
+    #obRole .choice b{font-size:16.5px;}
+    #obRole .choice span{font-family:Nunito,sans-serif;font-weight:700;font-size:13.5px;color:var(--muted);line-height:1.4;}
     .skip{background:none;border:none;color:var(--muted);font-weight:800;font-size:15px;cursor:pointer;padding:10px;}
   </style>
 </head>
@@ -101,6 +106,23 @@
       <div class="qh">Let's make talking fun!</div>
       <p class="muted">Short, friendly practice — a few minutes a day. Designed with a speech-language pathologist.</p>
       <p class="muted" id="moveRow" style="margin-top:12px;font-size:13px;"><a href="#" id="moveLink"><b>Have a code?</b> Bought Sona on the website or set up in a browser? Enter it here →</a></p>
+    </div>
+
+    <!-- role: SLP-first launch. Clinicians get Sona free to hand to their
+         whole caseload, so we have to know which one is setting this up. -->
+    <div class="step" data-step="role">
+      <div class="qh">Who's setting this up?</div>
+      <p class="muted">So Echo knows whether to talk to a grown-up at home or a clinician.</p>
+      <div class="choices" id="obRole" style="margin-top:14px;">
+        <div class="choice" data-val="parent">
+          <b>A parent or caregiver</b>
+          <span>Setting Sona up for my own child.</span>
+        </div>
+        <div class="choice" data-val="slp">
+          <b>A speech-language pathologist</b>
+          <span>I want to use Sona with the kids on my caseload.</span>
+        </div>
+      </div>
     </div>
 
     <!-- name -->
@@ -200,6 +222,7 @@
       character: (window.Sona && Sona.characterById && Sona.characterById(p.character)) ? p.character : "fox", // Pip starts selected — legacy/unknown ids fall back too
       // only a profile that finished onboarding carries a real sound CHOICE —
       // a fresh one holds the legacy default list, so new families start at R
+      role: p.role || "",
       focusSounds: (p.onboarded && p.focusSounds && p.focusSounds.length) ? p.focusSounds.slice() : ["R"],
       slpEvaluated: p.slpEvaluated || "",
       goals: p.goals || "",
@@ -207,9 +230,10 @@
       interests: (p.interests && p.interests.length) ? p.interests.slice() : [],
     };
 
-    var ORDER = ["welcome","name","buddy","interests","sounds","goal","slp","email"];
+    var ORDER = ["welcome","role","name","buddy","interests","sounds","goal","slp","email"];
     var BUBBLES = {
       welcome: "Hi! I'm Echo!",
+      role:    "Who am I meeting?",
       name:    "Nice to meet you!",
       buddy:   "Who should practice with you?",
       interests: "Ooh, what do you love?",
@@ -319,6 +343,37 @@
       ch.onclick = function () { Sona.sfx.tap(); goalVal = ch.dataset.val; goalWrap.querySelectorAll(".choice").forEach(function (n) { n.classList.remove("on"); }); ch.classList.add("on"); };
     });
 
+    // role: parent vs SLP. Clinicians get a different finish (a share link for
+    // their caseload) and different copy — everything else is identical.
+    (function(){
+      var rw=document.getElementById("obRole"); if(!rw)return;
+      rw.querySelectorAll(".choice").forEach(function(ch){
+        if(ch.dataset.val===draft.role) ch.classList.add("on");
+        ch.onclick=function(){ Sona.sfx.tap(); draft.role=ch.dataset.val;
+          rw.querySelectorAll(".choice").forEach(function(n){n.classList.remove("on");}); ch.classList.add("on");
+          applyRoleCopy();
+        };
+      });
+    })();
+    // an SLP is setting this up FOR a child, so the wording shifts from
+    // "your child" to "this child" — small, but it's the difference between
+    // software that knows who it's talking to and software that doesn't
+    function applyRoleCopy(){
+      var slp=draft.role==="slp";
+      try{
+        var nq=document.querySelector('[data-step="name"] .qh');
+        if(nq) nq.textContent = slp ? "Which child is this for?" : "Who's practicing today?";
+        var sq=document.querySelector('[data-step="slp"] .qh');
+        if(sq) sq.textContent = slp ? "Goals for this child" : "Has your child seen a speech therapist?";
+        var sw=document.getElementById("obSlp");
+        if(sw) sw.style.display = slp ? "none" : "";
+        var gw=document.getElementById("obGoalsWrap");
+        if(gw && slp) gw.style.display="block";
+        var eq=document.querySelector('[data-step="email"] .qh');
+        if(eq && slp) eq.innerHTML="Save this child's progress";
+      }catch(e){}
+    }
+
     // slp choices
     var slpWrap=document.getElementById("obSlp"), goalsWrap=document.getElementById("obGoalsWrap");
     slpWrap.querySelectorAll(".choice").forEach(function(ch){
@@ -326,6 +381,7 @@
       ch.onclick=function(){ Sona.sfx.tap(); draft.slpEvaluated=ch.dataset.val; slpWrap.querySelectorAll(".choice").forEach(function(n){n.classList.remove("on");}); ch.classList.add("on"); goalsWrap.style.display=(ch.dataset.val==="yes")?"block":"none"; };
     });
     if(draft.slpEvaluated==="yes") goalsWrap.style.display="block";
+    applyRoleCopy();
 
     // name prefill
     var nameEl=document.getElementById("obName"); nameEl.value=draft.childName;
@@ -402,6 +458,7 @@
         // enter the 7-day-trial path. Existing founding profiles keep theirs.
         earlyAdopter: !!_slp,
         slpCode: _slp,
+        role: draft.role || "parent",
         childName: draft.childName,
         childAge: draft.childAge || "",
         character: draft.character,
@@ -440,12 +497,9 @@
       // here); closing it still lands on today with the card-free usage week.
       var goHome=function(){
         try{ if(window.SonaAnalytics)SonaAnalytics.track("onboarding completed"); }catch(e){}
-        // RESERVE: Sona is free during beta — the plan screen stays built but
-        // off. Flip PAYWALL_ON to true to meet unsubscribed families here
-        // (where intent is hottest) again; subscribed/pilot/early-adopter
-        // families skip it either way.
-        var PAYWALL_ON=false;
-        var pay=false; try{ pay=PAYWALL_ON&&!(Sona.isSubscribed&&Sona.isSubscribed())&&!(Sona.isPilot&&Sona.isPilot())&&!(Sona.getProfile&&Sona.getProfile().earlyAdopter); }catch(e){}
+        // Sona is FREE (SLP-first launch) — Sona.FREE_MODE is the one switch,
+        // so this can never drift out of sync with the other purchase surfaces.
+        var pay=false; try{ pay=!(Sona.isFree&&Sona.isFree())&&!(Sona.isSubscribed&&Sona.isSubscribed())&&!(Sona.isPilot&&Sona.isPilot())&&!(Sona.getProfile&&Sona.getProfile().earlyAdopter); }catch(e){}
         // the adult literally just finished the parent flow — grant the
         // grown-ups gate pass so the plan screen opens instead of bouncing
         if(pay){ try{ sessionStorage.setItem("sona.gate.v1",String(Date.now())); }catch(e){} }
