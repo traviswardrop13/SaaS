@@ -240,26 +240,65 @@
     // silence. Unlock synchronously inside every tap that leads to speech.
     function unlockAudio(){ try{ var c=getCtx(); if(c.state==="suspended")c.resume(); var b=c.createBuffer(1,1,22050), s=c.createBufferSource(); s.buffer=b; s.connect(c.destination); s.start(0); }catch(e){} }
     document.addEventListener("pointerdown", unlockAudio, { passive:true, capture:true });
-    function stopSpeech() { sayToken++; try { curSrc && curSrc.stop(); } catch (e) {} curSrc = null; playing = false; }
+    function stopSpeech() { sayToken++; try { curSrc && curSrc.stop(); } catch (e) {} curSrc = null; playing = false; try { window.speechSynthesis && speechSynthesis.cancel(); } catch (e) {} }
+
+    // Guaranteed-audio fallback. library.html was the ONLY speaking page with
+    // no browser-voice path: when /api/tts failed (quota, key, network) the
+    // books just went quiet, while every other page kept talking. A child
+    // pressing "Hear it" must never get silence.
+    function speakFallback(text) {
+      return new Promise(function (resolve) {
+        try {
+          if (!window.speechSynthesis) return resolve();
+          var u = new SpeechSynthesisUtterance(text);
+          u.rate = 0.95; u.pitch = 1.05;
+          u.volume = (profile.volume != null ? profile.volume : 0.8);
+          var done = false;
+          function fin() { if (done) return; done = true; resolve(); }
+          u.onend = fin; u.onerror = fin;
+          // poll instead of trusting a fixed timer — the fixed-timeout version
+          // of this pattern released too early and let two voices overlap
+          var t0 = Date.now();
+          (function watch() {
+            if (done) return;
+            if (!speechSynthesis.speaking && Date.now() - t0 > 400) return fin();
+            if (Date.now() - t0 > 15000) return fin();
+            setTimeout(watch, 400);
+          })();
+          speechSynthesis.speak(u);
+        } catch (e) { resolve(); }
+      });
+    }
+
     function say(text) {
       return new Promise(function (resolve) {
         if (!text) return resolve();
         var tok = ++sayToken;
         playing = true;
-        fetch("/api/tts", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text: text, voice: profile.voiceId || "" }) })
-          .then(function (r) { if (!r.ok) throw 0; return r.arrayBuffer(); })
+        function fin() { if (tok === sayToken) playing = false; resolve(); }
+        // a hung fetch used to leave `playing` true forever, which silently
+        // disabled the Hear button for the rest of the session
+        var ctrl = null, to = null;
+        try { ctrl = new AbortController(); to = setTimeout(function () { try { ctrl.abort(); } catch (e) {} }, 7000); } catch (e) {}
+        fetch("/api/tts", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text: text, voice: profile.voiceId || "" }), signal: ctrl ? ctrl.signal : undefined })
+          .then(function (r) { if (to) clearTimeout(to); if (!r.ok) throw 0; return r.arrayBuffer(); })
           .then(function (buf) {
             if (tok !== sayToken) { playing = false; return resolve(); } // superseded — don't overlap
+            if (!buf || !buf.byteLength) throw 0;
             var bytes = new Uint8Array(buf), ctx = getCtx(), n = bytes.byteLength >> 1;
             var ab = ctx.createBuffer(1, n, 24000), ch = ab.getChannelData(0);
             var dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
             for (var i = 0; i < n; i++) ch[i] = dv.getInt16(i * 2, true) / 32768;
             var s = ctx.createBufferSource(); s.buffer = ab; s.playbackRate.value = PITCH; var g = ctx.createGain(); g.gain.value = (profile.volume != null ? profile.volume : 0.8); s.connect(g); g.connect(ctx.destination);
             curSrc = s;
-            s.onended = function () { playing = false; curSrc = null; resolve(); };
+            s.onended = function () { curSrc = null; fin(); };
             s.start();
           })
-          .catch(function () { setTimeout(function () { playing = false; resolve(); }, 600 + text.length * 40); });
+          .catch(function () {
+            if (to) clearTimeout(to);
+            if (tok !== sayToken) { playing = false; return resolve(); }
+            speakFallback(text).then(fin, fin);
+          });
       });
     }
 
