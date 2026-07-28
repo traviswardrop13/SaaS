@@ -23,7 +23,18 @@ const page = await ctx.newPage();
 let errs = [];
 page.on("pageerror", (e) => errs.push(e.message));
 await page.addInitScript(() => {
-  navigator.mediaDevices.getUserMedia = () => Promise.resolve(new MediaStream());
+  // a realistic SILENT mic: a bare `new MediaStream()` has no audio track, so
+  // createMediaStreamSource throws once the round gets as far as the engine.
+  // Gain 0 keeps it silent, so the VAD can't count phantom reps.
+  navigator.mediaDevices.getUserMedia = () => {
+    try {
+      const ac = new (window.AudioContext || window.webkitAudioContext)();
+      const dst = ac.createMediaStreamDestination();
+      const g = ac.createGain(); g.gain.value = 0; g.connect(dst);
+      const osc = ac.createOscillator(); osc.connect(g); osc.start();
+      return Promise.resolve(dst.stream);
+    } catch (e) { return Promise.resolve(new MediaStream()); }
+  };
   localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Milo", childAge: "7", focusSounds: ["R"], onboarded: true, voiceOn: false }));
   localStorage.setItem("sona.micok", "1");
 });
@@ -92,6 +103,21 @@ ok("beat carries real story copy", card.txt.length > 20, card.txt);
 await page.waitForTimeout(4600);
 card = await page.evaluate(() => document.getElementById("storyCard").classList.contains("show"));
 ok("beat card clears itself (no tap needed)", !card);
+
+// ── the beat must FINISH SPEAKING before the round's prompt plays ──
+// Regression: the beat used to fire say() un-awaited behind a fixed timer, so
+// the story line and the prompt clip played on top of each other. Two voices.
+{
+  const src = readFileSync(ROOT + "/charge.html", "utf8");
+  ok("story beat awaits its own speech before the round starts",
+    /Promise\.all\(\[spoke,\s*minShow\]\)/.test(src),
+    "a fixed timer that resolves while TTS is still playing overlaps the prompt");
+  ok("story beat still has a hard cap so a stuck TTS can't hang the round",
+    /cap\s*=\s*new Promise/.test(src));
+  ok("Rachel's recorded clip set is not shipping",
+    /var HUMANCLIPS=false;/.test(src),
+    "HUMANCLIPS=true plays /coach/say/<SOUND>.mp3, which is Rachel's own voice");
+}
 
 // ── free play has no story ──
 await page.goto("http://localhost:8151/charge.html?game=arcade-slice.html");
