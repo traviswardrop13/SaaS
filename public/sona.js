@@ -113,7 +113,7 @@
       badge(100, 52) + '</svg>';
   }
 
-  const DEFAULT_PROFILE = { childName: "", childAge: "", focusSounds: ["R", "S", "L", "K"], voiceOn: true, coachName: "Coach", cloudScoring: true, slpEvaluated: "", goals: "", focusArea: "articulation", interests: [], language: "en", character: "fox", outfit: "none", backdrop: "sky", soundOn: true, voiceId: "qBDvhofpxp92JgXJxDjB", volume: 0.3, musicOn: false, dailyMinutes: 5, owned: { outfits: ["none"], backdrops: ["sky"] }, onboarded: false };
+  const DEFAULT_PROFILE = { childName: "", childAge: "", focusSounds: ["R", "S", "L", "K"], voiceOn: true, coachName: "Coach", cloudScoring: true, slpEvaluated: "", goals: "", focusArea: "articulation", interests: [], language: "en", character: "fox", outfit: "none", backdrop: "sky", soundOn: true, voiceId: "qBDvhofpxp92JgXJxDjB", volume: 0.8, musicOn: false, dailyMinutes: 5, owned: { outfits: ["none"], backdrops: ["sky"] }, onboarded: false };
   // stage per sound: 0 = isolation (the letter), 1 = syllables, 2 = words, 3 = mastered.
   const STAGES = ["isolation", "syllables", "words"];
   const DEFAULT_PROGRESS = { sessions: [], totals: { sessions: 0, words: 0, stars: 0, coins: 0 }, streak: { count: 0, lastDate: "" }, bySound: {}, stage: {}, chests: {}, missed: [] };
@@ -126,6 +126,11 @@
     const p = Object.assign(clone(DEFAULT_PROFILE), load(PKEY, {}));
     // migrate old/empty default voices (Jessica, Will, and the prior Leo) to the current voice
     if (!p.voiceId || p.voiceId === "cgSgspJ2msm6clMCkdW9" || p.voiceId === "bIHbv24MWmeRgasZH58o" || p.voiceId === "SF6OznV7UB2AxeidTpie") p.voiceId = DEFAULT_PROFILE.voiceId;
+    // one-time repair: the default used to be 0.3 and the Settings slider that
+    // could change it was removed, so families were stuck at 30% volume with
+    // no way up. Lift only that exact value — a deliberate 0.3 is unreachable
+    // today, and anything else the family chose is left alone.
+    if (p.volume === 0.3) { p.volume = 0.8; try { save(PKEY, Object.assign({}, load(PKEY, {}), { volume: 0.8 })); } catch (e) {} }
     return p;
   }
   // Playback-rate multiplier for /api/tts audio. Leo's ElevenLabs voice is
@@ -1593,6 +1598,13 @@
   // ONE switch, honoured by every purchase surface — onboarding's hand-off,
   // the plan screen, Settings, and the trial page. Flip to false and the
   // paid rails (already built and tested) come back with no other edits.
+  // Recorded human model clips (/coach/say/<SOUND>[-demo].mp3) are Rachel's own
+  // voice. OFF everywhere until a non-Rachel set exists. This MUST live here,
+  // not per-page: charge.html gated it locally and coach-call.html went on
+  // playing them ungated, so her voice shipped anyway.
+  const HUMAN_CLIPS = false;
+  function humanClipsOn() { return HUMAN_CLIPS; }
+
   const FREE_MODE = true;
   // QA seam: ?paid=1 (or the sticky sona.paidui flag) reveals the purchase
   // rails on this device so the paid path stays exercisable — and TESTED —
@@ -1785,5 +1797,5 @@
   }
   try { installDebug(); } catch (e) {}
 
-  global.Sona = { pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, weekWins, ALL_SOUNDS, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, ladderContent, FREE_MODE, isFree, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, bumpReps, repsToday, pathState, localDay: () => _localDay(), soundFamily, frameShape, checkSounds, checkItems, gradeSound, saveCheck, lastCheck, checkHistory, checkDue, buildPlan, getPlan, journeyWeek, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, gated, gateVerify, gateOk, requireGate, slpCode, offerCode, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, LEVEL_GAMES, GAME_DECK, GAMES_PER_LEVEL, levelGames, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, WORLDS, LEVELS_PER_WORLD, campaignLevels, campaignSounds, campaignState, worldById, worldLevels, worldStars, worldCleared, levelStars, setLevelStars, totalStars, worldUnlocked, levelUnlocked, campaignLaunch, campaignResolve, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repsBeacon, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES };
+  global.Sona = { pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, weekWins, ALL_SOUNDS, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, ladderContent, FREE_MODE, isFree, HUMAN_CLIPS, humanClipsOn, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, bumpReps, repsToday, pathState, localDay: () => _localDay(), soundFamily, frameShape, checkSounds, checkItems, gradeSound, saveCheck, lastCheck, checkHistory, checkDue, buildPlan, getPlan, journeyWeek, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, gated, gateVerify, gateOk, requireGate, slpCode, offerCode, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, LEVEL_GAMES, GAME_DECK, GAMES_PER_LEVEL, levelGames, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, WORLDS, LEVELS_PER_WORLD, campaignLevels, campaignSounds, campaignState, worldById, worldLevels, worldStars, worldCleared, levelStars, setLevelStars, totalStars, worldUnlocked, levelUnlocked, campaignLaunch, campaignResolve, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repsBeacon, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES };
 })(window);

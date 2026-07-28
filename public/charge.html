@@ -382,10 +382,9 @@
     // Human model prompts ON: /coach/say/<SOUND>.mp3 is the finished
     // Sarah-voiced set (Rachel's takes, re-voiced) — the prompt actually
     // PERFORMS the sound, which TTS never can. TTS remains the fallback.
-    // OFF: the recorded /coach/say/<SOUND>.mp3 set is Rachel's own voice and
-    // shouldn't ship. playPrompt() falls through to TTS, which is what every
-    // other spoken line already uses. Flip back on once a non-Rachel set exists.
-    var HUMANCLIPS=false;
+    // Shared switch (Sona.HUMAN_CLIPS) — NOT a local copy. A local copy here is
+    // exactly why Rachel's clips kept playing in coach-call.html.
+    var HUMANCLIPS=false; try{ HUMANCLIPS=!!(S&&S.humanClipsOn&&S.humanClipsOn()); }catch(e){}
     function playPrompt(){
       return Promise.resolve().then(function(){ return new Promise(function(res){
         if(ITEM.level!=="isolation" || !HUMANCLIPS){ say(sayLine()).then(res); return; }
