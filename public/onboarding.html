@@ -84,6 +84,11 @@
     .obfoot{position:fixed;left:0;right:0;bottom:0;background:linear-gradient(180deg,rgba(255,255,255,0),#fff 30%);
       padding:16px 18px calc(18px + env(safe-area-inset-bottom));}
     .obfoot .inner{max-width:560px;margin:0 auto;display:flex;gap:10px;align-items:center;}
+    /* role cards stack their label over the description — .choice is a flex
+       row by default, which put the two side by side and wrapped both */
+    #obRole .choice{flex-direction:column;align-items:flex-start;gap:3px;}
+    #obRole .choice b{font-size:16.5px;}
+    #obRole .choice span{font-family:Nunito,sans-serif;font-weight:700;font-size:13.5px;color:var(--muted);line-height:1.4;}
     .skip{background:none;border:none;color:var(--muted);font-weight:800;font-size:15px;cursor:pointer;padding:10px;}
   </style>
 </head>

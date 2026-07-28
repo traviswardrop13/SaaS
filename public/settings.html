@@ -129,10 +129,46 @@
       <p style="margin-top:10px;font-size:14px;"><a href="/privacy">Privacy</a> · <a href="/terms">Terms</a> · <a href="/support">Support</a></p>
     </div>
 
+    <!-- SLP corner: only for clinicians (profile.role === "slp"). Their job
+         isn't setting a goal for one child — it's getting Sona into the hands
+         of a caseload and watching who's actually practising. -->
+    <div class="card" id="slpCard" style="display:none;">
+      <h2>Your caseload 🎓</h2>
+      <p class="muted" style="margin-bottom:12px;">Share one link with families. Everyone who joins through it shows up on your dashboard — practice days, reps, and how each sound is coming along.</p>
+
+      <label class="field" for="slpCodeIn">Your code</label>
+      <input id="slpCodeIn" type="text" placeholder="e.g. RACHEL1" autocomplete="off"
+             style="text-transform:uppercase;letter-spacing:1px;font-family:'Baloo 2';font-weight:800;" />
+      <p class="muted" style="font-size:12px;margin-top:6px;">Any short word works — families type it once and you can tell whose is whose.</p>
+
+      <div id="slpLinkWrap" style="display:none;margin-top:14px;background:#f4fce9;border-radius:14px;padding:12px 14px;">
+        <div style="font-weight:800;font-size:12px;color:#46a302;letter-spacing:.05em;">FAMILY LINK</div>
+        <div id="slpLink" style="font-weight:800;font-size:13.5px;color:var(--ink);word-break:break-all;margin-top:4px;"></div>
+      </div>
+      <div style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+        <button class="btn" id="slpCopy" style="width:auto;padding:12px 20px;">Copy family link</button>
+        <a class="btn ghost" id="slpDash" href="/slp.html" style="width:auto;padding:12px 18px;">Open dashboard →</a>
+        <span id="slpMsg" class="muted" style="font-weight:800;"></span>
+      </div>
+      <p class="muted" style="font-size:12px;margin-top:12px;line-height:1.5;">Families only appear here after their grown-up agrees to share progress with you. Sona never sends you audio — counts and accuracy only.</p>
+    </div>
+
     <div class="card">
       <h2>Help us improve 💬</h2>
-      <p class="muted" style="margin-bottom:10px;">Sona is in beta — tell us what's confusing or what you'd love to see next.</p>
-      <a class="btn ghost" href="mailto:wardroptravis@gmail.com?subject=Sona%20feedback" style="width:auto;padding:12px 18px;">Send feedback</a>
+      <p class="muted" style="margin-bottom:4px;" id="fbLead">Sona is in beta — what would you change?</p>
+      <!-- Chips first, typing optional. A blank box gets blank answers; a
+           tapped chip gets an answer from someone who'd never have written in. -->
+      <div id="fbChips" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;"></div>
+      <div id="fbMore" style="display:none;">
+        <textarea id="fbText" rows="2" placeholder="Anything else? (optional)"
+          style="width:100%;border:2px solid var(--line);border-radius:14px;padding:12px;font-family:Nunito,sans-serif;font-weight:700;font-size:14px;color:var(--ink);resize:none;margin-top:12px;"></textarea>
+        <div style="margin-top:10px;">
+          <div style="font-weight:800;font-size:13.5px;color:var(--ink);">Would you recommend Sona to a friend?</div>
+          <div id="fbRec" style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;"></div>
+        </div>
+        <button class="btn" id="fbSend" style="width:auto;padding:12px 22px;margin-top:14px;">Send it</button>
+      </div>
+      <p id="fbDone" style="display:none;margin-top:12px;font-weight:800;color:#2e7d32;">Thank you — we build fast. ✓</p>
     </div>
 
     <div class="card">
@@ -250,6 +286,109 @@
         var r = Sona.importData(v);
         if (r.ok) { m.style.color = "var(--good)"; m.textContent = "Restored " + r.restored + " items ✓ Reloading…"; setTimeout(function () { location.reload(); }, 900); }
         else { m.style.color = "#b42323"; m.textContent = r.error || "Couldn't restore."; }
+      };
+    })();
+
+    // ── SLP corner: share link + dashboard ──────────────────────────────
+    // An SLP's whole job here is distribution: one link, handed to a caseload.
+    // The code lives in the profile so the dashboard and the family link agree.
+    (function () {
+      var card = document.getElementById("slpCard");
+      if (!card) return;
+      if ((p.role || "") !== "slp") return;          // parents never see this
+      card.style.display = "block";
+      var inp = document.getElementById("slpCodeIn"),
+          wrap = document.getElementById("slpLinkWrap"),
+          out = document.getElementById("slpLink"),
+          msg = document.getElementById("slpMsg");
+      function clean(v) { return String(v || "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 12); }
+      function linkFor(c) { return location.origin + "/?slp=" + c; }
+      var code = "";
+      try { code = clean(p.slpCode || (Sona.slpCode && Sona.slpCode()) || ""); } catch (e) {}
+      inp.value = code;
+      function paint() {
+        var c = clean(inp.value);
+        if (c) { out.textContent = linkFor(c); wrap.style.display = "block"; }
+        else { wrap.style.display = "none"; }
+      }
+      paint();
+      inp.oninput = function () {
+        var c = clean(inp.value);
+        inp.value = c;
+        paint();
+        try { Sona.saveProfile({ slpCode: c }); localStorage.setItem("sona.slp", c); } catch (e) {}
+      };
+      document.getElementById("slpCopy").onclick = function () {
+        var c = clean(inp.value);
+        if (!c) { msg.style.color = "#b42323"; msg.textContent = "Pick a code first."; inp.focus(); return; }
+        var link = linkFor(c);
+        function done() { msg.style.color = "var(--good)"; msg.textContent = "Copied ✓"; setTimeout(function () { msg.textContent = ""; }, 2400); }
+        try {
+          if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(link).then(done, function () { window.prompt("Copy your family link:", link); });
+          else window.prompt("Copy your family link:", link);
+        } catch (e) { window.prompt("Copy your family link:", link); }
+      };
+      document.getElementById("slpDash").onclick = function () {
+        try { var c = clean(inp.value); if (c) localStorage.setItem("sona.slp", c); } catch (e) {}
+      };
+    })();
+
+    // ── feedback: chips first, typing optional ──────────────────────────
+    // A blank box gets blank answers. A tapped chip gets an answer from
+    // someone who'd never have written in — and the recommend question is the
+    // one number that actually predicts word-of-mouth.
+    (function () {
+      var host = document.getElementById("fbChips"); if (!host) return;
+      var isSlp = (p.role || "") === "slp";
+      var CHIPS = isSlp
+        ? ["More sounds", "Better progress data", "Easier to assign", "More game variety", "Something's broken", "Something else"]
+        : ["More games", "New sounds to practice", "Progress reports", "Easier for my kid", "Something's broken", "Something else"];
+      var REC = ["Definitely", "Maybe", "Not yet"];
+      try { if (isSlp) document.getElementById("fbLead").textContent = "You're the expert — what would make Sona more useful on your caseload?"; } catch (e) {}
+      var picked = {}, rec = "";
+      function chip(label, on) {
+        var b = document.createElement("button");
+        b.type = "button"; b.textContent = label;
+        b.style.cssText = "border:2px solid var(--line);border-radius:999px;padding:9px 14px;background:" +
+          (on ? "linear-gradient(180deg,#ffa05a,#ff8a3d)" : "#fff") + ";color:" + (on ? "#fff" : "var(--ink)") +
+          ";font-family:'Baloo 2';font-weight:800;font-size:13px;cursor:pointer;";
+        return b;
+      }
+      CHIPS.forEach(function (label) {
+        var b = chip(label, false);
+        b.onclick = function () {
+          picked[label] = !picked[label];
+          b.style.background = picked[label] ? "linear-gradient(180deg,#ffa05a,#ff8a3d)" : "#fff";
+          b.style.color = picked[label] ? "#fff" : "var(--ink)";
+          var any = CHIPS.some(function (k) { return picked[k]; });
+          document.getElementById("fbMore").style.display = any ? "block" : "none";
+        };
+        host.appendChild(b);
+      });
+      var recHost = document.getElementById("fbRec");
+      REC.forEach(function (label) {
+        var b = chip(label, false);
+        b.onclick = function () {
+          rec = label;
+          [].slice.call(recHost.children).forEach(function (n) { n.style.background = "#fff"; n.style.color = "var(--ink)"; });
+          b.style.background = "linear-gradient(180deg,#ffa05a,#ff8a3d)"; b.style.color = "#fff";
+        };
+        recHost.appendChild(b);
+      });
+      document.getElementById("fbSend").onclick = function () {
+        var chips = CHIPS.filter(function (k) { return picked[k]; });
+        if (!chips.length) return;
+        var note = (document.getElementById("fbText").value || "").trim().slice(0, 600);
+        var code = ""; try { code = (p.slpCode || (Sona.pilotInfo && Sona.pilotInfo().code) || ""); } catch (e) {}
+        var text = chips.join(" + ") + (rec ? " · recommend: " + rec : "") + (note ? " · " + note : "");
+        try {
+          fetch("/api/feedback", { method: "POST", headers: { "Content-Type": "application/json" }, keepalive: true,
+            body: JSON.stringify({ q: "settings.chips", text: text, src: isSlp ? "settings-slp" : "settings", code: code }) }).catch(function () {});
+        } catch (e) {}
+        document.getElementById("fbChips").style.display = "none";
+        document.getElementById("fbMore").style.display = "none";
+        document.getElementById("fbLead").style.display = "none";
+        document.getElementById("fbDone").style.display = "block";
       };
     })();
 
