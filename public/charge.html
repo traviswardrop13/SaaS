@@ -153,6 +153,24 @@
     }
 
     /* warm-card overlays */
+    /* ── STORY1: the beat before the round ── */
+    /* near-opaque + blurred: the practice screen behind has its own Echo, and
+       two Echos on screen at once reads as a glitch */
+    #storyCard{position:fixed;inset:0;z-index:70;display:none;align-items:center;justify-content:center;padding:26px;
+      background:linear-gradient(180deg,#1d2a44,#3a2a1a);cursor:pointer;
+      -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);}
+    #storyCard.show{display:flex;animation:scIn .32s ease both;}
+    @keyframes scIn{from{opacity:0}to{opacity:1}}
+    .scInner{max-width:340px;text-align:center;}
+    .scEcho{width:88px;height:88px;object-fit:contain;animation:scFloat 2.6s ease-in-out infinite;}
+    @keyframes scFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+    .scTtl{font-family:"Baloo 2";font-weight:800;font-size:13px;letter-spacing:.09em;text-transform:uppercase;
+      color:#ffd21c;margin-top:10px;}
+    .scTxt{font-family:"Baloo 2";font-weight:800;font-size:23px;line-height:1.35;color:#fff;margin-top:10px;
+      text-shadow:0 2px 12px rgba(0,0,0,.35);}
+    .scTap{margin-top:20px;font-weight:800;font-size:12px;color:rgba(255,255,255,.55);letter-spacing:.04em;}
+    @media (prefers-reduced-motion:reduce){ .scEcho{animation:none} #storyCard.show{animation:none} }
+
     .ovl{position:fixed;inset:0;z-index:60;background:rgba(74,44,20,.45);display:none;align-items:center;justify-content:center;padding:24px;}
     .ovl.show{display:flex;}
     .ovlCard{background:var(--cream);border-radius:28px;padding:56px 20px 22px;width:100%;max-width:340px;text-align:center;box-shadow:0 18px 40px rgba(74,44,20,.35);position:relative;display:flex;flex-direction:column;align-items:center;gap:10px;}
@@ -244,6 +262,17 @@
   </div>
 
   <!-- run complete -->
+  <!-- STORY1: the story beat that opens each daily round. Sits above the
+       practice screen, clears itself, and never needs a tap to get past. -->
+  <div id="storyCard">
+    <div class="scInner">
+      <img class="scEcho" src="/coach/echo/echo-idle.svg" alt="" />
+      <div class="scTtl" id="storyTtl"></div>
+      <div class="scTxt" id="storyTxt"></div>
+      <div class="scTap">tap to keep going</div>
+    </div>
+  </div>
+
   <div class="ovl" id="runOvl">
     <div class="ovlCard">
       <img class="ovlEcho" src="/coach/echo/echo-celebrate.svg" alt="" />
@@ -251,7 +280,12 @@
       <h2 id="runTitle">You did it!</h2>
       <div id="runScore">0</div>
       <div id="runBest"></div>
-      <p>Come back tomorrow for another shot!</p>
+      <!-- STORY1 cliffhanger: the actual reason a 6-year-old comes back
+           tomorrow. Naming what happens next beats "come back tomorrow". -->
+      <div id="runHook" style="display:none;margin-top:14px;background:linear-gradient(160deg,#fff3e3,#ffe6cc);border-radius:16px;padding:13px 16px;text-align:left;">
+        <div style="font-family:'Baloo 2';font-weight:800;font-size:12px;letter-spacing:.08em;color:#c2410c;">NEXT TIME</div>
+        <div id="runHookTxt" style="font-weight:800;font-size:15px;color:var(--ink);line-height:1.4;margin-top:3px;"></div>
+      </div>
       <button class="btn" id="runDone">Done</button>
       <button class="btn ghost" id="runArcade">Free play in the arcade →</button>
     </div>
@@ -793,7 +827,33 @@
         });
       });
     }
+    // ---- STORY1: the beat before the round ----
+    // The daily run is an episode. One short line lands before each round —
+    // chapter title on round 1, a bridge after that — then it clears itself and
+    // practice begins. Deliberately tiny: a card a child must dismiss is a tax
+    // on the thing they came to do. Free play gets no beat (no story there).
+    function storyBeat(){
+      return new Promise(function(res){
+        if(!isDaily || !(S&&S.episodeBeat)) return res();
+        var r=(run&&run.round)|0, txt="", ttl="";
+        try{ txt=S.episodeBeat(r); ttl=(r<=0&&S.episode)?("Chapter "+S.episodeNum()+" · "+S.episode().t):""; }catch(e){ return res(); }
+        if(!txt) return res();
+        var card=$("storyCard"); if(!card) return res();
+        try{
+          $("storyTtl").textContent=ttl; $("storyTtl").style.display=ttl?"block":"none";
+          $("storyTxt").textContent=txt;
+          card.classList.add("show");
+        }catch(e){ return res(); }
+        var done=false;
+        function go(){ if(done)return; done=true; try{ card.classList.remove("show"); }catch(e){} setTimeout(res,220); }
+        card.onclick=go;                       // tap to skip ahead
+        setTimeout(go, r<=0?4200:3200);        // chapter openers get a beat longer
+        try{ if(profile.voiceOn!==false) say(txt); }catch(e){}
+      });
+    }
+
     async function flow(){
+      await storyBeat();   // STORY1: one line of story, then straight to practice
       await micPrimer();
       try{ micStream=await navigator.mediaDevices.getUserMedia({audio:true,video:false}); try{ localStorage.setItem("sona.micok","1"); }catch(e){} }
       catch(e){ micGo(false); if(S&&S.micDenied)S.micDenied({back:"/today.html"}); return; }
@@ -935,9 +995,14 @@
       $("runBest").textContent=r.newBest?"NEW BEST!":("Best ever: "+r.best);
       $("runEmoji").innerHTML=(window.Sona&&Sona.icon)?Sona.icon("star",56):"";
       $("runTitle").textContent=r.newBest?"NEW HIGH SCORE!":"You did it!";
+      // STORY1: read the hook BEFORE advancing, then move to the next episode
+      // so tomorrow opens on the chapter this cliffhanger just promised.
+      var hook="";
+      try{ if(S.episodeHook){ hook=S.episodeHook(); if(S.episodeAdvance)S.episodeAdvance(); } }catch(e){}
+      if(hook){ try{ $("runHookTxt").textContent=hook; $("runHook").style.display="block"; }catch(e){} }
       $("runOvl").classList.add("show");
       sfx("complete"); try{ if(S.confetti)S.confetti(); }catch(e){}
-      say(r.newBest?"New high score! Amazing!":"You did it! Great work!");
+      say((r.newBest?"New high score! Amazing! ":"You did it! Great work! ")+hook);
     }
     $("runDone").onclick=function(){ location.href="/today.html"; };
     $("runArcade").onclick=function(){ location.href="/today.html#play"; };
