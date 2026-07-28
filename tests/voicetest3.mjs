@@ -70,7 +70,10 @@ await page.waitForTimeout(2500);
 const r1ok = ttsPosts.length === 0 || ttsPosts[0] === "Ready? Pull your tongue back and up, and make your R sound... five times... Go!";
 console.log((r1ok ? "PASS" : "FAIL") + "  E2E r1 human clip replaces TTS (or exact fallback)  → " + JSON.stringify(ttsPosts[0] || "(no TTS — clip played)"));
 if (!r1ok) fails++;
-ok("human model clips enabled in source", /var HUMANCLIPS=true/.test(html), true);
+// The recorded /coach/say/<SOUND>.mp3 set is Rachel's own voice and must not
+// ship — playPrompt falls through to TTS, the same path every other line uses.
+// Flip this assertion back only when a non-Rachel clip set is in place.
+ok("Rachel's recorded clip set stays off", /var HUMANCLIPS=false/.test(html), true);
 // Workstream A: the sound chip is gone — the header context line carries the sound
 ok("E2E r1 header names the sound", await page.evaluate(() => /R sound/.test(document.getElementById("ctxLine").textContent)), true);
 

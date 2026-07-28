@@ -382,7 +382,10 @@
     // Human model prompts ON: /coach/say/<SOUND>.mp3 is the finished
     // Sarah-voiced set (Rachel's takes, re-voiced) — the prompt actually
     // PERFORMS the sound, which TTS never can. TTS remains the fallback.
-    var HUMANCLIPS=true;
+    // OFF: the recorded /coach/say/<SOUND>.mp3 set is Rachel's own voice and
+    // shouldn't ship. playPrompt() falls through to TTS, which is what every
+    // other spoken line already uses. Flip back on once a non-Rachel set exists.
+    var HUMANCLIPS=false;
     function playPrompt(){
       return Promise.resolve().then(function(){ return new Promise(function(res){
         if(ITEM.level!=="isolation" || !HUMANCLIPS){ say(sayLine()).then(res); return; }
@@ -847,22 +850,35 @@
     // practice begins. Deliberately tiny: a card a child must dismiss is a tax
     // on the thing they came to do. Free play gets no beat (no story there).
     function storyBeat(){
-      return new Promise(function(res){
-        if(!isDaily || !(S&&S.episodeBeat)) return res();
-        var r=(run&&run.round)|0, txt="", ttl="";
-        try{ txt=S.episodeBeat(r); ttl=(r<=0&&S.episode)?("Chapter "+S.episodeNum()+" · "+S.episode().t):""; }catch(e){ return res(); }
-        if(!txt) return res();
-        var card=$("storyCard"); if(!card) return res();
+      return new Promise(function(resolve){
+        if(!isDaily || !(S&&S.episodeBeat)) return resolve();
+        var rd=(run&&run.round)|0, txt="", ttl="";
+        try{ txt=S.episodeBeat(rd); ttl=(rd<=0&&S.episode)?("Chapter "+S.episodeNum()+" · "+S.episode().t):""; }catch(e){ return resolve(); }
+        if(!txt) return resolve();
+        var card=$("storyCard"); if(!card) return resolve();
         try{
           $("storyTtl").textContent=ttl; $("storyTtl").style.display=ttl?"block":"none";
           $("storyTxt").textContent=txt;
           card.classList.add("show");
-        }catch(e){ return res(); }
-        var done=false;
-        function go(){ if(done)return; done=true; try{ card.classList.remove("show"); }catch(e){} setTimeout(res,220); }
-        card.onclick=go;                       // tap to skip ahead
-        setTimeout(go, r<=0?4200:3200);        // chapter openers get a beat longer
-        try{ if(profile.voiceOn!==false) say(txt); }catch(e){}
+        }catch(e){ return resolve(); }
+
+        // The round must NOT start until this line has finished speaking.
+        // playPrompt() plays its clip through `new Audio()`, a separate path
+        // from say()'s queue, so an un-awaited beat put two voices on top of
+        // each other. Tapping hides the card early but never cuts the audio —
+        // the prompt still waits, so there is only ever one voice.
+        var hidden=false, settled=false;
+        function hide(){ if(hidden)return; hidden=true; try{ card.classList.remove("show"); }catch(e){} }
+        function finish(){ if(settled)return; settled=true; hide(); setTimeout(resolve,200); }
+        card.onclick=hide;
+
+        var spoke;
+        try{ spoke=(profile.voiceOn!==false)?say(txt):Promise.resolve(); }catch(e){ spoke=Promise.resolve(); }
+        // a minimum beat so a failed/instant TTS doesn't just flash the card
+        var minShow=new Promise(function(r2){ setTimeout(r2, rd<=0?2400:1900); });
+        // hard cap: a stuck TTS can never hang the round
+        var cap=new Promise(function(r3){ setTimeout(r3, 11000); });
+        Promise.race([Promise.all([spoke,minShow]), cap]).then(finish, finish);
       });
     }
 
