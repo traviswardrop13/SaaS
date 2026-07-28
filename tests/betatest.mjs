@@ -35,11 +35,13 @@ const ob = await page.evaluate(() => ({
   preselected: !!document.querySelector("#obBuddies .bopt.on"),
 }));
 ok("beta step removed", !ob.betaStep);
-ok("8 progress segments", ob.segs === 8);
+ok("9 progress segments (role step added)", ob.segs === 9);
 ok("buddy preselected (Pip)", ob.preselected);
 // real walk: click through every step to finish()
 const clickNext = async () => { await page.evaluate(() => document.getElementById("nextBtn").click()); await page.waitForTimeout(250); };
 await clickNext(); // welcome →
+await page.evaluate(() => document.querySelector('#obRole .choice[data-val="parent"]').click());
+await clickNext(); // role →
 await page.evaluate(() => { document.getElementById("obName").value = "Milo"; });
 await clickNext(); // name →
 await clickNext(); // buddy →
@@ -75,6 +77,8 @@ await page.goto("http://localhost:8129/onboarding.html"); await page.waitForTime
 const nameStep = await page.evaluate(() => document.querySelector('[data-step="name"]').textContent);
 ok("name question carries justification microcopy", /cheers them on by name/.test(nameStep));
 await clickNext(); // welcome →
+await page.evaluate(() => document.querySelector('#obRole .choice[data-val="slp"]').click());
+await clickNext(); // role → (this walk is an SLP)
 await page.evaluate(() => { document.getElementById("obName").value = "Zoe"; });
 await clickNext(); // name →
 await clickNext(); // buddy →
@@ -98,6 +102,7 @@ const skipFin = await page.evaluate(() => ({
 }));
 ok("email skip still finishes onboarding (no gate)", skipFin.achieveShown && skipFin.prof.onboarded === true && skipFin.prof.email === "" && skipFin.prof.childName === "Zoe");
 ok("open sound picker: S saved next to R", (skipFin.prof.focusSounds || []).includes("S") && (skipFin.prof.focusSounds || []).includes("R"));
+ok("role is captured (SLP)", skipFin.prof.role === "slp", JSON.stringify(skipFin.prof.role));
 
 // ── pulse: shows on 3rd visit for early adopters, chip-first, X cools 14d ──
 fbPosts = []; errs = [];

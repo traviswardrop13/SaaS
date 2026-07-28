@@ -804,7 +804,9 @@
   // Launch gate: subscribers/pilots are always in; everyone else gets a 7-day
   // free trial, then the paywall. (Library, customize, progress stay open.)
   // Native app: never gate — it's free with no in-app purchase.
-  function gated() { if (isNativeApp()) return false; if (isSubscribed() || isPilot()) return false; ensureTrial(); return trialExpired(); }
+  // FREE MODE first: nothing is gated, so a kid page can never bounce to a
+  // price screen mid-play (the audit caught Story Time doing exactly that).
+  function gated() { if (isFree()) return false; if (isNativeApp()) return false; if (isSubscribed() || isPilot()) return false; ensureTrial(); return trialExpired(); }
   // Verify a subscription by email (Stripe is the source of truth) and cache it,
   // so a paid family can unlock on a new device / after clearing storage.
   // SECURITY (F7, founder review): email-only is a weak second factor — the
@@ -1585,6 +1587,28 @@
   // entitlement. The appl_ key is publishable by design.
   // NOTE: this product id is already App Store-approved; the price lives in
   // App Store Connect, and the paywall renders whatever ASC reports.
+  // ── FREE MODE (SLP-first launch) ───────────────────────────────────────
+  // Sona is free right now: the go-to-market is clinicians handing it to their
+  // whole caseload, and a price on the door kills that at the first step.
+  // ONE switch, honoured by every purchase surface — onboarding's hand-off,
+  // the plan screen, Settings, and the trial page. Flip to false and the
+  // paid rails (already built and tested) come back with no other edits.
+  const FREE_MODE = true;
+  // QA seam: ?paid=1 (or the sticky sona.paidui flag) reveals the purchase
+  // rails on this device so the paid path stays exercisable — and TESTED —
+  // while free mode ships. It only controls VISIBILITY; it can't unlock
+  // anything, grant entitlement, or move money.
+  function isFree() {
+    if (!FREE_MODE) return false;
+    try {
+      const q = new URLSearchParams(global.location.search);
+      if (q.get("paid") === "1") localStorage.setItem("sona.paidui", "1");
+      if (q.get("paid") === "0") localStorage.removeItem("sona.paidui");
+      if (localStorage.getItem("sona.paidui") === "1") return false;
+    } catch (e) {}
+    return true;
+  }
+
   const IAP_KEY = "appl_nONRfALUCMiZczeCggXKEusmVtl";
   const IAP_PRODUCT = "com.speaksona.app.annual";
   const IAP_TYPE = "subs"; // auto-renewable subscription
@@ -1761,5 +1785,5 @@
   }
   try { installDebug(); } catch (e) {}
 
-  global.Sona = { pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, weekWins, ALL_SOUNDS, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, ladderContent, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, bumpReps, repsToday, pathState, localDay: () => _localDay(), soundFamily, frameShape, checkSounds, checkItems, gradeSound, saveCheck, lastCheck, checkHistory, checkDue, buildPlan, getPlan, journeyWeek, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, gated, gateVerify, gateOk, requireGate, slpCode, offerCode, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, LEVEL_GAMES, GAME_DECK, GAMES_PER_LEVEL, levelGames, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, WORLDS, LEVELS_PER_WORLD, campaignLevels, campaignSounds, campaignState, worldById, worldLevels, worldStars, worldCleared, levelStars, setLevelStars, totalStars, worldUnlocked, levelUnlocked, campaignLaunch, campaignResolve, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repsBeacon, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES };
+  global.Sona = { pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, weekWins, ALL_SOUNDS, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, ladderContent, FREE_MODE, isFree, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, bumpReps, repsToday, pathState, localDay: () => _localDay(), soundFamily, frameShape, checkSounds, checkItems, gradeSound, saveCheck, lastCheck, checkHistory, checkDue, buildPlan, getPlan, journeyWeek, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, gated, gateVerify, gateOk, requireGate, slpCode, offerCode, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, LEVEL_GAMES, GAME_DECK, GAMES_PER_LEVEL, levelGames, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, WORLDS, LEVELS_PER_WORLD, campaignLevels, campaignSounds, campaignState, worldById, worldLevels, worldStars, worldCleared, levelStars, setLevelStars, totalStars, worldUnlocked, levelUnlocked, campaignLaunch, campaignResolve, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repsBeacon, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES };
 })(window);

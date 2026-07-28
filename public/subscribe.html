@@ -166,8 +166,8 @@
         </div>
         <div class="tli lock">
           <span class="tld" data-ic="lock">🔒</span>
-          <b>If Sona ever costs money</b>
-          <p>It's $39.99 a year, and your first week is always free — cancel anytime, no hoops.</p>
+          <b>Right now: free</b>
+          <p>Sona is free while we build it with speech-language pathologists. If that ever changes, you'll hear it from us first — never from a locked screen.</p>
         </div>
       </div>
     </div>
@@ -221,10 +221,25 @@
     if (window.Sona && Sona.requireGate) Sona.requireGate();
     window.addEventListener("pageshow", function (e) { if (e.persisted && window.Sona && Sona.requireGate) Sona.requireGate(); });
 
+    // FREE MODE (SLP-first launch): no price anywhere. Both purchase cards
+    // stay in the DOM (and under test) but neither is shown — one flag, so a
+    // clinician handing Sona to a family never hits a wall.
+    var FREE=false; try{ FREE=!!(Sona.isFree&&Sona.isFree()); }catch(e){}
+    if (FREE) {
+      try {
+        document.getElementById("iapCard").style.display = "none";
+        document.getElementById("pickCard").style.display = "none";
+        document.getElementById("planLine").innerHTML = 'Sona is <b style="color:var(--good);">free</b> right now — every game, every sound, nothing to pay.';
+        var _fc = document.getElementById("foundingCard");
+        if (_fc) _fc.style.display = "block";
+      } catch (e) {}
+    }
+
     // Native shell (App Store build): ONE paywall — Apple's sheet via
     // RevenueCat. Stripe cards never render in the shell (3.1.1 hygiene).
     (function () {
       try {
+        if (FREE) return;
         if (!(Sona.isNativeApp && Sona.isNativeApp())) return;
         var subbed = Sona.isSubscribed && Sona.isSubscribed();
         document.getElementById("pickCard").style.display = "none";
@@ -277,6 +292,7 @@
         var P = Sona.getProfile ? Sona.getProfile() : {};
         var subbed = Sona.isSubscribed && Sona.isSubscribed();
         var founding = !!P.earlyAdopter;
+        if (FREE) return;                                  // free mode: no picker
         if (Sona.isNativeApp && Sona.isNativeApp()) return; // shell handled above
         if (!subbed && !founding) {
           document.getElementById("pickCard").style.display = "block";

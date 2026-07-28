@@ -51,7 +51,7 @@ await page.addInitScript(() => {
 });
 
 // ── native subscribe: Apple paywall only, all required furniture ──
-await page.goto("http://localhost:8147/subscribe.html"); await page.waitForTimeout(900);
+await page.goto("http://localhost:8147/subscribe.html?paid=1"); await page.waitForTimeout(900);
 let t = await page.evaluate(() => ({
   iap: document.getElementById("iapCard").style.display,
   pick: document.getElementById("pickCard").style.display,
@@ -84,7 +84,7 @@ ok("paywall dismisses on success", t.card === "none");
 
 // ── restore path ──
 await page.evaluate(() => { localStorage.removeItem("sona.sub.v1"); localStorage.setItem("__iapEntitled", "0"); });
-await page.goto("http://localhost:8147/subscribe.html"); await page.waitForTimeout(900);
+await page.goto("http://localhost:8147/subscribe.html?paid=1"); await page.waitForTimeout(900);
 await page.evaluate(() => document.getElementById("iapRestore").click());
 await page.waitForTimeout(600);
 t = await page.evaluate(() => ({ n: window.__iap.restores, sub: JSON.parse(localStorage.getItem("sona.sub.v1") || "{}"), msg: document.getElementById("iapMsg").textContent }));
@@ -92,7 +92,7 @@ ok("restore unlocks + confirms", t.n === 1 && t.sub.active === true && /Restored
 
 // ── web-purchase hand-off: paired Stripe sub in the shell = NO paywall ──
 await page.evaluate(() => { localStorage.setItem("__iapEntitled", "0"); localStorage.setItem("sona.sub.v1", JSON.stringify({ active: true, source: "stripe", since: Date.now() })); });
-await page.goto("http://localhost:8147/subscribe.html"); await page.waitForTimeout(900);
+await page.goto("http://localhost:8147/subscribe.html?paid=1"); await page.waitForTimeout(900);
 t = await page.evaluate(() => ({
   iap: document.getElementById("iapCard").style.display,
   pick: document.getElementById("pickCard").style.display,
@@ -119,10 +119,27 @@ await web.addInitScript(() => {
   localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Milo", focusSounds: ["R"], onboarded: true, earlyAdopter: false }));
   sessionStorage.setItem("sona.gate.v1", String(Date.now()));
 });
-await web.goto("http://localhost:8147/subscribe.html"); await web.waitForTimeout(800);
+await web.goto("http://localhost:8147/subscribe.html?paid=1"); await web.waitForTimeout(800);
 t = await web.evaluate(() => ({ iap: document.getElementById("iapCard").style.display, pick: document.getElementById("pickCard").style.display }));
 ok("web keeps Stripe picker, no Apple card", t.iap !== "block" && t.pick === "block");
 await web.close();
+
+// ── FREE MODE is the shipped default: no purchase UI at all ──
+const free = await browser.newPage({ viewport: { width: 390, height: 844 } });
+await free.addInitScript(() => {
+  localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Milo", focusSounds: ["R"], onboarded: true }));
+  sessionStorage.setItem("sona.gate.v1", String(Date.now()));
+});
+await free.goto("http://localhost:8147/subscribe.html"); await free.waitForTimeout(800);
+const fm = await free.evaluate(() => ({
+  iap: document.getElementById("iapCard").style.display,
+  pick: document.getElementById("pickCard").style.display,
+  line: document.getElementById("planLine").textContent,
+  body: document.body.innerText,   // innerText respects display:none; textContent does not
+}));
+ok("free mode: no Apple card, no Stripe picker", fm.iap === "none" && fm.pick === "none");
+ok("free mode: the page says free, shows no price", /free/i.test(fm.line) && !/\$39\.99|\$79\.99/.test(fm.body));
+await free.close();
 
 ok("no pageerrors", errs.length === 0, errs.join(" | "));
 await browser.close(); srv.close();

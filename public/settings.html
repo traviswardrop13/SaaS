@@ -265,7 +265,10 @@
         ac.innerHTML = 'Plan: <strong style="color:var(--good);">Active ✓</strong> · <a href="/subscribe">Manage →</a>';
         document.getElementById("restoreBox").style.display = "none";
       } else {
-        ac.innerHTML = 'Free during beta · <a href="/subscribe">See plans →</a> · <a href="#" id="restoreLink">Restore</a>';
+        ac.innerHTML = (Sona.isFree && Sona.isFree())
+          ? 'Sona is <strong style="color:var(--good);">free</strong> right now — every game, every sound.'
+          : 'Free during beta · <a href="/subscribe">See plans →</a> · <a href="#" id="restoreLink">Restore</a>';
+        if (Sona.isFree && Sona.isFree()) { var _rb2 = document.getElementById("restoreBox"); if (_rb2) _rb2.style.display = "none"; return; }
         document.getElementById("restoreLink").onclick = function (e) { e.preventDefault(); document.getElementById("restoreBox").style.display = "block"; document.getElementById("restoreEmail").focus(); };
       }
     }

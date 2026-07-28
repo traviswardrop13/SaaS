@@ -294,7 +294,7 @@ await page.evaluate(() => {
   localStorage.setItem("sona.profile.v1", JSON.stringify(p));
   sessionStorage.setItem("sona.gate.v1", String(Date.now()));
 });
-await page.goto("http://localhost:8131/subscribe.html"); await page.waitForTimeout(700);
+await page.goto("http://localhost:8131/subscribe.html?paid=1"); await page.waitForTimeout(700);
 t = await page.evaluate(() => ({
   pick: document.getElementById("pickCard").style.display,
   founding: document.getElementById("foundingCard").style.display,
@@ -374,7 +374,7 @@ ok("proof strip: named SLP credential above the plan",
 
 // founding family keeps the free story
 await page.evaluate(() => { const p = JSON.parse(localStorage.getItem("sona.profile.v1")); p.earlyAdopter = true; localStorage.setItem("sona.profile.v1", JSON.stringify(p)); });
-await page.goto("http://localhost:8131/subscribe.html"); await page.waitForTimeout(700);
+await page.goto("http://localhost:8131/subscribe.html?paid=1"); await page.waitForTimeout(700);
 t = await page.evaluate(() => ({ pick: document.getElementById("pickCard").style.display, founding: document.getElementById("foundingCard").style.display }));
 ok("founding family keeps the free story", t.pick !== "block" && t.founding !== "none");
 

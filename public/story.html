@@ -177,7 +177,23 @@
       try{ if(typeof ttsBegin==="function")ttsBegin(); }catch(e){}
       window.speechSynthesis.speak(u);
     }catch(e){ res(); } }); }
-    var speaking=false; function say(t){return new Promise(function(res){if(!t||speaking)return res();speaking=true;fetch("/api/tts",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text:t,voice:profile.voiceId||""})}).then(function(r){return r.ok?r.arrayBuffer():null;}).then(function(b){if(!b)return speakFallback(t);return playPCM(new Uint8Array(b));}).catch(function(){return speakFallback(t);}).finally(function(){speaking=false;res();});});}
+    var speaking=false;
+    function _say1(t){return new Promise(function(res){if(!t)return res();speaking=true;fetch("/api/tts",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text:t,voice:profile.voiceId||""})}).then(function(r){return r.ok?r.arrayBuffer():null;}).then(function(b){if(!b)return speakFallback(t);return playPCM(new Uint8Array(b));}).catch(function(){return speakFallback(t);}).finally(function(){speaking=false;res();});});}
+    // QUEUE, never drop. This used to be `if(speaking) return res()` — so any
+    // line that arrived while Echo was still talking silently vanished, and the
+    // child got a page read to them but never heard the question that followed
+    // (Rachel caught this: "then it doesn't read the next question"). A line
+    // now WAITS its turn. Depth is capped so a kid mashing "read it to me"
+    // can't stack up a backlog.
+    var _sayQ=Promise.resolve(), _sayN=0;
+    function say(t){
+      if(!t||profile.voiceOn===false) return Promise.resolve();
+      if(_sayN>=2) return Promise.resolve();   // already one playing + one waiting
+      _sayN++;
+      var run=function(){ return _say1(t); };
+      _sayQ=_sayQ.then(run,run).then(function(){ _sayN=Math.max(0,_sayN-1); },function(){ _sayN=Math.max(0,_sayN-1); });
+      return _sayQ;
+    }
     var LEO={idle:"/coach/echo/echo-idle.svg",cheer:"/coach/echo/echo-celebrate.svg",listen:"/coach/echo/echo-listening.svg"};
     Object.keys(LEO).forEach(function(k){var im=new Image();im.src=LEO[k];});
     function setLeo(s){var el=$("echo");if(el&&LEO[s])el.src=LEO[s];}
