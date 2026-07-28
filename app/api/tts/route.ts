@@ -168,3 +168,24 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+
+/**
+ * GET /api/tts — health check. The books going silent traced back to this
+ * route failing with no way to see WHY without digging through Vercel logs
+ * (a browser GET just 405'd, since only POST was defined). Mirrors
+ * /api/score's shape: reports whether the keys are present WITHOUT ever
+ * echoing them, plus the model/voice actually in use.
+ */
+export async function GET() {
+  return NextResponse.json({
+    ok: true,
+    service: "tts",
+    hasElevenLabsKey: Boolean(process.env.ELEVENLABS_API_KEY),
+    hasOpenAIKey: Boolean(process.env.OPENAI_API_KEY),
+    voiceId: process.env.ELEVENLABS_VOICE_ID || "qBDvhofpxp92JgXJxDjB (default)",
+    model: process.env.ELEVENLABS_MODEL || "eleven_multilingual_v2 (default)",
+    v3OptIn: process.env.ELEVENLABS_V3 === "1",
+    speed: process.env.ELEVENLABS_SPEED || "0.93 (default)",
+    hint: "POST {text, voice?} here to synthesize. hasElevenLabsKey:false is why the books would be silent.",
+  });
+}
