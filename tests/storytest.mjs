@@ -114,9 +114,19 @@ ok("beat card clears itself (no tap needed)", !card);
     "a fixed timer that resolves while TTS is still playing overlaps the prompt");
   ok("story beat still has a hard cap so a stuck TTS can't hang the round",
     /cap\s*=\s*new Promise/.test(src));
-  ok("Rachel's recorded clip set is not shipping",
-    /var HUMANCLIPS=false;/.test(src),
-    "HUMANCLIPS=true plays /coach/say/<SOUND>.mp3, which is Rachel's own voice");
+  // Rachel's clips must be off on EVERY surface. charge.html gating its own
+  // local copy is exactly how coach-call.html kept playing them.
+  const sona = readFileSync(ROOT + "/sona.js", "utf8");
+  const call = readFileSync(ROOT + "/coach-call.html", "utf8");
+  ok("the human-clip switch is shared, not per-page",
+    /const HUMAN_CLIPS = false;/.test(sona) && /humanClipsOn/.test(src),
+    "a local per-page flag lets other pages ship her voice anyway");
+  ok("coach-call.html gates its demo clips too",
+    /humanClipsOn/.test(call),
+    "playDemo() plays /coach/say/<SOUND>-demo.mp3 — Rachel's voice — and was ungated");
+  ok("children aren't stuck at 30% volume",
+    /volume: 0\.8/.test(sona) && !/volume: 0\.3/.test(sona),
+    "DEFAULT_PROFILE volume 0.3 with no slider left every family inaudible");
 }
 
 // ── free play has no story ──

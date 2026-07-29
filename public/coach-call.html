@@ -201,7 +201,13 @@
     // it). Prefers the dedicated demo take, falls back to the full prompt clip.
     function tryClip(src){ return new Promise(function(res){ try{ var a=new Audio(src); var done=false; function fin(ok){ if(done)return; done=true; res(ok); }
       a.onended=function(){fin(true)}; a.onerror=function(){fin(false)}; a.play().catch(function(){fin(false)}); }catch(e){ res(false); } }); }
-    function playDemo(){ return tryClip("/coach/say/"+SOUND+"-demo.mp3").then(function(ok){ return ok||tryClip("/coach/say/"+SOUND+".mp3"); }); }
+    // GATED: these are Rachel's recorded clips. This call site was ungated while
+    // charge.html gated its own, so her voice shipped here regardless.
+    function playDemo(){
+      var on=false; try{ on=!!(window.Sona&&Sona.humanClipsOn&&Sona.humanClipsOn()); }catch(e){}
+      if(!on) return Promise.resolve(false);
+      return tryClip("/coach/say/"+SOUND+"-demo.mp3").then(function(ok){ return ok||tryClip("/coach/say/"+SOUND+".mp3"); });
+    }
     function pose(p){ var e=$("echo");
       e.classList.remove("talk","cheer");
       if(p==="talk"){ e.src="/coach/echo/echo-celebrate.svg"; e.classList.add("talk"); }
