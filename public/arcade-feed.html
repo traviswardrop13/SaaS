@@ -226,7 +226,10 @@
             else voiced=0;
             requestAnimationFrame(tick);
           })();
-          window.addEventListener("pagehide",function(){ micOn=false; try{ stream.getTracks().forEach(function(t){t.stop();}); }catch(e){} });
+          // lock/app-switch fires visibilitychange, NOT pagehide — this mic
+          // stayed open in your pocket with the recording indicator lit
+          var _rel=function(){ micOn=false; try{ stream.getTracks().forEach(function(t){t.stop();}); }catch(e){} };
+          if(window.Sona&&Sona.onBackground) Sona.onBackground(_rel); else window.addEventListener("pagehide",_rel);
         }).catch(function(){ /* denied elsewhere — tap-only play, no blocker here */ });
       }catch(e){}
     })();

@@ -195,8 +195,8 @@
     var PLAYY=function(){ return H-170; };
     function flash(t){ var f=$("flash"); f.textContent=t; f.style.opacity=1; f.style.transform="scale(1.15)"; setTimeout(function(){f.style.opacity=0;f.style.transform="scale(1)";},600); }
 
-    var distIv=setInterval(function(){ if(!playing||falling.on)return; dist+=(boost.on?2:1); $("score").textContent=dist+"m"; },100);
-    var rampIv=setInterval(function(){ if(playing&&speed<H*0.0056) speed*=1.05; },10000); // gentle, hard-capped
+    var distIv=setInterval(function(){ if(document.hidden)return; if(!playing||falling.on)return; dist+=(boost.on?2:1); $("score").textContent=dist+"m"; },100);
+    var rampIv=setInterval(function(){ if(document.hidden)return; if(playing&&speed<H*0.0056) speed*=1.05; },10000); // gentle, hard-capped
     // the round ends on the CLOCK, never on a crash — crashing just costs time
     
 
@@ -274,7 +274,10 @@
       paintChip();
       if(!(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia)){ $("boostChip").style.display="none"; return; }
       navigator.mediaDevices.getUserMedia({audio:true}).then(function(st){ MIC=true;
-        window.addEventListener("pagehide",function(){ try{ st.getTracks().forEach(function(t){t.stop();}); }catch(e){} });
+        var _rel=function(){ try{ st.getTracks().forEach(function(t){t.stop();}); }catch(e){} };
+        // lock/app-switch fires visibilitychange, NOT pagehide — the boost mic
+        // stayed open in your pocket with the recording indicator lit
+        if(window.Sona&&Sona.onBackground) Sona.onBackground(_rel); else window.addEventListener("pagehide",_rel);
         var AC=window.AudioContext||window.webkitAudioContext, bctx=new AC();
         var src=bctx.createMediaStreamSource(st), an=bctx.createAnalyser(); an.fftSize=512; src.connect(an);
         var td=new Uint8Array(an.fftSize), fd=new Uint8Array(an.frequencyBinCount), binHz=an.context.sampleRate/an.fftSize, shp=null, t0=performance.now(), calS=0,calN=0,thr=0,voiced=0;

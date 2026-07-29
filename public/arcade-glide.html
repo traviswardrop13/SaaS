@@ -162,8 +162,8 @@
       var cy=H*(0.30+Math.random()*0.40);
       gates.push({x:W+70,cy:cy,passed:false,gold:boost.on});
     }
-    var spawnTimer=setInterval(function(){ if(playing&&!falling.on) spawnGate(); },spawnMs);
-    var rampIv=setInterval(function(){ if(playing){ gspeed*=1.03; if(gapH>H*0.32) gapH*=0.992; } },12000); // very gentle ramp
+    var spawnTimer=setInterval(function(){ if(document.hidden)return; if(playing&&!falling.on) spawnGate(); },spawnMs);
+    var rampIv=setInterval(function(){ if(document.hidden)return; if(playing){ gspeed*=1.03; if(gapH>H*0.32) gapH*=0.992; } },12000); // very gentle ramp
     
 
     cv.addEventListener("pointerdown",function(){
@@ -261,7 +261,10 @@
       paintChip();
       if(!(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia)){ $("boostChip").style.display="none"; return; }
       navigator.mediaDevices.getUserMedia({audio:true}).then(function(st){ MIC=true;
-        window.addEventListener("pagehide",function(){ try{ st.getTracks().forEach(function(t){t.stop();}); }catch(e){} });
+        var _rel=function(){ try{ st.getTracks().forEach(function(t){t.stop();}); }catch(e){} };
+        // lock/app-switch fires visibilitychange, NOT pagehide — the boost mic
+        // stayed open in your pocket with the recording indicator lit
+        if(window.Sona&&Sona.onBackground) Sona.onBackground(_rel); else window.addEventListener("pagehide",_rel);
         var AC=window.AudioContext||window.webkitAudioContext, bctx=new AC();
         var src=bctx.createMediaStreamSource(st), an=bctx.createAnalyser(); an.fftSize=512; src.connect(an);
         var td=new Uint8Array(an.fftSize), fd=new Uint8Array(an.frequencyBinCount), binHz=an.context.sampleRate/an.fftSize, shp=null, t0=performance.now(), calS=0,calN=0,thr=0,voiced=0;

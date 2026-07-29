@@ -1044,7 +1044,10 @@
     $("close").addEventListener("pointerdown",function(){ _lpFired=false; _lpT=setTimeout(function(){ _lpFired=true; _lpT=null; launchGame(); },2000); });
     ["pointerup","pointerleave","pointercancel"].forEach(function(ev){ $("close").addEventListener(ev,function(){ if(_lpT){ clearTimeout(_lpT); _lpT=null; } }); });
     $("close").onclick=function(){ if(_lpFired){ _lpFired=false; return; } stopMic(); location.href=isDaily?"/today.html":"/map.html"; };
-    window.addEventListener("pagehide",stopMic);
+    // Locking the phone must release the mic and silence Echo. pagehide alone
+    // never fired on lock, so the indicator stayed on and TTS kept talking.
+    function goQuiet(){ stopMic(); try{ window.speechSynthesis && speechSynthesis.cancel(); }catch(e){} }
+    if(S&&S.onBackground) S.onBackground(goQuiet); else window.addEventListener("pagehide",goQuiet);
 
     // ---- boot: auto-start — the voice speaks, then it's GO. No tap gate. ----
     if(finishedNow){ finishRun(); }

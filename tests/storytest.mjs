@@ -124,6 +124,19 @@ ok("beat card clears itself (no tap needed)", !card);
   ok("coach-call.html gates its demo clips too",
     /humanClipsOn/.test(call),
     "playDemo() plays /coach/say/<SOUND>-demo.mp3 — Rachel's voice — and was ungated");
+  // Locking the phone fires visibilitychange, NOT pagehide. Every page holding
+  // a mic must release on both, or the recording indicator stays lit in a
+  // pocket and game timers keep advancing.
+  ok("sona.js exposes a shared onBackground()",
+    /function onBackground\(/.test(sona) && /visibilitychange/.test(sona),
+    "pagehide alone never fires on screen lock");
+  for (const g of ["arcade-slice", "arcade-tiles", "arcade-stack", "arcade-run", "arcade-glide", "arcade-feed"]) {
+    const gs = readFileSync(ROOT + "/" + g + ".html", "utf8");
+    ok(g + " releases its mic when backgrounded", /onBackground/.test(gs),
+      "this game holds its own boost mic and only listened to pagehide");
+  }
+  ok("charge.html releases the mic when backgrounded", /onBackground/.test(src));
+
   ok("children aren't stuck at 30% volume",
     /volume: 0\.8/.test(sona) && !/volume: 0\.3/.test(sona),
     "DEFAULT_PROFILE volume 0.3 with no slider left every family inaudible");
