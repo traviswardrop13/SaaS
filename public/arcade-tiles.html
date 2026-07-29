@@ -172,10 +172,10 @@
       noteIx+=melodyDir*(1+((Math.random()*2)|0)); if(noteIx>=NOTES.length-1){noteIx=NOTES.length-1;melodyDir=-1;} if(noteIx<=0){noteIx=0;melodyDir=1;}
       tiles.push({lane:lane,y:-90,h:88,hit:false,gone:false,note:NOTES[noteIx],gold:boost.on});
     }
-    var spawnTimer=setInterval(function(){ if(playing) spawn(); },spawnMs);
-    function retime(ms){ clearInterval(spawnTimer); spawnMs=ms; spawnTimer=setInterval(function(){ if(playing) spawn(); },spawnMs); }
+    var spawnTimer=setInterval(function(){ if(document.hidden)return; if(playing) spawn(); },spawnMs);
+    function retime(ms){ clearInterval(spawnTimer); spawnMs=ms; spawnTimer=setInterval(function(){ if(document.hidden)return; if(playing) spawn(); },spawnMs); }
     // gentle ramp: a touch faster every 12s, capped so it never gets frantic
-    var rampIv=setInterval(function(){ if(!playing)return; if(fall<H*0.0058) fall*=1.06; if(spawnMs>600) retime(spawnMs-50); },12000);
+    var rampIv=setInterval(function(){ if(document.hidden)return; if(!playing)return; if(fall<H*0.0058) fall*=1.06; if(spawnMs>600) retime(spawnMs-50); },12000);
 
     // ---- input: tap a lane when a tile is over the hit bar ----
     function laneAt(x){ return Math.max(0,Math.min(LANES-1,(x/(W/LANES))|0)); }
@@ -260,7 +260,10 @@
       paintChip();
       if(!(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia)){ $("boostChip").style.display="none"; return; }
       navigator.mediaDevices.getUserMedia({audio:true}).then(function(st){ MIC=true;
-        window.addEventListener("pagehide",function(){ try{ st.getTracks().forEach(function(t){t.stop();}); }catch(e){} });
+        var _rel=function(){ try{ st.getTracks().forEach(function(t){t.stop();}); }catch(e){} };
+        // lock/app-switch fires visibilitychange, NOT pagehide — the boost mic
+        // stayed open in your pocket with the recording indicator lit
+        if(window.Sona&&Sona.onBackground) Sona.onBackground(_rel); else window.addEventListener("pagehide",_rel);
         var AC=window.AudioContext||window.webkitAudioContext, bctx=new AC();
         var src=bctx.createMediaStreamSource(st), an=bctx.createAnalyser(); an.fftSize=512; src.connect(an);
         var td=new Uint8Array(an.fftSize), fd=new Uint8Array(an.frequencyBinCount), binHz=an.context.sampleRate/an.fftSize, shp=null, t0=performance.now(), calS=0,calN=0,thr=0,voiced=0;

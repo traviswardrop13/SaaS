@@ -169,7 +169,7 @@
           r:32+Math.random()*12, rot:Math.random()*6, vr:(Math.random()-0.5)*0.08, sliced:false });
       }
     }
-    var tossIv=setInterval(function(){ if(playing) toss(); },2100);
+    var tossIv=setInterval(function(){ if(document.hidden)return; if(playing) toss(); },2100);
     toss();
 
     // ── lives: miss a fruit → say your sound for a new life (3 per run) ──
@@ -223,7 +223,10 @@
       paintChip();
       if(!(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia)){ $("boostChip").style.display="none"; return; }
       navigator.mediaDevices.getUserMedia({audio:true}).then(function(st){ MIC=true;
-        window.addEventListener("pagehide",function(){ try{ st.getTracks().forEach(function(t){t.stop();}); }catch(e){} });
+        var _rel=function(){ try{ st.getTracks().forEach(function(t){t.stop();}); }catch(e){} };
+        // lock/app-switch fires visibilitychange, NOT pagehide — the boost mic
+        // stayed open in your pocket with the recording indicator lit
+        if(window.Sona&&Sona.onBackground) Sona.onBackground(_rel); else window.addEventListener("pagehide",_rel);
         var AC=window.AudioContext||window.webkitAudioContext, actx=new AC();
         var src=actx.createMediaStreamSource(st), an=actx.createAnalyser(); an.fftSize=512; src.connect(an);
         var td=new Uint8Array(an.fftSize), fd=new Uint8Array(an.frequencyBinCount), binHz=an.context.sampleRate/an.fftSize, shp=null, t0=performance.now(), calS=0,calN=0,thr=0,voiced=0;
@@ -265,7 +268,7 @@
     cv.addEventListener("pointermove",onMove);
     window.addEventListener("pointerup",function(){ pDown=false; });
 
-    var comboIv=setInterval(function(){ if(combo&&performance.now()-comboT>1400) combo=0; },500);
+    var comboIv=setInterval(function(){ if(document.hidden)return; if(combo&&performance.now()-comboT>1400) combo=0; },500);
 
     function draw(){
       ctx.clearRect(0,0,W,H);
