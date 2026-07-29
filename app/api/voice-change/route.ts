@@ -37,11 +37,27 @@ export async function POST(req: NextRequest) {
   if (audio.size > 4 * 1024 * 1024) return NextResponse.json({ ok: false, error: "audio too large" }, { status: 413 });
   const voiceId = String(form.get("voice") || process.env.ELEVENLABS_VOICE_ID || "qBDvhofpxp92JgXJxDjB").slice(0, 40);
 
+  // Per-request conversion strength. Defaults keep her expressiveness and stay
+  // close to the target timbre — right for SENTENCES. Bare sustained phonemes
+  // need gentler settings: a high similarity_boost re-synthesizes through the
+  // target speaker's vocal-tract prior, and an isolated sound is out of
+  // distribution for it, so formants regularize toward typical values. Measured
+  // on our own R take, F3 rose 1898 → 2470 Hz — that moves /r/ toward /w/, the
+  // exact substitution the child is here to fix. See VOICE_CLIPS.md.
+  const num = (k: string, dflt: number) => {
+    const v = parseFloat(String(form.get(k) ?? ""));
+    return Number.isFinite(v) ? Math.min(1, Math.max(0, v)) : dflt;
+  };
+  const boost = form.get("speaker_boost");
   const out = new FormData();
   out.append("audio", audio, audio.name || "clip.mp3");
   out.append("model_id", "eleven_multilingual_sts_v2");
-  // keep her expressiveness; stay close to the target voice's timbre
-  out.append("voice_settings", JSON.stringify({ stability: 0.5, similarity_boost: 0.85, style: 0.3, use_speaker_boost: true }));
+  out.append("voice_settings", JSON.stringify({
+    stability: num("stability", 0.5),
+    similarity_boost: num("similarity", 0.85),
+    style: num("style", 0.3),
+    use_speaker_boost: boost == null ? true : !/^(0|false|no)$/i.test(String(boost)),
+  }));
 
   const r = await fetch(
     `https://api.elevenlabs.io/v1/speech-to-speech/${voiceId}?output_format=mp3_44100_128`,
