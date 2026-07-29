@@ -71,8 +71,6 @@
     .thumb b{position:absolute;left:50%;bottom:-11px;transform:translateX(-50%);background:#fff;border-radius:99px;padding:4px 11px;font-family:"Baloo 2";font-weight:800;font-size:11px;color:var(--ink);white-space:nowrap;box-shadow:0 3px 0 rgba(120,80,20,.12);}
 
     /* CTA */
-    #goBtn{border:none;border-radius:20px;padding:17px;font-family:"Baloo 2";font-weight:800;font-size:19px;letter-spacing:.04em;color:#fff;background:linear-gradient(180deg,#ffa05a,#ff8a3d);box-shadow:0 6px 0 var(--orange-d);cursor:pointer;width:100%;margin-top:auto;transition:transform .05s;}
-    #goBtn:active{transform:translateY(4px);box-shadow:0 2px 0 var(--orange-d);}
 
     /* coming-soon tease (Coach Call): softly desaturated, gold ribbon, still tappable */
     .soon{filter:saturate(.72);}
@@ -111,66 +109,73 @@
     }
     @media (max-height:760px){
       #wrap{gap:10px;}
-      #goBtn{padding:13px;font-size:17px;}
+
     }
 
-    /* ── Practice Path (Workstream E) — the map is the home screen ── */
-    #wrap.path{position:relative;background:linear-gradient(180deg,#8fd0f5 0%,#ffe9b8 46%,#ffb066 76%,#ff8a5a 100%);gap:0;padding:0;}
-    #wrap.path header{position:relative;z-index:6;padding:calc(12px + env(safe-area-inset-top)) 14px 0;}
-    #wrap.path #hiName,#wrap.path #subLine{display:none;}
-    #wrap.path #hdrBtns{margin-left:auto;}
-    #wrap.path header>div:first-child{position:absolute;left:14px;top:calc(12px + env(safe-area-inset-top));}
-    #wrap.path #parentBtn,#wrap.path #ringBtn,#wrap.path #libBtn{background:#fff;box-shadow:0 4px 0 rgba(140,70,10,.2);}
-    #wrap.path #trialBanner,#wrap.path #checkNudge{position:relative;z-index:6;margin:8px 14px 0;}
-    #pathCanvas{position:relative;flex:1;min-height:400px;overflow:hidden;}
-    #roadSvg{position:absolute;inset:0;width:100%;height:100%;}
-    #skyScrim{position:absolute;top:0;left:0;right:0;height:100px;background:linear-gradient(180deg,rgba(143,208,245,.85),rgba(143,208,245,0));pointer-events:none;z-index:5;}
-    #pathNodes{position:absolute;inset:0;z-index:3;}
-    /* §13: every stop is a MINI SCENE of its game — never a bare letter */
-    .pnode{position:absolute;transform:translate(-50%,-50%);border:none;padding:0;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:"Baloo 2";font-weight:800;background:#fff;border-radius:50%;}
-    .pnode .scene{display:block;border-radius:50%;overflow:hidden;}
-    .pnode.done{width:56px;height:56px;box-shadow:0 5px 0 rgba(140,70,10,.18);}
-    .pnode.done .scene{width:34px;height:34px;}
-    .pnode.done .badge{position:absolute;right:-4px;top:-4px;width:22px;height:22px;border-radius:50%;background:#58cc02;box-shadow:0 2px 0 #46a302;display:flex;align-items:center;justify-content:center;}
-    .pnode.done .badge svg{width:12px;height:12px;}
-    .pnode.next{width:83px;height:83px;box-shadow:0 0 0 5px rgba(255,255,255,.55),0 0 0 10px rgba(255,138,61,.35),0 6px 14px rgba(160,70,10,.25);z-index:4;}
-    .pnode.next .scene{width:64px;height:64px;}
-    .pnode.next::after{content:"";position:absolute;inset:-26px;border-radius:50%;background:radial-gradient(circle,rgba(255,210,28,.4),rgba(255,210,28,0) 70%);z-index:-1;}
-    .pnode.next{animation:pbreathe 2.2s ease-in-out infinite;}
-    @keyframes pbreathe{0%,100%{transform:translate(-50%,-50%) scale(1)}50%{transform:translate(-50%,-50%) scale(1.05)}}
-    .pnode .npill{position:absolute;top:calc(100% + 6px);left:50%;transform:translateX(-50%);background:#fff;border-radius:99px;padding:4px 11px;font-size:10px;letter-spacing:.06em;color:#8a5a1a;white-space:nowrap;box-shadow:0 3px 0 rgba(140,70,10,.15);}
-    .pnode.todo{width:56px;height:56px;background:rgba(255,255,255,.72);box-shadow:0 4px 0 rgba(140,70,10,.12);}
-    .pnode.todo .scene{width:36px;height:36px;opacity:.55;}
-    .pnode.todo.wob{animation:pwob .5s ease;}
-    @keyframes pwob{0%,100%{transform:translate(-50%,-50%) rotate(0)}25%{transform:translate(-50%,-50%) rotate(-7deg)}75%{transform:translate(-50%,-50%) rotate(7deg)}}
-    .pchest{position:absolute;transform:translate(-50%,-50%);width:64px;z-index:3;filter:drop-shadow(0 5px 0 rgba(180,110,20,.3));}
-    #gatePill{position:absolute;top:14px;left:50%;transform:translateX(-50%);z-index:5;background:rgba(255,255,255,.78);border-radius:99px;padding:5px 13px;font-family:"Baloo 2";font-weight:800;font-size:11px;color:#8a5a1a;white-space:nowrap;display:none;}
-    /* STORY1 chapter ribbon — sits under the gate pill, same visual family */
-    #chapPill{position:absolute;top:14px;left:50%;transform:translateX(-50%);z-index:5;
-      background:linear-gradient(180deg,#ffe9b8,#ffd98a);border-radius:99px;padding:5px 14px;
-      font-family:"Baloo 2";font-weight:800;font-size:11px;color:#8a5a1a;white-space:nowrap;
-      max-width:86%;overflow:hidden;text-overflow:ellipsis;display:none;
-      box-shadow:0 3px 0 rgba(190,140,50,.35);}
-    #chapPill.show{display:block;}
-    #echoWrap{position:absolute;z-index:5;display:flex;flex-direction:column;align-items:flex-start;transform:translate(-6px,-100%);pointer-events:none;}
-    #echoBubble{background:#fff;border-radius:16px;border-bottom-right-radius:5px;padding:9px 14px;box-shadow:0 6px 16px rgba(140,70,10,.2);font-family:"Baloo 2";font-weight:800;font-size:14px;line-height:1.3;color:#4a2c14;max-width:190px;margin-bottom:6px;}
-    #echoLeo{width:66px;height:66px;filter:drop-shadow(0 7px 9px rgba(140,70,10,.25));pointer-events:auto;cursor:pointer;}
-    #echoLeo.bob{animation:leobob 3s ease-in-out infinite;}
-    @keyframes leobob{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
-    #floatLib{position:absolute;left:16px;bottom:calc(84px + env(safe-area-inset-bottom));z-index:7;width:44px;height:44px;border-radius:50%;border:none;background:#fff;box-shadow:0 4px 0 rgba(140,70,10,.2);display:none;align-items:center;justify-content:center;cursor:pointer;}
-    #wrap.path #floatLib{display:flex;} #floatLib svg{width:22px;height:22px;}
-    /* §13: the primary action is a white START! bubble pinned above the next
-       stop (the full-width bar covered the map). Whole node is the tap target. */
-    #wrap.path #goBtn{position:absolute;z-index:8;width:auto;margin:0;transform:translate(-50%,-100%);background:#fff;color:#ef6f23;font-family:"Baloo 2";font-weight:800;font-size:16px;letter-spacing:.04em;text-transform:uppercase;border:none;border-radius:16px;padding:10px 18px;box-shadow:0 5px 0 rgba(160,80,10,.22);cursor:pointer;}
-    #wrap.path #goBtn::after{content:"";position:absolute;left:50%;bottom:-7px;transform:translateX(-50%) rotate(45deg);width:12px;height:12px;background:#fff;border-radius:2px;box-shadow:3px 3px 0 rgba(160,80,10,.12);}
-    #wrap.path #goBtn.gold{color:#46a302;}
+    /* ── CITY1: the street IS the home screen ──────────────────────────────
+       One house per game, swiped left and right. The painted panel is the
+       whole slide (art at 2:3, phones are taller, so it covers and the sides
+       crop — everything important lives in the centre ~70%). A caption plate
+       names the house, its game, and the chapter waiting behind the door. */
+    #wrap.city{position:relative;background:linear-gradient(180deg,#8fd0f5,#ffe9b8 62%,#ffb066);gap:0;padding:0;}
+    #wrap.city header{position:relative;z-index:6;padding:calc(12px + env(safe-area-inset-top)) 14px 0;}
+    #wrap.city #hiName,#wrap.city #subLine{display:none;}
+    #wrap.city header>div:first-child{position:absolute;left:14px;top:calc(12px + env(safe-area-inset-top));}
+    #wrap.city #hdrBtns{margin-left:auto;}
+    #wrap.city #trialBanner,#wrap.city #checkNudge{position:relative;z-index:6;margin:8px 14px 0;}
+    /* the street: horizontal scroll-snap, one house per screen */
+    #street{flex:1;min-height:0;display:flex;overflow-x:auto;overflow-y:hidden;
+      scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+    #street::-webkit-scrollbar{display:none;}
+    .house{flex:0 0 100%;scroll-snap-align:center;position:relative;display:flex;
+      flex-direction:column;justify-content:flex-end;align-items:center;
+      padding:0 16px calc(28px + env(safe-area-inset-bottom));}
+    .hpanel{position:absolute;inset:0;background:#8fd0f5 center/cover no-repeat;z-index:0;}
+    /* the plate has to sit ON art of any colour — a soft scrim buys contrast
+       without washing the illustration out */
+    .house::after{content:"";position:absolute;left:0;right:0;bottom:0;height:44%;z-index:1;
+      background:linear-gradient(180deg,rgba(74,44,20,0),rgba(74,44,20,.42));pointer-events:none;}
+    .hplate{position:relative;z-index:2;background:#fff;border-radius:20px;padding:12px 18px 14px;
+      text-align:center;max-width:100%;box-shadow:0 8px 22px rgba(74,44,20,.28);transform:rotate(-1.2deg);}
+    .hname{font-family:"Baloo 2";font-weight:800;font-size:20px;line-height:1.15;}
+    .hgame{font-family:"Baloo 2";font-weight:800;font-size:11px;letter-spacing:.1em;color:var(--label);margin-top:1px;}
+    .hchap{font-weight:800;font-size:12px;color:var(--muted);margin-top:6px;line-height:1.35;}
+    .hgo{position:relative;z-index:2;margin-top:12px;border:none;border-radius:18px;padding:15px 40px;
+      font-family:"Baloo 2";font-weight:800;font-size:19px;letter-spacing:.04em;color:#fff;
+      background:linear-gradient(180deg,#ffa05a,#ff8a3d);box-shadow:0 6px 0 var(--orange-d);cursor:pointer;
+      transition:transform .05s;}
+    .hgo:active{transform:translateY(4px);box-shadow:0 2px 0 var(--orange-d);}
+    /* today's stop: the one door the city points at. Everything else stays open */
+    .house.today .hgo{background:linear-gradient(180deg,#6fdd18,#58cc02);box-shadow:0 6px 0 var(--green-d);}
+    .todayTag{position:absolute;top:calc(10px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);
+      z-index:3;background:linear-gradient(180deg,#ffe063,var(--gold));color:#7a5200;font-family:"Baloo 2";
+      font-weight:800;font-size:11px;letter-spacing:.08em;padding:5px 14px;border-radius:99px;
+      box-shadow:0 3px 0 rgba(120,80,20,.22);white-space:nowrap;pointer-events:none;}
+    /* chapter-done ribbon: this house's story moved on today */
+    .doneTag{position:absolute;top:calc(10px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);
+      z-index:3;background:rgba(255,255,255,.9);color:#46a302;font-family:"Baloo 2";font-weight:800;
+      font-size:11px;letter-spacing:.06em;padding:5px 14px;border-radius:99px;
+      box-shadow:0 3px 0 rgba(120,80,20,.16);white-space:nowrap;pointer-events:none;}
+    /* which house you're on — a row of dots, no numbers. Overlaid on the art
+       so the painted street runs edge to edge instead of ending in a band. */
+    #dots{position:absolute;left:0;right:0;bottom:calc(6px + env(safe-area-inset-bottom));
+      display:flex;gap:7px;justify-content:center;align-items:center;height:14px;z-index:6;pointer-events:none;}
+    #dots i{box-shadow:0 1px 3px rgba(74,44,20,.45);}
+    #dots i{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.55);box-shadow:0 1px 0 rgba(120,80,20,.18);transition:all .18s;}
+    #dots i.on{width:20px;border-radius:99px;background:#fff;}
+    /* swipe hint: only until the child scrolls once */
+    #swipeHint{position:absolute;right:16px;bottom:calc(96px + env(safe-area-inset-bottom));z-index:5;
+      font-family:"Baloo 2";font-weight:800;font-size:12px;color:#fff;background:rgba(74,44,20,.42);
+      border-radius:99px;padding:6px 13px;pointer-events:none;transition:opacity .3s;}
+    #wrap.city #floatLib{display:flex;}
+    @media (prefers-reduced-motion:reduce){ #street{scroll-behavior:auto;} }
+
+    /* the library button floats over the street art */
+    #floatLib{position:absolute;left:16px;bottom:calc(74px + env(safe-area-inset-bottom));z-index:7;width:44px;height:44px;border-radius:50%;border:none;background:#fff;box-shadow:0 4px 0 rgba(140,70,10,.2);display:none;align-items:center;justify-content:center;cursor:pointer;}
+    #floatLib svg{width:22px;height:22px;}
     #confetti i{position:absolute;border-radius:3px;z-index:6;animation:cfall 1.2s ease-out forwards;}
     @keyframes cfall{0%{opacity:1;transform:translateY(0) rotate(0)}100%{opacity:0;transform:translateY(60px) rotate(40deg)}}
-    @media (prefers-reduced-motion:reduce){
-      .pnode.next,#echoLeo.bob{animation:none;}
-      .pnode.next{transform:translate(-50%,-50%);}
-      #confetti i{animation:none;}
-    }
+    @media (prefers-reduced-motion:reduce){ #confetti i{animation:none;} }
   </style>
 </head>
 <body>
@@ -190,26 +195,13 @@
     <a id="trialBanner" href="/subscribe"><span data-ic="gift">🎁</span> <span id="trialMsg"></span></a>
     <a id="checkNudge" href="/soundcheck.html" style="display:none;align-items:center;gap:9px;background:#fff;border-radius:16px;padding:10px 14px;font-weight:800;font-size:12.5px;color:#4a2c14;text-decoration:none;box-shadow:0 4px 0 rgba(140,70,10,.12);"><svg viewBox="0 0 64 64" style="width:22px;height:22px;flex:0 0 auto"><circle cx="32" cy="32" r="20" fill="#ff5c5c"></circle><circle cx="32" cy="32" r="13" fill="#fff"></circle><circle cx="32" cy="32" r="6.5" fill="#ff5c5c"></circle><circle cx="25" cy="24" r="2.2" fill="#fff" opacity=".85"></circle></svg><span style="flex:1">NEW — the 2-minute Sound Check: Echo listens and builds the plan!</span><span style="color:#b08d63;font-size:15px">›</span></a>
 
-    <!-- Practice Path: the map IS the home screen. Road + nodes laid out on
-         the district sky; Echo stands on the next step; chest is the day's 5th;
-         gate pill points to the next district. (Workstream E.) -->
-    <div id="pathCanvas">
-      <svg id="roadSvg" viewBox="0 0 300 650" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
-        <path id="roadEdge" d="M118 668 C95 640 82 622 84 596 C86 570 74 556 76 530 C79 496 128 492 166 483 C207 473 224 446 226 414 C228 382 186 370 152 359 C114 347 90 323 88 291 C86 259 120 233 152 216 C186 198 170 158 152 118 C144 96 128 78 104 64" fill="none" stroke="#f3cf92" stroke-width="30" stroke-linecap="round" transform="translate(0,5)"></path>
-        <path id="road" d="M118 668 C95 640 82 622 84 596 C86 570 74 556 76 530 C79 496 128 492 166 483 C207 473 224 446 226 414 C228 382 186 370 152 359 C114 347 90 323 88 291 C86 259 120 233 152 216 C186 198 170 158 152 118 C144 96 128 78 104 64" fill="none" stroke="#ffe7c0" stroke-width="30" stroke-linecap="round"></path>
-        <path d="M118 668 C95 640 82 622 84 596 C86 570 74 556 76 530 C79 496 128 492 166 483 C207 473 224 446 226 414 C228 382 186 370 152 359 C114 347 90 323 88 291 C86 259 120 233 152 216 C186 198 170 158 152 118 C144 96 128 78 104 64" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-dasharray="1 14" opacity=".9"></path>
-        <circle cx="252" cy="70" r="26" fill="#ffd21c" opacity=".85"></circle><ellipse cx="40" cy="640" rx="90" ry="34" fill="#ff9d6e" opacity=".5"></ellipse><ellipse cx="270" cy="655" rx="110" ry="40" fill="#ff9d6e" opacity=".4"></ellipse>
-      </svg>
-      <!-- STORY1: which chapter today picks up. The kid sees the story is
-           still running before they've tapped anything. -->
-      <div id="chapPill"></div>
-      <div id="gatePill"></div>
-      <div id="pathNodes"></div>
-      <div id="echoWrap"><div id="echoBubble"></div><img id="echoLeo" src="/coach/echo/echo-idle.svg" alt="Echo" /></div>
-    </div>
-    <div id="skyScrim"></div>
+    <!-- CITY1: the street IS the home screen. One house per game, swiped; the
+         plate on each door names the chapter waiting inside. Today's stop wears
+         the gold ribbon, but every door stays open. -->
+    <div id="street"></div>
+    <div id="swipeHint">swipe →</div>
+    <div id="dots"></div>
     <button id="floatLib" aria-label="Book library"><svg viewBox="0 0 64 64"><path d="M10 14c8-4 15-4 22 0v38c-7-4-14-4-22 0Z" fill="#ffb066"/><path d="M54 14c-8-4-15-4-22 0v38c7-4 14-4 22 0Z" fill="#ef8b3d"/><line x1="32" y1="14" x2="32" y2="52" stroke="#b85e1e" stroke-width="2"/><circle cx="19" cy="22" r="3" fill="#fff" opacity=".8"/></svg></button>
-    <button id="goBtn">LET'S GO!</button>
   </div>
 
   <!-- parent gate -->
@@ -301,163 +293,157 @@
       else if(_tr&&_tr.n>0) $("subLine").textContent=(_tr.goal-_tr.n)+" more round"+((_tr.goal-_tr.n)===1?"":"s")+" to finish today's goal!";
     }catch(e){}
 
-    // STORY1: name the chapter today picks up, so the story is visible before
-    // the child taps anything. Once the day is finished it points forward —
-    // the cliffhanger is the reason to come back, not a streak.
-    try{
-      if(S&&S.episode){
-        var _cp=$("chapPill"), _tr2=(S&&S.todayRing)?S.todayRing():null;
-        if(_cp){
-          _cp.textContent=(_tr2&&_tr2.done)
-            ? ("Next time · "+S.episodeHook().replace(/^Tomorrow:\s*/i,""))
-            : ("Chapter "+S.episodeNum()+" · "+S.episode().t);
-          _cp.classList.add("show");
-        }
-      }
-    }catch(e){}
+    // ── CITY1: the street IS the home screen ──────────────────────────────
+    // One house per game. The child swipes the street and picks a door; the
+    // plate on each house names the chapter waiting behind it, which is the
+    // whole point — the reason to come back is an unfinished thread, not a
+    // streak. Today's stop wears the gold ribbon, but nothing is ever locked:
+    // a child who wants the fruit market four days running gets it.
+    $("wrap").classList.add("city");
 
-    // ── Practice Path: the map IS the home screen (Workstream E) ──
-    // Each node = one round in the daily rotation; 5 nodes = today's goal, the
-    // chest is the reward at the top of the day. Every launch is the same door:
-    // the daily run (charge.html), which advances the ring on each finished
-    // round — so re-visiting the path shows more green.
-    $("wrap").classList.add("path");
-    // the chest-closed / chest-open furniture (design 2b)
-    var CHEST_CLOSED='<svg viewBox="0 0 64 58"><rect x="6" y="26" width="52" height="26" rx="6" fill="#ffd21c"/><rect x="6" y="46" width="52" height="6" rx="3" fill="#f0a800"/><path d="M6 28v-6c0-9 11-16 26-16s26 7 26 16v6Z" fill="#f0a800"/><rect x="26" y="24" width="12" height="14" rx="4" fill="#b97900"/><circle cx="32" cy="30" r="3.4" fill="#7a5200"/><circle cx="16" cy="14" r="3" fill="#fff" opacity=".85"/></svg>';
-    var CHEST_OPEN='<svg viewBox="0 0 74 66"><path d="M16 30 L58 30 L70 4 L4 4 Z" fill="#ffe36b" opacity=".55"/><rect x="10" y="4" width="52" height="15" rx="7" fill="#f0a800" transform="rotate(-16 12 12)"/><rect x="10" y="28" width="54" height="11" rx="4" fill="#7a5200"/><rect x="10" y="33" width="54" height="25" rx="6" fill="#ffd21c"/><rect x="10" y="52" width="54" height="6" rx="3" fill="#f0a800"/><path d="M37 8l2.6 5.8 6.2.7-4.6 4.2 1.3 6.1-5.5-3.2-5.5 3.2 1.3-6.1-4.6-4.2 6.2-.7Z" fill="#ffd21c"/><circle cx="18" cy="40" r="3" fill="#fff" opacity=".85"/></svg>';
-    var CHECK='<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l5 5 9-11"/></svg>';
-    // §13 mini game scenes (pt-game-* from the design board; tiles/glide/feed
-    // composed in the same recipe: sky disc + 2-3 game elements + one glint)
-    function SCN(inner){ return '<svg class="scene" viewBox="0 0 64 64">'+inner+'</svg>'; }
-    var PT_SCENES={
-      "arcade-slice.html":SCN('<circle cx="32" cy="32" r="30" fill="#ffe2b0"/><path d="M14 38a18 18 0 0 0 36 0Z" fill="#3fae5c"/><path d="M17.5 38a14.5 14.5 0 0 0 29 0Z" fill="#ff5c6e"/><circle cx="26" cy="43" r="1.6" fill="#4a2c14"/><circle cx="32" cy="46" r="1.6" fill="#4a2c14"/><circle cx="38" cy="43" r="1.6" fill="#4a2c14"/><circle cx="44" cy="22" r="8" fill="#ffb100"/><path d="M44 13q5-3 8 1-4 3-8-1Z" fill="#58cc02"/><circle cx="41" cy="19" r="1.8" fill="#fff" opacity=".85"/><path d="M10 12 26 26" stroke="#fff" stroke-width="3" stroke-linecap="round" opacity=".8"/>'),
-      "arcade-run.html":SCN('<circle cx="32" cy="32" r="30" fill="#54409e"/><circle cx="15" cy="17" r="1.8" fill="#fff" opacity=".8"/><circle cx="48" cy="20" r="1.5" fill="#fff" opacity=".7"/><circle cx="18" cy="46" r="1.5" fill="#fff" opacity=".7"/><g transform="translate(14,10) scale(0.56)"><path d="M20 42l-8 12 13-4Z" fill="#ff5c5c"/><path d="M44 42l8 12-13-4Z" fill="#ff5c5c"/><path d="M32 5c9 7 12 22 8 41H24c-4-19-1-34 8-41Z" fill="#f0f0f5"/><path d="M32 5c5 4 8 10 9 17H23c1-7 4-13 9-17Z" fill="#ff5c5c"/><circle cx="32" cy="31" r="6" fill="#4db3f2"/><circle cx="32" cy="31" r="6" fill="none" stroke="#d0d5dd" stroke-width="2"/><path d="M26 46q6 12 12 0-6 4-12 0Z" fill="#ffb100"/><circle cx="27" cy="15" r="2.2" fill="#fff" opacity=".75"/></g>'),
-      "arcade-stack.html":SCN('<circle cx="32" cy="32" r="30" fill="#cdb8f0"/><rect x="16" y="40" width="32" height="12" rx="3" fill="#ffd21c"/><rect x="20" y="27" width="24" height="12" rx="3" fill="#4db3f2"/><rect x="24" y="14" width="16" height="11" rx="3" fill="#58cc02" transform="rotate(-8 32 19)"/><circle cx="21" cy="43" r="1.8" fill="#fff" opacity=".85"/><circle cx="24" cy="30" r="1.6" fill="#fff" opacity=".85"/>'),
-      "arcade-tiles.html":SCN('<circle cx="32" cy="32" r="30" fill="#3a2f6e"/><rect x="14" y="14" width="14" height="22" rx="4" fill="#ffd21c"/><rect x="34" y="26" width="14" height="22" rx="4" fill="#ffe887"/><rect x="24" y="42" width="14" height="12" rx="4" fill="#fff" opacity=".9"/><circle cx="18" cy="18" r="1.8" fill="#fff" opacity=".85"/>'),
-      "arcade-glide.html":SCN('<circle cx="32" cy="32" r="30" fill="#ffcf9a"/><path d="M32 10C21 10 15 19 15 27c0 9 8 14 13 20h8c5-6 13-11 13-20 0-8-6-17-17-17Z" fill="#ff6b6b"/><path d="M32 10c-4 0-7 9-7 17 0 9 3 14 5 20h4c2-6 5-11 5-20 0-8-3-17-7-17Z" fill="#fff4dd"/><rect x="26" y="48" width="12" height="9" rx="3" fill="#b5875a"/><circle cx="24" cy="18" r="2" fill="#fff" opacity=".8"/>'),
-      "arcade-feed.html":SCN('<circle cx="32" cy="32" r="30" fill="#cef0b8"/><ellipse cx="32" cy="46" rx="16" ry="6" fill="#8fdc7a"/><circle cx="32" cy="30" r="13" fill="#ff5c5c"/><path d="M32 18q4-4 8-2-3 4-8 2Z" fill="#58cc02"/><rect x="31" y="14" width="2.5" height="6" rx="1.2" fill="#8a5a2a"/><circle cx="27" cy="26" r="2" fill="#fff" opacity=".85"/>'),
-      "story":SCN('<circle cx="32" cy="32" r="30" fill="#d8f2ff"/><g transform="translate(10,10) scale(0.7)"><path d="M10 14c8-4 15-4 22 0v38c-7-4-14-4-22 0Z" fill="#4db3f2"/><path d="M54 14c-8-4-15-4-32 0v38c7-4 14-4 22 0Z" fill="#2a8fd4"/><line x1="32" y1="14" x2="32" y2="52" stroke="#1c6fa8" stroke-width="2"/><circle cx="19" cy="22" r="3" fill="#fff" opacity=".8"/></g>')
-    };
-    var PT_NAMES={"arcade-slice.html":"FRUIT SLICE","arcade-run.html":"SOUND SPRINT","arcade-stack.html":"BLOCK STACKER","arcade-tiles.html":"PIANO TILES","arcade-glide.html":"FLAPPY GLIDE","arcade-feed.html":"FEED ECHO","story":"STORY TIME"};
-    // which game each of today's stops runs: mirrors charge.html's DAILY_SEQ
-    // (littles: every stop is Feed Echo); the 5th stop is Story Time.
-    var ALL_ARCADE=["arcade-slice.html","arcade-tiles.html","arcade-stack.html","arcade-run.html","arcade-glide.html"];
-    function nodeGame(i){
-      if(_age&&_age<6) return "arcade-feed.html";
-      if(i>=4) return "story";
-      var off=(S&&S.dayNum)?(S.dayNum()%ALL_ARCADE.length):0;
-      return ALL_ARCADE[(off+i)%ALL_ARCADE.length];
-    }
-    var tr=(S&&S.todayRing)?S.todayRing():{n:0,goal:5,done:false};
-    var GOAL=tr.goal||5;
-    var rung=0; try{ rung=(S&&S.rungOf)?S.rungOf(sound):0; }catch(e){}
-    // the next round's target word/letter (drives the pulsing node face + copy)
-    var target=sound; try{ var it=((S&&S.ladderContent)?S.ladderContent(sound,rung):[])[0]; if(it) target=(it.level==="isolation")?sound:(it.display||it.t); }catch(e){}
-    // under-6 littles practice through Feed Echo (tap-and-say, no reading);
-    // everyone else runs the daily rotation. Both advance today's ring.
+    var HOUSES=(S&&S.HOUSES)?S.HOUSES:[];
     var _age=0; try{ _age=parseInt(P.childAge,10)||0; }catch(e){}
-    var LAUNCH=(_age&&_age<6)?"/arcade-feed.html":"/charge.html?daily=1";
-    function launch(){ sfx("tap"); location.href=LAUNCH; }
+    // Littles read nothing and can't run the arcade games — Echo's Kitchen
+    // (Feed Echo: tap-and-say) leads their street. Everyone else gets it in
+    // place, so it never becomes the default for a 9-year-old.
+    var ORDER=HOUSES.slice();
+    if(_age&&_age<6){
+      ORDER.sort(function(a,b){ return (a.key==="feed"?-1:0)-(b.key==="feed"?-1:0); });
+    }
+    var TODAYKEY=""; try{ TODAYKEY=(S&&S.houseToday)?S.houseToday():""; }catch(e){}
+    // a littles profile can't be sent to an arcade house as "today's stop"
+    if(_age&&_age<6) TODAYKEY="feed";
 
-    // lay the 5 nodes + chest on the road using getPointAtLength → the node
-    // always sits ON the drawn road, at any screen size (slice-mapped coords)
-    // low frac = bottom of the road (where the kid stands) → climb UP toward
-    // the chest near the top; the road's length-0 end sits just below-screen.
-    var FRACS=[0.17,0.31,0.45,0.585,0.72], CHEST_FRAC=0.83;
-    function layoutPath(){
-      var cv=$("pathCanvas"); if(!cv)return; var cw=cv.clientWidth, ch=cv.clientHeight; if(!cw||!ch)return;
-      var road=$("road"); var L; try{ L=road.getTotalLength(); }catch(e){ return; }
-      var scale=Math.max(cw/300,ch/650), ox=(cw-300*scale)/2, oy=(ch-650*scale)/2;
-      function pt(f){ var p=road.getPointAtLength(f*L); return {x:p.x*scale+ox, y:p.y*scale+oy}; }
-      var host=$("pathNodes"); host.innerHTML="";
-      var reduce=false; try{ reduce=window.matchMedia&&matchMedia("(prefers-reduced-motion:reduce)").matches; }catch(e){}
-      var nextPt=null;
-      for(var i=0;i<GOAL;i++){
-        var p=pt(FRACS[i]);
-        var cls=i<tr.n?"done":(i===tr.n?"next":"todo");
-        var g=nodeGame(i);
-        var b=document.createElement("button");
-        b.className="pnode "+cls+(reduce&&cls==="next"?" noanim":"");
-        b.style.left=p.x+"px"; b.style.top=p.y+"px";
-        b.setAttribute("aria-label","Step "+(i+1)+": "+(PT_NAMES[g]||""));
-        // every stop is its game's mini scene; done adds the check badge,
-        // next adds the game-name pill (START! bubble is #goBtn, placed below)
-        var inner=PT_SCENES[g]||PT_SCENES["arcade-slice.html"];
-        if(cls==="done") inner+='<span class="badge">'+CHECK+'</span>';
-        if(cls==="next") inner+='<span class="npill">'+(PT_NAMES[g]||"")+'</span>';
-        b.innerHTML=inner;
-        (function(cls){ b.onclick=function(){
-          if(cls==="next"){ launch(); }
-          else if(cls==="todo"){ this.classList.remove("wob"); void this.offsetWidth; this.classList.add("wob"); toast("Finish this step first!"); }
-          else { sfx("correct"); }
-        }; })(cls);
-        host.appendChild(b);
-        if(cls==="next") nextPt=p;
-      }
-      // chest crowns the trail; the steps-away pill hangs off the chest (§13)
-      var cp=pt(CHEST_FRAC);
-      var chest=document.createElement("div"); chest.className="pchest";
-      chest.style.left=cp.x+"px"; chest.style.top=cp.y+"px";
-      chest.innerHTML=tr.done?CHEST_OPEN:CHEST_CLOSED;
-      host.appendChild(chest);
-      try{ var gp=$("gatePill"); gp.style.left=cp.x+"px"; gp.style.top=(cp.y+34)+"px"; gp.style.transform="translateX(-50%)"; }catch(e){}
-      // Echo stands on the next node (or by the chest when the day's done);
-      // on right-edge nodes he flips to the LEFT so his bubble stays on screen
-      var ew=$("echoWrap"); var anchor=nextPt||cp;
-      var flip=anchor.x>cw*0.6;
-      ew.style.left=(anchor.x+(flip?-30:30))+"px"; ew.style.top=(anchor.y-6)+"px";
-      ew.style.transform=flip?"translate(calc(-100% + 6px),-100%)":"translate(-6px,-100%)";
-      ew.style.alignItems=flip?"flex-end":"flex-start";
-      // the START! bubble floats above the next stop (it IS #goBtn).
-      // #goBtn is absolute in #wrap, node coords are canvas-local — add the
-      // canvas's offset inside the wrap or the bubble drifts up a screen.
-      try{ var go=$("goBtn"), coY=cv.offsetTop||0, coX=cv.offsetLeft||0;
-        var a2=nextPt||cp, ay=nextPt?(nextPt.y-56):(cp.y-52);
-        go.style.display="block"; go.style.left=(coX+a2.x)+"px"; go.style.top=(coY+ay)+"px";
-      }catch(e){}
+    // Most doors open a practice session pinned to that house's one game
+    // (?house=), so all five rounds happen behind the door the child chose.
+    // Two houses are their own page and must NOT go through charge.html:
+    //   · Story House is reading, not practice — Story Time owns it.
+    //   · Echo's Kitchen is Feed Echo, which charge.html's GAMES map doesn't
+    //     know. Routed through ?house=feed it silently fell back to the arcade
+    //     rotation and sent a four-year-old to Fruit Slice.
+    var DIRECT={ story:"/story.html", feed:"/arcade-feed.html" };
+    function doorFor(key){
+      return DIRECT[key] || ("/charge.html?daily=1&house="+encodeURIComponent(key));
+    }
+    function enter(key){ sfx("tap"); location.href=doorFor(key); }
+
+    // What the plate says about this house's story. A house whose chapter
+    // already advanced today points FORWARD at its cliffhanger — the same
+    // honest move the path made, per house.
+    function plateStory(key){
+      try{
+        if(!(S&&S.houseChapter)) return "";
+        var st={}; try{ st=JSON.parse(localStorage.getItem("sona.houses.v1")||"{}"); }catch(e){}
+        var mine=st[key]||{}, doneToday=mine.day===(S.localDay?S.localDay():"");
+        if(doneToday){
+          var hk=S.houseHook(key)||"";
+          return "Next time · "+hk.replace(/^(Tomorrow|Next time):\s*/i,"");
+        }
+        var c=S.houseChapter(key); if(!c) return "";
+        return "Chapter "+S.houseChapterNum(key)+" · "+c.t;
+      }catch(e){ return ""; }
+    }
+    function chapterDoneToday(key){
+      try{ var st=JSON.parse(localStorage.getItem("sona.houses.v1")||"{}");
+        return (st[key]||{}).day===(S.localDay?S.localDay():""); }catch(e){ return false; }
     }
 
-    // Echo's bubble + the bottom CTA carry the state's one sentence (E4 copy)
-    function renderState(){
-      var name=P.childName||""; var leo=$("echoLeo"), bubble=$("echoBubble"), go=$("goBtn");
-      var left=Math.max(0,GOAL-tr.n);
-      if(tr.done){
-        leo.src="/coach/echo/echo-celebrate.svg";
-        bubble.innerHTML="You did it! <b style='color:#46a302'>Chest time!</b>";
-        go.textContent="FREE PLAY!"; go.classList.add("gold");
-      } else if(tr.n>0){
-        leo.src="/coach/echo/echo-listening.svg";
-        bubble.innerHTML=left+" more — I can see the chest!";
-        go.textContent="KEEP GOING!"; go.classList.remove("gold");
-      } else {
-        leo.src="/coach/echo/echo-idle.svg";
-        bubble.innerHTML="Hi"+(name?" "+name:"")+"! <b style='color:#ef6f23'>"+left+" steps</b> to the chest!";
-        go.textContent="START!"; go.classList.remove("gold");
-      }
-      try{ if(!(window.matchMedia&&matchMedia("(prefers-reduced-motion:reduce)").matches)) leo.classList.add("bob"); }catch(e){}
-      // gate pill: how far to the next district (pathState) — kid-visible, no numbers about streaks
-      try{ var ps=S&&S.pathState?S.pathState():null;
-        if(ps){ var gp=$("gatePill"); gp.textContent=(ps.into===0&&ps.steps>0)?"New place unlocked!":(ps.toGate+" steps to the next place!"); gp.style.display="block"; }
-      }catch(e){}
-      go.onclick=launch; go.dataset.launch=LAUNCH; // dataset: test hook for the age-aware target
-      // Echo is never a locked door (fix pack 1a): tapping him is a hello —
-      // a hop + a warm line in his bubble, then the state's sentence returns.
-      leo.onclick=function(){
-        sfx("tap");
-        var hi=["Hi"+(name?" "+name:"")+"!","Ready when you are!","Let's say some sounds!","You've got this!"];
-        var prev=bubble.innerHTML;
-        bubble.textContent=hi[(Math.random()*hi.length)|0];
-        leo.classList.remove("bob"); void leo.offsetWidth;
-        try{ if(!(window.matchMedia&&matchMedia("(prefers-reduced-motion:reduce)").matches)) leo.classList.add("bob"); }catch(e){}
-        clearTimeout(leo._hiT); leo._hiT=setTimeout(function(){ bubble.innerHTML=prev; },2600);
-      };
+    var GAMELBL={"arcade-slice.html":"FRUIT SLICE","arcade-tiles.html":"PIANO TILES","arcade-stack.html":"BLOCK STACKER","arcade-run.html":"SOUND SPRINT","arcade-glide.html":"FLAPPY GLIDE","arcade-feed.html":"FEED ECHO","story":"STORY TIME"};
+    // Echo's Kitchen has no painted panel yet — a warm meadow stands in until
+    // one lands (the panels auto-adopt: art at coach/city/<key>-800.webp).
+    var FALLBACK={feed:"linear-gradient(160deg,#ffe9b8,#b6eca0)"};
+
+    function buildStreet(){
+      var street=$("street"); if(!street) return;
+      street.innerHTML="";
+      ORDER.forEach(function(h){
+        var sec=document.createElement("section");
+        sec.className="house"+(h.key===TODAYKEY?" today":"");
+        sec.dataset.key=h.key;
+        sec.dataset.door=doorFor(h.key);   // the door this house opens (test hook)
+
+        var panel=document.createElement("div");
+        panel.className="hpanel";
+        if(FALLBACK[h.key]) panel.style.background=FALLBACK[h.key];
+        // the painted panel replaces the placeholder the moment it decodes —
+        // swapping on load beats a visible pop-in on first open
+        var im=new Image();
+        im.onload=function(){ panel.style.backgroundImage="url('"+im.src+"')"; panel.style.backgroundSize="cover"; panel.style.backgroundPosition="center"; panel.style.backgroundRepeat="no-repeat"; };
+        im.src="/coach/city/"+h.key+"-800.webp";
+        sec.appendChild(panel);
+
+        if(h.key===TODAYKEY){
+          var tag=document.createElement("div"); tag.className="todayTag";
+          tag.textContent="TODAY'S STOP"; sec.appendChild(tag);
+        } else if(chapterDoneToday(h.key)){
+          var dt=document.createElement("div"); dt.className="doneTag";
+          dt.textContent="CHAPTER READ ✓"; sec.appendChild(dt);
+        }
+
+        var plate=document.createElement("div"); plate.className="hplate";
+        var story=plateStory(h.key);
+        plate.innerHTML='<div class="hname"></div><div class="hgame"></div>'+(story?'<div class="hchap"></div>':"");
+        plate.querySelector(".hname").textContent=h.name;
+        plate.querySelector(".hgame").textContent=GAMELBL[h.game]||"";
+        if(story) plate.querySelector(".hchap").textContent=story;
+        sec.appendChild(plate);
+
+        var go=document.createElement("button");
+        go.className="hgo"; go.type="button";
+        go.textContent=(h.key==="story")?"READ!":"PLAY!";
+        go.setAttribute("aria-label",(h.key==="story"?"Read in ":"Play in ")+h.name);
+        go.onclick=function(ev){ if(ev&&ev.stopPropagation)ev.stopPropagation(); enter(h.key); };
+        sec.appendChild(go);
+
+        // the whole slide is a tap target too — a 5-year-old aims at the house
+        sec.onclick=function(){ enter(h.key); };
+        street.appendChild(sec);
+      });
+      buildDots();
+      // open ON today's stop rather than making the child hunt for it
+      var ix=0; ORDER.forEach(function(h,i){ if(h.key===TODAYKEY) ix=i; });
+      // no smooth scroll here: the street has just been laid out, and an
+      // animated jump on first paint reads as a glitch
+      street.scrollLeft=ix*street.clientWidth;
+      paintDots();
     }
-    renderState();
-    layoutPath();
-    // relayout on resize/orientation (road geometry is size-dependent)
-    var _rl; window.addEventListener("resize",function(){ clearTimeout(_rl); _rl=setTimeout(layoutPath,150); });
-    // fonts/images can shift canvas height slightly on first paint
-    setTimeout(layoutPath,180); setTimeout(layoutPath,600);
+
+    function buildDots(){
+      var d=$("dots"); if(!d) return; d.innerHTML="";
+      ORDER.forEach(function(){ d.appendChild(document.createElement("i")); });
+    }
+    function currentIx(){
+      var street=$("street"); if(!street||!street.clientWidth) return 0;
+      return Math.round(street.scrollLeft/street.clientWidth);
+    }
+    function paintDots(){
+      var d=$("dots"); if(!d) return; var ix=currentIx();
+      [].forEach.call(d.children,function(el,i){ el.className=(i===ix)?"on":""; });
+    }
+
+    buildStreet();
+    (function(){
+      var street=$("street"); if(!street) return;
+      var hint=$("swipeHint"), t, openedAt=currentIx();
+      street.addEventListener("scroll",function(){
+        clearTimeout(t); t=setTimeout(paintDots,60);
+        // Retire the hint once the street has actually MOVED. Setting
+        // scrollLeft during layout queues a scroll event that arrives after
+        // this listener is bound, so "any scroll" hid the hint before the
+        // child ever saw it.
+        if(hint && currentIx()!==openedAt) hint.style.opacity="0";
+      },{passive:true});
+      // and it retires on its own even if the child never swipes
+      if(hint) setTimeout(function(){ hint.style.opacity="0"; },6000);
+      // slide width is viewport-width — a rotate has to re-snap or the street
+      // sits between two houses
+      var rz; window.addEventListener("resize",function(){
+        clearTimeout(rz); rz=setTimeout(function(){
+          var ix=currentIx(); street.scrollLeft=ix*street.clientWidth; paintDots();
+        },160);
+      });
+    })();
+
     $("floatLib").onclick=function(){ sfx("tap"); location.href="/library.html"; };
 
     // ── library ──

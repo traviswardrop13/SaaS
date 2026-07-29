@@ -129,15 +129,31 @@ await page.goto("http://localhost:8145/arcade-feed.html"); await page.waitForTim
 t = await page.evaluate(() => document.getElementById("echo").style.transform);
 ok("Echo's size persists across visits", /scale\(1\.0[2-9]|scale\(1\.[1-9]/.test(t), t);
 
-// ── Practice Path launch is age-aware: under-6 practices via Feed Echo,
-//    older kids run the daily rotation (charge). Both advance today's ring. ──
+// ── CITY1: the street is age-aware. A little who can't read must land on
+//    Echo's Kitchen (tap-and-say), not on a house full of falling fruit —
+//    but no door is ever locked, so the other houses still render. ──
 await page.goto("http://localhost:8145/today.html"); await page.waitForTimeout(900);
-t = await page.evaluate(() => (document.getElementById("goBtn") || {}).dataset && document.getElementById("goBtn").dataset.launch);
-ok("under-6 path launches Feed Echo", /arcade-feed/.test(t || ""), t);
+let city = await page.evaluate(() => ({
+  first: (document.querySelector("#street .house") || {}).dataset,
+  today: (document.querySelector("#street .house.today") || {}).dataset,
+  n: document.querySelectorAll("#street .house").length,
+}));
+ok("under-6: Echo's Kitchen leads the street", city.first && city.first.key === "feed", JSON.stringify(city.first));
+ok("under-6: today's stop is Echo's Kitchen", city.today && city.today.key === "feed", JSON.stringify(city.today));
+ok("under-6: the kitchen door opens Feed Echo", /arcade-feed/.test((city.today || {}).door || ""), (city.today || {}).door);
+ok("under-6: every other door still renders", city.n >= 6, "houses=" + city.n);
 await page.evaluate(() => { const p = JSON.parse(localStorage.getItem("sona.profile.v1")); p.childAge = "8"; localStorage.setItem("sona.profile.v1", JSON.stringify(p)); });
 await page.goto("http://localhost:8145/today.html"); await page.waitForTimeout(900);
-t = await page.evaluate(() => document.getElementById("goBtn").dataset.launch);
-ok("age 8 path launches the daily run", /charge\.html\?daily/.test(t || ""), t);
+city = await page.evaluate(() => ({
+  first: (document.querySelector("#street .house") || {}).dataset,
+  today: (document.querySelector("#street .house.today") || {}).dataset,
+  doors: [...document.querySelectorAll("#street .house")].map((h) => h.dataset.door),
+}));
+ok("age 8: the kitchen no longer leads", city.first && city.first.key !== "feed", JSON.stringify(city.first));
+ok("age 8: practice doors run the daily rail, pinned to their house",
+  city.doors.filter((d) => /charge\.html\?daily=1&house=/.test(d)).length >= 5, JSON.stringify(city.doors));
+ok("age 8: the Story House opens Story Time, not a game",
+  city.doors.some((d) => /story\.html/.test(d)), JSON.stringify(city.doors));
 
 ok("no pageerrors", errs.length === 0, errs.join(" | "));
 await browser.close(); srv.close();

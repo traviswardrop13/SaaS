@@ -63,11 +63,14 @@ ok("cap overlay gates 4th call", await page.evaluate(() => document.getElementBy
 await page.goto("http://localhost:8132/today.html");
 await page.waitForTimeout(1200);
 const card = await page.evaluate(() => ({
-  path: document.querySelectorAll("#pathNodes .pnode").length,
+  houses: document.querySelectorAll("#street .house").length,
   deck: document.querySelectorAll(".thumb").length,
+  callDoor: [...document.querySelectorAll("#street .house")].filter((h) => /call/i.test(h.dataset.key || "")).length,
 }));
-// home is now the Practice Path (no game deck), so Coach Call is not surfaced there
-ok("home is the Practice Path — no Coach Call deck", card.path === 5 && card.deck === 0, JSON.stringify(card));
+// home is now the city (no game deck), and Coach Call has no house — it is not
+// surfaced to the child from the street at all
+ok("home is the city — no Coach Call deck, no call door",
+  card.houses >= 6 && card.deck === 0 && card.callDoor === 0, JSON.stringify(card));
 
 await browser.close(); srv.close();
 console.log(fails ? fails + " FAILURES" : "ALL GREEN");

@@ -1,7 +1,8 @@
-// STORY1: the daily run is an episode. Asserts the engine's contracts (a beat
-// per round, a cliffhanger, one chapter per DAY), that the beat card appears
-// and clears itself without a tap, that the hook renders on the finish
-// overlay, and that free play stays story-free.
+// STORY1 + CITY1: every HOUSE runs its own serial. Asserts the engine's
+// contracts (a beat per round, a cliffhanger, one chapter per house per DAY,
+// houses advancing independently), that the beat card appears and clears itself
+// without a tap, that the hook renders on the finish overlay, and that the city
+// street offers one door per game.
 import { createServer } from "http";
 import { readFileSync, existsSync } from "fs";
 import { chromium, ROOT, launchOpts } from "./_env.mjs";
@@ -78,26 +79,68 @@ const adv = await page.evaluate(() => {
 ok("finishing a run advances one chapter", adv.b === adv.a + 1, JSON.stringify(adv));
 ok("replaying the same day does NOT skip chapters", adv.c === adv.b, JSON.stringify(adv));
 
-// ── today.html surfaces the chapter before the kid taps in ──
-await page.evaluate(() => localStorage.removeItem("sona.episode.v1"));
+// ── CITY1: the street shows what is waiting behind every door ──
+await page.evaluate(() => { localStorage.removeItem("sona.episode.v1"); localStorage.removeItem("sona.houses.v1"); });
 await page.goto("http://localhost:8151/today.html");
 await page.waitForTimeout(800);
-const pill = await page.evaluate(() => {
-  const p = document.getElementById("chapPill");
-  return { shown: !!p && p.classList.contains("show"), txt: (p || {}).textContent || "" };
-});
-ok("path shows the chapter ribbon", pill.shown && /Chapter 1/.test(pill.txt), pill.txt);
+const street = await page.evaluate(() => ({
+  n: document.querySelectorAll("#street .house").length,
+  engineN: Sona.HOUSES.length,
+  today: document.querySelectorAll("#street .house.today").length,
+  dots: document.querySelectorAll("#dots i").length,
+  chaps: [...document.querySelectorAll("#street .house")].map((h) => ({
+    key: h.dataset.key, chap: (h.querySelector(".hchap") || {}).textContent || "",
+    game: (h.querySelector(".hgame") || {}).textContent || "",
+  })),
+  // every house key must resolve to a real arc, or a door opens on nothing
+  arcs: Sona.HOUSES.map((h) => ({ key: h.key, len: Sona.houseArcLen(h.key), arc: Sona.houseArc(h.key) })),
+}));
+ok("street has one house per game", street.n === street.engineN && street.n >= 6, street.n + "/" + street.engineN);
+ok("one house is today's stop", street.today === 1, String(street.today));
+ok("a dot per house", street.dots === street.n, street.dots + "/" + street.n);
+ok("every house names its game", street.chaps.every((c) => c.game.length > 3), JSON.stringify(street.chaps.filter((c) => c.game.length <= 3)));
+ok("every house plate shows the chapter waiting inside",
+  street.chaps.every((c) => /^Chapter 1 · .{4,}/.test(c.chap)),
+  JSON.stringify(street.chaps.filter((c) => !/^Chapter 1 · .{4,}/.test(c.chap))));
+ok("every house has a real arc behind it",
+  street.arcs.every((a) => a.len >= 3 && a.arc.length > 6),
+  JSON.stringify(street.arcs.filter((a) => !(a.len >= 3 && a.arc.length > 6))));
 
-// ── the beat card opens the daily round and clears ITSELF ──
-await page.goto("http://localhost:8151/charge.html?daily=1&sound=R");
+// ── house arcs advance INDEPENDENTLY, one chapter per house per day ──
+const harc = await page.evaluate(() => {
+  localStorage.removeItem("sona.houses.v1");
+  const a = Sona.houseChapterNum("slice"), other0 = Sona.houseChapterNum("tiles");
+  Sona.houseAdvance("slice");
+  const b = Sona.houseChapterNum("slice"), other1 = Sona.houseChapterNum("tiles");
+  Sona.houseAdvance("slice"); Sona.houseAdvance("slice");   // same local day
+  const c = Sona.houseChapterNum("slice");
+  return { a, b, c, other0, other1,
+    beat0: Sona.houseBeat("slice", 0), beat1: Sona.houseBeat("slice", 1), beat4: Sona.houseBeat("slice", 4),
+    beyond: Sona.houseBeat("slice", 99), hook: Sona.houseHook("slice"),
+    unknown: Sona.houseBeat("nope", 0) };
+});
+ok("finishing a house advances that house one chapter", harc.b === harc.a + 1, JSON.stringify(harc));
+ok("replaying the same day does NOT skip a house chapter", harc.c === harc.b, JSON.stringify(harc));
+ok("one house's story never moves another's", harc.other1 === harc.other0, JSON.stringify(harc));
+ok("round 0 gets the house chapter opener", !!harc.beat0);
+ok("each round gets its own house beat", harc.beat1 && harc.beat4 && harc.beat1 !== harc.beat4);
+ok("a round past the last house beat still returns copy", !!harc.beyond);
+ok("house cliffhanger names what happens next", /(tomorrow|next time)/i.test(harc.hook), harc.hook);
+ok("an unknown house returns nothing rather than throwing", harc.unknown === "");
+await page.evaluate(() => localStorage.removeItem("sona.houses.v1"));
+
+// ── the beat card opens the round and clears ITSELF ──
+await page.goto("http://localhost:8151/charge.html?daily=1&house=slice&sound=R");
 await page.waitForTimeout(900);
 let card = await page.evaluate(() => ({
   shown: document.getElementById("storyCard").classList.contains("show"),
   ttl: document.getElementById("storyTtl").textContent,
   txt: document.getElementById("storyTxt").textContent,
 }));
-ok("daily round opens on the story beat", card.shown, JSON.stringify(card));
+ok("a house round opens on that house's story beat", card.shown, JSON.stringify(card));
 ok("round 1 names the chapter", /Chapter 1/.test(card.ttl), card.ttl);
+ok("the beat is the FRUIT MARKET's, not some other house's",
+  /fruit|pia/i.test(card.txt), card.txt);
 ok("beat carries real story copy", card.txt.length > 20, card.txt);
 // it must get out of the child's way on its own — no tap required
 await page.waitForTimeout(4600);
@@ -142,17 +185,41 @@ ok("beat card clears itself (no tap needed)", !card);
     "DEFAULT_PROFILE volume 0.3 with no slider left every family inaudible");
 }
 
-// ── free play has no story ──
-await page.goto("http://localhost:8151/charge.html?game=arcade-slice.html");
-await page.waitForTimeout(1100);
-const free = await page.evaluate(() => document.getElementById("storyCard").classList.contains("show"));
-ok("free play shows no story beat", !free);
+// ── CITY1: free play inside a house gets that house's story too. The
+// unfinished thread IS the reason a child picks a door, so it cannot depend on
+// arriving through the daily rail.
+await page.evaluate(() => localStorage.removeItem("sona.houses.v1"));
+await page.goto("http://localhost:8151/charge.html?game=arcade-tiles.html");
+await page.waitForTimeout(1400);
+const free = await page.evaluate(() => ({
+  shown: document.getElementById("storyCard").classList.contains("show"),
+  txt: document.getElementById("storyTxt").textContent,
+}));
+ok("free play in a house shows that house's beat", free.shown, JSON.stringify(free));
+ok("the free-play beat belongs to the MUSIC HALL", /piano|mo\b/i.test(free.txt), free.txt);
+
+// ── ?house= pins every round to that house's ONE game ──
+// Without this the daily run rotates a different game each round, which is the
+// behaviour the city replaced: a child who walks into the fruit market must not
+// come out holding a piano.
+{
+  const src = readFileSync(ROOT + "/charge.html", "utf8");
+  ok("a house session pins the game for every round",
+    /HOUSEGAME\s*\|\|\s*\(isDaily/.test(src),
+    "GAME must prefer the house's game over the per-round rotation");
+  ok("the run remembers the house across the arcade round-trip",
+    /run\.house/.test(src),
+    "the arcade returns ?daily=1&banked=N with no house param");
+  ok("the mic is settled BEFORE the story beat plays",
+    src.indexOf("await micPrimer()") < src.indexOf("await storyBeat()"),
+    "a story card between the primer tap and the OS prompt delays the dialog");
+}
 
 // ── the cliffhanger lands on the finish overlay ──
 await page.evaluate(() => {
   sessionStorage.setItem("sona.run.v1", JSON.stringify({ active: true, round: 5, sum: 40, scores: [8, 8, 8, 8, 8], sound: "R", level: 1, pending: false }));
 });
-await page.goto("http://localhost:8151/charge.html?daily=1&sound=R");
+await page.goto("http://localhost:8151/charge.html?daily=1&house=slice&sound=R");
 await page.waitForTimeout(1200);
 const fin = await page.evaluate(() => ({
   ovl: document.getElementById("runOvl").classList.contains("show"),

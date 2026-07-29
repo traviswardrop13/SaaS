@@ -338,6 +338,303 @@
     return episode();
   }
 
+  // ── CITY1: one game per HOUSE, one storyline per house ─────────────────
+  // The city is the home screen: six houses, one game behind each door, and a
+  // serial story that belongs to THAT house. A child picks where to practice,
+  // and the reason to pick a door is the unfinished thread behind it.
+  //
+  // Six parallel arcs beat one shared arc here. A single global story has to be
+  // generic enough to sit in front of any game; a story that belongs to the
+  // fruit market can be ABOUT slicing fruit, so the beat explains why the child
+  // is doing the thing they're about to do. Six threads also means a kid who
+  // stalls on one house still has five live cliffhangers.
+  //
+  // Prose stays sound-agnostic — the practice word always comes from the
+  // child's own focus sound — so all six arcs serve all 19 sounds.
+  const HOUSES = [
+    { key: "slice", game: "arcade-slice.html", name: "Fruit Market", who: "Pia" },
+    { key: "tiles", game: "arcade-tiles.html", name: "Music Hall", who: "Maestro Mo" },
+    { key: "stack", game: "arcade-stack.html", name: "Build Yard", who: "Bo" },
+    { key: "run", game: "arcade-run.html", name: "Kart Garage", who: "Zip" },
+    { key: "glide", game: "arcade-glide.html", name: "Flight Tower", who: "Wren" },
+    { key: "feed", game: "arcade-feed.html", name: "Echo's Kitchen", who: "Echo" },
+    { key: "story", game: "story", name: "Story House", who: "Miss Fable" },
+  ];
+  const HOUSE_STORIES = {
+    slice: {
+      arc: "The Juice Machine",
+      chapters: [
+        { t: "Opening Day",
+          open: "Pia's fruit stand opens today — and every single fruit is still whole!",
+          beats: ["The slicer runs on your voice. Give it a go!",
+                  "Melon down the middle! Pia can't chop this fast.",
+                  "The juice line is out the door and around the corner.",
+                  "One more crate and the whole stand is stocked…"],
+          hook: "Tomorrow: something has been taking fruit off the top shelf." },
+        { t: "The Top-Shelf Thief",
+          open: "Six mangoes gone overnight. Pia found one tiny footprint in the sugar.",
+          beats: ["Slice fast — whatever it is, it's still up there.",
+                  "A tail! Just for a second, behind the bananas.",
+                  "It's a baby bat, and it is extremely sorry.",
+                  "She was only hungry. Pia is already making her a plate…"],
+          hook: "Tomorrow: the bat brings her whole family. All of them." },
+        { t: "Eleven Hungry Bats",
+          open: "The baby bat came back with ten cousins and no table manners.",
+          beats: ["Eleven plates! Start slicing.",
+                  "They squeak along with you. It's loud and lovely.",
+                  "Pia has never sold so much juice in her life.",
+                  "The last plate is nearly full…"],
+          hook: "Tomorrow: the Fruit Fair, and Pia needs a partner." },
+        { t: "The Fruit Fair",
+          open: "Pia's stand is in the fair. First prize: the golden pineapple.",
+          beats: ["The judges are watching. Slice clean!",
+                  "The bats are doing a whole dance now. The crowd loves it.",
+                  "One judge has asked for three refills.",
+                  "The judges are whispering. They're pointing at you…"],
+          hook: "Tomorrow: Maestro Mo heard the crowd — and he's got a stage." },
+      ],
+    },
+    tiles: {
+      arc: "The Song Nobody Finished",
+      chapters: [
+        { t: "The Locked Piano",
+          open: "Maestro Mo's grand piano hasn't made a sound in years. It's waiting.",
+          beats: ["Every tile you hit wakes up one more key.",
+                  "The low notes work! The high ones are still asleep.",
+                  "Mo is conducting you now. He's very serious about it.",
+                  "One whole octave to go…"],
+          hook: "Tomorrow: there's sheet music inside the piano. Half of it." },
+        { t: "Half a Song",
+          open: "Inside the piano: a page of music. It stops in the middle of a line.",
+          beats: ["Play what's on the page and see where it goes.",
+                  "The room hums along on its own. That's new.",
+                  "Mo says the rest of the page was never written.",
+                  "So somebody has to finish it. Somebody with a voice…"],
+          hook: "Tomorrow: you write the ending. Mo is bringing the orchestra." },
+        { t: "Writing the Ending",
+          open: "Mo hands you the pencil. \"Your part,\" he says. \"Sing it, I'll write it.\"",
+          beats: ["Your sound becomes a note on the page.",
+                  "That one was good. Mo actually smiled.",
+                  "Two more bars and the song has an ending.",
+                  "The last note is yours. Take your time…"],
+          hook: "Tomorrow: opening night. The Hall is going to be full." },
+        { t: "Opening Night",
+          open: "Every seat in the Music Hall is taken. The lights go down.",
+          beats: ["First note — the whole Hall goes quiet.",
+                  "The orchestra follows you. YOU are the tune.",
+                  "Somebody in the balcony is crying. Happily.",
+                  "The final note. Hold it as long as you can…"],
+          hook: "Tomorrow: Bo needs a hand at the Build Yard. Something fell over." },
+      ],
+    },
+    stack: {
+      arc: "The Tallest Thing in Town",
+      chapters: [
+        { t: "The Wobble",
+          open: "Bo's crane is fine. Bo's tower is not. It leans like a tired cat.",
+          beats: ["Your voice steadies the crane. Stack carefully!",
+                  "Three blocks up and holding. Nice.",
+                  "Bo is eating a sandwich and supervising.",
+                  "One more block and it's straight for the first time…"],
+          hook: "Tomorrow: the town wants the tower TALLER. Much taller." },
+        { t: "Taller",
+          open: "The mayor's note says: \"Make it the tallest thing in town. Please. — M\"",
+          beats: ["Higher than the Music Hall. Go.",
+                  "Higher than the Flight Tower. Wren is watching, amused.",
+                  "The wind up here pushes the blocks around.",
+                  "One block from the top of everything…"],
+          hook: "Tomorrow: a bird has built a nest on the top block." },
+        { t: "The Nest",
+          open: "There's a nest on the very top block. With eggs in it. Bo has stopped work.",
+          beats: ["Build AROUND the nest. Gently.",
+                  "A little roof over the eggs. Bo's idea.",
+                  "The mother bird is back. She approves.",
+                  "One last beam and the nest has a house…"],
+          hook: "Tomorrow: the eggs are moving." },
+        { t: "Four Small Neighbours",
+          open: "Four chicks. On the tallest thing in town. Bo has named all of them.",
+          beats: ["They're loud. Be louder — they copy you.",
+                  "Chick number three has your exact sound. Exactly.",
+                  "Bo is building them a tiny balcony.",
+                  "The tower is finished. It has residents…"],
+          hook: "Tomorrow: Zip bet the whole garage she's faster than you." },
+      ],
+    },
+    run: {
+      arc: "The Race Zip Can't Win Alone",
+      chapters: [
+        { t: "The Bet",
+          open: "Zip's kart is fast. Zip's kart is also missing a wheel. She made a bet anyway.",
+          beats: ["Your voice is the engine. Push!",
+                  "Three laps in and the wheel is holding.",
+                  "Zip is laughing so hard she nearly steers into a cone.",
+                  "Last lap. Go go go…"],
+          hook: "Tomorrow: the Hill Road. Nobody's finished it." },
+        { t: "The Hill Road",
+          open: "The Hill Road goes straight up. Zip has crashed on it eleven times.",
+          beats: ["Steady sound, steady climb.",
+                  "Halfway. Don't stop — the kart rolls back.",
+                  "Zip has closed her eyes. That's not helping.",
+                  "The top is right there…"],
+          hook: "Tomorrow: what's on the other side of the hill?" },
+        { t: "Over the Top",
+          open: "The other side of the hill is a beach. Nobody in town knew.",
+          beats: ["Sand track! Totally different. Push harder.",
+                  "Zip has driven into the sea. On purpose.",
+                  "There's a road going along the water for miles.",
+                  "One more stretch and you've mapped the whole thing…"],
+          hook: "Tomorrow: the Grand Prix. Zip has entered you both." },
+        { t: "The Grand Prix",
+          open: "Everyone in town is at the start line. Zip has polished the missing wheel.",
+          beats: ["Lights out. GO.",
+                  "Second place and closing. Louder!",
+                  "Bo is holding up a sign. It says GO ANYWAY.",
+                  "The finish line. One more push…"],
+          hook: "Tomorrow: Wren saw the whole race from the sky. She wants to show you something." },
+      ],
+    },
+    glide: {
+      arc: "Wren Learns to Land",
+      chapters: [
+        { t: "The Bird Who Won't Fly",
+          open: "Wren lives at the top of the Flight Tower and has never once flown.",
+          beats: ["Your voice lifts her off the sill. Keep going!",
+                  "She's gliding! Eyes shut, but gliding.",
+                  "Round the Music Hall spire. Mo waves.",
+                  "Nearly back to the tower…"],
+          hook: "Tomorrow: landing. Landing is the hard part." },
+        { t: "The Hard Part",
+          open: "Wren can fly for hours. Wren cannot land. She's been circling since dawn.",
+          beats: ["Slow and steady brings her down.",
+                  "Too fast! Around again.",
+                  "Bo has set out a pile of soft sand. Very thoughtful.",
+                  "Nearly gentle enough…"],
+          hook: "Tomorrow: there's a storm coming and Wren's still up there." },
+        { t: "The Storm",
+          open: "Grey sky, big wind, and one small bird a long way from her window.",
+          beats: ["Louder than the wind. She's listening for you.",
+                  "The wind pushes her back two houses.",
+                  "You can see the tower light. She can too.",
+                  "Almost home…"],
+          hook: "Tomorrow: Wren has something to show you above the clouds." },
+        { t: "Above the Clouds",
+          open: "\"Come up,\" says Wren. \"You've never seen the town from here.\"",
+          beats: ["Up through the white. Keep your voice steady.",
+                  "Out the top — sunshine, and quiet.",
+                  "The whole town is down there, tiny.",
+                  "Wren lands on your shoulder. First perfect landing…"],
+          hook: "Tomorrow: Miss Fable is writing all of this down." },
+      ],
+    },
+    feed: {
+      arc: "Echo's Kitchen",
+      chapters: [
+        { t: "Breakfast",
+          open: "Echo is hungry. Echo is ALWAYS hungry. Say it and food appears!",
+          beats: ["Here comes an apple. Say it!",
+                  "Echo is getting bigger. And happier.",
+                  "That was a whole watermelon. Wow.",
+                  "One more bite and Echo is full…"],
+          hook: "Next time: Echo wants to cook something himself." },
+        { t: "Echo Cooks",
+          open: "Echo has found a pot. This is either wonderful or a disaster.",
+          beats: ["Say it to drop in the first thing.",
+                  "In goes something orange. Probably a carrot.",
+                  "It smells GOOD. Nobody expected that.",
+                  "One more thing and dinner is ready…"],
+          hook: "Next time: Echo invites everyone in town for dinner." },
+        { t: "Everyone Comes to Dinner",
+          open: "Pia, Bo, Zip, Wren and Maestro Mo are all at the table. Echo is nervous.",
+          beats: ["Fill the first plate. Say it!",
+                  "Bo has asked for seconds already.",
+                  "Zip is eating with her helmet still on.",
+                  "One plate left — it's yours…"],
+          hook: "Next time: who is going to wash all of this up?" },
+        { t: "The Big Clean-Up",
+          open: "Forty-one dishes. One small Echo. He has a plan involving bubbles.",
+          beats: ["Say it and the bubbles start.",
+                  "Bubbles everywhere. Wren is hiding in one.",
+                  "The kitchen is nearly clean. Nearly.",
+                  "One last plate and Echo can sit down…"],
+          hook: "Next time: Echo is hungry again. Obviously." },
+      ],
+    },
+    story: {
+      arc: "The Book That Was Missing Its Middle",
+      chapters: [
+        { t: "The Empty Pages",
+          open: "Miss Fable's biggest book has a beginning, an ending, and nothing between.",
+          beats: ["Read it out and the words come back.",
+                  "A page filled in! Then it stopped.",
+                  "Miss Fable says the middle was never written down.",
+                  "One more page and there's a proper chapter…"],
+          hook: "Tomorrow: the missing middle is somewhere in town." },
+        { t: "The Hunt",
+          open: "Miss Fable has a theory: the story got out and is wandering around town.",
+          beats: ["Read the clue out loud.",
+                  "The clue points at the Fruit Market.",
+                  "Pia has been using a page as a napkin. Oops.",
+                  "One page found. Where are the others…"],
+          hook: "Tomorrow: Mo has been using a page as sheet music." },
+        { t: "Six Pages, Six Houses",
+          open: "Every house in town has one page. Nobody knew what they had.",
+          beats: ["Bo's page was a blueprint. Read it.",
+                  "Zip's page was folded into a paper plane.",
+                  "Wren's page was in the nest. Of course.",
+                  "One page left, and it's yours…"],
+          hook: "Tomorrow: your page. The last one." },
+        { t: "Your Page",
+          open: "The last page is blank. Miss Fable slides it across the desk to you.",
+          beats: ["Say it out loud and it writes itself.",
+                  "That's the middle. That's actually the middle.",
+                  "The whole town has come to hear it.",
+                  "One line to go and the book is whole…"],
+          hook: "Tomorrow: a brand-new book, and it's got your name on the front." },
+      ],
+    },
+  };
+  const HKEY = "sona.houses.v1";
+  function houseOf(game) {
+    const g = String(game || "");
+    const h = HOUSES.filter((x) => x.game === g)[0];
+    return h ? h.key : "";
+  }
+  function house(key) { return HOUSES.filter((x) => x.key === key)[0] || null; }
+  function houseGame(key) { const h = house(key); return h ? h.game : ""; }
+  function houseName(key) { const h = house(key); return h ? h.name : ""; }
+  function _hs(key) { const all = load(HKEY, {}); const v = all[key] || {}; return { i: (v.i | 0) || 0, day: v.day || "" }; }
+  function houseArcLen(key) { const a = HOUSE_STORIES[key]; return a ? a.chapters.length : 0; }
+  function houseChapter(key) {
+    const a = HOUSE_STORIES[key]; if (!a) return null;
+    return a.chapters[_hs(key).i % a.chapters.length];
+  }
+  function houseChapterNum(key) { const n = houseArcLen(key); return n ? (_hs(key).i % n) + 1 : 0; }
+  function houseArc(key) { const a = HOUSE_STORIES[key]; return a ? a.arc : ""; }
+  // The beat shown before round `r` (0-based). Round 0 gets the chapter opener.
+  function houseBeat(key, r) {
+    const c = houseChapter(key); if (!c) return "";
+    const n = r | 0;
+    if (n <= 0) return c.open;
+    return c.beats[Math.min(n, c.beats.length) - 1] || c.beats[c.beats.length - 1];
+  }
+  function houseHook(key) { const c = houseChapter(key); return c ? c.hook : ""; }
+  // Advance ONE chapter per house per local day — a replayed or refreshed run
+  // can't skip ahead, and each house keeps its own place in its own arc.
+  function houseAdvance(key) {
+    const n = houseArcLen(key); if (!n) return null;
+    const all = load(HKEY, {}); const v = _hs(key); const t = today();
+    if (v.day === t) return houseChapter(key);
+    all[key] = { i: (v.i + 1) % n, day: t };
+    save(HKEY, all);
+    return houseChapter(key);
+  }
+  // Which house the city badges as today's stop — rotates so no child parks in
+  // one game forever, but every other door stays open.
+  function houseToday() {
+    const i = (typeof dayNum === "function" ? dayNum() : 0) % HOUSES.length;
+    return HOUSES[i].key;
+  }
+
   // ── today's rep count (RING1): every honest VAD-counted rep ticks a
   // positive-only daily number the kid watches CLIMB (a kid does 40-60 real
   // reps a day — "47" beats "0/5"). Local-day keyed; silence never counts
@@ -1812,5 +2109,5 @@
   }
   try { installDebug(); } catch (e) {}
 
-  global.Sona = { pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, weekWins, ALL_SOUNDS, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, ladderContent, FREE_MODE, isFree, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, bumpReps, repsToday, pathState, localDay: () => _localDay(), soundFamily, frameShape, checkSounds, checkItems, gradeSound, saveCheck, lastCheck, checkHistory, checkDue, buildPlan, getPlan, journeyWeek, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, gated, gateVerify, gateOk, requireGate, slpCode, offerCode, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, LEVEL_GAMES, GAME_DECK, GAMES_PER_LEVEL, levelGames, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, WORLDS, LEVELS_PER_WORLD, campaignLevels, campaignSounds, campaignState, worldById, worldLevels, worldStars, worldCleared, levelStars, setLevelStars, totalStars, worldUnlocked, levelUnlocked, campaignLaunch, campaignResolve, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repsBeacon, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES };
+  global.Sona = { pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, weekWins, ALL_SOUNDS, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, ladderContent, FREE_MODE, isFree, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, HOUSES, HOUSE_STORIES, house, houseOf, houseGame, houseName, houseArc, houseArcLen, houseChapter, houseChapterNum, houseBeat, houseHook, houseAdvance, houseToday, bumpReps, repsToday, pathState, localDay: () => _localDay(), soundFamily, frameShape, checkSounds, checkItems, gradeSound, saveCheck, lastCheck, checkHistory, checkDue, buildPlan, getPlan, journeyWeek, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, gated, gateVerify, gateOk, requireGate, slpCode, offerCode, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, LEVEL_GAMES, GAME_DECK, GAMES_PER_LEVEL, levelGames, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, WORLDS, LEVELS_PER_WORLD, campaignLevels, campaignSounds, campaignState, worldById, worldLevels, worldStars, worldCleared, levelStars, setLevelStars, totalStars, worldUnlocked, levelUnlocked, campaignLaunch, campaignResolve, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repsBeacon, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES };
 })(window);
