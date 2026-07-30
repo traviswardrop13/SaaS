@@ -315,18 +315,18 @@
 
     // ---- content: SLP progression. Every round climbs the ladder the way a
     // session would — round 1 warms up in isolation (rrr), round 2 moves to
-    // syllables (rah/ree/roo), then words, phrases, sentences. Free play rides
+    // syllables (rah/ree/roo), then words, then sentences. Free play rides
     // the rotation (sona.js): 5 rounds on one sound, then the next sound takes
     // over. The climb is capped ONE level above the child's mastered rung, so
     // rounds end on a stretch level and two clean stretch rounds advance the
-    // rung for good — a kid who can't say R alone never gets pushed to phrases.
+    // rung for good — a kid who can't say R alone never gets pushed to sentences.
     var RUNG=(S&&S.rungOf)?S.rungOf(SOUND):0;
     // ONE counter drives both the header and the ladder step, because they used
     // to read different ones. The header showed today's ring position while the
     // rung read sona.js's PERSISTENT rotation counter, so "Round 3 of 5" could
-    // hand a child a phrase, and a fresh day could open at phrases instead of
+    // hand a child a sentence, and a fresh day could open at sentences instead of
     // warming up on the sound. Every session now starts at isolation and climbs
-    // isolation → syllable → word → phrase → sentence, still capped one level
+    // isolation → syllable → word → sentence, still capped one level
     // above the child's mastered rung so nobody gets pushed past what they own.
     // Free play wraps within the block of five, because the ring keeps counting
     // past the goal: a bonus round is a fresh session on the NEXT sound, and it
