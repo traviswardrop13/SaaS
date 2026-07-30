@@ -237,7 +237,29 @@
     g.totals = Object.assign({ sessions: 0, words: 0, stars: 0, coins: 0 }, g.totals || {});
     g.streak = Object.assign({ count: 0, lastDate: "" }, g.streak || {});
     g.bySound = g.bySound || {}; g.sessions = g.sessions || []; g.stage = g.stage || {}; g.chests = g.chests || {}; g.missed = g.missed || [];
+    if (migrateLadder(g)) save(GKEY, g);
     return g;
+  }
+  // ── ladder v2: the phrase rung is gone (word → sentence) ───────────────
+  // g.stage[sound] is an INDEX into LADDER, so dropping a rung silently
+  // re-points every stored value: a child sitting on 4 ("sentence") would read
+  // as 5 ("conversation") and be pushed a level they never earned. One-time
+  // remap, flagged so it can only run once:
+  //   0,1,2  isolation/syllable/word  → unchanged
+  //   3      phrase                   → 2 (word). Conservative on purpose: the
+  //          rung they cleared no longer exists, and the cap is earned+1, so
+  //          they still stretch to sentences without us claiming they own them.
+  //   4,5    sentence/conversation    → 3,4 (the same names, new indices)
+  function migrateLadder(g) {
+    if (g.ladderV >= 2) return false;
+    const st = g.stage || {};
+    Object.keys(st).forEach((s) => {
+      const v = st[s] | 0;
+      if (v >= 4) st[s] = v - 1;
+      else if (v === 3) st[s] = 2;
+    });
+    g.ladderV = 2;
+    return true;
   }
   // Local calendar day (was toISOString = UTC, which broke evening streaks).
   function _localDay(ms) { const d = ms != null ? new Date(ms) : new Date(); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); }
@@ -283,15 +305,19 @@
     return g.stage[sound] || 0;
   }
 
-  // ── SLP content ladder: isolation → syllable → word → phrase → sentence → conversation ──
+  // ── SLP content ladder: isolation → syllable → word → sentence → conversation ──
   // The way real therapists sequence a target sound. Per-sound progress climbs
   // the 6 rungs; a rung unlocks the next after a solid round (~80% — "encouraging"
   // gating: only ever moves UP, and every lower rung stays replayable). We reuse
   // g.stage[sound] as the rung index (0..6, 6 = all rungs cleared) so it stays in
   // sync with the existing stage tracker (stageOf/completeStage keep their 0..3
   // contract for the legacy lesson flow).
-  const LADDER = ["isolation", "syllable", "word", "phrase", "sentence", "conversation"];
-  const LADDER_LABEL = { isolation: "Sound", syllable: "Syllables", word: "Words", phrase: "Phrases", sentence: "Sentences", conversation: "Talking" };
+  // No phrase rung. It only ever existed as "carrier + word" ("a rain"), which
+  // was auto-generated and ungrammatical for half the bank; a real phrase step
+  // needs a per-word carrier table. Word → sentence until that exists.
+  // g.stage[sound] indexes THIS array — see migrateLadder() before reordering it.
+  const LADDER = ["isolation", "syllable", "word", "sentence", "conversation"];
+  const LADDER_LABEL = { isolation: "Sound", syllable: "Syllables", word: "Words", sentence: "Sentences", conversation: "Talking" };
   const RUNG_MASTER = 0.8; // ~80% on a rung advances to the next
   function rungOf(sound) { const g = getProgress(); return Math.min(LADDER.length, g.stage[sound] || 0); } // 0..6
   function rungName(i) { return LADDER[i] || "mastered"; }
@@ -486,7 +512,6 @@
     if (lvl === "isolation") return [{ t: soundSay(sound), say: soundSay(sound), display: soundLabel(sound), level: "isolation", mode: "phoneme" }];
     if (lvl === "syllable") return (SC && SC.syllables ? SC.syllables(sound) : []).map((s) => ({ t: s.t, say: s.say, display: s.t, level: "syllable", mode: "phoneme" }));
     if (lvl === "word") return ws().map((w) => ({ t: w.w, say: w.w, display: w.w, e: w.e, word: w.w, level: "word", mode: "full" }));
-    if (lvl === "phrase") return (SC && SC.phrases ? SC.phrases(sound) : ws().map((w) => ({ t: w.w, say: w.w, e: w.e, word: w.w }))).map((p) => ({ t: p.t, say: p.say, display: p.t, e: p.e, word: p.word, level: "phrase", mode: "full" }));
     if (lvl === "sentence") return (SC && SC.sentences ? SC.sentences(sound) : ws().map((w) => ({ t: w.w, say: w.w, e: w.e, word: w.w }))).map((s) => ({ t: s.t, say: s.say, display: s.t, e: s.e, word: s.word, level: "sentence", mode: "full" }));
     if (lvl === "conversation") return (SC && SC.chats ? SC.chats(sound) : []).map((c) => ({ q: c.q, options: c.options, level: "conversation", mode: "full" }));
     return [];
@@ -1195,7 +1220,7 @@
     "whack.html":    { name: "Pop-a-Word",    icon: "🔨",  band: "Words",     c: "#58cc02" },
     "match.html":    { name: "Match-Up",      icon: "🃏",  band: "Words",     c: "#8b5cf6" },
     "builder.html":  { name: "Block Builder",  icon: "🧱",  band: "Words",     c: "#ff8c42" },
-    "grocery.html":  { name: "Grocery Grab",  icon: "🛒",  band: "Phrases",   c: "#ff9600" },
+    "grocery.html":  { name: "Grocery Grab",  icon: "🛒",  band: "Words",      c: "#ff9600" },
     "train.html":    { name: "Story Train",   icon: "🚂",  band: "Sentences", c: "#2ec4d6" },
     "story.html":    { name: "Story Time",    icon: "📖",  band: "Story",     c: "#7cc40a" },
     "chat.html":     { name: "Chat with Echo", icon: "💬",  band: "Talking",   c: "#e0457b" },

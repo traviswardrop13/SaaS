@@ -84,12 +84,13 @@ ok('header "Round 1 of 5 · R sound"', /Round 1 of 5/.test(c.lbl) && /R sound/.t
 
 // ── every prompt below the sentence rung is ONE word ──
 // "Say a rain" was the bug: the phrase rung prefixed a carrier, so the target a
-// child read and imitated was not the target being scored.
+// child read and imitated was not the target being scored. That rung is gone
+// now (word → sentence), so the ladder below sentences is 0..2.
 {
   const bad = await page.evaluate(() => {
     const out = [];
     for (const snd of Sona.ALL_SOUNDS) {
-      for (const rung of [0, 1, 2, 3]) {          // isolation, syllable, word, phrase
+      for (const rung of [0, 1, 2]) {             // isolation, syllable, word
         for (const it of Sona.ladderContent(snd, rung) || []) {
           // rung 0's display is a sound LABEL, not a target — THV reads "TH (v)"
           // on purpose, to separate it from voiceless TH. Its spoken form still
@@ -105,7 +106,7 @@ ok('header "Round 1 of 5 · R sound"', /Round 1 of 5/.test(c.lbl) && /R sound/.t
   });
   ok("no prompt below the sentence rung is more than one word", bad.length === 0, bad.slice(0, 6).join(" | "));
   // the sentence rung is untouched — it is supposed to be a sentence
-  const sent = await page.evaluate(() => (Sona.ladderContent("R", 4) || []).map((s) => s.t));
+  const sent = await page.evaluate(() => (Sona.ladderContent("R", 3) || []).map((s) => s.t));
   ok("the sentence rung still returns sentences", sent.length > 0 && sent.every((t) => /\s/.test(t)), JSON.stringify(sent.slice(0, 2)));
 }
 
@@ -127,20 +128,6 @@ await page.goto("http://localhost:8131/charge.html?game=arcade-run.html"); await
 c = await page.evaluate(() => document.getElementById("bTarget").textContent);
 ok("round 4 capped at earned+1 (still syllables)", /^r(ah|ee|oo|oh|ay)$/i.test(c.trim()));
 
-// ── earned rung feeds the climb: stage.R=2 (words earned) → round 4 = phrase (2+1) ──
-// This used to key off word count, because the phrase rung glued a carrier on
-// ("a rain"). The prompt is one word at every rung below sentences now, so the
-// climb is observed by what the target IS: a real word, not a syllable.
-await page.evaluate(() => { const g = Sona.getProgress(); g.stage = g.stage || {}; g.stage.R = 2; localStorage.setItem("sona.progress.v1", JSON.stringify(g)); });
-await page.goto("http://localhost:8131/charge.html?game=arcade-run.html"); await page.waitForTimeout(700);
-c = await page.evaluate(() => ({
-  t: document.getElementById("bTarget").textContent.trim(),
-  syls: (Sona.ladderContent("R", 1) || []).map((x) => x.t),
-  words: (Sona.ladderContent("R", 2) || []).map((x) => x.t),
-}));
-ok("earned words → round 4 climbs past syllables to a real target",
-  !c.syls.includes(c.t) && c.words.includes(c.t), JSON.stringify(c));
-await page.evaluate(() => { const g = Sona.getProgress(); g.stage.R = 0; localStorage.setItem("sona.progress.v1", JSON.stringify(g)); });
 
 // ── rep pill mid-day: the number the kid watches only climbs (RING1) ──
 await page.evaluate(() => Sona.bumpReps(12));
@@ -460,6 +447,52 @@ ok("founding family keeps the free story", t.pick !== "block" && t.founding !== 
   ok("a child who has earned nothing is still capped at earned+1",
     capped.syls.includes(capped.target), JSON.stringify(capped));
   await page.evaluate(() => localStorage.removeItem(Sona.kkey("sona.today.v1")));
+}
+
+// ── earned rung feeds the climb: stage.R=2 (words earned) stretches to the
+//    rung above, which is now SENTENCES — the phrase rung in between is gone ──
+// Pin the round index instead of inheriting whatever the rotation left behind,
+// so this proves the CAP and not the test's own ordering.
+await page.evaluate(() => {
+  const g = Sona.getProgress(); g.stage = g.stage || {}; g.stage.R = 2;
+  localStorage.setItem(Sona.kkey("sona.progress.v1"), JSON.stringify(g));
+  localStorage.setItem(Sona.kkey("sona.today.v1"), JSON.stringify({ d: Sona.localDay(), n: 3 }));
+});
+await page.goto("http://localhost:8131/charge.html?game=arcade-run.html&sound=R"); await page.waitForTimeout(700);
+c = await page.evaluate(() => ({
+  t: document.getElementById("bTarget").textContent.trim(),
+  syls: (Sona.ladderContent("R", 1) || []).map((x) => x.t),
+  words: (Sona.ladderContent("R", 2) || []).map((x) => x.t),
+}));
+// the sentence set is randomly SAMPLED per call, so it can't be compared
+// against a regenerated list — match the frame shape instead
+ok("earned words stretches one rung up — straight to a sentence",
+  /^(I see|I have|Look at|Here is|I like)\b/.test(c.t) && !c.syls.includes(c.t) && !c.words.includes(c.t),
+  JSON.stringify(c));
+await page.evaluate(() => localStorage.removeItem(Sona.kkey("sona.today.v1")));
+await page.evaluate(() => { const g = Sona.getProgress(); g.stage.R = 0; localStorage.setItem("sona.progress.v1", JSON.stringify(g)); });
+
+// ── ladder v2 migration: stored rungs still mean what they meant ──
+// Real children are mid-ladder right now. Removing "phrase" shifts every index
+// above it, so this walks the whole old range through a real page load.
+{
+  const mig = await page.evaluate(() => {
+    localStorage.setItem(Sona.kkey("sona.progress.v1"), JSON.stringify({
+      stage: { R: 0, S: 1, L: 2, K: 3, G: 4, T: 5 },
+      totals: {}, streak: {}, bySound: {}, sessions: [], chests: {}, missed: [],
+    }));
+    const g = Sona.getProgress();
+    const named = {}; Object.keys(g.stage).forEach((k) => { named[k] = Sona.rungName(g.stage[k]); });
+    const again = Sona.getProgress();           // must not shift a second time
+    return { stage: g.stage, named, flag: g.ladderV, stable: JSON.stringify(again.stage) === JSON.stringify(g.stage) };
+  });
+  ok("isolation/syllable/word are untouched",
+    mig.named.R === "isolation" && mig.named.S === "syllable" && mig.named.L === "word", JSON.stringify(mig.named));
+  ok("a child on the old phrase rung lands on word, never higher",
+    mig.named.K === "word", JSON.stringify(mig.named));
+  ok("a child on sentences stays on sentences", mig.named.G === "sentence", JSON.stringify(mig.named));
+  ok("a child on conversation stays on conversation", mig.named.T === "conversation", JSON.stringify(mig.named));
+  ok("the migration is flagged and idempotent", mig.flag === 2 && mig.stable, JSON.stringify(mig));
 }
 
 await browser.close(); srv.close();

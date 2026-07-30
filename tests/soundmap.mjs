@@ -106,5 +106,49 @@ for (const page of ["charge.html", "soundcheck.html"]) {
   );
 }
 
+
+// ---- 8. the ladder lost a rung, so stored progress had to be remapped ----
+// g.stage[sound] is an INDEX into LADDER. Dropping "phrase" re-points every
+// stored value: a child sitting on 4 ("sentence") would read as 5
+// ("conversation") and be pushed a level they never earned. This is the kind of
+// thing that is invisible until an SLP notices a kid on sentences they can't say.
+{
+  ok(
+    "LADDER no longer has a phrase rung",
+    /const LADDER = \["isolation", "syllable", "word", "sentence", "conversation"\];/.test(sona),
+    "word → sentence",
+  );
+  ok(
+    "LADDER_LABEL has no orphan phrase entry",
+    !/phrase: "Phrases"/.test(sona),
+    "a label for a rung that cannot be reached",
+  );
+  ok(
+    "ladderContent has no phrase branch",
+    !/lvl === "phrase"/.test(sona),
+    "dead branch for an index nothing produces",
+  );
+  ok(
+    "gamecontent.js no longer exports phrases()",
+    !/phrases: phrases/.test(readFileSync(ROOT + "/public/gamecontent.js", "utf8")),
+    "an exported generator with no consumer",
+  );
+  ok(
+    "stored rungs are migrated, once, behind a version flag",
+    /function migrateLadder\(g\)/.test(sona) && /g\.ladderV >= 2/.test(sona) && /g\.ladderV = 2/.test(sona),
+    "without this every child above the word rung silently jumps a level",
+  );
+  ok(
+    "the migration runs on every read of progress",
+    /if \(migrateLadder\(g\)\) save\(GKEY, g\);/.test(sona),
+    "a migration nothing calls is not a migration",
+  );
+  ok(
+    "a child who cleared the phrase rung is moved DOWN to word, not up",
+    /else if \(v === 3\) st\[s\] = 2;/.test(sona),
+    "claiming a child owns a rung they never cleared is the unsafe direction",
+  );
+}
+
 console.log(fails ? fails + " FAILURES" : "ALL GREEN");
 process.exit(fails ? 1 : 0);

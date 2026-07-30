@@ -1,6 +1,6 @@
 /* Shared activity content for the Sona games.
    Generated from the word banks (window.Sona.WORDS) so every sound gets
-   syllables, phrases, sentences, a mini story, and chat prompts for free —
+   syllables, sentences, a mini story, and chat prompts for free —
    the Articulation-Station "depth", without hand-authoring each sound.
    Exposes window.SonaContent. */
 (function () {
@@ -31,21 +31,6 @@
     var on = ONSET[sound] || sound.toLowerCase();
     return ["ah", "ee", "oo", "oh", "ay"].map(function (v) { return { t: on + v, say: on + v }; });
   }
-  // The prompt is ONE word. This used to rotate a carrier onto the front of it
-  // ("a", "my", "the", "one", "a big", "a little"), which produced "a rain" and
-  // "a robot" — the carrier was applied blindly, so every mass noun and every
-  // non-noun in the bank came out ungrammatical. A five-year-old reading "Say a
-  // rain" is being asked to practise a mistake.
-  //
-  // A real phrase step needs to know which words take which carrier, word by
-  // word. Until that exists, the phrase rung presents the target word alone,
-  // same as the word rung. The seam stays so a hand-checked carrier set can drop
-  // in here later without re-plumbing the ladder.
-  function phrases(sound) {
-    return take(targetWords(sound), 6).map(function (w) {
-      return { t: w.w, say: w.w, e: w.e, word: w.w };
-    });
-  }
   function sentences(sound) {
     var frames = ["I see a ___.", "I have a ___.", "Look at the ___.", "Here is a ___.", "I like my ___."];
     return take(targetWords(sound), frames.length).map(function (w, i) {
@@ -69,5 +54,5 @@
     return out;
   }
 
-  window.SonaContent = { initialWords: initialWords, targetWords: targetWords, syllables: syllables, phrases: phrases, sentences: sentences, storyPages: storyPages, chats: chats };
+  window.SonaContent = { initialWords: initialWords, targetWords: targetWords, syllables: syllables, sentences: sentences, storyPages: storyPages, chats: chats };
 })();
