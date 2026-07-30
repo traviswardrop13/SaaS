@@ -36,7 +36,19 @@ async function measure(page, url) {
       oX: Math.round(doc.scrollWidth - innerWidth),
       oY: Math.round(doc.scrollHeight - innerHeight),
       scrollLocked: getComputedStyle(document.body).overflowY === "hidden" || getComputedStyle(doc).overflowY === "hidden",
-      pathCanvas: el("pathCanvas"), pnodes: (document.querySelectorAll("#pathNodes .pnode") || []).length, mic: el("micWrap"), build: el("reveals"), go: el("goBtn"),
+      street: el("street"), houses: (document.querySelectorAll("#street .house") || []).length,
+      mic: el("micWrap"), build: el("reveals"),
+      // CITY1: the CTA is per-house, so measure the one on the slide in view
+      go: (function(){ const s = document.getElementById("street"); if (!s) return null;
+        const ix = s.clientWidth ? Math.round(s.scrollLeft / s.clientWidth) : 0;
+        const b = (s.children[ix] || {}).querySelector ? s.children[ix].querySelector(".hgo") : null;
+        if (!b) return null; const r = b.getBoundingClientRect();
+        return { top: Math.round(r.top), bottom: Math.round(r.bottom), h: Math.round(r.height) }; })(),
+      plate: (function(){ const s = document.getElementById("street"); if (!s) return null;
+        const ix = s.clientWidth ? Math.round(s.scrollLeft / s.clientWidth) : 0;
+        const b = (s.children[ix] || {}).querySelector ? s.children[ix].querySelector(".hplate") : null;
+        if (!b) return null; const r = b.getBoundingClientRect();
+        return { top: Math.round(r.top), bottom: Math.round(r.bottom) }; })(),
       innerH: innerHeight,
     };
   });
@@ -51,12 +63,14 @@ for (const [dev, w, h] of PORTRAIT) {
   });
   let m = await measure(page, "today.html");
   ok(dev + " today: no sideways overflow", m.oX <= 1, "oX=" + m.oX);
-  // Practice Path: the road canvas fills real height and lays out all 5 nodes
-  ok(dev + " today: path canvas has a real size", m.pathCanvas && m.pathCanvas.h >= 150, m.pathCanvas && "pathH=" + (m.pathCanvas && m.pathCanvas.h));
-  ok(dev + " today: all 5 path nodes render", m.pnodes === 5, "nodes=" + m.pnodes);
-  // goBtn is the fixed bottom CTA; on hardware env(safe-area-inset-bottom)
+  // CITY1: the street fills real height and every house is on it
+  ok(dev + " today: street has a real size", m.street && m.street.h >= 150, m.street && "streetH=" + (m.street && m.street.h));
+  ok(dev + " today: every house renders", m.houses === 7, "houses=" + m.houses);
+  // the house CTA sits inside the slide; on hardware env(safe-area-inset-bottom)
   // adds the home-bar gap (0 in headless), so assert against the page floor.
-  ok(dev + " today: START CTA never overflows the page", m.go && m.go.bottom <= m.innerH - 15, m.go && m.go.bottom + "/" + (m.innerH - 15));
+  ok(dev + " today: house CTA never overflows the page", m.go && m.go.bottom <= m.innerH - 15, m.go && m.go.bottom + "/" + (m.innerH - 15));
+  // the plate must not sit under the CTA — the whole point is reading the chapter
+  ok(dev + " today: chapter plate clears the CTA", m.plate && m.go && m.plate.bottom <= m.go.top + 1, JSON.stringify({ p: m.plate, g: m.go }));
   m = await measure(page, "charge.html?game=arcade-slice.html");
   ok(dev + " charge: mic clears the home bar", m.mic && m.mic.bottom <= m.innerH - HOME_BAR + 1, m.mic && m.mic.bottom + "/" + (m.innerH - HOME_BAR));
   ok(dev + " charge: no sideways overflow", m.oX <= 1, "oX=" + m.oX);
@@ -85,7 +99,7 @@ for (const [dev, w, h] of LANDSCAPE) {
     localStorage.setItem("sona.micok", "1");
   });
   let m = await measure(page, "today.html");
-  ok(dev + " today: path canvas has a real size in landscape", m.pathCanvas && m.pathCanvas.h >= 200, m.pathCanvas && "pathH=" + (m.pathCanvas && m.pathCanvas.h));
+  ok(dev + " today: street has a real size in landscape", m.street && m.street.h >= 200, m.street && "streetH=" + (m.street && m.street.h));
   ok(dev + " today: landscape scrolls instead of clipping", !m.scrollLocked, "overflow still hidden");
   m = await measure(page, "charge.html?game=arcade-slice.html");
   ok(dev + " charge: landscape scrolls instead of clipping", !m.scrollLocked, "overflow still hidden");

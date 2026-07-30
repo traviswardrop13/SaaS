@@ -336,8 +336,27 @@
       } else { SOUND=(run.sound||SOUND).toUpperCase(); LEVEL=run.level||LEVEL; }
       if(run&&run.active&&run.round>=DAILY_SEQ.length){ finishedNow=true; }
     }
-    var GAME = isDaily ? DAILY_SEQ[Math.min(run?run.round:0,DAILY_SEQ.length-1)] : (freeGame||"arcade-slice.html");
+    // CITY1: a session belongs to a HOUSE. ?house=<key> pins every round to
+    // that house's one game, so the child stays behind the door they chose and
+    // the house's storyline is the story they get. Without it the daily run
+    // still rotates game-per-round (the pre-city behaviour), and free play
+    // still honours ?game=.
+    var HOUSE = qp.get("house")||"";
+    // A returning round comes back from the arcade as ?daily=1&banked=N with no
+    // house param, so the RUN remembers which door the child went in — six
+    // arcade files don't each have to forward it.
+    if(isDaily&&run&&run.active){
+      if(HOUSE) run.house=HOUSE; else HOUSE=run.house||"";
+      runSave(run);
+    }
+    var HOUSEGAME=""; try{ HOUSEGAME=(S&&S.houseGame)?S.houseGame(HOUSE):""; }catch(e){}
+    if(HOUSEGAME && !GAMES[HOUSEGAME]) HOUSEGAME="";     // "story" has no arcade file
+    var GAME = HOUSEGAME || (isDaily ? DAILY_SEQ[Math.min(run?run.round:0,DAILY_SEQ.length-1)] : (freeGame||"arcade-slice.html"));
     var GMETA=GAMES[GAME];
+    // the house whose story runs: the one asked for, else the one this game
+    // lives in. Free play inside a house gets its story too — the unfinished
+    // thread IS why a child picks that door.
+    var STORYHOUSE=""; try{ STORYHOUSE=(HOUSE&&S&&S.houseArcLen&&S.houseArcLen(HOUSE))?HOUSE:((S&&S.houseOf)?S.houseOf(GAME):""); }catch(e){}
 
     // ---- content: SLP progression. Every round climbs the ladder the way a
     // session would — round 1 warms up in isolation (rrr), round 2 moves to
@@ -843,16 +862,19 @@
         });
       });
     }
-    // ---- STORY1: the beat before the round ----
-    // The daily run is an episode. One short line lands before each round —
+    // ---- CITY1: the beat before the round ----
+    // Every house runs its own serial. One short line lands before each round —
     // chapter title on round 1, a bridge after that — then it clears itself and
     // practice begins. Deliberately tiny: a card a child must dismiss is a tax
-    // on the thing they came to do. Free play gets no beat (no story there).
+    // on the thing they came to do.
     function storyBeat(){
       return new Promise(function(resolve){
-        if(!isDaily || !(S&&S.episodeBeat)) return resolve();
-        var rd=(run&&run.round)|0, txt="", ttl="";
-        try{ txt=S.episodeBeat(rd); ttl=(rd<=0&&S.episode)?("Chapter "+S.episodeNum()+" · "+S.episode().t):""; }catch(e){ return resolve(); }
+        if(!STORYHOUSE || !(S&&S.houseBeat)) return resolve();
+        var rd=(isDaily&&run)?(run.round|0):0, txt="", ttl="";
+        try{
+          txt=S.houseBeat(STORYHOUSE,rd);
+          ttl=(rd<=0)?("Chapter "+S.houseChapterNum(STORYHOUSE)+" · "+S.houseChapter(STORYHOUSE).t):"";
+        }catch(e){ return resolve(); }
         if(!txt) return resolve();
         var card=$("storyCard"); if(!card) return resolve();
         try{
@@ -882,10 +904,15 @@
     }
 
     async function flow(){
-      await storyBeat();   // STORY1: one line of story, then straight to practice
+      // Order matters and it is not obvious. The primer explains the mic and
+      // must hand STRAIGHT to the OS prompt — anything in between and the
+      // browser dialog appears seconds after the tap that asked for it. The
+      // story beat therefore lands after the mic is settled, which also means a
+      // denied mic never plays a story card it's about to abandon.
       await micPrimer();
       try{ micStream=await navigator.mediaDevices.getUserMedia({audio:true,video:false}); try{ localStorage.setItem("sona.micok","1"); }catch(e){} }
       catch(e){ micGo(false); if(S&&S.micDenied)S.micDenied({back:"/today.html"}); return; }
+      await storyBeat();   // CITY1: this house's next line, then straight to practice
       tele("practice started",{sound:SOUND,game:GMETA.n});
       // Leo speaks the prompt ONCE, then the mic is instantly hot.
       await playPrompt();
@@ -1024,10 +1051,11 @@
       $("runBest").textContent=r.newBest?"NEW BEST!":("Best ever: "+r.best);
       $("runEmoji").innerHTML=(window.Sona&&Sona.icon)?Sona.icon("star",56):"";
       $("runTitle").textContent=r.newBest?"NEW HIGH SCORE!":"You did it!";
-      // STORY1: read the hook BEFORE advancing, then move to the next episode
-      // so tomorrow opens on the chapter this cliffhanger just promised.
+      // CITY1: read this house's hook BEFORE advancing it, so the next visit
+      // opens on the chapter the cliffhanger just promised. Each house keeps its
+      // own place, so finishing here never moves another house's story.
       var hook="";
-      try{ if(S.episodeHook){ hook=S.episodeHook(); if(S.episodeAdvance)S.episodeAdvance(); } }catch(e){}
+      try{ if(STORYHOUSE&&S.houseHook){ hook=S.houseHook(STORYHOUSE); if(S.houseAdvance)S.houseAdvance(STORYHOUSE); } }catch(e){}
       if(hook){ try{ $("runHookTxt").textContent=hook; $("runHook").style.display="block"; }catch(e){} }
       $("runOvl").classList.add("show");
       sfx("complete"); try{ if(S.confetti)S.confetti(); }catch(e){}

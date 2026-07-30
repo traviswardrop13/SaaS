@@ -67,8 +67,12 @@ await page.waitForTimeout(2500);
 // sound, which TTS can't perform. So round 1 posts NO TTS prompt; if the
 // headless env can't decode the mp3, the exact TTS fallback line is the
 // only acceptable substitute (and noSustained still guards every post).
-const r1ok = ttsPosts.length === 0 || ttsPosts[0] === "Ready? Pull your tongue back and up, and make your R sound... five times... Go!";
-console.log((r1ok ? "PASS" : "FAIL") + "  E2E r1 human clip replaces TTS (or exact fallback)  → " + JSON.stringify(ttsPosts[0] || "(no TTS — clip played)"));
+// CITY1: the house's story beat is spoken FIRST now, so the prompt is not
+// necessarily post 0 — pick the prompt out by its shape, same as sylLine below.
+const r1prompt = ttsPosts.filter((l) => /^Ready\?/.test(l))[0];
+const r1ok = !r1prompt || r1prompt === "Ready? Pull your tongue back and up, and make your R sound... five times... Go!";
+if (!r1ok) fails++;
+console.log((r1ok ? "PASS" : "FAIL") + "  E2E r1 human clip replaces TTS (or exact fallback)  → " + JSON.stringify(r1prompt || "(no TTS prompt — clip played)"));
 if (!r1ok) fails++;
 // The recorded /coach/say/<SOUND>.mp3 set is Rachel's own voice and must not
 // ship — playPrompt falls through to TTS, the same path every other line uses.
