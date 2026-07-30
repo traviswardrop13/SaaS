@@ -61,8 +61,6 @@
 
     /* up next thumbnails */
     #upNextLbl{font-family:"Baloo 2";font-weight:800;font-size:12px;letter-spacing:.1em;color:var(--label);}
-    .pline{flex:1;height:4px;border-radius:99px;background:var(--track);margin:0 3px;}
-    .pline.on{background:#58cc02;}
     #thumbs{display:flex;gap:16px;}
     .thumb{position:relative;width:120px;height:116px;border-radius:18px;border:5px solid #fff;box-shadow:0 6px 14px rgba(90,50,10,.16);background:#eee center/cover no-repeat;cursor:pointer;flex:none;transition:transform .12s;margin-bottom:12px;}
     .thumb:nth-child(1){transform:rotate(-2deg);}
@@ -112,67 +110,10 @@
 
     }
 
-    /* ── CITY1: the street IS the home screen ──────────────────────────────
-       One house per game, swiped left and right. The painted panel is the
-       whole slide (art at 2:3, phones are taller, so it covers and the sides
-       crop — everything important lives in the centre ~70%). A caption plate
-       names the house, its game, and the chapter waiting behind the door. */
-    #wrap.city{position:relative;background:linear-gradient(180deg,#8fd0f5,#ffe9b8 62%,#ffb066);gap:0;padding:0;}
-    #wrap.city header{position:relative;z-index:6;padding:calc(12px + env(safe-area-inset-top)) 14px 0;}
-    #wrap.city #hiName,#wrap.city #subLine{display:none;}
-    #wrap.city header>div:first-child{position:absolute;left:14px;top:calc(12px + env(safe-area-inset-top));}
-    #wrap.city #hdrBtns{margin-left:auto;}
-    #wrap.city #trialBanner,#wrap.city #checkNudge{position:relative;z-index:6;margin:8px 14px 0;}
-    /* the street: horizontal scroll-snap, one house per screen */
-    #street{flex:1;min-height:0;display:flex;overflow-x:auto;overflow-y:hidden;
-      scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
-    #street::-webkit-scrollbar{display:none;}
-    .house{flex:0 0 100%;scroll-snap-align:center;position:relative;display:flex;
-      flex-direction:column;justify-content:flex-end;align-items:center;
-      padding:0 16px calc(28px + env(safe-area-inset-bottom));}
-    .hpanel{position:absolute;inset:0;background:#8fd0f5 center/cover no-repeat;z-index:0;}
-    /* the plate has to sit ON art of any colour — a soft scrim buys contrast
-       without washing the illustration out */
-    .house::after{content:"";position:absolute;left:0;right:0;bottom:0;height:44%;z-index:1;
-      background:linear-gradient(180deg,rgba(74,44,20,0),rgba(74,44,20,.42));pointer-events:none;}
-    .hplate{position:relative;z-index:2;background:#fff;border-radius:20px;padding:12px 18px 14px;
-      text-align:center;max-width:100%;box-shadow:0 8px 22px rgba(74,44,20,.28);transform:rotate(-1.2deg);}
-    .hname{font-family:"Baloo 2";font-weight:800;font-size:20px;line-height:1.15;}
-    .hgame{font-family:"Baloo 2";font-weight:800;font-size:11px;letter-spacing:.1em;color:var(--label);margin-top:1px;}
-    .hchap{font-weight:800;font-size:12px;color:var(--muted);margin-top:6px;line-height:1.35;}
-    .hgo{position:relative;z-index:2;margin-top:12px;border:none;border-radius:18px;padding:15px 40px;
-      font-family:"Baloo 2";font-weight:800;font-size:19px;letter-spacing:.04em;color:#fff;
-      background:linear-gradient(180deg,#ffa05a,#ff8a3d);box-shadow:0 6px 0 var(--orange-d);cursor:pointer;
-      transition:transform .05s;}
-    .hgo:active{transform:translateY(4px);box-shadow:0 2px 0 var(--orange-d);}
-    /* today's stop: the one door the city points at. Everything else stays open */
-    .house.today .hgo{background:linear-gradient(180deg,#6fdd18,#58cc02);box-shadow:0 6px 0 var(--green-d);}
-    .todayTag{position:absolute;top:calc(10px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);
-      z-index:3;background:linear-gradient(180deg,#ffe063,var(--gold));color:#7a5200;font-family:"Baloo 2";
-      font-weight:800;font-size:11px;letter-spacing:.08em;padding:5px 14px;border-radius:99px;
-      box-shadow:0 3px 0 rgba(120,80,20,.22);white-space:nowrap;pointer-events:none;}
-    /* chapter-done ribbon: this house's story moved on today */
-    .doneTag{position:absolute;top:calc(10px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);
-      z-index:3;background:rgba(255,255,255,.9);color:#46a302;font-family:"Baloo 2";font-weight:800;
-      font-size:11px;letter-spacing:.06em;padding:5px 14px;border-radius:99px;
-      box-shadow:0 3px 0 rgba(120,80,20,.16);white-space:nowrap;pointer-events:none;}
-    /* which house you're on — a row of dots, no numbers. Overlaid on the art
-       so the painted street runs edge to edge instead of ending in a band. */
-    #dots{position:absolute;left:0;right:0;bottom:calc(6px + env(safe-area-inset-bottom));
-      display:flex;gap:7px;justify-content:center;align-items:center;height:14px;z-index:6;pointer-events:none;}
-    #dots i{box-shadow:0 1px 3px rgba(74,44,20,.45);}
-    #dots i{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.55);box-shadow:0 1px 0 rgba(120,80,20,.18);transition:all .18s;}
-    #dots i.on{width:20px;border-radius:99px;background:#fff;}
-    /* swipe hint: only until the child scrolls once */
-    #swipeHint{position:absolute;right:16px;bottom:calc(96px + env(safe-area-inset-bottom));z-index:5;
-      font-family:"Baloo 2";font-weight:800;font-size:12px;color:#fff;background:rgba(74,44,20,.42);
-      border-radius:99px;padding:6px 13px;pointer-events:none;transition:opacity .3s;}
-    #wrap.city #floatLib{display:flex;}
-    @media (prefers-reduced-motion:reduce){ #street{scroll-behavior:auto;} }
-
-    /* the library button floats over the street art */
-    #floatLib{position:absolute;left:16px;bottom:calc(74px + env(safe-area-inset-bottom));z-index:7;width:44px;height:44px;border-radius:50%;border:none;background:#fff;box-shadow:0 4px 0 rgba(140,70,10,.2);display:none;align-items:center;justify-content:center;cursor:pointer;}
-    #floatLib svg{width:22px;height:22px;}
+    /* the sticker-book home: the CTA is the full-width bar under the deck */
+    #goBtn{border:none;border-radius:20px;padding:17px;font-family:"Baloo 2";font-weight:800;font-size:19px;letter-spacing:.04em;color:#fff;background:linear-gradient(180deg,#ffa05a,#ff8a3d);box-shadow:0 6px 0 var(--orange-d);cursor:pointer;width:100%;margin-top:auto;transition:transform .05s;}
+    #goBtn:active{transform:translateY(4px);box-shadow:0 2px 0 var(--orange-d);}
+    @media (max-height:760px){ #goBtn{padding:13px;font-size:17px;} }
     #confetti i{position:absolute;border-radius:3px;z-index:6;animation:cfall 1.2s ease-out forwards;}
     @keyframes cfall{0%{opacity:1;transform:translateY(0) rotate(0)}100%{opacity:0;transform:translateY(60px) rotate(40deg)}}
     @media (prefers-reduced-motion:reduce){ #confetti i{animation:none;} }
@@ -195,13 +136,19 @@
     <a id="trialBanner" href="/subscribe"><span data-ic="gift">🎁</span> <span id="trialMsg"></span></a>
     <a id="checkNudge" href="/soundcheck.html" style="display:none;align-items:center;gap:9px;background:#fff;border-radius:16px;padding:10px 14px;font-weight:800;font-size:12.5px;color:#4a2c14;text-decoration:none;box-shadow:0 4px 0 rgba(140,70,10,.12);"><svg viewBox="0 0 64 64" style="width:22px;height:22px;flex:0 0 auto"><circle cx="32" cy="32" r="20" fill="#ff5c5c"></circle><circle cx="32" cy="32" r="13" fill="#fff"></circle><circle cx="32" cy="32" r="6.5" fill="#ff5c5c"></circle><circle cx="25" cy="24" r="2.2" fill="#fff" opacity=".85"></circle></svg><span style="flex:1">NEW — the 2-minute Sound Check: Echo listens and builds the plan!</span><span style="color:#b08d63;font-size:15px">›</span></a>
 
-    <!-- CITY1: the street IS the home screen. One house per game, swiped; the
-         plate on each door names the chapter waiting inside. Today's stop wears
-         the gold ribbon, but every door stays open. -->
-    <div id="street"></div>
-    <div id="swipeHint">swipe →</div>
-    <div id="dots"></div>
-    <button id="floatLib" aria-label="Book library"><svg viewBox="0 0 64 64"><path d="M10 14c8-4 15-4 22 0v38c-7-4-14-4-22 0Z" fill="#ffb066"/><path d="M54 14c-8-4-15-4-22 0v38c7-4 14-4 22 0Z" fill="#ef8b3d"/><line x1="32" y1="14" x2="32" y2="52" stroke="#b85e1e" stroke-width="2"/><circle cx="19" cy="22" r="3" fill="#fff" opacity=".8"/></svg></button>
+    <!-- the sticker-book home: today's activity as a tilted panel card with a
+         caption plate, the next two on a shelf below, one CTA. Swipe the hero
+         or tap a thumb to change what LET'S GO opens. -->
+    <div id="heroWrap">
+      <div id="heroCard"></div>
+      <div id="heroCap">
+        <div id="heroName"></div>
+        <div id="heroSub"></div>
+      </div>
+    </div>
+    <div id="upNextLbl">UP NEXT</div>
+    <div id="thumbs"></div>
+    <button id="goBtn">LET'S GO!</button>
   </div>
 
   <!-- parent gate -->
@@ -293,158 +240,86 @@
       else if(_tr&&_tr.n>0) $("subLine").textContent=(_tr.goal-_tr.n)+" more round"+((_tr.goal-_tr.n)===1?"":"s")+" to finish today's goal!";
     }catch(e){}
 
-    // ── CITY1: the street IS the home screen ──────────────────────────────
-    // One house per game. The child swipes the street and picks a door; the
-    // plate on each house names the chapter waiting behind it, which is the
-    // whole point — the reason to come back is an unfinished thread, not a
-    // streak. Today's stop wears the gold ribbon, but nothing is ever locked:
-    // a child who wants the fruit market four days running gets it.
-    $("wrap").classList.add("city");
-
-    var HOUSES=(S&&S.HOUSES)?S.HOUSES:[];
+    // ── the activity deck: hero + up-next (the sticker-book home) ──
+    // One card per game. The hero is what LET'S GO opens; the two thumbs below
+    // are what's next, and tapping one promotes it. Art is the painted house
+    // panel for that game (coach/city/<key>-{300|800}.webp) — the same panels,
+    // used as card faces rather than as a street.
+    var ACTS=[
+      { key:"slice", name:"Fruit Slice",   sub:"Say it 5× to play", go:"/charge.html?game=arcade-slice.html" },
+      { key:"tiles", name:"Piano Tiles",   sub:"Say it 5× to play", go:"/charge.html?game=arcade-tiles.html" },
+      { key:"stack", name:"Block Stacker", sub:"Say it 5× to play", go:"/charge.html?game=arcade-stack.html" },
+      { key:"run",   name:"Sound Sprint",  sub:"Say it 5× to play", go:"/charge.html?game=arcade-run.html" },
+      { key:"glide", name:"Flappy Glide",  sub:"Say it 5× to play", go:"/charge.html?game=arcade-glide.html" },
+      { key:"story", name:"Story Time",    sub:"Read with Echo · ★★★", go:"/story.html" },
+    ];
+    // Feed Echo — the littles game (tap-and-say, no reading, no timer). It
+    // LEADS the deck for under-6 profiles and rides last for everyone else, so
+    // a four-year-old never opens on a game full of falling fruit and a
+    // nine-year-old never opens on the toddler one.
     var _age=0; try{ _age=parseInt(P.childAge,10)||0; }catch(e){}
-    // Littles read nothing and can't run the arcade games — Echo's Kitchen
-    // (Feed Echo: tap-and-say) leads their street. Everyone else gets it in
-    // place, so it never becomes the default for a 9-year-old.
-    var ORDER=HOUSES.slice();
-    if(_age&&_age<6){
-      ORDER.sort(function(a,b){ return (a.key==="feed"?-1:0)-(b.key==="feed"?-1:0); });
-    }
-    var TODAYKEY=""; try{ TODAYKEY=(S&&S.houseToday)?S.houseToday():""; }catch(e){}
-    // a littles profile can't be sent to an arcade house as "today's stop"
-    if(_age&&_age<6) TODAYKEY="feed";
-
-    // Most doors open a practice session pinned to that house's one game
-    // (?house=), so all five rounds happen behind the door the child chose.
-    // Two houses are their own page and must NOT go through charge.html:
-    //   · Story House is reading, not practice — Story Time owns it.
-    //   · Echo's Kitchen is Feed Echo, which charge.html's GAMES map doesn't
-    //     know. Routed through ?house=feed it silently fell back to the arcade
-    //     rotation and sent a four-year-old to Fruit Slice.
-    var DIRECT={ story:"/story.html", feed:"/arcade-feed.html" };
-    function doorFor(key){
-      return DIRECT[key] || ("/charge.html?daily=1&house="+encodeURIComponent(key));
-    }
-    function enter(key){ sfx("tap"); location.href=doorFor(key); }
-
-    // What the plate says about this house's story. A house whose chapter
-    // already advanced today points FORWARD at its cliffhanger — the same
-    // honest move the path made, per house.
-    function plateStory(key){
-      try{
-        if(!(S&&S.houseChapter)) return "";
-        var st={}; try{ st=JSON.parse(localStorage.getItem("sona.houses.v1")||"{}"); }catch(e){}
-        var mine=st[key]||{}, doneToday=mine.day===(S.localDay?S.localDay():"");
-        if(doneToday){
-          var hk=S.houseHook(key)||"";
-          return "Next time · "+hk.replace(/^(Tomorrow|Next time):\s*/i,"");
-        }
-        var c=S.houseChapter(key); if(!c) return "";
-        return "Chapter "+S.houseChapterNum(key)+" · "+c.t;
-      }catch(e){ return ""; }
-    }
-    function chapterDoneToday(key){
-      try{ var st=JSON.parse(localStorage.getItem("sona.houses.v1")||"{}");
-        return (st[key]||{}).day===(S.localDay?S.localDay():""); }catch(e){ return false; }
-    }
-
-    var GAMELBL={"arcade-slice.html":"FRUIT SLICE","arcade-tiles.html":"PIANO TILES","arcade-stack.html":"BLOCK STACKER","arcade-run.html":"SOUND SPRINT","arcade-glide.html":"FLAPPY GLIDE","arcade-feed.html":"FEED ECHO","story":"STORY TIME"};
-    // Echo's Kitchen has no painted panel yet — a warm meadow stands in until
-    // one lands (the panels auto-adopt: art at coach/city/<key>-800.webp).
-    var FALLBACK={feed:"linear-gradient(160deg,#ffe9b8,#b6eca0)"};
-
-    function buildStreet(){
-      var street=$("street"); if(!street) return;
-      street.innerHTML="";
-      ORDER.forEach(function(h){
-        var sec=document.createElement("section");
-        sec.className="house"+(h.key===TODAYKEY?" today":"");
-        sec.dataset.key=h.key;
-        sec.dataset.door=doorFor(h.key);   // the door this house opens (test hook)
-
-        var panel=document.createElement("div");
-        panel.className="hpanel";
-        if(FALLBACK[h.key]) panel.style.background=FALLBACK[h.key];
-        // the painted panel replaces the placeholder the moment it decodes —
-        // swapping on load beats a visible pop-in on first open
-        var im=new Image();
-        im.onload=function(){ panel.style.backgroundImage="url('"+im.src+"')"; panel.style.backgroundSize="cover"; panel.style.backgroundPosition="center"; panel.style.backgroundRepeat="no-repeat"; };
-        im.src="/coach/city/"+h.key+"-800.webp";
-        sec.appendChild(panel);
-
-        if(h.key===TODAYKEY){
-          var tag=document.createElement("div"); tag.className="todayTag";
-          tag.textContent="TODAY'S STOP"; sec.appendChild(tag);
-        } else if(chapterDoneToday(h.key)){
-          var dt=document.createElement("div"); dt.className="doneTag";
-          dt.textContent="CHAPTER READ ✓"; sec.appendChild(dt);
-        }
-
-        var plate=document.createElement("div"); plate.className="hplate";
-        var story=plateStory(h.key);
-        plate.innerHTML='<div class="hname"></div><div class="hgame"></div>'+(story?'<div class="hchap"></div>':"");
-        plate.querySelector(".hname").textContent=h.name;
-        plate.querySelector(".hgame").textContent=GAMELBL[h.game]||"";
-        if(story) plate.querySelector(".hchap").textContent=story;
-        sec.appendChild(plate);
-
-        var go=document.createElement("button");
-        go.className="hgo"; go.type="button";
-        go.textContent=(h.key==="story")?"READ!":"PLAY!";
-        go.setAttribute("aria-label",(h.key==="story"?"Read in ":"Play in ")+h.name);
-        go.onclick=function(ev){ if(ev&&ev.stopPropagation)ev.stopPropagation(); enter(h.key); };
-        sec.appendChild(go);
-
-        // the whole slide is a tap target too — a 5-year-old aims at the house
-        sec.onclick=function(){ enter(h.key); };
-        street.appendChild(sec);
-      });
-      buildDots();
-      // open ON today's stop rather than making the child hunt for it
-      var ix=0; ORDER.forEach(function(h,i){ if(h.key===TODAYKEY) ix=i; });
-      // no smooth scroll here: the street has just been laid out, and an
-      // animated jump on first paint reads as a glitch
-      street.scrollLeft=ix*street.clientWidth;
-      paintDots();
-    }
-
-    function buildDots(){
-      var d=$("dots"); if(!d) return; d.innerHTML="";
-      ORDER.forEach(function(){ d.appendChild(document.createElement("i")); });
-    }
-    function currentIx(){
-      var street=$("street"); if(!street||!street.clientWidth) return 0;
-      return Math.round(street.scrollLeft/street.clientWidth);
-    }
-    function paintDots(){
-      var d=$("dots"); if(!d) return; var ix=currentIx();
-      [].forEach.call(d.children,function(el,i){ el.className=(i===ix)?"on":""; });
-    }
-
-    buildStreet();
     (function(){
-      var street=$("street"); if(!street) return;
-      var hint=$("swipeHint"), t, openedAt=currentIx();
-      street.addEventListener("scroll",function(){
-        clearTimeout(t); t=setTimeout(paintDots,60);
-        // Retire the hint once the street has actually MOVED. Setting
-        // scrollLeft during layout queues a scroll event that arrives after
-        // this listener is bound, so "any scroll" hid the hint before the
-        // child ever saw it.
-        if(hint && currentIx()!==openedAt) hint.style.opacity="0";
-      },{passive:true});
-      // and it retires on its own even if the child never swipes
-      if(hint) setTimeout(function(){ hint.style.opacity="0"; },6000);
-      // slide width is viewport-width — a rotate has to re-snap or the street
-      // sits between two houses
-      var rz; window.addEventListener("resize",function(){
-        clearTimeout(rz); rz=setTimeout(function(){
-          var ix=currentIx(); street.scrollLeft=ix*street.clientWidth; paintDots();
-        },160);
-      });
+      var FEED={ key:"feed", name:"Feed Echo", sub:"Say it & tap — Echo's hungry!", go:"/arcade-feed.html" };
+      if(_age&&_age<6) ACTS.unshift(FEED); else ACTS.push(FEED);
     })();
+    var sel=0;
 
-    $("floatLib").onclick=function(){ sfx("tap"); location.href="/library.html"; };
+    function art(key){ try{ return (window.SonaScenes&&SonaScenes.has(key))?("url('"+SonaScenes.uri(key)+"')"):""; }catch(e){ return ""; } }
+    // The painted panel takes over the moment it decodes — sized per slot (hero
+    // 800w, thumbs 300w) so the swap beats the eye. Two art shapes live side by
+    // side: full-bleed painted scenes (tall 2:3, the house-in-its-street style)
+    // simply cover the card; square sticker cut-outs layer over the vector city.
+    function upgradeArt(el,key){ var im=new Image(); im.onload=function(){
+      var fullBleed = im.naturalHeight > im.naturalWidth*1.2;
+      if(fullBleed){ el.style.backgroundImage="url('"+im.src+"')"; el.style.backgroundSize="cover"; el.style.backgroundPosition="center"; el.style.backgroundRepeat="no-repeat"; return; }
+      var base=art(key);
+      el.style.backgroundImage="url('"+im.src+"')"+(base?", "+base:"");
+      el.style.backgroundSize="88% auto"+(base?", cover":"");
+      el.style.backgroundPosition="center 62%"+(base?", center":"");
+      el.style.backgroundRepeat="no-repeat";
+    }; im.src="/coach/city/"+key+"-"+(el.id==="heroCard"?"800":"300")+".webp"; }
+    function applyArt(el,key){
+      if(key==="feed"&&!art(key)){
+        // no painted scene yet — warm meadow gradient until one lands
+        el.style.backgroundImage="linear-gradient(160deg,#ffe9b8,#b6eca0)";
+        el.style.backgroundSize="cover"; upgradeArt(el,key); return;
+      }
+      el.style.backgroundImage=art(key); upgradeArt(el,key);
+    }
+    function render(){
+      var a=ACTS[sel], hero=$("heroCard");
+      applyArt(hero,a.key);
+      hero.innerHTML=(a.key==="feed"&&!art(a.key))
+        ? '<span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:78px;text-shadow:0 8px 14px rgba(120,70,10,.25);">🦜🍎</span>'
+        : "";
+      $("heroName").textContent=a.name;
+      $("heroSub").innerHTML=a.sub.replace("★★★",'<b>★★★</b>');
+      $("goBtn").dataset.launch=a.go;   // test hook: what LET'S GO opens
+      var t=$("thumbs"); t.innerHTML="";
+      [1,2].forEach(function(off){
+        var ix=(sel+off)%ACTS.length, act=ACTS[ix];
+        var el=document.createElement("div"); el.className="thumb";
+        el.dataset.key=act.key;
+        applyArt(el,act.key);
+        el.innerHTML="<b>"+act.name+"</b>";
+        el.onclick=function(){ sfx("tap"); sel=ix; render(); };
+        t.appendChild(el);
+      });
+    }
+    render();
+    function launch(){ sfx("tap"); location.href=ACTS[sel].go; }
+    $("heroCard").onclick=launch;
+    $("goBtn").onclick=launch;
+    // swipe the hero to browse the deck
+    (function(){
+      var x0=null;
+      $("heroWrap").addEventListener("touchstart",function(e){ x0=e.touches[0].clientX; },{passive:true});
+      $("heroWrap").addEventListener("touchend",function(e){
+        if(x0==null)return; var dx=e.changedTouches[0].clientX-x0; x0=null;
+        if(Math.abs(dx)<40)return;
+        sel=(sel+(dx<0?1:ACTS.length-1))%ACTS.length; sfx("tap"); render();
+      },{passive:true});
+    })();
 
     // ── library ──
     $("libBtn").onclick=function(){ sfx("tap"); location.href="/library.html"; };

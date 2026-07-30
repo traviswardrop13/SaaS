@@ -63,14 +63,15 @@ ok("cap overlay gates 4th call", await page.evaluate(() => document.getElementBy
 await page.goto("http://localhost:8132/today.html");
 await page.waitForTimeout(1200);
 const card = await page.evaluate(() => ({
-  houses: document.querySelectorAll("#street .house").length,
-  deck: document.querySelectorAll(".thumb").length,
-  callDoor: [...document.querySelectorAll("#street .house")].filter((h) => /call/i.test(h.dataset.key || "")).length,
+  thumbs: document.querySelectorAll("#thumbs .thumb").length,
+  hero: document.getElementById("heroName").textContent,
+  // every card the deck can reach, hero included
+  keys: [document.getElementById("goBtn").dataset.launch, ...[...document.querySelectorAll(".thumb")].map((t) => t.dataset.key)].join(" "),
 }));
-// home is now the city (no game deck), and Coach Call has no house — it is not
-// surfaced to the child from the street at all
-ok("home is the city — no Coach Call deck, no call door",
-  card.houses >= 6 && card.deck === 0 && card.callDoor === 0, JSON.stringify(card));
+// the deck is games only — Coach Call has no card and is never surfaced to the
+// child from the home screen
+ok("home deck carries games, and no Coach Call card",
+  card.thumbs === 2 && card.hero.length > 3 && !/call/i.test(card.keys), JSON.stringify(card));
 
 await browser.close(); srv.close();
 console.log(fails ? fails + " FAILURES" : "ALL GREEN");

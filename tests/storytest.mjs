@@ -1,8 +1,8 @@
-// STORY1 + CITY1: every HOUSE runs its own serial. Asserts the engine's
-// contracts (a beat per round, a cliffhanger, one chapter per house per DAY,
-// houses advancing independently), that the beat card appears and clears itself
-// without a tap, that the hook renders on the finish overlay, and that the city
-// street offers one door per game.
+// STORY1: the episode engine, now used for ONE thing — the cliffhanger on the
+// win overlay. Asserts the engine's contracts (a beat per round, a hook, one
+// chapter per DAY), that the home deck carries a card per game, that the hook
+// renders when a run finishes, and — deliberately — that NO story card ever
+// interrupts a round. The games are the games.
 import { createServer } from "http";
 import { readFileSync, existsSync } from "fs";
 import { chromium, ROOT, launchOpts } from "./_env.mjs";
@@ -79,84 +79,50 @@ const adv = await page.evaluate(() => {
 ok("finishing a run advances one chapter", adv.b === adv.a + 1, JSON.stringify(adv));
 ok("replaying the same day does NOT skip chapters", adv.c === adv.b, JSON.stringify(adv));
 
-// ── CITY1: the street shows what is waiting behind every door ──
-await page.evaluate(() => { localStorage.removeItem("sona.episode.v1"); localStorage.removeItem("sona.houses.v1"); });
+// ── the home deck: hero + two up-next, one card per game ──
+await page.evaluate(() => { localStorage.removeItem("sona.episode.v1"); });
 await page.goto("http://localhost:8151/today.html");
 await page.waitForTimeout(800);
-const street = await page.evaluate(() => ({
-  n: document.querySelectorAll("#street .house").length,
-  engineN: Sona.HOUSES.length,
-  today: document.querySelectorAll("#street .house.today").length,
-  dots: document.querySelectorAll("#dots i").length,
-  chaps: [...document.querySelectorAll("#street .house")].map((h) => ({
-    key: h.dataset.key, chap: (h.querySelector(".hchap") || {}).textContent || "",
-    game: (h.querySelector(".hgame") || {}).textContent || "",
-  })),
-  // every house key must resolve to a real arc, or a door opens on nothing
-  arcs: Sona.HOUSES.map((h) => ({ key: h.key, len: Sona.houseArcLen(h.key), arc: Sona.houseArc(h.key) })),
+const deck = await page.evaluate(() => ({
+  hero: document.getElementById("heroName").textContent,
+  launch: document.getElementById("goBtn").dataset.launch,
+  cta: document.getElementById("goBtn").textContent,
+  thumbs: [...document.querySelectorAll("#thumbs .thumb")].map((t) => ({ k: t.dataset.key, n: t.querySelector("b").textContent })),
+  chapPill: !!document.getElementById("chapPill"),
 }));
-ok("street has one house per game", street.n === street.engineN && street.n >= 6, street.n + "/" + street.engineN);
-ok("one house is today's stop", street.today === 1, String(street.today));
-ok("a dot per house", street.dots === street.n, street.dots + "/" + street.n);
-ok("every house names its game", street.chaps.every((c) => c.game.length > 3), JSON.stringify(street.chaps.filter((c) => c.game.length <= 3)));
-ok("every house plate shows the chapter waiting inside",
-  street.chaps.every((c) => /^Chapter 1 · .{4,}/.test(c.chap)),
-  JSON.stringify(street.chaps.filter((c) => !/^Chapter 1 · .{4,}/.test(c.chap))));
-ok("every house has a real arc behind it",
-  street.arcs.every((a) => a.len >= 3 && a.arc.length > 6),
-  JSON.stringify(street.arcs.filter((a) => !(a.len >= 3 && a.arc.length > 6))));
+ok("deck names the hero activity", deck.hero.length > 3, deck.hero);
+ok("hero card opens a real door", /^\/(charge\.html\?game=|story\.html|arcade-feed\.html)/.test(deck.launch || ""), deck.launch);
+ok("CTA is LET'S GO", /LET'S GO/i.test(deck.cta), deck.cta);
+ok("up next shows two named cards", deck.thumbs.length === 2 && deck.thumbs.every((t) => t.n.length > 3), JSON.stringify(deck.thumbs));
+ok("home screen carries no chapter furniture", !deck.chapPill);
 
-// ── house arcs advance INDEPENDENTLY, one chapter per house per day ──
-const harc = await page.evaluate(() => {
-  localStorage.removeItem("sona.houses.v1");
-  const a = Sona.houseChapterNum("slice"), other0 = Sona.houseChapterNum("tiles");
-  Sona.houseAdvance("slice");
-  const b = Sona.houseChapterNum("slice"), other1 = Sona.houseChapterNum("tiles");
-  Sona.houseAdvance("slice"); Sona.houseAdvance("slice");   // same local day
-  const c = Sona.houseChapterNum("slice");
-  return { a, b, c, other0, other1,
-    beat0: Sona.houseBeat("slice", 0), beat1: Sona.houseBeat("slice", 1), beat4: Sona.houseBeat("slice", 4),
-    beyond: Sona.houseBeat("slice", 99), hook: Sona.houseHook("slice"),
-    unknown: Sona.houseBeat("nope", 0) };
-});
-ok("finishing a house advances that house one chapter", harc.b === harc.a + 1, JSON.stringify(harc));
-ok("replaying the same day does NOT skip a house chapter", harc.c === harc.b, JSON.stringify(harc));
-ok("one house's story never moves another's", harc.other1 === harc.other0, JSON.stringify(harc));
-ok("round 0 gets the house chapter opener", !!harc.beat0);
-ok("each round gets its own house beat", harc.beat1 && harc.beat4 && harc.beat1 !== harc.beat4);
-ok("a round past the last house beat still returns copy", !!harc.beyond);
-ok("house cliffhanger names what happens next", /(tomorrow|next time)/i.test(harc.hook), harc.hook);
-ok("an unknown house returns nothing rather than throwing", harc.unknown === "");
-await page.evaluate(() => localStorage.removeItem("sona.houses.v1"));
-
-// ── the beat card opens the round and clears ITSELF ──
-await page.goto("http://localhost:8151/charge.html?daily=1&house=slice&sound=R");
-await page.waitForTimeout(900);
-let card = await page.evaluate(() => ({
-  shown: document.getElementById("storyCard").classList.contains("show"),
-  ttl: document.getElementById("storyTtl").textContent,
-  txt: document.getElementById("storyTxt").textContent,
-}));
-ok("a house round opens on that house's story beat", card.shown, JSON.stringify(card));
-ok("round 1 names the chapter", /Chapter 1/.test(card.ttl), card.ttl);
-ok("the beat is the FRUIT MARKET's, not some other house's",
-  /fruit|pia/i.test(card.txt), card.txt);
-ok("beat carries real story copy", card.txt.length > 20, card.txt);
-// it must get out of the child's way on its own — no tap required
-await page.waitForTimeout(4600);
-card = await page.evaluate(() => document.getElementById("storyCard").classList.contains("show"));
-ok("beat card clears itself (no tap needed)", !card);
-
-// ── the beat must FINISH SPEAKING before the round's prompt plays ──
-// Regression: the beat used to fire say() un-awaited behind a fixed timer, so
-// the story line and the prompt clip played on top of each other. Two voices.
+// ── NO story card interrupts a round, daily or free play ──
+// This is the point of the change. Beats used to open every round and a child
+// had to sit through one before practising. The engine survives for the win
+// screen; nothing may render it mid-practice.
+for (const url of ["/charge.html?daily=1&sound=R", "/charge.html?game=arcade-slice.html"]) {
+  await page.goto("http://localhost:8151" + url);
+  await page.waitForTimeout(1600);
+  const quiet = await page.evaluate(() => ({
+    card: !!document.getElementById("storyCard"),
+    target: (document.getElementById("bTarget") || {}).textContent || "",
+  }));
+  ok("no story card on " + url, !quiet.card, "the storyCard element is still in the page");
+  ok("the round goes straight to a practice target on " + url, quiet.target.length > 0, quiet.target);
+}
 {
   const src = readFileSync(ROOT + "/charge.html", "utf8");
-  ok("story beat awaits its own speech before the round starts",
-    /Promise\.all\(\[spoke,\s*minShow\]\)/.test(src),
-    "a fixed timer that resolves while TTS is still playing overlaps the prompt");
-  ok("story beat still has a hard cap so a stuck TTS can't hang the round",
-    /cap\s*=\s*new Promise/.test(src));
+  ok("charge.html has no story-beat code left", !/storyBeat|STORYHOUSE|houseBeat/.test(src),
+    "a beat function left behind is a beat that comes back");
+  ok("the mic primer hands straight to the OS prompt",
+    /await micPrimer\(\);\s*\n\s*try\{ micStream=await navigator\.mediaDevices\.getUserMedia/.test(src),
+    "anything between the primer tap and getUserMedia delays the browser dialog");
+}
+
+// ── regression guards that outlived the story beat ──
+// ── the beat must FINISH SPEAKING before the round's prompt plays ──
+{
+  const src = readFileSync(ROOT + "/charge.html", "utf8");
   // Rachel's clips must be off on EVERY surface. charge.html gating its own
   // local copy is exactly how coach-call.html kept playing them.
   const sona = readFileSync(ROOT + "/sona.js", "utf8");
@@ -185,41 +151,11 @@ ok("beat card clears itself (no tap needed)", !card);
     "DEFAULT_PROFILE volume 0.3 with no slider left every family inaudible");
 }
 
-// ── CITY1: free play inside a house gets that house's story too. The
-// unfinished thread IS the reason a child picks a door, so it cannot depend on
-// arriving through the daily rail.
-await page.evaluate(() => localStorage.removeItem("sona.houses.v1"));
-await page.goto("http://localhost:8151/charge.html?game=arcade-tiles.html");
-await page.waitForTimeout(1400);
-const free = await page.evaluate(() => ({
-  shown: document.getElementById("storyCard").classList.contains("show"),
-  txt: document.getElementById("storyTxt").textContent,
-}));
-ok("free play in a house shows that house's beat", free.shown, JSON.stringify(free));
-ok("the free-play beat belongs to the MUSIC HALL", /piano|mo\b/i.test(free.txt), free.txt);
-
-// ── ?house= pins every round to that house's ONE game ──
-// Without this the daily run rotates a different game each round, which is the
-// behaviour the city replaced: a child who walks into the fruit market must not
-// come out holding a piano.
-{
-  const src = readFileSync(ROOT + "/charge.html", "utf8");
-  ok("a house session pins the game for every round",
-    /HOUSEGAME\s*\|\|\s*\(isDaily/.test(src),
-    "GAME must prefer the house's game over the per-round rotation");
-  ok("the run remembers the house across the arcade round-trip",
-    /run\.house/.test(src),
-    "the arcade returns ?daily=1&banked=N with no house param");
-  ok("the mic is settled BEFORE the story beat plays",
-    src.indexOf("await micPrimer()") < src.indexOf("await storyBeat()"),
-    "a story card between the primer tap and the OS prompt delays the dialog");
-}
-
 // ── the cliffhanger lands on the finish overlay ──
 await page.evaluate(() => {
   sessionStorage.setItem("sona.run.v1", JSON.stringify({ active: true, round: 5, sum: 40, scores: [8, 8, 8, 8, 8], sound: "R", level: 1, pending: false }));
 });
-await page.goto("http://localhost:8151/charge.html?daily=1&house=slice&sound=R");
+await page.goto("http://localhost:8151/charge.html?daily=1&sound=R");
 await page.waitForTimeout(1200);
 const fin = await page.evaluate(() => ({
   ovl: document.getElementById("runOvl").classList.contains("show"),

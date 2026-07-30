@@ -55,33 +55,17 @@ ok("rep pill starts at 0", t.ring === "0");
 ok("subLine invites the R sound", /your R sound/.test(t.sub));
 ok("rotation starts R round 0", t.sound === "R" && t.round === 0);
 
-// ── CITY1: the street — one house per game, today's stop badged ──
-// read the count from the engine so adding a house never fails this suite
-const Sona_HOUSE_COUNT = await page.evaluate(() => Sona.HOUSES.length);
-ok("city: the engine knows about houses", Sona_HOUSE_COUNT >= 6, "n=" + Sona_HOUSE_COUNT);
-const HOUSE_STATE = () => ({
+// ── the home deck: hero + two up-next, and the rotation behind it ──
+const DECK = () => ({
   ps: Sona.pathState(),
-  houses: [...document.querySelectorAll("#street .house")].map((e) => e.dataset.key),
-  today: [...document.querySelectorAll("#street .house.today")].map((e) => e.dataset.key),
-  read: [...document.querySelectorAll("#street .house .doneTag")].length,
-  plates: [...document.querySelectorAll("#street .house")].map((e) => ({
-    key: e.dataset.key,
-    game: (e.querySelector(".hgame") || {}).textContent || "",
-    chap: (e.querySelector(".hchap") || {}).textContent || "",
-  })),
-  openedOn: (function () { const s = document.getElementById("street");
-    return s && s.clientWidth ? Math.round(s.scrollLeft / s.clientWidth) : -1; })(),
+  hero: document.getElementById("heroName").textContent,
+  launch: document.getElementById("goBtn").dataset.launch,
+  thumbs: [...document.querySelectorAll("#thumbs .thumb")].map((t) => t.dataset.key),
 });
-let pp = await page.evaluate(HOUSE_STATE);
-ok("city: every game has a house", pp.houses.length === Sona_HOUSE_COUNT, pp.houses.join(","));
-ok("city: exactly one house is today's stop", pp.today.length === 1, pp.today.join(","));
-ok("city: the street opens ON today's stop",
-  pp.openedOn === pp.houses.indexOf(pp.today[0]), pp.openedOn + " vs " + pp.houses.indexOf(pp.today[0]));
-ok("city: every plate names its game and its next chapter",
-  pp.plates.every((h) => h.game.length > 3 && /^Chapter \d+ · .+/.test(h.chap)),
-  JSON.stringify(pp.plates.filter((h) => !/^Chapter \d+ · .+/.test(h.chap))));
-ok("city: nothing is marked read on a fresh day", pp.read === 0, "read=" + pp.read);
-ok("city: fresh family starts at step 0", pp.ps.steps === 0, JSON.stringify(pp.ps));
+let pp = await page.evaluate(DECK);
+ok("deck: hero card is named and opens a door", pp.hero.length > 3 && !!pp.launch, JSON.stringify(pp));
+ok("deck: two up-next cards, both different from each other", pp.thumbs.length === 2 && pp.thumbs[0] !== pp.thumbs[1], JSON.stringify(pp.thumbs));
+ok("deck: fresh family starts at step 0", pp.ps.steps === 0, JSON.stringify(pp.ps));
 
 // ── charge free play: round 1 = isolation, header context line ──
 // (Workstream A: the bubble target is the SUSTAINED sound — "rrrr", not
@@ -122,9 +106,9 @@ await page.goto("http://localhost:8131/today.html"); await page.waitForTimeout(7
 t = await page.evaluate(() => ({ ring: document.getElementById("ringTxt").textContent, sub: document.getElementById("subLine").textContent }));
 ok("rep pill shows today's reps climbing", t.ring === "12", t.ring);
 ok("subLine counts down the goal", /2 more rounds/.test(t.sub));
-pp = await page.evaluate(HOUSE_STATE);
-ok("city: steps track the rotation", pp.ps.steps === 3, JSON.stringify(pp.ps));
-ok("city: mid-day street still offers every door", pp.houses.length === Sona_HOUSE_COUNT, pp.houses.join(","));
+pp = await page.evaluate(DECK);
+ok("deck: steps track the rotation", pp.ps.steps === 3, JSON.stringify(pp.ps));
+ok("deck: mid-day still offers the whole deck", pp.thumbs.length === 2 && !!pp.launch, JSON.stringify(pp));
 await page.evaluate(() => document.getElementById("ringBtn").click());
 let toast = await page.evaluate(() => document.getElementById("toast").textContent);
 ok("pill tap explains reps + rounds honestly", /12 reps today/.test(toast) && /3 of 5 rounds done/.test(toast) && /R sound/.test(toast));
@@ -143,25 +127,9 @@ t = await page.evaluate(() => ({
 }));
 ok("rep pill goes gold when the day is done", t.gold === true && /^\d+$/.test(t.ring));
 ok("subLine celebrates the goal with the tomorrow-hook", /All done today/.test(t.sub) && /tomorrow/.test(t.sub));
-pp = await page.evaluate(HOUSE_STATE);
-ok("city: full day = five rotation steps", pp.ps.steps === 5, JSON.stringify(pp.ps));
+pp = await page.evaluate(DECK);
+ok("deck: full day = five rotation steps", pp.ps.steps === 5, JSON.stringify(pp.ps));
 
-// ── a finished chapter flips that house's plate FORWARD at its cliffhanger ──
-// (the honest move the path made with the day, now per house: never a number
-// the child can break, always the thing that happens next)
-await page.evaluate(() => { Sona.houseAdvance("slice"); });
-await page.goto("http://localhost:8131/today.html"); await page.waitForTimeout(700);
-pp = await page.evaluate(HOUSE_STATE);
-{
-  const slice = pp.plates.filter((h) => h.key === "slice")[0] || {};
-  const other = pp.plates.filter((h) => h.key === "tiles")[0] || {};
-  ok("city: a read chapter points at what happens next",
-    /^Next time · .{10,}/.test(slice.chap), slice.chap);
-  ok("city: reading one house never moves another house's story",
-    /^Chapter 1 · /.test(other.chap), other.chap);
-  ok("city: the read house wears the chapter ribbon",
-    pp.read === 1 || pp.today.indexOf("slice") >= 0, "read=" + pp.read + " today=" + pp.today.join(","));
-}
 await page.screenshot({ path: OUT + "/prog-ring-done.png" });
 
 // ── bonus rounds practice the NEXT letter from isolation ──
