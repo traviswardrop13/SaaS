@@ -354,6 +354,19 @@
   function rotRound() { return rotState().r; }
   // A practice round finished with real reps. The honesty split: QUALITY gates
   // the rung (recordRung — scored passes only); showing up moves the rotation.
+  // ── first-party usage beacon (TRACK1) ──────────────────────────────────
+  // Kid pages ship ZERO third-party scripts, so product events go to our own
+  // /api/track and the SERVER relays them to analytics. Anonymous family id
+  // only; the route enforces a hard whitelist of event names and properties,
+  // so a typo here silently drops rather than leaking anything new.
+  function track(ev, props) {
+    try {
+      const body = JSON.stringify({ e: ev, p: props || {}, fid: fid() });
+      if (navigator.sendBeacon) navigator.sendBeacon("/api/track", body);
+      else fetch("/api/track", { method: "POST", headers: { "Content-Type": "application/json" }, body, keepalive: true }).catch(() => {});
+    } catch (e) {}
+  }
+
   function rotAdvance() {
     const f = rotSounds(); const st = rotState();
     let i = st.i, r = st.r + 1;
@@ -362,7 +375,13 @@
     // the Practice Path ticks here too: one finished round = one lifelong step
     try { const g = getProgress(); g.totals.rounds = (g.totals.rounds || 0) + 1; save(GKEY, g); } catch (e) {}
     const t = today(); const dr = load(RINGKEY, {});
-    save(RINGKEY, { d: t, n: ((dr.d === t ? dr.n : 0) || 0) + 1 });
+    const n = ((dr.d === t ? dr.n : 0) || 0) + 1;
+    save(RINGKEY, { d: t, n });
+    // "day goal done" fires HERE, not per page: charge.html and Feed Echo both
+    // land on this one line, and the ring only crosses the goal once per local
+    // day (n climbs monotonically), so bonus rounds can't re-fire it. The sound
+    // is the one just PRACTICED (st.i) — rotSound() already points at tomorrow's.
+    if (n === ROT_LEN) { try { track("day goal done", { sound: f[st.i % f.length] }); } catch (e) {} }
     return { i, r };
   }
   // today's goal ring: rounds finished today; the goal = one full pass of the games
@@ -956,7 +975,14 @@
   // families. Ad/organic arrivals have no code → the trial/paid path.
   try {
     const m = (typeof location !== "undefined" ? location.search : "").match(/[?&]slp=([A-Za-z0-9_-]{2,24})/);
-    if (m) localStorage.setItem("sona.slp", m[1].toUpperCase());
+    if (m) {
+      const code = m[1].toUpperCase();
+      // fire only on FIRST redemption — the code sticks, and every later visit
+      // still carries the query param via bookmarks/re-taps
+      const fresh = localStorage.getItem("sona.slp") !== code;
+      localStorage.setItem("sona.slp", code);
+      if (fresh) { try { track("slp code redeemed", { code }); } catch (e) {} }
+    }
   } catch (e) {}
   function slpCode() { try { return localStorage.getItem("sona.slp") || ""; } catch (e) { return ""; } }
 
@@ -1931,5 +1957,5 @@
   }
   try { installDebug(); } catch (e) {}
 
-  global.Sona = { pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, weekWins, ALL_SOUNDS, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, ladderContent, FREE_MODE, isFree, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, bumpReps, repsToday, pathState, localDay: () => _localDay(), soundFamily, frameShape, checkSounds, checkItems, gradeSound, saveCheck, lastCheck, checkHistory, checkDue, buildPlan, getPlan, journeyWeek, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, gated, gateVerify, gateOk, requireGate, slpCode, offerCode, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, LEVEL_GAMES, GAME_DECK, GAMES_PER_LEVEL, levelGames, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, WORLDS, LEVELS_PER_WORLD, campaignLevels, campaignSounds, campaignState, worldById, worldLevels, worldStars, worldCleared, levelStars, setLevelStars, totalStars, worldUnlocked, levelUnlocked, campaignLaunch, campaignResolve, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repsBeacon, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES };
+  global.Sona = { pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, weekWins, ALL_SOUNDS, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, ladderContent, FREE_MODE, isFree, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, bumpReps, repsToday, pathState, localDay: () => _localDay(), soundFamily, frameShape, checkSounds, checkItems, gradeSound, saveCheck, lastCheck, checkHistory, checkDue, buildPlan, getPlan, journeyWeek, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, gated, gateVerify, gateOk, requireGate, slpCode, offerCode, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, LEVEL_GAMES, GAME_DECK, GAMES_PER_LEVEL, levelGames, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, WORLDS, LEVELS_PER_WORLD, campaignLevels, campaignSounds, campaignState, worldById, worldLevels, worldStars, worldCleared, levelStars, setLevelStars, totalStars, worldUnlocked, levelUnlocked, campaignLaunch, campaignResolve, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repsBeacon, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES };
 })(window);

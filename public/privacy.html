@@ -98,9 +98,14 @@
     <h2>Analytics &amp; advertising</h2>
     <p>We do <strong>not</strong> show advertising in Sona, and we do <strong>not</strong> allow
     behavioral/ad tracking of children. We never place analytics or advertising trackers on the
-    children's practice screens. Limited, privacy-respecting analytics may run only on adult-facing
-    pages of our website (such as marketing and parent setup) to understand general usage. <strong>The
-    Sona iOS app contains no third-party analytics or advertising trackers.</strong></p>
+    children's practice screens — those screens talk only to our own servers, which may record
+    anonymous usage counts (for example, that a practice session was completed, its sound and its
+    duration) tied to a random device identifier, never to a name, email, voice, or recording.
+    Limited, privacy-respecting analytics (PostHog, configured with session recording and
+    autocapture disabled) run on adult-facing pages of our website and of the app — such as
+    marketing, parent setup, and settings — to understand general usage under the same anonymous
+    identifier. <strong>The Sona iOS app contains no advertising trackers, and no third-party
+    analytics ever run on a child's practice screen.</strong></p>
 
     <h2>Children's privacy (COPPA)</h2>
     <p>Sona is directed to children and designed to be used under a parent's or guardian's supervision.
