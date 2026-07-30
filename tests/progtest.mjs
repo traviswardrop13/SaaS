@@ -40,7 +40,14 @@ const ok = (n, p) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL ") + n)
 const chargeSrc = readFileSync(ROOT + "/charge.html", "utf8");
 const todaySrc = readFileSync(ROOT + "/today.html", "utf8");
 ok("rung advance no longer daily-only", /if\(v==="pass" && useRung>=RUNG/.test(chargeSrc));
-ok("free play climbs with the rotation", /Math\.min\(isDaily\?\(run\?run\.round:0\):ROTR, RUNG\+1\)/.test(chargeSrc));
+// This used to pin the OLD formula, /Math.min(isDaily?(run?run.round:0):ROTR, RUNG+1)/,
+// which is the bug: the header counted today's ring while the rung counted the
+// persistent rotation, so the level a child got and the round a parent read were
+// different numbers. An assertion that pins an implementation can lock a bug in.
+ok("the ladder step and the header read ONE counter",
+  /var ROUNDIX = isDaily \? \(\(run\?run\.round:0\)\|0\) : \(_ringN % _runLen\);/.test(chargeSrc)
+  && /Math\.min\(ROUNDIX, RUNG\+1\)/.test(chargeSrc)
+  && /Math\.min\(ROUNDIX\+1,_goal\)/.test(chargeSrc));
 ok('pulse placeholder drops "complaint"', !/complaint/i.test(todaySrc));
 
 // ── today.html: fresh day, ring empty, rotation letter = R ──
@@ -410,6 +417,50 @@ await page.evaluate(() => { const p = JSON.parse(localStorage.getItem("sona.prof
 await page.goto("http://localhost:8131/subscribe.html?paid=1"); await page.waitForTimeout(700);
 t = await page.evaluate(() => ({ pick: document.getElementById("pickCard").style.display, founding: document.getElementById("foundingCard").style.display }));
 ok("founding family keeps the free story", t.pick !== "block" && t.founding !== "none");
+
+// ── the session CLIMBS, and the header agrees with the level ──
+// "Round 3 of 5" handed a child a phrase: the header read today's ring while the
+// ladder step read sona.js's persistent rotation counter, so the number a parent
+// saw and the level their child got were two different things — and a new day
+// could open at phrases instead of warming up on the sound.
+{
+  const climb = [];
+  for (const n of [0, 1, 2]) {
+    await page.evaluate((k) => {
+      const t = Sona.localDay();
+      localStorage.setItem(Sona.kkey("sona.today.v1"), JSON.stringify({ d: t, n: k }));
+      const g = Sona.getProgress(); g.stage = g.stage || {}; g.stage.R = 5;  // nothing capped
+      localStorage.setItem(Sona.kkey("sona.progress.v1"), JSON.stringify(g));
+    }, n);
+    await page.goto("http://localhost:8131/charge.html?game=arcade-slice.html&sound=R"); await page.waitForTimeout(700);
+    climb.push(await page.evaluate(() => ({
+      hdr: document.getElementById("ctxLine").textContent,
+      target: document.getElementById("bTarget").textContent.trim(),
+      syls: (Sona.ladderContent("R", 1) || []).map((x) => x.t),
+      words: (Sona.ladderContent("R", 2) || []).map((x) => x.t),
+    })));
+  }
+  ok("round 1 warms up on the sound in isolation", /^r+$/i.test(climb[0].target), climb[0].target);
+  ok("round 2 moves to a syllable", climb[1].syls.includes(climb[1].target), JSON.stringify([climb[1].target, climb[1].syls]));
+  ok("round 3 moves to a word", climb[2].words.includes(climb[2].target), JSON.stringify([climb[2].target, climb[2].words]));
+  ok("the header counts the same rounds the ladder does",
+    /Round 1 of/.test(climb[0].hdr) && /Round 2 of/.test(climb[1].hdr) && /Round 3 of/.test(climb[2].hdr),
+    climb.map((c) => c.hdr).join(" | "));
+  // and the cap still protects a child who has earned nothing
+  await page.evaluate(() => {
+    localStorage.setItem(Sona.kkey("sona.today.v1"), JSON.stringify({ d: Sona.localDay(), n: 4 }));
+    const g = Sona.getProgress(); g.stage = g.stage || {}; g.stage.R = 0;
+    localStorage.setItem(Sona.kkey("sona.progress.v1"), JSON.stringify(g));
+  });
+  await page.goto("http://localhost:8131/charge.html?game=arcade-slice.html&sound=R"); await page.waitForTimeout(700);
+  const capped = await page.evaluate(() => ({
+    target: document.getElementById("bTarget").textContent.trim(),
+    syls: (Sona.ladderContent("R", 1) || []).map((x) => x.t),
+  }));
+  ok("a child who has earned nothing is still capped at earned+1",
+    capped.syls.includes(capped.target), JSON.stringify(capped));
+  await page.evaluate(() => localStorage.removeItem(Sona.kkey("sona.today.v1")));
+}
 
 await browser.close(); srv.close();
 console.log(fails ? fails + " FAILURES" : "ALL GREEN");

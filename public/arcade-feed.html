@@ -141,7 +141,8 @@
     var profile=(S&&S.getProfile)?S.getProfile():{};
 
     // ── persistent growth: Echo is visibly bigger every week they show up ──
-    var FEEDKEY="sona.feed.v1";
+    // per-child: Echo grows for the child who fed him (KIDS1)
+    var FEEDKEY=(window.Sona&&Sona.kkey)?Sona.kkey("sona.feed.v1"):"sona.feed.v1";
     function feedState(){ try{ return JSON.parse(localStorage.getItem(FEEDKEY)||"{}"); }catch(e){ return {}; } }
     function feedSave(s){ try{ localStorage.setItem(FEEDKEY,JSON.stringify(s)); }catch(e){} }
     function echoScale(){ var f=feedState().fed||0; return 1+Math.min(f,80)*0.004; } // lifetime base, caps ~1.32×

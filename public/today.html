@@ -15,7 +15,12 @@
   <script>
     (function(){
       try{
-        var p=JSON.parse(localStorage.getItem("sona.profile.v1")||"{}");
+        // runs BEFORE sona.js, so the kid namespace has to be resolved by hand
+        // here — otherwise this always reads the first child and a freshly added
+        // sibling would skip setup (KIDS1)
+        var slot=""; try{ var kk=JSON.parse(localStorage.getItem("sona.kids.v1")||"null"); if(kk&&kk.active) slot=kk.active; }catch(e){}
+        var key="sona.profile.v1"+(slot?"@"+slot:"");
+        var p=JSON.parse(localStorage.getItem(key)||"{}");
         if(!p.onboarded&&!p.childName){ document.documentElement.style.display="none"; location.replace("/onboarding.html"); }
       }catch(e){}
     })();
@@ -344,8 +349,9 @@
         var t=new Date(), tk=t.getFullYear()+"-"+("0"+(t.getMonth()+1)).slice(-2)+"-"+("0"+t.getDate()).slice(-2);
         var days=Math.round((new Date(tk)-new Date(last))/864e5);
         if(!(days>=3)) return;
-        if(localStorage.getItem("sona.comeback.v1")===tk) return;
-        localStorage.setItem("sona.comeback.v1",tk);
+        var CBK=(S&&S.kkey)?S.kkey("sona.comeback.v1"):"sona.comeback.v1";
+        if(localStorage.getItem(CBK)===tk) return;
+        localStorage.setItem(CBK,tk);
         window.__comeback=true;
         $("cbOvl").classList.add("show");
         $("cbBtn").onclick=function(){ sfx("tap"); $("cbOvl").classList.remove("show"); };

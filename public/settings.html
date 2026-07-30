@@ -37,6 +37,27 @@
       <nav class="app"><a href="/today.html">Home</a><a href="/progress.html">Progress</a><a class="active" href="/settings.html">Settings</a></nav>
     </header>
 
+    <!-- KIDS1: siblings share a phone and an SLP shares one iPad. Each child
+         gets their own saved progress; switching is one tap. -->
+    <div class="card" id="kidsCard">
+      <h2>Kids 👧🧒</h2>
+      <p class="muted" style="font-size:13px;font-weight:700;">Each child keeps their own sounds, progress and stickers. Everything below this card belongs to whoever is selected.</p>
+      <div id="kidList" style="display:flex;flex-direction:column;gap:8px;margin-top:12px;"></div>
+      <div id="addKidRow" style="display:none;gap:8px;margin-top:10px;flex-wrap:wrap;align-items:flex-end;">
+        <div style="flex:1 1 140px;">
+          <label class="field" for="newKidName">Name</label>
+          <input id="newKidName" type="text" maxlength="24" placeholder="e.g. Ana" />
+        </div>
+        <div style="flex:0 0 90px;">
+          <label class="field" for="newKidAge">Age</label>
+          <input id="newKidAge" type="number" min="2" max="14" inputmode="numeric" placeholder="5" />
+        </div>
+        <button id="newKidSave" class="btn" style="flex:0 0 auto;">Add</button>
+        <button id="newKidCancel" class="btn ghost" style="flex:0 0 auto;">Cancel</button>
+      </div>
+      <button id="addKidBtn" class="btn ghost" style="margin-top:10px;">+ Add a kid</button>
+    </div>
+
     <div class="card">
       <h1>Settings</h1>
       <label class="field" for="childName">Child's name</label>
@@ -420,6 +441,63 @@
       else if (res.ok) { msg.style.color = "#b42323"; msg.textContent = "No active subscription for that email."; }
       else { msg.style.color = "#b42323"; msg.textContent = res.error || "Couldn’t check."; }
     };
+
+    // ── KIDS1: the child switcher ────────────────────────────────────────
+    // Every field below the Kids card belongs to whoever is selected here, so a
+    // switch reloads the page rather than trying to repaint each control — a
+    // half-repainted form is how one child's sounds get saved onto another.
+    (function(){
+      var listEl=document.getElementById("kidList");
+      if(!listEl||!(Sona.kids)) return;
+      function paintKids(){
+        var ks=Sona.kids();
+        listEl.innerHTML="";
+        ks.forEach(function(k){
+          var row=document.createElement("div");
+          row.style.cssText="display:flex;align-items:center;gap:10px;background:"+(k.active?"#fff1dc":"#fff6e9")
+            +";border:2px solid "+(k.active?"var(--orange)":"transparent")+";border-radius:14px;padding:11px 13px;";
+          row.dataset.slot=k.slot;
+          if(k.active) row.dataset.active="1";
+          var nm=document.createElement("div");
+          nm.style.cssText="flex:1;font-family:'Baloo 2';font-weight:800;font-size:16px;color:var(--ink);";
+          nm.textContent=(k.name||"Unnamed")+(k.active?" · practising now":"");
+          row.appendChild(nm);
+          if(!k.active){
+            var sw=document.createElement("button");
+            sw.className="btn"; sw.style.cssText="width:auto;padding:9px 15px;font-size:14px;";
+            sw.textContent="Switch"; sw.dataset.switch=k.slot;
+            sw.onclick=function(){ if(Sona.switchKid(k.slot)) location.reload(); };
+            row.appendChild(sw);
+          }
+          // never offer to delete the child you are looking at, and never the
+          // last one standing
+          if(!k.active && ks.length>1){
+            var rm=document.createElement("button");
+            rm.className="btn ghost"; rm.style.cssText="width:auto;padding:9px 12px;font-size:13px;";
+            rm.textContent="Remove"; rm.dataset.remove=k.slot;
+            rm.onclick=function(){
+              if(!confirm("Remove "+(k.name||"this child")+"? Their practice history is deleted from this device and can't be undone.")) return;
+              if(Sona.removeKid(k.slot)) location.reload();
+            };
+            row.appendChild(rm);
+          }
+          listEl.appendChild(row);
+        });
+      }
+      paintKids();
+      var addRow=document.getElementById("addKidRow"), addBtn=document.getElementById("addKidBtn");
+      addBtn.onclick=function(){ addRow.style.display="flex"; addBtn.style.display="none"; document.getElementById("newKidName").focus(); };
+      document.getElementById("newKidCancel").onclick=function(){ addRow.style.display="none"; addBtn.style.display=""; };
+      document.getElementById("newKidSave").onclick=function(){
+        var nm=(document.getElementById("newKidName").value||"").trim();
+        var ag=(document.getElementById("newKidAge").value||"").trim();
+        if(!nm){ document.getElementById("newKidName").focus(); return; }
+        Sona.addKid(nm,ag);
+        // the new child has no focus sounds yet, so send the parent through the
+        // real plan-builder instead of dropping a blank profile into the app
+        location.href="/onboarding.html";
+      };
+    })();
   </script>
 </body>
 </html>

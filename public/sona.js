@@ -119,8 +119,102 @@
   const DEFAULT_PROGRESS = { sessions: [], totals: { sessions: 0, words: 0, stars: 0, coins: 0 }, streak: { count: 0, lastDate: "" }, bySound: {}, stage: {}, chests: {}, missed: [] };
 
   const clone = (o) => JSON.parse(JSON.stringify(o));
-  function load(key, def) { try { const v = JSON.parse(localStorage.getItem(key)); return (v && typeof v === "object") ? v : clone(def); } catch { return clone(def); } }
-  function save(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch {} }
+
+  // ── KIDS1: more than one child per device ──────────────────────────────
+  // Siblings share a phone and an SLP shares one iPad across a caseload, so
+  // every practice key has to belong to a CHILD, not to the device. All of it
+  // funnels through load()/save(), so the namespace lives there and every page
+  // inherits it with no edits of its own.
+  //
+  // The first child keeps the ORIGINAL un-suffixed keys (slot ""). That is not a
+  // special case in the code — it is a slot whose suffix happens to be empty —
+  // and it means an existing family's progress needs no migration and cannot be
+  // lost by one. Kid two onward get "@k2", "@k3".
+  //
+  // Entitlement, trial, the parent gate, the anonymous beacon id and device
+  // permissions are FAMILY-wide and must never be namespaced: a family pays
+  // once, and a second child must not land behind a paywall or re-trigger the
+  // OS mic prompt.
+  const KIDSKEY = "sona.kids.v1";
+  const PER_KID = new Set([
+    PKEY, GKEY,
+    "sona.rotation.v1", "sona.today.v1", "sona.episode.v1", "sona.reps.v1",
+    "sona.soundcheck.v1", "sona.plan.v1", "sona.tickets.v1", "sona.charge.v1",
+    "sona.daily.v1", "sona.session.v1", "sona.levels.v1", "sona.campaign.v1",
+    "sona.stickers.v1", "sona.attempts.v1", "sona.outcomes.v1",
+    "sona.lib.read.v1", "sona.feed.v1", "sona.call.v1", "sona.callhist.v1",
+    "sona.comeback.v1", "sona.games.v1",
+  ]);
+  function _kids() {
+    let v = null;
+    try { v = JSON.parse(localStorage.getItem(KIDSKEY)); } catch (e) {}
+    if (!v || !Array.isArray(v.list) || !v.list.length) {
+      // seed from whoever is already on this device — slot "" is their data
+      let nm = "";
+      try { nm = (JSON.parse(localStorage.getItem(PKEY) || "{}").childName) || ""; } catch (e) {}
+      v = { active: "", list: [{ slot: "", name: nm }] };
+    }
+    if (!v.list.some((k) => k.slot === v.active)) v.active = v.list[0].slot;
+    return v;
+  }
+  function _saveKids(v) { try { localStorage.setItem(KIDSKEY, JSON.stringify(v)); } catch (e) {} }
+  function _slot() { try { return _kids().active || ""; } catch (e) { return ""; } }
+  function _k(key) { const s = _slot(); return (s && PER_KID.has(key)) ? key + "@" + s : key; }
+  // Pages that keep their own localStorage key (Story Time's game flags, the
+  // library's read stars, Echo's size, the comeback date) call this so their key
+  // belongs to the child too. Anything in PER_KID that does NOT route through
+  // load()/save() MUST be namespaced through here, or the list is a promise the
+  // code doesn't keep.
+  function kkey(key) { return _k(key); }
+
+  function load(key, def) { try { const v = JSON.parse(localStorage.getItem(_k(key))); return (v && typeof v === "object") ? v : clone(def); } catch { return clone(def); } }
+  function save(key, val) { try { localStorage.setItem(_k(key), JSON.stringify(val)); } catch {} }
+
+  // The switcher's list, each entry carrying the name from that kid's OWN
+  // profile (the cached name goes stale the moment a parent renames a child).
+  function kids() {
+    const v = _kids();
+    return v.list.map((k) => {
+      let nm = k.name || "";
+      try { const p = JSON.parse(localStorage.getItem(k.slot ? PKEY + "@" + k.slot : PKEY) || "{}"); if (p.childName) nm = p.childName; } catch (e) {}
+      return { slot: k.slot, name: nm, active: k.slot === v.active };
+    });
+  }
+  function activeKid() { return kids().filter((k) => k.active)[0] || null; }
+  function addKid(name, age) {
+    const v = _kids();
+    // slots are never reused — a removed kid's leftover keys must not become a
+    // new child's history
+    let n = 2; const taken = new Set(v.list.map((k) => k.slot));
+    while (taken.has("k" + n)) n++;
+    const slot = "k" + n;
+    v.list.push({ slot, name: String(name || "").slice(0, 24) });
+    v.active = slot;
+    _saveKids(v);
+    // written through the namespace, so this lands on the NEW kid
+    save(PKEY, Object.assign(clone(DEFAULT_PROFILE), {
+      childName: String(name || "").slice(0, 24),
+      childAge: String(age || ""),
+      onboarded: false,
+    }));
+    return slot;
+  }
+  function switchKid(slot) {
+    const v = _kids();
+    if (!v.list.some((k) => k.slot === slot)) return false;
+    v.active = slot; _saveKids(v); return true;
+  }
+  function removeKid(slot) {
+    const v = _kids();
+    if (v.list.length < 2) return false;              // never leave zero children
+    v.list = v.list.filter((k) => k.slot !== slot);
+    if (v.active === slot) v.active = v.list[0].slot;
+    _saveKids(v);
+    // drop that child's practice data; slot "" (the first kid) shares the
+    // un-suffixed keys, so only a suffixed slot is safe to clear
+    if (slot) { try { PER_KID.forEach((k) => localStorage.removeItem(k + "@" + slot)); } catch (e) {} }
+    return true;
+  }
 
   function getProfile() {
     const p = Object.assign(clone(DEFAULT_PROFILE), load(PKEY, {}));
@@ -1812,5 +1906,5 @@
   }
   try { installDebug(); } catch (e) {}
 
-  global.Sona = { pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, weekWins, ALL_SOUNDS, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, ladderContent, FREE_MODE, isFree, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, bumpReps, repsToday, pathState, localDay: () => _localDay(), soundFamily, frameShape, checkSounds, checkItems, gradeSound, saveCheck, lastCheck, checkHistory, checkDue, buildPlan, getPlan, journeyWeek, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, gated, gateVerify, gateOk, requireGate, slpCode, offerCode, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, LEVEL_GAMES, GAME_DECK, GAMES_PER_LEVEL, levelGames, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, WORLDS, LEVELS_PER_WORLD, campaignLevels, campaignSounds, campaignState, worldById, worldLevels, worldStars, worldCleared, levelStars, setLevelStars, totalStars, worldUnlocked, levelUnlocked, campaignLaunch, campaignResolve, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repsBeacon, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES };
+  global.Sona = { pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, weekWins, ALL_SOUNDS, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, ladderContent, FREE_MODE, isFree, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, bumpReps, repsToday, pathState, localDay: () => _localDay(), soundFamily, frameShape, checkSounds, checkItems, gradeSound, saveCheck, lastCheck, checkHistory, checkDue, buildPlan, getPlan, journeyWeek, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, gated, gateVerify, gateOk, requireGate, slpCode, offerCode, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, LEVEL_GAMES, GAME_DECK, GAMES_PER_LEVEL, levelGames, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, WORLDS, LEVELS_PER_WORLD, campaignLevels, campaignSounds, campaignState, worldById, worldLevels, worldStars, worldCleared, levelStars, setLevelStars, totalStars, worldUnlocked, levelUnlocked, campaignLaunch, campaignResolve, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repsBeacon, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES };
 })(window);
