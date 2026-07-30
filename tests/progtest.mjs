@@ -40,7 +40,14 @@ const ok = (n, p) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL ") + n)
 const chargeSrc = readFileSync(ROOT + "/charge.html", "utf8");
 const todaySrc = readFileSync(ROOT + "/today.html", "utf8");
 ok("rung advance no longer daily-only", /if\(v==="pass" && useRung>=RUNG/.test(chargeSrc));
-ok("free play climbs with the rotation", /Math\.min\(isDaily\?\(run\?run\.round:0\):ROTR, RUNG\+1\)/.test(chargeSrc));
+// This used to pin the OLD formula, /Math.min(isDaily?(run?run.round:0):ROTR, RUNG+1)/,
+// which is the bug: the header counted today's ring while the rung counted the
+// persistent rotation, so the level a child got and the round a parent read were
+// different numbers. An assertion that pins an implementation can lock a bug in.
+ok("the ladder step and the header read ONE counter",
+  /var ROUNDIX = isDaily \? \(\(run\?run\.round:0\)\|0\) : \(_ringN % _runLen\);/.test(chargeSrc)
+  && /Math\.min\(ROUNDIX, RUNG\+1\)/.test(chargeSrc)
+  && /Math\.min\(ROUNDIX\+1,_goal\)/.test(chargeSrc));
 ok('pulse placeholder drops "complaint"', !/complaint/i.test(todaySrc));
 
 // ── today.html: fresh day, ring empty, rotation letter = R ──
@@ -75,6 +82,33 @@ let c = await page.evaluate(() => ({ prompt: document.getElementById("bTarget").
 ok("round 1 practices isolation", /^r+$/i.test(c.prompt.trim()), c.prompt);
 ok('header "Round 1 of 5 · R sound"', /Round 1 of 5/.test(c.lbl) && /R sound/.test(c.lbl), c.lbl);
 
+// ── every prompt below the sentence rung is ONE word ──
+// "Say a rain" was the bug: the phrase rung prefixed a carrier, so the target a
+// child read and imitated was not the target being scored.
+{
+  const bad = await page.evaluate(() => {
+    const out = [];
+    for (const snd of Sona.ALL_SOUNDS) {
+      for (const rung of [0, 1, 2, 3]) {          // isolation, syllable, word, phrase
+        for (const it of Sona.ladderContent(snd, rung) || []) {
+          // rung 0's display is a sound LABEL, not a target — THV reads "TH (v)"
+          // on purpose, to separate it from voiceless TH. Its spoken form still
+          // has to be one piece.
+          const parts = rung === 0 ? [it.say] : [it.display || it.t, it.say];
+          for (const piece of parts) {
+            if (/\s/.test(String(piece || ""))) out.push(snd + " rung" + rung + ": " + JSON.stringify(piece));
+          }
+        }
+      }
+    }
+    return out;
+  });
+  ok("no prompt below the sentence rung is more than one word", bad.length === 0, bad.slice(0, 6).join(" | "));
+  // the sentence rung is untouched — it is supposed to be a sentence
+  const sent = await page.evaluate(() => (Sona.ladderContent("R", 4) || []).map((s) => s.t));
+  ok("the sentence rung still returns sentences", sent.length > 0 && sent.every((t) => /\s/.test(t)), JSON.stringify(sent.slice(0, 2)));
+}
+
 // ── ?sound= override beats the rotation (SLP/deep-link escape hatch) ──
 await page.goto("http://localhost:8131/charge.html?game=arcade-slice.html&sound=T"); await page.waitForTimeout(700);
 c = await page.evaluate(() => document.getElementById("bTarget").textContent);
@@ -94,10 +128,18 @@ c = await page.evaluate(() => document.getElementById("bTarget").textContent);
 ok("round 4 capped at earned+1 (still syllables)", /^r(ah|ee|oo|oh|ay)$/i.test(c.trim()));
 
 // ── earned rung feeds the climb: stage.R=2 (words earned) → round 4 = phrase (2+1) ──
+// This used to key off word count, because the phrase rung glued a carrier on
+// ("a rain"). The prompt is one word at every rung below sentences now, so the
+// climb is observed by what the target IS: a real word, not a syllable.
 await page.evaluate(() => { const g = Sona.getProgress(); g.stage = g.stage || {}; g.stage.R = 2; localStorage.setItem("sona.progress.v1", JSON.stringify(g)); });
 await page.goto("http://localhost:8131/charge.html?game=arcade-run.html"); await page.waitForTimeout(700);
-c = await page.evaluate(() => document.getElementById("bTarget").textContent);
-ok("earned words → round 4 stretches to a phrase", c.trim().split(/\s+/).length >= 2);
+c = await page.evaluate(() => ({
+  t: document.getElementById("bTarget").textContent.trim(),
+  syls: (Sona.ladderContent("R", 1) || []).map((x) => x.t),
+  words: (Sona.ladderContent("R", 2) || []).map((x) => x.t),
+}));
+ok("earned words → round 4 climbs past syllables to a real target",
+  !c.syls.includes(c.t) && c.words.includes(c.t), JSON.stringify(c));
 await page.evaluate(() => { const g = Sona.getProgress(); g.stage.R = 0; localStorage.setItem("sona.progress.v1", JSON.stringify(g)); });
 
 // ── rep pill mid-day: the number the kid watches only climbs (RING1) ──
@@ -375,6 +417,50 @@ await page.evaluate(() => { const p = JSON.parse(localStorage.getItem("sona.prof
 await page.goto("http://localhost:8131/subscribe.html?paid=1"); await page.waitForTimeout(700);
 t = await page.evaluate(() => ({ pick: document.getElementById("pickCard").style.display, founding: document.getElementById("foundingCard").style.display }));
 ok("founding family keeps the free story", t.pick !== "block" && t.founding !== "none");
+
+// ── the session CLIMBS, and the header agrees with the level ──
+// "Round 3 of 5" handed a child a phrase: the header read today's ring while the
+// ladder step read sona.js's persistent rotation counter, so the number a parent
+// saw and the level their child got were two different things — and a new day
+// could open at phrases instead of warming up on the sound.
+{
+  const climb = [];
+  for (const n of [0, 1, 2]) {
+    await page.evaluate((k) => {
+      const t = Sona.localDay();
+      localStorage.setItem(Sona.kkey("sona.today.v1"), JSON.stringify({ d: t, n: k }));
+      const g = Sona.getProgress(); g.stage = g.stage || {}; g.stage.R = 5;  // nothing capped
+      localStorage.setItem(Sona.kkey("sona.progress.v1"), JSON.stringify(g));
+    }, n);
+    await page.goto("http://localhost:8131/charge.html?game=arcade-slice.html&sound=R"); await page.waitForTimeout(700);
+    climb.push(await page.evaluate(() => ({
+      hdr: document.getElementById("ctxLine").textContent,
+      target: document.getElementById("bTarget").textContent.trim(),
+      syls: (Sona.ladderContent("R", 1) || []).map((x) => x.t),
+      words: (Sona.ladderContent("R", 2) || []).map((x) => x.t),
+    })));
+  }
+  ok("round 1 warms up on the sound in isolation", /^r+$/i.test(climb[0].target), climb[0].target);
+  ok("round 2 moves to a syllable", climb[1].syls.includes(climb[1].target), JSON.stringify([climb[1].target, climb[1].syls]));
+  ok("round 3 moves to a word", climb[2].words.includes(climb[2].target), JSON.stringify([climb[2].target, climb[2].words]));
+  ok("the header counts the same rounds the ladder does",
+    /Round 1 of/.test(climb[0].hdr) && /Round 2 of/.test(climb[1].hdr) && /Round 3 of/.test(climb[2].hdr),
+    climb.map((c) => c.hdr).join(" | "));
+  // and the cap still protects a child who has earned nothing
+  await page.evaluate(() => {
+    localStorage.setItem(Sona.kkey("sona.today.v1"), JSON.stringify({ d: Sona.localDay(), n: 4 }));
+    const g = Sona.getProgress(); g.stage = g.stage || {}; g.stage.R = 0;
+    localStorage.setItem(Sona.kkey("sona.progress.v1"), JSON.stringify(g));
+  });
+  await page.goto("http://localhost:8131/charge.html?game=arcade-slice.html&sound=R"); await page.waitForTimeout(700);
+  const capped = await page.evaluate(() => ({
+    target: document.getElementById("bTarget").textContent.trim(),
+    syls: (Sona.ladderContent("R", 1) || []).map((x) => x.t),
+  }));
+  ok("a child who has earned nothing is still capped at earned+1",
+    capped.syls.includes(capped.target), JSON.stringify(capped));
+  await page.evaluate(() => localStorage.removeItem(Sona.kkey("sona.today.v1")));
+}
 
 await browser.close(); srv.close();
 console.log(fails ? fails + " FAILURES" : "ALL GREEN");

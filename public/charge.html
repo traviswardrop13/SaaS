@@ -321,8 +321,19 @@
     // rounds end on a stretch level and two clean stretch rounds advance the
     // rung for good — a kid who can't say R alone never gets pushed to phrases.
     var RUNG=(S&&S.rungOf)?S.rungOf(SOUND):0;
-    var ROTR=(S&&S.rotRound)?S.rotRound():0;
-    var useRung = Math.min(isDaily?(run?run.round:0):ROTR, RUNG+1);
+    // ONE counter drives both the header and the ladder step, because they used
+    // to read different ones. The header showed today's ring position while the
+    // rung read sona.js's PERSISTENT rotation counter, so "Round 3 of 5" could
+    // hand a child a phrase, and a fresh day could open at phrases instead of
+    // warming up on the sound. Every session now starts at isolation and climbs
+    // isolation → syllable → word → phrase → sentence, still capped one level
+    // above the child's mastered rung so nobody gets pushed past what they own.
+    // Free play wraps within the block of five, because the ring keeps counting
+    // past the goal: a bonus round is a fresh session on the NEXT sound, and it
+    // has to warm up from isolation rather than inherit round six's rung.
+    var _ringN=0; try{ var _r0=(S&&S.todayRing)?S.todayRing():null; _ringN=_r0?(_r0.n|0):0; }catch(e){}
+    var ROUNDIX = isDaily ? ((run?run.round:0)|0) : (_ringN % _runLen);
+    var useRung = Math.min(ROUNDIX, RUNG+1);
     var ITEMS=[];
     try{ ITEMS=(S.ladderContent(SOUND,useRung)||[]).filter(function(it){return it&&it.t;}); }catch(e){}
     if(!ITEMS.length){ try{ ITEMS=(S.ladderContent(SOUND,0)||[]).filter(function(it){return it&&it.t;}); }catch(e){} }
@@ -598,10 +609,13 @@
     }
     // header context line — the ONE line of context up top (A §1)
     (function(){
+      // Reads ROUNDIX — the same counter the ladder step uses, so the number a
+      // parent reads and the level the child gets can never disagree again.
       var sn=((S&&S.soundLabel)?S.soundLabel(SOUND):SOUND)+" sound", t=sn;
-      if(isDaily&&run&&run.active) t="Round "+Math.min(run.round+1,DAILY_SEQ.length)+" of "+DAILY_SEQ.length+" · "+sn;
+      var _goal=DAILY_SEQ.length;
+      if(isDaily&&run&&run.active) t="Round "+Math.min(ROUNDIX+1,_goal)+" of "+_goal+" · "+sn;
       else { try{ var _tr=S&&S.todayRing?S.todayRing():null;
-        if(_tr) t=_tr.done?("Goal done — bonus round! · "+sn):("Round "+Math.min(_tr.n+1,_tr.goal)+" of "+_tr.goal+" · "+sn);
+        if(_tr) t=_tr.done?("Goal done — bonus round! · "+sn):("Round "+Math.min(ROUNDIX+1,_tr.goal)+" of "+_tr.goal+" · "+sn);
       }catch(e){} }
       $("ctxLine").textContent=t;
     })();

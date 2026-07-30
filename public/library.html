@@ -312,12 +312,13 @@
     var shelf = document.getElementById("shelf");
     // read-through star (D1): a book read to The End pins the gold star to
     // its cover. Local flag by title; Story Time's story.done counts too.
-    var LIBKEY = "sona.lib.read.v1";
+    // per-child: two siblings must not share read stars (KIDS1)
+    var LIBKEY = (window.Sona&&Sona.kkey)?Sona.kkey("sona.lib.read.v1"):"sona.lib.read.v1";
     function libRead() { try { return JSON.parse(localStorage.getItem(LIBKEY) || "{}"); } catch (e) { return {}; } }
     function markRead(title) { try { var m = libRead(); if (!m[title]) { m[title] = 1; localStorage.setItem(LIBKEY, JSON.stringify(m)); } } catch (e) {} }
     function wasRead(st) {
       try { if (libRead()[st.title]) return true; } catch (e) {}
-      try { var g = JSON.parse(localStorage.getItem("sona.games.v1") || "{}"); return !!(g[st.sound] && g[st.sound].story && g[st.sound].story.done); } catch (e) { return false; }
+      try { var g = JSON.parse(localStorage.getItem((window.Sona&&Sona.kkey)?Sona.kkey("sona.games.v1"):"sona.games.v1") || "{}"); return !!(g[st.sound] && g[st.sound].story && g[st.sound].story.done); } catch (e) { return false; }
     }
     STORIES.forEach(function (st) {
       var b = document.createElement("button");

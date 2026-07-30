@@ -266,7 +266,7 @@
     }
     function finishGame(){
       var earned=22; if(window.Sona&&Sona.addCoins)Sona.addCoins(earned);
-      try{var GS=JSON.parse(localStorage.getItem("sona.games.v1")||"{}");GS[SOUND]=GS[SOUND]||{};GS[SOUND].story={done:true};GS.lastPlayDay=(window.Sona&&Sona.localDay?Sona.localDay():new Date().toISOString().slice(0,10));localStorage.setItem("sona.games.v1",JSON.stringify(GS));}catch(e){}
+      try{var GK=(window.Sona&&Sona.kkey)?Sona.kkey("sona.games.v1"):"sona.games.v1";var GS=JSON.parse(localStorage.getItem(GK)||"{}");GS[SOUND]=GS[SOUND]||{};GS[SOUND].story={done:true};GS.lastPlayDay=(window.Sona&&Sona.localDay?Sona.localDay():new Date().toISOString().slice(0,10));localStorage.setItem(GK,JSON.stringify(GS));}catch(e){}
       $("winCount").textContent=GOAL;
       // drawn coin, never 🪙 (D3); the chip names the level like a postcard
       $("winUnlock").innerHTML='<svg viewBox="0 0 64 64" style="width:22px;height:22px;vertical-align:-4px"><circle cx="32" cy="32" r="20" fill="#ffd21c"/><circle cx="32" cy="32" r="14.5" fill="none" stroke="#f0a800" stroke-width="3"/><path d="M32 24l2.6 5.9 6.4.7-4.8 4.3 1.5 6.3L32 37.9l-5.7 3.3 1.5-6.3-4.8-4.3 6.4-.7Z" fill="#f0a800"/></svg> +'+earned+'<small>coins</small>';
