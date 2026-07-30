@@ -493,6 +493,7 @@
         var ag=(document.getElementById("newKidAge").value||"").trim();
         if(!nm){ document.getElementById("newKidName").focus(); return; }
         Sona.addKid(nm,ag);
+        try{ if(window.SonaAnalytics)SonaAnalytics.track("kid added"); }catch(e){}
         // the new child has no focus sounds yet, so send the parent through the
         // real plan-builder instead of dropping a blank profile into the app
         location.href="/onboarding.html";

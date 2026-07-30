@@ -14,8 +14,15 @@ export const runtime = "nodejs";
 
 const PH_KEY = "phc_xRPqirD2PznnvZrpeuLDwo7LtYegHsF2xWsDNLEEXdkw"; // publishable client token
 const PH_HOST = "https://us.i.posthog.com";
-const EVENTS = new Set(["practice started", "practice completed"]);
-const PROPS = new Set(["sound", "game", "duration_seconds", "attempts_count"]);
+// The daily dashboard's whole vocabulary. Adding here is a deliberate act —
+// anything not listed is silently dropped, which is the COPPA posture: the
+// relay can only ever say LESS than the page asked it to.
+const EVENTS = new Set([
+  "practice started", "practice completed",
+  "day goal done",        // the outcome proxy: a family finished all 5 rounds
+  "slp code redeemed",    // which SLPs actually send families
+]);
+const PROPS = new Set(["sound", "game", "duration_seconds", "attempts_count", "code"]);
 
 export async function POST(req: NextRequest) {
   try {

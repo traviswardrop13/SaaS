@@ -495,6 +495,30 @@ await page.evaluate(() => { const g = Sona.getProgress(); g.stage.R = 0; localSt
   ok("the migration is flagged and idempotent", mig.flag === 2 && mig.stable, JSON.stringify(mig));
 }
 
+// ── TRACK1: the goal beacon fires exactly once, the SLP beacon once per code ──
+{
+  await page.addInitScript(() => {
+    window.__beacons = [];
+    navigator.sendBeacon = (url, body) => { try { window.__beacons.push({ url, body: String(body) }); } catch (e) {} return true; };
+  });
+  await page.goto("http://localhost:8131/today.html"); await page.waitForTimeout(600);
+  const goal = await page.evaluate(() => {
+    window.__beacons.length = 0;
+    localStorage.setItem(Sona.kkey("sona.today.v1"), JSON.stringify({ d: Sona.localDay(), n: 0 }));
+    for (let i = 0; i < 7; i++) Sona.rotAdvance();     // through the goal and past it
+    return window.__beacons.filter((b) => b.url === "/api/track" && /day goal done/.test(b.body));
+  });
+  ok("day goal done fires exactly once, at the fifth round", goal.length === 1, "fired " + goal.length + "×");
+  ok("the goal beacon carries the practiced sound", /"sound":"[A-Z]{1,3}"/.test((goal[0] || {}).body || ""), (goal[0] || {}).body);
+
+  await page.goto("http://localhost:8131/today.html?slp=RACHEL1"); await page.waitForTimeout(600);
+  let slp = await page.evaluate(() => window.__beacons.filter((b) => /slp code redeemed/.test(b.body)));
+  ok("a fresh SLP code fires the redemption beacon", slp.length === 1 && /RACHEL1/.test(slp[0].body), JSON.stringify(slp));
+  await page.goto("http://localhost:8131/today.html?slp=RACHEL1"); await page.waitForTimeout(600);
+  slp = await page.evaluate(() => window.__beacons.filter((b) => /slp code redeemed/.test(b.body)));
+  ok("revisiting the same link does NOT re-fire it", slp.length === 0, "fired again on a sticky code");
+}
+
 await browser.close(); srv.close();
 console.log(fails ? fails + " FAILURES" : "ALL GREEN");
 process.exit(fails ? 1 : 0);
