@@ -31,11 +31,19 @@
     var on = ONSET[sound] || sound.toLowerCase();
     return ["ah", "ee", "oo", "oh", "ay"].map(function (v) { return { t: on + v, say: on + v }; });
   }
+  // The prompt is ONE word. This used to rotate a carrier onto the front of it
+  // ("a", "my", "the", "one", "a big", "a little"), which produced "a rain" and
+  // "a robot" — the carrier was applied blindly, so every mass noun and every
+  // non-noun in the bank came out ungrammatical. A five-year-old reading "Say a
+  // rain" is being asked to practise a mistake.
+  //
+  // A real phrase step needs to know which words take which carrier, word by
+  // word. Until that exists, the phrase rung presents the target word alone,
+  // same as the word rung. The seam stays so a hand-checked carrier set can drop
+  // in here later without re-plumbing the ladder.
   function phrases(sound) {
-    var carriers = ["a", "my", "the", "one", "a big", "a little"];
-    return take(targetWords(sound), 6).map(function (w, i) {
-      var c = carriers[i % carriers.length];
-      return { t: c + " " + w.w, say: c + " " + w.w, e: w.e, word: w.w };
+    return take(targetWords(sound), 6).map(function (w) {
+      return { t: w.w, say: w.w, e: w.e, word: w.w };
     });
   }
   function sentences(sound) {

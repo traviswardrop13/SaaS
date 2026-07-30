@@ -83,5 +83,28 @@ for (const page of ["charge.html", "soundcheck.html"]) {
   );
 }
 
+
+// ---- 7. no practice prompt is glued into a phrase ----
+// The phrase rung rotated a carrier onto the front of the target ("a", "my",
+// "the", "one", "a big", "a little"), applied blindly to the whole bank. It
+// produced "a rain" and "a robot": a child shown ungrammatical English to
+// imitate. Sentences are still allowed to be sentences.
+{
+  const gc = readFileSync(ROOT + "/public/gamecontent.js", "utf8");
+  ok(
+    "gamecontent.js builds no carrier phrases",
+    !/carriers\s*=/.test(gc),
+    "a carrier list here is 'a rain' waiting to come back",
+  );
+  const feed = readFileSync(ROOT + "/public/arcade-feed.html", "utf8");
+  // match the CALL, not the words — a comment explaining the removal must not
+  // be able to fail this
+  ok(
+    "Feed Echo speaks no praise on a correct tap",
+    !/if\(fed===\d+\)\s*say\(/.test(feed),
+    "an every-Nth-answer line talks over a child who is about to go again",
+  );
+}
+
 console.log(fails ? fails + " FAILURES" : "ALL GREEN");
 process.exit(fails ? 1 : 0);

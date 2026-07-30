@@ -272,10 +272,13 @@
       var e=$("echo"); e.classList.remove("munch"); void e.offsetWidth; e.classList.add("munch");
       paintScale();
       landOnPlate(w);
-      $("bMain").innerHTML=(fed>=NEED)?"YUM! All full!":["Yum!","Mmm, "+target.w+"!","So tasty!","More please!"][fed%4];
+      $("bMain").innerHTML=(fed>=NEED)?"YUM! All full!":["Yum!","Nice one!","So tasty!","Great!"][fed%4];
       $("bSub").textContent="";
       if((feedState().fed||0)%10===0){ toast("Echo grew bigger!"); }
-      if(fed===3) say("Mmm! "+target.w+"! More please!");
+      // Nothing is spoken on a correct tap. Every third one used to say
+      // "Mmm! <word>! More please!" — it talked over the child right as they
+      // were about to go again, and the next turn's prompt speaks the word
+      // anyway. The munch, the plate and the bubble already say "yes".
       if(fed>=NEED){ setTimeout(finish,900); } else { setTimeout(nextTurn,900); }
     }
     function toast(t){ var el=$("toast"); el.textContent=t; el.classList.add("show"); clearTimeout(toast._t); toast._t=setTimeout(function(){ el.classList.remove("show"); },1800); }
