@@ -325,13 +325,8 @@
       }catch(e){}
       var stk=null; try{ stk=(S&&S.awardNextSticker)?S.awardNextSticker():null; }catch(e){}
       try{ if(S&&S.confetti)S.confetti({count:140}); }catch(e){}
-      // CITY1: Echo's Kitchen is a house with its own serial, and Feed Echo is
-      // its own page — charge.html isn't in the loop, so the chapter has to
-      // advance HERE. Read the hook before advancing, or the kitchen plate sits
-      // on Chapter 1 forever and the story is a promise that never pays off.
-      var hook=""; try{ if(S&&S.houseHook){ hook=S.houseHook("feed")||""; if(S.houseAdvance)S.houseAdvance("feed"); } }catch(e){}
       $("endTitle").textContent=ringDone?"All of today's practice — done!":"Yum! Echo's full — concert time!";
-      $("endSub").textContent=(stk?("You won the "+stk.name+" sticker! "):"")+(stars>0?("Echo heard you "+stars+" time"+(stars===1?"":"s")+"! "):"")+(ringDone?"Come back tomorrow — Echo will have a new adventure ready!":"Echo's growing bigger every day you play!")+(hook?(" "+hook):"");
+      $("endSub").textContent=(stk?("You won the "+stk.name+" sticker! "):"")+(stars>0?("Echo heard you "+stars+" time"+(stars===1?"":"s")+"! "):"")+(ringDone?"Come back tomorrow — Echo will have a new adventure ready!":"Echo's growing bigger every day you play!");
       $("endOvl").classList.add("show");
       sfx("complete");
       // the payoff: Echo's ukulele concert. On a goal-done day the tomorrow

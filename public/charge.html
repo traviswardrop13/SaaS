@@ -153,24 +153,6 @@
     }
 
     /* warm-card overlays */
-    /* ── STORY1: the beat before the round ── */
-    /* near-opaque + blurred: the practice screen behind has its own Echo, and
-       two Echos on screen at once reads as a glitch */
-    #storyCard{position:fixed;inset:0;z-index:70;display:none;align-items:center;justify-content:center;padding:26px;
-      background:linear-gradient(180deg,#1d2a44,#3a2a1a);cursor:pointer;
-      -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);}
-    #storyCard.show{display:flex;animation:scIn .32s ease both;}
-    @keyframes scIn{from{opacity:0}to{opacity:1}}
-    .scInner{max-width:340px;text-align:center;}
-    .scEcho{width:88px;height:88px;object-fit:contain;animation:scFloat 2.6s ease-in-out infinite;}
-    @keyframes scFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
-    .scTtl{font-family:"Baloo 2";font-weight:800;font-size:13px;letter-spacing:.09em;text-transform:uppercase;
-      color:#ffd21c;margin-top:10px;}
-    .scTxt{font-family:"Baloo 2";font-weight:800;font-size:23px;line-height:1.35;color:#fff;margin-top:10px;
-      text-shadow:0 2px 12px rgba(0,0,0,.35);}
-    .scTap{margin-top:20px;font-weight:800;font-size:12px;color:rgba(255,255,255,.55);letter-spacing:.04em;}
-    @media (prefers-reduced-motion:reduce){ .scEcho{animation:none} #storyCard.show{animation:none} }
-
     .ovl{position:fixed;inset:0;z-index:60;background:rgba(74,44,20,.45);display:none;align-items:center;justify-content:center;padding:24px;}
     .ovl.show{display:flex;}
     .ovlCard{background:var(--cream);border-radius:28px;padding:56px 20px 22px;width:100%;max-width:340px;text-align:center;box-shadow:0 18px 40px rgba(74,44,20,.35);position:relative;display:flex;flex-direction:column;align-items:center;gap:10px;}
@@ -262,14 +244,6 @@
   </div>
 
   <!-- run complete -->
-  <!-- STORY1: the story beat that opens each daily round. Sits above the
-       practice screen, clears itself, and never needs a tap to get past. -->
-  <div id="storyCard">
-    <div class="scInner">
-      <img class="scEcho" src="/coach/echo/echo-idle.svg" alt="" />
-      <div class="scTtl" id="storyTtl"></div>
-      <div class="scTxt" id="storyTxt"></div>
-      <div class="scTap">tap to keep going</div>
     </div>
   </div>
 
@@ -336,27 +310,8 @@
       } else { SOUND=(run.sound||SOUND).toUpperCase(); LEVEL=run.level||LEVEL; }
       if(run&&run.active&&run.round>=DAILY_SEQ.length){ finishedNow=true; }
     }
-    // CITY1: a session belongs to a HOUSE. ?house=<key> pins every round to
-    // that house's one game, so the child stays behind the door they chose and
-    // the house's storyline is the story they get. Without it the daily run
-    // still rotates game-per-round (the pre-city behaviour), and free play
-    // still honours ?game=.
-    var HOUSE = qp.get("house")||"";
-    // A returning round comes back from the arcade as ?daily=1&banked=N with no
-    // house param, so the RUN remembers which door the child went in — six
-    // arcade files don't each have to forward it.
-    if(isDaily&&run&&run.active){
-      if(HOUSE) run.house=HOUSE; else HOUSE=run.house||"";
-      runSave(run);
-    }
-    var HOUSEGAME=""; try{ HOUSEGAME=(S&&S.houseGame)?S.houseGame(HOUSE):""; }catch(e){}
-    if(HOUSEGAME && !GAMES[HOUSEGAME]) HOUSEGAME="";     // "story" has no arcade file
-    var GAME = HOUSEGAME || (isDaily ? DAILY_SEQ[Math.min(run?run.round:0,DAILY_SEQ.length-1)] : (freeGame||"arcade-slice.html"));
+    var GAME = isDaily ? DAILY_SEQ[Math.min(run?run.round:0,DAILY_SEQ.length-1)] : (freeGame||"arcade-slice.html");
     var GMETA=GAMES[GAME];
-    // the house whose story runs: the one asked for, else the one this game
-    // lives in. Free play inside a house gets its story too — the unfinished
-    // thread IS why a child picks that door.
-    var STORYHOUSE=""; try{ STORYHOUSE=(HOUSE&&S&&S.houseArcLen&&S.houseArcLen(HOUSE))?HOUSE:((S&&S.houseOf)?S.houseOf(GAME):""); }catch(e){}
 
     // ---- content: SLP progression. Every round climbs the ladder the way a
     // session would — round 1 warms up in isolation (rrr), round 2 moves to
@@ -862,57 +817,18 @@
         });
       });
     }
-    // ---- CITY1: the beat before the round ----
-    // Every house runs its own serial. One short line lands before each round —
-    // chapter title on round 1, a bridge after that — then it clears itself and
-    // practice begins. Deliberately tiny: a card a child must dismiss is a tax
-    // on the thing they came to do.
-    function storyBeat(){
-      return new Promise(function(resolve){
-        if(!STORYHOUSE || !(S&&S.houseBeat)) return resolve();
-        var rd=(isDaily&&run)?(run.round|0):0, txt="", ttl="";
-        try{
-          txt=S.houseBeat(STORYHOUSE,rd);
-          ttl=(rd<=0)?("Chapter "+S.houseChapterNum(STORYHOUSE)+" · "+S.houseChapter(STORYHOUSE).t):"";
-        }catch(e){ return resolve(); }
-        if(!txt) return resolve();
-        var card=$("storyCard"); if(!card) return resolve();
-        try{
-          $("storyTtl").textContent=ttl; $("storyTtl").style.display=ttl?"block":"none";
-          $("storyTxt").textContent=txt;
-          card.classList.add("show");
-        }catch(e){ return resolve(); }
-
-        // The round must NOT start until this line has finished speaking.
-        // playPrompt() plays its clip through `new Audio()`, a separate path
-        // from say()'s queue, so an un-awaited beat put two voices on top of
-        // each other. Tapping hides the card early but never cuts the audio —
-        // the prompt still waits, so there is only ever one voice.
-        var hidden=false, settled=false;
-        function hide(){ if(hidden)return; hidden=true; try{ card.classList.remove("show"); }catch(e){} }
-        function finish(){ if(settled)return; settled=true; hide(); setTimeout(resolve,200); }
-        card.onclick=hide;
-
-        var spoke;
-        try{ spoke=(profile.voiceOn!==false)?say(txt):Promise.resolve(); }catch(e){ spoke=Promise.resolve(); }
-        // a minimum beat so a failed/instant TTS doesn't just flash the card
-        var minShow=new Promise(function(r2){ setTimeout(r2, rd<=0?2400:1900); });
-        // hard cap: a stuck TTS can never hang the round
-        var cap=new Promise(function(r3){ setTimeout(r3, 11000); });
-        Promise.race([Promise.all([spoke,minShow]), cap]).then(finish, finish);
-      });
-    }
-
+    // No story card before a round. The games are the games: a child taps in
+    // and practices. Story beats used to land here (STORY1, then per-house in
+    // CITY1) and they bought a card the child had to sit through every round.
+    // The one forward-looking line survives on the WIN overlay, where it costs
+    // nothing and still gives a reason to come back tomorrow.
     async function flow(){
-      // Order matters and it is not obvious. The primer explains the mic and
-      // must hand STRAIGHT to the OS prompt — anything in between and the
-      // browser dialog appears seconds after the tap that asked for it. The
-      // story beat therefore lands after the mic is settled, which also means a
-      // denied mic never plays a story card it's about to abandon.
+      // The primer explains the mic and hands STRAIGHT to the OS prompt —
+      // anything in between and the browser dialog appears seconds after the
+      // tap that asked for it.
       await micPrimer();
       try{ micStream=await navigator.mediaDevices.getUserMedia({audio:true,video:false}); try{ localStorage.setItem("sona.micok","1"); }catch(e){} }
       catch(e){ micGo(false); if(S&&S.micDenied)S.micDenied({back:"/today.html"}); return; }
-      await storyBeat();   // CITY1: this house's next line, then straight to practice
       tele("practice started",{sound:SOUND,game:GMETA.n});
       // Leo speaks the prompt ONCE, then the mic is instantly hot.
       await playPrompt();
@@ -1051,11 +967,11 @@
       $("runBest").textContent=r.newBest?"NEW BEST!":("Best ever: "+r.best);
       $("runEmoji").innerHTML=(window.Sona&&Sona.icon)?Sona.icon("star",56):"";
       $("runTitle").textContent=r.newBest?"NEW HIGH SCORE!":"You did it!";
-      // CITY1: read this house's hook BEFORE advancing it, so the next visit
-      // opens on the chapter the cliffhanger just promised. Each house keeps its
-      // own place, so finishing here never moves another house's story.
+      // The one line of story that survives: read the hook BEFORE advancing, so
+      // tomorrow opens on the chapter this cliffhanger just promised. It plays
+      // on the win overlay only — never mid-practice.
       var hook="";
-      try{ if(STORYHOUSE&&S.houseHook){ hook=S.houseHook(STORYHOUSE); if(S.houseAdvance)S.houseAdvance(STORYHOUSE); } }catch(e){}
+      try{ if(S.episodeHook){ hook=S.episodeHook(); if(S.episodeAdvance)S.episodeAdvance(); } }catch(e){}
       if(hook){ try{ $("runHookTxt").textContent=hook; $("runHook").style.display="block"; }catch(e){} }
       $("runOvl").classList.add("show");
       sfx("complete"); try{ if(S.confetti)S.confetti(); }catch(e){}
