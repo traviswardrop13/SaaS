@@ -178,5 +178,26 @@ for (const page of ["charge.html", "soundcheck.html"]) {
     "the page promised something analytics.js does not do");
 }
 
+
+// ---- 10. ADS1: the landing page funnels to the App Store ----
+// Meta ads point at speaksona.com; the page's one job is the App Store tap.
+// A leftover checkout CTA or a price claim while FREE_MODE ships is both a
+// conversion leak and an ad-review problem.
+{
+  const landing = readFileSync(ROOT + "/app/page.tsx", "utf8");
+  ok("landing CTAs link the App Store listing",
+    /apps\.apple\.com\/app\/id6785755867/.test(landing), "the ad click must end at the store");
+  ok("no checkout CTA left on the landing",
+    !/\/api\/checkout/.test(landing), "a checkout link on a free app's ad page");
+  ok("no price claims while the app is free",
+    !/39\.99/.test(landing), "an ad landing page must not contradict the store listing");
+  ok("App Store taps fire the ad-optimizable event",
+    /apps\.apple\.com[^`]*AppStoreClick/.test(landing), "Meta needs a conversion to optimize toward");
+  const pixel = readFileSync(ROOT + "/public/pixel.js", "utf8");
+  ok("custom Meta events ride trackCustom, standard ones ride track",
+    /trackCustom/.test(pixel) && /STANDARD\[event\]/.test(pixel),
+    "fbq('track') with a non-standard name gets flagged in Events Manager");
+}
+
 console.log(fails ? fails + " FAILURES" : "ALL GREEN");
 process.exit(fails ? 1 : 0);

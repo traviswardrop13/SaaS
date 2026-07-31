@@ -29,7 +29,12 @@
   fbq("init", META_PIXEL_ID);
   fbq("track", "PageView");
 
+  // Meta splits the API: fbq("track") is ONLY for its standard event names;
+  // anything else must go through trackCustom or Events Manager flags it.
+  // Custom events (e.g. AppStoreClick) still work for custom conversions and
+  // ad optimization — they just ride the other call.
+  var STANDARD = { PageView: 1, ViewContent: 1, Lead: 1, CompleteRegistration: 1, InitiateCheckout: 1, AddToCart: 1, Purchase: 1, Subscribe: 1, StartTrial: 1, Contact: 1, Search: 1 };
   window.sonaTrack = function (event, params) {
-    try { fbq("track", event, params || {}); } catch (e) {}
+    try { fbq(STANDARD[event] ? "track" : "trackCustom", event, params || {}); } catch (e) {}
   };
 })();
