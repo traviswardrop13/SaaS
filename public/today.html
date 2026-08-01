@@ -237,7 +237,11 @@
     function currentLevel(){ try{ return (S&&S.unlockedThru)?Math.max(1,S.unlockedThru()):1; }catch(e){ return 1; } }
 
     $("hiName").textContent="Hi"+(P.childName?", "+P.childName:"")+"!";
-    $("subLine").textContent="Let's practice your "+((S&&S.soundLabel)?S.soundLabel(sound):sound)+" sound";
+    // PLAY1: a play family never chose a sound to "practice" — the greeting is
+    // about the games, not a target
+    $("subLine").textContent=(S&&S.playMode&&S.playMode())
+      ? "Let's play some talking games!"
+      : "Let's practice your "+((S&&S.soundLabel)?S.soundLabel(sound):sound)+" sound";
     try{ var _tr=(S&&S.todayRing)?S.todayRing():null;
       // tomorrow-hook (the one safe streak borrowing): the completed state
       // points forward, never at a breakable number
@@ -329,8 +333,10 @@
     // ── library ──
     $("libBtn").onclick=function(){ sfx("tap"); location.href="/library.html"; };
 
-    // first-time Sound Check nudge — disappears forever once one check exists
-    try{ if(S&&S.lastCheck&&!S.lastCheck()) $("checkNudge").style.display="flex"; }catch(e){}
+    // first-time Sound Check nudge — disappears forever once one check exists.
+    // Hidden in play mode: "Echo listens and builds the plan" is the clinical
+    // framing the play door exists to avoid.
+    try{ if(S&&S.lastCheck&&!S.lastCheck()&&!(S.playMode&&S.playMode())) $("checkNudge").style.display="flex"; }catch(e){}
     // weekly volume sync — anonymous {id, week, rep count}, throttled in sona.js
     try{ if(S&&S.repsBeacon) S.repsBeacon(); }catch(e){}
     // App Store build: quiet entitlement sync (restores/reinstalls stay unlocked)

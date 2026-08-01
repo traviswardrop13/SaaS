@@ -35,13 +35,15 @@ const ob = await page.evaluate(() => ({
   preselected: !!document.querySelector("#obBuddies .bopt.on"),
 }));
 ok("beta step removed", !ob.betaStep);
-ok("9 progress segments (role step added)", ob.segs === 9);
+ok("10 progress segments (role + path steps)", ob.segs === 10);
 ok("buddy preselected (Pip)", ob.preselected);
 // real walk: click through every step to finish()
 const clickNext = async () => { await page.evaluate(() => document.getElementById("nextBtn").click()); await page.waitForTimeout(250); };
 await clickNext(); // welcome →
 await page.evaluate(() => document.querySelector('#obRole .choice[data-val="parent"]').click());
 await clickNext(); // role →
+await page.evaluate(() => document.querySelector('#obPath .choice[data-val="speech"]').click());
+await clickNext(); // path →
 await page.evaluate(() => { document.getElementById("obName").value = "Milo"; });
 await clickNext(); // name →
 await clickNext(); // buddy →
@@ -78,7 +80,12 @@ const nameStep = await page.evaluate(() => document.querySelector('[data-step="n
 ok("name question carries justification microcopy", /cheers them on by name/.test(nameStep));
 await clickNext(); // welcome →
 await page.evaluate(() => document.querySelector('#obRole .choice[data-val="slp"]').click());
-await clickNext(); // role → (this walk is an SLP)
+await clickNext(); // role → (this walk is an SLP — the play door is SKIPPED)
+const slpSkip = await page.evaluate(() => ({
+  onPath: document.querySelector('[data-step="path"]').classList.contains("on"),
+  onName: document.querySelector('[data-step="name"]').classList.contains("on"),
+}));
+ok("an SLP never sees the play door", !slpSkip.onPath && slpSkip.onName, JSON.stringify(slpSkip));
 await page.evaluate(() => { document.getElementById("obName").value = "Zoe"; });
 await clickNext(); // name →
 await clickNext(); // buddy →
@@ -103,6 +110,61 @@ const skipFin = await page.evaluate(() => ({
 ok("email skip still finishes onboarding (no gate)", skipFin.achieveShown && skipFin.prof.onboarded === true && skipFin.prof.email === "" && skipFin.prof.childName === "Zoe");
 ok("open sound picker: S saved next to R", (skipFin.prof.focusSounds || []).includes("S") && (skipFin.prof.focusSounds || []).includes("R"));
 ok("role is captured (SLP)", skipFin.prof.role === "slp", JSON.stringify(skipFin.prof.role));
+
+// ── PLAY1: the play door — no sound picker, every sound, easiest first ──
+// The niece case: a kid who doesn't need speech help still gets the games.
+// The picker IS the clinical framing, so the play path must never show it.
+await page.evaluate(() => { localStorage.clear(); sessionStorage.clear(); });
+await page.goto("http://localhost:8129/onboarding.html"); await page.waitForTimeout(900);
+await clickNext(); // welcome →
+await page.evaluate(() => document.querySelector('#obRole .choice[data-val="parent"]').click());
+await clickNext(); // role →
+await page.evaluate(() => document.querySelector('#obPath .choice[data-val="play"]').click());
+await clickNext(); // path →
+await page.evaluate(() => { document.getElementById("obName").value = "Nora"; });
+await clickNext(); // name →
+await clickNext(); // buddy →
+await clickNext(); // interests → (sounds is SKIPPED; the build beat fires here)
+const playSkip = await page.evaluate(() => ({
+  onSounds: document.querySelector('[data-step="sounds"]').classList.contains("on"),
+  onGoal: document.querySelector('[data-step="goal"]').classList.contains("on"),
+  build: (document.getElementById("obBuild") || {}).textContent || "",
+}));
+ok("play path skips the sound picker entirely", !playSkip.onSounds && playSkip.onGoal, JSON.stringify(playSkip));
+ok("the build beat says play list, not sound plan", /Nora's play list/.test(playSkip.build), playSkip.build);
+await clickNext(); // goal →
+await clickNext(); // slp →
+await page.evaluate(() => document.getElementById("obEmailSkip").click());
+await page.waitForTimeout(500);
+const playProf = await page.evaluate(() => JSON.parse(localStorage.getItem("sona.profile.v1") || "{}"));
+ok("play mode is recorded", playProf.mode === "play", playProf.mode);
+ok("play rotation covers every sound", (playProf.focusSounds || []).length === 19, String((playProf.focusSounds || []).length));
+ok("easiest sounds first, R last", playProf.focusSounds[0] === "P" && playProf.focusSounds[18] === "R", JSON.stringify([playProf.focusSounds[0], playProf.focusSounds[18]]));
+
+// the home greeting drops the clinical framing, and the Sound Check nudge stays hidden
+await page.goto("http://localhost:8129/today.html"); await page.waitForTimeout(700);
+const playHome = await page.evaluate(() => ({
+  sub: document.getElementById("subLine").textContent,
+  nudge: getComputedStyle(document.getElementById("checkNudge")).display,
+  firstSound: Sona.rotSound(),
+}));
+ok("play greeting talks about games, not a target sound", /talking games/i.test(playHome.sub), playHome.sub);
+ok("the Sound Check nudge stays hidden in play mode", playHome.nudge === "none", playHome.nudge);
+ok("the rotation starts on the easiest sound", playHome.firstSound === "P", playHome.firstSound);
+
+// Settings: the play note shows, and hand-picking sounds moves to focus mode
+await page.evaluate(() => { try { Sona.gateVerify(); } catch (e) {} });
+await page.goto("http://localhost:8129/settings.html"); await page.waitForTimeout(700);
+const noteShown = await page.evaluate(() => getComputedStyle(document.getElementById("playNote")).display !== "none");
+ok("Settings shows the play-mode note", noteShown);
+await page.evaluate(() => {
+  const chips = [...document.querySelectorAll("#sounds .sound")];
+  chips.filter((b) => !/^R\b/.test(b.textContent.trim())).slice(0, 18).forEach((b) => b.click()); // deselect all but one
+  document.getElementById("save").click();
+});
+await page.waitForTimeout(300);
+const flipped = await page.evaluate(() => JSON.parse(localStorage.getItem("sona.profile.v1") || "{}").mode);
+ok("hand-picking sounds exits play mode", flipped === "speech", flipped);
 
 // ── pulse: shows on 3rd visit for early adopters, chip-first, X cools 14d ──
 fbPosts = []; errs = [];

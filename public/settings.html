@@ -70,6 +70,12 @@
       <input id="parentPin" type="text" inputmode="numeric" maxlength="6" placeholder="e.g. 2468" />
 
       <div class="field">Focus sounds</div>
+      <!-- PLAY1: a play-mode family rotates through every sound; picking
+           specific chips below switches them to focus mode. -->
+      <div id="playNote" style="display:none;background:#fff6e9;border-radius:14px;padding:11px 14px;margin-bottom:10px;font-weight:800;font-size:12.5px;color:var(--muted);">
+        🎲 <b style="color:var(--ink);">Play mode</b> — Echo rotates through every sound, easiest first.
+        Picking sounds below switches to focus mode. <a href="#" id="playKeep" style="font-weight:800;">Stay in play mode</a>
+      </div>
       <div class="sounds" id="sounds"></div>
       <div id="voteRow" style="margin-top:12px;background:#fff6e9;border-radius:14px;padding:12px 14px;">
         <b style="font-family:'Baloo 2';font-weight:800;font-size:14px;color:var(--ink);">Which sound should get new books &amp; games next?</b>
@@ -282,8 +288,29 @@
       b.onclick = function () { if (sel.has(s)) { if (sel.size > 1) { sel.delete(s); b.classList.remove("on"); } } else { sel.add(s); b.classList.add("on"); } };
       wrap.appendChild(b);
     });
+    // PLAY1: the note shows in play mode; changing the chips is how a family
+    // moves to focus mode (the save below records it), and "stay in play mode"
+    // restores the full developmental rotation.
+    (function(){
+      var note=document.getElementById("playNote"); if(!note) return;
+      if(p.mode==="play") note.style.display="block";
+      var keep=document.getElementById("playKeep");
+      if(keep) keep.onclick=function(ev){ ev.preventDefault();
+        sel=new Set(Sona.PLAY_ORDER);
+        wrap.querySelectorAll(".sound").forEach(function(b){ b.classList.add("on"); });
+        Sona.saveProfile({ mode:"play", focusSounds: Sona.PLAY_ORDER.slice() });
+        var sv=document.getElementById("saved"); sv.style.display="inline"; setTimeout(function(){ sv.style.display="none"; },1800);
+      };
+    })();
     document.getElementById("save").onclick = function () {
-      Sona.saveProfile({ childName: childEl.value.trim(), childAge: ageEl.value, parentPin: (document.getElementById("parentPin").value||"").replace(/\D/g,"").slice(0,6), coachName: coachEl.value.trim() || "Coach", voiceOn: voiceEl.checked, soundOn: soundEl.checked, musicOn: musicEl.checked, cloudScoring: cloudEl.checked, dailyMinutes: parseInt(dailyEl.value, 10) || 5, volume: parseFloat(volEl.value) || 0.8, focusArea: focusAreaEl.value, slpEvaluated: slpEl.value, goals: goalsEl.value.trim(), practicePosition: posEl.value, focusSounds: [].concat(Array.from(sel)) });
+      // a play family that hand-picks sounds has chosen focus mode — record it,
+      // or the picker and the greeting copy contradict each other
+      var pickedMode = p.mode;
+      if (p.mode === "play") {
+        var stillAll = sel.size === Sona.PLAY_ORDER.length;
+        if (!stillAll) pickedMode = "speech";
+      }
+      Sona.saveProfile({ mode: pickedMode || "speech", childName: childEl.value.trim(), childAge: ageEl.value, parentPin: (document.getElementById("parentPin").value||"").replace(/\D/g,"").slice(0,6), coachName: coachEl.value.trim() || "Coach", voiceOn: voiceEl.checked, soundOn: soundEl.checked, musicOn: musicEl.checked, cloudScoring: cloudEl.checked, dailyMinutes: parseInt(dailyEl.value, 10) || 5, volume: parseFloat(volEl.value) || 0.8, focusArea: focusAreaEl.value, slpEvaluated: slpEl.value, goals: goalsEl.value.trim(), practicePosition: posEl.value, focusSounds: [].concat(Array.from(sel)) });
       var s = document.getElementById("saved"); s.style.display = "inline"; setTimeout(function () { s.style.display = "none"; }, 1800);
     };
     document.getElementById("reset").onclick = function () {

@@ -125,6 +125,24 @@
       </div>
     </div>
 
+    <!-- PLAY1: the play door. Two front doors, one engine — "we're working on
+         sounds" (the speech path, pick targets) vs "just for fun" (every sound,
+         easiest first, zero clinical framing). SLPs never see this step. -->
+    <div class="step" data-step="path">
+      <div class="qh">What brings you here?</div>
+      <p class="muted">Both get the same games — this just sets how Echo picks the sounds.</p>
+      <div class="choices" id="obPath" style="margin-top:14px;">
+        <div class="choice" data-val="speech">
+          <b>We're working on specific sounds</b>
+          <span>Pick the sounds — the games aim right at them.</span>
+        </div>
+        <div class="choice" data-val="play">
+          <b>Just for fun — letter sounds &amp; talking games</b>
+          <span>No goals needed. Echo plays through every sound, easiest first.</span>
+        </div>
+      </div>
+    </div>
+
     <!-- name -->
     <div class="step" data-step="name">
       <div class="qh">Who's practicing today?</div>
@@ -223,6 +241,7 @@
       // only a profile that finished onboarding carries a real sound CHOICE —
       // a fresh one holds the legacy default list, so new families start at R
       role: p.role || "",
+      mode: p.mode || "",
       focusSounds: (p.onboarded && p.focusSounds && p.focusSounds.length) ? p.focusSounds.slice() : ["R"],
       slpEvaluated: p.slpEvaluated || "",
       goals: p.goals || "",
@@ -230,10 +249,11 @@
       interests: (p.interests && p.interests.length) ? p.interests.slice() : [],
     };
 
-    var ORDER = ["welcome","role","name","buddy","interests","sounds","goal","slp","email"];
+    var ORDER = ["welcome","role","path","name","buddy","interests","sounds","goal","slp","email"];
     var BUBBLES = {
       welcome: "Hi! I'm Echo!",
       role:    "Who am I meeting?",
+      path:    "What are we here for?",
       name:    "Nice to meet you!",
       buddy:   "Who should practice with you?",
       interests: "Ooh, what do you love?",
@@ -355,6 +375,16 @@
         };
       });
     })();
+    // PLAY1: the play door choice
+    (function(){
+      var pw=document.getElementById("obPath"); if(!pw)return;
+      pw.querySelectorAll(".choice").forEach(function(ch){
+        if(ch.dataset.val===draft.mode) ch.classList.add("on");
+        ch.onclick=function(){ Sona.sfx.tap(); draft.mode=ch.dataset.val;
+          pw.querySelectorAll(".choice").forEach(function(n){n.classList.remove("on");}); ch.classList.add("on");
+        };
+      });
+    })();
     // an SLP is setting this up FOR a child, so the wording shifts from
     // "your child" to "this child" — small, but it's the difference between
     // software that knows who it's talking to and software that doesn't
@@ -416,6 +446,11 @@
       if(key==="email"){ var em=(emailEl.value||"").trim(); if(!/^\S+@\S+\.\S+$/.test(em)){ emailEl.focus(); emailEl.style.borderColor="#ef6f23"; var ee=document.getElementById("emErr"); ee.style.display="block"; ee.textContent="Please enter a valid email to save progress."; return; } draft.email=em; }
       Sona.sfx.tap();
       if(key==="sounds") showBuild(); // the plan "builds" while the next question paints
+      // PLAY1 skips: an SLP never sees the play door (their whole job is
+      // specific sounds), and a play family never sees the sound picker (the
+      // picker IS the clinical framing the play door removes).
+      if(key==="role" && draft.role==="slp"){ draft.mode="speech"; idx+=2; render(); return; }
+      if(key==="interests" && draft.mode==="play"){ showBuild(); idx+=2; render(); return; }
       if(idx < ORDER.length-1){ idx++; render(); return; }
       finish();
     }
@@ -435,13 +470,24 @@
             +'<div class="muted" style="font-weight:800;font-size:13.5px;" id="obBuildS"></div>';
           document.body.appendChild(d);
         }
-        document.getElementById("obBuildT").textContent="Building "+nm+"'s sound plan…";
-        document.getElementById("obBuildS").textContent="Tuning the games for "+(snds||"their sounds");
+        if(draft.mode==="play"){
+          document.getElementById("obBuildT").textContent="Building "+nm+"'s play list…";
+          document.getElementById("obBuildS").textContent="Every sound in the game — easiest first";
+        } else {
+          document.getElementById("obBuildT").textContent="Building "+nm+"'s sound plan…";
+          document.getElementById("obBuildS").textContent="Tuning the games for "+(snds||"their sounds");
+        }
         requestAnimationFrame(function(){ d.classList.add("show"); });
         setTimeout(function(){ d.classList.remove("show"); },1800);
       }catch(e){}
     }
-    function back(){ if(idx>0){ Sona.sfx.tap(); idx--; render(); } }
+    function back(){
+      if(idx<=0) return;
+      Sona.sfx.tap(); idx--;
+      if(ORDER[idx]==="sounds" && draft.mode==="play") idx--;
+      if(ORDER[idx]==="path" && draft.role==="slp") idx--;
+      render();
+    }
     // Email stays the default ask (it's the ad-funnel lead), but never a gate:
     // Duolingo ABC's equivalent step is skippable ("NOT NOW") and no winning
     // kids' flow hard-gates on an account. Skipping still finishes onboarding.
@@ -450,7 +496,7 @@
     })();
 
     function finish(){
-      draft.focusSounds = Array.from(selSounds);
+      draft.focusSounds = (draft.mode==="play" && Sona.PLAY_ORDER) ? Sona.PLAY_ORDER.slice() : Array.from(selSounds);
       draft.interests = Array.from(selInterests);
       var _slp=""; try{ _slp=(Sona.slpCode&&Sona.slpCode())||""; }catch(e){}
       Sona.saveProfile({
@@ -459,6 +505,7 @@
         earlyAdopter: !!_slp,
         slpCode: _slp,
         role: draft.role || "parent",
+        mode: draft.mode || "speech",
         childName: draft.childName,
         childAge: draft.childAge || "",
         character: draft.character,
@@ -480,7 +527,7 @@
           var utm=(window.Sona&&Sona.utm)?(Sona.utm()||{}):{};
           fetch("/api/lead",{method:"POST",headers:{"Content-Type":"application/json"},keepalive:true,body:JSON.stringify({
             email:draft.email, child:draft.childName, practice:draft.focusSounds, source:"onboarding",
-            summary:"New parent signup — practicing "+((draft.focusSounds||[]).join(", ")||"sounds"),
+            summary: draft.mode==="play" ? "New parent signup — play mode (all letter sounds)" : ("New parent signup — practicing "+((draft.focusSounds||[]).join(", ")||"sounds")),
             utm_source:utm.utm_source, utm_medium:utm.utm_medium, utm_campaign:utm.utm_campaign, utm_content:utm.utm_content, utm_term:utm.utm_term, referrer:utm.referrer, landing:utm.landing
           })}).catch(function(){});
         }
