@@ -931,7 +931,7 @@
   // Maximizes signups while the product is being validated. Stored locally and
   // mirrored to KV (/api/trial) so it survives a device switch and the day-6
   // nudge job can find expiring trials. Stripe charges only on conversion.
-  const TRIALKEY = "sona.trial.v1", TRIAL_DAYS = 7;
+  const TRIALKEY = "sona.trial.v1", TRIAL_DAYS = 3;
   function getTrial() { return load(TRIALKEY, null); }
   function trialMs(t) { return (((t && t.days) || TRIAL_DAYS)) * 86400000; }
   function mirrorTrial(t) { try { fetch("/api/trial", { method: "POST", headers: { "Content-Type": "application/json" }, keepalive: true, body: JSON.stringify({ email: t.email || "", start: t.start, days: t.days || TRIAL_DAYS }) }).catch(function () {}); } catch (e) {} }
@@ -953,12 +953,22 @@
   // subscribe UI is hidden there. The web paywall is completely unchanged.
   function isNativeApp() { try { return !!(window.Capacitor && (typeof window.Capacitor.isNativePlatform === "function" ? window.Capacitor.isNativePlatform() : true)); } catch (e) { return false; } }
 
-  // Launch gate: subscribers/pilots are always in; everyone else gets a 7-day
-  // free trial, then the paywall. (Library, customize, progress stay open.)
-  // Native app: never gate — it's free with no in-app purchase.
+  // Launch gate: subscribers, pilots and founding families (SLP-referred —
+  // that free-forever promise IS the SLP channel) are always in; everyone else
+  // gets a 3-day free trial, then the paywall. (Library, customize, progress
+  // stay open.) The native shell gates exactly like the web now — the old
+  // "native never gates" bypass predates the Apple IAP rail and would have
+  // made the App Store build free forever with an ignorable paywall.
   // FREE MODE first: nothing is gated, so a kid page can never bounce to a
   // price screen mid-play (the audit caught Story Time doing exactly that).
-  function gated() { if (isFree()) return false; if (isNativeApp()) return false; if (isSubscribed() || isPilot()) return false; ensureTrial(); return trialExpired(); }
+  // Gates fire at PAGE LOAD only, never mid-round.
+  function gated() {
+    if (isFree()) return false;
+    if (isSubscribed() || isPilot()) return false;
+    try { if (getProfile().earlyAdopter) return false; } catch (e) {}
+    ensureTrial();
+    return trialExpired();
+  }
   // Verify a subscription by email (Stripe is the source of truth) and cache it,
   // so a paid family can unlock on a new device / after clearing storage.
   // SECURITY (F7, founder review): email-only is a weak second factor — the
@@ -1746,12 +1756,12 @@
   // entitlement. The appl_ key is publishable by design.
   // NOTE: this product id is already App Store-approved; the price lives in
   // App Store Connect, and the paywall renders whatever ASC reports.
-  // ── FREE MODE (SLP-first launch) ───────────────────────────────────────
-  // Sona is free right now: the go-to-market is clinicians handing it to their
-  // whole caseload, and a price on the door kills that at the first step.
-  // ONE switch, honoured by every purchase surface — onboarding's hand-off,
-  // the plan screen, Settings, and the trial page. Flip to false and the
-  // paid rails (already built and tested) come back with no other edits.
+  // ── FREE MODE ──────────────────────────────────────────────────────────
+  // OFF: pricing is live — $9.99/mo or $59.99/yr after a 3-day free trial.
+  // ONE switch, honoured by every purchase surface. Two cohorts stay free
+  // forever regardless of this flag: SLP-referred families (earlyAdopter via
+  // ?slp= links — that promise IS the SLP channel) and pilots. Flip back to
+  // true and every price disappears again with no other edits.
   // Recorded human model clips (/coach/say/<SOUND>[-demo].mp3) are Rachel's own
   // voice. OFF everywhere until a non-Rachel set exists. This MUST live here,
   // not per-page: charge.html gated it locally and coach-call.html went on
@@ -1774,7 +1784,7 @@
   const HUMAN_CLIPS = false;
   function humanClipsOn() { return HUMAN_CLIPS; }
 
-  const FREE_MODE = true;
+  const FREE_MODE = false;
   // QA seam: ?paid=1 (or the sticky sona.paidui flag) reveals the purchase
   // rails on this device so the paid path stays exercisable — and TESTED —
   // while free mode ships. It only controls VISIBILITY; it can't unlock
@@ -1791,7 +1801,12 @@
   }
 
   const IAP_KEY = "appl_nONRfALUCMiZczeCggXKEusmVtl";
-  const IAP_PRODUCT = "com.speaksona.app.annual";
+  // Two auto-renewable products in the "full" entitlement. The annual id is
+  // the ORIGINAL one — its price changes in App Store Connect ($39.99 →
+  // $59.99, existing subscribers preserved), so early buyers keep their rate
+  // without any code caring.
+  const IAP_PRODUCTS = { annual: "com.speaksona.app.annual", monthly: "com.speaksona.app.monthly" };
+  const IAP_PRODUCT = IAP_PRODUCTS.annual;
   const IAP_TYPE = "subs"; // auto-renewable subscription
   const IAP_ENTITLEMENT = "full";
   function iapPlugin() {
@@ -1808,21 +1823,24 @@
     try { const e = info && (info.customerInfo || info); return !!(e && e.entitlements && e.entitlements.active && e.entitlements.active[IAP_ENTITLEMENT]); } catch (e2) { return false; }
   }
   function _iapUnlock() { saveSub({ active: true, source: "apple", since: Date.now() }); }
-  // fetch the live product (price string comes from the App Store, locale-correct)
-  function iapProduct() {
+  // fetch the live product (price string comes from the App Store, locale-
+  // correct). kind: "annual" (default) | "monthly".
+  function iapProduct(kind) {
+    const id = IAP_PRODUCTS[kind || "annual"] || IAP_PRODUCT;
     return iapConfigure().then((P) =>
-      Promise.resolve(P.getProducts({ productIdentifiers: [IAP_PRODUCT], type: IAP_TYPE }))
-        .catch(() => P.getProducts({ productIdentifiers: [IAP_PRODUCT] }))
+      Promise.resolve(P.getProducts({ productIdentifiers: [id], type: IAP_TYPE }))
+        .catch(() => P.getProducts({ productIdentifiers: [id] }))
         .then((r) => (r && r.products && r.products[0]) || null)
     );
   }
   // buy: try the modern API first, fall back across plugin versions
-  function iapPurchase() {
+  function iapPurchase(kind) {
+    const id = IAP_PRODUCTS[kind || "annual"] || IAP_PRODUCT;
     return iapConfigure().then((P) =>
-      iapProduct().then((product) => {
+      iapProduct(kind).then((product) => {
         const attempts = [];
         if (product && P.purchaseStoreProduct) attempts.push(() => P.purchaseStoreProduct({ product }));
-        if (P.purchaseProduct) attempts.push(() => P.purchaseProduct({ productIdentifier: IAP_PRODUCT, type: IAP_TYPE }));
+        if (P.purchaseProduct) attempts.push(() => P.purchaseProduct({ productIdentifier: id, type: IAP_TYPE }));
         let p = Promise.reject(new Error("no-purchase-api"));
         attempts.forEach((fn) => { p = p.catch(fn); });
         return p;

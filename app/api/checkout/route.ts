@@ -4,24 +4,42 @@ import Stripe from "stripe";
 /**
  * Creates a Stripe Checkout Session for Sona.
  *
- * ONE offer: $39.99 per year with a 7-day free trial. Charging on the web
- * (Stripe) keeps ~97% of revenue vs Apple's cut. Any legacy `plan` value
- * (monthly, founding, lifetime — retired tiers) is ignored; every checkout
- * sells the same yearly plan, so old links never break. Set
- * STRIPE_PRICE_ID_ANNUAL79 to use a real Price object instead of the inline
- * price below.
+ * TWO offers: $59.99/year with a 3-day free trial, or $9.99/month billed
+ * immediately (no trial — the trial is the yearly plan's perk). Charging on
+ * the web (Stripe) keeps ~97% of revenue vs Apple's cut. `plan` picks the
+ * tier ("monthly"/"month" → monthly, anything else → annual, so every old
+ * link still resolves). Existing $39.99 subscribers keep renewing at their
+ * price — a Stripe subscription carries its own price forever.
  *
- * Needs env: STRIPE_SECRET_KEY (live). Optional: STRIPE_PRICE_ID_ANNUAL79.
+ * Deliberately NOT reading the old STRIPE_PRICE_ID_ANNUAL79 env: a stale
+ * Price object in Vercel would silently override this file's amounts. New
+ * env names or inline price_data only.
+ *
+ * Needs env: STRIPE_SECRET_KEY (live). Optional: STRIPE_PRICE_ID_MONTHLY999,
+ * STRIPE_PRICE_ID_ANNUAL5999.
  */
 export const runtime = "nodejs";
 
-const PLAN = {
-  cents: 3999,
-  interval: "year" as const,
-  trialDays: 7,
-  name: "Sona — Yearly",
-  desc: "At-home speech-practice games, built with a licensed SLP. Every game, every sound, every update. 7 days free — cancel anytime.",
+const TRIAL_DAYS = 3;
+const PLANS = {
+  monthly: {
+    cents: 999,
+    interval: "month" as const,
+    name: "Sona — Monthly",
+    desc: "At-home speech-practice games, built with a licensed SLP. Every game, every sound, every update. Cancel anytime.",
+    env: "STRIPE_PRICE_ID_MONTHLY999",
+  },
+  annual: {
+    cents: 5999,
+    interval: "year" as const,
+    name: "Sona — Yearly",
+    desc: "At-home speech-practice games, built with a licensed SLP. Every game, every sound, every update. 3 days free — cancel anytime.",
+    env: "STRIPE_PRICE_ID_ANNUAL5999",
+  },
 } as const;
+function pickPlan(v: unknown): keyof typeof PLANS {
+  return /^month/i.test(String(v || "")) ? "monthly" : "annual";
+}
 
 export async function POST(req: NextRequest) {
   const key = process.env.STRIPE_SECRET_KEY;
@@ -34,19 +52,22 @@ export async function POST(req: NextRequest) {
   const stripe = new Stripe(key);
 
   let email: string | undefined;
+  let planKey: keyof typeof PLANS = "annual";
   try {
     const b = await req.json();
     email = typeof b?.email === "string" ? b.email.trim() : undefined;
+    planKey = pickPlan(b?.plan);
   } catch {
     // no body — fine; Checkout will collect the email
   }
+  const PLAN = PLANS[planKey];
 
   const origin =
     req.headers.get("origin") ||
     process.env.NEXT_PUBLIC_SITE_URL ||
     new URL(req.url).origin;
 
-  const priceId = process.env.STRIPE_PRICE_ID_ANNUAL79;
+  const priceId = process.env[PLAN.env];
   const line_items: Stripe.Checkout.SessionCreateParams.LineItem[] = priceId
     ? [{ price: priceId, quantity: 1 }]
     : [
@@ -65,11 +86,12 @@ export async function POST(req: NextRequest) {
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
       line_items,
-      subscription_data: { trial_period_days: PLAN.trialDays },
+      // the 3-day trial is the YEARLY plan's perk; monthly bills at purchase
+      subscription_data: planKey === "annual" ? { trial_period_days: TRIAL_DAYS } : undefined,
       customer_email: email,
       allow_promotion_codes: true,
       billing_address_collection: "auto",
-      success_url: `${origin}/subscribe/success?session_id={CHECKOUT_SESSION_ID}&plan=annual`,
+      success_url: `${origin}/subscribe/success?session_id={CHECKOUT_SESSION_ID}&plan=${planKey}`,
       cancel_url: `${origin}/subscribe.html?canceled=1`,
     });
     return NextResponse.json({ ok: true, url: session.url });
@@ -83,11 +105,12 @@ export async function POST(req: NextRequest) {
 
 /**
  * GET /api/checkout — plain-link checkout for landing-page CTAs (no client
- * JS): creates the yearly session and 303s straight to Stripe. The `plan`
- * query param is accepted but ignored (back-compat with old links).
+ * JS): creates the session and 303s straight to Stripe. ?plan=monthly picks
+ * the monthly tier; anything else (or nothing) is annual.
  */
 export async function GET(req: NextRequest) {
-  const proxied = new NextRequest(req.url, { method: "POST", headers: req.headers, body: JSON.stringify({}) });
+  const plan = new URL(req.url).searchParams.get("plan") || "";
+  const proxied = new NextRequest(req.url, { method: "POST", headers: req.headers, body: JSON.stringify({ plan }) });
   const res = await POST(proxied);
   const j = (await res.json()) as { ok?: boolean; url?: string };
   if (j?.ok && j.url) return NextResponse.redirect(j.url, 303);

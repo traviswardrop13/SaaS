@@ -4,15 +4,15 @@ import { useEffect, useState } from "react";
 
 /**
  * Post-checkout confirmation. Stripe redirects here with ?session_id=… after a
- * successful subscription start. Sona is $39.99/yr with a 7-day free trial, so
+ * successful subscription start. Sona is $9.99/mo or $59.99/yr with a 3-day free trial, so
  * this page's real job is defusing the one fear every trial buyer has — "I'll
  * forget and get billed" — by showing the LITERAL first-charge date off the
  * real Stripe subscription. If the read-back is unreachable we fall back to
- * honest client-side math: a 7-day trial started now ends 7 days from now.
+ * honest client-side math: a 3-day trial started now ends 3 days from now.
  */
 
-const PLAN_CENTS = 3999;
-const TRIAL_DAYS = 7;
+const PLAN_CENTS = { annual: 5999, monthly: 999 } as const;
+const TRIAL_DAYS = 3;
 
 type Info = {
   amountCents: number | null;
@@ -38,17 +38,20 @@ export default function SubscribeSuccess() {
   const [info, setInfo] = useState<Info | null>(null);
   const [fetched, setFetched] = useState(false);
   const [appCode, setAppCode] = useState<string>("");
+  const [plan, setPlan] = useState<"annual" | "monthly">("annual");
 
   useEffect(() => {
     const q = new URLSearchParams(window.location.search);
     const sessionId = q.get("session_id") || "";
+    const planQ: "annual" | "monthly" = q.get("plan") === "monthly" ? "monthly" : "annual";
+    setPlan(planQ);
 
     // Access flag for the static app — Stripe stays the source of truth.
     try {
       const prev = JSON.parse(localStorage.getItem("sona.sub.v1") || "{}");
       localStorage.setItem(
         "sona.sub.v1",
-        JSON.stringify({ ...prev, active: true, since: Date.now(), session: sessionId, plan: "annual" }),
+        JSON.stringify({ ...prev, active: true, since: Date.now(), session: sessionId, plan: planQ }),
       );
     } catch {
       // ignore — non-blocking
@@ -76,12 +79,16 @@ export default function SubscribeSuccess() {
     // any fetch, so a slow Stripe read never costs the ad platforms the event.
     try {
       const w = window as unknown as { sonaTrack?: (e: string, p?: Record<string, unknown>) => void };
-      const value = PLAN_CENTS / 100;
-      // a trialed plan registers as StartTrial — no money moves today
-      if (typeof w.sonaTrack === "function") w.sonaTrack("StartTrial", { value, currency: "USD", predicted_ltv: value });
+      const value = PLAN_CENTS[planQ] / 100;
+      // annual = a trial started (no money moves today); monthly = a real
+      // purchase the moment checkout completes
+      if (typeof w.sonaTrack === "function") {
+        if (planQ === "annual") w.sonaTrack("StartTrial", { value, currency: "USD", predicted_ltv: value });
+        else w.sonaTrack("Subscribe", { value, currency: "USD" });
+      }
       // product analytics (whitelisted props; Stripe has already confirmed)
       const wa = window as unknown as { SonaAnalytics?: { track: (e: string, p?: Record<string, unknown>) => void } };
-      if (wa.SonaAnalytics) wa.SonaAnalytics.track("trial started", { source: "stripe", plan: "annual" });
+      if (wa.SonaAnalytics) wa.SonaAnalytics.track(planQ === "annual" ? "trial started" : "subscription started", { source: "stripe", plan: planQ });
     } catch {
       // ignore — non-blocking
     }
@@ -102,9 +109,11 @@ export default function SubscribeSuccess() {
       .finally(() => setFetched(true));
   }, []);
 
-  const amount = info?.amountCents ?? (fetched ? PLAN_CENTS : null);
+  const amount = info?.amountCents ?? (fetched ? PLAN_CENTS[plan] : null);
   const nowSec = Math.floor(Date.now() / 1000);
-  const trialEnd = info?.trialEnd ?? (fetched ? nowSec + TRIAL_DAYS * 86400 : null);
+  // the trial is annual-only: fabricating a trial-end date for a monthly buyer
+  // would tell them "no charge yet" when the charge already happened
+  const trialEnd = info?.trialEnd ?? (fetched && plan === "annual" ? nowSec + TRIAL_DAYS * 86400 : null);
   const ready = fetched;
 
   return (
@@ -116,19 +125,23 @@ export default function SubscribeSuccess() {
         You&apos;re in!
       </h1>
       <p className="mt-3 max-w-md text-lg text-gray-600">
-        Your free week starts now. Let&apos;s meet Echo.
+        {plan === "annual" ? "Your 3 free days start now." : "Your plan is live."} Let&apos;s meet Echo.
       </p>
 
       {ready && (
         <div className="mt-6 w-full max-w-sm rounded-2xl border-2 border-sky-100 bg-white p-5 text-left shadow-sm">
           <div className="font-display text-sm font-extrabold uppercase tracking-wide text-gray-400">
-            How your free week works
+            {plan === "annual" ? "How your free days work" : "Your plan"}
           </div>
           <div className="mt-3 flex items-start gap-3">
             <div className="text-xl" aria-hidden>🔓</div>
             <div>
               <div className="font-display font-extrabold text-gray-900">Today</div>
-              <div className="text-sm text-gray-600">Full access starts now — <strong>$0 charged</strong>.</div>
+              <div className="text-sm text-gray-600">
+                {plan === "annual"
+                  ? <>Full access starts now — <strong>$0 charged</strong>.</>
+                  : <>Full access starts now — <strong>{fmtMoney(amount)}/month</strong>, cancel anytime.</>}
+              </div>
             </div>
           </div>
           {trialEnd != null && (

@@ -328,12 +328,18 @@ t = await page.evaluate(() => ({
   life: document.getElementById("planLife").textContent,
   cards: document.querySelectorAll("#pickCard .plan").length,
 }));
-ok("unpaid family sees the single yearly card ($39.99/yr)",
-  t.pick === "block" && t.founding === "none" && /39\.99/.test(t.life) && /\/yr|per year|yearly/i.test(t.life));
-ok("ONE offer only — no retired monthly/founding/lifetime tiers", t.cards === 1);
-// the trial is the offer: it must be stated, with the cancel promise beside it
-ok("web card states the free week and the cancel promise",
-  /7 days free/i.test(t.life) && /cancel anytime/i.test(t.life));
+ok("unpaid family sees the yearly card first ($59.99/yr, best value)",
+  t.pick === "block" && t.founding === "none" && /59\.99/.test(t.life) && /\/yr|per year|yearly/i.test(t.life));
+// PRICE2: exactly TWO offers — yearly (trialed) and monthly (no trial).
+// A third card is a retired tier creeping back.
+ok("TWO offers exactly — yearly + monthly, nothing retired", t.cards === 2, "cards=" + t.cards);
+// the trial is the YEARLY plan's perk: stated with the cancel promise beside
+// it, and never promised on the monthly card
+ok("yearly card states the 3-day trial and the cancel promise",
+  /3 days free/i.test(t.life) && /cancel anytime/i.test(t.life));
+t = await page.evaluate(() => (document.getElementById("planMonth") || {}).textContent || "");
+ok("monthly card is honest: $9.99, billed today, no trial",
+  /9\.99/.test(t) && /billed today, no trial/i.test(t));
 // paywall trust: named-SLP proof strip above the plan
 t = await page.evaluate(() => (document.querySelector("#pickCard .proof") || {}).textContent || "");
 ok("proof strip: named SLP credential above the plan",

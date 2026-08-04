@@ -1,9 +1,11 @@
 // Apple IAP rail (native shell): with a mocked Capacitor+Purchases bridge,
-// subscribe.html must show ONE Apple paywall for the $39.99/yr plan
-// non-consumable (no Stripe cards — 3.1.1 hygiene), carry the required
-// Restore + Terms/Privacy links and full auto-renew terms, purchase →
+// subscribe.html must show the Apple paywall — $59.99/yr (3-day trial) plus
+// $9.99/mo (no trial) — with no Stripe cards (3.1.1 hygiene), the required
+// Restore + Terms/Privacy links and full auto-renew terms; purchase →
 // unlock on the "full" entitlement, restore → unlock, and today.html must
-// quiet-sync entitlements on load. Web (no bridge) keeps the Stripe card.
+// quiet-sync entitlements on load. Web (no bridge) keeps the Stripe picker.
+// PRICING IS LIVE (FREE_MODE off): the paid rails are the default, the trial
+// gate is honest on every platform, and founding families never gate.
 import { createServer } from "http";
 import { readFileSync, existsSync } from "fs";
 import { chromium, ROOT, launchOpts } from "./_env.mjs";
@@ -39,7 +41,11 @@ await page.addInitScript(() => {
     Plugins: {
       Purchases: {
         configure: async () => { window.__iap.configured++; },
-        getProducts: async () => ({ products: [{ identifier: "com.speaksona.app.annual", priceString: "$39.99" }] }),
+        getProducts: async ({ productIdentifiers }) => {
+          const id = (productIdentifiers || [])[0] || "com.speaksona.app.annual";
+          const price = id.indexOf("monthly") > -1 ? "$9.99" : "$59.99";
+          return { products: [{ identifier: id, priceString: price }] };
+        },
         purchaseStoreProduct: async () => { window.__iap.purchases++; setEnt(true); return info(); },
         restorePurchases: async () => { window.__iap.restores++; setEnt(true); return info(); },
         getCustomerInfo: async () => info(),
@@ -51,23 +57,26 @@ await page.addInitScript(() => {
 });
 
 // ── native subscribe: Apple paywall only, all required furniture ──
-await page.goto("http://localhost:8147/subscribe.html?paid=1"); await page.waitForTimeout(900);
+await page.goto("http://localhost:8147/subscribe.html"); await page.waitForTimeout(900);
 let t = await page.evaluate(() => ({
   iap: document.getElementById("iapCard").style.display,
   pick: document.getElementById("pickCard").style.display,
   founding: getComputedStyle(document.getElementById("foundingCard")).display,
   price: document.getElementById("iapPrice").textContent,
+  priceMo: document.getElementById("iapPriceMo").textContent,
   body: document.getElementById("iapCard").textContent,
   restore: !!document.getElementById("iapRestore"),
 }));
 ok("shell shows the Apple paywall", t.iap === "block");
 ok("Stripe cards never render in the shell", t.pick !== "block" && t.founding === "none");
-ok("live App Store price painted", /\$39\.99/.test(t.price));
+ok("live App Store prices painted, both plans", /\$59\.99/.test(t.price) && /\$9\.99/.test(t.priceMo), JSON.stringify([t.price, t.priceMo]));
 ok("required furniture: Restore + Terms + Privacy + auto-renew terms",
-  t.restore && /Terms of Use/.test(t.body) && /Privacy/.test(t.body) && /renews yearly unless canceled/.test(t.body));
+  t.restore && /Terms of Use/.test(t.body) && /Privacy/.test(t.body) && /renews unless canceled/.test(t.body));
 // Apple requires the price, period and cancellation terms on the paywall itself
 ok("yearly offer: price, trial and cancel terms all stated",
-  /\$39\.99/.test(t.body) && /7 days free/i.test(t.body) && /cancel/i.test(t.body));
+  /\$59\.99/.test(t.body) && /3 days free/i.test(t.body) && /cancel/i.test(t.body));
+ok("monthly offer: price stated, and NO trial promised on it",
+  /\$9\.99/.test(t.body) && /billed today, no trial/i.test(t.body));
 ok("SLP proof strip on the native paywall", /Rachel/.test(t.body) && /speech-language pathologist/.test(t.body));
 
 // ── purchase → entitlement unlock → sub cached ──
@@ -82,9 +91,26 @@ ok("purchase drives Apple's sheet once", t.n === 1);
 ok("entitlement unlocks the app (source: apple)", t.sub.active === true && t.sub.source === "apple");
 ok("paywall dismisses on success", t.card === "none");
 
+// ── the monthly button buys the MONTHLY product ──
+await page.evaluate(() => { localStorage.removeItem("sona.sub.v1"); localStorage.setItem("__iapEntitled", "0"); });
+await page.goto("http://localhost:8147/subscribe.html"); await page.waitForTimeout(900);
+t = await page.evaluate(() => {
+  window.__bought = [];
+  const P = window.Capacitor.Plugins.Purchases;
+  const orig = P.purchaseStoreProduct;
+  P.purchaseStoreProduct = async (a) => { window.__bought.push(a.product.identifier); return orig(a); };
+  document.getElementById("iapBuyMo").click();
+  return true;
+});
+await page.waitForTimeout(700);
+t = await page.evaluate(() => ({ bought: window.__bought, sub: JSON.parse(localStorage.getItem("sona.sub.v1") || "{}") }));
+ok("monthly button purchases com.speaksona.app.monthly",
+  (t.bought || []).length === 1 && /monthly/.test(t.bought[0]), JSON.stringify(t.bought));
+ok("monthly purchase unlocks too", t.sub.active === true);
+
 // ── restore path ──
 await page.evaluate(() => { localStorage.removeItem("sona.sub.v1"); localStorage.setItem("__iapEntitled", "0"); });
-await page.goto("http://localhost:8147/subscribe.html?paid=1"); await page.waitForTimeout(900);
+await page.goto("http://localhost:8147/subscribe.html"); await page.waitForTimeout(900);
 await page.evaluate(() => document.getElementById("iapRestore").click());
 await page.waitForTimeout(600);
 t = await page.evaluate(() => ({ n: window.__iap.restores, sub: JSON.parse(localStorage.getItem("sona.sub.v1") || "{}"), msg: document.getElementById("iapMsg").textContent }));
@@ -92,7 +118,7 @@ ok("restore unlocks + confirms", t.n === 1 && t.sub.active === true && /Restored
 
 // ── web-purchase hand-off: paired Stripe sub in the shell = NO paywall ──
 await page.evaluate(() => { localStorage.setItem("__iapEntitled", "0"); localStorage.setItem("sona.sub.v1", JSON.stringify({ active: true, source: "stripe", since: Date.now() })); });
-await page.goto("http://localhost:8147/subscribe.html?paid=1"); await page.waitForTimeout(900);
+await page.goto("http://localhost:8147/subscribe.html"); await page.waitForTimeout(900);
 t = await page.evaluate(() => ({
   iap: document.getElementById("iapCard").style.display,
   pick: document.getElementById("pickCard").style.display,
@@ -119,27 +145,54 @@ await web.addInitScript(() => {
   localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Milo", focusSounds: ["R"], onboarded: true, earlyAdopter: false }));
   sessionStorage.setItem("sona.gate.v1", String(Date.now()));
 });
-await web.goto("http://localhost:8147/subscribe.html?paid=1"); await web.waitForTimeout(800);
+await web.goto("http://localhost:8147/subscribe.html"); await web.waitForTimeout(800);
 t = await web.evaluate(() => ({ iap: document.getElementById("iapCard").style.display, pick: document.getElementById("pickCard").style.display }));
 ok("web keeps Stripe picker, no Apple card", t.iap !== "block" && t.pick === "block");
+t = await web.evaluate(() => ({ body: document.getElementById("pickCard").innerText }));
+ok("web picker states both plans honestly",
+  /\$59\.99/.test(t.body) && /3 DAYS FREE/i.test(t.body) && /\$9\.99/.test(t.body) && /billed today, no trial/i.test(t.body), t.body.slice(0, 200));
 await web.close();
 
-// ── FREE MODE is the shipped default: no purchase UI at all ──
-const free = await browser.newPage({ viewport: { width: 390, height: 844 } });
-await free.addInitScript(() => {
-  localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Milo", focusSounds: ["R"], onboarded: true }));
-  sessionStorage.setItem("sona.gate.v1", String(Date.now()));
+// ── PRICING IS LIVE: FREE_MODE off, 3-day trial, the gate is honest ──
+{
+  const sona = readFileSync(ROOT + "/sona.js", "utf8");
+  ok("FREE_MODE is off", /const FREE_MODE = false;/.test(sona));
+  ok("the trial is 3 days", /TRIAL_DAYS = 3/.test(sona));
+  ok("the native shell gates like the web (old bypass gone)",
+    !/if \(isNativeApp\(\)\) return false;/.test(sona),
+    "the never-gate line predates the IAP rail — it made the App Store build free forever");
+  ok("founding/SLP families never gate",
+    /earlyAdopter\) return false/.test(sona.replace(/\s+/g, " ")),
+    "the free-forever promise IS the SLP channel");
+  // the practice doors gate at load; trial.html routes the shell to Apple
+  for (const pg of ["charge.html", "arcade-feed.html", "story.html"]) {
+    const src = readFileSync(ROOT + "/" + pg, "utf8");
+    ok(pg + " gates at page load", /Sona\.gated\(\)/.test(src) && /trial\.html/.test(src));
+  }
+  const trial = readFileSync(ROOT + "/trial.html", "utf8");
+  ok("trial.html routes the shell to the Apple paywall, not back home",
+    /location\.replace\("\/subscribe\.html"\)/.test(trial),
+    "routing natives to today.html made an infinite gate loop");
+  ok("trial page states live prices", /\$59\.99/.test(trial) && /\$9\.99/.test(trial) && /3 days free/.test(trial));
+}
+
+// ── an expired trial actually locks practice; a founding family sails through ──
+const gatePg = await browser.newPage({ viewport: { width: 390, height: 844 } });
+await gatePg.addInitScript(() => {
+  // seed-once: init scripts re-run on every navigation and would overwrite the
+  // earlyAdopter flag the second half of this test sets
+  if (!localStorage.getItem("sona.profile.v1")) {
+    localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Milo", childAge: "7", focusSounds: ["R"], onboarded: true }));
+    localStorage.setItem("sona.trial.v1", JSON.stringify({ start: Date.now() - 4 * 86400000, days: 3 }));
+    localStorage.setItem("sona.micok", "1");
+  }
 });
-await free.goto("http://localhost:8147/subscribe.html"); await free.waitForTimeout(800);
-const fm = await free.evaluate(() => ({
-  iap: document.getElementById("iapCard").style.display,
-  pick: document.getElementById("pickCard").style.display,
-  line: document.getElementById("planLine").textContent,
-  body: document.body.innerText,   // innerText respects display:none; textContent does not
-}));
-ok("free mode: no Apple card, no Stripe picker", fm.iap === "none" && fm.pick === "none");
-ok("free mode: the page says free, shows no price", /free/i.test(fm.line) && !/\$39\.99|\$79\.99/.test(fm.body));
-await free.close();
+await gatePg.goto("http://localhost:8147/charge.html?game=arcade-slice.html"); await gatePg.waitForTimeout(700);
+ok("expired trial bounces charge.html to the trial page", /trial\.html/.test(gatePg.url()), gatePg.url());
+await gatePg.evaluate(() => { const p = JSON.parse(localStorage.getItem("sona.profile.v1")); p.earlyAdopter = true; localStorage.setItem("sona.profile.v1", JSON.stringify(p)); });
+await gatePg.goto("http://localhost:8147/charge.html?game=arcade-slice.html"); await gatePg.waitForTimeout(700);
+ok("a founding family with the same expired trial is never locked", !/trial\.html/.test(gatePg.url()), gatePg.url());
+await gatePg.close();
 
 ok("no pageerrors", errs.length === 0, errs.join(" | "));
 await browser.close(); srv.close();

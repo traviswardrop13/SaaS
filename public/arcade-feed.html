@@ -135,6 +135,8 @@
 
   <script src="/sona.js"></script>
   <script>
+    // Trial gate (littles' direct door) — page load only, same rules as charge
+    if(window.Sona&&Sona.gated&&Sona.gated()){ location.replace("/trial.html"); }
     var S=window.Sona;
     function $(id){ return document.getElementById(id); }
     function sfx(n){ try{ if(S&&S.sfx&&S.sfx[n])S.sfx[n](); }catch(e){} }
