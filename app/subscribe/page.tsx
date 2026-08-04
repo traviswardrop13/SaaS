@@ -6,7 +6,7 @@ import { useSearchParams } from "next/navigation";
 
 const FEATURES = [
   "Every game and every level, unlocked",
-  "7 days free — cancel anytime, no charge",
+  "Yearly starts with 3 free days — cancel anytime, no charge",
   "Every new sound and update as it ships",
   "Your suggestions shape Sona for your child",
   "Priority support",
@@ -16,6 +16,7 @@ function SubscribeInner() {
   const params = useSearchParams();
   const canceled = params.get("canceled") === "1";
   const [email, setEmail] = useState("");
+  const [plan, setPlan] = useState<"annual" | "monthly">("annual");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -39,7 +40,7 @@ function SubscribeInner() {
       const res = await fetch("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email, plan }),
       });
       const data = await res.json();
       if (data.ok && data.url) {
@@ -71,24 +72,41 @@ function SubscribeInner() {
         <div className="rounded-3xl bg-white p-7 shadow-chunky ring-2 ring-sky-500">
           <div className="flex items-center gap-2">
             <p className="text-sm font-extrabold uppercase tracking-wide text-sky-600">
-              Sona Yearly
+              {plan === "annual" ? "Sona Yearly" : "Sona Monthly"}
             </p>
-            <span className="rounded-full bg-amber-400 px-2 py-0.5 text-[11px] font-extrabold uppercase tracking-wide text-amber-900">
-              7 days free
-            </span>
+            {plan === "annual" ? (
+              <span className="rounded-full bg-amber-400 px-2 py-0.5 text-[11px] font-extrabold uppercase tracking-wide text-amber-900">
+                3 days free
+              </span>
+            ) : null}
           </div>
 
-          <div className="mt-4 flex flex-wrap items-end gap-2">
-            <span className="font-display text-5xl font-extrabold text-gray-900">$39.99</span>
-            <span className="mb-1.5 font-bold text-gray-500">/year</span>
+          <div className="mt-4 grid grid-cols-2 gap-2">
+            <button
+              onClick={() => setPlan("annual")}
+              className={`rounded-2xl border-2 px-3 py-3 text-left ${plan === "annual" ? "border-sky-500 bg-sky-50" : "border-gray-200"}`}
+            >
+              <span className="block font-display text-xl font-extrabold text-gray-900">$59.99/yr</span>
+              <span className="text-xs font-bold text-grass-600">$5/mo billed yearly — save 50%</span>
+            </button>
+            <button
+              onClick={() => setPlan("monthly")}
+              className={`rounded-2xl border-2 px-3 py-3 text-left ${plan === "monthly" ? "border-sky-500 bg-sky-50" : "border-gray-200"}`}
+            >
+              <span className="block font-display text-xl font-extrabold text-gray-900">$9.99/mo</span>
+              <span className="text-xs font-bold text-gray-500">month to month · no trial</span>
+            </button>
           </div>
-          <p className="mt-1 text-sm font-bold text-grass-600">
-            That&apos;s $3.33 a month, billed yearly
-          </p>
-          <p className="mt-3 rounded-2xl bg-sky-50 px-4 py-3 text-sm font-semibold text-sky-700">
-            <b>$0 today.</b> Your first week is free — cancel anytime before it
-            ends and you won&apos;t be charged.
-          </p>
+          {plan === "annual" ? (
+            <p className="mt-3 rounded-2xl bg-sky-50 px-4 py-3 text-sm font-semibold text-sky-700">
+              <b>$0 today.</b> Your first 3 days are free — cancel anytime before
+              they end and you won&apos;t be charged.
+            </p>
+          ) : (
+            <p className="mt-3 rounded-2xl bg-sky-50 px-4 py-3 text-sm font-semibold text-sky-700">
+              <b>$9.99 today,</b> then monthly. Cancel anytime — no contract.
+            </p>
+          )}
 
           <ul className="mt-6 space-y-3">
             {FEATURES.map((f) => (
@@ -105,7 +123,7 @@ function SubscribeInner() {
         {/* Checkout */}
         <div className="rounded-3xl bg-white p-7 shadow-chunky">
           <h1 className="font-display text-2xl font-extrabold text-gray-900">
-            Start 7 days free
+            {plan === "annual" ? "Start 3 days free" : "Subscribe monthly"}
           </h1>
           <p className="mt-1 text-gray-600">
             Enter your email and Sona is yours for good.
@@ -139,7 +157,7 @@ function SubscribeInner() {
             disabled={busy}
             className="mt-5 w-full rounded-2xl bg-grass-500 px-6 py-3.5 font-display font-extrabold uppercase tracking-wide text-white shadow-chunky transition hover:bg-grass-600 active:translate-y-1 active:shadow-chunky-sm disabled:opacity-60"
           >
-            {busy ? "Loading…" : "Start 7 days free"}
+            {busy ? "Loading…" : plan === "annual" ? "Start 3 days free" : "Subscribe — $9.99/mo"}
           </button>
 
           <p className="mt-3 text-center text-xs text-gray-400">

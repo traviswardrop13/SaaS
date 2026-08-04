@@ -269,6 +269,10 @@
   <script src="/scenes.js"></script>
   <script src="/gamecontent.js"></script>
   <script>
+    // Trial gate — at PAGE LOAD only, never mid-round. Founding/SLP families,
+    // subscribers and pilots pass inside gated(); the shell bounces to the
+    // Apple paywall via trial.html's own routing.
+    if(window.Sona&&Sona.gated&&Sona.gated()){ location.replace("/trial.html"); }
     var $=function(id){return document.getElementById(id);};
     var qp=new URLSearchParams(location.search);
     var S=window.Sona;
