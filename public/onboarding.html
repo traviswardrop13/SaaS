@@ -533,43 +533,33 @@
       // capture the lead (email + answers) → GHL via /api/lead (fire-and-forget)
       try{
         if(draft.email){
+          var isSlp=draft.role==="slp";
           var utm=(window.Sona&&Sona.utm)?(Sona.utm()||{}):{};
-          fetch("/api/lead",{method:"POST",headers:{"Content-Type":"application/json"},keepalive:true,body:JSON.stringify({
-            email:draft.email, child:draft.childName, practice:draft.focusSounds, source:"onboarding",
-            summary: draft.mode==="play" ? "New parent signup — play mode (all letter sounds)" : ("New parent signup — practicing "+((draft.focusSounds||[]).join(", ")||"sounds")),
-            utm_source:utm.utm_source, utm_medium:utm.utm_medium, utm_campaign:utm.utm_campaign, utm_content:utm.utm_content, utm_term:utm.utm_term, referrer:utm.referrer, landing:utm.landing
-          })}).catch(function(){});
+          // COPPA: an SLP is entering someone else's client — never ship that
+          // child's name/targets to the marketing CRM. Only the clinician's
+          // own email + a role tag.
+          fetch("/api/lead",{method:"POST",headers:{"Content-Type":"application/json"},keepalive:true,body:JSON.stringify(
+            isSlp
+              ? { email:draft.email, source:"onboarding", role:"slp", summary:"New SLP signup",
+                  utm_source:utm.utm_source, utm_medium:utm.utm_medium, utm_campaign:utm.utm_campaign, utm_content:utm.utm_content, utm_term:utm.utm_term, referrer:utm.referrer, landing:utm.landing }
+              : { email:draft.email, child:draft.childName, practice:draft.focusSounds, source:"onboarding",
+                  summary: draft.mode==="play" ? "New parent signup — play mode (all letter sounds)" : ("New parent signup — practicing "+((draft.focusSounds||[]).join(", ")||"sounds")),
+                  utm_source:utm.utm_source, utm_medium:utm.utm_medium, utm_campaign:utm.utm_campaign, utm_content:utm.utm_content, utm_term:utm.utm_term, referrer:utm.referrer, landing:utm.landing }
+          )}).catch(function(){});
         }
       }catch(e){}
-      // SLP finish: mint the share credential NOW, so Rachel walks out of
-      // onboarding holding the code + key her clients need. Fire-and-forget —
-      // the finale paints whenever the server answers.
+      // SLP finish: create the clinician's ACCOUNT and email them a one-tap
+      // sign-in link. The share credential (code + family key) is auto-minted
+      // server-side on first authenticated load and shown on their dashboard —
+      // never minted by an unauthenticated request (that was an open oracle).
       if(draft.role==="slp" && draft.email){
-        fetch("/api/slp/register",{method:"POST",headers:{"Content-Type":"application/json"},
-          body:JSON.stringify({email:draft.email,name:draft.childName?"":""})})
-          .then(function(r){return r.json();})
-          .then(function(j){
-            var box=document.getElementById("obSlpCred"); if(!box) return;
-            if(j&&j.ok&&j.code&&j.familyKey){
-              Sona.saveProfile({slpCredential:{code:j.code,key:j.familyKey}});
-              var link=location.origin+"/?slp="+encodeURIComponent(j.code)+"&k="+encodeURIComponent(j.familyKey);
-              box.style.display="block";
-              box.innerHTML='<div style="font-weight:800;font-size:12px;letter-spacing:.06em;color:#46a302;">YOUR FAMILY CREDENTIAL — SHARE THIS WITH CLIENTS</div>'
-                +'<div style="font-family:\'Baloo 2\';font-weight:800;font-size:19px;margin-top:6px;">Code: '+j.code+'</div>'
-                +'<div style="font-family:\'Baloo 2\';font-weight:800;font-size:19px;">Family key: '+j.familyKey+'</div>'
-                +'<div class="muted" style="font-weight:700;font-size:12px;margin-top:6px;word-break:break-all;">Or one tap: '+link+'</div>'
-                +'<button class="btn" id="obCredCopy" style="margin-top:10px;width:auto;padding:11px 18px;">Copy the message to send</button>';
-              var msgTxt="Hi! Here\u2019s the speech practice app I mentioned \u2014 it\u2019s free for my families: "+link+"  (Or in the app: code "+j.code+", family key "+j.familyKey+")";
-              var cb=document.getElementById("obCredCopy");
-              if(cb) cb.onclick=function(){ try{ navigator.clipboard.writeText(msgTxt); cb.textContent="Copied ✓"; }catch(e){} };
-            } else if(j&&j.existing){
-              box.style.display="block";
-              box.innerHTML='<div class="muted" style="font-weight:700;font-size:13px;">This email already has a Sona clinician account — <a href="/slp-login.html"><b>sign in</b></a> to see your share code and family key.</div>';
-            } else {
-              box.style.display="block";
-              box.innerHTML='<div class="muted" style="font-weight:700;font-size:13px;">Couldn\u2019t create your share code right now \u2014 it\u2019ll be waiting in <a href="/slp-login.html"><b>your dashboard</b></a>.</div>';
-            }
-          }).catch(function(){});
+        var box=document.getElementById("obSlpCred");
+        if(box){
+          box.style.display="block";
+          box.innerHTML='<div class="muted" style="font-weight:700;font-size:13px;">Check your email — we just sent your one-tap sign-in. Open it to grab your <b>share code + family key</b> to send to families. It also lives in your dashboard.</div>';
+        }
+        fetch("/api/slp/auth/request",{method:"POST",headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({email:draft.email})}).catch(function(){});
       }
       if(window.Sona){ Sona.sfx.complete(); Sona.confetti({count:160}); }
       // the finale (not a step): show "what's ahead", then Echo calls by name

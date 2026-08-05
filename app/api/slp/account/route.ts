@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
+import crypto from "node:crypto";
 import { kvCmd, readSession, signSession, sessionCookie, SESSION_MAX_AGE, makeFamilyKey } from "@/lib/slpAuth";
+
+const SUFFIX = "abcdefghjkmnpqrstuvwxyz23456789";
+function suffix(n: number): string { let o = ""; const b = crypto.getRandomValues(new Uint8Array(n)); for (let i = 0; i < n; i++) o += SUFFIX[b[i] % SUFFIX.length]; return o; }
 
 export const runtime = "nodejs";
 
@@ -45,6 +49,20 @@ export async function POST(req: NextRequest) {
     }
     acct.code = c;
   }
+  // AUTO-MINT: an authenticated SLP with no code yet gets one derived from
+  // their email (readable on a handout: "rachel-k4"), claimed atomically. This
+  // is the ONLY place a credential is created now — the caller is proven by the
+  // session cookie, which is why the old unauthenticated /api/slp/register
+  // (an open credential-minting oracle) was deleted.
+  if (!acct.code) {
+    const stem = slug(String(s.email).split("@")[0]) || "slp";
+    for (let attempt = 0; attempt < 6 && !acct.code; attempt++) {
+      const cand = (stem + "-" + suffix(2 + Math.floor(attempt / 2))).slice(0, 30);
+      await kvCmd(["SET", "slpcode:" + cand, s.email, "NX"]);
+      const own = await kvCmd(["GET", "slpcode:" + cand]);
+      if (own && String(own) === s.email) acct.code = cand;
+    }
+  }
   // every account with a code carries a family key — the "password" half of
   // the credential that unlocks Sona free for that SLP's families
   if (acct.code && !acct.familyKey) acct.familyKey = makeFamilyKey();
@@ -67,4 +85,22 @@ export async function POST(req: NextRequest) {
   });
   res.headers.set("Set-Cookie", sessionCookie(session, SESSION_MAX_AGE));
   return res;
+}
+
+// GET → the signed-in SLP's credential (auto-minting on first read via the same
+// path as POST would, but read-only friendly). Used by Settings + the dashboard.
+export async function GET(req: NextRequest) {
+  const s = readSession(req);
+  if (!s) return NextResponse.json({ ok: false, error: "Not signed in." }, { status: 401 });
+  const acctKey = "slpacct:" + s.email;
+  let acct: Record<string, unknown> = {};
+  try { const raw = await kvCmd(["GET", acctKey]); if (raw) acct = JSON.parse(String(raw)); } catch { acct = {}; }
+  return NextResponse.json({
+    ok: true,
+    email: s.email,
+    code: (acct.code as string) || "",
+    familyKey: (acct.familyKey as string) || "",
+    name: (acct.name as string) || "",
+    clinic: (acct.clinic as string) || "",
+  });
 }

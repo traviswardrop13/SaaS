@@ -31,7 +31,7 @@ await page.waitForTimeout(900);
 // CODES1: founding access now requires the VERIFIED credential. sona.slpok is
 // what a successful /api/slp/redeem writes — seeded post-load (about:blank has
 // no localStorage) to simulate a family arriving through a valid CODE&k=KEY link.
-await page.evaluate(() => localStorage.setItem("sona.slpok", "RACHEL1"));
+await page.evaluate(() => { localStorage.setItem("sona.slpok", "RACHEL1"); localStorage.setItem("sona.slpunlock", "1"); });
 const ob = await page.evaluate(() => ({
   betaStep: !!document.querySelector('[data-step="beta"]'),
   segs: document.querySelectorAll("#seg i").length,

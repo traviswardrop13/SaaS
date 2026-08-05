@@ -15,9 +15,15 @@ import { kvCmd, kvConfigured } from "@/lib/slpAuth";
 const mem = new Map<string, { n: number; reset: number }>();
 
 function clientIp(req: Request): string {
-  const fwd = req.headers.get("x-forwarded-for") || "";
-  const first = fwd.split(",")[0].trim();
-  return first || req.headers.get("x-real-ip") || "anon";
+  // x-real-ip is set by Vercel's edge from the true socket peer and cannot be
+  // spoofed by the client; the LEFTMOST x-forwarded-for entry is client-
+  // supplied and trivially rotated to dodge a per-IP bucket. Prefer x-real-ip;
+  // fall back to the RIGHTMOST XFF hop (the closest trusted proxy), never the
+  // leftmost.
+  const real = (req.headers.get("x-real-ip") || "").trim();
+  if (real) return real;
+  const fwd = (req.headers.get("x-forwarded-for") || "").split(",").map((s) => s.trim()).filter(Boolean);
+  return fwd.length ? fwd[fwd.length - 1] : "anon";
 }
 
 /**

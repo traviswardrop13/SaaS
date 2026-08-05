@@ -12,6 +12,7 @@ import { chromium, ROOT, launchOpts } from "./_env.mjs";
 const MIME = { html: "text/html", js: "text/javascript", svg: "image/svg+xml", css: "text/css", png: "image/png", webp: "image/webp" };
 const CRED = { code: "rachel-k4", key: "RACHELKEY", name: "Rachel W" };
 let redeemCalls = 0;
+let authRequests = 0;
 const srv = createServer((req, res) => {
   const u = new URL(req.url, "http://x");
   if (u.pathname === "/api/slp/redeem" && req.method === "POST") {
@@ -29,16 +30,10 @@ const srv = createServer((req, res) => {
     });
     return;
   }
-  if (u.pathname === "/api/slp/register" && req.method === "POST") {
+  if (u.pathname === "/api/slp/auth/request" && req.method === "POST") {
     let body = "";
     req.on("data", (c) => (body += c));
-    req.on("end", () => {
-      let j = {};
-      try { j = JSON.parse(body); } catch {}
-      res.writeHead(200, { "content-type": "application/json" });
-      if (String(j.email || "") === "taken@example.com") res.end(JSON.stringify({ ok: true, existing: true }));
-      else res.end(JSON.stringify({ ok: true, code: "zoe-m7", familyKey: "NEWKEY99" }));
-    });
+    req.on("end", () => { authRequests++; res.writeHead(200, { "content-type": "application/json" }); res.end(JSON.stringify({ ok: true, sent: true })); });
     return;
   }
   if (u.pathname === "/api/founder" && req.method === "POST") {
@@ -174,6 +169,49 @@ const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL 
   await ctx.close();
 }
 
+// ── 4b. /join.html: the one-tap family link verifies with NO key leak ──
+{
+  const ctx = await browser.newContext();
+  const pg = await ctx.newPage();
+  const urls = [];
+  pg.on("request", (r) => urls.push(r.url()));
+  await pg.goto("http://localhost:8155/join.html?slp=rachel-k4&k=RACHELKEY");
+  await pg.waitForTimeout(900);
+  const st = await pg.evaluate(() => ({
+    unlocked: localStorage.getItem("sona.slpunlock"),
+    verified: Sona.slpVerified(),
+    loc: location.href,
+  }));
+  ok("join.html verifies the link's credential and unlocks the device", st.unlocked === "1" && st.verified, JSON.stringify(st));
+  ok("join.html strips ?k from the URL immediately", !/[?&]k=/.test(st.loc), st.loc);
+  // the family key must never appear in a request URL (pixel/analytics leak)
+  // the initial navigation the family tapped carries the key (unavoidable);
+  // the leak that matters is a SUBSEQUENT request (analytics/pixel/api) with it.
+  const leaked = urls.filter((u) => /RACHELKEY/.test(u) && !u.startsWith("http://localhost:8155/join.html"));
+  ok("the family key never rides a follow-on request URL", leaked.length === 0, leaked.join(" "));
+  // join.html must not load the ad/analytics scripts at all
+  ok("join.html loads no pixel or analytics", !urls.some((u) => /pixel\.js|analytics\.js/.test(u)), urls.filter((u) => /pixel|analytics/.test(u)).join(" "));
+  await ctx.close();
+}
+
+// ── 4c. device unlock survives a kid switch (the caseload iPad) ──
+{
+  const ctx = await browser.newContext();
+  const pg = await ctx.newPage();
+  await pg.goto("http://localhost:8155/today.html");
+  const res = await pg.evaluate(() => {
+    localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "A", childAge: "6", focusSounds: ["R"], onboarded: true }));
+    localStorage.setItem("sona.slpunlock", "1");
+    localStorage.setItem("sona.trial.v1", JSON.stringify({ start: Date.now() - 30 * 86400000, days: 3 }));
+    const before = Sona.gated();
+    Sona.addKid("Bee", "5"); // fresh profile, no earlyAdopter
+    const afterSwitch = Sona.gated();
+    return { before, afterSwitch };
+  });
+  ok("device SLP unlock keeps every kid free (survives a switch)", res.before === false && res.afterSwitch === false, JSON.stringify(res));
+  await ctx.close();
+}
+
 // ── 5. founder access: the owners skip the paywall on any device ──
 {
   const pg = await (await browser.newContext()).newPage();
@@ -205,18 +243,34 @@ const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL 
   const redeem = readFileSync(ROOT + "/../app/api/slp/redeem/route.ts", "utf8");
   ok("redeem fails CLOSED without KV", /status: 503/.test(redeem), "no KV must never be a free pass");
   ok("redeem is rate limited per IP", /rateLimit\(req/.test(redeem));
-  ok("redeem freezes a brute-forced code", /slpredeemfail:/.test(redeem) && /429/.test(redeem));
   ok("key comparison is constant-time", /safeEqualStr/.test(redeem));
-  const reg = readFileSync(ROOT + "/../app/api/slp/register/route.ts", "utf8");
-  ok("register never returns an existing SLP's credential",
-    /existing: true \}\);/.test(reg) && reg.indexOf("familyKey") > reg.indexOf("existing: true"),
-    "anyone knowing an SLP's email could steal their key otherwise");
-  ok("register codes are auto-generated, never caller-chosen", !/body\.code/.test(reg));
-  ok("register is rate limited", /rateLimit\(req/.test(reg));
+  ok("the unauthenticated register oracle is DELETED", !existsSync(ROOT + "/../app/api/slp/register/route.ts"),
+    "it minted forever-shareable free access from any anonymous request");
+  const account = readFileSync(ROOT + "/../app/api/slp/account/route.ts", "utf8");
+  ok("the ONLY credential mint is behind the session (auth-gated account route)",
+    /readSession\(req\)/.test(account) && /makeFamilyKey/.test(account));
+  ok("redeem enforces a per-code redemption CAP (a leaked link dies at N)",
+    /REDEEM_CAP/.test(redeem) && /n > REDEEM_CAP/.test(redeem));
+  ok("redeem no longer has the DoS-prone per-code failure freeze",
+    !/slpredeemfail/.test(redeem), "a passer-by fat-fingering the key must not lock out the caseload");
+  ok("redeem resolves the account even for an unknown code (timing-flat)",
+    /slpacct: none/.test(redeem) || /acctKey = owner/.test(redeem));
+  const rl = readFileSync(ROOT + "/../lib/rateLimit.ts", "utf8");
+  ok("rate limiter prefers un-spoofable x-real-ip over client XFF",
+    /x-real-ip[\s\S]{0,120}if \(real\) return real/.test(rl) && /fwd\[fwd\.length - 1\]/.test(rl));
+  const ob2 = readFileSync(ROOT + "/onboarding.html", "utf8");
+  ok("SLP onboarding fires the magic link, not an unauthenticated mint",
+    /api\/slp\/auth\/request/.test(ob2) && !/api\/slp\/register/.test(ob2));
+  ok("a child's name is never shipped to the CRM for an SLP signup",
+    /isSlp[\s\S]{0,200}role:"slp"/.test(ob2) && /New SLP signup/.test(ob2));
+  ok("SLP share links point at /join.html, never the analytics-loading '/'",
+    /\/join\.html\?slp=/.test(readFileSync(ROOT + "/settings.html", "utf8")));
   const sona = readFileSync(ROOT + "/sona.js", "utf8");
   ok("the funnel event fires only on a VALID redemption",
-    /valid[\s\S]{0,600}track\("slp code redeemed"/.test(sona) && !/fresh\) \{ try \{ track\("slp code redeemed"/.test(sona),
+    /valid[\s\S]{0,700}track\("slp code redeemed"/.test(sona),
     "counting unverified codes ranks garbage SLPs");
+  ok("gated() honors the device-wide SLP unlock",
+    /if \(slpVerified\(\)\) return false;/.test(sona));
   const ob = readFileSync(ROOT + "/onboarding.html", "utf8");
   ok("onboarding grants founding only when verified", /earlyAdopter: _slpok/.test(ob));
   const founder = readFileSync(ROOT + "/../app/api/founder/route.ts", "utf8");

@@ -965,6 +965,7 @@
   function gated() {
     if (isFree()) return false;
     if (isFounder()) return false;
+    if (slpVerified()) return false;                 // device redeemed a valid SLP credential
     if (isSubscribed() || isPilot()) return false;
     try { if (getProfile().earlyAdopter) return false; } catch (e) {}
     ensureTrial();
@@ -1002,7 +1003,7 @@
       body: JSON.stringify({ code, key }),
     }).then((r) => r.json()).then((j) => {
       if (j && j.ok && j.valid) {
-        try { localStorage.setItem("sona.slpok", code.toUpperCase()); } catch (e) {}
+        try { localStorage.setItem("sona.slpok", code.toUpperCase()); localStorage.setItem("sona.slpunlock", "1"); } catch (e) {}
         // a family that already finished onboarding gets patched in place —
         // the link can arrive after setup (e.g. re-sent by the SLP)
         try { const pr = getProfile(); if (pr.onboarded || pr.childName) saveProfile({ earlyAdopter: true, slpCode: code.toUpperCase() }); } catch (e) {}
@@ -1034,9 +1035,7 @@
     const fm = (typeof location !== "undefined" ? location.search : "").match(/[?&]founder=([^&]{8,128})/);
     if (fm && localStorage.getItem("sona.founder") !== "1") founderUnlock(decodeURIComponent(fm[1]));
   } catch (e) {}
-  function slpVerified() {
-    try { const ok = localStorage.getItem("sona.slpok") || ""; return !!ok && ok === (localStorage.getItem("sona.slp") || ""); } catch (e) { return false; }
-  }
+  function slpVerified() { try { return localStorage.getItem("sona.slpunlock") === "1"; } catch (e) { return false; } }
   try {
     const q = (typeof location !== "undefined" ? location.search : "");
     const m = q.match(/[?&]slp=([A-Za-z0-9_-]{2,24})/);
