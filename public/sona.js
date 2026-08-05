@@ -965,7 +965,6 @@
   function gated() {
     if (isFree()) return false;
     if (isFounder()) return false;
-    if (slpVerified()) return false;                 // device redeemed a valid SLP credential
     if (isSubscribed() || isPilot()) return false;
     try { if (getProfile().earlyAdopter) return false; } catch (e) {}
     ensureTrial();
@@ -990,25 +989,22 @@
   }
 
 
-  // ── SLP referral links: speaksona.com/?slp=CODE&k=KEY ───────────────────
-  // An SLP shares their credential — code (the "username") + family key (the
-  // "password") — and their families get Sona free, forever. With pricing
-  // LIVE, the grant is SERVER-VERIFIED: the old honor system unlocked for any
-  // string in the URL, which was fine while everything was free and is a
-  // paywall hole now. The code still sticks unverified (it keys the roster
-  // and the funnel), but free access needs the key to check out.
+  // ── SLP caseload links: speaksona.com/join.html?slp=CODE&k=KEY ──────────
+  // Sona is free for everyone, so this link does NOT unlock anything. Its job
+  // is the roster: a family who joins through their clinician's link (and
+  // whose grown-up consents) sends practice progress to that SLP's dashboard.
+  // The key is still verified server-side — not to gate access, but so a
+  // stranger can't inject fake children into a real clinician's caseload.
   function _slpVerify(code, key) {
     return fetch("/api/slp/redeem", {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ code, key }),
     }).then((r) => r.json()).then((j) => {
       if (j && j.ok && j.valid) {
-        try { localStorage.setItem("sona.slpok", code.toUpperCase()); localStorage.setItem("sona.slpunlock", "1"); } catch (e) {}
-        // a family that already finished onboarding gets patched in place —
-        // the link can arrive after setup (e.g. re-sent by the SLP)
-        try { const pr = getProfile(); if (pr.onboarded || pr.childName) saveProfile({ earlyAdopter: true, slpCode: code.toUpperCase() }); } catch (e) {}
-        // the funnel event means A REAL FAMILY UNLOCKED — only the valid
-        // branch may fire it, or the SLP ranking counts garbage
+        try { localStorage.setItem("sona.slpok", code.toUpperCase()); } catch (e) {}
+        try { const pr = getProfile(); if (pr.onboarded || pr.childName) saveProfile({ slpCode: code.toUpperCase() }); } catch (e) {}
+        // the funnel event means A REAL FAMILY JOINED A CASELOAD — only the
+        // valid branch may fire it, or the SLP ranking counts garbage
         try { track("slp code redeemed", { code: code.toUpperCase() }); } catch (e) {}
         return { valid: true, name: j.name || "" };
       }
@@ -1035,7 +1031,20 @@
     const fm = (typeof location !== "undefined" ? location.search : "").match(/[?&]founder=([^&]{8,128})/);
     if (fm && localStorage.getItem("sona.founder") !== "1") founderUnlock(decodeURIComponent(fm[1]));
   } catch (e) {}
-  function slpVerified() { try { return localStorage.getItem("sona.slpunlock") === "1"; } catch (e) { return false; } }
+  function slpVerified() { try { return !!localStorage.getItem("sona.slpok"); } catch (e) { return false; } }
+  // Consented enrolment: the grown-up agreed to share this child's practice
+  // with their clinician. startPilot is what makes sendProgress() actually
+  // report (it no-ops without consent), so THIS is the line that puts a family
+  // on an SLP's dashboard — link-joined families never hit it before, which is
+  // why they were invisible to their own therapist.
+  function slpJoinCaseload(code) {
+    try {
+      startPilot(String(code || "").toUpperCase());
+      saveProfile({ slpCode: String(code || "").toUpperCase(), slpShare: true });
+      sendProgress("enroll");
+      return true;
+    } catch (e) { return false; }
+  }
   try {
     const q = (typeof location !== "undefined" ? location.search : "");
     const m = q.match(/[?&]slp=([A-Za-z0-9_-]{2,24})/);
@@ -1801,11 +1810,11 @@
   // NOTE: this product id is already App Store-approved; the price lives in
   // App Store Connect, and the paywall renders whatever ASC reports.
   // ── FREE MODE ──────────────────────────────────────────────────────────
-  // OFF: pricing is live — $9.99/mo or $59.99/yr after a 3-day free trial.
-  // ONE switch, honoured by every purchase surface. Two cohorts stay free
-  // forever regardless of this flag: SLP-referred families (earlyAdopter via
-  // ?slp= links — that promise IS the SLP channel) and pilots. Flip back to
-  // true and every price disappears again with no other edits.
+  // ON: Sona is 100% free for everyone. No paywall, no trial, no plan.
+  // ONE switch, honoured by every purchase surface — gated() short-circuits
+  // here, so no kid page can ever bounce to a price screen. The Stripe and
+  // Apple rails stay built and tested behind this flag; flip to false and
+  // pricing comes back with no other edits.
   // Recorded human model clips (/coach/say/<SOUND>[-demo].mp3) are Rachel's own
   // voice. OFF everywhere until a non-Rachel set exists. This MUST live here,
   // not per-page: charge.html gated it locally and coach-call.html went on
@@ -1828,7 +1837,7 @@
   const HUMAN_CLIPS = false;
   function humanClipsOn() { return HUMAN_CLIPS; }
 
-  const FREE_MODE = false;
+  const FREE_MODE = true;
   // QA seam: ?paid=1 (or the sticky sona.paidui flag) reveals the purchase
   // rails on this device so the paid path stays exercisable — and TESTED —
   // while free mode ships. It only controls VISIBILITY; it can't unlock
@@ -2028,5 +2037,5 @@
   }
   try { installDebug(); } catch (e) {}
 
-  global.Sona = { pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, ladderContent, FREE_MODE, isFree, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, bumpReps, repsToday, pathState, localDay: () => _localDay(), soundFamily, frameShape, checkSounds, checkItems, gradeSound, saveCheck, lastCheck, checkHistory, checkDue, buildPlan, getPlan, journeyWeek, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, gated, gateVerify, gateOk, requireGate, slpCode, slpRedeem, slpVerified, isFounder, founderUnlock, offerCode, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, LEVEL_GAMES, GAME_DECK, GAMES_PER_LEVEL, levelGames, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, WORLDS, LEVELS_PER_WORLD, campaignLevels, campaignSounds, campaignState, worldById, worldLevels, worldStars, worldCleared, levelStars, setLevelStars, totalStars, worldUnlocked, levelUnlocked, campaignLaunch, campaignResolve, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repsBeacon, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES };
+  global.Sona = { pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, ladderContent, FREE_MODE, isFree, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, bumpReps, repsToday, pathState, localDay: () => _localDay(), soundFamily, frameShape, checkSounds, checkItems, gradeSound, saveCheck, lastCheck, checkHistory, checkDue, buildPlan, getPlan, journeyWeek, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, gated, gateVerify, gateOk, requireGate, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, LEVEL_GAMES, GAME_DECK, GAMES_PER_LEVEL, levelGames, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, WORLDS, LEVELS_PER_WORLD, campaignLevels, campaignSounds, campaignState, worldById, worldLevels, worldStars, worldCleared, levelStars, setLevelStars, totalStars, worldUnlocked, levelUnlocked, campaignLaunch, campaignResolve, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repsBeacon, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES };
 })(window);

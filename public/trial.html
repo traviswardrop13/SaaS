@@ -6,7 +6,17 @@
   <!-- Native shell: the purchase UI lives on the plan screen (Apple's sheet
        via RevenueCat — Stripe never renders in-app). Route there, not to a
        Stripe pitch. -->
-  <script>if(window.Capacitor)location.replace("/subscribe.html");</script>
+  <!-- Sona is FREE: nothing gates, so this page is unreachable in normal use.
+       A bookmark or an old link must never show a price screen to a family —
+       bounce straight to practice. (The page itself stays for the day pricing
+       returns; Sona.isFree() is the single switch.) -->
+  <script>
+    if (window.Capacitor) location.replace("/subscribe.html");
+  </script>
+  <script src="/sona.js"></script>
+  <script>
+    try { if (window.Sona && Sona.isFree && Sona.isFree()) location.replace("/today.html"); } catch (e) {}
+  </script>
   <title>Sona — keep going with Echo</title>
   <link href="/fonts.css" rel="stylesheet">
   <link rel="stylesheet" href="/sona.css" />

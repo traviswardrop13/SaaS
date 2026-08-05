@@ -161,18 +161,13 @@
       <p class="muted" id="pickMsg" style="margin-top:10px;font-weight:800;font-size:12.5px;"></p>
     </div>
 
-    <!-- SLP credential entry — free access for a clinician's families -->
+    <!-- Working with an SLP? Sona is free for everyone, so this is purely
+         about connecting a family to their clinician's dashboard. One consent
+         surface for the whole app: /join.html. -->
     <div class="card" id="slpEntryCard">
       <h2>Working with a speech therapist?</h2>
-      <p class="muted" style="font-size:13px;font-weight:700;">If your SLP gave you a code and family key, Sona is free for you — no trial, no plan.</p>
-      <label class="field" for="subSlpCode" style="font-size:12px;">Code</label>
-      <input id="subSlpCode" type="text" autocomplete="off" placeholder="e.g. rachel-k4" style="text-transform:lowercase;" />
-      <label class="field" for="subSlpKey" style="font-size:12px;margin-top:8px;">Family key</label>
-      <input id="subSlpKey" type="text" autocomplete="off" placeholder="e.g. ABCD2345" style="text-transform:uppercase;letter-spacing:1px;" />
-      <div style="display:flex;gap:10px;align-items:center;margin-top:10px;">
-        <button class="btn" id="subSlpGo" style="width:auto;padding:12px 22px;">Unlock free access</button>
-        <span id="subSlpMsg" class="muted" style="font-weight:800;font-size:12.5px;"></span>
-      </div>
+      <p class="muted" style="font-size:13px;font-weight:700;">Sona is free either way. If your therapist gave you a link or a code, connecting lets them follow your child's practice between sessions — you decide whether to share.</p>
+      <a class="btn" href="/join.html" style="width:auto;padding:12px 22px;margin-top:10px;display:inline-block;">Connect with my therapist →</a>
     </div>
 
     <div class="card" id="foundingCard">
@@ -368,30 +363,6 @@
           document.getElementById("planLine").innerHTML = 'Your plan: <b style="color:var(--good);">Active ✓</b> — thank you for backing Sona.';
         }
       } catch (e) {}
-    })();
-
-    // SLP credential entry: verified server-side; success = founding access.
-    (function(){
-      var go=document.getElementById("subSlpGo"); if(!go) return;
-      // subscribers and founding families don't need the box
-      try{ if((Sona.isSubscribed&&Sona.isSubscribed())||(Sona.getProfile&&Sona.getProfile().earlyAdopter)) document.getElementById("slpEntryCard").style.display="none"; }catch(e){}
-      var m=document.getElementById("subSlpMsg");
-      go.onclick=function(){
-        var c=(document.getElementById("subSlpCode").value||"").trim(), k=(document.getElementById("subSlpKey").value||"").trim();
-        if(!c||!k){ m.style.color="#b42323"; m.textContent="Both fields, please."; return; }
-        m.style.color="var(--muted)"; m.textContent="Checking\u2026";
-        Sona.slpRedeem(c,k).then(function(r){
-          if(r.valid){
-            try{ Sona.saveProfile({earlyAdopter:true, slpCode:c.toUpperCase()}); localStorage.setItem("sona.slp",c.toUpperCase()); }catch(e){}
-            m.style.color="var(--good)"; m.textContent="You\u2019re in \u2014 free"+(r.name?(" via "+r.name):"")+" \u2713";
-            try{ Sona.confetti&&Sona.confetti({count:140}); }catch(e){}
-            setTimeout(function(){ location.href="/today.html"; },900);
-          } else {
-            m.style.color="#b42323";
-            m.textContent = r.error==="offline" ? "Couldn\u2019t reach the server \u2014 try again." : "That code and key don\u2019t match \u2014 double-check with your SLP.";
-          }
-        });
-      };
     })();
 
     // "Remind me before anything changes" — now captures a real email so the

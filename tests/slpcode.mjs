@@ -1,9 +1,11 @@
-// CODES1: the SLP family credential — code ("username") + family key
-// ("password"), auto-created for the clinician, verified server-side before
-// anything unlocks. With pricing LIVE this is the wall between "typed a
-// string" and "skips the paywall": the old ?slp= honor system granted free
-// access to ANY code, so the thing under test here is that only a credential
-// the server vouches for unlocks — and that a wrong key genuinely doesn't.
+// CODES1: the SLP caseload link — code + family key, auto-created for the
+// clinician behind their login, verified server-side.
+//
+// Sona is FREE for everyone, so this link unlocks NOTHING. Its job is the
+// roster: a family who opens it, and whose grown-up CONSENTS, sends practice
+// progress to that clinician's dashboard. The key is verified not to gate
+// access but so a stranger can't inject fake children into a real caseload —
+// and consent is a real choice, not a formality.
 import { createServer } from "http";
 import { readFileSync, existsSync } from "fs";
 import { chromium, ROOT, launchOpts } from "./_env.mjs";
@@ -70,20 +72,12 @@ const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL 
     verified: Sona.slpVerified(),
   }));
   ok("a valid link verifies against the server", st.ok === "RACHEL-K4" && st.verified, JSON.stringify(st));
-  // finish onboarding as a parent: founding access sticks
-  await pg.evaluate(() => {
+  const free = await pg.evaluate(() => {
     Sona.saveProfile({ childName: "Milo", childAge: "7", focusSounds: ["R"], onboarded: true });
+    localStorage.setItem(Sona.kkey("sona.trial.v1"), JSON.stringify({ start: Date.now() - 40 * 86400000, days: 3 }));
+    return { free: Sona.isFree(), gated: Sona.gated() };
   });
-  // the link arrived BEFORE onboarding; finish() reads slpVerified — simulate
-  // the exact grant the onboarding flow performs
-  const granted = await pg.evaluate(() => {
-    if (Sona.slpVerified()) Sona.saveProfile({ earlyAdopter: true, slpCode: Sona.slpCode() });
-    // expire the trial hard: a founding family must never gate
-    localStorage.setItem(Sona.kkey("sona.trial.v1"), JSON.stringify({ start: Date.now() - 10 * 86400000, days: 3 }));
-    return { early: Sona.getProfile().earlyAdopter, gated: Sona.gated() };
-  });
-  ok("verified family gets founding access", granted.early === true);
-  ok("founding family with a dead trial is never gated", granted.gated === false);
+  ok("the app is free with or without a code", free.free === true && free.gated === false, JSON.stringify(free));
   await pg.context().close();
 }
 
@@ -97,12 +91,13 @@ const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL 
     verified: Sona.slpVerified(),
   }));
   ok("a wrong key never verifies", !st.ok && !st.verified, JSON.stringify(st));
-  const gated = await pg.evaluate(() => {
-    Sona.saveProfile({ childName: "Ana", childAge: "6", focusSounds: ["S"], onboarded: true, earlyAdopter: false });
-    localStorage.setItem(Sona.kkey("sona.trial.v1"), JSON.stringify({ start: Date.now() - 10 * 86400000, days: 3 }));
-    return Sona.gated();
+  const nope = await pg.evaluate(() => {
+    Sona.saveProfile({ childName: "Ana", childAge: "6", focusSounds: ["S"], onboarded: true });
+    localStorage.setItem(Sona.kkey("sona.trial.v1"), JSON.stringify({ start: Date.now() - 40 * 86400000, days: 3 }));
+    return { gated: Sona.gated(), pilot: Sona.isPilot() };
   });
-  ok("wrong-key family gates like anyone else after the trial", gated === true);
+  ok("a wrong key still leaves the app free (nothing to gate)", nope.gated === false);
+  ok("but it never puts the child on anyone's caseload", nope.pilot === false);
   await pg.context().close();
 }
 
@@ -120,12 +115,31 @@ const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL 
   await pg.context().close();
 }
 
-// ── 4. typed entry on the trial page unlocks with the right credential ──
+// ── 4. the trial page is a dead end while Sona is free ──
 {
   const ctx = await browser.newContext();
   const pg = await ctx.newPage();
   await pg.goto("http://localhost:8155/today.html"); // real origin for storage
   await pg.evaluate(() => {
+    localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Ben", childAge: "7", focusSounds: ["R"], onboarded: true }));
+    localStorage.setItem("sona.trial.v1", JSON.stringify({ start: Date.now() - 10 * 86400000, days: 3 }));
+  });
+  await pg.goto("http://localhost:8155/trial.html");
+  await pg.waitForTimeout(700);
+  ok("a family who lands on the trial page is bounced into the app, not a price",
+    /\/today\.html$/.test(new URL(pg.url()).pathname + ""), pg.url());
+  await ctx.close();
+}
+
+// ── 4a. the paid rail still works behind the QA seam (?paid=1) ──
+// Sona is free, but the purchase surfaces stay BUILT and TESTED so flipping
+// FREE_MODE back is a one-line change, not an archaeology project.
+{
+  const ctx = await browser.newContext();
+  const pg = await ctx.newPage();
+  await pg.goto("http://localhost:8155/today.html");
+  await pg.evaluate(() => {
+    localStorage.setItem("sona.paidui", "1"); // QA seam: show the purchase rails
     localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Ben", childAge: "7", focusSounds: ["R"], onboarded: true }));
     localStorage.setItem("sona.trial.v1", JSON.stringify({ start: Date.now() - 10 * 86400000, days: 3 }));
   });
@@ -178,12 +192,20 @@ const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL 
   await pg.goto("http://localhost:8155/join.html?slp=rachel-k4&k=RACHELKEY");
   await pg.waitForTimeout(900);
   const st = await pg.evaluate(() => ({
-    unlocked: localStorage.getItem("sona.slpunlock"),
     verified: Sona.slpVerified(),
+    consentShown: getComputedStyle(document.getElementById("jConsent")).display !== "none",
     loc: location.href,
   }));
-  ok("join.html verifies the link's credential and unlocks the device", st.unlocked === "1" && st.verified, JSON.stringify(st));
+  ok("join.html verifies the link and offers the consent choice", st.verified === true, JSON.stringify(st));
+  ok("join.html asks the grown-up before sharing anything", st.consentShown, JSON.stringify(st));
   ok("join.html strips ?k from the URL immediately", !/[?&]k=/.test(st.loc), st.loc);
+  // CONSENT IS REAL: yes enrols (progress flows), no shares nothing
+  const yes = await pg.evaluate(() => {
+    document.getElementById("jYes").click();
+    return { pilot: Sona.isPilot(), code: (Sona.pilotInfo() || {}).code, share: Sona.getProfile().slpShare };
+  });
+  ok("saying yes puts the child on the SLP's dashboard", yes.pilot === true && yes.code === "RACHEL-K4", JSON.stringify(yes));
+  ok("saying yes records the consent on the profile", yes.share === true);
   // the family key must never appear in a request URL (pixel/analytics leak)
   // the initial navigation the family tapped carries the key (unavoidable);
   // the leak that matters is a SUBSEQUENT request (analytics/pixel/api) with it.
@@ -194,29 +216,28 @@ const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL 
   await ctx.close();
 }
 
-// ── 4c. device unlock survives a kid switch (the caseload iPad) ──
+// ── 4c. declining consent shares NOTHING, and the app is still free ──
 {
   const ctx = await browser.newContext();
   const pg = await ctx.newPage();
-  await pg.goto("http://localhost:8155/today.html");
-  const res = await pg.evaluate(() => {
-    localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "A", childAge: "6", focusSounds: ["R"], onboarded: true }));
-    localStorage.setItem("sona.slpunlock", "1");
-    localStorage.setItem("sona.trial.v1", JSON.stringify({ start: Date.now() - 30 * 86400000, days: 3 }));
-    const before = Sona.gated();
-    Sona.addKid("Bee", "5"); // fresh profile, no earlyAdopter
-    const afterSwitch = Sona.gated();
-    return { before, afterSwitch };
+  await pg.goto("http://localhost:8155/join.html?slp=rachel-k4&k=RACHELKEY");
+  await pg.waitForTimeout(900);
+  const no = await pg.evaluate(() => {
+    document.getElementById("jNo").click();
+    return { pilot: Sona.isPilot(), share: Sona.getProfile().slpShare, gated: Sona.gated() };
   });
-  ok("device SLP unlock keeps every kid free (survives a switch)", res.before === false && res.afterSwitch === false, JSON.stringify(res));
+  ok("saying no never enrols the child", no.pilot === false, JSON.stringify(no));
+  ok("saying no records the refusal", no.share === false);
+  ok("saying no still leaves the app free", no.gated === false);
   await ctx.close();
 }
 
-// ── 5. founder access: the owners skip the paywall on any device ──
+// ── 5. founder access: the owners' key still verifies (rail kept alive) ──
 {
   const pg = await (await browser.newContext()).newPage();
   await pg.goto("http://localhost:8155/today.html");
   const good = await pg.evaluate(async () => {
+    localStorage.setItem("sona.paidui", "1"); // QA seam: exercise the rail
     localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "T", childAge: "7", focusSounds: ["R"], onboarded: true }));
     localStorage.setItem("sona.trial.v1", JSON.stringify({ start: Date.now() - 30 * 86400000, days: 3 }));
     const r = await Sona.founderUnlock("OWNER-SECRET-123");
@@ -235,6 +256,14 @@ const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL 
   await pg.waitForTimeout(600);
   const viaUrl = await pg.evaluate(() => Sona.isFounder());
   ok("?founder=KEY unlocks via the URL", viaUrl === true);
+  // …and with the seam OFF (real users), nobody is gated at all
+  const real = await pg.evaluate(() => {
+    localStorage.removeItem("sona.paidui");
+    localStorage.removeItem("sona.founder");
+    return { free: Sona.isFree(), gated: Sona.gated() };
+  });
+  ok("with no founder key and a dead trial, a real family is still not gated",
+    real.free === true && real.gated === false, JSON.stringify(real));
   await pg.context().close();
 }
 
@@ -269,8 +298,13 @@ const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL 
   ok("the funnel event fires only on a VALID redemption",
     /valid[\s\S]{0,700}track\("slp code redeemed"/.test(sona),
     "counting unverified codes ranks garbage SLPs");
-  ok("gated() honors the device-wide SLP unlock",
-    /if \(slpVerified\(\)\) return false;/.test(sona));
+  ok("Sona is free — gated() short-circuits on isFree()", /const FREE_MODE = true;/.test(sona) && /if \(isFree\(\)\) return false;/.test(sona));
+  ok("joining a caseload requires CONSENT and actually enrols (startPilot)",
+    /function slpJoinCaseload[\s\S]{0,320}startPilot\(/.test(sona) && /sendProgress\("enroll"\)/.test(sona),
+    "sendProgress() no-ops without consent — link-joined families were invisible to their own SLP");
+  const joinSrc = readFileSync(ROOT + "/join.html", "utf8");
+  ok("join.html only enrols behind an explicit Yes",
+    /jYes[\s\S]{0,200}slpJoinCaseload/.test(joinSrc) && /jNo/.test(joinSrc));
   const ob = readFileSync(ROOT + "/onboarding.html", "utf8");
   ok("onboarding grants founding only when verified", /earlyAdopter: _slpok/.test(ob));
   const founder = readFileSync(ROOT + "/../app/api/founder/route.ts", "utf8");
