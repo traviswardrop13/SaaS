@@ -517,12 +517,23 @@ await page.evaluate(() => { const g = Sona.getProgress(); g.stage.R = 0; localSt
   ok("day goal done fires exactly once, at the fifth round", goal.length === 1, "fired " + goal.length + "×");
   ok("the goal beacon carries the practiced sound", /"sound":"[A-Z]{1,3}"/.test((goal[0] || {}).body || ""), (goal[0] || {}).body);
 
+  // CODES1: the event means A REAL FAMILY UNLOCKED — a bare unverified code
+  // (the old honor system) must fire nothing.
   await page.goto("http://localhost:8131/today.html?slp=RACHEL1"); await page.waitForTimeout(600);
   let slp = await page.evaluate(() => window.__beacons.filter((b) => /slp code redeemed/.test(b.body)));
-  ok("a fresh SLP code fires the redemption beacon", slp.length === 1 && /RACHEL1/.test(slp[0].body), JSON.stringify(slp));
-  await page.goto("http://localhost:8131/today.html?slp=RACHEL1"); await page.waitForTimeout(600);
-  slp = await page.evaluate(() => window.__beacons.filter((b) => /slp code redeemed/.test(b.body)));
-  ok("revisiting the same link does NOT re-fire it", slp.length === 0, "fired again on a sticky code");
+  ok("a bare unverified code fires NO redemption beacon", slp.length === 0, JSON.stringify(slp));
+  // a VERIFIED redemption fires it exactly once
+  slp = await page.evaluate(async () => {
+    window.__beacons.length = 0;
+    const orig = window.fetch;
+    window.fetch = async (url, opts) => /\/api\/slp\/redeem/.test(String(url))
+      ? new Response(JSON.stringify({ ok: true, valid: true, name: "Rachel" }), { headers: { "Content-Type": "application/json" } })
+      : orig(url, opts);
+    await Sona.slpRedeem("rachel-k4", "RACHELKEY");
+    window.fetch = orig;
+    return window.__beacons.filter((b) => /slp code redeemed/.test(b.body));
+  });
+  ok("a verified redemption fires the beacon once", slp.length === 1 && /RACHEL-K4/.test(slp[0].body), JSON.stringify(slp));
 }
 
 await browser.close(); srv.close();

@@ -988,19 +988,45 @@
   }
 
 
-  // ── SLP referral links: speaksona.com/?slp=CODE ─────────────────────────
-  // An SLP shares their link; families arriving through it get free founding
-  // access (the SLP program), and the code sticks so we know which SLPs send
-  // families. Ad/organic arrivals have no code → the trial/paid path.
+  // ── SLP referral links: speaksona.com/?slp=CODE&k=KEY ───────────────────
+  // An SLP shares their credential — code (the "username") + family key (the
+  // "password") — and their families get Sona free, forever. With pricing
+  // LIVE, the grant is SERVER-VERIFIED: the old honor system unlocked for any
+  // string in the URL, which was fine while everything was free and is a
+  // paywall hole now. The code still sticks unverified (it keys the roster
+  // and the funnel), but free access needs the key to check out.
+  function _slpVerify(code, key) {
+    return fetch("/api/slp/redeem", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code, key }),
+    }).then((r) => r.json()).then((j) => {
+      if (j && j.ok && j.valid) {
+        try { localStorage.setItem("sona.slpok", code.toUpperCase()); } catch (e) {}
+        // a family that already finished onboarding gets patched in place —
+        // the link can arrive after setup (e.g. re-sent by the SLP)
+        try { const pr = getProfile(); if (pr.onboarded || pr.childName) saveProfile({ earlyAdopter: true, slpCode: code.toUpperCase() }); } catch (e) {}
+        // the funnel event means A REAL FAMILY UNLOCKED — only the valid
+        // branch may fire it, or the SLP ranking counts garbage
+        try { track("slp code redeemed", { code: code.toUpperCase() }); } catch (e) {}
+        return { valid: true, name: j.name || "" };
+      }
+      return { valid: false, error: (j && j.error) || "" };
+    }).catch(() => ({ valid: false, error: "offline" }));
+  }
+  // Typed entry (paywall surfaces): same verification, same grant.
+  function slpRedeem(code, key) { return _slpVerify(String(code || ""), String(key || "")); }
+  function slpVerified() {
+    try { const ok = localStorage.getItem("sona.slpok") || ""; return !!ok && ok === (localStorage.getItem("sona.slp") || ""); } catch (e) { return false; }
+  }
   try {
-    const m = (typeof location !== "undefined" ? location.search : "").match(/[?&]slp=([A-Za-z0-9_-]{2,24})/);
+    const q = (typeof location !== "undefined" ? location.search : "");
+    const m = q.match(/[?&]slp=([A-Za-z0-9_-]{2,24})/);
     if (m) {
       const code = m[1].toUpperCase();
-      // fire only on FIRST redemption — the code sticks, and every later visit
-      // still carries the query param via bookmarks/re-taps
-      const fresh = localStorage.getItem("sona.slp") !== code;
       localStorage.setItem("sona.slp", code);
-      if (fresh) { try { track("slp code redeemed", { code }); } catch (e) {} }
+      const km = q.match(/[?&]k=([A-Za-z0-9]{4,16})/);
+      // verify once per code — the link gets bookmarked and re-tapped
+      if (km && localStorage.getItem("sona.slpok") !== code) _slpVerify(code, km[1]);
     }
   } catch (e) {}
   function slpCode() { try { return localStorage.getItem("sona.slp") || ""; } catch (e) { return ""; } }
@@ -1984,5 +2010,5 @@
   }
   try { installDebug(); } catch (e) {}
 
-  global.Sona = { pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, ladderContent, FREE_MODE, isFree, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, bumpReps, repsToday, pathState, localDay: () => _localDay(), soundFamily, frameShape, checkSounds, checkItems, gradeSound, saveCheck, lastCheck, checkHistory, checkDue, buildPlan, getPlan, journeyWeek, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, gated, gateVerify, gateOk, requireGate, slpCode, offerCode, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, LEVEL_GAMES, GAME_DECK, GAMES_PER_LEVEL, levelGames, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, WORLDS, LEVELS_PER_WORLD, campaignLevels, campaignSounds, campaignState, worldById, worldLevels, worldStars, worldCleared, levelStars, setLevelStars, totalStars, worldUnlocked, levelUnlocked, campaignLaunch, campaignResolve, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repsBeacon, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES };
+  global.Sona = { pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, ladderContent, FREE_MODE, isFree, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, bumpReps, repsToday, pathState, localDay: () => _localDay(), soundFamily, frameShape, checkSounds, checkItems, gradeSound, saveCheck, lastCheck, checkHistory, checkDue, buildPlan, getPlan, journeyWeek, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, gated, gateVerify, gateOk, requireGate, slpCode, slpRedeem, slpVerified, offerCode, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, LEVEL_GAMES, GAME_DECK, GAMES_PER_LEVEL, levelGames, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, WORLDS, LEVELS_PER_WORLD, campaignLevels, campaignSounds, campaignState, worldById, worldLevels, worldStars, worldCleared, levelStars, setLevelStars, totalStars, worldUnlocked, levelUnlocked, campaignLaunch, campaignResolve, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repsBeacon, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES };
 })(window);

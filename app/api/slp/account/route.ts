@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { kvCmd, readSession, signSession, sessionCookie, SESSION_MAX_AGE } from "@/lib/slpAuth";
+import { kvCmd, readSession, signSession, sessionCookie, SESSION_MAX_AGE, makeFamilyKey } from "@/lib/slpAuth";
 
 export const runtime = "nodejs";
 
@@ -45,6 +45,9 @@ export async function POST(req: NextRequest) {
     }
     acct.code = c;
   }
+  // every account with a code carries a family key — the "password" half of
+  // the credential that unlocks Sona free for that SLP's families
+  if (acct.code && !acct.familyKey) acct.familyKey = makeFamilyKey();
   if (!acct.createdAt) acct.createdAt = new Date().toISOString();
   await kvCmd(["SET", acctKey, JSON.stringify(acct)]);
 
@@ -58,6 +61,7 @@ export async function POST(req: NextRequest) {
   const res = NextResponse.json({
     ok: true,
     code: (acct.code as string) || "",
+    familyKey: (acct.familyKey as string) || "",
     name: (acct.name as string) || "",
     clinic: (acct.clinic as string) || "",
   });

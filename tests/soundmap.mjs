@@ -166,9 +166,10 @@ for (const page of ["charge.html", "soundcheck.html"]) {
   ok("day goal done fires at the ring's goal crossing, once",
     /if \(n === ROT_LEN\) \{ try \{ track\("day goal done"/.test(sona),
     "per-page firing double-counts the day charge.html AND Feed Echo finish it");
-  ok("slp redemption fires only on a FRESH code",
-    /const fresh = localStorage\.getItem\("sona\.slp"\) !== code;/.test(sona),
-    "the code sticks; every revisit still carries the query param");
+  ok("slp redemption verifies once per code, and the event fires only on VALID",
+    /localStorage\.getItem\("sona\.slpok"\) !== code\) _slpVerify/.test(sona)
+    && /valid[\s\S]{0,600}track\("slp code redeemed"/.test(sona),
+    "the code sticks and links get re-tapped; only a server-verified redemption may count");
   const settings = readFileSync(ROOT + "/public/settings.html", "utf8");
   ok("kid added fires from the parent page", /SonaAnalytics\.track\("kid added"\)/.test(settings));
   const privacy = readFileSync(ROOT + "/public/privacy.html", "utf8");

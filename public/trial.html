@@ -50,8 +50,19 @@
       </ul>
       <a class="btn" href="/subscribe" style="margin-top:18px;">Start 3 days free</a>
       <p class="muted" style="margin-top:12px;font-size:13px;font-weight:700;">
+        Working with a speech therapist? <a href="#" id="slpEntryLink"><b>Enter their code</b></a> — Sona is free for their families.<br/>
         Already subscribed? <a href="#" id="restoreLink">Restore access</a>
       </p>
+      <div id="slpEntry" style="display:none;margin-top:10px;text-align:left;background:#f4fce9;border:2px solid #bce39f;border-radius:14px;padding:12px 14px;">
+        <label class="field" for="slpEnCode" style="font-size:12px;">Code from your SLP</label>
+        <input id="slpEnCode" type="text" autocomplete="off" placeholder="e.g. rachel-k4" style="text-transform:lowercase;" />
+        <label class="field" for="slpEnKey" style="font-size:12px;margin-top:8px;">Family key</label>
+        <input id="slpEnKey" type="text" autocomplete="off" placeholder="e.g. ABCD2345" style="text-transform:uppercase;letter-spacing:1px;" />
+        <div style="display:flex;gap:10px;align-items:center;margin-top:10px;">
+          <button class="btn" id="slpEnGo" style="width:auto;padding:12px 22px;">Unlock free access</button>
+          <span id="slpEnMsg" class="muted" style="font-weight:800;font-size:12.5px;"></span>
+        </div>
+      </div>
       <div class="resBox" id="resBox">
         <input id="resEmail" type="email" inputmode="email" placeholder="Email you subscribed with" />
         <div style="display:flex;gap:10px;align-items:center;margin-top:8px;justify-content:center;">
@@ -90,6 +101,33 @@
       else if (r.ok) { msg.style.color = "#b42323"; msg.textContent = "No active subscription for that email."; }
       else { msg.style.color = "#b42323"; msg.textContent = r.error || "Couldn’t check."; }
     };
+  </script>
+  <script>
+    // SLP credential entry: the family types what their clinician handed them;
+    // the server checks it; success = founding access, forever. (KIDS never see
+    // this page mid-round — the gate fires at page load only.)
+    (function(){
+      var lk=document.getElementById("slpEntryLink"), box=document.getElementById("slpEntry");
+      if(!lk||!box) return;
+      lk.onclick=function(ev){ ev.preventDefault(); box.style.display=box.style.display==="none"?"block":"none"; };
+      var go=document.getElementById("slpEnGo"), m=document.getElementById("slpEnMsg");
+      go.onclick=function(){
+        var c=(document.getElementById("slpEnCode").value||"").trim(), k=(document.getElementById("slpEnKey").value||"").trim();
+        if(!c||!k){ m.style.color="#b42323"; m.textContent="Both fields, please."; return; }
+        m.style.color="var(--muted)"; m.textContent="Checking\u2026";
+        Sona.slpRedeem(c,k).then(function(r){
+          if(r.valid){
+            try{ Sona.saveProfile({earlyAdopter:true, slpCode:c.toUpperCase()}); localStorage.setItem("sona.slp",c.toUpperCase()); }catch(e){}
+            m.style.color="var(--good)"; m.textContent="You\u2019re in \u2014 free"+(r.name?(" via "+r.name):"")+" \u2713";
+            try{ Sona.confetti&&Sona.confetti({count:140}); }catch(e){}
+            setTimeout(function(){ location.href="/today.html"; },900);
+          } else {
+            m.style.color="#b42323";
+            m.textContent = r.error==="offline" ? "Couldn\u2019t reach the server \u2014 try again." : "That code and key don\u2019t match \u2014 double-check with your SLP.";
+          }
+        });
+      };
+    })();
   </script>
 </body>
 </html>

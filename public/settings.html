@@ -161,19 +161,24 @@
          of a caseload and watching who's actually practising. -->
     <div class="card" id="slpCard" style="display:none;">
       <h2>Your caseload 🎓</h2>
-      <p class="muted" style="margin-bottom:12px;">Share one link with families. Everyone who joins through it shows up on your dashboard — practice days, reps, and how each sound is coming along.</p>
+      <p class="muted" style="margin-bottom:12px;">Hand families your credential and Sona is <b>free for them</b> — no trial, no paywall. Everyone who joins shows up on your dashboard: practice days, reps, and how each sound is coming along.</p>
 
-      <label class="field" for="slpCodeIn">Your code</label>
-      <input id="slpCodeIn" type="text" placeholder="e.g. RACHEL1" autocomplete="off"
-             style="text-transform:uppercase;letter-spacing:1px;font-family:'Baloo 2';font-weight:800;" />
-      <p class="muted" style="font-size:12px;margin-top:6px;">Any short word works — families type it once and you can tell whose is whose.</p>
-
-      <div id="slpLinkWrap" style="display:none;margin-top:14px;background:#f4fce9;border-radius:14px;padding:12px 14px;">
-        <div style="font-weight:800;font-size:12px;color:#46a302;letter-spacing:.05em;">FAMILY LINK</div>
-        <div id="slpLink" style="font-weight:800;font-size:13.5px;color:var(--ink);word-break:break-all;margin-top:4px;"></div>
+      <!-- registered credential (server-issued at onboarding). The old
+           type-anything code box was an honor system; with pricing live the
+           credential is verified, so it can't be edited here — only shared. -->
+      <div id="slpCredWrap" style="display:none;background:#f4fce9;border:2px solid #bce39f;border-radius:14px;padding:13px 15px;">
+        <div style="font-weight:800;font-size:11.5px;letter-spacing:.06em;color:#46a302;">YOUR FAMILY CREDENTIAL</div>
+        <div style="font-family:'Baloo 2';font-weight:800;font-size:18px;margin-top:5px;">Code: <span id="slpCredCode"></span></div>
+        <div style="font-family:'Baloo 2';font-weight:800;font-size:18px;">Family key: <span id="slpCredKey"></span></div>
+        <div id="slpLink" style="font-weight:700;font-size:12px;color:var(--muted);word-break:break-all;margin-top:6px;"></div>
+      </div>
+      <div id="slpNoCred" style="display:none;">
+        <p class="muted" style="font-size:13px;font-weight:700;">Your share credential isn't set up on this device yet.</p>
+        <button class="btn" id="slpCreate" style="width:auto;padding:12px 20px;margin-top:8px;">Create my share code</button>
+        <p class="muted" style="font-size:12px;margin-top:6px;">Already have one? <a href="/slp-login.html"><b>Sign in</b></a> and it's on your dashboard.</p>
       </div>
       <div style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
-        <button class="btn" id="slpCopy" style="width:auto;padding:12px 20px;">Copy family link</button>
+        <button class="btn" id="slpCopy" style="width:auto;padding:12px 20px;">Copy the message to send</button>
         <a class="btn ghost" id="slpDash" href="/slp.html" style="width:auto;padding:12px 18px;">Open dashboard →</a>
         <span id="slpMsg" class="muted" style="font-weight:800;"></span>
       </div>
@@ -345,39 +350,50 @@
       if (!card) return;
       if ((p.role || "") !== "slp") return;          // parents never see this
       card.style.display = "block";
-      var inp = document.getElementById("slpCodeIn"),
-          wrap = document.getElementById("slpLinkWrap"),
-          out = document.getElementById("slpLink"),
-          msg = document.getElementById("slpMsg");
-      function clean(v) { return String(v || "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 12); }
-      function linkFor(c) { return location.origin + "/?slp=" + c; }
-      var code = "";
-      try { code = clean(p.slpCode || (Sona.slpCode && Sona.slpCode()) || ""); } catch (e) {}
-      inp.value = code;
+      var msg = document.getElementById("slpMsg");
+      var cred = (p.slpCredential && p.slpCredential.code && p.slpCredential.key) ? p.slpCredential : null;
+      function linkFor(c) { return location.origin + "/?slp=" + encodeURIComponent(c.code) + "&k=" + encodeURIComponent(c.key); }
+      function shareMsg(c) { return "Hi! Here\u2019s the speech practice app I mentioned \u2014 it\u2019s free for my families: " + linkFor(c) + "  (Or in the app: code " + c.code + ", family key " + c.key + ")"; }
       function paint() {
-        var c = clean(inp.value);
-        if (c) { out.textContent = linkFor(c); wrap.style.display = "block"; }
-        else { wrap.style.display = "none"; }
+        document.getElementById("slpCredWrap").style.display = cred ? "block" : "none";
+        document.getElementById("slpNoCred").style.display = cred ? "none" : "block";
+        document.getElementById("slpCopy").style.display = cred ? "" : "none";
+        if (cred) {
+          document.getElementById("slpCredCode").textContent = cred.code;
+          document.getElementById("slpCredKey").textContent = cred.key;
+          document.getElementById("slpLink").textContent = linkFor(cred);
+        }
       }
       paint();
-      inp.oninput = function () {
-        var c = clean(inp.value);
-        inp.value = c;
-        paint();
-        try { Sona.saveProfile({ slpCode: c }); localStorage.setItem("sona.slp", c); } catch (e) {}
+      var mk = document.getElementById("slpCreate");
+      if (mk) mk.onclick = function () {
+        var em = (p.email || "").trim();
+        if (!em) { em = window.prompt("Your clinician email (this creates your account):") || ""; em = em.trim(); }
+        if (!/^\S+@\S+\.\S+$/.test(em)) { msg.style.color = "#b42323"; msg.textContent = "A valid email is needed."; return; }
+        msg.style.color = "var(--muted)"; msg.textContent = "Creating\u2026";
+        fetch("/api/slp/register", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: em, name: "" }) })
+          .then(function (r) { return r.json(); })
+          .then(function (j) {
+            if (j && j.ok && j.code && j.familyKey) {
+              cred = { code: j.code, key: j.familyKey };
+              Sona.saveProfile({ slpCredential: cred, email: em });
+              msg.style.color = "var(--good)"; msg.textContent = "Ready \u2713";
+              paint();
+            } else if (j && j.existing) {
+              msg.style.color = "var(--muted)"; msg.textContent = "That email already has an account \u2014 sign in to see its credential.";
+            } else {
+              msg.style.color = "#b42323"; msg.textContent = (j && j.error) || "Couldn\u2019t create it \u2014 try again.";
+            }
+          }).catch(function () { msg.style.color = "#b42323"; msg.textContent = "Couldn\u2019t reach the server."; });
       };
       document.getElementById("slpCopy").onclick = function () {
-        var c = clean(inp.value);
-        if (!c) { msg.style.color = "#b42323"; msg.textContent = "Pick a code first."; inp.focus(); return; }
-        var link = linkFor(c);
-        function done() { msg.style.color = "var(--good)"; msg.textContent = "Copied ✓"; setTimeout(function () { msg.textContent = ""; }, 2400); }
+        if (!cred) return;
+        var m = shareMsg(cred);
+        function done() { msg.style.color = "var(--good)"; msg.textContent = "Copied \u2713"; setTimeout(function () { msg.textContent = ""; }, 2400); }
         try {
-          if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(link).then(done, function () { window.prompt("Copy your family link:", link); });
-          else window.prompt("Copy your family link:", link);
-        } catch (e) { window.prompt("Copy your family link:", link); }
-      };
-      document.getElementById("slpDash").onclick = function () {
-        try { var c = clean(inp.value); if (c) localStorage.setItem("sona.slp", c); } catch (e) {}
+          if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(m).then(done, function () { window.prompt("Copy and send this to a family:", m); });
+          else window.prompt("Copy and send this to a family:", m);
+        } catch (e) { window.prompt("Copy and send this to a family:", m); }
       };
     })();
 

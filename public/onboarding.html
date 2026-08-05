@@ -197,6 +197,8 @@
         <div class="choice" style="cursor:default;"><span class="ce"><svg viewBox="0 0 64 64" style="width:30px;height:30px"><g id="ob-headphones"><path d="M14 38v-6a18 18 0 0 1 36 0v6" fill="none" stroke="#7c88e8" stroke-width="6" stroke-linecap="round"></path><rect x="9" y="35" width="12" height="17" rx="5.5" fill="#6270d4"></rect><rect x="43" y="35" width="12" height="17" rx="5.5" fill="#6270d4"></rect><circle cx="13" cy="39" r="2" fill="#fff" opacity=".6"></circle></g></svg></span> <span>Progress you can hear<br/><span style="font-family:Nunito;font-weight:700;font-size:13px;color:var(--muted);">Recordings + a report you can share with your SLP</span></span></div>
       </div>
       <div id="moveCode" style="display:none;margin-top:12px;background:#fff;border:2px solid #ffe2a8;border-radius:14px;padding:11px 14px;font-weight:800;font-size:12.5px;color:#8a6400;text-align:left;"></div>
+      <!-- SLP finale: the auto-created share credential (code + family key) -->
+      <div id="obSlpCred" style="display:none;margin-top:12px;background:#f4fce9;border:2px solid #bce39f;border-radius:14px;padding:13px 15px;text-align:left;"></div>
     </div>
 
     <!-- slp -->
@@ -400,7 +402,12 @@
         var gw=document.getElementById("obGoalsWrap");
         if(gw && slp) gw.style.display="block";
         var eq=document.querySelector('[data-step="email"] .qh');
-        if(eq && slp) eq.innerHTML="Save this child's progress";
+        if(eq && slp) eq.innerHTML="Your clinician account";
+        var ep=document.querySelector('[data-step="email"] p.muted');
+        if(ep && slp) ep.textContent="Your email creates your share credential — the code and family key you hand to clients so Sona is free for them.";
+        // an SLP can't skip email: the credential IS the account
+        var esk=document.getElementById("obEmailSkip");
+        if(esk) esk.parentElement.style.display = slp ? "none" : "";
       }catch(e){}
     }
 
@@ -435,7 +442,7 @@
       if(key==="name") setTimeout(function(){ nameEl.focus(); }, 80);
       if(key==="interests"){ var nmi=(nameEl.value||draft.childName||"").trim(); document.getElementById("intName").textContent = nmi || "your child"; }
       if(key==="achieve"){ var nm=(nameEl.value||draft.childName||"").trim(); document.getElementById("achName").textContent = nm || "your child"; }
-      if(key==="email"){ var nm2=(nameEl.value||draft.childName||"").trim(); document.getElementById("emName").textContent = nm2 || "your child"; setTimeout(function(){ emailEl.focus(); }, 80); }
+      if(key==="email"){ var nm2=(nameEl.value||draft.childName||"").trim(); var emn=document.getElementById("emName"); if(emn) emn.textContent = nm2 || "your child"; setTimeout(function(){ emailEl.focus(); }, 80); }
     }
 
     function next(){
@@ -499,10 +506,12 @@
       draft.focusSounds = (draft.mode==="play" && Sona.PLAY_ORDER) ? Sona.PLAY_ORDER.slice() : Array.from(selSounds);
       draft.interests = Array.from(selInterests);
       var _slp=""; try{ _slp=(Sona.slpCode&&Sona.slpCode())||""; }catch(e){}
+      // Founding access requires the VERIFIED credential (code + family key
+      // checked against the server). A bare ?slp= code still tags the family
+      // for the SLP's roster, but with pricing live it can't unlock by itself.
+      var _slpok=false; try{ _slpok=!!(Sona.slpVerified&&Sona.slpVerified()); }catch(e){}
       Sona.saveProfile({
-        // SLP-referred families get founding (free) access; ad/organic signups
-        // enter the 3-day-trial path. Existing founding profiles keep theirs.
-        earlyAdopter: !!_slp,
+        earlyAdopter: _slpok,
         slpCode: _slp,
         role: draft.role || "parent",
         mode: draft.mode || "speech",
@@ -532,6 +541,36 @@
           })}).catch(function(){});
         }
       }catch(e){}
+      // SLP finish: mint the share credential NOW, so Rachel walks out of
+      // onboarding holding the code + key her clients need. Fire-and-forget —
+      // the finale paints whenever the server answers.
+      if(draft.role==="slp" && draft.email){
+        fetch("/api/slp/register",{method:"POST",headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({email:draft.email,name:draft.childName?"":""})})
+          .then(function(r){return r.json();})
+          .then(function(j){
+            var box=document.getElementById("obSlpCred"); if(!box) return;
+            if(j&&j.ok&&j.code&&j.familyKey){
+              Sona.saveProfile({slpCredential:{code:j.code,key:j.familyKey}});
+              var link=location.origin+"/?slp="+encodeURIComponent(j.code)+"&k="+encodeURIComponent(j.familyKey);
+              box.style.display="block";
+              box.innerHTML='<div style="font-weight:800;font-size:12px;letter-spacing:.06em;color:#46a302;">YOUR FAMILY CREDENTIAL — SHARE THIS WITH CLIENTS</div>'
+                +'<div style="font-family:\'Baloo 2\';font-weight:800;font-size:19px;margin-top:6px;">Code: '+j.code+'</div>'
+                +'<div style="font-family:\'Baloo 2\';font-weight:800;font-size:19px;">Family key: '+j.familyKey+'</div>'
+                +'<div class="muted" style="font-weight:700;font-size:12px;margin-top:6px;word-break:break-all;">Or one tap: '+link+'</div>'
+                +'<button class="btn" id="obCredCopy" style="margin-top:10px;width:auto;padding:11px 18px;">Copy the message to send</button>';
+              var msgTxt="Hi! Here\u2019s the speech practice app I mentioned \u2014 it\u2019s free for my families: "+link+"  (Or in the app: code "+j.code+", family key "+j.familyKey+")";
+              var cb=document.getElementById("obCredCopy");
+              if(cb) cb.onclick=function(){ try{ navigator.clipboard.writeText(msgTxt); cb.textContent="Copied ✓"; }catch(e){} };
+            } else if(j&&j.existing){
+              box.style.display="block";
+              box.innerHTML='<div class="muted" style="font-weight:700;font-size:13px;">This email already has a Sona clinician account — <a href="/slp-login.html"><b>sign in</b></a> to see your share code and family key.</div>';
+            } else {
+              box.style.display="block";
+              box.innerHTML='<div class="muted" style="font-weight:700;font-size:13px;">Couldn\u2019t create your share code right now \u2014 it\u2019ll be waiting in <a href="/slp-login.html"><b>your dashboard</b></a>.</div>';
+            }
+          }).catch(function(){});
+      }
       if(window.Sona){ Sona.sfx.complete(); Sona.confetti({count:160}); }
       // the finale (not a step): show "what's ahead", then Echo calls by name
       ORDER.forEach(function(k){ steps[k].classList.remove("on"); });

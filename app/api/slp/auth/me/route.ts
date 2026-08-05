@@ -19,6 +19,7 @@ export async function GET(req: NextRequest) {
     ok: true,
     email: s.email,
     code,
+    familyKey: (acct && (acct.familyKey as string)) || "",
     name: (acct && (acct.name as string)) || "",
     clinic: (acct && (acct.clinic as string)) || "",
     onboarded: !!code,

@@ -9,6 +9,7 @@ const SUITES = [
   "soundmap.mjs",  // every sound is scorable + the daily ring can actually fill
   "storytest.mjs", // STORY1: episode beats, chapter pacing, cliffhanger
   "kidtest.mjs",   // KIDS1: per-child progress, switching, family-wide entitlement
+  "slpcode.mjs",   // CODES1: SLP family credential — verified redemption, honest gate
   "readtest.mjs",  // books never go silent: browser-voice fallback when TTS dies
   "momweek.mjs",   // parent weekly goal + streak math + the three UIs
   "betatest.mjs",  // onboarding flow + beta pulse + founding banner
