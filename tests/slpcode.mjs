@@ -41,6 +41,17 @@ const srv = createServer((req, res) => {
     });
     return;
   }
+  if (u.pathname === "/api/founder" && req.method === "POST") {
+    let body = "";
+    req.on("data", (c) => (body += c));
+    req.on("end", () => {
+      let j = {};
+      try { j = JSON.parse(body); } catch {}
+      res.writeHead(200, { "content-type": "application/json" });
+      res.end(JSON.stringify({ ok: true, valid: String(j.key || "") === "OWNER-SECRET-123" }));
+    });
+    return;
+  }
   if (u.pathname.startsWith("/api/")) { res.writeHead(500); res.end("{}"); return; }
   const p = ROOT + u.pathname;
   if (!existsSync(p)) { res.writeHead(404); res.end(); return; }
@@ -163,7 +174,33 @@ const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL 
   await ctx.close();
 }
 
-// ── 5. source contracts on the server side ──
+// ── 5. founder access: the owners skip the paywall on any device ──
+{
+  const pg = await (await browser.newContext()).newPage();
+  await pg.goto("http://localhost:8155/today.html");
+  const good = await pg.evaluate(async () => {
+    localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "T", childAge: "7", focusSounds: ["R"], onboarded: true }));
+    localStorage.setItem("sona.trial.v1", JSON.stringify({ start: Date.now() - 30 * 86400000, days: 3 }));
+    const r = await Sona.founderUnlock("OWNER-SECRET-123");
+    return { valid: r.valid, founder: Sona.isFounder(), gated: Sona.gated() };
+  });
+  ok("the founder key unlocks", good.valid && good.founder, JSON.stringify(good));
+  ok("a founder with a month-dead trial is never gated", good.gated === false);
+  const bad = await pg.evaluate(async () => {
+    localStorage.removeItem("sona.founder");
+    const r = await Sona.founderUnlock("WRONG");
+    return { valid: r.valid, founder: Sona.isFounder(), gated: Sona.gated() };
+  });
+  ok("a wrong founder key unlocks nothing", !bad.valid && !bad.founder && bad.gated === true, JSON.stringify(bad));
+  // the ?founder= URL path verifies too
+  await pg.goto("http://localhost:8155/today.html?founder=OWNER-SECRET-123");
+  await pg.waitForTimeout(600);
+  const viaUrl = await pg.evaluate(() => Sona.isFounder());
+  ok("?founder=KEY unlocks via the URL", viaUrl === true);
+  await pg.context().close();
+}
+
+// ── 6. source contracts on the server side ──
 {
   const redeem = readFileSync(ROOT + "/../app/api/slp/redeem/route.ts", "utf8");
   ok("redeem fails CLOSED without KV", /status: 503/.test(redeem), "no KV must never be a free pass");
@@ -182,6 +219,10 @@ const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL 
     "counting unverified codes ranks garbage SLPs");
   const ob = readFileSync(ROOT + "/onboarding.html", "utf8");
   ok("onboarding grants founding only when verified", /earlyAdopter: _slpok/.test(ob));
+  const founder = readFileSync(ROOT + "/../app/api/founder/route.ts", "utf8");
+  ok("founder unlock fails CLOSED when unconfigured", /status: 503/.test(founder));
+  ok("founder unlock is rate limited", /rateLimit\(req/.test(founder));
+  ok("founder key comparison is constant-time", /timingSafeEqual/.test(founder));
 }
 
 ok("no unexpected redeem spam", redeemCalls <= 6, String(redeemCalls));

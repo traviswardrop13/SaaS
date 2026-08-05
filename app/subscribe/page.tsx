@@ -86,8 +86,8 @@ function SubscribeInner() {
               onClick={() => setPlan("annual")}
               className={`rounded-2xl border-2 px-3 py-3 text-left ${plan === "annual" ? "border-sky-500 bg-sky-50" : "border-gray-200"}`}
             >
-              <span className="block font-display text-xl font-extrabold text-gray-900">$59.99/yr</span>
-              <span className="text-xs font-bold text-grass-600">$5/mo billed yearly — save 50%</span>
+              <span className="block font-display text-xl font-extrabold text-gray-900"><s className="mr-1 text-gray-400">$119.88</s>$59.99/yr</span>
+              <span className="text-xs font-bold text-grass-600">50% off the monthly rate</span>
             </button>
             <button
               onClick={() => setPlan("monthly")}

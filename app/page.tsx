@@ -228,10 +228,11 @@ export default function Landing() {
           <div style={{ background: "#fff", border: `3px solid ${INK}`, borderRadius: 26, boxShadow: `0 7px 0 ${INK}`, padding: "22px 20px" }}>
             <div style={{ display: "inline-flex", background: "#ffd21c", color: INK, font: `800 11px ${B}`, letterSpacing: 1.2, padding: "5px 12px", borderRadius: 999, boxShadow: "0 3px 0 #e0b000", marginBottom: 12 }}>3 DAYS FREE · BEST VALUE</div>
             <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
+              <s style={{ font: `800 24px/1 ${B}`, color: "#c9a878" }}>$119.88</s>
               <div style={{ font: `800 52px/1 ${B}` }}>$59.99</div>
               <div style={{ fontSize: 15, fontWeight: 800, color: MUTED }}>/year</div>
             </div>
-            <div style={{ fontSize: 12.5, fontWeight: 700, color: MUTED, margin: "4px 0 16px" }}>$5 a month billed yearly — or <a href="/api/checkout?plan=monthly" style={{ color: MUTED }}>$9.99 month to month, no trial</a></div>
+            <div style={{ fontSize: 12.5, fontWeight: 700, color: MUTED, margin: "4px 0 16px" }}>50% off the monthly rate ($9.99 × 12 = $119.88) — or <a href="/api/checkout?plan=monthly" style={{ color: MUTED }}>go month to month, no trial</a></div>
             <div style={{ display: "flex", flexDirection: "column", gap: 9, marginBottom: 18 }}>
               {["Every game, every sound — full access from minute one", "3 days free — cancel anytime, no charge", "Every new sound included as it ships", "Works on iPhone and iPad"].map((t) => (
                 <div key={t} style={{ display: "flex", gap: 9, fontSize: 14, fontWeight: 700 }}><Check />{t}</div>

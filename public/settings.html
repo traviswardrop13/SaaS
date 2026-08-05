@@ -457,6 +457,27 @@
     })();
 
     // account / subscription
+    // Founder unlock: owner's key, prompt-entry, server-verified. Shows as a
+    // quiet link under Account; once unlocked the line just says so.
+    (function () {
+      var ac = document.getElementById("acct"); if (!ac) return;
+      var host = document.createElement("p");
+      host.className = "muted"; host.style.cssText = "font-size:11.5px;margin-top:8px;";
+      host.innerHTML = (Sona.isFounder && Sona.isFounder())
+        ? '<b style="color:var(--good);">Founder access ✓</b>'
+        : '<a href="#" id="founderLink" style="color:var(--label);">Founder key</a>';
+      ac.parentElement.appendChild(host);
+      var fl = document.getElementById("founderLink");
+      if (fl) fl.onclick = function (ev) {
+        ev.preventDefault();
+        var k = window.prompt("Founder key:") || "";
+        if (!k.trim()) return;
+        Sona.founderUnlock(k.trim()).then(function (r) {
+          if (r.valid) { host.innerHTML = '<b style="color:var(--good);">Founder access ✓</b>'; try { Sona.confetti && Sona.confetti({ count: 120 }); } catch (e) {} }
+          else alert(r.error === "offline" ? "Couldn't reach the server." : "That key didn't check out.");
+        });
+      };
+    })();
     function paintAcct() {
       var ac = document.getElementById("acct");
       if (Sona.isNativeApp && Sona.isNativeApp()) {
