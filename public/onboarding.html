@@ -197,6 +197,8 @@
         <div class="choice" style="cursor:default;"><span class="ce"><svg viewBox="0 0 64 64" style="width:30px;height:30px"><g id="ob-headphones"><path d="M14 38v-6a18 18 0 0 1 36 0v6" fill="none" stroke="#7c88e8" stroke-width="6" stroke-linecap="round"></path><rect x="9" y="35" width="12" height="17" rx="5.5" fill="#6270d4"></rect><rect x="43" y="35" width="12" height="17" rx="5.5" fill="#6270d4"></rect><circle cx="13" cy="39" r="2" fill="#fff" opacity=".6"></circle></g></svg></span> <span>Progress you can hear<br/><span style="font-family:Nunito;font-weight:700;font-size:13px;color:var(--muted);">Recordings + a report you can share with your SLP</span></span></div>
       </div>
       <div id="moveCode" style="display:none;margin-top:12px;background:#fff;border:2px solid #ffe2a8;border-radius:14px;padding:11px 14px;font-weight:800;font-size:12.5px;color:#8a6400;text-align:left;"></div>
+      <!-- SLP finale: the auto-created share credential (code + family key) -->
+      <div id="obSlpCred" style="display:none;margin-top:12px;background:#f4fce9;border:2px solid #bce39f;border-radius:14px;padding:13px 15px;text-align:left;"></div>
     </div>
 
     <!-- slp -->
@@ -400,7 +402,12 @@
         var gw=document.getElementById("obGoalsWrap");
         if(gw && slp) gw.style.display="block";
         var eq=document.querySelector('[data-step="email"] .qh');
-        if(eq && slp) eq.innerHTML="Save this child's progress";
+        if(eq && slp) eq.innerHTML="Your clinician account";
+        var ep=document.querySelector('[data-step="email"] p.muted');
+        if(ep && slp) ep.textContent="Your email creates your clinician account — you'll get a caseload link to share, and a dashboard showing how your families are practising.";
+        // an SLP can't skip email: the credential IS the account
+        var esk=document.getElementById("obEmailSkip");
+        if(esk) esk.parentElement.style.display = slp ? "none" : "";
       }catch(e){}
     }
 
@@ -435,7 +442,7 @@
       if(key==="name") setTimeout(function(){ nameEl.focus(); }, 80);
       if(key==="interests"){ var nmi=(nameEl.value||draft.childName||"").trim(); document.getElementById("intName").textContent = nmi || "your child"; }
       if(key==="achieve"){ var nm=(nameEl.value||draft.childName||"").trim(); document.getElementById("achName").textContent = nm || "your child"; }
-      if(key==="email"){ var nm2=(nameEl.value||draft.childName||"").trim(); document.getElementById("emName").textContent = nm2 || "your child"; setTimeout(function(){ emailEl.focus(); }, 80); }
+      if(key==="email"){ var nm2=(nameEl.value||draft.childName||"").trim(); var emn=document.getElementById("emName"); if(emn) emn.textContent = nm2 || "your child"; setTimeout(function(){ emailEl.focus(); }, 80); }
     }
 
     function next(){
@@ -499,10 +506,12 @@
       draft.focusSounds = (draft.mode==="play" && Sona.PLAY_ORDER) ? Sona.PLAY_ORDER.slice() : Array.from(selSounds);
       draft.interests = Array.from(selInterests);
       var _slp=""; try{ _slp=(Sona.slpCode&&Sona.slpCode())||""; }catch(e){}
+      // Founding access requires the VERIFIED credential (code + family key
+      // checked against the server). A bare ?slp= code still tags the family
+      // for the SLP's roster, but with pricing live it can't unlock by itself.
+      var _slpok=false; try{ _slpok=!!(Sona.slpVerified&&Sona.slpVerified()); }catch(e){}
       Sona.saveProfile({
-        // SLP-referred families get founding (free) access; ad/organic signups
-        // enter the 3-day-trial path. Existing founding profiles keep theirs.
-        earlyAdopter: !!_slp,
+        earlyAdopter: _slpok,
         slpCode: _slp,
         role: draft.role || "parent",
         mode: draft.mode || "speech",
@@ -524,14 +533,34 @@
       // capture the lead (email + answers) → GHL via /api/lead (fire-and-forget)
       try{
         if(draft.email){
+          var isSlp=draft.role==="slp";
           var utm=(window.Sona&&Sona.utm)?(Sona.utm()||{}):{};
-          fetch("/api/lead",{method:"POST",headers:{"Content-Type":"application/json"},keepalive:true,body:JSON.stringify({
-            email:draft.email, child:draft.childName, practice:draft.focusSounds, source:"onboarding",
-            summary: draft.mode==="play" ? "New parent signup — play mode (all letter sounds)" : ("New parent signup — practicing "+((draft.focusSounds||[]).join(", ")||"sounds")),
-            utm_source:utm.utm_source, utm_medium:utm.utm_medium, utm_campaign:utm.utm_campaign, utm_content:utm.utm_content, utm_term:utm.utm_term, referrer:utm.referrer, landing:utm.landing
-          })}).catch(function(){});
+          // COPPA: an SLP is entering someone else's client — never ship that
+          // child's name/targets to the marketing CRM. Only the clinician's
+          // own email + a role tag.
+          fetch("/api/lead",{method:"POST",headers:{"Content-Type":"application/json"},keepalive:true,body:JSON.stringify(
+            isSlp
+              ? { email:draft.email, source:"onboarding", role:"slp", summary:"New SLP signup",
+                  utm_source:utm.utm_source, utm_medium:utm.utm_medium, utm_campaign:utm.utm_campaign, utm_content:utm.utm_content, utm_term:utm.utm_term, referrer:utm.referrer, landing:utm.landing }
+              : { email:draft.email, child:draft.childName, practice:draft.focusSounds, source:"onboarding",
+                  summary: draft.mode==="play" ? "New parent signup — play mode (all letter sounds)" : ("New parent signup — practicing "+((draft.focusSounds||[]).join(", ")||"sounds")),
+                  utm_source:utm.utm_source, utm_medium:utm.utm_medium, utm_campaign:utm.utm_campaign, utm_content:utm.utm_content, utm_term:utm.utm_term, referrer:utm.referrer, landing:utm.landing }
+          )}).catch(function(){});
         }
       }catch(e){}
+      // SLP finish: create the clinician's ACCOUNT and email them a one-tap
+      // sign-in link. The share credential (code + family key) is auto-minted
+      // server-side on first authenticated load and shown on their dashboard —
+      // never minted by an unauthenticated request (that was an open oracle).
+      if(draft.role==="slp" && draft.email){
+        var box=document.getElementById("obSlpCred");
+        if(box){
+          box.style.display="block";
+          box.innerHTML='<div class="muted" style="font-weight:700;font-size:13px;">Check your email — we just sent your one-tap sign-in. Open it to grab your <b>caseload link</b>. Sona is free for everyone; the link is what puts your families on your dashboard.</div>';
+        }
+        fetch("/api/slp/auth/request",{method:"POST",headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({email:draft.email})}).catch(function(){});
+      }
       if(window.Sona){ Sona.sfx.complete(); Sona.confetti({count:160}); }
       // the finale (not a step): show "what's ahead", then Echo calls by name
       ORDER.forEach(function(k){ steps[k].classList.remove("on"); });

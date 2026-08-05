@@ -26,9 +26,12 @@ let fails = 0;
 const ok = (n, p) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL ") + n); };
 
 // ── onboarding: slim flow — 8 steps, Pip preselected, achieve as finale ──
-await page.evaluate(() => localStorage.setItem("sona.slp", "RACHEL1")).catch(() => {});
 await page.goto("http://localhost:8129/onboarding.html?slp=RACHEL1");
 await page.waitForTimeout(900);
+// CODES1: founding access now requires the VERIFIED credential. sona.slpok is
+// what a successful /api/slp/redeem writes — seeded post-load (about:blank has
+// no localStorage) to simulate a family arriving through a valid CODE&k=KEY link.
+await page.evaluate(() => { localStorage.setItem("sona.slpok", "RACHEL1"); localStorage.setItem("sona.slpunlock", "1"); });
 const ob = await page.evaluate(() => ({
   betaStep: !!document.querySelector('[data-step="beta"]'),
   segs: document.querySelectorAll("#seg i").length,
@@ -101,13 +104,21 @@ await clickNext(); // sounds →
 await page.evaluate(() => document.querySelector('#obGoal .choice[data-val="3"]').click());
 await clickNext(); // goal →
 await clickNext(); // slp →
-await page.evaluate(() => document.getElementById("obEmailSkip").click()); // skip, no email
+// CODES1: an SLP can't skip email — the share credential IS the account
+const slpSkipHidden = await page.evaluate(() => {
+  const esk = document.getElementById("obEmailSkip");
+  return getComputedStyle(esk.parentElement).display === "none";
+});
+ok("SLPs can't skip email (the credential needs it)", slpSkipHidden);
+await page.evaluate(() => { document.getElementById("obEmail").value = "slp@example.com"; });
+await page.evaluate(() => document.getElementById("nextBtn").click()); // email → finish()
 await page.waitForTimeout(500);
 const skipFin = await page.evaluate(() => ({
   achieveShown: document.querySelector('[data-step="achieve"]').classList.contains("on"),
+  cred: !!document.getElementById("obSlpCred"),
   prof: JSON.parse(localStorage.getItem("sona.profile.v1") || "{}"),
 }));
-ok("email skip still finishes onboarding (no gate)", skipFin.achieveShown && skipFin.prof.onboarded === true && skipFin.prof.email === "" && skipFin.prof.childName === "Zoe");
+ok("SLP finish lands on the finale with the credential slot", skipFin.achieveShown && skipFin.cred && skipFin.prof.onboarded === true && skipFin.prof.childName === "Zoe");
 ok("open sound picker: S saved next to R", (skipFin.prof.focusSounds || []).includes("S") && (skipFin.prof.focusSounds || []).includes("R"));
 ok("role is captured (SLP)", skipFin.prof.role === "slp", JSON.stringify(skipFin.prof.role));
 
@@ -134,9 +145,13 @@ ok("play path skips the sound picker entirely", !playSkip.onSounds && playSkip.o
 ok("the build beat says play list, not sound plan", /Nora's play list/.test(playSkip.build), playSkip.build);
 await clickNext(); // goal →
 await clickNext(); // slp →
+// parents can still skip email — never a gate for families
+const parentSkipShown = await page.evaluate(() => getComputedStyle(document.getElementById("obEmailSkip").parentElement).display !== "none");
+ok("parents can still skip email (no gate)", parentSkipShown);
 await page.evaluate(() => document.getElementById("obEmailSkip").click());
 await page.waitForTimeout(500);
 const playProf = await page.evaluate(() => JSON.parse(localStorage.getItem("sona.profile.v1") || "{}"));
+ok("email skip still finishes onboarding", playProf.onboarded === true && playProf.email === "");
 ok("play mode is recorded", playProf.mode === "play", playProf.mode);
 ok("play rotation covers every sound", (playProf.focusSounds || []).length === 19, String((playProf.focusSounds || []).length));
 ok("easiest sounds first, R last", playProf.focusSounds[0] === "P" && playProf.focusSounds[18] === "R", JSON.stringify([playProf.focusSounds[0], playProf.focusSounds[18]]));

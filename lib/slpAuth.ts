@@ -49,6 +49,24 @@ export async function kvCmd(cmd: (string | number)[]): Promise<unknown> {
 export function randomToken(): string {
   return crypto.randomBytes(32).toString("base64url");
 }
+
+// The FAMILY KEY — the "password" half of the credential an SLP hands to a
+// family (the code is the username half). 8 chars from an unambiguous
+// alphabet: long enough that guessing is hopeless at the redeem endpoint's
+// rate limits, short enough to read off a clinic handout over the phone.
+const KEY_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+export function makeFamilyKey(): string {
+  const bytes = crypto.randomBytes(8);
+  let k = "";
+  for (let i = 0; i < 8; i++) k += KEY_ALPHABET[bytes[i] % KEY_ALPHABET.length];
+  return k;
+}
+export function safeEqualStr(a: string, b: string): boolean {
+  const ba = Buffer.from(a);
+  const bb = Buffer.from(b);
+  if (ba.length !== bb.length) return false;
+  return crypto.timingSafeEqual(ba, bb);
+}
 export function hashToken(t: string): string {
   return crypto.createHash("sha256").update(t).digest("hex");
 }

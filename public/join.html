@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <!-- STRIP THE KEY FIRST, before anything network/analytics touches the URL.
+       The family key rides in ?k=; this page loads none of the ad/analytics scripts,
+       and we replaceState to a clean URL immediately so the key never lands in
+       a captured pageview URL (the whole reason share links point here and not
+       at the Next landing page, which does load analytics). -->
+  <script>
+    (function () {
+      try {
+        var q = new URLSearchParams(location.search);
+        window.__slp = { code: q.get("slp") || "", key: q.get("k") || "" };
+        history.replaceState({}, "", "/join.html");
+      } catch (e) { window.__slp = { code: "", key: "" }; }
+    })();
+  </script>
+  <title>Sona — connect with your speech therapist</title>
+  <link href="/fonts.css" rel="stylesheet">
+  <link rel="stylesheet" href="/sona.css" />
+  <meta name="theme-color" content="#fff6e9" />
+  <style>
+    body{background:var(--cream,#fff6e9);color:var(--ink,#4a2c14);}
+    .jwrap{max-width:420px;margin:0 auto;padding:calc(24px + env(safe-area-inset-top)) 22px 40px;text-align:center;}
+    .jhero img{width:96px;height:96px;object-fit:contain;filter:drop-shadow(0 10px 18px rgba(140,60,0,.22));}
+    .jhero h1{font-family:"Baloo 2";font-weight:800;font-size:26px;margin-top:10px;}
+    .jmsg{font-weight:700;color:var(--muted,#8a6f52);margin-top:8px;font-size:15px;line-height:1.5;}
+    .jcard{background:#fff;border-radius:20px;box-shadow:0 5px 0 #f0e2cc;padding:18px 16px;margin-top:20px;text-align:left;}
+    .jcard label{display:block;font-family:"Baloo 2";font-weight:800;font-size:12px;color:var(--label,#a17c4a);margin:10px 0 4px;}
+    .jcard input{width:100%;border:2px solid #f0e4d2;border-radius:14px;padding:12px 14px;font-family:"Baloo 2";font-weight:800;font-size:16px;color:var(--ink,#4a2c14);}
+    #jCode{text-transform:lowercase;} #jKey{text-transform:uppercase;letter-spacing:1px;}
+    .jbtn{border:none;border-radius:16px;padding:15px;width:100%;margin-top:14px;font-family:"Baloo 2";font-weight:800;font-size:17px;color:#fff;background:linear-gradient(180deg,#6fd60e,#58cc02);box-shadow:0 5px 0 #46a302;cursor:pointer;}
+    .jbtn:active{transform:translateY(4px);box-shadow:0 1px 0 #46a302;}
+    #jStatus{font-weight:800;font-size:13.5px;margin-top:12px;min-height:18px;}
+  </style>
+</head>
+<body>
+  <div class="jwrap">
+    <div class="jhero">
+      <img src="/coach/echo/echo-celebrate.svg" alt="Echo" onerror="this.onerror=null;this.src='/coach/echo/echo-idle.svg';" />
+      <h1 id="jTitle">Connecting you…</h1>
+    </div>
+    <p class="jmsg" id="jMsg">Checking your therapist's code. One moment…</p>
+
+    <!-- manual fallback: shown only if the link's credential didn't verify -->
+    <div class="jcard" id="jForm" style="display:none;">
+      <label for="jCode">Code from your SLP</label>
+      <input id="jCode" type="text" autocomplete="off" placeholder="e.g. rachel-k4" />
+      <label for="jKey">Family key</label>
+      <input id="jKey" type="text" autocomplete="off" placeholder="e.g. ABCD2345" />
+      <button class="jbtn" id="jGo">Connect</button>
+      <div id="jStatus" class="muted"></div>
+    </div>
+    <!-- consent: the grown-up decides whether this child's practice is shared -->
+    <div class="jcard" id="jConsent" style="display:none;">
+      <div style="font-family:'Baloo 2';font-weight:800;font-size:17px;" id="jConsentTitle">Share progress with your therapist?</div>
+      <p class="muted" style="font-weight:700;font-size:13.5px;line-height:1.5;margin-top:8px;" id="jConsentBody"></p>
+      <p class="muted" style="font-weight:700;font-size:12px;line-height:1.5;margin-top:8px;">They'll see practice days, how many times your child practised, and how each sound is coming along. <b>Never any audio</b> — recordings stay on this device.</p>
+      <button class="jbtn" id="jYes">Yes, share progress</button>
+      <button class="jbtn" id="jNo" style="background:#fff;color:var(--muted,#8a6f52);box-shadow:0 5px 0 #f0e4d2;margin-top:10px;">No thanks — just use Sona</button>
+    </div>
+  </div>
+
+  <script src="/sona.js"></script>
+  <script>
+    (function () {
+      var title = document.getElementById("jTitle"), msg = document.getElementById("jMsg"),
+          form = document.getElementById("jForm"), status = document.getElementById("jStatus"),
+          consent = document.getElementById("jConsent");
+      function go() {
+        var p = {}; try { p = Sona.getProfile() || {}; } catch (e) {}
+        location.href = (p.onboarded || p.childName) ? "/today.html" : "/onboarding.html";
+      }
+      // Sona is FREE for everyone — this link never unlocks anything. It asks
+      // the grown-up whether to put this child on their clinician's dashboard.
+      function askConsent(code, name) {
+        title.textContent = "You're connected!";
+        msg.textContent = "Sona is free for everyone — nothing to pay, ever.";
+        form.style.display = "none";
+        consent.style.display = "block";
+        document.getElementById("jConsentBody").textContent =
+          name ? ("Would you like " + name + " to see your child's practice progress?")
+               : "Would you like your child's speech therapist to see their practice progress?";
+        try { if (Sona.confetti) Sona.confetti({ count: 130 }); } catch (e) {}
+        document.getElementById("jYes").onclick = function () {
+          try { Sona.slpJoinCaseload(code); } catch (e) {}
+          consent.style.display = "none";
+          title.textContent = "All set! 🎉";
+          msg.textContent = "Your therapist will see practice progress. Let's meet Echo.";
+          setTimeout(go, 1100);
+        };
+        document.getElementById("jNo").onclick = function () {
+          // declining shares nothing; the app is free either way
+          try { Sona.saveProfile({ slpShare: false }); } catch (e) {}
+          consent.style.display = "none";
+          title.textContent = "No problem!";
+          msg.textContent = "Nothing will be shared. Sona is still free — let's meet Echo.";
+          setTimeout(go, 1100);
+        };
+      }
+      function attempt(code, key, fromForm) {
+        if (!code || !key) { showForm(); return; }
+        if (fromForm) { status.style.color = "var(--muted)"; status.textContent = "Checking…"; }
+        Sona.slpRedeem(code, key).then(function (r) {
+          if (r.valid) { try { localStorage.setItem("sona.slp", String(code).toUpperCase()); } catch (e) {} askConsent(String(code).toUpperCase(), r.name); }
+          else {
+            showForm();
+            status.style.color = "#b42323";
+            status.textContent = r.error === "offline" ? "Couldn't reach the server — try again." : "That code and key don't match — check with your therapist.";
+          }
+        });
+      }
+      function showForm() {
+        title.textContent = "Enter your therapist's code";
+        msg.textContent = "Sona is free either way — this just connects you to your therapist's dashboard.";
+        form.style.display = "block";
+        try { if (window.__slp && window.__slp.code) document.getElementById("jCode").value = window.__slp.code; } catch (e) {}
+      }
+      document.getElementById("jGo").onclick = function () {
+        attempt((document.getElementById("jCode").value || "").trim(), (document.getElementById("jKey").value || "").trim(), true);
+      };
+      var s = window.__slp || {};
+      if (s.code && s.key) attempt(s.code, s.key, false); else showForm();
+    })();
+  </script>
+</body>
+</html>
