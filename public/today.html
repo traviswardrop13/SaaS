@@ -66,11 +66,23 @@
 
     /* up next thumbnails */
     #upNextLbl{font-family:"Baloo 2";font-weight:800;font-size:12px;letter-spacing:.1em;color:var(--label);}
-    #thumbs{display:flex;gap:16px;}
-    .thumb{position:relative;width:120px;height:116px;border-radius:18px;border:5px solid #fff;box-shadow:0 6px 14px rgba(90,50,10,.16);background:#eee center/cover no-repeat;cursor:pointer;flex:none;transition:transform .12s;margin-bottom:12px;}
-    .thumb:nth-child(1){transform:rotate(-2deg);}
-    .thumb:nth-child(2){transform:rotate(2deg);}
+    /* DAY1: three games, not two — they share the row, so they shrink */
+    #thumbs{display:flex;gap:10px;justify-content:center;}
+    .thumb{position:relative;flex:1 1 0;min-width:0;max-width:118px;aspect-ratio:1/.97;border-radius:18px;border:5px solid #fff;box-shadow:0 6px 14px rgba(90,50,10,.16);background:#eee center/cover no-repeat;cursor:pointer;transition:transform .12s;margin-bottom:12px;}
+    .thumb:nth-child(1){transform:rotate(-2.5deg);}
+    .thumb:nth-child(2){transform:rotate(1deg);}
+    .thumb:nth-child(3){transform:rotate(2.5deg);}
     .thumb:active{transform:scale(.95);}
+    /* LOCKED: dimmed, desaturated, with a padlock. Deliberately still shows the
+       art — a kid needs to see what they're about to earn, not a grey box. */
+    .thumb.locked{filter:grayscale(.75) brightness(.72);cursor:default;}
+    .thumb.locked:active{transform:none;}
+    .thumb .lock{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:30px;
+      text-shadow:0 3px 8px rgba(0,0,0,.45);}
+    .thumb.locked:nth-child(1),.thumb.locked:nth-child(2),.thumb.locked:nth-child(3){transform:rotate(0deg);}
+    /* the shake a locked card does when tapped: "not yet — story first" */
+    @keyframes nudge{0%,100%{transform:translateX(0);}25%{transform:translateX(-5px);}75%{transform:translateX(5px);}}
+    .thumb.nope{animation:nudge .32s;}
     .thumb b{position:absolute;left:50%;bottom:-11px;transform:translateX(-50%);background:#fff;border-radius:99px;padding:4px 11px;font-family:"Baloo 2";font-weight:800;font-size:11px;color:var(--ink);white-space:nowrap;box-shadow:0 3px 0 rgba(120,80,20,.12);}
 
     /* CTA */
@@ -150,7 +162,7 @@
         <div id="heroSub"></div>
       </div>
     </div>
-    <div id="upNextLbl">UP NEXT</div>
+    <div id="upNextLbl">TODAY’S GAMES</div>
     <div id="thumbs"></div>
     <button id="goBtn">LET'S GO!</button>
   </div>
@@ -244,29 +256,18 @@
       else if(_tr&&_tr.n>0) $("subLine").textContent=(_tr.goal-_tr.n)+" more round"+((_tr.goal-_tr.n)===1?"":"s")+" to finish today's goal!";
     }catch(e){}
 
-    // ── the activity deck: hero + up-next (the sticker-book home) ──
-    // One card per game. The hero is what LET'S GO opens; the two thumbs below
-    // are what's next, and tapping one promotes it. Art is the painted house
-    // panel for that game (coach/city/<key>-{300|800}.webp) — the same panels,
-    // used as card faces rather than as a street.
-    var ACTS=[
-      { key:"slice", name:"Fruit Slice",   sub:"Say it 5× to play", go:"/charge.html?game=arcade-slice.html" },
-      { key:"tiles", name:"Piano Tiles",   sub:"Say it 5× to play", go:"/charge.html?game=arcade-tiles.html" },
-      { key:"stack", name:"Block Stacker", sub:"Say it 5× to play", go:"/charge.html?game=arcade-stack.html" },
-      { key:"run",   name:"Sound Sprint",  sub:"Say it 5× to play", go:"/charge.html?game=arcade-run.html" },
-      { key:"glide", name:"Flappy Glide",  sub:"Say it 5× to play", go:"/charge.html?game=arcade-glide.html" },
-      { key:"story", name:"Story Time",    sub:"Read with Echo · ★★★", go:"/story.html" },
-    ];
-    // Feed Echo — the littles game (tap-and-say, no reading, no timer). It
-    // LEADS the deck for under-6 profiles and rides last for everyone else, so
-    // a four-year-old never opens on a game full of falling fruit and a
-    // nine-year-old never opens on the toddler one.
-    var _age=0; try{ _age=parseInt(P.childAge,10)||0; }catch(e){}
-    (function(){
-      var FEED={ key:"feed", name:"Feed Echo", sub:"Say it & tap — Echo's hungry!", go:"/arcade-feed.html" };
-      if(_age&&_age<6) ACTS.unshift(FEED); else ACTS.push(FEED);
-    })();
-    var sel=0;
+    // ── DAY1: the day is one story, then three games ───────────────────────
+    // The hero is not a game any more — it is TODAY'S CHAPTER, and it is the
+    // only thing tappable until it's read. The three cards below are the day's
+    // trio, drawn fresh each morning by Sona.dailyGames(), and they wear a
+    // padlock until the story is finished.
+    //
+    // Why gate at all: a kid given six games picks the same one every day, and
+    // the story — the thing that makes tomorrow worth showing up for — never
+    // gets opened. Story first means every session has a beginning.
+    var ICON={slice:"🍉",tiles:"🎹",stack:"🧱",run:"🏃",glide:"🎈",feed:"🦜"};
+    var EP=null, TRIO=[], READ=false;
+    try{ EP=S.dailyStory(); TRIO=S.dailyGames()||[]; READ=!!S.storyRead(); }catch(e){}
 
     function art(key){ try{ return (window.SonaScenes&&SonaScenes.has(key))?("url('"+SonaScenes.uri(key)+"')"):""; }catch(e){ return ""; } }
     // The painted panel takes over the moment it decodes — sized per slot (hero
@@ -284,46 +285,70 @@
     }; im.src="/coach/city/"+key+"-"+(el.id==="heroCard"?"800":"300")+".webp"; }
     function applyArt(el,key){
       if(key==="feed"&&!art(key)){
-        // no painted scene yet — warm meadow gradient until one lands
         el.style.backgroundImage="linear-gradient(160deg,#ffe9b8,#b6eca0)";
         el.style.backgroundSize="cover"; upgradeArt(el,key); return;
       }
       el.style.backgroundImage=art(key); upgradeArt(el,key);
     }
-    function render(){
-      var a=ACTS[sel], hero=$("heroCard");
-      applyArt(hero,a.key);
-      hero.innerHTML=(a.key==="feed"&&!art(a.key))
-        ? '<span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:78px;text-shadow:0 8px 14px rgba(120,70,10,.25);">🦜🍎</span>'
-        : "";
-      $("heroName").textContent=a.name;
-      $("heroSub").innerHTML=a.sub.replace("★★★",'<b>★★★</b>');
-      $("goBtn").dataset.launch=a.go;   // test hook: what LET'S GO opens
+
+    function renderHero(){
+      var hero=$("heroCard");
+      if(!READ){
+        // the story card: a night sky, because that is where the arc lives
+        hero.style.backgroundImage="linear-gradient(170deg,#2b56a8,#152a5c 55%,#0d1b3e)";
+        hero.style.backgroundSize="cover";
+        hero.innerHTML='<span style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;">'
+          +'<span style="font-size:62px;text-shadow:0 8px 16px rgba(0,0,0,.45);">📖</span>'
+          +'<span style="font-family:\'Baloo 2\';font-weight:800;font-size:12px;letter-spacing:.1em;color:#ffd21c;">CHAPTER '+(S.dailyChapterNum?S.dailyChapterNum():1)+'</span>'
+          +'</span>';
+        $("heroName").textContent=EP?EP.t:"Today's story";
+        $("heroSub").innerHTML="Read it first to unlock <b>3</b> games";
+        $("goBtn").textContent="READ TODAY'S STORY";
+        $("goBtn").dataset.launch="/chapter.html";
+        return;
+      }
+      // story done: the hero becomes the first of today's unlocked games
+      var k=TRIO[0], act=(S.gameAct&&S.gameAct(k))||null;
+      applyArt(hero,k);
+      hero.innerHTML=(k==="feed"&&!art(k))
+        ? '<span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:78px;text-shadow:0 8px 14px rgba(120,70,10,.25);">🦜🍎</span>' : "";
+      $("heroName").textContent=act?act.name:"Play";
+      $("heroSub").textContent=act?act.sub:"";
+      $("goBtn").textContent="LET'S GO!";
+      $("goBtn").dataset.launch=act?act.go:"/chapter.html";
+    }
+
+    function renderThumbs(){
       var t=$("thumbs"); t.innerHTML="";
-      [1,2].forEach(function(off){
-        var ix=(sel+off)%ACTS.length, act=ACTS[ix];
-        var el=document.createElement("div"); el.className="thumb";
-        el.dataset.key=act.key;
-        applyArt(el,act.key);
-        el.innerHTML="<b>"+act.name+"</b>";
-        el.onclick=function(){ sfx("tap"); sel=ix; render(); };
+      // once the story is read the hero IS trio[0], so the row shows the rest;
+      // before that it shows all three, locked, so the kid sees the whole prize
+      var show=READ?TRIO.slice(1):TRIO;
+      $("upNextLbl").textContent=READ?"UP NEXT":"TODAY’S GAMES — LOCKED 🔒";
+      show.forEach(function(k){
+        var act=(S.gameAct&&S.gameAct(k))||{name:"Game",go:"/today.html"};
+        var el=document.createElement("div");
+        el.className="thumb"+(READ?"":" locked");
+        el.dataset.key=k;
+        applyArt(el,k);
+        el.innerHTML="<b>"+act.name+"</b>"+(READ?"":'<span class="lock">🔒</span>');
+        el.onclick=function(){
+          if(!READ){
+            // never a dead tap: say what unlocks it, and offer the way there
+            sfx("tap"); el.classList.remove("nope"); void el.offsetWidth; el.classList.add("nope");
+            $("heroSub").innerHTML="Read <b>today’s story</b> to unlock this!";
+            return;
+          }
+          sfx("tap"); location.href=act.go;
+        };
         t.appendChild(el);
       });
     }
+
+    function render(){ renderHero(); renderThumbs(); }
     render();
-    function launch(){ sfx("tap"); location.href=ACTS[sel].go; }
+    function launch(){ sfx("tap"); location.href=$("goBtn").dataset.launch||"/chapter.html"; }
     $("heroCard").onclick=launch;
     $("goBtn").onclick=launch;
-    // swipe the hero to browse the deck
-    (function(){
-      var x0=null;
-      $("heroWrap").addEventListener("touchstart",function(e){ x0=e.touches[0].clientX; },{passive:true});
-      $("heroWrap").addEventListener("touchend",function(e){
-        if(x0==null)return; var dx=e.changedTouches[0].clientX-x0; x0=null;
-        if(Math.abs(dx)<40)return;
-        sel=(sel+(dx<0?1:ACTS.length-1))%ACTS.length; sfx("tap"); render();
-      },{passive:true});
-    })();
 
     // ── library ──
     $("libBtn").onclick=function(){ sfx("tap"); location.href="/library.html"; };

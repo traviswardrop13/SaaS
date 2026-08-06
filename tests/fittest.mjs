@@ -54,7 +54,7 @@ for (const [dev, w, h] of PORTRAIT) {
   ok(dev + " today: no sideways overflow", m.oX <= 1, "oX=" + m.oX);
   // the sticker-book home: the hero card breathes into whatever height is left
   ok(dev + " today: hero card has a real size", m.hero && m.hero.h >= 150, m.hero && "heroH=" + (m.hero && m.hero.h));
-  ok(dev + " today: up-next shows two thumbs", m.thumbs === 2, "thumbs=" + m.thumbs);
+  ok(dev + " today: the day's three game cards all fit", m.thumbs === 3, "thumbs=" + m.thumbs);
   // goBtn is the fixed bottom CTA; on hardware env(safe-area-inset-bottom)
   // adds the home-bar gap (0 in headless), so assert against the page floor.
   ok(dev + " today: LET'S GO never overflows the page", m.go && m.go.bottom <= m.innerH - 15, m.go && m.go.bottom + "/" + (m.innerH - 15));

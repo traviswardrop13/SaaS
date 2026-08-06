@@ -137,10 +137,23 @@ let deck = await page.evaluate(() => ({
   hero: document.getElementById("heroName").textContent,
   launch: document.getElementById("goBtn").dataset.launch,
   thumbs: [...document.querySelectorAll(".thumb")].map((t) => t.dataset.key),
+  trio: Sona.dailyGames(),
 }));
-ok("under-6: the deck opens on Feed Echo", /Feed Echo/.test(deck.hero), JSON.stringify(deck));
+// DAY1: the home opens on today's chapter for everyone, so the age rule is
+// about which games the story UNLOCKS — a four-year-old must never read a
+// story and be handed three games none of which they can play.
+ok("under-6: today's trio leads with Feed Echo", deck.trio[0] === "feed", JSON.stringify(deck));
+ok("under-6: the day starts on the story like everyone else", /chapter\.html/.test(deck.launch || ""), deck.launch);
+ok("under-6: three games are on offer once it's read", deck.thumbs.length === 3, JSON.stringify(deck.thumbs));
+// read the story, and the first thing they can play needs no reading
+await page.evaluate(() => Sona.markStoryRead());
+await page.goto("http://localhost:8145/today.html"); await page.waitForTimeout(900);
+deck = await page.evaluate(() => ({
+  hero: document.getElementById("heroName").textContent,
+  launch: document.getElementById("goBtn").dataset.launch,
+}));
+ok("under-6: the unlocked hero is Feed Echo", /Feed Echo/.test(deck.hero), JSON.stringify(deck));
 ok("under-6: LET'S GO opens Feed Echo", /arcade-feed/.test(deck.launch || ""), deck.launch);
-ok("under-6: the other games are still one swipe away", deck.thumbs.length === 2, JSON.stringify(deck.thumbs));
 await page.evaluate(() => { const p = JSON.parse(localStorage.getItem("sona.profile.v1")); p.childAge = "8"; localStorage.setItem("sona.profile.v1", JSON.stringify(p)); });
 await page.goto("http://localhost:8145/today.html"); await page.waitForTimeout(900);
 deck = await page.evaluate(() => ({

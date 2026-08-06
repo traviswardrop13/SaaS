@@ -148,7 +148,7 @@
   const PER_KID = new Set([
     PKEY, GKEY,
     "sona.rotation.v1", "sona.today.v1", "sona.episode.v1", "sona.reps.v1",
-    "sona.tickets.v1", "sona.charge.v1",
+    "sona.day.v1", "sona.tickets.v1", "sona.charge.v1",
     "sona.daily.v1", "sona.session.v1", "sona.levels.v1", "sona.campaign.v1",
     "sona.stickers.v1", "sona.attempts.v1", "sona.outcomes.v1",
     "sona.lib.read.v1", "sona.feed.v1", "sona.call.v1", "sona.callhist.v1",
@@ -484,6 +484,53 @@
     if (v.day === t) return episode();
     save(EPKEY, { i: (v.i + 1) % EPISODES.length, day: t });
     return episode();
+  }
+
+  // ── DAY1: the day's shape — one story, then three games ─────────────────
+  // The home screen is a gate, not a menu. Today's chapter is the front door;
+  // finishing it unlocks three games, and tomorrow both are different. Two
+  // reasons this beats a static deck of six:
+  //   1. a kid who can pick anything picks the same thing every day, and the
+  //      sound that needs work is never the fun one
+  //   2. "what do I get tomorrow?" is the only retention mechanic that costs
+  //      no content — the same six games feel new in a different trio
+  // Content cost stays flat: 8 chapters × C(6,3) trios is months of distinct
+  // days out of what already ships.
+  const DAYKEY = "sona.day.v1";
+  function _day() { const v = load(DAYKEY, {}); return (v && v.date === today()) ? v : null; }
+  // Today's chapter, PINNED on first look. Without the pin, reading it would
+  // advance the pointer and the card would flip to tomorrow's story while the
+  // kid was still on today's screen.
+  function dailyStory() {
+    const d = _day();
+    if (d && typeof d.ep === "number") return EPISODES[d.ep % EPISODES.length];
+    const i = _ep().i % EPISODES.length;
+    save(DAYKEY, { date: today(), ep: i, read: false });
+    return EPISODES[i];
+  }
+  function dailyChapterNum() { const d = _day(); return ((d && typeof d.ep === "number" ? d.ep : _ep().i) % EPISODES.length) + 1; }
+  function storyRead() { const d = _day(); return !!(d && d.read); }
+  function markStoryRead() {
+    dailyStory();                                   // ensure the day is pinned
+    const d = load(DAYKEY, {}); d.read = true; save(DAYKEY, d);
+    try { episodeAdvance(); } catch (e) {}          // day-guarded: sets up tomorrow
+    return true;
+  }
+  // The three games offered today. Deterministic per local day, so the trio is
+  // stable across refreshes and across a parent and child looking at the same
+  // phone — and so "did I already play today's set?" has one answer.
+  const DAILY_GAMES = 3;
+  function dailyGames() {
+    const pool = GAME_KEYS.slice();
+    const age = parseInt(getProfile().childAge, 10) || 0;
+    // Feed Echo is the littles game: no reading, no timer. Under 6 it is never
+    // rotated OUT, because the alternative is a four-year-old staring at a
+    // locked trio of games none of which they can play.
+    if (age && age < 6) {
+      const rest = pool.filter((k) => k !== "feed");
+      return ["feed"].concat(dailyPick(rest, DAILY_GAMES - 1, 7));
+    }
+    return dailyPick(pool.filter((k) => k !== "feed" || age >= 6), DAILY_GAMES, 7);
   }
 
   // ── today's rep count (RING1): every honest VAD-counted rep ticks a
@@ -1282,6 +1329,19 @@
     const k = String(file || "").replace(/^\//, "").split("?")[0];
     return GAME_META[k] || { name: "Game", icon: "🎮", band: "", c: "#1cb0f6" };
   }
+  // The games the daily trio is drawn from. This lived inline in today.html;
+  // it moved here because dailyGames() has to pick from the same list the home
+  // screen paints, and two copies of a list is one copy that goes stale.
+  const GAME_ACTS = {
+    slice: { name: "Fruit Slice",   sub: "Say it 5× to play",          go: "/charge.html?game=arcade-slice.html" },
+    tiles: { name: "Piano Tiles",   sub: "Say it 5× to play",          go: "/charge.html?game=arcade-tiles.html" },
+    stack: { name: "Block Stacker", sub: "Say it 5× to play",          go: "/charge.html?game=arcade-stack.html" },
+    run:   { name: "Sound Sprint",  sub: "Say it 5× to play",          go: "/charge.html?game=arcade-run.html" },
+    glide: { name: "Flappy Glide",  sub: "Say it 5× to play",          go: "/charge.html?game=arcade-glide.html" },
+    feed:  { name: "Feed Echo",     sub: "Say it & tap — Echo's hungry!", go: "/arcade-feed.html" },
+  };
+  const GAME_KEYS = ["slice", "tiles", "stack", "run", "glide", "feed"];
+  function gameAct(key) { return GAME_ACTS[key] || null; }
   const SESKEY = "sona.session.v1";
   const session = {
     start(level, sound, queue, diffLevel) {
@@ -1988,5 +2048,5 @@
   }
   try { installDebug(); } catch (e) {}
 
-  global.Sona = { pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, ladderContent, FREE_MODE, isFree, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, bumpReps, repsToday, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, gated, gateVerify, gateOk, requireGate, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, LEVEL_GAMES, GAME_DECK, GAMES_PER_LEVEL, levelGames, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, WORLDS, LEVELS_PER_WORLD, campaignLevels, campaignSounds, campaignState, worldById, worldLevels, worldStars, worldCleared, levelStars, setLevelStars, totalStars, worldUnlocked, levelUnlocked, campaignLaunch, campaignResolve, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repsBeacon, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES };
+  global.Sona = { pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, ladderContent, FREE_MODE, isFree, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, storyRead, markStoryRead, dailyGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, bumpReps, repsToday, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, gated, gateVerify, gateOk, requireGate, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, LEVEL_GAMES, GAME_DECK, GAMES_PER_LEVEL, levelGames, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, WORLDS, LEVELS_PER_WORLD, campaignLevels, campaignSounds, campaignState, worldById, worldLevels, worldStars, worldCleared, levelStars, setLevelStars, totalStars, worldUnlocked, levelUnlocked, campaignLaunch, campaignResolve, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repsBeacon, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES };
 })(window);
