@@ -162,8 +162,11 @@ await web.close();
     !/if \(isNativeApp\(\)\) return false;/.test(sona),
     "the never-gate line predates the IAP rail — it made the App Store build free forever");
   ok("founding/SLP families never gate",
-    /earlyAdopter\) return false/.test(sona.replace(/\s+/g, " ")),
+    /earlyAdopterAnyKid\(\)\) return false/.test(sona.replace(/\s+/g, " ")),
     "the free-forever promise IS the SLP channel");
+  ok("the founding grant belongs to the HOUSEHOLD, not one child",
+    /function earlyAdopterAnyKid[\s\S]{0,420}PKEY \+ "@" \+ slot/.test(sona),
+    "earlyAdopter lives on the per-kid profile — a referred family's second child was paywalled");
   // the practice doors gate at load; trial.html routes the shell to Apple
   for (const pg of ["charge.html", "arcade-feed.html", "story.html"]) {
     const src = readFileSync(ROOT + "/" + pg, "utf8");

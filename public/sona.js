@@ -967,9 +967,24 @@
     if (isFounder()) return false;
     if (slpVerified()) return false;                 // device redeemed a valid SLP credential
     if (isSubscribed() || isPilot()) return false;
-    try { if (getProfile().earlyAdopter) return false; } catch (e) {}
+    if (earlyAdopterAnyKid()) return false;
     ensureTrial();
     return trialExpired();
+  }
+  // earlyAdopter lives on the PROFILE, and the profile is per-kid — so a
+  // founding or SLP-referred family that added a second child had the first one
+  // playing free while the sibling hit a paywall on the same device. Access was
+  // never granted to a child; it was granted to the household.
+  function earlyAdopterAnyKid() {
+    try {
+      const list = _kids().list || [];
+      for (let i = 0; i < list.length; i++) {
+        const slot = list[i].slot;
+        const raw = localStorage.getItem(slot ? PKEY + "@" + slot : PKEY);
+        if (raw && JSON.parse(raw).earlyAdopter) return true;
+      }
+    } catch (e) {}
+    return false;
   }
   // Verify a subscription by email (Stripe is the source of truth) and cache it,
   // so a paid family can unlock on a new device / after clearing storage.

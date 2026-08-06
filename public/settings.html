@@ -145,7 +145,7 @@
 
     <div class="card">
       <h2>Account</h2>
-      <p class="muted" id="acct">Free during beta · <a href="/subscribe">See plans →</a> · <a href="#" id="restoreLink">Restore</a></p>
+      <p class="muted" id="acct">Checking your plan… · <a href="/subscribe">See plans →</a> · <a href="#" id="restoreLink">Restore</a></p>
       <div id="restoreBox" style="display:none;margin-top:10px;">
         <input id="restoreEmail" type="email" inputmode="email" placeholder="Email you subscribed with" />
         <div style="display:flex;gap:10px;align-items:center;margin-top:8px;">
@@ -472,7 +472,10 @@
     })();
     function paintAcct() {
       var ac = document.getElementById("acct");
-      if (Sona.isNativeApp && Sona.isNativeApp()) {
+      // The shell sells the same plans through Apple's sheet, so telling every
+      // iOS family the app is free was both untrue and an App Store review
+      // risk — and it hid Restore, which Apple requires to be reachable.
+      if (Sona.isNativeApp && Sona.isNativeApp() && Sona.isFree && Sona.isFree()) {
         ac.textContent = "Sona is free to use in the app.";
         var rb = document.getElementById("restoreBox"); if (rb) rb.style.display = "none";
         return;
@@ -483,7 +486,7 @@
       } else {
         ac.innerHTML = (Sona.isFree && Sona.isFree())
           ? 'Sona is <strong style="color:var(--good);">free</strong> right now — every game, every sound.'
-          : 'Free during beta · <a href="/subscribe">See plans →</a> · <a href="#" id="restoreLink">Restore</a>';
+          : 'No plan yet · <a href="/subscribe">See plans →</a> · <a href="#" id="restoreLink">Restore</a>';
         if (Sona.isFree && Sona.isFree()) { var _rb2 = document.getElementById("restoreBox"); if (_rb2) _rb2.style.display = "none"; return; }
         document.getElementById("restoreLink").onclick = function (e) { e.preventDefault(); document.getElementById("restoreBox").style.display = "block"; document.getElementById("restoreEmail").focus(); };
       }

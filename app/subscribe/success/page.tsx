@@ -37,6 +37,7 @@ function fmtMoney(cents: number | null): string {
 export default function SubscribeSuccess() {
   const [info, setInfo] = useState<Info | null>(null);
   const [fetched, setFetched] = useState(false);
+  const [paid, setPaid] = useState(false);
   const [appCode, setAppCode] = useState<string>("");
   const [plan, setPlan] = useState<"annual" | "monthly">("annual");
 
@@ -46,54 +47,11 @@ export default function SubscribeSuccess() {
     const planQ: "annual" | "monthly" = q.get("plan") === "monthly" ? "monthly" : "annual";
     setPlan(planQ);
 
-    // Access flag for the static app — Stripe stays the source of truth.
-    try {
-      const prev = JSON.parse(localStorage.getItem("sona.sub.v1") || "{}");
-      localStorage.setItem(
-        "sona.sub.v1",
-        JSON.stringify({ ...prev, active: true, since: Date.now(), session: sessionId, plan: planQ }),
-      );
-    } catch {
-      // ignore — non-blocking
-    }
-    // Mint the app hand-off code: the ad funnel buys HERE, then downloads the
-    // iOS app — the move-in code carries the purchase into the app so no
-    // paywall ever shows there. Best-effort (no KV → email-restore fallback).
-    try {
-      const subStr = localStorage.getItem("sona.sub.v1");
-      if (subStr) {
-        const blob = JSON.stringify({ app: "sona", v: 1, data: { "sona.sub.v1": subStr } });
-        fetch("/api/pair", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ data: blob }),
-        })
-          .then((r) => r.json())
-          .then((j: { ok?: boolean; code?: string }) => { if (j?.ok && j.code) setAppCode(j.code); })
-          .catch(() => {});
-      }
-    } catch {
-      // ignore — non-blocking
-    }
-    // Fire the conversion event for both PostHog and the Meta Pixel — before
-    // any fetch, so a slow Stripe read never costs the ad platforms the event.
-    try {
-      const w = window as unknown as { sonaTrack?: (e: string, p?: Record<string, unknown>) => void };
-      const value = PLAN_CENTS[planQ] / 100;
-      // annual = a trial started (no money moves today); monthly = a real
-      // purchase the moment checkout completes
-      if (typeof w.sonaTrack === "function") {
-        if (planQ === "annual") w.sonaTrack("StartTrial", { value, currency: "USD", predicted_ltv: value });
-        else w.sonaTrack("Subscribe", { value, currency: "USD" });
-      }
-      // product analytics (whitelisted props; Stripe has already confirmed)
-      const wa = window as unknown as { SonaAnalytics?: { track: (e: string, p?: Record<string, unknown>) => void } };
-      if (wa.SonaAnalytics) wa.SonaAnalytics.track(planQ === "annual" ? "trial started" : "subscription started", { source: "stripe", plan: planQ });
-    } catch {
-      // ignore — non-blocking
-    }
-
-    // Real charge amount off the real Stripe session.
+    // NOTHING is granted until Stripe confirms the session. This page used to
+    // write the entitlement on mount, which meant the URL itself was a free
+    // subscription for anyone who loaded it — the paywall was one shared link
+    // away from optional. /api/checkout/session verifies the id against Stripe
+    // and 404s on anything it doesn't recognise, so it is the gate.
     if (!sessionId) {
       setFetched(true);
       return;
@@ -101,8 +59,56 @@ export default function SubscribeSuccess() {
     fetch("/api/checkout/session?id=" + encodeURIComponent(sessionId))
       .then((r) => (r.ok ? r.json() : null))
       .then((j) => {
-        if (j && j.ok) {
-          setInfo({ amountCents: j.amountCents ?? null, trialEnd: j.trialEnd ?? null, email: j.email ?? null });
+        if (!j || !j.ok) return;
+        setInfo({ amountCents: j.amountCents ?? null, trialEnd: j.trialEnd ?? null, email: j.email ?? null });
+        setPaid(true);
+
+        // Access flag for the static app — Stripe stays the source of truth.
+        try {
+          const prev = JSON.parse(localStorage.getItem("sona.sub.v1") || "{}");
+          localStorage.setItem(
+            "sona.sub.v1",
+            JSON.stringify({ ...prev, active: true, since: Date.now(), session: sessionId, plan: planQ, email: j.email || prev.email || null }),
+          );
+        } catch {
+          // ignore — non-blocking
+        }
+        // Mint the app hand-off code: the ad funnel buys HERE, then downloads
+        // the iOS app — the move-in code carries the purchase into the app so
+        // no paywall ever shows there. Best-effort (no KV → email restore).
+        try {
+          const subStr = localStorage.getItem("sona.sub.v1");
+          if (subStr) {
+            const blob = JSON.stringify({ app: "sona", v: 1, data: { "sona.sub.v1": subStr } });
+            fetch("/api/pair", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ data: blob }),
+            })
+              .then((r) => r.json())
+              .then((p: { ok?: boolean; code?: string }) => { if (p?.ok && p.code) setAppCode(p.code); })
+              .catch(() => {});
+          }
+        } catch {
+          // ignore — non-blocking
+        }
+        // Conversion events fire on a CONFIRMED purchase only. Firing them on
+        // mount also meant every stray load of this URL was reported to Meta
+        // as a sale, which poisons the ad optimiser as surely as it poisoned
+        // the paywall.
+        try {
+          const w = window as unknown as { sonaTrack?: (e: string, p?: Record<string, unknown>) => void };
+          const value = (j.amountCents ?? PLAN_CENTS[planQ]) / 100;
+          // annual = a trial started (no money moves today); monthly = a real
+          // purchase the moment checkout completes
+          if (typeof w.sonaTrack === "function") {
+            if (planQ === "annual") w.sonaTrack("StartTrial", { value, currency: "USD", predicted_ltv: value });
+            else w.sonaTrack("Subscribe", { value, currency: "USD" });
+          }
+          const wa = window as unknown as { SonaAnalytics?: { track: (e: string, p?: Record<string, unknown>) => void } };
+          if (wa.SonaAnalytics) wa.SonaAnalytics.track(planQ === "annual" ? "trial started" : "subscription started", { source: "stripe", plan: planQ });
+        } catch {
+          // ignore — non-blocking
         }
       })
       .catch(() => {})
@@ -114,7 +120,41 @@ export default function SubscribeSuccess() {
   // the trial is annual-only: fabricating a trial-end date for a monthly buyer
   // would tell them "no charge yet" when the charge already happened
   const trialEnd = info?.trialEnd ?? (fetched && plan === "annual" ? nowSec + TRIAL_DAYS * 86400 : null);
-  const ready = fetched;
+  const ready = fetched && paid;
+
+  // Stripe never confirmed this session: someone opened the URL directly, or
+  // the read-back failed. Say so plainly and hand them the restore path —
+  // pretending "You're in!" is what turned this page into a free unlock.
+  if (fetched && !paid) {
+    return (
+      <main className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-sky-50 to-white px-6 py-10 text-center">
+        <div className="text-7xl" aria-hidden>🤔</div>
+        <h1 className="mt-4 font-display text-4xl font-extrabold text-gray-900">
+          We couldn&apos;t confirm a purchase
+        </h1>
+        <p className="mt-3 max-w-md text-lg text-gray-600">
+          This page only works on the link Stripe sends you right after checkout. If you already
+          subscribed, nothing is lost — restore with your email.
+        </p>
+        <div className="mt-6 flex flex-col gap-3">
+          <a
+            href="/trial.html"
+            className="inline-block rounded-2xl bg-grass-500 px-8 py-4 font-display text-lg font-extrabold uppercase tracking-wide text-white shadow-chunky transition hover:bg-grass-600 active:translate-y-1 active:shadow-chunky-sm"
+          >
+            Restore my access
+          </a>
+          <a href="/subscribe" className="font-bold text-sky-700 underline">See plans →</a>
+        </div>
+        <p className="mt-6 max-w-sm text-xs font-semibold text-gray-500">
+          Think this is a mistake?{" "}
+          <a className="font-bold text-sky-700 underline" href="mailto:wardroptravis@gmail.com?subject=Sona%20subscription">
+            Email us
+          </a>{" "}
+          — a human sorts it out same-day.
+        </p>
+      </main>
+    );
+  }
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-sky-50 to-white px-6 py-10 text-center">
@@ -184,7 +224,7 @@ export default function SubscribeSuccess() {
               <>
                 Enter{" "}
                 <strong className="rounded-lg bg-amber-100 px-2 py-0.5 font-display text-lg tracking-[3px] text-amber-900">{appCode}</strong>{" "}
-                — your free week comes with you, and set-up happens in the app.
+                — your plan comes with you, and set-up happens in the app.
               </>
             ) : (
               <>

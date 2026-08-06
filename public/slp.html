@@ -603,7 +603,11 @@
       aSound.dataset.ready="1";
     }
     function buildLink(){
-      var link=location.origin+"/pilot.html?code="+encodeURIComponent(code);
+      // The key is what makes this link an ENTITLEMENT rather than an honor
+      // system. Without it the dashboard was handing out a URL that unlocked
+      // Sona for anyone it was forwarded to.
+      var fk=(account&&account.familyKey)||"";
+      var link=location.origin+"/pilot.html?code="+encodeURIComponent(code)+(fk?("&k="+encodeURIComponent(fk)):"");
       var s=$("aSound")?$("aSound").value:"",p=$("aPos")?$("aPos").value:"",g=$("aGoal")?$("aGoal").value:"";
       if(s)link+="&sound="+encodeURIComponent(s);
       if(p)link+="&pos="+encodeURIComponent(p);

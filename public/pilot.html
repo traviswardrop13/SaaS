@@ -3,6 +3,17 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <!-- Strip the family key before anything else can observe it, same as
+       /join.html. This page loads no pixel/analytics either. -->
+  <script>
+    (function () {
+      try {
+        var q = new URLSearchParams(location.search);
+        window.__cred = { code: q.get("code") || q.get("slp") || "", key: q.get("k") || "" };
+        if (q.get("k")) { q.delete("k"); history.replaceState({}, "", location.pathname + (q.toString() ? "?" + q : "")); }
+      } catch (e) { window.__cred = { code: "", key: "" }; }
+    })();
+  </script>
   <title>Sona — Pilot</title>
   <link href="/fonts.css" rel="stylesheet">
   <link rel="manifest" href="/manifest.webmanifest" />
@@ -70,9 +81,28 @@
         <option value="mix">Mixed — all positions</option>
       </select>
 
+      <!-- The credential. Enrolling used to need nothing but a URL, which made
+           this page a self-serve free unlock for anyone who found it. The key
+           is verified server-side before any access is granted. -->
+      <div id="credWrap">
+        <label class="fl" for="cCode">Code from your SLP</label>
+        <input id="cCode" type="text" autocomplete="off" placeholder="e.g. rachel-k4" style="text-transform:lowercase;" />
+        <label class="fl" for="cKey">Family key</label>
+        <input id="cKey" type="text" autocomplete="off" placeholder="e.g. ABCD2345" style="text-transform:uppercase;letter-spacing:1px;" />
+      </div>
+
+      <!-- Required: the on-device recording consent, which the app genuinely
+           can't work without. -->
       <div class="consent">
         <input id="consent" type="checkbox" />
-        <label for="consent">I'm this child's parent or guardian. I agree Sona can record and score my child's spoken practice to give feedback and track progress. Recordings stay on this device; anonymized practice results (which sounds, how often, accuracy) help improve Sona and let my SLP see progress. I can stop anytime. <a href="/privacy" target="_blank">Privacy</a>.</label>
+        <label for="consent">I'm this child's parent or guardian. I agree Sona can record and score my child's spoken practice to give feedback and track progress. <b>Recordings stay on this device.</b> <a href="/privacy" target="_blank">Privacy</a>.</label>
+      </div>
+
+      <!-- Separate and optional: sharing with the clinician. Bundling it into
+           the box you must tick to use the app isn't consent, it's a toll. -->
+      <div class="consent">
+        <input id="shareSlp" type="checkbox" />
+        <label for="shareSlp">Share progress with my SLP — practice days, how often, and how each sound is coming along. <b>Never any audio.</b> Optional; your access is the same either way.</label>
       </div>
 
       <div class="err" id="err"></div>
@@ -85,7 +115,8 @@
   <script>
     var $=function(id){return document.getElementById(id);};
     var qp=new URLSearchParams(location.search);
-    var CODE=(qp.get("code")||qp.get("slp")||"pilot").slice(0,40);
+    var CRED=window.__cred||{code:"",key:""};
+    var CODE=(CRED.code||"pilot").slice(0,40);
     var ALL=(window.Sona&&Sona.ALL_SOUNDS)?Sona.ALL_SOUNDS:["R","S","L","K","SH","CH","TH","G","F"];
     var picked={};
     // pre-fill from an SLP assignment link (?sound=R,S  &pos=v  &goal=15)
@@ -98,24 +129,57 @@
       wrap.appendChild(b);
     });
     var _pp=qp.get("pos"); if(_pp&&$("pos")) $("pos").value=_pp;
+    if($("cCode")&&CRED.code) $("cCode").value=CRED.code;
+    if($("cKey")&&CRED.key) $("cKey").value=CRED.key;
+
+    // Set the child up, then enrol ONLY on a credential the server vouches for.
+    // startPilot() is an entitlement (isPilot() short-circuits gated()), so
+    // calling it off an unverified URL parameter — which is what this page used
+    // to do — handed out free forever to anyone who opened the link. A family
+    // without a valid key still gets set up; they just enter the app on the
+    // normal terms instead of on a free pass nobody granted them.
+    function finish(name, age, sounds){
+      try{
+        if(window.Sona){
+          Sona.saveProfile({ childName:name, childAge:String(age), focusSounds:sounds.slice(0,4), practicePosition:($("pos")?$("pos").value:"i"), dailyGoal:ASSIGN_GOAL, onboarded:true });
+          if(Sona.sfx&&Sona.sfx.correct) Sona.sfx.correct();
+        }
+      }catch(e){}
+      location.href="/map.html";
+    }
 
     $("go").onclick=function(){
       var name=$("cName").value.trim();
       var age=parseInt($("cAge").value,10)||0;
       var sounds=Object.keys(picked);
+      var code=(($("cCode")&&$("cCode").value)||"").trim();
+      var key=(($("cKey")&&$("cKey").value)||"").trim();
       if(!name){ $("err").textContent="Please enter your child's first name."; return; }
       if(!age){ $("err").textContent="Please choose your child's age."; return; }
       if(!sounds.length){ $("err").textContent="Pick at least one sound to practice."; return; }
       if(!$("consent").checked){ $("err").textContent="Please check the consent box to continue."; return; }
-      try{
-        if(window.Sona){
-          Sona.saveProfile({ childName:name, childAge:String(age), focusSounds:sounds.slice(0,4), practicePosition:($("pos")?$("pos").value:"i"), dailyGoal:ASSIGN_GOAL, onboarded:true });
-          if(Sona.startPilot) Sona.startPilot(CODE);
-          if(Sona.sendProgress) Sona.sendProgress("enroll");
-          if(Sona.sfx&&Sona.sfx.correct) Sona.sfx.correct();
+      if(!code||!key){ $("err").textContent="Enter the code and family key your SLP gave you."; return; }
+      $("err").style.color="var(--muted)"; $("err").textContent="Checking your SLP's code…";
+      $("go").disabled=true;
+      Sona.slpRedeem(code,key).then(function(r){
+        $("go").disabled=false;
+        if(!r.valid){
+          $("err").style.color="#e0457b";
+          $("err").textContent = r.error==="offline" ? "Couldn’t reach the server — try again." : "That code and key don’t match — double-check with your SLP.";
+          return;
         }
-      }catch(e){}
-      location.href="/map.html";
+        // Verified — slpRedeem has already granted the unlock. Enrolling on the
+        // clinician's dashboard is the SEPARATE, optional box.
+        try{
+          if($("shareSlp")&&$("shareSlp").checked){
+            if(Sona.slpJoinCaseload) Sona.slpJoinCaseload(code);
+            else if(Sona.startPilot){ Sona.startPilot(code.toUpperCase()); Sona.sendProgress&&Sona.sendProgress("enroll"); }
+          } else {
+            Sona.saveProfile&&Sona.saveProfile({ slpShare:false });
+          }
+        }catch(e){}
+        finish(name, age, sounds);
+      });
     };
   </script>
 </body>

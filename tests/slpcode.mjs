@@ -245,6 +245,101 @@ const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL 
   await ctx.close();
 }
 
+// ── 4d. the founding grant belongs to the household, not one child ──
+{
+  const ctx = await browser.newContext();
+  const pg = await ctx.newPage();
+  await pg.goto("http://localhost:8155/today.html");
+  const res = await pg.evaluate(() => {
+    Sona.saveProfile({ childName: "Kid One", childAge: "7", focusSounds: ["R"], onboarded: true, earlyAdopter: true });
+    localStorage.setItem("sona.trial.v1", JSON.stringify({ start: Date.now() - 40 * 86400000, days: 3 }));
+    const first = Sona.gated();
+    Sona.addKid("Kid Two", "5");                       // sibling on the same device
+    const kid2 = Sona.kids().filter((k) => !k.active)[0] || Sona.kids()[1];
+    Sona.switchKid(Sona.kids().filter((k) => k.name === "Kid Two")[0].slot);
+    Sona.saveProfile({ childName: "Kid Two", childAge: "5", focusSounds: ["S"], onboarded: true });
+    localStorage.setItem(Sona.kkey("sona.trial.v1"), JSON.stringify({ start: Date.now() - 40 * 86400000, days: 3 }));
+    return { first, second: Sona.gated(), name: Sona.getProfile().childName, early2: Sona.getProfile().earlyAdopter, kid2: !!kid2 };
+  });
+  ok("the referred family's first child is free", res.first === false, JSON.stringify(res));
+  ok("the sibling's own profile carries no grant (per-kid storage)", !res.early2, JSON.stringify(res));
+  ok("but the sibling is NOT paywalled — access is the household's", res.second === false, JSON.stringify(res));
+  await ctx.close();
+}
+
+// ── 4e. /pilot.html cannot self-serve a free unlock ──
+// It called startPilot() straight off a URL parameter, and isPilot()
+// short-circuits gated() — so the link was free-forever for anyone who had it.
+{
+  const ctx = await browser.newContext();
+  const pg = await ctx.newPage();
+  await pg.goto("http://localhost:8155/pilot.html?code=rachel-k4");   // NO key
+  await pg.waitForTimeout(700);
+  const nokey = await pg.evaluate(() => {
+    document.getElementById("cName").value = "Sneaky";
+    document.getElementById("cAge").value = "7";
+    document.querySelector(".snd").click();
+    document.getElementById("consent").checked = true;
+    document.getElementById("go").click();
+    return { pilot: Sona.isPilot(), err: document.getElementById("err").textContent, loc: location.pathname };
+  });
+  ok("no key, no enrolment", nokey.pilot === false, JSON.stringify(nokey));
+  ok("and the page says why instead of silently granting", /code and family key/i.test(nokey.err), nokey.err);
+  ok("it never navigates into the app on an ungranted enrolment", nokey.loc === "/pilot.html", nokey.loc);
+  await ctx.close();
+}
+
+// ── 4f. /pilot.html WITH a valid key: unlock yes, sharing only if ticked ──
+{
+  const ctx = await browser.newContext();
+  const pg = await ctx.newPage();
+  await pg.goto("http://localhost:8155/pilot.html?code=rachel-k4&k=RACHELKEY");
+  await pg.waitForTimeout(700);
+  const st = await pg.evaluate(() => ({
+    loc: location.href,
+    keyPrefilled: (document.getElementById("cKey") || {}).value,
+    shareOptional: !document.getElementById("shareSlp").checked,
+  }));
+  ok("pilot.html strips ?k from the URL too", !/[?&]k=/.test(st.loc), st.loc);
+  ok("the key is carried into the form, not the address bar", st.keyPrefilled === "RACHELKEY", st.keyPrefilled);
+  ok("sharing with the SLP is opt-IN, not pre-ticked", st.shareOptional);
+  const done = await pg.evaluate(() => {
+    document.getElementById("cName").value = "Mia";
+    document.getElementById("cAge").value = "6";
+    document.querySelector(".snd").click();
+    document.getElementById("consent").checked = true;   // required box only
+    document.getElementById("go").click();
+    return true;
+  });
+  await pg.waitForTimeout(900);
+  const after = await pg.evaluate(() => ({ verified: Sona.slpVerified(), pilot: Sona.isPilot(), share: Sona.getProfile().slpShare }));
+  ok("a verified family is unlocked", done && after.verified === true, JSON.stringify(after));
+  ok("leaving the share box unticked shares nothing", after.pilot === false && after.share === false, JSON.stringify(after));
+  await ctx.close();
+}
+
+// ── 4g. source contracts on the two surfaces that used to give access away ──
+{
+  const pilot = readFileSync(ROOT + "/pilot.html", "utf8");
+  ok("pilot.html only enrols behind slpRedeem",
+    /slpRedeem\([\s\S]{0,600}r\.valid/.test(pilot) && !/^\s*if\(Sona\.startPilot\) Sona\.startPilot\(CODE\);/m.test(pilot),
+    "startPilot() off a URL parameter is a free subscription for anyone with the link");
+  ok("pilot.html separates the required recording consent from SLP sharing",
+    /id="shareSlp"/.test(pilot) && /shareSlp[\s\S]{0,200}checked/.test(pilot));
+  const dash = readFileSync(ROOT + "/slp.html", "utf8");
+  ok("the dashboard's family link carries the key (an entitlement, not an honor system)",
+    /familyKey[\s\S]{0,200}"&k="/.test(dash), "a keyless link unlocked Sona for anyone it was forwarded to");
+  const succ = readFileSync(ROOT + "/../app/subscribe/success/page.tsx", "utf8");
+  ok("the success page grants NOTHING before Stripe confirms the session",
+    /if \(!j \|\| !j\.ok\) return;[\s\S]{0,900}sona\.sub\.v1[\s\S]{0,200}active: true/.test(succ),
+    "writing the entitlement on mount made the URL itself a free subscription");
+  ok("an unconfirmed load is told the truth instead of 'You're in!'",
+    /fetched && !paid/.test(succ) && /couldn&apos;t confirm a purchase/i.test(succ));
+  ok("conversion events fire only on a confirmed purchase",
+    succ.indexOf('sonaTrack("Subscribe"') > succ.indexOf("if (!j || !j.ok) return;"),
+    "reporting every stray page load to Meta as a sale poisons the optimiser");
+}
+
 // ── 5. founder access: the owners skip the paywall on any device ──
 {
   const pg = await (await browser.newContext()).newPage();

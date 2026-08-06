@@ -192,7 +192,7 @@
       </div>
     </div>
 
-    <div class="card">
+    <div class="card" id="remindCard">
       <h2>We'll tell you first <span data-ic="mail">💌</span></h2>
       <p class="muted" style="font-size:13.5px;font-weight:700;">That's our promise either way — this just makes it official on your end too.</p>
       <button class="btn blue" id="remindBtn" style="margin-top:14px;">Remind me before anything changes</button>
@@ -205,7 +205,7 @@
       <p id="remindDone">Done — we'll email you before anything changes.</p>
     </div>
 
-    <div class="card">
+    <div class="card" id="freeIncludesCard">
       <h2>What free includes</h2>
       <ul class="free">
         <li>Every game that's in Sona today — the full practice path, no locked tiers</li>
@@ -253,6 +253,21 @@
         var _fc = document.getElementById("foundingCard");
         if (_fc) _fc.style.display = "block";
       } catch (e) {}
+    } else {
+      // Pricing is live. These three cards are the free-era story — "Free while
+      // we build together", "no auto-charges", "What free includes" — and they
+      // sat directly under the buy buttons contradicting them. They stay for
+      // founding and SLP-referred families, for whom the story is still TRUE;
+      // everyone else is being sold to and must not be told it's free.
+      var _founding = false;
+      try { _founding = !!(Sona.getProfile().earlyAdopter) || !!(Sona.slpVerified && Sona.slpVerified()) || !!(Sona.isFounder && Sona.isFounder()); } catch (e) {}
+      if (!_founding) {
+        try {
+          ["foundingCard", "remindCard", "freeIncludesCard"].forEach(function (id) {
+            var el = document.getElementById(id); if (el) el.style.display = "none";
+          });
+        } catch (e) {}
+      }
     }
 
     // Native shell (App Store build): ONE paywall — Apple's sheet via
