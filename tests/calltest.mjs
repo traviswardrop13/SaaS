@@ -71,7 +71,7 @@ const card = await page.evaluate(() => ({
 // the deck is games only — Coach Call has no card and is never surfaced to the
 // child from the home screen
 ok("home deck carries games, and no Coach Call card",
-  card.thumbs === 2 && card.hero.length > 3 && !/call/i.test(card.keys), JSON.stringify(card));
+  card.thumbs === 3 && card.hero.length > 3 && !/call/i.test(card.keys), JSON.stringify(card));
 
 await browser.close(); srv.close();
 console.log(fails ? fails + " FAILURES" : "ALL GREEN");

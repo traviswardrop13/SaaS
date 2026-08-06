@@ -71,7 +71,7 @@ const DECK = () => ({
 });
 let pp = await page.evaluate(DECK);
 ok("deck: hero card is named and opens a door", pp.hero.length > 3 && !!pp.launch, JSON.stringify(pp));
-ok("deck: two up-next cards, both different from each other", pp.thumbs.length === 2 && pp.thumbs[0] !== pp.thumbs[1], JSON.stringify(pp.thumbs));
+ok("deck: three game cards, all different from each other", pp.thumbs.length === 3 && new Set(pp.thumbs).size === 3, JSON.stringify(pp.thumbs));
 ok("deck: fresh family starts at step 0", pp.ps.steps === 0, JSON.stringify(pp.ps));
 
 // ── charge free play: round 1 = isolation, header context line ──
@@ -137,7 +137,7 @@ ok("rep pill shows today's reps climbing", t.ring === "12", t.ring);
 ok("subLine counts down the goal", /2 more rounds/.test(t.sub));
 pp = await page.evaluate(DECK);
 ok("deck: steps track the rotation", pp.ps.steps === 3, JSON.stringify(pp.ps));
-ok("deck: mid-day still offers the whole deck", pp.thumbs.length === 2 && !!pp.launch, JSON.stringify(pp));
+ok("deck: mid-day still offers the whole trio", pp.thumbs.length === 3 && !!pp.launch, JSON.stringify(pp));
 await page.evaluate(() => document.getElementById("ringBtn").click());
 let toast = await page.evaluate(() => document.getElementById("toast").textContent);
 ok("pill tap explains reps + rounds honestly", /12 reps today/.test(toast) && /3 of 5 rounds done/.test(toast) && /R sound/.test(toast));

@@ -303,10 +303,21 @@
     }
 
     /* ---- shelf ---- */
-    // the child's focus-sound books come first; the rest keep their order
-    var focusOrder = profile.focusSounds || [];
+    // BOOKS1: the shelf holds the child's OWN sounds. A library full of books
+    // for sounds nobody is working on is a library a child scrolls past — and
+    // for a kid on /r/, a Theo-the-Sloth /th/ book is practice they were never
+    // assigned. Two escape hatches, because an empty shelf is worse than an
+    // unfocused one:
+    //   - play mode (PLAY1) rotates every sound, so it gets the whole shelf
+    //   - if a filter would leave nothing, show everything instead
+    var focusOrder = (profile.focusSounds || []).map(function (x) { return String(x).toUpperCase(); });
+    var playMode = false; try { playMode = !!(window.Sona && Sona.playMode && Sona.playMode()); } catch (e) {}
+    if (!playMode && focusOrder.length) {
+      var mine = STORIES.filter(function (st) { return focusOrder.indexOf(String(st.sound).toUpperCase()) !== -1; });
+      if (mine.length) STORIES = mine;
+    }
     STORIES.sort(function (a, b) {
-      var ai = focusOrder.indexOf(a.sound), bi = focusOrder.indexOf(b.sound);
+      var ai = focusOrder.indexOf(String(a.sound).toUpperCase()), bi = focusOrder.indexOf(String(b.sound).toUpperCase());
       return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
     });
     var shelf = document.getElementById("shelf");

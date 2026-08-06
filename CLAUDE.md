@@ -1,4 +1,4 @@
-# Working with Travis
+# Working with Travis (and Rachel)
 
 ## Communication style
 - Be concise. Default to a few sentences; use short bullets when listing.
@@ -9,11 +9,67 @@
 
 ## Project
 Sona (speaksona.com) — kids' speech-practice PWA in public/, Next.js API
-routes, Capacitor iOS shell that remote-loads the site. Rachel (wife) is a
-licensed SLP. Solo founder, ships fast.
+routes, Capacitor iOS shell that remote-loads the site. Solo founder, ships
+fast.
+
+**Two people work in this repo.** Travis builds. Rachel is a licensed
+pediatric SLP and co-founder — she owns clinical correctness. If a change
+touches what a child is asked to say, how a sound is cued, what counts as
+practice, or what an SLP is shown, it is Rachel's call, not an engineering
+one. Surface those in the PR body so she can review them without reading
+the diff.
 
 ## Hard rules
 - Merges to main/prod only on Travis's explicit go ("merge").
 - In-game voice detection records/uploads nothing (local loudness only).
 - No silence counted as reps; voice boosts never logged as SLP data.
 - Never rewrite pushed git history. Push after every verified milestone.
+- A child's name never leaves the device to any CRM, ad pixel or analytics
+  payload. Progress leaves only with a grown-up's explicit consent, and
+  never as audio.
+- Run the full battery (`node tests/run-all.mjs`) before every push.
+
+## Clinical rules (Rachel owns these)
+The app must not teach a child something an SLP would have to undo. These
+are enforced in code and pinned by tests — change them only on Rachel's say-so.
+
+- **One target, said in isolation, before anything else.** Never glue a
+  carrier phrase onto a practice word. "a rain" and "one robot" shipped once
+  because a rotating carrier was applied blindly to the whole word bank; a
+  child was being shown ungrammatical English to imitate. Sentences may be
+  sentences; single words stay single words.
+- **Silence is never a rep.** A rep requires detected voicing. A round that
+  advances on a timer teaches a child that not talking works.
+- **End every round on a success.** Step the target down rather than let a
+  child fail out — the last thing they do is the thing they remember.
+- **Developmental order is real.** Sounds are gated by `SOUND_NORM` (the age
+  a sound is typically acquired). Do not offer a 4-year-old /r/ drills
+  because the parent picked it.
+- **Nothing in the app is an evaluation.** No grades, no diagnosis, no
+  "score" a parent could mistake for an assessment. Parent-facing summaries
+  carry the practice-snapshot hedge and Rachel's byline.
+- **Cueing** — TODO, Rachel to specify. Her highest-value ask was the
+  "sssoup" prompt: model the target sound stretched and attached to the word
+  rather than saying the word cold. Needs her exact wording and which sounds
+  it applies to (stretchers vs. poppers) before it ships.
+- **Auditory bombardment warm-up** — TODO, Rachel to specify. Hearing the
+  target sound many times before producing it. Needs: how many exposures,
+  where in the flow, and whether the child responds or only listens.
+- **Speech-rate control** — TODO, Rachel to specify. Slowing the model so a
+  child has time to plan the motor movement. Needs her target rate and
+  whether it changes by age or ladder rung.
+
+## Code conventions
+- `public/` is static ES5 — no build step, no framework, no bundler. It ships
+  to the live site and the iOS shell reads that same site, so a web change is
+  a shipped app change with no App Store review.
+- `sona.js` is the single source of truth for state, entitlement and content.
+  Pages read it; they don't reimplement it. One switch, honoured everywhere —
+  when a rule lives in two places it drifts, and drifted rules are how the
+  paywall and the free-mode copy ended up contradicting each other.
+- Per-child data routes through `load()`/`save()` or `Sona.kkey()`. Anything
+  in `PER_KID` that bypasses them is a promise the code doesn't keep.
+- Entitlement is never granted from a URL parameter or an unverified page
+  load. If a link unlocks something, a server verified it first.
+- Comments explain *why*, especially where the obvious implementation is
+  wrong. Match the surrounding density.

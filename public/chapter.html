@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <title>Sona — Today's Story</title>
+  <link href="/fonts.css" rel="stylesheet">
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <meta name="theme-color" content="#0d1b3e" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <style>
+    :root{ --ink:#fff; --dim:#b9c6e8; --gold:#ffd21c; --green:#58cc02; --green-d:#46a302; }
+    *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;font-family:Nunito,-apple-system,"Segoe UI",Roboto,sans-serif;}
+    html,body{height:100%;overflow:hidden;}
+    body{background:radial-gradient(120% 90% at 50% 8%,#26407e 0%,#152a5c 45%,#0d1b3e 100%);color:var(--ink);}
+    /* the night sky the whole arc lives under — a star fell out of it */
+    #stars{position:fixed;inset:0;pointer-events:none;}
+    #stars i{position:absolute;background:#fff;border-radius:50%;opacity:.65;animation:tw 3.4s ease-in-out infinite;}
+    @keyframes tw{0%,100%{opacity:.22;}50%{opacity:.9;}}
+
+    #app{position:relative;height:100%;display:flex;flex-direction:column;
+      padding:calc(14px + env(safe-area-inset-top)) 20px calc(18px + env(safe-area-inset-bottom));max-width:520px;margin:0 auto;}
+    #top{display:flex;align-items:center;gap:10px;flex:none;}
+    #close{border:none;background:rgba(255,255,255,.14);color:#fff;width:38px;height:38px;border-radius:50%;font-size:17px;font-weight:800;cursor:pointer;flex:none;}
+    #chip{font-family:"Baloo 2";font-weight:800;font-size:12px;letter-spacing:.08em;color:var(--gold);text-transform:uppercase;}
+    #ttl{font-family:"Baloo 2";font-weight:800;font-size:15px;color:#fff;line-height:1.2;}
+
+    /* progress pips — a child can see how much story is left */
+    #pips{display:flex;gap:6px;margin-top:14px;flex:none;}
+    #pips b{height:5px;border-radius:99px;background:rgba(255,255,255,.2);flex:1;transition:background .3s;}
+    #pips b.on{background:var(--gold);}
+
+    #stage{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;min-height:0;padding:8px 0;}
+    #echo{width:min(38vw,150px);height:auto;filter:drop-shadow(0 14px 26px rgba(0,0,0,.45));transition:transform .35s;}
+    #echo.pop{transform:scale(1.07) rotate(-3deg);}
+    #text{font-family:"Baloo 2";font-weight:800;font-size:clamp(19px,5.4vw,26px);line-height:1.36;margin-top:18px;
+      text-shadow:0 3px 10px rgba(0,0,0,.35);max-width:22ch;}
+    #hint{color:var(--dim);font-weight:800;font-size:12.5px;margin-top:14px;}
+
+    #bottom{flex:none;display:flex;gap:10px;align-items:center;}
+    #hear{flex:none;border:none;border-radius:16px;padding:14px 16px;background:rgba(255,255,255,.15);color:#fff;font-family:"Baloo 2";font-weight:800;font-size:14px;cursor:pointer;}
+    #next{flex:1;border:none;border-radius:18px;padding:16px;font-family:"Baloo 2";font-weight:800;font-size:19px;color:#fff;
+      background:linear-gradient(180deg,#6fd60e,var(--green));box-shadow:0 5px 0 var(--green-d);cursor:pointer;}
+    #next:active{transform:translateY(4px);box-shadow:0 1px 0 var(--green-d);}
+
+    /* the finish beat: the three games visibly unlock */
+    #done{position:fixed;inset:0;z-index:20;display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;
+      padding:32px 26px;background:radial-gradient(120% 90% at 50% 20%,#2b56a8 0%,#152a5c 55%,#0d1b3e 100%);}
+    #done h1{font-family:"Baloo 2";font-weight:800;font-size:30px;margin-top:14px;}
+    #done p{color:var(--dim);font-weight:800;font-size:14.5px;margin-top:8px;line-height:1.5;max-width:26ch;}
+    #unlocked{display:flex;gap:10px;margin-top:22px;}
+    #unlocked div{width:74px;height:74px;border-radius:18px;background:rgba(255,255,255,.13);display:flex;align-items:center;justify-content:center;
+      font-size:30px;border:2px solid rgba(255,255,255,.22);animation:unlock .5s backwards;}
+    #unlocked div:nth-child(2){animation-delay:.14s;} #unlocked div:nth-child(3){animation-delay:.28s;}
+    @keyframes unlock{from{transform:scale(.6) rotate(-12deg);opacity:0;}to{transform:none;opacity:1;}}
+    #doneBtn{margin-top:26px;width:100%;max-width:320px;border:none;border-radius:18px;padding:17px;font-family:"Baloo 2";font-weight:800;font-size:20px;
+      color:#fff;background:linear-gradient(180deg,#6fd60e,var(--green));box-shadow:0 5px 0 var(--green-d);cursor:pointer;}
+    #hook{color:var(--gold);font-weight:800;font-size:13px;margin-top:18px;max-width:28ch;line-height:1.5;}
+  </style>
+</head>
+<body>
+  <div id="stars"></div>
+  <div id="app">
+    <div id="top">
+      <button id="close" aria-label="Close">✕</button>
+      <div>
+        <div id="chip"></div>
+        <div id="ttl"></div>
+      </div>
+    </div>
+    <div id="pips"></div>
+
+    <div id="stage">
+      <img id="echo" src="/coach/echo/echo-idle.svg" alt="Echo" onerror="this.style.display='none';" />
+      <div id="text"></div>
+      <div id="hint">Tap to keep reading</div>
+    </div>
+
+    <div id="bottom">
+      <button id="hear">🔊 Read it to me</button>
+      <button id="next">Next →</button>
+    </div>
+  </div>
+
+  <div id="done">
+    <img src="/coach/echo/echo-celebrate.svg" alt="Echo" style="width:120px;" onerror="this.onerror=null;this.src='/coach/echo/echo-idle.svg';" />
+    <h1>Story finished! 🎉</h1>
+    <p>Three games just unlocked for today.</p>
+    <div id="unlocked"></div>
+    <div id="hook"></div>
+    <button id="doneBtn">Let's play! →</button>
+  </div>
+
+  <script src="/sona.js"></script>
+  <script>
+    var $=function(id){return document.getElementById(id);};
+    var S=window.Sona, profile={}; try{ profile=S.getProfile()||{}; }catch(e){}
+
+    // twinkling sky (cheap, deterministic enough to look hand-placed)
+    (function(){ var f=document.createDocumentFragment();
+      for(var i=0;i<38;i++){ var s=document.createElement("i"); var sz=(i%4)+1.4;
+        s.style.cssText="left:"+((i*37)%100)+"%;top:"+((i*61)%92)+"%;width:"+sz+"px;height:"+sz+"px;animation-delay:"+((i%9)*0.37)+"s";
+        f.appendChild(s); } $("stars").appendChild(f); })();
+
+    // ── today's chapter ────────────────────────────────────────────────────
+    // The pages ARE the episode: the opening beat plus the four story beats.
+    // These used to flash between practice rounds where a mid-game child had
+    // no attention left for them; read first, they're the reason to practise.
+    var EP=null, PAGES=[], i=0;
+    try{ EP=S.dailyStory(); }catch(e){}
+    if(!EP){ location.replace("/today.html"); }
+    else {
+      PAGES=[EP.open].concat(EP.beats||[]);
+      $("chip").textContent="Chapter "+(S.dailyChapterNum?S.dailyChapterNum():1);
+      $("ttl").textContent=EP.t;
+      var pips=$("pips");
+      PAGES.forEach(function(){ pips.appendChild(document.createElement("b")); });
+    }
+
+    /* ── voice ───────────────────────────────────────────────────────────── */
+    var ctx=null;
+    function getCtx(){ if(!ctx){ var C=window.AudioContext||window.webkitAudioContext; ctx=new C(); } return ctx; }
+    function unlockAudio(){ try{ var c=getCtx(); if(c.state==="suspended")c.resume(); var b=c.createBuffer(1,1,22050); var s=c.createBufferSource(); s.buffer=b; s.connect(c.destination); s.start(0); }catch(e){} }
+    function playPCM(b){return new Promise(function(res){try{var c=getCtx(),n=b.byteLength>>1,ab=c.createBuffer(1,n,24000),ch=ab.getChannelData(0),dv=new DataView(b.buffer,b.byteOffset,b.byteLength);for(var k=0;k<n;k++)ch[k]=dv.getInt16(k*2,true)/32768;var s=c.createBufferSource();s.buffer=ab;s.playbackRate.value=(window.Sona&&Sona.VOICE_PITCH)||1;var g=c.createGain();g.gain.value=(profile.volume!=null?profile.volume:0.8);s.connect(g);g.connect(c.destination);s.onended=res;s.start();}catch(e){res();}});}
+    // Guaranteed audio: if cloud TTS is down or out of credit, the browser
+    // voice reads the page. A child is never left with a silent story.
+    function speakFallback(t){ return new Promise(function(res){ try{
+      if(!window.speechSynthesis||!window.SpeechSynthesisUtterance) return res();
+      var u=new SpeechSynthesisUtterance(String(t));
+      u.rate=0.9; u.pitch=1.05; u.volume=(profile.volume!=null?profile.volume:0.8);
+      var done=false; function fin(){ if(done)return; done=true; res(); }
+      u.onend=fin; u.onerror=fin; setTimeout(fin,12000);
+      window.speechSynthesis.speak(u);
+    }catch(e){ res(); } }); }
+    var _q=Promise.resolve(), _n=0;
+    function say(t){
+      if(!t||profile.voiceOn===false) return Promise.resolve();
+      if(_n>=2) return Promise.resolve();
+      _n++;
+      var run=function(){ return fetch("/api/tts",{method:"POST",headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({text:t,voice:profile.voiceId||""})})
+        .then(function(r){return r.ok?r.arrayBuffer():null;})
+        .then(function(b){ return b?playPCM(new Uint8Array(b)):speakFallback(t); })
+        .catch(function(){ return speakFallback(t); }); };
+      _q=_q.then(run,run).then(function(){_n=Math.max(0,_n-1);},function(){_n=Math.max(0,_n-1);});
+      return _q;
+    }
+
+    function paint(){
+      $("text").textContent=PAGES[i]||"";
+      var pp=$("pips").children;
+      for(var k=0;k<pp.length;k++) pp[k].className=(k<=i)?"on":"";
+      $("next").textContent=(i>=PAGES.length-1)?"Finish the story →":"Next →";
+      $("hint").textContent=(i>=PAGES.length-1)?"Last page!":"Tap to keep reading";
+      var e=$("echo"); e.classList.add("pop"); setTimeout(function(){ e.classList.remove("pop"); },340);
+      say(PAGES[i]);
+    }
+
+    function advance(){
+      try{ S.sfx&&S.sfx("tap"); }catch(e){}
+      if(i>=PAGES.length-1){ finish(); return; }
+      i++; paint();
+    }
+
+    // Finishing is what unlocks the day. markStoryRead() also queues tomorrow's
+    // chapter, so the home screen is different in the morning without anyone
+    // having to remember to advance it.
+    function finish(){
+      try{ S.markStoryRead(); }catch(e){}
+      try{ S.track&&S.track("story finished",{chapter:(S.dailyChapterNum?S.dailyChapterNum():0)}); }catch(e){}
+      var keys=[]; try{ keys=S.dailyGames()||[]; }catch(e){}
+      var ICON={slice:"🍉",tiles:"🎹",stack:"🧱",run:"🏃",glide:"🎈",feed:"🦜"};
+      var host=$("unlocked"); host.innerHTML="";
+      keys.forEach(function(k){ var d=document.createElement("div"); d.textContent=ICON[k]||"🎮"; host.appendChild(d); });
+      $("hook").textContent=EP.hook||"";
+      $("done").style.display="flex";
+      try{ S.confetti&&S.confetti({count:150}); }catch(e){}
+      say("You did it! Three games are unlocked.");
+    }
+
+    $("next").onclick=function(){ unlockAudio(); advance(); };
+    $("stage").onclick=function(){ unlockAudio(); advance(); };
+    $("hear").onclick=function(ev){ ev.stopPropagation(); unlockAudio(); say(PAGES[i]); };
+    $("close").onclick=function(){ location.href="/today.html"; };
+    $("doneBtn").onclick=function(){ location.href="/today.html"; };
+
+    if(EP) paint();
+  </script>
+</body>
+</html>
