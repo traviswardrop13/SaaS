@@ -1225,7 +1225,7 @@
     return _ac;
   }
   // master volume from the profile (so the volume slider also controls SFX); 0 = muted
-  function sfxVol() { try { const p = getProfile(); if (p.soundOn === false) return 0; return (p.volume != null ? p.volume : 0.8); } catch (e) { return 0.8; } }
+  function sfxVol() { try { const p = getProfile(); if (p.soundOn === false) return 0; return (p.volume != null ? p.volume : 0.6); } catch (e) { return 0.6; } }
   function note(freq, start, dur, type, gain) {
     const a = ac(); const v = sfxVol(); if (!a || v === 0) return;
     const t0 = a.currentTime + start;
@@ -1254,9 +1254,12 @@
   // gated on a profile toggle (off by default). No synth music (would sound cheap).
   let _music = null;
   const music = {
-    start() { try { const p = getProfile(); if (p.musicOn !== true || p.soundOn === false) return; if (!_music) { _music = new Audio("/sfx/music.mp3"); _music.loop = true; _music.volume = 0.18; } _music.play().catch(() => {}); } catch (e) {} },
+    // Background music is gone: it fought Echo's voice, and the one thing a
+    // speech app must never do is make the model harder to hear. start() is
+    // kept as a no-op so the dozen game pages that call it don't need touching.
+    start() {},
     stop()  { try { if (_music) _music.pause(); } catch (e) {} },
-    toggle(on) { try { saveProfile({ musicOn: !!on }); if (on) music.start(); else music.stop(); } catch (e) {} },
+    toggle() {},
   };
   function confetti(opts) {
     opts = opts || {};
