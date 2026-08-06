@@ -69,7 +69,7 @@ ok(
 );
 
 // ---- 6. the 'no clips sent' promise is honoured where recording happens ----
-for (const page of ["charge.html", "soundcheck.html"]) {
+for (const page of ["charge.html"]) {
   const src = readFileSync(ROOT + "/public/" + page, "utf8");
   ok(
     `${page} reads the cloudScoring toggle`,

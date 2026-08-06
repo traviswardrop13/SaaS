@@ -156,15 +156,19 @@ ok("play mode is recorded", playProf.mode === "play", playProf.mode);
 ok("play rotation covers every sound", (playProf.focusSounds || []).length === 19, String((playProf.focusSounds || []).length));
 ok("easiest sounds first, R last", playProf.focusSounds[0] === "P" && playProf.focusSounds[18] === "R", JSON.stringify([playProf.focusSounds[0], playProf.focusSounds[18]]));
 
-// the home greeting drops the clinical framing, and the Sound Check nudge stays hidden
+// the home greeting drops the clinical framing, and nothing pitches an evaluation
 await page.goto("http://localhost:8129/today.html"); await page.waitForTimeout(700);
 const playHome = await page.evaluate(() => ({
   sub: document.getElementById("subLine").textContent,
-  nudge: getComputedStyle(document.getElementById("checkNudge")).display,
+  nudge: !!document.getElementById("checkNudge"),
+  body: document.body.innerText,
   firstSound: Sona.rotSound(),
 }));
 ok("play greeting talks about games, not a target sound", /talking games/i.test(playHome.sub), playHome.sub);
-ok("the Sound Check nudge stays hidden in play mode", playHome.nudge === "none", playHome.nudge);
+// the nudge used to be hidden in play mode; the Sound Check is gone entirely,
+// which is the stronger guarantee — there is no clinical pitch left to hide
+ok("the Sound Check nudge no longer exists at all", playHome.nudge === false);
+ok("nothing on the kid home offers a Sound Check", !/sound check/i.test(playHome.body), playHome.body.slice(0, 160));
 ok("the rotation starts on the easiest sound", playHome.firstSound === "P", playHome.firstSound);
 
 // Settings: the play note shows, and hand-picking sounds moves to focus mode

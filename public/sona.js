@@ -148,7 +148,7 @@
   const PER_KID = new Set([
     PKEY, GKEY,
     "sona.rotation.v1", "sona.today.v1", "sona.episode.v1", "sona.reps.v1",
-    "sona.soundcheck.v1", "sona.plan.v1", "sona.tickets.v1", "sona.charge.v1",
+    "sona.tickets.v1", "sona.charge.v1",
     "sona.daily.v1", "sona.session.v1", "sona.levels.v1", "sona.campaign.v1",
     "sona.stickers.v1", "sona.attempts.v1", "sona.outcomes.v1",
     "sona.lib.read.v1", "sona.feed.v1", "sona.call.v1", "sona.callhist.v1",
@@ -545,103 +545,19 @@
     return [];
   }
 
-  // ── Sound Check: the weekly AI evaluation that writes the plan ──
-  // A structured word sweep: the SAME first-two initial-position words per
-  // sound every time, so week-over-week scores compare like-for-like — a
-  // controlled sample, unlike free play. Each word is scored on the target
-  // phoneme by the cloud scorer; grades roll up to strong/emerging/needs-work
-  // and buildPlan() turns that into focus sounds, starting ladder rungs, and
-  // a 12-week arc. Unofficial by design: a practice snapshot the parent can
-  // share with their SLP — never an evaluation or diagnosis.
-  const SCKEY = "sona.soundcheck.v1", PLANKEY = "sona.plan.v1";
-  function checkSounds(mode) {
-    const p = getProfile(); const age = parseInt(p.childAge, 10) || 0;
-    const picked = (p.focusSounds || []).map((s) => String(s).toUpperCase()).filter((s) => WORDS[s]);
-    if (mode === "mini" && picked.length) return picked.slice(0, 4);
-    // full sweep: age-appropriate sounds (expected by ~age+1) plus anything
-    // already picked, easiest developmental norms first so the check opens
-    // with wins; capped so a 4-year-old stays under ~five minutes.
-    let all = ALL_SOUNDS.filter((s) => WORDS[s]);
-    if (age) all = all.filter((s) => (SOUND_NORM[s] || 9) <= age + 1);
-    // picked sounds ALWAYS make the sweep (they take cap slots first), then
-    // age-appropriate rest; presented easiest developmental norms first.
-    const rest = all.filter((s) => picked.indexOf(s) === -1);
-    let list = picked.concat(rest).slice(0, 12);
-    if (!list.length) list = ["P", "B", "M"];
-    list.sort((a, b) => (SOUND_NORM[a] || 9) - (SOUND_NORM[b] || 9));
-    return list;
-  }
-  function checkItems(mode) {
-    return checkSounds(mode)
-      .map((s) => ({ sound: s, words: (wordsFor(s, "i") || []).slice(0, 2).map((w) => w.w) }))
-      .filter((it) => it.words.length);
-  }
-  // Grade one sound from its per-word target-phoneme scores (0-100; null = unscored).
-  function gradeSound(scores) {
-    const sc = (scores || []).filter((v) => typeof v === "number");
-    if (!sc.length) return "unknown";
-    const avg = sc.reduce((a, b) => a + b, 0) / sc.length;
-    return avg >= 78 ? "strong" : avg >= 55 ? "emerging" : "needs";
-  }
-  function saveCheck(run) { // {mode, results:{R:{words:[..], scores:[..]}}}
-    const hist = load(SCKEY, { checks: [] });
-    const statuses = {};
-    Object.keys(run.results || {}).forEach((s) => { statuses[s] = gradeSound(run.results[s].scores); });
-    hist.checks.push({ d: today(), t: Date.now(), mode: run.mode || "mini", results: run.results, statuses });
-    hist.checks = hist.checks.slice(-26); // ~6 months of weekly snapshots
-    save(SCKEY, hist);
-    return statuses;
-  }
-  function lastCheck() { const h = load(SCKEY, { checks: [] }); return h.checks[h.checks.length - 1] || null; }
-  function checkHistory() { return load(SCKEY, { checks: [] }).checks; }
-  function checkDue() { const c = lastCheck(); return !c || (Date.now() - (c.t || 0)) > 6.5 * 86400000; }
-  // The plan writer: evaluation → focus sounds + starting rungs + the arc.
-  function buildPlan() {
-    const c = lastCheck(); if (!c) return null;
-    const g = getProgress();
-    // needs-work first, easiest norms first, cap 3 so practice stays focused;
-    // strong sounds graduate out. All strong → light maintenance on the first two.
-    const order = Object.keys(c.statuses).sort((a, b) => (SOUND_NORM[a] || 9) - (SOUND_NORM[b] || 9));
-    const needs = order.filter((s) => c.statuses[s] === "needs");
-    const emerging = order.filter((s) => c.statuses[s] === "emerging");
-    let focus = needs.concat(emerging).slice(0, 3);
-    if (!focus.length) focus = order.slice(0, 2);
-    // starting rung: needs-work begins at the bottom, emerging gets isolation
-    // credit — but an EARNED rung is never downgraded by a bad check day.
-    focus.forEach((s) => { const want = c.statuses[s] === "emerging" ? 1 : 0; g.stage[s] = Math.max(g.stage[s] || 0, want); });
-    save(GKEY, g);
-    saveProfile({ focusSounds: focus });
-    try { save(ROTKEY, { i: 0, r: 0 }); } catch (e) {}
-    const plan = { created: today(), t: Date.now(), focus, statuses: c.statuses,
-      weeks: [
-        { w: "Weeks 1–2", what: "Warm-ups — each sound by itself, then syllables (rah, ree, roo)" },
-        { w: "Weeks 3–6", what: "Words — " + focus.map((s) => soundLabel(s)).join(", ") + " at the start of words" },
-        { w: "Weeks 7–10", what: "Phrases — short two-word combos inside the games" },
-        { w: "Weeks 11–13", what: "Sentences & review — the sounds in real talking" },
-      ] };
-    save(PLANKEY, plan);
-    return plan;
-  }
-  function getPlan() { const v = load(PLANKEY, {}); return v && v.focus ? v : null; }
-  // Where the family is on the 13-week Sound Journey (week 1 = plan creation).
-  function journeyWeek() {
-    const p = getPlan(); if (!p || !p.created) return null;
-    const wk = Math.floor((new Date(today()) - new Date(p.created)) / (7 * 864e5)) + 1;
-    return { week: Math.max(1, Math.min(13, wk)), total: 13, created: p.created };
-  }
-  // The Sound Story: the week, narrated from real data (card + email body).
+  // ── the week, narrated ────────────────────────────────────────────────
+  // The Sound Story: a plain-language read of the week from REAL practice
+  // data — days practised, reps out loud, and honest-scoring movement on the
+  // rotating sound. It used to also report Sound Check grade changes; the
+  // Sound Check is gone, and a weekly AI evaluation was never what made this
+  // card useful to a parent. Unofficial by design: a practice snapshot to
+  // share with an SLP, never an evaluation or a diagnosis.
   function soundStory() {
-    const w = weekWins(); const mw = momWeek(); const hist = checkHistory();
+    const w = weekWins(); const mw = momWeek();
     const name = getProfile().childName || "Your kid";
     const bits = [];
     bits.push(name + " practiced " + mw.done + (mw.done === 1 ? " day" : " days") + " this week" + (w.reps > 0 ? " and said " + w.reps + (w.reps === 1 ? " sound" : " sounds") + " out loud." : "."));
     if (w.acc != null && w.accPrev != null && w.acc !== w.accPrev) bits.push("The " + w.label + " sound moved " + w.accPrev + "% → " + w.acc + "% on honest scoring.");
-    if (hist.length >= 2) {
-      const rank = { needs: 0, emerging: 1, strong: 2 }; const ups = [];
-      const prev = hist[hist.length - 2].statuses || {}, cur = hist[hist.length - 1].statuses || {};
-      Object.keys(cur).forEach((s) => { if (prev[s] != null && rank[cur[s]] > rank[prev[s]]) ups.push(soundLabel(s)); });
-      if (ups.length) bits.push("Sound Check win: " + ups.join(", ") + " moved up since last week.");
-    }
     bits.push("At this stage, lots of honest tries beat perfect tries — steady practice is exactly how sounds get built.");
     return bits;
   }
@@ -2072,5 +1988,5 @@
   }
   try { installDebug(); } catch (e) {}
 
-  global.Sona = { pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, ladderContent, FREE_MODE, isFree, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, bumpReps, repsToday, pathState, localDay: () => _localDay(), soundFamily, frameShape, checkSounds, checkItems, gradeSound, saveCheck, lastCheck, checkHistory, checkDue, buildPlan, getPlan, journeyWeek, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, gated, gateVerify, gateOk, requireGate, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, LEVEL_GAMES, GAME_DECK, GAMES_PER_LEVEL, levelGames, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, WORLDS, LEVELS_PER_WORLD, campaignLevels, campaignSounds, campaignState, worldById, worldLevels, worldStars, worldCleared, levelStars, setLevelStars, totalStars, worldUnlocked, levelUnlocked, campaignLaunch, campaignResolve, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repsBeacon, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES };
+  global.Sona = { pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, ladderContent, FREE_MODE, isFree, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, bumpReps, repsToday, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, gated, gateVerify, gateOk, requireGate, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, LEVEL_GAMES, GAME_DECK, GAMES_PER_LEVEL, levelGames, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, WORLDS, LEVELS_PER_WORLD, campaignLevels, campaignSounds, campaignState, worldById, worldLevels, worldStars, worldCleared, levelStars, setLevelStars, totalStars, worldUnlocked, levelUnlocked, campaignLaunch, campaignResolve, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repsBeacon, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES };
 })(window);
