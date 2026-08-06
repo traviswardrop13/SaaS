@@ -148,7 +148,7 @@
   const PER_KID = new Set([
     PKEY, GKEY,
     "sona.rotation.v1", "sona.today.v1", "sona.episode.v1", "sona.reps.v1",
-    "sona.soundcheck.v1", "sona.plan.v1", "sona.tickets.v1", "sona.charge.v1",
+    "sona.tickets.v1", "sona.charge.v1",
     "sona.daily.v1", "sona.session.v1", "sona.levels.v1", "sona.campaign.v1",
     "sona.stickers.v1", "sona.attempts.v1", "sona.outcomes.v1",
     "sona.lib.read.v1", "sona.feed.v1", "sona.call.v1", "sona.callhist.v1",
@@ -545,103 +545,19 @@
     return [];
   }
 
-  // ── Sound Check: the weekly AI evaluation that writes the plan ──
-  // A structured word sweep: the SAME first-two initial-position words per
-  // sound every time, so week-over-week scores compare like-for-like — a
-  // controlled sample, unlike free play. Each word is scored on the target
-  // phoneme by the cloud scorer; grades roll up to strong/emerging/needs-work
-  // and buildPlan() turns that into focus sounds, starting ladder rungs, and
-  // a 12-week arc. Unofficial by design: a practice snapshot the parent can
-  // share with their SLP — never an evaluation or diagnosis.
-  const SCKEY = "sona.soundcheck.v1", PLANKEY = "sona.plan.v1";
-  function checkSounds(mode) {
-    const p = getProfile(); const age = parseInt(p.childAge, 10) || 0;
-    const picked = (p.focusSounds || []).map((s) => String(s).toUpperCase()).filter((s) => WORDS[s]);
-    if (mode === "mini" && picked.length) return picked.slice(0, 4);
-    // full sweep: age-appropriate sounds (expected by ~age+1) plus anything
-    // already picked, easiest developmental norms first so the check opens
-    // with wins; capped so a 4-year-old stays under ~five minutes.
-    let all = ALL_SOUNDS.filter((s) => WORDS[s]);
-    if (age) all = all.filter((s) => (SOUND_NORM[s] || 9) <= age + 1);
-    // picked sounds ALWAYS make the sweep (they take cap slots first), then
-    // age-appropriate rest; presented easiest developmental norms first.
-    const rest = all.filter((s) => picked.indexOf(s) === -1);
-    let list = picked.concat(rest).slice(0, 12);
-    if (!list.length) list = ["P", "B", "M"];
-    list.sort((a, b) => (SOUND_NORM[a] || 9) - (SOUND_NORM[b] || 9));
-    return list;
-  }
-  function checkItems(mode) {
-    return checkSounds(mode)
-      .map((s) => ({ sound: s, words: (wordsFor(s, "i") || []).slice(0, 2).map((w) => w.w) }))
-      .filter((it) => it.words.length);
-  }
-  // Grade one sound from its per-word target-phoneme scores (0-100; null = unscored).
-  function gradeSound(scores) {
-    const sc = (scores || []).filter((v) => typeof v === "number");
-    if (!sc.length) return "unknown";
-    const avg = sc.reduce((a, b) => a + b, 0) / sc.length;
-    return avg >= 78 ? "strong" : avg >= 55 ? "emerging" : "needs";
-  }
-  function saveCheck(run) { // {mode, results:{R:{words:[..], scores:[..]}}}
-    const hist = load(SCKEY, { checks: [] });
-    const statuses = {};
-    Object.keys(run.results || {}).forEach((s) => { statuses[s] = gradeSound(run.results[s].scores); });
-    hist.checks.push({ d: today(), t: Date.now(), mode: run.mode || "mini", results: run.results, statuses });
-    hist.checks = hist.checks.slice(-26); // ~6 months of weekly snapshots
-    save(SCKEY, hist);
-    return statuses;
-  }
-  function lastCheck() { const h = load(SCKEY, { checks: [] }); return h.checks[h.checks.length - 1] || null; }
-  function checkHistory() { return load(SCKEY, { checks: [] }).checks; }
-  function checkDue() { const c = lastCheck(); return !c || (Date.now() - (c.t || 0)) > 6.5 * 86400000; }
-  // The plan writer: evaluation → focus sounds + starting rungs + the arc.
-  function buildPlan() {
-    const c = lastCheck(); if (!c) return null;
-    const g = getProgress();
-    // needs-work first, easiest norms first, cap 3 so practice stays focused;
-    // strong sounds graduate out. All strong → light maintenance on the first two.
-    const order = Object.keys(c.statuses).sort((a, b) => (SOUND_NORM[a] || 9) - (SOUND_NORM[b] || 9));
-    const needs = order.filter((s) => c.statuses[s] === "needs");
-    const emerging = order.filter((s) => c.statuses[s] === "emerging");
-    let focus = needs.concat(emerging).slice(0, 3);
-    if (!focus.length) focus = order.slice(0, 2);
-    // starting rung: needs-work begins at the bottom, emerging gets isolation
-    // credit — but an EARNED rung is never downgraded by a bad check day.
-    focus.forEach((s) => { const want = c.statuses[s] === "emerging" ? 1 : 0; g.stage[s] = Math.max(g.stage[s] || 0, want); });
-    save(GKEY, g);
-    saveProfile({ focusSounds: focus });
-    try { save(ROTKEY, { i: 0, r: 0 }); } catch (e) {}
-    const plan = { created: today(), t: Date.now(), focus, statuses: c.statuses,
-      weeks: [
-        { w: "Weeks 1–2", what: "Warm-ups — each sound by itself, then syllables (rah, ree, roo)" },
-        { w: "Weeks 3–6", what: "Words — " + focus.map((s) => soundLabel(s)).join(", ") + " at the start of words" },
-        { w: "Weeks 7–10", what: "Phrases — short two-word combos inside the games" },
-        { w: "Weeks 11–13", what: "Sentences & review — the sounds in real talking" },
-      ] };
-    save(PLANKEY, plan);
-    return plan;
-  }
-  function getPlan() { const v = load(PLANKEY, {}); return v && v.focus ? v : null; }
-  // Where the family is on the 13-week Sound Journey (week 1 = plan creation).
-  function journeyWeek() {
-    const p = getPlan(); if (!p || !p.created) return null;
-    const wk = Math.floor((new Date(today()) - new Date(p.created)) / (7 * 864e5)) + 1;
-    return { week: Math.max(1, Math.min(13, wk)), total: 13, created: p.created };
-  }
-  // The Sound Story: the week, narrated from real data (card + email body).
+  // ── the week, narrated ────────────────────────────────────────────────
+  // The Sound Story: a plain-language read of the week from REAL practice
+  // data — days practised, reps out loud, and honest-scoring movement on the
+  // rotating sound. It used to also report Sound Check grade changes; the
+  // Sound Check is gone, and a weekly AI evaluation was never what made this
+  // card useful to a parent. Unofficial by design: a practice snapshot to
+  // share with an SLP, never an evaluation or a diagnosis.
   function soundStory() {
-    const w = weekWins(); const mw = momWeek(); const hist = checkHistory();
+    const w = weekWins(); const mw = momWeek();
     const name = getProfile().childName || "Your kid";
     const bits = [];
     bits.push(name + " practiced " + mw.done + (mw.done === 1 ? " day" : " days") + " this week" + (w.reps > 0 ? " and said " + w.reps + (w.reps === 1 ? " sound" : " sounds") + " out loud." : "."));
     if (w.acc != null && w.accPrev != null && w.acc !== w.accPrev) bits.push("The " + w.label + " sound moved " + w.accPrev + "% → " + w.acc + "% on honest scoring.");
-    if (hist.length >= 2) {
-      const rank = { needs: 0, emerging: 1, strong: 2 }; const ups = [];
-      const prev = hist[hist.length - 2].statuses || {}, cur = hist[hist.length - 1].statuses || {};
-      Object.keys(cur).forEach((s) => { if (prev[s] != null && rank[cur[s]] > rank[prev[s]]) ups.push(soundLabel(s)); });
-      if (ups.length) bits.push("Sound Check win: " + ups.join(", ") + " moved up since last week.");
-    }
     bits.push("At this stage, lots of honest tries beat perfect tries — steady practice is exactly how sounds get built.");
     return bits;
   }
@@ -965,10 +881,26 @@
   function gated() {
     if (isFree()) return false;
     if (isFounder()) return false;
+    if (slpVerified()) return false;                 // device redeemed a valid SLP credential
     if (isSubscribed() || isPilot()) return false;
-    try { if (getProfile().earlyAdopter) return false; } catch (e) {}
+    if (earlyAdopterAnyKid()) return false;
     ensureTrial();
     return trialExpired();
+  }
+  // earlyAdopter lives on the PROFILE, and the profile is per-kid — so a
+  // founding or SLP-referred family that added a second child had the first one
+  // playing free while the sibling hit a paywall on the same device. Access was
+  // never granted to a child; it was granted to the household.
+  function earlyAdopterAnyKid() {
+    try {
+      const list = _kids().list || [];
+      for (let i = 0; i < list.length; i++) {
+        const slot = list[i].slot;
+        const raw = localStorage.getItem(slot ? PKEY + "@" + slot : PKEY);
+        if (raw && JSON.parse(raw).earlyAdopter) return true;
+      }
+    } catch (e) {}
+    return false;
   }
   // Verify a subscription by email (Stripe is the source of truth) and cache it,
   // so a paid family can unlock on a new device / after clearing storage.
@@ -990,21 +922,29 @@
 
 
   // ── SLP caseload links: speaksona.com/join.html?slp=CODE&k=KEY ──────────
-  // Sona is free for everyone, so this link does NOT unlock anything. Its job
-  // is the roster: a family who joins through their clinician's link (and
-  // whose grown-up consents) sends practice progress to that SLP's dashboard.
-  // The key is still verified server-side — not to gate access, but so a
-  // stranger can't inject fake children into a real clinician's caseload.
+  // An SLP shares their credential — code (the "username") + family key (the
+  // "password") — and their families get Sona free, forever. Pricing is LIVE,
+  // so the grant is SERVER-VERIFIED: the old honor system unlocked for any
+  // string in the URL, which was a paywall hole. The code still sticks
+  // unverified (it keys the roster and the funnel), but free access needs the
+  // key to check out.
+  //
+  // Verifying UNLOCKS. It does not enrol — that takes the grown-up's explicit
+  // consent on /join.html, which calls slpJoinCaseload() below. Access and
+  // surveillance are separate decisions, and a family can take the free app
+  // without agreeing to be watched.
   function _slpVerify(code, key) {
     return fetch("/api/slp/redeem", {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ code, key }),
     }).then((r) => r.json()).then((j) => {
       if (j && j.ok && j.valid) {
-        try { localStorage.setItem("sona.slpok", code.toUpperCase()); } catch (e) {}
-        try { const pr = getProfile(); if (pr.onboarded || pr.childName) saveProfile({ slpCode: code.toUpperCase() }); } catch (e) {}
-        // the funnel event means A REAL FAMILY JOINED A CASELOAD — only the
-        // valid branch may fire it, or the SLP ranking counts garbage
+        try { localStorage.setItem("sona.slpok", code.toUpperCase()); localStorage.setItem("sona.slpunlock", "1"); } catch (e) {}
+        // a family that already finished onboarding gets patched in place —
+        // the link can arrive after setup (e.g. re-sent by the SLP)
+        try { const pr = getProfile(); if (pr.onboarded || pr.childName) saveProfile({ earlyAdopter: true, slpCode: code.toUpperCase() }); } catch (e) {}
+        // the funnel event means A REAL FAMILY UNLOCKED — only the valid
+        // branch may fire it, or the SLP ranking counts garbage
         try { track("slp code redeemed", { code: code.toUpperCase() }); } catch (e) {}
         return { valid: true, name: j.name || "" };
       }
@@ -1031,12 +971,21 @@
     const fm = (typeof location !== "undefined" ? location.search : "").match(/[?&]founder=([^&]{8,128})/);
     if (fm && localStorage.getItem("sona.founder") !== "1") founderUnlock(decodeURIComponent(fm[1]));
   } catch (e) {}
-  function slpVerified() { try { return !!localStorage.getItem("sona.slpok"); } catch (e) { return false; } }
+  // Either key means "the server vouched for this credential". slpok is the
+  // older of the two and is written ONLY on a valid redeem, so honouring it is
+  // the same trust level — not a wider door. It has to be honoured: during the
+  // free window _slpVerify wrote slpok and NOT slpunlock, and the auto-verify
+  // below skips re-checking a code whose slpok already matches, so those
+  // families could never heal themselves by re-opening their own link.
+  function slpVerified() {
+    try { return localStorage.getItem("sona.slpunlock") === "1" || !!localStorage.getItem("sona.slpok"); } catch (e) { return false; }
+  }
   // Consented enrolment: the grown-up agreed to share this child's practice
   // with their clinician. startPilot is what makes sendProgress() actually
   // report (it no-ops without consent), so THIS is the line that puts a family
   // on an SLP's dashboard — link-joined families never hit it before, which is
-  // why they were invisible to their own therapist.
+  // why they were invisible to their own therapist. Separate from the unlock
+  // on purpose: declining costs the family nothing.
   function slpJoinCaseload(code) {
     try {
       startPilot(String(code || "").toUpperCase());
@@ -1810,11 +1759,13 @@
   // NOTE: this product id is already App Store-approved; the price lives in
   // App Store Connect, and the paywall renders whatever ASC reports.
   // ── FREE MODE ──────────────────────────────────────────────────────────
-  // ON: Sona is 100% free for everyone. No paywall, no trial, no plan.
-  // ONE switch, honoured by every purchase surface — gated() short-circuits
-  // here, so no kid page can ever bounce to a price screen. The Stripe and
-  // Apple rails stay built and tested behind this flag; flip to false and
-  // pricing comes back with no other edits.
+  // OFF: pricing is live — $9.99/mo or $59.99/yr after a 3-day free trial.
+  // ONE switch, honoured by every purchase surface. Sona is a painkiller, not
+  // a vitamin: families arrive already paying for therapy, so the free tier
+  // that a habit app needs is dead weight here. Three cohorts stay free
+  // regardless of this flag: SLP-referred families (the ?slp= credential —
+  // that promise IS the SLP channel), pilots, and founders. Flip back to true
+  // and every price disappears again with no other edits.
   // Recorded human model clips (/coach/say/<SOUND>[-demo].mp3) are Rachel's own
   // voice. OFF everywhere until a non-Rachel set exists. This MUST live here,
   // not per-page: charge.html gated it locally and coach-call.html went on
@@ -1837,7 +1788,7 @@
   const HUMAN_CLIPS = false;
   function humanClipsOn() { return HUMAN_CLIPS; }
 
-  const FREE_MODE = true;
+  const FREE_MODE = false;
   // QA seam: ?paid=1 (or the sticky sona.paidui flag) reveals the purchase
   // rails on this device so the paid path stays exercisable — and TESTED —
   // while free mode ships. It only controls VISIBILITY; it can't unlock
@@ -2037,5 +1988,5 @@
   }
   try { installDebug(); } catch (e) {}
 
-  global.Sona = { pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, ladderContent, FREE_MODE, isFree, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, bumpReps, repsToday, pathState, localDay: () => _localDay(), soundFamily, frameShape, checkSounds, checkItems, gradeSound, saveCheck, lastCheck, checkHistory, checkDue, buildPlan, getPlan, journeyWeek, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, gated, gateVerify, gateOk, requireGate, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, LEVEL_GAMES, GAME_DECK, GAMES_PER_LEVEL, levelGames, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, WORLDS, LEVELS_PER_WORLD, campaignLevels, campaignSounds, campaignState, worldById, worldLevels, worldStars, worldCleared, levelStars, setLevelStars, totalStars, worldUnlocked, levelUnlocked, campaignLaunch, campaignResolve, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repsBeacon, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES };
+  global.Sona = { pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, ladderContent, FREE_MODE, isFree, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, bumpReps, repsToday, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, gated, gateVerify, gateOk, requireGate, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, LEVEL_GAMES, GAME_DECK, GAMES_PER_LEVEL, levelGames, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, WORLDS, LEVELS_PER_WORLD, campaignLevels, campaignSounds, campaignState, worldById, worldLevels, worldStars, worldCleared, levelStars, setLevelStars, totalStars, worldUnlocked, levelUnlocked, campaignLaunch, campaignResolve, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repsBeacon, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES };
 })(window);

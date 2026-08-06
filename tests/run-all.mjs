@@ -18,7 +18,6 @@ const SUITES = [
   "voicetest3.mjs",// TTS line composition + syllable card rotation
   "progtest.mjs",  // sound rotation + ladder cap + daily goal ring
   "shapetest.mjs", // sound-shape gate vs real recorded sounds
-  "checktest.mjs", // Sound Check → plan loop + parent card
   "gatecheck.mjs", // parent-gate hardening on adult-only pages
   "fittest.mjs",   // device-matrix fit: SE→Pro Max, zoomed display, landscape
   "feedtest.mjs",  // Feed Echo: littles tap-and-say loop, growth, deck placement
