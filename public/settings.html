@@ -77,18 +77,6 @@
         Picking sounds below switches to focus mode. <a href="#" id="playKeep" style="font-weight:800;">Stay in play mode</a>
       </div>
       <div class="sounds" id="sounds"></div>
-      <div id="voteRow" style="margin-top:12px;background:#fff6e9;border-radius:14px;padding:12px 14px;">
-        <b style="font-family:'Baloo 2';font-weight:800;font-size:14px;color:var(--ink);">Which sound should get new books &amp; games next?</b>
-        <div style="display:flex;gap:8px;margin-top:8px;align-items:center;">
-          <select id="voteSel" style="flex:1;padding:10px;border-radius:10px;border:1px solid var(--line);font-weight:800;font-family:Nunito,sans-serif;background:#fff;">
-            <option value="">Pick a sound…</option>
-            <option>S</option><option>L</option><option>SH</option><option>CH</option><option>TH</option><option>F</option><option>K</option><option>Z</option>
-          </select>
-          <button id="voteBtn" style="flex:none;border:none;border-radius:12px;padding:11px 18px;background:linear-gradient(180deg,#ffa05a,#ff8a3d);box-shadow:0 3px 0 #ef6f23;color:#fff;font-family:'Baloo 2';font-weight:800;font-size:14px;cursor:pointer;">Vote</button>
-        </div>
-        <p id="voteDone" style="display:none;font-weight:800;font-size:12.5px;color:#2e7d32;margin-top:8px;"></p>
-      </div>
-
       <label class="field" for="practicePos">Word position</label>
       <select id="practicePos">
         <option value="i">Beginning of word</option>
@@ -99,33 +87,24 @@
         <option value="mix">Mixed — all positions</option>
       </select>
 
-      <div class="toggle"><input type="checkbox" id="voiceOn" /><label for="voiceOn">Coach speaks out loud</label></div>
-      <div class="toggle"><input type="checkbox" id="soundOn" /><label for="soundOn">Sound effects (taps, chimes, celebrations)</label></div>
-      <div class="toggle"><input type="checkbox" id="musicOn" /><label for="musicOn">Background music</label></div>
-      <div class="toggle"><input type="checkbox" id="cloudScoring" /><label for="cloudScoring">Honest pronunciation scoring<span class="muted" style="display:block;font-weight:700;font-size:12px;">Practice clips are checked by SpeechAce for the target sound. Off = loudness-only practice, no clips sent.</span></label></div>
-
-      <label class="field" for="dailyMinutes">Daily practice length</label>
-      <select id="dailyMinutes">
-        <option value="5">5 minutes a day</option>
-        <option value="10">10 minutes a day</option>
-      </select>
-
-      <label class="field" for="coachName">Coach name</label>
-      <input id="coachName" type="text" placeholder="Coach" />
+      <!-- ONE sound control. There used to be three checkboxes (voice, effects,
+           music) and no way to set the actual level — while 22 pages were
+           already reading profile.volume, which nothing exposed. So a parent
+           could silence Echo but never turn Sona *down*. Slider to zero mutes
+           everything; anything above zero turns voice and effects back on, so
+           the flags the game pages read can never contradict what a parent set. -->
+      <label class="field" for="volume">Sound</label>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <span style="font-size:17px;">🔈</span>
+        <input id="volume" type="range" min="0" max="100" step="5" style="flex:1;accent-color:var(--orange,#ff8a3d);" />
+        <span style="font-size:19px;">🔊</span>
+      </div>
+      <p class="muted" id="volLbl" style="font-weight:800;font-size:12.5px;margin-top:6px;"></p>
 
       <label class="field">Coach voice</label>
       <a class="btn ghost" href="/voices.html" style="width:auto;padding:12px 18px;">🔊&nbsp;&nbsp;Choose coach voice →</a>
 
-      <label class="field" for="slpEvaluated">Evaluated by an SLP?</label>
-      <select id="slpEvaluated">
-        <option value="">—</option>
-        <option value="yes">Yes</option>
-        <option value="no">Not yet</option>
-        <option value="unsure">Not sure</option>
-      </select>
-
-      <label class="field" for="goals">Goals (optional)</label>
-      <input id="goals" type="text" placeholder="e.g. clear R and S sounds in words" />
+      <div class="toggle" style="margin-top:16px;"><input type="checkbox" id="cloudScoring" /><label for="cloudScoring">Honest pronunciation scoring<span class="muted" style="display:block;font-weight:700;font-size:12px;">Practice clips are checked for the target sound. Off = loudness-only practice, no clips sent.</span></label></div>
 
       <div style="margin-top:24px;display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
         <button class="btn" id="save">Save</button>
@@ -185,8 +164,10 @@
       <p class="muted" style="font-size:12px;margin-top:12px;line-height:1.5;">Families only appear here after their grown-up taps <b>Yes, share progress</b> when they open your link. Sona never sends you audio — counts and accuracy only.</p>
     </div>
 
-    <div class="card">
-      <h2>Help us improve 💬</h2>
+    <details class="card" id="moreCard">
+      <summary style="cursor:pointer;font-family:'Baloo 2';font-weight:800;font-size:16px;list-style:none;">More ⚙️</summary>
+    <div style="margin-top:18px;">
+      <h3 style="font-family:'Baloo 2';font-weight:800;font-size:15px;margin-bottom:6px;">Help us improve 💬</h3>
       <p class="muted" style="margin-bottom:4px;" id="fbLead">Sona is in beta — what would you change?</p>
       <!-- Chips first, typing optional. A blank box gets blank answers; a
            tapped chip gets an answer from someone who'd never have written in. -->
@@ -203,8 +184,8 @@
       <p id="fbDone" style="display:none;margin-top:12px;font-weight:800;color:#2e7d32;">Thank you — we build fast. ✓</p>
     </div>
 
-    <div class="card">
-      <h2>Backup &amp; restore 💾</h2>
+    <div style="margin-top:18px;">
+      <h3 style="font-family:'Baloo 2';font-weight:800;font-size:15px;margin-bottom:6px;">Backup &amp; restore 💾</h3>
       <p class="muted" style="margin-bottom:10px;">Save your child's progress somewhere safe. If this device is cleared or you switch phones, restore everything from the code or file.</p>
       <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
         <button class="btn ghost" id="backupCopy" style="width:auto;padding:12px 18px;">Copy backup code</button>
@@ -221,11 +202,12 @@
       </details>
     </div>
 
-    <div class="card">
-      <h2>Reset</h2>
+    <div style="margin-top:18px;">
+      <h3 style="font-family:'Baloo 2';font-weight:800;font-size:15px;margin-bottom:6px;">Reset</h3>
       <p class="muted" style="margin-bottom:10px;">Clear all saved progress on this device.</p>
       <button class="btn ghost" id="reset">Reset progress</button>
     </div>
+    </details>
   </div>
 
   <script src="/sona.js"></script>
@@ -239,45 +221,25 @@
     window.addEventListener("pageshow", function (e) { if (e.persisted && window.Sona && Sona.requireGate) Sona.requireGate(); });
     var p = Sona.getProfile();
     var childEl = document.getElementById("childName"),
-        coachEl = document.getElementById("coachName"),
-        voiceEl = document.getElementById("voiceOn"),
-        soundEl = document.getElementById("soundOn"),
-        musicEl = document.getElementById("musicOn"),
         cloudEl = document.getElementById("cloudScoring"),
-        dailyEl = document.getElementById("dailyMinutes"),
-        focusAreaEl = { value: "articulation" }, // selector removed — articulation only
-        slpEl = document.getElementById("slpEvaluated"),
-        goalsEl = document.getElementById("goals"),
+        volEl = document.getElementById("volume"),
         posEl = document.getElementById("practicePos"),
         wrap = document.getElementById("sounds");
     childEl.value = p.childName || "";
     var ageEl = document.getElementById("childAge"); ageEl.value = p.childAge || "";
     document.getElementById("parentPin").value = p.parentPin || "";
-    coachEl.value = p.coachName || "";
-    voiceEl.checked = p.voiceOn !== false;
-    soundEl.checked = p.soundOn !== false;
-    musicEl.checked = p.musicOn === true;
     cloudEl.checked = p.cloudScoring !== false;
-    dailyEl.value = String(p.dailyMinutes || 5);
-    var volEl = { value: (p.volume != null ? p.volume : 0.8) }; // volume UI removed — keeps the saved/default level
-    focusAreaEl.value = p.focusArea || "articulation"; // kept for the save payload
-    slpEl.value = p.slpEvaluated || "";
-    goalsEl.value = p.goals || "";
+    // profile.volume is a 0-1 gain that 22 pages already multiply into their
+    // audio; the slider is just the missing UI for it.
+    volEl.value = String(Math.round((p.volume != null ? p.volume : 0.6) * 100));
+    function volLabel() {
+      var v = parseInt(volEl.value, 10) || 0;
+      document.getElementById("volLbl").textContent = v === 0
+        ? "Muted — Echo won't speak and the games are silent."
+        : "Echo and the games play at " + v + "%.";
+    }
+    volEl.oninput = volLabel; volLabel();
     posEl.value = p.practicePosition || "i";
-    // next-sound vote: local echo + one whitelisted analytics event
-    (function(){
-      var vs=document.getElementById("voteSel"), vb=document.getElementById("voteBtn"), vd=document.getElementById("voteDone");
-      if(!vs||!vb)return;
-      var prev=""; try{ prev=localStorage.getItem("sona.soundvote.v1")||""; }catch(e){}
-      function done(v){ vd.textContent="Thanks — you voted "+v+"! We build new books and games in order of votes."; vd.style.display="block"; }
-      if(prev){ done(prev); try{ vs.value=prev; }catch(e){} }
-      vb.onclick=function(){
-        var v=vs.value; if(!v)return;
-        try{ localStorage.setItem("sona.soundvote.v1",v); }catch(e){}
-        try{ if(window.SonaAnalytics)SonaAnalytics.track("next sound vote",{sound:v}); }catch(e){}
-        done(v);
-      };
-    })();
     var sel = new Set(p.focusSounds || []);
     var kidAge = parseInt(p.childAge, 10) || 0;
     Sona.ALL_SOUNDS.forEach(function (s) {
@@ -315,7 +277,16 @@
         var stillAll = sel.size === Sona.PLAY_ORDER.length;
         if (!stillAll) pickedMode = "speech";
       }
-      Sona.saveProfile({ mode: pickedMode || "speech", childName: childEl.value.trim(), childAge: ageEl.value, parentPin: (document.getElementById("parentPin").value||"").replace(/\D/g,"").slice(0,6), coachName: coachEl.value.trim() || "Coach", voiceOn: voiceEl.checked, soundOn: soundEl.checked, musicOn: musicEl.checked, cloudScoring: cloudEl.checked, dailyMinutes: parseInt(dailyEl.value, 10) || 5, volume: parseFloat(volEl.value) || 0.8, focusArea: focusAreaEl.value, slpEvaluated: slpEl.value, goals: goalsEl.value.trim(), practicePosition: posEl.value, focusSounds: [].concat(Array.from(sel)) });
+      // ONE control, honoured everywhere. voiceOn/soundOn are still read by a
+      // dozen game pages, so they're derived from the slider rather than left
+      // to drift — a parent who drags to zero must not find Echo still talking
+      // because some page checks a different flag.
+      var vol = (parseInt(volEl.value, 10) || 0) / 100;
+      Sona.saveProfile({ mode: pickedMode || "speech", childName: childEl.value.trim(), childAge: ageEl.value,
+        parentPin: (document.getElementById("parentPin").value||"").replace(/\D/g,"").slice(0,6),
+        volume: vol, voiceOn: vol > 0, soundOn: vol > 0, musicOn: false,
+        cloudScoring: cloudEl.checked, focusArea: "articulation",
+        practicePosition: posEl.value, focusSounds: [].concat(Array.from(sel)) });
       var s = document.getElementById("saved"); s.style.display = "inline"; setTimeout(function () { s.style.display = "none"; }, 1800);
     };
     document.getElementById("reset").onclick = function () {
