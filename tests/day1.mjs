@@ -187,6 +187,103 @@ async function home(age) {
   ok("the kid home still carries no tracking", !/pixel\.js|analytics\.js/.test(home));
 }
 
+
+// ── 6. METER1: the jar fills on voice, and only on voice ──
+{
+  const { ctx, pg } = await home("7");
+  const zero = await pg.evaluate(() => ({
+    h: document.getElementById("jarFill").style.height,
+    sub: document.getElementById("jarSub").textContent,
+    coins: document.getElementById("coinTxt").textContent,
+  }));
+  ok("the jar starts empty", zero.h === "0%", JSON.stringify(zero));
+  ok("it says what filling it takes", /\d+ of \d+/.test(zero.sub), zero.sub);
+  const half = await pg.evaluate(() => {
+    Sona.bumpReps(13);                 // VAD-counted reps are the only input
+    return { g: Sona.goalState() };
+  });
+  ok("reps move the meter", half.g.pct > 0.4 && half.g.pct < 0.6, JSON.stringify(half.g));
+  const idle = await pg.evaluate(() => { const before = Sona.goalState().n; return { before, after: Sona.goalState().n }; });
+  ok("nothing but a rep moves it — no timer, no page view", idle.before === idle.after);
+  const full = await pg.evaluate(() => { Sona.bumpReps(40); return Sona.goalState(); });
+  ok("the jar caps at full instead of overflowing", full.pct === 1 && full.full === true, JSON.stringify(full));
+  await ctx.close();
+}
+
+// ── 7. COIN1: coins are minted from reps, never double-paid ──
+{
+  const { ctx, pg } = await home("7");
+  const c = await pg.evaluate(() => {
+    const start = Sona.getCoins();
+    Sona.bumpReps(12); Sona.mintCoins();
+    const after12 = Sona.getCoins();
+    Sona.mintCoins(); Sona.mintCoins();          // a double-fire must not pay twice
+    const afterRepeat = Sona.getCoins();
+    Sona.markStoryRead();                        // story bonus, once
+    const afterStory = Sona.getCoins();
+    Sona.markStoryRead();
+    return { start, after12, afterRepeat, afterStory, afterTwice: Sona.getCoins() };
+  });
+  ok("reps mint coins", c.after12 === c.start + 2, JSON.stringify(c));
+  ok("minting twice pays once", c.afterRepeat === c.after12, JSON.stringify(c));
+  ok("finishing the story pays a bonus", c.afterStory === c.after12 + 5, JSON.stringify(c));
+  ok("…and only the first time that day", c.afterTwice === c.afterStory, JSON.stringify(c));
+  await ctx.close();
+}
+
+// ── 8. the mystery game is ADDITIVE — it never buys past the story ──
+{
+  const { ctx, pg } = await home("7");
+  const locked = await pg.evaluate(() => {
+    Sona.addCoins(500);                          // rich, but the story is unread
+    return { can: Sona.canBuyMystery(), bought: Sona.buyMystery(), read: Sona.storyRead() };
+  });
+  ok("all the coins in the world don't skip the story", locked.can === false && locked.bought === null, JSON.stringify(locked));
+
+  const bought = await pg.evaluate(() => {
+    Sona.markStoryRead();
+    const trio = Sona.dailyGames();
+    const got = Sona.buyMystery();
+    return { trio, got, inTrio: trio.indexOf(got) >= 0, again: Sona.buyMystery(), coins: Sona.getCoins() };
+  });
+  ok("with the story read, coins buy a mystery game", !!bought.got, JSON.stringify(bought));
+  ok("it is a game NOT already in today's trio", bought.inTrio === false, JSON.stringify(bought));
+  ok("you can't buy a second one the same day", bought.again === null, JSON.stringify(bought));
+  await pg.reload(); await pg.waitForTimeout(700);
+  const shown = await pg.evaluate(() => ({
+    cards: document.querySelectorAll("#thumbs .thumb").length,
+    mystery: !!document.querySelector("#thumbs .thumb.mystery"),
+  }));
+  ok("the bought game appears as a fourth card", shown.mystery && shown.cards === 3, JSON.stringify(shown));
+  await ctx.close();
+}
+
+// ── 9. BOOKS1: the shelf holds the child's own sounds ──
+{
+  const ctx = await browser.newContext();
+  const pg = await ctx.newPage();
+  await pg.goto("http://localhost:8178/today.html");
+  await pg.evaluate(() => localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Mia", childAge: "7", focusSounds: ["R"], onboarded: true })));
+  await pg.goto("http://localhost:8178/library.html");
+  await pg.waitForTimeout(700);
+  const r = await pg.evaluate(() => [...document.querySelectorAll(".bookBtn")].map((b) => b.textContent));
+  ok("an /r/ child sees only /r/ books", r.length > 0 && r.every((t) => /R(ory|eba|uby|emy|ex)/.test(t)), JSON.stringify(r));
+  ok("…and there are still real books to read", r.length >= 3, String(r.length));
+
+  // play mode rotates every sound, so it keeps the whole shelf
+  await pg.evaluate(() => { const p = JSON.parse(localStorage.getItem("sona.profile.v1")); p.mode = "play"; localStorage.setItem("sona.profile.v1", JSON.stringify(p)); });
+  await pg.goto("http://localhost:8178/library.html"); await pg.waitForTimeout(700);
+  const all = await pg.evaluate(() => document.querySelectorAll(".bookBtn").length);
+  ok("a play-mode child keeps the whole shelf", all > r.length, all + " vs " + r.length);
+
+  // a sound with no books must never leave an empty room
+  await pg.evaluate(() => localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Mia", childAge: "7", focusSounds: ["Z"], onboarded: true })));
+  await pg.goto("http://localhost:8178/library.html"); await pg.waitForTimeout(700);
+  const none = await pg.evaluate(() => document.querySelectorAll(".bookBtn").length);
+  ok("a sound with no books falls back to the full shelf, never an empty one", none > 0, String(none));
+  await ctx.close();
+}
+
 await browser.close(); srv.close();
 console.log(fails ? fails + " FAILURES" : "ALL GREEN");
 process.exit(fails ? 1 : 0);

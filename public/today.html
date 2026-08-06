@@ -127,6 +127,33 @@
 
     }
 
+    /* METER1 — the star jar. A glass the child fills with light by talking;
+       it empties overnight, which is what makes tomorrow a fresh jar. */
+    #jarRow{display:flex;align-items:center;gap:12px;}
+    #jar{position:relative;width:44px;height:56px;flex:none;border-radius:7px 7px 13px 13px;
+      border:3px solid #e8d7bb;background:rgba(255,255,255,.55);overflow:hidden;box-shadow:0 3px 0 rgba(140,90,20,.10);}
+    #jar:before{content:"";position:absolute;top:-5px;left:50%;transform:translateX(-50%);width:22px;height:5px;
+      border-radius:3px;background:#e8d7bb;}
+    #jarFill{position:absolute;left:0;right:0;bottom:0;height:0%;
+      background:linear-gradient(180deg,#ffe27a,#ffc31c);transition:height .5s cubic-bezier(.4,1.3,.5,1);}
+    #jarFill:after{content:"";position:absolute;top:-3px;left:0;right:0;height:6px;border-radius:50%;
+      background:rgba(255,255,255,.5);}
+    #jarStar{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:20px;
+      opacity:0;transition:opacity .4s;}
+    #jar.full #jarStar{opacity:1;}
+    #jarTxt b{font-family:"Baloo 2";font-weight:800;font-size:15px;color:var(--ink);}
+    #jarTxt span{display:block;font-weight:800;font-size:11.5px;color:var(--muted);}
+    #purse{margin-left:auto;display:flex;align-items:center;gap:5px;font-family:"Baloo 2";font-weight:800;
+      font-size:15px;color:#a1701a;background:#fff5dc;border-radius:99px;padding:6px 13px;border:2px solid #f0dfb4;}
+    @media (prefers-reduced-motion:reduce){ #jarFill{transition:none;} }
+
+    /* the mystery card sits at the end of the row when bought or buyable */
+    .thumb.mystery{background:linear-gradient(160deg,#6b4fd6,#3b2a86)!important;}
+    .thumb.mystery .q{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+      font-size:30px;color:#fff;text-shadow:0 3px 8px rgba(0,0,0,.4);}
+    .thumb.mystery .cost{position:absolute;top:5px;right:5px;background:#ffd21c;color:#5b3d00;border-radius:99px;
+      padding:2px 7px;font-family:"Baloo 2";font-weight:800;font-size:10px;}
+
     /* the sticker-book home: the CTA is the full-width bar under the deck */
     #goBtn{border:none;border-radius:20px;padding:17px;font-family:"Baloo 2";font-weight:800;font-size:19px;letter-spacing:.04em;color:#fff;background:linear-gradient(180deg,#ffa05a,#ff8a3d);box-shadow:0 6px 0 var(--orange-d);cursor:pointer;width:100%;margin-top:auto;transition:transform .05s;}
     #goBtn:active{transform:translateY(4px);box-shadow:0 2px 0 var(--orange-d);}
@@ -155,6 +182,12 @@
     <!-- the sticker-book home: today's activity as a tilted panel card with a
          caption plate, the next two on a shelf below, one CTA. Swipe the hero
          or tap a thumb to change what LET'S GO opens. -->
+    <div id="jarRow">
+      <div id="jar"><div id="jarFill"></div><div id="jarStar">⭐</div></div>
+      <div id="jarTxt"><b id="jarHead">Fill the star jar!</b><span id="jarSub"></span></div>
+      <div id="purse" title="Coins"><span>🪙</span><span id="coinTxt">0</span></div>
+    </div>
+
     <div id="heroWrap">
       <div id="heroCard"></div>
       <div id="heroCap">
@@ -342,9 +375,52 @@
         };
         t.appendChild(el);
       });
+      renderMystery(t);
     }
 
-    function render(){ renderHero(); renderThumbs(); }
+    // METER1 + COIN1 — coins are minted from reps here rather than inside the
+    // games, so every door into the app settles up the same way and no game
+    // has to remember to pay.
+    function paintJar(){
+      try{
+        S.mintCoins&&S.mintCoins();
+        var g=S.goalState();
+        $("jarFill").style.height=Math.round(g.pct*100)+"%";
+        $("jar").classList.toggle("full",g.full);
+        $("jarHead").textContent=g.full?"Jar full! ⭐":"Fill the star jar!";
+        $("jarSub").textContent=g.full
+          ? "You said "+g.n+" sounds today."
+          : g.n+" of "+g.goal+" sounds — keep talking!";
+        $("coinTxt").textContent=String(S.getCoins?S.getCoins():0);
+      }catch(e){}
+    }
+
+    function renderMystery(t){
+      // Additive by design: the mystery game is a FOURTH door, never a way past
+      // the story. A coin that skipped the gate would undo the gate.
+      if(!READ) return;
+      var owned=S.mysteryGame&&S.mysteryGame();
+      var can=S.canBuyMystery&&S.canBuyMystery();
+      if(!owned&&!can) return;
+      var el=document.createElement("div");
+      el.className="thumb mystery"; el.dataset.key="mystery";
+      if(owned){
+        var act=(S.gameAct&&S.gameAct(owned))||{name:"Mystery",go:"/today.html"};
+        el.innerHTML='<span class="q">🎁</span><b>'+act.name+'</b>';
+        el.onclick=function(){ sfx("tap"); location.href=act.go; };
+      } else {
+        el.innerHTML='<span class="q">❓</span><b>Mystery game</b><span class="cost">🪙'+(S.mysteryCost?S.mysteryCost():15)+'</span>';
+        el.onclick=function(){
+          var got=S.buyMystery&&S.buyMystery();
+          if(!got){ $("heroSub").textContent="Not enough coins yet — keep practising!"; return; }
+          try{ S.confetti&&S.confetti({count:120}); }catch(e){}
+          sfx("win"); render();
+        };
+      }
+      t.appendChild(el);
+    }
+
+    function render(){ renderHero(); renderThumbs(); paintJar(); }
     render();
     function launch(){ sfx("tap"); location.href=$("goBtn").dataset.launch||"/chapter.html"; }
     $("heroCard").onclick=launch;

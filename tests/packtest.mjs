@@ -84,24 +84,28 @@ await page.goto("http://localhost:8134/library.html");
 await page.waitForTimeout(900);
 const adv = await page.evaluate(() => ({ t: document.getElementById("advTitle").textContent, s: document.getElementById("advSub").textContent }));
 ok("adventure tile personalized", adv.t === "Milo's Adventure" && /dragons story/.test(adv.s));
-// SOUNDS1: every little book is open again — no COMING SOON, the word-box
-// chip row is back, and a non-R book really opens in the reader
+// SOUNDS1 + BOOKS1: no book is gated behind COMING SOON, and the shelf now
+// holds the child's OWN sounds — a /r/ kid opening a /th/ book is practice
+// nobody assigned them. Every book that IS on the shelf must open.
 const lib = await page.evaluate(() => {
   const shelf = document.getElementById("shelf");
   const books = [...shelf.querySelectorAll(".bookBtn")];
-  books[books.length - 1].click(); // R books sort first (focus R), so last = non-R
+  const titles = books.map((b) => b.textContent);
+  books[books.length - 1].click();
   return {
     n: books.length,
+    titles,
     soon: /COMING SOON/.test(shelf.textContent),
     chips: document.querySelectorAll("#wbSounds .sound").length,
     open: document.getElementById("book").classList.contains("show"),
     head: document.getElementById("bkHead").textContent,
   };
 });
-ok("all little books open, no COMING SOON", lib.n >= 10 && !lib.soon);
+ok("no book is gated behind COMING SOON", !lib.soon);
+ok("the shelf is this child's sound, not the whole catalogue",
+  lib.n >= 3 && lib.titles.every((t) => /R(ory|eba|uby|emy|ex)/.test(t)), JSON.stringify(lib.titles));
 ok("word-box sound chips are back", lib.chips >= 10);
-ok("non-R book opens in the reader", lib.open && !/· R sound/.test(lib.head));
-await page.evaluate(() => document.getElementById("bkClose").click());
+ok("every book on the shelf opens in the reader", lib.open, JSON.stringify({ open: lib.open, head: lib.head }));
 ok("library clean", errs.length === 0);
 
 // 6) onboarding redirects into the first call
