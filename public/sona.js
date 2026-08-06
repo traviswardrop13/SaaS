@@ -965,6 +965,7 @@
   function gated() {
     if (isFree()) return false;
     if (isFounder()) return false;
+    if (slpVerified()) return false;                 // device redeemed a valid SLP credential
     if (isSubscribed() || isPilot()) return false;
     try { if (getProfile().earlyAdopter) return false; } catch (e) {}
     ensureTrial();
@@ -990,21 +991,29 @@
 
 
   // ── SLP caseload links: speaksona.com/join.html?slp=CODE&k=KEY ──────────
-  // Sona is free for everyone, so this link does NOT unlock anything. Its job
-  // is the roster: a family who joins through their clinician's link (and
-  // whose grown-up consents) sends practice progress to that SLP's dashboard.
-  // The key is still verified server-side — not to gate access, but so a
-  // stranger can't inject fake children into a real clinician's caseload.
+  // An SLP shares their credential — code (the "username") + family key (the
+  // "password") — and their families get Sona free, forever. Pricing is LIVE,
+  // so the grant is SERVER-VERIFIED: the old honor system unlocked for any
+  // string in the URL, which was a paywall hole. The code still sticks
+  // unverified (it keys the roster and the funnel), but free access needs the
+  // key to check out.
+  //
+  // Verifying UNLOCKS. It does not enrol — that takes the grown-up's explicit
+  // consent on /join.html, which calls slpJoinCaseload() below. Access and
+  // surveillance are separate decisions, and a family can take the free app
+  // without agreeing to be watched.
   function _slpVerify(code, key) {
     return fetch("/api/slp/redeem", {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ code, key }),
     }).then((r) => r.json()).then((j) => {
       if (j && j.ok && j.valid) {
-        try { localStorage.setItem("sona.slpok", code.toUpperCase()); } catch (e) {}
-        try { const pr = getProfile(); if (pr.onboarded || pr.childName) saveProfile({ slpCode: code.toUpperCase() }); } catch (e) {}
-        // the funnel event means A REAL FAMILY JOINED A CASELOAD — only the
-        // valid branch may fire it, or the SLP ranking counts garbage
+        try { localStorage.setItem("sona.slpok", code.toUpperCase()); localStorage.setItem("sona.slpunlock", "1"); } catch (e) {}
+        // a family that already finished onboarding gets patched in place —
+        // the link can arrive after setup (e.g. re-sent by the SLP)
+        try { const pr = getProfile(); if (pr.onboarded || pr.childName) saveProfile({ earlyAdopter: true, slpCode: code.toUpperCase() }); } catch (e) {}
+        // the funnel event means A REAL FAMILY UNLOCKED — only the valid
+        // branch may fire it, or the SLP ranking counts garbage
         try { track("slp code redeemed", { code: code.toUpperCase() }); } catch (e) {}
         return { valid: true, name: j.name || "" };
       }
@@ -1031,12 +1040,13 @@
     const fm = (typeof location !== "undefined" ? location.search : "").match(/[?&]founder=([^&]{8,128})/);
     if (fm && localStorage.getItem("sona.founder") !== "1") founderUnlock(decodeURIComponent(fm[1]));
   } catch (e) {}
-  function slpVerified() { try { return !!localStorage.getItem("sona.slpok"); } catch (e) { return false; } }
+  function slpVerified() { try { return localStorage.getItem("sona.slpunlock") === "1"; } catch (e) { return false; } }
   // Consented enrolment: the grown-up agreed to share this child's practice
   // with their clinician. startPilot is what makes sendProgress() actually
   // report (it no-ops without consent), so THIS is the line that puts a family
   // on an SLP's dashboard — link-joined families never hit it before, which is
-  // why they were invisible to their own therapist.
+  // why they were invisible to their own therapist. Separate from the unlock
+  // on purpose: declining costs the family nothing.
   function slpJoinCaseload(code) {
     try {
       startPilot(String(code || "").toUpperCase());
@@ -1810,11 +1820,13 @@
   // NOTE: this product id is already App Store-approved; the price lives in
   // App Store Connect, and the paywall renders whatever ASC reports.
   // ── FREE MODE ──────────────────────────────────────────────────────────
-  // ON: Sona is 100% free for everyone. No paywall, no trial, no plan.
-  // ONE switch, honoured by every purchase surface — gated() short-circuits
-  // here, so no kid page can ever bounce to a price screen. The Stripe and
-  // Apple rails stay built and tested behind this flag; flip to false and
-  // pricing comes back with no other edits.
+  // OFF: pricing is live — $9.99/mo or $59.99/yr after a 3-day free trial.
+  // ONE switch, honoured by every purchase surface. Sona is a painkiller, not
+  // a vitamin: families arrive already paying for therapy, so the free tier
+  // that a habit app needs is dead weight here. Three cohorts stay free
+  // regardless of this flag: SLP-referred families (the ?slp= credential —
+  // that promise IS the SLP channel), pilots, and founders. Flip back to true
+  // and every price disappears again with no other edits.
   // Recorded human model clips (/coach/say/<SOUND>[-demo].mp3) are Rachel's own
   // voice. OFF everywhere until a non-Rachel set exists. This MUST live here,
   // not per-page: charge.html gated it locally and coach-call.html went on
@@ -1837,7 +1849,7 @@
   const HUMAN_CLIPS = false;
   function humanClipsOn() { return HUMAN_CLIPS; }
 
-  const FREE_MODE = true;
+  const FREE_MODE = false;
   // QA seam: ?paid=1 (or the sticky sona.paidui flag) reveals the purchase
   // rails on this device so the paid path stays exercisable — and TESTED —
   // while free mode ships. It only controls VISIBILITY; it can't unlock

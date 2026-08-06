@@ -161,13 +161,13 @@
          of a caseload and watching who's actually practising. -->
     <div class="card" id="slpCard" style="display:none;">
       <h2>Your caseload 🎓</h2>
-      <p class="muted" style="margin-bottom:12px;">Sona is free for everyone. Share your link so the families you work with land on <b>your dashboard</b> — practice days, reps, and how each sound is coming along. They choose to share when they join.</p>
+      <p class="muted" style="margin-bottom:12px;">Hand families your link and Sona is <b>free for them</b> — no trial, no paywall. When they join they choose to share progress, and then they show up on <b>your dashboard</b>: practice days, reps, and how each sound is coming along.</p>
 
       <!-- registered credential (server-issued at onboarding). The old
            type-anything code box was an honor system; with pricing live the
            credential is verified, so it can't be edited here — only shared. -->
       <div id="slpCredWrap" style="display:none;background:#f4fce9;border:2px solid #bce39f;border-radius:14px;padding:13px 15px;">
-        <div style="font-weight:800;font-size:11.5px;letter-spacing:.06em;color:#46a302;">YOUR CASELOAD LINK</div>
+        <div style="font-weight:800;font-size:11.5px;letter-spacing:.06em;color:#46a302;">YOUR FAMILY CREDENTIAL</div>
         <div style="font-family:'Baloo 2';font-weight:800;font-size:18px;margin-top:5px;">Code: <span id="slpCredCode"></span></div>
         <div style="font-family:'Baloo 2';font-weight:800;font-size:18px;">Family key: <span id="slpCredKey"></span></div>
         <div id="slpLink" style="font-weight:700;font-size:12px;color:var(--muted);word-break:break-all;margin-top:6px;"></div>
@@ -353,7 +353,7 @@
       var msg = document.getElementById("slpMsg");
       var cred = null;
       function linkFor(c) { return location.origin + "/join.html?slp=" + encodeURIComponent(c.code) + "&k=" + encodeURIComponent(c.key); }
-      function shareMsg(c) { return "Hi! Here\u2019s the speech practice app I mentioned \u2014 it\u2019s completely free: " + linkFor(c) + "  This link also lets me see your practice progress between sessions (you choose when you open it). Code " + c.code + ", key " + c.key + "."; }
+      function shareMsg(c) { return "Hi! Here\u2019s the speech practice app I mentioned \u2014 this link makes it free for you: " + linkFor(c) + "  It also asks whether to share your practice progress with me between sessions \u2014 totally your call. (Or in the app: code " + c.code + ", family key " + c.key + ")"; }
       function paint() {
         document.getElementById("slpCredWrap").style.display = cred ? "block" : "none";
         document.getElementById("slpNoCred").style.display = cred ? "none" : "block";

@@ -161,13 +161,14 @@
       <p class="muted" id="pickMsg" style="margin-top:10px;font-weight:800;font-size:12.5px;"></p>
     </div>
 
-    <!-- Working with an SLP? Sona is free for everyone, so this is purely
-         about connecting a family to their clinician's dashboard. One consent
-         surface for the whole app: /join.html. -->
+    <!-- SLP credential entry. ONE redemption surface for the whole app —
+         /join.html — so the unlock semantics can't drift between three copies
+         of the same fetch. It verifies the key, grants free access, then asks
+         separately about sharing progress. -->
     <div class="card" id="slpEntryCard">
       <h2>Working with a speech therapist?</h2>
-      <p class="muted" style="font-size:13px;font-weight:700;">Sona is free either way. If your therapist gave you a link or a code, connecting lets them follow your child's practice between sessions — you decide whether to share.</p>
-      <a class="btn" href="/join.html" style="width:auto;padding:12px 22px;margin-top:10px;display:inline-block;">Connect with my therapist →</a>
+      <p class="muted" style="font-size:13px;font-weight:700;">If your SLP gave you a link, or a code and family key, Sona is <b>free for you</b> — no trial, no plan.</p>
+      <a class="btn" href="/join.html" style="width:auto;padding:12px 22px;margin-top:10px;display:inline-block;">Unlock free access →</a>
     </div>
 
     <div class="card" id="foundingCard">

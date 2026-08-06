@@ -404,7 +404,7 @@
         var eq=document.querySelector('[data-step="email"] .qh');
         if(eq && slp) eq.innerHTML="Your clinician account";
         var ep=document.querySelector('[data-step="email"] p.muted');
-        if(ep && slp) ep.textContent="Your email creates your clinician account — you'll get a caseload link to share, and a dashboard showing how your families are practising.";
+        if(ep && slp) ep.textContent="Your email creates your clinician account — the code and family key you hand to clients so Sona is free for them, plus a dashboard showing how they're practising.";
         // an SLP can't skip email: the credential IS the account
         var esk=document.getElementById("obEmailSkip");
         if(esk) esk.parentElement.style.display = slp ? "none" : "";
@@ -556,7 +556,7 @@
         var box=document.getElementById("obSlpCred");
         if(box){
           box.style.display="block";
-          box.innerHTML='<div class="muted" style="font-weight:700;font-size:13px;">Check your email — we just sent your one-tap sign-in. Open it to grab your <b>caseload link</b>. Sona is free for everyone; the link is what puts your families on your dashboard.</div>';
+          box.innerHTML='<div class="muted" style="font-weight:700;font-size:13px;">Check your email — we just sent your one-tap sign-in. Open it to grab your <b>share link + family key</b>: it makes Sona free for the families you send it to, and puts them on your dashboard. It also lives in your dashboard.</div>';
         }
         fetch("/api/slp/auth/request",{method:"POST",headers:{"Content-Type":"application/json"},
           body:JSON.stringify({email:draft.email})}).catch(function(){});

@@ -17,7 +17,7 @@
       } catch (e) { window.__slp = { code: "", key: "" }; }
     })();
   </script>
-  <title>Sona — connect with your speech therapist</title>
+  <title>Sona — free access from your speech therapist</title>
   <link href="/fonts.css" rel="stylesheet">
   <link rel="stylesheet" href="/sona.css" />
   <meta name="theme-color" content="#fff6e9" />
@@ -40,9 +40,9 @@
   <div class="jwrap">
     <div class="jhero">
       <img src="/coach/echo/echo-celebrate.svg" alt="Echo" onerror="this.onerror=null;this.src='/coach/echo/echo-idle.svg';" />
-      <h1 id="jTitle">Connecting you…</h1>
+      <h1 id="jTitle">Unlocking your free access…</h1>
     </div>
-    <p class="jmsg" id="jMsg">Checking your therapist's code. One moment…</p>
+    <p class="jmsg" id="jMsg">Your speech therapist gave you free access to Sona. One moment…</p>
 
     <!-- manual fallback: shown only if the link's credential didn't verify -->
     <div class="jcard" id="jForm" style="display:none;">
@@ -50,14 +50,15 @@
       <input id="jCode" type="text" autocomplete="off" placeholder="e.g. rachel-k4" />
       <label for="jKey">Family key</label>
       <input id="jKey" type="text" autocomplete="off" placeholder="e.g. ABCD2345" />
-      <button class="jbtn" id="jGo">Connect</button>
+      <button class="jbtn" id="jGo">Unlock free access</button>
       <div id="jStatus" class="muted"></div>
     </div>
-    <!-- consent: the grown-up decides whether this child's practice is shared -->
+    <!-- consent, asked AFTER the unlock is already granted: sharing is a
+         separate decision from access, and saying no costs the family nothing -->
     <div class="jcard" id="jConsent" style="display:none;">
       <div style="font-family:'Baloo 2';font-weight:800;font-size:17px;" id="jConsentTitle">Share progress with your therapist?</div>
       <p class="muted" style="font-weight:700;font-size:13.5px;line-height:1.5;margin-top:8px;" id="jConsentBody"></p>
-      <p class="muted" style="font-weight:700;font-size:12px;line-height:1.5;margin-top:8px;">They'll see practice days, how many times your child practised, and how each sound is coming along. <b>Never any audio</b> — recordings stay on this device.</p>
+      <p class="muted" style="font-weight:700;font-size:12px;line-height:1.5;margin-top:8px;">They'll see practice days, how many times your child practised, and how each sound is coming along. <b>Never any audio</b> — recordings stay on this device. Your free access is already unlocked either way.</p>
       <button class="jbtn" id="jYes">Yes, share progress</button>
       <button class="jbtn" id="jNo" style="background:#fff;color:var(--muted,#8a6f52);box-shadow:0 5px 0 #f0e4d2;margin-top:10px;">No thanks — just use Sona</button>
     </div>
@@ -73,17 +74,19 @@
         var p = {}; try { p = Sona.getProfile() || {}; } catch (e) {}
         location.href = (p.onboarded || p.childName) ? "/today.html" : "/onboarding.html";
       }
-      // Sona is FREE for everyone — this link never unlocks anything. It asks
-      // the grown-up whether to put this child on their clinician's dashboard.
+      // The credential verified: free access is ALREADY granted (slpRedeem set
+      // the device unlock). Sharing is the separate question — enrolling is
+      // what actually puts this child on the clinician's dashboard, because
+      // sendProgress() no-ops without consent. Saying no keeps the free app.
       function askConsent(code, name) {
-        title.textContent = "You're connected!";
-        msg.textContent = "Sona is free for everyone — nothing to pay, ever.";
+        title.textContent = "You're in — it's free! 🎉";
+        msg.textContent = name ? ("Free access via " + name + ".") : "Free access unlocked.";
         form.style.display = "none";
         consent.style.display = "block";
         document.getElementById("jConsentBody").textContent =
           name ? ("Would you like " + name + " to see your child's practice progress?")
                : "Would you like your child's speech therapist to see their practice progress?";
-        try { if (Sona.confetti) Sona.confetti({ count: 130 }); } catch (e) {}
+        try { if (Sona.confetti) Sona.confetti({ count: 150 }); } catch (e) {}
         document.getElementById("jYes").onclick = function () {
           try { Sona.slpJoinCaseload(code); } catch (e) {}
           consent.style.display = "none";
@@ -92,11 +95,11 @@
           setTimeout(go, 1100);
         };
         document.getElementById("jNo").onclick = function () {
-          // declining shares nothing; the app is free either way
+          // declining shares nothing — and costs nothing; the unlock stands
           try { Sona.saveProfile({ slpShare: false }); } catch (e) {}
           consent.style.display = "none";
           title.textContent = "No problem!";
-          msg.textContent = "Nothing will be shared. Sona is still free — let's meet Echo.";
+          msg.textContent = "Nothing will be shared, and Sona is still free for you. Let's meet Echo.";
           setTimeout(go, 1100);
         };
       }
@@ -104,8 +107,14 @@
         if (!code || !key) { showForm(); return; }
         if (fromForm) { status.style.color = "var(--muted)"; status.textContent = "Checking…"; }
         Sona.slpRedeem(code, key).then(function (r) {
-          if (r.valid) { try { localStorage.setItem("sona.slp", String(code).toUpperCase()); } catch (e) {} askConsent(String(code).toUpperCase(), r.name); }
-          else {
+          if (r.valid) {
+            // grant first, ask second — the unlock must not depend on the answer
+            try {
+              Sona.saveProfile({ earlyAdopter: true, slpCode: String(code).toUpperCase() });
+              localStorage.setItem("sona.slp", String(code).toUpperCase());
+            } catch (e) {}
+            askConsent(String(code).toUpperCase(), r.name);
+          } else {
             showForm();
             status.style.color = "#b42323";
             status.textContent = r.error === "offline" ? "Couldn't reach the server — try again." : "That code and key don't match — check with your therapist.";
@@ -113,8 +122,8 @@
         });
       }
       function showForm() {
-        title.textContent = "Enter your therapist's code";
-        msg.textContent = "Sona is free either way — this just connects you to your therapist's dashboard.";
+        title.textContent = "Enter your SLP's code";
+        msg.textContent = "Type the code and family key your speech therapist gave you — Sona is free for their families.";
         form.style.display = "block";
         try { if (window.__slp && window.__slp.code) document.getElementById("jCode").value = window.__slp.code; } catch (e) {}
       }
