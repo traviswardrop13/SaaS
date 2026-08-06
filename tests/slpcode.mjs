@@ -206,6 +206,27 @@ const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL 
   await ctx.close();
 }
 
+// ── 4b-iii. a family who redeemed during the free window is NOT locked out ──
+// FREE1 wrote only "sona.slpok"; PRICE3 gates on the credential again. If
+// slpVerified() read slpunlock alone these families would hit a paywall their
+// clinician already paid the price of — and could not heal it by re-opening
+// their own link, because auto-verify skips a code whose slpok already matches.
+{
+  const ctx = await browser.newContext();
+  const pg = await ctx.newPage();
+  await pg.goto("http://localhost:8155/today.html");
+  const res = await pg.evaluate(() => {
+    localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Nia", childAge: "6", focusSounds: ["R"], onboarded: true }));
+    localStorage.setItem("sona.slpok", "RACHEL-K4");   // exactly what FREE1 left behind
+    localStorage.removeItem("sona.slpunlock");
+    localStorage.setItem("sona.trial.v1", JSON.stringify({ start: Date.now() - 40 * 86400000, days: 3 }));
+    return { verified: Sona.slpVerified(), gated: Sona.gated() };
+  });
+  ok("a free-window SLP family still counts as verified", res.verified === true, JSON.stringify(res));
+  ok("and is never sent to the paywall", res.gated === false, JSON.stringify(res));
+  await ctx.close();
+}
+
 // ── 4c. device unlock survives a kid switch (the caseload iPad) ──
 {
   const ctx = await browser.newContext();

@@ -1040,7 +1040,15 @@
     const fm = (typeof location !== "undefined" ? location.search : "").match(/[?&]founder=([^&]{8,128})/);
     if (fm && localStorage.getItem("sona.founder") !== "1") founderUnlock(decodeURIComponent(fm[1]));
   } catch (e) {}
-  function slpVerified() { try { return localStorage.getItem("sona.slpunlock") === "1"; } catch (e) { return false; } }
+  // Either key means "the server vouched for this credential". slpok is the
+  // older of the two and is written ONLY on a valid redeem, so honouring it is
+  // the same trust level — not a wider door. It has to be honoured: during the
+  // free window _slpVerify wrote slpok and NOT slpunlock, and the auto-verify
+  // below skips re-checking a code whose slpok already matches, so those
+  // families could never heal themselves by re-opening their own link.
+  function slpVerified() {
+    try { return localStorage.getItem("sona.slpunlock") === "1" || !!localStorage.getItem("sona.slpok"); } catch (e) { return false; }
+  }
   // Consented enrolment: the grown-up agreed to share this child's practice
   // with their clinician. startPilot is what makes sendProgress() actually
   // report (it no-ops without consent), so THIS is the line that puts a family
