@@ -868,15 +868,34 @@
     return { app: "sona", v: 1, data: out };
   }
   function exportString() { try { return JSON.stringify(exportData()); } catch (e) { return "{}"; } }
+  // Backup restores PRACTICE, never ACCESS. It used to write any key beginning
+  // "sona." verbatim, which made a backup code a paste-in paywall bypass: hand
+  // someone a string containing sona.sub.v1 and they were a subscriber. Every
+  // entitlement lives server-side or behind a verified credential, and every
+  // one of them can be re-established on a new device by restoring with an
+  // email or re-opening an SLP link — so dropping them here costs a real
+  // family nothing and costs a forger everything.
+  const NO_IMPORT = ["sona.sub.v1", "sona.slpunlock", "sona.slpok", "sona.founder", "sona.paidui", "sona.pilot.v1", "sona.trial.v1"];
   function importData(payload) {
     try {
       const obj = (typeof payload === "string") ? JSON.parse(payload) : payload;
       const data = (obj && obj.data && typeof obj.data === "object") ? obj.data : obj;
       if (!data || typeof data !== "object") return { ok: false, error: "That backup didn't look right." };
-      let n = 0;
-      Object.keys(data).forEach((k) => { if (k.indexOf("sona.") === 0) { try { localStorage.setItem(k, String(data[k])); n++; } catch (e) {} } });
+      let n = 0, skipped = 0;
+      Object.keys(data).forEach((k) => {
+        if (k.indexOf("sona.") !== 0) return;
+        // the base key, so "sona.profile.v1@k2" is judged like "sona.profile.v1"
+        const base = k.split("@")[0];
+        if (NO_IMPORT.indexOf(base) !== -1) { skipped++; return; }
+        let v = String(data[k]);
+        // earlyAdopter rides INSIDE the profile, so a key-level block misses it
+        if (base === PKEY) {
+          try { const p = JSON.parse(v); if (p && typeof p === "object") { delete p.earlyAdopter; v = JSON.stringify(p); } } catch (e) {}
+        }
+        try { localStorage.setItem(k, v); n++; } catch (e) {}
+      });
       if (!n) return { ok: false, error: "No Sona data found in that backup." };
-      return { ok: true, restored: n };
+      return { ok: true, restored: n, skipped: skipped };
     } catch (e) { return { ok: false, error: "Couldn't read that backup code." }; }
   }
 
