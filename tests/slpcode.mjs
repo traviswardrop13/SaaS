@@ -340,6 +340,46 @@ const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL 
     "reporting every stray page load to Meta as a sale poisons the optimiser");
 }
 
+// ── 4h. a backup code restores PRACTICE, never ACCESS ──
+// importData() used to write any key starting "sona." verbatim, which made the
+// backup box a paste-in paywall bypass: hand someone a string containing
+// sona.sub.v1 and they were a subscriber.
+{
+  const ctx = await browser.newContext();
+  const pg = await ctx.newPage();
+  await pg.goto("http://localhost:8155/today.html");
+  const res = await pg.evaluate(() => {
+    Sona.saveProfile({ childName: "Real", childAge: "7", focusSounds: ["R"], onboarded: true });
+    const forged = JSON.stringify({ app: "sona", v: 1, data: {
+      "sona.sub.v1": JSON.stringify({ active: true, email: "forger@example.com" }),
+      "sona.slpunlock": "1",
+      "sona.slpok": "STOLEN",
+      "sona.founder": "1",
+      "sona.paidui": "1",
+      "sona.pilot.v1": JSON.stringify({ consent: true, code: "FAKE" }),
+      "sona.trial.v1": JSON.stringify({ start: Date.now(), days: 999 }),
+      "sona.profile.v1": JSON.stringify({ childName: "Restored", childAge: "7", focusSounds: ["R"], onboarded: true, earlyAdopter: true }),
+      "sona.progress.v1": JSON.stringify({ totals: { coins: 99 }, stage: {}, sessions: [], missed: [] }),
+    } });
+    const r = Sona.importData(forged);
+    return {
+      r,
+      subscribed: Sona.isSubscribed(), slp: Sona.slpVerified(), founder: Sona.isFounder(),
+      pilot: Sona.isPilot(), early: Sona.getProfile().earlyAdopter,
+      name: Sona.getProfile().childName, coins: Sona.getCoins(),
+    };
+  });
+  ok("the import succeeds — a real family's backup still works", res.r.ok === true, JSON.stringify(res.r));
+  ok("a forged backup buys no subscription", res.subscribed === false, JSON.stringify(res));
+  ok("…no SLP unlock", res.slp === false, JSON.stringify(res));
+  ok("…no founder key", res.founder === false, JSON.stringify(res));
+  ok("…no pilot enrolment", res.pilot === false, JSON.stringify(res));
+  ok("…and no earlyAdopter smuggled inside the profile", !res.early, JSON.stringify(res));
+  ok("but the child's real progress DOES restore", res.name === "Restored" && res.coins === 99, JSON.stringify(res));
+  ok("the entitlement keys are reported as skipped, not silently dropped", (res.r.skipped | 0) >= 5, JSON.stringify(res.r));
+  await ctx.close();
+}
+
 // ── 5. founder access: the owners skip the paywall on any device ──
 {
   const pg = await (await browser.newContext()).newPage();
@@ -408,6 +448,9 @@ const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL 
     "consent must never be the price of access");
   ok("join.html only enrols behind an explicit Yes",
     /jYes[\s\S]{0,200}slpJoinCaseload/.test(joinSrc) && /jNo/.test(joinSrc));
+  ok("a backup can never carry entitlement",
+    /const NO_IMPORT = \[/.test(sona) && /sona\.sub\.v1/.test(sona) && /delete p\.earlyAdopter/.test(sona),
+    "importData wrote any sona.* key verbatim — a backup code was a paste-in paywall bypass");
   ok("gated() honors the device-wide SLP unlock",
     /if \(slpVerified\(\)\) return false;/.test(sona));
   const ob = readFileSync(ROOT + "/onboarding.html", "utf8");
