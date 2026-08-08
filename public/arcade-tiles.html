@@ -104,6 +104,23 @@
 
   <script src="/sona.js"></script>
   <script>
+    /* The normal way in is /charge.html?game=…, which gates before it hands
+       off — so these pages carried no gate of their own and a typed URL played
+       free forever, story unread. The gate fires at PAGE LOAD only, never
+       mid-round: a child who is already playing is never interrupted. */
+    (function () {
+      try {
+        if (window.Sona && Sona.gated && Sona.gated()) { location.replace("/trial.html"); return; }
+        // The story gate is skipped for a round the child already EARNED:
+        // charge.html hands off with ?from=charge, and it gates before it does.
+        // Without this a session started at 11:58pm bounces out of the game at
+        // midnight, when the day rolls over and today's story is unread again.
+        var earned = /[?&]from=charge\b/.test(location.search);
+        if (!earned && window.Sona && Sona.storyRead && !Sona.storyRead()) { location.replace("/today.html"); }
+      } catch (e) {}
+    })();
+  </script>
+  <script>
     var $=function(id){return document.getElementById(id);};
     var S=window.Sona, qp=new URLSearchParams(location.search);
     function sfx(n){ try{ if(S&&S.sfx&&S.sfx[n])S.sfx[n](); }catch(e){} }

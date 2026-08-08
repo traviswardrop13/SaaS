@@ -115,7 +115,7 @@
       <div class="reward"><span id="winCount">0</span><small>pages read</small></div>
       <div class="reward" id="winUnlock"></div>
     </div>
-    <button class="btn" id="again">Read again</button><a href="/play.html" id="winDone">Done for now →</a>
+    <button class="btn" id="again">Read again</button><a href="/today.html" id="winDone">Done for now →</a>
   </div>
 
   <script src="/sona.js"></script>
@@ -289,7 +289,10 @@
       $("start").style.display="flex";
       $("startBtn").onclick=function(){ unlockAudio(); if(window.Sona&&Sona.music)Sona.music.start(); $("start").style.display="none"; startGame(); };
     })();
-    (function(){ var lad="/map.html"; var c=$("close"); if(c)c.onclick=function(){location.href=lad;}; Array.prototype.forEach.call(document.querySelectorAll('a[href="/play.html"]'),function(a){a.setAttribute("href",lad);}); })();
+    // The exits point at the real home directly. This used to rewrite a stale
+    // "/play.html" href to "/map.html" at runtime — two redirects to reach
+    // today.html, and a dead end for any child whose JS had not run yet.
+    (function(){ var c=$("close"); if(c)c.onclick=function(){location.href="/today.html";}; })();
     window.addEventListener("pagehide",function(){ try{ if(micStream)micStream.getTracks().forEach(function(t){t.stop();}); }catch(e){} });
   
     /* LEVEL SCENERY + art drop-in.

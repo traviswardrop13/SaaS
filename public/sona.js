@@ -1380,23 +1380,11 @@
   // reused at every level but scale in difficulty with the level number (the rocket
   // flies farther, races get longer, more bubbles to pop…). Add new games over time
   // by appending here (or give a map node its own `queue`).
-  const LEVEL_GAMES = ["racer.html", "bubble.html", "grocery.html", "cupstack.html", "story.html"];
-  // ── the deck is now Charge & Play ──
-  // The core loop replaced the themed-game roster: honest reps charge the ⚡
-  // meter → arcade tickets (Fruit Slice / Block Stacker) → repeat to the daily
-  // target. charge.html runs the whole session itself, so a "level" is simply
-  // one charge session. Story Time stays as the calm second mode (reached from
-  // the shelf), and the old speech games are parked on disk (racer, bubble,
-  // grocery, cupstack, chat, rocket, builder, train, whack, match) — arcade
-  // payoffs are the expansion surface now, not new speech games.
-  const GAME_DECK = ["charge.html"];
-  const GAMES_PER_LEVEL = 1;
-  function levelGames(level) {
-    level = level || 1;
-    const start = ((level - 1) * GAMES_PER_LEVEL) % GAME_DECK.length, out = [];
-    for (let i = 0; i < GAMES_PER_LEVEL; i++) out.push(GAME_DECK[(start + i) % GAME_DECK.length]);
-    return out;
-  }
+  // The core loop is Charge & Play: honest reps charge the ⚡ meter, which
+  // buys an arcade round. It replaced a roster of themed speech games and a
+  // level/world campaign on top of it — both are gone now, along with the
+  // pages that drove them, because nothing on the home screen had linked to
+  // them for a long time.
   // Per-game display info for the level-path screen (icon · name · skill band · color).
   const GAME_META = {
     "rocket.html":   { name: "Sound Rocket",  icon: "🚀",  band: "Warm-up",   c: "#1cb0f6" },
@@ -1438,7 +1426,7 @@
   const session = {
     start(level, sound, queue, diffLevel) {
       const s = { level: level || 1, sound: (sound || "R"), diff: (diffLevel != null ? diffLevel : (level || 1)),
-                  queue: (queue && queue.length ? queue.slice() : LEVEL_GAMES.slice()), idx: 0, ts: Date.now() };
+                  queue: (queue && queue.length ? queue.slice() : ["charge.html"]), idx: 0, ts: Date.now() };
       save(SESKEY, s); return s;
     },
     get() { return load(SESKEY, null); },
@@ -1468,75 +1456,6 @@
   function levelsState() { const s = load(LVLKEY, { done: {} }); s.done = s.done || {}; return s; }
   function markLevelDone(level) { const s = levelsState(); const was = !!s.done[level]; s.done[level] = true; s.ts = Date.now(); save(LVLKEY, s); if (!was) { try { awardNextSticker(); } catch (e) {} } return s; }
   function levelDone(level) { return !!levelsState().done[level]; }
-
-  // ── Worlds = one per game (Duolingo-ABC style) ──
-  // Each game is its own world (a themed "house"). Inside is a path of
-  // LEVELS_PER_WORLD levels of THAT game at rising difficulty (diff 1..N),
-  // cycling the child's focus sounds. All worlds are open (kids pick any house);
-  // levels unlock in order. Stars (1–3) come from accuracy and are replayable.
-  // Art drops in at /coach/worlds/<id>.png (house) + /coach/<id>/lvl<n>.png.
-  const WORLDS = [
-    { id: "racer",    game: "racer.html",    name: "Speedway",    theme: "🏁", sky: "linear-gradient(180deg,#bfe9ff,#dff4ff 55%,#cdeffd)" },
-    { id: "bubble",   game: "bubble.html",   name: "Bubble Bay",  theme: "🫧", sky: "linear-gradient(180deg,#bfeeff,#7fd2f0 55%,#2b86bd)" },
-    { id: "grocery",  game: "grocery.html",  name: "The Market",  theme: "🛒", sky: "linear-gradient(180deg,#fff1d6,#ffe1ad 55%,#ffcf86)" },
-    { id: "cupstack", game: "cupstack.html", name: "Stack Hall",  theme: "🥤", sky: "linear-gradient(180deg,#e9f3ff,#cfe6ff 55%,#a9d2ff)" },
-    { id: "story",    game: "story.html",    name: "Storybook",   theme: "📖", sky: "linear-gradient(180deg,#eafbe4,#cdebb0 60%,#9ad07a)" },
-    // Parked (files on disk; off the map until rebuilt): builder, train, whack, match.
-  ];
-  const LEVELS_PER_WORLD = 10;
-  function campaignSounds() {
-    const p = getProfile();
-    let f = (p.focusSounds || []).filter((s) => WORDS[s]);
-    if (!f.length) f = ["R", "S", "L", "K"].filter((s) => WORDS[s]);
-    return f;
-  }
-  // One world per game; LEVELS_PER_WORLD levels of that game at diff 1..N,
-  // cycling the child's focus sounds.
-  function campaignLevels() {
-    const sounds = campaignSounds(), out = [];
-    for (let w = 0; w < WORLDS.length; w++) {
-      for (let i = 0; i < LEVELS_PER_WORLD; i++) {
-        out.push({ id: WORLDS[w].id + "-" + (i + 1), world: w, worldId: WORLDS[w].id,
-          idx: i, n: i + 1, game: WORLDS[w].game,
-          sound: sounds[(w + i) % sounds.length], diff: i + 1, boss: i === LEVELS_PER_WORLD - 1 });
-      }
-    }
-    return out;
-  }
-  function worldById(id) { return WORLDS.filter((w) => w.id === id)[0] || null; }
-  function worldLevels(id) { return campaignLevels().filter((l) => l.worldId === id); }
-  const CAMPKEY = "sona.campaign.v1", CAMPPEND = "sona.campaign.pending";
-  function campaignState() { const s = load(CAMPKEY, { stars: {}, ts: 0 }); s.stars = s.stars || {}; return s; }
-  function levelStars(id) { return campaignState().stars[id] || 0; }
-  function setLevelStars(id, n) { const s = campaignState(); if ((n || 0) > (s.stars[id] || 0)) { s.stars[id] = n; s.ts = Date.now(); save(CAMPKEY, s); } return s.stars[id] || 0; }
-  function totalStars() { const s = campaignState().stars; return Object.keys(s).reduce((a, k) => a + (s[k] || 0), 0); }
-  function worldStars(id) { return worldLevels(id).reduce((a, l) => a + levelStars(l.id), 0); }
-  function worldCleared(id) { return worldLevels(id).filter((l) => levelStars(l.id) > 0).length; }
-  function worldUnlocked() { return true; } // all houses open; gating is per-level inside
-  function levelUnlocked(level, all) {
-    all = all || campaignLevels();
-    if (level.idx === 0) return true;
-    const prev = all.filter((l) => l.worldId === level.worldId && l.idx === level.idx - 1)[0];
-    return prev ? levelStars(prev.id) > 0 : true;
-  }
-  // Snapshot a sound's accuracy before launching a level; resolve to stars on
-  // return (read-only on the games — they just record outcomes as they always do).
-  function campaignLaunch(level) {
-    const o = outcomes()[level.sound] || { attempts: 0, passes: 0 };
-    save(CAMPPEND, { id: level.id, sound: level.sound, a: o.attempts || 0, p: o.passes || 0, ts: Date.now(), back: "/world.html?w=" + level.worldId });
-  }
-  function campaignResolve() {
-    const pend = load(CAMPPEND, null);
-    if (!pend || !pend.id) return null;
-    try { localStorage.removeItem(CAMPPEND); } catch (e) {}
-    const o = outcomes()[pend.sound] || { attempts: 0, passes: 0 };
-    const da = (o.attempts || 0) - (pend.a || 0), dp = (o.passes || 0) - (pend.p || 0);
-    if (da <= 0) return null; // they didn't actually practice
-    const acc = dp / da, stars = acc >= 0.85 ? 3 : acc >= 0.55 ? 2 : 1;
-    const before = levelStars(pend.id); setLevelStars(pend.id, stars);
-    if (before === 0) { try { addCoins(15); } catch (e) {} } // first-clear bonus
-    return { id: pend.id, stars: stars, improved: stars > before, acc: acc, worldId: String(pend.id).split("-")[0] };
-  }
 
   // ── sticker book: a collectible reward shelf kids fill as they practice ──
   const STICKERS = [
@@ -1711,19 +1630,6 @@
   // that advances the level (or finishes it). Returns true if it took over.
   function sessionButtons(winEl) {
     if (!winEl) return false;
-    // Adventure-Map (campaign) flow: a game launched from the map leaves a fresh
-    // campaign-pending marker. Turn the replay button into "Next →" that returns to
-    // the map — which is what records the win and unlocks the next level. Without
-    // this, tapping replay never returns, so the next level stays locked.
-    try {
-      var pend = load(CAMPPEND, null);
-      if (pend && pend.id && pend.ts && (Date.now() - pend.ts < 7200000) && !/[?&]session=1\b/.test(location.search)) {
-        var agc = winEl.querySelector("#again");
-        if (agc) { agc.textContent = "Next →"; agc.onclick = function () { try { sfx && sfx.tap && sfx.tap(); } catch (e) {} location.href = (pend && pend.back) || "/map.html"; }; }
-        Array.prototype.forEach.call(winEl.querySelectorAll("a"), function (a) { var h = a.getAttribute("href") || ""; if (/play\.html|map\.html/.test(h)) a.style.display = "none"; });
-        return true;
-      }
-    } catch (e) {}
     if (!session.active()) return false;
     try { if (!/[?&]session=1\b/.test(location.search)) return false; } catch (e) { return false; }
     const pos = session.pos(); const last = pos && pos.i >= pos.n;
@@ -2140,5 +2046,5 @@
   }
   try { installDebug(); } catch (e) {}
 
-  global.Sona = { pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, ladderContent, FREE_MODE, isFree, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, storyRead, markStoryRead, dailyGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, gated, gateVerify, gateOk, requireGate, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, LEVEL_GAMES, GAME_DECK, GAMES_PER_LEVEL, levelGames, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, WORLDS, LEVELS_PER_WORLD, campaignLevels, campaignSounds, campaignState, worldById, worldLevels, worldStars, worldCleared, levelStars, setLevelStars, totalStars, worldUnlocked, levelUnlocked, campaignLaunch, campaignResolve, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repsBeacon, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES };
+  global.Sona = { pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, ladderContent, FREE_MODE, isFree, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, storyRead, markStoryRead, dailyGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, gated, gateVerify, gateOk, requireGate, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repsBeacon, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES };
 })(window);
