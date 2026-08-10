@@ -19,6 +19,19 @@ practice, or what an SLP is shown, it is Rachel's call, not an engineering
 one. Surface those in the PR body so she can review them without reading
 the diff.
 
+## Pricing — settled
+Sona is **free for everyone**. `FREE_MODE` in `sona.js` is the only switch;
+every purchase surface reads it and `gated()` short-circuits on `isFree()`
+before anything else. The Stripe and Apple rails stay built and tested behind
+the flag, so turning pricing on is one line.
+
+Two things that follow, and are not up for quiet reinterpretation:
+- **Anyone who uses Sona while it is free keeps it free.** Grandfathering is a
+  promise to those families, not a growth tactic.
+- Don't re-open the pricing question in passing. It cost five reversals and a
+  lot of paywall plumbing while the clinical work sat in the TODO list below.
+  If it changes, it changes deliberately and once.
+
 ## Hard rules
 - Merges to main/prod only on Travis's explicit go ("merge").
 - In-game voice detection records/uploads nothing (local loudness only).

@@ -1817,13 +1817,18 @@
   // NOTE: this product id is already App Store-approved; the price lives in
   // App Store Connect, and the paywall renders whatever ASC reports.
   // ── FREE MODE ──────────────────────────────────────────────────────────
-  // OFF: pricing is live — $9.99/mo or $59.99/yr after a 3-day free trial.
-  // ONE switch, honoured by every purchase surface. Sona is a painkiller, not
-  // a vitamin: families arrive already paying for therapy, so the free tier
-  // that a habit app needs is dead weight here. Three cohorts stay free
-  // regardless of this flag: SLP-referred families (the ?slp= credential —
-  // that promise IS the SLP channel), pilots, and founders. Flip back to true
-  // and every price disappears again with no other edits.
+  // ON: Sona is free for everyone. No paywall, no trial, no plan.
+  //
+  // ONE switch, honoured by every purchase surface — gated() short-circuits
+  // here before it looks at anything else, so no kid page can bounce to a
+  // price screen. The Stripe and Apple rails stay built and TESTED behind the
+  // flag (?paid=1 / sona.paidui reveals them for QA), so turning pricing back
+  // on is this line and nothing else.
+  //
+  // The product has to be good before it can be worth anything, and a paywall
+  // pulls the build toward conversion plumbing and away from the therapy.
+  // Anyone who uses Sona while it is free keeps it free — a promise, not a
+  // growth tactic.
   // Recorded human model clips (/coach/say/<SOUND>[-demo].mp3) are Rachel's own
   // voice. OFF everywhere until a non-Rachel set exists. This MUST live here,
   // not per-page: charge.html gated it locally and coach-call.html went on
@@ -1846,7 +1851,7 @@
   const HUMAN_CLIPS = false;
   function humanClipsOn() { return HUMAN_CLIPS; }
 
-  const FREE_MODE = false;
+  const FREE_MODE = true;
   // QA seam: ?paid=1 (or the sticky sona.paidui flag) reveals the purchase
   // rails on this device so the paid path stays exercisable — and TESTED —
   // while free mode ships. It only controls VISIBILITY; it can't unlock
