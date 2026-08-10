@@ -38,20 +38,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: "Invalid JSON." }, { status: 400 });
   }
 
-  const hook = process.env.PILOT_WEBHOOK_URL || process.env.LEAD_WEBHOOK_URL;
-  let captured = false;
-  try {
-    if (hook) {
-      await fetch(hook, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...body, kind: "pilot" }),
-      });
-      captured = true;
-    }
-  } catch {
-    // never fail the app on a capture hiccup
-  }
+  // The grown-up consented to share this child's practice with THEIR CLINICIAN.
+  // That is the entire scope. This used to also POST the whole body — name,
+  // age, targets, outcomes, streak — to PILOT_WEBHOOK_URL, falling back to
+  // LEAD_WEBHOOK_URL, which is the marketing collector. Consent to one
+  // recipient is not consent to another, and the fallback quietly made the
+  // second recipient a CRM. The roster write below is the only destination.
+  const captured = false;
 
   // Upsert into the SLP roster (keyed slp:<code> → { childId: record }).
   try {

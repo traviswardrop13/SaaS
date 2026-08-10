@@ -1215,7 +1215,10 @@
       const db = await idb();
       return await new Promise((res, rej) => {
         const tx = db.transaction("recordings", "readwrite");
-        tx.objectStore("recordings").add(Object.assign({ date: new Date().toISOString() }, rec));
+        // KIDS1: stamp the owning child. The store is one IndexedDB table for
+        // the device, so without this a sibling's Progress page listed — and
+        // played — another child's voice.
+        tx.objectStore("recordings").add(Object.assign({ date: new Date().toISOString(), kid: _slot() }, rec));
         tx.oncomplete = () => res(true);
         tx.onerror = () => rej(tx.error);
       });
@@ -1226,9 +1229,18 @@
       const db = await idb();
       return await new Promise((res) => {
         const out = [];
+        const mine = _slot();
         const tx = db.transaction("recordings", "readonly");
         const cur = tx.objectStore("recordings").openCursor(null, "prev");
-        cur.onsuccess = (e) => { const c = e.target.result; if (c && out.length < limit) { out.push(c.value); c.continue(); } else res(out); };
+        // Only this child's clips. Rows saved before the kid stamp existed have
+        // no `kid` field — they belong to the first child, whose slot is "".
+        cur.onsuccess = (e) => {
+          const c = e.target.result;
+          if (!c) return res(out);
+          if (out.length >= limit) return res(out);
+          if ((c.value.kid || "") === mine) out.push(c.value);
+          c.continue();
+        };
         tx.onerror = () => res(out);
       });
     } catch (e) { return []; }

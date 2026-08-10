@@ -242,7 +242,10 @@
       if(!/^\S+@\S+\.\S+$/.test(email)){ $("gateMsg").style.color="#e0457b"; $("gateMsg").textContent="Please enter a valid email to see the results."; return; }
       $("gateBtn").disabled=true; $("gateBtn").textContent="Loading results…";
       var _utm=(window.Sona&&Sona.utm)?Sona.utm():{};
-      try{ await fetch("/api/lead",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(Object.assign({email:email,child:CHILD,age:AGE,practice:window._practice||[],report:window._report||"",summary:window._summary||""},_utm))}); }catch(e){}
+      // COPPA: the grown-up's email and the campaign tags — never the child's
+      // name, age, practice targets or their speech report. This page is the
+      // ad funnel; a marketing list is the last place any of that belongs.
+      try{ await fetch("/api/lead",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(Object.assign({email:email,source:"speech-check",summary:"Speech Check completed"},_utm))}); }catch(e){}
       // seed the profile so the app is tailored to what the check found (used at launch)
       try{ if(window.Sona){ var focus=(window._practice&&window._practice.length)?window._practice:WORDS.map(function(w){return w.s;}); Sona.saveProfile({ childName:CHILD, childAge:String(AGE||""), focusSounds:focus.slice(0,4), checkEmail:email, email:email, onboarded:true }); } }catch(e){}
       try{ if(window.sonaTrack) sonaTrack("Lead"); }catch(e){}

@@ -97,6 +97,7 @@ await page.waitForTimeout(1400);
 t = await page.evaluate(() => ({
   end: document.getElementById("endOvl").classList.contains("show"),
   endSub: document.getElementById("endSub").textContent,
+
   fedStore: JSON.parse(localStorage.getItem("sona.feed.v1") || "{}").fed || 0,
   rot: window.Sona.rotRound(),
   ring: window.Sona.todayRing().n,
@@ -120,13 +121,42 @@ t = await page.evaluate(() => ({
   stickers: Object.keys(window.Sona.stickersEarned ? window.Sona.stickersEarned() : {}).length,
 }));
 ok("growth persisted (5 feeds banked)", t.fedStore === 5, "fed=" + t.fedStore);
-ok("round advances the rotation + ring", t.rot >= 1 && t.ring >= 1, "rot=" + t.rot + " ring=" + t.ring);
-ok("a sticker landed", t.stickers >= 1);
+// SILENCE IS NEVER A REP. This run had no microphone, so Echo heard nothing —
+// tapping the right picture five times must NOT count as practice. The round
+// still ends warmly; it just doesn't advance anything.
+ok("a silent round does NOT advance the rotation or ring", t.rot === 0 && t.ring === 0, "rot=" + t.rot + " ring=" + t.ring);
+ok("…and earns no sticker", t.stickers === 0, String(t.stickers));
+ok("…but still ends kindly, and says why", /say the word out loud/i.test(t.endSub), t.endSub);
 ok("win copy mentions growth or the goal", /grow|adventure/i.test(t.endSub), t.endSub);
 
 // ── growth survives a reload (Echo visibly bigger) ──
 await page.goto("http://localhost:8145/arcade-feed.html"); await page.waitForTimeout(900);
 t = await page.evaluate(() => document.getElementById("echo").style.transform);
+// …and the other half of the rule: a round Echo actually HEARD does count.
+{
+  const ctx2 = await browser.newContext();
+  const pg2 = await ctx2.newPage();
+  await pg2.goto("http://localhost:8145/today.html");
+  await pg2.evaluate(() => localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Mia", childAge: "5", focusSounds: ["R"], onboarded: true, voiceOn: false })));
+  await pg2.goto("http://localhost:8145/arcade-feed.html?heard=5");
+  await pg2.waitForTimeout(700);
+  for (let i = 0; i < 6; i++) {
+    const hit = await pg2.evaluate(() => {
+      const m = document.getElementById("bMain").textContent.match(/Where's the (.+)\?/);
+      if (!m) return false;
+      const btn = [...document.querySelectorAll("#grid .cardBtn")].find((x) => x.querySelector(".w").textContent === m[1]);
+      if (btn) btn.click();
+      return !!btn;
+    });
+    if (!hit) break;
+    await pg2.waitForTimeout(900);   // the bite animation has to finish before the next ask paints
+  }
+  await pg2.waitForTimeout(1500);
+  const heard = await pg2.evaluate(() => ({ rot: Sona.rotRound(), ring: Sona.todayRing().n, title: document.getElementById("endTitle").textContent }));
+  ok("a round Echo heard DOES advance the rotation", heard.rot >= 1 || heard.ring >= 1, JSON.stringify(heard));
+  await ctx2.close();
+}
+
 ok("Echo's size persists across visits", /scale\(1\.0[2-9]|scale\(1\.[1-9]/.test(t), t);
 
 // ── the deck is age-aware. A little who can't read must open on Feed Echo

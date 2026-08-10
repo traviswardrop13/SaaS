@@ -82,6 +82,14 @@ export async function POST(req: NextRequest) {
     at: new Date().toISOString(),
   };
 
+  // COPPA / hard rule: a child's name never leaves the device to a CRM, ad
+  // pixel or analytics payload. This route is the marketing pipeline, so the
+  // child's identity is stripped HERE as well as at the caller — the client
+  // guard only covered the SLP branch, and the parent branch shipped the name
+  // for months with a COPPA comment sitting directly above it. Defence in
+  // depth: even a future caller that forgets cannot leak a name through here.
+  const safeLead = { ...lead, child: "", age: "", practice: [] as string[] };
+
   const hook = process.env.LEAD_WEBHOOK_URL;
   const kitKey = process.env.KIT_API_KEY;
   const kitForm = process.env.KIT_FORM_ID;
@@ -92,7 +100,7 @@ export async function POST(req: NextRequest) {
       await fetch(hook, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(lead),
+        body: JSON.stringify(safeLead),
       });
       captured = true;
     }
@@ -102,7 +110,9 @@ export async function POST(req: NextRequest) {
         headers: { "Content-Type": "application/json", "X-Kit-Api-Key": kitKey },
         body: JSON.stringify({
           email_address: email,
-          fields: { child_name: lead.child, child_age: lead.age, practice_sounds: lead.practice.join(", ") },
+          // no child_name / child_age / practice_sounds — a marketing list is
+          // never a place a child's identity or clinical targets belong
+          fields: { signup_source: safeLead.source },
         }),
       }).catch(() => {});
       captured = true;

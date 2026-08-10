@@ -208,6 +208,11 @@
     // Never prompts, never records, never logs — a voice burst while a card is
     // up = "Echo heard you! ⭐". Echo's own voice never counts (tts guard). ──
     var heardThisTurn=false, stars=0, micOn=false;
+    // Test seam: a headless browser has no microphone, so there is no way to
+    // exercise "a round WITH voicing" without one. Only ever ADDS a heard turn,
+    // and only when the page was opened with ?heard=N — it can't be reached
+    // from the app, and it cannot suppress the silence rule.
+    try{ var _hq=parseInt(new URLSearchParams(location.search).get("heard"),10); if(_hq>0){ stars=_hq; window.__heard=stars; } }catch(e){}
     (function(){
       try{
         if(localStorage.getItem("sona.micok")!=="1") return;
@@ -225,7 +230,7 @@
             var rms=Math.sqrt(sum/td.length),now=performance.now();
             if(now-t0<250){ calSum+=rms; calN++; requestAnimationFrame(tick); return; }
             if(!thr) thr=Math.max(0.035,(calSum/Math.max(1,calN))*3.0);
-            if(rms>thr){ voiced++; if(voiced>=4&&!heardThisTurn&&turnLive){ heardThisTurn=true; stars++; try{ $("starN").textContent=stars; }catch(e){} $("heard").classList.add("show"); setTimeout(function(){ $("heard").classList.remove("show"); },1400); sfx("tap"); } }
+            if(rms>thr){ voiced++; if(voiced>=4&&!heardThisTurn&&turnLive){ heardThisTurn=true; stars++; try{ window.__heard=stars; }catch(e){} try{ $("starN").textContent=stars; }catch(e){} $("heard").classList.add("show"); setTimeout(function(){ $("heard").classList.remove("show"); },1400); sfx("tap"); } }
             else voiced=0;
             requestAnimationFrame(tick);
           })();
@@ -323,16 +328,26 @@
       // a finished round advances the rotation + ring (real taps + real words —
       // never idle time), exactly like a charge free-play round. Nothing from
       // the mic is logged anywhere.
-      var ringDone=false;
-      try{
-        var pre=S.todayRing&&S.todayRing().done;
-        if(S.rotAdvance)S.rotAdvance();
-        ringDone=!pre&&S.todayRing&&S.todayRing().done;
-      }catch(e){}
-      var stk=null; try{ stk=(S&&S.awardNextSticker)?S.awardNextSticker():null; }catch(e){}
+      // SILENCE IS NEVER A REP. `stars` is the count of turns where the mic
+      // actually heard the child; tapping the right picture five times without
+      // speaking used to advance the rotation and the daily ring all the same,
+      // which teaches a four-year-old that pointing is the game. The round
+      // still ENDS warmly either way — a child is never scolded for a quiet
+      // day — it just doesn't count as practice.
+      var ringDone=false, counted=(stars>0);
+      if(counted){
+        try{
+          var pre=S.todayRing&&S.todayRing().done;
+          if(S.rotAdvance)S.rotAdvance();
+          ringDone=!pre&&S.todayRing&&S.todayRing().done;
+        }catch(e){}
+      }
+      var stk=null; if(counted){ try{ stk=(S&&S.awardNextSticker)?S.awardNextSticker():null; }catch(e){} }
       try{ if(S&&S.confetti)S.confetti({count:140}); }catch(e){}
-      $("endTitle").textContent=ringDone?"All of today's practice — done!":"Yum! Echo's full — concert time!";
-      $("endSub").textContent=(stk?("You won the "+stk.name+" sticker! "):"")+(stars>0?("Echo heard you "+stars+" time"+(stars===1?"":"s")+"! "):"")+(ringDone?"Come back tomorrow — Echo will have a new adventure ready!":"Echo's growing bigger every day you play!");
+      $("endTitle").textContent=ringDone?"All of today's practice — done!":(counted?"Yum! Echo's full — concert time!":"Echo's full — but he didn't hear you!");
+      $("endSub").textContent=counted
+        ? ((stk?("You won the "+stk.name+" sticker! "):"")+"Echo heard you "+stars+" time"+(stars===1?"":"s")+"! "+(ringDone?"Come back tomorrow — Echo will have a new adventure ready!":"Echo's growing bigger every day you play!"))
+        : "Say the word out loud next time and Echo will hear you — that's how he grows!";
       $("endOvl").classList.add("show");
       sfx("complete");
       // the payoff: Echo's ukulele concert. On a goal-done day the tomorrow

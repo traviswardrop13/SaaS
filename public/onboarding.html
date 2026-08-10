@@ -535,15 +535,18 @@
         if(draft.email){
           var isSlp=draft.role==="slp";
           var utm=(window.Sona&&Sona.utm)?(Sona.utm()||{}):{};
-          // COPPA: an SLP is entering someone else's client — never ship that
-          // child's name/targets to the marketing CRM. Only the clinician's
-          // own email + a role tag.
+          // COPPA: NO child's name, age or practice targets go to the marketing
+          // CRM — not the SLP's client, and not the parent's own child either.
+          // This guard used to cover only the SLP branch while the parent
+          // branch shipped `child: draft.childName` right underneath it. The
+          // grown-up's email and a role tag are the whole payload now, and
+          // /api/lead strips the fields again server-side.
           fetch("/api/lead",{method:"POST",headers:{"Content-Type":"application/json"},keepalive:true,body:JSON.stringify(
             isSlp
               ? { email:draft.email, source:"onboarding", role:"slp", summary:"New SLP signup",
                   utm_source:utm.utm_source, utm_medium:utm.utm_medium, utm_campaign:utm.utm_campaign, utm_content:utm.utm_content, utm_term:utm.utm_term, referrer:utm.referrer, landing:utm.landing }
-              : { email:draft.email, child:draft.childName, practice:draft.focusSounds, source:"onboarding",
-                  summary: draft.mode==="play" ? "New parent signup — play mode (all letter sounds)" : ("New parent signup — practicing "+((draft.focusSounds||[]).join(", ")||"sounds")),
+              : { email:draft.email, source:"onboarding", role:"parent",
+                  summary: draft.mode==="play" ? "New parent signup — play mode" : "New parent signup",
                   utm_source:utm.utm_source, utm_medium:utm.utm_medium, utm_campaign:utm.utm_campaign, utm_content:utm.utm_content, utm_term:utm.utm_term, referrer:utm.referrer, landing:utm.landing }
           )}).catch(function(){});
         }

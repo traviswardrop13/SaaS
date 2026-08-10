@@ -762,7 +762,8 @@
     (function () {
       var host = document.getElementById("firsts");
       if (!host) return;
-      var KEY = "sona.firsts.v1";
+      // KIDS1: milestones belong to one child, not the device
+      var KEY = (window.Sona&&Sona.kkey)?Sona.kkey("sona.firsts.v1"):"sona.firsts.v1";
       function loadF() { try { var v = JSON.parse(localStorage.getItem(KEY)); return (v && typeof v === "object") ? v : {}; } catch (e) { return {}; } }
       function saveF(v) { try { localStorage.setItem(KEY, JSON.stringify(v)); } catch (e) {} }
       function sl(k) { return Sona.soundLabel ? Sona.soundLabel(k) : k; }
