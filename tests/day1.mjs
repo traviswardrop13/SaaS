@@ -284,6 +284,50 @@ async function home(age) {
   await ctx.close();
 }
 
+// ── 10. GATE1: the games are not playable by typing their URL ──
+// They carried no gate of their own — the only thing protecting them was that
+// the normal route goes through charge.html, which does gate. A typed URL
+// played free, story unread, forever.
+{
+  const ARCADE = ["arcade-slice.html", "arcade-tiles.html", "arcade-stack.html", "arcade-run.html", "arcade-glide.html"];
+  async function land(url, prep) {
+    const ctx = await browser.newContext();
+    const pg = await ctx.newPage();
+    await pg.goto("http://localhost:8178/today.html");
+    await pg.evaluate(seed("7"));
+    if (prep) await pg.evaluate(prep);
+    await pg.goto("http://localhost:8178/" + url);
+    await pg.waitForTimeout(600);
+    const path = new URL(pg.url()).pathname;
+    await ctx.close();
+    return path;
+  }
+  for (const g of ARCADE) {
+    ok(`${g} can't be opened by typing its URL`, (await land(g)) === "/today.html", g);
+  }
+  ok("…but it opens once today's story is read",
+    (await land("arcade-slice.html", "Sona.markStoryRead()")) === "/arcade-slice.html");
+  // a round the child already EARNED must never be interrupted — charge.html
+  // gates before it hands off, and a session started at 11:58pm would
+  // otherwise be thrown out at midnight when the day rolls over
+  ok("a charge hand-off is never bounced, even with today's story unread",
+    (await land("arcade-slice.html?from=charge")) === "/arcade-slice.html");
+  // Sona is free, so a dead trial gates nothing — but the STORY gate still
+  // holds, which is the thing this page is actually protecting now.
+  ok("a dead trial no longer sends anyone to a price screen",
+    (await land("arcade-tiles.html", 'localStorage.setItem("sona.trial.v1",JSON.stringify({start:Date.now()-40*86400000,days:3}))')) === "/today.html");
+  // the retired campaign and its pages are gone, not merely unlinked
+  const sona = readFileSync(ROOT + "/sona.js", "utf8");
+  ok("the worlds/levels campaign is deleted from sona.js",
+    !/const WORLDS|campaignLaunch|campaignResolve|LEVEL_GAMES|GAME_DECK/.test(sona));
+  for (const dead of ["play.html", "ladder.html", "world.html", "level.html", "bubble.html", "racer.html", "lesson.html"]) {
+    ok(`${dead} is deleted`, !existsSync(ROOT + "/" + dead), dead);
+  }
+  ok("no live page links to a page that no longer exists",
+    !/href="\/(?:play|ladder|world|level|levelcomplete|arcade|bubble|racer|whack|cupstack|match|grocery|train|rocket|chat|shop|lesson|warmup|builder|coach|avatar|model|practice|rcal|home)\.html/
+      .test(readFileSync(ROOT + "/today.html", "utf8") + readFileSync(ROOT + "/story.html", "utf8") + readFileSync(ROOT + "/charge.html", "utf8")));
+}
+
 await browser.close(); srv.close();
 console.log(fails ? fails + " FAILURES" : "ALL GREEN");
 process.exit(fails ? 1 : 0);

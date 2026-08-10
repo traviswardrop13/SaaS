@@ -102,7 +102,9 @@ const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL 
     localStorage.setItem(Sona.kkey("sona.trial.v1"), JSON.stringify({ start: Date.now() - 10 * 86400000, days: 3 }));
     return Sona.gated();
   });
-  ok("wrong-key family gates like anyone else after the trial", gated === true);
+  // Sona is free, so there is nothing for a wrong key to fail to unlock. The
+  // claim that still matters: it never puts a child on anyone's caseload.
+  ok("a wrong key leaves the app free, like it is for everyone", gated === false);
   await pg.context().close();
 }
 
@@ -138,7 +140,8 @@ const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL 
     const a = document.getElementById("slpEntryLink");
     return a ? a.getAttribute("href") : null;
   });
-  ok("a gated family is offered the SLP route off the paywall", /join\.html/.test(href || ""), String(href));
+  ok("a family who lands on the trial page is bounced into the app, not a price",
+    /\/today\.html$/.test(new URL(pg.url()).pathname), pg.url());
   ok("the trial page no longer runs its own copy of the redeem fetch",
     !/slpEnGo/.test(readFileSync(ROOT + "/trial.html", "utf8")),
     "duplicated unlock logic is how a paywall hole gets reopened by accident");
@@ -397,7 +400,7 @@ const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL 
     const r = await Sona.founderUnlock("WRONG");
     return { valid: r.valid, founder: Sona.isFounder(), gated: Sona.gated() };
   });
-  ok("a wrong founder key unlocks nothing", !bad.valid && !bad.founder && bad.gated === true, JSON.stringify(bad));
+  ok("a wrong founder key unlocks nothing", !bad.valid && !bad.founder, JSON.stringify(bad));
   // the ?founder= URL path verifies too
   await pg.goto("http://localhost:8155/today.html?founder=OWNER-SECRET-123");
   await pg.waitForTimeout(600);
@@ -437,8 +440,9 @@ const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL 
   ok("the funnel event fires only on a VALID redemption",
     /valid[\s\S]{0,700}track\("slp code redeemed"/.test(sona),
     "counting unverified codes ranks garbage SLPs");
-  ok("pricing is live — FREE_MODE is the one switch and it is OFF",
-    /const FREE_MODE = false;/.test(sona), "a stray true here silently makes the whole app free");
+  ok("Sona is free — FREE_MODE is the one switch and it is ON",
+    /const FREE_MODE = true;/.test(sona) && /if \(isFree\(\)\) return false;/.test(sona),
+    "gated() must short-circuit on isFree() before it checks anything else");
   ok("joining a caseload requires CONSENT and actually enrols (startPilot)",
     /function slpJoinCaseload[\s\S]{0,360}startPilot\(/.test(sona) && /sendProgress\("enroll"\)/.test(sona),
     "sendProgress() no-ops without consent — link-joined families were invisible to their own SLP");

@@ -72,6 +72,15 @@
 
   <script src="/sona.js"></script>
   <script>
+    /* Free mode: nobody should ever land on a price page. A bookmarked or
+       back-swiped /trial.html goes straight into the app. Sona.isFree() is the
+       single switch — this page needs no other knowledge of pricing. */
+    (function () {
+      try { if (window.Sona && Sona.isFree && Sona.isFree()) location.replace("/today.html"); } catch (e) {}
+    })();
+  </script>
+
+  <script>
     var p = Sona.getProfile();
     var name = (p.childName || "").trim();
     if (name) document.getElementById("headline").textContent = name + ", that was just the start! 🎉";

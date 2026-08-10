@@ -3,7 +3,8 @@ import type { CSSProperties } from "react";
 /**
  * Sona — R-sound marketing landing page (web-first funnel).
  *
- * One job: start the yearly plan's 3-day free trial ($59.99/yr featured); $9.99/mo (no trial) offered. Meta-ad parents of kids 4–9 on the R
+ * One job: get the app. Sona is 100% FREE — no paywall, no trial, no plan.
+ * Meta-ad parents of kids 4–9 on the R
  * sound, 90%+ on phones. Mobile-first single column, centered on desktop;
  * every CTA calls the Stripe checkout start. Design: "Sunrise Storybook"
  * handoff (README + Sona Landing Redesign.dc.html).
@@ -15,7 +16,7 @@ import type { CSSProperties } from "react";
 export const metadata = {
   title: "Sona — R-sound practice kids actually love",
   description:
-    "Still saying “wabbit” instead of rabbit? Sona turns daily R practice into a game kids ask to play — built with a licensed speech-language pathologist. Try it free for 3 days.",
+    "Still saying “wabbit” instead of rabbit? Sona turns daily R practice into a game kids ask to play — built with a licensed speech-language pathologist. Completely free.",
 };
 
 const CHECKOUT = "/api/checkout";
@@ -70,7 +71,7 @@ function Mic({ s = 42 }: { s?: number }) {
     </svg>
   );
 }
-function CtaButton({ label = "Start 3 days free", big = true }: { label?: string; big?: boolean }) {
+function CtaButton({ label = "Get Sona — free", big = true }: { label?: string; big?: boolean }) {
   return (
     <a
       href={CHECKOUT}
@@ -108,7 +109,7 @@ export default function Landing() {
       {/* Ad-funnel signal: InitiateCheckout + paywall-viewed on any checkout tap. */}
       <script
         dangerouslySetInnerHTML={{
-          __html: `document.addEventListener("click",function(e){var a=e.target&&e.target.closest?e.target.closest('a[href^="/api/checkout"]'):null;if(!a)return;try{if(window.sonaTrack)window.sonaTrack("InitiateCheckout",{value:59.99,currency:"USD",content_name:"web_annual"});}catch(err){}try{if(window.SonaAnalytics)window.SonaAnalytics.track("paywall viewed",{surface:"landing"});}catch(err){}},true);`,
+          __html: `document.addEventListener("click",function(e){var a=e.target&&e.target.closest?e.target.closest('a[href^="/api/checkout"]'):null;if(!a)return;try{if(window.sonaTrack)window.sonaTrack("Lead",{content_name:"web_free"});}catch(err){}try{if(window.SonaAnalytics)window.SonaAnalytics.track("paywall viewed",{surface:"landing"});}catch(err){}},true);`,
         }}
       />
 
@@ -130,7 +131,7 @@ export default function Landing() {
           </p>
           <div style={{ display: "flex", flexDirection: "column", gap: 9, marginBottom: 20 }}>
             <CtaButton />
-            <div style={{ textAlign: "center", fontSize: 12.5, fontWeight: 700, color: MUTED }}>3 days free, then $59.99/yr — or <a href="/api/checkout?plan=monthly" style={{ color: MUTED }}>$9.99/month, no trial</a>. Cancel anytime.</div>
+            <div style={{ textAlign: "center", fontSize: 12.5, fontWeight: 700, color: MUTED }}>Free — every game, every sound. No card, no account, no catch.</div>
           </div>
           {/* R-detection demo card */}
           <div style={{ background: "#fff", borderRadius: 24, boxShadow: `0 5px 0 ${LINE}`, padding: "16px 18px", display: "flex", gap: 14, alignItems: "center" }}>
@@ -226,21 +227,20 @@ export default function Landing() {
         {/* 5 — PRICING */}
         <section id="pricing" style={{ background: "#fff", padding: "30px 20px" }}>
           <div style={{ background: "#fff", border: `3px solid ${INK}`, borderRadius: 26, boxShadow: `0 7px 0 ${INK}`, padding: "22px 20px" }}>
-            <div style={{ display: "inline-flex", background: "#ffd21c", color: INK, font: `800 11px ${B}`, letterSpacing: 1.2, padding: "5px 12px", borderRadius: 999, boxShadow: "0 3px 0 #e0b000", marginBottom: 12 }}>3 DAYS FREE · BEST VALUE</div>
+            <div style={{ display: "inline-flex", background: "#ffd21c", color: INK, font: `800 11px ${B}`, letterSpacing: 1.2, padding: "5px 12px", borderRadius: 999, boxShadow: "0 3px 0 #e0b000", marginBottom: 12 }}>FREE · NO CATCH</div>
             <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
-              <s style={{ font: `800 24px/1 ${B}`, color: "#c9a878" }}>$119.88</s>
-              <div style={{ font: `800 52px/1 ${B}` }}>$59.99</div>
-              <div style={{ fontSize: 15, fontWeight: 800, color: MUTED }}>/year</div>
+              <div style={{ font: `800 52px/1 ${B}` }}>Free</div>
+              <div style={{ fontSize: 15, fontWeight: 800, color: MUTED }}>forever</div>
             </div>
-            <div style={{ fontSize: 12.5, fontWeight: 700, color: MUTED, margin: "4px 0 16px" }}>50% off the monthly rate ($9.99 × 12 = $119.88) — or <a href="/api/checkout?plan=monthly" style={{ color: MUTED }}>go month to month, no trial</a></div>
+            <div style={{ fontSize: 12.5, fontWeight: 700, color: MUTED, margin: "4px 0 16px" }}>Built by two parents — one of them a licensed SLP. We wanted it in every kid&apos;s hands.</div>
             <div style={{ display: "flex", flexDirection: "column", gap: 9, marginBottom: 18 }}>
-              {["Every game, every sound — full access from minute one", "3 days free — cancel anytime, no charge", "Every new sound included as it ships", "Works on iPhone and iPad"].map((t) => (
+              {["Every game, every sound — full access from minute one", "No card, no subscription, no ads", "Every new sound included as it ships", "Works on iPhone and iPad"].map((t) => (
                 <div key={t} style={{ display: "flex", gap: 9, fontSize: 14, fontWeight: 700 }}><Check />{t}</div>
               ))}
             </div>
             <CtaButton />
             <div style={{ display: "flex", gap: 6, justifyContent: "space-between", margin: "14px 0 10px" }}>
-              {[["1", "Start 3 days free"], ["2", "Get 6-letter code"], ["3", "Download & play"]].map(([n, t]) => (
+              {[["1", "Download the app"], ["2", "2-minute setup"], ["3", "Play the first round"]].map(([n, t]) => (
                 <div key={n} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 10.5, fontWeight: 800, color: MUTED }}>
                   <div style={{ width: 17, height: 17, borderRadius: "50%", background: INK, color: CREAM, font: `800 10px ${B}`, display: "flex", alignItems: "center", justifyContent: "center", flex: "none" }}>{n}</div>{t}
                 </div>
@@ -275,7 +275,7 @@ export default function Landing() {
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {[
               ["Does Sona replace working with an SLP?", "No — it's daily practice designed by one. If your child already sees a speech professional, Sona is the between-sessions coach that makes each visit count."],
-              ["How does the free trial work?", "The yearly plan starts with 3 free days — cancel before they end and you're never charged; we show you the exact date at checkout. The monthly plan is $9.99 billed at purchase, no trial, cancel anytime."],
+              ["Is it really free?", "Yes — every game, every sound, no card and no subscription. Rachel is a practising speech-language pathologist and we built Sona for families who need daily practice between sessions; charging for it was never the point."],
               ["What do I need to start?", "An iPhone or iPad. After checkout you get a 6-letter code — enter it in the app and you're playing in minutes."],
               ["My kid is 4 — too young?", "Sona is built for ages 4–9. Exercises adapt from first tries at the sound all the way to tricky words like “squirrel.”"],
             ].map(([q, a]) => (
@@ -291,9 +291,9 @@ export default function Landing() {
         <section style={{ padding: "34px 20px 26px", textAlign: "center" }}>
           <div style={{ display: "flex", justifyContent: "center" }}><Parrot s={76} /></div>
           <h2 style={{ margin: "8px 0 6px", font: `800 30px/1.1 ${B}` }}>Ready to hear that R?</h2>
-          <div style={{ fontSize: 14, fontWeight: 700, color: MUTED, marginBottom: 16 }}><span style={{ color: INK, font: `800 20px ${B}` }}>$59.99/yr</span> with 3 days free · or $9.99/mo</div>
+          <div style={{ fontSize: 14, fontWeight: 700, color: MUTED, marginBottom: 16 }}><span style={{ color: INK, font: `800 20px ${B}` }}>Free</span> — every game, every sound</div>
           <CtaButton />
-          <div style={{ fontSize: 11.5, fontWeight: 700, color: MUTED, margin: "12px 0 22px" }}>3 days free · Cancel anytime</div>
+          <div style={{ fontSize: 11.5, fontWeight: 700, color: MUTED, margin: "12px 0 22px" }}>No card · No subscription · No ads</div>
           <div style={{ fontSize: 11.5, fontWeight: 700, color: MUTED, borderTop: `2px solid ${LINE}`, paddingTop: 14 }}>
             speaksona.com · <a href="/privacy" style={{ color: MUTED }}>Privacy</a> · <a href="/terms" style={{ color: MUTED }}>Terms</a><br />Made with a licensed pediatric SLP
           </div>
@@ -312,8 +312,8 @@ export default function Landing() {
         }}
       >
         <div style={{ flex: 1 }}>
-          <span style={{ font: `800 16px ${B}`, color: INK }}>3 days free</span>
-          <div style={{ fontSize: 10.5, fontWeight: 800, color: "#46a302" }}>then $59.99/yr or $9.99/mo</div>
+          <span style={{ font: `800 16px ${B}`, color: INK }}>Free forever</span>
+          <div style={{ fontSize: 10.5, fontWeight: 800, color: "#46a302" }}>Every game, every sound</div>
         </div>
         <span style={{ background: "#ff8a3d", color: "#fff", font: `700 14px ${B}`, padding: "10px 16px", borderRadius: 14, boxShadow: "0 4px 0 #ef6f23", flex: "none" }}>Get it</span>
       </a>
