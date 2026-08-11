@@ -5,7 +5,7 @@ import {
   hasTargetSound,
   type SoundPosition,
   type TargetSound,
-} from "@/lib/scoring";
+} from "@/lib/wordSounds";
 
 /**
  * AI Story Adventures — generates a short, personalized, illustrated story for
@@ -15,7 +15,7 @@ import {
  * with their target sound.
  *
  * THE LOOP (in /public/story.html): the buddy SPEAKS each page aloud (/api/tts),
- * the child REPEATS the highlighted word, and SpeechAce scores it (/api/score).
+ * the child REPEATS the highlighted word, judged on-device (no upload).
  * Listen-and-repeat — never "read it yourself" — because our 3–7yo users mostly
  * can't read yet, and imitation is exactly how articulation practice works.
  *
@@ -33,7 +33,7 @@ import {
 
 export const runtime = "nodejs";
 
-// Sounds our spelling-based on-target checker (lib/scoring) understands. For
+// Sounds our spelling-based on-target checker (lib/wordSounds) understands. For
 // any other focus sound we skip the strict check and lean on the prompt +
 // safety pass (better to ship a slightly-loose page than block the feature).
 const CHECKABLE: TargetSound[] = [

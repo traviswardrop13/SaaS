@@ -1,17 +1,18 @@
 // Sound-map coverage: every sound Sona offers must be fully supported by the
 // maps that serve it. The B/D outage came from exactly this gap — ALL_SOUNDS
-// shipped 19 sounds while /api/score's PHONEME_FOR knew 17, so every scored
+// shipped 19 sounds while the scorer's phoneme map knew 17, so every scored
 // B and D attempt was force-failed and logged as a miss against a child who
 // said it correctly. Nothing cross-checked the two lists, so it was invisible.
+// The cloud scorer is gone, but the bug CLASS is not: every map that has to
+// know about a sound is cross-checked here against the roster.
 //
 // Pure source parsing — no browser needed.
-import { readFileSync } from "fs";
+import { readFileSync, existsSync } from "fs";
 import { fileURLToPath } from "url";
 import path from "path";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const sona = readFileSync(ROOT + "/public/sona.js", "utf8");
-const score = readFileSync(ROOT + "/app/api/score/route.ts", "utf8");
 
 let fails = 0;
 const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL ") + n + (p ? "" : "  → " + (extra || ""))); };
@@ -22,23 +23,29 @@ ok("ALL_SOUNDS found in sona.js", !!mAll);
 const ALL = (mAll ? mAll[1] : "").match(/"([A-Z]+)"/g).map((s) => s.replace(/"/g, ""));
 ok("ALL_SOUNDS is non-trivial", ALL.length >= 15, `got ${ALL.length}`);
 
-// ---- 1. /api/score can actually grade every sound ----
-const mPhon = score.match(/const PHONEME_FOR[^=]*=\s*\{([\s\S]*?)\n\};/);
-ok("PHONEME_FOR found in app/api/score/route.ts", !!mPhon);
-const PHON = [...(mPhon ? mPhon[1] : "").matchAll(/^\s*([A-Z]+)\s*:/gm)].map((m) => m[1]);
-const missingPhon = ALL.filter((s) => !PHON.includes(s));
-ok(
-  "every ALL_SOUNDS entry has a PHONEME_FOR mapping",
-  missingPhon.length === 0,
-  `unscorable (every attempt would be force-failed): ${missingPhon.join(", ")}`,
-);
+// ---- 1. every sound Echo offers, Echo can model ----
+const mSay = sona.match(/const SOUND_SAY\s*=\s*\{([\s\S]*?)\n  \};/);
+ok("SOUND_SAY found in sona.js", !!mSay);
+const SAY = [...(mSay ? mSay[1] : "").matchAll(/([A-Z]+)\s*:\s*"/g)].map((m) => m[1]);
+const missingSay = ALL.filter((s) => !SAY.includes(s));
+ok("every ALL_SOUNDS entry has a spoken model", missingSay.length === 0,
+  `Echo would say the letter name instead of the sound: ${missingSay.join(", ")}`);
 
-// ---- 2. an unmapped sound must fail LOUDLY, never as a fabricated miss ----
-ok(
-  "score route rejects an unmapped sound instead of rating it tryAgain",
-  /PHONEME_FOR\[targetSound\.toUpperCase\(\)\]/.test(score) && /unscorable-sound/.test(score),
-  "missing the ok:false guard — an unmapped sound would log a miss the child didn't make",
-);
+// ---- 2. …and a placement cue to coach it ----
+const mCue = sona.match(/const CUES\s*=\s*\{([\s\S]*?)\n  \};/);
+ok("CUES found in sona.js", !!mCue);
+const CUE = [...(mCue ? mCue[1] : "").matchAll(/^\s{4}([A-Z]+)\s*:/gm)].map((m) => m[1]);
+const missingCue = ALL.filter((s) => !CUE.includes(s));
+ok("every ALL_SOUNDS entry has a placement cue", missingCue.length === 0,
+  `a child who misses would get no help: ${missingCue.join(", ")}`);
+
+// ---- 2b. …and a developmental norm, so age gating has something to read ----
+const mNorm = sona.match(/const SOUND_NORM\s*=\s*\{([\s\S]*?)\n  \};/);
+ok("SOUND_NORM found in sona.js", !!mNorm);
+const NORM = [...(mNorm ? mNorm[1] : "").matchAll(/([A-Z]+)\s*:/g)].map((m) => m[1]);
+const missingNorm = ALL.filter((s) => !NORM.includes(s));
+ok("every ALL_SOUNDS entry has a developmental norm", missingNorm.length === 0,
+  `no age data to gate on: ${missingNorm.join(", ")}`);
 
 // ---- 3. every sound has practice words ----
 const mWords = sona.match(/const WORDS\s*=\s*\{([\s\S]*?)\n  \};/);
@@ -68,20 +75,19 @@ ok(
   "rotAdvance() gated behind !isDaily freezes the path, chest and sound rotation for every daily child",
 );
 
-// ---- 6. the 'no clips sent' promise is honoured where recording happens ----
-for (const page of ["charge.html"]) {
+// ---- 6. the "stays on this device" promise is now structurally true ----
+// There is no cloudScoring toggle any more because there is nothing to toggle:
+// the scorer is deleted and no page uploads audio. A promise kept by having no
+// mechanism to break it beats one kept by a checkbox.
+for (const page of ["charge.html", "story.html", "check.html", "coach-call.html"]) {
   const src = readFileSync(ROOT + "/public/" + page, "utf8");
-  ok(
-    `${page} reads the cloudScoring toggle`,
-    /cloudScoring/.test(src),
-    "Settings promises 'no clips sent' — this page must honour it",
-  );
-  ok(
-    `${page} gates MediaRecorder on the toggle (no clip is even created)`,
-    /if\(CLOUD&&/.test(src),
-    "a clip must never be recorded when honest scoring is off",
-  );
+  ok(`${page} uploads no audio anywhere`, !/api\/score/.test(src),
+    "a clip leaving the device makes the consent copy false");
 }
+ok("the cloud scorer is deleted, not merely unused",
+  !existsSync(ROOT + "/app/api/score/route.ts") && !existsSync(ROOT + "/lib/scoring.ts"));
+ok("the consent copy states it plainly",
+  /no recording is ever uploaded/i.test(readFileSync(ROOT + "/public/pilot.html", "utf8")));
 
 
 // ---- 7. no practice prompt is glued into a phrase ----

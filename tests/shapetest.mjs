@@ -19,7 +19,11 @@ const ok = (n, p) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL ") + n)
 
 // ── source tripwires ──
 const src = readFileSync(ROOT + "/charge.html", "utf8");
-ok("isolation verdict is on-device (skips cloud scorer)", /if\(ITEM\.level==="isolation"\) return shapeVerdict\(\);/.test(src));
+// Stronger than before: the cloud scorer is gone, so EVERY rung is judged on
+// the phone and no clip is ever uploaded. That is what makes the consent copy
+// ("no recording is ever uploaded") true rather than aspirational.
+ok("every verdict is on-device", /async function verifyClip\(\)\{ return shapeVerdict\(\); \}/.test(src));
+ok("no page uploads a clip to a scorer", !/api\/score/.test(src));
 ok("shape sampled on voiced frames in the engine", /an\.getByteFrequencyData\(fd\); shapeFrame\(fd,binHz\);/.test(src));
 const shapeSrc = src.match(/var SHAPE=\{[\s\S]*?return "pass";\n    \}/)?.[0];
 ok("SHAPE block extracted from charge.html", !!shapeSrc);

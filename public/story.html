@@ -203,7 +203,7 @@
     function bubbleSay(word,sub){ $("sayLbl").textContent="Your turn — say"; $("bTarget").textContent=word||""; $("subLine").textContent=sub||""; }
     function bubbleNote(sub){ $("bTarget").textContent=""; $("sayLbl").textContent=""; $("subLine").textContent=sub||""; }
 
-    var micStream=null, useSpeechAce=false;
+    var micStream=null;
     function recordTurn(maxMs){ if(window.Sona&&Sona.hasNativeAudio&&Sona.hasNativeAudio())return Sona.captureClip({maxMs:(maxMs||6000)}); maxMs=maxMs||8000; return new Promise(function(resolve){
       var done=false,chunks=[],rec=null,sr=null,transcript="",spoke=false,lastV=0,raf=null,src=null,bars=null,micBtn=$("micBtn"),ico=micBtn.querySelector("svg");
       function finish(){ if(done)return; done=true; try{rec&&rec.state!=="inactive"&&rec.stop();}catch(e){} try{sr&&sr.stop();}catch(e){} micBtn.classList.remove("rec");micBtn.onclick=null; if(raf)cancelAnimationFrame(raf); try{src&&src.disconnect();}catch(e){} if(bars)bars.remove(); if(ico)ico.style.display=""; setTimeout(function(){resolve({transcript:transcript,blob:chunks.length?new Blob(chunks,{type:(rec&&rec.mimeType)||"audio/webm"}):null,spoke:spoke});},120); }
@@ -222,7 +222,9 @@
     }); }
     async function scoreUtterance(res,text){
       if(!res.spoke && !res.transcript && !res.blob) return {pass:false};
-      if(useSpeechAce && res.blob){ try{ var fd=new FormData(); fd.append("audio",new File([res.blob],"a.webm",{type:res.blob.type||"audio/webm"})); fd.append("text",text); fd.append("targetSound",SOUND); fd.append("userId","child"); fd.append("mode","full"); var r=await fetch("/api/score",{method:"POST",body:fd}); var j=await r.json(); if(j&&j.ok&&j.rating) return {pass:j.rating!=="tryAgain"}; }catch(e){} }
+      // Cloud scoring is gone — nothing is uploaded. The turn is judged from
+      // what the browser could hear locally (transcript when available, voicing
+      // otherwise), which is a narrower claim honestly made.
       if(res.transcript) return {pass:true};
       return {pass:!!res.spoke};
     }
@@ -276,7 +278,6 @@
       if(window.Sona){Sona.confetti&&Sona.confetti();Sona.sfx&&Sona.sfx.complete&&Sona.sfx.complete();Sona.sfx&&Sona.sfx.coin&&Sona.sfx.coin();}
     }
     function startGame(){ $("win").classList.remove("show"); pi=0; busy=false; $("count").textContent="0"; $("goal").textContent=GOAL; renderPage(); setLeo("idle"); readPage(); }
-    (async function(){ try{var r=await fetch("/api/score");var j=await r.json();useSpeechAce=!!(j&&j.hasKey);}catch(e){useSpeechAce=false;}
       try{ if(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia) micStream=await navigator.mediaDevices.getUserMedia({audio:true}); }catch(e){micStream=null;}
       $("hear").onclick=function(){ var p=PAGES[pi]; say(p.text.replace("___",p.word)); }; $("again").onclick=startGame;
       // Show a quick "writing your adventure" beat while the AI story loads, then play.

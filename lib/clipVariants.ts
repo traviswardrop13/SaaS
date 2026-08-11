@@ -1,4 +1,4 @@
-import type { TargetSound, SoundPosition } from "./scoring";
+import type { TargetSound, SoundPosition } from "./wordSounds";
 
 /**
  * Error patterns we want labelled recordings for, grouped by target sound.

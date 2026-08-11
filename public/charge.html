@@ -657,7 +657,7 @@
     // uses: hissy sounds (S/SH/F/CH...) put their energy high in the spectrum;
     // voiced sounds (R/L/M/N...) sit low. A round is flagged only when it is
     // CLEARLY the wrong family — borderline or same-family tries always pass
-    // (never punish a wobbly-but-honest attempt; R-vs-L stays SpeechAce's job
+    // (never punish a wobbly-but-honest attempt; the shape gate is deliberately
     // from syllables up). Thresholds calibrated on the SLP's recorded sounds:
     // voiced cluster ≤1318Hz/13% high-band vs hiss cluster ≥2044Hz/26%.
     // Only frequency-shape NUMBERS are read; nothing extra is recorded.
@@ -685,19 +685,14 @@
     }
 
     // ---- rapid-fire rep engine: continuous VAD, every voiced burst = a rep.
-    // No per-rep scoring round-trips — ONE SpeechAce spot-check on the whole
-    // clip at the end keeps the SLP data honest without killing the pace.
+    // No scoring round-trips at all — the verdict comes from the spectral
+    // shape of the burst, decided here on the phone.
     var micStream=null, reps=0, engineOn=false, chunks=[], rec=null, anyReps=false;
-    // Settings promises: "Off = loudness-only practice, no clips sent." That
-    // toggle is binding HERE, not just in lesson.html — when it's off we never
-    // ask the server, never record a clip, and never upload one.
-    var CLOUD=true; try{ CLOUD=(profile&&profile.cloudScoring)!==false; }catch(e){ CLOUD=true; }
-    var useSpeechAce=CLOUD;
-    (function(){ if(!CLOUD){ useSpeechAce=false; return; }
-      try{ fetch("/api/score").then(function(r){return r.json();}).then(function(j){ useSpeechAce=!!(j&&j.hasKey);
-      // tripwire: honest scoring silently off = every sound "passes". Make it loud in the server logs.
-      if(!useSpeechAce){ try{ fetch("/api/log",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({msg:"SCORING OFFLINE — SpeechAce key missing/unreachable; charge gate is loudness-only",url:location.pathname})}); }catch(e){} }
-    }).catch(function(){ useSpeechAce=false; }); }catch(e){ useSpeechAce=false; } })();
+    // NOTHING LEAVES THE DEVICE. Cloud scoring is gone: no MediaRecorder, no
+    // clip, no upload, no vendor. Every verdict is decided here from the
+    // spectral shape of what was said (shapeVerdict below), which is what
+    // finally makes the consent copy true — a parent ticking "recordings stay
+    // on this device" is now agreeing to something that is actually the case.
 
     function startEngine(){
       return new Promise(function(resolve){
@@ -705,7 +700,9 @@
         var voiced=0, silent=0, inBurst=false, thr=0, calN=0, calSum=0, t0=performance.now(), lastRep=0, idleTimer=null;
         // no clip is even CREATED when honest scoring is off — the promise is
         // "no clips sent", and the safest way to keep it is to have nothing to send
-        try{ if(CLOUD&&window.MediaRecorder&&micStream){ rec=new MediaRecorder(micStream); rec.ondataavailable=function(e){ if(e.data&&e.data.size)chunks.push(e.data); }; rec.start(); } }catch(e){ rec=null; }
+        // Still recorded — but ONLY to keep one clip a day on this device so a
+        // parent can listen back in Progress. It is never uploaded anywhere.
+        try{ if(window.MediaRecorder&&micStream){ rec=new MediaRecorder(micStream); rec.ondataavailable=function(e){ if(e.data&&e.data.size)chunks.push(e.data); }; rec.start(); } }catch(e){ rec=null; }
         var ctx=getCtx(), src=ctx.createMediaStreamSource(micStream), an=ctx.createAnalyser();
         an.fftSize=512; src.connect(an);
         var td=new Uint8Array(an.fftSize);
@@ -716,7 +713,7 @@
         // flushes its final chunk. rec.start() has no timeslice, so the whole
         // clip arrives in a single dataavailable that the browser queues at
         // stop(); resolving synchronously (the old bug) handed verifyClip an
-        // empty chunks[] and the SpeechAce spot-check never ran on word rounds.
+        // empty chunks[] and the day's keepsake clip was never saved.
         // onstop fires after that final dataavailable, so chunks is populated.
         var settled=false;
         function stopAll(){
@@ -766,24 +763,11 @@
     // Tri-state verdict: "pass" / "fail" (the scorer really heard a different
     // sound) / "unknown" (no scorer, timeout, error — never punish the kid for
     // infrastructure, and never log made-up data).
-    async function verifyClip(){
-      // bare-sound rounds: judged on-device by sound shape (SHAPE above) —
-      // the cloud scorer is unreliable on non-word text in both directions,
-      // and skipping it here saves credits. Syllables+ keep the honest gate.
-      if(ITEM.level==="isolation") return shapeVerdict();
-      var blob=clipBlob();
-      if(useSpeechAce&&blob){
-        try{
-          var ctrl=new AbortController(); var to=setTimeout(function(){ctrl.abort();},8000);
-          var fd=new FormData(); fd.append("audio",new File([blob],"a.webm",{type:blob.type||"audio/webm"}));
-          fd.append("text",ITEM.t); fd.append("targetSound",SOUND); fd.append("userId","child"); fd.append("mode",ITEM.mode||"phoneme");
-          var r=await fetch("/api/score",{method:"POST",body:fd,signal:ctrl.signal}); clearTimeout(to);
-          var j=await r.json(); if(j&&j.ok) return (j.rating!=="tryAgain")?"pass":"fail";
-        }catch(e){}
-        return "unknown";
-      }
-      return "unknown";
-    }
+    // Every rung is judged on-device now. The shape gate answers a narrower
+    // question than a phoneme scorer did — "did that sound like this sound"
+    // rather than "was that word right" — and it never leaves the phone.
+    async function verifyClip(){ return shapeVerdict(); }
+
 
     // ---- the flow ----
     var launched=false;

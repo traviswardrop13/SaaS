@@ -122,7 +122,7 @@
       badge(100, 52) + '</svg>';
   }
 
-  const DEFAULT_PROFILE = { childName: "", childAge: "", focusSounds: ["R", "S", "L", "K"], voiceOn: true, coachName: "Coach", cloudScoring: true, slpEvaluated: "", goals: "", focusArea: "articulation", interests: [], language: "en", character: "fox", outfit: "none", backdrop: "sky", soundOn: true, voiceId: "qBDvhofpxp92JgXJxDjB", volume: 0.8, musicOn: false, dailyMinutes: 5, owned: { outfits: ["none"], backdrops: ["sky"] }, onboarded: false };
+  const DEFAULT_PROFILE = { childName: "", childAge: "", focusSounds: ["R", "S", "L", "K"], voiceOn: true, coachName: "Coach", slpEvaluated: "", goals: "", focusArea: "articulation", interests: [], language: "en", character: "fox", outfit: "none", backdrop: "sky", soundOn: true, voiceId: "qBDvhofpxp92JgXJxDjB", volume: 0.8, musicOn: false, dailyMinutes: 5, owned: { outfits: ["none"], backdrops: ["sky"] }, onboarded: false };
   // stage per sound: 0 = isolation (the letter), 1 = syllables, 2 = words, 3 = mastered.
   const STAGES = ["isolation", "syllables", "words"];
   const DEFAULT_PROGRESS = { sessions: [], totals: { sessions: 0, words: 0, stars: 0, coins: 0 }, streak: { count: 0, lastDate: "" }, bySound: {}, stage: {}, chests: {}, missed: [] };
@@ -941,7 +941,7 @@
   // The core loop: a quick burst of ~5 real spoken reps "charges" the game the
   // kid is about to play. Practice is the power source — never the penalty.
   // Arcade time is NOT practice and never counts in the SLP stats (that stays
-  // logAttempt's job — one honest SpeechAce spot-check per charge).
+  // logAttempt's job — one on-device shape check per charge).
   const TICKKEY = "sona.tickets.v1", CHARGEKEY = "sona.charge.v1";
   const CHARGE_NEED = 5; // reps per charge — fast, drill-like, ~10s
   function tickets() { return Math.max(0, (load(TICKKEY, { n: 0 }).n | 0)); }
@@ -1827,7 +1827,7 @@
   // PCM via AVAudioSession `.measurement` mode (no auto-gain / noise-suppression
   // / high-pass) — preserving the high-frequency detail /s,sh,ch,th/ need. On the
   // web we fall back to MediaRecorder on the game's existing mic stream. Either
-  // way captureClip() resolves to { blob, transcript, spoke } that /api/score
+  // way captureClip() resolves to { blob, transcript, spoke } that the local
   // already accepts — so a game opts in with one line at the top of its recorder:
   //   if (Sona.hasNativeAudio()) return Sona.captureClip({ maxMs });
   function hasNativeAudio() {
@@ -2070,7 +2070,7 @@
     if (document.body) _mount(); else document.addEventListener("DOMContentLoaded", _mount);
   } catch (e) {}
 
-  // ── debug HUD: with ?debug=1 (sticky; ?debug=0 to clear), show the SpeechAce score on screen ──
+  // ── debug HUD: with ?debug=1 (sticky; ?debug=0 to clear) ──
   function debugOn() {
     try {
       const q = new URLSearchParams(location.search);
@@ -2109,7 +2109,6 @@
       const req = { text: "", sound: "" };
       try { if (init && init.body && typeof init.body.get === "function") { req.text = init.body.get("text") || ""; req.sound = init.body.get("targetSound") || ""; } } catch (e) {}
       const p = _fetch.apply(this, arguments);
-      if (url.indexOf("/api/score") !== -1) { try { p.then(function (r) { try { r.clone().json().then(function (j) { debugScore(req, j); }).catch(function () {}); } catch (e) {} return r; }).catch(function () {}); } catch (e) {} }
       return p;
     };
     try { if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", debugBox); else debugBox(); } catch (e) {}

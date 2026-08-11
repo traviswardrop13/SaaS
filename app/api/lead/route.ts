@@ -15,7 +15,7 @@ import { NextRequest, NextResponse } from "next/server";
 export const runtime = "nodejs";
 
 /**
- * Founder health check (same pattern as /api/score GET): presence booleans
+ * Founder health check: presence booleans
  * only, never values. Open in a browser to see which capture/email rails
  * are actually configured in this deployment.
  */

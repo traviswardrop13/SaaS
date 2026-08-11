@@ -3,7 +3,7 @@ import { kvCmd, kvConfigured } from "@/lib/slpAuth";
 
 /**
  * Per-IP rate limiting for the vendor-calling API routes (Anthropic / ElevenLabs
- * / SpeechAce). Without this, those routes are unauthenticated and anyone on the
+ * ). Without this, those routes are unauthenticated and anyone on the
  * internet can loop them to run up the bill.
  *
  * Uses KV (INCR + EXPIRE) when configured; otherwise a per-instance in-memory

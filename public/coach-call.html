@@ -255,10 +255,8 @@
       var ctrl=new AbortController(); var to=setTimeout(function(){ctrl.abort();},8000);
       var fd=new FormData(); fd.append("audio",new File([blob],"a.webm",{type:blob.type||"audio/webm"}));
       fd.append("text",text); fd.append("targetSound",SOUND); fd.append("userId","child"); fd.append("mode",mode||"phoneme");
-      return fetch("/api/score",{method:"POST",body:fd,signal:ctrl.signal})
-        .then(function(r){ clearTimeout(to); return r.json(); })
-        .then(function(j){ if(j&&j.ok) return (j.rating!=="tryAgain")?"pass":"fail"; return "unknown"; })
-        .catch(function(){ return "unknown"; });
+      // Cloud scoring was removed; nothing is uploaded from this page either.
+      return Promise.resolve(null);
     }
     function logV(v,word){ if(v!=="unknown"&&S&&S.logAttempt) S.logAttempt({game:"coach-call",sound:SOUND,pass:v==="pass",word:String(word||"").toLowerCase()}); }
 
