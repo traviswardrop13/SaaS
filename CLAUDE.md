@@ -20,17 +20,26 @@ one. Surface those in the PR body so she can review them without reading
 the diff.
 
 ## Pricing — settled
-Sona is **free for everyone**. `FREE_MODE` in `sona.js` is the only switch;
-every purchase surface reads it and `gated()` short-circuits on `isFree()`
-before anything else. The Stripe and Apple rails stay built and tested behind
-the flag, so turning pricing on is one line.
+Pricing is **live**: **$9.99/month** billed at purchase with **no trial**, and
+**$59.99/year** after a **3-day free trial**. `FREE_MODE` in `sona.js` is the
+only switch; every purchase surface reads it and `gated()` short-circuits on
+`isFree()` before anything else.
+
+Four cohorts are free regardless of the switch: SLP-referred families (the
+server-verified `?slp=` credential — that promise IS the SLP channel), pilots,
+founders, and **everyone who used Sona while it was free**.
 
 Two things that follow, and are not up for quiet reinterpretation:
-- **Anyone who uses Sona while it is free keeps it free.** Grandfathering is a
-  promise to those families, not a growth tactic.
-- Don't re-open the pricing question in passing. It cost five reversals and a
-  lot of paywall plumbing while the clinical work sat in the TODO list below.
-  If it changes, it changes deliberately and once.
+- **Anyone who used Sona while it was free keeps it free.** Enforced by
+  `_grandfatherFreeEra()` and pinned in `tests/iaptest.mjs`. It is a promise to
+  those families, not a growth tactic. Do not "clean it up".
+- Don't re-open the pricing question in passing. It has cost several reversals
+  and a lot of paywall plumbing while the clinical work sat in the TODO list
+  below. If it changes, it changes deliberately and once.
+
+**The iOS price does not live in this repo.** `subscribe.html` overwrites the
+figures with whatever RevenueCat reports from App Store Connect, so editing
+numbers here does not change what an iPhone shows. Change ASC.
 
 ## Hard rules
 - Merges to main/prod only on Travis's explicit go ("merge").
