@@ -225,6 +225,21 @@
     return true;
   }
 
+  // SET1 replaced three audio checkboxes with one volume slider, but a profile
+  // saved BEFORE that can still carry voiceOn:false — and there is no longer a
+  // control anywhere that can set it back to true. Echo goes silent forever and
+  // the parent has nothing to press. Reconcile the legacy flags with the volume
+  // that now owns them: audible volume means audible Echo.
+  function _healAudioFlags(p) {
+    if (!p || typeof p !== "object") return p;
+    const vol = (p.volume != null ? p.volume : 0.6);
+    if (vol > 0 && (p.voiceOn === false || p.soundOn === false)) {
+      p.voiceOn = true; p.soundOn = true;
+      try { save(PKEY, p); } catch (e) {}
+    }
+    return p;
+  }
+
   function getProfile() {
     const p = Object.assign(clone(DEFAULT_PROFILE), load(PKEY, {}));
     // migrate old/empty default voices (Jessica, Will, and the prior Leo) to the current voice
@@ -234,7 +249,7 @@
     // no way up. Lift only that exact value — a deliberate 0.3 is unreachable
     // today, and anything else the family chose is left alone.
     if (p.volume === 0.3) { p.volume = 0.8; try { save(PKEY, Object.assign({}, load(PKEY, {}), { volume: 0.8 })); } catch (e) {} }
-    return p;
+    return _healAudioFlags(p);
   }
   // Playback-rate multiplier for /api/tts audio. Leo's ElevenLabs voice is
   // already a kid — no pitch-shift needed.
@@ -1877,9 +1892,17 @@
     if (!FREE_MODE) return false;
     try {
       const q = new URLSearchParams(global.location.search);
-      if (q.get("paid") === "1") localStorage.setItem("sona.paidui", "1");
-      if (q.get("paid") === "0") localStorage.removeItem("sona.paidui");
-      if (localStorage.getItem("sona.paidui") === "1") return false;
+      // SESSION-scoped, deliberately. This lived in localStorage and so was
+      // permanent: one stray ?paid=1 — a shared QA link, a bookmark, a curious
+      // tap — and that family saw a paywall forever, in a free app, with the
+      // only escape a ?paid=0 parameter nobody could know about. A QA seam must
+      // not be able to lock a child out of a free product. sessionStorage
+      // lasts the tab, which is all testing needs, and dies on its own.
+      if (q.get("paid") === "1") sessionStorage.setItem("sona.paidui", "1");
+      if (q.get("paid") === "0") { sessionStorage.removeItem("sona.paidui"); localStorage.removeItem("sona.paidui"); }
+      // clear the old persistent flag wherever it is still stuck
+      if (localStorage.getItem("sona.paidui")) localStorage.removeItem("sona.paidui");
+      if (sessionStorage.getItem("sona.paidui") === "1") return false;
     } catch (e) {}
     return true;
   }
