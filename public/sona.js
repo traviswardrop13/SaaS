@@ -225,6 +225,21 @@
     return true;
   }
 
+  // SET1 replaced three audio checkboxes with one volume slider, but a profile
+  // saved BEFORE that can still carry voiceOn:false — and there is no longer a
+  // control anywhere that can set it back to true. Echo goes silent forever and
+  // the parent has nothing to press. Reconcile the legacy flags with the volume
+  // that now owns them: audible volume means audible Echo.
+  function _healAudioFlags(p) {
+    if (!p || typeof p !== "object") return p;
+    const vol = (p.volume != null ? p.volume : 0.6);
+    if (vol > 0 && (p.voiceOn === false || p.soundOn === false)) {
+      p.voiceOn = true; p.soundOn = true;
+      try { save(PKEY, p); } catch (e) {}
+    }
+    return p;
+  }
+
   function getProfile() {
     const p = Object.assign(clone(DEFAULT_PROFILE), load(PKEY, {}));
     // migrate old/empty default voices (Jessica, Will, and the prior Leo) to the current voice
@@ -234,7 +249,7 @@
     // no way up. Lift only that exact value — a deliberate 0.3 is unreachable
     // today, and anything else the family chose is left alone.
     if (p.volume === 0.3) { p.volume = 0.8; try { save(PKEY, Object.assign({}, load(PKEY, {}), { volume: 0.8 })); } catch (e) {} }
-    return p;
+    return _healAudioFlags(p);
   }
   // Playback-rate multiplier for /api/tts audio. Leo's ElevenLabs voice is
   // already a kid — no pitch-shift needed.
@@ -1076,6 +1091,11 @@
     }).then((r) => r.json()).then((j) => {
       if (j && j.ok && j.valid) {
         try { localStorage.setItem("sona.slpok", code.toUpperCase()); localStorage.setItem("sona.slpunlock", "1"); } catch (e) {}
+        // The enrolment ticket is this device's proof that it passed code+key.
+        // /api/pilot refuses a roster write without it, which is what stops
+        // anyone who merely knows the code from inventing children on a real
+        // clinician's dashboard.
+        try { if (j.ticket) localStorage.setItem("sona.slpticket", String(j.ticket)); } catch (e) {}
         // a family that already finished onboarding gets patched in place —
         // the link can arrive after setup (e.g. re-sent by the SLP)
         try { const pr = getProfile(); if (pr.onboarded || pr.childName) saveProfile({ earlyAdopter: true, slpCode: code.toUpperCase() }); } catch (e) {}
@@ -1215,7 +1235,10 @@
       const db = await idb();
       return await new Promise((res, rej) => {
         const tx = db.transaction("recordings", "readwrite");
-        tx.objectStore("recordings").add(Object.assign({ date: new Date().toISOString() }, rec));
+        // KIDS1: stamp the owning child. The store is one IndexedDB table for
+        // the device, so without this a sibling's Progress page listed — and
+        // played — another child's voice.
+        tx.objectStore("recordings").add(Object.assign({ date: new Date().toISOString(), kid: _slot() }, rec));
         tx.oncomplete = () => res(true);
         tx.onerror = () => rej(tx.error);
       });
@@ -1226,9 +1249,18 @@
       const db = await idb();
       return await new Promise((res) => {
         const out = [];
+        const mine = _slot();
         const tx = db.transaction("recordings", "readonly");
         const cur = tx.objectStore("recordings").openCursor(null, "prev");
-        cur.onsuccess = (e) => { const c = e.target.result; if (c && out.length < limit) { out.push(c.value); c.continue(); } else res(out); };
+        // Only this child's clips. Rows saved before the kid stamp existed have
+        // no `kid` field — they belong to the first child, whose slot is "".
+        cur.onsuccess = (e) => {
+          const c = e.target.result;
+          if (!c) return res(out);
+          if (out.length >= limit) return res(out);
+          if ((c.value.kid || "") === mine) out.push(c.value);
+          c.continue();
+        };
         tx.onerror = () => res(out);
       });
     } catch (e) { return []; }
@@ -1860,9 +1892,17 @@
     if (!FREE_MODE) return false;
     try {
       const q = new URLSearchParams(global.location.search);
-      if (q.get("paid") === "1") localStorage.setItem("sona.paidui", "1");
-      if (q.get("paid") === "0") localStorage.removeItem("sona.paidui");
-      if (localStorage.getItem("sona.paidui") === "1") return false;
+      // SESSION-scoped, deliberately. This lived in localStorage and so was
+      // permanent: one stray ?paid=1 — a shared QA link, a bookmark, a curious
+      // tap — and that family saw a paywall forever, in a free app, with the
+      // only escape a ?paid=0 parameter nobody could know about. A QA seam must
+      // not be able to lock a child out of a free product. sessionStorage
+      // lasts the tab, which is all testing needs, and dies on its own.
+      if (q.get("paid") === "1") sessionStorage.setItem("sona.paidui", "1");
+      if (q.get("paid") === "0") { sessionStorage.removeItem("sona.paidui"); localStorage.removeItem("sona.paidui"); }
+      // clear the old persistent flag wherever it is still stuck
+      if (localStorage.getItem("sona.paidui")) localStorage.removeItem("sona.paidui");
+      if (sessionStorage.getItem("sona.paidui") === "1") return false;
     } catch (e) {}
     return true;
   }
@@ -1964,6 +2004,11 @@
         consentAt: pilotInfo().consentAt || "",
         at: new Date().toISOString(),
       };
+      // No ticket, no write. A device that never passed the credential check
+      // has nothing to say about a clinician's caseload.
+      let ticket = ""; try { ticket = localStorage.getItem("sona.slpticket") || ""; } catch (e) {}
+      if (!ticket) return;
+      payload.ticket = ticket;
       fetch("/api/pilot", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload), keepalive: true }).catch(function () {});
     } catch (e) {}
   }

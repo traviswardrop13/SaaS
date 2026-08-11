@@ -854,14 +854,16 @@
       // One honest PASSED clip a day is kept ON-DEVICE (never uploaded) so the
       // parent can hear first-try vs today on the Progress "Listen" shelf.
       if(v==="pass"){ try{
-        var rk="sona.reclast."+SOUND, tdy=new Date().toDateString();
+        // KIDS1: per-child, or one sibling's saved clip blocks the other's
+        var rk=(S&&S.kkey)?S.kkey("sona.reclast."+SOUND):("sona.reclast."+SOUND), tdy=new Date().toDateString();
         if(localStorage.getItem(rk)!==tdy){ var rb=clipBlob(); if(rb&&S&&S.saveRecording){ S.saveRecording({sound:SOUND,word:String(ITEM.word||ITEM.t).toLowerCase(),level:ITEM.level,blob:rb}); localStorage.setItem(rk,tdy); } }
       }catch(e){} }
       // SLP gating: the rung only ever advances on HONEST evidence — two clean
       // scored rounds at the stretch level, never on mercy or offline scoring.
       if(v==="pass" && useRung>=RUNG && S && S.recordRung){
         try{
-          var wk="sona.rungwins."+SOUND+"."+useRung, w=1+(parseInt(localStorage.getItem(wk),10)||0);
+          // KIDS1: rung wins belong to the child who earned them
+        var wk=(S&&S.kkey)?S.kkey("sona.rungwins."+SOUND+"."+useRung):("sona.rungwins."+SOUND+"."+useRung), w=1+(parseInt(localStorage.getItem(wk),10)||0);
           if(w>=2){ S.recordRung(SOUND,useRung,1); localStorage.removeItem(wk); }
           else localStorage.setItem(wk,String(w));
         }catch(e){}
@@ -921,6 +923,13 @@
         ringDoneNow=!preDone&&S.todayRing&&S.todayRing().done;
         if(isDaily&&run){ run.ringed=roundKey; runSave(run); }
       }catch(e){} }
+      // SILENCE IS NEVER A REP — and it must not be a reward either. The
+      // rotation was already guarded by anyReps, but the GAME launched no
+      // matter what, so a child could grant the mic, say nothing for twenty
+      // seconds and still be handed the arcade round. Practice is the power
+      // source, never the penalty: a quiet child isn't scolded, they're just
+      // asked once more, and the meter doesn't pretend it filled.
+      if(!anyReps){ showQuiet(); return; }
       if(ringDoneNow){ showChest(launchGame); } else { launchGame(); }
     }
     // three-beat treasure chest on completing the daily goal ring: tease
@@ -952,6 +961,25 @@
       $("chestClaim").onclick=function(){ $("chestOvl").classList.remove("show"); next(); };
     }
 
+    // A round that heard nothing ends here rather than at the arcade. Warm on
+    // purpose — the child gets Echo asking again, not a failure screen.
+    function showQuiet(){
+      try{ $("gp").classList.remove("show"); }catch(e){}
+      var q=$("quietOvl");
+      if(!q){
+        q=document.createElement("div"); q.id="quietOvl";
+        q.style.cssText="position:fixed;inset:0;z-index:80;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:32px;background:linear-gradient(180deg,#eafff0,#dff6e6 55%,#cdea9e);";
+        q.innerHTML='<img src="/coach/echo/echo-listening.svg" alt="Echo" style="width:120px;" onerror="this.style.display=\'none\'"/>'
+          +'<h1 style="font-family:\'Baloo 2\';font-weight:800;font-size:26px;color:#3f8a06;margin-top:12px;">Echo didn\'t hear you!</h1>'
+          +'<p style="font-weight:800;font-size:15px;color:#5d7a3f;margin-top:8px;max-width:24ch;line-height:1.5;">Say it out loud and Echo will light up. Ready to try again?</p>'
+          +'<button id="quietGo" style="margin-top:24px;width:100%;max-width:300px;border:none;border-radius:18px;padding:17px;font-family:\'Baloo 2\';font-weight:800;font-size:19px;color:#fff;background:linear-gradient(180deg,#6fd60e,#58cc02);box-shadow:0 5px 0 #46a302;cursor:pointer;">Let\'s try again!</button>'
+          +'<a href="/today.html" style="margin-top:16px;font-weight:800;font-size:14px;color:#5d7a3f;">Maybe later</a>';
+        document.body.appendChild(q);
+      }
+      q.style.display="flex";
+      var g=document.getElementById("quietGo");
+      if(g) g.onclick=function(){ location.reload(); };
+    }
     function launchGame(){
       if(launched)return; launched=true;
       if(anyReps) tele("practice completed",{sound:SOUND,game:GMETA.n,duration_seconds:Math.round((performance.now()-T0)/1000),attempts_count:attemptsTotal});
@@ -1002,10 +1030,10 @@
     function stopMic(){ try{ if(micStream)micStream.getTracks().forEach(function(t){t.stop();}); }catch(e){} }
     // grown-up escape: LONG-PRESS (2s) the ✕ skips practice into the game
     // (replaces the kid-visible skip button). A normal tap still exits.
-    var _lpT=null,_lpFired=false;
-    $("close").addEventListener("pointerdown",function(){ _lpFired=false; _lpT=setTimeout(function(){ _lpFired=true; _lpT=null; launchGame(); },2000); });
-    ["pointerup","pointerleave","pointercancel"].forEach(function(ev){ $("close").addEventListener(ev,function(){ if(_lpT){ clearTimeout(_lpT); _lpT=null; } }); });
-    $("close").onclick=function(){ if(_lpFired){ _lpFired=false; return; } stopMic(); location.href=isDaily?"/today.html":"/map.html"; };
+    // The close control used to launch the game outright on a 2-second hold —
+    // an undocumented bypass a child finds by resting a thumb on it. Close is
+    // just close now.
+    $("close").onclick=function(){ stopMic(); location.href="/today.html"; };
     // Locking the phone must release the mic and silence Echo. pagehide alone
     // never fired on lock, so the indicator stayed on and TTS kept talking.
     function goQuiet(){ stopMic(); try{ window.speechSynthesis && speechSynthesis.cancel(); }catch(e){} }

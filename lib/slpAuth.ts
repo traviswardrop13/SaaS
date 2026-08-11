@@ -96,6 +96,45 @@ export function verifySession(token: string | undefined | null): Session | null 
   }
 }
 
+/**
+ * Enrolment ticket — proof that THIS device passed the code+key check at
+ * /api/slp/redeem. It is what stands between "knows an SLP's code" and "can
+ * write a child into that SLP's roster": the code travels in share links and
+ * is derived from the clinician's email stem, so it is close to public, while
+ * the family key is rate-limited and capped at the redeem endpoint.
+ *
+ * Tagged `t: "enrol"` and verified as such, so a clinician's session cookie
+ * can never be replayed as a family ticket (or the reverse). Long-lived on
+ * purpose — a family keeps syncing progress for months, and the thing that
+ * bounds abuse is the redeem endpoint's per-IP limit and per-code cap, not a
+ * short expiry that would silently stop a real child's data.
+ */
+export type Ticket = { t: "enrol"; code: string; exp: number };
+
+export function signTicket(code: string, ttlDays = 400): string {
+  const payload: Ticket = { t: "enrol", code: String(code || "").toLowerCase(), exp: Date.now() + ttlDays * 86400000 };
+  const body = Buffer.from(JSON.stringify(payload)).toString("base64url");
+  const sig = crypto.createHmac("sha256", SECRET).update(body).digest("base64url");
+  return body + "." + sig;
+}
+
+export function verifyTicket(token: string | undefined | null, code: string): boolean {
+  if (!token || token.indexOf(".") < 0) return false;
+  const [body, sig] = token.split(".");
+  if (!body || !sig) return false;
+  const expected = crypto.createHmac("sha256", SECRET).update(body).digest("base64url");
+  const a = Buffer.from(sig), b = Buffer.from(expected);
+  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return false;
+  try {
+    const t = JSON.parse(Buffer.from(body, "base64url").toString()) as Ticket;
+    if (t.t !== "enrol") return false;                       // not a session cookie
+    if (!t.exp || Date.now() > t.exp) return false;
+    return safeEqualStr(String(t.code || ""), String(code || "").toLowerCase());
+  } catch {
+    return false;
+  }
+}
+
 export function readSession(req: Request): Session | null {
   const cookie = req.headers.get("cookie") || "";
   const m = cookie.match(/(?:^|;\s*)slp_session=([^;]+)/);

@@ -17,3 +17,4 @@ tsconfig.tsbuildinfo
 
 # Local QA / scratch tooling (screenshots, smoke tests) — never ship
 scratchpad/
+SONA_BUNDLE.md

@@ -209,6 +209,42 @@ ok("free mode: the SLP connect card is still offered (tracking, not unlocking)",
 await plain.close();
 
 ok("no pageerrors", errs.length === 0, errs.join(" | "));
+// ── the QA seam must never brick a real family ──
+// It lived in localStorage, so one stray ?paid=1 paywalled that device forever
+// in a free app, with the only escape a parameter nobody could know about.
+{
+  const ctx = await browser.newContext();
+  const pg = await ctx.newPage();
+  await pg.goto("http://localhost:8147/today.html");
+  const healed = await pg.evaluate(() => {
+    localStorage.setItem("sona.paidui", "1");          // exactly what got stuck
+    const free = Sona.isFree();
+    return { free, gated: Sona.gated(), leftover: localStorage.getItem("sona.paidui") };
+  });
+  ok("a device stuck on the old sticky flag heals itself", healed.free === true && healed.gated === false, JSON.stringify(healed));
+  ok("…and the stale flag is cleared, not just ignored", healed.leftover === null, String(healed.leftover));
+  await ctx.close();
+}
+
+// ── a family whose voiceOn was turned off before SET1 is not silent forever ──
+// SET1 removed the "Coach speaks out loud" checkbox. Nothing left could set the
+// flag back to true, so Echo stopped talking with no control to press.
+{
+  const ctx = await browser.newContext();
+  const pg = await ctx.newPage();
+  await pg.goto("http://localhost:8147/today.html");
+  const r = await pg.evaluate(() => {
+    localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Mia", childAge: "7", focusSounds: ["R"], onboarded: true, voiceOn: false, soundOn: false, volume: 0.8 }));
+    const healed = Sona.getProfile();
+    localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Mia", onboarded: true, voiceOn: false, soundOn: false, volume: 0 }));
+    const muted = Sona.getProfile();
+    return { voice: healed.voiceOn, sound: healed.soundOn, mutedVoice: muted.voiceOn };
+  });
+  ok("an audible volume un-silences Echo", r.voice === true && r.sound === true, JSON.stringify(r));
+  ok("…but a deliberate mute is still respected", r.mutedVoice === false, JSON.stringify(r));
+  await ctx.close();
+}
+
 await browser.close(); srv.close();
 console.log(fails ? fails + " FAILURES" : "ALL GREEN");
 process.exit(fails ? 1 : 0);
