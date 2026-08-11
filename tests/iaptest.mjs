@@ -4,10 +4,8 @@
 // Restore + Terms/Privacy links and full auto-renew terms; purchase →
 // unlock on the "full" entitlement, restore → unlock, and today.html must
 // quiet-sync entitlements on load. Web (no bridge) keeps the Stripe picker.
-// SONA IS FREE (FREE_MODE on): no purchase UI anywhere and NOTHING gates —
-// that is the shipped default, asserted at the bottom. The paid rails are kept
-// alive and exercised through the ?paid=1 QA seam so they can't rot while free
-// mode ships; flipping FREE_MODE back is then a one-line change, not a rebuild.
+// PRICING IS LIVE (FREE_MODE off): the paid rails are the default, the trial
+// gate is honest on every platform, and founding families never gate.
 import { createServer } from "http";
 import { readFileSync, existsSync } from "fs";
 import { chromium, ROOT, launchOpts } from "./_env.mjs";
@@ -54,12 +52,12 @@ await page.addInitScript(() => {
       },
     },
   };
-  localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Milo", focusSounds: ["R"], onboarded: true }));
+  localStorage.setItem("sona.freeera.v1","post"); localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Milo", focusSounds: ["R"], onboarded: true }));
   sessionStorage.setItem("sona.gate.v1", String(Date.now()));
 });
 
 // ── native subscribe: Apple paywall only, all required furniture ──
-await page.goto("http://localhost:8147/subscribe.html?paid=1"); await page.waitForTimeout(900);
+await page.goto("http://localhost:8147/subscribe.html"); await page.waitForTimeout(900);
 let t = await page.evaluate(() => ({
   iap: document.getElementById("iapCard").style.display,
   pick: document.getElementById("pickCard").style.display,
@@ -95,7 +93,7 @@ ok("paywall dismisses on success", t.card === "none");
 
 // ── the monthly button buys the MONTHLY product ──
 await page.evaluate(() => { localStorage.removeItem("sona.sub.v1"); localStorage.setItem("__iapEntitled", "0"); });
-await page.goto("http://localhost:8147/subscribe.html?paid=1"); await page.waitForTimeout(900);
+await page.goto("http://localhost:8147/subscribe.html"); await page.waitForTimeout(900);
 t = await page.evaluate(() => {
   window.__bought = [];
   const P = window.Capacitor.Plugins.Purchases;
@@ -112,7 +110,7 @@ ok("monthly purchase unlocks too", t.sub.active === true);
 
 // ── restore path ──
 await page.evaluate(() => { localStorage.removeItem("sona.sub.v1"); localStorage.setItem("__iapEntitled", "0"); });
-await page.goto("http://localhost:8147/subscribe.html?paid=1"); await page.waitForTimeout(900);
+await page.goto("http://localhost:8147/subscribe.html"); await page.waitForTimeout(900);
 await page.evaluate(() => document.getElementById("iapRestore").click());
 await page.waitForTimeout(600);
 t = await page.evaluate(() => ({ n: window.__iap.restores, sub: JSON.parse(localStorage.getItem("sona.sub.v1") || "{}"), msg: document.getElementById("iapMsg").textContent }));
@@ -120,7 +118,7 @@ ok("restore unlocks + confirms", t.n === 1 && t.sub.active === true && /Restored
 
 // ── web-purchase hand-off: paired Stripe sub in the shell = NO paywall ──
 await page.evaluate(() => { localStorage.setItem("__iapEntitled", "0"); localStorage.setItem("sona.sub.v1", JSON.stringify({ active: true, source: "stripe", since: Date.now() })); });
-await page.goto("http://localhost:8147/subscribe.html?paid=1"); await page.waitForTimeout(900);
+await page.goto("http://localhost:8147/subscribe.html"); await page.waitForTimeout(900);
 t = await page.evaluate(() => ({
   iap: document.getElementById("iapCard").style.display,
   pick: document.getElementById("pickCard").style.display,
@@ -144,10 +142,10 @@ ok("today quiet-syncs the entitlement in the shell", t.active === true && t.sour
 // ── web (no bridge): Stripe picker untouched ──
 const web = await browser.newPage({ viewport: { width: 390, height: 844 } });
 await web.addInitScript(() => {
-  localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Milo", focusSounds: ["R"], onboarded: true, earlyAdopter: false }));
+  localStorage.setItem("sona.freeera.v1","post"); localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Milo", focusSounds: ["R"], onboarded: true, earlyAdopter: false }));
   sessionStorage.setItem("sona.gate.v1", String(Date.now()));
 });
-await web.goto("http://localhost:8147/subscribe.html?paid=1"); await web.waitForTimeout(800);
+await web.goto("http://localhost:8147/subscribe.html"); await web.waitForTimeout(800);
 t = await web.evaluate(() => ({ iap: document.getElementById("iapCard").style.display, pick: document.getElementById("pickCard").style.display }));
 ok("web keeps Stripe picker, no Apple card", t.iap !== "block" && t.pick === "block");
 t = await web.evaluate(() => ({ body: document.getElementById("pickCard").innerText }));
@@ -155,94 +153,87 @@ ok("web picker states both plans honestly",
   /\$59\.99/.test(t.body) && /3 DAYS FREE/i.test(t.body) && /\$9\.99/.test(t.body) && /billed today, no trial/i.test(t.body), t.body.slice(0, 200));
 await web.close();
 
-// ── SONA IS FREE: FREE_MODE on, and the rails survive behind the flag ──
+// ── PRICING IS LIVE: FREE_MODE off, 3-day trial, the gate is honest ──
 {
   const sona = readFileSync(ROOT + "/sona.js", "utf8");
-  ok("FREE_MODE is ON — Sona is free for everyone", /const FREE_MODE = true;/.test(sona));
-  ok("gated() short-circuits on isFree() before anything else",
-    /function gated\(\) \{\s*if \(isFree\(\)\) return false;/.test(sona.replace(/\n/g, " ").replace(/\s+/g, " "))
-    || /if \(isFree\(\)\) return false;/.test(sona),
-    "no kid page may ever bounce to a price screen");
-  ok("the QA seam still exists so the paid rails stay testable",
-    /sona\.paidui/.test(sona) && /q\.get\("paid"\)/.test(sona));
-  // the rails themselves must still be present — free mode is a flag, not a demolition
-  ok("the Apple rail is intact behind the flag", /IAP_PRODUCTS/.test(sona) && /iapPurchase/.test(sona));
-  const checkout = readFileSync(ROOT + "/../app/api/checkout/route.ts", "utf8");
-  ok("the Stripe rail is intact behind the flag", /trial_period_days/.test(checkout) && /PLANS/.test(checkout));
+  ok("FREE_MODE is off", /const FREE_MODE = false;/.test(sona));
+  ok("the trial is 3 days", /TRIAL_DAYS = 3/.test(sona));
+  ok("the native shell gates like the web (old bypass gone)",
+    !/if \(isNativeApp\(\)\) return false;/.test(sona),
+    "the never-gate line predates the IAP rail — it made the App Store build free forever");
+  ok("founding/SLP families never gate",
+    /earlyAdopterAnyKid\(\)\) return false/.test(sona.replace(/\s+/g, " ")),
+    "the free-forever promise IS the SLP channel");
+  ok("the founding grant belongs to the HOUSEHOLD, not one child",
+    /function earlyAdopterAnyKid[\s\S]{0,420}PKEY \+ "@" \+ slot/.test(sona),
+    "earlyAdopter lives on the per-kid profile — a referred family's second child was paywalled");
+  // the practice doors gate at load; trial.html routes the shell to Apple
+  for (const pg of ["charge.html", "arcade-feed.html", "story.html"]) {
+    const src = readFileSync(ROOT + "/" + pg, "utf8");
+    ok(pg + " gates at page load", /Sona\.gated\(\)/.test(src) && /trial\.html/.test(src));
+  }
   const trial = readFileSync(ROOT + "/trial.html", "utf8");
-  ok("a bookmarked trial page never shows a family a price while free",
-    /isFree\(\)\) location\.replace\("\/today\.html"\)/.test(trial));
+  ok("trial.html routes the shell to the Apple paywall, not back home",
+    /location\.replace\("\/subscribe\.html"\)/.test(trial),
+    "routing natives to today.html made an infinite gate loop");
+  ok("trial page states live prices", /\$59\.99/.test(trial) && /\$9\.99/.test(trial) && /3 days free/.test(trial));
 }
 
-// ── nothing gates: a month-dead trial still plays, on web AND in the shell ──
+// ── an expired trial actually locks practice; a founding family sails through ──
 const gatePg = await browser.newPage({ viewport: { width: 390, height: 844 } });
 await gatePg.addInitScript(() => {
+  // seed-once: init scripts re-run on every navigation and would overwrite the
+  // earlyAdopter flag the second half of this test sets
   if (!localStorage.getItem("sona.profile.v1")) {
-    localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Milo", childAge: "7", focusSounds: ["R"], onboarded: true }));
-    localStorage.setItem("sona.trial.v1", JSON.stringify({ start: Date.now() - 40 * 86400000, days: 3 }));
+    localStorage.setItem("sona.freeera.v1","post"); localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Milo", childAge: "7", focusSounds: ["R"], onboarded: true }));
+    localStorage.setItem("sona.trial.v1", JSON.stringify({ start: Date.now() - 4 * 86400000, days: 3 }));
     localStorage.setItem("sona.micok", "1");
   }
 });
 await gatePg.goto("http://localhost:8147/charge.html?game=arcade-slice.html"); await gatePg.waitForTimeout(700);
-ok("a month-dead trial never blocks practice (free for everyone)", !/trial\.html/.test(gatePg.url()), gatePg.url());
-const freeUi = await gatePg.evaluate(() => ({ free: Sona.isFree(), gated: Sona.gated() }));
-ok("isFree() true and gated() false with no credential of any kind",
-  freeUi.free === true && freeUi.gated === false, JSON.stringify(freeUi));
+ok("expired trial bounces charge.html to the trial page", /trial\.html/.test(gatePg.url()), gatePg.url());
+await gatePg.evaluate(() => { const p = JSON.parse(localStorage.getItem("sona.profile.v1")); p.earlyAdopter = true; localStorage.setItem("sona.freeera.v1","post"); localStorage.setItem("sona.profile.v1", JSON.stringify(p)); });
+await gatePg.goto("http://localhost:8147/charge.html?game=arcade-slice.html"); await gatePg.waitForTimeout(700);
+ok("a founding family with the same expired trial is never locked", !/trial\.html/.test(gatePg.url()), gatePg.url());
 await gatePg.close();
 
-// the plan screen with NO QA seam shows no purchase UI at all
-const plain = await browser.newPage({ viewport: { width: 390, height: 844 } });
-await plain.addInitScript(() => {
-  localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Milo", focusSounds: ["R"], onboarded: true }));
-  sessionStorage.setItem("sona.gate.v1", String(Date.now()));
-});
-await plain.goto("http://localhost:8147/subscribe.html"); await plain.waitForTimeout(800);
-const pf = await plain.evaluate(() => ({
-  iap: document.getElementById("iapCard").style.display,
-  pick: document.getElementById("pickCard").style.display,
-  body: document.body.innerText,
-  slpConnect: !!document.getElementById("slpEntryCard"),
-}));
-ok("free mode: no Apple card, no Stripe picker", pf.iap === "none" && pf.pick === "none");
-ok("free mode: no price anywhere on the plan screen", !/\$\d/.test(pf.body), (pf.body.match(/\$\d[\d.]*/g) || []).join(","));
-ok("free mode: the SLP connect card is still offered (tracking, not unlocking)", pf.slpConnect);
-await plain.close();
-
 ok("no pageerrors", errs.length === 0, errs.join(" | "));
-// ── the QA seam must never brick a real family ──
-// It lived in localStorage, so one stray ?paid=1 paywalled that device forever
-// in a free app, with the only escape a parameter nobody could know about.
+// ── THE FREE-ERA PROMISE ──────────────────────────────────────────────────
+// Sona shipped free, then priced. CLAUDE.md commits to this in writing:
+// anyone who used Sona while it was free keeps it free. If this ever breaks,
+// it breaks a promise to real families, so it is pinned here.
 {
-  const ctx = await browser.newContext();
-  const pg = await ctx.newPage();
-  await pg.goto("http://localhost:8147/today.html");
-  const healed = await pg.evaluate(() => {
-    localStorage.setItem("sona.paidui", "1");          // exactly what got stuck
-    const free = Sona.isFree();
-    return { free, gated: Sona.gated(), leftover: localStorage.getItem("sona.paidui") };
+  // a family already on the app when the paid build first loads
+  const ctxA = await browser.newContext();
+  const pgA = await ctxA.newPage();
+  await pgA.goto("http://localhost:8147/today.html");   // sona.js seeds nothing yet
+  const before = await pgA.evaluate(() => {
+    // rewind: pretend this device predates pricing — onboarded, never judged
+    localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Mia", childAge: "7", focusSounds: ["R"], onboarded: true }));
+    localStorage.removeItem("sona.freeera.v1");
+    return true;
   });
-  ok("a device stuck on the old sticky flag heals itself", healed.free === true && healed.gated === false, JSON.stringify(healed));
-  ok("…and the stale flag is cleared, not just ignored", healed.leftover === null, String(healed.leftover));
-  await ctx.close();
-}
+  await pgA.reload(); await pgA.waitForTimeout(500);
+  const grand = await pgA.evaluate(() => {
+    localStorage.setItem(Sona.kkey("sona.trial.v1"), JSON.stringify({ start: Date.now() - 365 * 86400000, days: 3 }));
+    return { stamp: localStorage.getItem("sona.freeera.v1"), early: Sona.getProfile().earlyAdopter, gated: Sona.gated() };
+  });
+  ok("a free-era family is grandfathered on the first paid load", before && grand.stamp === "grandfathered", JSON.stringify(grand));
+  ok("…and is never gated, a year after their trial would have died", grand.gated === false, JSON.stringify(grand));
+  await ctxA.close();
 
-// ── a family whose voiceOn was turned off before SET1 is not silent forever ──
-// SET1 removed the "Coach speaks out loud" checkbox. Nothing left could set the
-// flag back to true, so Echo stopped talking with no control to press.
-{
-  const ctx = await browser.newContext();
-  const pg = await ctx.newPage();
-  await pg.goto("http://localhost:8147/today.html");
-  const r = await pg.evaluate(() => {
-    localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Mia", childAge: "7", focusSounds: ["R"], onboarded: true, voiceOn: false, soundOn: false, volume: 0.8 }));
-    const healed = Sona.getProfile();
-    localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Mia", onboarded: true, voiceOn: false, soundOn: false, volume: 0 }));
-    const muted = Sona.getProfile();
-    return { voice: healed.voiceOn, sound: healed.soundOn, mutedVoice: muted.voiceOn };
+  // a family arriving after the flip
+  const ctxB = await browser.newContext();
+  const pgB = await ctxB.newPage();
+  await pgB.goto("http://localhost:8147/today.html"); await pgB.waitForTimeout(400);
+  const fresh = await pgB.evaluate(() => {
+    Sona.saveProfile({ childName: "New", childAge: "7", focusSounds: ["R"], onboarded: true });
+    localStorage.setItem(Sona.kkey("sona.trial.v1"), JSON.stringify({ start: Date.now() - 40 * 86400000, days: 3 }));
+    return { stamp: localStorage.getItem("sona.freeera.v1"), early: Sona.getProfile().earlyAdopter, gated: Sona.gated() };
   });
-  ok("an audible volume un-silences Echo", r.voice === true && r.sound === true, JSON.stringify(r));
-  ok("…but a deliberate mute is still respected", r.mutedVoice === false, JSON.stringify(r));
-  await ctx.close();
+  ok("a family who arrives after the flip is NOT grandfathered", fresh.stamp === "post" && !fresh.early, JSON.stringify(fresh));
+  ok("…and their expired trial does gate", fresh.gated === true, JSON.stringify(fresh));
+  await ctxB.close();
 }
 
 await browser.close(); srv.close();

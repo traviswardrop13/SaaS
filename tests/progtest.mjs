@@ -31,7 +31,7 @@ const ctx = await browser.newContext({ permissions: ["microphone"], viewport: { 
 const page = await ctx.newPage();
 await page.addInitScript(() => {
   navigator.mediaDevices.getUserMedia = () => Promise.resolve(new MediaStream());
-  if (!localStorage.getItem("sona.profile.v1")) localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Milo", focusSounds: ["R", "S"] }));
+  if (!localStorage.getItem("sona.profile.v1")) localStorage.setItem("sona.freeera.v1","post"); localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Milo", focusSounds: ["R", "S"] }));
 });
 let fails = 0;
 const ok = (n, p) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL ") + n); };
@@ -317,7 +317,7 @@ ok("?slp= link sticks (uppercased)", t === "DRSMITH22");
 await page.evaluate(() => {
   localStorage.removeItem("sona.slp");
   const p = JSON.parse(localStorage.getItem("sona.profile.v1")); p.earlyAdopter = false; delete p.slpCode;
-  localStorage.setItem("sona.profile.v1", JSON.stringify(p));
+  localStorage.setItem("sona.freeera.v1","post"); localStorage.setItem("sona.profile.v1", JSON.stringify(p));
   sessionStorage.setItem("sona.gate.v1", String(Date.now()));
 });
 await page.goto("http://localhost:8131/subscribe.html?paid=1"); await page.waitForTimeout(700);
@@ -404,11 +404,27 @@ ok("proof strip: named SLP credential above the plan",
   await page.evaluate(() => { localStorage.removeItem("sona.outcomes.v1"); localStorage.removeItem("sona.rateask.v1"); });
 }
 
-// founding family keeps the free story
-await page.evaluate(() => { const p = JSON.parse(localStorage.getItem("sona.profile.v1")); p.earlyAdopter = true; localStorage.setItem("sona.profile.v1", JSON.stringify(p)); });
-await page.goto("http://localhost:8131/subscribe.html?paid=1"); await page.waitForTimeout(700);
-t = await page.evaluate(() => ({ pick: document.getElementById("pickCard").style.display, founding: document.getElementById("foundingCard").style.display }));
-ok("founding family keeps the free story", t.pick !== "block" && t.founding !== "none");
+// A founding / free-era family keeps the free story on the plan page. Run in a
+// FRESH context: four hundred lines of prior mutations in this file leave the
+// shared one in a state that has nothing to do with what's being asserted.
+{
+  const fctx = await browser.newContext();
+  const fpg = await fctx.newPage();
+  await fpg.goto("http://localhost:8131/today.html");
+  await fpg.evaluate(() => {
+    localStorage.setItem("sona.freeera.v1", "post");
+    localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Milo", childAge: "7", focusSounds: ["R"], onboarded: true, earlyAdopter: true }));
+    try { Sona.gateVerify(); } catch (e) {}
+  });
+  await fpg.goto("http://localhost:8131/subscribe.html"); await fpg.waitForTimeout(800);
+  const f = await fpg.evaluate(() => ({
+    early: Sona.getProfile().earlyAdopter,
+    pick: document.getElementById("pickCard").style.display,
+    founding: document.getElementById("foundingCard").style.display,
+  }));
+  ok("founding family keeps the free story", f.early === true && f.pick !== "block" && f.founding !== "none");
+  await fctx.close();
+}
 
 // ── the session CLIMBS, and the header agrees with the level ──
 // "Round 3 of 5" handed a child a phrase: the header read today's ring while the

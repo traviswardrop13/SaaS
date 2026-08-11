@@ -240,6 +240,29 @@
     return p;
   }
 
+  // THE FREE-ERA PROMISE. Sona shipped free, then priced. Every family already
+  // on the app when the paid build first loads came in under that promise and
+  // keeps it — for good. Detected structurally rather than by date: if this
+  // device was ALREADY onboarded the first time a paid build ran here, it
+  // predates pricing. Stamped once, so a family who signs up after the flip is
+  // never caught by it, and a later run can never revoke a grant already made.
+  const GFKEY = "sona.freeera.v1";
+  function _grandfatherFreeEra() {
+    try {
+      if (FREE_MODE) return;                        // nothing to grandfather yet
+      if (localStorage.getItem(GFKEY)) return;      // this device was already judged
+      const raw = localStorage.getItem(PKEY);
+      let pr = null;
+      try { pr = JSON.parse(raw || "null"); } catch (e) { pr = null; }
+      const pre = !!(pr && (pr.onboarded || pr.childName));
+      localStorage.setItem(GFKEY, pre ? "grandfathered" : "post");
+      if (pre) {
+        pr.earlyAdopter = true; pr.freeEra = true;
+        localStorage.setItem(PKEY, JSON.stringify(pr));
+      }
+    } catch (e) {}
+  }
+
   function getProfile() {
     const p = Object.assign(clone(DEFAULT_PROFILE), load(PKEY, {}));
     // migrate old/empty default voices (Jessica, Will, and the prior Leo) to the current voice
@@ -1849,18 +1872,15 @@
   // NOTE: this product id is already App Store-approved; the price lives in
   // App Store Connect, and the paywall renders whatever ASC reports.
   // ── FREE MODE ──────────────────────────────────────────────────────────
-  // ON: Sona is free for everyone. No paywall, no trial, no plan.
+  // OFF: pricing is live — $9.99/mo billed at purchase with NO trial, or
+  // $59.99/yr after a 3-day free trial.
   //
-  // ONE switch, honoured by every purchase surface — gated() short-circuits
-  // here before it looks at anything else, so no kid page can bounce to a
-  // price screen. The Stripe and Apple rails stay built and TESTED behind the
-  // flag (?paid=1 / sona.paidui reveals them for QA), so turning pricing back
-  // on is this line and nothing else.
-  //
-  // The product has to be good before it can be worth anything, and a paywall
-  // pulls the build toward conversion plumbing and away from the therapy.
-  // Anyone who uses Sona while it is free keeps it free — a promise, not a
-  // growth tactic.
+  // ONE switch, honoured by every purchase surface. Four cohorts stay free
+  // regardless of it: SLP-referred families (the ?slp= credential — that
+  // promise IS the SLP channel), pilots, founders, and every family who was
+  // already using Sona while it was free. That last group is grandfathered by
+  // _grandfatherFreeEra(); it is a promise to those families, not a growth
+  // tactic, and it is not up for quiet reinterpretation.
   // Recorded human model clips (/coach/say/<SOUND>[-demo].mp3) are Rachel's own
   // voice. OFF everywhere until a non-Rachel set exists. This MUST live here,
   // not per-page: charge.html gated it locally and coach-call.html went on
@@ -1883,7 +1903,7 @@
   const HUMAN_CLIPS = false;
   function humanClipsOn() { return HUMAN_CLIPS; }
 
-  const FREE_MODE = true;
+  const FREE_MODE = false;
   // QA seam: ?paid=1 (or the sticky sona.paidui flag) reveals the purchase
   // rails on this device so the paid path stays exercisable — and TESTED —
   // while free mode ships. It only controls VISIBILITY; it can't unlock
@@ -2094,6 +2114,7 @@
     };
     try { if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", debugBox); else debugBox(); } catch (e) {}
   }
+  try { _grandfatherFreeEra(); } catch (e) {}
   try { installDebug(); } catch (e) {}
 
   global.Sona = { pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, ladderContent, FREE_MODE, isFree, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, storyRead, markStoryRead, dailyGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, gated, gateVerify, gateOk, requireGate, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repsBeacon, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES };
