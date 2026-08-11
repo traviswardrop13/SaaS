@@ -1076,6 +1076,11 @@
     }).then((r) => r.json()).then((j) => {
       if (j && j.ok && j.valid) {
         try { localStorage.setItem("sona.slpok", code.toUpperCase()); localStorage.setItem("sona.slpunlock", "1"); } catch (e) {}
+        // The enrolment ticket is this device's proof that it passed code+key.
+        // /api/pilot refuses a roster write without it, which is what stops
+        // anyone who merely knows the code from inventing children on a real
+        // clinician's dashboard.
+        try { if (j.ticket) localStorage.setItem("sona.slpticket", String(j.ticket)); } catch (e) {}
         // a family that already finished onboarding gets patched in place —
         // the link can arrive after setup (e.g. re-sent by the SLP)
         try { const pr = getProfile(); if (pr.onboarded || pr.childName) saveProfile({ earlyAdopter: true, slpCode: code.toUpperCase() }); } catch (e) {}
@@ -1976,6 +1981,11 @@
         consentAt: pilotInfo().consentAt || "",
         at: new Date().toISOString(),
       };
+      // No ticket, no write. A device that never passed the credential check
+      // has nothing to say about a clinician's caseload.
+      let ticket = ""; try { ticket = localStorage.getItem("sona.slpticket") || ""; } catch (e) {}
+      if (!ticket) return;
+      payload.ticket = ticket;
       fetch("/api/pilot", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload), keepalive: true }).catch(function () {});
     } catch (e) {}
   }

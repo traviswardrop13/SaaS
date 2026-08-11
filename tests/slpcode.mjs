@@ -12,6 +12,7 @@ import { chromium, ROOT, launchOpts } from "./_env.mjs";
 const MIME = { html: "text/html", js: "text/javascript", svg: "image/svg+xml", css: "text/css", png: "image/png", webp: "image/webp" };
 const CRED = { code: "rachel-k4", key: "RACHELKEY", name: "Rachel W" };
 let redeemCalls = 0;
+const pilotPosts = [];
 let authRequests = 0;
 const srv = createServer((req, res) => {
   const u = new URL(req.url, "http://x");
@@ -26,8 +27,14 @@ const srv = createServer((req, res) => {
       const key = String(j.key || "").trim().toUpperCase();
       const valid = code === CRED.code && key === CRED.key;
       res.writeHead(200, { "content-type": "application/json" });
-      res.end(JSON.stringify({ ok: true, valid, name: valid ? CRED.name : undefined }));
+      res.end(JSON.stringify({ ok: true, valid, name: valid ? CRED.name : undefined, ticket: valid ? "TESTTICKET" : undefined }));
     });
+    return;
+  }
+  if (u.pathname === "/api/pilot" && req.method === "POST") {
+    let body = "";
+    req.on("data", (c) => (body += c));
+    req.on("end", () => { try { pilotPosts.push(JSON.parse(body)); } catch {} res.writeHead(200, { "content-type": "application/json" }); res.end(JSON.stringify({ ok: true })); });
     return;
   }
   if (u.pathname === "/api/slp/auth/request" && req.method === "POST") {
@@ -383,6 +390,43 @@ const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL 
   await ctx.close();
 }
 
+// ── 4i. a roster write requires the enrolment ticket ──
+// /api/pilot used to accept any POST that named a code. The code travels in
+// share links and is derived from the clinician's email stem, so anyone who
+// had seen one could invent children, outcomes and streaks and watch them
+// appear on a real therapist's dashboard as clinical fact.
+{
+  const ctx = await browser.newContext();
+  const pg = await ctx.newPage();
+  pilotPosts.length = 0;
+  await pg.goto("http://localhost:8155/join.html?slp=rachel-k4&k=RACHELKEY");
+  await pg.waitForTimeout(900);
+  const held = await pg.evaluate(() => localStorage.getItem("sona.slpticket"));
+  ok("a verified redeem hands the device an enrolment ticket", held === "TESTTICKET", String(held));
+  await pg.evaluate(() => document.getElementById("jYes").click());
+  await pg.waitForTimeout(700);
+  ok("the enrolment write carries the ticket",
+    pilotPosts.length > 0 && pilotPosts.every((b) => b.ticket === "TESTTICKET"), JSON.stringify(pilotPosts.map((b) => b.ticket)));
+
+  // …and a device that never passed the credential check writes nothing
+  const ctx2 = await browser.newContext();
+  const pg2 = await ctx2.newPage();
+  pilotPosts.length = 0;
+  await pg2.goto("http://localhost:8155/today.html");
+  const forged = await pg2.evaluate(async () => {
+    Sona.saveProfile({ childName: "Ghost", childAge: "7", focusSounds: ["R"], onboarded: true });
+    localStorage.removeItem("sona.slpticket");
+    Sona.startPilot("RACHEL-K4");          // knows the code, has no ticket
+    Sona.sendProgress("enroll");
+    await new Promise((r) => setTimeout(r, 400));
+    return true;
+  });
+  await pg2.waitForTimeout(500);
+  ok("knowing the code alone writes nothing to the roster", forged && pilotPosts.length === 0, JSON.stringify(pilotPosts));
+  await ctx2.close();
+  await ctx.close();
+}
+
 // ── 5. founder access: the owners skip the paywall on any device ──
 {
   const pg = await (await browser.newContext()).newPage();
@@ -455,6 +499,15 @@ const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL 
   ok("a backup can never carry entitlement",
     /const NO_IMPORT = \[/.test(sona) && /sona\.sub\.v1/.test(sona) && /delete p\.earlyAdopter/.test(sona),
     "importData wrote any sona.* key verbatim — a backup code was a paste-in paywall bypass");
+  const pilotSrc = readFileSync(ROOT + "/../app/api/pilot/route.ts", "utf8");
+  ok("the roster route authenticates the write", /verifyTicket\(ticket, code\)/.test(pilotSrc) && /status: 401/.test(pilotSrc),
+    "any POST that named a code could invent a child on a real clinician's dashboard");
+  ok("the roster route is rate limited", /rateLimit\(req/.test(pilotSrc));
+  ok("a leaked credential can't invent a thousand children", /ROSTER_CAP/.test(pilotSrc) && /HEXISTS/.test(pilotSrc),
+    "an UPDATE to a known child must still pass, or the cap freezes a real family");
+  const authSrc = readFileSync(ROOT + "/../lib/slpAuth.ts", "utf8");
+  ok("a clinician's session cookie can't be replayed as a family ticket",
+    /t !== "enrol"/.test(authSrc) && /timingSafeEqual/.test(authSrc));
   ok("gated() honors the device-wide SLP unlock",
     /if \(slpVerified\(\)\) return false;/.test(sona));
   const ob = readFileSync(ROOT + "/onboarding.html", "utf8");

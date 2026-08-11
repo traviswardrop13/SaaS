@@ -1,13 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
+import { rateLimit } from "@/lib/rateLimit";
+import { verifyTicket } from "@/lib/slpAuth";
 
 /**
- * Pilot outcome capture — receives a child's (consented) practice progress and:
- *   1) forwards it to the founder's collector (PILOT_WEBHOOK_URL || LEAD_WEBHOOK_URL), and
- *   2) upserts it into a per-SLP roster store (Vercel KV / Upstash) so the SLP
- *      master dashboard can show each of their families' progress.
+ * Pilot outcome capture — receives a child's CONSENTED practice progress and
+ * upserts it into that clinician's roster (slp:<code> in Vercel KV / Upstash),
+ * which is the only destination.
  *
- * Both are best-effort and degrade gracefully: with no webhook and no KV store
- * configured, the app still works — you just won't see the data come back yet.
+ * AUTHENTICATED. This used to accept any POST that named a code, so anyone who
+ * had seen a share link — the code is also derived from the clinician's email
+ * stem — could invent children, outcomes and streaks and watch them appear on
+ * a real therapist's dashboard as clinical fact. A write now requires an
+ * enrolment ticket, which /api/slp/redeem mints only after the family key, the
+ * per-code cap and the per-IP limit have all passed.
+ *
+ * Three layers, because a roster is clinical data a clinician will act on:
+ *   - ticket: proves the device passed code+key
+ *   - per-IP rate limit: bounds a leaked credential
+ *   - per-code roster cap: bounds it again, so one leaked link can't invent a
+ *     thousand children even with a valid ticket
  */
 export const runtime = "nodejs";
 
@@ -30,12 +41,23 @@ async function kvCmd(cmd: (string | number)[]): Promise<unknown> {
   }
 }
 
+const ROSTER_CAP = 200; // a real caseload is well under this; a forger is not
+
 export async function POST(req: NextRequest) {
+  const rl = await rateLimit(req, { key: "pilot", limit: 60, windowSec: 3600 });
+  if (rl) return rl;
+
   let body: Record<string, unknown>;
   try {
     body = await req.json();
   } catch {
     return NextResponse.json({ ok: false, error: "Invalid JSON." }, { status: 400 });
+  }
+
+  const code = typeof body.code === "string" ? body.code.slice(0, 48) : "";
+  const ticket = typeof body.ticket === "string" ? body.ticket : (req.headers.get("x-sona-ticket") || "");
+  if (!code || !verifyTicket(ticket, code)) {
+    return NextResponse.json({ ok: false, error: "enrolment not verified" }, { status: 401 });
   }
 
   // The grown-up consented to share this child's practice with THEIR CLINICIAN.
@@ -49,9 +71,18 @@ export async function POST(req: NextRequest) {
   // Upsert into the SLP roster (keyed slp:<code> → { childId: record }).
   try {
     const b = body as Record<string, any>;
-    const code = typeof b.code === "string" ? b.code.slice(0, 48) : "";
     const childId = typeof b.childId === "string" ? b.childId.slice(0, 48) : "";
     if (code && childId) {
+      // Cap the roster. An UPDATE to a child already on it is always allowed —
+      // the cap must never freeze a real family's progress — but a NEW child
+      // beyond the cap is refused.
+      const known = await kvCmd(["HEXISTS", "slp:" + code, childId]);
+      if (known !== 1) {
+        const size = await kvCmd(["HLEN", "slp:" + code]);
+        if (typeof size === "number" && size >= ROSTER_CAP) {
+          return NextResponse.json({ ok: false, error: "roster is full" }, { status: 429 });
+        }
+      }
       const rec = JSON.stringify({
         childId,
         child: b.child || "",
