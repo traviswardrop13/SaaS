@@ -143,7 +143,7 @@
       {s:"R", w:"rabbit", e:"🐰", norm:7},
       {s:"TH",w:"thumb",  e:"👍", norm:7}
     ];
-    var CHILD="", AGE=0, useSpeechAce=false, micStream=null;
+    var CHILD="", AGE=0, micStream=null;
     var results=[]; // {s, got:true/false/null}
 
     /* audio + mic (reused proven pattern) */
@@ -170,7 +170,7 @@
 
     async function scoreWord(item,res){
       if(!res.spoke && !res.transcript && !res.blob) return null; // no attempt
-      if(useSpeechAce && res.blob){ try{ var fd=new FormData(); fd.append("audio",new File([res.blob],"a.webm",{type:res.blob.type||"audio/webm"})); fd.append("text",item.w); fd.append("targetSound",item.s); fd.append("userId","check"); fd.append("mode","full"); var r=await fetch("/api/score",{method:"POST",body:fd}); var j=await r.json(); if(j&&j.ok&&j.rating) return j.rating!=="tryAgain"; }catch(e){} }
+      // No clip leaves the device. The Speech Check is a local listen only.
       if(res.transcript) return matchText(res.transcript,item.w);
       return res.spoke ? true : null; // heard something but can't score -> give benefit of the doubt
     }
@@ -277,7 +277,6 @@
       CHILD=$("cName").value.trim(); AGE=parseInt($("cAge").value,10)||0;
       if(!AGE){ $("cAge").style.borderColor="#e0457b"; return; }
       $("startBtn").disabled=true; $("startBtn").textContent="Starting…";
-      try{ var r=await fetch("/api/score"); var j=await r.json(); useSpeechAce=!!(j&&j.hasKey); }catch(e){ useSpeechAce=false; }
       try{ if(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia) micStream=await navigator.mediaDevices.getUserMedia({audio:true}); }catch(e){ micStream=null; }
       show("sTest"); idx=0; results=[]; runStep();
     };

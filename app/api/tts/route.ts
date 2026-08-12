@@ -173,7 +173,7 @@ export async function POST(req: NextRequest) {
  * GET /api/tts — health check. The books going silent traced back to this
  * route failing with no way to see WHY without digging through Vercel logs
  * (a browser GET just 405'd, since only POST was defined). Mirrors
- * /api/score's shape: reports whether the keys are present WITHOUT ever
+ * Reports whether the keys are present WITHOUT ever
  * echoing them, plus the model/voice actually in use.
  */
 export async function GET() {

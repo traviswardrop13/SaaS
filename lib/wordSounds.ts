@@ -1,23 +1,12 @@
 /**
- * Scoring kid speech from the Web Speech API.
+ * Word ↔ sound matching. Given a word and a target sound, does that word
+ * actually contain the sound, and where?
  *
- * Why this is non-trivial: browser ASR is biased toward real adult-sounding
- * words. It mishears, "corrects," and gives low confidence on short words —
- * exactly the wrong failure modes for kids practicing speech sounds.
- *
- * Strategy:
- *  1. Take ALL alternatives the recognizer returned (up to 5), not just the
- *     top one — the right answer is often buried in slot 2 or 3.
- *  2. Score every alternative against the target word AND any explicit
- *     accepted variants (homophones like "sun" / "son").
- *  3. Award a "target-sound" bonus when the recognized word at least has the
- *     target phoneme in the correct position — this is the speech-therapy
- *     mindset: we care about the sound, not perfect English.
- *  4. Weight by recognizer confidence so low-confidence guesses can't carry
- *     a result by themselves.
- *  5. If we detect a common developmental substitution in the heard speech
- *     (e.g. "wabbit" for "rabbit"), surface a phoneme-specific hint instead
- *     of a generic "try again."
+ * This used to live alongside the SpeechAce scorer. The scorer is gone —
+ * nothing uploads audio any more — but this half never had anything to do with
+ * it: /api/story uses it to pick story words that genuinely practise the
+ * child's sound. Spelling-based and imperfect by design; it chooses content,
+ * it never judges a child.
  */
 
 import type { RecognitionAlternative } from "./speech";
@@ -54,26 +43,7 @@ export type LessonLevel =
   | "phrases"
   | "sentences";
 
-export type ScoreOptions = {
-  target: string;
-  accepts?: string[];
-  targetSound: TargetSound;
-  position: SoundPosition;
-  /** if set, the heard word must begin with this letter cluster to count */
-  blend?: string;
-};
 
-export type ScoreResult = {
-  /** 0..1 combined score */
-  similarity: number;
-  rating: "great" | "ok" | "tryAgain";
-  /** the accepted variant we matched best against */
-  matchedAgainst: string;
-  /** the alternative transcript we ended up scoring as the best */
-  bestHeard: string;
-  /** specific phoneme-level feedback if we detected a known substitution */
-  hint?: string;
-};
 
 function normalize(s: string): string {
   return s
@@ -291,82 +261,4 @@ function scoreOne(
   if (!blendOk) combined = Math.min(combined, 0.6);
 
   return { score: combined, matchedAgainst: bestAgainst };
-}
-
-export function scoreUtterance(
-  alternatives: RecognitionAlternative[],
-  opts: ScoreOptions,
-): ScoreResult {
-  const targets = [opts.target, ...(opts.accepts ?? [])].map(normalize);
-
-  if (alternatives.length === 0) {
-    return {
-      similarity: 0,
-      rating: "tryAgain",
-      matchedAgainst: targets[0] ?? opts.target,
-      bestHeard: "",
-      hint: "I didn't catch that. Tap the mic and try again!",
-    };
-  }
-
-  let best: {
-    score: number;
-    weighted: number;
-    matchedAgainst: string;
-    heard: string;
-  } | null = null;
-
-  for (const alt of alternatives) {
-    const { score, matchedAgainst } = scoreOne(
-      alt.transcript,
-      targets,
-      opts.targetSound,
-      opts.position,
-      opts.blend,
-    );
-    // Confidence floors at 0.4 so a strong word-match with no confidence
-    // still beats noise, but a 1.0 match at high confidence wins.
-    const confidence = Math.max(0.4, alt.confidence || 0);
-    const weighted = score * (0.6 + 0.4 * confidence);
-    if (!best || weighted > best.weighted) {
-      best = {
-        score,
-        weighted,
-        matchedAgainst,
-        heard: alt.transcript,
-      };
-    }
-  }
-
-  const finalScore = best!.score;
-  const rating: ScoreResult["rating"] =
-    finalScore >= 0.8 ? "great" : finalScore >= 0.55 ? "ok" : "tryAgain";
-
-  let hint: string | undefined;
-  if (rating !== "great") {
-    hint = detectSubstitution(best!.heard, opts.targetSound, opts.position);
-    if (!hint && opts.blend) {
-      const heardLc = best!.heard.toLowerCase();
-      const firstLetter = opts.blend[0];
-      // Detect a reduced cluster — e.g. "soon" when target was "spoon".
-      if (heardLc.startsWith(firstLetter) && !heardLc.startsWith(opts.blend)) {
-        hint = `Don't drop a sound — say both letters: ${opts.blend.toUpperCase()}!`;
-      }
-    }
-    if (
-      !hint &&
-      opts.position === "final" &&
-      !hasTargetSound(best!.heard, opts.targetSound, "final")
-    ) {
-      hint = `Don't forget the ${opts.targetSound} sound at the end!`;
-    }
-  }
-
-  return {
-    similarity: finalScore,
-    rating,
-    matchedAgainst: best!.matchedAgainst,
-    bestHeard: best!.heard,
-    hint,
-  };
 }

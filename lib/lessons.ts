@@ -1,4 +1,4 @@
-import type { LessonLevel, SoundPosition, TargetSound } from "./scoring";
+import type { LessonLevel, SoundPosition, TargetSound } from "./wordSounds";
 
 export type Word = {
   /** the target word/syllable/phrase the child should say */

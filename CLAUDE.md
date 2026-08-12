@@ -43,7 +43,11 @@ numbers here does not change what an iPhone shows. Change ASC.
 
 ## Hard rules
 - Merges to main/prod only on Travis's explicit go ("merge").
-- In-game voice detection records/uploads nothing (local loudness only).
+- **No audio ever leaves the device.** There is no cloud scorer: every verdict
+  is decided on the phone from the spectral shape of what was said. One clip a
+  day may be kept in local IndexedDB so a parent can listen back — it is never
+  uploaded. The consent copy says exactly this, and it is true because there is
+  no mechanism to break it, not because a checkbox is off.
 - No silence counted as reps; voice boosts never logged as SLP data.
 - Never rewrite pushed git history. Push after every verified milestone.
 - A child's name never leaves the device to any CRM, ad pixel or analytics
@@ -70,6 +74,11 @@ are enforced in code and pinned by tests — change them only on Rachel's say-so
 - **Nothing in the app is an evaluation.** No grades, no diagnosis, no
   "score" a parent could mistake for an assessment. Parent-facing summaries
   carry the practice-snapshot hedge and Rachel's byline.
+- **What the accuracy number now means — Rachel to confirm.** With the cloud
+  scorer gone, pass/fail comes from an on-device spectral check: it asks "did
+  that sound like this sound", not "was that word correct". Any percentage
+  shown to a parent or an SLP is built on that narrower signal. Rachel decides
+  whether it should still be shown as a percentage, softened, or dropped.
 - **Cueing** — TODO, Rachel to specify. Her highest-value ask was the
   "sssoup" prompt: model the target sound stretched and attached to the word
   rather than saying the word cold. Needs her exact wording and which sounds

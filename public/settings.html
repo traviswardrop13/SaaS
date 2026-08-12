@@ -104,7 +104,6 @@
       <label class="field">Coach voice</label>
       <a class="btn ghost" href="/voices.html" style="width:auto;padding:12px 18px;">🔊&nbsp;&nbsp;Choose coach voice →</a>
 
-      <div class="toggle" style="margin-top:16px;"><input type="checkbox" id="cloudScoring" /><label for="cloudScoring">Honest pronunciation scoring<span class="muted" style="display:block;font-weight:700;font-size:12px;">Practice clips are checked for the target sound. Off = loudness-only practice, no clips sent.</span></label></div>
 
       <div style="margin-top:24px;display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
         <button class="btn" id="save">Save</button>
@@ -221,14 +220,12 @@
     window.addEventListener("pageshow", function (e) { if (e.persisted && window.Sona && Sona.requireGate) Sona.requireGate(); });
     var p = Sona.getProfile();
     var childEl = document.getElementById("childName"),
-        cloudEl = document.getElementById("cloudScoring"),
         volEl = document.getElementById("volume"),
         posEl = document.getElementById("practicePos"),
         wrap = document.getElementById("sounds");
     childEl.value = p.childName || "";
     var ageEl = document.getElementById("childAge"); ageEl.value = p.childAge || "";
     document.getElementById("parentPin").value = p.parentPin || "";
-    cloudEl.checked = p.cloudScoring !== false;
     // profile.volume is a 0-1 gain that 22 pages already multiply into their
     // audio; the slider is just the missing UI for it.
     volEl.value = String(Math.round((p.volume != null ? p.volume : 0.6) * 100));
@@ -285,7 +282,7 @@
       Sona.saveProfile({ mode: pickedMode || "speech", childName: childEl.value.trim(), childAge: ageEl.value,
         parentPin: (document.getElementById("parentPin").value||"").replace(/\D/g,"").slice(0,6),
         volume: vol, voiceOn: vol > 0, soundOn: vol > 0, musicOn: false,
-        cloudScoring: cloudEl.checked, focusArea: "articulation",
+        focusArea: "articulation",
         practicePosition: posEl.value, focusSounds: [].concat(Array.from(sel)) });
       var s = document.getElementById("saved"); s.style.display = "inline"; setTimeout(function () { s.style.display = "none"; }, 1800);
     };
