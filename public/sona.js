@@ -605,6 +605,254 @@
         "Your star leaps out of your coat and races for a gap in the pattern. And that is when you see the other gaps.",
       ],
       hook: "Tomorrow: one star is home. Eleven are still missing." },
+
+    // ── ACT II: THE MISSING ELEVEN (11-20) ───────────────────────────────
+    // Seven of the eleven are recovered here, each rescue its own small
+    // self-contained problem, so a family joining on day 14 is in the middle
+    // of something without being lost. It ends on the reason they fell.
+    { id: "comeback", t: "The Star Comes Back", games: ["glide", "tiles", "run"],
+      open: "Your star is home. It sits in its gap in the sky, blazing away, exactly the right shape for the space it left.",
+      beats: [
+        "You are about to go when it pops straight back out of the gap and lands on your shoulder.",
+        "Echo says that is not how going home works. The star does not appear to care.",
+        "Then you look properly at the sky, and you understand why it came back.",
+        "There are gaps everywhere. Dark shapes where stars should be. You count them twice to be sure.",
+        "Eleven. Eleven stars that fell somewhere and never got back up.",
+        "Pip is already looking down through the open door. Somewhere under all that cloud, eleven lights are waiting.",
+      ],
+      hook: "Tomorrow: the first one fell into a city that never turns its lights off." },
+
+    { id: "lanterns", t: "The Lantern City", games: ["run", "stack", "slice"],
+      open: "You come down out of the clouds over a city made of lanterns. Thousands of them, strung between the rooftops, glowing orange.",
+      beats: [
+        "It is night here, but nobody has noticed. In a city of lanterns, night is just when the lights look nicer.",
+        "Echo asks a pigeon for directions. The pigeon is not helpful. Pigeons rarely are.",
+        "Then Pip pips once, and the two of you see it at the same time.",
+        "One lantern in the middle of the city is far, far too bright. Nobody has thought to ask why.",
+        "It is up at the very top of the tallest post, above all the washing lines and the cats.",
+        "So you start to climb. Twelve floors of ladders and roof tiles, and the light gets whiter the higher you go.",
+      ],
+      hook: "Tomorrow: you reach the top, and the whole city is watching." },
+
+    { id: "longnight", t: "The Longest Night", games: ["tiles", "feed", "glide"],
+      open: "At the top of the post, inside a glass lantern the size of a bathtub, a star is sitting with its arms around its knees.",
+      beats: [
+        "It has been in there so long that it thinks the lantern is the sky.",
+        "The glass is warm. When you speak near it, the star turns its head.",
+        "It will not come out. Everything out there is dark and everything in here is bright, and it is not moving.",
+        "So you sit down on the roof tiles and you talk to it. Not to make it do anything. Just so it is not on its own.",
+        "The glass cools. The star stands up. It comes over to the little door in the side and looks out at you.",
+        "As it steps out, every lantern in the city dims by exactly the same amount, and for the first time in years the people below look up.",
+      ],
+      hook: "Tomorrow: the next one fell somewhere much colder." },
+
+    { id: "ice", t: "Under the Ice", games: ["slice", "run", "stack"],
+      open: "A frozen lake, flat and grey and bigger than the city was. Under your boots you can hear the ice creak.",
+      beats: [
+        "Something down there is glowing green through the ice, about the size of a dinner plate.",
+        "It is not green. It is a star, and the ice is what is making it look that way.",
+        "Echo taps the surface with one claw. The ice is thicker than Echo is tall.",
+        "But your two stars are warm. You lie flat and hold them against the surface, and the ice begins to give.",
+        "A hole opens, no bigger than a plate. The green light comes up through it and turns gold in the air.",
+        "Three stars now. Pip's hood is getting crowded, and Pip is very clear about it.",
+      ],
+      hook: "Tomorrow: a house with an attic, and something in the attic that plays music by itself." },
+
+    { id: "musicbox", t: "The Music Box", games: ["tiles", "stack", "feed"],
+      open: "The house has been empty a long time. The attic ladder comes down when you pull it, and dust falls on all three of you.",
+      beats: [
+        "In the corner, under a sheet, something is playing. Six notes, over and over, very slowly.",
+        "It is a music box. The lid is shut, and the little brass key on the back is turning all by itself.",
+        "Echo lands on the lid and gets carried around in a slow circle, which Echo finds undignified.",
+        "You lift the lid. Inside, where the dancer should be, there is a star going round and round.",
+        "It has been keeping time in here for years. Nobody ever told it how to stop.",
+        "So you learn the six notes and say them back, and on the last one the star steps off the spindle and into your hand.",
+      ],
+      hook: "Tomorrow: an orchard, and a fruit that is far too heavy for its branch." },
+
+    { id: "orchard", t: "The Orchard", games: ["slice", "feed", "glide"],
+      open: "Rows and rows of trees, all the same height, all quiet. Somewhere in the middle, one branch is bent almost to the ground.",
+      beats: [
+        "On the end of it hangs a fruit the size of your head, and it is glowing faintly through the skin.",
+        "Echo tries to eat it. Echo is stopped.",
+        "You cut it down carefully. It is warm in your hands, and heavier than a fruit has any business being.",
+        "Inside there is a star, curled up, fast asleep. It fell in the spring and the tree simply grew around it.",
+        "You wake it the polite way, which is with your voice and not with your hands.",
+        "The branch springs straight the moment the fruit leaves it, and every other tree in the row shivers once, in order, all the way down.",
+      ],
+      hook: "Tomorrow: the sea, and a ferry that only runs for people who ask." },
+
+    { id: "ferry", t: "The Ferry", games: ["stack", "feed", "run"],
+      open: "The road ends at the sea. There is a jetty, and a boat, and a very large creature asleep across the whole of it.",
+      beats: [
+        "It has whiskers like broom handles and it is snoring in a way that moves the water.",
+        "Echo suggests going around. There is no around. There is sea in both directions as far as anybody can see.",
+        "Pip lands on its nose. One eye opens. The eye is the size of a dinner plate and it looks straight at you.",
+        "It is the ferry. It has been the ferry for a very long time, and nobody has asked it for a ride in years.",
+        "You share what is left of your food, and you tell it where you are going and why.",
+        "It slides off the jetty without a word and floats there, waiting, with its back flat like a raft.",
+      ],
+      hook: "Tomorrow: the star you are looking for is at the bottom of the sea." },
+
+    { id: "deep", t: "The Deep", games: ["glide", "slice", "tiles"],
+      open: "Out where the water goes from green to black, the ferry stops and points its nose straight down.",
+      beats: [
+        "Far below, so far it might be your eyes making it up, there is one small light.",
+        "You cannot swim that deep. Nobody can. But your four stars can, and they will not go without you.",
+        "So they make a bubble. Four stars in a ring, warm air between them, and you inside it, going down.",
+        "Kelp closes over the top. Fish you have no names for come to look at you, and then leave again.",
+        "The light gets bigger. It is shut inside a shell the size of a door.",
+        "You say something to the shell, the way you did to the sky door, and it opens without any fuss at all.",
+      ],
+      hook: "Tomorrow: something has been collecting bright things, and it has been busy." },
+
+    { id: "nest", t: "The Nest", games: ["stack", "feed", "glide"],
+      open: "On the cliffs above the beach there is a nest, and the nest is glittering.",
+      beats: [
+        "Bottle caps. Spoons. A watch. A doorknob. And near the middle, two lights that are none of those things.",
+        "Pip goes completely still, the way small birds do when a big bird is somewhere close.",
+        "It lands behind you. It is black and enormous and its head tilts all the way over to look at you.",
+        "It is not angry. It just likes bright things, and two of the brightest things it ever found were lying in a field.",
+        "So you trade. You give it the shiniest thing you are carrying, which is the little brass key off the back of the music box.",
+        "It takes the key, and it lets you take the two stars, and it watches you the whole way down the cliff path.",
+      ],
+      hook: "Tomorrow: you find out why any of them fell in the first place." },
+
+    { id: "thread", t: "The Loose Thread", games: ["tiles", "slice", "run"],
+      open: "Seven stars now. They ride in a loose cloud around your head, and you have stopped being able to count them without help.",
+      beats: [
+        "You are walking back towards the cloud ladder when Echo stops dead in the air.",
+        "Hanging down out of the sky, swaying, there is a single silver thread. It goes up further than you can see.",
+        "You touch it. It hums the same six notes as the music box, and every star you are carrying hums back.",
+        "Echo says the thing you are both thinking. The sky is not a picture. The sky is something somebody made.",
+        "And somewhere up there a thread has come loose, and the stars have been slipping through the gap it left.",
+        "The thread twitches once, all on its own, as though something at the far end of it just noticed you holding on.",
+      ],
+      hook: "Tomorrow: you climb the thread, and you find out who is up there." },
+
+    // ── ACT III: THE SKY LOOM (21-30) ────────────────────────────────────
+    // The last four stars, the reason, and a finale that hands the shuttle to
+    // the child. Chapter 30 closes the season and hooks straight back into
+    // chapter 1, so a family that finishes starts a new fall the next morning.
+    { id: "climb", t: "Following the Thread", games: ["run", "glide", "tiles"],
+      open: "You wrap the thread around your hand and it lifts, gently, the way a kite pulls just before it goes.",
+      beats: [
+        "The ground drops away. The orchard, then the lake, then the lantern city, all of it going small underneath you.",
+        "Pip flies alongside for the first time in the whole journey, which Pip would like noted.",
+        "The stars come too, in a long line behind you, like beads on a string.",
+        "Above the clouds the thread stops being silver and starts being light, and it is warm to hold.",
+        "You go up through the place where the sky door was and out the other side, and there is no other side. There is just more sky.",
+        "The thread ends at a stair. A spiral stair with no building around it, going up into the dark.",
+      ],
+      hook: "Tomorrow: the stair, and what is waiting at the top of it." },
+
+    { id: "stair", t: "The Weaver's Stair", games: ["stack", "run", "glide"],
+      open: "The stair is made of the same silver as the thread, and every step gives a little under your weight, like rope.",
+      beats: [
+        "There is no rail. There is nothing to fall onto either, which Echo points out and immediately regrets pointing out.",
+        "You climb. The stars go on ahead and light three steps at a time.",
+        "Halfway up, you pass a step with a bird's nest on it. Old, empty, and very carefully made.",
+        "Pip looks at that nest for a long moment and does not say anything at all.",
+        "The stair narrows near the top, until it is one step wide and you are going up it sideways.",
+        "Then the dark opens out, and there is a room, and in the room there is a loom the size of a house.",
+      ],
+      hook: "Tomorrow: you meet the person who makes the sky." },
+
+    { id: "weaver", t: "The Weaver", games: ["tiles", "feed", "stack"],
+      open: "She is very old and very small, and she is sitting at the loom with her hands in her lap, not weaving.",
+      beats: [
+        "The cloth on the loom is the night sky. You are seeing it from underneath, which nobody has ever done.",
+        "She says hello without turning around. She says she wondered when somebody would come.",
+        "Echo, for once, has nothing to say. Pip climbs out of your hood and sits on the arm of her chair.",
+        "There is a gap in the weave the size of a door. Around it, threads hang loose in every direction.",
+        "She has not stopped because she is tired, although she is. She has stopped because she cannot do it on her own any more.",
+        "You put your seven stars down on the floor of the room, and the whole place fills up with light.",
+      ],
+      hook: "Tomorrow: she shows you how the sky is made, and why it needs you." },
+
+    { id: "loom", t: "What the Loom Needs", games: ["tiles", "glide", "slice"],
+      open: "She picks up the shuttle and holds it out to you. It is wooden, worn smooth, and lighter than it looks.",
+      beats: [
+        "She says the loom does not run on hands. It never has.",
+        "She sings one note, and a thread pulls itself across the frame and lies down flat.",
+        "That is why the stars go warm when you talk to them. That is why the door opened. That is why the cave lit up.",
+        "The whole sky is woven out of sound, and it has been quiet up here for a very long time.",
+        "Her voice went a while ago. That is the night the thread came loose, and every night since has been a little darker.",
+        "She puts the shuttle into your hand and closes your fingers around it, and she does not say anything else.",
+      ],
+      hook: "Tomorrow: the eighth star, tangled in the loom itself." },
+
+    { id: "tangled", t: "The Eighth Star", games: ["slice", "tiles", "stack"],
+      open: "You find the eighth star before you work out how to weave. It is tangled in the loose threads at the edge of the gap.",
+      beats: [
+        "It has been stuck there since the night it slipped, holding on so it would not fall like the others.",
+        "The threads have grown right around it, the way the orchard tree grew around its fruit.",
+        "You work it free one strand at a time while it hums the six notes at you, over and over, nervously.",
+        "When it comes loose it does not fly off. It stays exactly where it is, because it is already in its own place.",
+        "One star back in the sky, and the smallest patch of the dark shape closes up around it.",
+        "The Weaver laughs, which is a sound like a door that has not been opened in years.",
+      ],
+      hook: "Tomorrow: it gets worse before it gets better." },
+
+    { id: "unravel", t: "The Unravelling", games: ["run", "slice", "glide"],
+      open: "You wake up to a sound like a zip. Along the far edge of the loom, the weave is coming apart on its own.",
+      beats: [
+        "Threads are letting go one after another, faster than anybody could tie them back.",
+        "Through the widening gap you can see the ground, extremely far away, and none of it is cloud.",
+        "Echo goes one way and Pip goes the other and you go straight down the middle, catching threads.",
+        "You get six of them in one fist and it is nowhere near enough. There are hundreds.",
+        "Then the Weaver says your name, and tells you to stop grabbing and start talking.",
+        "So you do. And the threads you speak to stop moving, and hang still, and wait.",
+      ],
+      hook: "Tomorrow: two more stars, in the darkest part of the sky." },
+
+    { id: "dark", t: "The Two in the Dark", games: ["glide", "tiles", "feed"],
+      open: "There is a corner of the sky where three stars fell on the same night, and nothing has ever been put back.",
+      beats: [
+        "It is the darkest place you have ever stood. Darker than the cave, because in the cave there was rock to touch.",
+        "Your stars will not go in. They hang at the edge of it, dimming, like a hand held over a candle.",
+        "So you go in without them, with Pip on your shoulder and Echo somewhere just above your head.",
+        "You find the first one by sound. It has been humming the whole time, very quietly, for a very long while.",
+        "The second one is holding on to the first one and will not let go, so you carry the pair of them together.",
+        "Coming out, you count. Two in your arms. One still missing. And no corner of the world left that you have not looked in.",
+      ],
+      hook: "Tomorrow: the last star, and it is not where anybody looked." },
+
+    { id: "lastone", t: "The Last One", games: ["slice", "feed", "tiles"],
+      open: "You look everywhere for the eleventh star. The Weaver studies the sky from underneath. Echo asks every bird between here and the sea.",
+      beats: [
+        "Nothing. Ten found, one gap left, and not one single idea between the four of you.",
+        "Then Pip flies off without telling anybody, which Pip has never once done, and is gone until morning.",
+        "Pip comes back with a single blade of grass in its beak. Long, green, and slightly scorched at the tip.",
+        "You know that grass. You have sat in that grass. It is the meadow, from the very first night.",
+        "The last star never went anywhere at all. It landed where the first one landed, on the same night, and it has been under the grass ever since, waiting for somebody to come back for it.",
+        "It is small and it is cold, and when you pick it up it fits in one hand, exactly the way the first one did.",
+      ],
+      hook: "Tomorrow: the long climb back up, with all of them at once." },
+
+    { id: "backup", t: "The Long Way Back Up", games: ["stack", "glide", "run"],
+      open: "Ten stars. You have ten stars and one spiral stair, and the stair is one step wide at the top.",
+      beats: [
+        "Echo carries two, badly. Pip carries one and will not be talked out of it.",
+        "The rest go in your coat, in your hood, and in both hands, and you go up sideways the way you did before.",
+        "Halfway, at the step with the old nest on it, you stop to rest and count them all again.",
+        "Pip puts its star down in the nest for a moment, just to see how it looks. It looks very good.",
+        "Then Pip picks it up again, because it is not Pip's star, and there is a sky waiting for it.",
+        "At the top, the Weaver has the loom open and the shuttle ready. She has been up all night clearing the frame.",
+      ],
+      hook: "Tomorrow: every star goes home at once." },
+
+    { id: "mended", t: "The Sky, Mended", games: ["tiles", "stack", "glide"],
+      open: "The gap in the weave is the size of a door, and there are ten stars sitting on the floor of the room waiting to go through it.",
+      beats: [
+        "The Weaver cannot sing it shut. You already knew that. It is the reason you are the one holding the shuttle.",
+        "So you say the first thing that comes into your head, and a thread lies itself flat across the frame.",
+        "Then another. Then another. It is slow, and it is not neat, and it holds.",
+        "One at a time the stars step up into the weave and find their gaps, and one at a time the dark shapes close.",
+        "The last one is the star from the meadow. It waits until the very end. Then it goes up, and the sky is whole.",
+        "From underneath, the new patch does not match. It is brighter than the rest, and rougher, and the Weaver says that is how everybody will know that somebody mended it.",
+      ],
+      hook: "Tomorrow: somewhere a long way off, in a meadow nobody has walked in yet, another star falls out of the sky." },
   ];
   const EPKEY = "sona.episode.v2";        // v2: Season 1 replaced the 8-chapter loop
   function _ep() { const v = load(EPKEY, {}); return { i: (v.i | 0) || 0, day: v.day || "" }; }
