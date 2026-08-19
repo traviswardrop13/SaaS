@@ -456,65 +456,157 @@
   // The prose is sound-agnostic — the practice word still comes from the
   // child's own focus sound — so ONE arc serves all 19 sounds. Writing 19
   // separate arcs would be a content project; this is a week.
+  // ── SEASON 1: THE LONG WAY HOME ────────────────────────────────────────
+  // One chapter a day, in order, told across a season rather than a loop. A
+  // kid who shows up on day 14 is in the middle of something, and knows it.
+  //
+  // Every chapter names the three games it hands over (`games`). They used to
+  // be drawn at random from the deck, which made the day's shape arbitrary:
+  // the river chapter could hand you the flying one and the story stopped
+  // meaning anything. Now the river gives you the one where you place stones
+  // and the ridge gives you the one where you fight the wind, so a game reads
+  // as the next thing that happens rather than an interruption.
+  //
+  // The verbs the six games map to: slice = cut a way through · tiles = echo
+  // a pattern back · stack = build upward · run = chase or escape · glide =
+  // float, rise, fight wind · feed = give something to a creature.
+  //
+  // WRITING RULES, and they are not stylistic:
+  //   - No instruction on HOW to say anything. "Your voice lifts the stone" is
+  //     story; "say it louder", "say it slowly" is a CUE, and cueing is
+  //     Rachel's to specify (CLAUDE.md). The old chapters had "be louder" and
+  //     "say it strong" in the beats, which shipped a clinical decision inside
+  //     a bedtime story.
+  //   - Nothing here is a practice target. Targets come from WORDS/wordsFor().
+  //     A chapter frames the practice; it never sets it.
+  //   - Read aloud by TTS, so: plain punctuation, no markdown, no symbols a
+  //     voice engine reads out as a word.
+  //   - `games` order is CARD order, and the first card is the hero a kid taps
+  //     LET'S GO on. "feed" is the littles game and must never lead a chapter:
+  //     dailyGames() promotes it for under-6s on its own, and an eight-year-old
+  //     opening the day on the toddler game is the regression feedtest catches.
   const EPISODES = [
-    { id: "star", t: "The Star That Fell",
-      open: "A little star fell out of the sky and landed right in the meadow!",
-      beats: ["The star is scared. Your voice makes it glow brighter.",
-              "It glows! But it's still a long way from home.",
-              "The star hums along with you. It likes your voice.",
-              "Almost warm enough to float again…"],
-      hook: "Tomorrow: the star tries to fly — and the wind has other plans." },
-    { id: "river", t: "The River Crossing",
-      open: "The star floats away — and lands on a rock in the middle of the river!",
-      beats: ["Stepping stones! One appears every time you speak up.",
-              "Halfway across. The water is loud — be louder.",
-              "A fish pokes its head up to listen to you.",
-              "One more stone and you've made it…"],
-      hook: "Tomorrow: what's making that sound in the woods?" },
-    { id: "woods", t: "The Whispering Woods",
-      open: "The woods whisper back everything you say. Echo LOVES it here.",
-      beats: ["Say it and the trees say it right back.",
-              "Something small is following you. It's friendly. Probably.",
-              "It's a lost baby owl! It copies your sound.",
-              "The owl knows a shortcut — through the dark cave…"],
-      hook: "Tomorrow: inside the cave. Bring your loudest voice." },
-    { id: "cave", t: "The Cave of Echoes",
-      open: "It's dark. But every sound you make lights the walls up blue.",
-      beats: ["Your voice bounces around and lights the way.",
-              "Cave drawings! Someone else was here long ago.",
-              "The drawings show a door made of clouds.",
-              "There's light up ahead — you're nearly through…"],
-      hook: "Tomorrow: a ladder made of clouds. Yes, really." },
-    { id: "clouds", t: "The Cloud Ladder",
-      open: "Out of the cave and into the sky — a ladder of clouds goes up and up.",
-      beats: ["Each cloud puffs up solid when you use your voice.",
-              "Don't look down! (Echo looked down.)",
-              "A bird gives you a lift to the next one.",
-              "The top is close enough to touch…"],
-      hook: "Tomorrow: the windy ridge, where sounds get carried away." },
-    { id: "ridge", t: "The Windy Ridge",
-      open: "The wind up here is FAST. It steals sounds right out of the air.",
-      beats: ["Say it strong so the wind can't take it.",
-              "The star tucks into your pocket to stay safe.",
-              "The owl flies ahead to scout the way.",
-              "The wind is dropping. Something big is ahead…"],
-      hook: "Tomorrow: the Sky Door. Only one thing opens it." },
-    { id: "door", t: "The Sky Door",
-      open: "A huge door in the sky. No handle. No key. Just a listening ear carved in it.",
-      beats: ["The door leans in. It wants to hear you.",
-              "A crack of light! Keep going.",
-              "The owl hoots along to help.",
-              "It's opening… slowly… almost…"],
-      hook: "Tomorrow: the star finally goes home." },
-    { id: "home", t: "Home Again",
-      open: "Behind the door: the whole night sky, and a star-shaped gap waiting.",
-      beats: ["The star lifts out of your hands.",
-              "It's climbing! Your voice is carrying it up.",
-              "It settles into its gap and blazes bright.",
-              "The whole sky says thank you, in your voice…"],
-      hook: "Tomorrow: a brand-new adventure begins." },
+    { id: "star", t: "The Star That Fell", games: ["glide", "feed", "tiles"],
+      open: "You are in the meadow when the sky drops something. It lands in the tall grass with a soft whump. The grass around it starts to glow.",
+      beats: [
+        "It is a star. A small one, about the size of your two hands together. It is shaking.",
+        "Echo lands beside it and says hello. The star does not answer. Stars do not know words yet.",
+        "But when you speak, the star brightens. It has never heard a voice before. It likes yours.",
+        "The more you say, the warmer it gets. Warm stars can float. Cold ones cannot.",
+        "It lifts off the grass. Just a little. Just enough to show you it wants to go home.",
+        "Home is a very long way up. Echo looks at the sky, then at you. This is going to take a while.",
+      ],
+      hook: "Tomorrow: the way out of the meadow is full of thorns." },
+
+    { id: "brambles", t: "The Bramble Path", games: ["slice", "run", "feed"],
+      open: "The only way out of the meadow is one narrow path. Overnight, the brambles have grown all the way across it.",
+      beats: [
+        "Thorns as long as your finger. Echo tries to squeeze through and comes back with one feather missing.",
+        "The star floats up to look. From above, the path is a green tangle with no gap anywhere in it.",
+        "Then the star does something new. It hums one low note, and a single bramble curls away from the sound.",
+        "So you help. Every sound you make bends another branch back, and a gap opens up in the green.",
+        "You go through in a line. Echo first, then you, then the star bobbing along behind.",
+        "On the other side there is a noise like a hundred spoons in a hundred cups. Water. A lot of water.",
+      ],
+      hook: "Tomorrow: the river is too wide to jump and too fast to swim." },
+
+    { id: "river", t: "The River Crossing", games: ["stack", "tiles", "slice"],
+      open: "The river is wide, loud, and moving fast. There is no bridge. There is no boat. There is just you.",
+      beats: [
+        "The star floats out over the water to have a look, and the wind pushes it straight back to you.",
+        "Echo spots something under the surface. Flat stones, one after another, like a path somebody hid on purpose.",
+        "They are too deep to stand on. But when you speak, the nearest one rises up out of the water.",
+        "One stone at a time. A sound, a stone, a step. A sound, a stone, a step.",
+        "Halfway across, a fish comes up beside you and just listens. Then another one. Then eleven more.",
+        "You reach the far bank with wet shoes and a small crowd of fish watching you go.",
+      ],
+      hook: "Tomorrow: the woods ahead say everything back to you." },
+
+    { id: "woods", t: "The Whispering Woods", games: ["tiles", "run", "feed"],
+      open: "The trees here are old and standing close together. Say one word and the woods say it back to you, twice.",
+      beats: [
+        "Echo goes absolutely wild. A parrot in a place that repeats things is a parrot in heaven.",
+        "The star hides in your pocket. It is not used to hearing itself yet.",
+        "You try a sound. The woods answer. You try another one. The woods answer that one too.",
+        "Then a third voice joins in. Small, wobbly, half a beat behind. That one is not a tree.",
+        "Something is following you and copying you. Echo stops laughing and steps in front of you.",
+        "It comes out of the ferns. It is about the size of a teacup, and it is extremely fluffy.",
+      ],
+      hook: "Tomorrow: you find out what the fluffy thing is, and what it wants." },
+
+    { id: "pip", t: "Pip", games: ["run", "feed", "glide"],
+      open: "It is a baby owl. It has one feather sticking straight up off its head, and it will not stop staring at you.",
+      beats: [
+        "Echo asks its name. The owl copies the question back instead of answering it. It is learning too.",
+        "You make a sound. The owl tries the same one. It comes out sideways, but it comes out.",
+        "You make it again. This time the owl lands much closer to it, and its one feather quivers with the effort.",
+        "You share your snack. The owl decides you are family now and climbs into your hood.",
+        "Echo names it Pip, on the grounds that it makes a sound like pip whenever it is pleased.",
+        "Pip points a wing at the hills. There is a black opening in the rock, and the path goes straight into it.",
+      ],
+      hook: "Tomorrow: the cave is dark, and dark is not the same as empty." },
+
+    { id: "cave", t: "The Cave of Echoes", games: ["tiles", "slice", "glide"],
+      open: "Inside the cave it is black. Not dim. Black. You cannot see your own hands in front of you.",
+      beats: [
+        "Then Pip makes one small nervous pip, and a ring of blue light spreads across the ceiling.",
+        "The rock in here answers sound with light. Every noise you make lights up the part of the wall it touches.",
+        "So you talk your way in. The cave glows ahead of you, one patch at a time, like stepping stones made of light.",
+        "The star sits on your shoulder and hums along. Between the two of you, it is almost bright.",
+        "The light reaches a wall that is not rock. It is flat, and somebody has drawn on it.",
+        "Hundreds of drawings. And in every single one, somebody is holding a star.",
+      ],
+      hook: "Tomorrow: you find out who drew them, and where they were going." },
+
+    { id: "drawings", t: "The Drawings", games: ["stack", "slice", "run"],
+      open: "The drawings go on for further than you can walk in one go. They tell a story, left to right, like a very long comic.",
+      beats: [
+        "First panel: a person in a meadow, and a star falling out of the sky. That one looks familiar.",
+        "Then a river. Then woods. Then a cave, with a small round shape riding on somebody's shoulder.",
+        "Pip looks at the shoulder shape, then down at itself, then back at the shoulder shape.",
+        "The last panel is a ladder. It starts on the ground and it goes up and up into the clouds.",
+        "There is no drawing of what happens after the ladder. Whoever drew all this never came back to finish it.",
+        "Echo is very quiet, which for a parrot is unusual. Then Echo says: well. We had better go and look.",
+      ],
+      hook: "Tomorrow: the ladder is real, and it is made of clouds." },
+
+    { id: "clouds", t: "The Cloud Ladder", games: ["stack", "glide", "run"],
+      open: "The ladder is exactly where the drawing said it would be. Rungs of white cloud, going up and up until they are too small to see.",
+      beats: [
+        "Echo tests the bottom rung with one foot. It goes straight through it. Cloud is cloud.",
+        "Then the star drifts down and rests on the rung, and the cloud puffs solid, like bread rising.",
+        "Warmth is what makes cloud firm. And your voice is what keeps the star warm.",
+        "So you climb and you talk. Rung, sound, rung, sound. The meadow shrinks to a green thumbprint underneath you.",
+        "Pip refuses to fly and rides in your hood the whole way, which is somehow more tiring for you than for Pip.",
+        "Near the top the air changes. It is moving. It is moving very fast.",
+      ],
+      hook: "Tomorrow: the ridge, where the wind takes sounds away with it." },
+
+    { id: "ridge", t: "The Windy Ridge", games: ["glide", "run", "slice"],
+      open: "The top of the ladder comes out on a thin ridge of cloud, and the wind up here does not stop for a second.",
+      beats: [
+        "It pulls at your sleeves. It pulls at Echo's tail. It pulls sounds right out of the air and carries them off sideways.",
+        "The star dims. Up here it is losing warmth faster than you can give it back.",
+        "So you tuck it inside your coat, against you, where the wind cannot get at it.",
+        "It works. You can feel it glowing through the fabric, steady as a heartbeat.",
+        "Pip flies ahead to scout, gets blown backwards past your head, and returns to the hood without comment.",
+        "Through the blur you see it. Something enormous standing out in the open sky, and the wind is going around it.",
+      ],
+      hook: "Tomorrow: the door in the sky, and the only key that fits it." },
+
+    { id: "door", t: "The Sky Door", games: ["tiles", "stack", "glide"],
+      open: "It is a door. It is taller than a tree and it is standing in the open air with nothing holding it up.",
+      beats: [
+        "No handle. No lock. No keyhole. Carved in the middle of it, at exactly your height, there is an ear.",
+        "Echo knocks. Nothing. Pip pips at it. Nothing. The star bumps into it and slides slowly down.",
+        "So you lean close to the carved ear, and you say something to it.",
+        "The door listens. That is the whole trick. It has been waiting a very long time for somebody to talk to it.",
+        "It swings open onto the night sky, closer than you have ever seen it, every star the size of a lamp.",
+        "Your star leaps out of your coat and races for a gap in the pattern. And that is when you see the other gaps.",
+      ],
+      hook: "Tomorrow: one star is home. Eleven are still missing." },
   ];
-  const EPKEY = "sona.episode.v1";
+  const EPKEY = "sona.episode.v2";        // v2: Season 1 replaced the 8-chapter loop
   function _ep() { const v = load(EPKEY, {}); return { i: (v.i | 0) || 0, day: v.day || "" }; }
   function episodeNum() { return (_ep().i % EPISODES.length) + 1; }        // 1-based, for "Chapter N"
   function episode() { return EPISODES[_ep().i % EPISODES.length]; }
@@ -542,9 +634,10 @@
   //      sound that needs work is never the fun one
   //   2. "what do I get tomorrow?" is the only retention mechanic that costs
   //      no content — the same six games feel new in a different trio
-  // Content cost stays flat: 8 chapters × C(6,3) trios is months of distinct
-  // days out of what already ships.
-  const DAYKEY = "sona.day.v1";
+  // The trio is no longer drawn at random: each chapter names its own three
+  // (see EPISODES above), so the games are the next thing that happens in the
+  // story rather than an interruption to it.
+  const DAYKEY = "sona.day.v2";           // v2 with EPKEY: today re-pins against the new season
   function _day() { const v = load(DAYKEY, {}); return (v && v.date === today()) ? v : null; }
   // Today's chapter, PINNED on first look. Without the pin, reading it would
   // advance the pointer and the card would flip to tomorrow's story while the
@@ -565,21 +658,32 @@
     try { episodeAdvance(); } catch (e) {}          // day-guarded: sets up tomorrow
     return true;
   }
-  // The three games offered today. Deterministic per local day, so the trio is
-  // stable across refreshes and across a parent and child looking at the same
-  // phone — and so "did I already play today's set?" has one answer.
+  // The three games offered today: TODAY'S CHAPTER'S three. Stable across
+  // refreshes and across a parent and child looking at the same phone, because
+  // the chapter is pinned for the day — so "did I already play today's set?"
+  // has one answer, and the answer never changes underneath a child.
   const DAILY_GAMES = 3;
   function dailyGames() {
-    const pool = GAME_KEYS.slice();
-    const age = parseInt(getProfile().childAge, 10) || 0;
-    // Feed Echo is the littles game: no reading, no timer. Under 6 it is never
-    // rotated OUT, because the alternative is a four-year-old staring at a
-    // locked trio of games none of which they can play.
-    if (age && age < 6) {
-      const rest = pool.filter((k) => k !== "feed");
-      return ["feed"].concat(dailyPick(rest, DAILY_GAMES - 1, 7));
+    const ep = dailyStory();
+    const named = (ep && ep.games) || [];
+    const trio = [];
+    for (let i = 0; i < named.length && trio.length < DAILY_GAMES; i++) {
+      if (GAME_KEYS.indexOf(named[i]) >= 0 && trio.indexOf(named[i]) === -1) trio.push(named[i]);
     }
-    return dailyPick(pool.filter((k) => k !== "feed" || age >= 6), DAILY_GAMES, 7);
+    // A chapter with a short or misspelled trio still has to hand a kid three
+    // playable things. Topping up from the deck beats rendering two cards.
+    for (let i = 0; trio.length < DAILY_GAMES && i < GAME_KEYS.length; i++) {
+      if (trio.indexOf(GAME_KEYS[i]) === -1) trio.push(GAME_KEYS[i]);
+    }
+    // Feed Echo is the littles game: no reading, no timer. Under 6 it leads,
+    // whatever the chapter asked for, because the alternative is a
+    // four-year-old facing three games none of which they can play. The
+    // chapter loses its third pick rather than the child losing their day.
+    const age = parseInt(getProfile().childAge, 10) || 0;
+    if (age && age < 6 && trio[0] !== "feed") {
+      return ["feed"].concat(trio.filter((k) => k !== "feed")).slice(0, DAILY_GAMES);
+    }
+    return trio;
   }
 
   // ── today's rep count (RING1): every honest VAD-counted rep ticks a
