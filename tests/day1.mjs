@@ -312,8 +312,13 @@ async function home(age) {
   // otherwise be thrown out at midnight when the day rolls over
   ok("a charge hand-off is never bounced, even with today's story unread",
     (await land("arcade-slice.html?from=charge")) === "/arcade-slice.html");
-  ok("an expired trial still wins over everything",
-    (await land("arcade-tiles.html", 'localStorage.setItem("sona.trial.v1",JSON.stringify({start:Date.now()-40*86400000,days:3}))')) === "/trial.html");
+  // Sona is free, so nothing gates on a trial today — but the day pricing
+  // returns, the gate must still outrank a read story. Exercised through the
+  // ?paid=1 seam so the rung above the story lock stays under test.
+  ok("an expired trial still wins over everything, the day pricing returns",
+    (await land("arcade-tiles.html", 'sessionStorage.setItem("sona.paidui","1");localStorage.setItem("sona.trial.v1",JSON.stringify({start:Date.now()-40*86400000,days:3}))')) === "/trial.html");
+  ok("…and while Sona is free, that same expired trial locks nobody out",
+    (await land("arcade-tiles.html", 'Sona.markStoryRead();localStorage.setItem("sona.trial.v1",JSON.stringify({start:Date.now()-40*86400000,days:3}))')) === "/arcade-tiles.html");
   // the retired campaign and its pages are gone, not merely unlinked
   const sona = readFileSync(ROOT + "/sona.js", "utf8");
   ok("the worlds/levels campaign is deleted from sona.js",

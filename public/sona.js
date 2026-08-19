@@ -243,13 +243,23 @@
   // THE FREE-ERA PROMISE. Sona shipped free, then priced. Every family already
   // on the app when the paid build first loads came in under that promise and
   // keeps it — for good. Detected structurally rather than by date: if this
-  // device was ALREADY onboarded the first time a paid build ran here, it
-  // predates pricing. Stamped once, so a family who signs up after the flip is
-  // never caught by it, and a later run can never revoke a grant already made.
+  // device was ALREADY onboarded the first time this ran here, it predates
+  // pricing. Stamped once, so a family who signs up after the flip is never
+  // caught by it, and a later run can never revoke a grant already made.
+  //
+  // This runs in FREE MODE TOO, and that is the whole point. It used to return
+  // early while free, which meant nothing was stamped until a paid build
+  // loaded — so going free again and pricing again later would have caught the
+  // entire second free period in a promise that was only ever made to the
+  // first one. The evidence that separates the two cohorts (an onboarded
+  // device carrying no stamp) exists only until this build reaches the phone,
+  // so the boundary is drawn NOW, while it is still there to draw. Families
+  // from the original free era keep free forever; families arriving during
+  // this free period are free because the app is free, which is a different
+  // promise and a revocable one.
   const GFKEY = "sona.freeera.v1";
   function _grandfatherFreeEra() {
     try {
-      if (FREE_MODE) return;                        // nothing to grandfather yet
       if (localStorage.getItem(GFKEY)) return;      // this device was already judged
       const raw = localStorage.getItem(PKEY);
       let pr = null;
@@ -1872,8 +1882,9 @@
   // NOTE: this product id is already App Store-approved; the price lives in
   // App Store Connect, and the paywall renders whatever ASC reports.
   // ── FREE MODE ──────────────────────────────────────────────────────────
-  // OFF: pricing is live — $9.99/mo billed at purchase with NO trial, or
-  // $59.99/yr after a 3-day free trial.
+  // ON: Sona is free for everyone. No paywall, no trial, no plan, nothing to
+  // buy. The purchase rails below stay wired and tested (see the ?paid=1 seam)
+  // so pricing is one boolean away, but no family meets them.
   //
   // ONE switch, honoured by every purchase surface. Four cohorts stay free
   // regardless of it: SLP-referred families (the ?slp= credential — that
@@ -1903,7 +1914,7 @@
   const HUMAN_CLIPS = false;
   function humanClipsOn() { return HUMAN_CLIPS; }
 
-  const FREE_MODE = false;
+  const FREE_MODE = true;
   // QA seam: ?paid=1 (or the sticky sona.paidui flag) reveals the purchase
   // rails on this device so the paid path stays exercisable — and TESTED —
   // while free mode ships. It only controls VISIBILITY; it can't unlock

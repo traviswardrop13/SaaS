@@ -609,6 +609,11 @@
         return;
       }
       if(!note)return;
+      // Free mode: no trial, no plan, nothing to say in the parent corner. The
+      // trial key still sits on every device that met the paywall before the
+      // flip, and without this they'd read "Your free trial has ended — see
+      // plans" inside an app that is free.
+      if(S.isFree&&S.isFree())return;
       if((S.isSubscribed&&S.isSubscribed())||(S.isPilot&&S.isPilot()))return; if(S.ensureTrial)S.ensureTrial();
       var link=' <a href="/subscribe.html" style="color:var(--orange-d);font-weight:800;">';
       if(S.trialActive&&S.trialActive()){ var dd=S.trialDaysLeft?S.trialDaysLeft():7; note.innerHTML="Your free trial: "+dd+" day"+(dd===1?"":"s")+" left."+link+"See plans →</a>"; note.style.display="block"; }

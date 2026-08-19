@@ -4,8 +4,11 @@
 // Restore + Terms/Privacy links and full auto-renew terms; purchase →
 // unlock on the "full" entitlement, restore → unlock, and today.html must
 // quiet-sync entitlements on load. Web (no bridge) keeps the Stripe picker.
-// PRICING IS LIVE (FREE_MODE off): the paid rails are the default, the trial
-// gate is honest on every platform, and founding families never gate.
+// SONA IS FREE (FREE_MODE on), so every paid assertion below runs behind the
+// ?paid=1 / sona.paidui QA seam. That is the seam's whole job: the purchase
+// rails stay exercised while nobody is charged, so pricing is one boolean away
+// instead of one archaeology project away. The seam only affects VISIBILITY —
+// it grants nothing and moves no money.
 import { createServer } from "http";
 import { readFileSync, existsSync } from "fs";
 import { chromium, ROOT, launchOpts } from "./_env.mjs";
@@ -54,6 +57,7 @@ await page.addInitScript(() => {
   };
   localStorage.setItem("sona.freeera.v1","post"); localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Milo", focusSounds: ["R"], onboarded: true }));
   sessionStorage.setItem("sona.gate.v1", String(Date.now()));
+  sessionStorage.setItem("sona.paidui", "1");   // reveal the purchase rails; grants nothing
 });
 
 // ── native subscribe: Apple paywall only, all required furniture ──
@@ -144,6 +148,7 @@ const web = await browser.newPage({ viewport: { width: 390, height: 844 } });
 await web.addInitScript(() => {
   localStorage.setItem("sona.freeera.v1","post"); localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Milo", focusSounds: ["R"], onboarded: true, earlyAdopter: false }));
   sessionStorage.setItem("sona.gate.v1", String(Date.now()));
+  sessionStorage.setItem("sona.paidui", "1");
 });
 await web.goto("http://localhost:8147/subscribe.html"); await web.waitForTimeout(800);
 t = await web.evaluate(() => ({ iap: document.getElementById("iapCard").style.display, pick: document.getElementById("pickCard").style.display }));
@@ -156,7 +161,10 @@ await web.close();
 // ── PRICING IS LIVE: FREE_MODE off, 3-day trial, the gate is honest ──
 {
   const sona = readFileSync(ROOT + "/sona.js", "utf8");
-  ok("FREE_MODE is off", /const FREE_MODE = false;/.test(sona));
+  ok("FREE_MODE is on — Sona is free", /const FREE_MODE = true;/.test(sona));
+  ok("isFree() short-circuits the gate before anything else can",
+    /function gated\(\) \{\s*if \(isFree\(\)\) return false;/.test(sona),
+    "if any check runs ahead of the switch, the switch is not the switch");
   ok("the trial is 3 days", /TRIAL_DAYS = 3/.test(sona));
   ok("the native shell gates like the web (old bypass gone)",
     !/if \(isNativeApp\(\)\) return false;/.test(sona),
@@ -176,12 +184,16 @@ await web.close();
   ok("trial.html routes the shell to the Apple paywall, not back home",
     /location\.replace\("\/subscribe\.html"\)/.test(trial),
     "routing natives to today.html made an infinite gate loop");
-  ok("trial page states live prices", /\$59\.99/.test(trial) && /\$9\.99/.test(trial) && /3 days free/.test(trial));
+  ok("trial page keeps the live prices ready for the flip", /\$59\.99/.test(trial) && /\$9\.99/.test(trial) && /3 days free/.test(trial));
+  ok("…but nobody lands on it while Sona is free",
+    /Sona\.isFree\(\)\) location\.replace\("\/today\.html"\)/.test(trial),
+    "a bookmarked or back-swiped /trial.html would pitch a price in a free app");
 }
 
 // ── an expired trial actually locks practice; a founding family sails through ──
 const gatePg = await browser.newPage({ viewport: { width: 390, height: 844 } });
 await gatePg.addInitScript(() => {
+  sessionStorage.setItem("sona.paidui", "1");   // exercise the gate as if priced
   // seed-once: init scripts re-run on every navigation and would overwrite the
   // earlyAdopter flag the second half of this test sets
   if (!localStorage.getItem("sona.profile.v1")) {
@@ -198,12 +210,17 @@ ok("a founding family with the same expired trial is never locked", !/trial\.htm
 await gatePg.close();
 
 ok("no pageerrors", errs.length === 0, errs.join(" | "));
-// ── THE FREE-ERA PROMISE ──────────────────────────────────────────────────
-// Sona shipped free, then priced. CLAUDE.md commits to this in writing:
-// anyone who used Sona while it was free keeps it free. If this ever breaks,
-// it breaks a promise to real families, so it is pinned here.
+// ── THE FREE-ERA PROMISE, AND ITS BOUNDARY ──────────────────────────
+// Sona shipped free, priced, and is free again. CLAUDE.md commits in writing
+// that anyone who used Sona while it was FREE keeps it free — a promise made
+// to the families of the FIRST free era. _grandfatherFreeEra() draws that line
+// and it must draw it NOW, on a free build, because the only evidence that
+// separates the two cohorts (an onboarded device carrying no stamp) is gone
+// the moment this build reaches the phone. If this ever breaks it breaks a
+// promise to real families, or silently extends it to everyone forever, so it
+// is pinned here from both directions.
 {
-  // a family already on the app when the paid build first loads
+  // (1) a family already on the app before pricing, meeting a FREE build
   const ctxA = await browser.newContext();
   const pgA = await ctxA.newPage();
   await pgA.goto("http://localhost:8147/today.html");   // sona.js seeds nothing yet
@@ -213,26 +230,42 @@ ok("no pageerrors", errs.length === 0, errs.join(" | "));
     localStorage.removeItem("sona.freeera.v1");
     return true;
   });
-  await pgA.reload(); await pgA.waitForTimeout(500);
-  const grand = await pgA.evaluate(() => {
+  await pgA.reload(); await pgA.waitForTimeout(500);    // note: no ?paid=1 — a plain free build
+  const grand = await pgA.evaluate(() => ({
+    stamp: localStorage.getItem("sona.freeera.v1"),
+    early: Sona.getProfile().earlyAdopter,
+  }));
+  ok("a free-era family is grandfathered by a FREE build, not just a paid one",
+    before && grand.stamp === "grandfathered" && grand.early === true, JSON.stringify(grand));
+  // and the grant survives the day pricing returns
+  const grandGate = await pgA.evaluate(() => {
+    sessionStorage.setItem("sona.paidui", "1");
     localStorage.setItem(Sona.kkey("sona.trial.v1"), JSON.stringify({ start: Date.now() - 365 * 86400000, days: 3 }));
-    return { stamp: localStorage.getItem("sona.freeera.v1"), early: Sona.getProfile().earlyAdopter, gated: Sona.gated() };
+    return { stamp: localStorage.getItem("sona.freeera.v1"), gated: Sona.gated() };
   });
-  ok("a free-era family is grandfathered on the first paid load", before && grand.stamp === "grandfathered", JSON.stringify(grand));
-  ok("…and is never gated, a year after their trial would have died", grand.gated === false, JSON.stringify(grand));
+  ok("…and is never gated, a year after their trial would have died",
+    grandGate.gated === false && grandGate.stamp === "grandfathered", JSON.stringify(grandGate));
   await ctxA.close();
 
-  // a family arriving after the flip
+  // (2) a family arriving DURING this free period. They are free because the
+  // app is free — a different promise, and a revocable one. If they stamped
+  // "grandfathered" instead, pricing could never reach anyone who joined now.
   const ctxB = await browser.newContext();
   const pgB = await ctxB.newPage();
   await pgB.goto("http://localhost:8147/today.html"); await pgB.waitForTimeout(400);
   const fresh = await pgB.evaluate(() => {
     Sona.saveProfile({ childName: "New", childAge: "7", focusSounds: ["R"], onboarded: true });
-    localStorage.setItem(Sona.kkey("sona.trial.v1"), JSON.stringify({ start: Date.now() - 40 * 86400000, days: 3 }));
     return { stamp: localStorage.getItem("sona.freeera.v1"), early: Sona.getProfile().earlyAdopter, gated: Sona.gated() };
   });
-  ok("a family who arrives after the flip is NOT grandfathered", fresh.stamp === "post" && !fresh.early, JSON.stringify(fresh));
-  ok("…and their expired trial does gate", fresh.gated === true, JSON.stringify(fresh));
+  ok("a family who arrives during THIS free period is not grandfathered",
+    fresh.stamp === "post" && !fresh.early, JSON.stringify(fresh));
+  ok("…and plays free anyway, because the app is free", fresh.gated === false, JSON.stringify(fresh));
+  const freshGate = await pgB.evaluate(() => {
+    sessionStorage.setItem("sona.paidui", "1");
+    localStorage.setItem(Sona.kkey("sona.trial.v1"), JSON.stringify({ start: Date.now() - 40 * 86400000, days: 3 }));
+    return Sona.gated();
+  });
+  ok("…and would gate on the day pricing returns", freshGate === true, String(freshGate));
   await ctxB.close();
 }
 
