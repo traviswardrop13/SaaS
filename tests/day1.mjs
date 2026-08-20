@@ -86,13 +86,18 @@ async function home(age) {
     title: document.getElementById("ttl").textContent,
     pips: document.getElementById("pips").children.length,
     text: document.getElementById("text").textContent,
+    beats: Sona.dailyStory().beats.length,
   }));
   ok("the reader names the chapter", /chapter/i.test(open.chip) && open.title.length > 4, JSON.stringify(open));
-  ok("the story is 5 pages (opening + 4 beats)", open.pips === 5, String(open.pips));
+  // opening + one beat per page. Season 1 runs 6 beats a chapter; the reader
+  // builds its pips from the page list, so this reads the chapter rather than
+  // hard-coding a length a rewrite would silently break.
+  ok("the reader paginates the whole chapter, a page per beat",
+    open.pips === 1 + open.beats, String(open.pips));
   ok("page one is the chapter's opening line", open.text.length > 10, open.text);
 
-  // page through to the end
-  for (let i = 0; i < 5; i++) { await pg.evaluate(() => document.getElementById("next").click()); await pg.waitForTimeout(120); }
+  // page through to the end, however long the chapter is
+  for (let i = 0; i < open.pips; i++) { await pg.evaluate(() => document.getElementById("next").click()); await pg.waitForTimeout(120); }
   await pg.waitForTimeout(400);
   const fin = await pg.evaluate(() => ({
     done: getComputedStyle(document.getElementById("done")).display !== "none",
@@ -135,18 +140,47 @@ async function home(age) {
   await ctx.close();
 }
 
-// ── 3b. rotation is real: different days, different trios ──
-// The picker is seeded by the day number, so the only honest way to test it is
-// to move the clock. A "rotation" that returns the same three games all week
-// is not a rotation, and a kid would notice before any test did.
+// ── 3b. the trio belongs to the CHAPTER, not the clock ──
+// It used to be a day-seeded random pick, which meant the river chapter could
+// hand you the flying game and the story stopped meaning anything. Each
+// chapter now names its own three, so this asserts two things: the day's trio
+// really is the chapter's trio, and the season is varied enough that a kid
+// does not get the same three games all week.
 {
-  const trios = [];
-  for (let d = 0; d < 10; d++) {
+  const { ctx, pg } = await home("7");
+  const st = await pg.evaluate(() => ({
+    trio: Sona.dailyGames(),
+    chapterGames: Sona.dailyStory().games,
+    seasonTrios: Sona.EPISODES.map((e) => e.games.join(",")),
+    allNamed: Sona.EPISODES.every((e) => Array.isArray(e.games) && e.games.length === 3
+      && new Set(e.games).size === 3 && e.games.every((g) => Sona.GAME_KEYS.indexOf(g) >= 0)),
+  }));
+  ok("today's three games ARE today's chapter's three games",
+    JSON.stringify(st.trio) === JSON.stringify(st.chapterGames), JSON.stringify(st));
+  ok("every chapter names three real, distinct games", st.allNamed, JSON.stringify(st.seasonTrios));
+  // the first card is the hero a kid taps LET'S GO on, and Feed Echo is the
+  // littles game — dailyGames() promotes it for under-6s by itself, so a
+  // chapter that LEADS with it hands an eight-year-old the toddler game
+  ok("no chapter leads with Feed Echo",
+    st.seasonTrios.every((t) => t.split(",")[0] !== "feed"), JSON.stringify(st.seasonTrios));
+  const distinct = new Set(st.seasonTrios).size;
+  ok("the season is a real spread, not the same three all week",
+    distinct >= Math.min(8, st.seasonTrios.length), JSON.stringify({ distinct, n: st.seasonTrios.length }));
+  await ctx.close();
+}
+
+// ── 3c. the same chapter gives the same trio on any date ──
+// The old picker was seeded by the day number, so the trio drifted under a
+// child who opened the app either side of midnight. Now the chapter decides,
+// and a chapter is a chapter whatever the calendar says.
+{
+  const seen = [];
+  for (const d of [1, 9]) {
     const ctx = await browser.newContext();
     const pg = await ctx.newPage();
     // freeze the clock to a specific day BEFORE sona.js loads
     await pg.addInitScript(`{
-      const fixed = new Date(2026, 0, ${1 + d}, 10, 0, 0).getTime();
+      const fixed = new Date(2026, 0, ${d}, 10, 0, 0).getTime();
       const R = Date;
       Date = class extends R { constructor(...a) { if (!a.length) super(fixed); else super(...a); } static now() { return fixed; } };
     }`);
@@ -154,12 +188,11 @@ async function home(age) {
     await pg.evaluate(seed("7"));
     await pg.goto("http://localhost:8178/today.html");
     await pg.waitForTimeout(400);
-    trios.push(await pg.evaluate(() => Sona.dailyGames().join(",")));
+    seen.push(await pg.evaluate(() => ({ ch: Sona.dailyChapterNum(), trio: Sona.dailyGames().join(",") })));
     await ctx.close();
   }
-  const distinct = new Set(trios).size;
-  ok("ten consecutive days give a real spread of trios", distinct >= 5, JSON.stringify({ trios, distinct }));
-  ok("consecutive days are not identical", trios[0] !== trios[1], JSON.stringify(trios.slice(0, 2)));
+  ok("a fresh device starts at chapter 1 whatever the date", seen.every((x) => x.ch === 1), JSON.stringify(seen));
+  ok("…and the same chapter hands over the same three games", seen[0].trio === seen[1].trio, JSON.stringify(seen));
 }
 
 // ── 4. a four-year-old always gets the game they can actually play ──
@@ -312,8 +345,13 @@ async function home(age) {
   // otherwise be thrown out at midnight when the day rolls over
   ok("a charge hand-off is never bounced, even with today's story unread",
     (await land("arcade-slice.html?from=charge")) === "/arcade-slice.html");
-  ok("an expired trial still wins over everything",
-    (await land("arcade-tiles.html", 'localStorage.setItem("sona.trial.v1",JSON.stringify({start:Date.now()-40*86400000,days:3}))')) === "/trial.html");
+  // Sona is free, so nothing gates on a trial today — but the day pricing
+  // returns, the gate must still outrank a read story. Exercised through the
+  // ?paid=1 seam so the rung above the story lock stays under test.
+  ok("an expired trial still wins over everything, the day pricing returns",
+    (await land("arcade-tiles.html", 'sessionStorage.setItem("sona.paidui","1");localStorage.setItem("sona.trial.v1",JSON.stringify({start:Date.now()-40*86400000,days:3}))')) === "/trial.html");
+  ok("…and while Sona is free, that same expired trial locks nobody out",
+    (await land("arcade-tiles.html", 'Sona.markStoryRead();localStorage.setItem("sona.trial.v1",JSON.stringify({start:Date.now()-40*86400000,days:3}))')) === "/arcade-tiles.html");
   // the retired campaign and its pages are gone, not merely unlinked
   const sona = readFileSync(ROOT + "/sona.js", "utf8");
   ok("the worlds/levels campaign is deleted from sona.js",

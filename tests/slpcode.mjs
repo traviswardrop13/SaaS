@@ -105,11 +105,15 @@ const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL 
   }));
   ok("a wrong key never verifies", !st.ok && !st.verified, JSON.stringify(st));
   const gated = await pg.evaluate(() => {
+    // Sona is free, so nobody gates today. What must stay true is that a wrong
+    // key buys no standing OF ITS OWN — checked through the ?paid=1 seam so an
+    // unverified family is still ordinary on the day pricing returns.
+    sessionStorage.setItem("sona.paidui", "1");
     Sona.saveProfile({ childName: "Ana", childAge: "6", focusSounds: ["S"], onboarded: true, earlyAdopter: false });
     localStorage.setItem(Sona.kkey("sona.trial.v1"), JSON.stringify({ start: Date.now() - 10 * 86400000, days: 3 }));
     return Sona.gated();
   });
-  ok("wrong-key family gates like anyone else after the trial", gated === true);
+  ok("wrong-key family gates like anyone else once pricing returns", gated === true);
   await pg.context().close();
 }
 
@@ -139,7 +143,9 @@ const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL 
     localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Ben", childAge: "7", focusSounds: ["R"], onboarded: true }));
     localStorage.setItem("sona.trial.v1", JSON.stringify({ start: Date.now() - 10 * 86400000, days: 3 }));
   });
-  await pg.goto("http://localhost:8155/trial.html");
+  // ?paid=1 renders the paywall while Sona is free; without it trial.html
+  // correctly bounces home and there is no paywall to point anywhere.
+  await pg.goto("http://localhost:8155/trial.html?paid=1");
   await pg.waitForTimeout(600);
   const href = await pg.evaluate(() => {
     const a = document.getElementById("slpEntryLink");
@@ -481,8 +487,8 @@ const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL 
   ok("the funnel event fires only on a VALID redemption",
     /valid[\s\S]{0,700}track\("slp code redeemed"/.test(sona),
     "counting unverified codes ranks garbage SLPs");
-  ok("pricing is live — FREE_MODE is the one switch and it is OFF",
-    /const FREE_MODE = false;/.test(sona), "a stray true here silently makes the whole app free");
+  ok("Sona is free — FREE_MODE is the one switch and it is ON",
+    /const FREE_MODE = true;/.test(sona), "a stray false here silently paywalls the whole app");
   ok("every family from the free era keeps it free",
     /function _grandfatherFreeEra[\s\S]{0,700}earlyAdopter = true/.test(sona),
     "grandfathering is a promise to those families, not a growth tactic");

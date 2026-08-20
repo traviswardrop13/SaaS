@@ -44,13 +44,12 @@ export default function TermsPage() {
       </Section>
 
       <Section title="Pricing &amp; billing">
-        <strong>Sona Monthly</strong> is <strong>$9.99 per month</strong> and{" "}
-        <strong>Sona Yearly</strong> is <strong>$59.99 per year</strong>, plus any
-        applicable taxes, and includes every game and every new sound we ship.
-        The yearly plan starts with <strong>3 free days</strong> — nothing is charged during
-        the trial, and the first charge lands only if you keep Sona past it. The
-        subscription renews yearly unless you cancel at least 24 hours before the
-        period ends. We show you the exact first-charge date at checkout.
+        <strong>Sona is free.</strong> There is no subscription, no in-app
+        purchase, and no charge of any kind for using the app. If that ever
+        changes, existing families will be told first and in advance — we will
+        never start charging you for something you already have without asking.
+        If you subscribed while Sona was paid, that subscription is still yours
+        and still renews on its own terms; see below to manage or cancel it.
       </Section>
 
       <Section title="Canceling &amp; refunds">

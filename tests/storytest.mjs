@@ -50,7 +50,7 @@ const eng = await page.evaluate(() => {
   const shapes = Sona.EPISODES.map((e) => ({ beats: e.beats.length, hook: !!e.hook, open: !!e.open, t: !!e.t }));
   return {
     n,
-    allShaped: shapes.every((s) => s.beats === 4 && s.hook && s.open && s.t),
+    allShaped: shapes.every((s) => s.beats === 6 && s.hook && s.open && s.t),
     open: Sona.episodeBeat(0),
     b1: Sona.episodeBeat(1),
     b4: Sona.episodeBeat(4),
@@ -59,8 +59,8 @@ const eng = await page.evaluate(() => {
     chapter: Sona.episodeNum(),
   };
 });
-ok("episode library is populated", eng.n >= 8, `got ${eng.n}`);
-ok("every episode has an opener, 4 beats and a cliffhanger", eng.allShaped);
+ok("episode library is populated", eng.n >= 10, `got ${eng.n}`);
+ok("every episode has an opener, 6 beats and a cliffhanger", eng.allShaped);
 ok("round 0 gets the chapter opener", !!eng.open && eng.open === eng.open);
 ok("each round has its own beat", eng.b1 && eng.b4 && eng.b1 !== eng.b4);
 ok("a round past the last beat still returns copy (no crash, no blank)", !!eng.beyond);

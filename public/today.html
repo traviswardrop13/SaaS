@@ -250,16 +250,6 @@
     </div>
   </div>
 
-  <!-- comeback greeting — numberless, warm; never a broken-streak screen -->
-  <div class="ovl" id="cbOvl">
-    <div class="modal">
-      <img src="/coach/echo/echo-celebrate.svg" alt="" onerror="this.onerror=null;this.src='/coach/echo/echo-idle.svg';" style="width:130px;height:130px;object-fit:contain;" />
-      <h3 style="margin-top:6px;">You're back!</h3>
-      <p>Echo missed you! Ready to play?</p>
-      <button id="cbBtn" style="width:100%;border:none;border-radius:16px;padding:15px;margin-top:14px;background:linear-gradient(180deg,#ffa05a,#ff8a3d);box-shadow:0 4px 0 var(--orange-d);color:#fff;font-family:'Baloo 2';font-weight:800;font-size:17px;cursor:pointer;">Let's play!</button>
-    </div>
-  </div>
-
   <div id="toast"></div>
 
   <script src="/sona.js"></script>
@@ -433,28 +423,9 @@
     // App Store build: quiet entitlement sync (restores/reinstalls stay unlocked)
     try{ if(S&&S.iapRefresh) S.iapRefresh(); }catch(e){}
 
-    // ── comeback greeting: 3+ days since the last practice day → Echo just
-    // says he missed you. No day counts, no broken anything — the fresh start
-    // is celebrated exactly like any other day. Shows at most once per day,
-    // and it owns the visit (the feedback pulse stays quiet).
-    (function(){
-      try{
-        var g=S&&S.getProgress?S.getProgress():null; if(!g)return;
-        var pd=Object.keys(g.practiceDays||{}); if(g.streak&&g.streak.lastDate)pd.push(g.streak.lastDate);
-        if(!pd.length) return; // never practiced — the first-time nudges own this
-        pd.sort(); var last=pd[pd.length-1];
-        var t=new Date(), tk=t.getFullYear()+"-"+("0"+(t.getMonth()+1)).slice(-2)+"-"+("0"+t.getDate()).slice(-2);
-        var days=Math.round((new Date(tk)-new Date(last))/864e5);
-        if(!(days>=3)) return;
-        var CBK=(S&&S.kkey)?S.kkey("sona.comeback.v1"):"sona.comeback.v1";
-        if(localStorage.getItem(CBK)===tk) return;
-        localStorage.setItem(CBK,tk);
-        window.__comeback=true;
-        $("cbOvl").classList.add("show");
-        $("cbBtn").onclick=function(){ sfx("tap"); $("cbOvl").classList.remove("show"); };
-      }catch(e){}
-    })();
-
+    // The comeback modal lived here and is deliberately GONE (Travis's call) —
+    // a popup between the kid and the day's story was friction on exactly the
+    // visit we most want to go well. The chapter card is the greeting.
     // ── the rep pill (RING1): every honest rep the kid says today ticks this
     // number UP — a count that only climbs (never 0/5 pressure). Gold once the
     // day's 5 rounds are done; tapping explains both numbers honestly.
@@ -609,6 +580,11 @@
         return;
       }
       if(!note)return;
+      // Free mode: no trial, no plan, nothing to say in the parent corner. The
+      // trial key still sits on every device that met the paywall before the
+      // flip, and without this they'd read "Your free trial has ended — see
+      // plans" inside an app that is free.
+      if(S.isFree&&S.isFree())return;
       if((S.isSubscribed&&S.isSubscribed())||(S.isPilot&&S.isPilot()))return; if(S.ensureTrial)S.ensureTrial();
       var link=' <a href="/subscribe.html" style="color:var(--orange-d);font-weight:800;">';
       if(S.trialActive&&S.trialActive()){ var dd=S.trialDaysLeft?S.trialDaysLeft():7; note.innerHTML="Your free trial: "+dd+" day"+(dd===1?"":"s")+" left."+link+"See plans →</a>"; note.style.display="block"; }
@@ -668,7 +644,7 @@
       var st=pulseState(); st.visits=(st.visits||0)+1; pulseSave(st);
       var dayAgo=!st.last || (Date.now()-st.last)>20*3600*1000;
       var cooling=!!st.cool && Date.now()<st.cool;
-      var due=st.visits>=3 && st.visits%3===0 && dayAgo && !cooling && !window.__comeback;
+      var due=st.visits>=3 && st.visits%3===0 && dayAgo && !cooling;
       if(due) setTimeout(function(){ showPulse(false); var s2=pulseState(); s2.last=Date.now(); pulseSave(s2); },900);
     })();
   </script>
