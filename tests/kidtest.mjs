@@ -125,7 +125,9 @@ ok("the last child can never be removed", st.blocked === false && st.n === 1, JS
   ok("library's story-done check is per child", /kkey\("sona\.games\.v1"\)/.test(lib));
   ok("Echo's size is per child", /Sona\.kkey\("sona\.feed\.v1"\)/.test(feed));
   ok("Story Time's finished flag is per child", /kkey\("sona\.games\.v1"\)/.test(story));
-  ok("the comeback greeting is per child", /kkey\("sona\.comeback\.v1"\)/.test(today));
+  // the comeback greeting was removed on Travis's call — nothing should write
+  // its key or resurrect the overlay
+  ok("the comeback popup stays gone", !/cbOvl|sona\.comeback\.v1/.test(today));
   // the first-run guard runs before sona.js and must resolve the slot itself
   ok("the first-run guard reads the ACTIVE child's profile",
     /sona\.kids\.v1[\s\S]{0,320}sona\.profile\.v1"\s*\+\s*\(slot/.test(today),

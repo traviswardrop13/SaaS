@@ -229,25 +229,21 @@ t = await page.evaluate(() => ({ sub: document.getElementById("subLine").textCon
 ok("ring done → tomorrow-hook line + gold pill", /tomorrow/.test(t.sub) && t.gold === true);
 await page.evaluate(() => localStorage.removeItem("sona.today.v1"));
 
-// ── comeback greeting: 3+ idle days → numberless "Echo missed you", once/day ──
+// ── no comeback popup: opening the app after days away goes STRAIGHT to the
+// day, no "You're back!" modal in the way. Removed on Travis's call — a popup
+// between the kid and the story was friction on exactly the visit we most
+// want to go well. Still no broken-streak guilt anywhere on the page either.
 await page.evaluate(() => {
   const g = Sona.getProgress(); g.practiceDays = { "2026-06-30": 1 }; g.streak = { lastDate: "2026-06-30", count: 1 };
   localStorage.setItem("sona.progress.v1", JSON.stringify(g));
-  localStorage.removeItem("sona.comeback.v1");
 });
 await page.goto("http://localhost:8131/today.html"); await page.waitForTimeout(700);
 let cb = await page.evaluate(() => ({
-  shown: document.getElementById("cbOvl").classList.contains("show"),
-  txt: document.getElementById("cbOvl").textContent,
+  overlays: [...document.querySelectorAll(".ovl.show")].map((e) => e.id),
+  body: document.body.textContent,
 }));
-ok("comeback greeting shows after 3+ days away", cb.shown);
-ok("comeback is numberless (no day counts)", !/\d/.test(cb.txt.replace(/Let's play!/, "")));
-await page.evaluate(() => document.getElementById("cbBtn").click());
-cb = await page.evaluate(() => document.getElementById("cbOvl").classList.contains("show"));
-ok("Let's play dismisses it", !cb);
-await page.goto("http://localhost:8131/today.html"); await page.waitForTimeout(600);
-cb = await page.evaluate(() => document.getElementById("cbOvl").classList.contains("show"));
-ok("shows at most once per day", !cb);
+ok("no popup after 3+ days away — the day is just there", cb.overlays.length === 0, JSON.stringify(cb.overlays));
+ok("…and nothing guilt-trips about the gap", !/you're back|missed you|streak (lost|broken)/i.test(cb.body));
 
 // ── mic primer: first-ever mic ask explains before the browser prompt ──
 await page.addInitScript(() => {

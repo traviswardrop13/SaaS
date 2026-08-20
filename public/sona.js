@@ -152,7 +152,7 @@
     "sona.daily.v1", "sona.session.v1", "sona.levels.v1", "sona.campaign.v1",
     "sona.stickers.v1", "sona.attempts.v1", "sona.outcomes.v1",
     "sona.lib.read.v1", "sona.feed.v1", "sona.call.v1", "sona.callhist.v1",
-    "sona.comeback.v1", "sona.games.v1",
+    "sona.games.v1",
   ]);
   function _kids() {
     let v = null;
