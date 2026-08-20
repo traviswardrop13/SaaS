@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Sona — Game Map Preview</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Baloo 2', cursive;
+      overflow: hidden;
+      background: #000;
+      -webkit-font-smoothing: antialiased;
+      touch-action: pan-x;
+      user-select: none;
+    }
+
+    .phone-frame {
+      width: 390px;
+      height: 844px;
+      margin: 20px auto;
+      border-radius: 44px;
+      overflow: hidden;
+      position: relative;
+      box-shadow: 0 0 0 12px #1a1a1a, 0 20px 60px rgba(0,0,0,0.5);
+    }
+
+    @media (max-width: 500px) {
+      .phone-frame {
+        width: 100vw;
+        height: 100vh;
+        margin: 0;
+        border-radius: 0;
+        box-shadow: none;
+      }
+    }
+
+    .carousel {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      transition: transform 0.45s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    }
+
+    .page {
+      min-width: 100%;
+      height: 100%;
+      position: relative;
+      overflow: hidden;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Scene image fills the top portion */
+    .scene-area {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .scene-bg {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center top;
+    }
+
+    .page:active .scene-bg {
+      transform: scale(1.02);
+      transition: transform 0.15s;
+    }
+
+    /* Grey ground band at the bottom — consistent across all scenes */
+    .ground-band {
+      background: #6b7b87;
+      padding: 14px 20px 52px;
+      text-align: center;
+      position: relative;
+    }
+
+    .game-title {
+      font-size: 24px;
+      font-weight: 800;
+      color: rgba(255,255,255,0.92);
+      line-height: 1.1;
+    }
+
+    /* Dot nav sits inside the ground band */
+    .dot-nav {
+      position: absolute;
+      bottom: 16px;
+      left: 0;
+      right: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 4px;
+      background: rgba(255,255,255,0.4);
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .dot.active {
+      width: 24px;
+      background: white;
+    }
+
+    .swipe-hint {
+      position: absolute;
+      top: 50%;
+      right: 16px;
+      transform: translateY(-50%);
+      z-index: 15;
+      background: rgba(0,0,0,0.45);
+      backdrop-filter: blur(8px);
+      border-radius: 20px;
+      padding: 10px 14px;
+      color: white;
+      font-size: 13px;
+      font-weight: 700;
+      animation: pulse-right 2s ease-in-out infinite;
+      pointer-events: none;
+    }
+
+    @keyframes pulse-right {
+      0%, 100% { transform: translateY(-50%) translateX(0); opacity: 1; }
+      50% { transform: translateY(-50%) translateX(8px); opacity: 0.7; }
+    }
+
+    .swipe-hint.hidden { display: none; }
+
+    @media (min-width: 501px) {
+      body { background: #111; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="phone-frame" id="phone">
+  <div class="carousel" id="carousel">
+
+    <div class="page">
+      <div class="scene-area">
+        <img class="scene-bg" src="/scenes/todays-practice.png" alt="Today's Practice">
+        <div class="swipe-hint" id="swipeHint">Swipe →</div>
+      </div>
+      <div class="ground-band">
+        <div class="game-title">Today's Practice</div>
+      </div>
+    </div>
+
+    <div class="page">
+      <div class="scene-area">
+        <img class="scene-bg" src="/scenes/racing.png" alt="Sound Racer">
+      </div>
+      <div class="ground-band">
+        <div class="game-title">Sound Racer</div>
+      </div>
+    </div>
+
+    <div class="page">
+      <div class="scene-area">
+        <img class="scene-bg" src="/scenes/storybook.png" alt="Story Time">
+      </div>
+      <div class="ground-band">
+        <div class="game-title">Story Time</div>
+      </div>
+    </div>
+
+    <div class="page">
+      <div class="scene-area">
+        <img class="scene-bg" src="/scenes/fruit-ninja.png" alt="Fruit Ninja">
+      </div>
+      <div class="ground-band">
+        <div class="game-title">Fruit Ninja</div>
+      </div>
+    </div>
+
+    <div class="page">
+      <div class="scene-area">
+        <img class="scene-bg" src="/scenes/stacks.png" alt="Stacks">
+      </div>
+      <div class="ground-band">
+        <div class="game-title">Stacks</div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="dot-nav" id="dotNav"></div>
+</div>
+
+<script>
+  const carousel = document.getElementById('carousel');
+  const dotNav = document.getElementById('dotNav');
+  const swipeHint = document.getElementById('swipeHint');
+  const pages = document.querySelectorAll('.page');
+  const totalPages = pages.length;
+  let current = 0;
+
+  for (let i = 0; i < totalPages; i++) {
+    const dot = document.createElement('div');
+    dot.className = 'dot' + (i === 0 ? ' active' : '');
+    dot.addEventListener('click', () => goTo(i));
+    dotNav.appendChild(dot);
+  }
+
+  function goTo(idx) {
+    current = Math.max(0, Math.min(idx, totalPages - 1));
+    carousel.style.transform = `translateX(-${current * 100}%)`;
+    dotNav.querySelectorAll('.dot').forEach((d, i) => {
+      d.className = 'dot' + (i === current ? ' active' : '');
+    });
+    if (current > 0 && swipeHint) swipeHint.classList.add('hidden');
+  }
+
+  let startX = 0, isDragging = false;
+  carousel.addEventListener('touchstart', (e) => { startX = e.touches[0].clientX; isDragging = true; }, { passive: true });
+  carousel.addEventListener('touchend', (e) => {
+    if (!isDragging) return; isDragging = false;
+    const dx = e.changedTouches[0].clientX - startX;
+    if (Math.abs(dx) > 50) goTo(current + (dx < 0 ? 1 : -1));
+  }, { passive: true });
+
+  let mouseDown = false, mouseStartX = 0;
+  carousel.addEventListener('mousedown', (e) => { mouseDown = true; mouseStartX = e.clientX; e.preventDefault(); });
+  document.addEventListener('mouseup', (e) => {
+    if (!mouseDown) return; mouseDown = false;
+    const dx = e.clientX - mouseStartX;
+    if (Math.abs(dx) > 50) goTo(current + (dx < 0 ? 1 : -1));
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight') goTo(current + 1);
+    if (e.key === 'ArrowLeft') goTo(current - 1);
+  });
+
+  goTo(0);
+</script>
+
+</body>
+</html>
