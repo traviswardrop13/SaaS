@@ -420,6 +420,10 @@
 
     // weekly volume sync — anonymous {id, week, rep count}, throttled in sona.js
     try{ if(S&&S.repsBeacon) S.repsBeacon(); }catch(e){}
+    // Homework: pull whatever this child's SLP assigned and report yesterday's
+    // reps against it. Fire-and-forget — the day's card is already painted from
+    // the cached copy, so a slow or dead network never delays a child starting.
+    try{ if(S&&S.syncHomework) S.syncHomework(); }catch(e){}
     // App Store build: quiet entitlement sync (restores/reinstalls stay unlocked)
     try{ if(S&&S.iapRefresh) S.iapRefresh(); }catch(e){}
 

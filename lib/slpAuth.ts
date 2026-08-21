@@ -109,30 +109,47 @@ export function verifySession(token: string | undefined | null): Session | null 
  * bounds abuse is the redeem endpoint's per-IP limit and per-code cap, not a
  * short expiry that would silently stop a real child's data.
  */
-export type Ticket = { t: "enrol"; code: string; exp: number };
+export type Ticket = { t: "enrol"; code: string; exp: number; cid?: string };
 
-export function signTicket(code: string, ttlDays = 400): string {
+export function signTicket(code: string, ttlDays = 400, childId = ""): string {
   const payload: Ticket = { t: "enrol", code: String(code || "").toLowerCase(), exp: Date.now() + ttlDays * 86400000 };
+  // Bind the ticket to ONE child where we know which one. A ticket proves the
+  // device passed this clinician's code+key, which is enough to WRITE its own
+  // roster row — but homework is per-child, and a code-only ticket would let
+  // any family on a caseload read any other family's assignment. Legacy
+  // tickets carry no cid and stay valid; readTicket() reports what it has and
+  // the caller decides. See app/api/homework.
+  if (childId) payload.cid = String(childId).slice(0, 60);
   const body = Buffer.from(JSON.stringify(payload)).toString("base64url");
   const sig = crypto.createHmac("sha256", SECRET).update(body).digest("base64url");
   return body + "." + sig;
 }
 
-export function verifyTicket(token: string | undefined | null, code: string): boolean {
-  if (!token || token.indexOf(".") < 0) return false;
+/**
+ * Verify a ticket and hand back its payload, so a caller can enforce more than
+ * "is this a real ticket for this code" — today that means the cid binding.
+ * Returns null on any failure; never throws.
+ */
+export function readTicket(token: string | undefined | null, code: string): Ticket | null {
+  if (!token || token.indexOf(".") < 0) return null;
   const [body, sig] = token.split(".");
-  if (!body || !sig) return false;
+  if (!body || !sig) return null;
   const expected = crypto.createHmac("sha256", SECRET).update(body).digest("base64url");
   const a = Buffer.from(sig), b = Buffer.from(expected);
-  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return false;
+  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return null;
   try {
     const t = JSON.parse(Buffer.from(body, "base64url").toString()) as Ticket;
-    if (t.t !== "enrol") return false;                       // not a session cookie
-    if (!t.exp || Date.now() > t.exp) return false;
-    return safeEqualStr(String(t.code || ""), String(code || "").toLowerCase());
+    if (t.t !== "enrol") return null;                        // not a session cookie
+    if (!t.exp || Date.now() > t.exp) return null;
+    if (!safeEqualStr(String(t.code || ""), String(code || "").toLowerCase())) return null;
+    return t;
   } catch {
-    return false;
+    return null;
   }
+}
+
+export function verifyTicket(token: string | undefined | null, code: string): boolean {
+  return !!readTicket(token, code);
 }
 
 export function readSession(req: Request): Session | null {

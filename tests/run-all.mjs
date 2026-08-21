@@ -23,6 +23,7 @@ const SUITES = [
   "day1.mjs", // the day: one story, then three games
   "feedtest.mjs",  // Feed Echo: littles tap-and-say loop, growth, deck placement
   "iaptest.mjs",   // Apple IAP rail: native paywall, purchase/restore, web untouched
+  "hwtest.mjs",    // HW1: SLP homework replaces what the app would have picked
 ];
 
 let bad = 0;

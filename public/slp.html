@@ -207,6 +207,24 @@
     .tool-card .tool-badge.soon { background:#fff5e0; color:#b07908; }
 
     /* ── Banner ───────────────────────────────────── */
+    /* homework */
+    .hwstat { display:inline-block; font-weight:800; font-size:11px; letter-spacing:.06em; text-transform:uppercase; padding:3px 9px; border-radius:999px; }
+    .hwstat.active { background:#e6f4ff; color:#1173b8; }
+    .hwstat.completed { background:#eafce9; color:var(--green-d); }
+    .hwstat.missed { background:#fdeaf1; color:#c2306a; }
+    .sndpick { display:flex; flex-wrap:wrap; gap:7px; margin-top:4px; }
+    .sndpick button { border:2px solid var(--line); background:#fff; color:var(--ink); border-radius:11px; padding:8px 13px; font-weight:800; font-size:14px; cursor:pointer; font-family:inherit; }
+    .sndpick button.on { background:var(--blue); border-color:var(--blue); color:#fff; }
+    .sndpick button .norm { font-weight:700; font-size:10.5px; opacity:.65; margin-left:4px; }
+    .hwgrid { display:grid; gap:16px; }
+    @media (min-width:900px){ .hwgrid { grid-template-columns:1fr 320px; align-items:start; } }
+    .preview { background:#f7fbff; border:1px solid var(--line); border-radius:14px; padding:16px; }
+    .preview h4 { margin:0 0 10px; font-size:12px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); }
+    .phone { background:#fff; border:1px solid var(--line); border-radius:14px; padding:14px; }
+    .phone .pt { font-weight:800; font-size:16px; }
+    .phone .pn { font-size:13.5px; color:#46627a; line-height:1.5; margin-top:6px; }
+    .phone .pm { font-size:12.5px; color:var(--muted); margin-top:10px; line-height:1.5; }
+    .warn { background:#fff8e6; border:1px solid #ffe0a3; color:#8a6100; border-radius:12px; padding:11px 13px; font-size:13px; font-weight:700; line-height:1.5; margin-top:12px; }
     .banner {
       background:#fff7e6; border:1px solid #ffe2a8; border-radius:12px;
       padding:12px 14px; font-size:12.5px; font-weight:700; color:#8a6400;
@@ -257,6 +275,9 @@
       </a>
       <a class="nav-item" data-page="familylink" href="#">
         <span class="icon">🔗</span> Family Link
+      </a>
+      <a class="nav-item" data-page="homework" href="#">
+        <span class="icon">📝</span> Homework
       </a>
       <a class="nav-item" data-page="toolkit" href="#">
         <span class="icon">🛠️</span> Toolkit
@@ -312,8 +333,8 @@
         <div class="card">
           <div class="stat-row">
             <div class="stat-box"><div class="stat-val" id="statFamilies">0</div><div class="stat-label">Families</div></div>
-            <div class="stat-box"><div class="stat-val" id="statSessions">0</div><div class="stat-label">Sessions</div></div>
-            <div class="stat-box"><div class="stat-val" id="statAccuracy">—</div><div class="stat-label">Avg Accuracy</div></div>
+            <div class="stat-box"><div class="stat-val" id="statSessions">0</div><div class="stat-label">Attempts</div></div>
+            <div class="stat-box"><div class="stat-val" id="statAccuracy">—</div><div class="stat-label">Avg pass rate</div></div>
           </div>
         </div>
 
@@ -466,6 +487,76 @@
       </div>
 
       <!-- ════════ YOUR PROFILE ════════ -->
+      <!-- ════════ HOMEWORK ════════ -->
+      <!-- Register matters here: "practice", "homework", "sounds". Never
+           therapy, treatment, plan-of-care or diagnosis — the moment this page
+           talks like a medical record it starts being treated as one. -->
+      <div class="page" id="page-homework">
+        <div class="page-header">
+          <h1>Homework 📝</h1>
+          <p>Set what a child practises at home. Sona swaps its own daily picks for yours — this is not a to-do list beside the app, it <em>is</em> what they practise next.</p>
+        </div>
+
+        <div class="card">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <h2>Assigned</h2>
+            <button class="btn ghost" id="hwRefresh" style="margin-left:auto;padding:8px 14px;">↻ Refresh</button>
+          </div>
+          <div id="hwList" style="margin-top:10px;"><p class="sub">Loading…</p></div>
+        </div>
+
+        <div class="card">
+          <h2>New homework</h2>
+          <div class="hwgrid" style="margin-top:10px;">
+            <div>
+              <label class="fl" for="hwChild">Child</label>
+              <select id="hwChild"><option value="">Loading your caseload…</option></select>
+
+              <label class="fl" for="hwTitle">Title <span style="font-weight:700;color:#aab9c8;">(the parent sees this)</span></label>
+              <input id="hwTitle" type="text" maxlength="60" placeholder="e.g. R in the middle of words" />
+
+              <label class="fl" for="hwNote">Note to the parent <span style="font-weight:700;color:#aab9c8;">(optional)</span></label>
+              <textarea id="hwNote" maxlength="240" placeholder="e.g. Short and often beats long and once — two minutes after breakfast is plenty."></textarea>
+
+              <label class="fl">Sounds <span style="font-weight:700;color:#aab9c8;">(up to 3 — the number beside each is the age it is typically acquired)</span></label>
+              <div class="sndpick" id="hwSounds"></div>
+              <div class="warn" id="hwNorm" style="display:none;"></div>
+
+              <label class="fl" for="hwPos">Where in the word</label>
+              <select id="hwPos"></select>
+
+              <label class="fl" for="hwReps">Reps a day</label>
+              <select id="hwReps"></select>
+
+              <label class="fl" for="hwWords">Specific words <span style="font-weight:700;color:#aab9c8;">(optional, comma separated — leave blank to use Sona's word bank)</span></label>
+              <input id="hwWords" type="text" placeholder="e.g. carrot, arrow, mirror" />
+              <p class="sub" id="hwWordsNote" style="margin-top:5px;"></p>
+
+              <div style="display:flex;gap:12px;">
+                <div style="flex:1;"><label class="fl" for="hwStart">Starts</label><input id="hwStart" type="date" /></div>
+                <div style="flex:1;"><label class="fl" for="hwDue">Ends</label><input id="hwDue" type="date" /></div>
+              </div>
+              <p class="sub" id="hwSpan" style="margin-top:6px;"></p>
+
+              <button class="btn green" id="hwSave" style="margin-top:16px;width:100%;">Assign this homework →</button>
+              <div class="err" id="hwErr"></div>
+            </div>
+
+            <!-- What the parent actually receives. A clinician will not trust
+                 a send they cannot see the shape of first. -->
+            <div class="preview">
+              <h4>What the family sees</h4>
+              <div class="phone">
+                <div class="pt" id="pvTitle">Practice at home</div>
+                <div class="pn" id="pvNote"></div>
+                <div class="pm" id="pvMeta"></div>
+              </div>
+              <p class="sub" style="margin-top:12px;line-height:1.5;">Nothing pings the child. The next time they open Sona, these are the sounds and words their day is built from.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div class="page" id="page-profile">
         <div class="page-header">
           <h1>Your Profile 👤</h1>
@@ -573,6 +664,7 @@
       $("overlay").classList.remove("open");
       // lazy load
       if(name==="families") loadRoster();
+      if(name==="homework"){ hwInit(); loadHomework(); }
     }
     document.querySelectorAll(".nav-item[data-page]").forEach(function(n){
       n.onclick=function(e){e.preventDefault();switchPage(n.dataset.page);};
@@ -654,6 +746,147 @@
       }).catch(function(){host.innerHTML='<p class="sub">Couldn\'t load right now.</p>';});
     }
     $("rosterRefresh").onclick=loadRoster;
+
+    /* ── Homework ──────────────────────────────────── */
+    // The whole feature in one place: pick a child, pick sounds, pick a window,
+    // see what the parent gets, send. Everything the SLP chooses is re-clamped
+    // on the server (lib/homework.ts) — this half is for the clinician's eyes,
+    // never the validator.
+    var HW_SEL={}, hwKids=[], hwReady=false;
+    function isoToday(d){d=d||new Date();return d.getFullYear()+"-"+("0"+(d.getMonth()+1)).slice(-2)+"-"+("0"+d.getDate()).slice(-2);}
+    function addDays(iso,n){var p=iso.split("-").map(Number);var d=new Date(Date.UTC(p[0],p[1]-1,p[2]+n));return d.toISOString().slice(0,10);}
+    function daysBetween(a,b){var x=a.split("-").map(Number),y=b.split("-").map(Number);return Math.round((Date.UTC(y[0],y[1]-1,y[2])-Date.UTC(x[0],x[1]-1,x[2]))/86400000);}
+    function sLabel(x){return(window.Sona&&Sona.soundLabel)?Sona.soundLabel(x):x;}
+    function posName(id){var m={i:"the beginning of words",m:"the middle of words",f:"the end of words",v:"vocalic R",b:"blends",mix:"anywhere in the word"};return m[id]||id;}
+
+    function hwInit(){
+      if(hwReady) return; hwReady=true;
+      var ALL=(window.Sona&&Sona.ALL_SOUNDS)?Sona.ALL_SOUNDS:["R","S","L","K","SH","CH","TH","G","F"];
+      var NORM=(window.Sona&&Sona.SOUND_NORM)?Sona.SOUND_NORM:{};
+      var wrap=$("hwSounds"); wrap.innerHTML="";
+      ALL.forEach(function(x){
+        var b=document.createElement("button"); b.type="button";
+        b.innerHTML=esc(sLabel(x))+(NORM[x]?'<span class="norm">'+NORM[x]+'+</span>':"");
+        b.onclick=function(){
+          if(HW_SEL[x]){delete HW_SEL[x];b.classList.remove("on");}
+          // three is the cap the server enforces; say so rather than silently dropping the fourth
+          else if(Object.keys(HW_SEL).length>=3){ $("hwErr").textContent="Three sounds is the most one assignment can carry."; return; }
+          else {HW_SEL[x]=1;b.classList.add("on");}
+          $("hwErr").textContent=""; paintHw();
+        };
+        wrap.appendChild(b);
+      });
+      var POS=(window.Sona&&Sona.POSITIONS)?Sona.POSITIONS:[{id:"mix",name:"Mixed"}];
+      $("hwPos").innerHTML=POS.map(function(p){return'<option value="'+p.id+'"'+(p.id==="mix"?" selected":"")+'>'+esc(p.name)+'</option>';}).join("");
+      $("hwReps").innerHTML=[10,15,20,30,40,60].map(function(n){return'<option value="'+n+'"'+(n===20?" selected":"")+'>'+n+' a day</option>';}).join("");
+      $("hwStart").value=isoToday();
+      $("hwDue").value=addDays(isoToday(),13);
+      ["hwTitle","hwNote","hwPos","hwReps","hwWords","hwStart","hwDue","hwChild"].forEach(function(id){
+        var el=$(id); if(el){ el.oninput=paintHw; el.onchange=paintHw; }
+      });
+      paintHw();
+    }
+
+    // Live preview + the two things a clinician should see before sending: the
+    // developmental-norm flag, and which of their typed words Sona can act on.
+    function paintHw(){
+      var sounds=Object.keys(HW_SEL);
+      var kid=hwKids.filter(function(k){return k.childId===$("hwChild").value;})[0];
+      $("pvTitle").textContent=$("hwTitle").value.trim()||"Practice at home";
+      var note=$("hwNote").value.trim();
+      $("pvNote").textContent=note; $("pvNote").style.display=note?"":"none";
+      var meta=sounds.length
+        ? sounds.map(sLabel).join(", ")+" — "+posName($("hwPos").value)+" · "+$("hwReps").value+" a day"
+        : "Pick at least one sound.";
+      $("pvMeta").textContent=meta;
+
+      // developmental norms: FLAG, never block. An SLP assigning above the norm
+      // may be exactly right in a way a parent picking it off a menu is not.
+      var NORM=(window.Sona&&Sona.SOUND_NORM)?Sona.SOUND_NORM:{};
+      var age=kid?parseInt(kid.age,10):0;
+      var over=age?sounds.filter(function(x){return NORM[x]>age;}):[];
+      if(over.length){
+        $("hwNorm").style.display="block";
+        $("hwNorm").innerHTML="Heads up: "+over.map(sLabel).join(", ")+(over.length>1?" are":" is")+" typically acquired later than age "+age+". Sona will assign it because you did — noting it, not blocking it.";
+      } else { $("hwNorm").style.display="none"; }
+
+      // words: only ones Sona has a recorded target for will be used
+      var typed=$("hwWords").value.split(",").map(function(w){return w.trim().toLowerCase();}).filter(Boolean);
+      if(typed.length && sounds.length && window.Sona && Sona.WORDS){
+        var known={}; sounds.forEach(function(x){(Sona.WORDS[x]||[]).forEach(function(w){known[String(w.w).toLowerCase()]=1;});});
+        var miss=typed.filter(function(w){return !known[w];});
+        $("hwWordsNote").textContent=miss.length
+          ? "Sona doesn't have "+miss.join(", ")+" for "+sounds.map(sLabel).join("/")+" — those will be skipped and its own words used instead."
+          : "All "+typed.length+" will be used.";
+      } else { $("hwWordsNote").textContent=""; }
+
+      var st=$("hwStart").value,du=$("hwDue").value;
+      if(st&&du){ var n=daysBetween(st,du)+1; $("hwSpan").textContent=n>0?(n+" day"+(n===1?"":"s")+" of practice."):"The end date is before the start date."; }
+    }
+
+    function hwRow(it){
+      var hw=it.hw||{},kid=hwKids.filter(function(k){return k.childId===it.childId;})[0];
+      var done=Object.keys(it.days||{}).filter(function(d){return it.days[d]>=(hw.repsPerDay||1);}).length;
+      var span=Math.max(1,daysBetween(hw.start||isoToday(),hw.due||isoToday())+1);
+      return '<div class="kid"><div class="kidtop"><span class="kidname">'+esc((kid&&kid.child)||"Child")+'</span>'
+        +'<span class="hwstat '+esc(it.status)+'">'+esc(it.status)+'</span>'
+        +'<span class="kidwhen">'+esc(hw.start||"")+" → "+esc(hw.due||"")+'</span></div>'
+        +'<div class="sub" style="margin-top:6px;">'+esc(hw.title||"")+" — "+esc((hw.sounds||[]).map(sLabel).join(", "))+" · "+esc(posName(hw.pos))+" · "+esc(String(hw.repsPerDay||""))+' a day</div>'
+        +'<div class="sub" style="margin-top:4px;">Hit the daily target on <b>'+done+'</b> of '+span+' days.</div>'
+        +(it.status==="active"?'<button class="btn ghost hwEnd" data-child="'+esc(it.childId)+'" style="margin-top:8px;padding:8px 14px;">End early</button>':"")
+        +'</div>';
+    }
+
+    function loadHomework(){
+      var host=$("hwList"); host.innerHTML='<p class="sub">Loading…</p>';
+      // the caseload feeds the child picker AND the names on the list
+      fetch("/api/slp").then(function(r){return r.json();}).then(function(j){
+        hwKids=((j&&j.kids)||[]).filter(function(k){return k.childId;});
+        $("hwChild").innerHTML=hwKids.length
+          ? hwKids.map(function(k){return'<option value="'+esc(k.childId)+'">'+esc(k.child||"Child")+(k.age?" (age "+esc(k.age)+")":"")+'</option>';}).join("")
+          : '<option value="">No families yet — share your link first</option>';
+        paintHw();
+        return fetch("/api/slp/homework").then(function(r){return r.json();});
+      }).then(function(j){
+        if(!j||!j.ok){host.innerHTML='<p class="sub">Couldn\'t load right now.</p>';return;}
+        if(!j.configured){host.innerHTML='<p class="sub">Homework needs a data store connected.</p>';return;}
+        var items=(j.items||[]).filter(function(i){return i.hw;});
+        host.innerHTML=items.length?items.map(hwRow).join(""):'<p class="sub">Nothing assigned yet. Set the first one below.</p>';
+        document.querySelectorAll(".hwEnd").forEach(function(b){
+          b.onclick=function(){
+            b.disabled=true;
+            fetch("/api/slp/homework",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({childId:b.dataset.child,action:"clear"})})
+              .then(function(){loadHomework();}).catch(function(){b.disabled=false;});
+          };
+        });
+      }).catch(function(){host.innerHTML='<p class="sub">Couldn\'t load right now.</p>';});
+    }
+    $("hwRefresh").onclick=loadHomework;
+
+    $("hwSave").onclick=function(){
+      var sounds=Object.keys(HW_SEL),childId=$("hwChild").value,err=$("hwErr");
+      err.style.color="";
+      if(!childId){err.textContent="Pick a child first.";return;}
+      if(!sounds.length){err.textContent="Pick at least one sound to practise.";return;}
+      if(daysBetween($("hwStart").value,$("hwDue").value)<0){err.textContent="The end date is before the start date.";return;}
+      $("hwSave").disabled=true; err.style.color="var(--muted)"; err.textContent="Assigning…";
+      fetch("/api/slp/homework",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
+        childId:childId,
+        hw:{
+          title:$("hwTitle").value.trim(), note:$("hwNote").value.trim(),
+          sounds:sounds, pos:$("hwPos").value, repsPerDay:parseInt($("hwReps").value,10),
+          words:$("hwWords").value.split(",").map(function(w){return w.trim();}).filter(Boolean),
+          start:$("hwStart").value, due:$("hwDue").value,
+        },
+      })}).then(function(r){return r.json();}).then(function(j){
+        $("hwSave").disabled=false;
+        if(!j||!j.ok){err.style.color="var(--pink)";err.textContent=(j&&j.error)||"Couldn\'t assign that — try again.";return;}
+        err.style.color="var(--green-d)";err.textContent="Assigned ✓ It lands the next time they open Sona.";
+        HW_SEL={}; document.querySelectorAll("#hwSounds button").forEach(function(b){b.classList.remove("on");});
+        $("hwTitle").value="";$("hwNote").value="";$("hwWords").value="";
+        paintHw(); loadHomework();
+      }).catch(function(){$("hwSave").disabled=false;err.style.color="var(--pink)";err.textContent="Network hiccup — try again.";});
+    };
 
     /* ── Feedback ──────────────────────────────────── */
     var fbCat="general";
