@@ -57,7 +57,7 @@
     /* the card BREATHES: it fills whatever height the flex column leaves
        (banner, nudge, iOS call pill all just shrink it) instead of holding a
        fixed 41dvh that overflowed the page whenever extra rows appeared */
-    #heroCard{position:relative;height:100%;min-height:150px;max-height:400px;max-width:80vw;aspect-ratio:234/290;border-radius:26px;border:7px solid #fff;box-shadow:0 12px 26px rgba(90,50,10,.2);transform:rotate(-2deg);background:#eee center/cover no-repeat;cursor:pointer;transition:transform .12s;}
+    #heroCard{position:relative;height:100%;min-height:150px;max-height:400px;max-width:80vw;aspect-ratio:234/290;border-radius:20px;border:6px solid #fff;box-shadow:0 10px 22px rgba(90,50,10,.16);transform:rotate(-2deg);background:#cfe7f2;cursor:pointer;transition:transform .12s;}
     #heroCard:active{transform:rotate(-2deg) scale(.98);}
     #heroCap{background:#fff;border-radius:16px;padding:10px 20px 12px;box-shadow:0 6px 16px rgba(90,50,10,.14);transform:rotate(1.5deg);margin-top:-26px;text-align:center;max-width:82vw;}
     #heroName{font-family:"Baloo 2";font-weight:800;font-size:19px;}
@@ -68,7 +68,7 @@
     #upNextLbl{font-family:"Baloo 2";font-weight:800;font-size:12px;letter-spacing:.1em;color:var(--label);}
     /* DAY1: three games, not two — they share the row, so they shrink */
     #thumbs{display:flex;gap:10px;justify-content:center;}
-    .thumb{position:relative;flex:1 1 0;min-width:0;max-width:118px;aspect-ratio:1/.97;border-radius:18px;border:5px solid #fff;box-shadow:0 6px 14px rgba(90,50,10,.16);background:#eee center/cover no-repeat;cursor:pointer;transition:transform .12s;margin-bottom:12px;}
+    .thumb{position:relative;flex:1 1 0;min-width:0;max-width:118px;aspect-ratio:1/.97;border-radius:20px;border:5px solid #fff;box-shadow:0 10px 22px rgba(90,50,10,.16);background:#cfe7f2;cursor:pointer;transition:transform .12s;margin-bottom:12px;}
     .thumb:nth-child(1){transform:rotate(-2.5deg);}
     .thumb:nth-child(2){transform:rotate(1deg);}
     .thumb:nth-child(3){transform:rotate(2.5deg);}
@@ -291,38 +291,21 @@
     var EP=null, TRIO=[], READ=false;
     try{ EP=S.dailyStory(); TRIO=S.dailyGames()||[]; READ=!!S.storyRead(); }catch(e){}
 
-    function art(key){ try{ return (window.SonaScenes&&SonaScenes.has(key))?("url('"+SonaScenes.uri(key)+"')"):""; }catch(e){ return ""; } }
-    // The painted panel takes over the moment it decodes — sized per slot (hero
-    // 800w, thumbs 300w) so the swap beats the eye. Two art shapes live side by
-    // side: full-bleed painted scenes (tall 2:3, the house-in-its-street style)
-    // simply cover the card; square sticker cut-outs layer over the vector city.
-    function upgradeArt(el,key){ var im=new Image(); im.onload=function(){
-      var fullBleed = im.naturalHeight > im.naturalWidth*1.2;
-      if(fullBleed){ el.style.backgroundImage="url('"+im.src+"')"; el.style.backgroundSize="cover"; el.style.backgroundPosition="center"; el.style.backgroundRepeat="no-repeat"; return; }
-      var base=art(key);
-      el.style.backgroundImage="url('"+im.src+"')"+(base?", "+base:"");
-      el.style.backgroundSize="88% auto"+(base?", cover":"");
-      el.style.backgroundPosition="center 62%"+(base?", center":"");
-      el.style.backgroundRepeat="no-repeat";
-    }; im.src="/coach/city/"+key+"-"+(el.id==="heroCard"?"800":"300")+".webp"; }
-    function applyArt(el,key){
-      if(key==="feed"&&!art(key)){
-        el.style.backgroundImage="linear-gradient(160deg,#ffe9b8,#b6eca0)";
-        el.style.backgroundSize="cover"; upgradeArt(el,key); return;
-      }
-      el.style.backgroundImage=art(key); upgradeArt(el,key);
-    }
+    // ART1: every activity is a flat sticker from /assets/sona-stickers.svg on a
+    // solid field, inside the card's white die-cut edge. The old path fetched a
+    // painted .webp per activity and layered it over a vector-city gradient —
+    // README section 2a retires photographic panels outright, and that was the
+    // last raster illustration in the app.
+    function applyArt(el,key){ var g=S.gameSticker(key); S.paintSticker(el,g[0],g[1]); }
 
     function renderHero(){
       var hero=$("heroCard");
       if(!READ){
         // the story card: a night sky, because that is where the arc lives
-        hero.style.backgroundImage="linear-gradient(170deg,#2b56a8,#152a5c 55%,#0d1b3e)";
-        hero.style.backgroundSize="cover";
-        hero.innerHTML='<span style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;">'
-          +'<span style="font-size:62px;text-shadow:0 8px 16px rgba(0,0,0,.45);">📖</span>'
-          +'<span style="font-family:\'Baloo 2\';font-weight:800;font-size:12px;letter-spacing:.1em;color:#ffd21c;">CHAPTER '+(S.dailyChapterNum?S.dailyChapterNum():1)+'</span>'
+        hero.innerHTML='<span style="position:absolute;left:0;right:0;top:10px;text-align:center;z-index:1;">'
+          +'<span style="font-family:\'Baloo 2\';font-weight:800;font-size:12px;letter-spacing:.1em;color:#4a2c14;background:rgba(255,255,255,.82);border-radius:99px;padding:4px 10px;">CHAPTER '+(S.dailyChapterNum?S.dailyChapterNum():1)+'</span>'
           +'</span>';
+        applyArt(hero,"chapter");
         $("heroName").textContent=EP?EP.t:"Today's story";
         $("heroSub").innerHTML="Read it first to unlock <b>3</b> games";
         $("goBtn").textContent="READ TODAY'S STORY";
@@ -331,9 +314,8 @@
       }
       // story done: the hero becomes the first of today's unlocked games
       var k=TRIO[0], act=(S.gameAct&&S.gameAct(k))||null;
+      hero.innerHTML="";
       applyArt(hero,k);
-      hero.innerHTML=(k==="feed"&&!art(k))
-        ? '<span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:78px;text-shadow:0 8px 14px rgba(120,70,10,.25);">🦜🍎</span>' : "";
       $("heroName").textContent=act?act.name:"Play";
       $("heroSub").textContent=act?act.sub:"";
       $("goBtn").textContent="LET'S GO!";
@@ -351,8 +333,10 @@
         var el=document.createElement("div");
         el.className="thumb"+(READ?"":" locked");
         el.dataset.key=k;
-        applyArt(el,k);
+        // label first, sticker second: paintSticker PREPENDS, so the art lands
+        // behind the name. Painting first and then setting innerHTML wipes it.
         el.innerHTML="<b>"+act.name+"</b>"+(READ?"":'<span class="lock">🔒</span>');
+        applyArt(el,k);
         el.onclick=function(){
           if(!READ){
             // never a dead tap: say what unlocks it, and offer the way there
@@ -420,6 +404,10 @@
 
     // weekly volume sync — anonymous {id, week, rep count}, throttled in sona.js
     try{ if(S&&S.repsBeacon) S.repsBeacon(); }catch(e){}
+    // Homework: pull whatever this child's SLP assigned and report yesterday's
+    // reps against it. Fire-and-forget — the day's card is already painted from
+    // the cached copy, so a slow or dead network never delays a child starting.
+    try{ if(S&&S.syncHomework) S.syncHomework(); }catch(e){}
     // App Store build: quiet entitlement sync (restores/reinstalls stay unlocked)
     try{ if(S&&S.iapRefresh) S.iapRefresh(); }catch(e){}
 

@@ -147,12 +147,12 @@
   const KIDSKEY = "sona.kids.v1";
   const PER_KID = new Set([
     PKEY, GKEY,
-    "sona.rotation.v1", "sona.today.v1", "sona.episode.v1", "sona.reps.v1",
-    "sona.day.v1", "sona.coinmint.v1", "sona.tickets.v1", "sona.charge.v1",
+    "sona.rotation.v1", "sona.today.v1", "sona.episode.v2", "sona.reps.v1",
+    "sona.day.v2", "sona.coinmint.v1", "sona.tickets.v1", "sona.charge.v1",
     "sona.daily.v1", "sona.session.v1", "sona.levels.v1", "sona.campaign.v1",
     "sona.stickers.v1", "sona.attempts.v1", "sona.outcomes.v1",
     "sona.lib.read.v1", "sona.feed.v1", "sona.call.v1", "sona.callhist.v1",
-    "sona.games.v1",
+    "sona.games.v1", "sona.homework.v1",
   ]);
   function _kids() {
     let v = null;
@@ -396,9 +396,74 @@
   // The rotation persists across days (stop at round 3, resume at round 3);
   // todayRing() below is the per-day goal and resets each morning.
   const ROTKEY = "sona.rotation.v1", RINGKEY = "sona.today.v1", ROT_LEN = 5;
+  // ── HW1: homework an SLP assigned ──────────────────────────────────────
+  // The design decision: homework REPLACES what the app would have picked. It
+  // is not a to-do list beside the practice — rotSounds(), the word position
+  // and the daily rep goal all defer to it, so the clinician's plan is simply
+  // what the child does next. Homework the app ignores is a checkbox.
+  //
+  // Cached locally and read from the cache on every call. The network is never
+  // in the path of a child starting a round: a phone in a car with no signal
+  // practises yesterday's assignment rather than nothing.
+  const HWKEY = "sona.homework.v1";
+  function homework() {
+    try {
+      const hw = (load(HWKEY, {}) || {}).hw;
+      if (!hw || !hw.sounds || !hw.sounds.length) return null;
+      const d = _localDay();
+      if (hw.start && d < hw.start) return null;   // not started yet
+      if (hw.due && d > hw.due) return null;       // window closed
+      return hw;
+    } catch (e) { return null; }
+  }
+  // Sounds the assignment names that this app actually has words for. An SLP
+  // can type anything; the child should never land on an empty round.
+  function homeworkSounds() {
+    const hw = homework(); if (!hw) return [];
+    return hw.sounds.map((x) => String(x).toUpperCase()).filter((x) => WORDS[x]);
+  }
+  // Pull the assignment, and report this child's rep total against the one we
+  // are currently holding. Fire-and-forget, at most hourly, and every failure
+  // path leaves the cached copy exactly where it was.
+  let _hwAt = 0;
+  function syncHomework(force) {
+    try {
+      if (!isPilot()) return Promise.resolve(null);
+      const now = Date.now();
+      if (!force && now - _hwAt < 3600000) return Promise.resolve(homework());
+      _hwAt = now;
+      const pi = pilotInfo(), code = pi.code || "", childId = pi.childId || "";
+      let ticket = ""; try { ticket = localStorage.getItem("sona.slpticket") || ""; } catch (e) {}
+      if (!code || !childId || !ticket) return Promise.resolve(null);
+      const body = { code: code, childId: childId, ticket: ticket };
+      // TODAY'S TOTAL, never a delta — a retried request cannot inflate it,
+      // the same reason mintCoins() derives from the day's count rather than
+      // incrementing. Reps only; no audio, no name, nothing else.
+      const cur = homework();
+      if (cur) { body.forId = cur.id; body.reps = repsToday(); }
+      return fetch("/api/homework", {
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
+      }).then((r) => r.json()).then((j) => {
+        if (j && j.ok) save(HWKEY, { hw: j.hw || null, at: Date.now() });
+        return homework();
+      }).catch(() => homework());
+    } catch (e) { return Promise.resolve(null); }
+  }
+
   function rotSounds() {
+    // Homework first: this is the whole point of assigning it.
+    const hs = homeworkSounds();
+    if (hs.length) return hs;
     const f = ((getProfile().focusSounds) || []).map((s) => String(s).toUpperCase()).filter((s) => WORDS[s]);
     return f.length ? f : ["R"];
+  }
+  // The position to practise: the assignment's, else the family's setting.
+  // One reader for both, so a page cannot honour homework for the sound and
+  // quietly ignore it for the position.
+  function practicePos() {
+    const hw = homework();
+    if (hw && hw.pos) return hw.pos;
+    try { return getProfile().practicePosition || "i"; } catch (e) { return "i"; }
   }
   function rotState() {
     const st = load(ROTKEY, {}); const f = rotSounds();
@@ -954,6 +1019,10 @@
   // a bar that creeps up on a timer would teach exactly the wrong lesson.
   const REP_GOAL_DEFAULT = 25;
   function repGoal() {
+    // An assignment's daily target outranks the family's own — the clinician
+    // set it, and the jar the child is filling should be the one they set.
+    const hw = homework();
+    if (hw && hw.repsPerDay > 0) return hw.repsPerDay;
     const g = parseInt(getProfile().dailyGoal, 10) || 0;
     return g > 0 ? g : REP_GOAL_DEFAULT;
   }
@@ -1214,6 +1283,18 @@
     { id: "v", name: "Vocalic R" }, { id: "b", name: "Blends" }, { id: "mix", name: "Mixed" },
   ];
   function wordsFor(sound, pos) {
+    // An assignment may name its own words. Only words this app already knows
+    // are used — an SLP typing a word with no recorded target is a silent
+    // dead end, so unknown ones fall through to the bank rather than shipping
+    // a round the child cannot pass.
+    try {
+      const hw = homework();
+      if (hw && hw.words && hw.words.length && hw.sounds.indexOf(String(sound).toUpperCase()) >= 0) {
+        const want = {}; hw.words.forEach(function (w) { want[String(w).toLowerCase()] = 1; });
+        const pick = (WORDS[sound] || []).filter(function (w) { return want[String(w.w).toLowerCase()]; });
+        if (pick.length) return pick;
+      }
+    } catch (e) {}
     const list = (WORDS[sound] || []).slice();
     if (pos === "mix" || pos === "all") return list;
     pos = pos || "i"; // no selection → initial position (preserves prior behavior; SLPs opt into others)
@@ -1470,9 +1551,21 @@
   // surveillance are separate decisions, and a family can take the free app
   // without agreeing to be watched.
   function _slpVerify(code, key) {
+    // Mint this device's child id FIRST so the ticket can be bound to it. It
+    // used to be minted later, at startPilot(), which meant every ticket was
+    // code-only — and a code-only ticket is readable by every other family on
+    // the same caseload. The id is a random opaque string, not a name.
+    let cid = "";
+    try { cid = pilotInfo().childId || ""; } catch (e) {}
+    if (!cid) {
+      try {
+        cid = Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
+        const cur = pilotInfo(); save(PILOTKEY, Object.assign({}, cur, { childId: cid }));
+      } catch (e) { cid = ""; }
+    }
     return fetch("/api/slp/redeem", {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ code, key }),
+      body: JSON.stringify({ code, key, childId: cid }),
     }).then((r) => r.json()).then((j) => {
       if (j && j.ok && j.valid) {
         try { localStorage.setItem("sona.slpok", code.toUpperCase()); localStorage.setItem("sona.slpunlock", "1"); } catch (e) {}
@@ -2121,7 +2214,7 @@
       // Prefer the word's own tagged position; else fall back to the practice setting.
       let pos = a.pos || "";
       if (!pos && word) { const hit = (WORDS[sound] || []).filter(function (x) { return x.w === word; })[0]; if (hit) pos = hit.pos || "i"; }
-      if (!pos) { try { pos = getProfile().practicePosition || ""; } catch (e) { pos = ""; } }
+      if (!pos) { try { pos = practicePos(); } catch (e) { pos = ""; } }
       if (pos && pos !== "mix" && pos !== "all") {
         bs.byPos = bs.byPos || {}; const bp = bs.byPos[pos] || (bs.byPos[pos] = { a: 0, p: 0 }); bp.a++; if (pass) bp.p++;
       }
@@ -2262,6 +2355,63 @@
     try { document.addEventListener("visibilitychange", () => { if (document.hidden) run(); }); } catch (e) {}
     try { global.addEventListener("pagehide", run); } catch (e) {}
   }
+
+  // ── ART1: the sticker sheet ────────────────────────────────────────────
+  // Every illustration in the kid app is one <g> in /assets/sona-stickers.svg,
+  // referenced as <use href="#id">. <use> cannot cross a document boundary, so
+  // the sheet has to be IN the page — the design handoff says to paste it into
+  // every page for that reason. It is 82KB, and pasting it into twenty pages
+  // ships it twenty times; fetching it once puts a single cached copy behind
+  // all of them and keeps one source of truth on disk.
+  //
+  // A card must never be blank while that request is in flight, so stickerBox()
+  // paints the flat FIELD colour immediately and the art lands on top when the
+  // sheet arrives. Offline, on a failed fetch, or with JS half-loaded, the card
+  // is a solid coloured tile with its label — not an empty grey box.
+  const STICKER_FIELDS = { sky: "#cfe7f2", peach: "#ffe1c4", mint: "#d9efc9" };
+  let _sheet = null;
+  function stickerSheet() {
+    if (_sheet) return _sheet;
+    _sheet = fetch("/assets/sona-stickers.svg").then((r) => r.text()).then((t) => {
+      try {
+        if (document.getElementById("sona-sticker-sheet")) return true;
+        const d = document.createElement("div");
+        d.id = "sona-sticker-sheet";
+        d.setAttribute("aria-hidden", "true");
+        d.style.cssText = "position:absolute;width:0;height:0;overflow:hidden";
+        d.innerHTML = t;
+        document.body.insertBefore(d, document.body.firstChild);
+      } catch (e) {}
+      return true;
+    }).catch(() => false);
+    return _sheet;
+  }
+  // One sticker, filling its box. preserveAspectRatio="slice" crops rather than
+  // letterboxing, which is why every sticker keeps its subject inside y14-106.
+  function stickerBox(id, field) {
+    const bg = STICKER_FIELDS[field || "sky"] || STICKER_FIELDS.sky;
+    return '<span class="stk" style="position:absolute;inset:0;overflow:hidden;border-radius:inherit;background:' + bg + ';">'
+      + '<svg viewBox="0 0 120 120" preserveAspectRatio="xMidYMid slice" style="display:block;width:100%;height:100%">'
+      + '<use href="#' + id + '"></use></svg></span>';
+  }
+  // Paint a sticker into an element, behind whatever labels it already carries.
+  function paintSticker(el, id, field) {
+    if (!el) return;
+    try {
+      const old = el.querySelector(":scope > .stk"); if (old) old.remove();
+      el.insertAdjacentHTML("afterbegin", stickerBox(id, field));
+      stickerSheet();
+    } catch (e) {}
+  }
+  // Which sticker each activity wears. The design drew six scenes; Feed Echo is
+  // the under-6 game it never covered, so it wears Echo himself on the mint
+  // field rather than borrowing a scene that means something else.
+  const GAME_STICKER = {
+    slice: ["st-fruit", "sky"], run: ["st-sprint", "mint"], stack: ["st-blocks", "sky"],
+    tiles: ["st-piano", "sky"], glide: ["st-balloon", "sky"], feed: ["p-echo-idle", "mint"],
+    story: ["st-story", "peach"], chapter: ["st-story", "peach"],
+  };
+  function gameSticker(key) { return GAME_STICKER[String(key || "").replace(/^arcade-|\.html$/g, "")] || GAME_STICKER.story; }
 
   const HUMAN_CLIPS = false;
   function humanClipsOn() { return HUMAN_CLIPS; }
@@ -2479,5 +2629,5 @@
   try { _grandfatherFreeEra(); } catch (e) {}
   try { installDebug(); } catch (e) {}
 
-  global.Sona = { pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, ladderContent, FREE_MODE, isFree, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, storyRead, markStoryRead, dailyGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, gated, gateVerify, gateOk, requireGate, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repsBeacon, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES };
+  global.Sona = { pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, ladderContent, FREE_MODE, isFree, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, storyRead, markStoryRead, dailyGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, gated, gateVerify, gateOk, requireGate, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repsBeacon, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES };
 })(window);

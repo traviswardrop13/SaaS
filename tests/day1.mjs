@@ -204,11 +204,42 @@ async function home(age) {
   await ctx.close();
 }
 
+// ── 4b. two siblings on one iPad do NOT share the story gate ──
+// The regression this catches shipped once already: the day pin and the
+// chapter pointer were renamed to v2 and PER_KID kept naming v1, so child A
+// reading the story unlocked child B's games on the same device.
+{
+  const { ctx, pg } = await home("7");
+  const st = await pg.evaluate(() => {
+    Sona.markStoryRead();
+    const firstSlot = (Sona.activeKid() || {}).slot;
+    const a = { read: Sona.storyRead(), ch: Sona.dailyChapterNum() };
+    Sona.switchKid(Sona.addKid("Sibling", "7"));      // addKid returns the new slot
+    Sona.saveProfile({ childName: "Sibling", childAge: "7", focusSounds: ["S"], onboarded: true });
+    const b = { read: Sona.storyRead(), ch: Sona.dailyChapterNum() };
+    Sona.switchKid(firstSlot);
+    return { a, b, backToA: Sona.storyRead() };
+  });
+  ok("child A's finished story does not unlock child B", st.a.read === true && st.b.read === false, JSON.stringify(st));
+  ok("…and each child has their own chapter pointer", st.b.ch === 1, JSON.stringify(st));
+  ok("…and switching back does not lose A's progress", st.backToA === true, JSON.stringify(st));
+  await ctx.close();
+}
+
 // ── 5. source contracts ──
 {
   const sona = readFileSync(ROOT + "/sona.js", "utf8");
-  ok("the day's state is per-child", /"sona\.day\.v1"[\s\S]{0,120}"sona\.tickets\.v1"/.test(sona),
-    "two siblings on one iPad must not share one story gate");
+  // This used to grep PER_KID for the literal "sona.day.v1". STORY1 renamed
+  // the key to v2 and PER_KID kept the old name, so the day pin and the
+  // chapter pointer silently stopped being per-child — and this assertion went
+  // on passing, because the string it was looking for was still sitting in the
+  // list doing nothing. A source contract that can be satisfied by a dead
+  // string is not a contract; the behaviour is checked below instead.
+  ok("every key the day is built from is declared per-child",
+    /const PER_KID[\s\S]{0,600}?\]\)/.exec(sona) &&
+    ["sona.day.v2", "sona.episode.v2", "sona.reps.v1", "sona.homework.v1"]
+      .every((k) => new RegExp('"' + k.replace(/\./g, "\\.") + '"').test(/const PER_KID[\s\S]{0,600}?\]\)/.exec(sona)[0])),
+    "a key the day depends on that is missing here is shared between siblings");
   ok("today's chapter is PINNED for the day", /function dailyStory[\s\S]{0,400}save\(DAYKEY/.test(sona),
     "without the pin, reading it flips the card to tomorrow's story mid-day");
   ok("finishing the story queues tomorrow's", /function markStoryRead[\s\S]{0,260}episodeAdvance\(\)/.test(sona));

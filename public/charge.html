@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
-  <title>Sona — Charge up!</title>
+  <title>Sona — Fill your ticket!</title>
   <link href="/fonts.css" rel="stylesheet">
   <link rel="manifest" href="/manifest.webmanifest" />
   <meta name="theme-color" content="#fff6e9" />
@@ -44,14 +44,25 @@
     #reveals .pop{animation:pop .45s cubic-bezier(.2,1.6,.4,1);}
     @keyframes pop{0%{transform:scale(.25);opacity:0}70%{transform:scale(1.12)}100%{transform:scale(1);opacity:1}}
     /* empty pieces are glassy SOLIDS — never dashed outlines */
-    .glass{background:rgba(255,255,255,.14)!important;border:2px solid rgba(255,255,255,.3);box-shadow:none!important;}
-    .glass.up{background:rgba(255,255,255,.22)!important;border-color:rgba(255,255,255,.55);}
+    /* Unearned pieces are white dashed GHOSTS, not dimmed solids — a child can
+       see the shape of the thing they are about to earn. Values are the design's
+       (README section 3): 2.5px dashed #fff at .75, fill rgba(255,255,255,.16). */
+    .glass{background:rgba(255,255,255,.16)!important;border:2.5px dashed rgba(255,255,255,.75);box-shadow:none!important;}
+    .glass.up{background:rgba(255,255,255,.24)!important;border-color:#fff;}
     #reveals .ringed{outline:3px solid rgba(88,204,2,.45);outline-offset:3px;}
 
     /* header: close circle · context line · star pill (design handoff A §1) */
     #top{position:relative;z-index:3;display:flex;align-items:center;gap:8px;padding:calc(14px + env(safe-area-inset-top)) 16px 0;}
     #close{border:none;width:44px;height:44px;border-radius:50%;background:#fff;color:#b9a98c;font-size:18px;font-weight:800;cursor:pointer;line-height:1;box-shadow:0 4px 0 var(--hsh);flex:0 0 auto;}
     #ctxLine{flex:1;text-align:center;font-family:"Baloo 2";font-weight:800;font-size:15px;color:var(--sky-ink);}
+    /* TICKET PILL — close | ticket | stars (README section 3). Five segments,
+       filled #ff8a3d, empty #f0e4d2, so "how many more?" is answerable at a
+       glance without counting fruit. */
+    #tktPill{display:flex;align-items:center;gap:7px;background:#fff;border-radius:99px;padding:9px 12px;box-shadow:0 4px 0 var(--hsh);flex:0 0 auto;}
+    #tktPill .segs{display:flex;gap:3px;}
+    #tktPill .segs i{display:block;width:14px;height:10px;border-radius:3px;background:#f0e4d2;transition:background .18s;}
+    #tktPill .segs i.on{background:#ff8a3d;}
+    @media (max-width:359px){ #tktPill .segs i{width:11px;} }
     #sumLbl{display:flex;align-items:center;gap:6px;background:#fff;border-radius:99px;padding:10px 13px;box-shadow:0 4px 0 var(--hsh);font-family:"Baloo 2";font-weight:800;font-size:15px;color:var(--ink);flex:0 0 auto;min-height:22px;}
 
     /* compact rotated title */
@@ -114,6 +125,8 @@
     #stand .well{position:relative;width:50px;height:52px;border-radius:11px;background:#f3c96f;box-shadow:inset 0 3px 5px rgba(120,60,10,.28);}
     #stand .well.up{box-shadow:inset 0 3px 5px rgba(120,60,10,.28),0 0 0 2px rgba(255,255,255,.65);}
     #stand .well .fr{position:absolute;left:50%;bottom:4px;transform:translateX(-50%);width:46px;height:46px;filter:drop-shadow(0 4px 5px rgba(160,60,10,.25));}
+    #stand .well .fr.ghost{filter:none;opacity:.75;}
+    #stand .well .fr.ghost svg *{fill:rgba(255,255,255,.16)!important;stroke:#fff!important;stroke-width:2.5!important;stroke-dasharray:5 5!important;}
     /* run — one receding road; the buddy stands on the top filled slab */
     #roadCol{display:flex;flex-direction:column-reverse;gap:8px;align-items:center;}
     #roadCol .slab{position:relative;height:34px;border-radius:10px;background:#b7c5d4;box-shadow:0 5px 0 rgba(40,80,120,.25);}
@@ -176,6 +189,10 @@
     <div id="top">
       <button id="close" aria-label="Close">✕</button>
       <div id="ctxLine"></div>
+      <div id="tktPill" aria-label="Ticket progress">
+        <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-2a2 2 0 0 0 0-4Z" fill="#ffb100" stroke="#f0a800" stroke-width="1.2"/><circle cx="8" cy="9" r="1.4" fill="#fff" opacity=".8"/></svg>
+        <span class="segs" id="tktSegs"><i></i><i></i><i></i><i></i><i></i></span>
+      </div>
       <div id="sumLbl"></div>
     </div>
 
@@ -186,7 +203,7 @@
     <div id="echoCluster">
       <div id="bubble">
         <div id="bMain"><span id="sayLbl">Say</span><b id="bTarget">…</b></div>
-        <div id="gpState">Say it to charge your ticket!</div>
+        <div id="gpState">Say it to fill your ticket!</div>
       </div>
       <img id="leo" src="/coach/echo/echo-listening.svg" alt="Echo" onerror="this.outerHTML='<div id=leo style=font-size:52px>🦜</div>'" />
     </div>
@@ -575,8 +592,15 @@
       R.innerHTML=html;
     })();
     function buildRoot(){ return $("buildRoot")||$("roadCol")||$("stackCol")||$("keyRow")||$("balloonBox"); }
+    function paintTicket(n){
+      try{
+        var segs=document.querySelectorAll("#tktSegs i");
+        for(var k=0;k<segs.length;k++) segs[k].classList.toggle("on",k<n);
+      }catch(e){}
+    }
     function reveal(n){
       var i,el;
+      paintTicket(n);
       if(SCENE.balloon){ el=$("balloonEl"); if(el) el.style.width=(34+n*13.2)+"%"; return; }
       var slots=document.querySelectorAll("#reveals [data-slot]");
       for(i=0;i<slots.length;i++){
@@ -584,7 +608,7 @@
         if(SCENE.stand){
           el.classList.toggle("up",!on&&i===n);
           if(on&&!was) el.innerHTML='<div class="fr pop">'+FRUITS[i]+'</div>';
-          else if(!on) el.innerHTML="";
+          else if(!on) el.innerHTML='<div class="fr ghost">'+FRUITS[i]+'</div>';
         } else if(SCENE.road){
           el.classList.toggle("glass",!on);
           el.classList.toggle("up",!on&&i===n);

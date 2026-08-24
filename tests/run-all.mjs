@@ -23,6 +23,9 @@ const SUITES = [
   "day1.mjs", // the day: one story, then three games
   "feedtest.mjs",  // Feed Echo: littles tap-and-say loop, growth, deck placement
   "iaptest.mjs",   // Apple IAP rail: native paywall, purchase/restore, web untouched
+  "loadtest.mjs",  // LOAD1: per-game loading scenes, ticket pill, ghost reveals
+  "hwtest.mjs",    // HW1: SLP homework replaces what the app would have picked
+  "arttest.mjs",   // ART1: every sticker renders, fits its box and stays in the safe band
 ];
 
 let bad = 0;
