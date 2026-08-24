@@ -24,6 +24,7 @@ const SUITES = [
   "feedtest.mjs",  // Feed Echo: littles tap-and-say loop, growth, deck placement
   "iaptest.mjs",   // Apple IAP rail: native paywall, purchase/restore, web untouched
   "hwtest.mjs",    // HW1: SLP homework replaces what the app would have picked
+  "arttest.mjs",   // ART1: every sticker renders, fits its box and stays in the safe band
 ];
 
 let bad = 0;
