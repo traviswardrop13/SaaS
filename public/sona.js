@@ -2356,6 +2356,63 @@
     try { global.addEventListener("pagehide", run); } catch (e) {}
   }
 
+  // ── ART1: the sticker sheet ────────────────────────────────────────────
+  // Every illustration in the kid app is one <g> in /assets/sona-stickers.svg,
+  // referenced as <use href="#id">. <use> cannot cross a document boundary, so
+  // the sheet has to be IN the page — the design handoff says to paste it into
+  // every page for that reason. It is 82KB, and pasting it into twenty pages
+  // ships it twenty times; fetching it once puts a single cached copy behind
+  // all of them and keeps one source of truth on disk.
+  //
+  // A card must never be blank while that request is in flight, so stickerBox()
+  // paints the flat FIELD colour immediately and the art lands on top when the
+  // sheet arrives. Offline, on a failed fetch, or with JS half-loaded, the card
+  // is a solid coloured tile with its label — not an empty grey box.
+  const STICKER_FIELDS = { sky: "#cfe7f2", peach: "#ffe1c4", mint: "#d9efc9" };
+  let _sheet = null;
+  function stickerSheet() {
+    if (_sheet) return _sheet;
+    _sheet = fetch("/assets/sona-stickers.svg").then((r) => r.text()).then((t) => {
+      try {
+        if (document.getElementById("sona-sticker-sheet")) return true;
+        const d = document.createElement("div");
+        d.id = "sona-sticker-sheet";
+        d.setAttribute("aria-hidden", "true");
+        d.style.cssText = "position:absolute;width:0;height:0;overflow:hidden";
+        d.innerHTML = t;
+        document.body.insertBefore(d, document.body.firstChild);
+      } catch (e) {}
+      return true;
+    }).catch(() => false);
+    return _sheet;
+  }
+  // One sticker, filling its box. preserveAspectRatio="slice" crops rather than
+  // letterboxing, which is why every sticker keeps its subject inside y14-106.
+  function stickerBox(id, field) {
+    const bg = STICKER_FIELDS[field || "sky"] || STICKER_FIELDS.sky;
+    return '<span class="stk" style="position:absolute;inset:0;overflow:hidden;border-radius:inherit;background:' + bg + ';">'
+      + '<svg viewBox="0 0 120 120" preserveAspectRatio="xMidYMid slice" style="display:block;width:100%;height:100%">'
+      + '<use href="#' + id + '"></use></svg></span>';
+  }
+  // Paint a sticker into an element, behind whatever labels it already carries.
+  function paintSticker(el, id, field) {
+    if (!el) return;
+    try {
+      const old = el.querySelector(":scope > .stk"); if (old) old.remove();
+      el.insertAdjacentHTML("afterbegin", stickerBox(id, field));
+      stickerSheet();
+    } catch (e) {}
+  }
+  // Which sticker each activity wears. The design drew six scenes; Feed Echo is
+  // the under-6 game it never covered, so it wears Echo himself on the mint
+  // field rather than borrowing a scene that means something else.
+  const GAME_STICKER = {
+    slice: ["st-fruit", "sky"], run: ["st-sprint", "mint"], stack: ["st-blocks", "sky"],
+    tiles: ["st-piano", "sky"], glide: ["st-balloon", "sky"], feed: ["p-echo-idle", "mint"],
+    story: ["st-story", "peach"], chapter: ["st-story", "peach"],
+  };
+  function gameSticker(key) { return GAME_STICKER[String(key || "").replace(/^arcade-|\.html$/g, "")] || GAME_STICKER.story; }
+
   const HUMAN_CLIPS = false;
   function humanClipsOn() { return HUMAN_CLIPS; }
 
@@ -2572,5 +2629,5 @@
   try { _grandfatherFreeEra(); } catch (e) {}
   try { installDebug(); } catch (e) {}
 
-  global.Sona = { pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, ladderContent, FREE_MODE, isFree, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, storyRead, markStoryRead, dailyGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, gated, gateVerify, gateOk, requireGate, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repsBeacon, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES };
+  global.Sona = { pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, ladderContent, FREE_MODE, isFree, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, storyRead, markStoryRead, dailyGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, gated, gateVerify, gateOk, requireGate, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repsBeacon, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES };
 })(window);
