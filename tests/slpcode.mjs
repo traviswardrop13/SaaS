@@ -487,8 +487,8 @@ const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL 
   ok("the funnel event fires only on a VALID redemption",
     /valid[\s\S]{0,700}track\("slp code redeemed"/.test(sona),
     "counting unverified codes ranks garbage SLPs");
-  ok("Sona is free — FREE_MODE is the one switch and it is ON",
-    /const FREE_MODE = true;/.test(sona), "a stray false here silently paywalls the whole app");
+  ok("pricing is live — FREE_MODE is the one switch and it is OFF",
+    /const FREE_MODE = false;/.test(sona), "a stray true here silently makes the whole app free");
   ok("every family from the free era keeps it free",
     /function _grandfatherFreeEra[\s\S]{0,700}earlyAdopter = true/.test(sona),
     "grandfathering is a promise to those families, not a growth tactic");

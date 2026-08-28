@@ -161,7 +161,7 @@ await web.close();
 // ── PRICING IS LIVE: FREE_MODE off, 3-day trial, the gate is honest ──
 {
   const sona = readFileSync(ROOT + "/sona.js", "utf8");
-  ok("FREE_MODE is on — Sona is free", /const FREE_MODE = true;/.test(sona));
+  ok("FREE_MODE is off — pricing is live", /const FREE_MODE = false;/.test(sona));
   ok("isFree() short-circuits the gate before anything else can",
     /function gated\(\) \{\s*if \(isFree\(\)\) return false;/.test(sona),
     "if any check runs ahead of the switch, the switch is not the switch");
@@ -184,10 +184,10 @@ await web.close();
   ok("trial.html routes the shell to the Apple paywall, not back home",
     /location\.replace\("\/subscribe\.html"\)/.test(trial),
     "routing natives to today.html made an infinite gate loop");
-  ok("trial page keeps the live prices ready for the flip", /\$59\.99/.test(trial) && /\$9\.99/.test(trial) && /3 days free/.test(trial));
-  ok("…but nobody lands on it while Sona is free",
+  ok("trial page states the live prices", /\$59\.99/.test(trial) && /\$9\.99/.test(trial) && /3 days free/.test(trial));
+  ok("…and still carries the free-mode bounce for the next flip",
     /Sona\.isFree\(\)\) location\.replace\("\/today\.html"\)/.test(trial),
-    "a bookmarked or back-swiped /trial.html would pitch a price in a free app");
+    "inert while priced; deleting it is how a future free window ships a paywall link");
 }
 
 // ── an expired trial actually locks practice; a founding family sails through ──
@@ -259,7 +259,7 @@ ok("no pageerrors", errs.length === 0, errs.join(" | "));
   });
   ok("a family who arrives during THIS free period is not grandfathered",
     fresh.stamp === "post" && !fresh.early, JSON.stringify(fresh));
-  ok("…and plays free anyway, because the app is free", fresh.gated === false, JSON.stringify(fresh));
+  ok("…and opens on their own trial rather than a paywall", fresh.gated === false, JSON.stringify(fresh));
   const freshGate = await pgB.evaluate(() => {
     sessionStorage.setItem("sona.paidui", "1");
     localStorage.setItem(Sona.kkey("sona.trial.v1"), JSON.stringify({ start: Date.now() - 40 * 86400000, days: 3 }));

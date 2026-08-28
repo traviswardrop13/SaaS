@@ -2327,9 +2327,15 @@
   // NOTE: this product id is already App Store-approved; the price lives in
   // App Store Connect, and the paywall renders whatever ASC reports.
   // ── FREE MODE ──────────────────────────────────────────────────────────
-  // ON: Sona is free for everyone. No paywall, no trial, no plan, nothing to
-  // buy. The purchase rails below stay wired and tested (see the ?paid=1 seam)
-  // so pricing is one boolean away, but no family meets them.
+  // OFF: pricing is live — $9.99/mo billed at purchase with NO trial, or
+  // $59.99/yr after a 3-day free trial.
+  //
+  // The free window this reverses ran five days. The boundary between the two
+  // free eras was drawn WHILE free (see _grandfatherFreeEra below), which is
+  // what makes flipping back honest rather than a broken promise: devices from
+  // the FIRST free era are already stamped "grandfathered" and never gate,
+  // devices from the second are stamped "post" and do. Nothing needs deciding
+  // now because it was decided then, on the only day the evidence existed.
   //
   // ONE switch, honoured by every purchase surface. Four cohorts stay free
   // regardless of it: SLP-referred families (the ?slp= credential — that
@@ -2416,7 +2422,7 @@
   const HUMAN_CLIPS = false;
   function humanClipsOn() { return HUMAN_CLIPS; }
 
-  const FREE_MODE = true;
+  const FREE_MODE = false;
   // QA seam: ?paid=1 (or the sticky sona.paidui flag) reveals the purchase
   // rails on this device so the paid path stays exercisable — and TESTED —
   // while free mode ships. It only controls VISIBILITY; it can't unlock
