@@ -19,36 +19,32 @@ practice, or what an SLP is shown, it is Rachel's call, not an engineering
 one. Surface those in the PR body so she can review them without reading
 the diff.
 
-## Pricing — Sona is free
-**Sona is 100% free.** No paywall, no trial, no plan, nothing to buy.
-`FREE_MODE = true` in `sona.js` is the only switch; every purchase surface reads
-it and `gated()` short-circuits on `isFree()` before anything else.
+## Pricing — settled
+Pricing is **live**: **$9.99/month** billed at purchase with **no trial**, and
+**$59.99/year** after a **3-day free trial**. `FREE_MODE = false` in `sona.js` is
+the only switch; every purchase surface reads it and `gated()` short-circuits on
+`isFree()` before anything else.
 
-**The payment rails stay.** RevenueCat, both IAP product ids, the three Stripe
-routes, `subscribe.html`, the trial timer — all wired, none reachable. The
-`?paid=1` QA seam (session-scoped, visibility only — it grants nothing and
-moves no money) keeps them under test in `iaptest`/`progtest`/`slpcode`/`day1`,
-so pricing is one boolean away instead of one archaeology project away. Do not
-delete them to tidy up. Likewise do not delete the App Store Connect products:
-deletion is effectively permanent, and re-creating them means new product ids
-and losing the legacy-price grandfathering.
+**The free-mode half of the switch stays wired.** `trial.html`'s `isFree()`
+bounce and `today.html`'s plan-note guard are inert while priced. They are not
+dead code — they are the other direction of the switch, and deleting them is how
+the next free window ships a paywall link to a family who was promised free.
 
-Three cohorts stay free even when the switch flips back: SLP-referred families
-(the server-verified `?slp=` credential — that promise IS the SLP channel),
-pilots, and founders. Plus the fourth, below.
+Four cohorts are free regardless of the switch: SLP-referred families (the
+server-verified `?slp=` credential — that promise IS the SLP channel), pilots,
+founders, and **everyone who used Sona during the FIRST free era**.
 
 Two things that follow, and are not up for quiet reinterpretation:
-- **Anyone who used Sona during the FIRST free era keeps it free.** Enforced by
-  `_grandfatherFreeEra()` and pinned in `tests/iaptest.mjs`. It is a promise to
-  those families, not a growth tactic. Do not "clean it up".
-  That function now runs **on free builds too**, deliberately. It used to
-  return early while free, which meant nothing was stamped until a paid build
-  loaded — so this second free period would have been swept into a promise only
-  ever made to the first one, and pricing could never have reached anyone who
-  joined during it. The evidence that separates the two cohorts (an onboarded
-  device carrying no stamp) exists only until the free build lands, so the line
-  is drawn now. Families arriving during this free period are free because the
-  app is free: a different promise, and a revocable one.
+- **The first free era's families keep it free.** Enforced by
+  `_grandfatherFreeEra()` and pinned in `tests/iaptest.mjs`. Do not "clean it up".
+  There have now been TWO free windows. The boundary between them was drawn
+  *during* the second one, deliberately, because the evidence that separates the
+  cohorts — an onboarded device carrying no stamp — exists only until a build
+  lands. So era-one devices are stamped `grandfathered` and never gate, era-two
+  devices are stamped `post` and do. That was decided on the only day it could
+  be, which is what makes flipping the switch back honest rather than a broken
+  promise. Families from the five-day second window were told the app was free
+  and now meet a paywall; that was the stated bargain, not an accident.
 - Don't re-open the pricing question in passing. It has cost several reversals
   and a lot of paywall plumbing while the clinical work sat in the TODO list
   below. If it changes, it changes deliberately and once — and the bar for
