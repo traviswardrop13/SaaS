@@ -57,7 +57,12 @@ async function home(age) {
   ok("the chapter is named on the card", st.hero.length > 4, st.hero);
   ok("the card says what reading it earns", /unlock/i.test(st.sub), st.sub);
   ok("THREE games sit below, not two", st.thumbs === 3, String(st.thumbs));
-  ok("all three are locked before the story", st.locked === 3 && st.padlocks === 3, JSON.stringify(st));
+  // A locked card keeps its art in warm monochrome and carries NO padlock —
+  // "coming", not "disabled". The padlock stamped over a grey scrim was the
+  // 10 Aug review's Priority 3, and it is the emotion that was wrong, not the
+  // information.
+  ok("all three are locked before the story", st.locked === 3, JSON.stringify(st));
+  ok("…and none of them wears a padlock", st.padlocks === 0, JSON.stringify(st));
   ok("nothing is marked read yet", st.read === false);
 
   // a locked tap must never be a dead tap
@@ -119,8 +124,11 @@ async function home(age) {
     cta: document.getElementById("goBtn").textContent.trim(),
     launch: document.getElementById("goBtn").dataset.launch,
     lbl: document.getElementById("upNextLbl").textContent,
+    filter: (function(){ var t=document.querySelector("#thumbs .thumb"); return t?getComputedStyle(t).filter:""; })(),
   }));
   ok("the unlock survives a reload", after.locked === 0 && after.padlocks === 0, JSON.stringify(after));
+  ok("…and full colour floods back into the cards",
+    after.filter === "none" || !/grayscale\(0?\.[1-9]/.test(after.filter || ""), String(after.filter));
   ok("the hero becomes a playable game", /let.s go/i.test(after.cta) && /charge\.html|arcade-/.test(after.launch), JSON.stringify(after));
   ok("the label stops saying LOCKED", !/locked/i.test(after.lbl), after.lbl);
   ok("no pageerrors anywhere in the flow", errs.length === 0, errs.join(" | "));
@@ -223,6 +231,38 @@ async function home(age) {
   ok("child A's finished story does not unlock child B", st.a.read === true && st.b.read === false, JSON.stringify(st));
   ok("…and each child has their own chapter pointer", st.b.ch === 1, JSON.stringify(st));
   ok("…and switching back does not lose A's progress", st.backToA === true, JSON.stringify(st));
+  await ctx.close();
+}
+
+// ── 4c. the star jar is an object, not an empty rectangle ──
+// The 10 Aug review: "an empty outlined rectangle where the jar should be — it
+// reads as a missing asset." An empty jar should invite; the three star
+// outlines inside it say what goes there, in the same ghost language the
+// loading scenes use for unearned fruit.
+{
+  const { ctx, pg } = await home("7");
+  const empty = await pg.evaluate(() => ({
+    fill: document.getElementById("jarFill").style.height,
+    ghost: document.querySelectorAll("#jarStars i.ghost").length,
+    lit: document.querySelectorAll("#jarStars i.lit").length,
+  }));
+  ok("an empty jar still shows the stars that go in it",
+    empty.ghost === 3 && empty.lit === 0, JSON.stringify(empty));
+
+  const filled = await pg.evaluate(() => {
+    Sona.bumpReps(Math.ceil(Sona.repGoal() * 0.55));
+    return new Promise((res) => {
+      location.reload();
+      setTimeout(() => res(null), 50);
+    });
+  }).catch(() => null);
+  await pg.waitForTimeout(1200);
+  const after = await pg.evaluate(() => ({
+    fill: parseInt(document.getElementById("jarFill").style.height, 10) || 0,
+    lit: document.querySelectorAll("#jarStars i.lit").length,
+  }));
+  ok("practice fills the jar and lights the stars in it",
+    after.fill > 0 && after.lit >= 1, JSON.stringify([filled, after]));
   await ctx.close();
 }
 

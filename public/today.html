@@ -73,12 +73,14 @@
     .thumb:nth-child(2){transform:rotate(1deg);}
     .thumb:nth-child(3){transform:rotate(2.5deg);}
     .thumb:active{transform:scale(.95);}
-    /* LOCKED: dimmed, desaturated, with a padlock. Deliberately still shows the
-       art — a kid needs to see what they're about to earn, not a grey box. */
-    .thumb.locked{filter:grayscale(.75) brightness(.72);cursor:default;}
+    /* LOCKED: warm monochrome, no padlock. The art stays visible on purpose —
+       a child needs to see what they are about to earn. A padlock stamped over
+       a grey scrim says "disabled"; the same card in warm greyscale says
+       "coming". Same information, opposite emotion. */
+    .thumb.locked{filter:grayscale(.9) sepia(.22) brightness(1.02);opacity:.72;cursor:default;
+      transition:filter .5s,opacity .5s;}
     .thumb.locked:active{transform:none;}
-    .thumb .lock{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:30px;
-      text-shadow:0 3px 8px rgba(0,0,0,.45);}
+    .thumb.locked b{background:#f3ece0;color:#9a866c;box-shadow:0 3px 0 rgba(120,80,20,.08);}
     .thumb.locked:nth-child(1),.thumb.locked:nth-child(2),.thumb.locked:nth-child(3){transform:rotate(0deg);}
     /* the shake a locked card does when tapped: "not yet — story first" */
     @keyframes nudge{0%,100%{transform:translateX(0);}25%{transform:translateX(-5px);}75%{transform:translateX(5px);}}
@@ -130,17 +132,29 @@
     /* METER1 — the star jar. A glass the child fills with light by talking;
        it empties overnight, which is what makes tomorrow a fresh jar. */
     #jarRow{display:flex;align-items:center;gap:12px;}
-    #jar{position:relative;width:44px;height:56px;flex:none;border-radius:7px 7px 13px 13px;
-      border:3px solid #e8d7bb;background:rgba(255,255,255,.55);overflow:hidden;box-shadow:0 3px 0 rgba(140,90,20,.10);}
-    #jar:before{content:"";position:absolute;top:-5px;left:50%;transform:translateX(-50%);width:22px;height:5px;
-      border-radius:3px;background:#e8d7bb;}
-    #jarFill{position:absolute;left:0;right:0;bottom:0;height:0%;
+    #jar{position:relative;width:46px;height:58px;flex:none;border-radius:8px 8px 14px 14px;
+      border:3px solid #e2cfae;overflow:hidden;box-shadow:0 3px 0 rgba(140,90,20,.12),inset 0 2px 6px rgba(255,255,255,.9);
+      background:linear-gradient(105deg,rgba(226,240,248,.85) 0%,rgba(255,255,255,.55) 45%,rgba(206,228,242,.7) 100%);}
+    /* the lid, and the highlight streak that makes it read as glass */
+    #jar:before{content:"";position:absolute;top:-5px;left:50%;transform:translateX(-50%);width:24px;height:5px;
+      border-radius:3px;background:#e2cfae;z-index:3;}
+    #jar:after{content:"";position:absolute;top:5px;left:6px;width:7px;height:62%;border-radius:99px;z-index:3;
+      background:linear-gradient(180deg,rgba(255,255,255,.95),rgba(255,255,255,.15));pointer-events:none;}
+    #jarFill{position:absolute;left:0;right:0;bottom:0;height:0%;z-index:1;
       background:linear-gradient(180deg,#ffe27a,#ffc31c);transition:height .5s cubic-bezier(.4,1.3,.5,1);}
     #jarFill:after{content:"";position:absolute;top:-3px;left:0;right:0;height:6px;border-radius:50%;
       background:rgba(255,255,255,.5);}
-    #jarStar{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:20px;
-      opacity:0;transition:opacity .4s;}
-    #jar.full #jarStar{opacity:1;}
+    /* three stars waiting to be earned: dashed outlines until the fill reaches
+       them, solid gold after. An empty jar that shows what goes in it invites;
+       an empty rectangle reads as a missing asset. */
+    #jarStars{position:absolute;inset:0;z-index:2;pointer-events:none;}
+    #jarStars i{position:absolute;left:50%;width:15px;height:15px;transform:translateX(-50%);
+      background:no-repeat center/contain;transition:opacity .35s;}
+    #jarStars i:nth-child(1){bottom:5px;}
+    #jarStars i:nth-child(2){bottom:20px;left:34%;}
+    #jarStars i:nth-child(3){bottom:34px;left:64%;}
+    #jarStars i.ghost{opacity:.55;}
+    #jarStars i.lit{opacity:1;filter:drop-shadow(0 1px 2px rgba(160,110,10,.45));}
     #jarTxt b{font-family:"Baloo 2";font-weight:800;font-size:15px;color:var(--ink);}
     #jarTxt span{display:block;font-weight:800;font-size:11.5px;color:var(--muted);}
     #purse{margin-left:auto;display:flex;align-items:center;gap:5px;font-family:"Baloo 2";font-weight:800;
@@ -183,7 +197,7 @@
          caption plate, the next two on a shelf below, one CTA. Swipe the hero
          or tap a thumb to change what LET'S GO opens. -->
     <div id="jarRow">
-      <div id="jar"><div id="jarFill"></div><div id="jarStar">⭐</div></div>
+      <div id="jar"><div id="jarFill"></div><div id="jarStars"><i></i><i></i><i></i></div></div>
       <div id="jarTxt"><b id="jarHead">Fill the star jar!</b><span id="jarSub"></span></div>
       <div id="purse" title="Coins"><span>🪙</span><span id="coinTxt">0</span></div>
     </div>
@@ -327,7 +341,9 @@
       // once the story is read the hero IS trio[0], so the row shows the rest;
       // before that it shows all three, locked, so the kid sees the whole prize
       var show=READ?TRIO.slice(1):TRIO;
-      $("upNextLbl").textContent=READ?"UP NEXT":"TODAY’S GAMES — LOCKED 🔒";
+      // one piece of lock language, and it says what OPENS them rather than
+      // that they are shut
+      $("upNextLbl").textContent=READ?"UP NEXT":"AFTER TODAY’S STORY";
       show.forEach(function(k){
         var act=(S.gameAct&&S.gameAct(k))||{name:"Game",go:"/today.html"};
         var el=document.createElement("div");
@@ -335,7 +351,7 @@
         el.dataset.key=k;
         // label first, sticker second: paintSticker PREPENDS, so the art lands
         // behind the name. Painting first and then setting innerHTML wipes it.
-        el.innerHTML="<b>"+act.name+"</b>"+(READ?"":'<span class="lock">🔒</span>');
+        el.innerHTML="<b>"+act.name+"</b>";
         applyArt(el,k);
         el.onclick=function(){
           if(!READ){
@@ -359,6 +375,19 @@
         S.mintCoins&&S.mintCoins();
         var g=S.goalState();
         $("jarFill").style.height=Math.round(g.pct*100)+"%";
+        // each star lights when the gold reaches it — the jar is filling with
+        // the stars themselves, not with an anonymous liquid
+        try{
+          var lvl=[.18,.46,.76], st=$("jarStars").children;
+          for(var q=0;q<st.length;q++){
+            var on=g.pct>=lvl[q];
+            st[q].className=on?"lit":"ghost";
+            st[q].style.backgroundImage="url(\"data:image/svg+xml;utf8,"+encodeURIComponent(
+              on ? '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2l2.9 6.2 6.6.8-4.9 4.6 1.3 6.6L12 16.9 6.1 20.2l1.3-6.6L2.5 9l6.6-.8Z" fill="#fff8d8" stroke="#e8a900" stroke-width="1.3" stroke-linejoin="round"/></svg>'
+                 : '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2l2.9 6.2 6.6.8-4.9 4.6 1.3 6.6L12 16.9 6.1 20.2l1.3-6.6L2.5 9l6.6-.8Z" fill="none" stroke="#c9a878" stroke-width="1.6" stroke-dasharray="3 2.4" stroke-linejoin="round"/></svg>'
+            )+"\")";
+          }
+        }catch(e){}
         $("jar").classList.toggle("full",g.full);
         $("jarHead").textContent=g.full?"Jar full! ⭐":"Fill the star jar!";
         $("jarSub").textContent=g.full
