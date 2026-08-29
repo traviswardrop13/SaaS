@@ -965,6 +965,103 @@
       ],
       hook: "Tomorrow: somewhere a long way off, in a meadow nobody has walked in yet, another star falls out of the sky." },
   ];
+  // ── SCENE1: every chapter gets its own world, and Echo acts in it ───────
+  // The live review's finding, verbatim: "across five pages the illustration
+  // never changes — same Echo, same pose, same starfield; only the text swaps."
+  // For a story-first app aimed at 3-8s, most of whom cannot read the words,
+  // the text was doing 100% of the storytelling. That is backwards.
+  //
+  // The cheap fix that buys most of the storybook feeling: one BACKGROUND per
+  // chapter and a re-POSED Echo per page. A single character moving over a
+  // changing world reads as illustration at a fraction of the art cost, which
+  // matters at 30 chapters x 7 pages = 210 pages.
+  //
+  // Scenes are CSS, not assets: a gradient plus a handful of positioned shapes,
+  // the same technique charge.html already uses for its six game skies. Nothing
+  // to download, nothing to art-direct per page, and it scales to Season 2 by
+  // adding a row.
+  const SKY = {
+    nightMeadow: "radial-gradient(120% 90% at 50% 8%,#26407e 0%,#152a5c 45%,#0d1b3e 100%)",
+    forest:      "linear-gradient(180deg,#1d3b46 0%,#1f4a3d 45%,#16352c 100%)",
+    river:       "linear-gradient(180deg,#7ec8e8 0%,#4a9fd0 42%,#2b6ea8 100%)",
+    cave:        "radial-gradient(90% 70% at 50% 40%,#1b2d5c 0%,#0e1730 55%,#070b18 100%)",
+    highSky:     "linear-gradient(180deg,#8fd0f5 0%,#cfe7f2 45%,#ffe9b8 100%)",
+    lantern:     "linear-gradient(180deg,#2a1a3e 0%,#5a3320 55%,#8a4a1e 100%)",
+    ice:         "linear-gradient(180deg,#cfe9f7 0%,#9fc9e4 50%,#6fa6c9 100%)",
+    attic:       "linear-gradient(180deg,#4a3520 0%,#6b4a2a 50%,#3a2716 100%)",
+    orchard:     "linear-gradient(180deg,#bfe4f5 0%,#d9efc9 48%,#8fc46f 100%)",
+    sea:         "linear-gradient(180deg,#8fd0f5 0%,#5fb0d8 40%,#2f7fa8 100%)",
+    deep:        "linear-gradient(180deg,#12456b 0%,#0a2c4a 45%,#04121f 100%)",
+    dusk:        "linear-gradient(180deg,#3f4a8a 0%,#7a5a9a 50%,#b06a8a 100%)",
+    loom:        "radial-gradient(100% 80% at 50% 30%,#5b3f8f 0%,#3a2766 50%,#1e1440 100%)",
+    dark:        "radial-gradient(80% 60% at 50% 45%,#161a3a 0%,#0a0c1c 60%,#04050c 100%)",
+    goldSky:     "linear-gradient(180deg,#3f74ab 0%,#6ea3d4 40%,#ffcf9a 78%,#ffe7c4 100%)",
+  };
+  // decor primitives — positioned shapes, no assets
+  function _c(css) { return '<i style="position:absolute;' + css + '"></i>'; }
+  const D = {
+    sun:    (t, l, w, c) => _c("top:" + t + ";left:" + l + ";width:" + w + ";aspect-ratio:1;border-radius:50%;background:" + (c || "#ffd21c") + ";box-shadow:0 0 0 14px rgba(255,210,28,.14)"),
+    moon:   (t, l, w) => _c("top:" + t + ";left:" + l + ";width:" + w + ";aspect-ratio:1;border-radius:50%;background:#fff4d6;opacity:.9"),
+    hill:   (t, l, w, h, c) => _c("top:" + t + ";left:" + l + ";width:" + w + ";height:" + h + ";border-radius:50%;background:" + c),
+    cloud:  (t, l, w, o) => _c("top:" + t + ";left:" + l + ";width:" + w + ";height:calc(" + w + " * .34);border-radius:99px;background:#fff;opacity:" + (o || ".7")),
+    band:   (b, h, c) => _c("bottom:" + b + ";left:0;right:0;height:" + h + ";background:" + c),
+    glow:   (t, l, w, c) => _c("top:" + t + ";left:" + l + ";width:" + w + ";aspect-ratio:1;border-radius:50%;background:radial-gradient(circle," + c + ",transparent 70%)"),
+  };
+  // sky · stars? · decor · one Echo pose per page (i idle, l listening, c celebrate, s holding-star)
+  const CHAPTER_SCENES = {
+    star:      { sky: "nightMeadow", stars: 1, poses: "iilslcc", decor: D.hill("74%", "-16%", "70%", "230px", "#1d4a3a") + D.hill("78%", "45%", "80%", "240px", "#173c2f") + D.glow("72%", "38%", "26%", "rgba(255,210,28,.5)") },
+    brambles:  { sky: "forest", stars: 0, poses: "ililcli", decor: D.hill("70%", "-20%", "80%", "250px", "#143028") + D.glow("30%", "44%", "18%", "rgba(255,210,28,.35)") },
+    river:     { sky: "river", stars: 0, poses: "ilillci", decor: D.sun("8%", "72%", "18%") + D.cloud("14%", "-6%", "40%", ".75") + D.band("0", "34%", "rgba(20,90,150,.35)") },
+    woods:     { sky: "forest", stars: 0, poses: "illlici", decor: D.hill("62%", "-24%", "70%", "260px", "#122b23") + D.hill("68%", "50%", "76%", "250px", "#0e241d") },
+    pip:       { sky: "forest", stars: 0, poses: "ilclici", decor: D.glow("30%", "30%", "40%", "rgba(255,210,28,.18)") + D.hill("72%", "-18%", "80%", "230px", "#143028") },
+    cave:      { sky: "cave", stars: 0, poses: "ilillci", decor: D.glow("34%", "26%", "48%", "rgba(90,170,255,.30)") },
+    drawings:  { sky: "cave", stars: 0, poses: "iiillci", decor: D.glow("40%", "18%", "64%", "rgba(90,170,255,.22)") },
+    clouds:    { sky: "highSky", stars: 0, poses: "ilclici", decor: D.cloud("22%", "-8%", "46%", ".9") + D.cloud("34%", "56%", "40%", ".8") + D.cloud("52%", "8%", "36%", ".7") },
+    ridge:     { sky: "highSky", stars: 0, poses: "illicsi", decor: D.cloud("18%", "-14%", "60%", ".55") + D.cloud("40%", "40%", "58%", ".45") },
+    door:      { sky: "nightMeadow", stars: 1, poses: "iillcsc", decor: D.glow("36%", "30%", "42%", "rgba(255,255,255,.20)") },
+
+    comeback:  { sky: "nightMeadow", stars: 1, poses: "scilili", decor: D.glow("28%", "34%", "34%", "rgba(255,210,28,.32)") },
+    lanterns:  { sky: "lantern", stars: 1, poses: "ilillci", decor: D.glow("30%", "40%", "30%", "rgba(255,180,80,.42)") + D.band("0", "26%", "rgba(20,10,30,.45)") },
+    longnight: { sky: "lantern", stars: 1, poses: "illlicc", decor: D.glow("26%", "34%", "40%", "rgba(255,220,140,.5)") },
+    ice:       { sky: "ice", stars: 0, poses: "ilillci", decor: D.band("0", "42%", "rgba(255,255,255,.30)") + D.glow("76%", "36%", "28%", "rgba(120,255,190,.35)") },
+    musicbox:  { sky: "attic", stars: 0, poses: "illlici", decor: D.glow("36%", "32%", "34%", "rgba(255,210,28,.28)") },
+    orchard:   { sky: "orchard", stars: 0, poses: "ilillci", decor: D.sun("10%", "12%", "16%") + D.hill("70%", "-14%", "66%", "220px", "#6fae52") + D.hill("74%", "48%", "70%", "220px", "#5f9a46") },
+    ferry:     { sky: "sea", stars: 0, poses: "ilclici", decor: D.sun("9%", "70%", "15%") + D.band("0", "38%", "rgba(20,90,150,.40)") },
+    deep:      { sky: "deep", stars: 0, poses: "illlici", decor: D.glow("26%", "30%", "40%", "rgba(120,220,255,.22)") },
+    nest:      { sky: "sea", stars: 0, poses: "ililcii", decor: D.cloud("16%", "-6%", "42%", ".7") + D.hill("66%", "-20%", "60%", "240px", "#8a7a5a") },
+    thread:    { sky: "dusk", stars: 1, poses: "iilliccc".slice(0, 7), decor: D.glow("20%", "44%", "18%", "rgba(255,255,255,.35)") },
+
+    climb:     { sky: "goldSky", stars: 0, poses: "iclilic", decor: D.cloud("28%", "-10%", "50%", ".7") + D.cloud("46%", "50%", "44%", ".6") },
+    stair:     { sky: "loom", stars: 1, poses: "iiliicc", decor: D.glow("38%", "34%", "34%", "rgba(200,180,255,.22)") },
+    weaver:    { sky: "loom", stars: 0, poses: "ilillcs", decor: D.glow("32%", "26%", "48%", "rgba(255,210,28,.20)") },
+    loom:      { sky: "loom", stars: 0, poses: "illlicc", decor: D.glow("30%", "30%", "42%", "rgba(255,255,255,.18)") },
+    tangled:   { sky: "loom", stars: 1, poses: "ilillcc", decor: D.glow("34%", "36%", "30%", "rgba(255,210,28,.38)") },
+    unravel:   { sky: "dark", stars: 1, poses: "licilii", decor: D.glow("78%", "20%", "60%", "rgba(120,90,200,.18)") },
+    dark:      { sky: "dark", stars: 0, poses: "iilllci", decor: D.glow("26%", "38%", "24%", "rgba(255,210,28,.16)") },
+    lastone:   { sky: "nightMeadow", stars: 1, poses: "iillisc", decor: D.hill("74%", "-16%", "70%", "230px", "#1d4a3a") + D.hill("78%", "45%", "80%", "240px", "#173c2f") + D.glow("76%", "40%", "20%", "rgba(255,210,28,.42)") },
+    backup:    { sky: "loom", stars: 1, poses: "iscilic", decor: D.glow("36%", "30%", "38%", "rgba(255,210,28,.26)") },
+    mended:    { sky: "nightMeadow", stars: 1, poses: "islcccc", decor: D.glow("26%", "22%", "56%", "rgba(255,210,28,.30)") },
+  };
+  const POSE_SRC = { i: "idle", l: "listening", c: "celebrate", s: "star" };
+  // The scene for a chapter, resolved to real values. Falls back to the night
+  // sky the season opened under, so a chapter added without a scene still
+  // renders as a story rather than a blank.
+  function chapterScene(id) {
+    const sc = CHAPTER_SCENES[id] || {};
+    return {
+      sky: SKY[sc.sky] || SKY.nightMeadow,
+      stars: sc.stars !== 0,
+      decor: sc.decor || "",
+      poses: String(sc.poses || "iiiiiii"),
+    };
+  }
+  // Which Echo pose page n of this chapter wears.
+  function chapterPose(id, n) {
+    const p = chapterScene(id).poses;
+    const k = p.charAt(Math.max(0, Math.min(p.length - 1, n | 0))) || "i";
+    return "/coach/echo/echo-" + (POSE_SRC[k] || "idle") + ".svg";
+  }
+
   const EPKEY = "sona.episode.v2";        // v2: Season 1 replaced the 8-chapter loop
   function _ep() { const v = load(EPKEY, {}); return { i: (v.i | 0) || 0, day: v.day || "" }; }
   function episodeNum() { return (_ep().i % EPISODES.length) + 1; }        // 1-based, for "Chapter N"
@@ -2684,5 +2781,5 @@
   try { _grandfatherFreeEra2(); } catch (e) {}
   try { installDebug(); } catch (e) {}
 
-  global.Sona = { pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, ladderContent, FREE_MODE, isFree, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, storyRead, markStoryRead, dailyGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, gated, gateVerify, gateOk, requireGate, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repsBeacon, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES };
+  global.Sona = { pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, ladderContent, FREE_MODE, isFree, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, gated, gateVerify, gateOk, requireGate, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repsBeacon, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES };
 })(window);
