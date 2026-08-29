@@ -32,23 +32,35 @@ the next free window ships a paywall link to a family who was promised free.
 
 Four cohorts are free regardless of the switch: SLP-referred families (the
 server-verified `?slp=` credential — that promise IS the SLP channel), pilots,
-founders, and **everyone who used Sona during the FIRST free era**.
+founders, and **everyone who used Sona during EITHER free era**.
 
 Two things that follow, and are not up for quiet reinterpretation:
-- **The first free era's families keep it free.** Enforced by
-  `_grandfatherFreeEra()` and pinned in `tests/iaptest.mjs`. Do not "clean it up".
-  There have now been TWO free windows. The boundary between them was drawn
-  *during* the second one, deliberately, because the evidence that separates the
-  cohorts — an onboarded device carrying no stamp — exists only until a build
-  lands. So era-one devices are stamped `grandfathered` and never gate, era-two
-  devices are stamped `post` and do. That was decided on the only day it could
-  be, which is what makes flipping the switch back honest rather than a broken
-  promise. Families from the five-day second window were told the app was free
-  and now meet a paywall; that was the stated bargain, not an accident.
+- **Both free eras' families keep it free.** Enforced by
+  `_grandfatherFreeEra()` and `_grandfatherFreeEra2()`, pinned in
+  `tests/iaptest.mjs`. Do not "clean it up".
+  There have been TWO free windows: the original, and nine days in August
+  (20–28). Era one was judged structurally — an onboarded device carrying no
+  stamp predates pricing. Era two was told a REVOCABLE thing ("the app is
+  free", not "free forever") and was originally left to meet the paywall;
+  Travis chose to keep it for them anyway, and `_grandfatherFreeEra2()` sweeps
+  them in.
+  **The sweep is one-shot and structural, and that is load-bearing.** An
+  era-two family and a family arriving tomorrow are both stamped `post`,
+  because a new device is stamped on its very first load, before it onboards.
+  No date on the device separates them — `practiceDays` is pruned at 130 days
+  and a family who set up but never practised has none. So the sweep runs once,
+  on the first load of the build carrying it, and grandfathers any device that
+  is ALREADY onboarded: such a device necessarily predates that build. A family
+  who onboards afterwards is stamped and swept before they ever have a profile,
+  and correctly still pays. Both directions are pinned — get it wrong one way
+  and you break a promise, the other way and you give the app away.
 - Don't re-open the pricing question in passing. It has cost several reversals
   and a lot of paywall plumbing while the clinical work sat in the TODO list
   below. If it changes, it changes deliberately and once — and the bar for
   changing it back is a number decided in advance, not a fresh argument.
+  Note what the two grandfather sweeps cost: every free window permanently
+  removes its own cohort from ever paying. That is the honest price of going
+  free, and it is a reason to mean it the next time.
 
 **The iOS price does not live in this repo.** `subscribe.html` overwrites the
 figures with whatever RevenueCat reports from App Store Connect, so editing

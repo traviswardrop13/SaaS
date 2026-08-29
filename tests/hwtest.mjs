@@ -49,7 +49,7 @@ async function page() {
   const pg = await ctx.newPage();
   await pg.goto("http://localhost:8191/today.html");
   await pg.evaluate(() => {
-    localStorage.setItem("sona.freeera.v1", "post");
+    localStorage.setItem("sona.freeera.v1","post"); localStorage.setItem("sona.freeera2.v1","done");
     Sona.saveProfile({ childName: "Mia", childAge: "7", focusSounds: ["R"], practicePosition: "i", dailyGoal: 15, onboarded: true });
   });
   return { ctx, pg };

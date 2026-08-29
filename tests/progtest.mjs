@@ -31,7 +31,7 @@ const ctx = await browser.newContext({ permissions: ["microphone"], viewport: { 
 const page = await ctx.newPage();
 await page.addInitScript(() => {
   navigator.mediaDevices.getUserMedia = () => Promise.resolve(new MediaStream());
-  if (!localStorage.getItem("sona.profile.v1")) localStorage.setItem("sona.freeera.v1","post"); localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Milo", focusSounds: ["R", "S"] }));
+  if (!localStorage.getItem("sona.profile.v1")) localStorage.setItem("sona.freeera.v1","post"); localStorage.setItem("sona.freeera2.v1","done"); localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Milo", focusSounds: ["R", "S"] }));
 });
 let fails = 0;
 const ok = (n, p) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL ") + n); };
@@ -313,7 +313,7 @@ ok("?slp= link sticks (uppercased)", t === "DRSMITH22");
 await page.evaluate(() => {
   localStorage.removeItem("sona.slp");
   const p = JSON.parse(localStorage.getItem("sona.profile.v1")); p.earlyAdopter = false; delete p.slpCode;
-  localStorage.setItem("sona.freeera.v1","post"); localStorage.setItem("sona.profile.v1", JSON.stringify(p));
+  localStorage.setItem("sona.freeera.v1","post"); localStorage.setItem("sona.freeera2.v1","done"); localStorage.setItem("sona.profile.v1", JSON.stringify(p));
   sessionStorage.setItem("sona.gate.v1", String(Date.now()));
 });
 await page.goto("http://localhost:8131/subscribe.html?paid=1"); await page.waitForTimeout(700);
@@ -408,7 +408,7 @@ ok("proof strip: named SLP credential above the plan",
   const fpg = await fctx.newPage();
   await fpg.goto("http://localhost:8131/today.html");
   await fpg.evaluate(() => {
-    localStorage.setItem("sona.freeera.v1", "post");
+    localStorage.setItem("sona.freeera.v1","post"); localStorage.setItem("sona.freeera2.v1","done");
     localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Milo", childAge: "7", focusSounds: ["R"], onboarded: true, earlyAdopter: true }));
     try { Sona.gateVerify(); } catch (e) {}
   });

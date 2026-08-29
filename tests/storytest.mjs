@@ -168,6 +168,73 @@ ok("finished run shows the win overlay", fin.ovl);
 ok("win overlay carries the cliffhanger", fin.hookShown && fin.hook.length > 10, JSON.stringify(fin));
 
 ok("no pageerrors", errs.length === 0, errs.join(" | "));
+// ── SCENE1: the story has pictures ────────────────────────────────────────
+// The 10 Aug review's Priority 1, verbatim: "across five pages the illustration
+// never changes — same Echo, same pose, same starfield; only the text swaps."
+// For readers aged 3-8 the text was doing 100% of the storytelling. These pin
+// that it cannot silently go back: every chapter has its own world, and Echo
+// moves through it.
+{
+  const src = readFileSync(ROOT + "/sona.js", "utf8");
+  const blk = src.slice(src.indexOf("const CHAPTER_SCENES"), src.indexOf("const POSE_SRC"));
+  const ids = [...blk.matchAll(/\n    (\w+):\s*\{/g)].map((m) => m[1]);
+  ok("every chapter in the season has a scene", ids.length >= 30, String(ids.length));
+  const skies = new Set([...blk.matchAll(/sky: "(\w+)"/g)].map((m) => m[1]));
+  ok("the season uses many worlds, not one", skies.size >= 10, [...skies].join(","));
+  // decor hidden behind the story text is decor nobody sees — the star's own
+  // glow was the first casualty, buried under the sentence describing it
+  const buried = [...blk.matchAll(/D\.(?:glow|sun|moon)\("(\d+)%"/g)]
+    .map((m) => +m[1]).filter((t) => t >= 44 && t <= 68);
+  ok("no decor is parked behind the story text", buried.length === 0, JSON.stringify(buried));
+
+  const pg = await browser.newPage({ viewport: { width: 390, height: 844 } });
+  await pg.goto("http://localhost:8151/today.html");
+  await pg.evaluate(() => {
+    localStorage.setItem("sona.freeera.v1", "post"); localStorage.setItem("sona.freeera2.v1", "done");
+    Sona.saveProfile({ childName: "Mia", childAge: "7", focusSounds: ["R"], onboarded: true });
+  });
+  // two different chapters must not look the same
+  const look = async (n) => {
+    await pg.evaluate((k) => {
+      localStorage.setItem(Sona.kkey("sona.episode.v2"), JSON.stringify({ i: k - 1, day: "" }));
+      localStorage.removeItem(Sona.kkey("sona.day.v2"));
+    }, n);
+    await pg.goto("http://localhost:8151/chapter.html"); await pg.waitForTimeout(700);
+    return pg.evaluate(() => ({
+      sky: getComputedStyle(document.body).backgroundImage,
+      pose: (document.getElementById("echo").getAttribute("src") || ""),
+      decor: document.getElementById("scene").children.length,
+      stars: getComputedStyle(document.getElementById("stars")).display,
+    }));
+  };
+  const c1 = await look(1), c12 = await look(12), c18 = await look(18);
+  ok("chapter 1 opens on its own world", c1.decor > 0 && /gradient/.test(c1.sky), JSON.stringify(c1));
+  ok("a different chapter is a different world", c1.sky !== c12.sky, JSON.stringify([c1.sky.slice(0, 30), c12.sky.slice(0, 30)]));
+  // the starfield belongs to the night chapters; underwater it reads as dirt
+  ok("the starfield is not painted over every chapter", c18.stars === "none", c18.stars);
+
+  // Echo acts: his pose changes as the pages turn
+  await pg.evaluate((k) => {
+    localStorage.setItem(Sona.kkey("sona.episode.v2"), JSON.stringify({ i: k - 1, day: "" }));
+    localStorage.removeItem(Sona.kkey("sona.day.v2"));
+  }, 1);
+  await pg.goto("http://localhost:8151/chapter.html"); await pg.waitForTimeout(700);
+  const poses = [];
+  for (let k = 0; k < 6; k++) {
+    poses.push(await pg.evaluate(() => document.getElementById("echo").getAttribute("src")));
+    await pg.evaluate(() => document.getElementById("next").click());
+    await pg.waitForTimeout(340);
+  }
+  ok("Echo is an actor, not a portrait — his pose changes across a chapter",
+    new Set(poses).size >= 2, JSON.stringify(poses.map((p) => String(p).split("/").pop())));
+
+  // the borrowed Duolingo green is gone from the story's primary action
+  const cta = await pg.evaluate(() => getComputedStyle(document.getElementById("next")).backgroundImage);
+  ok("the story CTA is Sona orange, not Duolingo green",
+    /255, 138, 61|255, 160, 90/.test(cta) && !/88, 204, 2/.test(cta), cta.slice(0, 70));
+  await pg.close();
+}
+
 await browser.close(); srv.close();
 console.log(fails ? fails + " FAILURES" : "ALL GREEN");
 process.exit(fails ? 1 : 0);

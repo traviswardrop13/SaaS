@@ -55,7 +55,7 @@ await page.addInitScript(() => {
       },
     },
   };
-  localStorage.setItem("sona.freeera.v1","post"); localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Milo", focusSounds: ["R"], onboarded: true }));
+  localStorage.setItem("sona.freeera.v1","post"); localStorage.setItem("sona.freeera2.v1","done"); localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Milo", focusSounds: ["R"], onboarded: true }));
   sessionStorage.setItem("sona.gate.v1", String(Date.now()));
   sessionStorage.setItem("sona.paidui", "1");   // reveal the purchase rails; grants nothing
 });
@@ -146,7 +146,7 @@ ok("today quiet-syncs the entitlement in the shell", t.active === true && t.sour
 // ── web (no bridge): Stripe picker untouched ──
 const web = await browser.newPage({ viewport: { width: 390, height: 844 } });
 await web.addInitScript(() => {
-  localStorage.setItem("sona.freeera.v1","post"); localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Milo", focusSounds: ["R"], onboarded: true, earlyAdopter: false }));
+  localStorage.setItem("sona.freeera.v1","post"); localStorage.setItem("sona.freeera2.v1","done"); localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Milo", focusSounds: ["R"], onboarded: true, earlyAdopter: false }));
   sessionStorage.setItem("sona.gate.v1", String(Date.now()));
   sessionStorage.setItem("sona.paidui", "1");
 });
@@ -197,14 +197,14 @@ await gatePg.addInitScript(() => {
   // seed-once: init scripts re-run on every navigation and would overwrite the
   // earlyAdopter flag the second half of this test sets
   if (!localStorage.getItem("sona.profile.v1")) {
-    localStorage.setItem("sona.freeera.v1","post"); localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Milo", childAge: "7", focusSounds: ["R"], onboarded: true }));
+    localStorage.setItem("sona.freeera.v1","post"); localStorage.setItem("sona.freeera2.v1","done"); localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Milo", childAge: "7", focusSounds: ["R"], onboarded: true }));
     localStorage.setItem("sona.trial.v1", JSON.stringify({ start: Date.now() - 4 * 86400000, days: 3 }));
     localStorage.setItem("sona.micok", "1");
   }
 });
 await gatePg.goto("http://localhost:8147/charge.html?game=arcade-slice.html"); await gatePg.waitForTimeout(700);
 ok("expired trial bounces charge.html to the trial page", /trial\.html/.test(gatePg.url()), gatePg.url());
-await gatePg.evaluate(() => { const p = JSON.parse(localStorage.getItem("sona.profile.v1")); p.earlyAdopter = true; localStorage.setItem("sona.freeera.v1","post"); localStorage.setItem("sona.profile.v1", JSON.stringify(p)); });
+await gatePg.evaluate(() => { const p = JSON.parse(localStorage.getItem("sona.profile.v1")); p.earlyAdopter = true; localStorage.setItem("sona.freeera.v1","post"); localStorage.setItem("sona.freeera2.v1","done"); localStorage.setItem("sona.profile.v1", JSON.stringify(p)); });
 await gatePg.goto("http://localhost:8147/charge.html?game=arcade-slice.html"); await gatePg.waitForTimeout(700);
 ok("a founding family with the same expired trial is never locked", !/trial\.html/.test(gatePg.url()), gatePg.url());
 await gatePg.close();
@@ -267,6 +267,65 @@ ok("no pageerrors", errs.length === 0, errs.join(" | "));
   });
   ok("…and would gate on the day pricing returns", freshGate === true, String(freshGate));
   await ctxB.close();
+}
+
+// ── THE SECOND FREE ERA, ALSO KEPT ────────────────────────────────────────
+// Sona was free again for nine days and those families were told a REVOCABLE
+// thing. Travis chose to keep it for them anyway. The hard part is that an
+// era-two family and a family arriving tomorrow are BOTH stamped "post" — a
+// new device is stamped on its first load, before it onboards. The sweep
+// separates them structurally: on the first load of the build carrying it, an
+// already-onboarded device necessarily predates the build. Get this wrong in
+// either direction and you either break a promise or give the app away.
+{
+  const seedThen = (extra) => `
+    localStorage.removeItem("sona.freeera2.v1");
+    localStorage.setItem("sona.freeera.v1","post");
+    localStorage.setItem("sona.profile.v1", JSON.stringify({childName:"Leo",childAge:"7",focusSounds:["R"],onboarded:true}));
+    ${extra || ""}`;
+  const deadTrial = () => localStorage.setItem(Sona.kkey("sona.trial.v1"),
+    JSON.stringify({ start: Date.now() - 90 * 86400000, days: 3 }));
+
+  // a device that existed during the second free window
+  const c1 = await browser.newContext(); const p1 = await c1.newPage();
+  await p1.goto("http://localhost:8147/today.html"); await p1.waitForTimeout(300);
+  await p1.evaluate(seedThen());
+  await p1.reload(); await p1.waitForTimeout(600);          // first load of THIS build
+  const era2 = await p1.evaluate(() => { deadTrialStub(); return {
+    stamp: localStorage.getItem("sona.freeera.v1"), early: Sona.getProfile().earlyAdopter, gated: Sona.gated() };
+    function deadTrialStub(){ localStorage.setItem(Sona.kkey("sona.trial.v1"), JSON.stringify({ start: Date.now() - 90*86400000, days: 3 })); } });
+  ok("a second-free-era family is grandfathered too",
+    era2.stamp === "grandfathered" && era2.early === true, JSON.stringify(era2));
+  ok("…and never gates, however dead their trial", era2.gated === false, JSON.stringify(era2));
+  await c1.close();
+
+  // a family who arrives AFTER the build carrying the sweep
+  const c2 = await browser.newContext(); const p2 = await c2.newPage();
+  await p2.goto("http://localhost:8147/today.html"); await p2.waitForTimeout(300);
+  await p2.evaluate(() => localStorage.clear());
+  await p2.reload(); await p2.waitForTimeout(600);          // stamped BEFORE they onboard
+  const later = await p2.evaluate(() => {
+    Sona.saveProfile({ childName: "New", childAge: "6", focusSounds: ["S"], onboarded: true });
+    localStorage.setItem(Sona.kkey("sona.trial.v1"), JSON.stringify({ start: Date.now() - 90 * 86400000, days: 3 }));
+    return { stamp: localStorage.getItem("sona.freeera.v1"), early: Sona.getProfile().earlyAdopter, gated: Sona.gated() };
+  });
+  ok("a family arriving after the sweep is NOT swept in",
+    later.stamp === "post" && !later.early, JSON.stringify(later));
+  ok("…and still meets the paywall", later.gated === true, JSON.stringify(later));
+  await c2.close();
+
+  // the sweep is one-shot: a device that onboards later cannot re-trigger it
+  const c3 = await browser.newContext(); const p3 = await c3.newPage();
+  await p3.goto("http://localhost:8147/today.html"); await p3.waitForTimeout(300);
+  await p3.evaluate(() => localStorage.clear());
+  await p3.reload(); await p3.waitForTimeout(600);
+  await p3.evaluate(() => Sona.saveProfile({ childName: "Late", childAge: "6", focusSounds: ["S"], onboarded: true }));
+  await p3.reload(); await p3.waitForTimeout(600);          // second load, now onboarded
+  const late = await p3.evaluate(() => ({
+    stamp: localStorage.getItem("sona.freeera.v1"), early: Sona.getProfile().earlyAdopter }));
+  ok("onboarding AFTER the sweep does not grandfather on a later load",
+    late.stamp === "post" && !late.early, JSON.stringify(late));
+  await c3.close();
 }
 
 await browser.close(); srv.close();
