@@ -51,7 +51,7 @@ async function scene(game, fill) {
   });
   await pg.goto("http://localhost:8198/today.html");
   await pg.evaluate(() => {
-    localStorage.setItem("sona.freeera.v1", "post");
+    localStorage.setItem("sona.freeera.v1","post"); localStorage.setItem("sona.freeera2.v1","done");
     localStorage.setItem("sona.micok", "1");
     Sona.saveProfile({ childName: "Mia", childAge: "7", focusSounds: ["R"], onboarded: true });
     Sona.markStoryRead();

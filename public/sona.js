@@ -273,6 +273,52 @@
     } catch (e) {}
   }
 
+  // SECOND FREE ERA, ALSO KEPT. Sona was free again for nine days (20-28 Aug)
+  // and those families were told a REVOCABLE thing — the app is free, not free
+  // forever. Travis chose to keep it for them anyway. This upgrades them.
+  //
+  // The hard part is telling an era-two family apart from a family who arrives
+  // tomorrow, because BOTH are stamped "post": a brand-new device is stamped on
+  // its very first load, before it has onboarded. No date on the device
+  // distinguishes them reliably — practiceDays is pruned at 130 days and a
+  // family who set up but never practised has none at all.
+  //
+  // So this uses the same structural trick that worked for era one: on the
+  // FIRST LOAD OF THIS BUILD, a device that is ALREADY onboarded necessarily
+  // existed before this build shipped. Era one is already stamped
+  // "grandfathered", so an onboarded device still stamped "post" can only be
+  // era two. A family arriving tomorrow is stamped and swept before they
+  // onboard, and is correctly left out. Like era one, the evidence exists only
+  // until this build lands, which is why it is claimed on the way in.
+  const GF2KEY = "sona.freeera2.v1";
+  function _grandfatherFreeEra2() {
+    try {
+      if (localStorage.getItem(GF2KEY)) return;     // swept once, on the way in
+      localStorage.setItem(GF2KEY, "done");
+      if (localStorage.getItem(GFKEY) !== "post") return;   // era one, or not yet judged
+      // every child on the device, not just the active one — access was
+      // granted to the household, the same rule earlyAdopterAnyKid enforces
+      let slots = [""];
+      try {
+        const v = JSON.parse(localStorage.getItem(KIDSKEY) || "null");
+        if (v && v.list && v.list.length) slots = v.list.map((k) => k.slot || "");
+      } catch (e) {}
+      let any = false;
+      slots.forEach(function (slot) {
+        const key = slot ? PKEY + "@" + slot : PKEY;
+        try {
+          const pr = JSON.parse(localStorage.getItem(key) || "null");
+          if (pr && (pr.onboarded || pr.childName)) {
+            pr.earlyAdopter = true; pr.freeEra = true; pr.freeEra2 = true;
+            localStorage.setItem(key, JSON.stringify(pr));
+            any = true;
+          }
+        } catch (e) {}
+      });
+      if (any) localStorage.setItem(GFKEY, "grandfathered");
+    } catch (e) {}
+  }
+
   function getProfile() {
     const p = Object.assign(clone(DEFAULT_PROFILE), load(PKEY, {}));
     // migrate old/empty default voices (Jessica, Will, and the prior Leo) to the current voice
@@ -2633,6 +2679,9 @@
     try { if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", debugBox); else debugBox(); } catch (e) {}
   }
   try { _grandfatherFreeEra(); } catch (e) {}
+  // order matters: era one is judged first, so the era-two sweep can trust
+  // that a device still stamped "post" is not an era-one family
+  try { _grandfatherFreeEra2(); } catch (e) {}
   try { installDebug(); } catch (e) {}
 
   global.Sona = { pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, ladderContent, FREE_MODE, isFree, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, storyRead, markStoryRead, dailyGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, gated, gateVerify, gateOk, requireGate, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repsBeacon, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES };
