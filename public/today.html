@@ -104,6 +104,9 @@
     .modal h3{font-family:"Baloo 2";font-weight:800;font-size:20px;color:var(--ink);}
     .modal p{font-weight:700;font-size:13.5px;color:var(--muted);margin-top:4px;}
     #gateQ{font-family:"Baloo 2";font-weight:800;font-size:30px;color:var(--orange-d);margin:10px 0 2px;}
+    /* the spelled-out challenge needs room for four words, so it sets its own
+       size rather than fighting the 30px the PIN lock glyph wants */
+    #gateQ.words{font-size:20px;letter-spacing:.06em;line-height:1.45;max-width:15ch;margin:10px auto 2px;}
     #gateIn{font-family:"Baloo 2";font-weight:800;font-size:26px;letter-spacing:8px;min-height:36px;color:var(--ink);}
     .pad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px;}
     .pad button{border:none;border-radius:14px;padding:13px 0;font-family:"Baloo 2";font-weight:800;font-size:20px;background:var(--cream);color:var(--ink);cursor:pointer;box-shadow:0 3px 0 var(--track);}
@@ -462,14 +465,30 @@
       }catch(e){}
     };
 
-    // ── parent gate: PIN if the parent set one, else a math question ──
+    // ── parent gate: PIN if the parent set one, else four spelled-out digits ──
+    // It used to be arithmetic (3-8 × 3-8). Two problems: a seven-year-old who
+    // knows their times tables walks straight through it, and there are only
+    // about thirty plausible products to guess. Four number WORDS have to be
+    // read to be answered — which is precisely what the child this gate exists
+    // to stop cannot do — and there are ten thousand of them.
+    var NUMWORD=["ZERO","ONE","TWO","THREE","FOUR","FIVE","SIX","SEVEN","EIGHT","NINE"];
     var gateAns="", gateNeed="", gateMode="math", gateNext=null;
     function openGate(next){
       gateNext=next||null; // pass a callback to run instead of the parent sheet
       var pin=(P.parentPin||"").trim();
       gateAns="";
-      if(pin){ gateMode="pin"; gateNeed=pin; $("gateQ").textContent="🔒"; $("gateHint").textContent="Enter your parent code"; }
-      else { gateMode="math"; var a=3+((Math.random()*6)|0), b=3+((Math.random()*6)|0); gateNeed=String(a*b); $("gateQ").textContent=a+" × "+b+" = ?"; $("gateHint").textContent="Answer to continue (set a code in Settings)"; }
+      var q=$("gateQ");
+      if(pin){
+        gateMode="pin"; gateNeed=pin; q.className=""; q.textContent="🔒";
+        $("gateHint").textContent="Enter your parent code";
+      } else {
+        gateMode="words"; var d=[];
+        for(var z=0;z<4;z++) d.push((Math.random()*10)|0);
+        gateNeed=d.join("");
+        q.className="words";
+        q.textContent=d.map(function(n){return NUMWORD[n];}).join(" · ");
+        $("gateHint").textContent="Tap these numbers in order (set a code in Settings)";
+      }
       $("gateIn").textContent="";
       $("gateOvl").classList.add("show");
     }

@@ -30,6 +30,57 @@ for (const f of ["settings.html", "progress.html", "subscribe.html"]) {
   await page.goto(`http://localhost:8141/${f}`); await page.waitForTimeout(600);
   chk(`${f} opens for a verified parent`, page.url().includes(f));
 }
+// ── the challenge a child cannot read ──────────────────────────────────────
+// It used to be arithmetic (3-8 × 3-8). A seven-year-old who knows their times
+// tables walks straight through that, and there are only ~30 plausible products
+// to guess. Four spelled-out number words have to be READ to be answered —
+// exactly what the child this gate exists to stop cannot do — and there are
+// ten thousand of them.
+{
+  const pg = await browser.newPage({ viewport: { width: 390, height: 844 } });
+  await pg.goto("http://localhost:8141/today.html"); await pg.waitForTimeout(300);
+  await pg.evaluate(() => {
+    localStorage.setItem("sona.freeera.v1", "post"); localStorage.setItem("sona.freeera2.v1", "done");
+    Sona.saveProfile({ childName: "Mia", childAge: "7", focusSounds: ["R"], onboarded: true });
+  });
+  await pg.goto("http://localhost:8141/today.html"); await pg.waitForTimeout(800);
+  await pg.evaluate(() => document.getElementById("parentBtn").click());
+  await pg.waitForTimeout(350);
+  const g = await pg.evaluate(() => ({
+    q: document.getElementById("gateQ").textContent,
+    shown: document.getElementById("gateOvl").classList.contains("show"),
+    overflow: (function () { const e = document.getElementById("gateQ"); return e.scrollWidth > e.clientWidth + 1; })(),
+  }));
+  chk("the parent gate asks for four spelled-out numbers", /^[A-Z]+( · [A-Z]+){3}$/.test(g.q));
+  chk("…with no arithmetic and no digits to shortcut", !/[×*=0-9]/.test(g.q));
+  chk("…and the words fit the modal", g.shown && g.overflow === false);
+
+  const WORDS = ["ZERO", "ONE", "TWO", "THREE", "FOUR", "FIVE", "SIX", "SEVEN", "EIGHT", "NINE"];
+  const digits = g.q.split(" · ").map((w) => WORDS.indexOf(w));
+  chk("every word maps to a real digit", digits.every((d) => d >= 0));
+
+  const tap = (ds) => pg.evaluate((seq) => {
+    const btns = [...document.querySelectorAll("#pad button")];
+    seq.forEach((d) => btns.find((b) => b.textContent === String(d)).click());
+    btns.find((b) => b.textContent === "✓").click();
+  }, ds);
+  const wrong = digits.map((d) => (d + 1) % 10);
+  await tap(wrong); await pg.waitForTimeout(350);
+  let st = await pg.evaluate(() => ({
+    gate: document.getElementById("gateOvl").classList.contains("show"),
+    sheet: document.getElementById("sheetOvl").classList.contains("show"),
+  }));
+  chk("a wrong sequence keeps the gate shut", st.gate === true && st.sheet === false);
+
+  await tap(digits); await pg.waitForTimeout(400);
+  st = await pg.evaluate(() => ({
+    gate: document.getElementById("gateOvl").classList.contains("show"),
+    sheet: document.getElementById("sheetOvl").classList.contains("show"),
+  }));
+  chk("the right sequence opens the parent corner", st.gate === false && st.sheet === true);
+  await pg.close();
+}
+
 await browser.close(); srv.close();
 console.log(bad ? bad + " FAILURES" : "GATE ALL GREEN");
 process.exit(bad ? 1 : 0);
