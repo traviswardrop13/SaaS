@@ -26,7 +26,7 @@ const srv = createServer((req, res) => {
         hw: {
           id: "hw1", title: "R in the middle", note: "Two minutes after breakfast.",
           sounds: ["S"], pos: "f", repsPerDay: 40, words: null,
-          start: "2000-01-01", due: "2999-01-01", by: "Rachel, CCC-SLP",
+          start: "2000-01-01", due: "2999-01-01", by: "Rachel, CF-SLP",
         },
       }));
     });

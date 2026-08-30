@@ -12,8 +12,25 @@ Sona (speaksona.com) — kids' speech-practice PWA in public/, Next.js API
 routes, Capacitor iOS shell that remote-loads the site. Solo founder, ships
 fast.
 
-**Two people work in this repo.** Travis builds. Rachel is a licensed
-pediatric SLP and co-founder — she owns clinical correctness. If a change
+**Two people work in this repo.** Travis builds. Rachel is a pediatric
+speech-language pathologist and co-founder — she owns clinical correctness.
+
+**Her credential wording is not settled, and it is on the paywall.** Rachel is a
+**Clinical Fellow (CF-SLP)**: master's complete, supervised fellowship year in
+progress, and she does **not** hold ASHA's CCC. The landing page claimed
+"Licensed & board-certified (CCC-SLP)" until it was caught — a specific,
+checkable false claim about a trademarked certification, on the page that sells
+the app. That one is gone.
+
+Seventeen "licensed speech-language pathologist" claims remain across
+`app/page.tsx`, `app/layout.tsx`, `subscribe.html`, `progress.html`,
+`today.html`, `check.html`, `for-slps.html` and `pilot.html`. Whether those are
+true turns on whether she holds a state provisional/CF licence right now —
+most states issue one, but nobody has confirmed it here. Until Travis or Rachel
+confirms, do not add new "licensed" claims, and prefer wording that is true
+either way: "built with a pediatric speech-language pathologist", or
+"Clinical Fellow (CF-SLP)" stated plainly. Never "CCC", "certified" or
+"board-certified". If a change
 touches what a child is asked to say, how a sound is cued, what counts as
 practice, or what an SLP is shown, it is Rachel's call, not an engineering
 one. Surface those in the PR body so she can review them without reading
