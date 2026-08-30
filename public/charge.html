@@ -790,7 +790,25 @@
     // Every rung is judged on-device now. The shape gate answers a narrower
     // question than a phoneme scorer did — "did that sound like this sound"
     // rather than "was that word right" — and it never leaves the phone.
-    async function verifyClip(){ return shapeVerdict(); }
+    // The verdict. On the shell the on-device transcript rules first:
+    //   pass — a real attempt at the word, or anything carrying the sound
+    //   fail — intelligible words with none of the target sound ("poopoo")
+    //   unknown — nothing transcribed → the spectral check decides, exactly
+    //             as before. Apple's models are adult-tuned, so a child the
+    //             recognizer can't parse must never fail BECAUSE of it.
+    async function verifyClip(){
+      try{
+        if(S&&S.speechStop&&S.hearVerdict){
+          var r=await S.speechStop();
+          if(r&&typeof r.text==="string"){
+            var hv=S.hearVerdict(r.text, SOUND, String(ITEM.word||ITEM.t||""));
+            try{ window.__hear={text:r.text,verdict:hv}; }catch(e){}
+            if(hv!=="unknown") return hv;
+          }
+        }
+      }catch(e){}
+      return shapeVerdict();
+    }
 
 
     // ---- the flow ----
@@ -811,6 +829,11 @@
       micGo(true);
       // back to the listening frame (coaching may have set idle + Almost! line)
       try{ $("sayLbl").textContent="Say"; var lm=$("leo"); if(lm&&lm.src) lm.src="/coach/echo/echo-listening.svg"; }catch(e){}
+      // HEAR1: on the shell, run Apple's ON-DEVICE recognizer alongside the
+      // spectral engine for this round. Biased toward the target word
+      // (contextualStrings) so a single practice word transcribes well.
+      // Fire-and-forget: if it cannot start, the round is exactly as before.
+      try{ if(S&&S.speechStart) S.speechStart({ words:[String(ITEM.word||ITEM.t||"").toLowerCase()], maxMs: 9000 }); }catch(e){}
       await startEngine();
       if(reps>0)anyReps=true;
       attemptsTotal+=reps;
@@ -855,6 +878,12 @@
       await micPrimer();
       try{ micStream=await navigator.mediaDevices.getUserMedia({audio:true,video:false}); try{ localStorage.setItem("sona.micok","1"); }catch(e){} }
       catch(e){ micGo(false); if(S&&S.micDenied)S.micDenied({back:"/today.html"}); return; }
+      // HEAR1: the speech-recognition permission is its own OS dialog on the
+      // shell. Asked AFTER the mic grant, deliberately — the mic prompt must
+      // ride directly on the primer tap (storytest pins that), and the mic
+      // dialog leading also reads sanely to a parent: hear first, then
+      // understand. No-op on web; denial just means spectral-only verdicts.
+      try{ if(S&&S.speechPerm&&S.isNativeApp&&S.isNativeApp()) S.speechPerm(); }catch(e){}
       tele("practice started",{sound:SOUND,game:GMETA.n});
       // Leo speaks the prompt ONCE, then the mic is instantly hot.
       await playPrompt();

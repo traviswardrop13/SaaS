@@ -2562,6 +2562,108 @@
   };
   function gameSticker(key) { return GAME_STICKER[String(key || "").replace(/^arcade-|\.html$/g, "")] || GAME_STICKER.story; }
 
+  // ── HEAR1: on-device speech recognition (native shell only) ────────────
+  // The spectral check asks "did that have the shape of the sound"; it cannot
+  // tell "poopoo" from an R, because both are low-centred and hiss-free. On
+  // the iOS shell the SonaSpeech plugin runs Apple's recognizer with
+  // requiresOnDeviceRecognition = true — audio never leaves the phone, and if
+  // on-device recognition is unavailable the plugin REFUSES to start rather
+  // than falling back to Apple's servers. Fail closed; the spectral check is
+  // always the fallback, so web/Android behaviour is unchanged.
+  //
+  // The plugin returns raw transcripts only. The PASS/FAIL DECISION lives
+  // here, on purpose: what counts as an attempt at a sound is clinical logic,
+  // it is Rachel's to tune, and a rule that lives in the web layer can be
+  // tuned without an App Store review.
+  function speechPlugin() {
+    try { const C = global.Capacitor; return (C && C.isNativePlatform && C.isNativePlatform() && C.Plugins && C.Plugins.SonaSpeech) ? C.Plugins.SonaSpeech : null; } catch (e) { return null; }
+  }
+  let _speechOk = null;
+  function speechAvailable() {
+    const P = speechPlugin(); if (!P) return Promise.resolve(false);
+    if (_speechOk !== null) return Promise.resolve(_speechOk);
+    return P.available().then((r) => {
+      // available is only true when on-device AND authorized — a plugin build
+      // that could reach a server never gets used, by construction
+      _speechOk = !!(r && r.available && r.onDevice);
+      return _speechOk;
+    }).catch(() => { _speechOk = false; return false; });
+  }
+  function speechPerm() {
+    const P = speechPlugin(); if (!P) return Promise.resolve(false);
+    return P.requestPermission().then((r) => { _speechOk = null; return !!(r && r.granted); }).catch(() => false);
+  }
+  function speechStart(opts) {
+    const P = speechPlugin(); if (!P) return Promise.resolve(false);
+    return speechAvailable().then((okay) => {
+      if (!okay) return false;
+      return P.start(opts || {}).then(() => true).catch(() => false);
+    });
+  }
+  function speechStop() {
+    const P = speechPlugin(); if (!P) return Promise.resolve(null);
+    return P.stop().then((r) => (r && r.onDevice ? r : null)).catch(() => null);
+  }
+
+  // What a digraph sounds like in a transcript. Single letters match
+  // themselves; TH matches both voiced and unvoiced spellings.
+  const HEAR_HINT = { SH: ["sh"], CH: ["ch", "tch"], TH: ["th"], THV: ["th"] };
+  function _lev1(a, b) {
+    // is edit distance <= 1? (one substitution/insert/delete) — cheap check,
+    // no full matrix needed
+    if (a === b) return true;
+    const la = a.length, lb = b.length;
+    if (Math.abs(la - lb) > 1) return false;
+    let i = 0, j = 0, edits = 0;
+    while (i < la && j < lb) {
+      if (a[i] === b[j]) { i++; j++; continue; }
+      if (++edits > 1) return false;
+      if (la === lb) { i++; j++; }
+      else if (la > lb) { i++; }
+      else { j++; }
+    }
+    return edits + (la - i) + (lb - j) <= 1;
+  }
+  /**
+   * hearVerdict(transcript, sound, word) → "pass" | "fail" | "unknown"
+   *
+   * pass    — the transcript is a real attempt at the target: the word (or one
+   *           edit away from it — "wabbit" for "rabbit" IS the practice, per
+   *           Travis: anything semi-close advances), or any word carrying the
+   *           target sound at all.
+   * fail    — the child said intelligible words with none of the target sound
+   *           in them. This is the "poopoo instead of R" case, and it is the
+   *           whole reason the recognizer exists.
+   * unknown — the recognizer heard nothing it could transcribe. NEVER a fail:
+   *           disordered child speech often will not transcribe, and Apple's
+   *           models are tuned on adults. Unknown defers to the spectral
+   *           check, so a child the recognizer cannot parse is judged exactly
+   *           as they were before this feature existed.
+   */
+  function hearVerdict(transcript, sound, word) {
+    const raw = String(transcript || "").toLowerCase().replace(/[^a-z' ]+/g, " ").trim();
+    if (!raw) return "unknown";
+    const tokens = raw.split(/\s+/).filter(Boolean);
+    if (!tokens.length) return "unknown";
+    const w = String(word || "").toLowerCase().replace(/[^a-z']/g, "");
+    if (w) {
+      for (let i = 0; i < tokens.length; i++) {
+        const t = tokens[i];
+        if (t === w) return "pass";
+        if (w.length >= 4 && _lev1(t, w)) return "pass";
+        if (t.indexOf(w) === 0 && w.length >= 3) return "pass";
+      }
+    }
+    const S2 = String(sound || "").toUpperCase();
+    const hints = HEAR_HINT[S2] || (S2 ? [S2.toLowerCase()] : []);
+    for (let i = 0; i < tokens.length; i++) {
+      for (let h = 0; h < hints.length; h++) {
+        if (tokens[i].indexOf(hints[h]) >= 0) return "pass";
+      }
+    }
+    return "fail";
+  }
+
   const HUMAN_CLIPS = false;
   function humanClipsOn() { return HUMAN_CLIPS; }
 
@@ -2781,5 +2883,5 @@
   try { _grandfatherFreeEra2(); } catch (e) {}
   try { installDebug(); } catch (e) {}
 
-  global.Sona = { pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, ladderContent, FREE_MODE, isFree, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, gated, gateVerify, gateOk, requireGate, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repsBeacon, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES };
+  global.Sona = { pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, ladderContent, FREE_MODE, isFree, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, gated, gateVerify, gateOk, requireGate, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, speechAvailable, speechPerm, speechStart, speechStop, hearVerdict, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repsBeacon, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES };
 })(window);
