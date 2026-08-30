@@ -166,7 +166,16 @@ export default function Landing() {
               A licensed speech-language pathologist designed every game, cue, and level in Sona — the same step-by-step R practice used with kids 4–9, without the waitlist.
             </p>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {["Licensed & board-certified (CCC-SLP)", "Specializes in kids ages 4–9", "Reviews every exercise before it ships"].map((t) => (
+              {/* Rachel is a Clinical Fellow (CF-SLP). A CF has finished the master's and
+                  is completing the supervised fellowship year; the CCC is ASHA's
+                  certification and she does NOT hold it yet. "Board-certified (CCC-SLP)"
+                  was a specific, checkable false claim about a trademarked credential,
+                  on the page that sells the app. Removed. The remaining "licensed"
+                  wording across the app is pending her actual state licence status —
+                  most states issue a provisional/CF licence, which would make it true,
+                  but nobody has confirmed it, so it is tracked in CLAUDE.md rather than
+                  guessed at here. */}
+              {["Speech-language pathologist (Clinical Fellow)", "Specializes in kids ages 4–9", "Reviews every exercise before it ships"].map((t) => (
                 <div key={t} style={{ display: "flex", gap: 8, fontSize: 13.5, fontWeight: 700 }}><Check />{t}</div>
               ))}
             </div>
