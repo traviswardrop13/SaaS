@@ -257,7 +257,17 @@ let mp = await page.evaluate(() => ({
   txt: document.getElementById("micPrime").textContent,
 }));
 ok("primer shows before the mic prompt", mp.shown);
-ok("primer explains listening honestly", /only during practice/.test(mp.txt) && /doesn't keep them/.test(mp.txt) && /nothing is recorded/.test(mp.txt));
+// This used to pin the phrases "nothing is recorded" and "doesn't keep them",
+// which sat either side of a claim that practice words were sent away to be
+// scored. That upload stopped existing when the cloud scorer was removed, so
+// the strings were pinning a promise the code no longer kept. What the primer
+// owes a parent is unchanged — SCOPE (when the mic is live), HANDLING (where
+// the sound goes), and the games/practice distinction — so those are what is
+// pinned now, in the form that is currently true. mictest.mjs guards the other
+// direction: no sending claim may come back without the mechanism.
+ok("primer explains listening honestly",
+  /only during practice/.test(mp.txt) && /never during the games/.test(mp.txt) &&
+  /checked right here on this device/.test(mp.txt) && /No recording is ever uploaded/.test(mp.txt));
 ok("primer offers a soft decline (protects the OS prompt)", /Not now/.test(mp.txt));
 await page.evaluate(() => document.getElementById("micPrimeBtn").click());
 await page.waitForTimeout(500);
