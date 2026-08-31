@@ -2421,6 +2421,155 @@
   }
 
   // ── Native audio capture (iOS) ──────────────────────────────────────────────
+  // ── SPEAK1: the one speech pipeline every reader shares ─────────────────
+  // chapter.html and story.html each carried their own copy of the TTS path,
+  // and both were missing the cure library.html already had. Two hangs, both
+  // seen on a real phone as "I press Read it to me and nothing happens":
+  //
+  //   1. The /api/tts fetch had no timeout. One stalled request blocked the
+  //      per-page say-queue forever and pinned its depth counter, after which
+  //      every later say() — the button included — was dropped WITHOUT SOUND
+  //      OR ERROR. library.html hit exactly this and was fixed with a 7s
+  //      abort; the other two pages never got the fix. That is the drift
+  //      CLAUDE.md warns about, so the pipeline now lives here, once.
+  //
+  //   2. playPCM resolved only from source.onended. On iOS an AudioContext
+  //      born outside a tap starts "suspended" (and a lock-screen interruption
+  //      re-suspends it): the source is scheduled, nothing plays, onended
+  //      never fires, and the queue is wedged for the life of the page.
+  //
+  // Every unit here is BOUNDED: the fetch aborts at 7s, PCM refuses to start
+  // on a context that will not run and falls back to the browser voice, a
+  // started source carries a duration+1.5s watchdog, and the browser voice is
+  // capped at 12s (1.2s when no voices are installed, where speak() never
+  // fires). A bounded unit means the depth-2 queue can never wedge, so the
+  // button always eventually speaks — and speakNow() does not even wait: a
+  // tapped button supersedes whatever is playing, because a child who taps
+  // "Read it to me" wants it read NOW, not after the backlog.
+  const _spk = { ctx: null, q: Promise.resolve(), n: 0, src: null, gen: 0 };
+  function _spkCtx() {
+    if (!_spk.ctx) { const C = global.AudioContext || global.webkitAudioContext; _spk.ctx = new C(); }
+    return _spk.ctx;
+  }
+  // Call from any user gesture: resumes the context and plays one silent
+  // sample, which is what iOS needs before it will run audio at all.
+  function speakUnlock() {
+    try {
+      const c = _spkCtx();
+      if (c.state === "suspended") c.resume();
+      const b = c.createBuffer(1, 1, 22050), s2 = c.createBufferSource();
+      s2.buffer = b; s2.connect(c.destination); s2.start(0);
+    } catch (e) {}
+    // iOS speechSynthesis sticks in a paused state after interruptions and
+    // then queues utterances forever; a gesture is the one place it un-sticks
+    try { if (global.speechSynthesis && global.speechSynthesis.paused) global.speechSynthesis.resume(); } catch (e) {}
+  }
+  function _spkSynth(text, opts, gen) {
+    return new Promise((res) => {
+      try {
+        if (gen !== _spk.gen) return res("superseded");
+        const SS = global.speechSynthesis;
+        if (!SS || !global.SpeechSynthesisUtterance) return res("no-synth");
+        // clear the stuck-paused queue iOS accumulates, or nothing ever plays
+        try { SS.cancel(); if (SS.paused) SS.resume(); } catch (e) {}
+        const t = opts.synthTransform ? opts.synthTransform(String(text)) : String(text);
+        const u = new global.SpeechSynthesisUtterance(t);
+        u.rate = opts.rate || 0.95; u.pitch = 1.05;
+        u.volume = (getProfile().volume != null ? getProfile().volume : 0.8);
+        let done = false;
+        const fin = () => {
+          if (done) return; done = true;
+          try { if (opts.hooks && opts.hooks.synthEnd) opts.hooks.synthEnd(); } catch (e) {}
+          res("synth");
+        };
+        u.onend = fin; u.onerror = fin;
+        // no installed voices → speak() never fires its events; give up fast
+        const cap = (SS.getVoices && SS.getVoices().length) ? 12000 : 1200;
+        setTimeout(fin, cap);
+        try { if (opts.hooks && opts.hooks.synthStart) opts.hooks.synthStart(); } catch (e) {}
+        SS.speak(u);
+      } catch (e) { res("error"); }
+    });
+  }
+  function _spkPCM(bytes, opts, gen) {
+    return new Promise((res) => {
+      try {
+        if (gen !== _spk.gen) return res("superseded");
+        const c = _spkCtx();
+        const go = () => {
+          try {
+            if (gen !== _spk.gen) return res("superseded");
+            // a context that will not run schedules audio that never plays and
+            // an onended that never fires — refuse, and let synth carry it
+            if (c.state !== "running") return res("blocked");
+            const n = bytes.byteLength >> 1, ab = c.createBuffer(1, n, 24000), ch = ab.getChannelData(0);
+            const dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+            for (let k = 0; k < n; k++) ch[k] = dv.getInt16(k * 2, true) / 32768;
+            const src = c.createBufferSource();
+            src.buffer = ab; src.playbackRate.value = VOICE_PITCH || 1;
+            const g = c.createGain();
+            g.gain.value = (getProfile().volume != null ? getProfile().volume : 0.8);
+            src.connect(g); g.connect(c.destination);
+            let done = false;
+            const fin = () => { if (done) return; done = true; if (_spk.src === src) _spk.src = null; res("pcm"); };
+            src.onended = fin;
+            // the watchdog IS the fix: onended is not trusted to arrive
+            setTimeout(() => { try { src.stop(); } catch (e) {} fin(); }, Math.ceil(ab.duration * 1000) + 1500);
+            _spk.src = src;
+            src.start();
+          } catch (e) { res("error"); }
+        };
+        if (c.state === "suspended") {
+          // resume() outside a gesture may silently do nothing on iOS — give
+          // it a beat, then either play or hand off to the browser voice
+          let waited = false;
+          const once = () => { if (waited) return; waited = true; go(); };
+          try { c.resume().then(once, once); } catch (e) { once(); }
+          setTimeout(once, 400);
+        } else go();
+      } catch (e) { res("error"); }
+    });
+  }
+  function _spkOnce(text, opts, gen) {
+    let ctrl = null, to = null;
+    try { ctrl = new AbortController(); to = setTimeout(() => { try { ctrl.abort(); } catch (e) {} }, 7000); } catch (e) {}
+    return fetch("/api/tts", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text: String(text), voice: opts.voice || getProfile().voiceId || "" }),
+      signal: ctrl ? ctrl.signal : undefined,
+    })
+      .then((r) => { if (to) clearTimeout(to); return r.ok ? r.arrayBuffer() : null; })
+      .then((b) => (b && b.byteLength) ? _spkPCM(new Uint8Array(b), opts, gen) : "no-audio")
+      .catch(() => { if (to) clearTimeout(to); return "fetch-failed"; })
+      .then((how) => {
+        // anything short of played-or-superseded gets the guaranteed voice —
+        // a child is never left with a silent story
+        if (how === "pcm" || how === "superseded") return how;
+        return _spkSynth(text, opts, gen);
+      });
+  }
+  function speak(text, opts) {
+    opts = opts || {};
+    if (!text || getProfile().voiceOn === false) return Promise.resolve();
+    if (_spk.n >= 2) return Promise.resolve();   // one playing + one waiting
+    _spk.n++;
+    const gen = _spk.gen;
+    const run = () => _spkOnce(text, opts, gen);
+    _spk.q = _spk.q.then(run, run).then(
+      () => { _spk.n = Math.max(0, _spk.n - 1); },
+      () => { _spk.n = Math.max(0, _spk.n - 1); },
+    );
+    return _spk.q;
+  }
+  // The button path: stop whatever is talking and say THIS, now.
+  function speakNow(text, opts) {
+    _spk.gen++;                                   // strand every queued unit
+    try { if (_spk.src) { _spk.src.stop(); _spk.src = null; } } catch (e) {}
+    try { if (global.speechSynthesis) global.speechSynthesis.cancel(); } catch (e) {}
+    _spk.q = Promise.resolve(); _spk.n = 0;       // the queue restarts clean
+    return speak(text, opts);
+  }
+
   // On the native iOS app (Capacitor) a custom `SonaAudio` plugin captures CLEAN
   // PCM via AVAudioSession `.measurement` mode (no auto-gain / noise-suppression
   // / high-pass) — preserving the high-frequency detail /s,sh,ch,th/ need. On the
@@ -2883,5 +3032,5 @@
   try { _grandfatherFreeEra2(); } catch (e) {}
   try { installDebug(); } catch (e) {}
 
-  global.Sona = { pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, ladderContent, FREE_MODE, isFree, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, gated, gateVerify, gateOk, requireGate, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, speechAvailable, speechPerm, speechStart, speechStop, hearVerdict, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repsBeacon, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES };
+  global.Sona = { pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, ladderContent, FREE_MODE, isFree, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, gated, gateVerify, gateOk, requireGate, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, speak, speakNow, speakUnlock, speechAvailable, speechPerm, speechStart, speechStop, hearVerdict, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repsBeacon, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES };
 })(window);
