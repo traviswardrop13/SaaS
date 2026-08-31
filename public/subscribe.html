@@ -56,6 +56,23 @@
     .tli b{font-family:"Baloo 2";font-weight:800;font-size:16px;display:block;color:var(--ink);}
     .tli p{font-weight:700;font-size:13.5px;color:var(--muted);margin-top:3px;line-height:1.45;}
 
+    /* Trial timeline: the same dashed rail as the founding card, tightened to
+       sit inside a plan. The dated 3-row shape is the strongest known defuser
+       of "I'll forget and get billed" — but only the rows we can actually keep
+       are here. We do NOT promise a reminder email: no trial webhook and no
+       trial mailer exist, and a promise the code can't keep is worse than no
+       promise. The middle row says what IS true — cancelling early keeps the
+       rest of the free days — and names where to do it. */
+    .tl.trial{margin-top:11px;padding-left:32px;}
+    .tl.trial:before{left:11px;top:8px;bottom:10px;width:3px;}
+    .tl.trial .tli{padding-bottom:13px;}
+    .tl.trial .tld{left:-32px;width:25px;height:25px;font-size:12px;}
+    .tl.trial .tli b{font-size:13.5px;}
+    .tl.trial .tli p{font-size:12px;margin-top:1px;}
+    .tli.clock .tld{background:linear-gradient(160deg,#56b4ff,var(--blue));border-color:transparent;box-shadow:0 3px 0 0 var(--blue-d);}
+    .tl.trial .tli.now .tld,.tl.trial .tli.lock .tld{box-shadow:0 3px 0 0 var(--orange-d);}
+    .tl.trial .tli.now .tld{background:linear-gradient(160deg,#ffc78f,var(--orange));border-color:transparent;}
+
     /* ── plan picker (trial cohort) ── */
     /* proof strip: the named-SLP credential ABOVE the plans — the strongest
        paywall trust lever in the Mobbin teardown (Flo leads with proof; ours
@@ -112,7 +129,7 @@
       <h2 id="iapTitle">Pick your plan</h2>
       <div class="proof">
         <span class="pem">🎓</span>
-        <span><b>Built with Rachel — licensed pediatric speech-language pathologist</b> &amp; Sona co-founder. Real speech practice, disguised as games kids ask to play.</span>
+        <span><b>Built with Rachel — pediatric speech-language pathologist (Clinical Fellow)</b> &amp; Sona co-founder. Real speech practice, disguised as games kids ask to play.</span>
       </div>
       <div class="plan best" id="iapPlan">
         <span class="tag">3 DAYS FREE · BEST VALUE</span>
@@ -120,6 +137,7 @@
         <span class="sub">$9.99/mo would be $119.88 a year — yearly is $59.99, a straight 50% off. Every game, the Sound Check, the weekly plan, the progress report.</span>
         <button class="btn go" id="iapBuy">Start 3 days free</button>
         <span class="reassure" id="iapMath">No charge today — cancel anytime during your free days.</span>
+        <div class="tl trial" id="iapTL"></div>
       </div>
       <div class="plan" id="iapPlanMo" style="margin-top:10px;">
         <b>Sona Monthly — <span id="iapPriceMo">$9.99/mo</span></b>
@@ -139,7 +157,7 @@
       <h2>Pick your plan</h2>
       <div class="proof">
         <span class="pem">🎓</span>
-        <span><b>Built with Rachel — licensed pediatric speech-language pathologist</b> &amp; Sona co-founder. Real speech practice, disguised as games kids ask to play.</span>
+        <span><b>Built with Rachel — pediatric speech-language pathologist (Clinical Fellow)</b> &amp; Sona co-founder. Real speech practice, disguised as games kids ask to play.</span>
       </div>
       <p class="muted" style="font-size:13.5px;font-weight:700;">One plan includes everything — every game, the Sound Check, the weekly plan, the progress report.</p>
       <div class="plan best" id="planLife">
@@ -148,6 +166,7 @@
         <span class="sub">$9.99/mo would be $119.88 a year — yearly is $59.99, a straight 50% off. Every game, every sound, every update as it ships.</span>
         <button class="btn go" id="buyLife">Start 3 days free</button>
         <span class="reassure" id="trialMath">No charge today — cancel anytime during your free days.</span>
+        <div class="tl trial" id="webTL"></div>
         <span style="display:block;margin-top:9px;font-weight:800;font-size:11px;">
           <a href="/terms" style="color:#8a6f52;text-decoration:underline;">Terms of Use</a>
           · <a href="/privacy" style="color:#8a6f52;text-decoration:underline;">Privacy</a>
@@ -245,6 +264,40 @@
     // stay in the DOM (and under test) but neither is shown — one flag, so a
     // clinician handing Sona to a family never hits a wall.
     var FREE=false; try{ FREE=!!(Sona.isFree&&Sona.isFree()); }catch(e){}
+
+    // The dated trial timeline, one builder for both paywalls.
+    //
+    // Every row has to survive a parent checking it against reality: the dates
+    // are computed from the same +3 days the charge itself uses, the middle row
+    // promises only what the code can keep (no reminder email exists — see the
+    // CSS note), and the final row carries a FIGURE only on the web, where this
+    // repo is the source of truth. On iOS the App Store price is whatever App
+    // Store Connect says and RevenueCat rewrites it above, so naming a number
+    // here could contradict the button two lines up.
+    function trialTimeline(id, native) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      var fmt = function (days) {
+        try { return new Date(Date.now() + days * 86400000).toLocaleDateString("en-US", { month: "long", day: "numeric" }); }
+        catch (e) { return ""; }
+      };
+      var d0 = fmt(0), d2 = fmt(2), d3 = fmt(3);
+      if (!d3) return;                       // no dates, no timeline — the prose line stays
+      var where = native ? "Settings → Subscriptions" : "your account";
+      var last = native
+        ? "Your yearly plan starts, at the price above — only if you kept Sona."
+        : "Your yearly plan starts: $59.99 for the year — only if you kept Sona.";
+      el.innerHTML =
+        '<div class="tli now"><span class="tld">⭐</span><b>Today, ' + d0 + ' — everything unlocks</b>' +
+          '<p>Every game, the Sound Check and the weekly plan. Nothing is charged today.</p></div>' +
+        '<div class="tli clock"><span class="tld">⏰</span><b>' + d2 + ' — still free</b>' +
+          '<p>Cancel any time before day 3 in ' + where + ' and you keep the rest of your free days.</p></div>' +
+        '<div class="tli lock"><span class="tld">🔓</span><b>' + d3 + '</b><p>' + last + '</p></div>';
+      // the prose sentence said the same thing in one line; the timeline
+      // replaces it rather than repeating it
+      var prose = document.getElementById(native ? "iapMath" : "trialMath");
+      if (prose) prose.style.display = "none";
+    }
     if (FREE) {
       try {
         document.getElementById("iapCard").style.display = "none";
@@ -291,6 +344,7 @@
           var t3 = d3.toLocaleDateString("en-US", { month: "long", day: "numeric" });
           document.getElementById("iapMath").innerHTML = "No charge today — first charge <b>" + t3 + "</b>, only if you keep Sona. Cancel anytime before then.";
         } catch (e) {}
+        trialTimeline("iapTL", true);
         Sona.iapProduct("annual").then(function (p) {
           if (p && (p.priceString || p.price)) document.getElementById("iapPrice").textContent = (p.priceString || ("$" + p.price)) + "/yr";
         }).catch(function () {});
@@ -366,6 +420,7 @@
         var _tm = document.getElementById("trialMath");
         if (_tm) _tm.innerHTML = "No charge today — first charge <b>" + _t + "</b>, only if you keep Sona. Cancel anytime before then.";
       } catch (e) {}
+      trialTimeline("webTL", false);
       var lf = document.getElementById("buyLife");
       if (lf) lf.onclick = function () { buy("annual", 59.99); };
       var mo = document.getElementById("buyMonth");

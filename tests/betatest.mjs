@@ -38,6 +38,46 @@ const ob = await page.evaluate(() => ({
   preselected: !!document.querySelector("#obBuddies .bopt.on"),
 }));
 ok("beta step removed", !ob.betaStep);
+
+// ── one mascot at a time ──
+// Every bubble on the opening steps is Echo speaking ("Hi! I'm Echo!"), but the
+// mascot slot was painted from draft.character on load — and a fresh family's
+// default is Pip the fox. A fox introduced itself as Echo: two mascots in one
+// flow, which the Aug 10 review flagged. The buddy is the CHILD's pick, so it
+// may only replace Echo once they have picked one.
+// A returning profile is the harder case: DEFAULT_PROFILE.character is "fox",
+// so a family that never reached the buddy step looks identical to one that
+// picked Pip. The rule is therefore the STEP, not the stored profile.
+for (const [who, seed] of [["a fresh family", () => {}],
+  ["a returning family", () => localStorage.setItem("sona.profile.v1",
+    JSON.stringify({ childName: "Milo", childAge: "7", character: "fox", focusSounds: ["R"], onboarded: true }))]]) {
+  const ob2 = await browser.newPage({ viewport: { width: 390, height: 844 } });
+  await ob2.addInitScript(seed);
+  await ob2.goto("http://localhost:8129/onboarding.html");
+  await ob2.waitForTimeout(700);
+  const m = await ob2.evaluate(() => ({
+    html: (document.getElementById("leo") || {}).innerHTML || "",
+    says: (document.getElementById("bubble") || {}).textContent || "",
+  }));
+  ok(who + " meets Echo, not a fox wearing Echo's words",
+    /echo-avatar\.svg/.test(m.html) && !/bFox/i.test(m.html));
+  ok("…and the bubble beside it is Echo's", /Echo/.test(m.says));
+
+  // …and the buddy still takes the slot the moment the child picks one
+  const at = await ob2.evaluate(async () => {
+    const nm = document.querySelector('[data-step="name"] input');
+    for (let i = 0; i < 8; i++) {
+      const cur = (document.querySelector(".step.on") || {}).dataset?.step;
+      if (cur === "buddy") return document.getElementById("leo").innerHTML;
+      if (cur === "name" && nm && !nm.value) nm.value = "Milo";
+      document.getElementById("nextBtn").click();
+      await new Promise((r) => setTimeout(r, 220));
+    }
+    return "(never reached the buddy step)";
+  });
+  ok("…and the child's buddy takes over at the buddy step", /bFox|<svg/.test(at) && !/echo-avatar/.test(at));
+  await ob2.close();
+}
 ok("10 progress segments (role + path steps)", ob.segs === 10);
 ok("buddy preselected (Pip)", ob.preselected);
 // real walk: click through every step to finish()

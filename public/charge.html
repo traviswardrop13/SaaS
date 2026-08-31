@@ -101,7 +101,7 @@
     #micWrap.hear #micBtn{transform:scale(1.07);}
     #micBtn{transition:background .15s,transform .12s;}
     /* charged: the mic hands off to a full-width launch bar (A §states) */
-    #launchBar{display:none;border:none;width:100%;border-radius:20px;padding:16px 20px;font-family:"Baloo 2";font-weight:800;font-size:16px;letter-spacing:.06em;text-transform:uppercase;color:#fff;background:linear-gradient(180deg,#6edd18,#58cc02);box-shadow:0 6px 0 var(--green-d),0 0 22px rgba(88,204,2,.4);}
+    #launchBar{display:none;border:none;width:100%;border-radius:20px;padding:16px 20px;font-family:"Baloo 2";font-weight:800;font-size:16px;letter-spacing:.06em;text-transform:uppercase;color:#fff;background:linear-gradient(180deg,#ffa05a,#ff8a3d);box-shadow:0 6px 0 var(--orange-d),0 0 22px rgba(255,138,61,.4);}
     #launchBar.show{display:block;}
     /* slow-replay pill — sits between Echo and the build on a retry */
     #turtleBtn{display:none;position:absolute;left:50%;transform:translateX(-50%);bottom:calc(330px + env(safe-area-inset-bottom));z-index:4;border:none;background:#fff;border-radius:99px;padding:9px 16px;font-family:"Baloo 2";font-weight:800;font-size:13.5px;color:var(--ink);box-shadow:0 4px 0 var(--hsh);cursor:pointer;align-items:center;gap:6px;}
@@ -173,8 +173,8 @@
     .ovl .big{font-size:64px;line-height:1;}
     .ovl h2{font-family:"Baloo 2";font-weight:800;font-size:25px;color:var(--ink);line-height:1.15;}
     .ovl p{color:var(--muted);font-weight:800;font-size:14.5px;max-width:280px;}
-    .btn{border:none;border-radius:20px;padding:15px 32px;font-family:"Baloo 2";font-weight:800;font-size:17px;text-transform:uppercase;letter-spacing:.04em;color:#fff;background:linear-gradient(180deg,#6edd18,#58cc02);box-shadow:0 6px 0 var(--green-d);cursor:pointer;transition:transform .05s;margin-top:4px;width:100%;}
-    .btn:active{transform:translateY(4px);box-shadow:0 2px 0 var(--green-d);}
+    .btn{border:none;border-radius:20px;padding:15px 32px;font-family:"Baloo 2";font-weight:800;font-size:17px;text-transform:uppercase;letter-spacing:.04em;color:#fff;background:linear-gradient(180deg,#ffa05a,#ff8a3d);box-shadow:0 6px 0 var(--orange-d);cursor:pointer;transition:transform .05s;margin-top:4px;width:100%;}
+    .btn:active{transform:translateY(4px);box-shadow:0 2px 0 var(--orange-d);}
     .btn.blue{background:linear-gradient(180deg,#5cc6ff,#1cb0f6);box-shadow:0 6px 0 #1480c0;}
     .btn.blue:active{box-shadow:0 2px 0 #1480c0;}
     .btn.ghost{background:none;color:var(--muted);box-shadow:none;text-transform:none;font-size:13px;width:auto;}
@@ -244,7 +244,14 @@
       <img class="ovlEcho" src="/coach/echo/echo-listening.svg" alt="" />
       <h2>Let Echo hear you practice!</h2>
       <p style="font-weight:800;font-size:13.5px;color:var(--muted);line-height:1.5;">Echo listens while you practice and cheers the sounds you get right.</p>
-      <p style="font-weight:800;font-size:11.5px;color:var(--muted);line-height:1.5;">Grown-ups: the mic is on only during practice, and sound is checked right on this device. In games nothing is recorded at all; practice words send one short clip for scoring — Sona doesn't keep them.</p>
+      <!-- This paragraph is a PROMISE, and it went stale: it described an upload
+           that stopped existing when the cloud scorer was removed, and said so
+           for months afterwards. Every verdict is decided on this phone now, so
+           the copy says that plainly. If a scoring path is ever added back, this
+           sentence changes FIRST — before the code that would make it false.
+           (Deliberately not quoting the old wording here: a test asserts that
+           wording is gone, and a comment repeating it would keep the check red.) -->
+      <p style="font-weight:800;font-size:11.5px;color:var(--muted);line-height:1.5;">Grown-ups: the mic is on only during practice, and every sound is checked right here on this device — no recording is ever uploaded, to us or anyone else. One practice clip a day may be saved on this phone so you can listen back.</p>
       <button class="btn" id="micPrimeBtn">Turn on Echo's ears</button>
       <button id="micPrimeSkip" style="border:none;background:none;font-family:Nunito,sans-serif;font-weight:800;font-size:13.5px;color:var(--muted);cursor:pointer;padding:8px;margin-top:2px;">Not now</button>
     </div>
@@ -861,7 +868,23 @@
             // soft decline: a parent who isn't ready leaves WITHOUT burning the
             // OS prompt (a denied OS dialog is near-unrecoverable) — the primer
             // simply asks again next time.
-            var sk=$("micPrimeSkip"); if(sk) sk.onclick=function(){ location.href="/today.html"; };
+            // ...but a silent bounce home left a child staring at locked games
+            // with no idea why (the Aug 10 review's dead end). Echo says one
+            // line first, so the decline is a choice with an explanation rather
+            // than a door closing. Still no OS prompt, still no sona.micok:
+            // the primer asks again next time exactly as before.
+            var sk=$("micPrimeSkip"); if(sk) sk.onclick=function(){
+              var card=$("micPrime").querySelector(".ovlCard");
+              if(!card){ location.href="/today.html"; return; }
+              card.innerHTML='<img class="ovlEcho" src="/coach/echo/echo-idle.svg" alt="" />'
+                +'<h2>That\'s okay!</h2>'
+                +'<p style="font-weight:800;font-size:13.5px;color:var(--muted);line-height:1.5;">Echo needs to hear you to play the games — we\'ll ask again next time you\'re ready.</p>'
+                +'<p style="font-weight:800;font-size:11.5px;color:var(--muted);line-height:1.5;">Grown-ups: you can turn the microphone on whenever you like, from this screen or your phone\'s Settings.</p>'
+                +'<button class="btn" id="micByeBtn">Okay</button>';
+              var b=card.querySelector("#micByeBtn");
+              if(b) b.onclick=function(){ location.href="/today.html"; };
+              setTimeout(function(){ if($("micPrime").classList.contains("show")) location.href="/today.html"; }, 8000);
+            };
           });
         });
       });
@@ -1009,7 +1032,7 @@
         q.innerHTML='<img src="/coach/echo/echo-listening.svg" alt="Echo" style="width:120px;" onerror="this.style.display=\'none\'"/>'
           +'<h1 style="font-family:\'Baloo 2\';font-weight:800;font-size:26px;color:#3f8a06;margin-top:12px;">Echo didn\'t hear you!</h1>'
           +'<p style="font-weight:800;font-size:15px;color:#5d7a3f;margin-top:8px;max-width:24ch;line-height:1.5;">Say it out loud and Echo will light up. Ready to try again?</p>'
-          +'<button id="quietGo" style="margin-top:24px;width:100%;max-width:300px;border:none;border-radius:18px;padding:17px;font-family:\'Baloo 2\';font-weight:800;font-size:19px;color:#fff;background:linear-gradient(180deg,#6fd60e,#58cc02);box-shadow:0 5px 0 #46a302;cursor:pointer;">Let\'s try again!</button>'
+          +'<button id="quietGo" style="margin-top:24px;width:100%;max-width:300px;border:none;border-radius:18px;padding:17px;font-family:\'Baloo 2\';font-weight:800;font-size:19px;color:#fff;background:linear-gradient(180deg,#ffa05a,#ff8a3d);box-shadow:0 5px 0 #ef6f23;cursor:pointer;">Let\'s try again!</button>'
           +'<a href="/today.html" style="margin-top:16px;font-weight:800;font-size:14px;color:#5d7a3f;">Maybe later</a>';
         document.body.appendChild(q);
       }
