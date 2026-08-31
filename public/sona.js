@@ -2421,6 +2421,155 @@
   }
 
   // ── Native audio capture (iOS) ──────────────────────────────────────────────
+  // ── SPEAK1: the one speech pipeline every reader shares ─────────────────
+  // chapter.html and story.html each carried their own copy of the TTS path,
+  // and both were missing the cure library.html already had. Two hangs, both
+  // seen on a real phone as "I press Read it to me and nothing happens":
+  //
+  //   1. The /api/tts fetch had no timeout. One stalled request blocked the
+  //      per-page say-queue forever and pinned its depth counter, after which
+  //      every later say() — the button included — was dropped WITHOUT SOUND
+  //      OR ERROR. library.html hit exactly this and was fixed with a 7s
+  //      abort; the other two pages never got the fix. That is the drift
+  //      CLAUDE.md warns about, so the pipeline now lives here, once.
+  //
+  //   2. playPCM resolved only from source.onended. On iOS an AudioContext
+  //      born outside a tap starts "suspended" (and a lock-screen interruption
+  //      re-suspends it): the source is scheduled, nothing plays, onended
+  //      never fires, and the queue is wedged for the life of the page.
+  //
+  // Every unit here is BOUNDED: the fetch aborts at 7s, PCM refuses to start
+  // on a context that will not run and falls back to the browser voice, a
+  // started source carries a duration+1.5s watchdog, and the browser voice is
+  // capped at 12s (1.2s when no voices are installed, where speak() never
+  // fires). A bounded unit means the depth-2 queue can never wedge, so the
+  // button always eventually speaks — and speakNow() does not even wait: a
+  // tapped button supersedes whatever is playing, because a child who taps
+  // "Read it to me" wants it read NOW, not after the backlog.
+  const _spk = { ctx: null, q: Promise.resolve(), n: 0, src: null, gen: 0 };
+  function _spkCtx() {
+    if (!_spk.ctx) { const C = global.AudioContext || global.webkitAudioContext; _spk.ctx = new C(); }
+    return _spk.ctx;
+  }
+  // Call from any user gesture: resumes the context and plays one silent
+  // sample, which is what iOS needs before it will run audio at all.
+  function speakUnlock() {
+    try {
+      const c = _spkCtx();
+      if (c.state === "suspended") c.resume();
+      const b = c.createBuffer(1, 1, 22050), s2 = c.createBufferSource();
+      s2.buffer = b; s2.connect(c.destination); s2.start(0);
+    } catch (e) {}
+    // iOS speechSynthesis sticks in a paused state after interruptions and
+    // then queues utterances forever; a gesture is the one place it un-sticks
+    try { if (global.speechSynthesis && global.speechSynthesis.paused) global.speechSynthesis.resume(); } catch (e) {}
+  }
+  function _spkSynth(text, opts, gen) {
+    return new Promise((res) => {
+      try {
+        if (gen !== _spk.gen) return res("superseded");
+        const SS = global.speechSynthesis;
+        if (!SS || !global.SpeechSynthesisUtterance) return res("no-synth");
+        // clear the stuck-paused queue iOS accumulates, or nothing ever plays
+        try { SS.cancel(); if (SS.paused) SS.resume(); } catch (e) {}
+        const t = opts.synthTransform ? opts.synthTransform(String(text)) : String(text);
+        const u = new global.SpeechSynthesisUtterance(t);
+        u.rate = opts.rate || 0.95; u.pitch = 1.05;
+        u.volume = (getProfile().volume != null ? getProfile().volume : 0.8);
+        let done = false;
+        const fin = () => {
+          if (done) return; done = true;
+          try { if (opts.hooks && opts.hooks.synthEnd) opts.hooks.synthEnd(); } catch (e) {}
+          res("synth");
+        };
+        u.onend = fin; u.onerror = fin;
+        // no installed voices → speak() never fires its events; give up fast
+        const cap = (SS.getVoices && SS.getVoices().length) ? 12000 : 1200;
+        setTimeout(fin, cap);
+        try { if (opts.hooks && opts.hooks.synthStart) opts.hooks.synthStart(); } catch (e) {}
+        SS.speak(u);
+      } catch (e) { res("error"); }
+    });
+  }
+  function _spkPCM(bytes, opts, gen) {
+    return new Promise((res) => {
+      try {
+        if (gen !== _spk.gen) return res("superseded");
+        const c = _spkCtx();
+        const go = () => {
+          try {
+            if (gen !== _spk.gen) return res("superseded");
+            // a context that will not run schedules audio that never plays and
+            // an onended that never fires — refuse, and let synth carry it
+            if (c.state !== "running") return res("blocked");
+            const n = bytes.byteLength >> 1, ab = c.createBuffer(1, n, 24000), ch = ab.getChannelData(0);
+            const dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+            for (let k = 0; k < n; k++) ch[k] = dv.getInt16(k * 2, true) / 32768;
+            const src = c.createBufferSource();
+            src.buffer = ab; src.playbackRate.value = VOICE_PITCH || 1;
+            const g = c.createGain();
+            g.gain.value = (getProfile().volume != null ? getProfile().volume : 0.8);
+            src.connect(g); g.connect(c.destination);
+            let done = false;
+            const fin = () => { if (done) return; done = true; if (_spk.src === src) _spk.src = null; res("pcm"); };
+            src.onended = fin;
+            // the watchdog IS the fix: onended is not trusted to arrive
+            setTimeout(() => { try { src.stop(); } catch (e) {} fin(); }, Math.ceil(ab.duration * 1000) + 1500);
+            _spk.src = src;
+            src.start();
+          } catch (e) { res("error"); }
+        };
+        if (c.state === "suspended") {
+          // resume() outside a gesture may silently do nothing on iOS — give
+          // it a beat, then either play or hand off to the browser voice
+          let waited = false;
+          const once = () => { if (waited) return; waited = true; go(); };
+          try { c.resume().then(once, once); } catch (e) { once(); }
+          setTimeout(once, 400);
+        } else go();
+      } catch (e) { res("error"); }
+    });
+  }
+  function _spkOnce(text, opts, gen) {
+    let ctrl = null, to = null;
+    try { ctrl = new AbortController(); to = setTimeout(() => { try { ctrl.abort(); } catch (e) {} }, 7000); } catch (e) {}
+    return fetch("/api/tts", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text: String(text), voice: opts.voice || getProfile().voiceId || "" }),
+      signal: ctrl ? ctrl.signal : undefined,
+    })
+      .then((r) => { if (to) clearTimeout(to); return r.ok ? r.arrayBuffer() : null; })
+      .then((b) => (b && b.byteLength) ? _spkPCM(new Uint8Array(b), opts, gen) : "no-audio")
+      .catch(() => { if (to) clearTimeout(to); return "fetch-failed"; })
+      .then((how) => {
+        // anything short of played-or-superseded gets the guaranteed voice —
+        // a child is never left with a silent story
+        if (how === "pcm" || how === "superseded") return how;
+        return _spkSynth(text, opts, gen);
+      });
+  }
+  function speak(text, opts) {
+    opts = opts || {};
+    if (!text || getProfile().voiceOn === false) return Promise.resolve();
+    if (_spk.n >= 2) return Promise.resolve();   // one playing + one waiting
+    _spk.n++;
+    const gen = _spk.gen;
+    const run = () => _spkOnce(text, opts, gen);
+    _spk.q = _spk.q.then(run, run).then(
+      () => { _spk.n = Math.max(0, _spk.n - 1); },
+      () => { _spk.n = Math.max(0, _spk.n - 1); },
+    );
+    return _spk.q;
+  }
+  // The button path: stop whatever is talking and say THIS, now.
+  function speakNow(text, opts) {
+    _spk.gen++;                                   // strand every queued unit
+    try { if (_spk.src) { _spk.src.stop(); _spk.src = null; } } catch (e) {}
+    try { if (global.speechSynthesis) global.speechSynthesis.cancel(); } catch (e) {}
+    _spk.q = Promise.resolve(); _spk.n = 0;       // the queue restarts clean
+    return speak(text, opts);
+  }
+
   // On the native iOS app (Capacitor) a custom `SonaAudio` plugin captures CLEAN
   // PCM via AVAudioSession `.measurement` mode (no auto-gain / noise-suppression
   // / high-pass) — preserving the high-frequency detail /s,sh,ch,th/ need. On the
@@ -2561,6 +2710,108 @@
     story: ["st-story", "peach"], chapter: ["st-story", "peach"],
   };
   function gameSticker(key) { return GAME_STICKER[String(key || "").replace(/^arcade-|\.html$/g, "")] || GAME_STICKER.story; }
+
+  // ── HEAR1: on-device speech recognition (native shell only) ────────────
+  // The spectral check asks "did that have the shape of the sound"; it cannot
+  // tell "poopoo" from an R, because both are low-centred and hiss-free. On
+  // the iOS shell the SonaSpeech plugin runs Apple's recognizer with
+  // requiresOnDeviceRecognition = true — audio never leaves the phone, and if
+  // on-device recognition is unavailable the plugin REFUSES to start rather
+  // than falling back to Apple's servers. Fail closed; the spectral check is
+  // always the fallback, so web/Android behaviour is unchanged.
+  //
+  // The plugin returns raw transcripts only. The PASS/FAIL DECISION lives
+  // here, on purpose: what counts as an attempt at a sound is clinical logic,
+  // it is Rachel's to tune, and a rule that lives in the web layer can be
+  // tuned without an App Store review.
+  function speechPlugin() {
+    try { const C = global.Capacitor; return (C && C.isNativePlatform && C.isNativePlatform() && C.Plugins && C.Plugins.SonaSpeech) ? C.Plugins.SonaSpeech : null; } catch (e) { return null; }
+  }
+  let _speechOk = null;
+  function speechAvailable() {
+    const P = speechPlugin(); if (!P) return Promise.resolve(false);
+    if (_speechOk !== null) return Promise.resolve(_speechOk);
+    return P.available().then((r) => {
+      // available is only true when on-device AND authorized — a plugin build
+      // that could reach a server never gets used, by construction
+      _speechOk = !!(r && r.available && r.onDevice);
+      return _speechOk;
+    }).catch(() => { _speechOk = false; return false; });
+  }
+  function speechPerm() {
+    const P = speechPlugin(); if (!P) return Promise.resolve(false);
+    return P.requestPermission().then((r) => { _speechOk = null; return !!(r && r.granted); }).catch(() => false);
+  }
+  function speechStart(opts) {
+    const P = speechPlugin(); if (!P) return Promise.resolve(false);
+    return speechAvailable().then((okay) => {
+      if (!okay) return false;
+      return P.start(opts || {}).then(() => true).catch(() => false);
+    });
+  }
+  function speechStop() {
+    const P = speechPlugin(); if (!P) return Promise.resolve(null);
+    return P.stop().then((r) => (r && r.onDevice ? r : null)).catch(() => null);
+  }
+
+  // What a digraph sounds like in a transcript. Single letters match
+  // themselves; TH matches both voiced and unvoiced spellings.
+  const HEAR_HINT = { SH: ["sh"], CH: ["ch", "tch"], TH: ["th"], THV: ["th"] };
+  function _lev1(a, b) {
+    // is edit distance <= 1? (one substitution/insert/delete) — cheap check,
+    // no full matrix needed
+    if (a === b) return true;
+    const la = a.length, lb = b.length;
+    if (Math.abs(la - lb) > 1) return false;
+    let i = 0, j = 0, edits = 0;
+    while (i < la && j < lb) {
+      if (a[i] === b[j]) { i++; j++; continue; }
+      if (++edits > 1) return false;
+      if (la === lb) { i++; j++; }
+      else if (la > lb) { i++; }
+      else { j++; }
+    }
+    return edits + (la - i) + (lb - j) <= 1;
+  }
+  /**
+   * hearVerdict(transcript, sound, word) → "pass" | "fail" | "unknown"
+   *
+   * pass    — the transcript is a real attempt at the target: the word (or one
+   *           edit away from it — "wabbit" for "rabbit" IS the practice, per
+   *           Travis: anything semi-close advances), or any word carrying the
+   *           target sound at all.
+   * fail    — the child said intelligible words with none of the target sound
+   *           in them. This is the "poopoo instead of R" case, and it is the
+   *           whole reason the recognizer exists.
+   * unknown — the recognizer heard nothing it could transcribe. NEVER a fail:
+   *           disordered child speech often will not transcribe, and Apple's
+   *           models are tuned on adults. Unknown defers to the spectral
+   *           check, so a child the recognizer cannot parse is judged exactly
+   *           as they were before this feature existed.
+   */
+  function hearVerdict(transcript, sound, word) {
+    const raw = String(transcript || "").toLowerCase().replace(/[^a-z' ]+/g, " ").trim();
+    if (!raw) return "unknown";
+    const tokens = raw.split(/\s+/).filter(Boolean);
+    if (!tokens.length) return "unknown";
+    const w = String(word || "").toLowerCase().replace(/[^a-z']/g, "");
+    if (w) {
+      for (let i = 0; i < tokens.length; i++) {
+        const t = tokens[i];
+        if (t === w) return "pass";
+        if (w.length >= 4 && _lev1(t, w)) return "pass";
+        if (t.indexOf(w) === 0 && w.length >= 3) return "pass";
+      }
+    }
+    const S2 = String(sound || "").toUpperCase();
+    const hints = HEAR_HINT[S2] || (S2 ? [S2.toLowerCase()] : []);
+    for (let i = 0; i < tokens.length; i++) {
+      for (let h = 0; h < hints.length; h++) {
+        if (tokens[i].indexOf(hints[h]) >= 0) return "pass";
+      }
+    }
+    return "fail";
+  }
 
   const HUMAN_CLIPS = false;
   function humanClipsOn() { return HUMAN_CLIPS; }
@@ -2781,5 +3032,5 @@
   try { _grandfatherFreeEra2(); } catch (e) {}
   try { installDebug(); } catch (e) {}
 
-  global.Sona = { pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, ladderContent, FREE_MODE, isFree, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, gated, gateVerify, gateOk, requireGate, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repsBeacon, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES };
+  global.Sona = { pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, ladderContent, FREE_MODE, isFree, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, gated, gateVerify, gateOk, requireGate, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, speak, speakNow, speakUnlock, speechAvailable, speechPerm, speechStart, speechStop, hearVerdict, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repsBeacon, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES };
 })(window);

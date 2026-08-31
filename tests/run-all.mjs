@@ -6,6 +6,7 @@ import path from "path";
 
 const dir = path.dirname(fileURLToPath(import.meta.url));
 const SUITES = [
+  "syntaxtest.mjs",// SYNTAX1: every inline script parses — a broken block kills its whole page
   "soundmap.mjs",  // every sound is scorable + the daily ring can actually fill
   "storytest.mjs", // STORY1: episode beats, chapter pacing, cliffhanger
   "kidtest.mjs",   // KIDS1: per-child progress, switching, family-wide entitlement
@@ -23,6 +24,7 @@ const SUITES = [
   "day1.mjs", // the day: one story, then three games
   "feedtest.mjs",  // Feed Echo: littles tap-and-say loop, growth, deck placement
   "iaptest.mjs",   // Apple IAP rail: native paywall, purchase/restore, web untouched
+  "heartest.mjs",  // HEAR1: on-device recognition verdicts — poopoo fails, unknown never does
   "loadtest.mjs",  // LOAD1: per-game loading scenes, ticket pill, ghost reveals
   "hwtest.mjs",    // HW1: SLP homework replaces what the app would have picked
   "arttest.mjs",   // ART1: every sticker renders, fits its box and stays in the safe band

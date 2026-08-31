@@ -1,0 +1,13 @@
+{
+  "name": "sona-speech",
+  "version": "0.1.0",
+  "description": "On-device speech recognition for Sona (SFSpeechRecognizer, requiresOnDeviceRecognition). Audio never leaves the device; if on-device recognition is unavailable the plugin reports unavailable rather than falling back to Apple's servers.",
+  "main": "dist/plugin.js",
+  "files": ["ios/", "Package.swift", "SonaSpeech.podspec"],
+  "capacitor": {
+    "ios": { "src": "ios" }
+  },
+  "peerDependencies": {
+    "@capacitor/core": ">=6.0.0"
+  }
+}

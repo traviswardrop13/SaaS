@@ -128,33 +128,12 @@
     }
 
     /* ── voice ───────────────────────────────────────────────────────────── */
-    var ctx=null;
-    function getCtx(){ if(!ctx){ var C=window.AudioContext||window.webkitAudioContext; ctx=new C(); } return ctx; }
-    function unlockAudio(){ try{ var c=getCtx(); if(c.state==="suspended")c.resume(); var b=c.createBuffer(1,1,22050); var s=c.createBufferSource(); s.buffer=b; s.connect(c.destination); s.start(0); }catch(e){} }
-    function playPCM(b){return new Promise(function(res){try{var c=getCtx(),n=b.byteLength>>1,ab=c.createBuffer(1,n,24000),ch=ab.getChannelData(0),dv=new DataView(b.buffer,b.byteOffset,b.byteLength);for(var k=0;k<n;k++)ch[k]=dv.getInt16(k*2,true)/32768;var s=c.createBufferSource();s.buffer=ab;s.playbackRate.value=(window.Sona&&Sona.VOICE_PITCH)||1;var g=c.createGain();g.gain.value=(profile.volume!=null?profile.volume:0.8);s.connect(g);g.connect(c.destination);s.onended=res;s.start();}catch(e){res();}});}
-    // Guaranteed audio: if cloud TTS is down or out of credit, the browser
-    // voice reads the page. A child is never left with a silent story.
-    function speakFallback(t){ return new Promise(function(res){ try{
-      if(!window.speechSynthesis||!window.SpeechSynthesisUtterance) return res();
-      var u=new SpeechSynthesisUtterance(String(t));
-      u.rate=0.9; u.pitch=1.05; u.volume=(profile.volume!=null?profile.volume:0.8);
-      var done=false; function fin(){ if(done)return; done=true; res(); }
-      u.onend=fin; u.onerror=fin; setTimeout(fin,12000);
-      window.speechSynthesis.speak(u);
-    }catch(e){ res(); } }); }
-    var _q=Promise.resolve(), _n=0;
-    function say(t){
-      if(!t||profile.voiceOn===false) return Promise.resolve();
-      if(_n>=2) return Promise.resolve();
-      _n++;
-      var run=function(){ return fetch("/api/tts",{method:"POST",headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({text:t,voice:profile.voiceId||""})})
-        .then(function(r){return r.ok?r.arrayBuffer():null;})
-        .then(function(b){ return b?playPCM(new Uint8Array(b)):speakFallback(t); })
-        .catch(function(){ return speakFallback(t); }); };
-      _q=_q.then(run,run).then(function(){_n=Math.max(0,_n-1);},function(){_n=Math.max(0,_n-1);});
-      return _q;
-    }
+    // SPEAK1: the speech path lives in sona.js now. This page carried its own
+    // copy with no fetch timeout and a PCM promise that never resolved on a
+    // suspended iOS context — two stuck calls and every later tap of "Read it
+    // to me" was dropped silently. The shared pipeline is bounded end to end.
+    function unlockAudio(){ try{ S.speakUnlock(); }catch(e){} }
+    function say(t){ try{ return S.speak(t); }catch(e){ return Promise.resolve(); } }
 
     // The chapter's world: painted once. Echo re-poses per page on top of it,
     // which is what makes a page turn feel like a page rather than a text swap.
@@ -217,7 +196,9 @@
 
     $("next").onclick=function(){ unlockAudio(); advance(); };
     $("stage").onclick=function(){ unlockAudio(); advance(); };
-    $("hear").onclick=function(ev){ ev.stopPropagation(); unlockAudio(); say(PAGES[i]); };
+    // the button means NOW — it supersedes the auto-read instead of queueing
+    // behind it, because a child who taps it wants this page, immediately
+    $("hear").onclick=function(ev){ ev.stopPropagation(); unlockAudio(); try{ S.speakNow(PAGES[i]); }catch(e){} };
     $("close").onclick=function(){ location.href="/today.html"; };
     $("doneBtn").onclick=function(){ location.href="/today.html"; };
 

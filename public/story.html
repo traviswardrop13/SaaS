@@ -161,39 +161,27 @@
     function loadStory(){return fetch("/api/story",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:NAME,interest:INTEREST,sound:SOUND,position:POS,minutes:MINUTES,diff:DIFF,level:DIFF,pages:LEVEL_GOAL})}).then(function(r){return r.ok?r.json():null;}).then(function(j){if(j&&j.ok&&j.story&&j.story.pages&&j.story.pages.length>=4){PAGES=j.story.pages;GOAL=Math.min(LEVEL_GOAL,PAGES.length);GENERATED=true;}}).catch(function(){});}
 
     var audioCtx=null; function getCtx(){if(!audioCtx){var AC=window.AudioContext||window.webkitAudioContext;audioCtx=new AC();}if(audioCtx.state==="suspended")audioCtx.resume();return audioCtx;}
-    // Mobile browsers block audio until a tap ON THIS PAGE — call once from the Start tap so every page can then auto-read.
-    function unlockAudio(){ try{ var c=getCtx(); if(c.state==="suspended")c.resume(); var b=c.createBuffer(1,1,22050); var s=c.createBufferSource(); s.buffer=b; s.connect(c.destination); s.start(0); }catch(e){} }
-    function playPCM(b){return new Promise(function(res){try{var c=getCtx(),n=b.byteLength>>1,ab=c.createBuffer(1,n,24000),ch=ab.getChannelData(0),dv=new DataView(b.buffer,b.byteOffset,b.byteLength);for(var i=0;i<n;i++)ch[i]=dv.getInt16(i*2,true)/32768;var s=c.createBufferSource();s.buffer=ab;s.playbackRate.value=(window.Sona&&Sona.VOICE_PITCH)||1;var g=c.createGain();g.gain.value=(profile.volume!=null?profile.volume:0.8);s.connect(g);g.connect(c.destination);s.onended=res;s.start();}catch(e){res();}});}
-    // Guaranteed-audio fallback: if cloud TTS fails (quota, network), the
-    // browser's built-in voice reads the line instead — lower quality, but a
-    // child is NEVER left with silent instructions. Runs under the speaker
-    // guard so it can't charge reps.
-    function speakFallback(t,slow){ return new Promise(function(res){ try{
-      if(!window.speechSynthesis||!window.SpeechSynthesisUtterance) return res();
-      var u=new SpeechSynthesisUtterance(String(t).replace(/\[[a-z ]{2,24}\]\s*/gi,""));
-      u.rate=slow?0.62:0.95; u.pitch=1.05; u.volume=(profile.volume!=null?profile.volume:0.8);
-      var done=false; function fin(){ if(done)return; done=true; try{ if(typeof ttsEnd==="function")ttsEnd(); }catch(e){} res(); }
-      u.onend=fin; u.onerror=fin; setTimeout(fin,(window.speechSynthesis.getVoices&&window.speechSynthesis.getVoices().length)?12000:1200);
-      try{ if(typeof ttsBegin==="function")ttsBegin(); }catch(e){}
-      window.speechSynthesis.speak(u);
-    }catch(e){ res(); } }); }
-    var speaking=false;
-    function _say1(t){return new Promise(function(res){if(!t)return res();speaking=true;fetch("/api/tts",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text:t,voice:profile.voiceId||""})}).then(function(r){return r.ok?r.arrayBuffer():null;}).then(function(b){if(!b)return speakFallback(t);return playPCM(new Uint8Array(b));}).catch(function(){return speakFallback(t);}).finally(function(){speaking=false;res();});});}
-    // QUEUE, never drop. This used to be `if(speaking) return res()` — so any
-    // line that arrived while Echo was still talking silently vanished, and the
-    // child got a page read to them but never heard the question that followed
-    // (Rachel caught this: "then it doesn't read the next question"). A line
-    // now WAITS its turn. Depth is capped so a kid mashing "read it to me"
-    // can't stack up a backlog.
-    var _sayQ=Promise.resolve(), _sayN=0;
+    // SPEAK1: shared pipeline (sona.js). The guard hooks matter: ttsBegin/
+    // ttsEnd wrap ONLY the browser-voice path, exactly as before, so Echo's
+    // fallback voice is never counted as the child speaking. The PCM path was
+    // never guarded here and stays unguarded — same behaviour, one copy.
+    function unlockAudio(){ try{ Sona.speakUnlock(); }catch(e){} }
+    var speaking=false;   // kept: mirrors the old flag for anything that reads it
+    var SPEAK_OPTS={
+      synthTransform:function(t){ return String(t).replace(/\[[a-z ]{2,24}\]\s*/gi,""); },
+      hooks:{
+        synthStart:function(){ try{ if(typeof ttsBegin==="function")ttsBegin(); }catch(e){} },
+        synthEnd:function(){ try{ if(typeof ttsEnd==="function")ttsEnd(); }catch(e){} },
+      },
+    };
     function say(t){
-      if(!t||profile.voiceOn===false) return Promise.resolve();
-      if(_sayN>=2) return Promise.resolve();   // already one playing + one waiting
-      _sayN++;
-      var run=function(){ return _say1(t); };
-      _sayQ=_sayQ.then(run,run).then(function(){ _sayN=Math.max(0,_sayN-1); },function(){ _sayN=Math.max(0,_sayN-1); });
-      return _sayQ;
+      if(!t) return Promise.resolve();
+      speaking=true;
+      var done=function(){ speaking=false; };
+      try{ return Sona.speak(t,SPEAK_OPTS).then(done,done); }
+      catch(e){ done(); return Promise.resolve(); }
     }
+
     var LEO={idle:"/coach/echo/echo-idle.svg",cheer:"/coach/echo/echo-celebrate.svg",listen:"/coach/echo/echo-listening.svg"};
     Object.keys(LEO).forEach(function(k){var im=new Image();im.src=LEO[k];});
     function setLeo(s){var el=$("echo");if(el&&LEO[s])el.src=LEO[s];}
@@ -278,8 +266,12 @@
       if(window.Sona){Sona.confetti&&Sona.confetti();Sona.sfx&&Sona.sfx.complete&&Sona.sfx.complete();Sona.sfx&&Sona.sfx.coin&&Sona.sfx.coin();}
     }
     function startGame(){ $("win").classList.remove("show"); pi=0; busy=false; $("count").textContent="0"; $("goal").textContent=GOAL; renderPage(); setLeo("idle"); readPage(); }
+    // Boot. The async wrapper is what makes every await below legal — losing it
+    // (it once shared a line with the SpeechAce probe) parsed as top-level
+    // await in a classic script and silently killed this whole block.
+    (async function(){
       try{ if(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia) micStream=await navigator.mediaDevices.getUserMedia({audio:true}); }catch(e){micStream=null;}
-      $("hear").onclick=function(){ var p=PAGES[pi]; say(p.text.replace("___",p.word)); }; $("again").onclick=startGame;
+      $("hear").onclick=function(){ unlockAudio(); var p=PAGES[pi]; try{ Sona.speakNow(p.text.replace("___",p.word),SPEAK_OPTS); }catch(e){} }; $("again").onclick=startGame;
       // Show a quick "writing your adventure" beat while the AI story loads, then play.
       $("pageEmoji").innerHTML='<svg viewBox="0 0 64 64" style="width:74px;height:74px"><path d="M32 5l8.2 18.6L60 25.8 44.9 39.2 49.8 59 32 48.4 14.2 59l4.9-19.8L4 25.8l19.8-2.2Z" fill="#ffd21c"/><circle cx="25" cy="21" r="3" fill="#fff" opacity=".85"/></svg>'; $("pageText").textContent="Writing "+(NAME?NAME+"'s":"your")+" "+INTEREST+" adventure…";
       await loadStory();
