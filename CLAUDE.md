@@ -36,52 +36,62 @@ practice, or what an SLP is shown, it is Rachel's call, not an engineering
 one. Surface those in the PR body so she can review them without reading
 the diff.
 
-## Pricing — settled
-Pricing is **live**: **$9.99/month** billed at purchase with **no trial**, and
-**$59.99/year** after a **3-day free trial**. `FREE_MODE = false` in `sona.js` is
-the only switch; every purchase surface reads it and `gated()` short-circuits on
-`isFree()` before anything else.
+## Pricing — free, permanently
+Sona is **free**. `FREE_MODE = true` in `sona.js` is the only switch; every
+purchase surface reads it and `gated()` short-circuits on `isFree()` before
+anything else. Travis set this on 31 Aug 2026 and called it **permanent** —
+not a window with a re-price behind it.
 
-**The free-mode half of the switch stays wired.** `trial.html`'s `isFree()`
-bounce and `today.html`'s plan-note guard are inert while priced. They are not
-dead code — they are the other direction of the switch, and deleting them is how
-the next free window ships a paywall link to a family who was promised free.
+**Both halves of the switch stay wired, and that rule now points the other
+way.** The paid rails — `subscribe.html`'s two cards, the trial timeline,
+`trial.html`'s prices, the Apple IAP path — are inert but alive, exercised
+through the `?paid=1` / `sona.paidui` QA seam that grants nothing and moves no
+money. Deleting them is how "we should charge for this" becomes a month of
+archaeology instead of a boolean. The last free era proved that; don't
+re-prove it.
 
-Four cohorts are free regardless of the switch: SLP-referred families (the
-server-verified `?slp=` credential — that promise IS the SLP channel), pilots,
-founders, and **everyone who used Sona during EITHER free era**.
+**There is no `_grandfatherFreeEra3()`, deliberately.** The first two sweeps
+exist to honour families who arrived free and would otherwise have met a
+paywall when the switch flipped back. Nothing flips back, so there is no
+cohort to rescue. If pricing ever DOES return, that sweep has to be written
+first — every family who arrived during this era was told free, and the
+precedent set twice is that they keep it.
 
-Two things that follow, and are not up for quiet reinterpretation:
-- **Both free eras' families keep it free.** Enforced by
-  `_grandfatherFreeEra()` and `_grandfatherFreeEra2()`, pinned in
-  `tests/iaptest.mjs`. Do not "clean it up".
-  There have been TWO free windows: the original, and nine days in August
-  (20–28). Era one was judged structurally — an onboarded device carrying no
-  stamp predates pricing. Era two was told a REVOCABLE thing ("the app is
-  free", not "free forever") and was originally left to meet the paywall;
-  Travis chose to keep it for them anyway, and `_grandfatherFreeEra2()` sweeps
-  them in.
-  **The sweep is one-shot and structural, and that is load-bearing.** An
+`_grandfatherFreeEra()` and `_grandfatherFreeEra2()` still run and stay pinned
+in `tests/iaptest.mjs`. They cost nothing now and they are promises already
+made. Do not "clean them up".
+  There have been THREE free windows: the original, nine days in August
+  (20–28), and this one. Era one was judged structurally — an onboarded device
+  carrying no stamp predates pricing. Era two was told a REVOCABLE thing ("the
+  app is free", not "free forever") and was originally left to meet the
+  paywall; Travis chose to keep it for them anyway, and
+  `_grandfatherFreeEra2()` sweeps them in.
+  **The sweeps are one-shot and structural, and that is load-bearing.** An
   era-two family and a family arriving tomorrow are both stamped `post`,
   because a new device is stamped on its very first load, before it onboards.
   No date on the device separates them — `practiceDays` is pruned at 130 days
-  and a family who set up but never practised has none. So the sweep runs once,
+  and a family who set up but never practised has none. So a sweep runs once,
   on the first load of the build carrying it, and grandfathers any device that
-  is ALREADY onboarded: such a device necessarily predates that build. A family
-  who onboards afterwards is stamped and swept before they ever have a profile,
-  and correctly still pays. Both directions are pinned — get it wrong one way
-  and you break a promise, the other way and you give the app away.
-- Don't re-open the pricing question in passing. It has cost several reversals
-  and a lot of paywall plumbing while the clinical work sat in the TODO list
-  below. If it changes, it changes deliberately and once — and the bar for
-  changing it back is a number decided in advance, not a fresh argument.
-  Note what the two grandfather sweeps cost: every free window permanently
-  removes its own cohort from ever paying. That is the honest price of going
-  free, and it is a reason to mean it the next time.
+  is ALREADY onboarded: such a device necessarily predates that build. Any
+  future era-3 sweep must work the same way.
+
+Still true regardless of the switch: SLP-referred families (the server-verified
+`?slp=` credential — that promise IS the SLP channel), pilots and founders are
+free, and entitlement is never granted from a URL parameter.
+
+**Don't re-open the pricing question in passing.** It has now cost several
+reversals and a lot of paywall plumbing while the clinical work sat in the TODO
+list below. If it changes, it changes deliberately and once — and the bar is a
+number decided in advance, not a fresh argument. Note what each free era costs:
+it permanently removes its own cohort from ever paying. That is the honest
+price of going free, and it is the reason to mean it.
 
 **The iOS price does not live in this repo.** `subscribe.html` overwrites the
 figures with whatever RevenueCat reports from App Store Connect, so editing
-numbers here does not change what an iPhone shows. Change ASC.
+numbers here does not change what an iPhone shows — and **going free in this
+repo does not cancel a single Apple or Stripe subscription.** Anyone already
+subscribed keeps being billed until those are stopped in App Store Connect and
+the Stripe dashboard. That is an operations task, not a code one.
 
 ## Hard rules
 - Merges to main/prod only on Travis's explicit go ("merge").

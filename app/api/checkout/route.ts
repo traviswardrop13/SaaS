@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
+import { FREE_MODE } from "@/lib/pricing";
 
 /**
  * Creates a Stripe Checkout Session for Sona.
@@ -42,6 +43,15 @@ function pickPlan(v: unknown): keyof typeof PLANS {
 }
 
 export async function POST(req: NextRequest) {
+  // Sona is free. Nothing here may take money — and the refusal lives on the
+  // server because the buttons are not the only way in: a bookmark, a stale
+  // tab or an old ad link reaches this endpoint directly.
+  if (FREE_MODE) {
+    return NextResponse.json(
+      { ok: false, error: "Sona is free — there is nothing to buy." },
+      { status: 410 },
+    );
+  }
   const key = process.env.STRIPE_SECRET_KEY;
   if (!key) {
     return NextResponse.json(
@@ -109,6 +119,9 @@ export async function POST(req: NextRequest) {
  * the monthly tier; anything else (or nothing) is annual.
  */
 export async function GET(req: NextRequest) {
+  // A click on an old ad or a stale "Start 3 days free" link lands on the
+  // marketing page, which now says the app is free — never on a Stripe form.
+  if (FREE_MODE) return NextResponse.redirect(new URL("/", req.url), 303);
   const plan = new URL(req.url).searchParams.get("plan") || "";
   const proxied = new NextRequest(req.url, { method: "POST", headers: req.headers, body: JSON.stringify({ plan }) });
   const res = await POST(proxied);

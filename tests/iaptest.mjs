@@ -206,7 +206,12 @@ await web.close();
 // ── PRICING IS LIVE: FREE_MODE off, 3-day trial, the gate is honest ──
 {
   const sona = readFileSync(ROOT + "/sona.js", "utf8");
-  ok("FREE_MODE is off — pricing is live", /const FREE_MODE = false;/.test(sona));
+  // Sona went free again on 31 Aug 2026, deliberately and permanently. Every
+  // paid assertion in this suite runs behind the ?paid=1 seam, which is the
+  // seam's whole job: the purchase rails stay exercised while nobody is
+  // charged, so pricing stays one boolean away instead of one archaeology
+  // project away. freetest.mjs owns the free-side invariants.
+  ok("FREE_MODE is on — Sona is free", /const FREE_MODE = true;/.test(sona));
   ok("isFree() short-circuits the gate before anything else can",
     /function gated\(\) \{\s*if \(isFree\(\)\) return false;/.test(sona),
     "if any check runs ahead of the switch, the switch is not the switch");
@@ -352,11 +357,23 @@ ok("no pageerrors", errs.length === 0, errs.join(" | "));
   const later = await p2.evaluate(() => {
     Sona.saveProfile({ childName: "New", childAge: "6", focusSounds: ["S"], onboarded: true });
     localStorage.setItem(Sona.kkey("sona.trial.v1"), JSON.stringify({ start: Date.now() - 90 * 86400000, days: 3 }));
-    return { stamp: localStorage.getItem("sona.freeera.v1"), early: Sona.getProfile().earlyAdopter, gated: Sona.gated() };
+    const swept = { stamp: localStorage.getItem("sona.freeera.v1"), early: Sona.getProfile().earlyAdopter };
+    // Sona is free, so this family does not gate today and neither does anyone
+    // else. The half that still has to hold is that they were given no
+    // standing OF THEIR OWN by the sweep — asked through the ?paid=1 seam, so
+    // it is still answered on the day pricing returns. Get this wrong and the
+    // sweep quietly grandfathers the whole future.
+    const gatedFree = Sona.gated();          // measure free FIRST, then arm the seam
+    sessionStorage.setItem("sona.paidui", "1");
+    const gatedAsPriced = Sona.gated();
+    sessionStorage.removeItem("sona.paidui");
+    return Object.assign(swept, { gatedFree, gatedAsPriced });
   });
   ok("a family arriving after the sweep is NOT swept in",
     later.stamp === "post" && !later.early, JSON.stringify(later));
-  ok("…and still meets the paywall", later.gated === true, JSON.stringify(later));
+  ok("…and is free today like everyone else", later.gatedFree === false, JSON.stringify(later));
+  ok("…but was granted no standing of its own — it would gate if pricing returned",
+    later.gatedAsPriced === true, JSON.stringify(later));
   await c2.close();
 
   // the sweep is one-shot: a device that onboards later cannot re-trigger it
