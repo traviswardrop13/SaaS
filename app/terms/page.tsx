@@ -44,6 +44,17 @@ export default function TermsPage() {
       </Section>
 
       <Section title="Pricing &amp; billing">
+        {/* Sona is free (lib/pricing.ts). The paid terms below still govern
+            anyone who subscribed while it was priced — their Apple or Stripe
+            subscription keeps running until it is cancelled — so they stay,
+            with the current state stated first rather than the page quietly
+            describing an offer nobody can accept. */}
+        <strong>Sona is currently free.</strong> Every game, every sound and the
+        Sound Check are available at no cost, and no new subscriptions are being
+        sold. The terms in this section continue to govern subscriptions bought
+        while Sona was paid, until they are cancelled.
+        <br />
+        <br />
         <strong>Sona Monthly</strong> is <strong>$9.99 per month</strong> and{" "}
         <strong>Sona Yearly</strong> is <strong>$59.99 per year</strong>, plus any
         applicable taxes, and includes every game and every new sound we ship.

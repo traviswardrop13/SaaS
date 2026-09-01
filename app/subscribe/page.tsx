@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Suspense, useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
+import { FREE_MODE } from "@/lib/pricing";
 
 const FEATURES = [
   "Every game and every level, unlocked",
@@ -53,6 +54,43 @@ function SubscribeInner() {
     } finally {
       setBusy(false);
     }
+  }
+
+  // Sona is free: /api/checkout refuses, so every button on this page could
+  // only produce an error. A parent who lands here from a bookmark or an old
+  // link gets the truth and a way into the app, not a broken plan picker.
+  if (FREE_MODE) {
+    return (
+      <main className="min-h-screen bg-gradient-to-b from-sky-50 to-white">
+        <div className="mx-auto max-w-md px-5 py-20 text-center">
+          <img src="/coach/echo/echo-avatar.svg" alt="Sona" className="mx-auto h-20 w-20 object-contain" />
+          <h1 className="font-display mt-4 text-3xl font-extrabold text-gray-900">Sona is free</h1>
+          <p className="mt-3 text-base font-bold text-gray-600">
+            Every game, every sound and the Sound Check — no plan, no card, nothing to cancel.
+          </p>
+          <Link
+            href="/onboarding.html"
+            className="mt-7 inline-block rounded-2xl bg-orange-400 px-7 py-4 font-display text-lg font-extrabold text-white shadow-chunky"
+          >
+            Start practicing
+          </Link>
+          {/* Settings still routes an active subscriber here via "Manage →".
+              Going free does not cancel anybody's Apple or Stripe
+              subscription, so the one thing this page owes them is the way
+              out — never a dead end on a page that just told them it's free. */}
+          <p className="mt-8 text-sm font-bold leading-relaxed text-gray-500">
+            Subscribed before Sona went free? Nothing is charged by the app any more, but an
+            existing subscription keeps renewing until it is cancelled. On iPhone or iPad:{" "}
+            <strong>Settings &rarr; your Apple ID &rarr; Subscriptions</strong>. Bought on
+            speaksona.com:{" "}
+            <a className="text-sky-700 underline" href="mailto:wardroptravis@gmail.com?subject=Sona%20subscription">
+              email us
+            </a>{" "}
+            and we will cancel and refund it.
+          </p>
+        </div>
+      </main>
+    );
   }
 
   return (

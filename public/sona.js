@@ -2816,7 +2816,20 @@
   const HUMAN_CLIPS = false;
   function humanClipsOn() { return HUMAN_CLIPS; }
 
-  const FREE_MODE = false;
+  // Sona is FREE. Travis's call, 31 Aug 2026, and deliberately PERMANENT —
+  // not a window with a re-price waiting behind it.
+  //
+  // That distinction is why there is no _grandfatherFreeEra3(). The first two
+  // sweeps exist to honour families who arrived during a free window and would
+  // otherwise have met a paywall when the switch flipped back. Nothing flips
+  // back here, so there is no cohort to rescue. Those two sweeps still run:
+  // they are promises already made, and they cost nothing now.
+  //
+  // The paid rails stay wired and stay TESTED through the ?paid=1 seam below.
+  // Not because a re-price is planned, but because a switch nobody can flip is
+  // not a switch — and the last free era proved how fast an unexercised paid
+  // path rots into an archaeology project.
+  const FREE_MODE = true;
   // QA seam: ?paid=1 (or the sticky sona.paidui flag) reveals the purchase
   // rails on this device so the paid path stays exercisable — and TESTED —
   // while free mode ships. It only controls VISIBILITY; it can't unlock

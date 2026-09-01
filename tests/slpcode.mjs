@@ -1,9 +1,11 @@
 // CODES1: the SLP family credential — code ("username") + family key
 // ("password"), auto-created for the clinician, verified server-side before
-// anything unlocks. With pricing LIVE this is the wall between "typed a
-// string" and "skips the paywall": the old ?slp= honor system granted free
-// access to ANY code, so the thing under test here is that only a credential
-// the server vouches for unlocks — and that a wrong key genuinely doesn't.
+// anything unlocks. Sona is free again, so nothing gates today — which is
+// exactly why this suite keeps testing through the ?paid=1 seam: the wall
+// between "typed a string" and "skips the paywall" has to still be standing
+// on the day pricing returns. The old ?slp= honor system granted free access
+// to ANY code; only a credential the server vouches for unlocks, and a wrong
+// key genuinely doesn't.
 import { createServer } from "http";
 import { readFileSync, existsSync } from "fs";
 import { chromium, ROOT, launchOpts } from "./_env.mjs";
@@ -487,8 +489,14 @@ const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL 
   ok("the funnel event fires only on a VALID redemption",
     /valid[\s\S]{0,700}track\("slp code redeemed"/.test(sona),
     "counting unverified codes ranks garbage SLPs");
-  ok("pricing is live — FREE_MODE is the one switch and it is OFF",
-    /const FREE_MODE = false;/.test(sona), "a stray true here silently makes the whole app free");
+  // This pin used to read "FREE_MODE is OFF", guarding a stray `true` that
+  // would have given the app away. Travis turned it on deliberately on 31 Aug
+  // 2026 and called it permanent, so the guard now points the other way: a
+  // stray `false` would put a paywall in front of three eras of families who
+  // were promised free, including this one. freetest.mjs owns the rest.
+  ok("Sona is free — FREE_MODE is the one switch and it is ON",
+    /const FREE_MODE = true;/.test(sona),
+    "a stray false here paywalls families who were promised free");
   ok("every family from the free era keeps it free",
     /function _grandfatherFreeEra[\s\S]{0,700}earlyAdopter = true/.test(sona),
     "grandfathering is a promise to those families, not a growth tactic");
