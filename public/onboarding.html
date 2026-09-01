@@ -312,7 +312,13 @@
       };
       bg.appendChild(el);
     })();
-    leo.innerHTML = mascotMarkup(draft.character);
+    // Which mascot stands beside the bubble is decided by the STEP, in
+    // render() — see mascotForStep(). It used to be painted once at load from
+    // draft.character, which is Pip the fox for anyone who has not chosen, so
+    // a fox delivered Echo's own "Hi! I'm Echo!" — the two-mascots-in-one-flow
+    // problem the Aug 10 review flagged. Profile state can't decide it either:
+    // DEFAULT_PROFILE.character is "fox", so a family who never reached the
+    // buddy step is indistinguishable from one who picked Pip.
 
     // interests (themes for AI Story Adventures). Keep in sync with today.html / story.html.
     var INTEREST_OPTS = [
@@ -433,9 +439,19 @@
     })();
     var emailEl=document.getElementById("obEmail"); emailEl.value=draft.email;
 
+    // Echo hosts onboarding — every bubble is Echo speaking. The child's buddy
+    // takes the slot from the buddy step onward, which is the first moment the
+    // pick is theirs rather than a default.
+    function mascotForStep(key){
+      var seen = ORDER.indexOf(key) >= ORDER.indexOf("buddy");
+      var want = seen ? mascotMarkup(draft.character) : mascotMarkup("leo");
+      if (leo.innerHTML !== want) leo.innerHTML = want;
+    }
+
     function render(){
       var key=ORDER[idx];
       ORDER.forEach(function(k,i){ steps[k].classList.toggle("on", i===idx); segEl.children[i].classList.toggle("on", i<=idx); });
+      mascotForStep(key);
       bubble.textContent = BUBBLES[key] || "";
       nextBtn.textContent = CTA[key] || "Continue";
       backBtn.style.display = idx === 0 ? "none" : "block";

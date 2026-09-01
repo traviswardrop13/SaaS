@@ -149,6 +149,61 @@ for (const [game, title, rgbs] of SKIES) {
   ok("no child-facing copy says charge or points", bad.length === 0, bad.join(" | "));
 }
 
+// ── 5. one action colour ──
+// The Aug 10 review: "the home CTA is brand orange; the story's Next and the
+// mic primer's button are Duolingo green" — palette discipline is the top
+// premium signal, and a borrowed accent is a cheap tell. Orange is ours.
+// Greens that are NOT actions stay: --good, the call-answer button (the
+// universal answer affordance), status dots, the founding-timeline dot.
+{
+  const GREEN = /#58cc02|#46a302|#6edd18|#6fd60e|#5fd216|#3c8c02/i;
+  const KID = ["today.html", "charge.html", "story.html", "chapter.html", "check.html", "join.html",
+    "library.html", "coach-call.html", ...["slice", "run", "stack", "tiles", "glide", "feed"].map((g) => `arcade-${g}.html`)];
+  const bad = [];
+  for (const f of KID) {
+    const src = readFileSync(ROOT + "/" + f, "utf8").replace(/\/\*[\s\S]*?\*\//g, " ");
+    // every rule that paints a BUTTON: the selector must mention a button or a
+    // btn-ish id/class, and the declaration must set a background
+    for (const m of src.matchAll(/([^{}]*(?:\.btn|button|Btn|#quietGo|\.jbtn)[^{}]*)\{([^}]*background[^}]*)\}/gi)) {
+      const sel = m[1].trim(), decl = m[2];
+      if (/--green|var\(--good\)|#answer|#callDot|\.ghost/.test(sel)) continue;   // status/answer greens
+      if (GREEN.test(decl)) bad.push(f + " " + sel.split("\n").pop().trim().slice(0, 40));
+    }
+    // inline styles on buttons
+    for (const m of src.matchAll(/<button[^>]*style="([^"]*)"/gi)) {
+      if (GREEN.test(m[1]) && /background/.test(m[1])) bad.push(f + " inline <button>");
+    }
+  }
+  ok("no kid-facing action button is Duolingo green", bad.length === 0, bad.join(" | "));
+
+  // and the buttons a child actually taps are the brand orange, in the browser
+  const ORANGE = /255, ?138, ?61|255, ?160, ?90/;
+  const { ctx, pg } = await scene("arcade-slice.html");
+  const primer = await pg.evaluate(() => {
+    const b = document.getElementById("micPrimeBtn");
+    return b ? getComputedStyle(b).backgroundImage : "";
+  });
+  ok("the mic primer's button is brand orange", ORANGE.test(primer), primer.slice(0, 70));
+  await ctx.close();
+
+  const c2 = await browser.newContext();
+  const p2 = await c2.newPage();
+  await p2.goto("http://localhost:8198/today.html");
+  await p2.evaluate(() => {
+    localStorage.setItem("sona.freeera.v1", "post"); localStorage.setItem("sona.freeera2.v1", "done");
+    Sona.saveProfile({ childName: "Mia", childAge: "7", focusSounds: ["R"], onboarded: true });
+  });
+  await p2.goto("http://localhost:8198/chapter.html");
+  await p2.waitForTimeout(600);
+  const next = await p2.evaluate(() => {
+    const n = document.getElementById("next"), d = document.getElementById("doneBtn");
+    return { next: n ? getComputedStyle(n).backgroundImage : "", done: d ? getComputedStyle(d).backgroundImage : "" };
+  });
+  ok("the chapter's Next is brand orange", ORANGE.test(next.next), next.next.slice(0, 70));
+  ok("…and so is the chapter's finish button", ORANGE.test(next.done), next.done.slice(0, 70));
+  await c2.close();
+}
+
 await browser.close(); srv.close();
 console.log(fails ? fails + " FAILURES" : "ALL GREEN");
 process.exit(fails ? 1 : 0);

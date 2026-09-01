@@ -27,8 +27,8 @@
     .field label{display:block;font-weight:800;font-size:13px;color:var(--muted);margin-bottom:5px;text-align:left;}
     input,select{width:100%;border:2px solid #d9e6f2;border-radius:14px;padding:14px;font-size:16px;font-weight:700;background:#fff;color:var(--ink);}
     .btn{margin-top:18px;width:100%;max-width:340px;border:none;border-radius:18px;padding:17px;font-family:"Baloo 2";font-weight:800;font-size:18px;text-transform:uppercase;letter-spacing:.03em;color:#fff;cursor:pointer;
-      background:linear-gradient(180deg,#5fd216,#46a302);box-shadow:0 7px 0 0 #3c8c02;transition:transform .06s,box-shadow .06s;}
-    .btn:active{transform:translateY(4px);box-shadow:0 3px 0 0 #3c8c02;}
+      background:linear-gradient(180deg,#ffa05a,#ff8a3d);box-shadow:0 7px 0 0 #ef6f23;transition:transform .06s,box-shadow .06s;}
+    .btn:active{transform:translateY(4px);box-shadow:0 3px 0 0 #ef6f23;}
     .btn.blue{background:linear-gradient(180deg,#36bdff,#1597d4);box-shadow:0 7px 0 0 #0f7fb5;}
     .btn:disabled{opacity:.5;}
     .disclaimer{color:var(--muted);font-weight:700;font-size:11.5px;max-width:330px;margin:14px auto 0;line-height:1.4;}
@@ -278,6 +278,14 @@
       if(!AGE){ $("cAge").style.borderColor="#e0457b"; return; }
       $("startBtn").disabled=true; $("startBtn").textContent="Starting…";
       try{ if(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia) micStream=await navigator.mediaDevices.getUserMedia({audio:true}); }catch(e){ micStream=null; }
+      // A check that cannot hear is not a check. This used to run anyway: every
+      // word scored as "no attempt", and the parent got a report built on
+      // nothing that still read like a result. Show the recovery screen instead.
+      if(!micStream){
+        $("startBtn").disabled=false; $("startBtn").textContent="Start the check →";
+        try{ Sona.micDenied({ onClose:function(){} }); }catch(e){}
+        return;
+      }
       show("sTest"); idx=0; results=[]; runStep();
     };
   </script>

@@ -2299,7 +2299,7 @@
     const proto = winEl.querySelector(".btn");
     const btn = document.createElement("button");
     btn.className = (proto ? proto.className : "btn") + " sona-next";
-    if (!proto) btn.style.cssText = "margin-top:14px;border:none;border-radius:16px;padding:15px 44px;font-family:'Baloo 2',sans-serif;font-weight:800;font-size:18px;color:#fff;background:#58cc02;box-shadow:0 5px 0 0 #46a302;cursor:pointer;";
+    if (!proto) btn.style.cssText = "margin-top:14px;border:none;border-radius:16px;padding:15px 44px;font-family:'Baloo 2',sans-serif;font-weight:800;font-size:18px;color:#fff;background:#ff8a3d;box-shadow:0 5px 0 0 #ef6f23;cursor:pointer;";
     else btn.style.marginTop = "14px";
     btn.textContent = last ? "See your path →" : "Next step →";
     btn.onclick = function () {

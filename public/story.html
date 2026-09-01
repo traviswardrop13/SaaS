@@ -63,8 +63,8 @@
     #win .rewards{display:flex;gap:12px;margin-top:18px;}
     #win .reward{background:#fff;border-radius:18px;padding:14px 22px;font-family:"Baloo 2";font-weight:800;font-size:22px;color:var(--ink);box-shadow:0 6px 16px rgba(120,80,20,.14);}
     #win .reward small{display:block;font-family:"Nunito";font-weight:700;font-size:12px;color:var(--muted);text-transform:uppercase;}
-    #win .btn{margin-top:22px;border:none;border-radius:16px;padding:15px 44px;font-family:"Baloo 2";font-weight:800;font-size:18px;text-transform:uppercase;color:#fff;background:linear-gradient(180deg,#6fd60e,#58cc02);box-shadow:0 5px 0 0 var(--green-d);cursor:pointer;}
-    #win .btn:active{transform:translateY(4px);box-shadow:0 1px 0 0 var(--green-d);} #win a{margin-top:14px;color:var(--muted);font-weight:800;font-size:14px;text-decoration:none;}
+    #win .btn{margin-top:22px;border:none;border-radius:16px;padding:15px 44px;font-family:"Baloo 2";font-weight:800;font-size:18px;text-transform:uppercase;color:#fff;background:linear-gradient(180deg,#ffa05a,#ff8a3d);box-shadow:0 5px 0 0 #ef6f23;cursor:pointer;}
+    #win .btn:active{transform:translateY(4px);box-shadow:0 1px 0 0 #ef6f23;} #win a{margin-top:14px;color:var(--muted);font-weight:800;font-size:14px;text-decoration:none;}
     @media (max-height:760px){ #pageEmoji{font-size:74px;} #pageText{font-size:20px;} #echo{width:54px;height:54px;} #artWrap{width:min(38vw,140px);height:min(38vw,140px);} }
     @media (prefers-reduced-motion:reduce){ #book.flip,#echoWrap.react,#win .leoWin,.mic.rec{animation:none;} }
   </style>
@@ -104,7 +104,7 @@
       <img src="/coach/echo/echo-celebrate.svg" alt="" onerror="this.onerror=null;this.src='/coach/echo/echo-idle.svg';" style="width:170px;height:170px;object-fit:contain;filter:drop-shadow(0 10px 14px rgba(90,120,20,.22));" />
       <h1 id="startTitle" style="font-family:'Baloo 2';font-weight:800;font-size:28px;color:#3f8a06;margin-top:12px;line-height:1.15;">Story time!</h1>
       <p style="font-weight:700;color:#5a7a3c;font-size:15.5px;margin-top:8px;">I'll read each page out loud — then you read it back to me!</p>
-      <button id="startBtn" style="margin-top:22px;width:100%;border:none;border-radius:18px;padding:17px;font-family:'Baloo 2';font-weight:800;font-size:20px;color:#fff;background:linear-gradient(180deg,#6fd60e,#58cc02);box-shadow:0 5px 0 #46a302;cursor:pointer;">Start the story!</button>
+      <button id="startBtn" style="margin-top:22px;width:100%;border:none;border-radius:18px;padding:17px;font-family:'Baloo 2';font-weight:800;font-size:20px;color:#fff;background:linear-gradient(180deg,#ffa05a,#ff8a3d);box-shadow:0 5px 0 #ef6f23;cursor:pointer;">Start the story!</button>
     </div>
   </div>
   <div id="win">
@@ -235,7 +235,20 @@
       turn(); // mic turns on by itself — the button stays as a backup tap
     }
     async function turn(){
-      if(busy) return; busy=true; $("micBtn").onclick=null;
+      if(busy) return;
+      // No mic, no turn. Without a stream recordTurn() can only ever come back
+      // empty, which scores as a miss and re-enters turn() — a child with a
+      // denied mic was trapped in "Not quite — try again!" forever with nothing
+      // on screen saying why. The shared recovery screen names the problem and
+      // gives the grown-up the Settings path. (The native shell captures
+      // without a web stream, so it is exempt.)
+      var nativeAudio=false; try{ nativeAudio=!!(window.Sona&&Sona.hasNativeAudio&&Sona.hasNativeAudio()); }catch(e){}
+      if(!micStream && !nativeAudio){
+        busy=false;
+        try{ Sona.micDenied({back:"/library.html"}); }catch(e){}
+        return;
+      }
+      busy=true; $("micBtn").onclick=null;
       var p=PAGES[pi];
       var res=await recordTurn(); var sa=await scoreUtterance(res, p.word);
       if(window.Sona&&Sona.logAttempt)Sona.logAttempt({game:"story",sound:SOUND,pass:sa.pass});

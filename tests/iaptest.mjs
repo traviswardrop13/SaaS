@@ -156,7 +156,52 @@ ok("web keeps Stripe picker, no Apple card", t.iap !== "block" && t.pick === "bl
 t = await web.evaluate(() => ({ body: document.getElementById("pickCard").innerText }));
 ok("web picker states both plans honestly",
   /\$59\.99/.test(t.body) && /3 DAYS FREE/i.test(t.body) && /\$9\.99/.test(t.body) && /billed today, no trial/i.test(t.body), t.body.slice(0, 200));
+
+// ── the dated trial timeline, and the promises inside it ──
+// A 3-row dated timeline is the strongest defuser of "I'll forget and get
+// billed" (Blinkist/Monarch both lead with it). The rows are only worth having
+// if every one of them is true, so this pins the SHAPE and the two claims that
+// could go false: a reminder we cannot send, and a price that is not ours.
+{
+  const tl = await web.evaluate(() => {
+    const el = document.getElementById("webTL");
+    return {
+      rows: el ? [...el.querySelectorAll(".tli")].map((r) => r.textContent.replace(/\s+/g, " ").trim()) : [],
+      prose: (document.getElementById("trialMath") || {}).style?.display,
+    };
+  });
+  ok("the trial is a dated 3-step timeline, not a sentence", tl.rows.length === 3, JSON.stringify(tl.rows));
+  const all = tl.rows.join(" ");
+  const dated = (tl.rows[0] || "").match(/[A-Z][a-z]+ \d{1,2}/) && (tl.rows[2] || "").match(/[A-Z][a-z]+ \d{1,2}/);
+  ok("…with real dates on the first and last rows", !!dated, JSON.stringify(tl.rows));
+  ok("…saying nothing is charged today, and naming what starts on day 3",
+    /nothing is charged today/i.test(all) && /\$59\.99/.test(all), all.slice(0, 200));
+  ok("…and the prose line steps aside so the page says it once", tl.prose === "none", String(tl.prose));
+  // THE LOAD-BEARING ONE. There is no trial webhook and no trial mailer in
+  // this repo: a "we'll email you before it starts" row would be a promise the
+  // code cannot keep, on the screen that takes the money.
+  ok("the timeline never promises a reminder Sona cannot send",
+    !/(email|e-mail|text|notify|remind)/i.test(all),
+    "no Stripe trial_will_end handler and no trial mailer exists — ship one FIRST, then say it: " + all.slice(0, 160));
+}
 await web.close();
+
+// ── the credential on the paywall says only what is verified ──
+// Rachel is a Clinical Fellow: master's done, supervised fellowship year in
+// progress, and NOT ASHA-certified. A specific, checkable claim about a
+// trademarked credential on the page that takes money is the one to get right.
+{
+  const sub = readFileSync(ROOT + "/subscribe.html", "utf8")
+    .replace(/<!--[\s\S]*?-->/g, " ").replace(/\/\*[\s\S]*?\*\//g, " ");
+  ok("no CCC or board-certified claim anywhere on the paywall",
+    !/\bCCC\b|board.certified|ASHA.certified/i.test(sub),
+    "she does not hold ASHA's CCC — this shipped once and must never return");
+  ok("…and no unconfirmed licence claim on the purchase cards",
+    !/licen[sc]ed (pediatric )?(speech|SLP)/i.test(sub),
+    "state licence is unconfirmed; 'Clinical Fellow' is true either way");
+  ok("…while still naming the credential Sona does have",
+    /Clinical Fellow/.test(sub), "the credential is the strongest trust lever on this page — state it, accurately");
+}
 
 // ── PRICING IS LIVE: FREE_MODE off, 3-day trial, the gate is honest ──
 {
