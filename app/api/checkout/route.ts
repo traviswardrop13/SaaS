@@ -27,14 +27,14 @@ const PLANS = {
     cents: 999,
     interval: "month" as const,
     name: "Sona — Monthly",
-    desc: "At-home speech-practice games, built with a pediatric speech-language pathologist. Every game, every sound, every update. Cancel anytime.",
+    desc: "At-home speech-practice games, built with a licensed pediatric speech-language pathologist. Every game, every sound, every update. Cancel anytime.",
     env: "STRIPE_PRICE_ID_MONTHLY999",
   },
   annual: {
     cents: 5999,
     interval: "year" as const,
     name: "Sona — Yearly",
-    desc: "At-home speech-practice games, built with a pediatric speech-language pathologist. Every game, every sound, every update. 3 days free — cancel anytime.",
+    desc: "At-home speech-practice games, built with a licensed pediatric speech-language pathologist. Every game, every sound, every update. 3 days free — cancel anytime.",
     env: "STRIPE_PRICE_ID_ANNUAL5999",
   },
 } as const;

@@ -15,22 +15,23 @@ fast.
 **Two people work in this repo.** Travis builds. Rachel is a pediatric
 speech-language pathologist and co-founder — she owns clinical correctness.
 
-**Her credential wording is not settled, and it is on the paywall.** Rachel is a
-**Clinical Fellow (CF-SLP)**: master's complete, supervised fellowship year in
-progress, and she does **not** hold ASHA's CCC. The landing page claimed
-"Licensed & board-certified (CCC-SLP)" until it was caught — a specific,
-checkable false claim about a trademarked certification, on the page that sells
-the app. That one is gone.
+**Her credential wording is settled — say exactly this.** Rachel holds an
+**Idaho CF licence** (confirmed by Travis, 1 Sep 2026) and is a **Clinical
+Fellow (CF-SLP)**: master's complete, supervised fellowship year in progress.
+She does **not** hold ASHA's CCC.
 
-Seventeen "licensed speech-language pathologist" claims remain across
-`app/page.tsx`, `app/layout.tsx`, `subscribe.html`, `progress.html`,
-`today.html`, `check.html`, `for-slps.html` and `pilot.html`. Whether those are
-true turns on whether she holds a state provisional/CF licence right now —
-most states issue one, but nobody has confirmed it here. Until Travis or Rachel
-confirms, do not add new "licensed" claims, and prefer wording that is true
-either way: "built with a pediatric speech-language pathologist", or
-"Clinical Fellow (CF-SLP)" stated plainly. Never "CCC", "certified" or
-"board-certified". If a change
+So: **"licensed speech-language pathologist" is TRUE** and is used across the
+app — under-claiming a real credential is not a virtue. State the fellowship
+beside it where there is room ("licensed pediatric speech-language pathologist
+(Clinical Fellow)"), and always on the SLP-facing pages, where a peer will read
+"CF" precisely and would notice its absence.
+
+**Never "CCC", "certified", "board-certified" or "ASHA-certified".** The
+landing page claimed "Licensed & board-certified (CCC-SLP)" until it was caught
+— a specific, checkable false claim about a trademarked certification, on the
+page that sells the app. `tests/iaptest.mjs` fails if it comes back, and if
+the licence ever lapses or she moves state, that pin is where to start.
+If a change
 touches what a child is asked to say, how a sound is cued, what counts as
 practice, or what an SLP is shown, it is Rachel's call, not an engineering
 one. Surface those in the PR body so she can review them without reading

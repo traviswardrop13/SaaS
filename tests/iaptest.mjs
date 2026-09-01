@@ -187,20 +187,23 @@ ok("web picker states both plans honestly",
 await web.close();
 
 // ── the credential on the paywall says only what is verified ──
-// Rachel is a Clinical Fellow: master's done, supervised fellowship year in
-// progress, and NOT ASHA-certified. A specific, checkable claim about a
-// trademarked credential on the page that takes money is the one to get right.
+// Rachel holds an Idaho CF licence (confirmed 1 Sep 2026), so "licensed" is
+// true and is used. She is a Clinical Fellow — master's complete, supervised
+// fellowship year in progress — and does NOT hold ASHA's CCC. The CCC is the
+// claim to get right: it is a trademarked certification, it is checkable, and
+// "board-certified (CCC-SLP)" shipped once on the page that takes money.
 {
   const sub = readFileSync(ROOT + "/subscribe.html", "utf8")
     .replace(/<!--[\s\S]*?-->/g, " ").replace(/\/\*[\s\S]*?\*\//g, " ");
   ok("no CCC or board-certified claim anywhere on the paywall",
     !/\bCCC\b|board.certified|ASHA.certified/i.test(sub),
     "she does not hold ASHA's CCC — this shipped once and must never return");
-  ok("…and no unconfirmed licence claim on the purchase cards",
-    !/licen[sc]ed (pediatric )?(speech|SLP)/i.test(sub),
-    "state licence is unconfirmed; 'Clinical Fellow' is true either way");
-  ok("…while still naming the credential Sona does have",
-    /Clinical Fellow/.test(sub), "the credential is the strongest trust lever on this page — state it, accurately");
+  ok("the verified licence claim is the one that is made",
+    /licen[sc]ed pediatric speech-language pathologist/i.test(sub),
+    "an Idaho CF licence makes this true — under-claiming is not a virtue when it is checkable");
+  ok("…and the fellowship status is stated beside it, not hidden",
+    /Clinical Fellow/.test(sub),
+    "another SLP reading this should know she is in her CF year; it costs nothing to say");
 }
 
 // ── PRICING IS LIVE: FREE_MODE off, 3-day trial, the gate is honest ──
