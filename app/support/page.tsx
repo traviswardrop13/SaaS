@@ -37,9 +37,13 @@ export default function SupportPage() {
           work. You can re-run it anytime from the parent dashboard.
         </Faq>
         <Faq q="Do you store my child's voice?">
-          Short practice clips are sent to our speech-scoring provider only to
-          measure pronunciation, then used to return a score. We don&apos;t use
-          them to identify your child or for advertising. See our{" "}
+          {/* This answer described the cloud scorer that was removed. Scoring
+              is on-device now and nothing is uploaded. */}
+          No. Your child&apos;s voice never leaves the device — the microphone is
+          on only during practice, and every check happens on the phone itself.
+          The app may keep one short clip a day in the device&apos;s own storage
+          so you can listen back; it is never uploaded, and clearing the
+          app&apos;s data removes it. See our{" "}
           <a className="text-[#1cb0f6] underline" href="/privacy">
             Privacy Policy
           </a>

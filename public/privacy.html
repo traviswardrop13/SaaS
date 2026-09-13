@@ -76,16 +76,24 @@
     </ul>
 
     <h2>How voice recordings are handled</h2>
-    <p>Voice clips are sent securely to our speech-scoring provider to evaluate how the target sound
-    was produced and return a score. Recordings are used <strong>only</strong> to provide pronunciation
-    feedback within Sona. We do <strong>not</strong> use children's recordings for advertising, we do
-    <strong>not</strong> sell them, and we do not use them to build advertising profiles. Sona does not
-    retain practice recordings after they have been scored.</p>
+    <!-- This section described a cloud speech-scoring provider that Sona no
+         longer uses. Scoring moved onto the device and the upload path was
+         deleted; the policy kept describing the old flow. What follows is what
+         the code actually does — and it understates nothing: there is no
+         mechanism in the app that can send a recording anywhere. -->
+    <p><strong>Your child's voice never leaves the device.</strong> The microphone is on only
+    during practice, and every check happens on the phone or tablet itself — the app listens for
+    the shape of the target sound locally and decides there. No recording is uploaded to Sona or
+    to anyone else, and there is no feature in the app that could send one.</p>
+    <p>So that a grown-up can hear how practice is going, the app may keep <strong>one short clip
+    per day</strong> in the device's own storage. It stays on that device, it is never transmitted,
+    and clearing the app's data removes it.</p>
+    <p>Because no recording is ever collected, we cannot and do not use children's recordings for
+    advertising, sell them, share them with anyone, or use them to build advertising profiles.</p>
 
     <h2>Service providers we share data with</h2>
     <p>We share limited information with trusted providers only so the service can function:</p>
     <ul>
-      <li><strong>Speech scoring</strong> — processes voice clips to return a pronunciation score.</li>
       <li><strong>Text-to-speech</strong> — turns the practice words and prompts into the spoken voice
         you hear. (We send the words to be spoken, not your child's recordings.)</li>
       <li><strong>Story &amp; coaching generation (AI)</strong> — generates practice stories and

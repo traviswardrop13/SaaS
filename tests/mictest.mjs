@@ -97,6 +97,62 @@ async function page(mic) {
     "a clip a parent can play back exists locally; consent copy should say so");
 }
 
+// ── 1b. every OTHER page that describes the mic tells the same truth ──
+// The primer was corrected while privacy.html and the support FAQ went on
+// describing voice clips "sent securely to our speech-scoring provider" —
+// a policy documenting a data flow that had been deleted. A privacy policy
+// that is wrong in the app's FAVOUR is still wrong: it names a subprocessor
+// that processes nothing and invites a parent to worry about an upload that
+// cannot happen. These pages get the same affirmative-claim scan the primer
+// gets, so they cannot drift apart from the code again.
+{
+  const APP = ROOT + "/..";
+  const PAGES = [
+    ["privacy.html", noComments(readFileSync(ROOT + "/privacy.html", "utf8"))],
+    ["app/support/page.tsx", noComments(readFileSync(APP + "/app/support/page.tsx", "utf8"))],
+  ];
+  for (const [name, src] of PAGES) {
+    const claims = src
+      .replace(/<[^>]+>/g, " ")
+      .split(/(?<=[.!?])\s+/)
+      .filter((s) => !/\b(no|not|never|n['’]t|without|cannot)\b/i.test(s))
+      .join(" ");
+    ok(name + " claims no recording is sent anywhere",
+      !/scoring provider|speech.scoring|\b(uploads?|uploaded|transmits?)\b/i.test(claims),
+      "found: " + (claims.match(/[^.]*(scoring provider|speech.scoring|upload|transmit)[^.]*/i) || [""])[0].slice(0, 140));
+    ok("…and " + name + " says the voice stays on the device",
+      /never leaves the device|stays on that device|on the phone|on the device/i.test(src),
+      "the strongest claim Sona makes should be stated outright, not left to inference");
+  }
+  ok("no dead speech-scoring subprocessor is still listed",
+    !/<li>\s*<strong>\s*Speech scoring/i.test(readFileSync(ROOT + "/privacy.html", "utf8")),
+    "naming a processor that receives nothing is a false disclosure in both directions");
+}
+
+// ── 1c. the marketing pipeline cannot carry a child's identity ──
+// /api/lead is the CRM/webhook path. Its strip used to be a DENY-list
+// (`{...lead, child:"", age:"", practice:[]}`) and `name: child` went straight
+// past it — latent rather than live, because every caller had already been
+// fixed, but the route's whole promise is that a caller who forgets CANNOT
+// leak. A deny-list cannot keep that promise; only an allow-list can.
+{
+  const route = readFileSync(ROOT + "/../app/api/lead/route.ts", "utf8");
+  const safe = (route.match(/const safeLead = \{[\s\S]*?\n  \};/) || [""])[0];
+  ok("the lead payload is built as an allow-list", safe.length > 0 && !/\.\.\.lead/.test(safe),
+    "spreading `lead` re-creates the bug: any field added later ships by default");
+  ok("…and the name field is blanked, not mapped from the child",
+    /name: "",/.test(safe),
+    "`name: child` was the leak — a CRM 'First Name' fed from a child's name");
+  for (const f of ["child", "age"]) {
+    ok(`…and ${f} is blanked`, new RegExp(f + ': (""|\\[\\])').test(safe));
+  }
+  ok("…and practice targets never ship", /practice: \[\] as string\[\]/.test(safe) && /practice_text: ""/.test(safe),
+    "a child's clinical targets are not marketing data");
+  const noC = noComments(route);
+  ok("only the sanitised payload reaches the webhook",
+    /body: JSON\.stringify\(safeLead\)/.test(noC) && !/body: JSON\.stringify\(lead\)/.test(noC));
+}
+
 // ── 2. "Not now" says something before it leaves ──
 {
   const { ctx, pg, errs } = await page(allowMic);
