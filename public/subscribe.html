@@ -88,6 +88,12 @@
     .plan b{font-family:"Baloo 2";font-weight:800;font-size:17px;display:block;color:var(--ink);}
     .plan .sub{font-weight:700;font-size:13px;color:var(--muted);margin-top:3px;line-height:1.45;}
     .plan .go{margin-top:12px;}
+    /* The saving, said loud. Travis's ask is that yearly reads as the obvious
+       pick, so it gets its own band inside the card — a clause buried in .sub
+       grey is exactly the footnote he asked us not to write. */
+    .plan .save{display:block;margin-top:9px;background:linear-gradient(160deg,#fff0d6,#ffdfa8);
+      border-radius:12px;padding:9px 12px;font-family:"Baloo 2";font-weight:800;font-size:14px;
+      color:#7a4a00;line-height:1.35;}
 
     /* ── remind-me module ── */
     #remindDone{display:none;margin-top:14px;font-weight:800;font-size:15px;color:#2e7d32;
@@ -131,21 +137,30 @@
         <span class="pem">🎓</span>
         <span><b>Built with Rachel — licensed pediatric speech-language pathologist (Clinical Fellow)</b> &amp; Sona co-founder. Real speech practice, disguised as games kids ask to play.</span>
       </div>
+      <!-- NATIVE CARD — state the saving as a RATIO, never as dollars.
+           RevenueCat overwrites #iapPrice and #iapPriceMo from App Store
+           Connect, so any dollar figure typed beside them can contradict the
+           button two lines up the moment Apple's price differs from this repo.
+           "About half" survives that, and holds for as long as App Store
+           Connect keeps the 59.99 / 9.99 shape — if that ratio ever changes in
+           App Store Connect, THIS WORDING is what has to change with it.
+           The web card below is the source of truth and says exact dollars. -->
       <div class="plan best" id="iapPlan">
-        <span class="tag">3 DAYS FREE · BEST VALUE</span>
-        <b>Sona Yearly — <s style="opacity:.55;">$119.88</s> <span id="iapPrice">$59.99/yr</span></b>
-        <span class="sub">$9.99/mo would be $119.88 a year — yearly is $59.99, a straight 50% off. Every game, the Sound Check, the weekly plan, the progress report.</span>
+        <span class="tag">3 DAYS FREE · SAVE ABOUT 50%</span>
+        <b>Sona Yearly — <span id="iapPrice">$59.99/yr</span></b>
+        <span class="save">A whole year for roughly half what twelve monthly payments cost — practically half price.</span>
+        <span class="sub">The biggest saving, and nothing is charged during your 3 free days. Every game, the Sound Check, the weekly plan, the progress report.</span>
         <button class="btn go" id="iapBuy">Start 3 days free</button>
         <span class="reassure" id="iapMath">No charge today — cancel anytime during your free days.</span>
         <div class="tl trial" id="iapTL"></div>
       </div>
       <div class="plan" id="iapPlanMo" style="margin-top:10px;">
         <b>Sona Monthly — <span id="iapPriceMo">$9.99/mo</span></b>
-        <span class="sub">Same everything, month to month — billed today, no trial.</span>
+        <span class="sub">Same everything, month to month — billed today, no trial. Twelve months this way costs about twice the yearly plan.</span>
         <button class="btn" id="iapBuyMo" style="margin-top:8px;">Subscribe monthly</button>
       </div>
       <p class="muted" id="iapMsg" style="margin-top:10px;font-weight:800;font-size:12.5px;min-height:16px;"></p>
-      <p class="muted" style="margin-top:8px;font-size:11.5px;line-height:1.5;">Yearly is $59.99/year after a 3-day free trial; monthly is $9.99/month billed at purchase. Payment is charged to your Apple&nbsp;ID; the subscription renews unless canceled at least 24 hours before the period ends. Manage or cancel in Settings&nbsp;→&nbsp;Subscriptions.</p>
+      <p class="muted" style="margin-top:8px;font-size:11.5px;line-height:1.5;">Yearly starts with a 3-day free trial, then renews at the yearly price shown above; monthly is billed at purchase, with no trial. Payment is charged to your Apple&nbsp;ID; the subscription renews unless canceled at least 24 hours before the period ends. Manage or cancel in Settings&nbsp;→&nbsp;Subscriptions.</p>
       <p style="margin-top:10px;font-weight:800;font-size:11px;">
         <button id="iapRestore" style="border:none;background:none;color:var(--blue-d);font-weight:800;font-size:12px;cursor:pointer;padding:4px 6px;text-decoration:underline;">Restore Purchases</button>
         · <a href="/terms" style="color:#8a6f52;">Terms of Use</a>
@@ -159,11 +174,17 @@
         <span class="pem">🎓</span>
         <span><b>Built with Rachel — licensed pediatric speech-language pathologist (Clinical Fellow)</b> &amp; Sona co-founder. Real speech practice, disguised as games kids ask to play.</span>
       </div>
-      <p class="muted" style="font-size:13.5px;font-weight:700;">One plan includes everything — every game, the Sound Check, the weekly plan, the progress report.</p>
+      <p class="muted" style="font-size:13.5px;font-weight:700;">Both plans include everything — every game, the Sound Check, the weekly plan, the progress report. Yearly is the same Sona for $59.89 less a year.</p>
+      <!-- WEB CARD — exact dollars, because Stripe reads its prices from this
+           repo. The three figures are one arithmetic chain: $119.88 = 12 ×
+           $9.99, $59.89 = $119.88 − $59.99, and "under $5 a month" = $59.99 /
+           12 ($4.99). Move any price and all of them move together, along with
+           the .save band, #planLine below and trialTimeline()'s final row. -->
       <div class="plan best" id="planLife">
-        <span class="tag">3 DAYS FREE · BEST VALUE</span>
+        <span class="tag">3 DAYS FREE · SAVE $59.89</span>
         <b>Yearly — <s style="opacity:.55;">$119.88</s> $59.99/yr</b>
-        <span class="sub">$9.99/mo would be $119.88 a year — yearly is $59.99, a straight 50% off. Every game, every sound, every update as it ships.</span>
+        <span class="save">Save $59.89 a year — that&rsquo;s under $5 a month.</span>
+        <span class="sub">Paying monthly comes to $119.88 over a year; yearly is $59.99 for the same thing — practically half price. Every game, every sound, every update as it ships.</span>
         <button class="btn go" id="buyLife">Start 3 days free</button>
         <span class="reassure" id="trialMath">No charge today — cancel anytime during your free days.</span>
         <div class="tl trial" id="webTL"></div>
@@ -174,10 +195,11 @@
       </div>
       <div class="plan" id="planMonth" style="margin-top:10px;">
         <b>Monthly — $9.99/mo</b>
-        <span class="sub">Same everything, month to month — billed today, no trial. Cancel anytime.</span>
+        <span class="sub">Same everything, month to month — billed today, no trial. That comes to $119.88 a year, $59.89 more than the yearly plan. Cancel anytime.</span>
         <button class="btn" id="buyMonth" style="margin-top:8px;">Subscribe monthly</button>
       </div>
       <p class="muted" id="pickMsg" style="margin-top:10px;font-weight:800;font-size:12.5px;"></p>
+      <p class="muted" style="margin-top:8px;font-size:11.5px;line-height:1.5;">Yearly renews at $59.99 a year after the 3-day free trial; monthly renews at $9.99 a month, billed at purchase. Cancel either anytime in your account.</p>
     </div>
 
     <!-- SLP credential entry. ONE redemption surface for the whole app —
@@ -203,10 +225,15 @@
           <b>Before anything changes</b>
           <p>We email you first. Nothing happens silently — no auto-charges, no fine print doing the talking.</p>
         </div>
+        <!-- Post-flip this card only renders for founding / SLP-referred /
+             grandfathered families (see the !_founding hide below), so this row
+             states the promise they were actually made: they keep free. Every
+             free era has been honoured by a one-shot sweep and this one is no
+             different — if that ever stops being true, this row is the lie. -->
         <div class="tli lock">
           <span class="tld" data-ic="lock">🔒</span>
-          <b>Right now: free</b>
-          <p>Sona is free while we build it with speech-language pathologists. If that ever changes, you'll hear it from us first — never from a locked screen.</p>
+          <b>Your plan stays free</b>
+          <p>Families who practised with Sona while it was free keep it free — that includes you. Nothing to pay, nothing to cancel, and no locked screen waiting.</p>
         </div>
       </div>
     </div>
@@ -336,7 +363,9 @@
         if (!(Sona.iapAvailable && Sona.iapAvailable())) return; // old binary: no purchase UI at all
         document.getElementById("iapCard").style.display = "block";
         try { if (window.SonaAnalytics) SonaAnalytics.track("paywall viewed", { surface: "native" }); } catch (e) {}
-        document.getElementById("planLine").innerHTML = "Yearly: <b>3 days free</b>, then $59.99/yr · Monthly: $9.99/mo, billed today.";
+        // ratio, not dollars: the figures on this card come from App Store
+        // Connect a moment later, and this line must not out-argue them
+        document.getElementById("planLine").innerHTML = "Yearly: <b>3 days free</b>, then about <b>half</b> what monthly costs over a year · Monthly: billed today, no trial.";
         // greet the onboarding hand-off warmly
         if (/[?&]welcome=1/.test(location.search)) document.getElementById("iapTitle").textContent = "One last thing — start your free days";
         try {
@@ -394,7 +423,7 @@
           try{ if(/[?&]welcome=1/.test(location.search)) document.querySelector("#pickCard h2").textContent = "One last thing — pick your plan"; }catch(e){}
           var fc = document.getElementById("foundingCard"); if (fc) fc.style.display = "none";
           // the header line must match the picker, not the founding story
-          document.getElementById("planLine").innerHTML = "Yearly: <b>3 days free</b>, then $59.99/yr · Monthly: $9.99/mo, billed today.";
+          document.getElementById("planLine").innerHTML = "Yearly: <b>3 days free</b>, then $59.99/yr — <b>saves $59.89 a year</b> vs $9.99/mo · Monthly: $9.99/mo, billed today.";
         }
       } catch (e) {}
       function buy(plan, value) {

@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
   const clamp = (v?: string, n = 120) => (typeof v === "string" ? v.slice(0, n) : "");
   const lead = {
     email,
-    name: child,                       // easy First Name mapping in GHL
+    name: child,                       // stripped below — never sent (see safeLead)
     child,
     age: body?.age != null ? String(body.age).slice(0, 4) : "",
     practice,                          // array (for Kit etc.)
@@ -88,7 +88,36 @@ export async function POST(req: NextRequest) {
   // guard only covered the SLP branch, and the parent branch shipped the name
   // for months with a COPPA comment sitting directly above it. Defence in
   // depth: even a future caller that forgets cannot leak a name through here.
-  const safeLead = { ...lead, child: "", age: "", practice: [] as string[] };
+  //
+  // ALLOW-LIST, not a deny-list, and that is the whole point. This was
+  // `{ ...lead, child: "", age: "", practice: [] }` — every safe field implied,
+  // every unsafe one enumerated — and `name: child` sailed straight through it,
+  // because nobody thought to add the new field to the blank-list. The promise
+  // above cannot be kept by a list of exceptions someone has to remember to
+  // update. Spreading `lead` here again would reintroduce exactly that bug: if
+  // a field is not named below, it does not leave this process.
+  const safeLead = {
+    email: lead.email,
+    // No parent name is collected on this route, and the child's never goes.
+    // The key stays so an existing GHL "First Name" mapping keeps resolving —
+    // to empty, which is the honest answer to "what is this person called".
+    name: "",
+    child: "",
+    age: "",
+    practice: [] as string[],
+    practice_text: "",
+    summary: lead.summary,
+    report: lead.report,
+    utm_source: lead.utm_source,
+    utm_medium: lead.utm_medium,
+    utm_campaign: lead.utm_campaign,
+    utm_content: lead.utm_content,
+    utm_term: lead.utm_term,
+    referrer: lead.referrer,
+    landing: lead.landing,
+    source: lead.source,
+    at: lead.at,
+  };
 
   const hook = process.env.LEAD_WEBHOOK_URL;
   const kitKey = process.env.KIT_API_KEY;

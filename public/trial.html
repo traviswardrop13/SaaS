@@ -21,11 +21,23 @@
     .was{ font-size:20px; font-weight:800; color:#9aa7b5; text-decoration:line-through; margin-right:8px; }
     .now{ font-family:"Baloo 2"; font-weight:800; font-size:44px; color:var(--ink); }
     .per{ font-weight:800; color:var(--muted); }
+    /* The struck figure is a COMPARISON, not a former Sona price, so it gets a
+       caption saying which is which. Without it the strike-through reads as a
+       discount off something we used to charge — a claim that isn't true. */
+    .wasnote{ display:block; margin-top:2px; font-weight:700; font-size:12px; color:var(--muted); }
+    /* The saving, said loud — same band as subscribe.html's yearly card.
+       Travis asked for yearly to be the obvious pick, so the number gets its
+       own row instead of a clause in grey type at the bottom. */
+    .save{ display:block; margin-top:11px; background:linear-gradient(160deg,#fff0d6,#ffdfa8);
+      border-radius:12px; padding:10px 12px; font-family:"Baloo 2"; font-weight:800; font-size:15px;
+      color:#7a4a00; line-height:1.35; }
     .circle{ display:inline-block; font-size:11px; font-weight:800; letter-spacing:.05em; text-transform:uppercase;
       color:#92400e; background:#fde68a; border-radius:99px; padding:4px 11px; }
     ul.perks{ list-style:none; margin:14px 0 0; text-align:left; }
     ul.perks li{ display:flex; gap:9px; font-weight:700; margin-top:9px; color:var(--ink); font-size:14.5px; }
     ul.perks li:before{ content:"✓"; color:#22c55e; font-weight:800; }
+    .proof{ display:flex; gap:9px; text-align:left; margin-top:14px; font-weight:700; font-size:12.5px;
+      color:var(--muted); line-height:1.45; }
     .resBox{ margin-top:10px; display:none; }
     .resBox.show{ display:block; }
   </style>
@@ -35,20 +47,39 @@
     <div class="hero">
       <img src="/coach/echo/echo-avatar.svg" alt="Echo" />
       <h1 id="headline">That was just the start! 🎉</h1>
-      <p class="muted" style="font-weight:700;">Echo loved practicing with you. Keep going — your first 3 days are on us.</p>
+      <p class="muted" style="font-weight:700;">Echo loved practicing with you. Keep going — your first 3 days are free, and nothing is charged until day 3.</p>
     </div>
 
     <div class="card" style="margin-top:16px;text-align:center;">
       <span class="circle">Sona Yearly · 3 days free</span>
-      <div class="pricebox"><span class="was">$119.88</span><span class="now">$59.99</span><span class="per">/year</span></div>
-      <p class="muted" style="font-weight:800;margin-top:4px;"><span style="color:#46a302;">3 days free</span> · then $59.99/yr — 50% off the $9.99/mo rate · cancel anytime</p>
+      <!-- PRICE COPY — one arithmetic chain, shared with subscribe.html's web
+           card: $119.88 = 12 × $9.99, $59.89 = $119.88 − $59.99, and "under $5
+           a month" = $59.99 / 12 ($4.99). Move any price and ALL FOUR figures
+           move, here and there — two surfaces quoting different savings is how
+           a parent stops believing either of them. Stripe reads these prices
+           from this repo, so they are true on the web; the iPhone never sees
+           this page (the Capacitor line at the top routes to subscribe.html,
+           where RevenueCat overwrites the figures with App Store Connect's). -->
+      <div class="pricebox">
+        <span class="was">$119.88</span><span class="now">$59.99</span><span class="per">/year</span>
+        <span class="wasnote">$119.88 is what twelve monthly payments cost. Yearly is $59.99.</span>
+      </div>
+      <span class="save">Save $59.89 a year — that&rsquo;s under $5 a month.</span>
+      <p class="muted" style="font-weight:800;margin-top:9px;"><span style="color:#46a302;">3 days free</span> · then $59.99 a year, billed once · cancel anytime</p>
       <ul class="perks" style="max-width:330px;margin-left:auto;margin-right:auto;">
         <li>Every game and every level, unlocked</li>
-        <li>3 days free — cancel anytime, no charge</li>
+        <li>Nothing is charged during your 3 free days — cancel before day 3 and you pay nothing</li>
         <li>Every new sound and update as it ships</li>
         <li>Your suggestions shape Sona for your child</li>
       </ul>
       <a class="btn" href="/subscribe" style="margin-top:18px;">Start 3 days free</a>
+      <p class="muted" style="margin-top:10px;font-size:13px;font-weight:700;">
+        Prefer month to month? <a href="/subscribe"><b>$9.99/mo</b></a> — billed today, no free trial. That comes to $119.88 a year, $59.89 more than yearly.
+      </p>
+      <div class="proof">
+        <span>🎓</span>
+        <span><b>Built with Rachel — licensed pediatric speech-language pathologist (Clinical Fellow)</b> &amp; Sona co-founder. Real speech practice, disguised as games kids ask to play — practice, not therapy, and never an evaluation.</span>
+      </div>
       <p class="muted" style="margin-top:12px;font-size:13px;font-weight:700;">
         Working with a speech therapist? <a href="/join.html" id="slpEntryLink"><b>Enter their code</b></a> — Sona is free for their families.<br/>
         Already subscribed? <a href="#" id="restoreLink">Restore access</a>
@@ -63,7 +94,16 @@
     </div>
 
     <p class="muted" style="text-align:center;margin-top:16px;font-size:13.5px;font-weight:700;">
-      The <a href="/library.html">Library 📚</a> is always free — stories and the word box are open anytime.
+      The <a href="/library.html">Library 📚</a> is always free — stories and the word box are open anytime.<br/>
+      Families who practised with Sona while it was free keep it free.
+    </p>
+    <!-- The renewal terms in one place, in the plainest words we have. The
+         dated day-by-day timeline lives on subscribe.html and is built from
+         the same +3 days the charge uses; it is deliberately NOT duplicated
+         here, because two copies of a date calculation drift. -->
+    <p class="muted" style="text-align:center;margin-top:10px;font-size:11.5px;line-height:1.5;">
+      Yearly renews at $59.99 a year after the 3-day free trial; monthly renews at $9.99 a month, billed at purchase, with no trial. Cancel either anytime in your account.<br/>
+      Practice is scored on your device — recordings are never uploaded.
     </p>
     <p class="muted" style="text-align:center;margin-top:8px;font-size:12.5px;">
       <a href="/map.html">← Back home</a>
@@ -74,7 +114,8 @@
   <script>
     /* Free mode: nobody should ever land on a price page. A bookmarked or
        back-swiped /trial.html goes straight into the app. Sona.isFree() is the
-       single switch — this page needs no other knowledge of pricing. */
+       single switch — this page needs no other knowledge of pricing. Inert
+       while pricing is live, and it is how the next free window would work. */
     (function () {
       try { if (window.Sona && Sona.isFree && Sona.isFree()) location.replace("/today.html"); } catch (e) {}
     })();

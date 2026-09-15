@@ -5,6 +5,10 @@ import { Suspense, useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { FREE_MODE } from "@/lib/pricing";
 
+// Shown under whichever plan is selected, so every line has to be true on
+// BOTH plans. The trial line is deliberately scoped to "Yearly" — monthly is
+// billed at purchase with no trial, and an unscoped "starts free" here would
+// be a lie on the monthly card.
 const FEATURES = [
   "Every game and every level, unlocked",
   "Yearly starts with 3 free days — cancel anytime, no charge",
@@ -119,30 +123,51 @@ function SubscribeInner() {
             ) : null}
           </div>
 
+          {/* Every figure on this page derives from exactly two numbers,
+              $59.99/yr and $9.99/mo, and they must match the Stripe prices
+              /api/checkout creates: $119.88 = 12 x $9.99, $59.89 = $119.88 -
+              $59.99, $4.99 = $59.99 / 12. Move a price and all three rot
+              silently — recompute them here, in FEATURES, and on every other
+              purchase surface in the same commit. (The struck "$119.88" is a
+              real alternative cost, not an invented was-price: it is what the
+              same year costs month to month.) */}
           <div className="mt-4 grid grid-cols-2 gap-2">
             <button
               onClick={() => setPlan("annual")}
               className={`rounded-2xl border-2 px-3 py-3 text-left ${plan === "annual" ? "border-sky-500 bg-sky-50" : "border-gray-200"}`}
             >
               <span className="block font-display text-xl font-extrabold text-gray-900"><s className="mr-1 text-gray-400">$119.88</s>$59.99/yr</span>
-              <span className="text-xs font-bold text-grass-600">50% off the monthly rate</span>
+              <span className="block text-xs font-bold text-grass-600">Under $5 a month · 3 days free first</span>
             </button>
             <button
               onClick={() => setPlan("monthly")}
               className={`rounded-2xl border-2 px-3 py-3 text-left ${plan === "monthly" ? "border-sky-500 bg-sky-50" : "border-gray-200"}`}
             >
               <span className="block font-display text-xl font-extrabold text-gray-900">$9.99/mo</span>
-              <span className="text-xs font-bold text-gray-500">month to month · no trial</span>
+              <span className="block text-xs font-bold text-gray-500">$119.88 a year · no trial</span>
             </button>
           </div>
+
+          {/* The saving renders on BOTH tabs, not just the yearly one: a parent
+              comparing plans should never have to click back to find the
+              reason yearly wins. Travis asked for it unmissable, not in a
+              footnote. */}
+          <p className="mt-3 rounded-2xl bg-grass-100 px-4 py-3 text-center font-display text-base font-extrabold leading-snug text-grass-600">
+            Yearly saves $59.89 a year
+            <span className="mt-0.5 block text-xs font-bold text-gray-600">
+              $59.99 a year instead of $119.88 — almost half price, and under $5 a month.
+            </span>
+          </p>
           {plan === "annual" ? (
             <p className="mt-3 rounded-2xl bg-sky-50 px-4 py-3 text-sm font-semibold text-sky-700">
-              <b>$0 today.</b> Your first 3 days are free — cancel anytime before
-              they end and you won&apos;t be charged.
+              <b>$0 today.</b> Your first 3 days are free. On day 3, if you keep Sona,
+              it&apos;s $59.99 for the year and $59.99 each year after. Cancel before
+              day 3 and you are charged nothing at all.
             </p>
           ) : (
             <p className="mt-3 rounded-2xl bg-sky-50 px-4 py-3 text-sm font-semibold text-sky-700">
-              <b>$9.99 today,</b> then monthly. Cancel anytime — no contract.
+              <b>$9.99 today,</b> then $9.99 every month — $119.88 over a year. Monthly
+              has no free trial. Cancel anytime, no contract.
             </p>
           )}
 
@@ -163,8 +188,13 @@ function SubscribeInner() {
           <h1 className="font-display text-2xl font-extrabold text-gray-900">
             {plan === "annual" ? "Start 3 days free" : "Subscribe monthly"}
           </h1>
+          {/* "Sona is yours for good" lived here and was wrong twice over: a
+              subscription is not ownership, and on yearly nothing is bought
+              today at all. Say what the card is actually charged, and when. */}
           <p className="mt-1 text-gray-600">
-            Enter your email and Sona is yours for good.
+            {plan === "annual"
+              ? "Enter your email to start your 3 free days. Nothing is charged today."
+              : "Enter your email to subscribe. $9.99 is charged today."}
           </p>
 
           {canceled ? (
@@ -195,11 +225,31 @@ function SubscribeInner() {
             disabled={busy}
             className="mt-5 w-full rounded-2xl bg-grass-500 px-6 py-3.5 font-display font-extrabold uppercase tracking-wide text-white shadow-chunky transition hover:bg-grass-600 active:translate-y-1 active:shadow-chunky-sm disabled:opacity-60"
           >
-            {busy ? "Loading…" : plan === "annual" ? "Start 3 days free" : "Subscribe — $9.99/mo"}
+            {busy
+              ? "Loading…"
+              : plan === "annual"
+                ? "Start 3 days free — then $59.99/yr"
+                : "Subscribe — $9.99/mo"}
           </button>
 
           <p className="mt-3 text-center text-xs text-gray-400">
             Secure payment by Stripe. We never see your card details.
+          </p>
+
+          {/* A grandfather sweep ships with this build, so families from the
+              free era are already entitled and this page is not for them. If
+              that sweep is ever changed or dropped, this sentence becomes a
+              broken promise — delete it in the same commit or not at all. */}
+          <p className="mt-5 rounded-2xl bg-gray-50 px-4 py-3 text-center text-xs font-bold leading-relaxed text-gray-500">
+            Already practicing with Sona while it was free? Your family keeps it free.
+            There is nothing to buy and nothing to do.
+          </p>
+
+          <p className="mt-4 text-center text-xs font-semibold leading-relaxed text-gray-500">
+            Built with Rachel, a licensed pediatric speech-language pathologist
+            (Clinical Fellow). Sona is speech practice at home — it is not therapy,
+            diagnosis or an evaluation. Your child&apos;s voice is checked on the
+            device and never uploaded.
           </p>
         </div>
       </div>

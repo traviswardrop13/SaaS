@@ -489,14 +489,16 @@ const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL 
   ok("the funnel event fires only on a VALID redemption",
     /valid[\s\S]{0,700}track\("slp code redeemed"/.test(sona),
     "counting unverified codes ranks garbage SLPs");
-  // This pin used to read "FREE_MODE is OFF", guarding a stray `true` that
-  // would have given the app away. Travis turned it on deliberately on 31 Aug
-  // 2026 and called it permanent, so the guard now points the other way: a
-  // stray `false` would put a paywall in front of three eras of families who
-  // were promised free, including this one. freetest.mjs owns the rest.
-  ok("Sona is free — FREE_MODE is the one switch and it is ON",
-    /const FREE_MODE = true;/.test(sona),
-    "a stray false here paywalls families who were promised free");
+  // This pin has now flipped twice, which is why it is worded around the
+  // CONSEQUENCE rather than the value. Pricing returned 15 Sep 2026, so a
+  // stray `true` would give the app away; while Sona was free, a stray
+  // `false` would have paywalled families promised otherwise. Either way the
+  // families from the three free eras are protected by the SWEEPS, not by
+  // this switch — see _grandfatherFreeEra3() and the era-3 block in
+  // iaptest.mjs. freetest.mjs owns switch-agreement and stays direction-neutral.
+  ok("pricing is live — FREE_MODE is the one switch and it is OFF",
+    /const FREE_MODE = false;/.test(sona),
+    "a stray true here silently makes the whole app free");
   ok("every family from the free era keeps it free",
     /function _grandfatherFreeEra[\s\S]{0,700}earlyAdopter = true/.test(sona),
     "grandfathering is a promise to those families, not a growth tactic");

@@ -2813,6 +2813,58 @@
     return "fail";
   }
 
+  // THIRD FREE ERA, KEPT — and this one was promised the most explicitly.
+  //
+  // Sona was free from 31 Aug to 15 Sep 2026. Unlike era two, that window was
+  // announced as PERMANENT: the landing page said free, CLAUDE.md said
+  // permanent, and /api/checkout refused money outright. Travis has now
+  // decided to charge again, which is his call — but the families who arrived
+  // believing the first thing do not pay for the change of mind. The
+  // precedent has been set twice, and CLAUDE.md recorded the requirement
+  // before the question was live: if pricing returns, this sweep ships FIRST.
+  //
+  // Same structural trick as eras one and two, for the same reason: on the
+  // FIRST LOAD OF THIS BUILD, a device that is ALREADY onboarded necessarily
+  // existed before this build shipped, and this build is the one that brings
+  // the paywall back. So an onboarded device seen here used Sona while it was
+  // free. A family arriving tomorrow gets stamped before they ever onboard and
+  // is correctly left out. The evidence exists only until this build lands,
+  // which is why it is claimed on the way in and never re-run.
+  //
+  // Deliberately NOT gated on the era-one/era-two stamps. Era two checked
+  // `GFKEY === "post"` because an already-"grandfathered" device was, by
+  // definition, already handled. That is still true — re-granting is a no-op —
+  // but a device that first loaded during the free era carries GFKEY "post"
+  // and GF2KEY "done" and belongs to no earlier cohort, so gating on those
+  // keys would skip exactly the families this sweep exists for.
+  const GF3KEY = "sona.freeera3.v1";
+  function _grandfatherFreeEra3() {
+    try {
+      if (localStorage.getItem(GF3KEY)) return;     // swept once, on the way in
+      localStorage.setItem(GF3KEY, "done");
+      // every child on the device, not just the active one — access was
+      // granted to the household, the same rule earlyAdopterAnyKid enforces
+      let slots = [""];
+      try {
+        const v = JSON.parse(localStorage.getItem(KIDSKEY) || "null");
+        if (v && v.list && v.list.length) slots = v.list.map((k) => k.slot || "");
+      } catch (e) {}
+      let any = false;
+      slots.forEach(function (slot) {
+        const key = slot ? PKEY + "@" + slot : PKEY;
+        try {
+          const pr = JSON.parse(localStorage.getItem(key) || "null");
+          if (pr && (pr.onboarded || pr.childName)) {
+            pr.earlyAdopter = true; pr.freeEra = true; pr.freeEra3 = true;
+            localStorage.setItem(key, JSON.stringify(pr));
+            any = true;
+          }
+        } catch (e) {}
+      });
+      if (any) localStorage.setItem(GFKEY, "grandfathered");
+    } catch (e) {}
+  }
+
   const HUMAN_CLIPS = false;
   function humanClipsOn() { return HUMAN_CLIPS; }
 
@@ -2829,7 +2881,7 @@
   // Not because a re-price is planned, but because a switch nobody can flip is
   // not a switch — and the last free era proved how fast an unexercised paid
   // path rots into an archaeology project.
-  const FREE_MODE = true;
+  const FREE_MODE = false;
   // QA seam: ?paid=1 (or the sticky sona.paidui flag) reveals the purchase
   // rails on this device so the paid path stays exercisable — and TESTED —
   // while free mode ships. It only controls VISIBILITY; it can't unlock
@@ -3043,6 +3095,10 @@
   // order matters: era one is judged first, so the era-two sweep can trust
   // that a device still stamped "post" is not an era-one family
   try { _grandfatherFreeEra2(); } catch (e) {}
+  // era three runs last and independently: it does not read the earlier
+  // stamps, because a family who first opened Sona during the third free
+  // window carries both of them and belongs to neither earlier cohort.
+  try { _grandfatherFreeEra3(); } catch (e) {}
   try { installDebug(); } catch (e) {}
 
   global.Sona = { pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, ladderContent, FREE_MODE, isFree, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, gated, gateVerify, gateOk, requireGate, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, speak, speakNow, speakUnlock, speechAvailable, speechPerm, speechStart, speechStop, hearVerdict, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repsBeacon, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES };
