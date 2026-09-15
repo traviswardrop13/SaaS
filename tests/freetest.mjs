@@ -31,8 +31,13 @@ const srvFree = /export const FREE_MODE = true;/.test(pricing);
 ok("the app switch and the server switch agree",
   appFree === srvFree,
   `sona.js FREE_MODE=${appFree}, lib/pricing.ts FREE_MODE=${srvFree} — one of these is charging or gating against the other`);
-ok("Sona is free right now", appFree && srvFree,
-  "flip BOTH switches together, and read the pricing section of CLAUDE.md before you do");
+// Sona is PAID again as of 15 Sep 2026. This suite was deliberately written to
+// work in both directions, so it does not assert a direction — it asserts the
+// two switches never disagree, and then checks whichever state is live. The
+// one thing that is NOT direction-neutral is the promise below: a free window
+// permanently removes its own cohort from paying, so every era keeps a sweep.
+ok("the switches are in a known state", appFree === srvFree,
+  "a half-flipped switch charges on one surface while giving the app away on another");
 
 // ── 2. the money door is bolted on the server, not just hidden ──
 {
@@ -91,9 +96,18 @@ if (appFree) {
 }
 
 // ── 4. the promises that outlive any switch ──
-ok("both grandfather sweeps still exist",
-  /function _grandfatherFreeEra\(/.test(sona) && /function _grandfatherFreeEra2\(/.test(sona),
-  "these are promises to families from the first two free eras; they cost nothing now");
+// THREE free windows, THREE sweeps. Each one is a promise to the families who
+// arrived while that window was open, and each survives every later flip. The
+// era-3 sweep is the one CLAUDE.md said had to be written BEFORE pricing could
+// return — it ships in the same commit that brought the paywall back.
+ok("all three grandfather sweeps still exist",
+  /function _grandfatherFreeEra\(/.test(sona) && /function _grandfatherFreeEra2\(/.test(sona) &&
+  /function _grandfatherFreeEra3\(/.test(sona),
+  "a missing sweep is a broken promise to a real cohort — never 'clean these up'");
+ok("…and every one of them is actually called at load",
+  /_grandfatherFreeEra\(\); \} catch/.test(sona) && /_grandfatherFreeEra2\(\); \} catch/.test(sona) &&
+  /_grandfatherFreeEra3\(\); \} catch/.test(sona),
+  "a sweep that is defined but never invoked keeps no promise at all");
 ok("the free-mode bounce is still wired on trial.html",
   /Sona\.isFree\(\)\) location\.replace\("\/today\.html"\)/.test(readFileSync(ROOT + "/trial.html", "utf8")));
 ok("gated() still short-circuits on the switch before anything else",

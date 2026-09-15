@@ -55,7 +55,7 @@ await page.addInitScript(() => {
       },
     },
   };
-  localStorage.setItem("sona.freeera.v1","post"); localStorage.setItem("sona.freeera2.v1","done"); localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Milo", focusSounds: ["R"], onboarded: true }));
+  localStorage.setItem("sona.freeera.v1","post"); localStorage.setItem("sona.freeera2.v1","done"); localStorage.setItem("sona.freeera3.v1","done"); localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Milo", focusSounds: ["R"], onboarded: true }));
   sessionStorage.setItem("sona.gate.v1", String(Date.now()));
   sessionStorage.setItem("sona.paidui", "1");   // reveal the purchase rails; grants nothing
 });
@@ -146,7 +146,7 @@ ok("today quiet-syncs the entitlement in the shell", t.active === true && t.sour
 // ── web (no bridge): Stripe picker untouched ──
 const web = await browser.newPage({ viewport: { width: 390, height: 844 } });
 await web.addInitScript(() => {
-  localStorage.setItem("sona.freeera.v1","post"); localStorage.setItem("sona.freeera2.v1","done"); localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Milo", focusSounds: ["R"], onboarded: true, earlyAdopter: false }));
+  localStorage.setItem("sona.freeera.v1","post"); localStorage.setItem("sona.freeera2.v1","done"); localStorage.setItem("sona.freeera3.v1","done"); localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Milo", focusSounds: ["R"], onboarded: true, earlyAdopter: false }));
   sessionStorage.setItem("sona.gate.v1", String(Date.now()));
   sessionStorage.setItem("sona.paidui", "1");
 });
@@ -209,12 +209,12 @@ await web.close();
 // ── PRICING IS LIVE: FREE_MODE off, 3-day trial, the gate is honest ──
 {
   const sona = readFileSync(ROOT + "/sona.js", "utf8");
-  // Sona went free again on 31 Aug 2026, deliberately and permanently. Every
-  // paid assertion in this suite runs behind the ?paid=1 seam, which is the
-  // seam's whole job: the purchase rails stay exercised while nobody is
-  // charged, so pricing stays one boolean away instead of one archaeology
-  // project away. freetest.mjs owns the free-side invariants.
-  ok("FREE_MODE is on — Sona is free", /const FREE_MODE = true;/.test(sona));
+  // Pricing returned on 15 Sep 2026: $59.99/yr after a 3-day trial, or
+  // $9.99/mo billed at purchase. The ?paid=1 seam that kept these rails
+  // exercised while the app was free is now inert — it only ever controlled
+  // visibility — and the assertions below run against the live paid path.
+  // freetest.mjs stays direction-neutral and owns the switch-agreement pin.
+  ok("FREE_MODE is off — pricing is live", /const FREE_MODE = false;/.test(sona));
   ok("isFree() short-circuits the gate before anything else can",
     /function gated\(\) \{\s*if \(isFree\(\)\) return false;/.test(sona),
     "if any check runs ahead of the switch, the switch is not the switch");
@@ -250,14 +250,14 @@ await gatePg.addInitScript(() => {
   // seed-once: init scripts re-run on every navigation and would overwrite the
   // earlyAdopter flag the second half of this test sets
   if (!localStorage.getItem("sona.profile.v1")) {
-    localStorage.setItem("sona.freeera.v1","post"); localStorage.setItem("sona.freeera2.v1","done"); localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Milo", childAge: "7", focusSounds: ["R"], onboarded: true }));
+    localStorage.setItem("sona.freeera.v1","post"); localStorage.setItem("sona.freeera2.v1","done"); localStorage.setItem("sona.freeera3.v1","done"); localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Milo", childAge: "7", focusSounds: ["R"], onboarded: true }));
     localStorage.setItem("sona.trial.v1", JSON.stringify({ start: Date.now() - 4 * 86400000, days: 3 }));
     localStorage.setItem("sona.micok", "1");
   }
 });
 await gatePg.goto("http://localhost:8147/charge.html?game=arcade-slice.html"); await gatePg.waitForTimeout(700);
 ok("expired trial bounces charge.html to the trial page", /trial\.html/.test(gatePg.url()), gatePg.url());
-await gatePg.evaluate(() => { const p = JSON.parse(localStorage.getItem("sona.profile.v1")); p.earlyAdopter = true; localStorage.setItem("sona.freeera.v1","post"); localStorage.setItem("sona.freeera2.v1","done"); localStorage.setItem("sona.profile.v1", JSON.stringify(p)); });
+await gatePg.evaluate(() => { const p = JSON.parse(localStorage.getItem("sona.profile.v1")); p.earlyAdopter = true; localStorage.setItem("sona.freeera.v1","post"); localStorage.setItem("sona.freeera2.v1","done"); localStorage.setItem("sona.freeera3.v1","done"); localStorage.setItem("sona.profile.v1", JSON.stringify(p)); });
 await gatePg.goto("http://localhost:8147/charge.html?game=arcade-slice.html"); await gatePg.waitForTimeout(700);
 ok("a founding family with the same expired trial is never locked", !/trial\.html/.test(gatePg.url()), gatePg.url());
 await gatePg.close();
@@ -361,22 +361,15 @@ ok("no pageerrors", errs.length === 0, errs.join(" | "));
     Sona.saveProfile({ childName: "New", childAge: "6", focusSounds: ["S"], onboarded: true });
     localStorage.setItem(Sona.kkey("sona.trial.v1"), JSON.stringify({ start: Date.now() - 90 * 86400000, days: 3 }));
     const swept = { stamp: localStorage.getItem("sona.freeera.v1"), early: Sona.getProfile().earlyAdopter };
-    // Sona is free, so this family does not gate today and neither does anyone
-    // else. The half that still has to hold is that they were given no
-    // standing OF THEIR OWN by the sweep — asked through the ?paid=1 seam, so
-    // it is still answered on the day pricing returns. Get this wrong and the
-    // sweep quietly grandfathers the whole future.
-    const gatedFree = Sona.gated();          // measure free FIRST, then arm the seam
-    sessionStorage.setItem("sona.paidui", "1");
-    const gatedAsPriced = Sona.gated();
-    sessionStorage.removeItem("sona.paidui");
-    return Object.assign(swept, { gatedFree, gatedAsPriced });
+    // Pricing is live again, so this is asked directly rather than through the
+    // ?paid=1 seam: a family who arrived after the sweep has no standing of its
+    // own and meets the paywall like anyone else. Get this wrong and the sweep
+    // quietly grandfathers the whole future.
+    return Object.assign(swept, { gated: Sona.gated() });
   });
   ok("a family arriving after the sweep is NOT swept in",
     later.stamp === "post" && !later.early, JSON.stringify(later));
-  ok("…and is free today like everyone else", later.gatedFree === false, JSON.stringify(later));
-  ok("…but was granted no standing of its own — it would gate if pricing returned",
-    later.gatedAsPriced === true, JSON.stringify(later));
+  ok("…and meets the paywall like anyone else", later.gated === true, JSON.stringify(later));
   await c2.close();
 
   // the sweep is one-shot: a device that onboards later cannot re-trigger it
@@ -391,6 +384,95 @@ ok("no pageerrors", errs.length === 0, errs.join(" | "));
   ok("onboarding AFTER the sweep does not grandfather on a later load",
     late.stamp === "post" && !late.early, JSON.stringify(late));
   await c3.close();
+}
+
+// ── the THIRD free era keeps it free, and this is the promise that cost most ──
+// Sona was free 31 Aug – 15 Sep 2026, and that window was announced as
+// PERMANENT — not "free for now" like era two. Pricing has returned anyway,
+// which is Travis's call; the families who believed the first thing do not pay
+// for the change of mind. CLAUDE.md recorded the requirement while the app was
+// still free, precisely so this could not be rediscovered too late.
+//
+// The case era one and era two CANNOT catch: a device whose very first load
+// happened during the third window carries GFKEY "post" AND GF2KEY "done"
+// already, so it belongs to neither earlier cohort and every earlier gate
+// skips it. If _grandfatherFreeEra3() reads those stamps, these families get a
+// paywall they were promised they would never see.
+{
+  const c4 = await browser.newContext(); const p4 = await c4.newPage();
+  await p4.goto("http://localhost:8147/today.html"); await p4.waitForTimeout(300);
+  await p4.evaluate(() => {
+    localStorage.clear();
+    // exactly what a third-era device looks like: swept by both earlier eras
+    // on its first load, onboarded afterwards, never entitled to anything
+    localStorage.setItem("sona.freeera.v1", "post");
+    localStorage.setItem("sona.freeera2.v1", "done");
+    localStorage.setItem("sona.profile.v1", JSON.stringify({
+      childName: "Nia", childAge: "6", focusSounds: ["S"], onboarded: true }));
+  });
+  await p4.reload(); await p4.waitForTimeout(700);        // first load of THIS build
+  const era3 = await p4.evaluate(() => {
+    // a trial that died long ago: the gate must not be what saves them
+    localStorage.setItem(Sona.kkey("sona.trial.v1"), JSON.stringify({ start: Date.now() - 120 * 86400000, days: 3 }));
+    return {
+      stamp3: localStorage.getItem("sona.freeera3.v1"),
+      stamp: localStorage.getItem("sona.freeera.v1"),
+      early: Sona.getProfile().earlyAdopter,
+      era3: Sona.getProfile().freeEra3,
+      gated: Sona.gated(),
+    };
+  });
+  ok("a third-free-era family is swept in by the era-3 sweep",
+    era3.stamp3 === "done" && era3.early === true && era3.era3 === true, JSON.stringify(era3));
+  ok("…and is NEVER gated, however dead their trial", era3.gated === false, JSON.stringify(era3));
+  ok("…and is marked grandfathered, not left as 'post'",
+    era3.stamp === "grandfathered", JSON.stringify(era3));
+  await c4.close();
+
+  // the household rule: a second child added on the same device is covered too
+  const c5 = await browser.newContext(); const p5 = await c5.newPage();
+  await p5.goto("http://localhost:8147/today.html"); await p5.waitForTimeout(300);
+  await p5.evaluate(() => {
+    localStorage.clear();
+    localStorage.setItem("sona.freeera.v1", "post");
+    localStorage.setItem("sona.freeera2.v1", "done");
+    localStorage.setItem("sona.kids.v1", JSON.stringify({ list: [{ slot: "", name: "A" }, { slot: "k2", name: "B" }], active: "" }));
+    localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "A", childAge: "7", focusSounds: ["R"], onboarded: true }));
+    localStorage.setItem("sona.profile.v1@k2", JSON.stringify({ childName: "B", childAge: "5", focusSounds: ["S"], onboarded: true }));
+  });
+  await p5.reload(); await p5.waitForTimeout(700);
+  const sibs = await p5.evaluate(() => ({
+    a: (JSON.parse(localStorage.getItem("sona.profile.v1") || "{}")).earlyAdopter,
+    b: (JSON.parse(localStorage.getItem("sona.profile.v1@k2") || "{}")).earlyAdopter,
+  }));
+  ok("era three is granted to the HOUSEHOLD, not just the active child",
+    sibs.a === true && sibs.b === true, JSON.stringify(sibs),
+  );
+  await c5.close();
+
+  // one-shot, like the others: a device that onboards tomorrow is not adopted
+  const c6 = await browser.newContext(); const p6 = await c6.newPage();
+  await p6.goto("http://localhost:8147/today.html"); await p6.waitForTimeout(300);
+  await p6.evaluate(() => localStorage.clear());
+  await p6.reload(); await p6.waitForTimeout(600);        // stamped before onboarding
+  await p6.evaluate(() => Sona.saveProfile({ childName: "Tomorrow", childAge: "6", focusSounds: ["S"], onboarded: true }));
+  await p6.reload(); await p6.waitForTimeout(600);        // a later load must not re-sweep
+  const fresh = await p6.evaluate(() => {
+    const swept = { stamp3: localStorage.getItem("sona.freeera3.v1"), early: Sona.getProfile().earlyAdopter };
+    // A brand-new family is NOT gated on day one — they are inside the 3-day
+    // trial, which is the product working. Kill the trial to ask the question
+    // that matters: when it runs out, does the wall appear?
+    const gatedInTrial = Sona.gated();
+    localStorage.setItem(Sona.kkey("sona.trial.v1"), JSON.stringify({ start: Date.now() - 9 * 86400000, days: 3 }));
+    return Object.assign(swept, { gatedInTrial, gated: Sona.gated() });
+  });
+  ok("…and gets their 3 free days first, like any new family",
+    fresh.gatedInTrial === false, JSON.stringify(fresh));
+  ok("a family arriving after the era-3 sweep is not adopted by it",
+    fresh.stamp3 === "done" && !fresh.early, JSON.stringify(fresh));
+  ok("…and pays, which is the whole point of charging again",
+    fresh.gated === true, JSON.stringify(fresh));
+  await c6.close();
 }
 
 await browser.close(); srv.close();
