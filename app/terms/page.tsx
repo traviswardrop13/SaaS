@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 const COMPANY = "Wardrop Ventures LLC";
 const SUPPORT_EMAIL = "wardroptravis@gmail.com";
 const GOVERNING_LAW = "the State of Florida, United States";
-const EFFECTIVE = "June 2026";
+const EFFECTIVE = "September 2026";
 
 export default function TermsPage() {
   return (
@@ -36,7 +36,8 @@ export default function TermsPage() {
 
       <Section title="What Sona is — and isn't">
         Sona is an at-home <strong>speech practice and coaching</strong> tool
-        designed with a licensed speech-language pathologist. It is{" "}
+        designed with a licensed pediatric speech-language pathologist (Clinical
+        Fellow). It is{" "}
         <strong>not therapy, not a medical device, not a diagnosis, and not a
         substitute for professional speech-language services</strong>. If you have
         concerns about your child&apos;s speech or development, please consult a
@@ -44,34 +45,78 @@ export default function TermsPage() {
       </Section>
 
       <Section title="Pricing &amp; billing">
-        {/* Sona is free (lib/pricing.ts). The paid terms below still govern
-            anyone who subscribed while it was priced — their Apple or Stripe
-            subscription keeps running until it is cancelled — so they stay,
-            with the current state stated first rather than the page quietly
-            describing an offer nobody can accept. */}
-        <strong>Sona is currently free.</strong> Every game, every sound and the
-        Sound Check are available at no cost, and no new subscriptions are being
-        sold. The terms in this section continue to govern subscriptions bought
-        while Sona was paid, until they are cancelled.
+        {/* Sona is paid (FREE_MODE = false in lib/pricing.ts, mirrored by
+            public/sona.js). Two prices drive every figure below: $119.88 =
+            12 x $9.99, $59.89 = $119.88 - $59.99, and "under $5 a month" =
+            $59.99 / 12 ($4.99). Move either price in /api/checkout and all of
+            them rot silently — recompute them here, on /subscribe and on the
+            static purchase surfaces in the same commit. This is legal copy:
+            it states only what the code actually does. */}
+        <strong>Sona Yearly</strong> is <strong>$59.99 per year</strong> and starts
+        with <strong>3 free days</strong>. Nothing is charged during those days —
+        the first charge lands on day 3, and only if you keep Sona.
         <br />
         <br />
-        <strong>Sona Monthly</strong> is <strong>$9.99 per month</strong> and{" "}
-        <strong>Sona Yearly</strong> is <strong>$59.99 per year</strong>, plus any
-        applicable taxes, and includes every game and every new sound we ship.
-        The yearly plan starts with <strong>3 free days</strong> — nothing is charged during
-        the trial, and the first charge lands only if you keep Sona past it. The
-        subscription renews yearly unless you cancel at least 24 hours before the
-        period ends. We show you the exact first-charge date at checkout.
+        <strong>Sona Monthly</strong> is <strong>$9.99 per month</strong>, billed at
+        purchase, with <strong>no free trial</strong>. Prices are in US dollars and
+        exclude any applicable taxes. Both plans include every game, every sound
+        and the Sound Check, plus every new sound we ship while your plan is
+        active.
+        <br />
+        <br />
+        <strong>Yearly saves you $59.89 a year.</strong> Twelve monthly payments
+        come to <strong>$119.88</strong>; the same year on the yearly plan is{" "}
+        <strong>$59.99</strong> — almost half the price, and under $5 a month.
+        <br />
+        <br />
+        Both plans renew automatically at the price above — $59.99 each year, or
+        $9.99 each month — unless you cancel at least 24 hours before the current
+        period ends. After checkout, your confirmation page shows the exact date
+        and amount of your first charge.
+        {/* That last sentence is backed by app/subscribe/success/page.tsx, which
+            reads trial_end and the amount back off the real Stripe subscription.
+            We deliberately do NOT promise a reminder email: nothing in this repo
+            sends one, and a promise no code keeps is the kind that gets found. */}
+        <br />
+        <br />
+        Subscriptions started inside the iOS app are sold and billed by Apple, at
+        the price and free-trial length shown in the App Store at the time of
+        purchase.
+        {/* Apple's price lives in App Store Connect and the paywall renders
+            whatever RevenueCat reports, so the figures above cannot be stated as
+            Apple's. Name whose terms govern rather than quote a number this repo
+            does not control. */}
+        <br />
+        <br />
+        {/* A one-shot grandfather sweep ships with this build, so the free-era
+            cohort is already entitled and never meets a paywall. If that sweep is
+            ever changed or dropped, this sentence becomes a broken promise —
+            delete it in the same commit or not at all. */}
+        <strong>
+          Families who were already practicing with Sona while it was free keep it
+          free.
+        </strong>{" "}
+        Your access continues at no cost — there is nothing to buy and nothing to
+        cancel. Access granted through a verified SLP referral, a pilot place or a
+        founding place is also free and is unaffected by these prices.
       </Section>
 
       <Section title="Canceling &amp; refunds">
         You can cancel anytime. For subscriptions bought through Apple, manage or
         cancel in <strong>Settings &rarr; your Apple ID &rarr; Subscriptions</strong>, and
         refunds are handled by Apple at reportaproblem.apple.com. For
-        subscriptions bought on speaksona.com, cancel from the link on your
-        confirmation page or email us and a human will sort it out same-day.
-        Cancel before your trial ends and you are never charged. Except where
-        required by law, payments already made are non-refundable.
+        subscriptions bought on speaksona.com, email us and we will cancel it for
+        you.
+        {/* The self-serve Stripe billing portal exists (app/api/portal/route.ts)
+            but no page links it yet, so this names the path that is actually
+            wired. Put the link back here in the commit that ships one. */}
+        <br />
+        <br />
+        Cancel during your 3 free days on the yearly plan and you are never
+        charged. The monthly plan has no trial, so the first month is charged at
+        purchase. Canceling stops the next renewal and leaves your access in place
+        until the period you have already paid for ends. Except where required by
+        law, payments already made are non-refundable.
       </Section>
 
       <Section title="Acceptable use">

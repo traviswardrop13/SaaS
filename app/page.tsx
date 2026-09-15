@@ -3,17 +3,24 @@ import type { CSSProperties } from "react";
 /**
  * Sona — R-sound marketing landing page (web-first funnel).
  *
- * One job: get the app open. Sona is FREE (lib/pricing.ts mirrors sona.js's
- * FREE_MODE), so every CTA points at onboarding, not at Stripe — /api/checkout
- * refuses while free and would bounce a click straight back here. Meta-ad
- * parents of kids 4–9 on the R sound, 90%+ on phones. Mobile-first single
- * column, centered on desktop. Design: "Sunrise Storybook" handoff (README +
- * Sona Landing Redesign.dc.html).
+ * One job: start the yearly plan's 3-day free trial. $59.99/yr is the hero
+ * offer; $9.99/mo (no trial) exists so the yearly saving has something real to
+ * be measured against. Meta-ad parents of kids 4–9 on the R sound, 90%+ on
+ * phones. Mobile-first single column, centered on desktop. Design: "Sunrise
+ * Storybook" handoff (README + Sona Landing Redesign.dc.html).
  *
- * The SALES NARRATIVE this page was built around — a 50%-off annual offer,
- * trial urgency, "secure checkout by Stripe" — is gone with the price. What
- * is left is honest but not yet a free-app pitch; it wants a real rewrite by
- * someone who sells for a living.
+ * EVERY FIGURE HERE IS COPY, NOT THE PRICE. app/api/checkout/route.ts's PLANS
+ * holds the cents Stripe actually charges; these must be kept in step with it
+ * and with every other purchase surface. $119.88 and the $59.89 saving are
+ * both DERIVED from $9.99 × 12 — change either plan's price and all three
+ * numbers on this page move together, or the page starts lying about
+ * arithmetic a parent can do. The CTAs only reach Stripe while FREE_MODE is
+ * false in lib/pricing.ts; while it is true, GET /api/checkout 303s back here.
+ *
+ * Families who were already practicing while Sona was free KEEP it free (a
+ * grandfather sweep ships alongside this). Nothing on this page may read as
+ * "everyone must now subscribe" — that promise was made twice before and
+ * kept both times.
  *
  * Copy rule (founder's spouse is an SLP): "practice"/"coach" only — never
  * therapy/treatment/diagnosis. Camera never used; audio isn't stored.
@@ -22,11 +29,13 @@ import type { CSSProperties } from "react";
 export const metadata = {
   title: "Sona — R-sound practice kids actually love",
   description:
-    "Still saying “wabbit” instead of rabbit? Sona turns daily R practice into a game kids ask to play — built with a pediatric speech-language pathologist. Free to play.",
+    "Still saying “wabbit” instead of rabbit? Sona turns daily R practice into a game kids ask to play — built with a licensed pediatric speech-language pathologist (Clinical Fellow). 3 days free, then $59.99/yr — under $5 a month.",
 };
 
-// Free: the CTA opens the app instead of a checkout session.
-const START = "/onboarding.html";
+// Paid again: every CTA starts a checkout. GET /api/checkout 303s straight to
+// Stripe (annual by default) — no client JS, so it survives ad-blockers and
+// cold Meta traffic. ?plan=monthly is the only other link on the page.
+const CHECKOUT = "/api/checkout";
 const CREAM = "#fff6e9", INK = "#4a2c14", MUTED = "#8a6f52", LINE = "#f0e2cc";
 const B = "'Baloo 2', system-ui, sans-serif"; // display
 
@@ -78,10 +87,10 @@ function Mic({ s = 42 }: { s?: number }) {
     </svg>
   );
 }
-function CtaButton({ label = "Start practicing — free", big = true }: { label?: string; big?: boolean }) {
+function CtaButton({ label = "Start 3 days free", big = true }: { label?: string; big?: boolean }) {
   return (
     <a
-      href={START}
+      href={CHECKOUT}
       style={{
         display: "block", textAlign: "center", textDecoration: "none",
         background: "#ff8a3d", color: "#fff",
@@ -116,10 +125,13 @@ export default function Landing() {
       {/* Ad-funnel signal: InitiateCheckout + paywall-viewed on any checkout tap. */}
       <script
         dangerouslySetInnerHTML={{
-          // Nothing is sold here any more, so InitiateCheckout/$59.99 would be
-          // a lie to the ad platform as well as to the parent. The signal that
-          // matters now is the app being opened.
-          __html: `document.addEventListener("click",function(e){var a=e.target&&e.target.closest?e.target.closest('a[href^="/onboarding.html"]'):null;if(!a)return;try{if(window.SonaAnalytics)window.SonaAnalytics.track("landing cta",{surface:"landing"});}catch(err){}},true);`,
+          // A checkout really is starting again, so InitiateCheckout is honest
+          // once more. Value is the ANNUAL price: a monthly tap reports 59.99
+          // too, which over-states that one click, but the annual plan is what
+          // the ads are optimised for and splitting the signal by plan is not
+          // worth a second listener. Payload carries no child name — nothing
+          // about a kid ever reaches an ad pixel.
+          __html: `document.addEventListener("click",function(e){var a=e.target&&e.target.closest?e.target.closest('a[href^="/api/checkout"]'):null;if(!a)return;try{if(window.sonaTrack)window.sonaTrack("InitiateCheckout",{value:59.99,currency:"USD",content_name:"web_annual"});}catch(err){}try{if(window.SonaAnalytics)window.SonaAnalytics.track("paywall viewed",{surface:"landing"});}catch(err){}},true);`,
         }}
       />
 
@@ -141,7 +153,7 @@ export default function Landing() {
           </p>
           <div style={{ display: "flex", flexDirection: "column", gap: 9, marginBottom: 20 }}>
             <CtaButton />
-            <div style={{ textAlign: "center", fontSize: 12.5, fontWeight: 700, color: MUTED }}>Free — every game, every sound. No card, no trial to remember.</div>
+            <div style={{ textAlign: "center", fontSize: 12.5, fontWeight: 700, color: MUTED }}>3 days free, then $59.99/yr — under $5 a month. Or <a href="/api/checkout?plan=monthly" style={{ color: MUTED }}>$9.99/month, no trial</a>. Cancel anytime.</div>
           </div>
           {/* R-detection demo card */}
           <div style={{ background: "#fff", borderRadius: 24, boxShadow: `0 5px 0 ${LINE}`, padding: "16px 18px", display: "flex", gap: 14, alignItems: "center" }}>
@@ -243,29 +255,49 @@ export default function Landing() {
           </div>
         </section>
 
-        {/* 5 — WHAT IT COSTS (nothing) */}
+        {/* 5 — PRICING (yearly is the offer; monthly is the yardstick) */}
         <section id="pricing" style={{ background: "#fff", padding: "30px 20px" }}>
           <div style={{ background: "#fff", border: `3px solid ${INK}`, borderRadius: 26, boxShadow: `0 7px 0 ${INK}`, padding: "22px 20px" }}>
-            <div style={{ display: "inline-flex", background: "#ffd21c", color: INK, font: `800 11px ${B}`, letterSpacing: 1.2, padding: "5px 12px", borderRadius: 999, boxShadow: "0 3px 0 #e0b000", marginBottom: 12 }}>FREE · EVERY GAME, EVERY SOUND</div>
+            <div style={{ display: "inline-flex", background: "#ffd21c", color: INK, font: `800 11px ${B}`, letterSpacing: 1.2, padding: "5px 12px", borderRadius: 999, boxShadow: "0 3px 0 #e0b000", marginBottom: 12 }}>3 DAYS FREE · BEST VALUE</div>
             <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
-              <div style={{ font: `800 52px/1 ${B}` }}>Free</div>
+              <s style={{ font: `800 24px/1 ${B}`, color: "#c9a878" }}>$119.88</s>
+              <div style={{ font: `800 52px/1 ${B}` }}>$59.99</div>
+              <div style={{ fontSize: 15, fontWeight: 800, color: MUTED }}>/year</div>
             </div>
-            <div style={{ fontSize: 12.5, fontWeight: 700, color: MUTED, margin: "4px 0 16px" }}>No plan, no card, nothing to cancel. If that ever changes you will hear it from us first — never from a locked screen.</div>
+            {/* The saving is the pitch, so it gets a block of its own rather than
+                a footnote under the price. Both figures are arithmetic on the two
+                plans ($9.99 × 12 = $119.88; − $59.99 = $59.89; $59.99 ÷ 12 is a
+                shade under $5) — a parent can check all three in their head, so
+                if either price moves in app/api/checkout/route.ts, every number
+                in this card moves with it. "Under $5 a month" is exactly true;
+                a rounded-down per-month figure would not be, so do not swap
+                one in. */}
+            <div style={{ background: "#f2fbe4", border: "2px solid #58cc02", borderRadius: 16, padding: "11px 13px", margin: "12px 0 14px" }}>
+              <div style={{ font: `800 19px ${B}`, color: "#46a302" }}>Save $59.89 a year</div>
+              <div style={{ fontSize: 12.5, lineHeight: 1.45, fontWeight: 700, color: INK, marginTop: 3 }}>Works out to under $5 a month — practically half price next to paying monthly ($9.99 × 12 = $119.88).</div>
+            </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 9, marginBottom: 18 }}>
-              {["Every game, every sound — full access from minute one", "No card, no trial to remember", "Every new sound included as it ships", "Works on iPhone and iPad"].map((t) => (
+              {["Every game, every sound — full access from minute one", "3 days free — nothing charged before day 3", "Every new sound included as it ships", "Works on iPhone and iPad"].map((t) => (
                 <div key={t} style={{ display: "flex", gap: 9, fontSize: 14, fontWeight: 700 }}><Check />{t}</div>
               ))}
             </div>
             <CtaButton />
+            <div style={{ textAlign: "center", fontSize: 12, fontWeight: 700, color: MUTED, marginTop: 11 }}>Rather pay month to month? <a href="/api/checkout?plan=monthly" style={{ color: MUTED }}>$9.99/month, no trial</a> — $119.88 over a year.</div>
             <div style={{ display: "flex", gap: 6, justifyContent: "space-between", margin: "14px 0 10px" }}>
-              {[["1", "Open Sona"], ["2", "Pick your sound"], ["3", "Play today's story"]].map(([n, t]) => (
+              {[["1", "Start 3 days free"], ["2", "Get 6-letter code"], ["3", "Download & play"]].map(([n, t]) => (
                 <div key={n} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 10.5, fontWeight: 800, color: MUTED }}>
                   <div style={{ width: 17, height: 17, borderRadius: "50%", background: INK, color: CREAM, font: `800 10px ${B}`, display: "flex", alignItems: "center", justifyContent: "center", flex: "none" }}>{n}</div>{t}
                 </div>
               ))}
             </div>
-            <div style={{ textAlign: "center", fontSize: 11.5, fontWeight: 700, color: MUTED }}>Works in any browser · iPhone &amp; iPad</div>
+            <div style={{ textAlign: "center", fontSize: 11.5, fontWeight: 700, color: MUTED }}>Secure checkout by Stripe · iPhone &amp; iPad</div>
           </div>
+          {/* Families who arrived while Sona was free keep it free — the sweep
+              ships with this price change. Saying so here is not generosity, it
+              is the third time the promise has been made and the second time it
+              has been honoured in code; a page that read "everyone subscribes
+              now" would contradict the build sitting underneath it. */}
+          <div style={{ textAlign: "center", fontSize: 12, lineHeight: 1.5, fontWeight: 700, color: MUTED, marginTop: 14 }}>Already practicing with Sona while it was free? It stays free for you — nothing to pay, nothing to do.</div>
         </section>
 
         {/* 6 — SAFETY */}
@@ -293,7 +325,7 @@ export default function Landing() {
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {[
               ["Does Sona replace working with an SLP?", "No — it's daily practice designed by one. If your child already sees a speech professional, Sona is the between-sessions coach that makes each visit count."],
-              ["What does it cost?", "Nothing. Every game, every sound and the Sound Check are free — there is no card to enter and no trial running out."],
+              ["What does it cost?", "$59.99 a year — under $5 a month — starting with 3 free days: nothing is charged before day 3, and only if you keep it. Month to month is $9.99, billed at purchase with no trial, which comes to $119.88 a year — so the yearly plan saves you $59.89. Cancel either one anytime. Families who were already practicing while Sona was free keep it free."],
               ["What do I need to start?", "An iPhone or iPad. After checkout you get a 6-letter code — enter it in the app and you're playing in minutes."],
               ["My kid is 4 — too young?", "Sona is built for ages 4–9. Exercises adapt from first tries at the sound all the way to tricky words like “squirrel.”"],
             ].map(([q, a]) => (
@@ -309,9 +341,9 @@ export default function Landing() {
         <section style={{ padding: "34px 20px 26px", textAlign: "center" }}>
           <div style={{ display: "flex", justifyContent: "center" }}><Parrot s={76} /></div>
           <h2 style={{ margin: "8px 0 6px", font: `800 30px/1.1 ${B}` }}>Ready to hear that R?</h2>
-          <div style={{ fontSize: 14, fontWeight: 700, color: MUTED, marginBottom: 16 }}><span style={{ color: INK, font: `800 20px ${B}` }}>Free</span> — every game, every sound</div>
+          <div style={{ fontSize: 14, fontWeight: 700, color: MUTED, marginBottom: 16 }}><span style={{ color: INK, font: `800 20px ${B}` }}>$59.99/yr</span> after 3 free days — under $5 a month · or $9.99/mo</div>
           <CtaButton />
-          <div style={{ fontSize: 11.5, fontWeight: 700, color: MUTED, margin: "12px 0 22px" }}>No card · Nothing to cancel</div>
+          <div style={{ fontSize: 11.5, fontWeight: 700, color: MUTED, margin: "12px 0 22px" }}>3 days free · Save $59.89 vs monthly · Cancel anytime</div>
           <div style={{ fontSize: 11.5, fontWeight: 700, color: MUTED, borderTop: `2px solid ${LINE}`, paddingTop: 14 }}>
             speaksona.com · <a href="/privacy" style={{ color: MUTED }}>Privacy</a> · <a href="/terms" style={{ color: MUTED }}>Terms</a><br />Made with a licensed pediatric SLP
           </div>
@@ -320,7 +352,7 @@ export default function Landing() {
 
       {/* sticky mobile CTA — hidden on desktop */}
       <a
-        href={START}
+        href={CHECKOUT}
         className="sona-sticky-cta"
         style={{
           position: "fixed", left: 12, right: 12, bottom: 12, zIndex: 40, textDecoration: "none",
@@ -330,8 +362,8 @@ export default function Landing() {
         }}
       >
         <div style={{ flex: 1 }}>
-          <span style={{ font: `800 16px ${B}`, color: INK }}>Free to play</span>
-          <div style={{ fontSize: 10.5, fontWeight: 800, color: "#46a302" }}>every game, every sound</div>
+          <span style={{ font: `800 16px ${B}`, color: INK }}>Start 3 days free</span>
+          <div style={{ fontSize: 10.5, fontWeight: 800, color: "#46a302" }}>$59.99/yr — save $59.89 · or $9.99/mo</div>
         </div>
         <span style={{ background: "#ff8a3d", color: "#fff", font: `700 14px ${B}`, padding: "10px 16px", borderRadius: 14, boxShadow: "0 4px 0 #ef6f23", flex: "none" }}>Get it</span>
       </a>
