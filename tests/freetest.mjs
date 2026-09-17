@@ -66,18 +66,41 @@ if (appFree) {
     .replace(/\/\*[\s\S]*?\*\//g, " ")             // block comments
     .replace(/(^|[^:])\/\/[^\n]*/g, "$1");         // line comments, keeping https://
 
-  // The landing page has no switch to read at runtime: whatever is in the
-  // file is what a parent sees, so nothing priced may be in it at all.
+  // THESE USED TO SCAN FOR THE ABSENCE OF A PRICE, and that was right while
+  // app/page.tsx was hand-rewritten for each era. It is not right any more.
+  // The switch has flipped eleven times, so the marketing surfaces now render
+  // BOTH states from FREE_MODE and the paid copy lives permanently in the file
+  // — an absence scan can never pass again, and deleting the paid arm to make
+  // it pass is exactly the archaeology CLAUDE.md forbids.
+  //
+  // So the pin is REACHABILITY, the same shape /subscribe already used: while
+  // free, nothing priced may render and no CTA may point at an endpoint that
+  // refuses. What follows must hold in EITHER direction.
   {
     const src = decomment(readFileSync(APP + "/app/page.tsx", "utf8"));
-    const hit = (src.match(PRICEY) || [])[0];
-    ok("app/page.tsx advertises no price while Sona is free", !hit, "found: " + hit);
+    ok("the landing page reads the one switch",
+      /import \{ FREE_MODE \} from "@\/lib\/pricing"/.test(src),
+      "a second copy of the pricing rule is how the paid and free halves contradicted each other three times");
+    ok("every CTA target is derived from the switch, not hard-coded",
+      /CTA_HREF = FREE_MODE \? "\/onboarding\.html" : "\/api\/checkout"/.test(src),
+      "while free, /api/checkout 303s straight back here — a button that does nothing");
+    ok("…and no CTA hard-codes the checkout endpoint around it",
+      !/href="\/api\/checkout"/.test(src),
+      "a literal href bypasses the switch and survives the next flip");
+    ok("the pricing section itself is selected by the switch",
+      /FREE_MODE \? <PricingFree \/> : <PricingPaid \/>/.test(src),
+      "both arms stay in the file; only one renders");
+    ok("the paid arm still carries the real figures, ready for the next flip",
+      /YEARLY = "\$59\.99"/.test(src) && /SAVING = "\$59\.89"/.test(src),
+      "if these rot while free, flip twelve ships wrong prices");
+    // the one figure that is wrong wherever it appears
+    ok("…and never quotes $4.99 a month",
+      !/\$4\.99 a month/.test(src),
+      "59.99/12 = 4.9991 — the rounded figure implies $59.88 a year");
   }
 
-  // /subscribe is different, and deliberately so. Its plan picker is the
-  // Stripe rail CLAUDE.md says to keep wired — deleting it is how the next
-  // pricing decision turns into archaeology. So the pin is not "no price in
-  // the file", it is UNREACHABLE: the FREE_MODE return must come first.
+  // /subscribe is the same shape: its plan picker is the Stripe rail CLAUDE.md
+  // says to keep wired, so the pin is UNREACHABLE, not absent.
   {
     const src = decomment(readFileSync(APP + "/app/subscribe/page.tsx", "utf8"));
     const guard = src.indexOf("if (FREE_MODE)");
@@ -89,10 +112,15 @@ if (appFree) {
       /if \(FREE_MODE\) \{[\s\S]{0,900}?return \(/.test(src),
       "the picker below it must never mount while free");
   }
-  const page = readFileSync(APP + "/app/page.tsx", "utf8");
-  ok("landing CTAs open the app instead of a checkout that would refuse them",
-    /const START = "\/onboarding\.html";/.test(page) && !/href="\/api\/checkout/.test(page),
-    "a CTA pointing at /api/checkout now 303s straight back to this page — a button that does nothing");
+
+  // Terms must state the live reality, whichever it is, and keep the paid
+  // terms available for anyone still holding a subscription from a paid era.
+  {
+    const src = decomment(readFileSync(APP + "/app/terms/page.tsx", "utf8"));
+    ok("the Terms read the switch too",
+      /import \{ FREE_MODE \} from "@\/lib\/pricing"/.test(src),
+      "legal copy describing the wrong pricing era is the worst place for this to drift");
+  }
 }
 
 // ── 4. the promises that outlive any switch ──
