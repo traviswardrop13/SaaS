@@ -475,6 +475,58 @@ ok("no pageerrors", errs.length === 0, errs.join(" | "));
   await c6.close();
 }
 
+// ── the ask lands AFTER the product has proved itself, never before ──
+// Onboarding used to end at /subscribe.html, so a parent off an ad met a price
+// screen before their child had said one word — and the 3-day trial was
+// already burning. At 20 downloads that is the difference between learning
+// "will parents pay" and learning nothing. These pin the new order.
+{
+  const onb = readFileSync(ROOT + "/onboarding.html", "utf8");
+  ok("onboarding never ends at the paywall",
+    /location\.href = "\/today\.html";/.test(onb) && !/subscribe\.html\?welcome=1/.test(onb),
+    "a price screen before the first rep asks a stranger to buy a promise");
+
+  const sona = readFileSync(ROOT + "/sona.js", "utf8");
+  const pm = (sona.match(/function planMoment\(\) \{[\s\S]*?\n  \}/) || [""])[0];
+  ok("the plan moment is one-shot", /localStorage\.setItem\(PLANSEEN/.test(pm) && /getItem\(PLANSEEN\)\) return false/.test(pm),
+    "asking twice is nagging; asking once at the peak is an offer");
+  for (const who of ["isSubscribed()", "isPilot()", "isFounder()", "slpVerified()", "earlyAdopterAnyKid()"]) {
+    ok(`…and never asks a family who is already entitled: ${who}`,
+      pm.includes(who), "the three free eras and the SLP channel must never see a price");
+  }
+  ok("…and never fires while Sona is free", /if \(isFree\(\)\) return false;/.test(pm));
+
+  const chg = readFileSync(ROOT + "/charge.html", "utf8");
+  ok("the ask hangs off the completed-run overlay, not the round start",
+    /runDone"\)\.onclick[\s\S]{0,260}planMoment\(\)/.test(chg) && /subscribe\.html\?first=1/.test(chg),
+    "the win screen is the only moment Sona has demonstrated what it sells");
+}
+
+// behaviourally: a fresh paying family is asked once, then never again
+{
+  const ctx = await browser.newContext(); const pg = await ctx.newPage();
+  await pg.goto("http://localhost:8147/today.html"); await pg.waitForTimeout(300);
+  await pg.evaluate(() => {
+    localStorage.clear();
+    localStorage.setItem("sona.freeera.v1", "post");
+    localStorage.setItem("sona.freeera2.v1", "done");
+    localStorage.setItem("sona.freeera3.v1", "done");
+    localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Ada", childAge: "7", focusSounds: ["R"], onboarded: true }));
+  });
+  await pg.reload(); await pg.waitForTimeout(600);
+  const seq = await pg.evaluate(() => [Sona.planMoment(), Sona.planMoment(), Sona.planMoment()]);
+  ok("a new paying family is asked exactly once", JSON.stringify(seq) === "[true,false,false]", JSON.stringify(seq));
+
+  // an SLP-referred family is never asked — that promise IS the SLP channel
+  const slp = await pg.evaluate(() => {
+    localStorage.removeItem("sona.planmoment.v1");
+    Sona.startPilot("rachel");
+    return Sona.planMoment();
+  });
+  ok("a referred / pilot family is never shown a price", slp === false, String(slp));
+  await ctx.close();
+}
+
 await browser.close(); srv.close();
 console.log(fails ? fails + " FAILURES" : "ALL GREEN");
 process.exit(fails ? 1 : 0);
