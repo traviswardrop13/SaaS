@@ -2909,7 +2909,7 @@
   // Not because a re-price is planned, but because a switch nobody can flip is
   // not a switch — and the last free era proved how fast an unexercised paid
   // path rots into an archaeology project.
-  const FREE_MODE = false;
+  const FREE_MODE = true;
   // QA seam: ?paid=1 (or the sticky sona.paidui flag) reveals the purchase
   // rails on this device so the paid path stays exercisable — and TESTED —
   // while free mode ships. It only controls VISIBILITY; it can't unlock

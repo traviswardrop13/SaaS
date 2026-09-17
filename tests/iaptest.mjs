@@ -28,6 +28,13 @@ const browser = await chromium.launch(launchOpts());
 const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
 let errs = [];
 page.on("pageerror", (e) => errs.push(e.message));
+// Whether Sona is free TODAY is read from the source rather than hard-coded,
+// so this suite never needs hand-editing when Travis flips the switch — which
+// has now happened eleven times. Assertions that must hold in both states run
+// through the ?paid=1 seam; this constant is only for the handful that ask
+// what the live state actually is.
+const IS_FREE_NOW = /const FREE_MODE = true;/.test(readFileSync(ROOT + "/sona.js", "utf8"));
+
 let fails = 0;
 const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL ") + n + (p ? "" : "  → " + (extra || ""))); };
 
@@ -209,12 +216,16 @@ await web.close();
 // ── PRICING IS LIVE: FREE_MODE off, 3-day trial, the gate is honest ──
 {
   const sona = readFileSync(ROOT + "/sona.js", "utf8");
-  // Pricing returned on 15 Sep 2026: $59.99/yr after a 3-day trial, or
-  // $9.99/mo billed at purchase. The ?paid=1 seam that kept these rails
-  // exercised while the app was free is now inert — it only ever controlled
-  // visibility — and the assertions below run against the live paid path.
-  // freetest.mjs stays direction-neutral and owns the switch-agreement pin.
-  ok("FREE_MODE is off — pricing is live", /const FREE_MODE = false;/.test(sona));
+  // THE SWITCH PIN IS GONE FROM HERE, DELIBERATELY. It had flipped three times
+  // in this file alone, and a test that must be hand-edited on every business
+  // decision is a tax, not a guard. freetest.mjs owns the one assertion that
+  // actually matters in both directions — that sona.js and lib/pricing.ts
+  // agree — and every purchase assertion below runs through the ?paid=1 seam,
+  // which makes them true whichever way the switch points. The seam only ever
+  // controlled VISIBILITY: it grants nothing and moves no money.
+  ok("the purchase rails are reachable for testing in either pricing state",
+    /sessionStorage\.getItem\("sona\.paidui"\) === "1"\) return false;/.test(sona),
+    "without the seam, half this suite can only be run by editing a constant");
   ok("isFree() short-circuits the gate before anything else can",
     /function gated\(\) \{\s*if \(isFree\(\)\) return false;/.test(sona),
     "if any check runs ahead of the switch, the switch is not the switch");
@@ -361,15 +372,20 @@ ok("no pageerrors", errs.length === 0, errs.join(" | "));
     Sona.saveProfile({ childName: "New", childAge: "6", focusSounds: ["S"], onboarded: true });
     localStorage.setItem(Sona.kkey("sona.trial.v1"), JSON.stringify({ start: Date.now() - 90 * 86400000, days: 3 }));
     const swept = { stamp: localStorage.getItem("sona.freeera.v1"), early: Sona.getProfile().earlyAdopter };
-    // Pricing is live again, so this is asked directly rather than through the
-    // ?paid=1 seam: a family who arrived after the sweep has no standing of its
-    // own and meets the paywall like anyone else. Get this wrong and the sweep
-    // quietly grandfathers the whole future.
-    return Object.assign(swept, { gated: Sona.gated() });
+    // Asked through the ?paid=1 seam ON PURPOSE, so this assertion is true
+    // whether Sona is free today or not: the question is whether the sweep
+    // granted this family standing OF THEIR OWN, and that must stay answerable
+    // on the day pricing next returns. Get it wrong and the sweep quietly
+    // grandfathers the entire future.
+    sessionStorage.setItem("sona.paidui", "1");
+    const gatedAsPriced = Sona.gated();
+    sessionStorage.removeItem("sona.paidui");
+    return Object.assign(swept, { gatedAsPriced });
   });
   ok("a family arriving after the sweep is NOT swept in",
     later.stamp === "post" && !later.early, JSON.stringify(later));
-  ok("…and meets the paywall like anyone else", later.gated === true, JSON.stringify(later));
+  ok("…and would meet the paywall like anyone else, whenever pricing is on",
+    later.gatedAsPriced === true, JSON.stringify(later));
   await c2.close();
 
   // the sweep is one-shot: a device that onboards later cannot re-trigger it
@@ -459,18 +475,22 @@ ok("no pageerrors", errs.length === 0, errs.join(" | "));
   await p6.reload(); await p6.waitForTimeout(600);        // a later load must not re-sweep
   const fresh = await p6.evaluate(() => {
     const swept = { stamp3: localStorage.getItem("sona.freeera3.v1"), early: Sona.getProfile().earlyAdopter };
-    // A brand-new family is NOT gated on day one — they are inside the 3-day
-    // trial, which is the product working. Kill the trial to ask the question
-    // that matters: when it runs out, does the wall appear?
+    // Both halves asked through the seam, so they hold in either pricing
+    // state. A brand-new family is not gated on day one — they are inside the
+    // 3 free days, which is the product working. Kill the trial to ask the
+    // question that matters: when it runs out, does the wall appear?
+    sessionStorage.setItem("sona.paidui", "1");
     const gatedInTrial = Sona.gated();
     localStorage.setItem(Sona.kkey("sona.trial.v1"), JSON.stringify({ start: Date.now() - 9 * 86400000, days: 3 }));
-    return Object.assign(swept, { gatedInTrial, gated: Sona.gated() });
+    const gated = Sona.gated();
+    sessionStorage.removeItem("sona.paidui");
+    return Object.assign(swept, { gatedInTrial, gated });
   });
   ok("…and gets their 3 free days first, like any new family",
     fresh.gatedInTrial === false, JSON.stringify(fresh));
   ok("a family arriving after the era-3 sweep is not adopted by it",
     fresh.stamp3 === "done" && !fresh.early, JSON.stringify(fresh));
-  ok("…and pays, which is the whole point of charging again",
+  ok("…and pays once those days run out, whenever pricing is on",
     fresh.gated === true, JSON.stringify(fresh));
   await c6.close();
 }
@@ -514,14 +534,32 @@ ok("no pageerrors", errs.length === 0, errs.join(" | "));
     localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Ada", childAge: "7", focusSounds: ["R"], onboarded: true }));
   });
   await pg.reload(); await pg.waitForTimeout(600);
-  const seq = await pg.evaluate(() => [Sona.planMoment(), Sona.planMoment(), Sona.planMoment()]);
+  const seq = await pg.evaluate(() => {
+    // through the seam, so the one-shot contract is pinned in either pricing
+    // state — while Sona is free planMoment correctly never fires at all
+    sessionStorage.setItem("sona.paidui", "1");
+    const r = [Sona.planMoment(), Sona.planMoment(), Sona.planMoment()];
+    sessionStorage.removeItem("sona.paidui");
+    return r;
+  });
   ok("a new paying family is asked exactly once", JSON.stringify(seq) === "[true,false,false]", JSON.stringify(seq));
+
+  const whileFree = await pg.evaluate(() => {
+    localStorage.removeItem("sona.planmoment.v1");
+    return Sona.planMoment();       // no seam: whatever the switch actually says
+  });
+  ok("…and the live switch decides whether the ask happens at all",
+    whileFree === !IS_FREE_NOW,
+    `FREE_MODE=${IS_FREE_NOW ? "true" : "false"} so planMoment should be ${!IS_FREE_NOW}, got ${whileFree}`);
 
   // an SLP-referred family is never asked — that promise IS the SLP channel
   const slp = await pg.evaluate(() => {
     localStorage.removeItem("sona.planmoment.v1");
+    sessionStorage.setItem("sona.paidui", "1");
     Sona.startPilot("rachel");
-    return Sona.planMoment();
+    const r = Sona.planMoment();
+    sessionStorage.removeItem("sona.paidui");
+    return r;
   });
   ok("a referred / pilot family is never shown a price", slp === false, String(slp));
   await ctx.close();

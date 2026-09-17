@@ -489,16 +489,15 @@ const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL 
   ok("the funnel event fires only on a VALID redemption",
     /valid[\s\S]{0,700}track\("slp code redeemed"/.test(sona),
     "counting unverified codes ranks garbage SLPs");
-  // This pin has now flipped twice, which is why it is worded around the
-  // CONSEQUENCE rather than the value. Pricing returned 15 Sep 2026, so a
-  // stray `true` would give the app away; while Sona was free, a stray
-  // `false` would have paywalled families promised otherwise. Either way the
-  // families from the three free eras are protected by the SWEEPS, not by
-  // this switch — see _grandfatherFreeEra3() and the era-3 block in
-  // iaptest.mjs. freetest.mjs owns switch-agreement and stays direction-neutral.
-  ok("pricing is live — FREE_MODE is the one switch and it is OFF",
-    /const FREE_MODE = false;/.test(sona),
-    "a stray true here silently makes the whole app free");
+  // NO SWITCH-VALUE PIN HERE ANY MORE. It flipped three times in this file and
+  // each flip was pure tax: the business decision is Travis's, and a test that
+  // has to be hand-edited to record it guards nothing. What this suite
+  // actually cares about is that the SLP promise survives the switch in either
+  // direction — a referred family is free because the server verified a
+  // credential, not because the app happens to be free this week.
+  ok("a verified SLP referral clears the gate before the switch is even read",
+    /if \(slpVerified\(\)\) return false;/.test(sona),
+    "that promise IS the SLP channel — it cannot depend on today's pricing");
   ok("every family from the free era keeps it free",
     /function _grandfatherFreeEra[\s\S]{0,700}earlyAdopter = true/.test(sona),
     "grandfathering is a promise to those families, not a growth tactic");
