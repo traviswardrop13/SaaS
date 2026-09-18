@@ -376,7 +376,11 @@
           Sona.iapPurchase(kind).then(function () {
             msg.textContent = "";
             // RevenueCat has confirmed the entitlement by the time this resolves
-            try { if (window.SonaAnalytics) SonaAnalytics.track(kind === "annual" ? "trial started" : "subscription started", { source: "apple", plan: kind }); } catch (e) {}
+            // "purchase completed", NOT "trial started": sona.js fires
+            // "trial started" when the in-app 3-day clock begins, and two
+            // different funnel steps sharing one event name makes both numbers
+            // meaningless. This one means money was committed.
+            try { if (window.SonaAnalytics) SonaAnalytics.track("purchase completed", { source: "apple", plan: "annual" }); } catch (e) {}
             try { if (Sona.confetti) Sona.confetti({ count: 160 }); if (Sona.sfx && Sona.sfx.complete) Sona.sfx.complete(); } catch (e) {}
             document.getElementById("planLine").innerHTML = 'Your plan: <b style="color:var(--good);">Active ✓</b> — welcome to Sona!';
             document.getElementById("iapCard").style.display = "none";

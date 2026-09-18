@@ -106,7 +106,10 @@ export default function SubscribeSuccess() {
             else w.sonaTrack("Subscribe", { value, currency: "USD" });
           }
           const wa = window as unknown as { SonaAnalytics?: { track: (e: string, p?: Record<string, unknown>) => void } };
-          if (wa.SonaAnalytics) wa.SonaAnalytics.track(planQ === "annual" ? "trial started" : "subscription started", { source: "stripe", plan: planQ });
+          // "purchase completed", matching the Apple path. sona.js owns
+          // "trial started" — that is the in-app 3-day clock, a different step
+          // of the funnel, and sharing a name would make both numbers useless.
+          if (wa.SonaAnalytics) wa.SonaAnalytics.track("purchase completed", { source: "stripe", plan: planQ });
         } catch {
           // ignore — non-blocking
         }
