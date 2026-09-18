@@ -592,13 +592,18 @@
       // here); closing it still lands on today with the card-free usage week.
       var goHome=function(){
         try{ if(window.SonaAnalytics)SonaAnalytics.track("onboarding completed"); }catch(e){}
-        // Sona is FREE (SLP-first launch) — Sona.FREE_MODE is the one switch,
-        // so this can never drift out of sync with the other purchase surfaces.
+        // Onboarding NEVER ends at the paywall any more. It used to: a parent
+        // off an ad met a price screen before their child had said a word.
+        // The ask now waits for the first completed run (Sona.planMoment),
+        // where the product has actually proved itself. `pay` survives only to
+        // pre-stamp the grown-ups gate, so that when the plan screen does open
+        // minutes later the adult who just finished this flow is not made to
+        // solve a word puzzle to reach it.
         var pay=false; try{ pay=!(Sona.isFree&&Sona.isFree())&&!(Sona.isSubscribed&&Sona.isSubscribed())&&!(Sona.isPilot&&Sona.isPilot())&&!(Sona.getProfile&&Sona.getProfile().earlyAdopter); }catch(e){}
         // the adult literally just finished the parent flow — grant the
         // grown-ups gate pass so the plan screen opens instead of bouncing
         if(pay){ try{ sessionStorage.setItem("sona.gate.v1",String(Date.now())); }catch(e){} }
-        location.href = pay ? "/subscribe.html?welcome=1" : "/today.html";
+        location.href = "/today.html";
       };
       var redirectT=setTimeout(goHome, 2400);
       // stash the save for the added-to-home-screen app (iOS separates its

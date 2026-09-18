@@ -1083,7 +1083,14 @@
       sfx("complete"); try{ if(S.confetti)S.confetti(); }catch(e){}
       say((r.newBest?"New high score! Amazing! ":"You did it! Great work! ")+hook);
     }
-    $("runDone").onclick=function(){ location.href="/today.html"; };
+    // The plan moment: the child has just finished a full run and the screen
+    // says "You did it!". If this family has never been asked, the Done button
+    // hands the device back to a grown-up on the plan screen instead of the
+    // home deck — once, ever. Everyone else goes home exactly as before.
+    $("runDone").onclick=function(){
+      var ask=false; try{ ask=!!(S&&S.planMoment&&S.planMoment()); }catch(e){}
+      location.href = ask ? "/subscribe.html?first=1" : "/today.html";
+    };
     $("runArcade").onclick=function(){ location.href="/today.html#play"; };
 
     // ---- chrome ----

@@ -335,16 +335,30 @@ t = await page.evaluate(() => ({
 }));
 ok("unpaid family sees the yearly card first ($59.99/yr, best value)",
   t.pick === "block" && t.founding === "none" && /59\.99/.test(t.life) && /\/yr|per year|yearly/i.test(t.life));
-// PRICE2: exactly TWO offers — yearly (trialed) and monthly (no trial).
-// A third card is a retired tier creeping back.
-ok("TWO offers exactly — yearly + monthly, nothing retired", t.cards === 2, "cards=" + t.cards);
-// the trial is the YEARLY plan's perk: stated with the cancel promise beside
-// it, and never promised on the monthly card
+// ONE offer as of 18 Sep 2026: monthly was retired. A SECOND card is a dead
+// tier creeping back — and since nobody can buy monthly any more, a page that
+// still shows it would take a parent to a checkout that quietly sells them the
+// yearly plan instead.
+ok("ONE offer exactly — the yearly plan, monthly retired", t.cards === 1, "cards=" + t.cards);
 ok("yearly card states the 3-day trial and the cancel promise",
   /3 days free/i.test(t.life) && /cancel anytime/i.test(t.life));
-t = await page.evaluate(() => (document.getElementById("planMonth") || {}).textContent || "");
-ok("monthly card is honest: $9.99, billed today, no trial",
-  /9\.99/.test(t) && /billed today, no trial/i.test(t));
+// The comparison figures died with the plan they compared to: $119.88 and
+// "save $59.89" were only ever 12 x $9.99, so striking one through now would
+// anchor against a price nobody can pay. What must survive is the per-month
+// reading, which is just $59.99/12 and true on its own.
+ok("…and no fabricated anchor survives the retirement",
+  !/119\.88/.test(t.life) && !/59\.89/.test(t.life),
+  "a strike-through with no monthly plan behind it is an invented was-price: " + t.life.slice(0, 120));
+ok("…while the honest per-month reading stays",
+  /under \$5 a month/i.test(t.life), t.life.slice(0, 120));
+{
+  const gone = await page.evaluate(() => ({
+    month: !!document.getElementById("planMonth"),
+    buy: !!document.getElementById("buyMonth"),
+  }));
+  ok("the monthly card and its buy button are gone from the paywall",
+    !gone.month && !gone.buy, JSON.stringify(gone));
+}
 // paywall trust: named-SLP proof strip above the plan
 t = await page.evaluate(() => (document.querySelector("#pickCard .proof") || {}).textContent || "");
 ok("proof strip: named SLP credential above the plan",

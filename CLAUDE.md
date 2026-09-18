@@ -37,70 +37,91 @@ practice, or what an SLP is shown, it is Rachel's call, not an engineering
 one. Surface those in the PR body so she can review them without reading
 the diff.
 
-## Pricing — paid, and the three free eras that are not
-Pricing is **live**: **$59.99/year** after a **3-day free trial**, or
-**$9.99/month** billed at purchase with **no trial**. `FREE_MODE = false` in
-`sona.js` is the only switch, mirrored by `lib/pricing.ts` for the Next.js
-half; `gated()` short-circuits on `isFree()` before anything else, and
-`tests/freetest.mjs` fails if the two copies ever disagree.
+## Pricing — one switch, and the cohorts it can never take back
+**Sona is PAID: one plan, $59.99/year after a 3-day free trial.** `FREE_MODE =
+false` in `sona.js`, mirrored by `lib/pricing.ts`. `gated()` short-circuits on
+`isFree()` before anything else, and `tests/freetest.mjs` fails if the two
+copies disagree.
 
-**The four figures, and the arithmetic that ties them together.** They appear
-on five surfaces and they must always agree: 12 × $9.99 = **$119.88**;
-$119.88 − $59.99 = **$59.89** saved by going yearly; $59.99 ÷ 12 = **$4.9991**,
-which is why every surface says "**under $5 a month**" and never "$4.99 a
-month" — the rounded figure implies $59.88 a year and is not true. Change a
-price and all four move, in the same commit, on all five surfaces
-(`app/page.tsx`, `public/subscribe.html`, `public/trial.html`,
-`app/subscribe/page.tsx`, `app/terms/page.tsx`).
+**MONTHLY IS RETIRED** (18 Sep 2026). There is one plan. What went with it, and
+must not come back as decoration: **$119.88** and **"save $59.89"** were only
+ever 12 × $9.99, so with no monthly plan to buy, a struck-through price is an
+anchor against a number nobody can pay — an invented was-price, not a discount.
+`tests/progtest.mjs` fails if a second plan card or either figure returns.
+
+What survives is checkable on its own: **$59.99 ÷ 12 = $4.9991**, so every
+surface says "**under $5 a month**" and never "$4.99 a month" (which would
+imply $59.88 a year).
+
+**Retiring a plan does not cancel a subscription.** Anyone still on $9.99/month
+keeps it. So: `/api/subscription` must go on recognising `month` intervals,
+`IAP_PRODUCTS.monthly` stays in `sona.js` so RevenueCat can restore them on a
+reinstall, and the Terms still describe the monthly plan for the people holding
+one. Only the PURCHASE path lost it. Old `?plan=monthly` links resolve quietly
+to yearly rather than erroring, because a stale link belongs to someone
+actively trying to pay.
+
+**Do not hand-edit copy for a pricing flip. The surfaces read the switch.**
+The switch has changed **eleven times in seven weeks** (`git log -G'const
+FREE_MODE = (true|false)' -- public/sona.js`) — twice on the same day, twice on
+consecutive days. Every purchase surface now branches on the switch and keeps
+BOTH states: `app/page.tsx`, `app/terms/page.tsx`, `app/subscribe/page.tsx`,
+`public/subscribe.html`, `public/trial.html`, `public/today.html`. Flipping
+pricing is **one boolean in two files**. If you find yourself rewriting a price
+into a page, stop — you are undoing this.
 
 **The iOS price does not live in this repo.** `subscribe.html` overwrites the
 figures with whatever RevenueCat reports from App Store Connect, so the native
-card states the saving as a RATIO ("roughly half") and never as dollars — a
-hard-coded number there can contradict the button two lines above it. Change
-ASC, not this repo.
+card states the saving as a RATIO ("roughly half"), never as dollars. Change
+ASC, not this repo. And **flipping to free here cancels no Apple or Stripe
+subscription** — anyone who bought during a paid window keeps being billed
+until it is stopped in those dashboards. That is an operations task.
 
-**Both halves of the switch stay wired.** `trial.html`'s `isFree()` bounce and
-`today.html`'s plan-note guard are inert while priced, and the `?paid=1` /
-`sona.paidui` seam keeps the purchase rails exercised in tests. Deleting either
-direction is how the next flip becomes archaeology instead of a boolean.
+**The ask happens after the product proves itself.** `planMoment()` fires once,
+on the first COMPLETED practice run — never during onboarding, which used to
+end at a price screen before the child had said a word. It is an offer, not a
+wall, it is inert while free, and it never fires for anyone already entitled.
 
-### Three free eras, three sweeps, all permanent
+### Four free eras, and the sweeps that honour them
 `_grandfatherFreeEra()`, `_grandfatherFreeEra2()` and `_grandfatherFreeEra3()`
-all run at load and are pinned in `tests/iaptest.mjs` and `tests/freetest.mjs`.
-**Do not "clean them up".** Each is a promise to a real cohort:
-- **Era one** — before pricing ever existed. Judged structurally: an onboarded
-  device carrying no stamp predates pricing.
-- **Era two** — nine days in August (20–28). Told a REVOCABLE thing ("the app
-  is free"), and Travis chose to keep it for them anyway.
-- **Era three** — 31 Aug to 15 Sep 2026, and the most explicit of the three:
-  that window was announced as PERMANENT, and `/api/checkout` refused money
-  outright. Pricing returned on 15 Sep; those families did not pay for the
-  change of mind.
+run at load and are pinned in `iaptest.mjs` and `freetest.mjs`. **Do not "clean
+them up".** Each is a promise to a real cohort that no later flip can revoke:
+- **Era one** — before pricing existed. An onboarded device carrying no stamp
+  predates pricing.
+- **Era two** — nine days in August (20–28).
+- **Era three** — 31 Aug to 15 Sep, announced as permanent.
+- **Era four — NEVER HAPPENED.** The switch was flipped free on 17 Sep and back
+  to paid on 18 Sep, and the free build was never merged to main in between, so
+  production stayed paid throughout and no family was ever told Sona was free.
+  There is no era-four cohort, and `_grandfatherFreeEra4()` is deliberately NOT
+  written. **The rule still stands for next time:** if a free window actually
+  SHIPS, the sweep for it must exist before pricing returns — and "shipped"
+  means merged to main, not merged into a branch.
 
 **The sweeps are one-shot and structural, and that is load-bearing.** A device
-that is ALREADY onboarded on the first load of the build carrying a sweep
-necessarily predates that build. A family arriving afterwards is stamped before
-they ever onboard and correctly still pays. Era three deliberately does NOT
-read the earlier stamps: a device whose first load happened during the third
-window carries `freeera.v1 = "post"` AND `freeera2.v1 = "done"` and belongs to
-no earlier cohort, so gating on those keys would skip exactly the families it
-exists for.
+already onboarded on the first load of the build carrying a sweep necessarily
+predates that build; a family arriving afterwards is stamped before they
+onboard and correctly still pays. Each new sweep must NOT read the earlier
+stamps — a device whose first load happened during a later window carries all
+the earlier ones and belongs to no earlier cohort.
 
-**Test seeds must set all THREE stamps.** An onboarded seed missing
-`sona.freeera3.v1` looks exactly like a third-era family, gets grandfathered,
-and silently disables the paywall inside that test. This has now bitten twice —
-once per new era — across `iaptest`, `progtest`, `loadtest` and `hwtest`.
+**Test seeds must set EVERY era stamp.** An onboarded seed missing the newest
+`sona.freeeraN.v1` looks exactly like that era's cohort, gets grandfathered,
+and silently disables the paywall inside that test. This has bitten once per
+era across `iaptest`, `progtest`, `loadtest` and `hwtest`.
 
-Still free regardless of the switch: SLP-referred families (the server-verified
-`?slp=` credential — that promise IS the SLP channel), pilots and founders. And
-entitlement is never granted from a URL parameter.
+**Tests do not pin the switch's value.** They pin that the two copies agree,
+and they exercise the purchase rails through the `?paid=1` / `sona.paidui` seam
+so they hold in either state. A test that must be hand-edited on a business
+decision guards nothing and taxes every flip. `IS_FREE_NOW` in `iaptest.mjs`
+reads the live state from source where a suite genuinely needs it.
 
-**Don't re-open the pricing question in passing.** It has now flipped four
-times, and each free window permanently removes its own cohort from ever
-paying. That is the honest price, and it is the reason to mean it. **If it goes
-free again, the next return to pricing needs `_grandfatherFreeEra4()` written
-first** — the precedent is now set three times and the families are told free
-on the page that sells the app.
+Still free regardless of the switch: SLP-referred families (server-verified
+`?slp=` — **that promise IS the SLP channel**, and it is free *forever* in
+writing on `for-slps.html`), pilots and founders. There is no payment path for
+an SLP or clinic anywhere in the product: the SLP channel produces engaged
+families and zero revenue by design. Entitlement is never granted from a URL
+parameter.
 
 ## Hard rules
 - Merges to main/prod only on Travis's explicit go ("merge").

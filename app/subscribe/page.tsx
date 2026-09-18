@@ -6,12 +6,11 @@ import { useSearchParams } from "next/navigation";
 import { FREE_MODE } from "@/lib/pricing";
 
 // Shown under whichever plan is selected, so every line has to be true on
-// BOTH plans. The trial line is deliberately scoped to "Yearly" — monthly is
-// billed at purchase with no trial, and an unscoped "starts free" here would
-// be a lie on the monthly card.
+// ONE PLAN. The FEATURES list below may safely say the trial is part of it:
+// with monthly retired there is no plan it could be a lie on.
 const FEATURES = [
   "Every game and every level, unlocked",
-  "Yearly starts with 3 free days — cancel anytime, no charge",
+  "Starts with 3 free days — cancel anytime, no charge",
   "Every new sound and update as it ships",
   "Your suggestions shape Sona for your child",
   "Priority support",
@@ -21,7 +20,6 @@ function SubscribeInner() {
   const params = useSearchParams();
   const canceled = params.get("canceled") === "1";
   const [email, setEmail] = useState("");
-  const [plan, setPlan] = useState<"annual" | "monthly">("annual");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -45,7 +43,7 @@ function SubscribeInner() {
       const res = await fetch("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, plan }),
+        body: JSON.stringify({ email, plan: "annual" }),
       });
       const data = await res.json();
       if (data.ok && data.url) {
@@ -114,62 +112,29 @@ function SubscribeInner() {
         <div className="rounded-3xl bg-white p-7 shadow-chunky ring-2 ring-sky-500">
           <div className="flex items-center gap-2">
             <p className="text-sm font-extrabold uppercase tracking-wide text-sky-600">
-              {plan === "annual" ? "Sona Yearly" : "Sona Monthly"}
+              Sona Yearly
             </p>
-            {plan === "annual" ? (
-              <span className="rounded-full bg-amber-400 px-2 py-0.5 text-[11px] font-extrabold uppercase tracking-wide text-amber-900">
-                3 days free
-              </span>
-            ) : null}
-          </div>
-
-          {/* Every figure on this page derives from exactly two numbers,
-              $59.99/yr and $9.99/mo, and they must match the Stripe prices
-              /api/checkout creates: $119.88 = 12 x $9.99, $59.89 = $119.88 -
-              $59.99, $4.99 = $59.99 / 12. Move a price and all three rot
-              silently — recompute them here, in FEATURES, and on every other
-              purchase surface in the same commit. (The struck "$119.88" is a
-              real alternative cost, not an invented was-price: it is what the
-              same year costs month to month.) */}
-          <div className="mt-4 grid grid-cols-2 gap-2">
-            <button
-              onClick={() => setPlan("annual")}
-              className={`rounded-2xl border-2 px-3 py-3 text-left ${plan === "annual" ? "border-sky-500 bg-sky-50" : "border-gray-200"}`}
-            >
-              <span className="block font-display text-xl font-extrabold text-gray-900"><s className="mr-1 text-gray-400">$119.88</s>$59.99/yr</span>
-              <span className="block text-xs font-bold text-grass-600">Under $5 a month · 3 days free first</span>
-            </button>
-            <button
-              onClick={() => setPlan("monthly")}
-              className={`rounded-2xl border-2 px-3 py-3 text-left ${plan === "monthly" ? "border-sky-500 bg-sky-50" : "border-gray-200"}`}
-            >
-              <span className="block font-display text-xl font-extrabold text-gray-900">$9.99/mo</span>
-              <span className="block text-xs font-bold text-gray-500">$119.88 a year · no trial</span>
-            </button>
-          </div>
-
-          {/* The saving renders on BOTH tabs, not just the yearly one: a parent
-              comparing plans should never have to click back to find the
-              reason yearly wins. Travis asked for it unmissable, not in a
-              footnote. */}
-          <p className="mt-3 rounded-2xl bg-grass-100 px-4 py-3 text-center font-display text-base font-extrabold leading-snug text-grass-600">
-            Yearly saves $59.89 a year
-            <span className="mt-0.5 block text-xs font-bold text-gray-600">
-              $59.99 a year instead of $119.88 — almost half price, and under $5 a month.
+            <span className="rounded-full bg-amber-400 px-2 py-0.5 text-[11px] font-extrabold uppercase tracking-wide text-amber-900">
+              3 days free
             </span>
+          </div>
+
+          {/* ONE PLAN as of 18 Sep 2026. The picker, the struck "$119.88" and
+              "yearly saves $59.89" all left with the monthly tier: every one of
+              them was 12 x $9.99, and a strike-through with no monthly plan
+              behind it is an anchor against a price nobody can buy. What is
+              left is checkable arithmetic — $59.99 / 12 = $4.9991 — which is
+              why it reads "under $5 a month" and never "$4.99 a month". */}
+          <div className="mt-4 rounded-2xl border-2 border-sky-500 bg-sky-50 px-4 py-4 text-left">
+            <span className="block font-display text-2xl font-extrabold text-gray-900">$59.99/yr</span>
+            <span className="block text-xs font-bold text-grass-600">Under $5 a month · 3 days free first</span>
+          </div>
+
+          <p className="mt-3 rounded-2xl bg-sky-50 px-4 py-3 text-sm font-semibold text-sky-700">
+            <b>$0 today.</b> Your first 3 days are free. On day 3, if you keep Sona,
+            it&apos;s $59.99 for the year and $59.99 each year after. Cancel before
+            day 3 and you are charged nothing at all.
           </p>
-          {plan === "annual" ? (
-            <p className="mt-3 rounded-2xl bg-sky-50 px-4 py-3 text-sm font-semibold text-sky-700">
-              <b>$0 today.</b> Your first 3 days are free. On day 3, if you keep Sona,
-              it&apos;s $59.99 for the year and $59.99 each year after. Cancel before
-              day 3 and you are charged nothing at all.
-            </p>
-          ) : (
-            <p className="mt-3 rounded-2xl bg-sky-50 px-4 py-3 text-sm font-semibold text-sky-700">
-              <b>$9.99 today,</b> then $9.99 every month — $119.88 over a year. Monthly
-              has no free trial. Cancel anytime, no contract.
-            </p>
-          )}
 
           <ul className="mt-6 space-y-3">
             {FEATURES.map((f) => (
@@ -186,15 +151,13 @@ function SubscribeInner() {
         {/* Checkout */}
         <div className="rounded-3xl bg-white p-7 shadow-chunky">
           <h1 className="font-display text-2xl font-extrabold text-gray-900">
-            {plan === "annual" ? "Start 3 days free" : "Subscribe monthly"}
+            Start 3 days free
           </h1>
           {/* "Sona is yours for good" lived here and was wrong twice over: a
               subscription is not ownership, and on yearly nothing is bought
               today at all. Say what the card is actually charged, and when. */}
           <p className="mt-1 text-gray-600">
-            {plan === "annual"
-              ? "Enter your email to start your 3 free days. Nothing is charged today."
-              : "Enter your email to subscribe. $9.99 is charged today."}
+            Enter your email to start your 3 free days. Nothing is charged today.
           </p>
 
           {canceled ? (
@@ -225,11 +188,7 @@ function SubscribeInner() {
             disabled={busy}
             className="mt-5 w-full rounded-2xl bg-grass-500 px-6 py-3.5 font-display font-extrabold uppercase tracking-wide text-white shadow-chunky transition hover:bg-grass-600 active:translate-y-1 active:shadow-chunky-sm disabled:opacity-60"
           >
-            {busy
-              ? "Loading…"
-              : plan === "annual"
-                ? "Start 3 days free — then $59.99/yr"
-                : "Subscribe — $9.99/mo"}
+            {busy ? "Loading…" : "Start 3 days free — then $59.99/yr"}
           </button>
 
           <p className="mt-3 text-center text-xs text-gray-400">

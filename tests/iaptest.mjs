@@ -1,6 +1,6 @@
 // Apple IAP rail (native shell): with a mocked Capacitor+Purchases bridge,
-// subscribe.html must show the Apple paywall — $59.99/yr (3-day trial) plus
-// $9.99/mo (no trial) — with no Stripe cards (3.1.1 hygiene), the required
+// subscribe.html must show the Apple paywall — $59.99/yr (3-day trial), the
+// only plan since monthly was retired — with no Stripe cards (3.1.1 hygiene), the required
 // Restore + Terms/Privacy links and full auto-renew terms; purchase →
 // unlock on the "full" entitlement, restore → unlock, and today.html must
 // quiet-sync entitlements on load. Web (no bridge) keeps the Stripe picker.
@@ -28,6 +28,13 @@ const browser = await chromium.launch(launchOpts());
 const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
 let errs = [];
 page.on("pageerror", (e) => errs.push(e.message));
+// Whether Sona is free TODAY is read from the source rather than hard-coded,
+// so this suite never needs hand-editing when Travis flips the switch — which
+// has now happened eleven times. Assertions that must hold in both states run
+// through the ?paid=1 seam; this constant is only for the handful that ask
+// what the live state actually is.
+const IS_FREE_NOW = /const FREE_MODE = true;/.test(readFileSync(ROOT + "/sona.js", "utf8"));
+
 let fails = 0;
 const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL ") + n + (p ? "" : "  → " + (extra || ""))); };
 
@@ -67,20 +74,23 @@ let t = await page.evaluate(() => ({
   pick: document.getElementById("pickCard").style.display,
   founding: getComputedStyle(document.getElementById("foundingCard")).display,
   price: document.getElementById("iapPrice").textContent,
-  priceMo: document.getElementById("iapPriceMo").textContent,
   body: document.getElementById("iapCard").textContent,
   restore: !!document.getElementById("iapRestore"),
 }));
 ok("shell shows the Apple paywall", t.iap === "block");
 ok("Stripe cards never render in the shell", t.pick !== "block" && t.founding === "none");
-ok("live App Store prices painted, both plans", /\$59\.99/.test(t.price) && /\$9\.99/.test(t.priceMo), JSON.stringify([t.price, t.priceMo]));
+ok("the live App Store price is painted onto the card", /\$59\.99/.test(t.price), String(t.price));
 ok("required furniture: Restore + Terms + Privacy + auto-renew terms",
   t.restore && /Terms of Use/.test(t.body) && /Privacy/.test(t.body) && /renews unless canceled/.test(t.body));
 // Apple requires the price, period and cancellation terms on the paywall itself
 ok("yearly offer: price, trial and cancel terms all stated",
   /\$59\.99/.test(t.body) && /3 days free/i.test(t.body) && /cancel/i.test(t.body));
-ok("monthly offer: price stated, and NO trial promised on it",
-  /\$9\.99/.test(t.body) && /billed today, no trial/i.test(t.body));
+// Monthly was retired 18 Sep 2026. Apple's paywall must not show a product a
+// tap cannot buy, and the retirement must not quietly drag the yearly price
+// down with it — so this pins the ABSENCE of the tier and the survival of the
+// one that is left.
+ok("no retired monthly tier on the Apple paywall",
+  !/\$9\.99/.test(t.body) && !/Subscribe monthly/i.test(t.body), t.body.slice(0, 140));
 ok("SLP proof strip on the native paywall", /Rachel/.test(t.body) && /speech-language pathologist/.test(t.body));
 
 // ── purchase → entitlement unlock → sub cached ──
@@ -95,22 +105,19 @@ ok("purchase drives Apple's sheet once", t.n === 1);
 ok("entitlement unlocks the app (source: apple)", t.sub.active === true && t.sub.source === "apple");
 ok("paywall dismisses on success", t.card === "none");
 
-// ── the monthly button buys the MONTHLY product ──
-await page.evaluate(() => { localStorage.removeItem("sona.sub.v1"); localStorage.setItem("__iapEntitled", "0"); });
-await page.goto("http://localhost:8147/subscribe.html"); await page.waitForTimeout(900);
-t = await page.evaluate(() => {
-  window.__bought = [];
-  const P = window.Capacitor.Plugins.Purchases;
-  const orig = P.purchaseStoreProduct;
-  P.purchaseStoreProduct = async (a) => { window.__bought.push(a.product.identifier); return orig(a); };
-  document.getElementById("iapBuyMo").click();
-  return true;
-});
-await page.waitForTimeout(700);
-t = await page.evaluate(() => ({ bought: window.__bought, sub: JSON.parse(localStorage.getItem("sona.sub.v1") || "{}") }));
-ok("monthly button purchases com.speaksona.app.monthly",
-  (t.bought || []).length === 1 && /monthly/.test(t.bought[0]), JSON.stringify(t.bought));
-ok("monthly purchase unlocks too", t.sub.active === true);
+// The monthly BUTTON is gone, but the monthly PRODUCT ID is not: RevenueCat
+// needs it to recognise someone who bought monthly before it was retired.
+// Dropping it from sona.js would strand a paying subscriber behind a paywall.
+{
+  const sona = readFileSync(ROOT + "/sona.js", "utf8");
+  ok("the monthly product id survives for RESTORE, though nothing sells it",
+    /monthly: "com\.speaksona\.app\.monthly"/.test(sona),
+    "an existing monthly subscriber must still be recognised on a reinstall");
+  const sub = readFileSync(ROOT + "/subscribe.html", "utf8");
+  ok("…and no surface offers it any more",
+    !/iapBuyMo|buyMonth|planMonth|iapPlanMo/.test(sub),
+    "a button that buys a retired plan is worse than no button");
+}
 
 // ── restore path ──
 await page.evaluate(() => { localStorage.removeItem("sona.sub.v1"); localStorage.setItem("__iapEntitled", "0"); });
@@ -154,8 +161,17 @@ await web.goto("http://localhost:8147/subscribe.html"); await web.waitForTimeout
 t = await web.evaluate(() => ({ iap: document.getElementById("iapCard").style.display, pick: document.getElementById("pickCard").style.display }));
 ok("web keeps Stripe picker, no Apple card", t.iap !== "block" && t.pick === "block");
 t = await web.evaluate(() => ({ body: document.getElementById("pickCard").innerText }));
-ok("web picker states both plans honestly",
-  /\$59\.99/.test(t.body) && /3 DAYS FREE/i.test(t.body) && /\$9\.99/.test(t.body) && /billed today, no trial/i.test(t.body), t.body.slice(0, 200));
+// ONE plan on the web card too. The two figures that left with monthly
+// ($119.88, "save $59.89") were 12 x $9.99 and cannot be stated once nobody
+// can buy the plan behind them — a strike-through against an unbuyable price
+// is a fabricated anchor. The per-month reading survives on its own.
+ok("web picker states the one plan honestly",
+  /\$59\.99/.test(t.body) && /3 DAYS FREE/i.test(t.body), t.body.slice(0, 200));
+ok("…with no retired monthly tier and no invented was-price",
+  !/\$9\.99/.test(t.body) && !/\$119\.88/.test(t.body) && !/\$59\.89/.test(t.body),
+  t.body.slice(0, 200));
+ok("…and the honest per-month reading in its place",
+  /under \$5 a month/i.test(t.body), t.body.slice(0, 200));
 
 // ── the dated trial timeline, and the promises inside it ──
 // A 3-row dated timeline is the strongest defuser of "I'll forget and get
@@ -209,12 +225,16 @@ await web.close();
 // ── PRICING IS LIVE: FREE_MODE off, 3-day trial, the gate is honest ──
 {
   const sona = readFileSync(ROOT + "/sona.js", "utf8");
-  // Pricing returned on 15 Sep 2026: $59.99/yr after a 3-day trial, or
-  // $9.99/mo billed at purchase. The ?paid=1 seam that kept these rails
-  // exercised while the app was free is now inert — it only ever controlled
-  // visibility — and the assertions below run against the live paid path.
-  // freetest.mjs stays direction-neutral and owns the switch-agreement pin.
-  ok("FREE_MODE is off — pricing is live", /const FREE_MODE = false;/.test(sona));
+  // THE SWITCH PIN IS GONE FROM HERE, DELIBERATELY. It had flipped three times
+  // in this file alone, and a test that must be hand-edited on every business
+  // decision is a tax, not a guard. freetest.mjs owns the one assertion that
+  // actually matters in both directions — that sona.js and lib/pricing.ts
+  // agree — and every purchase assertion below runs through the ?paid=1 seam,
+  // which makes them true whichever way the switch points. The seam only ever
+  // controlled VISIBILITY: it grants nothing and moves no money.
+  ok("the purchase rails are reachable for testing in either pricing state",
+    /sessionStorage\.getItem\("sona\.paidui"\) === "1"\) return false;/.test(sona),
+    "without the seam, half this suite can only be run by editing a constant");
   ok("isFree() short-circuits the gate before anything else can",
     /function gated\(\) \{\s*if \(isFree\(\)\) return false;/.test(sona),
     "if any check runs ahead of the switch, the switch is not the switch");
@@ -361,15 +381,20 @@ ok("no pageerrors", errs.length === 0, errs.join(" | "));
     Sona.saveProfile({ childName: "New", childAge: "6", focusSounds: ["S"], onboarded: true });
     localStorage.setItem(Sona.kkey("sona.trial.v1"), JSON.stringify({ start: Date.now() - 90 * 86400000, days: 3 }));
     const swept = { stamp: localStorage.getItem("sona.freeera.v1"), early: Sona.getProfile().earlyAdopter };
-    // Pricing is live again, so this is asked directly rather than through the
-    // ?paid=1 seam: a family who arrived after the sweep has no standing of its
-    // own and meets the paywall like anyone else. Get this wrong and the sweep
-    // quietly grandfathers the whole future.
-    return Object.assign(swept, { gated: Sona.gated() });
+    // Asked through the ?paid=1 seam ON PURPOSE, so this assertion is true
+    // whether Sona is free today or not: the question is whether the sweep
+    // granted this family standing OF THEIR OWN, and that must stay answerable
+    // on the day pricing next returns. Get it wrong and the sweep quietly
+    // grandfathers the entire future.
+    sessionStorage.setItem("sona.paidui", "1");
+    const gatedAsPriced = Sona.gated();
+    sessionStorage.removeItem("sona.paidui");
+    return Object.assign(swept, { gatedAsPriced });
   });
   ok("a family arriving after the sweep is NOT swept in",
     later.stamp === "post" && !later.early, JSON.stringify(later));
-  ok("…and meets the paywall like anyone else", later.gated === true, JSON.stringify(later));
+  ok("…and would meet the paywall like anyone else, whenever pricing is on",
+    later.gatedAsPriced === true, JSON.stringify(later));
   await c2.close();
 
   // the sweep is one-shot: a device that onboards later cannot re-trigger it
@@ -459,20 +484,94 @@ ok("no pageerrors", errs.length === 0, errs.join(" | "));
   await p6.reload(); await p6.waitForTimeout(600);        // a later load must not re-sweep
   const fresh = await p6.evaluate(() => {
     const swept = { stamp3: localStorage.getItem("sona.freeera3.v1"), early: Sona.getProfile().earlyAdopter };
-    // A brand-new family is NOT gated on day one — they are inside the 3-day
-    // trial, which is the product working. Kill the trial to ask the question
-    // that matters: when it runs out, does the wall appear?
+    // Both halves asked through the seam, so they hold in either pricing
+    // state. A brand-new family is not gated on day one — they are inside the
+    // 3 free days, which is the product working. Kill the trial to ask the
+    // question that matters: when it runs out, does the wall appear?
+    sessionStorage.setItem("sona.paidui", "1");
     const gatedInTrial = Sona.gated();
     localStorage.setItem(Sona.kkey("sona.trial.v1"), JSON.stringify({ start: Date.now() - 9 * 86400000, days: 3 }));
-    return Object.assign(swept, { gatedInTrial, gated: Sona.gated() });
+    const gated = Sona.gated();
+    sessionStorage.removeItem("sona.paidui");
+    return Object.assign(swept, { gatedInTrial, gated });
   });
   ok("…and gets their 3 free days first, like any new family",
     fresh.gatedInTrial === false, JSON.stringify(fresh));
   ok("a family arriving after the era-3 sweep is not adopted by it",
     fresh.stamp3 === "done" && !fresh.early, JSON.stringify(fresh));
-  ok("…and pays, which is the whole point of charging again",
+  ok("…and pays once those days run out, whenever pricing is on",
     fresh.gated === true, JSON.stringify(fresh));
   await c6.close();
+}
+
+// ── the ask lands AFTER the product has proved itself, never before ──
+// Onboarding used to end at /subscribe.html, so a parent off an ad met a price
+// screen before their child had said one word — and the 3-day trial was
+// already burning. At 20 downloads that is the difference between learning
+// "will parents pay" and learning nothing. These pin the new order.
+{
+  const onb = readFileSync(ROOT + "/onboarding.html", "utf8");
+  ok("onboarding never ends at the paywall",
+    /location\.href = "\/today\.html";/.test(onb) && !/subscribe\.html\?welcome=1/.test(onb),
+    "a price screen before the first rep asks a stranger to buy a promise");
+
+  const sona = readFileSync(ROOT + "/sona.js", "utf8");
+  const pm = (sona.match(/function planMoment\(\) \{[\s\S]*?\n  \}/) || [""])[0];
+  ok("the plan moment is one-shot", /localStorage\.setItem\(PLANSEEN/.test(pm) && /getItem\(PLANSEEN\)\) return false/.test(pm),
+    "asking twice is nagging; asking once at the peak is an offer");
+  for (const who of ["isSubscribed()", "isPilot()", "isFounder()", "slpVerified()", "earlyAdopterAnyKid()"]) {
+    ok(`…and never asks a family who is already entitled: ${who}`,
+      pm.includes(who), "the three free eras and the SLP channel must never see a price");
+  }
+  ok("…and never fires while Sona is free", /if \(isFree\(\)\) return false;/.test(pm));
+
+  const chg = readFileSync(ROOT + "/charge.html", "utf8");
+  ok("the ask hangs off the completed-run overlay, not the round start",
+    /runDone"\)\.onclick[\s\S]{0,260}planMoment\(\)/.test(chg) && /subscribe\.html\?first=1/.test(chg),
+    "the win screen is the only moment Sona has demonstrated what it sells");
+}
+
+// behaviourally: a fresh paying family is asked once, then never again
+{
+  const ctx = await browser.newContext(); const pg = await ctx.newPage();
+  await pg.goto("http://localhost:8147/today.html"); await pg.waitForTimeout(300);
+  await pg.evaluate(() => {
+    localStorage.clear();
+    localStorage.setItem("sona.freeera.v1", "post");
+    localStorage.setItem("sona.freeera2.v1", "done");
+    localStorage.setItem("sona.freeera3.v1", "done");
+    localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Ada", childAge: "7", focusSounds: ["R"], onboarded: true }));
+  });
+  await pg.reload(); await pg.waitForTimeout(600);
+  const seq = await pg.evaluate(() => {
+    // through the seam, so the one-shot contract is pinned in either pricing
+    // state — while Sona is free planMoment correctly never fires at all
+    sessionStorage.setItem("sona.paidui", "1");
+    const r = [Sona.planMoment(), Sona.planMoment(), Sona.planMoment()];
+    sessionStorage.removeItem("sona.paidui");
+    return r;
+  });
+  ok("a new paying family is asked exactly once", JSON.stringify(seq) === "[true,false,false]", JSON.stringify(seq));
+
+  const whileFree = await pg.evaluate(() => {
+    localStorage.removeItem("sona.planmoment.v1");
+    return Sona.planMoment();       // no seam: whatever the switch actually says
+  });
+  ok("…and the live switch decides whether the ask happens at all",
+    whileFree === !IS_FREE_NOW,
+    `FREE_MODE=${IS_FREE_NOW ? "true" : "false"} so planMoment should be ${!IS_FREE_NOW}, got ${whileFree}`);
+
+  // an SLP-referred family is never asked — that promise IS the SLP channel
+  const slp = await pg.evaluate(() => {
+    localStorage.removeItem("sona.planmoment.v1");
+    sessionStorage.setItem("sona.paidui", "1");
+    Sona.startPilot("rachel");
+    const r = Sona.planMoment();
+    sessionStorage.removeItem("sona.paidui");
+    return r;
+  });
+  ok("a referred / pilot family is never shown a price", slp === false, String(slp));
+  await ctx.close();
 }
 
 await browser.close(); srv.close();
