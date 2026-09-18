@@ -1,6 +1,6 @@
 // Apple IAP rail (native shell): with a mocked Capacitor+Purchases bridge,
-// subscribe.html must show the Apple paywall — $59.99/yr (3-day trial) plus
-// $9.99/mo (no trial) — with no Stripe cards (3.1.1 hygiene), the required
+// subscribe.html must show the Apple paywall — $59.99/yr (3-day trial), the
+// only plan since monthly was retired — with no Stripe cards (3.1.1 hygiene), the required
 // Restore + Terms/Privacy links and full auto-renew terms; purchase →
 // unlock on the "full" entitlement, restore → unlock, and today.html must
 // quiet-sync entitlements on load. Web (no bridge) keeps the Stripe picker.
@@ -74,20 +74,23 @@ let t = await page.evaluate(() => ({
   pick: document.getElementById("pickCard").style.display,
   founding: getComputedStyle(document.getElementById("foundingCard")).display,
   price: document.getElementById("iapPrice").textContent,
-  priceMo: document.getElementById("iapPriceMo").textContent,
   body: document.getElementById("iapCard").textContent,
   restore: !!document.getElementById("iapRestore"),
 }));
 ok("shell shows the Apple paywall", t.iap === "block");
 ok("Stripe cards never render in the shell", t.pick !== "block" && t.founding === "none");
-ok("live App Store prices painted, both plans", /\$59\.99/.test(t.price) && /\$9\.99/.test(t.priceMo), JSON.stringify([t.price, t.priceMo]));
+ok("the live App Store price is painted onto the card", /\$59\.99/.test(t.price), String(t.price));
 ok("required furniture: Restore + Terms + Privacy + auto-renew terms",
   t.restore && /Terms of Use/.test(t.body) && /Privacy/.test(t.body) && /renews unless canceled/.test(t.body));
 // Apple requires the price, period and cancellation terms on the paywall itself
 ok("yearly offer: price, trial and cancel terms all stated",
   /\$59\.99/.test(t.body) && /3 days free/i.test(t.body) && /cancel/i.test(t.body));
-ok("monthly offer: price stated, and NO trial promised on it",
-  /\$9\.99/.test(t.body) && /billed today, no trial/i.test(t.body));
+// Monthly was retired 18 Sep 2026. Apple's paywall must not show a product a
+// tap cannot buy, and the retirement must not quietly drag the yearly price
+// down with it — so this pins the ABSENCE of the tier and the survival of the
+// one that is left.
+ok("no retired monthly tier on the Apple paywall",
+  !/\$9\.99/.test(t.body) && !/Subscribe monthly/i.test(t.body), t.body.slice(0, 140));
 ok("SLP proof strip on the native paywall", /Rachel/.test(t.body) && /speech-language pathologist/.test(t.body));
 
 // ── purchase → entitlement unlock → sub cached ──
@@ -102,22 +105,19 @@ ok("purchase drives Apple's sheet once", t.n === 1);
 ok("entitlement unlocks the app (source: apple)", t.sub.active === true && t.sub.source === "apple");
 ok("paywall dismisses on success", t.card === "none");
 
-// ── the monthly button buys the MONTHLY product ──
-await page.evaluate(() => { localStorage.removeItem("sona.sub.v1"); localStorage.setItem("__iapEntitled", "0"); });
-await page.goto("http://localhost:8147/subscribe.html"); await page.waitForTimeout(900);
-t = await page.evaluate(() => {
-  window.__bought = [];
-  const P = window.Capacitor.Plugins.Purchases;
-  const orig = P.purchaseStoreProduct;
-  P.purchaseStoreProduct = async (a) => { window.__bought.push(a.product.identifier); return orig(a); };
-  document.getElementById("iapBuyMo").click();
-  return true;
-});
-await page.waitForTimeout(700);
-t = await page.evaluate(() => ({ bought: window.__bought, sub: JSON.parse(localStorage.getItem("sona.sub.v1") || "{}") }));
-ok("monthly button purchases com.speaksona.app.monthly",
-  (t.bought || []).length === 1 && /monthly/.test(t.bought[0]), JSON.stringify(t.bought));
-ok("monthly purchase unlocks too", t.sub.active === true);
+// The monthly BUTTON is gone, but the monthly PRODUCT ID is not: RevenueCat
+// needs it to recognise someone who bought monthly before it was retired.
+// Dropping it from sona.js would strand a paying subscriber behind a paywall.
+{
+  const sona = readFileSync(ROOT + "/sona.js", "utf8");
+  ok("the monthly product id survives for RESTORE, though nothing sells it",
+    /monthly: "com\.speaksona\.app\.monthly"/.test(sona),
+    "an existing monthly subscriber must still be recognised on a reinstall");
+  const sub = readFileSync(ROOT + "/subscribe.html", "utf8");
+  ok("…and no surface offers it any more",
+    !/iapBuyMo|buyMonth|planMonth|iapPlanMo/.test(sub),
+    "a button that buys a retired plan is worse than no button");
+}
 
 // ── restore path ──
 await page.evaluate(() => { localStorage.removeItem("sona.sub.v1"); localStorage.setItem("__iapEntitled", "0"); });
@@ -161,8 +161,17 @@ await web.goto("http://localhost:8147/subscribe.html"); await web.waitForTimeout
 t = await web.evaluate(() => ({ iap: document.getElementById("iapCard").style.display, pick: document.getElementById("pickCard").style.display }));
 ok("web keeps Stripe picker, no Apple card", t.iap !== "block" && t.pick === "block");
 t = await web.evaluate(() => ({ body: document.getElementById("pickCard").innerText }));
-ok("web picker states both plans honestly",
-  /\$59\.99/.test(t.body) && /3 DAYS FREE/i.test(t.body) && /\$9\.99/.test(t.body) && /billed today, no trial/i.test(t.body), t.body.slice(0, 200));
+// ONE plan on the web card too. The two figures that left with monthly
+// ($119.88, "save $59.89") were 12 x $9.99 and cannot be stated once nobody
+// can buy the plan behind them — a strike-through against an unbuyable price
+// is a fabricated anchor. The per-month reading survives on its own.
+ok("web picker states the one plan honestly",
+  /\$59\.99/.test(t.body) && /3 DAYS FREE/i.test(t.body), t.body.slice(0, 200));
+ok("…with no retired monthly tier and no invented was-price",
+  !/\$9\.99/.test(t.body) && !/\$119\.88/.test(t.body) && !/\$59\.89/.test(t.body),
+  t.body.slice(0, 200));
+ok("…and the honest per-month reading in its place",
+  /under \$5 a month/i.test(t.body), t.body.slice(0, 200));
 
 // ── the dated trial timeline, and the promises inside it ──
 // A 3-row dated timeline is the strongest defuser of "I'll forget and get
