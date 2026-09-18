@@ -34,16 +34,18 @@ const B = "'Baloo 2', system-ui, sans-serif"; // display
 // page they just tapped away from, so the free CTAs open the app instead.
 const CTA_HREF = FREE_MODE ? "/onboarding.html" : "/api/checkout";
 const CTA_LABEL = FREE_MODE ? "Start practicing — free" : "Start 3 days free";
-const MONTHLY_HREF = "/api/checkout?plan=monthly"; // paid branch only
 
-// EVERY FIGURE HERE IS COPY, NOT THE PRICE. app/api/checkout/route.ts's PLANS
-// holds the cents Stripe actually charges. Two of these are DERIVED from the
-// other two — $9.99 × 12 = $119.88; $119.88 − $59.99 = $59.89 — so if either
-// plan's price moves, all four move in the same commit, on every surface.
-// $59.99 ÷ 12 = $4.9991, which is why the copy says "under $5 a month" and
-// never "$4.99 a month": the rounded figure implies $59.88 a year and is not
-// true. Do not swap one in.
-const YEARLY = "$59.99", MONTHLY = "$9.99", YEARLY_AT_MONTHLY = "$119.88", SAVING = "$59.89";
+// THIS IS COPY, NOT THE PRICE. app/api/checkout/route.ts's PLANS holds the
+// cents Stripe actually charges; if that moves, this moves in the same commit,
+// on every surface. $59.99 / 12 = $4.9991, which is why the copy reads "under
+// $5 a month" and never "$4.99 a month": the rounded figure implies $59.88 a
+// year and is not true. Do not swap one in.
+// ONE PLAN as of 18 Sep 2026. $119.88 and "save $59.89" are gone with the
+// monthly tier: both existed ONLY as 12 x $9.99, so with no monthly plan to
+// compare against, a struck-through price would be an anchor against a number
+// nobody can buy. "Under $5 a month" survives because it is just $59.99 / 12
+// ($4.9991) — true with no second plan in sight, and never written as "$4.99".
+const YEARLY = "$59.99";
 
 // Ad-funnel signal. Paid: a checkout really is starting, so InitiateCheckout
 // is honest; the value is the ANNUAL price — a monthly tap reports 59.99 too,
@@ -166,23 +168,21 @@ function PricingPaid() {
   return (
     <>
       <div style={priceCard}>
-        <div style={priceBadge}>3 DAYS FREE · BEST VALUE</div>
+        <div style={priceBadge}>3 DAYS FREE · EVERYTHING INCLUDED</div>
         <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
-          <s style={{ font: `800 24px/1 ${B}`, color: "#c9a878" }}>{YEARLY_AT_MONTHLY}</s>
           <div style={{ font: `800 52px/1 ${B}` }}>{YEARLY}</div>
           <div style={{ fontSize: 15, fontWeight: 800, color: MUTED }}>/year</div>
         </div>
-        {/* The saving is the pitch, so it gets a block of its own rather than a
-            footnote under the price. A parent can check all three figures in
-            their head, which is exactly why they have to stay arithmetic on
-            the two plans and not be typed in by hand. */}
+        {/* With one plan there is nothing to compare against, so the block
+            carries the per-month reading instead of a saving. It is the same
+            arithmetic a parent can do in their head — $59.99 over twelve
+            months — and it is the only claim here that is not a price. */}
         <div style={{ background: "#f2fbe4", border: "2px solid #58cc02", borderRadius: 16, padding: "11px 13px", margin: "12px 0 14px" }}>
-          <div style={{ font: `800 19px ${B}`, color: "#46a302" }}>Save {SAVING} a year</div>
-          <div style={{ fontSize: 12.5, lineHeight: 1.45, fontWeight: 700, color: INK, marginTop: 3 }}>Works out to under $5 a month — practically half price next to paying monthly ({MONTHLY} × 12 = {YEARLY_AT_MONTHLY}).</div>
+          <div style={{ font: `800 19px ${B}`, color: "#46a302" }}>Under $5 a month</div>
+          <div style={{ fontSize: 12.5, lineHeight: 1.45, fontWeight: 700, color: INK, marginTop: 3 }}>One plan, billed once a year. Nothing is charged for the first 3 days.</div>
         </div>
         <Perks items={["Every game, every sound — full access from minute one", "3 days free — nothing charged before day 3", "Every new sound included as it ships", "Works on iPhone and iPad"]} />
         <CtaButton />
-        <div style={{ textAlign: "center", fontSize: 12, fontWeight: 700, color: MUTED, marginTop: 11 }}>Rather pay month to month? <a href={MONTHLY_HREF} style={{ color: MUTED }}>{MONTHLY}/month, no trial</a> — {YEARLY_AT_MONTHLY} over a year.</div>
         <Steps steps={[["1", "Start 3 days free"], ["2", "Get 6-letter code"], ["3", "Download & play"]]} />
         <div style={footNote}>Secure checkout by Stripe · iPhone &amp; iPad</div>
       </div>
@@ -219,25 +219,25 @@ export default function Landing() {
   const heroSubline = FREE_MODE ? (
     <>Free — every game, every sound. No card, no trial, nothing to cancel.</>
   ) : (
-    <>3 days free, then {YEARLY}/yr — under $5 a month. Or <a href={MONTHLY_HREF} style={{ color: MUTED }}>{MONTHLY}/month, no trial</a>. Cancel anytime.</>
+    <>3 days free, then {YEARLY}/yr — under $5 a month. Cancel anytime.</>
   );
   const finalPriceLine = FREE_MODE ? (
     <><span style={{ color: INK, font: `800 20px ${B}` }}>Free</span> — every game, every sound</>
   ) : (
-    <><span style={{ color: INK, font: `800 20px ${B}` }}>{YEARLY}/yr</span> after 3 free days — under $5 a month · or {MONTHLY}/mo</>
+    <><span style={{ color: INK, font: `800 20px ${B}` }}>{YEARLY}/yr</span> after 3 free days — under $5 a month</>
   );
   const finalFootnote = FREE_MODE
     ? "No card · No trial · Nothing to cancel"
-    : `3 days free · Save ${SAVING} vs monthly · Cancel anytime`;
+    : "3 days free · Under $5 a month · Cancel anytime";
   const stickyTitle = FREE_MODE ? "Free to play" : "Start 3 days free";
-  const stickySub = FREE_MODE ? "every game, every sound" : `${YEARLY}/yr — save ${SAVING} · or ${MONTHLY}/mo`;
+  const stickySub = FREE_MODE ? "every game, every sound" : `${YEARLY}/yr — under $5 a month`;
   const faq: [string, string][] = [
     ["Does Sona replace working with an SLP?", "No — it's daily practice designed by one. If your child already sees a speech professional, Sona is the between-sessions coach that makes each visit count."],
     [
       "What does it cost?",
       FREE_MODE
         ? "Nothing. Every game, every sound and the Sound Check are free right now — there is no card to enter and no trial running out."
-        : `${YEARLY} a year — under $5 a month — starting with 3 free days: nothing is charged before day 3, and only if you keep it. Month to month is ${MONTHLY}, billed at purchase with no trial, which comes to ${YEARLY_AT_MONTHLY} a year — so the yearly plan saves you ${SAVING}. Cancel either one anytime. Families who were already practicing while Sona was free keep it free.`,
+        : `${YEARLY} a year — under $5 a month — starting with 3 free days: nothing is charged before day 3, and only if you keep it. One plan, everything included, cancel anytime.`,
     ],
     [
       "What do I need to start?",

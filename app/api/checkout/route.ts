@@ -22,14 +22,13 @@ import { FREE_MODE } from "@/lib/pricing";
 export const runtime = "nodejs";
 
 const TRIAL_DAYS = 3;
+// ONE PLAN. Monthly ($9.99) was retired on 18 Sep 2026 — Sona sells the yearly
+// plan only. Anyone still holding a monthly subscription from an earlier window
+// keeps it: this table is the PURCHASE path, and removing a plan from it does
+// not cancel a live Stripe subscription. /api/subscription must go on
+// recognising `month` intervals, or an existing subscriber loses their access
+// the moment they reinstall.
 const PLANS = {
-  monthly: {
-    cents: 999,
-    interval: "month" as const,
-    name: "Sona — Monthly",
-    desc: "At-home speech-practice games, built with a licensed pediatric speech-language pathologist. Every game, every sound, every update. Cancel anytime.",
-    env: "STRIPE_PRICE_ID_MONTHLY999",
-  },
   annual: {
     cents: 5999,
     interval: "year" as const,
@@ -38,8 +37,11 @@ const PLANS = {
     env: "STRIPE_PRICE_ID_ANNUAL5999",
   },
 } as const;
-function pickPlan(v: unknown): keyof typeof PLANS {
-  return /^month/i.test(String(v || "")) ? "monthly" : "annual";
+// Every old ?plan=monthly link — ads, emails, bookmarks — still resolves,
+// quietly, to the only plan there is. A 400 here would turn a stale link into
+// a dead end for someone actively trying to pay.
+function pickPlan(_v: unknown): keyof typeof PLANS {
+  return "annual";
 }
 
 export async function POST(req: NextRequest) {
@@ -115,8 +117,8 @@ export async function POST(req: NextRequest) {
 
 /**
  * GET /api/checkout — plain-link checkout for landing-page CTAs (no client
- * JS): creates the session and 303s straight to Stripe. ?plan=monthly picks
- * the monthly tier; anything else (or nothing) is annual.
+ * JS): creates the session and 303s straight to Stripe. Any ?plan= value,
+ * including the retired ?plan=monthly, resolves to the yearly plan.
  */
 export async function GET(req: NextRequest) {
   // A click on an old ad or a stale "Start 3 days free" link lands on the

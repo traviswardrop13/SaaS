@@ -38,28 +38,37 @@ one. Surface those in the PR body so she can review them without reading
 the diff.
 
 ## Pricing — one switch, and the cohorts it can never take back
-**Sona is FREE right now.** `FREE_MODE = true` in `sona.js`, mirrored by
-`lib/pricing.ts` for the Next.js half. `gated()` short-circuits on `isFree()`
-before anything else, and `tests/freetest.mjs` fails if the two copies disagree.
+**Sona is PAID: one plan, $59.99/year after a 3-day free trial.** `FREE_MODE =
+false` in `sona.js`, mirrored by `lib/pricing.ts`. `gated()` short-circuits on
+`isFree()` before anything else, and `tests/freetest.mjs` fails if the two
+copies disagree.
+
+**MONTHLY IS RETIRED** (18 Sep 2026). There is one plan. What went with it, and
+must not come back as decoration: **$119.88** and **"save $59.89"** were only
+ever 12 × $9.99, so with no monthly plan to buy, a struck-through price is an
+anchor against a number nobody can pay — an invented was-price, not a discount.
+`tests/progtest.mjs` fails if a second plan card or either figure returns.
+
+What survives is checkable on its own: **$59.99 ÷ 12 = $4.9991**, so every
+surface says "**under $5 a month**" and never "$4.99 a month" (which would
+imply $59.88 a year).
+
+**Retiring a plan does not cancel a subscription.** Anyone still on $9.99/month
+keeps it. So: `/api/subscription` must go on recognising `month` intervals,
+`IAP_PRODUCTS.monthly` stays in `sona.js` so RevenueCat can restore them on a
+reinstall, and the Terms still describe the monthly plan for the people holding
+one. Only the PURCHASE path lost it. Old `?plan=monthly` links resolve quietly
+to yearly rather than erroring, because a stale link belongs to someone
+actively trying to pay.
 
 **Do not hand-edit copy for a pricing flip. The surfaces read the switch.**
-This is the rule that matters, because the switch has now changed **eleven
-times in seven weeks** (git: `git log -G'const FREE_MODE = (true|false)' --
-public/sona.js`) — twice on the same day, twice on consecutive days. Every one
-of those flips used to mean rewriting five files by hand, and three times the
-paid and free copy ended up contradicting each other on the live site.
-
-Every purchase surface now branches on the switch and keeps BOTH states:
-`app/page.tsx`, `app/terms/page.tsx`, `app/subscribe/page.tsx`,
+The switch has changed **eleven times in seven weeks** (`git log -G'const
+FREE_MODE = (true|false)' -- public/sona.js`) — twice on the same day, twice on
+consecutive days. Every purchase surface now branches on the switch and keeps
+BOTH states: `app/page.tsx`, `app/terms/page.tsx`, `app/subscribe/page.tsx`,
 `public/subscribe.html`, `public/trial.html`, `public/today.html`. Flipping
-pricing is **one boolean in two files**. If you find yourself rewriting a
-price into a page, stop — you are undoing this.
-
-**The paid figures, kept accurate for whenever the switch returns:**
-$59.99/year after a 3-day free trial, or $9.99/month billed at purchase with no
-trial. 12 × $9.99 = **$119.88**; $119.88 − $59.99 = **$59.89** saved by going
-yearly; $59.99 ÷ 12 = $4.9991, which is why the copy says "**under $5 a month**"
-and never "$4.99 a month". Change a price and all four move together.
+pricing is **one boolean in two files**. If you find yourself rewriting a price
+into a page, stop — you are undoing this.
 
 **The iOS price does not live in this repo.** `subscribe.html` overwrites the
 figures with whatever RevenueCat reports from App Store Connect, so the native
@@ -81,10 +90,13 @@ them up".** Each is a promise to a real cohort that no later flip can revoke:
   predates pricing.
 - **Era two** — nine days in August (20–28).
 - **Era three** — 31 Aug to 15 Sep, announced as permanent.
-- **Era four** — from 17 Sep, this window. **No sweep exists for it yet, and
-  none is needed until pricing returns.** When it does: `_grandfatherFreeEra4()`
-  must ship in the SAME commit as the switch, or these families meet a paywall
-  they were told they would not.
+- **Era four — NEVER HAPPENED.** The switch was flipped free on 17 Sep and back
+  to paid on 18 Sep, and the free build was never merged to main in between, so
+  production stayed paid throughout and no family was ever told Sona was free.
+  There is no era-four cohort, and `_grandfatherFreeEra4()` is deliberately NOT
+  written. **The rule still stands for next time:** if a free window actually
+  SHIPS, the sweep for it must exist before pricing returns — and "shipped"
+  means merged to main, not merged into a branch.
 
 **The sweeps are one-shot and structural, and that is load-bearing.** A device
 already onboarded on the first load of the build carrying a sweep necessarily

@@ -135,9 +135,9 @@ export default function TermsPage() {
         <br />
         {!FREE_MODE && (
           <>
-            Cancel during your 3 free days on the yearly plan and you are never
-            charged. The monthly plan has no trial, so the first month is charged
-            at purchase.{" "}
+            Cancel during your 3 free days and you are never charged. A monthly
+            subscription bought before that plan was retired has no trial and is
+            charged at the start of each month.{" "}
           </>
         )}
         Canceling stops the next renewal and leaves your access in place until
@@ -205,12 +205,17 @@ export default function TermsPage() {
  * priced they are the terms of sale, and while it is free they still govern
  * everyone holding a plan bought before the flip, until they cancel.
  *
- * Every figure here is DERIVED from the two prices in app/api/checkout's
- * PLANS: $119.88 = 12 x $9.99, $59.89 = $119.88 - $59.99, and "under $5 a
- * month" = $59.99 / 12 ($4.9991 — never "$4.99 a month", which would imply
- * $59.88 a year). Move either price and all of them rot silently: recompute
- * them here, on /subscribe, on the landing page and on the static purchase
+ * ONE PLAN as of 18 Sep 2026. Monthly was retired; the comparison figures
+ * ($119.88, "saves $59.89") went with it, because both were only 12 x $9.99
+ * and neither can be stated once nobody can buy the plan they compare to.
+ * "Under $5 a month" stays: it is $59.99 / 12 ($4.9991), never written as
+ * "$4.99 a month", which would imply $59.88 a year. Move the price and it
+ * moves here, on /subscribe, on the landing page and on the static purchase
  * surfaces in the same commit.
+ *
+ * The MONTHLY paragraph below is deliberately kept. Retiring a plan does not
+ * cancel a live subscription: anyone still on $9.99/month bought under these
+ * terms and is still governed by them until they cancel.
  */
 function PlanTerms() {
   return (
@@ -220,21 +225,20 @@ function PlanTerms() {
       the first charge lands on day 3, and only if you keep Sona.
       <br />
       <br />
-      <strong>Sona Monthly</strong> is <strong>$9.99 per month</strong>, billed at
-      purchase, with <strong>no free trial</strong>. Prices are in US dollars and
-      exclude any applicable taxes. Both plans include every game, every sound
-      and the Sound Check, plus every new sound we ship while your plan is
+      That works out to <strong>under $5 a month</strong>. Prices are in US
+      dollars and exclude any applicable taxes. The plan includes every game,
+      every sound and the Sound Check, plus every new sound we ship while it is
       active.
       <br />
       <br />
-      <strong>Yearly saves you $59.89 a year.</strong> Twelve monthly payments
-      come to <strong>$119.88</strong>; the same year on the yearly plan is{" "}
-      <strong>$59.99</strong> — almost half the price, and under $5 a month.
-      <br />
-      <br />
-      Both plans renew automatically at the price above — $59.99 each year, or
-      $9.99 each month — unless you cancel at least 24 hours before the current
-      period ends.{" "}
+      Sona Yearly renews automatically at $59.99 each year unless you cancel at
+      least 24 hours before the current period ends.{" "}
+      <strong>
+        Sona Monthly ($9.99 per month, billed at purchase, no free trial) is no
+        longer sold.
+      </strong>{" "}
+      If you already hold a monthly subscription it is unaffected: it renews at
+      $9.99 each month under these same terms until you cancel it.{" "}
       {!FREE_MODE && (
         <>
           After checkout, your confirmation page shows the exact date and amount

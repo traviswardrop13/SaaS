@@ -2909,7 +2909,7 @@
   // Not because a re-price is planned, but because a switch nobody can flip is
   // not a switch — and the last free era proved how fast an unexercised paid
   // path rots into an archaeology project.
-  const FREE_MODE = true;
+  const FREE_MODE = false;
   // QA seam: ?paid=1 (or the sticky sona.paidui flag) reveals the purchase
   // rails on this device so the paid path stays exercisable — and TESTED —
   // while free mode ships. It only controls VISIBILITY; it can't unlock
@@ -2938,6 +2938,10 @@
   // the ORIGINAL one — its price changes in App Store Connect ($39.99 →
   // $59.99, existing subscribers preserved), so early buyers keep their rate
   // without any code caring.
+  // Monthly was retired from SALE on 18 Sep 2026 — no surface offers it — but
+  // its product id STAYS here. RevenueCat needs it to recognise an existing
+  // monthly subscriber on restore or reinstall, and dropping it would strand
+  // every one of them behind a paywall they are already paying for.
   const IAP_PRODUCTS = { annual: "com.speaksona.app.annual", monthly: "com.speaksona.app.monthly" };
   const IAP_PRODUCT = IAP_PRODUCTS.annual;
   const IAP_TYPE = "subs"; // auto-renewable subscription
