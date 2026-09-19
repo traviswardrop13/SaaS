@@ -16,7 +16,16 @@ const nextConfig = {
   // which is the worst case: a cached old page calling functions the fresh
   // sona.js no longer exports.
   async headers() {
-    const noStore = [{ key: "Cache-Control", value: "no-store, max-age=0, must-revalidate" }];
+    // no-cache, NOT no-store. Both force the browser (and the CDN) to ask the
+    // origin before using a copy, so a deploy is still visible on the very
+    // next load — that is the update mechanism the comment above describes,
+    // and it is intact. The difference is what happens when nothing changed:
+    // no-store threw the copy away and re-downloaded it, so every hop of a
+    // session — home → story → practice → game → practice, five times — paid
+    // for sona.js again (82 KB gzipped) on a child's phone, often on cellular.
+    // no-cache keeps the copy and asks "still current?"; Vercel answers 304
+    // and a few bytes. Fresh on deploy, fast between deploys.
+    const noStore = [{ key: "Cache-Control", value: "no-cache, max-age=0, must-revalidate" }];
     let pages = [];
     try {
       pages = readdirSync(join(__dirname, "public"))

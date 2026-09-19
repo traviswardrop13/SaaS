@@ -402,20 +402,30 @@
       var t=$("thumbs"); t.innerHTML="";
       // once the story is read the hero IS trio[0], so the row shows the rest;
       // before that it shows all three, locked, so the kid sees the whole prize
-      var show=READ?TRIO.slice(1):TRIO;
+      // A GATED FAMILY'S GAMES ARE LOCKED HERE, NOT AT THE OTHER END. With the
+      // story read, these thumbs were live for a family whose free session was
+      // over — a child tapped one, the game's own gate fired, and they were on
+      // a price page. The lock now says who can open them, and never navigates.
+      var gatedNow=demoOnlyHero();
+      var show=(READ&&!gatedNow)?TRIO.slice(1):TRIO;
       // one piece of lock language, and it says what OPENS them rather than
       // that they are shut
-      $("upNextLbl").textContent=READ?"UP NEXT":"AFTER TODAY’S STORY";
+      $("upNextLbl").textContent=gatedNow?"MORE GAMES":(READ?"UP NEXT":"AFTER TODAY’S STORY");
       show.forEach(function(k){
         var act=(S.gameAct&&S.gameAct(k))||{name:"Game",go:"/today.html"};
         var el=document.createElement("div");
-        el.className="thumb"+(READ?"":" locked");
+        el.className="thumb"+((READ&&!gatedNow)?"":" locked");
         el.dataset.key=k;
         // label first, sticker second: paintSticker PREPENDS, so the art lands
         // behind the name. Painting first and then setting innerHTML wipes it.
         el.innerHTML="<b>"+act.name+"</b>";
         applyArt(el,k);
         el.onclick=function(){
+          if(gatedNow){
+            sfx("tap"); el.classList.remove("nope"); void el.offsetWidth; el.classList.add("nope");
+            $("heroSub").innerHTML="Ask a <b>grown-up</b> to unlock more games!";
+            return;
+          }
           if(!READ){
             // never a dead tap: say what unlocks it, and offer the way there
             sfx("tap"); el.classList.remove("nope"); void el.offsetWidth; el.classList.add("nope");
@@ -485,7 +495,18 @@
     }
 
     function render(){ renderHero(); renderThumbs(); paintJar(); }
+
     render();
+    // AFTER the boot render, or render() paints the hero's own line over it.
+    // Bounced here from a gated kid page (Sona.gateBounce)? Say why, in words a
+    // child can act on, and then forget the flag so a reload does not nag.
+    try{
+      if(/[?&]locked=1/.test(location.search)){
+        $("heroSub").innerHTML="Ask a <b>grown-up</b> to unlock more games!";
+        var hc=$("heroCard"); if(hc){ hc.classList.remove("nope"); void hc.offsetWidth; hc.classList.add("nope"); }
+        history.replaceState(null,"",location.pathname);
+      }
+    }catch(e){}
     function launch(){ sfx("tap"); location.href=$("goBtn").dataset.launch||"/chapter.html"; }
     $("heroCard").onclick=launch;
     $("goBtn").onclick=launch;
@@ -697,7 +718,17 @@
       // and only if one already exists — an existing family's unexpired days
       // are honoured to the end, and nobody new is issued any.
       var link=' <a href="/subscribe.html" style="color:var(--orange-d);font-weight:800;">';
-      if(S.trialActive&&S.trialActive()){ var dd=S.trialDaysLeft?S.trialDaysLeft():7; note.innerHTML="Your free trial: "+dd+" day"+(dd===1?"":"s")+" left."+link+"See plans →</a>"; note.style.display="block"; }
+      // The free session is over and nobody bought. This is the ONE place that
+      // says so — the kid screen never will — and it is where a parent who
+      // never saw the hand-off (a window that closed, a run never finished)
+      // learns what happened and where the plan is.
+      var sessionOver=false; try{ sessionOver=!!(S.demoDone&&S.demoDone()&&S.gated&&S.gated("practice")); }catch(e){}
+      var _tActive=!!(S.trialActive&&S.trialActive()), _tExpired=!!(S.trialExpired&&S.trialExpired());
+      if(sessionOver&&!_tActive&&!_tExpired){
+        note.innerHTML=((P.childName||"Your child")+"’s free session is finished. The yearly plan starts with 3 free days.")+link+"See plans →</a>";
+        note.style.display="block"; return;
+      }
+      if(_tActive){ var dd=S.trialDaysLeft?S.trialDaysLeft():7; note.innerHTML="Your free trial: "+dd+" day"+(dd===1?"":"s")+" left."+link+"See plans →</a>"; note.style.display="block"; }
       else if(S.trialExpired&&S.trialExpired()){ note.innerHTML="Your free trial has ended."+link+"See plans →</a>"; note.style.display="block"; }
     })();
 

@@ -1,5 +1,6 @@
 import type { CSSProperties } from "react";
 import { FREE_MODE } from "@/lib/pricing";
+import { charterSpots, CHARTER_PRICE, STANDARD_PRICE, CHARTER_PER_MONTH, STANDARD_PER_MONTH, CHARTER_CAP, CHARTER_LABEL, type Spots } from "@/lib/charter";
 
 /**
  * Sona — R-sound marketing landing page (web-first funnel).
@@ -45,7 +46,13 @@ const CTA_LABEL = FREE_MODE ? "Start practicing — free" : "Start 3 days free";
 // compare against, a struck-through price would be an anchor against a number
 // nobody can buy. "Under $5 a month" survives because it is just $59.99 / 12
 // ($4.9991) — true with no second plan in sight, and never written as "$4.99".
-const YEARLY = "$59.99";
+// THE PRICE IS NOT A CONSTANT ANY MORE — it is whichever tier the next buyer
+// will actually be charged, read from the same count /api/checkout reads. The
+// charter price for the first fifty families, then the standard price. A
+// page that said one and a checkout that charged the other would be the
+// bait-and-switch this file spent a paragraph refusing to commit with the
+// old struck-through $119.88.
+const YEARLY = CHARTER_PRICE;   // the launch-era default; PricingPaid renders from `spots`
 
 // Ad-funnel signal. Paid: a checkout really is starting, so InitiateCheckout
 // is honest; the value is the ANNUAL price — a monthly tap reports 59.99 too,
@@ -164,13 +171,28 @@ function Perks({ items }: { items: string[] }) {
    they are two named blocks rather than one tree full of ternaries. KEEP BOTH.
    Whichever era this repo is in today, the other one is one boolean away. */
 
-function PricingPaid() {
+function PricingPaid({ spots }: { spots: Spots }) {
+  const open = spots.open;
+  const price = open ? CHARTER_PRICE : STANDARD_PRICE;
+  const perMonth = open ? CHARTER_PER_MONTH : STANDARD_PER_MONTH;
+  // The spots-left number is printed only when it came from Stripe. A
+  // fallback count is a guess, and a guessed scarcity number is the one thing
+  // this page must never show.
+  const showLeft = open && spots.source === "stripe";
   return (
     <>
       <div style={priceCard}>
-        <div style={priceBadge}>3 DAYS FREE · EVERYTHING INCLUDED</div>
+        <div style={priceBadge}>{open ? `3 DAYS FREE · ${CHARTER_LABEL.toUpperCase()} PRICE` : "3 DAYS FREE · EVERYTHING INCLUDED"}</div>
+        {open && (
+          // Explicit words, not a bare strike-through: the standard price is
+          // what spot fifty-one pays, and /api/checkout enforces it.
+          <div style={{ fontSize: 13, fontWeight: 800, color: MUTED, marginTop: 10 }}>
+            Regular price <s>{STANDARD_PRICE}/yr</s> · {CHARTER_LABEL} price for the first {CHARTER_CAP} families
+            {showLeft ? ` · ${spots.left} spot${spots.left === 1 ? "" : "s"} left` : ""}
+          </div>
+        )}
         <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
-          <div style={{ font: `800 52px/1 ${B}` }}>{YEARLY}</div>
+          <div style={{ font: `800 52px/1 ${B}` }}>{price}</div>
           <div style={{ fontSize: 15, fontWeight: 800, color: MUTED }}>/year</div>
         </div>
         {/* With one plan there is nothing to compare against, so the block
@@ -178,7 +200,7 @@ function PricingPaid() {
             arithmetic a parent can do in their head — $59.99 over twelve
             months — and it is the only claim here that is not a price. */}
         <div style={{ background: "#f2fbe4", border: "2px solid #58cc02", borderRadius: 16, padding: "11px 13px", margin: "12px 0 14px" }}>
-          <div style={{ font: `800 19px ${B}`, color: "#46a302" }}>Under $5 a month</div>
+          <div style={{ font: `800 19px ${B}`, color: "#46a302" }}>{perMonth[0].toUpperCase() + perMonth.slice(1)}</div>
           <div style={{ fontSize: 12.5, lineHeight: 1.45, fontWeight: 700, color: INK, marginTop: 3 }}>One plan, billed once a year. Nothing is charged for the first 3 days.</div>
         </div>
         <Perks items={["Every game, every sound — full access from minute one", "3 days free — nothing charged before day 3", "Every new sound included as it ships", "Works on iPhone and iPad"]} />
@@ -215,29 +237,36 @@ function PricingFree() {
   );
 }
 
-export default function Landing() {
+export default async function Landing() {
+  // one Stripe read per render (memoised a minute); the page is no-store, so
+  // this is the truth at the moment the parent is looking at it
+  const spots: Spots = FREE_MODE
+    ? { cap: CHARTER_CAP, taken: 0, left: 0, open: false, source: "fallback", at: Date.now() }
+    : await charterSpots();
+  const priceNow = spots.open ? CHARTER_PRICE : STANDARD_PRICE;
+  const perMonthNow = spots.open ? CHARTER_PER_MONTH : STANDARD_PER_MONTH;
   const heroSubline = FREE_MODE ? (
     <>Free — every game, every sound. No card, no trial, nothing to cancel.</>
   ) : (
-    <>3 days free, then {YEARLY}/yr — under $5 a month. Cancel anytime.</>
+    <>3 days free, then {priceNow}/yr — {perMonthNow}. Cancel anytime.</>
   );
   const finalPriceLine = FREE_MODE ? (
     <><span style={{ color: INK, font: `800 20px ${B}` }}>Free</span> — every game, every sound</>
   ) : (
-    <><span style={{ color: INK, font: `800 20px ${B}` }}>{YEARLY}/yr</span> after 3 free days — under $5 a month</>
+    <><span style={{ color: INK, font: `800 20px ${B}` }}>{priceNow}/yr</span> after 3 free days — {perMonthNow}</>
   );
   const finalFootnote = FREE_MODE
     ? "No card · No trial · Nothing to cancel"
     : "3 days free · Under $5 a month · Cancel anytime";
   const stickyTitle = FREE_MODE ? "Free to play" : "Start 3 days free";
-  const stickySub = FREE_MODE ? "every game, every sound" : `${YEARLY}/yr — under $5 a month`;
+  const stickySub = FREE_MODE ? "every game, every sound" : `${priceNow}/yr — ${perMonthNow}`;
   const faq: [string, string][] = [
     ["Does Sona replace working with an SLP?", "No — it's daily practice designed by one. If your child already sees a speech professional, Sona is the between-sessions coach that makes each visit count."],
     [
       "What does it cost?",
       FREE_MODE
         ? "Nothing. Every game, every sound and the Sound Check are free right now — there is no card to enter and no trial running out."
-        : `${YEARLY} a year — under $5 a month — starting with 3 free days: nothing is charged before day 3, and only if you keep it. One plan, everything included, cancel anytime.`,
+        : `${priceNow} a year — ${perMonthNow} — starting with 3 free days: nothing is charged before day 3, and only if you keep it. One plan, everything included, cancel anytime.`,
     ],
     [
       "What do I need to start?",
@@ -388,7 +417,7 @@ export default function Landing() {
 
         {/* 5 — PRICING (switch-driven: see the block comment above PricingPaid) */}
         <section id="pricing" style={{ background: "#fff", padding: "30px 20px" }}>
-          {FREE_MODE ? <PricingFree /> : <PricingPaid />}
+          {FREE_MODE ? <PricingFree /> : <PricingPaid spots={spots} />}
         </section>
 
         {/* 6 — SAFETY */}

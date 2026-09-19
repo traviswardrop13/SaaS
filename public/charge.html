@@ -54,7 +54,9 @@
     /* header: close circle · context line · star pill (design handoff A §1) */
     #top{position:relative;z-index:3;display:flex;align-items:center;gap:8px;padding:calc(14px + env(safe-area-inset-top)) 16px 0;}
     #close{border:none;width:44px;height:44px;border-radius:50%;background:#fff;color:#b9a98c;font-size:18px;font-weight:800;cursor:pointer;line-height:1;box-shadow:0 4px 0 var(--hsh);flex:0 0 auto;}
-    #ctxLine{flex:1;text-align:center;font-family:"Baloo 2";font-weight:800;font-size:15px;color:var(--sky-ink);}
+    /* one line, always: "Round 1 of 5 · P sound" was wrapping to two on a 390px
+       phone between the close button, the ticket pill and the star count */
+    #ctxLine{flex:1;min-width:0;text-align:center;font-family:"Baloo 2";font-weight:800;font-size:14px;color:var(--sky-ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
     /* TICKET PILL — close | ticket | stars (README section 3). Five segments,
        filled #ff8a3d, empty #f0e4d2, so "how many more?" is answerable at a
        glance without counting fruit. */
@@ -315,8 +317,15 @@
     // demonstration, it would be the product for free with the receipts to
     // match. Decided HERE, at load, because demoFinish() flips demoDone()
     // later in this same page and the answer must not change underneath us.
-    var DEMO_REPLAY = IS_DEMO && !!(window.Sona && window.Sona.demoDone && window.Sona.demoDone());
-    if(window.Sona&&Sona.gated&&Sona.gated(IS_DEMO?"demo":"practice")){ location.replace("/trial.html"); }
+    // READ FROM THE RUN RECORD TOO. The arcade returns to this page with
+    // ?banked=N and nothing else, so on rounds two to five the URL no longer
+    // says demo — and a replay was banking coins, rungs and clinical outcomes
+    // from round two onward. The run record is written below with the flag
+    // the moment a replay starts, and it is what every later round reads.
+    var _runPeek=null; try{ _runPeek=JSON.parse(sessionStorage.getItem("sona.run.v1")||"null"); }catch(e){}
+    var DEMO_REPLAY = (IS_DEMO || !!(_runPeek&&_runPeek.active&&_runPeek.demo))
+      && !!(window.Sona && window.Sona.demoDone && window.Sona.demoDone());
+    if(window.Sona&&Sona.gated&&Sona.gated(IS_DEMO?"demo":"practice")){ Sona.gateBounce(); }
     var S=window.Sona;
     var profile=S?S.getProfile():{volume:0.8};
     var SOUND=(qp.get("sound")||((S&&S.rotSound)?S.rotSound():((profile.focusSounds&&profile.focusSounds[0])||"R"))).toUpperCase();
@@ -352,7 +361,7 @@
       }
       if(!(run&&run.active)){
         if(S&&S.dailyInfo&&S.dailyInfo().playedToday){ /* shown at boot */ }
-        else { run={active:true,round:0,sum:0,scores:[],sound:SOUND,level:LEVEL,pending:false}; runSave(run); }
+        else { run={active:true,round:0,sum:0,scores:[],sound:SOUND,level:LEVEL,pending:false,demo:DEMO_REPLAY}; runSave(run); }
       } else { SOUND=(run.sound||SOUND).toUpperCase(); LEVEL=run.level||LEVEL; }
       if(run&&run.active&&run.round>=DAILY_SEQ.length){ finishedNow=true; }
     }
@@ -664,7 +673,11 @@
     (function(){
       // Reads ROUNDIX — the same counter the ladder step uses, so the number a
       // parent reads and the level the child gets can never disagree again.
-      var sn=((S&&S.soundLabel)?S.soundLabel(SOUND):SOUND)+" sound", t=sn;
+      // the header says "· P", not "· P sound": with the close button, the
+      // ticket pill and the star count beside it, the longer form wrapped to
+      // two lines on a 390px phone and now truncates to "P…" — neither is
+      // a label. The full "P sound" survives everywhere it is spoken.
+      var snFull=((S&&S.soundLabel)?S.soundLabel(SOUND):SOUND)+" sound", sn=((S&&S.soundLabel)?S.soundLabel(SOUND):SOUND), t=snFull;
       var _goal=DAILY_SEQ.length;
       if(isDaily&&run&&run.active) t="Round "+Math.min(ROUNDIX+1,_goal)+" of "+_goal+" · "+sn;
       else { try{ var _tr=S&&S.todayRing?S.todayRing():null;

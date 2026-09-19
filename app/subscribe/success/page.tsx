@@ -40,12 +40,17 @@ export default function SubscribeSuccess() {
   const [paid, setPaid] = useState(false);
   const [appCode, setAppCode] = useState<string>("");
   const [plan, setPlan] = useState<"annual" | "monthly">("annual");
+  const [charter, setCharter] = useState<boolean>(false);
 
   useEffect(() => {
     const q = new URLSearchParams(window.location.search);
     const sessionId = q.get("session_id") || "";
     const planQ: "annual" | "monthly" = q.get("plan") === "monthly" ? "monthly" : "annual";
     setPlan(planQ);
+    // the tier the checkout actually applied rides back on the URL; the
+    // charged amount itself comes from Stripe below, so this only chooses
+    // a sentence, never a number
+    setCharter(q.get("tier") === "charter");
 
     // NOTHING is granted until Stripe confirms the session. This page used to
     // write the entitlement on mount, which meant the URL itself was a free
@@ -198,6 +203,7 @@ export default function SubscribeSuccess() {
                 <div className="font-display font-extrabold text-gray-900">{fmtDate(trialEnd)}</div>
                 <div className="text-sm text-gray-600">
                   First charge: <strong>{fmtMoney(amount)}/year</strong> — only if you keep Sona.
+                  {charter && <> Charter price, locked in for as long as you keep it — regular price $99.99/yr.</>}
                 </div>
               </div>
             </div>

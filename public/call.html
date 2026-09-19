@@ -151,7 +151,7 @@
 
   <script src="/sona.js"></script>
   <script>
-    if (Sona.gated && Sona.gated()) location.replace("/trial.html");
+    if (Sona.gated && Sona.gated()) Sona.gateBounce();
     window.addEventListener("error", function (e) { try { toast("⚠️ " + (e.message || "page error")); } catch (x) {} });
     var profile = Sona.getProfile();
     var CHILD = (profile.childName || "").trim();

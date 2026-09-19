@@ -80,7 +80,9 @@ ok("deck: fresh family starts at step 0", pp.ps.steps === 0, JSON.stringify(pp.p
 await page.goto("http://localhost:8131/charge.html?game=arcade-slice.html"); await page.waitForTimeout(700);
 let c = await page.evaluate(() => ({ prompt: document.getElementById("bTarget").textContent, lbl: document.getElementById("ctxLine").textContent }));
 ok("round 1 practices isolation", /^r+$/i.test(c.prompt.trim()), c.prompt);
-ok('header "Round 1 of 5 · R sound"', /Round 1 of 5/.test(c.lbl) && /R sound/.test(c.lbl), c.lbl);
+// "· R", not "· R sound": the longer form wrapped to two lines on a 390px
+// phone between the close button, the ticket pill and the star count
+ok('header "Round 1 of 5 · R"', /Round 1 of 5/.test(c.lbl) && /· R\b/.test(c.lbl) && !/R sound/.test(c.lbl), c.lbl);
 
 // ── every prompt below the sentence rung is ONE word ──
 // "Say a rain" was the bug: the phrase rung prefixed a carrier, so the target a
@@ -341,6 +343,21 @@ ok("unpaid family sees the yearly card first ($59.99/yr, best value)",
 // still shows it would take a parent to a checkout that quietly sells them the
 // yearly plan instead.
 ok("ONE offer exactly — the yearly plan, monthly retired", t.cards === 1, "cards=" + t.cards);
+// ONE PLAN, ONE HEADING. "Pick your plan" over a single card asked a parent
+// to choose between a thing and nothing; the heading now says what the
+// button does. And the decline sat two screens below the offer, past the
+// SLP card — it now sits directly beneath the card it declines.
+{
+  const shape = await page.evaluate(() => {
+    const h = document.querySelector("#pickCard h2");
+    const order = [...document.querySelectorAll("#pickCard, #declineRow, #slpEntryCard")].map((e) => e.id);
+    return { heading: h ? h.textContent.trim() : "", order };
+  });
+  ok("the plan card is headed by what the button does, not a choice that does not exist",
+    /Start your free days/.test(shape.heading) && !/Pick your plan/.test(shape.heading), shape.heading);
+  ok("…and the decline sits directly under the plan card, before the SLP card",
+    shape.order.join(">") === "pickCard>declineRow>slpEntryCard", shape.order.join(">"));
+}
 ok("yearly card states the 3-day trial and the cancel promise",
   /3 days free/i.test(t.life) && /cancel anytime/i.test(t.life));
 // The comparison figures died with the plan they compared to: $119.88 and

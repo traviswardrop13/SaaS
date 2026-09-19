@@ -47,7 +47,11 @@
     <div class="hero">
       <img src="/coach/echo/echo-avatar.svg" alt="Echo" />
       <h1 id="headline">That was just the start! 🎉</h1>
-      <p class="muted" style="font-weight:700;">Echo loved practicing with you. Keep going — your first 3 days are free, and nothing is charged until day 3.</p>
+      <!-- "your first 3 days are free" described the old local no-card trial,
+           which no longer exists for anyone new: the free part is the session
+           they just had, and the 3 days belong to the plan. Saying otherwise
+           here told a parent they were owed days that never start. -->
+      <p class="muted" style="font-weight:700;">Echo loved practicing with you. The free session is done — the yearly plan opens with <b>3 free days</b>, and nothing is charged until day 3.</p>
     </div>
 
     <div class="card" style="margin-top:16px;text-align:center;">
@@ -61,11 +65,30 @@
            at the top routes to subscribe.html, where RevenueCat overwrites the
            figure with App Store Connect's). -->
       <div class="pricebox">
-        <span class="now">$59.99</span><span class="per">/year</span>
+        <span class="now" id="tNow">$59.99</span><span class="per">/year</span>
         <span class="wasnote">One plan, billed once a year. Nothing is charged for the first 3 days.</span>
       </div>
-      <span class="save">Under $5 a month, billed once a year.</span>
-      <p class="muted" style="font-weight:800;margin-top:9px;"><span style="color:#46a302;">3 days free</span> · then $59.99 a year, billed once · cancel anytime</p>
+      <span class="save" id="tSave">Under $5 a month, billed once a year.</span>
+      <span class="save" id="tCharter" style="display:none;background:#f2fbe4;color:#3f8f00;"></span>
+      <p class="muted" id="tThen" style="font-weight:800;margin-top:9px;"><span style="color:#46a302;">3 days free</span> · then <span id="tThenPrice">$59.99</span> a year, billed once · cancel anytime</p>
+      <script>
+        // same count the checkout reads; the button here is a plain link to
+        // /subscribe, which re-checks before it lets anyone pay
+        (function () {
+          fetch("/api/charter").then(function (r) { return r.json(); }).then(function (j) {
+            if (!j || !j.ok || j.free) return;
+            var c = document.getElementById("tCharter");
+            if (j.open) {
+              if (c) { c.textContent = j.label + " price for the first " + j.cap + " families — regular price " + j.standard + "/yr"
+                + (j.source === "stripe" ? " · " + j.left + " spot" + (j.left === 1 ? "" : "s") + " left" : ""); c.style.display = "block"; }
+            } else {
+              var n = document.getElementById("tNow"); if (n) n.textContent = j.standard;
+              var sv = document.getElementById("tSave"); if (sv) sv.textContent = "Under $8.50 a month, billed once a year.";
+              var tp = document.getElementById("tThenPrice"); if (tp) tp.textContent = j.standard;
+            }
+          }).catch(function () {});
+        })();
+      </script>
       <ul class="perks" style="max-width:330px;margin-left:auto;margin-right:auto;">
         <li>Every game and every level, unlocked</li>
         <li>Nothing is charged during your 3 free days — cancel before day 3 and you pay nothing</li>
@@ -121,7 +144,9 @@
   <script>
     var p = Sona.getProfile();
     var name = (p.childName || "").trim();
-    if (name) document.getElementById("headline").textContent = name + ", that was just the start! 🎉";
+    // addressed to the GROWN-UP holding the phone: this is a price page, and
+    // no child is sent here any more (Sona.gateBounce goes home instead)
+    if (name) document.getElementById("headline").textContent = name + "’s free session was just the start! 🎉";
     // already unlocked? straight back to the fun
     if (Sona.isSubscribed && Sona.isSubscribed()) location.replace("/map.html");
 
