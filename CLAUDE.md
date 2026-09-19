@@ -199,6 +199,21 @@ link, because clinicians already onboarded and their free-forever families are
 a promise that hiding must not break. `betatest`, `progtest` and `slpcode`
 pin the doors shut.
 
+## The day: practice, then games
+**The books are parked, and Home leads with practice (Travis, 19 Sep 2026).**
+The stories "suck and don't even work"; they relaunch in Q4 once they are
+good. Until then: Home opens on today's adventure (`charge.html?daily=1`), the
+day's three games are open from the first tap (every door goes through
+`charge.html`, which asks for the sound first — a typed game URL goes home),
+the book button on the Home header says "coming soon" and goes nowhere, and no
+page links to `chapter.html`, `story.html` or `library.html`. The reader pages
+and the story engine stay in the repo: `dailyGames()` still draws the trio
+from the day's chapter and the win screen still turns the page
+(`episodeAdvance()`), which is what makes tomorrow's three different — but the
+win screen shows no cliffhanger and the mystery game no longer waits on a
+story being read. `day1`, `storytest` and `feedtest` pin the day; `readtest`
+still pins the reader pages so they work the day they come back.
+
 ## Hard rules
 - Merges to main/prod only on Travis's explicit go ("merge").
 - **No audio ever leaves the device.** There is no cloud scorer: every verdict

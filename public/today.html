@@ -44,7 +44,10 @@
     #hiName{font-family:"Baloo 2";font-weight:800;font-size:23px;line-height:1.1;}
     #subLine{font-weight:800;font-size:12.5px;color:var(--muted);margin-top:2px;}
     #hdrBtns{margin-left:auto;display:flex;align-items:center;gap:8px;}
-    #libBtn{border:none;width:44px;height:44px;border-radius:50%;background:#fff;font-size:20px;cursor:pointer;box-shadow:0 4px 0 rgba(120,80,20,.15);}
+    #libBtn{position:relative;border:none;width:44px;height:44px;border-radius:50%;background:#fff;font-size:20px;cursor:pointer;box-shadow:0 4px 0 rgba(120,80,20,.15);}
+    /* GAMES1: the books are parked until they are good — the button stays as a promise, with the promise written on it */
+    #libBtn::after{content:"SOON";position:absolute;top:-7px;right:-12px;font-family:'Baloo 2';font-weight:800;font-size:8.5px;letter-spacing:.06em;color:#fff;background:#ff9600;border-radius:99px;padding:2px 5px;box-shadow:0 2px 0 rgba(120,80,20,.15);}
+    #libBtn.nope{animation:nudge .32s;}
     #ringBtn{border:none;width:44px;height:44px;border-radius:50%;background:#fff;cursor:pointer;box-shadow:0 4px 0 rgba(120,80,20,.15);padding:0;display:flex;align-items:center;justify-content:center;}
     /* parent corner is a gear — Echo is never a locked door (fix pack 1a) */
     #parentBtn{border:none;cursor:pointer;width:44px;height:44px;border-radius:50%;background:#fff;box-shadow:0 4px 0 rgba(140,70,10,.14);display:flex;align-items:center;justify-content:center;color:#8a6f52;}
@@ -189,7 +192,7 @@
       </div>
       <div id="hdrBtns">
         <button id="ringBtn" aria-label="Reps today" style="display:flex;align-items:center;gap:5px;font-family:'Baloo 2';font-weight:800;font-size:15px;color:#4a2c14;padding:0 13px;"><svg viewBox="0 0 64 64" style="width:17px;height:17px"><path d="M36 4 14 36h13l-5 24 24-34H33Z" fill="#ffd21c" stroke="#f0a800" stroke-width="2.5" stroke-linejoin="round"/><circle cx="30" cy="15" r="2.5" fill="#fff" opacity=".9"/></svg><span id="ringTxt">0</span></button>
-        <button id="libBtn" aria-label="Book library"><svg viewBox="0 0 64 64" style="width:24px;height:24px;vertical-align:middle"><path d="M10 14c8-4 15-4 22 0v38c-7-4-14-4-22 0Z" fill="#4db3f2"/><path d="M54 14c-8-4-15-4-22 0v38c7-4 14-4 22 0Z" fill="#2a8fd4"/><line x1="32" y1="14" x2="32" y2="52" stroke="#1c6fa8" stroke-width="2"/><circle cx="19" cy="22" r="3" fill="#fff" opacity=".8"/></svg></button>
+        <button id="libBtn" aria-label="Books — coming soon"><svg viewBox="0 0 64 64" style="width:24px;height:24px;vertical-align:middle"><path d="M10 14c8-4 15-4 22 0v38c-7-4-14-4-22 0Z" fill="#4db3f2"/><path d="M54 14c-8-4-15-4-22 0v38c7-4 14-4 22 0Z" fill="#2a8fd4"/><line x1="32" y1="14" x2="32" y2="52" stroke="#1c6fa8" stroke-width="2"/><circle cx="19" cy="22" r="3" fill="#fff" opacity=".8"/></svg></button>
         <button id="parentBtn" aria-label="For grown-ups"><span class="pic-gear"></span></button>
       </div>
     </header>
@@ -295,18 +298,21 @@
       else if(_tr&&_tr.n>0) $("subLine").textContent=(_tr.goal-_tr.n)+" more round"+((_tr.goal-_tr.n)===1?"":"s")+" to finish today's goal!";
     }catch(e){}
 
-    // ── DAY1: the day is one story, then three games ───────────────────────
-    // The hero is not a game any more — it is TODAY'S CHAPTER, and it is the
-    // only thing tappable until it's read. The three cards below are the day's
-    // trio, drawn fresh each morning by Sona.dailyGames(), and they wear a
-    // padlock until the story is finished.
-    //
-    // Why gate at all: a kid given six games picks the same one every day, and
-    // the story — the thing that makes tomorrow worth showing up for — never
-    // gets opened. Story first means every session has a beginning.
+    // ── GAMES1: the day is practice, then games (Travis, 19 Sep 2026) ──────
+    // The books are parked until they are good enough to launch (Q4): Home no
+    // longer opens on today's chapter, and the three games are not locked
+    // behind reading it. The hero is TODAY'S ADVENTURE — five rounds of
+    // practice, each one earning a game — and the trio below are the day's
+    // games, each a door through charge.html that asks for the sound first.
+    // The trio is still drawn per day by Sona.dailyGames() (the story engine
+    // turns its page at the end of every run, which is what makes tomorrow's
+    // three different), but nothing here reads or mentions the chapter. The
+    // reader pages stay in the repo for the relaunch; the book button on the
+    // header is a promise, not a door.
     var ICON={slice:"🍉",tiles:"🎹",stack:"🧱",run:"🏃",glide:"🎈",feed:"🦜"};
-    var EP=null, TRIO=[], READ=false;
-    try{ EP=S.dailyStory(); TRIO=S.dailyGames()||[]; READ=!!S.storyRead(); }catch(e){}
+    var TRIO=[];
+    try{ TRIO=S.dailyGames()||[]; }catch(e){}
+    function playedToday(){ try{ return !!(S&&S.dailyInfo&&S.dailyInfo().playedToday); }catch(e){ return false; } }
 
     // ART1: every activity is a flat sticker from /assets/sona-stickers.svg on a
     // solid field, inside the card's white die-cut edge. The old path fetched a
@@ -370,51 +376,52 @@
         $("goBtn").dataset.launch="/charge.html?daily=1&demo=1";
         return;
       }
-      if(!READ){
-        // the story card: a night sky, because that is where the arc lives
-        hero.innerHTML='<span style="position:absolute;left:0;right:0;top:10px;text-align:center;z-index:1;">'
-          +'<span style="font-family:\'Baloo 2\';font-weight:800;font-size:12px;letter-spacing:.1em;color:#4a2c14;background:rgba(255,255,255,.82);border-radius:99px;padding:4px 10px;">CHAPTER '+(S.dailyChapterNum?S.dailyChapterNum():1)+'</span>'
-          +'</span>';
-        applyArt(hero,"chapter");
-        $("heroName").textContent=EP?EP.t:"Today's story";
-        var hn=homeworkNote();
-        $("heroSub").innerHTML=hn ? (hn+" · read it first to unlock <b>3</b> games")
-                                  : "Read it first to unlock <b>3</b> games";
-        // a child who has never practised is starting, not resuming, and the
-        // button should say the bigger thing exactly once
-        var firstEver=false;
-        try{ firstEver=!(S&&S.demoState&&S.demoState().started)&&!(S&&S.repsToday&&S.repsToday()); }catch(e){}
-        $("goBtn").textContent=firstEver?"START YOUR FIRST ADVENTURE":"READ TODAY'S STORY";
-        $("goBtn").dataset.launch="/chapter.html";
+      if(playedToday()){
+        // today's adventure is done: the hero becomes the first of today's games
+        var k=TRIO[0], act=(S.gameAct&&S.gameAct(k))||null;
+        hero.innerHTML="";
+        applyArt(hero,k||"slice");
+        $("heroName").textContent=act?act.name:"Play";
+        $("heroSub").textContent=act?act.sub:"";
+        $("goBtn").textContent="LET'S GO!";
+        $("goBtn").dataset.launch=act?act.go:"/charge.html?daily=1";
         return;
       }
-      // story done: the hero becomes the first of today's unlocked games
-      var k=TRIO[0], act=(S.gameAct&&S.gameAct(k))||null;
+      // today's adventure: five rounds of practice, and the games they earn.
+      // The art is the first of today's games — the thing the first round wins.
       hero.innerHTML="";
-      applyArt(hero,k);
-      $("heroName").textContent=act?act.name:"Play";
-      $("heroSub").textContent=act?act.sub:"";
-      $("goBtn").textContent="LET'S GO!";
-      $("goBtn").dataset.launch=act?act.go:"/chapter.html";
+      applyArt(hero,TRIO[0]||"slice");
+      // a child who has never practised is starting, not resuming, and the
+      // button should say the bigger thing exactly once
+      var firstEver=false;
+      try{ firstEver=!(S&&S.demoState&&S.demoState().started)&&!(S&&S.repsToday&&S.repsToday()); }catch(e){}
+      $("heroName").textContent=firstEver?"Your first adventure":"Today's adventure";
+      var hn=homeworkNote();
+      $("heroSub").innerHTML=(hn?hn+" · ":"")+"Say your sounds — every round earns a game";
+      $("goBtn").textContent=firstEver?"START YOUR FIRST ADVENTURE":"LET'S PLAY!";
+      $("goBtn").dataset.launch="/charge.html?daily=1";
     }
 
     function renderThumbs(){
       var t=$("thumbs"); t.innerHTML="";
-      // once the story is read the hero IS trio[0], so the row shows the rest;
-      // before that it shows all three, locked, so the kid sees the whole prize
-      // A GATED FAMILY'S GAMES ARE LOCKED HERE, NOT AT THE OTHER END. With the
-      // story read, these thumbs were live for a family whose free session was
-      // over — a child tapped one, the game's own gate fired, and they were on
-      // a price page. The lock now says who can open them, and never navigates.
+      // GAMES1: the games are open from the first tap of the day — every door
+      // goes through charge.html, which asks for the sound before it plays.
+      // Once today's adventure is done the hero IS trio[0], so the row shows
+      // the rest; before that it shows all three.
+      // A GATED FAMILY'S GAMES ARE LOCKED HERE, NOT AT THE OTHER END. These
+      // thumbs were live for a family whose free session was over — a child
+      // tapped one, the game's own gate fired, and they were on a price page.
+      // The lock now says who can open them, and never navigates.
       var gatedNow=demoOnlyHero();
-      var show=(READ&&!gatedNow)?TRIO.slice(1):TRIO;
+      var played=playedToday();
+      var show=(played&&!gatedNow)?TRIO.slice(1):TRIO;
       // one piece of lock language, and it says what OPENS them rather than
       // that they are shut
-      $("upNextLbl").textContent=gatedNow?"MORE GAMES":(READ?"UP NEXT":"AFTER TODAY’S STORY");
+      $("upNextLbl").textContent=gatedNow?"MORE GAMES":(played?"UP NEXT":"TODAY’S GAMES");
       show.forEach(function(k){
         var act=(S.gameAct&&S.gameAct(k))||{name:"Game",go:"/today.html"};
         var el=document.createElement("div");
-        el.className="thumb"+((READ&&!gatedNow)?"":" locked");
+        el.className="thumb"+(gatedNow?" locked":"");
         el.dataset.key=k;
         // label first, sticker second: paintSticker PREPENDS, so the art lands
         // behind the name. Painting first and then setting innerHTML wipes it.
@@ -424,12 +431,6 @@
           if(gatedNow){
             sfx("tap"); el.classList.remove("nope"); void el.offsetWidth; el.classList.add("nope");
             $("heroSub").innerHTML="Ask a <b>grown-up</b> to unlock more games!";
-            return;
-          }
-          if(!READ){
-            // never a dead tap: say what unlocks it, and offer the way there
-            sfx("tap"); el.classList.remove("nope"); void el.offsetWidth; el.classList.add("nope");
-            $("heroSub").innerHTML="Read <b>today’s story</b> to unlock this!";
             return;
           }
           sfx("tap"); location.href=act.go;
@@ -470,9 +471,9 @@
     }
 
     function renderMystery(t){
-      // Additive by design: the mystery game is a FOURTH door, never a way past
-      // the story. A coin that skipped the gate would undo the gate.
-      if(!READ) return;
+      // Additive by design: the mystery game is a FOURTH door. Coins only come
+      // from reps (COIN1), so a purchase is practice-backed; the story gate it
+      // used to sit behind went with the books (GAMES1).
       var owned=S.mysteryGame&&S.mysteryGame();
       var can=S.canBuyMystery&&S.canBuyMystery();
       if(!owned&&!can) return;
@@ -507,12 +508,18 @@
         history.replaceState(null,"",location.pathname);
       }
     }catch(e){}
-    function launch(){ sfx("tap"); location.href=$("goBtn").dataset.launch||"/chapter.html"; }
+    function launch(){ sfx("tap"); location.href=$("goBtn").dataset.launch||"/charge.html?daily=1"; }
     $("heroCard").onclick=launch;
     $("goBtn").onclick=launch;
 
-    // ── library ──
-    $("libBtn").onclick=function(){ sfx("tap"); location.href="/library.html"; };
+    // ── the books are coming soon (GAMES1) ──
+    // The shelf is parked until it is good enough to launch. The button stays
+    // on the header as a promise a child can see — and it goes nowhere.
+    $("libBtn").onclick=function(){
+      sfx("tap");
+      var b=$("libBtn"); b.classList.remove("nope"); void b.offsetWidth; b.classList.add("nope");
+      $("heroSub").innerHTML="📚 Books are <b>coming soon</b> — for now, play!";
+    };
 
     // weekly volume sync — anonymous {id, week, rep count}, throttled in sona.js
     try{ if(S&&S.repsBeacon) S.repsBeacon(); }catch(e){}
@@ -524,8 +531,8 @@
     try{ if(S&&S.iapRefresh) S.iapRefresh(); }catch(e){}
 
     // The comeback modal lived here and is deliberately GONE (Travis's call) —
-    // a popup between the kid and the day's story was friction on exactly the
-    // visit we most want to go well. The chapter card is the greeting.
+    // a popup between the kid and the day's adventure was friction on exactly
+    // the visit we most want to go well. The adventure card is the greeting.
     // ── the rep pill (RING1): every honest rep the kid says today ticks this
     // number UP — a count that only climbs (never 0/5 pressure). Gold once the
     // day's 5 rounds are done; tapping explains both numbers honestly.

@@ -231,7 +231,7 @@ function PricingFree() {
       <div style={{ fontSize: 12.5, fontWeight: 700, color: MUTED, margin: "4px 0 16px" }}>Every game, every sound and the Sound Check. No card, no trial, nothing to cancel.</div>
       <Perks items={["Every game, every sound — full access from minute one", "No card, no trial to remember", "Every new sound included as it ships", "Works on iPhone and iPad"]} />
       <CtaButton />
-      <Steps steps={[["1", "Open Sona"], ["2", "Pick your sound"], ["3", "Play today's story"]]} />
+      <Steps steps={[["1", "Open Sona"], ["2", "Pick your sound"], ["3", "Play today's games"]]} />
       <div style={footNote}>Works in any browser · iPhone &amp; iPad</div>
     </div>
   );

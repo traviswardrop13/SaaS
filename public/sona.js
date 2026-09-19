@@ -1235,9 +1235,10 @@
     return getCoins();
   }
   // The mystery game: one extra game for today, drawn from the ones NOT in
-  // today's trio. Deliberately ADDITIVE — it never opens the whole deck and it
-  // never skips the story, because a coin that buys past the gate would undo
-  // the reason the gate exists.
+  // today's trio. Deliberately ADDITIVE — it never opens the whole deck. It
+  // used to wait on today's story being read; that gate went with the books
+  // (GAMES1, 19 Sep 2026). Coins only come from reps, so a purchase is still
+  // practice-backed.
   function mysteryCost() { return MYSTERY_COST; }
   function mysteryGame() {
     const d = _day();
@@ -1245,7 +1246,7 @@
     return null;
   }
   function canBuyMystery() {
-    return storyRead() && !mysteryGame() && getCoins() >= MYSTERY_COST;
+    return !mysteryGame() && getCoins() >= MYSTERY_COST;
   }
   function buyMystery() {
     if (!canBuyMystery()) return null;

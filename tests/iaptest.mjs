@@ -673,7 +673,8 @@ ok("no pageerrors", errs.length === 0, errs.join(" | "));
   ok("the recap only renders on the hand-off from a completed run",
     /first=1\(&\|\$\)\/\.test\(location\.search\)\) return;/.test(sub));
   ok("…and every line is dropped when its number is missing",
-    /if \(!out\.length\) return;/.test(sub) && /if \(reps > 0\)/.test(sub) && /if \(di && di\.played\)/.test(sub));
+    /if \(!out\.length\) return;/.test(sub) && /if \(reps > 0\)/.test(sub) && /if \(di && di\.playedToday\)/.test(sub),
+    "dailyInfo() answers playedToday, never played — the old pin guarded a line that could not render");
   ok("…and it claims no improvement from one session",
     !/improv|better|progress(ing)?\b|mastered/i.test(
       (sub.match(/id="recapCard"[\s\S]*?<\/div>/) || [""])[0]),

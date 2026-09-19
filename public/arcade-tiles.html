@@ -111,12 +111,12 @@
     (function () {
       try {
         if (window.Sona && Sona.gated && Sona.gated()) { Sona.gateBounce(); return; }
-        // The story gate is skipped for a round the child already EARNED:
-        // charge.html hands off with ?from=charge, and it gates before it does.
-        // Without this a session started at 11:58pm bounces out of the game at
-        // midnight, when the day rolls over and today's story is unread again.
+        // GAMES1: a game is earned by practice, full stop. charge.html hands
+        // off with ?from=charge once the sound has been said (and it gates
+        // before it does); a typed URL goes home. The story gate that used to
+        // sit here went with the books.
         var earned = /[?&]from=charge\b/.test(location.search);
-        if (!earned && window.Sona && Sona.storyRead && !Sona.storyRead()) { location.replace("/today.html"); }
+        if (!earned) { location.replace("/today.html"); }
       } catch (e) {}
     })();
   </script>

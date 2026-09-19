@@ -1,13 +1,16 @@
-// DAY1: the day is one story, then three games.
+// DAY1 → GAMES1: the day is practice, then games.
 //
-// The home screen is a GATE, not a menu. Today's chapter is the only thing a
-// kid can tap; finishing it unlocks three games chosen fresh for that day.
-// What this suite defends:
-//   - the three cards are locked until the story is read, and a locked tap is
-//     never a dead tap
-//   - reading the story unlocks them, and the unlock survives a reload
+// It was "one story, then three games": the chapter was the only thing a kid
+// could tap, and reading it unlocked the trio. The books are parked (Travis,
+// 19 Sep 2026 — they relaunch in Q4 once they are good), so the home opens on
+// today's ADVENTURE, the trio is open from the first tap, and every game door
+// goes through charge.html, which asks for the sound first. What this suite
+// defends now:
+//   - the hero is practice, and the three games below are open, not locked
+//   - there is no door to the reader anywhere on Home, and the book button
+//     says "coming soon" and goes nowhere
 //   - the trio is stable within a day and different across days
-//   - tomorrow's chapter is queued the moment today's is finished
+//   - the season still turns its page at the end of a run
 //   - a four-year-old is never handed a trio they can't play
 import { createServer } from "http";
 import { readFileSync, existsSync } from "fs";
@@ -40,7 +43,7 @@ async function home(age) {
   return { ctx, pg };
 }
 
-// ── 1. the home opens on the story, with three locked games ──
+// ── 1. the home opens on today's adventure, with three games ready ──
 {
   const { ctx, pg } = await home("7");
   const st = await pg.evaluate(() => ({
@@ -51,90 +54,49 @@ async function home(age) {
     thumbs: document.getElementById("thumbs").children.length,
     locked: [...document.getElementById("thumbs").children].filter((e) => e.classList.contains("locked")).length,
     padlocks: document.querySelectorAll("#thumbs .lock").length,
-    read: Sona.storyRead(),
   }));
-  // The CTA wording now depends on whether this child has ever practised — a
-  // first-timer is invited to START. What this pins is the thing that matters
-  // either way: the hero is the CHAPTER, and the button opens it.
-  ok("the hero is today's chapter, not a game",
-    /story|adventure/i.test(st.cta) && st.launch === "/chapter.html", JSON.stringify(st));
-  ok("the chapter is named on the card", st.hero.length > 4, st.hero);
-  ok("the card says what reading it earns", /unlock/i.test(st.sub), st.sub);
+  ok("the hero is today's adventure — practice, not a book",
+    /adventure|play/i.test(st.cta) && st.launch === "/charge.html?daily=1", JSON.stringify(st));
+  ok("the adventure is named on the card", /adventure/i.test(st.hero), st.hero);
+  ok("the card says what practising earns", /game/i.test(st.sub), st.sub);
   ok("THREE games sit below, not two", st.thumbs === 3, String(st.thumbs));
-  // A locked card keeps its art in warm monochrome and carries NO padlock —
-  // "coming", not "disabled". The padlock stamped over a grey scrim was the
-  // 10 Aug review's Priority 3, and it is the emotion that was wrong, not the
-  // information.
-  ok("all three are locked before the story", st.locked === 3, JSON.stringify(st));
+  ok("none of them is locked — no book gates the day", st.locked === 0, JSON.stringify(st));
   ok("…and none of them wears a padlock", st.padlocks === 0, JSON.stringify(st));
-  ok("nothing is marked read yet", st.read === false);
 
-  // a locked tap must never be a dead tap
-  const tapped = await pg.evaluate(() => {
-    const before = location.href;
-    document.querySelector("#thumbs .thumb").click();
-    return { moved: location.href !== before, sub: document.getElementById("heroSub").textContent };
-  });
-  ok("tapping a locked game doesn't navigate", tapped.moved === false);
-  ok("…it explains what unlocks it", /story/i.test(tapped.sub), tapped.sub);
+  // a game door goes through charge.html — say the sound, then play
+  const before = pg.url();
+  await pg.evaluate(() => document.querySelector("#thumbs .thumb").click());
+  await pg.waitForTimeout(600);
+  const u = new URL(pg.url());
+  ok("tapping a game opens it through charge.html (say the sound first)",
+    pg.url() !== before && ((u.pathname === "/charge.html" && /game=arcade-/.test(u.search)) || u.pathname === "/arcade-feed.html"), pg.url());
   await ctx.close();
 }
 
-// ── 2. reading the story unlocks the day ──
+// ── 2. the books are parked: no door to the reader, and the shelf button says so ──
 {
   const ctx = await browser.newContext();
   const pg = await ctx.newPage();
   const errs = []; pg.on("pageerror", (e) => errs.push(String(e)));
   await pg.goto("http://localhost:8178/today.html");
   await pg.evaluate(seed("7"));
-
-  await pg.goto("http://localhost:8178/chapter.html");
-  await pg.waitForTimeout(600);
-  const open = await pg.evaluate(() => ({
-    chip: document.getElementById("chip").textContent,
-    title: document.getElementById("ttl").textContent,
-    pips: document.getElementById("pips").children.length,
-    text: document.getElementById("text").textContent,
-    beats: Sona.dailyStory().beats.length,
-  }));
-  ok("the reader names the chapter", /chapter/i.test(open.chip) && open.title.length > 4, JSON.stringify(open));
-  // opening + one beat per page. Season 1 runs 6 beats a chapter; the reader
-  // builds its pips from the page list, so this reads the chapter rather than
-  // hard-coding a length a rewrite would silently break.
-  ok("the reader paginates the whole chapter, a page per beat",
-    open.pips === 1 + open.beats, String(open.pips));
-  ok("page one is the chapter's opening line", open.text.length > 10, open.text);
-
-  // page through to the end, however long the chapter is
-  for (let i = 0; i < open.pips; i++) { await pg.evaluate(() => document.getElementById("next").click()); await pg.waitForTimeout(120); }
-  await pg.waitForTimeout(400);
-  const fin = await pg.evaluate(() => ({
-    done: getComputedStyle(document.getElementById("done")).display !== "none",
-    unlocked: document.getElementById("unlocked").children.length,
-    hook: document.getElementById("hook").textContent,
-    read: Sona.storyRead(),
-  }));
-  ok("finishing the last page ends the story", fin.done, JSON.stringify(fin));
-  ok("the finish beat shows the three games unlocking", fin.unlocked === 3, String(fin.unlocked));
-  ok("it hooks tomorrow", /tomorrow/i.test(fin.hook), fin.hook);
-  ok("the day is marked read", fin.read === true);
-
-  // …and the home screen now lets the kid play
   await pg.goto("http://localhost:8178/today.html");
   await pg.waitForTimeout(700);
-  const after = await pg.evaluate(() => ({
-    locked: [...document.getElementById("thumbs").children].filter((e) => e.classList.contains("locked")).length,
-    padlocks: document.querySelectorAll("#thumbs .lock").length,
-    cta: document.getElementById("goBtn").textContent.trim(),
-    launch: document.getElementById("goBtn").dataset.launch,
-    lbl: document.getElementById("upNextLbl").textContent,
-    filter: (function(){ var t=document.querySelector("#thumbs .thumb"); return t?getComputedStyle(t).filter:""; })(),
-  }));
-  ok("the unlock survives a reload", after.locked === 0 && after.padlocks === 0, JSON.stringify(after));
-  ok("…and full colour floods back into the cards",
-    after.filter === "none" || !/grayscale\(0?\.[1-9]/.test(after.filter || ""), String(after.filter));
-  ok("the hero becomes a playable game", /let.s go/i.test(after.cta) && /charge\.html|arcade-/.test(after.launch), JSON.stringify(after));
-  ok("the label stops saying LOCKED", !/locked/i.test(after.lbl), after.lbl);
+  const soon = await pg.evaluate(() => {
+    const before = location.href;
+    document.getElementById("libBtn").click();
+    return { moved: location.href !== before, sub: document.getElementById("heroSub").textContent,
+             label: document.getElementById("libBtn").getAttribute("aria-label") || "" };
+  });
+  await pg.waitForTimeout(300);
+  ok("the book button goes nowhere", soon.moved === false && /today\.html/.test(pg.url()), pg.url());
+  ok("…and says the books are coming soon", /coming soon/i.test(soon.sub), soon.sub);
+  ok("…in its label too", /coming soon/i.test(soon.label), soon.label);
+  // markup and code only — the comments explain the parking and may name the pages
+  const home = readFileSync(ROOT + "/today.html", "utf8").replace(/<!--[\s\S]*?-->/g, "").replace(/\/\/[^\n]*/g, "");
+  ok("Home has no door to the reader", !/chapter\.html|library\.html|story\.html/.test(home),
+    "a link to a parked page is a link to a broken promise");
+  ok("…and never says 'story' where a child can read it", !/today.s story|READ TODAY/i.test(home));
   ok("no pageerrors anywhere in the flow", errs.length === 0, errs.join(" | "));
   await ctx.close();
 }
@@ -298,7 +260,8 @@ async function home(age) {
     /const GAME_ACTS = \{/.test(sona) && !/var ACTS=\[/.test(readFileSync(ROOT + "/today.html", "utf8")),
     "two copies of the list is one copy that goes stale");
   const home = readFileSync(ROOT + "/today.html", "utf8");
-  ok("the home reads the trio from sona.js", /S\.dailyGames\(\)/.test(home) && /S\.storyRead\(\)/.test(home));
+  ok("the home reads the trio from sona.js, and no longer asks whether a story was read",
+    /S\.dailyGames\(\)/.test(home) && !/storyRead/.test(home));
   ok("the kid home still carries no tracking", !/pixel\.js|analytics\.js/.test(home));
 }
 
@@ -346,22 +309,20 @@ async function home(age) {
   await ctx.close();
 }
 
-// ── 8. the mystery game is ADDITIVE — it never buys past the story ──
+// ── 8. the mystery game is ADDITIVE — a fourth door, bought with reps ──
 {
   const { ctx, pg } = await home("7");
-  const locked = await pg.evaluate(() => {
-    Sona.addCoins(500);                          // rich, but the story is unread
-    return { can: Sona.canBuyMystery(), bought: Sona.buyMystery(), read: Sona.storyRead() };
-  });
-  ok("all the coins in the world don't skip the story", locked.can === false && locked.bought === null, JSON.stringify(locked));
-
+  // GAMES1: the story gate went with the books. Coins only come from reps
+  // (COIN1), so a purchase is practice-backed without it.
+  const broke = await pg.evaluate(() => ({ can: Sona.canBuyMystery(), bought: Sona.buyMystery(), coins: Sona.getCoins() }));
+  ok("no coins, no mystery game", broke.can === false && broke.bought === null, JSON.stringify(broke));
   const bought = await pg.evaluate(() => {
-    Sona.markStoryRead();
+    Sona.addCoins(500);
     const trio = Sona.dailyGames();
     const got = Sona.buyMystery();
     return { trio, got, inTrio: trio.indexOf(got) >= 0, again: Sona.buyMystery(), coins: Sona.getCoins() };
   });
-  ok("with the story read, coins buy a mystery game", !!bought.got, JSON.stringify(bought));
+  ok("coins buy a mystery game — no book stands in the way", !!bought.got, JSON.stringify(bought));
   ok("it is a game NOT already in today's trio", bought.inTrio === false, JSON.stringify(bought));
   ok("you can't buy a second one the same day", bought.again === null, JSON.stringify(bought));
   await pg.reload(); await pg.waitForTimeout(700);
@@ -369,7 +330,7 @@ async function home(age) {
     cards: document.querySelectorAll("#thumbs .thumb").length,
     mystery: !!document.querySelector("#thumbs .thumb.mystery"),
   }));
-  ok("the bought game appears as a fourth card", shown.mystery && shown.cards === 3, JSON.stringify(shown));
+  ok("the bought game appears as a fourth card", shown.mystery && shown.cards === 4, JSON.stringify(shown));
   await ctx.close();
 }
 
@@ -402,7 +363,9 @@ async function home(age) {
 // ── 10. GATE1: the games are not playable by typing their URL ──
 // They carried no gate of their own — the only thing protecting them was that
 // the normal route goes through charge.html, which does gate. A typed URL
-// played free, story unread, forever.
+// played free, forever. GAMES1: there is no state that opens a typed URL any
+// more — not a read story (gone with the books), not a finished adventure.
+// The only way in is the charge.html hand-off.
 {
   const ARCADE = ["arcade-slice.html", "arcade-tiles.html", "arcade-stack.html", "arcade-run.html", "arcade-glide.html"];
   async function land(url, prep) {
@@ -420,22 +383,24 @@ async function home(age) {
   for (const g of ARCADE) {
     ok(`${g} can't be opened by typing its URL`, (await land(g)) === "/today.html", g);
   }
-  ok("…but it opens once today's story is read",
-    (await land("arcade-slice.html", "Sona.markStoryRead()")) === "/arcade-slice.html");
+  ok("…not even once today's adventure is done",
+    (await land("arcade-slice.html", "Sona.dailyFinish(10)")) === "/today.html");
   // a round the child already EARNED must never be interrupted — charge.html
   // gates before it hands off, and a session started at 11:58pm would
   // otherwise be thrown out at midnight when the day rolls over
-  ok("a charge hand-off is never bounced, even with today's story unread",
+  ok("a charge hand-off is never bounced",
     (await land("arcade-slice.html?from=charge")) === "/arcade-slice.html");
-  // Pricing is live, so the gate outranks a read story: a child who finished
-  // today's chapter still meets the paywall on a dead trial. The ?paid=1 seam
+  // Pricing is live, so the gate outranks the hand-off itself: a child on a
+  // dead trial meets the lock even arriving from charge.html. The ?paid=1 seam
   // is left on the first case deliberately — it is inert while priced, so this
   // keeps passing in BOTH pricing states and cannot rot in a free window.
   // …and the gate sends a CHILD home to ask a grown-up, never to the price page
-  ok("an expired trial still wins over everything, even a story already read",
-    (await land("arcade-tiles.html", 'sessionStorage.setItem("sona.paidui","1");Sona.markStoryRead();localStorage.setItem("sona.demo.v1",JSON.stringify({started:1,done:1}));localStorage.setItem("sona.trial.v1",JSON.stringify({start:Date.now()-40*86400000,days:3}))')) === "/today.html");
-  ok("…and a LIVE trial opens the game the story unlocked",
-    (await land("arcade-tiles.html", 'Sona.markStoryRead();localStorage.setItem("sona.demo.v1",JSON.stringify({started:1,done:1}));localStorage.setItem("sona.trial.v1",JSON.stringify({start:Date.now(),days:3}))')) === "/arcade-tiles.html");
+  ok("an expired trial still wins over everything, even a charge hand-off",
+    (await land("arcade-tiles.html?from=charge", 'sessionStorage.setItem("sona.paidui","1");localStorage.setItem("sona.demo.v1",JSON.stringify({started:1,done:1}));localStorage.setItem("sona.trial.v1",JSON.stringify({start:Date.now()-40*86400000,days:3}))')) === "/today.html");
+  ok("a LIVE trial still does not open a typed game URL — every game is entered through charge.html",
+    (await land("arcade-tiles.html", 'localStorage.setItem("sona.demo.v1",JSON.stringify({started:1,done:1}));localStorage.setItem("sona.trial.v1",JSON.stringify({start:Date.now(),days:3}))')) === "/today.html");
+  ok("…while the charge hand-off opens it on that live trial",
+    (await land("arcade-tiles.html?from=charge", 'localStorage.setItem("sona.demo.v1",JSON.stringify({started:1,done:1}));localStorage.setItem("sona.trial.v1",JSON.stringify({start:Date.now(),days:3}))')) === "/arcade-tiles.html");
   // the retired campaign and its pages are gone, not merely unlinked
   const sona = readFileSync(ROOT + "/sona.js", "utf8");
   ok("the worlds/levels campaign is deleted from sona.js",
@@ -470,11 +435,11 @@ async function home(age) {
   ok("a brand-new child is invited to start, not to resume",
     /START YOUR FIRST ADVENTURE/i.test(await pg.evaluate(() => document.getElementById("goBtn").textContent)));
 
-  // …and once they have, it is the ordinary story CTA again
+  // …and once they have, it is the ordinary adventure CTA again
   await pg.evaluate(() => localStorage.setItem("sona.demo.v1", JSON.stringify({ started: 1, done: 1 })));
   await pg.goto("http://localhost:8178/today.html"); await pg.waitForTimeout(800);
   ok("…and afterwards it stops shouting about firsts",
-    /READ TODAY'S STORY/i.test(await pg.evaluate(() => document.getElementById("goBtn").textContent)));
+    /LET'S PLAY/i.test(await pg.evaluate(() => document.getElementById("goBtn").textContent)));
 
   // a run left half-finished is the commonest interruption there is
   await pg.evaluate(() => sessionStorage.setItem("sona.run.v1", JSON.stringify({ active: true, round: 2, sum: 40, scores: [20, 20], sound: "R", level: 1, pending: false })));

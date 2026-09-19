@@ -285,7 +285,7 @@
         <li>Every game that's in Sona today — the full practice path, no locked tiers</li>
         <li>New levels and sounds as they ship — founding families get them first, at no charge</li>
         <li>Progress tracking you can print or share with your SLP</li>
-        <li>The Library — stories and the word box, always open</li>
+        <li>A fresh set of games every day, each one earned by saying your sounds</li>
       </ul>
       <div class="slpline">
         <span class="em">🎓</span>
@@ -479,18 +479,13 @@
         if (reps > 0) out.push("<b>" + reps + "</b> word" + (reps === 1 ? "" : "s") + " said out loud — each one heard, none counted from silence.");
 
         var di = Sona.dailyInfo ? Sona.dailyInfo() : null;
-        if (di && di.played) out.push("Today's run is <b>finished</b>" + (di.score ? " — " + di.score + " points" : "") + ".");
+        if (di && di.playedToday) out.push("Today's run is <b>finished</b>" + (di.score ? " — " + di.score + " points" : "") + ".");
 
-        // NOTHING HAPPENED MEANS NO RECAP. What follows is a fact about the
-        // app rather than about the child, so it is always available — which
-        // is exactly why it must not be allowed to prop up an otherwise empty
-        // card. A recap whose only line is "next time" is a recap of nothing,
-        // on the page that asks for money.
+        // NOTHING HAPPENED MEANS NO RECAP. Every line above is something the
+        // device actually recorded; a recap of nothing, on the page that asks
+        // for money, is worse than no recap. (A "next time: tomorrow's chapter"
+        // line used to follow — it went with the books, GAMES1.)
         if (!out.length) return;
-        try {
-          var ep = Sona.dailyStory ? Sona.dailyStory() : null;
-          if (ep && ep.t) out.push("Next time: <b>" + ep.t + "</b>, then the games it unlocks.");
-        } catch (e) {}
         document.getElementById("recapTitle").textContent = "Here's what " + nm + " just did";
         document.getElementById("recapList").innerHTML = out.map(function (l) { return "<li>" + l + "</li>"; }).join("");
         document.getElementById("recapCard").style.display = "block";
