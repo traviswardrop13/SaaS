@@ -331,6 +331,7 @@ t = await page.evaluate(() => ({
   pick: document.getElementById("pickCard").style.display,
   founding: document.getElementById("foundingCard").style.display,
   life: document.getElementById("planLife").textContent,
+  line: document.getElementById("planLine").textContent,
   cards: document.querySelectorAll("#pickCard .plan").length,
 }));
 ok("unpaid family sees the yearly card first ($59.99/yr, best value)",
@@ -351,6 +352,17 @@ ok("…and no fabricated anchor survives the retirement",
   "a strike-through with no monthly plan behind it is an invented was-price: " + t.life.slice(0, 120));
 ok("…while the honest per-month reading stays",
   /under \$5 a month/i.test(t.life), t.life.slice(0, 120));
+// THE HEADER LINE IS PRICE COPY TOO. The card markup was cleaned up when
+// monthly was retired; #planLine was not, because the page WRITES it at
+// runtime and every check here read the card. It still said "saves $59.89 a
+// year vs $9.99/mo · Monthly: $9.99/mo, billed today" above a page with one
+// plan on it and no monthly button to find. Read what the parent reads.
+ok("the header line retired with the plan — no dead tier, no invented saving",
+  !/119\.88/.test(t.line) && !/59\.89/.test(t.line) && !/9\.99\s*\/?\s*mo/i.test(t.line) &&
+  !/\bmonthly\b/i.test(t.line),
+  "planLine: " + t.line.slice(0, 160));
+ok("…and says the one true thing about the one plan",
+  /59\.99/.test(t.line) && /3 days free/i.test(t.line), "planLine: " + t.line.slice(0, 160));
 {
   const gone = await page.evaluate(() => ({
     month: !!document.getElementById("planMonth"),

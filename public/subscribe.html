@@ -355,9 +355,16 @@
         if (!(Sona.iapAvailable && Sona.iapAvailable())) return; // old binary: no purchase UI at all
         document.getElementById("iapCard").style.display = "block";
         try { if (window.SonaAnalytics) SonaAnalytics.track("paywall viewed", { surface: "native" }); } catch (e) {}
-        // ratio, not dollars: the figures on this card come from App Store
-        // Connect a moment later, and this line must not out-argue them
-        document.getElementById("planLine").innerHTML = "Yearly: <b>3 days free</b>, then about <b>half</b> what monthly costs over a year · Monthly: billed today, no trial.";
+        // The offer is on screen NOW — this is the only place the one-shot is
+        // spent. Deciding to come here is not the same as arriving.
+        try { if (Sona.planShown) Sona.planShown("native"); } catch (e) {}
+        // NO dollars and NO comparison. The figure on this card arrives from
+        // App Store Connect a moment later, so a price written here would
+        // out-argue it. This line said "about half what monthly costs" until
+        // monthly was retired — a ratio against a plan nobody can buy is the
+        // same invented was-price a strike-through would be, and it sent a
+        // parent looking for a monthly button that is not on the card.
+        document.getElementById("planLine").innerHTML = "Yearly: <b>3 days free</b>, then one charge a year — cancel any time before it.";
         // greet the onboarding hand-off warmly
         if (/[?&]welcome=1/.test(location.search)) document.getElementById("iapTitle").textContent = "One last thing — start your free days";
         try {
@@ -414,7 +421,7 @@
           try{ if(/[?&]welcome=1/.test(location.search)) document.querySelector("#pickCard h2").textContent = "One last thing — pick your plan"; }catch(e){}
           var fc = document.getElementById("foundingCard"); if (fc) fc.style.display = "none";
           // the header line must match the picker, not the founding story
-          document.getElementById("planLine").innerHTML = "Yearly: <b>3 days free</b>, then $59.99/yr — <b>saves $59.89 a year</b> vs $9.99/mo · Monthly: $9.99/mo, billed today.";
+          document.getElementById("planLine").innerHTML = "Yearly: <b>3 days free</b>, then $59.99/yr — <b>under $5 a month</b>, billed once a year.";
         }
       } catch (e) {}
       function buy(plan, value) {
@@ -428,9 +435,15 @@
           .catch(function () { msg.textContent = "Checkout couldn't open — are you online?"; });
       }
       // web paywall impression (native fires its own with surface:"native")
+      // BOTH of these hang off one condition: the picker is actually on the
+      // screen. planShown() spends a one-shot this family only gets once, so
+      // counting it for a subscriber who was shown nothing would burn the ask
+      // AND inflate the funnel — the exact pair of bugs that killed
+      // planMoment().
       try {
-        if (window.SonaAnalytics && document.getElementById("pickCard").style.display !== "none" && !subbed)
-          SonaAnalytics.track("paywall viewed", { surface: "web" });
+        var offerOnScreen = document.getElementById("pickCard").style.display !== "none" && !subbed;
+        if (window.SonaAnalytics && offerOnScreen) SonaAnalytics.track("paywall viewed", { surface: "web" });
+        if (offerOnScreen) { try { if (Sona.planShown) Sona.planShown("web"); } catch (e) {} }
       } catch (e) {}
       // the exact-date pill: a trial started today ends on a knowable date, and
       // naming it beats "after 3 days" for trust

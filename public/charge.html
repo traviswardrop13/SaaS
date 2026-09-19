@@ -1121,7 +1121,10 @@
     // hands the device back to a grown-up on the plan screen instead of the
     // home deck — once, ever. Everyone else goes home exactly as before.
     $("runDone").onclick=function(){
-      var ask=false; try{ ask=!!(S&&S.planMoment&&S.planMoment()); }catch(e){}
+      // planEligible() only ANSWERS. The offer is spent by the paywall itself
+      // once it renders, so a parent who backs out of the grown-ups gate keeps
+      // their one ask instead of losing it to a redirect.
+      var ask=false; try{ ask=!!(S&&S.planEligible&&S.planEligible()); }catch(e){}
       location.href = ask ? "/subscribe.html?first=1" : "/today.html";
     };
     $("runArcade").onclick=function(){ location.href="/today.html#play"; };

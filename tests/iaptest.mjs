@@ -515,23 +515,47 @@ ok("no pageerrors", errs.length === 0, errs.join(" | "));
     /location\.href = "\/today\.html";/.test(onb) && !/subscribe\.html\?welcome=1/.test(onb),
     "a price screen before the first rep asks a stranger to buy a promise");
 
+  // DECIDING is not SHOWING. These were one function and it cost the family
+  // the offer: planMoment() consumed the one-shot and logged the impression at
+  // the moment of deciding, before the paywall existed on screen. The paywall
+  // lives behind the grown-ups gate, so a parent who backed out of that gate
+  // — or a redirect that simply failed — spent the only ask Sona will ever
+  // make, while the funnel counted an impression nobody saw.
   const sona = readFileSync(ROOT + "/sona.js", "utf8");
-  const pm = (sona.match(/function planMoment\(\) \{[\s\S]*?\n  \}/) || [""])[0];
-  ok("the plan moment is one-shot", /localStorage\.setItem\(PLANSEEN/.test(pm) && /getItem\(PLANSEEN\)\) return false/.test(pm),
-    "asking twice is nagging; asking once at the peak is an offer");
+  const fn = (name) => (sona.match(new RegExp("function " + name + "\\(\\w*\\) \\{[\\s\\S]*?\\n  \\}")) || [""])[0];
+  const el = fn("planEligible"), sh = fn("planShown");
+  ok("planEligible() exists and planShown() exists", !!el && !!sh, "the split is the fix");
+  ok("planEligible() CONSUMES NOTHING", !/setItem\(PLANSEEN/.test(el) && !/track\(/.test(el),
+    "asking whether to make an offer must not spend it: " + el.slice(0, 160));
+  ok("planEligible() still respects the one-shot", /getItem\(PLANSEEN\)\) return false/.test(el),
+    "once the offer has been made, stop making it");
+  ok("planShown() is the only thing that spends it",
+    /setItem\(PLANSEEN/.test(sh) && /track\("plan moment shown"/.test(sh),
+    "the impression is logged where the offer actually renders");
   for (const who of ["isSubscribed()", "isPilot()", "isFounder()", "slpVerified()", "earlyAdopterAnyKid()"]) {
     ok(`…and never asks a family who is already entitled: ${who}`,
-      pm.includes(who), "the three free eras and the SLP channel must never see a price");
+      el.includes(who), "the three free eras and the SLP channel must never see a price");
   }
-  ok("…and never fires while Sona is free", /if \(isFree\(\)\) return false;/.test(pm));
+  ok("…and never fires while Sona is free", /if \(isFree\(\)\) return false;/.test(el));
 
   const chg = readFileSync(ROOT + "/charge.html", "utf8");
   ok("the ask hangs off the completed-run overlay, not the round start",
-    /runDone"\)\.onclick[\s\S]{0,260}planMoment\(\)/.test(chg) && /subscribe\.html\?first=1/.test(chg),
+    /runDone"\)\.onclick[\s\S]{0,300}planEligible\(\)/.test(chg) && /subscribe\.html\?first=1/.test(chg),
     "the win screen is the only moment Sona has demonstrated what it sells");
+  ok("…and the win screen only ASKS, it does not mark the offer spent",
+    !/runDone"\)\.onclick[\s\S]{0,300}planShown\(/.test(chg),
+    "charge.html cannot know the paywall rendered — only the paywall knows that");
+
+  const sub = readFileSync(ROOT + "/subscribe.html", "utf8");
+  ok("the paywall itself marks the impression, on both rails",
+    /planShown\("native"\)/.test(sub) && /planShown\("web"\)/.test(sub),
+    "native and web each render their own card");
+  ok("…and the web rail only counts it when the card is on screen",
+    /offerOnScreen[\s\S]{0,240}planShown\("web"\)/.test(sub),
+    "a subscriber sees no picker; counting them burns the ask and inflates the funnel");
 }
 
-// behaviourally: a fresh paying family is asked once, then never again
+// behaviourally: eligibility is free to ask, the impression is spent once
 {
   const ctx = await browser.newContext(); const pg = await ctx.newPage();
   await pg.goto("http://localhost:8147/today.html"); await pg.waitForTimeout(300);
@@ -543,30 +567,47 @@ ok("no pageerrors", errs.length === 0, errs.join(" | "));
     localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Ada", childAge: "7", focusSounds: ["R"], onboarded: true }));
   });
   await pg.reload(); await pg.waitForTimeout(600);
+  // THE CANCELLED GATE. This is the regression that names the bug: a parent
+  // taps Done, the grown-ups gate opens, they change their mind and go back.
+  // Nothing was shown, so nothing may be spent — the next completed run must
+  // still be able to make the offer.
   const seq = await pg.evaluate(() => {
-    // through the seam, so the one-shot contract is pinned in either pricing
-    // state — while Sona is free planMoment correctly never fires at all
+    // through the seam, so the contract is pinned in either pricing state —
+    // while Sona is free planEligible correctly never returns true at all
     sessionStorage.setItem("sona.paidui", "1");
-    const r = [Sona.planMoment(), Sona.planMoment(), Sona.planMoment()];
+    const asked = [Sona.planEligible(), Sona.planEligible(), Sona.planEligible()];
+    const spent = localStorage.getItem("sona.planmoment.v1");
+    sessionStorage.removeItem("sona.paidui");
+    return { asked, spent };
+  });
+  ok("asking three times does not spend the offer",
+    JSON.stringify(seq.asked) === "[true,true,true]" && !seq.spent,
+    JSON.stringify(seq));
+
+  // …and the paywall, once it renders, spends it exactly once
+  const shown = await pg.evaluate(() => {
+    sessionStorage.setItem("sona.paidui", "1");
+    const r = [Sona.planShown("test"), Sona.planShown("test"), Sona.planEligible()];
     sessionStorage.removeItem("sona.paidui");
     return r;
   });
-  ok("a new paying family is asked exactly once", JSON.stringify(seq) === "[true,false,false]", JSON.stringify(seq));
+  ok("the rendered paywall is counted once, and then never asks again",
+    JSON.stringify(shown) === "[true,false,false]", JSON.stringify(shown));
 
   const whileFree = await pg.evaluate(() => {
     localStorage.removeItem("sona.planmoment.v1");
-    return Sona.planMoment();       // no seam: whatever the switch actually says
+    return Sona.planEligible();     // no seam: whatever the switch actually says
   });
   ok("…and the live switch decides whether the ask happens at all",
     whileFree === !IS_FREE_NOW,
-    `FREE_MODE=${IS_FREE_NOW ? "true" : "false"} so planMoment should be ${!IS_FREE_NOW}, got ${whileFree}`);
+    `FREE_MODE=${IS_FREE_NOW ? "true" : "false"} so planEligible should be ${!IS_FREE_NOW}, got ${whileFree}`);
 
   // an SLP-referred family is never asked — that promise IS the SLP channel
   const slp = await pg.evaluate(() => {
     localStorage.removeItem("sona.planmoment.v1");
     sessionStorage.setItem("sona.paidui", "1");
     Sona.startPilot("rachel");
-    const r = Sona.planMoment();
+    const r = Sona.planEligible();
     sessionStorage.removeItem("sona.paidui");
     return r;
   });

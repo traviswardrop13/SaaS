@@ -77,10 +77,19 @@ ASC, not this repo. And **flipping to free here cancels no Apple or Stripe
 subscription** — anyone who bought during a paid window keeps being billed
 until it is stopped in those dashboards. That is an operations task.
 
-**The ask happens after the product proves itself.** `planMoment()` fires once,
-on the first COMPLETED practice run — never during onboarding, which used to
-end at a price screen before the child had said a word. It is an offer, not a
-wall, it is inert while free, and it never fires for anyone already entitled.
+**The ask happens after the product proves itself.** The offer fires once, on
+the first COMPLETED practice run — never during onboarding, which used to end
+at a price screen before the child had said a word. It is an offer, not a wall,
+it is inert while free, and it never fires for anyone already entitled.
+
+**Eligibility and impression are two functions, and merging them is the bug.**
+`planEligible()` answers "should we take them to the plan screen" and changes
+nothing; `planShown(surface)` is called by the paywall once it has actually
+rendered, and is the only thing that spends the one-shot and logs "plan moment
+shown". They were one function (`planMoment()`, now an unused shim) that
+decided and consumed in the same breath — so a parent who backed out of the
+grown-ups gate in between lost the only ask Sona will ever make, while the
+funnel counted an impression nobody saw. `iaptest.mjs` pins both halves.
 
 ### Four free eras, and the sweeps that honour them
 `_grandfatherFreeEra()`, `_grandfatherFreeEra2()` and `_grandfatherFreeEra3()`
