@@ -65,10 +65,36 @@ one. Surface those in the PR body so she can review them without reading
 the diff.
 
 ## Pricing — one switch, and the cohorts it can never take back
-**Sona is PAID: one plan, $59.99/year after a 3-day free trial.** `FREE_MODE =
+**Sona is PAID: one plan, yearly, after a 3-day free trial — $59.99 for the
+first 50 families (the charter price), $99.99 after that.** `FREE_MODE =
 false` in `sona.js`, mirrored by `lib/pricing.ts`. `gated()` short-circuits on
 `isFree()` before anything else, and `tests/freetest.mjs` fails if the two
 copies disagree.
+
+**THE CHARTER PRICE IS TRUE BY CONSTRUCTION, OR IT IS THE BANNED ANCHOR AGAIN
+(19 Sep 2026).** This repo already threw out one struck-through price
+($119.88) for anchoring against a number nobody could pay. "$59.99 for the
+first 50 families, regular price $99.99" is honest only because spot 51 really
+is charged $99.99: `/api/checkout` reads `charterSpots()` (`lib/charter.ts` —
+Stripe `subscriptions.search`, memoised a minute, falls OPEN if Stripe is
+unreachable so a lookup failure never costs a family $40) and picks the tier
+at the moment of purchase, whatever any page showed. Every surface reads that
+same count — `/api/charter` for the static pages, `charterSpots()` for the
+landing page — and the in-app plan screen disables its button until the count
+answers, so a parent never taps $59.99 and meets $99.99 on the Stripe page.
+A spots-left number is printed ONLY when Stripe answered it; a fallback count
+is a guess, and a guessed scarcity number is the one thing no surface may show.
+`tests/chartertest.mjs` pins the counting rule and every surface.
+
+The word is **charter**, never **founding**: "founding family" already means
+the free SLP-referred cohort, with a banner on Home saying so, and one word
+for a paid tier and a free one is a support ticket. `CHARTER_LABEL` in
+`lib/charter.ts` is the one user-facing constant. The arithmetic rule extends:
+$99.99 ÷ 12 = $8.3325, so "**under $8.50 a month**" and never "$8.33".
+
+The native card shows none of this. App Store Connect owns the iOS price;
+mirroring the charter tier there is an ASC introductory offer, not a change in
+this repo — `NATIVE.md` says what and why.
 
 **MONTHLY IS RETIRED** (18 Sep 2026). There is one plan. What went with it, and
 must not come back as decoration: **$119.88** and **"save $59.89"** were only

@@ -139,6 +139,12 @@ for (const f of ["settings.html", "progress.html", "subscribe.html"]) {
   await pg.close();
 }
 
+// the settings page describes the gate that actually exists: four number
+// words to read, not the arithmetic it replaced (a seven-year-old with their
+// times tables walked through the old one; the copy still advertised it)
+chk("settings describes the gate that exists, not the one it replaced",
+  /four number words/.test(readFileSync(ROOT + "/settings.html", "utf8")) && !/math question/.test(readFileSync(ROOT + "/settings.html", "utf8")));
+
 await browser.close(); srv.close();
 console.log(bad ? bad + " FAILURES" : "GATE ALL GREEN");
 process.exit(bad ? 1 : 0);

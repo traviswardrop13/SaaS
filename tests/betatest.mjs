@@ -99,14 +99,13 @@ await page.evaluate(() => { document.getElementById("obName").value = "Milo"; })
 await clickNext(); // name →
 await page.evaluate(() => document.querySelector('#obPath .choice[data-val="speech"]').click());
 await clickNext(); // path → sounds
-// the "building the plan" beat fires over the next step, named + non-blocking
-await clickNext(); // sounds →
-const build = await page.evaluate(() => ({
-  shown: !!document.querySelector("#obBuild.show"),
-  txt: (document.getElementById("obBuild") || {}).textContent || "",
-  passthru: getComputedStyle(document.getElementById("obBuild")).pointerEvents === "none",
-}));
-ok("sound-plan build beat shows (named, non-blocking)", build.shown && /Milo's sound plan/.test(build.txt) && build.passthru);
+await clickNext(); // sounds → mic
+// The "building the plan" beat used to fire HERE, on the way into the
+// microphone step, and sit over it for 1.8s — the one setup screen whose
+// words matter. It now plays from finish(), between the last answer and the
+// finale, so this asserts it is ABSENT here and present there.
+ok("the build beat no longer covers the microphone step",
+  await page.evaluate(() => !document.querySelector("#obBuild.show")));
 const atMic = await page.evaluate(() => ({
   step: (document.querySelector(".step.on") || {}).dataset?.step,
   cta: document.getElementById("nextBtn").textContent,
@@ -122,6 +121,14 @@ ok("…and it tells the truth about the microphone",
   && !/\b(uploads?|sends?|transmits?)\b/i.test(atMic.says.replace(/Nothing is uploaded\.?/g, "")));
 ok("…and says what happens if they decline", /Not ready\?/.test(atMic.says));
 await clickNext(); // mic → finish()
+// the build beat, now between the last answer and the finale: named, and
+// non-blocking (pointer-events none), so nothing waits on it
+const build = await page.evaluate(() => {
+  const el = document.getElementById("obBuild");
+  return { shown: !!(el && el.classList.contains("show")), txt: el ? el.textContent : "",
+           passthru: el ? getComputedStyle(el).pointerEvents === "none" : false };
+});
+ok("sound-plan build beat plays before the finale (named, non-blocking)", build.shown && /Milo's sound plan/.test(build.txt) && build.passthru, JSON.stringify(build));
 await page.waitForTimeout(600);
 const fin = await page.evaluate(() => ({
   achieveShown: document.querySelector('[data-step="achieve"]').classList.contains("on"),
@@ -137,6 +144,37 @@ ok("SLP-referred → founding access", prof.earlyAdopter === true && prof.slpCod
 ok("the weekly goal keeps its default rather than being asked for", prof.weeklyGoal === 5);
 ok("no email was demanded to finish", prof.email === "");
 ok("onboarding no pageerrors", errs.length === 0);
+
+// ── SETUP3: what the screenshots showed ──────────────────────────────────
+// Photographed at 390px: "I'm not sure where to start" rendered one word per
+// line (a row layout gave a six-word title a ~90px column); the age chip a
+// parent had just picked was cream on white, the one selection on the screen
+// nobody could see; and the welcome never said how long setup was.
+{
+  const ob = readFileSync(ROOT + "/onboarding.html", "utf8");
+  ok("the practice-direction cards stack their title over their text, like the role cards",
+    /#obRole \.choice,#obPath \.choice\{flex-direction:column/.test(ob),
+    "a row layout wraps a six-word title one word per line");
+  ok("the picked age chip uses the app's one selection colour",
+    /\.schips \.sound\.on\{[^}]*border-color:#58cc02/.test(ob),
+    "cream on white is not a selection anyone can see");
+  const pg2 = await browser.newPage({ viewport: { width: 390, height: 844 } });
+  await pg2.goto("http://localhost:8129/onboarding.html"); await pg2.waitForTimeout(700);
+  const seen = await pg2.evaluate(() => {
+    const how = document.getElementById("howLong");
+    return { howLong: how ? how.textContent : "" };
+  });
+  ok("the welcome says how long setup takes", /Three quick questions/.test(seen.howLong) && /minute/.test(seen.howLong), seen.howLong);
+  // the card that broke: every title now sits on one line at phone width
+  await pg2.evaluate(() => document.getElementById("nextBtn").click()); await pg2.waitForTimeout(200);
+  await pg2.evaluate(() => { document.getElementById("obName").value = "Milo"; document.getElementById("nextBtn").click(); }); await pg2.waitForTimeout(300);
+  // line-height computes to "normal" here, so count lines by font size
+  const lines = await pg2.evaluate(() => [...document.querySelectorAll("#obPath .choice b")].map((b) => {
+    const cs = getComputedStyle(b); return +(b.getBoundingClientRect().height / parseFloat(cs.fontSize)).toFixed(1);
+  }));
+  ok("…and no practice-direction title wraps past two lines at 390px", lines.length === 3 && lines.every((n) => n <= 2.8), JSON.stringify(lines));
+  await pg2.close();
+}
 
 // ── SETUP1: partial setup survives an interruption ────────────────────
 // draft lived in memory only. A phone call, a locked screen or a stray
@@ -290,7 +328,11 @@ const playSkip = await page.evaluate(() => ({
   build: (document.getElementById("obBuild") || {}).textContent || "",
 }));
 ok("play path skips the sound picker entirely", !playSkip.onSounds && playSkip.onMic, JSON.stringify(playSkip));
-ok("the build beat says play list, not sound plan", /Nora's play list/.test(playSkip.build), playSkip.build);
+// the beat plays from finish() now — walk the last step and look there
+await clickNext(); // mic → finish()
+await page.waitForTimeout(150);
+const playBuild = await page.evaluate(() => (document.getElementById("obBuild") || {}).textContent || "");
+ok("the build beat says play list, not sound plan", /Nora's play list/.test(playBuild), playBuild);
 await clickNext(); // goal →
 await clickNext(); // slp →
 // parents can still skip email — never a gate for families

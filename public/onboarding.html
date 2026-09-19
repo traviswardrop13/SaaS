@@ -79,16 +79,16 @@
     .schips{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;}
     .schips .sound{transition:background .2s ease,border-color .2s ease,color .2s ease,transform .05s;}
     .schips .sound:active{transform:translateY(1px);}
-    .schips .sound.on{animation:sona-pop .26s cubic-bezier(.2,1.4,.4,1);}
+    .schips .sound.on{animation:sona-pop .26s cubic-bezier(.2,1.4,.4,1);border-color:#58cc02;background:#f4fce9;color:#3f8f00;box-shadow:0 0 0 3px rgba(88,204,2,.14);}
     /* fixed footer */
     .obfoot{position:fixed;left:0;right:0;bottom:0;background:linear-gradient(180deg,rgba(255,255,255,0),#fff 30%);
       padding:16px 18px calc(18px + env(safe-area-inset-bottom));}
     .obfoot .inner{max-width:560px;margin:0 auto;display:flex;gap:10px;align-items:center;}
     /* role cards stack their label over the description — .choice is a flex
        row by default, which put the two side by side and wrapped both */
-    #obRole .choice{flex-direction:column;align-items:flex-start;gap:3px;}
-    #obRole .choice b{font-size:16.5px;}
-    #obRole .choice span{font-family:Nunito,sans-serif;font-weight:700;font-size:13.5px;color:var(--muted);line-height:1.4;}
+    #obRole .choice,#obPath .choice{flex-direction:column;align-items:flex-start;gap:3px;}
+    #obRole .choice b,#obPath .choice b{font-size:16.5px;}
+    #obRole .choice span,#obPath .choice span{font-family:Nunito,sans-serif;font-weight:700;font-size:13.5px;color:var(--muted);line-height:1.4;}
     .skip{background:none;border:none;color:var(--muted);font-weight:800;font-size:15px;cursor:pointer;padding:10px;}
   </style>
 </head>
@@ -115,6 +115,7 @@
     <div class="step on" data-step="welcome">
       <div class="qh">Let's make talking fun!</div>
       <p class="muted">Short, friendly practice — a few minutes a day. Designed with a speech-language pathologist.</p>
+      <p class="muted" id="howLong" style="margin-top:12px;font-weight:800;color:var(--ink);">Three quick questions, then your child plays. About a minute.</p>
       <p class="muted" id="slpRow" style="margin-top:10px;font-size:13px;"><a href="#" id="slpLink"><b>I'm a speech-language pathologist</b> — setting Sona up for my caseload →</a></p>
       <p class="muted" id="moveRow" style="margin-top:12px;font-size:13px;"><a href="#" id="moveLink"><b>Have a code?</b> Bought Sona on the website or set up in a browser? Enter it here →</a></p>
     </div>
@@ -597,12 +598,13 @@
       if(key==="sounds" && selSounds.size===0){ selSounds.add("R"); }
       if(key==="email"){ var em=(emailEl.value||"").trim(); if(!/^\S+@\S+\.\S+$/.test(em)){ emailEl.focus(); emailEl.style.borderColor="#ef6f23"; var ee=document.getElementById("emErr"); ee.style.display="block"; ee.textContent="Please enter a valid email to save progress."; return; } draft.email=em; }
       Sona.sfx.tap();
-      if(key==="sounds") showBuild(); // the plan "builds" while the next question paints
+      // (the "building" beat used to fire here and cover the microphone step;
+      // it now plays from finish(), between the last answer and the finale)
       // PLAY1 skip, now the only one: a family who did not say they have
       // targets never sees the sound picker, because the picker IS the
       // clinical framing that both general doors remove. showBuild() still
       // runs so the hand-off feels the same either way.
-      if(key==="path" && draft.mode==="play"){ showBuild(); idx+=2; render(); return; }
+      if(key==="path" && draft.mode==="play"){ idx+=2; render(); return; }
       if(idx < ORDER.length-1){ idx++; render(); return; }
       finish();
     }
@@ -630,7 +632,7 @@
           document.getElementById("obBuildS").textContent="Tuning the games for "+(snds||"their sounds");
         }
         requestAnimationFrame(function(){ d.classList.add("show"); });
-        setTimeout(function(){ d.classList.remove("show"); },1800);
+        setTimeout(function(){ d.classList.remove("show"); },1100);
       }catch(e){}
     }
     function back(){
@@ -721,8 +723,12 @@
       if(window.Sona){ Sona.sfx.complete(); Sona.confetti({count:160}); }
       // the finale (not a step): show "what's ahead", then Echo calls by name
       ORDER.forEach(function(k){ steps[k].classList.remove("on"); });
+      // the "building" beat, then the finale under it — a beat, not a wait:
+      // the data above is already saved and nothing below blocks on this
+      try{ showBuild(); }catch(e){}
       var ach=document.querySelector('[data-step="achieve"]');
-      if(ach){ var nm3=(nameEl.value||draft.childName||"").trim(); document.getElementById("achName").textContent=nm3||"your child"; ach.classList.add("on"); }
+      if(ach){ var nm3=(nameEl.value||draft.childName||"").trim(); document.getElementById("achName").textContent=nm3||"your child"; }
+      setTimeout(function(){ try{ if(ach) ach.classList.add("on"); }catch(e){} }, 400);
       bubble.textContent = "You're all set!";
       nextBtn.disabled = true; nextBtn.textContent = "Let's practice!";
       backBtn.style.display = "none";
