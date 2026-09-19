@@ -1160,6 +1160,23 @@
       // false on every replay, so nothing here fires twice — the offer that
       // follows is spent by the paywall, not by arriving.
       try{ if(S&&S.demoFinish) S.demoFinish(); }catch(e){}
+      // THE HAND-OFF. When the plan screen is what comes next, the button says
+      // so in words a child can act on — they fetch a grown-up, rather than
+      // tapping "Done" and handing a parent a price screen with no idea why
+      // it appeared. When nothing follows, it stays "Done": a child should
+      // never be sent to find an adult for nothing.
+      try{
+        if(S&&S.planEligible&&S.planEligible()){
+          $("runDone").textContent="Show a grown-up →";
+          var sub=$("runHandoff");
+          if(!sub){
+            sub=document.createElement("p"); sub.id="runHandoff";
+            sub.style.cssText="font-weight:800;font-size:13px;color:var(--muted);margin:2px 0 10px;line-height:1.45;";
+            sub.textContent="Go show them what you just practised!";
+            $("runDone").parentNode.insertBefore(sub,$("runDone"));
+          }
+        }
+      }catch(e){}
     }
     // The plan moment: the child has just finished a full run and the screen
     // says "You did it!". If this family has never been asked, the Done button

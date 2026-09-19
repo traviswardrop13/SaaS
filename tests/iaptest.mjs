@@ -618,6 +618,68 @@ ok("no pageerrors", errs.length === 0, errs.join(" | "));
   await ctx.close();
 }
 
+// ── THE PARENT HAND-OFF AND THE RECAP ───────────────────────────
+// A parent was fetched by a child who had just finished something, and the
+// first thing they saw was a price. They see what happened first now — in
+// facts this device recorded, with every line dropped when its number is
+// missing, because an invented recap on the page that asks for money is
+// worse than no recap at all.
+{
+  const chg = readFileSync(ROOT + "/charge.html", "utf8");
+  const sub = readFileSync(ROOT + "/subscribe.html", "utf8");
+  ok("the win screen asks the child to fetch a grown-up — but only if a plan follows",
+    /planEligible\(\)\)\{[\s\S]{0,200}Show a grown-up/.test(chg),
+    "sending a child to find an adult for nothing is worse than saying Done");
+  ok("the recap only renders on the hand-off from a completed run",
+    /first=1\(&\|\$\)\/\.test\(location\.search\)\) return;/.test(sub));
+  ok("…and every line is dropped when its number is missing",
+    /if \(!out\.length\) return;/.test(sub) && /if \(reps > 0\)/.test(sub) && /if \(di && di\.played\)/.test(sub));
+  ok("…and it claims no improvement from one session",
+    !/improv|better|progress(ing)?\b|mastered/i.test(
+      (sub.match(/id="recapCard"[\s\S]*?<\/div>/) || [""])[0]),
+    "one session cannot show improvement and the detector could not prove it");
+
+  const ctx = await browser.newContext(); const pg = await ctx.newPage();
+  await pg.goto("http://localhost:8147/today.html"); await pg.waitForTimeout(300);
+  await pg.evaluate(() => {
+    localStorage.clear();
+    localStorage.setItem("sona.freeera.v1", "post"); localStorage.setItem("sona.freeera2.v1", "done"); localStorage.setItem("sona.freeera3.v1", "done");
+    localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Ada", childAge: "7", focusSounds: ["R"], onboarded: true }));
+    sessionStorage.setItem("sona.gate.v1", String(Date.now()));
+    sessionStorage.setItem("sona.paidui", "1");
+  });
+
+  // a parent arriving with nothing recorded must see no recap at all
+  await pg.goto("http://localhost:8147/subscribe.html?first=1"); await pg.waitForTimeout(700);
+  ok("a parent who arrives with nothing recorded is shown no recap",
+    (await pg.evaluate(() => document.getElementById("recapCard").style.display)) !== "block");
+
+  // …and one arriving after a real run sees only what the device actually holds
+  await pg.evaluate(() => {
+    const d = Sona.localDay();
+    localStorage.setItem(Sona.kkey("sona.outcomes.v1"), JSON.stringify({ R: { days: { [d]: { a: 12, p: 9 } } } }));
+    localStorage.setItem(Sona.kkey("sona.reps.v1"), JSON.stringify({ d: d, n: 12 }));
+  });
+  await pg.goto("http://localhost:8147/subscribe.html?first=1"); await pg.waitForTimeout(700);
+  const recap = await pg.evaluate(() => ({
+    shown: document.getElementById("recapCard").style.display,
+    txt: document.getElementById("recapList").textContent,
+    title: document.getElementById("recapTitle").textContent,
+  }));
+  ok("a real run produces a recap naming the sound and the count",
+    recap.shown === "block" && /R sound/.test(recap.txt) && /12 words/.test(recap.txt), JSON.stringify(recap));
+  ok("…addressed to the grown-up about their own child", /Ada/.test(recap.title), recap.title);
+  ok("…and says nothing about a run that was never finished",
+    !/finished/i.test(recap.txt), recap.txt);
+  // navigate from NODE, never from inside evaluate: location.href there
+  // destroys the execution context out from under the call that set it (the
+  // same race that took slpcode's sibling block down on CI)
+  await pg.goto("http://localhost:8147/subscribe.html"); await pg.waitForTimeout(700);
+  ok("…and never appears without the hand-off flag",
+    (await pg.evaluate(() => document.getElementById("recapCard").style.display)) !== "block");
+  await ctx.close();
+}
+
 // ── THE FREE DEMONSTRATION ────────────────────────────────────
 // A new family was handed a silent 3-day clock the moment onboarding closed —
 // it was already burning while the parent read the next screen, and a family

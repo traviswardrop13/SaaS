@@ -126,6 +126,22 @@
       </div>
     </header>
 
+    <!-- THE RECAP, and it only appears on the hand-off from a completed run.
+         A parent arrives here having been fetched by a child who just
+         finished something, and the first thing they saw was a price. What
+         they see first now is what actually happened, in facts this device
+         recorded: which sound, how many words out loud, whether the run was
+         finished, and what the next session holds. Every line is omitted when
+         the data behind it is missing — an invented recap on the page that
+         asks for money is worse than no recap — and none of them claims the
+         child improved, because one session cannot show that and the detector
+         could not prove it if it did. -->
+    <div class="card" id="recapCard" style="display:none;">
+      <h2 id="recapTitle">Here's what just happened</h2>
+      <ul id="recapList" style="margin:10px 0 0;padding-left:20px;font-weight:800;font-size:14.5px;line-height:1.7;color:var(--ink);"></ul>
+      <p class="muted" style="margin-top:10px;font-size:12px;line-height:1.5;">A practice snapshot, not an assessment — and it stays on this device.</p>
+    </div>
+
     <div class="card">
       <div class="hero">
         <img src="/coach/echo/echo-avatar.svg" alt="Echo" />
@@ -412,6 +428,53 @@
             if (active) setTimeout(function () { location.href = "/today.html"; }, 1000);
           }).catch(function () { msg.textContent = "Couldn't reach the App Store — try again in a moment."; });
         };
+      } catch (e) {}
+    })();
+
+    // Build the recap from what this device actually recorded. Nothing here
+    // is fetched and nothing is guessed: each line is skipped when its number
+    // is missing, so a parent who arrives after an interrupted run sees fewer
+    // lines rather than a fabricated one.
+    (function () {
+      if (!/[?&]first=1(&|$)/.test(location.search)) return;
+      try {
+        var P = Sona.getProfile ? Sona.getProfile() : {};
+        var nm = (P.childName || "").trim() || "Your child";
+        var out = [];
+
+        // which sound, by today's attempts — not by what is merely configured
+        var today = Sona.localDay ? Sona.localDay() : new Date().toISOString().slice(0, 10);
+        var o = (Sona.outcomes ? Sona.outcomes() : {}) || {};
+        var best = null;
+        Object.keys(o).forEach(function (sd) {
+          var d = o[sd] && o[sd].days && o[sd].days[today];
+          var n = d ? (d.a || 0) : 0;
+          if (n > 0 && (!best || n > best.n)) best = { s: sd, n: n };
+        });
+        if (best) {
+          var lbl = Sona.soundLabel ? Sona.soundLabel(best.s) : best.s;
+          out.push("<b>" + nm + "</b> practised the <b>" + lbl + "</b> sound.");
+        }
+
+        var reps = Sona.repsToday ? Sona.repsToday() : 0;
+        if (reps > 0) out.push("<b>" + reps + "</b> word" + (reps === 1 ? "" : "s") + " said out loud — each one heard, none counted from silence.");
+
+        var di = Sona.dailyInfo ? Sona.dailyInfo() : null;
+        if (di && di.played) out.push("Today's run is <b>finished</b>" + (di.score ? " — " + di.score + " points" : "") + ".");
+
+        // NOTHING HAPPENED MEANS NO RECAP. What follows is a fact about the
+        // app rather than about the child, so it is always available — which
+        // is exactly why it must not be allowed to prop up an otherwise empty
+        // card. A recap whose only line is "next time" is a recap of nothing,
+        // on the page that asks for money.
+        if (!out.length) return;
+        try {
+          var ep = Sona.dailyStory ? Sona.dailyStory() : null;
+          if (ep && ep.t) out.push("Next time: <b>" + ep.t + "</b>, then the games it unlocks.");
+        } catch (e) {}
+        document.getElementById("recapTitle").textContent = "Here's what " + nm + " just did";
+        document.getElementById("recapList").innerHTML = out.map(function (l) { return "<li>" + l + "</li>"; }).join("");
+        document.getElementById("recapCard").style.display = "block";
       } catch (e) {}
     })();
 
