@@ -517,6 +517,41 @@ ok("no pageerrors", errs.length === 0, errs.join(" | "));
   await c6.close();
 }
 
+// ── THERE IS NO LIFETIME PRODUCT, AND THERE MUST NOT BE ONE ───────────
+// /api/subscription used to scan Checkout Sessions for a one-time purchase and
+// answer kind: "lifetime". Nothing in this codebase has ever SOLD one —
+// /api/checkout opens subscription mode and only that — so the scan could only
+// match something bought outside the app, and in its original form it matched
+// paid SUBSCRIPTION sessions too, which is exactly how a cancelled subscriber
+// restored permanent access. Travis retired the idea outright on 19 Sep 2026.
+// Access comes from a live subscription: the one thing that can expire.
+{
+  // CODE, not commentary. The route's header explains WHY lifetime is gone and
+  // therefore contains the very string being banned — the same describing-vs-
+  // disavowing trap the README pin hit. Strip comments and ask what the code
+  // actually does; the explanation is worth keeping and must not be squeezed
+  // out by its own check.
+  const strip = (t) => t.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+  const sub = strip(readFileSync(ROOT + "/../app/api/subscription/route.ts", "utf8"));
+  const chk = strip(readFileSync(ROOT + "/../app/api/checkout/route.ts", "utf8"));
+  ok("the restore route never answers lifetime",
+    !/kind:\s*"lifetime"/.test(sub),
+    "permanent access that no product grants is a hole, not a plan");
+  ok("…and no longer walks Checkout Sessions looking for one",
+    !/checkout\.sessions\.list/.test(sub),
+    "a paid session is a receipt for something that happened once, not live access");
+  ok("…so access can only come from a subscription that is currently alive",
+    /kind:\s*"subscription"/.test(sub) && /status === "active" \|\| s\.status === "trialing"/.test(sub));
+  ok("checkout sells a subscription and nothing else",
+    /mode:\s*"subscription"/.test(chk) && !/mode:\s*"payment"/.test(chk),
+    "a one-time mode here is how a lifetime product would come back");
+  // the retired monthly plan is a different thing and must survive: those
+  // people are still billed, and a reinstall has to come back paid
+  ok("…while an existing monthly subscriber still restores",
+    !/interval|"month"/.test(sub.split("const customers")[1] || ""),
+    "the subscription check is interval-agnostic on purpose");
+}
+
 // ── ENTITLEMENT LIFECYCLE: access must be able to END ─────────────────
 // SEC2 fixed two halves of one bug and pinned neither, which is how it got
 // shipped in the first place: iapRefresh granted and never revoked (cached
