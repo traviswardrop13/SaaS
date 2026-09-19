@@ -186,6 +186,13 @@
 
   function load(key, def) { try { const v = JSON.parse(localStorage.getItem(_k(key))); return (v && typeof v === "object") ? v : clone(def); } catch { return clone(def); } }
   function save(key, val) { try { localStorage.setItem(_k(key), JSON.stringify(val)); } catch {} }
+  // Write to the child who was active when the work STARTED, not whoever is
+  // active when it finishes. save() resolves _k() at write time, which is
+  // right for anything synchronous and wrong for anything that awaits: a
+  // response that arrives after a switch lands under the wrong name.
+  function saveFor(slot, key, val) {
+    try { localStorage.setItem((slot && PER_KID.has(key)) ? key + "@" + slot : key, JSON.stringify(val)); } catch {}
+  }
 
   // The switcher's list, each entry carrying the name from that kid's OWN
   // profile (the cached name goes stale the moment a parent renames a child).
@@ -479,13 +486,26 @@
   // Pull the assignment, and report this child's rep total against the one we
   // are currently holding. Fire-and-forget, at most hourly, and every failure
   // path leaves the cached copy exactly where it was.
-  let _hwAt = 0;
+  // THE THROTTLE IS PER CHILD. One shared timestamp meant that after the first
+  // child synced, a sibling switched to within the hour was refused their own
+  // fetch entirely — so a second child on the same iPad could go an hour
+  // without ever seeing the assignment their SLP had just written.
+  const _hwAt = {};
   function syncHomework(force) {
     try {
       if (!isPilot()) return Promise.resolve(null);
       const now = Date.now();
-      if (!force && now - _hwAt < 3600000) return Promise.resolve(homework());
-      _hwAt = now;
+      // Pin the child HERE. Everything below — the credential, the rep count,
+      // and above all the write — belongs to whoever is active at this
+      // instant, and a parent can switch children while the request is in
+      // flight. Without this, child A's SLP assignment was saved into child
+      // B's slot, and B then practised A's sound at A's word position with
+      // A's reps reported against it. Clinical data crossing children is the
+      // exact failure the per-child pilot key was split to prevent; this is
+      // the asynchronous half of it.
+      const slot = _slot();
+      if (!force && now - (_hwAt[slot] || 0) < 3600000) return Promise.resolve(homework());
+      _hwAt[slot] = now;
       const pi = pilotInfo(), code = pi.code || "", childId = pi.childId || "";
       let ticket = ""; try { ticket = localStorage.getItem("sona.slpticket") || ""; } catch (e) {}
       if (!code || !childId || !ticket) return Promise.resolve(null);
@@ -498,7 +518,10 @@
       return fetch("/api/homework", {
         method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
       }).then((r) => r.json()).then((j) => {
-        if (j && j.ok) save(HWKEY, { hw: j.hw || null, at: Date.now() });
+        if (j && j.ok) saveFor(slot, HWKEY, { hw: j.hw || null, at: Date.now() });
+        // homework() reads whoever is active NOW, which is the honest answer
+        // for a caller that is still on this child and correctly reads the
+        // other child's assignment for a caller that has switched.
         return homework();
       }).catch(() => homework());
     } catch (e) { return Promise.resolve(null); }
@@ -3298,5 +3321,5 @@
   try { _grandfatherFreeEra3(); } catch (e) {}
   try { installDebug(); } catch (e) {}
 
-  global.Sona = { pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, ladderContent, FREE_MODE, isFree, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, gated, gateVerify, gateOk, requireGate, gateDest, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, planMoment, planEligible, planShown, speak, speakNow, speakUnlock, speechAvailable, speechPerm, speechStart, speechStop, hearVerdict, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repsBeacon, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES };
+  global.Sona = { pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, saveFor, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, ladderContent, FREE_MODE, isFree, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, gated, gateVerify, gateOk, requireGate, gateDest, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, planMoment, planEligible, planShown, speak, speakNow, speakUnlock, speechAvailable, speechPerm, speechStart, speechStop, hearVerdict, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repsBeacon, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES };
 })(window);
