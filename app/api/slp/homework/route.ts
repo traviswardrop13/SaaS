@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { readSession, kvCmd, kvConfigured } from "@/lib/slpAuth";
+import { readSession, kvCmd, kvConfigured, rosterKey } from "@/lib/slpAuth";
 import {
   normalizeHomework, readHomework, writeHomework, readAllHomework, hwStatus, isActive,
   type HomeworkRecord,
@@ -30,7 +30,7 @@ async function codeFor(email: string): Promise<string> {
 /** The child's roster row, for the age the norm check needs and the name we echo back. */
 async function rosterChild(code: string, childId: string): Promise<{ child?: string; age?: string } | null> {
   try {
-    const raw = await kvCmd(["HGET", "slp:" + code, childId]);
+    const raw = await kvCmd(["HGET", rosterKey(code), childId]);
     return raw ? (JSON.parse(String(raw)) as { child?: string; age?: string }) : null;
   } catch {
     return null;

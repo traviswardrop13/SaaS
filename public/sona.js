@@ -153,6 +153,14 @@
     "sona.stickers.v1", "sona.attempts.v1", "sona.outcomes.v1",
     "sona.lib.read.v1", "sona.feed.v1", "sona.call.v1", "sona.callhist.v1",
     "sona.games.v1", "sona.homework.v1",
+    // PER-CHILD, and it must be. This key holds the clinician code, the
+    // reporting childId and the grown-up's CONSENT to share. While it was
+    // shared, two siblings on one iPad reported under ONE childId: the roster
+    // row was overwritten by whichever child practised last, so a clinician
+    // saw one child's name against the other's outcomes — and homework
+    // assigned to one arrived on the other's profile. Consent was also
+    // inherited silently, which is the part that is not just a bug.
+    "sona.pilot.v1",
   ]);
   function _kids() {
     let v = null;

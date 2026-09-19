@@ -148,6 +148,90 @@ export function readTicket(token: string | undefined | null, code: string): Tick
   }
 }
 
+/**
+ * THE canonical roster key. A clinic code reaches the server in whatever case
+ * the caller happened to use: the client uppercases it (`slpJoinCaseload`),
+ * account creation slugifies it to lowercase, and tickets are signed and
+ * verified lowercased. Redis keys are case-sensitive, so before this existed
+ * a family enrolling through the normal link wrote `slp:RACHEL-K4` while the
+ * clinician's dashboard read `slp:rachel-k4` — the write succeeded, the ticket
+ * verified (because ticket checks normalise), and the roster stayed EMPTY.
+ * Silent, and it broke the SLP channel end to end.
+ *
+ * Every read and every write of a roster goes through here. Nothing should
+ * ever build "slp:" + code by hand again.
+ */
+export function rosterKey(code: string): string {
+  return "slp:" + String(code || "").toLowerCase();
+}
+
+/**
+ * Recover families enrolled while the bug above was live. Their rows sit under
+ * the uppercase key and are invisible to the clinician. This merges them into
+ * the canonical key and removes the stray, WITHOUT overwriting anything that
+ * already exists there — a row written since the fix is the newer truth.
+ *
+ * Idempotent and cheap: after the first successful heal the legacy key is gone
+ * and this costs one EXISTS. Safe to call on every dashboard read, which is
+ * exactly where a clinician would otherwise be staring at an empty caseload.
+ */
+export async function healLegacyRoster(code: string): Promise<number> {
+  const canon = rosterKey(code);
+  const legacy = "slp:" + String(code || "").toUpperCase();
+  if (legacy === canon) return 0;                       // already canonical
+  try {
+    const flat = await kvCmd(["HGETALL", legacy]);
+    if (!Array.isArray(flat) || flat.length === 0) return 0;
+    let moved = 0;
+    for (let i = 0; i < flat.length; i += 2) {
+      const field = String(flat[i]);
+      const value = String(flat[i + 1]);
+      // HSETNX: never clobber a row the family has already re-written under
+      // the correct key since the fix shipped.
+      const wrote = await kvCmd(["HSETNX", canon, field, value]);
+      if (wrote === 1) moved++;
+    }
+    await kvCmd(["EXPIRE", canon, 60 * 60 * 24 * 150]);
+    await kvCmd(["DEL", legacy]);
+    return moved;
+  } catch {
+    return 0;                                           // never break a read
+  }
+}
+
+/**
+ * Ownership of a child's roster row, for tickets that carry no `cid`.
+ *
+ * Tickets minted before the binding existed — and, until this shipped, tickets
+ * minted TODAY when the caller omitted childId — prove only "this device
+ * passed a clinic's code+key". That is enough to write a row; it is NOT enough
+ * to choose WHICH row, or one family on a caseload could overwrite another
+ * child's name, outcomes and streak.
+ *
+ * So an unbound ticket binds itself on first use: the child it claims first is
+ * the child it may write for, forever. Legitimate families are unaffected (they
+ * always send their own id); an attacker with a stolen unbound ticket is
+ * confined to whatever it already claimed. New tickets carry `cid` and never
+ * reach this path.
+ */
+export async function ticketOwnsChild(ticket: string, childId: string): Promise<boolean> {
+  if (!childId) return false;
+  const key = "tktcid:" + hashToken(ticket);
+  try {
+    const seen = await kvCmd(["GET", key]);
+    if (seen) return String(seen) === childId;
+    // first use: claim it, and only accept the claim if we won the race
+    const won = await kvCmd(["SET", key, childId, "NX", "EX", 60 * 60 * 24 * 400]);
+    if (won) return true;
+    const now = await kvCmd(["GET", key]);
+    return String(now || "") === childId;
+  } catch {
+    // KV unreachable: fail CLOSED. A roster write that cannot be attributed to
+    // a child is exactly the write this function exists to refuse.
+    return false;
+  }
+}
+
 export function verifyTicket(token: string | undefined | null, code: string): boolean {
   return !!readTicket(token, code);
 }

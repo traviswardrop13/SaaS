@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { readSession } from "@/lib/slpAuth";
+import { readSession, rosterKey, healLegacyRoster } from "@/lib/slpAuth";
 
 /**
  * SLP master roster — returns each family's latest progress for the SIGNED-IN
@@ -54,7 +54,13 @@ export async function GET(req: NextRequest) {
   }
   if (!code) return NextResponse.json({ ok: true, configured: true, kids: [] });
 
-  const flat = await kvCmd(["HGETALL", "slp:" + code]);
+  // Families who enrolled while the roster key was case-mismatched wrote to
+  // slp:<UPPERCASE> and have been invisible here ever since. Pull them back
+  // before reading — idempotent, and this is the screen where their absence
+  // would otherwise look like "nobody signed up".
+  await healLegacyRoster(code);
+
+  const flat = await kvCmd(["HGETALL", rosterKey(code)]);
   const kids: { at?: string }[] = [];
   if (Array.isArray(flat)) {
     for (let i = 0; i < flat.length; i += 2) {

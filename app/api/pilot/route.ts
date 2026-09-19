@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { rateLimit } from "@/lib/rateLimit";
-import { verifyTicket } from "@/lib/slpAuth";
+import { readTicket, rosterKey, ticketOwnsChild } from "@/lib/slpAuth";
 
 /**
  * Pilot outcome capture — receives a child's CONSENTED practice progress and
@@ -56,7 +56,8 @@ export async function POST(req: NextRequest) {
 
   const code = typeof body.code === "string" ? body.code.slice(0, 48) : "";
   const ticket = typeof body.ticket === "string" ? body.ticket : (req.headers.get("x-sona-ticket") || "");
-  if (!code || !verifyTicket(ticket, code)) {
+  const t = code ? readTicket(ticket, code) : null;
+  if (!t) {
     return NextResponse.json({ ok: false, error: "enrolment not verified" }, { status: 401 });
   }
 
@@ -72,13 +73,33 @@ export async function POST(req: NextRequest) {
   try {
     const b = body as Record<string, any>;
     const childId = typeof b.childId === "string" ? b.childId.slice(0, 48) : "";
+
+    // WHICH child this ticket may write for. Verifying the ticket only proves
+    // the device passed SOME family's code+key for this clinic — it says
+    // nothing about whose row this is. Without the check below, a family
+    // holding a valid ticket could post under another child's id and replace
+    // that child's name, age, outcomes, sessions and streak on a real
+    // clinician's dashboard, as clinical fact.
+    //
+    // Tickets minted since the binding carry `cid` and are checked directly.
+    // Older unbound ones bind to the first child they claim (see
+    // ticketOwnsChild) so existing families keep syncing without a break,
+    // while a stolen ticket stays confined to one row.
+    if (childId) {
+      const owns = t.cid ? t.cid === childId : await ticketOwnsChild(ticket, childId);
+      if (!owns) {
+        return NextResponse.json({ ok: false, error: "not your child" }, { status: 403 });
+      }
+    }
+
+    const key = rosterKey(code);           // canonical — never build this by hand
     if (code && childId) {
       // Cap the roster. An UPDATE to a child already on it is always allowed —
       // the cap must never freeze a real family's progress — but a NEW child
       // beyond the cap is refused.
-      const known = await kvCmd(["HEXISTS", "slp:" + code, childId]);
+      const known = await kvCmd(["HEXISTS", key, childId]);
       if (known !== 1) {
-        const size = await kvCmd(["HLEN", "slp:" + code]);
+        const size = await kvCmd(["HLEN", key]);
         if (typeof size === "number" && size >= ROSTER_CAP) {
           return NextResponse.json({ ok: false, error: "roster is full" }, { status: 429 });
         }
@@ -94,8 +115,8 @@ export async function POST(req: NextRequest) {
         streak: b.streak || 0,
         at: b.at || new Date().toISOString(),
       }).slice(0, 16000);
-      await kvCmd(["HSET", "slp:" + code, childId, rec]);
-      await kvCmd(["EXPIRE", "slp:" + code, 60 * 60 * 24 * 150]); // ~5 months
+      await kvCmd(["HSET", key, childId, rec]);
+      await kvCmd(["EXPIRE", key, 60 * 60 * 24 * 150]); // ~5 months
     }
   } catch {
     // roster is best-effort

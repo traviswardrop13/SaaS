@@ -432,6 +432,104 @@ const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL 
   await ctx.close();
 }
 
+// ── 4b. SIBLINGS ARE SEPARATE CHILDREN TO THE CLINICIAN ──
+// `sona.pilot.v1` held the clinician code, the reporting childId AND the
+// grown-up's consent — and it sat OUTSIDE PER_KID. Two children on one iPad
+// therefore reported under ONE childId: the roster row was overwritten by
+// whichever sibling practised last, so a clinician read one child's name
+// against the other's outcomes, and homework assigned to one arrived on the
+// other's profile. The sibling also inherited the sharing consent without
+// anyone agreeing to it, which is the part that is not merely a bug.
+//
+// This asserts the OUTGOING payloads, not local progress — the earlier
+// per-child work all passed while the wire still carried one id.
+{
+  const ctx = await browser.newContext();
+  const pg = await ctx.newPage();
+  pilotPosts.length = 0;
+  await pg.goto("http://localhost:8155/join.html?slp=rachel-k4&k=RACHELKEY");
+  await pg.waitForTimeout(900);
+  await pg.evaluate(() => document.getElementById("jYes").click());
+  await pg.waitForTimeout(700);
+  const first = pilotPosts.slice();
+  ok("the enrolled child reports to the clinician", first.length > 0, JSON.stringify(first.length));
+
+  // a sibling is added on the same device and practises
+  pilotPosts.length = 0;
+  const sib = await pg.evaluate(async () => {
+    const slot = Sona.addKid("Sibling", "5");
+    Sona.switchKid(slot);
+    const inherited = Sona.isPilot();          // must be FALSE: nobody consented for them
+    Sona.sendProgress("enroll");               // ...so this must send nothing
+    await new Promise((r) => setTimeout(r, 400));
+    return { slot, inherited };
+  });
+  await pg.waitForTimeout(400);
+  ok("a sibling does NOT inherit the grown-up's sharing consent",
+    sib.inherited === false, JSON.stringify(sib));
+  ok("…and nothing about them reaches the clinician until someone enrols them",
+    pilotPosts.length === 0, JSON.stringify(pilotPosts.map((b) => b.child)));
+
+  // when the sibling IS enrolled, they must be a DIFFERENT row
+  pilotPosts.length = 0;
+  const two = await pg.evaluate(async () => {
+    Sona.startPilot("RACHEL-K4");
+    Sona.sendProgress("enroll");
+    await new Promise((r) => setTimeout(r, 400));
+    return Sona.pilotInfo().childId;
+  });
+  await pg.waitForTimeout(400);
+  const firstId = (first[0] || {}).childId || "";
+  ok("an enrolled sibling gets their OWN reporting identity",
+    two && firstId && two !== firstId, JSON.stringify({ firstId, siblingId: two }));
+  ok("…so the clinician receives two rows, not one overwritten one",
+    pilotPosts.length > 0 && pilotPosts.every((b) => b.childId === two),
+    JSON.stringify(pilotPosts.map((b) => ({ id: b.childId, child: b.child }))));
+
+  // and switching back must not disturb the first child's identity
+  const back = await pg.evaluate(() => { Sona.switchKid(""); return Sona.pilotInfo().childId; });
+  ok("switching back restores the first child's identity, unchanged",
+    back === firstId, JSON.stringify({ back, firstId }));
+  await ctx.close();
+}
+
+// ── 4c. the roster key is canonical, and the child binding is enforced ──
+// Server-side contracts for two findings that no browser test can reach.
+{
+  const APP = ROOT + "/..";
+  const auth = readFileSync(APP + "/lib/slpAuth.ts", "utf8");
+  const pilot = readFileSync(APP + "/app/api/pilot/route.ts", "utf8");
+  const dash = readFileSync(APP + "/app/api/slp/route.ts", "utf8");
+  const hw = readFileSync(APP + "/app/api/slp/homework/route.ts", "utf8");
+
+  ok("there is ONE canonical roster key, and it lowercases",
+    /export function rosterKey[\s\S]{0,160}toLowerCase\(\)/.test(auth),
+    "the client uppercases the code and the dashboard reads lowercase — Redis keys are case-sensitive");
+  for (const [name, src] of [["pilot write", pilot], ["dashboard read", dash], ["homework roster read", hw]]) {
+    ok(`the ${name} goes through rosterKey()`,
+      /rosterKey\(/.test(src) && !/"slp:" *\+/.test(src),
+      "a hand-built key is how the write and the read drifted apart silently");
+  }
+  ok("families stranded under the old uppercase key are recovered on read",
+    /healLegacyRoster/.test(auth) && /healLegacyRoster\(/.test(dash),
+    "without this, everyone who enrolled while the keys mismatched stays invisible forever");
+  ok("…and the recovery never clobbers a row written since the fix",
+    /HSETNX/.test(auth));
+
+  ok("the pilot route READS its ticket, so the child binding is visible",
+    /readTicket\(/.test(pilot) && !/verifyTicket\(/.test(pilot),
+    "verifyTicket is a clinic-wide boolean — it cannot tell you WHOSE row this is");
+  ok("a ticket may only write the child it is bound to",
+    /t\.cid \? t\.cid === childId : await ticketOwnsChild\(/.test(pilot),
+    "otherwise one family on a caseload overwrites another child's name, outcomes and streak");
+  ok("…and an unbound ticket binds to the first child it claims",
+    /export async function ticketOwnsChild[\s\S]{0,700}"NX"/.test(auth),
+    "legacy tickets keep working, but stay confined to one row");
+  ok("…failing CLOSED when the store is unreachable",
+    /export async function ticketOwnsChild[\s\S]{0,900}catch \{[\s\S]{0,200}return false;/.test(auth),
+    "an unattributable roster write is the write this check exists to refuse");
+}
+
 // ── 5. founder access: the owners skip the paywall on any device ──
 {
   const pg = await (await browser.newContext()).newPage();
@@ -514,7 +612,12 @@ const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL 
     /const NO_IMPORT = \[/.test(sona) && /sona\.sub\.v1/.test(sona) && /delete p\.earlyAdopter/.test(sona),
     "importData wrote any sona.* key verbatim — a backup code was a paste-in paywall bypass");
   const pilotSrc = readFileSync(ROOT + "/../app/api/pilot/route.ts", "utf8");
-  ok("the roster route authenticates the write", /verifyTicket\(ticket, code\)/.test(pilotSrc) && /status: 401/.test(pilotSrc),
+  // This used to pin `verifyTicket(ticket, code)` BY NAME, which quietly
+  // locked in the weaker check: verifyTicket is a clinic-wide boolean and
+  // cannot say whose row a write belongs to. The route now reads the ticket.
+  // Pin the guarantee — an unauthenticated write is refused — not the helper.
+  ok("the roster route authenticates the write",
+    /readTicket\(ticket, code\)/.test(pilotSrc) && /status: 401/.test(pilotSrc),
     "any POST that named a code could invent a child on a real clinician's dashboard");
   ok("the roster route is rate limited", /rateLimit\(req/.test(pilotSrc));
   ok("a leaked credential can't invent a thousand children", /ROSTER_CAP/.test(pilotSrc) && /HEXISTS/.test(pilotSrc),
@@ -532,7 +635,10 @@ const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL 
   ok("founder key comparison is constant-time", /timingSafeEqual/.test(founder));
 }
 
-ok("no unexpected redeem spam", redeemCalls <= 6, String(redeemCalls));
+// One more than before: the sibling block opens join.html to enrol a real
+// family before adding the second child. The point of this cap is that no
+// code path redeems in a loop, not the exact number.
+ok("no unexpected redeem spam", redeemCalls <= 8, String(redeemCalls));
 await browser.close(); srv.close();
 console.log(fails ? fails + " FAILURES" : "ALL GREEN");
 process.exit(fails ? 1 : 0);
