@@ -1687,14 +1687,39 @@
   // real fix is an emailed one-time code (needs RESEND_API_KEY). The endpoint
   // is rate-limited server-side as the interim guard; the secure hand-off path
   // is the single-use move-in code, not this.
+  // WEB RESTORE. Same lifecycle as iapRefresh: an authoritative answer is
+  // acted on, a network failure is not. This used to grant on active and do
+  // NOTHING on inactive, so a cancelled Stripe subscriber stayed unlocked
+  // forever — and the restore screen would cheerfully tell them "no
+  // subscription found" while the app they were holding stayed open.
+  //
+  // Two guards on the revoke, and both matter:
+  //   • the email must be the one the cached access was granted to. Stripe
+  //     answers about an ADDRESS, not a device. A parent who mistypes, or
+  //     checks their partner's address, gets an honest "nothing here" about
+  //     someone else's account — that says nothing about their own.
+  //   • Apple-sourced access is never touched here, exactly as iapRefresh
+  //     never touches Stripe's. Founder unlocks, SLP credentials, pilots and
+  //     the grandfathered free eras are separate grants entirely and are not
+  //     stored here at all, so they cannot be reached from this path.
   async function restore(email) {
     email = (email || "").trim();
     if (!/^\S+@\S+\.\S+$/.test(email)) return { ok: false, error: "Enter a valid email." };
     try {
       const r = await fetch("/api/subscription?email=" + encodeURIComponent(email));
       const j = await r.json();
-      if (j && j.ok && j.active) { saveSub({ active: true, email: email }); return { ok: true, active: true }; }
-      if (j && j.ok) return { ok: true, active: false };
+      if (j && j.ok && j.active) {
+        saveSub({ active: true, email: email, source: "stripe", since: Date.now(), checked: Date.now() });
+        return { ok: true, active: true };
+      }
+      if (j && j.ok) {
+        try {
+          const cur = getSub();
+          const sameAccount = !!(cur.email && cur.email.toLowerCase() === email.toLowerCase());
+          if (cur.active && sameAccount && cur.source !== "apple") saveSub({ active: false, since: 0, checked: Date.now() });
+        } catch (e) {}
+        return { ok: true, active: false };
+      }
       return { ok: false, error: (j && j.error) || "Couldn’t check right now." };
     } catch (e) { return { ok: false, error: "Network error. Try again." }; }
   }

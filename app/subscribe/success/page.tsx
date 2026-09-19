@@ -64,11 +64,15 @@ export default function SubscribeSuccess() {
         setPaid(true);
 
         // Access flag for the static app — Stripe stays the source of truth.
+        // source: "stripe" is load-bearing, not decoration: iapRefresh clears
+        // only apple-sourced access and web restore clears only non-apple
+        // access, so an unlabelled grant belongs to no rail and can be revoked
+        // by the wrong one.
         try {
           const prev = JSON.parse(localStorage.getItem("sona.sub.v1") || "{}");
           localStorage.setItem(
             "sona.sub.v1",
-            JSON.stringify({ ...prev, active: true, since: Date.now(), session: sessionId, plan: planQ, email: j.email || prev.email || null }),
+            JSON.stringify({ ...prev, active: true, source: "stripe", since: Date.now(), checked: Date.now(), session: sessionId, plan: planQ, email: j.email || prev.email || null }),
           );
         } catch {
           // ignore — non-blocking

@@ -345,9 +345,19 @@ const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL 
   ok("the dashboard's family link carries the key (an entitlement, not an honor system)",
     /familyKey[\s\S]{0,200}"&k="/.test(dash), "a keyless link unlocked Sona for anyone it was forwarded to");
   const succ = readFileSync(ROOT + "/../app/subscribe/success/page.tsx", "utf8");
-  ok("the success page grants NOTHING before Stripe confirms the session",
-    /if \(!j \|\| !j\.ok\) return;[\s\S]{0,900}sona\.sub\.v1[\s\S]{0,200}active: true/.test(succ),
-    "writing the entitlement on mount made the URL itself a free subscription");
+  // ORDER, not distance. This measured character windows (900, then 200) and
+  // a four-line comment added between the key and the flag pushed the grant
+  // out of range — a green-to-red flip with no behaviour change, which is the
+  // same brittleness that took down day1 and hwtest. What matters is that the
+  // write happens AFTER the confirmation guard, and that is what it now asks.
+  {
+    const guard = succ.indexOf("if (!j || !j.ok) return;");
+    const key = succ.indexOf('"sona.sub.v1",');
+    const grant = succ.indexOf("active: true");
+    ok("the success page grants NOTHING before Stripe confirms the session",
+      guard > -1 && key > guard && grant > guard,
+      "writing the entitlement on mount made the URL itself a free subscription");
+  }
   ok("an unconfirmed load is told the truth instead of 'You're in!'",
     /fetched && !paid/.test(succ) && /couldn&apos;t confirm a purchase/i.test(succ));
   ok("conversion events fire only on a confirmed purchase",

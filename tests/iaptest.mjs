@@ -4,8 +4,9 @@
 // Restore + Terms/Privacy links and full auto-renew terms; purchase →
 // unlock on the "full" entitlement, restore → unlock, and today.html must
 // quiet-sync entitlements on load. Web (no bridge) keeps the Stripe picker.
-// SONA IS FREE (FREE_MODE on), so every paid assertion below runs behind the
-// ?paid=1 / sona.paidui QA seam. That is the seam's whole job: the purchase
+// The pricing switch has flipped eleven times in seven weeks, so every paid
+// assertion below runs behind the ?paid=1 / sona.paidui QA seam rather than
+// assuming today's answer. That is the seam's whole job: the purchase
 // rails stay exercised while nobody is charged, so pricing is one boolean away
 // instead of one archaeology project away. The seam only affects VISIBILITY —
 // it grants nothing and moves no money.
@@ -58,7 +59,9 @@ await page.addInitScript(() => {
         },
         purchaseStoreProduct: async () => { window.__iap.purchases++; setEnt(true); return info(); },
         restorePurchases: async () => { window.__iap.restores++; setEnt(true); return info(); },
-        getCustomerInfo: async () => info(),
+        // __iapFail lets a test make Apple UNREACHABLE, which is a different
+        // answer from "not entitled" and must be treated differently.
+        getCustomerInfo: async () => { if (localStorage.getItem("__iapFail") === "1") throw new Error("offline"); return info(); },
       },
     },
   };
@@ -502,6 +505,107 @@ ok("no pageerrors", errs.length === 0, errs.join(" | "));
   ok("…and pays once those days run out, whenever pricing is on",
     fresh.gated === true, JSON.stringify(fresh));
   await c6.close();
+}
+
+// ── ENTITLEMENT LIFECYCLE: access must be able to END ─────────────────
+// SEC2 fixed two halves of one bug and pinned neither, which is how it got
+// shipped in the first place: iapRefresh granted and never revoked (cached
+// active short-circuited the check, and an inactive answer left the flag
+// alone), and web restore() did the same on the Stripe side. The rule these
+// assert is narrow and has to stay narrow — an AUTHORITATIVE inactive from
+// one rail clears ONLY that rail's own grant, and an unreachable store clears
+// nothing at all.
+{
+  const ctx = await browser.newContext();
+  const pg = await ctx.newPage();
+  await pg.addInitScript(() => {
+    window.__iap = { purchases: 0, restores: 0, configured: 0 };
+    const entitled = () => localStorage.getItem("__iapEntitled") === "1";
+    const info = () => ({ customerInfo: { entitlements: { active: entitled() ? { full: { isActive: true } } : {} } } });
+    window.Capacitor = { isNativePlatform: () => true, Plugins: { Purchases: {
+      configure: async () => { window.__iap.configured++; },
+      getProducts: async () => ({ products: [{ identifier: "com.speaksona.app.annual", priceString: "$59.99" }] }),
+      purchaseStoreProduct: async () => info(),
+      restorePurchases: async () => info(),
+      getCustomerInfo: async () => { window.__iap.checks = (window.__iap.checks || 0) + 1; if (localStorage.getItem("__iapFail") === "1") throw new Error("offline"); return info(); },
+    } } };
+    localStorage.setItem("sona.freeera.v1", "post"); localStorage.setItem("sona.freeera2.v1", "done"); localStorage.setItem("sona.freeera3.v1", "done");
+    localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Ada", childAge: "7", focusSounds: ["R"], onboarded: true }));
+    sessionStorage.setItem("sona.gate.v1", String(Date.now()));
+  });
+  await pg.goto("http://localhost:8147/today.html"); await pg.waitForTimeout(600);
+
+  const appleSays = (entitled, opts) => pg.evaluate(async (o) => {
+    localStorage.setItem("__iapEntitled", o.entitled ? "1" : "0");
+    localStorage.setItem("__iapFail", o.offline ? "1" : "0");
+    localStorage.setItem("sona.sub.v1", JSON.stringify(o.sub));
+    if (o.checkedAt === null) localStorage.removeItem("sona.iapcheck.v1");
+    else localStorage.setItem("sona.iapcheck.v1", String(o.checkedAt));
+    const before = window.__iap.checks || 0;
+    const r = await Sona.iapRefresh();
+    return { r, sub: JSON.parse(localStorage.getItem("sona.sub.v1") || "{}"), calls: (window.__iap.checks || 0) - before,
+             stamped: parseInt(localStorage.getItem("sona.iapcheck.v1") || "0", 10) };
+  }, Object.assign({ entitled, offline: false, checkedAt: null, sub: { active: true, source: "apple" } }, opts || {}));
+
+  let r = await appleSays(false, {});
+  ok("Apple says inactive: apple-sourced access is revoked",
+    r.r === false && r.sub.active === false, JSON.stringify(r));
+
+  r = await appleSays(false, { sub: { active: true, source: "stripe", email: "a@b.com" } });
+  ok("…but a Stripe subscription is NOT revoked by Apple's answer",
+    r.sub.active === true && r.sub.source === "stripe", JSON.stringify(r));
+
+  r = await appleSays(true, { offline: true, sub: { active: true, source: "apple" } });
+  ok("Apple unreachable is not a cancellation — access survives",
+    r.r === true && r.sub.active === true, JSON.stringify(r));
+  ok("…and the check clock is not stamped, so the next open tries again",
+    r.stamped === 0, JSON.stringify(r));
+
+  r = await appleSays(true, { checkedAt: Date.now() });
+  ok("a recent check is trusted without another call (the offline grace)",
+    r.r === true && r.calls === 0, JSON.stringify(r));
+
+  r = await appleSays(false, { checkedAt: Date.now() - 7 * 3600 * 1000 });
+  ok("…but a stale one is re-verified, so a cancellation eventually lands",
+    r.calls === 1 && r.sub.active === false, JSON.stringify(r));
+
+  // ── the same discipline on the web rail ──
+  const webSays = (active, opts) => pg.evaluate(async (o) => {
+    localStorage.setItem("sona.sub.v1", JSON.stringify(o.sub));
+    window.__subReply = o.reply;
+    const r = await Sona.restore(o.email);
+    return { r, sub: JSON.parse(localStorage.getItem("sona.sub.v1") || "{}") };
+  }, Object.assign({ reply: { ok: true, active }, email: "parent@example.com",
+                     sub: { active: true, source: "stripe", email: "parent@example.com" } }, opts || {}));
+
+  await pg.route("**/api/subscription**", async (route) => {
+    const reply = await pg.evaluate(() => window.__subReply);
+    if (!reply) return route.fulfill({ status: 500, body: "{}" });
+    if (reply.boom) return route.abort("failed");
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(reply) });
+  });
+
+  r = await webSays(true, { sub: { active: false } });
+  ok("Stripe says active: access is granted and labelled stripe",
+    r.r.active === true && r.sub.active === true && r.sub.source === "stripe", JSON.stringify(r));
+
+  r = await webSays(false, {});
+  ok("Stripe says inactive for THIS account: access ends",
+    r.r.active === false && r.sub.active === false, JSON.stringify(r));
+
+  r = await webSays(false, { email: "someone.else@example.com" });
+  ok("…but an inactive answer about ANOTHER address revokes nothing",
+    r.sub.active === true, "a mistyped email must not lock a paying family out: " + JSON.stringify(r));
+
+  r = await webSays(false, { sub: { active: true, source: "apple", email: "parent@example.com" } });
+  ok("…and a web answer never clears Apple-sourced access",
+    r.sub.active === true && r.sub.source === "apple", JSON.stringify(r));
+
+  r = await webSays(false, { reply: { boom: true } });
+  ok("a failed request is not a cancellation on the web rail either",
+    r.r.ok === false && r.sub.active === true, JSON.stringify(r));
+
+  await ctx.close();
 }
 
 // ── the ask lands AFTER the product has proved itself, never before ──
