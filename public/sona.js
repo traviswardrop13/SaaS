@@ -1685,7 +1685,17 @@
   const DEMOKEY = "sona.demo.v1";
   function demoState() { try { return JSON.parse(localStorage.getItem(DEMOKEY) || "null") || { started: 0, done: 0 }; } catch (e) { return { started: 0, done: 0 }; } }
   function _demoSave(d) { try { localStorage.setItem(DEMOKEY, JSON.stringify(d)); } catch (e) {} }
-  function demoDone() { return !!demoState().done; }
+  // THE DEMONSTRATION HAS A WINDOW. Without one, a family who never FINISHED a
+  // run was never gated: story + practice + games, every day, free, for as
+  // long as they never reached the win screen. Three days from the first real
+  // practice is the whole of what the old trial promised, and it is generous
+  // to a family who started at bedtime. It never closes mid-run — see gated().
+  const DEMO_WINDOW_MS = 72 * 3600 * 1000;
+  function demoDone() {
+    const d = demoState();
+    if (d.done) return true;
+    return !!(d.started && (Date.now() - d.started) > DEMO_WINDOW_MS);
+  }
   function demoStart() {
     const d = demoState();
     if (d.done || d.started) return d;        // explicit state, so a refresh or
@@ -1717,12 +1727,37 @@
   // the one run this family was shown for free, and it stays replayable after
   // they decline, forever. Everything else gates normally once the
   // demonstration is done — replayable does not mean the product is free.
+  // A RUN THAT HAS STARTED IS NEVER GATED. charge.html keeps the daily run in
+  // sessionStorage and hands the child off to an arcade page and back, five
+  // times — every one of those is a page load, and every one of them asks the
+  // gate. The demo replay was bouncing at its FIRST earned game because the
+  // arcade pages ask with no activity name and the round trip carried no demo
+  // flag: a child practised, earned the game, tapped it, and met a price. And
+  // the demonstration's window, if it closed between round two and round
+  // three, would have done the same to a family mid-adventure.
+  //
+  // This is not a hole. A run record exists only because charge.html already
+  // passed this gate when the run began, so honouring it merely extends a
+  // permission that was already granted to the end of the thing it was granted
+  // for. It is one sitting: sessionStorage, gone with the tab.
+  const RUNKEY = "sona.run.v1";
+  function runActive() {
+    try { const r = JSON.parse(sessionStorage.getItem(RUNKEY) || "null"); return !!(r && r.active); } catch (e) { return false; }
+  }
+  // Where a GATED KID PAGE sends the child. It used to be /trial.html — a price
+  // screen, with the child's name on it, reached by a child tapping a game.
+  // Home tells them to ask a grown-up; the grown-up finds the price behind the
+  // gate, in the parent corner, which is the only place a price belongs.
+  function gateBounce() {
+    try { location.replace("/today.html?locked=1"); } catch (e) {}
+  }
   function gated(what) {
     if (isFree()) return false;
     if (isFounder()) return false;
     if (slpVerified()) return false;                 // device redeemed a valid SLP credential
     if (isSubscribed() || isPilot()) return false;
     if (earlyAdopterAnyKid()) return false;
+    if (runActive()) return false;                   // never mid-run — see above
     if (!demoDone()) return false;                   // still inside the demonstration
     if (what === "demo") return false;               // …which they may always replay
     // A local no-card trial is no longer STARTED by anything — the
@@ -3365,5 +3400,5 @@
   try { _grandfatherFreeEra3(); } catch (e) {}
   try { installDebug(); } catch (e) {}
 
-  global.Sona = { pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, saveFor, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, ladderContent, FREE_MODE, isFree, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, gated, gateVerify, gateOk, requireGate, gateDest, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, planMoment, planEligible, planShown, speak, speakNow, speakUnlock, speechAvailable, speechPerm, speechStart, speechStop, hearVerdict, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, demoState, demoDone, demoStart, demoFinish, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repsBeacon, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES };
+  global.Sona = { pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, saveFor, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, ladderContent, FREE_MODE, isFree, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, gated, gateVerify, gateOk, requireGate, gateDest, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, planMoment, planEligible, planShown, speak, speakNow, speakUnlock, speechAvailable, speechPerm, speechStart, speechStop, hearVerdict, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, demoState, demoDone, demoStart, demoFinish, runActive, gateBounce, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repsBeacon, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES };
 })(window);

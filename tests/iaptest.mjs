@@ -258,7 +258,10 @@ await web.close();
     // free demonstration is exempt and nothing else is. What this pins is
     // unchanged: the page asks at load, and an answer of yes goes to
     // trial.html rather than rendering a locked screen.
-    ok(pg + " gates at page load", /Sona\.gated\(/.test(src) && /trial\.html/.test(src));
+    // A gated KID page no longer goes to trial.html — a price screen with the
+    // child's name on it, reached by a child tapping a game. Sona.gateBounce()
+    // sends them home with "ask a grown-up"; the price waits behind the gate.
+    ok(pg + " gates at page load", /Sona\.gated\(/.test(src) && /Sona\.gateBounce\(\)/.test(src) && !/replace\("\/trial\.html"\)/.test(src));
   }
   const trial = readFileSync(ROOT + "/trial.html", "utf8");
   ok("trial.html routes the shell to the Apple paywall, not back home",
@@ -283,10 +286,12 @@ await gatePg.addInitScript(() => {
   }
 });
 await gatePg.goto("http://localhost:8147/charge.html?game=arcade-slice.html"); await gatePg.waitForTimeout(700);
-ok("expired trial bounces charge.html to the trial page", /trial\.html/.test(gatePg.url()), gatePg.url());
+// …home, not the price page: the child is told to ask a grown-up, and the
+// parent corner says the trial has ended and where the plan is
+ok("expired trial bounces charge.html home with the locked flag", /today\.html\?locked=1|today\.html$/.test(gatePg.url()), gatePg.url());
 await gatePg.evaluate(() => { const p = JSON.parse(localStorage.getItem("sona.profile.v1")); p.earlyAdopter = true; localStorage.setItem("sona.freeera.v1","post"); localStorage.setItem("sona.freeera2.v1","done"); localStorage.setItem("sona.freeera3.v1","done"); localStorage.setItem("sona.profile.v1", JSON.stringify(p)); });
 await gatePg.goto("http://localhost:8147/charge.html?game=arcade-slice.html"); await gatePg.waitForTimeout(700);
-ok("a founding family with the same expired trial is never locked", !/trial\.html/.test(gatePg.url()), gatePg.url());
+ok("a founding family with the same expired trial is never locked", /charge\.html/.test(gatePg.url()), gatePg.url());
 await gatePg.close();
 
 ok("no pageerrors", errs.length === 0, errs.join(" | "));
@@ -821,6 +826,122 @@ ok("no pageerrors", errs.length === 0, errs.join(" | "));
   ok("an unexpired trial from before this change still opens the door",
     honoured.alive === false, JSON.stringify(honoured));
   ok("…and once it genuinely runs out, the door closes", honoured.dead === !IS_FREE_NOW, JSON.stringify(honoured));
+  await ctx.close();
+}
+
+// ── DEMO2: THE ROUND TRIP — the demonstration has to survive its own games ──
+// The free session is charge → earned game → charge, five times, and every
+// hop is a page load that asks the gate. Two bugs hid in that trip, both found
+// by photographing it rather than reading it: the arcade pages asked the gate
+// with no activity name, so a replay bounced to the PRICE PAGE at its first
+// earned game; and the return URL carries only ?banked=N, so from round two a
+// replay banked coins, rungs and clinical outcomes as if it were real.
+// The run record in sessionStorage is now the source of truth for both.
+{
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  const pg = await ctx.newPage();
+  const seed = () => pg.evaluate(() => {
+    localStorage.clear(); sessionStorage.clear();
+    localStorage.setItem("sona.freeera.v1", "post"); localStorage.setItem("sona.freeera2.v1", "done"); localStorage.setItem("sona.freeera3.v1", "done");
+    localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Ada", childAge: "7", focusSounds: ["R"], onboarded: true }));
+    localStorage.setItem("sona.demo.v1", JSON.stringify({ started: 1, done: Date.now() }));   // session over, nobody bought
+    localStorage.setItem("sona.micok", "1");
+  });
+  await pg.goto("http://localhost:8147/today.html"); await pg.waitForTimeout(300);
+  await seed();
+
+  // A. where a gated KID page sends the child now
+  await pg.goto("http://localhost:8147/arcade-slice.html"); await pg.waitForTimeout(900);
+  if (IS_FREE_NOW) console.log("  (free mode: bounce assertions below hold vacuously — nothing gates)");
+  ok("a gated kid page goes HOME, never to a price screen",
+    !/trial\.html/.test(pg.url()) && /today\.html/.test(pg.url()), pg.url());
+  // null-safe on purpose: pre-fix this landed on trial.html, which has no
+  // #heroSub, and a throw here would CRASH the suite at the first symptom and
+  // hide every failure after it — the exact shape hwtest once died in
+  const told = await pg.evaluate(() => ({ sub: (document.getElementById("heroSub") || {}).innerHTML || "", url: location.search }));
+  ok("…and the child is told who can help, in their words",
+    IS_FREE_NOW || /grown-up/i.test(told.sub), told.sub);
+  ok("…and the flag is forgotten so a reload does not nag", told.url === "", told.url);
+
+  // B. a replay of the demonstration, all the way round
+  await seed();
+  await pg.goto("http://localhost:8147/charge.html?daily=1&demo=1"); await pg.waitForTimeout(900);
+  const r1 = await pg.evaluate(() => ({
+    url: location.pathname, run: JSON.parse(sessionStorage.getItem("sona.run.v1") || "null"),
+    isDemo: window.IS_DEMO, replay: window.DEMO_REPLAY,
+  }));
+  ok("a replay starts a run whose record says so", !!(r1.run && r1.run.active && r1.run.demo === true), JSON.stringify(r1.run));
+  ok("…and round one knows it earns nothing", r1.replay === true, JSON.stringify({ isDemo: r1.isDemo, replay: r1.replay }));
+
+  // the earned game: this is the tap that used to land on the price page.
+  // launchGame() marks the run pending and mints the play token before it
+  // hands off; the test does the same two writes rather than driving the
+  // five-rep charge, because the charge is not what is under test here.
+  await pg.evaluate(() => {
+    sessionStorage.setItem("sona.play.token", "1");
+    const r = JSON.parse(sessionStorage.getItem("sona.run.v1")); r.pending = true; sessionStorage.setItem("sona.run.v1", JSON.stringify(r));
+  });
+  await pg.goto("http://localhost:8147/arcade-slice.html?from=charge&daily=1"); await pg.waitForTimeout(900);
+  ok("the earned game OPENS — a run in progress is never gated",
+    /arcade-slice\.html/.test(pg.url()), pg.url());
+
+  // …and the way back, which carries only the score
+  await pg.goto("http://localhost:8147/charge.html?daily=1&banked=10"); await pg.waitForTimeout(900);
+  const r2 = await pg.evaluate(() => ({
+    isDemo: window.IS_DEMO, replay: window.DEMO_REPLAY,
+    run: JSON.parse(sessionStorage.getItem("sona.run.v1") || "null"), url: location.pathname,
+  }));
+  ok("round two arrives with no demo in the URL", r2.isDemo === false && /charge\.html/.test(r2.url), JSON.stringify(r2));
+  ok("…and STILL earns nothing, because the run record remembers",
+    r2.replay === true, "coins, rungs and clinical outcomes were banking from here on: " + JSON.stringify(r2));
+  ok("…with the round advanced", !!(r2.run && r2.run.round === 1 && r2.run.demo === true), JSON.stringify(r2.run));
+
+  // C. the negative control: it is the RUN that opens the door, not a wider gate
+  await pg.evaluate(() => { sessionStorage.removeItem("sona.run.v1"); sessionStorage.setItem("sona.play.token", "1"); });
+  await pg.goto("http://localhost:8147/arcade-slice.html?from=charge&daily=1"); await pg.waitForTimeout(900);
+  ok("with no run in progress the same game IS gated, whenever pricing is on",
+    IS_FREE_NOW ? /arcade-slice/.test(pg.url()) : /today\.html/.test(pg.url()), pg.url());
+
+  // D. the window: a session never finished cannot stay free forever
+  await pg.goto("http://localhost:8147/today.html"); await pg.waitForTimeout(300);
+  const win = await pg.evaluate(() => {
+    const H = 3600 * 1000, out = {};
+    sessionStorage.removeItem("sona.run.v1");
+    localStorage.setItem("sona.demo.v1", JSON.stringify({ started: Date.now() - 71 * H, done: 0 }));
+    out.open = Sona.demoDone();
+    localStorage.setItem("sona.demo.v1", JSON.stringify({ started: Date.now() - 73 * H, done: 0 }));
+    out.closed = Sona.demoDone();
+    // …but a run that is under way when it closes is finished, not interrupted
+    sessionStorage.setItem("sona.run.v1", JSON.stringify({ active: true, round: 2, sum: 30, scores: [15, 15], pending: false }));
+    out.midRun = Sona.gated("practice");
+    sessionStorage.removeItem("sona.run.v1");
+    return out;
+  });
+  ok("a demonstration still open at 71 hours is still the demonstration", win.open === false, JSON.stringify(win));
+  ok("…and one left unfinished for 73 hours has closed", win.closed === true, JSON.stringify(win));
+  ok("…but never underneath a run in progress", win.midRun === false, JSON.stringify(win));
+
+  // E. Home, for the family whose session is over
+  await seed();
+  await pg.evaluate(() => { try { Sona.markStoryRead(); } catch (e) {} });
+  await pg.goto("http://localhost:8147/today.html"); await pg.waitForTimeout(900);
+  const home = await pg.evaluate(() => {
+    const th = [...document.querySelectorAll("#thumbs .thumb")];
+    const first = th[0]; const before = location.href;
+    if (first) first.click();
+    return {
+      label: document.getElementById("upNextLbl").textContent,
+      locked: th.length > 0 && th.every((t) => t.classList.contains("locked")),
+      stayed: location.href === before,
+      sub: document.getElementById("heroSub").innerHTML,
+      note: (document.getElementById("planNote") || {}).innerHTML || "",
+    };
+  });
+  ok("a gated family's games are locked on Home, story read or not", IS_FREE_NOW || home.locked, JSON.stringify(home));
+  ok("…and tapping one says who can open them, without going anywhere",
+    IS_FREE_NOW || (home.stayed && /grown-up/i.test(home.sub)), JSON.stringify({ stayed: home.stayed, sub: home.sub }));
+  ok("…while the parent corner says the session is over and where the plan is",
+    IS_FREE_NOW || (/free session is finished/.test(home.note) && /See plans/.test(home.note)), home.note.slice(0, 160));
   await ctx.close();
 }
 

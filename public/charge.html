@@ -315,8 +315,15 @@
     // demonstration, it would be the product for free with the receipts to
     // match. Decided HERE, at load, because demoFinish() flips demoDone()
     // later in this same page and the answer must not change underneath us.
-    var DEMO_REPLAY = IS_DEMO && !!(window.Sona && window.Sona.demoDone && window.Sona.demoDone());
-    if(window.Sona&&Sona.gated&&Sona.gated(IS_DEMO?"demo":"practice")){ location.replace("/trial.html"); }
+    // READ FROM THE RUN RECORD TOO. The arcade returns to this page with
+    // ?banked=N and nothing else, so on rounds two to five the URL no longer
+    // says demo — and a replay was banking coins, rungs and clinical outcomes
+    // from round two onward. The run record is written below with the flag
+    // the moment a replay starts, and it is what every later round reads.
+    var _runPeek=null; try{ _runPeek=JSON.parse(sessionStorage.getItem("sona.run.v1")||"null"); }catch(e){}
+    var DEMO_REPLAY = (IS_DEMO || !!(_runPeek&&_runPeek.active&&_runPeek.demo))
+      && !!(window.Sona && window.Sona.demoDone && window.Sona.demoDone());
+    if(window.Sona&&Sona.gated&&Sona.gated(IS_DEMO?"demo":"practice")){ Sona.gateBounce(); }
     var S=window.Sona;
     var profile=S?S.getProfile():{volume:0.8};
     var SOUND=(qp.get("sound")||((S&&S.rotSound)?S.rotSound():((profile.focusSounds&&profile.focusSounds[0])||"R"))).toUpperCase();
@@ -352,7 +359,7 @@
       }
       if(!(run&&run.active)){
         if(S&&S.dailyInfo&&S.dailyInfo().playedToday){ /* shown at boot */ }
-        else { run={active:true,round:0,sum:0,scores:[],sound:SOUND,level:LEVEL,pending:false}; runSave(run); }
+        else { run={active:true,round:0,sum:0,scores:[],sound:SOUND,level:LEVEL,pending:false,demo:DEMO_REPLAY}; runSave(run); }
       } else { SOUND=(run.sound||SOUND).toUpperCase(); LEVEL=run.level||LEVEL; }
       if(run&&run.active&&run.round>=DAILY_SEQ.length){ finishedNow=true; }
     }

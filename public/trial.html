@@ -47,7 +47,11 @@
     <div class="hero">
       <img src="/coach/echo/echo-avatar.svg" alt="Echo" />
       <h1 id="headline">That was just the start! 🎉</h1>
-      <p class="muted" style="font-weight:700;">Echo loved practicing with you. Keep going — your first 3 days are free, and nothing is charged until day 3.</p>
+      <!-- "your first 3 days are free" described the old local no-card trial,
+           which no longer exists for anyone new: the free part is the session
+           they just had, and the 3 days belong to the plan. Saying otherwise
+           here told a parent they were owed days that never start. -->
+      <p class="muted" style="font-weight:700;">Echo loved practicing with you. The free session is done — the yearly plan opens with <b>3 free days</b>, and nothing is charged until day 3.</p>
     </div>
 
     <div class="card" style="margin-top:16px;text-align:center;">
@@ -121,7 +125,9 @@
   <script>
     var p = Sona.getProfile();
     var name = (p.childName || "").trim();
-    if (name) document.getElementById("headline").textContent = name + ", that was just the start! 🎉";
+    // addressed to the GROWN-UP holding the phone: this is a price page, and
+    // no child is sent here any more (Sona.gateBounce goes home instead)
+    if (name) document.getElementById("headline").textContent = name + "’s free session was just the start! 🎉";
     // already unlocked? straight back to the fun
     if (Sona.isSubscribed && Sona.isSubscribed()) location.replace("/map.html");
 
