@@ -124,7 +124,7 @@ for (const [game, title, rgbs] of SKIES) {
 // child can read counts.
 {
   const KID = new Set(["today.html", "charge.html", "library.html", "story.html", "chapter.html",
-    "stickers.html", "customize.html", "call.html",
+    "stickers.html", "customize.html",
     ...["slice", "run", "stack", "tiles", "glide", "feed"].map((g) => `arcade-${g}.html`)]);
   // Scan MARKUP text only. A first pass matched > ... < across <script> blocks
   // and flagged every JS comparison operator in the app, so scripts and
