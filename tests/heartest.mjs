@@ -157,6 +157,30 @@ ok('"cat" does not fuzzy-match "car"... it does not need to — it has no R; but
   ok("the speech permission is asked at setup, AFTER the mic grant",
     /getUserMedia\(\{audio:true[\s\S]{0,600}speechPerm/.test(charge)
     && !/micPrimer\(\);[\s\S]{0,200}speechPerm/.test(charge));
+
+  // HELP IS NOT A CONSOLATION PRIZE. "Hear it slowly" existed from the start
+  // but was revealed only inside the wrong-sound branch, so the child who
+  // most needed the slow model had to fail first to learn it was there.
+  // ORDER, not distance: the reveal must come before the first listen.
+  {
+    // Anchored to the round itself, not to any comment: inside flow(), the
+    // FIRST reveal must come before the FIRST listen. Pre-fix the only reveal
+    // sat in the wrong-sound branch, well after burstAndVerify.
+    const flowAt = charge.indexOf("async function flow(){");
+    const listen = charge.indexOf("var v=await burstAndVerify();", flowAt);
+    const reveal = charge.indexOf("showTurtle(true);", flowAt);
+    ok("\u2026slow replay is offered before the first attempt, not after a failure",
+      flowAt > -1 && listen > -1 && reveal > -1 && reveal < listen,
+      "a child had to get it wrong to find the help");
+  }
+  // …and the safeguards that make it safe to offer earlier
+  ok("the slow replay runs through the speaker guard, so it is never a rep",
+    /function playSlowClip[\s\S]{0,300}ttsBegin\(\)/.test(charge),
+    "model playback counted as the child speaking is the one thing this must never do");
+  ok("…and repeated taps cannot stack playback",
+    /function saySlow\([\s\S]{0,160}if\(speaking\)return res\(\);/.test(charge));
+  ok("…and both help controls say what they do, to a screen reader too",
+    /aria-label="Hear it again"/.test(charge) && /aria-label="Hear it slowly"/.test(charge));
 }
 
 await browser.close(); srv.close();

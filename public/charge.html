@@ -943,6 +943,14 @@
       tele("practice started",{sound:SOUND,game:GMETA.n});
       // Leo speaks the prompt ONCE, then the mic is instantly hot.
       await playPrompt();
+      // 🐢 IS AVAILABLE FROM THE FIRST TRY, NOT AS A CONSOLATION PRIZE.
+      // showTurtle(true) used to live only inside the wrong-sound branch, so
+      // the child who most needed to hear the model slowly had to fail first
+      // to discover the control existed. Nothing about the model changes —
+      // same clip, same 0.7x, same ttsBegin/ttsEnd speaker guard — so a
+      // replay still cannot be counted as the child speaking, and saySlow's
+      // own `if(speaking) return` means repeated taps cannot stack.
+      showTurtle(true);
       var v=await burstAndVerify();
       // One honest PASSED clip a day is kept ON-DEVICE (never uploaded) so the
       // parent can hear first-try vs today on the Progress "Listen" shelf.
@@ -975,7 +983,7 @@
         // spoken coaching drops the "— rrr!" demo (screen keeps the full tip):
         // TTS never performs the sound, it only describes the mouth move
         var tip=(c&&c.tip?c.tip.split("—")[0]:"").trim().replace(/[.!,]+$/,"")||("Let's try our "+soundName()+" sound again");
-        showTurtle(true); // 🐢 fun tool for round two — hear the model slooowly
+        showTurtle(true); // already on since the prompt; harmless if the round stepped down
         await say("Hmm, that was a different sound! "+tip+". Try again!");
         v=await burstAndVerify(3);
         if(v==="fail" && useRung>0){
