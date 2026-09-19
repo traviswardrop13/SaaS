@@ -718,7 +718,7 @@
     // ---- rapid-fire rep engine: continuous VAD, every voiced burst = a rep.
     // No scoring round-trips at all — the verdict comes from the spectral
     // shape of the burst, decided here on the phone.
-    var micStream=null, reps=0, engineOn=false, chunks=[], rec=null, anyReps=false;
+    var micStream=null, reps=0, engineOn=false, chunks=[], rec=null, anyReps=false, micOk=false;
     // NOTHING LEAVES THE DEVICE. Cloud scoring is gone: no MediaRecorder, no
     // clip, no upload, no vendor. Every verdict is decided here from the
     // spectral shape of what was said (shapeVerdict below), which is what
@@ -756,7 +756,40 @@
             setTimeout(function(){ resolve(); },1500); // safety: never hang if onstop is silent
           } else { resolve(); }
         }
-        function armIdle(){ if(idleTimer)clearTimeout(idleTimer); idleTimer=setTimeout(function(){ if(!engineOn)return; if(reps===0){ playPrompt(); armIdle(); } },8000); }
+        // Idle nudge — BOUNDED. This used to re-arm itself for as long as
+        // reps stayed 0, so a child whose mic was off, muted or simply not
+        // hearing them was told "Ready? Say rrrr... Go!" every eight seconds
+        // until a grown-up closed the app. Two nudges is the ceiling: a child
+        // who has not answered twice is not going to answer the ninth, and the
+        // second one lands at 16s, leaving the 20s hard cap below to end the
+        // round on showQuiet() — the warm "Echo didn't hear you!" screen — so
+        // the silence after the last nudge is short and leads somewhere.
+        // The nudge only ever RE-SPEAKS the prompt. It never counts, never
+        // advances, never fills the meter: silence is never a rep, so a child
+        // who waits it out still has to speak.
+        var MAX_NUDGES=2, nudges=0;
+        // Re-prompting into a mic that cannot hear is pure noise. A hard denial
+        // is caught in flow() (Sona.micDenied) before the engine ever starts,
+        // so micOk is normally true by the time we get here; the track check is
+        // for the mic that was granted and then died mid-round — another app
+        // taking it, a headset unplugged, the iOS shell backgrounded — which
+        // looks identical to a quiet child from the analyser's side.
+        function micLive(){
+          if(!micOk||!micStream) return false;
+          // unknowable (old browser, no track object) → assume live; never
+          // silence Echo on a guess, only on a state the device confirmed
+          try{ var t=micStream.getAudioTracks()[0]; return !t || (t.readyState==="live" && !t.muted); }catch(e){ return true; }
+        }
+        function armIdle(){
+          if(idleTimer)clearTimeout(idleTimer);
+          idleTimer=setTimeout(function(){
+            if(!engineOn) return;
+            if(reps!==0) return;        // they are talking — no nudge, and no re-arm (as before)
+            if(!micLive()) return;      // nothing is listening; the hard cap will hand them showQuiet()
+            if(nudges>=MAX_NUDGES) return;
+            nudges++; playPrompt(); armIdle();
+          },8000);
+        }
         armIdle();
         var mw=$("micWrap");
         (function tick(){
@@ -899,8 +932,8 @@
       // anything in between and the browser dialog appears seconds after the
       // tap that asked for it.
       await micPrimer();
-      try{ micStream=await navigator.mediaDevices.getUserMedia({audio:true,video:false}); try{ localStorage.setItem("sona.micok","1"); }catch(e){} }
-      catch(e){ micGo(false); if(S&&S.micDenied)S.micDenied({back:"/today.html"}); return; }
+      try{ micStream=await navigator.mediaDevices.getUserMedia({audio:true,video:false}); micOk=true; try{ localStorage.setItem("sona.micok","1"); }catch(e){} }
+      catch(e){ micOk=false; micGo(false); if(S&&S.micDenied)S.micDenied({back:"/today.html"}); return; }
       // HEAR1: the speech-recognition permission is its own OS dialog on the
       // shell. Asked AFTER the mic grant, deliberately — the mic prompt must
       // ride directly on the primer tap (storytest pins that), and the mic

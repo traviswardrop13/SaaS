@@ -202,6 +202,34 @@ async function waitSpoke(pg, ms) {
   await ctx.close();
 }
 
+// ── the robot voice is a last resort, not a default ──
+// Travis, from the field: lines the app speaks BY ITSELF on opening a screen
+// came out flat and robotic, while the same line tapped by hand sounded like
+// Echo. Not credits — /api/tts answers 200 throughout. Every page load makes a
+// NEW AudioContext, browsers start it suspended until a gesture, so the fetched
+// audio could not play and _spkOnce fell straight through to speechSynthesis.
+//
+// An AUTO line now waits for the tap that is coming anyway. A line the child
+// ASKED for still falls back, because there the choice is robot-or-nothing.
+{
+  const sona = readFileSync(ROOT + "/sona.js", "utf8");
+  ok("an auto-spoken line parks on a locked context instead of robot-voicing",
+    /if \(how === "blocked" && opts\.auto\) \{ _spkPark\(/.test(sona),
+    "this is the whole bug: the good audio was fetched, then thrown away for the robot");
+  ok("…and speak() is auto by default, so pages get it without opting in",
+    /function speak\(text, opts\) \{\s*opts = Object\.assign\(\{ auto: true \}/.test(sona));
+  ok("…while speakNow() explicitly is NOT, so a tapped line always makes a sound",
+    /function speakNow\(text, opts\) \{\s*opts = Object\.assign\(\{\}, opts \|\| \{\}, \{ auto: false \}\)/.test(sona),
+    "the Hear button must never go silent — that was the original field bug");
+  ok("the first gesture releases whatever was waiting",
+    /function speakUnlock\(\)[\s\S]{0,700}_spkFlush/.test(sona));
+  ok("…and only ONE line is ever held",
+    /let _spkPending = null;/.test(sona) && /function _spkPark\(text, opts\) \{ _spkPending = /.test(sona),
+    "a backlog would make a child sit through instructions that already scrolled past");
+  ok("…and a still-locked context drops it rather than queueing forever",
+    /function _spkFlush[\s\S]{0,420}state !== "running"\) return;/.test(sona));
+}
+
 await browser.close();
 for (const r of held) { try { r.socket.destroy(); } catch (e) {} }
 srv.close();

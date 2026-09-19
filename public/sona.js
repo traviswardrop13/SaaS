@@ -2472,6 +2472,20 @@
   }
   // Call from any user gesture: resumes the context and plays one silent
   // sample, which is what iOS needs before it will run audio at all.
+  // At most ONE line waits for the first tap. Holding a backlog would mean a
+  // child taps and then sits through instructions that have already scrolled
+  // past; the newest line is the only one still true.
+  let _spkPending = null;
+  function _spkPark(text, opts) { _spkPending = { text: text, opts: opts }; }
+  function _spkFlush() {
+    const p = _spkPending; _spkPending = null;
+    if (!p) return;
+    try {
+      const c = _spkCtx();
+      if (c.state !== "running") return;          // still locked: let it go
+      speak(p.text, Object.assign({}, p.opts, { auto: false }));
+    } catch (e) {}
+  }
   function speakUnlock() {
     try {
       const c = _spkCtx();
@@ -2482,6 +2496,9 @@
     // iOS speechSynthesis sticks in a paused state after interruptions and
     // then queues utterances forever; a gesture is the one place it un-sticks
     try { if (global.speechSynthesis && global.speechSynthesis.paused) global.speechSynthesis.resume(); } catch (e) {}
+    // resume() settles a tick later, so give it one before deciding the
+    // context is running and releasing whatever was waiting on this tap.
+    try { setTimeout(_spkFlush, 60); } catch (e) {}
   }
   function _spkSynth(text, opts, gen) {
     return new Promise((res) => {
@@ -2561,14 +2578,30 @@
       .then((b) => (b && b.byteLength) ? _spkPCM(new Uint8Array(b), opts, gen) : "no-audio")
       .catch(() => { if (to) clearTimeout(to); return "fetch-failed"; })
       .then((how) => {
-        // anything short of played-or-superseded gets the guaranteed voice —
-        // a child is never left with a silent story
+        // THE ROBOT VOICE IS A LAST RESORT, NOT A DEFAULT.
+        //
+        // "blocked" means the AudioContext will not run — which on a fresh page
+        // load is not a failure at all, just a browser waiting for a tap. Every
+        // page makes a NEW, locked context, so every line spoken automatically
+        // on open (charge.html's "Ready? Say rrrr… Go!") was landing here and
+        // falling straight through to speechSynthesis. /api/tts was answering
+        // 200 the whole time: the good voice was fetched, then thrown away.
+        //
+        // So an AUTO-spoken line waits for the tap that is coming anyway, and
+        // speaks in Echo's real voice when it arrives. A line the child ASKED
+        // for ("Read it to me") still falls back, because there the choice is
+        // robot-or-nothing and nothing is worse.
         if (how === "pcm" || how === "superseded") return how;
+        if (how === "blocked" && opts.auto) { _spkPark(text, opts); return "parked"; }
         return _spkSynth(text, opts, gen);
       });
   }
+  // speak() is the AMBIENT path — a page reading itself aloud on open, a page
+  // turn, a prompt at the top of a round. Nobody asked for it right now, so if
+  // the audio context is still locked it waits for the tap instead of dropping
+  // to the robot voice. speakNow() is the opposite and turns this off.
   function speak(text, opts) {
-    opts = opts || {};
+    opts = Object.assign({ auto: true }, opts || {});
     if (!text || getProfile().voiceOn === false) return Promise.resolve();
     if (_spk.n >= 2) return Promise.resolve();   // one playing + one waiting
     _spk.n++;
@@ -2613,7 +2646,11 @@
   }
 
   // The button path: stop whatever is talking and say THIS, now.
+  // The button path: a child ASKED to hear this, so it must make a sound now.
+  // auto:false means a locked context falls back to the browser voice rather
+  // than parking — robot-or-nothing, and nothing is worse.
   function speakNow(text, opts) {
+    opts = Object.assign({}, opts || {}, { auto: false });
     _spk.gen++;                                   // strand every queued unit
     try { if (_spk.src) { _spk.src.stop(); _spk.src = null; } } catch (e) {}
     try { if (global.speechSynthesis) global.speechSynthesis.cancel(); } catch (e) {}
@@ -3024,14 +3061,45 @@
   }
   // quiet entitlement sync (today.html on load in the shell): keeps sub state
   // honest across reinstalls/devices without any UI.
+  // Apple access has a lifetime, and this is where it ends.
+  //
+  // This used to grant and never revoke. Two halves, both wrong: an unforced
+  // refresh returned true immediately for anyone already cached active — so an
+  // existing subscriber was NEVER re-checked — and even a forced refresh that
+  // came back inactive left the stored flag alone, because _iapUnlock() only
+  // runs on success. Cancel, expire, refund, or have a payment fail, and
+  // isSubscribed() stayed true on that device forever.
+  //
+  // Now: re-verify on a cadence, and act on an authoritative "no".
+  const IAPCHK = "sona.iapcheck.v1";        // when Apple last actually answered
+  const IAP_RECHECK_MS = 6 * 60 * 60 * 1000;
   function iapRefresh(force) {
     if (!iapAvailable()) return Promise.resolve(false);
-    if (!force && isSubscribed()) return Promise.resolve(true);
+    // Cached and checked recently: trust it. This is the offline grace too —
+    // a subscriber on a plane keeps their app.
+    if (!force && isSubscribed()) {
+      let last = 0;
+      try { last = parseInt(localStorage.getItem(IAPCHK) || "0", 10) || 0; } catch (e) {}
+      if (Date.now() - last < IAP_RECHECK_MS) return Promise.resolve(true);
+    }
     return iapConfigure().then((P) => P.getCustomerInfo()).then((info) => {
       const active = _iapActive(info);
-      if (active) _iapUnlock();
-      return active;
-    }).catch(() => false);
+      // Apple answered, so record WHEN — the cadence above is only honest if
+      // it measures real answers rather than attempts.
+      try { localStorage.setItem(IAPCHK, String(Date.now())); } catch (e) {}
+      if (active) { _iapUnlock(); return true; }
+      // An authoritative inactive: drop Apple-sourced access. Only Apple's own
+      // grant is cleared — a Stripe subscription, a founder unlock, an SLP
+      // credential or a grandfathered free era are different sources and must
+      // survive, or cancelling an Apple sub would silently paywall a family
+      // whose access never came from Apple in the first place.
+      try { if (getSub().source === "apple") saveSub({ active: false, since: 0 }); } catch (e) {}
+      return false;
+    }).catch(() => {
+      // Network failure is NOT a cancellation. Leave everything as it is and
+      // do not stamp the check clock, so the next open tries again.
+      return isSubscribed();
+    });
   }
 
   // best-effort: send the pilot child's (consented) progress back to the founder. Debounced.

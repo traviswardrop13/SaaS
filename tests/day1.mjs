@@ -275,10 +275,17 @@ async function home(age) {
   // on passing, because the string it was looking for was still sitting in the
   // list doing nothing. A source contract that can be satisfied by a dead
   // string is not a contract; the behaviour is checked below instead.
+  // Matched to the list's real end, not a 600-character window. The cap was a
+  // hidden length limit on a declaration that is supposed to GROW: adding
+  // sona.pilot.v1 (and the comment explaining why siblings must not share a
+  // clinician identity) pushed the last entries outside it, and this assertion
+  // failed for a reason that had nothing to do with what it checks. hwtest
+  // carried the same regex and CRASHED on the null match.
+  const PERKID = (sona.match(/const PER_KID = new Set\(\[([\s\S]*?)\]\);/) || ["", ""])[1];
   ok("every key the day is built from is declared per-child",
-    /const PER_KID[\s\S]{0,600}?\]\)/.exec(sona) &&
+    !!PERKID &&
     ["sona.day.v2", "sona.episode.v2", "sona.reps.v1", "sona.homework.v1"]
-      .every((k) => new RegExp('"' + k.replace(/\./g, "\\.") + '"').test(/const PER_KID[\s\S]{0,600}?\]\)/.exec(sona)[0])),
+      .every((k) => PERKID.includes('"' + k + '"')),
     "a key the day depends on that is missing here is shared between siblings");
   ok("today's chapter is PINNED for the day", /function dailyStory[\s\S]{0,400}save\(DAYKEY/.test(sona),
     "without the pin, reading it flips the card to tomorrow's story mid-day");

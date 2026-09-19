@@ -208,9 +208,17 @@ const noComments = (src) => src
   ok("no therapy/treatment/diagnosis register on the clinician page",
     !/\b(diagnos\w*|treatment plan|plan of care)\b/i.test(noComments(slpHtml)),
     "product copy stays practice/homework/sounds — never clinical");
+  // The 600-char window here did not merely fail when PER_KID grew — .match()
+  // returned null and [0] THREW, taking the whole suite down with a stack
+  // trace instead of a failing assertion. Matched to the list's real end now.
+  const perKid = (readFileSync(ROOT + "/sona.js", "utf8")
+    .match(/const PER_KID = new Set\(\[([\s\S]*?)\]\);/) || ["", ""])[1];
   ok("homework is declared per-child",
-    /"sona\.homework\.v1"/.test(readFileSync(ROOT + "/sona.js", "utf8").match(/const PER_KID[\s\S]{0,600}?\]\)/)[0]),
+    perKid.includes('"sona.homework.v1"'),
     "two siblings on one iPad must not share one assignment");
+  ok("…and so is the clinician identity that reports it",
+    perKid.includes('"sona.pilot.v1"'),
+    "siblings sharing one pilot childId overwrite each other's roster row");
 }
 
 await browser.close(); srv.close();
