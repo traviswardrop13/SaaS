@@ -19,13 +19,15 @@ import Stripe from "stripe";
  * ticket waiting to happen, so the internal name is CHARTER throughout and the
  * user-facing word is ONE constant below. Change the constant, not the code.
  *
- * WHAT COUNTS AS A TAKEN SPOT. Every yearly subscription that ever completed
- * checkout (any status except the two "never finished paying" ones), unless
- * it was sold at the standard price. Everyone who subscribed before this file
- * existed paid $59.99 or less and keeps that price for life regardless — a
- * Stripe subscription carries its own price — so counting them is honest,
- * and it fills the spots FASTER, which is the safe direction for a promise
- * that says "first 50". A trial that was cancelled still consumed its spot.
+ * WHAT COUNTS AS A TAKEN SPOT. A subscription that /api/checkout SOLD as a
+ * charter spot — it stamps `metadata.tier` on every subscription it creates
+ * — in any status except the two "never finished paying" ones. A trial still
+ * inside its free days is one; a trial that was cancelled still consumed its
+ * spot. Nothing from before the offer existed is one: those subscriptions
+ * carry no tier, and the two that exist are Travis's own test purchases
+ * ("dont count", 19 Sep 2026). A real family from before the offer would keep
+ * their price for life regardless — a Stripe subscription carries its own —
+ * they are just not one of the fifty.
  *
  * THE COUNT IS NEVER GUESSED. When Stripe cannot be reached the offer stays
  * OPEN (a family is never charged more because our lookup failed) and the
@@ -57,9 +59,13 @@ export type Spots = {
 let memo: Spots | null = null;
 const MEMO_MS = 60_000;
 
-// The Search API's status filter; `incomplete` and `incomplete_expired` are
-// checkouts that never finished paying and are not spots.
-const QUERY = "status:'active' OR status:'trialing' OR status:'past_due' OR status:'canceled' OR status:'unpaid'";
+// Ask Stripe only for what checkout stamped as a charter sale. Status is
+// filtered below rather than in the query, so every rule that decides a spot
+// lives in this file where the test can reach it — a search string is
+// something the mock never sees.
+const QUERY = "metadata['tier']:'charter'";
+// Checkouts that never finished paying are not spots.
+const NOT_A_SPOT = new Set<string>(["incomplete", "incomplete_expired"]);
 
 function yearly(s: Stripe.Subscription): boolean {
   const it = s.items?.data?.[0];
@@ -81,8 +87,9 @@ export async function charterSpots(client?: Stripe): Promise<Spots> {
     for (let guard = 0; guard < 3; guard++) {
       const res = await stripe.subscriptions.search({ query: QUERY, limit: 100, page });
       for (const s of res.data) {
+        if (s.metadata?.tier !== "charter") continue;    // untagged: sold before the offer existed, or a test purchase; "standard": after the cap
+        if (NOT_A_SPOT.has(s.status)) continue;          // never finished paying
         if (!yearly(s)) continue;                        // the retired monthly plan is not a spot
-        if (s.metadata?.tier === "standard") continue;   // sold at full price, after the cap
         taken++;
       }
       if (taken >= CHARTER_CAP || !res.has_more || !res.next_page) break;

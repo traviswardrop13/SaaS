@@ -116,9 +116,10 @@ export async function POST(req: NextRequest) {
       mode: "subscription",
       line_items,
       // the 3-day trial is the YEARLY plan's perk; monthly bills at purchase
-      // metadata.tier on the SUBSCRIPTION is what lib/charter.ts counts: a
-      // standard-tier sale is excluded from the fifty, everything else is one
-      // of them. On the session too, so the success page can say which.
+      // metadata.tier on the SUBSCRIPTION is what lib/charter.ts counts: only
+      // a charter-tier sale is one of the fifty — a standard-tier sale is not,
+      // and neither is anything without the stamp (sold before the offer
+      // existed). On the session too, so the success page can say which.
       subscription_data: planKey === "annual" ? { trial_period_days: TRIAL_DAYS, metadata: { tier } } : { metadata: { tier } },
       metadata: { tier },
       customer_email: email,

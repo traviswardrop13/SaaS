@@ -84,6 +84,10 @@ landing page — and the in-app plan screen disables its button until the count
 answers, so a parent never taps $59.99 and meets $99.99 on the Stripe page.
 A spots-left number is printed ONLY when Stripe answered it; a fallback count
 is a guess, and a guessed scarcity number is the one thing no surface may show.
+A spot is a subscription that checkout stamped `tier: charter`, in any status
+but the two "never finished paying" ones; the yearly subscriptions from before
+the offer existed carry no stamp and are not spots — they are Travis's own
+test purchases ("dont count", 19 Sep 2026).
 `tests/chartertest.mjs` pins the counting rule and every surface.
 
 The word is **charter**, never **founding**: "founding family" already means
