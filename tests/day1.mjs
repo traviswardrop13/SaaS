@@ -53,7 +53,11 @@ async function home(age) {
     padlocks: document.querySelectorAll("#thumbs .lock").length,
     read: Sona.storyRead(),
   }));
-  ok("the hero is today's chapter, not a game", /story/i.test(st.cta) && st.launch === "/chapter.html", JSON.stringify(st));
+  // The CTA wording now depends on whether this child has ever practised — a
+  // first-timer is invited to START. What this pins is the thing that matters
+  // either way: the hero is the CHAPTER, and the button opens it.
+  ok("the hero is today's chapter, not a game",
+    /story|adventure/i.test(st.cta) && st.launch === "/chapter.html", JSON.stringify(st));
   ok("the chapter is named on the card", st.hero.length > 4, st.hero);
   ok("the card says what reading it earns", /unlock/i.test(st.sub), st.sub);
   ok("THREE games sit below, not two", st.thumbs === 3, String(st.thumbs));
@@ -441,6 +445,65 @@ async function home(age) {
   ok("no live page links to a page that no longer exists",
     !/href="\/(?:play|ladder|world|level|levelcomplete|arcade|bubble|racer|whack|cupstack|match|grocery|train|rocket|chat|shop|lesson|warmup|builder|coach|avatar|model|practice|rcal|home)\.html/
       .test(readFileSync(ROOT + "/today.html", "utf8") + readFileSync(ROOT + "/story.html", "utf8") + readFileSync(ROOT + "/charge.html", "utf8")));
+}
+
+// ── HOME1: one clear next step, and it knows where the child left off ────
+// Home already gave one activity visual priority and one line about what is
+// left today. What it did not do was notice a run in progress: a child called
+// to dinner between round two and round three came back to the same generic
+// start and had to find their own way in.
+{
+  const ctx = await browser.newContext(); const pg = await ctx.newPage();
+  await pg.goto("http://localhost:8178/today.html"); await pg.waitForTimeout(400);
+  await pg.evaluate(() => {
+    localStorage.clear(); sessionStorage.clear();
+    localStorage.setItem("sona.freeera.v1", "post"); localStorage.setItem("sona.freeera2.v1", "done"); localStorage.setItem("sona.freeera3.v1", "done");
+    localStorage.setItem("sona.demo.v1", JSON.stringify({ started: 1, done: 1 }));
+    localStorage.setItem("sona.sub.v1", JSON.stringify({ active: true, source: "stripe" }));
+    localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Ada", childAge: "7", focusSounds: ["R"], onboarded: true }));
+  });
+
+  // a child who has never practised is STARTING, and the button says so once
+  await pg.evaluate(() => { localStorage.removeItem("sona.demo.v1"); });
+  await pg.goto("http://localhost:8178/today.html"); await pg.waitForTimeout(800);
+  ok("a brand-new child is invited to start, not to resume",
+    /START YOUR FIRST ADVENTURE/i.test(await pg.evaluate(() => document.getElementById("goBtn").textContent)));
+
+  // …and once they have, it is the ordinary story CTA again
+  await pg.evaluate(() => localStorage.setItem("sona.demo.v1", JSON.stringify({ started: 1, done: 1 })));
+  await pg.goto("http://localhost:8178/today.html"); await pg.waitForTimeout(800);
+  ok("…and afterwards it stops shouting about firsts",
+    /READ TODAY'S STORY/i.test(await pg.evaluate(() => document.getElementById("goBtn").textContent)));
+
+  // a run left half-finished is the commonest interruption there is
+  await pg.evaluate(() => sessionStorage.setItem("sona.run.v1", JSON.stringify({ active: true, round: 2, sum: 40, scores: [20, 20], sound: "R", level: 1, pending: false })));
+  await pg.goto("http://localhost:8178/today.html"); await pg.waitForTimeout(800);
+  const mid = await pg.evaluate(() => ({
+    name: document.getElementById("heroName").textContent,
+    sub: document.getElementById("heroSub").textContent,
+    cta: document.getElementById("goBtn").textContent,
+    go: document.getElementById("goBtn").dataset.launch,
+  }));
+  ok("coming back mid-run, Home says carry on", /Keep going/i.test(mid.name) && /CARRY ON/i.test(mid.cta), JSON.stringify(mid));
+  ok("…and names the round they are actually on", /round 3/i.test(mid.sub), mid.sub);
+  ok("…and the button goes back into that run", /charge\.html\?daily=1/.test(mid.go), mid.go);
+
+  // the run record is one sitting, not a promise: a fresh session starts clean
+  await pg.evaluate(() => sessionStorage.removeItem("sona.run.v1"));
+  await pg.goto("http://localhost:8178/today.html"); await pg.waitForTimeout(800);
+  ok("…and a fresh sitting is not haunted by yesterday's half-run",
+    !/CARRY ON/i.test(await pg.evaluate(() => document.getElementById("goBtn").textContent)));
+
+  // homework already DROVE the app; now it says so
+  await pg.evaluate(() => {
+    localStorage.setItem(Sona.kkey("sona.homework.v1"), JSON.stringify({ hw: {
+      id: "hw9", title: "S in the middle", sounds: ["S"], pos: "m", repsPerDay: 20,
+      start: "2000-01-01", due: "2999-01-01", by: "Rachel, CF-SLP" }, at: Date.now() }));
+  });
+  await pg.goto("http://localhost:8178/today.html"); await pg.waitForTimeout(800);
+  ok("an assignment is visible on Home, not just honoured under the hood",
+    /Rachel, CF-SLP/.test(await pg.evaluate(() => document.getElementById("heroSub").textContent)));
+  await ctx.close();
 }
 
 await browser.close(); srv.close();
