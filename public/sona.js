@@ -1671,23 +1671,67 @@
   // subscribe UI is hidden there. The web paywall is completely unchanged.
   function isNativeApp() { try { return !!(window.Capacitor && (typeof window.Capacitor.isNativePlatform === "function" ? window.Capacitor.isNativePlatform() : true)); } catch (e) { return false; } }
 
+  // ── THE FREE DEMONSTRATION ────────────────────────────────────────────────
+  // A new family used to be handed a silent 3-day clock the moment onboarding
+  // closed, before Sona had shown them anything: the trial started burning
+  // while the parent was still reading. What they get instead is one COMPLETE
+  // run — a real prompt, real reps judged by the real detector, the game those
+  // reps earn, the celebration, and an explicit finish — and only then a price.
+  //
+  // It is not an entitlement. It grants nothing, unlocks nothing else, and is
+  // stored per DEVICE because it is a demonstration of the product, not a
+  // property of a child: a second child on the same iPad has already been
+  // shown what Sona does.
+  const DEMOKEY = "sona.demo.v1";
+  function demoState() { try { return JSON.parse(localStorage.getItem(DEMOKEY) || "null") || { started: 0, done: 0 }; } catch (e) { return { started: 0, done: 0 }; } }
+  function _demoSave(d) { try { localStorage.setItem(DEMOKEY, JSON.stringify(d)); } catch (e) {} }
+  function demoDone() { return !!demoState().done; }
+  function demoStart() {
+    const d = demoState();
+    if (d.done || d.started) return d;        // explicit state, so a refresh or
+    d.started = Date.now(); _demoSave(d);     // a back-swipe resumes rather
+    return d;                                  // than restarting
+  }
+  // ONE-SHOT, like the offer it precedes. A replay must not re-fire the
+  // first-completion beat, so this answers "was this the first time" and the
+  // caller decides what only happens once.
+  function demoFinish() {
+    const d = demoState();
+    if (d.done) return false;
+    d.done = Date.now(); _demoSave(d);
+    try { track("demo completed", {}); } catch (e) {}
+    return true;
+  }
+
   // Launch gate: subscribers, pilots and founding families (SLP-referred —
   // that free-forever promise IS the SLP channel) are always in; everyone else
-  // gets a 3-day free trial, then the paywall. (Library, customize, progress
-  // stay open.) The native shell gates exactly like the web now — the old
-  // "native never gates" bypass predates the Apple IAP rail and would have
+  // meets the free demonstration first, then the paywall. (Library, customize,
+  // progress stay open.) The native shell gates exactly like the web now — the
+  // old "native never gates" bypass predates the Apple IAP rail and would have
   // made the App Store build free forever with an ignorable paywall.
   // FREE MODE first: nothing is gated, so a kid page can never bounce to a
   // price screen mid-play (the audit caught Story Time doing exactly that).
   // Gates fire at PAGE LOAD only, never mid-round.
-  function gated() {
+  //
+  // `what` names the activity being asked for. Only "demo" is special: it is
+  // the one run this family was shown for free, and it stays replayable after
+  // they decline, forever. Everything else gates normally once the
+  // demonstration is done — replayable does not mean the product is free.
+  function gated(what) {
     if (isFree()) return false;
     if (isFounder()) return false;
     if (slpVerified()) return false;                 // device redeemed a valid SLP credential
     if (isSubscribed() || isPilot()) return false;
     if (earlyAdopterAnyKid()) return false;
-    ensureTrial();
-    return trialExpired();
+    if (!demoDone()) return false;                   // still inside the demonstration
+    if (what === "demo") return false;               // …which they may always replay
+    // A local no-card trial is no longer STARTED by anything — the
+    // demonstration replaced it — but one already promised to a family is
+    // honoured to the day it runs out. Removing ensureTrial() from here is
+    // what stops a new device quietly minting one just by being gated.
+    const t = getTrial();
+    if (t && t.start && !trialExpired()) return false;
+    return true;
   }
   // earlyAdopter lives on the PROFILE, and the profile is per-kid — so a
   // founding or SLP-referred family that added a second child had the first one
@@ -3321,5 +3365,5 @@
   try { _grandfatherFreeEra3(); } catch (e) {}
   try { installDebug(); } catch (e) {}
 
-  global.Sona = { pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, saveFor, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, ladderContent, FREE_MODE, isFree, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, gated, gateVerify, gateOk, requireGate, gateDest, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, planMoment, planEligible, planShown, speak, speakNow, speakUnlock, speechAvailable, speechPerm, speechStart, speechStop, hearVerdict, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repsBeacon, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES };
+  global.Sona = { pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, saveFor, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, ladderContent, FREE_MODE, isFree, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, gated, gateVerify, gateOk, requireGate, gateDest, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, planMoment, planEligible, planShown, speak, speakNow, speakUnlock, speechAvailable, speechPerm, speechStart, speechStop, hearVerdict, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, demoState, demoDone, demoStart, demoFinish, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repsBeacon, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES };
 })(window);

@@ -428,9 +428,9 @@ async function home(age) {
   // is left on the first case deliberately — it is inert while priced, so this
   // keeps passing in BOTH pricing states and cannot rot in a free window.
   ok("an expired trial still wins over everything, even a story already read",
-    (await land("arcade-tiles.html", 'sessionStorage.setItem("sona.paidui","1");Sona.markStoryRead();localStorage.setItem("sona.trial.v1",JSON.stringify({start:Date.now()-40*86400000,days:3}))')) === "/trial.html");
+    (await land("arcade-tiles.html", 'sessionStorage.setItem("sona.paidui","1");Sona.markStoryRead();localStorage.setItem("sona.demo.v1",JSON.stringify({started:1,done:1}));localStorage.setItem("sona.trial.v1",JSON.stringify({start:Date.now()-40*86400000,days:3}))')) === "/trial.html");
   ok("…and a LIVE trial opens the game the story unlocked",
-    (await land("arcade-tiles.html", 'Sona.markStoryRead();localStorage.setItem("sona.trial.v1",JSON.stringify({start:Date.now(),days:3}))')) === "/arcade-tiles.html");
+    (await land("arcade-tiles.html", 'Sona.markStoryRead();localStorage.setItem("sona.demo.v1",JSON.stringify({started:1,done:1}));localStorage.setItem("sona.trial.v1",JSON.stringify({start:Date.now(),days:3}))')) === "/arcade-tiles.html");
   // the retired campaign and its pages are gone, not merely unlinked
   const sona = readFileSync(ROOT + "/sona.js", "utf8");
   ok("the worlds/levels campaign is deleted from sona.js",

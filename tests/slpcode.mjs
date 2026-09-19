@@ -88,7 +88,7 @@ const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL 
   const granted = await pg.evaluate(() => {
     if (Sona.slpVerified()) Sona.saveProfile({ earlyAdopter: true, slpCode: Sona.slpCode() });
     // expire the trial hard: a founding family must never gate
-    localStorage.setItem(Sona.kkey("sona.trial.v1"), JSON.stringify({ start: Date.now() - 10 * 86400000, days: 3 }));
+    localStorage.setItem(Sona.kkey("sona.trial.v1"), JSON.stringify({ start: Date.now() - 10 * 86400000, days: 3 })); localStorage.setItem("sona.demo.v1", JSON.stringify({ started: 1, done: 1 }));
     return { early: Sona.getProfile().earlyAdopter, gated: Sona.gated() };
   });
   ok("verified family gets founding access", granted.early === true);
@@ -112,7 +112,7 @@ const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL 
     // unverified family is still ordinary on the day pricing returns.
     sessionStorage.setItem("sona.paidui", "1");
     Sona.saveProfile({ childName: "Ana", childAge: "6", focusSounds: ["S"], onboarded: true, earlyAdopter: false });
-    localStorage.setItem(Sona.kkey("sona.trial.v1"), JSON.stringify({ start: Date.now() - 10 * 86400000, days: 3 }));
+    localStorage.setItem(Sona.kkey("sona.trial.v1"), JSON.stringify({ start: Date.now() - 10 * 86400000, days: 3 })); localStorage.setItem("sona.demo.v1", JSON.stringify({ started: 1, done: 1 }));
     return Sona.gated();
   });
   ok("wrong-key family gates like anyone else once pricing returns", gated === true);
@@ -143,7 +143,7 @@ const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL 
   await pg.goto("http://localhost:8155/today.html"); // real origin for storage
   await pg.evaluate(() => {
     localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Ben", childAge: "7", focusSounds: ["R"], onboarded: true }));
-    localStorage.setItem("sona.trial.v1", JSON.stringify({ start: Date.now() - 10 * 86400000, days: 3 }));
+    localStorage.setItem("sona.trial.v1", JSON.stringify({ start: Date.now() - 10 * 86400000, days: 3 })); localStorage.setItem("sona.demo.v1", JSON.stringify({ started: 1, done: 1 }));
   });
   // ?paid=1 renders the paywall while Sona is free; without it trial.html
   // correctly bounces home and there is no paywall to point anywhere.
@@ -212,7 +212,7 @@ const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL 
   await pg.waitForTimeout(900);
   const no = await pg.evaluate(() => {
     document.getElementById("jNo").click();
-    localStorage.setItem(Sona.kkey("sona.trial.v1"), JSON.stringify({ start: Date.now() - 40 * 86400000, days: 3 }));
+    localStorage.setItem(Sona.kkey("sona.trial.v1"), JSON.stringify({ start: Date.now() - 40 * 86400000, days: 3 })); localStorage.setItem("sona.demo.v1", JSON.stringify({ started: 1, done: 1 }));
     return { pilot: Sona.isPilot(), share: Sona.getProfile().slpShare, gated: Sona.gated() };
   });
   ok("saying no never enrols the child", no.pilot === false, JSON.stringify(no));
@@ -234,7 +234,7 @@ const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL 
     localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Nia", childAge: "6", focusSounds: ["R"], onboarded: true }));
     localStorage.setItem("sona.slpok", "RACHEL-K4");   // exactly what FREE1 left behind
     localStorage.removeItem("sona.slpunlock");
-    localStorage.setItem("sona.trial.v1", JSON.stringify({ start: Date.now() - 40 * 86400000, days: 3 }));
+    localStorage.setItem("sona.trial.v1", JSON.stringify({ start: Date.now() - 40 * 86400000, days: 3 })); localStorage.setItem("sona.demo.v1", JSON.stringify({ started: 1, done: 1 }));
     return { verified: Sona.slpVerified(), gated: Sona.gated() };
   });
   ok("a free-window SLP family still counts as verified", res.verified === true, JSON.stringify(res));
@@ -250,7 +250,7 @@ const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL 
   const res = await pg.evaluate(() => {
     localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "A", childAge: "6", focusSounds: ["R"], onboarded: true }));
     localStorage.setItem("sona.slpunlock", "1");
-    localStorage.setItem("sona.trial.v1", JSON.stringify({ start: Date.now() - 30 * 86400000, days: 3 }));
+    localStorage.setItem("sona.trial.v1", JSON.stringify({ start: Date.now() - 30 * 86400000, days: 3 })); localStorage.setItem("sona.demo.v1", JSON.stringify({ started: 1, done: 1 }));
     const before = Sona.gated();
     Sona.addKid("Bee", "5"); // fresh profile, no earlyAdopter
     const afterSwitch = Sona.gated();
@@ -267,13 +267,13 @@ const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL 
   await pg.goto("http://localhost:8155/today.html");
   const res = await pg.evaluate(() => {
     Sona.saveProfile({ childName: "Kid One", childAge: "7", focusSounds: ["R"], onboarded: true, earlyAdopter: true });
-    localStorage.setItem("sona.trial.v1", JSON.stringify({ start: Date.now() - 40 * 86400000, days: 3 }));
+    localStorage.setItem("sona.trial.v1", JSON.stringify({ start: Date.now() - 40 * 86400000, days: 3 })); localStorage.setItem("sona.demo.v1", JSON.stringify({ started: 1, done: 1 }));
     const first = Sona.gated();
     Sona.addKid("Kid Two", "5");                       // sibling on the same device
     const kid2 = Sona.kids().filter((k) => !k.active)[0] || Sona.kids()[1];
     Sona.switchKid(Sona.kids().filter((k) => k.name === "Kid Two")[0].slot);
     Sona.saveProfile({ childName: "Kid Two", childAge: "5", focusSounds: ["S"], onboarded: true });
-    localStorage.setItem(Sona.kkey("sona.trial.v1"), JSON.stringify({ start: Date.now() - 40 * 86400000, days: 3 }));
+    localStorage.setItem(Sona.kkey("sona.trial.v1"), JSON.stringify({ start: Date.now() - 40 * 86400000, days: 3 })); localStorage.setItem("sona.demo.v1", JSON.stringify({ started: 1, done: 1 }));
     return { first, second: Sona.gated(), name: Sona.getProfile().childName, early2: Sona.getProfile().earlyAdopter, kid2: !!kid2 };
   });
   ok("the referred family's first child is free", res.first === false, JSON.stringify(res));
@@ -552,7 +552,7 @@ const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL 
   await pg.goto("http://localhost:8155/today.html");
   const good = await pg.evaluate(async () => {
     localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "T", childAge: "7", focusSounds: ["R"], onboarded: true }));
-    localStorage.setItem("sona.trial.v1", JSON.stringify({ start: Date.now() - 30 * 86400000, days: 3 }));
+    localStorage.setItem("sona.trial.v1", JSON.stringify({ start: Date.now() - 30 * 86400000, days: 3 })); localStorage.setItem("sona.demo.v1", JSON.stringify({ started: 1, done: 1 }));
     const r = await Sona.founderUnlock("OWNER-SECRET-123");
     return { valid: r.valid, founder: Sona.isFounder(), gated: Sona.gated() };
   });

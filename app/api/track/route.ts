@@ -26,6 +26,10 @@ const EVENTS = new Set([
   "plan moment shown",    // the ask, fired once on the first completed run
   "trial started",        // the in-app 3-day clock begins — NOT a purchase
   "purchase completed",   // money committed (Apple or Stripe)
+  "demo completed",       // the free demonstration finished — the step the
+                          // offer is supposed to follow, so without it the
+                          // funnel cannot tell a family who saw the product
+                          // from one who bounced before it started
 ]);
 // `plan` and `surface` join the list for the events above. Still no name, no
 // age, no email, no word a child said — an unlisted key is dropped silently,
