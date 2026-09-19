@@ -350,13 +350,16 @@ ok("ONE offer exactly — the yearly plan, monthly retired", t.cards === 1, "car
 {
   const shape = await page.evaluate(() => {
     const h = document.querySelector("#pickCard h2");
-    const order = [...document.querySelectorAll("#pickCard, #declineRow, #slpEntryCard")].map((e) => e.id);
-    return { heading: h ? h.textContent.trim() : "", order };
+    const order = [...document.querySelectorAll("#pickCard, #declineRow")].map((e) => e.id);
+    const slpCard = !!document.getElementById("slpEntryCard");
+    return { heading: h ? h.textContent.trim() : "", order, slpCard };
   });
   ok("the plan card is headed by what the button does, not a choice that does not exist",
     /Start your free days/.test(shape.heading) && !/Pick your plan/.test(shape.heading), shape.heading);
-  ok("…and the decline sits directly under the plan card, before the SLP card",
-    shape.order.join(">") === "pickCard>declineRow>slpEntryCard", shape.order.join(">"));
+  ok("…and the decline sits directly under the plan card",
+    shape.order.join(">") === "pickCard>declineRow", shape.order.join(">"));
+  // the SLP side is hidden (19 Sep 2026): the plan screen no longer offers it
+  ok("…and the 'working with a speech therapist?' card is gone from the plan screen", !shape.slpCard);
 }
 ok("yearly card states the 3-day trial and the cancel promise",
   /3 days free/i.test(t.life) && /cancel anytime/i.test(t.life));

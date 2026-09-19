@@ -189,6 +189,16 @@ an SLP or clinic anywhere in the product: the SLP channel produces engaged
 families and zero revenue by design. Entitlement is never granted from a URL
 parameter.
 
+**The SLP side is HIDDEN, not deleted** (Travis, 19 Sep 2026: "not a
+priority"). Nothing links to it: the clinician door left onboarding, the
+"working with a speech therapist?" card left the plan screen and the trial
+page, and the SLP pages carry `noindex`. `for-slps.html`, `slp.html`,
+`slp-login.html`, `join.html`, the settings SLP corner (renders only for
+`role === "slp"`) and every `/api/slp/*` route stay, reachable by direct
+link, because clinicians already onboarded and their free-forever families are
+a promise that hiding must not break. `betatest`, `progtest` and `slpcode`
+pin the doors shut.
+
 ## Hard rules
 - Merges to main/prod only on Travis's explicit go ("merge").
 - **No audio ever leaves the device.** There is no cloud scorer: every verdict
