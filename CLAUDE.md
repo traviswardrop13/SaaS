@@ -7,6 +7,33 @@
 - One recommendation, not a menu. No recaps of prior context.
 - Long-form only when explicitly asked ("go deep", "full plan").
 
+**Concise is not the same as compressed.** Travis is the founder, not a reader
+of this codebase. He has not memorised the function names, the file names, or
+the internal shorthand for things — and a sentence he cannot act on because he
+does not know what it points at is not brief, it is just short.
+
+Asked for outright, 19 Sep 2026. Three decisions had been flagged as needing
+him or Rachel, written as "the not-sure routing", "whether accuracy by sound
+stays a percentage", and "the replay boundary". All three were real,
+load-bearing questions. None of them meant anything to him, so none of them
+could be answered. Four hours of correct work sat waiting on three phrases.
+
+So:
+- **Name things by what a parent or a child SEES**, not by the function or the
+  storage key that implements it. "The button under the win screen", not
+  "planEligible()". Internal names are fine *after* the plain version, or in a
+  commit message or PR body where the diff is sitting right there.
+- **The first time an internal word appears in chat, define it in one clause.**
+  "The demonstration — the one free run a new family gets before any price —"
+- **When something needs his decision or Rachel's, give three things:** what
+  happens today, what would change if they chose differently, and why it is a
+  person's call rather than an engineering one. A decision he cannot picture is
+  a decision he cannot make.
+- **Explain it the way you would to a smart fifth grader.** That is a clarity
+  bar, not a length one — it usually costs a clause, not a paragraph. Being
+  brief and being clear are not in tension; being brief and being cryptic is
+  just a failure with fewer words.
+
 ## Project
 Sona (speaksona.com) — kids' speech-practice PWA in public/, Next.js API
 routes, Capacitor iOS shell that remote-loads the site. Solo founder, ships
