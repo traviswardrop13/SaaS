@@ -373,6 +373,35 @@ ok("today no pageerrors", errs.length === 0);
   await ctx.close();
 }
 
+// ── HONEST1c: the README describes THIS product ───────────────────────
+// It described "SpeakUp Kids" — a Next.js/Tailwind skill tree that posted
+// recordings to a Speechace scoring API at /api/score — for months after none
+// of that was true. That is not a cosmetic problem: it is the first thing a
+// new contributor, or an outside coding agent, builds its mental model from,
+// and it pointed at an architecture and a privacy posture the product had
+// abandoned. Cheap pin, exact regression.
+{
+  const readme = readFileSync(ROOT + "/../README.md", "utf8");
+  // DESCRIBING is not DISAVOWING. The README carries a blockquote naming the
+  // old claims in order to disown them, which is worth keeping — a reader who
+  // remembers the old file should be told it is gone, not left wondering. So
+  // the check reads the file with its blockquote stripped: what is left is
+  // what the README actually asserts about this product.
+  const claims = readme.split("\n").filter((l) => !l.trimStart().startsWith(">")).join("\n");
+  for (const dead of ["SpeakUp Kids", "/api/score", "SPEECHACE_API_KEY", "Tailwind"]) {
+    ok("README does not describe a product that no longer exists: " + dead,
+      !claims.includes(dead));
+  }
+  ok("…and it does still say plainly that the old description was wrong",
+    /SpeakUp Kids/.test(readme) && readme !== claims);
+  ok("README names the app and where it runs",
+    /# Sona/.test(readme) && /speaksona\.com/.test(readme));
+  ok("…and the verification command that actually exists",
+    /node tests\/run-all\.mjs/.test(readme) && /There is no `npm test`/.test(readme));
+  ok("…and the privacy posture the code actually keeps",
+    /No audio ever leaves the device/i.test(readme));
+}
+
 await browser.close(); srv.close();
 console.log(fails ? fails + " FAILURES" : "ALL GREEN");
 process.exit(fails ? 1 : 0);
