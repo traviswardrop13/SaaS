@@ -217,12 +217,27 @@
     </div>
 
     <!-- email (last — capture after the questions) -->
+    <!-- HONEST BY CONSTRUCTION. This screen was headed "Save <child>'s
+         progress" and promised to "save progress across devices and send a
+         free starter guide + progress report". Not one of the three was true:
+         the email starts the trial clock and goes to lead capture, no starter
+         guide exists anywhere in the product, and the weekly email carries
+         COHORT stats plus a link precisely BECAUSE per-child practice never
+         leaves the device — which is the privacy promise, not a gap in it.
+         A parent who read this and later wiped their phone lost everything
+         while believing it was saved.
+         What IS true and worth saying: the email is how they get their
+         subscription back on a new phone, and Backup & restore in Settings is
+         the one real way to move a child's practice. The weekly nudge is
+         deliberately NOT promised here — it is a Vercel cron that fails
+         closed without RESEND_FROM / UNSUB_SECRET / EMAIL_POSTAL, and a
+         promise that depends on environment variables is not a promise. -->
     <div class="step" data-step="email">
-      <div class="qh">Save <span id="emName">your child</span>'s progress</div>
-      <p class="muted">Add your email so we can save progress across devices and send a free starter guide + progress report.</p>
+      <div class="qh">Where should we reach you?</div>
+      <p class="muted">Your email is how you get your subscription back if you switch phones, and how we reach you about your account.</p>
       <input id="obEmail" type="email" inputmode="email" autocomplete="email" placeholder="you@email.com" style="margin-top:12px;" />
       <p id="emErr" style="display:none;color:#ef6f23;font-weight:800;font-size:13px;margin-top:8px;"></p>
-      <p class="muted" style="font-size:12px;margin-top:10px;">No spam — just your child's progress. <a href="/privacy" target="_blank">Privacy</a>.</p>
+      <p class="muted" style="font-size:12px;margin-top:10px;"><b id="emName">Your child</b>'s practice stays on this device — it is never uploaded. To move it to another one, use <b>Backup &amp; restore</b> in Settings. <a href="/privacy" target="_blank">Privacy</a>.</p>
       <p class="muted" style="font-size:12.5px;margin-top:12px;"><a href="#" id="obEmailSkip" style="font-weight:800;">Skip for now →</a> You can add it later in Settings.</p>
     </div>
   </div>
@@ -458,7 +473,7 @@
       if(key==="name") setTimeout(function(){ nameEl.focus(); }, 80);
       if(key==="interests"){ var nmi=(nameEl.value||draft.childName||"").trim(); document.getElementById("intName").textContent = nmi || "your child"; }
       if(key==="achieve"){ var nm=(nameEl.value||draft.childName||"").trim(); document.getElementById("achName").textContent = nm || "your child"; }
-      if(key==="email"){ var nm2=(nameEl.value||draft.childName||"").trim(); var emn=document.getElementById("emName"); if(emn) emn.textContent = nm2 || "your child"; setTimeout(function(){ emailEl.focus(); }, 80); }
+      if(key==="email"){ var nm2=(nameEl.value||draft.childName||"").trim(); var emn=document.getElementById("emName"); if(emn) emn.textContent = nm2 || "Your child"; setTimeout(function(){ emailEl.focus(); }, 80); }
     }
 
     function next(){

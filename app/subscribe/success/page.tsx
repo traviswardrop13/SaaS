@@ -231,7 +231,9 @@ export default function SubscribeSuccess() {
               <>
                 Enter{" "}
                 <strong className="rounded-lg bg-amber-100 px-2 py-0.5 font-display text-lg tracking-[3px] text-amber-900">{appCode}</strong>{" "}
-                — your plan comes with you, and set-up happens in the app.
+                — your plan comes with you, and set-up happens in the app. It
+                works once and expires in 48 hours; after that your email still
+                restores it from <strong>Settings → Restore access</strong>.
               </>
             ) : (
               <>

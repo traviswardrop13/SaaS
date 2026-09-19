@@ -274,6 +274,105 @@ const coolX = await page.evaluate(() => JSON.parse(localStorage.getItem("sona.pu
 ok("X cools future auto-asks ~14d", coolX > Date.now() + 13 * 24 * 3600 * 1000);
 ok("today no pageerrors", errs.length === 0);
 
+// ── HONEST1: the email screen must not promise a save that doesn't happen ──
+// It was headed "Save <child>'s progress" and offered to "save progress across
+// devices and send a free starter guide + progress report". None of the three
+// existed: the email starts the trial clock and goes to lead capture, there is
+// no starter guide in the product, and the weekly email carries COHORT stats
+// plus a link BECAUSE per-child practice never leaves the device. A parent who
+// believed it and wiped their phone lost everything. The real mechanism is
+// Backup & restore in Settings, and this asserts the screen points there.
+{
+  const ob = readFileSync(ROOT + "/onboarding.html", "utf8");
+  const step = (ob.match(/<div class="step" data-step="email">[\s\S]*?<\/div>\s*<\/div>/) || [""])[0];
+  ok("the email step exists to read", step.length > 0);
+  for (const lie of [/save progress across devices/i, /starter guide/i, /progress report/i, /just your child's progress/i]) {
+    ok("…and claims no sync that does not exist: " + lie.source,
+      !lie.test(step), step.slice(0, 200));
+  }
+  ok("…and says where the practice actually lives",
+    /stays on this device/i.test(step) && /Backup &amp; restore/i.test(step),
+    "a parent who is not told will find out by losing it: " + step.slice(0, 300));
+  // the one promise that IS kept: the email restores a purchase
+  ok("…and names the thing the email genuinely does",
+    /subscription back/i.test(step), step.slice(0, 300));
+  // Settings must still carry the mechanism the screen now points at
+  const set = readFileSync(ROOT + "/settings.html", "utf8");
+  ok("Settings still has Backup & restore to point at",
+    /Backup &amp; restore/i.test(set) && /id="backupCopy"/.test(set) && /id="restoreBk"/.test(set));
+  // …and it must not overclaim either: copying to a clipboard is not a backup
+  ok("…and copying a code is reported as a copy, not a completed backup",
+    !/backed up ✓|backup complete/i.test(set), "an attempted clipboard write is not a remote backup");
+}
+
+// ── HONEST1b: restoring a backup is reversible, and the confirm is accurate ──
+// Two problems on one screen. The confirm said the restore "replaces the
+// progress on this device" — importData MERGES, writing only the keys the
+// backup contains, so an old backup over a newer save leaves a hybrid and the
+// parent was told otherwise. And the overwrite was final: paste the wrong
+// code, and the only copy of a child's practice that exists anywhere is gone,
+// because nothing is uploaded. Snapshot first, and let them take it back.
+{
+  const set = readFileSync(ROOT + "/settings.html", "utf8");
+  ok("the confirm no longer claims a replace that doesn't happen",
+    !/replaces the progress on this device/.test(set) && /left as it is/.test(set));
+  ok("the safety snapshot is kept OUTSIDE the \"sona.\" namespace",
+    /var SNAP = "_sonaPreRestore"/.test(set),
+    "a snapshot inside the namespace would nest inside backups of itself");
+
+  const ctx = await browser.newContext({ viewport: { width: 430, height: 932 } });
+  const pg = await ctx.newPage();
+  pg.on("dialog", (d) => d.accept());
+  await pg.goto("http://localhost:8129/today.html"); await pg.waitForTimeout(500);
+  const backup = await pg.evaluate(() => {
+    localStorage.clear();
+    localStorage.setItem("sona.freeera.v1", "post"); localStorage.setItem("sona.freeera2.v1", "done"); localStorage.setItem("sona.freeera3.v1", "done");
+    Sona.saveProfile({ childName: "Ada", childAge: "7", focusSounds: ["R"], onboarded: true });
+    Sona.addCoins(40);
+    const old = Sona.exportString();   // the backup they will paste, later
+    Sona.addCoins(60);                 // …and then the child keeps practising
+    sessionStorage.setItem("sona.gate.v1", String(Date.now()));
+    return old;
+  });
+  ok("the device is ahead of the backup before we start",
+    (await pg.evaluate(() => Sona.getCoins())) === 100);
+
+  await pg.goto("http://localhost:8129/settings.html"); await pg.waitForTimeout(800);
+  // The restore box sits inside two nested collapsed <details> — a parent has
+  // to go looking for it, which is the right default for a destructive
+  // control. Drive it from script rather than fighting the disclosure widget:
+  // what is under test is the restore and its safety net, not the accordion.
+  await pg.evaluate((b) => {
+    const ta = document.getElementById("restoreIn");
+    let e = ta; while (e) { if (e.tagName === "DETAILS") e.open = true; e = e.parentElement; }
+    ta.value = b;
+    document.getElementById("restoreBk").click();
+  }, backup);
+  await pg.waitForTimeout(1600);       // the handler reloads after 900ms
+  const done = await pg.evaluate(() => ({
+    coins: Sona.getCoins(),
+    snap: !!localStorage.getItem("_sonaPreRestore"),
+    undo: document.getElementById("undoRow").style.display,
+  }));
+  ok("the backup lands", done.coins === 40);
+  ok("…and the device it overwrote was snapshotted first", done.snap === true);
+  ok("…and Undo is offered, not hidden in a support email", done.undo === "block");
+
+  await pg.evaluate(() => {
+    let e = document.getElementById("undoRestore"); while (e) { if (e.tagName === "DETAILS") e.open = true; e = e.parentElement; }
+    document.getElementById("undoRestore").click();
+  });
+  await pg.waitForTimeout(1600);
+  const back = await pg.evaluate(() => ({
+    coins: Sona.getCoins(),
+    snap: !!localStorage.getItem("_sonaPreRestore"),
+    undo: document.getElementById("undoRow").style.display,
+  }));
+  ok("Undo puts the practice back", back.coins === 100);
+  ok("…and spends the snapshot, so it cannot undo twice", back.snap === false && back.undo === "none");
+  await ctx.close();
+}
+
 await browser.close(); srv.close();
 console.log(fails ? fails + " FAILURES" : "ALL GREEN");
 process.exit(fails ? 1 : 0);
