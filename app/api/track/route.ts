@@ -26,6 +26,10 @@ const EVENTS = new Set([
   "plan moment shown",    // the ask, fired once on the first completed run
   "trial started",        // the in-app 3-day clock begins — NOT a purchase
   "purchase completed",   // money committed (Apple or Stripe)
+  "demo started",         // …and the other half of that rate
+  "recap viewed",         // the parent read what their child did
+  "offer dismissed",      // they said no, deliberately — which is not the same
+                          // as never arriving, and the two were indistinguishable
   "demo completed",       // the free demonstration finished — the step the
                           // offer is supposed to follow, so without it the
                           // funnel cannot tell a family who saw the product

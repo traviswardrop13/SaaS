@@ -677,6 +677,22 @@ ok("no pageerrors", errs.length === 0, errs.join(" | "));
   await pg.goto("http://localhost:8147/subscribe.html"); await pg.waitForTimeout(700);
   ok("…and never appears without the hand-off flag",
     (await pg.evaluate(() => document.getElementById("recapCard").style.display)) !== "block");
+
+  // A VISIBLE WAY TO SAY NO. There was a "Back to Sona" in the nav and a
+  // "Back to Settings" link, and both read as navigation — a parent who had
+  // just been fetched by their child and did not want to buy had to work out
+  // that leaving was allowed. On the hand-off it is stated, beside the price.
+  await pg.goto("http://localhost:8147/subscribe.html?first=1"); await pg.waitForTimeout(700);
+  const decline = await pg.evaluate(() => {
+    const r = document.getElementById("declineRow");
+    const a = document.getElementById("declineLink");
+    return { shown: r && r.style.display, text: a ? a.textContent : "", href: a ? a.getAttribute("href") : "",
+             promise: r ? r.textContent : "" };
+  });
+  ok("the plan screen offers a stated decline, not just navigation",
+    decline.shown === "block" && /not now/i.test(decline.text), JSON.stringify(decline));
+  ok("…which goes home, where the demonstration still is",
+    decline.href === "/today.html" && /still there/i.test(decline.promise), JSON.stringify(decline));
   await ctx.close();
 }
 

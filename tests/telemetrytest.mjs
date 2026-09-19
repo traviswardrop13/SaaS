@@ -9,7 +9,7 @@
 //
 //   sona.js track()  ->  POST /api/track  ->  PostHog   (kid pages; no pixel)
 //   SonaAnalytics    ->  posthog.capture  ->  PostHog   (parent pages, native too)
-import { readFileSync } from "fs";
+import { readFileSync, readdirSync } from "fs";
 import { ROOT } from "./_env.mjs";
 
 const APP = ROOT + "/..";
@@ -22,11 +22,22 @@ const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL 
 
 // ── 1. every event the app fires through the relay is allow-listed there ──
 {
+  // EVERY file that can reach the relay, not the two that did when this was
+  // written. The scan used to read sona.js and charge.html only, and its
+  // pattern excluded dotted calls to avoid catching SonaAnalytics.track (the
+  // direct-to-PostHog path, allow-listed separately below). But `Sona.track`
+  // is dotted AND is the relay — so a relay event fired from any other page
+  // was invisible to this check twice over, which is precisely the silence
+  // the suite exists to break.
   const relayed = new Set();
-  for (const f of ["sona.js", "charge.html"]) {
+  const files = ["sona.js", ...readdirSync(ROOT).filter((f) => f.endsWith(".html"))];
+  for (const f of files) {
     const src = readFileSync(ROOT + "/" + f, "utf8");
     for (const m of src.matchAll(/(?:^|[^.\w])(?:track|tele)\(\s*"([^"]+)"/g)) relayed.add(m[1]);
+    for (const m of src.matchAll(/\bSona\.track\(\s*"([^"]+)"/g)) relayed.add(m[1]);
   }
+  ok("the scan looks at every page that can reach the relay, not a fixed pair",
+    files.length > 10, files.length + " files");
   const allowed = (relay.match(/const EVENTS = new Set\(\[([\s\S]*?)\]\)/) || ["", ""])[1];
   for (const ev of [...relayed].sort()) {
     ok(`relay accepts "${ev}"`, allowed.includes(`"${ev}"`),

@@ -281,6 +281,17 @@
       </div>
     </div>
 
+    <!-- A VISIBLE WAY TO SAY NO. There was a "Back to Sona" in the nav and a
+         "Back to Settings" link, but both read as navigation — a parent who
+         had just been fetched by their child and did not want to buy anything
+         had to work out that leaving was allowed. On the hand-off it is a
+         stated option, next to the price rather than under the footer, and it
+         goes back to a home screen that still has the demonstration on it. -->
+    <p id="declineRow" style="display:none;text-align:center;margin-top:18px;">
+      <a href="/today.html" id="declineLink" class="btn ghost" style="width:auto;padding:12px 22px;display:inline-block;text-decoration:none;">Not now — back to Sona</a>
+      <span class="muted" style="display:block;margin-top:8px;font-size:12.5px;font-weight:700;">Your practice round is still there whenever you want it.</span>
+    </p>
+
     <p class="muted" style="text-align:center;margin-top:22px;font-size:12.5px;font-weight:700;max-width:420px;margin-left:auto;margin-right:auto;">
       Sona is an at-home practice companion — not a substitute for professional care.
     </p>
@@ -475,7 +486,27 @@
         document.getElementById("recapTitle").textContent = "Here's what " + nm + " just did";
         document.getElementById("recapList").innerHTML = out.map(function (l) { return "<li>" + l + "</li>"; }).join("");
         document.getElementById("recapCard").style.display = "block";
+        // The recap is a funnel STEP, not decoration: without it there is no
+        // way to tell a parent who read what their child did from one who was
+        // handed a price cold.
+        try { if (Sona.track) Sona.track("recap viewed", {}); } catch (e) {}
       } catch (e) {}
+    })();
+
+    // The decline, and the only place it is offered as a decline.
+    (function () {
+      if (!/[?&]first=1(&|$)/.test(location.search)) return;
+      var row = document.getElementById("declineRow"), a = document.getElementById("declineLink");
+      if (!row || !a) return;
+      // a family who cannot be sold to is not being asked, so there is nothing
+      // for them to decline
+      var asked = true; try { asked = !(Sona.isFree && Sona.isFree()) && !(Sona.isSubscribed && Sona.isSubscribed()); } catch (e) {}
+      if (!asked) return;
+      row.style.display = "block";
+      a.addEventListener("click", function () {
+        // keepalive, because this navigates immediately afterwards
+        try { if (Sona.track) Sona.track("offer dismissed", { surface: "first-run" }); } catch (e) {}
+      });
     })();
 
     // Cohort routing: founding/SLP families keep the free story; the trial

@@ -962,7 +962,15 @@
       // Mark the demonstration as UNDER WAY the moment real practice starts,
       // so a refresh, a back-swipe or a locked screen resumes it instead of
       // looking like a family who never began. demoStart() is idempotent.
-      try{ if(S&&S.demoStart&&!(S.demoDone&&S.demoDone())) S.demoStart(); }catch(e){}
+      try{
+        if(S&&S.demoStart&&!(S.demoDone&&S.demoDone())){
+          var firstTime=!S.demoState().started;
+          S.demoStart();
+          // paired with "demo completed", this is the one number that says
+          // whether the demonstration actually demonstrates anything
+          if(firstTime) tele("demo started",{sound:SOUND});
+        }
+      }catch(e){}
       // Leo speaks the prompt ONCE, then the mic is instantly hot.
       await playPrompt();
       // 🐢 IS AVAILABLE FROM THE FIRST TRY, NOT AS A CONSOLATION PRIZE.
