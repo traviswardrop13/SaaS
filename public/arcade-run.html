@@ -113,7 +113,7 @@
        mid-round: a child who is already playing is never interrupted. */
     (function () {
       try {
-        if (window.Sona && Sona.gated && Sona.gated()) { location.replace("/trial.html"); return; }
+        if (window.Sona && Sona.gated && Sona.gated()) { Sona.gateBounce(); return; }
         // The story gate is skipped for a round the child already EARNED:
         // charge.html hands off with ?from=charge, and it gates before it does.
         // Without this a session started at 11:58pm bounces out of the game at

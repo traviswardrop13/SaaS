@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { FREE_MODE } from "@/lib/pricing";
+import { charterSpots, CHARTER_CENTS, STANDARD_CENTS, CHARTER_CAP, CHARTER_LABEL } from "@/lib/charter";
 
 /**
  * Creates a Stripe Checkout Session for Sona.
@@ -80,16 +81,32 @@ export async function POST(req: NextRequest) {
     new URL(req.url).origin;
 
   const priceId = process.env[PLAN.env];
-  const line_items: Stripe.Checkout.SessionCreateParams.LineItem[] = priceId
+  // THE TIER IS DECIDED HERE, FROM THE REAL COUNT, at the moment of purchase.
+  // Every price surface in the product says "$59.99 for the first 50 families,
+  // then $99.99" — and this is the one line that makes that sentence true:
+  // spot 51 is charged the standard price whatever any page happened to show.
+  // The count is memoised for a minute and falls OPEN if Stripe cannot be
+  // reached, so a lookup failure never costs a family $40.
+  const spots = await charterSpots(stripe);
+  const tier: "charter" | "standard" = spots.open ? "charter" : "standard";
+  const cents = tier === "charter" ? CHARTER_CENTS : STANDARD_CENTS;
+  const tierName = tier === "charter" ? `${PLAN.name} (${CHARTER_LABEL} price)` : PLAN.name;
+  const tierDesc = tier === "charter"
+    ? `${CHARTER_LABEL} price for the first ${CHARTER_CAP} families — yours for as long as you keep Sona. ` + PLAN.desc
+    : PLAN.desc;
+  // A fixed Stripe Price from the environment can only ever be the charter
+  // price (that is the amount it was created with), so it is used only while
+  // the charter is open; the standard tier is always inline price_data.
+  const line_items: Stripe.Checkout.SessionCreateParams.LineItem[] = (priceId && tier === "charter")
     ? [{ price: priceId, quantity: 1 }]
     : [
         {
           quantity: 1,
           price_data: {
             currency: "usd",
-            unit_amount: PLAN.cents,
+            unit_amount: cents,
             recurring: { interval: PLAN.interval },
-            product_data: { name: PLAN.name, description: PLAN.desc },
+            product_data: { name: tierName, description: tierDesc },
           },
         },
       ];
@@ -99,11 +116,15 @@ export async function POST(req: NextRequest) {
       mode: "subscription",
       line_items,
       // the 3-day trial is the YEARLY plan's perk; monthly bills at purchase
-      subscription_data: planKey === "annual" ? { trial_period_days: TRIAL_DAYS } : undefined,
+      // metadata.tier on the SUBSCRIPTION is what lib/charter.ts counts: a
+      // standard-tier sale is excluded from the fifty, everything else is one
+      // of them. On the session too, so the success page can say which.
+      subscription_data: planKey === "annual" ? { trial_period_days: TRIAL_DAYS, metadata: { tier } } : { metadata: { tier } },
+      metadata: { tier },
       customer_email: email,
       allow_promotion_codes: true,
       billing_address_collection: "auto",
-      success_url: `${origin}/subscribe/success?session_id={CHECKOUT_SESSION_ID}&plan=${planKey}`,
+      success_url: `${origin}/subscribe/success?session_id={CHECKOUT_SESSION_ID}&plan=${planKey}&tier=${tier}`,
       cancel_url: `${origin}/subscribe.html?canceled=1`,
     });
     return NextResponse.json({ ok: true, url: session.url });

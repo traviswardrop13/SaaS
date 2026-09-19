@@ -78,8 +78,10 @@ if (!r1ok) fails++;
 // ship — playPrompt falls through to TTS, the same path every other line uses.
 // Flip this assertion back only when a non-Rachel clip set is in place.
 ok("Rachel's recorded clip set stays off", /var HUMANCLIPS=false/.test(html), true);
-// Workstream A: the sound chip is gone — the header context line carries the sound
-ok("E2E r1 header names the sound", await page.evaluate(() => /R sound/.test(document.getElementById("ctxLine").textContent)), true);
+// Workstream A: the sound chip is gone — the header context line carries the sound.
+// "· R", not "· R sound": the longer form wrapped to two lines on a 390px phone
+// between the close button, the ticket pill and the star count (fittest pins the fit).
+ok("E2E r1 header names the sound", await page.evaluate(() => /· R\b/.test(document.getElementById("ctxLine").textContent)), true);
 
 // ---- E2E round 2 of a daily run: syllables — chip label + spoken set ----
 ttsPosts = [];
@@ -95,7 +97,7 @@ const r2 = await page.evaluate(() => ({
 }));
 // the daily run is ROT_LEN (5) rounds — same number the goal ring, the chest
 // and today.html's path all count to. A shorter run leaves the ring unfillable.
-ok("E2E r2 header (daily round 2 of 5)", /Round 2 of 5/.test(r2.chip) && /R sound/.test(r2.chip), true);
+ok("E2E r2 header (daily round 2 of 5)", /Round 2 of 5/.test(r2.chip) && /· R\b/.test(r2.chip), true);
 console.log((r2.sylls.includes(r2.prompt) ? "PASS" : "FAIL") + "  E2E r2 card shows a syllable  (" + r2.prompt + " ∈ " + JSON.stringify(r2.sylls) + ")");
 if (!r2.sylls.includes(r2.prompt)) fails++;
 // STORY1: a daily round now opens with the episode beat spoken aloud (a

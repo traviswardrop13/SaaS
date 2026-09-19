@@ -220,19 +220,26 @@ export default function TermsPage() {
 function PlanTerms() {
   return (
     <>
-      <strong>Sona Yearly</strong> is <strong>$59.99 per year</strong> and starts
+      <strong>Sona Yearly</strong> is <strong>$99.99 per year</strong> and starts
       with <strong>3 free days</strong>. Nothing is charged during those days —
       the first charge lands on day 3, and only if you keep Sona.
       <br />
       <br />
-      That works out to <strong>under $5 a month</strong>. Prices are in US
-      dollars and exclude any applicable taxes. The plan includes every game,
-      every sound and the Sound Check, plus every new sound we ship while it is
-      active.
+      <strong>Charter price.</strong> The first 50 families to subscribe pay a
+      charter price of <strong>$59.99 per year</strong> (under $5 a month)
+      instead, and keep that price for as long as their subscription continues
+      without a break. The price you see at checkout is the price you will be
+      charged; once the 50 charter places are taken, new subscriptions are
+      $99.99 per year (under $8.50 a month).
       <br />
       <br />
-      Sona Yearly renews automatically at $59.99 each year unless you cancel at
-      least 24 hours before the current period ends.{" "}
+      Prices are in US dollars and exclude any applicable taxes. The plan
+      includes every game, every sound and the Sound Check, plus every new
+      sound we ship while it is active.
+      <br />
+      <br />
+      Sona Yearly renews automatically each year at the price you subscribed
+      at unless you cancel at least 24 hours before the current period ends.{" "}
       <strong>
         Sona Monthly ($9.99 per month, billed at purchase, no free trial) is no
         longer sold.

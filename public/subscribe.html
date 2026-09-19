@@ -147,7 +147,7 @@
         <img src="/coach/echo/echo-avatar.svg" alt="Echo" />
         <div>
           <h1>Your plan</h1>
-          <p class="muted" style="font-weight:700;font-size:14px;margin-top:3px;">The whole story of what Sona costs — told plainly, to the grown-ups.</p>
+          <p class="muted" style="font-weight:700;font-size:14px;margin-top:3px;">One plan, told plainly — for the grown-ups.</p>
         </div>
       </div>
       <span class="planline" id="planLine">Today's plan: <b>free</b> — you're a founding family.</span>
@@ -187,7 +187,10 @@
     </div>
 
     <div class="card" id="pickCard" style="display:none;">
-      <h2>Pick your plan</h2>
+      <!-- "Pick your plan" over ONE plan asked a parent to choose between a
+           thing and nothing. There is one plan; the heading says what the
+           button does. -->
+      <h2>Start your free days</h2>
       <div class="proof">
         <span class="pem">🎓</span>
         <span><b>Built with Rachel — licensed pediatric speech-language pathologist (Clinical Fellow)</b> &amp; Sona co-founder. Real speech practice, disguised as games kids ask to play.</span>
@@ -203,7 +206,16 @@
            final row move with it. -->
       <div class="plan best" id="planLife">
         <span class="tag">3 DAYS FREE · EVERYTHING INCLUDED</span>
-        <b>Sona Yearly — $59.99/yr</b>
+        <b id="webTitle">Sona Yearly — $59.99/yr</b>
+        <!-- CHARTER. Filled by /api/charter at load: while the first fifty
+             spots last, this names the standard price and how many are left
+             (the count only when Stripe answered it — a guessed scarcity
+             number is the one thing this card must never show). Once they are
+             gone the whole card re-prices to the standard tier BEFORE the
+             button enables, so the price a parent sees is the price Stripe
+             charges. The native card above is untouched: App Store Connect
+             owns that figure. -->
+        <span class="reassure" id="charterLine" style="display:none;font-weight:800;color:#46a302;"></span>
         <span class="save">Under $5 a month, billed once a year.</span>
         <span class="sub">Every game, every sound, every update as it ships. Nothing is charged for the first 3 days.</span>
         <button class="btn go" id="buyLife">Start 3 days free</button>
@@ -215,8 +227,13 @@
         </span>
       </div>
       <p class="muted" id="pickMsg" style="margin-top:10px;font-weight:800;font-size:12.5px;"></p>
-      <p class="muted" style="margin-top:8px;font-size:11.5px;line-height:1.5;">Sona Yearly renews at $59.99 a year after the 3-day free trial. Cancel anytime in your account.</p>
+      <p class="muted" id="webRenew" style="margin-top:8px;font-size:11.5px;line-height:1.5;">Sona Yearly renews at $59.99 a year after the 3-day free trial. Cancel anytime in your account.</p>
     </div>
+
+    <p id="declineRow" style="display:none;text-align:center;margin-top:18px;">
+      <a href="/today.html" id="declineLink" class="btn ghost" style="width:auto;padding:12px 22px;display:inline-block;text-decoration:none;">Not now — back to Sona</a>
+      <span class="muted" style="display:block;margin-top:8px;font-size:12.5px;font-weight:700;">Your practice round is still there whenever you want it.</span>
+    </p>
 
     <!-- SLP credential entry. ONE redemption surface for the whole app —
          /join.html — so the unlock semantics can't drift between three copies
@@ -287,10 +304,6 @@
          had to work out that leaving was allowed. On the hand-off it is a
          stated option, next to the price rather than under the footer, and it
          goes back to a home screen that still has the demonstration on it. -->
-    <p id="declineRow" style="display:none;text-align:center;margin-top:18px;">
-      <a href="/today.html" id="declineLink" class="btn ghost" style="width:auto;padding:12px 22px;display:inline-block;text-decoration:none;">Not now — back to Sona</a>
-      <span class="muted" style="display:block;margin-top:8px;font-size:12.5px;font-weight:700;">Your practice round is still there whenever you want it.</span>
-    </p>
 
     <p class="muted" style="text-align:center;margin-top:22px;font-size:12.5px;font-weight:700;max-width:420px;margin-left:auto;margin-right:auto;">
       Sona is an at-home practice companion — not a substitute for professional care.
@@ -340,7 +353,7 @@
       var where = native ? "Settings → Subscriptions" : "your account";
       var last = native
         ? "Your yearly plan starts, at the price above — only if you kept Sona."
-        : "Your yearly plan starts: $59.99 for the year — only if you kept Sona.";
+        : "Your yearly plan starts: " + (window.__yearPrice || "$59.99") + " for the year — only if you kept Sona.";
       el.innerHTML =
         '<div class="tli now"><span class="tld">⭐</span><b>Today, ' + d0 + ' — everything unlocks</b>' +
           '<p>Every game, the Sound Check and the weekly plan. Nothing is charged today.</p></div>' +
@@ -557,7 +570,40 @@
       } catch (e) {}
       trialTimeline("webTL", false);
       var lf = document.getElementById("buyLife");
-      if (lf) lf.onclick = function () { buy("annual", 59.99); };
+      var yearValue = 59.99;
+      if (lf) lf.onclick = function () { buy("annual", yearValue); };
+
+      // THE TIER, FROM THE SAME COUNT THE CHECKOUT READS. The button waits for
+      // the answer (or 2.5s) so a family never taps "$59.99" and meets $99.99
+      // on the Stripe page: the server decides the price, and this page must
+      // agree with it before it lets anyone through.
+      (function () {
+        if (!lf || document.getElementById("pickCard").style.display === "none") return;
+        var label = lf.textContent, settled = false;
+        lf.disabled = true; lf.textContent = "Checking today’s price…";
+        var release = function () { if (settled) return; settled = true; lf.disabled = false; lf.textContent = label; };
+        setTimeout(release, 2500);
+        fetch("/api/charter").then(function (r) { return r.json(); }).then(function (j) {
+          if (!j || !j.ok || j.free) return release();
+          var line = document.getElementById("charterLine");
+          if (j.open) {
+            if (line) {
+              line.textContent = j.label + " price for the first " + j.cap + " families — regular price " + j.standard + "/yr"
+                + (j.source === "stripe" ? " · " + j.left + " spot" + (j.left === 1 ? "" : "s") + " left" : "");
+              line.style.display = "block";
+            }
+          } else {
+            // spots gone: every figure on this card becomes the standard tier
+            yearValue = 99.99; window.__yearPrice = j.standard;
+            var t = document.getElementById("webTitle"); if (t) t.textContent = "Sona Yearly — " + j.standard + "/yr";
+            var sv = document.querySelector("#planLife .save"); if (sv) sv.textContent = "Under $8.50 a month, billed once a year.";
+            var pl = document.getElementById("planLine"); if (pl) pl.innerHTML = "Yearly: <b>3 days free</b>, then " + j.standard + "/yr — <b>under $8.50 a month</b>, billed once a year.";
+            var rn = document.getElementById("webRenew"); if (rn) rn.textContent = "Sona Yearly renews at " + j.standard + " a year after the 3-day free trial. Cancel anytime in your account.";
+            trialTimeline("webTL", false);
+          }
+          release();
+        }).catch(release);
+      })();
     })();
 
     // Plan line: reflect an active subscription if one was restored on this device.

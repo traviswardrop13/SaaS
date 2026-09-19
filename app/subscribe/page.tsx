@@ -22,6 +22,20 @@ function SubscribeInner() {
   const [email, setEmail] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // the tier from /api/charter; null until it answers, and the button waits
+  // for it so the price on this page is the price Stripe charges
+  const [spots, setSpots] = useState<{ open: boolean; left: number; cap: number; source: string; standard: string; label: string } | null>(null);
+  useEffect(() => {
+    let done = false;
+    const settle = (v: typeof spots) => { if (!done) { done = true; setSpots(v); } };
+    fetch("/api/charter").then((r) => r.json()).then((j) => settle(j && j.ok && !j.free ? j : { open: true, left: 0, cap: 50, source: "fallback", standard: "$99.99", label: "Charter" }))
+      .catch(() => settle({ open: true, left: 0, cap: 50, source: "fallback", standard: "$99.99", label: "Charter" }));
+    const t = setTimeout(() => settle({ open: true, left: 0, cap: 50, source: "fallback", standard: "$99.99", label: "Charter" }), 2500);
+    return () => clearTimeout(t);
+  }, []);
+  const open = spots ? spots.open : true;
+  const yearPrice = open ? "$59.99" : "$99.99";
+  const perMonth = open ? "Under $5 a month" : "Under $8.50 a month";
 
   // Native app (App Store build): Apple forbids non-IAP checkout, so the iOS app
   // ships with no in-app payment. If this page is reached inside the app, bounce
@@ -126,13 +140,19 @@ function SubscribeInner() {
               left is checkable arithmetic — $59.99 / 12 = $4.9991 — which is
               why it reads "under $5 a month" and never "$4.99 a month". */}
           <div className="mt-4 rounded-2xl border-2 border-sky-500 bg-sky-50 px-4 py-4 text-left">
-            <span className="block font-display text-2xl font-extrabold text-gray-900">$59.99/yr</span>
-            <span className="block text-xs font-bold text-grass-600">Under $5 a month · 3 days free first</span>
+            <span className="block font-display text-2xl font-extrabold text-gray-900">{yearPrice}/yr</span>
+            <span className="block text-xs font-bold text-grass-600">{perMonth} · 3 days free first</span>
+            {spots && open && (
+              <span className="mt-1 block text-xs font-bold text-grass-700">
+                {spots.label} price for the first {spots.cap} families — regular price <s>{spots.standard}/yr</s>
+                {spots.source === "stripe" ? ` · ${spots.left} spot${spots.left === 1 ? "" : "s"} left` : ""}
+              </span>
+            )}
           </div>
 
           <p className="mt-3 rounded-2xl bg-sky-50 px-4 py-3 text-sm font-semibold text-sky-700">
             <b>$0 today.</b> Your first 3 days are free. On day 3, if you keep Sona,
-            it&apos;s $59.99 for the year and $59.99 each year after. Cancel before
+            it&apos;s {yearPrice} for the year and {yearPrice} each year after. Cancel before
             day 3 and you are charged nothing at all.
           </p>
 
@@ -185,10 +205,10 @@ function SubscribeInner() {
 
           <button
             onClick={preorder}
-            disabled={busy}
+            disabled={busy || spots === null}
             className="mt-5 w-full rounded-2xl bg-grass-500 px-6 py-3.5 font-display font-extrabold uppercase tracking-wide text-white shadow-chunky transition hover:bg-grass-600 active:translate-y-1 active:shadow-chunky-sm disabled:opacity-60"
           >
-            {busy ? "Loading…" : "Start 3 days free — then $59.99/yr"}
+            {busy ? "Loading…" : spots === null ? "Checking today’s price…" : `Start 3 days free — then ${yearPrice}/yr`}
           </button>
 
           <p className="mt-3 text-center text-xs text-gray-400">

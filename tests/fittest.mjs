@@ -95,6 +95,23 @@ for (const [dev, w, h] of LANDSCAPE) {
   await page.close();
 }
 
+// ── the charge header is one line, not two, not "P…" ──
+// "Round 1 of 5 · P sound" wrapped to two lines on a 390px phone between the
+// close button, the ticket pill and the star count; nowrap alone turned it
+// into "P…". The label is shorter now and must fit without overflowing.
+{
+  const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+  await page.goto("http://localhost:8143/charge.html?daily=1", { waitUntil: "networkidle" });
+  await page.waitForTimeout(700);
+  const hdr = await page.evaluate(() => {
+    const e = document.getElementById("ctxLine"); if (!e) return null;
+    return { text: e.textContent, over: e.scrollWidth > e.clientWidth + 1, h: e.getBoundingClientRect().height, fs: parseFloat(getComputedStyle(e).fontSize) };
+  });
+  ok("the charge header fits on one line at 390px", !!hdr && !hdr.over && hdr.h <= hdr.fs * 1.8, JSON.stringify(hdr));
+  ok("…and still names the round and the sound", !!hdr && /Round \d+ of \d+ · \S+/.test(hdr.text), hdr && hdr.text);
+  await page.close();
+}
+
 await browser.close(); srv.close();
 console.log(fails ? fails + " FAILURES" : "ALL GREEN");
 process.exit(fails ? 1 : 0);

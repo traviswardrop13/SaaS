@@ -123,3 +123,24 @@ npx cap add android
 npx cap open android   # Android Studio
 ```
 Same config; Google Play is $25 once and reviews faster.
+
+## The charter price on iOS
+
+The web sells one yearly plan at two tiers — $59.99 for the first 50 families,
+$99.99 after — and `/api/checkout` decides which at the moment of purchase
+from a live Stripe count (`lib/charter.ts`). None of that reaches the App
+Store build, and it must not try to: the native paywall's figure comes from
+App Store Connect through RevenueCat (`iapProduct` → `priceString`), and
+`subscribe.html`'s native card deliberately states no dollars and no
+comparison, because a number written in this repo would out-argue the one ASC
+actually charges.
+
+To mirror the charter tier on iOS, the work is in App Store Connect, not here:
+either an **introductory offer** on `com.speaksona.app.annual` (a discounted
+first year — but ASC applies it per Apple ID, not per "first 50", so the cap
+cannot be enforced there), or a **second product** at the standard price that
+the app switches to once the web count closes. Neither exists today. Until one
+does, iOS simply sells the annual product at whatever ASC lists, and the
+native card describes exactly that. Do not add charter copy to the native
+card ahead of the ASC change: a card that says "first 50 families" over a
+price ASC controls is the same untrue promise the web half was built to avoid.
