@@ -25,7 +25,11 @@ page.on("pageerror", (e) => errs.push(e.message));
 let fails = 0;
 const ok = (n, p) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL ") + n); };
 
-// ── onboarding: slim flow — 8 steps, Pip preselected, achieve as finale ──
+// ── onboarding: THREE setup steps before a child says a word ────────────
+// It was ten screens — role, path, name, buddy, interests, sounds, weekly
+// goal, a summary and an email — all in front of a parent who had just come
+// off an ad and had no idea yet whether the thing worked. Everything not
+// needed to run the FIRST session now waits until after it.
 await page.goto("http://localhost:8129/onboarding.html?slp=RACHEL1");
 await page.waitForTimeout(900);
 // CODES1: founding access now requires the VERIFIED credential. sona.slpok is
@@ -36,18 +40,24 @@ const ob = await page.evaluate(() => ({
   betaStep: !!document.querySelector('[data-step="beta"]'),
   segs: document.querySelectorAll("#seg i").length,
   preselected: !!document.querySelector("#obBuddies .bopt.on"),
+  clinicianDoor: !!document.getElementById("slpLink"),
+  restoreDoor: !!document.getElementById("moveLink"),
 }));
 ok("beta step removed", !ob.betaStep);
+ok("a parent walks five screens, not ten", ob.segs === 5, "segs=" + ob.segs);
+ok("buddy is preselected, so it never needs to be a step", ob.preselected);
+// The two doors that must survive the cut. A clinician setting Sona up for a
+// caseload, and a family who already paid or has a save elsewhere, both used
+// to be reachable only by answering a question every parent was asked.
+ok("the clinician door is on the first screen", ob.clinicianDoor);
+ok("…and so is the returning-family door", ob.restoreDoor);
 
 // ── one mascot at a time ──
-// Every bubble on the opening steps is Echo speaking ("Hi! I'm Echo!"), but the
-// mascot slot was painted from draft.character on load — and a fresh family's
-// default is Pip the fox. A fox introduced itself as Echo: two mascots in one
-// flow, which the Aug 10 review flagged. The buddy is the CHILD's pick, so it
-// may only replace Echo once they have picked one.
-// A returning profile is the harder case: DEFAULT_PROFILE.character is "fox",
-// so a family that never reached the buddy step looks identical to one that
-// picked Pip. The rule is therefore the STEP, not the stored profile.
+// Every bubble in setup is Echo speaking, and the buddy is the CHILD's pick.
+// The mascot slot used to be painted from draft.character on load — a fresh
+// family's default is Pip the fox — so a fox introduced itself as Echo. With
+// the buddy step deferred there is now no point in setup where the slot should
+// change hands at all, which is a stronger rule than the old one.
 for (const [who, seed] of [["a fresh family", () => {}],
   ["a returning family", () => localStorage.setItem("sona.profile.v1",
     JSON.stringify({ childName: "Milo", childAge: "7", character: "fox", focusSounds: ["R"], onboarded: true }))]]) {
@@ -63,76 +73,179 @@ for (const [who, seed] of [["a fresh family", () => {}],
     /echo-avatar\.svg/.test(m.html) && !/bFox/i.test(m.html));
   ok("…and the bubble beside it is Echo's", /Echo/.test(m.says));
 
-  // …and the buddy still takes the slot the moment the child picks one
-  const at = await ob2.evaluate(async () => {
+  const hosts = await ob2.evaluate(async () => {
     const nm = document.querySelector('[data-step="name"] input');
+    const seen = [];
     for (let i = 0; i < 8; i++) {
       const cur = (document.querySelector(".step.on") || {}).dataset?.step;
-      if (cur === "buddy") return document.getElementById("leo").innerHTML;
+      if (!cur) break;
+      seen.push(cur + ":" + (/echo-avatar/.test(document.getElementById("leo").innerHTML) ? "echo" : "other"));
+      if (cur === "mic") break;
       if (cur === "name" && nm && !nm.value) nm.value = "Milo";
       document.getElementById("nextBtn").click();
       await new Promise((r) => setTimeout(r, 220));
     }
-    return "(never reached the buddy step)";
+    return seen;
   });
-  ok("…and the child's buddy takes over at the buddy step", /bFox|<svg/.test(at) && !/echo-avatar/.test(at));
+  ok("…and Echo hosts every step of setup, start to finish",
+    hosts.length > 1 && hosts.every((h) => h.endsWith(":echo")), JSON.stringify(hosts));
   await ob2.close();
 }
-ok("10 progress segments (role + path steps)", ob.segs === 10);
-ok("buddy preselected (Pip)", ob.preselected);
-// real walk: click through every step to finish()
+
+// ── the real walk, to finish() ──
 const clickNext = async () => { await page.evaluate(() => document.getElementById("nextBtn").click()); await page.waitForTimeout(250); };
 await clickNext(); // welcome →
-await page.evaluate(() => document.querySelector('#obRole .choice[data-val="parent"]').click());
-await clickNext(); // role →
-await page.evaluate(() => document.querySelector('#obPath .choice[data-val="speech"]').click());
-await clickNext(); // path →
 await page.evaluate(() => { document.getElementById("obName").value = "Milo"; });
 await clickNext(); // name →
-await clickNext(); // buddy →
-await clickNext(); // interests →
-await clickNext(); // sounds →
+await page.evaluate(() => document.querySelector('#obPath .choice[data-val="speech"]').click());
+await clickNext(); // path → sounds
 // the "building the plan" beat fires over the next step, named + non-blocking
+await clickNext(); // sounds →
 const build = await page.evaluate(() => ({
   shown: !!document.querySelector("#obBuild.show"),
   txt: (document.getElementById("obBuild") || {}).textContent || "",
   passthru: getComputedStyle(document.getElementById("obBuild")).pointerEvents === "none",
 }));
 ok("sound-plan build beat shows (named, non-blocking)", build.shown && /Milo's sound plan/.test(build.txt) && build.passthru);
-await page.evaluate(() => document.querySelector('#obGoal .choice[data-val="3"]').click());
-await clickNext(); // goal →
-await clickNext(); // slp →
-await page.evaluate(() => { document.getElementById("obEmail").value = "mom@example.com"; });
-await clickNext(); // email → finish()
-await page.waitForTimeout(500);
+const atMic = await page.evaluate(() => ({
+  step: (document.querySelector(".step.on") || {}).dataset?.step,
+  cta: document.getElementById("nextBtn").textContent,
+  says: document.querySelector('[data-step="mic"]').textContent,
+}));
+ok("the last setup step is the microphone, not a price or an email",
+  atMic.step === "mic", atMic.step);
+// the promise on this screen has to match the one charge.html makes, because
+// two screens promising different things about a child's voice is how the
+// stale upload wording survived for months
+ok("…and it tells the truth about the microphone",
+  /only during practice/.test(atMic.says) && /checked on this phone/.test(atMic.says)
+  && !/\b(uploads?|sends?|transmits?)\b/i.test(atMic.says.replace(/Nothing is uploaded\.?/g, "")));
+ok("…and says what happens if they decline", /Not ready\?/.test(atMic.says));
+await clickNext(); // mic → finish()
+await page.waitForTimeout(600);
 const fin = await page.evaluate(() => ({
   achieveShown: document.querySelector('[data-step="achieve"]').classList.contains("on"),
   achName: document.getElementById("achName").textContent,
   cta: document.getElementById("nextBtn").textContent,
 }));
-ok("achieve finale shows after email", fin.achieveShown && fin.achName === "Milo");
+ok("achieve finale shows after the last step", fin.achieveShown && fin.achName === "Milo");
 ok("CTA says Let's practice", /Let's practice/.test(fin.cta));
 const prof = await page.evaluate(() => JSON.parse(localStorage.getItem("sona.profile.v1") || "{}"));
-ok("SLP-referred → founding access + weeklyGoal", prof.earlyAdopter === true && prof.slpCode === "RACHEL1" && prof.weeklyGoal === 3);
+ok("SLP-referred → founding access", prof.earlyAdopter === true && prof.slpCode === "RACHEL1");
+// the deferred questions must not have been silently answered on the parent's
+// behalf either — they are asked later, in Settings, or they keep their default
+ok("the weekly goal keeps its default rather than being asked for", prof.weeklyGoal === 5);
+ok("no email was demanded to finish", prof.email === "");
 ok("onboarding no pageerrors", errs.length === 0);
+
+// ── SETUP1: partial setup survives an interruption ────────────────────
+// draft lived in memory only. A phone call, a locked screen or a stray
+// back-swipe at step seven threw away everything a parent had typed and put
+// them back at the top — and a parent who has just retyped their child's name
+// once does not do it twice.
+{
+  const pg = await browser.newPage({ viewport: { width: 390, height: 844 } });
+  await pg.goto("http://localhost:8129/onboarding.html"); await pg.waitForTimeout(800);
+  await pg.evaluate(() => { localStorage.clear(); sessionStorage.clear(); });
+  await pg.goto("http://localhost:8129/onboarding.html"); await pg.waitForTimeout(800);
+  await pg.evaluate(() => document.getElementById("nextBtn").click()); await pg.waitForTimeout(250);
+  await pg.evaluate(() => { document.getElementById("obName").value = "Rosie"; });
+  await pg.evaluate(() => document.querySelector('#obAge .sound[data-age="6"]').click());
+  await pg.evaluate(() => document.getElementById("nextBtn").click()); await pg.waitForTimeout(250);
+  const held = await pg.evaluate(() => JSON.parse(localStorage.getItem("sona.obdraft.v1") || "null"));
+  ok("what a parent typed is written down as they go",
+    !!held && held.childName === "Rosie" && String(held.childAge) === "6", JSON.stringify(held));
+
+  await pg.reload(); await pg.waitForTimeout(800);        // the interruption
+  const back = await pg.evaluate(() => ({
+    name: document.getElementById("obName").value,
+    age: (document.querySelector("#obAge .sound.on") || {}).dataset?.age,
+  }));
+  ok("…and is still there after the phone rings", back.name === "Rosie" && back.age === "6", JSON.stringify(back));
+
+  // it is a scratchpad, not a profile: finishing must clear it, or a stale
+  // draft shadows the real thing on the next visit
+  // the reload put them back at the top with their answers intact, so this
+  // walks the whole short flow again: welcome → name → path → mic → finish
+  await pg.evaluate(() => document.getElementById("nextBtn").click()); await pg.waitForTimeout(250);
+  await pg.evaluate(() => document.getElementById("nextBtn").click()); await pg.waitForTimeout(250);
+  await pg.evaluate(() => document.querySelector('#obPath .choice[data-val="play"]').click());
+  await pg.evaluate(() => document.getElementById("nextBtn").click()); await pg.waitForTimeout(400);
+  await pg.evaluate(() => document.getElementById("nextBtn").click()); await pg.waitForTimeout(700);
+  const after = await pg.evaluate(() => ({
+    draft: localStorage.getItem("sona.obdraft.v1"),
+    prof: JSON.parse(localStorage.getItem("sona.profile.v1") || "{}"),
+  }));
+  ok("…and the scratchpad is torn up once the profile is real",
+    after.draft === null && after.prof.onboarded === true, JSON.stringify(after.draft));
+  await pg.close();
+}
+
+// ── SETUP2: "I'm not sure" is a starting point, never a finding ─────────
+// A parent who does not know which sounds their child needs must be able to
+// say so and still start. What they must NOT get is Sona appearing to have
+// decided something about their child: it does not assess, and a door that
+// quietly picked targets would be it assessing.
+{
+  const pg = await browser.newPage({ viewport: { width: 390, height: 844 } });
+  await pg.goto("http://localhost:8129/onboarding.html"); await pg.waitForTimeout(800);
+  await pg.evaluate(() => { localStorage.clear(); sessionStorage.clear(); });
+  await pg.goto("http://localhost:8129/onboarding.html"); await pg.waitForTimeout(800);
+  const door = await pg.evaluate(() => ({
+    has: !!document.querySelector('#obPath .choice[data-val="unsure"]'),
+    says: document.querySelector('[data-step="path"]').textContent,
+  }));
+  ok("a parent can say they don't know where to start", door.has);
+  ok("…and the screen says plainly that Sona does not test or diagnose",
+    /doesn't test or diagnose/.test(door.says), door.says.slice(0, 160));
+  ok("…and does not dress the choice up as a recommendation",
+    !/recommend|we think|based on|diagnos(is|e)\b|assess(ment)?\b/i.test(door.says.replace(/doesn't test or diagnose/, "")),
+    door.says.slice(0, 200));
+
+  await pg.evaluate(() => document.getElementById("nextBtn").click()); await pg.waitForTimeout(250);
+  await pg.evaluate(() => { document.getElementById("obName").value = "Sam"; });
+  await pg.evaluate(() => document.getElementById("nextBtn").click()); await pg.waitForTimeout(250);
+  await pg.evaluate(() => document.querySelector('#obPath .choice[data-val="unsure"]').click());
+  await pg.evaluate(() => document.getElementById("nextBtn").click()); await pg.waitForTimeout(400);
+  const landed = await pg.evaluate(() => ({
+    onSounds: document.querySelector('[data-step="sounds"]').classList.contains("on"),
+    onMic: document.querySelector('[data-step="mic"]').classList.contains("on"),
+  }));
+  ok("…and is never shown the sound picker, which IS the clinical framing",
+    !landed.onSounds && landed.onMic, JSON.stringify(landed));
+  await pg.evaluate(() => document.getElementById("nextBtn").click()); await pg.waitForTimeout(700);
+  const prof = await pg.evaluate(() => JSON.parse(localStorage.getItem("sona.profile.v1") || "{}"));
+  // the CONTENT path is the existing play path — mode stays "play", because
+  // five other files read mode === "play" and a third value would have filed
+  // an unsure family as a speech family everywhere
+  ok("…lands on the existing general path, not a new one",
+    prof.mode === "play" && (prof.focusSounds || []).length > 1, JSON.stringify(prof.mode));
+  ok("…and the reason is kept separately, so the funnel can see it",
+    prof.pathReason === "unsure", JSON.stringify(prof.pathReason));
+  await pg.close();
+}
 
 // ── email is the default ask but never a gate: "Skip for now" still finishes ──
 await page.evaluate(() => { localStorage.clear(); sessionStorage.clear(); });
 await page.goto("http://localhost:8129/onboarding.html"); await page.waitForTimeout(900);
 const nameStep = await page.evaluate(() => document.querySelector('[data-step="name"]').textContent);
 ok("name question carries justification microcopy", /cheers them on by name/.test(nameStep));
-await clickNext(); // welcome →
-await page.evaluate(() => document.querySelector('#obRole .choice[data-val="slp"]').click());
-await clickNext(); // role → (this walk is an SLP — the play door is SKIPPED)
+// the clinician enters through the link on the welcome screen, so the question
+// "who are you?" is asked of the few people it is actually for
+await page.evaluate(() => document.getElementById("slpLink").click());
+await page.waitForTimeout(250);
 const slpSkip = await page.evaluate(() => ({
   onPath: document.querySelector('[data-step="path"]').classList.contains("on"),
   onName: document.querySelector('[data-step="name"]').classList.contains("on"),
+  segs: document.querySelectorAll("#seg i").length,
+  asks: document.querySelector('[data-step="name"] .qh').textContent,
 }));
 ok("an SLP never sees the play door", !slpSkip.onPath && slpSkip.onName, JSON.stringify(slpSkip));
+ok("\u2026and gets the caseload flow, not the parent one", slpSkip.segs === 5, "segs=" + slpSkip.segs);
+ok("\u2026and is asked about a child on their caseload, not their own",
+  /Which child is this for/.test(slpSkip.asks), slpSkip.asks);
 await page.evaluate(() => { document.getElementById("obName").value = "Zoe"; });
-await clickNext(); // name →
-await clickNext(); // buddy →
-await clickNext(); // interests →
+await clickNext(); // name → sounds
 // SOUNDS1: the picker is open for everyone (no SLP code) — add S next to R
 const pickState = await page.evaluate(() => {
   const chips = [...document.querySelectorAll("#obSounds .sound")];
@@ -140,10 +253,8 @@ const pickState = await page.evaluate(() => {
   return { total: chips.length, soon: document.querySelectorAll("#obSounds .soon").length };
 });
 ok("every sound chip is open (no SOON)", pickState.total >= 15 && pickState.soon === 0);
-await clickNext(); // sounds →
-await page.evaluate(() => document.querySelector('#obGoal .choice[data-val="3"]').click());
-await clickNext(); // goal →
-await clickNext(); // slp →
+await clickNext(); // sounds → slp
+await clickNext(); // slp → email
 // CODES1: an SLP can't skip email — the share credential IS the account
 const slpSkipHidden = await page.evaluate(() => {
   const esk = document.getElementById("obEmailSkip");
@@ -152,6 +263,7 @@ const slpSkipHidden = await page.evaluate(() => {
 ok("SLPs can't skip email (the credential needs it)", slpSkipHidden);
 await page.evaluate(() => { document.getElementById("obEmail").value = "slp@example.com"; });
 await page.evaluate(() => document.getElementById("nextBtn").click()); // email → finish()
+await page.waitForTimeout(300);
 await page.waitForTimeout(500);
 const skipFin = await page.evaluate(() => ({
   achieveShown: document.querySelector('[data-step="achieve"]').classList.contains("on"),
@@ -168,20 +280,16 @@ ok("role is captured (SLP)", skipFin.prof.role === "slp", JSON.stringify(skipFin
 await page.evaluate(() => { localStorage.clear(); sessionStorage.clear(); });
 await page.goto("http://localhost:8129/onboarding.html"); await page.waitForTimeout(900);
 await clickNext(); // welcome →
-await page.evaluate(() => document.querySelector('#obRole .choice[data-val="parent"]').click());
-await clickNext(); // role →
-await page.evaluate(() => document.querySelector('#obPath .choice[data-val="play"]').click());
-await clickNext(); // path →
 await page.evaluate(() => { document.getElementById("obName").value = "Nora"; });
 await clickNext(); // name →
-await clickNext(); // buddy →
-await clickNext(); // interests → (sounds is SKIPPED; the build beat fires here)
+await page.evaluate(() => document.querySelector('#obPath .choice[data-val="play"]').click());
+await clickNext(); // path → (sounds is SKIPPED; the build beat fires here)
 const playSkip = await page.evaluate(() => ({
   onSounds: document.querySelector('[data-step="sounds"]').classList.contains("on"),
-  onGoal: document.querySelector('[data-step="goal"]').classList.contains("on"),
+  onMic: document.querySelector('[data-step="mic"]').classList.contains("on"),
   build: (document.getElementById("obBuild") || {}).textContent || "",
 }));
-ok("play path skips the sound picker entirely", !playSkip.onSounds && playSkip.onGoal, JSON.stringify(playSkip));
+ok("play path skips the sound picker entirely", !playSkip.onSounds && playSkip.onMic, JSON.stringify(playSkip));
 ok("the build beat says play list, not sound plan", /Nora's play list/.test(playSkip.build), playSkip.build);
 await clickNext(); // goal →
 await clickNext(); // slp →
