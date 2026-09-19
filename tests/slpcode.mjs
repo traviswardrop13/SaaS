@@ -153,12 +153,15 @@ const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL 
     const a = document.getElementById("slpEntryLink");
     return a ? a.getAttribute("href") : null;
   });
-  ok("a gated family is offered the SLP route off the paywall", /join\.html/.test(href || ""), String(href));
+  // The SLP side is hidden (Travis, 19 Sep 2026): the paywall no longer offers
+  // the SLP route. A referred family arrives by the link their clinician hands
+  // them, which is verified and honoured below exactly as before.
+  ok("the paywall no longer offers the SLP route — the SLP side is hidden", href === null, String(href));
   ok("the trial page no longer runs its own copy of the redeem fetch",
     !/slpEnGo/.test(readFileSync(ROOT + "/trial.html", "utf8")),
     "duplicated unlock logic is how a paywall hole gets reopened by accident");
-  ok("subscribe.html routes to the same one surface",
-    /join\.html/.test(readFileSync(ROOT + "/subscribe.html", "utf8")) && !/subSlpGo/.test(readFileSync(ROOT + "/subscribe.html", "utf8")));
+  ok("subscribe.html carries neither the SLP card nor its own copy of the redeem fetch",
+    !/slpEntryCard/.test(readFileSync(ROOT + "/subscribe.html", "utf8")) && !/subSlpGo/.test(readFileSync(ROOT + "/subscribe.html", "utf8")));
   await ctx.close();
 }
 

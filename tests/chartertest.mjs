@@ -25,25 +25,39 @@ const { charterSpots, _resetCharterMemo, CHARTER_CAP, CHARTER_CENTS, STANDARD_CE
 let fails = 0;
 const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL ") + n + (p ? "" : "  → " + (extra || ""))); };
 
-const sub = (interval, tier) => ({ items: { data: [{ price: { recurring: { interval } } }] }, metadata: tier ? { tier } : {} });
+const sub = (interval, tier, status) => ({ status: status || "active", items: { data: [{ price: { recurring: { interval } } }] }, metadata: tier ? { tier } : {} });
 const client = (pages) => { let i = 0; return { subscriptions: { search: async () => { const p = pages[Math.min(i++, pages.length - 1)]; return { data: p.data, has_more: !!p.next, next_page: p.next }; } } }; };
 
-// ── the counting rule ──
+// ── the counting rule: a spot is what checkout SOLD as a charter spot ──
+// Travis, 19 Sep 2026, on the two yearly subscriptions that predate the
+// offer (his own test purchases): "dont count". Checkout stamps
+// metadata.tier on every subscription it creates, so anything without the
+// stamp was never sold as one of the fifty.
 _resetCharterMemo();
-let s = await charterSpots(client([{ data: [sub("year"), sub("year"), sub("year"), sub("month"), sub("year", "standard")] }]));
-ok("a yearly subscription is a spot", s.taken === 3, JSON.stringify(s));
+let s = await charterSpots(client([{ data: [
+  sub("year", "charter"), sub("year", "charter", "trialing"), sub("year", "charter", "canceled"),
+  sub("year"),                              // no tier: sold before the offer existed, or a test purchase
+  sub("month", "charter"),                  // the retired monthly plan
+  sub("year", "standard"),                  // sold at full price, after the cap
+  sub("year", "charter", "incomplete"),     // never finished paying
+  sub("year", "charter", "incomplete_expired"),
+] }]));
+ok("a yearly subscription checkout stamped as a charter sale is a spot", s.taken === 3, JSON.stringify(s));
+ok("…a trial still inside its free days is one, and a cancelled one still consumed its spot", s.taken === 3);
+ok("…a subscription with NO tier stamp — from before the offer existed, or a test purchase — is NOT (Travis: 'dont count')", s.taken === 3);
 ok("…the retired monthly plan is not", s.taken === 3 && s.source === "stripe");
-ok("…and one sold at the standard price, after the cap, is not", s.taken === 3);
+ok("…one sold at the standard price, after the cap, is not", s.taken === 3);
+ok("…and a checkout that never finished paying is not", s.taken === 3);
 ok("the count says what is left, and that the door is open", s.left === CHARTER_CAP - 3 && s.open === true, JSON.stringify(s));
 
 // ── the cap ──
 _resetCharterMemo();
-s = await charterSpots(client([{ data: Array.from({ length: CHARTER_CAP }, () => sub("year")) }]));
+s = await charterSpots(client([{ data: Array.from({ length: CHARTER_CAP }, () => sub("year", "charter")) }]));
 ok("fifty yearly subscriptions close the door", s.taken === CHARTER_CAP && s.left === 0 && s.open === false, JSON.stringify(s));
 
 // ── pagination stops at the cap, and never runs away ──
 _resetCharterMemo();
-const big = { data: Array.from({ length: 100 }, () => sub("year")), next: "p2" };
+const big = { data: Array.from({ length: 100 }, () => sub("year", "charter")), next: "p2" };
 s = await charterSpots(client([big, big, big, big]));
 ok("a hundred on page one is already past the cap — closed, no further pages needed", s.open === false && s.taken >= CHARTER_CAP, JSON.stringify(s));
 
@@ -80,6 +94,9 @@ ok("the user-facing word is NOT 'founding' — that already means the free SLP-r
   ok("$99.99 is never written as '$8.33 a month' (that would imply $99.96 a year)",
     !/8\.33/.test(lib) && /under \$8\.50 a month/.test(lib));
   ok("the banned anchor never comes back", !/119\.88|59\.89/.test(lib));
+  ok("the count asks Stripe only for what checkout stamped as a charter sale — nothing from before the offer existed",
+    /metadata\['tier'\]:'charter'/.test(lib) && /tier !== "charter"/.test(lib),
+    "the two pre-offer yearly subscriptions are test purchases and must not fill spots");
   const route = readFileSync(APP + "/app/api/charter/route.ts", "utf8");
   ok("the spots endpoint refuses to invent a price while Sona is free", /FREE_MODE/.test(route) && /open: false/.test(route));
   ok("…and is cacheable briefly at the edge, because it is public and memoised upstream", /s-maxage=60/.test(route));
@@ -94,7 +111,7 @@ ok("the user-facing word is NOT 'founding' — that already means the free SLP-r
     "this is the line that makes 'first 50 families' true rather than decorative");
   ok("…charges the standard price once the spots are gone",
     /tier === "charter" \? CHARTER_CENTS : STANDARD_CENTS/.test(co));
-  ok("…tags the subscription so the count can exclude standard-tier sales",
+  ok("…tags the subscription so the count can find charter sales — and nothing else",
     /metadata: \{ tier \}/.test(co));
   ok("…tells the success page which price was locked", /&tier=\$\{tier\}/.test(co));
   ok("…and a fixed Stripe Price from the environment is only ever the charter price",

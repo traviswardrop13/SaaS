@@ -46,11 +46,12 @@ const ob = await page.evaluate(() => ({
 ok("beta step removed", !ob.betaStep);
 ok("a parent walks five screens, not ten", ob.segs === 5, "segs=" + ob.segs);
 ok("buddy is preselected, so it never needs to be a step", ob.preselected);
-// The two doors that must survive the cut. A clinician setting Sona up for a
-// caseload, and a family who already paid or has a save elsewhere, both used
-// to be reachable only by answering a question every parent was asked.
-ok("the clinician door is on the first screen", ob.clinicianDoor);
-ok("…and so is the returning-family door", ob.restoreDoor);
+// One door survives the cut: a family who already paid or has a save
+// elsewhere. The clinician door is GONE — the SLP side is hidden (Travis,
+// 19 Sep 2026: not a priority), and a door onto a hidden product is a
+// question every parent would be asked for nobody's benefit.
+ok("the clinician door is off the first screen — the SLP side is hidden", !ob.clinicianDoor);
+ok("…and the returning-family door is still there", ob.restoreDoor);
 
 // ── one mascot at a time ──
 // Every bubble in setup is Echo speaking, and the buddy is the CHILD's pick.
@@ -268,22 +269,14 @@ await page.evaluate(() => { localStorage.clear(); sessionStorage.clear(); });
 await page.goto("http://localhost:8129/onboarding.html"); await page.waitForTimeout(900);
 const nameStep = await page.evaluate(() => document.querySelector('[data-step="name"]').textContent);
 ok("name question carries justification microcopy", /cheers them on by name/.test(nameStep));
-// the clinician enters through the link on the welcome screen, so the question
-// "who are you?" is asked of the few people it is actually for
-await page.evaluate(() => document.getElementById("slpLink").click());
-await page.waitForTimeout(250);
-const slpSkip = await page.evaluate(() => ({
-  onPath: document.querySelector('[data-step="path"]').classList.contains("on"),
-  onName: document.querySelector('[data-step="name"]').classList.contains("on"),
-  segs: document.querySelectorAll("#seg i").length,
-  asks: document.querySelector('[data-step="name"] .qh').textContent,
-}));
-ok("an SLP never sees the play door", !slpSkip.onPath && slpSkip.onName, JSON.stringify(slpSkip));
-ok("\u2026and gets the caseload flow, not the parent one", slpSkip.segs === 5, "segs=" + slpSkip.segs);
-ok("\u2026and is asked about a child on their caseload, not their own",
-  /Which child is this for/.test(slpSkip.asks), slpSkip.asks);
+// The clinician door is gone from this screen (the SLP side is hidden), so
+// its onboarding branch is unreachable; what is walked here is the PARENT
+// path that shares the sound picker with it.
+await clickNext(); // welcome → name (the old clinician link used to skip this step)
 await page.evaluate(() => { document.getElementById("obName").value = "Zoe"; });
-await clickNext(); // name → sounds
+await clickNext(); // name → path
+await page.evaluate(() => document.querySelector('#obPath .choice[data-val="speech"]').click());
+await clickNext(); // path → sounds
 // SOUNDS1: the picker is open for everyone (no SLP code) — add S next to R
 const pickState = await page.evaluate(() => {
   const chips = [...document.querySelectorAll("#obSounds .sound")];
@@ -291,26 +284,16 @@ const pickState = await page.evaluate(() => {
   return { total: chips.length, soon: document.querySelectorAll("#obSounds .soon").length };
 });
 ok("every sound chip is open (no SOON)", pickState.total >= 15 && pickState.soon === 0);
-await clickNext(); // sounds → slp
-await clickNext(); // slp → email
-// CODES1: an SLP can't skip email — the share credential IS the account
-const slpSkipHidden = await page.evaluate(() => {
-  const esk = document.getElementById("obEmailSkip");
-  return getComputedStyle(esk.parentElement).display === "none";
-});
-ok("SLPs can't skip email (the credential needs it)", slpSkipHidden);
-await page.evaluate(() => { document.getElementById("obEmail").value = "slp@example.com"; });
-await page.evaluate(() => document.getElementById("nextBtn").click()); // email → finish()
-await page.waitForTimeout(300);
-await page.waitForTimeout(500);
+await clickNext(); // sounds → mic
+await clickNext(); // mic → finish()
+await page.waitForTimeout(1800);
 const skipFin = await page.evaluate(() => ({
   achieveShown: document.querySelector('[data-step="achieve"]').classList.contains("on"),
-  cred: !!document.getElementById("obSlpCred"),
   prof: JSON.parse(localStorage.getItem("sona.profile.v1") || "{}"),
 }));
-ok("SLP finish lands on the finale with the credential slot", skipFin.achieveShown && skipFin.cred && skipFin.prof.onboarded === true && skipFin.prof.childName === "Zoe");
-ok("open sound picker: S saved next to R", (skipFin.prof.focusSounds || []).includes("S") && (skipFin.prof.focusSounds || []).includes("R"));
-ok("role is captured (SLP)", skipFin.prof.role === "slp", JSON.stringify(skipFin.prof.role));
+ok("the parent finish lands on the finale", skipFin.achieveShown && skipFin.prof.onboarded === true && skipFin.prof.childName === "Zoe", JSON.stringify(skipFin.prof));
+ok("open sound picker: S saved next to R", (skipFin.prof.focusSounds || []).includes("S") && (skipFin.prof.focusSounds || []).includes("R"), JSON.stringify(skipFin.prof.focusSounds));
+ok("nobody becomes an SLP by accident", skipFin.prof.role !== "slp", JSON.stringify(skipFin.prof.role));
 
 // ── PLAY1: the play door — no sound picker, every sound, easiest first ──
 // The niece case: a kid who doesn't need speech help still gets the games.

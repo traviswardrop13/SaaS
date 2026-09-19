@@ -1,8 +1,10 @@
-// STORY1: the episode engine, now used for ONE thing — the cliffhanger on the
-// win overlay. Asserts the engine's contracts (a beat per round, a hook, one
-// chapter per DAY), that the home deck carries a card per game, that the hook
-// renders when a run finishes, and — deliberately — that NO story card ever
-// interrupts a round. The games are the games.
+// STORY1: the episode engine, now used for ONE thing — drawing the day's trio
+// of games and turning its page at the end of a run (the cliffhanger on the
+// win overlay went with the books, GAMES1, 19 Sep 2026). Asserts the engine's
+// contracts (a beat per round, a hook, one chapter per DAY), that the home
+// deck carries a card per game, that the win screen shows no cliffhanger, and
+// — deliberately — that NO story card ever interrupts a round. The games are
+// the games.
 import { createServer } from "http";
 import { readFileSync, existsSync } from "fs";
 import { chromium, ROOT, launchOpts } from "./_env.mjs";
@@ -91,14 +93,13 @@ const deck = await page.evaluate(() => ({
   chapPill: !!document.getElementById("chapPill"),
 }));
 ok("deck names the hero activity", deck.hero.length > 3, deck.hero);
-// DAY1: the hero is today's CHAPTER until it's read — the day starts with the
-// story, and the games are what reading it earns.
-ok("hero card opens a real door", /^\/(chapter\.html|charge\.html\?game=|story\.html|arcade-feed\.html)/.test(deck.launch || ""), deck.launch);
-// The wording now depends on whether this child has ever practised — a
-// first-timer is invited to START YOUR FIRST ADVENTURE, and the adventure
-// is the chapter. The launch target above is what pins the door; this pins
-// that the button is about the story rather than a game.
-ok("CTA offers the story first", /READ TODAY.S STORY|FIRST ADVENTURE/i.test(deck.cta), deck.cta);
+// GAMES1: the hero is today's ADVENTURE — practice first, and the games are
+// what each round earns. The books are parked (19 Sep 2026).
+ok("hero card opens a real door", /^\/(charge\.html\?(daily=1|game=)|arcade-feed\.html)/.test(deck.launch || ""), deck.launch);
+// The wording depends on whether this child has ever practised — a
+// first-timer is invited to START YOUR FIRST ADVENTURE. The launch target
+// above is what pins the door; this pins that the button is about practice.
+ok("CTA offers the adventure first", /LET.S PLAY|FIRST ADVENTURE/i.test(deck.cta), deck.cta);
 ok("three named game cards sit below", deck.thumbs.length === 3 && deck.thumbs.every((t) => t.n.length > 3), JSON.stringify(deck.thumbs));
 ok("home screen carries no chapter furniture", !deck.chapPill);
 
@@ -157,7 +158,7 @@ for (const url of ["/charge.html?daily=1&sound=R", "/charge.html?game=arcade-sli
     "DEFAULT_PROFILE volume 0.3 with no slider left every family inaudible");
 }
 
-// ── the cliffhanger lands on the finish overlay ──
+// ── the finish overlay: no cliffhanger (the books are parked), and the season still turns ──
 await page.evaluate(() => {
   sessionStorage.setItem("sona.run.v1", JSON.stringify({ active: true, round: 5, sum: 40, scores: [8, 8, 8, 8, 8], sound: "R", level: 1, pending: false }));
 });
@@ -165,11 +166,17 @@ await page.goto("http://localhost:8151/charge.html?daily=1&sound=R");
 await page.waitForTimeout(1200);
 const fin = await page.evaluate(() => ({
   ovl: document.getElementById("runOvl").classList.contains("show"),
-  hookShown: document.getElementById("runHook").style.display === "block",
-  hook: document.getElementById("runHookTxt").textContent,
+  hook: !!document.getElementById("runHook"),
 }));
 ok("finished run shows the win overlay", fin.ovl);
-ok("win overlay carries the cliffhanger", fin.hookShown && fin.hook.length > 10, JSON.stringify(fin));
+// GAMES1: the cliffhanger promised a chapter that no longer opens, so the win
+// screen shows none — but the run still turns the season's page, which is
+// what draws tomorrow a different trio (the engine half is pinned above).
+ok("the win overlay carries no cliffhanger", fin.hook === false, JSON.stringify(fin));
+{
+  const src = readFileSync(ROOT + "/charge.html", "utf8");
+  ok("…and the finish still turns the season's page", /episodeAdvance\(\)/.test(src) && !/episodeHook/.test(src));
+}
 
 ok("no pageerrors", errs.length === 0, errs.join(" | "));
 // ── SCENE1: the story has pictures ────────────────────────────────────────

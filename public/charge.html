@@ -280,12 +280,8 @@
       <h2 id="runTitle">You did it!</h2>
       <div id="runScore">0</div>
       <div id="runBest"></div>
-      <!-- STORY1 cliffhanger: the actual reason a 6-year-old comes back
-           tomorrow. Naming what happens next beats "come back tomorrow". -->
-      <div id="runHook" style="display:none;margin-top:14px;background:linear-gradient(160deg,#fff3e3,#ffe6cc);border-radius:16px;padding:13px 16px;text-align:left;">
-        <div style="font-family:'Baloo 2';font-weight:800;font-size:12px;letter-spacing:.08em;color:#c2410c;">NEXT TIME</div>
-        <div id="runHookTxt" style="font-weight:800;font-size:15px;color:var(--ink);line-height:1.4;margin-top:3px;"></div>
-      </div>
+      <!-- The STORY1 cliffhanger card lived here. It went with the books
+           (GAMES1, 19 Sep 2026): it promised a chapter that no longer opens. -->
       <button class="btn" id="runDone">Done</button>
       <button class="btn ghost" id="runArcade">Free play in the arcade →</button>
     </div>
@@ -1166,15 +1162,14 @@
       $("runBest").textContent=r.newBest?"NEW BEST!":("Best ever: "+r.best);
       $("runEmoji").innerHTML=(window.Sona&&Sona.icon)?Sona.icon("star",56):"";
       $("runTitle").textContent=r.newBest?"NEW HIGH SCORE!":"You did it!";
-      // The one line of story that survives: read the hook BEFORE advancing, so
-      // tomorrow opens on the chapter this cliffhanger just promised. It plays
-      // on the win overlay only — never mid-practice.
-      var hook="";
-      try{ if(S.episodeHook){ hook=S.episodeHook(); if(S.episodeAdvance)S.episodeAdvance(); } }catch(e){}
-      if(hook){ try{ $("runHookTxt").textContent=hook; $("runHook").style.display="block"; }catch(e){} }
+      // The story engine still turns its page at the end of a run — that is
+      // what draws tomorrow a different trio of games — but with the books
+      // parked (GAMES1) the cliffhanger is neither shown nor spoken: it
+      // promised a chapter that no longer opens.
+      try{ if(S.episodeAdvance)S.episodeAdvance(); }catch(e){}
       $("runOvl").classList.add("show");
       sfx("complete"); try{ if(S.confetti)S.confetti(); }catch(e){}
-      say((r.newBest?"New high score! Amazing! ":"You did it! Great work! ")+hook);
+      say(r.newBest?"New high score! Amazing!":"You did it! Great work!");
       // THE EXPLICIT FINISH. This screen is the end of the free demonstration:
       // a real prompt, real reps judged by the real detector, the games those
       // reps earned, and the celebration. demoFinish() is one-shot and returns

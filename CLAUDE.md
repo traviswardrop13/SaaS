@@ -84,6 +84,10 @@ landing page — and the in-app plan screen disables its button until the count
 answers, so a parent never taps $59.99 and meets $99.99 on the Stripe page.
 A spots-left number is printed ONLY when Stripe answered it; a fallback count
 is a guess, and a guessed scarcity number is the one thing no surface may show.
+A spot is a subscription that checkout stamped `tier: charter`, in any status
+but the two "never finished paying" ones; the yearly subscriptions from before
+the offer existed carry no stamp and are not spots — they are Travis's own
+test purchases ("dont count", 19 Sep 2026).
 `tests/chartertest.mjs` pins the counting rule and every surface.
 
 The word is **charter**, never **founding**: "founding family" already means
@@ -184,6 +188,31 @@ writing on `for-slps.html`), pilots and founders. There is no payment path for
 an SLP or clinic anywhere in the product: the SLP channel produces engaged
 families and zero revenue by design. Entitlement is never granted from a URL
 parameter.
+
+**The SLP side is HIDDEN, not deleted** (Travis, 19 Sep 2026: "not a
+priority"). Nothing links to it: the clinician door left onboarding, the
+"working with a speech therapist?" card left the plan screen and the trial
+page, and the SLP pages carry `noindex`. `for-slps.html`, `slp.html`,
+`slp-login.html`, `join.html`, the settings SLP corner (renders only for
+`role === "slp"`) and every `/api/slp/*` route stay, reachable by direct
+link, because clinicians already onboarded and their free-forever families are
+a promise that hiding must not break. `betatest`, `progtest` and `slpcode`
+pin the doors shut.
+
+## The day: practice, then games
+**The books are parked, and Home leads with practice (Travis, 19 Sep 2026).**
+The stories "suck and don't even work"; they relaunch in Q4 once they are
+good. Until then: Home opens on today's adventure (`charge.html?daily=1`), the
+day's three games are open from the first tap (every door goes through
+`charge.html`, which asks for the sound first — a typed game URL goes home),
+the book button on the Home header says "coming soon" and goes nowhere, and no
+page links to `chapter.html`, `story.html` or `library.html`. The reader pages
+and the story engine stay in the repo: `dailyGames()` still draws the trio
+from the day's chapter and the win screen still turns the page
+(`episodeAdvance()`), which is what makes tomorrow's three different — but the
+win screen shows no cliffhanger and the mystery game no longer waits on a
+story being read. `day1`, `storytest` and `feedtest` pin the day; `readtest`
+still pins the reader pages so they work the day they come back.
 
 ## Hard rules
 - Merges to main/prod only on Travis's explicit go ("merge").
