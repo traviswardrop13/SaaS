@@ -21,8 +21,24 @@ const EVENTS = new Set([
   "practice started", "practice completed",
   "day goal done",        // the outcome proxy: a family finished all 5 rounds
   "slp code redeemed",    // which SLPs actually send families
+  // The conversion funnel, added 18 Sep 2026. Without these the relay could
+  // see a child practise and never see whether that turned into anything:
+  "plan moment shown",    // the ask, fired once on the first completed run
+  "trial started",        // the in-app 3-day clock begins — NOT a purchase
+  "purchase completed",   // money committed (Apple or Stripe)
+  "demo started",         // …and the other half of that rate
+  "recap viewed",         // the parent read what their child did
+  "offer dismissed",      // they said no, deliberately — which is not the same
+                          // as never arriving, and the two were indistinguishable
+  "demo completed",       // the free demonstration finished — the step the
+                          // offer is supposed to follow, so without it the
+                          // funnel cannot tell a family who saw the product
+                          // from one who bounced before it started
 ]);
-const PROPS = new Set(["sound", "game", "duration_seconds", "attempts_count", "code"]);
+// `plan` and `surface` join the list for the events above. Still no name, no
+// age, no email, no word a child said — an unlisted key is dropped silently,
+// which is the whole point of an allow-list.
+const PROPS = new Set(["sound", "game", "duration_seconds", "attempts_count", "code", "plan", "surface", "source"]);
 
 export async function POST(req: NextRequest) {
   try {

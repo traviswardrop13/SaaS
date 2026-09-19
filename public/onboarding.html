@@ -102,9 +102,20 @@
     </div>
 
     <!-- welcome -->
+    <!-- SETUP IS THREE STEPS. It was ten, and a parent off an ad met every one
+         of them before their child said a word: role, path, name, buddy,
+         interests, sounds, weekly goal, a summary, and an email. Everything
+         that is not needed to run the FIRST session now waits until after it
+         — buddy (Pip is preselected), interests, the weekly goal and the
+         email all still exist, in Settings, once the product has earned the
+         question. The two doors that must stay reachable from the very first
+         screen are here as links rather than steps: a clinician setting Sona
+         up for a caseload, and a family who already paid or already has a
+         save somewhere else. -->
     <div class="step on" data-step="welcome">
       <div class="qh">Let's make talking fun!</div>
       <p class="muted">Short, friendly practice — a few minutes a day. Designed with a speech-language pathologist.</p>
+      <p class="muted" id="slpRow" style="margin-top:10px;font-size:13px;"><a href="#" id="slpLink"><b>I'm a speech-language pathologist</b> — setting Sona up for my caseload →</a></p>
       <p class="muted" id="moveRow" style="margin-top:12px;font-size:13px;"><a href="#" id="moveLink"><b>Have a code?</b> Bought Sona on the website or set up in a browser? Enter it here →</a></p>
     </div>
 
@@ -136,11 +147,24 @@
           <b>We're working on specific sounds</b>
           <span>Pick the sounds — the games aim right at them.</span>
         </div>
+        <div class="choice" data-val="unsure">
+          <b>I'm not sure where to start</b>
+          <span>Echo plays through every sound, easiest first — the same general path as below. You can pick specific sounds any time in Settings.</span>
+        </div>
         <div class="choice" data-val="play">
           <b>Just for fun — letter sounds &amp; talking games</b>
           <span>No goals needed. Echo plays through every sound, easiest first.</span>
         </div>
       </div>
+      <!-- "I'M NOT SURE" IS NOT A DIAGNOSIS and must never read as one. It
+           routes to the EXISTING play order — every sound, easiest first —
+           and the option says so, so a parent can see they are getting the
+           general path rather than a recommendation Sona made about their
+           child. Sona does not assess, and a third door that quietly picked
+           targets would be Sona assessing. Any change to that is Rachel's:
+           if "not sure" should narrow by age, it needs her rule, not an
+           engineering guess. -->
+      <p class="muted" style="margin-top:12px;font-size:12.5px;">Sona practises — it doesn't test or diagnose. Which sounds a child needs is an SLP's call.</p>
     </div>
 
     <!-- name -->
@@ -175,6 +199,21 @@
       <div class="qh">Which sounds are we practicing?</div>
       <p class="muted">Pick every sound your child is working on — their SLP's targets go right here. You can change these anytime in Settings.</p>
       <div class="schips" id="obSounds"></div>
+    </div>
+
+    <!-- mic: the last setup step, and the only one that is about the NEXT
+         minute rather than about preferences. It exists so the OS permission
+         dialog on the first round is expected instead of ambushing a parent.
+         The wording mirrors charge.html's primer deliberately: that copy is
+         pinned by mictest because an earlier version described an upload that
+         stopped existing when the cloud scorer was removed. Two screens
+         promising different things about a child's voice is how that happens
+         again. -->
+    <div class="step" data-step="mic">
+      <div class="qh">One thing before you start</div>
+      <p class="muted">Echo listens while <span id="micName">your child</span> practises and cheers the sounds they get right. Your phone will ask permission on the first round.</p>
+      <p class="muted" style="margin-top:12px;font-size:12.5px;line-height:1.55;"><b style="color:var(--ink);">Grown-ups:</b> the mic is on only during practice — never during the games — and every sound is checked on this phone. Nothing is uploaded.</p>
+      <p class="muted" style="margin-top:10px;font-size:12.5px;">Not ready? Say no when your phone asks — Echo will offer again next time, and the rest of Sona still works.</p>
     </div>
 
     <!-- daily goal -->
@@ -217,12 +256,27 @@
     </div>
 
     <!-- email (last — capture after the questions) -->
+    <!-- HONEST BY CONSTRUCTION. This screen was headed "Save <child>'s
+         progress" and promised to "save progress across devices and send a
+         free starter guide + progress report". Not one of the three was true:
+         the email starts the trial clock and goes to lead capture, no starter
+         guide exists anywhere in the product, and the weekly email carries
+         COHORT stats plus a link precisely BECAUSE per-child practice never
+         leaves the device — which is the privacy promise, not a gap in it.
+         A parent who read this and later wiped their phone lost everything
+         while believing it was saved.
+         What IS true and worth saying: the email is how they get their
+         subscription back on a new phone, and Backup & restore in Settings is
+         the one real way to move a child's practice. The weekly nudge is
+         deliberately NOT promised here — it is a Vercel cron that fails
+         closed without RESEND_FROM / UNSUB_SECRET / EMAIL_POSTAL, and a
+         promise that depends on environment variables is not a promise. -->
     <div class="step" data-step="email">
-      <div class="qh">Save <span id="emName">your child</span>'s progress</div>
-      <p class="muted">Add your email so we can save progress across devices and send a free starter guide + progress report.</p>
+      <div class="qh">Where should we reach you?</div>
+      <p class="muted">Your email is how you get your subscription back if you switch phones, and how we reach you about your account.</p>
       <input id="obEmail" type="email" inputmode="email" autocomplete="email" placeholder="you@email.com" style="margin-top:12px;" />
       <p id="emErr" style="display:none;color:#ef6f23;font-weight:800;font-size:13px;margin-top:8px;"></p>
-      <p class="muted" style="font-size:12px;margin-top:10px;">No spam — just your child's progress. <a href="/privacy" target="_blank">Privacy</a>.</p>
+      <p class="muted" style="font-size:12px;margin-top:10px;"><b id="emName">Your child</b>'s practice stays on this device — it is never uploaded. To move it to another one, use <b>Backup &amp; restore</b> in Settings. <a href="/privacy" target="_blank">Privacy</a>.</p>
       <p class="muted" style="font-size:12.5px;margin-top:12px;"><a href="#" id="obEmailSkip" style="font-weight:800;">Skip for now →</a> You can add it later in Settings.</p>
     </div>
   </div>
@@ -249,9 +303,49 @@
       goals: p.goals || "",
       email: p.email || "",
       interests: (p.interests && p.interests.length) ? p.interests.slice() : [],
+      // WHY they chose the general path, when they said so. The CONTENT path
+      // for "I'm not sure" is the play path — mode stays "play", because five
+      // other files read mode === "play" and a third value would quietly file
+      // an unsure family as a speech family, which is the clinical framing
+      // that option exists to avoid. This is only the reason, kept for the
+      // funnel: how many parents arrive not knowing where to start.
+      pathReason: p.pathReason || "",
+      // childAge was assigned further down, after the draft literal, which put
+      // it outside anything that walks the draft's own keys — including the
+      // restore below, which silently dropped it. Declared here so the object
+      // is the whole scratchpad, not most of it.
+      childAge: p.childAge ? String(p.childAge) : "",
     };
 
-    var ORDER = ["welcome","role","path","name","buddy","interests","sounds","goal","slp","email"];
+    // PARTIAL SETUP SURVIVES AN INTERRUPTION. draft lived in memory only, so a
+    // phone call, a locked screen or a stray back-swipe at step seven threw
+    // away everything a parent had typed and started them at the top. It is
+    // written on every step and cleared the moment onboarding finishes — it
+    // is a scratchpad, never a profile, and nothing reads it but this page.
+    var DRAFTKEY = "sona.obdraft.v1";
+    (function () {
+      try {
+        var saved = JSON.parse(localStorage.getItem(DRAFTKEY) || "null");
+        if (!saved || typeof saved !== "object" || p.onboarded) return;
+        // An explicit list, not Object.keys(saved): this reads a value off
+        // disk, and a draft is not allowed to introduce fields of its own.
+        ["childName","childAge","character","role","mode","focusSounds",
+         "slpEvaluated","goals","email","interests","pathReason"].forEach(function (k) {
+          if (saved[k] !== undefined && saved[k] !== null) draft[k] = saved[k];
+        });
+      } catch (e) {}
+    })();
+    function saveDraft() { try { localStorage.setItem(DRAFTKEY, JSON.stringify(draft)); } catch (e) {} }
+    function clearDraft() { try { localStorage.removeItem(DRAFTKEY); } catch (e) {} }
+
+    // THREE SETUP STEPS for a parent: who is practising, what to aim at, and
+    // the microphone. `sounds` only appears for the family that says they have
+    // targets — for everyone else the picker IS the clinical framing, so it is
+    // not shown. A clinician still gets the caseload flow, reached by the link
+    // on the welcome screen rather than by asking every parent who they are.
+    var ORDER_PARENT = ["welcome","name","path","sounds","mic"];
+    var ORDER_SLP    = ["welcome","name","sounds","slp","email"];
+    var ORDER = ORDER_PARENT;
     var BUBBLES = {
       welcome: "Hi! I'm Echo!",
       role:    "Who am I meeting?",
@@ -264,12 +358,14 @@
       achieve: "Here's what's ahead!",
       slp:     "Almost done!",
       email:   "One last thing!",
+      mic:     "Let's hear you!",
     };
-    var CTA = { email: "START PRACTICING!" };
+    var CTA = { email: "START PRACTICING!", mic: "START PRACTICING!" };
     var idx = 0;
 
     var segEl = document.getElementById("seg");
-    ORDER.forEach(function(){ var i=document.createElement("i"); segEl.appendChild(i); });
+    function paintSeg(){ segEl.innerHTML=""; ORDER.forEach(function(){ segEl.appendChild(document.createElement("i")); }); }
+    paintSeg();
     var steps = {};
     document.querySelectorAll(".step").forEach(function(s){ steps[s.dataset.step]=s; });
     var bubble = document.getElementById("bubble"), leo = document.getElementById("leo");
@@ -387,8 +483,21 @@
     (function(){
       var pw=document.getElementById("obPath"); if(!pw)return;
       pw.querySelectorAll(".choice").forEach(function(ch){
-        if(ch.dataset.val===draft.mode) ch.classList.add("on");
-        ch.onclick=function(){ Sona.sfx.tap(); draft.mode=ch.dataset.val;
+        var v=ch.dataset.val;
+        // repaint the choice they made last time: "unsure" is stored as the
+        // play MODE plus a reason, so it is the reason that identifies it
+        var mine = (v==="unsure") ? (draft.mode==="play" && draft.pathReason==="unsure")
+                                  : (draft.mode===v && draft.pathReason!=="unsure");
+        if(mine) ch.classList.add("on");
+        ch.onclick=function(){ Sona.sfx.tap();
+          // "I'm not sure" and "just for fun" get the SAME content — the play
+          // order, every sound, easiest first. Storing a third mode value
+          // would have filed this family as a speech family everywhere that
+          // reads mode === "play" (library, settings, today, sona.playMode),
+          // which is the clinical framing the option exists to avoid.
+          draft.mode = (v==="unsure") ? "play" : v;
+          draft.pathReason = (v==="unsure") ? "unsure" : "";
+          saveDraft();
           pw.querySelectorAll(".choice").forEach(function(n){n.classList.remove("on");}); ch.classList.add("on");
         };
       });
@@ -429,7 +538,7 @@
     // name prefill
     var nameEl=document.getElementById("obName"); nameEl.value=draft.childName;
     // age chips: 3-4 → the littles path (Feed Echo everywhere); 5+ → the games
-    draft.childAge = draft.childAge || (p.childAge ? String(p.childAge) : "");
+    draft.childAge = draft.childAge || (p.childAge ? String(p.childAge) : "");   // declared in the literal; this only backfills a legacy profile
     (function(){
       var host=document.getElementById("obAge"); if(!host) return;
       host.querySelectorAll(".sound").forEach(function(ch){
@@ -442,11 +551,29 @@
     // Echo hosts onboarding — every bubble is Echo speaking. The child's buddy
     // takes the slot from the buddy step onward, which is the first moment the
     // pick is theirs rather than a default.
+    // The buddy step is deferred now, so there is no point in the flow where
+    // the mascot should become the child's buddy: Echo hosts setup end to end,
+    // and Pip (the preselected default) shows up on Home where they can change
+    // it. indexOf("buddy") is -1 against both live orders, which would have
+    // made every step render the buddy — hence the explicit rule.
     function mascotForStep(key){
-      var seen = ORDER.indexOf(key) >= ORDER.indexOf("buddy");
+      var seen = ORDER.indexOf("buddy") > -1 && ORDER.indexOf(key) >= ORDER.indexOf("buddy");
       var want = seen ? mascotMarkup(draft.character) : mascotMarkup("leo");
       if (leo.innerHTML !== want) leo.innerHTML = want;
     }
+
+    // The clinician door. It was a step every parent had to answer; it is a
+    // link, so the 95% who are parents never see the question and the 5% who
+    // are clinicians get the caseload flow in one tap.
+    (function(){
+      var sl=document.getElementById("slpLink"); if(!sl) return;
+      sl.onclick=function(ev){ ev.preventDefault();
+        try{ Sona.sfx.tap(); }catch(e){}
+        draft.role="slp"; draft.mode="speech"; draft.pathReason=""; saveDraft();
+        try{ applyRoleCopy(); }catch(e){}
+        ORDER=ORDER_SLP; paintSeg(); idx=1; render();
+      };
+    })();
 
     function render(){
       var key=ORDER[idx];
@@ -458,7 +585,9 @@
       if(key==="name") setTimeout(function(){ nameEl.focus(); }, 80);
       if(key==="interests"){ var nmi=(nameEl.value||draft.childName||"").trim(); document.getElementById("intName").textContent = nmi || "your child"; }
       if(key==="achieve"){ var nm=(nameEl.value||draft.childName||"").trim(); document.getElementById("achName").textContent = nm || "your child"; }
-      if(key==="email"){ var nm2=(nameEl.value||draft.childName||"").trim(); var emn=document.getElementById("emName"); if(emn) emn.textContent = nm2 || "your child"; setTimeout(function(){ emailEl.focus(); }, 80); }
+      if(key==="email"){ var nm2=(nameEl.value||draft.childName||"").trim(); var emn=document.getElementById("emName"); if(emn) emn.textContent = nm2 || "Your child"; setTimeout(function(){ emailEl.focus(); }, 80); }
+      if(key==="mic"){ var nm3=(nameEl.value||draft.childName||"").trim(); var mn=document.getElementById("micName"); if(mn) mn.textContent = nm3 || "your child"; }
+      saveDraft();
     }
 
     function next(){
@@ -469,11 +598,11 @@
       if(key==="email"){ var em=(emailEl.value||"").trim(); if(!/^\S+@\S+\.\S+$/.test(em)){ emailEl.focus(); emailEl.style.borderColor="#ef6f23"; var ee=document.getElementById("emErr"); ee.style.display="block"; ee.textContent="Please enter a valid email to save progress."; return; } draft.email=em; }
       Sona.sfx.tap();
       if(key==="sounds") showBuild(); // the plan "builds" while the next question paints
-      // PLAY1 skips: an SLP never sees the play door (their whole job is
-      // specific sounds), and a play family never sees the sound picker (the
-      // picker IS the clinical framing the play door removes).
-      if(key==="role" && draft.role==="slp"){ draft.mode="speech"; idx+=2; render(); return; }
-      if(key==="interests" && draft.mode==="play"){ showBuild(); idx+=2; render(); return; }
+      // PLAY1 skip, now the only one: a family who did not say they have
+      // targets never sees the sound picker, because the picker IS the
+      // clinical framing that both general doors remove. showBuild() still
+      // runs so the hand-off feels the same either way.
+      if(key==="path" && draft.mode==="play"){ showBuild(); idx+=2; render(); return; }
       if(idx < ORDER.length-1){ idx++; render(); return; }
       finish();
     }
@@ -508,7 +637,6 @@
       if(idx<=0) return;
       Sona.sfx.tap(); idx--;
       if(ORDER[idx]==="sounds" && draft.mode==="play") idx--;
-      if(ORDER[idx]==="path" && draft.role==="slp") idx--;
       render();
     }
     // Email stays the default ask (it's the ad-funnel lead), but never a gate:
@@ -542,10 +670,20 @@
         dailyMinutes: 5,
         weeklyGoal: parseInt(goalVal, 10) || 5,
         email: draft.email || "",
+        pathReason: draft.pathReason || "",
         onboarded: true,
       });
-      try{ if(window.Sona&&Sona.startTrial) Sona.startTrial(draft.email||""); }catch(e){}
-      try{ if(window.sonaTrack){ sonaTrack("Lead"); sonaTrack("CompleteRegistration"); sonaTrack("trial_started"); } }catch(e){}
+      // the scratchpad has done its job; a stale draft must never shadow a
+      // real profile on a later visit
+      clearDraft();
+      // NO TRIAL IS STARTED HERE ANY MORE. Finishing setup used to start a
+      // silent 3-day clock, so it was already burning while the parent read
+      // the next screen — and a family who opened Sona on Friday and came
+      // back on Tuesday had "used" a trial they never saw. What they get
+      // instead is the free demonstration: one complete run, then the offer.
+      // A subscription trial now starts only where a trial can honestly
+      // start, inside a verified purchase.
+      try{ if(window.sonaTrack){ sonaTrack("Lead"); sonaTrack("CompleteRegistration"); } }catch(e){}
       // capture the lead (email + answers) → GHL via /api/lead (fire-and-forget)
       try{
         if(draft.email){
@@ -594,7 +732,7 @@
         try{ if(window.SonaAnalytics)SonaAnalytics.track("onboarding completed"); }catch(e){}
         // Onboarding NEVER ends at the paywall any more. It used to: a parent
         // off an ad met a price screen before their child had said a word.
-        // The ask now waits for the first completed run (Sona.planMoment),
+        // The ask now waits for the first completed run (Sona.planEligible),
         // where the product has actually proved itself. `pay` survives only to
         // pre-stamp the grown-ups gate, so that when the plan screen does open
         // minutes later the adult who just finished this flow is not made to

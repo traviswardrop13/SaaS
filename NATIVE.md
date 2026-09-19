@@ -32,6 +32,63 @@ npx cap open ios      # opens Xcode
 In `Info.plist` add:
 - **NSMicrophoneUsageDescription** = "Sona uses the microphone so your child can practice saying their sounds."
 
+## Echo's real voice on auto-spoken lines (Xcode, 5 minutes)
+
+**Symptom:** lines the app speaks *by itself* on opening a screen — charge.html's
+"Ready? Say rrrr… Go!" — come out in the flat robot voice, while the same line
+tapped by hand sounds like Echo.
+
+**Cause:** not ElevenLabs credits. `/api/tts` answers 200 the whole time. Every
+page load creates a NEW `AudioContext`, and WKWebView starts it *suspended*
+until a user gesture, so `sona.js` cannot play the fetched audio and falls back
+to `speechSynthesis`.
+
+The web fix already shipped — an auto-spoken line now WAITS for the first tap
+and then speaks in Echo's voice, instead of robot-voicing immediately. That
+alone fixes it everywhere. The change below removes the wait in the iOS app, so
+the line plays the moment the screen opens.
+
+**This cannot be done in `capacitor.config.json`** — Capacitor does not expose
+`mediaTypesRequiringUserActionForPlayback`. It is a few lines in the Xcode
+project. In your Capacitor iOS app, edit `ios/App/App/AppDelegate.swift` (or a
+`CAPBridgeViewController` subclass if you have one):
+
+```swift
+import Capacitor
+import AVFoundation
+
+// Let the web layer start audio without a tap, and keep it audible with the
+// ringer switch off — Sona's whole point is a child hearing the model sound.
+extension AppDelegate {
+  func configureAudioForAutoplay() {
+    try? AVAudioSession.sharedInstance().setCategory(
+      .playAndRecord,                 // .playAndRecord: practice needs the mic too
+      mode: .measurement,             // matches the clean-capture mode the scorer wants
+      options: [.defaultToSpeaker, .allowBluetooth]
+    )
+    try? AVAudioSession.sharedInstance().setActive(true)
+  }
+}
+```
+
+and, where the bridge view controller is created, before it loads:
+
+```swift
+webView.configuration.allowsInlineMediaPlayback = true
+webView.configuration.mediaTypesRequiringUserActionForPlayback = []   // [] = none
+```
+
+**Verify it worked:** open a practice round *without touching the screen*. If
+"Ready? Say rrrr… Go!" is Echo, it took. If it is still the robot, the web
+fallback is doing its job and the WKWebView setting did not apply — check that
+you edited the controller that actually loads the bridge.
+
+**Caveat worth knowing:** `mediaTypesRequiringUserActionForPlayback` is
+documented for media *elements*. Web Audio (which is what Sona uses) usually
+follows it in WKWebView, but Apple has changed autoplay behaviour between iOS
+versions. That is exactly why the web-side wait shipped too — it is the fix
+that cannot regress out from under you.
+
 ## Ship it
 1. Xcode → **Product → Archive**
 2. **Distribute App → App Store Connect → Upload**

@@ -293,12 +293,30 @@
   <script src="/scenes.js"></script>
   <script src="/gamecontent.js"></script>
   <script>
-    // Trial gate — at PAGE LOAD only, never mid-round. Founding/SLP families,
-    // subscribers and pilots pass inside gated(); the shell bounces to the
-    // Apple paywall via trial.html's own routing.
-    if(window.Sona&&Sona.gated&&Sona.gated()){ location.replace("/trial.html"); }
     var $=function(id){return document.getElementById(id);};
     var qp=new URLSearchParams(location.search);
+    // Gate — at PAGE LOAD only, never mid-round. Founding/SLP families,
+    // subscribers and pilots pass inside gated(); the shell bounces to the
+    // Apple paywall via trial.html's own routing.
+    //
+    // ?demo=1 names the ONE run this family was shown for free. It stays
+    // replayable after they decline — that is the whole of the carve-out, and
+    // it is why the gate takes a name instead of guessing from the URL: a
+    // parameter that silently widened into "practice is free" would be a
+    // paywall hole rather than a demonstration.
+    //
+    // The demonstration is a WHOLE daily run, not one round, because the child
+    // returns here from each earned game and a gate that closed after round
+    // one would bounce them out of a run they were in the middle of.
+    var IS_DEMO = qp.get("demo")==="1";
+    // A REPLAY EARNS NOTHING. The demonstration stays replayable after a
+    // parent declines — that is the point — but a replay that minted coins,
+    // climbed the ladder and fed the clinician's rep counts would not be a
+    // demonstration, it would be the product for free with the receipts to
+    // match. Decided HERE, at load, because demoFinish() flips demoDone()
+    // later in this same page and the answer must not change underneath us.
+    var DEMO_REPLAY = IS_DEMO && !!(window.Sona && window.Sona.demoDone && window.Sona.demoDone());
+    if(window.Sona&&Sona.gated&&Sona.gated(IS_DEMO?"demo":"practice")){ location.replace("/trial.html"); }
     var S=window.Sona;
     var profile=S?S.getProfile():{volume:0.8};
     var SOUND=(qp.get("sound")||((S&&S.rotSound)?S.rotSound():((profile.focusSounds&&profile.focusSounds[0])||"R"))).toUpperCase();
@@ -718,7 +736,7 @@
     // ---- rapid-fire rep engine: continuous VAD, every voiced burst = a rep.
     // No scoring round-trips at all — the verdict comes from the spectral
     // shape of the burst, decided here on the phone.
-    var micStream=null, reps=0, engineOn=false, chunks=[], rec=null, anyReps=false;
+    var micStream=null, reps=0, engineOn=false, chunks=[], rec=null, anyReps=false, micOk=false;
     // NOTHING LEAVES THE DEVICE. Cloud scoring is gone: no MediaRecorder, no
     // clip, no upload, no vendor. Every verdict is decided here from the
     // spectral shape of what was said (shapeVerdict below), which is what
@@ -756,7 +774,40 @@
             setTimeout(function(){ resolve(); },1500); // safety: never hang if onstop is silent
           } else { resolve(); }
         }
-        function armIdle(){ if(idleTimer)clearTimeout(idleTimer); idleTimer=setTimeout(function(){ if(!engineOn)return; if(reps===0){ playPrompt(); armIdle(); } },8000); }
+        // Idle nudge — BOUNDED. This used to re-arm itself for as long as
+        // reps stayed 0, so a child whose mic was off, muted or simply not
+        // hearing them was told "Ready? Say rrrr... Go!" every eight seconds
+        // until a grown-up closed the app. Two nudges is the ceiling: a child
+        // who has not answered twice is not going to answer the ninth, and the
+        // second one lands at 16s, leaving the 20s hard cap below to end the
+        // round on showQuiet() — the warm "Echo didn't hear you!" screen — so
+        // the silence after the last nudge is short and leads somewhere.
+        // The nudge only ever RE-SPEAKS the prompt. It never counts, never
+        // advances, never fills the meter: silence is never a rep, so a child
+        // who waits it out still has to speak.
+        var MAX_NUDGES=2, nudges=0;
+        // Re-prompting into a mic that cannot hear is pure noise. A hard denial
+        // is caught in flow() (Sona.micDenied) before the engine ever starts,
+        // so micOk is normally true by the time we get here; the track check is
+        // for the mic that was granted and then died mid-round — another app
+        // taking it, a headset unplugged, the iOS shell backgrounded — which
+        // looks identical to a quiet child from the analyser's side.
+        function micLive(){
+          if(!micOk||!micStream) return false;
+          // unknowable (old browser, no track object) → assume live; never
+          // silence Echo on a guess, only on a state the device confirmed
+          try{ var t=micStream.getAudioTracks()[0]; return !t || (t.readyState==="live" && !t.muted); }catch(e){ return true; }
+        }
+        function armIdle(){
+          if(idleTimer)clearTimeout(idleTimer);
+          idleTimer=setTimeout(function(){
+            if(!engineOn) return;
+            if(reps!==0) return;        // they are talking — no nudge, and no re-arm (as before)
+            if(!micLive()) return;      // nothing is listening; the hard cap will hand them showQuiet()
+            if(nudges>=MAX_NUDGES) return;
+            nudges++; playPrompt(); armIdle();
+          },8000);
+        }
         armIdle();
         var mw=$("micWrap");
         (function tick(){
@@ -830,7 +881,7 @@
       if(navigator.sendBeacon) navigator.sendBeacon("/api/track",body);
       else fetch("/api/track",{method:"POST",headers:{"Content-Type":"application/json"},body:body,keepalive:true}).catch(function(){});
     }catch(e){} }
-    function logV(v){ if(v!=="unknown" && S && S.logAttempt) S.logAttempt({game:"charge",sound:SOUND,pass:v==="pass",word:String(ITEM.word||ITEM.t).toLowerCase()}); }
+    function logV(v){ if(DEMO_REPLAY) return; if(v!=="unknown" && S && S.logAttempt) S.logAttempt({game:"charge",sound:SOUND,pass:v==="pass",word:String(ITEM.word||ITEM.t).toLowerCase()}); }
     async function burstAndVerify(n){
       var save=NEED; if(n)NEED=n;
       micGo(true);
@@ -845,7 +896,7 @@
       if(reps>0)anyReps=true;
       attemptsTotal+=reps;
       // RING1: every honest counted rep ticks the kid-visible daily number
-      try{ if(reps>0&&S&&S.bumpReps) S.bumpReps(reps); }catch(e){}
+      try{ if(!DEMO_REPLAY&&reps>0&&S&&S.bumpReps) S.bumpReps(reps); }catch(e){}
       NEED=save;
       micGo(false); $("gpState").textContent="Echo's thinking…";
       var l=$("leo"); try{ l.classList.add("think"); }catch(e){}
@@ -899,8 +950,8 @@
       // anything in between and the browser dialog appears seconds after the
       // tap that asked for it.
       await micPrimer();
-      try{ micStream=await navigator.mediaDevices.getUserMedia({audio:true,video:false}); try{ localStorage.setItem("sona.micok","1"); }catch(e){} }
-      catch(e){ micGo(false); if(S&&S.micDenied)S.micDenied({back:"/today.html"}); return; }
+      try{ micStream=await navigator.mediaDevices.getUserMedia({audio:true,video:false}); micOk=true; try{ localStorage.setItem("sona.micok","1"); }catch(e){} }
+      catch(e){ micOk=false; micGo(false); if(S&&S.micDenied)S.micDenied({back:"/today.html"}); return; }
       // HEAR1: the speech-recognition permission is its own OS dialog on the
       // shell. Asked AFTER the mic grant, deliberately — the mic prompt must
       // ride directly on the primer tap (storytest pins that), and the mic
@@ -908,8 +959,28 @@
       // understand. No-op on web; denial just means spectral-only verdicts.
       try{ if(S&&S.speechPerm&&S.isNativeApp&&S.isNativeApp()) S.speechPerm(); }catch(e){}
       tele("practice started",{sound:SOUND,game:GMETA.n});
+      // Mark the demonstration as UNDER WAY the moment real practice starts,
+      // so a refresh, a back-swipe or a locked screen resumes it instead of
+      // looking like a family who never began. demoStart() is idempotent.
+      try{
+        if(S&&S.demoStart&&!(S.demoDone&&S.demoDone())){
+          var firstTime=!S.demoState().started;
+          S.demoStart();
+          // paired with "demo completed", this is the one number that says
+          // whether the demonstration actually demonstrates anything
+          if(firstTime) tele("demo started",{sound:SOUND});
+        }
+      }catch(e){}
       // Leo speaks the prompt ONCE, then the mic is instantly hot.
       await playPrompt();
+      // 🐢 IS AVAILABLE FROM THE FIRST TRY, NOT AS A CONSOLATION PRIZE.
+      // showTurtle(true) used to live only inside the wrong-sound branch, so
+      // the child who most needed to hear the model slowly had to fail first
+      // to discover the control existed. Nothing about the model changes —
+      // same clip, same 0.7x, same ttsBegin/ttsEnd speaker guard — so a
+      // replay still cannot be counted as the child speaking, and saySlow's
+      // own `if(speaking) return` means repeated taps cannot stack.
+      showTurtle(true);
       var v=await burstAndVerify();
       // One honest PASSED clip a day is kept ON-DEVICE (never uploaded) so the
       // parent can hear first-try vs today on the Progress "Listen" shelf.
@@ -920,7 +991,7 @@
       }catch(e){} }
       // SLP gating: the rung only ever advances on HONEST evidence — two clean
       // scored rounds at the stretch level, never on mercy or offline scoring.
-      if(v==="pass" && useRung>=RUNG && S && S.recordRung){
+      if(v==="pass" && useRung>=RUNG && S && S.recordRung && !DEMO_REPLAY){
         try{
           // KIDS1: rung wins belong to the child who earned them
         var wk=(S&&S.kkey)?S.kkey("sona.rungwins."+SOUND+"."+useRung):("sona.rungwins."+SOUND+"."+useRung), w=1+(parseInt(localStorage.getItem(wk),10)||0);
@@ -942,7 +1013,7 @@
         // spoken coaching drops the "— rrr!" demo (screen keeps the full tip):
         // TTS never performs the sound, it only describes the mouth move
         var tip=(c&&c.tip?c.tip.split("—")[0]:"").trim().replace(/[.!,]+$/,"")||("Let's try our "+soundName()+" sound again");
-        showTurtle(true); // 🐢 fun tool for round two — hear the model slooowly
+        showTurtle(true); // already on since the prompt; harmless if the round stepped down
         await say("Hmm, that was a different sound! "+tip+". Try again!");
         v=await burstAndVerify(3);
         if(v==="fail" && useRung>0){
@@ -1066,8 +1137,17 @@
     $("playedHome").onclick=function(){ location.href="/today.html"; };
 
     function finishRun(){
-      var r=S.dailyFinish(run.sum);
-      try{ if(S.recordSession)S.recordSession({words:[]}); if(S.markLevelDone)S.markLevelDone(LEVEL); if(S.addCoins)S.addCoins(10+Math.min(20,(run.sum/10)|0)); }catch(e){}
+      // On a replay the score is still SHOWN — a child who just played deserves
+      // to see what they scored — it simply is not banked: no daily record, no
+      // session, no level, no coins.
+      var r;
+      if(DEMO_REPLAY){
+        var _d={}; try{ _d=S.dailyInfo()||{}; }catch(e){}
+        r={ score: Math.max(0,run.sum|0), best: _d.best|0, newBest: false };
+      } else {
+        r=S.dailyFinish(run.sum);
+        try{ if(S.recordSession)S.recordSession({words:[]}); if(S.markLevelDone)S.markLevelDone(LEVEL); if(S.addCoins)S.addCoins(10+Math.min(20,(run.sum/10)|0)); }catch(e){}
+      }
       run.active=false; runSave(run);
       $("runScore").textContent=r.score;
       $("runBest").textContent=r.newBest?"NEW BEST!":("Best ever: "+r.best);
@@ -1082,13 +1162,39 @@
       $("runOvl").classList.add("show");
       sfx("complete"); try{ if(S.confetti)S.confetti(); }catch(e){}
       say((r.newBest?"New high score! Amazing! ":"You did it! Great work! ")+hook);
+      // THE EXPLICIT FINISH. This screen is the end of the free demonstration:
+      // a real prompt, real reps judged by the real detector, the games those
+      // reps earned, and the celebration. demoFinish() is one-shot and returns
+      // false on every replay, so nothing here fires twice — the offer that
+      // follows is spent by the paywall, not by arriving.
+      try{ if(S&&S.demoFinish) S.demoFinish(); }catch(e){}
+      // THE HAND-OFF. When the plan screen is what comes next, the button says
+      // so in words a child can act on — they fetch a grown-up, rather than
+      // tapping "Done" and handing a parent a price screen with no idea why
+      // it appeared. When nothing follows, it stays "Done": a child should
+      // never be sent to find an adult for nothing.
+      try{
+        if(S&&S.planEligible&&S.planEligible()){
+          $("runDone").textContent="Show a grown-up →";
+          var sub=$("runHandoff");
+          if(!sub){
+            sub=document.createElement("p"); sub.id="runHandoff";
+            sub.style.cssText="font-weight:800;font-size:13px;color:var(--muted);margin:2px 0 10px;line-height:1.45;";
+            sub.textContent="Go show them what you just practised!";
+            $("runDone").parentNode.insertBefore(sub,$("runDone"));
+          }
+        }
+      }catch(e){}
     }
     // The plan moment: the child has just finished a full run and the screen
     // says "You did it!". If this family has never been asked, the Done button
     // hands the device back to a grown-up on the plan screen instead of the
     // home deck — once, ever. Everyone else goes home exactly as before.
     $("runDone").onclick=function(){
-      var ask=false; try{ ask=!!(S&&S.planMoment&&S.planMoment()); }catch(e){}
+      // planEligible() only ANSWERS. The offer is spent by the paywall itself
+      // once it renders, so a parent who backs out of the grown-ups gate keeps
+      // their one ask instead of losing it to a redirect.
+      var ask=false; try{ ask=!!(S&&S.planEligible&&S.planEligible()); }catch(e){}
       location.href = ask ? "/subscribe.html?first=1" : "/today.html";
     };
     $("runArcade").onclick=function(){ location.href="/today.html#play"; };

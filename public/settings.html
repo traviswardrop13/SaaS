@@ -25,7 +25,12 @@
       } catch (e) { ok = false; }
       if (!ok) {
         try { document.documentElement.style.visibility = "hidden"; } catch (e) {}
-        location.replace("/today.html?gate=1");
+        // Carry where they were going. This guard runs BEFORE sona.js (that
+        // is the point of it — no flash of a parent page), so it cannot call
+        // Sona.gateDest; it names its own page literally instead. today.html
+        // re-checks ?to= against the allowlist on arrival, which is the side
+        // that reads an untrusted URL.
+        location.replace("/today.html?gate=1&to=" + encodeURIComponent("/settings.html"));
       }
     })();
   </script>
@@ -185,7 +190,7 @@
 
     <div style="margin-top:18px;">
       <h3 style="font-family:'Baloo 2';font-weight:800;font-size:15px;margin-bottom:6px;">Backup &amp; restore 💾</h3>
-      <p class="muted" style="margin-bottom:10px;">Save your child's progress somewhere safe. If this device is cleared or you switch phones, restore everything from the code or file.</p>
+      <p class="muted" style="margin-bottom:10px;">This is the only way to move practice off this device — it is never uploaded anywhere, so nothing restores it but the code or file you keep. The code does not expire.</p>
       <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
         <button class="btn ghost" id="backupCopy" style="width:auto;padding:12px 18px;">Copy backup code</button>
         <button class="btn ghost" id="backupDl" style="width:auto;padding:12px 18px;">Download file</button>
@@ -197,6 +202,10 @@
         <div style="display:flex;gap:10px;align-items:center;margin-top:8px;">
           <button class="btn" id="restoreBk" style="width:auto;padding:12px 20px;">Restore</button>
           <span id="restoreBkMsg" class="muted" style="font-weight:800;"></span>
+        </div>
+        <div id="undoRow" style="display:none;margin-top:10px;">
+          <button class="btn ghost" id="undoRestore" style="width:auto;padding:10px 16px;">Undo last restore</button>
+          <span class="muted" style="font-weight:800;font-size:12px;margin-left:8px;">Puts this device back the way it was before.</span>
         </div>
       </details>
     </div>
@@ -300,13 +309,52 @@
       if (dlB) dlB.onclick = function () {
         try { var s = Sona.exportString(); var blob = new Blob([s], { type: "application/json" }); var a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "sona-backup.json"; document.body.appendChild(a); a.click(); a.remove(); setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000); bmsg.textContent = "Downloaded ✓"; } catch (e) { bmsg.textContent = "Download failed."; }
       };
+      // The snapshot lives under a key that does NOT start with "sona." on
+      // purpose: exportData only collects "sona." keys and importData only
+      // writes them, so the safety net can never end up nested inside a backup
+      // of itself, and restoring one can never clobber it.
+      var SNAP = "_sonaPreRestore";
+      function paintUndo() {
+        var row = document.getElementById("undoRow"); if (!row) return;
+        var has = false; try { has = !!localStorage.getItem(SNAP); } catch (e) {}
+        row.style.display = has ? "block" : "none";
+      }
+      paintUndo();
       if (rBtn) rBtn.onclick = function () {
         var m = document.getElementById("restoreBkMsg"), v = document.getElementById("restoreIn").value;
         if (!v.trim()) { m.style.color = "#b42323"; m.textContent = "Paste a backup code first."; return; }
-        if (!confirm("Restore this backup? It replaces the progress on this device.")) return;
+        // MERGE, not replace — say what actually happens. importData writes the
+        // keys the backup contains and leaves every other one alone, so an old
+        // backup over a newer save leaves a hybrid, not the old state. The
+        // confirm said "replaces", which is the one reading that is wrong.
+        if (!confirm("Restore this backup?\n\nEverything the backup contains overwrites what is on this device. Anything it does not contain is left as it is.")) return;
+        // SAFETY NET, TAKEN FIRST. A parent who pasted the wrong code had no
+        // way back: the overwrite was silent and final, on the one copy of
+        // their child's practice that exists. Entitlements are never written
+        // by importData, so neither the restore nor the undo can grant or
+        // strip access — only practice moves.
+        try { localStorage.setItem(SNAP, Sona.exportString()); } catch (e) {}
         var r = Sona.importData(v);
         if (r.ok) { m.style.color = "var(--good)"; m.textContent = "Restored " + r.restored + " items ✓ Reloading…"; setTimeout(function () { location.reload(); }, 900); }
-        else { m.style.color = "#b42323"; m.textContent = r.error || "Couldn't restore."; }
+        else {
+          // nothing was written, so the net is noise — drop it rather than
+          // leave an Undo that would undo something that never happened
+          try { localStorage.removeItem(SNAP); } catch (e) {}
+          m.style.color = "#b42323"; m.textContent = r.error || "Couldn't restore.";
+        }
+      };
+      var uBtn = document.getElementById("undoRestore");
+      if (uBtn) uBtn.onclick = function () {
+        var m = document.getElementById("restoreBkMsg");
+        var snap = ""; try { snap = localStorage.getItem(SNAP) || ""; } catch (e) {}
+        if (!snap) { paintUndo(); return; }
+        if (!confirm("Put this device back the way it was before the last restore?")) return;
+        var back = Sona.importData(snap);
+        if (back.ok) {
+          try { localStorage.removeItem(SNAP); } catch (e) {}
+          m.style.color = "var(--good)"; m.textContent = "Put back ✓ Reloading…";
+          setTimeout(function () { location.reload(); }, 900);
+        } else { m.style.color = "#b42323"; m.textContent = back.error || "Couldn't undo."; }
       };
     })();
 

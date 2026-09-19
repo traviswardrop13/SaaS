@@ -12,6 +12,10 @@ import { chromium, ROOT, launchOpts } from "./_env.mjs";
 
 const MIME = { html: "text/html", js: "text/javascript", svg: "image/svg+xml", css: "text/css", woff2: "font/woff2" };
 let lastHwBody = null;
+// knobs the switch-race test turns: a response that takes long enough for a
+// parent to change children while it is in flight, and an id that says whose
+// assignment it is
+let hwDelayMs = 0, hwId = "hw1";
 const srv = createServer((req, res) => {
   const u = new URL(req.url, "http://x");
   if (u.pathname === "/api/homework") {
@@ -19,16 +23,19 @@ const srv = createServer((req, res) => {
     req.on("data", (c) => (raw += c));
     req.on("end", () => {
       try { lastHwBody = JSON.parse(raw); } catch { lastHwBody = null; }
-      res.writeHead(200, { "content-type": "application/json" });
-      // the shape /api/homework really returns: the assignment, nothing else
-      res.end(JSON.stringify({
-        ok: true,
-        hw: {
-          id: "hw1", title: "R in the middle", note: "Two minutes after breakfast.",
-          sounds: ["S"], pos: "f", repsPerDay: 40, words: null,
-          start: "2000-01-01", due: "2999-01-01", by: "Rachel, CF-SLP",
-        },
-      }));
+      const send = () => {
+        res.writeHead(200, { "content-type": "application/json" });
+        // the shape /api/homework really returns: the assignment, nothing else
+        res.end(JSON.stringify({
+          ok: true,
+          hw: {
+            id: hwId, title: "R in the middle", note: "Two minutes after breakfast.",
+            sounds: ["S"], pos: "f", repsPerDay: 40, words: null,
+            start: "2000-01-01", due: "2999-01-01", by: "Rachel, CF-SLP",
+          },
+        }));
+      };
+      if (hwDelayMs) setTimeout(send, hwDelayMs); else send();
     });
     return;
   }
@@ -208,9 +215,73 @@ const noComments = (src) => src
   ok("no therapy/treatment/diagnosis register on the clinician page",
     !/\b(diagnos\w*|treatment plan|plan of care)\b/i.test(noComments(slpHtml)),
     "product copy stays practice/homework/sounds — never clinical");
+  // The 600-char window here did not merely fail when PER_KID grew — .match()
+  // returned null and [0] THREW, taking the whole suite down with a stack
+  // trace instead of a failing assertion. Matched to the list's real end now.
+  const perKid = (readFileSync(ROOT + "/sona.js", "utf8")
+    .match(/const PER_KID = new Set\(\[([\s\S]*?)\]\);/) || ["", ""])[1];
   ok("homework is declared per-child",
-    /"sona\.homework\.v1"/.test(readFileSync(ROOT + "/sona.js", "utf8").match(/const PER_KID[\s\S]{0,600}?\]\)/)[0]),
+    perKid.includes('"sona.homework.v1"'),
     "two siblings on one iPad must not share one assignment");
+  ok("…and so is the clinician identity that reports it",
+    perKid.includes('"sona.pilot.v1"'),
+    "siblings sharing one pilot childId overwrite each other's roster row");
+}
+
+// ── SWITCHING CHILDREN WHILE AN ASSIGNMENT IS IN FLIGHT ─────────────────
+// The per-child pilot key fixed the synchronous half of sibling crossover.
+// This is the asynchronous half, and it is the one that ends with a child
+// practising someone else's clinical assignment. save() resolves the active
+// child at WRITE time, so a response that lands after a parent taps "switch
+// child" was stored under the wrong slot: child A's SLP assignment became
+// child B's, and B then practised A's sound at A's position with A's reps
+// reported against it.
+{
+  const { ctx, pg } = await page();
+  const sib = await pg.evaluate(() => {
+    localStorage.setItem("sona.slpticket", "fake.ticket");
+    Sona.startPilot("rachel");                 // the first child is enrolled
+    const slot = Sona.addKid("Sibling", "5");  // a sibling exists but is not
+    Sona.switchKid("");                        // addKid makes the new child
+    return slot;                               // active; go back to the first
+  });
+  ok("the first child is the enrolled one, and is active",
+    await pg.evaluate(() => (Sona.activeKid() || {}).slot === "" && Sona.isPilot() === true));
+
+  hwDelayMs = 900; hwId = "for-the-first-child";
+  await pg.evaluate(() => { window.__hw = Sona.syncHomework(true); });
+  await pg.waitForTimeout(150);
+  await pg.evaluate((slot) => Sona.switchKid(slot), sib);   // mid-flight
+  await pg.waitForTimeout(1500);
+  hwDelayMs = 0;
+
+  const landed = await pg.evaluate((slot) => ({
+    first: JSON.parse(localStorage.getItem("sona.homework.v1") || "null"),
+    sibling: JSON.parse(localStorage.getItem("sona.homework.v1@" + slot) || "null"),
+    activeSees: Sona.homework(),
+  }), sib);
+  ok("an assignment lands on the child who asked for it",
+    !!(landed.first && landed.first.hw && landed.first.hw.id === "for-the-first-child"),
+    JSON.stringify(landed.first));
+  ok("…and never on the sibling who happened to be active when it returned",
+    landed.sibling === null,
+    "a child practising another child's SLP assignment: " + JSON.stringify(landed.sibling));
+  ok("…so the sibling is still shown no homework at all",
+    landed.activeSees === null, JSON.stringify(landed.activeSees));
+
+  // …and the hourly throttle is per child too. One shared timestamp meant the
+  // first child's sync silenced the sibling's for an hour, so a second child
+  // on the same iPad could never see an assignment written minutes ago.
+  lastHwBody = null; hwId = "for-the-sibling";
+  await pg.evaluate(() => { Sona.startPilot("rachel"); });   // sibling enrols now
+  await pg.evaluate(() => Sona.syncHomework());              // NOT forced
+  await pg.waitForTimeout(500);
+  ok("a sibling's own sync is not suppressed by the first child's",
+    lastHwBody !== null, "the throttle must be per child, not per device");
+  const sibHw = await pg.evaluate(() => Sona.homework());
+  ok("…and the sibling's assignment is their own",
+    !!(sibHw && sibHw.id === "for-the-sibling"), JSON.stringify(sibHw));
+  await ctx.close();
 }
 
 await browser.close(); srv.close();

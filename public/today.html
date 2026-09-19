@@ -315,8 +315,61 @@
     // last raster illustration in the app.
     function applyArt(el,key){ var g=S.gameSticker(key); S.paintSticker(el,g[0],g[1]); }
 
+    // A GATED FAMILY'S BIG BUTTON MUST STILL DO SOMETHING. Once the free
+    // demonstration is done and the parent has declined, every hero target
+    // (story, today's games) bounces to the price screen — so a child tapping
+    // the biggest thing on the screen met a paywall, which is the one place a
+    // child should never be sent. The hero becomes the demonstration instead:
+    // the run they already did, replayable, earning nothing. Sona does not ask
+    // for money here; the offer comes back only when a grown-up deliberately
+    // reaches for something else, which is what the gate is for.
+    function demoOnlyHero(){
+      try{
+        if(!S||!S.gated||!S.demoDone) return false;
+        return S.demoDone() && S.gated("practice");
+      }catch(e){ return false; }
+    }
+
+    // A RUN LEFT HALF-FINISHED IS THE COMMONEST INTERRUPTION THERE IS — a
+    // child gets called to dinner between round two and round three. Home did
+    // not read the run record, so it offered the same generic start as ever
+    // and the child had to find their way back. charge.html keeps it in
+    // sessionStorage, which is the right lifetime: it is one sitting, not a
+    // promise, and a new tab correctly starts fresh.
+    function runUnderway(){
+      try{
+        var r=JSON.parse(sessionStorage.getItem("sona.run.v1")||"null");
+        return (r&&r.active&&(r.round|0)>0) ? r : null;
+      }catch(e){ return null; }
+    }
+    // Homework is already honoured under the hood — rotSounds() puts the SLP's
+    // sounds first and charge.html practises them. What was missing is SAYING
+    // so, so a parent can see the assignment is actually driving the app.
+    function homeworkNote(){
+      try{ var hw=S&&S.homework?S.homework():null; return hw?(hw.by?("From "+hw.by):"From your speech therapist"):""; }catch(e){ return ""; }
+    }
+
     function renderHero(){
       var hero=$("heroCard");
+      var mid=runUnderway();
+      if(mid&&!demoOnlyHero()){
+        hero.innerHTML="";
+        applyArt(hero,"slice");
+        $("heroName").textContent="Keep going!";
+        $("heroSub").textContent="You're on round "+((mid.round|0)+1)+" of today's adventure";
+        $("goBtn").textContent="CARRY ON!";
+        $("goBtn").dataset.launch="/charge.html?daily=1";
+        return;
+      }
+      if(demoOnlyHero()){
+        hero.innerHTML="";
+        applyArt(hero,"slice");
+        $("heroName").textContent="Practice with Echo";
+        $("heroSub").textContent="Say your sounds and play — the round you know";
+        $("goBtn").textContent="LET'S PRACTICE!";
+        $("goBtn").dataset.launch="/charge.html?daily=1&demo=1";
+        return;
+      }
       if(!READ){
         // the story card: a night sky, because that is where the arc lives
         hero.innerHTML='<span style="position:absolute;left:0;right:0;top:10px;text-align:center;z-index:1;">'
@@ -324,8 +377,14 @@
           +'</span>';
         applyArt(hero,"chapter");
         $("heroName").textContent=EP?EP.t:"Today's story";
-        $("heroSub").innerHTML="Read it first to unlock <b>3</b> games";
-        $("goBtn").textContent="READ TODAY'S STORY";
+        var hn=homeworkNote();
+        $("heroSub").innerHTML=hn ? (hn+" · read it first to unlock <b>3</b> games")
+                                  : "Read it first to unlock <b>3</b> games";
+        // a child who has never practised is starting, not resuming, and the
+        // button should say the bigger thing exactly once
+        var firstEver=false;
+        try{ firstEver=!(S&&S.demoState&&S.demoState().started)&&!(S&&S.repsToday&&S.repsToday()); }catch(e){}
+        $("goBtn").textContent=firstEver?"START YOUR FIRST ADVENTURE":"READ TODAY'S STORY";
         $("goBtn").dataset.launch="/chapter.html";
         return;
       }
@@ -511,8 +570,19 @@
       });
     })();
     $("gateClose").onclick=function(){ $("gateOvl").classList.remove("show"); };
-    // bounced here from a parent-only page (Sona.requireGate)? Open the gate right away.
-    try{ if(/[?&]gate=1/.test(location.search)) openGate(); }catch(e){}
+    // bounced here from a parent-only page (Sona.requireGate)? Open the gate
+    // right away — and send them ON to where they were going once they pass.
+    // Without this the parent solves a number puzzle and lands on the kid's
+    // home screen, with no sign of the plan screen (or progress page) that
+    // bounced them. Sona.gateDest re-checks the allowlist HERE too: this reads
+    // a URL, and a URL is never trusted because it arrived.
+    try{
+      if(/[?&]gate=1/.test(location.search)){
+        var _raw=""; try{ _raw=decodeURIComponent((location.search.match(/[?&]to=([^&]*)/)||[])[1]||""); }catch(e){}
+        var _to=""; try{ _to=(S&&S.gateDest)?S.gateDest(_raw):""; }catch(e){}
+        openGate(_to?function(){ location.replace(_to); }:null);
+      }
+    }catch(e){}
     // Mom's week — her goal (3/5/7 days), her streak. Never shown to the kid.
     function paintWeek(){
       try{
@@ -621,7 +691,11 @@
       // flip, and without this they'd read "Your free trial has ended — see
       // plans" inside an app that is free.
       if(S.isFree&&S.isFree())return;
-      if((S.isSubscribed&&S.isSubscribed())||(S.isPilot&&S.isPilot()))return; if(S.ensureTrial)S.ensureTrial();
+      if((S.isSubscribed&&S.isSubscribed())||(S.isPilot&&S.isPilot()))return;
+      // Opening the home screen used to START a trial (ensureTrial), so the
+      // clock began because a parent looked at the app. It reports one now,
+      // and only if one already exists — an existing family's unexpired days
+      // are honoured to the end, and nobody new is issued any.
       var link=' <a href="/subscribe.html" style="color:var(--orange-d);font-weight:800;">';
       if(S.trialActive&&S.trialActive()){ var dd=S.trialDaysLeft?S.trialDaysLeft():7; note.innerHTML="Your free trial: "+dd+" day"+(dd===1?"":"s")+" left."+link+"See plans →</a>"; note.style.display="block"; }
       else if(S.trialExpired&&S.trialExpired()){ note.innerHTML="Your free trial has ended."+link+"See plans →</a>"; note.style.display="block"; }

@@ -88,7 +88,7 @@ const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL 
   const granted = await pg.evaluate(() => {
     if (Sona.slpVerified()) Sona.saveProfile({ earlyAdopter: true, slpCode: Sona.slpCode() });
     // expire the trial hard: a founding family must never gate
-    localStorage.setItem(Sona.kkey("sona.trial.v1"), JSON.stringify({ start: Date.now() - 10 * 86400000, days: 3 }));
+    localStorage.setItem(Sona.kkey("sona.trial.v1"), JSON.stringify({ start: Date.now() - 10 * 86400000, days: 3 })); localStorage.setItem("sona.demo.v1", JSON.stringify({ started: 1, done: 1 }));
     return { early: Sona.getProfile().earlyAdopter, gated: Sona.gated() };
   });
   ok("verified family gets founding access", granted.early === true);
@@ -112,7 +112,7 @@ const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL 
     // unverified family is still ordinary on the day pricing returns.
     sessionStorage.setItem("sona.paidui", "1");
     Sona.saveProfile({ childName: "Ana", childAge: "6", focusSounds: ["S"], onboarded: true, earlyAdopter: false });
-    localStorage.setItem(Sona.kkey("sona.trial.v1"), JSON.stringify({ start: Date.now() - 10 * 86400000, days: 3 }));
+    localStorage.setItem(Sona.kkey("sona.trial.v1"), JSON.stringify({ start: Date.now() - 10 * 86400000, days: 3 })); localStorage.setItem("sona.demo.v1", JSON.stringify({ started: 1, done: 1 }));
     return Sona.gated();
   });
   ok("wrong-key family gates like anyone else once pricing returns", gated === true);
@@ -143,7 +143,7 @@ const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL 
   await pg.goto("http://localhost:8155/today.html"); // real origin for storage
   await pg.evaluate(() => {
     localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Ben", childAge: "7", focusSounds: ["R"], onboarded: true }));
-    localStorage.setItem("sona.trial.v1", JSON.stringify({ start: Date.now() - 10 * 86400000, days: 3 }));
+    localStorage.setItem("sona.trial.v1", JSON.stringify({ start: Date.now() - 10 * 86400000, days: 3 })); localStorage.setItem("sona.demo.v1", JSON.stringify({ started: 1, done: 1 }));
   });
   // ?paid=1 renders the paywall while Sona is free; without it trial.html
   // correctly bounces home and there is no paywall to point anywhere.
@@ -212,7 +212,7 @@ const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL 
   await pg.waitForTimeout(900);
   const no = await pg.evaluate(() => {
     document.getElementById("jNo").click();
-    localStorage.setItem(Sona.kkey("sona.trial.v1"), JSON.stringify({ start: Date.now() - 40 * 86400000, days: 3 }));
+    localStorage.setItem(Sona.kkey("sona.trial.v1"), JSON.stringify({ start: Date.now() - 40 * 86400000, days: 3 })); localStorage.setItem("sona.demo.v1", JSON.stringify({ started: 1, done: 1 }));
     return { pilot: Sona.isPilot(), share: Sona.getProfile().slpShare, gated: Sona.gated() };
   });
   ok("saying no never enrols the child", no.pilot === false, JSON.stringify(no));
@@ -234,7 +234,7 @@ const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL 
     localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Nia", childAge: "6", focusSounds: ["R"], onboarded: true }));
     localStorage.setItem("sona.slpok", "RACHEL-K4");   // exactly what FREE1 left behind
     localStorage.removeItem("sona.slpunlock");
-    localStorage.setItem("sona.trial.v1", JSON.stringify({ start: Date.now() - 40 * 86400000, days: 3 }));
+    localStorage.setItem("sona.trial.v1", JSON.stringify({ start: Date.now() - 40 * 86400000, days: 3 })); localStorage.setItem("sona.demo.v1", JSON.stringify({ started: 1, done: 1 }));
     return { verified: Sona.slpVerified(), gated: Sona.gated() };
   });
   ok("a free-window SLP family still counts as verified", res.verified === true, JSON.stringify(res));
@@ -250,7 +250,7 @@ const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL 
   const res = await pg.evaluate(() => {
     localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "A", childAge: "6", focusSounds: ["R"], onboarded: true }));
     localStorage.setItem("sona.slpunlock", "1");
-    localStorage.setItem("sona.trial.v1", JSON.stringify({ start: Date.now() - 30 * 86400000, days: 3 }));
+    localStorage.setItem("sona.trial.v1", JSON.stringify({ start: Date.now() - 30 * 86400000, days: 3 })); localStorage.setItem("sona.demo.v1", JSON.stringify({ started: 1, done: 1 }));
     const before = Sona.gated();
     Sona.addKid("Bee", "5"); // fresh profile, no earlyAdopter
     const afterSwitch = Sona.gated();
@@ -267,13 +267,13 @@ const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL 
   await pg.goto("http://localhost:8155/today.html");
   const res = await pg.evaluate(() => {
     Sona.saveProfile({ childName: "Kid One", childAge: "7", focusSounds: ["R"], onboarded: true, earlyAdopter: true });
-    localStorage.setItem("sona.trial.v1", JSON.stringify({ start: Date.now() - 40 * 86400000, days: 3 }));
+    localStorage.setItem("sona.trial.v1", JSON.stringify({ start: Date.now() - 40 * 86400000, days: 3 })); localStorage.setItem("sona.demo.v1", JSON.stringify({ started: 1, done: 1 }));
     const first = Sona.gated();
     Sona.addKid("Kid Two", "5");                       // sibling on the same device
     const kid2 = Sona.kids().filter((k) => !k.active)[0] || Sona.kids()[1];
     Sona.switchKid(Sona.kids().filter((k) => k.name === "Kid Two")[0].slot);
     Sona.saveProfile({ childName: "Kid Two", childAge: "5", focusSounds: ["S"], onboarded: true });
-    localStorage.setItem(Sona.kkey("sona.trial.v1"), JSON.stringify({ start: Date.now() - 40 * 86400000, days: 3 }));
+    localStorage.setItem(Sona.kkey("sona.trial.v1"), JSON.stringify({ start: Date.now() - 40 * 86400000, days: 3 })); localStorage.setItem("sona.demo.v1", JSON.stringify({ started: 1, done: 1 }));
     return { first, second: Sona.gated(), name: Sona.getProfile().childName, early2: Sona.getProfile().earlyAdopter, kid2: !!kid2 };
   });
   ok("the referred family's first child is free", res.first === false, JSON.stringify(res));
@@ -345,9 +345,19 @@ const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL 
   ok("the dashboard's family link carries the key (an entitlement, not an honor system)",
     /familyKey[\s\S]{0,200}"&k="/.test(dash), "a keyless link unlocked Sona for anyone it was forwarded to");
   const succ = readFileSync(ROOT + "/../app/subscribe/success/page.tsx", "utf8");
-  ok("the success page grants NOTHING before Stripe confirms the session",
-    /if \(!j \|\| !j\.ok\) return;[\s\S]{0,900}sona\.sub\.v1[\s\S]{0,200}active: true/.test(succ),
-    "writing the entitlement on mount made the URL itself a free subscription");
+  // ORDER, not distance. This measured character windows (900, then 200) and
+  // a four-line comment added between the key and the flag pushed the grant
+  // out of range — a green-to-red flip with no behaviour change, which is the
+  // same brittleness that took down day1 and hwtest. What matters is that the
+  // write happens AFTER the confirmation guard, and that is what it now asks.
+  {
+    const guard = succ.indexOf("if (!j || !j.ok) return;");
+    const key = succ.indexOf('"sona.sub.v1",');
+    const grant = succ.indexOf("active: true");
+    ok("the success page grants NOTHING before Stripe confirms the session",
+      guard > -1 && key > guard && grant > guard,
+      "writing the entitlement on mount made the URL itself a free subscription");
+  }
   ok("an unconfirmed load is told the truth instead of 'You're in!'",
     /fetched && !paid/.test(succ) && /couldn&apos;t confirm a purchase/i.test(succ));
   ok("conversion events fire only on a confirmed purchase",
@@ -432,13 +442,117 @@ const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL 
   await ctx.close();
 }
 
+// ── 4b. SIBLINGS ARE SEPARATE CHILDREN TO THE CLINICIAN ──
+// `sona.pilot.v1` held the clinician code, the reporting childId AND the
+// grown-up's consent — and it sat OUTSIDE PER_KID. Two children on one iPad
+// therefore reported under ONE childId: the roster row was overwritten by
+// whichever sibling practised last, so a clinician read one child's name
+// against the other's outcomes, and homework assigned to one arrived on the
+// other's profile. The sibling also inherited the sharing consent without
+// anyone agreeing to it, which is the part that is not merely a bug.
+//
+// This asserts the OUTGOING payloads, not local progress — the earlier
+// per-child work all passed while the wire still carried one id.
+{
+  const ctx = await browser.newContext();
+  const pg = await ctx.newPage();
+  pilotPosts.length = 0;
+  await pg.goto("http://localhost:8155/join.html?slp=rachel-k4&k=RACHELKEY");
+  await pg.waitForTimeout(900);
+  await pg.evaluate(() => document.getElementById("jYes").click());
+  // join.html enrols, then hands the family into the app on an 1100ms timer.
+  // A flat 700ms wait puts the NEXT page.evaluate inside that window, and the
+  // navigation destroys its execution context mid-call: green on a fast laptop,
+  // red on a slower CI runner, and nothing to do with the code under test.
+  // Wait for the landing instead of guessing how long it takes.
+  await pg.waitForURL(/\/(today|onboarding)\.html/, { timeout: 15000 });
+  await pg.waitForFunction(() => !!window.Sona, null, { timeout: 15000 });
+  const first = pilotPosts.slice();
+  ok("the enrolled child reports to the clinician", first.length > 0, JSON.stringify(first.length));
+
+  // a sibling is added on the same device and practises
+  pilotPosts.length = 0;
+  const sib = await pg.evaluate(async () => {
+    const slot = Sona.addKid("Sibling", "5");
+    Sona.switchKid(slot);
+    const inherited = Sona.isPilot();          // must be FALSE: nobody consented for them
+    Sona.sendProgress("enroll");               // ...so this must send nothing
+    await new Promise((r) => setTimeout(r, 400));
+    return { slot, inherited };
+  });
+  await pg.waitForTimeout(400);
+  ok("a sibling does NOT inherit the grown-up's sharing consent",
+    sib.inherited === false, JSON.stringify(sib));
+  ok("…and nothing about them reaches the clinician until someone enrols them",
+    pilotPosts.length === 0, JSON.stringify(pilotPosts.map((b) => b.child)));
+
+  // when the sibling IS enrolled, they must be a DIFFERENT row
+  pilotPosts.length = 0;
+  const two = await pg.evaluate(async () => {
+    Sona.startPilot("RACHEL-K4");
+    Sona.sendProgress("enroll");
+    await new Promise((r) => setTimeout(r, 400));
+    return Sona.pilotInfo().childId;
+  });
+  await pg.waitForTimeout(400);
+  const firstId = (first[0] || {}).childId || "";
+  ok("an enrolled sibling gets their OWN reporting identity",
+    two && firstId && two !== firstId, JSON.stringify({ firstId, siblingId: two }));
+  ok("…so the clinician receives two rows, not one overwritten one",
+    pilotPosts.length > 0 && pilotPosts.every((b) => b.childId === two),
+    JSON.stringify(pilotPosts.map((b) => ({ id: b.childId, child: b.child }))));
+
+  // and switching back must not disturb the first child's identity
+  const back = await pg.evaluate(() => { Sona.switchKid(""); return Sona.pilotInfo().childId; });
+  ok("switching back restores the first child's identity, unchanged",
+    back === firstId, JSON.stringify({ back, firstId }));
+  await ctx.close();
+}
+
+// ── 4c. the roster key is canonical, and the child binding is enforced ──
+// Server-side contracts for two findings that no browser test can reach.
+{
+  const APP = ROOT + "/..";
+  const auth = readFileSync(APP + "/lib/slpAuth.ts", "utf8");
+  const pilot = readFileSync(APP + "/app/api/pilot/route.ts", "utf8");
+  const dash = readFileSync(APP + "/app/api/slp/route.ts", "utf8");
+  const hw = readFileSync(APP + "/app/api/slp/homework/route.ts", "utf8");
+
+  ok("there is ONE canonical roster key, and it lowercases",
+    /export function rosterKey[\s\S]{0,160}toLowerCase\(\)/.test(auth),
+    "the client uppercases the code and the dashboard reads lowercase — Redis keys are case-sensitive");
+  for (const [name, src] of [["pilot write", pilot], ["dashboard read", dash], ["homework roster read", hw]]) {
+    ok(`the ${name} goes through rosterKey()`,
+      /rosterKey\(/.test(src) && !/"slp:" *\+/.test(src),
+      "a hand-built key is how the write and the read drifted apart silently");
+  }
+  ok("families stranded under the old uppercase key are recovered on read",
+    /healLegacyRoster/.test(auth) && /healLegacyRoster\(/.test(dash),
+    "without this, everyone who enrolled while the keys mismatched stays invisible forever");
+  ok("…and the recovery never clobbers a row written since the fix",
+    /HSETNX/.test(auth));
+
+  ok("the pilot route READS its ticket, so the child binding is visible",
+    /readTicket\(/.test(pilot) && !/verifyTicket\(/.test(pilot),
+    "verifyTicket is a clinic-wide boolean — it cannot tell you WHOSE row this is");
+  ok("a ticket may only write the child it is bound to",
+    /t\.cid \? t\.cid === childId : await ticketOwnsChild\(/.test(pilot),
+    "otherwise one family on a caseload overwrites another child's name, outcomes and streak");
+  ok("…and an unbound ticket binds to the first child it claims",
+    /export async function ticketOwnsChild[\s\S]{0,700}"NX"/.test(auth),
+    "legacy tickets keep working, but stay confined to one row");
+  ok("…failing CLOSED when the store is unreachable",
+    /export async function ticketOwnsChild[\s\S]{0,900}catch \{[\s\S]{0,200}return false;/.test(auth),
+    "an unattributable roster write is the write this check exists to refuse");
+}
+
 // ── 5. founder access: the owners skip the paywall on any device ──
 {
   const pg = await (await browser.newContext()).newPage();
   await pg.goto("http://localhost:8155/today.html");
   const good = await pg.evaluate(async () => {
     localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "T", childAge: "7", focusSounds: ["R"], onboarded: true }));
-    localStorage.setItem("sona.trial.v1", JSON.stringify({ start: Date.now() - 30 * 86400000, days: 3 }));
+    localStorage.setItem("sona.trial.v1", JSON.stringify({ start: Date.now() - 30 * 86400000, days: 3 })); localStorage.setItem("sona.demo.v1", JSON.stringify({ started: 1, done: 1 }));
     const r = await Sona.founderUnlock("OWNER-SECRET-123");
     return { valid: r.valid, founder: Sona.isFounder(), gated: Sona.gated() };
   });
@@ -514,7 +628,12 @@ const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL 
     /const NO_IMPORT = \[/.test(sona) && /sona\.sub\.v1/.test(sona) && /delete p\.earlyAdopter/.test(sona),
     "importData wrote any sona.* key verbatim — a backup code was a paste-in paywall bypass");
   const pilotSrc = readFileSync(ROOT + "/../app/api/pilot/route.ts", "utf8");
-  ok("the roster route authenticates the write", /verifyTicket\(ticket, code\)/.test(pilotSrc) && /status: 401/.test(pilotSrc),
+  // This used to pin `verifyTicket(ticket, code)` BY NAME, which quietly
+  // locked in the weaker check: verifyTicket is a clinic-wide boolean and
+  // cannot say whose row a write belongs to. The route now reads the ticket.
+  // Pin the guarantee — an unauthenticated write is refused — not the helper.
+  ok("the roster route authenticates the write",
+    /readTicket\(ticket, code\)/.test(pilotSrc) && /status: 401/.test(pilotSrc),
     "any POST that named a code could invent a child on a real clinician's dashboard");
   ok("the roster route is rate limited", /rateLimit\(req/.test(pilotSrc));
   ok("a leaked credential can't invent a thousand children", /ROSTER_CAP/.test(pilotSrc) && /HEXISTS/.test(pilotSrc),
@@ -532,7 +651,10 @@ const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL 
   ok("founder key comparison is constant-time", /timingSafeEqual/.test(founder));
 }
 
-ok("no unexpected redeem spam", redeemCalls <= 6, String(redeemCalls));
+// One more than before: the sibling block opens join.html to enrol a real
+// family before adding the second child. The point of this cap is that no
+// code path redeems in a loop, not the exact number.
+ok("no unexpected redeem spam", redeemCalls <= 8, String(redeemCalls));
 await browser.close(); srv.close();
 console.log(fails ? fails + " FAILURES" : "ALL GREEN");
 process.exit(fails ? 1 : 0);

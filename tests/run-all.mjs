@@ -8,6 +8,7 @@ const dir = path.dirname(fileURLToPath(import.meta.url));
 const SUITES = [
   "syntaxtest.mjs",// SYNTAX1: every inline script parses — a broken block kills its whole page
   "freetest.mjs",  // FREE1: Sona is free — the two switches agree and no door takes money
+  "telemetrytest.mjs", // TELE1: the funnel is measurable, and carries nothing about a child
   "soundmap.mjs",  // every sound is scorable + the daily ring can actually fill
   "storytest.mjs", // STORY1: episode beats, chapter pacing, cliffhanger
   "kidtest.mjs",   // KIDS1: per-child progress, switching, family-wide entitlement

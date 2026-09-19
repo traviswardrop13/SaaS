@@ -7,11 +7,23 @@ import { rateLimit } from "@/lib/rateLimit";
  * we don't need our own database to gate access for the MVP — the app calls
  * this to decide if a returning user is paid.
  *
- * Sona sells ONE thing: $39.99/yr with a 7-day free trial. We check for an
- * active or trialing subscription, and ALSO honour paid one-time Checkout
- * Sessions — the brief lifetime-pricing window sold a handful of those, and a
- * subscription-only lookup would strand every one of those buyers. Neither
- * check may be dropped without stranding real, paying customers.
+ * Sona sells ONE subscription; the price and trial length live in
+ * /api/checkout and lib/pricing.ts and are deliberately not restated here, so
+ * this file cannot drift out of date with them. We honour any active or
+ * trialing subscription — including the retired $9.99 monthly ones people
+ * still hold, because retiring a plan removed it from the PURCHASE path, not
+ * from the people billed on it.
+ *
+ * THERE IS NO LIFETIME PRODUCT (Travis, 19 Sep 2026). This route used to scan
+ * Checkout Sessions for a one-time purchase and answer kind: "lifetime". No
+ * such product exists anywhere in this codebase — /api/checkout has never sold
+ * one — so the scan could only ever match something bought outside the app,
+ * and its original form matched paid SUBSCRIPTION sessions too, which is how a
+ * cancelled subscriber restored permanent access. Access now comes from one
+ * place: a live subscription, which is the only thing that can expire.
+ *
+ * If a genuine one-time purchase ever does surface in Stripe, it is a support
+ * task — grant it through the founder or pilot path — not a branch here.
  *
  * SECURITY (interim): knowing a buyer's email is currently enough to unlock a
  * new device (review item F7). Rate-limited here to stop email enumeration /
@@ -38,29 +50,12 @@ export async function GET(req: NextRequest) {
   }
 
   const stripe = new Stripe(key);
-  try {
-    // 1) Paid one-time purchases from the brief lifetime-pricing window.
-    // Checkout Sessions carry the buyer's email in customer_details even when
-    // no Customer was created, which is why this scan — not a customer lookup —
-    // is the reliable path for them.
-    const wanted = email.toLowerCase();
-    let page = await stripe.checkout.sessions.list({ limit: 100 });
-    for (let guard = 0; guard < 5; guard++) {
-      for (const s of page.data) {
-        if (s.payment_status !== "paid") continue;
-        const got = (s.customer_details?.email || s.customer_email || "").toLowerCase();
-        if (got && got === wanted) {
-          return NextResponse.json({ ok: true, active: true, kind: "lifetime" });
-        }
-      }
-      if (!page.has_more || page.data.length === 0) break;
-      page = await stripe.checkout.sessions.list({
-        limit: 100,
-        starting_after: page.data[page.data.length - 1].id,
-      });
-    }
 
-    // 2) The current product: an active or trialing yearly subscription.
+  try {
+    // A live subscription, and nothing else. Interval-agnostic on
+    // purpose — retiring the monthly plan removed it from the PURCHASE path,
+    // not from the people still billed on it, and a `month` subscriber who
+    // reinstalls must still come back paid.
     const customers = await stripe.customers.list({ email, limit: 10 });
     for (const c of customers.data) {
       const subs = await stripe.subscriptions.list({

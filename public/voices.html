@@ -36,7 +36,12 @@
       } catch (e) { ok = false; }
       if (!ok) {
         try { document.documentElement.style.visibility = "hidden"; } catch (e) {}
-        location.replace("/today.html?gate=1");
+        // Carry where they were going. This guard runs BEFORE sona.js (that
+        // is the point of it — no flash of a parent page), so it cannot call
+        // Sona.gateDest; it names its own page literally instead. today.html
+        // re-checks ?to= against the allowlist on arrival, which is the side
+        // that reads an untrusted URL.
+        location.replace("/today.html?gate=1&to=" + encodeURIComponent("/voices.html"));
       }
     })();
   </script>

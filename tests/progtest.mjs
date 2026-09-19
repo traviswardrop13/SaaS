@@ -331,6 +331,7 @@ t = await page.evaluate(() => ({
   pick: document.getElementById("pickCard").style.display,
   founding: document.getElementById("foundingCard").style.display,
   life: document.getElementById("planLife").textContent,
+  line: document.getElementById("planLine").textContent,
   cards: document.querySelectorAll("#pickCard .plan").length,
 }));
 ok("unpaid family sees the yearly card first ($59.99/yr, best value)",
@@ -351,6 +352,17 @@ ok("…and no fabricated anchor survives the retirement",
   "a strike-through with no monthly plan behind it is an invented was-price: " + t.life.slice(0, 120));
 ok("…while the honest per-month reading stays",
   /under \$5 a month/i.test(t.life), t.life.slice(0, 120));
+// THE HEADER LINE IS PRICE COPY TOO. The card markup was cleaned up when
+// monthly was retired; #planLine was not, because the page WRITES it at
+// runtime and every check here read the card. It still said "saves $59.89 a
+// year vs $9.99/mo · Monthly: $9.99/mo, billed today" above a page with one
+// plan on it and no monthly button to find. Read what the parent reads.
+ok("the header line retired with the plan — no dead tier, no invented saving",
+  !/119\.88/.test(t.line) && !/59\.89/.test(t.line) && !/9\.99\s*\/?\s*mo/i.test(t.line) &&
+  !/\bmonthly\b/i.test(t.line),
+  "planLine: " + t.line.slice(0, 160));
+ok("…and says the one true thing about the one plan",
+  /59\.99/.test(t.line) && /3 days free/i.test(t.line), "planLine: " + t.line.slice(0, 160));
 {
   const gone = await page.evaluate(() => ({
     month: !!document.getElementById("planMonth"),
@@ -415,6 +427,33 @@ ok("proof strip: named SLP credential above the plan",
   }));
   ok("report opens with a narrative sentence (name + sound + count)", /practiced the R sound 24 times this week/.test(t.story));
   ok("non-clinical hedge present", t.hedge);
+  // AN EMPTY REPORT IS THE STATE MOST LIKELY TO READ AS "BROKEN". A parent who
+  // opens Progress before any practice must be told what will fill it and
+  // handed the one action that fills it — not left on a blank card.
+  {
+    const ctx = await browser.newContext(); const pg = await ctx.newPage();
+    await pg.goto("http://localhost:8131/today.html"); await pg.waitForTimeout(300);
+    await pg.evaluate(() => {
+      localStorage.clear();
+      localStorage.setItem("sona.freeera.v1", "post"); localStorage.setItem("sona.freeera2.v1", "done"); localStorage.setItem("sona.freeera3.v1", "done");
+      Sona.saveProfile({ childName: "Ada", childAge: "7", focusSounds: ["R"], onboarded: true });
+      sessionStorage.setItem("sona.gate.v1", String(Date.now()));
+    });
+    await pg.goto("http://localhost:8131/progress.html"); await pg.waitForTimeout(900);
+    const empty = await pg.evaluate(() => {
+      const one = document.getElementById("storyLine");
+      return {
+        says: one.textContent,
+        action: !!one.querySelector('a[href="/today.html"]'),
+        cards: [...document.querySelectorAll("#bysound p, #acc p")].map((e) => !!e.querySelector('a[href="/today.html"]')),
+      };
+    });
+    ok("an empty report explains what will appear", /adds its first reps to this page/.test(empty.says), empty.says);
+    ok("…and hands the parent one next action", empty.action, empty.says);
+    ok("…on every empty card, not just the headline",
+      empty.cards.length > 0 && empty.cards.every(Boolean), JSON.stringify(empty.cards));
+    await ctx.close();
+  }
   ok("review pre-gate shows after real value, Bear-style fork",
     t.rate === "block" && /action=write-review/.test(t.yesHref) && /^mailto:/.test(t.noHref));
   await page.evaluate(() => document.getElementById("rateX").click());

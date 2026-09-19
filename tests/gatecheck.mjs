@@ -22,6 +22,12 @@ const chk = (n, p) => { p ? ok++ : bad++; console.log((p ? "PASS " : "FAIL ") + 
 for (const f of ["settings.html", "progress.html", "voices.html", "subscribe.html"]) {
   await page.goto(`http://localhost:8141/${f}`); await page.waitForTimeout(600);
   chk(`${f} bounces a kid to the home gate`, page.url().includes("today.html?gate=1"));
+  // …and remembers where the visit was headed. Without this the parent
+  // solves the puzzle and lands on the kid's home screen, with no sign of the
+  // page that bounced them — which on subscribe.html means the plan screen a
+  // completed practice run just sent them to simply never appears.
+  chk(`…carrying ${f} as the destination`,
+    page.url().includes("to=" + encodeURIComponent("/" + f)));
 }
 const gateOpen = await page.evaluate(() => document.getElementById("gateOvl")?.classList.contains("show"));
 chk("home gate auto-opens after the bounce", !!gateOpen);
@@ -78,6 +84,58 @@ for (const f of ["settings.html", "progress.html", "subscribe.html"]) {
     sheet: document.getElementById("sheetOvl").classList.contains("show"),
   }));
   chk("the right sequence opens the parent corner", st.gate === false && st.sheet === true);
+  await pg.close();
+}
+
+// ── the destination survives the gate, and ONLY an allowlisted one does ──
+// ?to= rides in a URL anyone can type or text to a parent, and it lands on the
+// page that sells things. It names one of four pages or it is ignored.
+{
+  const pg = await browser.newPage({ viewport: { width: 390, height: 844 } });
+  await pg.goto("http://localhost:8141/today.html"); await pg.waitForTimeout(300);
+  await pg.evaluate(() => {
+    localStorage.setItem("sona.freeera.v1", "post"); localStorage.setItem("sona.freeera2.v1", "done");
+    localStorage.setItem("sona.freeera3.v1", "done");
+    Sona.saveProfile({ childName: "Mia", childAge: "7", focusSounds: ["R"], onboarded: true });
+  });
+
+  const dest = await pg.evaluate(() => ({
+    plain: Sona.gateDest("/subscribe.html"),
+    first: Sona.gateDest("/subscribe.html?first=1"),
+    prog: Sona.gateDest("/progress.html"),
+    offList: Sona.gateDest("/charge.html"),
+    absolute: Sona.gateDest("https://evil.example/x"),
+    protoRel: Sona.gateDest("//evil.example/subscribe.html"),
+    traversal: Sona.gateDest("/../subscribe.html"),
+    extraQuery: Sona.gateDest("/subscribe.html?slp=DRSMITH22&first=1"),
+    empty: Sona.gateDest(""),
+  }));
+  chk("an allowlisted page comes back", dest.plain === "/subscribe.html" && dest.prog === "/progress.html");
+  chk("…keeping the one flag that changes its copy", dest.first === "/subscribe.html?first=1");
+  chk("a page not on the list is dropped", dest.offList === "");
+  chk("another origin is dropped", dest.absolute === "" && dest.protoRel === "");
+  chk("a traversal is dropped", dest.traversal === "");
+  chk("every other query key is stripped", dest.extraQuery === "/subscribe.html?first=1");
+  chk("nothing is nothing", dest.empty === "");
+
+  // end to end: the win screen sends a parent to the plan, the gate stops
+  // them, they solve it, and they arrive where they were going.
+  await pg.evaluate(() => sessionStorage.removeItem("sona.gate.v1"));
+  await pg.goto("http://localhost:8141/subscribe.html?first=1"); await pg.waitForTimeout(700);
+  chk("an ungated visit to the plan screen bounces home with its destination",
+    pg.url().includes("gate=1") && pg.url().includes(encodeURIComponent("/subscribe.html?first=1")));
+  await pg.waitForTimeout(300);
+  const digits = (await pg.evaluate(() => document.getElementById("gateQ").textContent))
+    .split("·").map((w) => ["ZERO","ONE","TWO","THREE","FOUR","FIVE","SIX","SEVEN","EIGHT","NINE"].indexOf(w.trim()));
+  chk("the gate opened with a readable challenge", digits.length === 4 && digits.every((d) => d >= 0));
+  await pg.evaluate((seq) => {
+    const btns = [...document.querySelectorAll("#pad button")];
+    seq.forEach((d) => btns.find((b) => b.textContent === String(d)).click());
+    btns.find((b) => b.textContent === "✓").click();
+  }, digits);
+  await pg.waitForTimeout(900);
+  chk("solving it lands the parent on the plan screen, not the kid's home",
+    /\/subscribe\.html\?first=1/.test(pg.url()));
   await pg.close();
 }
 

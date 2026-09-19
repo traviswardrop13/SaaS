@@ -139,7 +139,7 @@ ok("…and every one of them is actually called at load",
 ok("the free-mode bounce is still wired on trial.html",
   /Sona\.isFree\(\)\) location\.replace\("\/today\.html"\)/.test(readFileSync(ROOT + "/trial.html", "utf8")));
 ok("gated() still short-circuits on the switch before anything else",
-  /function gated\(\) \{\s*if \(isFree\(\)\) return false;/.test(sona),
+  /function gated\(\w*\) \{\s*if \(isFree\(\)\) return false;/.test(sona),
   "if any check runs ahead of the switch, the switch is not the switch");
 
 // ── 5. what a parent actually gets, in a browser ──
@@ -164,7 +164,7 @@ if (appFree) {
   await pg.evaluate(() => {
     localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Milo", childAge: "7", focusSounds: ["R"], onboarded: true }));
     // a device that met the paywall before the flip still carries a dead trial
-    localStorage.setItem("sona.trial.v1", JSON.stringify({ start: Date.now() - 10 * 86400000, days: 3 }));
+    localStorage.setItem("sona.trial.v1", JSON.stringify({ start: Date.now() - 10 * 86400000, days: 3 })); localStorage.setItem("sona.demo.v1", JSON.stringify({ started: 1, done: 1 }));
     sessionStorage.setItem("sona.gate.v1", String(Date.now()));
   });
 

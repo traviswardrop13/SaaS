@@ -64,11 +64,15 @@ export default function SubscribeSuccess() {
         setPaid(true);
 
         // Access flag for the static app — Stripe stays the source of truth.
+        // source: "stripe" is load-bearing, not decoration: iapRefresh clears
+        // only apple-sourced access and web restore clears only non-apple
+        // access, so an unlabelled grant belongs to no rail and can be revoked
+        // by the wrong one.
         try {
           const prev = JSON.parse(localStorage.getItem("sona.sub.v1") || "{}");
           localStorage.setItem(
             "sona.sub.v1",
-            JSON.stringify({ ...prev, active: true, since: Date.now(), session: sessionId, plan: planQ, email: j.email || prev.email || null }),
+            JSON.stringify({ ...prev, active: true, source: "stripe", since: Date.now(), checked: Date.now(), session: sessionId, plan: planQ, email: j.email || prev.email || null }),
           );
         } catch {
           // ignore — non-blocking
@@ -106,7 +110,10 @@ export default function SubscribeSuccess() {
             else w.sonaTrack("Subscribe", { value, currency: "USD" });
           }
           const wa = window as unknown as { SonaAnalytics?: { track: (e: string, p?: Record<string, unknown>) => void } };
-          if (wa.SonaAnalytics) wa.SonaAnalytics.track(planQ === "annual" ? "trial started" : "subscription started", { source: "stripe", plan: planQ });
+          // "purchase completed", matching the Apple path. sona.js owns
+          // "trial started" — that is the in-app 3-day clock, a different step
+          // of the funnel, and sharing a name would make both numbers useless.
+          if (wa.SonaAnalytics) wa.SonaAnalytics.track("purchase completed", { source: "stripe", plan: planQ });
         } catch {
           // ignore — non-blocking
         }
@@ -224,7 +231,9 @@ export default function SubscribeSuccess() {
               <>
                 Enter{" "}
                 <strong className="rounded-lg bg-amber-100 px-2 py-0.5 font-display text-lg tracking-[3px] text-amber-900">{appCode}</strong>{" "}
-                — your plan comes with you, and set-up happens in the app.
+                — your plan comes with you, and set-up happens in the app. It
+                works once and expires in 48 hours; after that your email still
+                restores it from <strong>Settings → Restore access</strong>.
               </>
             ) : (
               <>

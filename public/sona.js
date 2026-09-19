@@ -153,6 +153,14 @@
     "sona.stickers.v1", "sona.attempts.v1", "sona.outcomes.v1",
     "sona.lib.read.v1", "sona.feed.v1", "sona.call.v1", "sona.callhist.v1",
     "sona.games.v1", "sona.homework.v1",
+    // PER-CHILD, and it must be. This key holds the clinician code, the
+    // reporting childId and the grown-up's CONSENT to share. While it was
+    // shared, two siblings on one iPad reported under ONE childId: the roster
+    // row was overwritten by whichever child practised last, so a clinician
+    // saw one child's name against the other's outcomes — and homework
+    // assigned to one arrived on the other's profile. Consent was also
+    // inherited silently, which is the part that is not just a bug.
+    "sona.pilot.v1",
   ]);
   function _kids() {
     let v = null;
@@ -178,6 +186,13 @@
 
   function load(key, def) { try { const v = JSON.parse(localStorage.getItem(_k(key))); return (v && typeof v === "object") ? v : clone(def); } catch { return clone(def); } }
   function save(key, val) { try { localStorage.setItem(_k(key), JSON.stringify(val)); } catch {} }
+  // Write to the child who was active when the work STARTED, not whoever is
+  // active when it finishes. save() resolves _k() at write time, which is
+  // right for anything synchronous and wrong for anything that awaits: a
+  // response that arrives after a switch lands under the wrong name.
+  function saveFor(slot, key, val) {
+    try { localStorage.setItem((slot && PER_KID.has(key)) ? key + "@" + slot : key, JSON.stringify(val)); } catch {}
+  }
 
   // The switcher's list, each entry carrying the name from that kid's OWN
   // profile (the cached name goes stale the moment a parent renames a child).
@@ -471,13 +486,26 @@
   // Pull the assignment, and report this child's rep total against the one we
   // are currently holding. Fire-and-forget, at most hourly, and every failure
   // path leaves the cached copy exactly where it was.
-  let _hwAt = 0;
+  // THE THROTTLE IS PER CHILD. One shared timestamp meant that after the first
+  // child synced, a sibling switched to within the hour was refused their own
+  // fetch entirely — so a second child on the same iPad could go an hour
+  // without ever seeing the assignment their SLP had just written.
+  const _hwAt = {};
   function syncHomework(force) {
     try {
       if (!isPilot()) return Promise.resolve(null);
       const now = Date.now();
-      if (!force && now - _hwAt < 3600000) return Promise.resolve(homework());
-      _hwAt = now;
+      // Pin the child HERE. Everything below — the credential, the rep count,
+      // and above all the write — belongs to whoever is active at this
+      // instant, and a parent can switch children while the request is in
+      // flight. Without this, child A's SLP assignment was saved into child
+      // B's slot, and B then practised A's sound at A's word position with
+      // A's reps reported against it. Clinical data crossing children is the
+      // exact failure the per-child pilot key was split to prevent; this is
+      // the asynchronous half of it.
+      const slot = _slot();
+      if (!force && now - (_hwAt[slot] || 0) < 3600000) return Promise.resolve(homework());
+      _hwAt[slot] = now;
       const pi = pilotInfo(), code = pi.code || "", childId = pi.childId || "";
       let ticket = ""; try { ticket = localStorage.getItem("sona.slpticket") || ""; } catch (e) {}
       if (!code || !childId || !ticket) return Promise.resolve(null);
@@ -490,7 +518,10 @@
       return fetch("/api/homework", {
         method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
       }).then((r) => r.json()).then((j) => {
-        if (j && j.ok) save(HWKEY, { hw: j.hw || null, at: Date.now() });
+        if (j && j.ok) saveFor(slot, HWKEY, { hw: j.hw || null, at: Date.now() });
+        // homework() reads whoever is active NOW, which is the honest answer
+        // for a caller that is still on this child and correctly reads the
+        // other child's assignment for a caller that has switched.
         return homework();
       }).catch(() => homework());
     } catch (e) { return Promise.resolve(null); }
@@ -1613,7 +1644,18 @@
   function mirrorTrial(t) { try { fetch("/api/trial", { method: "POST", headers: { "Content-Type": "application/json" }, keepalive: true, body: JSON.stringify({ email: t.email || "", start: t.start, days: t.days || TRIAL_DAYS }) }).catch(function () {}); } catch (e) {} }
   function startTrial(email) {
     let t = getTrial();
-    if (!t || !t.start) { t = { start: Date.now(), email: (email || "").trim(), days: TRIAL_DAYS }; save(TRIALKEY, t); mirrorTrial(t); }
+    if (!t || !t.start) {
+      t = { start: Date.now(), email: (email || "").trim(), days: TRIAL_DAYS };
+      save(TRIALKEY, t); mirrorTrial(t);
+      // Fired HERE, where the clock actually starts, not at the call site.
+      // onboarding.html used to be the only thing reporting a trial, through
+      // sonaTrack — which is a deliberate no-op in the iOS shell, so every
+      // trial started in the app was invisible. This is the top of the
+      // conversion funnel; measuring it only on the web measures the smaller
+      // half. Fires once per device, because the guard above only builds a
+      // trial when there isn't one.
+      try { track("trial started", { plan: "annual" }); } catch (e) {}
+    }
     else if (email && !t.email) { t.email = String(email).trim(); save(TRIALKEY, t); mirrorTrial(t); }
     return t;
   }
@@ -1629,23 +1671,67 @@
   // subscribe UI is hidden there. The web paywall is completely unchanged.
   function isNativeApp() { try { return !!(window.Capacitor && (typeof window.Capacitor.isNativePlatform === "function" ? window.Capacitor.isNativePlatform() : true)); } catch (e) { return false; } }
 
+  // ── THE FREE DEMONSTRATION ────────────────────────────────────────────────
+  // A new family used to be handed a silent 3-day clock the moment onboarding
+  // closed, before Sona had shown them anything: the trial started burning
+  // while the parent was still reading. What they get instead is one COMPLETE
+  // run — a real prompt, real reps judged by the real detector, the game those
+  // reps earn, the celebration, and an explicit finish — and only then a price.
+  //
+  // It is not an entitlement. It grants nothing, unlocks nothing else, and is
+  // stored per DEVICE because it is a demonstration of the product, not a
+  // property of a child: a second child on the same iPad has already been
+  // shown what Sona does.
+  const DEMOKEY = "sona.demo.v1";
+  function demoState() { try { return JSON.parse(localStorage.getItem(DEMOKEY) || "null") || { started: 0, done: 0 }; } catch (e) { return { started: 0, done: 0 }; } }
+  function _demoSave(d) { try { localStorage.setItem(DEMOKEY, JSON.stringify(d)); } catch (e) {} }
+  function demoDone() { return !!demoState().done; }
+  function demoStart() {
+    const d = demoState();
+    if (d.done || d.started) return d;        // explicit state, so a refresh or
+    d.started = Date.now(); _demoSave(d);     // a back-swipe resumes rather
+    return d;                                  // than restarting
+  }
+  // ONE-SHOT, like the offer it precedes. A replay must not re-fire the
+  // first-completion beat, so this answers "was this the first time" and the
+  // caller decides what only happens once.
+  function demoFinish() {
+    const d = demoState();
+    if (d.done) return false;
+    d.done = Date.now(); _demoSave(d);
+    try { track("demo completed", {}); } catch (e) {}
+    return true;
+  }
+
   // Launch gate: subscribers, pilots and founding families (SLP-referred —
   // that free-forever promise IS the SLP channel) are always in; everyone else
-  // gets a 3-day free trial, then the paywall. (Library, customize, progress
-  // stay open.) The native shell gates exactly like the web now — the old
-  // "native never gates" bypass predates the Apple IAP rail and would have
+  // meets the free demonstration first, then the paywall. (Library, customize,
+  // progress stay open.) The native shell gates exactly like the web now — the
+  // old "native never gates" bypass predates the Apple IAP rail and would have
   // made the App Store build free forever with an ignorable paywall.
   // FREE MODE first: nothing is gated, so a kid page can never bounce to a
   // price screen mid-play (the audit caught Story Time doing exactly that).
   // Gates fire at PAGE LOAD only, never mid-round.
-  function gated() {
+  //
+  // `what` names the activity being asked for. Only "demo" is special: it is
+  // the one run this family was shown for free, and it stays replayable after
+  // they decline, forever. Everything else gates normally once the
+  // demonstration is done — replayable does not mean the product is free.
+  function gated(what) {
     if (isFree()) return false;
     if (isFounder()) return false;
     if (slpVerified()) return false;                 // device redeemed a valid SLP credential
     if (isSubscribed() || isPilot()) return false;
     if (earlyAdopterAnyKid()) return false;
-    ensureTrial();
-    return trialExpired();
+    if (!demoDone()) return false;                   // still inside the demonstration
+    if (what === "demo") return false;               // …which they may always replay
+    // A local no-card trial is no longer STARTED by anything — the
+    // demonstration replaced it — but one already promised to a family is
+    // honoured to the day it runs out. Removing ensureTrial() from here is
+    // what stops a new device quietly minting one just by being gated.
+    const t = getTrial();
+    if (t && t.start && !trialExpired()) return false;
+    return true;
   }
   // earlyAdopter lives on the PROFILE, and the profile is per-kid — so a
   // founding or SLP-referred family that added a second child had the first one
@@ -1668,14 +1754,39 @@
   // real fix is an emailed one-time code (needs RESEND_API_KEY). The endpoint
   // is rate-limited server-side as the interim guard; the secure hand-off path
   // is the single-use move-in code, not this.
+  // WEB RESTORE. Same lifecycle as iapRefresh: an authoritative answer is
+  // acted on, a network failure is not. This used to grant on active and do
+  // NOTHING on inactive, so a cancelled Stripe subscriber stayed unlocked
+  // forever — and the restore screen would cheerfully tell them "no
+  // subscription found" while the app they were holding stayed open.
+  //
+  // Two guards on the revoke, and both matter:
+  //   • the email must be the one the cached access was granted to. Stripe
+  //     answers about an ADDRESS, not a device. A parent who mistypes, or
+  //     checks their partner's address, gets an honest "nothing here" about
+  //     someone else's account — that says nothing about their own.
+  //   • Apple-sourced access is never touched here, exactly as iapRefresh
+  //     never touches Stripe's. Founder unlocks, SLP credentials, pilots and
+  //     the grandfathered free eras are separate grants entirely and are not
+  //     stored here at all, so they cannot be reached from this path.
   async function restore(email) {
     email = (email || "").trim();
     if (!/^\S+@\S+\.\S+$/.test(email)) return { ok: false, error: "Enter a valid email." };
     try {
       const r = await fetch("/api/subscription?email=" + encodeURIComponent(email));
       const j = await r.json();
-      if (j && j.ok && j.active) { saveSub({ active: true, email: email }); return { ok: true, active: true }; }
-      if (j && j.ok) return { ok: true, active: false };
+      if (j && j.ok && j.active) {
+        saveSub({ active: true, email: email, source: "stripe", since: Date.now(), checked: Date.now() });
+        return { ok: true, active: true };
+      }
+      if (j && j.ok) {
+        try {
+          const cur = getSub();
+          const sameAccount = !!(cur.email && cur.email.toLowerCase() === email.toLowerCase());
+          if (cur.active && sameAccount && cur.source !== "apple") saveSub({ active: false, since: 0, checked: Date.now() });
+        } catch (e) {}
+        return { ok: true, active: false };
+      }
       return { ok: false, error: (j && j.error) || "Couldn’t check right now." };
     } catch (e) { return { ok: false, error: "Network error. Try again." }; }
   }
@@ -1832,10 +1943,39 @@
       document.addEventListener("visibilitychange", renew, { passive: true });
     } catch (e) {}
   }
+  // WHERE THEY WERE GOING. The gate bounces an ungated visitor to Home and
+  // opens the puzzle there — and used to drop the destination on the floor. A
+  // parent who tapped Done on the win screen, solved the gate, and landed on
+  // Home never saw the plan screen they were sent to, and had no idea one
+  // existed. So the bounce carries ?to=.
+  //
+  // ?to= rides inside a URL anyone can type or send, and it lands on a page
+  // that sells things, so it is an ALLOWLIST and not a parameter: it may name
+  // one of four parent-only pages and carry nothing but the one flag that
+  // changes their copy. Everything else — other origins, protocol-relative
+  // "//evil.example", any other query key — is dropped, and the visitor simply
+  // stays on Home.
+  const GATE_DESTS = { "/subscribe.html": 1, "/progress.html": 1, "/settings.html": 1, "/voices.html": 1 };
+  function gateDest(raw) {
+    try {
+      const s = String(raw || "");
+      if (s.charAt(0) !== "/" || s.charAt(1) === "/") return "";   // internal only, never "//host"
+      const path = s.split("?")[0].split("#")[0];
+      if (!GATE_DESTS[path]) return "";
+      return path + (/[?&]first=1(&|$)/.test(s) ? "?first=1" : "");
+    } catch (e) { return ""; }
+  }
   function requireGate(redirect) {
     if (gateOk()) { gateVerify(); gateWatch(); return true; }
     try { document.documentElement.style.visibility = "hidden"; } catch (e) {}
-    try { location.replace(redirect || "/today.html?gate=1"); } catch (e) {}
+    let url = redirect || "/today.html?gate=1";
+    if (!redirect) {
+      try {
+        const to = gateDest(location.pathname + location.search);
+        if (to) url += "&to=" + encodeURIComponent(to);
+      } catch (e) {}
+    }
+    try { location.replace(url); } catch (e) {}
     return false;
   }
 
@@ -2453,6 +2593,20 @@
   }
   // Call from any user gesture: resumes the context and plays one silent
   // sample, which is what iOS needs before it will run audio at all.
+  // At most ONE line waits for the first tap. Holding a backlog would mean a
+  // child taps and then sits through instructions that have already scrolled
+  // past; the newest line is the only one still true.
+  let _spkPending = null;
+  function _spkPark(text, opts) { _spkPending = { text: text, opts: opts }; }
+  function _spkFlush() {
+    const p = _spkPending; _spkPending = null;
+    if (!p) return;
+    try {
+      const c = _spkCtx();
+      if (c.state !== "running") return;          // still locked: let it go
+      speak(p.text, Object.assign({}, p.opts, { auto: false }));
+    } catch (e) {}
+  }
   function speakUnlock() {
     try {
       const c = _spkCtx();
@@ -2463,6 +2617,9 @@
     // iOS speechSynthesis sticks in a paused state after interruptions and
     // then queues utterances forever; a gesture is the one place it un-sticks
     try { if (global.speechSynthesis && global.speechSynthesis.paused) global.speechSynthesis.resume(); } catch (e) {}
+    // resume() settles a tick later, so give it one before deciding the
+    // context is running and releasing whatever was waiting on this tap.
+    try { setTimeout(_spkFlush, 60); } catch (e) {}
   }
   function _spkSynth(text, opts, gen) {
     return new Promise((res) => {
@@ -2542,14 +2699,30 @@
       .then((b) => (b && b.byteLength) ? _spkPCM(new Uint8Array(b), opts, gen) : "no-audio")
       .catch(() => { if (to) clearTimeout(to); return "fetch-failed"; })
       .then((how) => {
-        // anything short of played-or-superseded gets the guaranteed voice —
-        // a child is never left with a silent story
+        // THE ROBOT VOICE IS A LAST RESORT, NOT A DEFAULT.
+        //
+        // "blocked" means the AudioContext will not run — which on a fresh page
+        // load is not a failure at all, just a browser waiting for a tap. Every
+        // page makes a NEW, locked context, so every line spoken automatically
+        // on open (charge.html's "Ready? Say rrrr… Go!") was landing here and
+        // falling straight through to speechSynthesis. /api/tts was answering
+        // 200 the whole time: the good voice was fetched, then thrown away.
+        //
+        // So an AUTO-spoken line waits for the tap that is coming anyway, and
+        // speaks in Echo's real voice when it arrives. A line the child ASKED
+        // for ("Read it to me") still falls back, because there the choice is
+        // robot-or-nothing and nothing is worse.
         if (how === "pcm" || how === "superseded") return how;
+        if (how === "blocked" && opts.auto) { _spkPark(text, opts); return "parked"; }
         return _spkSynth(text, opts, gen);
       });
   }
+  // speak() is the AMBIENT path — a page reading itself aloud on open, a page
+  // turn, a prompt at the top of a round. Nobody asked for it right now, so if
+  // the audio context is still locked it waits for the tap instead of dropping
+  // to the robot voice. speakNow() is the opposite and turns this off.
   function speak(text, opts) {
-    opts = opts || {};
+    opts = Object.assign({ auto: true }, opts || {});
     if (!text || getProfile().voiceOn === false) return Promise.resolve();
     if (_spk.n >= 2) return Promise.resolve();   // one playing + one waiting
     _spk.n++;
@@ -2576,21 +2749,49 @@
   // way — nothing here blocks a child mid-session, and it fires exactly once.
   // Families who never finish a run simply meet the normal trial gate later.
   const PLANSEEN = "sona.planmoment.v1";
-  function planMoment() {
+  // ELIGIBILITY IS NOT AN IMPRESSION. These were one function, and that was a
+  // bug: planMoment() consumed the one-shot and fired "plan moment shown" at
+  // the moment of DECIDING, before anything was on screen. The offer lives
+  // behind the grown-ups gate, so a parent who bounced off that gate — or a
+  // navigation that simply failed — burned the only ask this family will ever
+  // get, while the funnel recorded an impression that never happened. Both
+  // halves wrong in the same breath: the family loses the offer, and the
+  // number that was supposed to tell us whether the offer works is inflated.
+  //
+  // planEligible() answers "should we take them there" and CHANGES NOTHING.
+  // planShown() is called by the paywall itself, once it has actually
+  // rendered, and is the only thing that spends the one-shot.
+  function planEligible() {
     try {
       if (isFree()) return false;                    // nothing to sell
-      if (localStorage.getItem(PLANSEEN)) return false;   // one-shot, forever
+      if (localStorage.getItem(PLANSEEN)) return false;
       // anyone already entitled is never asked: subscribers, founders,
       // SLP-referred families, pilots, and all three grandfathered free eras
       if (isSubscribed() || isPilot() || isFounder() || slpVerified()) return false;
       if (earlyAdopterAnyKid()) return false;
-      localStorage.setItem(PLANSEEN, String(Date.now()));
       return true;
     } catch (e) { return false; }
   }
+  function planShown(surface) {
+    try {
+      if (localStorage.getItem(PLANSEEN)) return false;   // already counted
+      localStorage.setItem(PLANSEEN, String(Date.now()));
+      track("plan moment shown", { surface: surface || "first-run" });
+      return true;
+    } catch (e) { return false; }
+  }
+  // Kept so an older cached page cannot crash on a missing export. It is the
+  // OLD, wrong shape — decide-and-consume — so it only answers eligibility and
+  // never spends the one-shot; nothing in this repo calls it.
+  function planMoment() { return planEligible(); }
+
 
   // The button path: stop whatever is talking and say THIS, now.
+  // The button path: a child ASKED to hear this, so it must make a sound now.
+  // auto:false means a locked context falls back to the browser voice rather
+  // than parking — robot-or-nothing, and nothing is worse.
   function speakNow(text, opts) {
+    opts = Object.assign({}, opts || {}, { auto: false });
     _spk.gen++;                                   // strand every queued unit
     try { if (_spk.src) { _spk.src.stop(); _spk.src = null; } } catch (e) {}
     try { if (global.speechSynthesis) global.speechSynthesis.cancel(); } catch (e) {}
@@ -3001,14 +3202,45 @@
   }
   // quiet entitlement sync (today.html on load in the shell): keeps sub state
   // honest across reinstalls/devices without any UI.
+  // Apple access has a lifetime, and this is where it ends.
+  //
+  // This used to grant and never revoke. Two halves, both wrong: an unforced
+  // refresh returned true immediately for anyone already cached active — so an
+  // existing subscriber was NEVER re-checked — and even a forced refresh that
+  // came back inactive left the stored flag alone, because _iapUnlock() only
+  // runs on success. Cancel, expire, refund, or have a payment fail, and
+  // isSubscribed() stayed true on that device forever.
+  //
+  // Now: re-verify on a cadence, and act on an authoritative "no".
+  const IAPCHK = "sona.iapcheck.v1";        // when Apple last actually answered
+  const IAP_RECHECK_MS = 6 * 60 * 60 * 1000;
   function iapRefresh(force) {
     if (!iapAvailable()) return Promise.resolve(false);
-    if (!force && isSubscribed()) return Promise.resolve(true);
+    // Cached and checked recently: trust it. This is the offline grace too —
+    // a subscriber on a plane keeps their app.
+    if (!force && isSubscribed()) {
+      let last = 0;
+      try { last = parseInt(localStorage.getItem(IAPCHK) || "0", 10) || 0; } catch (e) {}
+      if (Date.now() - last < IAP_RECHECK_MS) return Promise.resolve(true);
+    }
     return iapConfigure().then((P) => P.getCustomerInfo()).then((info) => {
       const active = _iapActive(info);
-      if (active) _iapUnlock();
-      return active;
-    }).catch(() => false);
+      // Apple answered, so record WHEN — the cadence above is only honest if
+      // it measures real answers rather than attempts.
+      try { localStorage.setItem(IAPCHK, String(Date.now())); } catch (e) {}
+      if (active) { _iapUnlock(); return true; }
+      // An authoritative inactive: drop Apple-sourced access. Only Apple's own
+      // grant is cleared — a Stripe subscription, a founder unlock, an SLP
+      // credential or a grandfathered free era are different sources and must
+      // survive, or cancelling an Apple sub would silently paywall a family
+      // whose access never came from Apple in the first place.
+      try { if (getSub().source === "apple") saveSub({ active: false, since: 0 }); } catch (e) {}
+      return false;
+    }).catch(() => {
+      // Network failure is NOT a cancellation. Leave everything as it is and
+      // do not stamp the check clock, so the next open tries again.
+      return isSubscribed();
+    });
   }
 
   // best-effort: send the pilot child's (consented) progress back to the founder. Debounced.
@@ -3133,5 +3365,5 @@
   try { _grandfatherFreeEra3(); } catch (e) {}
   try { installDebug(); } catch (e) {}
 
-  global.Sona = { pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, ladderContent, FREE_MODE, isFree, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, gated, gateVerify, gateOk, requireGate, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, planMoment, speak, speakNow, speakUnlock, speechAvailable, speechPerm, speechStart, speechStop, hearVerdict, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repsBeacon, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES };
+  global.Sona = { pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, saveFor, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, ladderContent, FREE_MODE, isFree, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, gated, gateVerify, gateOk, requireGate, gateDest, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, planMoment, planEligible, planShown, speak, speakNow, speakUnlock, speechAvailable, speechPerm, speechStart, speechStop, hearVerdict, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, demoState, demoDone, demoStart, demoFinish, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repsBeacon, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES };
 })(window);

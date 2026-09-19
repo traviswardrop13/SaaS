@@ -94,7 +94,11 @@ ok("deck names the hero activity", deck.hero.length > 3, deck.hero);
 // DAY1: the hero is today's CHAPTER until it's read — the day starts with the
 // story, and the games are what reading it earns.
 ok("hero card opens a real door", /^\/(chapter\.html|charge\.html\?game=|story\.html|arcade-feed\.html)/.test(deck.launch || ""), deck.launch);
-ok("CTA offers the story first", /READ TODAY.S STORY/i.test(deck.cta), deck.cta);
+// The wording now depends on whether this child has ever practised — a
+// first-timer is invited to START YOUR FIRST ADVENTURE, and the adventure
+// is the chapter. The launch target above is what pins the door; this pins
+// that the button is about the story rather than a game.
+ok("CTA offers the story first", /READ TODAY.S STORY|FIRST ADVENTURE/i.test(deck.cta), deck.cta);
 ok("three named game cards sit below", deck.thumbs.length === 3 && deck.thumbs.every((t) => t.n.length > 3), JSON.stringify(deck.thumbs));
 ok("home screen carries no chapter furniture", !deck.chapPill);
 

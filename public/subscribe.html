@@ -17,7 +17,15 @@
       } catch (e) { ok = false; }
       if (!ok) {
         document.documentElement.style.display = "none";
-        location.replace("/today.html?gate=1");
+        // Carry where they were going. This guard runs BEFORE sona.js (that
+        // is the point of it — no flash of a parent page), so it cannot call
+        // Sona.gateDest; it names its own page literally instead. today.html
+        // re-checks ?to= against the allowlist on arrival, which is the side
+        // that reads an untrusted URL.
+        // ?first=1 is the hand-off from a completed run and changes the copy
+        // here, so it is the one flag worth carrying home and back.
+        location.replace("/today.html?gate=1&to=" + encodeURIComponent(
+          "/subscribe.html" + (/[?&]first=1(&|$)/.test(location.search) ? "?first=1" : "")));
       }
     })();
   </script>
@@ -117,6 +125,22 @@
         <a class="iconbtn" href="/settings.html" title="Settings" style="display:flex;align-items:center;justify-content:center;"><span class="pic-gear"></span></a>
       </div>
     </header>
+
+    <!-- THE RECAP, and it only appears on the hand-off from a completed run.
+         A parent arrives here having been fetched by a child who just
+         finished something, and the first thing they saw was a price. What
+         they see first now is what actually happened, in facts this device
+         recorded: which sound, how many words out loud, whether the run was
+         finished, and what the next session holds. Every line is omitted when
+         the data behind it is missing — an invented recap on the page that
+         asks for money is worse than no recap — and none of them claims the
+         child improved, because one session cannot show that and the detector
+         could not prove it if it did. -->
+    <div class="card" id="recapCard" style="display:none;">
+      <h2 id="recapTitle">Here's what just happened</h2>
+      <ul id="recapList" style="margin:10px 0 0;padding-left:20px;font-weight:800;font-size:14.5px;line-height:1.7;color:var(--ink);"></ul>
+      <p class="muted" style="margin-top:10px;font-size:12px;line-height:1.5;">A practice snapshot, not an assessment — and it stays on this device.</p>
+    </div>
 
     <div class="card">
       <div class="hero">
@@ -257,6 +281,17 @@
       </div>
     </div>
 
+    <!-- A VISIBLE WAY TO SAY NO. There was a "Back to Sona" in the nav and a
+         "Back to Settings" link, but both read as navigation — a parent who
+         had just been fetched by their child and did not want to buy anything
+         had to work out that leaving was allowed. On the hand-off it is a
+         stated option, next to the price rather than under the footer, and it
+         goes back to a home screen that still has the demonstration on it. -->
+    <p id="declineRow" style="display:none;text-align:center;margin-top:18px;">
+      <a href="/today.html" id="declineLink" class="btn ghost" style="width:auto;padding:12px 22px;display:inline-block;text-decoration:none;">Not now — back to Sona</a>
+      <span class="muted" style="display:block;margin-top:8px;font-size:12.5px;font-weight:700;">Your practice round is still there whenever you want it.</span>
+    </p>
+
     <p class="muted" style="text-align:center;margin-top:22px;font-size:12.5px;font-weight:700;max-width:420px;margin-left:auto;margin-right:auto;">
       Sona is an at-home practice companion — not a substitute for professional care.
     </p>
@@ -355,9 +390,16 @@
         if (!(Sona.iapAvailable && Sona.iapAvailable())) return; // old binary: no purchase UI at all
         document.getElementById("iapCard").style.display = "block";
         try { if (window.SonaAnalytics) SonaAnalytics.track("paywall viewed", { surface: "native" }); } catch (e) {}
-        // ratio, not dollars: the figures on this card come from App Store
-        // Connect a moment later, and this line must not out-argue them
-        document.getElementById("planLine").innerHTML = "Yearly: <b>3 days free</b>, then about <b>half</b> what monthly costs over a year · Monthly: billed today, no trial.";
+        // The offer is on screen NOW — this is the only place the one-shot is
+        // spent. Deciding to come here is not the same as arriving.
+        try { if (Sona.planShown) Sona.planShown("native"); } catch (e) {}
+        // NO dollars and NO comparison. The figure on this card arrives from
+        // App Store Connect a moment later, so a price written here would
+        // out-argue it. This line said "about half what monthly costs" until
+        // monthly was retired — a ratio against a plan nobody can buy is the
+        // same invented was-price a strike-through would be, and it sent a
+        // parent looking for a monthly button that is not on the card.
+        document.getElementById("planLine").innerHTML = "Yearly: <b>3 days free</b>, then one charge a year — cancel any time before it.";
         // greet the onboarding hand-off warmly
         if (/[?&]welcome=1/.test(location.search)) document.getElementById("iapTitle").textContent = "One last thing — start your free days";
         try {
@@ -376,7 +418,11 @@
           Sona.iapPurchase(kind).then(function () {
             msg.textContent = "";
             // RevenueCat has confirmed the entitlement by the time this resolves
-            try { if (window.SonaAnalytics) SonaAnalytics.track(kind === "annual" ? "trial started" : "subscription started", { source: "apple", plan: kind }); } catch (e) {}
+            // "purchase completed", NOT "trial started": sona.js fires
+            // "trial started" when the in-app 3-day clock begins, and two
+            // different funnel steps sharing one event name makes both numbers
+            // meaningless. This one means money was committed.
+            try { if (window.SonaAnalytics) SonaAnalytics.track("purchase completed", { source: "apple", plan: "annual" }); } catch (e) {}
             try { if (Sona.confetti) Sona.confetti({ count: 160 }); if (Sona.sfx && Sona.sfx.complete) Sona.sfx.complete(); } catch (e) {}
             document.getElementById("planLine").innerHTML = 'Your plan: <b style="color:var(--good);">Active ✓</b> — welcome to Sona!';
             document.getElementById("iapCard").style.display = "none";
@@ -396,6 +442,73 @@
       } catch (e) {}
     })();
 
+    // Build the recap from what this device actually recorded. Nothing here
+    // is fetched and nothing is guessed: each line is skipped when its number
+    // is missing, so a parent who arrives after an interrupted run sees fewer
+    // lines rather than a fabricated one.
+    (function () {
+      if (!/[?&]first=1(&|$)/.test(location.search)) return;
+      try {
+        var P = Sona.getProfile ? Sona.getProfile() : {};
+        var nm = (P.childName || "").trim() || "Your child";
+        var out = [];
+
+        // which sound, by today's attempts — not by what is merely configured
+        var today = Sona.localDay ? Sona.localDay() : new Date().toISOString().slice(0, 10);
+        var o = (Sona.outcomes ? Sona.outcomes() : {}) || {};
+        var best = null;
+        Object.keys(o).forEach(function (sd) {
+          var d = o[sd] && o[sd].days && o[sd].days[today];
+          var n = d ? (d.a || 0) : 0;
+          if (n > 0 && (!best || n > best.n)) best = { s: sd, n: n };
+        });
+        if (best) {
+          var lbl = Sona.soundLabel ? Sona.soundLabel(best.s) : best.s;
+          out.push("<b>" + nm + "</b> practised the <b>" + lbl + "</b> sound.");
+        }
+
+        var reps = Sona.repsToday ? Sona.repsToday() : 0;
+        if (reps > 0) out.push("<b>" + reps + "</b> word" + (reps === 1 ? "" : "s") + " said out loud — each one heard, none counted from silence.");
+
+        var di = Sona.dailyInfo ? Sona.dailyInfo() : null;
+        if (di && di.played) out.push("Today's run is <b>finished</b>" + (di.score ? " — " + di.score + " points" : "") + ".");
+
+        // NOTHING HAPPENED MEANS NO RECAP. What follows is a fact about the
+        // app rather than about the child, so it is always available — which
+        // is exactly why it must not be allowed to prop up an otherwise empty
+        // card. A recap whose only line is "next time" is a recap of nothing,
+        // on the page that asks for money.
+        if (!out.length) return;
+        try {
+          var ep = Sona.dailyStory ? Sona.dailyStory() : null;
+          if (ep && ep.t) out.push("Next time: <b>" + ep.t + "</b>, then the games it unlocks.");
+        } catch (e) {}
+        document.getElementById("recapTitle").textContent = "Here's what " + nm + " just did";
+        document.getElementById("recapList").innerHTML = out.map(function (l) { return "<li>" + l + "</li>"; }).join("");
+        document.getElementById("recapCard").style.display = "block";
+        // The recap is a funnel STEP, not decoration: without it there is no
+        // way to tell a parent who read what their child did from one who was
+        // handed a price cold.
+        try { if (Sona.track) Sona.track("recap viewed", {}); } catch (e) {}
+      } catch (e) {}
+    })();
+
+    // The decline, and the only place it is offered as a decline.
+    (function () {
+      if (!/[?&]first=1(&|$)/.test(location.search)) return;
+      var row = document.getElementById("declineRow"), a = document.getElementById("declineLink");
+      if (!row || !a) return;
+      // a family who cannot be sold to is not being asked, so there is nothing
+      // for them to decline
+      var asked = true; try { asked = !(Sona.isFree && Sona.isFree()) && !(Sona.isSubscribed && Sona.isSubscribed()); } catch (e) {}
+      if (!asked) return;
+      row.style.display = "block";
+      a.addEventListener("click", function () {
+        // keepalive, because this navigates immediately afterwards
+        try { if (Sona.track) Sona.track("offer dismissed", { surface: "first-run" }); } catch (e) {}
+      });
+    })();
+
     // Cohort routing: founding/SLP families keep the free story; the trial
     // cohort (ad/organic signups) gets the plan picker. Subscribers see neither.
     (function () {
@@ -410,7 +523,7 @@
           try{ if(/[?&]welcome=1/.test(location.search)) document.querySelector("#pickCard h2").textContent = "One last thing — pick your plan"; }catch(e){}
           var fc = document.getElementById("foundingCard"); if (fc) fc.style.display = "none";
           // the header line must match the picker, not the founding story
-          document.getElementById("planLine").innerHTML = "Yearly: <b>3 days free</b>, then $59.99/yr — <b>saves $59.89 a year</b> vs $9.99/mo · Monthly: $9.99/mo, billed today.";
+          document.getElementById("planLine").innerHTML = "Yearly: <b>3 days free</b>, then $59.99/yr — <b>under $5 a month</b>, billed once a year.";
         }
       } catch (e) {}
       function buy(plan, value) {
@@ -424,9 +537,15 @@
           .catch(function () { msg.textContent = "Checkout couldn't open — are you online?"; });
       }
       // web paywall impression (native fires its own with surface:"native")
+      // BOTH of these hang off one condition: the picker is actually on the
+      // screen. planShown() spends a one-shot this family only gets once, so
+      // counting it for a subscriber who was shown nothing would burn the ask
+      // AND inflate the funnel — the exact pair of bugs that killed
+      // planMoment().
       try {
-        if (window.SonaAnalytics && document.getElementById("pickCard").style.display !== "none" && !subbed)
-          SonaAnalytics.track("paywall viewed", { surface: "web" });
+        var offerOnScreen = document.getElementById("pickCard").style.display !== "none" && !subbed;
+        if (window.SonaAnalytics && offerOnScreen) SonaAnalytics.track("paywall viewed", { surface: "web" });
+        if (offerOnScreen) { try { if (Sona.planShown) Sona.planShown("web"); } catch (e) {} }
       } catch (e) {}
       // the exact-date pill: a trial started today ends on a knowable date, and
       // naming it beats "after 3 days" for trust
