@@ -427,6 +427,33 @@ ok("proof strip: named SLP credential above the plan",
   }));
   ok("report opens with a narrative sentence (name + sound + count)", /practiced the R sound 24 times this week/.test(t.story));
   ok("non-clinical hedge present", t.hedge);
+  // AN EMPTY REPORT IS THE STATE MOST LIKELY TO READ AS "BROKEN". A parent who
+  // opens Progress before any practice must be told what will fill it and
+  // handed the one action that fills it — not left on a blank card.
+  {
+    const ctx = await browser.newContext(); const pg = await ctx.newPage();
+    await pg.goto("http://localhost:8131/today.html"); await pg.waitForTimeout(300);
+    await pg.evaluate(() => {
+      localStorage.clear();
+      localStorage.setItem("sona.freeera.v1", "post"); localStorage.setItem("sona.freeera2.v1", "done"); localStorage.setItem("sona.freeera3.v1", "done");
+      Sona.saveProfile({ childName: "Ada", childAge: "7", focusSounds: ["R"], onboarded: true });
+      sessionStorage.setItem("sona.gate.v1", String(Date.now()));
+    });
+    await pg.goto("http://localhost:8131/progress.html"); await pg.waitForTimeout(900);
+    const empty = await pg.evaluate(() => {
+      const one = document.getElementById("storyLine");
+      return {
+        says: one.textContent,
+        action: !!one.querySelector('a[href="/today.html"]'),
+        cards: [...document.querySelectorAll("#bysound p, #acc p")].map((e) => !!e.querySelector('a[href="/today.html"]')),
+      };
+    });
+    ok("an empty report explains what will appear", /adds its first reps to this page/.test(empty.says), empty.says);
+    ok("…and hands the parent one next action", empty.action, empty.says);
+    ok("…on every empty card, not just the headline",
+      empty.cards.length > 0 && empty.cards.every(Boolean), JSON.stringify(empty.cards));
+    await ctx.close();
+  }
   ok("review pre-gate shows after real value, Bear-style fork",
     t.rate === "block" && /action=write-review/.test(t.yesHref) && /^mailto:/.test(t.noHref));
   await page.evaluate(() => document.getElementById("rateX").click());
