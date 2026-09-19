@@ -17,7 +17,15 @@
       } catch (e) { ok = false; }
       if (!ok) {
         document.documentElement.style.display = "none";
-        location.replace("/today.html?gate=1");
+        // Carry where they were going. This guard runs BEFORE sona.js (that
+        // is the point of it — no flash of a parent page), so it cannot call
+        // Sona.gateDest; it names its own page literally instead. today.html
+        // re-checks ?to= against the allowlist on arrival, which is the side
+        // that reads an untrusted URL.
+        // ?first=1 is the hand-off from a completed run and changes the copy
+        // here, so it is the one flag worth carrying home and back.
+        location.replace("/today.html?gate=1&to=" + encodeURIComponent(
+          "/subscribe.html" + (/[?&]first=1(&|$)/.test(location.search) ? "?first=1" : "")));
       }
     })();
   </script>

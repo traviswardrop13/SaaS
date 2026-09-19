@@ -511,8 +511,19 @@
       });
     })();
     $("gateClose").onclick=function(){ $("gateOvl").classList.remove("show"); };
-    // bounced here from a parent-only page (Sona.requireGate)? Open the gate right away.
-    try{ if(/[?&]gate=1/.test(location.search)) openGate(); }catch(e){}
+    // bounced here from a parent-only page (Sona.requireGate)? Open the gate
+    // right away — and send them ON to where they were going once they pass.
+    // Without this the parent solves a number puzzle and lands on the kid's
+    // home screen, with no sign of the plan screen (or progress page) that
+    // bounced them. Sona.gateDest re-checks the allowlist HERE too: this reads
+    // a URL, and a URL is never trusted because it arrived.
+    try{
+      if(/[?&]gate=1/.test(location.search)){
+        var _raw=""; try{ _raw=decodeURIComponent((location.search.match(/[?&]to=([^&]*)/)||[])[1]||""); }catch(e){}
+        var _to=""; try{ _to=(S&&S.gateDest)?S.gateDest(_raw):""; }catch(e){}
+        openGate(_to?function(){ location.replace(_to); }:null);
+      }
+    }catch(e){}
     // Mom's week — her goal (3/5/7 days), her streak. Never shown to the kid.
     function paintWeek(){
       try{

@@ -450,7 +450,13 @@ const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL 
   await pg.goto("http://localhost:8155/join.html?slp=rachel-k4&k=RACHELKEY");
   await pg.waitForTimeout(900);
   await pg.evaluate(() => document.getElementById("jYes").click());
-  await pg.waitForTimeout(700);
+  // join.html enrols, then hands the family into the app on an 1100ms timer.
+  // A flat 700ms wait puts the NEXT page.evaluate inside that window, and the
+  // navigation destroys its execution context mid-call: green on a fast laptop,
+  // red on a slower CI runner, and nothing to do with the code under test.
+  // Wait for the landing instead of guessing how long it takes.
+  await pg.waitForURL(/\/(today|onboarding)\.html/, { timeout: 15000 });
+  await pg.waitForFunction(() => !!window.Sona, null, { timeout: 15000 });
   const first = pilotPosts.slice();
   ok("the enrolled child reports to the clinician", first.length > 0, JSON.stringify(first.length));
 

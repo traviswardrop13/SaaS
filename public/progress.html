@@ -278,7 +278,12 @@
           try { sessionStorage.setItem("sona.gate.v1", String(Date.now())); } catch (e) {}
           document.documentElement.style.visibility = "";
         } else {
-          try { location.replace("/today.html?gate=1"); } catch (e) {}
+          // Carry where they were going. This guard runs BEFORE sona.js (that
+          // is the point of it — no flash of a parent page), so it cannot call
+          // Sona.gateDest; it names its own page literally instead. today.html
+          // re-checks ?to= against the allowlist on arrival, which is the side
+          // that reads an untrusted URL.
+          try { location.replace("/today.html?gate=1&to=" + encodeURIComponent("/progress.html")); } catch (e) {}
         }
       }
       check();
