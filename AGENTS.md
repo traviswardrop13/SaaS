@@ -1,12 +1,16 @@
-# AGENTS.md — read this before you change anything
+# AGENTS.md — read this, then read CLAUDE.md in full, before you change anything
 
 You are working on **Sona** (speaksona.com), a kids' speech-practice app.
-This file is the agent brief. `CLAUDE.md` is the fuller version of the same
-rules; if the two ever disagree, `CLAUDE.md` wins.
+This file is the short agent brief. **`CLAUDE.md` is the full rulebook** —
+the pricing eras and the promises made to families, Rachel's clinical rules,
+how Travis wants to be talked to — and if the two ever disagree, `CLAUDE.md`
+wins. Read it before your first edit; it is not optional context.
 
-> **`README.md` is stale.** It describes an older product ("SpeakUp Kids", a
-> Next.js/Tailwind skill tree using the Web Speech API). That is not what this
-> repo is any more. Do not build a mental model from it.
+> **Where the product is today (20 Sep 2026):** Sona is **free** (the pricing
+> switch has flipped a dozen times; every surface reads it — never hand-edit
+> a price). The **books are parked** as "coming soon" and Home leads with
+> practice, then games. The **SLP side is hidden**, not deleted. Each of those
+> is a promise or a plan with reasons, and `CLAUDE.md` has them.
 
 ## The one thing most likely to cause real harm
 
@@ -27,7 +31,7 @@ that page. `tests/syntaxtest.mjs` exists because of it.
 
 ```bash
 npm i --no-save playwright && npx playwright install chromium   # first time
-node tests/run-all.mjs        # THE battery: 25 suites, ~900 assertions, ~9 min
+node tests/run-all.mjs        # THE battery: 27 suites, ~1,200 assertions, ~12 min
 npx tsc --noEmit -p tsconfig.json
 ```
 
@@ -97,9 +101,10 @@ treatment, diagnosis, or an evaluation.
 ## Orientation
 
 - `public/sona.js` — single source of truth: state, entitlement, content,
-  the daily story rotation, speech verdicts. Pages read it; they never
+  the day's trio of games, speech verdicts. Pages read it; they never
   reimplement it.
-- `public/*.html` — one file per screen (`today`, `charge` = practice,
-  `chapter` = story, `arcade-*` = games, `slp.html` = clinician dashboard).
+- `public/*.html` — one file per screen (`today` = Home, `charge` = practice,
+  `arcade-*` = games, `subscribe` = the plan screen; `chapter`/`story`/
+  `library` = the parked books; `slp.html`/`for-slps` = the hidden SLP side).
 - `app/` — Next.js API routes and the marketing site.
 - `tests/*.mjs` — Playwright suites; they drive real pages, not mocks.
