@@ -88,11 +88,18 @@ if (appFree) {
       !/href="\/api\/checkout"/.test(src),
       "a literal href bypasses the switch and survives the next flip");
     ok("the pricing section itself is selected by the switch",
-      /FREE_MODE \? <PricingFree \/> : <PricingPaid \/>/.test(src),
+      /FREE_MODE \? <PricingFree \/> : <PricingPaid spots=\{spots\} \/>/.test(src),
       "both arms stay in the file; only one renders");
-    ok("the paid arm still carries the real figures, ready for the next flip",
-      /YEARLY = "\$59\.99"/.test(src) && /SAVING = "\$59\.89"/.test(src),
-      "if these rot while free, flip twelve ships wrong prices");
+    // This pin used to demand SAVING = "$59.89" — the figure the repo later
+    // banned (12 × $9.99 against a plan nobody can buy). It only runs while
+    // free, so it sat unexercised through the paid weeks and rotted. The paid
+    // arm now reads every figure from lib/charter.ts, the one library.
+    ok("the paid arm reads its figures from the one library, ready for the next flip",
+      /YEARLY = CHARTER_PRICE/.test(src) && /import \{[^}]*CHARTER_PRICE[^}]*\} from "@\/lib\/charter"/.test(src),
+      "if the landing page grows its own price literal, flip twelve ships wrong prices");
+    ok("…and the banned anchor never comes back while nobody is looking",
+      !/59\.89|119\.88/.test(src),
+      "$59.89 and $119.88 were only ever 12 × $9.99 — an invented was-price");
     // the one figure that is wrong wherever it appears
     ok("…and never quotes $4.99 a month",
       !/\$4\.99 a month/.test(src),
@@ -108,8 +115,10 @@ if (appFree) {
     ok("app/subscribe/page.tsx returns the free notice before any price can render",
       guard >= 0 && (price < 0 || guard < price),
       guard < 0 ? "no FREE_MODE guard at all" : "a price at index " + price + " precedes the guard at " + guard);
+    // The switch is decided in a wrapper that renders one of two components,
+    // so while free the picker's hooks (and its charter fetch) never run at all.
     ok("…and that early return is a real return, not a flag",
-      /if \(FREE_MODE\) \{[\s\S]{0,900}?return \(/.test(src),
+      /function SubscribeInner\(\) \{\s*if \(FREE_MODE\) return <FreeNotice \/>;\s*return <PaidPicker \/>;/.test(src),
       "the picker below it must never mount while free");
   }
 

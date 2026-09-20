@@ -16,4 +16,4 @@
  * link, and a free app that can still take $59.99 from a parent is worse than
  * one that never went free at all.
  */
-export const FREE_MODE = false;
+export const FREE_MODE = true; // mirrors sona.js — Travis, 20 Sep 2026: "make it free"

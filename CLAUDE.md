@@ -65,9 +65,12 @@ one. Surface those in the PR body so she can review them without reading
 the diff.
 
 ## Pricing — one switch, and the cohorts it can never take back
-**Sona is PAID: one plan, yearly, after a 3-day free trial — $59.99 for the
-first 50 families (the charter price), $99.99 after that.** `FREE_MODE =
-false` in `sona.js`, mirrored by `lib/pricing.ts`. `gated()` short-circuits on
+**Sona is FREE** (Travis, 20 Sep 2026: "make it free" — the long game is
+SLPs championing it, families practising free, and a paid parent view of
+progress later). **When it is paid, it is one plan, yearly, after a 3-day free
+trial — $59.99 for the first 50 families (the charter price), $99.99 after
+that**, and every rule below is written for that state. `FREE_MODE = true` in
+`sona.js`, mirrored by `lib/pricing.ts`. `gated()` short-circuits on
 `isFree()` before anything else, and `tests/freetest.mjs` fails if the two
 copies disagree.
 
@@ -156,13 +159,15 @@ them up".** Each is a promise to a real cohort that no later flip can revoke:
   predates pricing.
 - **Era two** — nine days in August (20–28).
 - **Era three** — 31 Aug to 15 Sep, announced as permanent.
-- **Era four — NEVER HAPPENED.** The switch was flipped free on 17 Sep and back
-  to paid on 18 Sep, and the free build was never merged to main in between, so
-  production stayed paid throughout and no family was ever told Sona was free.
-  There is no era-four cohort, and `_grandfatherFreeEra4()` is deliberately NOT
-  written. **The rule still stands for next time:** if a free window actually
-  SHIPS, the sweep for it must exist before pricing returns — and "shipped"
-  means merged to main, not merged into a branch.
+- **Era four — began 20 Sep 2026**, the day "make it free" merged to main.
+  (The 17–18 Sep flip is NOT this era: it never reached main, so no family was
+  told anything.) Every family who onboards while this window is open is a
+  promise. **`_grandfatherFreeEra4()` is deliberately NOT written yet, and it
+  must ship in the SAME build that returns pricing — never earlier.** A sweep
+  that ships during the free window stamps the very families it exists to
+  protect, before they onboard, and they would pay. The rule: if a free window
+  actually SHIPS — and "shipped" means merged to main — the sweep for it
+  exists before pricing returns.
 
 **The sweeps are one-shot and structural, and that is load-bearing.** A device
 already onboarded on the first load of the build carrying a sweep necessarily
