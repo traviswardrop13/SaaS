@@ -245,6 +245,18 @@ officer, an engineer — whose rulings are now rules:
 - **One family door.** Every generated link is `join.html?slp=CODE&k=KEY`
   (`&inv=TOKEN` per child). The message says "free", never "pilot" or "trial".
 
+**The affiliate program, when it is built, is CREATOR-ONLY** (Travis, 21 Sep
+2026 — settled, do not re-open). An SLP who makes content and brings in
+families from outside their own client base can earn on it. An SLP never
+earns on a family from their own caseload: a clinician taking a per-sale
+commission for recommending a product to their own clients is a referral fee
+under several state practice acts, and two of those reach the party OFFERING
+the payment as well as the clinician. So the rule is enforced in code, not by
+trust — a payout is structurally impossible for any family that arrived
+through that clinician's caseload code or sits on their roster — and the
+clinician's free dashboard never depends on how many of their families
+upgrade.
+
 ## The day: practice, then games
 **The books are parked, and Home leads with practice (Travis, 19 Sep 2026).**
 The stories "suck and don't even work"; they relaunch in Q4 once they are
