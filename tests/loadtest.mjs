@@ -123,7 +123,7 @@ for (const [game, title, rgbs] of SKIES) {
 // handoff, and copy rules rot silently. Identifiers are exempt; only what a
 // child can read counts.
 {
-  const KID = new Set(["today.html", "charge.html", "library.html", "story.html", "chapter.html",
+  const KID = new Set(["today.html", "activities.html", "charge.html", "library.html", "story.html", "chapter.html",
     "stickers.html", "customize.html",
     ...["slice", "run", "stack", "tiles", "glide", "feed"].map((g) => `arcade-${g}.html`)]);
   // Scan MARKUP text only. A first pass matched > ... < across <script> blocks
@@ -157,7 +157,7 @@ for (const [game, title, rgbs] of SKIES) {
 // universal answer affordance), status dots, the founding-timeline dot.
 {
   const GREEN = /#58cc02|#46a302|#6edd18|#6fd60e|#5fd216|#3c8c02/i;
-  const KID = ["today.html", "charge.html", "story.html", "chapter.html", "check.html", "join.html",
+  const KID = ["today.html", "activities.html", "charge.html", "story.html", "chapter.html", "check.html", "join.html",
     "library.html", "coach-call.html", ...["slice", "run", "stack", "tiles", "glide", "feed"].map((g) => `arcade-${g}.html`)];
   const bad = [];
   for (const f of KID) {

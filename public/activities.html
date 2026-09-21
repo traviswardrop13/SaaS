@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Sona — Play library</title>
+  <link href="/fonts.css" rel="stylesheet" />
+  <link href="/sona.css" rel="stylesheet" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <meta name="theme-color" content="#fff6e9" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <style>
+    :root{--cream:#fff6e9;--ink:#4a2c14;--muted:#755b42;--line:#edddc8;}
+    html,body{min-height:100%;height:auto;background:var(--cream);}
+    body{color:var(--ink);}
+    button,a{-webkit-tap-highlight-color:transparent;}
+    button{font:inherit;}
+    button:focus-visible,a:focus-visible{outline:3px solid #1597d4;outline-offset:5px;}
+    [hidden]{display:none!important;}
+    .library-wrap{max-width:960px;margin:0 auto;padding:calc(20px + env(safe-area-inset-top)) 20px calc(42px + env(safe-area-inset-bottom));}
+    .library-header{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:24px;}
+    .back-home{display:inline-flex;align-items:center;gap:9px;min-height:44px;padding:9px 15px;border:2px solid #fff;border-radius:99px;background:#fff;color:var(--ink);font-weight:800;box-shadow:0 3px 0 var(--line);}
+    .back-home span{font-size:22px;line-height:1;}
+    .library-brand{display:flex;align-items:center;gap:7px;font-family:"Baloo 2",sans-serif;font-size:21px;font-weight:800;}
+    .library-brand img{width:34px;height:34px;}
+    .library-intro{max-width:620px;}
+    .library-intro h1{font-size:38px;line-height:1.1;font-weight:800;letter-spacing:-.5px;}
+    .library-intro p{margin-top:10px;font-size:16px;font-weight:700;line-height:1.55;color:var(--muted);}
+    #libraryFilters{display:flex;flex-wrap:wrap;gap:8px;margin:22px 0 32px;}
+    .library-filter{min-height:44px;border:2px solid #ead7bb;border-radius:99px;background:transparent;padding:9px 17px;color:var(--ink);font-size:14px;font-weight:800;cursor:pointer;}
+    .library-filter[aria-pressed="true"]{background:#ffe1c4;border-color:#ef6f23;box-shadow:0 2px 0 #ef6f23;}
+    .activity-group + .activity-group{margin-top:36px;}
+    .group-heading{display:flex;align-items:center;gap:9px 14px;flex-wrap:wrap;margin-bottom:6px;}
+    .group-heading h2{font-size:27px;line-height:1.2;font-weight:800;}
+    .group-age{font-size:13px;font-weight:800;color:var(--muted);}
+    .group-recommended{display:inline-block;border-radius:99px;background:#ffe4ad;padding:5px 10px;font-size:11px;line-height:1.3;font-weight:900;color:#704900;}
+    .group-description{max-width:600px;margin:0 0 17px;color:var(--muted);font-size:14px;font-weight:700;line-height:1.5;}
+    .game-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px 16px;}
+    .game-grid.single{grid-template-columns:1fr;}
+    .game-card{display:flex;flex-direction:column;min-width:0;width:100%;border:0;border-radius:23px;padding:9px;background:#fff;color:var(--ink);text-align:left;cursor:pointer;box-shadow:0 5px 0 #ecdac0,0 9px 20px rgba(90,50,10,.07);transition:transform .1s;}
+    .game-card:active{transform:translateY(3px);box-shadow:0 2px 0 #ecdac0;}
+    .game-art{display:block;position:relative;flex:none;width:100%;aspect-ratio:1/1;overflow:hidden;border-radius:16px;background:#cfe7f2;}
+    .game-copy{display:flex;flex:1;flex-direction:column;padding:12px 5px 7px;}
+    .game-name{display:block;font-family:"Baloo 2",sans-serif;font-size:20px;font-weight:800;line-height:1.2;}
+    .game-description{display:block;margin-top:5px;color:var(--muted);font-size:13px;font-weight:700;line-height:1.45;}
+    .game-play{display:flex;align-items:center;justify-content:space-between;margin-top:auto;padding-top:14px;font-family:"Baloo 2",sans-serif;font-size:15px;font-weight:800;color:#ab470e;}
+    .game-arrow{display:flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:50%;background:#ffe1c4;color:#9d3e08;font-family:Arial,sans-serif;font-size:20px;}
+    .game-card.feature{flex-direction:row;align-items:center;gap:18px;padding:12px;}
+    .feature .game-art{width:150px;}
+    .feature .game-copy{padding:6px 8px 6px 0;}
+    .feature .game-name{font-size:26px;}
+    .feature .game-description{font-size:15px;max-width:400px;}
+    .feature .game-play{justify-content:flex-start;gap:14px;padding-top:16px;}
+    .library-notice{position:fixed;z-index:20;left:50%;bottom:calc(16px + env(safe-area-inset-bottom));transform:translateX(-50%);display:flex;align-items:center;gap:12px;width:calc(100% - 32px);max-width:520px;border:2px solid #efbd82;border-radius:18px;padding:15px 14px 15px 18px;background:#fff4dc;box-shadow:0 7px 28px rgba(74,44,20,.2);}
+    #libraryMessage{flex:1;color:var(--ink);font-size:15px;font-weight:800;line-height:1.5;}
+    #libraryMessageClose{flex:none;width:44px;height:44px;border:0;border-radius:50%;background:#ffe1c4;color:var(--ink);font-size:23px;cursor:pointer;}
+    .library-wrap.has-message{padding-bottom:calc(170px + env(safe-area-inset-bottom));}
+    .library-footer{margin-top:32px;text-align:center;font-size:14px;font-weight:800;}
+    .library-footer a{display:inline-flex;align-items:center;min-height:44px;padding:8px 12px;color:var(--muted);}
+    .library-fallback{color:var(--muted);font-weight:700;line-height:1.6;}
+    @media(min-width:700px){
+      .library-wrap{padding-left:32px;padding-right:32px;}
+      .library-header{margin-bottom:32px;}
+      .library-intro h1{font-size:44px;}
+      .game-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:22px;}
+      .game-copy{padding:15px 9px 10px;}
+      .feature .game-art{width:170px;}
+      .game-card.feature{gap:26px;padding:14px;}
+    }
+    @media(max-width:370px){
+      .library-wrap{padding-left:16px;padding-right:16px;}
+      .library-filter{padding:9px 13px;font-size:13px;}
+      .game-grid{gap:16px 12px;}
+      .game-name{font-size:18px;}
+      .game-card.feature{gap:12px;}
+      .feature .game-art{width:108px;}
+      .feature .game-name{font-size:23px;}
+      .feature .game-description{font-size:13px;}
+    }
+    @media(prefers-reduced-motion:reduce){.game-card{transition:none;}}
+  </style>
+</head>
+<body>
+  <main class="library-wrap" id="libraryApp" hidden>
+    <header class="library-header">
+      <a class="back-home" href="/today.html"><span aria-hidden="true">←</span> Home</a>
+      <div class="library-brand"><img src="/coach/echo/echo-avatar.svg" alt="" /> Sona</div>
+    </header>
+    <div class="library-intro">
+      <h1>Play library</h1>
+      <p>Find a game you love. Ages are a guide. Explore any game that fits.</p>
+    </div>
+    <div id="libraryFilters" role="group" aria-label="Choose games to show">
+      <button type="button" class="library-filter" data-filter="all" aria-pressed="true">All games</button>
+      <button type="button" class="library-filter" data-filter="simple" aria-pressed="false">Simple play</button>
+      <button type="button" class="library-filter" data-filter="arcade" aria-pressed="false">Arcade</button>
+    </div>
+    <div id="activityGroups"></div>
+    <p class="library-footer"><a href="/today.html">Back to today's adventure →</a></p>
+    <aside class="library-notice" id="libraryNotice" hidden>
+      <div id="libraryMessage" role="status" aria-live="polite" aria-atomic="true"></div>
+      <button type="button" id="libraryMessageClose" aria-label="Close message">×</button>
+    </aside>
+  </main>
+  <noscript><p class="library-wrap">Turn on JavaScript to explore the play library. <a href="/today.html">Back to Home</a></p></noscript>
+  <script src="/sona.js"></script>
+  <script>
+    (function () {
+      var S = window.Sona;
+      var app = document.getElementById("libraryApp");
+      var host = document.getElementById("activityGroups");
+      var message = document.getElementById("libraryMessage");
+      var notice = document.getElementById("libraryNotice");
+      if (!S || !S.activityLibrary) {
+        app.hidden = false;
+        host.innerHTML = '<p class="library-fallback">Your games could not load. Head back Home and try again.</p>';
+        return;
+      }
+      // getProfile resolves the active child, including siblings on one device.
+      var profile = S.getProfile();
+      if (!profile.onboarded && !profile.childName) {
+        location.replace("/onboarding.html");
+        return;
+      }
+      app.hidden = false;
+      var library = S.activityLibrary();
+      var filterButtons = document.querySelectorAll("#libraryFilters button");
+
+      function node(tag, className, text) {
+        var el = document.createElement(tag);
+        if (className) el.className = className;
+        if (text) el.textContent = text;
+        return el;
+      }
+
+      function clearMessage() {
+        notice.hidden = true;
+        message.textContent = "";
+        app.classList.remove("has-message");
+      }
+      document.getElementById("libraryMessageClose").onclick = clearMessage;
+
+      function launch(game) {
+        // Check at the tap, not only at paint: access can change in another tab.
+        // Browsing never starts a practice run or sends a child to a purchase page.
+        if (S.gated("practice")) {
+          notice.hidden = false;
+          app.classList.add("has-message");
+          message.textContent = "Ask a grown-up to help open more games. You can keep looking around!";
+          return;
+        }
+        location.href = game.go;
+      }
+
+      function gameCard(game, feature) {
+        var button = node("button", "game-card" + (feature ? " feature" : ""));
+        button.type = "button";
+        button.setAttribute("data-game", game.key);
+        button.setAttribute("aria-label", game.name);
+        var art = node("span", "game-art");
+        art.setAttribute("aria-hidden", "true");
+        var sticker = S.gameSticker(game.key);
+        S.paintSticker(art, sticker[0], sticker[1]);
+        button.appendChild(art);
+        var copy = node("span", "game-copy");
+        copy.appendChild(node("span", "game-name", game.name));
+        var description = node("span", "game-description", game.playDescription || game.sub);
+        description.id = "game-description-" + game.key;
+        copy.appendChild(description);
+        button.setAttribute("aria-describedby", description.id);
+        var play = node("span", "game-play", "Play");
+        play.setAttribute("aria-hidden", "true");
+        play.appendChild(node("span", "game-arrow", "→"));
+        copy.appendChild(play);
+        button.appendChild(copy);
+        button.onclick = function () { launch(game); };
+        return button;
+      }
+
+      library.groups.forEach(function (group) {
+        var section = node("section", "activity-group");
+        section.setAttribute("data-group", group.id);
+        section.setAttribute("aria-labelledby", "group-" + group.id);
+        var heading = node("div", "group-heading");
+        var title = node("h2", "", group.name);
+        title.id = "group-" + group.id;
+        heading.appendChild(title);
+        heading.appendChild(node("span", "group-age", group.ageLabel));
+        if (group.recommended) heading.appendChild(node("span", "group-recommended", "Suggested for this age"));
+        section.appendChild(heading);
+        section.appendChild(node("p", "group-description", group.description));
+        var grid = node("div", "game-grid" + (group.games.length === 1 ? " single" : ""));
+        group.games.forEach(function (game) { grid.appendChild(gameCard(game, group.games.length === 1)); });
+        section.appendChild(grid);
+        host.appendChild(section);
+      });
+
+      Array.prototype.forEach.call(filterButtons, function (button) {
+        button.onclick = function () {
+          var selected = button.getAttribute("data-filter");
+          Array.prototype.forEach.call(filterButtons, function (item) {
+            item.setAttribute("aria-pressed", item === button ? "true" : "false");
+          });
+          Array.prototype.forEach.call(host.children, function (section) {
+            section.hidden = selected !== "all" && section.getAttribute("data-group") !== selected;
+          });
+          clearMessage();
+        };
+      });
+    })();
+  </script>
+</body>
+</html>

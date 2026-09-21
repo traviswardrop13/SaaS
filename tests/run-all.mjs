@@ -26,6 +26,7 @@ const SUITES = [
   "gatecheck.mjs", // parent-gate hardening on adult-only pages
   "fittest.mjs",   // device-matrix fit: SE→Pro Max, zoomed display, landscape
   "day1.mjs", // the day: one story, then three games
+  "activitytest.mjs", // play library: age suggestions, game routes, safe browsing and fit
   "feedtest.mjs",  // Feed Echo: littles tap-and-say loop, growth, deck placement
   "iaptest.mjs",   // Apple IAP rail: native paywall, purchase/restore, web untouched
   "heartest.mjs",  // HEAR1: on-device recognition verdicts — poopoo fails, unknown never does
