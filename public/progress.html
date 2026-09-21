@@ -700,8 +700,20 @@
       sessions.slice(0, 12).forEach(function (s) {
         var dt = new Date(s.date);
         var row = document.createElement("div");
-        row.style.cssText = "display:flex;justify-content:space-between;padding:11px 0;border-top:1px solid var(--line);font-weight:700;";
-        row.innerHTML = '<span>' + dt.toLocaleDateString(undefined, { month: "short", day: "numeric" }) + ' · ' + (s.count || 0) + ' words</span><span class="muted">' + ((s.sounds || []).join(", ")) + '</span>';
+        row.style.cssText = "display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;padding:11px 0;border-top:1px solid var(--line);font-weight:700;";
+        // Older daily adventures saved no word list. That means the count is
+        // unknown, not that a child completed a session without practising.
+        var summary = "Practice session", count = Number(s.count) || 0;
+        if (s.activity === "adventure" && Number.isInteger(s.rounds) && s.rounds > 0 && s.rounds <= Sona.ROT_LEN) {
+          summary = s.rounds + (s.rounds === 1 ? " round" : " rounds");
+        } else if (count > 0) {
+          summary = count + (count === 1 ? " word" : " words");
+        }
+        var detail = document.createElement("span"), sounds = document.createElement("span");
+        detail.textContent = dt.toLocaleDateString(undefined, { month: "short", day: "numeric" }) + " · " + summary;
+        sounds.className = "muted";
+        sounds.textContent = (s.sounds || []).join(", ");
+        row.appendChild(detail); row.appendChild(sounds);
         rc.appendChild(row);
       });
     }

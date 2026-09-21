@@ -180,8 +180,26 @@
     .btn.blue{background:linear-gradient(180deg,#5cc6ff,#1cb0f6);box-shadow:0 6px 0 #1480c0;}
     .btn.blue:active{box-shadow:0 2px 0 #1480c0;}
     .btn.ghost{background:none;color:var(--muted);box-shadow:none;text-transform:none;font-size:13px;width:auto;}
-    #runScore{font-family:"Baloo 2";font-weight:800;font-size:56px;color:var(--orange-d);line-height:1;}
-    #runBest{font-family:"Baloo 2";font-weight:800;font-size:15px;color:var(--muted);}
+    /* The finale scrolls inside its own card, so a short screen or larger text
+       never hides the way home. Echo stays in the flow instead of above it. */
+    #runOvl{background:linear-gradient(180deg,#e8f4f8 0%,#fff6e9 65%);padding:calc(16px + env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom));}
+    #runOvl .ovlCard{max-width:370px;padding:22px;gap:10px;max-height:calc(100vh - 32px);max-height:calc(100dvh - 32px - env(safe-area-inset-top) - env(safe-area-inset-bottom));overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;}
+    #runOvl .ovlCard > *{flex-shrink:0;}
+    .run-hero{position:relative;width:96px;height:96px;}
+    #runOvl .ovlEcho{position:static;width:96px;height:96px;transform:none;}
+    #runEmoji{position:absolute;right:-12px;bottom:0;width:36px;height:36px;line-height:1;}
+    #runEmoji svg{width:100%;height:100%;}
+    #runTitle{font-size:28px;}
+    #runRounds{font-family:"Baloo 2";font-weight:800;font-size:30px;line-height:1.15;color:#b84d0e;}
+    #runPractice{line-height:1.5;color:#795c3c;}
+    .run-arcade-score{display:grid;grid-template-columns:1fr auto;align-items:center;gap:4px 12px;width:100%;border-radius:18px;background:#f5e8d6;padding:10px 14px;margin:4px 0;text-align:left;}
+    #runScoreLabel{display:block;font-size:12px;font-weight:800;color:#795c3c;}
+    #runScore{display:block;font-family:"Baloo 2";font-weight:800;font-size:24px;color:var(--ink);line-height:1;}
+    #runBest{grid-column:1/-1;font-size:12px;font-weight:800;color:#795c3c;line-height:1.4;}
+    #runArcade{min-height:44px;width:100%;padding:10px 16px;font-size:14px;color:#795c3c;}
+    #runOvl .btn:focus-visible{outline:3px solid #1597d4;outline-offset:3px;}
+    #runTitle:focus{outline:none;}
+    @media(max-height:650px){#runOvl .ovlCard{padding:18px;gap:8px;}.run-hero{width:76px;height:76px;}#runOvl .ovlEcho{width:76px;height:76px;}#runTitle{font-size:25px;}#runRounds{font-size:27px;}}
   </style>
 </head>
 <body>
@@ -264,7 +282,7 @@
       <img class="ovlEcho" src="/coach/echo/echo-celebrate.svg" alt="" />
       <h2>You already played today!</h2>
       <p id="playedSub"></p>
-      <button class="btn blue" id="playedArcade">Free play</button>
+      <button class="btn blue" id="playedArcade">Browse games</button>
       <button class="btn ghost" id="playedHome">Back home</button>
     </div>
   </div>
@@ -273,17 +291,24 @@
     </div>
   </div>
 
-  <div class="ovl" id="runOvl">
+  <div class="ovl" id="runOvl" role="dialog" aria-modal="true" aria-labelledby="runTitle" aria-describedby="runRounds runPractice">
     <div class="ovlCard">
-      <img class="ovlEcho" src="/coach/echo/echo-celebrate.svg" alt="" />
-      <div class="big" id="runEmoji"><svg viewBox="0 0 64 64" style="width:56px;height:56px"><path d="M32 5l8.2 18.6L60 25.8 44.9 39.2 49.8 59 32 48.4 14.2 59l4.9-19.8L4 25.8l19.8-2.2Z" fill="#ffd21c"/><circle cx="25" cy="21" r="3" fill="#fff" opacity=".85"/></svg></div>
-      <h2 id="runTitle">You did it!</h2>
-      <div id="runScore">0</div>
-      <div id="runBest"></div>
+      <div class="run-hero">
+        <img class="ovlEcho" src="/coach/echo/echo-celebrate.svg" alt="" />
+        <div class="big" id="runEmoji" aria-hidden="true"><svg viewBox="0 0 64 64" style="width:56px;height:56px"><path d="M32 5l8.2 18.6L60 25.8 44.9 39.2 49.8 59 32 48.4 14.2 59l4.9-19.8L4 25.8l19.8-2.2Z" fill="#ffd21c"/><circle cx="25" cy="21" r="3" fill="#fff" opacity=".85"/></svg></div>
+      </div>
+      <h2 id="runTitle" tabindex="-1">Adventure complete!</h2>
+      <div id="runRounds">0 rounds completed</div>
+      <p id="runPractice"></p>
+      <div class="run-arcade-score">
+        <span id="runScoreLabel">Arcade score</span>
+        <span id="runScore" aria-labelledby="runScoreLabel">0</span>
+        <div id="runBest"></div>
+      </div>
       <!-- The STORY1 cliffhanger card lived here. It went with the books
            (GAMES1, 19 Sep 2026): it promised a chapter that no longer opens. -->
       <button class="btn" id="runDone">Done</button>
-      <button class="btn ghost" id="runArcade">Free play in the arcade →</button>
+      <button class="btn ghost" id="runArcade">Browse games</button>
     </div>
   </div>
 
@@ -421,10 +446,13 @@
     // exactly why Rachel's clips kept playing in coach-call.html.
     var HUMANCLIPS=false; try{ HUMANCLIPS=!!(S&&S.humanClipsOn&&S.humanClipsOn()); }catch(e){}
     function playPrompt(){
+      // Human clips obey the same parent audio controls as the spoken fallback.
+      if(profile.voiceOn===false || (profile.volume!=null && Number(profile.volume)===0)) return Promise.resolve();
       return Promise.resolve().then(function(){ return new Promise(function(res){
         if(ITEM.level!=="isolation" || !HUMANCLIPS){ say(sayLine()).then(res); return; }
         try{
           var a=new Audio("/coach/say/"+SOUND+".mp3");
+          a.volume=profile.volume!=null?Math.max(0,Math.min(1,profile.volume)):0.8;
           var done=false; function fin(){ if(done)return; done=true; speaking=false; ttsEnd(); res(); }
           a.onended=fin;
           a.onerror=function(){ if(done)return; done=true; speaking=false; ttsEnd(); say(sayLine()).then(res); };
@@ -1138,10 +1166,10 @@
     // ---- daily overlays ----
     function showPlayed(){
       var d=S.dailyInfo();
-      $("playedSub").textContent="Today's score: "+d.score+" · Best ever: "+d.best+". Once a day — free play is always open!";
+      $("playedSub").textContent="Today's arcade score: "+d.score+" · Best arcade score: "+d.best+". Choose another game whenever you're ready.";
       $("playedOvl").classList.add("show");
     }
-    $("playedArcade").onclick=function(){ location.href="/today.html#play"; };
+    $("playedArcade").onclick=function(){ location.href="/activities.html"; };
     $("playedHome").onclick=function(){ location.href="/today.html"; };
 
     function finishRun(){
@@ -1149,18 +1177,21 @@
       // to see what they scored — it simply is not banked: no daily record, no
       // session, no level, no coins.
       var r;
+      var completedRounds=Math.min(run.round,DAILY_SEQ.length);
       if(DEMO_REPLAY){
         var _d={}; try{ _d=S.dailyInfo()||{}; }catch(e){}
         r={ score: Math.max(0,run.sum|0), best: _d.best|0, newBest: false };
       } else {
         r=S.dailyFinish(run.sum);
-        try{ if(S.recordSession)S.recordSession({words:[]}); if(S.markLevelDone)S.markLevelDone(LEVEL); if(S.addCoins)S.addCoins(10+Math.min(20,(run.sum/10)|0)); }catch(e){}
+        try{ if(S.recordSession)S.recordSession({words:[],activity:"adventure",rounds:completedRounds,sound:SOUND}); if(S.markLevelDone)S.markLevelDone(LEVEL); if(S.addCoins)S.addCoins(10+Math.min(20,(run.sum/10)|0)); }catch(e){}
       }
       run.active=false; runSave(run);
+      $("runRounds").textContent=completedRounds+" round"+(completedRounds===1?"":"s")+" completed";
+      $("runPractice").textContent="You practised your "+(S.soundLabel?S.soundLabel(SOUND):SOUND)+" sound.";
       $("runScore").textContent=r.score;
-      $("runBest").textContent=r.newBest?"NEW BEST!":("Best ever: "+r.best);
+      $("runBest").textContent=r.newBest?"Your best arcade score yet!":("Best arcade score: "+r.best);
       $("runEmoji").innerHTML=(window.Sona&&Sona.icon)?Sona.icon("star",56):"";
-      $("runTitle").textContent=r.newBest?"NEW HIGH SCORE!":"You did it!";
+      $("runTitle").textContent="Adventure complete!";
       // The story engine still turns its page at the end of a run — that is
       // what draws tomorrow a different trio of games — but with the books
       // parked (GAMES1) the cliffhanger is neither shown nor spoken: it
@@ -1168,7 +1199,7 @@
       try{ if(S.episodeAdvance)S.episodeAdvance(); }catch(e){}
       $("runOvl").classList.add("show");
       sfx("complete"); try{ if(S.confetti)S.confetti(); }catch(e){}
-      say(r.newBest?"New high score! Amazing!":"You did it! Great work!");
+      say("Adventure complete! Great work!");
       // THE EXPLICIT FINISH. This screen is the end of the free demonstration:
       // a real prompt, real reps judged by the real detector, the games those
       // reps earned, and the celebration. demoFinish() is one-shot and returns
@@ -1192,9 +1223,21 @@
           }
         }
       }catch(e){}
+      // Start at the recap, not a button that could scroll it out of view.
+      // The underlying practice controls stay out of the dialog's focus order.
+      $("app").hidden=true;
+      $("app").setAttribute("aria-hidden","true");
+      try{ $("runTitle").focus({preventScroll:true}); }catch(e){ $("runTitle").focus(); }
+      $("runOvl").querySelector(".ovlCard").scrollTop=0;
     }
+    $("runOvl").onkeydown=function(e){
+      if(e.key!=="Tab" && e.keyCode!==9) return;
+      var first=$("runDone"), last=$("runArcade"), active=document.activeElement;
+      if(e.shiftKey && (active===first || active===$("runTitle"))){ e.preventDefault(); last.focus(); }
+      else if(!e.shiftKey && active===last){ e.preventDefault(); first.focus(); }
+    };
     // The plan moment: the child has just finished a full run and the screen
-    // says "You did it!". If this family has never been asked, the Done button
+    // says "Adventure complete!". If this family has never been asked, the Done button
     // hands the device back to a grown-up on the plan screen instead of the
     // home deck — once, ever. Everyone else goes home exactly as before.
     $("runDone").onclick=function(){
@@ -1204,7 +1247,7 @@
       var ask=false; try{ ask=!!(S&&S.planEligible&&S.planEligible()); }catch(e){}
       location.href = ask ? "/subscribe.html?first=1" : "/today.html";
     };
-    $("runArcade").onclick=function(){ location.href="/today.html#play"; };
+    $("runArcade").onclick=function(){ location.href="/activities.html"; };
 
     // ---- chrome ----
     function stopMic(){ try{ if(micStream)micStream.getTracks().forEach(function(t){t.stop();}); }catch(e){} }

@@ -1491,12 +1491,22 @@
   function owns(kind, id) { const o = getProfile().owned || {}; return (o[kind] || []).indexOf(id) !== -1; }
   function addOwned(kind, id) { const p = getProfile(); const o = p.owned || { outfits: [], backdrops: [] }; o[kind] = o[kind] || []; if (o[kind].indexOf(id) === -1) o[kind].push(id); saveProfile({ owned: o }); }
 
-  // rec: { words: [{ word, sound, ok }] }
+  // Word sessions retain their original counts. An adventure records completed
+  // rounds separately: its isolation/syllable practice is not a list of words.
   function recordSession(rec) {
     const g = getProgress();
     const words = (rec && rec.words) || [];
     const stars = words.filter((w) => w && w.ok !== false).length;
-    g.sessions.unshift({ date: new Date().toISOString(), count: words.length, sounds: [...new Set(words.map((w) => w && w.sound).filter(Boolean))] });
+    const session = { date: new Date().toISOString(), count: words.length, sounds: [...new Set(words.map((w) => w && w.sound).filter(Boolean))] };
+    if (rec && rec.activity === "adventure" && !words.length) {
+      const rounds = rec.rounds, sound = String(rec.sound || "").toUpperCase();
+      if (Number.isInteger(rounds) && rounds > 0 && rounds <= ROT_LEN && Object.prototype.hasOwnProperty.call(WORDS, sound)) {
+        session.activity = "adventure";
+        session.rounds = rounds;
+        session.sounds = [sound];
+      }
+    }
+    g.sessions.unshift(session);
     g.sessions = g.sessions.slice(0, 50);
     g.totals.sessions += 1; g.totals.words += words.length; g.totals.stars += stars;
     words.forEach((w) => { if (w && w.sound) g.bySound[w.sound] = (g.bySound[w.sound] || 0) + 1; });
