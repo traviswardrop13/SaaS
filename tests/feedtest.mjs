@@ -169,22 +169,21 @@ let deck = await page.evaluate(() => ({
   thumbs: [...document.querySelectorAll(".thumb")].map((t) => t.dataset.key),
   trio: Sona.dailyGames(),
 }));
-// GAMES1: the home opens on today's adventure for everyone (the books are
-// parked), so the age rule is about which games the day OFFERS — a
-// four-year-old must never be handed three games none of which they can play.
+// Home recommends a short simple-play session for ages 3–4. Feed Echo
+// remains an available individual choice in the existing daily trio.
 ok("under-6: today's trio leads with Feed Echo", deck.trio[0] === "feed", JSON.stringify(deck));
-ok("under-6: the day starts on the adventure like everyone else", /charge\.html\?daily=1/.test(deck.launch || ""), deck.launch);
+ok("age 4: the day starts with the recommended simple-play session", /arcade-bubbles\.html/.test(deck.launch || ""), deck.launch);
 ok("under-6: three games are on offer from the first tap", deck.thumbs.length === 3, JSON.stringify(deck.thumbs));
-// once today's adventure is done the hero is the first game — and for a
-// little one it needs no reading
+// Completing an adventure does not replace the younger child's simple-play
+// recommendation with a game requiring timing or reading.
 await page.evaluate(() => Sona.dailyFinish(10));
 await page.goto("http://localhost:8145/today.html"); await page.waitForTimeout(900);
 deck = await page.evaluate(() => ({
   hero: document.getElementById("heroName").textContent,
   launch: document.getElementById("goBtn").dataset.launch,
 }));
-ok("under-6: after the adventure, the hero is Feed Echo", /Feed Echo/.test(deck.hero), JSON.stringify(deck));
-ok("under-6: LET'S GO opens Feed Echo", /arcade-feed/.test(deck.launch || ""), deck.launch);
+ok("age 4: after the adventure, the hero remains Bubble Pop", /Bubble Pop/.test(deck.hero), JSON.stringify(deck));
+ok("age 4: the primary action opens Bubble Pop", /arcade-bubbles/.test(deck.launch || ""), deck.launch);
 await page.evaluate(() => { const p = JSON.parse(localStorage.getItem("sona.profile.v1")); p.childAge = "8"; localStorage.setItem("sona.profile.v1", JSON.stringify(p)); });
 await page.goto("http://localhost:8145/today.html"); await page.waitForTimeout(900);
 deck = await page.evaluate(() => ({

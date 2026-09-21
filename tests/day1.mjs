@@ -528,7 +528,7 @@ async function openPreview(pg) {
 
 {
   const firstGames = new Set();
-  for (const age of [4, 7]) {
+  for (const age of [5, 7]) {
     for (let offset = 0; offset < 5; offset++) {
       const { ctx, pg } = await adventureHome(age, offset);
       const { hero, practice } = await openPreview(pg);
@@ -544,7 +544,7 @@ async function openPreview(pg) {
       ok(label + ": starting an adventure saves five distinct playable games",
         Array.isArray(games) && games.length === 5 && new Set(games).size === 5
           && games.every((key) => adventureKeys.includes(key)), JSON.stringify(practice.run));
-      if (age === 4) ok(label + ": Feed Echo remains the first individual choice", hero.thumbs[0] === "feed", JSON.stringify(hero.thumbs));
+      if (age === 5) ok(label + ": Feed Echo remains the first individual choice", hero.thumbs[0] === "feed", JSON.stringify(hero.thumbs));
       await ctx.close();
     }
   }

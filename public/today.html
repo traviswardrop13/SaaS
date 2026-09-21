@@ -63,8 +63,8 @@
     #heroCard{position:relative;height:100%;min-height:150px;max-height:400px;max-width:80vw;aspect-ratio:234/290;border-radius:20px;border:6px solid #fff;box-shadow:0 10px 22px rgba(90,50,10,.16);transform:rotate(-2deg);background:#cfe7f2;cursor:pointer;transition:transform .12s;}
     #heroCard:active{transform:rotate(-2deg) scale(.98);}
     #heroCap{background:#fff;border-radius:16px;padding:10px 20px 12px;box-shadow:0 6px 16px rgba(90,50,10,.14);transform:rotate(1.5deg);margin-top:-26px;text-align:center;max-width:82vw;}
-    #heroName{font-family:"Baloo 2";font-weight:800;font-size:19px;}
-    #heroSub{font-weight:800;font-size:12px;color:var(--muted);}
+    #heroName{font-family:"Baloo 2";font-weight:800;font-size:22px;line-height:1.2;}
+    #heroSub{font-weight:800;font-size:12px;line-height:1.45;color:var(--muted);}
     #heroSub b{color:var(--gold);letter-spacing:1px;}
 
     /* up next thumbnails */
@@ -135,7 +135,7 @@
     }
     /* Very short portrait screens need room for the game's two-line
        preview. Let the family scroll instead of stacking it over labels. */
-    @media (orientation:portrait) and (max-height:650px){
+    @media (orientation:portrait) and (max-height:760px){
       html,body{overflow:auto;height:auto;overscroll-behavior:auto;}
       #wrap{height:auto;min-height:100dvh;overflow:visible;}
       #heroWrap{flex:none;}
@@ -149,6 +149,7 @@
     /* METER1 — the star jar. A glass the child fills with light by talking;
        it empties overnight, which is what makes tomorrow a fresh jar. */
     #jarRow{display:flex;align-items:center;gap:12px;}
+    #jarRow[hidden]{display:none;}
     #jar{position:relative;width:46px;height:58px;flex:none;border-radius:8px 8px 14px 14px;
       border:3px solid #e2cfae;overflow:hidden;box-shadow:0 3px 0 rgba(140,90,20,.12),inset 0 2px 6px rgba(255,255,255,.9);
       background:linear-gradient(105deg,rgba(226,240,248,.85) 0%,rgba(255,255,255,.55) 45%,rgba(206,228,242,.7) 100%);}
@@ -185,8 +186,10 @@
     .thumb.mystery .cost{position:absolute;top:5px;right:5px;background:#ffd21c;color:#5b3d00;border-radius:99px;
       padding:2px 7px;font-family:"Baloo 2";font-weight:800;font-size:10px;}
 
-    /* the sticker-book home: the CTA is the full-width bar under the deck */
-    #goBtn{border:none;border-radius:20px;padding:17px;font-family:"Baloo 2";font-weight:800;font-size:19px;letter-spacing:.04em;color:#fff;background:linear-gradient(180deg,#ffa05a,#ff8a3d);box-shadow:0 6px 0 var(--orange-d);cursor:pointer;width:100%;margin-top:auto;transition:transform .05s;}
+    /* The recommended session is one clear action before optional game choices. */
+    #goBtn{border:none;border-radius:20px;padding:17px;font-family:"Baloo 2";font-weight:800;font-size:19px;letter-spacing:.04em;color:#fff;background:linear-gradient(180deg,#ffa05a,#ff8a3d);box-shadow:0 6px 0 var(--orange-d);cursor:pointer;width:100%;margin-top:0;flex:none;transition:transform .05s;}
+    #sessionGuide{max-width:420px;align-self:center;text-align:center;font-size:12px;line-height:1.45;font-weight:700;color:#795c3c;margin:0 4px 3px;}
+    #goBtn:focus-visible{outline:3px solid #795c3c;outline-offset:5px;}
     #goBtn:active{transform:translateY(4px);box-shadow:0 2px 0 var(--orange-d);}
     @media (max-height:760px){ #goBtn{padding:13px;font-size:17px;} }
     #confetti i{position:absolute;border-radius:3px;z-index:6;animation:cfall 1.2s ease-out forwards;}
@@ -210,9 +213,8 @@
 
     <a id="trialBanner" href="/subscribe"><span data-ic="gift">🎁</span> <span id="trialMsg"></span></a>
 
-    <!-- the sticker-book home: today's activity as a tilted panel card with a
-         caption plate, the next two on a shelf below, one CTA. Swipe the hero
-         or tap a thumb to change what LET'S GO opens. -->
+    <!-- One recommended session comes first. The game shelf and library
+         remain open for families who want to choose something else. -->
     <div id="jarRow">
       <div id="jar"><div id="jarFill"></div><div id="jarStars"><i></i><i></i><i></i></div></div>
       <div id="jarTxt"><b id="jarHead">Fill the star jar!</b><span id="jarSub"></span></div>
@@ -226,12 +228,13 @@
         <div id="heroSub"></div>
       </div>
     </div>
+    <button id="goBtn" aria-describedby="heroSub sessionGuide">LET'S GO!</button>
+    <p id="sessionGuide"></p>
     <div id="gameShelfHead">
       <div id="upNextLbl">PICK A GAME</div>
       <a id="browseGames" href="/activities.html" aria-label="Browse all games">Browse all →</a>
     </div>
     <div id="thumbs"></div>
-    <button id="goBtn">LET'S GO!</button>
   </div>
 
   <!-- parent gate -->
@@ -305,24 +308,13 @@
     $("subLine").textContent=(S&&S.playMode&&S.playMode())
       ? "Let's play some talking games!"
       : "Let's practice your "+((S&&S.soundLabel)?S.soundLabel(sound):sound)+" sound";
-    try{ var _tr=(S&&S.todayRing)?S.todayRing():null;
-      // tomorrow-hook (the one safe streak borrowing): the completed state
-      // points forward, never at a breakable number
-      if(_tr&&_tr.done) $("subLine").textContent="All done today ★ — Echo has a new adventure tomorrow! Free play's open.";
-      else if(_tr&&_tr.n>0) $("subLine").textContent=(_tr.goal-_tr.n)+" more round"+((_tr.goal-_tr.n)===1?"":"s")+" to finish today's goal!";
-    }catch(e){}
+    // Goals come from the existing rotation, including assigned homework.
+    // Progress stays in the real rep count and jar instead of replacing the goal.
+    // Ages suggest a style of play; they never change a sound or target here.
+    function prefersSimplePlay(){
+      try{ return S.activityLibrary && S.activityLibrary().recommended==="simple"; }catch(e){ return false; }
+    }
 
-    // ── GAMES1: the day is practice, then games (Travis, 19 Sep 2026) ──────
-    // The books are parked until they are good enough to launch (Q4): Home no
-    // longer opens on today's chapter, and the three games are not locked
-    // behind reading it. The hero is TODAY'S ADVENTURE — five rounds of
-    // practice, each one earning a game — and the trio below are the day's
-    // games, each a door through charge.html that asks for the sound first.
-    // The trio is still drawn per day by Sona.dailyGames() (the story engine
-    // turns its page at the end of every run, which is what makes tomorrow's
-    // three different), but nothing here reads or mentions the chapter. The
-    // reader pages stay in the repo for the relaunch; the book button on the
-    // header is a promise, not a door.
     var ICON={slice:"🍉",tiles:"🎹",stack:"🧱",run:"🏃",glide:"🎈",feed:"🦜"};
     var TRIO=[];
     try{ TRIO=S.dailyGames()||[]; }catch(e){}
@@ -371,6 +363,7 @@
 
     function renderHero(){
       var hero=$("heroCard");
+      $("jarRow").hidden=false;
       var mid=runUnderway();
       var adventure=S.adventureGames();
       var nextGame=adventure[mid?(mid.round|0):0];
@@ -378,6 +371,8 @@
       if(mid&&!demoOnlyHero()){
         hero.innerHTML="";
         applyArt(hero,nextGame);
+        if(!(S.playMode&&S.playMode())) $("subLine").textContent="Let's practice your "+S.soundLabel(mid.sound||sound)+" sound";
+        $("sessionGuide").textContent="Pick up where you left off with your completed rounds saved.";
         $("heroName").textContent="Keep going!";
         $("heroSub").textContent="You're on round "+((mid.round|0)+1)+" of "+adventure.length+" · Next game: "+nextName;
         $("goBtn").textContent="CARRY ON!";
@@ -387,10 +382,25 @@
       if(demoOnlyHero()){
         hero.innerHTML="";
         applyArt(hero,nextGame);
+        $("sessionGuide").textContent="Listen, say your sound and enjoy a game with Echo.";
         $("heroName").textContent="Practice with Echo";
         $("heroSub").textContent="Say your sounds, then play "+nextName;
         $("goBtn").textContent="LET'S PRACTICE!";
         $("goBtn").dataset.launch="/charge.html?daily=1&demo=1&first="+adventure[0];
+        return;
+      }
+      if(prefersSimplePlay()){
+        // This untimed picture game does not fill the counted-rep jar.
+        $("jarRow").hidden=true;
+        // Five discoveries are an untimed game, not five earned speech reps.
+        // The game uses rotSound too, so this card previews the existing goal.
+        var simple=S.gameAct("bubbles"), simpleNote=homeworkNote();
+        hero.innerHTML=""; applyArt(hero,"bubbles");
+        $("heroName").textContent=simple.name;
+        $("heroSub").textContent=(simpleNote?simpleNote+" · ":"")+"5 pictures, at your own pace";
+        $("sessionGuide").textContent="Listen to a word, say it together, then tap Next.";
+        $("goBtn").textContent="PLAY TOGETHER";
+        $("goBtn").dataset.launch=simple.go;
         return;
       }
       if(playedToday()){
@@ -398,6 +408,7 @@
         var k=TRIO[0], act=(S.gameAct&&S.gameAct(k))||null;
         hero.innerHTML="";
         applyArt(hero,k||"slice");
+        $("sessionGuide").textContent="Choose this game or explore the library for more.";
         $("heroName").textContent=act?act.name:"Play";
         $("heroSub").textContent=act?act.sub:"";
         $("goBtn").textContent="LET'S GO!";
@@ -413,6 +424,7 @@
       // button should say the bigger thing exactly once
       var firstEver=false;
       try{ firstEver=!(S&&S.demoState&&S.demoState().started)&&!(S&&S.repsToday&&S.repsToday()); }catch(e){}
+      $("sessionGuide").textContent="A grown-up can help you listen, say the sound and play.";
       $("heroName").textContent=firstEver?"Your first adventure":"Today's adventure";
       var hn=homeworkNote();
       $("heroSub").textContent=(hn?hn+" · ":"")+adventure.length+" rounds of practice and games · First: "+nextName;

@@ -67,6 +67,8 @@
       var note = document.createElement("p"); note.textContent = "There aren't any pictures ready for this sound yet. You can choose another game in the library.";
       note.setAttribute("role", "status"); $("startPanel").appendChild(note); return;
     }
+    // The first deliberate Start begins the same existing demo window as practice.
+    if (S.demoStart) S.demoStart();
     found = 0; heard = 0; finished = false; used = [];
     chooseTurn(); unlockContext(); openMic();
     focus(kind === "bubbles" ? $("revealButton") : doors[0]);
@@ -107,7 +109,9 @@
   }
   function resume() {
     if (!paused || closed || document.hidden) return;
-    paused = false; profile = S.getProfile ? S.getProfile() : profile; render(); unlockContext(); openMic();
+    paused = false; profile = S.getProfile ? S.getProfile() : profile;
+    if (phase === "reveal") $("promptHint").textContent = "Say it together. Take your time.";
+    render(); unlockContext(); openMic();
     focus(focusBeforePause && focusBeforePause.isConnected ? focusBeforePause : $("pauseGame"));
   }
   function stopMic() {
@@ -227,8 +231,12 @@
       cleanup(function () { clearTimeout(timer); if (controller) controller.abort(); });
       var options = { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text: word, voice: profile.voiceId || "", stable: true }) };
       if (controller) options.signal = controller.signal;
-      fetch("/api/tts", options).then(function (response) { return response.ok ? response.arrayBuffer() : null; })
-        .then(function (bytes) { done(bytes && bytes.byteLength ? bytes : null); }).catch(function () { done(null); });
+      fetch("/api/tts", options).then(function (response) {
+        if (!response.ok) { job.reason = "api-error"; job.status = response.status; return null; }
+        job.voiceInfo = { source: response.headers.get("X-Sona-Voice-Provider") || "server", model: response.headers.get("X-Sona-Voice-Model"),
+          cache: response.headers.get("X-Sona-Voice-Cache"), revision: response.headers.get("X-Sona-Voice-Revision") };
+        return response.arrayBuffer();
+      }).then(function (bytes) { done(bytes && bytes.byteLength ? bytes : null); }).catch(function () { job.reason = "network-error"; done(null); });
     });
   }
   function pcm(job, bytes) {
@@ -246,6 +254,8 @@
           node = ctx.createBufferSource(); gain = ctx.createGain(); node.buffer = buffer; gain.gain.value = volume(); node.connect(gain); gain.connect(ctx.destination);
           node.onended = function () { done(true); }; clearTimeout(timer);
           timer = setTimeout(function () { done(false); }, Math.ceil(buffer.duration * 1000) + 1500); node.start();
+          $("promptHint").textContent = "Listen to Echo.";
+          if (S.voiceDiagnostic) S.voiceDiagnostic(job.voiceInfo || { source: "server" });
         } catch (e) { done(false); }
       });
     });
@@ -258,6 +268,8 @@
       cleanup(function () { clearTimeout(timer); utterance.onend = utterance.onerror = null; try { window.speechSynthesis.cancel(); } catch (e) {} });
       utterance.onend = utterance.onerror = function () { done(true); };
       try { if (window.speechSynthesis.paused) window.speechSynthesis.resume(); } catch (e) {}
+      if (S.voiceDiagnostic) S.voiceDiagnostic({ source: "browser", reason: job.reason || "fallback", status: job.status });
+      $("promptHint").textContent = "Listen to Echo.";
       window.speechSynthesis.speak(utterance);
     });
   }
@@ -270,16 +282,19 @@
     job.live = function () { return !job.cancelled && generation === audioGeneration && active() && phase === "reveal" && target && target.w === word; };
     job.cancel = function () { if (job.cancelled) return; job.cancelled = true; job.stops.slice().forEach(function (stop) { stop(); }); };
     audioJob = job; speaking = true; unlockContext();
-    var key = (profile.voiceId || "echo") + "|v6|" + word;
+    $("promptHint").textContent = "Getting Echo ready…";
+    var key = (profile.voiceId || "echo") + "|" + (S.TTS_CACHE_VERSION || "v7") + "|" + word;
     cache(job, key).then(function (bytes) {
       if (!job.live()) return null;
-      if (bytes) return bytes;
+      if (bytes) { job.voiceInfo = { source: "cache", cache: "device", revision: S.TTS_CACHE_VERSION || "v7" }; return bytes; }
       return fetchWord(job, word).then(function (fresh) { if (fresh && job.live()) cache(job, key, fresh); return fresh; });
     }).then(function (bytes) {
       if (!job.live()) return;
       return (bytes ? pcm(job, bytes) : Promise.resolve(false)).then(function (played) { if (!played && job.live()) return browserWord(job, word); });
     }).catch(function () { if (job.live()) return browserWord(job, word); }).then(function () {
-      job.cancel(); if (audioJob === job) { audioJob = null; speaking = false; voiced = 0; quietUntil = Math.max(quietUntil, performance.now() + 200); }
+      job.cancel(); if (audioJob === job) { audioJob = null; speaking = false; voiced = 0; quietUntil = Math.max(quietUntil, performance.now() + 200);
+        if (active() && phase === "reveal") $("promptHint").textContent = "Your turn. Say it together.";
+      }
     });
   }
 

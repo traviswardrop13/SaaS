@@ -38,6 +38,8 @@ const nextConfig = {
     return [
       ...pages.map((p) => ({ source: `/${p}.html`, headers: noStore })),
       { source: "/sona.js", headers: noStore },
+      { source: "/simple-play.js", headers: noStore },
+      { source: "/simple-play.css", headers: noStore },
       { source: "/mouthcue.js", headers: noStore },
       { source: "/sona.css", headers: noStore },
       { source: "/manifest.webmanifest", headers: noStore },

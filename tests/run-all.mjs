@@ -15,6 +15,9 @@ const SUITES = [
   "storytest.mjs", // STORY1: episode beats, chapter pacing, cliffhanger
   "kidtest.mjs",   // KIDS1: per-child progress, switching, family-wide entitlement
   "slpcode.mjs",   // CODES1: SLP family credential — verified redemption, honest gate
+  "ttsroutetest.mjs", // voice provider, delivery cache, safe fallback and request deadline
+  "voiceclienttest.mjs", // actual playback source, old-cache refresh and complete spoken turns
+  "chargepacingtest.mjs", // listen/model/child-turn handoff and replay ordering
   "readtest.mjs",  // books never go silent: browser-voice fallback when TTS dies
   "momweek.mjs",   // parent weekly goal + streak math + the three UIs
   "betatest.mjs",  // onboarding flow + beta pulse + founding banner
@@ -26,6 +29,7 @@ const SUITES = [
   "gatecheck.mjs", // parent-gate hardening on adult-only pages
   "fittest.mjs",   // device-matrix fit: SE→Pro Max, zoomed display, landscape
   "day1.mjs", // the day: one story, then three games
+  "homesessiontest.mjs", // one age-appropriate Home session, current goals and resume precedence
   "activitytest.mjs", // play library: age suggestions, game routes, safe browsing and fit
   "pausetest.mjs", // interruptions preserve one practice flow and release local device resources
   "completiontest.mjs", // adventure recap, honest history, finish routes and prompt volume

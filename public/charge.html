@@ -79,6 +79,11 @@
     #bTarget{font-family:"Baloo 2";font-weight:800;font-size:clamp(32px,10vw,40px);color:#ef6f23;display:inline-block;padding-left:6px;}
     #gpState{font-weight:800;font-size:14.5px;color:#8a6f52;margin-top:2px;}
     #gpState b{color:var(--chiptx);}
+    #turnStatus{font-size:13px;font-weight:900;color:#795534;line-height:1.35;margin-bottom:5px;}
+    body.echo-speaking #gpState{visibility:hidden;}
+    #micBtn:disabled,#turtleBtn:disabled{cursor:default;opacity:.6;}
+    #replayLabel{font-size:12px;font-weight:900;color:var(--sky-ink);text-align:center;}
+    #micBtn:focus-visible,#turtleBtn:focus-visible{outline:3px solid #795534;outline-offset:4px;}
     #leo{width:100px;height:100px;object-fit:contain;margin-top:10px;filter:drop-shadow(0 8px 10px var(--bsh));}
     #leo.cheer{animation:hop .5s ease;}
     #leo.think{animation:think 1.1s ease-in-out infinite;} /* head-tilt while the scorer runs */
@@ -231,6 +236,7 @@
 
     <div id="echoCluster">
       <div id="bubble">
+        <div id="turnStatus" role="status" aria-live="polite" aria-atomic="true">Getting ready…</div>
         <div id="bMain"><span id="sayLbl">Say</span><b id="bTarget">…</b></div>
         <div id="gpState">Say it to fill your ticket!</div>
       </div>
@@ -240,9 +246,10 @@
     <div id="bottom">
       <div id="micWrap">
         <button id="micBtn" aria-label="Hear it again">
-          <svg viewBox="0 0 24 24"><path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v5a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z"/></svg>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M16 8.5a5 5 0 0 1 0 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
         </button>
       </div>
+      <div id="replayLabel">Hear it again</div>
       <button id="launchBar"></button>
     </div>
     <button id="turtleBtn" aria-label="Hear it slowly"><svg viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="#ef6f23"/><path d="M16 8.5a5 5 0 0 1 0 7" stroke="#ef6f23" stroke-width="2" fill="none" stroke-linecap="round"/></svg>Hear it slooow</button>
@@ -272,7 +279,7 @@
     <div class="ovlCard">
       <img class="ovlEcho" src="/coach/echo/echo-listening.svg" alt="" />
       <h2>Let Echo hear you practice!</h2>
-      <p style="font-weight:800;font-size:13.5px;color:var(--muted);line-height:1.5;">Echo listens while you practice and cheers the sounds you get right.</p>
+      <p style="font-weight:800;font-size:13.5px;color:var(--muted);line-height:1.5;">Listen to Echo first. Then it's your turn to practise and fill the ticket for your game.</p>
       <!-- This paragraph is a PROMISE, and it went stale: it described an upload
            that stopped existing when the cloud scorer was removed, and said so
            for months afterwards. Every verdict is decided on this phone now, so
@@ -575,8 +582,18 @@
     function mutedSpeech(){return profile.voiceOn===false||(profile.volume!=null&&Number(profile.volume)===0);}
     function audioBlocked(){return practiceClosed||practicePaused||document.hidden;}
     function speechVolume(){var v=profile.volume!=null?Number(profile.volume):0.8;return isFinite(v)?Math.max(0,Math.min(1,v)):0.8;}
-    function ttsBegin(){_ttsN++;ttsPlaying=true;}
-    function ttsEnd(){if(_ttsN>0)_ttsN--;ttsPlaying=_ttsN>0;}
+    var turnPhase="ready";
+    function updateTurn(){
+      var busy=speaking||ttsPlaying||_sayN>0, listening=!!ttsPlaying;
+      var text=practicePaused?"Practice paused":listening?"Listen to Echo":busy?"Getting Echo ready…":engineOn?"Your turn":turnPhase==="checking"?"Echo is checking…":turnPhase==="game"?"Game ready!":"Getting ready…";
+      $("turnStatus").textContent=text;
+      document.body.classList.toggle("echo-speaking",busy);
+      var enabled=!!engineOn&&!busy&&!audioBlocked();
+      $("micBtn").disabled=!enabled; $("turtleBtn").disabled=!enabled;
+    }
+    function ttsBegin(){_ttsN++;ttsPlaying=true;updateTurn();}
+    function ttsEnd(){if(_ttsN>0)_ttsN--;ttsPlaying=_ttsN>0;updateTurn();}
+    function voiceDiagnostic(event){try{if(S&&S.voiceDiagnostic)S.voiceDiagnostic(event);}catch(e){}}
     function newAudioJob(){
       var job={epoch:practiceEpoch,cancelled:false,stops:[]};
       job.live=function(){return !job.cancelled&&job.epoch===practiceEpoch&&!audioBlocked();};
@@ -605,7 +622,7 @@
       try{if(window.speechSynthesis)window.speechSynthesis.cancel();}catch(e){}
       try{if(audioCtx)audioSuspend=Promise.resolve(audioCtx.suspend()).catch(function(){});}catch(e){}
       try{if(S&&S.sfx&&S.sfx.stop)S.sfx.stop();}catch(e){}
-      speaking=false;
+      speaking=false; updateTurn();
     }
     function getCtx(){
       if(audioBlocked())return audioCtx;
@@ -618,13 +635,13 @@
     function queueSpeech(t,slow,human,makeText){
       if((!t&&!human)||mutedSpeech()||practiceClosed||_sayN>=2)return Promise.resolve();
       var packet={text:t,slow:!!slow,human:human,makeText:makeText,epoch:practiceEpoch};
-      _sayN++;
+      _sayN++; updateTurn();
       var run=function(){return _say1(packet);};
-      _sayQ=_sayQ.then(run,run).then(function(){_sayN=Math.max(0,_sayN-1);},function(){_sayN=Math.max(0,_sayN-1);});
+      _sayQ=_sayQ.then(run,run).then(function(){_sayN=Math.max(0,_sayN-1);updateTurn();},function(){_sayN=Math.max(0,_sayN-1);updateTurn();});
       return _sayQ;
     }
     function say(t){return queueSpeech(t,false,null,null);}
-    // ---- same v6 on-device TTS cache; callbacks never outlive their job. ----
+    // ---- shared on-device TTS revision; callbacks never outlive their job. ----
     function ttsGet(key,job){return audioWait(job,function(done,cleanup){
       var db=null,ended=false;
       var timer=setTimeout(function(){done(null);},7000);cleanup(function(){ended=true;clearTimeout(timer);if(db)db.close();});
@@ -648,17 +665,23 @@
       };
     });}
     async function speechBytes(t,job){
-      var key=(profile.voiceId||"echo")+"|v6|"+t;
+      var revision=(S&&S.TTS_CACHE_VERSION)||"v7", key=(profile.voiceId||"echo")+"|"+revision+"|"+t;
       var cached=await ttsGet(key,job);
       if(cached===AUDIO_CANCEL||!job.live())return AUDIO_CANCEL;
-      if(cached)return cached;
+      if(cached){job.voiceEvent={source:"cache",cache:"device",revision:revision};return cached;}
       var bytes=await audioWait(job,function(done,cleanup){
         var controller=typeof AbortController!=="undefined"?new AbortController():null;
-        var timer=setTimeout(function(){done(null);},7000);
+        var timer=setTimeout(function(){job.voiceReason="timeout";done(null);},7000);
         cleanup(function(){clearTimeout(timer);if(controller)controller.abort();});
         var options={method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text:t,voice:profile.voiceId||"",stable:true})};
         if(controller)options.signal=controller.signal;
-        fetch("/api/tts",options).then(function(r){return r.ok?r.arrayBuffer():null;}).then(function(b){done(b&&b.byteLength?b:null);}).catch(function(){done(null);});
+        fetch("/api/tts",options).then(function(r){
+          if(!r.ok){job.voiceReason="api-error";job.voiceStatus=r.status;return null;}
+          function header(name){return r.headers&&r.headers.get?r.headers.get(name):null;}
+          var provider=header("X-Sona-Voice-Provider");
+          job.voiceEvent={source:provider==="elevenlabs"||provider==="openai"?provider:"server",cache:header("X-Sona-Voice-Cache"),model:header("X-Sona-Voice-Model"),revision:header("X-Sona-Voice-Revision")||revision};
+          return r.arrayBuffer();
+        }).then(function(b){done(b&&b.byteLength?b:null);}).catch(function(){if(job.live()&&job.voiceReason!=="timeout")job.voiceReason="network-error";done(null);});
       });
       if(bytes===AUDIO_CANCEL||!job.live())return AUDIO_CANCEL;
       if(bytes)ttsPut(key,bytes,job);
@@ -669,8 +692,9 @@
       if(slow){a.playbackRate=0.7;try{a.preservesPitch=true;a.mozPreservesPitch=true;a.webkitPreservesPitch=true;}catch(e){}}
       ttsBegin();cleanup(function(){ttsEnd();a.onended=null;a.onerror=null;try{a.pause();a.removeAttribute("src");a.load();}catch(e){}});
       var timer=setTimeout(function(){done(null);},15000);cleanup(function(){clearTimeout(timer);});
-      a.onended=function(){done(true);};a.onerror=function(){done(null);};
-      try{var promise=a.play();if(promise&&promise.catch)promise.catch(function(){done(null);});}catch(e){done(null);}
+      a.onended=function(){done(true);};a.onerror=function(){job.voiceReason="playback-blocked";done(null);};
+      function started(){if(job.live())voiceDiagnostic(url.indexOf("/coach/say/")===0?{source:"human"}:job.voiceEvent||{source:"server"});}
+      try{var promise=a.play();if(promise&&promise.then)promise.then(started,function(){job.voiceReason="playback-blocked";done(null);});else started();}catch(e){job.voiceReason="playback-blocked";done(null);}
     });}
     function playPCM(b,job){return audioWait(job,function(done,cleanup){
       var c=getCtx();if(!c){done(null);return;}
@@ -681,7 +705,7 @@
       ttsBegin();cleanup(function(){ttsEnd();source.onended=null;try{source.stop();}catch(e){}try{source.disconnect();gain.disconnect();}catch(e){}});
       source.onended=function(){done(true);};
       var timer=setTimeout(function(){done(null);},Math.ceil(ab.duration*1000)+1500);cleanup(function(){clearTimeout(timer);});
-      audioSuspend.then(function(){if(!job.live()){done(AUDIO_CANCEL);return;}try{if(c.state==="suspended")return c.resume();}catch(e){}return null;}).then(function(){if(!job.live()){done(AUDIO_CANCEL);return;}try{source.start();}catch(e){done(null);}}).catch(function(){done(null);});
+      audioSuspend.then(function(){if(!job.live()){done(AUDIO_CANCEL);return;}try{if(c.state==="suspended")return c.resume();}catch(e){}return null;}).then(function(){if(!job.live()){done(AUDIO_CANCEL);return;}try{source.start();voiceDiagnostic(job.voiceEvent||{source:"server"});}catch(e){job.voiceReason="playback-blocked";done(null);}}).catch(function(){job.voiceReason="playback-blocked";done(null);});
     });}
     function speakFallback(t,slow,job){return audioWait(job,function(done,cleanup){
       if(!window.speechSynthesis||!window.SpeechSynthesisUtterance){done(true);return;}
@@ -689,9 +713,11 @@
       u.rate=slow?0.62:0.95;u.pitch=1.05;u.volume=speechVolume();
       ttsBegin();cleanup(function(){ttsEnd();u.onend=null;u.onerror=null;try{window.speechSynthesis.cancel();}catch(e){}});
       u.onend=function(){done(true);};u.onerror=function(){done(true);};
-      var cap=(window.speechSynthesis.getVoices&&window.speechSynthesis.getVoices().length)?12000:1200;
-      var timer=setTimeout(function(){done(true);},cap);cleanup(function(){clearTimeout(timer);});
+      // Voice lists can load after speaking starts. An empty list must not
+      // chop a valid prompt into a 1.2-second fragment or begin the child's turn.
+      var timer=setTimeout(function(){done(true);},12000);cleanup(function(){clearTimeout(timer);});
       window.speechSynthesis.speak(u);
+      voiceDiagnostic({source:"browser",reason:job.voiceReason||"fallback",status:job.voiceStatus});
     });}
     function pcmToWav(u8){
       var n=u8.length,h=new ArrayBuffer(44),d=new DataView(h);
@@ -712,7 +738,7 @@
         if(practiceTerminal&&(audioBlocked()||packet.epoch!==practiceEpoch))return;
         if(!(await practiceReady())||practiceClosed||mutedSpeech())return;
         if(audioBlocked())continue;
-        var job=newAudioJob(),result=null;speaking=true;
+        var job=newAudioJob(),result=null;speaking=true;updateTurn();
         try{
           if(packet.human)result=await playMedia(packet.human,false,job);
           if(result!==true&&result!==AUDIO_CANCEL){
@@ -723,7 +749,7 @@
             if(result!==true&&result!==AUDIO_CANCEL)result=await speakFallback(packet.text,packet.slow,job);
           }
         }catch(e){if(!job.live())result=AUDIO_CANCEL;else result=await speakFallback(packet.text||"",packet.slow,job);}
-        finally{job.finish();speaking=false;}
+        finally{job.finish();speaking=false;updateTurn();}
         if(result!==AUDIO_CANCEL||practiceTerminal)return;
       }
     }
@@ -913,10 +939,10 @@
     // Playback runs through the speaker guard, so it can never charge a rep.
     function turtleText(){ return ITEM.level==="isolation" ? sayLine() : String(ITEM.say||ITEM.display||ITEM.t); }
     function showTurtle(on){ $("turtleBtn").classList.toggle("show",!!on); }
-    $("turtleBtn").onclick=function(){ if(!practicePaused&&!practiceClosed&&!document.hidden)saySlow(turtleText()); };
-    function micGo(on){ $("micBtn").className=on?"go":""; }
+    $("turtleBtn").onclick=function(){ if(engineOn&&!practicePaused&&!practiceClosed&&!document.hidden&&!speaking&&!ttsPlaying&&!_sayN)saySlow(turtleText()); };
+    function micGo(on){ $("micBtn").className=on?"go":""; updateTurn(); }
     // tapping the mic replays the prompt — speaker-guarded, can't charge reps
-    $("micBtn").onclick=function(){ if(engineOn&&!practicePaused&&!practiceClosed&&!document.hidden&&!speaking&&!ttsPlaying) playPrompt(); };
+    $("micBtn").onclick=function(){ if(engineOn&&!practicePaused&&!practiceClosed&&!document.hidden&&!speaking&&!ttsPlaying&&!_sayN) playPrompt(); };
 
     // ---- sound-shape gate (bare-sound rounds only). The cloud scorer force-
     // aligns nonsense text like "rrrr" onto whatever it hears and is wrong in
@@ -1147,7 +1173,7 @@
     function logV(v){ if(DEMO_REPLAY) return; if(v!=="unknown" && S && S.logAttempt) S.logAttempt({game:"charge",sound:SOUND,pass:v==="pass",word:String(ITEM.word||ITEM.t).toLowerCase()}); }
     async function burstAndVerify(n){
       var save=NEED; if(n)NEED=n;
-      micGo(true);
+      turnPhase="practice"; micGo(true);
       // back to the listening frame (coaching may have set idle + Almost! line)
       try{ $("sayLbl").textContent="Say"; var lm=$("leo"); if(lm&&lm.src) lm.src="/coach/echo/echo-listening.svg"; }catch(e){}
       // The engine owns recognition and mic segments, including resumed ones.
@@ -1157,7 +1183,7 @@
       // RING1: every honest counted rep ticks the kid-visible daily number
       try{ if(!DEMO_REPLAY&&reps>0&&S&&S.bumpReps) S.bumpReps(reps); }catch(e){}
       NEED=save;
-      micGo(false); $("gpState").textContent="Echo's thinking…";
+      turnPhase="checking"; micGo(false); $("gpState").textContent="Echo's thinking…";
       var l=$("leo"); try{ l.classList.add("think"); }catch(e){}
       var v=await verifyClip();
       if(!(await practiceReady()))return null;
@@ -1403,13 +1429,13 @@
       if(!(await practiceReady()))return;
       if(launched)return; launched=true;
       if(anyReps) tele("practice completed",{sound:SOUND,game:GMETA.n,duration_seconds:Math.round((performance.now()-T0)/1000),attempts_count:attemptsTotal});
-      stopMic(); try{ showTurtle(false); }catch(e){}
+      stopMic(); turnPhase="game"; updateTurn(); try{ showTurtle(false); }catch(e){}
       paintReps(NEED);
       // charged (5/5): ring the build, celebrate pose, GOOO line, launch bar
       try{ var _br=buildRoot(); if(_br) _br.classList.add("ringed"); }catch(e){}
       try{ var _lc=$("leo"); if(_lc&&_lc.src){ _lc.src="/coach/echo/echo-celebrate.svg"; _lc.style.width="110px"; _lc.style.height="110px"; } }catch(e){}
       try{ $("bMain").innerHTML=NEED+' of '+NEED+' — <span style="color:#46a302">here we GOOO!</span>'; $("gpState").textContent=""; }catch(e){}
-      try{ $("micWrap").style.display="none"; var _lb=$("launchBar"); _lb.textContent="LOADING "+SCENE.title+"…"; _lb.classList.add("show"); }catch(e){}
+      try{ $("micWrap").style.display="none"; $("replayLabel").hidden=true; var _lb=$("launchBar"); _lb.textContent="LOADING "+SCENE.title+"…"; _lb.classList.add("show"); }catch(e){}
       sfx("complete"); try{ if(S&&S.confetti)S.confetti(); }catch(e){}
       try{ sessionStorage.setItem("sona.play.token",GAME); sessionStorage.setItem("sona.boost.sound",SOUND); sessionStorage.removeItem("sona.play.active"); }catch(e){}
       if(isDaily&&run){ run.pending=true; runSave(run); }
@@ -1543,6 +1569,7 @@
       if(practicePaused || practiceClosed || document.hidden)return;
       try{getCtx();}catch(e){}
     },{passive:true});
+    updateTurn();
     if(finishedNow || (isDaily && !(run&&run.active)))boot();
     else setTimeout(boot,300);
   </script>
