@@ -109,6 +109,24 @@
       <button class="btn" id="go">Start the pilot →</button>
       <p class="note">A quick at-home practice tool — not a diagnosis or a substitute for professional care.</p>
     </div>
+
+    <!-- Consent that cannot be withdrawn is not consent. Shown only on a
+         device that is currently sharing. The server deletes — not hides —
+         everything the clinician could see, and marks the child gone so the
+         next sync cannot rebuild it; this page then records the choice
+         locally. Free access is untouched: access and sharing were separate
+         on the way in and stay separate on the way out. -->
+    <div class="card" id="stopCard" style="display:none;">
+      <div style="font-family:'Baloo 2';font-weight:800;font-size:16px;">Sharing with your speech therapist</div>
+      <p class="note" style="text-align:left;margin-top:6px;" id="stopLead">This device shares your child's practice with their speech therapist's dashboard.</p>
+      <button class="btn" id="stopOpen" style="background:#fff;color:var(--muted);box-shadow:0 7px 0 0 #d9e6f2;text-transform:none;letter-spacing:0;font-size:16px;">Stop sharing with your speech therapist</button>
+      <div id="stopConfirm" style="display:none;">
+        <p class="note" style="text-align:left;margin-top:14px;color:var(--ink);">Stop sharing with your speech therapist? Their dashboard forgets your child right away: name, age, practice history and homework are deleted, not hidden. Sona stays free for you, and your child's progress stays on this device.</p>
+        <button class="btn" id="stopYes" style="background:linear-gradient(180deg,#ff6b8a,#e0457b);box-shadow:0 7px 0 0 #b9315f;text-transform:none;letter-spacing:0;font-size:16px;">Stop sharing</button>
+        <button class="btn" id="stopNo" style="background:#fff;color:var(--muted);box-shadow:0 7px 0 0 #d9e6f2;text-transform:none;letter-spacing:0;font-size:16px;margin-top:10px;">Keep sharing</button>
+      </div>
+      <div class="err" id="stopErr"></div>
+    </div>
   </div>
 
   <script src="/sona.js"></script>
@@ -131,6 +149,40 @@
     var _pp=qp.get("pos"); if(_pp&&$("pos")) $("pos").value=_pp;
     if($("cCode")&&CRED.code) $("cCode").value=CRED.code;
     if($("cKey")&&CRED.key) $("cKey").value=CRED.key;
+
+    // Stop sharing: only offered on a device that is sharing right now. The
+    // request carries the enrolment ticket (the proof this device wrote the
+    // row), the device's own opaque child id and the clinic code — nothing
+    // typed here. On success the choice is recorded on the profile; the
+    // server has already deleted the row and marked the child gone.
+    (function(){
+      var sharing=false, pi={};
+      try{ pi=(window.Sona&&Sona.pilotInfo&&Sona.pilotInfo())||{}; sharing=!!(pi.consent&&pi.childId)&&(Sona.getProfile().slpShare!==false); }catch(e){}
+      if(!sharing||!$("stopCard")) return;
+      $("stopCard").style.display="block";
+      $("stopOpen").onclick=function(){ $("stopOpen").style.display="none"; $("stopConfirm").style.display="block"; };
+      $("stopNo").onclick=function(){ $("stopConfirm").style.display="none"; $("stopOpen").style.display="block"; };
+      $("stopYes").onclick=function(){
+        var ticket=""; try{ ticket=localStorage.getItem("sona.slpticket")||""; }catch(e){}
+        var childId=String(pi.childId||""), code=String(pi.code||"");
+        if(!ticket||!childId||!code){ $("stopErr").textContent="This device isn't enrolled with a speech therapist."; return; }
+        $("stopYes").disabled=true; $("stopErr").style.color="var(--muted)"; $("stopErr").textContent="Asking their dashboard to forget your child…";
+        fetch("/api/pilot/forget",{ method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ code:code, childId:childId, ticket:ticket }) })
+          .then(function(r){ return r.json(); })
+          .then(function(j){
+            if(j&&j.ok){
+              try{ Sona.saveProfile({ slpShare:false }); }catch(e){}
+              $("stopConfirm").style.display="none";
+              $("stopLead").textContent="Done. Their dashboard no longer has your child. Sona is still free for you.";
+              $("stopErr").textContent="";
+            } else {
+              $("stopYes").disabled=false; $("stopErr").style.color="#e0457b";
+              $("stopErr").textContent="Couldn't reach the server — try again in a moment.";
+            }
+          })
+          .catch(function(){ $("stopYes").disabled=false; $("stopErr").style.color="#e0457b"; $("stopErr").textContent="Couldn't reach the server — try again in a moment."; });
+      };
+    })();
 
     // Set the child up, then enrol ONLY on a credential the server vouches for.
     // startPilot() is an entitlement (isPilot() short-circuits gated()), so

@@ -11,12 +11,66 @@ import crypto from "node:crypto";
  */
 
 // Stable HMAC secret for sessions. Prefer a dedicated secret; fall back to the KV
-// token (already a stable per-deploy secret) so this works without extra setup.
-const SECRET =
+// token (already a stable per-deploy secret) so this works without extra setup
+// on a preview or a laptop.
+const SECRET = () =>
   process.env.SLP_AUTH_SECRET ||
   process.env.KV_REST_API_TOKEN ||
   process.env.UPSTASH_REDIS_REST_TOKEN ||
   "sona-dev-insecure-secret";
+
+/**
+ * THE SECRETS A SIGNATURE MAY STILL BE VERIFIED AGAINST, newest first.
+ *
+ * Adding SLP_AUTH_SECRET CHANGES the key everything was signed with. New
+ * signatures are always made with SECRET() — but a family enrolled last month
+ * is holding a 400-day ticket signed with the KV token, and their device
+ * never asks for a new one. Verify against the new secret alone and every
+ * enrolled family stops syncing the moment the secret is set: no homework
+ * arrives, no practice reports back, no error anyone would see. The clinician
+ * would watch a live caseload go quiet and conclude the families stopped
+ * practising.
+ *
+ * So verification accepts the legacy secret too, and only verification.
+ * Nothing is signed with it, so the window closes by itself as tickets age
+ * out, and a forger still cannot mint anything: minting needs SECRET(), which
+ * in production is the dedicated secret or nothing at all.
+ */
+function verifySecrets(): string[] {
+  const out = [SECRET()];
+  const legacy = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
+  if (legacy && legacy !== out[0]) out.push(legacy);
+  return out;
+}
+
+/** True when `body` carries a valid signature from any secret we still honour. */
+function sigOk(body: string, sig: string): boolean {
+  const given = Buffer.from(sig);
+  for (const secret of verifySecrets()) {
+    const expected = Buffer.from(crypto.createHmac("sha256", secret).update(body).digest("base64url"));
+    if (given.length === expected.length && crypto.timingSafeEqual(given, expected)) return true;
+  }
+  return false;
+}
+
+/**
+ * IN PRODUCTION THE SIGNING SECRET MUST BE ITS OWN SECRET. The KV bearer
+ * token is shared with every route that talks to the store and with the
+ * store's own dashboard; the dev string is public in this file. A session
+ * or a ticket signed with either would let anyone who ever saw the KV token
+ * mint a clinician's login or a family's enrolment. So on production with no
+ * SLP_AUTH_SECRET set, nothing is signed and nothing verifies: every SLP
+ * route fails closed until the secret exists. Preview and local keep the
+ * fallback, which is what makes the test suites run without setup.
+ *
+ * Read at call time, not import time, so a suite can flip it.
+ */
+export function authSecretOk(): boolean {
+  return !!process.env.SLP_AUTH_SECRET || process.env.VERCEL_ENV !== "production";
+}
+function requireAuthSecret(): void {
+  if (!authSecretOk()) throw new Error("SLP_AUTH_SECRET is not set: refusing to sign with a shared or dev secret in production");
+}
 
 const COOKIE = "slp_session";
 export const SESSION_MAX_AGE = 60 * 60 * 24 * 30; // 30 days
@@ -74,19 +128,18 @@ export function hashToken(t: string): string {
 export type Session = { email: string; code?: string; iat?: number; exp?: number };
 
 export function signSession(payload: Session): string {
+  requireAuthSecret();
   const body = Buffer.from(JSON.stringify(payload)).toString("base64url");
-  const sig = crypto.createHmac("sha256", SECRET).update(body).digest("base64url");
+  const sig = crypto.createHmac("sha256", SECRET()).update(body).digest("base64url");
   return body + "." + sig;
 }
 
 export function verifySession(token: string | undefined | null): Session | null {
+  if (!authSecretOk()) return null;
   if (!token || token.indexOf(".") < 0) return null;
   const [body, sig] = token.split(".");
   if (!body || !sig) return null;
-  const expected = crypto.createHmac("sha256", SECRET).update(body).digest("base64url");
-  const a = Buffer.from(sig);
-  const b = Buffer.from(expected);
-  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return null;
+  if (!sigOk(body, sig)) return null;
   try {
     const obj = JSON.parse(Buffer.from(body, "base64url").toString()) as Session;
     if (obj.exp && Date.now() > obj.exp) return null;
@@ -112,6 +165,7 @@ export function verifySession(token: string | undefined | null): Session | null 
 export type Ticket = { t: "enrol"; code: string; exp: number; cid?: string };
 
 export function signTicket(code: string, ttlDays = 400, childId = ""): string {
+  requireAuthSecret();
   const payload: Ticket = { t: "enrol", code: String(code || "").toLowerCase(), exp: Date.now() + ttlDays * 86400000 };
   // Bind the ticket to ONE child where we know which one. A ticket proves the
   // device passed this clinician's code+key, which is enough to WRITE its own
@@ -121,7 +175,7 @@ export function signTicket(code: string, ttlDays = 400, childId = ""): string {
   // the caller decides. See app/api/homework.
   if (childId) payload.cid = String(childId).slice(0, 60);
   const body = Buffer.from(JSON.stringify(payload)).toString("base64url");
-  const sig = crypto.createHmac("sha256", SECRET).update(body).digest("base64url");
+  const sig = crypto.createHmac("sha256", SECRET()).update(body).digest("base64url");
   return body + "." + sig;
 }
 
@@ -131,12 +185,11 @@ export function signTicket(code: string, ttlDays = 400, childId = ""): string {
  * Returns null on any failure; never throws.
  */
 export function readTicket(token: string | undefined | null, code: string): Ticket | null {
+  if (!authSecretOk()) return null;
   if (!token || token.indexOf(".") < 0) return null;
   const [body, sig] = token.split(".");
   if (!body || !sig) return null;
-  const expected = crypto.createHmac("sha256", SECRET).update(body).digest("base64url");
-  const a = Buffer.from(sig), b = Buffer.from(expected);
-  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return null;
+  if (!sigOk(body, sig)) return null;
   try {
     const t = JSON.parse(Buffer.from(body, "base64url").toString()) as Ticket;
     if (t.t !== "enrol") return null;                        // not a session cookie

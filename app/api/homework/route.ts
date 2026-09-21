@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { readTicket, kvConfigured } from "@/lib/slpAuth";
 import { readHomework, writeHomework, isActive, isoDay, type Homework } from "@/lib/homework";
+import { isGone } from "@/lib/roster";
 import { rateLimit } from "@/lib/rateLimit";
 
 /**
@@ -70,6 +71,13 @@ export async function POST(req: NextRequest) {
   }
 
   if (!kvConfigured()) return NextResponse.json({ ok: true, hw: null });
+
+  // A child taken off the caseload — by the clinician, or by the family's
+  // own "stop sharing" — has no assignment and reports no practice. The
+  // device still holds a valid ticket; the answer is a plain "nothing
+  // assigned" and NOTHING is written, so a removed family's reps never
+  // rebuild the row they asked to have deleted.
+  if (await isGone(code, childId)) return NextResponse.json({ ok: true, hw: null });
 
   const rec = await readHomework(code, childId);
 
