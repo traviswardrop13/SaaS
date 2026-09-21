@@ -27,6 +27,7 @@ const SUITES = [
   "fittest.mjs",   // device-matrix fit: SE→Pro Max, zoomed display, landscape
   "day1.mjs", // the day: one story, then three games
   "activitytest.mjs", // play library: age suggestions, game routes, safe browsing and fit
+  "pausetest.mjs", // interruptions preserve one practice flow and release local device resources
   "completiontest.mjs", // adventure recap, honest history, finish routes and prompt volume
   "feedtest.mjs",  // Feed Echo: littles tap-and-say loop, growth, deck placement
   "iaptest.mjs",   // Apple IAP rail: native paywall, purchase/restore, web untouched
@@ -34,6 +35,7 @@ const SUITES = [
   "loadtest.mjs",  // LOAD1: per-game loading scenes, ticket pill, ghost reveals
   "mictest.mjs",   // MIC1: a declined mic is never a dead end; the consent copy is true
   "hwtest.mjs",    // HW1: SLP homework replaces what the app would have picked
+  "pauseaudiotest.mjs", // interrupted playback and native starts cannot outlive their practice phase
   "arttest.mjs",   // ART1: every sticker renders, fits its box and stays in the safe band
 ];
 

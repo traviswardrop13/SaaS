@@ -200,6 +200,15 @@
     #runOvl .btn:focus-visible{outline:3px solid #1597d4;outline-offset:3px;}
     #runTitle:focus{outline:none;}
     @media(max-height:650px){#runOvl .ovlCard{padding:18px;gap:8px;}.run-hero{width:76px;height:76px;}#runOvl .ovlEcho{width:76px;height:76px;}#runTitle{font-size:25px;}#runRounds{font-size:27px;}}
+    #pauseOvl{z-index:120;background:rgba(74,44,20,.62);padding:20px;}
+    #pauseOvl .ovlCard{padding:24px;gap:12px;max-height:calc(100dvh - 40px);overflow-y:auto;}
+    #pauseOvl .ovlEcho{position:static;transform:none;width:88px;height:88px;flex-shrink:0;}
+    #pauseOvl p,#pauseHome{color:#795534;line-height:1.5;}
+    #pauseResume{color:#4a2c14;}
+    #pauseHome{min-height:44px;min-width:100px;font-size:15px;}
+    #pauseOvl button:focus-visible{outline:3px solid #795534;outline-offset:4px;}
+    body.practice-paused *{animation-play-state:paused!important;}
+    body.practice-paused .ovl:not(#pauseOvl){visibility:hidden;}
   </style>
 </head>
 <body>
@@ -312,6 +321,16 @@
     </div>
   </div>
 
+  <div class="ovl" id="pauseOvl" role="dialog" aria-modal="true" aria-labelledby="pauseTitle" aria-describedby="pauseCopy">
+    <div class="ovlCard">
+      <img class="ovlEcho" src="/coach/echo/echo-idle.svg" alt="" />
+      <h2 id="pauseTitle">Practice paused</h2>
+      <p id="pauseCopy">Take your time. We'll keep your place.</p>
+      <button class="btn" id="pauseResume">Resume</button>
+      <button class="btn ghost" id="pauseHome">Home</button>
+    </div>
+  </div>
+
   <script src="/sona.js"></script>
   <script src="/scenes.js"></script>
   <script src="/gamecontent.js"></script>
@@ -349,6 +368,105 @@
     if(window.Sona&&Sona.gated&&Sona.gated(IS_DEMO?"demo":"practice")){ Sona.gateBounce(); }
     var S=window.Sona;
     var profile=S?S.getProfile():{volume:0.8};
+    // One flow stays alive across interruptions. Nothing resumes until the
+    // child taps Resume; stale permission/audio results belong to an old epoch.
+    var practicePaused=false, practiceClosed=false, practiceTerminal=false, practiceEpoch=0;
+    var practiceWaiters=[], practiceTimers=[], pauseFocus=null, pauseInert=[], practiceClosing=Promise.resolve();
+    function practiceReady(){
+      if(practiceClosed || (practiceTerminal && document.hidden)) return Promise.resolve(false);
+      if(document.hidden && !practicePaused) pausePractice();
+      if(!practicePaused) return Promise.resolve(true);
+      return new Promise(function(resolve){ practiceWaiters.push(resolve); });
+    }
+    function releasePractice(value){ var waiting=practiceWaiters.splice(0); waiting.forEach(function(resolve){resolve(value);}); }
+    function hidePracticePause(){
+      $("pauseOvl").classList.remove("show");
+      document.body.classList.remove("practice-paused");
+      pauseInert.forEach(function(item){item.el.inert=item.was;}); pauseInert=[];
+    }
+    function pausePractice(){
+      if(practiceClosed || practicePaused) return;
+      practiceEpoch++;
+      if(!practiceTerminal) practicePaused=true;
+      if(engineControl) engineControl.pause();
+      stopMic();
+      cancelPracticeAudio();
+      try{ if(S&&S.sfx&&S.sfx.stop)S.sfx.stop(); }catch(e){}
+      practiceTimers.slice().forEach(function(wake){wake();});
+      if(practiceTerminal) return;
+      pauseFocus=document.activeElement;
+      [$("app"),$("chestOvl"),$("micPrime"),$("playedOvl"),$("runOvl")].forEach(function(el){if(el){pauseInert.push({el:el,was:el.inert});el.inert=true;}});
+      document.body.classList.add("practice-paused");
+      $("pauseOvl").classList.add("show");
+      $("pauseResume").focus({preventScroll:true});
+    }
+    function closePractice(){
+      if(practiceClosed)return practiceClosing;
+      practiceClosed=true; practiceEpoch++;
+      if(engineControl)engineControl.cancel();
+      // A native start may still be awaiting availability. Keep this page alive
+      // until its final stop settles, or navigation can discard that cleanup.
+      practiceClosing=recognitionStop();
+      stopMic(); cancelPracticeAudio();
+      try{ if(S&&S.sfx&&S.sfx.stop)S.sfx.stop(); }catch(e){}
+      practiceTimers.slice().forEach(function(wake){wake();});
+      hidePracticePause(); releasePractice(false);
+      return practiceClosing;
+    }
+    $("pauseResume").onclick=function(){
+      if(!practicePaused || practiceClosed || document.hidden)return;
+      practicePaused=false; hidePracticePause();
+      try{getCtx();}catch(e){}
+      if(pauseFocus&&pauseFocus.isConnected)try{pauseFocus.focus({preventScroll:true});}catch(e){}
+      releasePractice(true);
+    };
+    $("pauseHome").onclick=goPracticeHome;
+    async function goPracticeHome(){await closePractice();location.href="/today.html";}
+    $("pauseOvl").onkeydown=function(e){
+      if(e.key!=="Tab")return;
+      var first=$("pauseResume"),last=$("pauseHome");
+      if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}
+      else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}
+    };
+    async function practiceDelay(ms){
+      var left=ms;
+      while(left>0){
+        if(!(await practiceReady()))return false;
+        var began=performance.now();
+        await new Promise(function(resolve){
+          var timer,done=false;
+          function wake(){if(done)return;done=true;clearTimeout(timer);var i=practiceTimers.indexOf(wake);if(i>=0)practiceTimers.splice(i,1);resolve();}
+          practiceTimers.push(wake); timer=setTimeout(wake,left);
+        });
+        left=Math.max(0,left-(performance.now()-began));
+      }
+      return practiceReady();
+    }
+    async function acquirePracticeMic(){
+      while(await practiceReady()){
+        if(micOk&&micStream){
+          try{if(micStream.getAudioTracks().some(function(t){return t.readyState==="live";}))return true;}catch(e){return true;}
+        }
+        var epoch=practiceEpoch;
+        try{
+          var stream=await navigator.mediaDevices.getUserMedia({audio:true,video:false});
+          if(epoch!==practiceEpoch || practicePaused || practiceClosed || document.hidden){
+            stream.getTracks().forEach(function(t){t.stop();});
+            continue;
+          }
+          micStream=stream; micOk=true;
+          try{localStorage.setItem("sona.micok","1");}catch(e){}
+          return true;
+        }catch(e){
+          if(epoch!==practiceEpoch || practicePaused || document.hidden)continue;
+          practiceTerminal=true; closePractice(); micGo(false);
+          if(S&&S.micDenied)S.micDenied({back:"/today.html"});
+          return false;
+        }
+      }
+      return false;
+    }
+
     var SOUND=(qp.get("sound")||((S&&S.rotSound)?S.rotSound():((profile.focusSounds&&profile.focusSounds[0])||"R"))).toUpperCase();
     if(!(S&&S.WORDS&&S.WORDS[SOUND])) SOUND="R";
     var LEVEL=parseInt(qp.get("level"),10)||1;
@@ -374,7 +492,7 @@
       // bank a returning round score FIRST (arcade sends ?banked=N)
       if(run&&run.active&&run.pending&&qp.get("banked")!=null){
         var b=Math.max(0,parseInt(qp.get("banked"),10)||0);
-        run.sum+=b; run.scores.push(b); run.pending=false; run.round++; runSave(run);
+        run.sum+=b; run.scores.push(b); run.pending=false; delete run.ready; run.round++; runSave(run);
       }
       if(!(run&&run.active)){
         if(S&&S.dailyInfo&&S.dailyInfo().playedToday){ /* shown at boot */ }
@@ -446,108 +564,174 @@
     // exactly why Rachel's clips kept playing in coach-call.html.
     var HUMANCLIPS=false; try{ HUMANCLIPS=!!(S&&S.humanClipsOn&&S.humanClipsOn()); }catch(e){}
     function playPrompt(){
-      // Human clips obey the same parent audio controls as the spoken fallback.
-      if(profile.voiceOn===false || (profile.volume!=null && Number(profile.volume)===0)) return Promise.resolve();
-      return Promise.resolve().then(function(){ return new Promise(function(res){
-        if(ITEM.level!=="isolation" || !HUMANCLIPS){ say(sayLine()).then(res); return; }
-        try{
-          var a=new Audio("/coach/say/"+SOUND+".mp3");
-          a.volume=profile.volume!=null?Math.max(0,Math.min(1,profile.volume)):0.8;
-          var done=false; function fin(){ if(done)return; done=true; speaking=false; ttsEnd(); res(); }
-          a.onended=fin;
-          a.onerror=function(){ if(done)return; done=true; speaking=false; ttsEnd(); say(sayLine()).then(res); };
-          speaking=true; ttsBegin(); // human clip counts as Echo talking too — mic ignores it
-          a.play().catch(function(){ if(done)return; done=true; speaking=false; ttsEnd(); say(sayLine()).then(res); });
-        }catch(e){ speaking=false; say(sayLine()).then(res); }
-      }); });
+      if(mutedSpeech())return Promise.resolve();
+      // Human clips keep the same fallback line across an interruption. Delay
+      // sayLine() until fallback is needed, as a successful human clip did before.
+      var human=ITEM.level==="isolation"&&HUMANCLIPS?"/coach/say/"+SOUND+".mp3":null;
+      return human?queueSpeech(null,false,human,sayLine):say(sayLine());
     }
-
-
-    // QUEUE, never drop (Rachel's catch in Story Time — same bug lived here).
-    // A line that arrives while Echo is still talking must WAIT its turn, not
-    // silently vanish. Depth-capped so repeat taps can't stack a backlog.
-    var _sayQ=Promise.resolve(), _sayN=0;
-    function say(t){
-      if(!t||profile.voiceOn===false) return Promise.resolve();
-      if(_sayN>=2) return Promise.resolve();
+    var _sayQ=Promise.resolve(),_sayN=0,_slowQueued=false;
+    var audioJobs=[],AUDIO_CANCEL={},ttsPlaying=false,_ttsN=0,audioCtx=null,speaking=false,audioSuspend=Promise.resolve();
+    function mutedSpeech(){return profile.voiceOn===false||(profile.volume!=null&&Number(profile.volume)===0);}
+    function audioBlocked(){return practiceClosed||practicePaused||document.hidden;}
+    function speechVolume(){var v=profile.volume!=null?Number(profile.volume):0.8;return isFinite(v)?Math.max(0,Math.min(1,v)):0.8;}
+    function ttsBegin(){_ttsN++;ttsPlaying=true;}
+    function ttsEnd(){if(_ttsN>0)_ttsN--;ttsPlaying=_ttsN>0;}
+    function newAudioJob(){
+      var job={epoch:practiceEpoch,cancelled:false,stops:[]};
+      job.live=function(){return !job.cancelled&&job.epoch===practiceEpoch&&!audioBlocked();};
+      job.cancel=function(){if(job.cancelled)return;job.cancelled=true;job.stops.slice().forEach(function(stop){stop();});};
+      job.finish=function(){var i=audioJobs.indexOf(job);if(i>=0)audioJobs.splice(i,1);job.cancel();};
+      audioJobs.push(job);return job;
+    }
+    // Each pending operation settles when cancelled, even if the browser never
+    // fires an ended/error callback or an IndexedDB/fetch request returns late.
+    function audioWait(job,begin){return new Promise(function(resolve){
+      var settled=false,cleanups=[];
+      function cleanup(fn){if(settled){try{fn();}catch(e){}}else cleanups.push(fn);}
+      function done(value){
+        if(settled)return;settled=true;
+        if(!job.live())value=AUDIO_CANCEL;
+        var i=job.stops.indexOf(cancel);if(i>=0)job.stops.splice(i,1);
+        cleanups.forEach(function(fn){try{fn();}catch(e){}});resolve(value);
+      }
+      function cancel(){done(AUDIO_CANCEL);}
+      job.stops.push(cancel);
+      if(!job.live()){cancel();return;}
+      try{begin(done,cleanup);}catch(e){done(null);}
+    });}
+    function cancelPracticeAudio(){
+      audioJobs.slice().forEach(function(job){job.cancel();});
+      try{if(window.speechSynthesis)window.speechSynthesis.cancel();}catch(e){}
+      try{if(audioCtx)audioSuspend=Promise.resolve(audioCtx.suspend()).catch(function(){});}catch(e){}
+      try{if(S&&S.sfx&&S.sfx.stop)S.sfx.stop();}catch(e){}
+      speaking=false;
+    }
+    function getCtx(){
+      if(audioBlocked())return audioCtx;
+      if(!audioCtx){var AC=window.AudioContext||window.webkitAudioContext;audioCtx=new AC();}
+      var ctx=audioCtx;
+      // A pending suspend must finish before a Resume-triggered resume call.
+      audioSuspend.then(function(){if(!audioBlocked()&&ctx.state==="suspended")return ctx.resume();}).catch(function(){});
+      return ctx;
+    }
+    function queueSpeech(t,slow,human,makeText){
+      if((!t&&!human)||mutedSpeech()||practiceClosed||_sayN>=2)return Promise.resolve();
+      var packet={text:t,slow:!!slow,human:human,makeText:makeText,epoch:practiceEpoch};
       _sayN++;
-      var run=function(){ return _say1(t); };
-      _sayQ=_sayQ.then(run,run).then(function(){ _sayN=Math.max(0,_sayN-1); },function(){ _sayN=Math.max(0,_sayN-1); });
+      var run=function(){return _say1(packet);};
+      _sayQ=_sayQ.then(run,run).then(function(){_sayN=Math.max(0,_sayN-1);},function(){_sayN=Math.max(0,_sayN-1);});
       return _sayQ;
     }
-
-    // ---- consistent, instant TTS: on-device cache (IndexedDB "sona-tts").
-    // Same text = the exact same audio every time — Leo's rrrr never wobbles.
-    function ttsDB(){ return new Promise(function(res,rej){ try{ var r=indexedDB.open("sona-tts",1); r.onupgradeneeded=function(){ r.result.createObjectStore("clips"); }; r.onsuccess=function(){res(r.result)}; r.onerror=function(){rej(r.error)}; }catch(e){rej(e);} }); }
-    function ttsGet(k){ return ttsDB().then(function(db){ return new Promise(function(res){ var tx=db.transaction("clips"); var rq=tx.objectStore("clips").get(k); rq.onsuccess=function(){res(rq.result||null)}; rq.onerror=function(){res(null)}; }); }).catch(function(){return null;}); }
-    function ttsPut(k,buf){ ttsDB().then(function(db){ try{ db.transaction("clips","readwrite").objectStore("clips").put(buf,k); }catch(e){} }).catch(function(){}); }
-
-    // speaker guard: while ANY app audio (TTS, human model clip, turtle
-    // replay) is playing this counter is up and the VAD loop refuses to
-    // count — the device's own speaker must NEVER charge a rep.
-    var ttsPlaying=false,_ttsN=0;
-    function ttsBegin(){ _ttsN++; ttsPlaying=true; }
-    function ttsEnd(){ if(_ttsN>0)_ttsN--; ttsPlaying=_ttsN>0; }
-    var audioCtx=null,speaking=false;
-    function getCtx(){ if(!audioCtx){var AC=window.AudioContext||window.webkitAudioContext;audioCtx=new AC();} if(audioCtx.state==="suspended")audioCtx.resume(); return audioCtx; }
-    function playPCM(b){ return new Promise(function(res){ var done=false; ttsBegin(); function fin(){ if(done)return; done=true; ttsEnd(); res(); } try{ var c=getCtx(),n=b.byteLength>>1,ab=c.createBuffer(1,n,24000),ch=ab.getChannelData(0),dv=new DataView(b.buffer,b.byteOffset,b.byteLength); for(var i=0;i<n;i++)ch[i]=dv.getInt16(i*2,true)/32768; var s=c.createBufferSource();s.buffer=ab;var g=c.createGain();g.gain.value=(profile.volume!=null?profile.volume:0.8);s.connect(g);g.connect(c.destination);s.onended=fin;s.start(); }catch(e){fin();} }); }
-    // Guaranteed-audio fallback: if cloud TTS fails (quota, network), the
-    // browser's built-in voice reads the line instead — lower quality, but a
-    // child is NEVER left with silent instructions. Runs under the speaker
-    // guard so it can't charge reps.
-    function speakFallback(t,slow){ return new Promise(function(res){ try{
-      if(!window.speechSynthesis||!window.SpeechSynthesisUtterance) return res();
-      var u=new SpeechSynthesisUtterance(String(t).replace(/\[[a-z ]{2,24}\]\s*/gi,""));
-      u.rate=slow?0.62:0.95; u.pitch=1.05; u.volume=(profile.volume!=null?profile.volume:0.8);
-      var done=false; function fin(){ if(done)return; done=true; try{ if(typeof ttsEnd==="function")ttsEnd(); }catch(e){} res(); }
-      u.onend=fin; u.onerror=fin; setTimeout(fin,(window.speechSynthesis.getVoices&&window.speechSynthesis.getVoices().length)?12000:1200);
-      try{ if(typeof ttsBegin==="function")ttsBegin(); }catch(e){}
-      window.speechSynthesis.speak(u);
-    }catch(e){ res(); } }); }
-    function _say1(t){ return new Promise(function(res){ if(!t)return res(); speaking=true;
-      var key=(profile.voiceId||"echo")+"|v6|"+t; // v6: calmer pacing — every device regenerates its cached clips
-      ttsGet(key).then(function(cached){
-        if(cached) return playPCM(new Uint8Array(cached)).then(function(){ return true; });
-        return fetch("/api/tts",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text:t,voice:profile.voiceId||"",stable:true})})
-          .then(function(r){return r.ok?r.arrayBuffer():null;})
-          .then(function(b){ if(!b)return false; ttsPut(key,b); return playPCM(new Uint8Array(b)).then(function(){ return true; }); });
-      }).then(function(played){ if(!played) return speakFallback(t); })
-      .catch(function(){ return speakFallback(t); })
-      .finally(function(){speaking=false;res();});
-    }); }
-    // ---- 🐢 slow replay: rebuild the cached PCM clip as a WAV and play it at
-    // 0.7× (media elements keep pitch by default) — same Sarah model, sloooow.
-    function pcmToWav(u8){
-      var n=u8.length, h=new ArrayBuffer(44), d=new DataView(h);
-      function ws(o,s2){ for(var i=0;i<s2.length;i++)d.setUint8(o+i,s2.charCodeAt(i)); }
-      ws(0,"RIFF"); d.setUint32(4,36+n,true); ws(8,"WAVE"); ws(12,"fmt ");
-      d.setUint32(16,16,true); d.setUint16(20,1,true); d.setUint16(22,1,true);
-      d.setUint32(24,24000,true); d.setUint32(28,48000,true); d.setUint16(32,2,true); d.setUint16(34,16,true);
-      ws(36,"data"); d.setUint32(40,n,true);
-      return new Blob([h,u8],{type:"audio/wav"});
+    function say(t){return queueSpeech(t,false,null,null);}
+    // ---- same v6 on-device TTS cache; callbacks never outlive their job. ----
+    function ttsGet(key,job){return audioWait(job,function(done,cleanup){
+      var db=null,ended=false;
+      var timer=setTimeout(function(){done(null);},7000);cleanup(function(){ended=true;clearTimeout(timer);if(db)db.close();});
+      var request=indexedDB.open("sona-tts",1);
+      request.onupgradeneeded=function(){var d=request.result;if(!d.objectStoreNames.contains("clips"))d.createObjectStore("clips");};
+      request.onerror=function(){done(null);};
+      request.onsuccess=function(){
+        db=request.result;if(ended||!job.live()){db.close();done(AUDIO_CANCEL);return;}
+        try{var q=db.transaction("clips").objectStore("clips").get(key);q.onsuccess=function(){done(q.result||null);};q.onerror=function(){done(null);};}catch(e){done(null);}
+      };
+    });}
+    function ttsPut(key,bytes,job){return audioWait(job,function(done,cleanup){
+      var db=null,tx=null,ended=false;
+      var timer=setTimeout(function(){done(null);},7000);cleanup(function(){ended=true;clearTimeout(timer);if(tx){try{tx.abort();}catch(e){}}if(db)db.close();});
+      var request=indexedDB.open("sona-tts",1);
+      request.onupgradeneeded=function(){var d=request.result;if(!d.objectStoreNames.contains("clips"))d.createObjectStore("clips");};
+      request.onerror=function(){done(null);};
+      request.onsuccess=function(){
+        db=request.result;if(ended||!job.live()){db.close();done(AUDIO_CANCEL);return;}
+        try{tx=db.transaction("clips","readwrite");tx.oncomplete=function(){tx=null;done(true);};tx.onerror=function(){done(null);};tx.objectStore("clips").put(bytes,key);}catch(e){done(null);}
+      };
+    });}
+    async function speechBytes(t,job){
+      var key=(profile.voiceId||"echo")+"|v6|"+t;
+      var cached=await ttsGet(key,job);
+      if(cached===AUDIO_CANCEL||!job.live())return AUDIO_CANCEL;
+      if(cached)return cached;
+      var bytes=await audioWait(job,function(done,cleanup){
+        var controller=typeof AbortController!=="undefined"?new AbortController():null;
+        var timer=setTimeout(function(){done(null);},7000);
+        cleanup(function(){clearTimeout(timer);if(controller)controller.abort();});
+        var options={method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text:t,voice:profile.voiceId||"",stable:true})};
+        if(controller)options.signal=controller.signal;
+        fetch("/api/tts",options).then(function(r){return r.ok?r.arrayBuffer():null;}).then(function(b){done(b&&b.byteLength?b:null);}).catch(function(){done(null);});
+      });
+      if(bytes===AUDIO_CANCEL||!job.live())return AUDIO_CANCEL;
+      if(bytes)ttsPut(key,bytes,job);
+      return bytes;
     }
-    function playSlowClip(u8){ return new Promise(function(res){ var done=false,url=null; ttsBegin();
-      function fin(){ if(done)return; done=true; ttsEnd(); try{ if(url)URL.revokeObjectURL(url); }catch(e){} res(); }
-      try{
-        url=URL.createObjectURL(pcmToWav(u8));
-        var a=new Audio(url); a.playbackRate=0.7;
-        try{ a.preservesPitch=true; a.mozPreservesPitch=true; a.webkitPreservesPitch=true; }catch(e){}
-        a.volume=(profile.volume!=null?profile.volume:0.8);
-        a.onended=fin; a.onerror=fin;
-        try{ a.play().catch(fin); }catch(e2){ fin(); }
-        setTimeout(fin,15000);
-      }catch(e){ fin(); }
-    }); }
-    function saySlow(t){ return new Promise(function(res){ if(!t||profile.voiceOn===false)return res(); if(speaking)return res(); speaking=true;
-      var key=(profile.voiceId||"echo")+"|v6|"+t; // same cache as say() — repeat plays are instant and free
-      ttsGet(key).then(function(cached){
-        if(cached) return playSlowClip(new Uint8Array(cached));
-        return fetch("/api/tts",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text:t,voice:profile.voiceId||"",stable:true})})
-          .then(function(r){return r.ok?r.arrayBuffer():null;})
-          .then(function(b){ if(!b)return speakFallback(t,true); ttsPut(key,b); return playSlowClip(new Uint8Array(b)); });
-      }).catch(function(){ return speakFallback(t,true); }).finally(function(){speaking=false;res();});
-    }); }
-    function sfx(n){ try{ if(S&&S.sfx&&S.sfx[n])S.sfx[n](); }catch(e){} }
+    function playMedia(url,slow,job){return audioWait(job,function(done,cleanup){
+      var a=new Audio(url);a.volume=speechVolume();
+      if(slow){a.playbackRate=0.7;try{a.preservesPitch=true;a.mozPreservesPitch=true;a.webkitPreservesPitch=true;}catch(e){}}
+      ttsBegin();cleanup(function(){ttsEnd();a.onended=null;a.onerror=null;try{a.pause();a.removeAttribute("src");a.load();}catch(e){}});
+      var timer=setTimeout(function(){done(null);},15000);cleanup(function(){clearTimeout(timer);});
+      a.onended=function(){done(true);};a.onerror=function(){done(null);};
+      try{var promise=a.play();if(promise&&promise.catch)promise.catch(function(){done(null);});}catch(e){done(null);}
+    });}
+    function playPCM(b,job){return audioWait(job,function(done,cleanup){
+      var c=getCtx();if(!c){done(null);return;}
+      var n=b.byteLength>>1;if(!n){done(null);return;}
+      var ab=c.createBuffer(1,n,24000),ch=ab.getChannelData(0),dv=new DataView(b.buffer,b.byteOffset,b.byteLength);
+      for(var i=0;i<n;i++)ch[i]=dv.getInt16(i*2,true)/32768;
+      var source=c.createBufferSource(),gain=c.createGain();source.buffer=ab;gain.gain.value=speechVolume();source.connect(gain);gain.connect(c.destination);
+      ttsBegin();cleanup(function(){ttsEnd();source.onended=null;try{source.stop();}catch(e){}try{source.disconnect();gain.disconnect();}catch(e){}});
+      source.onended=function(){done(true);};
+      var timer=setTimeout(function(){done(null);},Math.ceil(ab.duration*1000)+1500);cleanup(function(){clearTimeout(timer);});
+      audioSuspend.then(function(){if(!job.live()){done(AUDIO_CANCEL);return;}try{if(c.state==="suspended")return c.resume();}catch(e){}return null;}).then(function(){if(!job.live()){done(AUDIO_CANCEL);return;}try{source.start();}catch(e){done(null);}}).catch(function(){done(null);});
+    });}
+    function speakFallback(t,slow,job){return audioWait(job,function(done,cleanup){
+      if(!window.speechSynthesis||!window.SpeechSynthesisUtterance){done(true);return;}
+      var u=new SpeechSynthesisUtterance(String(t).replace(/\[[a-z ]{2,24}\]\s*/gi,""));
+      u.rate=slow?0.62:0.95;u.pitch=1.05;u.volume=speechVolume();
+      ttsBegin();cleanup(function(){ttsEnd();u.onend=null;u.onerror=null;try{window.speechSynthesis.cancel();}catch(e){}});
+      u.onend=function(){done(true);};u.onerror=function(){done(true);};
+      var cap=(window.speechSynthesis.getVoices&&window.speechSynthesis.getVoices().length)?12000:1200;
+      var timer=setTimeout(function(){done(true);},cap);cleanup(function(){clearTimeout(timer);});
+      window.speechSynthesis.speak(u);
+    });}
+    function pcmToWav(u8){
+      var n=u8.length,h=new ArrayBuffer(44),d=new DataView(h);
+      function ws(o,s2){for(var i=0;i<s2.length;i++)d.setUint8(o+i,s2.charCodeAt(i));}
+      ws(0,"RIFF");d.setUint32(4,36+n,true);ws(8,"WAVE");ws(12,"fmt ");
+      d.setUint32(16,16,true);d.setUint16(20,1,true);d.setUint16(22,1,true);
+      d.setUint32(24,24000,true);d.setUint32(28,48000,true);d.setUint16(32,2,true);d.setUint16(34,16,true);
+      ws(36,"data");d.setUint32(40,n,true);return new Blob([h,u8],{type:"audio/wav"});
+    }
+    async function playSlowClip(u8,job){
+      var url=URL.createObjectURL(pcmToWav(u8));
+      try{return await playMedia(url,true,job);}finally{URL.revokeObjectURL(url);}
+    }
+    async function _say1(packet){
+      while(!practiceClosed&&!mutedSpeech()){
+        // Completion/quiet-screen speech is optional: never replay it after
+        // backgrounding, or wait for a practice Resume on a terminal screen.
+        if(practiceTerminal&&(audioBlocked()||packet.epoch!==practiceEpoch))return;
+        if(!(await practiceReady())||practiceClosed||mutedSpeech())return;
+        if(audioBlocked())continue;
+        var job=newAudioJob(),result=null;speaking=true;
+        try{
+          if(packet.human)result=await playMedia(packet.human,false,job);
+          if(result!==true&&result!==AUDIO_CANCEL){
+            if(packet.text==null)packet.text=packet.makeText?packet.makeText():"";
+            var bytes=await speechBytes(packet.text,job);
+            if(bytes===AUDIO_CANCEL)result=AUDIO_CANCEL;
+            else if(bytes)result=packet.slow?await playSlowClip(new Uint8Array(bytes),job):await playPCM(new Uint8Array(bytes),job);
+            if(result!==true&&result!==AUDIO_CANCEL)result=await speakFallback(packet.text,packet.slow,job);
+          }
+        }catch(e){if(!job.live())result=AUDIO_CANCEL;else result=await speakFallback(packet.text||"",packet.slow,job);}
+        finally{job.finish();speaking=false;}
+        if(result!==AUDIO_CANCEL||practiceTerminal)return;
+      }
+    }
+    function saySlow(t){return new Promise(function(res){
+      if(!t||mutedSpeech())return res();if(speaking)return res();if(_slowQueued)return res();_slowQueued=true;
+      queueSpeech(t,true,null,null).then(function(){_slowQueued=false;res();},function(){_slowQueued=false;res();});
+    });}
+    function sfx(n){if(audioBlocked())return;try{if(S&&S.sfx&&S.sfx[n])S.sfx[n]();}catch(e){}}
 
     // ---- UI: the game's own loading scene. Saying the sound LOADS the game —
     // each counted rep pops one more piece into the sky; the rest wait as
@@ -729,10 +913,10 @@
     // Playback runs through the speaker guard, so it can never charge a rep.
     function turtleText(){ return ITEM.level==="isolation" ? sayLine() : String(ITEM.say||ITEM.display||ITEM.t); }
     function showTurtle(on){ $("turtleBtn").classList.toggle("show",!!on); }
-    $("turtleBtn").onclick=function(){ saySlow(turtleText()); };
+    $("turtleBtn").onclick=function(){ if(!practicePaused&&!practiceClosed&&!document.hidden)saySlow(turtleText()); };
     function micGo(on){ $("micBtn").className=on?"go":""; }
     // tapping the mic replays the prompt — speaker-guarded, can't charge reps
-    $("micBtn").onclick=function(){ if(engineOn&&!speaking&&!ttsPlaying) playPrompt(); };
+    $("micBtn").onclick=function(){ if(engineOn&&!practicePaused&&!practiceClosed&&!document.hidden&&!speaking&&!ttsPlaying) playPrompt(); };
 
     // ---- sound-shape gate (bare-sound rounds only). The cloud scorer force-
     // aligns nonsense text like "rrrr" onto whatever it hears and is wrong in
@@ -769,136 +953,179 @@
       return "pass";
     }
 
-    // ---- rapid-fire rep engine: continuous VAD, every voiced burst = a rep.
-    // No scoring round-trips at all — the verdict comes from the spectral
-    // shape of the burst, decided here on the phone.
+    // ---- rapid-fire rep engine: one attempt can span visible mic segments. ----
     var micStream=null, reps=0, engineOn=false, chunks=[], rec=null, anyReps=false, micOk=false;
-    // NOTHING LEAVES THE DEVICE. Cloud scoring is gone: no MediaRecorder, no
-    // clip, no upload, no vendor. Every verdict is decided here from the
-    // spectral shape of what was said (shapeVerdict below), which is what
-    // finally makes the consent copy true — a parent ticking "recordings stay
-    // on this device" is now agreeing to something that is actually the case.
-
+    var engineControl=null, engineAttempt=null, attemptInterrupted=false;
+    var recognitionTexts=[], recognitionRemaining=9000, recognitionState=null;
+    // Native start is asynchronous (availability first). Stop once immediately,
+    // then again after a late start settles, before any new segment may start.
+    function recognitionStart(){
+      if(recognitionRemaining<=0 || !(S&&S.speechStart)) return;
+      var r={startedAt:performance.now(),budget:recognitionRemaining,settled:false,stop:null,timer:null};
+      recognitionState=r;
+      try{ r.pending=Promise.resolve(S.speechStart({ words:[String(ITEM.word||ITEM.t||"").toLowerCase()], maxMs: Math.ceil(r.budget) })); }
+      catch(e){ r.pending=Promise.resolve(false); }
+      r.pending=r.pending.then(function(v){r.settled=true;return v;},function(){r.settled=true;return false;});
+      r.timer=setTimeout(function(){if(recognitionState===r)recognitionStop();},r.budget);
+    }
+    function recognitionStop(){
+      var r=recognitionState;
+      if(!r) return Promise.resolve();
+      if(r.stop) return r.stop;
+      clearTimeout(r.timer);
+      recognitionRemaining=Math.max(0,r.budget-(performance.now()-r.startedAt));
+      function stop(){try{return Promise.resolve(S&&S.speechStop?S.speechStop():null).catch(function(){return null;});}catch(e){return Promise.resolve(null);}}
+      var first=stop(), wasSettled=r.settled;
+      r.stop=(wasSettled?first:Promise.all([first,r.pending]).then(stop)).then(function(result){
+        if(recognitionState===r && result && typeof result.text==="string" && result.text.trim()) recognitionTexts.push(result.text);
+      });
+      return r.stop;
+    }
     function startEngine(){
       return new Promise(function(resolve){
-        reps=0; paintReps(0); chunks=[];
-        var voiced=0, silent=0, inBurst=false, thr=0, calN=0, calSum=0, t0=performance.now(), lastRep=0, idleTimer=null;
-        // no clip is even CREATED when honest scoring is off — the promise is
-        // "no clips sent", and the safest way to keep it is to have nothing to send
-        // Still recorded — but ONLY to keep one clip a day on this device so a
-        // parent can listen back in Progress. It is never uploaded anywhere.
-        try{ if(window.MediaRecorder&&micStream){ rec=new MediaRecorder(micStream); rec.ondataavailable=function(e){ if(e.data&&e.data.size)chunks.push(e.data); }; rec.start(); } }catch(e){ rec=null; }
-        var ctx=getCtx(), src=ctx.createMediaStreamSource(micStream), an=ctx.createAnalyser();
-        an.fftSize=512; src.connect(an);
-        var td=new Uint8Array(an.fftSize);
-        var fd=new Uint8Array(an.frequencyBinCount), binHz=ctx.sampleRate/an.fftSize;
-        shapeReset();
-        engineOn=true;
-        // stop the mic graph AND resolve — but resolve only AFTER the recorder
-        // flushes its final chunk. rec.start() has no timeslice, so the whole
-        // clip arrives in a single dataavailable that the browser queues at
-        // stop(); resolving synchronously (the old bug) handed verifyClip an
-        // empty chunks[] and the day's keepsake clip was never saved.
-        // onstop fires after that final dataavailable, so chunks is populated.
-        var settled=false;
-        function stopAll(){
-          if(settled) return; settled=true;
-          engineOn=false; try{src.disconnect();}catch(e){} if(idleTimer)clearTimeout(idleTimer); try{ $("micWrap").classList.remove("hear"); }catch(e){}
-          if(rec && rec.state!=="inactive"){
-            rec.onstop=function(){ resolve(); };
-            try{ rec.stop(); }catch(e){ resolve(); }
-            setTimeout(function(){ resolve(); },1500); // safety: never hang if onstop is silent
-          } else { resolve(); }
+        var attempt={cancelled:false,settled:false,segment:null}; engineAttempt=attempt;
+        reps=0; paintReps(0); chunks=[]; rec=null; shapeReset(); attemptInterrupted=false;
+        recognitionTexts=[]; recognitionRemaining=9000; recognitionState=null;
+        var voiced=0,silent=0,inBurst=false,thr=0,calN=0,calSum=0,lastRep=0;
+        var elapsed=0,clockBase=performance.now(),nudges=0,nextNudge=8000,idleDisabled=false,successAt=null;
+        function closed(){return attempt.cancelled || practiceClosed || engineAttempt!==attempt;}
+        function finishAttempt(value){
+          if(attempt.settled)return; attempt.settled=true; engineOn=false;
+          if(engineControl===control)engineControl=null;
+          resolve(value);
         }
-        // Idle nudge — BOUNDED. This used to re-arm itself for as long as
-        // reps stayed 0, so a child whose mic was off, muted or simply not
-        // hearing them was told "Ready? Say rrrr... Go!" every eight seconds
-        // until a grown-up closed the app. Two nudges is the ceiling: a child
-        // who has not answered twice is not going to answer the ninth, and the
-        // second one lands at 16s, leaving the 20s hard cap below to end the
-        // round on showQuiet() — the warm "Echo didn't hear you!" screen — so
-        // the silence after the last nudge is short and leads somewhere.
-        // The nudge only ever RE-SPEAKS the prompt. It never counts, never
-        // advances, never fills the meter: silence is never a rep, so a child
-        // who waits it out still has to speak.
-        var MAX_NUDGES=2, nudges=0;
-        // Re-prompting into a mic that cannot hear is pure noise. A hard denial
-        // is caught in flow() (Sona.micDenied) before the engine ever starts,
-        // so micOk is normally true by the time we get here; the track check is
-        // for the mic that was granted and then died mid-round — another app
-        // taking it, a headset unplugged, the iOS shell backgrounded — which
-        // looks identical to a quiet child from the analyser's side.
-        function micLive(){
-          if(!micOk||!micStream) return false;
-          // unknowable (old browser, no track object) → assume live; never
-          // silence Echo on a guess, only on a state the device confirmed
-          try{ var t=micStream.getAudioTracks()[0]; return !t || (t.readyState==="live" && !t.muted); }catch(e){ return true; }
-        }
-        function armIdle(){
-          if(idleTimer)clearTimeout(idleTimer);
-          idleTimer=setTimeout(function(){
-            if(!engineOn) return;
-            if(reps!==0) return;        // they are talking — no nudge, and no re-arm (as before)
-            if(!micLive()) return;      // nothing is listening; the hard cap will hand them showQuiet()
-            if(nudges>=MAX_NUDGES) return;
-            nudges++; playPrompt(); armIdle();
-          },8000);
-        }
-        armIdle();
-        var mw=$("micWrap");
-        (function tick(){
-          if(!engineOn) return;
-          // Echo's own voice must never count: while ANY app audio plays (TTS,
-          // model clip, turtle replay, idle re-prompt) drop the frame entirely —
-          // no counting, no burst carry-over, no "hearing" rings.
-          if(speaking||ttsPlaying){ silent++; voiced=0; inBurst=false; try{ mw.classList.remove("hear"); }catch(e){} requestAnimationFrame(tick); return; }
-          an.getByteTimeDomainData(td);
-          var sum=0; for(var i=0;i<td.length;i++){ var d=(td[i]-128)/128; sum+=d*d; }
-          var rms=Math.sqrt(sum/td.length), now=performance.now();
-          if(now-t0<250){ calSum+=rms; calN++; requestAnimationFrame(tick); return; }
-          if(!thr) thr=Math.max(0.035,(calSum/Math.max(1,calN))*3.0);
-          if(rms>thr){ voiced++; silent=0; try{ mw.classList.add("hear"); }catch(e){}
-            an.getByteFrequencyData(fd); shapeFrame(fd,binHz); // shape sampled on voiced frames only
-            // a real burst = ~4 voiced frames (~120ms) — silence NEVER counts
-            if(!inBurst && voiced>=4 && now-lastRep>350){
-              inBurst=true; lastRep=now; reps++;
-              paintReps(reps); sfx("tap");
-              // mid-run checkpoint: a quick flourish at rep 3 keeps the last
-              // two reps fueled — visual only, the mic never pauses.
-              if(reps===3&&NEED>=5){ try{ if(S&&S.pop)S.pop("Way to go!",{color:"#ffd21c"}); }catch(e){} }
-              var l=$("leo"); l.classList.remove("cheer"); void l.offsetWidth; l.classList.add("cheer");
-              if(reps>=NEED){ setTimeout(function(){ stopAll(); },350); return; }
+        var control={
+          pause:function(){
+            if(attempt.settled)return;
+            attemptInterrupted=true; chunks=[];
+            voiced=0; silent=0; inBurst=false;
+            if(attempt.segment)attempt.segment.finish("pause");
+          },
+          cancel:function(){
+            attempt.cancelled=true;
+            if(attempt.segment)attempt.segment.finish("cancel");
+            else recognitionStop();
+            finishAttempt(false);
+          }
+        };
+        engineControl=control;
+        function runSegment(){return new Promise(function(segmentDone){
+          var seg={startedAt:performance.now(),closed:false,reason:null,timers:[],raf:null,src:null,recorder:null};
+          attempt.segment=seg;
+          function current(){return !closed() && !seg.closed && attempt.segment===seg;}
+          function activeMs(){return elapsed+performance.now()-seg.startedAt;}
+          function later(fn,ms){var timer=setTimeout(function(){if(current())fn();},Math.max(0,ms));seg.timers.push(timer);return timer;}
+          function recorderStop(){return new Promise(function(done){
+            var recorder=seg.recorder,settled=false;
+            function finish(){if(settled)return;settled=true;clearTimeout(safety);done();}
+            var safety=setTimeout(finish,1500);
+            if(!recorder || recorder.state==="inactive"){finish();return;}
+            recorder.onstop=finish;
+            try{recorder.stop();}catch(e){finish();}
+          });}
+          seg.finish=function(reason){
+            if(seg.closed)return; seg.closed=true; seg.reason=reason;
+            elapsed=Math.min(20000,activeMs()); engineOn=false; micGo(false);
+            seg.timers.forEach(clearTimeout); if(seg.raf!=null)cancelAnimationFrame(seg.raf);
+            try{if(seg.src)seg.src.disconnect();}catch(e){}
+            try{$("micWrap").classList.remove("hear");}catch(e){}
+            Promise.all([recorderStop(),recognitionStop()]).then(function(){
+              if(attempt.segment===seg)attempt.segment=null;
+              segmentDone(reason);
+            });
+          };
+          try{
+            var ctx=getCtx(),src=ctx.createMediaStreamSource(micStream),an=ctx.createAnalyser();
+            seg.src=src; an.fftSize=512;src.connect(an);
+            var td=new Uint8Array(an.fftSize),fd=new Uint8Array(an.frequencyBinCount),binHz=ctx.sampleRate/an.fftSize;
+            // Independent recorder files cannot be concatenated into one clip.
+            // Interrupted attempts retain reps/evidence but skip the keepsake.
+            if(!attemptInterrupted && window.MediaRecorder && micStream){try{
+              var recorder=new MediaRecorder(micStream);seg.recorder=recorder;rec=recorder;
+              recorder.ondataavailable=function(e){
+                if(engineAttempt===attempt && attempt.segment===seg && !attemptInterrupted && !attempt.cancelled && (!seg.closed || seg.reason==="done") && e.data && e.data.size)chunks.push(e.data);
+              };
+              recorder.start();
+            }catch(e){seg.recorder=null;rec=null;}}
+            recognitionStart(); engineOn=true; micGo(true);
+            function micLive(){
+              if(!micOk||!micStream)return false;
+              try{var t=micStream.getAudioTracks()[0];return !t||(t.readyState==="live"&&!t.muted);}catch(e){return true;}
             }
-          } else { silent++; voiced=0; if(silent>=3){ try{ mw.classList.remove("hear"); }catch(e){} } if(silent>=8) inBurst=false; }
-          requestAnimationFrame(tick);
-        })();
-        // hard cap so nobody is ever stuck
-        setTimeout(function(){ if(engineOn){ stopAll(); } },20000);
+            function armIdle(){
+              if(idleDisabled||nudges>=2)return;
+              later(function(){
+                if(reps!==0||!micLive()){idleDisabled=true;return;}
+                nudges++;playPrompt();nextNudge=activeMs()+8000;armIdle();
+              },nextNudge-activeMs());
+            }
+            armIdle();
+            var mw=$("micWrap");
+            function tick(){
+              if(!current() || practicePaused)return;
+              if(speaking||ttsPlaying){silent++;voiced=0;inBurst=false;try{mw.classList.remove("hear");}catch(e){}seg.raf=requestAnimationFrame(tick);return;}
+              an.getByteTimeDomainData(td);
+              var sum=0;for(var i=0;i<td.length;i++){var d=(td[i]-128)/128;sum+=d*d;}
+              var rms=Math.sqrt(sum/td.length),active=activeMs(),now=clockBase+active;
+              if(active<250){calSum+=rms;calN++;seg.raf=requestAnimationFrame(tick);return;}
+              if(!thr)thr=Math.max(0.035,(calSum/Math.max(1,calN))*3.0);
+              if(rms>thr){
+                voiced++;silent=0;try{mw.classList.add("hear");}catch(e){}
+                an.getByteFrequencyData(fd);shapeFrame(fd,binHz);
+                if(!inBurst&&voiced>=4&&now-lastRep>350){
+                  inBurst=true;lastRep=now;reps++;paintReps(reps);sfx("tap");
+                  if(reps===3&&NEED>=5){try{if(S&&S.pop)S.pop("Way to go!",{color:"#ffd21c"});}catch(e){}}
+                  var l=$("leo");l.classList.remove("cheer");void l.offsetWidth;l.classList.add("cheer");
+                  if(reps>=NEED){successAt=activeMs()+350;later(function(){seg.finish("done");},350);return;}
+                }
+              }else{silent++;voiced=0;if(silent>=3){try{mw.classList.remove("hear");}catch(e){}}if(silent>=8)inBurst=false;}
+              seg.raf=requestAnimationFrame(tick);
+            }
+            later(function(){seg.finish("done");},20000-activeMs());
+            if(successAt!==null)later(function(){seg.finish("done");},successAt-activeMs());else tick();
+          }catch(e){seg.finish("cancel");}
+        });}
+        (async function(){
+          while(!closed()){
+            if(!(await practiceReady())||closed()){finishAttempt(false);return;}
+            if(!(await acquirePracticeMic())){
+              if(practicePaused&&!closed())continue;
+              finishAttempt(false);return;
+            }
+            if(closed()){finishAttempt(false);return;}
+            if(practicePaused)continue;
+            // A suspended analyser is not listening. Start the attempt clock
+            // only after the browser has actually resumed its audio context.
+            var epoch=practiceEpoch;
+            try{
+              await audioSuspend;
+              if(epoch!==practiceEpoch||practicePaused||closed())continue;
+              var ctx=getCtx();
+              if(ctx&&ctx.state==="suspended")await ctx.resume();
+            }catch(e){pausePractice();continue;}
+            if(epoch!==practiceEpoch||practicePaused||closed()||document.hidden)continue;
+            var result=await runSegment();
+            if(result==="cancel"||closed()){finishAttempt(false);return;}
+            if(result==="done"){
+              if(!(await practiceReady())||closed()){finishAttempt(false);return;}
+              finishAttempt(true);return;
+            }
+          }
+          finishAttempt(false);
+        })().catch(function(){control.cancel();});
       });
     }
-
-    function clipBlob(){ return chunks.length?new Blob(chunks,{type:(rec&&rec.mimeType)||"audio/webm"}):null; }
-    // Tri-state verdict: "pass" / "fail" (the scorer really heard a different
-    // sound) / "unknown" (no scorer, timeout, error — never punish the kid for
-    // infrastructure, and never log made-up data).
-    // Every rung is judged on-device now. The shape gate answers a narrower
-    // question than a phoneme scorer did — "did that sound like this sound"
-    // rather than "was that word right" — and it never leaves the phone.
-    // The verdict. On the shell the on-device transcript rules first:
-    //   pass — a real attempt at the word, or anything carrying the sound
-    //   fail — intelligible words with none of the target sound ("poopoo")
-    //   unknown — nothing transcribed → the spectral check decides, exactly
-    //             as before. Apple's models are adult-tuned, so a child the
-    //             recognizer can't parse must never fail BECAUSE of it.
+    function clipBlob(){return !attemptInterrupted&&chunks.length?new Blob(chunks,{type:(rec&&rec.mimeType)||"audio/webm"}):null;}
+    // The same tri-state verdict, using only local evidence from this attempt.
+    // A pause does not erase an earlier transcript or change its scoring rule.
     async function verifyClip(){
+      await recognitionStop();
       try{
-        if(S&&S.speechStop&&S.hearVerdict){
-          var r=await S.speechStop();
-          if(r&&typeof r.text==="string"){
-            var hv=S.hearVerdict(r.text, SOUND, String(ITEM.word||ITEM.t||""));
-            try{ window.__hear={text:r.text,verdict:hv}; }catch(e){}
-            if(hv!=="unknown") return hv;
-          }
+        if(S&&S.hearVerdict){
+          var text=recognitionTexts.join(" ");
+          var hv=S.hearVerdict(text,SOUND,String(ITEM.word||ITEM.t||""));
+          try{window.__hear={text:text,verdict:hv};}catch(e){}
+          if(hv!=="unknown")return hv;
         }
       }catch(e){}
       return shapeVerdict();
@@ -923,12 +1150,8 @@
       micGo(true);
       // back to the listening frame (coaching may have set idle + Almost! line)
       try{ $("sayLbl").textContent="Say"; var lm=$("leo"); if(lm&&lm.src) lm.src="/coach/echo/echo-listening.svg"; }catch(e){}
-      // HEAR1: on the shell, run Apple's ON-DEVICE recognizer alongside the
-      // spectral engine for this round. Biased toward the target word
-      // (contextualStrings) so a single practice word transcribes well.
-      // Fire-and-forget: if it cannot start, the round is exactly as before.
-      try{ if(S&&S.speechStart) S.speechStart({ words:[String(ITEM.word||ITEM.t||"").toLowerCase()], maxMs: 9000 }); }catch(e){}
-      await startEngine();
+      // The engine owns recognition and mic segments, including resumed ones.
+      if(!(await startEngine()) || !(await practiceReady())){NEED=save;return null;}
       if(reps>0)anyReps=true;
       attemptsTotal+=reps;
       // RING1: every honest counted rep ticks the kid-visible daily number
@@ -936,7 +1159,9 @@
       NEED=save;
       micGo(false); $("gpState").textContent="Echo's thinking…";
       var l=$("leo"); try{ l.classList.add("think"); }catch(e){}
-      var v=await verifyClip(); logV(v);
+      var v=await verifyClip();
+      if(!(await practiceReady()))return null;
+      logV(v);
       try{ l.classList.remove("think"); }catch(e){}
       return v;
     }
@@ -951,7 +1176,10 @@
           if(st&&st.state==="granted"){ try{ localStorage.setItem("sona.micok","1"); }catch(e){} return; }
           return new Promise(function(res){
             $("micPrime").classList.add("show");
-            $("micPrimeBtn").onclick=function(){ $("micPrime").classList.remove("show"); res(); };
+            $("micPrimeBtn").onclick=function(){
+              if(practicePaused || practiceClosed || document.hidden)return;
+              $("micPrime").classList.remove("show"); res();
+            };
             // soft decline: a parent who isn't ready leaves WITHOUT burning the
             // OS prompt (a denied OS dialog is near-unrecoverable) — the primer
             // simply asks again next time.
@@ -961,6 +1189,7 @@
             // than a door closing. Still no OS prompt, still no sona.micok:
             // the primer asks again next time exactly as before.
             var sk=$("micPrimeSkip"); if(sk) sk.onclick=function(){
+              if(practicePaused || practiceClosed || document.hidden)return;
               var card=$("micPrime").querySelector(".ovlCard");
               if(!card){ location.href="/today.html"; return; }
               card.innerHTML='<img class="ovlEcho" src="/coach/echo/echo-idle.svg" alt="" />'
@@ -969,8 +1198,8 @@
                 +'<p style="font-weight:800;font-size:11.5px;color:var(--muted);line-height:1.5;">Grown-ups: you can turn the microphone on whenever you like, from this screen or your phone\'s Settings.</p>'
                 +'<button class="btn" id="micByeBtn">Okay</button>';
               var b=card.querySelector("#micByeBtn");
-              if(b) b.onclick=function(){ location.href="/today.html"; };
-              setTimeout(function(){ if($("micPrime").classList.contains("show")) location.href="/today.html"; }, 8000);
+              if(b) b.onclick=goPracticeHome;
+              practiceDelay(8000).then(function(ready){ if(ready&&$("micPrime").classList.contains("show")){goPracticeHome();} });
             };
           });
         });
@@ -986,8 +1215,7 @@
       // anything in between and the browser dialog appears seconds after the
       // tap that asked for it.
       await micPrimer();
-      try{ micStream=await navigator.mediaDevices.getUserMedia({audio:true,video:false}); micOk=true; try{ localStorage.setItem("sona.micok","1"); }catch(e){} }
-      catch(e){ micOk=false; micGo(false); if(S&&S.micDenied)S.micDenied({back:"/today.html"}); return; }
+      if(!(await acquirePracticeMic()))return;
       // HEAR1: the speech-recognition permission is its own OS dialog on the
       // shell. Asked AFTER the mic grant, deliberately — the mic prompt must
       // ride directly on the primer tap (storytest pins that), and the mic
@@ -1009,6 +1237,7 @@
       }catch(e){}
       // Leo speaks the prompt ONCE, then the mic is instantly hot.
       await playPrompt();
+      if(!(await practiceReady()))return;
       // 🐢 IS AVAILABLE FROM THE FIRST TRY, NOT AS A CONSOLATION PRIZE.
       // showTurtle(true) used to live only inside the wrong-sound branch, so
       // the child who most needed to hear the model slowly had to fail first
@@ -1018,6 +1247,7 @@
       // own `if(speaking) return` means repeated taps cannot stack.
       showTurtle(true);
       var v=await burstAndVerify();
+      if(v===null || !(await practiceReady()))return;
       // One honest PASSED clip a day is kept ON-DEVICE (never uploaded) so the
       // parent can hear first-try vs today on the Progress "Listen" shelf.
       if(v==="pass"){ try{
@@ -1051,7 +1281,9 @@
         var tip=(c&&c.tip?c.tip.split("—")[0]:"").trim().replace(/[.!,]+$/,"")||("Let's try our "+soundName()+" sound again");
         showTurtle(true); // already on since the prompt; harmless if the round stepped down
         await say("Hmm, that was a different sound! "+tip+". Try again!");
+        if(!(await practiceReady()))return;
         v=await burstAndVerify(3);
+        if(v===null || !(await practiceReady()))return;
         if(v==="fail" && useRung>0){
           // Step-down: two honest misses → Echo's OWN idea is an easier
           // same-sound target from one rung below, so the round still ends
@@ -1067,7 +1299,9 @@
             try{ $("sayLbl").textContent="Echo's idea — say"; }catch(e){}
             $("gpState").textContent="An easier one — you've got this!";
             await say("Okay, I have an idea! Let's try something easier. "+(ITEM.level==="isolation"?("Make your "+soundName()+" sound"):("Say "+(ITEM.say||ITEM.t)))+"!");
+            if(!(await practiceReady()))return;
             v=await burstAndVerify(3);
+            if(v===null || !(await practiceReady()))return;
             if(v==="pass"){ $("gpState").textContent="YES! That's the one!"; await say((S&&S.praiseLine)?S.praiseLine():"You did it!"); }
           }
         }
@@ -1075,6 +1309,7 @@
           await say("Great practicing! Let's play — we'll keep working on it!");
         }
       }
+      if(!(await practiceReady()))return;
       // real reps happened → the rotation moves (skip button and mic-denied
       // rounds never count; quality already gated the rung above).
       // The daily run counts too — it is how most children practice, and while
@@ -1097,6 +1332,9 @@
       // source, never the penalty: a quiet child isn't scolded, they're just
       // asked once more, and the meter doesn't pretend it filled.
       if(!anyReps){ showQuiet(); return; }
+      // Save the earned step before the chest. Home must not make a child
+      // repeat this practice or lose an unopened sticker chest.
+      if(isDaily&&run){run.ready={round:run.round,chest:ringDoneNow?{taps:0,opened:false,sticker:null}:null};runSave(run);}
       if(ringDoneNow){ showChest(launchGame); } else { launchGame(); }
     }
     // three-beat treasure chest on completing the daily goal ring: tease
@@ -1105,32 +1343,46 @@
     // honest scoring gates stars and rungs, never the chest. Stickers deal in
     // fixed sticker-book order: every open wins, no rarity, no duds.
     var chestTaps=0;
+    function showChestReveal(stk){
+      $("chestStage").style.display="none";
+      $("chestStk").textContent=stk?stk.e:"⭐";
+      $("chestName").textContent=stk?("You found the "+stk.name+" sticker!"):"Superstar!";
+      $("chestReveal").style.display="block";
+    }
     function showChest(next){
+      var saved=isDaily&&run&&run.ready&&run.ready.round===run.round?run.ready.chest:null;
+      chestTaps=saved?Math.max(0,Math.min(3,saved.taps|0)):0;
       $("chestOvl").classList.add("show");
       sfx("complete");
+      if(saved&&saved.opened){chestTaps=3;showChestReveal(saved.sticker);}
+      else if(chestTaps)$("chestCap").textContent=chestTaps===1?"Tap, tap!":"One more tap!";
       $("chestBox").onclick=function(){
+        if(practicePaused || practiceClosed || document.hidden || chestTaps>=3)return;
         chestTaps++;
         sfx("tap");
         var box=$("chestBox");
         box.classList.remove("thump"); void box.offsetWidth; box.classList.add("thump");
+        if(saved){saved.taps=chestTaps;runSave(run);}
         if(chestTaps<3){ $("chestCap").textContent=(chestTaps===1)?"Tap, tap!":"One more tap!"; return; }
         box.onclick=null;
         var stk=null; try{ stk=(S&&S.awardNextSticker)?S.awardNextSticker():null; }catch(e){}
+        if(saved){saved.opened=true;saved.sticker=stk;runSave(run);}
         try{ if(S&&S.confetti)S.confetti(); }catch(e){}
-        $("chestStage").style.display="none";
-        $("chestStk").textContent=stk?stk.e:"⭐";
-        $("chestName").textContent=stk?("You found the "+stk.name+" sticker!"):"Superstar!";
-        $("chestReveal").style.display="block";
-        // the tomorrow-hook, in Echo's voice at the day's peak moment (the one
-        // safe streak borrowing: forward pull, no breakable number)
+        showChestReveal(stk);
         try{ say("You did all of today's practice! Come back tomorrow — I'll have a new adventure ready!"); }catch(e){}
       };
-      $("chestClaim").onclick=function(){ $("chestOvl").classList.remove("show"); next(); };
+      $("chestClaim").onclick=function(){
+        if(practicePaused || practiceClosed || document.hidden || chestTaps<3)return;
+        $("chestClaim").onclick=null;
+        if(saved){run.ready.chest=null;runSave(run);}
+        $("chestOvl").classList.remove("show"); next();
+      };
     }
 
     // A round that heard nothing ends here rather than at the arcade. Warm on
     // purpose — the child gets Echo asking again, not a failure screen.
     function showQuiet(){
+      practiceTerminal=true; stopMic(); cancelPracticeAudio();
       try{ $("gp").classList.remove("show"); }catch(e){}
       var q=$("quietOvl");
       if(!q){
@@ -1147,7 +1399,8 @@
       var g=document.getElementById("quietGo");
       if(g) g.onclick=function(){ location.reload(); };
     }
-    function launchGame(){
+    async function launchGame(){
+      if(!(await practiceReady()))return;
       if(launched)return; launched=true;
       if(anyReps) tele("practice completed",{sound:SOUND,game:GMETA.n,duration_seconds:Math.round((performance.now()-T0)/1000),attempts_count:attemptsTotal});
       stopMic(); try{ showTurtle(false); }catch(e){}
@@ -1160,11 +1413,14 @@
       sfx("complete"); try{ if(S&&S.confetti)S.confetti(); }catch(e){}
       try{ sessionStorage.setItem("sona.play.token",GAME); sessionStorage.setItem("sona.boost.sound",SOUND); sessionStorage.removeItem("sona.play.active"); }catch(e){}
       if(isDaily&&run){ run.pending=true; runSave(run); }
-      setTimeout(function(){ location.href="/"+GAME+"?from=charge"+(isDaily?"&daily=1":""); },700);
+      if(await practiceDelay(700)){
+        await closePractice(); location.href="/"+GAME+"?from=charge"+(isDaily?"&daily=1":"");
+      }
     }
 
     // ---- daily overlays ----
     function showPlayed(){
+      practiceTerminal=true;
       var d=S.dailyInfo();
       $("playedSub").textContent="Today's arcade score: "+d.score+" · Best arcade score: "+d.best+". Choose another game whenever you're ready.";
       $("playedOvl").classList.add("show");
@@ -1173,6 +1429,7 @@
     $("playedHome").onclick=function(){ location.href="/today.html"; };
 
     function finishRun(){
+      practiceTerminal=true;
       // On a replay the score is still SHOWN — a child who just played deserves
       // to see what they scored — it simply is not banked: no daily record, no
       // session, no level, no coins.
@@ -1250,29 +1507,44 @@
     $("runArcade").onclick=function(){ location.href="/activities.html"; };
 
     // ---- chrome ----
-    function stopMic(){ try{ if(micStream)micStream.getTracks().forEach(function(t){t.stop();}); }catch(e){} }
+    function stopMic(){
+      try{if(micStream)micStream.getTracks().forEach(function(t){t.stop();});}catch(e){}
+      micStream=null; micOk=false;
+    }
     // grown-up escape: LONG-PRESS (2s) the ✕ skips practice into the game
     // (replaces the kid-visible skip button). A normal tap still exits.
     // The close control used to launch the game outright on a 2-second hold —
     // an undocumented bypass a child finds by resting a thumb on it. Close is
     // just close now.
-    $("close").onclick=function(){ stopMic(); location.href="/today.html"; };
-    // Locking the phone must release the mic and silence Echo. pagehide alone
-    // never fired on lock, so the indicator stayed on and TTS kept talking.
-    function goQuiet(){ stopMic(); try{ window.speechSynthesis && speechSynthesis.cancel(); }catch(e){} }
-    if(S&&S.onBackground) S.onBackground(goQuiet); else window.addEventListener("pagehide",goQuiet);
-
-    // ---- boot: auto-start — the voice speaks, then it's GO. No tap gate. ----
-    if(finishedNow){ finishRun(); }
-    else if(isDaily && !(run&&run.active) && S&&S.dailyInfo&&S.dailyInfo().playedToday){ showPlayed(); }
+    $("close").onclick=goPracticeHome;
+    // Lock / app switch / bfcache entry all release the mic and wait for an
+    // explicit Resume. A foreground event alone must never turn it back on.
+    if(S&&S.onBackground) S.onBackground(pausePractice);
     else {
-      var booted=false;
-      function boot(){ if(booted||launched)return; booted=true; getCtx(); flow(); }
-      // silent gesture hook: if the browser blocked audio, the first touch
-      // resumes it — no visible "tap to start" anywhere
-      document.body.addEventListener("pointerdown",function(){ try{ getCtx(); }catch(e){} },{passive:true});
-      setTimeout(boot,300);
+      document.addEventListener("visibilitychange",function(){if(document.hidden)pausePractice();});
+      window.addEventListener("pagehide",pausePractice);
     }
+
+    // Boot and resume share a single flow; resuming never starts another round.
+    var booted=false;
+    async function boot(){
+      if(booted)return; booted=true;
+      if(!(await practiceReady()))return;
+      if(finishedNow){finishRun();return;}
+      if(isDaily && !(run&&run.active) && S&&S.dailyInfo&&S.dailyInfo().playedToday){showPlayed();return;}
+      // Going Home during the earned game's loading step keeps that game earned.
+      if(isDaily&&run&&run.active){
+        if(run.ready&&run.ready.round===run.round&&run.ready.chest){showChest(launchGame);return;}
+        if(run.pending||(run.ready&&run.ready.round===run.round)){launchGame();return;}
+      }
+      getCtx(); flow();
+    }
+    document.body.addEventListener("pointerdown",function(){
+      if(practicePaused || practiceClosed || document.hidden)return;
+      try{getCtx();}catch(e){}
+    },{passive:true});
+    if(finishedNow || (isDaily && !(run&&run.active)))boot();
+    else setTimeout(boot,300);
   </script>
 </body>
 </html>

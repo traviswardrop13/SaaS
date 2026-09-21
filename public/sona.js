@@ -2078,6 +2078,7 @@
   // soft buzz on a miss, and confetti on a win. Synthesized so there are no
   // files to ship and nothing to wait on.
   let _ac = null, _master = null;
+  const _sfxNodes = new Set();
   function ac() {
     try { if (!_ac) { _ac = new (window.AudioContext || window.webkitAudioContext)(); _master = _ac.createGain(); _master.gain.value = 0.9; _master.connect(_ac.destination); } if (_ac.state === "suspended") _ac.resume(); } catch (e) {}
     return _ac;
@@ -2094,11 +2095,15 @@
     g.gain.exponentialRampToValueAtTime(peak, t0 + 0.015);
     g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
     o.connect(g); g.connect(_master || a.destination);
+    const voice = {o, g}; _sfxNodes.add(voice);
+    o.onended = () => { _sfxNodes.delete(voice); try { o.disconnect(); g.disconnect(); } catch (e) {} };
     o.start(t0); o.stop(t0 + dur + 0.03);
   }
   const tone = note; // back-comat
   // richer than plain beeps: core note + a soft octave/overtone shimmer
   const sfx = {
+    // Stop scheduled notes too, so they cannot play when an audio context wakes.
+    stop() { for (const {o, g} of _sfxNodes) { try { o.stop(); } catch (e) {} try { o.disconnect(); g.disconnect(); } catch (e) {} } _sfxNodes.clear(); },
     tap()      { note(660, 0, 0.06, "triangle", 0.10); note(990, 0.005, 0.05, "sine", 0.04); },
     correct()  { [523.25, 659.25, 783.99].forEach((f, i) => { note(f, i * 0.08, 0.18, "sine", 0.16); note(f * 2, i * 0.08, 0.12, "sine", 0.05); }); }, // warm C-E-G + shimmer
     wrong()    { note(330, 0, 0.16, "sine", 0.07); note(247, 0.1, 0.2, "sine", 0.07); },                  // gentle, never harsh
