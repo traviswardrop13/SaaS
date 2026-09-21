@@ -46,12 +46,14 @@ const ob = await page.evaluate(() => ({
 ok("beta step removed", !ob.betaStep);
 ok("a parent walks five screens, not ten", ob.segs === 5, "segs=" + ob.segs);
 ok("buddy is preselected, so it never needs to be a step", ob.preselected);
-// One door survives the cut: a family who already paid or has a save
-// elsewhere. The clinician door is GONE — the SLP side is hidden (Travis,
-// 19 Sep 2026: not a priority), and a door onto a hidden product is a
-// question every parent would be asked for nobody's benefit.
-ok("the clinician door is off the first screen — the SLP side is hidden", !ob.clinicianDoor);
-ok("…and the returning-family door is still there", ob.restoreDoor);
+// BOTH DOORS ARE BACK. The clinician door was removed on 19 Sep while the
+// SLP side was hidden and restored on 21 Sep when SLPs became the channel —
+// it is the only entrance to the clinician setup flow, so if it goes again
+// that flow becomes dead code. The other is a family who already paid or has
+// a save elsewhere. Both used to be reachable only by answering a question
+// every parent was asked.
+ok("the clinician door is on the first screen — SLPs are the channel", ob.clinicianDoor);
+ok("…and so is the returning-family door", ob.restoreDoor);
 
 // ── one mascot at a time ──
 // Every bubble in setup is Echo speaking, and the buddy is the CHILD's pick.

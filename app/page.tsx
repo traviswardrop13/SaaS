@@ -460,7 +460,7 @@ export default async function Landing() {
           <CtaButton />
           <div style={{ fontSize: 11.5, fontWeight: 700, color: MUTED, margin: "12px 0 22px" }}>{finalFootnote}</div>
           <div style={{ fontSize: 11.5, fontWeight: 700, color: MUTED, borderTop: `2px solid ${LINE}`, paddingTop: 14 }}>
-            speaksona.com · <a href="/privacy" style={{ color: MUTED }}>Privacy</a> · <a href="/terms" style={{ color: MUTED }}>Terms</a><br />Made with a licensed pediatric SLP
+            speaksona.com · <a href="/privacy" style={{ color: MUTED }}>Privacy</a> · <a href="/terms" style={{ color: MUTED }}>Terms</a> · <a href="/for-slps.html" style={{ color: MUTED }}>For SLPs</a><br />Made with a licensed pediatric SLP
           </div>
         </section>
       </div>

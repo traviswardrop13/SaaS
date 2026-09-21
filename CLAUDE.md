@@ -194,15 +194,21 @@ an SLP or clinic anywhere in the product: the SLP channel produces engaged
 families and zero revenue by design. Entitlement is never granted from a URL
 parameter.
 
-**The SLP side is HIDDEN, not deleted** (Travis, 19 Sep 2026: "not a
-priority"). Nothing links to it: the clinician door left onboarding, the
-"working with a speech therapist?" card left the plan screen and the trial
-page, and the SLP pages carry `noindex`. `for-slps.html`, `slp.html`,
-`slp-login.html`, `join.html`, the settings SLP corner (renders only for
-`role === "slp"`) and every `/api/slp/*` route stay, reachable by direct
-link, because clinicians already onboarded and their free-forever families are
-a promise that hiding must not break. `betatest`, `progtest` and `slpcode`
-pin the doors shut.
+**THE SLP SIDE IS THE CHANNEL** (Travis, 21 Sep 2026: "im keeping it free.
+targetting slps first"). It was hidden on 19 Sep as "not a priority" and that
+is now reversed: the clinician door is back on the first setup screen — it is
+the only entrance to `ORDER_SLP`, so removing it again makes that whole
+branch dead code — `for-slps.html` is indexable and linked from the landing
+footer, and `betatest` pins the door OPEN.
+
+Still `noindex`, correctly: `slp.html` and `slp-login.html` (a private
+dashboard and its login) and `join.html` (a family's redemption link, which
+carries a credential in the URL). Those are surfaces, not marketing.
+
+Not restored, deliberately: the "working with a speech therapist?" card on the
+plan screen and the trial page. Sona is free, so neither screen renders —
+bringing them back now would be copy nobody sees, and `progtest` and
+`slpcode` pin their absence. They return with pricing, if at all.
 
 ## The clinician's dashboard: carryover, in the honest register
 **The SLP dashboard (`public/slp.html`) is built around ONE problem — carryover
