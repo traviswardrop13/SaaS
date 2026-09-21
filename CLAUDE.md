@@ -204,6 +204,47 @@ link, because clinicians already onboarded and their free-forever families are
 a promise that hiding must not break. `betatest`, `progtest` and `slpcode`
 pin the doors shut.
 
+## The clinician's dashboard: carryover, in the honest register
+**The SLP dashboard (`public/slp.html`) is built around ONE problem — carryover
+(Travis, 21 Sep 2026):** a child goes home, practises, and the clinician can
+see that it happened and paste it into a note. Not "assigning homework"
+(table stakes), not income. So the page is Today (who practised this week,
+who went quiet, what ends soon — one action per row) → Caseload (every child,
+oldest-practised first, **Copy note on every row**) → a child page (8-week
+strip, pass rate by sound and position, the current homework, the composer)
+→ Settings. Reviewed by three lenses — a school SLP, a district privacy
+officer, an engineer — whose rulings are now rules:
+- **Register.** "Pass rate" (defined on the page as "did that sound like this
+  sound"), "practice", "homework". Never "accuracy", "score", "adherence",
+  "therapy", "treatment", "diagnosis", and no credential in an example name.
+  `tests/slptest.mjs` scans the page with comments stripped.
+- **`SMALL_N = 20`.** Under twenty attempts a pass rate is "too few to read"
+  and no percentage is shown — anywhere: table, grid, strip, note, CSV. One
+  constant; whether a percentage is shown at all is Rachel's call.
+- **The note is a fixed template** and carries its own hedge: "Between {start}
+  and {end}, {Name} practised on {n} of {N} days ({avg} tries a day). {Sound}
+  in {position}: {pass}% pass rate over {attempts} attempts. A practice
+  snapshot from at-home listening on the family's device; not an evaluation."
+  Window = the current homework, else the last 14 days. Never an age.
+- **No caseload-wide average.** An unweighted mean of percentages across
+  children is meaningless; the one number is "N of M children practised this
+  week". No leaderboard, no ranking, no comparison across families — a
+  district officer ends the app's use on that alone.
+- **Invites hold initials, never a name.** The SLP may add a child before the
+  family joins, but the placeholder is a label ("MK"), an optional age and a
+  target; the family types the name when they join, so nobody at a school or
+  clinic ever sends Sona a student's name. Unclaimed invites delete
+  themselves after 30 days. The claim fires only on the parent's "Yes, share
+  progress" — never on link open — and "No thanks" leaves the SLP seeing "not
+  joined", never "declined".
+- **Remove means delete.** Removing a child deletes the roster row and the
+  homework AND tombstones the child (`slpgone:<code>`) so the device's next
+  sync cannot resurrect them; the dialog promises exactly that, and that
+  nothing on the family's device is touched. The words ship only with the
+  routes.
+- **One family door.** Every generated link is `join.html?slp=CODE&k=KEY`
+  (`&inv=TOKEN` per child). The message says "free", never "pilot" or "trial".
+
 ## The day: practice, then games
 **The books are parked, and Home leads with practice (Travis, 19 Sep 2026).**
 The stories "suck and don't even work"; they relaunch in Q4 once they are
