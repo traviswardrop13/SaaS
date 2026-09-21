@@ -254,7 +254,7 @@
         section.appendChild(heading);
         section.appendChild(node("p", "group-description", group.id === "arcade"
           ? "A little sound practice, then your game. Pick your favourite."
-          : "Easy, untimed play with a hungry Echo."));
+          : "Pop, discover and play together. There’s no rush."));
         var grid = node("div", "game-grid" + (group.games.length === 1 ? " single" : ""));
         group.games.forEach(function (game) { grid.appendChild(gameCard(game, group.games.length === 1)); });
         section.appendChild(grid);

@@ -2263,8 +2263,12 @@
     run:   { name: "Sound Sprint",  sub: "Say it 5× to play",          go: "/charge.html?game=arcade-run.html", group: "arcade", playDescription: "Switch lanes and collect coins." },
     glide: { name: "Flappy Glide",  sub: "Say it 5× to play",          go: "/charge.html?game=arcade-glide.html", group: "arcade", playDescription: "Tap to glide through the gaps." },
     feed:  { name: "Feed Echo",     sub: "Say it & tap — Echo's hungry!", go: "/arcade-feed.html", group: "simple", playDescription: "Find the picture and feed Echo. No timer." },
+    bubbles: { name: "Bubble Pop", sub: "Pop, discover and say it together", go: "/arcade-bubbles.html", group: "simple", playDescription: "Pop a bubble. Find a little surprise." },
+    peekaboo: { name: "Peekaboo", sub: "Open a door and say it together", go: "/arcade-peekaboo.html", group: "simple", playDescription: "Knock, knock! See what’s hiding." },
   };
+  // Preserve the existing story and mystery deck; new library games stand alone.
   const GAME_KEYS = ["slice", "tiles", "stack", "run", "glide", "feed"];
+  const ACTIVITY_KEYS = GAME_KEYS.concat(["bubbles", "peekaboo"]);
   function gameAct(key) { return GAME_ACTS[key] || null; }
 
   // Age suggests a style of play, never access or a speech target. Keep this
@@ -2282,7 +2286,7 @@
       return {
         id: group.id, name: group.name, ageLabel: group.ageLabel,
         description: group.description, recommended: group.id === recommended,
-        games: GAME_KEYS.filter(function (key) {
+        games: ACTIVITY_KEYS.filter(function (key) {
           return GAME_ACTS[key].group === group.id;
         }).map(function (key) {
           var act = GAME_ACTS[key];
@@ -2297,7 +2301,7 @@
   // its own practice/reward loop and remains an independent game choice.
   // A started adventure keeps its order when a family pauses over midnight.
   function adventureGames(firstGame) {
-    var deck = GAME_KEYS.filter(function (key) { return key !== "feed"; });
+    var deck = GAME_KEYS.filter(function (key) { return GAME_ACTS[key].group === "arcade"; });
     var count = Math.min(ROT_LEN, deck.length);
     try {
       var run = JSON.parse(sessionStorage.getItem(RUNKEY) || "null");
@@ -3035,6 +3039,7 @@
   const GAME_STICKER = {
     slice: ["st-fruit", "sky"], run: ["st-sprint", "mint"], stack: ["st-blocks", "sky"],
     tiles: ["st-piano", "sky"], glide: ["st-balloon", "sky"], feed: ["p-echo-idle", "mint"],
+    bubbles: ["st-bubbles", "sky"], peekaboo: ["st-peekaboo", "peach"],
     story: ["st-story", "peach"], chapter: ["st-story", "peach"],
   };
   function gameSticker(key) { return GAME_STICKER[String(key || "").replace(/^arcade-|\.html$/g, "")] || GAME_STICKER.story; }

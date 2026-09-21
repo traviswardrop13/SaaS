@@ -29,6 +29,7 @@ const SUITES = [
   "activitytest.mjs", // play library: age suggestions, game routes, safe browsing and fit
   "pausetest.mjs", // interruptions preserve one practice flow and release local device resources
   "completiontest.mjs", // adventure recap, honest history, finish routes and prompt volume
+  "simpleplaytest.mjs", // Bubble Pop and Peekaboo: deliberate play, honest voice feedback, safe interruption
   "feedtest.mjs",  // Feed Echo: littles tap-and-say loop, growth, deck placement
   "iaptest.mjs",   // Apple IAP rail: native paywall, purchase/restore, web untouched
   "heartest.mjs",  // HEAR1: on-device recognition verdicts — poopoo fails, unknown never does

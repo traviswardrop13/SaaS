@@ -2,8 +2,9 @@
 // active child's age, and never turns browsing into practice or a purchase.
 import { createServer } from "http";
 import { existsSync, readFileSync } from "fs";
-import { chromium, ROOT, launchOpts } from "./_env.mjs";
+import { chromium, ROOT as SOURCE_ROOT, launchOpts } from "./_env.mjs";
 
+const ROOT = process.env.SONATEST_PUBLIC_ROOT || SOURCE_ROOT;
 const BASE = "http://localhost:8188";
 const MIME = { html: "text/html", js: "text/javascript", css: "text/css", svg: "image/svg+xml", png: "image/png", webp: "image/webp", woff2: "font/woff2" };
 const srv = createServer((req, res) => {
@@ -25,7 +26,9 @@ async function section(name, fn) {
   try { await fn(); }
   catch (error) { ok(name + " completes without a browser/test exception", false, error.message); }
 }
-const allKeys = ["feed", "glide", "run", "slice", "stack", "tiles"];
+const simpleKeys = ["bubbles", "feed", "peekaboo"];
+const arcadeKeys = ["glide", "run", "slice", "stack", "tiles"];
+const allKeys = [...simpleKeys, ...arcadeKeys].sort();
 const sorted = (values) => [...values].sort();
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 
@@ -47,7 +50,7 @@ async function fixture({ age = "4", paid = false, viewport = { width: 390, heigh
       }
     }
   }, { age, paid });
-  const pg = await ctx.newPage();
+  const pg = await ctx.newPage(); pg.setDefaultTimeout(5000);
   const errors = [];
   pg.on("pageerror", (error) => errors.push(error.message));
   const response = await pg.goto(BASE + path);
@@ -110,7 +113,7 @@ if (present && hasContract) {
         const label = "age " + JSON.stringify(age);
         ok(label + ": recommendation uses only a valid supported age", model.recommended === recommended, model.recommended);
         ok(label + ": both play groups remain available", same(sorted(model.groups.map((g) => g.id)), ["arcade", "simple"]), model.groups);
-        ok(label + ": all six games remain available", same(sorted(model.groups.flatMap((g) => g.games.map((game) => game.key))), allKeys));
+        ok(label + ": all eight games remain available", same(sorted(model.groups.flatMap((g) => g.games.map((game) => game.key))), allKeys));
         ok(label + ": only the recommended group is marked",
           model.groups.every((g) => g.recommended === (g.id === recommended)), model.groups.map((g) => ({ id: g.id, recommended: g.recommended })));
         if (recommended) ok(label + ": the recommended group comes first", model.groups[0]?.id === recommended, model.groups.map((g) => g.id));
@@ -118,8 +121,9 @@ if (present && hasContract) {
       const model = await pg.evaluate(() => Sona.activityLibrary());
       const simple = model.groups.find((g) => g.id === "simple");
       const arcade = model.groups.find((g) => g.id === "arcade");
-      ok("Simple play contains Feed Echo", same(simple.games.map((g) => g.key), ["feed"]));
-      ok("Arcade contains the five earned arcade games", same(sorted(arcade.games.map((g) => g.key)), allKeys.filter((key) => key !== "feed")));
+      ok("Simple play contains Feed Echo, Bubble Pop and Peekaboo", same(sorted(simple.games.map((g) => g.key)), simpleKeys));
+      ok("the daily adventure remains five arcade games", same(sorted(await pg.evaluate(() => Sona.adventureGames())), arcadeKeys));
+      ok("Arcade contains the five earned arcade games", same(sorted(arcade.games.map((g) => g.key)), arcadeKeys));
       ok("Arcade's age label presents the suggested 5–8 range", /5\s*[–—-]\s*8/.test(arcade.ageLabel), arcade.ageLabel);
       ok("every game has a usable name, description and destination",
         model.groups.every((g) => [g.name, g.ageLabel, g.description].every((v) => typeof v === "string" && v.trim())
@@ -132,7 +136,7 @@ if (present && hasContract) {
       const { ctx, pg, errors } = await fixture({ age });
       try {
         ok("age " + age + ": the browser title names the play library", /play library/i.test(await pg.title()), await pg.title());
-        ok("age " + age + ": All games initially shows six games", same(sorted(await visibleGames(pg)), allKeys));
+        ok("age " + age + ": All games initially shows eight games", same(sorted(await visibleGames(pg)), allKeys));
         const recommended = age === "4" ? "simple" : age == null ? null : "arcade";
         if (recommended) ok("age " + age + ": recommended cards render first", (await visibleGroups(pg))[0] === recommended);
         const games = await pg.evaluate(() => Sona.activityLibrary().groups.flatMap((g) => g.games));
@@ -144,13 +148,13 @@ if (present && hasContract) {
         }
         ok("age " + age + ": All games exposes selected state", await filter(pg, "All games").getAttribute("aria-pressed") === "true");
         await filter(pg, "Simple play").click();
-        ok("age " + age + ": Simple play filters to Feed Echo", same(await visibleGames(pg), ["feed"]));
+        ok("age " + age + ": Simple play filters to three simple games", same(sorted(await visibleGames(pg)), simpleKeys));
         ok("age " + age + ": only Simple play is selected",
           await filter(pg, "Simple play").getAttribute("aria-pressed") === "true"
             && await filter(pg, "All games").getAttribute("aria-pressed") === "false"
             && await filter(pg, "Arcade").getAttribute("aria-pressed") === "false");
         await filter(pg, "Arcade").click();
-        ok("age " + age + ": Arcade filters to all five arcade games", same(sorted(await visibleGames(pg)), allKeys.filter((key) => key !== "feed")));
+        ok("age " + age + ": Arcade filters to all five arcade games", same(sorted(await visibleGames(pg)), arcadeKeys));
         await filter(pg, "All games").click();
         ok("age " + age + ": All games restores every game", same(sorted(await visibleGames(pg)), allKeys));
         ok("age " + age + ": no runtime errors", errors.length === 0, errors);
@@ -195,11 +199,13 @@ if (present && hasContract) {
     try {
       for (const key of allKeys) {
         await pg.goto(BASE + "/activities.html");
-        await pg.locator('button[data-game="' + key + '"]').click();
-        await pg.waitForURL(key === "feed" ? /\/arcade-feed\.html(?:[?#]|$)/ : /\/charge\.html\?/);
+        const button = pg.locator('button[data-game="' + key + '"]');
+        if (!(await button.count())) { ok(key + ": launch card exists", false); continue; }
+        await button.click();
+        await pg.waitForURL(simpleKeys.includes(key) ? new RegExp("/arcade-" + key + "\\.html(?:[?#]|$)") : /\/charge\.html\?/);
         const url = new URL(pg.url());
         ok(key + ": launch follows the existing practice route",
-          key === "feed" ? url.pathname === "/arcade-feed.html"
+          simpleKeys.includes(key) ? url.pathname === "/arcade-" + key + ".html"
             : url.pathname === "/charge.html" && url.searchParams.get("game") === "arcade-" + key + ".html"
               && url.searchParams.get("daily") !== "1", pg.url());
       }
@@ -213,7 +219,9 @@ if (present && hasContract) {
       const before = await state(pg);
       ok("a gated family can still browse all games", same(sorted(await visibleGames(pg)), allKeys));
       for (const key of allKeys) {
-        await pg.locator('button[data-game="' + key + '"]').click();
+        const button = pg.locator('button[data-game="' + key + '"]');
+        if (!(await button.count())) { ok(key + ": launch card exists", false); continue; }
+        await button.click();
         await pg.waitForTimeout(50);
         const stayed = new URL(pg.url()).pathname === "/activities.html";
         ok(key + ": a gated click stays in the library instead of a paywall", stayed, pg.url());
@@ -234,7 +242,7 @@ if (present && hasContract) {
       await pg.keyboard.press("Tab");
       ok("Tab reaches the next filter", await filter(pg, "Simple play").evaluate((el) => el === document.activeElement));
       await pg.keyboard.press("Enter");
-      ok("Enter activates the Simple play filter", same(await visibleGames(pg), ["feed"]));
+      ok("Enter activates the Simple play filter", same(sorted(await visibleGames(pg)), simpleKeys));
       await filter(pg, "Arcade").focus();
       await pg.keyboard.press("Space");
       ok("Space activates the Arcade filter", (await visibleGames(pg)).length === 5);
