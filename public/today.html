@@ -130,6 +130,14 @@
       #wrap{height:auto;min-height:100dvh;overflow:visible;}
       #heroCard{height:auto;min-height:230px;}
     }
+    /* Very short portrait screens need room for the game's two-line
+       preview. Let the family scroll instead of stacking it over labels. */
+    @media (orientation:portrait) and (max-height:650px){
+      html,body{overflow:auto;height:auto;overscroll-behavior:auto;}
+      #wrap{height:auto;min-height:100dvh;overflow:visible;}
+      #heroWrap{flex:none;}
+      #heroCard{height:200px;min-height:200px;}
+    }
     @media (max-height:760px){
       #wrap{gap:10px;}
 
@@ -345,7 +353,7 @@
     function runUnderway(){
       try{
         var r=JSON.parse(sessionStorage.getItem("sona.run.v1")||"null");
-        return (r&&r.active&&(r.round|0)>0) ? r : null;
+        return (r&&r.active&&(r.round|0)>=0&&(r.round|0)<S.adventureGames().length) ? r : null;
       }catch(e){ return null; }
     }
     // Homework is already honoured under the hood — rotSounds() puts the SLP's
@@ -358,22 +366,25 @@
     function renderHero(){
       var hero=$("heroCard");
       var mid=runUnderway();
+      var adventure=S.adventureGames();
+      var nextGame=adventure[mid?(mid.round|0):0];
+      var nextName=S.gameAct(nextGame).name;
       if(mid&&!demoOnlyHero()){
         hero.innerHTML="";
-        applyArt(hero,"slice");
+        applyArt(hero,nextGame);
         $("heroName").textContent="Keep going!";
-        $("heroSub").textContent="You're on round "+((mid.round|0)+1)+" of today's adventure";
+        $("heroSub").textContent="You're on round "+((mid.round|0)+1)+" of "+adventure.length+" · Next game: "+nextName;
         $("goBtn").textContent="CARRY ON!";
-        $("goBtn").dataset.launch="/charge.html?daily=1";
+        $("goBtn").dataset.launch="/charge.html?daily=1&first="+adventure[0];
         return;
       }
       if(demoOnlyHero()){
         hero.innerHTML="";
-        applyArt(hero,"slice");
+        applyArt(hero,nextGame);
         $("heroName").textContent="Practice with Echo";
-        $("heroSub").textContent="Say your sounds and play — the round you know";
+        $("heroSub").textContent="Say your sounds, then play "+nextName;
         $("goBtn").textContent="LET'S PRACTICE!";
-        $("goBtn").dataset.launch="/charge.html?daily=1&demo=1";
+        $("goBtn").dataset.launch="/charge.html?daily=1&demo=1&first="+adventure[0];
         return;
       }
       if(playedToday()){
@@ -388,18 +399,19 @@
         return;
       }
       // today's adventure: five rounds of practice, and the games they earn.
-      // The art is the first of today's games — the thing the first round wins.
+      // Preview the adventure's first earned game; the trio below is a
+      // separate choice of individual activities, not this run's itinerary.
       hero.innerHTML="";
-      applyArt(hero,TRIO[0]||"slice");
+      applyArt(hero,nextGame);
       // a child who has never practised is starting, not resuming, and the
       // button should say the bigger thing exactly once
       var firstEver=false;
       try{ firstEver=!(S&&S.demoState&&S.demoState().started)&&!(S&&S.repsToday&&S.repsToday()); }catch(e){}
       $("heroName").textContent=firstEver?"Your first adventure":"Today's adventure";
       var hn=homeworkNote();
-      $("heroSub").innerHTML=(hn?hn+" · ":"")+"Say your sounds — every round earns a game";
+      $("heroSub").textContent=(hn?hn+" · ":"")+adventure.length+" rounds of practice and games · First: "+nextName;
       $("goBtn").textContent=firstEver?"START YOUR FIRST ADVENTURE":"LET'S PLAY!";
-      $("goBtn").dataset.launch="/charge.html?daily=1";
+      $("goBtn").dataset.launch="/charge.html?daily=1&first="+adventure[0];
     }
 
     function renderThumbs(){
@@ -417,7 +429,7 @@
       var show=(played&&!gatedNow)?TRIO.slice(1):TRIO;
       // one piece of lock language, and it says what OPENS them rather than
       // that they are shut
-      $("upNextLbl").textContent=gatedNow?"MORE GAMES":(played?"UP NEXT":"TODAY’S GAMES");
+      $("upNextLbl").textContent=gatedNow?"MORE GAMES":"PICK A GAME";
       show.forEach(function(k){
         var act=(S.gameAct&&S.gameAct(k))||{name:"Game",go:"/today.html"};
         var el=document.createElement("div");

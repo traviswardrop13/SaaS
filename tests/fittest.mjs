@@ -81,6 +81,45 @@ for (const [dev, w, h] of PORTRAIT) {
   await page.close();
 }
 
+// A small portrait screen may scroll, but the longer adventure preview must
+// still occupy its own space between the star jar and the game choices.
+{
+  const page = await browser.newPage({ viewport: { width: 320, height: 568 } });
+  await page.addInitScript(() => {
+    localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Leo", focusSounds: ["R"], onboarded: true, earlyAdopter: true }));
+    localStorage.setItem("sona.micok", "1");
+  });
+  await measure(page, "today.html");
+  const layout = await page.evaluate(() => {
+    const rect = (id) => {
+      const r = document.getElementById(id).getBoundingClientRect();
+      return { top: r.top, bottom: r.bottom };
+    };
+    return { jar: rect("jarRow"), hero: rect("heroCard"), caption: rect("heroCap"), choices: rect("upNextLbl") };
+  });
+  ok("small portrait today: the hero clears the star jar",
+    layout.jar.bottom <= layout.hero.top + 1, JSON.stringify(layout));
+  ok("small portrait today: the caption clears the game choices",
+    layout.caption.bottom <= layout.choices.top + 1, JSON.stringify(layout));
+  // Exercise actual scrolling, rather than accepting a CTA positioned below
+  // the screen inside an overflow-hidden container.
+  await page.mouse.wheel(0, 1000);
+  await page.waitForTimeout(200);
+  const cta = await page.evaluate(() => {
+    const button = document.getElementById("goBtn");
+    const r = button.getBoundingClientRect();
+    const target = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+    return {
+      visible: r.top >= 0 && r.bottom <= innerHeight && r.left >= 0 && r.right <= innerWidth,
+      reachable: target === button || button.contains(target),
+      overflowX: document.documentElement.scrollWidth - innerWidth,
+    };
+  });
+  ok("small portrait today: the adventure button is reachable after scrolling", cta.visible && cta.reachable, JSON.stringify(cta));
+  ok("small portrait today: no sideways overflow", cta.overflowX <= 1, JSON.stringify(cta));
+  await page.close();
+}
+
 for (const [dev, w, h] of LANDSCAPE) {
   const page = await browser.newPage({ viewport: { width: w, height: h } });
   await page.addInitScript(() => {

@@ -329,15 +329,11 @@
     var LEVEL=parseInt(qp.get("level"),10)||1;
     var NEED=(S?S.chargeState().need:5);
     var GAMES={ "arcade-slice.html":{e:"🍉",n:"Fruit Slice"}, "arcade-stack.html":{e:"🧱",n:"Block Stacker"}, "arcade-tiles.html":{e:"🎹",n:"Piano Tiles"}, "arcade-run.html":{e:"🏃",n:"Sound Sprint"}, "arcade-glide.html":{e:"🎈",n:"Flappy Glide"} };
-    // The Daily Run = one pass of the arcade, ordered by the date, so tomorrow
-    // opens on a different game than today. Its length MUST equal Sona.ROT_LEN
-    // (5) — the goal ring, the chest and today.html's path all count to that,
-    // so a 4-round run left the ring one short and the chest unreachable.
-    var ALL_ARCADE=["arcade-slice.html","arcade-tiles.html","arcade-stack.html","arcade-run.html","arcade-glide.html"];
-    var _dayOff=(S&&S.dayNum)?(S.dayNum()%ALL_ARCADE.length):0;
-    var _runLen=Math.min((S&&S.ROT_LEN)||5,ALL_ARCADE.length);
-    var DAILY_SEQ=[];
-    for(var _q=0;_q<_runLen;_q++) DAILY_SEQ.push(ALL_ARCADE[(_dayOff+_q)%ALL_ARCADE.length]);
+    // The shared plan also paints Home's preview. Keep all ROT_LEN rounds:
+    // practice progression, the ring and the chest still depend on that length.
+    var ADVENTURE=S.adventureGames(qp.get("first"));
+    var _runLen=Math.min((S&&S.ROT_LEN)||5,ADVENTURE.length);
+    var DAILY_SEQ=ADVENTURE.slice(0,_runLen).map(function(key){ return "arcade-"+key+".html"; });
 
     // ---- mode: daily run vs free play ----
     var isDaily = qp.get("daily")==="1" || qp.get("session")==="1";
@@ -359,6 +355,9 @@
         if(S&&S.dailyInfo&&S.dailyInfo().playedToday){ /* shown at boot */ }
         else { run={active:true,round:0,sum:0,scores:[],sound:SOUND,level:LEVEL,pending:false,demo:DEMO_REPLAY}; runSave(run); }
       } else { SOUND=(run.sound||SOUND).toUpperCase(); LEVEL=run.level||LEVEL; }
+      // Snapshot new adventures and migrate older runs without resetting any
+      // earned progress, pending game return or demonstration replay status.
+      if(run&&run.active){ run.games=ADVENTURE.slice(); runSave(run); }
       if(run&&run.active&&run.round>=DAILY_SEQ.length){ finishedNow=true; }
     }
     var GAME = isDaily ? DAILY_SEQ[Math.min(run?run.round:0,DAILY_SEQ.length-1)] : (freeGame||"arcade-slice.html");
