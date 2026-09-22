@@ -60,7 +60,7 @@ async function visibleGames(pg) {
   return pg.locator("#activityGroups button[data-game]:visible").evaluateAll((els) => els.map((el) => el.dataset.game));
 }
 async function visibleGroups(pg) {
-  return pg.locator("#activityGroups [data-group]:visible").evaluateAll((els) => els.map((el) => el.dataset.group));
+  return pg.locator("#activityGroups [data-group]").evaluateAll((els) => els.map((el) => el.dataset.group));
 }
 function filter(pg, name) { return pg.locator("#libraryFilters").getByRole("button", { name, exact: true }); }
 async function state(pg) {
@@ -85,7 +85,7 @@ await section("library prerequisites", async () => {
   try {
     hasContract = await pg.evaluate(() => typeof window.Sona?.activityLibrary === "function");
     ok("Sona provides the activity library content contract", hasContract);
-    const browse = pg.locator("#browseGames");
+    const browse = pg.locator("#libBtn");
     const count = await browse.count();
     ok("Home offers a browse-games link", count === 1, count);
     if (count) {
@@ -101,7 +101,7 @@ if (present && hasContract) {
     try {
       const cases = [
         ["3", "simple"], ["4", "simple"], ["5", "arcade"], ["8", "arcade"], ["14", "arcade"],
-        [null, null], ["", null], ["unknown", null], ["4 years", null], ["5.5", null], ["2", null], ["15", null], ["-1", null],
+        [null, null], ["", null], ["unknown", null], ["4 years", null], ["5.5", null], ["2", "simple"], ["15", null], ["-1", null],
       ];
       for (const [age, recommended] of cases) {
         const model = await pg.evaluate((age) => {
@@ -124,7 +124,7 @@ if (present && hasContract) {
       ok("Simple play contains Feed Echo, Bubble Pop and Peekaboo", same(sorted(simple.games.map((g) => g.key)), simpleKeys));
       ok("the daily adventure remains five arcade games", same(sorted(await pg.evaluate(() => Sona.adventureGames())), arcadeKeys));
       ok("Arcade contains the five earned arcade games", same(sorted(arcade.games.map((g) => g.key)), arcadeKeys));
-      ok("Arcade's age label presents the suggested 5–8 range", /5\s*[–—-]\s*8/.test(arcade.ageLabel), arcade.ageLabel);
+      ok("Arcade's age label presents the approved 5+ range", /5\s*(?:\+|and up)/.test(arcade.ageLabel), arcade.ageLabel);
       ok("every game has a usable name, description and destination",
         model.groups.every((g) => [g.name, g.ageLabel, g.description].every((v) => typeof v === "string" && v.trim())
           && g.games.every((game) => [game.name, game.sub, game.go, game.playDescription].every((v) => typeof v === "string" && v.trim()))));
@@ -146,17 +146,11 @@ if (present && hasContract) {
             await button.count() === 1 && await button.isEnabled()
               && await pg.getByRole("button", { name: new RegExp(game.name, "i") }).count() === 1);
         }
-        ok("age " + age + ": All games exposes selected state", await filter(pg, "All games").getAttribute("aria-pressed") === "true");
-        await filter(pg, "Simple play").click();
-        ok("age " + age + ": Simple play filters to three simple games", same(sorted(await visibleGames(pg)), simpleKeys));
-        ok("age " + age + ": only Simple play is selected",
-          await filter(pg, "Simple play").getAttribute("aria-pressed") === "true"
-            && await filter(pg, "All games").getAttribute("aria-pressed") === "false"
-            && await filter(pg, "Arcade").getAttribute("aria-pressed") === "false");
-        await filter(pg, "Arcade").click();
-        ok("age " + age + ": Arcade filters to all five arcade games", same(sorted(await visibleGames(pg)), arcadeKeys));
-        await filter(pg, "All games").click();
-        ok("age " + age + ": All games restores every game", same(sorted(await visibleGames(pg)), allKeys));
+        ok("age " + age + ": Echo gives one simple invitation", await pg.getByRole("heading", {name:"Pick a game!", exact:true}).count() === 1);
+        ok("age " + age + ": all games are visible without reading filters", await pg.locator("#libraryFilters").count() === 0);
+        const copy = await pg.locator("#libraryApp").innerText();
+        ok("age " + age + ": child choices do not carry age labels or instructions", !/Ages |Suggested|Practise|Practice your|More movement|Take your time/.test(copy),copy);
+        ok("age " + age + ": the picture cards show names without Play rows", await pg.locator(".game-description,.game-play,.game-arrow").count() === 0);
         ok("age " + age + ": no runtime errors", errors.length === 0, errors);
       } finally { await ctx.close(); }
     });
@@ -183,11 +177,9 @@ if (present && hasContract) {
     const { ctx, pg } = await fixture({ path: "/today.html" });
     try {
       const before = await state(pg);
-      await pg.locator("#browseGames").click();
+      await pg.locator("#libBtn").click();
       await pg.waitForURL(/\/activities\.html(?:[?#]|$)/);
-      await filter(pg, "Simple play").click();
-      await filter(pg, "Arcade").click();
-      await filter(pg, "All games").click();
+      await pg.locator("#activityGroups button[data-game]").last().scrollIntoViewIfNeeded();
       ok("browsing/filtering creates no practice, rewards, run, token or entitlement", same(await state(pg), before), { before, after: await state(pg) });
       const parked = await pg.locator("a[href]").evaluateAll((links) => links.map((link) => link.getAttribute("href")).filter((href) => /(?:chapter|story|library)\.html(?:[?#]|$)/.test(href)));
       ok("the play library has no parked reader links", parked.length === 0, parked);
@@ -235,17 +227,40 @@ if (present && hasContract) {
     } finally { await ctx.close(); }
   });
 
+  await section("spoken choices stop safely when the app is hidden", async () => {
+    const { ctx, pg } = await fixture();
+    try {
+      await ctx.route("**/sona.js", route=>route.fulfill({contentType:"text/javascript", body:readFileSync(ROOT+"/sona.js","utf8") + `
+        window.__librarySpeech=[]; window.__voiceEnds=[];
+        Sona.speak=function(text){__librarySpeech.push(text);return Promise.resolve();};
+        Sona.speakNow=function(text){__librarySpeech.push(text);return new Promise(resolve=>__voiceEnds.push(resolve));};
+        Object.defineProperty(document,'hidden',{configurable:true,get:function(){return !!window.__libraryHidden;}});
+      `}));
+      await pg.evaluate(()=>Sona.saveProfile({voiceOn:true,volume:0.5,soundOn:false}));
+      await pg.reload();
+      ok("Echo says the short library invitation", await pg.evaluate(()=>__librarySpeech.includes("Pick a game!")));
+      const pick=pg.locator('button[data-game="bubbles"]');
+      await pick.click();
+      if(new URL(pg.url()).pathname!=='/activities.html'){ok("the spoken choice stays in the library until its voice finishes",false,pg.url());return;}
+      ok("a tapped game speaks its name without child data", await pg.evaluate(()=>__librarySpeech.includes("Bubble Pop") && !__librarySpeech.some(t=>/Mia/.test(t))));
+      await pg.evaluate(()=>{window.__libraryHidden=true;document.dispatchEvent(new Event('visibilitychange'));});
+      await pg.waitForTimeout(1500);
+      ok("backgrounding cancels the delayed launch", new URL(pg.url()).pathname==='/activities.html',pg.url());
+      await pg.evaluate(()=>{window.__libraryHidden=false;document.dispatchEvent(new Event('visibilitychange'));});
+      await ctx.route('**/arcade-peekaboo.html',route=>route.fulfill({contentType:'text/html',body:'<p>Game destination</p>'}));
+      await pg.locator('button[data-game="peekaboo"]').click();
+      await pg.evaluate(()=>__voiceEnds.forEach(end=>end()));
+      await pg.waitForURL(/arcade-peekaboo\.html/);
+      ok("stale voice completion cannot override the latest choice", new URL(pg.url()).pathname==='/arcade-peekaboo.html');
+    }finally{await ctx.close();}
+  });
+
   await section("keyboard filters and launch", async () => {
     const { ctx, pg } = await fixture({ age: "8" });
     try {
-      await filter(pg, "All games").focus();
-      await pg.keyboard.press("Tab");
-      ok("Tab reaches the next filter", await filter(pg, "Simple play").evaluate((el) => el === document.activeElement));
-      await pg.keyboard.press("Enter");
-      ok("Enter activates the Simple play filter", same(sorted(await visibleGames(pg)), simpleKeys));
-      await filter(pg, "Arcade").focus();
-      await pg.keyboard.press("Space");
-      ok("Space activates the Arcade filter", (await visibleGames(pg)).length === 5);
+      const first = pg.locator("#activityGroups button[data-game]").first();
+      await first.focus(); await pg.keyboard.press("Tab");
+      ok("Tab reaches the next game directly", await pg.locator("#activityGroups button[data-game]").nth(1).evaluate(el=>el===document.activeElement));
       const launch = pg.locator("#activityGroups button[data-game]:visible").first();
       const key = await launch.getAttribute("data-game");
       await launch.focus(); await pg.keyboard.press("Enter");
@@ -258,6 +273,9 @@ if (present && hasContract) {
     await section("library fits " + viewport.width + "px", async () => {
       const { ctx, pg } = await fixture({ age: "8", viewport });
       try {
+        const tiles = await pg.locator("#activityGroups button[data-game]").evaluateAll(els=>els.map(el=>{const r=el.getBoundingClientRect();return {x:r.x,y:el.offsetTop,w:r.width,h:r.height};}));
+        const columns=tiles.filter(t=>Math.abs(t.y-tiles[0].y)<2).length;
+        ok(viewport.width + "px: large square pictures form the right grid", columns===(viewport.width>=600?3:2)&&tiles.every(t=>Math.abs(t.w-t.h)<2),tiles);
         const overflow = await pg.evaluate(() => Math.max(document.documentElement.scrollWidth, document.body.scrollWidth) - innerWidth);
         ok(viewport.width + "px: library has no horizontal overflow", overflow <= 1, overflow);
         await pg.mouse.move(viewport.width / 2, viewport.height / 2);

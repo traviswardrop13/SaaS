@@ -57,7 +57,7 @@
       <li><strong>Practice activity</strong> — which games and sounds are practiced, attempts, scores,
         streaks, and progress, so the app can show progress and adapt the level.</li>
       <li><strong>Voice recordings</strong> — when a child practices, Sona records short audio clips of
-        them saying the target words so their pronunciation can be scored and feedback can be given.</li>
+        practice for local playback. The sound checks run on the device; Sona does not receive these clips.</li>
       <li><strong>Optional names you provide</strong> — if you add names of family members or friends
         to personalize daily stories, that text is used to generate those stories.</li>
       <li><strong>Payment information</strong> — handled by our payment processor (Stripe). We do not
@@ -76,20 +76,15 @@
     </ul>
 
     <h2>How voice recordings are handled</h2>
-    <!-- This section described a cloud speech-scoring provider that Sona no
-         longer uses. Scoring moved onto the device and the upload path was
-         deleted; the policy kept describing the old flow. What follows is what
-         the code actually does — and it understates nothing: there is no
-         mechanism in the app that can send a recording anywhere. -->
-    <p><strong>Your child's voice never leaves the device.</strong> The microphone is on only
-    during practice, and every check happens on the phone or tablet itself — the app listens for
-    the shape of the target sound locally and decides there. No recording is uploaded to Sona or
-    to anyone else, and there is no feature in the app that could send one.</p>
-    <p>So that a grown-up can hear how practice is going, the app may keep <strong>one short clip
-    per day</strong> in the device's own storage. It stays on that device, it is never transmitted,
-    and clearing the app's data removes it.</p>
-    <p>Because no recording is ever collected, we cannot and do not use children's recordings for
-    advertising, sell them, share them with anyone, or use them to build advertising profiles.</p>
+    <p><strong>Sona checks practice sounds on the phone.</strong> The mic listens during practice
+    and optional voice-enabled games. Sona never uploads your child's recordings or uses a cloud
+    service to check their speech.</p>
+    <p>The app may keep <strong>one clear practice try per child per day</strong> in the device's
+    own storage so a grown-up can listen back. It stays on that device. A grown-up can choose
+    to share a saved clip using the phone's share sheet; the selected app or recipient then
+    handles that copy. Clearing the app's data removes the local clips.</p>
+    <p>Sona does not collect children's recordings for advertising, sell them, or use them
+    to build advertising profiles.</p>
 
     <h2>Service providers we share data with</h2>
     <p>We share limited information with trusted providers only so the service can function:</p>

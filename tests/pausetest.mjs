@@ -48,7 +48,7 @@ function fakeDevice(config) {
   const nativeSetTimeout = window.setTimeout.bind(window), nativeClearTimeout = window.clearTimeout.bind(window);
   let timerSeq = 1;
   window.setTimeout = function (fn, delay, ...args) {
-    const t = { id: timerSeq++, delay: Number(delay) || 0, active: true, nativeId: null, held: h.holdTimers && ((Number(delay) >= 699 && Number(delay) <= 701) || Number(delay) >= 7900) };
+    const t = { id: timerSeq++, delay: Number(delay) || 0, active: true, nativeId: null, held: h.holdTimers && ((Number(delay) >= 1199 && Number(delay) <= 1201) || Number(delay) >= 7900) };
     t.fire = () => { if (!t.active) return; t.active = false; if (t.nativeId != null) nativeClearTimeout(t.nativeId); if (typeof fn === 'function') fn(...args); };
     h.timers.push(t);
     if (!t.held) t.nativeId = nativeSetTimeout(t.fire, t.delay);
@@ -102,8 +102,16 @@ function fakeDevice(config) {
   FakeAudioContext.prototype.createAnalyser = function () {
     return {
       fftSize: 512, frequencyBinCount: 256,
-      getByteTimeDomainData(data) { data.fill(h.voice && this.graph && this.graph.connected && this.graph.stream.track.readyState === 'live' ? 160 : 128); },
-      getByteFrequencyData(data) { data.fill(0); data[2] = 240; data[3] = 255; },
+      // A sustained harmonic waveform represents voiced input. A constant DC
+      // level must not bypass the production non-speech rejection.
+      getByteTimeDomainData(data) {
+        const live = h.voice && this.graph && this.graph.connected && this.graph.stream.track.readyState === 'live';
+        for (let i = 0; i < data.length; i++) {
+          const phase = 2 * Math.PI * 187.5 * i / 48000;
+          data[i] = live ? Math.round(128 + 22*Math.sin(phase) + 16*Math.sin(2*phase) + 12*Math.sin(3*phase) + 9*Math.sin(4*phase)) : 128;
+        }
+      },
+      getByteFrequencyData(data) { data.fill(0); if (h.voice) for (const bin of [2,4,6,8]) data[bin] = 230; },
       disconnect() {},
     };
   };
@@ -151,6 +159,7 @@ function fakeDevice(config) {
     localStorage.setItem('sona.test.pauseSeed', '1');
     localStorage.setItem('sona.freeera.v1', 'post'); localStorage.setItem('sona.freeera2.v1', 'done'); localStorage.setItem('sona.freeera3.v1', 'done');
     if (!config.firstMic) localStorage.setItem('sona.micok', '1');
+    if (config.replay) localStorage.setItem('sona.demo.v1', JSON.stringify({started:Date.now()-1000,done:Date.now()}));
     localStorage.setItem('sona.profile.v1', JSON.stringify({ childName: 'Mia', childAge: '7', focusSounds: ['R'], onboarded: true, earlyAdopter: true, voiceOn: false, soundOn: false, volume: 0 }));
     const d = new Date(), day = [d.getFullYear(), String(d.getMonth() + 1).padStart(2, '0'), String(d.getDate()).padStart(2, '0')].join('-');
     const n = config.round || 0;
@@ -158,7 +167,7 @@ function fakeDevice(config) {
     localStorage.setItem('sona.reps.v1', JSON.stringify({ d: day, n: n * 5 }));
     localStorage.setItem('sona.rotation.v1', JSON.stringify({ i: 0, r: n }));
     localStorage.setItem('sona.progress.v1', JSON.stringify({ sessions: [], totals: { sessions: 0, words: 0, stars: 0, coins: 0, rounds: n }, streak: { count: 0, lastDate: '' }, bySound: {}, stage: {}, chests: {}, missed: [] }));
-    sessionStorage.setItem('sona.run.v1', JSON.stringify({ active: true, round: n, scores: Array(n).fill(7), sum: n * 7, sound: 'R', level: 1, pending: !!config.pending, demo: false, games: config.games }));
+    sessionStorage.setItem('sona.run.v1', JSON.stringify({ active: true, round: n, scores: Array(n).fill(7), sum: n * 7, sound: 'R', level: 1, pending: !!config.pending, demo: !!config.replay, games: config.games, tries: n * 5, ready: config.legacyChest ? { round:n, chest:{ taps:2, opened:false, sticker:null } } : null }));
   }
 }
 
@@ -168,7 +177,7 @@ async function fresh(config = {}) {
   await context.addInitScript(fakeDevice, { ...config, games });
   const page = await context.newPage(); page.setDefaultTimeout(5000); page.setDefaultNavigationTimeout(5000);
   const errors = []; page.on('pageerror', (error) => errors.push(error.message));
-  await page.goto(origin + '/charge.html?daily=1');
+  await page.goto(origin + '/charge.html?daily=1' + (config.replay ? '&demo=1' : ''));
   if (config.feedback) await page.evaluate(() => {
     const original = window.say;
     window.say = function (text) {
@@ -186,7 +195,7 @@ async function listening(page) {
 async function bursts(page, count) {
   for (let i = 0; i < count; i++) {
     await page.evaluate(() => { __pauseHarness.voice = true; });
-    await page.waitForTimeout(230);
+    await page.waitForTimeout(270);
     await page.evaluate(() => { __pauseHarness.voice = false; });
     await page.waitForTimeout(220);
   }
@@ -224,7 +233,7 @@ async function resources(page) {
     graphs: __pauseHarness.graphs.filter((g) => g.connected).length,
     recording: __pauseHarness.recorders.filter((r) => r.state === 'recording').length,
     effects: __pauseHarness.effects.slice(),
-    meter: document.querySelectorAll('#tktSegs .on').length,
+    meter: document.querySelectorAll('#reveals .fr:not(.ghost), #reveals .blk:not(.glass), #reveals .slab:not(.glass), #reveals .key.on').length,
     target: document.getElementById('bTarget')?.textContent || '',
     audio: __pauseHarness.mediaPlays + __pauseHarness.speechPlays,
   }));
@@ -237,6 +246,18 @@ async function earned(page) {
 }
 async function settledGame(page) {
   await page.waitForFunction(() => JSON.parse(sessionStorage.getItem('sona.run.v1')).pending, {}, { polling: 30 });
+}
+async function finalChest(page, practice = true) {
+  if (practice) { await listening(page); await bursts(page, 5); }
+  await settledGame(page);
+  ok('the final earned game launches before its chest', !(await page.locator('#chestOvl').isVisible()));
+  await page.evaluate(() => __pauseHarness.flushHeld(1200));
+  await page.waitForURL('**/arcade-glide.html?**');
+  // The game-return contract banks a pending, legitimately earned fifth game.
+  await page.goto(origin + '/charge.html?daily=1&banked=9');
+  await page.locator('#runOvl.show').waitFor();
+  ok('all five games are banked before the final surprise', await page.evaluate(() => JSON.parse(sessionStorage.getItem('sona.run.v1')).round === 5));
+  await click(page, '#runChest'); await page.locator('#chestOvl.show').waitFor();
 }
 function clean(name, errors) { ok(name + ' has no page errors', errors.length === 0, errors); }
 
@@ -344,6 +365,22 @@ await scenario('partial practice survives repeated pause and resume', async () =
   } finally { await context.close(); }
 });
 
+await scenario('positive heard demo replay creates no new practice credit', async () => {
+  const { context, page, errors } = await fresh({ round: 2, replay: true });
+  try {
+    await listening(page);
+    const before = await earned(page), rotation = await page.evaluate(() => localStorage.getItem('sona.rotation.v1'));
+    await bursts(page, 2);
+    ok('replay fixture contains two genuinely heard attempts', (await resources(page)).meter === 2);
+    await bursts(page, 3); await settledGame(page);
+    const after = await earned(page);
+    ok('five heard replay attempts still reach their earned game', after.run.pending && await page.evaluate(() => attemptsTotal === 5 && JSON.parse(sessionStorage.getItem('sona.run.v1')).tries === 10));
+    delete before.run; delete after.run;
+    ok('heard replay leaves ring, rotation, outcomes, reps and rewards unchanged', same(before, after) && rotation === await page.evaluate(() => localStorage.getItem('sona.rotation.v1')), after);
+    clean('positive heard replay', errors);
+  } finally { await context.close(); }
+});
+
 await scenario('a verifier response arrives while paused', async () => {
   const { context, page, errors } = await fresh({ verify: 'deferred' });
   try {
@@ -389,7 +426,7 @@ await scenario('earned game waits for Resume and survives Home', async () => {
   try {
     await listening(page); await bursts(page, 5); await settledGame(page);
     const before = await earned(page), visible = await pause(page);
-    await page.evaluate(() => __pauseHarness.flushHeld(700)); await page.waitForTimeout(60);
+    await page.evaluate(() => __pauseHarness.flushHeld(1200)); await page.waitForTimeout(60);
     ok('an earned game never launches in the background', page.url().includes('/charge.html'));
     ok('pause after earning a game preserves its reward once', same(before, await earned(page)));
     if (!visible) return;
@@ -410,12 +447,12 @@ await scenario('earned game waits for Resume and survives Home', async () => {
 await scenario('chest reveal and claim cannot run behind pause', async () => {
   const { context, page, errors } = await fresh({ round: 4 });
   try {
-    await listening(page); await bursts(page, 5); await page.locator('#chestOvl.show').waitFor();
+    await finalChest(page);
     await click(page, '#chestBox'); await click(page, '#chestBox');
     const before = await earned(page), visible = await pause(page);
     if (visible) await focusStaysInPause(page, 'chestOvl');
     await click(page, '#chestBox'); await click(page, '#chestClaim');
-    await page.evaluate(() => __pauseHarness.flushHeld(700)); await page.waitForTimeout(40);
+    await page.evaluate(() => __pauseHarness.flushHeld(1200)); await page.waitForTimeout(40);
     ok('queued chest actions award nothing while paused', same(before, await earned(page)));
     ok('queued chest claim cannot leave practice while paused', page.url().includes('/charge.html'));
     if (!visible) return;
@@ -428,17 +465,17 @@ await scenario('chest reveal and claim cannot run behind pause', async () => {
     await pause(page); await resume(page);
     const afterSecondPause = await resources(page);
     ok('resuming the revealed chest preserves its existing sticker', same(beforeSecondPause, await earned(page)) && afterSecondPause.effects.filter((e) => e === 'awardNextSticker').length === 1);
-    await click(page, '#chestClaim'); await settledGame(page);
-    ok('claim continues to its game without advancing another round', (await earned(page)).ring.n === before.ring.n);
+    await click(page, '#chestClaim'); await page.locator('#runDone').waitFor();
+    ok('claim continues to the farewell without advancing another round', (await earned(page)).ring.n === before.ring.n && await page.locator('#runTitle').innerText() === 'See you next time!');
     clean('chest resume', errors);
   } finally { await context.close(); }
 });
 
-await scenario('Home preserves both unopened and revealed chests', async () => {
-  const { context, page, errors } = await fresh({ round: 4 });
+await scenario('Home preserves both unopened and revealed legacy chests', async () => {
+  const { context, page, errors } = await fresh({ round: 4, legacyChest: true });
   try {
-    await listening(page); await bursts(page, 5); await page.locator('#chestOvl.show').waitFor();
-    await click(page, '#chestBox'); await click(page, '#chestBox');
+    await finalChest(page, false);
+    ok('the legacy two-tap chest is retained after game five', (await page.locator('#chestCap').innerText()).trim() === 'One more tap!');
     const before = await earned(page), visible = await pause(page);
     if (!visible) return;
     await page.evaluate(() => __pauseHarness.foreground()); await click(page, '#pauseHome');
@@ -456,8 +493,8 @@ await scenario('Home preserves both unopened and revealed chests', async () => {
     const reopened = await resources(page);
     ok('Home restores the same revealed sticker without another award', (await page.locator('#chestName').innerText()) === name && reopened.effects.filter((e) => e === 'awardNextSticker').length === 0 && samePractice(revealed, await earned(page)));
     ok('revealed chest restore does not reopen the microphone', reopened.requests === 0 && reopened.graphs === 0, reopened);
-    await click(page, '#chestClaim'); await settledGame(page);
-    ok('restored chest claim keeps one completed practice round', (await earned(page)).ring.n === before.ring.n);
+    await click(page, '#chestClaim'); await page.locator('#runDone').waitFor();
+    ok('restored chest claim keeps existing completed practice', (await earned(page)).ring.n === before.ring.n);
     clean('chest Home restore', errors);
   } finally { await context.close(); }
 });

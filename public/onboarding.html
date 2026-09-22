@@ -36,10 +36,14 @@
       border-left:2px solid var(--line);border-bottom:2px solid var(--line);transform:rotate(45deg);}
     /* step swap: gentle slide/fade; re-fires each time a step becomes active */
     .step{display:none;animation:fade .25s ease;} .step.on{display:block;animation:sona-slide-up .42s cubic-bezier(.2,.8,.3,1) both;}
-    /* "building the plan" beat — pure theater over the next step: it never
-       intercepts taps (pointer-events:none) and fades itself out */
-    #obBuild{position:fixed;inset:0;z-index:60;background:rgba(255,246,233,.96);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:10px;padding:30px;opacity:0;pointer-events:none;transition:opacity .3s ease;}
-    #obBuild.show{opacity:1;}
+    /* A calm, bounded transition makes the parent's answers visible before
+       the explicit handoff. It never navigates away from setup by itself. */
+    #obBuild{position:fixed;inset:0;z-index:60;background:#fff6e9;display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:14px;padding:30px;}
+    #obBuild.show{display:flex;}
+    #obBuildT{font-family:"Baloo 2";font-size:24px;line-height:1.25;}
+    #obBuildAnswers{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;max-width:340px;}
+    #obBuildAnswers span{padding:9px 13px;border-radius:14px;background:#fff;border:1px solid var(--line);font-weight:800;opacity:0;transform:translateY(6px);transition:opacity .25s,transform .25s;}
+    #obBuildAnswers span.on{opacity:1;transform:none;}
     #obBuild img{width:110px;height:110px;object-fit:contain;animation:obBob 1.1s ease-in-out infinite;}
     @keyframes obBob{0%,100%{transform:translateY(0);}50%{transform:translateY(-8px);}}
     @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
@@ -79,6 +83,32 @@
     .schips{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;}
     .schips .sound{transition:background .2s ease,border-color .2s ease,color .2s ease,transform .05s;}
     .schips .sound:active{transform:translateY(1px);}
+    #obSounds .sound{min-width:76px;flex:1 0 76px;display:flex;flex-direction:column;align-items:center;gap:2px;padding:10px 12px;}
+    #obSounds .sound small{font-family:Nunito,sans-serif;font-size:12px;font-weight:700;color:var(--muted);}
+    .sound:focus-visible,.skip:focus-visible,.btn:focus-visible,#moveLink:focus-visible{outline:3px solid #795534;outline-offset:3px;}
+    [hidden]{display:none!important;}
+    body.ob-world{background:linear-gradient(180deg,#caeafb 0%,#e7f4f8 46%,#fff0d5 100%) fixed;}
+    .ob-world .step.on{text-align:center;}
+    .ob-world .qh{font-size:29px;line-height:1.2;margin:12px auto;max-width:340px;}
+    .ob-world .mascot{justify-content:center;}
+    .ob-world .mascot .leo{display:none!important;}
+    .ob-world .bubble2:before{display:none;}
+    .world-scene{position:relative;isolation:isolate;display:flex;align-items:flex-end;justify-content:center;height:clamp(170px,29vh,250px);margin:14px -18px 0;overflow:hidden;}
+    .world-scene:before{content:"";position:absolute;left:-12%;right:-12%;bottom:-55px;height:95px;border-radius:50%;background:#9edab6;z-index:-1;}
+    .world-scene img{width:clamp(150px,25vh,210px);height:clamp(150px,25vh,210px);object-fit:contain;filter:drop-shadow(0 10px 12px rgba(74,44,20,.12));}
+    body[data-setup-screen="achieve"] .mascot{display:none;}
+    #moveLink{display:inline-block;min-height:44px;padding:10px 0;color:#795534;font-weight:800;}
+    #micNotNow{display:block;margin:14px auto 0;min-height:44px;}
+    #micStatus{font-weight:800;color:#795534;line-height:1.5;margin-top:12px;}
+    .move-sheet{position:fixed;inset:0;z-index:80;background:rgba(74,44,20,.42);display:flex;align-items:flex-end;justify-content:center;padding:20px 16px 0;}
+    .move-card{position:relative;width:100%;max-width:440px;max-height:calc(100dvh - 24px);overflow-y:auto;background:#fff6e9;border-radius:26px 26px 0 0;padding:26px 22px calc(24px + env(safe-area-inset-bottom));box-shadow:0 -8px 40px rgba(74,44,20,.14);}
+    .move-card h2{padding-right:34px;}
+    .move-card p{line-height:1.5;margin:10px 0;}
+    #moveClose{position:absolute;top:12px;right:12px;width:44px;height:44px;font-size:22px;}
+    #moveInput{text-transform:uppercase;letter-spacing:.15em;font-weight:800;}
+    #moveSubmit{margin-top:16px;}
+    #moveError{color:#a74a12;min-height:22px;font-weight:800;}
+    @media(prefers-reduced-motion:reduce){.step.on,.mascot .leo,#obBuild img,.sound.on{animation:none!important;}#obBuildAnswers span{transition:none;}}
     .schips .sound.on{animation:sona-pop .26s cubic-bezier(.2,1.4,.4,1);border-color:#58cc02;background:#f4fce9;color:#3f8f00;box-shadow:0 0 0 3px rgba(88,204,2,.14);}
     /* fixed footer */
     .obfoot{position:fixed;left:0;right:0;bottom:0;background:linear-gradient(180deg,rgba(255,255,255,0),#fff 30%);
@@ -92,7 +122,7 @@
     .skip{background:none;border:none;color:var(--muted);font-weight:800;font-size:15px;cursor:pointer;padding:10px;}
   </style>
 </head>
-<body>
+<body class="ob-world" data-setup-screen="welcome">
   <div class="ob">
     <div class="seg" id="seg"></div>
 
@@ -119,7 +149,8 @@
       <!-- The clinician door ("I'm a speech-language pathologist") is gone from
            here: the SLP side is HIDDEN, not deleted (Travis, 19 Sep 2026 — not a
            priority). ORDER_SLP below is unreachable until it comes back. -->
-      <p class="muted" id="moveRow" style="margin-top:12px;font-size:13px;"><a href="#" id="moveLink"><b>Have a code?</b> Bought Sona on the website or set up in a browser? Enter it here →</a></p>
+      <div class="world-scene" aria-hidden="true"><img src="/coach/echo/echo-listening.svg" alt="" /></div>
+      <p class="muted" id="moveRow" style="margin-top:12px;font-size:13px;"><a href="#" id="moveLink">Moving from another phone? Enter your code</a></p>
     </div>
 
     <!-- role: SLP-first launch. Clinicians get Sona free to hand to their
@@ -167,7 +198,7 @@
            targets would be Sona assessing. Any change to that is Rachel's:
            if "not sure" should narrow by age, it needs her rule, not an
            engineering guess. -->
-      <p class="muted" style="margin-top:12px;font-size:12.5px;">Sona practises — it doesn't test or diagnose. Which sounds a child needs is an SLP's call.</p>
+      <p class="muted" style="margin-top:12px;font-size:12.5px;">Sona practices — it doesn't test or diagnose. Which sounds a child needs is a speech-language pathologist's call.</p>
     </div>
 
     <!-- name -->
@@ -177,9 +208,9 @@
       <p class="muted" style="font-size:13px;margin-top:10px;">Echo cheers them on by name — and the progress report uses it too.</p>
       <p class="muted" style="font-size:13px;margin-top:16px;margin-bottom:2px;"><b style="color:var(--ink);">How old are they?</b> Little ones get simpler tap-and-say games.</p>
       <div class="schips" id="obAge">
-        <div class="sound" data-age="4">3–4</div>
-        <div class="sound" data-age="6">5–6</div>
-        <div class="sound" data-age="8">7+</div>
+        <button type="button" class="sound" data-age="4" aria-pressed="false">2–4</button>
+        <button type="button" class="sound" data-age="6" aria-pressed="false">5–6</button>
+        <button type="button" class="sound" data-age="8" aria-pressed="false">7+</button>
       </div>
     </div>
 
@@ -200,23 +231,18 @@
     <!-- sounds -->
     <div class="step" data-step="sounds">
       <div class="qh">Which sounds are we practicing?</div>
-      <p class="muted">Pick every sound your child is working on — their SLP's targets go right here. You can change these anytime in Settings.</p>
-      <div class="schips" id="obSounds"></div>
+      <p class="muted">Pick the sounds your child is working on. If a speech-language pathologist gave you targets, choose them here. You can change these anytime in Settings.</p>
+      <div class="schips" id="obSounds" aria-label="Practice sounds"></div>
+      <p class="muted" style="font-size:13px;margin-top:14px;">Not sure? Go back and choose “I’m not sure where to start.”</p>
     </div>
 
-    <!-- mic: the last setup step, and the only one that is about the NEXT
-         minute rather than about preferences. It exists so the OS permission
-         dialog on the first round is expected instead of ambushing a parent.
-         The wording mirrors charge.html's primer deliberately: that copy is
-         pinned by mictest because an earlier version described an upload that
-         stopped existing when the cloud scorer was removed. Two screens
-         promising different things about a child's voice is how that happens
-         again. -->
+    <!-- The permission belongs to the grown-up's tap, before the handoff. -->
     <div class="step" data-step="mic">
-      <div class="qh">One thing before you start</div>
-      <p class="muted">Echo listens while <span id="micName">your child</span> practises and cheers the sounds they get right. Your phone will ask permission on the first round.</p>
-      <p class="muted" style="margin-top:12px;font-size:12.5px;line-height:1.55;"><b style="color:var(--ink);">Grown-ups:</b> the mic is on only during practice — never during the games — and every sound is checked on this phone. Nothing is uploaded.</p>
-      <p class="muted" style="margin-top:10px;font-size:12.5px;">Not ready? Say no when your phone asks — Echo will offer again next time, and the rest of Sona still works.</p>
+      <div class="qh">Let Echo hear you</div>
+      <p class="muted">Echo listens while <span id="micName">your child</span> practices. Turn on the microphone now so they're ready to play.</p>
+      <p class="muted" id="micPromise" style="margin-top:14px;font-size:13px;line-height:1.55;"></p>
+      <p id="micStatus" role="status" aria-live="polite"></p>
+      <button type="button" class="skip" id="micNotNow">Not now</button>
     </div>
 
     <!-- daily goal -->
@@ -230,17 +256,11 @@
       </div>
     </div>
 
-    <!-- what's ahead -->
+    <!-- The child takes over only when the grown-up is ready. -->
     <div class="step" data-step="achieve">
-      <div class="qh">Here's what's ahead for <span id="achName">your child</span> <svg viewBox="0 0 24 24" style="width:20px;height:20px;vertical-align:-3px"><path d="M12 2l2.9 6.2 6.6.8-4.9 4.6 1.3 6.6L12 16.9 6.1 20.2l1.3-6.6L2.5 9l6.6-.8Z" fill="#ffd21c" stroke="#f0a800" stroke-width="1.2"/></svg></div>
-      <div class="choices">
-        <div class="choice" style="cursor:default;"><span class="ce"><svg viewBox="0 0 64 64" style="width:30px;height:30px"><g id="ob-mic"><rect x="24" y="7" width="16" height="27" rx="8" fill="#4db3f2"></rect><line x1="29" y1="15" x2="35" y2="15" stroke="#fff" stroke-width="2.5" stroke-linecap="round" opacity=".8"></line><line x1="29" y1="21" x2="35" y2="21" stroke="#fff" stroke-width="2.5" stroke-linecap="round" opacity=".8"></line><path d="M15 30a17 17 0 0 0 34 0" fill="none" stroke="#2a8fd4" stroke-width="5" stroke-linecap="round"></path><line x1="32" y1="47" x2="32" y2="53" stroke="#2a8fd4" stroke-width="5" stroke-linecap="round"></line><line x1="25" y1="56" x2="39" y2="56" stroke="#2a8fd4" stroke-width="5" stroke-linecap="round"></line></g></svg></span> <span>Clearer sounds<br/><span style="font-family:Nunito;font-weight:700;font-size:13px;color:var(--muted);">A few fun minutes of real practice, every day</span></span></div>
-        <div class="choice" style="cursor:default;"><span class="ce"><svg viewBox="0 0 64 64" style="width:30px;height:30px"><g id="ob-flex"><rect x="6" y="27" width="12" height="20" rx="5" fill="#ff8a3d"></rect><rect x="12" y="32" width="27" height="13" rx="6.5" fill="#ffd0a8"></rect><circle cx="25" cy="29" r="8.5" fill="#ffd0a8"></circle><rect x="36.5" y="12" width="13" height="27" rx="6.5" fill="#ffd0a8" transform="rotate(14 43 26)"></rect><circle cx="45" cy="13" r="7.5" fill="#f0b184"></circle><circle cx="22" cy="25" r="2.2" fill="#fff" opacity=".7"></circle></g></svg></span> <span>Confidence<br/><span style="font-family:Nunito;font-weight:700;font-size:13px;color:var(--muted);">Echo cheers every single try — no failing here</span></span></div>
-        <div class="choice" style="cursor:default;"><span class="ce"><svg viewBox="0 0 64 64" style="width:30px;height:30px"><g id="ob-headphones"><path d="M14 38v-6a18 18 0 0 1 36 0v6" fill="none" stroke="#7c88e8" stroke-width="6" stroke-linecap="round"></path><rect x="9" y="35" width="12" height="17" rx="5.5" fill="#6270d4"></rect><rect x="43" y="35" width="12" height="17" rx="5.5" fill="#6270d4"></rect><circle cx="13" cy="39" r="2" fill="#fff" opacity=".6"></circle></g></svg></span> <span>Progress you can hear<br/><span style="font-family:Nunito;font-weight:700;font-size:13px;color:var(--muted);">Recordings + a report you can share with your SLP</span></span></div>
-      </div>
-      <div id="moveCode" style="display:none;margin-top:12px;background:#fff;border:2px solid #ffe2a8;border-radius:14px;padding:11px 14px;font-weight:800;font-size:12.5px;color:#8a6400;text-align:left;"></div>
-      <!-- SLP finale: the auto-created share credential (code + family key) -->
-      <div id="obSlpCred" style="display:none;margin-top:12px;background:#f4fce9;border:2px solid #bce39f;border-radius:14px;padding:13px 15px;text-align:left;"></div>
+      <div class="qh" id="handoffTitle" tabindex="-1">Hand the phone to <span id="achName">your child</span>!</div>
+      <div class="world-scene" aria-hidden="true"><img src="/coach/echo/echo-listening.svg" alt="" /></div>
+      <div id="obSlpCred" hidden style="margin-top:12px;background:#fff;border-radius:14px;padding:13px 15px;text-align:left;"></div>
     </div>
 
     <!-- slp -->
@@ -291,6 +311,17 @@
     </div>
   </div>
 
+  <div class="move-sheet" id="moveSheet" hidden role="dialog" aria-modal="true" aria-labelledby="moveTitle" aria-describedby="moveCopy">
+    <form class="move-card" id="moveForm">
+      <button type="button" class="skip" id="moveClose" aria-label="Close code entry">×</button>
+      <h2 id="moveTitle">Bring your Sona with you</h2>
+      <p class="muted" id="moveCopy">Enter the six-character code from Backup &amp; restore in Settings on your other phone.</p>
+      <label class="field" for="moveInput">Your code</label>
+      <input type="text" id="moveInput" maxlength="6" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="ABC234" aria-describedby="moveError" />
+      <p id="moveError" role="status" aria-live="polite"></p>
+      <button type="submit" class="btn" id="moveSubmit" disabled>Use code</button>
+    </form>
+  </div>
   <script src="/sona.js"></script>
   <script>
     var p = Sona.getProfile();
@@ -298,10 +329,10 @@
       childName: p.childName || "",
       character: (window.Sona && Sona.characterById && Sona.characterById(p.character)) ? p.character : "fox", // Pip starts selected — legacy/unknown ids fall back too
       // only a profile that finished onboarding carries a real sound CHOICE —
-      // a fresh one holds the legacy default list, so new families start at R
+      // a fresh one holds a legacy default list, not a choice by this family
       role: p.role || "",
       mode: p.mode || "",
-      focusSounds: (p.onboarded && p.focusSounds && p.focusSounds.length) ? p.focusSounds.slice() : ["R"],
+      focusSounds: (p.onboarded && p.focusSounds && p.focusSounds.length) ? p.focusSounds.slice() : [],
       slpEvaluated: p.slpEvaluated || "",
       goals: p.goals || "",
       email: p.email || "",
@@ -341,7 +372,7 @@
     function saveDraft() { try { localStorage.setItem(DRAFTKEY, JSON.stringify(draft)); } catch (e) {} }
     function clearDraft() { try { localStorage.removeItem(DRAFTKEY); } catch (e) {} }
 
-    // THREE SETUP STEPS for a parent: who is practising, what to aim at, and
+    // THREE SETUP STEPS for a parent: who is practicing, what to aim at, and
     // the microphone. `sounds` only appears for the family that says they have
     // targets — for everyone else the picker IS the clinical framing, so it is
     // not shown. A clinician still gets the caseload flow, reached by the link
@@ -363,16 +394,62 @@
       email:   "One last thing!",
       mic:     "Let's hear you!",
     };
-    var CTA = { email: "START PRACTICING!", mic: "START PRACTICING!" };
+    var CTA = { email: "Continue", mic: "Turn on Echo's ears" };
     var idx = 0;
 
     var segEl = document.getElementById("seg");
-    function paintSeg(){ segEl.innerHTML=""; ORDER.forEach(function(){ segEl.appendChild(document.createElement("i")); }); }
+    function paintSeg(){ segEl.innerHTML=""; var count=ORDER===ORDER_PARENT?3:ORDER.length-1; for(var i=0;i<count;i++)segEl.appendChild(document.createElement("i")); }
+    function paintProgress(key){
+      var n=ORDER===ORDER_PARENT?({name:0,path:1,sounds:1,mic:2}[key]):idx-1;
+      segEl.hidden=key==="welcome"||key==="achieve";
+      Array.prototype.forEach.call(segEl.children,function(el,i){el.classList.toggle("on",i<=n);});
+      segEl.setAttribute("role","progressbar");segEl.setAttribute("aria-label","Setup progress");
+      segEl.setAttribute("aria-valuemin","0");segEl.setAttribute("aria-valuemax",String(segEl.children.length));segEl.setAttribute("aria-valuenow",String(n==null?0:n+1));
+    }
     paintSeg();
     var steps = {};
     document.querySelectorAll(".step").forEach(function(s){ steps[s.dataset.step]=s; });
     var bubble = document.getElementById("bubble"), leo = document.getElementById("leo");
     var nextBtn = document.getElementById("nextBtn"), backBtn = document.getElementById("backBtn");
+    var micBusy=false, micGeneration=0, finished=false;
+    document.getElementById("micPromise").textContent=Sona.MIC_PROMISE||"";
+    function updateNext(){nextBtn.disabled=micBusy||(ORDER[idx]==="sounds"&&selSounds.size===0);backBtn.disabled=micBusy;}
+    function stopSetupTracks(stream){try{if(stream)stream.getTracks().forEach(function(track){track.stop();});}catch(e){}}
+    function cancelSetupMic(){micGeneration++;micBusy=false;if(!finished)updateNext();}
+    function requestSetupMic(){
+      if(micBusy||finished||document.hidden)return;
+      var generation=++micGeneration;micBusy=true;updateNext();
+      var status=document.getElementById("micStatus");status.textContent="Your phone may ask for permission.";
+      var request;
+      try{request=navigator.mediaDevices.getUserMedia({audio:true,video:false});}catch(e){request=Promise.reject(e);}
+      Promise.resolve(request).then(function(stream){
+        // Setup checks permission; it never records or keeps an open stream.
+        stopSetupTracks(stream);
+        if(generation!==micGeneration||finished||document.hidden)return;
+        try{localStorage.setItem("sona.micok","1");}catch(e){}
+        var nativePermission;
+        try{if(Sona.isNativeApp&&Sona.isNativeApp()&&Sona.speechPerm)nativePermission=Sona.speechPerm();}catch(e){}
+        return Promise.resolve(nativePermission).catch(function(){}).then(function(){
+          if(generation!==micGeneration||finished||document.hidden)return;
+          micBusy=false;status.textContent="Echo's ears are ready.";finish();
+        });
+      }).catch(function(error){
+        if(generation!==micGeneration||finished||document.hidden)return;
+        micBusy=false;updateNext();
+        if(error&&(error.name==="NotAllowedError"||error.name==="PermissionDeniedError")){
+          status.textContent="You can turn the microphone on in your phone's Settings, or choose Not now.";
+          if(Sona.micDenied){
+            Sona.micDenied({onClose:function(){nextBtn.focus();}});
+            var close=document.getElementById("sonaMicBack"),retry=document.getElementById("sonaMicRetry");
+            if(close)close.textContent="Back to setup";
+            if(retry)retry.onclick=function(){var dialog=document.getElementById("sonaMicDenied");if(dialog)dialog.remove();requestSetupMic();};
+          }
+        }else status.textContent="The microphone isn't ready. Another app may be using it. Try again, or choose Not now.";
+      });
+    }
+    document.getElementById("micNotNow").onclick=function(){if(finished)return;cancelSetupMic();finish();};
+    if(Sona.onBackground)Sona.onBackground(cancelSetupMic);
+    else {document.addEventListener("visibilitychange",function(){if(document.hidden)cancelSetupMic();});window.addEventListener("pagehide",cancelSetupMic);}
 
     function mascotMarkup(id) {
       if (id === "leo") return '<img src="/coach/echo/echo-avatar.svg" alt="Echo" style="width:62px;height:62px;object-fit:contain;display:block;" />';
@@ -450,15 +527,17 @@
       ig.appendChild(el);
     });
 
-    // sound chips — every sound is open (SLPs put Sona in front of kids
-    // working letters beyond R); R stays the default for families who
-    // breeze past this step.
+    // Targets are the family's choice; a fresh setup never silently picks R.
     var selSounds = new Set(draft.focusSounds);
     var sc = document.getElementById("obSounds");
+    var soundExamples={R:"rabbit",S:"sun",TH:"think",THV:"this"};
     Sona.ALL_SOUNDS.forEach(function(s){
-      var b=document.createElement("div"); b.className="sound"+(selSounds.has(s)?" on":"");
-      b.innerHTML=(Sona.soundLabel?Sona.soundLabel(s):s);
-      b.onclick=function(){ Sona.sfx.tap(); if(selSounds.has(s)){ if(selSounds.size>1){ selSounds.delete(s); b.classList.remove("on"); } } else { selSounds.add(s); b.classList.add("on"); } };
+      var b=document.createElement("button"),label=Sona.soundLabel?Sona.soundLabel(s):s;
+      var bank=Sona.WORDS&&Sona.WORDS[s],example=soundExamples[s]||(bank&&bank[0]?bank[0].w:"");
+      b.type="button";b.className="sound"+(selSounds.has(s)?" on":"");b.dataset.sound=s;
+      var name=document.createElement("b"),hint=document.createElement("small");name.textContent=label;hint.textContent=example;b.appendChild(name);b.appendChild(hint);
+      b.setAttribute("aria-pressed",String(selSounds.has(s)));
+      b.onclick=function(){Sona.sfx.tap();if(selSounds.has(s))selSounds.delete(s);else selSounds.add(s);b.classList.toggle("on",selSounds.has(s));b.setAttribute("aria-pressed",String(selSounds.has(s)));draft.focusSounds=Array.from(selSounds);saveDraft();updateNext();};
       sc.appendChild(b);
     });
 
@@ -522,7 +601,7 @@
         var eq=document.querySelector('[data-step="email"] .qh');
         if(eq && slp) eq.innerHTML="Your clinician account";
         var ep=document.querySelector('[data-step="email"] p.muted');
-        if(ep && slp) ep.textContent="Your email creates your clinician account — the code and family key you hand to clients so Sona is free for them, plus a dashboard showing how they're practising.";
+        if(ep && slp) ep.textContent="Your email creates your clinician account — the code and family key you hand to clients so Sona is free for them, plus a dashboard showing how they're practicing.";
         // an SLP can't skip email: the credential IS the account
         var esk=document.getElementById("obEmailSkip");
         if(esk) esk.parentElement.style.display = slp ? "none" : "";
@@ -540,13 +619,14 @@
 
     // name prefill
     var nameEl=document.getElementById("obName"); nameEl.value=draft.childName;
-    // age chips: 3-4 → the littles path (Feed Echo everywhere); 5+ → the games
+    // Age bands follow the shared 2–4 simple-play / 5+ arcade recommendation.
     draft.childAge = draft.childAge || (p.childAge ? String(p.childAge) : "");   // declared in the literal; this only backfills a legacy profile
     (function(){
       var host=document.getElementById("obAge"); if(!host) return;
       host.querySelectorAll(".sound").forEach(function(ch){
-        if(draft.childAge && ch.dataset.age===String(draft.childAge)) ch.classList.add("on");
-        ch.onclick=function(){ Sona.sfx.tap(); draft.childAge=ch.dataset.age; host.querySelectorAll(".sound").forEach(function(n){n.classList.remove("on");}); ch.classList.add("on"); };
+        var age=Number(draft.childAge),band=age>=2&&age<=4?"4":age>=5&&age<=6?"6":age>=7?"8":"";
+        if(band===ch.dataset.age){ch.classList.add("on");ch.setAttribute("aria-pressed","true");}
+        ch.onclick=function(){Sona.sfx.tap();draft.childAge=ch.dataset.age;host.querySelectorAll(".sound").forEach(function(n){n.classList.remove("on");n.setAttribute("aria-pressed","false");});ch.classList.add("on");ch.setAttribute("aria-pressed","true");saveDraft();};
       });
     })();
     var emailEl=document.getElementById("obEmail"); emailEl.value=draft.email;
@@ -580,7 +660,8 @@
 
     function render(){
       var key=ORDER[idx];
-      ORDER.forEach(function(k,i){ steps[k].classList.toggle("on", i===idx); segEl.children[i].classList.toggle("on", i<=idx); });
+      ORDER.forEach(function(k,i){ steps[k].classList.toggle("on", i===idx); });
+      document.body.dataset.setupScreen=key;document.body.classList.toggle("ob-world",key==="welcome");paintProgress(key);
       mascotForStep(key);
       bubble.textContent = BUBBLES[key] || "";
       nextBtn.textContent = CTA[key] || "Continue";
@@ -590,14 +671,16 @@
       if(key==="achieve"){ var nm=(nameEl.value||draft.childName||"").trim(); document.getElementById("achName").textContent = nm || "your child"; }
       if(key==="email"){ var nm2=(nameEl.value||draft.childName||"").trim(); var emn=document.getElementById("emName"); if(emn) emn.textContent = nm2 || "Your child"; setTimeout(function(){ emailEl.focus(); }, 80); }
       if(key==="mic"){ var nm3=(nameEl.value||draft.childName||"").trim(); var mn=document.getElementById("micName"); if(mn) mn.textContent = nm3 || "your child"; }
-      saveDraft();
+      updateNext();saveDraft();
     }
 
     function next(){
+      if(finished||micBusy)return;
       var key=ORDER[idx];
+      if(key==="mic"){requestSetupMic();return;}
       if(key==="name"){ draft.childName=nameEl.value.trim(); if(!draft.childName){ nameEl.focus(); nameEl.style.borderColor="#ef6f23"; return; } }
       if(key==="interests" && selInterests.size===0){ selInterests.add("dragons"); }
-      if(key==="sounds" && selSounds.size===0){ selSounds.add("R"); }
+      if(key==="sounds" && selSounds.size===0)return;
       if(key==="email"){ var em=(emailEl.value||"").trim(); if(!/^\S+@\S+\.\S+$/.test(em)){ emailEl.focus(); emailEl.style.borderColor="#ef6f23"; var ee=document.getElementById("emErr"); ee.style.display="block"; ee.textContent="Please enter a valid email to save progress."; return; } draft.email=em; }
       Sona.sfx.tap();
       // (the "building" beat used to fire here and cover the microphone step;
@@ -610,35 +693,19 @@
       if(idx < ORDER.length-1){ idx++; render(); return; }
       finish();
     }
-    // Duolingo's "COURSE BUILDING…" beat, fired right after the choice that
-    // matters most (the sounds): the personalization feels like it already
-    // exists before the remaining questions. Pure theater — auto-fades, never
-    // blocks a tap, and the flow does not wait on it.
-    function showBuild(){
-      try{
-        var nm=(nameEl.value||draft.childName||"").trim()||"your child";
-        var snds=Array.from(selSounds).slice(0,4).map(function(s){ return (window.Sona&&Sona.soundLabel)?Sona.soundLabel(s):s; }).join(" + ");
-        var d=document.getElementById("obBuild");
-        if(!d){
-          d=document.createElement("div"); d.id="obBuild";
-          d.innerHTML='<img src="/coach/echo/echo-listening.svg" alt="" onerror="this.onerror=null;this.src=\'/coach/echo/echo-idle.svg\';" />'
-            +'<div style="font-family:\'Baloo 2\';font-weight:800;font-size:21px;color:var(--ink);" id="obBuildT"></div>'
-            +'<div class="muted" style="font-weight:800;font-size:13.5px;" id="obBuildS"></div>';
-          document.body.appendChild(d);
-        }
-        if(draft.mode==="play"){
-          document.getElementById("obBuildT").textContent="Building "+nm+"'s play list…";
-          document.getElementById("obBuildS").textContent="Every sound in the game — easiest first";
-        } else {
-          document.getElementById("obBuildT").textContent="Building "+nm+"'s sound plan…";
-          document.getElementById("obBuildS").textContent="Tuning the games for "+(snds||"their sounds");
-        }
-        requestAnimationFrame(function(){ d.classList.add("show"); });
-        setTimeout(function(){ d.classList.remove("show"); },1100);
-      }catch(e){}
+    function showBuild(done){
+      var nm=(nameEl.value||draft.childName||"").trim()||"your child",d=document.createElement("div");d.id="obBuild";d.className="show";
+      d.setAttribute("role","status");d.setAttribute("aria-live","polite");
+      d.innerHTML='<img src="/coach/echo/echo-listening.svg" alt="" /><div id="obBuildT"></div><div id="obBuildAnswers"></div>';
+      document.body.appendChild(d);
+      document.getElementById("obBuildT").textContent="Building "+nm+"'s "+(draft.mode==="play"?"play list":"sound plan")+"…";
+      var age=Number(draft.childAge),ageLabel=age>=2&&age<=4?"Ages 2–4":age>=5&&age<=6?"Ages 5–6":age>=7?"Ages 7+":"Your pace";
+      var sounds=draft.mode==="play"?"Every sound, easiest first":Array.from(selSounds).map(function(s){return Sona.soundLabel?Sona.soundLabel(s):s;}).join(" · ");
+      [nm,ageLabel,sounds].forEach(function(answer,i){var item=document.createElement("span");item.textContent=answer;document.getElementById("obBuildAnswers").appendChild(item);setTimeout(function(){item.classList.add("on");if(!document.hidden)try{Sona.sfx.tap();}catch(e){}},150+i*450);});
+      setTimeout(function(){d.remove();done();},2000);
     }
     function back(){
-      if(idx<=0) return;
+      if(idx<=0||micBusy||finished) return;
       Sona.sfx.tap(); idx--;
       if(ORDER[idx]==="sounds" && draft.mode==="play") idx--;
       render();
@@ -651,6 +718,7 @@
     })();
 
     function finish(){
+      if(finished)return;finished=true;micGeneration++;micBusy=false;
       draft.focusSounds = (draft.mode==="play" && Sona.PLAY_ORDER) ? Sona.PLAY_ORDER.slice() : Array.from(selSounds);
       draft.interests = Array.from(selInterests);
       var _slp=""; try{ _slp=(Sona.slpCode&&Sona.slpCode())||""; }catch(e){}
@@ -716,81 +784,55 @@
       if(draft.role==="slp" && draft.email){
         var box=document.getElementById("obSlpCred");
         if(box){
-          box.style.display="block";
+          box.hidden=false;box.style.display="block";
           box.innerHTML='<div class="muted" style="font-weight:700;font-size:13px;">Check your email — we just sent your one-tap sign-in. Open it to grab your <b>share link + family key</b>: it makes Sona free for the families you send it to, and puts them on your dashboard. It also lives in your dashboard.</div>';
         }
         fetch("/api/slp/auth/request",{method:"POST",headers:{"Content-Type":"application/json"},
           body:JSON.stringify({email:draft.email})}).catch(function(){});
       }
-      if(window.Sona){ Sona.sfx.complete(); Sona.confetti({count:160}); }
-      // the finale (not a step): show "what's ahead", then Echo calls by name
-      ORDER.forEach(function(k){ steps[k].classList.remove("on"); });
-      // the "building" beat, then the finale under it — a beat, not a wait:
-      // the data above is already saved and nothing below blocks on this
-      try{ showBuild(); }catch(e){}
-      var ach=document.querySelector('[data-step="achieve"]');
-      if(ach){ var nm3=(nameEl.value||draft.childName||"").trim(); document.getElementById("achName").textContent=nm3||"your child"; }
-      setTimeout(function(){ try{ if(ach) ach.classList.add("on"); }catch(e){} }, 400);
-      bubble.textContent = "You're all set!";
-      nextBtn.disabled = true; nextBtn.textContent = "Let's practice!";
-      backBtn.style.display = "none";
-      // App Store build: the plan screen follows onboarding (intent is hottest
-      // here); closing it still lands on today with the card-free usage week.
-      var goHome=function(){
-        try{ if(window.SonaAnalytics)SonaAnalytics.track("onboarding completed"); }catch(e){}
-        // Onboarding NEVER ends at the paywall any more. It used to: a parent
-        // off an ad met a price screen before their child had said a word.
-        // The ask now waits for the first completed run (Sona.planEligible),
-        // where the product has actually proved itself. `pay` survives only to
-        // pre-stamp the grown-ups gate, so that when the plan screen does open
-        // minutes later the adult who just finished this flow is not made to
-        // solve a word puzzle to reach it.
-        var pay=false; try{ pay=!(Sona.isFree&&Sona.isFree())&&!(Sona.isSubscribed&&Sona.isSubscribed())&&!(Sona.isPilot&&Sona.isPilot())&&!(Sona.getProfile&&Sona.getProfile().earlyAdopter); }catch(e){}
-        // the adult literally just finished the parent flow — grant the
-        // grown-ups gate pass so the plan screen opens instead of bouncing
-        if(pay){ try{ sessionStorage.setItem("sona.gate.v1",String(Date.now())); }catch(e){} }
-        location.href = "/today.html";
-      };
-      var redirectT=setTimeout(goHome, 2400);
-      // stash the save for the added-to-home-screen app (iOS separates its
-      // storage): best-effort — no KV, no code line, nothing changes.
-      try{
-        var standalone=(window.matchMedia&&window.matchMedia("(display-mode: standalone)").matches)||window.navigator.standalone===true;
-        if(!standalone&&window.Sona&&Sona.exportString){
-          fetch("/api/pair",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({data:Sona.exportString()})})
-            .then(function(r){return r.json();}).then(function(j){
-              if(!(j&&j.ok&&j.code))return;
-              clearTimeout(redirectT);
-              var mc=document.getElementById("moveCode");
-              if(mc){ mc.innerHTML="Adding Sona to your Home Screen? After you add it, open the app, tap \u201Cmove-in code\u201D on the first screen, and enter <b style='font-size:16px;letter-spacing:2px;'>"+j.code+"</b> — everything comes with you. (Good for 48 hours.)"; mc.style.display="block"; }
-              nextBtn.disabled=false; nextBtn.onclick=goHome;
-              setTimeout(goHome, 15000);
-            }).catch(function(){});
-        }
-      }catch(e){}
+      ORDER.forEach(function(k){steps[k].classList.remove("on");});
+      nextBtn.disabled=true;nextBtn.textContent="Getting ready…";backBtn.style.display="none";segEl.hidden=true;
+      showBuild(function(){
+        var ach=steps.achieve,nm=(nameEl.value||draft.childName||"").trim()||"your child";
+        document.getElementById("achName").textContent=nm;
+        document.body.dataset.setupScreen="achieve";document.body.classList.add("ob-world");ach.classList.add("on");
+        bubble.textContent="Ready to play?";nextBtn.disabled=false;nextBtn.textContent="Let's play!";
+        nextBtn.onclick=function(){
+          nextBtn.disabled=true;
+          try{if(window.SonaAnalytics)SonaAnalytics.track("onboarding completed");}catch(e){}
+          var pay=false;try{pay=!(Sona.isFree&&Sona.isFree())&&!(Sona.isSubscribed&&Sona.isSubscribed())&&!(Sona.isPilot&&Sona.isPilot())&&!(Sona.getProfile&&Sona.getProfile().earlyAdopter);}catch(e){}
+          if(pay){try{sessionStorage.setItem("sona.gate.v1",String(Date.now()));}catch(e){}}
+          var plan=Sona.adventureGames();
+          location.href="/charge.html?daily=1&first="+encodeURIComponent(plan[0]);
+        };
+        window.scrollTo(0,0);try{document.getElementById("handoffTitle").focus({preventScroll:true});}catch(e){}
+        // Names stay on the screen and device, not in a voice-service request.
+        if(!document.hidden&&Sona.speak)Sona.speak("Hi! Ready to play?");
+      });
     }
 
-    // ── move-in code: onboarding done in Safari doesn't carry into the
-    // added-to-home-screen app (iOS gives it separate storage). Redeeming the
-    // code imports the whole save and skips onboarding.
+    // Import is an explicit action. Creating/exporting a backup stays in
+    // Settings; completing setup must never POST a family's save.
     (function(){
-      var ml=document.getElementById("moveLink"); if(!ml)return;
-      ml.onclick=function(ev){ ev.preventDefault();
-        var c=(window.prompt("Enter your 6-letter code:")||"").trim().toUpperCase();
-        if(!c)return;
-        fetch("/api/pair?code="+encodeURIComponent(c)).then(function(r){return r.json();}).then(function(j){
-          if(j&&j.ok&&j.data&&window.Sona&&Sona.importData){
-            var res=Sona.importData(j.data);
-            if(res&&res.ok){
-              // web-purchase codes carry only the subscription — the family
-              // still onboards here; full saves skip straight to today
-              var prof={}; try{ prof=Sona.getProfile()||{}; }catch(e2){}
-              location.href=(prof.onboarded||prof.childName)?"/today.html":"/onboarding.html?paired=1";
-              return;
-            }
-          }
-          alert((j&&j.error)||"That code didn't work — codes last 48 hours and can only be used once.");
-        }).catch(function(){ alert("Couldn't check the code — are you online?"); });
+      var link=document.getElementById("moveLink"),sheet=document.getElementById("moveSheet"),form=document.getElementById("moveForm"),input=document.getElementById("moveInput"),submit=document.getElementById("moveSubmit"),close=document.getElementById("moveClose"),error=document.getElementById("moveError"),busy=false;
+      var ob=document.querySelector(".ob"),footer=document.querySelector(".obfoot");
+      function closeSheet(){if(busy)return;sheet.hidden=true;ob.inert=false;footer.inert=false;link.focus();}
+      link.onclick=function(ev){ev.preventDefault();sheet.hidden=false;ob.inert=true;footer.inert=true;error.textContent="";input.focus();};
+      close.onclick=closeSheet;
+      input.oninput=function(){input.value=input.value.toUpperCase().replace(/[^A-Z0-9]/g,"");submit.disabled=busy||input.value.length!==6;};
+      sheet.onclick=function(ev){if(ev.target===sheet)closeSheet();};
+      sheet.onkeydown=function(ev){
+        if(ev.key==="Escape"){ev.preventDefault();closeSheet();}
+        if(ev.key==="Tab"){var first=close.disabled?input:close,last=submit.disabled?input:submit;if(ev.shiftKey&&document.activeElement===first){ev.preventDefault();last.focus();}else if(!ev.shiftKey&&document.activeElement===last){ev.preventDefault();first.focus();}}
+      };
+      form.onsubmit=function(ev){
+        ev.preventDefault();var code=input.value.trim();if(busy||code.length!==6)return;
+        busy=true;submit.disabled=true;close.disabled=true;input.readOnly=true;error.textContent="Checking your code…";
+        var controller=typeof AbortController!=="undefined"?new AbortController():null,timer=setTimeout(function(){if(controller)controller.abort();},8000);
+        fetch("/api/pair?code="+encodeURIComponent(code),controller?{signal:controller.signal}:{}).then(function(r){return r.json();}).then(function(j){
+          if(j&&j.ok&&j.data&&Sona.importData){var result=Sona.importData(j.data);if(result&&result.ok){var profile=Sona.getProfile()||{};location.href=profile.onboarded||profile.childName?"/today.html":"/onboarding.html?paired=1";return;}}
+          error.textContent=(j&&j.error)||"That code didn't work. Codes last 48 hours and can only be used once.";
+        }).catch(function(){error.textContent="We couldn't check the code. Check your connection and try again.";}).then(function(){clearTimeout(timer);busy=false;close.disabled=false;input.readOnly=false;input.oninput();});
       };
     })();
 

@@ -152,11 +152,11 @@
     "sona.daily.v1", "sona.session.v1", "sona.levels.v1", "sona.campaign.v1",
     "sona.stickers.v1", "sona.attempts.v1", "sona.outcomes.v1",
     "sona.lib.read.v1", "sona.feed.v1", "sona.call.v1", "sona.callhist.v1",
-    "sona.games.v1", "sona.homework.v1",
+    "sona.games.v1", "sona.homework.v1", "sona.reclast",
     // PER-CHILD, and it must be. This key holds the clinician code, the
     // reporting childId and the grown-up's CONSENT to share. While it was
     // shared, two siblings on one iPad reported under ONE childId: the roster
-    // row was overwritten by whichever child practised last, so a clinician
+    // row was overwritten by whichever child practiced last, so a clinician
     // saw one child's name against the other's outcomes — and homework
     // assigned to one arrived on the other's profile. Consent was also
     // inherited silently, which is the part that is not just a bug.
@@ -205,6 +205,23 @@
     });
   }
   function activeKid() { return kids().filter((k) => k.active)[0] || null; }
+  // The live page uses one session key. Park it with its owner whenever a
+  // parent changes children, so a pending game cannot credit a sibling.
+  function _switchRun(from, to) {
+    if (from === to) return;
+    try {
+      const key = "sona.run.v1", saved = sessionStorage.getItem(key);
+      const fromKey = key + "@" + (from || "first");
+      if (saved) sessionStorage.setItem(fromKey, saved);
+      else sessionStorage.removeItem(fromKey);
+      const next = sessionStorage.getItem(key + "@" + (to || "first"));
+      if (next) sessionStorage.setItem(key, next);
+      else sessionStorage.removeItem(key);
+      // A game entrance token is transient; the saved ready checkpoint owns
+      // any already-earned game and will issue its own token on resume.
+      ["sona.play.token", "sona.play.active", "sona.boost.sound"].forEach((k) => sessionStorage.removeItem(k));
+    } catch (e) {}
+  }
   function addKid(name, age) {
     const v = _kids();
     // slots are never reused — a removed kid's leftover keys must not become a
@@ -213,6 +230,7 @@
     while (taken.has("k" + n)) n++;
     const slot = "k" + n;
     v.list.push({ slot, name: String(name || "").slice(0, 24) });
+    _switchRun(v.active, slot);
     v.active = slot;
     _saveKids(v);
     // written through the namespace, so this lands on the NEW kid
@@ -226,13 +244,15 @@
   function switchKid(slot) {
     const v = _kids();
     if (!v.list.some((k) => k.slot === slot)) return false;
+    _switchRun(v.active, slot);
     v.active = slot; _saveKids(v); return true;
   }
   function removeKid(slot) {
     const v = _kids();
     if (v.list.length < 2) return false;              // never leave zero children
     v.list = v.list.filter((k) => k.slot !== slot);
-    if (v.active === slot) v.active = v.list[0].slot;
+    if (v.active === slot) { _switchRun(slot, v.list[0].slot); v.active = v.list[0].slot; }
+    try { sessionStorage.removeItem("sona.run.v1@" + (slot || "first")); } catch (e) {}
     _saveKids(v);
     // drop that child's practice data; slot "" (the first kid) shares the
     // un-suffixed keys, so only a suffixed slot is safe to clear
@@ -296,7 +316,7 @@
   // tomorrow, because BOTH are stamped "post": a brand-new device is stamped on
   // its very first load, before it has onboarded. No date on the device
   // distinguishes them reliably — practiceDays is pruned at 130 days and a
-  // family who set up but never practised has none at all.
+  // family who set up but never practiced has none at all.
   //
   // So this uses the same structural trick that worked for era one: on the
   // FIRST LOAD OF THIS BUILD, a device that is ALREADY onboarded necessarily
@@ -488,7 +508,7 @@
   //
   // Cached locally and read from the cache on every call. The network is never
   // in the path of a child starting a round: a phone in a car with no signal
-  // practises yesterday's assignment rather than nothing.
+  // practices yesterday's assignment rather than nothing.
   const HWKEY = "sona.homework.v1";
   function homework() {
     try {
@@ -522,7 +542,7 @@
       // and above all the write — belongs to whoever is active at this
       // instant, and a parent can switch children while the request is in
       // flight. Without this, child A's SLP assignment was saved into child
-      // B's slot, and B then practised A's sound at A's word position with
+      // B's slot, and B then practiced A's sound at A's word position with
       // A's reps reported against it. Clinical data crossing children is the
       // exact failure the per-child pilot key was split to prevent; this is
       // the asynchronous half of it.
@@ -557,7 +577,7 @@
     const f = ((getProfile().focusSounds) || []).map((s) => String(s).toUpperCase()).filter((s) => WORDS[s]);
     return f.length ? f : ["R"];
   }
-  // The position to practise: the assignment's, else the family's setting.
+  // The position to practice: the assignment's, else the family's setting.
   // One reader for both, so a page cannot honour homework for the sound and
   // quietly ignore it for the position.
   function practicePos() {
@@ -1172,6 +1192,12 @@
   // refreshes and across a parent and child looking at the same phone, because
   // the chapter is pinned for the day — so "did I already play today's set?"
   // has one answer, and the answer never changes underneath a child.
+  const MIC_PROMISE = "Grown-ups: the mic listens during practice and optional voice-enabled games. Sounds are checked on this phone; Sona never uploads recordings. Up to one clear practice try a day may be saved on this phone so you can listen back.";
+  // Rachel-approved play recommendation. Every game remains available by choice.
+  function playStyle() {
+    var age = Number(getProfile().childAge);
+    return age >= 2 && age < 5 && Math.floor(age) === age ? "simple" : "arcade";
+  }
   const DAILY_GAMES = 3;
   function dailyGames() {
     const ep = dailyStory();
@@ -1185,14 +1211,8 @@
     for (let i = 0; trio.length < DAILY_GAMES && i < GAME_KEYS.length; i++) {
       if (trio.indexOf(GAME_KEYS[i]) === -1) trio.push(GAME_KEYS[i]);
     }
-    // Feed Echo is the littles game: no reading, no timer. Under 6 it leads,
-    // whatever the chapter asked for, because the alternative is a
-    // four-year-old facing three games none of which they can play. The
-    // chapter loses its third pick rather than the child losing their day.
-    const age = parseInt(getProfile().childAge, 10) || 0;
-    if (age && age < 6 && trio[0] !== "feed") {
-      return ["feed"].concat(trio.filter((k) => k !== "feed")).slice(0, DAILY_GAMES);
-    }
+    if (playStyle() === "simple") return ["feed", "bubbles", "peekaboo"];
+
     return trio;
   }
 
@@ -1331,7 +1351,7 @@
 
   // ── the week, narrated ────────────────────────────────────────────────
   // The Sound Story: a plain-language read of the week from REAL practice
-  // data — days practised, reps out loud, and honest-scoring movement on the
+  // data — days practiced, reps out loud, and honest-scoring movement on the
   // rotating sound. It used to also report Sound Check grade changes; the
   // Sound Check is gone, and a weekly AI evaluation was never what made this
   // card useful to a parent. Unofficial by design: a practice snapshot to
@@ -1519,6 +1539,9 @@
   function recordSession(rec) {
     const g = getProgress();
     const words = (rec && rec.words) || [];
+    const tries = Math.max(0, Math.floor(Number(rec && rec.tries) || 0));
+    // Discovery-only play never creates a practice day or an empty session.
+    if (!words.length && !tries) return g;
     const stars = words.filter((w) => w && w.ok !== false).length;
     const session = { date: new Date().toISOString(), count: words.length, sounds: [...new Set(words.map((w) => w && w.sound).filter(Boolean))] };
     if (rec && rec.activity === "adventure" && !words.length) {
@@ -1529,6 +1552,10 @@
         session.sounds = [sound];
       }
     }
+    if (tries) session.tries = tries;
+    if (rec && rec.activity === "practice") session.activity = "practice";
+    if (rec && rec.sound && Object.prototype.hasOwnProperty.call(WORDS, rec.sound)) session.sounds = [rec.sound];
+    if (rec && Number.isFinite(rec.arcadeScore)) session.arcadeScore = Math.max(0, Math.floor(rec.arcadeScore));
     g.sessions.unshift(session);
     g.sessions = g.sessions.slice(0, 50);
     g.totals.sessions += 1; g.totals.words += words.length; g.totals.stars += stars;
@@ -1766,7 +1793,7 @@
   // times — every one of those is a page load, and every one of them asks the
   // gate. The demo replay was bouncing at its FIRST earned game because the
   // arcade pages ask with no activity name and the round trip carried no demo
-  // flag: a child practised, earned the game, tapped it, and met a price. And
+  // flag: a child practiced, earned the game, tapped it, and met a price. And
   // the demonstration's window, if it closed between round two and round
   // three, would have done the same to a family mid-adventure.
   //
@@ -2061,6 +2088,7 @@
     });
   }
   async function saveRecording(rec) {
+    const kid = _slot(), day = today();
     try {
       const db = await idb();
       return await new Promise((res, rej) => {
@@ -2068,18 +2096,30 @@
         // KIDS1: stamp the owning child. The store is one IndexedDB table for
         // the device, so without this a sibling's Progress page listed — and
         // played — another child's voice.
-        tx.objectStore("recordings").add(Object.assign({ date: new Date().toISOString(), kid: _slot() }, rec));
-        tx.oncomplete = () => res(true);
+        const store = tx.objectStore("recordings");
+        let saved = false;
+        const request = store.openCursor();
+        request.onsuccess = function () {
+          const cursor = request.result;
+          if (cursor) {
+            const row = cursor.value;
+            if ((row.kid || "") === kid && _localDay(new Date(row.date).getTime()) === day) return;
+            cursor.continue(); return;
+          }
+          store.add(Object.assign({}, rec, { date: new Date().toISOString(), kid: kid }));
+          saved = true;
+        };
+        tx.oncomplete = () => res(saved);
         tx.onerror = () => rej(tx.error);
       });
     } catch (e) { return false; }
   }
   async function listRecordings(limit = 50) {
+    const mine = _slot();
     try {
       const db = await idb();
       return await new Promise((res) => {
         const out = [];
-        const mine = _slot();
         const tx = db.transaction("recordings", "readonly");
         const cur = tx.objectStore("recordings").openCursor(null, "prev");
         // Only this child's clips. Rows saved before the kid stamp existed have
@@ -2297,14 +2337,13 @@
   // Age suggests a style of play, never access or a speech target. Keep this
   // catalog separate from the daily adventure and its practice progression.
   const ACTIVITY_GROUPS = [
-    { id: "simple", name: "Simple play", ageLabel: "Suggested ages 3–4", description: "Easy tapping, one thing at a time." },
-    { id: "arcade", name: "Arcade", ageLabel: "Suggested ages 5–8", description: "More movement, timing and challenge." },
+    { id: "simple", name: "Simple play", ageLabel: "Suggested ages 2–4", description: "Easy tapping, one thing at a time." },
+    { id: "arcade", name: "Arcade", ageLabel: "Suggested ages 5 and up", description: "More movement, timing and challenge." },
   ];
   function activityLibrary() {
     var age = Number(getProfile().childAge);
     var validAge = age >= 2 && age <= 14 && Math.floor(age) === age;
-    var recommended = validAge && age >= 3 && age < 5 ? "simple"
-      : validAge && age >= 5 ? "arcade" : null;
+    var recommended = validAge ? playStyle() : null;
     var groups = ACTIVITY_GROUPS.map(function (group) {
       return {
         id: group.id, name: group.name, ageLabel: group.ageLabel,
@@ -2324,13 +2363,15 @@
   // its own practice/reward loop and remains an independent game choice.
   // A started adventure keeps its order when a family pauses over midnight.
   function adventureGames(firstGame) {
-    var deck = GAME_KEYS.filter(function (key) { return GAME_ACTS[key].group === "arcade"; });
-    var count = Math.min(ROT_LEN, deck.length);
+    var style = playStyle();
+    var deck = ACTIVITY_KEYS.filter(function (key) { return GAME_ACTS[key].group === style; });
+    var count = ROT_LEN;
     try {
       var run = JSON.parse(sessionStorage.getItem(RUNKEY) || "null");
       var saved = run && run.active && run.games;
-      if (Array.isArray(saved) && saved.length === count && saved.every(function (key, i) {
-        return deck.indexOf(key) >= 0 && saved.indexOf(key) === i;
+      // Keep a started plan, including older arcade plans and repeating simple games.
+      if (Array.isArray(saved) && saved.length === count && saved.every(function (key) {
+        return ACTIVITY_KEYS.indexOf(key) >= 0;
       })) return saved.slice();
     } catch (e) {}
     // Home can stay open overnight. Its first-game hint keeps the launch
@@ -2340,6 +2381,18 @@
     var games = [];
     for (var i = 0; i < count; i++) games.push(deck[(offset + i) % deck.length]);
     return games;
+  }
+  // Simple games are untimed discoveries. Their completion may move an
+  // adventure forward but never fabricates a spoken try, streak or outcome.
+  function simpleAdventure(kind, completed) {
+    try {
+      var query = new URLSearchParams(location.search);
+      if (query.get("daily") !== "1") return false;
+      var run = JSON.parse(sessionStorage.getItem(RUNKEY) || "null");
+      if (!run || !run.active || !run.pending || !Array.isArray(run.games) || run.games[run.round] !== kind) return false;
+      if (completed) { run.simpleComplete = run.round; sessionStorage.setItem(RUNKEY, JSON.stringify(run)); }
+      return true;
+    } catch (e) { return false; }
   }
   const SESKEY = "sona.session.v1";
   const session = {
@@ -2612,13 +2665,19 @@
   const ATTKEY = "sona.attempts.v1", OUTKEY = "sona.outcomes.v1";
   function logAttempt(a) {
     try {
-      a = a || {}; const sound = a.sound || "?", pass = !!a.pass, day = today();
+      a = a || {};
+      var reps = a.reps == null ? 1 : Math.max(0, Math.floor(Number(a.reps) || 0));
+      if (!reps) return;
+      const sound = a.sound || "?", pass = !!a.pass, day = today();
       const word = String(a.word || "").toLowerCase();
-      const log = load(ATTKEY, []); log.push({ g: a.game || "", s: sound, p: pass, sc: (typeof a.score === "number" ? Math.round(a.score) : null), w: word, t: Date.now() });
+      const log = load(ATTKEY, []); log.push({ g: a.game || "", s: sound, p: pass, sc: (typeof a.score === "number" ? Math.round(a.score) : null), w: word, reps: reps, t: Date.now() });
       save(ATTKEY, log.slice(-600));
       const o = load(OUTKEY, {}); const bs = o[sound] || (o[sound] = { attempts: 0, passes: 0, firstAt: day, lastAt: day, days: {} });
+      bs.tries = (typeof bs.tries === "number" ? bs.tries : bs.attempts) + reps;
       bs.attempts++; if (pass) bs.passes++; bs.lastAt = day;
-      const d = bs.days[day] || (bs.days[day] = { a: 0, p: 0 }); d.a++; if (pass) d.p++;
+      const d = bs.days[day] || (bs.days[day] = { a: 0, p: 0 });
+      d.tries = (typeof d.tries === "number" ? d.tries : d.a) + reps;
+      d.a++; if (pass) d.p++;
       // by word position (initial/medial/final/vocalic/blends) — the clinical breakdown.
       // Prefer the word's own tagged position; else fall back to the practice setting.
       let pos = a.pos || "";
@@ -2632,7 +2691,7 @@
       save(OUTKEY, o);
       // keep Today/Progress alive from real game play (not just the lesson flow):
       // every scored attempt counts a word and keeps today's streak going.
-      try { const g = getProgress(); g.totals.words = (g.totals.words || 0) + 1; bumpStreak(g); save(GKEY, g); } catch (e2) {}
+      try { const g = getProgress(); g.totals.words = (g.totals.words || 0) + reps; bumpStreak(g); save(GKEY, g); } catch (e2) {}
       // pilot/founding beacon: consented, counts-only, throttled to 1/min inside sendProgress
       try { sendProgress("auto"); } catch (e3) {}
     } catch (e) {}
@@ -2670,21 +2729,14 @@
       const days = (out[s] && out[s].days) || {};
       Object.keys(days).forEach((d) => {
         const t = new Date(d + "T12:00:00");
-        if (t >= mon && t < sun) total += (days[d] && days[d].a) || 0;
+        if (t >= mon && t < sun) total += days[d] ? (typeof days[d].tries === "number" ? days[d].tries : days[d].a || 0) : 0;
       });
     });
     return total;
   }
-  function repsBeacon() {
-    try {
-      const week = isoWeek(), reps = weekReps(), f = fid();
-      if (!f) return;
-      const st = load("sona.repsync.v1", {});
-      if (st.week === week && st.reps === reps && Date.now() - (st.at || 0) < 6 * 3600 * 1000) return;
-      save("sona.repsync.v1", { week, reps, at: Date.now() });
-      fetch("/api/reps", { method: "POST", headers: { "Content-Type": "application/json" }, keepalive: true, body: JSON.stringify({ fid: f, week, reps }) }).catch(() => {});
-    } catch (e) {}
-  }
+  // Retained as a no-op for cached pages. Family comparisons and their beacon
+  // are retired; counts remain local except consented pilot progress sharing.
+  function repsBeacon() {}
 
   // ── Native audio capture (iOS) ──────────────────────────────────────────────
   // ── SPEAK1: the one speech pipeline every reader shares ─────────────────
@@ -3502,5 +3554,5 @@
   try { _grandfatherFreeEra3(); } catch (e) {}
   try { installDebug(); } catch (e) {}
 
-  global.Sona = { pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, TTS_CACHE_VERSION, voiceDiagnostic, voiceStatus, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, saveFor, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, ladderContent, FREE_MODE, isFree, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, adventureGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, activityLibrary, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, gated, gateVerify, gateOk, requireGate, gateDest, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, planMoment, planEligible, planShown, speak, speakNow, speakUnlock, speechAvailable, speechPerm, speechStart, speechStop, hearVerdict, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, demoState, demoDone, demoStart, demoFinish, runActive, gateBounce, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repsBeacon, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES };
+  global.Sona = { simpleAdventure, MIC_PROMISE, playStyle, pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, TTS_CACHE_VERSION, voiceDiagnostic, voiceStatus, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, saveFor, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, ladderContent, FREE_MODE, isFree, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, adventureGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, activityLibrary, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, gated, gateVerify, gateOk, requireGate, gateDest, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, planMoment, planEligible, planShown, speak, speakNow, speakUnlock, speechAvailable, speechPerm, speechStart, speechStop, hearVerdict, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, demoState, demoDone, demoStart, demoFinish, runActive, gateBounce, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repsBeacon, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES };
 })(window);

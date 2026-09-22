@@ -60,7 +60,7 @@ async function home(age) {
     /adventure|play/i.test(st.cta) && heroLaunch.pathname === "/charge.html"
       && heroLaunch.searchParams.get("daily") === "1", JSON.stringify(st));
   ok("the adventure is named on the card", /adventure/i.test(st.hero), st.hero);
-  ok("the card says what practising earns", /game/i.test(st.sub), st.sub);
+  ok("the accessible card description names the adventure rounds", /rounds/i.test(st.sub), st.sub);
   ok("THREE games sit below, not two", st.thumbs === 3, String(st.thumbs));
   ok("none of them is locked — no book gates the day", st.locked === 0, JSON.stringify(st));
   ok("…and none of them wears a padlock", st.padlocks === 0, JSON.stringify(st));
@@ -84,16 +84,11 @@ async function home(age) {
   await pg.evaluate(seed("7"));
   await pg.goto("http://localhost:8178/today.html");
   await pg.waitForTimeout(700);
-  const soon = await pg.evaluate(() => {
-    const before = location.href;
-    document.getElementById("libBtn").click();
-    return { moved: location.href !== before, sub: document.getElementById("heroSub").textContent,
-             label: document.getElementById("libBtn").getAttribute("aria-label") || "" };
-  });
-  await pg.waitForTimeout(300);
-  ok("the book button goes nowhere", soon.moved === false && /today\.html/.test(pg.url()), pg.url());
-  ok("…and says the books are coming soon", /coming soon/i.test(soon.sub), soon.sub);
-  ok("…in its label too", /coming soon/i.test(soon.label), soon.label);
+  const libraryLabel = await pg.locator("#libBtn").getAttribute("aria-label");
+  await pg.locator("#libBtn").click();
+  await pg.waitForURL(/activities\.html/);
+  ok("the header library opens real games", /activities\.html/.test(pg.url()));
+  ok("the library door has an honest accessible name", /play library/i.test(libraryLabel),libraryLabel);
   // markup and code only — the comments explain the parking and may name the pages
   const home = readFileSync(ROOT + "/today.html", "utf8").replace(/<!--[\s\S]*?-->/g, "").replace(/\/\/[^\n]*/g, "");
   ok("Home has no door to the reader", !/chapter\.html|library\.html|story\.html/.test(home),
@@ -277,7 +272,7 @@ async function home(age) {
     coins: document.getElementById("coinTxt").textContent,
   }));
   ok("the jar starts empty", zero.h === "0%", JSON.stringify(zero));
-  ok("it says what filling it takes", /\d+ of \d+/.test(zero.sub), zero.sub);
+  ok("the empty jar invites speech without zero-count pressure", /Talk with Echo/.test(zero.sub), zero.sub);
   const half = await pg.evaluate(() => {
     Sona.bumpReps(13);                 // VAD-counted reps are the only input
     return { g: Sona.goalState() };
@@ -435,13 +430,13 @@ async function home(age) {
   await pg.evaluate(() => { localStorage.removeItem("sona.demo.v1"); });
   await pg.goto("http://localhost:8178/today.html"); await pg.waitForTimeout(800);
   ok("a brand-new child is invited to start, not to resume",
-    /START YOUR FIRST ADVENTURE/i.test(await pg.evaluate(() => document.getElementById("goBtn").textContent)));
+    /Your first adventure/i.test(await pg.evaluate(() => document.getElementById("goBtn").textContent)));
 
   // …and once they have, it is the ordinary adventure CTA again
   await pg.evaluate(() => localStorage.setItem("sona.demo.v1", JSON.stringify({ started: 1, done: 1 })));
   await pg.goto("http://localhost:8178/today.html"); await pg.waitForTimeout(800);
   ok("…and afterwards it stops shouting about firsts",
-    /LET'S PLAY/i.test(await pg.evaluate(() => document.getElementById("goBtn").textContent)));
+    /Today's adventure/i.test(await pg.evaluate(() => document.getElementById("goBtn").textContent)));
 
   // a run left half-finished is the commonest interruption there is
   await pg.evaluate(() => sessionStorage.setItem("sona.run.v1", JSON.stringify({ active: true, round: 2, sum: 40, scores: [20, 20], sound: "R", level: 1, pending: false })));
@@ -508,7 +503,7 @@ async function heroState(pg) {
   return pg.evaluate(() => ({
     sub: document.getElementById("heroSub").textContent,
     cta: document.getElementById("goBtn").textContent,
-    art: document.querySelector("#heroCard .stk use")?.getAttribute("href"),
+    art: document.querySelector("#heroCard .path-node.current > .stk use, #heroCard > .stk use")?.getAttribute("href"),
     shelf: document.getElementById("upNextLbl").textContent,
     thumbs: [...document.querySelectorAll("#thumbs .thumb")].map((el) => el.dataset.key),
   }));
@@ -544,7 +539,7 @@ async function openPreview(pg) {
       ok(label + ": starting an adventure saves five distinct playable games",
         Array.isArray(games) && games.length === 5 && new Set(games).size === 5
           && games.every((key) => adventureKeys.includes(key)), JSON.stringify(practice.run));
-      if (age === 5) ok(label + ": Feed Echo remains the first individual choice", hero.thumbs[0] === "feed", JSON.stringify(hero.thumbs));
+      if (age === 5) ok(label + ": individual choices still follow the shared daily deck", JSON.stringify(hero.thumbs) === JSON.stringify(await pg.evaluate(()=>Sona.dailyGames())), JSON.stringify(hero.thumbs));
       await ctx.close();
     }
   }
@@ -586,8 +581,8 @@ async function openPreview(pg) {
     })), { games, round });
     await pg.goto("http://localhost:8178/today.html");
     const { hero, practice } = await openPreview(pg);
-    ok("resume round " + (round + 1) + " is offered on Home",
-      /CARRY ON/i.test(hero.cta) && previewText(hero.sub).includes("round " + (round + 1)), JSON.stringify(hero));
+    ok("round " + (round + 1) + " resumes only after meaningful progress",
+      round > 0 ? /CARRY ON/i.test(hero.cta) && previewText(hero.sub).includes("round " + (round + 1)) : !/CARRY ON/i.test(hero.cta), JSON.stringify(hero));
     ok("resume round " + (round + 1) + " preview matches the actual game",
       previewText(hero.sub).includes(previewText(practice.title)) && hero.art === practice.art,
       JSON.stringify({ hero, practice: practice.title }));
@@ -648,15 +643,15 @@ async function openPreview(pg) {
     shown: document.getElementById("runOvl").classList.contains("show"),
   }));
   ok("the fifth return finishes the saved journey",
-    done.shown && done.run.active === false && done.run.round === 5 && done.run.sum === 57, JSON.stringify(done));
+    done.shown && done.run.active === true && done.run.finishing === true && done.run.round === 5 && done.run.sum === 57, JSON.stringify(done));
   await pg.goto("http://localhost:8178/today.html");
-  ok("a completed journey never offers resume round six", !/CARRY ON/i.test((await heroState(pg)).cta));
+  ok("an unfinished finale resumes the surprise without inventing round six", /CARRY ON/i.test((await heroState(pg)).cta) && !/round 6/i.test((await heroState(pg)).sub));
 
   // Also reject an old active record already at its finish line; Home should
   // never say there is a sixth round merely because active was left true.
   await pg.evaluate(() => {
     const run = JSON.parse(sessionStorage.getItem("sona.run.v1"));
-    run.active = true;
+    run.active = true; delete run.finishing;
     sessionStorage.setItem("sona.run.v1", JSON.stringify(run));
   });
   await pg.goto("http://localhost:8178/today.html");

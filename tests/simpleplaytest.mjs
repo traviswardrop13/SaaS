@@ -145,8 +145,8 @@ if(present)for(const game of pages){
       ok(game+': a second burst keeps the same one-turn feedback',(await page.locator('#heardMessage').innerText())===feedback);
       await finishRemaining(page,game);
       const r=await resources(page);
-      ok(game+': repeated bursts in one reveal count as one heard turn',/heard you 1 time\./i.test(await page.locator('#finishCopy').innerText()));
-      ok(game+': a voiced round advances and awards at most once',r.effects.filter(x=>x==='rotAdvance').length===1&&r.effects.filter(x=>x==='awardNextSticker').length===1,r);
+      ok(game+': the finish celebrates discoveries, not a speech count',/all five pictures/i.test(await page.locator('#finishCopy').innerText()));
+      ok(game+': loudness-only feedback never advances practice or awards a practice sticker',!r.effects.includes('rotAdvance')&&!r.effects.includes('awardNextSticker'),r);
       ok(game+': voice feedback creates no assessment or fabricated rep count',!r.effects.some(x=>['bumpReps','recordSession','logAttempt','recordRung'].includes(x)),r.effects);
       ok(game+': finishing releases the microphone',r.live===0&&r.graphs===0,r);
       clean(game+' voice',errors);

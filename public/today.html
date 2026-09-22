@@ -39,39 +39,37 @@
     body::before{content:"";position:fixed;inset:-120px;background:var(--cream);z-index:-1;}
     #wrap{max-width:560px;margin:0 auto;padding:calc(16px + env(safe-area-inset-top)) 20px calc(24px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:14px;height:100dvh;overflow:hidden;}
 
-    /* header — the sticker book (design section 2) */
+    /* Three familiar destinations leave the adventure as the main action. */
     header{display:flex;align-items:center;gap:10px;}
-    #hiName{font-family:"Baloo 2";font-weight:800;font-size:23px;line-height:1.1;}
-    #subLine{font-weight:800;font-size:12.5px;color:var(--muted);margin-top:2px;}
-    #hdrBtns{margin-left:auto;display:flex;align-items:center;gap:8px;}
-    #libBtn{position:relative;border:none;width:44px;height:44px;border-radius:50%;background:#fff;font-size:20px;cursor:pointer;box-shadow:0 4px 0 rgba(120,80,20,.15);}
-    /* GAMES1: the books are parked until they are good — the button stays as a promise, with the promise written on it */
-    #libBtn::after{content:"SOON";position:absolute;top:-7px;right:-12px;font-family:'Baloo 2';font-weight:800;font-size:8.5px;letter-spacing:.06em;color:#fff;background:#ff9600;border-radius:99px;padding:2px 5px;box-shadow:0 2px 0 rgba(120,80,20,.15);}
-    #libBtn.nope{animation:nudge .32s;}
-    #ringBtn{border:none;width:44px;height:44px;border-radius:50%;background:#fff;cursor:pointer;box-shadow:0 4px 0 rgba(120,80,20,.15);padding:0;display:flex;align-items:center;justify-content:center;}
-    /* parent corner is a gear — Echo is never a locked door (fix pack 1a) */
-    #parentBtn{border:none;cursor:pointer;width:44px;height:44px;border-radius:50%;background:#fff;box-shadow:0 4px 0 rgba(140,70,10,.14);display:flex;align-items:center;justify-content:center;color:#8a6f52;}
-
-    /* hero: today's activity as a tilted photo card */
-    /* flex:1 + centering lets the hero absorb tall-screen slack instead of
-       leaving one dead gap above the CTA */
-    #heroWrap{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;min-height:0;padding:6px 0 2px;}
-    /* height-driven: the card scales to whatever space the locked page leaves */
-    /* the card BREATHES: it fills whatever height the flex column leaves
-       (banner, nudge, iOS call pill all just shrink it) instead of holding a
-       fixed 41dvh that overflowed the page whenever extra rows appeared */
-    #heroCard{position:relative;height:100%;min-height:150px;max-height:400px;max-width:80vw;aspect-ratio:234/290;border-radius:20px;border:6px solid #fff;box-shadow:0 10px 22px rgba(90,50,10,.16);transform:rotate(-2deg);background:#cfe7f2;cursor:pointer;transition:transform .12s;}
-    #heroCard:active{transform:rotate(-2deg) scale(.98);}
-    #heroCap{background:#fff;border-radius:16px;padding:10px 20px 12px;box-shadow:0 6px 16px rgba(90,50,10,.14);transform:rotate(1.5deg);margin-top:-26px;text-align:center;max-width:82vw;}
-    #heroName{font-family:"Baloo 2";font-weight:800;font-size:22px;line-height:1.2;}
+    #greeting{min-width:0;flex:1;}
+    #hiName{font-family:"Baloo 2";font-weight:800;font-size:21px;line-height:1.1;overflow-wrap:anywhere;}
+    #subLine{font-weight:800;font-size:11.5px;color:var(--muted);margin-top:3px;line-height:1.3;}
+    #hdrBtns{margin-left:auto;display:flex;align-items:center;gap:8px;flex:none;}
+    #buddyBtn,#libBtn,#parentBtn{position:relative;display:flex;align-items:center;justify-content:center;flex:none;border:3px solid #fff;width:44px;height:44px;border-radius:50%;background:#fff;cursor:pointer;box-shadow:0 4px 0 rgba(140,70,10,.14);color:#795c3c;}
+    #buddyBtn{background:#ffe5b1;overflow:hidden;}
+    #libBtn{background:#e7f2fa;}
+    #buddyBtn:focus-visible,#libBtn:focus-visible,#parentBtn:focus-visible,#jarInfo:focus-visible{outline:3px solid #157da5;outline-offset:4px;}
+    .sr-only{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;}
+    [hidden]{display:none!important;}
+    #heroWrap{width:100%;display:flex;justify-content:center;flex:none;padding:2px 0 0;}
+    #heroCard{position:relative;display:block;width:100%;height:clamp(220px,39dvh,330px);overflow:hidden;background:linear-gradient(165deg,#d9f1fc 0%,#edf4ee 48%,#ffe4c3 100%);border-radius:24px 24px 0 0;isolation:isolate;}
+    #heroCard:before{content:"";position:absolute;width:145%;height:52%;left:-20%;bottom:-25%;border-radius:50%;background:#f3dcae;z-index:-1;}
+    #adventureTrail{position:absolute;inset:0;width:100%;height:100%;overflow:visible;}
+    .path-node{position:absolute;display:block;width:64px;height:64px;transform:translate(-50%,-50%);border:5px solid #fff;border-radius:50%;box-shadow:0 4px 0 rgba(120,80,20,.15);}
+    .path-node.upcoming{filter:grayscale(.95) sepia(.3);opacity:.65;}
+    .path-node.current{outline:4px solid #ffb547;outline-offset:3px;z-index:2;}
+    .path-node.done:after{content:"✓";position:absolute;right:-8px;bottom:-5px;width:23px;height:23px;border-radius:50%;border:2px solid #fff;background:#ffd35a;color:#67400d;font-weight:900;font-size:14px;}
+    .path-echo{position:absolute;display:block;width:69px;height:79px;left:-18px;top:-48px;filter:drop-shadow(0 4px 0 rgba(130,80,20,.10));pointer-events:none;}
+    .path-echo>.stk{background:transparent!important;overflow:visible;}
+    #heroCap{position:relative;display:flex;align-items:center;gap:12px;text-align:left;padding:17px 18px;background:#fff;border-radius:0 0 24px 24px;}
+    #heroName{display:block;font-family:"Baloo 2";font-weight:800;font-size:24px;line-height:1.12;flex:1;}
     #heroSub{font-weight:800;font-size:12px;line-height:1.45;color:var(--muted);}
-    #heroSub b{color:var(--gold);letter-spacing:1px;}
-
+    #actionLabel{font-family:"Baloo 2";font-size:15px;font-weight:800;line-height:1.1;}
+    .play-badge{display:flex;align-items:center;justify-content:center;gap:7px;flex:none;min-height:45px;border-radius:99px;padding:0 14px;background:#ff8a3d;box-shadow:0 4px 0 #e66c24;color:#fff;}
+    .play-badge svg{width:13px;height:16px;fill:currentColor;}
     /* up next thumbnails */
     #upNextLbl{font-family:"Baloo 2";font-weight:800;font-size:12px;letter-spacing:.1em;color:var(--label);}
     #gameShelfHead{display:flex;align-items:center;justify-content:space-between;gap:10px;flex:none;}
-    #browseGames{display:inline-flex;align-items:center;justify-content:center;min-height:32px;padding:4px 10px;border-radius:99px;background:#fff;color:#855028;font-size:12px;font-weight:900;text-decoration:none;white-space:nowrap;}
-    #browseGames:focus-visible{outline:3px solid #ff8a3d;outline-offset:3px;}
     /* DAY1: three games, not two — they share the row, so they shrink */
     #thumbs{display:flex;gap:10px;justify-content:center;}
     .thumb{position:relative;flex:1 1 0;min-width:0;max-width:118px;aspect-ratio:1/.97;border-radius:20px;border:5px solid #fff;box-shadow:0 10px 22px rgba(90,50,10,.16);background:#cfe7f2;cursor:pointer;transition:transform .12s;margin-bottom:12px;}
@@ -186,12 +184,21 @@
     .thumb.mystery .cost{position:absolute;top:5px;right:5px;background:#ffd21c;color:#5b3d00;border-radius:99px;
       padding:2px 7px;font-family:"Baloo 2";font-weight:800;font-size:10px;}
 
-    /* The recommended session is one clear action before optional game choices. */
-    #goBtn{border:none;border-radius:20px;padding:17px;font-family:"Baloo 2";font-weight:800;font-size:19px;letter-spacing:.04em;color:#fff;background:linear-gradient(180deg,#ffa05a,#ff8a3d);box-shadow:0 6px 0 var(--orange-d);cursor:pointer;width:100%;margin-top:0;flex:none;transition:transform .05s;}
-    #sessionGuide{max-width:420px;align-self:center;text-align:center;font-size:12px;line-height:1.45;font-weight:700;color:#795c3c;margin:0 4px 3px;}
-    #goBtn:focus-visible{outline:3px solid #795c3c;outline-offset:5px;}
-    #goBtn:active{transform:translateY(4px);box-shadow:0 2px 0 var(--orange-d);}
-    @media (max-height:760px){ #goBtn{padding:13px;font-size:17px;} }
+    /* The entire picture, path and caption are one native button. */
+    html,body{height:auto;min-height:100%;overflow:auto;overscroll-behavior:auto;}
+    #wrap{height:auto;min-height:100dvh;overflow:visible;gap:16px;max-width:500px;padding-left:20px;padding-right:20px;}
+    #heroCard{height:clamp(235px,39dvh,330px);min-height:235px;}
+    #goBtn{display:block;border:5px solid #fff;border-radius:29px;padding:0;background:#fff;color:var(--ink);width:100%;box-shadow:0 9px 0 #ebdcc7,0 15px 24px rgba(90,50,10,.10);cursor:pointer;text-align:left;transition:transform .12s;}
+    #goBtn:focus-visible{outline:3px solid #157da5;outline-offset:5px;}
+    #goBtn:active{transform:translateY(3px);}
+    #sessionGuide{max-width:380px;align-self:center;text-align:center;font-size:12px;line-height:1.45;font-weight:700;color:#795c3c;margin:0 7px 3px;}
+    #jarInfo{display:flex;align-items:center;gap:12px;min-width:0;border:0;background:none;color:inherit;text-align:left;cursor:pointer;}
+    #jarTxt{min-width:0;}
+    #purse{padding:5px 10px;}
+    #ageGuide{font-size:12px;line-height:1.5;margin:12px 0 4px;}
+    @media(max-width:360px){#wrap{padding-left:15px;padding-right:15px;gap:13px;}header{gap:7px;}#hdrBtns{gap:6px;}#hiName{font-size:19px;}#subLine{font-size:10px;}#heroCard{height:235px;min-height:235px;}#heroCap{padding:14px 12px;}#heroName{font-size:22px;}.play-badge{padding:0 11px;}.path-node{width:57px;height:57px;}.path-echo{width:62px;height:71px;left:-15px;top:-42px;}#jarTxt span{font-size:10.5px;}}
+    @media(orientation:landscape) and (max-height:520px){#heroCard{height:270px;}}
+    @media(prefers-reduced-motion:reduce){#goBtn{transition:none;}}
     #confetti i{position:absolute;border-radius:3px;z-index:6;animation:cfall 1.2s ease-out forwards;}
     @keyframes cfall{0%{opacity:1;transform:translateY(0) rotate(0)}100%{opacity:0;transform:translateY(60px) rotate(40deg)}}
     @media (prefers-reduced-motion:reduce){ #confetti i{animation:none;} }
@@ -200,13 +207,10 @@
 <body>
   <div id="wrap">
     <header>
-      <div>
-        <div id="hiName">Hi!</div>
-        <div id="subLine"></div>
-      </div>
+      <a id="buddyBtn" href="/customize.html" aria-label="Choose your buddy"></a>
+      <div id="greeting"><div id="hiName">Hi!</div><div id="subLine"></div></div>
       <div id="hdrBtns">
-        <button id="ringBtn" aria-label="Reps today" style="display:flex;align-items:center;gap:5px;font-family:'Baloo 2';font-weight:800;font-size:15px;color:#4a2c14;padding:0 13px;"><svg viewBox="0 0 64 64" style="width:17px;height:17px"><path d="M36 4 14 36h13l-5 24 24-34H33Z" fill="#ffd21c" stroke="#f0a800" stroke-width="2.5" stroke-linejoin="round"/><circle cx="30" cy="15" r="2.5" fill="#fff" opacity=".9"/></svg><span id="ringTxt">0</span></button>
-        <button id="libBtn" aria-label="Books — coming soon"><svg viewBox="0 0 64 64" style="width:24px;height:24px;vertical-align:middle"><path d="M10 14c8-4 15-4 22 0v38c-7-4-14-4-22 0Z" fill="#4db3f2"/><path d="M54 14c-8-4-15-4-22 0v38c7-4 14-4 22 0Z" fill="#2a8fd4"/><line x1="32" y1="14" x2="32" y2="52" stroke="#1c6fa8" stroke-width="2"/><circle cx="19" cy="22" r="3" fill="#fff" opacity=".8"/></svg></button>
+        <a id="libBtn" href="/activities.html" aria-label="Play library"></a>
         <button id="parentBtn" aria-label="For grown-ups"><span class="pic-gear"></span></button>
       </div>
     </header>
@@ -216,25 +220,22 @@
     <!-- One recommended session comes first. The game shelf and library
          remain open for families who want to choose something else. -->
     <div id="jarRow">
-      <div id="jar"><div id="jarFill"></div><div id="jarStars"><i></i><i></i><i></i></div></div>
-      <div id="jarTxt"><b id="jarHead">Fill the star jar!</b><span id="jarSub"></span></div>
-      <div id="purse" title="Coins"><span>🪙</span><span id="coinTxt">0</span></div>
+      <button id="jarInfo" aria-label="Today's practice">
+        <span id="jar" aria-hidden="true"><span id="jarFill"></span><span id="jarStars"><i></i><i></i><i></i></span></span>
+        <span id="jarTxt"><b id="jarHead">Fill the star jar!</b><span id="jarSub"></span></span>
+      </button>
+      <div id="purse" title="Coins" hidden><span id="coinArt" aria-hidden="true"></span><span id="coinTxt">0</span></div>
     </div>
-
     <div id="heroWrap">
-      <div id="heroCard"></div>
-      <div id="heroCap">
-        <div id="heroName"></div>
-        <div id="heroSub"></div>
-      </div>
+      <button id="goBtn" aria-labelledby="heroName actionLabel" aria-describedby="heroSub sessionGuide">
+        <span id="heroCard" aria-hidden="true"></span>
+        <span id="heroCap"><span id="heroName"></span><span class="play-badge"><svg viewBox="0 0 14 18" aria-hidden="true"><path d="M1 1 13 9 1 17Z"/></svg><span id="actionLabel">Let's go!</span></span></span>
+        <span id="heroSub" class="sr-only"></span>
+      </button>
     </div>
-    <button id="goBtn" aria-describedby="heroSub sessionGuide">LET'S GO!</button>
     <p id="sessionGuide"></p>
-    <div id="gameShelfHead">
-      <div id="upNextLbl">PICK A GAME</div>
-      <a id="browseGames" href="/activities.html" aria-label="Browse all games">Browse all →</a>
-    </div>
-    <div id="thumbs"></div>
+    <div id="gameShelfHead" hidden><div id="upNextLbl">PICK A GAME</div></div>
+    <div id="thumbs" hidden></div>
   </div>
 
   <!-- parent gate -->
@@ -253,6 +254,7 @@
   <div class="ovl" id="sheetOvl">
     <div class="modal">
       <h3>Parent corner</h3>
+      <p id="ageGuide">Simple play is suggested for ages 2–4; arcade adventures for ages 5+. Every game is available in the Play library.</p>
       <div id="weekCard" style="background:var(--cream);border-radius:16px;padding:14px 16px;margin-top:12px;text-align:left;">
         <div style="display:flex;align-items:center;gap:8px;">
           <b style="font-family:'Baloo 2';font-size:15px;color:var(--ink);">This week</b>
@@ -312,7 +314,7 @@
     // Progress stays in the real rep count and jar instead of replacing the goal.
     // Ages suggest a style of play; they never change a sound or target here.
     function prefersSimplePlay(){
-      try{ return S.activityLibrary && S.activityLibrary().recommended==="simple"; }catch(e){ return false; }
+      try{ return S.playStyle && S.playStyle()==="simple"; }catch(e){ return false; }
     }
 
     var ICON={slice:"🍉",tiles:"🎹",stack:"🧱",run:"🏃",glide:"🎈",feed:"🦜"};
@@ -351,85 +353,66 @@
     function runUnderway(){
       try{
         var r=JSON.parse(sessionStorage.getItem("sona.run.v1")||"null");
-        return (r&&r.active&&(r.round|0)>=0&&(r.round|0)<S.adventureGames().length) ? r : null;
+        return (r&&r.active&&(r.round|0)>=0&&((r.round|0)<S.adventureGames().length||r.finishing)&&(r.round>0||r.ready||r.pending)) ? r : null;
       }catch(e){ return null; }
     }
-    // Homework is already honoured under the hood — rotSounds() puts the SLP's
-    // sounds first and charge.html practises them. What was missing is SAYING
+    // Homework is already honored under the hood — rotSounds() puts the SLP's
+    // sounds first and charge.html practices them. What was missing is SAYING
     // so, so a parent can see the assignment is actually driving the app.
     function homeworkNote(){
       try{ var hw=S&&S.homework?S.homework():null; return hw?(hw.by?("From "+hw.by):"From your speech therapist"):""; }catch(e){ return ""; }
     }
 
-    function renderHero(){
+    function paintAdventure(games,round){
       var hero=$("heroCard");
-      $("jarRow").hidden=false;
-      var mid=runUnderway();
-      var adventure=S.adventureGames();
-      var nextGame=adventure[mid?(mid.round|0):0];
-      var nextName=S.gameAct(nextGame).name;
-      if(mid&&!demoOnlyHero()){
-        hero.innerHTML="";
-        applyArt(hero,nextGame);
-        if(!(S.playMode&&S.playMode())) $("subLine").textContent="Let's practice your "+S.soundLabel(mid.sound||sound)+" sound";
-        $("sessionGuide").textContent="Pick up where you left off with your completed rounds saved.";
-        $("heroName").textContent="Keep going!";
-        $("heroSub").textContent="You're on round "+((mid.round|0)+1)+" of "+adventure.length+" · Next game: "+nextName;
-        $("goBtn").textContent="CARRY ON!";
-        $("goBtn").dataset.launch="/charge.html?daily=1&first="+adventure[0];
-        return;
-      }
-      if(demoOnlyHero()){
-        hero.innerHTML="";
-        applyArt(hero,nextGame);
-        $("sessionGuide").textContent="Listen, say your sound and enjoy a game with Echo.";
-        $("heroName").textContent="Practice with Echo";
-        $("heroSub").textContent="Say your sounds, then play "+nextName;
-        $("goBtn").textContent="LET'S PRACTICE!";
-        $("goBtn").dataset.launch="/charge.html?daily=1&demo=1&first="+adventure[0];
-        return;
-      }
-      if(prefersSimplePlay()){
-        // This untimed picture game does not fill the counted-rep jar.
-        $("jarRow").hidden=true;
-        // Five discoveries are an untimed game, not five earned speech reps.
-        // The game uses rotSound too, so this card previews the existing goal.
-        var simple=S.gameAct("bubbles"), simpleNote=homeworkNote();
-        hero.innerHTML=""; applyArt(hero,"bubbles");
-        $("heroName").textContent=simple.name;
-        $("heroSub").textContent=(simpleNote?simpleNote+" · ":"")+"5 pictures, at your own pace";
-        $("sessionGuide").textContent="Listen to a word, say it together, then tap Next.";
-        $("goBtn").textContent="PLAY TOGETHER";
-        $("goBtn").dataset.launch=simple.go;
-        return;
-      }
-      if(playedToday()){
-        // today's adventure is done: the hero becomes the first of today's games
-        var k=TRIO[0], act=(S.gameAct&&S.gameAct(k))||null;
-        hero.innerHTML="";
-        applyArt(hero,k||"slice");
-        $("sessionGuide").textContent="Choose this game or explore the library for more.";
-        $("heroName").textContent=act?act.name:"Play";
-        $("heroSub").textContent=act?act.sub:"";
-        $("goBtn").textContent="LET'S GO!";
-        $("goBtn").dataset.launch=act?act.go:"/charge.html?daily=1";
-        return;
-      }
-      // today's adventure: five rounds of practice, and the games they earn.
-      // Preview the adventure's first earned game; the trio below is a
-      // separate choice of individual activities, not this run's itinerary.
-      hero.innerHTML="";
-      applyArt(hero,nextGame);
-      // a child who has never practised is starting, not resuming, and the
-      // button should say the bigger thing exactly once
+      hero.innerHTML='<svg id="adventureTrail" viewBox="0 0 100 100" preserveAspectRatio="none"><path d="M18 73 Q19 51 41 52 T76 64 Q91 48 76 25 T37 19" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-dasharray="1 5"/></svg>';
+      var spots=[[18,73],[41,52],[76,64],[76,25],[37,19]];
+      games.forEach(function(key,i){
+        var node=document.createElement("span");
+        node.className="path-node "+(i<round?"done":i===round?"current":"upcoming");
+        node.dataset.round=String(i);node.dataset.game=key;
+        node.style.left=spots[i][0]+"%";node.style.top=spots[i][1]+"%";
+        applyArt(node,key);
+        if(i===Math.min(round,games.length-1)){
+          var echo=document.createElement("span");echo.className="path-echo";
+          S.paintSticker(echo,"p-echo-idle","sky");
+          if(spots[i][1]<35)echo.style.top="4px";
+          echo.querySelector("svg").setAttribute("preserveAspectRatio","xMidYMid meet");node.appendChild(echo);
+        }
+        hero.appendChild(node);
+      });
+    }
+    function renderHero(){
+      var mid=runUnderway(),adventure=S.adventureGames();
+      var simple=adventure.every(function(k){return S.gameAct(k).group==="simple";});
+      $("jarRow").hidden=simple;
+      var round=mid?Math.min(mid.round|0,adventure.length):0;
+      paintAdventure(adventure,round);
       var firstEver=false;
-      try{ firstEver=!(S&&S.demoState&&S.demoState().started)&&!(S&&S.repsToday&&S.repsToday()); }catch(e){}
-      $("sessionGuide").textContent="A grown-up can help you listen, say the sound and play.";
-      $("heroName").textContent=firstEver?"Your first adventure":"Today's adventure";
+      try{firstEver=!S.demoState().started&&!S.repsToday();}catch(e){}
+      var nextName=S.gameAct(adventure[Math.min(round,adventure.length-1)]).name;
       var hn=homeworkNote();
-      $("heroSub").textContent=(hn?hn+" · ":"")+adventure.length+" rounds of practice and games · First: "+nextName;
-      $("goBtn").textContent=firstEver?"START YOUR FIRST ADVENTURE":"LET'S PLAY!";
+      $("heroName").textContent=firstEver?"Your first adventure":"Today's adventure";
+      $("heroSub").textContent=(hn?hn+" · ":"")+adventure.length+" rounds · First: "+S.gameAct(adventure[0]).name;
+      $("actionLabel").textContent="Let's go!";
+      $("sessionGuide").textContent=simple?"Play together: listen to a word, say it, then explore." : "A grown-up can help you listen, say the sound and play.";
       $("goBtn").dataset.launch="/charge.html?daily=1&first="+adventure[0];
+      if(mid){
+        if(!(S.playMode&&S.playMode()))$("subLine").textContent="Let's practice your "+S.soundLabel(mid.sound||sound)+" sound";
+        $("heroName").textContent=mid.finishing?"One last surprise!":"Keep going!";
+        $("actionLabel").textContent="Carry on!";
+        $("heroSub").textContent=mid.finishing?"Your completed adventure is saved. Open your final surprise.":"Round "+(round+1)+" of "+adventure.length+" · Next game: "+nextName;
+        $("sessionGuide").textContent="Pick up where you left off. Your completed rounds are saved.";
+      }else if(demoOnlyHero()){
+        $("heroName").textContent="Play with Echo";
+        $("goBtn").dataset.launch="/charge.html?daily=1&demo=1&first="+adventure[0];
+      }else if(playedToday()){
+        var k=TRIO[0],act=S.gameAct(k);
+        $("heroCard").innerHTML="";applyArt($("heroCard"),k);
+        $("heroName").textContent=act.name;$("heroSub").textContent=act.sub;
+        $("sessionGuide").textContent="Choose a game or find a favorite in the Play library.";
+        $("goBtn").dataset.launch=act.go;
+      }
     }
 
     function renderThumbs(){
@@ -444,6 +427,7 @@
       // The lock now says who can open them, and never navigates.
       var gatedNow=demoOnlyHero();
       var played=playedToday();
+      $("gameShelfHead").hidden=!played;$("thumbs").hidden=!played;
       var show=(played&&!gatedNow)?TRIO.slice(1):TRIO;
       // one piece of lock language, and it says what OPENS them rather than
       // that they are shut
@@ -495,8 +479,10 @@
         $("jarHead").textContent=g.full?"Jar full! ⭐":"Fill the star jar!";
         $("jarSub").textContent=g.full
           ? "You said "+g.n+" sounds today."
-          : g.n+" of "+g.goal+" sounds — keep talking!";
-        $("coinTxt").textContent=String(S.getCoins?S.getCoins():0);
+          : g.n ? g.n+" of "+g.goal+" sounds — keep talking!" : "Talk with Echo to fill your jar!";
+        var coins=S.getCoins?S.getCoins():0;
+        $("coinTxt").textContent=String(coins);
+        $("purse").hidden=!(coins>0||(S.canBuyMystery&&S.canBuyMystery()));
       }catch(e){}
     }
 
@@ -517,7 +503,7 @@
         el.innerHTML='<span class="q">❓</span><b>Mystery game</b><span class="cost">🪙'+(S.mysteryCost?S.mysteryCost():15)+'</span>';
         el.onclick=function(){
           var got=S.buyMystery&&S.buyMystery();
-          if(!got){ $("heroSub").textContent="Not enough coins yet — keep practising!"; return; }
+          if(!got){ $("heroSub").textContent="Not enough coins yet — keep practicing!"; return; }
           try{ S.confetti&&S.confetti({count:120}); }catch(e){}
           sfx("win"); render();
         };
@@ -527,7 +513,15 @@
 
     function render(){ renderHero(); renderThumbs(); paintJar(); }
 
+    $("buddyBtn").innerHTML=S.buddyMarkup(P.character||"fox",36);
+    S.paintSticker($("libBtn"),"pt-chest","#e7f2fa");
+    $("coinArt").innerHTML=S.icon("coin",20);
     render();
+    if(!document.hidden&&P.voiceOn!==false&&Number(P.volume)!==0){
+      var helloRun=runUnderway();
+      S.speak(helloRun?(helloRun.finishing?"Let\'s open your surprise!":"Let\'s keep going!"):playedToday()?"Pick a game!":"Let\'s go on an adventure!");
+    }
+    S.onBackground(function(){if(S.speakNow)S.speakNow("");});
     // AFTER the boot render, or render() paints the hero's own line over it.
     // Bounced here from a gated kid page (Sona.gateBounce)? Say why, in words a
     // child can act on, and then forget the flag so a reload does not nag.
@@ -539,17 +533,10 @@
       }
     }catch(e){}
     function launch(){ sfx("tap"); location.href=$("goBtn").dataset.launch||"/charge.html?daily=1"; }
-    $("heroCard").onclick=launch;
     $("goBtn").onclick=launch;
 
-    // ── the books are coming soon (GAMES1) ──
-    // The shelf is parked until it is good enough to launch. The button stays
-    // on the header as a promise a child can see — and it goes nowhere.
-    $("libBtn").onclick=function(){
-      sfx("tap");
-      var b=$("libBtn"); b.classList.remove("nope"); void b.offsetWidth; b.classList.add("nope");
-      $("heroSub").innerHTML="📚 Books are <b>coming soon</b> — for now, play!";
-    };
+    $("libBtn").onclick=function(){sfx("tap");};
+    $("buddyBtn").onclick=function(){sfx("tap");};
 
     // weekly volume sync — anonymous {id, week, rep count}, throttled in sona.js
     try{ if(S&&S.repsBeacon) S.repsBeacon(); }catch(e){}
@@ -563,22 +550,12 @@
     // The comeback modal lived here and is deliberately GONE (Travis's call) —
     // a popup between the kid and the day's adventure was friction on exactly
     // the visit we most want to go well. The adventure card is the greeting.
-    // ── the rep pill (RING1): every honest rep the kid says today ticks this
-    // number UP — a count that only climbs (never 0/5 pressure). Gold once the
-    // day's 5 rounds are done; tapping explains both numbers honestly.
-    function paintRing(){
-      try{
-        var reps=(S.repsToday?S.repsToday():0);
-        $("ringTxt").textContent=String(reps);
-        if(S.todayRing().done){ $("ringBtn").style.color="#f0a800"; $("ringBtn").classList.add("gold"); }
-      }catch(e){}
-    }
-    paintRing();
-    $("ringBtn").onclick=function(){
+    // The jar explains the real count without adding another header counter.
+    $("jarInfo").onclick=function(){
       sfx("tap");
       try{
-        var tr=S.todayRing(), reps=(S.repsToday?S.repsToday():0), snd=(S.soundLabel?S.soundLabel(S.rotSound()):S.rotSound());
-        toast(reps+" reps today · "+(tr.done?"today's goal is done — everything else is bonus!":(tr.n+" of "+tr.goal+" rounds done · "+snd+" sound")));
+        var tr=S.todayRing(),reps=S.repsToday?S.repsToday():0;
+        toast(reps+" reps today · "+(tr.done?"today's goal is done — everything else is bonus!":tr.n+" of "+tr.goal+" rounds done"));
       }catch(e){}
     };
 
@@ -753,7 +730,7 @@
       // Opening the home screen used to START a trial (ensureTrial), so the
       // clock began because a parent looked at the app. It reports one now,
       // and only if one already exists — an existing family's unexpired days
-      // are honoured to the end, and nobody new is issued any.
+      // are honored to the end, and nobody new is issued any.
       var link=' <a href="/subscribe.html" style="color:var(--orange-d);font-weight:800;">';
       // The free session is over and nobody bought. This is the ONE place that
       // says so — the kid screen never will — and it is where a parent who

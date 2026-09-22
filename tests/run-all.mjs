@@ -20,6 +20,9 @@ const SUITES = [
   "chargepacingtest.mjs", // listen/model/child-turn handoff and replay ordering
   "readtest.mjs",  // books never go silent: browser-voice fallback when TTS dies
   "momweek.mjs",   // parent weekly goal + streak math + the three UIs
+  "onboardingtest.mjs", // reviewed setup, permission and explicit handoff
+  "progressreviewtest.mjs", // honest parent counts, local clips and explicit sharing
+  "repguardtest.mjs", // non-speech evidence cannot create practice
   "betatest.mjs",  // onboarding flow + beta pulse + founding banner
   "calltest.mjs",  // Coach Call script variants + weekly cap (dev-gated)
   "packtest.mjs",  // call memory, wins card, buddy sprites, adventure tile

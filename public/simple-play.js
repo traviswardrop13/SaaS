@@ -89,17 +89,11 @@
   function finish() {
     if (finished) return;
     finished = true; phase = "finish"; stopResources();
-    var ringDone = false, sticker = null;
-    // Same boundary as Feed Echo: a completed round with at least one heard
-    // turn advances once. Discoveries alone never alter practice statistics.
-    if (heard > 0) {
-      try { var wasDone = S.todayRing && S.todayRing().done; if (S.rotAdvance) S.rotAdvance(); ringDone = !wasDone && S.todayRing && S.todayRing().done; } catch (e) {}
-      try { if (S.awardNextSticker) sticker = S.awardNextSticker(); } catch (e) {}
-    }
-    $("finishTitle").textContent = ringDone ? "Today's practice is done!" : "Five discoveries!";
-    $("finishCopy").textContent = heard > 0
-      ? "Echo heard you " + heard + " time" + (heard === 1 ? "" : "s") + "." + (sticker ? " You found the " + sticker.name + " sticker!" : "")
-      : "You found all five pictures. Play again whenever you're ready.";
+    // Optional loudness feedback is free play, never measured practice.
+    var daily = S.simpleAdventure && S.simpleAdventure(kind, true);
+    $("finishTitle").textContent = "Five discoveries!";
+    $("finishCopy").textContent = "You found all five pictures. That was fun!";
+    $("playAgain").textContent = daily ? "Keep going →" : "Play again ↻";
     render(); effect("complete", true); focus($("playAgain"));
   }
   function pause() {
@@ -298,7 +292,12 @@
     });
   }
 
-  $("startGame").onclick = start; $("playAgain").onclick = start;
+  $("startGame").onclick = start; $("playAgain").onclick = function () {
+    if (closed || paused || document.hidden) return;
+    if (finished && S.simpleAdventure && S.simpleAdventure(kind, false)) {
+      closed = true; stopResources(); location.href = "/charge.html?daily=1&banked=0";
+    } else start();
+  };
   if ($("revealButton")) $("revealButton").onclick = function () { reveal(null); };
   doors.forEach(function (door) { door.onclick = function () { reveal(door); }; });
   $("hearWord").onclick = sayWord; $("nextTurn").onclick = next;

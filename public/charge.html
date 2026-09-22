@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
-  <title>Sona — Fill your ticket!</title>
+  <title>Sona — Practice</title>
   <link href="/fonts.css" rel="stylesheet">
   <link rel="manifest" href="/manifest.webmanifest" />
   <meta name="theme-color" content="#fff6e9" />
@@ -116,7 +116,7 @@
     #turtleBtn svg{width:18px;height:18px;}
     #turtleBtn:active{transform:translate(-50%,3px);box-shadow:0 1px 0 var(--hsh);}
     /* sticker chest — tease wobble, tap thump, big reveal */
-    #chestBox{width:128px;height:128px;margin:0 auto;cursor:pointer;}
+    #chestBox{border:none;background:none;padding:0;display:block;width:128px;height:128px;margin:0 auto;cursor:pointer;}
     #chestBox.tease{animation:wob 1.5s ease-in-out infinite;}
     #chestBox.thump{animation:thump .3s ease;}
     @keyframes wob{0%,100%{transform:rotate(0)}20%{transform:rotate(-5deg)}45%{transform:rotate(4deg)}70%{transform:rotate(-3deg)}}
@@ -214,6 +214,41 @@
     #pauseOvl button:focus-visible{outline:3px solid #795534;outline-offset:4px;}
     body.practice-paused *{animation-play-state:paused!important;}
     body.practice-paused .ovl:not(#pauseOvl){visibility:hidden;}
+
+    #ctxLine{display:flex;align-items:center;justify-content:center;gap:12px;overflow:visible;}
+    .path-dot{width:12px;height:12px;background:#fff4e0;border:2px solid rgba(124,81,38,.25);border-radius:50%;}
+    .path-dot.done{background:#ffa052;border-color:#dc7132;}
+    .path-dot.current{position:relative;overflow:hidden;width:38px;height:38px;background:#fff;border:2px solid #ef7931;display:grid;place-items:center;box-shadow:0 3px 0 rgba(100,60,20,.15);}
+    #echoBuddy{position:relative;border:0;padding:0;background:none;border-radius:50%;cursor:pointer;line-height:0;isolation:isolate;}
+    #echoBuddy:focus-visible{outline:3px solid #ad5b1d;outline-offset:6px;}
+    #echoBuddy:disabled{cursor:default;}
+    #leo{width:165px;height:165px;position:relative;z-index:1;margin-top:8px;}
+    #echoBuddy::before{content:"";position:absolute;inset:8%;border-radius:50%;z-index:0;opacity:0;}
+    .echo-speaking #echoBuddy::before{opacity:1;border:3px dotted #c98b53;}
+    .echo-listening #echoBuddy::before{opacity:1;background:rgba(255,179,71,.35);box-shadow:0 0 26px #ffca78;animation:listenGlow 1.8s ease-in-out infinite;}
+    #echoBuddy.heard #leo{transform:translateY(-5px) rotate(-3deg);}
+    .voice-bars{display:none;position:absolute;right:0;top:45%;height:26px;align-items:center;gap:4px;}
+    .voice-bars i{width:5px;height:14px;border-radius:4px;background:#ed7d30;}.voice-bars i:nth-child(2){height:24px;}
+    #echoBuddy.heard .voice-bars{display:flex;}
+    .echo-checking #echoBuddy::before{opacity:1;border:3px solid transparent;border-top-color:#ed8c4b;animation:checkSpin 1.2s linear infinite;}
+    @keyframes listenGlow{50%{transform:scale(1.08);opacity:.65;}}
+    @keyframes checkSpin{to{transform:rotate(360deg);}}
+    #micWrap{width:44px;height:44px;}#micWrap::before,#micWrap::after{display:none;animation:none;}
+    #micBtn{width:38px;height:38px;box-shadow:none;cursor:default;color:#fff;}#micBtn svg{width:23px;height:23px;}
+    #bottom{bottom:calc(28px + env(safe-area-inset-bottom));}
+    #reveals{bottom:calc(120px + env(safe-area-inset-bottom));}
+    #turtleBtn{position:static;transform:none;margin:6px 0 0;min-height:38px;padding:7px 16px;}
+    #turtleBtn:active{transform:translateY(2px);}#turtleBtn svg{width:28px;height:24px;}
+    #stand .well .fr.ghost svg *{fill:none!important;stroke:#fff5df!important;stroke-width:3!important;stroke-dasharray:none!important;}
+    #launchArt{position:relative;overflow:hidden;border-radius:10px;width:44px;height:44px;display:block;flex-shrink:0;}
+    #launchBar.show{display:flex;justify-content:center;align-items:center;gap:14px;}
+    #quietOvl{background:rgba(74,44,20,.30);z-index:85;padding:20px;}
+    #quietOvl .quiet-card{background:#fff7e9;max-height:calc(100dvh - 40px);overflow:auto;}
+    .quiet-card img{width:160px;height:150px;object-fit:contain;}
+    #pauseResume span{font-size:30px;vertical-align:-3px;margin-right:8px;}
+    [hidden]{display:none!important;}
+    @media(max-height:700px){#echoCluster{margin-top:7px;}#leo{width:96px;height:96px;}#bubble{padding:8px 15px;}#gameTitle{font-size:24px;}#turtleBtn{margin-top:3px;min-height:34px;}#balloonBox{width:140px;}}
+    @media(prefers-reduced-motion:reduce){#echoBuddy::before,#leo,#chestBox{animation:none!important;}}
   </style>
 </head>
 <body>
@@ -223,11 +258,7 @@
     <div id="top">
       <button id="close" aria-label="Close">✕</button>
       <div id="ctxLine"></div>
-      <div id="tktPill" aria-label="Ticket progress">
-        <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-2a2 2 0 0 0 0-4Z" fill="#ffb100" stroke="#f0a800" stroke-width="1.2"/><circle cx="8" cy="9" r="1.4" fill="#fff" opacity=".8"/></svg>
-        <span class="segs" id="tktSegs"><i></i><i></i><i></i><i></i><i></i></span>
-      </div>
-      <div id="sumLbl"></div>
+
     </div>
 
     <div id="titleWrap">
@@ -240,30 +271,29 @@
         <div id="bMain"><span id="sayLbl">Say</span><b id="bTarget">…</b></div>
         <div id="gpState">Say it to fill your ticket!</div>
       </div>
-      <img id="leo" src="/coach/echo/echo-listening.svg" alt="Echo" onerror="this.outerHTML='<div id=leo style=font-size:52px>🦜</div>'" />
+      <button id="echoBuddy" aria-label="Hear it again"><img id="leo" src="/coach/echo/echo-listening.svg" alt="Echo"/><span class="voice-bars" aria-hidden="true"><i></i><i></i><i></i></span></button>
+      <button id="turtleBtn" aria-label="Hear it slowly"><svg viewBox="0 0 40 30" aria-hidden="true"><path d="M8 21C8 4 29 4 29 21Z" fill="#79bf73"/><path d="m14 20 4-10 7 7" fill="none" stroke="#398a58" stroke-width="2"/><circle cx="33" cy="20" r="5" fill="#b9d996"/><circle cx="35" cy="19" r="1" fill="#4a2c14"/><path d="M11 23v3m14-3v3M5 21h3" stroke="#398a58" stroke-width="3" stroke-linecap="round"/></svg>Hear it slooow</button>
     </div>
 
     <div id="bottom">
       <div id="micWrap">
-        <button id="micBtn" aria-label="Hear it again">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M16 8.5a5 5 0 0 1 0 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-        </button>
+        <div id="micBtn" role="img" aria-label="Microphone off"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M6 10v2a6 6 0 0 0 12 0v-2M12 18v4M8 22h8" stroke="currentColor" stroke-width="2" fill="none"/></svg></div>
       </div>
-      <div id="replayLabel">Hear it again</div>
+      <div id="replayLabel">Tap Echo to hear it again</div>
       <button id="launchBar"></button>
     </div>
-    <button id="turtleBtn" aria-label="Hear it slowly"><svg viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="#ef6f23"/><path d="M16 8.5a5 5 0 0 1 0 7" stroke="#ef6f23" stroke-width="2" fill="none" stroke-linecap="round"/></svg>Hear it slooow</button>
+
   </div>
 
   <!-- already played today -->
   <!-- sticker chest — fires the moment the daily goal ring completes (round 5):
        wiggle-tease → the child taps ×3 → burst + sticker reveal → claim, then the
        final game launches. Earned by showing up; never purchasable, no timers. -->
-  <div class="ovl" id="chestOvl">
+  <div class="ovl" id="chestOvl" role="dialog" aria-modal="true" aria-labelledby="chestCap">
     <div class="ovlCard">
       <img class="ovlEcho" src="/coach/echo/echo-celebrate.svg" alt="" />
       <div id="chestStage">
-        <div id="chestBox" class="tease"><svg viewBox="0 0 64 64"><path d="M8 32v-6q0-14 24-14t24 14v6Z" fill="#b5875a"/><rect x="8" y="30" width="48" height="26" rx="6" fill="#a06f45"/><rect x="15" y="30" width="8" height="26" rx="2" fill="#8a5a2a"/><rect x="41" y="30" width="8" height="26" rx="2" fill="#8a5a2a"/><rect x="8" y="28" width="48" height="5" rx="2.5" fill="#6e4f2f"/><rect x="26" y="26" width="12" height="14" rx="4" fill="#ffd21c"/><circle cx="32" cy="32" r="2.6" fill="#8a5a2a"/><circle cx="20" cy="20" r="2.4" fill="#fff" opacity=".7"/></svg></div>
+        <button id="chestBox" type="button" class="tease" aria-label="Open your treasure chest"><svg viewBox="0 0 64 64"><path d="M8 32v-6q0-14 24-14t24 14v6Z" fill="#b5875a"/><rect x="8" y="30" width="48" height="26" rx="6" fill="#a06f45"/><rect x="15" y="30" width="8" height="26" rx="2" fill="#8a5a2a"/><rect x="41" y="30" width="8" height="26" rx="2" fill="#8a5a2a"/><rect x="8" y="28" width="48" height="5" rx="2.5" fill="#6e4f2f"/><rect x="26" y="26" width="12" height="14" rx="4" fill="#ffd21c"/><circle cx="32" cy="32" r="2.6" fill="#8a5a2a"/><circle cx="20" cy="20" r="2.4" fill="#fff" opacity=".7"/></svg></button>
         <div id="chestCap">A treasure chest! Tap, tap, tap to open!</div>
       </div>
       <div id="chestReveal" style="display:none">
@@ -279,7 +309,7 @@
     <div class="ovlCard">
       <img class="ovlEcho" src="/coach/echo/echo-listening.svg" alt="" />
       <h2>Let Echo hear you practice!</h2>
-      <p style="font-weight:800;font-size:13.5px;color:var(--muted);line-height:1.5;">Listen to Echo first. Then it's your turn to practise and fill the ticket for your game.</p>
+      <p style="font-weight:800;font-size:13.5px;color:var(--muted);line-height:1.5;">Listen to Echo first. Then it's your turn to practice and fill the ticket for your game.</p>
       <!-- This paragraph is a PROMISE, and it went stale: it described an upload
            that stopped existing when the cloud scorer was removed, and said so
            for months afterwards. Every verdict is decided on this phone now, so
@@ -287,7 +317,7 @@
            sentence changes FIRST — before the code that would make it false.
            (Deliberately not quoting the old wording here: a test asserts that
            wording is gone, and a comment repeating it would keep the check red.) -->
-      <p style="font-weight:800;font-size:11.5px;color:var(--muted);line-height:1.5;">Grown-ups: the mic is on only during practice — never during the games — and every sound is checked right here on this device. No recording is ever uploaded, to us or to anyone else. One practice clip a day may be saved on this phone so you can listen back.</p>
+      <p id="micPromise" style="font-weight:800;font-size:12px;color:var(--muted);line-height:1.5;"></p>
       <button class="btn" id="micPrimeBtn">Turn on Echo's ears</button>
       <button id="micPrimeSkip" style="border:none;background:none;font-family:Nunito,sans-serif;font-weight:800;font-size:13.5px;color:var(--muted);cursor:pointer;padding:8px;margin-top:2px;">Not now</button>
     </div>
@@ -307,33 +337,27 @@
     </div>
   </div>
 
-  <div class="ovl" id="runOvl" role="dialog" aria-modal="true" aria-labelledby="runTitle" aria-describedby="runRounds runPractice">
+  <div class="ovl" id="runOvl" role="dialog" aria-modal="true" aria-labelledby="runTitle" aria-describedby="runPractice">
     <div class="ovlCard">
       <div class="run-hero">
         <img class="ovlEcho" src="/coach/echo/echo-celebrate.svg" alt="" />
         <div class="big" id="runEmoji" aria-hidden="true"><svg viewBox="0 0 64 64" style="width:56px;height:56px"><path d="M32 5l8.2 18.6L60 25.8 44.9 39.2 49.8 59 32 48.4 14.2 59l4.9-19.8L4 25.8l19.8-2.2Z" fill="#ffd21c"/><circle cx="25" cy="21" r="3" fill="#fff" opacity=".85"/></svg></div>
       </div>
       <h2 id="runTitle" tabindex="-1">Adventure complete!</h2>
-      <div id="runRounds">0 rounds completed</div>
-      <p id="runPractice"></p>
-      <div class="run-arcade-score">
-        <span id="runScoreLabel">Arcade score</span>
-        <span id="runScore" aria-labelledby="runScoreLabel">0</span>
-        <div id="runBest"></div>
-      </div>
+      <p id="runPractice">We finished the whole adventure!</p>
       <!-- The STORY1 cliffhanger card lived here. It went with the books
            (GAMES1, 19 Sep 2026): it promised a chapter that no longer opens. -->
-      <button class="btn" id="runDone">Done</button>
-      <button class="btn ghost" id="runArcade">Browse games</button>
+      <button class="btn" id="runChest">Open your chest <span aria-hidden="true">→</span></button>
+      <button class="btn" id="runDone" hidden>Done</button>
     </div>
   </div>
 
   <div class="ovl" id="pauseOvl" role="dialog" aria-modal="true" aria-labelledby="pauseTitle" aria-describedby="pauseCopy">
     <div class="ovlCard">
-      <img class="ovlEcho" src="/coach/echo/echo-idle.svg" alt="" />
+      <img class="ovlEcho" src="/coach/echo/echo-waiting.svg" alt="Echo resting" />
       <h2 id="pauseTitle">Practice paused</h2>
       <p id="pauseCopy">Take your time. We'll keep your place.</p>
-      <button class="btn" id="pauseResume">Resume</button>
+      <button class="btn" id="pauseResume"><span aria-hidden="true">▶</span> Resume</button>
       <button class="btn ghost" id="pauseHome">Home</button>
     </div>
   </div>
@@ -374,6 +398,7 @@
       && !!(window.Sona && window.Sona.demoDone && window.Sona.demoDone());
     if(window.Sona&&Sona.gated&&Sona.gated(IS_DEMO?"demo":"practice")){ Sona.gateBounce(); }
     var S=window.Sona;
+    $("micPromise").textContent=S.MIC_PROMISE;
     var profile=S?S.getProfile():{volume:0.8};
     // One flow stays alive across interruptions. Nothing resumes until the
     // child taps Resume; stale permission/audio results belong to an old epoch.
@@ -402,7 +427,7 @@
       practiceTimers.slice().forEach(function(wake){wake();});
       if(practiceTerminal) return;
       pauseFocus=document.activeElement;
-      [$("app"),$("chestOvl"),$("micPrime"),$("playedOvl"),$("runOvl")].forEach(function(el){if(el){pauseInert.push({el:el,was:el.inert});el.inert=true;}});
+      [$("app"),$("chestOvl"),$("micPrime"),$("playedOvl"),$("runOvl"),$("quietOvl")].forEach(function(el){if(el){pauseInert.push({el:el,was:el.inert});el.inert=true;}});
       document.body.classList.add("practice-paused");
       $("pauseOvl").classList.add("show");
       $("pauseResume").focus({preventScroll:true});
@@ -450,6 +475,7 @@
       return practiceReady();
     }
     async function acquirePracticeMic(){
+      var retried=false;
       while(await practiceReady()){
         if(micOk&&micStream){
           try{if(micStream.getAudioTracks().some(function(t){return t.readyState==="live";}))return true;}catch(e){return true;}
@@ -466,9 +492,16 @@
           return true;
         }catch(e){
           if(epoch!==practiceEpoch || practicePaused || document.hidden)continue;
-          practiceTerminal=true; closePractice(); micGo(false);
-          if(S&&S.micDenied)S.micDenied({back:"/today.html"});
-          return false;
+          stopMic(); micGo(false);
+          if(e && e.name === "NotAllowedError"){
+            practiceTerminal=true; closePractice();
+            if(S&&S.micDenied)S.micDenied({back:"/today.html"});
+            return false;
+          }
+          // Calls/audio-session interruptions are temporary, not denied permission.
+          if(!retried){retried=true;if(!(await practiceDelay(1000)))return false;continue;}
+          if(!(await showQuiet("microphone")))return false;
+          retried=false;
         }
       }
       return false;
@@ -479,6 +512,7 @@
     var LEVEL=parseInt(qp.get("level"),10)||1;
     var NEED=(S?S.chargeState().need:5);
     var GAMES={ "arcade-slice.html":{e:"🍉",n:"Fruit Slice"}, "arcade-stack.html":{e:"🧱",n:"Block Stacker"}, "arcade-tiles.html":{e:"🎹",n:"Piano Tiles"}, "arcade-run.html":{e:"🏃",n:"Sound Sprint"}, "arcade-glide.html":{e:"🎈",n:"Flappy Glide"} };
+    ["feed","bubbles","peekaboo"].forEach(function(key){var a=S.gameAct(key);GAMES["arcade-"+key+".html"]={e:"",n:a.name,simple:true};});
     // The shared plan also paints Home's preview. Keep all ROT_LEN rounds:
     // practice progression, the ring and the chest still depend on that length.
     var ADVENTURE=S.adventureGames(qp.get("first"));
@@ -496,10 +530,14 @@
 
     var finishedNow=false;
     if(isDaily){
-      // bank a returning round score FIRST (arcade sends ?banked=N)
-      if(run&&run.active&&run.pending&&qp.get("banked")!=null){
-        var b=Math.max(0,parseInt(qp.get("banked"),10)||0);
-        run.sum+=b; run.scores.push(b); run.pending=false; delete run.ready; run.round++; runSave(run);
+      // Simple games persist their finish before either Home or Keep going.
+      // Resume banks that finish exactly once even without a return query.
+      var pendingKey=run&&(run.games||ADVENTURE)[run.round];
+      var pendingSimple=!!(pendingKey&&S&&S.gameAct&&S.gameAct(pendingKey).group==="simple");
+      if(run&&run.active&&run.pending&&
+        (pendingSimple?run.simpleComplete===run.round:qp.get("banked")!=null)){
+        var b=pendingSimple?0:Math.max(0,parseInt(qp.get("banked"),10)||0);
+        run.sum+=b; run.scores.push(b); run.pending=false; delete run.ready; delete run.simpleComplete; run.round++; runSave(run);
       }
       if(!(run&&run.active)){
         if(S&&S.dailyInfo&&S.dailyInfo().playedToday){ /* shown at boot */ }
@@ -589,7 +627,11 @@
       $("turnStatus").textContent=text;
       document.body.classList.toggle("echo-speaking",busy);
       var enabled=!!engineOn&&!busy&&!audioBlocked();
-      $("micBtn").disabled=!enabled; $("turtleBtn").disabled=!enabled;
+      $("echoBuddy").disabled=!enabled; $("turtleBtn").disabled=!enabled;
+      var live=enabled&&turnPhase!=="checking";
+      document.body.classList.toggle("echo-listening",live);
+      document.body.classList.toggle("echo-checking",turnPhase==="checking"&&!busy);
+      $("micBtn").setAttribute("aria-label",live?"Microphone listening":"Microphone off");
     }
     function ttsBegin(){_ttsN++;ttsPlaying=true;updateTurn();}
     function ttsEnd(){if(_ttsN>0)_ttsN--;ttsPlaying=_ttsN>0;updateTurn();}
@@ -769,6 +811,14 @@
       '<svg viewBox="0 0 64 64"><path d="M32 58C17 51 12 38 14 28c5-4 12-5 18-2 6-3 13-2 18 2 2 10-3 23-18 30Z" fill="#ff5470"/><path d="M32 58C17 51 12 38 14 28c5-4 12-5 18-2v32Z" fill="#ff6b8a"/><ellipse cx="32" cy="20" rx="9" ry="5" fill="#58cc02"/><circle cx="26" cy="36" r="1.5" fill="#ffe4a8"/><circle cx="36" cy="40" r="1.5" fill="#ffe4a8"/><circle cx="31" cy="47" r="1.5" fill="#ffe4a8"/></svg>',
       '<svg viewBox="0 0 64 64"><ellipse cx="32" cy="36" rx="21" ry="15" fill="#ffd21c" transform="rotate(-16 32 36)"/><ellipse cx="24" cy="30" rx="5" ry="3.4" fill="#fff3b8" transform="rotate(-16 24 30)"/><ellipse cx="47" cy="26" rx="3" ry="2" fill="#8a5a2a" transform="rotate(-16 47 26)"/></svg>'
     ];
+    var FRUIT_OUTLINES=[
+      'M5 25a27 27 0 0 0 54 0Z',
+      'M20 18Q10 23 15 33Q16 42 23 43Q24 57 32 57Q40 57 41 43Q51 39 50 29Q52 17 41 18Q31 10 20 18Z',
+      'M51 37a19 19 0 1 0-38 0 19 19 0 0 0 38 0Z',
+      'M32 58C17 51 12 38 14 28c5-4 12-5 18-2 6-3 13-2 18 2 2 10-3 23-18 30Z',
+      'M12 41C5 20 44 10 52 27C59 47 21 61 12 41Z'
+    ];
+    function ghostFruit(i){return '<svg viewBox="0 0 64 64" aria-hidden="true"><path d="'+FRUIT_OUTLINES[i]+'" fill="none" stroke="#fff5df" stroke-width="3" stroke-linejoin="round"/></svg>';}
     var FOX='<svg viewBox="0 0 64 64"><path d="M12 40q-7 2-8 10 7 3 12-2Z" fill="#ff8a3d"/><circle cx="7" cy="49" r="3.5" fill="#fff"/><path d="M17 10l10 12-14 4Z" fill="#ff8a3d"/><path d="M47 10l-10 12 14 4Z" fill="#ff8a3d"/><path d="M20 15l6 8-9 2.5Z" fill="#e5672a"/><path d="M44 15l-6 8 9 2.5Z" fill="#e5672a"/><circle cx="32" cy="36" r="17" fill="#ff8a3d"/><ellipse cx="32" cy="44" rx="9" ry="7" fill="#fff"/><circle cx="25" cy="34" r="2.6" fill="#4a2c14"/><circle cx="39" cy="34" r="2.6" fill="#4a2c14"/><circle cx="32" cy="42" r="2.6" fill="#4a2c14"/></svg>';
     // the buddy the child picked — never a hardcoded fox (handoff C §8)
     function buddySvg(){ try{ if(S&&S.buddyMarkup) return S.buddyMarkup(profile.character||"fox",68); }catch(e){} return FOX; }
@@ -875,7 +925,7 @@
         if(SCENE.stand){
           el.classList.toggle("up",!on&&i===n);
           if(on&&!was) el.innerHTML='<div class="fr pop">'+FRUITS[i]+'</div>';
-          else if(!on) el.innerHTML='<div class="fr ghost">'+FRUITS[i]+'</div>';
+          else if(!on) el.innerHTML='<div class="fr ghost">'+ghostFruit(i)+'</div>';
         } else if(SCENE.road){
           el.classList.toggle("glass",!on);
           el.classList.toggle("up",!on&&i===n);
@@ -902,21 +952,10 @@
         if(n<slots.length&&slots[n]) slots[n].insertAdjacentHTML("beforeend",'<div class="coinUp">'+COIN+'</div>');
       }
     }
-    // header context line — the ONE line of context up top (A §1)
     (function(){
-      // Reads ROUNDIX — the same counter the ladder step uses, so the number a
-      // parent reads and the level the child gets can never disagree again.
-      // the header says "· P", not "· P sound": with the close button, the
-      // ticket pill and the star count beside it, the longer form wrapped to
-      // two lines on a 390px phone and now truncates to "P…" — neither is
-      // a label. The full "P sound" survives everywhere it is spoken.
-      var snFull=((S&&S.soundLabel)?S.soundLabel(SOUND):SOUND)+" sound", sn=((S&&S.soundLabel)?S.soundLabel(SOUND):SOUND), t=snFull;
-      var _goal=DAILY_SEQ.length;
-      if(isDaily&&run&&run.active) t="Round "+Math.min(ROUNDIX+1,_goal)+" of "+_goal+" · "+sn;
-      else { try{ var _tr=S&&S.todayRing?S.todayRing():null;
-        if(_tr) t=_tr.done?("Goal done — bonus round! · "+sn):("Round "+Math.min(ROUNDIX+1,_tr.goal)+" of "+_tr.goal+" · "+sn);
-      }catch(e){} }
-      $("ctxLine").textContent=t;
+      if(!isDaily){$("ctxLine").textContent=GMETA.n;return;}
+      $("ctxLine").setAttribute("aria-label","Adventure, round "+Math.min(ROUNDIX+1,DAILY_SEQ.length)+" of "+DAILY_SEQ.length);
+      ADVENTURE.forEach(function(key,i){var dot=document.createElement("span");dot.className="path-dot"+(i<ROUNDIX?" done":i===ROUNDIX?" current":"");dot.setAttribute("aria-hidden","true");if(i===ROUNDIX){var art=S.gameSticker(key);S.paintSticker(dot,art[0],art[1]);}$("ctxLine").appendChild(dot);});
     })();
     // the bubble target — huge, orange, repainted on every syllable flip
     function paintCard(){
@@ -933,7 +972,7 @@
     paintReps(0);
     window.__paintReps=paintReps; // headless-test hook
 
-    try{ var _g=S&&S.getProgress?S.getProgress():null; $("sumLbl").innerHTML='<svg width="15" height="15" viewBox="0 0 24 24"><path d="M12 2l2.9 6.2 6.6.8-4.9 4.6 1.3 6.6L12 16.9 6.1 20.2l1.3-6.6L2.5 9l6.6-.8Z" fill="#ffd21c" stroke="#f0a800" stroke-width="1.2"/></svg> '+((_g&&_g.totals&&_g.totals.stars)||0); }catch(e){}
+
 
     // slow-replay pill — appears on a retry; replays the model slooowly, for fun.
     // Playback runs through the speaker guard, so it can never charge a rep.
@@ -942,7 +981,7 @@
     $("turtleBtn").onclick=function(){ if(engineOn&&!practicePaused&&!practiceClosed&&!document.hidden&&!speaking&&!ttsPlaying&&!_sayN)saySlow(turtleText()); };
     function micGo(on){ $("micBtn").className=on?"go":""; updateTurn(); }
     // tapping the mic replays the prompt — speaker-guarded, can't charge reps
-    $("micBtn").onclick=function(){ if(engineOn&&!practicePaused&&!practiceClosed&&!document.hidden&&!speaking&&!ttsPlaying&&!_sayN) playPrompt(); };
+    $("echoBuddy").onclick=function(){ if(engineOn&&!practicePaused&&!practiceClosed&&!document.hidden&&!speaking&&!ttsPlaying&&!_sayN) playPrompt(); };
 
     // ---- sound-shape gate (bare-sound rounds only). The cloud scorer force-
     // aligns nonsense text like "rrrr" onto whatever it hears and is wrong in
@@ -1012,7 +1051,7 @@
         var attempt={cancelled:false,settled:false,segment:null}; engineAttempt=attempt;
         reps=0; paintReps(0); chunks=[]; rec=null; shapeReset(); attemptInterrupted=false;
         recognitionTexts=[]; recognitionRemaining=9000; recognitionState=null;
-        var voiced=0,silent=0,inBurst=false,thr=0,calN=0,calSum=0,lastRep=0;
+        var voiced=0,silent=0,inBurst=false,thr=0,calN=0,calSum=0,lastRep=0,burstFrames=[];
         var elapsed=0,clockBase=performance.now(),nudges=0,nextNudge=8000,idleDisabled=false,successAt=null;
         function closed(){return attempt.cancelled || practiceClosed || engineAttempt!==attempt;}
         function finishAttempt(value){
@@ -1024,7 +1063,7 @@
           pause:function(){
             if(attempt.settled)return;
             attemptInterrupted=true; chunks=[];
-            voiced=0; silent=0; inBurst=false;
+            voiced=0; silent=0; inBurst=false; burstFrames=[];
             if(attempt.segment)attempt.segment.finish("pause");
           },
           cancel:function(){
@@ -1036,10 +1075,10 @@
         };
         engineControl=control;
         function runSegment(){return new Promise(function(segmentDone){
-          var seg={startedAt:performance.now(),closed:false,reason:null,timers:[],raf:null,src:null,recorder:null};
+          var seg={startedAt:performance.now(),modelMs:0,modelAt:null,closed:false,reason:null,timers:[],raf:null,src:null,recorder:null};
           attempt.segment=seg;
           function current(){return !closed() && !seg.closed && attempt.segment===seg;}
-          function activeMs(){return elapsed+performance.now()-seg.startedAt;}
+          function activeMs(){var now=performance.now();return elapsed+now-seg.startedAt-seg.modelMs-(seg.modelAt===null?0:now-seg.modelAt);}
           function later(fn,ms){var timer=setTimeout(function(){if(current())fn();},Math.max(0,ms));seg.timers.push(timer);return timer;}
           function recorderStop(){return new Promise(function(done){
             var recorder=seg.recorder,settled=false;
@@ -1054,7 +1093,7 @@
             elapsed=Math.min(20000,activeMs()); engineOn=false; micGo(false);
             seg.timers.forEach(clearTimeout); if(seg.raf!=null)cancelAnimationFrame(seg.raf);
             try{if(seg.src)seg.src.disconnect();}catch(e){}
-            try{$("micWrap").classList.remove("hear");}catch(e){}
+            try{$("micWrap").classList.remove("hear");$("echoBuddy").classList.remove("heard");}catch(e){}
             Promise.all([recorderStop(),recognitionStop()]).then(function(){
               if(attempt.segment===seg)attempt.segment=null;
               segmentDone(reason);
@@ -1085,31 +1124,52 @@
                 nudges++;playPrompt();nextNudge=activeMs()+8000;armIdle();
               },nextNudge-activeMs());
             }
-            armIdle();
+            // No repeated coaching before the quiet state; replay is child-directed.
             var mw=$("micWrap");
             function tick(){
               if(!current() || practicePaused)return;
-              if(speaking||ttsPlaying){silent++;voiced=0;inBurst=false;try{mw.classList.remove("hear");}catch(e){}seg.raf=requestAnimationFrame(tick);return;}
-              an.getByteTimeDomainData(td);
+              var wallNow=performance.now();
+              if(speaking||ttsPlaying||_sayN){
+                if(seg.modelAt===null)seg.modelAt=wallNow;
+                silent++;voiced=0;inBurst=false;burstFrames=[];
+                try{mw.classList.remove("hear");$("echoBuddy").classList.remove("heard");}catch(e){}
+                seg.raf=requestAnimationFrame(tick);return;
+              }
+              if(seg.modelAt!==null){seg.modelMs+=wallNow-seg.modelAt;seg.modelAt=null;}
+              if(!micLive()){seg.finish("microphone");return;}
+              an.getByteTimeDomainData(td);an.getByteFrequencyData(fd);
               var sum=0;for(var i=0;i<td.length;i++){var d=(td[i]-128)/128;sum+=d*d;}
-              var rms=Math.sqrt(sum/td.length),active=activeMs(),now=clockBase+active;
+              var rms=Math.sqrt(sum/td.length),active=activeMs(),now=wallNow;
               if(active<250){calSum+=rms;calN++;seg.raf=requestAnimationFrame(tick);return;}
               if(!thr)thr=Math.max(0.035,(calSum/Math.max(1,calN))*3.0);
+              // Keep the existing event detector until a replacement accepts
+              // the whole sound inventory. The reviewed hard classifier rejected
+              // real M/N/THV/V and short stops; see APP_REVIEW_2026-09-22.md.
+              // This is an energy event, not proof of speech. The open noise
+              // regressions must pass before the review's item 1 can be closed.
               if(rms>thr){
-                voiced++;silent=0;try{mw.classList.add("hear");}catch(e){}
-                an.getByteFrequencyData(fd);shapeFrame(fd,binHz);
+                voiced++;silent=0;
+                if(!inBurst)burstFrames.push(new Uint8Array(fd));
                 if(!inBurst&&voiced>=4&&now-lastRep>350){
-                  inBurst=true;lastRep=now;reps++;paintReps(reps);sfx("tap");
-                  if(reps===3&&NEED>=5){try{if(S&&S.pop)S.pop("Way to go!",{color:"#ffd21c"});}catch(e){}}
+                  inBurst=true;lastRep=now;reps++;
+                  burstFrames.forEach(function(frame){shapeFrame(frame,binHz);});burstFrames=[];
+                  paintReps(reps);sfx("tap");
                   var l=$("leo");l.classList.remove("cheer");void l.offsetWidth;l.classList.add("cheer");
+                  try{mw.classList.add("hear");$("echoBuddy").classList.add("heard");}catch(e){}
                   if(reps>=NEED){successAt=activeMs()+350;later(function(){seg.finish("done");},350);return;}
-                }
-              }else{silent++;voiced=0;if(silent>=3){try{mw.classList.remove("hear");}catch(e){}}if(silent>=8)inBurst=false;}
+                }else if(inBurst)shapeFrame(fd,binHz);
+              }else{
+                silent++;voiced=0;
+                if(!inBurst)burstFrames=[];
+                if(silent>=3){try{mw.classList.remove("hear");$("echoBuddy").classList.remove("heard");}catch(e){}}
+                if(silent>=8){inBurst=false;burstFrames=[];}
+              }
               seg.raf=requestAnimationFrame(tick);
             }
-            later(function(){seg.finish("done");},20000-activeMs());
+            function deadline(){var remaining=20000-activeMs();if(remaining<=0)seg.finish("done");else later(deadline,remaining);}
+            later(deadline,20000-activeMs());
             if(successAt!==null)later(function(){seg.finish("done");},successAt-activeMs());else tick();
-          }catch(e){seg.finish("cancel");}
+          }catch(e){seg.finish("microphone");}
         });}
         (async function(){
           while(!closed()){
@@ -1132,6 +1192,10 @@
             if(epoch!==practiceEpoch||practicePaused||closed()||document.hidden)continue;
             var result=await runSegment();
             if(result==="cancel"||closed()){finishAttempt(false);return;}
+            if(result==="microphone"){
+              stopMic(); if(!(await showQuiet("microphone"))){finishAttempt(false);return;}
+              continue;
+            }
             if(result==="done"){
               if(!(await practiceReady())||closed()){finishAttempt(false);return;}
               finishAttempt(true);return;
@@ -1170,27 +1234,36 @@
       if(navigator.sendBeacon) navigator.sendBeacon("/api/track",body);
       else fetch("/api/track",{method:"POST",headers:{"Content-Type":"application/json"},body:body,keepalive:true}).catch(function(){});
     }catch(e){} }
-    function logV(v){ if(DEMO_REPLAY) return; if(v!=="unknown" && S && S.logAttempt) S.logAttempt({game:"charge",sound:SOUND,pass:v==="pass",word:String(ITEM.word||ITEM.t).toLowerCase()}); }
-    async function burstAndVerify(n){
-      var save=NEED; if(n)NEED=n;
-      turnPhase="practice"; micGo(true);
-      // back to the listening frame (coaching may have set idle + Almost! line)
-      try{ $("sayLbl").textContent="Say"; var lm=$("leo"); if(lm&&lm.src) lm.src="/coach/echo/echo-listening.svg"; }catch(e){}
-      // The engine owns recognition and mic segments, including resumed ones.
-      if(!(await startEngine()) || !(await practiceReady())){NEED=save;return null;}
-      if(reps>0)anyReps=true;
-      attemptsTotal+=reps;
-      // RING1: every honest counted rep ticks the kid-visible daily number
-      try{ if(!DEMO_REPLAY&&reps>0&&S&&S.bumpReps) S.bumpReps(reps); }catch(e){}
-      NEED=save;
-      turnPhase="checking"; micGo(false); $("gpState").textContent="Echo's thinking…";
-      var l=$("leo"); try{ l.classList.add("think"); }catch(e){}
-      var v=await verifyClip();
-      if(!(await practiceReady()))return null;
-      logV(v);
-      try{ l.classList.remove("think"); }catch(e){}
-      return v;
+    function logV(v){
+      if(DEMO_REPLAY || reps<=0 || v==="unknown")return;
+      if(S&&S.logAttempt)S.logAttempt({game:"charge",sound:SOUND,pass:v==="pass",reps:reps,word:String(ITEM.word||ITEM.t).toLowerCase()});
     }
+    async function burstAndVerify(n){
+      var save=NEED;
+      while(await practiceReady()){
+        NEED=n||save;turnPhase="practice";micGo(true);
+        try{$("sayLbl").textContent="Say";$("leo").src="/coach/echo/echo-listening.svg";}catch(e){}
+        if(!(await startEngine()) || !(await practiceReady())){NEED=save;return null;}
+        NEED=save;
+        // Even a native transcript cannot manufacture a try when the mic found
+        // no sustained speech. No outcomes, totals, clips, coaching or rewards.
+        if(reps===0){if(await showQuiet())continue;return null;}
+        turnPhase="checking";micGo(false);$("gpState").textContent="";
+        var l=$("leo");l.classList.add("think");
+        var v=await verifyClip();
+        if(!(await practiceReady()))return null;
+        l.classList.remove("think");
+        if(v==="unknown"){if(await showQuiet())continue;return null;}
+        anyReps=true;attemptsTotal+=reps;logV(v);
+        if(!DEMO_REPLAY){
+          if(S&&S.bumpReps)S.bumpReps(reps);
+          if(isDaily&&run){run.tries=(run.tries||0)+reps;runSave(run);}
+        }
+        lastVerdict=v;return v;
+      }
+      NEED=save;return null;
+    }
+    var lastVerdict="unknown";
     // First-ever mic ask gets a primer BEFORE the browser prompt: what Echo
     // hears and what happens to it, in parent-readable words. Skipped forever
     // once permission is granted (or after the first successful open).
@@ -1276,9 +1349,9 @@
       if(v===null || !(await practiceReady()))return;
       // One honest PASSED clip a day is kept ON-DEVICE (never uploaded) so the
       // parent can hear first-try vs today on the Progress "Listen" shelf.
-      if(v==="pass"){ try{
+      if(v==="pass" && reps>0 && !DEMO_REPLAY){ try{
         // KIDS1: per-child, or one sibling's saved clip blocks the other's
-        var rk=(S&&S.kkey)?S.kkey("sona.reclast."+SOUND):("sona.reclast."+SOUND), tdy=new Date().toDateString();
+        var rk=(S&&S.kkey)?S.kkey("sona.reclast"):"sona.reclast", tdy=new Date().toDateString();
         if(localStorage.getItem(rk)!==tdy){ var rb=clipBlob(); if(rb&&S&&S.saveRecording){ S.saveRecording({sound:SOUND,word:String(ITEM.word||ITEM.t).toLowerCase(),level:ITEM.level,blob:rb}); localStorage.setItem(rk,tdy); } }
       }catch(e){} }
       // SLP gating: the rung only ever advances on HONEST evidence — two clean
@@ -1345,7 +1418,7 @@
       var ringDoneNow=false;
       var roundKey=isDaily?(run?run.round:0):-1;
       var alreadyRinged=isDaily&&run&&run.ringed===roundKey;
-      if(anyReps && !alreadyRinged && S && S.rotAdvance){ try{
+      if(!DEMO_REPLAY && anyReps && lastVerdict!=="unknown" && !alreadyRinged && S && S.rotAdvance){ try{
         var preDone=S.todayRing&&S.todayRing().done;
         S.rotAdvance();
         ringDoneNow=!preDone&&S.todayRing&&S.todayRing().done;
@@ -1360,8 +1433,8 @@
       if(!anyReps){ showQuiet(); return; }
       // Save the earned step before the chest. Home must not make a child
       // repeat this practice or lose an unopened sticker chest.
-      if(isDaily&&run){run.ready={round:run.round,chest:ringDoneNow?{taps:0,opened:false,sticker:null}:null};runSave(run);}
-      if(ringDoneNow){ showChest(launchGame); } else { launchGame(); }
+      if(isDaily&&run){run.ready={round:run.round,chest:null};runSave(run);}
+      launchGame();
     }
     // three-beat treasure chest on completing the daily goal ring: tease
     // (wobble) → the child taps ×3 → burst + sticker reveal → claim, then the
@@ -1374,11 +1447,13 @@
       $("chestStk").textContent=stk?stk.e:"⭐";
       $("chestName").textContent=stk?("You found the "+stk.name+" sticker!"):"Superstar!";
       $("chestReveal").style.display="block";
+      $("chestClaim").focus({preventScroll:true});
     }
     function showChest(next){
-      var saved=isDaily&&run&&run.ready&&run.ready.round===run.round?run.ready.chest:null;
+      var saved=isDaily&&run&&run.finishing?run.finishChest:null;
       chestTaps=saved?Math.max(0,Math.min(3,saved.taps|0)):0;
       $("chestOvl").classList.add("show");
+      $("chestBox").focus({preventScroll:true});
       sfx("complete");
       if(saved&&saved.opened){chestTaps=3;showChestReveal(saved.sticker);}
       else if(chestTaps)$("chestCap").textContent=chestTaps===1?"Tap, tap!":"One more tap!";
@@ -1391,39 +1466,42 @@
         if(saved){saved.taps=chestTaps;runSave(run);}
         if(chestTaps<3){ $("chestCap").textContent=(chestTaps===1)?"Tap, tap!":"One more tap!"; return; }
         box.onclick=null;
-        var stk=null; try{ stk=(S&&S.awardNextSticker)?S.awardNextSticker():null; }catch(e){}
+        var stk=null; try{ stk=(!DEMO_REPLAY&&S&&S.awardNextSticker)?S.awardNextSticker():null; }catch(e){}
         if(saved){saved.opened=true;saved.sticker=stk;runSave(run);}
         try{ if(S&&S.confetti)S.confetti(); }catch(e){}
         showChestReveal(stk);
-        try{ say("You did all of today's practice! Come back tomorrow — I'll have a new adventure ready!"); }catch(e){}
+        try{ say("Look what we found!"); }catch(e){}
       };
       $("chestClaim").onclick=function(){
         if(practicePaused || practiceClosed || document.hidden || chestTaps<3)return;
         $("chestClaim").onclick=null;
-        if(saved){run.ready.chest=null;runSave(run);}
+        if(saved){run.finishBeat="done";runSave(run);}
         $("chestOvl").classList.remove("show"); next();
       };
     }
 
     // A round that heard nothing ends here rather than at the arcade. Warm on
     // purpose — the child gets Echo asking again, not a failure screen.
-    function showQuiet(){
-      practiceTerminal=true; stopMic(); cancelPracticeAudio();
-      try{ $("gp").classList.remove("show"); }catch(e){}
+    function showQuiet(cause){
+      stopMic();cancelPracticeAudio();micGo(false);turnPhase="quiet";updateTurn();
       var q=$("quietOvl");
       if(!q){
-        q=document.createElement("div"); q.id="quietOvl";
-        q.style.cssText="position:fixed;inset:0;z-index:80;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:32px;background:linear-gradient(180deg,#eafff0,#dff6e6 55%,#cdea9e);";
-        q.innerHTML='<img src="/coach/echo/echo-listening.svg" alt="Echo" style="width:120px;" onerror="this.style.display=\'none\'"/>'
-          +'<h1 style="font-family:\'Baloo 2\';font-weight:800;font-size:26px;color:#3f8a06;margin-top:12px;">Echo didn\'t hear you!</h1>'
-          +'<p style="font-weight:800;font-size:15px;color:#5d7a3f;margin-top:8px;max-width:24ch;line-height:1.5;">Say it out loud and Echo will light up. Ready to try again?</p>'
-          +'<button id="quietGo" style="margin-top:24px;width:100%;max-width:300px;border:none;border-radius:18px;padding:17px;font-family:\'Baloo 2\';font-weight:800;font-size:19px;color:#fff;background:linear-gradient(180deg,#ffa05a,#ff8a3d);box-shadow:0 5px 0 #ef6f23;cursor:pointer;">Let\'s try again!</button>'
-          +'<a href="/today.html" style="margin-top:16px;font-weight:800;font-size:14px;color:#5d7a3f;">Maybe later</a>';
+        q=document.createElement("div");q.id="quietOvl";q.className="ovl";
+        q.setAttribute("role","dialog");q.setAttribute("aria-modal","true");q.setAttribute("aria-labelledby","quietTitle");
+        q.innerHTML='<div class="ovlCard quiet-card"><img src="/coach/echo/echo-listening.svg" alt="Echo"/><h2 id="quietTitle" tabindex="-1"></h2><p id="quietCopy"></p><button class="btn" id="quietGo">Try again</button><button class="btn ghost" id="quietLater">Maybe later</button></div>';
         document.body.appendChild(q);
       }
-      q.style.display="flex";
-      var g=document.getElementById("quietGo");
-      if(g) g.onclick=function(){ location.reload(); };
+      var microphone=cause==="microphone";
+      $("quietTitle").textContent=microphone?"Let's get a grown-up":"I couldn't hear you!";
+      $("quietCopy").textContent=microphone?"Another app may be using the microphone. Close it, then try again.":"Say it big — I'm all ears!";
+      q.classList.add("show");$("app").inert=true;$("quietGo").focus({preventScroll:true});
+      if(!microphone)say("I couldn't hear you! Say it big — I'm all ears!");
+      return new Promise(function(resolve){
+        function finish(retry){q.classList.remove("show");$("app").inert=false;$("quietGo").onclick=null;$("quietLater").onclick=null;resolve(retry);}
+        $("quietGo").onclick=function(){if(practicePaused||practiceClosed||document.hidden)return;cancelPracticeAudio();finish(true);};
+        $("quietLater").onclick=function(){if(practicePaused||practiceClosed||document.hidden)return;finish(false);goPracticeHome();};
+        q.onkeydown=function(e){if(e.key!=="Tab")return;var first=$("quietGo"),last=$("quietLater");if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}};
+      });
     }
     async function launchGame(){
       if(!(await practiceReady()))return;
@@ -1434,12 +1512,14 @@
       // charged (5/5): ring the build, celebrate pose, GOOO line, launch bar
       try{ var _br=buildRoot(); if(_br) _br.classList.add("ringed"); }catch(e){}
       try{ var _lc=$("leo"); if(_lc&&_lc.src){ _lc.src="/coach/echo/echo-celebrate.svg"; _lc.style.width="110px"; _lc.style.height="110px"; } }catch(e){}
-      try{ $("bMain").innerHTML=NEED+' of '+NEED+' — <span style="color:#46a302">here we GOOO!</span>'; $("gpState").textContent=""; }catch(e){}
-      try{ $("micWrap").style.display="none"; $("replayLabel").hidden=true; var _lb=$("launchBar"); _lb.textContent="LOADING "+SCENE.title+"…"; _lb.classList.add("show"); }catch(e){}
+      try{ $("bMain").textContent=GMETA.simple?"Let’s play together!":"Here we go!"; $("gpState").textContent=""; }catch(e){}
+      try{ $("micWrap").style.display="none"; $("replayLabel").hidden=true; var _lb=$("launchBar"); _lb.innerHTML="<span id=launchArt aria-hidden=true></span><span>"+GMETA.n+"</span>";var art=S.gameSticker(GAME);S.paintSticker($("launchArt"),art[0],art[1]); _lb.classList.add("show"); }catch(e){}
       sfx("complete"); try{ if(S&&S.confetti)S.confetti(); }catch(e){}
       try{ sessionStorage.setItem("sona.play.token",GAME); sessionStorage.setItem("sona.boost.sound",SOUND); sessionStorage.removeItem("sona.play.active"); }catch(e){}
       if(isDaily&&run){ run.pending=true; runSave(run); }
-      if(await practiceDelay(700)){
+      if(!isDaily&&!DEMO_REPLAY&&attemptsTotal>0&&S.recordSession)S.recordSession({activity:"practice",sound:SOUND,tries:attemptsTotal});
+      if(lastVerdict==="pass")await say("I heard you! Let's play!");
+      if(await practiceDelay(1200)){
         await closePractice(); location.href="/"+GAME+"?from=charge"+(isDaily?"&daily=1":"");
       }
     }
@@ -1455,82 +1535,58 @@
     $("playedHome").onclick=function(){ location.href="/today.html"; };
 
     function finishRun(){
-      practiceTerminal=true;
-      // On a replay the score is still SHOWN — a child who just played deserves
-      // to see what they scored — it simply is not banked: no daily record, no
-      // session, no level, no coins.
-      var r;
+      practiceTerminal=false;stopMic();turnPhase="finish";
       var completedRounds=Math.min(run.round,DAILY_SEQ.length);
-      if(DEMO_REPLAY){
-        var _d={}; try{ _d=S.dailyInfo()||{}; }catch(e){}
-        r={ score: Math.max(0,run.sum|0), best: _d.best|0, newBest: false };
-      } else {
-        r=S.dailyFinish(run.sum);
-        try{ if(S.recordSession)S.recordSession({words:[],activity:"adventure",rounds:completedRounds,sound:SOUND}); if(S.markLevelDone)S.markLevelDone(LEVEL); if(S.addCoins)S.addCoins(10+Math.min(20,(run.sum/10)|0)); }catch(e){}
-      }
-      run.active=false; runSave(run);
-      $("runRounds").textContent=completedRounds+" round"+(completedRounds===1?"":"s")+" completed";
-      $("runPractice").textContent="You practised your "+(S.soundLabel?S.soundLabel(SOUND):SOUND)+" sound.";
-      $("runScore").textContent=r.score;
-      $("runBest").textContent=r.newBest?"Your best arcade score yet!":("Best arcade score: "+r.best);
-      $("runEmoji").innerHTML=(window.Sona&&Sona.icon)?Sona.icon("star",56):"";
-      $("runTitle").textContent="Adventure complete!";
-      // The story engine still turns its page at the end of a run — that is
-      // what draws tomorrow a different trio of games — but with the books
-      // parked (GAMES1) the cliffhanger is neither shown nor spoken: it
-      // promised a chapter that no longer opens.
-      try{ if(S.episodeAdvance)S.episodeAdvance(); }catch(e){}
-      $("runOvl").classList.add("show");
-      sfx("complete"); try{ if(S.confetti)S.confetti(); }catch(e){}
-      say("Adventure complete! Great work!");
-      // THE EXPLICIT FINISH. This screen is the end of the free demonstration:
-      // a real prompt, real reps judged by the real detector, the games those
-      // reps earned, and the celebration. demoFinish() is one-shot and returns
-      // false on every replay, so nothing here fires twice — the offer that
-      // follows is spent by the paywall, not by arriving.
-      try{ if(S&&S.demoFinish) S.demoFinish(); }catch(e){}
-      // THE HAND-OFF. When the plan screen is what comes next, the button says
-      // so in words a child can act on — they fetch a grown-up, rather than
-      // tapping "Done" and handing a parent a price screen with no idea why
-      // it appeared. When nothing follows, it stays "Done": a child should
-      // never be sent to find an adult for nothing.
-      try{
-        if(S&&S.planEligible&&S.planEligible()){
-          $("runDone").textContent="Show a grown-up →";
-          var sub=$("runHandoff");
-          if(!sub){
-            sub=document.createElement("p"); sub.id="runHandoff";
-            sub.style.cssText="font-weight:800;font-size:13px;color:var(--muted);margin:2px 0 10px;line-height:1.45;";
-            sub.textContent="Go show them what you just practised!";
-            $("runDone").parentNode.insertBefore(sub,$("runDone"));
-          }
+      if(!run.finishRecorded){
+        if(!DEMO_REPLAY){
+          S.dailyFinish(run.sum);
+          if(S.recordSession&&run.tries>0)S.recordSession({activity:"adventure",rounds:completedRounds,sound:SOUND,tries:run.tries,arcadeScore:run.sum});
+          if(run.tries>0){if(S.markLevelDone)S.markLevelDone(LEVEL);if(S.addCoins)S.addCoins(10+Math.min(20,(run.sum/10)|0));}
+          if(S.episodeAdvance)S.episodeAdvance();
         }
-      }catch(e){}
-      // Start at the recap, not a button that could scroll it out of view.
-      // The underlying practice controls stay out of the dialog's focus order.
-      $("app").hidden=true;
-      $("app").setAttribute("aria-hidden","true");
-      try{ $("runTitle").focus({preventScroll:true}); }catch(e){ $("runTitle").focus(); }
+        run.finishRecorded=true;
+        if(S.demoFinish)S.demoFinish();
+      }
+      run.finishing=true;
+      if(!run.finishChest)run.finishChest={taps:0,opened:false,sticker:null};
+      if(!run.finishBeat)run.finishBeat="celebrate";
+      runSave(run);
+      $("app").hidden=true;$("app").setAttribute("aria-hidden","true");
+      function showDone(){
+        run.finishBeat="done";runSave(run);
+        $("runTitle").textContent="See you next time!";
+        $("runPractice").textContent="I'll have another adventure tomorrow.";
+        $("runChest").hidden=true;$("runDone").hidden=false;
+        var ask=!!(S.planEligible&&S.planEligible());
+        $("runDone").textContent=ask?"Show a grown-up →":"Done";
+        if(ask)$("runPractice").textContent="Go show them what you just practiced!";
+        $("runOvl").classList.add("show");$("runDone").focus({preventScroll:true});
+      }
+      function openChest(){
+        if(practicePaused||practiceClosed||document.hidden)return;
+        run.finishBeat="chest";runSave(run);$("runOvl").classList.remove("show");showChest(showDone);
+      }
+      $("runChest").onclick=openChest;
+      $("runDone").onclick=function(){
+        if(practicePaused||practiceClosed||document.hidden)return;
+        run.active=false;run.finishing=false;runSave(run);
+        var ask=!!(S.planEligible&&S.planEligible());
+        closePractice().then(function(){location.href=ask?"/subscribe.html?first=1":"/today.html";});
+      };
+      if(run.finishBeat==="done"){showDone();return;}
+      if(run.finishBeat==="chest"){openChest();return;}
+      $("runTitle").textContent="Adventure complete!";
+      $("runPractice").textContent="We finished the whole adventure!";
+      $("runOvl").classList.add("show");
+      sfx("complete");if(S.confetti)S.confetti();say("We finished the whole adventure!");
+      try{$("runTitle").focus({preventScroll:true});}catch(e){$("runTitle").focus();}
       $("runOvl").querySelector(".ovlCard").scrollTop=0;
     }
     $("runOvl").onkeydown=function(e){
-      if(e.key!=="Tab" && e.keyCode!==9) return;
-      var first=$("runDone"), last=$("runArcade"), active=document.activeElement;
-      if(e.shiftKey && (active===first || active===$("runTitle"))){ e.preventDefault(); last.focus(); }
-      else if(!e.shiftKey && active===last){ e.preventDefault(); first.focus(); }
+      if(e.key!=="Tab"&&e.keyCode!==9)return;
+      var button=$("runDone").hidden?$("runChest"):$("runDone");
+      e.preventDefault();button.focus();
     };
-    // The plan moment: the child has just finished a full run and the screen
-    // says "Adventure complete!". If this family has never been asked, the Done button
-    // hands the device back to a grown-up on the plan screen instead of the
-    // home deck — once, ever. Everyone else goes home exactly as before.
-    $("runDone").onclick=function(){
-      // planEligible() only ANSWERS. The offer is spent by the paywall itself
-      // once it renders, so a parent who backs out of the grown-ups gate keeps
-      // their one ask instead of losing it to a redirect.
-      var ask=false; try{ ask=!!(S&&S.planEligible&&S.planEligible()); }catch(e){}
-      location.href = ask ? "/subscribe.html?first=1" : "/today.html";
-    };
-    $("runArcade").onclick=function(){ location.href="/activities.html"; };
 
     // ---- chrome ----
     function stopMic(){
@@ -1560,8 +1616,16 @@
       if(isDaily && !(run&&run.active) && S&&S.dailyInfo&&S.dailyInfo().playedToday){showPlayed();return;}
       // Going Home during the earned game's loading step keeps that game earned.
       if(isDaily&&run&&run.active){
-        if(run.ready&&run.ready.round===run.round&&run.ready.chest){showChest(launchGame);return;}
+        if(run.ready&&run.ready.round===run.round&&run.ready.chest){
+          // Old versions earned the chest before game five. Preserve its taps
+          // and sticker, but present it at the end of this same adventure.
+          run.finishChest=run.ready.chest;run.ready.chest=null;runSave(run);
+        }
         if(run.pending||(run.ready&&run.ready.round===run.round)){launchGame();return;}
+      }
+      if(isDaily&&run&&GMETA.simple){
+        if(S.demoStart)S.demoStart();
+        run.ready={round:run.round,chest:null};runSave(run);launchGame();return;
       }
       getCtx(); flow();
     }

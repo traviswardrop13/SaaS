@@ -89,8 +89,8 @@ for (const [game, title, rgbs] of SKIES) {
     on: document.querySelectorAll("#tktSegs i.on").length,
     filled: document.querySelectorAll("#stand .well .fr:not(.ghost)").length,
   }));
-  ok("the ticket pill has five segments", st.total === 5, String(st.total));
-  ok("…and reads the same number as the scene", st.on === 3 && st.filled === 3, JSON.stringify(st));
+  ok("the redundant ticket pill is removed", st.total === 0, String(st.total));
+  ok("the fruit stand alone shows three heard tries", st.on === 0 && st.filled === 3, JSON.stringify(st));
 
   const back = await pg.evaluate(() => { reveal(0); return document.querySelectorAll("#tktSegs i.on").length; });
   ok("…and empties again when the scene does", back === 0, String(back));
@@ -114,7 +114,7 @@ for (const [game, title, rgbs] of SKIES) {
     };
   });
   ok("unearned fruit render as ghosts", st.ghosts === 3 && st.solid === 2, JSON.stringify(st));
-  ok("…dashed, in white, per the spec", /5/.test(st.dash) && /255, 255, 255/.test(st.stroke), JSON.stringify(st));
+  ok("…one continuous warm-white outline", st.dash === "none" && /255, 245, 223/.test(st.stroke), JSON.stringify(st));
   await ctx.close();
 }
 

@@ -59,7 +59,7 @@ for (const [dev, w, h] of PORTRAIT) {
   // adds the home-bar gap (0 in headless), so assert against the page floor.
   ok(dev + " today: LET'S GO never overflows the page", m.go && m.go.bottom <= m.innerH - 15, m.go && m.go.bottom + "/" + (m.innerH - 15));
   // the caption plate must never be pushed under the CTA
-  ok(dev + " today: hero caption clears the CTA", m.cap && m.go && m.cap.bottom <= m.go.top + 1, JSON.stringify({ c: m.cap, g: m.go }));
+  ok(dev + " today: hero caption is inside the whole-card action", m.cap && m.go && m.cap.top >= m.go.top && m.cap.bottom <= m.go.bottom, JSON.stringify({ c: m.cap, g: m.go }));
   m = await measure(page, "charge.html?game=arcade-slice.html");
   ok(dev + " charge: mic clears the home bar", m.mic && m.mic.bottom <= m.innerH - HOME_BAR + 1, m.mic && m.mic.bottom + "/" + (m.innerH - HOME_BAR));
   ok(dev + " charge: no sideways overflow", m.oX <= 1, "oX=" + m.oX);
@@ -95,7 +95,7 @@ for (const [dev, w, h] of PORTRAIT) {
       const r = document.getElementById(id).getBoundingClientRect();
       return { top: r.top, bottom: r.bottom };
     };
-    return { jar: rect("jarRow"), hero: rect("heroCard"), caption: rect("heroCap"), choices: rect("upNextLbl") };
+    return { jar: rect("jarRow"), hero: rect("heroCard"), caption: rect("heroCap"), choices: rect("sessionGuide") };
   });
   ok("small portrait today: the hero clears the star jar",
     layout.jar.bottom <= layout.hero.top + 1, JSON.stringify(layout));
@@ -144,10 +144,10 @@ for (const [dev, w, h] of LANDSCAPE) {
   await page.waitForTimeout(700);
   const hdr = await page.evaluate(() => {
     const e = document.getElementById("ctxLine"); if (!e) return null;
-    return { text: e.textContent, over: e.scrollWidth > e.clientWidth + 1, h: e.getBoundingClientRect().height, fs: parseFloat(getComputedStyle(e).fontSize) };
+    return { text: e.getAttribute("aria-label"), dots:e.querySelectorAll(".path-dot").length, over: e.scrollWidth > e.clientWidth + 1, h: e.getBoundingClientRect().height, fs: parseFloat(getComputedStyle(e).fontSize) };
   });
-  ok("the charge header fits on one line at 390px", !!hdr && !hdr.over && hdr.h <= hdr.fs * 1.8, JSON.stringify(hdr));
-  ok("…and still names the round and the sound", !!hdr && /Round \d+ of \d+ · \S+/.test(hdr.text), hdr && hdr.text);
+  ok("the charge header fits on one line at 390px", !!hdr && !hdr.over && hdr.h <= 44, JSON.stringify(hdr));
+  ok("…five picture dots name the current adventure step accessibly", !!hdr && hdr.dots === 5 && /round \d+ of \d+/i.test(hdr.text), hdr && hdr.text);
   await page.close();
 }
 

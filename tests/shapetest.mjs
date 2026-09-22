@@ -31,7 +31,7 @@ ok("every verdict is on-device: transcript first, spectral fallback",
 ok("…and the verdict path makes no network call",
   !/function verifyClip[\s\S]{0,900}fetch\(/.test(src));
 ok("no page uploads a clip to a scorer", !/api\/score/.test(src));
-ok("shape sampled on voiced frames in the engine", /an\.getByteFrequencyData\(fd\);\s*shapeFrame\(fd,binHz\);/.test(src));
+ok("shape only receives counted-burst frames", /burstFrames\.forEach[\s\S]{0,120}shapeFrame/.test(src) && /else if\(inBurst\) shapeFrame\(fd,binHz\)/.test(src));
 const shapeSrc = src.match(/var SHAPE=\{[\s\S]*?return "pass";\n    \}/)?.[0];
 ok("SHAPE block extracted from charge.html", !!shapeSrc);
 if (!shapeSrc) { srv.close(); process.exit(1); }

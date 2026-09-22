@@ -68,17 +68,18 @@ await scenario('cold browser voice list',async()=>{
   const {context,page,errors}=await fresh();try{
     await page.waitForFunction(()=>__pacing.voices.length===1);
     ok('model speech is clearly marked as a listening turn',/Listen to Echo/.test(await status(page)));
-    ok('the visible replay control describes its action',await page.locator('#replayLabel').count()===1&&await page.locator('#replayLabel').innerText()==='Hear it again');
+    ok('the visible replay control describes its action',await page.locator('#replayLabel').count()===1&&await page.locator('#replayLabel').innerText()==='Tap Echo to hear it again');
     await page.waitForTimeout(1500);
     const held=await state(page);
     ok('an initially empty voice list does not cut a live prompt off at 1.2 seconds',held.active===1&&held.guard,held);
     ok('the child turn waits for the model to finish',!held.engine&&held.reps===0&&held.stored===0,held);
-    ok('replay cannot queue over the model',await page.locator('#micBtn').isDisabled()&&await page.locator('#turtleBtn').isDisabled());
+    ok('replay cannot queue over the model',await page.locator('#echoBuddy').isDisabled()&&await page.locator('#turtleBtn').isDisabled());
     await page.evaluate(()=>__pacing.voices[0].end());await page.waitForFunction(()=>engineOn);
     ok('the real speech end opens a clearly labeled child turn',/Your turn/.test(await status(page)));
-    ok('child-turn replay is enabled',await page.locator('#micBtn').isEnabled());
-    await page.locator('#micBtn').click();await page.waitForFunction(()=>__pacing.voices.length===2);
-    await page.evaluate(()=>{document.getElementById('micBtn').click();document.getElementById('turtleBtn').click();});
+    ok('child-turn replay is enabled',await page.locator('#echoBuddy').isEnabled());
+    ok('the microphone is a listening status, not a replay button',await page.locator('#micBtn').evaluate(el=>el.tagName==='DIV'&&el.getAttribute('role')==='img'&&el.getAttribute('aria-label')==='Microphone listening'&&el.tabIndex===-1));
+    await page.locator('#echoBuddy').click();await page.waitForFunction(()=>__pacing.voices.length===2);
+    await page.evaluate(()=>{document.getElementById('echoBuddy').click();document.getElementById('turtleBtn').click();});
     await page.waitForTimeout(50);
     ok('repeated replay taps cannot stack speech',await page.evaluate(()=>__pacing.voices.length===2));
     ok('replay returns to the listening cue',/Listen to Echo/.test(await status(page)));
@@ -115,7 +116,7 @@ await scenario('server and cached playback',async()=>{
     ok('server audio is marked as listening until actual completion',/Listen to Echo/.test(await status(page))&&!(await state(page)).engine);
     ok('fresh audio identifies the reported server provider',await page.evaluate(()=>__pacing.diagnostics.some(e=>e.source==='elevenlabs'&&e.cache==='miss'&&e.model==='eleven_multilingual_v2'&&e.revision==='v7')));
     await page.evaluate(()=>__pacing.pcm.find(p=>p.active).end());await page.waitForFunction(()=>engineOn);
-    await page.locator('#micBtn').click();await page.waitForFunction(()=>__pacing.pcm.some(p=>p.active));
+    await page.locator('#echoBuddy').click();await page.waitForFunction(()=>__pacing.pcm.some(p=>p.active));
     // Repeated isolation prompts can use a shorter line; replay the exact
     // captured first prompt through the real queue to exercise a cache hit.
     await page.evaluate(()=>__pacing.pcm.find(p=>p.active).end());await page.waitForTimeout(30);

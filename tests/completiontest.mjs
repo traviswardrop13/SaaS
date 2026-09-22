@@ -31,7 +31,7 @@ async function scenario(name, task) {
 }
 const games = ["slice", "stack", "tiles", "run", "glide"];
 async function fresh({ paid = false, replay = false, sound = "R", width = 390, height = 844 } = {}) {
-  const context = await browser.newContext({ viewport: { width, height } });
+  const context = await browser.newContext({ viewport: { width, height }, reducedMotion: "reduce" });
   await context.route("**/*", (route) => {
     const u = new URL(route.request().url());
     return u.origin === origin || u.hostname === "127.0.0.1" ? route.continue() : route.abort();
@@ -51,7 +51,7 @@ async function fresh({ paid = false, replay = false, sound = "R", width = 390, h
     localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Mia", childAge: "7", focusSounds: [sound], onboarded: true, volume: 0, voiceOn: false, soundOn: false }));
     if (paid) sessionStorage.setItem("sona.paidui", "1");
     if (replay) localStorage.setItem("sona.demo.v1", JSON.stringify({ started: Date.now() - 1000, done: Date.now() }));
-    sessionStorage.setItem("sona.run.v1", JSON.stringify({ active: true, round: 4, sum: 40, scores: [10, 10, 10, 10], pending: true, sound, level: 1, demo: replay, games }));
+    sessionStorage.setItem("sona.run.v1", JSON.stringify({ active: true, tries: 25, round: 4, sum: 40, scores: [10, 10, 10, 10], pending: true, sound, level: 1, demo: replay, games }));
   }, { paid, replay, sound, games });
   return { context, page, errors };
 }
@@ -80,109 +80,119 @@ async function reachable(page, selector) {
   }, selector);
 }
 
-await scenario("a finished adventure and its history", async () => {
-  const { context, page, errors } = await fresh();
+async function openAndClaim(page) {
+  await page.locator("#runChest").click();
+  await page.locator("#chestOvl.show").waitFor();
+  for(let i=0;i<3;i++) await page.locator("#chestBox").click();
+  await page.locator("#chestClaim").click();
+  await page.locator("#runDone").waitFor({state:"visible"});
+}
+await scenario("saved three-beat completion", async () => {
+  const {context,page,errors}=await fresh();
   try {
     await finish(page);
-    const ui = await page.locator("#runOvl").innerText();
-    ok("completion celebrates the adventure", /Adventure complete!/i.test(ui), ui);
-    ok("completion states the actual five completed rounds", /5 rounds completed/i.test(ui), ui);
-    ok("completion recaps the practised sound", /You practised your R sound\./i.test(ui), ui);
-    ok("the unchanged score is explicitly an arcade score", /Arcade score/i.test(ui) && await page.locator("#runScore").innerText() === "57", ui);
-    ok("Done remains a clear finish for a free family", /^Done$/i.test(await page.locator("#runDone").innerText()), ui);
-    const state = await evidence(page), session = state.progress.sessions[0];
-    ok("the final arcade score is banked once", state.daily.score === 57 && state.run.round === 5 && state.run.active === false && state.run.scores.length === 5, state);
-    ok("one history record describes the completed adventure", state.progress.sessions.length === 1 && session.activity === "adventure" && session.rounds === 5 && JSON.stringify(session.sounds) === '["R"]', session);
-    ok("completion invents no words, stars, repetitions or accuracy", session.count === 0 && state.progress.totals.words === 0 && state.progress.totals.stars === 0 && Object.keys(state.progress.bySound).length === 0 && state.reps === 0 && Object.keys(state.outcomes).length === 0, state);
-    await page.reload();
-    const again = await evidence(page);
-    ok("refresh records no second session or reward", JSON.stringify(again.progress) === JSON.stringify(state.progress) && again.daily.score === 57, { before: state, after: again });
-    ok("refresh shows the existing completed-day screen", await page.locator("#playedOvl").evaluate((e) => e.classList.contains("show")));
-    await page.locator("#playedArcade").click();
-    await page.waitForLoadState("domcontentloaded");
-    ok("completed-day Browse games opens the library", new URL(page.url()).pathname === "/activities.html", page.url());
-    const history = await showHistory(page);
-    ok("Progress explains rounds and sound instead of zero words", /5 rounds[\s·]*R/.test(history) && !/0 words/.test(history), history);
-    const isolation = await page.evaluate(() => {
-      const first = Sona.activeKid().slot;
-      const before = Sona.getProgress().sessions;
-      const sibling = Sona.addKid("Sibling", "5"); Sona.switchKid(sibling);
-      Sona.saveProfile({ childName: "Sibling", childAge: "5", focusSounds: ["S"], onboarded: true, volume: 0 });
-      const empty = Sona.getProgress().sessions;
-      Sona.recordSession({ words: [], activity: "adventure", rounds: 3, sound: "S" });
-      const own = Sona.getProgress().sessions;
-      Sona.switchKid(first);
-      return { before, empty, own, back: Sona.getProgress().sessions };
+    const ui=await page.locator("#runOvl").innerText();
+    ok("Echo celebrates without numbers or an arcade score", /Adventure complete!/.test(ui)&&!/5 rounds|score|R sound/.test(ui),ui);
+    ok("the first action is opening the chest, not leaving",await page.locator("#runChest").isVisible()&&!(await page.locator("#runDone").isVisible()));
+    const before=await evidence(page),row=before.progress.sessions[0];
+    ok("score is banked once and finish remains resumable",before.daily.score===57&&before.run.round===5&&before.run.active&&before.run.finishing,before.run);
+    ok("parent history stores rounds and verified tries",row&&row.tries===25&&row.rounds===5&&row.sounds[0]==="R"&&row.arcadeScore===57,row);
+    ok("completion creates no extra tries or accuracy",before.progress.totals.words===0&&before.reps===0&&Object.keys(before.outcomes).length===0,before);
+    await page.locator("#runChest").click();await page.locator("#chestBox").click();
+    await page.reload();await page.locator("#chestOvl.show").waitFor();
+    ok("one chest tap survives refresh",await page.evaluate(()=>chestTaps===1));
+    await page.locator("#chestBox").click();await page.locator("#chestBox").click();
+    const sticker=await page.evaluate(()=>JSON.stringify(Sona.stickersEarned()));
+    await page.reload();await page.locator("#chestClaim").waitFor({state:"visible"});
+    ok("the opened sticker survives refresh without another award",await page.evaluate(()=>JSON.stringify(Sona.stickersEarned()))===sticker);
+    await page.locator("#chestClaim").click();
+    ok("tomorrow follows the chest with one Done action",/tomorrow/i.test(await page.locator("#runOvl").innerText())&&await page.locator("#runDone").isVisible()&&!(await page.locator("#runChest").isVisible()));
+    const after=await evidence(page);
+    ok("refresh never doubles sessions or coins",JSON.stringify(after.progress)===JSON.stringify(before.progress)&&after.daily.score===57,{before:before.progress,after:after.progress});
+    await page.locator("#runDone").click();await page.waitForURL(/today.html/);
+    ok("Done returns Home and closes the saved run",await page.evaluate(()=>!JSON.parse(sessionStorage.getItem("sona.run.v1")).active));
+    const history=await showHistory(page);
+    ok("parent history uses detected tries",/25 tries/.test(history)&&!/0 words/.test(history),history);
+    ok("completion has no page errors",errors.length===0,errors);
+  }finally{await context.close();}
+});
+await scenario("small-screen and keyboard completion",async()=>{
+  const {context,page}=await fresh({width:320,height:568});
+  try{
+    await finish(page);
+    ok("dialog is named and fits the short phone",await page.getByRole("dialog",{name:"Adventure complete!"}).count()===1&&await reachable(page,"#runChest"));
+    await page.keyboard.press("Tab");ok("keyboard reaches the picture-led chest action",await page.evaluate(()=>document.activeElement.id==="runChest"));
+    await openAndClaim(page);
+    ok("Done stays reachable without horizontal overflow",await reachable(page,"#runDone")&&await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+  }finally{await context.close();}
+});
+await scenario("paid-state parent handoff",async()=>{
+  const {context,page}=await fresh({paid:true,width:320,height:568});
+  try{
+    await finish(page);await openAndClaim(page);
+    ok("paid-state uses a grown-up handoff after the chest",/Show a grown-up/i.test(await page.locator("#runDone").innerText()));
+    await page.locator("#runDone").click();await page.waitForLoadState("domcontentloaded");
+    const url=new URL(page.url());
+    ok("the adult gate preserves the intended destination",url.pathname==="/today.html"&&url.searchParams.get("gate")==="1"&&url.searchParams.get("to")==="/subscribe.html?first=1",page.url());
+    ok("arrival at the gate does not spend the offer",await page.evaluate(()=>!localStorage.getItem("sona.planmoment.v1")));
+  }finally{await context.close();}
+});
+await scenario("replays and empty sessions never add practice",async()=>{
+  const {context,page}=await fresh({replay:true});
+  try{
+    await finish(page);await openAndClaim(page);
+    const state=await evidence(page);
+    ok("demo replay creates no session, coins, words or daily score",state.progress.sessions.length===0&&state.progress.totals.coins===0&&state.progress.totals.words===0&&!state.daily.playedToday,state);
+    ok("demo replay creates no extra sticker",await page.evaluate(()=>Object.keys(Sona.stickersEarned()).length===0));
+    const unchanged=await page.evaluate(()=>{var before=JSON.stringify(Sona.getProgress());Sona.recordSession({words:[]});Sona.recordSession({activity:"adventure",rounds:5,sound:"R",tries:0});return before===JSON.stringify(Sona.getProgress());});
+    ok("zero-try sessions never create stats or a streak",unchanged);
+  }finally{await context.close();}
+});
+
+await scenario("five untimed games form the younger-child adventure",async()=>{
+  const {context,page,errors}=await fresh({width:375,height:812});
+  try{
+    await page.evaluate(()=>{
+      sessionStorage.removeItem("sona.run.v1");
+      var p=JSON.parse(localStorage.getItem("sona.profile.v1"));p.childAge="3";p.focusSounds=["M"];localStorage.setItem("sona.profile.v1",JSON.stringify(p));
     });
-    ok("siblings have separate adventure histories", isolation.empty.length === 0 && isolation.own.length === 1 && isolation.own[0].rounds === 3 && isolation.own[0].sounds[0] === "S" && JSON.stringify(isolation.before) === JSON.stringify(isolation.back), isolation);
-    await page.evaluate(() => {
-      Sona.recordSession({ words: [] });
-      Sona.recordSession({ words: [{ word: "sun", sound: "S", ok: true }, { word: "sock", sound: "S", ok: false }] });
-    });
-    const mixed = await showHistory(page);
-    ok("legacy empty history is described honestly", /Practice session/.test(mixed) && !/0 words/.test(mixed), mixed);
-    ok("existing word sessions retain their count and sound", /2 words/.test(mixed) && /S/.test(mixed), mixed);
-    const totals = await page.evaluate(() => Sona.getProgress().totals);
-    ok("word-session accounting remains unchanged", totals.words === 2 && totals.stars === 1, totals);
-    ok("completion and Progress have no page errors", errors.length === 0, errors);
-  } finally { await context.close(); }
-});
-
-await scenario("completion navigation and small-screen access", async () => {
-  const { context, page } = await fresh({ width: 320, height: 568, sound: "S" });
-  try {
-    await finish(page);
-    ok("the recap uses this run's sound", /S sound/.test(await page.locator("#runOvl").innerText()));
-    ok("the finish dialog has an accessible name", await page.locator("#runOvl").getAttribute("role") === "dialog" && await page.getByRole("dialog", { name: "Adventure complete!" }).count() === 1);
-    ok("opening completion places focus within the dialog", await page.evaluate(() => document.querySelector("#runOvl").contains(document.activeElement)));
-    ok("the 320px finish screen has no horizontal overflow", await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth && document.querySelector("#runOvl").scrollWidth <= innerWidth));
-    await page.keyboard.press("Tab");
-    ok("keyboard reaches Done from the recap", await page.evaluate(() => document.activeElement.id === "runDone"));
-    await page.keyboard.press("Tab");
-    ok("keyboard reaches Browse games", await page.evaluate(() => document.activeElement.id === "runArcade"));
-    ok("the last action can be reached on a short phone", await reachable(page, "#runArcade"));
-    ok("the last action is named Browse games", /Browse games/i.test(await page.locator("#runArcade").innerText()));
-    await Promise.all([
-      page.waitForURL(/\/activities\.html$/, { timeout: 3000 }).catch(() => null),
-      page.keyboard.press("Enter"),
-    ]);
-    ok("completion Browse games opens the library", new URL(page.url()).pathname === "/activities.html", page.url());
-  } finally { await context.close(); }
-  const next = await fresh();
-  try {
-    await finish(next.page);
-    await next.page.locator("#runDone").click(); await next.page.waitForLoadState("domcontentloaded");
-    ok("Done returns a free family Home", new URL(next.page.url()).pathname === "/today.html", next.page.url());
-  } finally { await next.context.close(); }
-});
-
-await scenario("the grown-up handoff remains reachable", async () => {
-  const { context, page } = await fresh({ paid: true, width: 320, height: 568 });
-  try {
-    await finish(page);
-    ok("eligible paid-state completion explains the grown-up handoff", /Show a grown-up/i.test(await page.locator("#runDone").innerText()) && await page.locator("#runHandoff").isVisible());
-    await page.locator("#runDone").focus();
-    ok("the grown-up action is reachable on a short phone", await reachable(page, "#runDone"));
-    await page.mouse.move(160, 400); await page.mouse.wheel(0, 650); await page.waitForTimeout(150);
-    ok("scrolling exposes the last button with the extra handoff copy", await reachable(page, "#runArcade"));
-    await page.locator("#runDone").click(); await page.waitForLoadState("domcontentloaded");
-    const destination = new URL(page.url());
-    ok("Done retains the grown-up gate and intended plan destination", destination.pathname === "/today.html" && destination.searchParams.get("gate") === "1" && destination.searchParams.get("to") === "/subscribe.html?first=1", page.url());
-    ok("arriving at the gate does not consume the plan offer", await page.evaluate(() => !localStorage.getItem("sona.planmoment.v1")));
-  } finally { await context.close(); }
-});
-
-await scenario("demonstration replay earns no second reward", async () => {
-  const { context, page } = await fresh({ replay: true });
-  try {
-    await finish(page);
-    const state = await evidence(page);
-    ok("a replay still shows its actual rounds and arcade score", /5 rounds completed/i.test(await page.locator("#runOvl").innerText()) && await page.locator("#runScore").innerText() === "57");
-    ok("replay creates no history, coins, words or daily score", state.progress.sessions.length === 0 && state.progress.totals.sessions === 0 && state.progress.totals.coins === 0 && state.progress.totals.words === 0 && !state.daily.playedToday && state.daily.score === 0, state);
-    const progress = JSON.stringify(state.progress);
-    await page.reload();
-    ok("refreshing replay completion creates no reward", JSON.stringify((await evidence(page)).progress) === progress);
-  } finally { await context.close(); }
+    await page.goto(origin+"/charge.html?daily=1&first=feed");
+    const seen=[];
+    for(let round=0;round<5;round++){
+      await page.waitForURL(/arcade-(feed|bubbles|peekaboo)\.html/, {timeout:7000});
+      const game=new URL(page.url()).pathname.match(/arcade-(.+)\.html/)[1];seen.push(game);
+      if(game==="feed"){
+        for(let turn=0;turn<5;turn++){
+          await page.waitForFunction(()=>window.turnLive===true);
+          const label=await page.locator("#bMain").innerText();
+          const word=label.match(/Where's the (.+)\?/)[1];
+          await page.locator("#grid .cardBtn").filter({has:page.locator(".w",{hasText:word})}).first().click();
+        }
+        await page.locator("#endOvl.show").waitFor();
+        if(round===0){
+          await page.locator("#goHome").click();await page.waitForURL(/today.html/);
+          await page.locator("#goBtn").click();
+          await page.waitForFunction(()=>JSON.parse(sessionStorage.getItem("sona.run.v1")).round===1);
+          ok("Home resumes after a completed simple game without repeating it",await page.evaluate(()=>JSON.parse(sessionStorage.getItem("sona.run.v1")).scores.length===1));
+        }else await page.locator("#again").click();
+      }else{
+        await page.locator("#startGame").click();
+        for(let turn=0;turn<5;turn++){
+          await page.locator(game==="bubbles"?"#revealButton":"[data-door]").first().click();
+          await page.locator("#nextTurn").click();
+        }
+        await page.locator("#playAgain").click();
+      }
+      if(round<4)await page.waitForFunction(n=>location.pathname==="/charge.html"||JSON.parse(sessionStorage.getItem("sona.run.v1")).round>n,round);
+    }
+    await page.locator("#runOvl.show").waitFor({timeout:7000});
+    ok("the simple adventure is five untimed games",seen.length===5&&seen.every(x=>["feed","bubbles","peekaboo"].includes(x)),seen);
+    const state=await evidence(page);
+    ok("all discoveries can finish without inventing spoken practice",state.run.round===5&&state.progress.sessions.length===0&&state.progress.totals.words===0&&state.reps===0&&Object.keys(state.outcomes).length===0&&!state.progress.streak.lastDate,state);
+    await openAndClaim(page);await page.locator("#runDone").click();await page.waitForURL(/today.html/);
+    ok("younger child returns Home after the final chest",await page.evaluate(()=>Sona.dailyInfo().playedToday));
+    ok("younger adventure has no page errors",errors.length===0,errors);
+  }finally{await context.close();}
 });
 
 await scenario("human practice prompt respects sound settings", async () => {
