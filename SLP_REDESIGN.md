@@ -1,4 +1,4 @@
-# SLP dashboard redesign — local handoff
+# SLP dashboard redesign — release handoff
 
 Branch: `codex/slp-dashboard-redesign`, based on September 21's dashboard (`0c9f482`). Worktree: `/Users/traviswardrop/.codex/worktrees/sona-slp-redesign/SaaS`. The older main workspace and app work are separate.
 
@@ -41,11 +41,11 @@ The deployed dashboard still uses authenticated SLP APIs. Community and Affiliat
 
 TypeScript passed with `--noEmit --incremental false`. Browser review covered 1440/390 pixels, with workflow checks also covering 320 pixels. No runtime errors or horizontal overflow were found. Tests verify view navigation does not make write requests. New review checks fail against the saved pre-review page, and the durable workflow suite detects the old generic planner.
 
-All suites are registered in `tests/run-all.mjs`. Run the full battery before any future push, as required by the repository. It was not rerun for this local handoff because no push or deployment was requested.
+Release verification on September 22: after integrating main at `777cdc7`, all 34 suites in `node tests/run-all.mjs` passed (exit 0), including the latest audio regression suites. TypeScript also passed with `--noEmit --incremental false`. The local run used the installed Google Chrome executable via `CHROMIUM_PATH`.
 
 ## Deliberately not live
 
-- Nothing has been pushed or deployed.
+- Release prerequisite: Production must have `SLP_AUTH_SECRET` set before merging. Without it, SLP sessions and family enrollment tickets fail closed. Confirm the setting by name; never record its value here.
 - Community needs shared storage and moderation before enabling it for members. Rachel must rewrite/approve her seed posts. The preview is not a functioning shared community.
 - Affiliate commission and eligibility terms still need a confirmed launch decision.
 - Live feedback delivery was not exercised. Dedicated notifications use `SLACK_FEEDBACK_WEBHOOK_URL` or `FEEDBACK_WEBHOOK_URL`; with KV alone, messages are stored but no notification is sent. The code does not route feedback into generic lead/pilot destinations.
