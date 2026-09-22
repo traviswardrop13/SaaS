@@ -24,12 +24,15 @@ function safeEqual(a: string, b: string): boolean {
  * cost a clinician their sign-in link. An email and a role — never a child's
  * name, which is the rule everywhere else and has no exception here.
  */
-function tellCrm(origin: string, email: string, source: string): void {
+function tellCrm(origin: string, email: string, source: string, name: string): void {
   try {
     void fetch(origin + "/api/lead", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, source, role: "slp", summary: "New SLP signup" }),
+      // The clinician's OWN first name — the one they typed about themselves.
+      // Never a child's, which is the rule everywhere and has no exception in
+      // a marketing payload of all places.
+      body: JSON.stringify({ email, name, source, role: "slp", summary: "New SLP signup" }),
     }).catch(() => {});
   } catch {
     /* never blocks sign-in */
@@ -44,7 +47,7 @@ function tellCrm(origin: string, email: string, source: string): void {
 // to a pilot SLP directly — before Resend/email is configured. Without the key
 // the link is only ever emailed; it is never returned to the caller.
 export async function POST(req: NextRequest) {
-  let body: { email?: string; adminKey?: string; source?: string };
+  let body: { email?: string; adminKey?: string; source?: string; name?: string };
   try {
     body = await req.json();
   } catch {
@@ -81,7 +84,7 @@ export async function POST(req: NextRequest) {
   const token = randomToken();
   await kvCmd(["SET", "slptok:" + hashToken(token), email, "EX", 900]); // 15 min
   const link = origin + "/api/slp/auth/verify?token=" + encodeURIComponent(token);
-  const res = await sendMagicEmail(email, link);
+  const res = await sendMagicEmail(email, link, String(body.name || "").trim().slice(0, 60));
 
   /**
    * A BRAND-NEW ACCOUNT IS SIGNED IN ON THE SPOT. Cold traffic off an ad does
@@ -102,11 +105,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true, sent: res.sent, signedIn: false, devLink: isAdmin ? link : res.devLink });
   }
 
+  // The name they gave at sign-up is the name on their homework notes, so the
+  // dashboard does not have to ask for it a second time.
+  const name = String(body.name || "").trim().slice(0, 60);
   await kvCmd(["SET", "slpacct:" + email, JSON.stringify({
-    email, name: "", clinic: "", code: "", createdAt: new Date().toISOString(),
+    email, name, clinic: "", code: "", createdAt: new Date().toISOString(),
     source: String(body.source || "").slice(0, 40),
   })]);
-  tellCrm(origin, email, String(body.source || "slp-signup").slice(0, 40));
+  tellCrm(origin, email, String(body.source || "slp-signup").slice(0, 40), name);
 
   const session = signSession({ email, code: "", iat: Date.now(), exp: Date.now() + SESSION_MAX_AGE * 1000 });
   const out = NextResponse.json({ ok: true, sent: res.sent, signedIn: true, devLink: isAdmin ? link : res.devLink });

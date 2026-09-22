@@ -65,6 +65,12 @@ const TRACKER = FREE_MODE
   ? `document.addEventListener("click",function(e){var a=e.target&&e.target.closest?e.target.closest('a[href^="/onboarding.html"]'):null;if(!a)return;try{if(window.SonaAnalytics)window.SonaAnalytics.track("landing cta",{surface:"landing"});}catch(err){}},true);`
   : `document.addEventListener("click",function(e){var a=e.target&&e.target.closest?e.target.closest('a[href^="/api/checkout"]'):null;if(!a)return;try{if(window.sonaTrack)window.sonaTrack("InitiateCheckout",{value:59.99,currency:"USD",content_name:"web_annual"});}catch(err){}try{if(window.SonaAnalytics)window.SonaAnalytics.track("paywall viewed",{surface:"landing"});}catch(err){}},true);`;
 
+// THIS IS /families NOW, not the root. speaksona.com is the clinician page
+// (Travis, 22 Sep 2026: SLPs are the channel), and this page moved rather than
+// being rewritten so that every purchase surface keeps BOTH pricing states —
+// the switch has flipped eleven times and hand-editing a price into a page is
+// the one thing CLAUDE.md forbids. A family reaching Sona directly lands here;
+// a family reaching it through their SLP never sees it at all.
 export const metadata = {
   title: "Sona — R-sound practice kids actually love",
   description: FREE_MODE

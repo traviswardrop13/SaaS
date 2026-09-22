@@ -100,6 +100,11 @@ export async function kvCmd(cmd: (string | number)[]): Promise<unknown> {
   }
 }
 
+/** A clinician-supplied name lands in an HTML email; escape it. */
+function esc(s: string): string {
+  return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c] as string));
+}
+
 export function randomToken(): string {
   return crypto.randomBytes(32).toString("base64url");
 }
@@ -307,9 +312,17 @@ export function clearCookie(): string {
  * Send the sign-in link via Resend. Until RESEND_API_KEY is set, return the link
  * directly so it can be tested on preview — but never leak it on production.
  */
+/**
+ * THIS EMAIL IS THE DELIVERY MECHANISM, not a receipt. An SLP signs up from an
+ * ad, and this is what arrives — so it says what is behind the link and what to
+ * do first, rather than "here is your sign-in link" over a bare button. The
+ * name is the one they typed about themselves at sign-up; a child's name has no
+ * business in an outbound email and none is available here.
+ */
 export async function sendMagicEmail(
   email: string,
   link: string,
+  name = "",
 ): Promise<{ sent: boolean; devLink: string | null }> {
   const key = process.env.RESEND_API_KEY;
   const from = process.env.RESEND_FROM || "Sona <login@speaksona.com>";
@@ -323,12 +336,19 @@ export async function sendMagicEmail(
       body: JSON.stringify({
         from,
         to: [email],
-        subject: "Your Sona sign-in link",
+        subject: "Your Sona dashboard is ready",
         html:
-          `<div style="font-family:system-ui,Segoe UI,Roboto,sans-serif;font-size:15px;color:#16384f;line-height:1.5;">` +
-          `<p>Here's your sign-in link for your Sona SLP account:</p>` +
-          `<p><a href="${link}" style="display:inline-block;background:#1cb0f6;color:#fff;font-weight:700;text-decoration:none;padding:12px 22px;border-radius:10px;">Sign in to Sona</a></p>` +
-          `<p style="color:#6b86a3;font-size:13px;">This link expires in 15 minutes. If you didn't request it, you can ignore this email.</p>` +
+          `<div style="font-family:system-ui,Segoe UI,Roboto,sans-serif;font-size:15px;color:#16384f;line-height:1.6;max-width:520px;">` +
+          `<p>${name ? "Hi " + esc(name) + "," : "Hi,"}</p>` +
+          `<p>Your Sona dashboard is ready — it's free for you and for every family on your caseload.</p>` +
+          `<p><a href="${link}" style="display:inline-block;background:#58cc02;color:#fff;font-weight:700;text-decoration:none;padding:14px 26px;border-radius:12px;font-size:16px;">Open my dashboard</a></p>` +
+          `<p style="margin-top:22px;"><b>What to do first</b></p>` +
+          `<ol style="padding-left:18px;color:#46627a;">` +
+          `<li>Add a child — initials are enough. You pick the sound and the position.</li>` +
+          `<li>Send their family the link. They set up in about 30 seconds, on their own phone.</li>` +
+          `<li>Come back and see the days they practised — and copy a line for your progress note.</li>` +
+          `</ol>` +
+          `<p style="color:#6b86a3;font-size:13px;margin-top:22px;">This link expires in 15 minutes — if it does, just enter your email again at speaksona.com and we'll send a fresh one. If you didn't ask for this, you can ignore it.</p>` +
           `</div>`,
       }),
     });

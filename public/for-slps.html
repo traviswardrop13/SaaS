@@ -9,6 +9,7 @@
        dashboard, the login and the family redemption page stay noindex —
        those are private surfaces, not marketing. -->
   <meta name="description" content="Give every family on your caseload a speech home-practice app — free. You assign the sound and the position; practice days, reps and pass rate roll up to your dashboard. No audio ever leaves the child's device. Built with a licensed pediatric SLP (Clinical Fellow)." />
+  <link rel="canonical" href="https://speaksona.com/" />
   <link href="/fonts.css" rel="stylesheet">
   <link rel="manifest" href="/manifest.webmanifest" />
   <meta name="theme-color" content="#1cb0f6" />
@@ -42,6 +43,17 @@
     .step div b{font-family:"Baloo 2";}
     .step p{color:var(--muted);font-weight:700;font-size:13.5px;line-height:1.5;margin-top:2px;}
     .midcta{text-align:center;margin-top:30px;}
+    .modal{display:none;position:fixed;inset:0;z-index:90;background:rgba(14,46,72,.55);padding:20px;overflow-y:auto;}
+    .modal.open{display:flex;align-items:center;justify-content:center;}
+    .sheet{position:relative;background:#fff;border-radius:22px;padding:28px 24px 22px;max-width:430px;width:100%;box-shadow:0 30px 70px -30px rgba(10,40,70,.6);text-align:left;animation:pop .18s ease-out;}
+    @keyframes pop{from{transform:translateY(10px) scale(.98);opacity:0;}to{transform:none;opacity:1;}}
+    .sheet .x{position:absolute;top:10px;right:12px;border:none;background:none;font-size:30px;line-height:1;color:var(--muted);cursor:pointer;padding:4px 8px;}
+    .mTitle{font-family:"Baloo 2";font-weight:800;font-size:22px;color:var(--ink);padding-right:26px;}
+    .mSub{color:var(--muted);font-weight:700;font-size:14px;line-height:1.5;margin-top:6px;}
+    .sheet input{width:100%;border:2px solid #d9e6f2;border-radius:14px;padding:14px;font-size:16px;font-weight:700;color:var(--ink);background:#fff;font-family:inherit;}
+    .sheet input:focus{outline:none;border-color:var(--blue);}
+    .mFine{font-size:11.5px;color:var(--muted);font-weight:700;line-height:1.6;margin-top:14px;}
+    .mFine a{color:var(--blue-d);}
     .signup{background:#fff;border-radius:20px;padding:22px;margin-top:26px;box-shadow:0 14px 34px -20px rgba(20,90,160,.55);text-align:left;}
     .signup.sent{text-align:center;}
     .sfl{display:block;font-weight:800;font-size:13px;color:var(--muted);margin-bottom:8px;}
@@ -67,23 +79,8 @@
       <h1>See who actually <span>practised at home</span>.</h1>
       <p class="sub">You assign the sound and the position. Sona makes it what the child practises next — and the days, the reps and the pass rate come back to your dashboard. Free for you, free for every family on your caseload.</p>
 
-      <div class="signup" id="signupCard">
-        <label class="sfl" for="heroEmail">Your email — that's the whole sign-up</label>
-        <div class="srow">
-          <input id="heroEmail" type="email" inputmode="email" autocomplete="email" placeholder="you@school.org" />
-          <button class="cta go" id="heroGo">Get my free dashboard</button>
-        </div>
-        <div class="serr" id="heroErr"></div>
-        <span class="free">No password · no credit card · unlimited families</span>
-      </div>
-
-      <div class="signup sent" id="sentCard" style="display:none;">
-        <div style="font-size:40px;">📬</div>
-        <div style="font-family:'Baloo 2';font-weight:800;font-size:19px;margin-top:6px;">Check your email</div>
-        <p class="sub" style="font-size:14.5px;margin-top:8px;" id="sentMsg"></p>
-        <a class="cta" id="sentOpen" href="/slp-login.html" style="margin-top:14px;font-size:15px;padding:13px 24px;">Open the sign-in page</a>
-      </div>
-      <div class="devbox" id="devbox" style="display:none;"></div>
+      <button class="cta" id="openModal">Get my free dashboard</button>
+      <span class="free">One email · no password · no credit card</span>
     </div>
 
     <!-- CLAIMS TO CLINICIANS. This page is the one place Sona describes what
@@ -135,6 +132,35 @@
 
     <p class="note">Sona is an at-home speech practice tool — not a diagnosis, evaluation, or a substitute for professional care.<br/>Questions? <a href="mailto:hello@speaksona.com?subject=Sona%20for%20SLPs">Email us</a> · <a href="/privacy">Privacy</a></p>
   </div>
+  <!-- THE SIGN-UP, IN A DIALOG. Two fields and one button, over a dimmed page,
+       so the decision is the only thing on screen — and a first name, because
+       every email that follows is addressed to a person rather than to an
+       inbox. Closing it costs nothing: the page is still there underneath. -->
+  <div class="modal" id="modal" aria-hidden="true">
+    <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="mTitle">
+      <button class="x" id="mClose" aria-label="Close">×</button>
+      <div id="mForm">
+        <div class="mTitle" id="mTitle">Your free SLP dashboard</div>
+        <p class="mSub">We'll email you the link. No password to make, no card, unlimited families.</p>
+        <label class="sfl" for="mName">First name</label>
+        <input id="mName" type="text" autocomplete="given-name" maxlength="40" placeholder="Sarah" />
+        <label class="sfl" for="mEmail" style="margin-top:12px;">Email</label>
+        <input id="mEmail" type="email" inputmode="email" autocomplete="email" placeholder="you@school.org" />
+        <button class="cta go" id="mGo" style="width:100%;margin-top:16px;">Email me my dashboard</button>
+        <div class="serr" id="mErr"></div>
+        <p class="mFine">Free forever for SLPs and for every family on your caseload. No audio ever leaves a child's device, and you never type a student's name — the parent does, on their own phone, after consenting.</p>
+      </div>
+      <div id="mSent" style="display:none;text-align:center;">
+        <div style="font-size:46px;">📬</div>
+        <div class="mTitle" style="margin-top:6px;">Check your email</div>
+        <p class="mSub" id="mSentMsg"></p>
+        <a class="cta go" id="mStraight" href="/slp.html" style="width:100%;margin-top:16px;display:block;text-align:center;text-decoration:none;">Or go straight there now →</a>
+        <p class="mFine" id="mResend">Didn't arrive? Check spam, or <a href="#" id="mAgain">try another address</a>.</p>
+      </div>
+      <div class="devbox" id="devbox" style="display:none;"></div>
+    </div>
+  </div>
+
   <script>
     (function () {
       var $ = function (id) { return document.getElementById(id); };
@@ -146,36 +172,58 @@
         if (u) src = String(u).replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 30) || src;
       } catch (e) {}
 
+      function openModal(e) {
+        if (e) e.preventDefault();
+        $("modal").classList.add("open");
+        $("modal").setAttribute("aria-hidden", "false");
+        document.body.style.overflow = "hidden";
+        setTimeout(function () { $("mName").focus(); }, 60);
+      }
+      function closeModal() {
+        $("modal").classList.remove("open");
+        $("modal").setAttribute("aria-hidden", "true");
+        document.body.style.overflow = "";
+      }
+      $("openModal").onclick = openModal;
+      var mid = $("midCta"); if (mid) mid.onclick = openModal;
+      $("mClose").onclick = closeModal;
+      // the backdrop closes it; the sheet itself does not
+      $("modal").addEventListener("click", function (e) { if (e.target === $("modal")) closeModal(); });
+      document.addEventListener("keydown", function (e) { if (e.key === "Escape" && $("modal").classList.contains("open")) closeModal(); });
+
       function go() {
-        var email = (($("heroEmail").value) || "").trim();
-        $("heroErr").textContent = "";
-        if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { $("heroErr").textContent = "Enter a valid email."; $("heroEmail").focus(); return; }
-        $("heroGo").disabled = true; $("heroGo").textContent = "Setting up…";
+        var name = (($("mName").value) || "").trim();
+        var email = (($("mEmail").value) || "").trim();
+        $("mErr").textContent = "";
+        if (!name) { $("mErr").textContent = "Your first name, so we know who we're writing to."; $("mName").focus(); return; }
+        if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { $("mErr").textContent = "Enter a valid email."; $("mEmail").focus(); return; }
+        $("mGo").disabled = true; $("mGo").textContent = "Sending…";
         fetch("/api/slp/auth/request", {
           method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email: email, source: src }),
+          body: JSON.stringify({ email: email, name: name, source: src }),
         }).then(function (r) { return r.json(); }).then(function (j) {
-          $("heroGo").disabled = false; $("heroGo").textContent = "Get my free dashboard";
-          if (!j || !j.ok) { $("heroErr").textContent = (j && j.error) || "Couldn't set that up right now."; return; }
-          // A brand-new account is already signed in — go straight there. An
-          // account that exists gets the emailed link instead, because by then
-          // there may be a caseload behind the door.
-          if (j.signedIn) { location.href = "/slp.html"; return; }
-          $("sentMsg").textContent = "You already have a Sona account, so we sent a sign-in link to " + email + ". It expires in 15 minutes.";
-          $("signupCard").style.display = "none"; $("sentCard").style.display = "block";
+          $("mGo").disabled = false; $("mGo").textContent = "Email me my dashboard";
+          if (!j || !j.ok) { $("mErr").textContent = (j && j.error) || "Couldn't set that up right now."; return; }
+          $("mSentMsg").textContent = "We sent your dashboard link to " + email + ". It opens straight into your caseload — no password.";
+          // A brand-new account is signed in already, so the straight-through
+          // button works immediately; the email still lands, which is how they
+          // get back in tomorrow. An existing account has a caseload behind the
+          // door, so for them the emailed link is the only way through.
+          $("mStraight").style.display = j.signedIn ? "block" : "none";
+          $("mForm").style.display = "none"; $("mSent").style.display = "block";
           if (j.devLink) {
             $("devbox").style.display = "block";
             $("devbox").innerHTML = 'Email isn\'t configured here, so this is your link (preview only): <a href="' + j.devLink + '">Open it →</a>';
           }
         }).catch(function () {
-          $("heroGo").disabled = false; $("heroGo").textContent = "Get my free dashboard";
-          $("heroErr").textContent = "Network hiccup — try again.";
+          $("mGo").disabled = false; $("mGo").textContent = "Email me my dashboard";
+          $("mErr").textContent = "Network hiccup — try again.";
         });
       }
-      $("heroGo").onclick = go;
-      $("heroEmail").addEventListener("keydown", function (e) { if (e.key === "Enter") go(); });
-      var mid = $("midCta");
-      if (mid) mid.onclick = function (e) { e.preventDefault(); $("signupCard").scrollIntoView({ behavior: "smooth", block: "center" }); setTimeout(function () { $("heroEmail").focus(); }, 400); };
+      $("mGo").onclick = go;
+      $("mEmail").addEventListener("keydown", function (e) { if (e.key === "Enter") go(); });
+      $("mName").addEventListener("keydown", function (e) { if (e.key === "Enter") $("mEmail").focus(); });
+      $("mAgain").onclick = function (e) { e.preventDefault(); $("mSent").style.display = "none"; $("mForm").style.display = "block"; $("mEmail").value = ""; $("mEmail").focus(); };
     })();
   </script>
 </body>
