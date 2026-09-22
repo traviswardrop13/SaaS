@@ -45,7 +45,7 @@ Travis approved the item 25 summary wording and confirmed Rachel approved Simple
 
 ## Verification
 
-Post-rollback full battery is running; the retained noise-rejection tests already fail as expected. Log: `/private/tmp/sona-app-review-postrollback-battery.log`. This checkpoint is not release-ready. The earlier 39-suite run passed, but broader positive-sound checks then exposed a real false-negative problem that those tests did not cover. That earlier green result is not the final release verdict.
+Live-release recheck on 22 Sep 2026 finished: **38 of 39 suites passed; exit 1**. Only `repguardtest.mjs` failed. The production build passed (exit 0). Durable logs and the voice-only fallback patch are in `/Users/traviswardrop/Documents/SaaS/output/sona-live-release-2026-09-22/`. Tests used installed Chrome with muted playback and synthetic microphones. This checkpoint is not release-ready under the existing all-tests-pass rule. The earlier 39-suite run passed, but broader positive-sound checks then exposed a real false-negative problem that those tests did not cover. That earlier green result is not the final release verdict.
 
 All 19 recorded-target positive controls pass after rollback (40 checks, exit 0). Focused results include 41 onboarding checks, 33 parent-progress checks, speech/noise regressions and positive controls across all 19 recorded targets, 120 pause checks, 29 completion checks, child-switching checks and 11 Feed Echo audio checks. New regression tests were exercised against pre-fix code and failed there. TypeScript passed. Visual inspection covered Home, library, practice, parent progress and welcome; 375px pages had no horizontal overflow or page errors, with an additional 320px practice capture.
 
@@ -60,3 +60,9 @@ All automated browser tests were muted. Microphone tests used generated streams 
 5. Listen to the model voice on-device with Rachel before release. The existing shape checker returns `fail` for the bundled L example, while short T/D/B examples correctly remain `unknown` with limited evidence. Review the model/checker pairing; positive detection alone does not validate scoring. This checkpoint does not constitute a clinical sign-off on voice cues or cadence.
 
 Pricing, free-era promises, the dormant paid flow, existing clinical cues, protected setup disclaimer, parent narrative/byline, weekly goal and no-age-lock library behavior remain preserved. No SLP dashboard redesign is included.
+
+## Live release request — 22 Sep 2026
+
+Travis authorized a release for everyone. No push, merge or deployment was made during the release check because the retained practice acceptance suite still fails. The live ElevenLabs configuration returned a successful 71,332-byte PCM response for a generic test phrase; no sound was played on the Mac. Physical iPhone playback remains unverified.
+
+A separate five-file audio-only patch applies to production `main` at `10ec31a`; its 21 route checks and seven shared-client checks passed. It preserves the current live clinical, game and visual behavior. It still needs its full release battery if selected. The decision now is audio-only scope, fixing practice detection first, or an explicit exception for publishing the full redesign with the known practice limitations.
