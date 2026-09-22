@@ -2821,7 +2821,8 @@
         u.onend = fin; u.onerror = fin;
         // getVoices() may still be loading while speech already works. Its
         // empty list must not cut a valid sentence off after 1.2 seconds.
-        timer = setTimeout(() => { if (gen === _spk.gen) try { SS.cancel(); } catch (e) {} fin(); }, 12000);
+        // Release a stuck queue without cutting off longer, valid narration.
+        timer = setTimeout(fin, 12000);
         voiceDiagnostic({ source: "browser", reason: opts.fallbackReason || "fallback" });
         try { if (opts.hooks && opts.hooks.synthStart) opts.hooks.synthStart(); } catch (e) {}
         SS.speak(u);

@@ -17,12 +17,12 @@ const server=createServer((req,res)=>{
 await new Promise(resolve=>server.listen(8198,'127.0.0.1',resolve));
 const browser=await chromium.launch(launchOpts());
 function fake(){
- const h=window.__voiceTest={utterances:[],pcm:0,cacheKeys:[],cache:{},hold:false};
+ const h=window.__voiceTest={utterances:[],pcm:0,cacheKeys:[],cache:{},hold:false,cancels:0};
  const param=()=>({value:0,setValueAtTime(){},linearRampToValueAtTime(){},exponentialRampToValueAtTime(){}});
  const node=()=>({gain:param(),frequency:param(),playbackRate:param(),connect(){},disconnect(){},start(){},stop(){}});
  class Context{constructor(){this.state='running';this.destination={};this.sampleRate=24000;this.currentTime=0;}resume(){this.state='running';return Promise.resolve();}suspend(){this.state='suspended';return Promise.resolve();}createGain(){return node();}createOscillator(){return node();}createBuffer(c,n,rate){return {duration:n/rate,getChannelData:()=>new Float32Array(n)};}createBufferSource(){const n=node();n.start=()=>{h.pcm++;setTimeout(()=>{if(n.onended)n.onended();},10);};return n;}}
  window.AudioContext=window.webkitAudioContext=Context;
- speechSynthesis.getVoices=()=>[];speechSynthesis.cancel=()=>{};
+ speechSynthesis.getVoices=()=>[];speechSynthesis.cancel=()=>{h.cancels++;};
  speechSynthesis.speak=u=>{h.utterances.push(u);if(!h.hold)setTimeout(()=>u.onend&&u.onend(),10);};
  navigator.mediaDevices.getUserMedia=()=>Promise.reject(new DOMException('No real microphone','NotAllowedError'));
  const db={objectStoreNames:{contains:()=>true},close(){},transaction(){const tx={abort(){},objectStore(){return {
@@ -45,6 +45,15 @@ await scenario('shared browser fallback',async()=>{
  await page.evaluate(()=>__voiceTest.utterances[0].onend());await page.waitForFunction(()=>finished===true);
  ok('the speech promise ends when the voice actually ends',await page.evaluate(()=>finished===true));
  ok('fallback has no page errors',!errors.length,errors);
+ }finally{await ctx.close();}
+});
+await scenario('long browser narration',async()=>{
+ mode='error';const {ctx,page}=await fresh('/speech-harness');try{
+ await page.clock.install();
+ await page.evaluate(()=>{__voiceTest.hold=true;});await page.click('#speak');await page.waitForFunction(()=>__voiceTest.utterances.length===1);
+ const before=await page.evaluate(()=>__voiceTest.cancels);
+ await page.clock.fastForward(13000);
+ ok('queue watchdog does not cut off an ongoing narration',await page.evaluate(n=>__voiceTest.cancels===n,before));
  }finally{await ctx.close();}
 });
 await scenario('shared ElevenLabs playback',async()=>{

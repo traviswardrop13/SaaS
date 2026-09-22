@@ -66,3 +66,9 @@ Pricing, free-era promises, the dormant paid flow, existing clinical cues, prote
 Travis authorized a release for everyone. No push, merge or deployment was made during the release check because the retained practice acceptance suite still fails. The live ElevenLabs configuration returned a successful 71,332-byte PCM response for a generic test phrase; no sound was played on the Mac. Physical iPhone playback remains unverified.
 
 A separate five-file audio-only patch applies to production `main` at `10ec31a`; its 21 route checks and seven shared-client checks passed. It preserves the current live clinical, game and visual behavior. It still needs its full release battery if selected. The decision now is audio-only scope, fixing practice detection first, or an explicit exception for publishing the full redesign with the known practice limitations.
+
+## Merge preparation after audio release
+
+The audio-only release is live through PR #121 and production commit 777cdc736959b2e50ea2f0cc3a73a5398a3d1824. Current main has been integrated locally into this redesign branch. Its non-cancelling narration watchdog and regression test are preserved alongside the simple-game voice tests. All 24 combined voice-client checks and the syntax suite passed after integration. No redesigned app changes have been published.
+
+The prior full battery remains 38/39 suites; the known noise acceptance failures were neither removed nor weakened. Source comparison confirms production uses the same underlying energy-event gate, but this branch also changes practice accounting and related flows, so the full redesign is not a UI-only release. Publishing it with those known limitations needs an explicit exception to the all-tests-pass rule. No new detector tuning or full repeated battery was started during this merge preparation.
