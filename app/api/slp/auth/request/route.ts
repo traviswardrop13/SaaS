@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "node:crypto";
-import { kvCmd, kvConfigured, randomToken, hashToken, sendMagicEmail } from "@/lib/slpAuth";
+import {
+  kvCmd, kvConfigured, randomToken, hashToken, sendMagicEmail,
+  signSession, sessionCookie, SESSION_MAX_AGE,
+} from "@/lib/slpAuth";
 
 export const runtime = "nodejs";
 
@@ -12,14 +15,36 @@ function safeEqual(a: string, b: string): boolean {
   return crypto.timingSafeEqual(ba, bb);
 }
 
-// POST { email, adminKey? } → email a single-use magic sign-in link.
+/**
+ * Tell the founder's CRM that a clinician signed up. /api/lead is already
+ * wired to LEAD_WEBHOOK_URL (a GoHighLevel inbound workflow) and is the one
+ * place any opt-in goes, so this reuses it rather than growing a second rail.
+ *
+ * Fire-and-forget and never awaited into the response: a CRM hiccup must not
+ * cost a clinician their sign-in link. An email and a role — never a child's
+ * name, which is the rule everywhere else and has no exception here.
+ */
+function tellCrm(origin: string, email: string, source: string): void {
+  try {
+    void fetch(origin + "/api/lead", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, source, role: "slp", summary: "New SLP signup" }),
+    }).catch(() => {});
+  } catch {
+    /* never blocks sign-in */
+  }
+}
+
+// POST { email, adminKey?, source? } → email a single-use magic sign-in link,
+// and, for an account that does not exist yet, sign the clinician straight in.
 //
 // Admin override: when SLP_ADMIN_KEY is set (>= 8 chars) AND a matching adminKey
 // is supplied, the link is returned in the response so the operator can hand it
 // to a pilot SLP directly — before Resend/email is configured. Without the key
 // the link is only ever emailed; it is never returned to the caller.
 export async function POST(req: NextRequest) {
-  let body: { email?: string; adminKey?: string };
+  let body: { email?: string; adminKey?: string; source?: string };
   try {
     body = await req.json();
   } catch {
@@ -52,11 +77,39 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  const origin = new URL(req.url).origin;
   const token = randomToken();
   await kvCmd(["SET", "slptok:" + hashToken(token), email, "EX", 900]); // 15 min
-  const link = new URL(req.url).origin + "/api/slp/auth/verify?token=" + encodeURIComponent(token);
+  const link = origin + "/api/slp/auth/verify?token=" + encodeURIComponent(token);
   const res = await sendMagicEmail(email, link);
-  // Admins always get the link back; otherwise honor sendMagicEmail's devLink
-  // (null on production unless email is unconfigured on a preview deploy).
-  return NextResponse.json({ ok: true, sent: res.sent, devLink: isAdmin ? link : res.devLink });
+
+  /**
+   * A BRAND-NEW ACCOUNT IS SIGNED IN ON THE SPOT. Cold traffic off an ad does
+   * not go to its inbox and come back — the email step is where a funnel
+   * leaks — and on the very first request there is nothing behind the door to
+   * protect: the account does not exist, so it has no code, no families and no
+   * children. The link is still emailed, because that is how they get back in
+   * tomorrow.
+   *
+   * An account that ALREADY EXISTS gets the link and nothing else. By then it
+   * may hold a caseload, and a caseload is children — that door needs the
+   * proof that someone can read the inbox.
+   */
+  let acctExists = false;
+  try { acctExists = !!(await kvCmd(["GET", "slpacct:" + email])); } catch { acctExists = true; }
+
+  if (acctExists) {
+    return NextResponse.json({ ok: true, sent: res.sent, signedIn: false, devLink: isAdmin ? link : res.devLink });
+  }
+
+  await kvCmd(["SET", "slpacct:" + email, JSON.stringify({
+    email, name: "", clinic: "", code: "", createdAt: new Date().toISOString(),
+    source: String(body.source || "").slice(0, 40),
+  })]);
+  tellCrm(origin, email, String(body.source || "slp-signup").slice(0, 40));
+
+  const session = signSession({ email, code: "", iat: Date.now(), exp: Date.now() + SESSION_MAX_AGE * 1000 });
+  const out = NextResponse.json({ ok: true, sent: res.sent, signedIn: true, devLink: isAdmin ? link : res.devLink });
+  out.headers.set("Set-Cookie", sessionCookie(session, SESSION_MAX_AGE));
+  return out;
 }

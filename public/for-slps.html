@@ -42,6 +42,18 @@
     .step div b{font-family:"Baloo 2";}
     .step p{color:var(--muted);font-weight:700;font-size:13.5px;line-height:1.5;margin-top:2px;}
     .midcta{text-align:center;margin-top:30px;}
+    .signup{background:#fff;border-radius:20px;padding:22px;margin-top:26px;box-shadow:0 14px 34px -20px rgba(20,90,160,.55);text-align:left;}
+    .signup.sent{text-align:center;}
+    .sfl{display:block;font-weight:800;font-size:13px;color:var(--muted);margin-bottom:8px;}
+    .srow{display:flex;gap:10px;flex-wrap:wrap;}
+    .srow input{flex:1;min-width:210px;border:2px solid #d9e6f2;border-radius:14px;padding:15px;font-size:16px;font-weight:700;color:var(--ink);background:#fff;font-family:inherit;}
+    .srow input:focus{outline:none;border-color:var(--blue);}
+    .cta.go{margin-top:0;padding:15px 26px;font-size:16px;border:none;cursor:pointer;white-space:nowrap;}
+    .serr{color:#e0457b;font-weight:800;font-size:13px;margin-top:9px;min-height:17px;}
+    .signup .free{margin-top:10px;text-align:left;}
+    .signup.sent .free{text-align:center;}
+    .devbox{margin-top:14px;background:#fff7e6;border:1px solid #ffe2a8;border-radius:12px;padding:11px 13px;font-size:12px;font-weight:700;color:#8a6400;line-height:1.5;word-break:break-all;}
+    @media(max-width:560px){ .srow input{min-width:100%;} .cta.go{width:100%;} }
     .note{font-size:11.5px;color:var(--muted);font-weight:700;text-align:center;margin-top:26px;line-height:1.6;}
     .note a{color:var(--blue-d);}
   </style>
@@ -51,11 +63,27 @@
     <div class="top"><img src="/coach/echo/echo-avatar.svg" alt="Sona"/> Sona <a href="/slp-login.html">Sign in →</a></div>
 
     <div class="hero">
-      <span class="pill">✓ Built with a licensed SLP (Clinical Fellow)</span>
-      <h1>Home practice your whole caseload will <span>actually do</span>.</h1>
-      <p class="sub">Sona is a fun, AI-powered speech app for the kids you treat. You assign the targets; it listens, scores every attempt, and rolls their home practice up to you — automatically. Free for SLPs.</p>
-      <a class="cta" href="/slp-login.html">Create your free account</a>
-      <span class="free">Free forever · unlimited families · no credit card</span>
+      <span class="pill">✓ Built with a licensed pediatric SLP (Clinical Fellow)</span>
+      <h1>See who actually <span>practised at home</span>.</h1>
+      <p class="sub">You assign the sound and the position. Sona makes it what the child practises next — and the days, the reps and the pass rate come back to your dashboard. Free for you, free for every family on your caseload.</p>
+
+      <div class="signup" id="signupCard">
+        <label class="sfl" for="heroEmail">Your email — that's the whole sign-up</label>
+        <div class="srow">
+          <input id="heroEmail" type="email" inputmode="email" autocomplete="email" placeholder="you@school.org" />
+          <button class="cta go" id="heroGo">Get my free dashboard</button>
+        </div>
+        <div class="serr" id="heroErr"></div>
+        <span class="free">No password · no credit card · unlimited families</span>
+      </div>
+
+      <div class="signup sent" id="sentCard" style="display:none;">
+        <div style="font-size:40px;">📬</div>
+        <div style="font-family:'Baloo 2';font-weight:800;font-size:19px;margin-top:6px;">Check your email</div>
+        <p class="sub" style="font-size:14.5px;margin-top:8px;" id="sentMsg"></p>
+        <a class="cta" id="sentOpen" href="/slp-login.html" style="margin-top:14px;font-size:15px;padding:13px 24px;">Open the sign-in page</a>
+      </div>
+      <div class="devbox" id="devbox" style="display:none;"></div>
     </div>
 
     <!-- CLAIMS TO CLINICIANS. This page is the one place Sona describes what
@@ -103,9 +131,52 @@
       <div class="step"><div class="num">✉️</div><div><b>Who do I ask?</b><p><a href="mailto:privacy@speaksona.com">privacy@speaksona.com</a>, and the full <a href="/privacy.html">privacy policy</a>.</p></div></div>
     </div>
 
-    <div class="midcta"><a class="cta" href="/slp-login.html">Get your free account</a><span class="free">Takes a minute · free forever</span></div>
+    <div class="midcta"><a class="cta" href="#signupCard" id="midCta">Get your free dashboard</a><span class="free">One email · no password · free forever</span></div>
 
     <p class="note">Sona is an at-home speech practice tool — not a diagnosis, evaluation, or a substitute for professional care.<br/>Questions? <a href="mailto:hello@speaksona.com?subject=Sona%20for%20SLPs">Email us</a> · <a href="/privacy">Privacy</a></p>
   </div>
+  <script>
+    (function () {
+      var $ = function (id) { return document.getElementById(id); };
+      // Where the sign-up came from, so the CRM can tell ad traffic from the
+      // rest. utm_source if the ad set one, else the page itself.
+      var src = "for-slps";
+      try {
+        var u = new URLSearchParams(location.search).get("utm_source");
+        if (u) src = String(u).replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 30) || src;
+      } catch (e) {}
+
+      function go() {
+        var email = (($("heroEmail").value) || "").trim();
+        $("heroErr").textContent = "";
+        if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { $("heroErr").textContent = "Enter a valid email."; $("heroEmail").focus(); return; }
+        $("heroGo").disabled = true; $("heroGo").textContent = "Setting up…";
+        fetch("/api/slp/auth/request", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: email, source: src }),
+        }).then(function (r) { return r.json(); }).then(function (j) {
+          $("heroGo").disabled = false; $("heroGo").textContent = "Get my free dashboard";
+          if (!j || !j.ok) { $("heroErr").textContent = (j && j.error) || "Couldn't set that up right now."; return; }
+          // A brand-new account is already signed in — go straight there. An
+          // account that exists gets the emailed link instead, because by then
+          // there may be a caseload behind the door.
+          if (j.signedIn) { location.href = "/slp.html"; return; }
+          $("sentMsg").textContent = "You already have a Sona account, so we sent a sign-in link to " + email + ". It expires in 15 minutes.";
+          $("signupCard").style.display = "none"; $("sentCard").style.display = "block";
+          if (j.devLink) {
+            $("devbox").style.display = "block";
+            $("devbox").innerHTML = 'Email isn\'t configured here, so this is your link (preview only): <a href="' + j.devLink + '">Open it →</a>';
+          }
+        }).catch(function () {
+          $("heroGo").disabled = false; $("heroGo").textContent = "Get my free dashboard";
+          $("heroErr").textContent = "Network hiccup — try again.";
+        });
+      }
+      $("heroGo").onclick = go;
+      $("heroEmail").addEventListener("keydown", function (e) { if (e.key === "Enter") go(); });
+      var mid = $("midCta");
+      if (mid) mid.onclick = function (e) { e.preventDefault(); $("signupCard").scrollIntoView({ behavior: "smooth", block: "center" }); setTimeout(function () { $("heroEmail").focus(); }, 400); };
+    })();
+  </script>
 </body>
 </html>

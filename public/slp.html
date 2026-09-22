@@ -449,6 +449,8 @@
           <h2>Your caseload link</h2>
           <p class="sub">Any family can join with this one link. They pick the sound themselves, and you set homework once they appear. Adding a child from the Caseload page makes a per-child link with the homework already waiting.</p>
           <div class="linkbox"><input id="famLink" type="text" readonly /><button class="btn sm" id="copyLink">Copy link</button></div>
+          <p class="sub" style="margin-top:10px;">The link opens Sona in the phone's browser and unlocks it — nothing to install, and it works on iPhone and Android. A family who would rather have an app icon can get the iPhone app free from the App Store and sign in with the same link; the link is what unlocks them, so send it either way.</p>
+          <div class="row" style="margin-top:8px;"><a class="btn ghost sm" href="https://apps.apple.com/app/id6785755867" target="_blank" rel="noopener">App Store listing →</a><button class="btn ghost sm" id="copyAppLink">Copy App Store link</button><span class="sub" id="appCopied"></span></div>
           <label class="fl" for="snip">Ready-to-send message</label>
           <textarea id="snip" style="font-size:13.5px;"></textarea>
           <div class="row" style="margin-top:8px;"><button class="btn green sm" id="copySnip">Copy message</button><span class="sub" id="copyMsg"></span></div>
@@ -935,6 +937,7 @@
     $("invCopy").onclick=function(){copy($("invLink").value,$("invCopy"));};
     $("invCopyMsg").onclick=function(){copy($("invMsg").value,$("invCopyMsg"));$("invCopied").textContent="Copied ✓";setTimeout(function(){$("invCopied").textContent="";},1800);};
     $("copyLink").onclick=function(){copy($("famLink").value,$("copyLink"));};
+    $("copyAppLink").onclick=function(){copy("https://apps.apple.com/app/id6785755867",$("copyAppLink"));$("appCopied").textContent="Copied ✓";setTimeout(function(){$("appCopied").textContent="";},1800);};
     $("copySnip").onclick=function(){copy($("snip").value,$("copySnip"));$("copyMsg").textContent="Copied ✓";setTimeout(function(){$("copyMsg").textContent="";},1800);};
 
     /* ── Settings ──────────────────────────────── */
