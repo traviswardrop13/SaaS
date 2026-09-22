@@ -348,6 +348,29 @@
   // Playback-rate multiplier for /api/tts audio. Leo's ElevenLabs voice is
   // already a kid — no pitch-shift needed.
   const VOICE_PITCH = 1;
+  // Shared delivery revision: server tuning must not leave families replaying
+  // older, indefinitely cached prompts on their devices.
+  const TTS_CACHE_VERSION = "v7";
+  const _voiceEvents = [];
+  function voiceDiagnostic(event) {
+    event = event || {};
+    const sources = ["elevenlabs", "openai", "server", "cache", "browser", "human", "unavailable"];
+    const reasons = ["api-error", "network-error", "timeout", "playback-blocked", "playback-error", "no-audio", "fallback", "no-synth"];
+    const item = { at: Date.now(), source: sources.indexOf(event.source) >= 0 ? event.source : "unavailable" };
+    if (reasons.indexOf(event.reason) >= 0) item.reason = event.reason;
+    if (typeof event.model === "string" && /^[a-z0-9_.-]{1,64}$/i.test(event.model)) item.model = event.model;
+    if (typeof event.revision === "string" && /^[a-z0-9_.-]{1,32}$/i.test(event.revision)) item.revision = event.revision;
+    if (["hit", "miss", "device"].indexOf(event.cache) >= 0) item.cache = event.cache;
+    if (Number.isInteger(event.status) && event.status >= 100 && event.status <= 599) item.status = event.status;
+    _voiceEvents.push(item); if (_voiceEvents.length > 20) _voiceEvents.shift();
+    // Memory only: no spoken text, child information, audio, persistence or beacon.
+    return Object.assign({}, item);
+  }
+  function voiceStatus() {
+    return { last: _voiceEvents.length ? Object.assign({}, _voiceEvents[_voiceEvents.length - 1]) : null,
+      events: _voiceEvents.map(function (item) { return Object.assign({}, item); }) };
+  }
+
   function saveProfile(patch) { save(PKEY, Object.assign(getProfile(), patch || {})); }
 
   function getProgress() {
@@ -2669,16 +2692,19 @@
         const u = new global.SpeechSynthesisUtterance(t);
         u.rate = opts.rate || 0.95; u.pitch = 1.05;
         u.volume = (getProfile().volume != null ? getProfile().volume : 0.8);
-        let done = false;
+        let done = false, timer = null;
         const fin = () => {
           if (done) return; done = true;
+          if (timer) clearTimeout(timer);
           try { if (opts.hooks && opts.hooks.synthEnd) opts.hooks.synthEnd(); } catch (e) {}
           res("synth");
         };
         u.onend = fin; u.onerror = fin;
-        // no installed voices → speak() never fires its events; give up fast
-        const cap = (SS.getVoices && SS.getVoices().length) ? 12000 : 1200;
-        setTimeout(fin, cap);
+        // getVoices() may still be loading while speech already works. Its
+        // empty list must not cut a valid sentence off after 1.2 seconds.
+        // Release a stuck queue without cutting off longer, valid narration.
+        timer = setTimeout(fin, 12000);
+        voiceDiagnostic({ source: "browser", reason: opts.fallbackReason || "fallback" });
         try { if (opts.hooks && opts.hooks.synthStart) opts.hooks.synthStart(); } catch (e) {}
         SS.speak(u);
       } catch (e) { res("error"); }
@@ -2710,6 +2736,7 @@
             setTimeout(() => { try { src.stop(); } catch (e) {} fin(); }, Math.ceil(ab.duration * 1000) + 1500);
             _spk.src = src;
             src.start();
+            voiceDiagnostic(opts.voiceInfo || { source: "server" });
           } catch (e) { res("error"); }
         };
         if (c.state === "suspended") {
@@ -2731,9 +2758,15 @@
       body: JSON.stringify({ text: String(text), voice: opts.voice || getProfile().voiceId || "" }),
       signal: ctrl ? ctrl.signal : undefined,
     })
-      .then((r) => { if (to) clearTimeout(to); return r.ok ? r.arrayBuffer() : null; })
+      .then((r) => {
+        if (!r.ok) { opts.fallbackReason = "api-error"; voiceDiagnostic({ source: "unavailable", reason: "api-error", status: r.status }); return null; }
+        opts.voiceInfo = { source: r.headers.get("X-Sona-Voice-Provider") || "server", model: r.headers.get("X-Sona-Voice-Model"),
+          cache: r.headers.get("X-Sona-Voice-Cache"), revision: r.headers.get("X-Sona-Voice-Revision") };
+        return r.arrayBuffer();
+      })
+      .then((bytes) => { if (to) clearTimeout(to); return bytes; })
       .then((b) => (b && b.byteLength) ? _spkPCM(new Uint8Array(b), opts, gen) : "no-audio")
-      .catch(() => { if (to) clearTimeout(to); return "fetch-failed"; })
+      .catch((error) => { if (to) clearTimeout(to); opts.fallbackReason = error && error.name === "AbortError" ? "timeout" : "network-error"; return "fetch-failed"; })
       .then((how) => {
         // THE ROBOT VOICE IS A LAST RESORT, NOT A DEFAULT.
         //
@@ -2750,6 +2783,7 @@
         // robot-or-nothing and nothing is worse.
         if (how === "pcm" || how === "superseded") return how;
         if (how === "blocked" && opts.auto) { _spkPark(text, opts); return "parked"; }
+        if (!opts.fallbackReason) opts.fallbackReason = how === "blocked" ? "playback-blocked" : "no-audio";
         return _spkSynth(text, opts, gen);
       });
   }
@@ -3401,5 +3435,5 @@
   try { _grandfatherFreeEra3(); } catch (e) {}
   try { installDebug(); } catch (e) {}
 
-  global.Sona = { pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, saveFor, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, ladderContent, FREE_MODE, isFree, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, gated, gateVerify, gateOk, requireGate, gateDest, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, planMoment, planEligible, planShown, speak, speakNow, speakUnlock, speechAvailable, speechPerm, speechStart, speechStop, hearVerdict, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, demoState, demoDone, demoStart, demoFinish, runActive, gateBounce, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repsBeacon, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES };
+  global.Sona = { pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, TTS_CACHE_VERSION, voiceDiagnostic, voiceStatus, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, saveFor, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, ladderContent, FREE_MODE, isFree, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, gated, gateVerify, gateOk, requireGate, gateDest, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, planMoment, planEligible, planShown, speak, speakNow, speakUnlock, speechAvailable, speechPerm, speechStart, speechStop, hearVerdict, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, demoState, demoDone, demoStart, demoFinish, runActive, gateBounce, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repsBeacon, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES };
 })(window);
