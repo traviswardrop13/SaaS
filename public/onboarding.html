@@ -116,9 +116,11 @@
       <div class="qh">Let's make talking fun!</div>
       <p class="muted">Short, friendly practice — a few minutes a day. Designed with a speech-language pathologist.</p>
       <p class="muted" id="howLong" style="margin-top:12px;font-weight:800;color:var(--ink);">Three quick questions, then your child plays. About a minute.</p>
-      <!-- The clinician door ("I'm a speech-language pathologist") is gone from
-           here: the SLP side is HIDDEN, not deleted (Travis, 19 Sep 2026 — not a
-           priority). ORDER_SLP below is unreachable until it comes back. -->
+      <!-- THE CLINICIAN DOOR. Hidden 19 Sep ("not a priority"), back 21 Sep
+           when SLPs became the channel. It is the only way into ORDER_SLP, so
+           removing it again makes that whole branch dead code — if it ever
+           goes, take the branch with it. -->
+      <p class="muted" id="slpRow" style="margin-top:10px;font-size:13px;"><a href="#" id="slpLink"><b>I'm a speech-language pathologist</b> — setting Sona up for my caseload →</a></p>
       <p class="muted" id="moveRow" style="margin-top:12px;font-size:13px;"><a href="#" id="moveLink"><b>Have a code?</b> Bought Sona on the website or set up in a browser? Enter it here →</a></p>
     </div>
 
@@ -167,7 +169,7 @@
            targets would be Sona assessing. Any change to that is Rachel's:
            if "not sure" should narrow by age, it needs her rule, not an
            engineering guess. -->
-      <p class="muted" style="margin-top:12px;font-size:12.5px;">Sona practises — it doesn't test or diagnose. Which sounds a child needs is an SLP's call.</p>
+      <p class="muted" style="margin-top:12px;font-size:12.5px;">Sona practices — it doesn't test or diagnose. Which sounds a child needs is an SLP's call.</p>
     </div>
 
     <!-- name -->
@@ -214,7 +216,7 @@
          again. -->
     <div class="step" data-step="mic">
       <div class="qh">One thing before you start</div>
-      <p class="muted">Echo listens while <span id="micName">your child</span> practises and cheers the sounds they get right. Your phone will ask permission on the first round.</p>
+      <p class="muted">Echo listens while <span id="micName">your child</span> practices and cheers the sounds they get right. Your phone will ask permission on the first round.</p>
       <p class="muted" style="margin-top:12px;font-size:12.5px;line-height:1.55;"><b style="color:var(--ink);">Grown-ups:</b> the mic is on only during practice — never during the games — and every sound is checked on this phone. Nothing is uploaded.</p>
       <p class="muted" style="margin-top:10px;font-size:12.5px;">Not ready? Say no when your phone asks — Echo will offer again next time, and the rest of Sona still works.</p>
     </div>
@@ -237,6 +239,12 @@
         <div class="choice" style="cursor:default;"><span class="ce"><svg viewBox="0 0 64 64" style="width:30px;height:30px"><g id="ob-mic"><rect x="24" y="7" width="16" height="27" rx="8" fill="#4db3f2"></rect><line x1="29" y1="15" x2="35" y2="15" stroke="#fff" stroke-width="2.5" stroke-linecap="round" opacity=".8"></line><line x1="29" y1="21" x2="35" y2="21" stroke="#fff" stroke-width="2.5" stroke-linecap="round" opacity=".8"></line><path d="M15 30a17 17 0 0 0 34 0" fill="none" stroke="#2a8fd4" stroke-width="5" stroke-linecap="round"></path><line x1="32" y1="47" x2="32" y2="53" stroke="#2a8fd4" stroke-width="5" stroke-linecap="round"></line><line x1="25" y1="56" x2="39" y2="56" stroke="#2a8fd4" stroke-width="5" stroke-linecap="round"></line></g></svg></span> <span>Clearer sounds<br/><span style="font-family:Nunito;font-weight:700;font-size:13px;color:var(--muted);">A few fun minutes of real practice, every day</span></span></div>
         <div class="choice" style="cursor:default;"><span class="ce"><svg viewBox="0 0 64 64" style="width:30px;height:30px"><g id="ob-flex"><rect x="6" y="27" width="12" height="20" rx="5" fill="#ff8a3d"></rect><rect x="12" y="32" width="27" height="13" rx="6.5" fill="#ffd0a8"></rect><circle cx="25" cy="29" r="8.5" fill="#ffd0a8"></circle><rect x="36.5" y="12" width="13" height="27" rx="6.5" fill="#ffd0a8" transform="rotate(14 43 26)"></rect><circle cx="45" cy="13" r="7.5" fill="#f0b184"></circle><circle cx="22" cy="25" r="2.2" fill="#fff" opacity=".7"></circle></g></svg></span> <span>Confidence<br/><span style="font-family:Nunito;font-weight:700;font-size:13px;color:var(--muted);">Echo cheers every single try — no failing here</span></span></div>
         <div class="choice" style="cursor:default;"><span class="ce"><svg viewBox="0 0 64 64" style="width:30px;height:30px"><g id="ob-headphones"><path d="M14 38v-6a18 18 0 0 1 36 0v6" fill="none" stroke="#7c88e8" stroke-width="6" stroke-linecap="round"></path><rect x="9" y="35" width="12" height="17" rx="5.5" fill="#6270d4"></rect><rect x="43" y="35" width="12" height="17" rx="5.5" fill="#6270d4"></rect><circle cx="13" cy="39" r="2" fill="#fff" opacity=".6"></circle></g></svg></span> <span>Progress you can hear<br/><span style="font-family:Nunito;font-weight:700;font-size:13px;color:var(--muted);">Recordings + a report you can share with your SLP</span></span></div>
+      </div>
+      <div id="achEmail" style="display:none;margin-top:14px;background:#f7fbff;border:2px solid #dcecfa;border-radius:14px;padding:13px 15px;text-align:left;">
+        <div style="font-family:'Baloo 2';font-weight:800;font-size:14.5px;">Want <span id="achEmName">your child</span>'s weekly summary?</div>
+        <p class="muted" style="font-size:12.5px;margin-top:4px;line-height:1.5;">One short email a week — which days they practiced and the sounds they worked on. Optional, and you can add it later in Settings.</p>
+        <input id="achEmailInput" type="email" inputmode="email" autocomplete="email" placeholder="you@email.com" style="margin-top:9px;" />
+        <p id="achEmailMsg" class="muted" style="font-size:12px;margin-top:7px;"></p>
       </div>
       <div id="moveCode" style="display:none;margin-top:12px;background:#fff;border:2px solid #ffe2a8;border-radius:14px;padding:11px 14px;font-weight:800;font-size:12.5px;color:#8a6400;text-align:left;"></div>
       <!-- SLP finale: the auto-created share credential (code + family key) -->
@@ -275,11 +283,11 @@
          closed without RESEND_FROM / UNSUB_SECRET / EMAIL_POSTAL, and a
          promise that depends on environment variables is not a promise. -->
     <div class="step" data-step="email">
-      <div class="qh">Where should we reach you?</div>
-      <p class="muted">Your email is how you get your subscription back if you switch phones, and how we reach you about your account.</p>
+      <div class="qh">Your clinician account</div>
+      <p class="muted">Your email creates your clinician account — the code and family key you hand to families so Sona is free for them, plus a dashboard showing how they are practicing. It is also how you sign back in: there is no password.</p>
       <input id="obEmail" type="email" inputmode="email" autocomplete="email" placeholder="you@email.com" style="margin-top:12px;" />
       <p id="emErr" style="display:none;color:#ef6f23;font-weight:800;font-size:13px;margin-top:8px;"></p>
-      <p class="muted" style="font-size:12px;margin-top:10px;"><b id="emName">Your child</b>'s practice stays on this device — it is never uploaded. To move it to another one, use <b>Backup &amp; restore</b> in Settings. <a href="/privacy" target="_blank">Privacy</a>.</p>
+      <p class="muted" style="font-size:12px;margin-top:10px;"><b id="emName">Your child</b>'s practice stays on this device — it is never uploaded. To move it to another one, use <b>Backup &amp; restore</b> in Settings. A family's own practice works the same way; what reaches your dashboard is counts, never audio. <a href="/privacy" target="_blank">Privacy</a>.</p>
       <p class="muted" style="font-size:12.5px;margin-top:12px;"><a href="#" id="obEmailSkip" style="font-weight:800;">Skip for now →</a> You can add it later in Settings.</p>
     </div>
   </div>
@@ -341,7 +349,7 @@
     function saveDraft() { try { localStorage.setItem(DRAFTKEY, JSON.stringify(draft)); } catch (e) {} }
     function clearDraft() { try { localStorage.removeItem(DRAFTKEY); } catch (e) {} }
 
-    // THREE SETUP STEPS for a parent: who is practising, what to aim at, and
+    // THREE SETUP STEPS for a parent: who is practicing, what to aim at, and
     // the microphone. `sounds` only appears for the family that says they have
     // targets — for everyone else the picker IS the clinical framing, so it is
     // not shown. A clinician still gets the caseload flow, reached by the link
@@ -519,10 +527,8 @@
         if(sw) sw.style.display = slp ? "none" : "";
         var gw=document.getElementById("obGoalsWrap");
         if(gw && slp) gw.style.display="block";
-        var eq=document.querySelector('[data-step="email"] .qh');
-        if(eq && slp) eq.innerHTML="Your clinician account";
-        var ep=document.querySelector('[data-step="email"] p.muted');
-        if(ep && slp) ep.textContent="Your email creates your clinician account — the code and family key you hand to clients so Sona is free for them, plus a dashboard showing how they're practising.";
+        // The step's own markup is the clinician's wording: it is the only
+        // path that reaches it (ORDER_SLP), so there is nothing to swap.
         // an SLP can't skip email: the credential IS the account
         var esk=document.getElementById("obEmailSkip");
         if(esk) esk.parentElement.style.display = slp ? "none" : "";
@@ -588,7 +594,11 @@
       if(key==="name") setTimeout(function(){ nameEl.focus(); }, 80);
       if(key==="interests"){ var nmi=(nameEl.value||draft.childName||"").trim(); document.getElementById("intName").textContent = nmi || "your child"; }
       if(key==="achieve"){ var nm=(nameEl.value||draft.childName||"").trim(); document.getElementById("achName").textContent = nm || "your child"; }
-      if(key==="email"){ var nm2=(nameEl.value||draft.childName||"").trim(); var emn=document.getElementById("emName"); if(emn) emn.textContent = nm2 || "Your child"; setTimeout(function(){ emailEl.focus(); }, 80); }
+      if(key==="email"){
+        var nm2=(nameEl.value||draft.childName||"").trim();
+        var emn=document.getElementById("emName"); if(emn) emn.textContent = nm2 || "Your child";
+        setTimeout(function(){ emailEl.focus(); }, 80);
+      }
       if(key==="mic"){ var nm3=(nameEl.value||draft.childName||"").trim(); var mn=document.getElementById("micName"); if(mn) mn.textContent = nm3 || "your child"; }
       saveDraft();
     }
@@ -598,7 +608,7 @@
       if(key==="name"){ draft.childName=nameEl.value.trim(); if(!draft.childName){ nameEl.focus(); nameEl.style.borderColor="#ef6f23"; return; } }
       if(key==="interests" && selInterests.size===0){ selInterests.add("dragons"); }
       if(key==="sounds" && selSounds.size===0){ selSounds.add("R"); }
-      if(key==="email"){ var em=(emailEl.value||"").trim(); if(!/^\S+@\S+\.\S+$/.test(em)){ emailEl.focus(); emailEl.style.borderColor="#ef6f23"; var ee=document.getElementById("emErr"); ee.style.display="block"; ee.textContent="Please enter a valid email to save progress."; return; } draft.email=em; }
+      if(key==="email"){ var em=(emailEl.value||"").trim(); if(!/^\S+@\S+\.\S+$/.test(em)){ emailEl.focus(); emailEl.style.borderColor="#ef6f23"; var ee=document.getElementById("emErr"); ee.style.display="block"; ee.textContent="Please enter a valid email — it is how you sign back in."; return; } draft.email=em; }
       Sona.sfx.tap();
       // (the "building" beat used to fire here and cover the microphone step;
       // it now plays from finish(), between the last answer and the finale)
@@ -730,13 +740,36 @@
       try{ showBuild(); }catch(e){}
       var ach=document.querySelector('[data-step="achieve"]');
       if(ach){ var nm3=(nameEl.value||draft.childName||"").trim(); document.getElementById("achName").textContent=nm3||"your child"; }
+      // the optional weekly-summary ask — parents only. A clinician already
+      // gave an email on their own step, because for them it IS the account.
+      if(draft.role!=="slp"){
+        var aeb=document.getElementById("achEmail");
+        if(aeb){
+          aeb.style.display="block";
+          var aen=document.getElementById("achEmName");
+          if(aen) aen.textContent=(nameEl.value||draft.childName||"").trim()||"your child";
+        }
+      }
       setTimeout(function(){ try{ if(ach) ach.classList.add("on"); }catch(e){} }, 400);
       bubble.textContent = "You're all set!";
       nextBtn.disabled = true; nextBtn.textContent = "Let's practice!";
       backBtn.style.display = "none";
       // App Store build: the plan screen follows onboarding (intent is hottest
       // here); closing it still lands on today with the card-free usage week.
+      // Read the finale's optional email on the way out. Deliberately silent:
+      // a typo costs the weekly summary, not the child's first practice, and
+      // there is no error state on a field nobody had to fill in.
+      var takeFinaleEmail=function(){
+        try{
+          var el=document.getElementById("achEmailInput"); if(!el) return;
+          var em=(el.value||"").trim();
+          if(!em || !/^\S+@\S+\.\S+$/.test(em)) return;
+          Sona.saveProfile({ email: em, weeklyEmail: true });
+          try{ if(window.SonaAnalytics)SonaAnalytics.track("weekly summary opted in"); }catch(e){}
+        }catch(e){}
+      };
       var goHome=function(){
+        takeFinaleEmail();
         try{ if(window.SonaAnalytics)SonaAnalytics.track("onboarding completed"); }catch(e){}
         // Onboarding NEVER ends at the paywall any more. It used to: a parent
         // off an ad met a price screen before their child had said a word.

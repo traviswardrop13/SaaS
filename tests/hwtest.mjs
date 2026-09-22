@@ -1,7 +1,7 @@
 // HW1: homework an SLP assigned, and the app honouring it.
 //
 // The contract worth pinning is not "the API returns 200" — it is that an
-// assignment CHANGES WHAT THE CHILD PRACTISES. Homework the app ignores is a
+// assignment CHANGES WHAT THE CHILD PRACTICES. Homework the app ignores is a
 // checkbox, so every assertion below is about rotSounds(), the position, the
 // rep goal and the word list actually deferring to it, plus the two things a
 // clinician must not be able to do by accident: read another family's
@@ -104,7 +104,7 @@ const CACHE = (over) => `localStorage.setItem(Sona.kkey("sona.homework.v1"), JSO
     st.future.hw === false && st.future.sounds.join() === "R", JSON.stringify(st.future));
   ok("homework past its end date changes nothing",
     st.past.hw === false && st.past.sounds.join() === "R", JSON.stringify(st.past));
-  ok("homework inside its window is what the child practises",
+  ok("homework inside its window is what the child practices",
     st.now.hw === true && st.now.sounds.join() === "S", JSON.stringify(st.now));
   await ctx.close();
 }
@@ -120,7 +120,7 @@ const CACHE = (over) => `localStorage.setItem(Sona.kkey("sona.homework.v1"), JSO
     const junk = Sona.wordsFor("S", Sona.practicePos()).map((w) => w.w);
     return { picked, junk, bankHas: Sona.WORDS.S.map((w) => w.w) };
   }, CACHE());
-  ok("the SLP's own words are the ones practised",
+  ok("the SLP's own words are the ones practiced",
     st.picked.length > 0 && st.picked.every((w) => ["bus", "glass"].indexOf(w) >= 0), JSON.stringify(st.picked));
   ok("words Sona has no target for fall back to the bank, never to an empty round",
     st.junk.length > 0, JSON.stringify(st.junk));
@@ -231,10 +231,10 @@ const noComments = (src) => src
 // ── SWITCHING CHILDREN WHILE AN ASSIGNMENT IS IN FLIGHT ─────────────────
 // The per-child pilot key fixed the synchronous half of sibling crossover.
 // This is the asynchronous half, and it is the one that ends with a child
-// practising someone else's clinical assignment. save() resolves the active
+// practicing someone else's clinical assignment. save() resolves the active
 // child at WRITE time, so a response that lands after a parent taps "switch
 // child" was stored under the wrong slot: child A's SLP assignment became
-// child B's, and B then practised A's sound at A's position with A's reps
+// child B's, and B then practiced A's sound at A's position with A's reps
 // reported against it.
 {
   const { ctx, pg } = await page();
@@ -265,7 +265,7 @@ const noComments = (src) => src
     JSON.stringify(landed.first));
   ok("…and never on the sibling who happened to be active when it returned",
     landed.sibling === null,
-    "a child practising another child's SLP assignment: " + JSON.stringify(landed.sibling));
+    "a child practicing another child's SLP assignment: " + JSON.stringify(landed.sibling));
   ok("…so the sibling is still shown no homework at all",
     landed.activeSees === null, JSON.stringify(landed.activeSees));
 

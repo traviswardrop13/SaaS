@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { rateLimit } from "@/lib/rateLimit";
 import { readTicket, rosterKey, ticketOwnsChild } from "@/lib/slpAuth";
+import { isGone, fitRosterRecord } from "@/lib/roster";
 
 /**
  * Pilot outcome capture — receives a child's CONSENTED practice progress and
@@ -42,6 +43,7 @@ async function kvCmd(cmd: (string | number)[]): Promise<unknown> {
 }
 
 const ROSTER_CAP = 200; // a real caseload is well under this; a forger is not
+const CONSENT_VER = "join-2026-09"; // the consent wording on join.html when this row was written
 
 export async function POST(req: NextRequest) {
   const rl = await rateLimit(req, { key: "pilot", limit: 60, windowSec: 3600 });
@@ -94,6 +96,15 @@ export async function POST(req: NextRequest) {
 
     const key = rosterKey(code);           // canonical — never build this by hand
     if (code && childId) {
+      // A child taken off the caseload — by the clinician, or by the family's
+      // own "stop sharing" — stays off. The device still holds a valid ticket
+      // and syncs after every practice, so without this the deleted row would
+      // be back within the hour. Answered with a plain ok and NO write: the
+      // device ignores failures either way, and a 2xx keeps its logs quiet.
+      // The mark is lifted only by a fresh invite being claimed.
+      if (await isGone(code, childId)) {
+        return NextResponse.json({ ok: true, captured });
+      }
       // Cap the roster. An UPDATE to a child already on it is always allowed —
       // the cap must never freeze a real family's progress — but a NEW child
       // beyond the cap is refused.
@@ -104,7 +115,10 @@ export async function POST(req: NextRequest) {
           return NextResponse.json({ ok: false, error: "roster is full" }, { status: 429 });
         }
       }
-      const rec = JSON.stringify({
+      // consentAt is what the device recorded when the grown-up tapped Yes;
+      // consentVer names the wording they saw (join.html, Sep 2026), so a
+      // later change to that copy can tell who agreed to what.
+      const rec = fitRosterRecord({
         childId,
         child: b.child || "",
         age: b.age || "",
@@ -113,8 +127,10 @@ export async function POST(req: NextRequest) {
         outcomes: b.outcomes || {},
         sessions: b.sessions || 0,
         streak: b.streak || 0,
+        consentAt: typeof b.consentAt === "string" ? b.consentAt.slice(0, 40) : "",
+        consentVer: CONSENT_VER,
         at: b.at || new Date().toISOString(),
-      }).slice(0, 16000);
+      });
       await kvCmd(["HSET", key, childId, rec]);
       await kvCmd(["EXPIRE", key, 60 * 60 * 24 * 150]); // ~5 months
     }

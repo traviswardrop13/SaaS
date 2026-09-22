@@ -22,7 +22,7 @@ const EVENTS = new Set([
   "day goal done",        // the outcome proxy: a family finished all 5 rounds
   "slp code redeemed",    // which SLPs actually send families
   // The conversion funnel, added 18 Sep 2026. Without these the relay could
-  // see a child practise and never see whether that turned into anything:
+  // see a child practice and never see whether that turned into anything:
   "plan moment shown",    // the ask, fired once on the first completed run
   "trial started",        // the in-app 3-day clock begins — NOT a purchase
   "purchase completed",   // money committed (Apple or Stripe)

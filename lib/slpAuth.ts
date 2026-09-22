@@ -11,12 +11,66 @@ import crypto from "node:crypto";
  */
 
 // Stable HMAC secret for sessions. Prefer a dedicated secret; fall back to the KV
-// token (already a stable per-deploy secret) so this works without extra setup.
-const SECRET =
+// token (already a stable per-deploy secret) so this works without extra setup
+// on a preview or a laptop.
+const SECRET = () =>
   process.env.SLP_AUTH_SECRET ||
   process.env.KV_REST_API_TOKEN ||
   process.env.UPSTASH_REDIS_REST_TOKEN ||
   "sona-dev-insecure-secret";
+
+/**
+ * THE SECRETS A SIGNATURE MAY STILL BE VERIFIED AGAINST, newest first.
+ *
+ * Adding SLP_AUTH_SECRET CHANGES the key everything was signed with. New
+ * signatures are always made with SECRET() — but a family enrolled last month
+ * is holding a 400-day ticket signed with the KV token, and their device
+ * never asks for a new one. Verify against the new secret alone and every
+ * enrolled family stops syncing the moment the secret is set: no homework
+ * arrives, no practice reports back, no error anyone would see. The clinician
+ * would watch a live caseload go quiet and conclude the families stopped
+ * practicing.
+ *
+ * So verification accepts the legacy secret too, and only verification.
+ * Nothing is signed with it, so the window closes by itself as tickets age
+ * out, and a forger still cannot mint anything: minting needs SECRET(), which
+ * in production is the dedicated secret or nothing at all.
+ */
+function verifySecrets(): string[] {
+  const out = [SECRET()];
+  const legacy = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
+  if (legacy && legacy !== out[0]) out.push(legacy);
+  return out;
+}
+
+/** True when `body` carries a valid signature from any secret we still honour. */
+function sigOk(body: string, sig: string): boolean {
+  const given = Buffer.from(sig);
+  for (const secret of verifySecrets()) {
+    const expected = Buffer.from(crypto.createHmac("sha256", secret).update(body).digest("base64url"));
+    if (given.length === expected.length && crypto.timingSafeEqual(given, expected)) return true;
+  }
+  return false;
+}
+
+/**
+ * IN PRODUCTION THE SIGNING SECRET MUST BE ITS OWN SECRET. The KV bearer
+ * token is shared with every route that talks to the store and with the
+ * store's own dashboard; the dev string is public in this file. A session
+ * or a ticket signed with either would let anyone who ever saw the KV token
+ * mint a clinician's login or a family's enrolment. So on production with no
+ * SLP_AUTH_SECRET set, nothing is signed and nothing verifies: every SLP
+ * route fails closed until the secret exists. Preview and local keep the
+ * fallback, which is what makes the test suites run without setup.
+ *
+ * Read at call time, not import time, so a suite can flip it.
+ */
+export function authSecretOk(): boolean {
+  return !!process.env.SLP_AUTH_SECRET || process.env.VERCEL_ENV !== "production";
+}
+function requireAuthSecret(): void {
+  if (!authSecretOk()) throw new Error("SLP_AUTH_SECRET is not set: refusing to sign with a shared or dev secret in production");
+}
 
 const COOKIE = "slp_session";
 export const SESSION_MAX_AGE = 60 * 60 * 24 * 30; // 30 days
@@ -44,6 +98,11 @@ export async function kvCmd(cmd: (string | number)[]): Promise<unknown> {
   } catch {
     return undefined;
   }
+}
+
+/** A clinician-supplied name lands in an HTML email; escape it. */
+function esc(s: string): string {
+  return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c] as string));
 }
 
 export function randomToken(): string {
@@ -74,19 +133,18 @@ export function hashToken(t: string): string {
 export type Session = { email: string; code?: string; iat?: number; exp?: number };
 
 export function signSession(payload: Session): string {
+  requireAuthSecret();
   const body = Buffer.from(JSON.stringify(payload)).toString("base64url");
-  const sig = crypto.createHmac("sha256", SECRET).update(body).digest("base64url");
+  const sig = crypto.createHmac("sha256", SECRET()).update(body).digest("base64url");
   return body + "." + sig;
 }
 
 export function verifySession(token: string | undefined | null): Session | null {
+  if (!authSecretOk()) return null;
   if (!token || token.indexOf(".") < 0) return null;
   const [body, sig] = token.split(".");
   if (!body || !sig) return null;
-  const expected = crypto.createHmac("sha256", SECRET).update(body).digest("base64url");
-  const a = Buffer.from(sig);
-  const b = Buffer.from(expected);
-  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return null;
+  if (!sigOk(body, sig)) return null;
   try {
     const obj = JSON.parse(Buffer.from(body, "base64url").toString()) as Session;
     if (obj.exp && Date.now() > obj.exp) return null;
@@ -112,6 +170,7 @@ export function verifySession(token: string | undefined | null): Session | null 
 export type Ticket = { t: "enrol"; code: string; exp: number; cid?: string };
 
 export function signTicket(code: string, ttlDays = 400, childId = ""): string {
+  requireAuthSecret();
   const payload: Ticket = { t: "enrol", code: String(code || "").toLowerCase(), exp: Date.now() + ttlDays * 86400000 };
   // Bind the ticket to ONE child where we know which one. A ticket proves the
   // device passed this clinician's code+key, which is enough to WRITE its own
@@ -121,7 +180,7 @@ export function signTicket(code: string, ttlDays = 400, childId = ""): string {
   // the caller decides. See app/api/homework.
   if (childId) payload.cid = String(childId).slice(0, 60);
   const body = Buffer.from(JSON.stringify(payload)).toString("base64url");
-  const sig = crypto.createHmac("sha256", SECRET).update(body).digest("base64url");
+  const sig = crypto.createHmac("sha256", SECRET()).update(body).digest("base64url");
   return body + "." + sig;
 }
 
@@ -131,12 +190,11 @@ export function signTicket(code: string, ttlDays = 400, childId = ""): string {
  * Returns null on any failure; never throws.
  */
 export function readTicket(token: string | undefined | null, code: string): Ticket | null {
+  if (!authSecretOk()) return null;
   if (!token || token.indexOf(".") < 0) return null;
   const [body, sig] = token.split(".");
   if (!body || !sig) return null;
-  const expected = crypto.createHmac("sha256", SECRET).update(body).digest("base64url");
-  const a = Buffer.from(sig), b = Buffer.from(expected);
-  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return null;
+  if (!sigOk(body, sig)) return null;
   try {
     const t = JSON.parse(Buffer.from(body, "base64url").toString()) as Ticket;
     if (t.t !== "enrol") return null;                        // not a session cookie
@@ -254,9 +312,17 @@ export function clearCookie(): string {
  * Send the sign-in link via Resend. Until RESEND_API_KEY is set, return the link
  * directly so it can be tested on preview — but never leak it on production.
  */
+/**
+ * THIS EMAIL IS THE DELIVERY MECHANISM, not a receipt. An SLP signs up from an
+ * ad, and this is what arrives — so it says what is behind the link and what to
+ * do first, rather than "here is your sign-in link" over a bare button. The
+ * name is the one they typed about themselves at sign-up; a child's name has no
+ * business in an outbound email and none is available here.
+ */
 export async function sendMagicEmail(
   email: string,
   link: string,
+  name = "",
 ): Promise<{ sent: boolean; devLink: string | null }> {
   const key = process.env.RESEND_API_KEY;
   const from = process.env.RESEND_FROM || "Sona <login@speaksona.com>";
@@ -270,17 +336,52 @@ export async function sendMagicEmail(
       body: JSON.stringify({
         from,
         to: [email],
-        subject: "Your Sona sign-in link",
+        subject: "Your Sona dashboard is ready",
         html:
-          `<div style="font-family:system-ui,Segoe UI,Roboto,sans-serif;font-size:15px;color:#16384f;line-height:1.5;">` +
-          `<p>Here's your sign-in link for your Sona SLP account:</p>` +
-          `<p><a href="${link}" style="display:inline-block;background:#1cb0f6;color:#fff;font-weight:700;text-decoration:none;padding:12px 22px;border-radius:10px;">Sign in to Sona</a></p>` +
-          `<p style="color:#6b86a3;font-size:13px;">This link expires in 15 minutes. If you didn't request it, you can ignore this email.</p>` +
+          `<div style="font-family:system-ui,Segoe UI,Roboto,sans-serif;font-size:15px;color:#16384f;line-height:1.6;max-width:520px;">` +
+          `<p>${name ? "Hi " + esc(name) + "," : "Hi,"}</p>` +
+          `<p>Your Sona dashboard is ready — it's free for you and for every family on your caseload.</p>` +
+          `<p><a href="${link}" style="display:inline-block;background:#58cc02;color:#fff;font-weight:700;text-decoration:none;padding:14px 26px;border-radius:12px;font-size:16px;">Open my dashboard</a></p>` +
+          `<p style="margin-top:22px;"><b>What to do first</b></p>` +
+          `<ol style="padding-left:18px;color:#46627a;">` +
+          `<li>Add a child — initials are enough. You pick the sound and the position.</li>` +
+          `<li>Send their family the link. They set up in about 30 seconds, on their own phone.</li>` +
+          `<li>Come back and see the days they practiced — and copy a line for your progress note.</li>` +
+          `</ol>` +
+          `<p style="color:#6b86a3;font-size:13px;margin-top:22px;">This link expires in 15 minutes — if it does, just enter your email again at speaksona.com and we'll send a fresh one. If you didn't ask for this, you can ignore it.</p>` +
           `</div>`,
+        /**
+         * A PLAIN-TEXT PART, because an HTML-only email scores worse with
+         * every spam filter that looks — and this message is not a receipt
+         * a clinician can shrug off. It IS the dashboard: if it lands in
+         * junk, the sign-up we just paid an ad for is worth nothing.
+         */
+        text:
+          (name ? "Hi " + name + ",\n\n" : "Hi,\n\n") +
+          "Your Sona dashboard is ready - it's free for you and for every family on your caseload.\n\n" +
+          "Open it here:\n" + link + "\n\n" +
+          "What to do first\n" +
+          "1. Add a child - initials are enough. You pick the sound and the position.\n" +
+          "2. Send their family the link. They set up in about 30 seconds, on their own phone.\n" +
+          "3. Come back and see the days they practiced - and copy a line for your progress note.\n\n" +
+          "This link expires in 15 minutes. If it does, enter your email again at speaksona.com and we'll send a fresh one. If you didn't ask for this, you can ignore it.\n",
       }),
     });
+    /**
+     * SAY WHY, in the server log, when Resend refuses. The usual cause is a
+     * sending domain that was never verified, and its symptom is silence: the
+     * page says "check your email", the inbox stays empty, and nothing
+     * anywhere names the reason. The key is never logged; the body is
+     * Resend's own error text.
+     */
+    if (!r.ok) {
+      let why = String(r.status);
+      try { why += " " + (await r.text()).slice(0, 300); } catch { /* status alone */ }
+      console.error("[slpAuth] Resend refused the sign-in email:", why);
+    }
     return { sent: r.ok, devLink: null };
-  } catch {
+  } catch (e) {
+    console.error("[slpAuth] sign-in email threw:", e instanceof Error ? e.message : String(e));
     return { sent: false, devLink: null };
   }
 }

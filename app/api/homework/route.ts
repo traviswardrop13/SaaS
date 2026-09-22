@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { readTicket, kvConfigured } from "@/lib/slpAuth";
 import { readHomework, writeHomework, isActive, isoDay, type Homework } from "@/lib/homework";
+import { isGone } from "@/lib/roster";
 import { rateLimit } from "@/lib/rateLimit";
 
 /**
  * The family's half of homework: a child's device asks what it should be
- * practising, and reports back how much of it happened.
+ * practicing, and reports back how much of it happened.
  *
  * POST, not GET, because the credential travels in the body — a ticket in a
  * query string lands in every access log between here and the phone.
@@ -57,7 +58,7 @@ export async function POST(req: NextRequest) {
   if (!code || !childId) return NextResponse.json({ ok: true, hw: null });
 
   // No ticket, no read. A device that never passed the clinician's code+key
-  // check has no standing to ask what their caseload is practising.
+  // check has no standing to ask what their caseload is practicing.
   const t = readTicket(ticket, code);
   if (!t) return NextResponse.json({ ok: false, error: "not enrolled" }, { status: 401 });
   // Tickets minted since the homework work carry the child they were issued
@@ -70,6 +71,13 @@ export async function POST(req: NextRequest) {
   }
 
   if (!kvConfigured()) return NextResponse.json({ ok: true, hw: null });
+
+  // A child taken off the caseload — by the clinician, or by the family's
+  // own "stop sharing" — has no assignment and reports no practice. The
+  // device still holds a valid ticket; the answer is a plain "nothing
+  // assigned" and NOTHING is written, so a removed family's reps never
+  // rebuild the row they asked to have deleted.
+  if (await isGone(code, childId)) return NextResponse.json({ ok: true, hw: null });
 
   const rec = await readHomework(code, childId);
 

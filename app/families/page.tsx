@@ -65,6 +65,12 @@ const TRACKER = FREE_MODE
   ? `document.addEventListener("click",function(e){var a=e.target&&e.target.closest?e.target.closest('a[href^="/onboarding.html"]'):null;if(!a)return;try{if(window.SonaAnalytics)window.SonaAnalytics.track("landing cta",{surface:"landing"});}catch(err){}},true);`
   : `document.addEventListener("click",function(e){var a=e.target&&e.target.closest?e.target.closest('a[href^="/api/checkout"]'):null;if(!a)return;try{if(window.sonaTrack)window.sonaTrack("InitiateCheckout",{value:59.99,currency:"USD",content_name:"web_annual"});}catch(err){}try{if(window.SonaAnalytics)window.SonaAnalytics.track("paywall viewed",{surface:"landing"});}catch(err){}},true);`;
 
+// THIS IS /families NOW, not the root. speaksona.com is the clinician page
+// (Travis, 22 Sep 2026: SLPs are the channel), and this page moved rather than
+// being rewritten so that every purchase surface keeps BOTH pricing states —
+// the switch has flipped eleven times and hand-editing a price into a page is
+// the one thing CLAUDE.md forbids. A family reaching Sona directly lands here;
+// a family reaching it through their SLP never sees it at all.
 export const metadata = {
   title: "Sona — R-sound practice kids actually love",
   description: FREE_MODE
@@ -460,7 +466,7 @@ export default async function Landing() {
           <CtaButton />
           <div style={{ fontSize: 11.5, fontWeight: 700, color: MUTED, margin: "12px 0 22px" }}>{finalFootnote}</div>
           <div style={{ fontSize: 11.5, fontWeight: 700, color: MUTED, borderTop: `2px solid ${LINE}`, paddingTop: 14 }}>
-            speaksona.com · <a href="/privacy" style={{ color: MUTED }}>Privacy</a> · <a href="/terms" style={{ color: MUTED }}>Terms</a><br />Made with a licensed pediatric SLP
+            speaksona.com · <a href="/privacy" style={{ color: MUTED }}>Privacy</a> · <a href="/terms" style={{ color: MUTED }}>Terms</a> · <a href="/for-slps.html" style={{ color: MUTED }}>For SLPs</a><br />Made with a licensed pediatric SLP
           </div>
         </section>
       </div>

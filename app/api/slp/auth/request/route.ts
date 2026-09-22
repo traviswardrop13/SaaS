@@ -1,8 +1,35 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "node:crypto";
-import { kvCmd, kvConfigured, randomToken, hashToken, sendMagicEmail } from "@/lib/slpAuth";
+import {
+  kvCmd, kvConfigured, randomToken, hashToken, sendMagicEmail,
+  signSession, sessionCookie, SESSION_MAX_AGE, authSecretOk,
+} from "@/lib/slpAuth";
 
 export const runtime = "nodejs";
+
+/**
+ * FOUNDER HEALTH CHECK — open it in a browser and see whether the sign-up
+ * funnel is actually wired in THIS deployment. Presence booleans only, never
+ * values, exactly as /api/lead does it.
+ *
+ * It exists because an ad can be live and spending while a missing
+ * environment variable quietly fails every sign-up: the clinician sees a
+ * shrug, and nothing in the logs says which rail is down. `ready` is the
+ * one number that matters — false means do not spend.
+ */
+export async function GET() {
+  const signing = authSecretOk();
+  const store = kvConfigured();
+  return NextResponse.json({
+    ok: true,
+    service: "slp-signup",
+    ready: signing && store,
+    signing,                                        // SLP_AUTH_SECRET (or non-production)
+    store,                                          // KV / Upstash
+    email: Boolean(process.env.RESEND_API_KEY),     // the link can actually be delivered
+    crm: Boolean(process.env.LEAD_WEBHOOK_URL),     // the lead reaches GoHighLevel
+  });
+}
 
 // Constant-time string compare (avoids leaking the admin key via timing).
 function safeEqual(a: string, b: string): boolean {
@@ -12,14 +39,63 @@ function safeEqual(a: string, b: string): boolean {
   return crypto.timingSafeEqual(ba, bb);
 }
 
-// POST { email, adminKey? } → email a single-use magic sign-in link.
+/**
+ * Tell the founder's CRM that a clinician signed up. /api/lead is already
+ * wired to LEAD_WEBHOOK_URL (a GoHighLevel inbound workflow) and is the one
+ * place any opt-in goes, so this reuses it rather than growing a second rail.
+ *
+ * Fire-and-forget and never awaited into the response: a CRM hiccup must not
+ * cost a clinician their sign-in link. An email and a role — never a child's
+ * name, which is the rule everywhere else and has no exception here.
+ */
+/**
+ * Which ad produced this clinician. An ALLOW-LIST, copied in spirit from
+ * /api/lead's safeLead: the object arrives from a page a stranger can put any
+ * query string on, so a field that is not named here does not travel. A
+ * deny-list is how `name: child` once sailed into a marketing payload.
+ */
+const ATTRIB_KEYS = [
+  "utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term",
+  "fbclid", "referrer", "landing",
+] as const;
+
+function safeAttrib(raw: unknown): Record<string, string> {
+  const out: Record<string, string> = {};
+  if (!raw || typeof raw !== "object") return out;
+  const src = raw as Record<string, unknown>;
+  for (const k of ATTRIB_KEYS) {
+    const v = src[k];
+    if (typeof v === "string" && v) out[k] = v.slice(0, k === "referrer" ? 200 : 120);
+  }
+  return out;
+}
+
+function tellCrm(
+  origin: string, email: string, source: string, name: string, attrib: Record<string, string>,
+): void {
+  try {
+    void fetch(origin + "/api/lead", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      // The clinician's OWN first name — the one they typed about themselves.
+      // Never a child's, which is the rule everywhere and has no exception in
+      // a marketing payload of all places.
+      body: JSON.stringify({ email, name, source, role: "slp", summary: "New SLP signup", ...attrib }),
+    }).catch(() => {});
+  } catch {
+    /* never blocks sign-in */
+  }
+}
+
+// POST { email, adminKey?, source? } → email a single-use magic sign-in link,
+// and, for an account that does not exist yet, sign the clinician straight in.
 //
 // Admin override: when SLP_ADMIN_KEY is set (>= 8 chars) AND a matching adminKey
 // is supplied, the link is returned in the response so the operator can hand it
 // to a pilot SLP directly — before Resend/email is configured. Without the key
 // the link is only ever emailed; it is never returned to the caller.
 export async function POST(req: NextRequest) {
-  let body: { email?: string; adminKey?: string };
+  let body: { email?: string; adminKey?: string; source?: string; name?: string; attrib?: unknown };
   try {
     body = await req.json();
   } catch {
@@ -32,6 +108,24 @@ export async function POST(req: NextRequest) {
   if (!kvConfigured()) {
     return NextResponse.json(
       { ok: false, error: "Accounts aren't enabled yet — a data store needs to be connected." },
+      { status: 503 },
+    );
+  }
+
+  /**
+   * FAIL BEFORE ANYTHING IS WRITTEN, NOT HALFWAY THROUGH. Without a signing
+   * secret, signSession() throws — but by then this route has already stored
+   * the account, so the clinician's RETRY takes the "account exists" path and
+   * only ever gets an emailed link, which cannot verify either. One missing
+   * environment variable would lock a real clinician out permanently and give
+   * them a network error to explain it.
+   *
+   * So the check happens first, above the token, the account and the CRM ping,
+   * and says what it is in plain words. GET / on this route reports it too.
+   */
+  if (!authSecretOk()) {
+    return NextResponse.json(
+      { ok: false, error: "Sign-in isn't switched on for this deployment yet. Email hello@speaksona.com and we'll get you in." },
       { status: 503 },
     );
   }
@@ -52,11 +146,42 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  const origin = new URL(req.url).origin;
   const token = randomToken();
   await kvCmd(["SET", "slptok:" + hashToken(token), email, "EX", 900]); // 15 min
-  const link = new URL(req.url).origin + "/api/slp/auth/verify?token=" + encodeURIComponent(token);
-  const res = await sendMagicEmail(email, link);
-  // Admins always get the link back; otherwise honor sendMagicEmail's devLink
-  // (null on production unless email is unconfigured on a preview deploy).
-  return NextResponse.json({ ok: true, sent: res.sent, devLink: isAdmin ? link : res.devLink });
+  const link = origin + "/api/slp/auth/verify?token=" + encodeURIComponent(token);
+  const res = await sendMagicEmail(email, link, String(body.name || "").trim().slice(0, 60));
+
+  /**
+   * A BRAND-NEW ACCOUNT IS SIGNED IN ON THE SPOT. Cold traffic off an ad does
+   * not go to its inbox and come back — the email step is where a funnel
+   * leaks — and on the very first request there is nothing behind the door to
+   * protect: the account does not exist, so it has no code, no families and no
+   * children. The link is still emailed, because that is how they get back in
+   * tomorrow.
+   *
+   * An account that ALREADY EXISTS gets the link and nothing else. By then it
+   * may hold a caseload, and a caseload is children — that door needs the
+   * proof that someone can read the inbox.
+   */
+  let acctExists = false;
+  try { acctExists = !!(await kvCmd(["GET", "slpacct:" + email])); } catch { acctExists = true; }
+
+  if (acctExists) {
+    return NextResponse.json({ ok: true, sent: res.sent, signedIn: false, devLink: isAdmin ? link : res.devLink });
+  }
+
+  // The name they gave at sign-up is the name on their homework notes, so the
+  // dashboard does not have to ask for it a second time.
+  const name = String(body.name || "").trim().slice(0, 60);
+  await kvCmd(["SET", "slpacct:" + email, JSON.stringify({
+    email, name, clinic: "", code: "", createdAt: new Date().toISOString(),
+    source: String(body.source || "").slice(0, 40),
+  })]);
+  tellCrm(origin, email, String(body.source || "slp-signup").slice(0, 40), name, safeAttrib(body.attrib));
+
+  const session = signSession({ email, code: "", iat: Date.now(), exp: Date.now() + SESSION_MAX_AGE * 1000 });
+  const out = NextResponse.json({ ok: true, sent: res.sent, signedIn: true, devLink: isAdmin ? link : res.devLink });
+  out.headers.set("Set-Cookie", sessionCookie(session, SESSION_MAX_AGE));
+  return out;
 }

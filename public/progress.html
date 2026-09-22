@@ -610,7 +610,7 @@
     function accOf(k) { var o = out[k]; return (o && o.attempts) ? Math.round(o.passes / o.attempts * 100) : null; }
     function posLineOf(k) { var o = out[k]; if (!o || !o.byPos) return ""; var parts = []; Object.keys(o.byPos).forEach(function (p) { var bp = o.byPos[p]; if (bp.a) parts.push((POSLBL[p] || p) + " " + Math.round(bp.p / bp.a * 100) + "%"); }); return parts.join(" · "); }
     if (!keys.length) {
-      bs.innerHTML = '<p class="muted">No practice yet — each sound appears here once it has been practised. <a href="/today.html" style="color:var(--blue-d);font-weight:800;">Start today’s practice →</a></p>';
+      bs.innerHTML = '<p class="muted">No practice yet — each sound appears here once it has been practiced. <a href="/today.html" style="color:var(--blue-d);font-weight:800;">Start today’s practice →</a></p>';
     } else {
       keys.sort(function (a, b) { return ((out[b] && out[b].attempts) || g.bySound[b] || 0) - ((out[a] && out[a].attempts) || g.bySound[a] || 0); }).forEach(function (k) {
         var n = g.bySound[k] || 0, st = Math.min(3, Math.floor(n / 3));

@@ -66,6 +66,11 @@ if (appFree) {
     .replace(/\/\*[\s\S]*?\*\//g, " ")             // block comments
     .replace(/(^|[^:])\/\/[^\n]*/g, "$1");         // line comments, keeping https://
 
+  // THE PARENT LANDING PAGE IS /families NOW. speaksona.com is the clinician
+  // page (22 Sep 2026: SLPs are the channel); the page moved rather than being
+  // rewritten precisely so these pins keep holding — it still carries BOTH
+  // pricing states and still reads the one switch.
+  //
   // THESE USED TO SCAN FOR THE ABSENCE OF A PRICE, and that was right while
   // app/page.tsx was hand-rewritten for each era. It is not right any more.
   // The switch has flipped eleven times, so the marketing surfaces now render
@@ -77,7 +82,7 @@ if (appFree) {
   // free, nothing priced may render and no CTA may point at an endpoint that
   // refuses. What follows must hold in EITHER direction.
   {
-    const src = decomment(readFileSync(APP + "/app/page.tsx", "utf8"));
+    const src = decomment(readFileSync(APP + "/app/families/page.tsx", "utf8"));
     ok("the landing page reads the one switch",
       /import \{ FREE_MODE \} from "@\/lib\/pricing"/.test(src),
       "a second copy of the pricing rule is how the paid and free halves contradicted each other three times");
