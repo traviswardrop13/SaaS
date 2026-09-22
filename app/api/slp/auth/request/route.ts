@@ -2,10 +2,34 @@ import { NextRequest, NextResponse } from "next/server";
 import crypto from "node:crypto";
 import {
   kvCmd, kvConfigured, randomToken, hashToken, sendMagicEmail,
-  signSession, sessionCookie, SESSION_MAX_AGE,
+  signSession, sessionCookie, SESSION_MAX_AGE, authSecretOk,
 } from "@/lib/slpAuth";
 
 export const runtime = "nodejs";
+
+/**
+ * FOUNDER HEALTH CHECK — open it in a browser and see whether the sign-up
+ * funnel is actually wired in THIS deployment. Presence booleans only, never
+ * values, exactly as /api/lead does it.
+ *
+ * It exists because an ad can be live and spending while a missing
+ * environment variable quietly fails every sign-up: the clinician sees a
+ * shrug, and nothing in the logs says which rail is down. `ready` is the
+ * one number that matters — false means do not spend.
+ */
+export async function GET() {
+  const signing = authSecretOk();
+  const store = kvConfigured();
+  return NextResponse.json({
+    ok: true,
+    service: "slp-signup",
+    ready: signing && store,
+    signing,                                        // SLP_AUTH_SECRET (or non-production)
+    store,                                          // KV / Upstash
+    email: Boolean(process.env.RESEND_API_KEY),     // the link can actually be delivered
+    crm: Boolean(process.env.LEAD_WEBHOOK_URL),     // the lead reaches GoHighLevel
+  });
+}
 
 // Constant-time string compare (avoids leaking the admin key via timing).
 function safeEqual(a: string, b: string): boolean {
@@ -60,6 +84,24 @@ export async function POST(req: NextRequest) {
   if (!kvConfigured()) {
     return NextResponse.json(
       { ok: false, error: "Accounts aren't enabled yet — a data store needs to be connected." },
+      { status: 503 },
+    );
+  }
+
+  /**
+   * FAIL BEFORE ANYTHING IS WRITTEN, NOT HALFWAY THROUGH. Without a signing
+   * secret, signSession() throws — but by then this route has already stored
+   * the account, so the clinician's RETRY takes the "account exists" path and
+   * only ever gets an emailed link, which cannot verify either. One missing
+   * environment variable would lock a real clinician out permanently and give
+   * them a network error to explain it.
+   *
+   * So the check happens first, above the token, the account and the CRM ping,
+   * and says what it is in plain words. GET / on this route reports it too.
+   */
+  if (!authSecretOk()) {
+    return NextResponse.json(
+      { ok: false, error: "Sign-in isn't switched on for this deployment yet. Email hello@speaksona.com and we'll get you in." },
       { status: 503 },
     );
   }

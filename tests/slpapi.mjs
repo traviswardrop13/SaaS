@@ -308,6 +308,37 @@ if (A) {
   if (saved.sec === undefined) delete process.env.SLP_AUTH_SECRET; else process.env.SLP_AUTH_SECRET = saved.sec;
 }
 
+// ── the sign-up route refuses before it half-creates an account ──
+{
+  const req = read("app/api/slp/auth/request/route.ts");
+
+  // The order is the pin, not the presence. signSession() throws without a
+  // secret; if the account had already been stored by then, the clinician's
+  // retry would take the "account exists" branch forever and only ever be
+  // emailed a link that cannot verify either. One missing variable, one
+  // clinician locked out for good, and a network error to explain it.
+  const gate = req.indexOf("if (!authSecretOk())");
+  ok("the sign-up route checks the signing secret at all", gate > 0);
+  ok("…before it writes the account, mints a token or pings the CRM",
+    gate > 0 &&
+    gate < req.indexOf('kvCmd(["SET", "slptok:') &&
+    gate < req.indexOf('kvCmd(["SET", "slpacct:') &&
+    gate < req.indexOf("tellCrm(origin, email, String("),
+    "a half-created account is a permanent lockout: the retry can never reach the new-account branch again");
+  ok("…and says so in words a clinician can act on, not a stack trace",
+    /Sign-in isn't switched on for this deployment yet/.test(req) && /hello@speaksona.com/.test(req));
+
+  // A live ad spends whether or not the funnel works. One URL, opened in a
+  // browser, has to answer "is it working" without reading a log.
+  ok("GET on the sign-up route reports whether the funnel is wired",
+    /export async function GET()/.test(req) && /ready: signing && store/.test(req));
+  ok("…as presence booleans only, never the values themselves",
+    /Boolean\(process\.env\.RESEND_API_KEY\)/.test(req) &&
+    /Boolean\(process\.env\.LEAD_WEBHOOK_URL\)/.test(req) &&
+    !/process\.env\.SLP_AUTH_SECRET/.test((req.split("export async function POST")[0].split("export async function GET")[1]) || ""),
+    "a health check that prints a secret is a leak wearing a helpful hat");
+}
+
 // ── source contracts: the routes ──
 {
   const roster = read("lib/roster.ts");
