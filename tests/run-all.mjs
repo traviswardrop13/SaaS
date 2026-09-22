@@ -16,6 +16,8 @@ const SUITES = [
   "kidtest.mjs",   // KIDS1: per-child progress, switching, family-wide entitlement
   "slpcode.mjs",   // CODES1: SLP family credential — verified redemption, honest gate
   "slpapi.mjs",    // SLPAPI1: the clinician's roster — invites ahead of the family, removal, meta the device can't overwrite
+  "ttsroutetest.mjs", // voice provider, delivery cache, safe fallback and request deadline
+  "voiceclienttest.mjs", // actual playback source and complete spoken turns
   "readtest.mjs",  // books never go silent: browser-voice fallback when TTS dies
   "momweek.mjs",   // parent weekly goal + streak math + the three UIs
   "betatest.mjs",  // onboarding flow + beta pulse + founding banner
