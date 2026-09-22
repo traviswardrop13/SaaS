@@ -23,6 +23,13 @@ import { rateLimit } from "@/lib/rateLimit";
  */
 export const runtime = "nodejs";
 
+const VOICE_REVISION = "v7";
+const VENDOR_TIMEOUT_MS = 6000; // leave room inside the browser's seven-second timeout
+const DEFAULT_ELEVEN_VOICE = "qBDvhofpxp92JgXJxDjB";
+const OPENAI_VOICES = new Set([
+  "alloy", "ash", "ballad", "coral", "echo", "fable", "nova", "onyx",
+  "sage", "shimmer", "verse", "marin", "cedar",
+]);
 const PCM_HEADERS = {
   "Content-Type": "audio/L16; rate=24000; channels=1",
   "Cache-Control": "no-store",
@@ -47,145 +54,186 @@ function cacheSet(k: string, v: ArrayBuffer) {
   while (audioCache.size > CACHE_MAX) audioCache.delete(audioCache.keys().next().value as string);
 }
 
+function elevenConfig() {
+  const v3Model = process.env.ELEVENLABS_V3_MODEL || "eleven_v3";
+  return {
+    voiceId: process.env.ELEVENLABS_VOICE_ID || DEFAULT_ELEVEN_VOICE,
+    v3Model,
+    fallbackModel: process.env.ELEVENLABS_MODEL || "eleven_multilingual_v2",
+    wantV3: process.env.ELEVENLABS_V3 === "1",
+    speed: Math.min(1.05, Math.max(0.85, parseFloat(process.env.ELEVENLABS_SPEED || "") || 0.93)),
+  };
+}
+function elevenSettings(model: string, config: ReturnType<typeof elevenConfig>): Record<string, number | boolean> {
+  // v3 supports coarse stability; speaker boost, similarity and speed are not supported.
+  if (model === config.v3Model || model === "eleven_v3") return { stability: 0.5 };
+  return {
+    stability: 0.55,
+    similarity_boost: 0.85,
+    style: 0.3,
+    speed: config.speed,
+    use_speaker_boost: true,
+  };
+}
+function openaiVoice(requested?: string) {
+  // Pages send the child's ElevenLabs profile voice. It is not an OpenAI voice.
+  return requested && OPENAI_VOICES.has(requested)
+    ? requested : process.env.OPENAI_TTS_VOICE || "shimmer";
+}
+function voiceHeaders(provider: string, model: string, cache: "hit" | "miss" = "miss") {
+  return {
+    "X-Sona-Voice-Provider": provider,
+    "X-Sona-Voice-Model": model,
+    "X-Sona-Voice-Cache": cache,
+    "X-Sona-Voice-Revision": VOICE_REVISION,
+  };
+}
+function pcmResponse(buf: ArrayBuffer, provider: string, model: string, cache: "hit" | "miss" = "miss") {
+  // A successful HTTP status with no PCM must never be cached or look like speech.
+  if (!buf.byteLength || buf.byteLength % 2) throw new Error("Invalid PCM response");
+  return new NextResponse(buf.slice(0), {
+    status: 200, headers: { ...PCM_HEADERS, ...voiceHeaders(provider, model, cache) },
+  });
+}
+
 export async function POST(req: NextRequest) {
-  const _rl = await rateLimit(req, { key: "tts", limit: 120, windowSec: 60 }); if (_rl) return _rl;
+  const limited = await rateLimit(req, { key: "tts", limit: 120, windowSec: 60 });
+  if (limited) return limited;
   const elevenKey = process.env.ELEVENLABS_API_KEY;
   const openaiKey = process.env.OPENAI_API_KEY;
   if (!elevenKey && !openaiKey) {
     return NextResponse.json(
-      { ok: false, error: "Server is missing ELEVENLABS_API_KEY (or OPENAI_API_KEY)." },
-      { status: 500 },
+      { ok: false, error: "Speech service is not configured." },
+      { status: 500, headers: voiceHeaders("none", "none") },
     );
   }
 
   let text = "";
   let voiceOverride: string | undefined;
-  // `stable` used to force flat v2 delivery so repeats matched — but clips are
-  // cached on-device AND in the warm-instance LRU, so identical replays come
-  // from the cache, not from flat generation. Every line now gets the
-  // expressive path; `stable` only pins v3 to its "natural" mode.
-  let stable = false;
   try {
     const b = await req.json();
     text = typeof b?.text === "string" ? b.text.slice(0, 800) : "";
     if (typeof b?.voice === "string" && b.voice) voiceOverride = b.voice;
-    stable = b?.stable === true;
+    // `stable` remains accepted for old clients; it no longer changes delivery.
   } catch {
     // no body
   }
-  void stable; // accepted for back-compat; v3 always runs in its "natural" mode
   if (!text.trim()) {
     return NextResponse.json({ ok: false, error: "text is required" }, { status: 400 });
   }
 
+  const provider = elevenKey ? "elevenlabs" : "openai";
+  let model = "none";
+  // One budget includes all vendor attempts and response-body reads. A v3
+  // fallback cannot start another full timeout after the browser has given up.
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), VENDOR_TIMEOUT_MS);
   try {
     if (elevenKey) {
-      const voiceId =
-        voiceOverride || process.env.ELEVENLABS_VOICE_ID || "qBDvhofpxp92JgXJxDjB"; // the app's kid coach voice — matches the profile default every page sends.
-
-      // Serve a cached clip instantly (short, repeated prompts only — never
-      // long/unique story text). The `el2|` epoch busts clips rendered with
-      // the old rushed settings.
-      const cacheKey = `el2|${voiceId}|${text}`;
-      const cacheable = text.length <= 120;
-      if (cacheable) { const hit = cacheGet(cacheKey); if (hit) return new NextResponse(hit.slice(0), { status: 200, headers: PCM_HEADERS }); }
-
-      const v3Model = process.env.ELEVENLABS_V3_MODEL || "eleven_v3";
-      const fallbackModel = process.env.ELEVENLABS_MODEL || "eleven_multilingual_v2";
-      // v2 IS the app's sound — the delivery every family has heard since the
-      // field tests. v3 renders the same voice with a different cadence, and a
-      // plan upgrade silently unlocking it must never change the coach's voice
-      // mid-week (that's how "why is the voice different?" happens). v3 stays
-      // opt-in via ELEVENLABS_V3=1 until it's been listened to and chosen.
-      const wantV3 = process.env.ELEVENLABS_V3 === "1";
+      const config = elevenConfig();
+      const voiceId = voiceOverride || config.voiceId;
+      // Keep the existing v2 voice and delivery until an intentional listening
+      // review chooses otherwise. v3 is still an explicit environment opt-in.
       const attempts = [
-        // v3 = the natural-cadence model; audio tags like [excited]/[whispers]
-        // in the text become real delivery. Coarse stability only
-        // (0=creative, 0.5=natural, 1=robust).
-        ...(wantV3 ? [{ model: v3Model, settings: { stability: 0.5, use_speaker_boost: true } }] : []),
-        {
-          model: fallbackModel,
-          settings: {
-            stability: 0.55,        // calm-mid intonation (0.78 was the "robot" — flat by design)
-            similarity_boost: 0.85, // stay close to the voice's natural sample
-            style: 0.3,             // a little less pep — 0.4 rushed the short command lines
-            // Field report: "Ready? Say X five times. Go!" sounded fast-forwarded.
-            // 0.93 = gently unhurried without the 0.87 drone. Tunable live via
-            // ELEVENLABS_SPEED (0.85–1.05) — no deploy needed to adjust.
-            speed: Math.min(1.05, Math.max(0.85, parseFloat(process.env.ELEVENLABS_SPEED || "") || 0.93)),
-            use_speaker_boost: true,
-          },
-        },
-      ].filter((a, i, arr) => arr.findIndex((b) => b.model === a.model) === i)
-       .filter((a) => !(v3Broken && a.model === v3Model));
+        ...(config.wantV3 ? [config.v3Model] : []),
+        config.fallbackModel,
+      ].filter((candidate, i, arr) => arr.indexOf(candidate) === i)
+       .filter((candidate) => !(v3Broken && candidate === config.v3Model));
 
-      let lastErr = "";
-      for (const a of attempts) {
+      let lastStatus: number | undefined;
+      for (model of attempts) {
+        const isV3 = model === config.v3Model || model === "eleven_v3";
+        const settings = elevenSettings(model, config);
         // v3 performs [tags]; older models would read them aloud — strip.
-        const sendText = a.model === v3Model ? text : text.replace(/\[[a-z ]{2,24}\]\s*/gi, "");
+        const sendText = isV3 ? text : text.replace(/\[[a-z ]{2,24}\]\s*/gi, "");
+        if (!sendText.trim()) {
+          return NextResponse.json({ ok: false, error: "text is required" }, { status: 400 });
+        }
+        // Key by exactly what is synthesized, including the actual attempted
+        // model. Changing delivery settings must never replay an older clip.
+        const cacheKey = JSON.stringify([VOICE_REVISION, provider, voiceId, model, settings, sendText, "pcm_24000"]);
+        const cacheable = sendText.length <= 120;
+        if (cacheable) {
+          const hit = cacheGet(cacheKey);
+          if (hit) return pcmResponse(hit, provider, model, "hit");
+        }
         const r = await fetch(
           `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?output_format=pcm_24000`,
           {
             method: "POST",
             headers: { "xi-api-key": elevenKey, "Content-Type": "application/json" },
-            body: JSON.stringify({ text: sendText, model_id: a.model, voice_settings: a.settings }),
+            body: JSON.stringify({ text: sendText, model_id: model, voice_settings: settings }),
+            signal: controller.signal,
           },
         );
         if (r.ok) {
           const buf = await r.arrayBuffer();
+          const response = pcmResponse(buf, provider, model);
           if (cacheable) cacheSet(cacheKey, buf);
-          return new NextResponse(buf.slice(0), { status: 200, headers: PCM_HEADERS });
+          return response;
         }
-        if (a.model === v3Model && (r.status === 400 || r.status === 401 || r.status === 403 || r.status === 404 || r.status === 422)) v3Broken = true; // account lacks v3 — stop trying it
-        lastErr = `${a.model}: ${r.status} ${(await r.text().catch(() => "")).slice(0, 200)}`;
+        if (isV3 && [400, 401, 403, 404, 422].includes(r.status)) v3Broken = true;
+        lastStatus = r.status;
+        // Vendor bodies can contain account details. Never forward them.
+        void r.body?.cancel().catch(() => {});
+        if (controller.signal.aborted) throw new Error("Speech timeout");
       }
       return NextResponse.json(
-        { ok: false, error: "ElevenLabs error", detail: lastErr },
-        { status: 502 },
+        { ok: false, error: "ElevenLabs speech request failed.", ...(lastStatus ? { vendorStatus: lastStatus } : {}) },
+        { status: 502, headers: voiceHeaders(provider, model) },
       );
     }
 
-    // Fallback: OpenAI TTS (pcm = 24kHz/16-bit/mono)
-    const voice = voiceOverride || process.env.OPENAI_TTS_VOICE || "shimmer";
-    const model = process.env.OPENAI_TTS_MODEL || "gpt-4o-mini-tts";
+    // Fallback when only OpenAI is configured (pcm = 24kHz/16-bit/mono).
+    const voice = openaiVoice(voiceOverride);
+    model = process.env.OPENAI_TTS_MODEL || "gpt-4o-mini-tts";
     const r = await fetch("https://api.openai.com/v1/audio/speech", {
       method: "POST",
       headers: { Authorization: `Bearer ${openaiKey}`, "Content-Type": "application/json" },
       body: JSON.stringify({ model, voice, input: text, response_format: "pcm" }),
+      signal: controller.signal,
     });
     if (!r.ok) {
-      const detail = await r.text().catch(() => "");
+      void r.body?.cancel().catch(() => {});
       return NextResponse.json(
-        { ok: false, error: `OpenAI TTS error (${r.status})`, detail: detail.slice(0, 500) },
-        { status: 502 },
+        { ok: false, error: "OpenAI speech request failed.", vendorStatus: r.status },
+        { status: 502, headers: voiceHeaders(provider, model) },
       );
     }
-    return new NextResponse(await r.arrayBuffer(), { status: 200, headers: PCM_HEADERS });
-  } catch (e: unknown) {
+    return pcmResponse(await r.arrayBuffer(), provider, model);
+  } catch {
     return NextResponse.json(
-      { ok: false, error: e instanceof Error ? e.message : "TTS request failed." },
-      { status: 502 },
+      { ok: false, error: controller.signal.aborted ? "Speech request timed out." : "Speech request failed." },
+      { status: controller.signal.aborted ? 504 : 502, headers: voiceHeaders(provider, model) },
     );
+  } finally {
+    clearTimeout(timeout);
   }
 }
 
-/**
- * GET /api/tts — health check. The books going silent traced back to this
- * route failing with no way to see WHY without digging through Vercel logs
- * (a browser GET just 405'd, since only POST was defined). Mirrors
- * Reports whether the keys are present WITHOUT ever
- * echoing them, plus the model/voice actually in use.
- */
+/** Configuration health only: GET never synthesizes or proves vendor access. */
 export async function GET() {
+  const hasElevenLabsKey = Boolean(process.env.ELEVENLABS_API_KEY);
+  const hasOpenAIKey = Boolean(process.env.OPENAI_API_KEY);
+  const provider = hasElevenLabsKey ? "elevenlabs" : hasOpenAIKey ? "openai" : "none";
+  const config = elevenConfig();
+  const model = provider === "elevenlabs"
+    ? (config.wantV3 ? config.v3Model : config.fallbackModel)
+    : provider === "openai" ? process.env.OPENAI_TTS_MODEL || "gpt-4o-mini-tts" : null;
   return NextResponse.json({
     ok: true,
     service: "tts",
-    hasElevenLabsKey: Boolean(process.env.ELEVENLABS_API_KEY),
-    hasOpenAIKey: Boolean(process.env.OPENAI_API_KEY),
-    voiceId: process.env.ELEVENLABS_VOICE_ID || "qBDvhofpxp92JgXJxDjB (default)",
-    model: process.env.ELEVENLABS_MODEL || "eleven_multilingual_v2 (default)",
-    v3OptIn: process.env.ELEVENLABS_V3 === "1",
-    speed: process.env.ELEVENLABS_SPEED || "0.93 (default)",
-    hint: "POST {text, voice?} here to synthesize. hasElevenLabsKey:false is why the books would be silent.",
-  });
+    configured: provider !== "none",
+    synthesisVerified: false,
+    provider,
+    revision: VOICE_REVISION,
+    hasElevenLabsKey,
+    hasOpenAIKey,
+    voiceId: provider === "elevenlabs" ? config.voiceId : provider === "openai" ? openaiVoice() : null,
+    model,
+    fallbackModel: provider === "elevenlabs" ? config.fallbackModel : null,
+    v3OptIn: provider === "elevenlabs" && config.wantV3,
+    settings: provider === "elevenlabs" && model ? elevenSettings(model, config) : null,
+    hint: "Configuration only; a successful POST is required to verify synthesis. POST {text, voice?}; an eligible requested/profile voice overrides this configured default.",
+  }, { headers: voiceHeaders(provider, model || "none") });
 }
