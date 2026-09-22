@@ -7,8 +7,8 @@ import { readAccount, normalizeInvite, createInvite, deleteInvite, cleanToken } 
  * Set a child up BEFORE the family has tapped anything.
  *
  * A clinician finishing a session knows who they just saw and what to
- * practise this fortnight. Until now nothing could reach the dashboard until
- * the family had enrolled AND practised. An invite holds the first target
+ * practice this fortnight. Until now nothing could reach the dashboard until
+ * the family had enrolled AND practiced. An invite holds the first target
  * behind a random token that rides the family's join link; when the family
  * says yes to sharing, their device claims the token (/api/slp/claim) and
  * the target becomes the child's first assignment.

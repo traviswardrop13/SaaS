@@ -149,7 +149,7 @@ const ui = await page.evaluate(() => ({
 }));
 ok("Settings has a Kids card", ui.card);
 ok("it lists every child", ui.rows >= 1, "rows=" + ui.rows);
-ok("exactly one child is marked as practising now", ui.active === 1, "active=" + ui.active);
+ok("exactly one child is marked as practicing now", ui.active === 1, "active=" + ui.active);
 ok("it offers adding a kid", ui.addBtn);
 ok("it says the settings below belong to the selected child", /belongs to whoever is selected/i.test(ui.copy), ui.copy.slice(0, 120));
 

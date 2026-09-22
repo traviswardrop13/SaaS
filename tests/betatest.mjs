@@ -492,7 +492,7 @@ ok("today no pageerrors", errs.length === 0);
     Sona.saveProfile({ childName: "Ada", childAge: "7", focusSounds: ["R"], onboarded: true });
     Sona.addCoins(40);
     const old = Sona.exportString();   // the backup they will paste, later
-    Sona.addCoins(60);                 // …and then the child keeps practising
+    Sona.addCoins(60);                 // …and then the child keeps practicing
     sessionStorage.setItem("sona.gate.v1", String(Date.now()));
     return old;
   });

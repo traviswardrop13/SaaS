@@ -1,13 +1,13 @@
 // SLP1: the clinician's dashboard is built around ONE problem — carryover.
-// A child goes home, practises, and the clinician can see that it happened
+// A child goes home, practices, and the clinician can see that it happened
 // and paste it into a note. What this suite defends, with a mock API and a
 // real browser (the page is static ES5; nothing here needs KV):
-//   - the first screen is live: who practised this week, without a click
+//   - the first screen is live: who practiced this week, without a click
 //   - the register: pass rate, practice, homework — never accuracy, score,
 //     adherence, therapy, treatment, diagnosis, and no credential in an
 //     example name
 //   - one family door: every generated link is join.html?slp=&k= (+&inv=)
-//   - the caseload sorts oldest-practised first, and under SMALL_N attempts
+//   - the caseload sorts oldest-practiced first, and under SMALL_N attempts
 //     a pass rate is "too few to read", never a percentage
 //   - Copy note writes exactly the template a school SLP asked for
 //   - remove really removes (the route is called, the row is gone) and the
@@ -95,15 +95,15 @@ async function open(hash) {
 {
   const { ctx, pg, errs } = await open("#today");
   const txt = await pg.evaluate(() => document.getElementById("todayBody").textContent);
-  ok("Today says who practised this week the moment it opens", /3 of 6 children practised this week/.test(txt), txt.slice(0, 120));
+  ok("Today says who practiced this week the moment it opens", /3 of 6 children practiced this week/.test(txt), txt.slice(0, 120));
   const groups = await pg.evaluate(() => [...document.querySelectorAll("#todayBody .card h2")].map((h) => h.textContent));
-  ok("…in three groups a clinician asks about, plus the invites", groups.join("|") === "Gone quiet|Homework ending this week or missed|Practised this week|Invited, not joined yet", groups.join("|"));
+  ok("…in three groups a clinician asks about, plus the invites", groups.join("|") === "Gone quiet|Homework ending this week or missed|Practiced this week|Invited, not joined yet", groups.join("|"));
   const quiet = await pg.evaluate(() => [...document.querySelectorAll("#todayBody .card")][1].textContent);
   ok("gone quiet is a practice fact, not a judgement", /Ava/.test(quiet) && /no practice yet/.test(quiet) && /Leo/.test(quiet) && /no practice for 9 days/.test(quiet), quiet.slice(0, 200));
   const hw = await pg.evaluate(() => [...document.querySelectorAll("#todayBody .card")][2].textContent);
   ok("missed and ending-soon homework are listed with a re-assign action", /Leo/.test(hw) && /missed/i.test(hw) && /Mia/.test(hw) && /Re-assign/.test(hw), hw.slice(0, 200));
   const noteBtns = await pg.evaluate(() => document.querySelectorAll("#todayBody [data-note]").length);
-  ok("every practised/quiet row carries Copy note", noteBtns === 6, String(noteBtns));
+  ok("every practiced/quiet row carries Copy note", noteBtns === 6, String(noteBtns));
   ok("no pageerrors", errs.length === 0, errs.join(" | "));
   const badCalls = log.filter((l) => /\/api\/slp\?code=/.test(l.p));
   ok("the page never passes the clinic code in a query string", badCalls.length === 0, JSON.stringify(badCalls));
@@ -136,14 +136,14 @@ async function open(hash) {
   await ctx.close();
 }
 
-// ── 4. the caseload: oldest-practised first, and the small-n rule ──
+// ── 4. the caseload: oldest-practiced first, and the small-n rule ──
 {
   const { ctx, pg } = await open("#caseload");
   const rows = await pg.evaluate(() => [...document.querySelectorAll("#clTable tbody tr")].map((r) => ({ name: r.querySelector(".name").textContent, rate: r.children[5].textContent.trim() })));
-  ok("rows sort by last practised, the never-practised children first", /^(Ava,New family|New family,Ava),Leo,Zoe,Sam,Mia$/.test(rows.map((r) => r.name).join(",")), rows.map((r) => r.name).join(","));
+  ok("rows sort by last practiced, the never-practiced children first", /^(Ava,New family|New family,Ava),Leo,Zoe,Sam,Mia$/.test(rows.map((r) => r.name).join(",")), rows.map((r) => r.name).join(","));
   // The invite carried initials; the claim threw them away; the name only
   // exists once the family types it. "Child" would read as a bug.
-  ok("a family who tapped the link but has not practised is named as that, not as a nameless Child",
+  ok("a family who tapped the link but has not practiced is named as that, not as a nameless Child",
     rows.some((r) => r.name === "New family") && !rows.some((r) => r.name === "Child"), rows.map((r) => r.name).join(","));
   const zoe = rows.find((r) => r.name === "Zoe"), sam = rows.find((r) => r.name === "Sam"), ava = rows.find((r) => r.name === "Ava");
   ok("19 attempts is too few to read — no percentage", /too few to read/.test(zoe.rate) && !/%/.test(zoe.rate), zoe.rate);
@@ -155,7 +155,7 @@ async function open(hash) {
   await pg.evaluate(() => { [...document.querySelectorAll("#clTable tr")].find((r) => /Mia/.test(r.textContent)).querySelector("[data-note]").click(); });
   const note = await pg.evaluate(() => window.__copied[0] || "");
   ok("Copy note writes the template exactly",
-    /^Between \w+ \d+ and \w+ \d+, Mia practised on 5 of 6 days \(15 tries a day\)\. R in the middle of words: 70% pass rate over 46 attempts\. A practice snapshot from at-home listening on the family's device; not an evaluation\.$/.test(note), note);
+    /^Between \w+ \d+ and \w+ \d+, Mia practiced on 5 of 6 days \(15 tries a day\)\. R in the middle of words: 70% pass rate over 46 attempts\. A practice snapshot from at-home listening on the family's device; not an evaluation\.$/.test(note), note);
   ok("…with no age and no score in it", !/age|score/i.test(note), note);
   await pg.evaluate(() => { [...document.querySelectorAll("#clTable tr")].find((r) => /Zoe/.test(r.textContent)).querySelector("[data-note]").click(); });
   const zn = await pg.evaluate(() => window.__copied[1] || "");

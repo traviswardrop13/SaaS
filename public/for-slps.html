@@ -3,16 +3,56 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Sona for SLPs — free home-practice for your whole caseload</title>
+  <title>See who practiced at home — Sona for SLPs</title>
   <!-- Indexable since 21 Sep 2026: SLPs are the channel, so the page that
        explains Sona to them is the one page that must be findable. The
        dashboard, the login and the family redemption page stay noindex —
        those are private surfaces, not marketing. -->
   <meta name="description" content="Give every family on your caseload a speech home-practice app — free. You assign the sound and the position; practice days, reps and pass rate roll up to your dashboard. No audio ever leaves the child's device. Built with a licensed pediatric SLP (Clinical Fellow)." />
   <link rel="canonical" href="https://speaksona.com/" />
+
+  <!-- WHAT A SHARED LINK LOOKS LIKE. The growth plan is SLPs telling other
+       SLPs, which means the link gets pasted into a Facebook group, a district
+       Slack and a text message — and a link with no card is a grey box with a
+       URL in it. The old root was the Next page, which got its title and icons
+       from app/layout.tsx; rewriting / to this static page left it with none,
+       so this page carries its own.
+
+       Absolute URLs, because a scraper resolves these against nothing. -->
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Sona" />
+  <meta property="og:url" content="https://speaksona.com/" />
+  <meta property="og:title" content="See who actually practiced at home." />
+  <meta property="og:description" content="Give every family on your caseload a speech home-practice app — free. You assign the sound and the position; the days, the reps and the pass rate come back to your dashboard." />
+  <meta property="og:image" content="https://speaksona.com/og-slp.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="Sona for SLPs — see who actually practiced at home. Free for SLPs." />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="See who actually practiced at home." />
+  <meta name="twitter:description" content="Free home-practice for your whole caseload. You assign the sound; the practice comes back to your dashboard." />
+  <meta name="twitter:image" content="https://speaksona.com/og-slp.png" />
+
+  <!-- The bird with no card behind him: the old icon carried a cream
+       rounded square that showed as a pale box against a dark tab bar. The
+       home-screen icons below keep their background on purpose — iOS fills a
+       transparent home-screen icon with black. -->
+  <link rel="icon" type="image/png" href="/favicon.png" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
   <link href="/fonts.css" rel="stylesheet">
   <link rel="manifest" href="/manifest.webmanifest" />
   <meta name="theme-color" content="#1cb0f6" />
+  <!-- THE AD LANDS HERE, SO THE PIXEL BELONGS HERE. The root used to be the
+       Next page, which loads this from app/layout.tsx; rewriting / to this
+       static page took the pixel off the landing page without anyone noticing,
+       and a campaign with no PageView and no Lead optimises on clicks — it
+       buys the people most likely to tap an ad rather than the people most
+       likely to be clinicians who sign up.
+
+       Nothing a child ever sees loads this: not the practice pages, not
+       join.html (which strips the family key before any script runs), not the
+       dashboard. No event below carries a name, an age or a child. -->
+  <script src="/pixel.js"></script>
   <script src="/analytics.js"></script>
   <style>
     :root{ --blue:#1cb0f6; --blue-d:#1597d4; --green:#58cc02; --green-d:#46a302; --ink:#16384f; --muted:#6b86a3; }
@@ -76,8 +116,8 @@
 
     <div class="hero">
       <span class="pill">✓ Built with a licensed pediatric SLP (Clinical Fellow)</span>
-      <h1>See who actually <span>practised at home</span>.</h1>
-      <p class="sub">You assign the sound and the position. Sona makes it what the child practises next — and the days, the reps and the pass rate come back to your dashboard. Free for you, free for every family on your caseload.</p>
+      <h1>See who actually <span>practiced at home</span>.</h1>
+      <p class="sub">You assign the sound and the position. Sona makes it what the child practices next — and the days, the reps and the pass rate come back to your dashboard. Free for you, free for every family on your caseload.</p>
 
       <button class="cta" id="openModal">Get my free dashboard</button>
       <span class="free">One email · no password · no credit card</span>
@@ -122,7 +162,7 @@
       <h2>What your IT or compliance reviewer will ask, answered</h2>
       <div class="step"><div class="num">🎙️</div><div><b>Is a child&rsquo;s voice recorded or sent anywhere?</b><p>No. Every check happens on the child&rsquo;s own phone, and there is no route in the product that accepts audio — not a setting that is switched off, an absence of any mechanism. One clip a day may be kept in that phone&rsquo;s own storage so a parent can listen back; it stays there.</p></div></div>
       <div class="step"><div class="num">✍️</div><div><b>Who gives Sona the child&rsquo;s name — me, or the parent?</b><p>The parent, on their own device, after consenting. When you add a child ahead of time you type initials or a nickname, and Sona discards even that once the family joins. You never send Sona a student&rsquo;s name, which is what keeps this a parent-initiated disclosure rather than a school record shared with a vendor.</p></div></div>
-      <div class="step"><div class="num">📋</div><div><b>What is stored, and where?</b><p>On our server: your account (email, name, clinic, your code), and for each consenting family the child&rsquo;s first name and age as the parent typed them, the sounds being practised, practice days and counts, a pass rate per sound, and the assignments you set. Hosted on Vercel; stored in Upstash; sign-in links sent by Resend; analytics (PostHog) on grown-up pages only, never on a child&rsquo;s screen. No advertising, no sale of data, no profiling.</p></div></div>
+      <div class="step"><div class="num">📋</div><div><b>What is stored, and where?</b><p>On our server: your account (email, name, clinic, your code), and for each consenting family the child&rsquo;s first name and age as the parent typed them, the sounds being practiced, practice days and counts, a pass rate per sound, and the assignments you set. Hosted on Vercel; stored in Upstash; sign-in links sent by Resend; analytics (PostHog) on grown-up pages only, never on a child&rsquo;s screen. No advertising, no sale of data, no profiling.</p></div></div>
       <div class="step"><div class="num">🗑️</div><div><b>How is it deleted?</b><p>Three ways, all immediate: the parent taps &ldquo;stop sharing&rdquo; in the app; you remove the child from your caseload; or it ages out about 150 days after your caseload last received practice. Removal is a real delete, and the child&rsquo;s device is marked so later practice cannot rebuild the record. A pending invite nobody opens deletes itself after 30 days.</p></div></div>
       <div class="step"><div class="num">📄</div><div><b>Do you sign agreements?</b><p>Ask us — we will answer in writing, and we would rather have the conversation before you hand the link to a family than after. Our position on a BAA: the family shares their data with us directly, after consenting on their own phone, rather than the clinic sharing it on their behalf. If we confirm a breach we notify affected clinicians and parents within 72 hours of confirming it; families who reached us through you are reached through you, since we hold no parent email on this channel.</p></div></div>
       <div class="step"><div class="num">✉️</div><div><b>Who do I ask?</b><p><a href="mailto:privacy@speaksona.com">privacy@speaksona.com</a>, and the full <a href="/privacy.html">privacy policy</a>.</p></div></div>
@@ -167,9 +207,28 @@
       // Where the sign-up came from, so the CRM can tell ad traffic from the
       // rest. utm_source if the ad set one, else the page itself.
       var src = "for-slps";
+      /**
+       * WHICH AD BROUGHT THEM. Several creatives run at once, so "an SLP
+       * signed up" is only half a fact — the useful half is which image and
+       * which headline produced her. These ride along to the CRM, where they
+       * become fields on the contact; /api/lead already forwards this exact
+       * set. fbclid is Meta's own click id, kept so a sign-up can be matched
+       * back to a click even when the UTMs are missing.
+       *
+       * Read once, at load, because the modal may be opened after a scroll
+       * that changed the URL, and clamped because they arrive from a URL a
+       * stranger controls.
+       */
+      var attrib = {};
       try {
-        var u = new URLSearchParams(location.search).get("utm_source");
-        if (u) src = String(u).replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 30) || src;
+        var q = new URLSearchParams(location.search);
+        var clean = function (v, n) { return String(v || "").replace(/[^\w .\-|/]/g, "").slice(0, n || 120); };
+        ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term", "fbclid"].forEach(function (k) {
+          var v = q.get(k); if (v) attrib[k] = clean(v);
+        });
+        attrib.referrer = clean(document.referrer, 200);
+        attrib.landing = clean(location.pathname, 120);
+        if (attrib.utm_source) src = attrib.utm_source.replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 30) || src;
       } catch (e) {}
 
       function openModal(e) {
@@ -200,11 +259,40 @@
         $("mGo").disabled = true; $("mGo").textContent = "Sending…";
         fetch("/api/slp/auth/request", {
           method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email: email, name: name, source: src }),
+          body: JSON.stringify({ email: email, name: name, source: src, attrib: attrib }),
         }).then(function (r) { return r.json(); }).then(function (j) {
           $("mGo").disabled = false; $("mGo").textContent = "Email me my dashboard";
           if (!j || !j.ok) { $("mErr").textContent = (j && j.error) || "Couldn't set that up right now."; return; }
-          $("mSentMsg").textContent = "We sent your dashboard link to " + email + ". It opens straight into your caseload — no password.";
+          /**
+           * THE CONVERSION, fired only once the server said yes — a tap on the
+           * button is not a sign-up, and an ad optimised on taps buys taps.
+           * CompleteRegistration additionally marks a clinician who did not
+           * exist a moment ago, so the campaign can be optimised on new
+           * accounts rather than on repeat sign-ins.
+           *
+           * No parameters: Meta gets the fact, never the person. The email and
+           * the name stay on our side, where the clinician knowingly gave them.
+           */
+          try {
+            if (window.sonaTrack) {
+              sonaTrack("Lead");
+              if (j.signedIn) sonaTrack("CompleteRegistration");
+            }
+          } catch (e) {}
+          /**
+           * DO NOT SAY "CHECK YOUR EMAIL" ABOUT AN EMAIL THAT WAS REFUSED.
+           * The server reports whether it actually went. A brand-new account
+           * is signed in anyway, so the button below is a real way through
+           * and the failure costs them nothing. An existing account has no
+           * other door — telling them to check an inbox that will stay empty
+           * turns a fixable problem into a clinician who quietly gives up.
+           */
+          if (!j.sent && !j.signedIn) {
+            $("mSentMsg").textContent = "Your account is here, but our email didn't go out just now. Email hello@speaksona.com and we'll open your dashboard by hand — usually within the hour.";
+            $("mResend").style.display = "none";
+          } else {
+            $("mSentMsg").textContent = "We sent your dashboard link to " + email + ". It opens straight into your caseload — no password.";
+          }
           // A brand-new account is signed in already, so the straight-through
           // button works immediately; the email still lands, which is how they
           // get back in tomorrow. An existing account has a caseload behind the

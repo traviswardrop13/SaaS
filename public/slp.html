@@ -11,10 +11,10 @@
   <meta name="theme-color" content="#1cb0f6" />
   <!--
     THE CLINICIAN'S DASHBOARD (v2, 21 Sep 2026). Built around ONE problem —
-    carryover: a child goes home, practises, and the clinician can see that it
+    carryover: a child goes home, practices, and the clinician can see that it
     happened and paste it into a note. So the page is organised by that loop:
 
-      Today     — who practised this week, who went quiet, what ends soon
+      Today     — who practiced this week, who went quiet, what ends soon
       Caseload  — every child, sortable by what needs attention; each opens a
                   child page with an 8-week strip, pass rate by sound and
                   position, the current homework, a one-tap "copy progress
@@ -256,7 +256,7 @@
 
       <!-- ════════ ONBOARDING (no code yet) ════════ -->
       <div class="page" id="page-onboarding">
-        <div class="page-header"><div><h1>Welcome to Sona 🎉</h1><p>One form, then your families can start practising.</p></div></div>
+        <div class="page-header"><div><h1>Welcome to Sona 🎉</h1><p>One form, then your families can start practicing.</p></div></div>
         <div class="card">
           <h2>Create your SLP profile</h2>
           <p class="sub">Your name goes on every homework note a parent sees. Your code goes in your family links.</p>
@@ -275,7 +275,7 @@
       <!-- ════════ TODAY ════════ -->
       <div class="page" id="page-today">
         <div class="page-header">
-          <div><h1 id="todayHi">Today</h1><p id="todaySub">Who practised, who went quiet, what ends soon.</p></div>
+          <div><h1 id="todayHi">Today</h1><p id="todaySub">Who practiced, who went quiet, what ends soon.</p></div>
           <div class="spacer"></div>
           <button class="btn ghost sm noprint" id="todayRefresh">↻ Refresh</button>
         </div>
@@ -323,7 +323,7 @@
           <div class="row noprint">
             <input id="clSearch" type="search" placeholder="Search by name" class="grow" style="max-width:260px;" />
             <select id="clSort" style="width:auto;">
-              <option value="recent">Sort: last practised, oldest first</option>
+              <option value="recent">Sort: last practiced, oldest first</option>
               <option value="attention">Sort: needs attention</option>
               <option value="name">Sort: name</option>
               <option value="week">Sort: days this week</option>
@@ -357,7 +357,7 @@
           <div>
             <div class="card">
               <div class="cardtop"><h2>Practice at home</h2><div class="spacer"></div><span class="sub" id="chLast"></span></div>
-              <p class="sub">Days practised each week, words said out loud, and pass rate on the target sound. Avg pass rate, last 14 days on the target: <b id="chAvg">—</b></p>
+              <p class="sub">Days practiced each week, words said out loud, and pass rate on the target sound. Avg pass rate, last 14 days on the target: <b id="chAvg">—</b></p>
               <div id="chStrip"></div>
               <p class="sub" style="margin-top:8px;font-size:11.5px;">Days are the family's phone's days: a late-evening practice can land on the next date. Pass rate means "did that sound like this sound" — nothing here is an evaluation.</p>
             </div>
@@ -383,7 +383,7 @@
         <!-- composer: kept from v1 (the parent preview is what a clinician trusts) -->
         <div class="card" id="composer" style="display:none;">
           <div class="cardtop"><h2 id="hwHeading">New homework</h2><div class="spacer"></div><button class="btn ghost sm noprint" id="hwCancel">Cancel</button></div>
-          <p class="sub">Sona swaps its own daily picks for yours — this is not a to-do list beside the app, it <i>is</i> what they practise next.</p>
+          <p class="sub">Sona swaps its own daily picks for yours — this is not a to-do list beside the app, it <i>is</i> what they practice next.</p>
           <div class="hwgrid" style="margin-top:8px;">
             <div>
               <div id="hwChildRow" style="display:none;"><label class="fl" for="hwChild">Child</label><select id="hwChild"></select></div>
@@ -457,7 +457,7 @@
         </div>
         <div class="card">
           <h2>Your data</h2>
-          <p class="sub">A spreadsheet of your caseload: first names, targets, days practised, pass rates, homework status. No ages, no recordings — Sona never holds any.</p>
+          <p class="sub">A spreadsheet of your caseload: first names, targets, days practiced, pass rates, homework status. No ages, no recordings — Sona never holds any.</p>
           <button class="btn ghost sm" id="exportCsv" style="margin-top:10px;">Download CSV</button>
         </div>
       </div>
@@ -521,8 +521,8 @@
        The roster row carries the device's outcomes: per sound, attempts and
        passes, per-day {a,p}, and by position. Everything the page shows is
        derived here, once, so Today, the table and the child page never
-       disagree about what "practised this week" means. */
-    // A CHILD WHO TAPPED THE LINK BUT HAS NOT PRACTISED HAS NO NAME YET, and
+       disagree about what "practiced this week" means. */
+    // A CHILD WHO TAPPED THE LINK BUT HAS NOT PRACTICED HAS NO NAME YET, and
     // that is the design working: the invite carried initials, which the claim
     // discarded, and the name only exists once the grown-up types it on their
     // own device and the first sync brings it. Saying "Child" would read as a
@@ -550,7 +550,7 @@
       var hd=(k.hw&&k.hw.days)||{}; var reps=0; Object.keys(hd).forEach(function(day){ if(day<from||day>to)return; reps+=hd[day]|0; if((hd[day]|0)>0)days[day]=1; });
       return {attempts:a,passes:p,days:Object.keys(days).length,reps:Math.max(reps,a),rate:pct(p,a)};
     }
-    function lastPractised(k){
+    function lastPracticed(k){
       var out=k.outcomes||{},last="";
       Object.keys(out).forEach(function(s){ var l=(out[s]&&out[s].lastAt)||""; if(l>last)last=l; var d=(out[s]&&out[s].days)||{}; Object.keys(d).forEach(function(day){ if((d[day].a||0)>0&&day>last)last=day; }); });
       var hd=(k.hw&&k.hw.days)||{}; Object.keys(hd).forEach(function(day){ if((hd[day]|0)>0&&day>last)last=day; });
@@ -558,7 +558,7 @@
     }
     function joined(k){ return !!(k.outcomes&&Object.keys(k.outcomes).length)||!!(k.meta&&k.meta.joinedAt)||!!k.at; }
     function derive(k){
-      var t=isoToday(), wk=addDays(t,-6), last=lastPractised(k);
+      var t=isoToday(), wk=addDays(t,-6), last=lastPracticed(k);
       var w=windowStats(k,wk,t,null);
       var tg=targets(k);
       var tw=windowStats(k,addDays(t,-13),t,tg);
@@ -636,7 +636,7 @@
       var week=live.filter(function(k){return k.d.week.days>0;}).sort(function(a,b){return b.d.week.days-a.d.week.days;});
       var quiet=live.filter(function(k){return k.d.quiet;}).sort(function(a,b){return (b.d.lastN==null?9999:b.d.lastN)-(a.d.lastN==null?9999:a.d.lastN);});
       var hw=live.filter(function(k){return k.d.hwst==="missed"||(k.d.hwst==="active"&&k.d.due&&daysBetween(t,k.d.due)>=0&&daysBetween(t,k.d.due)<=7);}).sort(function(a,b){return (a.d.hwst==="missed"?-1:0)-(b.d.hwst==="missed"?-1:0)||(a.d.due||"").localeCompare(b.d.due||"");});
-      html+='<div class="card"><p style="font-family:\'Baloo 2\';font-weight:800;font-size:18px;">'+week.length+' of '+live.length+' children practised this week.</p></div>';
+      html+='<div class="card"><p style="font-family:\'Baloo 2\';font-weight:800;font-size:18px;">'+week.length+' of '+live.length+' children practiced this week.</p></div>';
       // one group per question a clinician asks between sessions; ten rows each, one action per row
       function group(title,list,rowFn,sort){
         var h='<div class="card"><div class="cardtop"><h2>'+title+'</h2><div class="spacer"></div><span class="sub">'+list.length+'</span></div>';
@@ -649,7 +649,7 @@
       var noteBtn=function(k){return '<button class="btn ghost sm" data-note="'+esc(k.childId)+'">Copy note</button>';};
       html+=group("Gone quiet",quiet,function(k){ return '<div class="attn">'+kidLink(k)+target(k)+'<div class="why">'+(k.d.last?'no practice for <b>'+k.d.lastN+' days</b>':'<b>no practice yet</b>')+'</div>'+noteBtn(k)+'</div>'; },"recent");
       html+=group("Homework ending this week or missed",hw,function(k){ var h=k.hw.hw; return '<div class="attn">'+kidLink(k)+target(k)+'<div class="why">'+(k.d.hwst==="missed"?'<span class="pill missed">missed</span> the window closed without the daily target on half the days':'<span class="pill active">ends '+esc(niceDate(k.d.due))+'</span>')+'</div><button class="btn ghost sm" data-reassign="'+esc(k.childId)+'">Re-assign →</button></div>'; },"hw");
-      html+=group("Practised this week",week,function(k){ return '<div class="attn">'+kidLink(k)+target(k)+'<div class="why"><b>'+k.d.week.days+'</b> of 7 days · <b>'+k.d.week.reps+'</b> words said'+(k.d.two.attempts>=SMALL_N&&k.d.two.rate!=null?' · '+k.d.two.rate+'% pass rate':'')+'</div>'+noteBtn(k)+'</div>'; },"week");
+      html+=group("Practiced this week",week,function(k){ return '<div class="attn">'+kidLink(k)+target(k)+'<div class="why"><b>'+k.d.week.days+'</b> of 7 days · <b>'+k.d.week.reps+'</b> words said'+(k.d.two.attempts>=SMALL_N&&k.d.two.rate!=null?' · '+k.d.two.rate+'% pass rate':'')+'</div>'+noteBtn(k)+'</div>'; },"week");
       if(pending.length){
         html+='<div class="card"><div class="cardtop"><h2>Invited, not joined yet</h2><div class="spacer"></div><a class="sub" href="#caseload" style="text-decoration:none;">Manage →</a></div>';
         pending.slice(0,10).forEach(function(i){ html+='<div class="attn"><span class="kidname">'+esc(i.label||i.child||"—")+'</span><div class="why">invited '+esc(agoText(i.createdAt))+(i.sounds&&i.sounds.length?' · '+esc(i.sounds.map(sLabel).join(", ")):'')+(i.expiresAt?' · deletes itself '+esc(niceDate(i.expiresAt)):'')+'</div><button class="btn ghost sm" data-copyinv="'+esc(i.token)+'">Copy link</button></div>'; });
@@ -688,7 +688,7 @@
       $("kvBanner").style.display=CONFIGURED?"none":"block";
       var host=$("clTable");
       if(!KIDS.length){host.innerHTML='<div class="empty"><div class="big">👨‍👩‍👧‍👦</div><h2>No children yet</h2><p class="sub">Add a child, or share your caseload link — they appear here the moment a family joins.</p><div class="row" style="justify-content:center;margin-top:12px;"><button class="btn green" onclick="go(\'invite\')">Add a child →</button></div></div>';return;}
-      var html='<table class="tbl"><thead><tr><th class="noprint" style="width:28px;"></th><th>Child</th><th>Target</th><th>Practised</th><th class="opt">This week</th><th>Pass rate</th><th class="opt">Homework</th><th class="noprint"></th></tr></thead><tbody>';
+      var html='<table class="tbl"><thead><tr><th class="noprint" style="width:28px;"></th><th>Child</th><th>Target</th><th>Practiced</th><th class="opt">This week</th><th>Pass rate</th><th class="opt">Homework</th><th class="noprint"></th></tr></thead><tbody>';
       list.forEach(function(k){
         var d=k.d, r=d.two.rate;
         html+='<tr'+(d.archived?' style="opacity:.55;"':'')+'><td class="noprint"><input type="checkbox" data-sel="'+esc(k.childId)+'"'+(SELECTED[k.childId]?" checked":"")+' /></td>'
@@ -729,7 +729,7 @@
     }
     function soundGrid(k){
       var out=k.outcomes||{}, keys=Object.keys(out).sort(function(a,b){return(out[b].attempts||0)-(out[a].attempts||0);});
-      if(!keys.length)return '<p class="sub" style="margin-top:8px;">Nothing to show until they practise.</p>';
+      if(!keys.length)return '<p class="sub" style="margin-top:8px;">Nothing to show until they practice.</p>';
       var cols=["i","m","f","v","b"], html='<table class="grid"><thead><tr><th>Sound</th><th>All</th>'+cols.map(function(c){return '<th>'+esc(POSN[c])+'</th>';}).join("")+'</tr></thead><tbody>';
       keys.forEach(function(s){
         var o=out[s], all=pct(o.passes,o.attempts);
@@ -740,7 +740,7 @@
     }
     function hwPanel(k){
       var hw=k.hw&&k.hw.hw, st=k.d.hwst;
-      if(!hw||st==="none")return '<p class="sub" style="margin-top:8px;">No homework set. Assign one and it becomes what the app practises next.</p>';
+      if(!hw||st==="none")return '<p class="sub" style="margin-top:8px;">No homework set. Assign one and it becomes what the app practices next.</p>';
       var days=k.hw.days||{}, hit=Object.keys(days).filter(function(d){return days[d]>=(hw.repsPerDay||1);}).length, span=Math.max(1,daysBetween(hw.start,hw.due)+1);
       var html='<div style="margin-top:8px;"><b>'+esc(hw.title||"Practice at home")+'</b><div class="sub">'+esc(hw.sounds.map(sLabel).join(", "))+' · '+esc(posName(hw.pos))+' · '+esc(String(hw.repsPerDay))+' a day · '+esc(niceDate(hw.start))+' – '+esc(niceDate(hw.due))+'</div>';
       html+='<div class="sub" style="margin-top:6px;">Hit the daily target on <b>'+hit+'</b> of '+span+' days.'+(hw.note?' Note to the parent: “'+esc(hw.note)+'”':'')+'</div>';
@@ -756,7 +756,7 @@
       // window: since the current assignment started, else the last 14 days
       var from=active&&hw.start&&hw.start<=t?hw.start:addDays(t,-13), N=daysBetween(from,t)+1;
       var s=windowStats(k,from,t,null), lines=[];
-      var head="Between "+niceDate(from)+" and "+niceDate(t)+", "+d.name+" practised on "+s.days+" of "+N+" days"+(s.days?" ("+Math.round(s.reps/s.days)+" tries a day)":"")+".";
+      var head="Between "+niceDate(from)+" and "+niceDate(t)+", "+d.name+" practiced on "+s.days+" of "+N+" days"+(s.days?" ("+Math.round(s.reps/s.days)+" tries a day)":"")+".";
       lines.push(head);
       var pos=hw&&hw.pos&&hw.pos!=="mix"?" in "+posName(hw.pos):"";
       d.targets.forEach(function(snd){
@@ -773,7 +773,7 @@
       var k=kidById(id); CURRENT=k;
       if(!k){$("chName").textContent="Not on your caseload";$("chSub").textContent="";$("chStrip").innerHTML="";$("chGrid").innerHTML="";$("chHw").innerHTML="";$("chNote").value="";return;}
       $("chName").textContent=k.d.name+(k.d.age?", age "+k.d.age:"");
-      $("chSub").textContent=(k.d.targets.length?"Working on "+k.d.targets.map(sLabel).join(", ")+". ":"")+(k.synced===false?"Joined through your link — their first practice has not come back yet, so Sona has no name for them.":(joined(k)?(k.d.last?"Last practised "+agoText(k.d.last)+".":"Joined, no practice yet."):"Invited — the family has not opened their link yet."));
+      $("chSub").textContent=(k.d.targets.length?"Working on "+k.d.targets.map(sLabel).join(", ")+". ":"")+(k.synced===false?"Joined through your link — their first practice has not come back yet, so Sona has no name for them.":(joined(k)?(k.d.last?"Last practiced "+agoText(k.d.last)+".":"Joined, no practice yet."):"Invited — the family has not opened their link yet."));
       $("chLast").textContent=k.d.week.days?k.d.week.days+" of the last 7 days":"";
       $("chAvg").innerHTML=k.d.two.attempts?(k.d.two.attempts<SMALL_N?"too few to read (n="+k.d.two.attempts+")":k.d.two.rate+"% (n="+k.d.two.attempts+")"):"—";
       $("chStrip").innerHTML=weekStrip(k);
@@ -863,7 +863,7 @@
       var sounds=Object.keys(HW_SEL),err=$("hwErr"); err.style.color="";
       var ids=BULK?BULK.slice():(CURRENT?[CURRENT.childId]:[]);
       if(!ids.length){err.textContent="Pick a child first.";return;}
-      if(!sounds.length){err.textContent="Pick at least one sound to practise.";return;}
+      if(!sounds.length){err.textContent="Pick at least one sound to practice.";return;}
       if(daysBetween($("hwStart").value,$("hwDue").value)<0){err.textContent="The end date is before the start date.";return;}
       $("hwSave").disabled=true; err.style.color="var(--muted)"; err.textContent="Assigning…";
       var hw={title:$("hwTitle").value.trim(),note:$("hwNote").value.trim(),sounds:sounds,pos:$("hwPos").value,repsPerDay:parseInt($("hwReps").value,10),words:$("hwWords").value.split(",").map(function(w){return w.trim();}).filter(Boolean),start:$("hwStart").value,due:$("hwDue").value};
@@ -907,7 +907,7 @@
     // wherever the link is shown
     function paintLinkCard(){
       $("famLink").value=familyLink();
-      $("snip").value="Hi! Here's the Sona link I mentioned — a fun app where your child can practise their speech sounds at home. It's free for your family. Open it on the phone your child will use, set them up in about 30 seconds, and say yes to sharing practice with me so I can see it add up.\n\n"+familyLink();
+      $("snip").value="Hi! Here's the Sona link I mentioned — a fun app where your child can practice their speech sounds at home. It's free for your family. Open it on the phone your child will use, set them up in about 30 seconds, and say yes to sharing practice with me so I can see it add up.\n\n"+familyLink();
     }
     function renderInvite(){
       invInit();
@@ -964,7 +964,7 @@
       }).catch(function(){$("rotateKey").disabled=false;$("profMsg").textContent="Network error.";});
     };
     $("exportCsv").onclick=function(){
-      var t=isoToday(), rows=[["A practice snapshot from at-home listening on the family's device; not an evaluation. Pass rate means: did that sound like this sound. Under "+SMALL_N+" attempts is too few to read."],["child","targets","last practised","days last 7","days last 30","words last 30","pass rate on target (14 days)","attempts (14 days)","homework status","homework","homework ends"]];
+      var t=isoToday(), rows=[["A practice snapshot from at-home listening on the family's device; not an evaluation. Pass rate means: did that sound like this sound. Under "+SMALL_N+" attempts is too few to read."],["child","targets","last practiced","days last 7","days last 30","words last 30","pass rate on target (14 days)","attempts (14 days)","homework status","homework","homework ends"]];
       KIDS.forEach(function(k){ var d=k.d, m=windowStats(k,addDays(t,-29),t,null), hw=k.hw&&k.hw.hw; rows.push([d.name,d.targets.map(sLabel).join(" "),d.last||"",d.week.days,m.days,m.reps,(d.two.rate==null||d.two.attempts<SMALL_N)?"":d.two.rate+"%",d.two.attempts,d.hwst,hw?(hw.title||""):"",hw?hw.due:""]); });
       var csv=rows.map(function(r){return r.map(function(v){v=String(v==null?"":v);return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;}).join(",");}).join("\n");
       var a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"})); a.download="sona-caseload-"+t+".csv"; document.body.appendChild(a); a.click(); setTimeout(function(){document.body.removeChild(a);},0);

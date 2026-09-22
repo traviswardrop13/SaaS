@@ -66,7 +66,7 @@ the diff.
 
 ## Pricing — one switch, and the cohorts it can never take back
 **Sona is FREE** (Travis, 20 Sep 2026: "make it free" — the long game is
-SLPs championing it, families practising free, and a paid parent view of
+SLPs championing it, families practicing free, and a paid parent view of
 progress later). **When it is paid, it is one plan, yearly, after a 3-day free
 trial — $59.99 for the first 50 families (the charter price), $99.99 after
 that**, and every rule below is written for that state. `FREE_MODE = true` in
@@ -212,11 +212,11 @@ bringing them back now would be copy nobody sees, and `progtest` and
 
 ## The clinician's dashboard: carryover, in the honest register
 **The SLP dashboard (`public/slp.html`) is built around ONE problem — carryover
-(Travis, 21 Sep 2026):** a child goes home, practises, and the clinician can
+(Travis, 21 Sep 2026):** a child goes home, practices, and the clinician can
 see that it happened and paste it into a note. Not "assigning homework"
-(table stakes), not income. So the page is Today (who practised this week,
+(table stakes), not income. So the page is Today (who practiced this week,
 who went quiet, what ends soon — one action per row) → Caseload (every child,
-oldest-practised first, **Copy note on every row**) → a child page (8-week
+oldest-practiced first, **Copy note on every row**) → a child page (8-week
 strip, pass rate by sound and position, the current homework, the composer)
 → Settings. Reviewed by three lenses — a school SLP, a district privacy
 officer, an engineer — whose rulings are now rules:
@@ -228,12 +228,12 @@ officer, an engineer — whose rulings are now rules:
   and no percentage is shown — anywhere: table, grid, strip, note, CSV. One
   constant; whether a percentage is shown at all is Rachel's call.
 - **The note is a fixed template** and carries its own hedge: "Between {start}
-  and {end}, {Name} practised on {n} of {N} days ({avg} tries a day). {Sound}
+  and {end}, {Name} practiced on {n} of {N} days ({avg} tries a day). {Sound}
   in {position}: {pass}% pass rate over {attempts} attempts. A practice
   snapshot from at-home listening on the family's device; not an evaluation."
   Window = the current homework, else the last 14 days. Never an age.
 - **No caseload-wide average.** An unweighted mean of percentages across
-  children is meaningless; the one number is "N of M children practised this
+  children is meaningless; the one number is "N of M children practiced this
   week". No leaderboard, no ranking, no comparison across families — a
   district officer ends the app's use on that alone.
 - **Invites hold initials, never a name.** The SLP may add a child before the

@@ -45,8 +45,8 @@ function hwSummary(hw: Homework) {
 }
 
 /**
- * status / assignment / days-practised for one child. Days are shown only
- * for the assignment they were practised against (the same id check
+ * status / assignment / days-practiced for one child. Days are shown only
+ * for the assignment they were practiced against (the same id check
  * hwStatus makes), so last month's ledger never reads as this week's.
  */
 function hwFor(rec: HomeworkRecord | undefined): { status: ReturnType<typeof hwStatus>; hw: ReturnType<typeof hwSummary> | null; days: Record<string, number> } {

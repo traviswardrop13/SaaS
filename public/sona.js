@@ -156,7 +156,7 @@
     // PER-CHILD, and it must be. This key holds the clinician code, the
     // reporting childId and the grown-up's CONSENT to share. While it was
     // shared, two siblings on one iPad reported under ONE childId: the roster
-    // row was overwritten by whichever child practised last, so a clinician
+    // row was overwritten by whichever child practiced last, so a clinician
     // saw one child's name against the other's outcomes — and homework
     // assigned to one arrived on the other's profile. Consent was also
     // inherited silently, which is the part that is not just a bug.
@@ -296,7 +296,7 @@
   // tomorrow, because BOTH are stamped "post": a brand-new device is stamped on
   // its very first load, before it has onboarded. No date on the device
   // distinguishes them reliably — practiceDays is pruned at 130 days and a
-  // family who set up but never practised has none at all.
+  // family who set up but never practiced has none at all.
   //
   // So this uses the same structural trick that worked for era one: on the
   // FIRST LOAD OF THIS BUILD, a device that is ALREADY onboarded necessarily
@@ -465,7 +465,7 @@
   //
   // Cached locally and read from the cache on every call. The network is never
   // in the path of a child starting a round: a phone in a car with no signal
-  // practises yesterday's assignment rather than nothing.
+  // practices yesterday's assignment rather than nothing.
   const HWKEY = "sona.homework.v1";
   function homework() {
     try {
@@ -499,7 +499,7 @@
       // and above all the write — belongs to whoever is active at this
       // instant, and a parent can switch children while the request is in
       // flight. Without this, child A's SLP assignment was saved into child
-      // B's slot, and B then practised A's sound at A's word position with
+      // B's slot, and B then practiced A's sound at A's word position with
       // A's reps reported against it. Clinical data crossing children is the
       // exact failure the per-child pilot key was split to prevent; this is
       // the asynchronous half of it.
@@ -534,7 +534,7 @@
     const f = ((getProfile().focusSounds) || []).map((s) => String(s).toUpperCase()).filter((s) => WORDS[s]);
     return f.length ? f : ["R"];
   }
-  // The position to practise: the assignment's, else the family's setting.
+  // The position to practice: the assignment's, else the family's setting.
   // One reader for both, so a page cannot honour homework for the sound and
   // quietly ignore it for the position.
   function practicePos() {
@@ -1308,7 +1308,7 @@
 
   // ── the week, narrated ────────────────────────────────────────────────
   // The Sound Story: a plain-language read of the week from REAL practice
-  // data — days practised, reps out loud, and honest-scoring movement on the
+  // data — days practiced, reps out loud, and honest-scoring movement on the
   // rotating sound. It used to also report Sound Check grade changes; the
   // Sound Check is gone, and a weekly AI evaluation was never what made this
   // card useful to a parent. Unofficial by design: a practice snapshot to
@@ -1733,7 +1733,7 @@
   // times — every one of those is a page load, and every one of them asks the
   // gate. The demo replay was bouncing at its FIRST earned game because the
   // arcade pages ask with no activity name and the round trip carried no demo
-  // flag: a child practised, earned the game, tapped it, and met a price. And
+  // flag: a child practiced, earned the game, tapped it, and met a price. And
   // the demonstration's window, if it closed between round two and round
   // three, would have done the same to a family mid-adventure.
   //

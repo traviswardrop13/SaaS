@@ -58,7 +58,7 @@ async function home(age) {
   ok("the hero is today's adventure — practice, not a book",
     /adventure|play/i.test(st.cta) && st.launch === "/charge.html?daily=1", JSON.stringify(st));
   ok("the adventure is named on the card", /adventure/i.test(st.hero), st.hero);
-  ok("the card says what practising earns", /game/i.test(st.sub), st.sub);
+  ok("the card says what practicing earns", /game/i.test(st.sub), st.sub);
   ok("THREE games sit below, not two", st.thumbs === 3, String(st.thumbs));
   ok("none of them is locked — no book gates the day", st.locked === 0, JSON.stringify(st));
   ok("…and none of them wears a padlock", st.padlocks === 0, JSON.stringify(st));
@@ -429,7 +429,7 @@ async function home(age) {
     localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Ada", childAge: "7", focusSounds: ["R"], onboarded: true }));
   });
 
-  // a child who has never practised is STARTING, and the button says so once
+  // a child who has never practiced is STARTING, and the button says so once
   await pg.evaluate(() => { localStorage.removeItem("sona.demo.v1"); });
   await pg.goto("http://localhost:8178/today.html"); await pg.waitForTimeout(800);
   ok("a brand-new child is invited to start, not to resume",

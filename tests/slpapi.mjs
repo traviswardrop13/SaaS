@@ -5,7 +5,7 @@
 // What the dashboard exists for is CARRYOVER: send a child home with the
 // right practice, see whether it happened, paste a sentence into a note. The
 // three things that made that impossible were: a child appeared only after
-// the family had practised; nobody could remove one; and the device's sync
+// the family had practiced; nobody could remove one; and the device's sync
 // overwrote the whole roster row, so nothing the clinician wrote about a
 // child could live there. This suite pins the fixes — and, more than the
 // fixes, the walls around them: an invite holds a LABEL, never a name, and
@@ -133,7 +133,7 @@ if (R) {
   const wide = R.normalizeInvite({ label: "x".repeat(80), age: "123abc", sounds: "R", pos: "nope", repsPerDay: 9999, note: "n".repeat(500) });
   ok("the label is capped at 40 characters", wide.label.length === 40, wide.label.length);
   ok("age is digits only, at most two", wide.age === "12", wide.age);
-  ok("a non-list of sounds is no sounds (an invite with nothing to practise is still an invite)", Array.isArray(wide.sounds) && wide.sounds.length === 0, JSON.stringify(wide.sounds));
+  ok("a non-list of sounds is no sounds (an invite with nothing to practice is still an invite)", Array.isArray(wide.sounds) && wide.sounds.length === 0, JSON.stringify(wide.sounds));
   ok("an unknown position falls back to mixed", wide.pos === "mix", wide.pos);
   ok("reps are clamped into the homework range", wide.repsPerDay === 200, wide.repsPerDay);
   ok("the parent note is capped at NOTE_MAX (240)", wide.note.length === 240, wide.note.length);
@@ -273,7 +273,7 @@ if (A) {
   // invalidated those tickets, every enrolled family would stop syncing the
   // moment it was set — no homework in, no practice out, no error anyone sees,
   // and a clinician watching a live caseload go quiet would conclude the
-  // families had stopped practising. So the OLD secret still VERIFIES.
+  // families had stopped practicing. So the OLD secret still VERIFIES.
   {
     const legacy = "legacy-kv-token-from-before-the-secret";
     process.env.KV_REST_API_TOKEN = legacy;
@@ -356,7 +356,7 @@ if (A) {
 
   ok("the routes exist", !!child && !!invite && !!claim && !!dash && !!forget, [!!child, !!invite, !!claim, !!dash, !!forget].join());
 
-  // 2. the claim route: the device proves who it is; the invite says what to practise
+  // 2. the claim route: the device proves who it is; the invite says what to practice
   ok("claim verifies the enrolment ticket against the code",
     /readTicket\(ticket, code\)/.test(claim) && /status: 401/.test(claim),
     "a device that never passed the clinician's code+key has no standing to claim an invite");
@@ -375,7 +375,7 @@ if (A) {
   ok("…and the single-use lock is the lib's SET NX", /claimInvite\(code, inv, childId\)/.test(claim) && /"NX", "EX", CLAIM_TTL/.test(roster));
   ok("claim turns the invite's sounds into the child's first assignment, on a fresh ledger, two weeks long",
     /normalizeHomework\(/.test(claim) && /writeHomework\(/.test(claim) && /days: \{\}/.test(claim) && /FIRST_ASSIGNMENT_DAYS = 14/.test(claim),
-    "the device picks it up on its next sync — the clinician's pre-set target becomes what the child practises");
+    "the device picks it up on its next sync — the clinician's pre-set target becomes what the child practices");
   ok("…addressed by the clinician's account name, looked up from the code — never from the body",
     /"slpcode:" \+ code/.test(claim) && /readAccount\(/.test(claim) && !/body\.by\b/.test(noComments(claim)));
   ok("…and the note is the invite's note", /note: data\.note/.test(claim));
@@ -506,12 +506,12 @@ if (A) {
     ok("…and is fire-and-forget: the unlock and enrolment never wait on it", /claim[\s\S]{0,600}\.catch\(function \(\) \{\}\)/.test(join));
     ok("the consent copy names the clinician and says what they see, what they can send, what never leaves, and that stopping deletes",
       /"If you say yes, " \+ \(name \|\| "your child's speech therapist"\) \+ " will see your child's first name and age as you entered them, "/.test(join) &&
-      /which sounds they are practising, practice days and how many tries each day, and a rough pass rate per sound\. /.test(join) &&
+      /which sounds they are practicing, practice days and how many tries each day, and a rough pass rate per sound\. /.test(join) &&
       /They can also send practice assignments and a short note to this app\. Never any audio; recordings stay on this device\. /.test(join) &&
       /You can stop any time, and stopping deletes everything they could see\. Saying no changes nothing; Sona stays free for you\./.test(join));
     ok("…and the two button labels the credential suite drives are unchanged",
       />Yes, share progress<\/button>/.test(join) && />No thanks — just use Sona<\/button>/.test(join));
-    ok("…with the old two-paragraph copy gone", !/They'll see practice days, how many times your child practised/.test(join));
+    ok("…with the old two-paragraph copy gone", !/They'll see practice days, how many times your child practiced/.test(join));
   }
 
   // rotating the family key
@@ -540,6 +540,29 @@ if (A) {
 
   ok("the suite is registered right after slpcode in run-all",
     /"slpcode\.mjs",[^\n]*\n\s*"slpapi\.mjs",/.test(runAll));
+}
+
+
+// ── the email IS the product, so it has to arrive and to be honest ──
+{
+  const auth = read("lib/slpAuth.ts");
+  const slps = read("public/for-slps.html");
+
+  ok("the sign-in email carries a plain-text part",
+    /\n\s*text:\s*$/m.test(auth) || /text:\s*\n?\s*\(name \?/.test(auth),
+    "HTML-only scores worse with every spam filter, and this message is the dashboard");
+  ok("…whose link is the same link the button uses",
+    /"Open it here:\\n" \+ link/.test(auth));
+
+  // The usual cause of an empty inbox is an unverified sending domain, and
+  // its symptom is silence. Silence is what this suite exists to break.
+  ok("a refused send says why, in the log", /Resend refused the sign-in email/.test(auth));
+  ok("…without ever logging the key", !/console\.error[\s\S]{0,200}RESEND_API_KEY/.test(auth));
+
+  ok("the page does not claim an email that was refused",
+    /if \(!j\.sent && !j\.signedIn\)/.test(slps),
+    "an existing account has no other door; 'check your email' about an email that never went is a dead end");
+  ok("…and gives them a way through instead", /hello@speaksona\.com/.test(slps));
 }
 
 console.log(fails ? fails + " FAILURES" : "ALL GREEN");

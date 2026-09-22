@@ -29,7 +29,7 @@ const SECRET = () =>
  * enrolled family stops syncing the moment the secret is set: no homework
  * arrives, no practice reports back, no error anyone would see. The clinician
  * would watch a live caseload go quiet and conclude the families stopped
- * practising.
+ * practicing.
  *
  * So verification accepts the legacy secret too, and only verification.
  * Nothing is signed with it, so the window closes by itself as tickets age
@@ -346,14 +346,42 @@ export async function sendMagicEmail(
           `<ol style="padding-left:18px;color:#46627a;">` +
           `<li>Add a child — initials are enough. You pick the sound and the position.</li>` +
           `<li>Send their family the link. They set up in about 30 seconds, on their own phone.</li>` +
-          `<li>Come back and see the days they practised — and copy a line for your progress note.</li>` +
+          `<li>Come back and see the days they practiced — and copy a line for your progress note.</li>` +
           `</ol>` +
           `<p style="color:#6b86a3;font-size:13px;margin-top:22px;">This link expires in 15 minutes — if it does, just enter your email again at speaksona.com and we'll send a fresh one. If you didn't ask for this, you can ignore it.</p>` +
           `</div>`,
+        /**
+         * A PLAIN-TEXT PART, because an HTML-only email scores worse with
+         * every spam filter that looks — and this message is not a receipt
+         * a clinician can shrug off. It IS the dashboard: if it lands in
+         * junk, the sign-up we just paid an ad for is worth nothing.
+         */
+        text:
+          (name ? "Hi " + name + ",\n\n" : "Hi,\n\n") +
+          "Your Sona dashboard is ready - it's free for you and for every family on your caseload.\n\n" +
+          "Open it here:\n" + link + "\n\n" +
+          "What to do first\n" +
+          "1. Add a child - initials are enough. You pick the sound and the position.\n" +
+          "2. Send their family the link. They set up in about 30 seconds, on their own phone.\n" +
+          "3. Come back and see the days they practiced - and copy a line for your progress note.\n\n" +
+          "This link expires in 15 minutes. If it does, enter your email again at speaksona.com and we'll send a fresh one. If you didn't ask for this, you can ignore it.\n",
       }),
     });
+    /**
+     * SAY WHY, in the server log, when Resend refuses. The usual cause is a
+     * sending domain that was never verified, and its symptom is silence: the
+     * page says "check your email", the inbox stays empty, and nothing
+     * anywhere names the reason. The key is never logged; the body is
+     * Resend's own error text.
+     */
+    if (!r.ok) {
+      let why = String(r.status);
+      try { why += " " + (await r.text()).slice(0, 300); } catch { /* status alone */ }
+      console.error("[slpAuth] Resend refused the sign-in email:", why);
+    }
     return { sent: r.ok, devLink: null };
-  } catch {
+  } catch (e) {
+    console.error("[slpAuth] sign-in email threw:", e instanceof Error ? e.message : String(e));
     return { sent: false, devLink: null };
   }
 }

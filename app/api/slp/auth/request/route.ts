@@ -48,7 +48,31 @@ function safeEqual(a: string, b: string): boolean {
  * cost a clinician their sign-in link. An email and a role — never a child's
  * name, which is the rule everywhere else and has no exception here.
  */
-function tellCrm(origin: string, email: string, source: string, name: string): void {
+/**
+ * Which ad produced this clinician. An ALLOW-LIST, copied in spirit from
+ * /api/lead's safeLead: the object arrives from a page a stranger can put any
+ * query string on, so a field that is not named here does not travel. A
+ * deny-list is how `name: child` once sailed into a marketing payload.
+ */
+const ATTRIB_KEYS = [
+  "utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term",
+  "fbclid", "referrer", "landing",
+] as const;
+
+function safeAttrib(raw: unknown): Record<string, string> {
+  const out: Record<string, string> = {};
+  if (!raw || typeof raw !== "object") return out;
+  const src = raw as Record<string, unknown>;
+  for (const k of ATTRIB_KEYS) {
+    const v = src[k];
+    if (typeof v === "string" && v) out[k] = v.slice(0, k === "referrer" ? 200 : 120);
+  }
+  return out;
+}
+
+function tellCrm(
+  origin: string, email: string, source: string, name: string, attrib: Record<string, string>,
+): void {
   try {
     void fetch(origin + "/api/lead", {
       method: "POST",
@@ -56,7 +80,7 @@ function tellCrm(origin: string, email: string, source: string, name: string): v
       // The clinician's OWN first name — the one they typed about themselves.
       // Never a child's, which is the rule everywhere and has no exception in
       // a marketing payload of all places.
-      body: JSON.stringify({ email, name, source, role: "slp", summary: "New SLP signup" }),
+      body: JSON.stringify({ email, name, source, role: "slp", summary: "New SLP signup", ...attrib }),
     }).catch(() => {});
   } catch {
     /* never blocks sign-in */
@@ -71,7 +95,7 @@ function tellCrm(origin: string, email: string, source: string, name: string): v
 // to a pilot SLP directly — before Resend/email is configured. Without the key
 // the link is only ever emailed; it is never returned to the caller.
 export async function POST(req: NextRequest) {
-  let body: { email?: string; adminKey?: string; source?: string; name?: string };
+  let body: { email?: string; adminKey?: string; source?: string; name?: string; attrib?: unknown };
   try {
     body = await req.json();
   } catch {
@@ -154,7 +178,7 @@ export async function POST(req: NextRequest) {
     email, name, clinic: "", code: "", createdAt: new Date().toISOString(),
     source: String(body.source || "").slice(0, 40),
   })]);
-  tellCrm(origin, email, String(body.source || "slp-signup").slice(0, 40), name);
+  tellCrm(origin, email, String(body.source || "slp-signup").slice(0, 40), name, safeAttrib(body.attrib));
 
   const session = signSession({ email, code: "", iat: Date.now(), exp: Date.now() + SESSION_MAX_AGE * 1000 });
   const out = NextResponse.json({ ok: true, sent: res.sent, signedIn: true, devLink: isAdmin ? link : res.devLink });

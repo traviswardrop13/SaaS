@@ -407,7 +407,7 @@ type SoundOutcome = { days?: Record<string, unknown>; byWord?: unknown; [k: stri
  * to `.slice(0, 16000)` the string, which past the limit stored a truncated
  * document that JSON.parse could not read — the dashboard then skipped that
  * child as malformed, silently, and the family it happened to was the one
- * who had practised the most. Now, if the record is too long, the per-word
+ * who had practiced the most. Now, if the record is too long, the per-word
  * breakdown goes first (the least a clinician reads), then each sound's day
  * ledger is trimmed to the newest 90 dates, and whatever remains is stored
  * whole. Nothing is ever cut mid-character.
