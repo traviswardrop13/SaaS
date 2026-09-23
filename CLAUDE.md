@@ -48,10 +48,12 @@ Fellow (CF-SLP)**: master's complete, supervised fellowship year in progress.
 She does **not** hold ASHA's CCC.
 
 So: **"licensed speech-language pathologist" is TRUE** and is used across the
-app — under-claiming a real credential is not a virtue. State the fellowship
-beside it where there is room ("licensed pediatric speech-language pathologist
-(Clinical Fellow)"), and always on the SLP-facing pages, where a peer will read
-"CF" precisely and would notice its absence.
+app — under-claiming a real credential is not a virtue. **The fellowship is no
+longer named in product copy** (Travis, 23 Sep 2026: "we can take out clinical
+fellow") — "licensed pediatric speech-language pathologist" and nothing after
+it. She still is a Clinical Fellow: if an SLP, a district or a board asks, the
+answer is yes, and no copy may imply otherwise — never "fully licensed", never
+anything that suggests the fellowship is behind her.
 
 **Never "CCC", "certified", "board-certified" or "ASHA-certified".** The
 landing page claimed "Licensed & board-certified (CCC-SLP)" until it was caught
