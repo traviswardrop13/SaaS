@@ -546,8 +546,6 @@ if (A) {
 // ── the email IS the product, so it has to arrive and to be honest ──
 {
   const auth = read("lib/slpAuth.ts");
-  const slps = read("public/for-slps.html");
-
   ok("the sign-in email carries a plain-text part",
     /\n\s*text:\s*$/m.test(auth) || /text:\s*\n?\s*\(name \?/.test(auth),
     "HTML-only scores worse with every spam filter, and this message is the dashboard");
@@ -558,11 +556,6 @@ if (A) {
   // its symptom is silence. Silence is what this suite exists to break.
   ok("a refused send says why, in the log", /Resend refused the sign-in email/.test(auth));
   ok("…without ever logging the key", !/console\.error[\s\S]{0,200}RESEND_API_KEY/.test(auth));
-
-  ok("the page does not claim an email that was refused",
-    /if \(!j\.sent && !j\.signedIn\)/.test(slps),
-    "an existing account has no other door; 'check your email' about an email that never went is a dead end");
-  ok("…and gives them a way through instead", /hello@speaksona\.com/.test(slps));
 }
 
 
@@ -591,19 +584,8 @@ if (A) {
 }
 
 
-// ── what the clinician sees when sign-up does not go through ──
-{
-  const slps = read("public/for-slps.html");
-  // The error line sits under the button — on a laptop, the bottom edge of the
-  // window. Shown there and left there, a refused sign-up looked like a button
-  // that did nothing (23 Sep 2026, with an ad running).
-  ok("every sign-up error is brought into view as it is shown",
-    /function err\(msg\)[\s\S]{0,200}scrollIntoView/.test(slps) &&
-    !/\$\("fErr"\)\.textContent = [^"]*"[^"]/.test(slps.replace('$("fErr").textContent = "";', "")),
-    "an error below the fold is an error nobody reads");
-  ok("a signed-in clinician whose email failed is not told it is on its way",
-    /else if \(!j\.sent\)/.test(slps) && /didn't go out just now, so bookmark the dashboard/.test(slps));
-}
+// (The landing page's sign-up form, and the pins on how it failed, went on
+// 23 Sep 2026 when speaksona.com became one button to the App Store.)
 
 
 // ── every clinician reaches the CRM exactly once ──
