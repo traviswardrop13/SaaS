@@ -444,21 +444,28 @@
     } catch (e) {}
 
     var LABEL = "Get Sona free";
+    // THE ERROR SITS UNDER THE BUTTON, which on a laptop is the bottom edge of
+    // the window — so a refused sign-up looked like a button that did nothing.
+    // Every message is brought into view as it is shown.
+    function err(msg) {
+      var e = $("fErr"); e.textContent = msg;
+      try { e.scrollIntoView({ block: "nearest", behavior: "smooth" }); } catch (x) { e.scrollIntoView(false); }
+    }
     function busy(on) { $("fGo").disabled = on; $("fGo").textContent = on ? "Sending…" : LABEL; }
 
     function go() {
       var name = (($("fName").value) || "").trim();
       var email = (($("fEmail").value) || "").trim();
       $("fErr").textContent = "";
-      if (!name) { $("fErr").textContent = "Your first name, so we know who we're writing to."; $("fName").focus(); return; }
-      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { $("fErr").textContent = "Enter a valid email."; $("fEmail").focus(); return; }
+      if (!name) { err("Your first name, so we know who we're writing to."); $("fName").focus(); return; }
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { err("Enter a valid email."); $("fEmail").focus(); return; }
       busy(true);
       fetch("/api/slp/auth/request", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: email, name: name, source: src, attrib: attrib }),
       }).then(function (r) { return r.json(); }).then(function (j) {
         busy(false);
-        if (!j || !j.ok) { $("fErr").textContent = (j && j.error) || "Couldn't set that up right now."; return; }
+        if (!j || !j.ok) { err((j && j.error) || "Couldn't set that up right now."); return; }
         /**
          * THE CONVERSION, fired only once the server said yes — a tap on the
          * button is not a sign-up, and an ad optimised on taps buys taps.
@@ -486,6 +493,11 @@
         if (!j.sent && !j.signedIn) {
           $("sentMsg").textContent = "Your account is here, but our email didn't go out just now. Email hello@speaksona.com and we'll open your dashboard by hand — usually within the hour.";
           $("again").hidden = true;
+        } else if (!j.sent) {
+          // Signed in, but the email was refused: the dashboard is one tap
+          // away, and the page must not promise a link that is not coming.
+          $("sentMsg").textContent = "You're in — open your dashboard below. Our email to " + email + " didn't go out just now, so bookmark the dashboard to come back to it.";
+          $("again").hidden = true;
         } else {
           $("sentMsg").textContent = "Your sign-in link is on its way to " + email + ". It opens straight into your dashboard — no password.";
           $("again").hidden = false;
@@ -502,7 +514,7 @@
         }
       }).catch(function () {
         busy(false);
-        $("fErr").textContent = "Network hiccup — try again.";
+        err("Network hiccup — try again.");
       });
     }
     $("signup").addEventListener("submit", function (e) { e.preventDefault(); go(); });
