@@ -1,143 +1,129 @@
 import { NextRequest, NextResponse } from "next/server";
+import { readSession, kvCmd } from "@/lib/slpAuth";
+import { rateLimit } from "@/lib/rateLimit";
 
-/**
- * SLP Feedback endpoint — receives feedback from the SLP dashboard and
- * forwards it to the founder via Slack webhook. Also stores in KV if
- * configured.
- *
- * Environment variables:
- *   SLACK_FEEDBACK_WEBHOOK_URL — Slack incoming webhook URL for notifications
- *   KV_REST_API_URL / UPSTASH_REDIS_REST_URL — optional KV store
- *   KV_REST_API_TOKEN / UPSTASH_REDIS_REST_TOKEN — optional KV auth
+/** Feedback and requests to connect go only to the team's feedback inbox.
+ * A 2xx means at least one destination accepted the message, never just that
+ * the browser submitted it. KV retains the latest 500 messages for one year.
+ * Optional notifications: SLACK_FEEDBACK_WEBHOOK_URL or FEEDBACK_WEBHOOK_URL.
  */
 export const runtime = "nodejs";
 
-async function kvCmd(cmd: (string | number)[]): Promise<unknown> {
-  const url = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
-  const tok = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
-  if (!url || !tok) return undefined;
-  try {
-    const r = await fetch(url, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${tok}`, "Content-Type": "application/json" },
-      body: JSON.stringify(cmd),
-    });
-    if (!r.ok) return undefined;
-    const j = (await r.json()) as { result?: unknown };
-    return j.result;
-  } catch {
-    return undefined;
-  }
-}
+const CATEGORIES = new Set([
+  "dashboard", "app", "question", "affiliate", "general", "bug", "feature", "content", "praise",
+]);
+// Keep the append, cap and expiry together so a failed second request cannot
+// leave feedback stored indefinitely. This preserves the existing inbox key.
+const STORE_FEEDBACK = `
+  local count = redis.call('RPUSH', KEYS[1], ARGV[1])
+  redis.call('LTRIM', KEYS[1], -500, -1)
+  redis.call('EXPIRE', KEYS[1], ARGV[2])
+  return count
+`;
 
 export async function POST(req: NextRequest) {
+  let session;
+  try { session = readSession(req); } catch { session = null; }
+  if (!session || typeof session.email !== "string" || !session.email) {
+    return NextResponse.json({ ok: false, error: "Please sign in to send your message." }, { status: 401 });
+  }
+
+  const limited = await rateLimit(req, { key: "slpfeedback", limit: 30, windowSec: 3600 });
+  if (limited) return limited;
+
   let body: Record<string, unknown>;
   try {
-    body = await req.json();
+    const value = await req.json();
+    if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("invalid body");
+    body = value;
   } catch {
     return NextResponse.json({ ok: false, error: "Invalid JSON." }, { status: 400 });
   }
 
-  const text = String((body.text as string) || "").slice(0, 2000).trim();
-  if (!text) {
-    return NextResponse.json({ ok: false, error: "Empty feedback." }, { status: 400 });
+  const kind = body.kind === undefined ? "feedback" : body.kind;
+  if (kind !== "feedback" && kind !== "call") {
+    return NextResponse.json({ ok: false, error: "Choose feedback or a call request." }, { status: 400 });
+  }
+  for (const [field, max] of [["text", 2000], ["availability", 240], ["timezone", 80]] as const) {
+    if (body[field] !== undefined && (typeof body[field] !== "string" || (body[field] as string).length > max)) {
+      return NextResponse.json({ ok: false, error: `Please keep ${field} to ${max} characters.` }, { status: 400 });
+    }
+  }
+  const text = typeof body.text === "string" ? body.text.trim() : "";
+  if (kind === "feedback" && !text) {
+    return NextResponse.json({ ok: false, error: "Please add your feedback or question." }, { status: 400 });
   }
 
+  // A caller can submit feedback before finishing their profile. The signed
+  // session still provides a reply address; never trust identity in the body.
+  let account: Record<string, unknown> = {};
+  try {
+    const raw = await kvCmd(["GET", "slpacct:" + session.email]);
+    const parsed = raw ? JSON.parse(String(raw)) : null;
+    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) account = parsed;
+  } catch { /* the session's reply address is enough */ }
   const rec = {
-    text,
-    slpName: String((body.slpName as string) || "Unknown SLP").slice(0, 120),
-    slpCode: String((body.slpCode as string) || "").slice(0, 48),
-    category: String((body.category as string) || "general").slice(0, 40),
+    kind,
+    text: text || "I'd like to connect with Rachel and the Sona team.",
+    category: typeof body.category === "string" && CATEGORIES.has(body.category) ? body.category : "general",
+    availability: typeof body.availability === "string" ? body.availability.trim() : "",
+    timezone: typeof body.timezone === "string" ? body.timezone.trim() : "",
+    replyEmail: session.email,
+    slpName: typeof account.name === "string" ? account.name.slice(0, 120) : "",
+    slpCode: typeof account.code === "string" ? account.code.slice(0, 48) : "",
     at: new Date().toISOString(),
   };
 
-  // ── Send to Slack ──────────────────────────────────────────────
-  const slackUrl = process.env.SLACK_FEEDBACK_WEBHOOK_URL;
-  let slackSent = false;
+  // Store valid JSON in full. Slicing a serialized record can corrupt it and
+  // lose both the message and the address needed to reply.
+  const saved = await kvCmd([
+    "EVAL", STORE_FEEDBACK, 1, "slp-feedback:" + (rec.slpCode || session.email),
+    JSON.stringify(rec), 60 * 60 * 24 * 365,
+  ]);
+  const stored = typeof saved === "number" && saved > 0;
 
+  let slackSent = false;
+  const slackUrl = process.env.SLACK_FEEDBACK_WEBHOOK_URL;
   if (slackUrl) {
     try {
-      const categoryEmoji: Record<string, string> = {
-        bug: "🐛",
-        feature: "💡",
-        content: "📝",
-        general: "💬",
-        praise: "🌟",
-      };
-      const emoji = categoryEmoji[rec.category] || "💬";
-
-      const slackPayload = {
-        blocks: [
-          {
-            type: "header",
-            text: {
-              type: "plain_text",
-              text: `${emoji} SLP Feedback — ${rec.category.charAt(0).toUpperCase() + rec.category.slice(1)}`,
-              emoji: true,
-            },
-          },
-          {
-            type: "section",
-            fields: [
-              { type: "mrkdwn", text: `*From:*\n${rec.slpName}` },
-              { type: "mrkdwn", text: `*Code:*\n\`${rec.slpCode || "n/a"}\`` },
-            ],
-          },
-          {
-            type: "section",
-            text: {
-              type: "mrkdwn",
-              text: `*Feedback:*\n> ${rec.text.replace(/\n/g, "\n> ")}`,
-            },
-          },
-          {
-            type: "context",
-            elements: [
-              { type: "mrkdwn", text: `Sent at ${rec.at}` },
-            ],
-          },
-        ],
-      };
-
-      const slackRes = await fetch(slackUrl, {
+      const response = await fetch(slackUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(slackPayload),
+        body: JSON.stringify({
+          text: rec.kind === "call" ? "SLP call request" : "SLP feedback",
+          blocks: [
+            { type: "header", text: { type: "plain_text", text: rec.kind === "call" ? "SLP call request" : "SLP feedback" } },
+            { type: "section", fields: [
+              { type: "plain_text", text: `From: ${rec.slpName || "SLP"}\nReply to: ${rec.replyEmail}` },
+              { type: "plain_text", text: `About: ${rec.category}\nCode: ${rec.slpCode || "profile not finished"}` },
+            ] },
+            { type: "section", text: { type: "plain_text", text: rec.text } },
+            ...(rec.kind === "call" ? [{ type: "section", text: { type: "plain_text", text: `Availability: ${rec.availability || "Ask by email"}\nTime zone: ${rec.timezone || "Ask by email"}` } }] : []),
+            { type: "context", elements: [{ type: "plain_text", text: `Sent at ${rec.at}` }] },
+          ],
+        }),
+        signal: AbortSignal.timeout(5000),
       });
-      slackSent = slackRes.ok;
-    } catch {
-      // Never fail the request because of Slack
-    }
+      slackSent = response.ok;
+    } catch { /* the dedicated fallback or stored inbox may still succeed */ }
   }
 
-  // ── Also try the generic webhook (fallback) ─────────────────────
-  if (!slackSent) {
-    const hook =
-      process.env.FEEDBACK_WEBHOOK_URL ||
-      process.env.PILOT_WEBHOOK_URL ||
-      process.env.LEAD_WEBHOOK_URL;
-    if (hook) {
-      try {
-        await fetch(hook, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ ...rec, kind: "slp-feedback" }),
-        });
-      } catch {
-        // best effort
-      }
-    }
+  let delivered = slackSent;
+  const hook = process.env.FEEDBACK_WEBHOOK_URL;
+  if (!delivered && hook) {
+    try {
+      const response = await fetch(hook, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...rec, source: "slp-feedback" }),
+        signal: AbortSignal.timeout(5000),
+      });
+      delivered = response.ok;
+    } catch { /* a confirmed KV save is still a received message */ }
   }
 
-  // ── Store in KV ────────────────────────────────────────────────
-  try {
-    const key = "slp-feedback:" + (rec.slpCode || "unknown");
-    await kvCmd(["RPUSH", key, JSON.stringify(rec).slice(0, 4000)]);
-    await kvCmd(["LTRIM", key, -500, -1]);
-    await kvCmd(["EXPIRE", key, 60 * 60 * 24 * 365]); // 1 year
-  } catch {
-    // best effort
+  if (!stored && !delivered) {
+    return NextResponse.json({ ok: false, error: "We couldn't receive your message. Please try again shortly." }, { status: 503 });
   }
-
-  return NextResponse.json({ ok: true, slackSent });
+  return NextResponse.json({ ok: true, stored, delivered, slackSent });
 }

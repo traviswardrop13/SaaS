@@ -21,6 +21,7 @@ import { chromium, ROOT, launchOpts } from "./_env.mjs";
 
 const MIME = { html: "text/html", js: "text/javascript", svg: "image/svg+xml", css: "text/css", png: "image/png", webp: "image/webp" };
 const PORT = 8161;
+const HTML = process.env.SLP_TEST_HTML || ROOT + "/slp.html";
 
 // ── fixture: five children, one pending invite ──
 const day = (n) => { const d = new Date(); d.setDate(d.getDate() - n); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); };
@@ -65,7 +66,7 @@ const srv = createServer((req, res) => {
     if (u.pathname === "/api/slp/invite" && req.method === "POST") { const inv = { token: "NEWTOKEN1234", label: b.label, age: b.age, sounds: b.sounds, pos: b.pos, repsPerDay: b.repsPerDay, note: b.note, createdAt: new Date().toISOString(), expiresAt: day(-30) }; DATA.invites.push(inv); return json({ ok: true, invite: inv, link: "http://localhost:" + PORT + "/join.html?slp=RACHEL-K4&k=ABCD2345&inv=NEWTOKEN1234" }); }
     if (u.pathname === "/api/slp/invite" && req.method === "DELETE") { DATA.invites = DATA.invites.filter((i) => i.token !== b.token); return json({ ok: true }); }
     if (u.pathname.startsWith("/api/")) return json({ ok: true });
-    const p = ROOT + u.pathname;
+    const p = u.pathname === "/slp.html" ? HTML : ROOT + u.pathname;
     if (!existsSync(p)) { res.writeHead(404); res.end(); return; }
     res.writeHead(200, { "content-type": MIME[p.split(".").pop()] || "application/octet-stream" });
     res.end(readFileSync(p));
@@ -74,8 +75,8 @@ const srv = createServer((req, res) => {
 await new Promise((r) => srv.listen(PORT, r));
 
 const browser = await chromium.launch(launchOpts());
-let fails = 0;
-const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL ") + n + (p ? "" : "  → " + (extra || ""))); };
+let fails = 0, checks = 0;
+const ok = (n, p, extra) => { checks++; if (!p) fails++; console.log((p ? "PASS " : "FAIL ") + n + (p ? "" : "  → " + (extra || ""))); };
 const U = (h) => "http://localhost:" + PORT + "/slp.html" + (h || "");
 async function open(hash) {
   const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
@@ -95,15 +96,31 @@ async function open(hash) {
 {
   const { ctx, pg, errs } = await open("#today");
   const txt = await pg.evaluate(() => document.getElementById("todayBody").textContent);
-  ok("Today says who practiced this week the moment it opens", /3 of 6 children practiced this week/.test(txt), txt.slice(0, 120));
-  const groups = await pg.evaluate(() => [...document.querySelectorAll("#todayBody .card h2")].map((h) => h.textContent));
-  ok("…in three groups a clinician asks about, plus the invites", groups.join("|") === "Gone quiet|Homework ending this week or missed|Practiced this week|Invited, not joined yet", groups.join("|"));
-  const quiet = await pg.evaluate(() => [...document.querySelectorAll("#todayBody .card")][1].textContent);
-  ok("gone quiet is a practice fact, not a judgement", /Ava/.test(quiet) && /no practice yet/.test(quiet) && /Leo/.test(quiet) && /no practice for 9 days/.test(quiet), quiet.slice(0, 200));
-  const hw = await pg.evaluate(() => [...document.querySelectorAll("#todayBody .card")][2].textContent);
-  ok("missed and ending-soon homework are listed with a re-assign action", /Leo/.test(hw) && /missed/i.test(hw) && /Mia/.test(hw) && /Re-assign/.test(hw), hw.slice(0, 200));
-  const noteBtns = await pg.evaluate(() => document.querySelectorAll("#todayBody [data-note]").length);
-  ok("every practiced/quiet row carries Copy note", noteBtns === 6, String(noteBtns));
+  ok("Today labels its rolling practice window as the last 7 days", /3 of 6 children practiced (?:in the )?last 7 days/i.test(txt), txt.slice(0, 240));
+  const cards = pg.locator("#todayBody .card");
+  const groups = await pg.locator("#todayBody .card h2").allTextContents();
+  ok("Today keeps three useful groups and pending invites", groups.length === 4 && /Gone quiet/.test(groups[0]) && /Homework ending .*or missed/.test(groups[1]) && /practiced.*last 7 days/i.test(groups[2]) && /Invited, not joined yet/.test(groups[3]), groups.join("|"));
+  const quiet = cards.filter({has:pg.locator("h2",{hasText:"Gone quiet"})});
+  const quietText = await quiet.textContent();
+  ok("quiet rows show the practice fact without duplicating missed homework", /Ava/.test(quietText) && /no practice yet/.test(quietText) && !/Leo/.test(quietText), quietText);
+  const hw = cards.filter({has:pg.locator("h2",{hasText:/Homework ending/})});
+  const hwText = await hw.textContent();
+  ok("missed homework keeps both facts on one actionable row", /Leo/.test(hwText) && /missed/i.test(hwText) && /no practice for 9 days/.test(hwText) && /Mia/.test(hwText) && /Re-assign/.test(hwText), hwText);
+  const noteBtns = await pg.locator("#todayBody [data-note]").count();
+  ok("practiced rows keep Copy note", noteBtns === 3, String(noteBtns));
+  const checkin = quiet.getByRole("button",{name:"Copy check-in message",exact:true});
+  ok("quiet children with a target offer a parent check-in", await checkin.count() === 1);
+  if(await checkin.count()) {
+    await checkin.click();
+    const message = await pg.evaluate(() => window.__copied[0] || "");
+    ok("check-in copies a parent message without practice statistics", /Sona/.test(message) && !/\d+ of \d+|%|streak/i.test(message), message);
+  }
+  const chooseSound = quiet.getByRole("button",{name:/Set their sound/});
+  ok("unnamed family offers a sound selection", await chooseSound.count() === 1);
+  if(await chooseSound.count()) {
+    await chooseSound.click();await pg.waitForTimeout(100);
+    ok("Set their sound opens this family's homework without assigning", await pg.locator("#quickHomework").isVisible() && await pg.evaluate(() => location.hash) === "#child/c6/homework" && !log.some(l=>l.m==="POST"&&l.p==="/api/slp/homework"));
+  }
   ok("no pageerrors", errs.length === 0, errs.join(" | "));
   const badCalls = log.filter((l) => /\/api\/slp\?code=/.test(l.p));
   ok("the page never passes the clinic code in a query string", badCalls.length === 0, JSON.stringify(badCalls));
@@ -112,7 +129,7 @@ async function open(hash) {
 
 // ── 2. the register, with comments stripped ──
 {
-  const src = readFileSync(ROOT + "/slp.html", "utf8")
+  const src = readFileSync(HTML, "utf8")
     .replace(/<!--[\s\S]*?-->/g, "").replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:])\/\/[^\n]*/g, "$1");
   const hits = src.match(/\b(accuracy|score|scores|adherence|therapy|treatment|diagnos\w*|CCC)\b/gi) || [];
   ok("never accuracy / score / adherence / therapy / treatment / diagnosis / CCC anywhere a clinician reads", hits.length === 0, hits.join(", "));
@@ -125,7 +142,9 @@ async function open(hash) {
 
 // ── 3. one family door ──
 {
-  const { ctx, pg } = await open("#settings");
+  const { ctx, pg } = await open("#invite");
+  if(await pg.locator("#generalInvite summary").count())await pg.locator("#generalInvite summary").click();
+  ok("general family link and message share the invite panel", await pg.locator("#invComposer #famLink").isVisible() && await pg.locator("#invComposer #snip").isVisible());
   const link = await pg.evaluate(() => document.getElementById("famLink").value);
   ok("the caseload link is join.html?slp=CODE&k=KEY", /\/join\.html\?slp=RACHEL-K4&k=ABCD2345$/.test(link), link);
   const snip = await pg.evaluate(() => document.getElementById("snip").value);
@@ -154,8 +173,9 @@ async function open(hash) {
   // the note itself: the fixed template, from the current homework window
   await pg.evaluate(() => { [...document.querySelectorAll("#clTable tr")].find((r) => /Mia/.test(r.textContent)).querySelector("[data-note]").click(); });
   const note = await pg.evaluate(() => window.__copied[0] || "");
-  ok("Copy note writes the template exactly",
-    /^Between \w+ \d+ and \w+ \d+, Mia practiced on 5 of 6 days \(15 tries a day\)\. R in the middle of words: 70% pass rate over 46 attempts\. A practice snapshot from at-home listening on the family's device; not an evaluation\.$/.test(note), note);
+  ok("Copy note preserves the factual window, practice summary and qualification",
+    /^Between \w+ \d+ and \w+ \d+, Mia practiced on 5 of 6 days \(15 tries a day\)\. R in the middle of words: 70% pass rate over 46 attempts\./.test(note) && /A practice snapshot from at-home listening on the family's device; not an evaluation\.$/.test(note), note);
+  ok("progress note includes supported position rates with attempt counts", /(?:Beginning|beginning)[^%]*74% \(n=70\)/.test(note) && /[Mm]iddle[^%]*60% \(n=60\)/.test(note) && /[Ee]nd[^%]*53% \(n=30\)/.test(note), note);
   ok("…with no age and no score in it", !/age|score/i.test(note), note);
   await pg.evaluate(() => { [...document.querySelectorAll("#clTable tr")].find((r) => /Zoe/.test(r.textContent)).querySelector("[data-note]").click(); });
   const zn = await pg.evaluate(() => window.__copied[1] || "");
@@ -172,7 +192,13 @@ async function open(hash) {
   ok("…and shows a weighted pass rate on the target for the last 14 days, with n", /68% \(n=94\)/.test(head), head);
   const sub = await pg.evaluate(() => document.getElementById("chNoteSub").textContent);
   ok("the note says which window it covers", /Covers the current homework window/.test(sub), sub);
-  await pg.evaluate(() => document.getElementById("chRemove").click());
+  ok("remove is available on Overview", await pg.locator("#chRemove").isVisible());
+  for(const view of ["homework","plan"]) {
+    await pg.evaluate(view=>location.hash="#child/c1/"+view,view);await pg.waitForTimeout(80);
+    ok("remove is hidden on "+view, !await pg.locator("#chRemove").isVisible());
+  }
+  await pg.evaluate(()=>location.hash="#child/c1");await pg.waitForTimeout(80);
+  await pg.locator("#chRemove").click();
   await pg.waitForTimeout(700);
   const confirmMsg = await pg.evaluate(() => window.__confirms[0] || "");
   ok("the remove dialog promises only what the route delivers", /nothing on their device is deleted/.test(confirmMsg) && /stops sending you updates/.test(confirmMsg) && /Copy the progress note first/.test(confirmMsg), confirmMsg);
@@ -226,5 +252,5 @@ async function open(hash) {
 }
 
 await browser.close(); srv.close();
-console.log(fails ? fails + " FAILURES" : "ALL GREEN");
+console.log(JSON.stringify({checks, failures:fails}));
 process.exit(fails ? 1 : 0);

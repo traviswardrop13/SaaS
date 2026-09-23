@@ -47,6 +47,9 @@ const SUITES = [
   "hwtest.mjs",    // HW1: SLP homework replaces what the app would have picked
   "pauseaudiotest.mjs", // interrupted playback and native starts cannot outlive their practice phase
   "slptest.mjs",   // SLP1: the clinician dashboard — live Today, honest register, one door, real remove, the note
+  "slpworkflowtest.mjs", // quick homework, per-child plans, feedback/call UI and failure recovery
+  "slpfeedbacktest.mjs", // authenticated feedback and call requests; confirmed receipt only
+  "slpdesigntest.mjs", // SLP workspace: filters, failure recovery, bulk assignments, mobile layout
   "arttest.mjs",   // ART1: every sticker renders, fits its box and stays in the safe band
 ];
 
