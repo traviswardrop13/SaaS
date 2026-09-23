@@ -624,5 +624,15 @@ if (A) {
     existing.length > 0 && !/acct\.name\s*=/.test(existing));
 }
 
+
+// ── a new clinician goes straight into the dashboard ──
+{
+  const slps = read("public/for-slps.html");
+  ok("a brand-new, signed-in clinician is taken into the dashboard without a 'check your email' stop",
+    /if \(j\.signedIn\) setTimeout\(function \(\) \{ location\.href = "\/slp\.html"; \}/.test(slps));
+  ok("…after the Lead has fired, so the pixel's request leaves first",
+    slps.indexOf('sonaTrack("Lead")') > 0 && slps.indexOf('sonaTrack("Lead")') < slps.indexOf('if (j.signedIn) setTimeout('));
+}
+
 console.log(fails ? fails + " FAILURES" : "ALL GREEN");
 process.exit(fails ? 1 : 0);
