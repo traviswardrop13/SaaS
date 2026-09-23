@@ -181,24 +181,51 @@ export async function POST(req: NextRequest) {
    * may hold a caseload, and a caseload is children — that door needs the
    * proof that someone can read the inbox.
    */
+  let acctRaw: unknown = null;
   let acctExists = false;
-  try { acctExists = !!(await kvCmd(["GET", "slpacct:" + email])); } catch { acctExists = true; }
+  try { acctRaw = await kvCmd(["GET", "slpacct:" + email]); acctExists = !!acctRaw; } catch { acctExists = true; }
 
   if (acctExists) {
+    /**
+     * A CLINICIAN THE CRM HAS NEVER HEARD OF. The CRM was told only when THIS
+     * route created the account, so everyone whose account was made another
+     * way — by the magic-link verify route, or before the CRM was wired on
+     * 22 Sep 2026 — was invisible to GoHighLevel however often they signed
+     * in. Travis found it signing up with his own address: the dashboard
+     * email arrived, and GoHighLevel never heard of him.
+     *
+     * So the account carries crmAt once the CRM has taken the lead. Without
+     * it, the lead goes on this sign-in, once; with it, never again, because
+     * a daily sign-in is not a daily "new signup". The name sent is the one
+     * already on the account when there is one — this request is not signed
+     * in, so it may inform the CRM but never rewrites the account.
+     */
+    let acct: Record<string, unknown> | null = null;
+    try { acct = acctRaw ? JSON.parse(String(acctRaw)) : null; } catch { acct = null; }
+    if (acct && !acct.crmAt) {
+      const crmName = String(acct.name || body.name || "").trim().slice(0, 60);
+      if (await tellCrm(origin, email, String(body.source || "slp-signup").slice(0, 40), crmName, safeAttrib(body.attrib))) {
+        acct.crmAt = new Date().toISOString();
+        await kvCmd(["SET", "slpacct:" + email, JSON.stringify(acct)]);
+      }
+    }
     return NextResponse.json({ ok: true, sent: res.sent, signedIn: false, devLink: isAdmin ? link : res.devLink });
   }
 
   // The name they gave at sign-up is the name on their homework notes, so the
   // dashboard does not have to ask for it a second time.
   const name = String(body.name || "").trim().slice(0, 60);
-  await kvCmd(["SET", "slpacct:" + email, JSON.stringify({
+  const acctNew = {
     email, name, clinic: "", code: "", createdAt: new Date().toISOString(),
     source: String(body.source || "").slice(0, 40),
-  })]);
+  };
+  await kvCmd(["SET", "slpacct:" + email, JSON.stringify(acctNew)]);
   const crm = tellCrm(origin, email, String(body.source || "slp-signup").slice(0, 40), name, safeAttrib(body.attrib));
 
   const session = signSession({ email, code: "", iat: Date.now(), exp: Date.now() + SESSION_MAX_AGE * 1000 });
-  await crm;
+  // Stamped only when the CRM took it: a miss is retried on the next sign-in.
+  const captured = await crm;
+  if (captured) await kvCmd(["SET", "slpacct:" + email, JSON.stringify({ ...acctNew, crmAt: new Date().toISOString() })]);
   const out = NextResponse.json({ ok: true, sent: res.sent, signedIn: true, devLink: isAdmin ? link : res.devLink });
   out.headers.set("Set-Cookie", sessionCookie(session, SESSION_MAX_AGE));
   return out;
