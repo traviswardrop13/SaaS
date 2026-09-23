@@ -1,7 +1,7 @@
 # Sona
 
 A speech-practice app for kids, at [speaksona.com](https://speaksona.com).
-A child practises a target sound in short rounds, earns arcade time by doing
+A child practices a target sound in short rounds, earns arcade time by doing
 it, and a grown-up gets a practice snapshot they can share with their SLP.
 
 Built with Rachel, a licensed pediatric speech-language pathologist (Clinical

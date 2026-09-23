@@ -1,7 +1,7 @@
 import { kvCmd } from "@/lib/slpAuth";
 
 /**
- * Homework: what an SLP asks one child to practise, and how the app honours it.
+ * Homework: what an SLP asks one child to practice, and how the app honours it.
  *
  * The design decision that matters: homework does NOT arrive as a to-do list
  * beside the app. It REPLACES what the daily rotation would have picked — the

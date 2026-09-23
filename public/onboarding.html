@@ -146,9 +146,8 @@
       <div class="qh">Let's make talking fun!</div>
       <p class="muted">Short, friendly practice — a few minutes a day. Designed with a speech-language pathologist.</p>
       <p class="muted" id="howLong" style="margin-top:12px;font-weight:800;color:var(--ink);">Three quick questions, then your child plays. About a minute.</p>
-      <!-- The clinician door ("I'm a speech-language pathologist") is gone from
-           here: the SLP side is HIDDEN, not deleted (Travis, 19 Sep 2026 — not a
-           priority). ORDER_SLP below is unreachable until it comes back. -->
+      <!-- Clinician setup remains available in browsers, never in the native family app. -->
+      <p class="muted" id="slpRow" hidden style="margin-top:10px;font-size:13px;"><a href="#" id="slpLink"><b>I'm a speech-language pathologist</b> — setting Sona up for my caseload →</a></p>
       <div class="world-scene" aria-hidden="true"><img src="/coach/echo/echo-listening.svg" alt="" /></div>
       <p class="muted" id="moveRow" style="margin-top:12px;font-size:13px;"><a href="#" id="moveLink">Moving from another phone? Enter your code</a></p>
     </div>
@@ -260,6 +259,12 @@
     <div class="step" data-step="achieve">
       <div class="qh" id="handoffTitle" tabindex="-1">Hand the phone to <span id="achName">your child</span>!</div>
       <div class="world-scene" aria-hidden="true"><img src="/coach/echo/echo-listening.svg" alt="" /></div>
+      <div id="achEmail" style="display:none;margin-top:14px;background:#f7fbff;border:2px solid #dcecfa;border-radius:14px;padding:13px 15px;text-align:left;">
+        <div style="font-family:'Baloo 2';font-weight:800;font-size:14.5px;">Want <span id="achEmName">your child</span>'s weekly summary?</div>
+        <p class="muted" style="font-size:12.5px;margin-top:4px;line-height:1.5;">One short email a week — which days they practiced and the sounds they worked on. Optional, and you can add it later in Settings.</p>
+        <input id="achEmailInput" type="email" inputmode="email" autocomplete="email" placeholder="you@email.com" style="margin-top:9px;" />
+        <p id="achEmailMsg" class="muted" style="font-size:12px;margin-top:7px;"></p>
+      </div>
       <div id="obSlpCred" hidden style="margin-top:12px;background:#fff;border-radius:14px;padding:13px 15px;text-align:left;"></div>
     </div>
 
@@ -295,11 +300,11 @@
          closed without RESEND_FROM / UNSUB_SECRET / EMAIL_POSTAL, and a
          promise that depends on environment variables is not a promise. -->
     <div class="step" data-step="email">
-      <div class="qh">Where should we reach you?</div>
-      <p class="muted">Your email is how you get your subscription back if you switch phones, and how we reach you about your account.</p>
+      <div class="qh">Your clinician account</div>
+      <p class="muted">Your email creates your clinician account — the code and family key you hand to families so Sona is free for them, plus a dashboard showing how they are practicing. It is also how you sign back in: there is no password.</p>
       <input id="obEmail" type="email" inputmode="email" autocomplete="email" placeholder="you@email.com" style="margin-top:12px;" />
       <p id="emErr" style="display:none;color:#ef6f23;font-weight:800;font-size:13px;margin-top:8px;"></p>
-      <p class="muted" style="font-size:12px;margin-top:10px;"><b id="emName">Your child</b>'s practice stays on this device — it is never uploaded. To move it to another one, use <b>Backup &amp; restore</b> in Settings. <a href="/privacy" target="_blank">Privacy</a>.</p>
+      <p class="muted" style="font-size:12px;margin-top:10px;"><b id="emName">Your child</b>'s practice stays on this device — it is never uploaded. To move it to another one, use <b>Backup &amp; restore</b> in Settings. A family's own practice works the same way; what reaches your dashboard is counts, never audio. <a href="/privacy" target="_blank">Privacy</a>.</p>
       <p class="muted" style="font-size:12.5px;margin-top:12px;"><a href="#" id="obEmailSkip" style="font-weight:800;">Skip for now →</a> You can add it later in Settings.</p>
     </div>
   </div>
@@ -371,6 +376,8 @@
     })();
     // A restored clinician draft must not start clinician setup in the family app.
     if (Sona.isNativeApp && Sona.isNativeApp()) draft.role = "parent";
+    var nativeFamily = !!(Sona.isNativeApp && Sona.isNativeApp());
+    document.getElementById("slpRow").hidden = nativeFamily;
     function saveDraft() { try { localStorage.setItem(DRAFTKEY, JSON.stringify(draft)); } catch (e) {} }
     function clearDraft() { try { localStorage.removeItem(DRAFTKEY); } catch (e) {} }
 
@@ -600,10 +607,8 @@
         if(sw) sw.style.display = slp ? "none" : "";
         var gw=document.getElementById("obGoalsWrap");
         if(gw && slp) gw.style.display="block";
-        var eq=document.querySelector('[data-step="email"] .qh');
-        if(eq && slp) eq.innerHTML="Your clinician account";
-        var ep=document.querySelector('[data-step="email"] p.muted');
-        if(ep && slp) ep.textContent="Your email creates your clinician account — the code and family key you hand to clients so Sona is free for them, plus a dashboard showing how they're practicing.";
+        // The step's own markup is the clinician's wording: it is the only
+        // path that reaches it (ORDER_SLP), so there is nothing to swap.
         // an SLP can't skip email: the credential IS the account
         var esk=document.getElementById("obEmailSkip");
         if(esk) esk.parentElement.style.display = slp ? "none" : "";
@@ -654,6 +659,7 @@
       var sl=document.getElementById("slpLink"); if(!sl) return;
       sl.onclick=function(ev){ ev.preventDefault();
         try{ Sona.sfx.tap(); }catch(e){}
+        if(nativeFamily)return;
         draft.role="slp"; draft.mode="speech"; draft.pathReason=""; saveDraft();
         try{ applyRoleCopy(); }catch(e){}
         ORDER=ORDER_SLP; paintSeg(); idx=1; render();
@@ -671,7 +677,11 @@
       if(key==="name") setTimeout(function(){ nameEl.focus(); }, 80);
       if(key==="interests"){ var nmi=(nameEl.value||draft.childName||"").trim(); document.getElementById("intName").textContent = nmi || "your child"; }
       if(key==="achieve"){ var nm=(nameEl.value||draft.childName||"").trim(); document.getElementById("achName").textContent = nm || "your child"; }
-      if(key==="email"){ var nm2=(nameEl.value||draft.childName||"").trim(); var emn=document.getElementById("emName"); if(emn) emn.textContent = nm2 || "Your child"; setTimeout(function(){ emailEl.focus(); }, 80); }
+      if(key==="email"){
+        var nm2=(nameEl.value||draft.childName||"").trim();
+        var emn=document.getElementById("emName"); if(emn) emn.textContent = nm2 || "Your child";
+        setTimeout(function(){ emailEl.focus(); }, 80);
+      }
       if(key==="mic"){ var nm3=(nameEl.value||draft.childName||"").trim(); var mn=document.getElementById("micName"); if(mn) mn.textContent = nm3 || "your child"; }
       updateNext();saveDraft();
     }
@@ -683,7 +693,7 @@
       if(key==="name"){ draft.childName=nameEl.value.trim(); if(!draft.childName){ nameEl.focus(); nameEl.style.borderColor="#ef6f23"; return; } }
       if(key==="interests" && selInterests.size===0){ selInterests.add("dragons"); }
       if(key==="sounds" && selSounds.size===0)return;
-      if(key==="email"){ var em=(emailEl.value||"").trim(); if(!/^\S+@\S+\.\S+$/.test(em)){ emailEl.focus(); emailEl.style.borderColor="#ef6f23"; var ee=document.getElementById("emErr"); ee.style.display="block"; ee.textContent="Please enter a valid email to save progress."; return; } draft.email=em; }
+      if(key==="email"){ var em=(emailEl.value||"").trim(); if(!/^\S+@\S+\.\S+$/.test(em)){ emailEl.focus(); emailEl.style.borderColor="#ef6f23"; var ee=document.getElementById("emErr"); ee.style.display="block"; ee.textContent="Please enter a valid email — it is how you sign back in."; return; } draft.email=em; }
       Sona.sfx.tap();
       // (the "building" beat used to fire here and cover the microphone step;
       // it now plays from finish(), between the last answer and the finale)
@@ -797,10 +807,12 @@
       showBuild(function(){
         var ach=steps.achieve,nm=(nameEl.value||draft.childName||"").trim()||"your child";
         document.getElementById("achName").textContent=nm;
+        if(draft.role!=="slp"){document.getElementById("achEmail").style.display="block";document.getElementById("achEmName").textContent=nm;}
         document.body.dataset.setupScreen="achieve";document.body.classList.add("ob-world");ach.classList.add("on");
         bubble.textContent="Ready to play?";nextBtn.disabled=false;nextBtn.textContent="Let's play!";
         nextBtn.onclick=function(){
           nextBtn.disabled=true;
+          try{var em=(document.getElementById("achEmailInput").value||"").trim();if(draft.role!=="slp" && /^\S+@\S+\.\S+$/.test(em)){Sona.saveProfile({email:em,weeklyEmail:true});if(window.SonaAnalytics)SonaAnalytics.track("weekly summary opted in");}}catch(e){}
           try{if(window.SonaAnalytics)SonaAnalytics.track("onboarding completed");}catch(e){}
           var pay=false;try{pay=!(Sona.isFree&&Sona.isFree())&&!(Sona.isSubscribed&&Sona.isSubscribed())&&!(Sona.isPilot&&Sona.isPilot())&&!(Sona.getProfile&&Sona.getProfile().earlyAdopter);}catch(e){}
           if(pay){try{sessionStorage.setItem("sona.gate.v1",String(Date.now()));}catch(e){}}

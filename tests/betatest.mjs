@@ -46,12 +46,14 @@ const ob = await page.evaluate(() => ({
 ok("beta step removed", !ob.betaStep);
 ok("three progress groups match the three setup questions", ob.segs === 3, "segs=" + ob.segs);
 ok("buddy is preselected, so it never needs to be a step", ob.preselected);
-// One door survives the cut: a family who already paid or has a save
-// elsewhere. The clinician door is GONE — the SLP side is hidden (Travis,
-// 19 Sep 2026: not a priority), and a door onto a hidden product is a
-// question every parent would be asked for nobody's benefit.
-ok("the clinician door is off the first screen — the SLP side is hidden", !ob.clinicianDoor);
-ok("…and the returning-family door is still there", ob.restoreDoor);
+// BOTH DOORS ARE BACK. The clinician door was removed on 19 Sep while the
+// SLP side was hidden and restored on 21 Sep when SLPs became the channel —
+// it is the only entrance to the clinician setup flow, so if it goes again
+// that flow becomes dead code. The other is a family who already paid or has
+// a save elsewhere. Both used to be reachable only by answering a question
+// every parent was asked.
+ok("the clinician door is on the first screen — SLPs are the channel", ob.clinicianDoor);
+ok("…and so is the returning-family door", ob.restoreDoor);
 
 // ── one mascot at a time ──
 // Every bubble in setup is Echo speaking, and the buddy is the CHILD's pick.
@@ -289,10 +291,32 @@ ok("every sound chip is open (no SOON)", pickState.total >= 15 && pickState.soon
 await clickNext(); // sounds → mic
 await clickNext(); // mic → finish()
 await page.waitForTimeout(1800);
+// THE WEEKLY-SUMMARY ASK LIVES ON THE FINALE, NOT IN THE STEPS. A parent has
+// no email anywhere else: on the SLP channel the clinician owns the family
+// relationship and Sona's roster deliberately carries no parent contact, so
+// without this there is no route to a parent that does not go through their
+// clinician. It is on the finale rather than as a sixth step because setup
+// once ENDED at a price screen before the child had said a word, and the pin
+// above ("the last setup step is the microphone, not a price or an email")
+// exists to stop that shape coming back in a friendlier costume.
+const finaleAsk = await page.evaluate(() => {
+  const box = document.getElementById("achEmail");
+  return {
+    shown: !!(box && getComputedStyle(box).display !== "none"),
+    named: (document.getElementById("achEmName") || {}).textContent || "",
+    optional: /optional/i.test((box || {}).textContent || ""),
+    cta: document.getElementById("nextBtn").textContent,
+    required: !!document.querySelector("#achEmailInput[required]"),
+  };
+});
+ok("the finale offers the weekly summary, named for the child", finaleAsk.shown && /Zoe/.test(finaleAsk.named), JSON.stringify(finaleAsk));
+ok("…says it is optional, and never blocks the way into the app",
+  finaleAsk.optional && !finaleAsk.required && /play|practice/i.test(finaleAsk.cta), JSON.stringify(finaleAsk));
 const skipFin = await page.evaluate(() => ({
   achieveShown: document.querySelector('[data-step="achieve"]').classList.contains("on"),
   prof: JSON.parse(localStorage.getItem("sona.profile.v1") || "{}"),
 }));
+ok("…and leaving it blank keeps no address", !skipFin.prof.email, JSON.stringify(skipFin.prof.email));
 ok("the parent finish lands on the finale", skipFin.achieveShown && skipFin.prof.onboarded === true && skipFin.prof.childName === "Zoe", JSON.stringify(skipFin.prof));
 ok("open sound picker: S saved next to R", (skipFin.prof.focusSounds || []).includes("S") && (skipFin.prof.focusSounds || []).includes("R"), JSON.stringify(skipFin.prof.focusSounds));
 ok("nobody becomes an SLP by accident", skipFin.prof.role !== "slp", JSON.stringify(skipFin.prof.role));
@@ -428,9 +452,14 @@ ok("today no pageerrors", errs.length === 0);
   ok("…and says where the practice actually lives",
     /stays on this device/i.test(step) && /Backup &amp; restore/i.test(step),
     "a parent who is not told will find out by losing it: " + step.slice(0, 300));
-  // the one promise that IS kept: the email restores a purchase
+  // THIS STEP IS THE CLINICIAN'S. It is in ORDER_SLP and not in ORDER_PARENT,
+  // so the parent-flavoured copy that used to sit here — "your email is how
+  // you get your subscription back" — was unreachable, and untrue besides
+  // while Sona is free. What it promises now is the thing the email actually
+  // is: a passwordless account. The parent's ask moved to the finale.
   ok("…and names the thing the email genuinely does",
-    /subscription back/i.test(step), step.slice(0, 300));
+    /clinician account/i.test(step) && /no password/i.test(step) && !/subscription/i.test(step),
+    step.slice(0, 300));
   // Settings must still carry the mechanism the screen now points at
   const set = readFileSync(ROOT + "/settings.html", "utf8");
   ok("Settings still has Backup & restore to point at",
@@ -465,7 +494,7 @@ ok("today no pageerrors", errs.length === 0);
     Sona.saveProfile({ childName: "Ada", childAge: "7", focusSounds: ["R"], onboarded: true });
     Sona.addCoins(40);
     const old = Sona.exportString();   // the backup they will paste, later
-    Sona.addCoins(60);                 // …and then the child keeps practising
+    Sona.addCoins(60);                 // …and then the child keeps practicing
     sessionStorage.setItem("sona.gate.v1", String(Date.now()));
     return old;
   });

@@ -7,14 +7,16 @@
        The family key rides in ?k=; this page loads none of the ad/analytics scripts,
        and we replaceState to a clean URL immediately so the key never lands in
        a captured pageview URL (the whole reason share links point here and not
-       at the Next landing page, which does load analytics). -->
+       at the Next landing page, which does load analytics). The invite token
+       (?inv=, present when the clinician set this child up ahead of time)
+       rides the same strip for the same reason. -->
   <script>
     (function () {
       try {
         var q = new URLSearchParams(location.search);
-        window.__slp = { code: q.get("slp") || "", key: q.get("k") || "" };
+        window.__slp = { code: q.get("slp") || "", key: q.get("k") || "", inv: q.get("inv") || "" };
         history.replaceState({}, "", "/join.html");
-      } catch (e) { window.__slp = { code: "", key: "" }; }
+      } catch (e) { window.__slp = { code: "", key: "", inv: "" }; }
     })();
   </script>
   <title>Sona — free access from your speech therapist</title>
@@ -59,8 +61,11 @@
          separate decision from access, and saying no costs the family nothing -->
     <div class="jcard" id="jConsent" style="display:none;">
       <div style="font-family:'Baloo 2';font-weight:800;font-size:17px;" id="jConsentTitle">Share progress with your therapist?</div>
-      <p class="muted" style="font-weight:700;font-size:13.5px;line-height:1.5;margin-top:8px;" id="jConsentBody"></p>
-      <p class="muted" style="font-weight:700;font-size:12px;line-height:1.5;margin-top:8px;">They'll see practice days, how many times your child practiced, and how each sound is coming along. <b>Never any audio</b> — recordings stay on this device. Your free access is already unlocked either way.</p>
+      <!-- The whole of what is shared, in one paragraph, with the clinician
+           named: what they see, what they can send, what never leaves, and
+           that stopping deletes rather than hides. Filled in by askConsent()
+           so the clinician's name or clinic can be spoken. -->
+      <p class="muted" style="font-weight:700;font-size:13px;line-height:1.55;margin-top:8px;" id="jConsentBody"></p>
       <button class="jbtn" id="jYes">Yes, share progress</button>
       <button class="jbtn" id="jNo" style="background:#fff;color:var(--muted,#8a6f52);box-shadow:0 5px 0 #f0e4d2;margin-top:10px;">No thanks — just use Sona</button>
     </div>
@@ -76,6 +81,34 @@
         var p = {}; try { p = Sona.getProfile() || {}; } catch (e) {}
         location.href = (p.onboarded || p.childName) ? "/today.html" : "/onboarding.html";
       }
+      // The clinician may have set a first sound to practice ahead of time,
+      // behind an invite token in the link. Claiming it ties THIS device to
+      // that invite, so the target becomes the child's first assignment and
+      // the dashboard knows this child came in through it. The name and age
+      // the clinician's dashboard shows are what the grown-up types here, on
+      // this device — the invite carries only a label, discarded on claim. It
+      // runs ONLY behind Yes: a family that declined sharing has not agreed
+      // to be on the roster at all. Fire-and-forget — the unlock and the
+      // enrolment never wait on it, and the request carries the credential
+      // and the device's own opaque child id, nothing typed here.
+      function claimInvite(code) {
+        var inv = ""; try { inv = (window.__slp && window.__slp.inv) || ""; } catch (e) {}
+        if (!inv) return;
+        var ticket = "", childId = "";
+        try { ticket = localStorage.getItem("sona.slpticket") || ""; } catch (e) {}
+        try { childId = (Sona.pilotInfo() || {}).childId || ""; } catch (e) {}
+        if (!ticket || !childId) return;
+        try {
+          fetch("/api/slp/claim", {
+            method: "POST", headers: { "Content-Type": "application/json" }, keepalive: true,
+            body: JSON.stringify({ code: code, ticket: ticket, childId: childId, inv: inv }),
+          }).then(function (r) { return r.json(); }).then(function (j) {
+            // the clinician's target is written server-side; pull it now if
+            // we are still here, so today's words are theirs from the first open
+            if (j && j.ok && Sona.syncHomework) Sona.syncHomework(true);
+          }).catch(function () {});
+        } catch (e) {}
+      }
       // The credential verified: free access is ALREADY granted (slpRedeem set
       // the device unlock). Sharing is the separate question — enrolling is
       // what actually puts this child on the clinician's dashboard, because
@@ -86,11 +119,14 @@
         form.style.display = "none";
         consent.style.display = "block";
         document.getElementById("jConsentBody").textContent =
-          name ? ("Would you like " + name + " to see your child's practice progress?")
-               : "Would you like your child's speech therapist to see their practice progress?";
+          "If you say yes, " + (name || "your child's speech therapist") + " will see your child's first name and age as you entered them, " +
+          "which sounds they are practicing, practice days and how many tries each day, and a rough pass rate per sound. " +
+          "They can also send practice assignments and a short note to this app. Never any audio; recordings stay on this device. " +
+          "You can stop any time, and stopping deletes everything they could see. Saying no changes nothing; Sona stays free for you.";
         try { if (Sona.confetti) Sona.confetti({ count: 150 }); } catch (e) {}
         document.getElementById("jYes").onclick = function () {
           try { Sona.slpJoinCaseload(code); } catch (e) {}
+          claimInvite(code);
           consent.style.display = "none";
           title.textContent = "All set! 🎉";
           msg.textContent = "Your therapist will see practice progress. Let's meet Echo.";

@@ -66,7 +66,7 @@ the diff.
 
 ## Pricing — one switch, and the cohorts it can never take back
 **Sona is FREE** (Travis, 20 Sep 2026: "make it free" — the long game is
-SLPs championing it, families practising free, and a paid parent view of
+SLPs championing it, families practicing free, and a paid parent view of
 progress later). **When it is paid, it is one plan, yearly, after a 3-day free
 trial — $59.99 for the first 50 families (the charter price), $99.99 after
 that**, and every rule below is written for that state. `FREE_MODE = true` in
@@ -194,15 +194,74 @@ an SLP or clinic anywhere in the product: the SLP channel produces engaged
 families and zero revenue by design. Entitlement is never granted from a URL
 parameter.
 
-**The SLP side is HIDDEN, not deleted** (Travis, 19 Sep 2026: "not a
-priority"). Nothing links to it: the clinician door left onboarding, the
-"working with a speech therapist?" card left the plan screen and the trial
-page, and the SLP pages carry `noindex`. `for-slps.html`, `slp.html`,
-`slp-login.html`, `join.html`, the settings SLP corner (renders only for
-`role === "slp"`) and every `/api/slp/*` route stay, reachable by direct
-link, because clinicians already onboarded and their free-forever families are
-a promise that hiding must not break. `betatest`, `progtest` and `slpcode`
-pin the doors shut.
+**THE SLP SIDE IS THE CHANNEL** (Travis, 21 Sep 2026: "im keeping it free.
+targetting slps first"). It was hidden on 19 Sep as "not a priority" and that
+is now reversed: the clinician door is back on the first setup screen — it is
+the only entrance to `ORDER_SLP`, so removing it again makes that whole
+branch dead code — `for-slps.html` is indexable and linked from the landing
+footer, and `betatest` pins the door OPEN.
+
+Still `noindex`, correctly: `slp.html` and `slp-login.html` (a private
+dashboard and its login) and `join.html` (a family's redemption link, which
+carries a credential in the URL). Those are surfaces, not marketing.
+
+Not restored, deliberately: the "working with a speech therapist?" card on the
+plan screen and the trial page. Sona is free, so neither screen renders —
+bringing them back now would be copy nobody sees, and `progtest` and
+`slpcode` pin their absence. They return with pricing, if at all.
+
+## The clinician's dashboard: carryover, in the honest register
+**The SLP dashboard (`public/slp.html`) is built around ONE problem — carryover
+(Travis, 21 Sep 2026):** a child goes home, practices, and the clinician can
+see that it happened and paste it into a note. Not "assigning homework"
+(table stakes), not income. So the page is Today (who practiced this week,
+who went quiet, what ends soon — one action per row) → Caseload (every child,
+oldest-practiced first, **Copy note on every row**) → a child page (8-week
+strip, pass rate by sound and position, the current homework, the composer)
+→ Settings. Reviewed by three lenses — a school SLP, a district privacy
+officer, an engineer — whose rulings are now rules:
+- **Register.** "Pass rate" (defined on the page as "did that sound like this
+  sound"), "practice", "homework". Never "accuracy", "score", "adherence",
+  "therapy", "treatment", "diagnosis", and no credential in an example name.
+  `tests/slptest.mjs` scans the page with comments stripped.
+- **`SMALL_N = 20`.** Under twenty attempts a pass rate is "too few to read"
+  and no percentage is shown — anywhere: table, grid, strip, note, CSV. One
+  constant; whether a percentage is shown at all is Rachel's call.
+- **The note is a fixed template** and carries its own hedge: "Between {start}
+  and {end}, {Name} practiced on {n} of {N} days ({avg} tries a day). {Sound}
+  in {position}: {pass}% pass rate over {attempts} attempts. A practice
+  snapshot from at-home listening on the family's device; not an evaluation."
+  Window = the current homework, else the last 14 days. Never an age.
+- **No caseload-wide average.** An unweighted mean of percentages across
+  children is meaningless; the one number is "N of M children practiced this
+  week". No leaderboard, no ranking, no comparison across families — a
+  district officer ends the app's use on that alone.
+- **Invites hold initials, never a name.** The SLP may add a child before the
+  family joins, but the placeholder is a label ("MK"), an optional age and a
+  target; the family types the name when they join, so nobody at a school or
+  clinic ever sends Sona a student's name. Unclaimed invites delete
+  themselves after 30 days. The claim fires only on the parent's "Yes, share
+  progress" — never on link open — and "No thanks" leaves the SLP seeing "not
+  joined", never "declined".
+- **Remove means delete.** Removing a child deletes the roster row and the
+  homework AND tombstones the child (`slpgone:<code>`) so the device's next
+  sync cannot resurrect them; the dialog promises exactly that, and that
+  nothing on the family's device is touched. The words ship only with the
+  routes.
+- **One family door.** Every generated link is `join.html?slp=CODE&k=KEY`
+  (`&inv=TOKEN` per child). The message says "free", never "pilot" or "trial".
+
+**The affiliate program, when it is built, is CREATOR-ONLY** (Travis, 21 Sep
+2026 — settled, do not re-open). An SLP who makes content and brings in
+families from outside their own client base can earn on it. An SLP never
+earns on a family from their own caseload: a clinician taking a per-sale
+commission for recommending a product to their own clients is a referral fee
+under several state practice acts, and two of those reach the party OFFERING
+the payment as well as the clinician. So the rule is enforced in code, not by
+trust — a payout is structurally impossible for any family that arrived
+through that clinician's caseload code or sits on their roster — and the
+clinician's free dashboard never depends on how many of their families
+upgrade.
 
 ## The day: practice, then games
 **The books are parked, and Home leads with practice (Travis, 19 Sep 2026).**

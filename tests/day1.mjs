@@ -426,7 +426,7 @@ async function home(age) {
     localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Ada", childAge: "7", focusSounds: ["R"], onboarded: true }));
   });
 
-  // a child who has never practised is STARTING, and the button says so once
+  // a child who has never practiced is STARTING, and the button says so once
   await pg.evaluate(() => { localStorage.removeItem("sona.demo.v1"); });
   await pg.goto("http://localhost:8178/today.html"); await pg.waitForTimeout(800);
   ok("a brand-new child is invited to start, not to resume",

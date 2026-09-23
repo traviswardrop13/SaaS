@@ -15,6 +15,7 @@ const SUITES = [
   "storytest.mjs", // STORY1: episode beats, chapter pacing, cliffhanger
   "kidtest.mjs",   // KIDS1: per-child progress, switching, family-wide entitlement
   "slpcode.mjs",   // CODES1: SLP family credential — verified redemption, honest gate
+  "slpapi.mjs",    // SLPAPI1: the clinician's roster — invites ahead of the family, removal, meta the device can't overwrite
   "ttsroutetest.mjs", // voice provider, delivery cache, safe fallback and request deadline
   "voiceclienttest.mjs", // actual playback source, old-cache refresh and complete spoken turns
   "chargepacingtest.mjs", // listen/model/child-turn handoff and replay ordering
@@ -45,6 +46,7 @@ const SUITES = [
   "mictest.mjs",   // MIC1: a declined mic is never a dead end; the consent copy is true
   "hwtest.mjs",    // HW1: SLP homework replaces what the app would have picked
   "pauseaudiotest.mjs", // interrupted playback and native starts cannot outlive their practice phase
+  "slptest.mjs",   // SLP1: the clinician dashboard — live Today, honest register, one door, real remove, the note
   "arttest.mjs",   // ART1: every sticker renders, fits its box and stays in the safe band
 ];
 

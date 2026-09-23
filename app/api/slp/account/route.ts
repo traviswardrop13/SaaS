@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
   const s = readSession(req);
   if (!s) return NextResponse.json({ ok: false, error: "Not signed in." }, { status: 401 });
 
-  let body: { name?: string; clinic?: string; code?: string };
+  let body: { name?: string; clinic?: string; code?: string; rotateKey?: boolean };
   try {
     body = await req.json();
   } catch {
@@ -63,6 +63,17 @@ export async function POST(req: NextRequest) {
       if (own && String(own) === s.email) acct.code = cand;
     }
   }
+  // ROTATE: a fresh family key on request, minted by the one function that
+  // mints them. What it does and does not do — a clinician should know both
+  // before they tap it:
+  //   - every link and handout carrying the OLD key stops redeeming at once —
+  //     the caseload link and every per-child invite alike — which is the
+  //     point (a link that got forwarded too far dies here);
+  //   - families ALREADY enrolled keep syncing, because /api/pilot and
+  //     /api/homework trust the enrolment ticket their device was handed at
+  //     redeem time, not the key. Rotating never knocks a real child off the
+  //     dashboard; it only closes the door to new redemptions on the old link.
+  if (body.rotateKey === true && acct.code) acct.familyKey = makeFamilyKey();
   // every account with a code carries a family key — the "password" half of
   // the credential that unlocks Sona free for that SLP's families
   if (acct.code && !acct.familyKey) acct.familyKey = makeFamilyKey();
