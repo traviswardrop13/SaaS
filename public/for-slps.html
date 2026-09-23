@@ -20,21 +20,23 @@
   </script>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>See who practiced at home — Sona for SLPs</title>
-  <!-- Indexable since 21 Sep 2026: SLPs are the channel, so the page that
-       explains Sona to them is the one page that must be findable. The
-       dashboard, the login and the family redemption page stay noindex —
-       those are private surfaces, not marketing. -->
+  <!-- speaksona.com. next.config.js rewrites / to this file, so this is the
+       page the ads land on and the one a clinician finds by searching.
+       Indexable on purpose; the dashboard, its login and the family's
+       redemption link stay noindex — those are private surfaces.
+
+       Built from the 23 Sep 2026 design handoff. Where the handoff's copy
+       promised something the product does not do, the page says what the
+       product does instead; the PR that shipped this lists each change. -->
   <meta name="description" content="Give every family on your caseload a speech home-practice app — free. You assign the sound and the position; practice days, reps and pass rate roll up to your dashboard. No audio ever leaves the child's device. Built with a licensed pediatric SLP (Clinical Fellow)." />
   <link rel="canonical" href="https://speaksona.com/" />
 
   <!-- WHAT A SHARED LINK LOOKS LIKE. The growth plan is SLPs telling other
        SLPs, which means the link gets pasted into a Facebook group, a district
        Slack and a text message — and a link with no card is a grey box with a
-       URL in it. The old root was the Next page, which got its title and icons
-       from app/layout.tsx; rewriting / to this static page left it with none,
-       so this page carries its own.
-
-       Absolute URLs, because a scraper resolves these against nothing. -->
+       URL in it. This page is static and inherits nothing from app/layout.tsx,
+       so it carries its own. Absolute URLs, because a scraper resolves these
+       against nothing. -->
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="Sona" />
   <meta property="og:url" content="https://speaksona.com/" />
@@ -46,290 +48,497 @@
   <meta property="og:image:alt" content="Sona for SLPs — see who actually practiced at home. Free for SLPs." />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="See who actually practiced at home." />
-  <meta name="twitter:description" content="Free home-practice for your whole caseload. You assign the sound; the practice comes back to your dashboard." />
+  <meta name="twitter:description" content="Free home practice for your whole caseload. You assign the sound; the practice comes back to your dashboard." />
   <meta name="twitter:image" content="https://speaksona.com/og-slp.png" />
 
-  <!-- The bird with no card behind him: the old icon carried a cream
-       rounded square that showed as a pale box against a dark tab bar. The
-       home-screen icons below keep their background on purpose — iOS fills a
-       transparent home-screen icon with black. -->
+  <!-- The bird with no card behind him. The home-screen icon keeps its
+       background on purpose: iOS fills a transparent one with black. -->
   <link rel="icon" type="image/png" href="/favicon.png" />
   <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-  <link href="/fonts.css" rel="stylesheet">
   <link rel="manifest" href="/manifest.webmanifest" />
-  <meta name="theme-color" content="#1cb0f6" />
+  <meta name="theme-color" content="#31B8C6" />
+
+  <!-- Self-hosted Baloo 2 and Nunito, not Google Fonts: every weight the
+       design uses is in the variable files, and a page whose privacy section
+       says what third parties it talks to should not add one for typefaces. -->
+  <link href="/fonts.css" rel="stylesheet">
+
   <!-- THE AD LANDS HERE, SO THE PIXEL BELONGS HERE. The root used to be the
        Next page, which loads this from app/layout.tsx; rewriting / to this
-       static page took the pixel off the landing page without anyone noticing,
-       and a campaign with no PageView and no Lead optimises on clicks — it
-       buys the people most likely to tap an ad rather than the people most
-       likely to be clinicians who sign up.
-
-       Nothing a child ever sees loads this: not the practice pages, not
-       join.html (which strips the family key before any script runs), not the
-       dashboard. No event below carries a name, an age or a child. -->
+       static page once took the pixel off the landing page without anyone
+       noticing, and a campaign with no PageView and no Lead optimises on
+       clicks. Nothing a child ever sees loads it (tests/telemetrytest.mjs
+       holds the list), and no event below carries a name, an age or a child.
+       The privacy answers further down say it is here. -->
   <script src="/pixel.js"></script>
   <script src="/analytics.js"></script>
   <style>
-    :root{ --blue:#1cb0f6; --blue-d:#1597d4; --green:#58cc02; --green-d:#46a302; --ink:#16384f; --muted:#6b86a3; }
-    *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;font-family:"Nunito",-apple-system,"Segoe UI",Roboto,sans-serif;}
-    body{background:linear-gradient(180deg,#eef7ff,#eafbe9 70%);color:var(--ink);}
-    .wrap{max-width:760px;margin:0 auto;padding:calc(20px + env(safe-area-inset-top)) 20px 56px;}
-    .top{display:flex;align-items:center;gap:8px;font-family:"Baloo 2";font-weight:800;font-size:18px;color:var(--blue-d);}
-    .top img{width:30px;height:30px;}
-    .top a{margin-left:auto;font-size:14px;color:var(--blue-d);text-decoration:none;font-weight:800;}
-    .hero{text-align:center;margin-top:24px;}
-    .pill{display:inline-block;background:#eafce9;color:var(--green-d);font-weight:800;font-size:12.5px;border-radius:99px;padding:6px 14px;}
-    h1{font-family:"Baloo 2";font-weight:800;font-size:33px;line-height:1.1;margin-top:12px;}
-    h1 span{color:var(--blue-d);}
-    p.sub{color:var(--muted);font-weight:700;font-size:16px;line-height:1.5;max-width:560px;margin:12px auto 0;}
-    .cta{display:inline-block;margin-top:22px;border:none;border-radius:16px;padding:16px 30px;font-family:"Baloo 2";font-weight:800;font-size:18px;text-transform:uppercase;letter-spacing:.03em;color:#fff;background:linear-gradient(180deg,#5fd216,#46a302);box-shadow:0 6px 0 #3c8c02;text-decoration:none;}
-    .cta:active{transform:translateY(3px);box-shadow:0 3px 0 #3c8c02;}
-    .free{display:block;color:var(--muted);font-weight:800;font-size:12.5px;margin-top:10px;text-transform:uppercase;letter-spacing:.05em;}
-    .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:34px;}
-    @media(max-width:560px){ .grid{grid-template-columns:1fr;} h1{font-size:27px;} }
-    .feat{background:#fff;border-radius:18px;padding:18px;box-shadow:0 10px 26px -18px rgba(20,90,160,.5);}
-    .feat .e{font-size:26px;}
-    .feat h3{font-family:"Baloo 2";font-weight:800;font-size:16px;margin-top:8px;}
-    .feat p{color:var(--muted);font-weight:700;font-size:13.5px;line-height:1.5;margin-top:4px;}
-    .steps{background:#fff;border-radius:18px;padding:20px;margin-top:26px;box-shadow:0 10px 26px -18px rgba(20,90,160,.5);}
-    .steps h2{font-family:"Baloo 2";font-weight:800;font-size:19px;text-align:center;}
-    .step{display:flex;gap:12px;align-items:flex-start;margin-top:14px;}
-    .step .num{flex:0 0 auto;width:30px;height:30px;border-radius:50%;background:var(--blue);color:#fff;font-family:"Baloo 2";font-weight:800;display:flex;align-items:center;justify-content:center;}
-    .step div b{font-family:"Baloo 2";}
-    .step p{color:var(--muted);font-weight:700;font-size:13.5px;line-height:1.5;margin-top:2px;}
-    .midcta{text-align:center;margin-top:30px;}
-    .modal{display:none;position:fixed;inset:0;z-index:90;background:rgba(14,46,72,.55);padding:20px;overflow-y:auto;}
-    .modal.open{display:flex;align-items:center;justify-content:center;}
-    .sheet{position:relative;background:#fff;border-radius:22px;padding:28px 24px 22px;max-width:430px;width:100%;box-shadow:0 30px 70px -30px rgba(10,40,70,.6);text-align:left;animation:pop .18s ease-out;}
-    @keyframes pop{from{transform:translateY(10px) scale(.98);opacity:0;}to{transform:none;opacity:1;}}
-    .sheet .x{position:absolute;top:10px;right:12px;border:none;background:none;font-size:30px;line-height:1;color:var(--muted);cursor:pointer;padding:4px 8px;}
-    .mTitle{font-family:"Baloo 2";font-weight:800;font-size:22px;color:var(--ink);padding-right:26px;}
-    .mSub{color:var(--muted);font-weight:700;font-size:14px;line-height:1.5;margin-top:6px;}
-    .sheet input{width:100%;border:2px solid #d9e6f2;border-radius:14px;padding:14px;font-size:16px;font-weight:700;color:var(--ink);background:#fff;font-family:inherit;}
-    .sheet input:focus{outline:none;border-color:var(--blue);}
-    .mFine{font-size:11.5px;color:var(--muted);font-weight:700;line-height:1.6;margin-top:14px;}
-    .mFine a{color:var(--blue-d);}
-    .signup{background:#fff;border-radius:20px;padding:22px;margin-top:26px;box-shadow:0 14px 34px -20px rgba(20,90,160,.55);text-align:left;}
-    .signup.sent{text-align:center;}
-    .sfl{display:block;font-weight:800;font-size:13px;color:var(--muted);margin-bottom:8px;}
-    .srow{display:flex;gap:10px;flex-wrap:wrap;}
-    .srow input{flex:1;min-width:210px;border:2px solid #d9e6f2;border-radius:14px;padding:15px;font-size:16px;font-weight:700;color:var(--ink);background:#fff;font-family:inherit;}
-    .srow input:focus{outline:none;border-color:var(--blue);}
-    .cta.go{margin-top:0;padding:15px 26px;font-size:16px;border:none;cursor:pointer;white-space:nowrap;}
-    .serr{color:#e0457b;font-weight:800;font-size:13px;margin-top:9px;min-height:17px;}
-    .signup .free{margin-top:10px;text-align:left;}
-    .signup.sent .free{text-align:center;}
-    .devbox{margin-top:14px;background:#fff7e6;border:1px solid #ffe2a8;border-radius:12px;padding:11px 13px;font-size:12px;font-weight:700;color:#8a6400;line-height:1.5;word-break:break-all;}
-    @media(max-width:560px){ .srow input{min-width:100%;} .cta.go{width:100%;} }
-    .note{font-size:11.5px;color:var(--muted);font-weight:700;text-align:center;margin-top:26px;line-height:1.6;}
-    .note a{color:var(--blue-d);}
+    :root{
+      --bg:#FFFAF3; --ink:#2D2A4B; --body:#4A4766; --muted:#7A7690; --line:#F0E8DB; --line2:#E8DFD0;
+      --teal:#31B8C6; --teal-d:#0E7C89; --teal-dd:#0E6E7A; --teal-sh:#09545D; --teal-p:#DDF4F6;
+      --yel:#FFD43B; --yel-p:#FFE9A8; --coral:#FF6B6B; --coral-p:#FFE1DE;
+    }
+    *{box-sizing:border-box;}
+    /* the flex rules below would otherwise beat the hidden attribute */
+    [hidden]{display:none !important;}
+    /* clip, not hidden: hidden makes body a scroll container and the sticky
+       header stops sticking. The mascot pokes past the hero's edge on phones. */
+    html,body{overflow-x:clip;}
+    body{margin:0;background:var(--bg);color:var(--ink);font-family:Nunito,system-ui,sans-serif;-webkit-font-smoothing:antialiased;}
+    a{color:var(--teal-dd);text-decoration:underline;text-underline-offset:3px;}
+    a:hover{color:#094E57;}
+    h1,h2{font-family:"Baloo 2",Nunito,sans-serif;font-weight:800;margin:0;text-wrap:balance;}
+    h2{font-size:clamp(34px,4.4vw,52px);line-height:1;letter-spacing:-1px;}
+    p{margin:0;}
+    .wrap{max-width:1200px;margin:0 auto;padding-left:24px;padding-right:24px;}
+    .baloo{font-family:"Baloo 2",Nunito,sans-serif;font-weight:800;}
+    .pill{font-weight:800;font-size:13px;letter-spacing:.4px;color:var(--teal-dd);background:var(--teal-p);padding:7px 14px;border-radius:999px;align-self:flex-start;}
+
+    /* chunky buttons: a darker 5px shelf that the button presses down onto */
+    .btn{height:58px;padding:0 26px;border:none;border-radius:16px;background:var(--teal-d);color:#fff;font:800 18px "Baloo 2",Nunito,sans-serif;cursor:pointer;white-space:nowrap;box-shadow:0 5px 0 var(--teal-sh);transition:transform .06s,box-shadow .06s;}
+    .btn:active{transform:translateY(4px);box-shadow:0 1px 0 var(--teal-sh);}
+    .btn:disabled{opacity:.7;cursor:default;}
+    .btn.yel{height:60px;padding:0 30px;font-size:19px;background:var(--yel);color:var(--ink);box-shadow:0 5px 0 #C99A00;}
+    .btn.yel:active{box-shadow:0 1px 0 #C99A00;}
+
+    /* header */
+    header{position:sticky;top:0;z-index:20;background:rgba(255,250,243,.9);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);}
+    .hbar{display:flex;align-items:center;justify-content:space-between;gap:16px;padding-top:12px;padding-bottom:12px;}
+    .brand{display:flex;align-items:center;gap:10px;color:var(--ink);text-decoration:none;}
+    .brand img{width:40px;height:40px;display:block;}
+    .brand b{font-family:"Baloo 2",Nunito,sans-serif;font-weight:800;font-size:26px;letter-spacing:-.5px;line-height:1;}
+    .brand span{font-weight:800;font-size:12px;color:var(--teal-dd);background:var(--teal-p);padding:4px 10px;border-radius:999px;}
+    nav{display:flex;align-items:center;gap:20px;font-weight:700;font-size:15px;}
+    nav a{color:var(--body);text-decoration:none;}
+    nav a.signin{color:var(--ink);border:2px solid var(--line2);padding:8px 16px;border-radius:12px;}
+    @media(max-width:620px){ nav a.nl{display:none;} }
+
+    /* hero */
+    .hero{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,440px),1fr));gap:56px;align-items:center;padding-top:72px;padding-bottom:56px;}
+    .hero-l{display:flex;flex-direction:column;gap:24px;}
+    .hero h1{font-size:clamp(44px,6.2vw,78px);line-height:.96;letter-spacing:-2px;}
+    .lede{font-size:20px;line-height:1.55;color:var(--body);max-width:500px;text-wrap:pretty;}
+    .signup{display:flex;flex-direction:column;gap:10px;max-width:520px;}
+    .srow{display:flex;flex-wrap:wrap;gap:10px;}
+    .signup input{height:58px;padding:0 20px;border-radius:16px;border:2px solid var(--line2);background:#fff;font:600 17px Nunito,sans-serif;color:var(--ink);width:100%;}
+    .srow input{flex:1 1 230px;width:auto;}
+    .signup input:focus{outline:none;border-color:var(--teal);}
+    .srow .btn{flex:none;}
+    @media(max-width:480px){ .srow .btn{flex:1 1 100%;} }
+    .serr{color:#B83A3A;font-weight:800;font-size:14px;min-height:0;}
+    .serr:empty{display:none;}
+    .hnote{font-size:14px;font-weight:700;color:var(--muted);}
+    .sent{display:flex;flex-direction:column;gap:6px;max-width:520px;background:#fff;border:2px solid #BFEFF3;border-radius:18px;padding:16px 20px;}
+    .sent .t{font-family:"Baloo 2",Nunito,sans-serif;font-weight:800;font-size:22px;color:var(--teal-dd);}
+    .sent .m{font-size:15px;color:var(--body);line-height:1.5;}
+    .sent .straight{font-weight:800;}
+    .sent .again{font-size:13px;color:var(--muted);}
+    .devbox{margin-top:6px;background:#fff7e6;border:1px solid #ffe2a8;border-radius:12px;padding:10px 12px;font-size:12px;font-weight:700;color:#8a6400;line-height:1.5;word-break:break-all;}
+
+    .hero-r{position:relative;min-height:500px;display:flex;align-items:center;justify-content:center;}
+    .sun{position:absolute;width:min(92%,460px);aspect-ratio:1;border-radius:50%;background:var(--yel-p);top:0;right:0;}
+    .mascot{position:absolute;width:210px;right:-6px;top:-24px;z-index:3;transform:rotate(8deg);}
+    @media(max-width:520px){ .mascot{width:150px;right:-4px;top:-10px;} }
+    .cl{position:relative;z-index:2;width:min(100%,400px);background:#fff;border-radius:26px;box-shadow:0 2px 0 #EFE6D6,0 30px 60px -24px rgba(45,42,75,.35);padding:22px;display:flex;flex-direction:column;gap:12px;margin-top:80px;}
+    .cl .h{font-family:"Baloo 2",Nunito,sans-serif;font-weight:800;font-size:21px;}
+    .kid{display:grid;grid-template-columns:1fr auto;gap:8px 12px;align-items:center;padding:14px;border-radius:16px;background:#F6FBFB;}
+    .kid.quiet{background:#FFF3F1;}
+    .kid .n{font-weight:800;font-size:16px;}
+    .kid .n i{font-style:normal;font-weight:700;color:var(--muted);font-size:14px;}
+    .kid .r{font-family:"Baloo 2",Nunito,sans-serif;font-weight:800;font-size:19px;color:var(--teal-dd);}
+    .kid.quiet .r{font-size:15px;color:#B83A3A;}
+    .days{display:flex;gap:4px;}
+    .days span{width:24px;height:10px;border-radius:5px;background:#E6E1D8;}
+    .days span.on{background:var(--teal);}
+    .kid .s{font-size:13px;font-weight:700;color:var(--muted);}
+
+    /* facts */
+    .facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:12px;padding-bottom:24px;}
+    .fact{background:#fff;border:2px solid var(--line);border-radius:20px;padding:20px 22px;display:flex;flex-direction:column;gap:4px;}
+    .fact b{font-family:"Baloo 2",Nunito,sans-serif;font-weight:800;font-size:22px;}
+    .fact span{font-size:15px;color:var(--body);}
+
+    /* how it works */
+    .how{padding-top:96px;padding-bottom:72px;display:flex;flex-direction:column;gap:40px;}
+    .how h2{max-width:700px;}
+    .steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:20px;}
+    .step{border-radius:28px;padding:28px;display:flex;flex-direction:column;gap:18px;}
+    .step .k{font-family:"Baloo 2",Nunito,sans-serif;font-weight:800;font-size:18px;}
+    .step p{font-size:17px;line-height:1.5;color:var(--ink);}
+    .s1{background:var(--teal-p);} .s1 .k{color:var(--teal-dd);}
+    .s2{background:var(--yel-p);} .s2 .k{color:#7A5200;}
+    .s3{background:var(--coral-p);} .s3 .k{color:#A33131;}
+    .chips{display:flex;flex-wrap:wrap;gap:8px;}
+    .chips span{background:#fff;border-radius:999px;padding:8px 14px;font-weight:800;font-size:14px;}
+    .chips span.on{background:var(--teal-d);color:#fff;}
+    .bubble{background:#fff;border-radius:18px 18px 18px 4px;padding:12px 16px;font-size:14px;font-weight:600;line-height:1.45;color:var(--body);max-width:300px;}
+    .bubble u{color:var(--teal-dd);text-decoration:none;word-break:break-all;}
+    .bars{display:flex;align-items:flex-end;gap:8px;height:64px;}
+    .bars span{flex:1;background:#fff;border-radius:8px;}
+    .bars span.hi{background:var(--coral);}
+
+    /* the kid side */
+    .kidside{background:var(--teal);padding:88px 24px;}
+    .kidside .in{max-width:1200px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:48px;align-items:center;}
+    .kidside .txt{display:flex;flex-direction:column;gap:22px;color:#0F2F36;}
+    .kidside .txt p{font-size:19px;line-height:1.55;max-width:480px;text-wrap:pretty;}
+    .kidside .chips span{font-size:15px;padding:9px 16px;}
+    .phones{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+    .phone{aspect-ratio:9/17;border-radius:32px;border:6px solid #0F2F36;overflow:hidden;background:#0F2F36;}
+    .phone img{width:100%;height:100%;object-fit:cover;object-position:top;display:block;}
+    .phone.lo{margin-top:48px;}
+
+    /* before you assign */
+    .before{padding-top:96px;padding-bottom:40px;display:flex;flex-direction:column;gap:36px;}
+    .before .intro{display:flex;flex-direction:column;gap:12px;max-width:680px;}
+    .before .intro p{font-size:18px;line-height:1.55;color:var(--body);}
+    .notes{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:16px;}
+    .note{display:flex;flex-direction:column;gap:8px;padding:24px;border-radius:22px;background:#fff;border:2px solid var(--line);}
+    .note b{font-family:"Baloo 2",Nunito,sans-serif;font-weight:800;font-size:21px;line-height:1.15;}
+    .note p{font-size:15px;line-height:1.55;color:var(--body);}
+
+    /* privacy */
+    .privacy{padding-top:72px;padding-bottom:96px;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:48px;align-items:start;}
+    .privacy .l{display:flex;flex-direction:column;gap:16px;}
+    .privacy .l p{font-size:18px;line-height:1.55;color:var(--body);}
+    .privacy .l p.more{font-size:15px;}
+    .faq{display:flex;flex-direction:column;gap:10px;}
+    .q{background:#fff;border:2px solid var(--line);border-radius:20px;overflow:hidden;}
+    .q button{width:100%;display:flex;justify-content:space-between;align-items:center;gap:16px;padding:20px 22px;background:none;border:none;cursor:pointer;text-align:left;font:800 19px "Baloo 2",Nunito,sans-serif;color:var(--ink);}
+    .q button span{font-size:24px;color:var(--teal-d);flex:none;transition:transform .15s;}
+    .q button[aria-expanded="true"] span{transform:rotate(45deg);}
+    .q .a{padding:0 22px 20px;font-size:15px;line-height:1.6;color:var(--body);}
+    .q .a[hidden]{display:none;}
+
+    /* final call */
+    .final{padding:0 24px 72px;}
+    .final .in{max-width:1200px;margin:0 auto;background:var(--ink);border-radius:36px;padding:64px 40px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:32px;color:#fff;}
+    .final .l{display:flex;align-items:center;gap:28px;flex-wrap:wrap;}
+    .final img{width:120px;height:120px;}
+    .final .t{display:flex;flex-direction:column;gap:8px;max-width:520px;}
+    .final h2{font-size:clamp(32px,4vw,46px);}
+    .final p{font-size:17px;color:#D9D6EA;}
+    @media(max-width:520px){ .final .in{padding:44px 24px;} .final .btn{width:100%;} }
+
+    footer{display:flex;flex-wrap:wrap;justify-content:space-between;gap:16px;font-size:14px;color:var(--muted);padding-bottom:48px;}
+    footer .d{max-width:560px;}
+    footer .links{display:flex;gap:18px;}
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <div class="top"><img src="/coach/echo/echo-avatar.svg" alt="Sona"/> Sona <a href="/slp-login.html">Sign in →</a></div>
 
-    <div class="hero">
-      <span class="pill">✓ Built with a licensed pediatric SLP (Clinical Fellow)</span>
-      <h1>See who actually <span>practiced at home</span>.</h1>
-      <p class="sub">You assign the sound and the position. Sona makes it what the child practices next — and the days, the reps and the pass rate come back to your dashboard. Free for you, free for every family on your caseload.</p>
-
-      <button class="cta" id="openModal">Get my free dashboard</button>
-      <span class="free">One email · no password · no credit card</span>
-    </div>
-
-    <!-- CLAIMS TO CLINICIANS. This page is the one place Sona describes what
-         its listening actually does to somebody qualified to judge it, so a
-         stale claim here is a clinical claim, not marketing drift. It said
-         "real phoneme-level scoring" and "a recording is sent to our
-         pronunciation-scoring provider" long after the cloud scorer was
-         removed — the second one contradicted the app's hardest rule to the
-         exact audience that would have refused it on those grounds. Both are
-         corrected. How the remaining pass rate should be CHARACTERISED to an
-         SLP is still Rachel's wording (see CLAUDE.md); what is here now is the
-         conservative version. -->
-    <div class="grid">
-      <div class="feat"><div class="e">🎧</div><h3>It actually listens</h3><p>Every attempt is checked on the phone against the acoustic shape of the target sound — not a sticker for tapping. Kids get instant feedback at home. It will never tell a child a wrong sound was perfect, and it will never count silence.</p></div>
-      <div class="feat"><div class="e">🎯</div><h3>You set the target</h3><p>Pick the sound, the position (initial / medial / final / vocalic R / blends), and a daily goal. The family link drops them straight onto it.</p></div>
-      <div class="feat"><div class="e">📈</div><h3>Progress rolls up to you</h3><p>Practice days, reps, and pass rate broken out by sound <em>and</em> by position for every family — initial, medial, final, vocalic R, blends — so you walk into each session already knowing where the work went.</p></div>
-      <div class="feat"><div class="e">👨‍👩‍👧</div><h3>Unlimited families</h3><p>Add every kid on your caseload. One link per family, ~30-second setup, and they're practicing — at no cost to them or you.</p></div>
-      <div class="feat"><div class="e">🔒</div><h3>Private by design</h3><p>First name only, no recording ever leaves the child&rsquo;s device, and the parent — never you — enters the name and gives consent. Your reviewer&rsquo;s questions are answered below.</p></div>
-      <div class="feat"><div class="e">🦜</div><h3>Kids want to play it</h3><p>A town to explore, games, coins, a sticker book — the carryover engine that gets reps in between your sessions.</p></div>
-    </div>
-
-    <div class="steps">
-      <h2>How it works</h2>
-      <div class="step"><div class="num">1</div><div><b>Create your free account</b><p>One email, one tap. Pick a short code (your name or clinic) so we can group your families.</p></div></div>
-      <div class="step"><div class="num">2</div><div><b>Send each family their link</b><p>Set the target if you like, copy the ready-made message, and send. They set up their child in about 30 seconds.</p></div></div>
-      <div class="step"><div class="num">3</div><div><b>Watch the practice add up</b><p>Every family's practice days and home reps appear on your dashboard — yours to use in sessions, notes, and parent updates.</p></div></div>
-    </div>
-
-    <div class="steps" style="margin-top:26px;">
-      <h2>What to know before you assign it</h2>
-      <div class="step"><div class="num">✓</div><div><b>It supplements your therapy — it doesn't replace it</b><p>Sona is a home-practice tool for carryover. It doesn't diagnose, evaluate, or set goals — you do. Think of it as the worksheet that listens.</p></div></div>
-      <div class="step"><div class="num">🎧</div><div><b>What the check can and cannot tell you</b><p>Sona decides on-device whether what it heard has the acoustic shape of the target sound. That is a narrower question than whether the word was produced correctly, and it is not a substitute for your ear — read the numbers as practice volume with a rough pass rate attached, not as a score. It will never call a wrong sound perfect and it will never count silence as a rep.</p></div></div>
-      <div class="step"><div class="num">🗣️</div><div><b>Accent &amp; dialect</b><p>The on-device check is tuned to General American English. It may mark features of regional, dialectal, or bilingual speech (e.g. AAVE or Spanish-influenced English) as misses — please use your clinical judgment when choosing targets and when reading the pass rate.</p></div></div>
-      <div class="step"><div class="num">📅</div><div><b>Pick developmentally-appropriate targets</b><p>Assign sounds the child is ready for — e.g. vocalic R isn't typically expected until ~age 7. Sona practices the targets you set; it doesn't decide readiness.</p></div></div>
-      <div class="step"><div class="num">🔒</div><div><b>How a child's audio is handled</b><p>No audio ever leaves the device. There is no cloud scorer and no third-party listener — every check happens on the phone itself, and there is no mechanism in the app that could upload a clip. One practice clip a day may be kept in the phone's own storage so a parent can listen back; it is never sent anywhere. First name only, and a parent sets the child up and consents. Nothing here for clinic IT to review.</p></div></div>
-    </div>
-
-    <div class="steps" style="margin-top:26px;">
-      <h2>What your IT or compliance reviewer will ask, answered</h2>
-      <div class="step"><div class="num">🎙️</div><div><b>Is a child&rsquo;s voice recorded or sent anywhere?</b><p>No. Every check happens on the child&rsquo;s own phone, and there is no route in the product that accepts audio — not a setting that is switched off, an absence of any mechanism. One clip a day may be kept in that phone&rsquo;s own storage so a parent can listen back; it stays there.</p></div></div>
-      <div class="step"><div class="num">✍️</div><div><b>Who gives Sona the child&rsquo;s name — me, or the parent?</b><p>The parent, on their own device, after consenting. When you add a child ahead of time you type initials or a nickname, and Sona discards even that once the family joins. You never send Sona a student&rsquo;s name, which is what keeps this a parent-initiated disclosure rather than a school record shared with a vendor.</p></div></div>
-      <div class="step"><div class="num">📋</div><div><b>What is stored, and where?</b><p>On our server: your account (email, name, clinic, your code), and for each consenting family the child&rsquo;s first name and age as the parent typed them, the sounds being practiced, practice days and counts, a pass rate per sound, and the assignments you set. Hosted on Vercel; stored in Upstash; sign-in links sent by Resend; analytics (PostHog) on grown-up pages only, never on a child&rsquo;s screen. No advertising, no sale of data, no profiling.</p></div></div>
-      <div class="step"><div class="num">🗑️</div><div><b>How is it deleted?</b><p>Three ways, all immediate: the parent taps &ldquo;stop sharing&rdquo; in the app; you remove the child from your caseload; or it ages out about 150 days after your caseload last received practice. Removal is a real delete, and the child&rsquo;s device is marked so later practice cannot rebuild the record. A pending invite nobody opens deletes itself after 30 days.</p></div></div>
-      <div class="step"><div class="num">📄</div><div><b>Do you sign agreements?</b><p>Ask us — we will answer in writing, and we would rather have the conversation before you hand the link to a family than after. Our position on a BAA: the family shares their data with us directly, after consenting on their own phone, rather than the clinic sharing it on their behalf. If we confirm a breach we notify affected clinicians and parents within 72 hours of confirming it; families who reached us through you are reached through you, since we hold no parent email on this channel.</p></div></div>
-      <div class="step"><div class="num">✉️</div><div><b>Who do I ask?</b><p><a href="mailto:privacy@speaksona.com">privacy@speaksona.com</a>, and the full <a href="/privacy.html">privacy policy</a>.</p></div></div>
-    </div>
-
-    <div class="midcta"><a class="cta" href="#signupCard" id="midCta">Get your free dashboard</a><span class="free">One email · no password · free forever</span></div>
-
-    <p class="note">Sona is an at-home speech practice tool — not a diagnosis, evaluation, or a substitute for professional care.<br/>Questions? <a href="mailto:hello@speaksona.com?subject=Sona%20for%20SLPs">Email us</a> · <a href="/privacy">Privacy</a></p>
+<header>
+  <div class="wrap hbar">
+    <a class="brand" href="/" aria-label="Sona for SLPs">
+      <img src="/echo.png" alt="" width="40" height="40">
+      <b>Sona</b><span>for SLPs</span>
+    </a>
+    <nav>
+      <a class="nl" href="#how">How it works</a>
+      <a class="nl" href="#privacy">Privacy</a>
+      <a class="signin" href="/slp-login.html">Sign in</a>
+    </nav>
   </div>
-  <!-- THE SIGN-UP, IN A DIALOG. Two fields and one button, over a dimmed page,
-       so the decision is the only thing on screen — and a first name, because
-       every email that follows is addressed to a person rather than to an
-       inbox. Closing it costs nothing: the page is still there underneath. -->
-  <div class="modal" id="modal" aria-hidden="true">
-    <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="mTitle">
-      <button class="x" id="mClose" aria-label="Close">×</button>
-      <div id="mForm">
-        <div class="mTitle" id="mTitle">Your free SLP dashboard</div>
-        <p class="mSub">We'll email you the link. No password to make, no card, unlimited families.</p>
-        <label class="sfl" for="mName">First name</label>
-        <input id="mName" type="text" autocomplete="given-name" maxlength="40" placeholder="Sarah" />
-        <label class="sfl" for="mEmail" style="margin-top:12px;">Email</label>
-        <input id="mEmail" type="email" inputmode="email" autocomplete="email" placeholder="you@school.org" />
-        <button class="cta go" id="mGo" style="width:100%;margin-top:16px;">Email me my dashboard</button>
-        <div class="serr" id="mErr"></div>
-        <p class="mFine">Free forever for SLPs and for every family on your caseload. No audio ever leaves a child's device, and you never type a student's name — the parent does, on their own phone, after consenting.</p>
+</header>
+
+<main>
+<section class="wrap hero">
+  <div class="hero-l">
+    <!-- The fellowship goes beside the licence on every clinician-facing
+         page: a peer reads "CF" precisely and notices when it is missing. -->
+    <div class="pill">Built with a licensed pediatric SLP (Clinical Fellow)</div>
+    <h1>See who actually practiced at home.</h1>
+    <p class="lede">You assign the sound. Kids practice it with Echo between sessions. The days, reps and pass rate come back to your dashboard.</p>
+
+    <!-- THE SIGN-UP. First name and email, one button. The name is the
+         clinician's own — it goes on the account, into the CRM and into the
+         greeting of every email after this one. A child's name is never
+         asked for here and never leaves a family's device. -->
+    <form class="signup" id="signup" novalidate>
+      <input id="fName" type="text" autocomplete="given-name" maxlength="40" placeholder="First name" aria-label="First name" />
+      <div class="srow">
+        <input id="fEmail" type="email" inputmode="email" autocomplete="email" placeholder="you@clinic.com" aria-label="Work email" />
+        <button class="btn" id="fGo" type="submit">Get Sona free</button>
       </div>
-      <div id="mSent" style="display:none;text-align:center;">
-        <div style="font-size:46px;">📬</div>
-        <div class="mTitle" style="margin-top:6px;">Check your email</div>
-        <p class="mSub" id="mSentMsg"></p>
-        <a class="cta go" id="mStraight" href="/slp.html" style="width:100%;margin-top:16px;display:block;text-align:center;text-decoration:none;">Or go straight there now →</a>
-        <p class="mFine" id="mResend">Didn't arrive? Check spam, or <a href="#" id="mAgain">try another address</a>.</p>
-      </div>
-      <div class="devbox" id="devbox" style="display:none;"></div>
+      <div class="serr" id="fErr" role="alert"></div>
+    </form>
+    <div class="sent" id="sent" hidden>
+      <div class="t">Check your email</div>
+      <div class="m" id="sentMsg"></div>
+      <a class="straight" id="straight" href="/slp.html" hidden>Or go straight there now →</a>
+      <div class="again" id="again">Wrong address? <a href="#" id="againLink">Try again</a></div>
+      <div class="devbox" id="devbox" hidden></div>
     </div>
+    <div class="hnote">Your dashboard plus the kids' app to share with families. Free forever, one email, no card.</div>
   </div>
 
-  <script>
-    (function () {
-      if (window.__sonaFamilyRedirect) return;
-      var $ = function (id) { return document.getElementById(id); };
-      // Where the sign-up came from, so the CRM can tell ad traffic from the
-      // rest. utm_source if the ad set one, else the page itself.
-      var src = "for-slps";
-      /**
-       * WHICH AD BROUGHT THEM. Several creatives run at once, so "an SLP
-       * signed up" is only half a fact — the useful half is which image and
-       * which headline produced her. These ride along to the CRM, where they
-       * become fields on the contact; /api/lead already forwards this exact
-       * set. fbclid is Meta's own click id, kept so a sign-up can be matched
-       * back to a click even when the UTMs are missing.
-       *
-       * Read once, at load, because the modal may be opened after a scroll
-       * that changed the URL, and clamped because they arrive from a URL a
-       * stranger controls.
-       */
-      var attrib = {};
-      try {
-        var q = new URLSearchParams(location.search);
-        var clean = function (v, n) { return String(v || "").replace(/[^\w .\-|/]/g, "").slice(0, n || 120); };
-        ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term", "fbclid"].forEach(function (k) {
-          var v = q.get(k); if (v) attrib[k] = clean(v);
-        });
-        attrib.referrer = clean(document.referrer, 200);
-        attrib.landing = clean(location.pathname, 120);
-        if (attrib.utm_source) src = attrib.utm_source.replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 30) || src;
-      } catch (e) {}
+  <!-- An illustration of the dashboard, not anyone's data: three made-up
+       children, first names only. Each shown pass rate sits on well over the
+       20 attempts below which the real dashboard shows no percentage. -->
+  <div class="hero-r" aria-hidden="true">
+    <div class="sun"></div>
+    <img class="mascot" src="/echo.png" alt="">
+    <div class="cl">
+      <div class="h">Your caseload this week</div>
+      <div class="kid">
+        <div class="n">Maya <i>· /r/ initial</i></div>
+        <div class="r">84%</div>
+        <div class="days"><span class="on"></span><span class="on"></span><span class="on"></span><span></span><span class="on"></span><span class="on"></span><span></span></div>
+        <div class="s">5 days · 142 reps</div>
+      </div>
+      <div class="kid">
+        <div class="n">Theo <i>· /s/ blends</i></div>
+        <div class="r">71%</div>
+        <div class="days"><span class="on"></span><span></span><span class="on"></span><span class="on"></span><span></span><span class="on"></span><span class="on"></span></div>
+        <div class="s">5 days · 96 reps</div>
+      </div>
+      <div class="kid quiet">
+        <div class="n">Ava <i>· vocalic R</i></div>
+        <div class="r">No practice yet</div>
+        <div class="days"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+        <div class="s">0 days</div>
+      </div>
+    </div>
+  </div>
+</section>
 
-      function openModal(e) {
-        if (e) e.preventDefault();
-        $("modal").classList.add("open");
-        $("modal").setAttribute("aria-hidden", "false");
-        document.body.style.overflow = "hidden";
-        setTimeout(function () { $("mName").focus(); }, 60);
-      }
-      function closeModal() {
-        $("modal").classList.remove("open");
-        $("modal").setAttribute("aria-hidden", "true");
-        document.body.style.overflow = "";
-      }
-      $("openModal").onclick = openModal;
-      var mid = $("midCta"); if (mid) mid.onclick = openModal;
-      $("mClose").onclick = closeModal;
-      // the backdrop closes it; the sheet itself does not
-      $("modal").addEventListener("click", function (e) { if (e.target === $("modal")) closeModal(); });
-      document.addEventListener("keydown", function (e) { if (e.key === "Escape" && $("modal").classList.contains("open")) closeModal(); });
+<section class="wrap facts">
+  <!-- "Free forever" is a written promise, and it is the SLP channel: a
+       clinician sends families only when she is sure nobody gets a bill. -->
+  <div class="fact"><b>Free forever, unlimited families</b><span>For you and every kid on your caseload.</span></div>
+  <div class="fact"><b>It actually listens</b><span>Every attempt is checked on the phone. Silence never counts.</span></div>
+  <div class="fact"><b>No audio leaves the device</b><span>First name only, entered by the parent.</span></div>
+</section>
 
-      function go() {
-        var name = (($("mName").value) || "").trim();
-        var email = (($("mEmail").value) || "").trim();
-        $("mErr").textContent = "";
-        if (!name) { $("mErr").textContent = "Your first name, so we know who we're writing to."; $("mName").focus(); return; }
-        if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { $("mErr").textContent = "Enter a valid email."; $("mEmail").focus(); return; }
-        $("mGo").disabled = true; $("mGo").textContent = "Sending…";
-        fetch("/api/slp/auth/request", {
-          method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email: email, name: name, source: src, attrib: attrib }),
-        }).then(function (r) { return r.json(); }).then(function (j) {
-          $("mGo").disabled = false; $("mGo").textContent = "Email me my dashboard";
-          if (!j || !j.ok) { $("mErr").textContent = (j && j.error) || "Couldn't set that up right now."; return; }
-          /**
-           * THE CONVERSION, fired only once the server said yes — a tap on the
-           * button is not a sign-up, and an ad optimised on taps buys taps.
-           * CompleteRegistration additionally marks a clinician who did not
-           * exist a moment ago, so the campaign can be optimised on new
-           * accounts rather than on repeat sign-ins.
-           *
-           * No parameters: Meta gets the fact, never the person. The email and
-           * the name stay on our side, where the clinician knowingly gave them.
-           */
-          try {
-            if (window.sonaTrack) {
-              sonaTrack("Lead");
-              if (j.signedIn) sonaTrack("CompleteRegistration");
-            }
-          } catch (e) {}
-          /**
-           * DO NOT SAY "CHECK YOUR EMAIL" ABOUT AN EMAIL THAT WAS REFUSED.
-           * The server reports whether it actually went. A brand-new account
-           * is signed in anyway, so the button below is a real way through
-           * and the failure costs them nothing. An existing account has no
-           * other door — telling them to check an inbox that will stay empty
-           * turns a fixable problem into a clinician who quietly gives up.
-           */
-          if (!j.sent && !j.signedIn) {
-            $("mSentMsg").textContent = "Your account is here, but our email didn't go out just now. Email hello@speaksona.com and we'll open your dashboard by hand — usually within the hour.";
-            $("mResend").style.display = "none";
-          } else {
-            $("mSentMsg").textContent = "We sent your dashboard link to " + email + ". It opens straight into your caseload — no password.";
+<section class="wrap how" id="how">
+  <h2>Three steps from your session to their kitchen table.</h2>
+  <div class="steps">
+    <div class="step s1">
+      <div class="k">1 · Set the target</div>
+      <div class="chips"><span>Initial</span><span class="on">Medial</span><span>Final</span><span>Vocalic R</span><span>Blends</span></div>
+      <p>Pick the sound, the position and a daily goal. Sona makes it the next thing the child practices.</p>
+    </div>
+    <div class="step s2">
+      <div class="k">2 · Send the family link</div>
+      <!-- The dashboard's real message, shortened: it names nobody, because
+           the clinician typed initials rather than a name, and the link is
+           the one family door (join.html), not a short link that does not
+           exist. -->
+      <div class="bubble">Hi! Here's your child's Sona link — the speech-practice app I mentioned. It's free for your family. <u>speaksona.com/join.html?slp=…</u></div>
+      <p>Copy the ready-made message. Parents set up their child in about 30 seconds.</p>
+    </div>
+    <div class="step s3">
+      <div class="k">3 · Walk in prepared</div>
+      <div class="bars"><span style="height:40%"></span><span style="height:70%"></span><span style="height:55%"></span><span class="hi" style="height:100%"></span><span style="height:30%"></span><span style="height:85%"></span><span style="height:60%"></span></div>
+      <p>Practice days, reps and pass rate by sound and position. Ready for sessions, notes and parent updates.</p>
+    </div>
+  </div>
+</section>
+
+<section class="kidside">
+  <div class="in">
+    <div class="txt">
+      <h2>The part kids actually ask for.</h2>
+      <!-- What Home shows today: the day's adventure, three games that change
+           every day, and coins. -->
+      <p>A daily adventure with Echo, three new games every day and coins to earn. The fun is what brings kids back, so the reps keep happening between your sessions.</p>
+      <div class="chips"><span>Instant feedback</span><span>New games every day</span><span>Coins to earn</span><span>Every round ends on a win</span></div>
+    </div>
+    <div class="phones">
+      <div class="phone"><img src="/slp-shot-home.jpg" width="585" height="1104" loading="lazy" alt="Sona's home screen: today's adventure and three games"></div>
+      <div class="phone lo"><img src="/slp-shot-practice.jpg" width="585" height="1104" loading="lazy" alt="A Sona practice round: Echo asks the child to say the R sound five times"></div>
+    </div>
+  </div>
+</section>
+
+<section class="wrap before">
+  <div class="intro">
+    <h2>Good to know before you assign it.</h2>
+    <p>Sona is the worksheet that listens. It supports your therapy; it doesn't diagnose, evaluate or set goals.</p>
+  </div>
+  <div class="notes">
+    <div class="note"><b>Read it as practice volume</b><p>The check asks whether a sound has the acoustic shape of the target. That's narrower than your ear. Treat pass rate as a rough signal, not a score.</p></div>
+    <div class="note"><b>Tuned to General American English</b><p>Dialectal or bilingual speech, like AAVE or Spanish-influenced English, may be marked as misses. Use your clinical judgment.</p></div>
+    <div class="note"><b>You decide readiness</b><p>Assign targets the child is developmentally ready for. Vocalic R, for example, isn't typically expected until about age 7.</p></div>
+  </div>
+</section>
+
+<section class="wrap privacy" id="privacy">
+  <div class="l">
+    <h2>Your IT reviewer's questions, answered.</h2>
+    <p>Every check runs on the child's phone. No cloud scorer, no third-party listener, and the app never sends a child's voice anywhere.</p>
+    <p class="more">More questions? <a href="mailto:privacy@speaksona.com">privacy@speaksona.com</a> · <a href="/privacy.html">Full privacy policy</a></p>
+  </div>
+  <!-- Each answer is what the code does, not what would be nice to say. A
+       reviewer opens the network tab; an answer that disagrees with it ends
+       the conversation. -->
+  <div class="faq" id="faq">
+    <div class="q">
+      <button type="button" aria-expanded="true" aria-controls="a0" id="q0">Is a child's voice recorded or sent anywhere?<span>+</span></button>
+      <p class="a" id="a0">No. Every check happens on the child's own phone, and the app never sends a child's voice anywhere. One clip a day may stay in the phone's storage so a parent can listen back. It never leaves the device.</p>
+    </div>
+    <div class="q">
+      <button type="button" aria-expanded="false" aria-controls="a1" id="q1">Who enters the child's name?<span>+</span></button>
+      <p class="a" id="a1" hidden>The parent, on their own device, after consenting. If you add a child ahead of time you type initials or a nickname, and Sona discards that once the family joins. You never send Sona a student's name.</p>
+    </div>
+    <div class="q">
+      <button type="button" aria-expanded="false" aria-controls="a2" id="q2">What's stored, and where?<span>+</span></button>
+      <p class="a" id="a2" hidden>Your account (email, name, clinic, code). For each consenting family: the child's first name and age, target sounds, practice days and counts, pass rate per sound, your assignments, and when the parent consented. Hosted on Vercel, stored in Upstash, sign-in emails via Resend. Analytics (PostHog) on grown-up pages only, and a Meta ad pixel on this sign-up page so we can tell which of our ads work — neither ever runs where a child practices, and neither is sent a child's name. No ads in the app, no data sales, no profiling.</p>
+    </div>
+    <div class="q">
+      <button type="button" aria-expanded="false" aria-controls="a3" id="q3">How is data deleted?<span>+</span></button>
+      <p class="a" id="a3" hidden>Two ways, immediately: the parent taps "stop sharing", or you remove the child from your caseload. Otherwise it ages out about 150 days after your caseload's last practice. Unopened invites delete themselves after 30 days.</p>
+    </div>
+    <div class="q">
+      <button type="button" aria-expanded="false" aria-controls="a4" id="q4">Do you sign agreements, like a BAA?<span>+</span></button>
+      <p class="a" id="a4" hidden>Ask us and we'll answer in writing, ideally before you share the link. Families share data with us directly after consenting on their own phone, rather than the clinic sharing it for them. If we confirm a breach, we notify affected clinicians and parents within 72 hours.</p>
+    </div>
+  </div>
+</section>
+
+<section class="final">
+  <div class="in">
+    <div class="l">
+      <img src="/echo.png" alt="" width="120" height="120">
+      <div class="t">
+        <h2>Know who practiced before they walk in.</h2>
+        <p>Free for SLPs and every family on your caseload.</p>
+      </div>
+    </div>
+    <button class="btn yel" id="finalGo" type="button">Get Sona free</button>
+  </div>
+</section>
+</main>
+
+<footer class="wrap">
+  <div class="d">Sona is an at-home speech practice tool. It is not a diagnosis, evaluation, or substitute for professional care.</div>
+  <div class="links"><a href="mailto:hello@speaksona.com?subject=Sona%20for%20SLPs">Email us</a><a href="/privacy.html">Privacy</a></div>
+</footer>
+
+<script>
+  (function () {
+    if (window.__sonaFamilyRedirect) return;
+    var $ = function (id) { return document.getElementById(id); };
+    // Where the sign-up came from, so the CRM can tell ad traffic from the
+    // rest. utm_source if the ad set one, else the page itself.
+    var src = "for-slps";
+    /**
+     * WHICH AD BROUGHT THEM. Several creatives run at once, so "an SLP
+     * signed up" is only half a fact — the useful half is which image and
+     * which headline produced her. These ride along to the CRM, where they
+     * become fields on the contact; /api/lead already forwards this exact
+     * set. fbclid is Meta's own click id, kept so a sign-up can be matched
+     * back to a click even when the UTMs are missing.
+     *
+     * Read once, at load, and clamped because they arrive from a URL a
+     * stranger controls.
+     */
+    var attrib = {};
+    try {
+      var q = new URLSearchParams(location.search);
+      var clean = function (v, n) { return String(v || "").replace(/[^\w .\-|/]/g, "").slice(0, n || 120); };
+      ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term", "fbclid"].forEach(function (k) {
+        var v = q.get(k); if (v) attrib[k] = clean(v);
+      });
+      attrib.referrer = clean(document.referrer, 200);
+      attrib.landing = clean(location.pathname, 120);
+      if (attrib.utm_source) src = attrib.utm_source.replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 30) || src;
+    } catch (e) {}
+
+    var LABEL = "Get Sona free";
+    function busy(on) { $("fGo").disabled = on; $("fGo").textContent = on ? "Sending…" : LABEL; }
+
+    function go() {
+      var name = (($("fName").value) || "").trim();
+      var email = (($("fEmail").value) || "").trim();
+      $("fErr").textContent = "";
+      if (!name) { $("fErr").textContent = "Your first name, so we know who we're writing to."; $("fName").focus(); return; }
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { $("fErr").textContent = "Enter a valid email."; $("fEmail").focus(); return; }
+      busy(true);
+      fetch("/api/slp/auth/request", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email, name: name, source: src, attrib: attrib }),
+      }).then(function (r) { return r.json(); }).then(function (j) {
+        busy(false);
+        if (!j || !j.ok) { $("fErr").textContent = (j && j.error) || "Couldn't set that up right now."; return; }
+        /**
+         * THE CONVERSION, fired only once the server said yes — a tap on the
+         * button is not a sign-up, and an ad optimised on taps buys taps.
+         * CompleteRegistration additionally marks a clinician who did not
+         * exist a moment ago, so the campaign can be optimised on new
+         * accounts rather than on repeat sign-ins.
+         *
+         * No parameters: Meta gets the fact, never the person. The email and
+         * the name stay on our side, where the clinician knowingly gave them.
+         */
+        try {
+          if (window.sonaTrack) {
+            sonaTrack("Lead");
+            if (j.signedIn) sonaTrack("CompleteRegistration");
           }
-          // A brand-new account is signed in already, so the straight-through
-          // button works immediately; the email still lands, which is how they
-          // get back in tomorrow. An existing account has a caseload behind the
-          // door, so for them the emailed link is the only way through.
-          $("mStraight").style.display = j.signedIn ? "block" : "none";
-          $("mForm").style.display = "none"; $("mSent").style.display = "block";
-          if (j.devLink) {
-            $("devbox").style.display = "block";
-            $("devbox").innerHTML = 'Email isn\'t configured here, so this is your link (preview only): <a href="' + j.devLink + '">Open it →</a>';
-          }
-        }).catch(function () {
-          $("mGo").disabled = false; $("mGo").textContent = "Email me my dashboard";
-          $("mErr").textContent = "Network hiccup — try again.";
-        });
-      }
-      $("mGo").onclick = go;
-      $("mEmail").addEventListener("keydown", function (e) { if (e.key === "Enter") go(); });
-      $("mName").addEventListener("keydown", function (e) { if (e.key === "Enter") $("mEmail").focus(); });
-      $("mAgain").onclick = function (e) { e.preventDefault(); $("mSent").style.display = "none"; $("mForm").style.display = "block"; $("mEmail").value = ""; $("mEmail").focus(); };
-    })();
-  </script>
+        } catch (e) {}
+        /**
+         * DO NOT SAY "CHECK YOUR EMAIL" ABOUT AN EMAIL THAT WAS REFUSED.
+         * The server reports whether it actually went. A brand-new account
+         * is signed in anyway, so the straight-through link is a real way in
+         * and the failure costs them nothing. An existing account has no
+         * other door — telling them to check an inbox that will stay empty
+         * turns a fixable problem into a clinician who quietly gives up.
+         */
+        if (!j.sent && !j.signedIn) {
+          $("sentMsg").textContent = "Your account is here, but our email didn't go out just now. Email hello@speaksona.com and we'll open your dashboard by hand — usually within the hour.";
+          $("again").hidden = true;
+        } else {
+          $("sentMsg").textContent = "Your sign-in link is on its way to " + email + ". It opens straight into your dashboard — no password.";
+          $("again").hidden = false;
+        }
+        // A brand-new account is signed in already, so the straight-through
+        // link works immediately; the email still lands, which is how they
+        // get back in tomorrow. An existing account has a caseload behind the
+        // door, so for them the emailed link is the only way through.
+        $("straight").hidden = !j.signedIn;
+        $("signup").hidden = true; $("sent").hidden = false;
+        if (j.devLink) {
+          $("devbox").hidden = false;
+          $("devbox").innerHTML = 'Email isn\'t configured here, so this is your link (preview only): <a href="' + j.devLink + '">Open it →</a>';
+        }
+      }).catch(function () {
+        busy(false);
+        $("fErr").textContent = "Network hiccup — try again.";
+      });
+    }
+    $("signup").addEventListener("submit", function (e) { e.preventDefault(); go(); });
+    $("fName").addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); $("fEmail").focus(); } });
+    $("againLink").onclick = function (e) {
+      e.preventDefault();
+      $("sent").hidden = true; $("signup").hidden = false;
+      $("fEmail").value = ""; $("fEmail").focus();
+    };
+
+    // The closing button goes back to the one form rather than opening a
+    // second door: one place to sign up means one place to get it right.
+    $("finalGo").onclick = function () {
+      var target = $("sent").hidden ? $("signup") : $("sent");
+      target.scrollIntoView({ behavior: "smooth", block: "center" });
+      if ($("sent").hidden) setTimeout(function () { $($("fName").value ? "fEmail" : "fName").focus({ preventScroll: true }); }, 450);
+    };
+
+    // One answer open at a time; the first starts open.
+    var qs = document.querySelectorAll("#faq .q button");
+    for (var i = 0; i < qs.length; i++) {
+      qs[i].onclick = function () {
+        var wasOpen = this.getAttribute("aria-expanded") === "true";
+        for (var k = 0; k < qs.length; k++) {
+          qs[k].setAttribute("aria-expanded", "false");
+          $(qs[k].getAttribute("aria-controls")).hidden = true;
+        }
+        if (!wasOpen) {
+          this.setAttribute("aria-expanded", "true");
+          $(this.getAttribute("aria-controls")).hidden = false;
+        }
+      };
+    }
+  })();
+</script>
 </body>
 </html>
