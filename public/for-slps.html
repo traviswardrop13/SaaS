@@ -100,9 +100,6 @@
     .btn:disabled{opacity:.7;cursor:default;}
     .btn.yel{height:60px;padding:0 30px;font-size:19px;background:var(--yel);color:var(--ink);box-shadow:0 5px 0 #C99A00;}
     .btn.yel:active{box-shadow:0 1px 0 #C99A00;}
-    a.btn.store{display:inline-flex;align-items:center;justify-content:center;text-decoration:none;color:#fff;align-self:flex-start;height:62px;padding:0 30px;font-size:20px;}
-    a.btn.yel.store{color:var(--ink);}
-    @media(max-width:480px){ a.btn.store{align-self:stretch;} }
 
     /* header */
     header{position:sticky;top:0;z-index:20;background:rgba(255,250,243,.9);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);}
@@ -251,14 +248,26 @@
     <h1>See who actually practiced at home.</h1>
     <p class="lede">You assign the sound. Kids practice it with Echo between sessions. The days, reps and pass rate come back to your dashboard.</p>
 
-    <!-- THE ONE ACTION IS GETTING THE APP (Travis, 23 Sep 2026: "optimizing
-         for app downloads"). The page is a single button to the App Store.
-         The email is asked for inside the app, during setup, where it already
-         goes to the CRM. Clinicians who have a dashboard use Sign in, above.
-         On Android there is no App Store listing, so the button opens the web
-         app instead of a dead end. -->
-    <a class="btn store" id="getApp" href="https://apps.apple.com/app/id6785755867">Download free on the App Store</a>
-    <div class="hnote">Free on iPhone. No card, nothing to fill in first.</div>
+    <!-- THE SIGN-UP. First name and email, one button. The name is the
+         clinician's own — it goes on the account, into the CRM and into the
+         greeting of every email after this one. A child's name is never
+         asked for here and never leaves a family's device. -->
+    <form class="signup" id="signup" novalidate>
+      <input id="fName" type="text" autocomplete="given-name" maxlength="40" placeholder="First name" aria-label="First name" />
+      <div class="srow">
+        <input id="fEmail" type="email" inputmode="email" autocomplete="email" placeholder="you@clinic.com" aria-label="Work email" />
+        <button class="btn" id="fGo" type="submit">Get Sona free</button>
+      </div>
+      <div class="serr" id="fErr" role="alert"></div>
+    </form>
+    <div class="sent" id="sent" hidden>
+      <div class="t">Check your email</div>
+      <div class="m" id="sentMsg"></div>
+      <a class="straight" id="straight" href="/slp.html" hidden>Or go straight there now →</a>
+      <div class="again" id="again">Wrong address? <a href="#" id="againLink">Try again</a></div>
+      <div class="devbox" id="devbox" hidden></div>
+    </div>
+    <div class="hnote">Your dashboard plus the kids' app to share with families. Free forever, one email, no card.</div>
   </div>
 
   <!-- An illustration of the dashboard, not anyone's data: three made-up
@@ -394,7 +403,7 @@
         <p>Free for SLPs and every family on your caseload.</p>
       </div>
     </div>
-    <a class="btn yel store" id="finalGo" href="https://apps.apple.com/app/id6785755867">Download free</a>
+    <button class="btn yel" id="finalGo" type="button">Get Sona free</button>
   </div>
 </section>
 </main>
@@ -408,28 +417,121 @@
   (function () {
     if (window.__sonaFamilyRedirect) return;
     var $ = function (id) { return document.getElementById(id); };
-    var buttons = [$("getApp"), $("finalGo")];
-
-    // Android has no App Store listing: send the tap to the web app instead
-    // of a store page that cannot install anything.
-    if (/Android/i.test(navigator.userAgent)) {
-      buttons.forEach(function (b) { b.href = "/onboarding.html"; b.textContent = "Start free in your browser"; });
-    }
-
+    // Where the sign-up came from, so the CRM can tell ad traffic from the
+    // rest. utm_source if the ad set one, else the page itself.
+    var src = "for-slps";
     /**
-     * THE CONVERSION IS THE TAP. The download itself happens in the App Store,
-     * where this page cannot see it, so the last thing it can count is the tap
-     * that sends someone there. Lead, because that is the event the campaign
-     * already optimises on. No parameters: Meta gets the fact, never a person.
-     * The short wait lets the pixel's request leave before the page does.
+     * WHICH AD BROUGHT THEM. Several creatives run at once, so "an SLP
+     * signed up" is only half a fact — the useful half is which image and
+     * which headline produced her. These ride along to the CRM, where they
+     * become fields on the contact; /api/lead already forwards this exact
+     * set. fbclid is Meta's own click id, kept so a sign-up can be matched
+     * back to a click even when the UTMs are missing.
+     *
+     * Read once, at load, and clamped because they arrive from a URL a
+     * stranger controls.
      */
-    function go(e) {
-      var href = this.href;
-      try { if (window.sonaTrack) sonaTrack("Lead"); } catch (x) {}
-      e.preventDefault();
-      setTimeout(function () { location.href = href; }, 180);
+    var attrib = {};
+    try {
+      var q = new URLSearchParams(location.search);
+      var clean = function (v, n) { return String(v || "").replace(/[^\w .\-|/]/g, "").slice(0, n || 120); };
+      ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term", "fbclid"].forEach(function (k) {
+        var v = q.get(k); if (v) attrib[k] = clean(v);
+      });
+      attrib.referrer = clean(document.referrer, 200);
+      attrib.landing = clean(location.pathname, 120);
+      if (attrib.utm_source) src = attrib.utm_source.replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 30) || src;
+    } catch (e) {}
+
+    var LABEL = "Get Sona free";
+    // THE ERROR SITS UNDER THE BUTTON, which on a laptop is the bottom edge of
+    // the window — so a refused sign-up looked like a button that did nothing.
+    // Every message is brought into view as it is shown.
+    function err(msg) {
+      var e = $("fErr"); e.textContent = msg;
+      try { e.scrollIntoView({ block: "nearest", behavior: "smooth" }); } catch (x) { e.scrollIntoView(false); }
     }
-    buttons.forEach(function (b) { b.addEventListener("click", go); });
+    function busy(on) { $("fGo").disabled = on; $("fGo").textContent = on ? "Sending…" : LABEL; }
+
+    function go() {
+      var name = (($("fName").value) || "").trim();
+      var email = (($("fEmail").value) || "").trim();
+      $("fErr").textContent = "";
+      if (!name) { err("Your first name, so we know who we're writing to."); $("fName").focus(); return; }
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { err("Enter a valid email."); $("fEmail").focus(); return; }
+      busy(true);
+      fetch("/api/slp/auth/request", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email, name: name, source: src, attrib: attrib }),
+      }).then(function (r) { return r.json(); }).then(function (j) {
+        busy(false);
+        if (!j || !j.ok) { err((j && j.error) || "Couldn't set that up right now."); return; }
+        /**
+         * THE CONVERSION, fired only once the server said yes — a tap on the
+         * button is not a sign-up, and an ad optimised on taps buys taps.
+         * CompleteRegistration additionally marks a clinician who did not
+         * exist a moment ago, so the campaign can be optimised on new
+         * accounts rather than on repeat sign-ins.
+         *
+         * No parameters: Meta gets the fact, never the person. The email and
+         * the name stay on our side, where the clinician knowingly gave them.
+         */
+        try {
+          if (window.sonaTrack) {
+            sonaTrack("Lead");
+            if (j.signedIn) sonaTrack("CompleteRegistration");
+          }
+        } catch (e) {}
+        /**
+         * DO NOT SAY "CHECK YOUR EMAIL" ABOUT AN EMAIL THAT WAS REFUSED.
+         * The server reports whether it actually went. A brand-new account
+         * is signed in anyway, so the straight-through link is a real way in
+         * and the failure costs them nothing. An existing account has no
+         * other door — telling them to check an inbox that will stay empty
+         * turns a fixable problem into a clinician who quietly gives up.
+         */
+        if (!j.sent && !j.signedIn) {
+          $("sentMsg").textContent = "Your account is here, but our email didn't go out just now. Email hello@speaksona.com and we'll open your dashboard by hand — usually within the hour.";
+          $("again").hidden = true;
+        } else if (!j.sent) {
+          // Signed in, but the email was refused: the dashboard is one tap
+          // away, and the page must not promise a link that is not coming.
+          $("sentMsg").textContent = "You're in — open your dashboard below. Our email to " + email + " didn't go out just now, so bookmark the dashboard to come back to it.";
+          $("again").hidden = true;
+        } else {
+          $("sentMsg").textContent = "Your sign-in link is on its way to " + email + ". It opens straight into your dashboard — no password.";
+          $("again").hidden = false;
+        }
+        // A brand-new account is signed in already, so the straight-through
+        // link works immediately; the email still lands, which is how they
+        // get back in tomorrow. An existing account has a caseload behind the
+        // door, so for them the emailed link is the only way through.
+        $("straight").hidden = !j.signedIn;
+        $("signup").hidden = true; $("sent").hidden = false;
+        if (j.devLink) {
+          $("devbox").hidden = false;
+          $("devbox").innerHTML = 'Email isn\'t configured here, so this is your link (preview only): <a href="' + j.devLink + '">Open it →</a>';
+        }
+      }).catch(function () {
+        busy(false);
+        err("Network hiccup — try again.");
+      });
+    }
+    $("signup").addEventListener("submit", function (e) { e.preventDefault(); go(); });
+    $("fName").addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); $("fEmail").focus(); } });
+    $("againLink").onclick = function (e) {
+      e.preventDefault();
+      $("sent").hidden = true; $("signup").hidden = false;
+      $("fEmail").value = ""; $("fEmail").focus();
+    };
+
+    // The closing button goes back to the one form rather than opening a
+    // second door: one place to sign up means one place to get it right.
+    $("finalGo").onclick = function () {
+      var target = $("sent").hidden ? $("signup") : $("sent");
+      target.scrollIntoView({ behavior: "smooth", block: "center" });
+      if ($("sent").hidden) setTimeout(function () { $($("fName").value ? "fEmail" : "fName").focus({ preventScroll: true }); }, 450);
+    };
 
     // One answer open at a time; the first starts open.
     var qs = document.querySelectorAll("#faq .q button");

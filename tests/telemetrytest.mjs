@@ -116,18 +116,16 @@ const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL 
     /<script src="\/pixel\.js"><\/script>/.test(slps),
     "a campaign with no PageView and no Lead optimises on clicks, not on sign-ups");
 
-  // Since 23 Sep 2026 the page optimises for app downloads: its one action is
-  // the App Store, and the download itself happens where this page cannot see
-  // it — so the tap that sends someone there is the conversion it can count.
-  ok("the page's one action goes to the App Store",
-    /id="getApp" href="https:\/\/apps\.apple\.com\/app\/id6785755867"/.test(slps) &&
-    /id="finalGo" href="https:\/\/apps\.apple\.com\/app\/id6785755867"/.test(slps));
-  ok("Lead fires on that tap, before the page leaves",
-    /function go\(e\)[\s\S]{0,160}sonaTrack\("Lead"\)[\s\S]{0,120}setTimeout\(function \(\) \{ location\.href = href; \}/.test(slps) &&
-    /buttons\.forEach\(function \(b\) \{ b\.addEventListener\("click", go\); \}\)/.test(slps),
-    "a campaign with no conversion event optimises on clicks on the ad, not taps toward the app");
-  ok("…and Android, which has no App Store listing, is sent to the web app instead of a dead end",
-    /\/Android\/i\.test\(navigator\.userAgent\)[\s\S]{0,120}\/onboarding\.html/.test(slps));
+  // A tap is not a sign-up. Firing on the click would teach the campaign to
+  // buy people who open forms and abandon them.
+  const handler = slps.slice(slps.indexOf("function go()"));
+  const okGate = handler.indexOf("if (!j || !j.ok)");
+  const lead = handler.indexOf('sonaTrack("Lead")');
+  ok("Lead fires only after the server accepted the sign-up",
+    okGate > 0 && lead > okGate,
+    "otherwise the campaign optimises for opening the form, not completing it");
+  ok("…and a brand-new clinician is marked as one",
+    /if \(j\.signedIn\) sonaTrack\("CompleteRegistration"\)/.test(handler));
 
   // WHERE THE PIXEL MAY LOAD, as an allow-list. A deny-list would mean every
   // new page is tracked until someone remembers to exclude it, and the pages
@@ -160,10 +158,12 @@ const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL 
 // ── 5. which ad produced which clinician ──
 {
   const req = readFileSync(APP + "/app/api/slp/auth/request/route.ts", "utf8");
-  // The landing page stopped collecting sign-ups on 23 Sep 2026 (its one
-  // action is the App Store), so the utm/fbclid capture it did for the CRM
-  // went with the form. The route still takes attribution from any caller,
-  // and what it forwards is still an allow-list:
+  const slps = readFileSync(ROOT + "/for-slps.html", "utf8");
+
+  ok("the landing page captures the ad's own click id, not just utm_source",
+    /"fbclid"/.test(slps) && /utm_campaign/.test(slps) && /utm_content/.test(slps),
+    "several creatives run at once; 'an SLP signed up' is only useful with which ad");
+  ok("…and they ride along with the sign-up", /attrib: attrib/.test(slps));
 
   // ALLOW-LIST, the lesson /api/lead's safeLead already paid for: these
   // arrive from a query string a stranger controls, and a deny-list is how
