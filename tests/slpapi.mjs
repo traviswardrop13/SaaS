@@ -565,5 +565,30 @@ if (A) {
   ok("…and gives them a way through instead", /hello@speaksona\.com/.test(slps));
 }
 
+
+// ── the sign-up actually reaches the CRM ──
+{
+  const req = read("app/api/slp/auth/request/route.ts");
+  const lead = read("app/api/lead/route.ts");
+  // On Vercel a function can be frozen the moment its response is sent, so a
+  // fetch nobody awaits may never leave. The symptom is silence: sign-up
+  // works, the CRM never hears, nothing errors.
+  ok("the CRM call is awaited before the response, not fired and forgotten",
+    /const crm = tellCrm\(/.test(req) && /await crm;/.test(req) &&
+    req.indexOf("await crm;") < req.lastIndexOf("return out;") && !/void fetch\(origin \+ "\/api\/lead"/.test(req),
+    "an un-awaited fetch in a serverless function can be dropped when the response is sent");
+  ok("…with a fuse, so a slow CRM never costs a clinician their sign-in",
+    /CRM_TIMEOUT_MS = \d+/.test(req) && /ctl\.abort\(\)/.test(req));
+  ok("…and a lead the CRM did not take says so in the log", /CRM did not capture the lead/.test(req));
+
+  // The clinician's own first name reaches the CRM — as its own field, only
+  // on the clinician path, and never through `name`, which stays blank
+  // because on the parent path the only name there is a child's.
+  ok("the clinician's first name travels only when the caller is a clinician",
+    /first_name: body\?\.role === "slp" && typeof body\?\.name === "string"/.test(lead));
+  ok("…and reaches the webhook through the allow-list",
+    /first_name: lead\.first_name,/.test(lead) && /role: lead\.role,/.test(lead) && /fbclid: lead\.fbclid,/.test(lead));
+}
+
 console.log(fails ? fails + " FAILURES" : "ALL GREEN");
 process.exit(fails ? 1 : 0);

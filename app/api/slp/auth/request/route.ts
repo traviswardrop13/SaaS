@@ -40,15 +40,6 @@ function safeEqual(a: string, b: string): boolean {
 }
 
 /**
- * Tell the founder's CRM that a clinician signed up. /api/lead is already
- * wired to LEAD_WEBHOOK_URL (a GoHighLevel inbound workflow) and is the one
- * place any opt-in goes, so this reuses it rather than growing a second rail.
- *
- * Fire-and-forget and never awaited into the response: a CRM hiccup must not
- * cost a clinician their sign-in link. An email and a role — never a child's
- * name, which is the rule everywhere else and has no exception here.
- */
-/**
  * Which ad produced this clinician. An ALLOW-LIST, copied in spirit from
  * /api/lead's safeLead: the object arrives from a page a stranger can put any
  * query string on, so a field that is not named here does not travel. A
@@ -70,20 +61,46 @@ function safeAttrib(raw: unknown): Record<string, string> {
   return out;
 }
 
-function tellCrm(
+/**
+ * Tell the founder's CRM that a clinician signed up. /api/lead is already
+ * wired to LEAD_WEBHOOK_URL (a GoHighLevel inbound workflow) and is the one
+ * place any opt-in goes, so this reuses it rather than growing a second rail.
+ *
+ * AWAITED, WITH A SHORT FUSE — NOT FIRE-AND-FORGET. This used to be
+ * `void fetch(...)` so a CRM hiccup could never cost a clinician their
+ * sign-in. But on Vercel a function can be frozen the moment its response
+ * is sent, and a fetch nobody awaits may never leave: the clinician signs up,
+ * the dashboard works, and GoHighLevel never hears about them. Nothing
+ * errors, so nothing says so. The fuse keeps the first promise — after
+ * CRM_TIMEOUT_MS the sign-in goes ahead regardless — and awaiting keeps the
+ * second. It runs alongside the rest of sign-up, so it costs nothing on the
+ * usual path.
+ *
+ * The clinician's OWN first name — the one they typed about themselves.
+ * Never a child's, which is the rule everywhere and has no exception in a
+ * marketing payload of all places.
+ */
+const CRM_TIMEOUT_MS = 3000;
+async function tellCrm(
   origin: string, email: string, source: string, name: string, attrib: Record<string, string>,
-): void {
+): Promise<boolean> {
+  const ctl = new AbortController();
+  const fuse = setTimeout(() => ctl.abort(), CRM_TIMEOUT_MS);
   try {
-    void fetch(origin + "/api/lead", {
+    const r = await fetch(origin + "/api/lead", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      // The clinician's OWN first name — the one they typed about themselves.
-      // Never a child's, which is the rule everywhere and has no exception in
-      // a marketing payload of all places.
       body: JSON.stringify({ email, name, source, role: "slp", summary: "New SLP signup", ...attrib }),
-    }).catch(() => {});
-  } catch {
-    /* never blocks sign-in */
+      signal: ctl.signal,
+    });
+    const j = (await r.json().catch(() => null)) as { captured?: boolean } | null;
+    if (!r.ok || !j || !j.captured) console.error("[slp signup] CRM did not capture the lead:", r.status, j);
+    return !!(r.ok && j && j.captured);
+  } catch (e) {
+    console.error("[slp signup] CRM call failed:", e instanceof Error ? e.message : String(e));
+    return false; /* never blocks sign-in */
+  } finally {
+    clearTimeout(fuse);
   }
 }
 
@@ -178,9 +195,10 @@ export async function POST(req: NextRequest) {
     email, name, clinic: "", code: "", createdAt: new Date().toISOString(),
     source: String(body.source || "").slice(0, 40),
   })]);
-  tellCrm(origin, email, String(body.source || "slp-signup").slice(0, 40), name, safeAttrib(body.attrib));
+  const crm = tellCrm(origin, email, String(body.source || "slp-signup").slice(0, 40), name, safeAttrib(body.attrib));
 
   const session = signSession({ email, code: "", iat: Date.now(), exp: Date.now() + SESSION_MAX_AGE * 1000 });
+  await crm;
   const out = NextResponse.json({ ok: true, sent: res.sent, signedIn: true, devLink: isAdmin ? link : res.devLink });
   out.headers.set("Set-Cookie", sessionCookie(session, SESSION_MAX_AGE));
   return out;
