@@ -16,7 +16,8 @@ const MIME = { html: "text/html", js: "text/javascript", svg: "image/svg+xml", c
 const srv = createServer((req, res) => {
   const u = new URL(req.url, "http://x");
   if (u.pathname.startsWith("/api/")) { res.writeHead(500); res.end("{}"); return; }
-  const p = ROOT + u.pathname;
+  // A saved pre-fix shared script makes the sibling-run regression reproducible.
+  const p = u.pathname === "/sona.js" && process.env.KIDTEST_SONA_SOURCE ? process.env.KIDTEST_SONA_SOURCE : ROOT + u.pathname;
   if (!existsSync(p)) { res.writeHead(404); res.end(); return; }
   res.writeHead(200, { "content-type": MIME[p.split(".").pop()] || "application/octet-stream" });
   res.end(readFileSync(p));
@@ -50,21 +51,36 @@ ok("an existing family seeds one kid", st.kids.length === 1, JSON.stringify(st.k
 ok("that kid is the active one", !!st.active && st.active.slot === "", JSON.stringify(st.active));
 ok("their name comes from their own profile", st.name === "Milo", st.name);
 
+// An unfinished adventure belongs to this child, including an earned but
+// unopened chest. Keep the exact payload: switching must neither lose nor
+// reinterpret any completed work. No microphone or practice engine is used.
+await page.evaluate(() => {
+  window.__kidRunA = JSON.stringify({ active: true, round: 2, tries: 8, sound: "R", pending: false, scores: [12, 9], sum: 21, ready: { round: 2, chest: { taps: 1, opened: false } } });
+  window.__kidRunB = JSON.stringify({ active: true, round: 1, tries: 4, sound: "S", pending: true, scores: [7], sum: 7 });
+  window.__kidRecordingKeyA = Sona.kkey("sona.reclast");
+  sessionStorage.setItem("sona.run.v1", window.__kidRunA);
+});
+
 // ── add a sibling: separate profile, separate progress, from the first write ──
 st = await page.evaluate(() => {
   const slot = Sona.addKid("Ana", "5");
+  const runCleared = sessionStorage.getItem("sona.run.v1") === null;
+  const recordingKey = Sona.kkey("sona.reclast");
+  sessionStorage.setItem("sona.run.v1", window.__kidRunB);
   Sona.saveProfile({ focusSounds: ["S"], onboarded: true });
   Sona.bumpReps(9);
   const g = Sona.getProgress(); g.stage = g.stage || {}; g.stage.S = 2;
   localStorage.setItem(Sona.kkey("sona.progress.v1"), JSON.stringify(g));
   return {
-    slot,
+    slot, runCleared, recordingKey, originalRecordingKey: window.__kidRecordingKeyA,
     name: Sona.getProfile().childName, age: Sona.getProfile().childAge,
     focus: Sona.getProfile().focusSounds,
     reps: Sona.repsToday(),
     kids: Sona.kids().map((k) => k.name + (k.active ? "*" : "")),
   };
 });
+ok("adding a child starts without the previous child's active adventure", st.runCleared, JSON.stringify(st));
+ok("the daily recording marker is separate for each child", st.recordingKey !== st.originalRecordingKey, JSON.stringify(st));
 ok("adding a kid takes a new slot", st.slot === "k2", st.slot);
 ok("the new kid is switched to immediately", /Ana\*/.test(st.kids.join(",")), st.kids.join(","));
 ok("their name and age land on THEIR profile", st.name === "Ana" && st.age === "5", JSON.stringify(st));
@@ -80,8 +96,10 @@ st = await page.evaluate(() => {
     pin: Sona.getProfile().parentPin,
     reps: Sona.repsToday(),
     stageS: (Sona.getProgress().stage || {}).S,
+    runRestored: sessionStorage.getItem("sona.run.v1") === window.__kidRunA,
   };
 });
+ok("switching back restores the first child's exact unfinished adventure", st.runRestored, JSON.stringify(st));
 ok("switching back restores the first child's profile", st.name === "Milo", st.name);
 ok("their focus sound was never overwritten", JSON.stringify(st.focus) === '["R"]', JSON.stringify(st.focus));
 ok("their parent code survived", st.pin === "2468", st.pin);
@@ -93,21 +111,28 @@ st = await page.evaluate(() => {
   const a = !!(Sona.isSubscribed && Sona.isSubscribed());
   Sona.switchKid("k2");
   const b = !!(Sona.isSubscribed && Sona.isSubscribed());
+  const siblingRunRestored = sessionStorage.getItem("sona.run.v1") === window.__kidRunB;
   const mic = localStorage.getItem("sona.micok");
   Sona.switchKid("");
-  return { a, b, mic };
+  const originalRunRestored = sessionStorage.getItem("sona.run.v1") === window.__kidRunA;
+  return { a, b, mic, siblingRunRestored, originalRunRestored };
 });
+ok("repeated switching restores each child's own run without overwriting either", st.siblingRunRestored && st.originalRunRestored, JSON.stringify(st));
 ok("both children share the family's plan", st.a === true && st.b === true, JSON.stringify(st));
 ok("the mic grant is per DEVICE, not per child", st.mic === "1", String(st.mic));
 
 // ── removing a sibling clears their data and never leaves zero children ──
 st = await page.evaluate(() => {
   const before = Sona.kids().length;
+  // Simulate another saved step for the active child just before removal, so
+  // this check fails independently of a broken preceding switch.
+  sessionStorage.setItem("sona.run.v1", window.__kidRunA);
   const removedLast = Sona.removeKid("");         // two exist, so this one is allowed
   Sona.switchKid("");
   const midway = Sona.kids().length;
-  return { before, removedLast, midway, keys: Object.keys(localStorage).filter((k) => k.indexOf("@k2") > -1).length };
+  return { before, removedLast, midway, active: Sona.activeKid().slot, survivorRun: sessionStorage.getItem("sona.run.v1") === window.__kidRunB, removedRunAbsent: sessionStorage.getItem("sona.run.v1") !== window.__kidRunA, keys: Object.keys(localStorage).filter((k) => k.indexOf("@k2") > -1).length };
 });
+ok("removing the active child restores the survivor's run without the removed run", st.active === "k2" && st.survivorRun && st.removedRunAbsent, JSON.stringify(st));
 ok("a removal takes the child out of the list", st.midway === st.before - 1, JSON.stringify(st));
 
 st = await page.evaluate(() => ({ blocked: Sona.removeKid(Sona.kids()[0].slot), n: Sona.kids().length }));
@@ -149,7 +174,7 @@ const ui = await page.evaluate(() => ({
 }));
 ok("Settings has a Kids card", ui.card);
 ok("it lists every child", ui.rows >= 1, "rows=" + ui.rows);
-ok("exactly one child is marked as practising now", ui.active === 1, "active=" + ui.active);
+ok("exactly one child is marked as practicing now", ui.active === 1, "active=" + ui.active);
 ok("it offers adding a kid", ui.addBtn);
 ok("it says the settings below belong to the selected child", /belongs to whoever is selected/i.test(ui.copy), ui.copy.slice(0, 120));
 

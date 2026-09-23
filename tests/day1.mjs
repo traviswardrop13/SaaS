@@ -55,10 +55,12 @@ async function home(age) {
     locked: [...document.getElementById("thumbs").children].filter((e) => e.classList.contains("locked")).length,
     padlocks: document.querySelectorAll("#thumbs .lock").length,
   }));
+  const heroLaunch = new URL(st.launch, "http://localhost:8178");
   ok("the hero is today's adventure — practice, not a book",
-    /adventure|play/i.test(st.cta) && st.launch === "/charge.html?daily=1", JSON.stringify(st));
+    /adventure|play/i.test(st.cta) && heroLaunch.pathname === "/charge.html"
+      && heroLaunch.searchParams.get("daily") === "1", JSON.stringify(st));
   ok("the adventure is named on the card", /adventure/i.test(st.hero), st.hero);
-  ok("the card says what practising earns", /game/i.test(st.sub), st.sub);
+  ok("the accessible card description names the adventure rounds", /rounds/i.test(st.sub), st.sub);
   ok("THREE games sit below, not two", st.thumbs === 3, String(st.thumbs));
   ok("none of them is locked — no book gates the day", st.locked === 0, JSON.stringify(st));
   ok("…and none of them wears a padlock", st.padlocks === 0, JSON.stringify(st));
@@ -82,16 +84,11 @@ async function home(age) {
   await pg.evaluate(seed("7"));
   await pg.goto("http://localhost:8178/today.html");
   await pg.waitForTimeout(700);
-  const soon = await pg.evaluate(() => {
-    const before = location.href;
-    document.getElementById("libBtn").click();
-    return { moved: location.href !== before, sub: document.getElementById("heroSub").textContent,
-             label: document.getElementById("libBtn").getAttribute("aria-label") || "" };
-  });
-  await pg.waitForTimeout(300);
-  ok("the book button goes nowhere", soon.moved === false && /today\.html/.test(pg.url()), pg.url());
-  ok("…and says the books are coming soon", /coming soon/i.test(soon.sub), soon.sub);
-  ok("…in its label too", /coming soon/i.test(soon.label), soon.label);
+  const libraryLabel = await pg.locator("#libBtn").getAttribute("aria-label");
+  await pg.locator("#libBtn").click();
+  await pg.waitForURL(/activities\.html/);
+  ok("the header library opens real games", /activities\.html/.test(pg.url()));
+  ok("the library door has an honest accessible name", /play library/i.test(libraryLabel),libraryLabel);
   // markup and code only — the comments explain the parking and may name the pages
   const home = readFileSync(ROOT + "/today.html", "utf8").replace(/<!--[\s\S]*?-->/g, "").replace(/\/\/[^\n]*/g, "");
   ok("Home has no door to the reader", !/chapter\.html|library\.html|story\.html/.test(home),
@@ -275,7 +272,7 @@ async function home(age) {
     coins: document.getElementById("coinTxt").textContent,
   }));
   ok("the jar starts empty", zero.h === "0%", JSON.stringify(zero));
-  ok("it says what filling it takes", /\d+ of \d+/.test(zero.sub), zero.sub);
+  ok("the empty jar invites speech without zero-count pressure", /Talk with Echo/.test(zero.sub), zero.sub);
   const half = await pg.evaluate(() => {
     Sona.bumpReps(13);                 // VAD-counted reps are the only input
     return { g: Sona.goalState() };
@@ -429,17 +426,17 @@ async function home(age) {
     localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Ada", childAge: "7", focusSounds: ["R"], onboarded: true }));
   });
 
-  // a child who has never practised is STARTING, and the button says so once
+  // a child who has never practiced is STARTING, and the button says so once
   await pg.evaluate(() => { localStorage.removeItem("sona.demo.v1"); });
   await pg.goto("http://localhost:8178/today.html"); await pg.waitForTimeout(800);
   ok("a brand-new child is invited to start, not to resume",
-    /START YOUR FIRST ADVENTURE/i.test(await pg.evaluate(() => document.getElementById("goBtn").textContent)));
+    /Your first adventure/i.test(await pg.evaluate(() => document.getElementById("goBtn").textContent)));
 
   // …and once they have, it is the ordinary adventure CTA again
   await pg.evaluate(() => localStorage.setItem("sona.demo.v1", JSON.stringify({ started: 1, done: 1 })));
   await pg.goto("http://localhost:8178/today.html"); await pg.waitForTimeout(800);
   ok("…and afterwards it stops shouting about firsts",
-    /LET'S PLAY/i.test(await pg.evaluate(() => document.getElementById("goBtn").textContent)));
+    /Today's adventure/i.test(await pg.evaluate(() => document.getElementById("goBtn").textContent)));
 
   // a run left half-finished is the commonest interruption there is
   await pg.evaluate(() => sessionStorage.setItem("sona.run.v1", JSON.stringify({ active: true, round: 2, sum: 40, scores: [20, 20], sound: "R", level: 1, pending: false })));
@@ -469,6 +466,196 @@ async function home(age) {
   await pg.goto("http://localhost:8178/today.html"); await pg.waitForTimeout(800);
   ok("an assignment is visible on Home, not just honoured under the hood",
     /Rachel, CF-SLP/.test(await pg.evaluate(() => document.getElementById("heroSub").textContent)));
+  await ctx.close();
+}
+
+
+// ── Adventure preview: the game promised on Home is the one practice earns. ──
+// Exercise the actual page hand-off across every date rotation, including a
+// little child's Feed Echo shelf. No microphone or fabricated speech is needed.
+const adventureKeys = ["slice", "tiles", "stack", "run", "glide"];
+const previewText = (value) => String(value || "").toLowerCase().replace(/\s+/g, " ").trim();
+
+async function adventureHome(age, offset = 0) {
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  await ctx.addInitScript(({ age, timestamp }) => {
+    const RealDate = Date;
+    const current = () => {
+      try { return Number(localStorage.getItem("sona.test.now")) || timestamp; }
+      catch { return timestamp; }
+    };
+    window.Date = class extends RealDate {
+      constructor(...args) { super(...(args.length ? args : [current()])); }
+      static now() { return current(); }
+    };
+    if (!localStorage.getItem("sona.profile.v1")) {
+      localStorage.setItem("sona.profile.v1", JSON.stringify({
+        childName: "Mia", childAge: String(age), focusSounds: ["S"], onboarded: true, voiceOn: false,
+      }));
+    }
+  }, { age, timestamp: Date.UTC(2026, 8, 21 + offset, 12) });
+  const pg = await ctx.newPage();
+  await pg.goto("http://localhost:8178/today.html");
+  return { ctx, pg };
+}
+
+async function heroState(pg) {
+  return pg.evaluate(() => ({
+    sub: document.getElementById("heroSub").textContent,
+    cta: document.getElementById("goBtn").textContent,
+    art: document.querySelector("#heroCard .path-node.current > .stk use, #heroCard > .stk use")?.getAttribute("href"),
+    shelf: document.getElementById("upNextLbl").textContent,
+    thumbs: [...document.querySelectorAll("#thumbs .thumb")].map((el) => el.dataset.key),
+  }));
+}
+
+async function openPreview(pg) {
+  const hero = await heroState(pg);
+  await pg.locator("#goBtn").click();
+  await pg.waitForURL(/\/charge\.html\?/);
+  const practice = await pg.evaluate(() => ({
+    title: document.getElementById("gameTitle").textContent,
+    art: "#" + Sona.gameSticker(window.GAME)[0],
+    run: JSON.parse(sessionStorage.getItem("sona.run.v1") || "null"),
+  }));
+  return { hero, practice };
+}
+
+{
+  const firstGames = new Set();
+  for (const age of [5, 7]) {
+    for (let offset = 0; offset < 5; offset++) {
+      const { ctx, pg } = await adventureHome(age, offset);
+      const { hero, practice } = await openPreview(pg);
+      const label = "age " + age + ", date " + (offset + 1);
+      firstGames.add(practice.title);
+      ok(label + ": Home names the game practice actually opens",
+        !!practice.title && previewText(hero.sub).includes(previewText(practice.title)),
+        JSON.stringify({ hero: hero.sub, practice: practice.title }));
+      ok(label + ": Home shows that game's art", hero.art === practice.art,
+        JSON.stringify({ home: hero.art, practice: practice.art }));
+      ok(label + ": individual choices are named separately", /pick a game/i.test(hero.shelf), hero.shelf);
+      const games = practice.run?.games;
+      ok(label + ": starting an adventure saves five distinct playable games",
+        Array.isArray(games) && games.length === 5 && new Set(games).size === 5
+          && games.every((key) => adventureKeys.includes(key)), JSON.stringify(practice.run));
+      if (age === 5) ok(label + ": individual choices still follow the shared daily deck", JSON.stringify(hero.thumbs) === JSON.stringify(await pg.evaluate(()=>Sona.dailyGames())), JSON.stringify(hero.thumbs));
+      await ctx.close();
+    }
+  }
+  ok("the five date rotations really exercise five different first games", firstGames.size === 5, JSON.stringify([...firstGames]));
+}
+
+// Home can remain open across midnight before any adventure starts. Starting
+// must honor the visible promise, without opening a run (or a gate) early.
+{
+  const { ctx, pg } = await adventureHome(7);
+  const visible = await heroState(pg);
+  const waitingRun = await pg.evaluate(() => JSON.parse(sessionStorage.getItem("sona.run.v1") || "null"));
+  ok("merely previewing an adventure does not start an active run", !waitingRun?.active, JSON.stringify(waitingRun));
+  await pg.evaluate(() => localStorage.setItem("sona.test.now", String(Date.now() + 86400000)));
+  // Deliberately do not navigate, refresh or rerender Home between the clock
+  // change and the click: these are still yesterday's pixels.
+  const { practice } = await openPreview(pg);
+  ok("starting after midnight honors the game Home was already showing",
+    previewText(visible.sub).includes(previewText(practice.title)),
+    JSON.stringify({ beforeMidnight: visible.sub, launched: practice.title }));
+  ok("starting after midnight honors the art Home was already showing",
+    visible.art === practice.art, JSON.stringify({ beforeMidnight: visible.art, launched: practice.art }));
+  const games = practice.run?.games;
+  ok("the previewed adventure still starts a complete five-game plan",
+    Array.isArray(games) && games.length === 5 && new Set(games).size === 5
+      && games.every((key) => adventureKeys.includes(key)), JSON.stringify(practice.run));
+  await ctx.close();
+}
+
+// Saved journeys take precedence over the date. Resume includes a child who
+// left before finishing the first round, and names the actual current game.
+{
+  const { ctx, pg } = await adventureHome(7);
+  const games = ["tiles", "stack", "run", "glide", "slice"];
+  for (const round of [0, 2]) {
+    await pg.evaluate(({ games, round }) => sessionStorage.setItem("sona.run.v1", JSON.stringify({
+      active: true, round, sum: round * 20, scores: Array(round).fill(20),
+      sound: "S", level: 1, pending: false, demo: true, games,
+    })), { games, round });
+    await pg.goto("http://localhost:8178/today.html");
+    const { hero, practice } = await openPreview(pg);
+    ok("round " + (round + 1) + " resumes only after meaningful progress",
+      round > 0 ? /CARRY ON/i.test(hero.cta) && previewText(hero.sub).includes("round " + (round + 1)) : !/CARRY ON/i.test(hero.cta), JSON.stringify(hero));
+    ok("resume round " + (round + 1) + " preview matches the actual game",
+      previewText(hero.sub).includes(previewText(practice.title)) && hero.art === practice.art,
+      JSON.stringify({ hero, practice: practice.title }));
+    ok("resume uses the saved current game",
+      await pg.evaluate((key) => window.GAME === "arcade-" + key + ".html", games[round]), practice.title);
+  }
+  const before = await pg.evaluate(() => ({
+    title: document.getElementById("gameTitle").textContent,
+    run: JSON.parse(sessionStorage.getItem("sona.run.v1")),
+  }));
+  await pg.evaluate(() => localStorage.setItem("sona.test.now", String(Date.now() + 86400000)));
+  await pg.goto("http://localhost:8178/today.html");
+  const resumed = await openPreview(pg);
+  ok("crossing midnight does not replace the earned journey",
+    resumed.practice.title === before.title && JSON.stringify(resumed.practice.run.games) === JSON.stringify(before.run.games),
+    JSON.stringify({ before, after: resumed.practice }));
+  ok("after midnight Home still previews the game that opens",
+    previewText(resumed.hero.sub).includes(previewText(resumed.practice.title)) && resumed.hero.art === resumed.practice.art);
+  await ctx.close();
+}
+
+// A pre-update record has no games field. Adopting a plan must not erase its
+// score, pending return, target or replay flag; refreshing a return banks once.
+{
+  const { ctx, pg } = await adventureHome(7);
+  const legacy = { active: true, round: 2, sum: 40, scores: [20, 20], sound: "S", level: 2, pending: false, ringed: 1, demo: true };
+  await pg.evaluate((run) => sessionStorage.setItem("sona.run.v1", JSON.stringify(run)), legacy);
+  await pg.goto("http://localhost:8178/charge.html?daily=1");
+  const adopted = await pg.evaluate(() => JSON.parse(sessionStorage.getItem("sona.run.v1")));
+  ok("a legacy adventure adopts a five-game plan",
+    Array.isArray(adopted.games) && adopted.games.length === 5, JSON.stringify(adopted));
+  ok("adopting the plan preserves every existing progress and replay field",
+    Object.keys(legacy).every((key) => JSON.stringify(adopted[key]) === JSON.stringify(legacy[key])), JSON.stringify(adopted));
+
+  await pg.evaluate(() => {
+    const run = JSON.parse(sessionStorage.getItem("sona.run.v1"));
+    run.pending = true;
+    sessionStorage.setItem("sona.run.v1", JSON.stringify(run));
+  });
+  await pg.goto("http://localhost:8178/charge.html?daily=1&banked=10");
+  const banked = await pg.evaluate(() => JSON.parse(sessionStorage.getItem("sona.run.v1")));
+  await pg.reload();
+  const refreshed = await pg.evaluate(() => JSON.parse(sessionStorage.getItem("sona.run.v1")));
+  ok("a returning score advances one round exactly once",
+    banked.round === 3 && banked.sum === 50 && banked.pending === false && JSON.stringify(banked.scores) === "[20,20,10]"
+      && JSON.stringify(refreshed) === JSON.stringify(banked), JSON.stringify({ banked, refreshed }));
+  ok("banking preserves the chosen sequence and replay",
+    JSON.stringify(refreshed.games) === JSON.stringify(adopted.games) && refreshed.demo === true, JSON.stringify(refreshed));
+
+  await pg.evaluate(() => {
+    const run = JSON.parse(sessionStorage.getItem("sona.run.v1"));
+    run.round = 4; run.pending = true;
+    sessionStorage.setItem("sona.run.v1", JSON.stringify(run));
+  });
+  await pg.goto("http://localhost:8178/charge.html?daily=1&banked=7");
+  const done = await pg.evaluate(() => ({
+    run: JSON.parse(sessionStorage.getItem("sona.run.v1")),
+    shown: document.getElementById("runOvl").classList.contains("show"),
+  }));
+  ok("the fifth return finishes the saved journey",
+    done.shown && done.run.active === true && done.run.finishing === true && done.run.round === 5 && done.run.sum === 57, JSON.stringify(done));
+  await pg.goto("http://localhost:8178/today.html");
+  ok("an unfinished finale resumes the surprise without inventing round six", /CARRY ON/i.test((await heroState(pg)).cta) && !/round 6/i.test((await heroState(pg)).sub));
+
+  // Also reject an old active record already at its finish line; Home should
+  // never say there is a sixth round merely because active was left true.
+  await pg.evaluate(() => {
+    const run = JSON.parse(sessionStorage.getItem("sona.run.v1"));
+    run.active = true; delete run.finishing;
+    sessionStorage.setItem("sona.run.v1", JSON.stringify(run));
+  });
+  await pg.goto("http://localhost:8178/today.html");
+  ok("a finished active record does not produce a sixth-round resume", !/CARRY ON/i.test((await heroState(pg)).cta));
   await ctx.close();
 }
 

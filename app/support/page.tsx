@@ -37,13 +37,12 @@ export default function SupportPage() {
           work. You can re-run it anytime from the parent dashboard.
         </Faq>
         <Faq q="Do you store my child's voice?">
-          {/* This answer described the cloud scorer that was removed. Scoring
-              is on-device now and nothing is uploaded. */}
-          No. Your child&apos;s voice never leaves the device — the microphone is
-          on only during practice, and every check happens on the phone itself.
-          The app may keep one short clip a day in the device&apos;s own storage
-          so you can listen back; it is never uploaded, and clearing the
-          app&apos;s data removes it. See our{" "}
+          Sona may save one clear practice try per child per day on the phone so
+          you can listen back. The microphone listens during practice and optional
+          voice-enabled games; sound checks happen on the phone itself. Sona never
+          uploads recordings. A grown-up can choose to share a saved clip through
+          the phone&apos;s share sheet. Clearing the app&apos;s data removes local
+          clips. See our{" "}
           <a className="text-[#1cb0f6] underline" href="/privacy">
             Privacy Policy
           </a>

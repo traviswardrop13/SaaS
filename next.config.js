@@ -38,6 +38,8 @@ const nextConfig = {
     return [
       ...pages.map((p) => ({ source: `/${p}.html`, headers: noStore })),
       { source: "/sona.js", headers: noStore },
+      { source: "/simple-play.js", headers: noStore },
+      { source: "/simple-play.css", headers: noStore },
       { source: "/mouthcue.js", headers: noStore },
       { source: "/sona.css", headers: noStore },
       { source: "/manifest.webmanifest", headers: noStore },
@@ -53,6 +55,14 @@ const nextConfig = {
   // static page instead of 404ing. Rewrite keeps the pretty URL in the address bar.
   async rewrites() {
     return [
+      // THE ROOT IS THE CLINICIAN PAGE (22 Sep 2026). speaksona.com is where
+      // the SLP ad lands, so it serves the SLP page itself rather than
+      // redirecting — a redirect costs a hop on cold paid traffic and splits
+      // the SEO. One copy of that page exists, in public/, and both URLs show
+      // it; for-slps.html carries a canonical pointing at the root so search
+      // engines are told which one is the page. The parent landing page moved
+      // to /families and is unchanged.
+      { source: "/", destination: "/for-slps.html" },
       { source: "/for-slps", destination: "/for-slps.html" },
       { source: "/slp-login", destination: "/slp-login.html" },
       { source: "/slp", destination: "/slp.html" },

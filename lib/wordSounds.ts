@@ -4,7 +4,7 @@
  *
  * This used to live alongside the SpeechAce scorer. The scorer is gone —
  * nothing uploads audio any more — but this half never had anything to do with
- * it: /api/story uses it to pick story words that genuinely practise the
+ * it: /api/story uses it to pick story words that genuinely practice the
  * child's sound. Spelling-based and imperfect by design; it chooses content,
  * it never judges a child.
  */

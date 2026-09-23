@@ -14,6 +14,7 @@ The deployed dashboard still uses authenticated SLP APIs. Community and Affiliat
 
 ## Completed
 
+- Prominent Download the app and Copy app link controls stay visible on desktop/mobile. General and individual family messages include the exact Sona Speech App Store URL while retaining each clinician invitation link.
 - Calm desktop/mobile workspace; clear Today groups, caseload search/filter/sort, clickable rows, honest clipboard/load-error recovery, and keyboard focus.
 - Review fixes: consistent Last 7 days labels, homework hit counts that exclude future/out-of-window dates, friendly parent check-in messages, Set their sound for new families, and no duplicate quiet/missed row.
 - One family invite panel with individual and general links/messages. Initials, 30-day expiry, and parent-message guidance are preserved.
@@ -28,7 +29,7 @@ The deployed dashboard still uses authenticated SLP APIs. Community and Affiliat
 
 ## Verification
 
-253 focused checks passed against the final implementation:
+The earlier local review passed 253 focused checks:
 
 | Suite | Checks |
 | --- | ---: |
@@ -41,11 +42,11 @@ The deployed dashboard still uses authenticated SLP APIs. Community and Affiliat
 
 TypeScript passed with `--noEmit --incremental false`. Browser review covered 1440/390 pixels, with workflow checks also covering 320 pixels. No runtime errors or horizontal overflow were found. Tests verify view navigation does not make write requests. New review checks fail against the saved pre-review page, and the durable workflow suite detects the old generic planner.
 
-Release verification on September 22: after integrating main at `777cdc7`, all 34 suites in `node tests/run-all.mjs` passed (exit 0), including the latest audio regression suites. TypeScript also passed with `--noEmit --incremental false`. The local run used the installed Google Chrome executable via `CHROMIUM_PATH`.
+Final integration on September 22 includes main at `0954730`, preserving the landing-page signup/CRM changes, family-only native routing, current privacy disclosures, and Rachel's current product credential wording. The full 45-suite battery completed: 44 passed, with only the existing `repguardtest.mjs` noise-acceptance failure (64/74 checks; runner exit 1). The practice engine and that suite exactly match main. Travis explicitly approved shipping this known limitation in the Sona task before addressing noise separately; the tests remain enabled and unchanged. TypeScript passed with `--noEmit --incremental false`. An additional 33 UI checks passed for the download/share controls at 1440, 390, and 320 pixels. The local run used installed Google Chrome via `CHROMIUM_PATH`.
 
 ## Deliberately not live
 
-- Release prerequisite: Production must have `SLP_AUTH_SECRET` set before merging. Without it, SLP sessions and family enrollment tickets fail closed. Confirm the setting by name; never record its value here.
+- Existing production blocker: the live signup health endpoint reports `signing:false`, with store/email/CRM configuration present. Production needs `SLP_AUTH_SECRET` and a redeploy to enable sign-in. Auth code in this release is identical to current main; this dashboard merge does not resolve the missing setting. Never record its value here.
 - Community needs shared storage and moderation before enabling it for members. Rachel must rewrite/approve her seed posts. The preview is not a functioning shared community.
 - Affiliate commission and eligibility terms still need a confirmed launch decision.
 - Live feedback delivery was not exercised. Dedicated notifications use `SLACK_FEEDBACK_WEBHOOK_URL` or `FEEDBACK_WEBHOOK_URL`; with KV alone, messages are stored but no notification is sent. The code does not route feedback into generic lead/pilot destinations.

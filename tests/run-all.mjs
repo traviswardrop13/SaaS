@@ -17,9 +17,14 @@ const SUITES = [
   "slpcode.mjs",   // CODES1: SLP family credential — verified redemption, honest gate
   "slpapi.mjs",    // SLPAPI1: the clinician's roster — invites ahead of the family, removal, meta the device can't overwrite
   "ttsroutetest.mjs", // voice provider, delivery cache, safe fallback and request deadline
-  "voiceclienttest.mjs", // actual playback source and complete spoken turns
+  "voiceclienttest.mjs", // actual playback source, old-cache refresh and complete spoken turns
+  "chargepacingtest.mjs", // listen/model/child-turn handoff and replay ordering
   "readtest.mjs",  // books never go silent: browser-voice fallback when TTS dies
   "momweek.mjs",   // parent weekly goal + streak math + the three UIs
+  "nativefamilytest.mjs", // native family entry; clinician routes stay browser-only
+  "onboardingtest.mjs", // reviewed setup, permission and explicit handoff
+  "progressreviewtest.mjs", // honest parent counts, local clips and explicit sharing
+  "repguardtest.mjs", // non-speech evidence cannot create practice
   "betatest.mjs",  // onboarding flow + beta pulse + founding banner
   "calltest.mjs",  // Coach Call script variants + weekly cap (dev-gated)
   "packtest.mjs",  // call memory, wins card, buddy sprites, adventure tile
@@ -29,12 +34,18 @@ const SUITES = [
   "gatecheck.mjs", // parent-gate hardening on adult-only pages
   "fittest.mjs",   // device-matrix fit: SE→Pro Max, zoomed display, landscape
   "day1.mjs", // the day: one story, then three games
+  "homesessiontest.mjs", // one age-appropriate Home session, current goals and resume precedence
+  "activitytest.mjs", // play library: age suggestions, game routes, safe browsing and fit
+  "pausetest.mjs", // interruptions preserve one practice flow and release local device resources
+  "completiontest.mjs", // adventure recap, honest history, finish routes and prompt volume
+  "simpleplaytest.mjs", // Bubble Pop and Peekaboo: deliberate play, honest voice feedback, safe interruption
   "feedtest.mjs",  // Feed Echo: littles tap-and-say loop, growth, deck placement
   "iaptest.mjs",   // Apple IAP rail: native paywall, purchase/restore, web untouched
   "heartest.mjs",  // HEAR1: on-device recognition verdicts — poopoo fails, unknown never does
   "loadtest.mjs",  // LOAD1: per-game loading scenes, ticket pill, ghost reveals
   "mictest.mjs",   // MIC1: a declined mic is never a dead end; the consent copy is true
   "hwtest.mjs",    // HW1: SLP homework replaces what the app would have picked
+  "pauseaudiotest.mjs", // interrupted playback and native starts cannot outlive their practice phase
   "slptest.mjs",   // SLP1: the clinician dashboard — live Today, honest register, one door, real remove, the note
   "slpworkflowtest.mjs", // quick homework, per-child plans, feedback/call UI and failure recovery
   "slpfeedbacktest.mjs", // authenticated feedback and call requests; confirmed receipt only

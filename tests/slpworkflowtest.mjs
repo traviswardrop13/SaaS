@@ -65,7 +65,7 @@ try {
     ok('feedback and call are explicit modes',await exists(pg,'#fbModeFeedback')&&await exists(pg,'#fbModeCall'));
     if(!await exists(pg,'#fbModeCall')){await ctx.close();return;}
     const intro=await text(pg,'#page-feedback');
-    ok('feedback introduces Rachel as Clinical Fellow',/Rachel/.test(intro)&&/Clinical Fellow|CF.SLP|CF year/i.test(intro),intro);
+    ok('feedback introduces Rachel with her current product credential',/Rachel/.test(intro)&&/licensed pediatric speech-language pathologist/i.test(intro)&&!/Clinical Fellow|CF.SLP/i.test(intro),intro);
     ok('normal feedback keeps call scheduling fields hidden',!await visible(pg,'#callFields'));
     await pg.locator('#fbTopic').selectOption('dashboard');await pg.locator('#fbText').fill('The child switcher is useful.');await pg.locator('#fbSend').click();await pg.waitForTimeout(100);
     const fb=writes('/api/slp/feedback').at(-1);

@@ -2,6 +2,22 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
+  <script>
+// Clinician tools live in the browser. A restored link in the native shell
+// must return to the family app before rendering or making clinician requests.
+(function () {
+  var native = false;
+  try {
+    var bridge = window.Capacitor;
+    native = !!(bridge && (typeof bridge.isNativePlatform === "function" ? bridge.isNativePlatform() : true));
+  } catch (e) {}
+  if (!native) return;
+  window.__sonaFamilyRedirect = true;
+  document.documentElement.style.visibility = "hidden";
+  // Home owns active-child selection and the first-run setup guard.
+  window.location.replace("/today.html");
+})();
+  </script>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Sona — SLP Portal</title>
   <!-- the SLP side is hidden (19 Sep 2026): reachable by direct link, not by search -->
@@ -565,6 +581,13 @@
     .chip.neutral { background:#edf1f0; color:#4e6460; }
     .grid td.neutral { color:#4e6460; }
     .bar.neutral i { background:#829995; }
+    .workspace-bar { gap:16px; }
+    .app-actions { display:flex; align-items:center; gap:8px; flex-shrink:0; }
+    .app-download { gap:9px; min-height:44px; padding:8px 15px; text-align:left; text-decoration:none; }
+    .app-download span { line-height:1.25; }
+    .app-download small { display:block; margin-top:2px; font-size:10px; font-weight:400; opacity:.9; }
+    @media (max-width:768px) { .workspace-bar { height:64px; } }
+    @media (max-width:600px) { .workspace-bar .crumb { display:none; } .app-actions { width:100%; justify-content:space-between; } }
   </style>
 </head>
 <body>
@@ -598,7 +621,13 @@
   </aside>
 
   <main class="main" id="mainContent" tabindex="-1">
-    <div class="workspace-bar"><div class="crumb">Workspace <span>/</span> <b id="pageCrumb">Today</b></div></div>
+    <div class="workspace-bar">
+      <div class="crumb">Workspace <span>/</span> <b id="pageCrumb">Today</b></div>
+      <div class="app-actions">
+        <a class="btn green app-download" id="downloadApp" href="https://apps.apple.com/us/app/sona-speech/id6785755867" target="_blank" rel="noopener noreferrer"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="2" width="12" height="20" rx="3"/><path d="M10 18h4M12 6v8m-3-3 3 3 3-3"/></svg><span>Download the app<small>iPhone &amp; iPad</small></span></a>
+        <button class="btn ghost sm" id="copyAppLink" type="button">Copy app link</button>
+      </div>
+    </div>
     <div class="main-inner">
       <div class="load-notice" id="loadError" role="alert" hidden><span id="loadErrorText"></span><button class="btn ghost sm" id="loadRetry">Try again</button></div>
       <div class="loading-state" id="loadingState" role="status">Loading your workspace…</div>
@@ -864,7 +893,7 @@
           <div id="communityFeed" aria-live="polite"></div>
         </div><aside class="community-aside">
           <div class="card"><div class="eyebrow">Made for SLPs</div><h3 style="margin-top:12px;">A little community. A lot of care.</h3><p>A place to trade practical ideas, celebrate small wins, and ask the questions you've been sitting on.</p><div class="community-side-list"><div><strong>Keep it kind</strong>Meet each other with curiosity and respect.</div><div><strong>Protect your families</strong>Share general ideas, without identifying a child.</div><div><strong>Make room for everyone</strong>Questions are welcome at every stage.</div></div></div>
-          <div class="card"><div class="rachel-avatar" aria-hidden="true">R</div><h3>Build this with Rachel</h3><p>Rachel is Sona's co-founder and a licensed pediatric SLP in her Clinical Fellowship year. Help shape the space you'd want to come back to.</p><a href="#feedback">Share an idea or request a call ↗</a><a href="#affiliate" data-preview-only hidden>Explore the upcoming affiliate program ↗</a></div>
+          <div class="card"><div class="rachel-avatar" aria-hidden="true">R</div><h3>Build this with Rachel</h3><p>Rachel is Sona's co-founder and a licensed pediatric speech-language pathologist. Help shape the space you'd want to come back to.</p><a href="#feedback">Share an idea or request a call ↗</a><a href="#affiliate" data-preview-only hidden>Explore the upcoming affiliate program ↗</a></div>
         </aside></div>
       </div>
 
@@ -887,7 +916,7 @@
           <p class="workflow-note">Please keep feedback about the product. Leave out children's names and private information.</p><p class="workflow-note" id="fbReply"></p>
           <div class="row" style="margin-top:18px;"><button class="btn green" id="fbSend">Send to Rachel</button><span class="sub" id="fbStatus" role="status"></span></div>
           <div class="fb-success" id="fbSuccess" role="status" style="display:none;"></div>
-        </div><aside class="feedback-intro"><div class="rachel-avatar" aria-hidden="true">R</div><h2>Hi, I'm Rachel.</h2><p>I'm Sona's co-founder and a licensed pediatric speech-language pathologist in my Clinical Fellowship year.</p><p>I'd love to hear how Sona fits into your day, what could work better, and what you're curious about. A little feedback helps us build something more useful for you and your families.</p><p class="signature">Rachel · Co-founder</p><p class="credential">Licensed SLP · Clinical Fellow (CF-SLP)</p><button class="btn ghost sm" id="rachelCall">I'd love to connect →</button></aside></div>
+        </div><aside class="feedback-intro"><div class="rachel-avatar" aria-hidden="true">R</div><h2>Hi, I'm Rachel.</h2><p>I'm Sona's co-founder and a licensed pediatric speech-language pathologist.</p><p>I'd love to hear how Sona fits into your day, what could work better, and what you're curious about. A little feedback helps us build something more useful for you and your families.</p><p class="signature">Rachel · Co-founder</p><p class="credential">Licensed pediatric speech-language pathologist</p><button class="btn ghost sm" id="rachelCall">I'd love to connect →</button></aside></div>
       </div>
 
     </div>
@@ -1409,7 +1438,8 @@
       return location.origin+"/join.html?slp="+encodeURIComponent(code.toUpperCase())+(fk?("&k="+encodeURIComponent(fk)):"");
     }
     function inviteLink(token){ return familyLink()+"&inv="+encodeURIComponent(token); }
-    function inviteMsg(child,link){ return "Hi! Here's your child's Sona link — the speech-practice app I mentioned. It's free forever for your family. Open it on the phone your child will use, say yes to sharing practice with me, and they can start today. It listens and gives feedback as they play, and I'll see the practice add up on my end.\n\n"+link; }
+    var APP_STORE_URL="https://apps.apple.com/us/app/sona-speech/id6785755867";
+    function inviteMsg(child,link){ return "Hi! Here's your child's Sona link — the speech-practice app I mentioned. It's free forever for your family. Open it on the phone your child will use, say yes to sharing practice with me, and they can start today. It listens and gives feedback as they play, and I'll see the practice add up on my end.\n\nYour family invite (start here):\n"+link+"\n\nDownload for iPhone or iPad:\n"+APP_STORE_URL; }
     function invInit(){
       if(invReady)return; invReady=true;
       $("invAge").innerHTML='<option value="">—</option>'+[3,4,5,6,7,8,9,10,11,12].map(function(a){return'<option value="'+a+'">'+a+'</option>';}).join("");
@@ -1424,7 +1454,7 @@
     // wherever the link is shown
     function paintLinkCard(){
       $("famLink").value=familyLink();
-      $("snip").value="Hi! Here's the Sona link I mentioned — a fun app where your child can practice their speech sounds at home. It's free forever for your family. Open it on the phone your child will use, set them up in about 30 seconds, and say yes to sharing practice with me so I can see it add up.\n\n"+familyLink();
+      $("snip").value="Hi! Here's the Sona link I mentioned — a fun app where your child can practice their speech sounds at home. It's free forever for your family. Open it on the phone your child will use, set them up in about 30 seconds, and say yes to sharing practice with me so I can see it add up.\n\nYour family invite (start here):\n"+familyLink()+"\n\nDownload for iPhone or iPad:\n"+APP_STORE_URL;
     }
     function renderInvite(){
       invInit();
@@ -1453,6 +1483,7 @@
     };
     $("invCopy").onclick=function(){copy($("invLink").value,$("invCopy"));};
     $("invCopyMsg").onclick=function(){copy($("invMsg").value,$("invCopyMsg"));};
+    $("copyAppLink").onclick=function(){copy(APP_STORE_URL,$("copyAppLink"));};
     $("copyLink").onclick=function(){copy($("famLink").value,$("copyLink"));};
     $("copySnip").onclick=function(){copy($("snip").value,$("copySnip"));};
 
@@ -1598,7 +1629,7 @@
     var COMMUNITY_FILTER="all", COMMUNITY_SEQUENCE=0, COMMUNITY_REPLY_DRAFTS={};
     var COMMUNITY_TOPICS={discussions:"Discussions",resources:"Resources & ideas",cf:"CF corner"};
     var COMMUNITY_POSTS=[
-      {id:"rachel-welcome",author:"Rachel · Co-founder",draft:true,category:"discussions",title:"A little hello from Rachel",text:"I'm Rachel, Sona's co-founder and a licensed pediatric SLP in my Clinical Fellowship year. I'd love for this to be a space where we can ask questions, trade ideas, and get to know each other. What would make this community useful to you?",replies:[]},
+      {id:"rachel-welcome",author:"Rachel · Co-founder",draft:true,category:"discussions",title:"A little hello from Rachel",text:"I'm Rachel, Sona's co-founder and a licensed pediatric speech-language pathologist. I'd love for this to be a space where we can ask questions, trade ideas, and get to know each other. What would make this community useful to you?",replies:[]},
       {id:"rachel-cf",author:"Rachel · Co-founder",draft:true,category:"cf",title:"CF year: learning as I go",text:"I'd like to use this corner for honest conversations about the CF year — the questions, the small wins, and finding our rhythm. What's something you're figuring out, or something you wish you'd known when you started?",replies:[]},
       {id:"rachel-home",author:"Rachel · Co-founder",draft:true,category:"resources",title:"Home practice: where does it fit?",text:"A question I'd love to talk about: how do you help families find a place for practice in their day? Share a routine, a useful resource, or a question we can think through together.",replies:[]}
     ];
@@ -1680,6 +1711,7 @@
     /* ── Auth boot ─────────────────────────────── */
     $("logout").onclick=function(e){e.preventDefault();fetch("/api/slp/auth/logout",{method:"POST"}).then(function(){location.replace("/slp-login.html");}).catch(function(){location.replace("/slp-login.html");});};
     function boot(){
+      if(window.__sonaFamilyRedirect)return;
       fetch("/api/slp/auth/me").then(function(r){return r.json();}).then(function(j){
         if(!j||!j.ok){location.replace("/slp-login.html");return;}
         account=j;code=j.code||"";

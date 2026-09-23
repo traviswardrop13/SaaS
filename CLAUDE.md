@@ -48,10 +48,12 @@ Fellow (CF-SLP)**: master's complete, supervised fellowship year in progress.
 She does **not** hold ASHA's CCC.
 
 So: **"licensed speech-language pathologist" is TRUE** and is used across the
-app — under-claiming a real credential is not a virtue. State the fellowship
-beside it where there is room ("licensed pediatric speech-language pathologist
-(Clinical Fellow)"), and always on the SLP-facing pages, where a peer will read
-"CF" precisely and would notice its absence.
+app — under-claiming a real credential is not a virtue. **The fellowship is no
+longer named in product copy** (Travis, 23 Sep 2026: "we can take out clinical
+fellow") — "licensed pediatric speech-language pathologist" and nothing after
+it. She still is a Clinical Fellow: if an SLP, a district or a board asks, the
+answer is yes, and no copy may imply otherwise — never "fully licensed", never
+anything that suggests the fellowship is behind her.
 
 **Never "CCC", "certified", "board-certified" or "ASHA-certified".** The
 landing page claimed "Licensed & board-certified (CCC-SLP)" until it was caught
@@ -66,7 +68,7 @@ the diff.
 
 ## Pricing — one switch, and the cohorts it can never take back
 **Sona is FREE** (Travis, 20 Sep 2026: "make it free" — the long game is
-SLPs championing it, families practising free, and a paid parent view of
+SLPs championing it, families practicing free, and a paid parent view of
 progress later). **When it is paid, it is one plan, yearly, after a 3-day free
 trial — $59.99 for the first 50 families (the charter price), $99.99 after
 that**, and every rule below is written for that state. `FREE_MODE = true` in
@@ -194,23 +196,29 @@ an SLP or clinic anywhere in the product: the SLP channel produces engaged
 families and zero revenue by design. Entitlement is never granted from a URL
 parameter.
 
-**The SLP side is HIDDEN, not deleted** (Travis, 19 Sep 2026: "not a
-priority"). Nothing links to it: the clinician door left onboarding, the
-"working with a speech therapist?" card left the plan screen and the trial
-page, and the SLP pages carry `noindex`. `for-slps.html`, `slp.html`,
-`slp-login.html`, `join.html`, the settings SLP corner (renders only for
-`role === "slp"`) and every `/api/slp/*` route stay, reachable by direct
-link, because clinicians already onboarded and their free-forever families are
-a promise that hiding must not break. `betatest`, `progtest` and `slpcode`
-pin the doors shut.
+**THE SLP SIDE IS THE CHANNEL** (Travis, 21 Sep 2026: "im keeping it free.
+targetting slps first"). It was hidden on 19 Sep as "not a priority" and that
+is now reversed: the clinician door is back on the first setup screen — it is
+the only entrance to `ORDER_SLP`, so removing it again makes that whole
+branch dead code — `for-slps.html` is indexable and linked from the landing
+footer, and `betatest` pins the door OPEN.
+
+Still `noindex`, correctly: `slp.html` and `slp-login.html` (a private
+dashboard and its login) and `join.html` (a family's redemption link, which
+carries a credential in the URL). Those are surfaces, not marketing.
+
+Not restored, deliberately: the "working with a speech therapist?" card on the
+plan screen and the trial page. Sona is free, so neither screen renders —
+bringing them back now would be copy nobody sees, and `progtest` and
+`slpcode` pin their absence. They return with pricing, if at all.
 
 ## The clinician's dashboard: carryover, in the honest register
 **The SLP dashboard (`public/slp.html`) is built around ONE problem — carryover
-(Travis, 21 Sep 2026):** a child goes home, practises, and the clinician can
+(Travis, 21 Sep 2026):** a child goes home, practices, and the clinician can
 see that it happened and paste it into a note. Not "assigning homework"
-(table stakes), not income. So the page is Today (who practised this week,
+(table stakes), not income. So the page is Today (who practiced this week,
 who went quiet, what ends soon — one action per row) → Caseload (every child,
-oldest-practised first, **Copy note on every row**) → a child page (8-week
+oldest-practiced first, **Copy note on every row**) → a child page (8-week
 strip, pass rate by sound and position, the current homework, the composer)
 → Settings. Reviewed by three lenses — a school SLP, a district privacy
 officer, an engineer — whose rulings are now rules:
@@ -222,12 +230,12 @@ officer, an engineer — whose rulings are now rules:
   and no percentage is shown — anywhere: table, grid, strip, note, CSV. One
   constant; whether a percentage is shown at all is Rachel's call.
 - **The note is a fixed template** and carries its own hedge: "Between {start}
-  and {end}, {Name} practised on {n} of {N} days ({avg} tries a day). {Sound}
+  and {end}, {Name} practiced on {n} of {N} days ({avg} tries a day). {Sound}
   in {position}: {pass}% pass rate over {attempts} attempts. A practice
   snapshot from at-home listening on the family's device; not an evaluation."
   Window = the current homework, else the last 14 days. Never an age.
 - **No caseload-wide average.** An unweighted mean of percentages across
-  children is meaningless; the one number is "N of M children practised this
+  children is meaningless; the one number is "N of M children practiced this
   week". No leaderboard, no ranking, no comparison across families — a
   district officer ends the app's use on that alone.
 - **Invites hold initials, never a name.** The SLP may add a child before the

@@ -81,7 +81,7 @@
         var p = {}; try { p = Sona.getProfile() || {}; } catch (e) {}
         location.href = (p.onboarded || p.childName) ? "/today.html" : "/onboarding.html";
       }
-      // The clinician may have set a first sound to practise ahead of time,
+      // The clinician may have set a first sound to practice ahead of time,
       // behind an invite token in the link. Claiming it ties THIS device to
       // that invite, so the target becomes the child's first assignment and
       // the dashboard knows this child came in through it. The name and age
@@ -120,7 +120,7 @@
         consent.style.display = "block";
         document.getElementById("jConsentBody").textContent =
           "If you say yes, " + (name || "your child's speech therapist") + " will see your child's first name and age as you entered them, " +
-          "which sounds they are practising, practice days and how many tries each day, and a rough pass rate per sound. " +
+          "which sounds they are practicing, practice days and how many tries each day, and a rough pass rate per sound. " +
           "They can also send practice assignments and a short note to this app. Never any audio; recordings stay on this device. " +
           "You can stop any time, and stopping deletes everything they could see. Saying no changes nothing; Sona stays free for you.";
         try { if (Sona.confetti) Sona.confetti({ count: 150 }); } catch (e) {}

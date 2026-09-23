@@ -96,7 +96,7 @@ ok("deck names the hero activity", deck.hero.length > 3, deck.hero);
 // GAMES1: the hero is today's ADVENTURE — practice first, and the games are
 // what each round earns. The books are parked (19 Sep 2026).
 ok("hero card opens a real door", /^\/(charge\.html\?(daily=1|game=)|arcade-feed\.html)/.test(deck.launch || ""), deck.launch);
-// The wording depends on whether this child has ever practised — a
+// The wording depends on whether this child has ever practiced — a
 // first-timer is invited to START YOUR FIRST ADVENTURE. The launch target
 // above is what pins the door; this pins that the button is about practice.
 ok("CTA offers the adventure first", /LET.S PLAY|FIRST ADVENTURE/i.test(deck.cta), deck.cta);
@@ -105,7 +105,7 @@ ok("home screen carries no chapter furniture", !deck.chapPill);
 
 // ── NO story card interrupts a round, daily or free play ──
 // This is the point of the change. Beats used to open every round and a child
-// had to sit through one before practising. The engine survives for the win
+// had to sit through one before practicing. The engine survives for the win
 // screen; nothing may render it mid-practice.
 for (const url of ["/charge.html?daily=1&sound=R", "/charge.html?game=arcade-slice.html"]) {
   await page.goto("http://localhost:8151" + url);
@@ -122,7 +122,8 @@ for (const url of ["/charge.html?daily=1&sound=R", "/charge.html?game=arcade-sli
   ok("charge.html has no story-beat code left", !/storyBeat|STORYHOUSE|houseBeat/.test(src),
     "a beat function left behind is a beat that comes back");
   ok("the mic primer hands straight to the OS prompt",
-    /await micPrimer\(\);\s*\n\s*try\{ micStream=await navigator\.mediaDevices\.getUserMedia/.test(src),
+    /await micPrimer\(\);\s*if\(!\(await acquirePracticeMic\(\)\)\)return;/.test(src)
+    && /async function acquirePracticeMic\(\)[\s\S]*?navigator\.mediaDevices\.getUserMedia\(\{audio:true,video:false\}\)/.test(src),
     "anything between the primer tap and getUserMedia delays the browser dialog");
 }
 

@@ -75,7 +75,8 @@ async function page(mic) {
 // the paragraph a parent reads before granting the mic must not describe one.
 {
   const charge = noComments(readFileSync(ROOT + "/charge.html", "utf8"));
-  const primer = (charge.match(/id="micPrime"[\s\S]{0,1400}?<\/div>\s*<\/div>/) || [""])[0];
+  const primer = (readFileSync(ROOT + "/sona.js", "utf8").match(/const MIC_PROMISE = "([^"]+)"/) || ["", ""])[1];
+  ok("practice renders the single shared mic promise", /micPromise/.test(charge) && /S\.MIC_PROMISE/.test(charge));
   ok("the mic primer exists with a grown-ups paragraph", /Grown-ups:/.test(primer), "the primer is the consent moment");
   // Scan for an AFFIRMATIVE sending claim only. A first pass matched the word
   // "upload" and flagged the sentence promising nothing is uploaded — a denial
@@ -90,7 +91,7 @@ async function page(mic) {
     !/\b(sends?|sent|uploads?|uploaded|transmits?)\b|for scoring|scoring provider/i.test(claims),
     "no audio leaves the device — copy describing an upload is a false promise, not a stale detail: " + claims.slice(0, 120));
   ok("…and says plainly that nothing is uploaded",
-    /never uploaded|no recording is ever uploaded|not uploaded/i.test(primer),
+    /never uploads recordings|never uploaded|no recording is ever uploaded|not uploaded/i.test(primer),
     "the strongest claim Sona makes should be stated, not implied");
   ok("…and is honest about the one clip kept on the phone",
     /saved on this phone|on this device/i.test(primer),

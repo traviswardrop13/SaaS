@@ -45,6 +45,9 @@ export async function POST(req: NextRequest) {
     referrer?: string;
     landing?: string;
     source?: string;
+    name?: string;
+    role?: string;
+    fbclid?: string;
   };
   try {
     body = await req.json();
@@ -79,6 +82,12 @@ export async function POST(req: NextRequest) {
     referrer: clamp(body?.referrer, 200),
     landing: clamp(body?.landing),
     source: typeof body?.source === "string" ? body.source.slice(0, 40) : "speech-check",
+    // Only a clinician signing up for themselves has a role, and only then
+    // does a first name travel — theirs, typed about themselves. The parent
+    // path never sets a role, so a child's name has no way onto this field.
+    role: body?.role === "slp" ? "slp" : "",
+    first_name: body?.role === "slp" && typeof body?.name === "string" ? body.name.trim().slice(0, 60) : "",
+    fbclid: clamp(body?.fbclid),
     at: new Date().toISOString(),
   };
 
@@ -116,6 +125,12 @@ export async function POST(req: NextRequest) {
     referrer: lead.referrer,
     landing: lead.landing,
     source: lead.source,
+    role: lead.role,
+    // The CLINICIAN's first name, separate from `name` on purpose: `name` is
+    // the field a CRM maps to "First Name" for every lead, and it stays blank
+    // because on the parent path the only name available is a child's.
+    first_name: lead.first_name,
+    fbclid: lead.fbclid,
     at: lead.at,
   };
 

@@ -143,7 +143,7 @@ ok("web-bought sub pairs into the shell: no paywall anywhere", t.iap !== "block"
 // screen, and goHome routes subscribers straight home (never the paywall)
 {
   const obSrc = readFileSync(ROOT + "/onboarding.html", "utf8");
-  ok("onboarding offers Have-a-code entry", /moveLink/.test(obSrc) && /Have a code\?/.test(obSrc));
+  ok("onboarding offers device-code entry", /moveLink/.test(obSrc) && /Moving from another phone/.test(obSrc));
   ok("onboarding goHome skips paywall for subscribers", /!\(Sona\.isSubscribed&&Sona\.isSubscribed\(\)\)/.test(obSrc));
 }
 
@@ -208,7 +208,9 @@ await web.close();
 // ── the credential on the paywall says only what is verified ──
 // Rachel holds an Idaho CF licence (confirmed 1 Sep 2026), so "licensed" is
 // true and is used. She is a Clinical Fellow — master's complete, supervised
-// fellowship year in progress — and does NOT hold ASHA's CCC. The CCC is the
+// fellowship year in progress — and does NOT hold ASHA's CCC. Since 23 Sep 2026
+// the copy says "licensed" without naming the fellowship (Travis's call), so
+// that is not pinned; what is pinned is that nothing claims MORE. The CCC is the
 // claim to get right: it is a trademarked certification, it is checkable, and
 // "board-certified (CCC-SLP)" shipped once on the page that takes money.
 {
@@ -220,9 +222,9 @@ await web.close();
   ok("the verified licence claim is the one that is made",
     /licen[sc]ed pediatric speech-language pathologist/i.test(sub),
     "an Idaho CF licence makes this true — under-claiming is not a virtue when it is checkable");
-  ok("…and the fellowship status is stated beside it, not hidden",
-    /Clinical Fellow/.test(sub),
-    "another SLP reading this should know she is in her CF year; it costs nothing to say");
+  ok("…and nothing dresses it up as more than a licence",
+    !/fully licen[sc]ed|\bcertified\b/i.test(sub),
+    "leaving the fellowship unsaid is a choice; implying she is past it is a false claim");
 }
 
 // ── PRICING IS LIVE: FREE_MODE off, 3-day trial, the gate is honest ──
@@ -667,9 +669,8 @@ ok("no pageerrors", errs.length === 0, errs.join(" | "));
 {
   const chg = readFileSync(ROOT + "/charge.html", "utf8");
   const sub = readFileSync(ROOT + "/subscribe.html", "utf8");
-  ok("the win screen asks the child to fetch a grown-up — but only if a plan follows",
-    /planEligible\(\)\)\{[\s\S]{0,200}Show a grown-up/.test(chg),
-    "sending a child to find an adult for nothing is worse than saying Done");
+  // The final button is now reached after the chest. Its two eligibility
+  // branches are exercised on the real page below, without pinning formatting.
   ok("the recap only renders on the hand-off from a completed run",
     /first=1\(&\|\$\)\/\.test\(location\.search\)\) return;/.test(sub));
   ok("…and every line is dropped when its number is missing",
@@ -758,21 +759,14 @@ ok("no pageerrors", errs.length === 0, errs.join(" | "));
     /const t = getTrial\(\);\s*\n\s*if \(t && t\.start && !trialExpired\(\)\) return false;/.test(sona),
     "an existing family's unexpired trial must not be shortened by this");
 
-  ok("the demonstration ends where the celebration is, not before",
-    /runOvl"\)\.classList\.add\("show"\)[\s\S]{0,400}demoFinish\(\)/.test(chg),
-    "an explicit finish: real practice, the games it earned, then the offer");
+  // Runtime checks below finish the fifth earned game, then claim the chest;
+  // demo completion must coincide with that completed adventure.
   ok("…and is marked under way when practice starts, so a refresh resumes it",
     /practice started[\s\S]{0,320}demoStart\(\)/.test(chg));
 
-  // A REPLAY EARNS NOTHING. Every write that would bank something is guarded,
-  // because a replay that minted coins, climbed the ladder and fed the
-  // clinician's counts is not a demonstration — it is the product for free.
-  for (const [what, re] of [
-    ["clinical outcome data", /function logV\(v\)\{ if\(DEMO_REPLAY\) return;/],
-    ["the rep count", /if\(!DEMO_REPLAY&&reps>0&&S&&S\.bumpReps\)/],
-    ["ladder advancement", /S\.recordRung && !DEMO_REPLAY/],
-    ["the day's score, session and coins", /if\(DEMO_REPLAY\)\{[\s\S]{0,200}newBest: false/],
-  ]) ok("a replay banks no " + what, re.test(chg), what);
+  // The replay's writes are exercised below with a positive detected burst
+  // and an actual completed run. Ladder gating keeps its separate source pin.
+  ok("a replay banks no ladder advancement", /S\.recordRung && !DEMO_REPLAY/.test(chg));
   ok("…and the replay flag is read before demoFinish can change it",
     chg.indexOf("var DEMO_REPLAY") < chg.indexOf("S.demoFinish"),
     "decided at load, or the answer flips underneath the page");
@@ -780,6 +774,57 @@ ok("no pageerrors", errs.length === 0, errs.join(" | "));
   ok("a gated child's big button is the demonstration, never a price screen",
     /demoOnlyHero\(\)[\s\S]{0,400}charge\.html\?daily=1&demo=1/.test(tdy),
     "a child should never tap the biggest thing on the screen and meet a paywall");
+}
+
+// Finish the real final-game return and chest. The input boundary is already
+// verified elsewhere; these checks isolate entitlement and replay accounting.
+{
+  for (const mode of ["entitled", "paid", "replay"]) {
+    const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, reducedMotion: "reduce" });
+    await ctx.route("**/*", route => route.request().url().startsWith("http://localhost:8147/") ? route.continue() : route.abort());
+    await ctx.addInitScript(() => { if (navigator.mediaDevices) navigator.mediaDevices.getUserMedia = () => Promise.reject(new Error("No microphone in entitlement test")); });
+    const pg = await ctx.newPage();
+    try {
+      await pg.goto("http://localhost:8147/today.html");
+      await pg.evaluate(mode => {
+        localStorage.clear(); sessionStorage.clear();
+        localStorage.setItem("sona.freeera.v1", "post"); localStorage.setItem("sona.freeera2.v1", "done"); localStorage.setItem("sona.freeera3.v1", "done");
+        localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Ada", childAge: "7", focusSounds: ["R"], onboarded: true, volume: 0, voiceOn: false, soundOn: false }));
+        if (mode === "paid" || mode === "entitled") sessionStorage.setItem("sona.paidui", "1");
+        if (mode === "entitled") localStorage.setItem("sona.sub.v1", JSON.stringify({ active: true, source: "apple", since: Date.now() }));
+        if (mode === "replay") localStorage.setItem("sona.demo.v1", JSON.stringify({ started: Date.now() - 1000, done: Date.now() }));
+        // The final arcade round is earned but has not returned yet.
+        sessionStorage.setItem("sona.run.v1", JSON.stringify({ active: true, round: 4, scores: [10,10,10,10], sum: 40, tries: 12, sound: "R", pending: true, demo: mode === "replay", games: ["slice","tiles","stack","run","glide"] }));
+      }, mode);
+      const before = await pg.evaluate(() => ({ progress: Sona.getProgress(), outcomes: Sona.outcomes(), reps: Sona.repsToday(), daily: Sona.dailyInfo(), demoDone: Sona.demoDone() }));
+      await pg.goto("http://localhost:8147/charge.html?daily=1&banked=17");
+      await pg.locator("#runOvl.show").waitFor();
+      const complete = await pg.evaluate(() => ({ done: Sona.demoDone(), round: run.round, title: document.getElementById("runTitle").textContent, buttonHidden: document.getElementById("runDone").hidden }));
+      if (mode !== "replay") ok(mode + ": demonstration completes at the final-game celebration, before the chest handoff",
+        !before.demoDone && complete.done && complete.round === 5 && /Adventure complete/.test(complete.title) && complete.buttonHidden, JSON.stringify(complete));
+      await pg.locator("#runChest").click(); await pg.locator("#chestOvl.show").waitFor();
+      for (let i = 0; i < 3; i++) await pg.locator("#chestBox").click();
+      await pg.locator("#chestClaim").click(); await pg.locator("#runDone").waitFor({ state: "visible" });
+      const handoff = await pg.evaluate(() => ({ eligible: Sona.planEligible(), label: document.getElementById("runDone").textContent, spent: localStorage.getItem("sona.planmoment.v1") }));
+      if (mode !== "replay") ok(mode + ": the child fetches a grown-up only when a plan follows",
+        handoff.eligible === (mode === "paid") && (handoff.eligible ? /Show a grown-up/.test(handoff.label) : handoff.label === "Done") && handoff.spent === null, JSON.stringify(handoff));
+      if (mode === "replay") {
+        const afterFinish = await pg.evaluate(() => ({ progress: Sona.getProgress(), daily: Sona.dailyInfo(), stickers: Object.keys(Sona.stickersEarned()).length }));
+        ok("a replay banks no day's score, session, coins or sticker", JSON.stringify(before.progress) === JSON.stringify(afterFinish.progress) && JSON.stringify(before.daily) === JSON.stringify(afterFinish.daily) && afterFinish.stickers === 0, JSON.stringify(afterFinish));
+        const burst = await pg.evaluate(async () => {
+          const start = startEngine, verify = verifyClip;
+          try {
+            startEngine = async function () { reps = 3; return true; };
+            verifyClip = async function () { return "pass"; };
+            const verdict = await burstAndVerify(3);
+            return { verdict, attemptsTotal, replay: DEMO_REPLAY, outcomes: Sona.outcomes(), reps: Sona.repsToday(), progress: Sona.getProgress() };
+          } finally { startEngine = start; verifyClip = verify; }
+        });
+        ok("a replay's positive burst banks no clinical outcomes", burst.replay && burst.verdict === "pass" && burst.attemptsTotal === 3 && JSON.stringify(burst.outcomes) === JSON.stringify(before.outcomes), JSON.stringify(burst));
+        ok("a replay's positive burst banks no rep count or practice history", burst.reps === before.reps && JSON.stringify(burst.progress) === JSON.stringify(before.progress), JSON.stringify(burst));
+      }
+    } finally { await ctx.close(); }
+  }
 }
 
 // behaviourally: the gate opens for the demonstration and closes after it
@@ -839,7 +884,7 @@ ok("no pageerrors", errs.length === 0, errs.join(" | "));
 // replay banked coins, rungs and clinical outcomes as if it were real.
 // The run record in sessionStorage is now the source of truth for both.
 {
-  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, reducedMotion: "reduce" });
   const pg = await ctx.newPage();
   const seed = () => pg.evaluate(() => {
     localStorage.clear(); sessionStorage.clear();
@@ -952,10 +997,25 @@ ok("no pageerrors", errs.length === 0, errs.join(" | "));
 // already burning. At 20 downloads that is the difference between learning
 // "will parents pay" and learning nothing. These pin the new order.
 {
-  const onb = readFileSync(ROOT + "/onboarding.html", "utf8");
-  ok("onboarding never ends at the paywall",
-    /location\.href = "\/today\.html";/.test(onb) && !/subscribe\.html\?welcome=1/.test(onb),
-    "a price screen before the first rep asks a stranger to buy a promise");
+  // Exercise the current explicit handoff instead of requiring its old Home
+  // destination. Setup may launch practice directly; it must never launch a price.
+  const obContext = await browser.newContext(); const obPage = await obContext.newPage();
+  await obContext.route("**/charge.html?**", route => route.fulfill({ status: 200, contentType: "text/html", body: "<!doctype html><title>Practice handoff</title>" }));
+  try {
+    await obPage.goto("http://localhost:8147/onboarding.html");
+    const firstGame = await obPage.evaluate(() => {
+      sessionStorage.setItem("sona.paidui", "1");
+      Sona.speak = () => Promise.resolve();
+      draft.childName = "Ada"; draft.childAge = "7"; draft.mode = "speech"; draft.email = "";
+      nameEl.value = "Ada"; selSounds = new Set(["R"]); finish();
+      return Sona.adventureGames()[0];
+    });
+    await obPage.locator('[data-step="achieve"].on').waitFor();
+    ok("onboarding waits for an explicit child handoff without starting a trial", /onboarding\.html/.test(obPage.url()) && await obPage.evaluate(() => !localStorage.getItem("sona.trial.v1")));
+    await obPage.locator("#nextBtn").click(); await obPage.waitForURL(/charge\.html/);
+    const destination = new URL(obPage.url());
+    ok("onboarding ends in the first adventure, never at the paywall", destination.pathname === "/charge.html" && destination.searchParams.get("daily") === "1" && destination.searchParams.get("first") === firstGame, obPage.url());
+  } finally { await obContext.close(); }
 
   // DECIDING is not SHOWING. These were one function and it cost the family
   // the offer: planMoment() consumed the one-shot and logged the impression at

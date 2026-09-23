@@ -59,7 +59,7 @@ for (const [dev, w, h] of PORTRAIT) {
   // adds the home-bar gap (0 in headless), so assert against the page floor.
   ok(dev + " today: LET'S GO never overflows the page", m.go && m.go.bottom <= m.innerH - 15, m.go && m.go.bottom + "/" + (m.innerH - 15));
   // the caption plate must never be pushed under the CTA
-  ok(dev + " today: hero caption clears the CTA", m.cap && m.go && m.cap.bottom <= m.go.top + 1, JSON.stringify({ c: m.cap, g: m.go }));
+  ok(dev + " today: hero caption is inside the whole-card action", m.cap && m.go && m.cap.top >= m.go.top && m.cap.bottom <= m.go.bottom, JSON.stringify({ c: m.cap, g: m.go }));
   m = await measure(page, "charge.html?game=arcade-slice.html");
   ok(dev + " charge: mic clears the home bar", m.mic && m.mic.bottom <= m.innerH - HOME_BAR + 1, m.mic && m.mic.bottom + "/" + (m.innerH - HOME_BAR));
   ok(dev + " charge: no sideways overflow", m.oX <= 1, "oX=" + m.oX);
@@ -78,6 +78,45 @@ for (const [dev, w, h] of PORTRAIT) {
   // env()=0 headless — assert against the page's own 16px, not the device inset
   ok(dev + " story: mic never overflows the page", st.mic && st.mic.bottom <= st.innerH - 15, st.mic && st.mic.bottom + "/" + (st.innerH - 15));
   ok(dev + " story: no sideways overflow", st.oX <= 1, "oX=" + st.oX);
+  await page.close();
+}
+
+// A small portrait screen may scroll, but the longer adventure preview must
+// still occupy its own space between the star jar and the game choices.
+{
+  const page = await browser.newPage({ viewport: { width: 320, height: 568 } });
+  await page.addInitScript(() => {
+    localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Leo", focusSounds: ["R"], onboarded: true, earlyAdopter: true }));
+    localStorage.setItem("sona.micok", "1");
+  });
+  await measure(page, "today.html");
+  const layout = await page.evaluate(() => {
+    const rect = (id) => {
+      const r = document.getElementById(id).getBoundingClientRect();
+      return { top: r.top, bottom: r.bottom };
+    };
+    return { jar: rect("jarRow"), hero: rect("heroCard"), caption: rect("heroCap"), choices: rect("sessionGuide") };
+  });
+  ok("small portrait today: the hero clears the star jar",
+    layout.jar.bottom <= layout.hero.top + 1, JSON.stringify(layout));
+  ok("small portrait today: the caption clears the game choices",
+    layout.caption.bottom <= layout.choices.top + 1, JSON.stringify(layout));
+  // Exercise actual scrolling, rather than accepting a CTA positioned below
+  // the screen inside an overflow-hidden container.
+  await page.mouse.wheel(0, 1000);
+  await page.waitForTimeout(200);
+  const cta = await page.evaluate(() => {
+    const button = document.getElementById("goBtn");
+    const r = button.getBoundingClientRect();
+    const target = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+    return {
+      visible: r.top >= 0 && r.bottom <= innerHeight && r.left >= 0 && r.right <= innerWidth,
+      reachable: target === button || button.contains(target),
+      overflowX: document.documentElement.scrollWidth - innerWidth,
+    };
+  });
+  ok("small portrait today: the adventure button is reachable after scrolling", cta.visible && cta.reachable, JSON.stringify(cta));
+  ok("small portrait today: no sideways overflow", cta.overflowX <= 1, JSON.stringify(cta));
   await page.close();
 }
 
@@ -105,10 +144,10 @@ for (const [dev, w, h] of LANDSCAPE) {
   await page.waitForTimeout(700);
   const hdr = await page.evaluate(() => {
     const e = document.getElementById("ctxLine"); if (!e) return null;
-    return { text: e.textContent, over: e.scrollWidth > e.clientWidth + 1, h: e.getBoundingClientRect().height, fs: parseFloat(getComputedStyle(e).fontSize) };
+    return { text: e.getAttribute("aria-label"), dots:e.querySelectorAll(".path-dot").length, over: e.scrollWidth > e.clientWidth + 1, h: e.getBoundingClientRect().height, fs: parseFloat(getComputedStyle(e).fontSize) };
   });
-  ok("the charge header fits on one line at 390px", !!hdr && !hdr.over && hdr.h <= hdr.fs * 1.8, JSON.stringify(hdr));
-  ok("…and still names the round and the sound", !!hdr && /Round \d+ of \d+ · \S+/.test(hdr.text), hdr && hdr.text);
+  ok("the charge header fits on one line at 390px", !!hdr && !hdr.over && hdr.h <= 44, JSON.stringify(hdr));
+  ok("…five picture dots name the current adventure step accessibly", !!hdr && hdr.dots === 5 && /round \d+ of \d+/i.test(hdr.text), hdr && hdr.text);
   await page.close();
 }
 

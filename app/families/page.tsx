@@ -65,11 +65,17 @@ const TRACKER = FREE_MODE
   ? `document.addEventListener("click",function(e){var a=e.target&&e.target.closest?e.target.closest('a[href^="/onboarding.html"]'):null;if(!a)return;try{if(window.SonaAnalytics)window.SonaAnalytics.track("landing cta",{surface:"landing"});}catch(err){}},true);`
   : `document.addEventListener("click",function(e){var a=e.target&&e.target.closest?e.target.closest('a[href^="/api/checkout"]'):null;if(!a)return;try{if(window.sonaTrack)window.sonaTrack("InitiateCheckout",{value:59.99,currency:"USD",content_name:"web_annual"});}catch(err){}try{if(window.SonaAnalytics)window.SonaAnalytics.track("paywall viewed",{surface:"landing"});}catch(err){}},true);`;
 
+// THIS IS /families NOW, not the root. speaksona.com is the clinician page
+// (Travis, 22 Sep 2026: SLPs are the channel), and this page moved rather than
+// being rewritten so that every purchase surface keeps BOTH pricing states —
+// the switch has flipped eleven times and hand-editing a price into a page is
+// the one thing CLAUDE.md forbids. A family reaching Sona directly lands here;
+// a family reaching it through their SLP never sees it at all.
 export const metadata = {
   title: "Sona — R-sound practice kids actually love",
   description: FREE_MODE
-    ? "Still saying “wabbit” instead of rabbit? Sona turns daily R practice into a game kids ask to play — built with a licensed pediatric speech-language pathologist (Clinical Fellow). Free right now: every game, every sound, no card."
-    : "Still saying “wabbit” instead of rabbit? Sona turns daily R practice into a game kids ask to play — built with a licensed pediatric speech-language pathologist (Clinical Fellow). 3 days free, then $59.99/yr — under $5 a month.",
+    ? "Still saying “wabbit” instead of rabbit? Sona turns daily R practice into a game kids ask to play — built with a licensed pediatric speech-language pathologist. Free right now: every game, every sound, no card."
+    : "Still saying “wabbit” instead of rabbit? Sona turns daily R practice into a game kids ask to play — built with a licensed pediatric speech-language pathologist. 3 days free, then $59.99/yr — under $5 a month.",
 };
 
 /* ---------- shared bits ---------- */
@@ -350,14 +356,13 @@ export default async function Landing() {
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {/* Rachel holds an Idaho CF licence (confirmed by Travis, 1 Sep 2026), so
                   "licensed speech-language pathologist" is TRUE and is used across the
-                  app. She is a Clinical Fellow — master's complete, supervised
-                  fellowship year in progress — and that is stated alongside it rather
-                  than hidden: it costs nothing and it is what another SLP would want
-                  to know. What must NEVER come back is the CCC: that is ASHA's
+                  app. She is a Clinical Fellow (master's complete, supervised year in
+                  progress); since 23 Sep 2026 the copy says "licensed" without the
+                  fellowship, on Travis's call, and never implies more. What must NEVER come back is the CCC: that is ASHA's
                   certification, she does not hold it, and "board-certified (CCC-SLP)"
                   shipped once on this very page as a checkable false claim about a
                   trademarked credential. Pinned in iaptest.mjs. */}
-              {["Licensed speech-language pathologist (Clinical Fellow)", "Specializes in kids ages 4–9", "Reviews every exercise before it ships"].map((t) => (
+              {["Licensed speech-language pathologist", "Specializes in kids ages 4–9", "Reviews every exercise before it ships"].map((t) => (
                 <div key={t} style={{ display: "flex", gap: 8, fontSize: 13.5, fontWeight: 700 }}><Check />{t}</div>
               ))}
             </div>
@@ -460,7 +465,7 @@ export default async function Landing() {
           <CtaButton />
           <div style={{ fontSize: 11.5, fontWeight: 700, color: MUTED, margin: "12px 0 22px" }}>{finalFootnote}</div>
           <div style={{ fontSize: 11.5, fontWeight: 700, color: MUTED, borderTop: `2px solid ${LINE}`, paddingTop: 14 }}>
-            speaksona.com · <a href="/privacy" style={{ color: MUTED }}>Privacy</a> · <a href="/terms" style={{ color: MUTED }}>Terms</a><br />Made with a licensed pediatric SLP
+            speaksona.com · <a href="/privacy" style={{ color: MUTED }}>Privacy</a> · <a href="/terms" style={{ color: MUTED }}>Terms</a> · <a href="/for-slps.html" style={{ color: MUTED }}>For SLPs</a><br />Made with a licensed pediatric SLP
           </div>
         </section>
       </div>

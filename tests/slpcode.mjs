@@ -449,7 +449,7 @@ const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL 
 // `sona.pilot.v1` held the clinician code, the reporting childId AND the
 // grown-up's consent — and it sat OUTSIDE PER_KID. Two children on one iPad
 // therefore reported under ONE childId: the roster row was overwritten by
-// whichever sibling practised last, so a clinician read one child's name
+// whichever sibling practiced last, so a clinician read one child's name
 // against the other's outcomes, and homework assigned to one arrived on the
 // other's profile. The sibling also inherited the sharing consent without
 // anyone agreeing to it, which is the part that is not merely a bug.
@@ -473,7 +473,7 @@ const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL 
   const first = pilotPosts.slice();
   ok("the enrolled child reports to the clinician", first.length > 0, JSON.stringify(first.length));
 
-  // a sibling is added on the same device and practises
+  // a sibling is added on the same device and practices
   pilotPosts.length = 0;
   const sib = await pg.evaluate(async () => {
     const slot = Sona.addKid("Sibling", "5");

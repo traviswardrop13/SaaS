@@ -118,7 +118,7 @@ ok("the user-facing word is NOT 'founding' — that already means the free SLP-r
     /priceId && tier === "charter"/.test(co),
     "an env price created at $59.99 must not be reused for a $99.99 sale");
 
-  const landing = strip(readFileSync(APP + "/app/page.tsx", "utf8"));
+  const landing = strip(readFileSync(APP + "/app/families/page.tsx", "utf8"));
   ok("the landing page renders from the same count, server-side, per request",
     /export default async function Landing/.test(landing) && /await charterSpots\(\)/.test(landing) && /<PricingPaid spots=\{spots\} \/>/.test(landing));
   ok("…names the standard price in words beside the charter price, never a bare strike-through",
