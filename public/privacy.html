@@ -57,11 +57,8 @@
       <li><strong>Practice activity</strong> — which games and sounds are practiced, how many attempts,
         how many the app judged a match, streaks and progress, so it can show progress and adapt the
         level. This is counted on the device; what leaves it is described below.</li>
-      <li><strong>Voice recordings — none.</strong> Sona never collects a recording of your child.
-        Every judgement is made on the phone itself, from the shape of the sound, and nothing is sent
-        anywhere. One clip a day may be kept <em>on the device</em> so a grown-up can listen back; it
-        stays in that phone&rsquo;s own storage and there is no mechanism in the app that could upload
-        it. See &ldquo;How voice recordings are handled&rdquo; below.</li>
+      <li><strong>Voice recordings</strong> — when a child practices, Sona records short audio clips of
+        practice for local playback. The sound checks run on the device; Sona does not receive these clips.</li>
       <li><strong>Optional names you provide</strong> — if you add names of family members or friends
         to personalize daily stories, that text is used to generate those stories.</li>
       <li><strong>Payment information</strong> — handled by our payment processor (Stripe). We do not
@@ -81,20 +78,15 @@
     </ul>
 
     <h2>How voice recordings are handled</h2>
-    <!-- This section described a cloud speech-scoring provider that Sona no
-         longer uses. Scoring moved onto the device and the upload path was
-         deleted; the policy kept describing the old flow. What follows is what
-         the code actually does — and it understates nothing: there is no
-         mechanism in the app that can send a recording anywhere. -->
-    <p><strong>Your child's voice never leaves the device.</strong> The microphone is on only
-    during practice, and every check happens on the phone or tablet itself — the app listens for
-    the shape of the target sound locally and decides there. No recording is uploaded to Sona or
-    to anyone else, and there is no feature in the app that could send one.</p>
-    <p>So that a grown-up can hear how practice is going, the app may keep <strong>one short clip
-    per day</strong> in the device's own storage. It stays on that device, it is never transmitted,
-    and clearing the app's data removes it.</p>
-    <p>Because no recording is ever collected, we cannot and do not use children's recordings for
-    advertising, sell them, share them with anyone, or use them to build advertising profiles.</p>
+    <p><strong>Sona checks practice sounds on the phone.</strong> The mic listens during practice
+    and optional voice-enabled games. Sona never uploads your child's recordings or uses a cloud
+    service to check their speech.</p>
+    <p>The app may keep <strong>one clear practice try per child per day</strong> in the device's
+    own storage so a grown-up can listen back. It stays on that device. A grown-up can choose
+    to share a saved clip using the phone's share sheet; the selected app or recipient then
+    handles that copy. Clearing the app's data removes the local clips.</p>
+    <p>Sona does not collect children's recordings for advertising, sell them, or use them
+    to build advertising profiles.</p>
 
     <h2>Sharing with your child&rsquo;s speech-language pathologist</h2>
     <p>If your child&rsquo;s speech-language pathologist (SLP) gave you a link to Sona, opening it
@@ -104,8 +96,7 @@
     <p><strong>If you say yes</strong>, that one clinician&rsquo;s dashboard shows: your child&rsquo;s
     first name and age as you typed them, which sounds they are practicing, which days they practiced
     and how many tries each day, and a rough pass rate per sound. They can also send practice
-    assignments and a short note to this app. <strong>Never any audio</strong> — there is no recording
-    to send. Nothing about your child goes to any other clinician, and no clinician ever sees another
+    assignments and a short note to this app. <strong>Never any audio</strong> — this progress-sharing connection does not send recordings. Nothing about your child goes to any other clinician, and no clinician ever sees another
     family.</p>
     <p><strong>How to stop.</strong> Open the grown-ups&rsquo; area and choose &ldquo;Stop sharing with
     your speech therapist&rdquo;. Their dashboard forgets your child immediately: first name, age,

@@ -9,6 +9,7 @@ import { chromium, ROOT, launchOpts } from "./_env.mjs";
 
 const MIME = { html: "text/html", js: "text/javascript", svg: "image/svg+xml", css: "text/css", woff2: "font/woff2" };
 let ttsAsks = [];
+const feedSource = process.env.SONATEST_FEED_SOURCE || ROOT + "/arcade-feed.html";
 const srv = createServer((req, res) => {
   const u = new URL(req.url, "http://x");
   if (u.pathname === "/api/tts" && req.method === "POST") {
@@ -17,7 +18,7 @@ const srv = createServer((req, res) => {
     return;
   }
   if (u.pathname.startsWith("/api/")) { res.writeHead(500); res.end("{}"); return; }
-  const p = ROOT + u.pathname;
+  const p = u.pathname === "/arcade-feed.html" ? feedSource : ROOT + u.pathname;
   if (!existsSync(p)) { res.writeHead(404); res.end(); return; }
   res.writeHead(200, { "content-type": MIME[p.split(".").pop()] || "application/octet-stream" });
   res.end(readFileSync(p));
@@ -32,7 +33,8 @@ let fails = 0;
 const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL ") + n + (p ? "" : "  → " + (extra || ""))); };
 
 // COPPA guard: the kid page must not carry any tracking script
-const src = readFileSync(ROOT + "/arcade-feed.html", "utf8");
+const src = readFileSync(feedSource, "utf8");
+if (!process.env.FEED_AUDIO_ONLY) {
 ok("kid page carries no tracking", !/pixel\.js|analytics\.js|fbevents|posthog/i.test(src));
 
 await page.addInitScript(() => {
@@ -126,8 +128,8 @@ ok("growth persisted (5 feeds banked)", t.fedStore === 5, "fed=" + t.fedStore);
 // still ends warmly; it just doesn't advance anything.
 ok("a silent round does NOT advance the rotation or ring", t.rot === 0 && t.ring === 0, "rot=" + t.rot + " ring=" + t.ring);
 ok("…and earns no sticker", t.stickers === 0, String(t.stickers));
-ok("…but still ends kindly, and says why", /say the word out loud/i.test(t.endSub), t.endSub);
-ok("win copy mentions growth or the goal", /grow|adventure/i.test(t.endSub), t.endSub);
+ok("…and ends kindly without claiming silence was practice", /discoveries/i.test(t.endSub), t.endSub);
+ok("win copy offers the earned play celebration", /concert/i.test(t.endSub), t.endSub);
 
 // ── growth survives a reload (Echo visibly bigger) ──
 await page.goto("http://localhost:8145/arcade-feed.html"); await page.waitForTimeout(900);
@@ -153,7 +155,7 @@ t = await page.evaluate(() => document.getElementById("echo").style.transform);
   }
   await pg2.waitForTimeout(1500);
   const heard = await pg2.evaluate(() => ({ rot: Sona.rotRound(), ring: Sona.todayRing().n, title: document.getElementById("endTitle").textContent }));
-  ok("a round Echo heard DOES advance the rotation", heard.rot >= 1 || heard.ring >= 1, JSON.stringify(heard));
+  ok("a loudness-only round never advances measured practice", heard.rot === 0 && heard.ring === 0, JSON.stringify(heard));
   await ctx2.close();
 }
 
@@ -169,22 +171,21 @@ let deck = await page.evaluate(() => ({
   thumbs: [...document.querySelectorAll(".thumb")].map((t) => t.dataset.key),
   trio: Sona.dailyGames(),
 }));
-// GAMES1: the home opens on today's adventure for everyone (the books are
-// parked), so the age rule is about which games the day OFFERS — a
-// four-year-old must never be handed three games none of which they can play.
+// Home recommends a short simple-play session for ages 3–4. Feed Echo
+// remains an available individual choice in the existing daily trio.
 ok("under-6: today's trio leads with Feed Echo", deck.trio[0] === "feed", JSON.stringify(deck));
-ok("under-6: the day starts on the adventure like everyone else", /charge\.html\?daily=1/.test(deck.launch || ""), deck.launch);
+ok("age 4: the day starts with the shared simple adventure", /charge\.html\?daily=1/.test(deck.launch || "") && deck.trio.every(k=>["feed","bubbles","peekaboo"].includes(k)), deck.launch);
 ok("under-6: three games are on offer from the first tap", deck.thumbs.length === 3, JSON.stringify(deck.thumbs));
-// once today's adventure is done the hero is the first game — and for a
-// little one it needs no reading
+// Completing an adventure does not replace the younger child's simple-play
+// recommendation with a game requiring timing or reading.
 await page.evaluate(() => Sona.dailyFinish(10));
 await page.goto("http://localhost:8145/today.html"); await page.waitForTimeout(900);
 deck = await page.evaluate(() => ({
   hero: document.getElementById("heroName").textContent,
   launch: document.getElementById("goBtn").dataset.launch,
 }));
-ok("under-6: after the adventure, the hero is Feed Echo", /Feed Echo/.test(deck.hero), JSON.stringify(deck));
-ok("under-6: LET'S GO opens Feed Echo", /arcade-feed/.test(deck.launch || ""), deck.launch);
+ok("age 4: after the adventure, the hero offers Feed Echo", /Feed Echo/.test(deck.hero), JSON.stringify(deck));
+ok("age 4: the completed-day action opens Feed Echo", /arcade-feed/.test(deck.launch || ""), deck.launch);
 await page.evaluate(() => { const p = JSON.parse(localStorage.getItem("sona.profile.v1")); p.childAge = "8"; localStorage.setItem("sona.profile.v1", JSON.stringify(p)); });
 await page.goto("http://localhost:8145/today.html"); await page.waitForTimeout(900);
 deck = await page.evaluate(() => ({
@@ -193,6 +194,57 @@ deck = await page.evaluate(() => ({
 }));
 ok("age 8: the deck no longer opens on Feed Echo", !/Feed Echo/.test(deck.hero), JSON.stringify(deck));
 ok("age 8: LET'S GO opens a practice game", /charge\.html\?game=/.test(deck.launch || ""), deck.launch);
+
+}
+// Audio device edges are fake: no real mic, browser speech or Web Audio output.
+async function audioFixture() {
+  const ctx=await browser.newContext();
+  await ctx.addInitScript(()=>{
+    localStorage.setItem('sona.profile.v1',JSON.stringify({childName:'Mia',childAge:'4',focusSounds:['R'],onboarded:true,voiceOn:true,soundOn:true,volume:0.8}));
+    const h=window.__feedAudio={hidden:false,requests:[],sources:[],spoken:0,cancelled:0,resumes:0,suspends:0};
+    Object.defineProperty(document,'hidden',{configurable:true,get:()=>h.hidden});
+    h.hide=()=>{h.hidden=true;document.dispatchEvent(new Event('visibilitychange'));};
+    h.show=()=>{h.hidden=false;document.dispatchEvent(new Event('visibilitychange'));};
+    const fetchOriginal=window.fetch.bind(window);
+    window.fetch=(url,opts)=>String(url)==='/api/tts'?new Promise(resolve=>h.requests.push(success=>resolve({ok:success,arrayBuffer:()=>Promise.resolve(new ArrayBuffer(48))}))):fetchOriginal(url,opts);
+    function param(){return{value:1,setValueAtTime(){},exponentialRampToValueAtTime(){}};}
+    function FakeContext(){this.state='running';this.sampleRate=24000;this.currentTime=0;this.destination={};}
+    FakeContext.prototype.createBuffer=(c,n)=>({length:n,getChannelData:()=>new Float32Array(n)});
+    FakeContext.prototype.createGain=()=>({gain:param(),connect(){},disconnect(){}});
+    FakeContext.prototype.createBufferSource=function(){const source={buffer:null,started:false,stopped:false,connect(){},disconnect(){},start(){this.started=true;},stop(){this.stopped=true;if(this.onended)this.onended();}};h.sources.push(source);return source;};
+    FakeContext.prototype.resume=function(){h.resumes++;this.state='running';return Promise.resolve();};
+    FakeContext.prototype.suspend=function(){h.suspends++;this.state='suspended';return Promise.resolve();};
+    window.AudioContext=window.webkitAudioContext=FakeContext;
+    navigator.mediaDevices.getUserMedia=()=>Promise.reject(new Error('No real mic in audio regression'));
+    speechSynthesis.speak=()=>{h.spoken++;};speechSynthesis.cancel=()=>{h.cancelled++;};
+  });
+  const pg=await ctx.newPage();pg.setDefaultTimeout(3000);await pg.goto('http://localhost:8145/arcade-feed.html');
+  await pg.waitForFunction(()=>__feedAudio.requests.length>0);return{ctx,pg};
+}
+for(const mode of ['pcm','fallback','late']){
+ const {ctx,pg}=await audioFixture();
+ try{
+  if(mode==='late')await pg.evaluate(()=>__feedAudio.hide());
+  await pg.evaluate(success=>__feedAudio.requests.shift()(success),mode!=='fallback');
+  if(mode==='pcm')await pg.waitForFunction(()=>__feedAudio.sources.some(s=>s.started&&s.buffer.length>1));
+  if(mode==='fallback')await pg.waitForFunction(()=>__feedAudio.spoken>0);
+  if(mode!=='late')await pg.evaluate(()=>__feedAudio.hide());
+  await pg.waitForTimeout(100);
+  const state=await pg.evaluate(()=>({playing:__feedAudio.sources.filter(s=>s.started&&!s.stopped&&s.buffer.length>1).length,spoken:__feedAudio.spoken,cancelled:__feedAudio.cancelled,resumes:__feedAudio.resumes,started:__feedAudio.sources.filter(s=>s.started).length}));
+  ok(mode+': background prevents active or late PCM',state.playing===0,JSON.stringify(state));
+  if(mode==='fallback')ok('background cancels native fallback speech',state.cancelled>0,JSON.stringify(state));
+  if(mode==='late')ok('a late response never starts fallback speech either',state.spoken===0,JSON.stringify(state));
+  await pg.evaluate(()=>__feedAudio.show());await pg.waitForTimeout(80);
+  ok(mode+': foreground alone never restarts audio',await pg.evaluate(before=>__feedAudio.resumes===before.resumes&&__feedAudio.sources.filter(s=>s.started).length===before.started,state));
+  if(mode==='pcm'){
+   await pg.locator('#echo').click();
+   await pg.evaluate(()=>playUke());
+   ok('the visible concert can play after a deliberate action',await pg.evaluate(()=>__feedAudio.sources.some(s=>s.started&&!s.stopped&&s.buffer.length>48)));
+   await pg.evaluate(()=>__feedAudio.hide());
+   ok('background stops every concert note',await pg.evaluate(()=>__feedAudio.sources.filter(s=>s.started&&s.buffer.length>1).every(s=>s.stopped)));
+  }
+ }finally{await ctx.close();}
+}
 
 ok("no pageerrors", errs.length === 0, errs.join(" | "));
 await browser.close(); srv.close();

@@ -44,7 +44,7 @@ const ob = await page.evaluate(() => ({
   restoreDoor: !!document.getElementById("moveLink"),
 }));
 ok("beta step removed", !ob.betaStep);
-ok("a parent walks five screens, not ten", ob.segs === 5, "segs=" + ob.segs);
+ok("three progress groups match the three setup questions", ob.segs === 3, "segs=" + ob.segs);
 ok("buddy is preselected, so it never needs to be a step", ob.preselected);
 // BOTH DOORS ARE BACK. The clinician door was removed on 19 Sep while the
 // SLP side was hidden and restored on 21 Sep when SLPs became the channel —
@@ -85,7 +85,8 @@ for (const [who, seed] of [["a fresh family", () => {}],
       seen.push(cur + ":" + (/echo-avatar/.test(document.getElementById("leo").innerHTML) ? "echo" : "other"));
       if (cur === "mic") break;
       if (cur === "name" && nm && !nm.value) nm.value = "Milo";
-      document.getElementById("nextBtn").click();
+      if (cur === "sounds" && !document.querySelector("#obSounds .on")) document.querySelector('#obSounds [data-sound="R"]').click();
+      (document.querySelector('[data-step="mic"].on') ? document.getElementById("micNotNow") : document.getElementById("nextBtn")).click();
       await new Promise((r) => setTimeout(r, 220));
     }
     return seen;
@@ -96,12 +97,13 @@ for (const [who, seed] of [["a fresh family", () => {}],
 }
 
 // ── the real walk, to finish() ──
-const clickNext = async () => { await page.evaluate(() => document.getElementById("nextBtn").click()); await page.waitForTimeout(250); };
+const clickNext = async () => { await page.evaluate(() => (document.querySelector('[data-step="mic"].on') ? document.getElementById("micNotNow") : document.getElementById("nextBtn")).click()); await page.waitForTimeout(250); };
 await clickNext(); // welcome →
 await page.evaluate(() => { document.getElementById("obName").value = "Milo"; });
 await clickNext(); // name →
 await page.evaluate(() => document.querySelector('#obPath .choice[data-val="speech"]').click());
 await clickNext(); // path → sounds
+await page.locator('#obSounds [data-sound="R"]').click();
 await clickNext(); // sounds → mic
 // The "building the plan" beat used to fire HERE, on the way into the
 // microphone step, and sit over it for 1.8s — the one setup screen whose
@@ -120,26 +122,25 @@ ok("the last setup step is the microphone, not a price or an email",
 // two screens promising different things about a child's voice is how the
 // stale upload wording survived for months
 ok("…and it tells the truth about the microphone",
-  /only during practice/.test(atMic.says) && /checked on this phone/.test(atMic.says)
-  && !/\b(uploads?|sends?|transmits?)\b/i.test(atMic.says.replace(/Nothing is uploaded\.?/g, "")));
-ok("…and says what happens if they decline", /Not ready\?/.test(atMic.says));
+  atMic.says.includes(await page.evaluate(() => Sona.MIC_PROMISE)) && /optional voice-enabled games/.test(atMic.says));
+ok("…and offers an in-app decline before the OS prompt", /Not now/.test(atMic.says));
 await clickNext(); // mic → finish()
 // the build beat, now between the last answer and the finale: named, and
-// non-blocking (pointer-events none), so nothing waits on it
+// calm and bounded, before the child can start
 const build = await page.evaluate(() => {
   const el = document.getElementById("obBuild");
   return { shown: !!(el && el.classList.contains("show")), txt: el ? el.textContent : "",
-           passthru: el ? getComputedStyle(el).pointerEvents === "none" : false };
+           solid: el ? getComputedStyle(el).backgroundColor === "rgb(255, 246, 233)" : false };
 });
-ok("sound-plan build beat plays before the finale (named, non-blocking)", build.shown && /Milo's sound plan/.test(build.txt) && build.passthru, JSON.stringify(build));
-await page.waitForTimeout(600);
+ok("sound-plan build beat calmly shows the family answers", build.shown && /Milo's sound plan/.test(build.txt) && build.solid, JSON.stringify(build));
+await page.waitForTimeout(2000);
 const fin = await page.evaluate(() => ({
   achieveShown: document.querySelector('[data-step="achieve"]').classList.contains("on"),
   achName: document.getElementById("achName").textContent,
   cta: document.getElementById("nextBtn").textContent,
 }));
 ok("achieve finale shows after the last step", fin.achieveShown && fin.achName === "Milo");
-ok("CTA says Let's practice", /Let's practice/.test(fin.cta));
+ok("CTA invites the child to play", /Let's play/.test(fin.cta));
 const prof = await page.evaluate(() => JSON.parse(localStorage.getItem("sona.profile.v1") || "{}"));
 ok("SLP-referred → founding access", prof.earlyAdopter === true && prof.slpCode === "RACHEL1");
 // the deferred questions must not have been silently answered on the parent's
@@ -169,8 +170,8 @@ ok("onboarding no pageerrors", errs.length === 0);
   });
   ok("the welcome says how long setup takes", /Three quick questions/.test(seen.howLong) && /minute/.test(seen.howLong), seen.howLong);
   // the card that broke: every title now sits on one line at phone width
-  await pg2.evaluate(() => document.getElementById("nextBtn").click()); await pg2.waitForTimeout(200);
-  await pg2.evaluate(() => { document.getElementById("obName").value = "Milo"; document.getElementById("nextBtn").click(); }); await pg2.waitForTimeout(300);
+  await pg2.evaluate(() => (document.querySelector('[data-step="mic"].on') ? document.getElementById("micNotNow") : document.getElementById("nextBtn")).click()); await pg2.waitForTimeout(200);
+  await pg2.evaluate(() => { document.getElementById("obName").value = "Milo"; (document.querySelector('[data-step="mic"].on') ? document.getElementById("micNotNow") : document.getElementById("nextBtn")).click(); }); await pg2.waitForTimeout(300);
   // line-height computes to "normal" here, so count lines by font size
   const lines = await pg2.evaluate(() => [...document.querySelectorAll("#obPath .choice b")].map((b) => {
     const cs = getComputedStyle(b); return +(b.getBoundingClientRect().height / parseFloat(cs.fontSize)).toFixed(1);
@@ -189,10 +190,10 @@ ok("onboarding no pageerrors", errs.length === 0);
   await pg.goto("http://localhost:8129/onboarding.html"); await pg.waitForTimeout(800);
   await pg.evaluate(() => { localStorage.clear(); sessionStorage.clear(); });
   await pg.goto("http://localhost:8129/onboarding.html"); await pg.waitForTimeout(800);
-  await pg.evaluate(() => document.getElementById("nextBtn").click()); await pg.waitForTimeout(250);
+  await pg.evaluate(() => (document.querySelector('[data-step="mic"].on') ? document.getElementById("micNotNow") : document.getElementById("nextBtn")).click()); await pg.waitForTimeout(250);
   await pg.evaluate(() => { document.getElementById("obName").value = "Rosie"; });
   await pg.evaluate(() => document.querySelector('#obAge .sound[data-age="6"]').click());
-  await pg.evaluate(() => document.getElementById("nextBtn").click()); await pg.waitForTimeout(250);
+  await pg.evaluate(() => (document.querySelector('[data-step="mic"].on') ? document.getElementById("micNotNow") : document.getElementById("nextBtn")).click()); await pg.waitForTimeout(250);
   const held = await pg.evaluate(() => JSON.parse(localStorage.getItem("sona.obdraft.v1") || "null"));
   ok("what a parent typed is written down as they go",
     !!held && held.childName === "Rosie" && String(held.childAge) === "6", JSON.stringify(held));
@@ -208,11 +209,11 @@ ok("onboarding no pageerrors", errs.length === 0);
   // draft shadows the real thing on the next visit
   // the reload put them back at the top with their answers intact, so this
   // walks the whole short flow again: welcome → name → path → mic → finish
-  await pg.evaluate(() => document.getElementById("nextBtn").click()); await pg.waitForTimeout(250);
-  await pg.evaluate(() => document.getElementById("nextBtn").click()); await pg.waitForTimeout(250);
+  await pg.evaluate(() => (document.querySelector('[data-step="mic"].on') ? document.getElementById("micNotNow") : document.getElementById("nextBtn")).click()); await pg.waitForTimeout(250);
+  await pg.evaluate(() => (document.querySelector('[data-step="mic"].on') ? document.getElementById("micNotNow") : document.getElementById("nextBtn")).click()); await pg.waitForTimeout(250);
   await pg.evaluate(() => document.querySelector('#obPath .choice[data-val="play"]').click());
-  await pg.evaluate(() => document.getElementById("nextBtn").click()); await pg.waitForTimeout(400);
-  await pg.evaluate(() => document.getElementById("nextBtn").click()); await pg.waitForTimeout(700);
+  await pg.evaluate(() => (document.querySelector('[data-step="mic"].on') ? document.getElementById("micNotNow") : document.getElementById("nextBtn")).click()); await pg.waitForTimeout(400);
+  await pg.evaluate(() => (document.querySelector('[data-step="mic"].on') ? document.getElementById("micNotNow") : document.getElementById("nextBtn")).click()); await pg.waitForTimeout(700);
   const after = await pg.evaluate(() => ({
     draft: localStorage.getItem("sona.obdraft.v1"),
     prof: JSON.parse(localStorage.getItem("sona.profile.v1") || "{}"),
@@ -243,18 +244,18 @@ ok("onboarding no pageerrors", errs.length === 0);
     !/recommend|we think|based on|diagnos(is|e)\b|assess(ment)?\b/i.test(door.says.replace(/doesn't test or diagnose/, "")),
     door.says.slice(0, 200));
 
-  await pg.evaluate(() => document.getElementById("nextBtn").click()); await pg.waitForTimeout(250);
+  await pg.evaluate(() => (document.querySelector('[data-step="mic"].on') ? document.getElementById("micNotNow") : document.getElementById("nextBtn")).click()); await pg.waitForTimeout(250);
   await pg.evaluate(() => { document.getElementById("obName").value = "Sam"; });
-  await pg.evaluate(() => document.getElementById("nextBtn").click()); await pg.waitForTimeout(250);
+  await pg.evaluate(() => (document.querySelector('[data-step="mic"].on') ? document.getElementById("micNotNow") : document.getElementById("nextBtn")).click()); await pg.waitForTimeout(250);
   await pg.evaluate(() => document.querySelector('#obPath .choice[data-val="unsure"]').click());
-  await pg.evaluate(() => document.getElementById("nextBtn").click()); await pg.waitForTimeout(400);
+  await pg.evaluate(() => (document.querySelector('[data-step="mic"].on') ? document.getElementById("micNotNow") : document.getElementById("nextBtn")).click()); await pg.waitForTimeout(400);
   const landed = await pg.evaluate(() => ({
     onSounds: document.querySelector('[data-step="sounds"]').classList.contains("on"),
     onMic: document.querySelector('[data-step="mic"]').classList.contains("on"),
   }));
   ok("…and is never shown the sound picker, which IS the clinical framing",
     !landed.onSounds && landed.onMic, JSON.stringify(landed));
-  await pg.evaluate(() => document.getElementById("nextBtn").click()); await pg.waitForTimeout(700);
+  await pg.evaluate(() => (document.querySelector('[data-step="mic"].on') ? document.getElementById("micNotNow") : document.getElementById("nextBtn")).click()); await pg.waitForTimeout(700);
   const prof = await pg.evaluate(() => JSON.parse(localStorage.getItem("sona.profile.v1") || "{}"));
   // the CONTENT path is the existing play path — mode stays "play", because
   // five other files read mode === "play" and a third value would have filed
@@ -279,10 +280,11 @@ await page.evaluate(() => { document.getElementById("obName").value = "Zoe"; });
 await clickNext(); // name → path
 await page.evaluate(() => document.querySelector('#obPath .choice[data-val="speech"]').click());
 await clickNext(); // path → sounds
-// SOUNDS1: the picker is open for everyone (no SLP code) — add S next to R
+// SOUNDS1: the picker is open for everyone (no SLP code) — choose R and S
 const pickState = await page.evaluate(() => {
   const chips = [...document.querySelectorAll("#obSounds .sound")];
-  chips.find((b) => b.textContent.trim() === "S").click();
+  chips.find((b) => b.dataset.sound === "R").click();
+  chips.find((b) => b.dataset.sound === "S").click();
   return { total: chips.length, soon: document.querySelectorAll("#obSounds .soon").length };
 });
 ok("every sound chip is open (no SOON)", pickState.total >= 15 && pickState.soon === 0);
@@ -309,7 +311,7 @@ const finaleAsk = await page.evaluate(() => {
 });
 ok("the finale offers the weekly summary, named for the child", finaleAsk.shown && /Zoe/.test(finaleAsk.named), JSON.stringify(finaleAsk));
 ok("…says it is optional, and never blocks the way into the app",
-  finaleAsk.optional && !finaleAsk.required && /practice/i.test(finaleAsk.cta), JSON.stringify(finaleAsk));
+  finaleAsk.optional && !finaleAsk.required && /play|practice/i.test(finaleAsk.cta), JSON.stringify(finaleAsk));
 const skipFin = await page.evaluate(() => ({
   achieveShown: document.querySelector('[data-step="achieve"]').classList.contains("on"),
   prof: JSON.parse(localStorage.getItem("sona.profile.v1") || "{}"),

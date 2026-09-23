@@ -143,20 +143,21 @@ ok('"cat" does not fuzzy-match "car"... it does not need to — it has no R; but
   ok("recognition sessions are bounded (an abandoned round can't hold the mic)",
     /maxMs/.test(swift) && /15000/.test(swift));
   ok("verifyClip prefers the on-device transcript and falls back to spectral",
-    /speechStop[\s\S]{0,400}hearVerdict[\s\S]{0,400}shapeVerdict\(\)/.test(charge));
+    /async function verifyClip\(\)[\s\S]{0,400}await recognitionStop\(\)[\s\S]{0,400}hearVerdict[\s\S]{0,400}shapeVerdict\(\)/.test(charge)
+    && /function recognitionStop\(\)[\s\S]{0,700}S\.speechStop\(\)/.test(charge));
   ok("the round biases recognition toward the practice word",
     /speechStart\(\{ words:/.test(charge));
   ok("the verdict rules live in sona.js, not the binary",
     /function hearVerdict/.test(sona),
     "clinical tuning must never need an App Store review");
   // ORDER MATTERS and is pinned from both sides: the mic prompt must ride
-  // directly on the primer tap (storytest pins primer→getUserMedia with
+  // directly on the primer tap (storytest pins primer→acquirePracticeMic with
   // nothing between), and the speech dialog comes AFTER the mic grant — a
   // speech prompt beating the mic prompt is exactly the confusion the primer
   // exists to prevent.
   ok("the speech permission is asked at setup, AFTER the mic grant",
-    /getUserMedia\(\{audio:true[\s\S]{0,600}speechPerm/.test(charge)
-    && !/micPrimer\(\);[\s\S]{0,200}speechPerm/.test(charge));
+    /async function flow\(\)[\s\S]{0,600}await micPrimer\(\);\s*if\(!\(await acquirePracticeMic\(\)\)\)return;[\s\S]{0,700}S\.speechPerm\(\)/.test(charge)
+    && /async function acquirePracticeMic\(\)[\s\S]*?await navigator\.mediaDevices\.getUserMedia\(\{audio:true,video:false\}\)/.test(charge));
 
   // HELP IS NOT A CONSOLATION PRIZE. "Hear it slowly" existed from the start
   // but was revealed only inside the wrong-sound branch, so the child who
@@ -175,7 +176,8 @@ ok('"cat" does not fuzzy-match "car"... it does not need to — it has no R; but
   }
   // …and the safeguards that make it safe to offer earlier
   ok("the slow replay runs through the speaker guard, so it is never a rep",
-    /function playSlowClip[\s\S]{0,300}ttsBegin\(\)/.test(charge),
+    /function playSlowClip[\s\S]{0,220}await playMedia\(url,true,job\)/.test(charge)
+    && /function playMedia[\s\S]{0,900}ttsBegin\(\)/.test(charge),
     "model playback counted as the child speaking is the one thing this must never do");
   ok("…and repeated taps cannot stack playback",
     /function saySlow\([\s\S]{0,160}if\(speaking\)return res\(\);/.test(charge));

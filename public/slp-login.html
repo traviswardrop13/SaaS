@@ -2,6 +2,22 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
+  <script>
+// Clinician tools live in the browser. A restored link in the native shell
+// must return to the family app before rendering or making clinician requests.
+(function () {
+  var native = false;
+  try {
+    var bridge = window.Capacitor;
+    native = !!(bridge && (typeof bridge.isNativePlatform === "function" ? bridge.isNativePlatform() : true));
+  } catch (e) {}
+  if (!native) return;
+  window.__sonaFamilyRedirect = true;
+  document.documentElement.style.visibility = "hidden";
+  // Home owns active-child selection and the first-run setup guard.
+  window.location.replace("/today.html");
+})();
+  </script>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Sona — SLP Sign in</title>
   <!-- the SLP side is hidden (19 Sep 2026): reachable by direct link, not by search -->
@@ -115,6 +131,7 @@
     if(qp.get("err")==="expired") $("err").textContent="That link expired — enter your email for a fresh one.";
 
     function send(){
+      if(window.__sonaFamilyRedirect)return;
       var email=($("email").value||"").trim();
       $("err").textContent="";
       if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){$("err").textContent="Enter a valid email.";return;}

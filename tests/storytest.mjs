@@ -122,7 +122,8 @@ for (const url of ["/charge.html?daily=1&sound=R", "/charge.html?game=arcade-sli
   ok("charge.html has no story-beat code left", !/storyBeat|STORYHOUSE|houseBeat/.test(src),
     "a beat function left behind is a beat that comes back");
   ok("the mic primer hands straight to the OS prompt",
-    /await micPrimer\(\);\s*\n\s*try\{ micStream=await navigator\.mediaDevices\.getUserMedia/.test(src),
+    /await micPrimer\(\);\s*if\(!\(await acquirePracticeMic\(\)\)\)return;/.test(src)
+    && /async function acquirePracticeMic\(\)[\s\S]*?navigator\.mediaDevices\.getUserMedia\(\{audio:true,video:false\}\)/.test(src),
     "anything between the primer tap and getUserMedia delays the browser dialog");
 }
 

@@ -139,7 +139,7 @@
     if(window.Sona&&Sona.gated&&Sona.gated()){ Sona.gateBounce(); }
     var S=window.Sona;
     function $(id){ return document.getElementById(id); }
-    function sfx(n){ try{ if(S&&S.sfx&&S.sfx[n])S.sfx[n](); }catch(e){} }
+    function sfx(n){ if(document.hidden||audioPaused)return; try{ if(S&&S.sfx&&S.sfx[n])S.sfx[n](); }catch(e){} }
     var profile=(S&&S.getProfile)?S.getProfile():{};
 
     // ── persistent growth: Echo is visibly bigger every week they show up ──
@@ -176,48 +176,87 @@
     }catch(e){}
 
     // ── tiny cached TTS (same on-device cache as charge; repeat asks are free)
-    var audioCtx=null,speaking=false,ttsPlaying=false;
-    function getCtx(){ if(!audioCtx){var AC=window.AudioContext||window.webkitAudioContext;audioCtx=new AC();} if(audioCtx.state==="suspended")audioCtx.resume(); return audioCtx; }
+    var audioCtx=null,speaking=false,ttsPlaying=false,audioGeneration=0,audioPaused=!!document.hidden,audioStop=null,audioSuspend=Promise.resolve();
+    function audioAllowed(generation){return !document.hidden&&!audioPaused&&generation===audioGeneration;}
+    function stopFeedAudio(){
+      audioGeneration++;audioPaused=true;
+      var stop=audioStop;audioStop=null;if(stop)stop();
+      speaking=false;ttsPlaying=false;
+      try{if(window.speechSynthesis)window.speechSynthesis.cancel();}catch(e){}
+      stopUke();
+      try{if(S&&S.sfx&&S.sfx.stop)S.sfx.stop();}catch(e){}
+      try{if(audioCtx&&audioCtx.suspend)audioSuspend=Promise.resolve(audioCtx.suspend()).catch(function(){});}catch(e){}
+    }
+    function getCtx(){
+      if(document.hidden||audioPaused)throw new Error("Feed audio is paused");
+      if(!audioCtx){var AC=window.AudioContext||window.webkitAudioContext;audioCtx=new AC();}
+      if(audioCtx.state==="suspended"){var generation=audioGeneration;audioSuspend.then(function(){if(audioAllowed(generation)&&audioCtx.state==="suspended")return audioCtx.resume();}).catch(function(){});}
+      return audioCtx;
+    }
     // iOS unlock: the first ask auto-plays at boot (no gesture) — any first
     // tap unlocks the context so speech works from then on
-    (function(){ function un(){ try{ var c=getCtx(); if(c.state==="suspended")c.resume(); var b=c.createBuffer(1,1,22050), s=c.createBufferSource(); s.buffer=b; s.connect(c.destination); s.start(0); }catch(e){} }
+    (function(){ function un(){ if(document.hidden)return;audioPaused=false;try{ var c=getCtx(); var b=c.createBuffer(1,1,22050), s=c.createBufferSource(); s.buffer=b; s.connect(c.destination); s.start(0); }catch(e){} }
       document.addEventListener("pointerdown", un, { passive:true, capture:true }); })();
     function ttsDB(){ return new Promise(function(res,rej){ try{ var r=indexedDB.open("sona-tts",1); r.onupgradeneeded=function(){ r.result.createObjectStore("clips"); }; r.onsuccess=function(){res(r.result)}; r.onerror=function(){rej(r.error)}; }catch(e){rej(e);} }); }
     function ttsGet(k){ return ttsDB().then(function(db){ return new Promise(function(res){ var tx=db.transaction("clips"); var rq=tx.objectStore("clips").get(k); rq.onsuccess=function(){res(rq.result||null)}; rq.onerror=function(){res(null)}; }); }).catch(function(){return null;}); }
     function ttsPut(k,buf){ ttsDB().then(function(db){ try{ db.transaction("clips","readwrite").objectStore("clips").put(buf,k); }catch(e){} }).catch(function(){}); }
-    function playPCM(b){ return new Promise(function(res){ var done=false; ttsPlaying=true; function fin(){ if(done)return; done=true; ttsPlaying=false; res(); } try{ var c=getCtx(),n=b.byteLength>>1,ab=c.createBuffer(1,n,24000),ch=ab.getChannelData(0),dv=new DataView(b.buffer,b.byteOffset,b.byteLength); for(var i=0;i<n;i++)ch[i]=dv.getInt16(i*2,true)/32768; var s=c.createBufferSource();s.buffer=ab;var g=c.createGain();g.gain.value=(profile.volume!=null?profile.volume:0.8);s.connect(g);g.connect(c.destination);s.onended=fin;s.start(); }catch(e){fin();} }); }
-    function speakFallback(t){ return new Promise(function(res){ try{
-      if(!window.speechSynthesis||!window.SpeechSynthesisUtterance) return res();
-      var u=new SpeechSynthesisUtterance(t); u.rate=.95; u.pitch=1.05; u.volume=(profile.volume!=null?profile.volume:0.8);
-      var done=false; function fin(){ if(done)return; done=true; ttsPlaying=false; res(); }
-      u.onend=fin; u.onerror=fin; setTimeout(fin,9000); ttsPlaying=true; window.speechSynthesis.speak(u);
-    }catch(e){ ttsPlaying=false; res(); } }); }
-    function say(t){ return new Promise(function(res){ if(!t||profile.voiceOn===false||speaking)return res(); speaking=true;
-      var key=(profile.voiceId||"echo")+"|v6|"+t;
-      ttsGet(key).then(function(cached){
-        if(cached) return playPCM(new Uint8Array(cached)).then(function(){return true;});
+    function playPCM(b,generation){return new Promise(function(res){
+      if(!audioAllowed(generation))return res();
+      var done=false,source=null;ttsPlaying=true;
+      function fin(){if(done)return;done=true;if(audioStop===cancel)audioStop=null;if(generation===audioGeneration)ttsPlaying=false;res();}
+      function cancel(){try{if(source)source.stop();}catch(e){}fin();}
+      audioStop=cancel;
+      try{
+        var c=getCtx(),n=b.byteLength>>1,ab=c.createBuffer(1,n,24000),ch=ab.getChannelData(0),dv=new DataView(b.buffer,b.byteOffset,b.byteLength);
+        for(var i=0;i<n;i++)ch[i]=dv.getInt16(i*2,true)/32768;
+        source=c.createBufferSource();source.buffer=ab;var g=c.createGain();g.gain.value=profile.volume!=null?profile.volume:0.8;
+        source.connect(g);g.connect(c.destination);source.onended=fin;source.start();
+      }catch(e){fin();}
+    });}
+    function speakFallback(t,generation){return new Promise(function(res){
+      if(!audioAllowed(generation)||!window.speechSynthesis||!window.SpeechSynthesisUtterance)return res();
+      var done=false,timer=null;
+      function fin(){if(done)return;done=true;clearTimeout(timer);if(audioStop===cancel)audioStop=null;if(generation===audioGeneration)ttsPlaying=false;res();}
+      function cancel(){try{window.speechSynthesis.cancel();}catch(e){}fin();}
+      audioStop=cancel;
+      try{
+        var u=new SpeechSynthesisUtterance(t);u.rate=.95;u.pitch=1.05;u.volume=profile.volume!=null?profile.volume:0.8;
+        u.onend=fin;u.onerror=fin;timer=setTimeout(fin,9000);ttsPlaying=true;window.speechSynthesis.speak(u);
+      }catch(e){fin();}
+    });}
+    function say(t){
+      var generation=audioGeneration;
+      if(!t||!audioAllowed(generation)||profile.voiceOn===false||Number(profile.volume)===0||speaking)return Promise.resolve();
+      speaking=true;
+      var key=(profile.voiceId||"echo")+"|"+((window.Sona&&Sona.TTS_CACHE_VERSION)||"v7")+"|"+t;
+      return ttsGet(key).then(function(cached){
+        if(!audioAllowed(generation))return true;
+        if(cached)return playPCM(new Uint8Array(cached),generation).then(function(){return true;});
         return fetch("/api/tts",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text:t,voice:profile.voiceId||"",stable:true})})
           .then(function(r){return r.ok?r.arrayBuffer():null;})
-          .then(function(b){ if(!b)return false; ttsPut(key,b); return playPCM(new Uint8Array(b)).then(function(){return true;}); });
-      }).then(function(played){ if(!played) return speakFallback(t); })
-      .catch(function(){ return speakFallback(t); })
-      .finally(function(){ speaking=false; res(); });
-    }); }
+          .then(function(b){if(!audioAllowed(generation))return true;if(!b)return false;ttsPut(key,b);return playPCM(new Uint8Array(b),generation).then(function(){return true;});});
+      }).then(function(played){if(!played&&audioAllowed(generation))return speakFallback(t,generation);})
+        .catch(function(){if(audioAllowed(generation))return speakFallback(t,generation);})
+        .then(function(){if(generation===audioGeneration)speaking=false;});
+    }
 
     // ── OPTIONAL mic cheer: loudness only, only if already granted elsewhere.
     // Never prompts, never records, never logs — a voice burst while a card is
     // up = "Echo heard you! ⭐". Echo's own voice never counts (tts guard). ──
-    var heardThisTurn=false, stars=0, micOn=false;
-    // Test seam: a headless browser has no microphone, so there is no way to
-    // exercise "a round WITH voicing" without one. Only ever ADDS a heard turn,
-    // and only when the page was opened with ?heard=N — it can't be reached
-    // from the app, and it cannot suppress the silence rule.
-    try{ var _hq=parseInt(new URLSearchParams(location.search).get("heard"),10); if(_hq>0){ stars=_hq; window.__heard=stars; } }catch(e){}
+    var heardThisTurn=false, stars=0, micOn=false, feedMicStop=function(){};
     (function(){
       try{
         if(localStorage.getItem("sona.micok")!=="1") return;
         if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia) return;
-        navigator.mediaDevices.getUserMedia({audio:true,video:false}).then(function(stream){
+        if(!navigator.permissions||!navigator.permissions.query)return;
+        var micRequestGeneration=audioGeneration;
+        navigator.permissions.query({name:"microphone"}).then(function(permission){
+          if(permission.state!=="granted"||document.hidden||audioPaused||micRequestGeneration!==audioGeneration)return null;
+          return navigator.mediaDevices.getUserMedia({audio:true,video:false});
+        }).then(function(stream){
+          if(!stream)return;
+          feedMicStop=function(){micOn=false;try{stream.getTracks().forEach(function(t){t.stop();});}catch(e){}};
+          if(document.hidden||audioPaused||micRequestGeneration!==audioGeneration){feedMicStop();return;}
           micOn=true;
           var ctx=getCtx(),src=ctx.createMediaStreamSource(stream),an=ctx.createAnalyser();
           an.fftSize=512; src.connect(an);
@@ -236,7 +275,7 @@
           })();
           // lock/app-switch fires visibilitychange, NOT pagehide — this mic
           // stayed open in your pocket with the recording indicator lit
-          var _rel=function(){ micOn=false; try{ stream.getTracks().forEach(function(t){t.stop();}); }catch(e){} };
+          var _rel=feedMicStop;
           if(window.Sona&&Sona.onBackground) Sona.onBackground(_rel); else window.addEventListener("pagehide",_rel);
         }).catch(function(){ /* denied elsewhere — tap-only play, no blocker here */ });
       }catch(e){}
@@ -306,7 +345,7 @@
     }
     function playUke(){
       try{
-        if(profile.soundOn===false) return;
+        if(document.hidden||audioPaused||profile.soundOn===false||Number(profile.volume)===0)return;
         var ctx=getCtx(), t=ctx.currentTime+0.15;
         var master=ctx.createGain(); master.gain.value=Math.min(0.5,(profile.volume!=null?profile.volume:0.8)*0.55); master.connect(ctx.destination);
         // ukulele voicings (G4-C4-E4-A4 strings): C, F, G7, C — the campfire cadence
@@ -325,43 +364,27 @@
     function stopUke(){ try{ ukeNodes.forEach(function(n){ try{n.stop();}catch(e){} }); ukeNodes=[]; }catch(e){} }
 
     function finish(){
-      // a finished round advances the rotation + ring (real taps + real words —
-      // never idle time), exactly like a charge free-play round. Nothing from
-      // the mic is logged anywhere.
-      // SILENCE IS NEVER A REP. `stars` is the count of turns where the mic
-      // actually heard the child; tapping the right picture five times without
-      // speaking used to advance the rotation and the daily ring all the same,
-      // which teaches a four-year-old that pointing is the game. The round
-      // still ENDS warmly either way — a child is never scolded for a quiet
-      // day — it just doesn't count as practice.
-      var ringDone=false, counted=(stars>0);
-      if(counted){
-        try{
-          var pre=S.todayRing&&S.todayRing().done;
-          if(S.rotAdvance)S.rotAdvance();
-          ringDone=!pre&&S.todayRing&&S.todayRing().done;
-        }catch(e){}
-      }
-      var stk=null; if(counted){ try{ stk=(S&&S.awardNextSticker)?S.awardNextSticker():null; }catch(e){} }
-      try{ if(S&&S.confetti)S.confetti({count:140}); }catch(e){}
-      $("endTitle").textContent=ringDone?"All of today's practice — done!":(counted?"Yum! Echo's full — concert time!":"Echo's full — but he didn't hear you!");
-      $("endSub").textContent=counted
-        ? ((stk?("You won the "+stk.name+" sticker! "):"")+"Echo heard you "+stars+" time"+(stars===1?"":"s")+"! "+(ringDone?"Come back tomorrow — Echo will have a new adventure ready!":"Echo's growing bigger every day you play!"))
-        : "Say the word out loud next time and Echo will hear you — that's how he grows!";
+      feedMicStop();
+      var daily=S.simpleAdventure&&S.simpleAdventure("feed",true);
+      // These discoveries are free play. Loudness alone never advances practice.
+      $("endTitle").textContent="Yum! You fed Echo!";
+      $("endSub").textContent="Five tasty discoveries. Concert time!";
+      $("again").textContent=daily?"Keep going →":"Play again";
       $("endOvl").classList.add("show");
-      sfx("complete");
-      // the payoff: Echo's ukulele concert. On a goal-done day the tomorrow
-      // line speaks first, then the strumming; otherwise music leads.
-      if(ringDone){ say("You did all of today's practice! Come back tomorrow — I'll have a new adventure ready!").then(playUke); }
-      else { playUke(); }
+      sfx("complete");playUke();
     }
 
-    $("again").onclick=function(){ stopUke(); fed=0; stars=0; roundBump=0; paintScale();
+    $("again").onclick=function(){ stopUke();
+      if(S.simpleAdventure&&S.simpleAdventure("feed",false)){feedMicStop();location.href="/charge.html?daily=1&banked=0";return;}
+ fed=0; stars=0; roundBump=0; paintScale();
       try{ $("plate").querySelectorAll(".well").forEach(function(w){ w.innerHTML=""; }); $("plate").dataset.fed="0/5"; $("starN").textContent="0"; }catch(e){}
       $("endOvl").classList.remove("show"); sfx("tap"); nextTurn(); };
-    $("goHome").onclick=function(){ stopUke(); location.href="/today.html"; };
-    $("close").onclick=function(){ stopUke(); location.href="/today.html"; };
+    $("goHome").onclick=function(){ stopFeedAudio();feedMicStop(); location.href="/today.html"; };
+    $("close").onclick=function(){ stopFeedAudio();feedMicStop(); location.href="/today.html"; };
 
+    function backgroundFeed(){stopFeedAudio();feedMicStop();}
+    if(S&&S.onBackground)S.onBackground(backgroundFeed);
+    else{document.addEventListener("visibilitychange",function(){if(document.hidden)backgroundFeed();});window.addEventListener("pagehide",backgroundFeed);}
     paintScale();
     nextTurn();
   </script>

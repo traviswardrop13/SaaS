@@ -47,18 +47,18 @@ ok("rung advance no longer daily-only", /if\(v==="pass" && useRung>=RUNG/.test(c
 ok("the ladder step and the header read ONE counter",
   /var ROUNDIX = isDaily \? \(\(run\?run\.round:0\)\|0\) : \(_ringN % _runLen\);/.test(chargeSrc)
   && /Math\.min\(ROUNDIX, RUNG\+1\)/.test(chargeSrc)
-  && /Math\.min\(ROUNDIX\+1,_goal\)/.test(chargeSrc));
+  && /Math\.min\(ROUNDIX\+1,DAILY_SEQ\.length\)/.test(chargeSrc));
 ok('pulse placeholder drops "complaint"', !/complaint/i.test(todaySrc));
 
 // ── today.html: fresh day, ring empty, rotation letter = R ──
 await page.goto("http://localhost:8131/today.html"); await page.waitForTimeout(700);
 let t = await page.evaluate(() => ({
-  ring: document.getElementById("ringTxt").textContent,
+  ring: String(Sona.repsToday()),
   sub: document.getElementById("subLine").textContent,
   sound: Sona.rotSound(), round: Sona.rotRound(),
   ph: (document.getElementById("pulseText") || {}).placeholder || "",
 }));
-ok("rep pill starts at 0", t.ring === "0");
+ok("fresh Home has no earned reps", t.ring === "0");
 ok("subLine invites the R sound", /your R sound/.test(t.sub));
 ok("rotation starts R round 0", t.sound === "R" && t.round === 0);
 
@@ -82,7 +82,7 @@ let c = await page.evaluate(() => ({ prompt: document.getElementById("bTarget").
 ok("round 1 practices isolation", /^r+$/i.test(c.prompt.trim()), c.prompt);
 // "· R", not "· R sound": the longer form wrapped to two lines on a 390px
 // phone between the close button, the ticket pill and the star count
-ok('header "Round 1 of 5 · R"', /Round 1 of 5/.test(c.lbl) && /· R\b/.test(c.lbl) && !/R sound/.test(c.lbl), c.lbl);
+ok("free-play header names its game", c.lbl === "Fruit Slice", c.lbl);
 
 // ── every prompt below the sentence rung is ONE word ──
 // "Say a rain" was the bug: the phrase rung prefixed a carrier, so the target a
@@ -122,7 +122,7 @@ await page.evaluate(() => Sona.rotAdvance());
 await page.goto("http://localhost:8131/charge.html?game=arcade-tiles.html"); await page.waitForTimeout(700);
 c = await page.evaluate(() => ({ prompt: document.getElementById("bTarget").textContent, lbl: document.getElementById("ctxLine").textContent }));
 ok("round 2 climbs to syllables", /^r(ah|ee|oo|oh|ay)$/i.test(c.prompt.trim()));
-ok('header "Round 2 of 5"', /Round 2 of 5/.test(c.lbl), c.lbl);
+ok("free-play header stays with the selected game", c.lbl === "Piano Tiles", c.lbl);
 
 // ── rounds 3-4 stay CAPPED at syllables while the rung is unearned ──
 await page.evaluate(() => { Sona.rotAdvance(); Sona.rotAdvance(); });
@@ -134,15 +134,15 @@ ok("round 4 capped at earned+1 (still syllables)", /^r(ah|ee|oo|oh|ay)$/i.test(c
 // ── rep pill mid-day: the number the kid watches only climbs (RING1) ──
 await page.evaluate(() => Sona.bumpReps(12));
 await page.goto("http://localhost:8131/today.html"); await page.waitForTimeout(700);
-t = await page.evaluate(() => ({ ring: document.getElementById("ringTxt").textContent, sub: document.getElementById("subLine").textContent }));
-ok("rep pill shows today's reps climbing", t.ring === "12", t.ring);
-ok("subLine counts down the goal", /2 more rounds/.test(t.sub));
+t = await page.evaluate(() => ({ ring: String(Sona.repsToday()), sub: document.getElementById("subLine").textContent }));
+ok("Home keeps today's real rep count", t.ring === "12", t.ring);
+ok("subLine keeps the sound goal visible", /your R sound/.test(t.sub));
 pp = await page.evaluate(DECK);
 ok("deck: steps track the rotation", pp.ps.steps === 3, JSON.stringify(pp.ps));
 ok("deck: mid-day still offers the whole trio", pp.thumbs.length === 3 && !!pp.launch, JSON.stringify(pp));
-await page.evaluate(() => document.getElementById("ringBtn").click());
+await page.evaluate(() => document.getElementById("jarInfo").click());
 let toast = await page.evaluate(() => document.getElementById("toast").textContent);
-ok("pill tap explains reps + rounds honestly", /12 reps today/.test(toast) && /3 of 5 rounds done/.test(toast) && /R sound/.test(toast));
+ok("jar tap explains reps + rounds honestly", /12 reps today/.test(toast) && /3 of 5 rounds done/.test(toast));
 await page.screenshot({ path: OUT + "/prog-ring-mid.png" });
 
 // ── finish the rotation: 5 rounds → next letter S, ring goes gold ──
@@ -152,12 +152,12 @@ ok("rotation flips to S at 5 rounds", t.sound === "S" && t.round === 0);
 ok("todayRing done at 5", t.ring.n === 5 && t.ring.done === true);
 await page.goto("http://localhost:8131/today.html"); await page.waitForTimeout(700);
 t = await page.evaluate(() => ({
-  ring: document.getElementById("ringTxt").textContent,
-  gold: document.getElementById("ringBtn").className.includes("gold"),
+  ring: String(Sona.repsToday()),
+  gold: Sona.todayRing().done,
   sub: document.getElementById("subLine").textContent,
 }));
-ok("rep pill goes gold when the day is done", t.gold === true && /^\d+$/.test(t.ring));
-ok("subLine celebrates the goal with the tomorrow-hook", /All done today/.test(t.sub) && /tomorrow/.test(t.sub));
+ok("Home keeps the finished-round status independently of reps", t.gold === true && /^\d+$/.test(t.ring));
+ok("subLine shows the next current sound goal", /your S sound/.test(t.sub));
 pp = await page.evaluate(DECK);
 ok("deck: full day = five rotation steps", pp.ps.steps === 5, JSON.stringify(pp.ps));
 
@@ -167,10 +167,10 @@ await page.screenshot({ path: OUT + "/prog-ring-done.png" });
 await page.goto("http://localhost:8131/charge.html?game=arcade-glide.html"); await page.waitForTimeout(700);
 c = await page.evaluate(() => ({ prompt: document.getElementById("bTarget").textContent, lbl: document.getElementById("ctxLine").textContent }));
 ok("next rotation practices the S sound", /^s+$/i.test(c.prompt.trim()), c.prompt);
-ok("charge header flips to bonus", /Goal done — bonus round!/.test(c.lbl), c.lbl);
+ok("extra free play keeps its game title", c.lbl === "Flappy Glide", c.lbl);
 
 // ── Echo's voice never counts as reps; no prices on the kid's home ──
-ok("engine ignores mic while ANY app audio plays", /if\(speaking\|\|ttsPlaying\)\{ silent\+\+; voiced=0; inBurst=false;/.test(chargeSrc));
+ok("engine ignores mic while ANY app audio plays", /if\(speaking\|\|ttsPlaying\|\|_sayN\)\{[\s\S]{0,130}voiced=0;inBurst=false;/.test(chargeSrc));
 ok("no dollar pricing in kid-facing today.html", !/\$\d/.test(todaySrc));
 await page.goto("http://localhost:8131/today.html"); await page.waitForTimeout(700);
 // this profile is NOT a founding family → trial banner path
@@ -187,7 +187,7 @@ if (bn.shown) {
 }
 
 // ── retry ladder: Echo thinks while scoring; two misses step DOWN a rung ──
-ok("Echo's thinking state while the scorer runs", /Echo's thinking…/.test(chargeSrc) && /leo\.think\{animation:think/.test(chargeSrc.replace(/#/g, "")));
+ok("Echo shows a visual checking state", /echo-checking/.test(chargeSrc) && /leo\.think\{animation:think/.test(chargeSrc.replace(/#/g, "")));
 ok("step-down retry offers an easier same-sound target", /Let's try something easier/.test(chargeSrc) && /ladderContent\(SOUND,useRung-1\)/.test(chargeSrc));
 
 // ── voice revive: "keep playing" copy + family-aware trigger in all 5 games ──
@@ -218,7 +218,7 @@ if (t.chips) {
 // ── the ring resets overnight: yesterday's rounds never survive to today ──
 await page.evaluate(() => { localStorage.setItem("sona.today.v1", JSON.stringify({ d: "2026-07-10", n: 3 })); localStorage.setItem("sona.reps.v1", JSON.stringify({ d: "2026-07-10", n: 44 })); });
 await page.goto("http://localhost:8131/today.html"); await page.waitForTimeout(600);
-t = await page.evaluate(() => ({ ring: document.getElementById("ringTxt").textContent, api: Sona.todayRing() }));
+t = await page.evaluate(() => ({ ring: String(Sona.repsToday()), api: Sona.todayRing() }));
 ok("stale day → rep pill and rounds reset to 0", t.ring === "0" && t.api.n === 0 && !t.api.done);
 
 // ── done state carries the tomorrow-hook (forward pull, no breakable number) ──
@@ -227,8 +227,8 @@ await page.evaluate(() => {
   localStorage.setItem("sona.today.v1", JSON.stringify({ d: iso, n: 5 }));
 });
 await page.goto("http://localhost:8131/today.html"); await page.waitForTimeout(600);
-t = await page.evaluate(() => ({ sub: document.getElementById("subLine").textContent, gold: document.getElementById("ringBtn").className.includes("gold") }));
-ok("ring done → tomorrow-hook line + gold pill", /tomorrow/.test(t.sub) && t.gold === true);
+t = await page.evaluate(() => ({ sub: document.getElementById("subLine").textContent, gold: Sona.todayRing().done }));
+ok("completed rounds preserve the next sound goal", /your S sound/.test(t.sub) && t.gold === true);
 await page.evaluate(() => localStorage.removeItem("sona.today.v1"));
 
 // ── no comeback popup: opening the app after days away goes STRAIGHT to the
@@ -268,8 +268,7 @@ ok("primer shows before the mic prompt", mp.shown);
 // pinned now, in the form that is currently true. mictest.mjs guards the other
 // direction: no sending claim may come back without the mechanism.
 ok("primer explains listening honestly",
-  /only during practice/.test(mp.txt) && /never during the games/.test(mp.txt) &&
-  /checked right here on this device/.test(mp.txt) && /No recording is ever uploaded/.test(mp.txt));
+  /practice and optional voice-enabled games/.test(mp.txt) && /checked on this phone/.test(mp.txt) && /never uploads recordings/.test(mp.txt));
 ok("primer offers a soft decline (protects the OS prompt)", /Not now/.test(mp.txt));
 await page.evaluate(() => document.getElementById("micPrimeBtn").click());
 await page.waitForTimeout(500);
@@ -285,7 +284,7 @@ ok("primer never shows again after grant", !mp);
 // ── mic DENIED → recovery screen: grown-up steps + a Try Again that retries ──
 await page.evaluate(() => localStorage.removeItem("sona.micok"));
 await page.addInitScript(() => {
-  if (navigator.mediaDevices) navigator.mediaDevices.getUserMedia = () => Promise.reject(new Error("NotAllowedError"));
+  if (navigator.mediaDevices) navigator.mediaDevices.getUserMedia = () => Promise.reject(new DOMException("Permission denied", "NotAllowedError"));
 });
 await page.goto("http://localhost:8131/charge.html?game=arcade-slice.html"); await page.waitForTimeout(900);
 await page.evaluate(() => document.getElementById("micPrimeBtn").click());
@@ -395,33 +394,27 @@ ok("…and says the one true thing about the one plan",
 t = await page.evaluate(() => (document.querySelector("#pickCard .proof") || {}).textContent || "");
 ok("proof strip: named SLP credential above the plan",
   /Rachel/.test(t) && /speech-language pathologist/.test(t));
-// ── practice volume: weekly reps + percentile chip (volume only, cohort-gated) ──
+// ── practice volume: local tries and the family's own prior week only ──
 {
   const iso = new Date().toISOString().slice(0, 10);
   await page.evaluate((d) => {
     sessionStorage.setItem("sona.gate.v1", String(Date.now()));
-    const out = { R: { days: {} } }; out.R.days[d] = { a: 30, p: 24 };
+    const out = { R: { attempts: 6, passes: 4, tries: 30, days: {} } };
+    out.R.days[d] = { a: 6, p: 4, tries: 30 };
     localStorage.setItem("sona.outcomes.v1", JSON.stringify(out));
-    localStorage.removeItem("sona.repsync.v1");
   }, iso);
-  repsPosts = []; repsQuery = { cohort: 40, pct: 80, nextPct: 90, nextReps: 12 };
+  repsPosts = [];
   await page.goto("http://localhost:8131/progress.html"); await page.waitForTimeout(900);
   t = await page.evaluate(() => ({
-    reps: document.getElementById("volReps").textContent,
-    chip: document.getElementById("volChip").textContent,
-    chipShown: document.getElementById("volChip").style.display,
-    next: document.getElementById("volNext").textContent,
+    tries: document.getElementById("volReps").textContent,
+    ranking: !!document.getElementById("volChip") || !!document.getElementById("volNext"),
+    last: document.getElementById("volLast").textContent,
   }));
-  ok("volume card shows the week's honest reps", t.reps === "30");
-  ok("percentile chip: top % + out-practicing framing", t.chipShown === "block" && /Top 20%/.test(t.chip) && /80%/.test(t.chip));
-  ok("bump line names the reps to the next decile", /12 more reps/.test(t.next) && /top 10%/.test(t.next));
-  ok("beacon posted anonymous volume", repsPosts.length >= 1 && repsPosts[0].reps === 30 && /^f[a-z0-9]+/.test(repsPosts[0].fid) && /^\d{4}-W\d{2}$/.test(repsPosts[0].week));
-  // tiny cohort → no percentile theater
-  repsQuery = { cohort: 7, pct: 80, nextPct: 90, nextReps: 3 };
-  await page.goto("http://localhost:8131/progress.html"); await page.waitForTimeout(900);
-  t = await page.evaluate(() => document.getElementById("volChip").style.display);
-  ok("percentile hides under 20 reporting families", t !== "block");
-  await page.evaluate(() => { localStorage.removeItem("sona.outcomes.v1"); localStorage.removeItem("sona.repsync.v1"); });
+  ok("volume card shows detected tries rather than the number of sound checks", t.tries === "30");
+  ok("peer ranking is removed", !t.ranking);
+  ok("the baseline is the family's own previous week", /Last week: 0 tries/.test(t.last));
+  ok("opening Progress posts no anonymous practice volume", repsPosts.length === 0);
+  await page.evaluate(() => localStorage.removeItem("sona.outcomes.v1"));
 }
 
 // ── progress report: narrative hero + non-clinical hedge + review pre-gate ──
@@ -433,7 +426,7 @@ ok("proof strip: named SLP credential above the plan",
     g.totals = Object.assign({}, g.totals, { sessions: 6, words: 40, stars: 3 });
     g.streak = g.streak || { count: 1, lastDate: d };
     localStorage.setItem("sona.progress.v1", JSON.stringify(g));
-    const out = {}; out.R = { days: {} }; out.R.days[d] = { a: 24, p: 20 };
+    const out = {}; out.R = { attempts: 24, passes: 20, days: {} }; out.R.days[d] = { a: 24, p: 20 };
     localStorage.setItem("sona.outcomes.v1", JSON.stringify(out));
     localStorage.removeItem("sona.rateask.v1");
   }, iso);
@@ -445,7 +438,7 @@ ok("proof strip: named SLP credential above the plan",
     yesHref: document.getElementById("rateYes").getAttribute("href"),
     noHref: document.getElementById("rateNo").getAttribute("href"),
   }));
-  ok("report opens with a narrative sentence (name + sound + count)", /practiced the R sound 24 times this week/.test(t.story));
+  ok("report opens with a narrative sentence (name + sound + count)", /practiced the R sound with 24 tries this week/.test(t.story));
   ok("non-clinical hedge present", t.hedge);
   // AN EMPTY REPORT IS THE STATE MOST LIKELY TO READ AS "BROKEN". A parent who
   // opens Progress before any practice must be told what will fill it and
@@ -468,10 +461,10 @@ ok("proof strip: named SLP credential above the plan",
         cards: [...document.querySelectorAll("#bysound p, #acc p")].map((e) => !!e.querySelector('a[href="/today.html"]')),
       };
     });
-    ok("an empty report explains what will appear", /adds its first reps to this page/.test(empty.says), empty.says);
+    ok("an empty report explains what will appear", /adds its first tries to this page/.test(empty.says), empty.says);
     ok("…and hands the parent one next action", empty.action, empty.says);
-    ok("…on every empty card, not just the headline",
-      empty.cards.length > 0 && empty.cards.every(Boolean), JSON.stringify(empty.cards));
+    ok("empty detail cards do not duplicate the main practice action",
+      empty.cards.length > 0 && empty.cards.every((hasAction) => !hasAction), JSON.stringify(empty.cards));
     await ctx.close();
   }
   ok("review pre-gate shows after real value, Bear-style fork",
@@ -530,8 +523,8 @@ ok("proof strip: named SLP credential above the plan",
   ok("round 1 warms up on the sound in isolation", /^r+$/i.test(climb[0].target), climb[0].target);
   ok("round 2 moves to a syllable", climb[1].syls.includes(climb[1].target), JSON.stringify([climb[1].target, climb[1].syls]));
   ok("round 3 moves to a word", climb[2].words.includes(climb[2].target), JSON.stringify([climb[2].target, climb[2].words]));
-  ok("the header counts the same rounds the ladder does",
-    /Round 1 of/.test(climb[0].hdr) && /Round 2 of/.test(climb[1].hdr) && /Round 3 of/.test(climb[2].hdr),
+  ok("free-play names the game while the practice target climbs",
+    climb.every(c => c.hdr === "Fruit Slice"),
     climb.map((c) => c.hdr).join(" | "));
   // and the cap still protects a child who has earned nothing
   await page.evaluate(() => {

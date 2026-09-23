@@ -364,7 +364,7 @@
     (function () {
       var card = document.getElementById("slpCard");
       if (!card) return;
-      if ((p.role || "") !== "slp") return;          // parents never see this
+      if ((p.role || "") !== "slp" || (Sona.isNativeApp && Sona.isNativeApp())) return; // clinician tools are browser-only
       card.style.display = "block";
       var msg = document.getElementById("slpMsg");
       var cred = null;
@@ -411,7 +411,7 @@
     // one number that actually predicts word-of-mouth.
     (function () {
       var host = document.getElementById("fbChips"); if (!host) return;
-      var isSlp = (p.role || "") === "slp";
+      var isSlp = (p.role || "") === "slp" && !(Sona.isNativeApp && Sona.isNativeApp());
       var CHIPS = isSlp
         ? ["More sounds", "Better progress data", "Easier to assign", "More game variety", "Something's broken", "Something else"]
         : ["More games", "New sounds to practice", "Progress reports", "Easier for my kid", "Something's broken", "Something else"];

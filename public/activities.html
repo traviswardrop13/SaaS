@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Sona — Play library</title>
+  <link href="/fonts.css" rel="stylesheet" />
+  <link href="/sona.css" rel="stylesheet" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <meta name="theme-color" content="#fff6e9" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <style>
+    :root{--cream:#fff6e9;--ink:#4a2c14;--muted:#795c3c;}
+    html,body{min-height:100%;height:auto;background:var(--cream);}
+    body{color:var(--ink);}
+    button,a{-webkit-tap-highlight-color:transparent;}
+    button{font:inherit;}
+    button:focus-visible,a:focus-visible{outline:3px solid #157da5;outline-offset:5px;}
+    [hidden]{display:none!important;}
+    .sr-only{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;}
+    .library-wrap{max-width:840px;margin:0 auto;padding:calc(18px + env(safe-area-inset-top)) 20px calc(32px + env(safe-area-inset-bottom));}
+    .library-header{display:flex;align-items:center;justify-content:space-between;gap:16px;}
+    .back-home{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:9px 15px;border:2px solid #fff;border-radius:99px;background:#fffdf8;color:var(--ink);font-weight:800;box-shadow:0 3px 0 #ebdcc7;}
+    .back-home span{font-size:22px;line-height:1;}
+    .library-label{font-family:"Baloo 2",sans-serif;font-size:17px;font-weight:800;color:var(--muted);}
+    .library-intro{display:flex;align-items:center;justify-content:center;gap:12px;margin:22px 0 28px;}
+    #libraryEcho{display:block;position:relative;width:84px;height:96px;flex:none;transform:rotate(-5deg);}
+    #libraryEcho>.stk{background:transparent!important;}
+    .library-intro h1{position:relative;font-family:"Baloo 2",sans-serif;font-size:30px;line-height:1.1;font-weight:800;padding:17px 20px;border-radius:23px;background:#fff;box-shadow:0 5px 0 #eddfcb;}
+    .library-intro h1:before{content:"";position:absolute;left:-9px;top:26px;width:20px;height:20px;transform:rotate(45deg);background:#fff;border-radius:3px;}
+    #activityGroups{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px 17px;}
+    .activity-group,.game-grid{display:contents;}
+    .game-card{position:relative;display:block;min-width:0;aspect-ratio:1;border:6px solid #fff;border-radius:25px;background:#fff;box-shadow:0 6px 0 #e8d9c5,0 10px 20px rgba(90,50,10,.09);color:var(--ink);padding:0;cursor:pointer;transition:transform .12s;}
+    .game-card:nth-child(3n+1){transform:rotate(-2deg);}
+    .game-card:nth-child(3n+3){transform:rotate(2deg);}
+    .game-card:active{transform:translateY(3px) scale(.97);}
+    .game-art{position:absolute;display:block;inset:0;border-radius:19px;overflow:hidden;}
+    .game-name{position:absolute;left:7px;right:7px;bottom:5px;padding:7px 3px 5px;background:#fff;border-radius:14px;font-family:"Baloo 2",sans-serif;font-size:19px;line-height:1.1;font-weight:800;text-align:center;box-shadow:0 3px 0 rgba(110,75,35,.10);}
+    #libraryNotice{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:20;width:calc(100% - 32px);max-width:440px;display:flex;align-items:center;gap:10px;padding:15px 14px 15px 18px;background:#fff;border:2px solid #eed7b0;border-radius:22px;box-shadow:0 10px 32px rgba(80,50,10,.2);}
+    #libraryMessage{font-weight:800;font-size:14px;line-height:1.45;color:var(--muted);}
+    #libraryMessageClose{flex:none;width:36px;height:36px;border:0;border-radius:50%;background:#fff0d8;color:var(--ink);font-size:23px;cursor:pointer;}
+    .library-wrap.has-message{padding-bottom:145px;}
+    @media(min-width:600px){.library-wrap{padding:26px 30px 42px;}#activityGroups{grid-template-columns:repeat(3,minmax(0,1fr));gap:27px;}.library-intro{margin:26px 0 33px;}.library-intro h1{font-size:34px;}#libraryEcho{width:100px;height:110px;}.game-name{font-size:22px;bottom:8px;padding:10px 3px;}}
+    @media(max-width:350px){.library-wrap{padding-left:15px;padding-right:15px;}#activityGroups{gap:20px 13px;}.library-intro{gap:10px;margin:20px 0 24px;}#libraryEcho{width:68px;height:80px;}.library-intro h1{font-size:25px;padding:15px 17px;}.game-card{border-width:5px;border-radius:21px;}.game-art{border-radius:16px;}.game-name{font-size:17px;left:4px;right:4px;padding:6px 2px;}}
+    @media(prefers-reduced-motion:reduce){.game-card{transition:none;}}
+  </style>
+</head>
+<body>
+  <main id="libraryApp" class="library-wrap" hidden>
+    <header class="library-header"><a class="back-home" href="/today.html"><span aria-hidden="true">‹</span> Home</a><span class="library-label">Play library</span></header>
+    <div class="library-intro"><span id="libraryEcho" aria-hidden="true"></span><h1>Pick a game!</h1></div>
+    <div id="activityGroups"></div>
+    <div id="libraryNotice" hidden><p id="libraryMessage" role="status"></p><button id="libraryMessageClose" aria-label="Close message">×</button></div>
+  </main>
+  <script src="/sona.js"></script>
+  <script>
+    (function(){
+      var S=window.Sona,app=document.getElementById("libraryApp"),host=document.getElementById("activityGroups");
+      var notice=document.getElementById("libraryNotice"),message=document.getElementById("libraryMessage");
+      if(!S||!S.activityLibrary){app.hidden=false;host.textContent="Your games could not load. Head back Home and try again.";return;}
+      var profile=S.getProfile();
+      if(!profile.onboarded&&!profile.childName){location.replace("/onboarding.html");return;}
+      app.hidden=false;
+      var library=S.activityLibrary(),selection=0,launchTimer=null;
+      function node(tag,className,text){var el=document.createElement(tag);if(className)el.className=className;if(text)el.textContent=text;return el;}
+      function clearMessage(){notice.hidden=true;message.textContent="";app.classList.remove("has-message");}
+      document.getElementById("libraryMessageClose").onclick=clearMessage;
+      function launch(game){
+        // Access is checked again at the tap. Browsing never starts practice.
+        selection++;clearTimeout(launchTimer);
+        if(S.sfx&&S.sfx.tap)S.sfx.tap();
+        if(S.gated("practice")){
+          if(S.speakNow)S.speakNow("");notice.hidden=false;app.classList.add("has-message");
+          message.textContent="Ask a grown-up to help open more games. You can keep looking around!";return;
+        }
+        clearMessage();
+        var chosen=selection,opened=false;
+        function openGame(){if(opened||chosen!==selection||document.hidden)return;opened=true;clearTimeout(launchTimer);location.href=game.go;}
+        var p=S.getProfile();
+        if(p.voiceOn===false||Number(p.volume)===0){openGame();return;}
+        // Keep names helpful even on a slow voice connection: play is never blocked.
+        launchTimer=setTimeout(openGame,1400);
+        try{S.speakNow(game.name).then(openGame,openGame);}catch(e){openGame();}
+      }
+      function gameCard(game){
+        var button=node("button","game-card");button.type="button";button.dataset.game=game.key;
+        button.setAttribute("aria-label",game.name+". "+(game.playDescription||game.sub));
+        var art=node("span","game-art");art.setAttribute("aria-hidden","true");var sticker=S.gameSticker(game.key);S.paintSticker(art,sticker[0],sticker[1]);button.appendChild(art);
+        button.appendChild(node("span","game-name",game.name));button.onclick=function(){launch(game);};return button;
+      }
+      library.groups.forEach(function(group){
+        var section=node("section","activity-group");section.dataset.group=group.id;section.setAttribute("aria-labelledby","group-"+group.id);
+        var heading=node("h2","sr-only",group.name);heading.id="group-"+group.id;section.appendChild(heading);
+        var grid=node("div","game-grid");group.games.forEach(function(game){grid.appendChild(gameCard(game));});section.appendChild(grid);host.appendChild(section);
+      });
+      S.paintSticker(document.getElementById("libraryEcho"),"p-echo-idle","sky");
+      document.querySelector("#libraryEcho svg").setAttribute("preserveAspectRatio","xMidYMid meet");
+      if(!document.hidden&&profile.voiceOn!==false&&Number(profile.volume)!==0)S.speak("Pick a game!");
+      S.onBackground(function(){selection++;clearTimeout(launchTimer);if(S.speakNow)S.speakNow("");});
+    })();
+  </script>
+</body>
+</html>

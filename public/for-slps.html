@@ -2,6 +2,22 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
+  <script>
+// Clinician tools live in the browser. A restored link in the native shell
+// must return to the family app before rendering or making clinician requests.
+(function () {
+  var native = false;
+  try {
+    var bridge = window.Capacitor;
+    native = !!(bridge && (typeof bridge.isNativePlatform === "function" ? bridge.isNativePlatform() : true));
+  } catch (e) {}
+  if (!native) return;
+  window.__sonaFamilyRedirect = true;
+  document.documentElement.style.visibility = "hidden";
+  // Home owns active-child selection and the first-run setup guard.
+  window.location.replace("/today.html");
+})();
+  </script>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>See who practiced at home — Sona for SLPs</title>
   <!-- Indexable since 21 Sep 2026: SLPs are the channel, so the page that
@@ -203,6 +219,7 @@
 
   <script>
     (function () {
+      if (window.__sonaFamilyRedirect) return;
       var $ = function (id) { return document.getElementById(id); };
       // Where the sign-up came from, so the CRM can tell ad traffic from the
       // rest. utm_source if the ad set one, else the page itself.

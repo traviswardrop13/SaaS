@@ -78,26 +78,26 @@ if (!r1ok) fails++;
 // ship — playPrompt falls through to TTS, the same path every other line uses.
 // Flip this assertion back only when a non-Rachel clip set is in place.
 ok("Rachel's recorded clip set stays off", /var HUMANCLIPS=false/.test(html), true);
-// Workstream A: the sound chip is gone — the header context line carries the sound.
-// "· R", not "· R sound": the longer form wrapped to two lines on a 390px phone
-// between the close button, the ticket pill and the star count (fittest pins the fit).
-ok("E2E r1 header names the sound", await page.evaluate(() => /· R\b/.test(document.getElementById("ctxLine").textContent)), true);
+// Free play names the selected game; the daily header is a visual path.
+ok("E2E free-play header names its selected game", await page.evaluate(() => document.getElementById("ctxLine").textContent === "Fruit Slice" && document.querySelectorAll("#ctxLine .path-dot").length === 0), true);
 
 // ---- E2E round 2 of a daily run: syllables — chip label + spoken set ----
 ttsPosts = [];
-await page.evaluate(() => sessionStorage.setItem("sona.run.v1", JSON.stringify({ active: true, round: 1, sum: 12, scores: [12], sound: "R", level: 1, pending: false })));
+await page.evaluate(() => sessionStorage.setItem("sona.run.v1", JSON.stringify({ active: true, round: 1, sum: 12, scores: [12], sound: "R", level: 1, pending: false, games: ["slice","tiles","stack","run","glide"] })));
 await page.goto("http://localhost:8123/charge.html?daily=1&sound=R");
 // STORY1: a daily round opens with the spoken episode beat (~3.2s on a bridge
 // round) before the practice prompt, so this has to wait past it.
 await page.waitForTimeout(6000);
 const r2 = await page.evaluate(() => ({
-  chip: document.getElementById("ctxLine").textContent,
+  pathLabel: document.getElementById("ctxLine").getAttribute("aria-label"),
+  dots: [...document.querySelectorAll("#ctxLine .path-dot")].map(dot => ({ done:dot.classList.contains("done"), current:dot.classList.contains("current"), icon:dot.querySelector("use")?.getAttribute("href") || null })),
   prompt: document.getElementById("bTarget").textContent,
   sylls: (window.SonaContent && SonaContent.syllables) ? SonaContent.syllables("R").map((s) => s.t) : [],
 }));
 // the daily run is ROT_LEN (5) rounds — same number the goal ring, the chest
 // and today.html's path all count to. A shorter run leaves the ring unfillable.
-ok("E2E r2 header (daily round 2 of 5)", /Round 2 of 5/.test(r2.chip) && /· R\b/.test(r2.chip), true);
+ok("E2E r2 path exposes round 2 of 5 to assistive technology", r2.pathLabel, "Adventure, round 2 of 5");
+ok("E2E r2 path shows one completed game and the current game's icon", r2.dots.length === 5 && r2.dots.filter(dot=>dot.done).length === 1 && r2.dots[0].done && r2.dots.filter(dot=>dot.current).length === 1 && r2.dots[1].current && r2.dots[1].icon === "#st-piano" && r2.dots.slice(2).every(dot=>!dot.done&&!dot.current&&!dot.icon), true);
 console.log((r2.sylls.includes(r2.prompt) ? "PASS" : "FAIL") + "  E2E r2 card shows a syllable  (" + r2.prompt + " ∈ " + JSON.stringify(r2.sylls) + ")");
 if (!r2.sylls.includes(r2.prompt)) fails++;
 // STORY1: a daily round now opens with the episode beat spoken aloud (a

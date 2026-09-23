@@ -72,5 +72,23 @@ await scenario('shared ElevenLabs playback',async()=>{
  ok('diagnostics are bounded, private, memory-only copies',safe);
  }finally{await ctx.close();}
 });
+for(const game of ['bubbles','peekaboo'])await scenario(game+' delivery and cache',async()=>{
+ mode='pcm';const {ctx,page,errors}=await fresh('/arcade-'+game+'.html');try{
+ const before=requests;ok(game+': opening a game does not start the demonstration clock',await page.evaluate(()=>!Sona.demoState().started));
+ await page.click('#startGame');const started=await page.evaluate(()=>Sona.demoState().started);
+ ok(game+': deliberate Start begins the existing demonstration window',started>0);
+ await page.click(game==='bubbles'?'#revealButton':'[data-door="1"]');await page.waitForTimeout(150);
+ ok(game+': old cached delivery is bypassed',requests===before+1,{before,requests});
+ const first=await page.evaluate(()=>Sona.voiceStatus?Sona.voiceStatus():null);
+ ok(game+': fresh audio uses the server provider',first?.last?.source==='elevenlabs',first);
+ await page.click('#hearWord');await page.waitForTimeout(150);
+ const replay=await page.evaluate(()=>Sona.voiceStatus?Sona.voiceStatus():null);
+ ok(game+': fresh delivery is reused without another API call',requests===before+1&&replay?.last?.source==='cache',replay);
+ ok(game+': listening becomes the child’s turn after playback',/Your turn/.test(await page.locator('#promptHint').textContent()));
+ await page.click('#pauseGame');await page.click('#resumeGame');
+ ok(game+': resuming never restarts the demonstration window',await page.evaluate(t=>Sona.demoState().started===t,started));
+ ok(game+': no runtime errors',!errors.length,errors);
+ }finally{await ctx.close();}
+});
 await browser.close();await new Promise(resolve=>server.close(resolve));
 console.log(failures?failures+' FAILURES':'ALL GREEN');process.exit(failures?1:0);
