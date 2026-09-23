@@ -20,6 +20,7 @@ const SUITES = [
   "chargepacingtest.mjs", // listen/model/child-turn handoff and replay ordering
   "readtest.mjs",  // books never go silent: browser-voice fallback when TTS dies
   "momweek.mjs",   // parent weekly goal + streak math + the three UIs
+  "nativefamilytest.mjs", // native family entry; clinician routes stay browser-only
   "onboardingtest.mjs", // reviewed setup, permission and explicit handoff
   "progressreviewtest.mjs", // honest parent counts, local clips and explicit sharing
   "repguardtest.mjs", // non-speech evidence cannot create practice

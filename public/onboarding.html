@@ -369,6 +369,8 @@
         });
       } catch (e) {}
     })();
+    // A restored clinician draft must not start clinician setup in the family app.
+    if (Sona.isNativeApp && Sona.isNativeApp()) draft.role = "parent";
     function saveDraft() { try { localStorage.setItem(DRAFTKEY, JSON.stringify(draft)); } catch (e) {} }
     function clearDraft() { try { localStorage.removeItem(DRAFTKEY); } catch (e) {} }
 

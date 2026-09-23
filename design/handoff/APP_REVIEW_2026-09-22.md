@@ -72,3 +72,15 @@ A separate five-file audio-only patch applies to production `main` at `10ec31a`;
 The audio-only release is live through PR #121 and production commit 777cdc736959b2e50ea2f0cc3a73a5398a3d1824. Current main has been integrated locally into this redesign branch. Its non-cancelling narration watchdog and regression test are preserved alongside the simple-game voice tests. All 24 combined voice-client checks and the syntax suite passed after integration. No redesigned app changes have been published.
 
 The prior full battery remains 38/39 suites; the known noise acceptance failures were neither removed nor weakened. Source comparison confirms production uses the same underlying energy-event gate, but this branch also changes practice accounting and related flows, so the full redesign is not a UI-only release. Publishing it with those known limitations needs an explicit exception to the all-tests-pass rule. No new detector tuning or full repeated battery was started during this merge preparation.
+
+## Approved known-limitation release
+
+After the remaining 38/39 result and its practical consequence were explained, Travis explicitly instructed: “okay letsfirst merge what we have then attack this noise issue.” This authorizes publishing the current redesign with the disclosed noise-counting limitation as an exception to the all-tests-pass gate. The failing noise suite remains enabled and unchanged. The noise investigation is separate follow-up work, with no new detector behavior included in this release.
+
+## Native family-only correction
+
+Travis reported the installed iPhone app showing SLP sign-in, clarified that clinician tools belong only in the browser, and instructed fixing this before merging immediately. The native start URL was already the family root, but direct/restored clinician URLs had no native guard and a legacy SLP profile could reveal clinician Settings controls. The exact arrival path on his device is not established.
+
+Each clinician entry page now performs its native redirect inline in the head, before rendering and without another asset dependency; clinician boot/send functions honor that redirect. Native Settings hides clinician controls and uses family feedback wording. Native setup disregards a saved clinician role in its draft. Existing profile data and browser clinician access remain intact. Fresh/returning native users, clean aliases, active-child setup, legacy Capacitor bridges and browser bridges are covered: 14/28 checks before the fix, 28/28 afterward. Syntax passed. Physical-device confirmation is still needed.
+
+The first integration battery also had three navigation/timing timeouts (day1, pause, pause-audio); all three passed once when rerun independently (143, 120 and 41 assertions respectively). This is recorded rather than relabeling the first run as green. The final combined battery log is family-entry-final-battery.log under the release output folder.
