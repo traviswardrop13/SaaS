@@ -590,5 +590,20 @@ if (A) {
     /first_name: lead\.first_name,/.test(lead) && /role: lead\.role,/.test(lead) && /fbclid: lead\.fbclid,/.test(lead));
 }
 
+
+// ── what the clinician sees when sign-up does not go through ──
+{
+  const slps = read("public/for-slps.html");
+  // The error line sits under the button — on a laptop, the bottom edge of the
+  // window. Shown there and left there, a refused sign-up looked like a button
+  // that did nothing (23 Sep 2026, with an ad running).
+  ok("every sign-up error is brought into view as it is shown",
+    /function err\(msg\)[\s\S]{0,200}scrollIntoView/.test(slps) &&
+    !/\$\("fErr"\)\.textContent = [^"]*"[^"]/.test(slps.replace('$("fErr").textContent = "";', "")),
+    "an error below the fold is an error nobody reads");
+  ok("a signed-in clinician whose email failed is not told it is on its way",
+    /else if \(!j\.sent\)/.test(slps) && /didn't go out just now, so bookmark the dashboard/.test(slps));
+}
+
 console.log(fails ? fails + " FAILURES" : "ALL GREEN");
 process.exit(fails ? 1 : 0);
