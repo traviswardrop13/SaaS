@@ -74,8 +74,8 @@ const TRACKER = FREE_MODE
 export const metadata = {
   title: "Sona — R-sound practice kids actually love",
   description: FREE_MODE
-    ? "Still saying “wabbit” instead of rabbit? Sona turns daily R practice into a game kids ask to play — built with a licensed pediatric speech-language pathologist (Clinical Fellow). Free right now: every game, every sound, no card."
-    : "Still saying “wabbit” instead of rabbit? Sona turns daily R practice into a game kids ask to play — built with a licensed pediatric speech-language pathologist (Clinical Fellow). 3 days free, then $59.99/yr — under $5 a month.",
+    ? "Still saying “wabbit” instead of rabbit? Sona turns daily R practice into a game kids ask to play — built with a licensed pediatric speech-language pathologist. Free right now: every game, every sound, no card."
+    : "Still saying “wabbit” instead of rabbit? Sona turns daily R practice into a game kids ask to play — built with a licensed pediatric speech-language pathologist. 3 days free, then $59.99/yr — under $5 a month.",
 };
 
 /* ---------- shared bits ---------- */
@@ -356,14 +356,13 @@ export default async function Landing() {
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {/* Rachel holds an Idaho CF licence (confirmed by Travis, 1 Sep 2026), so
                   "licensed speech-language pathologist" is TRUE and is used across the
-                  app. She is a Clinical Fellow — master's complete, supervised
-                  fellowship year in progress — and that is stated alongside it rather
-                  than hidden: it costs nothing and it is what another SLP would want
-                  to know. What must NEVER come back is the CCC: that is ASHA's
+                  app. She is a Clinical Fellow (master's complete, supervised year in
+                  progress); since 23 Sep 2026 the copy says "licensed" without the
+                  fellowship, on Travis's call, and never implies more. What must NEVER come back is the CCC: that is ASHA's
                   certification, she does not hold it, and "board-certified (CCC-SLP)"
                   shipped once on this very page as a checkable false claim about a
                   trademarked credential. Pinned in iaptest.mjs. */}
-              {["Licensed speech-language pathologist (Clinical Fellow)", "Specializes in kids ages 4–9", "Reviews every exercise before it ships"].map((t) => (
+              {["Licensed speech-language pathologist", "Specializes in kids ages 4–9", "Reviews every exercise before it ships"].map((t) => (
                 <div key={t} style={{ display: "flex", gap: 8, fontSize: 13.5, fontWeight: 700 }}><Check />{t}</div>
               ))}
             </div>

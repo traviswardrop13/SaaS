@@ -208,7 +208,9 @@ await web.close();
 // ── the credential on the paywall says only what is verified ──
 // Rachel holds an Idaho CF licence (confirmed 1 Sep 2026), so "licensed" is
 // true and is used. She is a Clinical Fellow — master's complete, supervised
-// fellowship year in progress — and does NOT hold ASHA's CCC. The CCC is the
+// fellowship year in progress — and does NOT hold ASHA's CCC. Since 23 Sep 2026
+// the copy says "licensed" without naming the fellowship (Travis's call), so
+// that is not pinned; what is pinned is that nothing claims MORE. The CCC is the
 // claim to get right: it is a trademarked certification, it is checkable, and
 // "board-certified (CCC-SLP)" shipped once on the page that takes money.
 {
@@ -220,9 +222,9 @@ await web.close();
   ok("the verified licence claim is the one that is made",
     /licen[sc]ed pediatric speech-language pathologist/i.test(sub),
     "an Idaho CF licence makes this true — under-claiming is not a virtue when it is checkable");
-  ok("…and the fellowship status is stated beside it, not hidden",
-    /Clinical Fellow/.test(sub),
-    "another SLP reading this should know she is in her CF year; it costs nothing to say");
+  ok("…and nothing dresses it up as more than a licence",
+    !/fully licen[sc]ed|\bcertified\b/i.test(sub),
+    "leaving the fellowship unsaid is a choice; implying she is past it is a false claim");
 }
 
 // ── PRICING IS LIVE: FREE_MODE off, 3-day trial, the gate is honest ──
