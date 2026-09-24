@@ -767,7 +767,10 @@
       // instead is the free demonstration: one complete run, then the offer.
       // A subscription trial now starts only where a trial can honestly
       // start, inside a verified purchase.
-      try{ if(window.sonaTrack){ sonaTrack("Lead"); sonaTrack("CompleteRegistration"); } }catch(e){}
+      // A Lead is an email we can reach. Finishing setup without one is a
+      // registration, not a lead — counting it as one told the ad account it
+      // had 26 leads when the CRM had almost none (24 Sep 2026).
+      try{ if(window.sonaTrack){ if(draft.email) sonaTrack("Lead"); sonaTrack("CompleteRegistration"); } }catch(e){}
       // capture the lead (email + answers) → GHL via /api/lead (fire-and-forget)
       try{
         if(draft.email){

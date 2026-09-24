@@ -634,5 +634,35 @@ if (A) {
     slps.indexOf('sonaTrack("Lead")') > 0 && slps.indexOf('sonaTrack("Lead")') < slps.indexOf('if (j.signedIn) setTimeout('));
 }
 
+
+// ── no lead is ever lost, and "sent to the CRM" means the CRM said yes ──
+{
+  const lead = read("app/api/lead/route.ts");
+  const view = read("app/api/founders/leads/route.ts");
+  const page = read("public/leads.html");
+  const ob = read("public/onboarding.html");
+  // 24 Sep 2026: the first ad showed 26 "Website Leads" and the CRM had
+  // almost none. /api/lead forwarded and forgot, and called a refusal a
+  // capture; setup fired Lead whether or not an email was given.
+  ok("captured is true only when the CRM accepted the lead",
+    /captured = crm\.ok;/.test(lead) && !/body: JSON\.stringify\(safeLead\),\s*\}\);\s*captured = true;/.test(lead),
+    "a 4xx from a broken workflow must not read as a lead delivered");
+  ok("…and a refusal is logged with the CRM's own answer", /CRM webhook refused the lead/.test(lead));
+  ok("every lead is also kept in our own store, capped",
+    /kvCmd\(\["LPUSH", "leads:all", JSON\.stringify\(entry\)\]\)/.test(lead) && /kvCmd\(\["LTRIM", "leads:all", 0, \d+\]\)/.test(lead));
+  const entry = lead.slice(lead.indexOf("const entry = {"), lead.indexOf("};", lead.indexOf("const entry = {")));
+  ok("…built field by field from safeLead: never a child, never the free-text report",
+    entry.length > 0 && !/\.\.\./.test(entry) && !/\blead\./.test(entry) && !/child|age:|practice|report/.test(entry),
+    "the ledger is marketing data; a child's details have no place in it");
+  ok("the founder view needs a real FOUNDER_KEY, compared in constant time, from a header",
+    /need\.length < 12/.test(view) && /timingSafeEqual/.test(view) && /x-founder-key/.test(view) && !/searchParams\.get\("key"\)/.test(view));
+  ok("the founder page is hidden from search and loads no tracking",
+    /name="robots" content="noindex/.test(page) && !/pixel\.js|analytics\.js|fbevents|posthog/.test(page),
+    "it lists people's email addresses");
+  ok("setup counts a Lead only when an email was given",
+    /if\(draft\.email\) sonaTrack\("Lead"\); sonaTrack\("CompleteRegistration"\);/.test(ob),
+    "a finished setup with no email is a registration, not a lead the CRM can ever show");
+}
+
 console.log(fails ? fails + " FAILURES" : "ALL GREEN");
 process.exit(fails ? 1 : 0);
