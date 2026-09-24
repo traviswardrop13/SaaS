@@ -1289,12 +1289,14 @@
     return null;
   }
   function canBuyMystery() {
-    return !mysteryGame() && getCoins() >= MYSTERY_COST;
+    return !mysteryGame() && getCoins() >= MYSTERY_COST && GAME_KEYS.some(function (key) {
+      return dailyGames().indexOf(key) < 0 && gameAccess(key).allowed;
+    });
   }
   function buyMystery() {
     if (!canBuyMystery()) return null;
     const trio = dailyGames();
-    const rest = GAME_KEYS.filter((k) => trio.indexOf(k) === -1);
+    const rest = GAME_KEYS.filter((k) => trio.indexOf(k) === -1 && gameAccess(k).allowed);
     if (!rest.length) return null;
     if (!spendCoins(MYSTERY_COST)) return null;
     const pick = dailyPick(rest, 1, 31)[0] || rest[0];
@@ -2047,17 +2049,22 @@
   //
   // ?to= rides inside a URL anyone can type or send, and it lands on a page
   // that sells things, so it is an ALLOWLIST and not a parameter: it may name
-  // one of four parent-only pages and carry nothing but the one flag that
-  // changes their copy. Everything else — other origins, protocol-relative
+  // a known parent-only page and carry only its allowed copy/game selector.
+  // Everything else — other origins, protocol-relative
   // "//evil.example", any other query key — is dropped, and the visitor simply
   // stays on Home.
-  const GATE_DESTS = { "/subscribe.html": 1, "/progress.html": 1, "/settings.html": 1, "/voices.html": 1 };
+  const GATE_DESTS = { "/premium.html": 1, "/subscribe.html": 1, "/progress.html": 1, "/settings.html": 1, "/voices.html": 1 };
   function gateDest(raw) {
     try {
       const s = String(raw || "");
       if (s.charAt(0) !== "/" || s.charAt(1) === "/") return "";   // internal only, never "//host"
       const path = s.split("?")[0].split("#")[0];
       if (!GATE_DESTS[path]) return "";
+      if (path === "/premium.html") {
+        var query = new URLSearchParams(s.split("?")[1] || "");
+        var key = gameKey(query.get("game"));
+        return path + (key ? "?game=" + key : "");
+      }
       return path + (/[?&]first=1(&|$)/.test(s) ? "?first=1" : "");
     } catch (e) { return ""; }
   }
@@ -2320,51 +2327,170 @@
   // it moved here because dailyGames() has to pick from the same list the home
   // screen paints, and two copies of a list is one copy that goes stale.
   const GAME_ACTS = {
-    slice: { name: "Fruit Slice",   sub: "Say it 5× to play",          go: "/charge.html?game=arcade-slice.html", group: "arcade", playDescription: "Swipe through the fruit." },
-    tiles: { name: "Piano Tiles",   sub: "Say it 5× to play",          go: "/charge.html?game=arcade-tiles.html", group: "arcade", playDescription: "Tap each tile as it reaches the line." },
-    stack: { name: "Block Stacker", sub: "Say it 5× to play",          go: "/charge.html?game=arcade-stack.html", group: "arcade", playDescription: "Time your tap to stack the blocks." },
-    run:   { name: "Sound Sprint",  sub: "Say it 5× to play",          go: "/charge.html?game=arcade-run.html", group: "arcade", playDescription: "Switch lanes and collect coins." },
-    glide: { name: "Flappy Glide",  sub: "Say it 5× to play",          go: "/charge.html?game=arcade-glide.html", group: "arcade", playDescription: "Tap to glide through the gaps." },
-    feed:  { name: "Feed Echo",     sub: "Say it & tap — Echo's hungry!", go: "/arcade-feed.html", group: "simple", playDescription: "Find the picture and feed Echo. No timer." },
-    bubbles: { name: "Bubble Pop", sub: "Pop, discover and say it together", go: "/arcade-bubbles.html", group: "simple", playDescription: "Pop a bubble. Find a little surprise." },
-    peekaboo: { name: "Peekaboo", sub: "Open a door and say it together", go: "/arcade-peekaboo.html", group: "simple", playDescription: "Knock, knock! See what’s hiding." },
+    slice: { name: "Fruit Slice",   sub: "Say it 5× to play",          go: "/charge.html?game=arcade-slice.html", group: "arcade", tier: "free", playDescription: "Swipe through the fruit." },
+    tiles: { name: "Piano Tiles",   sub: "Say it 5× to play",          go: "/charge.html?game=arcade-tiles.html", group: "arcade", tier: "premium", playDescription: "Tap each tile as it reaches the line." },
+    stack: { name: "Block Stacker", sub: "Say it 5× to play",          go: "/charge.html?game=arcade-stack.html", group: "arcade", tier: "free", playDescription: "Time your tap to stack the blocks." },
+    run:   { name: "Sound Sprint",  sub: "Say it 5× to play",          go: "/charge.html?game=arcade-run.html", group: "arcade", tier: "premium", playDescription: "Switch lanes and collect coins." },
+    glide: { name: "Flappy Glide",  sub: "Say it 5× to play",          go: "/charge.html?game=arcade-glide.html", group: "arcade", tier: "premium", playDescription: "Tap to glide through the gaps." },
+    feed:  { name: "Feed Echo",     sub: "Say it & tap — Echo's hungry!", go: "/arcade-feed.html", group: "simple", tier: "free", playDescription: "Find the picture and feed Echo. No timer." },
+    bubbles: { name: "Bubble Pop", sub: "Pop, discover and say it together", go: "/arcade-bubbles.html", group: "simple", tier: "free", releasedOn: "2026-09-21", playDescription: "Pop a bubble. Find a little surprise." },
+    peekaboo: { name: "Peekaboo", sub: "Open a door and say it together", go: "/arcade-peekaboo.html", group: "simple", tier: "premium", releasedOn: "2026-09-21", playDescription: "Knock, knock! See what’s hiding." },
   };
+  // Catalog access is separate from the speech needed to earn an arcade turn.
+  // FREE_MODE still opens every game in production; local preview moves no money.
   // Preserve the existing story and mystery deck; new library games stand alone.
   const GAME_KEYS = ["slice", "tiles", "stack", "run", "glide", "feed"];
   const ACTIVITY_KEYS = GAME_KEYS.concat(["bubbles", "peekaboo"]);
   function gameAct(key) { return GAME_ACTS[key] || null; }
 
+  const LIBRARY_PREVIEW_KEY = "sona.librarypreview.v1", PREVIEW_PLAN_KEY = "sona.previewplan.v1";
+  function libraryPreview() {
+    try {
+      if (!/^(localhost|127\.0\.0\.1|\[::1\])$/.test(global.location.hostname)) return false;
+      var q = new URLSearchParams(global.location.search), flag = q.get("libraryPreview");
+      if (flag === "0") {
+        sessionStorage.removeItem(LIBRARY_PREVIEW_KEY);
+        sessionStorage.removeItem(PREVIEW_PLAN_KEY);
+        return false;
+      }
+      if (flag === "1") sessionStorage.setItem(LIBRARY_PREVIEW_KEY, "1");
+      return sessionStorage.getItem(LIBRARY_PREVIEW_KEY) === "1";
+    } catch (e) { return false; }
+  }
+  function previewPlan() {
+    var empty = { state: "free", endsAt: 0 };
+    if (!libraryPreview()) return empty;
+    try {
+      var p = JSON.parse(sessionStorage.getItem(PREVIEW_PLAN_KEY) || "null");
+      if (!p || ["free", "trial", "expired"].indexOf(p.state) < 0) return empty;
+      var end = Number(p.endsAt) || 0;
+      if (p.state === "trial") return { state: end > Date.now() ? "trial" : "expired", endsAt: end };
+      return { state: p.state, endsAt: end };
+    } catch (e) { return empty; }
+  }
+  function setPreviewPlan(state) {
+    if (!libraryPreview() || !gateOk() || ["free", "trial", "expired"].indexOf(state) < 0) return false;
+    try {
+      sessionStorage.setItem(PREVIEW_PLAN_KEY, JSON.stringify({ state: state,
+        endsAt: state === "trial" ? Date.now() + 3 * 86400000 : state === "expired" ? Date.now() - 1 : 0 }));
+      return true;
+    } catch (e) { return false; }
+  }
+  // Only catalog keys enter links or access decisions. Paths and return URLs
+  // are deliberately not accepted here, even when they point to this origin.
+  function gameKey(value) {
+    return typeof value === "string" && ACTIVITY_KEYS.indexOf(value) >= 0 ? value : "";
+  }
+  function catalogRun() {
+    try {
+      var r = JSON.parse(sessionStorage.getItem(RUNKEY) || "null");
+      if (!r || !r.active || !Array.isArray(r.games) || r.games.length !== ROT_LEN ||
+          !r.games.every(function (key) { return !!gameKey(key); }) ||
+          typeof r.round !== "number" || Math.floor(r.round) !== r.round || r.round < 0 || r.round > r.games.length) return null;
+      return r;
+    } catch (e) { return null; }
+  }
+  function gameAccess(key, options) {
+    key = gameKey(key);
+    var act = key && GAME_ACTS[key], preview = libraryPreview();
+    var result = { allowed: false, tier: act ? act.tier : "premium", reason: "unknown", preview: preview };
+    function allow(reason) { result.allowed = true; result.reason = reason; return result; }
+    if (!act || act.available === false) return result;
+    if (act.tier === "free") return allow("free");
+    if (preview) {
+      if (previewPlan().state === "trial") return allow("trial");
+    } else {
+      if (isFree()) return allow("free-mode");
+      if (isFounder() || slpVerified() || isSubscribed() || isPilot() || earlyAdopterAnyKid()) return allow("entitled");
+      if (trialActive()) return allow("trial");
+    }
+    // Keep matching earned turns within a saved adventure across expiration:
+    // charge resumes its original plan, and each finished turn is banked once.
+    // A saved adventure never grants unrelated Premium choices in the library.
+    var run = options && options.run ? catalogRun() : null;
+    if (run && (run.simpleComplete === run.round || (run.arcadeComplete && run.arcadeComplete.round === run.round))) {
+      result.reason = "completed"; return result;
+    }
+    if (options && options.earned) {
+      try {
+        var file = "arcade-" + key + ".html";
+        if (sessionStorage.getItem("sona.play.token") === file || sessionStorage.getItem("sona.play.active") === file) return allow("earned");
+      } catch (e) {}
+    }
+    if (run && run.games[run.round] === key && (run.pending || (run.ready && run.ready.round === run.round))) return allow("run");
+    result.reason = preview && previewPlan().state === "expired" ? "expired" : "premium";
+    return result;
+  }
+  function finishGameTurn(key, dailyScore) {
+    key = gameKey(key); if (!key) return;
+    try {
+      var file = "arcade-" + key + ".html";
+      if (sessionStorage.getItem("sona.play.token") === file) sessionStorage.removeItem("sona.play.token");
+      if (sessionStorage.getItem("sona.play.active") === file) sessionStorage.removeItem("sona.play.active");
+      var run = typeof dailyScore === "number" && isFinite(dailyScore) ? catalogRun() : null;
+      if (run && run.pending && run.games[run.round] === key && !(run.arcadeComplete && run.arcadeComplete.round === run.round)) {
+        run.arcadeComplete = { round: run.round, score: Math.max(0, dailyScore | 0) };
+        sessionStorage.setItem(RUNKEY, JSON.stringify(run));
+      }
+    } catch (e) {}
+  }
+  function gameBounce(key) {
+    try { location.replace("/activities.html" + (gameKey(key) ? "?locked=" + key : "")); } catch (e) {}
+  }
+
   // Age suggests a style of play, never access or a speech target. Keep this
   // catalog separate from the daily adventure and its practice progression.
   const ACTIVITY_GROUPS = [
-    { id: "simple", name: "Simple play", ageLabel: "Suggested ages 2–4", description: "Easy tapping, one thing at a time." },
-    { id: "arcade", name: "Arcade", ageLabel: "Suggested ages 5 and up", description: "More movement, timing and challenge." },
+    { id: "simple", name: "Simple play", ageLabel: "Suggested ages 3–4", description: "Little taps. Big discoveries." },
+    { id: "arcade", name: "Arcade", ageLabel: "Suggested ages 5–8", description: "A little more action and adventure." },
   ];
-  function activityLibrary() {
+  function activityLibrary(options) {
     var age = Number(getProfile().childAge);
     var validAge = age >= 2 && age <= 14 && Math.floor(age) === age;
     var recommended = validAge ? playStyle() : null;
+    var now = options && typeof options.now === "number" && isFinite(options.now) ? options.now : Date.now();
+    var date = new Date(now), day = Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
+    function catalogDay(value) {
+      if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return NaN;
+      var parsed = Date.parse(value + "T00:00:00Z");
+      return isFinite(parsed) && new Date(parsed).toISOString().slice(0, 10) === value ? parsed : NaN;
+    }
+    function entry(key) {
+      var act = GAME_ACTS[key];
+      return { key: key, name: act.name, sub: act.sub, go: act.go, playDescription: act.playDescription,
+        tier: act.tier, releasedOn: act.releasedOn || null, available: act.available !== false };
+    }
     var groups = ACTIVITY_GROUPS.map(function (group) {
       return {
         id: group.id, name: group.name, ageLabel: group.ageLabel,
         description: group.description, recommended: group.id === recommended,
         games: ACTIVITY_KEYS.filter(function (key) {
-          return GAME_ACTS[key].group === group.id;
-        }).map(function (key) {
-          var act = GAME_ACTS[key];
-          return { key: key, name: act.name, sub: act.sub, go: act.go, playDescription: act.playDescription };
-        }),
+          return GAME_ACTS[key].group === group.id && GAME_ACTS[key].available !== false;
+        }).map(entry),
       };
     });
     if (recommended === "arcade") groups.reverse();
-    return { recommended: recommended, groups: groups };
+    // Release dates expire honestly after thirty calendar dates. Seasonal rows
+    // exist only when a finished item has a real active start/end date; no placeholders.
+    var fresh = ACTIVITY_KEYS.filter(function (key) {
+      var act = GAME_ACTS[key], released = catalogDay(act.releasedOn);
+      return act.available !== false && released <= day && day - released < 30 * 86400000;
+    }).sort(function (a, b) { return catalogDay(GAME_ACTS[b].releasedOn) - catalogDay(GAME_ACTS[a].releasedOn); }).map(entry);
+    var seasonal = ACTIVITY_KEYS.filter(function (key) {
+      var act = GAME_ACTS[key], season = act.season;
+      return act.available !== false && season && catalogDay(season.startsOn) <= day && day <= catalogDay(season.endsOn);
+    }).map(entry);
+    var featured = [];
+    if (fresh.length) featured.push({ id: "new", name: "New to Sona", games: fresh });
+    if (seasonal.length) featured.push({ id: "seasonal", name: "Seasonal favorites", games: seasonal });
+    return { recommended: recommended, groups: groups, featured: featured };
   }
   // Home previews the same adventure that practice launches. Feed Echo has
   // its own practice/reward loop and remains an independent game choice.
   // A started adventure keeps its order when a family pauses over midnight.
   function adventureGames(firstGame) {
     var style = playStyle();
-    var deck = ACTIVITY_KEYS.filter(function (key) { return GAME_ACTS[key].group === style; });
+    var deck = ACTIVITY_KEYS.filter(function (key) { return GAME_ACTS[key].group === style && gameAccess(key).allowed; });
     var count = ROT_LEN;
     try {
       var run = JSON.parse(sessionStorage.getItem(RUNKEY) || "null");
@@ -3555,5 +3681,5 @@
   try { _grandfatherFreeEra3(); } catch (e) {}
   try { installDebug(); } catch (e) {}
 
-  global.Sona = { simpleAdventure, MIC_PROMISE, playStyle, pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, TTS_CACHE_VERSION, voiceDiagnostic, voiceStatus, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, saveFor, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, ladderContent, FREE_MODE, isFree, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, adventureGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, activityLibrary, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, gated, gateVerify, gateOk, requireGate, gateDest, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, planMoment, planEligible, planShown, speak, speakNow, speakUnlock, speechAvailable, speechPerm, speechStart, speechStop, hearVerdict, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, demoState, demoDone, demoStart, demoFinish, runActive, gateBounce, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repsBeacon, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES };
+  global.Sona = { libraryPreview, previewPlan, setPreviewPlan, gameKey, gameAccess, gameBounce, finishGameTurn, catalogRun, simpleAdventure, MIC_PROMISE, playStyle, pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, TTS_CACHE_VERSION, voiceDiagnostic, voiceStatus, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, saveFor, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, ladderContent, FREE_MODE, isFree, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, adventureGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, activityLibrary, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, gated, gateVerify, gateOk, requireGate, gateDest, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, planMoment, planEligible, planShown, speak, speakNow, speakUnlock, speechAvailable, speechPerm, speechStart, speechStop, hearVerdict, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, demoState, demoDone, demoStart, demoFinish, runActive, gateBounce, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repsBeacon, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES };
 })(window);

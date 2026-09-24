@@ -5,9 +5,10 @@
   "use strict";
   var S = window.Sona;
   if (!S) return;
-  if (S.gated && S.gated()) { S.gateBounce(); return; }
-  function $(id) { return document.getElementById(id); }
   var kind = document.body.getAttribute("data-simple-game"), NEED = 5;
+  var dailyEntry = new URLSearchParams(location.search).get("daily") === "1";
+  if (!S.gameAccess(kind, { run: dailyEntry }).allowed) { S.gameBounce(kind); return; }
+  function $(id) { return document.getElementById(id); }
   var phase = "intro", paused = false, closed = false, finished = false;
   var found = 0, heard = 0, heardThisTurn = false, target = null, targets = [], used = [], sound = "";
   var selectedDoor = null, focusBeforePause = null, profile = S.getProfile ? S.getProfile() : {};
@@ -61,6 +62,9 @@
   }
   function start() {
     if (closed || paused || document.hidden || (phase !== "intro" && phase !== "finish")) return;
+    // Expiration waits for the current discoveries to finish, then applies to
+    // a new round. A still-unplayed earned adventure turn keeps its handoff.
+    if (!S.gameAccess(kind, { run: dailyEntry && phase === "intro" }).allowed) { closed = true; stopResources(); S.gameBounce(kind); return; }
     profile = S.getProfile ? S.getProfile() : profile;
     if (!prepareTargets()) {
       phase = "intro"; render(); $("startGame").disabled = true;

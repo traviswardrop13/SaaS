@@ -365,7 +365,7 @@ async function home(age) {
 // The only way in is the charge.html hand-off.
 {
   const ARCADE = ["arcade-slice.html", "arcade-tiles.html", "arcade-stack.html", "arcade-run.html", "arcade-glide.html"];
-  async function land(url, prep) {
+  async function land(url, prep, withQuery = false) {
     const ctx = await browser.newContext();
     const pg = await ctx.newPage();
     await pg.goto("http://localhost:8178/today.html");
@@ -373,7 +373,8 @@ async function home(age) {
     if (prep) await pg.evaluate(prep);
     await pg.goto("http://localhost:8178/" + url);
     await pg.waitForTimeout(600);
-    const path = new URL(pg.url()).pathname;
+    const destination = new URL(pg.url());
+    const path = destination.pathname + (withQuery ? destination.search : "");
     await ctx.close();
     return path;
   }
@@ -387,13 +388,10 @@ async function home(age) {
   // otherwise be thrown out at midnight when the day rolls over
   ok("a charge hand-off is never bounced",
     (await land("arcade-slice.html?from=charge")) === "/arcade-slice.html");
-  // Pricing is live, so the gate outranks the hand-off itself: a child on a
-  // dead trial meets the lock even arriving from charge.html. The ?paid=1 seam
-  // is left on the first case deliberately — it is inert while priced, so this
-  // keeps passing in BOTH pricing states and cannot rot in a free window.
-  // …and the gate sends a CHILD home to ask a grown-up, never to the price page
-  ok("an expired trial still wins over everything, even a charge hand-off",
-    (await land("arcade-tiles.html?from=charge", 'sessionStorage.setItem("sona.paidui","1");localStorage.setItem("sona.demo.v1",JSON.stringify({started:1,done:1}));localStorage.setItem("sona.trial.v1",JSON.stringify({start:Date.now()-40*86400000,days:3}))')) === "/today.html");
+  // A URL flag is not an earned ticket. An expired Premium choice returns
+  // to the child-safe library, which keeps the selected game and free choices.
+  ok("an expired Premium hand-off without an earned ticket returns to its library choice",
+    (await land("arcade-tiles.html?from=charge", 'sessionStorage.setItem("sona.paidui","1");localStorage.setItem("sona.demo.v1",JSON.stringify({started:1,done:1}));localStorage.setItem("sona.trial.v1",JSON.stringify({start:Date.now()-40*86400000,days:3}))', true)) === "/activities.html?locked=tiles");
   ok("a LIVE trial still does not open a typed game URL — every game is entered through charge.html",
     (await land("arcade-tiles.html", 'localStorage.setItem("sona.demo.v1",JSON.stringify({started:1,done:1}));localStorage.setItem("sona.trial.v1",JSON.stringify({start:Date.now(),days:3}))')) === "/today.html");
   ok("…while the charge hand-off opens it on that live trial",

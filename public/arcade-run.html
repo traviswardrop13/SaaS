@@ -107,23 +107,20 @@
 
   <script src="/sona.js"></script>
   <script>
-    /* The normal way in is /charge.html?game=…, which gates before it hands
-       off — so these pages carried no gate of their own and a typed URL played
-       free forever, story unread. The gate fires at PAGE LOAD only, never
-       mid-round: a child who is already playing is never interrupted. */
+    // Check access before any game resources start. The earned speech token
+    // remains a separate requirement; a catalog unlock never creates one.
+    var gameEntryAllowed=false;
     (function () {
-      try {
-        if (window.Sona && Sona.gated && Sona.gated()) { Sona.gateBounce(); return; }
-        // GAMES1: a game is earned by practice, full stop. charge.html hands
-        // off with ?from=charge once the sound has been said (and it gates
-        // before it does); a typed URL goes home. The story gate that used to
-        // sit here went with the books.
-        var earned = /[?&]from=charge\b/.test(location.search);
-        if (!earned) { location.replace("/today.html"); }
-      } catch (e) {}
+      var S=window.Sona, q=new URLSearchParams(location.search);
+      if(!S)return;
+      var earned=q.get("from")==="charge";
+      if(!S.gameAccess("run",{run:q.get("daily")==="1",earned:earned}).allowed){S.gameBounce("run");return;}
+      if(!earned){location.replace("/today.html");return;}
+      gameEntryAllowed=true;
     })();
   </script>
   <script>
+    if(gameEntryAllowed){
     var $=function(id){return document.getElementById(id);};
     var S=window.Sona, qp=new URLSearchParams(location.search);
     function sfx(n){ try{ if(S&&S.sfx&&S.sfx[n])S.sfx[n](); }catch(e){} }
@@ -318,10 +315,11 @@
     })();
 
     // ---- round over ----
-    function bankAndContinue(){ location.href="/charge.html?daily=1&banked="+score(); }
+    function bankAndContinue(){ S.finishGameTurn("run",score()); location.href="/charge.html?daily=1&banked="+score(); }
     function score(){ return (dist/10|0)+coins*2; }
     function endRound(){
       if(window.__ended)return; window.__ended=true;
+      S.finishGameTurn("run",isDaily?score():null);
       playing=false; reviveWait=false; clearInterval(distIv); clearInterval(rampIv);
       var isBest=dist>BEST; if(isBest){ BEST=dist; try{ localStorage.setItem(BESTK,String(BEST)); }catch(e){} }
       var pts=score(), cshare=Math.min(10,(coins/2)|0);
@@ -353,9 +351,10 @@
       $("endAgain").style.display="none";
       $("endOvl").classList.add("show");
     }
-    $("endCharge").onclick=function(){ location.href="/charge.html?"+(isDaily?"daily=1":("game=arcade-glide.html")); };
-    $("endHome").onclick=function(){ location.href="/today.html#play"; };
-    $("close").onclick=function(){ if(playing){ playing=false; clearInterval(distIv); clearInterval(rampIv); } if(isDaily){ bankAndContinue(); return; } location.href="/today.html#play"; };
+    $("endCharge").onclick=function(){ location.href=isDaily?"/charge.html?daily=1":(S.gameAccess("glide").allowed?"/charge.html?game=arcade-glide.html":"/activities.html"); };
+    $("endHome").onclick=function(){ S.finishGameTurn("run"); location.href="/today.html#play"; };
+    $("close").onclick=function(){ S.finishGameTurn("run"); if(playing){ playing=false; clearInterval(distIv); clearInterval(rampIv); } if(isDaily){ bankAndContinue(); return; } location.href="/today.html#play"; };
+    }
   </script>
 </body>
 </html>

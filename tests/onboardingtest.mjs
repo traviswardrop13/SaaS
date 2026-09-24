@@ -70,9 +70,31 @@ await scenario('sound selection and private paced handoff',async()=>{
   if(new URL(page.url()).pathname==='/onboarding.html'){
    const fits=await page.evaluate(()=>{const b=document.getElementById('nextBtn').getBoundingClientRect(),h=document.getElementById('handoffTitle').getBoundingClientRect();return b.bottom<=innerHeight&&h.top>=0&&document.documentElement.scrollWidth<=innerWidth;});ok('handoff heading and button fit a small phone',fits);
    ok('young-child handoff uses the shared simple-game plan',result.plan.length===5&&result.plan.every(g=>['feed','bubbles','peekaboo'].includes(g)),result.plan);
+   await page.locator('#achEmailInput').fill('parent@example.com');await page.locator('#achEmailInput').press('Enter');
+   ok('Done in the optional email leaves the family in control of the handoff',new URL(page.url()).pathname==='/onboarding.html'&&await page.evaluate(()=>document.activeElement.id!=='achEmailInput'&&!Sona.getProfile().email));
    await next(page);await page.waitForURL('**/charge.html?**');const u=new URL(page.url());ok('handoff enters the first actual adventure game',u.searchParams.get('daily')==='1'&&u.searchParams.get('first')===result.plan[0]);
+   ok('the play button still saves an explicitly entered optional email',await page.evaluate(()=>JSON.parse(localStorage.getItem('sona.profile.v1')).email==='parent@example.com'));
   }
   clean('sound/skip handoff',errors);
+ }finally{await context.close();}
+});
+
+await scenario('Done closes typing without accepting setup choices',async()=>{
+ const {context,page,errors,requests}=await fresh();try{
+  await page.locator('#slpLink').click();await page.locator('#obName').fill('Milo');await page.locator('#obName').press('Enter');
+  const nameDone=await page.evaluate(()=>({step:document.body.dataset.setupScreen,focused:document.activeElement.id,age:draft.childAge}));
+  ok('Done in the name field leaves the age choice on screen and dismisses focus',nameDone.step==='name'&&nameDone.focused!=='obName'&&nameDone.age==='',nameDone);
+  // Keep the other checks useful when exercising the pre-fix page.
+  if(nameDone.step!=='name')await page.locator('#backBtn').click();
+  await page.locator('#obAge [data-age="4"]').click();await next(page);await choose(page,'S');await next(page);
+  await page.locator('#obGoals').fill('Clear sounds in words');await page.locator('#obGoals').press('Enter');
+  ok('Done in goals stays on the same setup question',await page.locator('[data-step="slp"].on').count()===1&&await page.evaluate(()=>document.activeElement.id!=='obGoals'));
+  await next(page);await page.locator('#obEmail').fill('clinician@example.com');await page.locator('#obEmail').press('Enter');
+  const accountPosts=()=>requests.filter(r=>r.method==='POST'&&['/api/lead','/api/slp/auth/request'].includes(new URL(r.url).pathname));
+  ok('Done in clinician email dismisses focus without creating an account',await page.locator('[data-step="email"].on').count()===1&&await page.evaluate(()=>document.activeElement.id!=='obEmail'&&!Sona.getProfile().onboarded)&&accountPosts().length===0,accountPosts());
+  await next(page);await atHandoff(page);
+  ok('Continue still accepts the clinician email and sends each intended request once',await page.evaluate(()=>Sona.getProfile().email==='clinician@example.com')&&accountPosts().filter(r=>new URL(r.url).pathname==='/api/lead').length===1&&accountPosts().filter(r=>new URL(r.url).pathname==='/api/slp/auth/request').length===1,accountPosts());
+  clean('Done actions',errors);
  }finally{await context.close();}
 });
 
@@ -121,7 +143,7 @@ await scenario('move-in code sheet',async()=>{
    ok('a failed code stays in the sheet with a useful error',await sheet.isVisible()&&await page.locator('#moveSubmit').isEnabled());
    const backup=JSON.stringify({app:'sona',v:1,data:{'sona.profile.v1':JSON.stringify({childName:'Restored',childAge:'7',onboarded:true,focusSounds:['S'],volume:0,voiceOn:false})}});
    await context.route('**/api/pair?code=XYZ789',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({ok:true,data:backup})}));
-   await page.locator('#moveInput').fill('XYZ789');await page.locator('#moveSubmit').click();await page.waitForURL('**/today.html');
+   await page.locator('#moveInput').fill('XYZ789');await page.locator('#moveInput').press('Enter');await page.waitForURL('**/today.html');
    ok('explicit code redemption restores the save and returns Home',await page.evaluate(()=>JSON.parse(localStorage.getItem('sona.profile.v1')).childName)==='Restored');
   }
   ok('code entry only retrieves an explicitly entered backup',pairPosts(requests).length===0);
