@@ -125,6 +125,7 @@
     .signup input:focus{outline:none;border-color:var(--teal);}
     .srow .btn{flex:none;}
     @media(max-width:480px){ .srow .btn{flex:1 1 100%;} }
+    .consent{font-size:13px;font-weight:700;color:var(--muted);margin:0;}
     .serr{color:#B83A3A;font-weight:800;font-size:14px;min-height:0;}
     .serr:empty{display:none;}
     .hnote{font-size:14px;font-weight:700;color:var(--muted);}
@@ -258,6 +259,9 @@
         <input id="fEmail" type="email" inputmode="email" autocomplete="email" placeholder="you@clinic.com" aria-label="Work email" />
         <button class="btn" id="fGo" type="submit">Get Sona free</button>
       </div>
+      <!-- The email also joins the Kit list, so the form says so before the
+           button is pressed (Travis's wording, 24 Sep 2026). -->
+      <p class="consent">We&rsquo;ll also send occasional tips from Rachel. Unsubscribe anytime.</p>
       <div class="serr" id="fErr" role="alert"></div>
     </form>
     <div class="sent" id="sent" hidden>
@@ -381,7 +385,7 @@
     </div>
     <div class="q">
       <button type="button" aria-expanded="false" aria-controls="a2" id="q2">What's stored, and where?<span>+</span></button>
-      <p class="a" id="a2" hidden>Your account (email, name, clinic, code). For each consenting family: the child's first name and age, target sounds, practice days and counts, pass rate per sound, your assignments, and when the parent consented. Hosted on Vercel, stored in Upstash, sign-in emails via Resend. Analytics (PostHog) on grown-up pages only, and a Meta ad pixel on this sign-up page so we can tell which of our ads work — neither ever runs where a child practices, and neither is sent a child's name. No ads in the app, no data sales, no profiling.</p>
+      <p class="a" id="a2" hidden>Your account (email, name, clinic, code). For each consenting family: the child's first name and age, target sounds, practice days and counts, pass rate per sound, your assignments, and when the parent consented. Hosted on Vercel, stored in Upstash, sign-in emails via Resend, and the occasional email from Rachel via Kit. Analytics (PostHog) on grown-up pages only, and a Meta ad pixel on this sign-up page so we can tell which of our ads work — neither ever runs where a child practices, and neither is sent a child's name. No ads in the app, no data sales, no profiling.</p>
     </div>
     <div class="q">
       <button type="button" aria-expanded="false" aria-controls="a3" id="q3">How is data deleted?<span>+</span></button>
