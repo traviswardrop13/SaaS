@@ -68,7 +68,7 @@ function fakeDevice(config) {
   }});
   if(!localStorage.getItem('sona.test.simpleSeed')){
     localStorage.setItem('sona.test.simpleSeed','1');
-    localStorage.setItem('sona.freeera.v1','post');localStorage.setItem('sona.freeera2.v1','done');localStorage.setItem('sona.freeera3.v1','done');
+    localStorage.setItem('sona.freeera.v1','post');localStorage.setItem('sona.freeera2.v1','done');localStorage.setItem('sona.freeera3.v1','done');localStorage.setItem('sona.freeera4.v1','done');
     localStorage.setItem('sona.profile.v1',JSON.stringify({childName:'Mia',childAge:'4',focusSounds:['M'],onboarded:true,earlyAdopter:true,voiceOn:config.voiceOn!==false,soundOn:false,volume:config.voiceOn===false?0:0.6}));
     if(config.micok)localStorage.setItem('sona.micok','1');
   }

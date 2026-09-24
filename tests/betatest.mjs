@@ -32,9 +32,10 @@ const ok = (n, p) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL ") + n)
 // needed to run the FIRST session now waits until after it.
 await page.goto("http://localhost:8129/onboarding.html?slp=RACHEL1");
 await page.waitForTimeout(900);
-// CODES1: founding access now requires the VERIFIED credential. sona.slpok is
-// what a successful /api/slp/redeem writes — seeded post-load (about:blank has
-// no localStorage) to simulate a family arriving through a valid CODE&k=KEY link.
+// CODES1: sona.slpok is what a successful /api/slp/redeem writes — seeded
+// post-load (about:blank has no localStorage) to simulate a family arriving
+// through a valid CODE&k=KEY link. Post-load also means AFTER this build's
+// first load, so it is a redemption the era-four sweep correctly ignores.
 await page.evaluate(() => { localStorage.setItem("sona.slpok", "RACHEL1"); localStorage.setItem("sona.slpunlock", "1"); });
 const ob = await page.evaluate(() => ({
   betaStep: !!document.querySelector('[data-step="beta"]'),
@@ -142,7 +143,14 @@ const fin = await page.evaluate(() => ({
 ok("achieve finale shows after the last step", fin.achieveShown && fin.achName === "Milo");
 ok("CTA invites the child to play", /Let's play/.test(fin.cta));
 const prof = await page.evaluate(() => JSON.parse(localStorage.getItem("sona.profile.v1") || "{}"));
-ok("SLP-referred → founding access", prof.earlyAdopter === true && prof.slpCode === "RACHEL1");
+// REWRITTEN 24 Sep 2026. This was "SLP-referred → founding access": setup
+// wrote earlyAdopter for a verified family. It writes no grant now. A family
+// who redeems a clinician's link after this build gets Premium through that
+// clinician's coverage (asked of the server), and one who redeemed before it
+// was grandfathered by the era-four sweep — never by the setup screen. What
+// setup still owes the clinician is the roster tag.
+ok("SLP-referred → tagged for the clinician's roster, with no founding grant written by setup",
+  prof.slpCode === "RACHEL1" && prof.earlyAdopter !== true);
 // the deferred questions must not have been silently answered on the parent's
 // behalf either — they are asked later, in Settings, or they keep their default
 ok("the weekly goal keeps its default rather than being asked for", prof.weeklyGoal === 5);
@@ -490,7 +498,7 @@ ok("today no pageerrors", errs.length === 0);
   await pg.goto("http://localhost:8129/today.html"); await pg.waitForTimeout(500);
   const backup = await pg.evaluate(() => {
     localStorage.clear();
-    localStorage.setItem("sona.freeera.v1", "post"); localStorage.setItem("sona.freeera2.v1", "done"); localStorage.setItem("sona.freeera3.v1", "done");
+    localStorage.setItem("sona.freeera.v1", "post"); localStorage.setItem("sona.freeera2.v1", "done"); localStorage.setItem("sona.freeera3.v1", "done"); localStorage.setItem("sona.freeera4.v1", "done");
     Sona.saveProfile({ childName: "Ada", childAge: "7", focusSounds: ["R"], onboarded: true });
     Sona.addCoins(40);
     const old = Sona.exportString();   // the backup they will paste, later

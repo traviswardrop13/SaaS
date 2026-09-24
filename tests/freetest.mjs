@@ -86,9 +86,16 @@ if (appFree) {
     ok("the landing page reads the one switch",
       /import \{ FREE_MODE \} from "@\/lib\/pricing"/.test(src),
       "a second copy of the pricing rule is how the paid and free halves contradicted each other three times");
-    ok("every CTA target is derived from the switch, not hard-coded",
-      /CTA_HREF = FREE_MODE \? "\/onboarding\.html" : "\/api\/checkout"/.test(src),
-      "while free, /api/checkout 303s straight back here — a button that does nothing");
+    // REWRITTEN 24 Sep 2026. This demanded CTA_HREF = FREE_MODE ? onboarding
+    // : /api/checkout. It only runs while free, so it sat silent through the
+    // paid build that changed the page — and would have failed on the next
+    // flip back, tempting someone to restore the checkout arm the page
+    // dropped on purpose. Every family now starts free (practice is never
+    // behind the paywall) and Premium is bought inside the app, after the
+    // product has proved itself — so the CTA opens the app in BOTH states.
+    ok("every CTA opens the app, in both states — Premium is bought inside it",
+      /const CTA_HREF = "\/onboarding\.html";/.test(src),
+      "a CTA that 303s to Stripe asks a parent to pay before their child has said a word");
     ok("…and no CTA hard-codes the checkout endpoint around it",
       !/href="\/api\/checkout"/.test(src),
       "a literal href bypasses the switch and survives the next flip");
@@ -138,23 +145,57 @@ if (appFree) {
 }
 
 // ── 4. the promises that outlive any switch ──
-// THREE free windows, THREE sweeps. Each one is a promise to the families who
+// FOUR free windows, FOUR sweeps. Each one is a promise to the families who
 // arrived while that window was open, and each survives every later flip. The
 // era-3 sweep is the one CLAUDE.md said had to be written BEFORE pricing could
 // return — it ships in the same commit that brought the paywall back.
-ok("all three grandfather sweeps still exist",
+//
+// 24 Sep 2026: era four (20 Sep → this build) joins them. It ships in the SAME
+// build that turns FREE_MODE off — never earlier, because a sweep that shipped
+// during the window would have stamped the very families it protects before
+// they onboarded. So its presence is pinned to the switch: whenever the family
+// paywall is live, the era-four sweep must exist and run.
+ok("all four grandfather sweeps still exist",
   /function _grandfatherFreeEra\(/.test(sona) && /function _grandfatherFreeEra2\(/.test(sona) &&
-  /function _grandfatherFreeEra3\(/.test(sona),
+  /function _grandfatherFreeEra3\(/.test(sona) && /function _grandfatherFreeEra4\(/.test(sona),
   "a missing sweep is a broken promise to a real cohort — never 'clean these up'");
 ok("…and every one of them is actually called at load",
   /_grandfatherFreeEra\(\); \} catch/.test(sona) && /_grandfatherFreeEra2\(\); \} catch/.test(sona) &&
-  /_grandfatherFreeEra3\(\); \} catch/.test(sona),
+  /_grandfatherFreeEra3\(\); \} catch/.test(sona) && /_grandfatherFreeEra4\(\); \} catch/.test(sona),
   "a sweep that is defined but never invoked keeps no promise at all");
+ok("…in era order, so no sweep ever runs ahead of the one before it",
+  sona.indexOf("_grandfatherFreeEra3(); } catch") < sona.indexOf("_grandfatherFreeEra4(); } catch") &&
+  sona.indexOf("_grandfatherFreeEra2(); } catch") < sona.indexOf("_grandfatherFreeEra3(); } catch"));
+{
+  const era4 = (sona.match(/function _grandfatherFreeEra4\(\) \{[\s\S]*?\n  \}/) || [""])[0];
+  ok("the era-four sweep never reads an earlier era's stamp",
+    !!era4 && !/GF2KEY|GF3KEY|getItem\(GFKEY\)|freeera2|freeera3/.test(era4),
+    "a device that first loaded during era three or four carries every earlier stamp and belongs to none of them");
+  ok("…is one-shot, stamped on the way in",
+    /if \(localStorage\.getItem\(GF4KEY\)\) return;[^\n]*\n\s*localStorage\.setItem\(GF4KEY, "done"\);/.test(era4),
+    "a sweep that can re-run adopts every family who onboards after it");
+  ok("…and counts a clinician's credential as membership, not just onboarding",
+    /sona\.slpunlock/.test(era4) && /sona\.slpok/.test(era4),
+    "before this build a redemption WAS free-forever access — a family mid-setup was promised it too");
+}
 ok("the free-mode bounce is still wired on trial.html",
   /Sona\.isFree\(\)\) location\.replace\("\/today\.html"\)/.test(readFileSync(ROOT + "/trial.html", "utf8")));
 ok("gated() still short-circuits on the switch before anything else",
   /function gated\(\w*\) \{\s*if \(isFree\(\)\) return false;/.test(sona),
   "if any check runs ahead of the switch, the switch is not the switch");
+// …and PRACTICE comes straight after it (24 Sep 2026). "Paid" no longer means
+// "walled": the free version is daily practice, so nothing that could close
+// the door — a finished demonstration, a dead trial, a lapsed plan — may be
+// consulted before the gate has said practice is open.
+{
+  const g = (sona.match(/function gated\(\w*\) \{[\s\S]*?\n  \}/) || [""])[0];
+  const practice = g.indexOf("PRACTICE_ASKS.indexOf(what) !== -1) return false;");
+  ok("practice is answered before any entitlement, demo or trial check",
+    practice > 0 && practice < g.indexOf("premium()") && practice < g.indexOf("demoDone()") && practice < g.indexOf("getTrial()"),
+    g.slice(0, 300));
+  ok("…and every practice door is on the list",
+    /const PRACTICE_ASKS = \["practice", "daily", "session", "demo"\];/.test(sona));
+}
 
 // ── 5. what a parent actually gets, in a browser ──
 const MIME = { html: "text/html", js: "text/javascript", svg: "image/svg+xml", css: "text/css", woff2: "font/woff2", png: "image/png" };
@@ -204,6 +245,102 @@ if (appFree) {
   ok("the paywall page bounces a family straight back into the app",
     /today\.html/.test(pg.url()), pg.url());
   ok("no pageerrors across the free-mode surfaces", errs.length === 0, errs.join(" | "));
+  await ctx.close();
+}
+
+// ── 6. THE FREE VERSION, in a browser, whichever way the switch points ──
+// Since 24 Sep 2026 the paid state is not a wall: a family with no entitlement
+// at all keeps daily practice and the free games for their style of play, and
+// Premium adds the rest. Everything below runs through the ?paid=1 seam, so it
+// holds in either state — it pins what "priced" MEANS, not whether Sona is
+// priced today. The device is brand new: its first load is this build, so
+// every free-era sweep stamps it before it onboards and grants it nothing.
+{
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  const pg = await ctx.newPage();
+  const errs = [];
+  pg.on("pageerror", (e) => errs.push(e.message));
+  await pg.goto("http://localhost:8211/today.html"); await pg.waitForTimeout(300);
+  const seedNew = () => pg.evaluate(() => {
+    sessionStorage.setItem("sona.paidui", "1");
+    localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Ivy", childAge: "7", focusSounds: ["R"], onboarded: true, voiceOn: false, volume: 0 }));
+    // the demonstration is long over and an old local trial is long dead —
+    // the family the free version exists for
+    localStorage.setItem("sona.demo.v1", JSON.stringify({ started: 1, done: 1 }));
+    localStorage.setItem("sona.trial.v1", JSON.stringify({ start: Date.now() - 30 * 86400000, days: 3 }));
+    localStorage.setItem("sona.micok", "1");
+  });
+  await seedNew();
+  const st = await pg.evaluate(() => {
+    const keys = Object.keys(Sona.GAME_ACTS);
+    return {
+      stamp4: localStorage.getItem("sona.freeera4.v1"),
+      premium: Sona.premium(),
+      practice: ["practice", "daily", "session", "demo"].map((w) => Sona.gated(w)),
+      free: keys.filter((k) => Sona.GAME_ACTS[k].tier === "free" && !Sona.GAME_ACTS[k].comingSoon).map((k) => [k, Sona.gameAccess(k).allowed]),
+      paid: keys.filter((k) => Sona.GAME_ACTS[k].tier === "premium" && !Sona.GAME_ACTS[k].comingSoon).map((k) => [k, Sona.gameAccess(k).allowed, Sona.gated(k)]),
+      parked: keys.filter(k => Sona.GAME_ACTS[k].comingSoon).map(k => ({key:k,access:Sona.gameAccess(k)})),
+      story: Sona.gated("story"),
+      unnamed: Sona.gated(),
+      deck: Sona.adventureGames().map((k) => [k, Sona.gameAccess(k).allowed]),
+      mystery: (Sona.addCoins(500), Sona.canBuyMystery()),
+      ask: Sona.planEligible(),
+    };
+  });
+  ok("a brand-new device is stamped by the era-four sweep and granted nothing",
+    st.stamp4 === "done" && st.premium === false, JSON.stringify(st));
+  ok("…and is never gated from practice, by any door",
+    st.practice.every((g) => g === false), JSON.stringify(st.practice));
+  ok("…plays every released free-tier game",
+    st.free.length >= 2 && st.free.every(([, a]) => a === true), JSON.stringify(st.free));
+  ok("…but Coming soon games remain unavailable to this family", st.parked.length===2&&st.parked.every(g=>!g.access.allowed&&g.access.reason==="coming-soon"),JSON.stringify(st.parked));
+  ok("…but no Premium game, asked by the catalog or the gate",
+    st.paid.length > 0 && st.paid.every(([, a, g]) => a === false && g === true), JSON.stringify(st.paid));
+  ok("…and Premium content that is not a game stays Premium",
+    st.story === true && st.unnamed === true, JSON.stringify({ story: st.story, unnamed: st.unnamed }));
+  ok("the daily adventure deals only games the family can open",
+    st.deck.length === 5 && st.deck.every(([, a]) => a === true), JSON.stringify(st.deck));
+  ok("the mystery door is Premium: coins alone do not open it", st.mystery === false, JSON.stringify(st));
+  ok("…and the one-time offer is still an offer this family may see", st.ask === true, JSON.stringify(st));
+
+  // Home stays a quiet catalog. Released Premium cards name their boundary;
+  // Coming soon cards cannot start or advertise an upgrade.
+  await pg.goto("http://localhost:8211/today.html"); await pg.waitForTimeout(800);
+  const home = await pg.evaluate(() => ({
+    heading:document.querySelector("h1").textContent,
+    automatic:!!document.getElementById("goBtn"),
+    run:sessionStorage.getItem("sona.run.v1"),
+    kid:document.getElementById("libraryApp").innerText,
+    locked:[...document.querySelectorAll('#activityGroups .game-card[data-locked="true"]')].filter(t=>!t.disabled).map(t=>({key:t.dataset.game,tag:t.querySelector(".game-access").textContent,aria:t.getAttribute("aria-label")})),
+    open:[...document.querySelectorAll('#activityGroups .game-card[data-locked="false"]')].map(t=>t.dataset.game),
+  }));
+  ok("Home waits for a chosen game without starting a daily run or replay", /pick a game/i.test(home.heading)&&!home.automatic&&!home.run,JSON.stringify(home));
+  ok("a locked released tile says Premium and asks for a grown-up",home.locked.length===3&&home.locked.every(t=>t.tag==="Premium"&&/Ask a grown-up/.test(t.aria)),JSON.stringify(home.locked));
+  ok("…and nothing a child can read on Home names a price",!/\$\s?\d/.test(home.kid),(home.kid.match(/\$\s?\d[^\s]*/) || [])[0]);
+  await pg.locator('#activityGroups .game-card[data-game="slice"]').click();
+  await pg.waitForURL(/charge\.html/);
+  ok("choosing a released free game opens normal practice without a replay flag",home.open.includes("slice")&&new URL(pg.url()).searchParams.get("game")==="arcade-slice.html"&&!new URL(pg.url()).searchParams.has("demo"),pg.url());
+
+  // the daily run itself opens — the practice door does not bounce
+  await pg.goto("http://localhost:8211/charge.html?daily=1"); await pg.waitForTimeout(900);
+  ok("the daily run opens for a family with no plan", /charge\.html\?daily=1/.test(pg.url()), pg.url());
+
+  // the plan screen: ONE plan card, and what stays free right under it
+  await pg.evaluate(() => sessionStorage.setItem("sona.gate.v1", String(Date.now())));
+  await pg.goto("http://localhost:8211/subscribe.html"); await pg.waitForTimeout(900);
+  const plan = await pg.evaluate(() => ({
+    pick: document.getElementById("pickCard").style.display,
+    plans: document.querySelectorAll("#pickCard .plan").length,
+    free: (document.getElementById("freeTierCard") || {}).style ? document.getElementById("freeTierCard").style.display : "missing",
+    freeText: (document.getElementById("freeTierCard") || {}).innerText || "",
+    line: document.getElementById("planLine").innerText,
+  }));
+  ok("the plan screen offers exactly one plan to a family on the free version",
+    plan.pick === "block" && plan.plans === 1, JSON.stringify(plan));
+  // The free-version promise must not count games that are still parked.
+  ok("…and says what they keep if they don't buy it, in the one phrase",
+    plan.free === "block" && /daily practice and free games/i.test(plan.freeText) && !/\btwo games\b/i.test(plan.freeText), JSON.stringify(plan));
+  ok("no pageerrors across the free-version surfaces", errs.length === 0, errs.join(" | "));
   await ctx.close();
 }
 

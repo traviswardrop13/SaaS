@@ -138,6 +138,39 @@ ok("a removal takes the child out of the list", st.midway === st.before - 1, JSO
 st = await page.evaluate(() => ({ blocked: Sona.removeKid(Sona.kids()[0].slot), n: Sona.kids().length }));
 ok("the last child can never be removed", st.blocked === false && st.n === 1, JSON.stringify(st));
 
+// ── a grandfathered household stays grandfathered through its children ──
+// (24 Sep 2026) The free-era sweeps mark the profiles that exist when they
+// run, and earlyAdopterAnyKid() only reads children still on the list. A
+// family who added a sibling and then removed the first child — the only one
+// ever marked — dropped to the free version. addKid copies the household's
+// mark onto the new child now; a household without one gives none.
+{
+  const c2 = await browser.newContext(); const p2 = await c2.newPage();
+  await p2.goto("http://localhost:8153/today.html"); await p2.waitForTimeout(400);
+  const seed = (early) => p2.evaluate((early) => {
+    localStorage.clear();
+    localStorage.setItem("sona.freeera.v1", "post"); localStorage.setItem("sona.freeera2.v1", "done");
+    localStorage.setItem("sona.freeera3.v1", "done"); localStorage.setItem("sona.freeera4.v1", "done");
+    localStorage.setItem("sona.profile.v1", JSON.stringify(Object.assign({ childName: "Ada", childAge: "6", focusSounds: ["R"], onboarded: true }, early ? { earlyAdopter: true, freeEra: true, freeEra4: true } : {})));
+    sessionStorage.setItem("sona.paidui", "1");
+    localStorage.setItem("sona.demo.v1", JSON.stringify({ started: 1, done: 1 }));
+  }, early);
+  await seed(true);
+  st = await p2.evaluate(() => {
+    const before = Sona.premium();
+    Sona.addKid("Ben", "5");
+    const copied = !!Sona.getProfile().earlyAdopter;
+    const removed = Sona.removeKid("");              // the child the sweep marked
+    return { before, copied, removed, kids: Sona.kids().length, after: Sona.premium(), tiles: Sona.gameAccess("tiles").allowed };
+  });
+  ok("a new child in a grandfathered household carries the household's grant", st.before === true && st.copied === true, JSON.stringify(st));
+  ok("…so removing the first child keeps the family's Premium", st.removed && st.kids === 1 && st.after === true && st.tiles === true, JSON.stringify(st));
+  await seed(false);
+  st = await p2.evaluate(() => { Sona.addKid("Cy", "5"); return { early: !!Sona.getProfile().earlyAdopter, premium: Sona.premium() }; });
+  ok("…while a household never grandfathered gains nothing by adding one", st.early === false && st.premium === false, JSON.stringify(st));
+  await c2.close();
+}
+
 // ── per-kid keys that pages own directly must be namespaced too ──
 // PER_KID is a promise; a key listed there but read with a raw localStorage call
 // keeps none of it. These are the live surfaces that keep their own key.

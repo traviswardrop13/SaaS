@@ -205,7 +205,7 @@
       var library=S.activityLibrary(),lockedGame=null;
       var unlock=document.getElementById("libraryUnlock");
       function node(tag,className,text){var el=document.createElement(tag);if(className)el.className=className;if(text)el.textContent=text;return el;}
-      function access(game){return S.gameAccess?S.gameAccess(game.key):{allowed:!S.gated("practice"),tier:game.tier,reason:S.isFree()?"free-mode":"legacy"};}
+      function access(game){return S.gameAccess?S.gameAccess(game.key):{allowed:!S.gated(game.key),tier:game.tier,reason:S.isFree()?"free-mode":"legacy"};}
       function clearMessage(){notice.hidden=true;message.textContent="";lockedGame=null;unlock.hidden=false;app.classList.remove("has-message");}
       function showLocked(game){
         var comingSoon=game.comingSoon||access(game).reason==="coming-soon";
@@ -272,6 +272,14 @@
     try{if(S&&S.repsBeacon)S.repsBeacon();}catch(e){}
     try{if(S&&S.syncHomework)S.syncHomework();}catch(e){}
     try{if(S&&S.iapRefresh)S.iapRefresh();}catch(e){}
+    // Refresh clinician coverage without delaying the library. A changed
+    // cached answer refreshes card access; unchanged coverage never reloads.
+    try{
+      if(S&&S.caseRefresh&&S.premium){
+        var wasPremium=S.premium();
+        S.caseRefresh().then(function(){if(S.premium()!==wasPremium)location.reload();},function(){});
+      }
+    }catch(e){}
     // ── parent gate: PIN if the parent set one, else four spelled-out digits ──
     // It used to be arithmetic (3-8 × 3-8). Two problems: a seven-year-old who
     // knows their times tables walks straight through it, and there are only
@@ -439,17 +447,28 @@
       // flip, and without this they'd read "Your free trial has ended — see
       // plans" inside an app that is free.
       if(S.isFree&&S.isFree())return;
-      if((S.isSubscribed&&S.isSubscribed())||(S.isPilot&&S.isPilot()))return;
+      if(S.isSubscribed&&S.isSubscribed())return;
+      // Premium through a clinician's caseload plan: say where it came from,
+      // so a parent who never bought anything is not left wondering why every
+      // game is open — or surprised if it closes when the plan ends.
+      if(S.caseCovered&&S.caseCovered()){
+        note.textContent="Sona Premium is included through your child's speech therapist — every available game is open.";
+        note.style.display="block"; return;
+      }
+      if(S.premium&&S.premium())return;
       // Opening the home screen used to START a trial (ensureTrial), so the
       // clock began because a parent looked at the app. It reports one now,
       // and only if one already exists — an existing family's unexpired days
       // are honored to the end, and nobody new is issued any.
       var link=' <a href="/subscribe.html" style="color:var(--orange-d);font-weight:800;">';
-      // The free session is over and nobody bought. This is the ONE place that
-      // says so — the kid screen never will — and it is where a parent who
-      // never saw the hand-off (a window that closed, a run never finished)
-      // learns what happened and where the plan is.
-      var sessionOver=false; try{ sessionOver=!!(S.demoDone&&S.demoDone()&&S.gated&&S.gated("practice")); }catch(e){}
+      // The family is on the free version and has seen what Sona does. This is
+      // the ONE place that says what that means — the kid screen never will —
+      // and it is where a parent who never saw the hand-off (a window that
+      // closed, a run never finished) learns what stays free and where Premium
+      // is. It asked gated("practice") until 24 Sep 2026; practice is never
+      // gated now, so the question is the one that is actually true: has this
+      // family got every game?
+      var sessionOver=false; try{ sessionOver=!!(S.demoDone&&S.demoDone()&&S.premium&&!S.premium()); }catch(e){}
       var _tActive=!!(S.trialActive&&S.trialActive()), _tExpired=!!(S.trialExpired&&S.trialExpired());
       if(sessionOver&&!_tActive&&!_tExpired){
         note.innerHTML='Free games stay free. Explore more with Sona Premium. <a href="/premium.html" style="color:var(--orange-d);font-weight:800;">See Premium →</a>';

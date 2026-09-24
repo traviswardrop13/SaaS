@@ -34,7 +34,9 @@ let playableKeys = [], freeKeys = [], premiumKeys = [];
 const sorted = (values) => [...values].sort();
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 
-async function fixture({ age = "4", paid = false, viewport = { width: 390, height: 844 }, path = "/activities.html", origin = BASE, catalog = null, now = null } = {}) {
+// Ordinary families use the restored free release. The paid seam rehearses
+// future locks without changing the release or granting a real entitlement.
+async function fixture({ age = "4", paid = false, premium = false, viewport = { width: 390, height: 844 }, path = "/activities.html", origin = BASE, catalog = null, now = null } = {}) {
   const ctx = await browser.newContext({ viewport });
   await ctx.route("**/*", (route) => {
     const url = new URL(route.request().url());
@@ -52,13 +54,14 @@ async function fixture({ age = "4", paid = false, viewport = { width: 390, heigh
       })();`;
     return route.fulfill({ contentType: MIME[file.split(".").pop()] || "application/octet-stream", body });
   });
-  await ctx.addInitScript(({ age, paid }) => {
+  await ctx.addInitScript(({ age, paid, premium }) => {
     if (!localStorage.getItem("sona.test.librarySeed")) {
       localStorage.setItem("sona.test.librarySeed", "1");
       localStorage.setItem("sona.freeera.v1", "post");
       localStorage.setItem("sona.freeera2.v1", "done");
-      localStorage.setItem("sona.freeera3.v1", "done");
+      localStorage.setItem("sona.freeera3.v1", "done"); localStorage.setItem("sona.freeera4.v1", "done");
       const profile = { childName: "Mia", focusSounds: ["S"], onboarded: true, volume: 0, voiceOn: false, soundOn: false };
+      if (premium) profile.earlyAdopter = true;
       if (age !== null) profile.childAge = age;
       localStorage.setItem("sona.profile.v1", JSON.stringify(profile));
       if (paid) {
@@ -66,7 +69,7 @@ async function fixture({ age = "4", paid = false, viewport = { width: 390, heigh
         localStorage.setItem("sona.demo.v1", JSON.stringify({ started: Date.now() - 100 * 3600000, done: Date.now() - 90000 }));
       }
     }
-  }, { age, paid });
+  }, { age, paid, premium });
   const pg = await ctx.newPage(); pg.setDefaultTimeout(5000);
   const errors = [];
   pg.on("pageerror", (error) => errors.push(error.message));
@@ -81,7 +84,7 @@ async function visibleGroups(pg) {
 }
 async function state(pg) {
   return pg.evaluate(() => {
-    const keys = Object.keys(localStorage).filter((key) => /^sona\.(?:profile|progress|tickets|charge|rotation|today|reps|coins|sub|trial|demo|slp|founder|pilot|rung|plan)/.test(key)).sort();
+    const keys = Object.keys(localStorage).filter((key) => /^sona\.(?:profile|progress|tickets|charge|rotation|today|reps|coins|sub|trial|demo|slp|caseplan|founding|founder|pilot|rung|plan)/.test(key)).sort();
     return {
       local: keys.map((key) => [key, localStorage.getItem(key)]),
       paidUi: sessionStorage.getItem("sona.paidui"),
@@ -298,7 +301,7 @@ if (present && hasContract) {
     const { ctx, pg } = await fixture({ paid: true, path: "/activities.html?libraryPreview=1" });
     try {
       const before = await state(pg);
-      ok("preview leaves an expired paid-state family gated", await pg.evaluate(() => Sona.gated("practice")) === true);
+      ok("preview leaves Premium locked while practice stays open", await pg.evaluate(() => Sona.gated("story") === true && Sona.gated("practice") === false));
       ok("free preview games are accessible without a real entitlement", await pg.evaluate(() => Sona.gameAccess("feed").allowed && !Sona.gameAccess("tiles").allowed));
       await pg.locator('#activityGroups button[data-game="tiles"]').click();
       ok("Premium stays behind the parent invitation in a paid-state preview", new URL(pg.url()).pathname === "/today.html" && await pg.locator("#libraryNotice").isVisible());
@@ -376,7 +379,9 @@ if (present && hasContract) {
   await section("paid-state browsing and child-safe gate", async () => {
     const { ctx, pg } = await fixture({ paid: true });
     try {
-      ok("the expired-demo fixture really is gated", await pg.evaluate(() => Sona.gated("practice")) === true);
+      // REWRITTEN 24 Sep 2026 (see the preview section): gated means Premium.
+      ok("the expired-demo fixture really has Premium locked, and practice open",
+        await pg.evaluate(() => Sona.gated("story") === true && Sona.gated("practice") === false && !Sona.premium()));
       const before = await state(pg);
       ok("a gated family can still browse all games", same(sorted(await visibleGames(pg)), allKeys));
       const locked = await pg.evaluate(() => Object.keys(Sona.GAME_ACTS).filter(key => !Sona.GAME_ACTS[key].comingSoon && !Sona.gameAccess(key).allowed));

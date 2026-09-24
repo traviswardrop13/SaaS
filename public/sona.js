@@ -229,6 +229,12 @@
     let n = 2; const taken = new Set(v.list.map((k) => k.slot));
     while (taken.has("k" + n)) n++;
     const slot = "k" + n;
+    // A grandfathered household stays grandfathered through its NEW children
+    // too (24 Sep 2026). earlyAdopterAnyKid() only sees children still on the
+    // list, so a family who added a sibling and then removed the first child
+    // — the only one the sweep ever marked — dropped to the free version.
+    // Read BEFORE the list changes; copied, never invented.
+    const household = earlyAdopterAnyKid();
     v.list.push({ slot, name: String(name || "").slice(0, 24) });
     _switchRun(v.active, slot);
     v.active = slot;
@@ -238,7 +244,7 @@
       childName: String(name || "").slice(0, 24),
       childAge: String(age || ""),
       onboarded: false,
-    }));
+    }, household ? { earlyAdopter: true } : {}));
     return slot;
   }
   function switchKid(slot) {
@@ -1288,7 +1294,13 @@
     if (d && d.mystery) return d.mystery;
     return null;
   }
+  // The mystery door is a PREMIUM door (24 Sep 2026): the free version is
+  // practice plus its free games, and a fourth game a day is exactly what
+  // Premium adds. Coins still mint from reps for everyone — they are practice
+  // made visible, not a currency the paywall owns — so a family who upgrades
+  // later finds their jar already full.
   function canBuyMystery() {
+    if (!isFree() && !premium()) return false;
     return !mysteryGame() && getCoins() >= MYSTERY_COST && GAME_KEYS.some(function (key) {
       return dailyGames().indexOf(key) < 0 && gameAccess(key).allowed;
     });
@@ -1592,14 +1604,47 @@
   // entitlement lives server-side or behind a verified credential, and every
   // one of them can be re-established on a new device by restoring with an
   // email or re-opening an SLP link — so dropping them here costs a real
-  // family nothing and costs a forger everything.
-  const NO_IMPORT = ["sona.sub.v1", "sona.slpunlock", "sona.slpok", "sona.founder", "sona.paidui", "sona.pilot.v1", "sona.trial.v1"];
+  // family nothing and costs a forger everything. ONE EXCEPTION, stated
+  // plainly: a free-era promise (earlyAdopter) is recorded only on the device
+  // its sweep judged, so it cannot follow a family to a new phone. A restore
+  // at least never erases the one the DESTINATION holds (below); carrying it
+  // across would need a server-side record, which does not exist yet.
+  // The caseload coverage cache joined the list on 24 Sep 2026: coverage is
+  // Premium, and a cached "yes" is exactly what a forger would paste.
+  //
+  // THE ENROLMENT TICKET TRAVELS, and so do the clinician codes (sona.slp,
+  // sona.slpok) — deliberately, and later the same day. The clinician's link
+  // opens in Safari; the iOS app keeps separate storage, and the move-in code
+  // or a backup is the ONLY way anything crosses to it. Blocking the ticket
+  // meant a covered family who installed the app landed on the free version
+  // with no way back short of finding the link again. It is safe to carry
+  // because it grants nothing here: premium() never reads it, and the only
+  // thing that turns it into Premium is the server answering /api/slp/covered
+  // for that exact code — which is asked the moment an import carries one. A
+  // pasted ticket is worth what the clinician's plan is worth, for as long as
+  // the server says so; the cached answer itself never travels.
+  //
+  // THE FREE-ERA STAMPS AND THE FOUNDING MARK never travel either. The stamps
+  // say "this device was judged on its first load", which is true of the
+  // device, not the family — and a pasted empty stamp would re-open a sweep
+  // on the next load and adopt whatever the backup brought with it.
+  const NO_IMPORT = ["sona.sub.v1", "sona.slpunlock", "sona.caseplan.v1", "sona.founder", "sona.founding.v1", "sona.paidui", "sona.pilot.v1", "sona.trial.v1",
+    "sona.freeera.v1", "sona.freeera2.v1", "sona.freeera3.v1", "sona.freeera4.v1"];
+  // The free-era marks a sweep writes onto a profile. A backup may never
+  // bring them (it would forge the promise), and it may never take them away
+  // from the device it is restored onto (that would break one).
+  const ERA_MARKS = ["earlyAdopter", "freeEra", "freeEra2", "freeEra3", "freeEra4"];
   function importData(payload) {
     try {
       const obj = (typeof payload === "string") ? JSON.parse(payload) : payload;
       const data = (obj && obj.data && typeof obj.data === "object") ? obj.data : obj;
       if (!data || typeof data !== "object") return { ok: false, error: "That backup didn't look right." };
-      let n = 0, skipped = 0;
+      // THE DESTINATION'S PROMISE SURVIVES THE RESTORE (24 Sep 2026). Stripping
+      // earlyAdopter from the backup is right; writing the stripped profile
+      // over a profile that was grandfathered HERE silently ended a promise
+      // this device's own sweep made. Snapshot the household first.
+      const wasGrandfathered = earlyAdopterAnyKid();
+      let n = 0, skipped = 0, ticket = false;
       Object.keys(data).forEach((k) => {
         if (k.indexOf("sona.") !== 0) return;
         // the base key, so "sona.profile.v1@k2" is judged like "sona.profile.v1"
@@ -1608,11 +1653,38 @@
         let v = String(data[k]);
         // earlyAdopter rides INSIDE the profile, so a key-level block misses it
         if (base === PKEY) {
-          try { const p = JSON.parse(v); if (p && typeof p === "object") { delete p.earlyAdopter; v = JSON.stringify(p); } } catch (e) {}
+          try {
+            const p = JSON.parse(v);
+            if (p && typeof p === "object") {
+              ERA_MARKS.forEach((m) => { delete p[m]; });
+              // …and the marks this device already held on this very key stay
+              let here = null; try { here = JSON.parse(localStorage.getItem(k) || "null"); } catch (e) {}
+              if (here && typeof here === "object") ERA_MARKS.forEach((m) => { if (here[m]) p[m] = here[m]; });
+              v = JSON.stringify(p);
+            }
+          } catch (e) {}
         }
-        try { localStorage.setItem(k, v); n++; } catch (e) {}
+        try { localStorage.setItem(k, v); n++; if (base === "sona.slpticket" && v) ticket = true; } catch (e) {}
       });
       if (!n) return { ok: false, error: "No Sona data found in that backup." };
+      // The backup can also replace the child list, so the grandfathered
+      // profile may no longer be in it. Access was the household's, so it
+      // lands on every child the household now has — never on a household
+      // that did not already hold it.
+      if (wasGrandfathered && !earlyAdopterAnyKid()) {
+        try {
+          (_kids().list || []).forEach((k) => {
+            const key = k.slot ? PKEY + "@" + k.slot : PKEY;
+            let pr = null; try { pr = JSON.parse(localStorage.getItem(key) || "null"); } catch (e) {}
+            pr = (pr && typeof pr === "object") ? pr : {};
+            pr.earlyAdopter = true;
+            localStorage.setItem(key, JSON.stringify(pr));
+          });
+        } catch (e) {}
+      }
+      // a carried ticket is a question, not an answer: ask it now, so a
+      // covered family opens Home with every game instead of in six hours
+      if (ticket) { try { caseRefresh(true); } catch (e) {} }
       return { ok: true, restored: n, skipped: skipped };
     } catch (e) { return { ok: false, error: "Couldn't read that backup code." }; }
   }
@@ -1776,20 +1848,27 @@
     return true;
   }
 
-  // Launch gate: subscribers, pilots and founding families (SLP-referred —
-  // that free-forever promise IS the SLP channel) are always in; everyone else
-  // meets the free demonstration first, then the paywall. (Library, customize,
-  // progress stay open.) The native shell gates exactly like the web now — the
-  // old "native never gates" bypass predates the Apple IAP rail and would have
-  // made the App Store build free forever with an ignorable paywall.
+  // Launch gate. SINCE 24 SEP 2026 SONA HAS A FREE VERSION, and this gate is
+  // what keeps it one: daily speech practice is never behind the paywall, for
+  // anyone, in any pricing state. What Premium adds is GAMES — every game in
+  // the library, the mystery door — and a catalog game is decided by
+  // gameAccess(), the one reader of the catalog's tiers, so this gate and the
+  // library can never disagree about whether Piano Tiles is open. Whoever
+  // holds Premium (premium() below: subscribers, founders, founding pilots,
+  // every grandfathered free era, a covered clinician's caseload) is never
+  // gated. The native shell gates exactly like the web — the old "native
+  // never gates" bypass predates the Apple IAP rail and would have made the
+  // App Store build free forever with an ignorable paywall.
   // FREE MODE first: nothing is gated, so a kid page can never bounce to a
   // price screen mid-play (the audit caught Story Time doing exactly that).
   // Gates fire at PAGE LOAD only, never mid-round.
   //
-  // `what` names the activity being asked for. Only "demo" is special: it is
-  // the one run this family was shown for free, and it stays replayable after
-  // they decline, forever. Everything else gates normally once the
-  // demonstration is done — replayable does not mean the product is free.
+  // `what` names the thing being asked for. Practice in any of its doors
+  // ("practice", "daily", "session", and "demo" — the one run a family was
+  // shown before the offer, replayable forever) is always open. A catalog key
+  // asks the catalog. Anything else — Story Time, or a cached page that asks
+  // with no name at all — is Premium content, and gates like it once the
+  // demonstration is done.
   // A RUN THAT HAS STARTED IS NEVER GATED. charge.html keeps the daily run in
   // sessionStorage and hands the child off to an arcade page and back, five
   // times — every one of those is a page load, and every one of them asks the
@@ -1814,15 +1893,16 @@
   function gateBounce() {
     try { location.replace("/today.html?locked=1"); } catch (e) {}
   }
+  const PRACTICE_ASKS = ["practice", "daily", "session", "demo"];
   function gated(what) {
     if (isFree()) return false;
-    if (isFounder()) return false;
-    if (slpVerified()) return false;                 // device redeemed a valid SLP credential
-    if (isSubscribed() || isPilot()) return false;
-    if (earlyAdopterAnyKid()) return false;
+    // Practice is the free version. Nothing below may ever run for it: not
+    // the demonstration window, not a dead trial, not a lapsed subscription.
+    if (PRACTICE_ASKS.indexOf(what) !== -1) return false;
+    if (gameKey(what)) return !gameAccess(what).allowed;
+    if (premium()) return false;                     // every game, whatever the source
     if (runActive()) return false;                   // never mid-run — see above
     if (!demoDone()) return false;                   // still inside the demonstration
-    if (what === "demo") return false;               // …which they may always replay
     // A local no-card trial is no longer STARTED by anything — the
     // demonstration replaced it — but one already promised to a family is
     // honoured to the day it runs out. Removing ensureTrial() from here is
@@ -1835,6 +1915,13 @@
   // founding or SLP-referred family that added a second child had the first one
   // playing free while the sibling hit a paywall on the same device. Access was
   // never granted to a child; it was granted to the household.
+  //
+  // Since 24 Sep 2026 NOTHING NEW WRITES IT except the free-era sweeps. It is
+  // the mark of a family who was promised Sona free before pricing returned
+  // (eras one to four, including every device that redeemed a clinician's link
+  // before this build — see _grandfatherFreeEra4). A redemption made AFTER
+  // this build earns Premium only through the clinician's coverage, which can
+  // end; a promise already made cannot.
   function earlyAdopterAnyKid() {
     try {
       const list = _kids().list || [];
@@ -1845,6 +1932,115 @@
       }
     } catch (e) {}
     return false;
+  }
+
+  // ── PREMIUM: every game in the library ────────────────────────────────
+  // ONE answer to "does this family have Premium", so the gate, the catalog,
+  // the plan moment and every page's copy ask the same question — the rule
+  // lives here and nowhere else, or the paywall and the Home tiles drift the
+  // way the free-mode copy once drifted from the gate.
+  //
+  // Deliberately NOT here: slpVerified() and an SLP-code pilot on their own.
+  // A clinician's link proves a family belongs to a caseload; whether that
+  // caseload includes Premium is the clinician's plan, answered by the server
+  // (caseCovered). Before this build every redemption WAS the grant — those
+  // families are kept by the era-four sweep, not by this function reading the
+  // credential. Founding pilots (codes "ff-…", from the /founding programme)
+  // and founders keep Premium outright: nobody sold them anything and nobody
+  // can take it back.
+  //
+  // FOUNDING IS THE HOUSEHOLD'S, in its own key (24 Sep 2026). It used to be
+  // read off the pilot code, which is per-child and which "Yes, share
+  // progress" overwrites with the clinician's code — so a founding family who
+  // joined an uncovered clinician lost every game, and their second child
+  // never had them. sona.founding.v1 is written by the verified ?ff= path (and
+  // by startPilot, carrying an older device's "ff-" code out of the slot it
+  // is about to overwrite); it is on NO_IMPORT, so a backup cannot forge it.
+  const FOUNDKEY = "sona.founding.v1";
+  function _markFounding(code) {
+    try { if (!localStorage.getItem(FOUNDKEY)) localStorage.setItem(FOUNDKEY, JSON.stringify({ code: String(code || ""), at: new Date().toISOString() })); } catch (e) {}
+  }
+  function foundingPilot() {
+    try {
+      const f = JSON.parse(localStorage.getItem(FOUNDKEY) || "null");
+      if (f && String(f.code || "").indexOf("ff-") === 0) return true;
+    } catch (e) {}
+    // devices enrolled before the key existed: the "ff-" code on any child
+    try {
+      const list = _kids().list || [];
+      for (let i = 0; i < list.length; i++) {
+        const raw = localStorage.getItem(list[i].slot ? PILOTKEY + "@" + list[i].slot : PILOTKEY);
+        const pi = raw ? JSON.parse(raw) : null;
+        if (pi && pi.consent && String(pi.code || "").indexOf("ff-") === 0) return true;
+      }
+    } catch (e) {}
+    return false;
+  }
+  function premium() {
+    return isFounder() || isSubscribed() || earlyAdopterAnyKid() || foundingPilot() || caseCovered();
+  }
+
+  // ── CASELOAD COVERAGE: Premium that a clinician's plan pays for ─────────
+  // A family who joined through a clinician whose caseload is covered (the
+  // $79.99 "Sona Premium for your caseload" plan, or a clinician grandfathered
+  // from before it existed) gets Premium — whether or not they chose to share
+  // progress. Access and sharing stay separate decisions.
+  //
+  // The SERVER decides, from the enrolment ticket this device earned by
+  // redeeming code + key: /api/slp/covered answers about the clinician who
+  // owns that code. Cached device-wide in sona.caseplan.v1 (a caseload is a
+  // household's, like every other grant) and re-asked on the same cadence as
+  // Apple. The lifecycle mirrors iapRefresh on purpose:
+  //   • only an authoritative {ok:true, covered} answer changes anything;
+  //   • a network failure, a 5xx or a refused ticket changes NOTHING — a
+  //     family on a plane keeps their games, and a server bug must not strip
+  //     a whole caseload at once;
+  //   • covered:false removes THIS grant only. A subscription, a founder key
+  //     or a free-era promise on the same device is a different source and is
+  //     never touched from here.
+  // When a clinician stops paying, Stripe keeps the subscription active to
+  // the end of the paid year, so their families keep Premium until then.
+  const CASEKEY = "sona.caseplan.v1";
+  const CASE_RECHECK_MS = 6 * 60 * 60 * 1000;
+  let _caseInFlight = null;
+  function _casePlan() {
+    try { const c = JSON.parse(localStorage.getItem(CASEKEY) || "null"); return (c && typeof c === "object") ? c : null; } catch (e) { return null; }
+  }
+  function caseCovered() { const c = _casePlan(); return !!(c && c.active === true); }
+  function caseRefresh(force) {
+    let code = "", ticket = "";
+    try {
+      // the VERIFIED code first: the ticket was minted for it, and sona.slp can
+      // be overwritten by any bare ?slp= link opened later
+      code = localStorage.getItem("sona.slpok") || localStorage.getItem("sona.slp") || "";
+      ticket = localStorage.getItem("sona.slpticket") || "";
+    } catch (e) {}
+    if (!code || !ticket) return Promise.resolve(caseCovered());
+    const cur = _casePlan();
+    const fresh = cur && String(cur.code || "").toUpperCase() === code.toUpperCase() &&
+      (Date.now() - (Number(cur.checked) || 0)) < CASE_RECHECK_MS;
+    if (!force && fresh) return Promise.resolve(!!cur.active);
+    // one question at a time: join.html forces a refresh right after the
+    // redeem that already started one, and two answers racing is two writes
+    if (_caseInFlight) return _caseInFlight;
+    _caseInFlight = fetch("/api/slp/covered", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code: code, ticket: ticket }),
+    }).then((r) => r.json()).then((j) => {
+      if (j && j.ok === true && typeof j.covered === "boolean") {
+        try { localStorage.setItem(CASEKEY, JSON.stringify({ active: j.covered, code: code.toUpperCase(), checked: Date.now() })); } catch (e) {}
+        // A RENEWED TICKET rides every authoritative answer (24 Sep 2026).
+        // Tickets expire (400 days) and only a redeem used to mint one, so a
+        // healthy device reached expiry, got 401s forever and froze on its
+        // last answer — Premium kept after a clinician stopped paying, or
+        // never granted after they started. Storing the fresh one here means
+        // a device that keeps asking never runs out of proof.
+        try { if (typeof j.ticket === "string" && j.ticket && j.ticket.length < 4096) localStorage.setItem("sona.slpticket", j.ticket); } catch (e) {}
+        return j.covered;
+      }
+      return caseCovered();                      // not an answer: change nothing
+    }).catch(() => caseCovered()).then((v) => { _caseInFlight = null; return v; });
+    return _caseInFlight;
   }
   // Verify a subscription by email (Stripe is the source of truth) and cache it,
   // so a paid family can unlock on a new device / after clearing storage.
@@ -1892,17 +2088,25 @@
 
   // ── SLP caseload links: speaksona.com/join.html?slp=CODE&k=KEY ──────────
   // An SLP shares their credential — code (the "username") + family key (the
-  // "password") — and their families get Sona free, forever. Pricing is LIVE,
-  // so the grant is SERVER-VERIFIED: the old honor system unlocked for any
-  // string in the URL, which was a paywall hole. The code still sticks
-  // unverified (it keys the roster and the funnel), but free access needs the
-  // key to check out.
+  // "password"). The credential is SERVER-VERIFIED: the old honor system
+  // unlocked for any string in the URL, which was a paywall hole. The code
+  // still sticks unverified (it keys the roster and the funnel), but the
+  // enrolment ticket needs the key to check out.
   //
-  // Verifying UNLOCKS. It does not enrol — that takes the grown-up's explicit
-  // consent on /join.html, which calls slpJoinCaseload() below. Access and
-  // surveillance are separate decisions, and a family can take the free app
-  // without agreeing to be watched.
-  function _slpVerify(code, key) {
+  // WHAT VERIFYING GRANTS CHANGED ON 24 SEP 2026. It used to write
+  // earlyAdopter — free forever, on the spot. Now it earns the ticket, and the
+  // ticket is what lets the server answer whether this clinician's caseload is
+  // covered (caseRefresh): a covered caseload means Premium, an uncovered one
+  // means the free version, which every family has anyway. Devices that
+  // redeemed BEFORE this build keep what they were given — the era-four sweep
+  // grandfathers them — so nobody who was already in loses anything.
+  //
+  // Verifying does not enrol — that takes the grown-up's explicit consent on
+  // /join.html, which calls slpJoinCaseload() below. Access and surveillance
+  // are separate decisions, and a family can take the app without agreeing to
+  // be watched. `me` is the clinician's own one-phone token (their emailed
+  // link to try Sona on their own device); only the server can read it.
+  function _slpVerify(code, key, me) {
     // Mint this device's child id FIRST so the ticket can be bound to it. It
     // used to be minted later, at startPilot(), which meant every ticket was
     // code-only — and a code-only ticket is readable by every other family on
@@ -1915,20 +2119,31 @@
         const cur = pilotInfo(); save(PILOTKEY, Object.assign({}, cur, { childId: cid }));
       } catch (e) { cid = ""; }
     }
+    const body = { code, key, childId: cid };
+    if (me && /^[A-Za-z0-9_-]{8,128}$/.test(String(me))) body.me = String(me);
     return fetch("/api/slp/redeem", {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ code, key, childId: cid }),
+      body: JSON.stringify(body),
     }).then((r) => r.json()).then((j) => {
       if (j && j.ok && j.valid) {
+        // slpok/slpunlock no longer grant anything by themselves, but they
+        // stay: they record that the server vouched for this device, and the
+        // era-four sweep and caseRefresh both read that record.
         try { localStorage.setItem("sona.slpok", code.toUpperCase()); localStorage.setItem("sona.slpunlock", "1"); } catch (e) {}
         // The enrolment ticket is this device's proof that it passed code+key.
         // /api/pilot refuses a roster write without it, which is what stops
         // anyone who merely knows the code from inventing children on a real
-        // clinician's dashboard.
+        // clinician's dashboard — and /api/slp/covered refuses to say whether
+        // a caseload is covered to anyone who cannot show one.
         try { if (j.ticket) localStorage.setItem("sona.slpticket", String(j.ticket)); } catch (e) {}
-        // a family that already finished onboarding gets patched in place —
-        // the link can arrive after setup (e.g. re-sent by the SLP)
-        try { const pr = getProfile(); if (pr.onboarded || pr.childName) saveProfile({ earlyAdopter: true, slpCode: code.toUpperCase() }); } catch (e) {}
+        // a family that already finished onboarding is tagged in place — the
+        // link can arrive after setup (e.g. re-sent by the SLP). The tag is a
+        // label for the roster, NOT a grant: earlyAdopter is no longer
+        // written here (see above).
+        try { const pr = getProfile(); if (pr.onboarded || pr.childName) saveProfile({ slpCode: code.toUpperCase() }); } catch (e) {}
+        // ask straight away whether this caseload is covered, so a covered
+        // family opens Home with every game rather than on the next check
+        try { caseRefresh(true); } catch (e) {}
         // the funnel event means A REAL FAMILY UNLOCKED — only the valid
         // branch may fire it, or the SLP ranking counts garbage
         try { track("slp code redeemed", { code: code.toUpperCase() }); } catch (e) {}
@@ -1937,8 +2152,8 @@
       return { valid: false, error: (j && j.error) || "" };
     }).catch(() => ({ valid: false, error: "offline" }));
   }
-  // Typed entry (paywall surfaces): same verification, same grant.
-  function slpRedeem(code, key) { return _slpVerify(String(code || ""), String(key || "")); }
+  // Typed entry (join.html's form, pilot.html): same verification, same ticket.
+  function slpRedeem(code, key, me) { return _slpVerify(String(code || ""), String(key || ""), me ? String(me) : ""); }
 
   // ── Founder access: the owners use the whole app, no paywall, any device ──
   // Server-verified against FOUNDER_KEY (same env that guards the founder
@@ -1961,8 +2176,12 @@
   // older of the two and is written ONLY on a valid redeem, so honouring it is
   // the same trust level — not a wider door. It has to be honoured: during the
   // free window _slpVerify wrote slpok and NOT slpunlock, and the auto-verify
-  // below skips re-checking a code whose slpok already matches, so those
-  // families could never heal themselves by re-opening their own link.
+  // below skips re-checking a code whose slpok already matches.
+  //
+  // It ANSWERS "is this device on a verified caseload"; since 24 Sep 2026 it
+  // no longer answers "does this family have Premium" — premium() does not
+  // read it. The families it used to unlock are kept by the era-four sweep,
+  // which reads these same two keys once, on the way in.
   function slpVerified() {
     try { return localStorage.getItem("sona.slpunlock") === "1" || !!localStorage.getItem("sona.slpok"); } catch (e) { return false; }
   }
@@ -2403,7 +2622,7 @@
       if (previewPlan().state === "trial") return allow("trial");
     } else {
       if (isFree()) return allow("free-mode");
-      if (isFounder() || slpVerified() || isSubscribed() || isPilot() || earlyAdopterAnyKid()) return allow("entitled");
+      if (premium()) return allow("entitled");
       if (trialActive()) return allow("trial");
     }
     // Keep matching earned turns within a saved adventure across expiration:
@@ -2785,7 +3004,9 @@
   const PILOTKEY = "sona.pilot.v1";
   function pilotInfo() { return load(PILOTKEY, { consent: false }); }
   function isPilot() { return !!pilotInfo().consent; }
-  function startPilot(code) { try { const cur = pilotInfo(); save(PILOTKEY, { code: (code || cur.code || "pilot"), childId: cur.childId || (Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4)), consent: true, consentAt: new Date().toISOString(), ver: 1 }); } catch (e) {} }
+  // The one writer of the pilot code — so the one place a founding "ff-" code
+  // could be overwritten. Carry it into the household key first.
+  function startPilot(code) { try { const cur = pilotInfo(); if (cur.consent && String(cur.code || "").indexOf("ff-") === 0) _markFounding(cur.code); save(PILOTKEY, { code: (code || cur.code || "pilot"), childId: cur.childId || (Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4)), consent: true, consentAt: new Date().toISOString(), ver: 1 }); } catch (e) {} }
   // how many levels are open: pilot families get the whole town; everyone else Level 1 for now.
   function unlockedThru() { return isPilot() ? 10 : 1; }
 
@@ -3082,10 +3303,14 @@
     try {
       if (isFree()) return false;                    // nothing to sell
       if (localStorage.getItem(PLANSEEN)) return false;
-      // anyone already entitled is never asked: subscribers, founders,
-      // SLP-referred families, pilots, and all three grandfathered free eras
-      if (isSubscribed() || isPilot() || isFounder() || slpVerified()) return false;
-      if (earlyAdopterAnyKid()) return false;
+      // anyone who already has every game is never asked: subscribers,
+      // founders, founding pilots, a covered clinician's families, and all
+      // four grandfathered free eras (which include every device that
+      // redeemed a clinician's link before 24 Sep 2026). premium() is the
+      // one list — a second copy here is how the ask and the gate drifted.
+      // What the offer sells is Premium, so a family on the free version
+      // may see it once, after a finished run; practice is theirs either way.
+      if (premium()) return false;
       return true;
     } catch (e) { return false; }
   }
@@ -3165,22 +3390,11 @@
   // NOTE: this product id is already App Store-approved; the price lives in
   // App Store Connect, and the paywall renders whatever ASC reports.
   // ── FREE MODE ──────────────────────────────────────────────────────────
-  // OFF: pricing is live — $9.99/mo billed at purchase with NO trial, or
-  // $59.99/yr after a 3-day free trial.
-  //
-  // The free window this reverses ran five days. The boundary between the two
-  // free eras was drawn WHILE free (see _grandfatherFreeEra below), which is
-  // what makes flipping back honest rather than a broken promise: devices from
-  // the FIRST free era are already stamped "grandfathered" and never gate,
-  // devices from the second are stamped "post" and do. Nothing needs deciding
-  // now because it was decided then, on the only day the evidence existed.
-  //
-  // ONE switch, honoured by every purchase surface. Four cohorts stay free
-  // regardless of it: SLP-referred families (the ?slp= credential — that
-  // promise IS the SLP channel), pilots, founders, and every family who was
-  // already using Sona while it was free. That last group is grandfathered by
-  // _grandfatherFreeEra(); it is a promise to those families, not a growth
-  // tactic, and it is not up for quiet reinterpretation.
+  // The switch, what "off" means since the free version shipped (24 Sep
+  // 2026), and who keeps Premium regardless of it are all documented at
+  // `const FREE_MODE` below, beside the four free-era sweeps. This used to
+  // carry its own copy of that list, and it went stale the day the list
+  // changed — one description, next to the code it describes.
   // Recorded human model clips (/coach/say/<SOUND>[-demo].mp3) are Rachel's own
   // voice. OFF everywhere until a non-Rachel set exists. This MUST live here,
   // not per-page: charge.html gated it locally and coach-call.html went on
@@ -3412,23 +3626,93 @@
     } catch (e) {}
   }
 
+  // FOURTH FREE ERA, KEPT — and it ships in the build that ends it.
+  //
+  // Sona went free again on 20 Sep 2026 ("make it free"), and every family who
+  // arrived while that window was open came in under it. Pricing returns with
+  // this build as a free version plus Premium, and CLAUDE.md fixed the rule
+  // before the question was live: the sweep for a free window ships in the
+  // SAME build that returns pricing — never earlier, because a sweep that
+  // shipped during the window would have stamped the very families it exists
+  // to protect before they onboarded.
+  //
+  // Two kinds of device are this era's cohort, and both get Premium for good:
+  //   • any device already ONBOARDED on its first load of this build — the
+  //     same structural evidence eras one to three used;
+  //   • any device holding a clinician's verified credential (sona.slpok /
+  //     sona.slpunlock), onboarded or not. Until this build a redemption WAS
+  //     free-forever access, written on the spot; from this build it is a
+  //     ticket whose Premium depends on the clinician's plan. A family who
+  //     redeemed a link and hadn't finished setup yet was promised exactly
+  //     what the family who had was promised.
+  // A family whose first load is this build or later is stamped here before
+  // they onboard or redeem anything, and gets what the free version and their
+  // clinician's coverage give them — nothing from this sweep.
+  //
+  // HOUSEHOLD-WIDE, like the earlier eras: every profile on the device. A
+  // credential-only device has no profile yet, so the grant goes where the
+  // first child's profile will be, and onboarding merges into it.
+  //
+  // Deliberately NOT gated on any earlier era's stamp: a device that first
+  // loaded during era three or four carries all of them and belongs to none.
+  const GF4KEY = "sona.freeera4.v1";
+  function _grandfatherFreeEra4() {
+    try {
+      if (localStorage.getItem(GF4KEY)) return;     // swept once, on the way in
+      localStorage.setItem(GF4KEY, "done");
+      let slots = [""];
+      try {
+        const v = JSON.parse(localStorage.getItem(KIDSKEY) || "null");
+        if (v && v.list && v.list.length) slots = v.list.map((k) => k.slot || "");
+      } catch (e) {}
+      const read = (slot) => {
+        try { const pr = JSON.parse(localStorage.getItem(slot ? PKEY + "@" + slot : PKEY) || "null"); return (pr && typeof pr === "object") ? pr : null; }
+        catch (e) { return null; }
+      };
+      const onboarded = slots.some((slot) => { const pr = read(slot); return !!(pr && (pr.onboarded || pr.childName)); });
+      let redeemed = false;
+      try { redeemed = localStorage.getItem("sona.slpunlock") === "1" || !!localStorage.getItem("sona.slpok"); } catch (e) {}
+      if (!onboarded && !redeemed) return;
+      slots.forEach(function (slot) {
+        try {
+          const pr = read(slot) || {};
+          pr.earlyAdopter = true; pr.freeEra = true; pr.freeEra4 = true;
+          localStorage.setItem(slot ? PKEY + "@" + slot : PKEY, JSON.stringify(pr));
+        } catch (e) {}
+      });
+      localStorage.setItem(GFKEY, "grandfathered");
+    } catch (e) {}
+  }
+
   const HUMAN_CLIPS = false;
   function humanClipsOn() { return HUMAN_CLIPS; }
 
-  // Sona is FREE. Travis's call, 31 Aug 2026, and deliberately PERMANENT —
-  // not a window with a re-price waiting behind it.
+  // ── THE FAMILY PAYWALL SWITCH ─────────────────────────────────────────
+  // FREE_MODE is the switch for what a FAMILY pays, mirrored in
+  // lib/pricing.ts for the server (tests/freetest.mjs fails if they disagree).
   //
-  // That distinction is why there is no _grandfatherFreeEra3(). The first two
-  // sweeps exist to honour families who arrived during a free window and would
-  // otherwise have met a paywall when the switch flipped back. Nothing flips
-  // back here, so there is no cohort to rescue. Those two sweeps still run:
-  // they are promises already made, and they cost nothing now.
+  // Since 24 Sep 2026 "off" no longer means "everything behind a wall". Sona
+  // has a FREE VERSION — daily practice and released free-tier games —
+  // and PREMIUM, which opens every released game:
+  //   OFF — the free version for everyone; Premium for premium(): a
+  //     subscription (yearly, 3 days free; the web price comes from
+  //     lib/charter.ts via /api/charter, the iOS price from App Store
+  //     Connect), a covered clinician's caseload, a founder or founding
+  //     pilot, or any of the four free eras' promises;
+  //   ON (now) — every released game for everyone, nothing sold.
+  // Practice is never gated in either state; gated() says so before anything.
   //
-  // The paid rails stay wired and stay TESTED through the ?paid=1 seam below.
-  // Not because a re-price is planned, but because a switch nobody can flip is
-  // not a switch — and the last free era proved how fast an unexercised paid
-  // path rots into an archaeology project.
-  const FREE_MODE = true;   // Travis, 20 Sep 2026: "make it free" — era four begins the day this merges
+  // The CLINICIAN plan ("Sona Premium for your caseload", bought on the
+  // dashboard) is separate and deliberately does not read this switch: what
+  // it pays for is its families' Premium, reported back here by caseRefresh.
+  //
+  // Era four ended in the earlier paid build; its shipped sweep stays.
+  // This new free window needs its own sweep when pricing returns, not now.
+  //
+  // The paid rails stay TESTED in either state through the ?paid=1 seam below,
+  // because a switch nobody can flip is not a switch — and every free era so
+  // far has proved how fast an unexercised path rots into archaeology.
+  const FREE_MODE = true;  // Travis, 24 Sep 2026: restore family access to free; pricing needs explicit approval
   // QA seam: ?paid=1 (or the sticky sona.paidui flag) reveals the purchase
   // rails on this device so the paid path stays exercisable — and TESTED —
   // while free mode ships. It only controls VISIBILITY; it can't unlock
@@ -3608,7 +3892,9 @@
         fetch("/api/founding?id=" + encodeURIComponent(_ff))
           .then(function (r) { return r.json(); })
           .then(function (j) {
-            if (j && j.valid) { startPilot("ff-" + _ff); try { sendProgress("enroll"); } catch (e) {} }
+            // the household mark first: the pilot slot is per-child and can be
+            // overwritten by a later clinician enrolment; this cannot
+            if (j && j.valid) { _markFounding("ff-" + _ff); startPilot("ff-" + _ff); try { sendProgress("enroll"); } catch (e) {} }
           })
           .catch(function () {});
       } catch (e) {}
@@ -3681,7 +3967,12 @@
   // stamps, because a family who first opened Sona during the third free
   // window carries both of them and belongs to neither earlier cohort.
   try { _grandfatherFreeEra3(); } catch (e) {}
+  // era four, likewise independent of every earlier stamp. It must run
+  // BEFORE anything on this load can redeem a credential or finish setup —
+  // both are asynchronous or user-driven, so a device whose first load is
+  // this build is always judged as it arrived, never as it will be.
+  try { _grandfatherFreeEra4(); } catch (e) {}
   try { installDebug(); } catch (e) {}
 
-  global.Sona = { libraryPreview, previewPlan, setPreviewPlan, gameKey, gameAccess, gameBounce, finishGameTurn, catalogRun, simpleAdventure, MIC_PROMISE, playStyle, pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, TTS_CACHE_VERSION, voiceDiagnostic, voiceStatus, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, saveFor, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, ladderContent, FREE_MODE, isFree, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, adventureGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, activityLibrary, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, gated, gateVerify, gateOk, requireGate, gateDest, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, planMoment, planEligible, planShown, speak, speakNow, speakUnlock, speechAvailable, speechPerm, speechStart, speechStop, hearVerdict, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, demoState, demoDone, demoStart, demoFinish, runActive, gateBounce, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repsBeacon, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES };
+  global.Sona = { libraryPreview, previewPlan, setPreviewPlan, gameKey, gameAccess, gameBounce, finishGameTurn, catalogRun, simpleAdventure, MIC_PROMISE, playStyle, pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, TTS_CACHE_VERSION, voiceDiagnostic, voiceStatus, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, saveFor, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, ladderContent, FREE_MODE, isFree, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, adventureGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, activityLibrary, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, premium, caseCovered, caseRefresh, gated, gateVerify, gateOk, requireGate, gateDest, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, planMoment, planEligible, planShown, speak, speakNow, speakUnlock, speechAvailable, speechPerm, speechStart, speechStop, hearVerdict, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, demoState, demoDone, demoStart, demoFinish, runActive, gateBounce, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repsBeacon, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES };
 })(window);

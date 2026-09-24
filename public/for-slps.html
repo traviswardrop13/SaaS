@@ -28,7 +28,7 @@
        Built from the 23 Sep 2026 design handoff. Where the handoff's copy
        promised something the product does not do, the page says what the
        product does instead; the PR that shipped this lists each change. -->
-  <meta name="description" content="Give every family on your caseload a speech home-practice app — free. You assign the sound and the position; practice days, reps and pass rate roll up to your dashboard. No audio ever leaves the child's device. Built with a licensed pediatric SLP." />
+  <meta name="description" content="Give every family on your caseload free daily speech practice at home. You assign the sound and the position; practice days, reps and pass rate roll up to your free dashboard. No audio ever leaves the child's device. Built with a licensed pediatric SLP." />
   <link rel="canonical" href="https://speaksona.com/" />
 
   <!-- WHAT A SHARED LINK LOOKS LIKE. The growth plan is SLPs telling other
@@ -41,7 +41,7 @@
   <meta property="og:site_name" content="Sona" />
   <meta property="og:url" content="https://speaksona.com/" />
   <meta property="og:title" content="See who actually practiced at home." />
-  <meta property="og:description" content="Give every family on your caseload a speech home-practice app — free. You assign the sound and the position; the days, the reps and the pass rate come back to your dashboard." />
+  <meta property="og:description" content="Give every family on your caseload free daily speech practice at home. You assign the sound and the position; the days, the reps and the pass rate come back to your dashboard." />
   <meta property="og:image" content="https://speaksona.com/og-slp.png" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
@@ -290,7 +290,7 @@
       <div class="again" id="again">Wrong address? <a href="#" id="againLink">Try again</a></div>
       <div class="devbox" id="devbox" hidden></div>
     </div>
-    <div class="hnote">Your dashboard plus the kids' app to share with families. Free forever, one email, no card.</div>
+    <div class="hnote">Your dashboard plus the kids' app to share with families, both free. One email, no card.</div>
   </div>
 
   <!-- An illustration of the dashboard, not anyone's data: three made-up
@@ -324,9 +324,21 @@
 </section>
 
 <section class="wrap facts">
-  <!-- "Free forever" is a written promise, and it is the SLP channel: a
-       clinician sends families only when she is sure nobody gets a bill. -->
-  <div class="fact"><b>Free forever, unlimited families</b><span>For you and every kid on your caseload.</span></div>
+  <!-- WHAT IS FREE, AND WHAT IS NOT (Travis, 24 Sep 2026). This row said
+       "Free forever, unlimited families — for you and every kid on your
+       caseload" while every game was free. Sona now has a free version and
+       Premium, so it says exactly which is which: the dashboard is free, the
+       free version is free for every family, and every game is Caseload
+       Premium. A clinician sends families only when she is sure what they
+       will be asked to pay, so this is the row that must never overstate.
+       The clinicians who signed up under the old line keep it, free — the
+       cost answer below says so. The price is lib/caseload.ts's; this static
+       page cannot import it, so tests/shiptest.mjs pins the two together.
+       "Daily practice and free games" is the one phrase for the free
+       version on every surface (24 Sep 2026): gameAccess() opens all four
+       free games to every child, and "two games" undersold it. -->
+  <div class="fact"><b>Free for you</b><span>Your dashboard, with every family's practice in one place. One email, no card.</span></div>
+  <div class="fact"><b>Free for every family</b><span>Daily practice and free games. Caseload Premium adds every game: $79.99 a year.</span></div>
   <div class="fact"><b>It actually listens</b><span>Every attempt is checked on the phone. Silence never counts.</span></div>
   <div class="fact"><b>No audio leaves the device</b><span>First name only, entered by the parent.</span></div>
 </section>
@@ -345,7 +357,7 @@
            the clinician typed initials rather than a name, and the link is
            the one family door (join.html), not a short link that does not
            exist. -->
-      <div class="bubble">Hi! Here's your child's Sona link — the speech-practice app I mentioned. It's free for your family. <u>speaksona.com/join.html?slp=…</u></div>
+      <div class="bubble">Hi! Here's your child's Sona link — the speech-practice app I mentioned. It's free for your family: daily practice and free games. <u>speaksona.com/join.html?slp=…</u></div>
       <p>Copy the ready-made message. Parents set up their child in about 30 seconds.</p>
     </div>
     <div class="step s3">
@@ -360,10 +372,12 @@
   <div class="in">
     <div class="txt">
       <h2>The part kids actually ask for.</h2>
-      <!-- What Home shows today: the day's adventure, three games that change
-           every day, and coins. -->
-      <p>A daily adventure with Echo, three new games every day and coins to earn. The fun is what brings kids back, so the reps keep happening between your sessions.</p>
-      <div class="chips"><span>Instant feedback</span><span>New games every day</span><span>Coins to earn</span><span>Every round ends on a win</span></div>
+      <!-- What Home shows: the day's adventure, games after practice, and
+           coins. Free-tier games stay free and the rest of the
+           library is Premium, so the copy no longer promises three new games
+           a day to every family. -->
+      <p>A daily adventure with Echo, games to play after practice and coins to earn: free games, the released library with Premium. The fun is what brings kids back, so the reps keep happening between your sessions.</p>
+      <div class="chips"><span>Instant feedback</span><span>Games after practice</span><span>Coins to earn</span><span>Every round ends on a win</span></div>
     </div>
     <div class="phones">
       <div class="phone"><img src="/slp-shot-home.jpg" width="585" height="1104" loading="lazy" alt="Sona's home screen: today's adventure and three games"></div>
@@ -386,13 +400,15 @@
 
 <section class="wrap privacy" id="privacy">
   <div class="l">
-    <h2>Your IT reviewer's questions, answered.</h2>
+    <h2>Your questions, and your IT reviewer's, answered.</h2>
     <p>Every check runs on the child's phone. No cloud scorer, no third-party listener, and the app never sends a child's voice anywhere.</p>
     <p class="more">More questions? <a href="mailto:privacy@speaksona.com">privacy@speaksona.com</a> · <a href="/privacy.html">Full privacy policy</a></p>
   </div>
   <!-- Each answer is what the code does, not what would be nice to say. A
        reviewer opens the network tab; an answer that disagrees with it ends
-       the conversation. -->
+       the conversation. So a parent's email is "handed to Resend", not "kept
+       nowhere" (24 Sep 2026): the address and the link do reach Resend, which
+       keeps delivery logs, and privacy.html already said so. -->
   <div class="faq" id="faq">
     <div class="q">
       <button type="button" aria-expanded="true" aria-controls="a0" id="q0">Is a child's voice recorded or sent anywhere?<span>+</span></button>
@@ -404,7 +420,7 @@
     </div>
     <div class="q">
       <button type="button" aria-expanded="false" aria-controls="a2" id="q2">What's stored, and where?<span>+</span></button>
-      <p class="a" id="a2" hidden>Your account (email, name, clinic, code). For each consenting family: the child's first name and age, target sounds, practice days and counts, pass rate per sound, your assignments, and when the parent consented. Hosted on Vercel, stored in Upstash, sign-in emails via Resend, and the occasional email from Rachel via Kit. Analytics (PostHog) on grown-up pages only, and a Meta ad pixel on this sign-up page so we can tell which of our ads work — neither ever runs where a child practices, and neither is sent a child's name. No ads in the app, no data sales, no profiling.</p>
+      <p class="a" id="a2" hidden>Your account (email, name, clinic, code). For each consenting family: the child's first name and age, target sounds, practice days and counts, pass rate per sound, your assignments, and when the parent consented. Hosted on Vercel, stored in Upstash, emails via Resend, and the occasional email from Rachel via Kit. If you buy Caseload Premium, Stripe takes the payment and holds your email and card; we never see the card number, and nothing about a child goes to Stripe. If you type a parent's email when you add a child, we hand it to Resend to deliver that one email with the link, and Sona keeps no copy: not stored, not logged, not added to any list. Analytics (PostHog) on grown-up pages only, and a Meta ad pixel on this sign-up page so we can tell which of our ads work — neither ever runs where a child practices, and neither is sent a child's name. No ads in the app, no data sales, no profiling.</p>
     </div>
     <div class="q">
       <button type="button" aria-expanded="false" aria-controls="a3" id="q3">How is data deleted?<span>+</span></button>
@@ -413,6 +429,13 @@
     <div class="q">
       <button type="button" aria-expanded="false" aria-controls="a4" id="q4">Do you sign agreements, like a BAA?<span>+</span></button>
       <p class="a" id="a4" hidden>Ask us and we'll answer in writing, ideally before you share the link. Families share data with us directly after consenting on their own phone, rather than the clinic sharing it for them. If we confirm a breach, we notify affected clinicians and parents within 72 hours.</p>
+    </div>
+    <!-- The money answer, in full. Every figure is lib/caseload.ts's; the
+         family price is deliberately not quoted here — it moves with the
+         charter count, and only /api/charter may print it. -->
+    <div class="q">
+      <button type="button" aria-expanded="false" aria-controls="a5" id="q5">What does it cost?<span>+</span></button>
+      <p class="a" id="a5" hidden>Your dashboard is free, and so is Sona's free version for every family: daily practice and free games, with no card. Caseload Premium is optional: $79.99 a year (under $7 a month) gives every family who joins through your link every game, whether or not they share practice with you. You buy it on the web through Stripe; there is no trial, it renews yearly, and you can cancel anytime — your families keep Premium to the end of the year you paid for. Families you don't cover can buy Premium themselves. You never earn anything on your own caseload. Signed up before Caseload Premium existed? Your caseload already has it, free: that was the promise, and it stands.</p>
     </div>
   </div>
 </section>
@@ -423,7 +446,7 @@
       <img src="/echo.png" alt="" width="120" height="120">
       <div class="t">
         <h2>Know who practiced before they walk in.</h2>
-        <p>Free for SLPs and every family on your caseload.</p>
+        <p>Free for you, and free daily practice for every family on your caseload.</p>
       </div>
     </div>
     <button class="btn yel" id="finalGo" type="button">Get Sona free</button>
@@ -433,7 +456,7 @@
 
 <footer class="wrap">
   <div class="d">Sona is an at-home speech practice tool. It is not a diagnosis, evaluation, or substitute for professional care.</div>
-  <div class="links"><a href="mailto:hello@speaksona.com?subject=Sona%20for%20SLPs">Email us</a><a href="/privacy.html">Privacy</a></div>
+  <div class="links"><a href="mailto:hello@speaksona.com?subject=Sona%20for%20SLPs">Email us</a><a href="/privacy.html">Privacy</a><a href="/terms">Terms</a></div>
 </footer>
 
 <script>

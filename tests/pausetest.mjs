@@ -174,7 +174,7 @@ function fakeDevice(config) {
 
   if (!localStorage.getItem('sona.test.pauseSeed')) {
     localStorage.setItem('sona.test.pauseSeed', '1');
-    localStorage.setItem('sona.freeera.v1', 'post'); localStorage.setItem('sona.freeera2.v1', 'done'); localStorage.setItem('sona.freeera3.v1', 'done');
+    localStorage.setItem('sona.freeera.v1', 'post'); localStorage.setItem('sona.freeera2.v1', 'done'); localStorage.setItem('sona.freeera3.v1', 'done'); localStorage.setItem('sona.freeera4.v1', 'done');
     if (!config.firstMic) localStorage.setItem('sona.micok', '1');
     if (config.replay) localStorage.setItem('sona.demo.v1', JSON.stringify({started:Date.now()-1000,done:Date.now()}));
     localStorage.setItem('sona.profile.v1', JSON.stringify({ childName: 'Mia', childAge: '7', focusSounds: ['R'], onboarded: true, earlyAdopter: true, voiceOn: false, soundOn: false, volume: 0 }));

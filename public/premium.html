@@ -123,7 +123,31 @@
         el("keepFree").textContent=allOpen?"Back to the library":"Keep playing free";
         el("premiumFreeNote").hidden=allOpen;
         el("premiumCardTitle").textContent=allOpen?"Your library is ready.":"Every game. Both age groups.";
+        if(!preview&&!S.isFree())paintOffer(allOpen);
         var art=S.gameSticker(key||"feed");S.paintSticker(el("premiumArt"),art[0],art[1]);
+      }
+      // THE REAL OFFER (24 Sep 2026). With pricing live, every locked tile on
+      // Home, "See Premium" in the parent corner and the library's unlock
+      // button land here — and the page still said "price to be confirmed"
+      // beside a disabled button, a dead end on the main way to buy. It now
+      // hands off to /subscribe.html, which prices from /api/charter on the
+      // web and from RevenueCat in the app, so no figure is typed here and
+      // none can drift. A family who already has Premium is told so, with
+      // where it came from, and is offered nothing. Preview mode keeps its
+      // rehearsal exactly as it was: nothing on that path can buy.
+      function paintOffer(allOpen){
+        var has=!!(S.premium&&S.premium()),buy=el("premiumBuy");
+        if(has){
+          el("premiumOffer").hidden=true;
+          el("premiumEyebrow").textContent="Sona Premium ✓";
+          el("premiumLead").textContent="You have Sona Premium"+((S.caseCovered&&S.caseCovered())?", included through your child’s speech therapist":"")+". Every available game in the library is open.";
+          return;
+        }
+        if(allOpen)return;   // a live trial: every game is already open
+        el("premiumPrice").textContent="3 days free, then one yearly plan";
+        el("premiumTerms").textContent="Daily practice and free games stay free either way.";
+        buy.disabled=false;buy.textContent="See the plan";
+        buy.onclick=function(){if(checkGate())location.href="/subscribe.html";};
       }
       function simulate(state){
         if(!checkGate())return;
@@ -134,8 +158,9 @@
       }
       el("previewTrial").onclick=function(){simulate("trial");};
       el("previewExpire").onclick=function(){simulate("expired");};
-      // No checkout or IAP calls live on this screen until the real offer is
-      // configured. Simulated trials never touch purchase or family records.
+      // No checkout or IAP call lives on this screen: the real offer is a
+      // link to the plan screen, which owns the price and the purchase.
+      // Simulated trials never touch purchase or family records.
       window.addEventListener("pageshow",function(){render();});
       document.addEventListener("visibilitychange",function(){if(!document.hidden)render();});
       render();

@@ -65,7 +65,7 @@ await page.addInitScript(() => {
       },
     },
   };
-  localStorage.setItem("sona.freeera.v1","post"); localStorage.setItem("sona.freeera2.v1","done"); localStorage.setItem("sona.freeera3.v1","done"); localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Milo", focusSounds: ["R"], onboarded: true }));
+  localStorage.setItem("sona.freeera.v1","post"); localStorage.setItem("sona.freeera2.v1","done"); localStorage.setItem("sona.freeera3.v1","done");localStorage.setItem("sona.freeera4.v1","done"); localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Milo", focusSounds: ["R"], onboarded: true }));
   sessionStorage.setItem("sona.gate.v1", String(Date.now()));
   sessionStorage.setItem("sona.paidui", "1");   // reveal the purchase rails; grants nothing
 });
@@ -95,6 +95,11 @@ ok("yearly offer: price, trial and cancel terms all stated",
 ok("no retired monthly tier on the Apple paywall",
   !/\$9\.99/.test(t.body) && !/Subscribe monthly/i.test(t.body), t.body.slice(0, 140));
 ok("SLP proof strip on the native paywall", /Rachel/.test(t.body) && /speech-language pathologist/.test(t.body));
+// THE PLAN IS SONA PREMIUM (24 Sep 2026). With a free version, "Sona Yearly"
+// and "only if you keep Sona" read as buying Sona itself — which nobody has
+// to. The card names what it sells, the same name the Premium page uses.
+ok("the Apple card names the plan Sona Premium, never a bare 'Sona Yearly'",
+  /Sona Premium — /.test(t.body) && !/Sona Yearly/.test(t.body) && !/keep Sona(?! Premium)/.test(t.body), t.body.slice(0, 200));
 
 // ── purchase → entitlement unlock → sub cached ──
 await page.evaluate(() => document.getElementById("iapBuy").click());
@@ -156,7 +161,7 @@ ok("today quiet-syncs the entitlement in the shell", t.active === true && t.sour
 // ── web (no bridge): Stripe picker untouched ──
 const web = await browser.newPage({ viewport: { width: 390, height: 844 } });
 await web.addInitScript(() => {
-  localStorage.setItem("sona.freeera.v1","post"); localStorage.setItem("sona.freeera2.v1","done"); localStorage.setItem("sona.freeera3.v1","done"); localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Milo", focusSounds: ["R"], onboarded: true, earlyAdopter: false }));
+  localStorage.setItem("sona.freeera.v1","post"); localStorage.setItem("sona.freeera2.v1","done"); localStorage.setItem("sona.freeera3.v1","done");localStorage.setItem("sona.freeera4.v1","done"); localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Milo", focusSounds: ["R"], onboarded: true, earlyAdopter: false }));
   sessionStorage.setItem("sona.gate.v1", String(Date.now()));
   sessionStorage.setItem("sona.paidui", "1");
 });
@@ -205,6 +210,78 @@ ok("…and the honest per-month reading in its place",
 }
 await web.close();
 
+// ── PREMIUM THAT NOBODY BOUGHT HERE IS NEVER SOLD AGAIN (24 Sep 2026) ──
+// A family can hold Premium without a purchase: their clinician's caseload is
+// covered (sona.caseplan.v1), or a free-era sweep grandfathered them
+// (earlyAdopter). The plan screen returns early for them on iOS and hides the
+// picker on the web — and nothing pinned it, so an edit that dropped either
+// check would show a covered family Apple's "Start 3 days free" sheet for
+// games they already have, with every suite green.
+{
+  const noSale = { configure: async () => {}, getProducts: async () => ({ products: [{ identifier: "com.speaksona.app.annual", priceString: "$59.99" }] }),
+    purchaseStoreProduct: async () => ({ customerInfo: { entitlements: { active: {} } } }), restorePurchases: async () => ({ customerInfo: { entitlements: { active: {} } } }),
+    getCustomerInfo: async () => ({ customerInfo: { entitlements: { active: {} } } }) };
+  const families = [
+    ["covered caseload", { "sona.slpok": "RACHEL-K4", "sona.caseplan.v1": JSON.stringify({ active: true, code: "RACHEL-K4", checked: Date.now() }) }, {}, /included through your child's speech therapist/],
+    ["grandfathered", {}, { earlyAdopter: true }, /yours to keep/],
+  ];
+  for (const native of [true, false]) for (const [who, local, prof, why] of families) {
+    const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+    await ctx.addInitScript(({ native, local, prof, fns }) => {
+      if (native) {
+        const P = {}; Object.keys(fns).forEach((k) => { P[k] = new Function("return (" + fns[k] + ")")(); });
+        window.Capacitor = { isNativePlatform: () => true, Plugins: { Purchases: P } };
+      }
+      if (!sessionStorage.getItem("iap.nosale.seed")) {
+        sessionStorage.setItem("iap.nosale.seed", "1");
+        ["", "2", "3", "4"].forEach((n) => localStorage.setItem("sona.freeera" + n + ".v1", n ? "done" : "post"));
+        localStorage.setItem("sona.profile.v1", JSON.stringify(Object.assign({ childName: "Milo", focusSounds: ["R"], onboarded: true }, prof)));
+        Object.keys(local).forEach((k) => localStorage.setItem(k, local[k]));
+        sessionStorage.setItem("sona.gate.v1", String(Date.now()));
+        sessionStorage.setItem("sona.paidui", "1");
+      }
+    }, { native, local, prof, fns: Object.fromEntries(Object.entries(noSale).map(([k, f]) => [k, f.toString()])) });
+    const pg = await ctx.newPage();
+    for (const path of ["/subscribe.html", "/subscribe.html?first=1"]) {
+      await pg.goto("http://localhost:8147" + path); await pg.waitForTimeout(800);
+      const st = await pg.evaluate(() => ({
+        native: Sona.isNativeApp(), premium: Sona.premium(),
+        iap: document.getElementById("iapCard").style.display, pick: document.getElementById("pickCard").style.display,
+        free: document.getElementById("freeTierCard").style.display, decline: document.getElementById("declineRow").style.display,
+        line: document.getElementById("planLine").textContent,
+      }));
+      const rail = (native ? "iOS" : "web") + " " + path + ": ";
+      ok(rail + "a " + who + " family with no purchase sees no Apple sheet and no plan picker",
+        st.native === native && st.premium === true && st.iap !== "block" && st.pick !== "block" && st.free !== "block" && st.decline !== "block", JSON.stringify(st));
+      ok(rail + "…and is told they have Sona Premium, and why", /Sona Premium ✓/.test(st.line) && why.test(st.line), st.line);
+    }
+    if (!native) {
+      await pg.goto("http://localhost:8147/settings.html"); await pg.waitForTimeout(800);
+      const set = await pg.evaluate(() => ({ acct: document.getElementById("acct").textContent, restore: getComputedStyle(document.getElementById("restoreBox")).display }));
+      ok("Settings: a " + who + " family reads 'Sona Premium ✓' and where it came from, with no restore box",
+        /Sona Premium ✓/.test(set.acct) && why.test(set.acct) && set.restore === "none", JSON.stringify(set));
+    }
+    await ctx.close();
+  }
+  // …and the free version is named in the one phrase in Settings too
+  const ctx = await browser.newContext();
+  await ctx.addInitScript(() => {
+    if (!sessionStorage.getItem("iap.free.seed")) {
+      sessionStorage.setItem("iap.free.seed", "1");
+      ["", "2", "3", "4"].forEach((n) => localStorage.setItem("sona.freeera" + n + ".v1", n ? "done" : "post"));
+      localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Milo", focusSounds: ["R"], onboarded: true }));
+      sessionStorage.setItem("sona.gate.v1", String(Date.now()));
+      sessionStorage.setItem("sona.paidui", "1");
+    }
+  });
+  const pg = await ctx.newPage();
+  await pg.goto("http://localhost:8147/settings.html"); await pg.waitForTimeout(800);
+  const acct = await pg.evaluate(() => document.getElementById("acct").textContent);
+  ok("Settings names a family's free version as 'daily practice and free games'",
+    /free version — daily practice and free games/.test(acct) && /See Premium/.test(acct), acct);
+  await ctx.close();
+}
+
 // ── the credential on the paywall says only what is verified ──
 // Rachel holds an Idaho CF licence (confirmed 1 Sep 2026), so "licensed" is
 // true and is used. She is a Clinical Fellow — master's complete, supervised
@@ -247,21 +324,38 @@ await web.close();
   ok("the native shell gates like the web (old bypass gone)",
     !/if \(isNativeApp\(\)\) return false;/.test(sona),
     "the never-gate line predates the IAP rail — it made the App Store build free forever");
-  ok("founding/SLP families never gate",
-    /earlyAdopterAnyKid\(\)\) return false/.test(sona.replace(/\s+/g, " ")),
-    "the free-forever promise IS the SLP channel");
+  // REWRITTEN 24 Sep 2026. This pinned `earlyAdopterAnyKid()) return false`
+  // inside gated() under the name "founding/SLP families never gate". The
+  // promise it guarded still holds — every grandfathered family keeps every
+  // game — but it is kept in ONE place now: premium(), which the gate, the
+  // catalog and the plan moment all ask. What changed is who is in it: a
+  // clinician's link redeemed after this build earns Premium only through the
+  // clinician's coverage (caseCovered), and the families who redeemed before
+  // it are grandfathered by the era-four sweep instead of by the credential.
+  {
+    const prem = (sona.match(/function premium\(\) \{[\s\S]*?\n  \}/) || [""])[0];
+    ok("grandfathered families hold Premium, in the one function that decides it",
+      /earlyAdopterAnyKid\(\)/.test(prem) && /isSubscribed\(\)/.test(prem) && /isFounder\(\)/.test(prem) &&
+      /foundingPilot\(\)/.test(prem) && /caseCovered\(\)/.test(prem), prem);
+    ok("…and a verified credential or an SLP-code pilot is NOT, by itself, Premium",
+      !/slpVerified\(\)/.test(prem) && !/isPilot\(\)/.test(prem),
+      "a clinician's link proves membership of a caseload; whether that caseload is covered is the server's answer");
+    ok("…and the gate asks that one function rather than keeping its own list",
+      /function gated\(\w*\) \{[\s\S]{0,700}if \(premium\(\)\) return false;/.test(sona));
+  }
   ok("the founding grant belongs to the HOUSEHOLD, not one child",
     /function earlyAdopterAnyKid[\s\S]{0,420}PKEY \+ "@" \+ slot/.test(sona),
     "earlyAdopter lives on the per-kid profile — a referred family's second child was paywalled");
-  // Catalog doors ask about the chosen game; the parked story keeps its
-  // general entitlement gate. Neither child route leads straight to a price.
+  // Catalog doors ask about the chosen game; the parked story asks for
+  // itself BY NAME since 24 Sep 2026 (practice never gates, so an unnamed ask
+  // no longer means "the whole app"). Neither child route leads to a price.
   for (const pg of ["charge.html", "arcade-feed.html"]) {
     const src = readFileSync(ROOT + "/" + pg, "utf8");
     ok(pg + " checks catalog access at page load",
       /S\.gameAccess\(/.test(src) && /S\.gameBounce\(/.test(src) && !/replace\("\/trial\.html"\)/.test(src));
   }
   const storyGate = readFileSync(ROOT + "/story.html", "utf8");
-  ok("story.html keeps its general page-load gate", /Sona\.gated\(/.test(storyGate) && /Sona\.gateBounce\(\)/.test(storyGate));
+  ok("story.html keeps its page-load gate, asking as Premium content", /Sona\.gated\("story"\)/.test(storyGate) && /Sona\.gateBounce\(\)/.test(storyGate));
   const trial = readFileSync(ROOT + "/trial.html", "utf8");
   ok("trial.html routes the shell to the Apple paywall, not back home",
     /location\.replace\("\/subscribe\.html"\)/.test(trial),
@@ -279,7 +373,7 @@ await gatePg.addInitScript(() => {
   // seed-once: init scripts re-run on every navigation and would overwrite the
   // earlyAdopter flag the second half of this test sets
   if (!localStorage.getItem("sona.profile.v1")) {
-    localStorage.setItem("sona.freeera.v1","post"); localStorage.setItem("sona.freeera2.v1","done"); localStorage.setItem("sona.freeera3.v1","done"); localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Milo", childAge: "7", focusSounds: ["R"], onboarded: true }));
+    localStorage.setItem("sona.freeera.v1","post"); localStorage.setItem("sona.freeera2.v1","done"); localStorage.setItem("sona.freeera3.v1","done");localStorage.setItem("sona.freeera4.v1","done"); localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Milo", childAge: "7", focusSounds: ["R"], onboarded: true }));
     localStorage.setItem("sona.trial.v1", JSON.stringify({ start: Date.now() - 4 * 86400000, days: 3 })); localStorage.setItem("sona.demo.v1", JSON.stringify({ started: 1, done: 1 }));
     localStorage.setItem("sona.micok", "1");
   }
@@ -289,7 +383,7 @@ ok("expired trial keeps free Slice practice available", /charge\.html\?game=arca
 await gatePg.goto("http://localhost:8147/charge.html?game=arcade-tiles.html"); await gatePg.waitForTimeout(700);
 ok("expired trial blocks Premium practice before its earned-game flow",
   /today\.html\?locked=tiles$/.test(gatePg.url()), gatePg.url());
-await gatePg.evaluate(() => { const p = JSON.parse(localStorage.getItem("sona.profile.v1")); p.earlyAdopter = true; localStorage.setItem("sona.freeera.v1","post"); localStorage.setItem("sona.freeera2.v1","done"); localStorage.setItem("sona.freeera3.v1","done"); localStorage.setItem("sona.profile.v1", JSON.stringify(p)); });
+await gatePg.evaluate(() => { const p = JSON.parse(localStorage.getItem("sona.profile.v1")); p.earlyAdopter = true; localStorage.setItem("sona.freeera.v1","post"); localStorage.setItem("sona.freeera2.v1","done"); localStorage.setItem("sona.freeera3.v1","done");localStorage.setItem("sona.freeera4.v1","done"); localStorage.setItem("sona.profile.v1", JSON.stringify(p)); });
 await gatePg.goto("http://localhost:8147/charge.html?game=arcade-tiles.html"); await gatePg.waitForTimeout(700);
 ok("a founding family with the same expired trial still opens Premium practice", /charge\.html\?game=arcade-tiles\.html$/.test(gatePg.url()), gatePg.url());
 await gatePg.close();
@@ -315,12 +409,12 @@ ok("no pageerrors", errs.length === 0, errs.join(" | "));
     localStorage.removeItem("sona.freeera.v1");
     return true;
   });
-  await pgA.reload(); await pgA.waitForTimeout(500);    // note: no ?paid=1 — a plain free build
+  await pgA.reload(); await pgA.waitForTimeout(500);    // note: no ?paid=1 — whatever the build says
   const grand = await pgA.evaluate(() => ({
     stamp: localStorage.getItem("sona.freeera.v1"),
     early: Sona.getProfile().earlyAdopter,
   }));
-  ok("a free-era family is grandfathered by a FREE build, not just a paid one",
+  ok("a free-era family is grandfathered whichever way the switch points",
     before && grand.stamp === "grandfathered" && grand.early === true, JSON.stringify(grand));
   // and the grant survives the day pricing returns
   const grandGate = await pgA.evaluate(() => {
@@ -345,12 +439,15 @@ ok("no pageerrors", errs.length === 0, errs.join(" | "));
   ok("a family who arrives during THIS free period is not grandfathered",
     fresh.stamp === "post" && !fresh.early, JSON.stringify(fresh));
   ok("…and opens on their own trial rather than a paywall", fresh.gated === false, JSON.stringify(fresh));
+  // 24 Sep 2026: "would gate" no longer means "loses Sona". A family with no
+  // standing of their own meets Premium locked — and practice never.
   const freshGate = await pgB.evaluate(() => {
     sessionStorage.setItem("sona.paidui", "1");
     localStorage.setItem(Sona.kkey("sona.trial.v1"), JSON.stringify({ start: Date.now() - 40 * 86400000, days: 3 })); localStorage.setItem("sona.demo.v1", JSON.stringify({ started: 1, done: 1 }));
-    return Sona.gated();
+    return { premium: Sona.gated(), tiles: Sona.gated("tiles"), practice: Sona.gated("practice") };
   });
-  ok("…and would gate on the day pricing returns", freshGate === true, String(freshGate));
+  ok("…and would find Premium locked, but never practice, on the day pricing returns",
+    freshGate.premium === true && freshGate.tiles === true && freshGate.practice === false, JSON.stringify(freshGate));
   await ctxB.close();
 }
 
@@ -406,13 +503,14 @@ ok("no pageerrors", errs.length === 0, errs.join(" | "));
     // grandfathers the entire future.
     sessionStorage.setItem("sona.paidui", "1");
     const gatedAsPriced = Sona.gated();
+    const practiceAsPriced = Sona.gated("practice");
     sessionStorage.removeItem("sona.paidui");
-    return Object.assign(swept, { gatedAsPriced });
+    return Object.assign(swept, { gatedAsPriced, practiceAsPriced });
   });
   ok("a family arriving after the sweep is NOT swept in",
     later.stamp === "post" && !later.early, JSON.stringify(later));
-  ok("…and would meet the paywall like anyone else, whenever pricing is on",
-    later.gatedAsPriced === true, JSON.stringify(later));
+  ok("…and would find Premium locked like anyone else (practice never), whenever pricing is on",
+    later.gatedAsPriced === true && later.practiceAsPriced === false, JSON.stringify(later));
   await c2.close();
 
   // the sweep is one-shot: a device that onboards later cannot re-trigger it
@@ -447,9 +545,14 @@ ok("no pageerrors", errs.length === 0, errs.join(" | "));
   await p4.evaluate(() => {
     localStorage.clear();
     // exactly what a third-era device looks like: swept by both earlier eras
-    // on its first load, onboarded afterwards, never entitled to anything
+    // on its first load, onboarded afterwards, never entitled to anything.
+    // The era-FOUR stamp is set too (24 Sep 2026), so it is era three's sweep
+    // and nothing later that is under test: an onboarded seed missing the
+    // newest stamp is that newest era's cohort, and would pass for the wrong
+    // reason.
     localStorage.setItem("sona.freeera.v1", "post");
     localStorage.setItem("sona.freeera2.v1", "done");
+    localStorage.setItem("sona.freeera4.v1", "done");
     localStorage.setItem("sona.profile.v1", JSON.stringify({
       childName: "Nia", childAge: "6", focusSounds: ["S"], onboarded: true }));
   });
@@ -479,6 +582,7 @@ ok("no pageerrors", errs.length === 0, errs.join(" | "));
     localStorage.clear();
     localStorage.setItem("sona.freeera.v1", "post");
     localStorage.setItem("sona.freeera2.v1", "done");
+    localStorage.setItem("sona.freeera4.v1", "done");   // isolate era three (see above)
     localStorage.setItem("sona.kids.v1", JSON.stringify({ list: [{ slot: "", name: "A" }, { slot: "k2", name: "B" }], active: "" }));
     localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "A", childAge: "7", focusSounds: ["R"], onboarded: true }));
     localStorage.setItem("sona.profile.v1@k2", JSON.stringify({ childName: "B", childAge: "5", focusSounds: ["S"], onboarded: true }));
@@ -510,16 +614,123 @@ ok("no pageerrors", errs.length === 0, errs.join(" | "));
     const gatedInTrial = Sona.gated();
     localStorage.setItem(Sona.kkey("sona.trial.v1"), JSON.stringify({ start: Date.now() - 9 * 86400000, days: 3 })); localStorage.setItem("sona.demo.v1", JSON.stringify({ started: 1, done: 1 }));
     const gated = Sona.gated();
+    const practice = Sona.gated("practice");
     sessionStorage.removeItem("sona.paidui");
-    return Object.assign(swept, { gatedInTrial, gated });
+    return Object.assign(swept, { gatedInTrial, gated, practice });
   });
   ok("…and gets their 3 free days first, like any new family",
     fresh.gatedInTrial === false, JSON.stringify(fresh));
   ok("a family arriving after the era-3 sweep is not adopted by it",
     fresh.stamp3 === "done" && !fresh.early, JSON.stringify(fresh));
-  ok("…and pays once those days run out, whenever pricing is on",
-    fresh.gated === true, JSON.stringify(fresh));
+  // "pays" means Premium since 24 Sep 2026: the free version stays theirs
+  ok("…and meets Premium locked once those days run out — practice never — whenever pricing is on",
+    fresh.gated === true && fresh.practice === false, JSON.stringify(fresh));
   await c6.close();
+}
+
+// ── THE FOURTH FREE ERA, KEPT — in the build that ends it ─────────────────
+// Sona went free on 20 Sep 2026 and the build that returns pricing (as a free
+// version plus Premium, 24 Sep 2026) is the build that carries this sweep —
+// CLAUDE.md's rule, because a sweep that shipped during the window would have
+// stamped the families it protects before they onboarded. Two cohorts are
+// kept, both for good: every device already onboarded on its first load of
+// this build, and every device that had redeemed a clinician's link (sona.slpok
+// / sona.slpunlock) — because until this build a redemption WAS free-forever
+// access, onboarded or not. Everyone whose first load is this build or later
+// is stamped before they onboard or redeem, and gets nothing from it.
+{
+  const load = async (seed) => {
+    const c = await browser.newContext(); const p = await c.newPage();
+    await p.goto("http://localhost:8147/today.html"); await p.waitForTimeout(300);
+    await p.evaluate(seed);
+    await p.reload(); await p.waitForTimeout(700);        // first load of THIS build
+    return { c, p };
+  };
+  const ask = (p) => p.evaluate(() => {
+    sessionStorage.setItem("sona.paidui", "1");
+    localStorage.setItem("sona.demo.v1", JSON.stringify({ started: 1, done: 1 }));
+    localStorage.setItem(Sona.kkey("sona.trial.v1"), JSON.stringify({ start: Date.now() - 60 * 86400000, days: 3 }));
+    const out = { stamp4: localStorage.getItem("sona.freeera4.v1"), early: Sona.getProfile().earlyAdopter, era4: Sona.getProfile().freeEra4,
+      premium: Sona.premium(), tiles: Sona.gameAccess("tiles").allowed, story: Sona.gated("story") };
+    sessionStorage.removeItem("sona.paidui");
+    return out;
+  });
+
+  // (a) onboarded during era four: carries every earlier stamp, no era-four one
+  let { c, p } = await load(() => {
+    localStorage.clear();
+    localStorage.setItem("sona.freeera.v1", "post"); localStorage.setItem("sona.freeera2.v1", "done"); localStorage.setItem("sona.freeera3.v1", "done");
+    localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Remy", childAge: "7", focusSounds: ["R"], onboarded: true }));
+  });
+  let r = await ask(p);
+  ok("an era-four family is swept in by the era-four sweep",
+    r.stamp4 === "done" && r.early === true && r.era4 === true, JSON.stringify(r));
+  ok("…and holds Premium for good — available Premium games open, dead trial and all",
+    r.premium === true && r.tiles === true && r.story === false, JSON.stringify(r));
+  await c.close();
+
+  // (b) household-wide, like every era before it
+  ({ c, p } = await load(() => {
+    localStorage.clear();
+    localStorage.setItem("sona.freeera.v1", "post"); localStorage.setItem("sona.freeera2.v1", "done"); localStorage.setItem("sona.freeera3.v1", "done");
+    localStorage.setItem("sona.kids.v1", JSON.stringify({ list: [{ slot: "", name: "A" }, { slot: "k2", name: "B" }], active: "" }));
+    localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "A", childAge: "7", focusSounds: ["R"], onboarded: true }));
+    localStorage.setItem("sona.profile.v1@k2", JSON.stringify({ childName: "B", childAge: "4", focusSounds: ["S"] }));
+  }));
+  const sibs = await p.evaluate(() => ({
+    a: (JSON.parse(localStorage.getItem("sona.profile.v1") || "{}")).earlyAdopter,
+    b: (JSON.parse(localStorage.getItem("sona.profile.v1@k2") || "{}")).earlyAdopter,
+  }));
+  ok("era four is granted to the HOUSEHOLD, every profile on the device",
+    sibs.a === true && sibs.b === true, JSON.stringify(sibs));
+  await c.close();
+
+  // (c) redeemed a clinician's link before this build, setup not finished
+  ({ c, p } = await load(() => {
+    localStorage.clear();
+    localStorage.setItem("sona.freeera.v1", "post"); localStorage.setItem("sona.freeera2.v1", "done"); localStorage.setItem("sona.freeera3.v1", "done");
+    localStorage.setItem("sona.slpok", "RACHEL-K4");        // what a pre-build redeem left behind
+  }));
+  r = await ask(p);
+  ok("a device that redeemed a clinician's link before this build is kept, onboarded or not",
+    r.stamp4 === "done" && r.early === true && r.premium === true, JSON.stringify(r));
+  // …and finishing setup afterwards must not undo it: onboarding merges into
+  // the profile the sweep wrote, and writes no earlyAdopter of its own
+  const kept = await p.evaluate(() => {
+    Sona.saveProfile({ childName: "Late", childAge: "6", focusSounds: ["S"], onboarded: true });
+    sessionStorage.setItem("sona.paidui", "1");
+    const out = { early: Sona.getProfile().earlyAdopter, premium: Sona.premium() };
+    sessionStorage.removeItem("sona.paidui");
+    return out;
+  });
+  ok("…and keeps it when setup finishes afterwards", kept.early === true && kept.premium === true, JSON.stringify(kept));
+  await c.close();
+
+  // (c2) slpunlock alone is the same evidence
+  ({ c, p } = await load(() => {
+    localStorage.clear();
+    localStorage.setItem("sona.freeera.v1", "post"); localStorage.setItem("sona.freeera2.v1", "done"); localStorage.setItem("sona.freeera3.v1", "done");
+    localStorage.setItem("sona.slpunlock", "1");
+  }));
+  r = await ask(p);
+  ok("…whichever of the two credential keys it holds", r.early === true && r.premium === true, JSON.stringify(r));
+  await c.close();
+
+  // (d) a family whose first load is THIS build: stamped before they onboard
+  // or redeem, and neither later act re-opens the sweep
+  ({ c, p } = await load(() => localStorage.clear()));
+  await p.evaluate(() => {
+    Sona.saveProfile({ childName: "Newt", childAge: "7", focusSounds: ["R"], onboarded: true });
+    localStorage.setItem("sona.slpok", "RACHEL-K4");        // redeemed AFTER this build
+    localStorage.setItem("sona.slpunlock", "1");
+  });
+  await p.reload(); await p.waitForTimeout(600);
+  r = await ask(p);
+  ok("a family arriving after the era-four sweep is not adopted by it — not by setup, not by a link",
+    r.stamp4 === "done" && !r.early && r.premium === false, JSON.stringify(r));
+  ok("…and meets Premium locked like anyone else, whenever pricing is on",
+    r.tiles === false && r.story === true, JSON.stringify(r));
+  await c.close();
 }
 
 // ── THERE IS NO LIFETIME PRODUCT, AND THERE MUST NOT BE ONE ───────────
@@ -579,7 +790,7 @@ ok("no pageerrors", errs.length === 0, errs.join(" | "));
       restorePurchases: async () => info(),
       getCustomerInfo: async () => { window.__iap.checks = (window.__iap.checks || 0) + 1; if (localStorage.getItem("__iapFail") === "1") throw new Error("offline"); return info(); },
     } } };
-    localStorage.setItem("sona.freeera.v1", "post"); localStorage.setItem("sona.freeera2.v1", "done"); localStorage.setItem("sona.freeera3.v1", "done");
+    localStorage.setItem("sona.freeera.v1", "post"); localStorage.setItem("sona.freeera2.v1", "done"); localStorage.setItem("sona.freeera3.v1", "done"); localStorage.setItem("sona.freeera4.v1", "done");
     localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Ada", childAge: "7", focusSounds: ["R"], onboarded: true }));
     sessionStorage.setItem("sona.gate.v1", String(Date.now()));
   });
@@ -658,6 +869,113 @@ ok("no pageerrors", errs.length === 0, errs.join(" | "));
   await ctx.close();
 }
 
+// ── CASELOAD COVERAGE: Premium a clinician's plan pays for (24 Sep 2026) ──
+// A family who joined through a clinician whose caseload is covered gets
+// Premium; the server says so to a device that can show the enrolment ticket.
+// Same discipline as the two rails above: only an authoritative answer changes
+// anything, a failure changes nothing, and covered:false removes ONLY this
+// grant — never a subscription, a founder key or a free-era promise.
+{
+  const ctx = await browser.newContext(); const pg = await ctx.newPage();
+  const cov = { reply: { ok: true, covered: true }, calls: 0, bodies: [] };
+  await ctx.route("**/api/slp/covered", async (route) => {
+    cov.calls++;
+    try { cov.bodies.push(route.request().postDataJSON()); } catch (e) { cov.bodies.push(null); }
+    if (cov.reply === "boom") return route.abort("failed");
+    if (cov.reply === 401) return route.fulfill({ status: 401, contentType: "application/json", body: JSON.stringify({ ok: false }) });
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(cov.reply) });
+  });
+  await pg.goto("http://localhost:8147/today.html"); await pg.waitForTimeout(300);
+  await pg.evaluate(() => {
+    localStorage.clear();
+    localStorage.setItem("sona.freeera.v1", "post"); localStorage.setItem("sona.freeera2.v1", "done"); localStorage.setItem("sona.freeera3.v1", "done"); localStorage.setItem("sona.freeera4.v1", "done");
+    localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Cal", childAge: "7", focusSounds: ["R"], onboarded: true, voiceOn: false, volume: 0 }));
+    localStorage.setItem("sona.demo.v1", JSON.stringify({ started: 1, done: 1 }));
+  });
+  const state = () => pg.evaluate(() => {
+    sessionStorage.setItem("sona.paidui", "1");
+    const out = { covered: Sona.caseCovered(), premium: Sona.premium(), tiles: Sona.gameAccess("tiles").allowed,
+      plan: JSON.parse(localStorage.getItem("sona.caseplan.v1") || "null"), sub: JSON.parse(localStorage.getItem("sona.sub.v1") || "null"),
+      early: Sona.getProfile().earlyAdopter };
+    sessionStorage.removeItem("sona.paidui");
+    return out;
+  });
+
+  // no credential, no question — and no Premium
+  cov.calls = 0;
+  let r = await pg.evaluate(() => Sona.caseRefresh(true));
+  ok("a device with no enrolment ticket never asks, and is not covered",
+    r === false && cov.calls === 0, JSON.stringify({ r, calls: cov.calls }));
+
+  // the clinician's link was redeemed after this build: slpok + ticket, no grant
+  await pg.evaluate(() => {
+    localStorage.setItem("sona.slpok", "RACHEL-K4"); localStorage.setItem("sona.slpunlock", "1");
+    localStorage.setItem("sona.slp", "RACHEL-K4"); localStorage.setItem("sona.slpticket", "TICKET-1");
+  });
+  let s0 = await state();
+  ok("a verified credential alone opens no Premium game", s0.premium === false && s0.tiles === false, JSON.stringify(s0));
+
+  cov.calls = 0; cov.bodies = []; cov.reply = { ok: true, covered: true };
+  r = await pg.evaluate(() => Sona.caseRefresh(true));
+  let s1 = await state();
+  ok("a covered caseload grants Premium: available Premium games open",
+    r === true && s1.covered && s1.premium && s1.tiles, JSON.stringify(s1));
+  ok("…asking with the verified code and the ticket, and nothing about the child",
+    cov.calls === 1 && JSON.stringify(Object.keys(cov.bodies[0] || {}).sort()) === '["code","ticket"]' &&
+    cov.bodies[0].code === "RACHEL-K4" && cov.bodies[0].ticket === "TICKET-1", JSON.stringify(cov.bodies));
+
+  cov.calls = 0;
+  r = await pg.evaluate(() => Sona.caseRefresh());
+  ok("a recent answer is trusted without another call", r === true && cov.calls === 0, JSON.stringify({ r, calls: cov.calls }));
+
+  // failures are not answers
+  cov.reply = "boom";
+  r = await pg.evaluate(() => Sona.caseRefresh(true));
+  let s2 = await state();
+  ok("the server unreachable is not an ending — coverage survives", r === true && s2.covered === true, JSON.stringify(s2));
+  cov.reply = 401;
+  r = await pg.evaluate(() => Sona.caseRefresh(true));
+  s2 = await state();
+  ok("…nor is a refused ticket: one bad answer must not strip a caseload", r === true && s2.covered === true, JSON.stringify(s2));
+  cov.reply = { ok: true };
+  r = await pg.evaluate(() => Sona.caseRefresh(true));
+  s2 = await state();
+  ok("…nor a reply that does not say covered either way", r === true && s2.covered === true, JSON.stringify(s2));
+
+  // a stale answer is re-asked, so a plan that ends eventually lands
+  await pg.evaluate(() => {
+    const p = JSON.parse(localStorage.getItem("sona.caseplan.v1")); p.checked = Date.now() - 7 * 3600 * 1000;
+    localStorage.setItem("sona.caseplan.v1", JSON.stringify(p));
+    localStorage.setItem("sona.sub.v1", JSON.stringify({ active: true, source: "stripe", email: "a@b.com" }));
+  });
+  cov.calls = 0; cov.reply = { ok: true, covered: false };
+  r = await pg.evaluate(() => Sona.caseRefresh());
+  let s3 = await state();
+  ok("a stale answer is re-asked, and covered:false revokes the coverage grant",
+    cov.calls === 1 && r === false && s3.covered === false && s3.plan && s3.plan.active === false, JSON.stringify(s3));
+  ok("…and ONLY that grant: a Stripe subscription on the same device survives",
+    s3.sub && s3.sub.active === true && s3.premium === true, JSON.stringify(s3));
+  await pg.evaluate(() => {
+    localStorage.removeItem("sona.sub.v1");
+    const p = JSON.parse(localStorage.getItem("sona.profile.v1")); p.earlyAdopter = true; localStorage.setItem("sona.profile.v1", JSON.stringify(p));
+  });
+  r = await pg.evaluate(() => Sona.caseRefresh(true));
+  s3 = await state();
+  ok("…and so does a free-era promise", s3.covered === false && s3.early === true && s3.premium === true, JSON.stringify(s3));
+
+  // Home asks on load, beside Apple's sync
+  await pg.evaluate(() => {
+    const p = JSON.parse(localStorage.getItem("sona.profile.v1")); delete p.earlyAdopter; localStorage.setItem("sona.profile.v1", JSON.stringify(p));
+    localStorage.removeItem("sona.caseplan.v1");
+  });
+  cov.calls = 0; cov.reply = { ok: true, covered: true };
+  await pg.goto("http://localhost:8147/today.html"); await pg.waitForTimeout(900);
+  const home = await pg.evaluate(() => ({ covered: Sona.caseCovered(), locked: document.querySelectorAll("#thumbs .thumb.locked").length }));
+  ok("Home re-checks coverage on load, and a covered family's tiles open without a reload",
+    cov.calls === 1 && home.covered === true && home.locked === 0, JSON.stringify(Object.assign(home, { calls: cov.calls })));
+  await ctx.close();
+}
+
 // ── THE PARENT HAND-OFF AND THE RECAP ───────────────────────────
 // A parent was fetched by a child who had just finished something, and the
 // first thing they saw was a price. They see what happened first now — in
@@ -683,7 +1001,7 @@ ok("no pageerrors", errs.length === 0, errs.join(" | "));
   await pg.goto("http://localhost:8147/today.html"); await pg.waitForTimeout(300);
   await pg.evaluate(() => {
     localStorage.clear();
-    localStorage.setItem("sona.freeera.v1", "post"); localStorage.setItem("sona.freeera2.v1", "done"); localStorage.setItem("sona.freeera3.v1", "done");
+    localStorage.setItem("sona.freeera.v1", "post"); localStorage.setItem("sona.freeera2.v1", "done"); localStorage.setItem("sona.freeera3.v1", "done"); localStorage.setItem("sona.freeera4.v1", "done");
     localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Ada", childAge: "7", focusSounds: ["R"], onboarded: true }));
     sessionStorage.setItem("sona.gate.v1", String(Date.now()));
     sessionStorage.setItem("sona.paidui", "1");
@@ -733,6 +1051,18 @@ ok("no pageerrors", errs.length === 0, errs.join(" | "));
     decline.shown === "block" && /not now/i.test(decline.text), JSON.stringify(decline));
   ok("…which goes home, where the demonstration still is",
     decline.href === "/today.html" && /still there/i.test(decline.promise), JSON.stringify(decline));
+  // the one-time offer after a first run sells SONA PREMIUM, by name, the
+  // way premium.html does — never a bare "Sona" plan (24 Sep 2026)
+  const named = await pg.evaluate(() => ({
+    heading: document.querySelector("#pickCard h2").textContent, title: document.getElementById("webTitle").textContent,
+    card: document.getElementById("pickCard").innerText, line: document.getElementById("planLine").textContent,
+    decline: document.getElementById("declineLink").textContent,
+  }));
+  ok("the first-run offer names the plan Sona Premium — heading, card and header line",
+    /Sona Premium/.test(named.heading) && /^Sona Premium — /.test(named.title) && /Sona Premium/.test(named.line) &&
+    !/Sona Yearly/.test(named.card) && !/keep Sona(?! Premium)/.test(named.card), JSON.stringify(named));
+  ok("…and its decline keeps the free version, which is what saying no means now",
+    /free version/.test(named.decline), named.decline);
   await ctx.close();
 }
 
@@ -786,7 +1116,7 @@ ok("no pageerrors", errs.length === 0, errs.join(" | "));
       await pg.goto("http://localhost:8147/today.html");
       await pg.evaluate(mode => {
         localStorage.clear(); sessionStorage.clear();
-        localStorage.setItem("sona.freeera.v1", "post"); localStorage.setItem("sona.freeera2.v1", "done"); localStorage.setItem("sona.freeera3.v1", "done");
+        localStorage.setItem("sona.freeera.v1", "post"); localStorage.setItem("sona.freeera2.v1", "done"); localStorage.setItem("sona.freeera3.v1", "done"); localStorage.setItem("sona.freeera4.v1", "done");
         localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Ada", childAge: "7", focusSounds: ["R"], onboarded: true, volume: 0, voiceOn: false, soundOn: false }));
         if (mode === "paid" || mode === "entitled") sessionStorage.setItem("sona.paidui", "1");
         if (mode === "entitled") localStorage.setItem("sona.sub.v1", JSON.stringify({ active: true, source: "apple", since: Date.now() }));
@@ -833,13 +1163,16 @@ ok("no pageerrors", errs.length === 0, errs.join(" | "));
     localStorage.clear();
     localStorage.setItem("sona.freeera.v1", "post");
     localStorage.setItem("sona.freeera2.v1", "done");
-    localStorage.setItem("sona.freeera3.v1", "done");
+    localStorage.setItem("sona.freeera3.v1", "done"); localStorage.setItem("sona.freeera4.v1", "done");
     localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Ada", childAge: "7", focusSounds: ["R"], onboarded: true }));
   });
   await seed(); await pg.reload(); await pg.waitForTimeout(500);
 
+  // Asked as Premium content ("story") since 24 Sep 2026: practice is never
+  // gated at all, so asking about practice here would pass for the wrong
+  // reason. The demonstration's exemption is about everything else.
   const fresh = await pg.evaluate(() => ({
-    gated: Sona.gated("practice"), demo: Sona.demoDone(), trial: localStorage.getItem("sona.trial.v1"),
+    gated: Sona.gated("story"), demo: Sona.demoDone(), trial: localStorage.getItem("sona.trial.v1"),
   }));
   ok("a family who has seen nothing is not gated — they are inside the demo",
     fresh.gated === false && fresh.demo === false, JSON.stringify(fresh));
@@ -854,22 +1187,28 @@ ok("no pageerrors", errs.length === 0, errs.join(" | "));
   ok("finishing the demonstration is one-shot", done.first === true && done.again === false, JSON.stringify(done));
   ok("…and still issues no silent trial", done.trial === null, String(done.trial));
   // the switch decides whether anything gates at all; the demo exemption must
-  // hold in BOTH states, which is the half that would rot silently
-  ok("…after which the rest of Sona gates, whenever pricing is on",
-    done.practice === !IS_FREE_NOW && done.story === !IS_FREE_NOW, JSON.stringify(done));
+  // hold in BOTH states, which is the half that would rot silently.
+  // REWRITTEN 24 Sep 2026: this asserted that PRACTICE gated after the
+  // demonstration whenever pricing was on. That was the old promise — one
+  // free run, then a wall — and the free version ends it: practice is never
+  // gated in any state, and what closes after the demonstration is Premium.
+  ok("…after which Premium content gates, whenever pricing is on",
+    done.story === !IS_FREE_NOW, JSON.stringify(done));
+  ok("…and practice NEVER does, in either state", done.practice === false, JSON.stringify(done));
   ok("…but the demonstration itself stays replayable, forever, either way",
     done.demo === false, String(done.demo));
 
   // an existing family mid-trial keeps every day they were promised
   const honoured = await pg.evaluate(() => {
     localStorage.setItem("sona.trial.v1", JSON.stringify({ start: Date.now() - 86400000, days: 3 }));
-    const alive = Sona.gated("practice");
+    const alive = Sona.gated("story");
     localStorage.setItem("sona.trial.v1", JSON.stringify({ start: Date.now() - 9 * 86400000, days: 3 }));
-    return { alive, dead: Sona.gated("practice") };
+    return { alive, dead: Sona.gated("story"), practice: Sona.gated("practice") };
   });
   ok("an unexpired trial from before this change still opens the door",
     honoured.alive === false, JSON.stringify(honoured));
-  ok("…and once it genuinely runs out, the door closes", honoured.dead === !IS_FREE_NOW, JSON.stringify(honoured));
+  ok("…and once it genuinely runs out, the Premium door closes — the practice door never does",
+    honoured.dead === !IS_FREE_NOW && honoured.practice === false, JSON.stringify(honoured));
   await ctx.close();
 }
 
@@ -886,7 +1225,7 @@ ok("no pageerrors", errs.length === 0, errs.join(" | "));
   const pg = await ctx.newPage();
   const seed = () => pg.evaluate(() => {
     localStorage.clear(); sessionStorage.clear();
-    localStorage.setItem("sona.freeera.v1", "post"); localStorage.setItem("sona.freeera2.v1", "done"); localStorage.setItem("sona.freeera3.v1", "done");
+    localStorage.setItem("sona.freeera.v1", "post"); localStorage.setItem("sona.freeera2.v1", "done"); localStorage.setItem("sona.freeera3.v1", "done"); localStorage.setItem("sona.freeera4.v1", "done");
     localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Ada", childAge: "7", focusSounds: ["R"], onboarded: true }));
     localStorage.setItem("sona.demo.v1", JSON.stringify({ started: 1, done: Date.now() }));   // session over, nobody bought
     localStorage.setItem("sona.micok", "1");
@@ -954,7 +1293,7 @@ ok("no pageerrors", errs.length === 0, errs.join(" | "));
     out.closed = Sona.demoDone();
     // …but a run that is under way when it closes is finished, not interrupted
     sessionStorage.setItem("sona.run.v1", JSON.stringify({ active: true, round: 2, sum: 30, scores: [15, 15], pending: false }));
-    out.midRun = Sona.gated("practice");
+    out.midRun = Sona.gated("story");         // Premium content: practice never gates anyway
     sessionStorage.removeItem("sona.run.v1");
     return out;
   });
@@ -978,6 +1317,8 @@ ok("no pageerrors", errs.length === 0, errs.join(" | "));
   ok("coming-soon games stay visible without a purchase or play action", comingSoonCards.length === 2 && comingSoonCards.every(card => card.disabled && /coming soon/i.test(card.label)), JSON.stringify(comingSoonCards));
   ok("Home leaves free cards open and marks Premium choices for grown-ups",
     freeCards.length > 0 && freeCards.every(card => !card.locked) && premiumCards.length > 0 && premiumCards.every(card => card.locked), JSON.stringify(home.cards));
+  // Parked titles must not inflate the available free-game promise.
+  // Keep the parent-facing explanation independent of the catalog count.
   ok("the parent corner explains continuing free access and the Premium choice",
     /Free games stay free/.test(home.note) && /See Premium/.test(home.note) && /href="\/premium\.html"/.test(home.note), home.note.slice(0, 200));
   if (premiumCards.length) {
@@ -1031,10 +1372,16 @@ ok("no pageerrors", errs.length === 0, errs.join(" | "));
   ok("planShown() is the only thing that spends it",
     /setItem\(PLANSEEN/.test(sh) && /track\("plan moment shown"/.test(sh),
     "the impression is logged where the offer actually renders");
-  for (const who of ["isSubscribed()", "isPilot()", "isFounder()", "slpVerified()", "earlyAdopterAnyKid()"]) {
-    ok(`…and never asks a family who is already entitled: ${who}`,
-      el.includes(who), "the three free eras and the SLP channel must never see a price");
-  }
+  // REWRITTEN 24 Sep 2026. This walked a list of five entitlements that
+  // planEligible() had to name itself — the same list the gate kept, in a
+  // second copy. It asks premium() now, and the list lives there (pinned in
+  // the gate section above). What changed in the list is deliberate: an
+  // SLP-code pilot or a verified credential no longer counts by itself, so a
+  // clinician's family whose caseload is NOT covered is on the free version
+  // and may see the one offer once — the behavioural pins below say so.
+  ok("…and never asks a family who already has every game: it asks premium()",
+    /if \(premium\(\)\) return false;/.test(el) && !/slpVerified\(\)|isPilot\(\)/.test(el),
+    "a second list here is how the ask and the gate drifted: " + el.slice(0, 200));
   ok("…and never fires while Sona is free", /if \(isFree\(\)\) return false;/.test(el));
 
   const chg = readFileSync(ROOT + "/charge.html", "utf8");
@@ -1062,7 +1409,7 @@ ok("no pageerrors", errs.length === 0, errs.join(" | "));
     localStorage.clear();
     localStorage.setItem("sona.freeera.v1", "post");
     localStorage.setItem("sona.freeera2.v1", "done");
-    localStorage.setItem("sona.freeera3.v1", "done");
+    localStorage.setItem("sona.freeera3.v1", "done"); localStorage.setItem("sona.freeera4.v1", "done");
     localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Ada", childAge: "7", focusSounds: ["R"], onboarded: true }));
   });
   await pg.reload(); await pg.waitForTimeout(600);
@@ -1101,16 +1448,43 @@ ok("no pageerrors", errs.length === 0, errs.join(" | "));
     whileFree === !IS_FREE_NOW,
     `FREE_MODE=${IS_FREE_NOW ? "true" : "false"} so planEligible should be ${!IS_FREE_NOW}, got ${whileFree}`);
 
-  // an SLP-referred family is never asked — that promise IS the SLP channel
-  const slp = await pg.evaluate(() => {
-    localStorage.removeItem("sona.planmoment.v1");
+  // REWRITTEN 24 Sep 2026. This said "a referred / pilot family is never
+  // shown a price" and enrolled an SLP-code pilot to prove it. The founding
+  // programme's pilots ("ff-…") keep that promise; a clinician's family is
+  // never asked while their caseload is covered, and — the change — is on the
+  // free version, and may see the one offer, while it is not.
+  //
+  // REWRITTEN AGAIN the same day. The SLP-code enrolment below used to be
+  // pinned as REPLACING the founding code "in the same slot" — and with it,
+  // silently, the founding family's Premium: foundingPilot() read the
+  // per-child pilot code, which "Yes, share progress" overwrites. Founding
+  // status is the household's now (sona.founding.v1), and startPilot carries
+  // an older device's "ff-" code into it before overwriting the slot. So the
+  // same sequence now pins the opposite: the founding family keeps Premium.
+  // The uncovered clinician's family is a family that was never founding.
+  const pilots = await pg.evaluate(() => {
+    const ask = () => { localStorage.removeItem("sona.planmoment.v1"); return Sona.planEligible(); };
     sessionStorage.setItem("sona.paidui", "1");
-    Sona.startPilot("rachel");
-    const r = Sona.planEligible();
+    Sona.startPilot("ff-abc123");            // a device enrolled before the household key existed
+    const founding = ask();
+    Sona.startPilot("RACHEL-K4");            // same slot: the SLP-code enrolment replaces the code…
+    const afterJoin = { ask: ask(), premium: Sona.premium(), code: Sona.pilotInfo().code, mark: localStorage.getItem("sona.founding.v1") };
+    // …a family that was never founding, on the same uncovered caseload
+    localStorage.removeItem("sona.founding.v1"); localStorage.removeItem("sona.pilot.v1");
+    Sona.startPilot("RACHEL-K4");
+    const uncovered = ask();
+    localStorage.setItem("sona.caseplan.v1", JSON.stringify({ active: true, code: "RACHEL-K4", checked: Date.now() }));
+    const covered = ask();
+    localStorage.removeItem("sona.caseplan.v1");
     sessionStorage.removeItem("sona.paidui");
-    return r;
+    return { founding, afterJoin, uncovered, covered };
   });
-  ok("a referred / pilot family is never shown a price", slp === false, String(slp));
+  ok("a founding pilot is never shown a price", pilots.founding === false, JSON.stringify(pilots));
+  ok("…and keeps Premium when a clinician's enrolment replaces its pilot code — founding is the household's",
+    pilots.afterJoin.code === "RACHEL-K4" && pilots.afterJoin.premium === true && pilots.afterJoin.ask === false &&
+    /"code":"ff-abc123"/.test(pilots.afterJoin.mark || ""), JSON.stringify(pilots));
+  ok("…nor a family whose clinician's caseload is covered", pilots.covered === false, JSON.stringify(pilots));
+  ok("…but a clinician's family on an uncovered caseload may see the one offer", pilots.uncovered === true, JSON.stringify(pilots));
   await ctx.close();
 }
 

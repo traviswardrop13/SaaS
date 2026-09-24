@@ -144,7 +144,13 @@
          of a caseload and watching who's actually practicing. -->
     <div class="card" id="slpCard" style="display:none;">
       <h2>Your caseload 🎓</h2>
-      <p class="muted" style="margin-bottom:12px;">Hand families your link and Sona is <b>free for them</b> — no trial, no paywall. When they join they choose to share progress, and then they show up on <b>your dashboard</b>: practice days, reps, and how each sound is coming along.</p>
+      <!-- WHAT THE LINK DOES, and nothing more (24 Sep 2026). It said "free
+           for them — no trial, no paywall", which was the grant a link used to
+           BE. A link now connects a family to this dashboard; the free version
+           is free for every family anyway, and every game comes with the
+           clinician's caseload plan. A promise the app then breaks is one the
+           clinician made to a family on Sona's behalf. -->
+      <p class="muted" style="margin-bottom:12px;">Hand families your link: it connects them to <b>your dashboard</b>. Daily practice and free games are <b>free for every family</b>, and with <b>Sona Premium for your caseload</b> they get every game. When they join they choose to share progress, and then they show up on your dashboard: practice days, reps, and how each sound is coming along.</p>
 
       <!-- registered credential (server-issued at onboarding). The old
            type-anything code box was an honor system; with pricing live the
@@ -332,7 +338,9 @@
         // way back: the overwrite was silent and final, on the one copy of
         // their child's practice that exists. Entitlements are never written
         // by importData, so neither the restore nor the undo can grant or
-        // strip access — only practice moves.
+        // strip access — only practice moves. (A clinician's enrolment ticket
+        // travels, since 24 Sep 2026, but it is a question only the server
+        // answers; and a grant this device already held is kept.)
         try { localStorage.setItem(SNAP, Sona.exportString()); } catch (e) {}
         var r = Sona.importData(v);
         if (r.ok) { m.style.color = "var(--good)"; m.textContent = "Restored " + r.restored + " items ✓ Reloading…"; setTimeout(function () { location.reload(); }, 900); }
@@ -369,7 +377,9 @@
       var msg = document.getElementById("slpMsg");
       var cred = null;
       function linkFor(c) { return location.origin + "/join.html?slp=" + encodeURIComponent(c.code) + "&k=" + encodeURIComponent(c.key); }
-      function shareMsg(c) { return "Hi! Here\u2019s the speech practice app I mentioned \u2014 this link makes it free for you: " + linkFor(c) + "  It also asks whether to share your practice progress with me between sessions \u2014 totally your call. (Or in the app: code " + c.code + ", family key " + c.key + ")"; }
+      // the family's message says what is true on every branch: free, and
+      // what free means — never that the link itself grants anything
+      function shareMsg(c) { return "Hi! Here\u2019s the speech practice app I mentioned. It\u2019s free for your family: daily practice and free games. " + linkFor(c) + "  It also asks whether to share your practice progress with me between sessions \u2014 totally your call. (Or in the app: code " + c.code + ", family key " + c.key + ")"; }
       function paint() {
         document.getElementById("slpCredWrap").style.display = cred ? "block" : "none";
         document.getElementById("slpNoCred").style.display = cred ? "none" : "block";
@@ -499,10 +509,23 @@
       if (Sona.isSubscribed && Sona.isSubscribed()) {
         ac.innerHTML = 'Plan: <strong style="color:var(--good);">Active ✓</strong> · <a href="/subscribe">Manage →</a>';
         document.getElementById("restoreBox").style.display = "none";
+      } else if (!(Sona.isFree && Sona.isFree()) && Sona.premium && Sona.premium()) {
+        // Premium that nobody here bought. Say where it came from, so the
+        // grown-up is never sold a plan they already have — and never
+        // surprised when a clinician's plan, which can end, does.
+        var why = (Sona.caseCovered && Sona.caseCovered())
+          ? "included through your child's speech therapist"
+          : ((Sona.getProfile().earlyAdopter) ? "yours to keep — you were here while Sona was free" : "every game is open");
+        ac.innerHTML = 'Plan: <strong style="color:var(--good);">Sona Premium ✓</strong> — ' + why + '.';
+        document.getElementById("restoreBox").style.display = "none";
       } else {
+        // THE FREE VERSION IS A PLAN, not the absence of one (24 Sep 2026):
+        // daily practice and free games, for good. "No plan
+        // yet" told a family who was never going to pay that they were
+        // missing something they needed.
         ac.innerHTML = (Sona.isFree && Sona.isFree())
           ? 'Sona is <strong style="color:var(--good);">free</strong> right now — every game, every sound.'
-          : 'No plan yet · <a href="/subscribe">See plans →</a> · <a href="#" id="restoreLink">Restore</a>';
+          : 'Plan: <strong>free version</strong> — daily practice and free games · <a href="/subscribe">See Premium →</a> · <a href="#" id="restoreLink">Restore</a>';
         if (Sona.isFree && Sona.isFree()) { var _rb2 = document.getElementById("restoreBox"); if (_rb2) _rb2.style.display = "none"; return; }
         document.getElementById("restoreLink").onclick = function (e) { e.preventDefault(); document.getElementById("restoreBox").style.display = "block"; document.getElementById("restoreEmail").focus(); };
       }

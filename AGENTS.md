@@ -6,11 +6,10 @@ the pricing eras and the promises made to families, Rachel's clinical rules,
 how Travis wants to be talked to — and if the two ever disagree, `CLAUDE.md`
 wins. Read it before your first edit; it is not optional context.
 
-> **Where the product is today (20 Sep 2026):** Sona is **free** (the pricing
-> switch has flipped a dozen times; every surface reads it — never hand-edit
-> a price). The **books are parked** as "coming soon" and Home leads with
-> practice, then games. The **SLP side is hidden**, not deleted. Each of those
-> is a promise or a plan with reasons, and `CLAUDE.md` has them.
+> **Where the product is today (24 Sep 2026):** The family app is **free**
+> again; pricing needs Travis's explicit approval. Home is the silent game
+> library. Books, Bubble Pop and Peekaboo are “coming soon.” The SLP dashboard
+> is browser-only and stays separate from the installed family app.
 
 ## The one thing most likely to cause real harm
 

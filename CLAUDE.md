@@ -66,15 +66,24 @@ practice, or what an SLP is shown, it is Rachel's call, not an engineering
 one. Surface those in the PR body so she can review them without reading
 the diff.
 
-## Pricing — one switch, and the cohorts it can never take back
-**Sona is FREE** (Travis, 20 Sep 2026: "make it free" — the long game is
-SLPs championing it, families practicing free, and a paid parent view of
-progress later). **When it is paid, it is one plan, yearly, after a 3-day free
-trial — $59.99 for the first 50 families (the charter price), $99.99 after
-that**, and every rule below is written for that state. `FREE_MODE = true` in
-`sona.js`, mirrored by `lib/pricing.ts`. `gated()` short-circuits on
-`isFree()` before anything else, and `tests/freetest.mjs` fails if the two
-copies disagree.
+## Pricing — a free version, Premium, and the cohorts no flip can take back
+**Current release: the family app is free again (Travis, 24 Sep 2026, after the
+Caseload Premium merge).** `FREE_MODE = true` in `public/sona.js` and
+`lib/pricing.ts`. Do not make family pricing live until Travis explicitly
+approves it. All six released games are available; Bubble Pop and Peekaboo
+are disabled “Coming soon” cards, regardless of subscription, free mode,
+trial, or earned access. Books remain coming soon.
+
+The dormant paid rail remains tested: daily practice and released free-tier
+games stay free, while `premium()` recognizes subscriptions, founders,
+free-era families, founding pilots, and covered caseloads. Avoid a fixed
+“four free games” claim while Bubble Pop is parked. Clinician dashboard and
+Caseload Premium work from the earlier merge stays separate and intact.
+
+The earlier paid release shipped `_grandfatherFreeEra4()`; preserve all four
+sweeps. This newly restored free window needs its own sweep in the future
+build that turns pricing on, never before. `tests/freetest.mjs` checks that
+both pricing switches agree. Planned prices remain on the dormant rail.
 
 **THE CHARTER PRICE IS TRUE BY CONSTRUCTION, OR IT IS THE BANNED ANCHOR AGAIN
 (19 Sep 2026).** This repo already threw out one struck-through price
@@ -124,10 +133,10 @@ to yearly rather than erroring, because a stale link belongs to someone
 actively trying to pay.
 
 **Do not hand-edit copy for a pricing flip. The surfaces read the switch.**
-The switch has changed **eleven times in seven weeks** (`git log -G'const
+The switch has changed **twelve times in eight weeks** (`git log -G'const
 FREE_MODE = (true|false)' -- public/sona.js`) — twice on the same day, twice on
 consecutive days. Every purchase surface now branches on the switch and keeps
-BOTH states: `app/page.tsx`, `app/terms/page.tsx`, `app/subscribe/page.tsx`,
+BOTH states: `app/families/page.tsx`, `app/terms/page.tsx`, `app/subscribe/page.tsx`,
 `public/subscribe.html`, `public/trial.html`, `public/today.html`. Flipping
 pricing is **one boolean in two files**. If you find yourself rewriting a price
 into a page, stop — you are undoing this.
@@ -153,23 +162,92 @@ decided and consumed in the same breath — so a parent who backed out of the
 grown-ups gate in between lost the only ask Sona will ever make, while the
 funnel counted an impression nobody saw. `iaptest.mjs` pins both halves.
 
+### Caseload Premium — the clinician's plan
+**"Sona Premium for your caseload": $79.99 a year, bought on the web by the
+clinician** (Travis, 24 Sep 2026 — this reverses "there is no payment path for
+an SLP or clinic"). Stripe hosted checkout from the dashboard's Caseload
+Premium page, **no trial**, renews yearly, cancel anytime in Stripe's billing
+portal. Every family who joins through that clinician's link gets Premium —
+whether or not they say "Yes, share progress": access and sharing are separate
+promises. $79.99 ÷ 12 = $6.6658, so "**under $7 a month**", never "$6.67".
+`lib/caseload.ts` holds every constant; the static landing page cannot import
+it, so `shiptest` pins its copy to it.
+- **Covered = paid or grandfathered.** Paid is a Stripe subscription stamped
+  `plan: slp-caseload, slp: <email>` in active, trialing or past_due. Stripe
+  keeps a cancelled plan active to its period end, so families keep Premium to
+  the end of the year that was paid for, then drop to the free version — and
+  that holds by construction, not by a dashboard toggle: **Manage billing opens
+  the caseload's OWN billing-portal configuration, whose cancel button cancels
+  at period end** (`openCaseloadPortal()` in `lib/caseload.ts` creates it once
+  and reuses it — its id cached per Stripe mode in the `stripe:portalcfg:caseload`
+  hash — or reads `STRIPE_PORTAL_CONFIG_CASELOAD`). A "no plan" answer is
+  remembered for 60 seconds only, so a payment whose redirect was lost is
+  found by the recovery search within a minute. The account's
+  default portal, which the family billing page shares, is only the fallback
+  if Stripe refuses that configuration. Never a `tier` stamp: only
+  `tier: charter` is a charter spot.
+- **Clinicians who signed up before this build keep "free forever".** They were
+  promised "Free forever, unlimited families — for you and every kid on your
+  caseload", and their caseload stays covered, free. Structural, no dates:
+  every account this build creates carries `terms: "caseload-2026-09"`, and an
+  account with no `terms` predates it. Never backfill that field.
+- **"Every family on your caseload", never "unlimited".** The redeem cap is
+  300 for a covered clinician (60 uncovered), counted **per code AND per
+  clinician** (`slpredeem:<code>` and `slpredeem-owner:<email>`, ~a year each)
+  — a clinician can claim a new code at any time and every code shares one
+  family key, so a per-code cap alone multiplied with every rename. It counts
+  successful sign-ups, not distinct families (a second phone or a re-tapped
+  link counts again), so the Terms say "a single link allows up to 300
+  sign-ups a year … we raise it on request", and the error at the cap says
+  "ask your speech therapist to contact Sona" — a fresh link hits the same
+  wall.
+- **Coverage rides the enrolment ticket, and the ticket never freezes.**
+  `/api/slp/covered` answers a correctly signed ticket at any age and, past
+  half its 400-day life, hands back a fresh one that `Sona.caseRefresh()`
+  stores — before this, from day 400 a family's coverage stuck in whatever
+  state it was last in. The SLP link state (`sona.slp`, `sona.slpok`,
+  `sona.slpticket`) **travels through the move-in code and backups**, because
+  the iOS app keeps separate storage from Safari and that is the only way a
+  covered family's Premium reaches the iPhone app; the cached answer
+  (`sona.caseplan.v1`) never travels, and the server is asked afresh.
+- **The clinician earns nothing on their caseload, ever** — the creator-only
+  rule below is unchanged, and the Premium page says so in words.
+- **The family price, on the Premium page, comes with its conditions** —
+  "on the web, $59.99 a year for the first 50 families" (price and cap from
+  `/api/charter`), "on the web, $99.99 a year" once the charter spots are
+  gone, and nothing when the route doesn't answer. A clinician repeats what
+  she reads, and a bare launch price is a figure most families will not see.
+- **Their own phone needs a work email.** The dashboard stays open to any email
+  (the landing page collects every one), but the clinician's own free Premium
+  link is emailed only to a work address; free-mail domains get "No work
+  email? Request access", approved by hand on `/leads.html`. Approval sends
+  no email, so the card says "Requested — once we approve it, this button will
+  work." beside the greyed-out button. **Never "one phone":** each link works
+  once, but three can be sent a day and none is retired, so the copy is
+  "Premium on your own phone or tablet. Each link works once." How many
+  devices a clinician may have is Travis's open call.
+- **Web only.** Clinician pages never render in the iOS shell, so this plan has
+  no App Store product and meets no in-app purchase rule (`NATIVE.md`). It
+  does not read `FREE_MODE`, which is the FAMILY paywall switch.
+
 ### Four free eras, and the sweeps that honour them
-`_grandfatherFreeEra()`, `_grandfatherFreeEra2()` and `_grandfatherFreeEra3()`
-run at load and are pinned in `iaptest.mjs` and `freetest.mjs`. **Do not "clean
-them up".** Each is a promise to a real cohort that no later flip can revoke:
+`_grandfatherFreeEra()` through `_grandfatherFreeEra4()` run at load and are
+pinned in `iaptest.mjs` and `freetest.mjs`. **Do not "clean them up".** Each is
+a promise to a real cohort that no later flip can revoke:
 - **Era one** — before pricing existed. An onboarded device carrying no stamp
   predates pricing.
 - **Era two** — nine days in August (20–28).
 - **Era three** — 31 Aug to 15 Sep, announced as permanent.
-- **Era four — began 20 Sep 2026**, the day "make it free" merged to main.
-  (The 17–18 Sep flip is NOT this era: it never reached main, so no family was
-  told anything.) Every family who onboards while this window is open is a
-  promise. **`_grandfatherFreeEra4()` is deliberately NOT written yet, and it
-  must ship in the SAME build that returns pricing — never earlier.** A sweep
-  that ships during the free window stamps the very families it exists to
-  protect, before they onboard, and they would pay. The rule: if a free window
-  actually SHIPS — and "shipped" means merged to main — the sweep for it
-  exists before pricing returns.
+- **Era four** — 20 Sep 2026 ("make it free" merged to main) to the Caseload
+  Premium build of 24 Sep 2026. (The 17–18 Sep flip is NOT this era: it never
+  reached main, so no family was told anything.) **`_grandfatherFreeEra4()`
+  shipped in that same build**, as this rule required (Travis, 24 Sep 2026), and
+  it also counts a device that had redeemed a clinician's link
+  (`sona.slpunlock` / `sona.slpok`): before that build a redemption WAS
+  free-forever access. The rule stands for the next window: a sweep ships in
+  the build that ends a free window that actually SHIPPED (merged to main) —
+  never earlier, because a sweep shipped during the window stamps the very
+  families it exists to protect before they onboard, and they would pay.
 
 **The sweeps are one-shot and structural, and that is load-bearing.** A device
 already onboarded on the first load of the build carrying a sweep necessarily
@@ -189,28 +267,46 @@ so they hold in either state. A test that must be hand-edited on a business
 decision guards nothing and taxes every flip. `IS_FREE_NOW` in `iaptest.mjs`
 reads the live state from source where a suite genuinely needs it.
 
-Still free regardless of the switch: SLP-referred families (server-verified
-`?slp=` — **that promise IS the SLP channel**, and it is free *forever* in
-writing on `for-slps.html`), pilots and founders. There is no payment path for
-an SLP or clinic anywhere in the product: the SLP channel produces engaged
-families and zero revenue by design. Entitlement is never granted from a URL
-parameter.
+Free regardless of the switch: practice and the four free games, for every
+family; founding pilots (`ff-` codes) and founders; every device onboarded, or
+that redeemed a clinician's link, before the Caseload Premium build. **Not**
+an SLP-code pilot: "Yes, share progress" makes every consenting family a
+pilot, so counting `isPilot()` in `premium()` would hand every uncovered
+clinician's families Premium and undo the caseload plan.
+- **Founding status is the household's** (`sona.founding.v1`, written by the
+  verified `?ff=` path — or carried out of a slot an older device's `ff-` code
+  is about to be overwritten in — and on `NO_IMPORT`). It used to be read off the
+  per-child pilot code, which "Yes, share progress" overwrites with the
+  clinician's code — so a founding family lost every game the day they joined
+  an uncovered clinician, and a second child never had them.
+- **Grandfathering is the household's too.** `addKid()` copies `earlyAdopter`
+  onto a new child, and an import never takes a free-era mark away from the
+  device it lands on (it never brings one either). It is still a mark on the
+  device the sweep ran on: it does not travel to a new phone. **What a clinician's link
+brings changed on 24 Sep 2026 (Travis):** until then it was free-forever
+access, in writing on `for-slps.html`; now it is the free version, plus every
+game while that clinician's caseload is covered. Entitlement is never granted
+from a URL parameter: coverage is the server's answer to the enrolment ticket
+the device earned by redeeming code + key (`Sona.caseRefresh()`, re-asked every
+6 hours; only an authoritative answer changes anything).
 
 **THE SLP SIDE IS THE CHANNEL** (Travis, 21 Sep 2026: "im keeping it free.
 targetting slps first"). It was hidden on 19 Sep as "not a priority" and that
 is now reversed: the clinician door is back on the first setup screen — it is
 the only entrance to `ORDER_SLP`, so removing it again makes that whole
 branch dead code — `for-slps.html` is indexable and linked from the landing
-footer, and `betatest` pins the door OPEN.
+footer, and `betatest` pins the door OPEN. Since 24 Sep 2026 the channel can
+also pay: the dashboard and the free version stay free, and a clinician who
+wants every game for their families buys Caseload Premium — one yearly price,
+never per family, never to the clinician.
 
 Still `noindex`, correctly: `slp.html` and `slp-login.html` (a private
 dashboard and its login) and `join.html` (a family's redemption link, which
 carries a credential in the URL). Those are surfaces, not marketing.
 
-Not restored, deliberately: the "working with a speech therapist?" card on the
-plan screen and the trial page. Sona is free, so neither screen renders —
-bringing them back now would be copy nobody sees, and `progtest` and
-`slpcode` pin their absence. They return with pricing, if at all.
+Still absent now that Premium is back (24 Sep 2026): the "working with a
+speech therapist?" card on the plan screen and the trial page; `progtest`
+pins its absence. Bringing it back is a product call, not a cleanup.
 
 ## The clinician's dashboard: carryover, in the honest register
 **The SLP dashboard (`public/slp.html`) is built around ONE problem — carryover
@@ -220,7 +316,9 @@ see that it happened and paste it into a note. Not "assigning homework"
 who went quiet, what ends soon — one action per row) → Caseload (every child,
 oldest-practiced first, **Copy note on every row**) → a child page (8-week
 strip, pass rate by sound and position, the current homework, the composer)
-→ Settings. Reviewed by three lenses — a school SLP, a district privacy
+→ Caseload Premium (its own page, 24 Sep 2026: Today keeps exactly its four
+cards, and no price ever appears there; viewing it only reads) → Settings.
+Reviewed by three lenses — a school SLP, a district privacy
 officer, an engineer — whose rulings are now rules:
 - **Register.** "Pass rate" (defined on the page as "did that sound like this
   sound"), "practice", "homework". Never "accuracy", "score", "adherence",
@@ -245,13 +343,23 @@ officer, an engineer — whose rulings are now rules:
   themselves after 30 days. The claim fires only on the parent's "Yes, share
   progress" — never on link open — and "No thanks" leaves the SLP seeing "not
   joined", never "declined".
+- **A parent's email, typed by the clinician, is used once** (Travis, 24 Sep
+  2026). Add a child may carry it; Sona hands it to Resend to email the join
+  link one time and keeps no copy — not on the invite, not in Kit or
+  `/api/lead`, not in a log — at most 30 a day per clinician. Say "handed to
+  Resend", never "kept nowhere": Resend has it, and a privacy officer checks.
+  A parent joins the list only by typing their own email under the consent
+  line (`join.html` → `/api/lead`).
 - **Remove means delete.** Removing a child deletes the roster row and the
   homework AND tombstones the child (`slpgone:<code>`) so the device's next
   sync cannot resurrect them; the dialog promises exactly that, and that
   nothing on the family's device is touched. The words ship only with the
   routes.
 - **One family door.** Every generated link is `join.html?slp=CODE&k=KEY`
-  (`&inv=TOKEN` per child). The message says "free", never "pilot" or "trial".
+  (`&inv=TOKEN` per child). The message says "free", never "pilot" or "trial",
+  and promises what is true today: the free version, and Premium only while
+  the caseload is covered. "Free forever" and "unlimited" are gone from every
+  clinician surface (`slptest`, `shiptest`).
 
 **The affiliate program, when it is built, is CREATOR-ONLY** (Travis, 21 Sep
 2026 — settled, do not re-open). An SLP who makes content and brings in
@@ -269,7 +377,8 @@ upgrade.
 **GoHighLevel was deleted on 24 Sep 2026; Kit replaced it.** Every grown-up's
 email goes through one door, `/api/lead`: the SLP sign-up (via the auth
 route's `tellCrm`), the app's setup (a clinician's account email, a parent's
-weekly-summary email) and the Speech Check. That route:
+weekly-summary email), the parent's optional box on `join.html` and the Speech
+Check. An address a clinician types for a parent never reaches it. That route:
 - **keeps every lead first** in the store (`leads:all`, capped), whether or not
   a list takes it — it once forwarded and forgot, and 26 "leads" were unfindable;
 - sends it to **Kit** (`lib/kit.ts`: create the subscriber, then the optional
@@ -286,20 +395,20 @@ Unsubscribe anytime." Meta's `Lead` fires only when an email was given.
 every clinician account, and its "Send everyone to Kit" button is the one-time
 catch-up for everyone collected before Kit existed.
 
-## The day: practice, then games
-**The books are parked, and Home leads with practice (Travis, 19 Sep 2026).**
-The stories "suck and don't even work"; they relaunch in Q4 once they are
-good. Until then: Home opens on today's adventure (`charge.html?daily=1`), the
-day's three games are open from the first tap (every door goes through
-`charge.html`, which asks for the sound first — a typed game URL goes home),
-the book button on the Home header says "coming soon" and goes nowhere, and no
-page links to `chapter.html`, `story.html` or `library.html`. The reader pages
-and the story engine stay in the repo: `dailyGames()` still draws the trio
-from the day's chapter and the win screen still turns the page
-(`episodeAdvance()`), which is what makes tomorrow's three different — but the
-win screen shows no cliffhanger and the mystery game no longer waits on a
-story being read. `day1`, `storytest` and `feedtest` pin the day; `readtest`
-still pins the reader pages so they work the day they come back.
+## Home: choose a game, then practice
+**Home is the silent Play library (Travis, 24 Sep 2026).** `today.html` opens
+on “Pick a game!”; `activities.html` preserves old query/hash links by
+redirecting there. Setup finishes at Home, without starting practice or a
+game. There is no old adventure-map Home or menu narration. Voice remains
+inside deliberate game/practice sessions. Parent settings, progress,
+profiles, earned coins, homework and entitlement sync remain available.
+
+Bubble Pop and Peekaboo stay visible only as disabled “Coming soon” cards,
+with no New shelf promotion and no direct-link, paid or earned bypass.
+Their engines remain in the repo for future work. Books are also parked;
+reader engines and their tests stay, but no public menu opens a book.
+The existing practice, honest-rep, rotation and earned arcade-turn rules
+still apply after a child chooses an available game.
 
 ## Hard rules
 - Merges to main/prod only on Travis's explicit go ("merge").

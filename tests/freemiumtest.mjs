@@ -4,6 +4,7 @@ import { existsSync, readFileSync } from "fs";
 import { chromium, ROOT as SOURCE_ROOT, launchOpts } from "./_env.mjs";
 
 const ROOT = process.env.SONATEST_PUBLIC_ROOT || SOURCE_ROOT;
+const appFree = /const FREE_MODE = true;/.test(readFileSync(ROOT + "/sona.js", "utf8"));
 const BASE = "http://localhost:8196";
 const ALL = ["bubbles", "feed", "glide", "peekaboo", "run", "slice", "stack", "tiles"];
 const COMING_SOON = ["bubbles", "peekaboo"];
@@ -56,7 +57,7 @@ async function fixture({ origin = BASE, path = "/activities.html?libraryPreview=
       localStorage.setItem("test.freemium.seed", "1");
       localStorage.setItem("sona.freeera.v1", "post");
       localStorage.setItem("sona.freeera2.v1", "done");
-      localStorage.setItem("sona.freeera3.v1", "done");
+      localStorage.setItem("sona.freeera3.v1", "done"); localStorage.setItem("sona.freeera4.v1", "done");
       localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Mia", childAge: "7", focusSounds: ["S"], onboarded: true, volume: 0, voiceOn: false, soundOn: false }));
       localStorage.setItem("sona.demo.v1", JSON.stringify({ started: Date.now() - 8 * 86400000, done: Date.now() - 7 * 86400000 }));
       Object.entries(local).forEach(([key, value]) => localStorage.setItem(key, typeof value === "string" ? value : JSON.stringify(value)));
@@ -91,7 +92,7 @@ async function fixture({ origin = BASE, path = "/activities.html?libraryPreview=
 }
 async function realState(pg) {
   return pg.evaluate(() => Object.keys(localStorage)
-    .filter(key => /^sona\.(?:sub|trial|profile|progress|demo|slp|founder|pilot|plan|reps|tickets|charge|rung|rotation|librarypreview|previewplan)/.test(key))
+    .filter(key => /^sona\.(?:sub|trial|profile|progress|demo|slp|caseplan|founding|founder|pilot|plan|reps|tickets|charge|rung|rotation|librarypreview|previewplan)/.test(key))
     .sort().map(key => [key, localStorage.getItem(key)]));
 }
 async function allowed(pg, options) {
@@ -123,7 +124,8 @@ await section("preview contract", async () => {
       PLAYABLE = sorted(playable.map(game => game.key));
       ok("Bubble Pop and Peekaboo are explicitly Coming soon", same(sorted(games.filter(game => game.comingSoon).map(game => game.key)), COMING_SOON));
       ok("ordinary visits do not enable the preview", await pg.evaluate(() => Sona.libraryPreview()) === false);
-      if (await pg.evaluate(() => Sona.isFree())) ok("the current free promise still opens every playable game", same(await allowed(pg), PLAYABLE));
+      ok("an ordinary family receives the configured release without an entitlement", await pg.evaluate(() => ({free:Sona.isFree(),premium:Sona.premium()})).then(state => state.free === appFree && !state.premium));
+      ok("ordinary access matches the configured free or paid release", same(await allowed(pg), appFree ? PLAYABLE : FREE));
       const access = await pg.evaluate(() => Sona.gameAccess("not-a-game"));
       ok("unknown games never receive access", access.allowed === false);
     }
@@ -178,17 +180,35 @@ if (hasContract) {
   });
 
   await section("real paid families keep their promises", async () => {
+    // REWRITTEN 24 Sep 2026 (Caseload Premium). "verified SLP family" and
+    // "pilot family" were on this list on the strength of the credential
+    // alone. A clinician's family now holds Premium through the clinician's
+    // COVERAGE (the server's answer, cached as sona.caseplan.v1); families who
+    // redeemed before this build were grandfathered by the era-four sweep and
+    // appear here as the earlyAdopter cohort. Founding pilots ("ff-…") keep
+    // Premium outright. The bare credential and an SLP-code pilot moved to the
+    // list below: they keep the free version, which is every family's.
     const cohorts = [
       ["subscriber", { "sona.sub.v1": { active: true, since: 1 } }],
       ["founder", { "sona.founder": "1" }],
-      ["verified SLP family", { "sona.slpunlock": "1", "sona.slpok": "VERIFIED" }],
-      ["pilot family", { "sona.pilot.v1": { consent: true } }],
+      ["covered caseload family", { "sona.slpunlock": "1", "sona.slpok": "VERIFIED", "sona.caseplan.v1": { active: true, code: "VERIFIED", checked: Date.now() } }],
+      ["founding pilot family", { "sona.pilot.v1": { consent: true, code: "ff-abc123" } }],
       ["grandfathered sibling", { "sona.kids.v1": { active: "second", list: [{slot:"",name:"Mia"},{slot:"second",name:"Leo"}] }, "sona.profile.v1": {onboarded:true,earlyAdopter:true}, "sona.profile.v1@second": {onboarded:true,childAge:"7",voiceOn:false,soundOn:false,volume:0} }],
       ["existing promised trial", { "sona.trial.v1": { start: Date.now() - 86400000, days: 3 } }],
     ];
     for (const [name, local] of cohorts) {
       const { ctx, pg } = await fixture({ path: "/activities.html?paid=1", paid: true, local });
       try { ok(name + " keeps every playable game in the paid seam", same(await allowed(pg), PLAYABLE)); }
+      finally { await ctx.close(); }
+    }
+    const freeVersion = [
+      ["verified credential with no coverage", { "sona.slpunlock": "1", "sona.slpok": "VERIFIED" }],
+      ["SLP-code pilot with no coverage", { "sona.pilot.v1": { consent: true, code: "RACHEL-K4" } }],
+      ["caseload whose coverage ended", { "sona.slpok": "VERIFIED", "sona.caseplan.v1": { active: false, code: "VERIFIED", checked: Date.now() } }],
+    ];
+    for (const [name, local] of freeVersion) {
+      const { ctx, pg } = await fixture({ path: "/activities.html?paid=1", paid: true, local });
+      try { ok(name + " keeps the playable free catalog in the paid seam", same(await allowed(pg), FREE)); }
       finally { await ctx.close(); }
     }
     const { ctx, pg } = await fixture({ path: "/activities.html?paid=1", paid: true, local: {"sona.trial.v1":{start:Date.now()-9*86400000,days:3}} });
@@ -369,7 +389,7 @@ if (hasContract && premiumPresent) {
       await pg.locator("#keepFree").click();
       await pg.waitForURL(/\/today\.html/);
       ok("Keep free returns to the playable free catalog", same(await allowed(pg), FREE));
-      const entitlement = rows => rows.filter(([key]) => /^sona\.(?:sub|trial|slp|founder|pilot|plan)/.test(key));
+      const entitlement = rows => rows.filter(([key]) => /^sona\.(?:sub|trial|slp|caseplan|founding|founder|pilot|plan)/.test(key));
       ok("the complete parent flow changes no real subscription or trial", same(entitlement(await realState(pg)), entitlement(before)));
       ok("the parent simulation calls no real purchase or trial methods", await pg.evaluate(() => JSON.parse(sessionStorage.getItem("test.realCalls") || "[]").length) === 0);
       ok("the parent simulation calls no purchase or trial endpoint", !calls.some(url => /checkout|subscription|\/trial|revenuecat|purchases/i.test(url)), calls);
@@ -399,7 +419,55 @@ if (hasContract && premiumPresent) {
       ok("a cached back-navigation rechecks an expired parent pass", new URL(pg.url()).pathname === "/today.html");
     } finally { await ctx.close(); }
   });
+
+  // Follow the configured release without pinning the business switch.
+  await section("the parent offer follows the configured release", async () => {
+    const { ctx, pg, errors, calls } = await fixture({ path: "/premium.html?game=tiles", gate: true });
+    try {
+      await pg.locator("#premiumApp").waitFor();
+      const st = await pg.evaluate(() => ({
+        preview: Sona.libraryPreview(), free: Sona.isFree(), premium: Sona.premium(),
+        disabled: document.getElementById("premiumBuy").disabled,
+        offerShown: !document.getElementById("premiumOffer").hidden,
+      }));
+      if (appFree) {
+        ok("an ordinary family needs no entitlement or purchase to play", !st.preview && st.free && !st.premium && !st.offerShown && st.disabled && same(await allowed(pg), PLAYABLE), st);
+        ok("the free release shows no active purchase button or price", !await pg.locator("#premiumBuy").isVisible() && !/\$\s?\d/.test(await pg.locator("body").innerText()));
+        await pg.locator("#premiumContinue").click();
+        await pg.waitForURL(/\/charge\.html\?game=arcade-tiles\.html/);
+        ok("the parent returns to the selected playable game", new URL(pg.url()).searchParams.get("game") === "arcade-tiles.html");
+        ok("playing free starts no real purchase or trial", await pg.evaluate(() => JSON.parse(sessionStorage.getItem("test.realCalls") || "[]").length) === 0 && !calls.some(url => /checkout|subscription|\/trial|revenuecat|purchases/i.test(url)), calls);
+      } else {
+        ok("the paid release offers a plan only to a family without Premium", !st.preview && !st.free && !st.premium && st.offerShown && !st.disabled && await pg.locator("#premiumBuy").isVisible(), st);
+        ok("the plan handoff page does not invent a price", !/\$\s?\d/.test(await pg.locator("#premiumOffer").innerText()));
+        await pg.locator("#premiumBuy").click();
+        await pg.waitForURL(/\/subscribe\.html/);
+        ok("the paid offer hands off to the page that owns pricing", new URL(pg.url()).pathname === "/subscribe.html");
+      }
+      ok("the parent flow has no runtime errors", errors.length === 0, errors);
+    } finally { await ctx.close(); }
+  });
+
+  for (const [who, local, why] of [
+    ["a covered caseload family", { "sona.slpok": "RACHEL-K4", "sona.caseplan.v1": { active: true, code: "RACHEL-K4", checked: Date.now() } }, /speech therapist/],
+    ["a grandfathered family", { "sona.profile.v1": { childName: "Mia", childAge: "7", focusSounds: ["S"], onboarded: true, earlyAdopter: true, volume: 0, voiceOn: false, soundOn: false } }, /Every available game in the library is open/],
+  ]) {
+    await section(who + " is told they have Premium", async () => {
+      const { ctx, pg } = await fixture({ path: "/premium.html?game=tiles&paid=1", gate: true, paid: true, local });
+      try {
+        await pg.locator("#premiumApp").waitFor();
+        const st = await pg.evaluate(() => ({
+          premium: Sona.premium(), offerShown: !document.getElementById("premiumOffer").hidden,
+          lead: document.getElementById("premiumLead").innerText, eyebrow: document.getElementById("premiumEyebrow").textContent,
+        }));
+        ok(who + " sees that they have Premium, with where it came from",
+          st.premium === true && /You have Sona Premium/.test(st.lead) && why.test(st.lead) && /Sona Premium ✓/.test(st.eyebrow), JSON.stringify(st));
+        ok(who + " is offered nothing to buy", !st.offerShown && !await pg.locator("#premiumBuy").isVisible(), JSON.stringify(st));
+      } finally { await ctx.close(); }
+    });
+  }
 }
+
 await browser.close();
 console.log(fails ? fails + " FAILURES" : "ALL GREEN");
 process.exit(fails ? 1 : 0);

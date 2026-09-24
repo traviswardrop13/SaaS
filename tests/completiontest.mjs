@@ -30,6 +30,9 @@ async function scenario(name, task) {
   try { await task(); } catch (error) { ok(name + " completes without a harness/page exception", false, error.stack); }
 }
 const games = ["slice", "stack", "tiles", "run", "glide"];
+// Default completion fixtures hold grandfathered access in either pricing
+// state. `paid: true` uses the paid-state seam for a post-era family, keeping
+// the parent handoff covered while the production family app remains free.
 async function fresh({ paid = false, replay = false, sound = "R", width = 390, height = 844, parkedEngineFixture = false } = {}) {
   const context = await browser.newContext({ viewport: { width, height }, reducedMotion: "reduce" });
   await context.route("**/*", (route) => {
@@ -53,8 +56,8 @@ async function fresh({ paid = false, replay = false, sound = "R", width = 390, h
   await page.evaluate(({ paid, replay, sound, games }) => {
     localStorage.setItem("sona.freeera.v1", "post");
     localStorage.setItem("sona.freeera2.v1", "done");
-    localStorage.setItem("sona.freeera3.v1", "done");
-    localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Mia", childAge: "7", focusSounds: [sound], onboarded: true, volume: 0, voiceOn: false, soundOn: false }));
+    localStorage.setItem("sona.freeera3.v1", "done"); localStorage.setItem("sona.freeera4.v1", "done");
+    localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Mia", childAge: "7", focusSounds: [sound], onboarded: true, volume: 0, voiceOn: false, soundOn: false, earlyAdopter: !paid }));
     if (paid) sessionStorage.setItem("sona.paidui", "1");
     if (replay) localStorage.setItem("sona.demo.v1", JSON.stringify({ started: Date.now() - 1000, done: Date.now() }));
     sessionStorage.setItem("sona.run.v1", JSON.stringify({ active: true, tries: 25, round: 4, sum: 40, scores: [10, 10, 10, 10], pending: true, sound, level: 1, demo: replay, games }));

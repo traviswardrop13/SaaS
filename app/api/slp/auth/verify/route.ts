@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { kvCmd, hashToken, signSession, sessionCookie, SESSION_MAX_AGE } from "@/lib/slpAuth";
+import { CASELOAD_TERMS } from "@/lib/caseload";
 
 export const runtime = "nodejs";
 
@@ -18,16 +19,24 @@ export async function GET(req: NextRequest) {
 
   const acctKey = "slpacct:" + email;
   let acct: Record<string, unknown> | null = null;
+  let raw: unknown = null;
   try {
-    const raw = await kvCmd(["GET", acctKey]);
+    raw = await kvCmd(["GET", acctKey]);
     if (raw) acct = JSON.parse(String(raw));
   } catch {
     acct = null;
   }
-  if (!acct) {
-    acct = { email, name: "", clinic: "", code: "", createdAt: new Date().toISOString() };
+  // A NEW account only when the store SAID there is none (null). When it did
+  // not answer (undefined) nothing is written: an existing account rewritten
+  // from scratch would lose its code, its family key and — the absent `terms`
+  // field being the whole of it — its grandfathered caseload. They are
+  // signed in regardless; the dashboard reads the account itself.
+  if (!acct && raw === null) {
+    // `terms`: made under the caseload plan (lib/caseload, 24 Sep 2026).
+    acct = { email, name: "", clinic: "", code: "", createdAt: new Date().toISOString(), terms: CASELOAD_TERMS };
     await kvCmd(["SET", acctKey, JSON.stringify(acct)]);
   }
+  if (!acct) acct = { code: "" };
 
   const session = signSession({
     email,

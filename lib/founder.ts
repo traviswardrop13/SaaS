@@ -1,6 +1,8 @@
 import crypto from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { kvCmd, kvConfigured } from "@/lib/slpAuth";
+import { grandfathered, recordActive, accessKey, planKey, type PlanRecord } from "@/lib/caseload";
+import { isWorkEmail } from "@/lib/workEmail";
 
 /**
  * What the founder-only routes share: the FOUNDER_KEY gate, and reading the
@@ -38,11 +40,30 @@ export async function readLeads(): Promise<Record<string, string>[]> {
 
 export type Clinician = {
   email: string; name: string; clinic: string; createdAt: string; source: string; inCrm: string;
+  // The caseload plan (lib/caseload, 24 Sep 2026), for the founder's
+  // clinicians table: whether the address is a work one, whether they asked
+  // for their own Premium without one (and whether it was approved), and
+  // how their caseload is covered.
+  workEmail: "yes" | "no";
+  accessRequested: string;           // ISO time of the first request, or ""
+  approved: "yes" | "no";
+  caseload: "paid" | "grandfathered" | "none";
 };
+
+/** An Upstash HGETALL answer — a flat [field, value, …] list — as an object. */
+function hashObj(flat: unknown): Record<string, string> {
+  const out: Record<string, string> = {};
+  if (Array.isArray(flat)) for (let i = 0; i + 1 < flat.length; i += 2) out[String(flat[i])] = String(flat[i + 1]);
+  return out;
+}
 
 /**
  * Every clinician account, however it was created. SCAN, not KEYS, so a large
  * store is walked in pages instead of blocked; capped at 5000.
+ *
+ * "paid" here is the plan mirror as last written (slpplan), not a fresh
+ * Stripe call per clinician: this is a list of everyone, and the mirror is
+ * at most ten minutes behind for anyone whose families are checking in.
  */
 export async function readClinicians(): Promise<Clinician[]> {
   const out: Clinician[] = [];
@@ -56,13 +77,21 @@ export async function readClinicians(): Promise<Clinician[]> {
       if (out.length >= 5000) break;
       try {
         const a = JSON.parse(String(await kvCmd(["GET", key])));
+        const email = String(a.email || key.slice("slpacct:".length));
+        const access = hashObj(await kvCmd(["HGETALL", accessKey(email)]));
+        let plan: PlanRecord | null = null;
+        try { plan = JSON.parse(String(await kvCmd(["GET", planKey(email)]))) as PlanRecord | null; } catch { plan = null; }
         out.push({
-          email: String(a.email || key.slice("slpacct:".length)),
+          email,
           name: String(a.name || ""),
           clinic: String(a.clinic || ""),
           createdAt: String(a.createdAt || ""),
           source: String(a.source || ""),
           inCrm: a.crmAt ? "yes" : "not yet",
+          workEmail: isWorkEmail(email) ? "yes" : "no",
+          accessRequested: access.requestedAt || "",
+          approved: access.approved === "1" ? "yes" : "no",
+          caseload: grandfathered(a) ? "grandfathered" : recordActive(plan) ? "paid" : "none",
         });
       } catch { /* skip */ }
     }

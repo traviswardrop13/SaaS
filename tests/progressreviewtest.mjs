@@ -59,7 +59,7 @@ async function fresh() {
   const errors = []; page.on('pageerror', e => errors.push(e.message));
   await page.goto(origin + '/__seed');
   await page.evaluate(() => {
-    localStorage.setItem('sona.freeera.v1', 'post'); localStorage.setItem('sona.freeera2.v1', 'done'); localStorage.setItem('sona.freeera3.v1', 'done');
+    localStorage.setItem('sona.freeera.v1', 'post'); localStorage.setItem('sona.freeera2.v1', 'done'); localStorage.setItem('sona.freeera3.v1', 'done'); localStorage.setItem('sona.freeera4.v1', 'done');
     localStorage.setItem('sona.profile.v1', JSON.stringify({ childName: 'Milo', childAge: '7', focusSounds: ['R'], onboarded: true, weeklyGoal: 5, volume: 0, voiceOn: false, soundOn: false }));
     sessionStorage.setItem('sona.gate.v1', String(Date.now()));
   });

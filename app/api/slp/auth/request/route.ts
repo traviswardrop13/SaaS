@@ -5,6 +5,7 @@ import {
   signSession, sessionCookie, SESSION_MAX_AGE, authSecretOk, leadSig,
 } from "@/lib/slpAuth";
 import { kitConfigured } from "@/lib/kit";
+import { CASELOAD_TERMS } from "@/lib/caseload";
 
 export const runtime = "nodejs";
 
@@ -189,10 +190,17 @@ export async function POST(req: NextRequest) {
    * An account that ALREADY EXISTS gets the link and nothing else. By then it
    * may hold a caseload, and a caseload is children — that door needs the
    * proof that someone can read the inbox.
+   *
+   * "Does not exist" means the store SAID so (null). A store that did not
+   * answer (undefined) is treated as "exists" — the emailed-link path, which
+   * writes nothing — because the new-account branch below would overwrite a
+   * real clinician's account whole: their code, their family key and, since
+   * 24 Sep 2026, the missing `terms` field that is their grandfathered
+   * "free forever" promise.
    */
   let acctRaw: unknown = null;
   let acctExists = false;
-  try { acctRaw = await kvCmd(["GET", "slpacct:" + email]); acctExists = !!acctRaw; } catch { acctExists = true; }
+  try { acctRaw = await kvCmd(["GET", "slpacct:" + email]); acctExists = acctRaw !== null; } catch { acctExists = true; }
 
   if (acctExists) {
     /**
@@ -223,10 +231,18 @@ export async function POST(req: NextRequest) {
 
   // The name they gave at sign-up is the name on their homework notes, so the
   // dashboard does not have to ask for it a second time.
+  //
+  // `terms` is the caseload-plan rule (lib/caseload, 24 Sep 2026): an account
+  // made from this build on carries it and its caseload is covered only by
+  // the $79.99 plan. An account WITHOUT it predates the plan and keeps the
+  // "free forever, every kid on your caseload" promise it signed up under.
+  // Structural, not a date — so it is stamped on every new account, here and
+  // in the verify and account routes, and never on an existing one.
   const name = String(body.name || "").trim().slice(0, 60);
   const acctNew = {
     email, name, clinic: "", code: "", createdAt: new Date().toISOString(),
     source: String(body.source || "").slice(0, 40),
+    terms: CASELOAD_TERMS,
   };
   await kvCmd(["SET", "slpacct:" + email, JSON.stringify(acctNew)]);
   const crm = tellCrm(origin, email, String(body.source || "slp-signup").slice(0, 40), name, safeAttrib(body.attrib));

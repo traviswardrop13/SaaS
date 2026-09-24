@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
+import { CASELOAD_PLAN } from "@/lib/caseload";
 
 /**
  * Self-serve "Manage subscription" — turns a checkout session id into a Stripe
@@ -10,6 +11,13 @@ import Stripe from "stripe";
  * the portal isn't configured on the Stripe account yet.
  *
  * POST { session_id } -> { ok, url }
+ *
+ * FAMILIES ONLY (24 Sep 2026). A clinician's caseload checkout returns to
+ * slp.html?plan_session=cs_…, so that id sits in their address bar and their
+ * browser history — and this route turns any session id into the keys to
+ * its customer's billing, with no sign-in. A session stamped
+ * metadata.plan "slp-caseload" is refused: a clinician manages their plan
+ * from the dashboard (/api/slp/plan/portal), behind their own session.
  */
 export const runtime = "nodejs";
 
@@ -33,6 +41,9 @@ export async function POST(req: NextRequest) {
   const stripe = new Stripe(key);
   try {
     const s = await stripe.checkout.sessions.retrieve(sid);
+    if (s.metadata?.plan === CASELOAD_PLAN) {
+      return NextResponse.json({ ok: false, error: "That's a clinician's plan — manage it from your Sona dashboard." }, { status: 403 });
+    }
     const customer = typeof s.customer === "string" ? s.customer : s.customer?.id;
     if (!customer) return NextResponse.json({ ok: false, error: "No customer on session." }, { status: 404 });
     const portal = await stripe.billingPortal.sessions.create({

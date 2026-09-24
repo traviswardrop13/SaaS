@@ -144,3 +144,22 @@ does, iOS simply sells the annual product at whatever ASC lists, and the
 native card describes exactly that. Do not add charter copy to the native
 card ahead of the ASC change: a card that says "first 50 families" over a
 price ASC controls is the same untrue promise the web half was built to avoid.
+
+## Caseload Premium is web-only (24 Sep 2026)
+
+"Sona Premium for your caseload" ($79.99 a year) is sold to clinicians on
+speaksona.com, from the dashboard — and the dashboard never renders in the
+app: `slp.html` sends a native shell straight to Home before it draws or calls
+anything. So no clinician buy button can appear in the iOS build, **there is no
+App Store product for this plan, and none should be created.**
+
+What reaches the app is the result, not the sale: a family whose clinician's
+caseload is covered gets Premium from the server's coverage answer, the way a
+web subscription is recognised. The clinician's link opens in Safari, and the
+app keeps separate storage, so the link state (the code and the enrolment
+ticket) travels into the app through the move-in code; the app then asks
+`/api/slp/covered` itself. The cached answer never travels. A parent's own Premium in the app stays the
+existing annual in-app purchase, priced in App Store Connect. Apple accepts
+access bought elsewhere only while the app also sells Premium itself and never
+points a parent at buying outside it — so no page inside the app may mention
+the clinician plan or a web price.

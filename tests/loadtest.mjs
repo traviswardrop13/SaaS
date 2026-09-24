@@ -51,9 +51,13 @@ async function scene(game, fill) {
   });
   await pg.goto("http://localhost:8198/today.html");
   await pg.evaluate(() => {
-    localStorage.setItem("sona.freeera.v1","post"); localStorage.setItem("sona.freeera2.v1","done"); localStorage.setItem("sona.freeera3.v1","done");
+    localStorage.setItem("sona.freeera.v1","post"); localStorage.setItem("sona.freeera2.v1","done"); localStorage.setItem("sona.freeera3.v1","done");localStorage.setItem("sona.freeera4.v1","done");
     localStorage.setItem("sona.micok", "1");
-    Sona.saveProfile({ childName: "Mia", childAge: "7", focusSounds: ["R"], onboarded: true });
+    // earlyAdopter: a family holding every game. This measures each game's
+    // SCENE, and since 24 Sep 2026 a family on the free version is sent back
+    // from a Premium game before its scene paints — that refusal is pinned in
+    // freetest/day1, not here, and this must hold whichever way pricing points.
+    Sona.saveProfile({ childName: "Mia", childAge: "7", focusSounds: ["R"], onboarded: true, earlyAdopter: true });
     Sona.markStoryRead();
   });
   await pg.goto("http://localhost:8198/charge.html?game=" + game + "&free=1");

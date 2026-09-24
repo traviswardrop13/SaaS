@@ -710,6 +710,31 @@
       .app-download { padding:8px 10px; }
     }
     @media print { .heading-echo { display:none; } .card { box-shadow:none; } }
+    /* Caseload Premium: one card per plan state, beside the clinician's own phone.
+       .btn sets display, which beats the hidden attribute; on this page the
+       script hides buttons by state, so hidden has to win. */
+    #page-premium [hidden] { display:none !important; }
+    .premium-layout { display:grid; grid-template-columns:minmax(0,1.5fr) minmax(0,1fr); gap:20px; align-items:start; }
+    .premium-layout > * { min-width:0; }
+    .premium-card { padding:28px; }
+    .premium-card.premium-on { background:#edf4ef; border-color:#dce8df; }
+    .card .premium-title { font-size:22px; font-weight:600; letter-spacing:-.5px; line-height:1.3; margin-bottom:8px; overflow-wrap:anywhere; }
+    .premium-price { font-size:13px; color:var(--muted); margin:6px 0 20px; }
+    .premium-price b { font-size:28px; font-weight:650; color:var(--ink); letter-spacing:-.6px; margin-right:2px; }
+    .premium-points { list-style:none; display:grid; gap:12px; margin:0 0 22px; padding:0; }
+    .premium-points li { position:relative; padding-left:26px; font-size:12.5px; line-height:1.65; color:var(--muted); }
+    .premium-points li:before { content:""; position:absolute; left:3px; top:6px; width:11px; height:6px; border-left:2px solid var(--blue); border-bottom:2px solid var(--blue); transform:rotate(-45deg); }
+    .premium-points b { color:var(--ink); font-weight:600; }
+    .premium-buy { border-top:1px solid var(--line); padding-top:18px; }
+    .premium-buy .warn { margin:0 0 14px; }
+    .premium-buy .btn, .premium-self .btn { white-space:normal; text-align:center; }
+    .premium-buy .btn { width:100%; }
+    .premium-when { font-size:13px; font-weight:500; color:var(--ink); margin:14px 0 18px; }
+    .premium-self .ok { margin-top:12px; font-weight:500; color:var(--green-d); overflow-wrap:anywhere; }
+    #invEmailed { margin:0 0 12px; font-weight:500; color:var(--green-d); }
+    #invEmailed.bad { color:var(--pink); }
+    @media (max-width:1100px) { .premium-layout { grid-template-columns:minmax(0,1fr); } }
+    @media (max-width:768px) { .premium-card { padding:20px 16px; } .card .premium-title { font-size:19px; } .premium-price b { font-size:24px; } }
   </style>
 </head>
 <body>
@@ -728,6 +753,7 @@
       <div class="nav-section">Workspace</div>
       <a class="nav-item active" data-page="today" href="#today"><span class="icon"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M16 3v4M8 3v4M3 11h18m-12 5 2 2 4-4"/></svg></span> Today <span class="badge warn" id="attnCount" style="display:none;">0</span></a>
       <a class="nav-item" data-page="caseload" href="#caseload"><span class="icon"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2m20 0v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/><circle cx="9" cy="7" r="4"/></svg></span> Caseload <span class="badge" id="familyCount" style="display:none;">0</span></a>
+      <a class="nav-item" data-page="premium" href="#premium"><span class="icon"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.6l-5.4 2.9 1.2-6-4.5-4.2 6.1-.7Z"/></svg></span> Caseload Premium</a>
       <div class="nav-section">Connect</div>
       <a class="nav-item" data-page="community" href="#community"><span class="icon"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 11a7 7 0 0 1-7 7H7l-5 3 1.7-5A7 7 0 0 1 2 11a7 7 0 0 1 7-7h5a7 7 0 0 1 7 7Z"/><path d="M7 10h10M7 14h6"/></svg></span> Community</a>
       <a class="nav-item" data-page="affiliate" href="#affiliate"><span class="icon"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v18M3 12h18M5.6 5.6l12.8 12.8M5.6 18.4 18.4 5.6"/></svg></span> Affiliate partnerships <span class="soon-badge">2027</span></a>
@@ -807,11 +833,19 @@
           <label class="fl" for="invNote">Note to the parent <span style="font-weight:700;color:#aab9c8;">(optional)</span></label>
           <textarea id="invNote" maxlength="240" placeholder="e.g. Two minutes after breakfast is plenty."></textarea>
           <p class="sub">This goes to the parent's phone and is stored with the assignment. Practice instructions only — nothing from the plan, nothing you wouldn't write on a fridge note.</p>
+          <!-- A parent's address, typed by the clinician, is used for ONE send
+               and kept nowhere: not on the invite, not in the email list, not
+               in a log (app/api/slp/invite). autocomplete is off because the
+               browser would otherwise offer the clinician's own address. -->
+          <label class="fl" for="invParentEmail">Parent's email <span style="font-weight:700;color:#aab9c8;">(optional)</span></label>
+          <input id="invParentEmail" type="email" inputmode="email" autocomplete="off" maxlength="254" placeholder="parent@example.com" />
+          <p class="sub">We'll email them the link once. We don't keep the address.</p>
           <button class="btn green" id="invCreate" style="margin-top:14px;">Create their link →</button>
           <div class="err" id="invErr"></div>
           <p class="sub" style="margin-top:8px;">If the family never opens the link, it deletes itself in 30 days and nothing about them is kept.</p>
           <div id="invResult" style="display:none;margin-top:14px;">
             <div class="preview">
+              <p class="sub" id="invEmailed" role="status" hidden></p>
               <h4>Their link</h4>
               <div class="linkbox"><input id="invLink" type="text" readonly /><button class="btn sm" id="invCopy">Copy link</button></div>
               <label class="fl" for="invMsg">Ready-to-send message</label>
@@ -971,6 +1005,86 @@
 
       </div>
 
+      <!-- ════════ CASELOAD PREMIUM ════════
+           The clinician's plan (Travis, 24 Sep 2026): $79.99 a year, bought
+           here on the web, and every family who joins through this clinician's
+           link gets every game. Its own page, never a card on Today — Today
+           answers "who practiced", and a price there would crowd the one
+           question the dashboard exists for. Each state is static markup so
+           the register scan in tests/slptest.mjs reads every word; the script
+           only chooses which one shows and fills in the figures the server
+           sends (the price is lib/caseload.ts's, never typed here). -->
+      <div class="page" id="page-premium">
+        <div class="page-header"><div><div class="eyebrow">Every game, for every family you send home</div><h1>Caseload Premium</h1><p>Sona's free version is free for every family. Premium adds every game.</p></div></div>
+        <div class="send-success" id="premiumReturn" role="status" hidden><span id="premiumReturnText"></span> <button class="feedback-shortcut" id="premiumCheck" type="button" hidden>Check again</button></div>
+        <div class="load-notice" id="premiumError" role="alert" hidden><span id="premiumErrorText"></span><button class="btn ghost sm" id="premiumRetry" type="button">Try again</button></div>
+        <div class="loading-state" id="premiumLoading" role="status" hidden>Checking your plan…</div>
+        <div class="premium-layout">
+          <div>
+            <section class="card premium-card" id="premiumOffer" aria-labelledby="premiumOfferTitle" hidden>
+              <div class="eyebrow">Sona Premium for your caseload</div>
+              <h2 class="premium-title" id="premiumOfferTitle">Sona Premium for your whole caseload</h2>
+              <p class="premium-price" id="premiumPriceLine"><b id="premiumPrice"></b> a year · <span id="premiumPerMonth"></span></p>
+              <ul class="premium-points">
+                <li><b>Every game, every sound.</b> Every family who joins through your link gets all of Sona's games, whether or not they choose to share practice with you.</li>
+                <li><b>Practice stays free.</b> Families can always use the free version at home — daily practice and free games — whether or not you buy this.</li>
+                <li id="premiumParentPrice"><b>Families you don't cover</b> can buy Premium themselves<span id="premiumParentFigure"></span>.</li>
+                <li><b>You never earn anything on your own caseload.</b> This is a plan you pay for, not a referral fee.</li>
+              </ul>
+              <div class="premium-buy">
+                <p class="warn" id="premiumNeedLink" hidden>Set up your family link first — Premium reaches families through it. <a href="#today">Set up my link →</a></p>
+                <button class="btn green" id="premiumBuy" type="button">Get Premium for my caseload</button>
+                <p class="workflow-note">Secure checkout by Stripe. Charged when you check out, then once a year until you cancel — cancel anytime. If you cancel, your families keep Premium to the end of the year you paid for.</p>
+                <div class="err" id="premiumBuyErr" role="status"></div>
+              </div>
+            </section>
+            <section class="card premium-card premium-on" id="premiumPaid" aria-labelledby="premiumPaidTitle" hidden>
+              <div class="eyebrow">Sona Premium for your caseload</div>
+              <h2 class="premium-title" id="premiumPaidTitle">Premium is on for your caseload</h2>
+              <p class="sub">Every family who joins through your link has every game, whether or not they choose to share practice with you.</p>
+              <p class="premium-when" id="premiumWhen"></p>
+              <button class="btn ghost" id="premiumManage" type="button">Manage billing</button>
+              <p class="workflow-note">Change your card, download receipts or cancel, on Stripe's billing page.</p>
+              <div class="err" id="premiumManageErr" role="status"></div>
+            </section>
+            <section class="card premium-card premium-on" id="premiumFree" aria-labelledby="premiumFreeTitle" hidden>
+              <div class="eyebrow">Sona Premium for your caseload</div>
+              <h2 class="premium-title" id="premiumFreeTitle">Your caseload has Premium, free</h2>
+              <p class="sub">You joined when Sona promised free for every family on your caseload, and that promise stands.</p>
+              <p class="sub" style="margin-top:8px;">Every family who joins through your link has every game. There is nothing to buy and nothing to renew.</p>
+            </section>
+          </div>
+          <!-- The clinician's OWN phone. A work email proves a clinician; a
+               free-mail address is refused and can ask to be approved by hand
+               on /leads.html. The link goes to the account's own inbox, which
+               is what makes it theirs.
+               NEVER "ONE PHONE" (24 Sep 2026). Each link works once, but the
+               server sends a few a day and retires none of them, so "on one
+               phone" was a limit nobody keeps; the words are the ones
+               /api/slp/self and the Terms use. -->
+          <section class="card premium-self" id="premiumSelf" aria-labelledby="selfTitle" hidden>
+            <h2 id="selfTitle">Premium on your own phone or tablet</h2>
+            <p class="sub">Play every game yourself, so you know what you're sending home. Free for you.</p>
+            <div id="selfEligible" hidden>
+              <p class="sub" style="margin-top:8px;">We'll email a link to <b id="selfEmail"></b>. Open it on your phone or tablet within 30 days. Each link works once.</p>
+              <p class="warn" id="selfNeedLink" hidden>Set up your family link first — your Premium link opens Sona through it.</p>
+              <button class="btn ghost" id="selfSend" type="button" style="margin-top:14px;">Email me my Premium link</button>
+            </div>
+            <!-- A request is approved by hand and nothing emails the clinician
+                 when it is (24 Sep 2026: this said "we'll email you", and no
+                 route sends one). So the card shows the button the approval
+                 turns on, greyed out, and says that is what changes. -->
+            <div id="selfNeedWork" hidden>
+              <p class="sub" style="margin-top:8px;">Premium on your own phone or tablet needs a work email — your school or clinic address.</p>
+              <button class="btn ghost sm" id="selfRequest" type="button" style="margin-top:14px;">No work email? Request access</button>
+              <button class="btn ghost" id="selfPending" type="button" style="margin-top:14px;" disabled hidden>Email me my Premium link</button>
+            </div>
+            <p class="sub ok" id="selfDone" role="status" hidden></p>
+            <div class="err" id="selfErr" role="status"></div>
+          </section>
+        </div>
+      </div>
+
       <!-- ════════ SETTINGS ════════ -->
       <div class="page" id="page-settings">
         <div class="page-header"><div><h1>Settings</h1><p>Your profile, your code, your data.</p></div></div>
@@ -987,7 +1101,10 @@
         </div>
         <div class="card">
           <h2>Your caseload link</h2>
-          <p class="sub">Your SLP workspace and home practice for families who join through your link are free forever.</p>
+          <!-- Was "free forever" until 24 Sep 2026. The dashboard is still free
+               and so is the free version for every family; every game is now
+               Premium, so this line says which of the two a family gets. -->
+          <p class="sub">Your dashboard is free. Families who join through your link get Sona's free version — daily practice and free games — at no cost. <span id="linkCoverage">With <a href="#premium">Caseload Premium</a> they get every game.</span></p>
           <p class="sub" style="margin-top:8px;">Create a child's link or copy your general link in Caseload → Add a child.</p>
           <a class="btn ghost sm" href="#invite" style="margin-top:12px;">Invite a family →</a>
 
@@ -1199,13 +1316,14 @@
       document.querySelectorAll(".page").forEach(function(p){p.classList.remove("active");});
       var el=$("page-"+name); if(el)el.classList.add("active");
       document.querySelectorAll(".nav-item").forEach(function(n){var active=n.dataset.page===name||(name==="child"&&n.dataset.page==="caseload");n.classList.toggle("active",active);if(active)n.setAttribute("aria-current","page");else n.removeAttribute("aria-current");});
-      $("pageCrumb").textContent={today:"Today",caseload:"Caseload",child:"Child overview",settings:"Settings",feedback:"Talk to Rachel",affiliate:"Affiliate partnerships",community:"Community",onboarding:"Welcome"}[name]||"Today";
+      $("pageCrumb").textContent={today:"Today",caseload:"Caseload",child:"Child overview",premium:"Caseload Premium",settings:"Settings",feedback:"Talk to Rachel",affiliate:"Affiliate partnerships",community:"Community",onboarding:"Welcome"}[name]||"Today";
       document.title="Sona · "+$("pageCrumb").textContent;
       setMenu(false);
       window.scrollTo(0,0);
       if(name==="today")renderToday();
       if(name==="caseload")renderCaseload();
       if(name==="child")renderChild(arg);
+      if(name==="premium")renderPremium();
       if(name==="settings")renderSettings();
       if(name==="feedback")paintFeedback();
       if(name==="community"){renderCommunity();loadCommunity(false);}
@@ -1214,7 +1332,9 @@
     function route(){
       if(!account)return;
       var h=(location.hash||"#today").slice(1).split("/"); var name=h[0]||"today", arg=h[1]?decodeURIComponent(h[1]):null;
-      if(!code&&name!=="community"&&name!=="feedback"){switchPage("onboarding");return;}
+      // Premium is readable before a code exists (the buy button then says the
+      // family link comes first); everything else starts at the one form.
+      if(!code&&name!=="community"&&name!=="feedback"&&name!=="premium"){switchPage("onboarding");return;}
       if(!PREVIEW_FEATURES&&previewOnlyPage(name)){name="today";history.replaceState(null,"","#today");}
       if(name==="invite"){switchPage("caseload");openInvite();return;}
       if(!$("page-"+name))name="today";
@@ -1567,7 +1687,17 @@
     }
     function inviteLink(token){ return familyLink()+"&inv="+encodeURIComponent(token); }
     var APP_STORE_URL="https://apps.apple.com/us/app/sona-speech/id6785755867";
-    function inviteMsg(child,link){ return "Hi! Here's your child's Sona link — the speech-practice app I mentioned. It's free forever for your family. Open it on the phone your child will use, say yes to sharing practice with me, and they can start today. It listens and gives feedback as they play, and I'll see the practice add up on my end.\n\nYour family invite (start here):\n"+link+"\n\nDownload for iPhone or iPad:\n"+APP_STORE_URL; }
+    // WHAT A FAMILY IS PROMISED, in one place for both messages. Until 24 Sep
+    // 2026 they said "free forever" — true while every game was free. Every
+    // game is Premium now, so a message promises the free version and names
+    // Premium only while this caseload is covered, paid or grandfathered.
+    // Still "free", never "pilot" or "trial". "Daily practice and four free
+    // games" is the one phrase for the free version on every surface (24 Sep
+    // 2026): it said "two games", but gameAccess() opens all free games
+    // to every child whatever their play style, and a parent told "two" by
+    // her clinician then saw "four" on Home.
+    function familyOffer(){ return caseCovered()?"It's free for your family, and Premium is included through me, so your child gets every game.":"It's free for your family: daily practice and free games."; }
+    function inviteMsg(child,link){ return "Hi! Here's your child's Sona link — the speech-practice app I mentioned. "+familyOffer()+" Open it on the phone your child will use, say yes to sharing practice with me, and they can start today. It listens and gives feedback as they play, and I'll see the practice add up on my end.\n\nYour family invite (start here):\n"+link+"\n\nDownload for iPhone or iPad:\n"+APP_STORE_URL; }
     function invInit(){
       if(invReady)return; invReady=true;
       $("invAge").innerHTML='<option value="">—</option>'+[3,4,5,6,7,8,9,10,11,12].map(function(a){return'<option value="'+a+'">'+a+'</option>';}).join("");
@@ -1582,7 +1712,7 @@
     // wherever the link is shown
     function paintLinkCard(){
       $("famLink").value=familyLink();
-      $("snip").value="Hi! Here's the Sona link I mentioned — a fun app where your child can practice their speech sounds at home. It's free forever for your family. Open it on the phone your child will use, set them up in about 30 seconds, and say yes to sharing practice with me so I can see it add up.\n\nYour family invite (start here):\n"+familyLink()+"\n\nDownload for iPhone or iPad:\n"+APP_STORE_URL;
+      $("snip").value="Hi! Here's the Sona link I mentioned — a fun app where your child can practice their speech sounds at home. "+familyOffer()+" Open it on the phone your child will use, set them up in about 30 seconds, and say yes to sharing practice with me so I can see it add up.\n\nYour family invite (start here):\n"+familyLink()+"\n\nDownload for iPhone or iPad:\n"+APP_STORE_URL;
     }
     function renderInvite(){
       invInit();
@@ -1598,6 +1728,13 @@
       var name=$("invName").value.trim(), err=$("invErr"); err.style.color="";
       if(!name){err.textContent="Initials or a nickname, so you know whose link this is.";return;}
       var body={label:name.slice(0,40),age:$("invAge").value,sounds:Object.keys(INV_SEL),pos:$("invPos").value,repsPerDay:parseInt($("invReps").value,10),note:$("invNote").value.trim()};
+      // Checked here as well as on the server so a typo is fixed in the
+      // composer, before an invite exists that the email never reached. A
+      // blank box sends no key at all.
+      var parentEmail=$("invParentEmail").value.trim();
+      if(parentEmail&&(parentEmail.length>254||!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(parentEmail))){err.textContent="That email doesn't look right — check it, or leave it blank.";$("invParentEmail").focus();return;}
+      if(parentEmail)body.parentEmail=parentEmail;
+      $("invEmailed").hidden=true;
       $("invCreate").disabled=true; err.style.color="var(--muted)"; err.textContent="Creating…";
       fetch("/api/slp/invite",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)}).then(function(r){return r.json();}).then(function(j){
         $("invCreate").disabled=false;
@@ -1605,10 +1742,20 @@
         err.textContent="";
         var link=j.link||inviteLink(j.invite&&j.invite.token);
         $("invResult").style.display=""; $("invLink").value=link; $("invMsg").value=inviteMsg("",link);
+        if(parentEmail)paintEmailed(j);
+        // The address has done its one job; the page lets go of it too.
+        $("invParentEmail").value="";
         $("invName").value="";$("invNote").value="";INV_SEL={};document.querySelectorAll("#invSounds button").forEach(function(b){b.classList.remove("on");});invNorm();
         loadAll(function(){renderCaseload();$("invComposer").style.display="";$("invResult").style.display="";$("invLink").value=link;$("invMsg").value=inviteMsg("",link);});
       }).catch(function(){$("invCreate").disabled=false;err.style.color="var(--pink)";err.textContent="Network hiccup — try again.";});
     };
+    // Only what the server says happened: "emailed" when the send went, and
+    // otherwise its own reason, so the clinician knows to copy the link.
+    function paintEmailed(j){
+      var el=$("invEmailed"), sent=!!(j&&j.emailed);
+      el.textContent=sent?"Emailed to the parent ✓":((j&&j.emailError)||"The email didn't go out. Copy the link and send it yourself.");
+      el.classList.toggle("bad",!sent);el.hidden=false;
+    }
     $("invCopy").onclick=function(){copy($("invLink").value,$("invCopy"));};
     $("invCopyMsg").onclick=function(){copy($("invMsg").value,$("invCopyMsg"));};
     $("copyAppLink").onclick=function(){copy(APP_STORE_URL,$("copyAppLink"));};
@@ -1723,7 +1870,180 @@
     $("planCopy").onclick=function(){copy($("planOutline").value,$("planCopy"));};
     $("planHomework").onclick=function(){if(CURRENT)go("child",CURRENT.childId,"homework");};
 
+    /* ── Caseload Premium ──────────────────────────
+       VIEWING ONLY READS. Opening this page sends two GETs — /api/slp/plan
+       (where this caseload stands, and whether the clinician's own phone may
+       have Premium) and /api/charter (the family price, for the one line that
+       names it) — and nothing else until a button is pressed. Buying, billing,
+       the self link and an access request are each one POST behind one tap.
+
+       THE RETURN FROM STRIPE lands on /slp.html?plan_session=cs_…#premium.
+       That id is a question, not proof: the server asks Stripe whether the
+       session is finished, the caseload plan's, and this clinician's before
+       it stores anything. The page forwards it, and takes it off the address
+       bar only once the answer is yes (activated, or already active) — until
+       then "Check again" re-asks Stripe about that same session, which reads
+       it directly instead of waiting on Stripe's search index (24 Sep 2026:
+       dropping it on any reply left a clinician who had just paid unable to
+       confirm it, and families joining meanwhile were told "not covered"). */
+    var PLAN=null, PLAN_AT=0, PLAN_BUSY=false, PLAN_ERR="", PLAN_GEN=0, PLAN_SESSION="";
+    var PARENT_PRICE="", PARENT_ASKED=false, BUY_BUSY=false, MANAGE_BUSY=false, SELF_BUSY=false, SELF_SENT="", SELF_DEV="", COVERED_SHOWN=null;
+    try{var planSid=new URLSearchParams(location.search).get("plan_session");
+      if(planSid!=null){ if(/^cs_[A-Za-z0-9_]{10,240}$/.test(planSid))PLAN_SESSION=planSid; else history.replaceState(null,"","/slp.html#premium"); }
+    }catch(e){}
+    // Paid or grandfathered: the families on this link have every game.
+    function caseCovered(){return !!(PLAN&&PLAN.active);}
+    function answer(r){return r.json().catch(function(){return null;}).then(function(j){return {status:r.status,j:j||{}};});}
+    function planDate(sec){var d=new Date(sec*1000);return isNaN(d.getTime())?"":d.toLocaleDateString(undefined,{month:"short",day:"numeric",year:"numeric"});}
+    function loadPlan(){
+      var gen=++PLAN_GEN, sid=PLAN_SESSION;
+      PLAN_BUSY=true;paintPremium();
+      return fetch("/api/slp/plan"+(sid?"?session="+encodeURIComponent(sid):""),{cache:"no-store"}).then(answer).then(function(res){
+        if(gen!==PLAN_GEN)return;
+        PLAN_BUSY=false;
+        if(!res.j.ok){PLAN_ERR=res.status===401?"Your sign-in has ended. Sign in again to see your plan.":(res.j.error||"Couldn't check your plan just now.");paintPremium();return;}
+        // The id leaves the address bar only on a yes. A 200 can still say
+        // activated:false (Stripe didn't answer, or the payment hasn't
+        // settled), and then the id stays so Check again asks the same
+        // question; a failed request keeps it too (the return above).
+        // A REFUSAL (activated:false with no retry flag: another account's
+        // session, a family's) will never succeed, so it leaves too; Check
+        // again then finds a real plan by the recovery search instead.
+        if(sid&&(res.j.activated===true||res.j.active===true||res.j.retry!==true)){PLAN_SESSION="";try{history.replaceState(null,"","/slp.html#premium");}catch(e){}}
+        PLAN=res.j;PLAN_AT=Date.now();PLAN_ERR="";
+        if(sid)paintReturn(true);
+        paintPremium();paintCoverage();
+      }).catch(function(){if(gen!==PLAN_GEN)return;PLAN_BUSY=false;PLAN_ERR="Couldn't reach Sona to check your plan.";paintPremium();});
+    }
+    // The family price comes from /api/charter, the count checkout itself
+    // reads, and only when it answers with a price: a figure typed here would
+    // be a second copy of it, and a stale one is a promise checkout breaks.
+    // WITH ITS CONDITIONS (24 Sep 2026). "$59.99 a year" bare is true for the
+    // first fifty web buyers only, and a clinician repeats what she reads, so
+    // the charter price carries its cap (the route's, not a typed 50), both
+    // carry "on the web" (App Store Connect prices the app), and a charter
+    // answer without a usable cap prints nothing rather than the bare figure.
+    function loadParentPrice(){
+      if(PARENT_ASKED)return;PARENT_ASKED=true;
+      fetch("/api/charter").then(answer).then(function(res){
+        var j=res.j, money=/^\$\d+(\.\d\d)?$/, cap=typeof j.cap==="number"&&j.cap>0&&j.cap%1===0?j.cap:0;
+        if(!j.ok||j.free)PARENT_PRICE="";
+        else if(j.open)PARENT_PRICE=typeof j.price==="string"&&money.test(j.price)&&cap?" — on the web, "+j.price+" a year for the first "+cap+" families":"";
+        else PARENT_PRICE=typeof j.standard==="string"&&money.test(j.standard)?" — on the web, "+j.standard+" a year":"";
+        paintPremium();
+      }).catch(function(){});
+    }
+    function paintReturn(show){
+      var el=$("premiumReturn"), paid=caseCovered()&&PLAN.source==="paid";
+      el.hidden=!show;if(!show)return;
+      $("premiumReturnText").textContent=paid?"Thank you. Premium is on for your caseload: every family who joins through your link has every game.":"We couldn't confirm that payment yet. If you just paid, give it a minute, then check again.";
+      $("premiumCheck").hidden=paid;
+      el.style.background=paid?"":"#fff8eb";el.style.color=paid?"":"#806132";
+    }
+    function paintPremium(){
+      var st=!PLAN?null:(!PLAN.active?"none":(PLAN.source==="grandfathered"?"free":"paid"));
+      $("premiumLoading").hidden=!(PLAN_BUSY&&!PLAN);
+      $("premiumError").hidden=!PLAN_ERR||PLAN_BUSY;
+      $("premiumErrorText").textContent=PLAN_ERR+(PLAN&&PLAN_ERR?" What's below is the last answer we had.":"");
+      $("premiumRetry").disabled=PLAN_BUSY;$("premiumCheck").disabled=PLAN_BUSY;
+      $("premiumOffer").hidden=st!=="none";$("premiumPaid").hidden=st!=="paid";$("premiumFree").hidden=st!=="free";
+      if(st==="none"){
+        $("premiumPriceLine").hidden=!PLAN.price;$("premiumPrice").textContent=PLAN.price||"";$("premiumPerMonth").textContent=PLAN.perMonth||"";
+        loadParentPrice();
+        $("premiumParentFigure").textContent=PARENT_PRICE;
+      }
+      // No code, no link: Premium reaches families only through the link, so
+      // the button says what comes first rather than selling a plan that
+      // would cover nobody yet.
+      $("premiumNeedLink").hidden=!!code;
+      $("premiumBuy").disabled=!code||BUY_BUSY;$("premiumBuy").textContent=BUY_BUSY?"Opening secure checkout…":"Get Premium for my caseload";
+      if(st==="paid"){
+        var end=PLAN.periodEnd?planDate(PLAN.periodEnd):"";
+        $("premiumWhen").textContent=PLAN.cancelAtPeriodEnd?(end?"Ends "+end+". Your families keep Premium until then, then move to the free version.":"Cancelled. Your families keep Premium to the end of the year you paid for, then move to the free version."):(end?"Renews "+end+".":"Renews once a year.");
+      }
+      $("premiumManage").disabled=MANAGE_BUSY;$("premiumManage").textContent=MANAGE_BUSY?"Opening billing…":"Manage billing";
+      var self=PLAN&&PLAN.self;
+      $("premiumSelf").hidden=!self;
+      if(self){
+        $("selfEligible").hidden=!self.eligible;$("selfNeedWork").hidden=!!self.eligible;
+        $("selfEmail").textContent=(account&&account.email)||"your account email";
+        $("selfNeedLink").hidden=!!code;
+        $("selfSend").disabled=!code||SELF_BUSY;$("selfSend").textContent=SELF_BUSY&&self.eligible?"Sending…":"Email me my Premium link";
+        $("selfRequest").hidden=!!self.requested;$("selfRequest").disabled=SELF_BUSY;$("selfPending").hidden=!self.requested;
+        var done=self.eligible?SELF_SENT:(self.requested?"Requested — once we approve it, this button will work.":"");
+        $("selfDone").hidden=!done&&!SELF_DEV;$("selfDone").textContent=done;
+        if(SELF_DEV&&self.eligible){var a=document.createElement("a");a.href=SELF_DEV;a.textContent="open it here";$("selfDone").textContent="Email isn't set up on this server, so here is your link (preview only): ";$("selfDone").appendChild(a);}
+      }
+    }
+    // Where the dashboard promises families something, the promise follows
+    // the plan: Settings, and the two ready-to-send messages.
+    function paintCoverage(){
+      var covered=caseCovered();
+      if(COVERED_SHOWN===covered)return;COVERED_SHOWN=covered;
+      $("linkCoverage").innerHTML=covered?"Your caseload has Premium, so they get every game too.":'With <a href="#premium">Caseload Premium</a> they get every game.';
+      if(code)paintLinkCard();
+    }
+    function renderPremium(){
+      paintPremium();
+      if(!PLAN_BUSY&&(!PLAN||Date.now()-PLAN_AT>60000))loadPlan();
+    }
+    // Stripe is another site: whatever it returns, the page only leaves for
+    // an http(s) address the server handed back.
+    function leaveFor(url){if(typeof url==="string"&&/^https?:\/\//.test(url)){location.assign(url);return true;}return false;}
+    function planPost(path,body){return fetch(path,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body||{})}).then(answer);}
+    $("premiumBuy").onclick=function(){
+      if(BUY_BUSY||!code)return;
+      BUY_BUSY=true;$("premiumBuyErr").textContent="";paintPremium();
+      planPost("/api/slp/plan").then(function(res){
+        if(res.j.ok&&leaveFor(res.j.url))return;   // on the way to Stripe; stays busy
+        BUY_BUSY=false;$("premiumBuyErr").textContent=res.j.error||"Couldn't open checkout. Try again.";
+        if(res.j.already)loadPlan();               // covered in another tab meanwhile
+        paintPremium();
+      }).catch(function(){BUY_BUSY=false;$("premiumBuyErr").textContent="Network hiccup. Try again.";paintPremium();});
+    };
+    $("premiumManage").onclick=function(){
+      if(MANAGE_BUSY)return;
+      MANAGE_BUSY=true;$("premiumManageErr").textContent="";paintPremium();
+      planPost("/api/slp/plan/portal").then(function(res){
+        if(res.j.ok&&leaveFor(res.j.url))return;
+        MANAGE_BUSY=false;$("premiumManageErr").textContent=res.j.error||"Couldn't open billing. Try again.";paintPremium();
+      }).catch(function(){MANAGE_BUSY=false;$("premiumManageErr").textContent="Network hiccup. Try again.";paintPremium();});
+    };
+    $("selfSend").onclick=function(){
+      if(SELF_BUSY||!code)return;
+      SELF_BUSY=true;SELF_SENT="";SELF_DEV="";$("selfErr").textContent="";paintPremium();
+      planPost("/api/slp/self",{action:"send"}).then(function(res){
+        SELF_BUSY=false;
+        if(res.j.ok&&res.j.sent===false&&res.j.devLink&&String(res.j.devLink).indexOf(location.origin+"/")===0)SELF_DEV=res.j.devLink;
+        else if(res.j.ok)SELF_SENT="Check your inbox — your Premium link is on its way to "+((account&&account.email)||"your account email")+".";
+        else if(res.j.needWorkEmail){if(PLAN&&PLAN.self)PLAN.self.eligible=false;}
+        else $("selfErr").textContent=res.j.error||"Couldn't send your link. Try again.";
+        paintPremium();
+      }).catch(function(){SELF_BUSY=false;$("selfErr").textContent="Network hiccup. Try again.";paintPremium();});
+    };
+    $("selfRequest").onclick=function(){
+      if(SELF_BUSY)return;
+      SELF_BUSY=true;$("selfErr").textContent="";paintPremium();
+      planPost("/api/slp/self",{action:"request"}).then(function(res){
+        SELF_BUSY=false;
+        if(res.j.ok&&PLAN&&PLAN.self)PLAN.self.requested=true;
+        else if(!res.j.ok)$("selfErr").textContent=res.j.error||"Couldn't send your request. Try again.";
+        paintPremium();
+      }).catch(function(){SELF_BUSY=false;$("selfErr").textContent="Network hiccup. Try again.";paintPremium();});
+    };
+    $("premiumRetry").onclick=function(){loadPlan();};
+    $("premiumCheck").onclick=function(){loadPlan();};
+    // Back from Stripe by the browser's back button: the page may come back
+    // from the cache with its buttons still saying "Opening…".
+    window.addEventListener("pageshow",function(e){if(e.persisted){BUY_BUSY=false;MANAGE_BUSY=false;paintPremium();}});
+
     /* ── Settings ──────────────────────────────── */
+    // POST /api/slp/account answers {code, familyKey, name, clinic} and no
+    // email; only /api/slp/auth/me (boot) carries it. Replacing the account
+    // with that answer blanked the address the Premium page names (24 Sep
+    // 2026: "on its way to your account email", on the very path where which
+    // inbox is the whole question), so a save MERGES what it returns.
+    function mergeAccount(j){account=Object.assign({},account,j);}
     function renderSettings(){
       $("profName").value=(account&&account.name)||""; $("profClinic").value=(account&&account.clinic)||""; $("profCode").value=code; $("profKey").value=(account&&account.familyKey)||"";
       paintLinkCard();
@@ -1733,7 +2053,7 @@
       $("profSave").disabled=true;$("profMsg").textContent="Saving…";
       fetch("/api/slp/account",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(data)}).then(function(r){return r.json();}).then(function(j){
         $("profSave").disabled=false;
-        if(j&&j.ok){account=j;$("profMsg").textContent="Saved ✓";$("sidebarName").textContent=data.name||code;setTimeout(function(){$("profMsg").textContent="";},2000);}
+        if(j&&j.ok){mergeAccount(j);$("profMsg").textContent="Saved ✓";$("sidebarName").textContent=data.name||code;setTimeout(function(){$("profMsg").textContent="";},2000);}
         else $("profMsg").textContent="Couldn't save — try again.";
       }).catch(function(){$("profSave").disabled=false;$("profMsg").textContent="Network error.";});
     };
@@ -1742,7 +2062,7 @@
       $("rotateKey").disabled=true;
       fetch("/api/slp/account",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({rotateKey:true})}).then(function(r){return r.json();}).then(function(j){
         $("rotateKey").disabled=false;
-        if(j&&j.ok&&j.familyKey){account=j;$("profKey").value=j.familyKey;paintLinkCard();$("profMsg").textContent="New key saved ✓";setTimeout(function(){$("profMsg").textContent="";},2500);}
+        if(j&&j.ok&&j.familyKey){mergeAccount(j);$("profKey").value=j.familyKey;paintLinkCard();$("profMsg").textContent="New key saved ✓";setTimeout(function(){$("profMsg").textContent="";},2500);}
         else $("profMsg").textContent="Couldn't rotate — try again.";
       }).catch(function(){$("rotateKey").disabled=false;$("profMsg").textContent="Network error.";});
     };
@@ -1894,7 +2214,7 @@
       fetch("/api/slp/account",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:$("onbName").value.trim(),clinic:$("onbClinic").value.trim(),code:c})}).then(function(r){return r.json();}).then(function(j){
         $("onbSave").disabled=false;
         if(!j||!j.ok){$("onbErr").textContent=(j&&j.error)||"Couldn't save — try again.";return;}
-        account=j;code=j.code;$("sidebarName").textContent=(account&&account.name)||code;
+        mergeAccount(j);code=j.code;$("sidebarName").textContent=(account&&account.name)||code;
         loadAll(function(){go("caseload");});
       }).catch(function(){$("onbSave").disabled=false;$("onbErr").textContent="Network error — try again.";});
     };
@@ -1906,6 +2226,9 @@
       fetch("/api/slp/auth/me").then(function(r){return r.json();}).then(function(j){
         if(!j||!j.ok){location.replace("/slp-login.html");return;}
         account=j;code=j.code||"";
+        // In the background, so every family message knows whether Premium is
+        // included; the Premium page shows it (and the Stripe return lands).
+        loadPlan();
         $("sidebarName").textContent=(account&&account.name)||code||"";
         $("accountAvatar").textContent=((account.name||"S").split(/\s+/).map(function(n){return n.charAt(0);}).slice(0,2).join("")).toUpperCase();
         if(!code){$("loadingState").hidden=true;route();return;}

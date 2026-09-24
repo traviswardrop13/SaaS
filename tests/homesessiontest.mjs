@@ -19,7 +19,7 @@ async function fixture(config={}){
   let sona;Object.defineProperty(window,'Sona',{configurable:true,get:()=>sona,set:value=>{sona=value;value.speak=record;value.speakNow=record;}});
   if(window.speechSynthesis)window.speechSynthesis.speak=utterance=>record(utterance.text);
   if(localStorage.getItem('sona.test.homeSession'))return;localStorage.setItem('sona.test.homeSession','1');
-  localStorage.setItem('sona.freeera.v1','post');localStorage.setItem('sona.freeera2.v1','done');localStorage.setItem('sona.freeera3.v1','done');
+  localStorage.setItem('sona.freeera.v1','post');localStorage.setItem('sona.freeera2.v1','done');localStorage.setItem('sona.freeera3.v1','done');localStorage.setItem('sona.freeera4.v1','done');
   localStorage.setItem('sona.profile.v1',JSON.stringify({childName:'Mia',childAge:config.age===undefined?'4':config.age,focusSounds:['M'],onboarded:true,voiceOn:true,soundOn:false,volume:0.7}));
   if(config.paid){sessionStorage.setItem('sona.paidui','1');localStorage.setItem('sona.demo.v1',JSON.stringify({started:1,done:1}));}
   if(config.run)sessionStorage.setItem('sona.run.v1',JSON.stringify(config.run));

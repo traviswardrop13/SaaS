@@ -14,6 +14,12 @@ import Stripe from "stripe";
  * The session id is the bearer secret here: it's high-entropy, only ever
  * handed to the buyer by Stripe's redirect, and the response contains only
  * their own purchase facts.
+ *
+ * `plan` is the session's metadata.plan (24 Sep 2026): "slp-caseload" for a
+ * clinician's caseload plan, null for a family's. The family success page
+ * reads it to REFUSE to unlock a device on a clinician's receipt — that plan
+ * covers the families who join through the clinician's link, not whatever
+ * browser the session id is pasted into.
  */
 export const runtime = "nodejs";
 
@@ -45,6 +51,7 @@ export async function GET(req: NextRequest) {
       interval: item?.price?.recurring?.interval ?? null,
       trialEnd: sub?.trial_end ?? null,
       periodEnd,
+      plan: s.metadata?.plan || null,
     });
   } catch {
     return NextResponse.json({ ok: false, error: "Session not found." }, { status: 404 });
