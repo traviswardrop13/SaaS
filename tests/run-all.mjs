@@ -48,6 +48,8 @@ const SUITES = [
   "pauseaudiotest.mjs", // interrupted playback and native starts cannot outlive their practice phase
   "slptest.mjs",   // SLP1: the clinician dashboard — live Today, honest register, one door, real remove, the note
   "slpworkflowtest.mjs", // quick homework, per-child plans, feedback/call UI and failure recovery
+  "slpcommunityapi.mjs", // shared community access, persistence, privacy and ownership
+  "slpcommunitytest.mjs", // shared conversations, draft recovery and mobile layout
   "slpfeedbacktest.mjs", // authenticated feedback and call requests; confirmed receipt only
   "slpdesigntest.mjs", // SLP workspace: filters, failure recovery, bulk assignments, mobile layout
   "arttest.mjs",   // ART1: every sticker renders, fits its box and stays in the safe band
