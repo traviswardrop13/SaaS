@@ -551,7 +551,9 @@ await page.evaluate(() => {
   localStorage.setItem(Sona.kkey("sona.progress.v1"), JSON.stringify(g));
   localStorage.setItem(Sona.kkey("sona.today.v1"), JSON.stringify({ d: Sona.localDay(), n: 3 }));
 });
-await page.goto("http://localhost:8131/charge.html?game=arcade-run.html&sound=R"); await page.waitForTimeout(700);
+// This checks the practice ladder, so use a free game: the earlier paywall
+// checks deliberately leave the paid UI seam enabled in this browser tab.
+await page.goto("http://localhost:8131/charge.html?game=arcade-slice.html&sound=R"); await page.waitForTimeout(700);
 c = await page.evaluate(() => ({
   t: document.getElementById("bTarget").textContent.trim(),
   syls: (Sona.ladderContent("R", 1) || []).map((x) => x.t),

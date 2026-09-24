@@ -254,7 +254,7 @@
   <div class="ovl" id="sheetOvl">
     <div class="modal">
       <h3>Parent corner</h3>
-      <p id="ageGuide">Simple play is suggested for ages 2–4; arcade adventures for ages 5+. Every game is available in the Play library.</p>
+      <p id="ageGuide">Simple play is suggested for ages 2–4; arcade adventures for ages 5+. Find all games in the Play library.</p>
       <div id="weekCard" style="background:var(--cream);border-radius:16px;padding:14px 16px;margin-top:12px;text-align:left;">
         <div style="display:flex;align-items:center;gap:8px;">
           <b style="font-family:'Baloo 2';font-size:15px;color:var(--ink);">This week</b>
@@ -329,19 +329,17 @@
     // last raster illustration in the app.
     function applyArt(el,key){ var g=S.gameSticker(key); S.paintSticker(el,g[0],g[1]); }
 
-    // A GATED FAMILY'S BIG BUTTON MUST STILL DO SOMETHING. Once the free
-    // demonstration is done and the parent has declined, every hero target
-    // (story, today's games) bounces to the price screen — so a child tapping
-    // the biggest thing on the screen met a paywall, which is the one place a
-    // child should never be sent. The hero becomes the demonstration instead:
-    // the run they already did, replayable, earning nothing. Sona does not ask
-    // for money here; the offer comes back only when a grown-up deliberately
-    // reaches for something else, which is what the gate is for.
-    function demoOnlyHero(){
-      try{
-        if(!S||!S.gated||!S.demoDone) return false;
-        return S.demoDone() && S.gated("practice");
-      }catch(e){ return false; }
+    // Home always offers a playable adventure. A Premium choice goes through
+    // the grown-ups gate; access never replaces the arcade's speech requirement.
+    function launchCatalogGame(key){
+      var act=S.gameAct(key);
+      if(!act)return;
+      sfx("tap");
+      location.href=S.gameAccess(key).allowed?act.go:"/premium.html?game="+key;
+    }
+    function homeGame(){
+      for(var i=0;i<TRIO.length;i++)if(S.gameAccess(TRIO[i]).allowed)return TRIO[i];
+      return S.adventureGames()[0];
     }
 
     // A RUN LEFT HALF-FINISHED IS THE COMMONEST INTERRUPTION THERE IS — a
@@ -396,6 +394,7 @@
       $("heroSub").textContent=(hn?hn+" · ":"")+adventure.length+" rounds · First: "+S.gameAct(adventure[0]).name;
       $("actionLabel").textContent="Let's go!";
       $("sessionGuide").textContent=simple?"Play together: listen to a word, say it, then explore." : "A grown-up can help you listen, say the sound and play.";
+      $("goBtn").dataset.game="";
       $("goBtn").dataset.launch="/charge.html?daily=1&first="+adventure[0];
       if(mid){
         if(!(S.playMode&&S.playMode()))$("subLine").textContent="Let's practice your "+S.soundLabel(mid.sound||sound)+" sound";
@@ -403,52 +402,40 @@
         $("actionLabel").textContent="Carry on!";
         $("heroSub").textContent=mid.finishing?"Your completed adventure is saved. Open your final surprise.":"Round "+(round+1)+" of "+adventure.length+" · Next game: "+nextName;
         $("sessionGuide").textContent="Pick up where you left off. Your completed rounds are saved.";
-      }else if(demoOnlyHero()){
-        $("heroName").textContent="Play with Echo";
-        $("goBtn").dataset.launch="/charge.html?daily=1&demo=1&first="+adventure[0];
       }else if(playedToday()){
-        var k=TRIO[0],act=S.gameAct(k);
+        var k=homeGame(),act=S.gameAct(k);
         $("heroCard").innerHTML="";applyArt($("heroCard"),k);
         $("heroName").textContent=act.name;$("heroSub").textContent=act.sub;
         $("sessionGuide").textContent="Choose a game or find a favorite in the Play library.";
+        $("goBtn").dataset.game=k;
         $("goBtn").dataset.launch=act.go;
       }
     }
 
     function renderThumbs(){
       var t=$("thumbs"); t.innerHTML="";
-      // GAMES1: the games are open from the first tap of the day — every door
-      // goes through charge.html, which asks for the sound before it plays.
-      // Once today's adventure is done the hero IS trio[0], so the row shows
-      // the rest; before that it shows all three.
-      // A GATED FAMILY'S GAMES ARE LOCKED HERE, NOT AT THE OTHER END. These
-      // thumbs were live for a family whose free session was over — a child
-      // tapped one, the game's own gate fired, and they were on a price page.
-      // The lock now says who can open them, and never navigates.
-      var gatedNow=demoOnlyHero();
+      // After the adventure, the hero offers an accessible game and the shelf
+      // shows the other daily choices, with parent-only help for Premium ones.
       var played=playedToday();
       $("gameShelfHead").hidden=!played;$("thumbs").hidden=!played;
-      var show=(played&&!gatedNow)?TRIO.slice(1):TRIO;
+      var show=played?TRIO.filter(function(key){return key!==homeGame();}):TRIO;
       // one piece of lock language, and it says what OPENS them rather than
       // that they are shut
-      $("upNextLbl").textContent=gatedNow?"MORE GAMES":"PICK A GAME";
+      $("upNextLbl").textContent="PICK A GAME";
       show.forEach(function(k){
         var act=(S.gameAct&&S.gameAct(k))||{name:"Game",go:"/today.html"};
         var el=document.createElement("div");
-        el.className="thumb"+(gatedNow?" locked":"");
+        var locked=!S.gameAccess(k).allowed;
+        el.className="thumb"+(locked?" locked":"");
+        el.setAttribute("role","button");el.tabIndex=0;
+        el.setAttribute("aria-label",act.name+(locked?". Ask a grown-up to unlock.":""));
         el.dataset.key=k;
         // label first, sticker second: paintSticker PREPENDS, so the art lands
         // behind the name. Painting first and then setting innerHTML wipes it.
         el.innerHTML="<b>"+act.name+"</b>";
         applyArt(el,k);
-        el.onclick=function(){
-          if(gatedNow){
-            sfx("tap"); el.classList.remove("nope"); void el.offsetWidth; el.classList.add("nope");
-            $("heroSub").innerHTML="Ask a <b>grown-up</b> to unlock more games!";
-            return;
-          }
-          sfx("tap"); location.href=act.go;
-        };
+        el.onclick=function(){launchCatalogGame(k);};
+        el.onkeydown=function(event){if(event.key==="Enter"||event.key===" "){event.preventDefault();launchCatalogGame(k);}};
         t.appendChild(el);
       });
       renderMystery(t);
@@ -498,7 +485,7 @@
       if(owned){
         var act=(S.gameAct&&S.gameAct(owned))||{name:"Mystery",go:"/today.html"};
         el.innerHTML='<span class="q">🎁</span><b>'+act.name+'</b>';
-        el.onclick=function(){ sfx("tap"); location.href=act.go; };
+        el.onclick=function(){launchCatalogGame(owned);};
       } else {
         el.innerHTML='<span class="q">❓</span><b>Mystery game</b><span class="cost">🪙'+(S.mysteryCost?S.mysteryCost():15)+'</span>';
         el.onclick=function(){
@@ -532,7 +519,10 @@
         history.replaceState(null,"",location.pathname);
       }
     }catch(e){}
-    function launch(){ sfx("tap"); location.href=$("goBtn").dataset.launch||"/charge.html?daily=1"; }
+    function launch(){
+      if($("goBtn").dataset.game){launchCatalogGame($("goBtn").dataset.game);return;}
+      sfx("tap");location.href=$("goBtn").dataset.launch||"/charge.html?daily=1";
+    }
     $("goBtn").onclick=launch;
 
     $("libBtn").onclick=function(){sfx("tap");};
@@ -739,11 +729,11 @@
       var sessionOver=false; try{ sessionOver=!!(S.demoDone&&S.demoDone()&&S.gated&&S.gated("practice")); }catch(e){}
       var _tActive=!!(S.trialActive&&S.trialActive()), _tExpired=!!(S.trialExpired&&S.trialExpired());
       if(sessionOver&&!_tActive&&!_tExpired){
-        note.innerHTML=((P.childName||"Your child")+"’s free session is finished. The yearly plan starts with 3 free days.")+link+"See plans →</a>";
+        note.innerHTML='Four games stay free. Explore more with Sona Premium. <a href="/premium.html" style="color:var(--orange-d);font-weight:800;">See Premium →</a>';
         note.style.display="block"; return;
       }
       if(_tActive){ var dd=S.trialDaysLeft?S.trialDaysLeft():7; note.innerHTML="Your free trial: "+dd+" day"+(dd===1?"":"s")+" left."+link+"See plans →</a>"; note.style.display="block"; }
-      else if(S.trialExpired&&S.trialExpired()){ note.innerHTML="Your free trial has ended."+link+"See plans →</a>"; note.style.display="block"; }
+      else if(S.trialExpired&&S.trialExpired()){ note.innerHTML="Your free trial has ended. Four games stay free."+link+"See plans →</a>"; note.style.display="block"; }
     })();
 
     // ── beta pulse: chip-first (a tap beats a blank box — the Mobbin study's

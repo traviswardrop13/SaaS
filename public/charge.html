@@ -368,19 +368,9 @@
   <script>
     var $=function(id){return document.getElementById(id);};
     var qp=new URLSearchParams(location.search);
-    // Gate — at PAGE LOAD only, never mid-round. Founding/SLP families,
-    // subscribers and pilots pass inside gated(); the shell bounces to the
-    // Apple paywall via trial.html's own routing.
-    //
-    // ?demo=1 names the ONE run this family was shown for free. It stays
-    // replayable after they decline — that is the whole of the carve-out, and
-    // it is why the gate takes a name instead of guessing from the URL: a
-    // parameter that silently widened into "practice is free" would be a
-    // paywall hole rather than a demonstration.
-    //
-    // The demonstration is a WHOLE daily run, not one round, because the child
-    // returns here from each earned game and a gate that closed after round
-    // one would bounce them out of a run they were in the middle of.
+    // The legacy demonstration remains a rewardless replay when explicitly
+    // requested. Catalog access below still applies: a demo flag cannot grant
+    // a new Premium game. Entry checks run before microphone or audio work.
     var IS_DEMO = qp.get("demo")==="1";
     // A REPLAY EARNS NOTHING. The demonstration stays replayable after a
     // parent declines — that is the point — but a replay that minted coins,
@@ -396,13 +386,19 @@
     var _runPeek=null; try{ _runPeek=JSON.parse(sessionStorage.getItem("sona.run.v1")||"null"); }catch(e){}
     var DEMO_REPLAY = (IS_DEMO || !!(_runPeek&&_runPeek.active&&_runPeek.demo))
       && !!(window.Sona && window.Sona.demoDone && window.Sona.demoDone());
-    if(window.Sona&&Sona.gated&&Sona.gated(IS_DEMO?"demo":"practice")){ Sona.gateBounce(); }
     var S=window.Sona;
+    // Resolve the requested catalog item before microphone or audio work. New
+    // adventures use an accessible deck; a saved run keeps its original plan.
+    var catalogDaily=qp.get("daily")==="1"||qp.get("session")==="1";
+    var catalogMatch=/^arcade-([a-z]+)\.html$/.exec(qp.get("game")||"");
+    var catalogKey=(catalogMatch&&S.gameKey(catalogMatch[1]))||"slice";
+    var catalogBlocked=!catalogDaily&&!S.gameAccess(catalogKey).allowed;
+    if(catalogBlocked)S.gameBounce(catalogKey);
     $("micPromise").textContent=S.MIC_PROMISE;
     var profile=S?S.getProfile():{volume:0.8};
     // One flow stays alive across interruptions. Nothing resumes until the
     // child taps Resume; stale permission/audio results belong to an old epoch.
-    var practicePaused=false, practiceClosed=false, practiceTerminal=false, practiceEpoch=0;
+    var practicePaused=false, practiceClosed=catalogBlocked, practiceTerminal=catalogBlocked, practiceEpoch=0;
     var practiceWaiters=[], practiceTimers=[], pauseFocus=null, pauseInert=[], practiceClosing=Promise.resolve();
     function practiceReady(){
       if(practiceClosed || (practiceTerminal && document.hidden)) return Promise.resolve(false);
@@ -534,10 +530,11 @@
       // Resume banks that finish exactly once even without a return query.
       var pendingKey=run&&(run.games||ADVENTURE)[run.round];
       var pendingSimple=!!(pendingKey&&S&&S.gameAct&&S.gameAct(pendingKey).group==="simple");
+      var completedArcade=run&&run.arcadeComplete&&run.arcadeComplete.round===run.round?run.arcadeComplete:null;
       if(run&&run.active&&run.pending&&
-        (pendingSimple?run.simpleComplete===run.round:qp.get("banked")!=null)){
-        var b=pendingSimple?0:Math.max(0,parseInt(qp.get("banked"),10)||0);
-        run.sum+=b; run.scores.push(b); run.pending=false; delete run.ready; delete run.simpleComplete; run.round++; runSave(run);
+        (pendingSimple?run.simpleComplete===run.round:completedArcade||qp.get("banked")!=null)){
+        var b=pendingSimple?0:Math.max(0,completedArcade?completedArcade.score|0:parseInt(qp.get("banked"),10)||0);
+        run.sum+=b; run.scores.push(b); run.pending=false; delete run.ready; delete run.simpleComplete; delete run.arcadeComplete; run.round++; runSave(run);
       }
       if(!(run&&run.active)){
         if(S&&S.dailyInfo&&S.dailyInfo().playedToday){ /* shown at boot */ }
@@ -1646,7 +1643,7 @@
     },{passive:true});
     updateTurn();
     if(finishedNow || (isDaily && !(run&&run.active)))boot();
-    else setTimeout(boot,300);
+    else if(!catalogBlocked)setTimeout(boot,300);
   </script>
 </body>
 </html>

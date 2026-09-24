@@ -272,28 +272,29 @@ if (present && hasContract) {
         const cards = await pg.locator("#activityGroups button[data-game]").allInnerTexts();
         if (local) {
           const copy = await notice.count() ? await notice.innerText() : "";
-          ok(origin + ": preview explains that purchases and game access do not change", /preview/i.test(copy) && /no purchases/i.test(copy) && /all games|available games/i.test(copy), copy);
+          ok(origin + ": preview identifies the local simulation and rules out real purchases", /preview/i.test(copy) && /no (?:real )?purchases|no charge|never charge|nothing is charged|purchases are off/i.test(copy), copy);
           ok(origin + ": proposed Free and Premium labels appear without disabling cards", cards.filter((text) => /\bFree\b/.test(text)).length === 4 && cards.filter((text) => /\bPremium\b/.test(text)).length === 4 && await pg.locator("#activityGroups button[data-game]:disabled").count() === 0, cards);
         } else if (access.free) ok("a public host ignores the preview URL and keeps current Free labels", cards.every((text) => /\bFree\b/.test(text) && !/\bPremium\b/.test(text)), cards);
         ok(origin + ": the preview has no purchase link or button", await pg.locator('#libraryApp a[href*="subscribe"],#libraryApp a[href*="checkout"]').count() === 0 && await pg.getByRole("button", { name: /buy|subscribe|purchase|upgrade/i }).count() === 0);
-        ok(origin + ": preview does not change current access decisions", same(await pg.evaluate(() => ({ free: Sona.isFree(), gated: Sona.gated("practice") })), access));
+        ok(origin + ": preview does not change the real pricing switch or general practice gate", same(await pg.evaluate(() => ({ free: Sona.isFree(), gated: Sona.gated("practice") })), access));
         ok(origin + ": preview creates no entitlement, plan impression or practice state", same(await state(pg), before), { before, after: await state(pg) });
         if (local && !access.gated) {
           await pg.locator('#activityGroups button[data-game="peekaboo"]').click();
-          await pg.waitForURL(/\/arcade-peekaboo\.html(?:[?#]|$)/);
-          ok(origin + ": a proposed Premium game remains playable with current access", new URL(pg.url()).pathname === "/arcade-peekaboo.html");
+          ok(origin + ": a Premium preview choice stays in the library with a parent invitation", new URL(pg.url()).pathname === "/activities.html" && await pg.locator("#libraryNotice").isVisible());
+          ok(origin + ": the preview keeps the two free games in each age group open", same(await pg.evaluate(() => Object.keys(Sona.GAME_ACTS).filter(key => Sona.gameAccess(key).allowed).sort()), ["bubbles", "feed", "slice", "stack"]));
         }
       } finally { await ctx.close(); }
     });
   }
 
-  await section("preview cannot bypass the existing paid gate", async () => {
+  await section("preview preserves real paid state while offering its free games", async () => {
     const { ctx, pg } = await fixture({ paid: true, path: "/activities.html?libraryPreview=1" });
     try {
       const before = await state(pg);
       ok("preview leaves an expired paid-state family gated", await pg.evaluate(() => Sona.gated("practice")) === true);
-      await pg.locator('#activityGroups button[data-game="feed"]').click();
-      ok("a proposed Free label cannot grant access through the preview", new URL(pg.url()).pathname === "/activities.html" && await pg.locator("#libraryMessage").isVisible());
+      ok("free preview games are accessible without a real entitlement", await pg.evaluate(() => Sona.gameAccess("feed").allowed && !Sona.gameAccess("peekaboo").allowed));
+      await pg.locator('#activityGroups button[data-game="peekaboo"]').click();
+      ok("Premium stays behind the parent invitation in a paid-state preview", new URL(pg.url()).pathname === "/activities.html" && await pg.locator("#libraryNotice").isVisible());
       ok("preview gate checks create no access or practice", same(await state(pg), before));
     } finally { await ctx.close(); }
   });
@@ -371,7 +372,9 @@ if (present && hasContract) {
       ok("the expired-demo fixture really is gated", await pg.evaluate(() => Sona.gated("practice")) === true);
       const before = await state(pg);
       ok("a gated family can still browse all games", same(sorted(await visibleGames(pg)), allKeys));
-      for (const key of allKeys) {
+      const locked = await pg.evaluate(() => Object.keys(Sona.GAME_ACTS).filter(key => !Sona.gameAccess(key).allowed));
+      ok("the paid library keeps its four free choices open", same(sorted(allKeys.filter(key => !locked.includes(key))), ["bubbles", "feed", "slice", "stack"]));
+      for (const key of locked) {
         const button = pg.locator('#activityGroups button[data-game="' + key + '"]');
         if (!(await button.count())) { ok(key + ": launch card exists", false); continue; }
         await button.click();

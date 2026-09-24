@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Sona — More to play</title>
+  <script>
+    (function(){
+      var ok=false;
+      try{var t=parseInt(sessionStorage.getItem("sona.gate.v1"),10),age=Date.now()-t;ok=!!t&&age>=0&&age<600000;}catch(e){}
+      if(!ok){
+        document.documentElement.style.display="none";
+        // Before sona.js loads, carry only this literal page and a simple key.
+        // Home validates the key against the catalog before returning here.
+        var key=new URLSearchParams(location.search).get("game")||"";
+        var dest="/premium.html"+(/^[a-z]+$/.test(key)?"?game="+key:"");
+        var flag=new URLSearchParams(location.search).get("libraryPreview");
+        var local=/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
+        // Carry the local preview switch to Home, where sona.js owns its state.
+        var previewFlag=local&&(flag==="1"||flag==="0")?"&libraryPreview="+flag:"";
+        location.replace("/today.html?gate=1&to="+encodeURIComponent(dest)+previewFlag);
+      }
+    })();
+  </script>
+  <link href="/fonts.css" rel="stylesheet" />
+  <link href="/sona.css" rel="stylesheet" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <meta name="theme-color" content="#fff6e9" />
+  <style>
+    :root{color-scheme:light;--cream:#fff6e9;--ink:#4a2c14;--muted:#795c3c;}
+    html,body{min-height:100%;height:auto;background:var(--cream);color:var(--ink);}
+    [hidden]{display:none!important;}
+    button,a{-webkit-tap-highlight-color:transparent;}
+    button{font:inherit;cursor:pointer;}
+    button:focus-visible,a:focus-visible{outline:3px solid #157da5;outline-offset:4px;}
+    .premium-wrap{max-width:540px;margin:0 auto;padding:calc(18px + env(safe-area-inset-top)) 22px calc(30px + env(safe-area-inset-bottom));}
+    .premium-header{display:flex;justify-content:space-between;align-items:center;gap:16px;}
+    .premium-back{display:inline-flex;align-items:center;min-height:44px;padding:9px 14px;border:2px solid #fff;border-radius:99px;background:#fffdf8;color:var(--ink);font-weight:800;box-shadow:0 3px 0 #ebdcc7;}
+    .adult-label{color:var(--muted);font-size:12px;font-weight:800;}
+    #premiumPreviewNotice{margin-top:23px;background:#f1e9fb;color:#665093;border:1px dashed #a897ba;padding:11px 14px;border-radius:16px;font-size:12px;line-height:1.5;}
+    .premium-hero{text-align:center;margin:26px auto 23px;}
+    #premiumArt{display:block;position:relative;width:122px;height:122px;margin:0 auto 16px;border:5px solid #fff;border-radius:29px;overflow:hidden;box-shadow:0 5px 0 #e8d9c5;transform:rotate(-4deg);}
+    .eyebrow{font-size:12px;font-weight:800;color:#6a508f;letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px;}
+    h1{font-family:"Baloo 2",sans-serif;font-size:36px;font-weight:800;line-height:1.08;max-width:420px;margin:0 auto;}
+    #premiumLead{font-size:15px;line-height:1.55;color:var(--muted);margin:12px auto 0;max-width:380px;}
+    .more-card{background:#fff;border:1px solid #ecdfce;border-radius:25px;padding:22px;box-shadow:0 4px 0 #ebdcc7;}
+    .more-card h2{font-family:"Baloo 2",sans-serif;font-size:23px;line-height:1.2;}
+    .benefits{list-style:none;margin:15px 0 20px;padding:0;}
+    .benefits li{display:flex;gap:10px;font-size:14px;line-height:1.5;margin-top:10px;}
+    .benefits li::before{content:"✓";font-weight:900;color:#597c38;}
+    .plan-price{padding-top:17px;border-top:1px solid #eee3d5;}
+    #premiumPrice{font-weight:800;font-size:15px;}
+    #premiumTerms{font-size:12px;line-height:1.5;color:var(--muted);margin-top:7px;}
+    .action{display:flex;align-items:center;justify-content:center;width:100%;min-height:52px;margin-top:17px;border:0;border-radius:16px;background:#6a508f;color:#fff;font-weight:800;font-size:15px;padding:13px 16px;text-align:center;}
+    .action:disabled{background:#e8e1ef;color:#756584;cursor:default;}
+    #previewExpire{background:#fff;color:#6a508f;border:2px solid #d8cbe9;}
+    #keepFree{display:flex;align-items:center;justify-content:center;min-height:48px;margin-top:16px;text-align:center;font-size:14px;font-weight:800;color:var(--muted);text-decoration:underline;text-underline-offset:3px;}
+    .free-note{text-align:center;font-size:12px;line-height:1.55;color:var(--muted);margin:9px auto 0;max-width:365px;}
+    .books-note{font-size:12px;line-height:1.5;color:var(--muted);border-top:1px solid #e8d9c5;padding-top:18px;margin-top:25px;text-align:center;}
+    #previewError{color:#9c3124;font-size:13px;line-height:1.5;margin-top:12px;}
+    @media(max-width:350px){.premium-wrap{padding-left:17px;padding-right:17px;}h1{font-size:31px;}.more-card{padding:18px;}#premiumArt{width:106px;height:106px;}.premium-hero{margin-top:22px;}}
+  </style>
+</head>
+<body>
+  <main id="premiumApp" class="premium-wrap" hidden>
+    <header class="premium-header"><a class="premium-back" href="/activities.html">‹ &nbsp; Library</a><span class="adult-label">For grown-ups</span></header>
+    <aside id="premiumPreviewNotice" hidden><strong>Preview only.</strong> No payment, charge, or subscription. Trial controls affect this browser tab only.</aside>
+    <section class="premium-hero">
+      <span id="premiumArt" aria-hidden="true"></span>
+      <p class="eyebrow" id="premiumEyebrow">Sona Premium</p>
+      <h1 id="premiumTitle">More ways to play.</h1>
+      <p id="premiumLead">Unlock the full game library, with simple discoveries for little ones and more adventure for bigger kids.</p>
+    </section>
+    <section class="more-card">
+      <h2 id="premiumCardTitle">Every game. Both age groups.</h2>
+      <ul class="benefits" id="premiumBenefits">
+        <li id="premiumGameCount">Every game in the library</li>
+        <li>Simple play and arcade adventures</li>
+        <li>Switch games whenever your child wants a change</li>
+      </ul>
+      <div class="plan-price" id="premiumOffer">
+        <p id="premiumPrice">Annual price to be confirmed</p>
+        <p id="premiumTerms">Planned: a 3-day free trial, then a yearly subscription. Purchasing is not available yet.</p>
+        <button class="action" id="premiumBuy" type="button" disabled>Subscriptions coming soon</button>
+      </div>
+      <a class="action" id="premiumContinue" href="/activities.html" hidden>Back to the library</a>
+      <button class="action" id="previewTrial" type="button" hidden>Preview 3-day trial</button>
+      <button class="action" id="previewExpire" type="button" hidden>Preview trial ending</button>
+      <p id="previewError" role="status" hidden></p>
+    </section>
+    <a id="keepFree" href="/activities.html">Keep playing free</a>
+    <p class="free-note" id="premiumFreeNote">Two free games for each age group stay available.</p>
+    <p class="books-note"><strong>Books are coming soon.</strong> They aren’t part of the available library yet.</p>
+  </main>
+  <script src="/sona.js"></script>
+  <script>
+    (function(){
+      var S=window.Sona,app=document.getElementById("premiumApp");
+      if(!S||!S.requireGate||!S.requireGate())return;
+      if(!S.gameAccess||!S.previewPlan){location.replace("/activities.html");return;}
+      var key=S.gameKey(new URLSearchParams(location.search).get("game")),game=key?S.gameAct(key):null;
+      var preview=S.libraryPreview(),catalog=[];
+      S.activityLibrary().groups.forEach(function(group){catalog=catalog.concat(group.games);});
+      function el(id){return document.getElementById(id);}
+      function checkGate(){app.hidden=true;if(!S.requireGate())return false;app.hidden=false;return true;}
+      function render(){
+        if(!checkGate())return;
+        var plan=S.previewPlan(),allOpen=catalog.length>0&&catalog.every(function(item){return S.gameAccess(item.key).allowed;}),chosenOpen=game&&S.gameAccess(key).allowed;
+        el("premiumGameCount").textContent="All "+catalog.length+" games in the library";
+        var freeNames=catalog.filter(function(item){return item.tier==="free";}).map(function(item){return item.name;});
+        el("premiumFreeNote").textContent=freeNames.join(", ")+" stay free. Two games for each age group.";
+        el("premiumPreviewNotice").hidden=!preview;
+        el("previewTrial").hidden=!preview||plan.state==="trial";
+        el("previewExpire").hidden=!preview||plan.state!=="trial";
+        el("premiumOffer").hidden=allOpen;
+        el("premiumContinue").hidden=!(allOpen||chosenOpen);
+        el("premiumContinue").href=game?game.go:"/activities.html";
+        el("premiumContinue").textContent=game?"Play "+game.name:"Back to the library";
+        el("premiumEyebrow").textContent=allOpen?"Ready to play":"Sona Premium";
+        el("premiumTitle").textContent=allOpen?(preview?"Every game is unlocked.":"You’re all set."):game?"More to explore with "+game.name+".":"More ways to play.";
+        el("premiumLead").textContent=allOpen?(preview?"Your trial preview is active. Try any game, or see what happens when the trial ends.":"Your family already has access to every game. Head back to the library and pick a favorite."):plan.state==="expired"?"The trial preview has ended. Four games are still free, and all your practice stays with you.":"Unlock the full game library, with simple discoveries for little ones and more adventure for bigger kids.";
+        el("keepFree").textContent=allOpen?"Back to the library":"Keep playing free";
+        el("premiumFreeNote").hidden=allOpen;
+        el("premiumCardTitle").textContent=allOpen?"Your library is ready.":"Every game. Both age groups.";
+        var art=S.gameSticker(key||"peekaboo");S.paintSticker(el("premiumArt"),art[0],art[1]);
+      }
+      function simulate(state){
+        if(!checkGate())return;
+        if(!S.setPreviewPlan(state)){el("previewError").hidden=false;el("previewError").textContent="The preview couldn’t save. Please try again with browser storage enabled.";return;}
+        el("previewError").hidden=true;
+        if(state==="trial")location.href=game?game.go:"/activities.html";
+        else render();
+      }
+      el("previewTrial").onclick=function(){simulate("trial");};
+      el("previewExpire").onclick=function(){simulate("expired");};
+      // No checkout or IAP calls live on this screen until the real offer is
+      // configured. Simulated trials never touch purchase or family records.
+      window.addEventListener("pageshow",function(){render();});
+      document.addEventListener("visibilitychange",function(){if(!document.hidden)render();});
+      render();
+    })();
+  </script>
+</body>
+</html>

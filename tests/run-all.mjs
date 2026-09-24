@@ -36,6 +36,7 @@ const SUITES = [
   "day1.mjs", // the day: one story, then three games
   "homesessiontest.mjs", // one age-appropriate Home session, current goals and resume precedence
   "activitytest.mjs", // play library: age suggestions, game routes, safe browsing and fit
+  "freemiumtest.mjs", // local Premium preview: parent gate, session trial, free games and route boundaries
   "pausetest.mjs", // interruptions preserve one practice flow and release local device resources
   "completiontest.mjs", // adventure recap, honest history, finish routes and prompt volume
   "simpleplaytest.mjs", // Bubble Pop and Peekaboo: deliberate play, honest voice feedback, safe interruption

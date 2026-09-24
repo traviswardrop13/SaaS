@@ -60,7 +60,8 @@ for(const progress of [{round:0},{round:0,pending:true},{round:0,ready:{round:0,
 for(const age of ['4','7'])await scenario('paid gate age '+age,async()=>{
  const {context,page,errors}=await fixture({age,paid:true});try{
   const st=await state(page),url=new URL(st.launch,BASE);
-  ok('paid age '+age+': free demonstration replay remains the primary door',url.pathname==='/charge.html'&&url.searchParams.get('demo')==='1',st.launch);
+  ok('paid age '+age+': a normal free adventure remains the primary door',url.pathname==='/charge.html'&&url.searchParams.get('daily')==='1'&&!url.searchParams.has('demo'),st.launch);
+  ok('paid age '+age+': the advertised adventure uses only accessible free games',st.plan.length===5&&st.plan.every(key=>(age==='4'?['feed','bubbles']:['slice','stack']).includes(key)),st.plan);
   ok('paid age '+age+': library stays open',await page.locator('#libBtn').isVisible());clean('paid gate',errors);
  }finally{await context.close();}
 });

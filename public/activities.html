@@ -57,6 +57,8 @@
     #catalogPreviewNotice{border:1px dashed #a897ba;border-radius:16px;background:#f4eefb;padding:12px 14px;font-size:12px;line-height:1.5;margin-bottom:20px;color:#665093;}
     #catalogPreviewNotice strong{display:block;}
     #libraryNotice{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:20;width:calc(100% - 32px);max-width:440px;display:flex;align-items:center;gap:10px;padding:15px 14px 15px 18px;background:#fff;border:2px solid #eed7b0;border-radius:22px;box-shadow:0 10px 32px rgba(80,50,10,.2);}
+    .notice-copy{flex:1;}
+    #libraryUnlock{display:block;min-height:44px;margin-top:8px;border:0;border-radius:12px;padding:9px 15px;background:#6a508f;color:#fff;font-weight:800;cursor:pointer;}
     #libraryMessage{font-weight:800;font-size:14px;line-height:1.45;color:var(--muted);}
     #libraryMessageClose{flex:none;width:36px;height:36px;border:0;border-radius:50%;background:#fff0d8;color:var(--ink);font-size:23px;cursor:pointer;}
     .library-wrap.has-message{padding-bottom:145px;}
@@ -69,7 +71,7 @@
   <main id="libraryApp" class="library-wrap" hidden>
     <header class="library-header"><a class="back-home" href="/today.html"><span aria-hidden="true">‹</span> Home</a><span class="library-label">Play library</span></header>
     <div class="library-intro"><div><h1>Pick a game!</h1><p>A little practice. A lot to explore.</p></div><span id="libraryEcho" aria-hidden="true"></span></div>
-    <aside id="catalogPreviewNotice" hidden><strong>Free &amp; Premium preview</strong>These labels show the proposed selection. All games remain available; no purchases are enabled.</aside>
+    <aside id="catalogPreviewNotice" hidden><strong>Free &amp; Premium preview</strong><span id="catalogPreviewState"></span> <a href="/premium.html">Trial preview</a> · <a href="/activities.html?libraryPreview=0">Exit preview</a></aside>
     <div id="featuredGroups"></div>
     <div id="activityGroups"></div>
     <section id="booksComingSoon" aria-labelledby="booksHeading">
@@ -77,7 +79,7 @@
       <div><h2 id="booksHeading">Books</h2><span class="shelf-tag">Coming soon</span><p>Stories to share, one sound at a time.</p></div>
     </section>
     <p class="age-note">Ages are a guide. Explore any game that fits.</p>
-    <div id="libraryNotice" hidden><p id="libraryMessage" role="status"></p><button id="libraryMessageClose" aria-label="Close message">×</button></div>
+    <div id="libraryNotice" hidden><div class="notice-copy"><p id="libraryMessage" role="status"></p><button id="libraryUnlock" type="button">Ask a grown-up</button></div><button id="libraryMessageClose" aria-label="Close message">×</button></div>
   </main>
   <script src="/sona.js"></script>
   <script>
@@ -88,23 +90,29 @@
       var profile=S.getProfile();
       if(!profile.onboarded&&!profile.childName){location.replace("/onboarding.html");return;}
       app.hidden=false;
-      // Local visual review only. This flag never changes access or appears on
-      // the live site, and cannot start a purchase or a trial.
-      var localHost=/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
-      var preview=localHost&&new URLSearchParams(location.search).get("libraryPreview")==="1";
+      // Preview access is tab-local; real family entitlements stay untouched.
+      var preview=S.libraryPreview?S.libraryPreview():false;
       document.getElementById("catalogPreviewNotice").hidden=!preview;
-      var library=S.activityLibrary(),selection=0,launchTimer=null;
+      if(preview){
+        var plan=S.previewPlan();
+        document.getElementById("catalogPreviewState").textContent=plan.state==="trial"?"Trial preview: all games unlocked. No payment or subscription.":plan.state==="expired"?"Trial ended preview: four games stay free. Purchases are off.":"Four free games. Premium games open through the grown-ups gate. Purchases are off.";
+      }
+      var library=S.activityLibrary(),selection=0,launchTimer=null,lockedGame=null;
+      var unlock=document.getElementById("libraryUnlock");
       function node(tag,className,text){var el=document.createElement(tag);if(className)el.className=className;if(text)el.textContent=text;return el;}
-      function clearMessage(){notice.hidden=true;message.textContent="";app.classList.remove("has-message");}
+      function access(game){return S.gameAccess?S.gameAccess(game.key):{allowed:!S.gated("practice"),tier:game.tier,reason:S.isFree()?"free-mode":"legacy"};}
+      function clearMessage(){notice.hidden=true;message.textContent="";lockedGame=null;app.classList.remove("has-message");}
+      function showLocked(game){
+        lockedGame=game;notice.hidden=false;app.classList.add("has-message");
+        message.textContent="Ask a grown-up to help open "+game.name+". Your free games are still ready to play!";
+      }
       document.getElementById("libraryMessageClose").onclick=clearMessage;
+      unlock.onclick=function(){if(lockedGame)location.href="/premium.html?game="+encodeURIComponent(lockedGame.key);};
       function launch(game){
-        // Catalog tiers are not access checks. Preserve the current verified
-        // entitlement path until content-specific purchases are ready to ship.
         selection++;clearTimeout(launchTimer);
         if(S.sfx&&S.sfx.tap)S.sfx.tap();
-        if(S.gated("practice")){
-          if(S.speakNow)S.speakNow("");notice.hidden=false;app.classList.add("has-message");
-          message.textContent="Ask a grown-up to help open more games. You can keep looking around!";return;
+        if(!access(game).allowed){
+          if(S.speakNow)S.speakNow("");showLocked(game);return;
         }
         clearMessage();
         var chosen=selection,opened=false;
@@ -116,11 +124,13 @@
       }
       function gameCard(game){
         var button=node("button","game-card");button.type="button";button.dataset.game=game.key;
-        var tier=preview?game.tier:(S.isFree()?"free":null);
-        button.setAttribute("aria-label",game.name+". "+(game.playDescription||game.sub)+(tier?" "+(tier==="free"?"Free.":"Premium preview."):""));
+        var grant=access(game),tier=grant.reason==="free-mode"?"free":game.tier;
+        var label=tier==="free"?"Free":grant.allowed?"Included":"Premium";
+        button.dataset.locked=grant.allowed?"false":"true";
+        button.setAttribute("aria-label",game.name+". "+(game.playDescription||game.sub)+" "+(grant.allowed?label+".":"Premium. Ask a grown-up to unlock."));
         var art=node("span","game-art");art.setAttribute("aria-hidden","true");var sticker=S.gameSticker(game.key);S.paintSticker(art,sticker[0],sticker[1]);button.appendChild(art);
         var info=node("span","game-info");info.appendChild(node("span","game-name",game.name));
-        if(tier)info.appendChild(node("span","game-access"+(tier==="premium"?" premium":""),tier==="free"?"Free":"Premium"));
+        info.appendChild(node("span","game-access"+(tier==="premium"?" premium":""),label));
         button.appendChild(info);button.onclick=function(){launch(game);};return button;
       }
       // A cached pre-shelves sona.js still supplies the complete age groups.
@@ -137,6 +147,11 @@
         if(group.recommended)top.appendChild(node("span","shelf-tag recommended","For your child"));section.appendChild(top);
         var grid=node("div","game-grid");group.games.forEach(function(game){grid.appendChild(gameCard(game));});section.appendChild(grid);host.appendChild(section);
       });
+      var lockedKey=new URLSearchParams(location.search).get("locked");
+      library.groups.forEach(function(group){group.games.forEach(function(game){if(game.key===lockedKey&&!access(game).allowed)showLocked(game);});});
+      // A cached library can return after a trial expires or an adult changes
+      // preview state. Re-evaluate its labels without reviving stale access.
+      window.addEventListener("pageshow",function(event){if(event.persisted)location.reload();});
       S.paintSticker(document.getElementById("libraryEcho"),"p-echo-idle","sky");
       var echo=document.querySelector("#libraryEcho svg");if(echo)echo.setAttribute("preserveAspectRatio","xMidYMid meet");
       S.paintSticker(document.getElementById("libraryBooksArt"),"pt-book","sky");

@@ -135,9 +135,11 @@
 
   <script src="/sona.js"></script>
   <script>
-    // Trial gate (littles' direct door) — page load only, same rules as charge
-    if(window.Sona&&Sona.gated&&Sona.gated()){ Sona.gateBounce(); }
+    // Catalog access is checked before this game's resources start.
     var S=window.Sona;
+    var feedAllowed=!!(S&&S.gameAccess("feed").allowed);
+    if(!feedAllowed&&S)S.gameBounce("feed");
+    if(feedAllowed){
     function $(id){ return document.getElementById(id); }
     function sfx(n){ if(document.hidden||audioPaused)return; try{ if(S&&S.sfx&&S.sfx[n])S.sfx[n](); }catch(e){} }
     var profile=(S&&S.getProfile)?S.getProfile():{};
@@ -387,6 +389,7 @@
     else{document.addEventListener("visibilitychange",function(){if(document.hidden)backgroundFeed();});window.addEventListener("pagehide",backgroundFeed);}
     paintScale();
     nextTurn();
+    }
   </script>
 </body>
 </html>
