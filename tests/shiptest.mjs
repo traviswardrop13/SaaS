@@ -66,6 +66,17 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
   ok("…and never claims a certification Rachel does not hold",
     !/\bCCC\b|board-certified|ASHA-certified|\bcertified\b/i.test(slps));
 
+  // ONE PROMISE, EVERYWHERE IT IS READ (24 Sep 2026): the headline, the tab
+  // title and the shared-link card must say the same thing, or a link pasted
+  // into a Facebook group sells a page that isn't there.
+  ok("the headline, the tab title and the shared card all say 'Speech practice kids actually want to do'",
+    /<h1>Speech practice kids actually want to do\.<\/h1>/.test(slps) &&
+    /<title>Speech practice kids actually want to do — Sona for SLPs<\/title>/.test(slps) &&
+    /og:title" content="Speech practice kids actually want to do\."/.test(slps) &&
+    /twitter:title" content="Speech practice kids actually want to do\."/.test(slps) &&
+    !/actually practiced at home|Never plan speech homework/.test(slps));
+  ok("…and the lede keeps Rachel's point: nothing to plan", /Nothing to plan, and you see who practiced\./.test(slps));
+
   // PARENTS COME FROM THE SAME ADS (Travis, 24 Sep 2026). The form on this
   // page is for clinicians, so a parent needs a door out that does not ask
   // for an email: the App Store on an iPhone or iPad, the family page (which
@@ -76,6 +87,9 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
   ok("the header has a For parents link, top right, before Sign in",
     /<a class="parents" id="forParents" href="\/families">For parents<\/a>\s*<a class="signin"/.test(header));
   ok("…that is never hidden on a phone", !/class="[^"]*\bnl\b[^"]*" id="forParents"/.test(header));
+  // TWO LINKS, NOTHING ELSE (Travis, 24 Sep 2026): the header is For parents
+  // and Sign in. How it works and Privacy are on the page below the fold.
+  ok("…and the header carries only For parents and Sign in", (header.match(/<a\b/g) || []).length === 3 && !/How it works|>Privacy</.test(header));
   ok("…and goes straight to the App Store on an iPhone or iPad",
     /getElementById\("forParents"\)\.href = "https:\/\/apps\.apple\.com\/us\/app\/sona-speech\/id6785755867"/.test(slps) &&
     /iPhone\|iPad\|iPod/.test(slps) && /maxTouchPoints > 1/.test(slps));
