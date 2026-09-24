@@ -63,3 +63,7 @@ Reports are saved privately in `{slp-community}:reports` (latest 1,000; queue ex
 Focused backend checks: 55 pass both against the portable store model and real Redis Lua, including concurrent replies and ownership. TypeScript passes. Focused browser checks: 31 Community checks and 52 dashboard design checks pass, including two-account persistence, access before profile completion, draft recovery, safe text rendering, pagination and 390/320px layouts. The old page fails the new Community access checks. Screenshots: `/private/tmp/sona-community-live/`.
 
 Final Community release verification: all 47 suites completed; 46 passed. The only failing suite is the previously documented and approved `repguardtest.mjs` noise-acceptance limitation in unchanged app code. Community API/browser suites passed within the full run; no tests were disabled. Log: `/private/tmp/sona-community-release-checks.log`.
+
+## Rachel’s welcome
+
+Travis requested a more casual welcome and publishing it at the top of Community. The approved welcome replaces the generic banner and supports the same shared reply controls as member posts. It is returned separately from regular feed pages, remains visible across topics, and is inserted once into the existing store. Repeat reads preserve replies; a moderator’s deletion is permanent. Member requests cannot choose the welcome’s identity or pin their own posts. Ordinary members can delete their own replies, and the configured moderator role can remove the welcome.

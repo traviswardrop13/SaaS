@@ -21,6 +21,8 @@ let data = makeFixture();
 let account = { ...initialAccount };
 let writes = 0;
 let communityPosts = [];
+function makeWelcome() { return { ...{"id": "71109159-5b68-4af1-851c-35c918bc3050", "author": "Rachel", "title": "Hey everyone! 👋", "text": "I’m Rachel! My husband Travis and I started Sona, and I’m so happy you’re here.\n\nI’d love for this to be a place where we can swap ideas, share resources, and help each other make homework and planning a little easier. And if something in Sona is confusing or could work better, tell us—we’re building it with you.\n\nCome say hi! What setting do you work in, and what’s one thing you’d love help with right now?", "category": "discussions", "pinned": true, "canDelete": false, "replies": []}, createdAt:new Date().toISOString() }; }
+let communityWelcome=makeWelcome();
 const demoBanner = `<aside id="local-preview-banner" role="status" style="position:fixed;bottom:0;left:0;right:0;z-index:10000;min-height:32px;padding:6px 14px;box-sizing:border-box;background:#183d43;color:#fff;font:500 11px/20px system-ui,sans-serif;letter-spacing:.02em;text-align:center;box-shadow:0 -1px 8px #0001"><strong style="letter-spacing:.1em">LOCAL PREVIEW</strong> &nbsp;·&nbsp; Synthetic sample data &nbsp;·&nbsp; Changes stay in this local preview <button type="button" onclick="fetch('/api/preview/reset',{method:'POST'}).then(function(){location.reload();})" style="margin-left:10px;background:transparent;color:#fff;border:1px solid #ffffff70;border-radius:5px;padding:2px 7px;font:inherit;cursor:pointer">Reset demo</button></aside><style>body{padding-bottom:44px!important}@media print{#local-preview-banner{display:none!important}}</style>`;
 
 const server = createServer((req, res) => {
@@ -32,7 +34,7 @@ const server = createServer((req, res) => {
   req.on('end', () => {
     let b = {};
     try { if(body) b=JSON.parse(body); } catch { return json({ok:false,error:'Invalid JSON'},400); }
-    if(u.pathname === '/api/preview/reset' && req.method === 'POST') { data=makeFixture(); account={...initialAccount}; writes=0; communityPosts=[]; return json({ok:true}); }
+    if(u.pathname === '/api/preview/reset' && req.method === 'POST') { data=makeFixture(); account={...initialAccount}; writes=0; communityPosts=[]; communityWelcome=makeWelcome(); return json({ok:true}); }
     if(u.pathname === '/api/slp/auth/me') return json(account);
     if(u.pathname === '/api/slp/auth/logout') return json({ok:true});
     if(u.pathname === '/api/slp/account') {
@@ -70,11 +72,12 @@ const server = createServer((req, res) => {
     if(u.pathname === '/api/slp/community') {
       if(req.method === 'GET') {
         const category=u.searchParams.get('category');
-        return json({ok:true,posts:communityPosts.filter(p=>!category||p.category===category),nextCursor:null});
+        return json({ok:true,pinned:communityWelcome?[communityWelcome]:[],posts:communityPosts.filter(p=>!category||p.category===category),nextCursor:null});
       }
-      const post=communityPosts.find(p=>p.id===b.postId);
+      const post=[communityWelcome,...communityPosts].filter(Boolean).find(p=>p.id===b.postId);
       if(req.method === 'DELETE') {
         if(!post)return json({ok:false,error:'Conversation not found.'},404);
+        if(post.pinned&&!b.replyId)return json({ok:false,error:'Only a moderator can remove the welcome.'},403);
         if(b.replyId)post.replies=post.replies.filter(r=>r.id!==b.replyId);
         else communityPosts=communityPosts.filter(p=>p.id!==b.postId);
         return json({ok:true});

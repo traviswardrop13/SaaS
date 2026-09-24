@@ -515,10 +515,9 @@
 
     .community-layout { max-width:900px; margin:0 auto; }
     .community-main { min-width:0; }
-    .community-welcome { background:#eaf1ed; border:1px solid #d9e5dd; border-radius:12px; padding:27px; margin-bottom:22px; }
-    .community-welcome h2 { font-size:23px; letter-spacing:-.6px; font-weight:550; margin:8px 0; }
-    .community-welcome p { font-size:12px; line-height:1.8; color:#5a7467; max-width:540px; }
-    .community-welcome .eyebrow { color:#647e6e; }
+    .community-pinned { background:#eaf1ed; border-color:#d9e5dd; margin-bottom:22px; }
+    .community-pinned .community-body { color:#3e5e51; }
+    .community-pinned .community-topic { background:#fff; color:#345f4b; }
     .community-membership { border:1px dashed #c4d4ca; background:#f8faf7; border-radius:8px; padding:10px 14px; color:#66766b; font-size:11px; line-height:1.6; margin-bottom:18px; }
     .community-composer { display:flex; align-items:center; gap:12px; width:100%; padding:18px; background:white; border:1px solid var(--line); border-radius:10px; color:var(--muted); text-align:left; cursor:pointer; font:inherit; font-size:12px; }
     .community-composer:hover { border-color:#94b1a0; }
@@ -560,7 +559,7 @@
     .community-resource:hover { border-color:#aec2b0; }
     .community-empty { text-align:center; padding:28px 20px; }
     .community-empty p { font-size:12px; color:var(--muted); margin:7px 0 14px; }
-    @media (max-width:768px) { .community-welcome { padding:22px; } .community-post { padding:19px; } .community-post-header { flex-wrap:wrap; } .community-topic { margin-left:0; } .community-editor { padding:18px; } }
+    @media (max-width:768px) { .community-post { padding:19px; } .community-post-header { flex-wrap:wrap; } .community-topic { margin-left:0; } .community-editor { padding:18px; } }
 
     [data-preview-only][hidden] { display:none !important; }
     .general-invite { border-top:1px solid var(--line); margin-top:22px; padding-top:18px; }
@@ -877,7 +876,7 @@
       <div class="page" id="page-community">
         <div class="page-header"><div><div class="eyebrow">Better, together</div><h1>SLP community</h1><p>Your people. Your questions. A little support for the day.</p></div><div class="spacer"></div><button class="btn ghost sm" id="communityRefresh">Refresh</button><button class="btn green" id="communityNew">+ Start a conversation</button></div>
         <div class="community-layout"><div class="community-main">
-          <div class="community-welcome"><div class="eyebrow">A space to connect</div><h2>You don't have to figure it all out alone.</h2><p>Swap ideas, share useful resources, and learn alongside other SLPs. From your CF year to years into practice, there's a place for you here.</p></div>
+          <div id="communityPinned" aria-label="Pinned welcome" aria-live="polite"></div>
           <div class="community-membership"><strong>You’re already part of the community.</strong> Free with every SLP account. Posts are shared with other signed-in SLPs using your first name. Your email and caseload stay private.</div>
           <button class="community-composer" id="communityCompose"><span class="community-avatar" id="communityAvatar" aria-hidden="true">You</span><span>Ask a question or share an idea…</span><span class="compose-plus" aria-hidden="true">+</span></button>
           <form class="card community-editor" id="communityEditor" hidden>
@@ -1621,7 +1620,7 @@
     };
 
     /* All signed-in SLPs share this feed. Drafts stay here until the server confirms a save. */
-    var COMMUNITY_FILTER="all", COMMUNITY_POSTS=[], COMMUNITY_CURSOR=null, COMMUNITY_OPEN={}, COMMUNITY_REPLY_DRAFTS={};
+    var COMMUNITY_FILTER="all", COMMUNITY_POSTS=[], COMMUNITY_PINNED=[], COMMUNITY_CURSOR=null, COMMUNITY_OPEN={}, COMMUNITY_REPLY_DRAFTS={};
     var COMMUNITY_LOADING=false, COMMUNITY_WRITING=false, COMMUNITY_FETCH=0, COMMUNITY_RETRIES={};
     var COMMUNITY_TOPICS={discussions:"Discussions",resources:"Resources & ideas",cf:"CF corner"};
     function communityEditor(category){
@@ -1646,7 +1645,7 @@
       $("communityRefresh").disabled=COMMUNITY_LOADING||COMMUNITY_WRITING;
       $("communityMore").hidden=!COMMUNITY_CURSOR;
       $("communityMore").disabled=COMMUNITY_LOADING||COMMUNITY_WRITING;
-      document.querySelectorAll("[data-community-filter],#communityFeed button,#communityFeed textarea,#communityEditor input,#communityEditor textarea,#communityEditor select,#communityEditor button").forEach(function(b){b.disabled=COMMUNITY_WRITING;});
+      document.querySelectorAll("[data-community-filter],#communityFeed button,#communityFeed textarea,#communityPinned button,#communityPinned textarea,#communityEditor input,#communityEditor textarea,#communityEditor select,#communityEditor button").forEach(function(b){b.disabled=COMMUNITY_WRITING;});
       $("communityNew").disabled=COMMUNITY_WRITING;$("communityCompose").disabled=COMMUNITY_WRITING;
     }
     function loadCommunity(more){
@@ -1657,6 +1656,7 @@
         if(!r.ok||!j||!j.ok||!Array.isArray(j.posts))throw new Error((j&&j.error)||"Couldn't load conversations. Try Refresh.");
         if(generation!==COMMUNITY_FETCH)return;
         var seen={};COMMUNITY_POSTS=(more?COMMUNITY_POSTS:[]).concat(j.posts).filter(function(p){if(seen[p.id])return false;seen[p.id]=true;return true;});
+        if(Array.isArray(j.pinned))COMMUNITY_PINNED=j.pinned;
         COMMUNITY_CURSOR=j.nextCursor||null;COMMUNITY_LOADING=false;communityStatus("");renderCommunity();
       });}).catch(function(e){if(generation!==COMMUNITY_FETCH)return;COMMUNITY_LOADING=false;communityStatus(e.message||"Couldn't load conversations. Try Refresh.");communityControls();});
     }
@@ -1672,11 +1672,13 @@
       var name=(account&&account.name)||"You";
       $("communityAvatar").textContent=name.charAt(0).toUpperCase();
       document.querySelectorAll("[data-community-filter]").forEach(function(b){b.setAttribute("aria-pressed",String(b.dataset.communityFilter===COMMUNITY_FILTER));});
-      var html=COMMUNITY_POSTS.map(function(p){
+      function postHtml(p){
         var id=esc(p.id),open=!!COMMUNITY_OPEN[p.id],replies=(p.replies||[]).map(function(r){return '<div class="community-reply"><strong>'+esc(r.author)+'</strong><small>'+esc(communityDate(r.createdAt))+'</small><p>'+communityText(r.text)+'</p><div class="community-post-actions">'+communityActions(p.id,r.id,r.canDelete)+'</div></div>';}).join("");
-        return '<article class="card community-post"><div class="community-post-header"><span class="community-avatar" aria-hidden="true">'+esc((p.author||"S").charAt(0).toUpperCase())+'</span><div><strong>'+esc(p.author)+'</strong><p>'+esc(communityDate(p.createdAt))+'</p></div><span class="community-topic">'+esc(COMMUNITY_TOPICS[p.category]||"Discussions")+'</span></div><h3>'+esc(p.title)+'</h3><p class="community-body">'+communityText(p.text)+'</p><div class="community-post-actions"><button type="button" data-community-reply="'+id+'" aria-expanded="'+String(open)+'" aria-controls="community-replies-'+id+'">'+(open?'Hide replies':'Reply')+'</button><span class="reply-count">'+(p.replies||[]).length+' '+((p.replies||[]).length===1?'reply':'replies')+'</span>'+communityActions(p.id,null,p.canDelete)+'</div><div class="community-replies" id="community-replies-'+id+'"'+(open?'':' hidden')+'>'+replies+'<form data-community-reply-form="'+id+'"><label class="fl" for="community-reply-'+id+'">Your reply</label><textarea id="community-reply-'+id+'" maxlength="1000" required placeholder="Add to the conversation…">'+esc(COMMUNITY_REPLY_DRAFTS[p.id]||'')+'</textarea><button class="btn ghost sm" type="submit" style="margin-top:8px;">Post reply</button><span class="sub" id="community-reply-status-'+id+'" role="status"></span></form></div></article>';
-      }).join("");
-      if(!html&&!COMMUNITY_LOADING)html='<div class="card community-empty"><h3>Start something good.</h3><p>No conversations here yet. Introduce yourself, ask a question, or share a useful idea.</p></div>';
+        return '<article class="card community-post'+(p.pinned?' community-pinned':'')+'"><div class="community-post-header"><span class="community-avatar" aria-hidden="true">'+esc((p.author||"S").charAt(0).toUpperCase())+'</span><div><strong>'+esc(p.author)+'</strong><p>'+esc(communityDate(p.createdAt))+'</p></div><span class="community-topic">'+esc(p.pinned?"Pinned · From Rachel":(COMMUNITY_TOPICS[p.category]||"Discussions"))+'</span></div><h3>'+esc(p.title)+'</h3><p class="community-body">'+communityText(p.text)+'</p><div class="community-post-actions"><button type="button" data-community-reply="'+id+'" aria-expanded="'+String(open)+'" aria-controls="community-replies-'+id+'">'+(open?'Hide replies':'Reply')+'</button><span class="reply-count">'+(p.replies||[]).length+' '+((p.replies||[]).length===1?'reply':'replies')+'</span>'+communityActions(p.id,null,p.canDelete)+'</div><div class="community-replies" id="community-replies-'+id+'"'+(open?'':' hidden')+'>'+replies+'<form data-community-reply-form="'+id+'"><label class="fl" for="community-reply-'+id+'">Your reply</label><textarea id="community-reply-'+id+'" maxlength="1000" required placeholder="Add to the conversation…">'+esc(COMMUNITY_REPLY_DRAFTS[p.id]||'')+'</textarea><button class="btn ghost sm" type="submit" style="margin-top:8px;">Post reply</button><span class="sub" id="community-reply-status-'+id+'" role="status"></span></form></div></article>';
+      }
+      var html=COMMUNITY_POSTS.map(postHtml).join("");
+      $("communityPinned").innerHTML=COMMUNITY_PINNED.map(postHtml).join("");
+      if(!html&&!COMMUNITY_LOADING)html='<div class="card community-empty"><h3>Start something good.</h3><p>Start a new conversation, ask a question, or share a useful idea.</p></div>';
       $("communityFeed").innerHTML=html;
       document.querySelectorAll("[data-community-reply]").forEach(function(b){b.onclick=function(){var id=b.dataset.communityReply;COMMUNITY_OPEN[id]=!COMMUNITY_OPEN[id];renderCommunity();if(COMMUNITY_OPEN[id])$("community-reply-"+id).focus();};});
       document.querySelectorAll("[data-community-reply-form]").forEach(function(f){var id=f.dataset.communityReplyForm;$("community-reply-"+id).oninput=function(){COMMUNITY_REPLY_DRAFTS[id]=this.value;};f.onsubmit=function(e){

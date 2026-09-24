@@ -10,6 +10,8 @@ const CATEGORIES = new Set(["discussions", "resources", "cf"]);
 const ID = /^[a-f0-9-]{36}$/;
 const REQUEST_ID = /^[a-zA-Z0-9_-]{8,80}$/;
 const PAGE_SIZE = 20;
+const WELCOME_ID = "71109159-5b68-4af1-851c-35c918bc3050";
+const WELCOME_AUTHOR_ID = "sona-team-rachel";
 type Member = { id: string; author: string; moderator: boolean };
 type Reply = { id: string; authorId: string; author: string; text: string; createdAt: string };
 type Post = Reply & { title: string; category: string; replies: Reply[] };
@@ -43,7 +45,7 @@ function publicReply(reply: Reply, viewer: Member) {
   return { id: reply.id, author: reply.author, text: reply.text, createdAt: reply.createdAt, canDelete: viewer.moderator || reply.authorId === viewer.id };
 }
 function publicPost(post: Post, viewer: Member) {
-  return { ...publicReply(post, viewer), title: post.title, category: post.category, replies: (Array.isArray(post.replies) ? post.replies : []).map(r => publicReply(r, viewer)) };
+  return { ...publicReply(post, viewer), title: post.title, category: post.category, replies: (Array.isArray(post.replies) ? post.replies : []).map(r => publicReply(r, viewer)), ...(post.id === WELCOME_ID && post.authorId === WELCOME_AUTHOR_ID ? { pinned: true } : {}) };
 }
 
 // Reads and writes fail closed if Redis cannot enforce the limit. Using the
@@ -62,6 +64,22 @@ const READ_POSTS = `
   end
   return rows
 `;
+// Seed once in the same hash as member posts, so existing reply and ownership
+// rules apply. Keep the marker after deletion: a moderator's removal must stick.
+// The welcome has no index entry and cannot consume a normal feed page slot.
+const READ_WELCOME = `
+  if redis.call('HSETNX', KEYS[1], ARGV[1] .. ':seeded', '1') == 1 then
+    redis.call('HSETNX', KEYS[1], ARGV[1], ARGV[2])
+  end
+  return redis.call('HGET', KEYS[1], ARGV[1])
+`;
+function welcomePost(): Post {
+  return {
+    id: WELCOME_ID, authorId: WELCOME_AUTHOR_ID, author: "Rachel",
+    title: "Hey everyone! 👋", category: "discussions", replies: [], createdAt: new Date().toISOString(),
+    text: "I’m Rachel! My husband Travis and I started Sona, and I’m so happy you’re here.\n\nI’d love for this to be a place where we can swap ideas, share resources, and help each other make homework and planning a little easier. And if something in Sona is confusing or could work better, tell us—we’re building it with you.\n\nCome say hi! What setting do you work in, and what’s one thing you’d love help with right now?",
+  };
+}
 
 export async function GET(req: NextRequest) {
   const viewer = await member(req);
@@ -82,10 +100,13 @@ export async function GET(req: NextRequest) {
   }
   const rows = await kvCmd(["EVAL", READ_POSTS, 2, PREFIX + "index" + (category ? ":" + category : ""), PREFIX + "posts", cursor ? "(" + cursor : "+inf", PAGE_SIZE + 1]);
   if (!Array.isArray(rows) || rows.length % 2) return unavailable();
+  const welcome = await kvCmd(["EVAL", READ_WELCOME, 1, PREFIX + "posts", WELCOME_ID, JSON.stringify(welcomePost())]);
+  if (welcome !== null && typeof welcome !== "string") return unavailable();
   try {
     const posts = [];
     for (let i = 0; i < Math.min(rows.length, PAGE_SIZE * 2); i += 2) posts.push(publicPost(JSON.parse(String(rows[i])), viewer));
-    return response({ ok: true, posts, nextCursor: rows.length > PAGE_SIZE * 2 ? String(rows[PAGE_SIZE * 2 - 1]) : null });
+    const pinned = welcome === null ? [] : [publicPost(JSON.parse(welcome), viewer)];
+    return response({ ok: true, pinned, posts, nextCursor: rows.length > PAGE_SIZE * 2 ? String(rows[PAGE_SIZE * 2 - 1]) : null });
   } catch { return unavailable(); }
 }
 

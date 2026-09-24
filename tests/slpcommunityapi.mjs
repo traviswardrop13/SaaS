@@ -26,13 +26,15 @@ const oldFetch = globalThis.fetch;
 let checks = 0, fails = 0, sequence = 0, redisProcess, redisDir;
 function ok(label, condition) { checks++; if (!condition) fails++; console.log((condition ? 'PASS ' : 'FAIL ') + label); }
 const accountA = 'morgan@example.test', accountB = 'casey@example.test', moderator = 'moderator@example.test';
+const welcomeId = '71109159-5b68-4af1-851c-35c918bc3050';
+const welcomeText = 'I’m Rachel! My husband Travis and I started Sona, and I’m so happy you’re here.\n\nI’d love for this to be a place where we can swap ideas, share resources, and help each other make homework and planning a little easier. And if something in Sona is confusing or could work better, tell us—we’re building it with you.\n\nCome say hi! What setting do you work in, and what’s one thing you’d love help with right now?';
 const accounts = new Map([
   ['slpacct:' + accountA, JSON.stringify({ email: accountA, name: 'Morgan PRIVATE_LASTNAME', code: '', familyKey: 'PRIVATE_KEY', clinic: 'PRIVATE_CLINIC', children: ['PRIVATE_CHILD'] })],
   ['slpacct:' + accountB, JSON.stringify({ email: accountB, name: 'Casey Other', code: 'private-code' })],
   ['slpacct:' + moderator, JSON.stringify({ email: moderator, name: 'Moderator Person', code: '' })],
 ]);
 const posts = new Map(), indexes = new Map(), receipts = new Map(), counters = new Map(), reports = [];
-let forcedCount = 0, offline = false, failWrites = false, failReadLimit = false, externalCalls = 0, commands = [];
+let forcedCount = 0, offline = false, failWrites = false, failReadLimit = false, failWelcome = false, externalCalls = 0, commands = [];
 
 // An isolated, in-memory model keeps the suite portable. The same requests can
 // also execute actual Redis, guarding cjson empty arrays and Lua race behavior.
@@ -42,6 +44,11 @@ function model(cmd) {
   if (op === 'LRANGE') return reports.slice(0, 100).map(x => JSON.stringify(x));
   if (op !== 'EVAL') throw new Error('Unexpected store operation: ' + op);
   const script = args[0], n = Number(args[1]), k = args.slice(2, 2 + n), a = args.slice(2 + n);
+  if (script.includes('HSETNX')) {
+    const marker = a[0] + ':seeded';
+    if (!posts.has(marker)) { posts.set(marker, '1'); if (!posts.has(a[0])) posts.set(a[0], JSON.parse(a[1])); }
+    return posts.has(a[0]) ? JSON.stringify(posts.get(a[0])) : null;
+  }
   if (!script.includes('local previous') && !script.includes('ZREVRANGEBYSCORE')) {
     const count = forcedCount || (counters.get(k[0]) || 0) + 1; counters.set(k[0], count); return count;
   }
@@ -115,8 +122,9 @@ try {
     if (String(url) !== process.env.KV_REST_API_URL) { externalCalls++; throw new Error('Unexpected outbound call'); }
     const cmd = JSON.parse(init.body); commands.push(cmd);
     const mutation = cmd[0] === 'EVAL' && cmd[1].includes('local previous');
-    const readLimit = cmd[0] === 'EVAL' && !mutation && !cmd[1].includes('ZREVRANGEBYSCORE');
-    if (offline || (failWrites && mutation) || (failReadLimit && readLimit)) return Response.json({ error: 'offline' }, { status: 503 });
+    const welcomeRead = cmd[0] === 'EVAL' && cmd[1].includes('HSETNX');
+    const readLimit = cmd[0] === 'EVAL' && !mutation && !welcomeRead && !cmd[1].includes('ZREVRANGEBYSCORE');
+    if (offline || (failWrites && mutation) || (failReadLimit && readLimit) || (failWelcome && welcomeRead)) return Response.json({ error: 'offline' }, { status: 503 });
     if (forcedCount && usingRedis) {
       if (readLimit) return Response.json({ result: forcedCount });
       if (mutation) await realRedis(['SET', cmd[8], forcedCount]);
@@ -126,7 +134,12 @@ try {
   for (const opts of [{ signedOut: true }, { badCookie: true }, { expired: true }, { email: 'missing@example.test' }]) {
     const r = await request('GET', undefined, opts); ok('only signed-in real accounts have community access: ' + JSON.stringify(opts), r.status === 401);
   }
-  let r = await request(); ok('existing account with unfinished profile has automatic access and empty feed', r.status === 200 && r.json.ok && r.json.posts?.length === 0 && r.json.nextCursor === null);
+  const firstReads = await Promise.all([request(), request('GET', undefined, { email: accountB })]);
+  let r = firstReads[0]; ok('existing account with unfinished profile has automatic access and empty feed', r.status === 200 && r.json.ok && r.json.posts?.length === 0 && r.json.nextCursor === null);
+  const welcome = r.json.pinned?.[0];
+  ok('members receive the approved Rachel welcome separately from ordinary posts', r.json.pinned?.length === 1 && welcome?.id === welcomeId && welcome.author === 'Rachel' && welcome.title === 'Hey everyone! 👋' && welcome.text === welcomeText && welcome.category === 'discussions' && welcome.pinned === true && Array.isArray(welcome.replies) && welcome.replies.length === 0);
+  ok('simultaneous first reads seed one stable welcome for both accounts', firstReads.every(x => x.status === 200 && x.json.pinned?.length === 1 && x.json.pinned[0].id === welcomeId && x.json.pinned[0].createdAt === welcome?.createdAt && x.json.posts?.length === 0));
+  ok('ordinary members receive no permission or private owner ID for the welcome', welcome?.canDelete === false && !JSON.stringify(r.json).includes('sona-team-rachel'));
   ok('community responses are never cached', r.headers?.get('cache-control') === 'no-store');
   r = await post({}, { origin: 'https://evil.test' }); ok('cross-origin mutations rejected', r.status === 403);
   r = await post({}, { origin: '' }); ok('missing origin rejected', r.status === 403);
@@ -135,13 +148,14 @@ try {
     r = await post(change); ok('invalid post rejected: ' + Object.keys(change).join(','), r.status === 400);
   }
   r = await request('POST', 'x'.repeat(20001), { raw: true }); ok('oversized request rejected before parsing', r.status === 413);
-  const first = await post({ title: '<img src=x onerror=alert(1)>', text: '<script>alert(1)</script> 雪', author: 'Spoof', email: 'spoof@example.test', requestId: 'stable_request_01' });
+  const first = await post({ title: '<img src=x onerror=alert(1)>', text: '<script>alert(1)</script> 雪', author: 'Spoof', authorId: 'sona-team-rachel', id: welcomeId, pinned: true, email: 'spoof@example.test', requestId: 'stable_request_01' });
   ok('signed-in member creates shared post', first.status === 200 && first.json.id);
   const firstId = first.json.id;
   r = await request('GET', undefined, { email: accountB });
   let shared = r.json.posts?.find(p => p.id === firstId);
   ok('second account sees the same durable post', r.status === 200 && shared?.text === '<script>alert(1)</script> 雪');
   ok('shared author is server-derived first name', shared?.author === 'Morgan');
+  ok('member-supplied pin identity and flag cannot create or replace a welcome', shared?.id !== welcomeId && !shared?.pinned && r.json.pinned?.length === 1 && r.json.pinned[0].text === welcomeText);
   ok('non-owner cannot delete through returned permissions', shared?.canDelete === false);
   const exposed = JSON.stringify(r.json);
   ok('shared response omits private names emails codes keys clinics and member IDs', !/PRIVATE_|example\.test|authorId|reporterId|familyKey|private-code|clinic|children/.test(exposed));
@@ -152,6 +166,15 @@ try {
   const together = await Promise.all([reply(firstId, { text: 'Reply one' }, { email: accountB }), reply(firstId, { text: 'Reply two' })]);
   r = await request(); shared = r.json.posts?.find(p => p.id === firstId);
   ok('concurrent writers retain both replies', together.every(x => x.status === 200) && shared?.replies.length === 2 && shared.replies.some(x => x.text === 'Reply one') && shared.replies.some(x => x.text === 'Reply two'));
+  const welcomeReplies = await Promise.all([reply(welcomeId, { text: 'Hello Rachel from a school!' }), reply(welcomeId, { text: 'Hi from a clinic!' }, { email: accountB })]);
+  r = await request('GET', undefined, { email: accountB });
+  let updatedWelcome = r.json.pinned?.[0];
+  ok('concurrent replies to the welcome persist across accounts and repeated reads', welcomeReplies.every(x => x.status === 200) && updatedWelcome?.createdAt === welcome?.createdAt && updatedWelcome?.replies.length === 2 && updatedWelcome.replies.some(x => x.author === 'Morgan' && x.text === 'Hello Rachel from a school!') && updatedWelcome.replies.some(x => x.author === 'Casey' && x.text === 'Hi from a clinic!'));
+  r = await request('DELETE', { postId: welcomeId, authorId: 'sona-team-rachel' }); ok('members cannot delete the welcome or claim its server owner', r.status === 403);
+  r = await request('DELETE', { postId: welcomeId, replyId: welcomeReplies[1].json.id }); ok('members cannot delete another member reply to the welcome', r.status === 403);
+  const deleteWelcomeReply = await request('DELETE', { postId: welcomeId, replyId: welcomeReplies[0].json.id });
+  r = await request(); updatedWelcome = r.json.pinned?.[0];
+  ok('members can delete their own welcome reply without removing the welcome or other replies', deleteWelcomeReply.status === 200 && updatedWelcome?.replies.length === 1 && updatedWelcome.replies[0].id === welcomeReplies[1].json.id);
   const bReply = together[0].json.id, aReply = together[1].json.id;
   r = await request('DELETE', { postId: firstId }, { email: accountB }); ok('another member cannot delete a post', r.status === 403);
   r = await request('DELETE', { postId: firstId, replyId: bReply }); ok('post ownership does not grant deletion of another member reply', r.status === 403);
@@ -174,7 +197,16 @@ try {
   const pageOne = await request(), pageTwo = await request('GET', undefined, { query: '?cursor=' + pageOne.json.nextCursor });
   ok('feed is bounded and newest first', pageOne.json.posts?.length === 20 && pageOne.json.posts[0].title === 'Page item 21' && !!pageOne.json.nextCursor);
   ok('pagination has no repeats or lost posts', pageTwo.json.posts?.length === 3 && pageTwo.json.nextCursor === null && !pageTwo.json.posts.some(p => pageOne.json.posts.some(other => p.id === other.id)));
+  const categoryWithWelcome = await request('GET', undefined, { query: '?category=resources' });
+  ok('welcome stays separate on later pages and category filters without changing normal pagination', [pageOne, pageTwo, categoryWithWelcome].every(x => x.json.pinned?.length === 1 && x.json.pinned[0].id === welcomeId && x.json.pinned[0].replies.length === 1 && !x.json.posts?.some(p => p.id === welcomeId)) && categoryWithWelcome.json.posts?.length === 0);
   for (const query of ['?cursor=-1', '?cursor=abc', '?category=admin']) { r = await request('GET', undefined, { query }); ok('invalid query is rejected: ' + query, r.status === 400); }
+  failWelcome = true; r = await request(); ok('welcome storage outage fails closed instead of inventing an empty pinned feed', r.status === 503 && !r.json.ok); failWelcome = false;
+  const moderatorFeed = await request('GET', undefined, { email: moderator });
+  r = await request('DELETE', { postId: welcomeId }, { email: moderator });
+  ok('configured moderator can remove the welcome', moderatorFeed.json.pinned?.[0]?.canDelete === true && r.status === 200);
+  const afterRemoval = await Promise.all([request(), request('GET', undefined, { email: accountB })]);
+  r = await reply(welcomeId);
+  ok('later and concurrent reads never resurrect a removed welcome or permit new replies', afterRemoval.every(x => x.status === 200 && Array.isArray(x.json.pinned) && x.json.pinned.length === 0) && r.status === 404);
   forcedCount = 121; r = await request(); ok('read rate limit enforced', r.status === 429);
   forcedCount = 61; r = await post(); ok('write rate limit enforced', r.status === 429);
   r = await post({ title: '<img src=x onerror=alert(1)>', text: '<script>alert(1)</script> 雪', author: 'Spoof', email: 'spoof@example.test', requestId: 'stable_request_01' }); ok('successful retries still recover receipt at rate limit', r.status === 200 && r.json.duplicate); forcedCount = 0;
