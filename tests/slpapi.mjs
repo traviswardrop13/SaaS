@@ -645,7 +645,7 @@ if (A) {
   // almost none. /api/lead forwarded and forgot, and called a refusal a
   // capture; setup fired Lead whether or not an email was given.
   ok("captured is true only when the CRM accepted the lead",
-    /captured = crm\.ok;/.test(lead) && !/body: JSON\.stringify\(safeLead\),\s*\}\);\s*captured = true;/.test(lead),
+    /captured = !!\(hookRes && hookRes\.ok\) \|\| !!\(kitRes && kitRes\.ok\);/.test(lead) && !/body: JSON\.stringify\(safeLead\),\s*\}\);\s*captured = true;/.test(lead),
     "a 4xx from a broken workflow must not read as a lead delivered");
   ok("…and a refusal is logged with the CRM's own answer", /CRM webhook refused the lead/.test(lead));
   ok("every lead is also kept in our own store, capped",
@@ -654,14 +654,92 @@ if (A) {
   ok("…built field by field from safeLead: never a child, never the free-text report",
     entry.length > 0 && !/\.\.\./.test(entry) && !/\blead\./.test(entry) && !/child|age:|practice|report/.test(entry),
     "the ledger is marketing data; a child's details have no place in it");
+  const gate = read("lib/founder.ts");
   ok("the founder view needs a real FOUNDER_KEY, compared in constant time, from a header",
-    /need\.length < 12/.test(view) && /timingSafeEqual/.test(view) && /x-founder-key/.test(view) && !/searchParams\.get\("key"\)/.test(view));
+    /need\.length < 12/.test(gate) && /timingSafeEqual/.test(gate) && /x-founder-key/.test(gate) && !/searchParams\.get\("key"\)/.test(gate) &&
+    /const denied = founderGate\(req\);\s*if \(denied\) return denied;/.test(view));
   ok("the founder page is hidden from search and loads no tracking",
     /name="robots" content="noindex/.test(page) && !/pixel\.js|analytics\.js|fbevents|posthog/.test(page),
     "it lists people's email addresses");
   ok("setup counts a Lead only when an email was given",
     /if\(draft\.email\) sonaTrack\("Lead"\); sonaTrack\("CompleteRegistration"\);/.test(ob),
     "a finished setup with no email is a registration, not a lead the CRM can ever show");
+}
+
+
+// ── Kit: every grown-up's email joins the list; nothing about a child does ──
+{
+  const kitSrc = read("lib/kit.ts");
+  const lead = read("app/api/lead/route.ts");
+  const sync = read("app/api/founders/kit-sync/route.ts");
+  const ob = read("public/onboarding.html");
+  ok("Kit is reached with the v4 API key header", /"X-Kit-Api-Key": process\.env\.KIT_API_KEY/.test(kitSrc));
+  ok("the lead route sends every lead to Kit, tagged by role, with only a clinician's own first name",
+    /kitSubscribe\(\{ email: safeLead\.email, firstName: safeLead\.first_name, tag: kitTagFor\(safeLead\.role\) \}\)/.test(lead) &&
+    /first_name: body\?\.role === "slp" && typeof body\?\.name === "string"/.test(lead),
+    "first_name is only ever a clinician's own name; a parent's lead carries none");
+  ok("…and records Kit's answer on the saved lead", /kit: kitRes \? \(kitRes\.ok \? kitRes\.detail : "refused \(" \+ kitRes\.detail \+ "\)"\)/.test(lead));
+  ok("the catch-up is founder-only, batched, and stops when Kit says slow down",
+    /const denied = founderGate\(req\);/.test(sync) && /const BATCH = \d+;/.test(sync) && /r\.status === 429/.test(sync));
+
+  // A parent's email used to stay on the phone; it now goes to the list, with
+  // the grown-up's email and nothing from the child on the same screen.
+  const fin = ob.slice(ob.indexOf('var em=(document.getElementById("achEmailInput")'), ob.indexOf("SonaAnalytics.track(\"onboarding completed\")"));
+  ok("a parent's weekly-summary email is sent to the list, tagged parent",
+    /fetch\("\/api\/lead",[^\n]*role:"parent"/.test(fin) && /keepalive:true/.test(fin));
+  ok("…and never with the child's name or age",
+    fin.length > 0 && !/childName|draft\.age|achEmName|nameEl|child:/.test(fin.slice(fin.indexOf('fetch("/api/lead"'))));
+
+  // The consent line, everywhere an email can join the list (Travis's wording).
+  for (const f of ["public/for-slps.html", "public/slp-login.html", "public/onboarding.html", "public/check.html"]) {
+    ok(`${f} says the email joins the list before it is given`,
+      /also send occasional tips from Rachel\. Unsubscribe anytime\./.test(read(f)));
+  }
+  ok("…on both of the app's email boxes", (ob.match(/also send occasional tips from Rachel/g) || []).length >= 2);
+  ok("the Speech Check no longer promises to email a report it never sends", !/email your child's report/.test(read("public/check.html")));
+  ok("the privacy policy names Kit and says it holds nothing about a child",
+    /<strong>Email list<\/strong> — Kit/.test(read("public/privacy.html")) && /never anything about a child/.test(read("public/privacy.html")));
+
+  // Behaviour, against a fake Kit: what is sent, and what counts as success.
+  const calls = [];
+  let createStatus = 201, formStatus = 404;
+  const realFetch = globalThis.fetch;
+  globalThis.fetch = async (url, init) => {
+    const u = String(url), body = init && init.body ? JSON.parse(init.body) : null;
+    calls.push({ u, method: init && init.method, body, key: init && init.headers && init.headers["X-Kit-Api-Key"] });
+    const res = (status, obj) => new Response(JSON.stringify(obj), { status, headers: { "Content-Type": "application/json" } });
+    if (u.endsWith("/v4/subscribers")) return res(createStatus, { subscriber: { id: 1 } });
+    if (u.includes("/v4/tags?")) return res(200, { tags: [{ id: 77, name: "sona-parent" }, { id: 78, name: "sona-slp" }], pagination: { has_next_page: false } });
+    if (/\/v4\/tags\/\d+\/subscribers$/.test(u)) return res(201, { subscriber: { id: 1 } });
+    if (/\/v4\/forms\/.+\/subscribers$/.test(u)) return res(formStatus, { errors: ["Not Found"] });
+    return res(404, {});
+  };
+  const saved = { key: process.env.KIT_API_KEY, form: process.env.KIT_FORM_ID };
+  process.env.KIT_API_KEY = "kit_test_key"; process.env.KIT_FORM_ID = "12345";
+  try {
+    const K = await import(pathToFileURL(APP + "/lib/kit.ts").href);
+    const r1 = await K.kitSubscribe({ email: "mom@example.com", firstName: "", tag: K.kitTagFor("parent") });
+    const create = calls.find((c) => c.u.endsWith("/v4/subscribers"));
+    ok("a parent is created in Kit with their email and no name", !!create && create.body.email_address === "mom@example.com" && !("first_name" in create.body));
+    ok("…with the API key sent", !!create && create.key === "kit_test_key");
+    ok("…tagged sona-parent", calls.some((c) => /\/v4\/tags\/77\/subscribers$/.test(c.u)));
+    ok("a failed form step still counts the person as in Kit, and says what failed",
+      r1.ok === true && /form 404/.test(r1.detail), JSON.stringify(r1));
+    calls.length = 0; formStatus = 201;
+    const r2 = await K.kitSubscribe({ email: "sam@clinic.org", firstName: "Sam", tag: K.kitTagFor("slp") });
+    ok("a clinician goes with their own first name and the sona-slp tag, all steps clean",
+      r2.ok && r2.detail === "added" && calls.some((c) => c.u.endsWith("/v4/subscribers") && c.body.first_name === "Sam") && calls.some((c) => /\/v4\/tags\/78\/subscribers$/.test(c.u)));
+    calls.length = 0; createStatus = 401;
+    const r3 = await K.kitSubscribe({ email: "x@y.org", tag: K.kitTagFor("parent") });
+    ok("if the subscriber itself is refused, the lead is NOT counted as in Kit", r3.ok === false && /subscriber 401/.test(r3.detail));
+    delete process.env.KIT_API_KEY;
+    const r4 = await K.kitSubscribe({ email: "x@y.org" });
+    ok("with no key, Kit is simply not configured — nothing is called", r4.ok === false && r4.detail === "not configured");
+  } finally {
+    globalThis.fetch = realFetch;
+    if (saved.key === undefined) delete process.env.KIT_API_KEY; else process.env.KIT_API_KEY = saved.key;
+    if (saved.form === undefined) delete process.env.KIT_FORM_ID; else process.env.KIT_FORM_ID = saved.form;
+  }
 }
 
 console.log(fails ? fails + " FAILURES" : "ALL GREEN");

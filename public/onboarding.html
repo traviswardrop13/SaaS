@@ -263,6 +263,7 @@
         <div style="font-family:'Baloo 2';font-weight:800;font-size:14.5px;">Want <span id="achEmName">your child</span>'s weekly summary?</div>
         <p class="muted" style="font-size:12.5px;margin-top:4px;line-height:1.5;">One short email a week — which days they practiced and the sounds they worked on. Optional, and you can add it later in Settings.</p>
         <input id="achEmailInput" type="email" inputmode="email" autocomplete="email" placeholder="you@email.com" style="margin-top:9px;" />
+        <p class="muted" style="font-size:11.5px;margin-top:6px;">We&rsquo;ll also send occasional tips from Rachel. Unsubscribe anytime.</p>
         <p id="achEmailMsg" class="muted" style="font-size:12px;margin-top:7px;"></p>
       </div>
       <div id="obSlpCred" hidden style="margin-top:12px;background:#fff;border-radius:14px;padding:13px 15px;text-align:left;"></div>
@@ -304,6 +305,7 @@
       <p class="muted">Your email creates your clinician account — the code and family key you hand to families so Sona is free for them, plus a dashboard showing how they are practicing. It is also how you sign back in: there is no password.</p>
       <input id="obEmail" type="email" inputmode="email" autocomplete="email" placeholder="you@email.com" style="margin-top:12px;" />
       <p id="emErr" style="display:none;color:#ef6f23;font-weight:800;font-size:13px;margin-top:8px;"></p>
+      <p class="muted" style="font-size:12px;margin-top:8px;">We&rsquo;ll also send occasional tips from Rachel. Unsubscribe anytime.</p>
       <p class="muted" style="font-size:12px;margin-top:10px;"><b id="emName">Your child</b>'s practice stays on this device — it is never uploaded. To move it to another one, use <b>Backup &amp; restore</b> in Settings. A family's own practice works the same way; what reaches your dashboard is counts, never audio. <a href="/privacy" target="_blank">Privacy</a>.</p>
       <p class="muted" style="font-size:12.5px;margin-top:12px;"><a href="#" id="obEmailSkip" style="font-weight:800;">Skip for now →</a> You can add it later in Settings.</p>
     </div>
@@ -815,7 +817,15 @@
         bubble.textContent="Ready to play?";nextBtn.disabled=false;nextBtn.textContent="Let's play!";
         nextBtn.onclick=function(){
           nextBtn.disabled=true;
-          try{var em=(document.getElementById("achEmailInput").value||"").trim();if(draft.role!=="slp" && /^\S+@\S+\.\S+$/.test(em)){Sona.saveProfile({email:em,weeklyEmail:true});if(window.SonaAnalytics)SonaAnalytics.track("weekly summary opted in");}}catch(e){}
+          // A parent's email used to stay on this phone and nowhere else, so
+          // the list never heard of a single parent. It goes to /api/lead now
+          // (then Kit, tagged sona-parent): the grown-up's email and campaign
+          // tags only — never the child's name shown on this very screen.
+          // keepalive, because the page navigates away on the next line.
+          try{var em=(document.getElementById("achEmailInput").value||"").trim();if(draft.role!=="slp" && /^\S+@\S+\.\S+$/.test(em)){Sona.saveProfile({email:em,weeklyEmail:true});if(window.SonaAnalytics)SonaAnalytics.track("weekly summary opted in");
+            var pu=(window.Sona&&Sona.utm)?(Sona.utm()||{}):{};
+            fetch("/api/lead",{method:"POST",headers:{"Content-Type":"application/json"},keepalive:true,body:JSON.stringify({email:em,source:"app-setup",role:"parent",summary:"New parent (weekly summary opt-in)",utm_source:pu.utm_source,utm_medium:pu.utm_medium,utm_campaign:pu.utm_campaign,utm_content:pu.utm_content,utm_term:pu.utm_term,referrer:pu.referrer,landing:pu.landing})}).catch(function(){});
+            if(window.sonaTrack)sonaTrack("Lead");}}catch(e){}
           try{if(window.SonaAnalytics)SonaAnalytics.track("onboarding completed");}catch(e){}
           var pay=false;try{pay=!(Sona.isFree&&Sona.isFree())&&!(Sona.isSubscribed&&Sona.isSubscribed())&&!(Sona.isPilot&&Sona.isPilot())&&!(Sona.getProfile&&Sona.getProfile().earlyAdopter);}catch(e){}
           if(pay){try{sessionStorage.setItem("sona.gate.v1",String(Date.now()));}catch(e){}}

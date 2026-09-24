@@ -80,7 +80,9 @@ function safeAttrib(raw: unknown): Record<string, string> {
  * Never a child's, which is the rule everywhere and has no exception in a
  * marketing payload of all places.
  */
-const CRM_TIMEOUT_MS = 3000;
+// Long enough for Kit's create + form + tag calls (lib/kit fuses each at
+// 2.5s, run side by side), which usually finish in well under a second.
+const CRM_TIMEOUT_MS = 8000;
 async function tellCrm(
   origin: string, email: string, source: string, name: string, attrib: Record<string, string>,
 ): Promise<boolean> {
