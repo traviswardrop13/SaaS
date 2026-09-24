@@ -2320,15 +2320,17 @@
   // it moved here because dailyGames() has to pick from the same list the home
   // screen paints, and two copies of a list is one copy that goes stale.
   const GAME_ACTS = {
-    slice: { name: "Fruit Slice",   sub: "Say it 5× to play",          go: "/charge.html?game=arcade-slice.html", group: "arcade", playDescription: "Swipe through the fruit." },
-    tiles: { name: "Piano Tiles",   sub: "Say it 5× to play",          go: "/charge.html?game=arcade-tiles.html", group: "arcade", playDescription: "Tap each tile as it reaches the line." },
-    stack: { name: "Block Stacker", sub: "Say it 5× to play",          go: "/charge.html?game=arcade-stack.html", group: "arcade", playDescription: "Time your tap to stack the blocks." },
-    run:   { name: "Sound Sprint",  sub: "Say it 5× to play",          go: "/charge.html?game=arcade-run.html", group: "arcade", playDescription: "Switch lanes and collect coins." },
-    glide: { name: "Flappy Glide",  sub: "Say it 5× to play",          go: "/charge.html?game=arcade-glide.html", group: "arcade", playDescription: "Tap to glide through the gaps." },
-    feed:  { name: "Feed Echo",     sub: "Say it & tap — Echo's hungry!", go: "/arcade-feed.html", group: "simple", playDescription: "Find the picture and feed Echo. No timer." },
-    bubbles: { name: "Bubble Pop", sub: "Pop, discover and say it together", go: "/arcade-bubbles.html", group: "simple", playDescription: "Pop a bubble. Find a little surprise." },
-    peekaboo: { name: "Peekaboo", sub: "Open a door and say it together", go: "/arcade-peekaboo.html", group: "simple", playDescription: "Knock, knock! See what’s hiding." },
+    slice: { name: "Fruit Slice",   sub: "Say it 5× to play",          go: "/charge.html?game=arcade-slice.html", group: "arcade", tier: "free", playDescription: "Swipe through the fruit." },
+    tiles: { name: "Piano Tiles",   sub: "Say it 5× to play",          go: "/charge.html?game=arcade-tiles.html", group: "arcade", tier: "premium", playDescription: "Tap each tile as it reaches the line." },
+    stack: { name: "Block Stacker", sub: "Say it 5× to play",          go: "/charge.html?game=arcade-stack.html", group: "arcade", tier: "free", playDescription: "Time your tap to stack the blocks." },
+    run:   { name: "Sound Sprint",  sub: "Say it 5× to play",          go: "/charge.html?game=arcade-run.html", group: "arcade", tier: "premium", playDescription: "Switch lanes and collect coins." },
+    glide: { name: "Flappy Glide",  sub: "Say it 5× to play",          go: "/charge.html?game=arcade-glide.html", group: "arcade", tier: "premium", playDescription: "Tap to glide through the gaps." },
+    feed:  { name: "Feed Echo",     sub: "Say it & tap — Echo's hungry!", go: "/arcade-feed.html", group: "simple", tier: "free", playDescription: "Find the picture and feed Echo. No timer." },
+    bubbles: { name: "Bubble Pop", sub: "Pop, discover and say it together", go: "/arcade-bubbles.html", group: "simple", tier: "free", releasedOn: "2026-09-21", playDescription: "Pop a bubble. Find a little surprise." },
+    peekaboo: { name: "Peekaboo", sub: "Open a door and say it together", go: "/arcade-peekaboo.html", group: "simple", tier: "premium", releasedOn: "2026-09-21", playDescription: "Knock, knock! See what’s hiding." },
   };
+  // Tiers describe the proposed catalog, not entitlement. FREE_MODE and the
+  // existing access checks still decide who can play; pricing is not enabled here.
   // Preserve the existing story and mystery deck; new library games stand alone.
   const GAME_KEYS = ["slice", "tiles", "stack", "run", "glide", "feed"];
   const ACTIVITY_KEYS = GAME_KEYS.concat(["bubbles", "peekaboo"]);
@@ -2337,27 +2339,49 @@
   // Age suggests a style of play, never access or a speech target. Keep this
   // catalog separate from the daily adventure and its practice progression.
   const ACTIVITY_GROUPS = [
-    { id: "simple", name: "Simple play", ageLabel: "Suggested ages 2–4", description: "Easy tapping, one thing at a time." },
-    { id: "arcade", name: "Arcade", ageLabel: "Suggested ages 5 and up", description: "More movement, timing and challenge." },
+    { id: "simple", name: "Simple play", ageLabel: "Suggested ages 3–4", description: "Little taps. Big discoveries." },
+    { id: "arcade", name: "Arcade", ageLabel: "Suggested ages 5–8", description: "A little more action and adventure." },
   ];
-  function activityLibrary() {
+  function activityLibrary(options) {
     var age = Number(getProfile().childAge);
     var validAge = age >= 2 && age <= 14 && Math.floor(age) === age;
     var recommended = validAge ? playStyle() : null;
+    var now = options && typeof options.now === "number" && isFinite(options.now) ? options.now : Date.now();
+    var date = new Date(now), day = Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
+    function catalogDay(value) {
+      if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return NaN;
+      var parsed = Date.parse(value + "T00:00:00Z");
+      return isFinite(parsed) && new Date(parsed).toISOString().slice(0, 10) === value ? parsed : NaN;
+    }
+    function entry(key) {
+      var act = GAME_ACTS[key];
+      return { key: key, name: act.name, sub: act.sub, go: act.go, playDescription: act.playDescription,
+        tier: act.tier, releasedOn: act.releasedOn || null, available: act.available !== false };
+    }
     var groups = ACTIVITY_GROUPS.map(function (group) {
       return {
         id: group.id, name: group.name, ageLabel: group.ageLabel,
         description: group.description, recommended: group.id === recommended,
         games: ACTIVITY_KEYS.filter(function (key) {
-          return GAME_ACTS[key].group === group.id;
-        }).map(function (key) {
-          var act = GAME_ACTS[key];
-          return { key: key, name: act.name, sub: act.sub, go: act.go, playDescription: act.playDescription };
-        }),
+          return GAME_ACTS[key].group === group.id && GAME_ACTS[key].available !== false;
+        }).map(entry),
       };
     });
     if (recommended === "arcade") groups.reverse();
-    return { recommended: recommended, groups: groups };
+    // Release dates expire honestly after thirty calendar dates. Seasonal rows
+    // exist only when a finished item has a real active start/end date; no placeholders.
+    var fresh = ACTIVITY_KEYS.filter(function (key) {
+      var act = GAME_ACTS[key], released = catalogDay(act.releasedOn);
+      return act.available !== false && released <= day && day - released < 30 * 86400000;
+    }).sort(function (a, b) { return catalogDay(GAME_ACTS[b].releasedOn) - catalogDay(GAME_ACTS[a].releasedOn); }).map(entry);
+    var seasonal = ACTIVITY_KEYS.filter(function (key) {
+      var act = GAME_ACTS[key], season = act.season;
+      return act.available !== false && season && catalogDay(season.startsOn) <= day && day <= catalogDay(season.endsOn);
+    }).map(entry);
+    var featured = [];
+    if (fresh.length) featured.push({ id: "new", name: "New to Sona", games: fresh });
+    if (seasonal.length) featured.push({ id: "seasonal", name: "Seasonal favorites", games: seasonal });
+    return { recommended: recommended, groups: groups, featured: featured };
   }
   // Home previews the same adventure that practice launches. Feed Echo has
   // its own practice/reward loop and remains an independent game choice.
