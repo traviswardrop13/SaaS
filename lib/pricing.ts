@@ -11,7 +11,7 @@
  * acceptable at all — do not add a third.
  *
  * Since 24 Sep 2026 "off" means a FREE VERSION plus PREMIUM, not a wall:
- * daily speech practice (and two games per style of play) stays free for
+ * daily speech practice (and released free-tier games) stays free for
  * every family, and what a family can buy here is Premium — every game — on
  * the one yearly plan, at the price lib/charter.ts decides. While this is
  * true instead, /api/checkout refuses to create a Stripe session. Refusing on
@@ -24,4 +24,4 @@
  * separate product on a separate route and deliberately does not read this
  * switch: it pays for a caseload's families, whatever families pay today.
  */
-export const FREE_MODE = false; // mirrors sona.js — Travis, 24 Sep 2026: a free version and Premium
+export const FREE_MODE = true; // mirrors sona.js — Travis, 24 Sep 2026: restore family access to free

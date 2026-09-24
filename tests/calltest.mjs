@@ -63,15 +63,11 @@ ok("cap overlay gates 4th call", await page.evaluate(() => document.getElementBy
 await page.goto("http://localhost:8132/today.html");
 await page.waitForTimeout(1200);
 const card = await page.evaluate(() => ({
-  thumbs: document.querySelectorAll("#thumbs .thumb").length,
-  hero: document.getElementById("heroName").textContent,
-  // every card the deck can reach, hero included
-  keys: [document.getElementById("goBtn").dataset.launch, ...[...document.querySelectorAll(".thumb")].map((t) => t.dataset.key)].join(" "),
+  keys:[...document.querySelectorAll('.activity-group .game-card')].map(t=>t.dataset.game),
+  title:document.querySelector('h1').textContent
 }));
-// the deck is games only — Coach Call has no card and is never surfaced to the
-// child from the home screen
-ok("home deck carries games, and no Coach Call card",
-  card.thumbs === 3 && card.hero.length > 3 && !/call/i.test(card.keys), JSON.stringify(card));
+ok("Home offers games and never exposes Coach Call",
+  card.keys.length===8&&card.title==='Pick a game!'&&!card.keys.some(k=>/call/i.test(k)),JSON.stringify(card));
 
 await browser.close(); srv.close();
 console.log(fails ? fails + " FAILURES" : "ALL GREEN");

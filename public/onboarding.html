@@ -309,7 +309,7 @@
       <!-- The code and key CONNECT a family to the dashboard (24 Sep 2026).
            "so Sona is free for them" was the grant a link used to be; what is
            free now is free for every family, link or not. -->
-      <p class="muted">Your email creates your clinician account — the code and family key that connect families to your dashboard, which shows how they are practicing. Daily practice and four free games are free for every family. It is also how you sign back in: there is no password.</p>
+      <p class="muted">Your email creates your clinician account — the code and family key that connect families to your dashboard, which shows how they are practicing. Daily practice and free games are free for every family. It is also how you sign back in: there is no password.</p>
       <input id="obEmail" type="email" inputmode="email" autocomplete="email" autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="done" placeholder="you@email.com" style="margin-top:12px;" />
       <p id="emErr" style="display:none;color:#ef6f23;font-weight:800;font-size:13px;margin-top:8px;"></p>
       <p class="muted" style="font-size:12px;margin-top:8px;">We&rsquo;ll also send occasional tips from Rachel. Unsubscribe anytime.</p>
@@ -840,12 +840,10 @@
           try{if(window.SonaAnalytics)SonaAnalytics.track("onboarding completed");}catch(e){}
           var pay=false;try{pay=!(Sona.isFree&&Sona.isFree())&&!(Sona.isSubscribed&&Sona.isSubscribed())&&!(Sona.isPilot&&Sona.isPilot())&&!(Sona.getProfile&&Sona.getProfile().earlyAdopter);}catch(e){}
           if(pay){try{sessionStorage.setItem("sona.gate.v1",String(Date.now()));}catch(e){}}
-          var plan=Sona.adventureGames();
-          location.href="/charge.html?daily=1&first="+encodeURIComponent(plan[0]);
+          location.href="/today.html";
         };
         window.scrollTo(0,0);try{document.getElementById("handoffTitle").focus({preventScroll:true});}catch(e){}
-        // Names stay on the screen and device, not in a voice-service request.
-        if(!document.hidden&&Sona.speak)Sona.speak("Hi! Ready to play?");
+        // Setup and menus stay quiet; spoken coaching belongs inside games.
       });
     }
 

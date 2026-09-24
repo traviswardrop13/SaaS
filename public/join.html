@@ -168,7 +168,7 @@
       }
       // The credential verified: this device holds the enrolment ticket. What
       // it opens is the clinician's to say — Premium when their caseload is
-      // covered, the free version (daily practice and four free games) when
+      // covered, the free version (daily practice and free games) when
       // it is not, and the free version is free for everyone either way, so
       // "free" is true on every branch and "unlock" is true on none. Sharing is the separate question — enrolling is
       // what actually puts this child on the clinician's dashboard, because
@@ -177,7 +177,7 @@
         title.textContent = "You're connected! 🎉";
         // true on every branch: the free version is every family's
         var connected = name ? ("You're connected to " + name + ".") : "You're connected.";
-        msg.textContent = connected + " Daily practice and four free games are free.";
+        msg.textContent = connected + " Daily practice and free games are free.";
         form.style.display = "none";
         consent.style.display = "block";
         // Ask the server, now, whether this caseload is covered — and say so
@@ -241,7 +241,7 @@
       }
       function showForm() {
         title.textContent = "Enter your SLP's code";
-        msg.textContent = "Type the code and family key your speech therapist gave you. Daily practice and four free games are free for every family.";
+        msg.textContent = "Type the code and family key your speech therapist gave you. Daily practice and free games are free for every family.";
         form.style.display = "block";
         try { if (window.__slp && window.__slp.code) document.getElementById("jCode").value = window.__slp.code; } catch (e) {}
       }

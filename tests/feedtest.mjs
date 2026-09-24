@@ -161,39 +161,26 @@ t = await page.evaluate(() => document.getElementById("echo").style.transform);
 
 ok("Echo's size persists across visits", /scale\(1\.0[2-9]|scale\(1\.[1-9]/.test(t), t);
 
-// ── the deck is age-aware. A little who can't read must open on Feed Echo
-//    (tap-and-say), not on a card full of falling fruit — but every other
-//    game is still one swipe away. ──
+// Home suggests an age shelf, but never starts a game for the child.
+async function readLibrary(){return page.evaluate(()=>({
+  group:document.querySelector('.activity-group').dataset.group,
+  games:[...document.querySelectorAll('.activity-group .game-card')].map(t=>t.dataset.game),
+  playable:[...document.querySelectorAll('.activity-group .game-card')].filter(card=>!card.disabled).map(card=>card.dataset.game),
+  comingSoon:[...document.querySelectorAll('.activity-group .game-card')].filter(card=>card.disabled&&/coming soon/i.test(card.textContent)).map(card=>card.dataset.game).sort(),
+  hero:!!document.getElementById('goBtn'),
+  trio:Sona.dailyGames()
+}));}
 await page.goto("http://localhost:8145/today.html"); await page.waitForTimeout(900);
-let deck = await page.evaluate(() => ({
-  hero: document.getElementById("heroName").textContent,
-  launch: document.getElementById("goBtn").dataset.launch,
-  thumbs: [...document.querySelectorAll(".thumb")].map((t) => t.dataset.key),
-  trio: Sona.dailyGames(),
-}));
-// Home recommends a short simple-play session for ages 3–4. Feed Echo
-// remains an available individual choice in the existing daily trio.
-ok("under-6: today's trio leads with Feed Echo", deck.trio[0] === "feed", JSON.stringify(deck));
-ok("age 4: the day starts with the shared simple adventure", /charge\.html\?daily=1/.test(deck.launch || "") && deck.trio.every(k=>["feed","bubbles","peekaboo"].includes(k)), deck.launch);
-ok("under-6: three games are on offer from the first tap", deck.thumbs.length === 3, JSON.stringify(deck.thumbs));
-// Completing an adventure does not replace the younger child's simple-play
-// recommendation with a game requiring timing or reading.
-await page.evaluate(() => Sona.dailyFinish(10));
-await page.goto("http://localhost:8145/today.html"); await page.waitForTimeout(900);
-deck = await page.evaluate(() => ({
-  hero: document.getElementById("heroName").textContent,
-  launch: document.getElementById("goBtn").dataset.launch,
-}));
-ok("age 4: after the adventure, the hero offers Feed Echo", /Feed Echo/.test(deck.hero), JSON.stringify(deck));
-ok("age 4: the completed-day action opens Feed Echo", /arcade-feed/.test(deck.launch || ""), deck.launch);
-await page.evaluate(() => { const p = JSON.parse(localStorage.getItem("sona.profile.v1")); p.childAge = "8"; localStorage.setItem("sona.profile.v1", JSON.stringify(p)); });
-await page.goto("http://localhost:8145/today.html"); await page.waitForTimeout(900);
-deck = await page.evaluate(() => ({
-  hero: document.getElementById("heroName").textContent,
-  launch: document.getElementById("goBtn").dataset.launch,
-}));
-ok("age 8: the deck no longer opens on Feed Echo", !/Feed Echo/.test(deck.hero), JSON.stringify(deck));
-ok("age 8: LET'S GO opens a practice game", /charge\.html\?game=/.test(deck.launch || ""), deck.launch);
+let deck=await readLibrary();
+ok("age 4: simple play is suggested first",deck.group==='simple',JSON.stringify(deck));
+ok("Home shows all eight titles with six playable and two coming soon",deck.games.length===8&&deck.playable.length===6&&deck.playable.includes('feed')&&JSON.stringify(deck.comingSoon)===JSON.stringify(['bubbles','peekaboo']),JSON.stringify(deck));
+ok("Home waits for a choice instead of starting an adventure",!deck.hero&&page.url().endsWith('/today.html'));
+await page.evaluate(()=>Sona.dailyFinish(10));
+await page.reload();await page.waitForTimeout(900);deck=await readLibrary();
+ok("finishing a day keeps the same library choices",deck.group==='simple'&&deck.games.includes('feed')&&!deck.hero,JSON.stringify(deck));
+await page.evaluate(()=>{const p=JSON.parse(localStorage.getItem('sona.profile.v1'));p.childAge='8';localStorage.setItem('sona.profile.v1',JSON.stringify(p));});
+await page.reload();await page.waitForTimeout(900);deck=await readLibrary();
+ok("age 8: Arcade is suggested first, with Feed Echo still available",deck.group==='arcade'&&deck.games.includes('feed'),JSON.stringify(deck));
 
 }
 // Audio device edges are fake: no real mic, browser speech or Web Audio output.

@@ -1217,7 +1217,7 @@
     for (let i = 0; trio.length < DAILY_GAMES && i < GAME_KEYS.length; i++) {
       if (trio.indexOf(GAME_KEYS[i]) === -1) trio.push(GAME_KEYS[i]);
     }
-    if (playStyle() === "simple") return ["feed", "bubbles", "peekaboo"];
+    if (playStyle() === "simple") return ["feed", "bubbles", "peekaboo"].filter(function (key) { return gameAccess(key).allowed; });
 
     return trio;
   }
@@ -2552,13 +2552,11 @@
     run:   { name: "Sound Sprint",  sub: "Say it 5× to play",          go: "/charge.html?game=arcade-run.html", group: "arcade", tier: "premium", playDescription: "Switch lanes and collect coins." },
     glide: { name: "Flappy Glide",  sub: "Say it 5× to play",          go: "/charge.html?game=arcade-glide.html", group: "arcade", tier: "premium", playDescription: "Tap to glide through the gaps." },
     feed:  { name: "Feed Echo",     sub: "Say it & tap — Echo's hungry!", go: "/arcade-feed.html", group: "simple", tier: "free", playDescription: "Find the picture and feed Echo. No timer." },
-    bubbles: { name: "Bubble Pop", sub: "Pop, discover and say it together", go: "/arcade-bubbles.html", group: "simple", tier: "free", releasedOn: "2026-09-21", playDescription: "Pop a bubble. Find a little surprise." },
-    peekaboo: { name: "Peekaboo", sub: "Open a door and say it together", go: "/arcade-peekaboo.html", group: "simple", tier: "premium", releasedOn: "2026-09-21", playDescription: "Knock, knock! See what’s hiding." },
+    bubbles: { name: "Bubble Pop", sub: "Pop, discover and say it together", go: "/arcade-bubbles.html", group: "simple", tier: "free", comingSoon: true, releasedOn: "2026-09-21", playDescription: "Pop a bubble. Find a little surprise." },
+    peekaboo: { name: "Peekaboo", sub: "Open a door and say it together", go: "/arcade-peekaboo.html", group: "simple", tier: "premium", comingSoon: true, releasedOn: "2026-09-21", playDescription: "Knock, knock! See what’s hiding." },
   };
   // Catalog access is separate from the speech needed to earn an arcade turn.
-  // tier "free" is the free version's games (two per style of play); every
-  // "premium" game opens for premium() — the one entitlement test — or, while
-  // FREE_MODE is on, for everyone. Local preview moves no money.
+  // Free access opens released games; unfinished games stay parked for everyone.
   // Preserve the existing story and mystery deck; new library games stand alone.
   const GAME_KEYS = ["slice", "tiles", "stack", "run", "glide", "feed"];
   const ACTIVITY_KEYS = GAME_KEYS.concat(["bubbles", "peekaboo"]);
@@ -2617,6 +2615,8 @@
     var result = { allowed: false, tier: act ? act.tier : "premium", reason: "unknown", preview: preview };
     function allow(reason) { result.allowed = true; result.reason = reason; return result; }
     if (!act || act.available === false) return result;
+    // Unfinished games cannot be unlocked by a plan, saved turn or old link.
+    if (act.comingSoon) { result.reason = "coming-soon"; return result; }
     if (act.tier === "free") return allow("free");
     if (preview) {
       if (previewPlan().state === "trial") return allow("trial");
@@ -2679,7 +2679,7 @@
     function entry(key) {
       var act = GAME_ACTS[key];
       return { key: key, name: act.name, sub: act.sub, go: act.go, playDescription: act.playDescription,
-        tier: act.tier, releasedOn: act.releasedOn || null, available: act.available !== false };
+        tier: act.tier, releasedOn: act.releasedOn || null, available: act.available !== false, comingSoon: !!act.comingSoon };
     }
     var groups = ACTIVITY_GROUPS.map(function (group) {
       return {
@@ -2695,11 +2695,11 @@
     // exist only when a finished item has a real active start/end date; no placeholders.
     var fresh = ACTIVITY_KEYS.filter(function (key) {
       var act = GAME_ACTS[key], released = catalogDay(act.releasedOn);
-      return act.available !== false && released <= day && day - released < 30 * 86400000;
+      return act.available !== false && !act.comingSoon && released <= day && day - released < 30 * 86400000;
     }).sort(function (a, b) { return catalogDay(GAME_ACTS[b].releasedOn) - catalogDay(GAME_ACTS[a].releasedOn); }).map(entry);
     var seasonal = ACTIVITY_KEYS.filter(function (key) {
       var act = GAME_ACTS[key], season = act.season;
-      return act.available !== false && season && catalogDay(season.startsOn) <= day && day <= catalogDay(season.endsOn);
+      return act.available !== false && !act.comingSoon && season && catalogDay(season.startsOn) <= day && day <= catalogDay(season.endsOn);
     }).map(entry);
     var featured = [];
     if (fresh.length) featured.push({ id: "new", name: "New to Sona", games: fresh });
@@ -3692,28 +3692,27 @@
   // lib/pricing.ts for the server (tests/freetest.mjs fails if they disagree).
   //
   // Since 24 Sep 2026 "off" no longer means "everything behind a wall". Sona
-  // has a FREE VERSION — daily practice and four free games (two per age
-  // group, every one open to every child) — and PREMIUM, which opens every
-  // game:
-  //   OFF (now) — the free version for everyone; Premium for premium(): a
+  // has a FREE VERSION — daily practice and released free-tier games —
+  // and PREMIUM, which opens every released game:
+  //   OFF — the free version for everyone; Premium for premium(): a
   //     subscription (yearly, 3 days free; the web price comes from
   //     lib/charter.ts via /api/charter, the iOS price from App Store
   //     Connect), a covered clinician's caseload, a founder or founding
   //     pilot, or any of the four free eras' promises;
-  //   ON — every game for everyone, nothing sold.
+  //   ON (now) — every released game for everyone, nothing sold.
   // Practice is never gated in either state; gated() says so before anything.
   //
   // The CLINICIAN plan ("Sona Premium for your caseload", bought on the
   // dashboard) is separate and deliberately does not read this switch: what
   // it pays for is its families' Premium, reported back here by caseRefresh.
   //
-  // Era four — the free window that began 20 Sep 2026 — ends with this build,
-  // and _grandfatherFreeEra4() ships IN it, as CLAUDE.md requires.
+  // Era four ended in the earlier paid build; its shipped sweep stays.
+  // This new free window needs its own sweep when pricing returns, not now.
   //
   // The paid rails stay TESTED in either state through the ?paid=1 seam below,
   // because a switch nobody can flip is not a switch — and every free era so
   // far has proved how fast an unexercised path rots into archaeology.
-  const FREE_MODE = false;  // Travis, 24 Sep 2026: a free version and Premium — era four ends the day this merges
+  const FREE_MODE = true;  // Travis, 24 Sep 2026: restore family access to free; pricing needs explicit approval
   // QA seam: ?paid=1 (or the sticky sona.paidui flag) reveals the purchase
   // rails on this device so the paid path stays exercisable — and TESTED —
   // while free mode ships. It only controls VISIBILITY; it can't unlock

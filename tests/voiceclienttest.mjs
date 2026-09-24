@@ -12,7 +12,9 @@ const server=createServer((req,res)=>{
  if(pathname==='/api/tts'){requests++;res.writeHead(mode==='pcm'?200:503,{'Content-Type':mode==='pcm'?'audio/L16; rate=24000; channels=1':'application/json','X-Sona-Voice-Provider':'elevenlabs','X-Sona-Voice-Model':'eleven_multilingual_v2','X-Sona-Voice-Cache':'miss','X-Sona-Voice-Revision':'v7'});res.end(mode==='pcm'?Buffer.alloc(480):'{}');return;}
  if(pathname==='/speech-harness'){res.writeHead(200,{'Content-Type':'text/html'});res.end('<!doctype html><html><button id="speak">Speak</button><script src="/sona.js"></script><script>document.getElementById("speak").onclick=function(){window.finished=false;Sona.speakNow("Take your time. It is your turn.").then(function(){window.finished=true;});};</script></html>');return;}
  const file=ROOT+pathname;if(!existsSync(file)||!statSync(file).isFile()){res.writeHead(404);res.end();return;}
- res.writeHead(200,{'Content-Type':mime[file.split('.').pop()]||'application/octet-stream'});res.end(readFileSync(file));
+ res.writeHead(200,{'Content-Type':mime[file.split('.').pop()]||'application/octet-stream'});
+ // Keep parked-game speech delivery covered without adding an app unlock.
+ const body=pathname==='/sona.js'?readFileSync(file,'utf8').replace(/((?:bubbles|peekaboo): \{[^\n]*?)comingSoon: true/g,'$1comingSoon: false'):readFileSync(file);res.end(body);
 });
 await new Promise(resolve=>server.listen(8198,'127.0.0.1',resolve));
 const browser=await chromium.launch(launchOpts());

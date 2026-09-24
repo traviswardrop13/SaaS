@@ -7,7 +7,7 @@ import { FREE_MODE } from "@/lib/pricing";
 
 // Shown under the one plan, so every line has to be true of it. The plan is
 // SONA PREMIUM (24 Sep 2026): Sona has a free version — daily practice and
-// four free games (two per age group), for every family — so this list sells
+// free games (two per age group), for every family — so this list sells
 // only what Premium adds, and says out loud what stays free either way, in
 // the one phrase every family surface uses. A feature every family already
 // has does not belong on a price card.
@@ -15,7 +15,7 @@ const FEATURES = [
   "Every game in the library, for both age groups",
   "Starts with 3 free days — cancel anytime, no charge",
   "Every new game as it ships",
-  "Daily practice and four free games stay free, whether or not you subscribe",
+  "Daily practice and free games stay free, whether or not you subscribe",
   "Priority support",
 ];
 

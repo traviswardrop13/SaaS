@@ -67,28 +67,23 @@ one. Surface those in the PR body so she can review them without reading
 the diff.
 
 ## Pricing — a free version, Premium, and the cohorts no flip can take back
-**Sona has a free version and Premium** (Travis, 24 Sep 2026 — this reverses
-"make it free" of 20 Sep). **Free, for every family: the daily speech practice,
-plus four free games** — two per play style (`GAME_ACTS[key].tier` in
-`sona.js`: arcade → Fruit Slice + Block Stacker, simple → Feed Echo + Bubble
-Pop), and `gameAccess()` opens all four to every child whatever their style.
-**The one phrase is "daily practice and four free games"**, on every surface:
-some pages said "two games" while Home said four, and a parent holding her
-clinician's "two" against the app's "four" is a support ticket (`freemiumtest`
-pins the family pages, `shiptest` and `slptest` the clinician and legal ones).
-**Premium is every game.** Practice is never behind the paywall:
-`gated()` short-circuits on `isFree()`, then answers the practice asks
-(`PRACTICE_ASKS`) before any entitlement, demo or trial check — `freetest`
-pins that order. `premium()` is the one answer to "every game?": a
-subscription, a founder, a free-era family (`earlyAdopterAnyKid()`), a founding
-pilot (`ff-` code), or a covered caseload (`caseCovered()`) — never a
-clinician's link on its own.
+**Current release: the family app is free again (Travis, 24 Sep 2026, after the
+Caseload Premium merge).** `FREE_MODE = true` in `public/sona.js` and
+`lib/pricing.ts`. Do not make family pricing live until Travis explicitly
+approves it. All six released games are available; Bubble Pop and Peekaboo
+are disabled “Coming soon” cards, regardless of subscription, free mode,
+trial, or earned access. Books remain coming soon.
 
-**A family's Premium is one plan, yearly, after a 3-day free trial — $59.99
-for the first 50 families (the charter price), $99.99 after that.** Parents
-upgrade inside the app; `/families` starts everyone free and sells nothing
-itself. `FREE_MODE = false` in `sona.js`, mirrored by `lib/pricing.ts` (`true`
-= everything free), and `tests/freetest.mjs` fails if the two copies disagree.
+The dormant paid rail remains tested: daily practice and released free-tier
+games stay free, while `premium()` recognizes subscriptions, founders,
+free-era families, founding pilots, and covered caseloads. Avoid a fixed
+“four free games” claim while Bubble Pop is parked. Clinician dashboard and
+Caseload Premium work from the earlier merge stays separate and intact.
+
+The earlier paid release shipped `_grandfatherFreeEra4()`; preserve all four
+sweeps. This newly restored free window needs its own sweep in the future
+build that turns pricing on, never before. `tests/freetest.mjs` checks that
+both pricing switches agree. Planned prices remain on the dormant rail.
 
 **THE CHARTER PRICE IS TRUE BY CONSTRUCTION, OR IT IS THE BANNED ANCHOR AGAIN
 (19 Sep 2026).** This repo already threw out one struck-through price
@@ -400,20 +395,20 @@ Unsubscribe anytime." Meta's `Lead` fires only when an email was given.
 every clinician account, and its "Send everyone to Kit" button is the one-time
 catch-up for everyone collected before Kit existed.
 
-## The day: practice, then games
-**The books are parked, and Home leads with practice (Travis, 19 Sep 2026).**
-The stories "suck and don't even work"; they relaunch in Q4 once they are
-good. Until then: Home opens on today's adventure (`charge.html?daily=1`), the
-day's three games are open from the first tap (every door goes through
-`charge.html`, which asks for the sound first — a typed game URL goes home),
-the book button on the Home header says "coming soon" and goes nowhere, and no
-page links to `chapter.html`, `story.html` or `library.html`. The reader pages
-and the story engine stay in the repo: `dailyGames()` still draws the trio
-from the day's chapter and the win screen still turns the page
-(`episodeAdvance()`), which is what makes tomorrow's three different — but the
-win screen shows no cliffhanger and the mystery game no longer waits on a
-story being read. `day1`, `storytest` and `feedtest` pin the day; `readtest`
-still pins the reader pages so they work the day they come back.
+## Home: choose a game, then practice
+**Home is the silent Play library (Travis, 24 Sep 2026).** `today.html` opens
+on “Pick a game!”; `activities.html` preserves old query/hash links by
+redirecting there. Setup finishes at Home, without starting practice or a
+game. There is no old adventure-map Home or menu narration. Voice remains
+inside deliberate game/practice sessions. Parent settings, progress,
+profiles, earned coins, homework and entitlement sync remain available.
+
+Bubble Pop and Peekaboo stay visible only as disabled “Coming soon” cards,
+with no New shelf promotion and no direct-link, paid or earned bypass.
+Their engines remain in the repo for future work. Books are also parked;
+reader engines and their tests stay, but no public menu opens a book.
+The existing practice, honest-rep, rotation and earned arcade-turn rules
+still apply after a child chooses an available game.
 
 ## Hard rules
 - Merges to main/prod only on Travis's explicit go ("merge").

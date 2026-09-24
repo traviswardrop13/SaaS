@@ -365,7 +365,7 @@ for (const [cred, isCovered] of [[CRED, true], [CRED2, false]]) {
   // grants nothing a plain download doesn't, so the page says what happened:
   // the family is connected, and what is free.
   ok("…and on an uncovered caseload the page says CONNECTED, and what is free — never a grant",
-    /You're connected/.test(st.title) && /You're connected to Sam P\./.test(st.msg) && /Daily practice and four free games are free\./.test(st.msg) &&
+    /You're connected/.test(st.title) && /You're connected to Sam P\./.test(st.msg) && /Daily practice and free games are free\./.test(st.msg) &&
     !/free access|gave you|unlock|it's free!/i.test(st.page + " " + st.tab), JSON.stringify({ title: st.title, msg: st.msg, tab: st.tab }));
   await ctx.close();
 }
@@ -823,10 +823,10 @@ for (const [cred, isCovered] of [[CRED, true], [CRED2, false]]) {
     ok(name + " never says a clinician's link grants access", !GRANT.test(src), (src.match(GRANT) || [])[0]);
   }
   ok("the clinician's share card says what the link does, and what is free for every family",
-    /it connects them to <b>your dashboard<\/b>/.test(settings) && /Daily practice and four free games are <b>free for every family<\/b>/.test(settings) &&
+    /it connects them to <b>your dashboard<\/b>/.test(settings) && /Daily practice and free games are <b>free for every family<\/b>/.test(settings) &&
     /with <b>Sona Premium for your caseload<\/b> they get every game/.test(settings));
   ok("…and the message a clinician copies to a family says 'free' and what free means",
-    /It\\u2019s free for your family: daily practice and four free games\. /.test(settings));
+    /It\\u2019s free for your family: daily practice and free games\. /.test(settings));
   ok("clinician setup says the code and key connect families to the dashboard",
     /the code and family key that connect families to your dashboard/.test(onb) && /it connects the families you send it to with your dashboard/.test(onb));
 }

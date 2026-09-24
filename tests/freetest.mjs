@@ -277,8 +277,9 @@ if (appFree) {
       stamp4: localStorage.getItem("sona.freeera4.v1"),
       premium: Sona.premium(),
       practice: ["practice", "daily", "session", "demo"].map((w) => Sona.gated(w)),
-      free: keys.filter((k) => Sona.GAME_ACTS[k].tier === "free").map((k) => [k, Sona.gameAccess(k).allowed]),
-      paid: keys.filter((k) => Sona.GAME_ACTS[k].tier === "premium").map((k) => [k, Sona.gameAccess(k).allowed, Sona.gated(k)]),
+      free: keys.filter((k) => Sona.GAME_ACTS[k].tier === "free" && !Sona.GAME_ACTS[k].comingSoon).map((k) => [k, Sona.gameAccess(k).allowed]),
+      paid: keys.filter((k) => Sona.GAME_ACTS[k].tier === "premium" && !Sona.GAME_ACTS[k].comingSoon).map((k) => [k, Sona.gameAccess(k).allowed, Sona.gated(k)]),
+      parked: keys.filter(k => Sona.GAME_ACTS[k].comingSoon).map(k => ({key:k,access:Sona.gameAccess(k)})),
       story: Sona.gated("story"),
       unnamed: Sona.gated(),
       deck: Sona.adventureGames().map((k) => [k, Sona.gameAccess(k).allowed]),
@@ -290,8 +291,9 @@ if (appFree) {
     st.stamp4 === "done" && st.premium === false, JSON.stringify(st));
   ok("…and is never gated from practice, by any door",
     st.practice.every((g) => g === false), JSON.stringify(st.practice));
-  ok("…plays every free-tier game",
+  ok("…plays every released free-tier game",
     st.free.length >= 2 && st.free.every(([, a]) => a === true), JSON.stringify(st.free));
+  ok("…but Coming soon games remain unavailable to this family", st.parked.length===2&&st.parked.every(g=>!g.access.allowed&&g.access.reason==="coming-soon"),JSON.stringify(st.parked));
   ok("…but no Premium game, asked by the catalog or the gate",
     st.paid.length > 0 && st.paid.every(([, a, g]) => a === false && g === true), JSON.stringify(st.paid));
   ok("…and Premium content that is not a game stays Premium",
@@ -301,20 +303,23 @@ if (appFree) {
   ok("the mystery door is Premium: coins alone do not open it", st.mystery === false, JSON.stringify(st));
   ok("…and the one-time offer is still an offer this family may see", st.ask === true, JSON.stringify(st));
 
-  // Home: practice is the hero, and a Premium tile names itself and nothing else
+  // Home stays a quiet catalog. Released Premium cards name their boundary;
+  // Coming soon cards cannot start or advertise an upgrade.
   await pg.goto("http://localhost:8211/today.html"); await pg.waitForTimeout(800);
   const home = await pg.evaluate(() => ({
-    launch: document.getElementById("goBtn").dataset.launch || "",
-    kid: document.getElementById("app") ? document.getElementById("app").innerText : document.body.innerText,
-    locked: [...document.querySelectorAll("#thumbs .thumb.locked")].map((t) => ({ key: t.dataset.key, tag: (t.querySelector(".premiumTag") || {}).textContent || "", aria: t.getAttribute("aria-label") })),
-    open: [...document.querySelectorAll("#thumbs .thumb:not(.locked)")].map((t) => t.dataset.key),
+    heading:document.querySelector("h1").textContent,
+    automatic:!!document.getElementById("goBtn"),
+    run:sessionStorage.getItem("sona.run.v1"),
+    kid:document.getElementById("libraryApp").innerText,
+    locked:[...document.querySelectorAll('#activityGroups .game-card[data-locked="true"]')].filter(t=>!t.disabled).map(t=>({key:t.dataset.game,tag:t.querySelector(".game-access").textContent,aria:t.getAttribute("aria-label")})),
+    open:[...document.querySelectorAll('#activityGroups .game-card[data-locked="false"]')].map(t=>t.dataset.game),
   }));
-  ok("Home launches the NORMAL daily run, never the replay that earns nothing",
-    /charge\.html\?daily=1/.test(home.launch) && !/demo=1/.test(home.launch), home.launch);
-  ok("a locked tile says Premium and asks for a grown-up",
-    home.locked.every((t) => t.tag === "Premium" && /Ask a grown-up/.test(t.aria)), JSON.stringify(home.locked));
-  ok("…and nothing a child can read on Home names a price",
-    !/\$\s?\d/.test(home.kid), (home.kid.match(/\$\s?\d[^\s]*/) || [])[0]);
+  ok("Home waits for a chosen game without starting a daily run or replay", /pick a game/i.test(home.heading)&&!home.automatic&&!home.run,JSON.stringify(home));
+  ok("a locked released tile says Premium and asks for a grown-up",home.locked.length===3&&home.locked.every(t=>t.tag==="Premium"&&/Ask a grown-up/.test(t.aria)),JSON.stringify(home.locked));
+  ok("…and nothing a child can read on Home names a price",!/\$\s?\d/.test(home.kid),(home.kid.match(/\$\s?\d[^\s]*/) || [])[0]);
+  await pg.locator('#activityGroups .game-card[data-game="slice"]').click();
+  await pg.waitForURL(/charge\.html/);
+  ok("choosing a released free game opens normal practice without a replay flag",home.open.includes("slice")&&new URL(pg.url()).searchParams.get("game")==="arcade-slice.html"&&!new URL(pg.url()).searchParams.has("demo"),pg.url());
 
   // the daily run itself opens — the practice door does not bounce
   await pg.goto("http://localhost:8211/charge.html?daily=1"); await pg.waitForTimeout(900);
@@ -332,12 +337,9 @@ if (appFree) {
   }));
   ok("the plan screen offers exactly one plan to a family on the free version",
     plan.pick === "block" && plan.plans === 1, JSON.stringify(plan));
-  // REWRITTEN 24 Sep 2026: this pinned "two games", which undersold the free
-  // version — gameAccess opens all four free-tier games to every child (two
-  // per age group) — while Home said four. One phrase on every family
-  // surface now, and this is where the plan screen's copy of it is held.
+  // The free-version promise must not count games that are still parked.
   ok("…and says what they keep if they don't buy it, in the one phrase",
-    plan.free === "block" && /daily practice and four free games/i.test(plan.freeText) && !/\btwo games\b/i.test(plan.freeText), JSON.stringify(plan));
+    plan.free === "block" && /daily practice and free games/i.test(plan.freeText) && !/\btwo games\b/i.test(plan.freeText), JSON.stringify(plan));
   ok("no pageerrors across the free-version surfaces", errs.length === 0, errs.join(" | "));
   await ctx.close();
 }

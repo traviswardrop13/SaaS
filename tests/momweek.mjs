@@ -78,7 +78,7 @@ await page.reload(); await page.waitForTimeout(900);
 const sheet = await page.evaluate(() => {
   document.getElementById("sheetOvl").classList.add("show");
   // paintWeek runs on load; read what it rendered
-  return { dots: document.getElementById("wkDots").children.length, msg: document.getElementById("wkMsg").textContent, streak: document.getElementById("wkStreak").textContent, sub: document.getElementById("subLine").textContent, entries: [...document.querySelectorAll(".sheetBtn")].map((b) => b.textContent.trim()) };
+  return { dots: document.getElementById("wkDots").children.length, msg: document.getElementById("wkMsg").textContent, streak: document.getElementById("wkStreak").textContent, entries: [...document.querySelectorAll(".sheetBtn")].map((b) => b.textContent.trim()) };
 });
 ok("sheet 7 dots", sheet.dots, 7);
 // The plan lives in Settings → Account, where Restore also is; duplicating it
@@ -89,7 +89,7 @@ ok("the sheet still reaches Progress and Settings",
 // pre-path families get one step per practiced day — nobody restarts at zero
 const pcredit = await page.evaluate(() => window.Sona.pathState().steps);
 ok("path credits practiced days", pcredit >= 3, true);
-console.log("      msg:", sheet.msg, "| streak:", sheet.streak, "| subLine:", sheet.sub);
+console.log("      msg:", sheet.msg, "| streak:", sheet.streak);
 await page.screenshot({ path: OUT + "/mom-sheet.png" });
 
 // progress page

@@ -8,11 +8,17 @@ import { chromium, ROOT as SOURCE_ROOT, launchOpts } from './_env.mjs';
 const ROOT = process.env.SONATEST_PUBLIC_ROOT || SOURCE_ROOT;
 const BASE = 'http://127.0.0.1:8196';
 const MIME = { html:'text/html', js:'text/javascript', css:'text/css', svg:'image/svg+xml', png:'image/png', webp:'image/webp', woff2:'font/woff2' };
+// Bubble Pop and Peekaboo are parked in the shipped catalog. Keep exercising
+// their retained engines by changing only their flags in this test server's
+// source response; the app has no runtime flag that unlocks parked games.
+function enableParkedEngineFixture(source) {
+  return source.replace(/(\b(?:bubbles|peekaboo)\s*:\s*\{[^}]*\bcomingSoon\s*:\s*)true/g, '$1false');
+}
 const server = createServer((req,res) => {
   const url = new URL(req.url, BASE), file = path.join(ROOT,url.pathname);
   if(url.pathname.startsWith('/api/')) { res.writeHead(503,{'content-type':'application/json'}); res.end('{}'); return; }
   if(!existsSync(file)||!statSync(file).isFile()) { res.writeHead(404); res.end(); return; }
-  res.writeHead(200,{'content-type':MIME[file.split('.').pop()]||'application/octet-stream'}); res.end(readFileSync(file));
+  res.writeHead(200,{'content-type':MIME[file.split('.').pop()]||'application/octet-stream'}); res.end(url.pathname==='/sona.js'?enableParkedEngineFixture(readFileSync(file,'utf8')):readFileSync(file));
 });
 await new Promise(resolve=>server.listen(8196,'127.0.0.1',resolve));
 const browser = await chromium.launch(launchOpts());
@@ -89,7 +95,7 @@ function clean(game,errors){ok(game+': no runtime errors',errors.length===0,erro
 
 const pages=['bubbles','peekaboo'];
 const present=pages.every(game=>existsSync(ROOT+'/arcade-'+game+'.html'))&&existsSync(ROOT+'/simple-play.js');
-for(const game of pages)ok(game+': playable page ships',existsSync(ROOT+'/arcade-'+game+'.html'));
+for(const game of pages)ok(game+': parked engine page is retained',existsSync(ROOT+'/arcade-'+game+'.html'));
 ok('shared simple-play engine ships',existsSync(ROOT+'/simple-play.js'));
 
 if(present)for(const game of pages){
@@ -120,8 +126,8 @@ if(present)for(const game of pages){
       await click(page,'#playAgain');await phase(page,'choose');
       const replay=await visibleState(page);
       ok(game+': replay starts a fresh five-turn round',replay.phase==='choose'&&replay.progress===first.progress&&!(await page.locator('#finishPanel').isVisible()));
-      await click(page,'#backLibrary');await page.waitForURL('**/activities.html');
-      ok(game+': library exit returns to game choices',new URL(page.url()).pathname==='/activities.html');
+      await click(page,'#backLibrary');await page.waitForURL('**/today.html');
+      ok(game+': library exit returns to game choices',new URL(page.url()).pathname==='/today.html');
       clean(game,errors);
     }finally{await context.close();}
   });

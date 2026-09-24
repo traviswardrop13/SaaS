@@ -12,8 +12,8 @@ import { charterSpots, CHARTER_PRICE, STANDARD_PRICE, CHARTER_PER_MONTH, STANDAR
  * permanently.
  *
  * "PAID" MEANS A FREE VERSION AND PREMIUM (Travis, 24 Sep 2026). Daily
- * practice and four free games are free for every family — the one phrase
- * every surface uses, because gameAccess() opens all four free games to every
+ * practice and free games are free for every family — the one phrase
+ * every surface uses, because gameAccess() opens all free games to every
  * child — and Premium adds every game. So in EITHER state the CTA starts free, in the app; Premium is an
  * upgrade made inside the app, never a checkout started from this page. The
  * parent price is only ever lib/charter.ts's, read through the live count. The price has flipped eleven
@@ -229,7 +229,7 @@ function PricingPaid({ spots }: { spots: Spots }) {
         <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
           <div style={{ font: `800 52px/1 ${B}` }}>Free</div>
         </div>
-        <div style={{ fontSize: 12.5, fontWeight: 700, color: MUTED, margin: "4px 0 16px" }}>Daily practice and four free games. No card, no trial, nothing to cancel.</div>
+        <div style={{ fontSize: 12.5, fontWeight: 700, color: MUTED, margin: "4px 0 16px" }}>Daily practice and free games. No card, no trial, nothing to cancel.</div>
         <Perks items={["Daily practice that really hears every rep", "Four free games to play after practice", "Progress you can see on your phone", "Works on iPhone, iPad and in any browser"]} />
         <CtaButton />
         <Steps steps={[["1", "Open Sona"], ["2", "Pick your sound"], ["3", "Practice today"]]} />
@@ -303,7 +303,7 @@ export default async function Landing() {
   const heroSubline = FREE_MODE ? (
     <>Free — every game, every sound. No card, no trial, nothing to cancel.</>
   ) : (
-    <>Free: daily practice and four free games, no card. Every game with Premium — {priceNow}/yr after 3 free days.</>
+    <>Free: daily practice and free games, no card. Every game with Premium — {priceNow}/yr after 3 free days.</>
   );
   const finalPriceLine = FREE_MODE ? (
     <><span style={{ color: INK, font: `800 20px ${B}` }}>Free</span> — every game, every sound</>
@@ -316,14 +316,14 @@ export default async function Landing() {
     ? "No card · No trial · Nothing to cancel"
     : `No card to start · Premium ${perMonthNow} · Cancel anytime`;
   const stickyTitle = FREE_MODE ? "Free to play" : "Start free";
-  const stickySub = FREE_MODE ? "every game, every sound" : "daily practice + four free games";
+  const stickySub = FREE_MODE ? "every game, every sound" : "daily practice + free games";
   const faq: [string, string][] = [
     ["Does Sona replace working with an SLP?", "No — it's daily practice designed by one. If your child already sees a speech professional, Sona is the between-sessions coach that makes each visit count."],
     [
       "What does it cost?",
       FREE_MODE
         ? "Nothing. Every game, every sound and the Sound Check are free right now — there is no card to enter and no trial running out."
-        : `The free version costs nothing: daily practice and four free games, with no card. Premium unlocks every game for ${priceNow} a year — ${perMonthNow} — starting with 3 free days on the web: nothing is charged before day 3, and only if you keep it. Upgrade inside the app whenever you want, and cancel anytime.`,
+        : `The free version costs nothing: daily practice and free games, with no card. Premium unlocks every game for ${priceNow} a year — ${perMonthNow} — starting with 3 free days on the web: nothing is charged before day 3, and only if you keep it. Upgrade inside the app whenever you want, and cancel anytime.`,
     ],
     [
       "What do I need to start?",

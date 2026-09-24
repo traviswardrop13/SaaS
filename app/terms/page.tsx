@@ -106,7 +106,7 @@ export default function TermsPage() {
                 "Four free games", the one phrase every surface uses: gameAccess()
                 opens all four to every child, and "two games" understated it. */}
             <strong>Sona has a free version and Premium.</strong> The free version
-            — daily practice and four free games — costs nothing and needs no
+            — daily practice and free games — costs nothing and needs no
             card. Premium adds every game.
             <br />
             <br />

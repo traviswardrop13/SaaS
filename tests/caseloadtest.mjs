@@ -824,8 +824,8 @@ const count = (pred) => S.calls.filter(pred).length;
   ok("…subject \"<clinician> invited you to practice with Sona\"", mail.subject === "Sam Rivera invited you to practice with Sona", mail.subject);
   ok("…one button, and it is the join link", (mail.html.match(/<a /g) || []).length === 1 && mail.html.includes('href="' + r.json.link.replace(/&/g, "&amp;") + '"') && mail.text.includes(r.json.link));
   // One phrase for the free version everywhere (24 Sep 2026), the email too.
-  ok("…says the clinician uses Sona for practice at home, and what the free version is: daily practice and four free games",
-    /Sam Rivera uses Sona for speech practice at home/.test(mail.text) && mail.text.includes("Sona's free version (daily practice and four free games) is free for your family.") && mail.html.includes("daily practice and four free games"));
+  ok("…says the clinician uses Sona for practice at home, and what the free version is: daily practice and free games",
+    /Sam Rivera uses Sona for speech practice at home/.test(mail.text) && mail.text.includes("Sona's free version (daily practice and free games) is free for your family.") && mail.html.includes("daily practice and free games"));
   ok("…with no Premium line, because this caseload is not covered", !/Premium/.test(mail.text + mail.html));
   ok("…and the footer: one email, asked for by the clinician, address not kept",
     mail.text.includes("You're getting this one email because Sam Rivera asked Sona to send it. We didn't keep your address."));

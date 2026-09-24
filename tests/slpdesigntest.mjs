@@ -179,9 +179,8 @@ try {
     ok("…with its own crumb",(await pg.locator("#pageCrumb").textContent())==="Caseload Premium");
     const page=await pg.locator("#page-premium").innerText();
     ok("the offer names the plan and prints the server's price and per-month reading",/Sona Premium for your whole caseload/.test(page)&&/\$79\.99 a year · under \$7 a month/.test(page),page);
-    // "four free games" since 24 Sep 2026: "two games" undersold what
-    // gameAccess() opens, and Home said four. One phrase, every surface.
-    ok("…says what families get, and that the free version stays free",/every game, every sound/i.test(page)&&/free version at home — daily practice and four free games/.test(page)&&!/two games/.test(page),page);
+    // The shared promise avoids counting games that are still Coming soon.
+    ok("…says what families get, and that the free version stays free",/every game, every sound/i.test(page)&&/free version at home — daily practice and free games/.test(page)&&!/two games/.test(page),page);
     // With its conditions (24 Sep 2026): the bare "$59.99 a year" was true
     // only for the first fifty web buyers, and a clinician repeats it.
     ok("…prints the family price only as /api/charter answered it, with its conditions",/can buy Premium themselves — on the web, \$59\.99 a year for the first 50 families\./.test(page)&&charterReads.length>0,page);

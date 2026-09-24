@@ -7,7 +7,7 @@
   if (!S) return;
   var kind = document.body.getAttribute("data-simple-game"), NEED = 5;
   var dailyEntry = new URLSearchParams(location.search).get("daily") === "1";
-  if (!S.gameAccess(kind, { run: dailyEntry }).allowed) { S.gameBounce(kind); return; }
+  if (!S.gameAccess(kind, { run: dailyEntry }).allowed) { document.body.hidden = true; S.gameBounce(kind); return; }
   function $(id) { return document.getElementById(id); }
   var phase = "intro", paused = false, closed = false, finished = false;
   var found = 0, heard = 0, heardThisTurn = false, target = null, targets = [], used = [], sound = "";

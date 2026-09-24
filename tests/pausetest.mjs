@@ -450,7 +450,7 @@ await scenario('earned game waits for Resume and survives Home', async () => {
     await page.evaluate(() => __pauseHarness.foreground()); await click(page, '#pauseHome');
     await page.waitForURL('**/today.html');
     ok('Home preserves the earned pending game', (await earned(page)).run.pending === true);
-    await click(page, '#goBtn'); await page.waitForURL('**/charge.html?**'); await page.waitForTimeout(420);
+    ok('Home waits in the library before an explicit legacy resume', await page.locator('#libraryApp').isVisible()); await page.goto(origin+'/charge.html?daily=1'); await page.waitForURL('**/charge.html?**'); await page.waitForTimeout(420);
     const restored = await resources(page);
     ok('returning to a pending earned game asks for no new practice', restored.requests === 0 && restored.graphs === 0, restored);
     ok('pending-game restore duplicates no practice reward', samePractice(before, await earned(page)));
@@ -496,7 +496,7 @@ await scenario('Home preserves both unopened and revealed legacy chests', async 
     const before = await earned(page), visible = await pause(page);
     if (!visible) return;
     await page.evaluate(() => __pauseHarness.foreground()); await click(page, '#pauseHome');
-    await page.waitForURL('**/today.html'); await click(page, '#goBtn');
+    await page.waitForURL('**/today.html'); ok('Home waits in the library before an explicit legacy resume', await page.locator('#libraryApp').isVisible()); await page.goto(origin+'/charge.html?daily=1');
     await page.waitForURL('**/charge.html?**'); await page.locator('#chestOvl.show').waitFor();
     const restored = await resources(page);
     ok('Home restores an unopened chest without another practice attempt', restored.requests === 0 && restored.graphs === 0 && samePractice(before, await earned(page)), restored);
@@ -505,7 +505,7 @@ await scenario('Home preserves both unopened and revealed legacy chests', async 
     const name = await page.locator('#chestName').innerText(), revealed = await earned(page);
     ok('one remaining tap awards exactly one sticker after Home', (await resources(page)).effects.filter((e) => e === 'awardNextSticker').length === 1);
     await pause(page); await page.evaluate(() => __pauseHarness.foreground()); await click(page, '#pauseHome');
-    await page.waitForURL('**/today.html'); await click(page, '#goBtn');
+    await page.waitForURL('**/today.html'); ok('Home waits in the library before an explicit legacy resume', await page.locator('#libraryApp').isVisible()); await page.goto(origin+'/charge.html?daily=1');
     await page.waitForURL('**/charge.html?**'); await page.locator('#chestOvl.show').waitFor();
     const reopened = await resources(page);
     ok('Home restores the same revealed sticker without another award', (await page.locator('#chestName').innerText()) === name && reopened.effects.filter((e) => e === 'awardNextSticker').length === 0 && samePractice(revealed, await earned(page)));

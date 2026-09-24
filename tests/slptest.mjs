@@ -270,11 +270,9 @@ async function open(hash) {
     .replace(/<!--[\s\S]*?-->/g, "").replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:])\/\/[^\n]*/g, "$1");
   ok("the dashboard no longer promises anything 'free forever'", !/free forever/i.test(src));
   ok("…and never says 'unlimited' — a covered caseload has a number, and the copy says every family", !/unlimited/i.test(src));
-  // ONE PHRASE FOR THE FREE VERSION (24 Sep 2026): "daily practice and four
-  // free games". It said "two games", but gameAccess() opens all four free
-  // games to every child, and Home said four — a parent told "two" by her
-  // clinician then read "four" in the app. Pinned wherever the dashboard says it.
-  ok("…and names the free version one way: four free games, never 'two games'", !/two (free )?games/i.test(src) && (src.match(/daily practice and four free games/g) || []).length >= 3, (src.match(/[^.>"]*two (free )?games[^.<"]*/i) || [""])[0]);
+  // Use the shared free-version promise without a fixed game count: parked
+  // content must not be advertised as an available free game.
+  ok("…and names the free version one way: free games, never 'two games'", !/two (free )?games/i.test(src) && (src.match(/daily practice and free games/g) || []).length >= 3, (src.match(/[^.>"]*two (free )?games[^.<"]*/i) || [""])[0]);
 
   for (const [label, plan] of [["not covered", PLAN_NONE], ["paid", { ...PLAN_NONE, active: true, source: "paid", periodEnd: 1822000000 }], ["grandfathered", { ...PLAN_NONE, active: true, source: "grandfathered" }]]) {
     PLAN = plan; DATA = fixture(); log.length = 0;
@@ -286,8 +284,8 @@ async function open(hash) {
       ok(`${label}: the caseload message says Premium is included`, /free for your family/.test(snip) && /Premium is included/.test(snip) && /every game/.test(snip), snip);
       ok(`${label}: Settings says the families get every game`, /Your caseload has Premium, so they get every game too/.test(settings), settings);
     } else {
-      ok(`${label}: the caseload message promises the free version and no Premium`, /free for your family: daily practice and four free games\./.test(snip) && !/Premium/.test(snip), snip);
-      ok(`${label}: Settings says what the free version is and where Premium lives`, /daily practice and four free games/.test(settings) && /With Caseload Premium they get every game/.test(settings), settings);
+      ok(`${label}: the caseload message promises the free version and no Premium`, /free for your family: daily practice and free games\./.test(snip) && !/Premium/.test(snip), snip);
+      ok(`${label}: Settings says what the free version is and where Premium lives`, /daily practice and free games/.test(settings) && /With Caseload Premium they get every game/.test(settings), settings);
     }
     ok(`${label}: never pilot, trial or forever`, !/pilot|trial|forever/i.test(snip + settings), snip);
     ok(`${label}: learning the plan is a read, never a write`, !log.some((l) => l.m !== "GET"), JSON.stringify(log.filter((l) => l.m !== "GET")));

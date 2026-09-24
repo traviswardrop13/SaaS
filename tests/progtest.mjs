@@ -1,5 +1,5 @@
 // Progression: sound rotation (one letter per 5-round pass), per-round ladder
-// climb capped at earned+1, daily-goal ring on Today, charge round label,
+// climb capped at earned+1, saved daily-goal state on Today, charge round label,
 // pulse copy. Real pages; rotation advanced via the exported Sona API.
 import { createServer } from "http";
 import { readFileSync, existsSync } from "fs";
@@ -54,24 +54,24 @@ ok('pulse placeholder drops "complaint"', !/complaint/i.test(todaySrc));
 await page.goto("http://localhost:8131/today.html"); await page.waitForTimeout(700);
 let t = await page.evaluate(() => ({
   ring: String(Sona.repsToday()),
-  sub: document.getElementById("subLine").textContent,
+  title: document.querySelector(".library-intro h1").textContent,
   sound: Sona.rotSound(), round: Sona.rotRound(),
   ph: (document.getElementById("pulseText") || {}).placeholder || "",
 }));
 ok("fresh Home has no earned reps", t.ring === "0");
-ok("subLine invites the R sound", /your R sound/.test(t.sub));
+ok("Home invites choosing a game", /pick a game/i.test(t.title));
 ok("rotation starts R round 0", t.sound === "R" && t.round === 0);
 
-// ── the home deck: hero + two up-next, and the rotation behind it ──
+// ── the complete library, and the rotation behind it ──
 const DECK = () => ({
   ps: Sona.pathState(),
-  hero: document.getElementById("heroName").textContent,
-  launch: document.getElementById("goBtn").dataset.launch,
-  thumbs: [...document.querySelectorAll("#thumbs .thumb")].map((t) => t.dataset.key),
+  games: [...document.querySelectorAll("#activityGroups .game-card[data-game]")].map(card => card.dataset.game),
+  expected: Sona.activityLibrary().groups.flatMap(group => group.games.map(game => game.key)),
+  library: !document.getElementById("libraryApp").hidden,
 });
 let pp = await page.evaluate(DECK);
-ok("deck: hero card is named and opens a door", pp.hero.length > 3 && !!pp.launch, JSON.stringify(pp));
-ok("deck: three game cards, all different from each other", pp.thumbs.length === 3 && new Set(pp.thumbs).size === 3, JSON.stringify(pp.thumbs));
+ok("Home opens the library without choosing a game", pp.library && /today\.html$/.test(page.url()), JSON.stringify(pp));
+ok("library offers every game once in the age shelves", JSON.stringify(pp.games) === JSON.stringify(pp.expected) && new Set(pp.games).size === pp.games.length, JSON.stringify(pp));
 ok("deck: fresh family starts at step 0", pp.ps.steps === 0, JSON.stringify(pp.ps));
 
 // ── charge free play: round 1 = isolation, header context line ──
@@ -142,15 +142,13 @@ ok("round 4 capped at earned+1 (still syllables)", /^r(ah|ee|oo|oh|ay)$/i.test(c
 // ── rep pill mid-day: the number the kid watches only climbs (RING1) ──
 await page.evaluate(() => Sona.bumpReps(12));
 await page.goto("http://localhost:8131/today.html"); await page.waitForTimeout(700);
-t = await page.evaluate(() => ({ ring: String(Sona.repsToday()), sub: document.getElementById("subLine").textContent }));
+t = await page.evaluate(() => ({ ring: String(Sona.repsToday()), sound: Sona.rotSound() }));
 ok("Home keeps today's real rep count", t.ring === "12", t.ring);
-ok("subLine keeps the sound goal visible", /your R sound/.test(t.sub));
+ok("library leaves the current practice sound intact", t.sound === "R");
 pp = await page.evaluate(DECK);
 ok("deck: steps track the rotation", pp.ps.steps === 3, JSON.stringify(pp.ps));
-ok("deck: mid-day still offers the whole trio", pp.thumbs.length === 3 && !!pp.launch, JSON.stringify(pp));
-await page.evaluate(() => document.getElementById("jarInfo").click());
-let toast = await page.evaluate(() => document.getElementById("toast").textContent);
-ok("jar tap explains reps + rounds honestly", /12 reps today/.test(toast) && /3 of 5 rounds done/.test(toast));
+ok("library: mid-day still offers the complete catalog", JSON.stringify(pp.games) === JSON.stringify(pp.expected), JSON.stringify(pp));
+ok("Home keeps saved reps and rounds without the old star-jar menu", await page.evaluate(() => Sona.repsToday() === 12 && Sona.rotRound() === 3 && !document.getElementById("jarInfo")));
 await page.screenshot({ path: OUT + "/prog-ring-mid.png" });
 
 // ── finish the rotation: 5 rounds → next letter S, ring goes gold ──
@@ -162,10 +160,10 @@ await page.goto("http://localhost:8131/today.html"); await page.waitForTimeout(7
 t = await page.evaluate(() => ({
   ring: String(Sona.repsToday()),
   gold: Sona.todayRing().done,
-  sub: document.getElementById("subLine").textContent,
+  sound: Sona.rotSound(),
 }));
 ok("Home keeps the finished-round status independently of reps", t.gold === true && /^\d+$/.test(t.ring));
-ok("subLine shows the next current sound goal", /your S sound/.test(t.sub));
+ok("Home preserves the next current practice sound", t.sound === "S");
 pp = await page.evaluate(DECK);
 ok("deck: full day = five rotation steps", pp.ps.steps === 5, JSON.stringify(pp.ps));
 
@@ -235,8 +233,8 @@ await page.evaluate(() => {
   localStorage.setItem("sona.today.v1", JSON.stringify({ d: iso, n: 5 }));
 });
 await page.goto("http://localhost:8131/today.html"); await page.waitForTimeout(600);
-t = await page.evaluate(() => ({ sub: document.getElementById("subLine").textContent, gold: Sona.todayRing().done }));
-ok("completed rounds preserve the next sound goal", /your S sound/.test(t.sub) && t.gold === true);
+t = await page.evaluate(() => ({ sound: Sona.rotSound(), gold: Sona.todayRing().done }));
+ok("completed rounds preserve the next sound goal", t.sound === "S" && t.gold === true);
 await page.evaluate(() => localStorage.removeItem("sona.today.v1"));
 
 // ── no comeback popup: opening the app after days away goes STRAIGHT to the

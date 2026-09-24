@@ -494,7 +494,7 @@ export async function sendParentInviteEmail(
       `<p>Hi,</p>` +
       `<p>${esc(who)} uses Sona for speech practice at home, and invited your family to join.</p>` +
       `<p><a href="${esc(link)}" style="${BUTTON}">Join on Sona</a></p>` +
-      `<p>Sona's free version (daily practice and four free games) is free for your family.${esc(premium)}</p>` +
+      `<p>Sona's free version (daily practice and free games) is free for your family.${esc(premium)}</p>` +
       `<p style="color:#6b86a3;font-size:13px;margin-top:22px;">You're getting this one email because ${esc(whoMid)} asked Sona to send it. We didn't keep your address.</p>` +
       `</div>`,
     // plain text too, for the same reason the sign-in email has one: an
@@ -503,7 +503,7 @@ export async function sendParentInviteEmail(
       "Hi,\n\n" +
       who + " uses Sona for speech practice at home, and invited your family to join.\n\n" +
       "Join here:\n" + link + "\n\n" +
-      "Sona's free version (daily practice and four free games) is free for your family." + premium + "\n\n" +
+      "Sona's free version (daily practice and free games) is free for your family." + premium + "\n\n" +
       "You're getting this one email because " + whoMid + " asked Sona to send it. We didn't keep your address.\n",
   }, "parent invite", false);
   if (r.sent) return { sent: true };

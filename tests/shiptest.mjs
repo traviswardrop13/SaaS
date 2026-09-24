@@ -92,9 +92,9 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
   const shown = slps.replace(/<!--[\s\S]*?-->/g, "").replace(/<script[\s\S]*?<\/script>/g, "");
   ok("the landing page no longer promises 'unlimited families' or anything 'forever'",
     !/unlimited|forever/i.test(shown), (shown.match(/[^.>]*(unlimited|forever)[^.<]*/i) || [""])[0]);
-  // "four free games" since 24 Sep 2026 — the one phrase (block below).
+  // Keep the free-game promise independent of the number of available titles.
   ok("…says what is free: the dashboard for you, the free version for every family",
-    /<b>Free for you<\/b>/.test(shown) && /<b>Free for every family<\/b>/.test(shown) && /Daily practice and four free games/.test(shown));
+    /<b>Free for you<\/b>/.test(shown) && /<b>Free for every family<\/b>/.test(shown) && /Daily practice and free games/.test(shown));
   ok("…answers 'What does it cost?'",
     /What does it cost\?/.test(shown) && /Caseload Premium is optional: \$79\.99 a year \(under \$7 a month\) gives every family who joins through your link every game/.test(shown));
   ok("…with the plan's real terms: no trial, yearly, cancel anytime, families keep it to the end of the paid year",
@@ -152,16 +152,14 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
 }
 
 // ── ONE PHRASE FOR THE FREE VERSION (24 Sep 2026) ──
-// "Daily practice and four free games", on every clinician and legal surface.
-// These said "two games" while Home said four; gameAccess() opens all four
-// free games to every child whatever their play style, so "two" undersold
-// it — and a parent holding a clinician's "two" against Home's "four" has a
-// support ticket, not an answer. freemiumtest holds the family surfaces.
+// "Daily practice and free games", on every clinician and legal surface.
+// Coming-soon titles are not playable yet. Keep the promise count-free so
+// parked content cannot inflate it. freemiumtest holds the family surfaces.
 {
   const decomment = (t) => t.replace(/<!--[\s\S]*?-->/g, " ").replace(/\{?\/\*[\s\S]*?\*\/\}?/g, " ").replace(/(^|[^:"'\\])\/\/[^\n]*/g, "$1");
   for (const rel of ["public/for-slps.html", "public/slp.html", "public/privacy.html", "app/terms/page.tsx", "app/families/page.tsx"]) {
     const src = decomment(readFileSync(APP + "/" + rel, "utf8")).replace(/\s+/g, " ");
-    ok(rel + " names the free version as 'daily practice and four free games'", /daily practice (and|\+) four free games/i.test(src));
+    ok(rel + " names the free version as 'daily practice and free games'", /daily practice (and|\+) free games/i.test(src));
     ok(rel + " never undersells it as 'two games'", !/\btwo (free )?games\b/i.test(src), (src.match(/.{0,60}\btwo (free )?games\b.{0,40}/i) || [])[0]);
   }
 }

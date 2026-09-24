@@ -1027,7 +1027,7 @@
               <p class="premium-price" id="premiumPriceLine"><b id="premiumPrice"></b> a year · <span id="premiumPerMonth"></span></p>
               <ul class="premium-points">
                 <li><b>Every game, every sound.</b> Every family who joins through your link gets all of Sona's games, whether or not they choose to share practice with you.</li>
-                <li><b>Practice stays free.</b> Families can always use the free version at home — daily practice and four free games — whether or not you buy this.</li>
+                <li><b>Practice stays free.</b> Families can always use the free version at home — daily practice and free games — whether or not you buy this.</li>
                 <li id="premiumParentPrice"><b>Families you don't cover</b> can buy Premium themselves<span id="premiumParentFigure"></span>.</li>
                 <li><b>You never earn anything on your own caseload.</b> This is a plan you pay for, not a referral fee.</li>
               </ul>
@@ -1104,7 +1104,7 @@
           <!-- Was "free forever" until 24 Sep 2026. The dashboard is still free
                and so is the free version for every family; every game is now
                Premium, so this line says which of the two a family gets. -->
-          <p class="sub">Your dashboard is free. Families who join through your link get Sona's free version — daily practice and four free games — at no cost. <span id="linkCoverage">With <a href="#premium">Caseload Premium</a> they get every game.</span></p>
+          <p class="sub">Your dashboard is free. Families who join through your link get Sona's free version — daily practice and free games — at no cost. <span id="linkCoverage">With <a href="#premium">Caseload Premium</a> they get every game.</span></p>
           <p class="sub" style="margin-top:8px;">Create a child's link or copy your general link in Caseload → Add a child.</p>
           <a class="btn ghost sm" href="#invite" style="margin-top:12px;">Invite a family →</a>
 
@@ -1693,10 +1693,10 @@
     // Premium only while this caseload is covered, paid or grandfathered.
     // Still "free", never "pilot" or "trial". "Daily practice and four free
     // games" is the one phrase for the free version on every surface (24 Sep
-    // 2026): it said "two games", but gameAccess() opens all four free games
+    // 2026): it said "two games", but gameAccess() opens all free games
     // to every child whatever their play style, and a parent told "two" by
     // her clinician then saw "four" on Home.
-    function familyOffer(){ return caseCovered()?"It's free for your family, and Premium is included through me, so your child gets every game.":"It's free for your family: daily practice and four free games."; }
+    function familyOffer(){ return caseCovered()?"It's free for your family, and Premium is included through me, so your child gets every game.":"It's free for your family: daily practice and free games."; }
     function inviteMsg(child,link){ return "Hi! Here's your child's Sona link — the speech-practice app I mentioned. "+familyOffer()+" Open it on the phone your child will use, say yes to sharing practice with me, and they can start today. It listens and gives feedback as they play, and I'll see the practice add up on my end.\n\nYour family invite (start here):\n"+link+"\n\nDownload for iPhone or iPad:\n"+APP_STORE_URL; }
     function invInit(){
       if(invReady)return; invReady=true;
