@@ -46,9 +46,13 @@
   <div id="out" hidden>
     <div class="cards">
       <div class="card"><span class="muted">Emails captured</span><b id="nLeads">0</b></div>
-      <div class="card"><span class="muted">Reached GoHighLevel</span><b id="nCrm">0</b></div>
+      <div class="card"><span class="muted">In Kit</span><b id="nCrm">0</b></div>
       <div class="card"><span class="muted">Therapist accounts</span><b id="nSlp">0</b></div>
     </div>
+
+    <h2>Kit</h2>
+    <p class="muted">Sends everyone below — every captured email and every therapist account — to your Kit list, tagged therapist or parent. Safe to run again: Kit updates people it already has.</p>
+    <div class="row"><button id="kitSync">Send everyone to Kit</button><span class="muted" id="kitMsg" role="status"></span></div>
 
     <h2>Emails captured</h2>
     <p class="muted">Newest first. Kept since 24 Sep 2026 — nothing before that was stored on our side.</p>
@@ -56,7 +60,7 @@
     <div class="tw"><table id="tLeads"></table></div>
 
     <h2>Therapist accounts</h2>
-    <p class="muted">Everyone who signed up for the dashboard, from the start. "Not yet" means GoHighLevel hasn't been told; it will be the next time they sign in.</p>
+    <p class="muted">Everyone who signed up for the dashboard, from the start. "Not yet" means Kit doesn't have them yet: the Kit button above sends them, and so does their next sign-in.</p>
     <div class="row"><button class="ghost" id="csvSlp">Download CSV</button></div>
     <div class="tw"><table id="tSlp"></table></div>
   </div>
@@ -66,8 +70,8 @@
   (function () {
     var $ = function (id) { return document.getElementById(id); };
     var DATA = null;
-    var LEAD_COLS = [["at", "When"], ["email", "Email"], ["first_name", "Name"], ["role", "Who"], ["source", "From"], ["utm_campaign", "Campaign"], ["utm_content", "Ad"], ["crm", "GoHighLevel"]];
-    var SLP_COLS = [["createdAt", "Signed up"], ["email", "Email"], ["name", "Name"], ["clinic", "Clinic"], ["source", "From"], ["inCrm", "In GoHighLevel"]];
+    var LEAD_COLS = [["at", "When"], ["email", "Email"], ["first_name", "Name"], ["role", "Who"], ["source", "From"], ["utm_campaign", "Campaign"], ["utm_content", "Ad"], ["kit", "Kit"]];
+    var SLP_COLS = [["createdAt", "Signed up"], ["email", "Email"], ["name", "Name"], ["clinic", "Clinic"], ["source", "From"], ["inCrm", "Sent to email list"]];
 
     function esc(s) {
       return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
@@ -82,13 +86,21 @@
         return "<tr>" + cols.map(function (c) {
           var v = r[c[0]];
           if (c[0] === "at" || c[0] === "createdAt") v = when(v);
-          var cls = (c[0] === "crm" || c[0] === "inCrm") ? (/^(accepted|yes)$/.test(String(v)) ? ' class="ok"' : ' class="bad"') : "";
+          if (c[0] === "kit" && !v) v = "—";
+          var cls = (c[0] === "kit" || c[0] === "inCrm") ? (/^(added|yes)/.test(String(v)) ? ' class="ok"' : ' class="bad"') : "";
           return "<td" + cls + ">" + esc(v) + "</td>";
         }).join("") + "</tr>";
       }).join("");
     }
     function csv(cols, rows, name) {
-      var q = function (v) { v = String(v == null ? "" : v); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
+      // Anyone can put text into these fields (a UTM tag, a name at sign-up),
+      // and a cell that starts with = + - @ runs as a formula in Excel and
+      // Sheets. A leading apostrophe makes it plain text.
+      var q = function (v) {
+        v = String(v == null ? "" : v);
+        if (/^[=+\-@\t\r]/.test(v)) v = "'" + v;
+        return /[",\n\r]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
+      };
       var body = [cols.map(function (c) { return q(c[1]); }).join(",")].concat(rows.map(function (r) {
         return cols.map(function (c) { return q(r[c[0]]); }).join(",");
       })).join("\n");
@@ -110,8 +122,10 @@
           // Kept for this tab only, so a refresh doesn't ask again.
           try { sessionStorage.setItem("sona.founderKey", key); } catch (e) {}
           DATA = j;
-          $("nLeads").textContent = j.leads.length;
-          $("nCrm").textContent = j.leads.filter(function (l) { return l.crm === "accepted"; }).length;
+          // People, not rows: a clinician finishing setup is posted twice.
+          var uniq = function (list) { var s = {}; list.forEach(function (l) { s[String(l.email || "").toLowerCase()] = 1; }); return Object.keys(s).length; };
+          $("nLeads").textContent = uniq(j.leads);
+          $("nCrm").textContent = uniq(j.leads.filter(function (l) { return /^added/.test(String(l.kit || "")); }));
           $("nSlp").textContent = j.clinicians.length;
           table($("tLeads"), LEAD_COLS, j.leads);
           table($("tSlp"), SLP_COLS, j.clinicians);
@@ -122,6 +136,34 @@
           $("err").textContent = "Network hiccup — try again.";
         });
     }
+    // THE CATCH-UP: batches of five with a pause between them, because Kit
+    // allows about 120 requests a minute and each person can cost three.
+    // When Kit says slow down, the page waits the minute it asks for.
+    function kitSync() {
+      var key = ($("key").value || "").trim();
+      var added = 0, failed = 0;
+      $("kitSync").disabled = true;
+      function step(offset) {
+        fetch("/api/founders/kit-sync", {
+          method: "POST", headers: { "Content-Type": "application/json", "x-founder-key": key },
+          body: JSON.stringify({ offset: offset }),
+        }).then(function (r) { return r.json(); }).then(function (j) {
+          if (!j || !j.ok) { $("kitMsg").textContent = (j && j.error) || "Couldn't reach Kit."; $("kitSync").disabled = false; return; }
+          (j.results || []).forEach(function (x) { if (/^added/.test(x.result)) added++; else failed++; });
+          if (j.done) {
+            $("kitMsg").textContent = "Done — " + added + " in Kit" + (failed ? ", " + failed + " failed (see the Kit column after refreshing)" : "") + ".";
+            $("kitSync").disabled = false; load(); return;
+          }
+          var wait = j.retryAfter ? j.retryAfter * 1000 : 8000;
+          $("kitMsg").textContent = j.next + " of " + j.total + " sent" + (j.retryAfter ? " — Kit asked us to slow down, waiting a minute…" : "…");
+          setTimeout(function () { step(j.next); }, wait);
+        }).catch(function () { $("kitMsg").textContent = "Network hiccup — press it again to carry on."; $("kitSync").disabled = false; });
+      }
+      $("kitMsg").textContent = "Starting…";
+      step(0);
+    }
+    $("kitSync").onclick = kitSync;
+
     $("go").onclick = load;
     $("key").addEventListener("keydown", function (e) { if (e.key === "Enter") load(); });
     $("csvLeads").onclick = function () { if (DATA) csv(LEAD_COLS, DATA.leads, "sona-leads.csv"); };

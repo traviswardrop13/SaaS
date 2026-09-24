@@ -1,17 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
-import { kvCmd, kvConfigured } from "@/lib/slpAuth";
+import crypto from "node:crypto";
+import { kvCmd, kvConfigured, leadSig } from "@/lib/slpAuth";
+import { rateLimit } from "@/lib/rateLimit";
+import { kitConfigured, kitSubscribe, kitTagFor, type KitResult } from "@/lib/kit";
 
 /**
- * Lead capture for the free Speech Check (top-of-funnel email opt-in).
+ * THE ONE PLACE A GROWN-UP'S EMAIL GOES: the SLP sign-up (via the auth route's
+ * tellCrm), the app's setup (a clinician's account email, a parent's
+ * weekly-summary email) and the Speech Check.
  *
- * Forwards the lead to whatever the founder has wired up — no DB required:
- *   - LEAD_WEBHOOK_URL : a generic inbound webhook (GHL workflow, Zapier,
- *     Make, etc.). The whole lead JSON is POSTed there. Simplest path to
- *     "see your opt-ins" with zero new accounts.
- *   - KIT_API_KEY + KIT_FORM_ID : best-effort native Kit (ConvertKit) opt-in.
+ * Every lead is saved in the store first-class (the ledger below), then sent to:
+ *   - KIT_API_KEY (+ optional KIT_FORM_ID): the email list, via lib/kit —
+ *     clinicians tagged sona-slp, everyone else sona-parent;
+ *   - LEAD_WEBHOOK_URL: a generic webhook. It was GoHighLevel, deleted on
+ *     24 Sep 2026; remove the variable and this path goes quiet.
  *
- * Never blocks the user: if capture hiccups, we still return ok so the Check
- * flow completes. `captured` tells the client whether anything was wired.
+ * Never blocks the visitor: a capture hiccup still returns ok. `captured` says
+ * whether a list actually accepted the lead, and the auth route stamps a
+ * clinician's account only when it did.
  */
 export const runtime = "nodejs";
 
@@ -26,7 +32,8 @@ export async function GET() {
     service: "lead",
     email: Boolean(process.env.RESEND_API_KEY),
     hook: Boolean(process.env.LEAD_WEBHOOK_URL),
-    kit: Boolean(process.env.KIT_API_KEY && process.env.KIT_FORM_ID),
+    kit: kitConfigured(),
+    kitForm: Boolean(process.env.KIT_FORM_ID),
   });
 }
 
@@ -57,8 +64,26 @@ export async function POST(req: NextRequest) {
   }
 
   const email = typeof body?.email === "string" ? body.email.trim() : "";
-  if (!/^\S+@\S+\.\S+$/.test(email)) {
+  // 254 is the longest address email itself allows; anything longer is not
+  // an address, and every lead is now kept, so nothing unbounded gets in.
+  if (email.length > 254 || !/^\S+@\S+\.\S+$/.test(email)) {
     return NextResponse.json({ ok: false, error: "A valid email is required." }, { status: 400 });
+  }
+
+  /**
+   * A STRANGER CANNOT FLOOD THE LIST. This door takes posts from anyone, and
+   * each one is kept and sent to Kit — so a script could fill the ledger past
+   * its cap (pushing real leads out) and stuff the Kit list with junk. Ten an
+   * hour from one address is far more than any family or clinician sends.
+   * Our own sign-up route forwards every clinician from the same few server
+   * addresses, so it signs its leads and a valid signature skips the limit.
+   */
+  const sig = req.headers.get("x-sona-lead-sig") || "";
+  const want = leadSig(email);
+  const internal = sig.length === want.length && crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(want));
+  if (!internal) {
+    const limited = await rateLimit(req, { key: "lead", limit: 10, windowSec: 3600 });
+    if (limited) return limited;
   }
 
   const child = typeof body?.child === "string" ? body.child.slice(0, 60) : "";
@@ -86,7 +111,10 @@ export async function POST(req: NextRequest) {
     // Only a clinician signing up for themselves has a role, and only then
     // does a first name travel — theirs, typed about themselves. The parent
     // path never sets a role, so a child's name has no way onto this field.
-    role: body?.role === "slp" ? "slp" : "",
+    // "parent" travels too since 24 Sep 2026 so the email list can tell the
+    // two apart. It is a label, not an identity; the parent's name is never
+    // asked for here and never sent.
+    role: body?.role === "slp" ? "slp" : body?.role === "parent" ? "parent" : "",
     first_name: body?.role === "slp" && typeof body?.name === "string" ? body.name.trim().slice(0, 60) : "",
     fbclid: clamp(body?.fbclid),
     at: new Date().toISOString(),
@@ -136,56 +164,51 @@ export async function POST(req: NextRequest) {
   };
 
   const hook = process.env.LEAD_WEBHOOK_URL;
-  const kitKey = process.env.KIT_API_KEY;
-  const kitForm = process.env.KIT_FORM_ID;
   let captured = false;
   let crm: { ok: boolean; status: number } | null = null;
+  let kit: KitResult | null = null;
 
-  try {
-    if (hook) {
-      /**
-       * CAPTURED MEANS THE CRM SAID YES. This used to set captured = true the
-       * moment the fetch returned, whatever GoHighLevel answered — so a 4xx
-       * from a misconfigured workflow read, everywhere downstream, as a lead
-       * safely delivered. The status is kept now, a refusal is logged with
-       * GoHighLevel's own words, and a CRM that hangs cannot hold the
-       * sign-up hostage past the fuse.
-       */
-      const ctl = new AbortController();
-      const fuse = setTimeout(() => ctl.abort(), 5000);
-      try {
-        const r = await fetch(hook, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(safeLead),
-          signal: ctl.signal,
-        });
-        crm = { ok: r.ok, status: r.status };
-        if (!r.ok) console.error("[lead] CRM webhook refused the lead:", r.status, (await r.text().catch(() => "")).slice(0, 300));
-      } catch (e) {
-        crm = { ok: false, status: 0 };
-        console.error("[lead] CRM webhook failed:", e instanceof Error ? e.message : String(e));
-      } finally {
-        clearTimeout(fuse);
-      }
-      captured = crm.ok;
-    }
-    if (kitKey && kitForm) {
-      await fetch(`https://api.kit.com/v4/forms/${kitForm}/subscribers`, {
+  /**
+   * CAPTURED MEANS A LIST SAID YES. It used to be set the moment a fetch
+   * returned, whatever the CRM answered, so a refusal read everywhere
+   * downstream as a lead safely delivered. The legacy webhook (GoHighLevel,
+   * deleted 24 Sep 2026 — remove LEAD_WEBHOOK_URL once it is gone) and Kit
+   * run side by side, each on its own fuse, and captured is true only if one
+   * of them actually took the lead.
+   */
+  const toHook = async (): Promise<void> => {
+    if (!hook) return;
+    const ctl = new AbortController();
+    const fuse = setTimeout(() => ctl.abort(), 5000);
+    try {
+      const r = await fetch(hook, {
         method: "POST",
-        headers: { "Content-Type": "application/json", "X-Kit-Api-Key": kitKey },
-        body: JSON.stringify({
-          email_address: email,
-          // no child_name / child_age / practice_sounds — a marketing list is
-          // never a place a child's identity or clinical targets belong
-          fields: { signup_source: safeLead.source },
-        }),
-      }).catch(() => {});
-      captured = true;
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(safeLead),
+        signal: ctl.signal,
+      });
+      crm = { ok: r.ok, status: r.status };
+      if (!r.ok) console.error("[lead] CRM webhook refused the lead:", r.status, (await r.text().catch(() => "")).slice(0, 300));
+    } catch (e) {
+      crm = { ok: false, status: 0 };
+      console.error("[lead] CRM webhook failed:", e instanceof Error ? e.message : String(e));
+    } finally {
+      clearTimeout(fuse);
     }
+  };
+  const toKit = async (): Promise<void> => {
+    if (!kitConfigured()) return;
+    // A clinician's own first name goes with them; nobody else's does.
+    kit = await kitSubscribe({ email: safeLead.email, firstName: safeLead.first_name, tag: kitTagFor(safeLead.role) });
+  };
+  try {
+    await Promise.all([toHook(), toKit()]);
   } catch {
-    // never fail the user on a capture hiccup
+    // never fail the visitor on a capture hiccup
   }
+  const hookRes = crm as { ok: boolean; status: number } | null;
+  const kitRes = kit as KitResult | null;
+  captured = !!(hookRes && hookRes.ok) || !!(kitRes && kitRes.ok);
 
   /**
    * THE LEDGER: EVERY LEAD IS KEPT ON OUR SIDE TOO. Until 24 Sep 2026 this
@@ -213,7 +236,10 @@ export async function POST(req: NextRequest) {
         utm_content: safeLead.utm_content,
         fbclid: safeLead.fbclid,
         landing: safeLead.landing,
-        crm: crm ? (crm.ok ? "accepted" : "refused " + crm.status) : "not configured",
+        // status 0 is a timeout or a network failure, not a refusal: the
+        // webhook may never have seen it, or may have it without replying
+        crm: hookRes ? (hookRes.ok ? "accepted" : hookRes.status ? "refused " + hookRes.status : "unreachable") : "not configured",
+        kit: kitRes ? (kitRes.ok ? kitRes.detail : "refused (" + kitRes.detail + ")") : "not configured",
       };
       await kvCmd(["LPUSH", "leads:all", JSON.stringify(entry)]);
       await kvCmd(["LTRIM", "leads:all", 0, 9999]);
