@@ -28,6 +28,8 @@ Project **sona → Settings → Environment Variables** (Production **and** Prev
 | `STRIPE_SECRET_KEY` | `sk_test_…` (then `sk_live_…` for real charges) | ✅ |
 | `NEXT_PUBLIC_SITE_URL` | your site URL, e.g. `https://getsona.com` | optional* |
 | `STRIPE_PRICE_ID` | a Price ID, if you'd rather manage the price in Stripe | optional |
+| `STRIPE_PRICE_ID_SLP_CASELOAD` | a yearly **$79.99** Price for Caseload Premium (below) | optional |
+| `STRIPE_PORTAL_CONFIG_CASELOAD` | a billing-portal configuration id (`bpc_…`) for Caseload Premium — only if you'd rather make it yourself (below) | optional |
 
 \*If unset, success/cancel redirects use the request origin, which is fine.
 
@@ -47,6 +49,42 @@ Then **push any commit** (or redeploy) so the new vars take effect.
 - Optional but recommended later: a webhook (`checkout.session.completed`,
   `customer.subscription.updated/deleted`) if you move to a real accounts DB.
   For now, live lookups via `/api/subscription` are enough to gate access.
+
+## Caseload Premium — the clinician plan (24 Sep 2026)
+
+"Sona Premium for your caseload": **$79.99 a year, no trial**, bought by a
+clinician from their dashboard (`/slp.html#premium` → `POST /api/slp/plan`).
+Every family who joins through that clinician's link gets Premium.
+
+- **Nothing to create to start selling.** Checkout uses an inline yearly price
+  (7999 USD) from `lib/caseload.ts`, the same constant every page prints. If you
+  want Stripe's product reports tidy, create a yearly $79.99 Price and set
+  `STRIPE_PRICE_ID_SLP_CASELOAD` — it must be exactly $79.99/year, or the pages
+  and the charge disagree.
+- **The billing page cancels at period end, by construction.** The dashboard's
+  **Manage billing** button (`POST /api/slp/plan/portal`) opens Stripe's
+  billing portal under the caseload's OWN configuration — cancel **at the end
+  of the billing period**, update payment method, invoice history — which the
+  code creates on the first press and reuses after (`openCaseloadPortal()` in
+  `lib/caseload.ts`; one per Stripe mode, live and test). Nothing to set up.
+  Set `STRIPE_PORTAL_CONFIG_CASELOAD` only if you want to make that
+  configuration yourself; if you do, its cancellation must be "At the end of
+  the billing period". This is load-bearing: the Terms promise families keep
+  Premium to the end of the paid year, and that is true only because Stripe
+  keeps the subscription active until then. "Cancel immediately" would take a
+  caseload's games away the same day.
+- **Still set the default portal to cancel at period end** (Stripe →
+  Settings → Billing → Customer portal). The family billing page uses it, and
+  so does Manage billing whenever Stripe will not create or accept the
+  caseload configuration (it was deleted in the dashboard, say — the code logs
+  it and opens the default rather than a dead button) — so a cancel there must
+  not be immediate either.
+- **The stamps are the plan.** The session and the subscription carry
+  `metadata.plan = "slp-caseload"` and `metadata.slp = <clinician email>`, and
+  never `tier` — only `tier: charter` counts toward the 50 charter spots. Don't
+  edit them by hand; coverage is read from them.
+- **Web only.** There is no App Store product for this plan, and there should
+  not be one (`NATIVE.md`).
 
 ## Notes
 

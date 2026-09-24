@@ -122,7 +122,11 @@
   <script src="/gamecontent.js"></script>
   <script>
     var $=function(id){return document.getElementById(id);};
-    if(window.Sona&&Sona.gated&&Sona.gated()){ Sona.gateBounce(); }
+    // Story Time asks by NAME since the free version shipped (24 Sep 2026):
+    // practice never gates, catalog games ask the catalog, and a story is
+    // Premium content. Parked with the books and linked from nowhere, so this
+    // is a typed URL's answer — home, where a child is told to ask a grown-up.
+    if(window.Sona&&Sona.gated&&Sona.gated("story")){ Sona.gateBounce(); }
     var Q=new URLSearchParams(location.search);
     var profile=(window.Sona?Sona.getProfile():{focusSounds:["R"],voiceId:"",volume:0.8});
     var SOUND=(Q.get("sound")||(profile.focusSounds&&profile.focusSounds[0])||"R").toUpperCase();

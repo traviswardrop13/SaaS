@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { rateLimit } from "@/lib/rateLimit";
+import { CASELOAD_PLAN } from "@/lib/caseload";
 
 /**
  * Returns whether an email has bought Sona. Stripe is the source of truth, so
@@ -29,6 +30,16 @@ import { rateLimit } from "@/lib/rateLimit";
  * new device (review item F7). Rate-limited here to stop email enumeration /
  * Stripe-call abuse; a proper emailed one-time restore code is the real fix and
  * is queued for review.
+ *
+ * NOT THE CLINICIAN'S PLAN (24 Sep 2026). A clinician who bought "Sona
+ * Premium for your caseload" holds a live subscription under their own
+ * email, and that plan covers the families who join through their link —
+ * not whichever device types that email into Restore. Their own phone has
+ * its own door (a work email, or the founder's approval, via /api/slp/self);
+ * restore-by-email must not be a way around it. Skipped by its metadata,
+ * the stamp /api/slp/plan puts on every caseload subscription — never by
+ * price or billing period, which is how a family's plan is told apart from
+ * nothing at all.
  *
  * GET /api/subscription?email=foo@bar.com  ->  { ok, active, kind? }
  */
@@ -64,7 +75,7 @@ export async function GET(req: NextRequest) {
         limit: 10,
       });
       const active = subs.data.some(
-        (s) => s.status === "active" || s.status === "trialing",
+        (s) => s.metadata?.plan !== CASELOAD_PLAN && (s.status === "active" || s.status === "trialing"),
       );
       if (active) return NextResponse.json({ ok: true, active: true, kind: "subscription" });
     }

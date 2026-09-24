@@ -46,16 +46,18 @@
   <div class="wrap">
     <div class="hero">
       <img src="/coach/echo/echo-avatar.svg" alt="Echo" />
-      <h1 id="headline">That was just the start! 🎉</h1>
+      <h1 id="headline">Every game, with Sona Premium 🎉</h1>
       <!-- "your first 3 days are free" described the old local no-card trial,
-           which no longer exists for anyone new: the free part is the session
-           they just had, and the 3 days belong to the plan. Saying otherwise
-           here told a parent they were owed days that never start. -->
-      <p class="muted" style="font-weight:700;">Echo loved practicing with you. The free session is done — the yearly plan opens with <b>3 free days</b>, and nothing is charged until day 3.</p>
+           which no longer exists for anyone new: the 3 days belong to the
+           plan. And since 24 Sep 2026 "the free session is done" is not true
+           either — daily practice is the free version and never ends, so this
+           page sells what Premium actually adds (every game) and says what a
+           family keeps if they do not buy it. -->
+      <p class="muted" style="font-weight:700;">Echo loved practicing with you. Daily practice and four free games stay free — Sona Premium opens every game, starting with <b>3 free days</b>, and nothing is charged until day 3.</p>
     </div>
 
     <div class="card" style="margin-top:16px;text-align:center;">
-      <span class="circle">Sona Yearly · 3 days free</span>
+      <span class="circle">Sona Premium · 3 days free</span>
       <!-- PRICE COPY. ONE PLAN as of 18 Sep 2026. The struck "$119.88" and
            "save $59.89" left with the monthly tier: both were only 12 x $9.99,
            and striking through a price nobody can buy is a fabricated anchor,
@@ -90,10 +92,10 @@
         })();
       </script>
       <ul class="perks" style="max-width:330px;margin-left:auto;margin-right:auto;">
-        <li>Every game and every level, unlocked</li>
+        <li>Every game in the library, for both age groups</li>
         <li>Nothing is charged during your 3 free days — cancel before day 3 and you pay nothing</li>
-        <li>Every new sound and update as it ships</li>
-        <li>Your suggestions shape Sona for your child</li>
+        <li>Every new game as it ships</li>
+        <li>Daily practice and four free games stay free either way</li>
       </ul>
       <a class="btn" href="/subscribe" style="margin-top:18px;">Start 3 days free</a>
       <div class="proof">
@@ -120,7 +122,7 @@
          the same +3 days the charge uses; it is deliberately NOT duplicated
          here, because two copies of a date calculation drift. -->
     <p class="muted" style="text-align:center;margin-top:10px;font-size:11.5px;line-height:1.5;">
-      Sona Yearly renews at $59.99 a year after the 3-day free trial. Cancel anytime in your account.<br/>
+      Sona Premium renews at $59.99 a year after the 3-day free trial. Cancel anytime in your account.<br/>
       Practice is scored on your device — recordings are never uploaded.
     </p>
     <p class="muted" style="text-align:center;margin-top:8px;font-size:12.5px;">
@@ -144,9 +146,10 @@
     var name = (p.childName || "").trim();
     // addressed to the GROWN-UP holding the phone: this is a price page, and
     // no child is sent here any more (Sona.gateBounce goes home instead)
-    if (name) document.getElementById("headline").textContent = name + "’s free session was just the start! 🎉";
-    // already unlocked? straight back to the fun
-    if (Sona.isSubscribed && Sona.isSubscribed()) location.replace("/map.html");
+    if (name) document.getElementById("headline").textContent = "Every game for " + name + ", with Sona Premium 🎉";
+    // already has every game — bought here or anywhere else (a free era, a
+    // clinician's plan)? Straight back to the fun; never sell it twice.
+    if ((Sona.premium && Sona.premium()) || (Sona.isSubscribed && Sona.isSubscribed())) location.replace("/map.html");
 
     document.getElementById("restoreLink").onclick = function (e) {
       e.preventDefault();

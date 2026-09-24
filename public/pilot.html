@@ -57,7 +57,10 @@
     <div class="hero">
       <img class="leo" src="/coach/echo/echo-idle.svg" alt="Echo" onerror="this.style.display='none';" />
       <h1>Welcome to the Sona pilot</h1>
-      <p class="lead">Your SLP invited you to try Sona at home — free during the pilot. Set up your child below and start practicing with Echo today.</p>
+      <!-- "free during the pilot" promised a grant this page no longer makes
+           (24 Sep 2026): a verified code connects a family to their
+           clinician; what is free is free for every family. -->
+      <p class="lead">Your SLP invited you to try Sona at home. Daily practice and four free games are free. Set up your child below and start practicing with Echo today.</p>
       <span class="slptag">✓ Built with a licensed SLP</span>
     </div>
 
@@ -185,11 +188,14 @@
     })();
 
     // Set the child up, then enrol ONLY on a credential the server vouches for.
-    // startPilot() is an entitlement (isPilot() short-circuits gated()), so
-    // calling it off an unverified URL parameter — which is what this page used
-    // to do — handed out free forever to anyone who opened the link. A family
-    // without a valid key still gets set up; they just enter the app on the
-    // normal terms instead of on a free pass nobody granted them.
+    // startPilot() used to be an entitlement (isPilot() short-circuited the
+    // gate), so calling it off an unverified URL parameter — which is what
+    // this page used to do — handed out free forever to anyone who opened the
+    // link. Since 24 Sep 2026 an SLP-code enrolment grants nothing by itself
+    // (Premium comes from the clinician's coverage, asked by slpRedeem), but
+    // it still writes to a real clinician's dashboard, so the rule stands: no
+    // verified key, no enrolment. A family without one still gets set up, on
+    // the free version everyone has.
     function finish(name, age, sounds){
       try{
         if(window.Sona){
@@ -217,11 +223,13 @@
         $("go").disabled=false;
         if(!r.valid){
           $("err").style.color="#e0457b";
-          $("err").textContent = r.error==="offline" ? "Couldn’t reach the server — try again." : "That code and key don’t match — double-check with your SLP.";
+          // The server's own sentence (link full, check down) beats a guess.
+          $("err").textContent = r.error==="offline" ? "Couldn’t reach the server — try again." : (typeof r.error==="string"&&r.error ? r.error : "That code and key don’t match — double-check with your SLP.");
           return;
         }
-        // Verified — slpRedeem has already granted the unlock. Enrolling on the
-        // clinician's dashboard is the SEPARATE, optional box.
+        // Verified — slpRedeem holds the ticket and has already asked whether
+        // this caseload is covered. Enrolling on the clinician's dashboard is
+        // the SEPARATE, optional box.
         try{
           if($("shareSlp")&&$("shareSlp").checked){
             if(Sona.slpJoinCaseload) Sona.slpJoinCaseload(code);

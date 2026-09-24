@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "node:crypto";
 import { kvCmd, readSession, signSession, sessionCookie, SESSION_MAX_AGE, makeFamilyKey } from "@/lib/slpAuth";
+import { CASELOAD_TERMS } from "@/lib/caseload";
 
 const SUFFIX = "abcdefghjkmnpqrstuvwxyz23456789";
 function suffix(n: number): string { let o = ""; const b = crypto.getRandomValues(new Uint8Array(n)); for (let i = 0; i < n; i++) o += SUFFIX[b[i] % SUFFIX.length]; return o; }
@@ -25,12 +26,23 @@ export async function POST(req: NextRequest) {
 
   const acctKey = "slpacct:" + s.email;
   let acct: Record<string, unknown> = {};
+  let raw: unknown = null;
   try {
-    const raw = await kvCmd(["GET", acctKey]);
+    raw = await kvCmd(["GET", acctKey]);
     if (raw) acct = JSON.parse(String(raw));
   } catch {
     acct = {};
   }
+  // This route rewrites the account WHOLE, so a read that failed must not
+  // become a write: the clinician's code, family key and — since 24 Sep 2026
+  // — whether they are grandfathered (no `terms` field) would all be
+  // replaced by a blank. The store said nothing; neither do we.
+  if (raw === undefined) {
+    return NextResponse.json({ ok: false, error: "Couldn't reach your account just now — try again in a moment." }, { status: 503 });
+  }
+  // An account made HERE (signed in, but the record is gone) is made under
+  // the caseload plan, like every account from this build on (lib/caseload).
+  if (raw === null) acct.terms = CASELOAD_TERMS;
   acct.email = s.email;
   if (typeof body.name === "string") acct.name = body.name.slice(0, 80);
   if (typeof body.clinic === "string") acct.clinic = body.clinic.slice(0, 80);
@@ -87,8 +99,13 @@ export async function POST(req: NextRequest) {
     iat: Date.now(),
     exp: Date.now() + SESSION_MAX_AGE * 1000,
   });
+  // `email` too (24 Sep 2026), as GET and /api/slp/auth/me already say it:
+  // the dashboard replaces its account with this answer after every save,
+  // and the own-phone card names the inbox the link goes to — without it,
+  // "your account email" was all a clinician could read.
   const res = NextResponse.json({
     ok: true,
+    email: s.email,
     code: (acct.code as string) || "",
     familyKey: (acct.familyKey as string) || "",
     name: (acct.name as string) || "",

@@ -56,7 +56,7 @@ async function fixture({ origin = BASE, path = "/activities.html?libraryPreview=
       localStorage.setItem("test.freemium.seed", "1");
       localStorage.setItem("sona.freeera.v1", "post");
       localStorage.setItem("sona.freeera2.v1", "done");
-      localStorage.setItem("sona.freeera3.v1", "done");
+      localStorage.setItem("sona.freeera3.v1", "done"); localStorage.setItem("sona.freeera4.v1", "done");
       localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Mia", childAge: "7", focusSounds: ["S"], onboarded: true, volume: 0, voiceOn: false, soundOn: false }));
       localStorage.setItem("sona.demo.v1", JSON.stringify({ started: Date.now() - 8 * 86400000, done: Date.now() - 7 * 86400000 }));
       Object.entries(local).forEach(([key, value]) => localStorage.setItem(key, typeof value === "string" ? value : JSON.stringify(value)));
@@ -172,17 +172,35 @@ if (hasContract) {
   });
 
   await section("real paid families keep their promises", async () => {
+    // REWRITTEN 24 Sep 2026 (Caseload Premium). "verified SLP family" and
+    // "pilot family" were on this list on the strength of the credential
+    // alone. A clinician's family now holds Premium through the clinician's
+    // COVERAGE (the server's answer, cached as sona.caseplan.v1); families who
+    // redeemed before this build were grandfathered by the era-four sweep and
+    // appear here as the earlyAdopter cohort. Founding pilots ("ff-…") keep
+    // Premium outright. The bare credential and an SLP-code pilot moved to the
+    // list below: they keep the free version, which is every family's.
     const cohorts = [
       ["subscriber", { "sona.sub.v1": { active: true, since: 1 } }],
       ["founder", { "sona.founder": "1" }],
-      ["verified SLP family", { "sona.slpunlock": "1", "sona.slpok": "VERIFIED" }],
-      ["pilot family", { "sona.pilot.v1": { consent: true } }],
+      ["covered caseload family", { "sona.slpunlock": "1", "sona.slpok": "VERIFIED", "sona.caseplan.v1": { active: true, code: "VERIFIED", checked: Date.now() } }],
+      ["founding pilot family", { "sona.pilot.v1": { consent: true, code: "ff-abc123" } }],
       ["grandfathered sibling", { "sona.kids.v1": { active: "second", list: [{slot:"",name:"Mia"},{slot:"second",name:"Leo"}] }, "sona.profile.v1": {onboarded:true,earlyAdopter:true}, "sona.profile.v1@second": {onboarded:true,childAge:"7",voiceOn:false,soundOn:false,volume:0} }],
       ["existing promised trial", { "sona.trial.v1": { start: Date.now() - 86400000, days: 3 } }],
     ];
     for (const [name, local] of cohorts) {
       const { ctx, pg } = await fixture({ path: "/activities.html?paid=1", paid: true, local });
       try { ok(name + " keeps all eight games in the paid seam", same(await allowed(pg), ALL)); }
+      finally { await ctx.close(); }
+    }
+    const freeVersion = [
+      ["verified credential with no coverage", { "sona.slpunlock": "1", "sona.slpok": "VERIFIED" }],
+      ["SLP-code pilot with no coverage", { "sona.pilot.v1": { consent: true, code: "RACHEL-K4" } }],
+      ["caseload whose coverage ended", { "sona.slpok": "VERIFIED", "sona.caseplan.v1": { active: false, code: "VERIFIED", checked: Date.now() } }],
+    ];
+    for (const [name, local] of freeVersion) {
+      const { ctx, pg } = await fixture({ path: "/activities.html?paid=1", paid: true, local });
+      try { ok(name + " keeps the free version — the four free games — in the paid seam", same(await allowed(pg), FREE)); }
       finally { await ctx.close(); }
     }
     const { ctx, pg } = await fixture({ path: "/activities.html?paid=1", paid: true, local: {"sona.trial.v1":{start:Date.now()-9*86400000,days:3}} });
@@ -385,6 +403,74 @@ if (hasContract && premiumPresent) {
       ok("a cached back-navigation rechecks an expired parent pass", new URL(pg.url()).pathname === "/today.html");
     } finally { await ctx.close(); }
   });
+
+  // ── THE REAL OFFER, outside the preview (24 Sep 2026) ──
+  // With pricing live, a locked tile on Home, "See Premium" in the parent
+  // corner and the library's unlock all land on premium.html — which still
+  // said "price to be confirmed" beside a disabled "coming soon" button: a
+  // dead end on the main way to buy, and untrue. Everything above pins the
+  // PREVIEW; these pin the page a real family gets, through the ?paid=1 seam
+  // so they hold whichever way the switch points.
+  await section("the real offer hands off to the plan screen", async () => {
+    const { ctx, pg, errors } = await fixture({ path: "/premium.html?game=tiles&paid=1", gate: true, paid: true });
+    try {
+      await pg.locator("#premiumApp").waitFor();
+      const st = await pg.evaluate(() => ({
+        preview: Sona.libraryPreview(), premium: Sona.premium(),
+        disabled: document.getElementById("premiumBuy").disabled,
+        offerShown: !document.getElementById("premiumOffer").hidden,
+        offer: document.getElementById("premiumOffer").innerText,
+        terms: document.getElementById("premiumTerms").innerText,
+        note: document.getElementById("premiumFreeNote").innerText,
+      }));
+      ok("outside the preview, a family without Premium gets an ENABLED way to buy",
+        !st.preview && !st.premium && st.offerShown && st.disabled === false && await pg.locator("#premiumBuy").isVisible(), JSON.stringify(st));
+      ok("…priced nowhere on this page, and never 'not available yet'",
+        !/\$\s?\d/.test(st.offer) && !/not available|coming soon|to be confirmed/i.test(st.offer) && /3 days free, then one yearly plan/.test(st.offer), st.offer);
+      ok("…saying what stays free in the one phrase",
+        /Daily practice and four free games stay free either way\./.test(st.terms) && /^Daily practice and four free games stay free: /.test(st.note), JSON.stringify(st));
+      await pg.locator("#premiumBuy").click();
+      await pg.waitForURL(/\/subscribe\.html/);
+      ok("the button goes to /subscribe.html, which owns the price on the web and in the app",
+        new URL(pg.url()).pathname === "/subscribe.html", pg.url());
+      ok("the hand-off has no runtime errors", errors.length === 0, errors);
+    } finally { await ctx.close(); }
+  });
+
+  for (const [who, local, why] of [
+    ["a covered caseload family", { "sona.slpok": "RACHEL-K4", "sona.caseplan.v1": { active: true, code: "RACHEL-K4", checked: Date.now() } }, /speech therapist/],
+    ["a grandfathered family", { "sona.profile.v1": { childName: "Mia", childAge: "7", focusSounds: ["S"], onboarded: true, earlyAdopter: true, volume: 0, voiceOn: false, soundOn: false } }, /Every game in the library is open/],
+  ]) {
+    await section(who + " is told they have Premium", async () => {
+      const { ctx, pg } = await fixture({ path: "/premium.html?game=tiles&paid=1", gate: true, paid: true, local });
+      try {
+        await pg.locator("#premiumApp").waitFor();
+        const st = await pg.evaluate(() => ({
+          premium: Sona.premium(), offerShown: !document.getElementById("premiumOffer").hidden,
+          lead: document.getElementById("premiumLead").innerText, eyebrow: document.getElementById("premiumEyebrow").textContent,
+        }));
+        ok(who + " sees that they have Premium, with where it came from",
+          st.premium === true && /You have Sona Premium/.test(st.lead) && why.test(st.lead) && /Sona Premium ✓/.test(st.eyebrow), JSON.stringify(st));
+        ok(who + " is offered nothing to buy", !st.offerShown && !await pg.locator("#premiumBuy").isVisible(), JSON.stringify(st));
+      } finally { await ctx.close(); }
+    });
+  }
+}
+
+// ── ONE PHRASE FOR THE FREE VERSION (24 Sep 2026) ──
+// gameAccess opens every free-tier game to every child — two per age group,
+// four in all. Home said "four free games" while the plan screen, Settings
+// and the Premium page said "two games": both true of something, and a parent
+// holding a clinician's "two" against Home's "four" has a support ticket, not
+// an answer. Every family surface says the same words, comments aside.
+{
+  const strip = (src) => src.replace(/<!--[\s\S]*?-->/g, " ").replace(/\{?\/\*[\s\S]*?\*\/\}?/g, " ").replace(/(^|[^:"'\\])\/\/[^\n]*/g, "$1");
+  const surfaces = ["public/today.html", "public/premium.html", "public/subscribe.html", "public/settings.html", "public/join.html", "public/trial.html", "app/subscribe/page.tsx"];
+  for (const rel of surfaces) {
+    const src = strip(readFileSync(SOURCE_ROOT + "/../" + rel, "utf8"));
+    ok(rel + " names the free version as 'daily practice and four free games'", /daily practice and four free games/i.test(src));
+    ok(rel + " never undersells it as 'two games'", !/\btwo (free )?games\b/i.test(src), (src.match(/.{0,60}\btwo (free )?games\b.{0,40}/i) || [])[0]);
+  }
 }
 await browser.close();
 console.log(fails ? fails + " FAILURES" : "ALL GREEN");

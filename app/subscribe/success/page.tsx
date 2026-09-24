@@ -13,6 +13,10 @@ import { useEffect, useState } from "react";
 
 const PLAN_CENTS = { annual: 5999, monthly: 999 } as const;
 const TRIAL_DAYS = 3;
+// CASELOAD_PLAN in lib/caseload.ts, written out because that module is
+// server-only (Stripe, the store) and cannot ride into a client bundle.
+// tests/caseloadtest.mjs fails if the two ever differ.
+const CASELOAD_PLAN_ID = "slp-caseload";
 
 type Info = {
   amountCents: number | null;
@@ -41,6 +45,7 @@ export default function SubscribeSuccess() {
   const [appCode, setAppCode] = useState<string>("");
   const [plan, setPlan] = useState<"annual" | "monthly">("annual");
   const [charter, setCharter] = useState<boolean>(false);
+  const [caseload, setCaseload] = useState<boolean>(false);
 
   useEffect(() => {
     const q = new URLSearchParams(window.location.search);
@@ -65,6 +70,15 @@ export default function SubscribeSuccess() {
       .then((r) => (r.ok ? r.json() : null))
       .then((j) => {
         if (!j || !j.ok) return;
+        // A CLINICIAN'S RECEIPT UNLOCKS NO DEVICE. The caseload plan covers
+        // the families who join through that clinician's link — checked by
+        // the server on every family device — not whichever browser this
+        // session id is opened in. Nothing is written, no code is minted and
+        // no purchase is reported: this was not a family's purchase.
+        if (j.plan === CASELOAD_PLAN_ID) {
+          setCaseload(true);
+          return;
+        }
         setInfo({ amountCents: j.amountCents ?? null, trialEnd: j.trialEnd ?? null, email: j.email ?? null });
         setPaid(true);
 
@@ -133,6 +147,28 @@ export default function SubscribeSuccess() {
   // would tell them "no charge yet" when the charge already happened
   const trialEnd = info?.trialEnd ?? (fetched && plan === "annual" ? nowSec + TRIAL_DAYS * 86400 : null);
   const ready = fetched && paid;
+
+  if (fetched && caseload) {
+    return (
+      <main className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-sky-50 to-white px-6 py-10 text-center">
+        <h1 className="mt-4 font-display text-4xl font-extrabold text-gray-900">
+          This is a clinician&apos;s plan
+        </h1>
+        <p className="mt-3 max-w-md text-lg text-gray-600">
+          Sona Premium for your caseload covers the families who join through the clinician&apos;s
+          link, on their own phones. It doesn&apos;t switch Premium on in this browser.
+        </p>
+        <div className="mt-6 flex flex-col gap-3">
+          <a
+            href="/slp.html#premium"
+            className="inline-block rounded-2xl bg-grass-500 px-8 py-4 font-display text-lg font-extrabold uppercase tracking-wide text-white shadow-chunky transition hover:bg-grass-600 active:translate-y-1 active:shadow-chunky-sm"
+          >
+            Go to the dashboard
+          </a>
+        </div>
+      </main>
+    );
+  }
 
   // Stripe never confirmed this session: someone opened the URL directly, or
   // the read-back failed. Say so plainly and hand them the restore path —

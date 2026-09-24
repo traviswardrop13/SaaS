@@ -428,11 +428,14 @@
         var locked=!S.gameAccess(k).allowed;
         el.className="thumb"+(locked?" locked":"");
         el.setAttribute("role","button");el.tabIndex=0;
-        el.setAttribute("aria-label",act.name+(locked?". Ask a grown-up to unlock.":""));
+        el.setAttribute("aria-label",act.name+(locked?". Premium. Ask a grown-up to unlock.":""));
         el.dataset.key=k;
         // label first, sticker second: paintSticker PREPENDS, so the art lands
         // behind the name. Painting first and then setting innerHTML wipes it.
-        el.innerHTML="<b>"+act.name+"</b>";
+        // A Premium game says so in one word and nothing else: the child is
+        // told WHAT it is and (on tap) to ask a grown-up — never a price,
+        // which lives behind the grown-ups gate and nowhere a child can read.
+        el.innerHTML="<b>"+act.name+"</b>"+(locked?'<span class="soonTag premiumTag">Premium</span>':"");
         applyArt(el,k);
         el.onclick=function(){launchCatalogGame(k);};
         el.onkeydown=function(event){if(event.key==="Enter"||event.key===" "){event.preventDefault();launchCatalogGame(k);}};
@@ -536,6 +539,16 @@
     try{ if(S&&S.syncHomework) S.syncHomework(); }catch(e){}
     // App Store build: quiet entitlement sync (restores/reinstalls stay unlocked)
     try{ if(S&&S.iapRefresh) S.iapRefresh(); }catch(e){}
+    // A clinician's caseload plan: the same quiet sync, for families who
+    // joined through a link. Home is already painted from the cached answer;
+    // if the server's answer changes what is open, repaint the tiles rather
+    // than leave a newly covered child looking at locked games until tomorrow.
+    try{
+      if(S&&S.caseRefresh&&S.premium){
+        var wasPremium=S.premium();
+        S.caseRefresh().then(function(){ if(S.premium()!==wasPremium) render(); },function(){});
+      }
+    }catch(e){}
 
     // The comeback modal lived here and is deliberately GONE (Travis's call) —
     // a popup between the kid and the day's adventure was friction on exactly
@@ -716,24 +729,37 @@
       // flip, and without this they'd read "Your free trial has ended — see
       // plans" inside an app that is free.
       if(S.isFree&&S.isFree())return;
-      if((S.isSubscribed&&S.isSubscribed())||(S.isPilot&&S.isPilot()))return;
+      if(S.isSubscribed&&S.isSubscribed())return;
+      // Premium through a clinician's caseload plan: say where it came from,
+      // so a parent who never bought anything is not left wondering why every
+      // game is open — or surprised if it closes when the plan ends.
+      if(S.caseCovered&&S.caseCovered()){
+        note.textContent="Sona Premium is included through your child's speech therapist — every game is open.";
+        note.style.display="block"; return;
+      }
+      if(S.premium&&S.premium())return;
       // Opening the home screen used to START a trial (ensureTrial), so the
       // clock began because a parent looked at the app. It reports one now,
       // and only if one already exists — an existing family's unexpired days
       // are honored to the end, and nobody new is issued any.
       var link=' <a href="/subscribe.html" style="color:var(--orange-d);font-weight:800;">';
-      // The free session is over and nobody bought. This is the ONE place that
-      // says so — the kid screen never will — and it is where a parent who
-      // never saw the hand-off (a window that closed, a run never finished)
-      // learns what happened and where the plan is.
-      var sessionOver=false; try{ sessionOver=!!(S.demoDone&&S.demoDone()&&S.gated&&S.gated("practice")); }catch(e){}
+      // The family is on the free version and has seen what Sona does. This is
+      // the ONE place that says what that means — the kid screen never will —
+      // and it is where a parent who never saw the hand-off (a window that
+      // closed, a run never finished) learns what stays free and where Premium
+      // is. It asked gated("practice") until 24 Sep 2026; practice is never
+      // gated now, so the question is the one that is actually true: has this
+      // family got every game?
+      var sessionOver=false; try{ sessionOver=!!(S.demoDone&&S.demoDone()&&S.premium&&!S.premium()); }catch(e){}
       var _tActive=!!(S.trialActive&&S.trialActive()), _tExpired=!!(S.trialExpired&&S.trialExpired());
       if(sessionOver&&!_tActive&&!_tExpired){
-        note.innerHTML='Four games stay free. Explore more with Sona Premium. <a href="/premium.html" style="color:var(--orange-d);font-weight:800;">See Premium →</a>';
+        // "daily practice and four free games" is the ONE phrase every family
+        // surface uses for the free version (24 Sep 2026) — iaptest pins it
+        note.innerHTML='Daily practice and four free games stay free. Every other game comes with Sona Premium. <a href="/premium.html" style="color:var(--orange-d);font-weight:800;">See Premium →</a>';
         note.style.display="block"; return;
       }
       if(_tActive){ var dd=S.trialDaysLeft?S.trialDaysLeft():7; note.innerHTML="Your free trial: "+dd+" day"+(dd===1?"":"s")+" left."+link+"See plans →</a>"; note.style.display="block"; }
-      else if(S.trialExpired&&S.trialExpired()){ note.innerHTML="Your free trial has ended. Four games stay free."+link+"See plans →</a>"; note.style.display="block"; }
+      else if(S.trialExpired&&S.trialExpired()){ note.innerHTML="Your free trial has ended. Daily practice and four free games stay free."+link+"See plans →</a>"; note.style.display="block"; }
     })();
 
     // ── beta pulse: chip-first (a tap beats a blank box — the Mobbin study's

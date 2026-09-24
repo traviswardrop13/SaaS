@@ -30,7 +30,7 @@ function fake(){
  put(value,key){h.cache[key]=value;const query={};queueMicrotask(()=>{if(tx.oncomplete)tx.oncomplete();});return query;}
  };}};return tx;}};
  Object.defineProperty(window,'indexedDB',{configurable:true,value:{open(){const r={result:db};queueMicrotask(()=>r.onsuccess&&r.onsuccess());return r;}}});
- localStorage.setItem('sona.freeera.v1','post');localStorage.setItem('sona.freeera2.v1','done');localStorage.setItem('sona.freeera3.v1','done');
+ localStorage.setItem('sona.freeera.v1','post');localStorage.setItem('sona.freeera2.v1','done');localStorage.setItem('sona.freeera3.v1','done');localStorage.setItem('sona.freeera4.v1','done');
  localStorage.setItem('sona.profile.v1',JSON.stringify({childName:'Demo',childAge:'4',focusSounds:['M'],onboarded:true,volume:.6,voiceOn:true,soundOn:true,earlyAdopter:true}));
 }
 async function fresh(path){const ctx=await browser.newContext({reducedMotion:'reduce'});await ctx.addInitScript(fake);await ctx.route('**/*',r=>r.request().url().startsWith(origin+'/')?r.continue():r.abort());const page=await ctx.newPage();page.setDefaultTimeout(4000);const errors=[];page.on('pageerror',e=>errors.push(e.message));await page.goto(origin+path);return {ctx,page,errors};}

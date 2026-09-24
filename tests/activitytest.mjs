@@ -32,7 +32,14 @@ const allKeys = [...simpleKeys, ...arcadeKeys].sort();
 const sorted = (values) => [...values].sort();
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 
-async function fixture({ age = "4", paid = false, viewport = { width: 390, height: 844 }, path = "/activities.html", origin = BASE, catalog = null, now = null } = {}) {
+// 24 Sep 2026: Sona has a free version, and with the switch off a plain seed
+// is a family ON it — Premium games locked. The default fixture used to lean
+// on FREE_MODE being on to open every game, which pinned the switch's value.
+// It now seeds a family that HOLDS every game (a grandfathered free-era
+// profile), so the library's layout, launch and speech pins hold whichever
+// way the switch points; `paid: true` stays the free-version family whose
+// locks are under test.
+async function fixture({ age = "4", paid = false, premium = !paid, viewport = { width: 390, height: 844 }, path = "/activities.html", origin = BASE, catalog = null, now = null } = {}) {
   const ctx = await browser.newContext({ viewport });
   await ctx.route("**/*", (route) => {
     const url = new URL(route.request().url());
@@ -50,13 +57,14 @@ async function fixture({ age = "4", paid = false, viewport = { width: 390, heigh
       })();`;
     return route.fulfill({ contentType: MIME[file.split(".").pop()] || "application/octet-stream", body });
   });
-  await ctx.addInitScript(({ age, paid }) => {
+  await ctx.addInitScript(({ age, paid, premium }) => {
     if (!localStorage.getItem("sona.test.librarySeed")) {
       localStorage.setItem("sona.test.librarySeed", "1");
       localStorage.setItem("sona.freeera.v1", "post");
       localStorage.setItem("sona.freeera2.v1", "done");
-      localStorage.setItem("sona.freeera3.v1", "done");
+      localStorage.setItem("sona.freeera3.v1", "done"); localStorage.setItem("sona.freeera4.v1", "done");
       const profile = { childName: "Mia", focusSounds: ["S"], onboarded: true, volume: 0, voiceOn: false, soundOn: false };
+      if (premium) profile.earlyAdopter = true;
       if (age !== null) profile.childAge = age;
       localStorage.setItem("sona.profile.v1", JSON.stringify(profile));
       if (paid) {
@@ -64,7 +72,7 @@ async function fixture({ age = "4", paid = false, viewport = { width: 390, heigh
         localStorage.setItem("sona.demo.v1", JSON.stringify({ started: Date.now() - 100 * 3600000, done: Date.now() - 90000 }));
       }
     }
-  }, { age, paid });
+  }, { age, paid, premium });
   const pg = await ctx.newPage(); pg.setDefaultTimeout(5000);
   const errors = [];
   pg.on("pageerror", (error) => errors.push(error.message));
@@ -291,7 +299,11 @@ if (present && hasContract) {
     const { ctx, pg } = await fixture({ paid: true, path: "/activities.html?libraryPreview=1" });
     try {
       const before = await state(pg);
-      ok("preview leaves an expired paid-state family gated", await pg.evaluate(() => Sona.gated("practice")) === true);
+      // REWRITTEN 24 Sep 2026: this asked gated("practice"), and practice is
+      // never gated now — the free version is practice. What an expired
+      // paid-state family meets is Premium locked.
+      ok("preview leaves an expired paid-state family's Premium locked — and its practice open",
+        await pg.evaluate(() => Sona.gated("story") === true && Sona.gated("practice") === false));
       ok("free preview games are accessible without a real entitlement", await pg.evaluate(() => Sona.gameAccess("feed").allowed && !Sona.gameAccess("peekaboo").allowed));
       await pg.locator('#activityGroups button[data-game="peekaboo"]').click();
       ok("Premium stays behind the parent invitation in a paid-state preview", new URL(pg.url()).pathname === "/activities.html" && await pg.locator("#libraryNotice").isVisible());
@@ -369,7 +381,9 @@ if (present && hasContract) {
   await section("paid-state browsing and child-safe gate", async () => {
     const { ctx, pg } = await fixture({ paid: true });
     try {
-      ok("the expired-demo fixture really is gated", await pg.evaluate(() => Sona.gated("practice")) === true);
+      // REWRITTEN 24 Sep 2026 (see the preview section): gated means Premium.
+      ok("the expired-demo fixture really has Premium locked, and practice open",
+        await pg.evaluate(() => Sona.gated("story") === true && Sona.gated("practice") === false && !Sona.premium()));
       const before = await state(pg);
       ok("a gated family can still browse all games", same(sorted(await visibleGames(pg)), allKeys));
       const locked = await pg.evaluate(() => Object.keys(Sona.GAME_ACTS).filter(key => !Sona.gameAccess(key).allowed));

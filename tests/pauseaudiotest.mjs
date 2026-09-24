@@ -81,7 +81,7 @@ function device(config){
   }});
   if(!localStorage.getItem('sona.test.audioSeed')){
     localStorage.setItem('sona.test.audioSeed','1');
-    localStorage.setItem('sona.freeera.v1','post');localStorage.setItem('sona.freeera2.v1','done');localStorage.setItem('sona.freeera3.v1','done');localStorage.setItem('sona.micok','1');
+    localStorage.setItem('sona.freeera.v1','post');localStorage.setItem('sona.freeera2.v1','done');localStorage.setItem('sona.freeera3.v1','done');localStorage.setItem('sona.freeera4.v1','done');localStorage.setItem('sona.micok','1');
     localStorage.setItem('sona.profile.v1',JSON.stringify({childName:'Mia',childAge:'7',focusSounds:['R'],onboarded:true,earlyAdopter:true,volume:0,voiceOn:false,soundOn:false}));
     sessionStorage.setItem('sona.run.v1',JSON.stringify({active:true,round:0,scores:[],sum:0,sound:'R',level:1,pending:false,games:['slice','tiles','stack','run','glide']}));
   }

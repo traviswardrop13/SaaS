@@ -306,7 +306,10 @@
          promise that depends on environment variables is not a promise. -->
     <div class="step" data-step="email">
       <div class="qh">Your clinician account</div>
-      <p class="muted">Your email creates your clinician account — the code and family key you hand to families so Sona is free for them, plus a dashboard showing how they are practicing. It is also how you sign back in: there is no password.</p>
+      <!-- The code and key CONNECT a family to the dashboard (24 Sep 2026).
+           "so Sona is free for them" was the grant a link used to be; what is
+           free now is free for every family, link or not. -->
+      <p class="muted">Your email creates your clinician account — the code and family key that connect families to your dashboard, which shows how they are practicing. Daily practice and four free games are free for every family. It is also how you sign back in: there is no password.</p>
       <input id="obEmail" type="email" inputmode="email" autocomplete="email" autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="done" placeholder="you@email.com" style="margin-top:12px;" />
       <p id="emErr" style="display:none;color:#ef6f23;font-weight:800;font-size:13px;margin-top:8px;"></p>
       <p class="muted" style="font-size:12px;margin-top:8px;">We&rsquo;ll also send occasional tips from Rachel. Unsubscribe anytime.</p>
@@ -740,12 +743,16 @@
       draft.focusSounds = (draft.mode==="play" && Sona.PLAY_ORDER) ? Sona.PLAY_ORDER.slice() : Array.from(selSounds);
       draft.interests = Array.from(selInterests);
       var _slp=""; try{ _slp=(Sona.slpCode&&Sona.slpCode())||""; }catch(e){}
-      // Founding access requires the VERIFIED credential (code + family key
-      // checked against the server). A bare ?slp= code still tags the family
-      // for the SLP's roster, but with pricing live it can't unlock by itself.
-      var _slpok=false; try{ _slpok=!!(Sona.slpVerified&&Sona.slpVerified()); }catch(e){}
+      // NO GRANT IS WRITTEN HERE ANY MORE (24 Sep 2026). This used to set
+      // earlyAdopter from slpVerified(), so a verified clinician's link made a
+      // family free forever at setup. A clinician's family now gets Premium
+      // through the clinician's coverage (Sona.caseRefresh), and a family who
+      // redeemed before this build was already grandfathered by the era-four
+      // sweep — which wrote earlyAdopter onto this very profile. Leaving the
+      // field out means saveProfile's merge keeps whatever that sweep gave,
+      // where writing it (true OR false) would either grant or revoke.
+      // The bare ?slp= code still tags the family for the SLP's roster.
       Sona.saveProfile({
-        earlyAdopter: _slpok,
         slpCode: _slp,
         role: draft.role || "parent",
         mode: draft.mode || "speech",
@@ -806,7 +813,7 @@
         var box=document.getElementById("obSlpCred");
         if(box){
           box.hidden=false;box.style.display="block";
-          box.innerHTML='<div class="muted" style="font-weight:700;font-size:13px;">Check your email — we just sent your one-tap sign-in. Open it to grab your <b>share link + family key</b>: it makes Sona free for the families you send it to, and puts them on your dashboard. It also lives in your dashboard.</div>';
+          box.innerHTML='<div class="muted" style="font-weight:700;font-size:13px;">Check your email — we just sent your one-tap sign-in. Open it to grab your <b>share link + family key</b>: it connects the families you send it to with your dashboard. It also lives in your dashboard.</div>';
         }
         fetch("/api/slp/auth/request",{method:"POST",headers:{"Content-Type":"application/json"},
           body:JSON.stringify({email:draft.email})}).catch(function(){});
