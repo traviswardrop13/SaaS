@@ -115,12 +115,18 @@ try {
     ok("ended homework uses the full completed window", /0 of 8 days/.test(ended)&&!/so far/.test(ended),ended);
     await ctx.close();
   });
-  await run("Community and preview-only affiliate routes",async()=>{
+  await run("Community and affiliate routes",async()=>{
     DATA=fixture();failRoster=false;writes.length=0;
     const {ctx,pg}=await open("#community");
     ok("community is available without preview injection", await visible(pg,"#page-community") && await visible(pg,'[data-page="community"]'));
+    // Live since 24 Sep 2026 (Travis): a teaser, coming 2027. CREATOR-ONLY is
+    // settled — the page has to say a clinician never earns on their caseload.
     await pg.evaluate(()=>location.hash="#affiliate");await pg.waitForTimeout(80);
-    ok("affiliate stays hidden without preview injection", !await visible(pg,"#page-affiliate") && !await visible(pg,'[data-page="affiliate"]') && await visible(pg,"#page-today"));
+    ok("affiliate partnerships is live in the sidebar and opens", await visible(pg,"#page-affiliate") && await visible(pg,'[data-page="affiliate"]') && !await visible(pg,"#page-today"));
+    const aff=await pg.locator("#page-affiliate").innerText();
+    ok("…says coming 2027 and earning for referring friends", /Affiliate partnerships/.test(aff) && /Coming 2027/i.test(aff) && /referring Sona to friends/i.test(aff), aff);
+    ok("…and that a family on your own caseload never earns you anything", /own caseload are never part of it/.test(aff) && /never earn on a family you work with/.test(aff), aff);
+    ok("…and asks for nothing: no form, no payment details", await pg.locator("#page-affiliate input, #page-affiliate form").count()===0);
     for(const page of ["caseload","today","caseload","today"]){await pg.locator('[data-page="'+page+'"]').click();}
     ok("view changes never send a write", writes.filter(w=>w.method!=="GET"&&w.method!=="HEAD").length===0,JSON.stringify(writes));
     await ctx.close();

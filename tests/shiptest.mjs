@@ -65,6 +65,20 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
     /rel="icon"/.test(slps) && /rel="apple-touch-icon"/.test(slps));
   ok("…and never claims a certification Rachel does not hold",
     !/\bCCC\b|board-certified|ASHA-certified|\bcertified\b/i.test(slps));
+
+  // PARENTS COME FROM THE SAME ADS (Travis, 24 Sep 2026). The form on this
+  // page is for clinicians, so a parent needs a door out that does not ask
+  // for an email: the App Store on an iPhone or iPad, the family page (which
+  // also runs in any browser) everywhere else. It has to show on a phone,
+  // where the ads land, so it must not carry the class that hides nav links
+  // under 620px.
+  const header = (slps.match(/<header>[\s\S]*?<\/header>/) || [""])[0];
+  ok("the header has a For parents link, top right, before Sign in",
+    /<a class="parents" id="forParents" href="\/families">For parents<\/a>\s*<a class="signin"/.test(header));
+  ok("…that is never hidden on a phone", !/class="[^"]*\bnl\b[^"]*" id="forParents"/.test(header));
+  ok("…and goes straight to the App Store on an iPhone or iPad",
+    /getElementById\("forParents"\)\.href = "https:\/\/apps\.apple\.com\/us\/app\/sona-speech\/id6785755867"/.test(slps) &&
+    /iPhone\|iPad\|iPod/.test(slps) && /maxTouchPoints > 1/.test(slps));
 }
 
 console.log(fails ? fails + " FAILURES" : "ALL GREEN");

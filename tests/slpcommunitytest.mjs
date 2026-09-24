@@ -142,7 +142,7 @@ try {
     }
     ok('load more is hidden when no next page exists',!(await a.page.locator('#communityMore').isVisible()));
     ok('community contains no preview or placeholder promises',!/interactive preview|starter posts|only visible here|nothing is shared/i.test(await a.page.locator('#page-community').innerText()));
-    ok('affiliate remains gated in a live dashboard',!(await a.page.locator('[data-page=affiliate]').isVisible()));
+    ok('affiliate partnerships is a live sidebar tab (coming 2027)',await a.page.locator('[data-page=affiliate]').isVisible());
 
     await post(a.page,'Question from Alex','A practical question for fellow SLPs.');
     await waitText(a.page,'Question from Alex');

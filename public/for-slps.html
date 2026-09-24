@@ -111,7 +111,11 @@
     nav{display:flex;align-items:center;gap:20px;font-weight:700;font-size:15px;}
     nav a{color:var(--body);text-decoration:none;}
     nav a.signin{color:var(--ink);border:2px solid var(--line2);padding:8px 16px;border-radius:12px;}
-    @media(max-width:620px){ nav a.nl{display:none;} }
+    nav a.parents{color:var(--teal-dd);font-weight:800;}
+    @media(max-width:620px){ nav a.nl{display:none;} nav{gap:14px;} }
+    nav a{white-space:nowrap;}
+    @media(max-width:400px){ .brand span{display:none;} nav{font-size:14px;gap:12px;} nav a.signin{padding:7px 12px;} }
+    @media(max-width:340px){ .brand{gap:6px;} .brand img{width:32px;height:32px;} .brand b{font-size:22px;} .hbar{gap:8px;} nav{gap:10px;font-size:13px;} nav a.signin{padding:6px 10px;} }
 
     /* hero */
     .hero{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,440px),1fr));gap:56px;align-items:center;padding-top:72px;padding-bottom:56px;}
@@ -237,10 +241,25 @@
     <nav>
       <a class="nl" href="#how">How it works</a>
       <a class="nl" href="#privacy">Privacy</a>
+      <a class="parents" id="forParents" href="/families">For parents</a>
       <a class="signin" href="/slp-login.html">Sign in</a>
     </nav>
   </div>
 </header>
+<script>
+  // Parents land here from the same ads as clinicians. This page's form is
+  // for SLPs, so a parent gets a way out that does not ask for an email:
+  // straight to the App Store on an iPhone or iPad (iPadOS reports itself as
+  // a Mac with a touchscreen), and the family page — which also runs in any
+  // browser — everywhere else.
+  (function () {
+    try {
+      var ua = navigator.userAgent || "";
+      var ios = /iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+      if (ios) document.getElementById("forParents").href = "https://apps.apple.com/us/app/sona-speech/id6785755867";
+    } catch (e) {}
+  })();
+</script>
 
 <main>
 <section class="wrap hero">

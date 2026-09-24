@@ -604,7 +604,7 @@
       <a class="nav-item" data-page="caseload" href="#caseload"><span class="icon"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2m20 0v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/><circle cx="9" cy="7" r="4"/></svg></span> Caseload <span class="badge" id="familyCount" style="display:none;">0</span></a>
       <div class="nav-section">Connect</div>
       <a class="nav-item" data-page="community" href="#community"><span class="icon"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 11a7 7 0 0 1-7 7H7l-5 3 1.7-5A7 7 0 0 1 2 11a7 7 0 0 1 7-7h5a7 7 0 0 1 7 7Z"/><path d="M7 10h10M7 14h6"/></svg></span> Community</a>
-      <a class="nav-item" data-page="affiliate" href="#affiliate" data-preview-only hidden><span class="icon"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v18M3 12h18M5.6 5.6l12.8 12.8M5.6 18.4 18.4 5.6"/></svg></span> Affiliates <span class="soon-badge">Soon</span></a>
+      <a class="nav-item" data-page="affiliate" href="#affiliate"><span class="icon"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v18M3 12h18M5.6 5.6l12.8 12.8M5.6 18.4 18.4 5.6"/></svg></span> Affiliate partnerships <span class="soon-badge">2027</span></a>
       <div class="nav-section account-label">Account</div>
       <a class="nav-item" data-page="settings" href="#settings"><span class="icon"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="3" fill="white"/><circle cx="15" cy="17" r="3" fill="white"/></svg></span> Settings</a>
       <a class="nav-item" data-page="feedback" href="#feedback"><span class="icon"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7A8.4 8.4 0 0 1 4 11.5a8.5 8.5 0 0 1 4.7-7.6 8.4 8.4 0 0 1 3.8-.9H13a8.5 8.5 0 0 1 8 8v.5Z"/></svg></span> Talk to Rachel</a>
@@ -890,12 +890,17 @@
         </div></div>
       </div>
 
-      <!-- A passive teaser. Only an explicit question opens the conversation. -->
-      <div class="page" id="page-affiliate" data-preview-only hidden>
-        <div class="page-header"><div><div class="eyebrow">Help more families find Sona</div><h1>Affiliate program</h1><p>Something to look forward to.</p></div></div>
-        <div class="affiliate-hero"><span class="affiliate-status">Coming soon</span><div class="eyebrow">Share something you believe in</div><h2>Earn a share of each sale — details at launch.</h2><p>We're building a creator affiliate program for people who introduce Sona to new families through their content and community.</p></div>
-        <div class="affiliate-details"><div class="card"><span class="detail-num">01</span><h3>Share with your audience</h3><p class="sub">For creators reaching families outside their own caseload. Your own caseload stays free and is never commission-bearing.</p></div><div class="card"><span class="detail-num">02</span><h3>Earn on eligible sales</h3><p class="sub">Commission and eligibility details will be shared when the program launches.</p></div><div class="card"><span class="detail-num">03</span><h3>Keep doing what you do</h3><p class="sub">Affiliate participation is completely optional. It never changes access to your SLP workspace or your own caseload.</p></div></div>
-        <div class="affiliate-footnote"><p>We're still putting the details together. Curious? Choose Talk to Rachel in the sidebar to ask about the program.</p></div>
+      <!-- A passive teaser, live since 24 Sep 2026 (Travis: "affiliate
+           partnerships coming 2027, earn for referring Sona to friends").
+           CREATOR-ONLY, settled 21 Sep 2026: a clinician never earns on a
+           family from their own caseload, because a commission on a client
+           is a referral fee under several state practice acts. The copy says
+           so in plain words, and nothing here asks for payment details. -->
+      <div class="page" id="page-affiliate">
+        <div class="page-header"><div><div class="eyebrow">Help more families find Sona</div><h1>Affiliate partnerships</h1><p>For SLPs who share Sona beyond their own caseload.</p></div></div>
+        <div class="affiliate-hero"><span class="affiliate-status">Coming 2027</span><div class="eyebrow">Share something you believe in</div><h2>Earn for referring Sona to friends.</h2><p>In 2027 we're opening affiliate partnerships for SLPs who share Sona with colleagues, friends and the families who find them through their content.</p></div>
+        <div class="affiliate-details"><div class="card"><span class="detail-num">01</span><h3>Share with your audience</h3><p class="sub">Friends, fellow SLPs, and families who follow your posts. Families on your own caseload are never part of it: you never earn on a family you work with, so a recommendation to a client is only ever a recommendation.</p></div><div class="card"><span class="detail-num">02</span><h3>Earn on eligible sales</h3><p class="sub">Rates and who counts come with the launch in 2027.</p></div><div class="card"><span class="detail-num">03</span><h3>Keep doing what you do</h3><p class="sub">Completely optional. It never changes your dashboard or what your families get.</p></div></div>
+        <div class="affiliate-footnote"><p>Want to be first in line? Choose Talk to Rachel in the sidebar and tell her.</p></div>
       </div>
 
       <div class="page" id="page-feedback">
@@ -903,7 +908,7 @@
         <div class="feedback-layout"><div class="card">
           <div class="feedback-tabs" role="group" aria-label="How would you like to connect?"><button id="fbModeFeedback" aria-pressed="true">Leave feedback</button><button id="fbModeCall" aria-pressed="false">Request a call</button></div>
           <h2 id="fbHeading">What's on your mind?</h2><p class="sub" id="fbIntro">A quick thought is enough. Tell Rachel what's working or what would make your day easier.</p>
-          <label class="fl" for="fbTopic">About</label><select id="fbTopic"><option value="dashboard">The SLP dashboard</option><option value="app">The family app</option><option value="question">A question about Sona</option><option value="affiliate" data-preview-only hidden>The affiliate program</option></select>
+          <label class="fl" for="fbTopic">About</label><select id="fbTopic"><option value="dashboard">The SLP dashboard</option><option value="app">The family app</option><option value="question">A question about Sona</option><option value="affiliate">Affiliate partnerships</option></select>
           <label class="fl" for="fbText" id="fbTextLabel">Your message</label><textarea id="fbText" maxlength="2000" placeholder="I wish the dashboard could…"></textarea>
           <div class="workflow-fields" id="callFields" hidden><label class="fl" for="callAvailability">A good time to connect (optional)</label><input id="callAvailability" maxlength="240" placeholder="e.g. Tuesday afternoons, Mountain Time" /><p class="sub">This is a request, not a booking. We'll email you to find a time together.</p></div>
           <p class="workflow-note">Please keep feedback about the product. Leave out children's names and private information.</p><p class="workflow-note" id="fbReply"></p>
@@ -921,7 +926,10 @@
     // Only the local fixture server opts in. Deployed pages default closed.
     var PREVIEW_FEATURES=window.SLP_PREVIEW_FEATURES===true&&/^(localhost|127\.0\.0\.1|\[?::1\]?)$/.test(location.hostname);
     document.querySelectorAll("[data-preview-only]").forEach(function(el){el.hidden=!PREVIEW_FEATURES;});
-    function previewOnlyPage(name){return name==="affiliate";}
+    // No page is preview-only right now: the affiliate teaser went live on
+    // 24 Sep 2026. The switch stays for the next unfinished page.
+    var PREVIEW_ONLY_PAGES=[];
+    function previewOnlyPage(name){return PREVIEW_ONLY_PAGES.indexOf(name)>=0;}
 
     /* ── Helpers ───────────────────────────────────── */
     var $=function(id){return document.getElementById(id);};
@@ -1065,7 +1073,7 @@
       document.querySelectorAll(".page").forEach(function(p){p.classList.remove("active");});
       var el=$("page-"+name); if(el)el.classList.add("active");
       document.querySelectorAll(".nav-item").forEach(function(n){var active=n.dataset.page===name||(name==="child"&&n.dataset.page==="caseload");n.classList.toggle("active",active);if(active)n.setAttribute("aria-current","page");else n.removeAttribute("aria-current");});
-      $("pageCrumb").textContent={today:"Today",caseload:"Caseload",child:"Child overview",settings:"Settings",feedback:"Talk to Rachel",affiliate:"Affiliates",community:"Community",onboarding:"Welcome"}[name]||"Today";
+      $("pageCrumb").textContent={today:"Today",caseload:"Caseload",child:"Child overview",settings:"Settings",feedback:"Talk to Rachel",affiliate:"Affiliate partnerships",community:"Community",onboarding:"Welcome"}[name]||"Today";
       document.title="Sona · "+$("pageCrumb").textContent;
       setMenu(false);
       window.scrollTo(0,0);
