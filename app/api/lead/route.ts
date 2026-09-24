@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { kvCmd, kvConfigured } from "@/lib/slpAuth";
 
 /**
  * Lead capture for the free Speech Check (top-of-funnel email opt-in).
@@ -138,15 +139,36 @@ export async function POST(req: NextRequest) {
   const kitKey = process.env.KIT_API_KEY;
   const kitForm = process.env.KIT_FORM_ID;
   let captured = false;
+  let crm: { ok: boolean; status: number } | null = null;
 
   try {
     if (hook) {
-      await fetch(hook, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(safeLead),
-      });
-      captured = true;
+      /**
+       * CAPTURED MEANS THE CRM SAID YES. This used to set captured = true the
+       * moment the fetch returned, whatever GoHighLevel answered — so a 4xx
+       * from a misconfigured workflow read, everywhere downstream, as a lead
+       * safely delivered. The status is kept now, a refusal is logged with
+       * GoHighLevel's own words, and a CRM that hangs cannot hold the
+       * sign-up hostage past the fuse.
+       */
+      const ctl = new AbortController();
+      const fuse = setTimeout(() => ctl.abort(), 5000);
+      try {
+        const r = await fetch(hook, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(safeLead),
+          signal: ctl.signal,
+        });
+        crm = { ok: r.ok, status: r.status };
+        if (!r.ok) console.error("[lead] CRM webhook refused the lead:", r.status, (await r.text().catch(() => "")).slice(0, 300));
+      } catch (e) {
+        crm = { ok: false, status: 0 };
+        console.error("[lead] CRM webhook failed:", e instanceof Error ? e.message : String(e));
+      } finally {
+        clearTimeout(fuse);
+      }
+      captured = crm.ok;
     }
     if (kitKey && kitForm) {
       await fetch(`https://api.kit.com/v4/forms/${kitForm}/subscribers`, {
@@ -163,6 +185,41 @@ export async function POST(req: NextRequest) {
     }
   } catch {
     // never fail the user on a capture hiccup
+  }
+
+  /**
+   * THE LEDGER: EVERY LEAD IS KEPT ON OUR SIDE TOO. Until 24 Sep 2026 this
+   * route forwarded and forgot, so a lead the CRM dropped was gone — and the
+   * first ad produced 26 "Website Leads" that nobody could find. Each lead is
+   * now appended to the store with whether the CRM accepted it, and the
+   * founder view (/leads.html, behind FOUNDER_KEY) reads it back.
+   *
+   * Built from safeLead, field by field, never from `lead`: the grown-up's
+   * email and the campaign tags, never a child's name, age or targets, and
+   * not the free-text report either. Capped so it cannot grow without end.
+   */
+  if (kvConfigured()) {
+    try {
+      const entry = {
+        at: safeLead.at,
+        email: safeLead.email,
+        first_name: safeLead.first_name,
+        role: safeLead.role,
+        source: safeLead.source,
+        summary: safeLead.summary.slice(0, 120),
+        utm_source: safeLead.utm_source,
+        utm_medium: safeLead.utm_medium,
+        utm_campaign: safeLead.utm_campaign,
+        utm_content: safeLead.utm_content,
+        fbclid: safeLead.fbclid,
+        landing: safeLead.landing,
+        crm: crm ? (crm.ok ? "accepted" : "refused " + crm.status) : "not configured",
+      };
+      await kvCmd(["LPUSH", "leads:all", JSON.stringify(entry)]);
+      await kvCmd(["LTRIM", "leads:all", 0, 9999]);
+    } catch {
+      // the ledger is a backup; its failure never costs the visitor anything
+    }
   }
 
   return NextResponse.json({ ok: true, captured });

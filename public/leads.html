@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Leads — Sona founders</title>
+  <!-- A private founder page: every email that reached Sona, and every
+       clinician account. noindex, and no pixel or analytics — it lists
+       people's email addresses, and nothing on it should be tracked. -->
+  <meta name="robots" content="noindex, nofollow" />
+  <link href="/fonts.css" rel="stylesheet">
+  <style>
+    *{box-sizing:border-box;}
+    [hidden]{display:none !important;}
+    body{margin:0;background:#FFFAF3;color:#2D2A4B;font-family:Nunito,system-ui,sans-serif;}
+    .wrap{max-width:1200px;margin:0 auto;padding:24px;}
+    h1,h2{font-family:"Baloo 2",Nunito,sans-serif;font-weight:800;margin:0 0 8px;}
+    h1{font-size:30px;} h2{font-size:22px;margin-top:28px;}
+    .muted{color:#7A7690;font-size:14px;font-weight:700;}
+    .row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:14px 0;}
+    input{height:46px;padding:0 14px;border-radius:12px;border:2px solid #E8DFD0;font:600 16px Nunito,sans-serif;min-width:280px;}
+    button{height:46px;padding:0 18px;border:none;border-radius:12px;background:#0E7C89;color:#fff;font:800 16px "Baloo 2",Nunito,sans-serif;cursor:pointer;}
+    button.ghost{background:#fff;color:#2D2A4B;border:2px solid #E8DFD0;}
+    .err{color:#B83A3A;font-weight:800;}
+    .cards{display:flex;flex-wrap:wrap;gap:10px;margin:10px 0;}
+    .card{background:#fff;border:2px solid #F0E8DB;border-radius:16px;padding:12px 16px;min-width:150px;}
+    .card b{display:block;font-family:"Baloo 2",Nunito,sans-serif;font-size:26px;}
+    .tw{overflow-x:auto;background:#fff;border:2px solid #F0E8DB;border-radius:16px;}
+    table{border-collapse:collapse;width:100%;font-size:14px;}
+    th,td{text-align:left;padding:9px 12px;border-bottom:1px solid #F0E8DB;white-space:nowrap;}
+    th{font-weight:800;color:#4A4766;background:#FBF6EE;}
+    .ok{color:#0E6E7A;font-weight:800;} .bad{color:#B83A3A;font-weight:800;}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Leads</h1>
+  <p class="muted">Every email that reached Sona, and every therapist account. Private: unlock with your founder key.</p>
+
+  <div class="row" id="gate">
+    <input id="key" type="password" autocomplete="off" placeholder="Founder key" aria-label="Founder key" />
+    <button id="go">Show leads</button>
+    <span class="err" id="err" role="alert"></span>
+  </div>
+
+  <div id="out" hidden>
+    <div class="cards">
+      <div class="card"><span class="muted">Emails captured</span><b id="nLeads">0</b></div>
+      <div class="card"><span class="muted">Reached GoHighLevel</span><b id="nCrm">0</b></div>
+      <div class="card"><span class="muted">Therapist accounts</span><b id="nSlp">0</b></div>
+    </div>
+
+    <h2>Emails captured</h2>
+    <p class="muted">Newest first. Kept since 24 Sep 2026 — nothing before that was stored on our side.</p>
+    <div class="row"><button class="ghost" id="csvLeads">Download CSV</button></div>
+    <div class="tw"><table id="tLeads"></table></div>
+
+    <h2>Therapist accounts</h2>
+    <p class="muted">Everyone who signed up for the dashboard, from the start. "Not yet" means GoHighLevel hasn't been told; it will be the next time they sign in.</p>
+    <div class="row"><button class="ghost" id="csvSlp">Download CSV</button></div>
+    <div class="tw"><table id="tSlp"></table></div>
+  </div>
+</div>
+
+<script>
+  (function () {
+    var $ = function (id) { return document.getElementById(id); };
+    var DATA = null;
+    var LEAD_COLS = [["at", "When"], ["email", "Email"], ["first_name", "Name"], ["role", "Who"], ["source", "From"], ["utm_campaign", "Campaign"], ["utm_content", "Ad"], ["crm", "GoHighLevel"]];
+    var SLP_COLS = [["createdAt", "Signed up"], ["email", "Email"], ["name", "Name"], ["clinic", "Clinic"], ["source", "From"], ["inCrm", "In GoHighLevel"]];
+
+    function esc(s) {
+      return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+        return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+      });
+    }
+    function when(s) { try { return s ? new Date(s).toLocaleString() : ""; } catch (e) { return s || ""; } }
+    function table(el, cols, rows) {
+      var h = "<tr>" + cols.map(function (c) { return "<th>" + esc(c[1]) + "</th>"; }).join("") + "</tr>";
+      if (!rows.length) { el.innerHTML = h + '<tr><td colspan="' + cols.length + '" class="muted">None yet.</td></tr>'; return; }
+      el.innerHTML = h + rows.map(function (r) {
+        return "<tr>" + cols.map(function (c) {
+          var v = r[c[0]];
+          if (c[0] === "at" || c[0] === "createdAt") v = when(v);
+          var cls = (c[0] === "crm" || c[0] === "inCrm") ? (/^(accepted|yes)$/.test(String(v)) ? ' class="ok"' : ' class="bad"') : "";
+          return "<td" + cls + ">" + esc(v) + "</td>";
+        }).join("") + "</tr>";
+      }).join("");
+    }
+    function csv(cols, rows, name) {
+      var q = function (v) { v = String(v == null ? "" : v); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
+      var body = [cols.map(function (c) { return q(c[1]); }).join(",")].concat(rows.map(function (r) {
+        return cols.map(function (c) { return q(r[c[0]]); }).join(",");
+      })).join("\n");
+      var a = document.createElement("a");
+      a.href = URL.createObjectURL(new Blob([body], { type: "text/csv" }));
+      a.download = name; document.body.appendChild(a); a.click(); a.remove();
+    }
+
+    function load() {
+      var key = ($("key").value || "").trim();
+      $("err").textContent = "";
+      if (!key) { $("err").textContent = "Enter your founder key."; return; }
+      $("go").disabled = true; $("go").textContent = "Loading…";
+      fetch("/api/founders/leads", { headers: { "x-founder-key": key }, cache: "no-store" })
+        .then(function (r) { return r.json(); })
+        .then(function (j) {
+          $("go").disabled = false; $("go").textContent = "Show leads";
+          if (!j || !j.ok) { $("err").textContent = (j && j.error) || "Couldn't load."; return; }
+          // Kept for this tab only, so a refresh doesn't ask again.
+          try { sessionStorage.setItem("sona.founderKey", key); } catch (e) {}
+          DATA = j;
+          $("nLeads").textContent = j.leads.length;
+          $("nCrm").textContent = j.leads.filter(function (l) { return l.crm === "accepted"; }).length;
+          $("nSlp").textContent = j.clinicians.length;
+          table($("tLeads"), LEAD_COLS, j.leads);
+          table($("tSlp"), SLP_COLS, j.clinicians);
+          $("out").hidden = false;
+        })
+        .catch(function () {
+          $("go").disabled = false; $("go").textContent = "Show leads";
+          $("err").textContent = "Network hiccup — try again.";
+        });
+    }
+    $("go").onclick = load;
+    $("key").addEventListener("keydown", function (e) { if (e.key === "Enter") load(); });
+    $("csvLeads").onclick = function () { if (DATA) csv(LEAD_COLS, DATA.leads, "sona-leads.csv"); };
+    $("csvSlp").onclick = function () { if (DATA) csv(SLP_COLS, DATA.clinicians, "sona-therapists.csv"); };
+    try { var k = sessionStorage.getItem("sona.founderKey"); if (k) { $("key").value = k; load(); } } catch (e) {}
+  })();
+</script>
+</body>
+</html>
