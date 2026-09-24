@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { kvCmd, kvConfigured } from "@/lib/slpAuth";
+import crypto from "node:crypto";
+import { kvCmd, kvConfigured, leadSig } from "@/lib/slpAuth";
+import { rateLimit } from "@/lib/rateLimit";
 import { kitConfigured, kitSubscribe, kitTagFor, type KitResult } from "@/lib/kit";
 
 /**
@@ -62,8 +64,26 @@ export async function POST(req: NextRequest) {
   }
 
   const email = typeof body?.email === "string" ? body.email.trim() : "";
-  if (!/^\S+@\S+\.\S+$/.test(email)) {
+  // 254 is the longest address email itself allows; anything longer is not
+  // an address, and every lead is now kept, so nothing unbounded gets in.
+  if (email.length > 254 || !/^\S+@\S+\.\S+$/.test(email)) {
     return NextResponse.json({ ok: false, error: "A valid email is required." }, { status: 400 });
+  }
+
+  /**
+   * A STRANGER CANNOT FLOOD THE LIST. This door takes posts from anyone, and
+   * each one is kept and sent to Kit — so a script could fill the ledger past
+   * its cap (pushing real leads out) and stuff the Kit list with junk. Ten an
+   * hour from one address is far more than any family or clinician sends.
+   * Our own sign-up route forwards every clinician from the same few server
+   * addresses, so it signs its leads and a valid signature skips the limit.
+   */
+  const sig = req.headers.get("x-sona-lead-sig") || "";
+  const want = leadSig(email);
+  const internal = sig.length === want.length && crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(want));
+  if (!internal) {
+    const limited = await rateLimit(req, { key: "lead", limit: 10, windowSec: 3600 });
+    if (limited) return limited;
   }
 
   const child = typeof body?.child === "string" ? body.child.slice(0, 60) : "";
@@ -216,7 +236,9 @@ export async function POST(req: NextRequest) {
         utm_content: safeLead.utm_content,
         fbclid: safeLead.fbclid,
         landing: safeLead.landing,
-        crm: hookRes ? (hookRes.ok ? "accepted" : "refused " + hookRes.status) : "not configured",
+        // status 0 is a timeout or a network failure, not a refusal: the
+        // webhook may never have seen it, or may have it without replying
+        crm: hookRes ? (hookRes.ok ? "accepted" : hookRes.status ? "refused " + hookRes.status : "unreachable") : "not configured",
         kit: kitRes ? (kitRes.ok ? kitRes.detail : "refused (" + kitRes.detail + ")") : "not configured",
       };
       await kvCmd(["LPUSH", "leads:all", JSON.stringify(entry)]);

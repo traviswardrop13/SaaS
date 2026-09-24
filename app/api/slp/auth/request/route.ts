@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import crypto from "node:crypto";
 import {
   kvCmd, kvConfigured, randomToken, hashToken, sendMagicEmail,
-  signSession, sessionCookie, SESSION_MAX_AGE, authSecretOk,
+  signSession, sessionCookie, SESSION_MAX_AGE, authSecretOk, leadSig,
 } from "@/lib/slpAuth";
 
 export const runtime = "nodejs";
@@ -91,7 +91,8 @@ async function tellCrm(
   try {
     const r = await fetch(origin + "/api/lead", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      // signed, so /api/lead's per-address flood limit never catches it
+      headers: { "Content-Type": "application/json", "x-sona-lead-sig": leadSig(email) },
       body: JSON.stringify({ email, name, source, role: "slp", summary: "New SLP signup", ...attrib }),
       signal: ctl.signal,
     });

@@ -93,7 +93,14 @@
       }).join("");
     }
     function csv(cols, rows, name) {
-      var q = function (v) { v = String(v == null ? "" : v); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
+      // Anyone can put text into these fields (a UTM tag, a name at sign-up),
+      // and a cell that starts with = + - @ runs as a formula in Excel and
+      // Sheets. A leading apostrophe makes it plain text.
+      var q = function (v) {
+        v = String(v == null ? "" : v);
+        if (/^[=+\-@\t\r]/.test(v)) v = "'" + v;
+        return /[",\n\r]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
+      };
       var body = [cols.map(function (c) { return q(c[1]); }).join(",")].concat(rows.map(function (r) {
         return cols.map(function (c) { return q(r[c[0]]); }).join(",");
       })).join("\n");
@@ -115,8 +122,10 @@
           // Kept for this tab only, so a refresh doesn't ask again.
           try { sessionStorage.setItem("sona.founderKey", key); } catch (e) {}
           DATA = j;
-          $("nLeads").textContent = j.leads.length;
-          $("nCrm").textContent = j.leads.filter(function (l) { return /^added/.test(String(l.kit || "")); }).length;
+          // People, not rows: a clinician finishing setup is posted twice.
+          var uniq = function (list) { var s = {}; list.forEach(function (l) { s[String(l.email || "").toLowerCase()] = 1; }); return Object.keys(s).length; };
+          $("nLeads").textContent = uniq(j.leads);
+          $("nCrm").textContent = uniq(j.leads.filter(function (l) { return /^added/.test(String(l.kit || "")); }));
           $("nSlp").textContent = j.clinicians.length;
           table($("tLeads"), LEAD_COLS, j.leads);
           table($("tSlp"), SLP_COLS, j.clinicians);

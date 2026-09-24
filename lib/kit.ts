@@ -102,7 +102,7 @@ export async function kitSubscribe(o: { email: string; firstName?: string; tag?:
   if (!sub.ok) {
     console.error("[kit] subscriber was not created:", sub.status, sub.text);
     await tagP;
-    return { ok: false, status: sub.status, detail: "subscriber " + sub.status };
+    return { ok: false, status: sub.status, detail: sub.status ? "subscriber " + sub.status : "unreachable" };
   }
 
   const form = process.env.KIT_FORM_ID || "";

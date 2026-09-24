@@ -742,5 +742,29 @@ if (A) {
   }
 }
 
+
+// ── the lead door, hardened (independent review of #131, 24 Sep 2026) ──
+{
+  const lead = read("app/api/lead/route.ts");
+  const req = read("app/api/slp/auth/request/route.ts");
+  const page = read("public/leads.html");
+  ok("an address longer than email allows is refused before it is kept", /email\.length > 254/.test(lead));
+  ok("a stranger is limited to ten leads an hour from one address",
+    /rateLimit\(req, \{ key: "lead", limit: 10, windowSec: 3600 \}\)/.test(lead),
+    "otherwise a script fills the ledger past its cap and stuffs the Kit list with junk");
+  ok("…while our own sign-up route, which forwards every clinician from the same servers, signs its leads past it",
+    /"x-sona-lead-sig": leadSig\(email\)/.test(req) && /timingSafeEqual\(Buffer\.from\(sig\), Buffer\.from\(want\)\)/.test(lead) &&
+    lead.indexOf("if (!internal)") > 0 && lead.indexOf("if (!internal)") < lead.indexOf("const toKit"));
+  if (A) {
+    ok("the signature is the server's own: same for the same email, different for another",
+      A.leadSig("Sam@Clinic.org") === A.leadSig("sam@clinic.org") && A.leadSig("sam@clinic.org") !== A.leadSig("pat@clinic.org"));
+  }
+  ok("a timeout or network failure reads 'unreachable', never 'refused 0'",
+    /hookRes\.status \? "refused " \+ hookRes\.status : "unreachable"/.test(lead) && /sub\.status \? "subscriber " \+ sub\.status : "unreachable"/.test(read("lib/kit.ts")));
+  ok("the founder CSV cannot run a formula someone typed into a form",
+    /if \(\/\^\[=\+\\-@\\t\\r\]\/\.test\(v\)\) v = "'" \+ v;/.test(page));
+  ok("the founder page counts people, not rows", /var uniq = function \(list\)/.test(page) && /\$\("nLeads"\)\.textContent = uniq\(j\.leads\)/.test(page));
+}
+
 console.log(fails ? fails + " FAILURES" : "ALL GREEN");
 process.exit(fails ? 1 : 0);
