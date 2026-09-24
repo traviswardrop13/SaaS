@@ -513,8 +513,8 @@
     }
     @media print { .free-promise, .child-tabs, .child-nav, .feedback-shortcut, #quickHomework, #sessionPlanner, #childSaved { display:none !important; } #chOverview[hidden] { display:grid !important; } }
 
-    .community-layout { display:grid; grid-template-columns:minmax(0,1fr) 260px; gap:24px; align-items:start; }
-    .community-main, .community-aside { min-width:0; }
+    .community-layout { max-width:900px; margin:0 auto; }
+    .community-main { min-width:0; }
     .community-welcome { background:#eaf1ed; border:1px solid #d9e5dd; border-radius:12px; padding:27px; margin-bottom:22px; }
     .community-welcome h2 { font-size:23px; letter-spacing:-.6px; font-weight:550; margin:8px 0; }
     .community-welcome p { font-size:12px; line-height:1.8; color:#5a7467; max-width:540px; }
@@ -542,13 +542,6 @@
     .community-post-actions { display:flex; gap:16px; align-items:center; margin-top:20px; padding-top:14px; border-top:1px solid var(--line); }
     .community-post-actions button { font:inherit; font-size:11px; color:var(--blue-d); cursor:pointer; border:none; background:none; padding:3px 0; }
     .community-post-actions .reply-count { font-size:10px; color:var(--muted); margin-left:auto; }
-    .community-aside .card { padding:22px; }
-    .community-aside h3 { font-size:13px; margin-bottom:10px; font-weight:600; }
-    .community-aside p { font-size:11px; color:var(--muted); line-height:1.85; }
-    .community-aside a { display:block; margin-top:12px; font-size:11px; text-decoration:none; }
-    .community-side-list { display:grid; gap:14px; margin-top:18px; }
-    .community-side-list div { font-size:11px; line-height:1.7; color:var(--muted); }
-    .community-side-list strong { display:block; color:var(--ink); font-weight:500; }
     .community-editor[hidden], .community-replies[hidden], #communityMore[hidden] { display:none; }
     .community-editor { margin-top:12px; padding:24px; border:1px solid #b7cbbb; }
     .community-editor textarea { min-height:125px; }
@@ -567,8 +560,7 @@
     .community-resource:hover { border-color:#aec2b0; }
     .community-empty { text-align:center; padding:28px 20px; }
     .community-empty p { font-size:12px; color:var(--muted); margin:7px 0 14px; }
-    @media (max-width:1150px) { .community-layout { grid-template-columns:minmax(0,1fr); } .community-aside { display:grid; grid-template-columns:1fr 1fr; gap:16px; } }
-    @media (max-width:768px) { .community-welcome { padding:22px; } .community-post { padding:19px; } .community-aside { grid-template-columns:1fr; } .community-post-header { flex-wrap:wrap; } .community-topic { margin-left:0; } .community-editor { padding:18px; } }
+    @media (max-width:768px) { .community-welcome { padding:22px; } .community-post { padding:19px; } .community-post-header { flex-wrap:wrap; } .community-topic { margin-left:0; } .community-editor { padding:18px; } }
 
     [data-preview-only][hidden] { display:none !important; }
     .general-invite { border-top:1px solid var(--line); margin-top:22px; padding-top:18px; }
@@ -896,10 +888,7 @@
           </form>
           <div class="community-filters" role="group" aria-label="Community topics"><button class="filter-tab" data-community-filter="all" aria-pressed="true">All posts</button><button class="filter-tab" data-community-filter="discussions" aria-pressed="false">Discussions</button><button class="filter-tab" data-community-filter="resources" aria-pressed="false">Resources &amp; ideas</button><button class="filter-tab" data-community-filter="cf" aria-pressed="false">CF corner</button></div>
           <p class="sub community-status" id="communityStatus" role="status"></p><div id="communityFeed" aria-live="polite"></div><button class="btn ghost" id="communityMore" hidden>Load more conversations</button>
-        </div><aside class="community-aside">
-          <div class="card"><div class="eyebrow">Made for SLPs</div><h3 style="margin-top:12px;">A little community. A lot of care.</h3><p>A place to trade practical ideas, celebrate small wins, and ask the questions you've been sitting on.</p><div class="community-side-list"><div><strong>Keep it kind</strong>Meet each other with curiosity and respect.</div><div><strong>Protect your families</strong>Share general ideas, without identifying a child.</div><div><strong>Make room for everyone</strong>Questions are welcome at every stage.</div></div></div>
-          <div class="card"><div class="rachel-avatar" aria-hidden="true">R</div><h3>Build this with Rachel</h3><p>Rachel is Sona's co-founder and a licensed pediatric speech-language pathologist. Help shape the space you'd want to come back to.</p><a href="#feedback">Share an idea or request a call ↗</a><a href="#affiliate" data-preview-only hidden>Explore the upcoming affiliate program ↗</a></div>
-        </aside></div>
+        </div></div>
       </div>
 
       <!-- A passive teaser. Only an explicit question opens the conversation. -->
