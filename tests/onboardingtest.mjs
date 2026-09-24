@@ -17,8 +17,8 @@ function edges(config){
   h.background=()=>{h.hidden=true;document.dispatchEvent(new Event('visibilitychange'));};h.foreground=()=>{h.hidden=false;document.dispatchEvent(new Event('visibilitychange'));};
   navigator.mediaDevices.getUserMedia=()=>new Promise((resolve,reject)=>{h.order.push('microphone');const req={grant(){const tracks=[0,1].map(()=>{const t={readyState:'live',stop(){t.readyState='ended';h.order.push('stop');}};h.tracks.push(t);return t;});resolve({getTracks:()=>tracks,getAudioTracks:()=>tracks});},deny(){reject(new DOMException('Denied','NotAllowedError'));}};h.requests.push(req);if(config.permission==='grant')req.grant();else if(config.permission==='deny')req.deny();});
   let sona;
-  Object.defineProperty(window,'Sona',{configurable:true,get:()=>sona,set(value){sona=value;value.isNativeApp=()=>!!config.native;value.speechPerm=()=>{h.order.push('speech permission');return Promise.resolve(true);};value.speak=text=>{h.speech.push(text);return Promise.resolve();};value.confetti=()=>h.confetti++;Object.keys(value.sfx||{}).forEach(k=>{if(typeof value.sfx[k]==='function')value.sfx[k]=()=>{if(k==='complete')h.complete++;};});}});
-  if(!localStorage.getItem('sona.test.setupseed')){localStorage.setItem('sona.test.setupseed','1');localStorage.setItem('sona.profile.v1',JSON.stringify({voiceOn:false,soundOn:false,volume:0}));}
+  Object.defineProperty(window,'Sona',{configurable:true,get:()=>sona,set(value){sona=value;value.isNativeApp=()=>!!config.native;value.speechPerm=()=>{h.order.push('speech permission');return Promise.resolve(true);};value.speak=value.speakNow=text=>{if(String(text||'').trim())h.speech.push(text);return Promise.resolve();};value.confetti=()=>h.confetti++;Object.keys(value.sfx||{}).forEach(k=>{if(typeof value.sfx[k]==='function')value.sfx[k]=()=>{if(k==='complete')h.complete++;};});}});
+  if(!localStorage.getItem('sona.test.setupseed')){localStorage.setItem('sona.test.setupseed','1');localStorage.setItem('sona.profile.v1',JSON.stringify({voiceOn:true,soundOn:false,volume:0.7}));}
 }
 async function fresh(config={}){
   const context=await browser.newContext({viewport:{width:320,height:568},reducedMotion:'reduce'});await context.addInitScript(edges,config);
@@ -61,18 +61,20 @@ await scenario('sound selection and private paced handoff',async()=>{
   await atHandoff(page);
   ok('the build gets a short readable beat',Date.now()-began>=1750);
   ok('handoff is personalized and its button works immediately',await page.locator('#handoffTitle').count()===1&&/Hand the phone to Milo!/.test(await page.locator('#handoffTitle').innerText())&&await page.locator('#nextBtn').isEnabled());
-  const result=await page.evaluate(()=>({profile:Sona.getProfile(),mic:localStorage.getItem('sona.micok'),requests:__setup.requests.length,speech:__setup.speech,plan:Sona.adventureGames()}));
+  const result=await page.evaluate(()=>({profile:Sona.getProfile(),mic:localStorage.getItem('sona.micok'),requests:__setup.requests.length,speech:__setup.speech,recommended:Sona.activityLibrary().recommended}));
   ok('Not now saves choices without asking or pretending microphone permission',result.requests===0&&result.mic!=='1'&&result.profile.onboarded&&JSON.stringify(result.profile.focusSounds)==='["S"]',result);
   ok('the handoff does not send the child name into generated speech',result.speech.every(t=>!t.includes('Milo')));
+  ok('setup and the handoff stay silent even with voice enabled',result.speech.length===0,result.speech);
   await page.waitForTimeout(3200);
   ok('the family controls when the handoff ends',new URL(page.url()).pathname==='/onboarding.html');
   ok('finishing web setup never uploads an automatic backup',pairPosts(requests).length===0,pairPosts(requests));
   if(new URL(page.url()).pathname==='/onboarding.html'){
    const fits=await page.evaluate(()=>{const b=document.getElementById('nextBtn').getBoundingClientRect(),h=document.getElementById('handoffTitle').getBoundingClientRect();return b.bottom<=innerHeight&&h.top>=0&&document.documentElement.scrollWidth<=innerWidth;});ok('handoff heading and button fit a small phone',fits);
-   ok('young-child handoff uses the shared simple-game plan',result.plan.length===5&&result.plan.every(g=>['feed','bubbles','peekaboo'].includes(g)),result.plan);
+   ok('young-child setup prepares the Simple play suggestion on Home',result.recommended==='simple',result.recommended);
    await page.locator('#achEmailInput').fill('parent@example.com');await page.locator('#achEmailInput').press('Enter');
    ok('Done in the optional email leaves the family in control of the handoff',new URL(page.url()).pathname==='/onboarding.html'&&await page.evaluate(()=>document.activeElement.id!=='achEmailInput'&&!Sona.getProfile().email));
-   await next(page);await page.waitForURL('**/charge.html?**');const u=new URL(page.url());ok('handoff enters the first actual adventure game',u.searchParams.get('daily')==='1'&&u.searchParams.get('first')===result.plan[0]);
+   await next(page);await page.waitForURL(url=>['/today.html','/charge.html'].includes(url.pathname));const u=new URL(page.url());ok('handoff opens Home so the child can choose a game',u.pathname==='/today.html'&&!u.search);
+   ok('setup never launches practice or creates a run automatically',!requests.some(r=>/\/(?:charge|arcade-[a-z]+)\.html/.test(new URL(r.url).pathname))&&await page.evaluate(()=>!sessionStorage.getItem('sona.run.v1')));
    ok('the play button still saves an explicitly entered optional email',await page.evaluate(()=>JSON.parse(localStorage.getItem('sona.profile.v1')).email==='parent@example.com'));
   }
   clean('sound/skip handoff',errors);
@@ -106,7 +108,7 @@ await scenario('granted microphone in native setup',async()=>{
   ok('the setup tap makes the real mic request and remembers only a grant',result.order[0]==='microphone'&&result.mic==='1',result);
   ok('every permission-check track stops before the native speech ask',result.tracks.length===2&&result.tracks.every(s=>s==='ended')&&result.order.indexOf('speech permission')>result.order.lastIndexOf('stop'),result);
   await atHandoff(page);ok('native setup finishes without a backup POST',pairPosts(requests).length===0,pairPosts(requests));
-  const plan=await page.evaluate(()=>Sona.adventureGames());ok('the older-child handoff follows the shared arcade plan',plan.length===5&&plan.every(g=>['slice','run','stack','glide','tiles'].includes(g)),plan);
+  const recommended=await page.evaluate(()=>Sona.activityLibrary().recommended);ok('older-child setup prepares the Arcade suggestion on Home',recommended==='arcade',recommended);
   clean('native microphone',errors);
  }finally{await context.close();}
 });

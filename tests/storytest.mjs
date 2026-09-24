@@ -81,27 +81,21 @@ const adv = await page.evaluate(() => {
 ok("finishing a run advances one chapter", adv.b === adv.a + 1, JSON.stringify(adv));
 ok("replaying the same day does NOT skip chapters", adv.c === adv.b, JSON.stringify(adv));
 
-// ── the home deck: hero + two up-next, one card per game ──
+// ── Home is the game library; the parked story engine stays off the menu ──
 await page.evaluate(() => { localStorage.removeItem("sona.episode.v1"); });
 await page.goto("http://localhost:8151/today.html");
 await page.waitForTimeout(800);
 const deck = await page.evaluate(() => ({
-  hero: document.getElementById("heroName").textContent,
-  launch: document.getElementById("goBtn").dataset.launch,
-  cta: document.getElementById("goBtn").textContent,
-  thumbs: [...document.querySelectorAll("#thumbs .thumb")].map((t) => ({ k: t.dataset.key, n: t.querySelector("b").textContent })),
+  title: document.querySelector(".library-intro h1").textContent,
+  cards: [...document.querySelectorAll("#activityGroups .game-card[data-game]")].map(card => ({ k: card.dataset.game, n: card.querySelector(".game-name").textContent })),
+  expected: Sona.activityLibrary().groups.flatMap(group => group.games.map(game => game.key)),
   chapPill: !!document.getElementById("chapPill"),
+  bookLinks: [...document.querySelectorAll('a[href]')].filter(a => /\/(chapter|story|library)\.html/.test(a.getAttribute('href'))).length,
 }));
-ok("deck names the hero activity", deck.hero.length > 3, deck.hero);
-// GAMES1: the hero is today's ADVENTURE — practice first, and the games are
-// what each round earns. The books are parked (19 Sep 2026).
-ok("hero card opens a real door", /^\/(charge\.html\?(daily=1|game=)|arcade-feed\.html)/.test(deck.launch || ""), deck.launch);
-// The wording depends on whether this child has ever practiced — a
-// first-timer is invited to START YOUR FIRST ADVENTURE. The launch target
-// above is what pins the door; this pins that the button is about practice.
-ok("CTA offers the adventure first", /LET.S PLAY|FIRST ADVENTURE/i.test(deck.cta), deck.cta);
-ok("three named game cards sit below", deck.thumbs.length === 3 && deck.thumbs.every((t) => t.n.length > 3), JSON.stringify(deck.thumbs));
-ok("home screen carries no chapter furniture", !deck.chapPill);
+ok("Home invites choosing a game", /pick a game/i.test(deck.title), deck.title);
+ok("every catalog game has a named card in the age shelves", JSON.stringify(deck.cards.map(card => card.k)) === JSON.stringify(deck.expected) && deck.cards.every(card => card.n.length > 3), JSON.stringify(deck.cards));
+ok("Home stays at the library until a game is chosen", /today\.html$/.test(page.url()), page.url());
+ok("home screen carries no chapter furniture or reader links", !deck.chapPill && deck.bookLinks === 0);
 
 // ── NO story card interrupts a round, daily or free play ──
 // This is the point of the change. Beats used to open every round and a child

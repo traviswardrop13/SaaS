@@ -36,7 +36,8 @@ async function measure(page, url) {
       oX: Math.round(doc.scrollWidth - innerWidth),
       oY: Math.round(doc.scrollHeight - innerHeight),
       scrollLocked: getComputedStyle(document.body).overflowY === "hidden" || getComputedStyle(doc).overflowY === "hidden",
-      hero: el("heroCard"), cap: el("heroCap"), thumbs: document.querySelectorAll("#thumbs .thumb").length,
+      library: el("libraryApp"), cards: document.querySelectorAll("#activityGroups .game-card").length,
+      firstCard: (()=>{const e=document.querySelector("#activityGroups .game-card");if(!e)return null;const r=e.getBoundingClientRect();return{w:r.width,h:r.height};})(),
       mic: el("micWrap"), build: el("reveals"), go: el("goBtn"),
       innerH: innerHeight,
     };
@@ -52,14 +53,9 @@ for (const [dev, w, h] of PORTRAIT) {
   });
   let m = await measure(page, "today.html");
   ok(dev + " today: no sideways overflow", m.oX <= 1, "oX=" + m.oX);
-  // the sticker-book home: the hero card breathes into whatever height is left
-  ok(dev + " today: hero card has a real size", m.hero && m.hero.h >= 150, m.hero && "heroH=" + (m.hero && m.hero.h));
-  ok(dev + " today: the day's three game cards all fit", m.thumbs === 3, "thumbs=" + m.thumbs);
-  // goBtn is the fixed bottom CTA; on hardware env(safe-area-inset-bottom)
-  // adds the home-bar gap (0 in headless), so assert against the page floor.
-  ok(dev + " today: LET'S GO never overflows the page", m.go && m.go.bottom <= m.innerH - 15, m.go && m.go.bottom + "/" + (m.innerH - 15));
-  // the caption plate must never be pushed under the CTA
-  ok(dev + " today: hero caption is inside the whole-card action", m.cap && m.go && m.cap.top >= m.go.top && m.cap.bottom <= m.go.bottom, JSON.stringify({ c: m.cap, g: m.go }));
+  ok(dev + " today: library cards have a usable touch area", m.firstCard && m.firstCard.w >= 120 && m.firstCard.h >= 160, JSON.stringify(m.firstCard));
+  ok(dev + " today: all eight games remain reachable by scrolling", m.cards === 8 && !m.scrollLocked, JSON.stringify(m));
+  ok(dev + " today: no retired adventure action is visible", m.go === null, JSON.stringify(m));
   m = await measure(page, "charge.html?game=arcade-slice.html");
   ok(dev + " charge: mic clears the home bar", m.mic && m.mic.bottom <= m.innerH - HOME_BAR + 1, m.mic && m.mic.bottom + "/" + (m.innerH - HOME_BAR));
   ok(dev + " charge: no sideways overflow", m.oX <= 1, "oX=" + m.oX);
@@ -81,42 +77,27 @@ for (const [dev, w, h] of PORTRAIT) {
   await page.close();
 }
 
-// A small portrait screen may scroll, but the longer adventure preview must
-// still occupy its own space between the star jar and the game choices.
+// The library is intentionally taller than a phone. Its final game and parked
+// book shelf must be genuinely reachable, with no fixed action covering them.
 {
-  const page = await browser.newPage({ viewport: { width: 320, height: 568 } });
+  const page = await browser.newPage({viewport:{width:320,height:568}});
   await page.addInitScript(() => {
-    localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Leo", focusSounds: ["R"], onboarded: true, earlyAdopter: true }));
-    localStorage.setItem("sona.micok", "1");
+    localStorage.setItem("sona.profile.v1", JSON.stringify({childName:"Leo",childAge:"4",focusSounds:["P"],onboarded:true,voiceOn:false}));
   });
-  await measure(page, "today.html");
-  const layout = await page.evaluate(() => {
-    const rect = (id) => {
-      const r = document.getElementById(id).getBoundingClientRect();
-      return { top: r.top, bottom: r.bottom };
-    };
-    return { jar: rect("jarRow"), hero: rect("heroCard"), caption: rect("heroCap"), choices: rect("sessionGuide") };
+  await measure(page,"today.html");
+  const cards = page.locator("#activityGroups .game-card");
+  const last = cards.last();
+  await last.scrollIntoViewIfNeeded();
+  const target = await last.evaluate(button => {
+    const r=button.getBoundingClientRect(), hit=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);
+    return {visible:r.top>=0&&r.bottom<=innerHeight&&r.left>=0&&r.right<=innerWidth,reachable:hit===button||button.contains(hit),overflowX:document.documentElement.scrollWidth-innerWidth};
   });
-  ok("small portrait today: the hero clears the star jar",
-    layout.jar.bottom <= layout.hero.top + 1, JSON.stringify(layout));
-  ok("small portrait today: the caption clears the game choices",
-    layout.caption.bottom <= layout.choices.top + 1, JSON.stringify(layout));
-  // Exercise actual scrolling, rather than accepting a CTA positioned below
-  // the screen inside an overflow-hidden container.
-  await page.mouse.wheel(0, 1000);
-  await page.waitForTimeout(200);
-  const cta = await page.evaluate(() => {
-    const button = document.getElementById("goBtn");
-    const r = button.getBoundingClientRect();
-    const target = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
-    return {
-      visible: r.top >= 0 && r.bottom <= innerHeight && r.left >= 0 && r.right <= innerWidth,
-      reachable: target === button || button.contains(target),
-      overflowX: document.documentElement.scrollWidth - innerWidth,
-    };
-  });
-  ok("small portrait today: the adventure button is reachable after scrolling", cta.visible && cta.reachable, JSON.stringify(cta));
-  ok("small portrait today: no sideways overflow", cta.overflowX <= 1, JSON.stringify(cta));
+  ok("small portrait today: the final game can be reached and tapped", target.visible&&target.reachable,JSON.stringify(target));
+  ok("small portrait today: no sideways overflow",target.overflowX<=1,JSON.stringify(target));
+  await page.locator("#booksComingSoon").scrollIntoViewIfNeeded();
+  ok("small portrait today: the parked book shelf is reachable",await page.locator("#booksComingSoon").isVisible());
+  const heading=await page.locator(".library-intro h1").boundingBox();
+  ok("small portrait today: content scrolls rather than clipping below the fold", heading.y<0,JSON.stringify(heading));
   await page.close();
 }
 
@@ -127,7 +108,7 @@ for (const [dev, w, h] of LANDSCAPE) {
     localStorage.setItem("sona.micok", "1");
   });
   let m = await measure(page, "today.html");
-  ok(dev + " today: hero card has a real size in landscape", m.hero && m.hero.h >= 200, m.hero && "heroH=" + (m.hero && m.hero.h));
+  ok(dev + " today: game cards have a real size in landscape", m.cards === 8 && m.firstCard && m.firstCard.w >= 120 && m.firstCard.h >= 160, JSON.stringify(m));
   ok(dev + " today: landscape scrolls instead of clipping", !m.scrollLocked, "overflow still hidden");
   m = await measure(page, "charge.html?game=arcade-slice.html");
   ok(dev + " charge: landscape scrolls instead of clipping", !m.scrollLocked, "overflow still hidden");

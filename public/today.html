@@ -2,13 +2,13 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
-  <title>Sona</title>
-  <link href="/fonts.css" rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Sona — Play library</title>
+  <link href="/fonts.css" rel="stylesheet" />
+  <link href="/sona.css" rel="stylesheet" />
   <link rel="manifest" href="/manifest.webmanifest" />
   <meta name="theme-color" content="#fff6e9" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="mobile-web-app-capable" content="yes" />
   <!-- first-run guard: a brand-new family (no onboarding done, no name) never
        sees the home screen with a blank default profile — they set up first.
        Covers deep links and the native shell's start URL alike. -->
@@ -26,78 +26,63 @@
     })();
   </script>
   <style>
-    :root{
-      /* readable muted/label (fix pack 1a): 4.6:1 on cream — #b08d63/#c9a878
-         stay only in decorative spots */
-      --cream:#fff6e9; --ink:#4a2c14; --muted:#8a6f52; --label:#a17c4a; --track:#f0e4d2;
-      --green:#58cc02; --green-d:#46a302; --orange:#ff8a3d; --orange-d:#ef6f23; --gold:#ffd21c;
-    }
-    *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;font-family:"Nunito",-apple-system,sans-serif;user-select:none;}
-    html,body{height:100%;overflow:hidden;background:var(--cream);color:var(--ink);overscroll-behavior:none;}
-    /* WKWebView rubber-band shows the webview's own (white) backdrop — pin a
-       fixed cream underlay behind everything so a bounce never flashes white */
-    body::before{content:"";position:fixed;inset:-120px;background:var(--cream);z-index:-1;}
-    #wrap{max-width:560px;margin:0 auto;padding:calc(16px + env(safe-area-inset-top)) 20px calc(24px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:14px;height:100dvh;overflow:hidden;}
-
-    /* Three familiar destinations leave the adventure as the main action. */
-    header{display:flex;align-items:center;gap:10px;}
-    #greeting{min-width:0;flex:1;}
-    #hiName{font-family:"Baloo 2";font-weight:800;font-size:21px;line-height:1.1;overflow-wrap:anywhere;}
-    #subLine{font-weight:800;font-size:11.5px;color:var(--muted);margin-top:3px;line-height:1.3;}
-    #hdrBtns{margin-left:auto;display:flex;align-items:center;gap:8px;flex:none;}
-    #buddyBtn,#libBtn,#parentBtn{position:relative;display:flex;align-items:center;justify-content:center;flex:none;border:3px solid #fff;width:44px;height:44px;border-radius:50%;background:#fff;cursor:pointer;box-shadow:0 4px 0 rgba(140,70,10,.14);color:#795c3c;}
-    #buddyBtn{background:#ffe5b1;overflow:hidden;}
-    #libBtn{background:#e7f2fa;}
-    #buddyBtn:focus-visible,#libBtn:focus-visible,#parentBtn:focus-visible,#jarInfo:focus-visible{outline:3px solid #157da5;outline-offset:4px;}
-    .sr-only{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;}
+    :root{--cream:#fff6e9;--ink:#4a2c14;--muted:#795c3c;}
+    html,body{min-height:100%;height:auto;background:var(--cream);}
+    body{color:var(--ink);}
+    button,a{-webkit-tap-highlight-color:transparent;}
+    button{font:inherit;}
+    button:focus-visible,a:focus-visible{outline:3px solid #157da5;outline-offset:5px;}
     [hidden]{display:none!important;}
-    #heroWrap{width:100%;display:flex;justify-content:center;flex:none;padding:2px 0 0;}
-    #heroCard{position:relative;display:block;width:100%;height:clamp(220px,39dvh,330px);overflow:hidden;background:linear-gradient(165deg,#d9f1fc 0%,#edf4ee 48%,#ffe4c3 100%);border-radius:24px 24px 0 0;isolation:isolate;}
-    #heroCard:before{content:"";position:absolute;width:145%;height:52%;left:-20%;bottom:-25%;border-radius:50%;background:#f3dcae;z-index:-1;}
-    #adventureTrail{position:absolute;inset:0;width:100%;height:100%;overflow:visible;}
-    .path-node{position:absolute;display:block;width:64px;height:64px;transform:translate(-50%,-50%);border:5px solid #fff;border-radius:50%;box-shadow:0 4px 0 rgba(120,80,20,.15);}
-    .path-node.upcoming{filter:grayscale(.95) sepia(.3);opacity:.65;}
-    .path-node.current{outline:4px solid #ffb547;outline-offset:3px;z-index:2;}
-    .path-node.done:after{content:"✓";position:absolute;right:-8px;bottom:-5px;width:23px;height:23px;border-radius:50%;border:2px solid #fff;background:#ffd35a;color:#67400d;font-weight:900;font-size:14px;}
-    .path-echo{position:absolute;display:block;width:69px;height:79px;left:-18px;top:-48px;filter:drop-shadow(0 4px 0 rgba(130,80,20,.10));pointer-events:none;}
-    .path-echo>.stk{background:transparent!important;overflow:visible;}
-    #heroCap{position:relative;display:flex;align-items:center;gap:12px;text-align:left;padding:17px 18px;background:#fff;border-radius:0 0 24px 24px;}
-    #heroName{display:block;font-family:"Baloo 2";font-weight:800;font-size:24px;line-height:1.12;flex:1;}
-    #heroSub{font-weight:800;font-size:12px;line-height:1.45;color:var(--muted);}
-    #actionLabel{font-family:"Baloo 2";font-size:15px;font-weight:800;line-height:1.1;}
-    .play-badge{display:flex;align-items:center;justify-content:center;gap:7px;flex:none;min-height:45px;border-radius:99px;padding:0 14px;background:#ff8a3d;box-shadow:0 4px 0 #e66c24;color:#fff;}
-    .play-badge svg{width:13px;height:16px;fill:currentColor;}
-    /* up next thumbnails */
-    #upNextLbl{font-family:"Baloo 2";font-weight:800;font-size:12px;letter-spacing:.1em;color:var(--label);}
-    #gameShelfHead{display:flex;align-items:center;justify-content:space-between;gap:10px;flex:none;}
-    /* DAY1: three games, not two — they share the row, so they shrink */
-    #thumbs{display:flex;gap:10px;justify-content:center;}
-    .thumb{position:relative;flex:1 1 0;min-width:0;max-width:118px;aspect-ratio:1/.97;border-radius:20px;border:5px solid #fff;box-shadow:0 10px 22px rgba(90,50,10,.16);background:#cfe7f2;cursor:pointer;transition:transform .12s;margin-bottom:12px;}
-    .thumb:nth-child(1){transform:rotate(-2.5deg);}
-    .thumb:nth-child(2){transform:rotate(1deg);}
-    .thumb:nth-child(3){transform:rotate(2.5deg);}
-    .thumb:active{transform:scale(.95);}
-    /* LOCKED: warm monochrome, no padlock. The art stays visible on purpose —
-       a child needs to see what they are about to earn. A padlock stamped over
-       a grey scrim says "disabled"; the same card in warm greyscale says
-       "coming". Same information, opposite emotion. */
-    .thumb.locked{filter:grayscale(.9) sepia(.22) brightness(1.02);opacity:.72;cursor:default;
-      transition:filter .5s,opacity .5s;}
-    .thumb.locked:active{transform:none;}
-    .thumb.locked b{background:#f3ece0;color:#9a866c;box-shadow:0 3px 0 rgba(120,80,20,.08);}
-    .thumb.locked:nth-child(1),.thumb.locked:nth-child(2),.thumb.locked:nth-child(3){transform:rotate(0deg);}
-    /* the shake a locked card does when tapped: "not yet — story first" */
-    @keyframes nudge{0%,100%{transform:translateX(0);}25%{transform:translateX(-5px);}75%{transform:translateX(5px);}}
-    .thumb.nope{animation:nudge .32s;}
-    .thumb b{position:absolute;left:50%;bottom:-11px;transform:translateX(-50%);background:#fff;border-radius:99px;padding:4px 11px;font-family:"Baloo 2";font-weight:800;font-size:11px;color:var(--ink);white-space:nowrap;box-shadow:0 3px 0 rgba(120,80,20,.12);}
-
-    /* CTA */
-
-    /* coming-soon tease (Coach Call): softly desaturated, gold ribbon, still tappable */
-    .soon{filter:saturate(.72);}
-    .soonTag{position:absolute;top:12px;left:-9px;background:linear-gradient(180deg,#ffe063,var(--gold));color:#7a5200;font-family:"Baloo 2";font-weight:800;font-size:12px;letter-spacing:.08em;padding:5px 13px;border-radius:99px;box-shadow:0 3px 0 rgba(120,80,20,.18);transform:rotate(-4deg);pointer-events:none;}
-    .thumb .soonTag{top:6px;left:-7px;font-size:10px;padding:3px 9px;}
-
+    .library-wrap{max-width:860px;margin:0 auto;padding:calc(18px + env(safe-area-inset-top)) 20px calc(32px + env(safe-area-inset-bottom));}
+    .library-header{display:flex;align-items:center;justify-content:space-between;gap:16px;}
+    .library-label{font-family:"Baloo 2",sans-serif;font-size:17px;font-weight:800;color:var(--muted);}
+    .library-intro{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:25px 0 22px;}
+    .library-intro h1{font-family:"Baloo 2",sans-serif;font-size:36px;line-height:1.1;font-weight:800;}
+    .library-intro p{font-size:14px;color:var(--muted);line-height:1.5;max-width:240px;margin-top:8px;}
+    #libraryEcho{display:block;position:relative;width:84px;height:96px;flex:none;transform:rotate(5deg);}
+    #libraryEcho>.stk{background:transparent!important;}
+    .activity-group{margin-top:28px;}
+    .shelf-heading{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:0 0 12px;}
+    .shelf-heading h2{font-size:23px;line-height:1.2;}
+    .shelf-heading p{font-size:12px;line-height:1.5;color:var(--muted);margin-top:3px;}
+    .shelf-tag{display:inline-flex;align-items:center;flex:none;padding:5px 9px;border-radius:99px;background:#f6e8d3;color:#775431;font-size:11px;font-weight:800;white-space:nowrap;}
+    .shelf-tag.recommended{background:#dfeecf;color:#3b5d25;}
+    .game-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px;}
+    .game-card{position:relative;display:flex;flex-direction:column;min-width:0;border:5px solid #fff;border-radius:23px;background:#fff;box-shadow:0 4px 0 #e8d9c5;color:var(--ink);padding:0;cursor:pointer;transition:transform .12s;text-align:left;}
+    .game-card:active{transform:translateY(3px) scale(.98);}
+    .game-art{position:relative;display:block;width:100%;aspect-ratio:1;border-radius:18px;overflow:hidden;}
+    .game-info{display:flex;flex-direction:column;align-items:flex-start;gap:6px;padding:10px 6px 8px;}
+    .game-name{font-family:"Baloo 2",sans-serif;font-size:18px;line-height:1.15;font-weight:800;}
+    .game-access{font-size:10px;line-height:1.3;font-weight:800;color:#3f6630;background:#eaf3dd;padding:3px 7px;border-radius:99px;}
+    .game-access.premium{color:#665093;background:#efe9f9;}
+    .featured-group{background:#f1e9fb;border:1px solid #e5d9f5;border-radius:26px;padding:17px 15px 15px;margin:20px 0 26px;}
+    .featured-group[data-collection="seasonal"]{background:#ffe9cc;border-color:#f5d9b1;}
+    .featured-grid{display:grid;grid-auto-flow:column;grid-auto-columns:calc((100% - 15px)/2);gap:15px;overflow-x:auto;padding:1px 1px 8px;scroll-snap-type:x proximity;}
+    .featured-grid .game-card{scroll-snap-align:start;box-shadow:0 4px 0 #ded0ef;}
+    .featured-group .shelf-heading h2{font-size:22px;}
+    .featured-group .shelf-tag{background:#fff9;color:#665093;}
+    #booksComingSoon{display:flex;align-items:center;gap:15px;padding:21px 17px;background:#e6f0ee;border:1px solid #d5e4de;border-radius:25px;margin-top:32px;}
+    .book-art{position:relative;display:block;width:76px;height:86px;flex:none;}
+    .book-art>.stk{background:transparent!important;}
+    #booksComingSoon h2{font-size:23px;line-height:1.2;margin-bottom:6px;}
+    #booksComingSoon p{font-size:13px;line-height:1.5;margin-top:8px;color:#536b62;max-width:300px;}
+    #booksComingSoon .shelf-tag{background:#fff9;color:#536b62;}
+    .age-note{font-size:12px;line-height:1.5;color:var(--muted);text-align:center;margin:25px 12px 0;}
+    #catalogPreviewNotice{border:1px dashed #a897ba;border-radius:16px;background:#f4eefb;padding:12px 14px;font-size:12px;line-height:1.5;margin-bottom:20px;color:#665093;}
+    #catalogPreviewNotice strong{display:block;}
+    #libraryNotice{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:20;width:calc(100% - 32px);max-width:440px;display:flex;align-items:center;gap:10px;padding:15px 14px 15px 18px;background:#fff;border:2px solid #eed7b0;border-radius:22px;box-shadow:0 10px 32px rgba(80,50,10,.2);}
+    .notice-copy{flex:1;}
+    #libraryUnlock{display:block;min-height:44px;margin-top:8px;border:0;border-radius:12px;padding:9px 15px;background:#6a508f;color:#fff;font-weight:800;cursor:pointer;}
+    #libraryMessage{font-weight:800;font-size:14px;line-height:1.45;color:var(--muted);}
+    #libraryMessageClose{flex:none;width:36px;height:36px;border:0;border-radius:50%;background:#fff0d8;color:var(--ink);font-size:23px;cursor:pointer;}
+    .library-wrap.has-message{padding-bottom:145px;}
+    @media(min-width:600px){.library-wrap{padding:26px 30px 42px;}.game-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:22px;}.featured-grid{grid-auto-columns:calc((100% - 44px)/3);gap:22px;}.library-intro{margin:28px 0;}.library-intro h1{font-size:42px;}#libraryEcho{width:100px;height:110px;}.game-name{font-size:22px;}.game-info{padding:12px 9px;}.game-access{font-size:11px;}.shelf-heading h2{font-size:27px;}.featured-group{padding:22px;}.activity-group{margin-top:34px;}}
+    @media(max-width:350px){.library-wrap{padding-left:15px;padding-right:15px;}.game-grid{gap:12px;}.library-intro h1{font-size:30px;}#libraryEcho{width:67px;height:80px;}.game-card{border-width:4px;border-radius:19px;}.game-art{border-radius:15px;}.game-name{font-size:16px;}.game-info{padding:9px 4px 6px;}.featured-group{padding:14px 11px;}.shelf-heading h2{font-size:21px;}.shelf-tag{font-size:10px;padding:4px 7px;}#booksComingSoon{gap:10px;}.book-art{width:60px;height:72px;}}
+    @media(prefers-reduced-motion:reduce){.game-card{transition:none;}}
+    :root{--label:#a17c4a;--track:#f0e4d2;--orange-d:#ef6f23;}
+    .library-label{flex:1;}
+    #buddyBtn,#parentBtn{position:relative;display:flex;align-items:center;justify-content:center;flex:none;border:3px solid #fff;width:44px;height:44px;border-radius:50%;background:#fff;cursor:pointer;box-shadow:0 4px 0 rgba(140,70,10,.14);color:#795c3c;}
+    #buddyBtn{background:#ffe5b1;overflow:hidden;}
     /* founding banner (feedback invite — never pricing) */
     #trialBanner{display:none;align-items:center;gap:8px;background:linear-gradient(120deg,#fff7e6,#ffe9c2);border:1px solid #ffe2a8;border-radius:14px;padding:9px 14px;font-weight:800;font-size:12.5px;color:#8a6400;text-decoration:none;}
 
@@ -122,122 +107,29 @@
     .ghost{border:none;background:none;color:var(--label);font-weight:800;font-size:13px;margin-top:12px;cursor:pointer;}
     #toast{position:fixed;left:50%;bottom:calc(110px + env(safe-area-inset-bottom));transform:translateX(-50%);background:#fff;border-radius:99px;padding:10px 18px;font-family:"Baloo 2";font-weight:800;font-size:14px;color:var(--ink);box-shadow:0 8px 22px rgba(74,44,20,.3);opacity:0;transition:opacity .25s;pointer-events:none;z-index:20;white-space:nowrap;}
     #toast.show{opacity:1;}
-    /* short screens: everything shrinks so the locked page never clips */
-    /* landscape rescue: with the height-driven hero, a rotated phone crushed
-       the play card to ~18px. Short-wide viewports unlock scrolling and give
-       the hero a real minimum — scrolling beats a broken-looking screen. */
-    @media (orientation:landscape) and (max-height:520px){
-      html,body{overflow:auto;height:auto;}
-      #wrap{height:auto;min-height:100dvh;overflow:visible;}
-      #heroCard{height:auto;min-height:230px;}
-    }
-    /* Very short portrait screens need room for the game's two-line
-       preview. Let the family scroll instead of stacking it over labels. */
-    @media (orientation:portrait) and (max-height:760px){
-      html,body{overflow:auto;height:auto;overscroll-behavior:auto;}
-      #wrap{height:auto;min-height:100dvh;overflow:visible;}
-      #heroWrap{flex:none;}
-      #heroCard{height:200px;min-height:200px;}
-    }
-    @media (max-height:760px){
-      #wrap{gap:10px;}
-
-    }
-
-    /* METER1 — the star jar. A glass the child fills with light by talking;
-       it empties overnight, which is what makes tomorrow a fresh jar. */
-    #jarRow{display:flex;align-items:center;gap:12px;}
-    #jarRow[hidden]{display:none;}
-    #jar{position:relative;width:46px;height:58px;flex:none;border-radius:8px 8px 14px 14px;
-      border:3px solid #e2cfae;overflow:hidden;box-shadow:0 3px 0 rgba(140,90,20,.12),inset 0 2px 6px rgba(255,255,255,.9);
-      background:linear-gradient(105deg,rgba(226,240,248,.85) 0%,rgba(255,255,255,.55) 45%,rgba(206,228,242,.7) 100%);}
-    /* the lid, and the highlight streak that makes it read as glass */
-    #jar:before{content:"";position:absolute;top:-5px;left:50%;transform:translateX(-50%);width:24px;height:5px;
-      border-radius:3px;background:#e2cfae;z-index:3;}
-    #jar:after{content:"";position:absolute;top:5px;left:6px;width:7px;height:62%;border-radius:99px;z-index:3;
-      background:linear-gradient(180deg,rgba(255,255,255,.95),rgba(255,255,255,.15));pointer-events:none;}
-    #jarFill{position:absolute;left:0;right:0;bottom:0;height:0%;z-index:1;
-      background:linear-gradient(180deg,#ffe27a,#ffc31c);transition:height .5s cubic-bezier(.4,1.3,.5,1);}
-    #jarFill:after{content:"";position:absolute;top:-3px;left:0;right:0;height:6px;border-radius:50%;
-      background:rgba(255,255,255,.5);}
-    /* three stars waiting to be earned: dashed outlines until the fill reaches
-       them, solid gold after. An empty jar that shows what goes in it invites;
-       an empty rectangle reads as a missing asset. */
-    #jarStars{position:absolute;inset:0;z-index:2;pointer-events:none;}
-    #jarStars i{position:absolute;left:50%;width:15px;height:15px;transform:translateX(-50%);
-      background:no-repeat center/contain;transition:opacity .35s;}
-    #jarStars i:nth-child(1){bottom:5px;}
-    #jarStars i:nth-child(2){bottom:20px;left:34%;}
-    #jarStars i:nth-child(3){bottom:34px;left:64%;}
-    #jarStars i.ghost{opacity:.55;}
-    #jarStars i.lit{opacity:1;filter:drop-shadow(0 1px 2px rgba(160,110,10,.45));}
-    #jarTxt b{font-family:"Baloo 2";font-weight:800;font-size:15px;color:var(--ink);}
-    #jarTxt span{display:block;font-weight:800;font-size:11.5px;color:var(--muted);}
-    #purse{margin-left:auto;display:flex;align-items:center;gap:5px;font-family:"Baloo 2";font-weight:800;
-      font-size:15px;color:#a1701a;background:#fff5dc;border-radius:99px;padding:6px 13px;border:2px solid #f0dfb4;}
-    @media (prefers-reduced-motion:reduce){ #jarFill{transition:none;} }
-
-    /* the mystery card sits at the end of the row when bought or buyable */
-    .thumb.mystery{background:linear-gradient(160deg,#6b4fd6,#3b2a86)!important;}
-    .thumb.mystery .q{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
-      font-size:30px;color:#fff;text-shadow:0 3px 8px rgba(0,0,0,.4);}
-    .thumb.mystery .cost{position:absolute;top:5px;right:5px;background:#ffd21c;color:#5b3d00;border-radius:99px;
-      padding:2px 7px;font-family:"Baloo 2";font-weight:800;font-size:10px;}
-
-    /* The entire picture, path and caption are one native button. */
-    html,body{height:auto;min-height:100%;overflow:auto;overscroll-behavior:auto;}
-    #wrap{height:auto;min-height:100dvh;overflow:visible;gap:16px;max-width:500px;padding-left:20px;padding-right:20px;}
-    #heroCard{height:clamp(235px,39dvh,330px);min-height:235px;}
-    #goBtn{display:block;border:5px solid #fff;border-radius:29px;padding:0;background:#fff;color:var(--ink);width:100%;box-shadow:0 9px 0 #ebdcc7,0 15px 24px rgba(90,50,10,.10);cursor:pointer;text-align:left;transition:transform .12s;}
-    #goBtn:focus-visible{outline:3px solid #157da5;outline-offset:5px;}
-    #goBtn:active{transform:translateY(3px);}
-    #sessionGuide{max-width:380px;align-self:center;text-align:center;font-size:12px;line-height:1.45;font-weight:700;color:#795c3c;margin:0 7px 3px;}
-    #jarInfo{display:flex;align-items:center;gap:12px;min-width:0;border:0;background:none;color:inherit;text-align:left;cursor:pointer;}
-    #jarTxt{min-width:0;}
-    #purse{padding:5px 10px;}
-    #ageGuide{font-size:12px;line-height:1.5;margin:12px 0 4px;}
-    @media(max-width:360px){#wrap{padding-left:15px;padding-right:15px;gap:13px;}header{gap:7px;}#hdrBtns{gap:6px;}#hiName{font-size:19px;}#subLine{font-size:10px;}#heroCard{height:235px;min-height:235px;}#heroCap{padding:14px 12px;}#heroName{font-size:22px;}.play-badge{padding:0 11px;}.path-node{width:57px;height:57px;}.path-echo{width:62px;height:71px;left:-15px;top:-42px;}#jarTxt span{font-size:10.5px;}}
-    @media(orientation:landscape) and (max-height:520px){#heroCard{height:270px;}}
-    @media(prefers-reduced-motion:reduce){#goBtn{transition:none;}}
-    #confetti i{position:absolute;border-radius:3px;z-index:6;animation:cfall 1.2s ease-out forwards;}
-    @keyframes cfall{0%{opacity:1;transform:translateY(0) rotate(0)}100%{opacity:0;transform:translateY(60px) rotate(40deg)}}
-    @media (prefers-reduced-motion:reduce){ #confetti i{animation:none;} }
+    .modal{max-height:calc(100dvh - 48px);overflow-y:auto;}
+    #trialBanner{margin-top:18px;}
   </style>
 </head>
 <body>
-  <div id="wrap">
-    <header>
+  <main id="libraryApp" class="library-wrap" hidden>
+    <header class="library-header">
       <a id="buddyBtn" href="/customize.html" aria-label="Choose your buddy"></a>
-      <div id="greeting"><div id="hiName">Hi!</div><div id="subLine"></div></div>
-      <div id="hdrBtns">
-        <a id="libBtn" href="/activities.html" aria-label="Play library"></a>
-        <button id="parentBtn" aria-label="For grown-ups"><span class="pic-gear"></span></button>
-      </div>
+      <span class="library-label">Play library</span>
+      <button id="parentBtn" type="button" aria-label="Parent corner"><span class="pic-gear" aria-hidden="true"></span></button>
     </header>
-
-    <a id="trialBanner" href="/subscribe"><span data-ic="gift">🎁</span> <span id="trialMsg"></span></a>
-
-    <!-- One recommended session comes first. The game shelf and library
-         remain open for families who want to choose something else. -->
-    <div id="jarRow">
-      <button id="jarInfo" aria-label="Today's practice">
-        <span id="jar" aria-hidden="true"><span id="jarFill"></span><span id="jarStars"><i></i><i></i><i></i></span></span>
-        <span id="jarTxt"><b id="jarHead">Fill the star jar!</b><span id="jarSub"></span></span>
-      </button>
-      <div id="purse" title="Coins" hidden><span id="coinArt" aria-hidden="true"></span><span id="coinTxt">0</span></div>
-    </div>
-    <div id="heroWrap">
-      <button id="goBtn" aria-labelledby="heroName actionLabel" aria-describedby="heroSub sessionGuide">
-        <span id="heroCard" aria-hidden="true"></span>
-        <span id="heroCap"><span id="heroName"></span><span class="play-badge"><svg viewBox="0 0 14 18" aria-hidden="true"><path d="M1 1 13 9 1 17Z"/></svg><span id="actionLabel">Let's go!</span></span></span>
-        <span id="heroSub" class="sr-only"></span>
-      </button>
-    </div>
-    <p id="sessionGuide"></p>
-    <div id="gameShelfHead" hidden><div id="upNextLbl">PICK A GAME</div></div>
-    <div id="thumbs" hidden></div>
-  </div>
-
+    <a id="trialBanner"><span data-ic="gift" aria-hidden="true"></span> <span id="trialMsg"></span></a>
+    <div class="library-intro"><div><h1>Pick a game!</h1><p>A little practice. A lot to explore.</p></div><span id="libraryEcho" aria-hidden="true"></span></div>
+    <aside id="catalogPreviewNotice" hidden><strong>Free &amp; Premium preview</strong><span id="catalogPreviewState"></span> <a href="/premium.html">Trial preview</a> · <a href="/activities.html?libraryPreview=0">Exit preview</a></aside>
+    <div id="featuredGroups"></div>
+    <div id="activityGroups"></div>
+    <section id="booksComingSoon" aria-labelledby="booksHeading">
+      <span class="book-art" id="libraryBooksArt" aria-hidden="true"></span>
+      <div><h2 id="booksHeading">Books</h2><span class="shelf-tag">Coming soon</span><p>Stories to share, one sound at a time.</p></div>
+    </section>
+    <p class="age-note">Ages are a guide. Explore any game that fits.</p>
+    <div id="libraryNotice" hidden><div class="notice-copy"><p id="libraryMessage" role="status"></p><button id="libraryUnlock" type="button">Ask a grown-up</button></div><button id="libraryMessageClose" aria-label="Close message">×</button></div>
+  </main>
   <!-- parent gate -->
   <div class="ovl" id="gateOvl">
     <div class="modal" id="gateModal">
@@ -254,7 +146,7 @@
   <div class="ovl" id="sheetOvl">
     <div class="modal">
       <h3>Parent corner</h3>
-      <p id="ageGuide">Simple play is suggested for ages 2–4; arcade adventures for ages 5+. Find all games in the Play library.</p>
+      <p id="ageGuide">Simple play is suggested for ages 3–4; Arcade for ages 5–8. Ages are a guide — all games are available to explore.</p>
       <div id="weekCard" style="background:var(--cream);border-radius:16px;padding:14px 16px;margin-top:12px;text-align:left;">
         <div style="display:flex;align-items:center;gap:8px;">
           <b style="font-family:'Baloo 2';font-size:15px;color:var(--ink);">This week</b>
@@ -292,263 +184,87 @@
   <div id="toast"></div>
 
   <script src="/sona.js"></script>
-  <script src="/scenes.js"></script>
+  <script>
+    (function(){
+      var S=window.Sona,app=document.getElementById("libraryApp"),host=document.getElementById("activityGroups");
+      var notice=document.getElementById("libraryNotice"),message=document.getElementById("libraryMessage");
+      if(!S||!S.activityLibrary){app.hidden=false;host.textContent="Your games could not load. Please reopen Sona and try again.";return;}
+      var profile=S.getProfile();
+      if(!profile.onboarded&&!profile.childName){location.replace("/onboarding.html");return;}
+      app.hidden=false;
+      // Preview access is tab-local; real family entitlements stay untouched.
+      var preview=S.libraryPreview?S.libraryPreview():false;
+      document.getElementById("catalogPreviewNotice").hidden=!preview;
+      if(preview){
+        var plan=S.previewPlan();
+        document.getElementById("catalogPreviewState").textContent=plan.state==="trial"?"Trial preview: all games unlocked. No payment or subscription.":plan.state==="expired"?"Trial ended preview: four games stay free. Purchases are off.":"Four free games. Premium games open through the grown-ups gate. Purchases are off.";
+      }
+      var library=S.activityLibrary(),lockedGame=null;
+      var unlock=document.getElementById("libraryUnlock");
+      function node(tag,className,text){var el=document.createElement(tag);if(className)el.className=className;if(text)el.textContent=text;return el;}
+      function access(game){return S.gameAccess?S.gameAccess(game.key):{allowed:!S.gated("practice"),tier:game.tier,reason:S.isFree()?"free-mode":"legacy"};}
+      function clearMessage(){notice.hidden=true;message.textContent="";lockedGame=null;app.classList.remove("has-message");}
+      function showLocked(game){
+        lockedGame=game;notice.hidden=false;app.classList.add("has-message");
+        message.textContent="Ask a grown-up to help open "+game.name+". Your free games are still ready to play!";
+      }
+      document.getElementById("libraryMessageClose").onclick=clearMessage;
+      unlock.onclick=function(){if(lockedGame)location.href="/premium.html?game="+encodeURIComponent(lockedGame.key);};
+      // Home stays quiet. Practice begins only after a child picks a game.
+      function launch(game){
+        if(!access(game).allowed){showLocked(game);return;}
+        clearMessage();
+        location.href=game.go;
+      }
+      function gameCard(game){
+        var button=node("button","game-card");button.type="button";button.dataset.game=game.key;
+        var grant=access(game),tier=grant.reason==="free-mode"?"free":game.tier;
+        var label=tier==="free"?"Free":grant.allowed?"Included":"Premium";
+        button.dataset.locked=grant.allowed?"false":"true";
+        button.setAttribute("aria-label",game.name+". "+(game.playDescription||game.sub)+" "+(grant.allowed?label+".":"Premium. Ask a grown-up to unlock."));
+        var art=node("span","game-art");art.setAttribute("aria-hidden","true");var sticker=S.gameSticker(game.key);S.paintSticker(art,sticker[0],sticker[1]);button.appendChild(art);
+        var info=node("span","game-info");info.appendChild(node("span","game-name",game.name));
+        info.appendChild(node("span","game-access"+(tier==="premium"?" premium":""),label));
+        button.appendChild(info);button.onclick=function(){launch(game);};return button;
+      }
+      // A cached pre-shelves sona.js still supplies the complete age groups.
+      (library.featured || []).forEach(function(collection){
+        var section=node("section","featured-group");section.dataset.collection=collection.id;section.setAttribute("aria-labelledby","collection-"+collection.id);
+        var top=node("div","shelf-heading"),heading=node("h2","",collection.name);heading.id="collection-"+collection.id;top.appendChild(heading);
+        top.appendChild(node("span","shelf-tag",collection.id==="new"?"Just added":"This season"));section.appendChild(top);
+        var grid=node("div","featured-grid");collection.games.forEach(function(game){grid.appendChild(gameCard(game));});section.appendChild(grid);document.getElementById("featuredGroups").appendChild(section);
+      });
+      library.groups.forEach(function(group){
+        var section=node("section","activity-group");section.dataset.group=group.id;section.setAttribute("aria-labelledby","group-"+group.id);
+        var top=node("div","shelf-heading"),copy=node("div"),heading=node("h2","",group.name);heading.id="group-"+group.id;copy.appendChild(heading);
+        copy.appendChild(node("p","",group.ageLabel));top.appendChild(copy);
+        if(group.recommended)top.appendChild(node("span","shelf-tag recommended","For your child"));section.appendChild(top);
+        var grid=node("div","game-grid");group.games.forEach(function(game){grid.appendChild(gameCard(game));});section.appendChild(grid);host.appendChild(section);
+      });
+      var lockedKey=new URLSearchParams(location.search).get("locked");
+      library.groups.forEach(function(group){group.games.forEach(function(game){if(game.key===lockedKey&&!access(game).allowed)showLocked(game);});});
+      // A cached library can return after a trial expires or an adult changes
+      // preview state. Re-evaluate its labels without reviving stale access.
+      window.addEventListener("pageshow",function(event){if(event.persisted)location.reload();});
+      S.paintSticker(document.getElementById("libraryEcho"),"p-echo-idle","sky");
+      var echo=document.querySelector("#libraryEcho svg");if(echo)echo.setAttribute("preserveAspectRatio","xMidYMid meet");
+      S.paintSticker(document.getElementById("libraryBooksArt"),"pt-book","sky");
+      // Cancel any previous spoken turn without changing the game voice preference.
+      if(S.speakNow)S.speakNow("");
+    })();
+  </script>
   <script>
     var $=function(id){return document.getElementById(id);};
     var S=window.Sona;
-    function sfx(n){ try{ if(S&&S.sfx&&S.sfx[n])S.sfx[n](); }catch(e){} }
-    function toast(t){ var el=$("toast"); el.textContent=t; el.classList.add("show"); clearTimeout(toast._t); toast._t=setTimeout(function(){el.classList.remove("show");},1800); }
-
     var P=(S&&S.getProfile)?S.getProfile():{};
-    var d=(S&&S.dailyInfo)?S.dailyInfo():{playedToday:false,score:0,best:0};
-    var sound=(((S&&S.rotSound)?S.rotSound():"")||((P.focusSounds&&P.focusSounds[0])||"R")).toUpperCase();
-    function currentLevel(){ try{ return (S&&S.unlockedThru)?Math.max(1,S.unlockedThru()):1; }catch(e){ return 1; } }
-
-    $("hiName").textContent="Hi"+(P.childName?", "+P.childName:"")+"!";
-    // PLAY1: a play family never chose a sound to "practice" — the greeting is
-    // about the games, not a target
-    $("subLine").textContent=(S&&S.playMode&&S.playMode())
-      ? "Let's play some talking games!"
-      : "Let's practice your "+((S&&S.soundLabel)?S.soundLabel(sound):sound)+" sound";
-    // Goals come from the existing rotation, including assigned homework.
-    // Progress stays in the real rep count and jar instead of replacing the goal.
-    // Ages suggest a style of play; they never change a sound or target here.
-    function prefersSimplePlay(){
-      try{ return S.playStyle && S.playStyle()==="simple"; }catch(e){ return false; }
-    }
-
-    var ICON={slice:"🍉",tiles:"🎹",stack:"🧱",run:"🏃",glide:"🎈",feed:"🦜"};
-    var TRIO=[];
-    try{ TRIO=S.dailyGames()||[]; }catch(e){}
-    function playedToday(){ try{ return !!(S&&S.dailyInfo&&S.dailyInfo().playedToday); }catch(e){ return false; } }
-
-    // ART1: every activity is a flat sticker from /assets/sona-stickers.svg on a
-    // solid field, inside the card's white die-cut edge. The old path fetched a
-    // painted .webp per activity and layered it over a vector-city gradient —
-    // README section 2a retires photographic panels outright, and that was the
-    // last raster illustration in the app.
-    function applyArt(el,key){ var g=S.gameSticker(key); S.paintSticker(el,g[0],g[1]); }
-
-    // Home always offers a playable adventure. A Premium choice goes through
-    // the grown-ups gate; access never replaces the arcade's speech requirement.
-    function launchCatalogGame(key){
-      var act=S.gameAct(key);
-      if(!act)return;
-      sfx("tap");
-      location.href=S.gameAccess(key).allowed?act.go:"/premium.html?game="+key;
-    }
-    function homeGame(){
-      for(var i=0;i<TRIO.length;i++)if(S.gameAccess(TRIO[i]).allowed)return TRIO[i];
-      return S.adventureGames()[0];
-    }
-
-    // A RUN LEFT HALF-FINISHED IS THE COMMONEST INTERRUPTION THERE IS — a
-    // child gets called to dinner between round two and round three. Home did
-    // not read the run record, so it offered the same generic start as ever
-    // and the child had to find their way back. charge.html keeps it in
-    // sessionStorage, which is the right lifetime: it is one sitting, not a
-    // promise, and a new tab correctly starts fresh.
-    function runUnderway(){
-      try{
-        var r=JSON.parse(sessionStorage.getItem("sona.run.v1")||"null");
-        return (r&&r.active&&(r.round|0)>=0&&((r.round|0)<S.adventureGames().length||r.finishing)&&(r.round>0||r.ready||r.pending)) ? r : null;
-      }catch(e){ return null; }
-    }
-    // Homework is already honored under the hood — rotSounds() puts the SLP's
-    // sounds first and charge.html practices them. What was missing is SAYING
-    // so, so a parent can see the assignment is actually driving the app.
-    function homeworkNote(){
-      try{ var hw=S&&S.homework?S.homework():null; return hw?(hw.by?("From "+hw.by):"From your speech therapist"):""; }catch(e){ return ""; }
-    }
-
-    function paintAdventure(games,round){
-      var hero=$("heroCard");
-      hero.innerHTML='<svg id="adventureTrail" viewBox="0 0 100 100" preserveAspectRatio="none"><path d="M18 73 Q19 51 41 52 T76 64 Q91 48 76 25 T37 19" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-dasharray="1 5"/></svg>';
-      var spots=[[18,73],[41,52],[76,64],[76,25],[37,19]];
-      games.forEach(function(key,i){
-        var node=document.createElement("span");
-        node.className="path-node "+(i<round?"done":i===round?"current":"upcoming");
-        node.dataset.round=String(i);node.dataset.game=key;
-        node.style.left=spots[i][0]+"%";node.style.top=spots[i][1]+"%";
-        applyArt(node,key);
-        if(i===Math.min(round,games.length-1)){
-          var echo=document.createElement("span");echo.className="path-echo";
-          S.paintSticker(echo,"p-echo-idle","sky");
-          if(spots[i][1]<35)echo.style.top="4px";
-          echo.querySelector("svg").setAttribute("preserveAspectRatio","xMidYMid meet");node.appendChild(echo);
-        }
-        hero.appendChild(node);
-      });
-    }
-    function renderHero(){
-      var mid=runUnderway(),adventure=S.adventureGames();
-      var simple=adventure.every(function(k){return S.gameAct(k).group==="simple";});
-      $("jarRow").hidden=simple;
-      var round=mid?Math.min(mid.round|0,adventure.length):0;
-      paintAdventure(adventure,round);
-      var firstEver=false;
-      try{firstEver=!S.demoState().started&&!S.repsToday();}catch(e){}
-      var nextName=S.gameAct(adventure[Math.min(round,adventure.length-1)]).name;
-      var hn=homeworkNote();
-      $("heroName").textContent=firstEver?"Your first adventure":"Today's adventure";
-      $("heroSub").textContent=(hn?hn+" · ":"")+adventure.length+" rounds · First: "+S.gameAct(adventure[0]).name;
-      $("actionLabel").textContent="Let's go!";
-      $("sessionGuide").textContent=simple?"Play together: listen to a word, say it, then explore." : "A grown-up can help you listen, say the sound and play.";
-      $("goBtn").dataset.game="";
-      $("goBtn").dataset.launch="/charge.html?daily=1&first="+adventure[0];
-      if(mid){
-        if(!(S.playMode&&S.playMode()))$("subLine").textContent="Let's practice your "+S.soundLabel(mid.sound||sound)+" sound";
-        $("heroName").textContent=mid.finishing?"One last surprise!":"Keep going!";
-        $("actionLabel").textContent="Carry on!";
-        $("heroSub").textContent=mid.finishing?"Your completed adventure is saved. Open your final surprise.":"Round "+(round+1)+" of "+adventure.length+" · Next game: "+nextName;
-        $("sessionGuide").textContent="Pick up where you left off. Your completed rounds are saved.";
-      }else if(playedToday()){
-        var k=homeGame(),act=S.gameAct(k);
-        $("heroCard").innerHTML="";applyArt($("heroCard"),k);
-        $("heroName").textContent=act.name;$("heroSub").textContent=act.sub;
-        $("sessionGuide").textContent="Choose a game or find a favorite in the Play library.";
-        $("goBtn").dataset.game=k;
-        $("goBtn").dataset.launch=act.go;
-      }
-    }
-
-    function renderThumbs(){
-      var t=$("thumbs"); t.innerHTML="";
-      // After the adventure, the hero offers an accessible game and the shelf
-      // shows the other daily choices, with parent-only help for Premium ones.
-      var played=playedToday();
-      $("gameShelfHead").hidden=!played;$("thumbs").hidden=!played;
-      var show=played?TRIO.filter(function(key){return key!==homeGame();}):TRIO;
-      // one piece of lock language, and it says what OPENS them rather than
-      // that they are shut
-      $("upNextLbl").textContent="PICK A GAME";
-      show.forEach(function(k){
-        var act=(S.gameAct&&S.gameAct(k))||{name:"Game",go:"/today.html"};
-        var el=document.createElement("div");
-        var locked=!S.gameAccess(k).allowed;
-        el.className="thumb"+(locked?" locked":"");
-        el.setAttribute("role","button");el.tabIndex=0;
-        el.setAttribute("aria-label",act.name+(locked?". Ask a grown-up to unlock.":""));
-        el.dataset.key=k;
-        // label first, sticker second: paintSticker PREPENDS, so the art lands
-        // behind the name. Painting first and then setting innerHTML wipes it.
-        el.innerHTML="<b>"+act.name+"</b>";
-        applyArt(el,k);
-        el.onclick=function(){launchCatalogGame(k);};
-        el.onkeydown=function(event){if(event.key==="Enter"||event.key===" "){event.preventDefault();launchCatalogGame(k);}};
-        t.appendChild(el);
-      });
-      renderMystery(t);
-    }
-
-    // METER1 + COIN1 — coins are minted from reps here rather than inside the
-    // games, so every door into the app settles up the same way and no game
-    // has to remember to pay.
-    function paintJar(){
-      try{
-        S.mintCoins&&S.mintCoins();
-        var g=S.goalState();
-        $("jarFill").style.height=Math.round(g.pct*100)+"%";
-        // each star lights when the gold reaches it — the jar is filling with
-        // the stars themselves, not with an anonymous liquid
-        try{
-          var lvl=[.18,.46,.76], st=$("jarStars").children;
-          for(var q=0;q<st.length;q++){
-            var on=g.pct>=lvl[q];
-            st[q].className=on?"lit":"ghost";
-            st[q].style.backgroundImage="url(\"data:image/svg+xml;utf8,"+encodeURIComponent(
-              on ? '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2l2.9 6.2 6.6.8-4.9 4.6 1.3 6.6L12 16.9 6.1 20.2l1.3-6.6L2.5 9l6.6-.8Z" fill="#fff8d8" stroke="#e8a900" stroke-width="1.3" stroke-linejoin="round"/></svg>'
-                 : '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2l2.9 6.2 6.6.8-4.9 4.6 1.3 6.6L12 16.9 6.1 20.2l1.3-6.6L2.5 9l6.6-.8Z" fill="none" stroke="#c9a878" stroke-width="1.6" stroke-dasharray="3 2.4" stroke-linejoin="round"/></svg>'
-            )+"\")";
-          }
-        }catch(e){}
-        $("jar").classList.toggle("full",g.full);
-        $("jarHead").textContent=g.full?"Jar full! ⭐":"Fill the star jar!";
-        $("jarSub").textContent=g.full
-          ? "You said "+g.n+" sounds today."
-          : g.n ? g.n+" of "+g.goal+" sounds — keep talking!" : "Talk with Echo to fill your jar!";
-        var coins=S.getCoins?S.getCoins():0;
-        $("coinTxt").textContent=String(coins);
-        $("purse").hidden=!(coins>0||(S.canBuyMystery&&S.canBuyMystery()));
-      }catch(e){}
-    }
-
-    function renderMystery(t){
-      // Additive by design: the mystery game is a FOURTH door. Coins only come
-      // from reps (COIN1), so a purchase is practice-backed; the story gate it
-      // used to sit behind went with the books (GAMES1).
-      var owned=S.mysteryGame&&S.mysteryGame();
-      var can=S.canBuyMystery&&S.canBuyMystery();
-      if(!owned&&!can) return;
-      var el=document.createElement("div");
-      el.className="thumb mystery"; el.dataset.key="mystery";
-      if(owned){
-        var act=(S.gameAct&&S.gameAct(owned))||{name:"Mystery",go:"/today.html"};
-        el.innerHTML='<span class="q">🎁</span><b>'+act.name+'</b>';
-        el.onclick=function(){launchCatalogGame(owned);};
-      } else {
-        el.innerHTML='<span class="q">❓</span><b>Mystery game</b><span class="cost">🪙'+(S.mysteryCost?S.mysteryCost():15)+'</span>';
-        el.onclick=function(){
-          var got=S.buyMystery&&S.buyMystery();
-          if(!got){ $("heroSub").textContent="Not enough coins yet — keep practicing!"; return; }
-          try{ S.confetti&&S.confetti({count:120}); }catch(e){}
-          sfx("win"); render();
-        };
-      }
-      t.appendChild(el);
-    }
-
-    function render(){ renderHero(); renderThumbs(); paintJar(); }
-
-    $("buddyBtn").innerHTML=S.buddyMarkup(P.character||"fox",36);
-    S.paintSticker($("libBtn"),"pt-chest","#e7f2fa");
-    $("coinArt").innerHTML=S.icon("coin",20);
-    render();
-    if(!document.hidden&&P.voiceOn!==false&&Number(P.volume)!==0){
-      var helloRun=runUnderway();
-      S.speak(helloRun?(helloRun.finishing?"Let\'s open your surprise!":"Let\'s keep going!"):playedToday()?"Pick a game!":"Let\'s go on an adventure!");
-    }
-    S.onBackground(function(){if(S.speakNow)S.speakNow("");});
-    // AFTER the boot render, or render() paints the hero's own line over it.
-    // Bounced here from a gated kid page (Sona.gateBounce)? Say why, in words a
-    // child can act on, and then forget the flag so a reload does not nag.
-    try{
-      if(/[?&]locked=1/.test(location.search)){
-        $("heroSub").innerHTML="Ask a <b>grown-up</b> to unlock more games!";
-        var hc=$("heroCard"); if(hc){ hc.classList.remove("nope"); void hc.offsetWidth; hc.classList.add("nope"); }
-        history.replaceState(null,"",location.pathname);
-      }
-    }catch(e){}
-    function launch(){
-      if($("goBtn").dataset.game){launchCatalogGame($("goBtn").dataset.game);return;}
-      sfx("tap");location.href=$("goBtn").dataset.launch||"/charge.html?daily=1";
-    }
-    $("goBtn").onclick=launch;
-
-    $("libBtn").onclick=function(){sfx("tap");};
-    $("buddyBtn").onclick=function(){sfx("tap");};
-
-    // weekly volume sync — anonymous {id, week, rep count}, throttled in sona.js
-    try{ if(S&&S.repsBeacon) S.repsBeacon(); }catch(e){}
-    // Homework: pull whatever this child's SLP assigned and report yesterday's
-    // reps against it. Fire-and-forget — the day's card is already painted from
-    // the cached copy, so a slow or dead network never delays a child starting.
-    try{ if(S&&S.syncHomework) S.syncHomework(); }catch(e){}
-    // App Store build: quiet entitlement sync (restores/reinstalls stay unlocked)
-    try{ if(S&&S.iapRefresh) S.iapRefresh(); }catch(e){}
-
-    // The comeback modal lived here and is deliberately GONE (Travis's call) —
-    // a popup between the kid and the day's adventure was friction on exactly
-    // the visit we most want to go well. The adventure card is the greeting.
-    // The jar explains the real count without adding another header counter.
-    $("jarInfo").onclick=function(){
-      sfx("tap");
-      try{
-        var tr=S.todayRing(),reps=S.repsToday?S.repsToday():0;
-        toast(reps+" reps today · "+(tr.done?"today's goal is done — everything else is bonus!":tr.n+" of "+tr.goal+" rounds done"));
-      }catch(e){}
-    };
-
+    function sfx(n){try{if(S&&S.sfx&&S.sfx[n])S.sfx[n]();}catch(e){}}
+    function toast(t){var el=$("toast");el.textContent=t;el.classList.add("show");clearTimeout(toast._t);toast._t=setTimeout(function(){el.classList.remove("show");},1800);}
+    if(S&&S.buddyMarkup)$("buddyBtn").innerHTML=S.buddyMarkup(P.character||"fox",36);
+    // Bank coins already earned by honest practice, once; browsing earns nothing.
+    try{if(S&&S.mintCoins)S.mintCoins();}catch(e){}
+    try{if(S&&S.repsBeacon)S.repsBeacon();}catch(e){}
+    try{if(S&&S.syncHomework)S.syncHomework();}catch(e){}
+    try{if(S&&S.iapRefresh)S.iapRefresh();}catch(e){}
     // ── parent gate: PIN if the parent set one, else four spelled-out digits ──
     // It used to be arithmetic (3-8 × 3-8). Two problems: a seven-year-old who
     // knows their times tables walks straight through it, and there are only

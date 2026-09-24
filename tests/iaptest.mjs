@@ -288,7 +288,7 @@ await gatePg.goto("http://localhost:8147/charge.html?game=arcade-slice.html"); a
 ok("expired trial keeps free Slice practice available", /charge\.html\?game=arcade-slice\.html$/.test(gatePg.url()), gatePg.url());
 await gatePg.goto("http://localhost:8147/charge.html?game=arcade-tiles.html"); await gatePg.waitForTimeout(700);
 ok("expired trial blocks Premium practice before its earned-game flow",
-  /activities\.html\?locked=tiles$/.test(gatePg.url()), gatePg.url());
+  /today\.html\?locked=tiles$/.test(gatePg.url()), gatePg.url());
 await gatePg.evaluate(() => { const p = JSON.parse(localStorage.getItem("sona.profile.v1")); p.earlyAdopter = true; localStorage.setItem("sona.freeera.v1","post"); localStorage.setItem("sona.freeera2.v1","done"); localStorage.setItem("sona.freeera3.v1","done"); localStorage.setItem("sona.profile.v1", JSON.stringify(p)); });
 await gatePg.goto("http://localhost:8147/charge.html?game=arcade-tiles.html"); await gatePg.waitForTimeout(700);
 ok("a founding family with the same expired trial still opens Premium practice", /charge\.html\?game=arcade-tiles\.html$/.test(gatePg.url()), gatePg.url());
@@ -769,9 +769,9 @@ ok("no pageerrors", errs.length === 0, errs.join(" | "));
     chg.indexOf("var DEMO_REPLAY") < chg.indexOf("S.demoFinish"),
     "decided at load, or the answer flips underneath the page");
 
-  ok("Home offers normal free adventures after expiry instead of forcing rewardless replays",
-    /S\.adventureGames\(\)/.test(tdy) && /charge\.html\?daily=1&first=/.test(tdy) && !/charge\.html\?daily=1&demo=1/.test(tdy),
-    "free catalog practice stays available without changing explicit demo replay accounting");
+  ok("Home offers the library without an automatic adventure or rewardless replay",
+    /id="libraryApp"/.test(tdy) && !/id="goBtn"/.test(tdy) && !/charge\.html\?daily=1&demo=1/.test(tdy),
+    "free catalog choices stay available without changing explicit demo replay accounting");
 }
 
 // Finish the real final-game return and chest. The input boundary is already
@@ -899,11 +899,9 @@ ok("no pageerrors", errs.length === 0, errs.join(" | "));
   if (IS_FREE_NOW) console.log("  (free mode: bounce assertions below hold vacuously — nothing gates)");
   ok("a gated kid page goes HOME, never to a price screen",
     !/trial\.html/.test(pg.url()) && /today\.html/.test(pg.url()), pg.url());
-  // null-safe on purpose: pre-fix this landed on trial.html, which has no
-  // #heroSub, and a throw here would CRASH the suite at the first symptom and
-  // hide every failure after it — the exact shape hwtest once died in
-  const told = await pg.evaluate(() => ({ sub: (document.getElementById("heroSub") || {}).innerHTML || "", url: location.search }));
-  ok("…and Home offers the child a playable adventure", /rounds/i.test(told.sub), told.sub);
+  // Null-safe so an incorrect price-page redirect reports an assertion.
+  const told = await pg.evaluate(() => ({ games: document.querySelectorAll("#activityGroups .game-card[data-game]").length, url: location.search }));
+  ok("…and Home offers the child the game library", told.games > 0, JSON.stringify(told));
   ok("…and the flag is forgotten so a reload does not nag", told.url === "", told.url);
 
   // B. a replay of the demonstration, all the way round
@@ -943,7 +941,7 @@ ok("no pageerrors", errs.length === 0, errs.join(" | "));
   await pg.evaluate(() => { sessionStorage.removeItem("sona.run.v1"); sessionStorage.setItem("sona.play.token", "1"); sessionStorage.setItem("sona.paidui", "1"); });
   await pg.goto("http://localhost:8147/arcade-tiles.html?from=charge&daily=1"); await pg.waitForTimeout(900);
   ok("with no saved run a generic token never opens an expired Premium game",
-    /activities\.html\?locked=tiles$/.test(pg.url()), pg.url());
+    /today\.html\?locked=tiles$/.test(pg.url()), pg.url());
 
   // D. the window: a session never finished cannot stay free forever
   await pg.goto("http://localhost:8147/today.html"); await pg.waitForTimeout(300);
@@ -964,25 +962,26 @@ ok("no pageerrors", errs.length === 0, errs.join(" | "));
   ok("…and one left unfinished for 73 hours has closed", win.closed === true, JSON.stringify(win));
   ok("…but never underneath a run in progress", win.midRun === false, JSON.stringify(win));
 
-  // E. Home keeps normal free adventures; Premium choices ask a grown-up.
+  // E. Home keeps its free library games; Premium choices ask a grown-up.
   await seed();
   await pg.evaluate(() => { sessionStorage.setItem("sona.paidui", "1"); try { Sona.markStoryRead(); } catch (e) {} });
   await pg.goto("http://localhost:8147/today.html"); await pg.waitForTimeout(900);
   const home = await pg.evaluate(() => ({
-    launch: document.getElementById("goBtn").dataset.launch,
+    library: !document.getElementById("libraryApp").hidden,
     adventure: Sona.adventureGames().map(key => ({ key, allowed: Sona.gameAccess(key).allowed })),
-    cards: [...document.querySelectorAll("#thumbs .thumb[data-key]")].map(card => ({ key: card.dataset.key, locked: card.classList.contains("locked"), tier: (Sona.gameAct(card.dataset.key) || {}).tier })),
+    cards: [...document.querySelectorAll("#activityGroups .game-card[data-game]")].map(card => ({ key: card.dataset.game, locked: card.dataset.locked === "true", tier: (Sona.gameAct(card.dataset.game) || {}).tier })),
     note: (document.getElementById("planNote") || {}).innerHTML || "",
   }));
-  ok("an expired family's Home launches a full accessible adventure without demo replay",
-    home.adventure.length === 5 && home.adventure.every(game => game.allowed) && /charge\.html\?daily=1/.test(home.launch) && !/demo=1/.test(home.launch), JSON.stringify(home));
+  ok("an expired family keeps the library and accessible saved adventure choices",
+    home.library && home.adventure.length === 5 && home.adventure.every(game => game.allowed) && /today\.html$/.test(pg.url()), JSON.stringify(home));
   const freeCards = home.cards.filter(card => card.tier === "free"), premiumCards = home.cards.filter(card => card.tier === "premium");
   ok("Home leaves free cards open and marks Premium choices for grown-ups",
     freeCards.length > 0 && freeCards.every(card => !card.locked) && premiumCards.length > 0 && premiumCards.every(card => card.locked), JSON.stringify(home.cards));
   ok("the parent corner explains continuing free access and the Premium choice",
     /Four games stay free/.test(home.note) && /See Premium/.test(home.note) && /href="\/premium\.html"/.test(home.note), home.note.slice(0, 200));
   if (premiumCards.length) {
-    await pg.evaluate(key => document.querySelector('#thumbs [data-key="' + key + '"]').click(), premiumCards[0].key);
+    await pg.evaluate(key => document.querySelector('#activityGroups [data-game="' + key + '"]').click(), premiumCards[0].key);
+    await pg.locator("#libraryUnlock").click();
     await pg.waitForURL(/today\.html\?gate=1/);
     const parentDoor = await pg.evaluate(() => ({ open: document.getElementById("gateOvl").classList.contains("show"), to: Sona.gateDest(new URLSearchParams(location.search).get("to")) }));
     ok("a Premium choice opens the parent gate with the selected game intact",
@@ -997,24 +996,21 @@ ok("no pageerrors", errs.length === 0, errs.join(" | "));
 // already burning. At 20 downloads that is the difference between learning
 // "will parents pay" and learning nothing. These pin the new order.
 {
-  // Exercise the current explicit handoff instead of requiring its old Home
-  // destination. Setup may launch practice directly; it must never launch a price.
+  // Setup ends at the library; choosing the first game remains the family's action.
   const obContext = await browser.newContext(); const obPage = await obContext.newPage();
-  await obContext.route("**/charge.html?**", route => route.fulfill({ status: 200, contentType: "text/html", body: "<!doctype html><title>Practice handoff</title>" }));
   try {
     await obPage.goto("http://localhost:8147/onboarding.html");
-    const firstGame = await obPage.evaluate(() => {
+    await obPage.evaluate(() => {
       sessionStorage.setItem("sona.paidui", "1");
       Sona.speak = () => Promise.resolve();
       draft.childName = "Ada"; draft.childAge = "7"; draft.mode = "speech"; draft.email = "";
       nameEl.value = "Ada"; selSounds = new Set(["R"]); finish();
-      return Sona.adventureGames()[0];
     });
     await obPage.locator('[data-step="achieve"].on').waitFor();
     ok("onboarding waits for an explicit child handoff without starting a trial", /onboarding\.html/.test(obPage.url()) && await obPage.evaluate(() => !localStorage.getItem("sona.trial.v1")));
-    await obPage.locator("#nextBtn").click(); await obPage.waitForURL(/charge\.html/);
+    await obPage.locator("#nextBtn").click(); await obPage.waitForURL(/today\.html/);
     const destination = new URL(obPage.url());
-    ok("onboarding ends in the first adventure, never at the paywall", destination.pathname === "/charge.html" && destination.searchParams.get("daily") === "1" && destination.searchParams.get("first") === firstGame, obPage.url());
+    ok("onboarding ends at the game library without starting practice or a trial", destination.pathname === "/today.html" && !destination.search && await obPage.locator("#libraryApp").isVisible() && await obPage.evaluate(() => !localStorage.getItem("sona.trial.v1") && !sessionStorage.getItem("sona.run.v1")), obPage.url());
   } finally { await obContext.close(); }
 
   // DECIDING is not SHOWING. These were one function and it cost the family

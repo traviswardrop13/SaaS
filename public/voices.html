@@ -10,15 +10,12 @@
   <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
   <meta name="theme-color" content="#fff6e9" />
   <style>
-    .vrow{display:flex;align-items:center;gap:12px;border:2px solid var(--line);background:#fff;border-radius:16px;padding:12px 14px;margin-top:10px;cursor:pointer;transition:border-color .12s,transform .05s;}
+    .vrow{width:100%;text-align:left;color:inherit;display:flex;align-items:center;gap:12px;border:2px solid var(--line);background:#fff;border-radius:16px;padding:12px 14px;margin-top:10px;cursor:pointer;transition:border-color .12s,transform .05s;}
     .vrow:active{transform:translateY(1px);}
     .vrow.on{border-color:var(--blue);box-shadow:0 0 0 3px rgba(42,157,244,.16);}
     .vrow .info{flex:1;min-width:0;}
-    .vrow .nm{font-family:"Baloo 2";font-weight:800;font-size:16px;}
-    .vrow .vibe{font-size:13px;color:var(--muted);font-weight:700;}
-    .vrow .play{flex:0 0 auto;width:44px;height:44px;border-radius:50%;border:none;background:var(--blue);color:#fff;font-size:18px;cursor:pointer;box-shadow:0 4px 0 0 var(--blue-d);}
-    .vrow .play:active{transform:translateY(3px);box-shadow:0 1px 0 0 var(--blue-d);}
-    .vrow .play.err{background:#e7ecf3;color:#94a6bd;box-shadow:none;}
+    .vrow .nm{display:block;font-family:"Baloo 2";font-weight:800;font-size:16px;}
+    .vrow .vibe{display:block;font-size:13px;color:var(--muted);font-weight:700;}
     .vfoot{position:fixed;left:0;right:0;bottom:0;background:linear-gradient(180deg,rgba(255,255,255,0),#fff 35%);padding:16px 16px calc(16px + env(safe-area-inset-bottom));}
     .vfoot .inner{max-width:560px;margin:0 auto;}
   </style>
@@ -55,7 +52,7 @@
 
     <div class="card">
       <h1>Pick Echo's voice</h1>
-      <p class="muted">Tap ▶ to hear each one, then choose. This is the voice the coach uses in lessons (saved on this device).</p>
+      <p class="muted">Choose the voice used inside games. Menus stay quiet. Your choice is saved on this device.</p>
     </div>
 
     <div id="list"></div>
@@ -76,7 +73,6 @@
     // back-swipe can restore this page from the bfcache without re-running
     // scripts — re-check the gate whenever the page is shown again.
     window.addEventListener("pageshow", function (e) { if (e.persisted && window.Sona && Sona.requireGate) Sona.requireGate(); });
-    var SAMPLE = "Let's practice together — ready? Rabbit. Rocket. Ring.";
     var VOICES = [
       { id: "qBDvhofpxp92JgXJxDjB", name: "Default", vibe: "Warm & friendly — the default voice" },
       { id: "EXAVITQu4vr4xnSDxMaL", name: "Sarah", vibe: "Warm, clear female" },
@@ -91,37 +87,12 @@
     ];
 
     var sel = (Sona.getProfile().voiceId) || "";
-    var audioCtx = null;
-    function getCtx() { if (!audioCtx) { var AC = window.AudioContext || window.webkitAudioContext; audioCtx = new AC(); } if (audioCtx.state === "suspended") audioCtx.resume(); return audioCtx; }
-    function playPCM(bytes) {
-      return new Promise(function (resolve) {
-        try { var ctx = getCtx(), n = bytes.byteLength >> 1, ab = ctx.createBuffer(1, n, 24000), ch = ab.getChannelData(0), dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
-          for (var i = 0; i < n; i++) ch[i] = dv.getInt16(i * 2, true) / 32768;
-          var src = ctx.createBufferSource(); src.buffer = ab; src.playbackRate.value = (window.Sona && Sona.VOICE_PITCH) || 1; var g = ctx.createGain(); g.gain.value = (Sona.getProfile().volume != null ? Sona.getProfile().volume : 0.8); src.connect(g); g.connect(ctx.destination); src.onended = resolve; src.start();
-        } catch (e) { resolve(); }
-      });
-    }
-    var playing = false;
-    async function play(v, btn) {
-      if (playing) return; playing = true;
-      var old = btn.textContent; btn.textContent = "…"; btn.classList.remove("err");
-      try {
-        var res = await fetch("/api/tts", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text: SAMPLE, voice: v.id || "" }) });
-        if (!res.ok) throw new Error("tts " + res.status);
-        await playPCM(new Uint8Array(await res.arrayBuffer()));
-        btn.textContent = old;
-      } catch (e) { btn.textContent = "—"; btn.classList.add("err"); btn.title = "Unavailable on your account"; }
-      finally { playing = false; }
-    }
-
     var list = document.getElementById("list");
-    function paint() { [].forEach.call(list.children, function (el) { el.classList.toggle("on", el.dataset.id === sel); }); }
+    function paint() { [].forEach.call(list.children, function (el) { el.classList.toggle("on", el.dataset.id === sel); el.setAttribute("aria-pressed", el.dataset.id === sel ? "true" : "false"); }); }
     VOICES.forEach(function (v) {
-      var row = document.createElement("div");
+      var row = document.createElement("button"); row.type="button";
       row.className = "vrow"; row.dataset.id = v.id;
-      row.innerHTML = '<div class="info"><div class="nm">' + v.name + '</div><div class="vibe">' + v.vibe + '</div></div><button class="play" aria-label="Play">▶</button>';
-      var btn = row.querySelector(".play");
-      btn.onclick = function (e) { e.stopPropagation(); if (window.Sona) Sona.sfx && Sona.sfx.tap(); play(v, btn); };
+      row.innerHTML = '<span class="info"><span class="nm">' + v.name + '</span><span class="vibe">' + v.vibe + '</span></span>';
       row.onclick = function () { sel = v.id; paint(); };
       list.appendChild(row);
     });

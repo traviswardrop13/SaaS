@@ -120,8 +120,8 @@ if(present)for(const game of pages){
       await click(page,'#playAgain');await phase(page,'choose');
       const replay=await visibleState(page);
       ok(game+': replay starts a fresh five-turn round',replay.phase==='choose'&&replay.progress===first.progress&&!(await page.locator('#finishPanel').isVisible()));
-      await click(page,'#backLibrary');await page.waitForURL('**/activities.html');
-      ok(game+': library exit returns to game choices',new URL(page.url()).pathname==='/activities.html');
+      await click(page,'#backLibrary');await page.waitForURL('**/today.html');
+      ok(game+': library exit returns to game choices',new URL(page.url()).pathname==='/today.html');
       clean(game,errors);
     }finally{await context.close();}
   });

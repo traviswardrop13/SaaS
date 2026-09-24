@@ -171,9 +171,10 @@ await scenario("five untimed games form the younger-child adventure",async()=>{
         await page.locator("#endOvl.show").waitFor();
         if(round===0){
           await page.locator("#goHome").click();await page.waitForURL(/today.html/);
-          await page.locator("#goBtn").click();
+          ok("Home leaves the saved adventure parked in the library",await page.locator('#libraryApp').isVisible());
+          await page.goto(origin+"/charge.html?daily=1");
           await page.waitForFunction(()=>JSON.parse(sessionStorage.getItem("sona.run.v1")).round===1);
-          ok("Home resumes after a completed simple game without repeating it",await page.evaluate(()=>JSON.parse(sessionStorage.getItem("sona.run.v1")).scores.length===1));
+          ok("an explicit legacy resume preserves the completed simple game",await page.evaluate(()=>JSON.parse(sessionStorage.getItem("sona.run.v1")).scores.length===1));
         }else await page.locator("#again").click();
       }else{
         await page.locator("#startGame").click();

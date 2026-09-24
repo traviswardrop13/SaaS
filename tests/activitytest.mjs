@@ -100,13 +100,7 @@ await section("library prerequisites", async () => {
   try {
     hasContract = await pg.evaluate(() => typeof window.Sona?.activityLibrary === "function");
     ok("Sona provides the activity library content contract", hasContract);
-    const browse = pg.locator("#libBtn");
-    const count = await browse.count();
-    ok("Home offers a browse-games link", count === 1, count);
-    if (count) {
-      const href = await browse.getAttribute("href");
-      ok("Home's browse link opens the play library", new URL(href, BASE).pathname === "/activities.html", href);
-    }
+    ok("Home itself presents the game picker", await pg.getByRole("heading", {name:"Pick a game!",exact:true}).count() === 1 && await pg.locator("#activityGroups button[data-game]").count() === 8);
   } finally { await ctx.close(); }
 });
 
@@ -280,7 +274,7 @@ if (present && hasContract) {
         ok(origin + ": preview creates no entitlement, plan impression or practice state", same(await state(pg), before), { before, after: await state(pg) });
         if (local && !access.gated) {
           await pg.locator('#activityGroups button[data-game="peekaboo"]').click();
-          ok(origin + ": a Premium preview choice stays in the library with a parent invitation", new URL(pg.url()).pathname === "/activities.html" && await pg.locator("#libraryNotice").isVisible());
+          ok(origin + ": a Premium preview choice stays on Home with a parent invitation", new URL(pg.url()).pathname === "/today.html" && await pg.locator("#libraryNotice").isVisible());
           ok(origin + ": the preview keeps the two free games in each age group open", same(await pg.evaluate(() => Object.keys(Sona.GAME_ACTS).filter(key => Sona.gameAccess(key).allowed).sort()), ["bubbles", "feed", "slice", "stack"]));
         }
       } finally { await ctx.close(); }
@@ -294,7 +288,7 @@ if (present && hasContract) {
       ok("preview leaves an expired paid-state family gated", await pg.evaluate(() => Sona.gated("practice")) === true);
       ok("free preview games are accessible without a real entitlement", await pg.evaluate(() => Sona.gameAccess("feed").allowed && !Sona.gameAccess("peekaboo").allowed));
       await pg.locator('#activityGroups button[data-game="peekaboo"]').click();
-      ok("Premium stays behind the parent invitation in a paid-state preview", new URL(pg.url()).pathname === "/activities.html" && await pg.locator("#libraryNotice").isVisible());
+      ok("Premium stays behind the parent invitation in a paid-state preview", new URL(pg.url()).pathname === "/today.html" && await pg.locator("#libraryNotice").isVisible());
       ok("preview gate checks create no access or practice", same(await state(pg), before));
     } finally { await ctx.close(); }
   });
@@ -339,8 +333,8 @@ if (present && hasContract) {
     const { ctx, pg } = await fixture({ path: "/today.html" });
     try {
       const before = await state(pg);
-      await pg.locator("#libBtn").click();
-      await pg.waitForURL(/\/activities\.html(?:[?#]|$)/);
+      await pg.goto(BASE + "/activities.html");
+      await pg.waitForURL(/\/today\.html(?:[?#]|$)/);
       await pg.locator("#activityGroups button[data-game]").last().scrollIntoViewIfNeeded();
       ok("browsing creates no practice, rewards, run, token or entitlement", same(await state(pg), before), { before, after: await state(pg) });
       const parked = await pg.locator("a[href]").evaluateAll((links) => links.map((link) => link.getAttribute("href")).filter((href) => /(?:chapter|story|library)\.html(?:[?#]|$)/.test(href)));
@@ -379,7 +373,7 @@ if (present && hasContract) {
         if (!(await button.count())) { ok(key + ": launch card exists", false); continue; }
         await button.click();
         await pg.waitForTimeout(50);
-        const stayed = new URL(pg.url()).pathname === "/activities.html";
+        const stayed = new URL(pg.url()).pathname === "/today.html";
         ok(key + ": a gated click stays in the library instead of a paywall", stayed, pg.url());
         if (!stayed) { await pg.goto(BASE + "/activities.html"); continue; }
         const message = pg.locator("#libraryMessage");
@@ -391,31 +385,33 @@ if (present && hasContract) {
     } finally { await ctx.close(); }
   });
 
-  await section("spoken choices stop safely when the app is hidden", async () => {
+  await section("silent menus and immediate deliberate game choice", async () => {
     const { ctx, pg } = await fixture();
     try {
       await ctx.route("**/sona.js", route=>route.fulfill({contentType:"text/javascript", body:readFileSync(ROOT+"/sona.js","utf8") + `
-        window.__librarySpeech=[]; window.__voiceEnds=[];
-        Sona.speak=function(text){__librarySpeech.push(text);return Promise.resolve();};
-        Sona.speakNow=function(text){__librarySpeech.push(text);return new Promise(resolve=>__voiceEnds.push(resolve));};
-        Object.defineProperty(document,'hidden',{configurable:true,get:function(){return !!window.__libraryHidden;}});
+        function menuSpeech(text){
+          if(String(text||'').trim()){var calls=JSON.parse(sessionStorage.getItem('test.menuSpeech')||'[]');calls.push(String(text));sessionStorage.setItem('test.menuSpeech',JSON.stringify(calls));}
+          return Promise.resolve();
+        }
+        Sona.speak=menuSpeech;Sona.speakNow=menuSpeech;
       `}));
       await pg.evaluate(()=>Sona.saveProfile({voiceOn:true,volume:0.5,soundOn:false}));
       await pg.reload();
-      ok("Echo says the short library invitation", await pg.evaluate(()=>__librarySpeech.includes("Pick a game!")));
-      const pick=pg.locator('#activityGroups button[data-game="bubbles"]');
-      await pick.click();
-      if(new URL(pg.url()).pathname!=='/activities.html'){ok("the spoken choice stays in the library until its voice finishes",false,pg.url());return;}
-      ok("a tapped game speaks its name without child data", await pg.evaluate(()=>__librarySpeech.includes("Bubble Pop") && !__librarySpeech.some(t=>/Mia/.test(t))));
-      await pg.evaluate(()=>{window.__libraryHidden=true;document.dispatchEvent(new Event('visibilitychange'));});
-      await pg.waitForTimeout(1500);
-      ok("backgrounding cancels the delayed launch", new URL(pg.url()).pathname==='/activities.html',pg.url());
-      await pg.evaluate(()=>{window.__libraryHidden=false;document.dispatchEvent(new Event('visibilitychange'));});
-      await ctx.route('**/arcade-peekaboo.html',route=>route.fulfill({contentType:'text/html',body:'<p>Game destination</p>'}));
-      await pg.locator('#activityGroups button[data-game="peekaboo"]').click();
-      await pg.evaluate(()=>__voiceEnds.forEach(end=>end()));
-      await pg.waitForURL(/arcade-peekaboo\.html/);
-      ok("stale voice completion cannot override the latest choice", new URL(pg.url()).pathname==='/arcade-peekaboo.html');
+      ok("the Home menu never narrates with voice enabled", await pg.evaluate(()=>JSON.parse(sessionStorage.getItem('test.menuSpeech')||'[]').length)===0);
+      await ctx.route('**/arcade-bubbles.html',route=>route.fulfill({contentType:'text/html',body:'<p>Game destination</p>'}));
+      await pg.locator('#activityGroups button[data-game="bubbles"]').click();
+      await pg.waitForURL(/arcade-bubbles\.html/);
+      ok("choosing a simple game opens its existing route directly", new URL(pg.url()).pathname==='/arcade-bubbles.html');
+      ok("a game choice never speaks the card name in the menu", await pg.evaluate(()=>JSON.parse(sessionStorage.getItem('test.menuSpeech')||'[]').length)===0);
+    }finally{await ctx.close();}
+  });
+
+  await section("the legacy library alias preserves navigation state", async () => {
+    const {ctx,pg}=await fixture({path:'/activities.html?libraryPreview=1&locked=tiles#games'});
+    try {
+      const url=new URL(pg.url());
+      ok("the old library link resolves to Home with its full query and hash",url.pathname==='/today.html'&&url.searchParams.get('libraryPreview')==='1'&&url.searchParams.get('locked')==='tiles'&&url.hash==='#games',url.href);
+      ok("the redirected preview still explains the selected locked game",await pg.locator('#libraryNotice').isVisible()&&/Piano Tiles/.test(await pg.locator('#libraryNotice').innerText()));
     }finally{await ctx.close();}
   });
 

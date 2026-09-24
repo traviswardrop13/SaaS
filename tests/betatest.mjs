@@ -358,12 +358,12 @@ ok("easiest sounds first, R last", playProf.focusSounds[0] === "P" && playProf.f
 // the home greeting drops the clinical framing, and nothing pitches an evaluation
 await page.goto("http://localhost:8129/today.html"); await page.waitForTimeout(700);
 const playHome = await page.evaluate(() => ({
-  sub: document.getElementById("subLine").textContent,
+  title: document.querySelector(".library-intro h1").textContent,
   nudge: !!document.getElementById("checkNudge"),
   body: document.body.innerText,
   firstSound: Sona.rotSound(),
 }));
-ok("play greeting talks about games, not a target sound", /talking games/i.test(playHome.sub), playHome.sub);
+ok("play Home invites choosing a game", /pick a game/i.test(playHome.title), playHome.title);
 // the nudge used to be hidden in play mode; the Sound Check is gone entirely,
 // which is the stronger guarantee — there is no clinical pitch left to hide
 ok("the Sound Check nudge no longer exists at all", playHome.nudge === false);

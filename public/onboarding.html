@@ -833,12 +833,10 @@
           try{if(window.SonaAnalytics)SonaAnalytics.track("onboarding completed");}catch(e){}
           var pay=false;try{pay=!(Sona.isFree&&Sona.isFree())&&!(Sona.isSubscribed&&Sona.isSubscribed())&&!(Sona.isPilot&&Sona.isPilot())&&!(Sona.getProfile&&Sona.getProfile().earlyAdopter);}catch(e){}
           if(pay){try{sessionStorage.setItem("sona.gate.v1",String(Date.now()));}catch(e){}}
-          var plan=Sona.adventureGames();
-          location.href="/charge.html?daily=1&first="+encodeURIComponent(plan[0]);
+          location.href="/today.html";
         };
         window.scrollTo(0,0);try{document.getElementById("handoffTitle").focus({preventScroll:true});}catch(e){}
-        // Names stay on the screen and device, not in a voice-service request.
-        if(!document.hidden&&Sona.speak)Sona.speak("Hi! Ready to play?");
+        // Setup and menus stay quiet; spoken coaching belongs inside games.
       });
     }
 

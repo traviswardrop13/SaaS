@@ -230,8 +230,8 @@ if (hasContract) {
       ok("the current earned game still opens after expiry", new URL(pg.url()).pathname === "/arcade-tiles.html" && await pg.evaluate(() => window.gameEntryAllowed === true));
       ok("the earned game keeps its saved run without changing the deck", same(await pg.evaluate(() => JSON.parse(sessionStorage.getItem("sona.run.v1")).games), games));
       await pg.goto(BASE + "/arcade-run.html?daily=1&from=charge");
-      await pg.waitForURL(/\/activities\.html/);
-      ok("another Premium URL cannot borrow the active game's permission", new URL(pg.url()).pathname === "/activities.html");
+      await pg.waitForURL(/\/today\.html/);
+      ok("another Premium URL cannot borrow the active game's permission", new URL(pg.url()).pathname === "/today.html");
       await pg.evaluate(() => { sessionStorage.removeItem("sona.run.v1"); sessionStorage.removeItem("sona.play.active"); sessionStorage.setItem("sona.play.token","arcade-tiles.html"); });
       await pg.goto(BASE + "/arcade-tiles.html?from=charge");
       ok("an already-earned standalone turn also survives expiry", new URL(pg.url()).pathname === "/arcade-tiles.html" && await pg.evaluate(() => window.gameEntryAllowed === true));
@@ -255,7 +255,7 @@ if (hasContract) {
       await pg.evaluate(() => Sona.setPreviewPlan("expired"));
       await pg.goto(gameURL);
       await pg.waitForTimeout(100);
-      ok("daily=" + daily + ": a completed turn cannot reopen Premium after expiry using its old URL", new URL(pg.url()).pathname === "/activities.html", pg.url());
+      ok("daily=" + daily + ": a completed turn cannot reopen Premium after expiry using its old URL", new URL(pg.url()).pathname === "/today.html", pg.url());
       if (daily) {
         await pg.goto(BASE + "/charge.html?daily=1");
         const run = await pg.evaluate(() => JSON.parse(sessionStorage.getItem("sona.run.v1")));
@@ -281,7 +281,7 @@ if (hasContract) {
       await pg.evaluate(() => Sona.setPreviewPlan("expired"));
       await pg.locator("#playAgain").click();
       await pg.waitForTimeout(100);
-      ok("a finished Peekaboo page cannot start a fresh Premium round after expiry", new URL(pg.url()).pathname === "/activities.html", pg.url());
+      ok("a finished Peekaboo page cannot start a fresh Premium round after expiry", new URL(pg.url()).pathname === "/today.html", pg.url());
     } finally { await ctx.close(); }
   });
 
@@ -295,7 +295,7 @@ if (hasContract) {
         const url = new URL(pg.url());
         if (FREE.includes(key)) ok(key + ": expiry still permits its existing practice route", url.pathname === "/charge.html" || url.pathname === "/arcade-" + key + ".html", url.href);
         else {
-          ok(key + ": a direct Premium practice link returns to the library", url.pathname === "/activities.html", url.href);
+          ok(key + ": a direct Premium practice link returns to the library", url.pathname === "/today.html", url.href);
           ok(key + ": a blocked practice link never asks for the microphone", await pg.evaluate(() => Number(sessionStorage.getItem("test.micCalls") || 0)) === 0);
         }
       } finally { await ctx.close(); }
@@ -307,8 +307,8 @@ if (hasContract) {
       const { ctx, pg } = await fixture();
       try {
         await pg.goto(BASE + "/arcade-" + key + ".html?from=charge&daily=1");
-        await pg.waitForURL(/\/activities\.html/);
-        ok(key + ": a typed game URL cannot bypass preview access", new URL(pg.url()).pathname === "/activities.html");
+        await pg.waitForURL(/\/today\.html/);
+        ok(key + ": a typed game URL cannot bypass preview access", new URL(pg.url()).pathname === "/today.html");
         ok(key + ": rejection happens before microphone use", await pg.evaluate(() => Number(sessionStorage.getItem("test.micCalls") || 0)) === 0);
       } finally { await ctx.close(); }
     });
@@ -325,7 +325,7 @@ if (hasContract && premiumPresent) {
       await pg.goto(BASE + "/activities.html");
       const before = await realState(pg);
       await pg.locator('#activityGroups button[data-game="tiles"]').click();
-      ok("a locked choice stays in the child library", new URL(pg.url()).pathname === "/activities.html");
+      ok("a locked choice stays in the child library", new URL(pg.url()).pathname === "/today.html");
       ok("the locked message names a grown-up who can help", await pg.locator("#libraryNotice").isVisible() && /grown[ -]?up|parent|adult/i.test(await pg.locator("#libraryNotice").innerText()));
       await pg.locator("#libraryUnlock").click();
       await pg.waitForURL(/\/today\.html\?gate=1/);
@@ -334,7 +334,7 @@ if (hasContract && premiumPresent) {
       ok("canceling the gate reveals no Premium offer or entitlement", !await pg.locator("#gateOvl").isVisible() && await pg.evaluate(() => Sona.previewPlan().state) === "free");
       ok("canceling keeps real family state unchanged", same(await realState(pg), before), {before,after:await realState(pg)});
       await pg.goBack();
-      await pg.waitForURL(/\/activities\.html/);
+      await pg.waitForURL(/\/today\.html/);
       await pg.locator('#activityGroups button[data-game="tiles"]').click();
       await pg.locator("#libraryUnlock").click();
       await solveGate(pg);
@@ -353,7 +353,7 @@ if (hasContract && premiumPresent) {
       await pg.locator("#previewExpire").click();
       ok("the parent can rehearse expiry", await pg.evaluate(() => Sona.previewPlan().state) === "expired");
       await pg.locator("#keepFree").click();
-      await pg.waitForURL(/\/activities\.html/);
+      await pg.waitForURL(/\/today\.html/);
       ok("Keep free returns to a library with four usable games", same(await allowed(pg), FREE));
       const entitlement = rows => rows.filter(([key]) => /^sona\.(?:sub|trial|slp|founder|pilot|plan)/.test(key));
       ok("the complete parent flow changes no real subscription or trial", same(entitlement(await realState(pg)), entitlement(before)));
