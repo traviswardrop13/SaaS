@@ -1075,6 +1075,8 @@
         };
         engineControl=control;
         function runSegment(){return new Promise(function(segmentDone){
+          // A replacement stream must qualify its own burst after an interruption.
+          voiced=0;silent=0;inBurst=false;burstFrames=[];
           var seg={startedAt:performance.now(),modelMs:0,modelAt:null,closed:false,reason:null,timers:[],raf:null,src:null,recorder:null};
           attempt.segment=seg;
           function current(){return !closed() && !seg.closed && attempt.segment===seg;}
@@ -1090,6 +1092,7 @@
           });}
           seg.finish=function(reason){
             if(seg.closed)return; seg.closed=true; seg.reason=reason;
+            if(reason==="microphone"){attemptInterrupted=true;chunks=[];}
             elapsed=Math.min(20000,activeMs()); engineOn=false; micGo(false);
             seg.timers.forEach(clearTimeout); if(seg.raf!=null)cancelAnimationFrame(seg.raf);
             try{if(seg.src)seg.src.disconnect();}catch(e){}
@@ -1150,13 +1153,18 @@
               if(rms>thr){
                 voiced++;silent=0;
                 if(!inBurst)burstFrames.push(new Uint8Array(fd));
-                if(!inBurst&&voiced>=4&&now-lastRep>350){
-                  inBurst=true;lastRep=now;reps++;
+                if(!inBurst&&voiced>=4&&(successAt!==null||now-lastRep>350)){
+                  inBurst=true;
                   burstFrames.forEach(function(frame){shapeFrame(frame,binHz);});burstFrames=[];
-                  paintReps(reps);sfx("tap");
-                  var l=$("leo");l.classList.remove("cheer");void l.offsetWidth;l.classList.add("cheer");
-                  try{mw.classList.add("hear");$("echoBuddy").classList.add("heard");}catch(e){}
-                  if(reps>=NEED){successAt=activeMs()+350;later(function(){seg.finish("done");},350);return;}
+                  // Finish hearing the last try without awarding another. A
+                  // resumed tail still needs a qualified burst, not one click.
+                  if(successAt===null){
+                    lastRep=now;reps++;
+                    paintReps(reps);sfx("tap");
+                    var l=$("leo");l.classList.remove("cheer");void l.offsetWidth;l.classList.add("cheer");
+                    try{mw.classList.add("hear");$("echoBuddy").classList.add("heard");}catch(e){}
+                    if(reps>=NEED){successAt=activeMs()+350;later(finishTail,350);}
+                  }
                 }else if(inBurst) shapeFrame(fd,binHz);
               }else{
                 silent++;voiced=0;
@@ -1166,9 +1174,12 @@
               }
               seg.raf=requestAnimationFrame(tick);
             }
+            // Coaching and background pauses must not spend listening time.
+            function finishTail(){var remaining=successAt-activeMs();if(remaining<=0)seg.finish("done");else later(finishTail,remaining);}
             function deadline(){var remaining=20000-activeMs();if(remaining<=0)seg.finish("done");else later(deadline,remaining);}
             later(deadline,20000-activeMs());
-            if(successAt!==null)later(function(){seg.finish("done");},successAt-activeMs());else tick();
+            if(successAt!==null)later(finishTail,successAt-activeMs());
+            tick();
           }catch(e){seg.finish("microphone");}
         });}
         (async function(){

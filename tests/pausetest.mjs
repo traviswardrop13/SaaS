@@ -25,6 +25,7 @@ function ok(name, pass, detail = '') {
   console.log((pass ? 'PASS ' : 'FAIL ') + name + (pass ? '' : ' → ' + (typeof detail === 'string' ? detail : JSON.stringify(detail))));
 }
 async function scenario(name, fn) {
+  if (process.env.PAUSE_ONLY === 'tail' && !name.startsWith('tail:')) return;
   try { await fn(); } catch (error) { ok(name + ' completes without a harness/page exception', false, error.stack); }
 }
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
@@ -105,7 +106,7 @@ function fakeDevice(config) {
       // A sustained harmonic waveform represents voiced input. A constant DC
       // level must not bypass the production non-speech rejection.
       getByteTimeDomainData(data) {
-        const live = h.voice && this.graph && this.graph.connected && this.graph.stream.track.readyState === 'live';
+        const live = h.voice && (h.voiceFrames == null || h.voiceFrames-- > 0) && this.graph && this.graph.connected && this.graph.stream.track.readyState === 'live';
         for (let i = 0; i < data.length; i++) {
           const phase = 2 * Math.PI * 187.5 * i / 48000;
           data[i] = live ? Math.round(128 + 22*Math.sin(phase) + 16*Math.sin(2*phase) + 12*Math.sin(3*phase) + 9*Math.sin(4*phase)) : 128;
@@ -143,7 +144,7 @@ function fakeDevice(config) {
     value.speechStop = () => {
       h.nativeStops++;
       if (h.verifyMode === 'deferred') return new Promise((resolve) => h.speechWaiters.push(resolve));
-      return Promise.resolve({ text: h.verifyMode === 'fail' ? 'poopoo' : 'rrrr' });
+      return Promise.resolve({ text: h.verifyMode === 'unknown' ? '' : h.verifyMode === 'fail' ? 'poopoo' : 'rrrr' });
     };
     value.saveRecording = () => { h.effects.push('saveRecording'); return Promise.resolve(); };
     value.confetti = () => {};
@@ -527,6 +528,153 @@ await scenario('Home ends an unfinished attempt without changing past work', asy
     await page.waitForTimeout(400);
     ok('abandoned timers do not pull the family off Home', page.url().endsWith('/today.html'));
     clean('pause Home', errors);
+  } finally { await context.close(); }
+});
+
+// Unknown native recognition deliberately exercises the on-device fallback.
+// Device-edge frames are controlled; the app's counter, timers, verification,
+// persistence and pause lifecycle remain real.
+async function beginFinalTail(page, action) {
+  await listening(page);
+  await page.evaluate((action) => {
+    NEED = 1;
+    __pauseHarness.voiceFrames = action === 'short' ? 4 : Infinity;
+    const paint = paintReps;
+    paintReps = function (n) {
+      paint(n);
+      if (n !== 1 || __pauseHarness.finalReached) return;
+      __pauseHarness.finalReached = true;
+      queueMicrotask(() => {
+        if (action === 'pause' || action === 'latepause') {
+          const stop = () => { __pauseHarness.voice = false; __pauseHarness.background(); };
+          if (action === 'latepause') setTimeout(stop, 150); else stop();
+        } else if (action === 'microphone') {
+          __pauseHarness.streams.filter(s => s.track.readyState === 'live').forEach(s => s.track.stop());
+        } else if (action === 'model') speaking = true;
+      });
+    };
+    __pauseHarness.voice = true;
+  }, action);
+  await page.waitForFunction(() => __pauseHarness.finalReached);
+}
+
+await scenario('tail: sustained speech completes one fallback-scored try', async () => {
+  const { context, page, errors } = await fresh({ verify: 'unknown' });
+  try {
+    await beginFinalTail(page);
+    await page.waitForTimeout(600);
+    const state = await page.evaluate(() => ({ frames: SHAPE.frames, reps, saved: Sona.repsToday(), effects: __pauseHarness.effects }));
+    ok('final speech continues supplying enough evidence to score', state.frames >= 12, state);
+    ok('final listening window saves exactly one try and one outcome', state.reps === 1 && state.saved === 1 && state.effects.filter(e => e === 'logAttempt').length === 1 && state.effects.filter(e => e === 'bumpReps').length === 1, state);
+    await page.waitForTimeout(450);
+    ok('completed tail cannot count or save again', await page.evaluate(() => reps === 1 && Sona.repsToday() === 1 && __pauseHarness.effects.filter(e => e === 'logAttempt').length === 1));
+    clean('sustained final tail', errors);
+  } finally { await context.close(); }
+});
+
+await scenario('tail: silence and isolated transients cannot manufacture evidence', async () => {
+  const { context, page, errors } = await fresh({ verify: 'unknown' });
+  try {
+    await beginFinalTail(page, 'short');
+    await page.waitForTimeout(170); // Existing eight-frame gap ends the burst.
+    await page.evaluate(() => { __pauseHarness.voiceFrames = 2; });
+    await page.waitForTimeout(400);
+    const state = await page.evaluate(() => ({ frames: SHAPE.frames, reps, saved: Sona.repsToday(), remaining: __pauseHarness.voiceFrames, quiet: !!document.querySelector('#quietOvl.show') }));
+    ok('two-frame transient reaches the still-active listener', state.remaining <= 0, state);
+    ok('silence and a two-frame transient add no scoring evidence or credit', state.frames === 4 && state.reps === 1 && state.saved === 0 && state.quiet, state);
+    clean('short final tail', errors);
+  } finally { await context.close(); }
+});
+
+for (const continuedSpeech of [true, false]) await scenario('tail: pause then resume with ' + (continuedSpeech ? 'speech' : 'silence'), async () => {
+  const { context, page, errors } = await fresh({ verify: 'unknown' });
+  try {
+    await beginFinalTail(page, 'pause');
+    await page.locator('#pauseOvl.show').waitFor();
+    const before = await earned(page);
+    await page.waitForTimeout(430);
+    const paused = await resources(page);
+    ok('final-tail pause freezes evidence, releases devices and saves nothing', await page.evaluate(() => SHAPE.frames === 4) && paused.live === 0 && paused.recording === 0 && paused.graphs === 0 && same(before, await earned(page)), paused);
+    await page.evaluate((voice) => { __pauseHarness.voice = voice; }, continuedSpeech);
+    await resume(page);
+    await page.waitForTimeout(650);
+    const state = await page.evaluate(() => ({ frames: SHAPE.frames, reps, saved: Sona.repsToday(), effects: __pauseHarness.effects, quiet: !!document.querySelector('#quietOvl.show') }));
+    if (continuedSpeech) {
+      ok('resumed tail requalifies speech and scores once without another repetition', state.frames >= 12 && state.reps === 1 && state.saved === 1 && state.effects.filter(e => e === 'logAttempt').length === 1, state);
+      ok('an interrupted final tail does not save an invalid stitched recording', !state.effects.includes('saveRecording'), state.effects);
+    } else {
+      ok('resuming into silence preserves unknown and saves nothing', state.frames === 4 && state.reps === 1 && state.saved === 0 && state.quiet, state);
+    }
+    clean('resumed final tail', errors);
+  } finally { await context.close(); }
+});
+
+await scenario('tail: model playback preserves remaining listening time', async () => {
+  const { context, page, errors } = await fresh({ verify: 'unknown' });
+  try {
+    await beginFinalTail(page, 'model');
+    await page.waitForTimeout(480);
+    const held = await page.evaluate(() => ({ frames: SHAPE.frames, live: engineOn, saved: Sona.repsToday() }));
+    ok('coaching in final tail supplies no evidence and cannot exhaust listening time', held.frames === 4 && held.live && held.saved === 0, held);
+    await page.evaluate(() => { speaking = false; });
+    await page.waitForTimeout(550);
+    const state = await page.evaluate(() => ({ frames: SHAPE.frames, reps, saved: Sona.repsToday(), outcomes: __pauseHarness.effects.filter(e => e === 'logAttempt').length }));
+    ok('child gets remaining listening time after coaching and only one credit', state.frames >= 12 && state.reps === 1 && state.saved === 1 && state.outcomes === 1, state);
+    clean('model during final tail', errors);
+  } finally { await context.close(); }
+});
+
+await scenario('tail: closing a paused final repetition cancels pending work', async () => {
+  const { context, page, errors } = await fresh({ verify: 'unknown' });
+  try {
+    await beginFinalTail(page, 'pause');
+    await page.locator('#pauseOvl.show').waitFor();
+    const before = await earned(page);
+    await page.evaluate(() => closePractice());
+    await page.waitForTimeout(450);
+    const state = await resources(page);
+    ok('closed final tail leaves no listening resources or delayed credit', state.live === 0 && state.recording === 0 && state.graphs === 0 && same(before, await earned(page)), state);
+    clean('cancelled final tail', errors);
+  } finally { await context.close(); }
+});
+
+await scenario('tail: resume retains only the unused listening time', async () => {
+  const { context, page, errors } = await fresh({ verify: 'unknown' });
+  try {
+    await beginFinalTail(page, 'latepause');
+    await page.locator('#pauseOvl.show').waitFor();
+    await page.waitForTimeout(400);
+    await page.evaluate(() => { __pauseHarness.voice = true; });
+    await resume(page);
+    await page.waitForFunction(() => engineOn && engineAttempt?.segment);
+    const remaining = await page.evaluate(() => {
+      const ids = engineAttempt.segment.timers;
+      return __pauseHarness.timers.filter(t => ids.includes(t.id) && t.active && t.delay < 350).map(t => t.delay);
+    });
+    ok('resume keeps the partially used tail instead of starting a new 350 ms', remaining.length === 1 && remaining[0] > 0 && remaining[0] < 260, remaining);
+    await page.waitForTimeout(450);
+    ok('a partially used tail still finishes once', await page.evaluate(() => reps === 1 && Sona.repsToday() === 1 && __pauseHarness.effects.filter(e => e === 'logAttempt').length === 1));
+    clean('partially used final tail', errors);
+  } finally { await context.close(); }
+});
+
+for (const continuedSpeech of [true, false]) await scenario('tail: microphone recovery with ' + (continuedSpeech ? 'speech' : 'one transient'), async () => {
+  const { context, page, errors } = await fresh({ verify: 'unknown' });
+  try {
+    await beginFinalTail(page, 'microphone');
+    await page.locator('#quietOvl.show').waitFor();
+    ok('lost final-tail microphone presents recovery without saving progress', /grown-up/.test(await page.locator('#quietTitle').innerText()) && await page.evaluate(() => SHAPE.frames === 4 && Sona.repsToday() === 0));
+    await page.evaluate((speech) => { __pauseHarness.voiceFrames = speech ? Infinity : 1; }, continuedSpeech);
+    await click(page, '#quietGo');
+    await page.waitForTimeout(650);
+    const state = await page.evaluate(() => ({ frames: SHAPE.frames, reps, saved: Sona.repsToday(), remaining: __pauseHarness.voiceFrames, effects: __pauseHarness.effects, quiet: !!document.querySelector('#quietOvl.show') }));
+    if (continuedSpeech) {
+      ok('replacement microphone qualifies speech and finishes the same try once', state.frames >= 12 && state.reps === 1 && state.saved === 1 && state.effects.filter(e => e === 'logAttempt').length === 1, state);
+      ok('microphone interruption never saves a stitched recording', !state.effects.includes('saveRecording'), state);
+    } else {
+      ok('replacement microphone receives the transient but cannot reuse old burst qualification', state.remaining <= 0 && state.frames === 4 && state.reps === 1 && state.saved === 0 && state.quiet, state);
+    }
+    clean('final-tail microphone recovery', errors);
   } finally { await context.close(); }
 });
 
