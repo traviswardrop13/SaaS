@@ -4,6 +4,7 @@ import {
   kvCmd, kvConfigured, randomToken, hashToken, sendMagicEmail,
   signSession, sessionCookie, SESSION_MAX_AGE, authSecretOk, leadSig,
 } from "@/lib/slpAuth";
+import { kitConfigured } from "@/lib/kit";
 
 export const runtime = "nodejs";
 
@@ -27,7 +28,11 @@ export async function GET() {
     signing,                                        // SLP_AUTH_SECRET (or non-production)
     store,                                          // KV / Upstash
     email: Boolean(process.env.RESEND_API_KEY),     // the link can actually be delivered
-    crm: Boolean(process.env.LEAD_WEBHOOK_URL),     // the lead reaches GoHighLevel
+    // The lead reaches an email list. Kit since 24 Sep 2026; the webhook is
+    // the retired GoHighLevel rail, so deleting LEAD_WEBHOOK_URL must not
+    // turn this false while Kit is taking every sign-up.
+    crm: kitConfigured() || Boolean(process.env.LEAD_WEBHOOK_URL),
+    kit: kitConfigured(),
   });
 }
 
@@ -62,9 +67,10 @@ function safeAttrib(raw: unknown): Record<string, string> {
 }
 
 /**
- * Tell the founder's CRM that a clinician signed up. /api/lead is already
- * wired to LEAD_WEBHOOK_URL (a GoHighLevel inbound workflow) and is the one
- * place any opt-in goes, so this reuses it rather than growing a second rail.
+ * Tell the founder's email list that a clinician signed up. /api/lead is
+ * the one place any opt-in goes (it sends to Kit; GoHighLevel, the list before
+ * it, was deleted 24 Sep 2026), so this reuses it rather than growing a
+ * second rail.
  *
  * AWAITED, WITH A SHORT FUSE — NOT FIRE-AND-FORGET. This used to be
  * `void fetch(...)` so a CRM hiccup could never cost a clinician their

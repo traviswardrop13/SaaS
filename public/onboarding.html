@@ -773,7 +773,7 @@
       // registration, not a lead — counting it as one told the ad account it
       // had 26 leads when the CRM had almost none (24 Sep 2026).
       try{ if(window.sonaTrack){ if(draft.email) sonaTrack("Lead"); sonaTrack("CompleteRegistration"); } }catch(e){}
-      // capture the lead (email + answers) → GHL via /api/lead (fire-and-forget)
+      // the grown-up's email joins the list (Kit) via /api/lead — fire-and-forget
       try{
         if(draft.email){
           var isSlp=draft.role==="slp";

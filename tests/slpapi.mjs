@@ -337,6 +337,15 @@ if (A) {
     /Boolean\(process\.env\.LEAD_WEBHOOK_URL\)/.test(req) &&
     !/process\.env\.SLP_AUTH_SECRET/.test((req.split("export async function POST")[0].split("export async function GET")[1]) || ""),
     "a health check that prints a secret is a leak wearing a helpful hat");
+  // GoHighLevel was deleted and its webhook goes with it (24 Sep 2026). If the
+  // list flag read the webhook alone, following the setup steps would turn it
+  // false on the day Kit starts taking every sign-up.
+  ok("…and the email-list flag counts Kit, not only the retired webhook",
+    /crm: kitConfigured\(\) \|\| Boolean\(process\.env\.LEAD_WEBHOOK_URL\)/.test(req) &&
+    /kit: kitConfigured\(\)/.test(req) && /import \{ kitConfigured \} from "@\/lib\/kit"/.test(req));
+  const founderPage = read("public/leads.html");
+  ok("the founder page no longer points at GoHighLevel",
+    !/GoHighLevel|HighLevel|\bGHL\b/.test(founderPage) && /Kit doesn't have them yet/.test(founderPage));
 }
 
 // ── source contracts: the routes ──

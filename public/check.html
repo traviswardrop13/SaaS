@@ -208,7 +208,8 @@
       if(practice.length===0) txt="Great news — every sound we checked is on track or right on schedule for age "+AGE+". Keep it up with daily play!";
       else txt="A few sounds are ready to practice: "+practice.join(", ")+". That's totally normal — and exactly what daily play with Echo helps with.";
       $("sumText").textContent=txt;
-      // build a readable report for the emailed version (forwarded to GHL)
+      // a readable report, kept on this page: the lead post below carries the
+      // email and campaign tags only — no report, and never the child's name
       var onTrack=[],dev=[];
       results.forEach(function(r){ var c=classify(r); if(c==="ok")onTrack.push(r.s); else if(c==="dev")dev.push(r.s); });
       var rl=[(CHILD?CHILD+"'s":"Your child's")+" Speech Check — age "+AGE, "", txt, ""];
