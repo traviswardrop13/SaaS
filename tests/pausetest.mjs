@@ -113,6 +113,22 @@ function fakeDevice(config) {
         }
       },
       getByteFrequencyData(data) { data.fill(0); if (h.voice) for (const bin of [2,4,6,8]) data[bin] = 230; },
+      // The engine's speech-evidence read (REPGUARD1) uses these. Four narrow
+      // lines are rightly not a voice, so the float reads carry what one is:
+      // the same 187.5Hz pitch with harmonics spread across the speech band.
+      getFloatTimeDomainData(data) {
+        const live = h.voice && this.graph && this.graph.connected && this.graph.stream.track.readyState === 'live';
+        for (let i = 0; i < data.length; i++) {
+          let v = 0;
+          if (live) { const phase = 2 * Math.PI * 187.5 * i / 48000; for (let k = 1; k <= 24; k++) v += 0.12 / k * Math.sin(k * phase); }
+          data[i] = v;
+        }
+      },
+      getFloatFrequencyData(data) {
+        const live = h.voice && this.graph && this.graph.connected && this.graph.stream.track.readyState === 'live';
+        const binHz = 24000 / data.length;
+        for (let i = 0; i < data.length; i++) data[i] = live && i * binHz < 6000 ? (i % 4 === 0 ? -40 : -70) : -110;
+      },
       disconnect() {},
     };
   };

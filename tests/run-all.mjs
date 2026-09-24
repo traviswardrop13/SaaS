@@ -25,6 +25,7 @@ const SUITES = [
   "onboardingtest.mjs", // reviewed setup, permission and explicit handoff
   "progressreviewtest.mjs", // honest parent counts, local clips and explicit sharing
   "repguardtest.mjs", // non-speech evidence cannot create practice
+  "speechevidencetest.mjs", // SPEECHEV1: that rule in room noise, at 30fps, for held/quiet sounds and early answers
   "betatest.mjs",  // onboarding flow + beta pulse + founding banner
   "calltest.mjs",  // Coach Call script variants + weekly cap (dev-gated)
   "packtest.mjs",  // call memory, wins card, buddy sprites, adventure tile

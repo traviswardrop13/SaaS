@@ -90,3 +90,34 @@ The first integration battery also had three navigation/timing timeouts (day1, p
 While the release checks ran, production advanced to ce59e43 (#120), making `/` rewrite to `/for-slps.html`. The installed Capacitor app loads that root; this explains the observed clinician entry. The native guard now protects that rewritten root too. The browser clinician homepage, dashboard, consent/roster changes and optional parent email feature are retained. The browser setup clinician link is available only outside the native app; native draft routing remains parent-only.
 
 The completed pre-integration 40-suite run passed 39 suites, with only the disclosed repguard failure. After integrating current production, native entry passed 32/32 including `/`, the syntax suite and production build passed, and targeted parent/clinician/referral checks were rerun. Full runner retains 42 suites, including both upstream SLP suites and the unchanged noise acceptance suite. No new noise-detector behavior is shipped here.
+
+
+## Noise-filter review candidate — 24 September 2026
+
+Review item 1 now has an integrated candidate on `codex/sona-noise-guard`,
+based on production `77190cc`. It reuses the earlier filter from `fc30d3e`
+and preserves the newer final 350 ms of active listening, exactly-once credit,
+pause/resume, microphone-replacement qualification, interrupted-recording
+exclusion, and 20-second cap. No pricing, purchase, SLP-dashboard or clinical
+cue changes are included.
+
+The unchanged noise suite improves from 64/74 on the original page to 74/74,
+including detectable events for all 19 shipped adult targets. Pause/recovery
+passes 152 assertions. Two added real-recorded final-try scenarios pass 8/8;
+the original filter at immutable `fc30d3e` fails six of those checks because
+it stops collecting evidence after five frames and saves no practice. The final combined battery passes all 49 groups (exit 0), including 156
+speech-evidence checks. TypeScript and syntax checks pass.
+
+**This remains a review candidate, not clinical approval.** Earlier filter
+measurements found missed very soft steady F and quiet L, fewer P releases in
+noise, and fewer synthetic child M/N repetitions in some conditions. Those
+losses are not resolved by passing normal-volume adult recordings. Rachel
+should review quiet/held F/TH/L, M/N, short P/T/K, actual room noise and Low
+Power Mode on an iPhone before release. The existing cues are unchanged.
+
+The filter rejects the tested pure tones, electrical hum and steady noise.
+Actual humming, blowing, household hiss, brief household sounds, changing
+noise, buzzy toys and nearby speech can still count. It does not identify who
+spoke or reliably exclude TV. Automated checks are muted and use synthetic
+streams or shipped adult recordings; no physical-device or child-voice
+validation has been performed. Audio stays on the device.

@@ -1015,6 +1015,166 @@
       return "pass";
     }
 
+    // ---- speech evidence (REPGUARD1). The energy detector below finds EVENTS:
+    // anything louder than the room. An event becomes a try only once it has
+    // shown evidence a spoken sound carries, judged over the whole event
+    // rather than frame by frame — a per-frame veto was tried and threw away
+    // real P evidence, and a continuous 150ms speech gate rejected real
+    // M/N/THV/V, brief stops and weak fricatives (APP_REVIEW_2026-09-22.md).
+    // One of:
+    //   VOICED — a voice pitch (100-700Hz) held for ~45ms, carried either by a
+    //     spectrum spread over 1.2kHz above the room or by at least 3 clear
+    //     overtones of that pitch (2 from 250Hz up: a child's pitch fits
+    //     fewer under the ~1kHz a noisy room leaves audible). A voice is a
+    //     ladder of overtones; a pure tone has none, and a mains-type hum's
+    //     few sit inside its fundamental's smear. Overtones, not width, keep
+    //     M/N/V countable over a fan or TV, which bury everything above ~1kHz.
+    //   SIBILANT — BROAD, with its hiss 8dB above its own 0.3-1.5kHz band,
+    //     for 150ms: an S or SH, however long and steady the hold. White
+    //     noise is flat and breath, fans and rooms slope the other way; a
+    //     steam or kettle hiss is acoustically an S and does count.
+    //   SHORT — BROAD (1.2kHz of the band over the room), at least ~45ms long
+    //     and over within a second, like one said sound: a T/K/P release, a
+    //     quick "fff" or "zz". A fan, hum or white noise goes on and on.
+    //   CHANGING — BROAD and, once it has lasted a second, its loudness
+    //     swells or fades 4.5dB within the last 0.8s: a long breath-driven
+    //     F/TH/L does; steady machine hiss and slow gain drift do not. The
+    //     first and latest 30ms are ignored so a hard switch-on/off edge is
+    //     not a swell. A soft, dead-steady voiceless hold longer than a second
+    //     that is not an S/SH can therefore earn nothing (Rachel's call).
+    // The rule's thresholds are milliseconds, not animation frames (WebKit
+    // drops to 30fps in Low Power Mode); the loudness contour takes a point a
+    // frame (at most one per 14ms) and the detector's own onset is still 4
+    // loud frames. The
+    // room is the per-bin MEDIAN of the silent quarter-second, like the
+    // energy threshold below, so an answer in its last moments (under half
+    // of it) does not raise either.
+    // What this cannot do (one microphone): tell humming from M, blowing or
+    // rustling from F/TH, a hiss (steam, a tap, spray) from S, a clap, knock,
+    // cough or other short household sound from T/K/P, a buzzy toy or timer
+    // tone from a voice, bass-heavy or swelling noise that starts mid-turn
+    // from speech, or the child from a nearby voice, pet, TV or music.
+    // Without float analyser reads (old WebKit) it counts on energy exactly
+    // as before rather than guess. Only numbers are read; nothing extra is
+    // recorded.
+    var EVID={broadHz:1200, overtones:3, voicedMs:45, sibDb:8, sibMs:150, minMs:45, shortMs:1000, quietMs:130, changeDb:4.5, spanMs:800, edgeMs:30};
+    function speechEvidence(){
+      var an=null,off=false,rate=48000,binHz=46.875,etd=null,efd=null,cal=[],calAt=-1e9,bgDb=null,cur=null;
+      function db(p){ return p>0 ? 4.342944819*Math.log(p) : -Infinity; }
+      // Pitch by YIN's cumulative-mean-normalised difference: the first lag
+      // whose d' falls under 0.2, walked to its local minimum. Searching from
+      // lag 2 lets a high tone report its own pitch, not a voice-range
+      // sub-harmonic. A voice with a weak fundamental dips shallowly at half
+      // its period (Rachel's G reads 400Hz for 195Hz): when that first dip is
+      // shallow and the one at twice the lag is under half as deep, the
+      // longer period is the pitch. A clean tone or hum dips to ~0 at its own
+      // period and is never moved. Returns 0 when nothing periodic is found.
+      function pitch(x){
+        var maxLag=Math.min(Math.floor(rate/100),x.length>>1),W=x.length-maxLag,run=0,best=0,bestD=0.2,second=false,end=maxLag,alt=0,altD=1,t,n,d,v,dp;
+        for(t=1;t<=end;t++){
+          d=0; for(n=0;n<W;n++){ v=x[n]-x[n+t]; d+=v*v; }
+          run+=d; dp=run>0?d*t/run:1;
+          if(t<2) continue;
+          if(!second){
+            if(dp<bestD){ best=t; bestD=dp; }
+            else if(best){
+              if(bestD<0.05||best*1.8>maxLag) break;
+              second=true; end=Math.min(maxLag,Math.round(best*2.2));
+            }
+          }else if(t>=best*1.8&&dp<altD){ alt=t; altD=dp; }
+        }
+        if(alt&&altD<bestD/2) best=alt;
+        return best ? rate/best : 0;
+      }
+      // Harmonics 2-9 (below 5kHz) of f0 that stand clear of the room (6dB),
+      // of the spectrum halfway to their neighbours (3dB), and within 40dB
+      // of the strongest harmonic.
+      function overtones(f0){
+        var lv=[],k,c,v,top=-Infinity,n=0;
+        for(k=1;k<=9&&k*f0<5000;k++){ c=Math.round(k*f0/binHz); v=Math.max(efd[c-1],efd[c],efd[c+1]); lv.push(c,v); if(v>top)top=v; }
+        for(k=2;k*2<=lv.length;k++){
+          c=lv[k*2-2]; v=lv[k*2-1];
+          if(v>=bgDb[c]+6 && v>=top-40 && v>=Math.max(efd[Math.round((k-0.5)*f0/binHz)],efd[Math.round((k+0.5)*f0/binHz)])+3) n++;
+        }
+        return n;
+      }
+      // power-mean level of a band, in dB
+      function band(a,b){
+        var k,p=0,n=0,lo=Math.ceil(a/binHz),hi=Math.min(efd.length-1,Math.floor(b/binHz));
+        for(k=lo;k<=hi;k++){ p+=Math.pow(10,efd[k]/10); n++; }
+        return n ? db(p/n) : -Infinity;
+      }
+      function med3(a,b,c){ return Math.max(Math.min(a,b),Math.min(Math.max(a,b),c)); }
+      return {
+        attach:function(node,sampleRate){
+          an=node; rate=sampleRate||48000;
+          off=!(node.getFloatTimeDomainData&&node.getFloatFrequencyData);
+          var n=node.fftSize||1024; binHz=rate/n;
+          if(!etd||etd.length!==n){ etd=new Float32Array(n); efd=new Float32Array(n>>1); cal=[]; bgDb=null; }
+        },
+        // the same silent quarter-second that sets the rep threshold, sampled
+        // at most every 8ms so the whole of it counts at any frame rate.
+        // Exact digital silence is the audio path still starting (a phone's
+        // mic warms up), never a room: it is skipped.
+        calibrate:function(now){
+          if(!an||off||cal.length>=60||now-calAt<8) return;
+          an.getFloatFrequencyData(efd);
+          for(var k=0;k<efd.length;k++) if(efd[k]>-Infinity){ calAt=now; cal.push(new Float32Array(efd)); return; }
+        },
+        settle:function(){
+          var k,j,n=cal.length,col=[];
+          bgDb=new Float32Array(efd.length);
+          for(k=0;k<bgDb.length;k++){
+            if(!n){ bgDb[k]=-100; continue; }
+            col.length=0; for(j=0;j<n;j++) col.push(cal[j][k]);
+            col.sort(function(a,b){ return a-b; });
+            bgDb[k]=Math.max(-100,col[n>>1]);
+          }
+        },
+        drop:function(){ cur=null; },
+        // One loud frame of the current event. True once the event qualifies.
+        frame:function(now){
+          if(off) return true;
+          if(!bgDb) this.settle();
+          an.getFloatTimeDomainData(etd); an.getFloatFrequencyData(efd);
+          if(!cur) cur={t0:now,t1:now,n:0,broad:0,run0:-1,sib0:-1,pts:[],pt:-1e9,ok:false,why:''};
+          var lo=Math.ceil(90/binHz),hi=Math.min(efd.length-1,Math.floor(8000/binHz)),wide=0,k,s=0;
+          for(k=lo;k<=hi;k++) if(efd[k]>=bgDb[k]+12) wide++;
+          for(k=0;k<etd.length;k++) s+=etd[k]*etd[k];
+          var broad=wide*binHz>=EVID.broadHz,f0=pitch(etd);
+          var voiced=f0>=100&&f0<=700&&(broad||overtones(f0)>=(f0>=250?EVID.overtones-1:EVID.overtones));
+          var sib=broad&&Math.max(band(2500,5000),band(5000,Math.min(10000,rate/2-200)))-band(300,1500)>=EVID.sibDb;
+          cur.t1=now; cur.n++; if(broad) cur.broad++;
+          if(!voiced) cur.run0=-1; else if(cur.run0<0) cur.run0=now;
+          if(!sib) cur.sib0=-1; else if(cur.sib0<0) cur.sib0=now;
+          // loudness contour: at most one point per ~14ms, 3-point median
+          if(now-cur.pt>=14){ cur.pts.push(now,Math.max(-120,db(s/etd.length))); cur.pt=now; }
+          if(cur.ok) return true;
+          if(cur.run0>=0&&now-cur.run0>=EVID.voicedMs){ cur.why='voiced'; return (cur.ok=true); }
+          if(cur.sib0>=0&&now-cur.sib0>=EVID.sibMs){ cur.why='sibilant'; return (cur.ok=true); }
+          if(cur.broad*2<=cur.n||now-cur.t0<=EVID.shortMs) return false;
+          // each point is the median of it and its neighbours when those
+          // sit within ~45ms (60fps and up); at slower frame rates three
+          // points would smear 100ms of breath, so the point stands alone
+          var P=cur.pts,i,a=null,b=null,c=null,ta=0,tb=0,tc=0,m,mn=Infinity,mx=-Infinity;
+          for(i=0;i<P.length;i+=2){
+            if(P[i]<cur.t0+EVID.edgeMs||P[i]>now-EVID.edgeMs||P[i]<now-EVID.spanMs) continue;
+            a=b; b=c; c=P[i+1]; ta=tb; tb=tc; tc=P[i];
+            if(a!==null){ m=tc-ta<=45?med3(a,b,c):b; if(m<mn)mn=m; if(m>mx)mx=m; }
+          }
+          if(mx-mn>=EVID.changeDb){ cur.why='changing'; cur.ok=true; }
+          return cur.ok;
+        },
+        // An event that went quiet without qualifying: was it one short sound?
+        brief:function(){
+          return off || (!!cur && cur.t1-cur.t0>=EVID.minMs && cur.t1-cur.t0<=EVID.shortMs && cur.broad*2>cur.n);
+        },
+        quietFor:function(now){ return cur ? now-cur.t1 : 0; },
+        // which evidence counted the event, for on-device debugging (__evid)
+        route:function(){ return off ? 'energy' : cur&&cur.why ? cur.why : 'short'; }
+      };
+    }
+
     // ---- rapid-fire rep engine: one attempt can span visible mic segments. ----
     var micStream=null, reps=0, engineOn=false, chunks=[], rec=null, anyReps=false, micOk=false;
     var engineControl=null, engineAttempt=null, attemptInterrupted=false;
@@ -1048,7 +1208,8 @@
         var attempt={cancelled:false,settled:false,segment:null}; engineAttempt=attempt;
         reps=0; paintReps(0); chunks=[]; rec=null; shapeReset(); attemptInterrupted=false;
         recognitionTexts=[]; recognitionRemaining=9000; recognitionState=null;
-        var voiced=0,silent=0,inBurst=false,thr=0,calN=0,calSum=0,lastRep=0,burstFrames=[];
+        var voiced=0,silent=0,inBurst=false,thr=0,calRms=[],lastRep=0,burstFrames=[];
+        var evid=speechEvidence(),counted=false,heardAt=0,burstAt=0;
         var elapsed=0,clockBase=performance.now(),nudges=0,nextNudge=8000,idleDisabled=false,successAt=null;
         function closed(){return attempt.cancelled || practiceClosed || engineAttempt!==attempt;}
         function finishAttempt(value){
@@ -1060,7 +1221,7 @@
           pause:function(){
             if(attempt.settled)return;
             attemptInterrupted=true; chunks=[];
-            voiced=0; silent=0; inBurst=false; burstFrames=[];
+            voiced=0; silent=0; inBurst=false; burstFrames=[]; counted=false; evid.drop();
             if(attempt.segment)attempt.segment.finish("pause");
           },
           cancel:function(){
@@ -1073,7 +1234,7 @@
         engineControl=control;
         function runSegment(){return new Promise(function(segmentDone){
           // A replacement stream must qualify its own burst after an interruption.
-          voiced=0;silent=0;inBurst=false;burstFrames=[];
+          voiced=0;silent=0;inBurst=false;burstFrames=[];counted=false;evid.drop();
           var seg={startedAt:performance.now(),modelMs:0,modelAt:null,closed:false,reason:null,timers:[],raf:null,src:null,recorder:null};
           attempt.segment=seg;
           function current(){return !closed() && !seg.closed && attempt.segment===seg;}
@@ -1103,6 +1264,10 @@
             var ctx=getCtx(),src=ctx.createMediaStreamSource(micStream),an=ctx.createAnalyser();
             seg.src=src; an.fftSize=512;src.connect(an);
             var td=new Uint8Array(an.fftSize),fd=new Uint8Array(an.frequencyBinCount),binHz=ctx.sampleRate/an.fftSize;
+            // Evidence reads its own unsmoothed analyser, so the shape
+            // checker's smoothed bytes above are untouched.
+            var ev=ctx.createAnalyser(); ev.fftSize=ctx.sampleRate>=88200?2048:ctx.sampleRate>=32000?1024:512; ev.smoothingTimeConstant=0; src.connect(ev);
+            evid.attach(ev,ctx.sampleRate);
             // Independent recorder files cannot be concatenated into one clip.
             // Interrupted attempts retain reps/evidence but skip the keepsake.
             if(!attemptInterrupted && window.MediaRecorder && micStream){try{
@@ -1121,6 +1286,7 @@
               if(idleDisabled||nudges>=2)return;
               later(function(){
                 if(reps!==0||!micLive()){idleDisabled=true;return;}
+                if(inBurst){nextNudge=activeMs()+250;armIdle();return;} // a sound is still being judged
                 nudges++;playPrompt();nextNudge=activeMs()+8000;armIdle();
               },nextNudge-activeMs());
             }
@@ -1129,9 +1295,12 @@
             function tick(){
               if(!current() || practicePaused)return;
               var wallNow=performance.now();
+              // Echo starting to talk ends listening for now: a short sound
+              // that already finished is judged first, then the event drops.
+              if(speaking||ttsPlaying||_sayN)judgePending(wallNow);
               if(speaking||ttsPlaying||_sayN){
                 if(seg.modelAt===null)seg.modelAt=wallNow;
-                silent++;voiced=0;inBurst=false;burstFrames=[];
+                silent++;voiced=0;inBurst=false;burstFrames=[];counted=false;evid.drop();
                 try{mw.classList.remove("hear");$("echoBuddy").classList.remove("heard");}catch(e){}
                 seg.raf=requestAnimationFrame(tick);return;
               }
@@ -1140,40 +1309,54 @@
               an.getByteTimeDomainData(td);an.getByteFrequencyData(fd);
               var sum=0;for(var i=0;i<td.length;i++){var d=(td[i]-128)/128;sum+=d*d;}
               var rms=Math.sqrt(sum/td.length),active=activeMs(),now=wallNow;
-              if(active<250){calSum+=rms;calN++;seg.raf=requestAnimationFrame(tick);return;}
-              if(!thr)thr=Math.max(0.035,(calSum/Math.max(1,calN))*3.0);
-              // Keep the existing event detector until a replacement accepts
-              // the whole sound inventory. The reviewed hard classifier rejected
-              // real M/N/THV/V and short stops; see APP_REVIEW_2026-09-22.md.
-              // This is an energy event, not proof of speech. The open noise
-              // regressions must pass before the review's item 1 can be closed.
+              if(active<250){calRms.push(rms);evid.calibrate(now);seg.raf=requestAnimationFrame(tick);return;}
+              // 3x the MEDIAN quiet-check loudness: a child who answers in its
+              // last moments no longer lifts the bar over their own voice.
+              // Exact zeros (the audio path still starting) are not the room.
+              if(!thr){calRms=calRms.filter(function(v){return v>0;}).sort(function(a,b){return a-b;});thr=Math.max(0.035,(calRms.length?calRms[calRms.length>>1]:0)*3.0);}
+              // The energy detector finds the event and its timing; the try
+              // waits for speech evidence (speechEvidence above). An event
+              // that never shows any is not a try: no count, no "heard", and
+              // its frames never reach the shape checker.
               if(rms>thr){
                 voiced++;silent=0;
-                if(!inBurst)burstFrames.push(new Uint8Array(fd));
-                if(!inBurst&&voiced>=4&&(successAt!==null||now-lastRep>350)){
-                  inBurst=true;
-                  burstFrames.forEach(function(frame){shapeFrame(frame,binHz);});burstFrames=[];
-                  // Finish hearing the last try without awarding another. A
-                  // resumed tail still needs a qualified burst, not one click.
-                  if(successAt===null){
-                    lastRep=now;reps++;
-                    paintReps(reps);sfx("tap");
-                    var l=$("leo");l.classList.remove("cheer");void l.offsetWidth;l.classList.add("cheer");
-                    try{mw.classList.add("hear");$("echoBuddy").classList.add("heard");}catch(e){}
-                    if(reps>=NEED){successAt=activeMs()+350;later(finishTail,350);}
-                  }
+                if(!inBurst&&voiced>=4&&(successAt!==null||now-lastRep>350)){inBurst=true;burstAt=now;}
+                if(!counted){
+                  burstFrames.push(new Uint8Array(fd));
+                  if(evid.frame(now)&&inBurst)countRep(now);
                 }else if(inBurst) shapeFrame(fd,binHz);
               }else{
                 silent++;voiced=0;
-                if(!inBurst)burstFrames=[];
-                if(silent>=3){try{mw.classList.remove("hear");$("echoBuddy").classList.remove("heard");}catch(e){}}
-                if(silent>=8){inBurst=false;burstFrames=[];}
+                if(!inBurst){burstFrames=[];evid.drop();}
+                if(silent>=3&&now-heardAt>250){try{mw.classList.remove("hear");$("echoBuddy").classList.remove("heard");}catch(e){}}
+                // A short sound (a T/K/P release, a quick "fff") is judged once
+                // it has been quiet ~130ms, or when the event closes if sooner.
+                if(inBurst&&!counted&&(silent>=8||evid.quietFor(now)>=EVID.quietMs)&&evid.brief())countRep(now);
+                if(silent>=8){inBurst=false;counted=false;burstFrames=[];evid.drop();}
               }
               seg.raf=requestAnimationFrame(tick);
             }
+            function countRep(now){
+              counted=true;
+              burstFrames.forEach(function(frame){shapeFrame(frame,binHz);});burstFrames=[];
+              // Keep hearing the final try, including after a pause, without
+              // awarding another rep or replaying its reward.
+              if(successAt!==null)return;
+              reps++;heardAt=now;lastRep=burstAt;
+              try{ (window.__evid=window.__evid||[]).push(evid.route()); }catch(e){}
+              paintReps(reps);sfx("tap");
+              var l=$("leo");l.classList.remove("cheer");void l.offsetWidth;l.classList.add("cheer");
+              try{mw.classList.add("hear");$("echoBuddy").classList.add("heard");}catch(e){}
+              if(reps>=NEED){successAt=activeMs()+350;later(finishTail,350);}
+            }
+            // A short sound that ended just before time ran out or Echo spoke
+            // still counts; one still going cannot be judged and is dropped.
+            function judgePending(now){if(inBurst&&!counted&&silent>0&&evid.brief())countRep(now);}
             // Coaching and background pauses must not spend listening time.
             function finishTail(){var remaining=successAt-activeMs();if(remaining<=0)seg.finish("done");else later(finishTail,remaining);}
-            function deadline(){var remaining=20000-activeMs();if(remaining<=0)seg.finish("done");else later(deadline,remaining);}
+            // Preserve the existing 20-second cap, even for a final short try.
+            function deadline(){var remaining=20000-activeMs();if(remaining<=0){judgePending(performance.now());seg.finish("done");}else later(deadline,remaining);}
+
             later(deadline,20000-activeMs());
             if(successAt!==null)later(finishTail,successAt-activeMs());
             tick();
@@ -1201,6 +1384,7 @@
             var result=await runSegment();
             if(result==="cancel"||closed()){finishAttempt(false);return;}
             if(result==="microphone"){
+              voiced=0; silent=0; inBurst=false; burstFrames=[]; counted=false; evid.drop();
               stopMic(); if(!(await showQuiet("microphone"))){finishAttempt(false);return;}
               continue;
             }
