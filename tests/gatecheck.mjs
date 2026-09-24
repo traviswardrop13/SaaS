@@ -95,7 +95,7 @@ for (const f of ["settings.html", "progress.html", "subscribe.html"]) {
   await pg.goto("http://localhost:8141/today.html"); await pg.waitForTimeout(300);
   await pg.evaluate(() => {
     localStorage.setItem("sona.freeera.v1", "post"); localStorage.setItem("sona.freeera2.v1", "done");
-    localStorage.setItem("sona.freeera3.v1", "done");
+    localStorage.setItem("sona.freeera3.v1", "done"); localStorage.setItem("sona.freeera4.v1", "done");
     Sona.saveProfile({ childName: "Mia", childAge: "7", focusSounds: ["R"], onboarded: true });
   });
 

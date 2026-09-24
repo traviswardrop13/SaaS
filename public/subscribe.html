@@ -156,7 +156,12 @@
     <!-- native paywall (App Store build): ONE plan, Apple's sheet, required
          restore + legal links. Stripe never shows inside the shell. -->
     <div class="card" id="iapCard" style="display:none;">
-      <h2 id="iapTitle">Pick your plan</h2>
+      <!-- The plan is SONA PREMIUM, named as such on every surface that sells
+           it (24 Sep 2026): the "See the plan" button on the Premium page and
+           the one-time offer after a first run both land here, and a card
+           titled "Sona Yearly" beside "only if you keep Sona" read as buying
+           Sona itself — which, with a free version, nobody has to. -->
+      <h2 id="iapTitle">Start your free days of Sona Premium</h2>
       <div class="proof">
         <span class="pem">🎓</span>
         <span><b>Built with Rachel — licensed pediatric speech-language pathologist</b> &amp; Sona co-founder. Real speech practice, disguised as games kids ask to play.</span>
@@ -170,15 +175,15 @@
            is never offered for purchase again. -->
       <div class="plan best" id="iapPlan">
         <span class="tag">3 DAYS FREE · EVERYTHING INCLUDED</span>
-        <b>Sona Yearly — <span id="iapPrice">$59.99/yr</span></b>
+        <b>Sona Premium — <span id="iapPrice">$59.99/yr</span></b>
         <span class="save">One plan, billed once a year.</span>
-        <span class="sub">Nothing is charged during your 3 free days. Every game, the Sound Check, the weekly plan, the progress report.</span>
+        <span class="sub">Nothing is charged during your 3 free days. Sona Premium: every game in the library. Daily practice and four free games stay free either way.</span>
         <button class="btn go" id="iapBuy">Start 3 days free</button>
         <span class="reassure" id="iapMath">No charge today — cancel anytime during your free days.</span>
         <div class="tl trial" id="iapTL"></div>
       </div>
       <p class="muted" id="iapMsg" style="margin-top:10px;font-weight:800;font-size:12.5px;min-height:16px;"></p>
-      <p class="muted" style="margin-top:8px;font-size:11.5px;line-height:1.5;">Sona Yearly starts with a 3-day free trial, then renews at the yearly price shown above. Payment is charged to your Apple&nbsp;ID; the subscription renews unless canceled at least 24 hours before the period ends. Manage or cancel in Settings&nbsp;→&nbsp;Subscriptions.</p>
+      <p class="muted" style="margin-top:8px;font-size:11.5px;line-height:1.5;">Sona Premium (yearly) starts with a 3-day free trial, then renews at the yearly price shown above. Payment is charged to your Apple&nbsp;ID; the subscription renews unless canceled at least 24 hours before the period ends. Manage or cancel in Settings&nbsp;→&nbsp;Subscriptions.</p>
       <p style="margin-top:10px;font-weight:800;font-size:11px;">
         <button id="iapRestore" style="border:none;background:none;color:var(--blue-d);font-weight:800;font-size:12px;cursor:pointer;padding:4px 6px;text-decoration:underline;">Restore Purchases</button>
         · <a href="/terms" style="color:#8a6f52;">Terms of Use</a>
@@ -190,12 +195,18 @@
       <!-- "Pick your plan" over ONE plan asked a parent to choose between a
            thing and nothing. There is one plan; the heading says what the
            button does. -->
-      <h2>Start your free days</h2>
+      <h2>Start your free days of Sona Premium</h2>
       <div class="proof">
         <span class="pem">🎓</span>
         <span><b>Built with Rachel — licensed pediatric speech-language pathologist</b> &amp; Sona co-founder. Real speech practice, disguised as games kids ask to play.</span>
       </div>
-      <p class="muted" style="font-size:13.5px;font-weight:700;">One plan, everything included — every game, the Sound Check, the weekly plan, the progress report.</p>
+      <!-- SONA PREMIUM, and only what it actually adds (24 Sep 2026). Since the
+           free version shipped, daily practice is free for every family, so
+           this card sells GAMES — every game in the library — and says
+           plainly that practice stays free either way. Listing the Sound
+           Check or the progress report here would imply the free version
+           lacks them; it does not. -->
+      <p class="muted" style="font-size:13.5px;font-weight:700;">Sona Premium opens every game in the library, for every child on this device. Daily practice and four free games stay free either way.</p>
       <!-- WEB CARD — exact dollars, because Stripe reads its prices from this
            repo. ONE PLAN as of 18 Sep 2026: $119.88 and "save $59.89" left
            with the monthly tier, because both were only 12 x $9.99 and a
@@ -206,7 +217,7 @@
            final row move with it. -->
       <div class="plan best" id="planLife">
         <span class="tag">3 DAYS FREE · EVERYTHING INCLUDED</span>
-        <b id="webTitle">Sona Yearly — $59.99/yr</b>
+        <b id="webTitle">Sona Premium — $59.99/yr</b>
         <!-- CHARTER. Filled by /api/charter at load: while the first fifty
              spots last, this names the standard price and how many are left
              (the count only when Stripe answered it — a guessed scarcity
@@ -217,7 +228,7 @@
              owns that figure. -->
         <span class="reassure" id="charterLine" style="display:none;font-weight:800;color:#46a302;"></span>
         <span class="save">Under $5 a month, billed once a year.</span>
-        <span class="sub">Every game, every sound, every update as it ships. Nothing is charged for the first 3 days.</span>
+        <span class="sub">Every game in the library, both age groups, and every new game as it ships. Nothing is charged for the first 3 days.</span>
         <button class="btn go" id="buyLife">Start 3 days free</button>
         <span class="reassure" id="trialMath">No charge today — cancel anytime during your free days.</span>
         <div class="tl trial" id="webTL"></div>
@@ -227,13 +238,29 @@
         </span>
       </div>
       <p class="muted" id="pickMsg" style="margin-top:10px;font-weight:800;font-size:12.5px;"></p>
-      <p class="muted" id="webRenew" style="margin-top:8px;font-size:11.5px;line-height:1.5;">Sona Yearly renews at $59.99 a year after the 3-day free trial. Cancel anytime in your account.</p>
+      <p class="muted" id="webRenew" style="margin-top:8px;font-size:11.5px;line-height:1.5;">Sona Premium renews at $59.99 a year after the 3-day free trial. Cancel anytime in your account.</p>
     </div>
 
     <p id="declineRow" style="display:none;text-align:center;margin-top:18px;">
-      <a href="/today.html" id="declineLink" class="btn ghost" style="width:auto;padding:12px 22px;display:inline-block;text-decoration:none;">Not now — back to Sona</a>
+      <a href="/today.html" id="declineLink" class="btn ghost" style="width:auto;padding:12px 22px;display:inline-block;text-decoration:none;">Not now — keep the free version</a>
       <span class="muted" style="display:block;margin-top:8px;font-size:12.5px;font-weight:700;">Your practice round is still there whenever you want it.</span>
     </p>
+
+    <!-- WHAT STAYS FREE — shown, while pricing is live, to a family who does
+         not have Premium, directly under the offer. Since 24 Sep 2026 saying
+         no to the plan does not mean losing Sona: practice is never behind
+         the paywall. A parent deciding whether to pay deserves to see what
+         they keep if they don't, in the same place they see the price. -->
+    <div class="card" id="freeTierCard" style="display:none;">
+      <h2>What stays free</h2>
+      <ul class="free">
+        <li>Daily speech practice — the whole adventure, every day</li>
+        <li>Four free games — two for each age group, open to every child</li>
+      </ul>
+      <!-- the one phrase every family surface uses for the free version
+           (24 Sep 2026); "two games" undersold what gameAccess opens -->
+      <p class="muted" style="font-size:13px;font-weight:700;margin-top:10px;">Daily practice and four free games stay free for good. Sona Premium adds every other game; nothing about practice changes either way.</p>
+    </div>
 
     <!-- The "working with a speech therapist?" card lived here. The SLP side
          is HIDDEN (Travis, 19 Sep 2026 — not a priority): a referred family
@@ -327,6 +354,18 @@
     // clinician handing Sona to a family never hits a wall.
     var FREE=false; try{ FREE=!!(Sona.isFree&&Sona.isFree()); }catch(e){}
 
+    // The header line for a family who holds Premium without having bought it
+    // here. Where it came from is said out loud: a clinician's plan can end,
+    // and a parent who was never told it was theirs cannot plan for that.
+    function premiumLine() {
+      var why = "every game is open.";
+      try {
+        if (Sona.caseCovered && Sona.caseCovered()) why = "included through your child's speech therapist.";
+        else if (Sona.getProfile().earlyAdopter) why = "yours to keep — you were here while Sona was free.";
+      } catch (e) {}
+      document.getElementById("planLine").innerHTML = 'Your plan: <b style="color:var(--good);">Sona Premium ✓</b> — ' + why;
+    }
+
     // The dated trial timeline, one builder for both paywalls.
     //
     // Every row has to survive a parent checking it against reality: the dates
@@ -347,11 +386,11 @@
       if (!d3) return;                       // no dates, no timeline — the prose line stays
       var where = native ? "Settings → Subscriptions" : "your account";
       var last = native
-        ? "Your yearly plan starts, at the price above — only if you kept Sona."
-        : "Your yearly plan starts: " + (window.__yearPrice || "$59.99") + " for the year — only if you kept Sona.";
+        ? "Sona Premium's yearly plan starts, at the price above — only if you kept Premium."
+        : "Sona Premium's yearly plan starts: " + (window.__yearPrice || "$59.99") + " for the year — only if you kept Premium.";
       el.innerHTML =
-        '<div class="tli now"><span class="tld">⭐</span><b>Today, ' + d0 + ' — everything unlocks</b>' +
-          '<p>Every game, the Sound Check and the weekly plan. Nothing is charged today.</p></div>' +
+        '<div class="tli now"><span class="tld">⭐</span><b>Today, ' + d0 + ' — every game unlocks</b>' +
+          '<p>Every game in Sona Premium opens. Nothing is charged today.</p></div>' +
         '<div class="tli clock"><span class="tld">⏰</span><b>' + d2 + ' — still free</b>' +
           '<p>Cancel any time before day 3 in ' + where + ' and you keep the rest of your free days.</p></div>' +
         '<div class="tli lock"><span class="tld">🔓</span><b>' + d3 + '</b><p>' + last + '</p></div>';
@@ -372,10 +411,14 @@
       // Pricing is live. These three cards are the free-era story — "Free while
       // we build together", "no auto-charges", "What free includes" — and they
       // sat directly under the buy buttons contradicting them. They stay for
-      // founding and SLP-referred families, for whom the story is still TRUE;
-      // everyone else is being sold to and must not be told it's free.
+      // the families for whom that story is still TRUE: every grandfathered
+      // free era (earlyAdopter — which, through the era-four sweep, includes
+      // every device that redeemed a clinician's link before 24 Sep 2026) and
+      // founders. A clinician's link redeemed AFTER that is not in this
+      // cohort: slpVerified() no longer means "free forever", so it no longer
+      // earns the story that says so.
       var _founding = false;
-      try { _founding = !!(Sona.getProfile().earlyAdopter) || !!(Sona.slpVerified && Sona.slpVerified()) || !!(Sona.isFounder && Sona.isFounder()); } catch (e) {}
+      try { _founding = !!(Sona.getProfile().earlyAdopter) || !!(Sona.isFounder && Sona.isFounder()); } catch (e) {}
       if (!_founding) {
         try {
           ["foundingCard", "remindCard", "freeIncludesCard"].forEach(function (id) {
@@ -395,6 +438,10 @@
         document.getElementById("pickCard").style.display = "none";
         var fc = document.getElementById("foundingCard"); if (fc) fc.style.display = "none";
         if (subbed) { document.getElementById("planLine").innerHTML = 'Your plan: <b style="color:var(--good);">Active ✓</b> — thank you for backing Sona.'; return; }
+        // Premium from somewhere else — a grandfathered free era, a covered
+        // caseload, a founder key — is never offered Apple's sheet: selling a
+        // family what they already have is the one sale Sona must not make.
+        if (Sona.premium && Sona.premium()) { premiumLine(); return; }
         if (!(Sona.iapAvailable && Sona.iapAvailable())) return; // old binary: no purchase UI at all
         document.getElementById("iapCard").style.display = "block";
         try { if (window.SonaAnalytics) SonaAnalytics.track("paywall viewed", { surface: "native" }); } catch (e) {}
@@ -407,13 +454,13 @@
         // monthly was retired — a ratio against a plan nobody can buy is the
         // same invented was-price a strike-through would be, and it sent a
         // parent looking for a monthly button that is not on the card.
-        document.getElementById("planLine").innerHTML = "Yearly: <b>3 days free</b>, then one charge a year — cancel any time before it.";
+        document.getElementById("planLine").innerHTML = "Today: the <b>free version</b>. Sona Premium: <b>3 days free</b>, then one charge a year — cancel any time before it.";
         // greet the onboarding hand-off warmly
-        if (/[?&]welcome=1/.test(location.search)) document.getElementById("iapTitle").textContent = "One last thing — start your free days";
+        if (/[?&]welcome=1/.test(location.search)) document.getElementById("iapTitle").textContent = "One last thing — start your free days of Sona Premium";
         try {
           var d3 = new Date(Date.now() + 3 * 86400000);
           var t3 = d3.toLocaleDateString("en-US", { month: "long", day: "numeric" });
-          document.getElementById("iapMath").innerHTML = "No charge today — first charge <b>" + t3 + "</b>, only if you keep Sona. Cancel anytime before then.";
+          document.getElementById("iapMath").innerHTML = "No charge today — first charge <b>" + t3 + "</b>, only if you keep Sona Premium. Cancel anytime before then.";
         } catch (e) {}
         trialTimeline("iapTL", true);
         Sona.iapProduct("annual").then(function (p) {
@@ -503,7 +550,7 @@
       if (!row || !a) return;
       // a family who cannot be sold to is not being asked, so there is nothing
       // for them to decline
-      var asked = true; try { asked = !(Sona.isFree && Sona.isFree()) && !(Sona.isSubscribed && Sona.isSubscribed()); } catch (e) {}
+      var asked = true; try { asked = !(Sona.isFree && Sona.isFree()) && !(Sona.premium && Sona.premium()); } catch (e) {}
       if (!asked) return;
       row.style.display = "block";
       a.addEventListener("click", function () {
@@ -512,21 +559,25 @@
       });
     })();
 
-    // Cohort routing: founding/SLP families keep the free story; the trial
-    // cohort (ad/organic signups) gets the plan picker. Subscribers see neither.
+    // Cohort routing: whoever already has Premium — subscribers, founding
+    // families, a covered clinician's caseload, founders — is never shown the
+    // picker; everyone else (the free version) gets the plan AND, right under
+    // it, what stays free if they say no. premium() is the one test, the same
+    // one the gate and the plan moment read.
     (function () {
       try {
-        var P = Sona.getProfile ? Sona.getProfile() : {};
         var subbed = Sona.isSubscribed && Sona.isSubscribed();
-        var founding = !!P.earlyAdopter;
+        var hasPremium = !!(Sona.premium && Sona.premium());
         if (FREE) return;                                  // free mode: no picker
         if (Sona.isNativeApp && Sona.isNativeApp()) return; // shell handled above
-        if (!subbed && !founding) {
+        if (hasPremium && !subbed) premiumLine();
+        if (!hasPremium) {
           document.getElementById("pickCard").style.display = "block";
-          try{ if(/[?&]welcome=1/.test(location.search)) document.querySelector("#pickCard h2").textContent = "One last thing — pick your plan"; }catch(e){}
+          var ft = document.getElementById("freeTierCard"); if (ft) ft.style.display = "block";
+          try{ if(/[?&]welcome=1/.test(location.search)) document.querySelector("#pickCard h2").textContent = "One last thing — start your free days of Sona Premium"; }catch(e){}
           var fc = document.getElementById("foundingCard"); if (fc) fc.style.display = "none";
           // the header line must match the picker, not the founding story
-          document.getElementById("planLine").innerHTML = "Yearly: <b>3 days free</b>, then $59.99/yr — <b>under $5 a month</b>, billed once a year.";
+          document.getElementById("planLine").innerHTML = "Today: the <b>free version</b>. Sona Premium: <b>3 days free</b>, then $59.99/yr — <b>under $5 a month</b>, billed once a year.";
         }
       } catch (e) {}
       function buy(plan, value) {
@@ -556,7 +607,7 @@
         var _d = new Date(Date.now() + 3 * 86400000);
         var _t = _d.toLocaleDateString("en-US", { month: "long", day: "numeric" });
         var _tm = document.getElementById("trialMath");
-        if (_tm) _tm.innerHTML = "No charge today — first charge <b>" + _t + "</b>, only if you keep Sona. Cancel anytime before then.";
+        if (_tm) _tm.innerHTML = "No charge today — first charge <b>" + _t + "</b>, only if you keep Sona Premium. Cancel anytime before then.";
       } catch (e) {}
       trialTimeline("webTL", false);
       var lf = document.getElementById("buyLife");
@@ -585,10 +636,10 @@
           } else {
             // spots gone: every figure on this card becomes the standard tier
             yearValue = 99.99; window.__yearPrice = j.standard;
-            var t = document.getElementById("webTitle"); if (t) t.textContent = "Sona Yearly — " + j.standard + "/yr";
+            var t = document.getElementById("webTitle"); if (t) t.textContent = "Sona Premium — " + j.standard + "/yr";
             var sv = document.querySelector("#planLife .save"); if (sv) sv.textContent = "Under $8.50 a month, billed once a year.";
-            var pl = document.getElementById("planLine"); if (pl) pl.innerHTML = "Yearly: <b>3 days free</b>, then " + j.standard + "/yr — <b>under $8.50 a month</b>, billed once a year.";
-            var rn = document.getElementById("webRenew"); if (rn) rn.textContent = "Sona Yearly renews at " + j.standard + " a year after the 3-day free trial. Cancel anytime in your account.";
+            var pl = document.getElementById("planLine"); if (pl) pl.innerHTML = "Today: the <b>free version</b>. Sona Premium: <b>3 days free</b>, then " + j.standard + "/yr — <b>under $8.50 a month</b>, billed once a year.";
+            var rn = document.getElementById("webRenew"); if (rn) rn.textContent = "Sona Premium renews at " + j.standard + " a year after the 3-day free trial. Cancel anytime in your account.";
             trialTimeline("webTL", false);
           }
           release();

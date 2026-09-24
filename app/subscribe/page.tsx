@@ -5,14 +5,17 @@ import { Suspense, useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { FREE_MODE } from "@/lib/pricing";
 
-// Shown under whichever plan is selected, so every line has to be true on
-// ONE PLAN. The FEATURES list below may safely say the trial is part of it:
-// with monthly retired there is no plan it could be a lie on.
+// Shown under the one plan, so every line has to be true of it. The plan is
+// SONA PREMIUM (24 Sep 2026): Sona has a free version — daily practice and
+// four free games (two per age group), for every family — so this list sells
+// only what Premium adds, and says out loud what stays free either way, in
+// the one phrase every family surface uses. A feature every family already
+// has does not belong on a price card.
 const FEATURES = [
-  "Every game and every level, unlocked",
+  "Every game in the library, for both age groups",
   "Starts with 3 free days — cancel anytime, no charge",
-  "Every new sound and update as it ships",
-  "Your suggestions shape Sona for your child",
+  "Every new game as it ships",
+  "Daily practice and four free games stay free, whether or not you subscribe",
   "Priority support",
 ];
 
@@ -134,7 +137,7 @@ function PaidPicker() {
         <div className="rounded-3xl bg-white p-7 shadow-chunky ring-2 ring-sky-500">
           <div className="flex items-center gap-2">
             <p className="text-sm font-extrabold uppercase tracking-wide text-sky-600">
-              Sona Yearly
+              Sona Premium · yearly
             </p>
             <span className="rounded-full bg-amber-400 px-2 py-0.5 text-[11px] font-extrabold uppercase tracking-wide text-amber-900">
               3 days free
@@ -159,7 +162,7 @@ function PaidPicker() {
           </div>
 
           <p className="mt-3 rounded-2xl bg-sky-50 px-4 py-3 text-sm font-semibold text-sky-700">
-            <b>$0 today.</b> Your first 3 days are free. On day 3, if you keep Sona,
+            <b>$0 today.</b> Your first 3 days are free. On day 3, if you keep Sona Premium,
             it&apos;s {yearPrice} for the year and {yearPrice} each year after. Cancel before
             day 3 and you are charged nothing at all.
           </p>
@@ -223,12 +226,13 @@ function PaidPicker() {
             Secure payment by Stripe. We never see your card details.
           </p>
 
-          {/* A grandfather sweep ships with this build, so families from the
-              free era are already entitled and this page is not for them. If
-              that sweep is ever changed or dropped, this sentence becomes a
-              broken promise — delete it in the same commit or not at all. */}
+          {/* The era-four grandfather sweep ships with this build (as eras one
+              to three shipped with theirs), so families from every free era
+              already have Premium and this page is not for them. If a sweep is
+              ever changed or dropped, this sentence becomes a broken promise —
+              delete it in the same commit or not at all. */}
           <p className="mt-5 rounded-2xl bg-gray-50 px-4 py-3 text-center text-xs font-bold leading-relaxed text-gray-500">
-            Already practicing with Sona while it was free? Your family keeps it free.
+            Already using Sona while it was free? Your family keeps every game.
             There is nothing to buy and nothing to do.
           </p>
 

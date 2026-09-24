@@ -9,17 +9,24 @@
        a captured pageview URL (the whole reason share links point here and not
        at the Next landing page, which does load analytics). The invite token
        (?inv=, present when the clinician set this child up ahead of time)
-       rides the same strip for the same reason. -->
+       rides the same strip for the same reason, and so does ?me= — the
+       single-use token in the link a clinician emails THEMSELVES to try Sona
+       on their own phone. -->
   <script>
     (function () {
       try {
         var q = new URLSearchParams(location.search);
-        window.__slp = { code: q.get("slp") || "", key: q.get("k") || "", inv: q.get("inv") || "" };
+        window.__slp = { code: q.get("slp") || "", key: q.get("k") || "", inv: q.get("inv") || "", me: q.get("me") || "" };
         history.replaceState({}, "", "/join.html");
-      } catch (e) { window.__slp = { code: "", key: "", inv: "" }; }
+      } catch (e) { window.__slp = { code: "", key: "", inv: "", me: "" }; }
     })();
   </script>
-  <title>Sona — free access from your speech therapist</title>
+  <!-- CONNECT, NOT UNLOCK (24 Sep 2026). Every word on this page used to say
+       the link granted "free access", which was true when a redemption WAS
+       the grant. It connects a family to their clinician now; what is free
+       is free for every family, and every game comes only when the
+       clinician's caseload is covered — which the page says when it is. -->
+  <title>Sona — connect with your speech therapist</title>
   <!-- the SLP side is hidden (19 Sep 2026): reachable by direct link, not by search -->
   <meta name="robots" content="noindex">
   <link href="/fonts.css" rel="stylesheet">
@@ -44,9 +51,9 @@
   <div class="jwrap">
     <div class="jhero">
       <img src="/coach/echo/echo-celebrate.svg" alt="Echo" onerror="this.onerror=null;this.src='/coach/echo/echo-idle.svg';" />
-      <h1 id="jTitle">Unlocking your free access…</h1>
+      <h1 id="jTitle">Connecting you to your speech therapist…</h1>
     </div>
-    <p class="jmsg" id="jMsg">Your speech therapist gave you free access to Sona. One moment…</p>
+    <p class="jmsg" id="jMsg">One moment…</p>
 
     <!-- manual fallback: shown only if the link's credential didn't verify -->
     <div class="jcard" id="jForm" style="display:none;">
@@ -54,10 +61,10 @@
       <input id="jCode" type="text" autocomplete="off" placeholder="e.g. rachel-k4" />
       <label for="jKey">Family key</label>
       <input id="jKey" type="text" autocomplete="off" placeholder="e.g. ABCD2345" />
-      <button class="jbtn" id="jGo">Unlock free access</button>
+      <button class="jbtn" id="jGo">Connect</button>
       <div id="jStatus" class="muted"></div>
     </div>
-    <!-- consent, asked AFTER the unlock is already granted: sharing is a
+    <!-- consent, asked AFTER access is already settled: sharing is a
          separate decision from access, and saying no costs the family nothing -->
     <div class="jcard" id="jConsent" style="display:none;">
       <div style="font-family:'Baloo 2';font-weight:800;font-size:17px;" id="jConsentTitle">Share progress with your therapist?</div>
@@ -68,6 +75,20 @@
       <p class="muted" style="font-weight:700;font-size:13px;line-height:1.55;margin-top:8px;" id="jConsentBody"></p>
       <button class="jbtn" id="jYes">Yes, share progress</button>
       <button class="jbtn" id="jNo" style="background:#fff;color:var(--muted,#8a6f52);box-shadow:0 5px 0 #f0e4d2;margin-top:10px;">No thanks — just use Sona</button>
+    </div>
+    <!-- The grown-up's OWN email, asked only after the sharing question is
+         answered and never as a condition of anything: an empty box and
+         Continue is a complete answer. The list line comes BEFORE the box, in
+         Travis's words, because an address typed here joins the Kit list.
+         What leaves: the email and the role "parent". Never the child's name,
+         age or the clinician's code — the address is about the grown-up. -->
+    <div class="jcard" id="jEmail" style="display:none;">
+      <div style="font-family:'Baloo 2';font-weight:800;font-size:17px;">One last thing — optional</div>
+      <p class="muted" style="font-weight:700;font-size:13px;line-height:1.55;margin-top:8px;" id="jEmailLine">Leave your email to hear from Sona. Nothing about your child is sent with it. We'll also send occasional tips from Rachel. Unsubscribe anytime.</p>
+      <label for="jEmailInput">Your email</label>
+      <input id="jEmailInput" type="email" inputmode="email" autocomplete="email" placeholder="you@email.com" />
+      <button class="jbtn" id="jEmailGo">Continue</button>
+      <div id="jEmailStatus" class="muted" style="font-weight:800;font-size:13px;margin-top:10px;min-height:18px;"></div>
     </div>
   </div>
 
@@ -109,15 +130,66 @@
           }).catch(function () {});
         } catch (e) {}
       }
-      // The credential verified: free access is ALREADY granted (slpRedeem set
-      // the device unlock). Sharing is the separate question — enrolling is
+      // The optional email step, after the sharing answer. An address that
+      // looks like one goes to /api/lead (then Kit, tagged as a parent); an
+      // empty box goes straight on. The family never waits on the list:
+      // keepalive, then into the app.
+      //
+      // NO ATTRIBUTION RIDES THIS LEAD (24 Sep 2026) — no campaign tags, no
+      // landing page, no referrer, no clinician code, and no ad-pixel "Lead".
+      // Every family on this page arrived through a clinician's caseload
+      // link, and the affiliate rule is that a payout is STRUCTURALLY
+      // impossible for such a family. A lead that carried a creator's
+      // campaign tag or landing URL is exactly the record a payout would one
+      // day key on; this one carries the grown-up's address and nothing else.
+      function askEmail() {
+        var box = document.getElementById("jEmail"), input = document.getElementById("jEmailInput"),
+            st = document.getElementById("jEmailStatus"), btn = document.getElementById("jEmailGo");
+        box.style.display = "block";
+        btn.onclick = function () {
+          var em = (input.value || "").trim();
+          if (em && !/^\S+@\S+\.\S+$/.test(em)) { st.style.color = "#b42323"; st.textContent = "That email doesn't look right — fix it, or clear the box to skip."; return; }
+          btn.disabled = true;
+          if (em) {
+            try {
+              fetch("/api/lead", {
+                method: "POST", headers: { "Content-Type": "application/json" }, keepalive: true,
+                body: JSON.stringify({ email: em, source: "join", role: "parent", summary: "Parent joined through their clinician" }),
+              }).catch(function () {});
+              // kept on the device too, where every other page already looks
+              // for the grown-up's email (the plan screen, Settings)
+              var cur = Sona.getProfile() || {};
+              if (!cur.email) Sona.saveProfile({ email: em });
+            } catch (e) {}
+          }
+          go();
+        };
+        try { input.focus({ preventScroll: true }); } catch (e) {}
+      }
+      // The credential verified: this device holds the enrolment ticket. What
+      // it opens is the clinician's to say — Premium when their caseload is
+      // covered, the free version (daily practice and four free games) when
+      // it is not, and the free version is free for everyone either way, so
+      // "free" is true on every branch and "unlock" is true on none. Sharing is the separate question — enrolling is
       // what actually puts this child on the clinician's dashboard, because
       // sendProgress() no-ops without consent. Saying no keeps the free app.
       function askConsent(code, name) {
-        title.textContent = "You're in — it's free! 🎉";
-        msg.textContent = name ? ("Free access via " + name + ".") : "Free access unlocked.";
+        title.textContent = "You're connected! 🎉";
+        // true on every branch: the free version is every family's
+        var connected = name ? ("You're connected to " + name + ".") : "You're connected.";
+        msg.textContent = connected + " Daily practice and four free games are free.";
         form.style.display = "none";
         consent.style.display = "block";
+        // Ask the server, now, whether this caseload is covered — and say so
+        // when it is, so the grown-up knows why every game is open. Nothing
+        // waits on this: an unanswered question leaves the page as it is.
+        try {
+          if (Sona.caseRefresh) Sona.caseRefresh(true).then(function (covered) {
+            // only while the question is still on screen: a grown-up who has
+            // already answered is reading the line that answer produced
+            if (covered && consent.style.display !== "none") msg.textContent = connected + " Daily practice is free, with every game in Sona Premium included.";
+          }, function () {});
+        } catch (e) {}
         document.getElementById("jConsentBody").textContent =
           "If you say yes, " + (name || "your child's speech therapist") + " will see your child's first name and age as you entered them, " +
           "which sounds they are practicing, practice days and how many tries each day, and a rough pass rate per sound. " +
@@ -130,38 +202,46 @@
           consent.style.display = "none";
           title.textContent = "All set! 🎉";
           msg.textContent = "Your therapist will see practice progress. Let's meet Echo.";
-          setTimeout(go, 1100);
+          askEmail();
         };
         document.getElementById("jNo").onclick = function () {
-          // declining shares nothing — and costs nothing; the unlock stands
+          // declining shares nothing — and costs nothing; access stands, and
+          // coverage never asked for consent in the first place
           try { Sona.saveProfile({ slpShare: false }); } catch (e) {}
           consent.style.display = "none";
           title.textContent = "No problem!";
           msg.textContent = "Nothing will be shared, and Sona is still free for you. Let's meet Echo.";
-          setTimeout(go, 1100);
+          askEmail();
         };
       }
       function attempt(code, key, fromForm) {
         if (!code || !key) { showForm(); return; }
         if (fromForm) { status.style.color = "var(--muted)"; status.textContent = "Checking…"; }
-        Sona.slpRedeem(code, key).then(function (r) {
+        var me = ""; try { me = (window.__slp && window.__slp.me) || ""; } catch (e) {}
+        Sona.slpRedeem(code, key, me).then(function (r) {
           if (r.valid) {
-            // grant first, ask second — the unlock must not depend on the answer
+            // access first, ask second — what this device may open must not
+            // depend on the sharing answer. The code is tagged for the roster;
+            // NO earlyAdopter is written (24 Sep 2026): Premium for a new
+            // redemption comes only from the clinician's coverage, which
+            // slpRedeem has already asked the server about.
             try {
-              Sona.saveProfile({ earlyAdopter: true, slpCode: String(code).toUpperCase() });
+              Sona.saveProfile({ slpCode: String(code).toUpperCase() });
               localStorage.setItem("sona.slp", String(code).toUpperCase());
             } catch (e) {}
             askConsent(String(code).toUpperCase(), r.name);
           } else {
             showForm();
             status.style.color = "#b42323";
-            status.textContent = r.error === "offline" ? "Couldn't reach the server — try again." : "That code and key don't match — check with your therapist.";
+            // A server sentence (the link is full, the check is down) is the true
+            // reason; "don't match" is only true when the server said no.
+            status.textContent = r.error === "offline" ? "Couldn't reach the server — try again." : (typeof r.error === "string" && r.error ? r.error : "That code and key don't match — check with your therapist.");
           }
         });
       }
       function showForm() {
         title.textContent = "Enter your SLP's code";
-        msg.textContent = "Type the code and family key your speech therapist gave you — Sona is free for their families.";
+        msg.textContent = "Type the code and family key your speech therapist gave you. Daily practice and four free games are free for every family.";
         form.style.display = "block";
         try { if (window.__slp && window.__slp.code) document.getElementById("jCode").value = window.__slp.code; } catch (e) {}
       }

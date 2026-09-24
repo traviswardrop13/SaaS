@@ -31,21 +31,29 @@ await new Promise((r) => srv.listen(8178, r));
 const browser = await chromium.launch(launchOpts());
 let fails = 0;
 const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL ") + n + (p ? "" : "  → " + (extra || ""))); };
-const seed = (age) => `localStorage.setItem("sona.profile.v1",JSON.stringify({childName:"Mia",childAge:"${age}",focusSounds:["R"],onboarded:true,voiceOn:false}))`;
+// `premium` seeds a family holding every game (a grandfathered free-era
+// profile). Since 24 Sep 2026 Sona has a free version, so a plain seed is a
+// family on it: Premium games locked, practice and the free games open. The
+// pins about what Home, the trio and the mystery door ARE use the Premium
+// family, so they hold whichever way the pricing switch points; the pins
+// about what the free version locks say so and use the seam.
+const seed = (age, premium) => `localStorage.setItem("sona.profile.v1",JSON.stringify({childName:"Mia",childAge:"${age}",focusSounds:["R"],onboarded:true,voiceOn:false${premium ? ",earlyAdopter:true" : ""}}))`;
 
-async function home(age) {
+async function home(age, premium) {
   const ctx = await browser.newContext();
   const pg = await ctx.newPage();
   await pg.goto("http://localhost:8178/today.html");
-  await pg.evaluate(seed(age || "7"));
+  await pg.evaluate(seed(age || "7", premium));
   await pg.goto("http://localhost:8178/today.html");
   await pg.waitForTimeout(700);
   return { ctx, pg };
 }
 
 // ── 1. the home opens on today's adventure, with three games ready ──
+// A family with every game (see seed): whether anything is locked by a BOOK is
+// the question here, and Premium must not answer it for the book.
 {
-  const { ctx, pg } = await home("7");
+  const { ctx, pg } = await home("7", true);
   const st = await pg.evaluate(() => ({
     cta: document.getElementById("goBtn").textContent.trim(),
     launch: document.getElementById("goBtn").dataset.launch,
@@ -72,6 +80,35 @@ async function home(age) {
   const u = new URL(pg.url());
   ok("tapping a game opens it through charge.html (say the sound first)",
     pg.url() !== before && ((u.pathname === "/charge.html" && /game=arcade-/.test(u.search)) || u.pathname === "/arcade-feed.html"), pg.url());
+  await ctx.close();
+}
+
+// ── 1b. the SAME Home on the free version (24 Sep 2026) ──
+// Practice is still the hero and still one tap; what locks is exactly the
+// trio's Premium games — each saying "Premium", none saying a price — and a
+// free game still opens through charge.html. Through the ?paid=1 seam, so it
+// holds whichever way the switch points.
+{
+  const { ctx, pg } = await home("7");
+  await pg.evaluate(() => sessionStorage.setItem("sona.paidui", "1"));
+  await pg.goto("http://localhost:8178/today.html"); await pg.waitForTimeout(700);
+  const st = await pg.evaluate(() => ({
+    launch: document.getElementById("goBtn").dataset.launch,
+    cards: [...document.querySelectorAll("#thumbs .thumb[data-key]")].map((e) => ({ key: e.dataset.key, locked: e.classList.contains("locked"),
+      tier: (Sona.gameAct(e.dataset.key) || {}).tier, tag: (e.querySelector(".premiumTag") || {}).textContent || "" })),
+  }));
+  ok("on the free version the hero is still today's adventure, one tap away",
+    /charge\.html\?daily=1/.test(st.launch) && !/demo=1/.test(st.launch), st.launch);
+  ok("…exactly the Premium games are locked, each saying Premium",
+    st.cards.length === 3 && st.cards.every((c) => c.locked === (c.tier === "premium") && (!c.locked || c.tag === "Premium")), JSON.stringify(st.cards));
+  const free = st.cards.filter((c) => !c.locked)[0];
+  if (free) {
+    await pg.evaluate((k) => document.querySelector('#thumbs [data-key="' + k + '"]').click(), free.key);
+    await pg.waitForTimeout(600);
+    const u = new URL(pg.url());
+    ok("…and a free game still opens through charge.html",
+      (u.pathname === "/charge.html" && /game=arcade-/.test(u.search)) || u.pathname === "/arcade-feed.html", pg.url());
+  }
   await ctx.close();
 }
 
@@ -307,8 +344,11 @@ async function home(age) {
 }
 
 // ── 8. the mystery game is ADDITIVE — a fourth door, bought with reps ──
+// …and a PREMIUM door since 24 Sep 2026: the free version is practice plus its
+// games, and a fourth game a day is what Premium adds. So these pins run for a
+// family with every game, and the free version's closed door is pinned below.
 {
-  const { ctx, pg } = await home("7");
+  const { ctx, pg } = await home("7", true);
   // GAMES1: the story gate went with the books. Coins only come from reps
   // (COIN1), so a purchase is practice-backed without it.
   const broke = await pg.evaluate(() => ({ can: Sona.canBuyMystery(), bought: Sona.buyMystery(), coins: Sona.getCoins() }));
@@ -328,6 +368,21 @@ async function home(age) {
     mystery: !!document.querySelector("#thumbs .thumb.mystery"),
   }));
   ok("the bought game appears as a fourth card", shown.mystery && shown.cards === 4, JSON.stringify(shown));
+  await ctx.close();
+}
+{
+  const { ctx, pg } = await home("7");
+  const closed = await pg.evaluate(() => {
+    sessionStorage.setItem("sona.paidui", "1");
+    Sona.addCoins(500);
+    const r = { can: Sona.canBuyMystery(), bought: Sona.buyMystery(), coins: Sona.getCoins() };
+    return r;
+  });
+  ok("on the free version, coins alone never open the mystery door — and are never spent trying",
+    closed.can === false && closed.bought === null && closed.coins >= 500, JSON.stringify(closed));
+  await pg.goto("http://localhost:8178/today.html"); await pg.waitForTimeout(700);
+  ok("…and Home offers no mystery card to buy",
+    await pg.evaluate(() => !document.querySelector("#thumbs .thumb.mystery")));
   await ctx.close();
 }
 
@@ -378,11 +433,26 @@ async function home(age) {
     await ctx.close();
     return path;
   }
+  // A family with every game: a typed URL is refused for want of an EARNED
+  // turn, and goes home. (24 Sep 2026: the seed is Premium on purpose — on the
+  // free version a Premium game is refused one step earlier, for want of
+  // Premium, and that refusal is pinned separately just below.)
+  const PREMIUM = 'const p=JSON.parse(localStorage.getItem("sona.profile.v1"));p.earlyAdopter=true;localStorage.setItem("sona.profile.v1",JSON.stringify(p))';
   for (const g of ARCADE) {
-    ok(`${g} can't be opened by typing its URL`, (await land(g)) === "/today.html", g);
+    ok(`${g} can't be opened by typing its URL`, (await land(g, PREMIUM)) === "/today.html", g);
   }
   ok("…not even once today's adventure is done",
-    (await land("arcade-slice.html", "Sona.dailyFinish(10)")) === "/today.html");
+    (await land("arcade-slice.html", PREMIUM + ";Sona.dailyFinish(10)")) === "/today.html");
+  // the free version: a free game typed in goes home like any other; a
+  // Premium one goes to the library's lock, which asks for a grown-up — never
+  // to a price
+  for (const g of ARCADE) {
+    const key = g.replace(/^arcade-|\.html$/g, "");
+    const tier = key === "slice" || key === "stack" ? "free" : "premium";
+    const to = await land(g, 'sessionStorage.setItem("sona.paidui","1")', true);
+    ok(`on the free version, typed ${g} is refused (${tier})`,
+      tier === "free" ? to === "/today.html" : to === "/activities.html?locked=" + key, to);
+  }
   // a round the child already EARNED must never be interrupted — charge.html
   // gates before it hands off, and a session started at 11:58pm would
   // otherwise be thrown out at midnight when the day rolls over
@@ -418,7 +488,7 @@ async function home(age) {
   await pg.goto("http://localhost:8178/today.html"); await pg.waitForTimeout(400);
   await pg.evaluate(() => {
     localStorage.clear(); sessionStorage.clear();
-    localStorage.setItem("sona.freeera.v1", "post"); localStorage.setItem("sona.freeera2.v1", "done"); localStorage.setItem("sona.freeera3.v1", "done");
+    localStorage.setItem("sona.freeera.v1", "post"); localStorage.setItem("sona.freeera2.v1", "done"); localStorage.setItem("sona.freeera3.v1", "done"); localStorage.setItem("sona.freeera4.v1", "done");
     localStorage.setItem("sona.demo.v1", JSON.stringify({ started: 1, done: 1 }));
     localStorage.setItem("sona.sub.v1", JSON.stringify({ active: true, source: "stripe" }));
     localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Ada", childAge: "7", focusSounds: ["R"], onboarded: true }));

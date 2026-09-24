@@ -89,7 +89,7 @@
       <p id="previewError" role="status" hidden></p>
     </section>
     <a id="keepFree" href="/activities.html">Keep playing free</a>
-    <p class="free-note" id="premiumFreeNote">Two free games for each age group stay available.</p>
+    <p class="free-note" id="premiumFreeNote">Daily practice and four free games stay free.</p>
     <p class="books-note"><strong>Books are coming soon.</strong> They aren’t part of the available library yet.</p>
   </main>
   <script src="/sona.js"></script>
@@ -108,7 +108,11 @@
         var plan=S.previewPlan(),allOpen=catalog.length>0&&catalog.every(function(item){return S.gameAccess(item.key).allowed;}),chosenOpen=game&&S.gameAccess(key).allowed;
         el("premiumGameCount").textContent="All "+catalog.length+" games in the library";
         var freeNames=catalog.filter(function(item){return item.tier==="free";}).map(function(item){return item.name;});
-        el("premiumFreeNote").textContent=freeNames.join(", ")+" stay free. Two games for each age group.";
+        // ONE PHRASE for the free version on every family surface (24 Sep
+        // 2026): gameAccess opens every free-tier game to every child — two
+        // per age group, four in all — so "two games" undersold it here while
+        // Home said four. tests/freemiumtest.mjs pins the phrase.
+        el("premiumFreeNote").textContent="Daily practice and four free games stay free: "+freeNames.join(", ")+".";
         el("premiumPreviewNotice").hidden=!preview;
         el("previewTrial").hidden=!preview||plan.state==="trial";
         el("previewExpire").hidden=!preview||plan.state!=="trial";
@@ -122,7 +126,31 @@
         el("keepFree").textContent=allOpen?"Back to the library":"Keep playing free";
         el("premiumFreeNote").hidden=allOpen;
         el("premiumCardTitle").textContent=allOpen?"Your library is ready.":"Every game. Both age groups.";
+        if(!preview&&!S.isFree())paintOffer(allOpen);
         var art=S.gameSticker(key||"peekaboo");S.paintSticker(el("premiumArt"),art[0],art[1]);
+      }
+      // THE REAL OFFER (24 Sep 2026). With pricing live, every locked tile on
+      // Home, "See Premium" in the parent corner and the library's unlock
+      // button land here — and the page still said "price to be confirmed"
+      // beside a disabled button, a dead end on the main way to buy. It now
+      // hands off to /subscribe.html, which prices from /api/charter on the
+      // web and from RevenueCat in the app, so no figure is typed here and
+      // none can drift. A family who already has Premium is told so, with
+      // where it came from, and is offered nothing. Preview mode keeps its
+      // rehearsal exactly as it was: nothing on that path can buy.
+      function paintOffer(allOpen){
+        var has=!!(S.premium&&S.premium()),buy=el("premiumBuy");
+        if(has){
+          el("premiumOffer").hidden=true;
+          el("premiumEyebrow").textContent="Sona Premium ✓";
+          el("premiumLead").textContent="You have Sona Premium"+((S.caseCovered&&S.caseCovered())?", included through your child’s speech therapist":"")+". Every game in the library is open.";
+          return;
+        }
+        if(allOpen)return;   // a live trial: every game is already open
+        el("premiumPrice").textContent="3 days free, then one yearly plan";
+        el("premiumTerms").textContent="Daily practice and four free games stay free either way.";
+        buy.disabled=false;buy.textContent="See the plan";
+        buy.onclick=function(){if(checkGate())location.href="/subscribe.html";};
       }
       function simulate(state){
         if(!checkGate())return;
@@ -133,8 +161,9 @@
       }
       el("previewTrial").onclick=function(){simulate("trial");};
       el("previewExpire").onclick=function(){simulate("expired");};
-      // No checkout or IAP calls live on this screen until the real offer is
-      // configured. Simulated trials never touch purchase or family records.
+      // No checkout or IAP call lives on this screen: the real offer is a
+      // link to the plan screen, which owns the price and the purchase.
+      // Simulated trials never touch purchase or family records.
       window.addEventListener("pageshow",function(){render();});
       document.addEventListener("visibilitychange",function(){if(!document.hidden)render();});
       render();

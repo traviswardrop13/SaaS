@@ -35,7 +35,7 @@
   <div class="wrap">
     <header><span class="leo">🦜</span><span class="name">Sona</span></header>
     <h1>Privacy Policy</h1>
-    <div class="updated">Last updated: September 21, 2026</div>
+    <div class="updated">Last updated: September 24, 2026</div>
 
     <p class="lede">Sona ("Sona," "we," "us") helps children practice their speech sounds at home,
     alongside their speech therapy. We built Sona for kids, so protecting their privacy — and giving
@@ -61,8 +61,14 @@
         practice for local playback. The sound checks run on the device; Sona does not receive these clips.</li>
       <li><strong>Optional names you provide</strong> — if you add names of family members or friends
         to personalize daily stories, that text is used to generate those stories.</li>
-      <li><strong>Payment information</strong> — handled by our payment processor (Stripe). We do not
-        receive or store full card numbers.</li>
+      <li><strong>Payment information</strong> — handled by our payment processor (Stripe) when a
+        parent buys Premium on our website, or a clinician buys Caseload Premium for their caseload.
+        We do not receive or store full card numbers. Premium bought inside the iPhone or iPad app is
+        handled by Apple.</li>
+      <li><strong>An invite email from your clinician</strong> — if your child&rsquo;s speech-language
+        pathologist typed your email address when adding your child, we use it once, to email you
+        their Sona link. We do not keep it: it is not stored, not added to any email list, and not
+        written to our logs.</li>
       <li><strong>Basic device/usage data</strong> — standard technical information (e.g., app version,
         general device type) needed to run and troubleshoot the service.</li>
     </ul>
@@ -90,9 +96,11 @@
 
     <h2>Sharing with your child&rsquo;s speech-language pathologist</h2>
     <p>If your child&rsquo;s speech-language pathologist (SLP) gave you a link to Sona, opening it
-    unlocks the app for you at no cost. Sharing your child&rsquo;s practice with that clinician is a
-    <strong>separate question</strong>, asked after the app is already unlocked, and saying no costs
-    you nothing — Sona stays free for you either way.</p>
+    connects your family to that clinician. Sona&rsquo;s free version — daily practice and four free games —
+    costs you nothing either way, and if that clinician&rsquo;s caseload has Premium, your family gets
+    every game through their link. Sharing your child&rsquo;s practice with that clinician is a
+    <strong>separate question</strong>, asked on its own: saying no costs you nothing, and it does not
+    decide whether your family gets Premium through the link.</p>
     <p><strong>If you say yes</strong>, that one clinician&rsquo;s dashboard shows: your child&rsquo;s
     first name and age as you typed them, which sounds they are practicing, which days they practiced
     and how many tries each day, and a rough pass rate per sound. They can also send practice
@@ -101,8 +109,8 @@
     <p><strong>How to stop.</strong> Open the grown-ups&rsquo; area and choose &ldquo;Stop sharing with
     your speech therapist&rdquo;. Their dashboard forgets your child immediately: first name, age,
     practice history and assignments are <em>deleted, not hidden</em>, and their device is marked so
-    later practice cannot rebuild the record. Your child&rsquo;s own progress stays on your device and
-    Sona stays free for you. A clinician can also remove a child from their own caseload, which
+    later practice cannot rebuild the record. Your child&rsquo;s own progress stays on your device, and
+    the free version stays free. A clinician can also remove a child from their own caseload, which
     deletes the same information.</p>
     <p><strong>How long it is kept.</strong> Until one of you deletes it, or automatically about 150
     days after the clinician&rsquo;s caseload last received any practice — whichever comes first. (That
@@ -119,13 +127,20 @@
         you hear. (We send the words to be spoken, not your child's recordings.)</li>
       <li><strong>Story &amp; coaching generation (AI)</strong> — generates practice stories and
         coaching tips; this may include a child's first name or names you've added, to personalize the story.</li>
-      <li><strong>Payments</strong> — Stripe processes subscriptions. Sona is free at the moment, so
-        this path is idle.</li>
+      <li><strong>Payments</strong> — Stripe processes what is bought on our website: a family&rsquo;s
+        Premium, and a clinician&rsquo;s Caseload Premium. Stripe receives the buyer&rsquo;s email address
+        and payment details, and nothing about a child.</li>
+      <li><strong>In-app purchases</strong> — Premium bought inside the iPhone or iPad app is sold and
+        billed by Apple, and RevenueCat checks with Apple whether that purchase is active, under a random
+        identifier. Neither is given a child&rsquo;s name.</li>
       <li><strong>Hosting</strong> — Vercel runs the site and its server routes.</li>
       <li><strong>Data store</strong> — Upstash holds clinician accounts, the caseload information
-        described above, and clinician sign-in sessions. It never holds audio.</li>
-      <li><strong>Clinician sign-in email</strong> — Resend delivers the sign-in link to a clinician.
-        These emails go to clinicians, never to children, and never contain a child&rsquo;s name.</li>
+        described above, clinician sign-in sessions, and a copy of Stripe&rsquo;s answer about whether a
+        clinician&rsquo;s Caseload Premium is active. It never holds audio.</li>
+      <li><strong>Email delivery</strong> — Resend delivers a clinician&rsquo;s sign-in link, and the one
+        invite email a clinician can ask us to send a parent. These emails never go to children and never
+        contain a child&rsquo;s name. A parent&rsquo;s address is given to Resend only to deliver that one
+        email; Sona keeps no copy of it.</li>
       <li><strong>Email list</strong> — Kit sends the occasional email a grown-up agreed to when they gave
         us their address. It holds that email address, a clinician&rsquo;s own first name, and whether the
         person is a clinician or a parent — never anything about a child. Unsubscribe from any of its emails.</li>
@@ -134,8 +149,9 @@
     <p>These providers may only use the information to perform their service for Sona.</p>
     <p><strong>If something goes wrong.</strong> If we confirm a breach affecting your information we
     will notify affected clinicians and parents without unreasonable delay, and within 72 hours of
-    confirming it. Where a family reached Sona through a clinician we hold no parent email address, so
-    notice to those families goes through their clinician.</p>
+    confirming it. Where a family reached Sona through a clinician we usually hold no parent email
+    address (only one a parent gave us themselves), so notice to those families goes through their
+    clinician.</p>
 
     <h2>Analytics &amp; advertising</h2>
     <p>We do <strong>not</strong> show advertising in Sona, and we do <strong>not</strong> allow
@@ -166,7 +182,8 @@
     <h2>Your choices &amp; rights</h2>
     <ul>
       <li><strong>Access &amp; deletion</strong> — email us to review or delete your or your child's information.</li>
-      <li><strong>Cancel</strong> — you can cancel your subscription at any time.</li>
+      <li><strong>Cancel</strong> — you can cancel your subscription at any time. A clinician cancels
+        Caseload Premium from their dashboard: Caseload Premium &rarr; Manage billing.</li>
       <li>Depending on where you live, you may have additional rights over your personal information; contact us to exercise them.</li>
     </ul>
 

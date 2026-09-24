@@ -15,6 +15,11 @@
 //   - an invite carries initials, never a child's name, and its message
 //     names nobody
 //   - assign from the child page posts the assignment for that child
+//   - (24 Sep 2026) what a family is promised follows the caseload's plan:
+//     the free version always, Premium only while the caseload is covered,
+//     and never "free forever" or "unlimited" again
+//   - a parent's email typed into Add a child goes to the invite route once,
+//     only when typed, and the page says whether the email really went
 import { createServer } from "http";
 import { readFileSync, existsSync } from "fs";
 import { chromium, ROOT, launchOpts } from "./_env.mjs";
@@ -50,6 +55,10 @@ function fixture() {
 // ── mock API: the shapes the routes answer with, and a log of every write ──
 let DATA = fixture();
 const log = [];
+// GET /api/slp/plan, in the route's own shape (app/api/slp/plan). Not covered
+// by default; section 9 flips it to see the family messages follow.
+const PLAN_NONE = { ok: true, active: false, source: "none", periodEnd: null, cancelAtPeriodEnd: false, price: "$79.99", perMonth: "under $7 a month", self: { eligible: true, workEmail: true, approved: false, requested: false } };
+let PLAN = PLAN_NONE;
 const acct = { ok: true, email: "rachel@example.com", code: "rachel-k4", familyKey: "ABCD2345", name: "Rachel K", clinic: "Bright Steps", onboarded: true };
 const srv = createServer((req, res) => {
   const u = new URL(req.url, "http://x");
@@ -63,7 +72,13 @@ const srv = createServer((req, res) => {
     if (u.pathname === "/api/slp" && req.method === "GET") return json({ ok: true, configured: true, kids: DATA.kids, invites: DATA.invites });
     if (u.pathname === "/api/slp/homework") return json({ ok: true, hw: b.hw || null });
     if (u.pathname === "/api/slp/child" && req.method === "DELETE") { DATA.kids = DATA.kids.filter((k) => k.childId !== b.childId); return json({ ok: true, removed: b.childId }); }
-    if (u.pathname === "/api/slp/invite" && req.method === "POST") { const inv = { token: "NEWTOKEN1234", label: b.label, age: b.age, sounds: b.sounds, pos: b.pos, repsPerDay: b.repsPerDay, note: b.note, createdAt: new Date().toISOString(), expiresAt: day(-30) }; DATA.invites.push(inv); return json({ ok: true, invite: inv, link: "http://localhost:" + PORT + "/join.html?slp=RACHEL-K4&k=ABCD2345&inv=NEWTOKEN1234" }); }
+    if (u.pathname === "/api/slp/plan" && req.method === "GET") return json(PLAN);
+    if (u.pathname === "/api/slp/invite" && req.method === "POST") {
+      const inv = { token: "NEWTOKEN1234", label: b.label, age: b.age, sounds: b.sounds, pos: b.pos, repsPerDay: b.repsPerDay, note: b.note, createdAt: new Date().toISOString(), expiresAt: day(-30) }; DATA.invites.push(inv);
+      // the route's reply: emailed, plus its own reason when the send failed
+      const mail = !b.parentEmail ? { emailed: false } : /bounce/.test(b.parentEmail) ? { emailed: false, emailError: "That's 30 emails today, the daily limit. Copy the link and send it yourself." } : { emailed: true };
+      return json({ ok: true, invite: inv, link: "http://localhost:" + PORT + "/join.html?slp=RACHEL-K4&k=ABCD2345&inv=NEWTOKEN1234", ...mail });
+    }
     if (u.pathname === "/api/slp/invite" && req.method === "DELETE") { DATA.invites = DATA.invites.filter((i) => i.token !== b.token); return json({ ok: true }); }
     if (u.pathname.startsWith("/api/")) return json({ ok: true });
     const p = u.pathname === "/slp.html" ? HTML : ROOT + u.pathname;
@@ -99,6 +114,9 @@ async function open(hash) {
   ok("Today labels its rolling practice window as the last 7 days", /3 of 6 children practiced (?:in the )?last 7 days/i.test(txt), txt.slice(0, 240));
   const cards = pg.locator("#todayBody .card");
   const groups = await pg.locator("#todayBody .card h2").allTextContents();
+  // The Premium offer has its own page (24 Sep 2026); Today answers who
+  // practiced, and a price there would crowd out the one question it is for.
+  ok("Today never sells: no price and no Premium card", !/\$\d|Premium/.test(txt), txt.slice(0, 240));
   ok("Today keeps three useful groups and pending invites", groups.length === 4 && /Gone quiet/.test(groups[0]) && /Homework ending .*or missed/.test(groups[1]) && /practiced.*last 7 days/i.test(groups[2]) && /Invited, not joined yet/.test(groups[3]), groups.join("|"));
   const quiet = cards.filter({has:pg.locator("h2",{hasText:"Gone quiet"})});
   const quietText = await quiet.textContent();
@@ -234,10 +252,83 @@ async function open(hash) {
   await pg.waitForTimeout(600);
   const post = log.find((l) => l.m === "POST" && l.p === "/api/slp/invite");
   ok("the invite posts a label and never a child field", !!post && post.b.label === "M.K." && !("child" in post.b), JSON.stringify(post && post.b));
+  ok("…and a blank parent's email sends no address at all", !!post && !("parentEmail" in post.b), JSON.stringify(post && post.b));
+  ok("…nor claims an email went", await pg.evaluate(() => document.getElementById("invEmailed").hidden));
   const msg = await pg.evaluate(() => document.getElementById("invMsg").value);
   ok("the ready message names nobody and carries the per-child link", !/M\.K\./.test(msg) && /join\.html\?slp=RACHEL-K4&k=ABCD2345&inv=NEWTOKEN1234/.test(msg) && !/pilot|trial/i.test(msg), msg);
   const pend = await pg.evaluate(() => document.getElementById("invList").textContent);
   ok("pending invites say when they delete themselves", /deletes itself/.test(pend) && /M\.K\./.test(pend), pend.slice(0, 160));
+  await ctx.close();
+}
+
+// ── 9. what a family is promised follows the plan (24 Sep 2026) ──
+// Until this build every family message said "free forever". Every game is
+// Premium now: the messages promise the free version, which stays free, and
+// name Premium only while this caseload is covered (paid or grandfathered).
+{
+  const src = readFileSync(HTML, "utf8")
+    .replace(/<!--[\s\S]*?-->/g, "").replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:])\/\/[^\n]*/g, "$1");
+  ok("the dashboard no longer promises anything 'free forever'", !/free forever/i.test(src));
+  ok("…and never says 'unlimited' — a covered caseload has a number, and the copy says every family", !/unlimited/i.test(src));
+  // ONE PHRASE FOR THE FREE VERSION (24 Sep 2026): "daily practice and four
+  // free games". It said "two games", but gameAccess() opens all four free
+  // games to every child, and Home said four — a parent told "two" by her
+  // clinician then read "four" in the app. Pinned wherever the dashboard says it.
+  ok("…and names the free version one way: four free games, never 'two games'", !/two (free )?games/i.test(src) && (src.match(/daily practice and four free games/g) || []).length >= 3, (src.match(/[^.>"]*two (free )?games[^.<"]*/i) || [""])[0]);
+
+  for (const [label, plan] of [["not covered", PLAN_NONE], ["paid", { ...PLAN_NONE, active: true, source: "paid", periodEnd: 1822000000 }], ["grandfathered", { ...PLAN_NONE, active: true, source: "grandfathered" }]]) {
+    PLAN = plan; DATA = fixture(); log.length = 0;
+    const { ctx, pg } = await open("#invite");
+    await pg.waitForTimeout(200);
+    const snip = await pg.evaluate(() => document.getElementById("snip").value);
+    const settings = await pg.evaluate(() => { location.hash = "#settings"; return new Promise((r) => setTimeout(() => r(document.getElementById("page-settings").innerText), 150)); });
+    if (plan.active) {
+      ok(`${label}: the caseload message says Premium is included`, /free for your family/.test(snip) && /Premium is included/.test(snip) && /every game/.test(snip), snip);
+      ok(`${label}: Settings says the families get every game`, /Your caseload has Premium, so they get every game too/.test(settings), settings);
+    } else {
+      ok(`${label}: the caseload message promises the free version and no Premium`, /free for your family: daily practice and four free games\./.test(snip) && !/Premium/.test(snip), snip);
+      ok(`${label}: Settings says what the free version is and where Premium lives`, /daily practice and four free games/.test(settings) && /With Caseload Premium they get every game/.test(settings), settings);
+    }
+    ok(`${label}: never pilot, trial or forever`, !/pilot|trial|forever/i.test(snip + settings), snip);
+    ok(`${label}: learning the plan is a read, never a write`, !log.some((l) => l.m !== "GET"), JSON.stringify(log.filter((l) => l.m !== "GET")));
+    await ctx.close();
+  }
+  PLAN = PLAN_NONE;
+}
+
+// ── 10. a parent's email: typed only if the clinician wants, used once ──
+{
+  DATA = fixture(); log.length = 0;
+  const { ctx, pg } = await open("#caseload");
+  await pg.evaluate(() => document.getElementById("clAdd").click()); await pg.waitForTimeout(200);
+  const help = await pg.evaluate(() => document.getElementById("invComposer").innerText);
+  ok("the composer offers an optional parent's email and says what happens to it",
+    /Parent's email/.test(help) && /\(optional\)/.test(help) && /We'll email them the link once\. We don't keep the address\./.test(help), help.slice(0, 200));
+  ok("…and the browser is not invited to fill in the clinician's own address",
+    await pg.evaluate(() => document.getElementById("invParentEmail").getAttribute("autocomplete") === "off" && document.getElementById("invParentEmail").type === "email"));
+
+  // a typo is caught before an invite exists
+  await pg.evaluate(() => { document.getElementById("invName").value = "J.T."; document.getElementById("invParentEmail").value = "not-an-email"; document.getElementById("invCreate").click(); });
+  await pg.waitForTimeout(200);
+  ok("a malformed email is refused in the composer, before any invite is made",
+    !log.some((l) => l.m === "POST" && l.p === "/api/slp/invite") && /doesn't look right/.test(await pg.evaluate(() => document.getElementById("invErr").textContent)));
+
+  await pg.evaluate(() => { document.getElementById("invParentEmail").value = "  parent@example.com "; document.getElementById("invCreate").click(); });
+  await pg.waitForTimeout(600);
+  const post = log.find((l) => l.m === "POST" && l.p === "/api/slp/invite");
+  ok("the address goes with the invite, trimmed, as parentEmail", !!post && post.b.parentEmail === "parent@example.com" && post.b.label === "J.T.", JSON.stringify(post && post.b));
+  ok("…to that one route and nowhere else", log.filter((l) => JSON.stringify(l).includes("parent@example.com")).length === 1, JSON.stringify(log.map((l) => l.p)));
+  ok("…and the page says it was emailed", /Emailed to the parent/.test(await pg.evaluate(() => document.getElementById("invEmailed").textContent)) && !(await pg.evaluate(() => document.getElementById("invEmailed").hidden)));
+  ok("…then lets go of the address", await pg.evaluate(() => document.getElementById("invParentEmail").value === ""));
+  const msg = await pg.evaluate(() => document.getElementById("invMsg").value);
+  ok("…while the ready message still carries the link to send by hand", /inv=NEWTOKEN1234/.test(msg) && !/parent@example\.com/.test(msg), msg);
+
+  // a send that did not go says so, in the route's own words
+  log.length = 0;
+  await pg.evaluate(() => { document.getElementById("invName").value = "A.B."; document.getElementById("invParentEmail").value = "bounce@example.com"; document.getElementById("invCreate").click(); });
+  await pg.waitForTimeout(600);
+  const said = await pg.evaluate(() => ({ t: document.getElementById("invEmailed").textContent, bad: document.getElementById("invEmailed").classList.contains("bad") }));
+  ok("an email that did not go shows the route's reason, never 'Emailed'", said.bad && /daily limit\. Copy the link and send it yourself/.test(said.t) && !/Emailed to the parent/.test(said.t), JSON.stringify(said));
   await ctx.close();
 }
 

@@ -50,6 +50,20 @@ ok("…one sold at the standard price, after the cap, is not", s.taken === 3);
 ok("…and a checkout that never finished paying is not", s.taken === 3);
 ok("the count says what is left, and that the door is open", s.left === CHARTER_CAP - 3 && s.open === true, JSON.stringify(s));
 
+// ── a clinician's caseload plan is not a family's charter spot (24 Sep 2026) ──
+// "Sona Premium for your caseload" is a $79.99 YEARLY subscription, live, and
+// stamped plan + slp by /api/slp/plan — never `tier`. Were it ever counted,
+// every clinician who bought it would quietly take one of the fifty $59.99
+// family spots, and "for the first 50 families" would stop being true. Even
+// if a search returned one, the count must pass it by.
+{
+  const caseload = (status, extra) => ({ ...sub("year", null, status), metadata: { plan: "slp-caseload", slp: "sam@clinic.org", ...(extra || {}) } });
+  _resetCharterMemo();
+  const c = await charterSpots(client([{ data: [caseload("active"), caseload("past_due"), caseload("trialing"), sub("year", "charter")] }]));
+  ok("a caseload subscription (plan slp-caseload, no tier) is never a charter spot, in any status",
+    c.taken === 1 && c.source === "stripe", JSON.stringify(c));
+}
+
 // ── the cap ──
 _resetCharterMemo();
 s = await charterSpots(client([{ data: Array.from({ length: CHARTER_CAP }, () => sub("year", "charter")) }]));

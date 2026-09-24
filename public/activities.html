@@ -100,7 +100,11 @@
       var library=S.activityLibrary(),selection=0,launchTimer=null,lockedGame=null;
       var unlock=document.getElementById("libraryUnlock");
       function node(tag,className,text){var el=document.createElement(tag);if(className)el.className=className;if(text)el.textContent=text;return el;}
-      function access(game){return S.gameAccess?S.gameAccess(game.key):{allowed:!S.gated("practice"),tier:game.tier,reason:S.isFree()?"free-mode":"legacy"};}
+      // A game is asked about BY NAME. The fallback (a cached sona.js without
+      // gameAccess) used to ask gated("practice"), which since 24 Sep 2026 is
+      // never gated — practice is the free version — and would have opened
+      // every Premium game. A named game asks the catalog under either copy.
+      function access(game){return S.gameAccess?S.gameAccess(game.key):{allowed:!S.gated(game.key),tier:game.tier,reason:S.isFree()?"free-mode":"legacy"};}
       function clearMessage(){notice.hidden=true;message.textContent="";lockedGame=null;app.classList.remove("has-message");}
       function showLocked(game){
         lockedGame=game;notice.hidden=false;app.classList.add("has-message");

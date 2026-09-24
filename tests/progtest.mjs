@@ -31,7 +31,7 @@ const ctx = await browser.newContext({ permissions: ["microphone"], viewport: { 
 const page = await ctx.newPage();
 await page.addInitScript(() => {
   navigator.mediaDevices.getUserMedia = () => Promise.resolve(new MediaStream());
-  if (!localStorage.getItem("sona.profile.v1")) localStorage.setItem("sona.freeera.v1","post"); localStorage.setItem("sona.freeera2.v1","done"); localStorage.setItem("sona.freeera3.v1","done"); localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Milo", focusSounds: ["R", "S"] }));
+  if (!localStorage.getItem("sona.profile.v1")) localStorage.setItem("sona.freeera.v1","post"); localStorage.setItem("sona.freeera2.v1","done"); localStorage.setItem("sona.freeera3.v1","done");localStorage.setItem("sona.freeera4.v1","done"); localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Milo", focusSounds: ["R", "S"] }));
 });
 let fails = 0;
 const ok = (n, p) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL ") + n); };
@@ -77,6 +77,14 @@ ok("deck: fresh family starts at step 0", pp.ps.steps === 0, JSON.stringify(pp.p
 // ── charge free play: round 1 = isolation, header context line ──
 // (Workstream A: the bubble target is the SUSTAINED sound — "rrrr", not
 // "your R sound" — and round context lives in the header #ctxLine.)
+// The ladder sections below open Premium games (Piano Tiles, Sound Sprint,
+// Flappy Glide). Since 24 Sep 2026 a family on the free version is bounced
+// from those before practice starts, so this family holds every game — a
+// founder key, which the per-navigation profile seed above cannot erase —
+// and the climb is tested whichever way the pricing switch points. The key
+// is dropped again before the plan-screen section, which needs a family
+// WITHOUT Premium.
+await page.evaluate(() => localStorage.setItem("sona.founder", "1"));
 await page.goto("http://localhost:8131/charge.html?game=arcade-slice.html"); await page.waitForTimeout(700);
 let c = await page.evaluate(() => ({ prompt: document.getElementById("bTarget").textContent, lbl: document.getElementById("ctxLine").textContent }));
 ok("round 1 practices isolation", /^r+$/i.test(c.prompt.trim()), c.prompt);
@@ -322,9 +330,10 @@ t = await page.evaluate(() => localStorage.getItem("sona.slp"));
 ok("?slp= link sticks (uppercased)", t === "DRSMITH22");
 // trial-cohort family (no slp, not founding) sees the plan picker on subscribe
 await page.evaluate(() => {
+  localStorage.removeItem("sona.founder");      // the ladder sections' Premium, gone
   localStorage.removeItem("sona.slp");
   const p = JSON.parse(localStorage.getItem("sona.profile.v1")); p.earlyAdopter = false; delete p.slpCode;
-  localStorage.setItem("sona.freeera.v1","post"); localStorage.setItem("sona.freeera2.v1","done"); localStorage.setItem("sona.freeera3.v1","done"); localStorage.setItem("sona.profile.v1", JSON.stringify(p));
+  localStorage.setItem("sona.freeera.v1","post"); localStorage.setItem("sona.freeera2.v1","done"); localStorage.setItem("sona.freeera3.v1","done");localStorage.setItem("sona.freeera4.v1","done"); localStorage.setItem("sona.profile.v1", JSON.stringify(p));
   sessionStorage.setItem("sona.gate.v1", String(Date.now()));
 });
 await page.goto("http://localhost:8131/subscribe.html?paid=1"); await page.waitForTimeout(700);
@@ -448,7 +457,7 @@ ok("proof strip: named SLP credential above the plan",
     await pg.goto("http://localhost:8131/today.html"); await pg.waitForTimeout(300);
     await pg.evaluate(() => {
       localStorage.clear();
-      localStorage.setItem("sona.freeera.v1", "post"); localStorage.setItem("sona.freeera2.v1", "done"); localStorage.setItem("sona.freeera3.v1", "done");
+      localStorage.setItem("sona.freeera.v1", "post"); localStorage.setItem("sona.freeera2.v1", "done"); localStorage.setItem("sona.freeera3.v1", "done"); localStorage.setItem("sona.freeera4.v1", "done");
       Sona.saveProfile({ childName: "Ada", childAge: "7", focusSounds: ["R"], onboarded: true });
       sessionStorage.setItem("sona.gate.v1", String(Date.now()));
     });
@@ -484,7 +493,7 @@ ok("proof strip: named SLP credential above the plan",
   const fpg = await fctx.newPage();
   await fpg.goto("http://localhost:8131/today.html");
   await fpg.evaluate(() => {
-    localStorage.setItem("sona.freeera.v1","post"); localStorage.setItem("sona.freeera2.v1","done"); localStorage.setItem("sona.freeera3.v1","done");
+    localStorage.setItem("sona.freeera.v1","post"); localStorage.setItem("sona.freeera2.v1","done"); localStorage.setItem("sona.freeera3.v1","done");localStorage.setItem("sona.freeera4.v1","done");
     localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Milo", childAge: "7", focusSounds: ["R"], onboarded: true, earlyAdopter: true }));
     try { Sona.gateVerify(); } catch (e) {}
   });

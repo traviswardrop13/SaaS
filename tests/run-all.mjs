@@ -16,6 +16,7 @@ const SUITES = [
   "kidtest.mjs",   // KIDS1: per-child progress, switching, family-wide entitlement
   "slpcode.mjs",   // CODES1: SLP family credential — verified redemption, honest gate
   "slpapi.mjs",    // SLPAPI1: the clinician's roster — invites ahead of the family, removal, meta the device can't overwrite
+  "caseloadtest.mjs", // CASELOAD1: the clinician's $79.99 plan — who is covered, grandfathering, own phone, parent invites
   "ttsroutetest.mjs", // voice provider, delivery cache, safe fallback and request deadline
   "voiceclienttest.mjs", // actual playback source, old-cache refresh and complete spoken turns
   "chargepacingtest.mjs", // listen/model/child-turn handoff and replay ordering
