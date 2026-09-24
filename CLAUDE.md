@@ -265,6 +265,27 @@ through that clinician's caseload code or sits on their roster — and the
 clinician's free dashboard never depends on how many of their families
 upgrade.
 
+## The email list: Kit (GoHighLevel is gone)
+**GoHighLevel was deleted on 24 Sep 2026; Kit replaced it.** Every grown-up's
+email goes through one door, `/api/lead`: the SLP sign-up (via the auth
+route's `tellCrm`), the app's setup (a clinician's account email, a parent's
+weekly-summary email) and the Speech Check. That route:
+- **keeps every lead first** in the store (`leads:all`, capped), whether or not
+  a list takes it — it once forwarded and forgot, and 26 "leads" were unfindable;
+- sends it to **Kit** (`lib/kit.ts`: create the subscriber, then the optional
+  `KIT_FORM_ID` form and a `sona-slp` / `sona-parent` tag). Only creating the
+  subscriber counts as success; a failed form or tag step is logged, not lost;
+- says `captured` only when a list actually said yes.
+
+What reaches Kit: the email, a **clinician's own** first name, and the role tag.
+Never anything about a child. Wherever an email joins the list, the page says
+so first, in Travis's words: "We'll also send occasional tips from Rachel.
+Unsubscribe anytime." Meta's `Lead` fires only when an email was given.
+
+`/leads.html` (private, behind `FOUNDER_KEY`) lists every captured email and
+every clinician account, and its "Send everyone to Kit" button is the one-time
+catch-up for everyone collected before Kit existed.
+
 ## The day: practice, then games
 **The books are parked, and Home leads with practice (Travis, 19 Sep 2026).**
 The stories "suck and don't even work"; they relaunch in Q4 once they are

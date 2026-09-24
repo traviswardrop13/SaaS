@@ -36,6 +36,18 @@ const SECRET = () =>
  * out, and a forger still cannot mint anything: minting needs SECRET(), which
  * in production is the dedicated secret or nothing at all.
  */
+/**
+ * Proof that a lead came from our own sign-up route, not a stranger. The
+ * auth route forwards every clinician sign-up to /api/lead from the server,
+ * so they all arrive from the same few Vercel addresses; a per-address flood
+ * limit on /api/lead would lump every clinician together and could turn real
+ * sign-ups away. The route signs the email with the server's own secret, and
+ * /api/lead lets a correctly signed lead past the limit.
+ */
+export function leadSig(email: string): string {
+  return crypto.createHmac("sha256", SECRET()).update("sona-lead:" + email.trim().toLowerCase()).digest("base64url");
+}
+
 function verifySecrets(): string[] {
   const out = [SECRET()];
   const legacy = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
