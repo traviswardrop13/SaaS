@@ -605,5 +605,34 @@ if (A) {
     /else if \(!j\.sent\)/.test(slps) && /didn't go out just now, so bookmark the dashboard/.test(slps));
 }
 
+
+// ── every clinician reaches the CRM exactly once ──
+{
+  const req = read("app/api/slp/auth/request/route.ts");
+  const start = req.indexOf("if (acctExists) {");
+  const existing = start > 0 ? req.slice(start, req.indexOf("return NextResponse.json", start)) : "";
+  // 23 Sep 2026: Travis signed up with his own address, got the dashboard
+  // email, and GoHighLevel never heard of him — his account predated the CRM
+  // wiring, and the CRM was told only when this route CREATED an account.
+  ok("an existing account the CRM has never heard of is sent to it on sign-in",
+    /if \(acct && !acct\.crmAt\)/.test(existing) && /await tellCrm\(/.test(existing),
+    "otherwise every clinician who signed up before the CRM was wired stays invisible to it forever");
+  ok("…once: the account is stamped when the CRM takes it, so a daily sign-in is not a daily new lead",
+    /acct\.crmAt = new Date\(\)\.toISOString\(\)/.test(existing) &&
+    /if \(captured\) await kvCmd\(\["SET", "slpacct:" \+ email, JSON\.stringify\(\{ \.\.\.acctNew, crmAt:/.test(req));
+  ok("…and a sign-in request, which is not signed in, never rewrites the account's name",
+    existing.length > 0 && !/acct\.name\s*=/.test(existing));
+}
+
+
+// ── a new clinician goes straight into the dashboard ──
+{
+  const slps = read("public/for-slps.html");
+  ok("a brand-new, signed-in clinician is taken into the dashboard without a 'check your email' stop",
+    /if \(j\.signedIn\) setTimeout\(function \(\) \{ location\.href = "\/slp\.html"; \}/.test(slps));
+  ok("…after the Lead has fired, so the pixel's request leaves first",
+    slps.indexOf('sonaTrack("Lead")') > 0 && slps.indexOf('sonaTrack("Lead")') < slps.indexOf('if (j.signedIn) setTimeout('));
+}
+
 console.log(fails ? fails + " FAILURES" : "ALL GREEN");
 process.exit(fails ? 1 : 0);

@@ -496,7 +496,10 @@
         } else if (!j.sent) {
           // Signed in, but the email was refused: the dashboard is one tap
           // away, and the page must not promise a link that is not coming.
-          $("sentMsg").textContent = "You're in — open your dashboard below. Our email to " + email + " didn't go out just now, so bookmark the dashboard to come back to it.";
+          $("sentMsg").textContent = "You're in — opening your dashboard now. Our email to " + email + " didn't go out just now, so bookmark the dashboard to come back to it.";
+          $("again").hidden = true;
+        } else if (j.signedIn) {
+          $("sentMsg").textContent = "You're in — opening your dashboard now. We've also emailed " + email + " a link for next time.";
           $("again").hidden = true;
         } else {
           $("sentMsg").textContent = "Your sign-in link is on its way to " + email + ". It opens straight into your dashboard — no password.";
@@ -512,6 +515,12 @@
           $("devbox").hidden = false;
           $("devbox").innerHTML = 'Email isn\'t configured here, so this is your link (preview only): <a href="' + j.devLink + '">Open it →</a>';
         }
+        // STRAIGHT IN (Travis, 23 Sep 2026). A brand-new account is signed in
+        // already, so it goes to the dashboard on its own rather than stopping
+        // at "check your email" — the dashboard is where the app download and
+        // the family link live. The pause lets the pixel's Lead leave first.
+        // An existing account is not signed in here and still needs its email.
+        if (j.signedIn) setTimeout(function () { location.href = "/slp.html"; }, 700);
       }).catch(function () {
         busy(false);
         err("Network hiccup — try again.");
