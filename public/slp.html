@@ -24,7 +24,7 @@
   <meta name="robots" content="noindex">
   <link href="/fonts.css" rel="stylesheet">
   <link rel="manifest" href="/manifest.webmanifest" />
-  <meta name="theme-color" content="#24786c" />
+  <meta name="theme-color" content="#fff8ef" />
   <!--
     THE CLINICIAN'S DASHBOARD (v2, 21 Sep 2026). Built around ONE problem —
     carryover: a child goes home, practices, and the clinician can see that it
@@ -54,15 +54,15 @@
   -->
   <style>
     :root {
-      --blue: #24786c; --blue-d: #1b6258; --blue-bg: #e9f3ef;
-      --green: #24786c; --green-d: #1b6258; --green-bg: #e9f3ef;
-      --ink: #243c3a; --muted: #687875; --line: #e4eae7;
-      --bg: #f5f7f6; --card: #fff;
+      --blue: #137f8b; --blue-d: #09636e; --blue-bg: #e2f5f5;
+      --green: #137f8b; --green-d: #09636e; --green-bg: #e2f5f5;
+      --ink: #302d49; --muted: #727083; --line: #eae5df;
+      --bg: #fff8ef; --card: #fff;
       --sidebar-w: 228px;
       --purple: #a855f7; --amber: #f59e0b; --pink: #e0457b;
     }
     * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent;
-        font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+        font-family:"Nunito",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
     body { background:var(--bg); color:var(--ink); min-height:100vh;min-height:100dvh; display:flex; }
 
     /* ── Sidebar ─────────────────────────────────── */
@@ -584,6 +584,132 @@
     .app-download small { display:block; margin-top:2px; font-size:10px; font-weight:400; opacity:.9; }
     @media (max-width:768px) { .workspace-bar { height:64px; } }
     @media (max-width:600px) { .workspace-bar .crumb { display:none; } .app-actions { width:100%; justify-content:space-between; } }
+
+    /* A little more Sona: warm surfaces and playful accents around practical tools. */
+    .sidebar, .mobile-bar { background:#fffdf9; }
+    .sidebar .brand { padding-bottom:24px; font-weight:800; }
+    .sidebar .brand img { width:42px; height:42px; }
+    .sidebar .brand small { background:#e2f5f5; color:#09636e; border-color:#cee9e8; border-radius:99px; }
+    .sidebar .nav-section { font-size:10px; letter-spacing:1.2px; font-weight:800; }
+    .nav-item { border-radius:14px; padding:10px 12px; font-size:14px; font-weight:700; gap:10px; }
+    .nav-item .icon { width:32px; height:32px; display:grid; place-items:center; border-radius:10px; background:#f3efe9; color:#777185; }
+    .nav-item[data-page=today] .icon { background:#fff0c4; color:#92641a; }
+    .nav-item[data-page=caseload] .icon { background:#e5f2f6; color:#337481; }
+    .nav-item[data-page=community] .icon { background:#eee8fb; color:#7a5ea6; }
+    .nav-item[data-page=feedback] .icon { background:#ffebe5; color:#aa6751; }
+    .nav-item.active { background:#e2f5f5; color:#09636e; box-shadow:inset 0 0 0 1px #c9e6e5; font-weight:800; }
+    .nav-item .badge { border-radius:99px; background:#c9ecea; color:#135e65; }
+    .nav-item .badge.warn { background:#ffeab2; color:#795611; }
+    .sidebar-bottom { background:#faf5ed; }
+    .account-avatar { background:#ffebbb; color:#826326; font-weight:800; width:38px; height:38px; }
+    .workspace-bar { background:#fffdf9; }
+    .workspace-bar .crumb b { font-weight:800; }
+    .main-inner { max-width:1300px; }
+    .page-header h1, .workflow-heading, .empty h2 { font-family:"Baloo 2","Nunito",sans-serif; font-weight:750; letter-spacing:-.6px; }
+    .page-header h1 { font-size:36px; }
+    .page-header p { font-size:14px; }
+    .eyebrow { color:#88705c; font-weight:800; letter-spacing:1.1px; }
+    .friendly-heading { display:flex; align-items:center; gap:17px; min-width:0; flex:1; }
+    .friendly-heading > div { min-width:0; }
+    .heading-echo { width:76px; height:76px; flex:none; padding:5px; background:#ffedb6; border-radius:26px; transform:rotate(-5deg); }
+    #page-community .heading-echo { background:#e8def9; transform:rotate(5deg); }
+    .card { border-radius:18px; border-color:var(--line); box-shadow:0 3px 0 #d9cbb314; }
+    .card h2 { font-size:15px; font-weight:800; }
+    .card h3 { font-weight:800; }
+    .btn { border-radius:12px; font-weight:800; font-size:13px; transition:background .15s,box-shadow .15s,transform .1s; }
+    .btn.green { box-shadow:0 3px 0 #09636e; }
+    .btn.green:active { box-shadow:0 1px 0 #09636e; transform:translateY(2px); }
+    .btn.ghost { background:#fffdf9; border-color:#e7dfd4; }
+    .btn.sm { font-size:12px; }
+    .btn:disabled { box-shadow:none; }
+    input, select, textarea { border-radius:11px; border-color:#e1ded8; font-size:14px; }
+    input:focus, select:focus, textarea:focus { outline-color:#137f8b24; }
+    .pill, .chip { border-radius:7px; font-weight:750; }
+    .week-summary { background:#e6f5f3; border-color:#cde6e1; padding:28px; }
+    .week-summary .eyebrow { color:#3c756d; }
+    .week-summary .summary-title { color:var(--ink); font-size:23px; font-weight:650; letter-spacing:-.35px; }
+    .week-summary .summary-title strong { font-weight:900; }
+    .week-summary .summary-caption { color:#53766f; font-size:13px; }
+    .summary-ring { background:conic-gradient(#2ba8ad var(--fill),#cce5df 0); }
+    .summary-ring:before { background:#e6f5f3; }
+    .summary-ring span { color:#196c70; font-weight:900; }
+    .summary-link { color:#09636e; font-weight:800; font-size:12px; }
+    .group-icon { border-radius:11px; width:36px; height:36px; }
+    .group-quiet .group-icon { background:#fff0c4; color:#92641a; }
+    .group-hw .group-icon { background:#ffebe5; color:#a96248; }
+    .group-week .group-icon { background:#e4f4e9; color:#4e7a5d; }
+    .group-count { border-radius:99px; background:#f5f0e9; font-weight:800; }
+    .group-caption { font-size:12px; }
+    .kidname, .tbl .name { font-size:14px; font-weight:800; }
+    .person-avatar { border-radius:50%; font-weight:800; background:#ffedc6; color:#866729; }
+    .avatar-1 { background:#e9e3f7; color:#766099; } .avatar-2 { background:#ffe8de; color:#996650; } .avatar-3 { background:#dff1e7; color:#527f66; }
+    .week-dot { height:6px; border-radius:99px; }
+    .week-dot.practiced { background:#4caaa5; }
+    .filter-tab { border-radius:99px; font-weight:750; font-size:13px; }
+    .filter-tab[aria-pressed=true] { border-color:#cce6e5; }
+    .tbl th { background:#faf6ef; font-weight:800; }
+    .tbl tr:hover td { background:#fffaf3; }
+    .workflow-preview, .feedback-intro { border-radius:18px; background:#edf7f4; }
+    .feedback-tabs, .child-tabs .filter-tab { border-radius:12px; }
+    .feedback-tabs button { font-weight:800; border-radius:9px; }
+    .step-number { background:#e2f5f5; font-weight:800; }
+    .community-layout { max-width:880px; }
+    .community-membership { border-style:solid; background:#fffdf8; border-color:#eee3cf; border-radius:12px; font-size:12px; color:#756951; }
+    .community-pinned { background:#fff8e3; border-color:#eddda9; border-top:4px solid #f1cc65; }
+    .community-pinned .community-body { color:#625b4d; }
+    .community-pinned .community-topic { background:#ffedba; color:#795b1e; border-color:#eddda9; }
+    .community-pinned .community-avatar { background:#f9dfa0; color:#80602a; }
+    .community-composer { border-radius:16px; padding:20px; font-size:14px; color:#716e80; box-shadow:0 3px 0 #d9cbb314; }
+    .community-composer:hover { border-color:#86babb; background:#fafffd; }
+    .community-composer .compose-plus { display:grid; place-items:center; width:32px; height:32px; flex:none; background:#e2f5f5; border-radius:10px; }
+    .community-avatar { width:42px; height:42px; background:#e9e3f7; color:#715796; font-size:15px; font-weight:800; }
+    .community-filters { gap:8px; }
+    .community-filters .filter-tab { border-color:#e9e4dc; background:#fffdf9; padding:8px 14px; }
+    .community-filters .filter-tab[aria-pressed=true] { background:#e2f5f5; color:#09636e; border-color:#b9dddc; }
+    .community-post { padding:25px; }
+    .community-post-header strong { font-size:14px; font-weight:800; }
+    .community-post-header p { font-size:11px; }
+    .community-topic { border-radius:99px; background:#f0ecf8; border-color:#e4ddef; color:#766090; font-size:11px; padding:5px 10px; font-weight:750; }
+    .community-post h3 { font-size:19px; font-weight:850; color:var(--ink); }
+    .community-body { font-size:14px; line-height:1.8; color:#696678; }
+    .community-post-actions { gap:12px; }
+    .community-post-actions button { font-size:12px; font-weight:750; }
+    .community-post-actions > button[data-community-reply] { border:1px solid #d0e6e3; background:#f2faf7; padding:7px 14px; border-radius:99px; }
+    .community-post-actions .reply-count { font-size:12px; }
+    .community-reply { background:#faf8f3; border-radius:12px; padding:14px; margin-bottom:10px; }
+    .community-reply strong { font-size:13px; font-weight:800; }
+    .community-reply p, .community-replies textarea { font-size:13px; }
+    .community-empty { background:#fffdf9; border-style:dashed; }
+    .community-empty p { font-size:13px; }
+    @media (max-width:1100px) { .friendly-heading { flex-basis:100%; } }
+    @media (max-width:768px) {
+      .main-inner { padding:24px 18px 48px; }
+      .page-header h1 { font-size:31px; }
+      .friendly-heading { gap:13px; }
+      .heading-echo { width:60px; height:60px; border-radius:21px; }
+      .card { border-radius:16px; }
+      .week-summary { padding:20px 18px; }
+      .week-summary .summary-title { font-size:20px; }
+      .week-summary .summary-caption { font-size:12px; }
+      .group-caption { font-size:11px; }
+      .filter-tab { font-size:12px; }
+      .community-post { padding:20px; }
+      .community-body { font-size:14px; }
+      .community-post-header { gap:10px; }
+      .community-composer { padding:16px; font-size:13px; }
+      .community-filters { gap:6px; }
+      .community-filters .filter-tab { padding:7px 11px; font-size:12px; }
+      .child-tabs .filter-tab { font-size:11px; }
+    }
+    @media (max-width:380px) {
+      .heading-echo { width:47px; height:47px; border-radius:16px; padding:3px; }
+      .friendly-heading { gap:10px; }
+      .page-header h1 { font-size:28px; }
+      .page-header .eyebrow { font-size:8px; letter-spacing:.6px; }
+      .page-header p { font-size:12px; }
+      .app-download { padding:8px 10px; }
+    }
+    @media print { .heading-echo { display:none; } .card { box-shadow:none; } }
   </style>
 </head>
 <body>
@@ -649,7 +775,7 @@
       <!-- ════════ TODAY ════════ -->
       <div class="page" id="page-today">
         <div class="page-header">
-          <div><div class="eyebrow">A little progress, every day</div><h1 id="todayHi">Today</h1><p id="todaySub">Who practiced, who went quiet, what ends soon.</p></div>
+          <div class="friendly-heading"><img class="heading-echo" src="/coach/echo/echo-idle.svg" alt="" aria-hidden="true" width="76" height="76"/><div><div class="eyebrow">A little support for your day</div><h1 id="todayHi">Today</h1><p id="todaySub">Who practiced, who went quiet, what ends soon.</p></div></div>
           <div class="spacer"></div>
           <button class="btn ghost sm noprint" id="todayRefresh"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5M6 7a7 7 0 0 1 12-2l2 3M4 16l2 3a7 7 0 0 0 12-2"/></svg> Refresh</button>
           <button class="btn green noprint" id="todayAdd"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg> Add a child</button>
@@ -874,7 +1000,7 @@
       </div>
 
       <div class="page" id="page-community">
-        <div class="page-header"><div><div class="eyebrow">Better, together</div><h1>SLP community</h1><p>Your people. Your questions. A little support for the day.</p></div><div class="spacer"></div><button class="btn ghost sm" id="communityRefresh">Refresh</button><button class="btn green" id="communityNew">+ Start a conversation</button></div>
+        <div class="page-header"><div class="friendly-heading"><img class="heading-echo" src="/coach/echo/echo-celebrate.svg" alt="" aria-hidden="true" width="76" height="76"/><div><div class="eyebrow">Your Sona circle</div><h1>SLP community</h1><p>Swap ideas, ask questions, and cheer each other on.</p></div></div><div class="spacer"></div><button class="btn ghost sm" id="communityRefresh">Refresh</button><button class="btn green" id="communityNew">+ Start a conversation</button></div>
         <div class="community-layout"><div class="community-main">
           <div id="communityPinned" aria-label="Pinned welcome" aria-live="polite"></div>
           <div class="community-membership"><strong>You’re already part of the community.</strong> Free with every SLP account. Posts are shared with other signed-in SLPs using your first name. Your email and caseload stay private.</div>
