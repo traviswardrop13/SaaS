@@ -5,9 +5,9 @@ import { chromium, ROOT as SOURCE_ROOT, launchOpts } from "./_env.mjs";
 
 const ROOT = process.env.SONATEST_PUBLIC_ROOT || SOURCE_ROOT;
 const BASE = "http://localhost:8196";
-const FREE = ["bubbles", "feed", "slice", "stack"];
-const PREMIUM = ["glide", "peekaboo", "run", "tiles"];
-const ALL = [...FREE, ...PREMIUM].sort();
+const ALL = ["bubbles", "feed", "glide", "peekaboo", "run", "slice", "stack", "tiles"];
+const COMING_SOON = ["bubbles", "peekaboo"];
+let FREE = [], PREMIUM = [], PLAYABLE = [];
 const MIME = { html: "text/html", js: "text/javascript", css: "text/css", svg: "image/svg+xml", png: "image/png", webp: "image/webp", woff2: "font/woff2" };
 const browser = await chromium.launch(launchOpts());
 let fails = 0;
@@ -116,8 +116,14 @@ await section("preview contract", async () => {
     for (const [name, present] of contract) ok("Sona exposes " + name, present);
     hasContract = contract.every(([, present]) => present);
     if (hasContract) {
+      const games = await pg.evaluate(() => Sona.activityLibrary().groups.flatMap(group => group.games));
+      const playable = games.filter(game => game.available && !game.comingSoon);
+      FREE = sorted(playable.filter(game => game.tier === "free").map(game => game.key));
+      PREMIUM = sorted(playable.filter(game => game.tier === "premium").map(game => game.key));
+      PLAYABLE = sorted(playable.map(game => game.key));
+      ok("Bubble Pop and Peekaboo are explicitly Coming soon", same(sorted(games.filter(game => game.comingSoon).map(game => game.key)), COMING_SOON));
       ok("ordinary visits do not enable the preview", await pg.evaluate(() => Sona.libraryPreview()) === false);
-      if (await pg.evaluate(() => Sona.isFree())) ok("the current free promise still opens every available game", same(await allowed(pg), ALL));
+      if (await pg.evaluate(() => Sona.isFree())) ok("the current free promise still opens every playable game", same(await allowed(pg), PLAYABLE));
       const access = await pg.evaluate(() => Sona.gameAccess("not-a-game"));
       ok("unknown games never receive access", access.allowed === false);
     }
@@ -151,18 +157,18 @@ if (hasContract) {
     const { ctx, pg, calls } = await fixture();
     try {
       const before = await realState(pg);
-      ok("preview starts free with two games in each age group", same(await allowed(pg), FREE));
+      ok("preview starts with the playable free catalog", FREE.length > 0 && same(await allowed(pg), FREE));
       const model = await pg.evaluate(() => Sona.activityLibrary());
-      ok("both age groups retain two free choices", model.groups.length === 2 && model.groups.every(group => group.games.filter(game => game.tier === "free").length === 2));
+      ok("both age groups retain a playable free choice", model.groups.length === 2 && model.groups.every(group => group.games.some(game => game.tier === "free" && !game.comingSoon)));
       ok("a child cannot start the simulated trial", await pg.evaluate(() => Sona.setPreviewPlan("trial")) === false);
       await pg.evaluate(() => Sona.gateVerify());
       const trial = await pg.evaluate(() => { const now = Date.now(); const changed = Sona.setPreviewPlan("trial"); return { now, changed, plan: Sona.previewPlan() }; });
       ok("a verified parent can simulate precisely three days", trial.changed === true && trial.plan.state === "trial" && Math.abs(trial.plan.endsAt - trial.now - 3 * 86400000) < 100, trial);
-      ok("the simulated trial opens all eight games", same(await allowed(pg), ALL));
+      ok("the simulated trial opens all playable games", same(await allowed(pg), PLAYABLE));
       ok("invalid simulated states are rejected", await pg.evaluate(() => Sona.setPreviewPlan("paid")) === false);
       await pg.evaluate(() => { const end = Sona.previewPlan().endsAt; Date.now = () => end + 1; });
       ok("the simulated trial expires by its clock without a button tap", await pg.evaluate(() => Sona.previewPlan().state) === "expired");
-      ok("expiry leaves all four free games available", same(await allowed(pg), FREE));
+      ok("expiry leaves the playable free games available", same(await allowed(pg), FREE));
       ok("simulation never changes real family, practice, trial or subscription data", same(await realState(pg), before));
       ok("simulation invokes no real trial or subscription method", await pg.evaluate(() => JSON.parse(sessionStorage.getItem("test.realCalls") || "[]").length) === 0);
       ok("simulation invokes no purchase, trial or checkout endpoint", !calls.some(url => /checkout|subscription|\/trial|revenuecat|purchases/i.test(url)), calls);
@@ -182,12 +188,12 @@ if (hasContract) {
     ];
     for (const [name, local] of cohorts) {
       const { ctx, pg } = await fixture({ path: "/activities.html?paid=1", paid: true, local });
-      try { ok(name + " keeps all eight games in the paid seam", same(await allowed(pg), ALL)); }
+      try { ok(name + " keeps every playable game in the paid seam", same(await allowed(pg), PLAYABLE)); }
       finally { await ctx.close(); }
     }
     const { ctx, pg } = await fixture({ path: "/activities.html?paid=1", paid: true, local: {"sona.trial.v1":{start:Date.now()-9*86400000,days:3}} });
     try {
-      ok("an expired paid family retains the four free games", same(await allowed(pg), FREE));
+      ok("an expired paid family retains the playable free games", same(await allowed(pg), FREE));
       await pg.evaluate(() => sessionStorage.setItem("sona.run.v1", JSON.stringify({active:true,round:0,pending:true,games:["slice","stack","slice","stack","slice"]})));
       ok("a generic active free run cannot unlock unrelated Premium games", same(await allowed(pg), FREE));
       ok("even a forged SLP URL cannot grant access", await pg.evaluate(() => { history.replaceState({},"","/activities.html?paid=1&slp=UNVERIFIED"); return Sona.gameAccess("tiles").allowed; }) === false);
@@ -267,25 +273,33 @@ if (hasContract) {
     } finally { await ctx.close(); }
   });
 
-  await section("Premium simple play rechecks a new round", async () => {
-    const { ctx, pg } = await fixture({ gate: true });
+  for (const key of COMING_SOON) for (const mode of ["free", "paid", "trial"]) await section(key + " stays Coming soon for " + mode, async () => {
+    const { ctx, pg, calls, errors } = await fixture({ gate: true, paid: mode === "paid", path: "/activities.html" + (mode === "trial" ? "?libraryPreview=1" : ""), local: mode === "paid" ? {"sona.sub.v1":{active:true,since:1}} : {} });
     try {
-      await pg.evaluate(() => Sona.setPreviewPlan("trial"));
-      await pg.goto(BASE + "/arcade-peekaboo.html");
-      await pg.locator("#startGame").click();
-      for (let turn = 0; turn < 5; turn++) {
-        await pg.locator("[data-door]").first().click();
-        await pg.locator("#nextTurn").click();
+      const before = await realState(pg);
+      await pg.evaluate(({key,mode}) => {
+        if (mode === "trial") Sona.setPreviewPlan("trial");
+        sessionStorage.setItem("sona.play.token", "arcade-" + key + ".html");
+        sessionStorage.setItem("sona.play.active", "arcade-" + key + ".html");
+        sessionStorage.setItem("sona.run.v1", JSON.stringify({active:true,round:0,pending:true,ready:{round:0,chest:null},games:[key,"feed","slice","stack","tiles"],scores:[],sum:0,tries:5,sound:"S"}));
+      }, {key,mode});
+      const access = await pg.evaluate(key => Sona.gameAccess(key,{run:true,earned:true}), key);
+      ok(key + " " + mode + ": entitlement and an earned checkpoint cannot open Coming soon", access.allowed === false && access.reason === "coming-soon", access);
+      const choices = await pg.evaluate(() => { const run=sessionStorage.getItem("sona.run.v1");sessionStorage.removeItem("sona.run.v1");try{return {daily:Sona.dailyGames(),adventure:Sona.adventureGames()};}finally{sessionStorage.setItem("sona.run.v1",run);} });
+      ok(key + " " + mode + ": new daily and adventure choices omit parked titles", choices.daily.length > 0 && choices.adventure.length > 0 && [...choices.daily,...choices.adventure].every(game => !COMING_SOON.includes(game)), choices);
+      for (const path of ["/arcade-" + key + ".html?daily=1&from=charge", "/charge.html?game=arcade-" + key + ".html", "/premium.html?game=" + key]) {
+        await pg.goto(BASE + path); await pg.waitForTimeout(100);
+        ok(key + " " + mode + ": " + path + " returns to Home", new URL(pg.url()).pathname === "/today.html", pg.url());
+        if (new URL(pg.url()).pathname === "/today.html") ok(key + " " + mode + ": Coming soon explains the return without an unlock offer", /coming soon/i.test(await pg.locator("#libraryNotice").innerText()) && !await pg.locator("#libraryUnlock").isVisible());
       }
-      await pg.locator("#finishPanel").waitFor();
-      await pg.evaluate(() => Sona.setPreviewPlan("expired"));
-      await pg.locator("#playAgain").click();
-      await pg.waitForTimeout(100);
-      ok("a finished Peekaboo page cannot start a fresh Premium round after expiry", new URL(pg.url()).pathname === "/today.html", pg.url());
+      ok(key + " " + mode + ": denied routes never request microphone access", await pg.evaluate(() => Number(sessionStorage.getItem("test.micCalls") || 0)) === 0);
+      ok(key + " " + mode + ": denied routes preserve real family state", same(await realState(pg), before));
+      ok(key + " " + mode + ": denial invokes no real purchase or trial", await pg.evaluate(() => JSON.parse(sessionStorage.getItem("test.realCalls") || "[]").length) === 0 && !calls.some(url => /checkout|subscription|\/trial|revenuecat|purchases/i.test(url)));
+      ok(key + " " + mode + ": blocked pages have no runtime errors", errors.length === 0, errors);
     } finally { await ctx.close(); }
   });
 
-  for (const key of ALL) {
+  for (const key of PLAYABLE) {
     await section("charge entry " + key, async () => {
       const { ctx, pg } = await fixture({ gate: true });
       try {
@@ -354,7 +368,7 @@ if (hasContract && premiumPresent) {
       ok("the parent can rehearse expiry", await pg.evaluate(() => Sona.previewPlan().state) === "expired");
       await pg.locator("#keepFree").click();
       await pg.waitForURL(/\/today\.html/);
-      ok("Keep free returns to a library with four usable games", same(await allowed(pg), FREE));
+      ok("Keep free returns to the playable free catalog", same(await allowed(pg), FREE));
       const entitlement = rows => rows.filter(([key]) => /^sona\.(?:sub|trial|slp|founder|pilot|plan)/.test(key));
       ok("the complete parent flow changes no real subscription or trial", same(entitlement(await realState(pg)), entitlement(before)));
       ok("the parent simulation calls no real purchase or trial methods", await pg.evaluate(() => JSON.parse(sessionStorage.getItem("test.realCalls") || "[]").length) === 0);

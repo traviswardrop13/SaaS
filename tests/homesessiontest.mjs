@@ -40,7 +40,9 @@ function clean(name,errors){ok(name+': no runtime errors',errors.length===0,erro
 for(const age of ['2','3','4','5','8',null,'4 years','4.5'])await scenario('age '+age,async()=>{
  const {context,page,errors}=await fixture({age});try{
   await page.waitForTimeout(200);const st=await state(page);
-  ok('age '+age+': Home itself presents all eight game choices',JSON.stringify(st.keys)===JSON.stringify(ALL),st.keys);
+  ok('age '+age+': Home itself presents all eight catalog cards',JSON.stringify(st.keys)===JSON.stringify(ALL),st.keys);
+  const parked=await page.locator('#activityGroups button[data-game]:disabled').evaluateAll(els=>els.map(el=>({key:el.dataset.game,text:el.innerText})).sort((a,b)=>a.key.localeCompare(b.key)));
+  ok('age '+age+': Bubble Pop and Peekaboo are explicitly Coming soon',JSON.stringify(parked.map(game=>game.key))===JSON.stringify(['bubbles','peekaboo'])&&parked.every(game=>/Coming soon/.test(game.text)),parked);
   ok('age '+age+': Home invites a choice',await page.getByRole('heading',{name:'Pick a game!',exact:true}).count()===1);
   ok('age '+age+': no adventure hero or auto-start replaces the choice',await page.locator('#goBtn,#heroCard,#jarRow').count()===0&&new URL(page.url()).pathname==='/today.html');
   const recommended=['2','3','4'].includes(age)?'simple':['5','8'].includes(age)?'arcade':null;
@@ -78,8 +80,8 @@ await scenario('game choice and the parent gate stay deliberate',async()=>{
 });
 for(const age of ['4','7'])await scenario('paid gate age '+age,async()=>{
  const {context,page,errors}=await fixture({age,paid:true});try{
-  const access=await page.evaluate(()=>Object.keys(Sona.GAME_ACTS).filter(key=>Sona.gameAccess(key).allowed).sort());
-  ok('paid age '+age+': browsing retains the four free games',JSON.stringify(access)===JSON.stringify(['bubbles','feed','slice','stack']),access);
+  const access=await page.evaluate(()=>({allowed:Object.keys(Sona.GAME_ACTS).filter(key=>Sona.gameAccess(key).allowed).sort(),free:Object.keys(Sona.GAME_ACTS).filter(key=>{const game=Sona.GAME_ACTS[key];return game.tier==='free'&&game.available!==false&&!game.comingSoon;}).sort()}));
+  ok('paid age '+age+': browsing retains the playable free games',access.free.length>0&&JSON.stringify(access.allowed)===JSON.stringify(access.free),access);
   ok('paid age '+age+': browsing does not enter a game or purchase page',new URL(page.url()).pathname==='/today.html');
   if(await page.locator('#activityGroups button[data-game="tiles"]').count()){
    await page.locator('#activityGroups button[data-game="tiles"]').click();

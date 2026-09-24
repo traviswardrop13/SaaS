@@ -969,16 +969,17 @@ ok("no pageerrors", errs.length === 0, errs.join(" | "));
   const home = await pg.evaluate(() => ({
     library: !document.getElementById("libraryApp").hidden,
     adventure: Sona.adventureGames().map(key => ({ key, allowed: Sona.gameAccess(key).allowed })),
-    cards: [...document.querySelectorAll("#activityGroups .game-card[data-game]")].map(card => ({ key: card.dataset.game, locked: card.dataset.locked === "true", tier: (Sona.gameAct(card.dataset.game) || {}).tier })),
+    cards: [...document.querySelectorAll("#activityGroups .game-card[data-game]")].map(card => ({ key: card.dataset.game, disabled: card.disabled, comingSoon: !!(Sona.gameAct(card.dataset.game) || {}).comingSoon, label: card.querySelector(".game-access").textContent, locked: card.dataset.locked === "true", tier: (Sona.gameAct(card.dataset.game) || {}).tier })),
     note: (document.getElementById("planNote") || {}).innerHTML || "",
   }));
   ok("an expired family keeps the library and accessible saved adventure choices",
     home.library && home.adventure.length === 5 && home.adventure.every(game => game.allowed) && /today\.html$/.test(pg.url()), JSON.stringify(home));
-  const freeCards = home.cards.filter(card => card.tier === "free"), premiumCards = home.cards.filter(card => card.tier === "premium");
+  const freeCards = home.cards.filter(card => !card.comingSoon && card.tier === "free"), premiumCards = home.cards.filter(card => !card.comingSoon && card.tier === "premium"), comingSoonCards = home.cards.filter(card => card.comingSoon);
+  ok("coming-soon games stay visible without a purchase or play action", comingSoonCards.length === 2 && comingSoonCards.every(card => card.disabled && /coming soon/i.test(card.label)), JSON.stringify(comingSoonCards));
   ok("Home leaves free cards open and marks Premium choices for grown-ups",
     freeCards.length > 0 && freeCards.every(card => !card.locked) && premiumCards.length > 0 && premiumCards.every(card => card.locked), JSON.stringify(home.cards));
   ok("the parent corner explains continuing free access and the Premium choice",
-    /Four games stay free/.test(home.note) && /See Premium/.test(home.note) && /href="\/premium\.html"/.test(home.note), home.note.slice(0, 200));
+    /Free games stay free/.test(home.note) && /See Premium/.test(home.note) && /href="\/premium\.html"/.test(home.note), home.note.slice(0, 200));
   if (premiumCards.length) {
     await pg.evaluate(key => document.querySelector('#activityGroups [data-game="' + key + '"]').click(), premiumCards[0].key);
     await pg.locator("#libraryUnlock").click();

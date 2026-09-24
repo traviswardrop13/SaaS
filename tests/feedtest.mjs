@@ -165,13 +165,15 @@ ok("Echo's size persists across visits", /scale\(1\.0[2-9]|scale\(1\.[1-9]/.test
 async function readLibrary(){return page.evaluate(()=>({
   group:document.querySelector('.activity-group').dataset.group,
   games:[...document.querySelectorAll('.activity-group .game-card')].map(t=>t.dataset.game),
+  playable:[...document.querySelectorAll('.activity-group .game-card')].filter(card=>!card.disabled).map(card=>card.dataset.game),
+  comingSoon:[...document.querySelectorAll('.activity-group .game-card')].filter(card=>card.disabled&&/coming soon/i.test(card.textContent)).map(card=>card.dataset.game).sort(),
   hero:!!document.getElementById('goBtn'),
   trio:Sona.dailyGames()
 }));}
 await page.goto("http://localhost:8145/today.html"); await page.waitForTimeout(900);
 let deck=await readLibrary();
 ok("age 4: simple play is suggested first",deck.group==='simple',JSON.stringify(deck));
-ok("all eight games including Feed Echo remain available",deck.games.length===8&&deck.games.includes('feed'),JSON.stringify(deck));
+ok("Home shows all eight titles with six playable and two coming soon",deck.games.length===8&&deck.playable.length===6&&deck.playable.includes('feed')&&JSON.stringify(deck.comingSoon)===JSON.stringify(['bubbles','peekaboo']),JSON.stringify(deck));
 ok("Home waits for a choice instead of starting an adventure",!deck.hero&&page.url().endsWith('/today.html'));
 await page.evaluate(()=>Sona.dailyFinish(10));
 await page.reload();await page.waitForTimeout(900);deck=await readLibrary();

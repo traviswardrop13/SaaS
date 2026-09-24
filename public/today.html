@@ -49,7 +49,10 @@
     .shelf-tag.recommended{background:#dfeecf;color:#3b5d25;}
     .game-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px;}
     .game-card{position:relative;display:flex;flex-direction:column;min-width:0;border:5px solid #fff;border-radius:23px;background:#fff;box-shadow:0 4px 0 #e8d9c5;color:var(--ink);padding:0;cursor:pointer;transition:transform .12s;text-align:left;}
-    .game-card:active{transform:translateY(3px) scale(.98);}
+    .game-card:disabled{cursor:default;}
+    .game-card:disabled .game-art{opacity:.55;filter:saturate(.5);}
+    .game-access.coming-soon{color:#715d45;background:#f0e8db;}
+    .game-card:not(:disabled):active{transform:translateY(3px) scale(.98);}
     .game-art{position:relative;display:block;width:100%;aspect-ratio:1;border-radius:18px;overflow:hidden;}
     .game-info{display:flex;flex-direction:column;align-items:flex-start;gap:6px;padding:10px 6px 8px;}
     .game-name{font-family:"Baloo 2",sans-serif;font-size:18px;line-height:1.15;font-weight:800;}
@@ -146,7 +149,7 @@
   <div class="ovl" id="sheetOvl">
     <div class="modal">
       <h3>Parent corner</h3>
-      <p id="ageGuide">Simple play is suggested for ages 3–4; Arcade for ages 5–8. Ages are a guide — all games are available to explore.</p>
+      <p id="ageGuide">Simple play is suggested for ages 3–4; Arcade for ages 5–8. Ages are a guide. Choose any available game that fits.</p>
       <div id="weekCard" style="background:var(--cream);border-radius:16px;padding:14px 16px;margin-top:12px;text-align:left;">
         <div style="display:flex;align-items:center;gap:8px;">
           <b style="font-family:'Baloo 2';font-size:15px;color:var(--ink);">This week</b>
@@ -197,15 +200,17 @@
       document.getElementById("catalogPreviewNotice").hidden=!preview;
       if(preview){
         var plan=S.previewPlan();
-        document.getElementById("catalogPreviewState").textContent=plan.state==="trial"?"Trial preview: all games unlocked. No payment or subscription.":plan.state==="expired"?"Trial ended preview: four games stay free. Purchases are off.":"Four free games. Premium games open through the grown-ups gate. Purchases are off.";
+        document.getElementById("catalogPreviewState").textContent=plan.state==="trial"?"Trial preview: all available games unlocked. No payment or subscription.":plan.state==="expired"?"Trial ended preview: free games stay available. Purchases are off.":"Free games stay available. Premium games open through the grown-ups gate. Purchases are off.";
       }
       var library=S.activityLibrary(),lockedGame=null;
       var unlock=document.getElementById("libraryUnlock");
       function node(tag,className,text){var el=document.createElement(tag);if(className)el.className=className;if(text)el.textContent=text;return el;}
       function access(game){return S.gameAccess?S.gameAccess(game.key):{allowed:!S.gated("practice"),tier:game.tier,reason:S.isFree()?"free-mode":"legacy"};}
-      function clearMessage(){notice.hidden=true;message.textContent="";lockedGame=null;app.classList.remove("has-message");}
+      function clearMessage(){notice.hidden=true;message.textContent="";lockedGame=null;unlock.hidden=false;app.classList.remove("has-message");}
       function showLocked(game){
-        lockedGame=game;notice.hidden=false;app.classList.add("has-message");
+        var comingSoon=game.comingSoon||access(game).reason==="coming-soon";
+        lockedGame=comingSoon?null:game;unlock.hidden=!!comingSoon;notice.hidden=false;app.classList.add("has-message");
+        if(comingSoon){message.textContent=game.name+" is coming soon. Pick another game to play.";return;}
         message.textContent="Ask a grown-up to help open "+game.name+". Your free games are still ready to play!";
       }
       document.getElementById("libraryMessageClose").onclick=clearMessage;
@@ -219,12 +224,14 @@
       function gameCard(game){
         var button=node("button","game-card");button.type="button";button.dataset.game=game.key;
         var grant=access(game),tier=grant.reason==="free-mode"?"free":game.tier;
-        var label=tier==="free"?"Free":grant.allowed?"Included":"Premium";
+        var comingSoon=game.comingSoon||grant.reason==="coming-soon";
+        var label=comingSoon?"Coming soon":tier==="free"?"Free":grant.allowed?"Included":"Premium";
+        button.disabled=!!comingSoon;
         button.dataset.locked=grant.allowed?"false":"true";
-        button.setAttribute("aria-label",game.name+". "+(game.playDescription||game.sub)+" "+(grant.allowed?label+".":"Premium. Ask a grown-up to unlock."));
+        button.setAttribute("aria-label",comingSoon?game.name+". Coming soon.":game.name+". "+(game.playDescription||game.sub)+" "+(grant.allowed?label+".":"Premium. Ask a grown-up to unlock."));
         var art=node("span","game-art");art.setAttribute("aria-hidden","true");var sticker=S.gameSticker(game.key);S.paintSticker(art,sticker[0],sticker[1]);button.appendChild(art);
         var info=node("span","game-info");info.appendChild(node("span","game-name",game.name));
-        info.appendChild(node("span","game-access"+(tier==="premium"?" premium":""),label));
+        info.appendChild(node("span","game-access"+(comingSoon?" coming-soon":tier==="premium"?" premium":""),label));
         button.appendChild(info);button.onclick=function(){launch(game);};return button;
       }
       // A cached pre-shelves sona.js still supplies the complete age groups.
@@ -445,11 +452,11 @@
       var sessionOver=false; try{ sessionOver=!!(S.demoDone&&S.demoDone()&&S.gated&&S.gated("practice")); }catch(e){}
       var _tActive=!!(S.trialActive&&S.trialActive()), _tExpired=!!(S.trialExpired&&S.trialExpired());
       if(sessionOver&&!_tActive&&!_tExpired){
-        note.innerHTML='Four games stay free. Explore more with Sona Premium. <a href="/premium.html" style="color:var(--orange-d);font-weight:800;">See Premium →</a>';
+        note.innerHTML='Free games stay free. Explore more with Sona Premium. <a href="/premium.html" style="color:var(--orange-d);font-weight:800;">See Premium →</a>';
         note.style.display="block"; return;
       }
       if(_tActive){ var dd=S.trialDaysLeft?S.trialDaysLeft():7; note.innerHTML="Your free trial: "+dd+" day"+(dd===1?"":"s")+" left."+link+"See plans →</a>"; note.style.display="block"; }
-      else if(S.trialExpired&&S.trialExpired()){ note.innerHTML="Your free trial has ended. Four games stay free."+link+"See plans →</a>"; note.style.display="block"; }
+      else if(S.trialExpired&&S.trialExpired()){ note.innerHTML="Your free trial has ended. Free games stay free."+link+"See plans →</a>"; note.style.display="block"; }
     })();
 
     // ── beta pulse: chip-first (a tap beats a blank box — the Mobbin study's

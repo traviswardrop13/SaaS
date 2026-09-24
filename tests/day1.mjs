@@ -39,7 +39,8 @@ for (const age of ["3", "4", "5", "8"]) {
     heading: document.querySelector("h1")?.textContent || "",
     keys: [...document.querySelectorAll("#activityGroups .game-card")].map(e => e.dataset.game),
     groups: [...document.querySelectorAll("#activityGroups .activity-group")].map(e => e.dataset.group),
-    allAccessible: [...document.querySelectorAll("#activityGroups .game-card")].every(e => e.dataset.locked === "false"),
+    playable: [...document.querySelectorAll("#activityGroups .game-card")].filter(e => !["bubbles", "peekaboo"].includes(e.dataset.game)).map(e => ({key:e.dataset.game,accessible:e.dataset.locked === "false"&&!e.disabled})),
+    parked: [...document.querySelectorAll("#activityGroups .game-card")].filter(e => ["bubbles", "peekaboo"].includes(e.dataset.game)).map(e => ({key:e.dataset.game,disabled:e.disabled,label:e.textContent,access:Sona.gameAccess(e.dataset.game)})),
     forbidden: !!document.querySelector("#goBtn, #heroCard, #jarRow"),
     run: sessionStorage.getItem("sona.run.v1"),
     books: document.getElementById("booksComingSoon")?.textContent || "",
@@ -47,7 +48,8 @@ for (const age of ["3", "4", "5", "8"]) {
   }));
   ok("age " + age + ": Home opens directly to Pick a game", /pick a game/i.test(st.heading) && new URL(pg.url()).pathname === "/today.html", JSON.stringify(st));
   ok("age " + age + ": every catalog game appears once in the age shelves", st.keys.length === 8 && new Set(st.keys).size === 8, JSON.stringify(st.keys));
-  ok("age " + age + ": both suggested age groups remain available", st.groups.length === 2 && st.allAccessible, JSON.stringify(st));
+  ok("age " + age + ": both suggested age groups remain available", st.groups.length === 2 && st.playable.length === 6 && st.playable.every(e => e.accessible), JSON.stringify(st));
+  ok("age " + age + ": Bubble Pop and Peekaboo stay visible as disabled Coming soon cards", st.parked.length === 2 && st.parked.every(e => e.disabled && /coming soon/i.test(e.label) && e.access.allowed === false && e.access.reason === "coming-soon"), JSON.stringify(st.parked));
   ok("age " + age + ": opening Home does not start a journey or display the retired adventure", !st.run && !st.forbidden, JSON.stringify(st));
   ok("age " + age + ": books remain passive Coming soon", /coming soon/i.test(st.books) && st.bookDoors === 0, JSON.stringify(st));
   await ctx.close();
@@ -377,7 +379,7 @@ for (const age of ["3", "4", "5", "8"]) {
 // ── Deliberate selection, not an automatic adventure. ──
 // Every visible choice names and illustrates the game practice actually earns.
 // The card may appear in New as well, so exercise each canonical age shelf.
-for (const key of ["feed", "bubbles", "peekaboo", "slice", "tiles", "stack", "run", "glide"]) {
+for (const key of ["feed", "slice", "tiles", "stack", "run", "glide"]) {
   const {ctx, pg} = await home("7");
   const card = pg.locator('#activityGroups .game-card[data-game="' + key + '"]');
   const visible = await card.evaluate(e => ({name:e.querySelector(".game-name").textContent,art:e.querySelector("use").getAttribute("href")}));
@@ -388,7 +390,7 @@ for (const key of ["feed", "bubbles", "peekaboo", "slice", "tiles", "stack", "ru
     run: sessionStorage.getItem("sona.run.v1"), ticket: sessionStorage.getItem("sona.play.token"),
     sticker: "#" + Sona.gameSticker(window.GAME || location.pathname.split("/").pop())[0],
   }));
-  if (["feed", "bubbles", "peekaboo"].includes(key)) {
+  if (key === "feed") {
     ok(key + ": choosing the simple game opens its integrated practice", new URL(pg.url()).pathname === "/arcade-" + key + ".html", pg.url());
   } else {
     const u = new URL(pg.url());
@@ -396,6 +398,26 @@ for (const key of ["feed", "bubbles", "peekaboo", "slice", "tiles", "stack", "ru
     ok(key + ": practice preserves the chosen card's art", visible.art === result.sticker, JSON.stringify({visible,result}));
   }
   ok(key + ": choosing a card never awards a ticket or creates a daily journey", result.ticket === null && result.run === null, JSON.stringify(result));
+  await ctx.close();
+}
+
+// A parked game is unavailable even on a previously earned or paid return.
+// It keeps a visible place in the library without becoming a hidden launch door.
+for (const key of ["bubbles", "peekaboo"]) {
+  const {ctx, pg} = await home("4");
+  const before = await pg.evaluate(() => ({run:sessionStorage.getItem("sona.run.v1"),ticket:sessionStorage.getItem("sona.play.token"),reps:Sona.repsToday()}));
+  await pg.locator('#activityGroups .game-card[data-game="' + key + '"]').evaluate(el => el.click());
+  await pg.waitForTimeout(200);
+  const after = await pg.evaluate(() => ({run:sessionStorage.getItem("sona.run.v1"),ticket:sessionStorage.getItem("sona.play.token"),reps:Sona.repsToday()}));
+  ok(key + ": the disabled library card does not navigate, earn or start anything", new URL(pg.url()).pathname === "/today.html" && JSON.stringify(before) === JSON.stringify(after), JSON.stringify({before,after,url:pg.url()}));
+  await pg.evaluate(key => {
+    Sona.saveSub({active:true,source:"stripe"});
+    sessionStorage.setItem("sona.play.token","arcade-" + key + ".html");
+    sessionStorage.setItem("sona.play.active","arcade-" + key + ".html");
+  },key);
+  await pg.goto("http://localhost:8178/arcade-" + key + ".html?from=charge");
+  await pg.waitForURL(/today\.html/);
+  ok(key + ": an old paid or earned URL still returns to the library", new URL(pg.url()).pathname === "/today.html" && await pg.locator("#libraryApp").isVisible(),pg.url());
   await ctx.close();
 }
 

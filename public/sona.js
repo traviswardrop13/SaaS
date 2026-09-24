@@ -1211,7 +1211,7 @@
     for (let i = 0; trio.length < DAILY_GAMES && i < GAME_KEYS.length; i++) {
       if (trio.indexOf(GAME_KEYS[i]) === -1) trio.push(GAME_KEYS[i]);
     }
-    if (playStyle() === "simple") return ["feed", "bubbles", "peekaboo"];
+    if (playStyle() === "simple") return ["feed", "bubbles", "peekaboo"].filter(function (key) { return gameAccess(key).allowed; });
 
     return trio;
   }
@@ -2333,11 +2333,11 @@
     run:   { name: "Sound Sprint",  sub: "Say it 5× to play",          go: "/charge.html?game=arcade-run.html", group: "arcade", tier: "premium", playDescription: "Switch lanes and collect coins." },
     glide: { name: "Flappy Glide",  sub: "Say it 5× to play",          go: "/charge.html?game=arcade-glide.html", group: "arcade", tier: "premium", playDescription: "Tap to glide through the gaps." },
     feed:  { name: "Feed Echo",     sub: "Say it & tap — Echo's hungry!", go: "/arcade-feed.html", group: "simple", tier: "free", playDescription: "Find the picture and feed Echo. No timer." },
-    bubbles: { name: "Bubble Pop", sub: "Pop, discover and say it together", go: "/arcade-bubbles.html", group: "simple", tier: "free", releasedOn: "2026-09-21", playDescription: "Pop a bubble. Find a little surprise." },
-    peekaboo: { name: "Peekaboo", sub: "Open a door and say it together", go: "/arcade-peekaboo.html", group: "simple", tier: "premium", releasedOn: "2026-09-21", playDescription: "Knock, knock! See what’s hiding." },
+    bubbles: { name: "Bubble Pop", sub: "Pop, discover and say it together", go: "/arcade-bubbles.html", group: "simple", tier: "free", comingSoon: true, releasedOn: "2026-09-21", playDescription: "Pop a bubble. Find a little surprise." },
+    peekaboo: { name: "Peekaboo", sub: "Open a door and say it together", go: "/arcade-peekaboo.html", group: "simple", tier: "premium", comingSoon: true, releasedOn: "2026-09-21", playDescription: "Knock, knock! See what’s hiding." },
   };
   // Catalog access is separate from the speech needed to earn an arcade turn.
-  // FREE_MODE still opens every game in production; local preview moves no money.
+  // Free access opens released games; unfinished games stay parked for everyone.
   // Preserve the existing story and mystery deck; new library games stand alone.
   const GAME_KEYS = ["slice", "tiles", "stack", "run", "glide", "feed"];
   const ACTIVITY_KEYS = GAME_KEYS.concat(["bubbles", "peekaboo"]);
@@ -2396,6 +2396,8 @@
     var result = { allowed: false, tier: act ? act.tier : "premium", reason: "unknown", preview: preview };
     function allow(reason) { result.allowed = true; result.reason = reason; return result; }
     if (!act || act.available === false) return result;
+    // Unfinished games cannot be unlocked by a plan, saved turn or old link.
+    if (act.comingSoon) { result.reason = "coming-soon"; return result; }
     if (act.tier === "free") return allow("free");
     if (preview) {
       if (previewPlan().state === "trial") return allow("trial");
@@ -2458,7 +2460,7 @@
     function entry(key) {
       var act = GAME_ACTS[key];
       return { key: key, name: act.name, sub: act.sub, go: act.go, playDescription: act.playDescription,
-        tier: act.tier, releasedOn: act.releasedOn || null, available: act.available !== false };
+        tier: act.tier, releasedOn: act.releasedOn || null, available: act.available !== false, comingSoon: !!act.comingSoon };
     }
     var groups = ACTIVITY_GROUPS.map(function (group) {
       return {
@@ -2474,11 +2476,11 @@
     // exist only when a finished item has a real active start/end date; no placeholders.
     var fresh = ACTIVITY_KEYS.filter(function (key) {
       var act = GAME_ACTS[key], released = catalogDay(act.releasedOn);
-      return act.available !== false && released <= day && day - released < 30 * 86400000;
+      return act.available !== false && !act.comingSoon && released <= day && day - released < 30 * 86400000;
     }).sort(function (a, b) { return catalogDay(GAME_ACTS[b].releasedOn) - catalogDay(GAME_ACTS[a].releasedOn); }).map(entry);
     var seasonal = ACTIVITY_KEYS.filter(function (key) {
       var act = GAME_ACTS[key], season = act.season;
-      return act.available !== false && season && catalogDay(season.startsOn) <= day && day <= catalogDay(season.endsOn);
+      return act.available !== false && !act.comingSoon && season && catalogDay(season.startsOn) <= day && day <= catalogDay(season.endsOn);
     }).map(entry);
     var featured = [];
     if (fresh.length) featured.push({ id: "new", name: "New to Sona", games: fresh });

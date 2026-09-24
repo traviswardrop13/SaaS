@@ -30,12 +30,18 @@ async function scenario(name, task) {
   try { await task(); } catch (error) { ok(name + " completes without a harness/page exception", false, error.stack); }
 }
 const games = ["slice", "stack", "tiles", "run", "glide"];
-async function fresh({ paid = false, replay = false, sound = "R", width = 390, height = 844 } = {}) {
+async function fresh({ paid = false, replay = false, sound = "R", width = 390, height = 844, parkedEngineFixture = false } = {}) {
   const context = await browser.newContext({ viewport: { width, height }, reducedMotion: "reduce" });
   await context.route("**/*", (route) => {
     const u = new URL(route.request().url());
     return u.origin === origin || u.hostname === "127.0.0.1" ? route.continue() : route.abort();
   });
+  // The retained younger-game engine still needs completion/replay coverage.
+  // Enable it only in this test context's served source, never via app state.
+  if (parkedEngineFixture) await context.route("**/sona.js", route => route.fulfill({
+    status:200, contentType:"text/javascript",
+    body:readFileSync(path.join(publicRoot,"sona.js"),"utf8").replace(/(\b(?:bubbles|peekaboo)\s*:\s*\{[^}]*\bcomingSoon\s*:\s*)true/g, "$1false"),
+  }));
   // These scenarios finish recorded runs; none should request a real mic.
   await context.addInitScript(() => {
     if (navigator.mediaDevices) navigator.mediaDevices.getUserMedia = () => new Promise(() => {});
@@ -149,8 +155,8 @@ await scenario("replays and empty sessions never add practice",async()=>{
   }finally{await context.close();}
 });
 
-await scenario("five untimed games form the younger-child adventure",async()=>{
-  const {context,page,errors}=await fresh({width:375,height:812});
+await scenario("retained parked-game fixture completes the younger-child adventure",async()=>{
+  const {context,page,errors}=await fresh({width:375,height:812,parkedEngineFixture:true});
   try{
     await page.evaluate(()=>{
       sessionStorage.removeItem("sona.run.v1");
@@ -187,7 +193,7 @@ await scenario("five untimed games form the younger-child adventure",async()=>{
       if(round<4)await page.waitForFunction(n=>location.pathname==="/charge.html"||JSON.parse(sessionStorage.getItem("sona.run.v1")).round>n,round);
     }
     await page.locator("#runOvl.show").waitFor({timeout:7000});
-    ok("the simple adventure is five untimed games",seen.length===5&&seen.every(x=>["feed","bubbles","peekaboo"].includes(x)),seen);
+    ok("the retained simple-engine fixture exercises all three games across five untimed turns",seen.length===5&&seen.every(x=>["feed","bubbles","peekaboo"].includes(x))&&seen.includes("bubbles")&&seen.includes("peekaboo"),seen);
     const state=await evidence(page);
     ok("all discoveries can finish without inventing spoken practice",state.run.round===5&&state.progress.sessions.length===0&&state.progress.totals.words===0&&state.reps===0&&Object.keys(state.outcomes).length===0&&!state.progress.streak.lastDate,state);
     await openAndClaim(page);await page.locator("#runDone").click();await page.waitForURL(/today.html/);
