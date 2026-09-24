@@ -10,7 +10,7 @@ node scripts/slp-preview.mjs
 
 Open http://127.0.0.1:4174/slp.html. Set `SLP_PREVIEW_PORT` if another port is needed. This preview uses synthetic children, intercepts all API writes locally, and shows a preview banner. Nothing is submitted to a live account. Reset demo restores the sample roster.
 
-The deployed dashboard still uses authenticated SLP APIs. Community and Affiliates default hidden, including direct hash routes and in-page links. Only the local preview server injects `window.SLP_PREVIEW_FEATURES=true`, and the dashboard also requires a localhost hostname.
+The deployed dashboard uses authenticated SLP APIs. Community is available automatically to every current and future SLP account, including accounts without a completed profile. Affiliates remain preview-only: the local preview server injects `window.SLP_PREVIEW_FEATURES=true`, and the dashboard also requires a localhost hostname.
 
 ## Completed
 
@@ -25,7 +25,7 @@ The deployed dashboard still uses authenticated SLP APIs. Community and Affiliat
 - Overview-only removal link retains the original confirmation. Duplicate homework/feedback entry points removed. Settings copy is plain and accurate. Dashboard spelling is US English.
 - Neutral pass-rate chips, position cells, and rate bars, per Travis's decision.
 - Free forever remains in Settings and the family invitation messages; repeated banners are removed. Affiliate commission is unconfirmed, so the teaser says “Earn a share of each sale — details at launch.”
-- Community preview includes topic filters, replies, and Rachel seed drafts clearly marked for her to rewrite. Demo posts remain in the current tab and clear on reload.
+- Shared Community includes durable posts/replies, Discussions / Resources & ideas / CF corner filters, pagination, refresh, author deletion and private reports. There is no separate join step or membership migration. Only the author’s first name is exposed; email, code and caseload are excluded from community responses. Placeholder posts have been removed. Failed submissions retain drafts; retries use receipt IDs to avoid duplicate posts.
 
 ## Verification
 
@@ -46,10 +46,20 @@ Final integration on September 22 includes main at `0954730`, preserving the lan
 
 ## Deliberately not live
 
-- Existing production blocker: the live signup health endpoint reports `signing:false`, with store/email/CRM configuration present. Production needs `SLP_AUTH_SECRET` and a redeploy to enable sign-in. Auth code in this release is identical to current main; this dashboard merge does not resolve the missing setting. Never record its value here.
-- Community needs shared storage and moderation before enabling it for members. Rachel must rewrite/approve her seed posts. The preview is not a functioning shared community.
 - Affiliate commission and eligibility terms still need a confirmed launch decision.
 - Live feedback delivery was not exercised. Dedicated notifications use `SLACK_FEEDBACK_WEBHOOK_URL` or `FEEDBACK_WEBHOOK_URL`; with KV alone, messages are stored but no notification is sent. The code does not route feedback into generic lead/pilot destinations.
 - Rachel should review the changed clinical-facing planner and note presentation before release.
 
 Local review screenshots are in `/private/tmp/sona-slp-review/`.
+
+## Community launch — September 23
+
+Branch `codex/slp-community-live` starts from current main `c6a2610`; signup and app changes remain intact. The production signup health check now reports signing/store/email/CRM configured after Travis added the signing key.
+
+Community uses the existing KV connection and SLP session, with same-origin writes, server-derived authorship, account-based limits, atomic writes, and 24-hour duplicate-request protection. No new service is needed. Posts remain until deleted. Each conversation supports up to 50 replies; a full conversation asks the member to start a new one. The browser escapes text and only links HTTP(S) URLs.
+
+Reports are saved privately in `{slp-community}:reports` (latest 1,000; queue expires after one year without a new report). They do not send emails or CRM messages. Optional `SLP_COMMUNITY_MODERATOR_EMAILS` is a comma-separated list of signed-in account emails: those accounts can delete any post/reply and read the private report queue at `/api/slp/community?reports=1`. There are no default moderator emails. Without that optional setting, members can still delete their own contributions and submit reports; the team can inspect the queue in its existing store. Do not publish example posts under Rachel’s name.
+
+Focused backend checks: 55 pass both against the portable store model and real Redis Lua, including concurrent replies and ownership. TypeScript passes. Focused browser checks: 31 Community checks and 52 dashboard design checks pass, including two-account persistence, access before profile completion, draft recovery, safe text rendering, pagination and 390/320px layouts. The old page fails the new Community access checks. Screenshots: `/private/tmp/sona-community-live/`.
+
+Final Community release verification: all 47 suites completed; 46 passed. The only failing suite is the previously documented and approved `repguardtest.mjs` noise-acceptance limitation in unchanged app code. Community API/browser suites passed within the full run; no tests were disabled. Log: `/private/tmp/sona-community-release-checks.log`.

@@ -115,13 +115,12 @@ try {
     ok("ended homework uses the full completed window", /0 of 8 days/.test(ended)&&!/so far/.test(ended),ended);
     await ctx.close();
   });
-  await run("Preview-only routes",async()=>{
+  await run("Community and preview-only affiliate routes",async()=>{
     DATA=fixture();failRoster=false;writes.length=0;
     const {ctx,pg}=await open("#community");
-    for(const page of ["community","affiliate"]){
-      await pg.evaluate(page=>location.hash="#"+page,page);await pg.waitForTimeout(80);
-      ok(page+" stays hidden without preview injection", !await visible(pg,"#page-"+page) && !await visible(pg,'[data-page="'+page+'"]') && await visible(pg,"#page-today"));
-    }
+    ok("community is available without preview injection", await visible(pg,"#page-community") && await visible(pg,'[data-page="community"]'));
+    await pg.evaluate(()=>location.hash="#affiliate");await pg.waitForTimeout(80);
+    ok("affiliate stays hidden without preview injection", !await visible(pg,"#page-affiliate") && !await visible(pg,'[data-page="affiliate"]') && await visible(pg,"#page-today"));
     for(const page of ["caseload","today","caseload","today"]){await pg.locator('[data-page="'+page+'"]').click();}
     ok("view changes never send a write", writes.filter(w=>w.method!=="GET"&&w.method!=="HEAD").length===0,JSON.stringify(writes));
     await ctx.close();
