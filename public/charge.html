@@ -1353,6 +1353,10 @@
     //    A window with no room and a voice for a reading learns the room in
     //    the child's first pause instead (learnRoom).
     var ROOM_MS=300, ROOM_PCT=0.2, ROOM_MIN=4, ROOM_MAX=0.03, LEARN_FRAMES=8, room=null, roomProbe=null;
+    // roomLoud: a usable reading on this page came out louder than any room
+    // (a voice, or a hum/fan too loud to be one). Only then does a reopened
+    // window with no room start in learn-first mode.
+    var roomLoud=false;
     function frameRms(an,td){an.getByteTimeDomainData(td);var sum=0;for(var i=0;i<td.length;i++){var d=(td[i]-128)/128;sum+=d*d;}return Math.sqrt(sum/td.length);}
     // The pct-th percentile of the non-zero readings (exact zeros are the
     // audio path still starting, never a room); 0 when there are none.
@@ -1376,6 +1380,7 @@
         var bg=complete?probe.measured():null,off=!!ev&&!(ev.getFloatTimeDomainData&&ev.getFloatFrequencyData),level=roomLevel(rms,ROOM_PCT);
         // Louder than any room (ROOM_MAX): the child was talking. No reading.
         if(complete&&roomUsable(rms)&&(bg||off)&&level<=ROOM_MAX)room={rms:level,bg:bg};
+        else if(complete&&roomUsable(rms)&&level>ROOM_MAX)roomLoud=true;
         done();
       }
       function stop(){finish(false);}
@@ -1511,14 +1516,16 @@
             // own first quarter-second (readRoom).
             evid.resample();
             if(room&&evid.floor(room.bg))thr=roomBar(room.rms);
-            // No room, but an earlier window of this attempt already set a bar
-            // (it opened on a voice, or on a room too loud to be one): this
-            // window has no background either, so it starts in the same
-            // learn-first mode that window ended in. Without this, a steady hum
+            // No room, an earlier window of this attempt already set a bar, and
+            // what this page has heard was louder than any room (a voice, or a
+            // hum too loud to be one): this window has no background either, so
+            // it starts in the same learn-first mode. Without this, a steady hum
             // louder than a room can be was counted as a try every time the
             // window reopened (a tap on Echo, the turtle, a return from the
-            // background) — the one thing noise may never be.
-            else if(thr)seg.learn=[];
+            // background) — the one thing noise may never be. A page that simply
+            // never got a reading (a mic still sending zeros) keeps its bar, so
+            // a child who carries on after a pause is still heard.
+            else if(thr&&roomLoud)seg.learn=[];
             // Independent recorder files cannot be concatenated into one clip.
             // Interrupted attempts retain reps/evidence but skip the keepsake.
             if(!attemptInterrupted && window.MediaRecorder && micStream){try{
@@ -1608,6 +1615,7 @@
             // quietest reading, as before, and the next window measures again.
             function readRoom(){
               var low=roomLevel(seg.rms,ROOM_PCT),bg=evid.measured(),off=!(ev.getFloatTimeDomainData&&ev.getFloatFrequencyData),voice=low>ROOM_MAX;
+              if(voice&&roomUsable(seg.rms))roomLoud=true;
               // The carried room describes this analyser (same frequency bins).
               function fits(){return !!room&&(off||!!(room.bg&&bg&&room.bg.length===bg.length));}
               if(!voice&&roomUsable(seg.rms)&&(bg||off)){

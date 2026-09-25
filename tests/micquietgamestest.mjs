@@ -48,7 +48,11 @@ const server = createServer((req, res) => {
   if (url.pathname.startsWith("/api/")) { res.writeHead(503, { "content-type": "application/json" }); res.end("{}"); return; }
   if (!existsSync(file) || !statSync(file).isFile()) { res.writeHead(404); res.end(); return; }
   res.writeHead(200, { "content-type": MIME[file.split(".").pop()] || "application/octet-stream" });
-  res.end(readFileSync(file));
+  // Bubble Pop and Peekaboo are parked as Coming soon in the shipped catalog
+  // (#140). Their engines still ship, so they are still audited here: the
+  // test server flips only their comingSoon flag in the sona.js it serves —
+  // the same fixture simpleplaytest uses; the app has no runtime unlock.
+  res.end(url.pathname === "/sona.js" ? readFileSync(file, "utf8").replace(/(\b(?:bubbles|peekaboo)\s*:\s*\{[^}]*\bcomingSoon\s*:\s*)true/g, "$1false") : readFileSync(file));
 });
 await new Promise((resolve) => server.listen(8231, "127.0.0.1", resolve));
 const browser = await chromium.launch(launchOpts());
