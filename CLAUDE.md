@@ -416,7 +416,10 @@ still apply after a child chooses an available game.
   is decided on the phone from the spectral shape of what was said. One clip a
   day may be kept in local IndexedDB so a parent can listen back — it is never
   uploaded. The consent copy says exactly this, and it is true because there is
-  no mechanism to break it, not because a checkbox is off.
+  no mechanism to break it, not because a checkbox is off. `mictest` pins the
+  mechanism's absence: no route but the two founder clip tools (`isolate`,
+  `voice-change`, behind `FOUNDER_KEY`) accepts a file, and no family page
+  posts to one. `/api/stt` was deleted on 25 Sep 2026 for exactly this.
 - No silence counted as reps; voice boosts never logged as SLP data.
 - Never rewrite pushed git history. Push after every verified milestone.
 - A child's name never leaves the device to any CRM, ad pixel or analytics
