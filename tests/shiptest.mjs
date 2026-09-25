@@ -94,28 +94,30 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
   ok("…and the header carries only For parents and Sign in", (header.match(/<a\b/g) || []).length === 3 && !/How it works|>Privacy</.test(header));
   // REWRITTEN 25 Sep 2026 (Travis): this pinned For parents leaving for the
   // App Store on an iPhone, which skipped the one question the page now asks.
-  // It opens the Start free pop-up with Parent chosen; Start free ends at the
+  // It brings a parent to the form with Parent chosen; the form ends at the
   // App Store, or at the web app on Android, which has no Sona app to get.
-  ok("…and opens the Start free pop-up with Parent chosen",
-    /\$\("forParents"\)\.onclick = function \(e\) \{ e\.preventDefault\(\); openStart\("parent"\); \}/.test(slps));
-  ok("Start free ends at the App Store, or at the web app on Android",
+  ok("…and brings a parent to the form with Parent chosen",
+    /\$\("forParents"\)\.onclick = function \(e\) \{ e\.preventDefault\(\); toForm\("parent"\); \}/.test(slps));
+  ok("the form ends at the App Store, or at the web app on Android",
     /var APP_STORE = "https:\/\/apps\.apple\.com\/us\/app\/sona-speech\/id6785755867";/.test(slps) &&
     /var NEXT_URL = android \? "\/onboarding\.html" : APP_STORE;/.test(slps));
 
-  // THE START FREE POP-UP (Travis, 25 Sep 2026): the grown-up's own first
-  // name, their email and who they are, one button. Every Start free opens it,
-  // and there is no second form on the page to get out of step with it.
-  const modal = (slps.match(/<div class="modal" id="startModal"[\s\S]*?<\/form>/) || [""])[0];
-  ok("one pop-up asks 'Your first name', the email and 'I'm a…', with one button",
-    /<label class="fl" for="fName">Your first name<\/label>/.test(modal) && /id="fEmail" type="email"/.test(modal) &&
-    /<select id="fRole">/.test(modal) && (modal.match(/<button\b/g) || []).length === 2 && (slps.match(/<form\b/g) || []).length === 1);
-  ok("…and the three answers are Speech therapist (SLP or SLPA), Parent or caregiver, Other",
-    /<option value="slp">Speech therapist \(SLP or SLPA\)<\/option>/.test(modal) &&
-    /<option value="parent">Parent or caregiver<\/option>/.test(modal) && /<option value="other">Other<\/option>/.test(modal));
-  ok("every Start free on the page opens it",
-    /\$\("startGo"\)\.onclick = function \(\) \{ openStart\(""\); \};/.test(slps) &&
-    /\$\("finalGo"\)\.onclick = function \(\) \{ openStart\(""\); \};/.test(slps) &&
-    (slps.replace(/<!--[\s\S]*?-->/g, "").match(/>Start free</g) || []).length === 4);
+  // AS SIMPLE AS IT GETS (Travis, 25 Sep 2026): on the page itself, an email
+  // and "I'm a…", one button. No name box of any kind, no pop-up, and one
+  // form, so there is no second door to get out of step with it.
+  const form = (slps.match(/<form class="signup" id="signup"[\s\S]*?<\/form>/) || [""])[0];
+  ok("one form: an email, 'I'm a…', one button, and no name",
+    /id="fEmail" type="email"/.test(form) && /<select id="fRole"/.test(form) && (form.match(/<button\b/g) || []).length === 1 &&
+    (form.match(/<input\b/g) || []).length === 1 && !/name/i.test(form.replace(/aria-label|class="|autocomplete="email"/g, "")) &&
+    (slps.match(/<form\b/g) || []).length === 1 && !/id="startModal"/.test(slps));
+  ok("…and the answers are Parent or caregiver, Speech therapist (SLP or SLPA), Other",
+    /<option value="parent">Parent or caregiver<\/option>/.test(form) &&
+    /<option value="slp">Speech therapist \(SLP or SLPA\)<\/option>/.test(form) && /<option value="other">Other<\/option>/.test(form));
+  ok("the closing Start free brings the visitor back to that form",
+    /\$\("finalGo"\)\.onclick = function \(\) \{ toForm\(""\); \};/.test(slps) &&
+    (slps.replace(/<!--[\s\S]*?-->/g, "").match(/>Start free</g) || []).length === 2);
+  ok("the hero shows Travis's whole App Store image, which is in the repo",
+    /<img class="hshot" src="\/hero-practice-play\.webp" width="610" height="1328"/.test(slps) && existsSync(APP + "/public/hero-practice-play.webp"));
 }
 
 // ── what the landing page promises: a free version and Premium (24 Sep 2026) ──

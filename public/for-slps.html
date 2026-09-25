@@ -23,8 +23,8 @@
   <!-- speaksona.com. next.config.js rewrites / to this file, so this is the
        page the ads land on and the one a parent or a clinician finds by
        searching. FOR BOTH (Travis, 25 Sep 2026): "I don't know who my customer
-       is", so the page speaks to parents and SLPs alike and one Start free
-       pop-up asks who they are. The file keeps its name (for-slps.html) because
+       is", so the page speaks to parents and SLPs alike, and the one form asks
+       for an email and who they are, nothing else. The file keeps its name (for-slps.html) because
        the rewrite, the canonical and a dozen pins point at it.
        Indexable on purpose; the dashboard, its login and the family's
        redemption link stay noindex — those are private surfaces.
@@ -142,8 +142,6 @@
     .sent .m{font-size:15px;color:var(--body);line-height:1.5;}
     .sent .straight{font-weight:800;}
     .sent .again{font-size:13px;color:var(--muted);}
-    .ctarow{display:flex;flex-wrap:wrap;align-items:center;gap:14px 18px;}
-    @media(max-width:480px){ .ctarow .btn{width:100%;} }
     .devbox{margin-top:6px;background:#fff7e6;border:1px solid #ffe2a8;border-radius:12px;padding:10px 12px;font-size:12px;font-weight:700;color:#8a6400;line-height:1.5;word-break:break-all;}
 
     .hero-r{position:relative;min-height:500px;display:flex;align-items:center;justify-content:center;}
@@ -162,7 +160,10 @@
     .days span{width:24px;height:10px;border-radius:5px;background:#E6E1D8;}
     .days span.on{background:var(--teal);}
     .kid .s{font-size:13px;font-weight:700;color:var(--muted);}
-    .hphone{position:relative;z-index:2;width:min(62%,250px);margin-top:70px;box-shadow:0 30px 60px -24px rgba(45,42,75,.45);}
+    .hshot{position:relative;z-index:2;display:block;width:min(82%,300px);height:auto;border-radius:28px;box-shadow:0 30px 60px -24px rgba(45,42,75,.45);}
+    .signup select{height:58px;padding:0 16px;border-radius:16px;border:2px solid var(--line2);background:#fff;font:600 17px Nunito,sans-serif;color:var(--ink);flex:1 1 200px;min-width:0;}
+    .signup select:focus{outline:none;border-color:var(--teal);}
+    .mnext{font-size:13px;font-weight:700;color:var(--muted);}
 
     /* facts */
     .facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:12px;padding-bottom:24px;}
@@ -200,22 +201,6 @@
     .ticks li b{font-weight:800;}
     .way .cl{margin-top:4px;width:100%;box-shadow:0 2px 0 #EFE6D6;}
 
-    /* THE START FREE POP-UP. Fixed over everything, the header included. */
-    .modal{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;padding:16px;}
-    .mback{position:absolute;inset:0;background:rgba(45,42,75,.55);}
-    .mcard{position:relative;width:min(100%,440px);max-height:calc(100vh - 32px);max-height:calc(100dvh - 32px);overflow:auto;background:var(--bg);border-radius:26px;padding:28px 24px 24px;box-shadow:0 30px 60px -20px rgba(45,42,75,.5);display:flex;flex-direction:column;gap:14px;}
-    .mx{position:absolute;top:8px;right:8px;width:44px;height:44px;border:none;background:none;font-size:30px;line-height:1;color:var(--muted);cursor:pointer;border-radius:12px;}
-    .mx:focus-visible{outline:3px solid var(--teal);}
-    .mt{font-size:30px;line-height:1.05;padding-right:40px;}
-    .msub{font-size:15px;line-height:1.5;color:var(--body);}
-    .mcard .signup{max-width:none;}
-    .fl{font-weight:800;font-size:14px;color:var(--ink);margin-top:4px;}
-    .signup select{height:58px;padding:0 16px;border-radius:16px;border:2px solid var(--line2);background:#fff;font:600 17px Nunito,sans-serif;color:var(--ink);width:100%;}
-    .signup select:focus{outline:none;border-color:var(--teal);}
-    .mcard .btn{width:100%;margin-top:6px;}
-    .mnext{font-size:13px;font-weight:700;color:var(--muted);}
-    .mcard .sent{max-width:none;}
-    html.mopen,html.mopen body{overflow:hidden;}
 
     /* the kid side */
     .kidside{background:var(--teal);padding:88px 24px;}
@@ -279,7 +264,7 @@
     </nav>
   </div>
 </header>
-<!-- FOR PARENTS opens the Start free pop-up with "Parent or caregiver"
+<!-- FOR PARENTS brings a parent to the form with "Parent or caregiver"
      chosen (script below). It used to leave the page for the App Store, which
      skipped the one question this page now asks. Without script, the link
      still reaches the family page. -->
@@ -298,20 +283,41 @@
          who practiced. -->
     <p class="lede">A few playful minutes a day, at home. Parents get practice their child asks for, and SLPs pick the sound. Nothing to plan, and you see who practiced.</p>
 
-    <!-- ONE BUTTON (Travis, 25 Sep 2026). It opens the pop-up below: first
-         name, email and who they are, then the App Store. -->
-    <div class="ctarow">
-      <button class="btn yel" id="startGo" type="button">Start free</button>
-      <div class="hnote">For families and speech therapists. No card.</div>
+    <!-- THE SIGN-UP, AS SIMPLE AS IT GETS (Travis, 25 Sep 2026): an email and
+         who they are, one button, then the App Store. No name is asked for,
+         the grown-up's or a child's. -->
+    <form class="signup" id="signup" novalidate>
+      <input id="fEmail" type="email" inputmode="email" autocomplete="email" placeholder="Your email" aria-label="Your email" />
+      <div class="srow">
+        <select id="fRole" aria-label="I'm a…">
+          <option value="" selected disabled>I&rsquo;m a&hellip;</option>
+          <option value="parent">Parent or caregiver</option>
+          <option value="slp">Speech therapist (SLP or SLPA)</option>
+          <option value="other">Other</option>
+        </select>
+        <button class="btn" id="fGo" type="submit">Start free</button>
+      </div>
+      <!-- The email also joins the Kit list, so the form says so before the
+           button is pressed (Travis's wording, 24 Sep 2026). -->
+      <p class="consent">We&rsquo;ll also send occasional tips from Rachel. Unsubscribe anytime.</p>
+      <p class="mnext" id="mNext">Next: the App Store, to download Sona.</p>
+      <div class="serr" id="fErr" role="alert"></div>
+    </form>
+    <div class="sent" id="sent" hidden>
+      <div class="t" id="sentT">You&rsquo;re in</div>
+      <div class="m" id="sentMsg"></div>
+      <a class="straight" id="straight" href="/slp.html" hidden>Open my dashboard &rarr;</a>
+      <button class="btn" id="nextGo" type="button" hidden>Get the app</button>
+      <div class="devbox" id="devbox" hidden></div>
     </div>
+    <div class="hnote">For families and speech therapists. No card.</div>
   </div>
 
-  <!-- What a child sees: a real practice round. The clinician's view is
-       further down, in the SLP half of "two ways in". -->
-  <div class="hero-r" aria-hidden="true">
-    <div class="sun"></div>
-    <img class="mascot" src="/echo.png" alt="">
-    <div class="phone hphone"><img src="/slp-shot-practice.jpg" width="585" height="1104" alt=""></div>
+  <!-- Travis's App Store image, whole (25 Sep 2026): the fruit-slicing game
+       under "Turn practice into play". -->
+  <div class="hero-r">
+    <div class="sun" aria-hidden="true"></div>
+    <img class="hshot" src="/hero-practice-play.webp" width="610" height="1328" alt="Sona's fruit-slicing game on a phone: Turn practice into play. Fast fruit-slicing games keep kids engaged.">
   </div>
 </section>
 
@@ -437,7 +443,7 @@
     </div>
     <div class="q">
       <button type="button" aria-expanded="false" aria-controls="a2" id="q2">What's stored, and where?<span>+</span></button>
-      <p class="a" id="a2" hidden>If you start from this page: your first name, your email and whether you're a parent, a speech therapist or something else, kept by Sona and sent to Kit so Rachel's tips can reach you. A speech therapist's account: email, name, clinic, code. For each consenting family: the child's first name and age, target sounds, practice days and counts, pass rate per sound, your assignments, and when the parent consented. Hosted on Vercel, stored in Upstash, emails via Resend, and the occasional email from Rachel via Kit. If you buy Caseload Premium, Stripe takes the payment and holds your email and card; we never see the card number, and nothing about a child goes to Stripe. If you type a parent's email when you add a child, we hand it to Resend to deliver that one email with the link, and Sona keeps no copy: not stored, not logged, not added to any list. Analytics (PostHog) on grown-up pages only, and a Meta ad pixel on this sign-up page so we can tell which of our ads work — neither ever runs where a child practices, and neither is sent a child's name. No ads in the app, no data sales, no profiling.</p>
+      <p class="a" id="a2" hidden>If you start from this page: your email and whether you're a parent, a speech therapist or something else, kept by Sona and sent to Kit so Rachel's tips can reach you. A speech therapist's account: email, name, clinic, code. For each consenting family: the child's first name and age, target sounds, practice days and counts, pass rate per sound, your assignments, and when the parent consented. Hosted on Vercel, stored in Upstash, emails via Resend, and the occasional email from Rachel via Kit. If you buy Caseload Premium, Stripe takes the payment and holds your email and card; we never see the card number, and nothing about a child goes to Stripe. If you type a parent's email when you add a child, we hand it to Resend to deliver that one email with the link, and Sona keeps no copy: not stored, not logged, not added to any list. Analytics (PostHog) on grown-up pages only, and a Meta ad pixel on this sign-up page so we can tell which of our ads work — neither ever runs where a child practices, and neither is sent a child's name. No ads in the app, no data sales, no profiling.</p>
     </div>
     <div class="q">
       <button type="button" aria-expanded="false" aria-controls="a3" id="q3">How is data deleted?<span>+</span></button>
@@ -470,44 +476,6 @@
   </div>
 </section>
 </main>
-
-<!-- THE START FREE POP-UP (Travis, 25 Sep 2026): first name, email and who
-     they are, one button, then the App Store. The name is the grown-up's own
-     ("Your first name"); a child's name is never asked for here. -->
-<div class="modal" id="startModal" hidden>
-  <div class="mback" id="mBack"></div>
-  <div class="mcard" role="dialog" aria-modal="true" aria-labelledby="mTitle">
-    <button class="mx" id="mClose" type="button" aria-label="Close">&times;</button>
-    <div class="mt baloo" id="mTitle">Start free</div>
-    <p class="msub" id="mSub">Tell us who you are, then get Sona.</p>
-    <form class="signup" id="signup" novalidate>
-      <label class="fl" for="fName">Your first name</label>
-      <input id="fName" type="text" autocomplete="given-name" maxlength="40" placeholder="Your first name" />
-      <label class="fl" for="fEmail">Email</label>
-      <input id="fEmail" type="email" inputmode="email" autocomplete="email" placeholder="you@email.com" />
-      <label class="fl" for="fRole">I'm a&hellip;</label>
-      <select id="fRole">
-        <option value="" selected disabled>Choose one</option>
-        <option value="slp">Speech therapist (SLP or SLPA)</option>
-        <option value="parent">Parent or caregiver</option>
-        <option value="other">Other</option>
-      </select>
-      <button class="btn" id="fGo" type="submit">Start free</button>
-      <!-- The email also joins the Kit list, so the form says so before the
-           button is pressed (Travis's wording, 24 Sep 2026). -->
-      <p class="consent">We&rsquo;ll also send occasional tips from Rachel. Unsubscribe anytime.</p>
-      <p class="mnext" id="mNext">Next: the App Store, to download Sona.</p>
-      <div class="serr" id="fErr" role="alert"></div>
-    </form>
-    <div class="sent" id="sent" hidden>
-      <div class="t" id="sentT">You&rsquo;re in</div>
-      <div class="m" id="sentMsg"></div>
-      <a class="straight" id="straight" href="/slp.html" hidden>Open my dashboard &rarr;</a>
-      <button class="btn" id="nextGo" type="button" hidden>Get the app</button>
-      <div class="devbox" id="devbox" hidden></div>
-    </div>
-  </div>
-</div>
 
 <footer class="wrap">
   <div class="d">Sona is an at-home speech practice tool. It is not a diagnosis, evaluation, or substitute for professional care.</div>
@@ -559,50 +527,26 @@
     $("mNext").textContent = android ? "Next: Sona opens right here in your browser." : "Next: the App Store, to download Sona.";
     $("nextGo").textContent = android ? "Open Sona" : "Get the app";
 
-    // THE ERROR SITS UNDER THE BUTTON, and on a short phone screen that can be
-    // below the fold of the pop-up — so a refused sign-up looked like a button
-    // that did nothing. Every message is brought into view as it is shown.
+    // THE ERROR SITS UNDER THE BUTTON, which on a laptop is the bottom edge of
+    // the window — so a refused sign-up looked like a button that did nothing.
+    // Every message is brought into view as it is shown.
     function err(msg) {
       var e = $("fErr"); e.textContent = msg;
       try { e.scrollIntoView({ block: "nearest", behavior: "smooth" }); } catch (x) { e.scrollIntoView(false); }
     }
     function busy(on) { $("fGo").disabled = on; $("fGo").textContent = on ? "Sending…" : LABEL; }
 
-    // ── the pop-up: every Start free button, and For parents, open it ──
-    var lastFocus = null;
-    function openStart(role) {
-      lastFocus = document.activeElement;
-      // For parents arrives with its answer chosen; an answer already picked
-      // is never overwritten.
+    // ONE FORM, ONE PLACE. The closing Start free brings the visitor back to it
+    // rather than opening a second door, and For parents does the same with
+    // "Parent or caregiver" chosen (an answer already picked is kept).
+    function toForm(role) {
       if (role && !$("fRole").value) $("fRole").value = role;
-      $("startModal").hidden = false;
-      document.documentElement.classList.add("mopen");
-      setTimeout(function () {
-        var first = !$("sent").hidden ? ($("nextGo").hidden ? $("mClose") : $("nextGo")) : $($("fName").value ? "fEmail" : "fName");
-        try { first.focus({ preventScroll: true }); } catch (e) { first.focus(); }
-      }, 30);
+      var target = $("sent").hidden ? $("signup") : $("sent");
+      target.scrollIntoView({ behavior: "smooth", block: "center" });
+      if ($("sent").hidden) setTimeout(function () { try { $("fEmail").focus({ preventScroll: true }); } catch (e) { $("fEmail").focus(); } }, 450);
     }
-    function closeStart() {
-      $("startModal").hidden = true;
-      document.documentElement.classList.remove("mopen");
-      if (lastFocus && lastFocus.focus) { try { lastFocus.focus({ preventScroll: true }); } catch (e) {} }
-    }
-    $("startGo").onclick = function () { openStart(""); };
-    $("finalGo").onclick = function () { openStart(""); };
-    $("forParents").onclick = function (e) { e.preventDefault(); openStart("parent"); };
-    $("mClose").onclick = closeStart;
-    $("mBack").onclick = closeStart;
-    document.addEventListener("keydown", function (e) {
-      if ($("startModal").hidden) return;
-      if (e.key === "Escape") { e.preventDefault(); closeStart(); return; }
-      if (e.key !== "Tab") return;
-      // Tab stays inside the pop-up while it is open.
-      var f = [].filter.call(document.querySelectorAll("#startModal button, #startModal input, #startModal select, #startModal a[href]"), function (n) { return !n.disabled && n.offsetParent !== null; });
-      if (!f.length) return;
-      var first = f[0], last = f[f.length - 1];
-      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
-      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
-    });
+    $("finalGo").onclick = function () { toForm(""); };
+    $("forParents").onclick = function (e) { e.preventDefault(); toForm("parent"); };
 
     // ONE WAY OUT. Called only after the Lead has fired, and after a pause, so
     // the pixel's request leaves before the page does.
@@ -613,36 +557,33 @@
       $("sentMsg").textContent = msg;
       $("straight").hidden = !opts.dashboard;
       $("nextGo").hidden = !opts.button;
-      $("signup").hidden = true; $("mSub").hidden = true; $("sent").hidden = false;
-      try { ($("nextGo").hidden ? $("mClose") : $("nextGo")).focus({ preventScroll: true }); } catch (e) {}
+      $("signup").hidden = true; $("sent").hidden = false;
     }
 
     function go() {
-      var name = (($("fName").value) || "").trim();
       var email = (($("fEmail").value) || "").trim();
       var role = $("fRole").value;
       $("fErr").textContent = "";
-      if (!name) { err("Your first name, so we know who we're writing to."); $("fName").focus(); return; }
       if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { err("Enter a valid email."); $("fEmail").focus(); return; }
-      if (!role) { err("Choose one: speech therapist, parent or other."); $("fRole").focus(); return; }
+      if (!role) { err("Choose one: parent, speech therapist or other."); $("fRole").focus(); return; }
       busy(true);
       /**
        * A SPEECH THERAPIST GETS THEIR DASHBOARD TOO. The iPhone app is the
        * family app and has no clinician side, so an SLP or SLPA is signed up
        * exactly as this page always did: the account, the sign-in email, and
        * the lead, which the auth route forwards to /api/lead itself. Everyone
-       * else goes to /api/lead directly, with their role and their OWN first
-       * name (own_name), never anything about a child. One post per person,
-       * so a lead is counted once.
+       * else goes to /api/lead directly, with their email and role and nothing
+       * else: no name, nothing about a child. One post per person, so a lead
+       * is counted once.
        */
       var req = role === "slp"
         ? fetch("/api/slp/auth/request", {
             method: "POST", headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email: email, name: name, source: src, attrib: attrib }),
+            body: JSON.stringify({ email: email, source: src, attrib: attrib }),
           })
         : fetch("/api/lead", {
             method: "POST", headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(Object.assign({ email: email, role: role, own_name: name, source: src }, attrib)),
+            body: JSON.stringify(Object.assign({ email: email, role: role, source: src }, attrib)),
           });
       req.then(function (r) { return r.json(); }).then(function (j) {
         busy(false);
@@ -655,7 +596,7 @@
          * accounts rather than on repeat sign-ins.
          *
          * No parameters: Meta gets the fact, never the person. The email and
-         * the name stay on our side, where the visitor knowingly gave them.
+         * the answer stay on our side, where the visitor knowingly gave them.
          */
         try {
           if (window.sonaTrack) {
@@ -697,7 +638,6 @@
       });
     }
     $("signup").addEventListener("submit", function (e) { e.preventDefault(); go(); });
-    $("fName").addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); $("fEmail").focus(); } });
     $("fEmail").addEventListener("keydown", function (e) { if (e.key === "Enter" && !$("fRole").value) { e.preventDefault(); $("fRole").focus(); } });
 
     // One answer open at a time; the first starts open.

@@ -14,10 +14,9 @@ import { kvCmd } from "@/lib/slpAuth";
  * reported in `detail` (the founder leads page shows it) rather than counted
  * as a lost lead — a wrong form id should cost a tag, not an email address.
  *
- * What goes to Kit: the email address, the grown-up's OWN first name (a
- * clinician's, or what a visitor typed into the landing page's "Your first
- * name" box — never a child's; /api/lead decides which), and the role tag.
- * Nothing about a child, ever.
+ * What goes to Kit: the email address, a CLINICIAN's own first name (never a
+ * parent's, never a child's — the caller only passes one for role "slp"), and
+ * the role tag. Nothing about a child, ever.
  */
 const KIT = "https://api.kit.com/v4";
 const STEP_TIMEOUT_MS = 2500;

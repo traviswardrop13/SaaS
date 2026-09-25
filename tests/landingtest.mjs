@@ -1,15 +1,14 @@
-// LANDING1: speaksona.com's one call to action (Travis, 25 Sep 2026). The page
-// speaks to parents and SLPs alike; every "Start free" (and "For parents")
-// opens one pop-up: the grown-up's own first name, their email, and "I'm a…"
-// (SLP or SLPA · parent · other), one button, then the App Store — or the web
-// app on Android, which has no Sona app to download. Driven in a real browser
-// against fake routes, so what is posted, and where the visitor ends up, is
-// what is checked.
+// LANDING1: speaksona.com's one form (Travis, 25 Sep 2026). The page speaks to
+// parents and SLPs alike, and asks for as little as possible: an email and
+// "I'm a…" (parent or caregiver · SLP or SLPA · other), one button, then the
+// App Store — or the web app on Android, which has no Sona app to download.
+// No name, no pop-up. Driven in a real browser against fake routes, so what is
+// posted, and where the visitor ends up, is what is checked.
 import { createServer } from "http";
 import { readFileSync, existsSync } from "fs";
 import { chromium, ROOT, launchOpts } from "./_env.mjs";
 
-const MIME = { html: "text/html", js: "text/javascript", css: "text/css", png: "image/png", jpg: "image/jpeg", svg: "image/svg+xml", woff2: "font/woff2", webmanifest: "application/manifest+json" };
+const MIME = { html: "text/html", js: "text/javascript", css: "text/css", png: "image/png", jpg: "image/jpeg", webp: "image/webp", svg: "image/svg+xml", woff2: "font/woff2", webmanifest: "application/manifest+json" };
 let fails = 0;
 const ok = (name, cond, detail) => { if (!cond) fails++; console.log((cond ? "PASS " : "FAIL ") + name + (cond || detail === undefined ? "" : "  → " + (typeof detail === "string" ? detail : JSON.stringify(detail)))); };
 
@@ -57,66 +56,62 @@ async function fresh(opts = {}) {
   await page.goto(origin + "/?utm_source=fb&utm_campaign=launch&fbclid=abc123");
   return { context, page, errors };
 }
-const open = (page) => page.evaluate(() => !document.getElementById("startModal").hidden);
-async function fill(page, name, email, role) {
-  await page.fill("#fName", name); await page.fill("#fEmail", email);
+async function fill(page, email, role) {
+  await page.fill("#fEmail", email);
   if (role) await page.selectOption("#fRole", role);
 }
 
-// ── the page and the pop-up ──
+// ── the form ──
 {
   const { context, page, errors } = await fresh();
-  ok("the page opens with the pop-up closed", !(await open(page)));
-  await page.click("#startGo");
-  ok("Start free opens the pop-up", await open(page));
-  ok("…with the first name box focused", await page.waitForFunction(() => document.activeElement && document.activeElement.id === "fName", null, { timeout: 2000 }).then(() => true, () => false));
-  ok("…and the page behind it does not scroll", await page.evaluate(() => document.documentElement.classList.contains("mopen")));
-  const fit = await page.evaluate(() => { const r = document.querySelector(".mcard").getBoundingClientRect(); return { l: r.left, r: r.right, w: innerWidth, overflow: document.documentElement.scrollWidth > innerWidth }; });
-  ok("on a phone the pop-up fits the screen, with no sideways scroll", fit.l >= 0 && fit.r <= fit.w && !fit.overflow, fit);
-  await page.keyboard.press("Escape");
-  ok("Escape closes it", !(await open(page)));
-  await page.click("#forParents");
-  ok("For parents opens the same pop-up, with Parent or caregiver chosen", (await open(page)) && (await page.inputValue("#fRole")) === "parent");
-  await page.click("#mClose");
-  ok("the close button closes it", !(await open(page)));
-  await page.click("#finalGo");
-  ok("the closing Start free opens it too", await open(page));
-  await page.click("#mBack", { position: { x: 5, y: 5 } });
-  ok("a tap outside the card closes it", !(await open(page)));
+  ok("the form is on the page itself: an email box and 'I'm a…', no name", await page.isVisible("#fEmail") && await page.isVisible("#fRole") && (await page.$("#fName")) === null && (await page.$("#startModal")) === null);
+  ok("…and nothing is chosen for them", (await page.inputValue("#fRole")) === "");
+  const fit = await page.evaluate(() => { const r = document.getElementById("signup").getBoundingClientRect(); return { l: r.left, r: r.right, w: innerWidth, overflow: document.documentElement.scrollWidth > innerWidth }; });
+  ok("on a phone the form fits the screen, with no sideways scroll", fit.l >= 0 && fit.r <= fit.w && !fit.overflow, fit);
+  ok("the hero shows the whole App Store image", await page.evaluate(() => { const i = document.querySelector("img.hshot"); return !!i && i.complete && i.naturalWidth === 610 && i.naturalHeight === 1328; }));
 
   // What the visitor is told before anything is sent.
-  await page.click("#startGo");
   posts = [];
   await page.click("#fGo");
-  ok("no name: asked for a first name, nothing sent", /first name/.test(await page.textContent("#fErr")) && posts.length === 0);
-  await fill(page, "Dana", "not-an-email");
+  ok("no email: asked for a valid one, nothing sent", /valid email/.test(await page.textContent("#fErr")) && posts.length === 0);
+  await fill(page, "not-an-email");
   await page.click("#fGo");
   ok("a bad email: asked for a valid one, nothing sent", /valid email/.test(await page.textContent("#fErr")) && posts.length === 0);
-  await fill(page, "Dana", "dana@example.com");
-  // For parents chose Parent above; clear it, as a visitor who arrived by
-  // Start free has it.
-  await page.evaluate(() => { document.getElementById("fRole").value = ""; });
+  await fill(page, "dana@example.com");
   await page.click("#fGo");
   ok("no answer to I'm a…: asked to choose, nothing sent", /Choose one/.test(await page.textContent("#fErr")) && posts.length === 0);
-  ok("the consent line is in the pop-up, before the email is given", /also send occasional tips from Rachel\. Unsubscribe anytime\./.test(await page.textContent("#signup")));
+  ok("the consent line is on the form, before the email is given", /also send occasional tips from Rachel\. Unsubscribe anytime\./.test(await page.textContent("#signup")));
   ok("…and it says where the button goes: the App Store", /App Store/.test(await page.textContent("#mNext")));
+
+  // For parents and the closing Start free both come back to this one form.
+  await page.evaluate(() => { document.getElementById("fRole").value = ""; window.scrollTo(0, document.body.scrollHeight); });
+  await page.click("#forParents");
+  await page.waitForTimeout(700);
+  ok("For parents brings a parent to the form, with Parent or caregiver chosen and the email box ready",
+    (await page.inputValue("#fRole")) === "parent" && await page.evaluate(() => document.activeElement && document.activeElement.id === "fEmail"));
+  await page.selectOption("#fRole", "other");
+  await page.click("#forParents");
+  ok("…and never overwrites an answer already chosen", (await page.inputValue("#fRole")) === "other");
+  await page.evaluate(() => { document.activeElement.blur(); window.scrollTo(0, document.body.scrollHeight); });
+  await page.click("#finalGo");
+  await page.waitForTimeout(700);
+  ok("the closing Start free comes back to the same form", await page.evaluate(() => { const r = document.getElementById("signup").getBoundingClientRect(); return r.top >= 0 && r.bottom <= innerHeight && document.activeElement.id === "fEmail"; }));
   ok("no page errors", errors.length === 0, errors);
   await context.close();
 }
 
-// ── a parent: /api/lead, their own name, then the App Store ──
+// ── a parent, or other: /api/lead, email and role only, then the App Store ──
 for (const role of ["parent", "other"]) {
   const { context, page, errors } = await fresh();
   posts = []; leadReply = { ok: true, captured: true };
-  await page.click("#startGo");
-  await fill(page, "Dana", "dana@example.com", role);
+  await fill(page, "dana@example.com", role);
   const nav = page.waitForURL(/apps\.apple\.com/, { timeout: 5000 }).then(() => true, () => false);
   await page.click("#fGo");
   const went = await nav;
   const p = posts[0] || { body: {} };
   ok(role + ": one post, to /api/lead", posts.length === 1 && p.path === "/api/lead", posts);
-  ok(role + ": it carries the role and the grown-up's own name as own_name, never name or anything about a child",
-    p.body.role === role && p.body.own_name === "Dana" && p.body.email === "dana@example.com" && !("name" in p.body) && !("child" in p.body) && !("age" in p.body), p.body);
+  ok(role + ": it carries the email and the role, and no name of anyone",
+    p.body.role === role && p.body.email === "dana@example.com" && !("name" in p.body) && !("own_name" in p.body) && !("child" in p.body) && !("age" in p.body), p.body);
   ok(role + ": …and which ad brought them", p.body.utm_source === "fb" && p.body.utm_campaign === "launch" && p.body.fbclid === "abc123" && p.body.source === "fb", p.body);
   ok(role + ": then the page went to the App Store listing", went && /apps\.apple\.com\/us\/app\/sona-speech\/id6785755867/.test(page.url()), page.url());
   ok(role + ": no page errors", errors.length === 0, errors);
@@ -127,8 +122,7 @@ for (const role of ["parent", "other"]) {
 {
   const { context, page } = await fresh();
   posts = []; leadReply = { ok: false, error: "A valid email is required." };
-  await page.click("#startGo");
-  await fill(page, "Dana", "dana@example.com", "parent");
+  await fill(page, "dana@example.com", "parent");
   await page.click("#fGo");
   await page.waitForTimeout(400);
   ok("a refused lead shows the server's reason and stays put", /valid email is required/.test(await page.textContent("#fErr")) && /127\.0\.0\.1/.test(page.url()));
@@ -147,14 +141,13 @@ for (const role of ["parent", "other"]) {
 {
   const { context, page, errors } = await fresh();
   posts = []; authReply = { ok: true, sent: true, signedIn: true };
-  await page.click("#startGo");
-  await fill(page, "Sam", "sam@clinic.org", "slp");
+  await fill(page, "sam@clinic.org", "slp");
   const nav = page.waitForURL(/apps\.apple\.com/, { timeout: 6000 }).then(() => true, () => false);
   await page.click("#fGo");
   await page.waitForTimeout(300);
   const p = posts[0] || { body: {} };
   ok("SLP: one post, to the clinician sign-up (which forwards the lead itself)", posts.length === 1 && p.path === "/api/slp/auth/request", posts);
-  ok("SLP: it carries their name, email and the ad", p.body.name === "Sam" && p.body.email === "sam@clinic.org" && p.body.attrib && p.body.attrib.fbclid === "abc123", p.body);
+  ok("SLP: it carries the email and the ad, and no name", p.body.email === "sam@clinic.org" && !("name" in p.body) && p.body.attrib && p.body.attrib.fbclid === "abc123", p.body);
   ok("SLP: told the dashboard link is in their email, with the dashboard a tap away",
     /emailed sam@clinic\.org a link/.test(await page.textContent("#sentMsg")) && (await page.isVisible("#straight")));
   ok("SLP: a new clinician is marked as one", JSON.stringify(await page.evaluate(() => window.__track)) === '["Lead","CompleteRegistration"]');
@@ -168,8 +161,7 @@ for (const [label, reply, want] of [
 ]) {
   const { context, page } = await fresh();
   posts = []; authReply = reply;
-  await page.click("#startGo");
-  await fill(page, "Sam", "sam@clinic.org", "slp");
+  await fill(page, "sam@clinic.org", "slp");
   await page.click("#fGo");
   await page.waitForTimeout(3200);
   ok("SLP, " + label + ": says so, and stays, so the way in is not lost", want.test(await page.textContent("#sentMsg")) && /127\.0\.0\.1/.test(page.url()));
@@ -181,9 +173,8 @@ for (const [label, reply, want] of [
 {
   const { context, page, errors } = await fresh({ ua: "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Mobile Safari/537.36" });
   posts = []; leadReply = { ok: true, captured: true };
-  await page.click("#startGo");
-  ok("Android: the pop-up says Sona opens in the browser", /browser/.test(await page.textContent("#mNext")));
-  await fill(page, "Lee", "lee@example.com", "parent");
+  ok("Android: the form says Sona opens in the browser", /browser/.test(await page.textContent("#mNext")));
+  await fill(page, "lee@example.com", "parent");
   const nav = page.waitForURL(/\/onboarding\.html/, { timeout: 5000 }).then(() => true, () => false);
   await page.click("#fGo");
   ok("Android: after the lead, the web app's setup, not the App Store", await nav, page.url());

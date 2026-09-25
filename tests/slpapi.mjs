@@ -590,16 +590,15 @@ if (A) {
     /CRM_TIMEOUT_MS = \d+/.test(req) && /ctl\.abort\(\)/.test(req));
   ok("…and a lead the CRM did not take says so in the log", /CRM did not capture the lead/.test(req));
 
-  // A first name reaches the CRM only as the grown-up's own: a clinician's
-  // `name` on the clinician path, or `own_name` from the landing page's
-  // "Your first name" box (25 Sep 2026). Never `name` otherwise, because on the
-  // parent paths the only name a caller holds is a child's.
-  ok("a first name travels only as the grown-up's own: a clinician's name, or own_name",
-    /first_name: body\?\.role === "slp" && typeof body\?\.name === "string" \? body\.name\.trim\(\)\.slice\(0, 60\)\s*: typeof body\?\.own_name === "string" \? body\.own_name\.trim\(\)\.slice\(0, 60\) : ""/.test(lead));
+  // The clinician's own first name reaches the CRM — as its own field, only
+  // on the clinician path, and never through `name`, which stays blank
+  // because on the parent path the only name there is a child's. The landing
+  // page asks nobody for a name (25 Sep 2026).
+  ok("the clinician's first name travels only when the caller is a clinician",
+    /first_name: body\?\.role === "slp" && typeof body\?\.name === "string" \? body\.name\.trim\(\)\.slice\(0, 60\) : "",/.test(lead));
   {
-    const senders = readdirSync(APP + "/public").filter((f) => f.endsWith(".html") && /own_name/.test(read("public/" + f)));
-    ok("…and only the landing page sends own_name, from a box labelled 'Your first name'",
-      senders.length === 1 && senders[0] === "for-slps.html" && /<label class="fl" for="fName">Your first name<\/label>/.test(read("public/for-slps.html")), senders.join(", "));
+    const named = readdirSync(APP + "/public").filter((f) => f.endsWith(".html") && /own_name|"fName"/.test(read("public/" + f)));
+    ok("…and no page sends a second kind of name to the list", named.length === 0, named.join(", "));
   }
   ok("…and reaches the webhook through the allow-list",
     /first_name: lead\.first_name,/.test(lead) && /role: lead\.role,/.test(lead) && /fbclid: lead\.fbclid,/.test(lead));
@@ -696,11 +695,11 @@ if (A) {
   const sync = read("app/api/founders/kit-sync/route.ts");
   const ob = read("public/onboarding.html");
   ok("Kit is reached with the v4 API key header", /"X-Kit-Api-Key": process\.env\.KIT_API_KEY/.test(kitSrc));
-  ok("the lead route sends every lead to Kit, tagged by role, with only the grown-up's own first name",
+  ok("the lead route sends every lead to Kit, tagged by role, with only a clinician's own first name",
     /kitSubscribe\(\{ email: safeLead\.email, firstName: safeLead\.first_name, tag: kitTagFor\(safeLead\.role\) \}\)/.test(lead) &&
     /first_name: body\?\.role === "slp" && typeof body\?\.name === "string"/.test(lead) &&
     /role: body\?\.role === "slp" \? "slp" : body\?\.role === "parent" \? "parent" : body\?\.role === "other" \? "other" : ""/.test(lead),
-    "first_name is a clinician's own name or own_name; a child's never");
+    "first_name is only ever a clinician's own name; a parent's lead carries none");
   ok("…and records Kit's answer on the saved lead", /kit: kitRes \? \(kitRes\.ok \? kitRes\.detail : "refused \(" \+ kitRes\.detail \+ "\)"\)/.test(lead));
   ok("the catch-up is founder-only, batched, and stops when Kit says slow down",
     /const denied = founderGate\(req\);/.test(sync) && /const BATCH = \d+;/.test(sync) && /r\.status === 429/.test(sync));
