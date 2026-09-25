@@ -7,7 +7,12 @@ on:
 jobs:
   suites:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    # 45, not 25 (25 Sep 2026): the battery drives real audio through the
+    # practice screen and the eight games, and on this runner it takes about
+    # 27-30 minutes. At 25 the job was cancelled mid-run on main (#143) and
+    # on #146, which reads as neither pass nor fail. One job, same name, so
+    # a required check keeps matching.
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
