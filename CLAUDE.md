@@ -300,6 +300,17 @@ also pay: the dashboard and the free version stay free, and a clinician who
 wants every game for their families buys Caseload Premium — one yearly price,
 never per family, never to the clinician.
 
+**speaksona.com speaks to parents AND SLPs** (Travis, 25 Sep 2026: "I don't
+know who my customer is"). The root is still `for-slps.html` (the name is
+historical; the rewrite and the pins point at it). The headline stays; the
+one call to action is **Start free**, a pop-up asking the grown-up's own first
+name, email and "I'm a…" (Speech therapist (SLP or SLPA) · Parent or
+caregiver · Other), then the App Store (Android: the web app, which has no
+store listing to send it to). "For parents" in the header opens the same
+pop-up with Parent chosen. An SLP or SLPA also gets their dashboard account
+and sign-in email, as the page always did, because the iPhone app has no
+clinician side; everyone else goes to `/api/lead` with role and `own_name`.
+
 Still `noindex`, correctly: `slp.html` and `slp-login.html` (a private
 dashboard and its login) and `join.html` (a family's redemption link, which
 carries a credential in the URL). Those are surfaces, not marketing.
@@ -386,7 +397,10 @@ Check. An address a clinician types for a parent never reaches it. That route:
   subscriber counts as success; a failed form or tag step is logged, not lost;
 - says `captured` only when a list actually said yes.
 
-What reaches Kit: the email, a **clinician's own** first name, and the role tag.
+What reaches Kit: the email, the grown-up's **own** first name (a clinician's,
+or what a visitor typed into the landing page's "Your first name" box, sent as
+`own_name`; a caller's `name` field never becomes it off the clinician path),
+and the role tag (`sona-slp`, `sona-parent`, `sona-other`).
 Never anything about a child. Wherever an email joins the list, the page says
 so first, in Travis's words: "We'll also send occasional tips from Rachel.
 Unsubscribe anytime." Meta's `Lead` fires only when an email was given.

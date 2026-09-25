@@ -71,7 +71,9 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
   // into a Facebook group sells a page that isn't there.
   ok("the headline, the tab title and the shared card all say 'Speech practice kids actually want to do'",
     /<h1>Speech practice kids actually want to do\.<\/h1>/.test(slps) &&
-    /<title>Speech practice kids actually want to do — Sona for SLPs<\/title>/.test(slps) &&
+    // "— Sona", not "— Sona for SLPs" (25 Sep 2026): the page speaks to
+    // parents and SLPs alike now.
+    /<title>Speech practice kids actually want to do — Sona<\/title>/.test(slps) &&
     /og:title" content="Speech practice kids actually want to do\."/.test(slps) &&
     /twitter:title" content="Speech practice kids actually want to do\."/.test(slps) &&
     !/actually practiced at home|Never plan speech homework/.test(slps));
@@ -90,9 +92,30 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
   // TWO LINKS, NOTHING ELSE (Travis, 24 Sep 2026): the header is For parents
   // and Sign in. How it works and Privacy are on the page below the fold.
   ok("…and the header carries only For parents and Sign in", (header.match(/<a\b/g) || []).length === 3 && !/How it works|>Privacy</.test(header));
-  ok("…and goes straight to the App Store on an iPhone or iPad",
-    /getElementById\("forParents"\)\.href = "https:\/\/apps\.apple\.com\/us\/app\/sona-speech\/id6785755867"/.test(slps) &&
-    /iPhone\|iPad\|iPod/.test(slps) && /maxTouchPoints > 1/.test(slps));
+  // REWRITTEN 25 Sep 2026 (Travis): this pinned For parents leaving for the
+  // App Store on an iPhone, which skipped the one question the page now asks.
+  // It opens the Start free pop-up with Parent chosen; Start free ends at the
+  // App Store, or at the web app on Android, which has no Sona app to get.
+  ok("…and opens the Start free pop-up with Parent chosen",
+    /\$\("forParents"\)\.onclick = function \(e\) \{ e\.preventDefault\(\); openStart\("parent"\); \}/.test(slps));
+  ok("Start free ends at the App Store, or at the web app on Android",
+    /var APP_STORE = "https:\/\/apps\.apple\.com\/us\/app\/sona-speech\/id6785755867";/.test(slps) &&
+    /var NEXT_URL = android \? "\/onboarding\.html" : APP_STORE;/.test(slps));
+
+  // THE START FREE POP-UP (Travis, 25 Sep 2026): the grown-up's own first
+  // name, their email and who they are, one button. Every Start free opens it,
+  // and there is no second form on the page to get out of step with it.
+  const modal = (slps.match(/<div class="modal" id="startModal"[\s\S]*?<\/form>/) || [""])[0];
+  ok("one pop-up asks 'Your first name', the email and 'I'm a…', with one button",
+    /<label class="fl" for="fName">Your first name<\/label>/.test(modal) && /id="fEmail" type="email"/.test(modal) &&
+    /<select id="fRole">/.test(modal) && (modal.match(/<button\b/g) || []).length === 2 && (slps.match(/<form\b/g) || []).length === 1);
+  ok("…and the three answers are Speech therapist (SLP or SLPA), Parent or caregiver, Other",
+    /<option value="slp">Speech therapist \(SLP or SLPA\)<\/option>/.test(modal) &&
+    /<option value="parent">Parent or caregiver<\/option>/.test(modal) && /<option value="other">Other<\/option>/.test(modal));
+  ok("every Start free on the page opens it",
+    /\$\("startGo"\)\.onclick = function \(\) \{ openStart\(""\); \};/.test(slps) &&
+    /\$\("finalGo"\)\.onclick = function \(\) \{ openStart\(""\); \};/.test(slps) &&
+    (slps.replace(/<!--[\s\S]*?-->/g, "").match(/>Start free</g) || []).length === 4);
 }
 
 // ── what the landing page promises: a free version and Premium (24 Sep 2026) ──
@@ -108,7 +131,8 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
     !/unlimited|forever/i.test(shown), (shown.match(/[^.>]*(unlimited|forever)[^.<]*/i) || [""])[0]);
   // Keep the free-game promise independent of the number of available titles.
   ok("…says what is free: the dashboard for you, the free version for every family",
-    /<b>Free for you<\/b>/.test(shown) && /<b>Free for every family<\/b>/.test(shown) && /Daily practice and free games/.test(shown));
+    // "Free for SLPs", not "Free for you" (25 Sep 2026): "you" is anyone now.
+    /<b>Free for SLPs<\/b>/.test(shown) && /<b>Free for every family<\/b>/.test(shown) && /Daily practice and free games/.test(shown));
   ok("…answers 'What does it cost?'",
     /What does it cost\?/.test(shown) && /Caseload Premium is optional: \$79\.99 a year \(under \$7 a month\) gives every family who joins through your link every game/.test(shown));
   ok("…with the plan's real terms: no trial, yearly, cancel anytime, families keep it to the end of the paid year",

@@ -9,14 +9,15 @@ import { kvCmd } from "@/lib/slpAuth";
  *  1. create the subscriber (Kit treats this as an upsert, so a second
  *     sign-up is harmless) — if THIS fails, the lead did not reach Kit;
  *  2. add them to the Sona form (KIT_FORM_ID), if one is set;
- *  3. tag them sona-slp / sona-parent.
+ *  3. tag them sona-slp / sona-parent / sona-other.
  * A failed 2 or 3 still leaves a real subscriber in Kit, so it is logged and
  * reported in `detail` (the founder leads page shows it) rather than counted
  * as a lost lead — a wrong form id should cost a tag, not an email address.
  *
- * What goes to Kit: the email address, a CLINICIAN's own first name (never a
- * parent's, never a child's — the caller only passes one for role "slp"), and
- * the role tag. Nothing about a child, ever.
+ * What goes to Kit: the email address, the grown-up's OWN first name (a
+ * clinician's, or what a visitor typed into the landing page's "Your first
+ * name" box — never a child's; /api/lead decides which), and the role tag.
+ * Nothing about a child, ever.
  */
 const KIT = "https://api.kit.com/v4";
 const STEP_TIMEOUT_MS = 2500;
@@ -120,7 +121,12 @@ export async function kitSubscribe(o: { email: string; firstName?: string; tag?:
   return { ok: true, status: sub.status, detail: notes.length ? "added (" + notes.join(", ") + ")" : "added" };
 }
 
-/** The tag a lead gets: clinicians apart from everyone else. */
+/**
+ * The tag a lead gets: clinicians (SLPs and SLPAs), "other" (since 25 Sep
+ * 2026, the landing page asks), and parents, which is also every lead that
+ * arrives without a role (the Speech Check, the reminder pledge). Kit makes a
+ * tag the first time it is used, so a new one needs nothing set up there.
+ */
 export function kitTagFor(role: string): string {
-  return role === "slp" ? "sona-slp" : "sona-parent";
+  return role === "slp" ? "sona-slp" : role === "other" ? "sona-other" : "sona-parent";
 }

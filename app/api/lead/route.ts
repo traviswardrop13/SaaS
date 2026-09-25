@@ -54,6 +54,7 @@ export async function POST(req: NextRequest) {
     landing?: string;
     source?: string;
     name?: string;
+    own_name?: string;
     role?: string;
     fbclid?: string;
   };
@@ -108,14 +109,18 @@ export async function POST(req: NextRequest) {
     referrer: clamp(body?.referrer, 200),
     landing: clamp(body?.landing),
     source: typeof body?.source === "string" ? body.source.slice(0, 40) : "speech-check",
-    // Only a clinician signing up for themselves has a role, and only then
-    // does a first name travel — theirs, typed about themselves. The parent
-    // path never sets a role, so a child's name has no way onto this field.
-    // "parent" travels too since 24 Sep 2026 so the email list can tell the
-    // two apart. It is a label, not an identity; the parent's name is never
-    // asked for here and never sent.
-    role: body?.role === "slp" ? "slp" : body?.role === "parent" ? "parent" : "",
-    first_name: body?.role === "slp" && typeof body?.name === "string" ? body.name.trim().slice(0, 60) : "",
+    // WHO THEY ARE: "slp" (an SLP or SLPA), "parent", or "other" (since
+    // 25 Sep 2026: the landing page's Start free pop-up asks every visitor).
+    // A label, not an identity.
+    role: body?.role === "slp" ? "slp" : body?.role === "parent" ? "parent" : body?.role === "other" ? "other" : "",
+    // A FIRST NAME TRAVELS ONLY AS THE GROWN-UP'S OWN. Two ways, and `name` is
+    // never one of them off the clinician path, because on the parent paths
+    // the only name a caller holds is a child's: a clinician signing up
+    // (`name`, role "slp", via the auth route), or `own_name`, which only the
+    // landing page's pop-up sends, from a box labelled "Your first name"
+    // (tests/slpapi.mjs holds both, and that no other page sends own_name).
+    first_name: body?.role === "slp" && typeof body?.name === "string" ? body.name.trim().slice(0, 60)
+      : typeof body?.own_name === "string" ? body.own_name.trim().slice(0, 60) : "",
     fbclid: clamp(body?.fbclid),
     at: new Date().toISOString(),
   };
@@ -198,7 +203,8 @@ export async function POST(req: NextRequest) {
   };
   const toKit = async (): Promise<void> => {
     if (!kitConfigured()) return;
-    // A clinician's own first name goes with them; nobody else's does.
+    // The grown-up's own first name goes with them (see first_name above);
+    // a child's never does.
     kit = await kitSubscribe({ email: safeLead.email, firstName: safeLead.first_name, tag: kitTagFor(safeLead.role) });
   };
   try {

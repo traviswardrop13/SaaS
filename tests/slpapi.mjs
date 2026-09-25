@@ -23,7 +23,7 @@
 // process only.
 import { spawnSync } from "child_process";
 import { fileURLToPath, pathToFileURL } from "url";
-import { readFileSync, existsSync } from "fs";
+import { readFileSync, existsSync, readdirSync } from "fs";
 import { register } from "node:module";
 import path from "path";
 
@@ -590,11 +590,17 @@ if (A) {
     /CRM_TIMEOUT_MS = \d+/.test(req) && /ctl\.abort\(\)/.test(req));
   ok("…and a lead the CRM did not take says so in the log", /CRM did not capture the lead/.test(req));
 
-  // The clinician's own first name reaches the CRM — as its own field, only
-  // on the clinician path, and never through `name`, which stays blank
-  // because on the parent path the only name there is a child's.
-  ok("the clinician's first name travels only when the caller is a clinician",
-    /first_name: body\?\.role === "slp" && typeof body\?\.name === "string"/.test(lead));
+  // A first name reaches the CRM only as the grown-up's own: a clinician's
+  // `name` on the clinician path, or `own_name` from the landing page's
+  // "Your first name" box (25 Sep 2026). Never `name` otherwise, because on the
+  // parent paths the only name a caller holds is a child's.
+  ok("a first name travels only as the grown-up's own: a clinician's name, or own_name",
+    /first_name: body\?\.role === "slp" && typeof body\?\.name === "string" \? body\.name\.trim\(\)\.slice\(0, 60\)\s*: typeof body\?\.own_name === "string" \? body\.own_name\.trim\(\)\.slice\(0, 60\) : ""/.test(lead));
+  {
+    const senders = readdirSync(APP + "/public").filter((f) => f.endsWith(".html") && /own_name/.test(read("public/" + f)));
+    ok("…and only the landing page sends own_name, from a box labelled 'Your first name'",
+      senders.length === 1 && senders[0] === "for-slps.html" && /<label class="fl" for="fName">Your first name<\/label>/.test(read("public/for-slps.html")), senders.join(", "));
+  }
   ok("…and reaches the webhook through the allow-list",
     /first_name: lead\.first_name,/.test(lead) && /role: lead\.role,/.test(lead) && /fbclid: lead\.fbclid,/.test(lead));
 }
@@ -637,10 +643,17 @@ if (A) {
 // ── a new clinician goes straight into the dashboard ──
 {
   const slps = read("public/for-slps.html");
-  ok("a brand-new, signed-in clinician is taken into the dashboard without a 'check your email' stop",
-    /if \(j\.signedIn\) setTimeout\(function \(\) \{ location\.href = "\/slp\.html"; \}/.test(slps));
-  ok("…after the Lead has fired, so the pixel's request leaves first",
-    slps.indexOf('sonaTrack("Lead")') > 0 && slps.indexOf('sonaTrack("Lead")') < slps.indexOf('if (j.signedIn) setTimeout('));
+  // REWRITTEN 25 Sep 2026 (Travis): after Start free everyone goes to the
+  // App Store, clinicians included. This pinned a new clinician going straight
+  // into the dashboard; the dashboard link now comes by email, and the pop-up
+  // offers it too, so a clinician is never left without a way in.
+  const handler = slps.slice(slps.indexOf("function go()"));
+  ok("a clinician whose dashboard email went is taken on to the App Store, with the dashboard a tap away",
+    /if \(!j\.devLink\) goNext\(2600\);/.test(handler) && /\{ dashboard: !!j\.signedIn, button: true \}/.test(handler));
+  ok("…but when the email did not go, the pop-up stays open with the way in instead of leaving",
+    /else if \(!j\.sent\) \{[\s\S]*?\{ dashboard: true, button: true \}\);\s*\} else \{/.test(handler));
+  ok("…and the page leaves only after the Lead has fired, so the pixel's request goes first",
+    handler.indexOf('sonaTrack("Lead")') > 0 && handler.indexOf('sonaTrack("Lead")') < handler.indexOf("goNext("));
 }
 
 
@@ -683,10 +696,11 @@ if (A) {
   const sync = read("app/api/founders/kit-sync/route.ts");
   const ob = read("public/onboarding.html");
   ok("Kit is reached with the v4 API key header", /"X-Kit-Api-Key": process\.env\.KIT_API_KEY/.test(kitSrc));
-  ok("the lead route sends every lead to Kit, tagged by role, with only a clinician's own first name",
+  ok("the lead route sends every lead to Kit, tagged by role, with only the grown-up's own first name",
     /kitSubscribe\(\{ email: safeLead\.email, firstName: safeLead\.first_name, tag: kitTagFor\(safeLead\.role\) \}\)/.test(lead) &&
-    /first_name: body\?\.role === "slp" && typeof body\?\.name === "string"/.test(lead),
-    "first_name is only ever a clinician's own name; a parent's lead carries none");
+    /first_name: body\?\.role === "slp" && typeof body\?\.name === "string"/.test(lead) &&
+    /role: body\?\.role === "slp" \? "slp" : body\?\.role === "parent" \? "parent" : body\?\.role === "other" \? "other" : ""/.test(lead),
+    "first_name is a clinician's own name or own_name; a child's never");
   ok("…and records Kit's answer on the saved lead", /kit: kitRes \? \(kitRes\.ok \? kitRes\.detail : "refused \(" \+ kitRes\.detail \+ "\)"\)/.test(lead));
   ok("the catch-up is founder-only, batched, and stops when Kit says slow down",
     /const denied = founderGate\(req\);/.test(sync) && /const BATCH = \d+;/.test(sync) && /r\.status === 429/.test(sync));
@@ -727,6 +741,8 @@ if (A) {
   process.env.KIT_API_KEY = "kit_test_key"; process.env.KIT_FORM_ID = "12345";
   try {
     const K = await import(pathToFileURL(APP + "/lib/kit.ts").href);
+    ok("tags: SLPs and SLPAs sona-slp, Other sona-other, parents and every lead with no role sona-parent",
+      K.kitTagFor("slp") === "sona-slp" && K.kitTagFor("other") === "sona-other" && K.kitTagFor("parent") === "sona-parent" && K.kitTagFor("") === "sona-parent");
     const r1 = await K.kitSubscribe({ email: "mom@example.com", firstName: "", tag: K.kitTagFor("parent") });
     const create = calls.find((c) => c.u.endsWith("/v4/subscribers"));
     ok("a parent is created in Kit with their email and no name", !!create && create.body.email_address === "mom@example.com" && !("first_name" in create.body));
