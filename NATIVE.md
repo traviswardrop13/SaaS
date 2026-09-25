@@ -21,6 +21,28 @@ npx cap open ios      # opens Xcode
 ```
 > `npm install` updates `package.json` + `package-lock.json` together — commit those. (`/ios` is gitignored; commit it later only if you want CI builds.)
 
+## Required scene lifecycle (iOS 27 launch fix)
+
+After generating the iOS project, install Sona's scene lifecycle before building:
+
+```bash
+python3 scripts/install-ios-lifecycle.py
+# If the generated project is in another checkout:
+python3 scripts/install-ios-lifecycle.py /path/to/SaaS/ios/App/App
+```
+
+This adds the scene manifest and compiles `native/ios/App/SceneDelegate.swift`
+through the existing AppDelegate source entry. It preserves the existing
+Capacitor storyboard, plugins, icon, signing, permissions, and orientations.
+Original files are backed up to a temporary directory; repeating it is safe.
+Do not separately add SceneDelegate.swift to the Xcode target.
+
+**A successful archive is not a launch test.** Before uploading, install and
+launch the build on an iOS 27 simulator and a physical device. Verify a cold
+launch, background/reopen, and arrival at the family library or first-run setup.
+An app built against SDK 27 without a scene configuration exits immediately.
+[Apple's migration guide](https://developer.apple.com/documentation/uikit/transitioning-to-the-uikit-scene-based-life-cycle)
+
 ## In Xcode
 1. **App** target → **Signing & Capabilities** → check **Automatically manage signing** → choose your **Team** (your Apple account).
 2. **Bundle Identifier** = `com.speaksona.app` (matches `appId`; Xcode can create the App ID for you).
