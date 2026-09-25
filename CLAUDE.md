@@ -1,6 +1,12 @@
 # Working with Travis (and Rachel)
 
 ## Communication style
+**Talk to Travis like he's 10 years old, and keep it short** (Travis, 25 Sep
+2026: "explain as if im 10 years old and be more concise"). Short sentences,
+everyday words, no tech words unless explained in a few plain words. Say what
+happened, what he needs to do, and stop. If a reply is more than a few short
+lines, cut it.
+
 - Be concise. Default to a few sentences; use short bullets when listing.
 - Lead with the answer or the thing that happened. Cut background, caveats,
   and strategy essays unless asked.
