@@ -232,13 +232,14 @@ const spokenLiterals = (file) => {
   }
   return out;
 };
-for (const [file, known] of [
-  ["today.html", ["Let's open your surprise.", "Let's keep going.", "Pick a game.", "Let's go on an adventure."]],
-  ["onboarding.html", ["Hi there. Ready to play?"]],
-  ["activities.html", ["Pick a game."]],
-]) {
-  const lines = spokenLiterals(file);
-  ok(file + " speaks its known calm lines", known.every((k) => lines.includes(k)), true);
+// Home, setup and the library are silent since #140 (Travis, 24 Sep 2026:
+// "Setup and menus stay quiet; spoken coaching belongs inside games"), so
+// they must speak nothing at all; any line a later change adds there still
+// has to be calm.
+for (const file of ["today.html", "onboarding.html", "activities.html"]) {
+  // speakNow("") is the audio unlock on a tap, not a line.
+  const lines = spokenLiterals(file).filter((l) => l.trim());
+  ok(file + " speaks no menu lines", JSON.stringify(lines), "[]");
   for (const l of lines) noBang(file + ": " + l, l);
 }
 
