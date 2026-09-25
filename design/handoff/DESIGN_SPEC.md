@@ -5,6 +5,13 @@ Sona is a speech-therapy practice app for kids (~3–8). The core loop: the chil
 
 This redesign replaces the previous emoji-based UI with a designed "sticker" system, retires Leo (PNG mascot) for **Echo the Parrot** (pure SVG, 5 poses), adds an original 8-buddy cast, gives each mini-game its own sky, and moves all interstitials onto a shared warm-card overlay pattern.
 
+> **Superseded, 24 Sep 2026 — no in-game voice boosts.** STAR MODE, FRENZY,
+> SLOW-MO, GOLDEN KEYS and SUPER FLOAT (and the voice-boost pill below) were
+> removed: listening for them held the microphone open for a whole game, which
+> put iPhones into call audio. The only voice feature inside a game is "say
+> your sound to keep playing", and its mic opens only while that card shows.
+> Everything else in this spec stands.
+
 ## About the Design Files
 The files in this bundle are **design references created in HTML** — prototypes showing intended look and behavior, not production code. The task is to **recreate these designs in the app's existing codebase** (its current framework, component patterns, and asset pipeline). Open `Sona Final.dc.html` in a browser (keep `support.js` and `uploads/` beside it) to view the full board.
 

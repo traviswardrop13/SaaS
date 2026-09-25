@@ -2,6 +2,9 @@
 // rotate the card. E2E (real page, stubbed mic) asserts the /api/tts body for
 // round 1 (isolation) and round 2 (syllables); a same-source harness asserts
 // line composition for R/S/SH/THV/word/fail plus card rotation.
+// Since 24 Sep 2026 it also pins the calm voice: no "!" in any practice line,
+// the praise list, or what Echo says on Home, in setup and in the game picker;
+// the trimmed win chimes; and no coach voice labelled "Rachel".
 import { createServer } from "http";
 import { readFileSync, existsSync } from "fs";
 import { chromium, ROOT, OUT, launchOpts } from "./_env.mjs";
@@ -18,6 +21,11 @@ const srv = createServer((req, res) => {
       try { ttsPosts.push(JSON.parse(b).text); } catch (e) {}
       res.writeHead(500); res.end();
     });
+    return;
+  }
+  if (u.pathname === "/sfx-harness") {
+    res.writeHead(200, { "content-type": "text/html" });
+    res.end('<!doctype html><html><body><script src="/sona.js"></script></body></html>');
     return;
   }
   if (u.pathname.startsWith("/api/")) { res.writeHead(500); res.end(); return; }
@@ -70,7 +78,13 @@ await page.waitForTimeout(2500);
 // CITY1: the house's story beat is spoken FIRST now, so the prompt is not
 // necessarily post 0 — pick the prompt out by its shape, same as sylLine below.
 const r1prompt = ttsPosts.filter((l) => /^Ready\?/.test(l))[0];
-const r1ok = !r1prompt || r1prompt === "Ready? Pull your tongue back and up, and make your R sound... five times... Go!";
+// CALM PROMPT (24 Sep 2026, rewritten deliberately): was "...five times...
+// Go!". The voice reads "… Go!" as a jump in pitch and energy. Rewritten
+// again the same day: no spoken "Your turn." — it was said into a closed mic,
+// before anything could hear the child who obeyed it; the glowing mic hands
+// the turn over instead. The mouth cue and the practice word inside it are
+// unchanged (Rachel's calls).
+const r1ok = !r1prompt || r1prompt === "Ready? Pull your tongue back and up, and make your R sound, five times.";
 if (!r1ok) fails++;
 console.log((r1ok ? "PASS" : "FAIL") + "  E2E r1 human clip replaces TTS (or exact fallback)  → " + JSON.stringify(r1prompt || "(no TTS prompt — clip played)"));
 if (!r1ok) fails++;
@@ -105,7 +119,7 @@ if (!r2.sylls.includes(r2.prompt)) fails++;
 // matching the prompt grammar — not simply the first thing said.
 const sylLine = ttsPosts.filter((l) => /^Ready\?/.test(l))[0] || ttsPosts[0] || "";
 // ONE syllable per round now — the card no longer rotates rah→ree→roo mid-round
-const sylWant = /^Ready\? Say [a-z]+\.\.\. five times\.\.\. Go!$/;
+const sylWant = /^Ready\? Say [a-z]+, five times\.$/; // calm frame, no spoken "Your turn." (24 Sep 2026)
 console.log((sylWant.test(sylLine) ? "PASS" : "FAIL") + "  E2E r2 spoken one syllable  → " + JSON.stringify(sylLine));
 if (!sylWant.test(sylLine)) fails++;
 for (const t of ttsPosts) noSustained("E2E:" + t.slice(0, 24), t);
@@ -143,7 +157,9 @@ const cases = await page.evaluate(
       const c = S.cue(snd);
       const soundName = () => { let x = String(snd).toUpperCase(); if (x === "THV") x = "TH"; return x.length > 1 ? x.split("").join(" ") : x; };
       const tip = new Function("c", "soundName", "return " + failTipSrc)(c, soundName);
-      return "Hmm, that was a different sound! " + tip + ". Try again!";
+      // 24 Sep 2026: the calm retry line (was "Hmm, that was a different
+      // sound! {tip}. Try again!"). Pinned against charge.html's source below.
+      return "Let's try that one again. " + tip + ".";
     };
     out.failR = failFor("R"); out.failS = failFor("S"); out.failZ = failFor("Z"); out.failM = failFor("M");
     // card rotation: paintCard with a syllable ITEM must update the bubble target
@@ -158,24 +174,141 @@ const cases = await page.evaluate(
   { soundNameSrc, sayLineSrc, cueShortSrc, failTipSrc, paintCardSrc }
 );
 
-ok("R first", cases.rFirst, "Ready? Pull your tongue back and up, and make your R sound... five times... Go!");
-ok("R repeat", cases.rRepeat, "Ready? Make your R sound... five times... Go!");
-ok("S first", cases.sFirst, "Ready? Teeth together, and make your S sound... five times... Go!");
-ok("S repeat", cases.sRepeat, "Ready? Make your S sound... five times... Go!");
-ok("SH first", cases.shFirst, "Ready? Round your lips and whisper quiet, and make your S H sound... five times... Go!");
-ok("THV first", cases.thvFirst, "Ready? Tongue between your teeth and buzz, and make your T H sound... five times... Go!");
-ok("word level", cases.word, "Ready? Say rabbit... five times... Go!");
-ok("syllable one target", cases.sylFirst, "Ready? Say rah... five times... Go!");
-ok("syllable one target repeat", cases.sylRepeat, "Ready? Say rah... five times... Go!");
+// CALM FRAME (24 Sep 2026, rewritten deliberately from "...five times...
+// Go!"): a comma and a full stop. "Your turn." was dropped the same day: Echo
+// said it before the mic could hear, so an obedient child answered into
+// nothing; the glowing mic, lit only once the window hears, marks the turn.
+// The mouth cue (CUES tip, first clause) and the practice word are exactly
+// what they were — Rachel's calls.
+ok("R first", cases.rFirst, "Ready? Pull your tongue back and up, and make your R sound, five times.");
+ok("R repeat", cases.rRepeat, "Ready? Make your R sound, five times.");
+ok("S first", cases.sFirst, "Ready? Teeth together, and make your S sound, five times.");
+ok("S repeat", cases.sRepeat, "Ready? Make your S sound, five times.");
+ok("SH first", cases.shFirst, "Ready? Round your lips and whisper quiet, and make your S H sound, five times.");
+ok("THV first", cases.thvFirst, "Ready? Tongue between your teeth and buzz, and make your T H sound, five times.");
+ok("word level", cases.word, "Ready? Say rabbit, five times.");
+ok("syllable one target", cases.sylFirst, "Ready? Say rah, five times.");
+ok("syllable one target repeat", cases.sylRepeat, "Ready? Say rah, five times.");
 ok("card flip prompt", cases.cardPrompt, "ree");
 // isolation shows the SUSTAINED target on screen (huge, orange) — the
 // no-sustained rule below guards SPOKEN lines only, so card* is excluded
 ok("card isolation prompt", cases.cardIso, "rrrr");
-ok("fail R", cases.failR, "Hmm, that was a different sound! Pull your tongue back and up like a tiger growl. Try again!");
-ok("fail S", cases.failS, "Hmm, that was a different sound! Teeth together, big smile, let the air hiss out. Try again!");
-ok("fail Z", cases.failZ, "Hmm, that was a different sound! Teeth together and buzz like a bee. Try again!");
-ok("fail M", cases.failM, "Hmm, that was a different sound! Lips together and hum. Try again!");
+// The tip text is Rachel's CUES wording, untouched; only the frame is calmer.
+ok("fail R", cases.failR, "Let's try that one again. Pull your tongue back and up like a tiger growl.");
+ok("fail S", cases.failS, "Let's try that one again. Teeth together, big smile, let the air hiss out.");
+ok("fail Z", cases.failZ, "Let's try that one again. Teeth together and buzz like a bee.");
+ok("fail M", cases.failM, "Let's try that one again. Lips together and hum.");
+ok("charge.html speaks exactly the calm retry line pinned above", /await say\("Let's try that one again\. "\+tip\+"\."\);/.test(html), true);
 for (const [k, v] of Object.entries(cases)) if (!/^card/.test(k)) noSustained(k, v);
+
+// ---- CALM, NOT HYPED (24 Sep 2026) ----
+// The voice reads "!" as a jump in pitch and energy. Travis heard the result
+// as "jumpy and explosive" and asked for "relaxed and sweet, like talking to a
+// little kid". So no line Echo SPEAKS in these places may carry a "!".
+const noBang = (name, s) => {
+  const pass = typeof s === "string" && s.length > 0 && !s.includes("!");
+  if (!pass) fails++;
+  console.log((pass ? "PASS" : "FAIL") + "  no \"!\"  " + name + (pass ? "" : "  → " + JSON.stringify(s)));
+};
+for (const [k, v] of Object.entries(cases)) if (!/^card/.test(k)) noBang("practice line " + k, v);
+// The praise list, read from the live Sona object, not from a copy.
+const praises = await page.evaluate(() => (window.Sona && Sona.PRAISES) ? Sona.PRAISES.slice() : null);
+ok("praise is the calm list", JSON.stringify(praises), JSON.stringify(["Nice one.", "Good job.", "I heard that.", "That was lovely.", "Well done."]));
+for (const p of praises || []) noBang("praise " + p, p);
+ok("praiseLine() only ever returns a calm line", await page.evaluate(() => {
+  for (let i = 0; i < 200; i++) { const l = Sona.praiseLine(); if (!Sona.PRAISES.includes(l) || l.includes("!")) return false; }
+  return true;
+}), true);
+// Every string literal Echo is asked to say on Home, in setup and in the game
+// picker. Scanned from source so a new spoken line is caught the day it lands;
+// each page must yield its known lines, so the scan can never pass empty.
+const spokenLiterals = (file) => {
+  const src = readFileSync(ROOT + "/" + file, "utf8"), out = [];
+  for (const m of src.matchAll(/\b(?:S|Sona)\.speak(?:Now)?\(((?:[^()]|\([^()]*\))*)\)/g)) {
+    for (const lit of m[1].matchAll(/"((?:[^"\\]|\\.)*)"|'((?:[^'\\]|\\.)*)'/g)) {
+      const text = (lit[1] ?? lit[2]).replace(/\\(.)/g, "$1");
+      if (text) out.push(text);
+    }
+  }
+  return out;
+};
+for (const [file, known] of [
+  ["today.html", ["Let's open your surprise.", "Let's keep going.", "Pick a game.", "Let's go on an adventure."]],
+  ["onboarding.html", ["Hi there. Ready to play?"]],
+  ["activities.html", ["Pick a game."]],
+]) {
+  const lines = spokenLiterals(file);
+  ok(file + " speaks its known calm lines", known.every((k) => lines.includes(k)), true);
+  for (const l of lines) noBang(file + ": " + l, l);
+}
+
+// ---- No coach voice is labelled "Rachel" (24 Sep 2026) ----
+// ElevenLabs' stock voice of that name sat in Settings → Choose coach voice,
+// and Sona's co-founder SLP is Rachel: a parent could think they were hearing
+// her. The voice stays (same id, so a family who chose it keeps it); the label
+// is one that belongs to nobody at Sona.
+{
+  const voices = readFileSync(ROOT + "/voices.html", "utf8");
+  const names = [...voices.matchAll(/\{\s*id:\s*"([^"]+)",\s*name:\s*"([^"]+)"/g)].map((m) => ({ id: m[1], name: m[2] }));
+  ok("the voice picker lists its voices", names.length >= 8, true);
+  ok("no coach voice is named Rachel", names.some((v) => /rachel/i.test(v.name)), false);
+  ok("the stock voice is still offered under a new label", names.find((v) => v.id === "21m00Tcm4TlvDq8ikWAM")?.name, "Gentle");
+}
+
+// ---- Win chimes trimmed (24 Sep 2026) ----
+// correct and complete land on the loudest moments, right beside Echo's voice:
+// each note is 3 dB down (0.16 -> 0.113 at full volume) and swells in over
+// 25 ms instead of snapping in over 15. Durations are unchanged — pages time
+// the mic's quiet window after them.
+const chimes = await (async () => {
+  const c2 = await browser.newContext();
+  const p2 = await c2.newPage();
+  await p2.addInitScript(() => {
+    const log = window.__notes = [];
+    const param = () => ({ value: 0, setValueAtTime() {}, linearRampToValueAtTime() {}, exponentialRampToValueAtTime(v, t) { this.ramps.push([v, t]); }, ramps: [] });
+    class Ctx {
+      constructor() { this.state = "running"; this.currentTime = 0; this.destination = {}; }
+      resume() { return Promise.resolve(); }
+      createGain() { const g = { gain: param(), connect() {}, disconnect() {} }; return g; }
+      createOscillator() { const o = { type: "", frequency: param(), connect(g) { this.g = g; }, disconnect() {}, start(t) { this.rec = { start: t, ramps: this.g && this.g.gain ? this.g.gain.ramps : [] }; log.push(this.rec); }, stop(t) { if (this.rec) this.rec.stop = t; } }; return o; }
+    }
+    window.AudioContext = window.webkitAudioContext = Ctx;
+    localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Demo", onboarded: true, volume: 1, soundOn: true, voiceOn: true }));
+  });
+  await p2.goto("http://localhost:8123/sfx-harness");
+  const read = (name) => p2.evaluate((n) => { window.__notes.length = 0; Sona.sfx[n](); return window.__notes.map((x) => ({ start: x.start, peak: x.ramps[0] && x.ramps[0][0], attack: x.ramps[0] && +(x.ramps[0][1] - x.start).toFixed(4), end: x.ramps[1] && +(x.ramps[1][1] - x.start).toFixed(4), stop: x.stop })); }, name);
+  const out = { correct: await read("correct"), complete: await read("complete"), tap: await read("tap") };
+  await c2.close();
+  return out;
+})();
+for (const name of ["correct", "complete"]) {
+  const notes = chimes[name];
+  ok(name + ": every note is at or under 0.113 of full volume (3 dB under the old 0.16)", notes.length > 0 && notes.every((n) => n.peak <= 0.1131), true);
+  ok(name + ": the main notes are exactly 3 dB down", notes.filter((n) => n.peak > 0.1).every((n) => Math.abs(20 * Math.log10(n.peak / 0.16) + 3) < 0.05), true);
+  ok(name + ": every note swells in over 25 ms", notes.every((n) => n.attack === 0.025), true);
+}
+ok("correct keeps its length (last note ends 0.34 s in)", Math.max(...chimes.correct.map((n) => n.start + n.end)).toFixed(2), "0.34");
+ok("complete keeps its length (last note ends 0.56 s in)", Math.max(...chimes.complete.map((n) => n.start + n.end)).toFixed(2), "0.56");
+ok("the counted-try tap is untouched (15 ms attack)", chimes.tap.length === 2 && chimes.tap.every((n) => n.attack === 0.015), true);
+// Sona must never hear its own chime as the child. The practice screen keeps
+// the mic closed until a chime has finished (SFX_MS says how long each one
+// rings, then ECHO_TAIL_MS) — so every chime must have fully stopped inside
+// the time the page thinks it lasts.
+// REWRITTEN 24 Sep 2026: this also pinned TAP_CHIME_MS, the deaf window after
+// the chime that marked each counted try inside the open mic. That chime is
+// gone — a counted try is seen, not heard — so the pin is now that no chime
+// is played while the mic is listening at all: nothing in countRep sounds.
+{
+  const tapMs = +(html.match(/SFX_MS=\{[^}]*tap:(\d+)/)?.[1] || NaN);
+  const winMs = +(html.match(/SFX_MS=\{[^}]*complete:(\d+)/)?.[1] || NaN);
+  const lastStop = (notes) => Math.max(...notes.map((n) => n.stop)) * 1000;
+  ok("charge.html declares how long its chimes ring", Number.isFinite(tapMs) && Number.isFinite(winMs), true);
+  ok("the tap chime is silent before its window ends (" + lastStop(chimes.tap).toFixed(0) + " ms ≤ " + tapMs + " ms)", lastStop(chimes.tap) <= tapMs, true);
+  ok("the win chime is silent before its window ends (" + lastStop(chimes.complete).toFixed(0) + " ms ≤ " + winMs + " ms)", lastStop(chimes.complete) <= winMs, true);
+  const countRep = html.match(/function countRep\(now\)\{[\s\S]*?\n            \}/)?.[0] || "";
+  ok("a counted try makes no sound into the open mic (no chime in countRep)", !!countRep && !/sfx|Chime|S\.sfx/.test(countRep.replace(/\/\/[^\n]*/g, "")), true);
+  ok("the counted-try chime guard is gone", !/TAP_CHIME_MS|chimeUntil|tryChime/.test(html), true);
+}
 
 await browser.close();
 srv.close();

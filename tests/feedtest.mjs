@@ -56,6 +56,9 @@ const target1 = (t.bubble.match(/Where's the (.+)\?/) || [])[1];
 ok("the asked word is one of the cards", !!target1 && t.cards.includes(target1), t.bubble);
 ok("round starts 0/5", /0\/5/.test(t.fed));
 ok("Echo speaks the ask", ttsAsks.some((x) => new RegExp("Where is the " + target1, "i").test(x)), JSON.stringify(ttsAsks));
+// Calm, not hype (24 Sep 2026): the voice reads "!" as a burst of energy, so
+// the ask ends on a period. The practice word inside it is unchanged.
+ok("Echo's ask ends calmly, on a period", ttsAsks.length > 0 && ttsAsks.every((x) => !/!/.test(x) && /\.$/.test(x)), JSON.stringify(ttsAsks));
 
 // ── wrong tap: wobble + hint, never a fail, fed stays 0 ──
 const wrongIdx = t.cards.findIndex((w) => w !== target1);

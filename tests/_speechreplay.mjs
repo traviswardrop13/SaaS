@@ -15,7 +15,14 @@ export function loadEvidence(file = (process.env.SONATEST_PUBLIC_ROOT || ROOT) +
   const src = readFileSync(file, 'utf8');
   const a = src.indexOf('var EVID='), b = src.indexOf('// ---- rapid-fire rep engine');
   if (a < 0 || b < 0) throw new Error('evidence block not found in ' + file);
-  return new Function(src.slice(a, b) + '\nreturn {speechEvidence, EVID};')();
+  const out = new Function(src.slice(a, b) + '\nreturn {speechEvidence, EVID};')();
+  // The room constants (24 Sep 2026), read from the page so the replay's bar
+  // and its voice-not-a-room rule are the ones that ship. An older build
+  // (SONATEST_PUBLIC_ROOT) without them replays as it worked: the median, and
+  // no ceiling.
+  const num = (name, dflt) => { const m = src.match(new RegExp('\\b' + name + '=([0-9.]+)')); return m ? +m[1] : dflt; };
+  out.ROOM = { pct: num('ROOM_PCT', 0.5), max: num('ROOM_MAX', Infinity), learn: num('LEARN_FRAMES', 8) };
+  return out;
 }
 
 function fft(re, im) {
@@ -65,24 +72,46 @@ export class Analyser {
 // Replay one listening segment over `sig` (the whole mic stream, starting at
 // the moment the segment opens). Returns tries for the new and old engines.
 export function run(sig, rate, { fps = 60, jitter = 0, NEED = 100, evidence = loadEvidence(), float = true, seed = 1 } = {}) {
-  const { speechEvidence, EVID } = evidence;
+  const { speechEvidence, EVID, ROOM } = evidence;
+  // charge.html's roomLevel (the pct-th percentile of the non-zero readings)
+  // and roomBar (3x the room, 0.035 at least, 3 x ROOM_MAX at most).
+  const level = (list, pct) => { const v = list.filter(x => x > 0).sort((a, b) => a - b); return v.length ? v[Math.floor((v.length - 1) * pct)] : 0; };
+  const bar = (x) => Math.min(3 * ROOM.max, Math.max(0.035, x * 3.0));
   const an = new Analyser(sig, 512, 0.8), ev = new Analyser(sig, rate >= 88200 ? 2048 : rate >= 32000 ? 1024 : 512, 0, float);
   const td = new Uint8Array(512);
   const evid = speechEvidence(); evid.attach(ev, rate);
   // lastRep starts far in the past: the engine's clock is performance.now(), never near 0
-  let voiced = 0, silent = 0, inBurst = false, thr = 0, lastRep = -1e9, counted = false, burstAt = 0, reps = 0; const calRms = [];
+  let voiced = 0, silent = 0, inBurst = false, thr = 0, lastRep = -1e9, counted = false, burstAt = 0, reps = 0, learn = null, voice = false; const calRms = [];
   let ov = 0, os = 0, oin = false, olast = -1e9, oreps = 0, othr = 0, calSum = 0;
   const at = [], oldAt = [];
   let s = seed >>> 0; const rnd = () => { s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s / 4294967296; };
   const endMs = sig.length / rate * 1000, dt = 1000 / fps;
   const countRep = (now, why) => { counted = true; reps++; lastRep = burstAt; at.push({ t: Math.round(now), why }); return reps >= NEED; };
+  // charge.html's learnRoom and heardTry: a window whose own quarter-second
+  // was a voice learns the room from its first LEARN_FRAMES quiet frames, and
+  // meanwhile counts a try only once it ends, and only if voiced or a hiss.
+  const learnRoom = (now, rms) => {
+    learn.push(rms); evid.calibrate(now);
+    if (learn.length < ROOM.learn) return;
+    const low = level(learn, ROOM.pct), bg = evid.measured();
+    if (bg) evid.floor(bg);
+    thr = bar(low); learn = null;
+  };
+  const heardTry = () => learn ? /^(voiced|sibilant|energy)$/.test(evid.route()) : evid.brief();
   for (let now = 0; now < endMs; now += dt * (1 + jitter * (rnd() - 0.5))) {
     const pos = Math.floor(now / 1000 * rate / 128) * 128; an.pos = pos; ev.pos = pos;
     an.getByteTimeDomainData(td);
     let sum = 0; for (let i = 0; i < 512; i++) { const d = (td[i] - 128) / 128; sum += d * d; }
     const rms = Math.sqrt(sum / 512), active = now;
     if (active < 250) { calRms.push(rms); calSum += rms; evid.calibrate(now); continue; }
-    if (!thr) { const c = calRms.filter(v => v > 0).sort((a, b) => a - b); thr = Math.max(0.035, (c.length ? c[c.length >> 1] : 0) * 3.0); othr = Math.max(0.035, calSum / Math.max(1, calRms.length) * 3.0); }
+    // No page reading (the replay is one window on its own): the window's
+    // 20th percentile, as charge.html's readRoom (the median until 24 Sep
+    // 2026), and never a voice's (ROOM.max).
+    if (!thr) {
+      const low = level(calRms, ROOM.pct); voice = low > ROOM.max; thr = bar(low);
+      if (voice) { evid.resample(); learn = []; }
+      othr = Math.max(0.035, calSum / Math.max(1, calRms.length) * 3.0);
+    }
     // OLD engine (origin/main): mean threshold, every event is a try at onset
     if (rms > othr) { ov++; os = 0; if (!oin && ov >= 4 && now - olast > 350) { oin = true; olast = now; oreps++; oldAt.push(Math.round(now)); } }
     else { os++; ov = 0; if (os >= 8) oin = false; }
@@ -90,15 +119,15 @@ export function run(sig, rate, { fps = 60, jitter = 0, NEED = 100, evidence = lo
     if (rms > thr) {
       voiced++; silent = 0;
       if (!inBurst && voiced >= 4 && now - lastRep > 350) { inBurst = true; burstAt = now; }
-      if (!counted) { if (evid.frame(now) && inBurst && countRep(now, 'ev')) break; }
+      if (!counted) { if (evid.frame(now) && inBurst && !learn && countRep(now, 'ev')) break; }
     } else {
       silent++; voiced = 0;
-      if (!inBurst) evid.drop();
-      if (inBurst && !counted && (silent >= 8 || evid.quietFor(now) >= EVID.quietMs) && evid.brief() && countRep(now, 'short')) break;
+      if (!inBurst) { evid.drop(); if (learn && rms <= ROOM.max) learnRoom(now, rms); }
+      if (inBurst && !counted && (silent >= 8 || evid.quietFor(now) >= EVID.quietMs) && heardTry() && countRep(now, 'short')) break;
       if (silent >= 8) { inBurst = false; counted = false; evid.drop(); }
     }
   }
-  return { reps, old: oreps, at, oldAt, thr };
+  return { reps, old: oreps, at, oldAt, thr, voice, learned: voice && !learn };
 }
 
 // ---- stream builders ----

@@ -89,7 +89,11 @@ function device(config){
 async function fresh(config={}){
   const context=await browser.newContext();await context.route('**/*',route=>route.request().url().startsWith(origin+'/')?route.continue():route.abort());
   await context.addInitScript(device,config);const page=await context.newPage();page.setDefaultTimeout(4500);const errors=[];page.on('pageerror',e=>errors.push(e.message));
-  await page.goto(origin+'/charge.html?daily=1');await page.waitForFunction(()=>__audioHarness.graphs.some(g=>g.connected));
+  // REWRITTEN 24 Sep 2026: a connected graph used to mean "the child's
+  // listening window is open". The page now also connects one, briefly, to
+  // measure the room on the first mic before Echo speaks (ROOM FLOOR), so
+  // the window is awaited by its own flag.
+  await page.goto(origin+'/charge.html?daily=1');await page.waitForFunction(()=>window.engineOn&&__audioHarness.graphs.some(g=>g.connected));
   return {context,page,errors};
 }
 async function background(page){await page.evaluate(()=>__audioHarness.background());await page.waitForTimeout(35);}
@@ -105,6 +109,12 @@ await scenario('human prompt cancellation',async()=>{
   const {context,page,errors}=await fresh();try{
     await page.evaluate(()=>{profile.volume=0.4;profile.voiceOn=true;HUMANCLIPS=true;window.__audioDone=0;playPrompt().then(()=>__audioDone++);});
     await page.waitForFunction(()=>__audioHarness.media.length===1&&__audioHarness.media[0].active);
+    // 24 Sep 2026: this prompt is asked for while the child's window is open
+    // (the page loaded muted, so listening began at once). It must end that
+    // window first: no live mic, no native recognizer, no listening graph
+    // under Echo's voice — Echo's words can never reach a verdict.
+    const under=await state(page),liveMic=await page.evaluate(()=>__audioHarness.streams.filter(s=>s.track.readyState==='live').length);
+    ok('a prompt asked for mid-window plays into a closed mic and a stopped recognizer',liveMic===0&&under.native===null&&under.graphs===0&&!under.engine,{...under,liveMic});
     await background(page);const paused=await state(page);
     ok('pause stops the human clip and releases its speaker guard',paused.mediaLive===0&&!paused.guard,paused);
     await page.evaluate(()=>{const a=__audioHarness.media[0];if(a.lateEnd)a.lateEnd();if(a.lateError)a.lateError();});await page.waitForTimeout(30);

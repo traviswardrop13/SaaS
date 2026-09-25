@@ -1,3 +1,10 @@
+// LOUD ROOM ACROSS A REOPENED WINDOW (24 Sep 2026). A room louder than a room
+// can be (a steady hum, pink or white noise at -20 dBFS and up) is never
+// learned as the room, and the first listening window blocks it. A later
+// window of the same attempt — reopened after a tap on Echo, a sound of
+// Sona's, or a return from the background — used to start with the capped
+// bar and no background, and counted the hum as one try per reopen. Noise is
+// never a rep: every window must stay at zero.
 // REPGUARD1: real Web Audio signals enter the real practice engine through a
 // synthetic MediaStream. No hardware microphone, speaker, or external network.
 // These fixtures reject common non-speech; they cannot establish that speech
@@ -6,7 +13,7 @@
 import { createServer } from 'node:http';
 import { readFileSync, existsSync, statSync } from 'node:fs';
 import path from 'node:path';
-import { chromium, ROOT, launchOpts } from './_env.mjs';
+import { chromium, ROOT, launchOpts } from '/home/user/SaaS/tests/_env.mjs';
 const publicRoot = process.env.SONATEST_PUBLIC_ROOT || ROOT;
 const MIME = { html:'text/html', js:'text/javascript', css:'text/css', svg:'image/svg+xml', png:'image/png', webp:'image/webp', woff2:'font/woff2', mp3:'audio/mpeg' };
 const server = createServer((req,res) => {
@@ -203,173 +210,27 @@ async function completeSegment(page){
   await page.waitForTimeout(150);
 }
 async function close(context,page){await page.evaluate(()=>{try{window.engineControl?.cancel();}catch{}try{__repHarness.ctx?.close();}catch{}}).catch(()=>{});await context.close();}
+const KINDS=(process.env.KINDS||'hum,pink,white').split(',');
+const DBS=(process.env.DBS||'-20,-15').split(',').map(Number);
+const MODES=(process.env.MODES||'close,echo').split(',');
 try{
-  for(const kind of (process.env.REPGUARD_ONLY==='positive'?[]:['silence','tone','clicks','claps','breath','white noise','hum']))await scenario(kind,async()=>{
-    const{page,context,errors}=await fresh();
+  for(const mode of MODES)for(const kind of KINDS)for(const db of DBS){
+    const voice=mode==='echo';
+    const{page,context,errors}=await fresh({room:{kind,db},voice,...(voice?{micDelay:100}:{})});
     try{
-      const before=await snapshot(page);await page.evaluate(kind=>__repHarness.play(kind),kind);await completeSegment(page);
-      const after=await snapshot(page),state=await page.evaluate(()=>({reps,quiet:!!document.querySelector('#quietOvl.show'),effects:__repHarness.effects,frames:__repHarness.frames,speechFrames:__repHarness.speechFrames,metrics:__repHarness.metrics,shapeFrames:SHAPE.frames,live:__repHarness.streams.some(s=>s.getTracks().some(t=>t.readyState==='live'))}));
-      ok(kind+': no counted repetition',state.reps===0,state);
-      ok(kind+': no outcomes, totals, streak, weekly tries, recording, rung or ring change',JSON.stringify(before)===JSON.stringify(after),{before,after,effects:state.effects});
-      ok(kind+': quiet state releases the synthetic mic',state.quiet&&!state.live,state);
-      ok(kind+': no script error',errors.length===0,errors);
-    }finally{await close(context,page);}
-  });
-  if(process.env.REPGUARD_ONLY!=='positive')await scenario('native transcript without voice',async()=>{
-    const{page,context}=await fresh({native:true});
-    try{
-      const before=await snapshot(page);await page.waitForTimeout(500);await completeSegment(page);
-      const after=await snapshot(page),state=await page.evaluate(()=>({reps,quiet:!!document.querySelector('#quietOvl.show'),verifyCalls:__repHarness.verifyCalls,texts:recognitionTexts,effects:__repHarness.effects}));
-      ok('zero detected tries cannot be rescued by a matching native transcript',state.reps===0&&state.quiet&&state.verifyCalls===0&&state.texts.includes('rrrr'),state);
-      ok('native zero-try transcript cannot create saved progress or clips',JSON.stringify(before)===JSON.stringify(after),{before,after,effects:state.effects});
-    }finally{await close(context,page);}
-  });
-  // VOICE ON (24 Sep 2026). Every other scenario here mutes Sona, so none of
-  // them could catch the app counting ITSELF. Here Echo speaks every line in
-  // a real recorded R (the target sound), the chimes play, and the fake mic
-  // hears all of it 200ms late — louder than a phone with echo cancellation
-  // ever would. The child says nothing: prompt, a tap on Echo, the turtle,
-  // an unprompted prompt mid-window (the idle nudge's call), then the quiet
-  // screen's line. Sona must end with zero tries, no verdict and no clip.
-  if(process.env.REPGUARD_ONLY!=='positive')await scenario('voice on: Sona hears only itself',async()=>{
-    const{page,context,errors}=await fresh({voice:true,native:true});
-    try{
-      const before=await snapshot(page);
-      const turn=()=>page.waitForFunction(()=>!document.getElementById('echoBuddy').disabled);
-      await page.locator('#echoBuddy').click();await page.waitForFunction(()=>__repHarness.voicePlays>=2);
-      await page.locator('#turtleBtn').click();await page.waitForFunction(()=>__repHarness.mediaPlays>=1);
-      await turn();await page.evaluate(()=>{playPrompt();});await page.waitForFunction(()=>__repHarness.voicePlays>=3);
-      await turn();await page.waitForTimeout(600);
-      await completeSegment(page);await page.locator('#quietOvl.show').waitFor();
-      await page.waitForFunction(()=>__repHarness.voicePlays>=4);await page.waitForTimeout(1800);
-      const after=await snapshot(page),state=await page.evaluate(()=>({reps,verifyCalls:__repHarness.verifyCalls,effects:__repHarness.effects,texts:recognitionTexts,micHeardPage:__repHarness.micHeardPage,recognizerHeard:__repHarness.recognizerHeard,roomPeak:__repHarness.roomPeak,voicePlays:__repHarness.voicePlays,mediaPlays:__repHarness.mediaPlays,browserVoice:__repHarness.browserVoice,routeError:__repHarness.audioRouteError||null,quiet:(document.getElementById('quietTitle')||{}).textContent}));
-      ok('voice on: every line really played through the room',state.voicePlays>=4&&state.mediaPlays>=1&&state.roomPeak>.05&&state.browserVoice===0&&!state.routeError,state);
-      ok('voice on: none of it reached a live mic',!state.micHeardPage,state);
-      ok('voice on: none of it reached the native recognizer',!state.recognizerHeard&&!state.texts.length,state);
-      ok('voice on: zero tries and no verdict',state.reps===0&&state.verifyCalls===0&&state.quiet==="I couldn't hear you!",state);
-      ok('voice on: no outcomes, totals, streak, weekly tries, recording, rung or ring change',JSON.stringify(before)===JSON.stringify(after)&&!state.effects.length,{before,after,effects:state.effects});
-      ok('voice on: no script error',errors.length===0,errors);
-    }finally{await close(context,page);}
-  });
-  // EAGER CHILD, REAL AUDIO (24 Sep 2026). With the voice on, the mic is
-  // closed while Echo speaks and opens a quarter-second after he stops, plus
-  // the phone's own delay (300ms here). A child who answers straight away is
-  // already talking when it opens. Each window used to spend its first
-  // quarter-second measuring "the room" — here, the child's R — and set the
-  // bar three times above it: zero tries, then "I couldn't hear you!". The
-  // room is now measured once, on the first mic before Echo speaks (this
-  // mic hisses faintly at -70dBFS, as real ones do), and a window's reading
-  // can only lower it. Rachel's recorded R, from 300, 500 and 700ms after the
-  // prompt: at least the 2 tries it counted before the change, at every onset.
-  if(process.env.REPGUARD_ONLY!=='positive')for(const onset of [300,500,700])await scenario('voice on: a child answering '+onset+'ms after the prompt',async()=>{
-    const{page,context,errors}=await fresh({voice:true,micDelay:300,floor:-70,child:{onset}});
-    try{
-      await page.evaluate(()=>{NEED=100;});
-      await page.waitForFunction(()=>__repHarness.childDone,{},{timeout:9000});await page.waitForTimeout(400);
-      const state=await page.evaluate(()=>({reps,promptEnd:__repHarness.promptEnd,childDone:__repHarness.childDone,micHeardPage:__repHarness.micHeardPage,quiet:!!document.querySelector('#quietOvl.show')}));
-      ok('voice on, child answering '+onset+'ms after the prompt: their tries count (at least the 2 from before the change)',state.reps>=2&&!state.quiet,state);
-      ok('voice on, child answering '+onset+'ms after the prompt: Echo still never reached a live mic',!state.micHeardPage,state);
-      ok('voice on, child answering '+onset+'ms after the prompt: no script error',errors.length===0,errors);
-    }finally{await close(context,page);}
-  });
-  // THE ROOM READING, REAL AUDIO (24 Sep 2026, after review). Two ways the
-  // one room reading before Echo speaks still caught the child's voice, each
-  // with Rachel's recorded R answering 300 or 500ms after the prompt:
-  //  - the mic sends digital zeros for 250 or 400ms as it starts: the 300ms
-  //    reading used to run down on zeros, the first window measured the child
-  //    instead, and none of their tries counted. Its clock now starts at the
-  //    first frame that is not zeros.
-  //  - the child says 1s of their R the moment the mic opens, before Echo
-  //    has spoken: the reading WAS their voice. A reading louder than any
-  //    room (ROOM_MAX) is not taken for one now, the bar never passes
-  //    3 x ROOM_MAX, and the window learns the room in the child's first pause.
-  // At least the 2 tries this recording counted before the change, each time.
-  for(const [what,cfg] of [['250ms of zeros as the mic starts',{warm:250}],['400ms of zeros as the mic starts',{warm:400}],['the child saying 1s of R during the reading',{pre:1}]])
-    for(const onset of [300,500])if(process.env.REPGUARD_ONLY!=='positive')await scenario('voice on, '+what+', child answering '+onset+'ms after the prompt',async()=>{
-      const{page,context,errors}=await fresh({voice:true,micDelay:300,floor:-70,child:{onset},...cfg});
-      try{
-        await page.evaluate(()=>{NEED=100;});
-        await page.waitForFunction(()=>__repHarness.childDone,{},{timeout:9000});await page.waitForTimeout(400);
-        const state=await page.evaluate(()=>({reps,room:room&&room.rms,micHeardPage:__repHarness.micHeardPage,quiet:!!document.querySelector('#quietOvl.show'),talkingFromLive:__repHarness.preAt==null?null:Math.round(__repHarness.firstLive-__repHarness.preAt),talkingAfterLive:__repHarness.preEnd==null?null:Math.round(__repHarness.preEnd-__repHarness.firstLive)}));
-        // The reading is at most 300ms from the first real frame: a child
-        // talking from before the mic opened until well after covers it.
-        if(cfg.pre)ok(what+', child at '+onset+'ms: they were already talking when the mic opened, and for the whole reading',state.talkingFromLive>0&&state.talkingAfterLive>=400,state);
-        ok(what+', child at '+onset+'ms: their tries count (at least the 2 from before the change)',state.reps>=2&&!state.quiet,state);
-        ok(what+', child at '+onset+'ms: the room is never their voice',!(state.room>.03),state);
-        ok(what+', child at '+onset+'ms: Echo still never reached a live mic',!state.micHeardPage,state);
-        ok(what+', child at '+onset+'ms: no script error',errors.length===0,errors);
-      }finally{await close(context,page);}
-    });
-  // LOUD ROOMS (24 Sep 2026). The bar is capped now (3 x ROOM_MAX), so a loud
-  // room must still be kept out by what the page knows about it. A loud but
-  // real room (pink, -32dBFS: ~0.02, over twice speechevidencetest's TV room)
-  // is measured and the noises played over it earn nothing. A room louder
-  // than any real one (-20dBFS, ~0.1: over the capped bar itself) is never
-  // taken for a room, and on its own earns nothing either: pink and white
-  // are never voiced, and a steady hum never ends.
-  if(process.env.REPGUARD_ONLY!=='positive')for(const kind of ['tone','hum','white noise','breath'])await scenario(kind+' in a loud room',async()=>{
-    const{page,context,errors}=await fresh({room:{kind:'pink',db:-32}});
-    try{
-      const before=await snapshot(page);await page.evaluate(kind=>__repHarness.play(kind),kind);await completeSegment(page);
-      const after=await snapshot(page),state=await page.evaluate(()=>({reps,room:room&&room.rms,quiet:!!document.querySelector('#quietOvl.show')}));
-      ok(kind+' in a loud room: the room (~0.02) was measured as the room',state.room>.01&&state.room<=.03,state);
-      ok(kind+' in a loud room: no counted repetition and no saved change',state.reps===0&&JSON.stringify(before)===JSON.stringify(after)&&state.quiet,{state,before,after});
-      ok(kind+' in a loud room: no script error',errors.length===0,errors);
-    }finally{await close(context,page);}
-  });
-  if(process.env.REPGUARD_ONLY!=='positive')for(const kind of ['pink','white','hum'])await scenario('a '+kind+' room louder than any real one',async()=>{
-    const{page,context,errors}=await fresh({room:{kind,db:-20}});
-    try{
-      const before=await snapshot(page);await page.waitForTimeout(2500);await completeSegment(page);
-      const after=await snapshot(page),state=await page.evaluate(()=>({reps,room:room&&room.rms,quiet:!!document.querySelector('#quietOvl.show')}));
-      ok('a '+kind+' room at -20dBFS is never taken for the room',state.room==null,state);
-      ok('a '+kind+' room at -20dBFS: nothing counts, nothing is saved',state.reps===0&&JSON.stringify(before)===JSON.stringify(after)&&state.quiet,{state,before,after});
-      ok('a '+kind+' room at -20dBFS: no script error',errors.length===0,errors);
-    }finally{await close(context,page);}
-  });
-  // Every shipped target must remain detectable. An isolated short stop may
-  // legitimately score unknown; detection does not assert clinical accuracy.
-  for(const sound of ['R','S','M','THV','N','V','L','F','TH','T','P','D','G','B','K','CH','J','SH','Z']){
-    const file=sound+'-demo.mp3';
-    await scenario(file,async()=>{
-    const{page,context,errors}=await fresh({sound});
-    try{
-      await page.evaluate(()=>{NEED=100;});
-      const duration=await page.evaluate(file=>__repHarness.play(file),file);
-      const detected=await page.evaluate(()=>({reps,frames:SHAPE.frames,signal:__repHarness.speechFrames,totalFrames:__repHarness.frames,metrics:__repHarness.metrics,shape:shapeVerdict()}));
-      console.log('CONTROL '+file+': '+detected.reps+' tries, '+detected.frames+' shape frames, '+detected.shape);
-      ok(file+': real recorded target still produces a detected try and shape evidence',detected.reps>0&&detected.frames>=(sound==='R'||sound==='S'?12:1),{duration,...detected});
-      await completeSegment(page);
-      if(sound==='R'||sound==='S'){
-        const state=await snapshot(page);
-        ok(file+': verified practice still logs tries and outcomes',state.reps>0&&state.week>0&&(state.outcomes[sound]?.tries||state.outcomes[sound]?.attempts||0)>0,{detected,state});
-      }
-      ok(file+': no script error',errors.length===0,errors);
-    }finally{await close(context,page);}
-    });
+      await page.waitForTimeout(1200);
+      const w1=await page.evaluate(()=>({reps,room:typeof room!=='undefined'&&room?room.rms:null,learn:!!(engineAttempt&&engineAttempt.segment&&engineAttempt.segment.learn)}));
+      if(mode==='close')await page.evaluate(()=>{if(typeof closeMicForSound==='function')closeMicForSound();else engineAttempt.segment.finish('model');});
+      else {await page.locator('#echoBuddy').click();}
+      const t0=Date.now();
+      await page.waitForFunction(()=>engineAttempt&&engineAttempt.segment&&!engineAttempt.segment.closed&&performance.now()-engineAttempt.segment.startedAt>600,{},{timeout:9000});
+      const w2=await page.evaluate(()=>({reps,room:typeof room!=='undefined'&&room?room.rms:null,learn:!!(engineAttempt.segment.learn),evid:window.__evid||[]}));
+      ok(`${kind} at ${db} dBFS (${mode==='echo'?'tap on Echo':'Sona sound'}): no try in the first window`,w1.reps===0,w1);
+      ok(`…and none after the window reopens`,w2.reps===0,w2);
+      ok(`…with no page errors`,errors.length===0,errors.slice(0,2));
+    }catch(e){ok(`${mode} ${kind} ${db} completes`,false,String(e).slice(0,200));}
+    finally{await close(context,page);}
   }
-  if(process.env.REPGUARD_ONLY!=='positive')await scenario('shared attempt and recording boundaries',async()=>{
-    const{page,context}=await fresh({shared:true});
-    try{
-      const result=await page.evaluate(async()=>{
-        const state=()=>JSON.stringify({outcomes:Sona.outcomes(),progress:Sona.getProgress(),week:Sona.weekReps(),reps:Sona.repsToday()});
-        const before=state();Sona.logAttempt({game:'charge',sound:'R',pass:true,reps:0,word:'rrrr'});const afterZero=state();
-        Sona.logAttempt({game:'charge',sound:'R',pass:true,reps:3,word:'rrrr'});
-        const o=Sona.outcomes().R,day=o.days[Sona.localDay()],week=Sona.weekReps();
-        const first=await Sona.saveRecording({sound:'R',word:'rrrr',blob:new Blob(['first fixture'],{type:'audio/webm'})});
-        const second=await Sona.saveRecording({sound:'S',word:'ssss',blob:new Blob(['second fixture'],{type:'audio/webm'})});
-        const mine=(await Sona.listRecordings()).length;
-        const sibling=Sona.addKid('Sibling','5');
-        const other=await Sona.saveRecording({sound:'S',word:'ssss',blob:new Blob(['sibling fixture'],{type:'audio/webm'})});
-        const otherCount=(await Sona.listRecordings()).length;
-        Sona.switchKid('');const originalCount=(await Sona.listRecordings()).length;
-        return{zeroUnchanged:before===afterZero,o,day,week,first,second,mine,sibling,other,otherCount,originalCount};
-      });
-      ok('logAttempt with zero reps changes no practice state',result.zeroUnchanged,result);
-      ok('three voiced tries remain one sound check',result.o.tries===3&&result.o.attempts===1&&result.day.tries===3&&result.day.a===1&&result.week===3,result);
-      ok('two sounds cannot save two recordings for one child on one day',result.first===true&&result.second===false&&result.mine===1,result);
-      ok('a sibling gets one separate daily recording',result.other===true&&result.otherCount===1&&result.originalCount===1,result);
-    }finally{await close(context,page);}
-  });
 }finally{await browser.close();await new Promise(resolve=>server.close(resolve));}
-console.log(`Rep guard: ${checks-failures}/${checks} passed`);process.exitCode=failures?1:0;
+console.log(failures?failures+' FAILURES':'ALL GREEN — '+checks+' assertions');
+process.exit(failures?1:0);

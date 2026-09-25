@@ -20,9 +20,6 @@
     #score{flex:none;}
     #hudspacer{flex:1;}
     #timer{color:#ff5c74;letter-spacing:1px;}
-    #boostChip{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(64px + env(safe-area-inset-bottom));top:auto;z-index:5;background:#fff;color:#4a2c14;font-family:"Baloo 2";font-weight:800;font-size:13.5px;padding:9px 16px;border-radius:99px;pointer-events:none;white-space:nowrap;box-shadow:0 4px 0 rgba(160,80,20,.35);transition:background .2s,color .2s;}
-    #boostChip.hot{background:#ffd21c;color:#5c4500;animation:chipPop .4s ease;}
-    @keyframes chipPop{0%{transform:translateX(-50%) scale(1)}50%{transform:translateX(-50%) scale(1.18)}100%{transform:translateX(-50%) scale(1)}}
     /* ── warm-card overlays (handoff section 5) ── */
     .ovl{position:fixed;inset:0;z-index:50;background:rgba(30,22,50,.55);display:none;align-items:center;justify-content:center;padding:24px;}
     .ovl.show{display:flex;}
@@ -65,7 +62,6 @@
       <div id="timer" class="hudpill"></div>
     </div>
     <div id="combo"></div>
-    <div id="boostChip"></div>
   </div>
 
   <div class="ovl" id="needOvl">
@@ -84,7 +80,7 @@
       <h2 id="revTitle">Say it!</h2>
       <p id="revHearts" style="font-size:26px;"></p>
       <div style="width:56px;height:56px;border-radius:50%;background:linear-gradient(180deg,#ffa05a,#ff8a3d);box-shadow:0 4px 0 #ef6f23,0 0 0 10px rgba(255,138,61,.14);display:flex;align-items:center;justify-content:center;margin:2px 0;"><svg viewBox="0 0 24 24" style="width:24px;height:24px;fill:#fff"><path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v5a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z"/></svg></div>
-      <p style="font-size:13px;">I'm listening…</p>
+      <p id="revListen" style="font-size:13px;">Get ready…</p>
       <button class="btn ghost" id="revDone">I'm done playing</button>
     </div>
   </div>
@@ -120,7 +116,27 @@
     var $=function(id){return document.getElementById(id);};
     var S=window.Sona, qp=new URLSearchParams(location.search);
     var fromCharge=qp.get("from")==="charge";
-    function sfx(n){ try{ if(S&&S.sfx&&S.sfx[n])S.sfx[n](); }catch(e){} }
+    // ── the mic and this game's own sounds never overlap (24 Sep 2026) ──
+    // On an iPhone a page holding the mic runs as a phone call: the volume
+    // buttons change CALL volume and every chime is processed like a call.
+    // So no game sound plays while the keep-playing mic is open (a sound
+    // asked for then is dropped; the game is paused behind the card anyway),
+    // none waits on a mic request that hasn't settled, none plays in the
+    // first SETTLE_MS after the mic closes (the phone switches back in
+    // silence, not under a chime), and the mic never opens until QUIET_MS
+    // after the last sound began: the longest chime ("complete") rings about
+    // 0.6 s and the rest covers speaker and Bluetooth delay, so a chime's
+    // tail can never answer the card for the child.
+    var SETTLE_MS=200, QUIET_MS=900, quietUntil=0, micClosedAt=-1e9;
+    var rv={st:null,pending:0,gen:0,raf:0,t:0,ctx:null,src:null,floor:-1};   // floor: the room's quiet level, measured once per page (see listenFor)
+    function sfx(n){
+      if(rv.st) return;
+      if(rv.pending){ setTimeout(function(){ sfx(n); },60); return; }
+      var wait=micClosedAt+SETTLE_MS-performance.now();
+      if(wait>0){ quietUntil=Math.max(quietUntil,performance.now()+wait+QUIET_MS); setTimeout(function(){ sfx(n); },wait); return; }
+      quietUntil=Math.max(quietUntil,performance.now()+QUIET_MS);
+      try{ if(S&&S.sfx&&S.sfx[n])S.sfx[n](); }catch(e){}
+    }
 
     // ---- charge gate: a round is unlocked by the 5-rep charge (play token) ----
     var SELF="arcade-slice.html";
@@ -144,11 +160,10 @@
       strawberry:'<path d="M50 92 Q18 68 22 42 Q26 24 50 26 Q74 24 78 42 Q82 68 50 92" fill="#fa5252"/><path d="M50 92 Q18 68 22 42 Q26 24 50 26 L50 92" fill="#ff8787"/><path d="M34 22 L50 30 L66 22 L58 34 L50 28 L42 34 Z" fill="#51cf66"/><path d="M50 16 l0 10" stroke="#2f9e44" stroke-width="5" stroke-linecap="round"/><circle cx="38" cy="48" r="2.2" fill="#fff3bf"/><circle cx="54" cy="44" r="2.2" fill="#fff3bf"/><circle cx="62" cy="58" r="2.2" fill="#fff3bf"/><circle cx="44" cy="64" r="2.2" fill="#fff3bf"/><circle cx="54" cy="76" r="2.2" fill="#fff3bf"/>',
       kiwi:'<circle cx="50" cy="56" r="34" fill="#a9803f"/><circle cx="50" cy="56" r="29" fill="#94d82d"/><circle cx="50" cy="56" r="27" fill="#a9e34b"/><circle cx="50" cy="56" r="9" fill="#f4fce3"/><g fill="#343a40"><ellipse cx="50" cy="38" rx="2" ry="3.4"/><ellipse cx="62" cy="43" rx="2" ry="3.4" transform="rotate(40 62 43)"/><ellipse cx="67" cy="56" rx="2" ry="3.4" transform="rotate(90 67 56)"/><ellipse cx="62" cy="69" rx="2" ry="3.4" transform="rotate(140 62 69)"/><ellipse cx="50" cy="74" rx="2" ry="3.4"/><ellipse cx="38" cy="69" rx="2" ry="3.4" transform="rotate(40 38 69)"/><ellipse cx="33" cy="56" rx="2" ry="3.4" transform="rotate(90 33 56)"/><ellipse cx="38" cy="43" rx="2" ry="3.4" transform="rotate(140 38 43)"/></g>',
       peach:'<circle cx="50" cy="58" r="32" fill="#ff9f9f"/><path d="M50 58 m-32 0 a32 32 0 0 1 32 -32 v64 a32 32 0 0 1 -32 -32" fill="#ffb8b0"/><path d="M50 30 Q58 54 50 86" stroke="#ef8080" stroke-width="4" fill="none" stroke-linecap="round"/><path d="M50 26 q-2 -10 6 -13" stroke="#8a5a2e" stroke-width="5" fill="none" stroke-linecap="round"/><ellipse cx="61" cy="16" rx="11" ry="6" fill="#69db7c" transform="rotate(22 61 16)"/><circle cx="38" cy="48" r="6.5" fill="#ffe0dc" opacity=".9"/>',
-      pineapple:'<defs><clipPath id="pb"><ellipse cx="50" cy="64" rx="25" ry="29"/></clipPath></defs><ellipse cx="50" cy="64" rx="25" ry="29" fill="#ffc93b"/><g clip-path="url(#pb)" stroke="#e0a400" stroke-width="3.5" opacity=".85"><path d="M20 44 L84 90" fill="none"/><path d="M16 62 L76 100" fill="none"/><path d="M32 34 L92 76" fill="none"/><path d="M80 44 L16 90" fill="none"/><path d="M84 62 L24 100" fill="none"/><path d="M68 34 L8 76" fill="none"/></g><circle cx="41" cy="52" r="5" fill="#ffe9a8" opacity=".85"/><path d="M50 40 C45 24 46 12 50 4 C54 12 55 24 50 40" fill="#2f9e44"/><path d="M48 40 C36 30 29 22 24 10 C37 15 46 25 51 36" fill="#51cf66"/><path d="M52 40 C64 30 71 22 76 10 C63 15 54 25 49 36" fill="#51cf66"/>',
-      star:'<path d="M50 8 L61 36 L92 38 L68 58 L76 90 L50 72 L24 90 L32 58 L8 38 L39 36 Z" fill="#ffd21c" stroke="#f0a500" stroke-width="4" stroke-linejoin="round"/><circle cx="42" cy="42" r="6" fill="#fff3bf" opacity=".95"/>'
+      pineapple:'<defs><clipPath id="pb"><ellipse cx="50" cy="64" rx="25" ry="29"/></clipPath></defs><ellipse cx="50" cy="64" rx="25" ry="29" fill="#ffc93b"/><g clip-path="url(#pb)" stroke="#e0a400" stroke-width="3.5" opacity=".85"><path d="M20 44 L84 90" fill="none"/><path d="M16 62 L76 100" fill="none"/><path d="M32 34 L92 76" fill="none"/><path d="M80 44 L16 90" fill="none"/><path d="M84 62 L24 100" fill="none"/><path d="M68 34 L8 76" fill="none"/></g><circle cx="41" cy="52" r="5" fill="#ffe9a8" opacity=".85"/><path d="M50 40 C45 24 46 12 50 4 C54 12 55 24 50 40" fill="#2f9e44"/><path d="M48 40 C36 30 29 22 24 10 C37 15 46 25 51 36" fill="#51cf66"/><path d="M52 40 C64 30 71 22 76 10 C63 15 54 25 49 36" fill="#51cf66"/>'
     };
-    var JUICE={ "🍉":"#ff6b7a","🍎":"#fa5252","🍊":"#ff922b","🍋":"#ffd43b","🍇":"#9775fa","🍓":"#fa5252","🥝":"#94d82d","🍑":"#ffa8a8","🍍":"#ffd43b","🌟":"#ffd21c" };
-    var SPRITEKEY={ "🍉":"watermelon","🍎":"apple","🍊":"orange","🍋":"lemon","🍇":"grapes","🍓":"strawberry","🥝":"kiwi","🍑":"peach","🍍":"pineapple","🌟":"star" };
+    var JUICE={ "🍉":"#ff6b7a","🍎":"#fa5252","🍊":"#ff922b","🍋":"#ffd43b","🍇":"#9775fa","🍓":"#fa5252","🥝":"#94d82d","🍑":"#ffa8a8","🍍":"#ffd43b" };
+    var SPRITEKEY={ "🍉":"watermelon","🍎":"apple","🍊":"orange","🍋":"lemon","🍇":"grapes","🍓":"strawberry","🥝":"kiwi","🍑":"peach","🍍":"pineapple" };
     var SPRITES={};
     Object.keys(SVGS).forEach(function(k){
       var im=new Image();
@@ -166,7 +181,7 @@
     fit(); window.addEventListener("resize",fit);
 
     var playing=true, score=0, combo=0, comboT=0;
-    var REV=3, reviveWait=false, MIC=false;   // say-the-sound lives
+    var REV=3, reviveWait=false;   // say-the-sound lives
     var BESTK="sona.best.slice", BEST=0; try{ BEST=parseInt(localStorage.getItem(BESTK)||"0",10)||0; }catch(e){}
     var fruits=[], parts=[], trail=[];
     // Kid-tuned physics: floaty gravity + launch speed derived from the screen
@@ -192,76 +207,129 @@
     function crash(){
       if(!playing) return;
       playing=false; fruits=[]; trail.length=0; sfx("tap");
-      if(REV>0 && MIC){
+      if(REV>0 && CAN_LISTEN){
         $("revTitle").textContent="Say \u201C"+SAYTXT+"\u201D to keep playing!";
         $("revHearts").innerHTML=(window.Sona&&Sona.heartRow)?Sona.heartRow(REV,3,28):String(REV);
-        reviveWait=true; $("revOvl").classList.add("show");
+        reviveWait=true; $("revOvl").classList.add("show"); openReviveMic();
       } else { endRound(); }
     }
     function doRevive(){
       reviveWait=false; REV--; hearts();
       $("revOvl").classList.remove("show");
+      // the mic has just closed: sfx() holds this chime SETTLE_MS
       sfx("complete"); try{ if(S&&S.confetti)S.confetti(); }catch(e){}
       playing=true;
     }
-    $("revDone").onclick=function(){ reviveWait=false; $("revOvl").classList.remove("show"); endRound(); };
+    $("revDone").onclick=function(){ closeReviveMic(); reviveWait=false; $("revOvl").classList.remove("show"); endRound(); };
 
-    // ── VOICE BOOST: say your sound mid-game → FRUIT FRENZY (3s golden rain,
-    // double points). 100% optional — the game never requires it. Pure local
-    // detection (loudness + sound-shape numbers): nothing is recorded, nothing leaves the device.
-    var boost={on:false,cool:false};
-    function spawnGold(){
-      for(var i=0;i<8;i++){
-        var x=W*(0.15+Math.random()*0.7);
-        fruits.push({ e:"🌟", gold:true, x:x, y:H+40,
-          vx:(W*0.5-x)*0.0025+(Math.random()-0.5)*1.2,
-          vy:-(H*(0.0155+Math.random()*0.003)),
-          r:30+Math.random()*8, rot:Math.random()*6, vr:(Math.random()-0.5)*0.1, sliced:false });
-      }
-    }
-    function fireBoost(){
-      boost.on=true; boost.cool=true;
-      var ch=$("boostChip"); ch.textContent="FRUIT FRENZY!!"; ch.classList.add("hot");
-      sfx("complete"); spawnGold();
-      var c=$("combo"); c.textContent="FRENZY! 2× STARS"; c.style.opacity=1; setTimeout(function(){c.style.opacity=0;},900);
-      setTimeout(function(){ boost.on=false; ch.classList.remove("hot"); ch.textContent="…"; },3000);
-      setTimeout(function(){ boost.cool=false; paintChip(); },9000);
-    }
-    var SAYTXT="";
-    function paintChip(){ $("boostChip").innerHTML=((window.Sona&&Sona.icon)?Sona.icon("mic",17)+" ":"")+"Say “"+SAYTXT+"” for a FRENZY!"; }
+    // ── "Say your sound to keep playing": the only time this game listens ──
+    // (24 Sep 2026) STAR MODE is gone. It held the mic open for the whole
+    // game so a shout could fire a power-up, which kept an iPhone in
+    // phone-call audio from the first frame to the last. The mic now opens
+    // only while the keep-playing card shows, after the quiet window above,
+    // and closes before the revive chime. Loudness and sound-shape numbers
+    // only: nothing is recorded, nothing leaves the device, and a revive is
+    // play, never practice data.
+    var SND="R", SAYTXT="rrrr", CAN_LISTEN=!!(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia);
     (function(){
       var snd=""; try{ snd=sessionStorage.getItem("sona.boost.sound")||""; }catch(e){}
       if(!snd){ try{ snd=((S&&S.getProfile&&S.getProfile().focusSounds)||["R"])[0]; }catch(e){ snd="R"; } }
-      var SND=String(snd).toUpperCase();
-      SAYTXT=(S&&S.soundSay)?S.soundSay(SND):"rrrr";
-      paintChip();
-      if(!(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia)){ $("boostChip").style.display="none"; return; }
-      navigator.mediaDevices.getUserMedia({audio:true}).then(function(st){ MIC=true;
-        var _rel=function(){ try{ st.getTracks().forEach(function(t){t.stop();}); }catch(e){} };
-        // lock/app-switch fires visibilitychange, NOT pagehide — the boost mic
-        // stayed open in your pocket with the recording indicator lit
-        if(window.Sona&&Sona.onBackground) Sona.onBackground(_rel); else window.addEventListener("pagehide",_rel);
-        var AC=window.AudioContext||window.webkitAudioContext, actx=new AC();
-        var src=actx.createMediaStreamSource(st), an=actx.createAnalyser(); an.fftSize=512; src.connect(an);
-        var td=new Uint8Array(an.fftSize), fd=new Uint8Array(an.frequencyBinCount), binHz=an.context.sampleRate/an.fftSize, shp=null, t0=performance.now(), calS=0,calN=0,thr=0,voiced=0;
-        // family check: the burst must SOUND like the target's family (voiced
-        // vs hiss) to fire — a scream or an S can't revive an R kid. Shape
-        // numbers only; nothing recorded (see Sona.frameShape).
-        function famOK(){ if(!shp||!shp.m) return true; var cent=shp.fm/shp.m, high=shp.hm/shp.m, fam=(window.Sona&&Sona.soundFamily)?Sona.soundFamily(SND):"any"; if(fam==="low") return !(cent>1800&&high>0.22); if(fam==="hiss") return !(cent<1100&&high<0.10); return true; }
-        (function tick(){
-          an.getByteTimeDomainData(td);
-          var sum=0; for(var i=0;i<td.length;i++){ var d=(td[i]-128)/128; sum+=d*d; }
-          var rms=Math.sqrt(sum/td.length), now=performance.now();
-          if(now-t0<450){ calS+=rms; calN++; } // calibrate WITH game audio playing
-          else { if(!thr) thr=Math.max(0.05,(calS/Math.max(1,calN))*3.5);
-            if(rms>thr){ voiced++;
-              if(window.Sona&&Sona.frameShape){ an.getByteFrequencyData(fd); var _s=Sona.frameShape(fd,binHz); if(_s){ if(!shp)shp={m:0,fm:0,hm:0}; shp.m+=_s.m; shp.fm+=_s.fm; shp.hm+=_s.hm; } }
-              if(voiced>=6){ if(!famOK()){ voiced=0; shp=null; } else { shp=null; if(reviveWait){ voiced=0; doRevive(); } else if(playing && !boost.on && !boost.cool) fireBoost(); } } }
-            else { voiced=0; shp=null; } }
-          requestAnimationFrame(tick);
-        })();
-      }).catch(function(){ $("boostChip").style.display="none"; }); // no mic → no boost; game unaffected
+      SND=String(snd).toUpperCase(); SAYTXT=(S&&S.soundSay)?S.soundSay(SND):"rrrr";
     })();
+    function listenNote(t){ try{ $("revListen").textContent=t; }catch(e){} }
+    function closeReviveMic(){
+      rv.gen++; clearTimeout(rv.t); if(rv.raf)cancelAnimationFrame(rv.raf); rv.raf=0;
+      try{ if(rv.src)rv.src.disconnect(); }catch(e){} rv.src=null;
+      if(rv.st){ try{ rv.st.getTracks().forEach(function(t){t.stop();}); }catch(e){} rv.st=null; micClosedAt=performance.now(); }
+      listenNote("Get ready…");
+    }
+    // A request that was already late when it settled asks again if the card
+    // is still up and on screen (24 Sep 2026). The phone can be locked while
+    // it is asking: the ask made on the way back finds that request still
+    // pending and stands down, so without this the card waited on "Get
+    // ready…" for good and only "I'm done playing" got the child out.
+    function askAgain(){ if(reviveWait&&!document.hidden&&!rv.st) openReviveMic(); }
+    function openReviveMic(){
+      if(!reviveWait||rv.st||rv.pending||document.hidden) return;
+      var wait=quietUntil-performance.now();
+      if(wait>0){ clearTimeout(rv.t); rv.t=setTimeout(openReviveMic,wait); return; }
+      var gen=++rv.gen; rv.pending++;
+      navigator.mediaDevices.getUserMedia({audio:true}).then(function(st){
+        rv.pending--;
+        // the card closed (or the page hid) while the phone was asking: this
+        // stream is already late, so it goes straight back
+        if(gen!==rv.gen||!reviveWait||document.hidden){ try{ st.getTracks().forEach(function(t){t.stop();}); }catch(e){} micClosedAt=performance.now(); askAgain(); return; }
+        rv.st=st; listenFor(st,gen);
+      }).catch(function(){
+        rv.pending--;
+        // a request cut short by the page hiding asks again on the way back
+        if(gen!==rv.gen||!reviveWait||document.hidden){ askAgain(); return; }
+        // no microphone: the card can't hear anyone, so the round ends kindly
+        reviveWait=false; $("revOvl").classList.remove("show"); endRound();
+      });
+    }
+    // ── what counts as the child on the card (24 Sep 2026) ──
+    // The bar a sound must clear is 3.5× the room's quiet level, and that
+    // level is the page's, not the card's: rv.floor is the 20th-percentile
+    // loudness of the quietest FLOOR_MS the card's mic has heard on this
+    // page, and it only ever goes DOWN. The first cut of this change
+    // averaged the first 450 ms of every card instead, and a card that says
+    // "Say rrrr!" opens its mic exactly when an eager child is already
+    // saying it: their own voice became the "room", the bar landed above
+    // it, and nothing they said could answer the card. So: a low
+    // percentile, which a voice filling most of the stretch can't lift;
+    // only-down, so nothing a child says ever raises it and one quiet
+    // breath (or a later card) mends a floor a talking child set; and the
+    // last HEARD_MS of frames are judged against the CURRENT floor, so a
+    // try said before that breath still counts the moment it comes. The
+    // 0.05 minimum, the 6-frame burst and the family check are unchanged.
+    // "I'm listening…" shows only once there is a floor to listen against.
+    var FLOOR_MS=450, HEARD_MS=3000;
+    function p20(list){ var a=list.slice().sort(function(x,y){ return x-y; }); return a[Math.floor((a.length-1)*0.2)]; }
+    function listenFor(st,gen){
+      var an, td, fd, binHz, heard=[], said=false;
+      try{
+        if(!rv.ctx){ var AC=window.AudioContext||window.webkitAudioContext; rv.ctx=new AC(); }
+        if(rv.ctx.state==="suspended") rv.ctx.resume();
+        rv.src=rv.ctx.createMediaStreamSource(st); an=rv.ctx.createAnalyser(); an.fftSize=512; rv.src.connect(an);
+        td=new Uint8Array(an.fftSize); fd=new Uint8Array(an.frequencyBinCount); binHz=rv.ctx.sampleRate/an.fftSize;
+      }catch(e){ closeReviveMic(); reviveWait=false; $("revOvl").classList.remove("show"); endRound(); return; }
+      // family check: the burst must SOUND like the target's family (voiced
+      // vs hiss) to fire — a scream or an S can't revive an R kid. Shape
+      // numbers only; nothing recorded (see Sona.frameShape).
+      function famOK(shp){ if(!shp||!shp.m) return true; var cent=shp.fm/shp.m, high=shp.hm/shp.m, fam=(window.Sona&&Sona.soundFamily)?Sona.soundFamily(SND):"any"; if(fam==="low") return !(cent>1800&&high>0.22); if(fam==="hiss") return !(cent<1100&&high<0.10); return true; }
+      (function tick(){
+        if(gen!==rv.gen) return;
+        var now=performance.now();
+        // belt and braces: nothing plays while this mic is open, but if a
+        // sound ever did, its frames would be dropped: never judged, never
+        // part of the floor, never joined to a burst after it
+        if(now<quietUntil){ heard=[]; rv.raf=requestAnimationFrame(tick); return; }
+        an.getByteTimeDomainData(td);
+        var sum=0; for(var i=0;i<td.length;i++){ var d=(td[i]-128)/128; sum+=d*d; }
+        var shape=null; if(window.Sona&&Sona.frameShape){ an.getByteFrequencyData(fd); shape=Sona.frameShape(fd,binHz); }
+        heard.push({t:now,r:Math.sqrt(sum/td.length),s:shape});
+        while(now-heard[0].t>HEARD_MS) heard.shift();
+        if(now-heard[0].t>=FLOOR_MS){
+          var w=[]; for(var k=heard.length-1;k>=0&&now-heard[k].t<=FLOOR_MS;k--) w.push(heard[k].r);
+          var q=p20(w); if(rv.floor<0||q<rv.floor) rv.floor=q;
+        }
+        if(rv.floor>=0){
+          if(!said){ said=true; listenNote("I'm listening…"); }
+          var thr=Math.max(0.05,rv.floor*3.5), voiced=0, shp=null;
+          for(var j=0;j<heard.length;j++){ var f=heard[j];
+            if(f.r>thr){ voiced++;
+              if(f.s){ if(!shp)shp={m:0,fm:0,hm:0}; shp.m+=f.s.m; shp.fm+=f.s.fm; shp.hm+=f.s.hm; }
+              if(voiced>=6){ if(!famOK(shp)){ voiced=0; shp=null; } else { closeReviveMic(); doRevive(); return; } } }
+            else { voiced=0; shp=null; } }
+        }
+        rv.raf=requestAnimationFrame(tick);
+      })();
+    }
+    // lock/app-switch fires visibilitychange, NOT pagehide — a mic left open
+    // there stays lit in a pocket. Coming back to the card listens again.
+    if(window.Sona&&Sona.onBackground) Sona.onBackground(closeReviveMic); else window.addEventListener("pagehide",closeReviveMic);
+    document.addEventListener("visibilitychange",function(){ if(!document.hidden&&reviveWait) openReviveMic(); });
 
     // slicing: pointer trail + segment-vs-circle hit
     var pDown=false,lx=0,ly=0;
@@ -270,7 +338,7 @@
     function onMove(e){ if(!pDown||!playing)return; var p=pt(e); trail.push({x:p.x,y:p.y,t:performance.now()});
       var hit=0;
       for(var i=0;i<fruits.length;i++){ var f=fruits[i];
-        if(!f.sliced && segHit(lx,ly,p.x,p.y,f.x,f.y,f.r+16)){ f.sliced=true; hit++; score+=(f.gold||boost.on)?2:1; combo++;
+        if(!f.sliced && segHit(lx,ly,p.x,p.y,f.x,f.y,f.r+16)){ f.sliced=true; hit++; score++; combo++;
           for(var k=0;k<10;k++) parts.push({x:f.x,y:f.y,vx:(Math.random()-0.5)*7,vy:-Math.random()*6,r:3+Math.random()*4,life:1,col:(JUICE[f.e]||"#ffd21c")});
           parts.push({x:f.x,y:f.y,vx:-2.4,vy:-2,e:f.e,half:1,life:1}); parts.push({x:f.x,y:f.y,vx:2.4,vy:-2,e:f.e,half:2,life:1});
         } }
@@ -298,13 +366,10 @@
       // fruit
       ctx.textAlign="center"; ctx.textBaseline="middle";
       for(var i=fruits.length-1;i>=0;i--){ var f=fruits[i];
-        // FRENZY is also SLOW fruit: floatier gravity + eased motion while on
-        var bz=boost.on?0.62:1;
-        f.x+=f.vx*bz; f.y+=f.vy*bz; f.vy+=G*bz; f.rot+=f.vr;
+        f.x+=f.vx; f.y+=f.vy; f.vy+=G; f.rot+=f.vr;
         if(f.sliced){ fruits.splice(i,1); continue; }
-        if(f.y>H+80){ fruits.splice(i,1); if(!f.gold&&!boost.on&&playing){ crash(); } continue; }
+        if(f.y>H+80){ fruits.splice(i,1); if(playing){ crash(); } continue; }
         ctx.save(); ctx.translate(f.x,f.y); ctx.rotate(f.rot);
-        if(f.gold){ ctx.fillStyle="rgba(255,210,28,.30)"; ctx.beginPath(); ctx.arc(0,0,f.r*1.35,0,7); ctx.fill(); }
         // opaque paint before emoji — translucent fillStyle ghosts color glyphs
         drawFruit(f.e,f.r*2.15); ctx.restore();
       }
@@ -323,6 +388,7 @@
     // ---- round over ----
     function bankAndContinue(){ S.finishGameTurn("slice",score); location.href="/charge.html?daily=1&banked="+score; }
     function endRound(){
+      closeReviveMic();
       if(window.__ended)return; window.__ended=true;
       S.finishGameTurn("slice",isDaily?score:null);
       playing=false; reviveWait=false; clearInterval(tossIv); clearInterval(comboIv);
@@ -360,7 +426,7 @@
     $("endCharge").onclick=function(){ location.href=isDaily?"/charge.html?daily=1":(S.gameAccess("tiles").allowed?"/charge.html?game=arcade-tiles.html":"/activities.html"); };
     $("endAgain").onclick=function(){ location.reload(); };
     $("endHome").onclick=function(){ S.finishGameTurn("slice"); location.href="/today.html#play"; };
-    $("close").onclick=function(){ S.finishGameTurn("slice"); if(playing){ playing=false; clearInterval(tossIv); clearInterval(comboIv); } if(isDaily){ bankAndContinue(); return; } location.href="/today.html#play"; };
+    $("close").onclick=function(){ closeReviveMic(); S.finishGameTurn("slice"); if(playing){ playing=false; clearInterval(tossIv); clearInterval(comboIv); } if(isDaily){ bankAndContinue(); return; } location.href="/today.html#play"; };
     }
   </script>
 </body>

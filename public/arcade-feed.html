@@ -141,7 +141,56 @@
     if(!feedAllowed&&S)S.gameBounce("feed");
     if(feedAllowed){
     function $(id){ return document.getElementById(id); }
-    function sfx(n){ if(document.hidden||audioPaused)return; try{ if(S&&S.sfx&&S.sfx[n])S.sfx[n](); }catch(e){} }
+    // A game sound never plays while the listening mic is open or being
+    // asked for (24 Sep 2026): on an iPhone a page holding the mic runs as a
+    // phone call, so a chime there is processed like a call and the volume
+    // buttons change CALL volume. Every chime here follows a closed mic, and
+    // waits SETTLE_MS after it closes so the phone switches back in silence,
+    // not under the chime. Each sound also pushes quietUntil out, and the
+    // mic never opens before then: a chime's tail can't be heard as the child.
+    var SETTLE_MS=200, QUIET_MS=900, VOICE_TAIL_MS=250, quietUntil=0, ukeUntil=0, micClosedAt=-1e9;
+    // A sound asked for while the phone is still answering a mic request
+    // waits for the answer instead of being dropped (24 Sep 2026): a right
+    // pick in that moment lost its chime, and a round finished then lost its
+    // concert. Only an OPEN mic silences a sound: a wrong tap while Echo
+    // listens is answered by the wobble alone. `then` runs once the sound has
+    // really started, so the concert can follow the chime it waits for.
+    // (24 Sep 2026) chimesDue counts chimes still waiting on the mic, and
+    // chimeEnd is when the last one played will have finished (SFX_MS), so
+    // Echo's next ask, which waits on the same mic, lets the chime go first
+    // instead of starting on the same instant (see micQuiet below).
+    var SFX_MS={tap:120,correct:400,complete:700}, chimesDue=0, chimeEnd=0;
+    function sfx(n,then,due){
+      if(document.hidden||audioPaused||micStream){ if(due)chimesDue--; return; }
+      var wait=micClosedAt+SETTLE_MS-performance.now();
+      if(micAsking||wait>0){
+        if(!due)chimesDue++;
+        if(!micAsking)quietUntil=Math.max(quietUntil,performance.now()+wait+QUIET_MS);
+        setTimeout(function(){ sfx(n,then,true); },micAsking?60:wait); return;
+      }
+      if(due)chimesDue--;
+      quietUntil=Math.max(quietUntil,performance.now()+QUIET_MS);
+      chimeEnd=Math.max(chimeEnd,performance.now()+(SFX_MS[n]||400));
+      try{ if(S&&S.sfx&&S.sfx[n])S.sfx[n](); }catch(e){}
+      if(then)then();
+    }
+    function settleLeft(){ return Math.max(0,micClosedAt+SETTLE_MS-performance.now()); }
+    // Echo never starts talking while the phone is still answering a mic
+    // request (24 Sep 2026). An iPhone starts recording before getUserMedia
+    // returns, so an ask started then plays through call audio although the
+    // page never holds a live track. With a phone slow to answer (1.5 s), a
+    // right pick straight after the ask left the request pending and the
+    // next ask started ~0.5 s before it landed. Every line now waits for the
+    // answer (feedMicOpen closes a stale one and stamps micClosedAt), then
+    // SETTLE_MS, then any chime that was waiting on the same answer.
+    function micQuiet(){ return new Promise(function(done){ (function check(){
+      if(micAsking||chimesDue>0){ setTimeout(check,60); return; }
+      var wait=Math.max(settleLeft(),chimeEnd-performance.now());
+      if(wait>0){ setTimeout(check,wait); return; }
+      done();
+    })(); }); }
+    // the concert keeps its own clock: stopping it early frees the mic again
+    function quietLeft(){ return Math.max(quietUntil,ukeUntil)-performance.now(); }
     var profile=(S&&S.getProfile)?S.getProfile():{};
 
     // ── persistent growth: Echo is visibly bigger every week they show up ──
@@ -230,8 +279,11 @@
       var generation=audioGeneration;
       if(!t||!audioAllowed(generation)||profile.voiceOn===false||Number(profile.volume)===0||speaking)return Promise.resolve();
       speaking=true;
-      var key=(profile.voiceId||"echo")+"|"+((window.Sona&&Sona.TTS_CACHE_VERSION)||"v7")+"|"+t;
-      return ttsGet(key).then(function(cached){
+      var key=(profile.voiceId||"echo")+"|"+((window.Sona&&Sona.TTS_CACHE_VERSION)||"v8")+"|"+t;
+      // Echo waits out a mic request still being answered, then the phone's
+      // switch back from a mic that has only just closed (the same SETTLE_MS
+      // the chimes wait), then a chime that was waiting on it (micQuiet)
+      return micQuiet().then(function(){ return ttsGet(key); }).then(function(cached){
         if(!audioAllowed(generation))return true;
         if(cached)return playPCM(new Uint8Array(cached),generation).then(function(){return true;});
         return fetch("/api/tts",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text:t,voice:profile.voiceId||"",stable:true})})
@@ -243,51 +295,91 @@
     }
 
     // ── OPTIONAL mic cheer: loudness only, only if already granted elsewhere.
-    // Never prompts, never records, never logs — a voice burst while a card is
-    // up = "Echo heard you! ⭐". Echo's own voice never counts (tts guard). ──
-    var heardThisTurn=false, stars=0, micOn=false, feedMicStop=function(){};
-    (function(){
-      try{
-        if(localStorage.getItem("sona.micok")!=="1") return;
-        if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia) return;
-        if(!navigator.permissions||!navigator.permissions.query)return;
-        var micRequestGeneration=audioGeneration;
-        navigator.permissions.query({name:"microphone"}).then(function(permission){
-          if(permission.state!=="granted"||document.hidden||audioPaused||micRequestGeneration!==audioGeneration)return null;
-          return navigator.mediaDevices.getUserMedia({audio:true,video:false});
-        }).then(function(stream){
-          if(!stream)return;
-          feedMicStop=function(){micOn=false;try{stream.getTracks().forEach(function(t){t.stop();});}catch(e){}};
-          if(document.hidden||audioPaused||micRequestGeneration!==audioGeneration){feedMicStop();return;}
-          micOn=true;
-          var ctx=getCtx(),src=ctx.createMediaStreamSource(stream),an=ctx.createAnalyser();
-          an.fftSize=512; src.connect(an);
-          var td=new Uint8Array(an.fftSize),voiced=0,thr=0,calN=0,calSum=0,t0=performance.now();
-          (function tick(){
-            if(!micOn)return;
-            if(speaking||ttsPlaying){ voiced=0; requestAnimationFrame(tick); return; }
-            an.getByteTimeDomainData(td);
-            var sum=0; for(var i=0;i<td.length;i++){ var d=(td[i]-128)/128; sum+=d*d; }
-            var rms=Math.sqrt(sum/td.length),now=performance.now();
-            if(now-t0<250){ calSum+=rms; calN++; requestAnimationFrame(tick); return; }
-            if(!thr) thr=Math.max(0.035,(calSum/Math.max(1,calN))*3.0);
-            if(rms>thr){ voiced++; if(voiced>=4&&!heardThisTurn&&turnLive){ heardThisTurn=true; stars++; try{ window.__heard=stars; }catch(e){} try{ $("starN").textContent=stars; }catch(e){} $("heard").classList.add("show"); setTimeout(function(){ $("heard").classList.remove("show"); },1400); sfx("tap"); } }
-            else voiced=0;
-            requestAnimationFrame(tick);
-          })();
-          // lock/app-switch fires visibilitychange, NOT pagehide — this mic
-          // stayed open in your pocket with the recording indicator lit
-          var _rel=feedMicStop;
-          if(window.Sona&&Sona.onBackground) Sona.onBackground(_rel); else window.addEventListener("pagehide",_rel);
-        }).catch(function(){ /* denied elsewhere — tap-only play, no blocker here */ });
-      }catch(e){}
-    })();
+    // Never prompts, never records, never logs — a voice burst during the
+    // child's turn = "Echo heard you! ⭐". (24 Sep 2026) The mic used to open
+    // at page load and stay open under every ask, chime and the concert,
+    // which kept an iPhone in phone-call audio for the whole game. It now
+    // opens only after Echo has finished asking, VOICE_TAIL_MS after the
+    // voice stops, and closes when the turn ends (a right pick, a heard
+    // word), on Play again, at the finish and when the page hides. ──
+    var heardThisTurn=false, stars=0, micStream=null, micAsking=false, micGen=0, micSrc=null, micRaf=0, micT=0;
+    // What counts as "heard" (24 Sep 2026): the bar is 3× the room's quiet
+    // level, and that level belongs to the page, not the turn. micFloor is
+    // the 20th-percentile loudness of the quietest FLOOR_MS the mic has heard
+    // on this page, and it only ever goes DOWN. The first cut of this change
+    // averaged the first 250 ms of every turn instead, which is exactly when
+    // a child answers "Say... robot.": their own voice became the "room",
+    // the bar landed above it, and the child who answered fastest never got
+    // "Echo heard you!". A low percentile ignores a voice that fills most of
+    // the stretch; only-down means nothing a child says raises it; and the
+    // last HEARD_MS of frames are judged against the CURRENT floor, so an
+    // answer given before the first quiet breath still counts once it comes.
+    var FLOOR_MS=250, HEARD_MS=3000, micFloor=-1;
+    function p20(list){ var a=list.slice().sort(function(x,y){ return x-y; }); return a[Math.floor((a.length-1)*0.2)]; }
+    function feedMicStop(){
+      micGen++; clearTimeout(micT); if(micRaf)cancelAnimationFrame(micRaf); micRaf=0;
+      try{ if(micSrc)micSrc.disconnect(); }catch(e){} micSrc=null;
+      if(micStream){ try{ micStream.getTracks().forEach(function(t){t.stop();}); }catch(e){} micStream=null; micClosedAt=performance.now(); }
+    }
+    function listenable(){ return turnLive&&!heardThisTurn&&!speaking&&!ttsPlaying&&!document.hidden&&!audioPaused; }
+    function feedMicOpen(){
+      if(!listenable()||micStream||micAsking)return;
+      try{ if(localStorage.getItem("sona.micok")!=="1")return; }catch(e){ return; }
+      if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia||!navigator.permissions||!navigator.permissions.query)return;
+      var wait=quietLeft();
+      if(wait>0){ clearTimeout(micT); micT=setTimeout(feedMicOpen,wait); return; }
+      var gen=++micGen, asked=false; micAsking=true;
+      navigator.permissions.query({name:"microphone"}).then(function(permission){
+        if(permission.state!=="granted"||gen!==micGen||!listenable())return null;
+        asked=true;
+        return navigator.mediaDevices.getUserMedia({audio:true,video:false});
+      }).then(function(stream){
+        micAsking=false;
+        if(!stream)return;
+        if(gen!==micGen||!listenable()){ try{ stream.getTracks().forEach(function(t){t.stop();}); }catch(e){} micClosedAt=performance.now(); return; }
+        micStream=stream;
+        // a mic that can't be wired to a listener closes at once: left open,
+        // it would hear nothing and silence every chime until the turn ended
+        try{ var ctx=getCtx(),src=ctx.createMediaStreamSource(stream),an=ctx.createAnalyser(); an.fftSize=512; src.connect(an); micSrc=src; }
+        catch(e){ feedMicStop(); return; }
+        var td=new Uint8Array(an.fftSize),heard=[];
+        (function tick(){
+          if(gen!==micGen)return;
+          // belt and braces: nothing plays while this mic is open, and if
+          // anything did, its frames would never be judged or join a burst
+          if(speaking||ttsPlaying||quietLeft()>0){ heard=[]; micRaf=requestAnimationFrame(tick); return; }
+          an.getByteTimeDomainData(td);
+          var sum=0; for(var i=0;i<td.length;i++){ var d=(td[i]-128)/128; sum+=d*d; }
+          var now=performance.now();
+          heard.push({t:now,r:Math.sqrt(sum/td.length)});
+          while(now-heard[0].t>HEARD_MS) heard.shift();
+          if(now-heard[0].t>=FLOOR_MS){
+            var w=[]; for(var k=heard.length-1;k>=0&&now-heard[k].t<=FLOOR_MS;k--) w.push(heard[k].r);
+            var q=p20(w); if(micFloor<0||q<micFloor) micFloor=q;
+          }
+          if(micFloor>=0&&!heardThisTurn&&turnLive){
+            var thr=Math.max(0.035,micFloor*3.0), voiced=0;
+            for(var j=0;j<heard.length&&voiced<4;j++) voiced=heard[j].r>thr?voiced+1:0;
+            if(voiced>=4){
+              heardThisTurn=true; stars++; try{ window.__heard=stars; }catch(e){} try{ $("starN").textContent=stars; }catch(e){}
+              $("heard").classList.add("show"); setTimeout(function(){ $("heard").classList.remove("show"); },1400);
+              feedMicStop(); sfx("tap"); return;   // heard once is the whole turn: close, THEN the little chime
+            }
+          }
+          micRaf=requestAnimationFrame(tick);
+        })();
+      }).catch(function(){ micAsking=false;
+        // denied elsewhere — tap-only play, no blocker here. A request that
+        // failed after it reached the phone may already have switched it into
+        // call audio, so the next sound settles after it too.
+        if(asked)micClosedAt=Math.max(micClosedAt,performance.now()); });
+    }
 
     // ── the round: 5 feeds, no timer, no fail ──
     var NEED=5, fed=0, turnLive=false, target=null, usedIdx=[];
     function shuffle(a){ for(var i=a.length-1;i>0;i--){ var j=(Math.random()*(i+1))|0,t=a[i]; a[i]=a[j]; a[j]=t; } return a; }
     function nextTurn(){
-      heardThisTurn=false;
+      feedMicStop(); heardThisTurn=false;   // Echo is about to ask: never over an open mic
       var ti; do{ ti=(Math.random()*TARGETS.length)|0; }while(TARGETS.length>1&&usedIdx.indexOf(ti)>=0&&usedIdx.length<TARGETS.length);
       usedIdx.push(ti); if(usedIdx.length>=TARGETS.length)usedIdx=[];
       target=TARGETS[ti];
@@ -304,17 +396,26 @@
         g.appendChild(b);
       });
       turnLive=true;
-      say("Where is the "+target.w+"? Say... "+target.w+"!");
+      // Calm: the ask ends on a period, not "!", which the voice reads as a
+      // burst of energy (24 Sep 2026). The practice word itself is unchanged.
+      say("Where is the "+target.w+"? Say... "+target.w+".").then(function(){
+        // listenable() decides whether this is still somebody's turn, so an
+        // older ask finishing late opens the mic for the current one
+        quietUntil=Math.max(quietUntil,performance.now()+VOICE_TAIL_MS);
+        feedMicOpen();
+      });
     }
     function pick(w,btn){
       if(!turnLive)return;
       if(w.w!==target.w){
         btn.classList.remove("wrong"); void btn.offsetWidth; btn.classList.add("wrong");
         $("bSub").textContent="Almost! Where's the "+target.w+"?";
+        // while the mic is listening the wobble and the hint are the whole
+        // answer: sfx() stays silent over an open mic
         sfx("tap");
         return; // no fail state, no strikes — littles just try again
       }
-      turnLive=false; fed++;
+      turnLive=false; fed++; feedMicStop(); // the turn is over: the mic closes before the chime
       roundBump=fed*0.07;
       var f=feedState(); f.fed=(f.fed||0)+1; feedSave(f);
       btn.classList.add("right"); sfx("correct");
@@ -335,21 +436,29 @@
     // ── Echo's ukulele: real plucked strings (Karplus-Strong), no assets.
     // A celebration jingle, not background music: one pass (~4s), volume from
     // the profile, silent when sounds are off, stopped when the overlay closes.
-    var ukeNodes=[];
+    // (24 Sep 2026) It was the loudest thing in the app: master min(0.5,
+    // volume×0.55), ~9 dB over the win chime, each pluck a raw noise burst
+    // with no attack, starting on top of the chime. Now volume×0.2 (level
+    // with the chime), a 4 ms attack on every pluck, and it waits
+    // UKE_AFTER_CHIME_MS for the chime to have its moment.
+    var ukeNodes=[], UKE_AFTER_CHIME_MS=500;
     function pluck(ctx,dest,freq,when,vel){
       var sr=ctx.sampleRate, N=Math.round(sr/freq), len=Math.round(sr*0.9);
       var buf=ctx.createBuffer(1,len,sr), ch=buf.getChannelData(0);
       for(var i=0;i<N;i++) ch[i]=Math.random()*2-1;           // the pluck burst
       for(var n=N;n<len;n++) ch[n]=0.996*0.5*(ch[n-N]+ch[n-N+1]); // string decay
       var s=ctx.createBufferSource(); s.buffer=buf;
-      var g=ctx.createGain(); g.gain.setValueAtTime(vel,when); g.gain.exponentialRampToValueAtTime(0.001,when+0.85);
+      var g=ctx.createGain(); g.gain.setValueAtTime(0.0001,when); g.gain.exponentialRampToValueAtTime(vel,when+0.004); g.gain.exponentialRampToValueAtTime(0.001,when+0.85);
       s.connect(g); g.connect(dest); s.start(when); ukeNodes.push(s);
     }
-    function playUke(){
+    function playUke(delaySec){
       try{
-        if(document.hidden||audioPaused||profile.soundOn===false||Number(profile.volume)===0)return;
-        var ctx=getCtx(), t=ctx.currentTime+0.15;
-        var master=ctx.createGain(); master.gain.value=Math.min(0.5,(profile.volume!=null?profile.volume:0.8)*0.55); master.connect(ctx.destination);
+        if(document.hidden||audioPaused||micStream||profile.soundOn===false||Number(profile.volume)===0)return;
+        // like sfx(): a mic request still being answered is waited out, not a
+        // reason to drop the concert, and the wait ends with the end card
+        if(micAsking){ setTimeout(function(){ if(concertDue())playUke(delaySec); },60); return; }
+        var ctx=getCtx(), t=ctx.currentTime+(delaySec!=null?delaySec:UKE_AFTER_CHIME_MS/1000);
+        var master=ctx.createGain(); master.gain.value=(profile.volume!=null?profile.volume:0.8)*0.2; master.connect(ctx.destination);
         // ukulele voicings (G4-C4-E4-A4 strings): C, F, G7, C — the campfire cadence
         var CH={ C:[392,261.6,329.6,523.3], F:[349.2,261.6,349.2,440], G:[392,293.7,392,493.9] };
         var pat=[CH.C,CH.C,CH.F,CH.F,CH.G,CH.G,CH.C];
@@ -360,10 +469,14 @@
         });
         // the last chord rings with a little flourish arpeggio
         [523.3,659.3,784].forEach(function(fq,k){ pluck(ctx,master,fq,t+7*0.42+0.25+k*0.09,0.55); });
+        ukeUntil=performance.now()+(t-ctx.currentTime)*1000+4600;   // last pluck + its 0.9 s ring + a tail
         window.__ukePlayed=true;
       }catch(e){}
     }
-    function stopUke(){ try{ ukeNodes.forEach(function(n){ try{n.stop();}catch(e){} }); ukeNodes=[]; }catch(e){} }
+    // the concert belongs to the end card: a chime that waited past "Play
+    // again" must not start a concert over the next round's ask
+    function concertDue(){ return $("endOvl").classList.contains("show"); }
+    function stopUke(){ try{ ukeNodes.forEach(function(n){ try{n.stop();}catch(e){} }); ukeNodes=[]; }catch(e){} ukeUntil=0; }
 
     function finish(){
       feedMicStop();
@@ -373,10 +486,12 @@
       $("endSub").textContent="Five tasty discoveries. Concert time!";
       $("again").textContent=daily?"Keep going →":"Play again";
       $("endOvl").classList.add("show");
-      sfx("complete");playUke();
+      // the chime waits out the mic's close (and any request still being
+      // answered) in sfx(); the uke starts from the moment the chime really does
+      sfx("complete",function(){ if(concertDue())playUke(UKE_AFTER_CHIME_MS/1000); });
     }
 
-    $("again").onclick=function(){ stopUke();
+    $("again").onclick=function(){ stopUke(); feedMicStop();
       if(S.simpleAdventure&&S.simpleAdventure("feed",false)){feedMicStop();location.href="/charge.html?daily=1&banked=0";return;}
  fed=0; stars=0; roundBump=0; paintScale();
       try{ $("plate").querySelectorAll(".well").forEach(function(w){ w.innerHTML=""; }); $("plate").dataset.fed="0/5"; $("starN").textContent="0"; }catch(e){}

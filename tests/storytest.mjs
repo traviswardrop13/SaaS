@@ -144,7 +144,7 @@ for (const url of ["/charge.html?daily=1&sound=R", "/charge.html?game=arcade-sli
   for (const g of ["arcade-slice", "arcade-tiles", "arcade-stack", "arcade-run", "arcade-glide", "arcade-feed"]) {
     const gs = readFileSync(ROOT + "/" + g + ".html", "utf8");
     ok(g + " releases its mic when backgrounded", /onBackground/.test(gs),
-      "this game holds its own boost mic and only listened to pagehide");
+      "this game holds its own keep-playing mic and only listened to pagehide");
   }
   ok("charge.html releases the mic when backgrounded", /onBackground/.test(src));
 

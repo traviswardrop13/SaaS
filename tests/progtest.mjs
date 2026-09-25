@@ -194,7 +194,8 @@ if (bn.shown) {
 
 // ── retry ladder: Echo thinks while scoring; two misses step DOWN a rung ──
 ok("Echo shows a visual checking state", /echo-checking/.test(chargeSrc) && /leo\.think\{animation:think/.test(chargeSrc.replace(/#/g, "")));
-ok("step-down retry offers an easier same-sound target", /Let's try something easier/.test(chargeSrc) && /ladderContent\(SOUND,useRung-1\)/.test(chargeSrc));
+// 24 Sep 2026: the spoken line is calm now ("I have an idea. Let's try this one.").
+ok("step-down retry offers an easier same-sound target", /Let's try this one/.test(chargeSrc) && /ladderContent\(SOUND,useRung-1\)/.test(chargeSrc));
 
 // ── voice revive: "keep playing" copy + family-aware trigger in all 5 games ──
 {

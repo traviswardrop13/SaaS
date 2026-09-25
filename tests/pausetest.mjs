@@ -198,15 +198,20 @@ async function fresh(config = {}) {
   if (config.feedback) await page.evaluate(() => {
     const original = window.say;
     window.say = function (text) {
-      if (/different sound/.test(text)) return new Promise((resolve) => { __pauseHarness.feedbackResolve = resolve; });
+      // The wrong-sound coaching line (calm since 24 Sep 2026; was "Hmm, that was a different sound! …").
+      if (/^Let's try that one again\./.test(text)) return new Promise((resolve) => { __pauseHarness.feedbackResolve = resolve; });
       return original(text);
     };
   });
   return { context, page, errors };
 }
 async function click(page, id) { await page.locator(id).evaluate((el) => el.click()); }
+// REWRITTEN 24 Sep 2026: a connected graph on a live stream used to mean the
+// child's listening window. The page now also connects one for ~300ms on the
+// first mic, before Echo speaks, to measure the room (ROOM FLOOR), so the
+// window is awaited by its own flag as well.
 async function listening(page) {
-  await page.waitForFunction(() => window.__pauseHarness.graphs.some((g) => g.connected && g.stream.track.readyState === 'live'), { }, { polling: 30 });
+  await page.waitForFunction(() => window.engineOn && window.__pauseHarness.graphs.some((g) => g.connected && g.stream.track.readyState === 'live'), { }, { polling: 30 });
   await page.waitForTimeout(310); // silent calibration before any fake voiced burst
 }
 async function bursts(page, count) {
@@ -625,17 +630,27 @@ for (const continuedSpeech of [true, false]) await scenario('tail: pause then re
   } finally { await context.close(); }
 });
 
+// REWRITTEN 24 Sep 2026. This used to require the mic to stay LIVE while Echo
+// talked over the final try (held.live === engineOn) and only the detector to
+// look away. On an iPhone a live mic under Echo's voice is phone-call audio,
+// and it let Echo reach the recognizer and the parent's clip. Now Echo talking
+// ends the window cleanly — not as a lost mic — the mic is closed while he
+// talks, and a fresh window reopens a quarter-second after he stops with the
+// unused tail carried. Still: no evidence while he talks, one credit after.
 await scenario('tail: model playback preserves remaining listening time', async () => {
   const { context, page, errors } = await fresh({ verify: 'unknown' });
   try {
     await beginFinalTail(page, 'model');
     await page.waitForTimeout(480);
-    const held = await page.evaluate(() => ({ frames: SHAPE.frames, live: engineOn, saved: Sona.repsToday() }));
-    ok('coaching in final tail supplies no evidence and cannot exhaust listening time', held.frames === 4 && held.live && held.saved === 0, held);
+    const held = await page.evaluate(() => ({ frames: SHAPE.frames, window: engineOn, live: __pauseHarness.streams.filter((s) => s.track.readyState === 'live').length, graphs: __pauseHarness.graphs.filter((g) => g.connected).length, saved: Sona.repsToday(), quiet: !!document.querySelector('#quietOvl.show') }));
+    ok('coaching in final tail supplies no evidence and closes the mic while Echo talks', held.frames === 4 && !held.window && held.live === 0 && held.graphs === 0 && held.saved === 0, held);
+    ok('…ending the window as Echo talking, never as a lost microphone', !held.quiet, held);
+    const opened = await page.evaluate(() => __pauseHarness.requests.length);
     await page.evaluate(() => { speaking = false; });
-    await page.waitForTimeout(550);
-    const state = await page.evaluate(() => ({ frames: SHAPE.frames, reps, saved: Sona.repsToday(), outcomes: __pauseHarness.effects.filter(e => e === 'logAttempt').length }));
+    await page.waitForFunction(() => Sona.repsToday() === 1 && __pauseHarness.effects.includes('logAttempt'), {}, { polling: 30, timeout: 4000 });
+    const state = await page.evaluate(() => ({ frames: SHAPE.frames, reps, saved: Sona.repsToday(), outcomes: __pauseHarness.effects.filter(e => e === 'logAttempt').length, requests: __pauseHarness.requests.length }));
     ok('child gets remaining listening time after coaching and only one credit', state.frames >= 12 && state.reps === 1 && state.saved === 1 && state.outcomes === 1, state);
+    ok('…in one fresh mic opened after Echo stopped', state.requests === opened + 1, { opened, ...state });
     clean('model during final tail', errors);
   } finally { await context.close(); }
 });

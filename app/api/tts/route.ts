@@ -23,13 +23,25 @@ import { rateLimit } from "@/lib/rateLimit";
  */
 export const runtime = "nodejs";
 
-const VOICE_REVISION = "v7";
+// v8 (24 Sep 2026): every clip is now loudness-levelled (levelPcm below) and
+// made with calmer settings and a fixed seed. Bumped together with
+// TTS_CACHE_VERSION in public/sona.js — the phone keys its saved clips by that
+// value, so bumping only one side leaves families replaying the old, unlevelled,
+// excitable takes forever.
+const VOICE_REVISION = "v8";
 const VENDOR_TIMEOUT_MS = 6000; // leave room inside the browser's seven-second timeout
 const DEFAULT_ELEVEN_VOICE = "qBDvhofpxp92JgXJxDjB";
 const OPENAI_VOICES = new Set([
   "alloy", "ash", "ballad", "coral", "echo", "fable", "nova", "onyx",
   "sage", "shimmer", "verse", "marin", "cedar",
 ]);
+// One fixed ElevenLabs seed for every request (24 Sep 2026). Without it each
+// phone got its own random take of the same line, so a child heard "Nice one."
+// in a slightly different voice from one day to the next and a bad take lived
+// on that one device forever. Same text + same settings + same seed = the same
+// recording everywhere (ElevenLabs calls this best-effort determinism). It is
+// part of the cache key, so changing it can never replay an older take.
+const VOICE_SEED = 20260924;
 const PCM_HEADERS = {
   "Content-Type": "audio/L16; rate=24000; channels=1",
   "Cache-Control": "no-store",
@@ -67,10 +79,19 @@ function elevenConfig() {
 function elevenSettings(model: string, config: ReturnType<typeof elevenConfig>): Record<string, number | boolean> {
   // v3 supports coarse stability; speaker boost, similarity and speed are not supported.
   if (model === config.v3Model || model === "eleven_v3") return { stability: 0.5 };
+  // A CALMER VOICE (Travis, 24 Sep 2026: "relaxed and sweet, like talking to a
+  // little kid"). style 0.3 exaggerated every line and stability 0.55 let the
+  // pitch and energy jump, which was the "jumpy, explosive" sound. style 0 and
+  // stability 0.7 steady it; 0.78 was logged as robotic in 7d286f9, so not
+  // higher. similarity_boost and speed stay exactly where they were: speed is
+  // also the rate of the practice word the child copies, so it is Rachel's
+  // call, and similarity is the setting that moved a modelled /r/ toward /w/
+  // in the voice changer (app/api/voice-change/route.ts) — not one to touch
+  // without her ears on the practice words.
   return {
-    stability: 0.55,
+    stability: 0.7,
     similarity_boost: 0.85,
-    style: 0.3,
+    style: 0,
     speed: config.speed,
     use_speaker_boost: true,
   };
@@ -88,9 +109,86 @@ function voiceHeaders(provider: string, model: string, cache: "hit" | "miss" = "
     "X-Sona-Voice-Revision": VOICE_REVISION,
   };
 }
-function pcmResponse(buf: ArrayBuffer, provider: string, model: string, cache: "hit" | "miss" = "miss") {
+function assertPcm(buf: ArrayBuffer) {
   // A successful HTTP status with no PCM must never be cached or look like speech.
   if (!buf.byteLength || buf.byteLength % 2) throw new Error("Invalid PCM response");
+}
+
+// ── Loudness levelling (24 Sep 2026) ────────────────────────────────────────
+// Every line used to play at whatever level the voice service happened to
+// produce, so an excited line came out louder than a calm one and the volume
+// jumped from line to line. Each clip is now brought to one speech level,
+// once, here — before it is cached — so every page's player gets it for free.
+//
+// ONE GAIN PER CLIP, NO COMPRESSION. The practice word is the model the child
+// copies, and the on-device check listens for the hiss of /s/ and /sh/; a
+// compressor or limiter would reshape exactly that. A single multiplication
+// changes how loud the clip is and nothing about how it sounds.
+const LEVEL_TARGET_DB = -20;   // speech level: RMS over the spoken frames only
+const LEVEL_PEAK_DB = -3;      // no sample may land above this after the gain
+const LEVEL_FRAME = 480;       // 20 ms at 24 kHz
+const LEVEL_PAUSE_DB = -50;    // frames quieter than this are pauses, not speech
+const LEVEL_RELATIVE_DB = -20; // …and frames this far under the clip's own speech are breaths and tails
+const LEVEL_QUIET_DB = -40;    // speech measured below this is near-silence: never turned up
+const LEVEL_FADE = 240;        // 10 ms linear fade at each end, so no clip starts or stops with a click
+const dbToAmp = (db: number) => Math.pow(10, db / 20);
+
+/** Level 24 kHz 16-bit little-endian mono PCM. Returns a new buffer. */
+function levelPcm(buf: ArrayBuffer): ArrayBuffer {
+  assertPcm(buf);
+  const n = buf.byteLength >> 1;
+  const inView = new DataView(buf);
+  const x = new Float64Array(n);
+  let peak = 0;
+  for (let i = 0; i < n; i++) {
+    x[i] = inView.getInt16(i * 2, true) / 32768;
+    const a = Math.abs(x[i]);
+    if (a > peak) peak = a;
+  }
+  // Measure the SPOKEN part only. Averaging in the pauses would read a line
+  // with long gaps as quiet and turn its speech up too far.
+  const frames: { sum: number; len: number }[] = [];
+  for (let s = 0; s < n; s += LEVEL_FRAME) {
+    const e = Math.min(n, s + LEVEL_FRAME);
+    let sum = 0;
+    for (let i = s; i < e; i++) sum += x[i] * x[i];
+    frames.push({ sum, len: e - s });
+  }
+  const pauseGate = dbToAmp(LEVEL_PAUSE_DB) ** 2;
+  const spoken = frames.filter((f) => f.sum / f.len >= pauseGate);
+  let gain = 1;
+  if (spoken.length) {
+    const mean = spoken.reduce((t, f) => t + f.sum, 0) / spoken.reduce((t, f) => t + f.len, 0);
+    const relGate = mean * dbToAmp(LEVEL_RELATIVE_DB) ** 2;
+    const speech = spoken.filter((f) => f.sum / f.len >= relGate);
+    const rms = Math.sqrt(speech.reduce((t, f) => t + f.sum, 0) / speech.reduce((t, f) => t + f.len, 0));
+    // Near-silence is never turned up: raising it would only raise hiss, and a
+    // clip that is mostly nothing must not become something.
+    if (rms >= dbToAmp(LEVEL_QUIET_DB)) gain = dbToAmp(LEVEL_TARGET_DB) / rms;
+  }
+  // The peak cap wins over the target: a spiky line lands a little under
+  // -20 dB rather than being squashed to reach it. The cap sits a sample step
+  // under -3 dB so rounding back to 16-bit can never nudge a peak over it.
+  const peakCap = Math.floor(dbToAmp(LEVEL_PEAK_DB) * 32768 - 1) / 32768;
+  if (peak > 0) gain = Math.min(gain, peakCap / peak);
+  const fade = Math.min(LEVEL_FADE, n >> 1);
+  const out = new ArrayBuffer(n * 2);
+  const outView = new DataView(out);
+  for (let i = 0; i < n; i++) {
+    let g = gain;
+    if (fade > 0) {
+      if (i < fade) g *= i / fade;
+      const fromEnd = n - 1 - i;
+      if (fromEnd < fade) g *= fromEnd / fade;
+    }
+    const v = Math.round(x[i] * g * 32768);
+    outView.setInt16(i * 2, Math.max(-32768, Math.min(32767, v)), true);
+  }
+  return out;
+}
+
+function pcmResponse(buf: ArrayBuffer, provider: string, model: string, cache: "hit" | "miss" = "miss") {
+  assertPcm(buf);
   return new NextResponse(buf.slice(0), {
     status: 200, headers: { ...PCM_HEADERS, ...voiceHeaders(provider, model, cache) },
   });
@@ -151,7 +249,7 @@ export async function POST(req: NextRequest) {
         }
         // Key by exactly what is synthesized, including the actual attempted
         // model. Changing delivery settings must never replay an older clip.
-        const cacheKey = JSON.stringify([VOICE_REVISION, provider, voiceId, model, settings, sendText, "pcm_24000"]);
+        const cacheKey = JSON.stringify([VOICE_REVISION, provider, voiceId, model, settings, VOICE_SEED, sendText, "pcm_24000"]);
         const cacheable = sendText.length <= 120;
         if (cacheable) {
           const hit = cacheGet(cacheKey);
@@ -162,12 +260,14 @@ export async function POST(req: NextRequest) {
           {
             method: "POST",
             headers: { "xi-api-key": elevenKey, "Content-Type": "application/json" },
-            body: JSON.stringify({ text: sendText, model_id: model, voice_settings: settings }),
+            body: JSON.stringify({ text: sendText, model_id: model, voice_settings: settings, seed: VOICE_SEED }),
             signal: controller.signal,
           },
         );
         if (r.ok) {
-          const buf = await r.arrayBuffer();
+          // Level once, then cache the LEVELLED clip: a cache hit is already
+          // levelled and must not be levelled again.
+          const buf = levelPcm(await r.arrayBuffer());
           const response = pcmResponse(buf, provider, model);
           if (cacheable) cacheSet(cacheKey, buf);
           return response;
@@ -200,7 +300,9 @@ export async function POST(req: NextRequest) {
         { status: 502, headers: voiceHeaders(provider, model) },
       );
     }
-    return pcmResponse(await r.arrayBuffer(), provider, model);
+    // The fallback voice is levelled to the same target, so a slow ElevenLabs
+    // day does not also mean a louder or quieter Echo.
+    return pcmResponse(levelPcm(await r.arrayBuffer()), provider, model);
   } catch {
     return NextResponse.json(
       { ok: false, error: controller.signal.aborted ? "Speech request timed out." : "Speech request failed." },
