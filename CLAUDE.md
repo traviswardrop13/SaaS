@@ -1,6 +1,12 @@
 # Working with Travis (and Rachel)
 
 ## Communication style
+**Talk to Travis like he's 10 years old, and keep it short** (Travis, 25 Sep
+2026: "explain as if im 10 years old and be more concise"). Short sentences,
+everyday words, no tech words unless explained in a few plain words. Say what
+happened, what he needs to do, and stop. If a reply is more than a few short
+lines, cut it.
+
 - Be concise. Default to a few sentences; use short bullets when listing.
 - Lead with the answer or the thing that happened. Cut background, caveats,
   and strategy essays unless asked.
@@ -312,6 +318,23 @@ their dashboard account and sign-in email, as the page always did, because
 the iPhone app has no clinician side; everyone else goes to `/api/lead` with
 their email and role. `tests/landingtest.mjs` drives it.
 
+**While the app is not ready, nobody is sent to the App Store** (Travis, 25
+Sep 2026: "the app launches next week"; the iOS 27 build closes on launch).
+`APP_READY = false` in `lib/launch.ts` and `var APP_READY` in
+`for-slps.html`, pinned equal by `shiptest`. A parent or "other" is thanked
+on the page ("The Sona app launches next week. We'll email you the moment
+it's ready.") and emailed the same once through Resend (`/api/lead`,
+`launchmail:<email>`); a speech therapist goes to their dashboard's
+community (`/slp.html#community`) and their sign-in email carries the same
+P.S. Not the web app: Travis chose to wait for the app. When the app is
+live, set both switches to true.
+
+**The SLP community shows who is there** (Travis, 25 Sep 2026): the real
+number of SLP accounts and up to a dozen members' first names, newest first,
+only to signed-in members, rebuilt every ten minutes
+(`{slp-community}:members`). Never a last name, an email or an invented
+member.
+
 Still `noindex`, correctly: `slp.html` and `slp-login.html` (a private
 dashboard and its login) and `join.html` (a family's redemption link, which
 carries a credential in the URL). Those are surfaces, not marketing.
@@ -402,11 +425,16 @@ What reaches Kit: the email, a **clinician's own** first name, and the role tag
 (`sona-slp`, `sona-parent`, `sona-other`).
 Never anything about a child. Wherever an email joins the list, the page says
 so first, in Travis's words: "We'll also send occasional tips from Rachel.
-Unsubscribe anytime." Meta's `Lead` fires only when an email was given.
+Unsubscribe anytime." **Except the landing page**, where Travis took the line
+out (25 Sep 2026: "get rid of this text"); its "What's stored" answer still
+says the email goes to Kit. Meta's `Lead` fires only when an email was given.
 
 `/leads.html` (private, behind `FOUNDER_KEY`) lists every captured email and
-every clinician account, and its "Send everyone to Kit" button is the one-time
-catch-up for everyone collected before Kit existed.
+every clinician account, and its "Send everyone to Kit" button is the catch-up:
+it re-sends everyone Sona holds, tagged `sona-slp` (a clinician account or an
+SLP sign-up), `sona-other` (answered Other) or `sona-parent`, and is safe to
+press again. Kit tags only add, so a wrong tag is fixed in Kit, not by
+re-running.
 
 ## Home: choose a game, then practice
 **Home is the silent Play library (Travis, 24 Sep 2026).** `today.html` opens

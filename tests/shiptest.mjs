@@ -116,8 +116,26 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
   ok("the closing Start free brings the visitor back to that form",
     /\$\("finalGo"\)\.onclick = function \(\) \{ toForm\(""\); \};/.test(slps) &&
     (slps.replace(/<!--[\s\S]*?-->/g, "").match(/>Start free</g) || []).length === 2);
-  ok("the hero shows Travis's whole App Store image, which is in the repo",
-    /<img class="hshot" src="\/hero-practice-play\.webp" width="610" height="1328"/.test(slps) && existsSync(APP + "/public/hero-practice-play.webp"));
+  // IS THE APP READY? One switch, two copies, like FREE_MODE (25 Sep 2026):
+  // the page's and lib/launch.ts's, and the same launch note in both.
+  {
+    const launch = readFileSync(APP + "/lib/launch.ts", "utf8");
+    const pageReady = (slps.match(/var APP_READY = (true|false);/) || [])[1];
+    const libReady = (launch.match(/export const APP_READY = (true|false);/) || [])[1];
+    const pageNote = (slps.match(/var LAUNCH_NOTE = "([^"]+)";/) || [])[1];
+    const libNote = (launch.match(/export const LAUNCH_NOTE = "([^"]+)";/) || [])[1];
+    ok("the landing page and lib/launch.ts agree on whether the app is ready", !!pageReady && pageReady === libReady, pageReady + " vs " + libReady);
+    ok("…and say the same launch note", !!pageNote && pageNote === libNote, pageNote + " | " + libNote);
+  }
+  // BACK TO ECHO AND THE CASELOAD CARD (Travis, 25 Sep 2026), after one
+  // afternoon with his App Store image there instead.
+  const heroR = (slps.match(/<div class="hero-r"[\s\S]*?<\/section>/) || [""])[0];
+  ok("the hero shows Echo and the caseload card, made-up first names only",
+    /<img class="mascot" src="\/echo\.png"/.test(heroR) && /Your caseload this week/.test(heroR) &&
+    /Maya/.test(heroR) && !/hero-practice-play/.test(slps) && (slps.match(/Your caseload this week/g) || []).length === 1);
+  // NOTHING UNDER THE BUTTON (Travis, 25 Sep 2026: "get rid of this text").
+  ok("…and nothing under the form's button: no list line, no 'Next' hint, no 'No card' note",
+    !/class="consent"|id="mNext"|class="hnote"/.test(slps.replace(/<!--[\s\S]*?-->/g, "")));
 }
 
 // ── what the landing page promises: a free version and Premium (24 Sep 2026) ──

@@ -15,7 +15,10 @@ import { kitConfigured, kitSubscribe, kitTagFor } from "@/lib/kit";
  *
  * Clinicians go with their own first name and the sona-slp tag, and their
  * account is stamped (crmAt) once Kit has them, so their next sign-in does not
- * send them again. Everyone else goes as sona-parent with no name at all.
+ * send them again. Everyone else goes with no name at all: sona-other if they
+ * answered "Other" on the landing page (25 Sep 2026), else sona-parent. Kit
+ * tags only ever add, so without that case a re-run would have stuck a
+ * parent tag on everyone who said "Other".
  */
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -23,7 +26,7 @@ export const maxDuration = 30;
 
 const BATCH = 5;
 
-type Person = { email: string; firstName: string; role: "slp" | "parent"; account: boolean };
+type Person = { email: string; firstName: string; role: "slp" | "parent" | "other"; account: boolean };
 
 async function everyone(): Promise<Person[]> {
   const byEmail = new Map<string, Person>();
@@ -31,7 +34,7 @@ async function everyone(): Promise<Person[]> {
     const email = String(l.email || "").trim().toLowerCase();
     if (!email || byEmail.has(email)) continue;
     const slp = l.role === "slp";
-    byEmail.set(email, { email, firstName: slp ? String(l.first_name || "") : "", role: slp ? "slp" : "parent", account: false });
+    byEmail.set(email, { email, firstName: slp ? String(l.first_name || "") : "", role: slp ? "slp" : l.role === "other" ? "other" : "parent", account: false });
   }
   // An account wins: whoever holds one is a clinician, with their own name.
   for (const c of await readClinicians()) {

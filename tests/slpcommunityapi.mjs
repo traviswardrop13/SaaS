@@ -33,14 +33,16 @@ const accounts = new Map([
   ['slpacct:' + accountB, JSON.stringify({ email: accountB, name: 'Casey Other', code: 'private-code' })],
   ['slpacct:' + moderator, JSON.stringify({ email: moderator, name: 'Moderator Person', code: '' })],
 ]);
-const posts = new Map(), indexes = new Map(), receipts = new Map(), counters = new Map(), reports = [];
+const posts = new Map(), indexes = new Map(), receipts = new Map(), counters = new Map(), reports = [], memberCache = new Map();
 let forcedCount = 0, offline = false, failWrites = false, failReadLimit = false, failWelcome = false, externalCalls = 0, commands = [];
 
 // An isolated, in-memory model keeps the suite portable. The same requests can
 // also execute actual Redis, guarding cjson empty arrays and Lua race behavior.
 function model(cmd) {
   const [op, ...args] = cmd;
-  if (op === 'GET') return accounts.get(args[0]) ?? null;
+  if (op === 'GET') return accounts.get(args[0]) ?? memberCache.get(args[0]) ?? null;
+  if (op === 'SCAN') return ['0', [...accounts.keys()]];
+  if (op === 'SET') { memberCache.set(args[0], args[1]); return 'OK'; }
   if (op === 'LRANGE') return reports.slice(0, 100).map(x => JSON.stringify(x));
   if (op !== 'EVAL') throw new Error('Unexpected store operation: ' + op);
   const script = args[0], n = Number(args[1]), k = args.slice(2, 2 + n), a = args.slice(2 + n);
@@ -137,6 +139,14 @@ try {
   const firstReads = await Promise.all([request(), request('GET', undefined, { email: accountB })]);
   let r = firstReads[0]; ok('existing account with unfinished profile has automatic access and empty feed', r.status === 200 && r.json.ok && r.json.posts?.length === 0 && r.json.nextCursor === null);
   const welcome = r.json.pinned?.[0];
+  // WHO IS HERE (25 Sep 2026): the real count and first names, nothing more.
+  ok('members see how many SLPs are in the community: every account', r.json.members?.count === accounts.size);
+  ok('…and their first names only, never a last name', JSON.stringify(r.json.members?.names?.slice().sort()) === JSON.stringify(['Casey', 'Moderator', 'Morgan']) && !JSON.stringify(r.json.members).includes('PRIVATE') && !JSON.stringify(r.json.members).includes('Other'));
+  {
+    const scans = () => commands.filter(c => c[0] === 'SCAN').length;
+    const before = scans(); await request(); await request('GET', undefined, { email: accountB });
+    ok('…rebuilt at most every ten minutes, not on every read', scans() === before);
+  }
   ok('members receive the approved Rachel welcome separately from ordinary posts', r.json.pinned?.length === 1 && welcome?.id === welcomeId && welcome.author === 'Rachel' && welcome.title === 'Hey everyone! 👋' && welcome.text === welcomeText && welcome.category === 'discussions' && welcome.pinned === true && Array.isArray(welcome.replies) && welcome.replies.length === 0);
   ok('simultaneous first reads seed one stable welcome for both accounts', firstReads.every(x => x.status === 200 && x.json.pinned?.length === 1 && x.json.pinned[0].id === welcomeId && x.json.pinned[0].createdAt === welcome?.createdAt && x.json.posts?.length === 0));
   ok('ordinary members receive no permission or private owner ID for the welcome', welcome?.canDelete === false && !JSON.stringify(r.json).includes('sona-team-rachel'));
