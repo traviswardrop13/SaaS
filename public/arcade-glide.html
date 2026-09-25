@@ -21,9 +21,6 @@
     #score{flex:none;}
     #hudspacer{flex:1;}
     #timer{color:#ff5c74;letter-spacing:1px;}
-    #boostChip{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(64px + env(safe-area-inset-bottom));top:auto;z-index:5;background:#fff;color:#4a2c14;font-family:"Baloo 2";font-weight:800;font-size:13.5px;padding:9px 16px;border-radius:99px;pointer-events:none;white-space:nowrap;box-shadow:0 4px 0 rgba(70,50,20,.35);transition:background .2s,color .2s;}
-    #boostChip.hot{background:#ffd21c;color:#5c4500;animation:chipPop .4s ease;}
-    @keyframes chipPop{0%{transform:translateX(-50%) scale(1)}50%{transform:translateX(-50%) scale(1.18)}100%{transform:translateX(-50%) scale(1)}}
     /* ── warm-card overlays (handoff section 5) ── */
     .ovl{position:fixed;inset:0;z-index:50;background:rgba(30,22,50,.55);display:none;align-items:center;justify-content:center;padding:24px;}
     .ovl.show{display:flex;}
@@ -66,7 +63,6 @@
       <div id="timer" class="hudpill"></div>
     </div>
     <div id="flash"></div>
-    <div id="boostChip"></div>
     <div id="tapHint">Tap to flap! Glide through the gaps!</div>
   </div>
 
@@ -86,7 +82,7 @@
       <h2 id="revTitle">Say it!</h2>
       <p id="revHearts" style="font-size:26px;"></p>
       <div style="width:56px;height:56px;border-radius:50%;background:linear-gradient(180deg,#ffa05a,#ff8a3d);box-shadow:0 4px 0 #ef6f23,0 0 0 10px rgba(255,138,61,.14);display:flex;align-items:center;justify-content:center;margin:2px 0;"><svg viewBox="0 0 24 24" style="width:24px;height:24px;fill:#fff"><path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v5a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z"/></svg></div>
-      <p style="font-size:13px;">I'm listening…</p>
+      <p id="revListen" style="font-size:13px;">Get ready…</p>
       <button class="btn ghost" id="revDone">I'm done playing</button>
     </div>
   </div>
@@ -122,7 +118,27 @@
     if(gameEntryAllowed){
     var $=function(id){return document.getElementById(id);};
     var S=window.Sona, qp=new URLSearchParams(location.search);
-    function sfx(n){ try{ if(S&&S.sfx&&S.sfx[n])S.sfx[n](); }catch(e){} }
+    // ── the mic and this game's own sounds never overlap (24 Sep 2026) ──
+    // On an iPhone a page holding the mic runs as a phone call: the volume
+    // buttons change CALL volume and every chime is processed like a call.
+    // So no game sound plays while the keep-playing mic is open (a sound
+    // asked for then is dropped; the game is paused behind the card anyway),
+    // none waits on a mic request that hasn't settled, none plays in the
+    // first SETTLE_MS after the mic closes (the phone switches back in
+    // silence, not under a chime), and the mic never opens until QUIET_MS
+    // after the last sound began: the longest chime ("complete") rings about
+    // 0.6 s and the rest covers speaker and Bluetooth delay, so a chime's
+    // tail can never answer the card for the child.
+    var SETTLE_MS=200, QUIET_MS=900, quietUntil=0, micClosedAt=-1e9;
+    var rv={st:null,pending:0,gen:0,raf:0,t:0,ctx:null,src:null,floor:-1};   // floor: the room's quiet level, measured once per page (see listenFor)
+    function sfx(n){
+      if(rv.st) return;
+      if(rv.pending){ setTimeout(function(){ sfx(n); },60); return; }
+      var wait=micClosedAt+SETTLE_MS-performance.now();
+      if(wait>0){ quietUntil=Math.max(quietUntil,performance.now()+wait+QUIET_MS); setTimeout(function(){ sfx(n); },wait); return; }
+      quietUntil=Math.max(quietUntil,performance.now()+QUIET_MS);
+      try{ if(S&&S.sfx&&S.sfx[n])S.sfx[n](); }catch(e){}
+    }
 
     // ---- charge gate + daily plumbing ----
     var SELF="arcade-glide.html";
@@ -137,28 +153,28 @@
     fit(); window.addEventListener("resize",fit);
 
     // ---- game state ----
-    var boost={on:false,cool:false}; // declared with game state — draw() reads it from frame 1
     var playing=true, score=0;
     var BESTK="sona.best.glide", BEST=0; try{ BEST=parseInt(localStorage.getItem(BESTK)||"0",10)||0; }catch(e){}
     // ── lives: a crash → say your sound for a new life (3 per run) ──
-    var REV=3, reviveWait=false, MIC=false;
+    var REV=3, reviveWait=false;
     function hearts(){ $("timer").innerHTML=(window.Sona&&Sona.heartRow)?Sona.heartRow(REV,3,17):String(REV); }
     function crash(){
       if(!playing) return;
       playing=false; gates=[]; sfx("tap");
-      if(REV>0 && MIC){
+      if(REV>0 && CAN_LISTEN){
         $("revTitle").textContent="Say \u201C"+SAYTXT+"\u201D to keep playing!";
         $("revHearts").innerHTML=(window.Sona&&Sona.heartRow)?Sona.heartRow(REV,3,28):String(REV);
-        reviveWait=true; $("revOvl").classList.add("show");
+        reviveWait=true; $("revOvl").classList.add("show"); openReviveMic();
       } else { endRound(); }
     }
     function doRevive(){
       reviveWait=false; REV--; hearts();
       $("revOvl").classList.remove("show");
+      // the mic has just closed: sfx() holds this chime SETTLE_MS
       sfx("complete"); try{ if(S&&S.confetti)S.confetti(); }catch(e){}
       py=H*0.45; vy=0; mercyT=performance.now(); playing=true; draw(); // the gated rAF died on crash — restart it
     }
-    $("revDone").onclick=function(){ reviveWait=false; $("revOvl").classList.remove("show"); endRound(); };
+    $("revDone").onclick=function(){ closeReviveMic(); reviveWait=false; $("revOvl").classList.remove("show"); endRound(); };
     hearts();
 
     var G=H*0.00052, FLAP=-H*0.0095; // floaty, kid-gentle physics
@@ -174,7 +190,7 @@
 
     function spawnGate(){
       var cy=H*(0.30+Math.random()*0.40);
-      gates.push({x:W+70,cy:cy,passed:false,gold:boost.on});
+      gates.push({x:W+70,cy:cy,passed:false});
     }
     var spawnTimer=setInterval(function(){ if(document.hidden)return; if(playing&&!falling.on) spawnGate(); },spawnMs);
     var rampIv=setInterval(function(){ if(document.hidden)return; if(playing){ gspeed*=1.03; if(gapH>H*0.32) gapH*=0.992; } },12000); // very gentle ramp
@@ -203,30 +219,30 @@
       for(var i=0;i<5;i++){ var cx=((i*173-performance.now()*0.02*(1+i*0.2))%(W+140)+W+140)%(W+140)-70; var cy2=H*0.12+i*H*0.14; ctx.beginPath(); ctx.ellipse(cx,cy2,52,20,0,0,7); ctx.fill(); }
       // gates (hedge towers)
       for(var i=gates.length-1;i>=0;i--){ var g=gates[i];
-        g.x-=gspeed*(boost.on?1.4:1);
+        g.x-=gspeed;
         if(g.x<-90){ gates.splice(i,1); continue; }
         var topH=g.cy-gapH/2, botY=g.cy+gapH/2;
-        ctx.fillStyle=g.gold?"#ffd21c":"#2f9e44";
+        ctx.fillStyle="#2f9e44";
         rr(g.x-COLW/2,-12,COLW,topH+12,18); ctx.fill();
         rr(g.x-COLW/2,botY,COLW,H-botY+12,18); ctx.fill();
         // topiary caps + leaf dots (design 4: Flappy Glide)
-        ctx.fillStyle=g.gold?"#ffe066":"#5cbf6a";
+        ctx.fillStyle="#5cbf6a";
         rr(g.x-COLW/2-5,topH-16,COLW+10,18,10); ctx.fill();
         rr(g.x-COLW/2-5,botY-2,COLW+10,18,10); ctx.fill();
         ctx.fillStyle="rgba(255,255,255,.25)";
         for(var di=0;di<3;di++){ ctx.beginPath(); ctx.arc(g.x-COLW/4+di*(COLW/4), topH-30-((di%2)*14), 3.2, 0, 7); ctx.fill();
           ctx.beginPath(); ctx.arc(g.x-COLW/4+di*(COLW/4), botY+30+((di%2)*14), 3.2, 0, 7); ctx.fill(); }
         // score when the gate passes the player
-        if(!g.passed && g.x<px-COLW/2){ g.passed=true; score+=(g.gold||boost.on)?2:1; $("score").textContent=score; sfx("tap"); if(score%10===0)flash(score+" GATES!"); }
-        // collide (skip during fall/mercy/boost)
-        if(!falling.on && !boost.on && performance.now()-mercyT>1200 &&
+        if(!g.passed && g.x<px-COLW/2){ g.passed=true; score++; $("score").textContent=score; sfx("tap"); if(score%10===0)flash(score+" GATES!"); }
+        // collide (skip during fall/mercy)
+        if(!falling.on && performance.now()-mercyT>1200 &&
            Math.abs(g.x-px)<(COLW/2+22) && (py<topH+22||py>botY-22)){
           crash();
         }
       }
       // player physics
       if(!falling.on){
-        vy+=G*(boost.on?0.4:1); py+=vy;
+        vy+=G; py+=vy;
         if(py<44){ py=44; vy=0; }
         if(py>H-120){ py=H-120; vy=FLAP*0.6; } // soft bounce off the ground — no floor deaths
       }
@@ -240,7 +256,6 @@
       } else {
         var blink=(performance.now()-mercyT<1200)&&(((performance.now()/120)|0)%2===0);
         if(!blink){
-          if(boost.on){ ctx.fillStyle="rgba(255,210,28,.35)"; ctx.beginPath(); ctx.arc(px,py,46,0,7); ctx.fill(); }
           // opaque paint before emoji: canvases modulate color glyphs by the
           // fill's alpha, so a leftover translucent fillStyle ghosts the buddy
           ctx.fillStyle="#000"; ctx.textAlign="center"; ctx.textBaseline="middle";
@@ -256,54 +271,119 @@
     function rr(x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
     spawnGate(); draw();
 
-    // ── VOICE BOOST: SUPER FLOAT — say your sound → 3s feather-fall,
-    // fly-through-anything, 2x gates. Optional; local loudness only.
-    function fireBoost(){
-      boost.on=true; boost.cool=true;
-      var ch=$("boostChip"); ch.textContent="SUPER FLOAT!!"; ch.classList.add("hot");
-      sfx("complete"); flash("SUPER FLOAT! 2×");
-      setTimeout(function(){ boost.on=false; ch.classList.remove("hot"); ch.textContent="…"; },3000);
-      setTimeout(function(){ boost.cool=false; paintChip(); },9000);
-    }
-    var SAYTXT="";
-    function paintChip(){ $("boostChip").innerHTML=((window.Sona&&Sona.icon)?Sona.icon("mic",17)+" ":"")+"Say “"+SAYTXT+"” for SUPER FLOAT!"; }
+    // ── "Say your sound to keep playing": the only time this game listens ──
+    // (24 Sep 2026) STAR MODE is gone. It held the mic open for the whole
+    // game so a shout could fire a power-up, which kept an iPhone in
+    // phone-call audio from the first frame to the last. The mic now opens
+    // only while the keep-playing card shows, after the quiet window above,
+    // and closes before the revive chime. Loudness and sound-shape numbers
+    // only: nothing is recorded, nothing leaves the device, and a revive is
+    // play, never practice data.
+    var SND="R", SAYTXT="rrrr", CAN_LISTEN=!!(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia);
     (function(){
       var snd=""; try{ snd=sessionStorage.getItem("sona.boost.sound")||""; }catch(e){}
       if(!snd){ try{ snd=((S&&S.getProfile&&S.getProfile().focusSounds)||["R"])[0]; }catch(e){ snd="R"; } }
-      var SND=String(snd).toUpperCase();
-      SAYTXT=(S&&S.soundSay)?S.soundSay(SND):"rrrr";
-      paintChip();
-      if(!(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia)){ $("boostChip").style.display="none"; return; }
-      navigator.mediaDevices.getUserMedia({audio:true}).then(function(st){ MIC=true;
-        var _rel=function(){ try{ st.getTracks().forEach(function(t){t.stop();}); }catch(e){} };
-        // lock/app-switch fires visibilitychange, NOT pagehide — the boost mic
-        // stayed open in your pocket with the recording indicator lit
-        if(window.Sona&&Sona.onBackground) Sona.onBackground(_rel); else window.addEventListener("pagehide",_rel);
-        var AC=window.AudioContext||window.webkitAudioContext, bctx=new AC();
-        var src=bctx.createMediaStreamSource(st), an=bctx.createAnalyser(); an.fftSize=512; src.connect(an);
-        var td=new Uint8Array(an.fftSize), fd=new Uint8Array(an.frequencyBinCount), binHz=an.context.sampleRate/an.fftSize, shp=null, t0=performance.now(), calS=0,calN=0,thr=0,voiced=0;
-        // family check: the burst must SOUND like the target's family (voiced
-        // vs hiss) to fire — a scream or an S can't revive an R kid. Shape
-        // numbers only; nothing recorded (see Sona.frameShape).
-        function famOK(){ if(!shp||!shp.m) return true; var cent=shp.fm/shp.m, high=shp.hm/shp.m, fam=(window.Sona&&Sona.soundFamily)?Sona.soundFamily(SND):"any"; if(fam==="low") return !(cent>1800&&high>0.22); if(fam==="hiss") return !(cent<1100&&high<0.10); return true; }
-        (function tick(){
-          an.getByteTimeDomainData(td);
-          var sum=0; for(var i=0;i<td.length;i++){ var d=(td[i]-128)/128; sum+=d*d; }
-          var rms=Math.sqrt(sum/td.length), now=performance.now();
-          if(now-t0<450){ calS+=rms; calN++; }
-          else { if(!thr) thr=Math.max(0.05,(calS/Math.max(1,calN))*3.5);
-            if(rms>thr){ voiced++;
-              if(window.Sona&&Sona.frameShape){ an.getByteFrequencyData(fd); var _s=Sona.frameShape(fd,binHz); if(_s){ if(!shp)shp={m:0,fm:0,hm:0}; shp.m+=_s.m; shp.fm+=_s.fm; shp.hm+=_s.hm; } }
-              if(voiced>=6){ if(!famOK()){ voiced=0; shp=null; } else { shp=null; if(reviveWait){ voiced=0; doRevive(); } else if(playing && !boost.on && !boost.cool) fireBoost(); } } }
-            else { voiced=0; shp=null; } }
-          requestAnimationFrame(tick);
-        })();
-      }).catch(function(){ $("boostChip").style.display="none"; });
+      SND=String(snd).toUpperCase(); SAYTXT=(S&&S.soundSay)?S.soundSay(SND):"rrrr";
     })();
+    function listenNote(t){ try{ $("revListen").textContent=t; }catch(e){} }
+    function closeReviveMic(){
+      rv.gen++; clearTimeout(rv.t); if(rv.raf)cancelAnimationFrame(rv.raf); rv.raf=0;
+      try{ if(rv.src)rv.src.disconnect(); }catch(e){} rv.src=null;
+      if(rv.st){ try{ rv.st.getTracks().forEach(function(t){t.stop();}); }catch(e){} rv.st=null; micClosedAt=performance.now(); }
+      listenNote("Get ready…");
+    }
+    // A request that was already late when it settled asks again if the card
+    // is still up and on screen (24 Sep 2026). The phone can be locked while
+    // it is asking: the ask made on the way back finds that request still
+    // pending and stands down, so without this the card waited on "Get
+    // ready…" for good and only "I'm done playing" got the child out.
+    function askAgain(){ if(reviveWait&&!document.hidden&&!rv.st) openReviveMic(); }
+    function openReviveMic(){
+      if(!reviveWait||rv.st||rv.pending||document.hidden) return;
+      var wait=quietUntil-performance.now();
+      if(wait>0){ clearTimeout(rv.t); rv.t=setTimeout(openReviveMic,wait); return; }
+      var gen=++rv.gen; rv.pending++;
+      navigator.mediaDevices.getUserMedia({audio:true}).then(function(st){
+        rv.pending--;
+        // the card closed (or the page hid) while the phone was asking: this
+        // stream is already late, so it goes straight back
+        if(gen!==rv.gen||!reviveWait||document.hidden){ try{ st.getTracks().forEach(function(t){t.stop();}); }catch(e){} micClosedAt=performance.now(); askAgain(); return; }
+        rv.st=st; listenFor(st,gen);
+      }).catch(function(){
+        rv.pending--;
+        // a request cut short by the page hiding asks again on the way back
+        if(gen!==rv.gen||!reviveWait||document.hidden){ askAgain(); return; }
+        // no microphone: the card can't hear anyone, so the round ends kindly
+        reviveWait=false; $("revOvl").classList.remove("show"); endRound();
+      });
+    }
+    // ── what counts as the child on the card (24 Sep 2026) ──
+    // The bar a sound must clear is 3.5× the room's quiet level, and that
+    // level is the page's, not the card's: rv.floor is the 20th-percentile
+    // loudness of the quietest FLOOR_MS the card's mic has heard on this
+    // page, and it only ever goes DOWN. The first cut of this change
+    // averaged the first 450 ms of every card instead, and a card that says
+    // "Say rrrr!" opens its mic exactly when an eager child is already
+    // saying it: their own voice became the "room", the bar landed above
+    // it, and nothing they said could answer the card. So: a low
+    // percentile, which a voice filling most of the stretch can't lift;
+    // only-down, so nothing a child says ever raises it and one quiet
+    // breath (or a later card) mends a floor a talking child set; and the
+    // last HEARD_MS of frames are judged against the CURRENT floor, so a
+    // try said before that breath still counts the moment it comes. The
+    // 0.05 minimum, the 6-frame burst and the family check are unchanged.
+    // "I'm listening…" shows only once there is a floor to listen against.
+    var FLOOR_MS=450, HEARD_MS=3000;
+    function p20(list){ var a=list.slice().sort(function(x,y){ return x-y; }); return a[Math.floor((a.length-1)*0.2)]; }
+    function listenFor(st,gen){
+      var an, td, fd, binHz, heard=[], said=false;
+      try{
+        if(!rv.ctx){ var AC=window.AudioContext||window.webkitAudioContext; rv.ctx=new AC(); }
+        if(rv.ctx.state==="suspended") rv.ctx.resume();
+        rv.src=rv.ctx.createMediaStreamSource(st); an=rv.ctx.createAnalyser(); an.fftSize=512; rv.src.connect(an);
+        td=new Uint8Array(an.fftSize); fd=new Uint8Array(an.frequencyBinCount); binHz=rv.ctx.sampleRate/an.fftSize;
+      }catch(e){ closeReviveMic(); reviveWait=false; $("revOvl").classList.remove("show"); endRound(); return; }
+      // family check: the burst must SOUND like the target's family (voiced
+      // vs hiss) to fire — a scream or an S can't revive an R kid. Shape
+      // numbers only; nothing recorded (see Sona.frameShape).
+      function famOK(shp){ if(!shp||!shp.m) return true; var cent=shp.fm/shp.m, high=shp.hm/shp.m, fam=(window.Sona&&Sona.soundFamily)?Sona.soundFamily(SND):"any"; if(fam==="low") return !(cent>1800&&high>0.22); if(fam==="hiss") return !(cent<1100&&high<0.10); return true; }
+      (function tick(){
+        if(gen!==rv.gen) return;
+        var now=performance.now();
+        // belt and braces: nothing plays while this mic is open, but if a
+        // sound ever did, its frames would be dropped: never judged, never
+        // part of the floor, never joined to a burst after it
+        if(now<quietUntil){ heard=[]; rv.raf=requestAnimationFrame(tick); return; }
+        an.getByteTimeDomainData(td);
+        var sum=0; for(var i=0;i<td.length;i++){ var d=(td[i]-128)/128; sum+=d*d; }
+        var shape=null; if(window.Sona&&Sona.frameShape){ an.getByteFrequencyData(fd); shape=Sona.frameShape(fd,binHz); }
+        heard.push({t:now,r:Math.sqrt(sum/td.length),s:shape});
+        while(now-heard[0].t>HEARD_MS) heard.shift();
+        if(now-heard[0].t>=FLOOR_MS){
+          var w=[]; for(var k=heard.length-1;k>=0&&now-heard[k].t<=FLOOR_MS;k--) w.push(heard[k].r);
+          var q=p20(w); if(rv.floor<0||q<rv.floor) rv.floor=q;
+        }
+        if(rv.floor>=0){
+          if(!said){ said=true; listenNote("I'm listening…"); }
+          var thr=Math.max(0.05,rv.floor*3.5), voiced=0, shp=null;
+          for(var j=0;j<heard.length;j++){ var f=heard[j];
+            if(f.r>thr){ voiced++;
+              if(f.s){ if(!shp)shp={m:0,fm:0,hm:0}; shp.m+=f.s.m; shp.fm+=f.s.fm; shp.hm+=f.s.hm; }
+              if(voiced>=6){ if(!famOK(shp)){ voiced=0; shp=null; } else { closeReviveMic(); doRevive(); return; } } }
+            else { voiced=0; shp=null; } }
+        }
+        rv.raf=requestAnimationFrame(tick);
+      })();
+    }
+    // lock/app-switch fires visibilitychange, NOT pagehide — a mic left open
+    // there stays lit in a pocket. Coming back to the card listens again.
+    if(window.Sona&&Sona.onBackground) Sona.onBackground(closeReviveMic); else window.addEventListener("pagehide",closeReviveMic);
+    document.addEventListener("visibilitychange",function(){ if(!document.hidden&&reviveWait) openReviveMic(); });
 
     // ---- round over ----
     function bankAndContinue(){ S.finishGameTurn("glide",score); location.href="/charge.html?daily=1&banked="+score; }
     function endRound(){
+      closeReviveMic();
       if(window.__ended)return; window.__ended=true;
       S.finishGameTurn("glide",isDaily?score:null);
       playing=false; reviveWait=false; clearInterval(spawnTimer); clearInterval(rampIv);
@@ -339,7 +419,7 @@
     }
     $("endCharge").onclick=function(){ location.href=isDaily?"/charge.html?daily=1":(S.gameAccess("slice").allowed?"/charge.html?game=arcade-slice.html":"/activities.html"); };
     $("endHome").onclick=function(){ S.finishGameTurn("glide"); location.href="/today.html#play"; };
-    $("close").onclick=function(){ S.finishGameTurn("glide"); if(playing){ playing=false; clearInterval(spawnTimer); clearInterval(rampIv); } if(isDaily){ bankAndContinue(); return; } location.href="/today.html#play"; };
+    $("close").onclick=function(){ closeReviveMic(); S.finishGameTurn("glide"); if(playing){ playing=false; clearInterval(spawnTimer); clearInterval(rampIv); } if(isDaily){ bankAndContinue(); return; } location.href="/today.html#play"; };
     }
   </script>
 </body>

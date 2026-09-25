@@ -15,7 +15,27 @@ export function loadEvidence(file = (process.env.SONATEST_PUBLIC_ROOT || ROOT) +
   const src = readFileSync(file, 'utf8');
   const a = src.indexOf('var EVID='), b = src.indexOf('// ---- rapid-fire rep engine');
   if (a < 0 || b < 0) throw new Error('evidence block not found in ' + file);
-  return new Function(src.slice(a, b) + '\nreturn {speechEvidence, EVID};')();
+  const out = new Function(src.slice(a, b) + '\nreturn {speechEvidence, EVID};')();
+  // The room constants (24 Sep 2026), read from the page so the replay's bar
+  // and its voice-not-a-room rule are the ones that ship. An older build
+  // (SONATEST_PUBLIC_ROOT) without them replays as it worked: the median, and
+  // no ceiling.
+  const num = (name, dflt) => { const m = src.match(new RegExp('\\b' + name + '=([0-9.]+)')); return m ? +m[1] : dflt; };
+  out.ROOM = { pct: num('ROOM_PCT', 0.5), max: num('ROOM_MAX', Infinity), learn: num('LEARN_FRAMES', 8), min: num('ROOM_MIN', 4), ms: num('ROOM_MS', 300), gap: num('GAP_RUN', 0) };
+  // The page's room (24-25 Sep 2026): the one reading taken before Echo
+  // speaks and carried into every window (pageRoom below), and what a
+  // window's own quieter reading does to it: roomReading and roomLower,
+  // extracted verbatim. Older builds replay as they worked: 24 Sep's per-bin
+  // minimum of the two backgrounds; #139's build has no page room (null).
+  const c = src.indexOf('// ONE READING, WHOLE'), d = src.indexOf('// Evidence reads its own unsmoothed analyser');
+  if (c >= 0 && d > c) out.page = new Function('var room=null;\n' + src.slice(c, d) + '\nreturn {reading: roomReading, lower: function (r, level, bg) { room = r; roomLower(level, bg); return room; }};')();
+  else if (src.includes('room.bg[k]=Math.min(room.bg[k],bg[k])')) out.page = {
+    reading: (level, bg) => ({ rms: level, bg }),
+    lower: (r, level, bg) => { r.rms = level; if (bg) for (let k = 0; k < bg.length; k++) r.bg[k] = Math.min(r.bg[k], bg[k]); return r; },
+  };
+  else if (src.includes('function roomLower')) throw new Error('roomLower is in ' + file + ' but not between its ONE READING, WHOLE markers');
+  else out.page = null;
+  return out;
 }
 
 function fft(re, im) {
@@ -62,43 +82,118 @@ export class Analyser {
   getByteFrequencyData(d) { const m = this.mags(); for (let k = 0; k < d.length; k++) d[k] = Math.max(0, Math.min(255, Math.floor(255 / 70 * (20 * Math.log10(m[k]) + 100)))); }
 }
 
+// charge.html's roomLevel (the pct-th percentile of the non-zero readings)
+// and roomBar (3x the room, 0.035 at least, 3 x ROOM_MAX at most).
+const level = (list, pct) => { const v = list.filter(x => x > 0).sort((a, b) => a - b); return v.length ? v[Math.floor((v.length - 1) * pct)] : 0; };
+const byteRms = (an, td) => { an.getByteTimeDomainData(td); let sum = 0; for (let i = 0; i < td.length; i++) { const d = (td[i] - 128) / 128; sum += d * d; } return Math.sqrt(sum / td.length); };
+const evSize = rate => rate >= 88200 ? 2048 : rate >= 32000 ? 1024 : 512;
+// charge.html's starved(): a frame with sound in it and a run of exact zeros
+// in the evidence analyser's samples (an analyser only part full, or a
+// starved path) is not read as the room. GAP_RUN from the page; an older
+// build has no such rule.
+const starvedBy = (run) => (ev, level) => {
+  if (!run || !(level > 0) || !ev.getFloatTimeDomainData) return false;
+  const x = new Float32Array(ev.fftSize); ev.getFloatTimeDomainData(x);
+  for (let i = 0, n = 0; i < x.length; i++) { if (x[i] !== 0) n = 0; else if (++n >= run) return true; }
+  return false;
+};
+
+// charge.html's measureRoom: the page's one reading of the room on a fresh
+// mic (`sig` starts as it opens), before Echo speaks. ROOM_MS from the first
+// frame that is not digital zeros, its quiet end (ROOM_PCT), and the
+// speech-evidence background from its own unsmoothed analyser. null when the
+// page would have no room: too few frames, or louder than any room.
+export function pageRoom(sig, rate, { fps = 60, evidence = loadEvidence() } = {}) {
+  const { speechEvidence, ROOM, page } = evidence; if (!page) return null;
+  const an = new Analyser(sig, 512, 0.8), ev = new Analyser(sig, evSize(rate), 0), td = new Uint8Array(512), probe = speechEvidence(); probe.attach(ev, rate);
+  const list = [], starved = starvedBy(ROOM.gap); let began = null;
+  for (let now = 0; now < 600 + ROOM.ms + 400; now += 1000 / fps) {
+    const pos = Math.floor(now / 1000 * rate / 128) * 128; an.pos = pos; ev.pos = pos;
+    const r = byteRms(an, td), gap = starved(ev, r);
+    if (began === null && r > 0 && !gap) began = now;
+    if (began === null) { if (now > 600) return null; continue; }
+    if (!gap) { list.push(r); probe.calibrate(now); }
+    if (now - began >= ROOM.ms) {
+      const low = level(list, ROOM.pct), bg = probe.measured();
+      return list.filter(x => x > 0).length >= ROOM.min && bg && low <= ROOM.max ? page.reading(low, bg) : null;
+    }
+  }
+  return null;
+}
+
 // Replay one listening segment over `sig` (the whole mic stream, starting at
 // the moment the segment opens). Returns tries for the new and old engines.
-export function run(sig, rate, { fps = 60, jitter = 0, NEED = 100, evidence = loadEvidence(), float = true, seed = 1 } = {}) {
-  const { speechEvidence, EVID } = evidence;
-  const an = new Analyser(sig, 512, 0.8), ev = new Analyser(sig, rate >= 88200 ? 2048 : rate >= 32000 ? 1024 : 512, 0, float);
+// `room`: the page's reading (pageRoom), carried in as charge.html does: the
+// window listens from its first frame and its own first quarter-second may
+// lower it (readRoom). Without one, the window measures itself.
+export function run(sig, rate, { fps = 60, jitter = 0, NEED = 100, evidence = loadEvidence(), float = true, seed = 1, room = null } = {}) {
+  const { speechEvidence, EVID, ROOM } = evidence;
+  const bar = (x) => Math.min(3 * ROOM.max, Math.max(0.035, x * 3.0));
+  const an = new Analyser(sig, 512, 0.8), ev = new Analyser(sig, evSize(rate), 0, float);
   const td = new Uint8Array(512);
   const evid = speechEvidence(); evid.attach(ev, rate);
+  const starved = starvedBy(ROOM.gap);
+  // The page's room is the page's: a copy, since a lowering may change it.
+  let page = room && evidence.page ? { ...room, bg: room.bg && Float32Array.from(room.bg) } : null, read = false;
   // lastRep starts far in the past: the engine's clock is performance.now(), never near 0
-  let voiced = 0, silent = 0, inBurst = false, thr = 0, lastRep = -1e9, counted = false, burstAt = 0, reps = 0; const calRms = [];
-  let ov = 0, os = 0, oin = false, olast = -1e9, oreps = 0, othr = 0, calSum = 0;
+  let voiced = 0, silent = 0, inBurst = false, thr = 0, lastRep = -1e9, counted = false, burstAt = 0, reps = 0, learn = null, voice = false; const calRms = [];
+  let ov = 0, os = 0, oin = false, olast = -1e9, oreps = 0, othr = 0, calSum = 0, calN = 0;
   const at = [], oldAt = [];
   let s = seed >>> 0; const rnd = () => { s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s / 4294967296; };
   const endMs = sig.length / rate * 1000, dt = 1000 / fps;
   const countRep = (now, why) => { counted = true; reps++; lastRep = burstAt; at.push({ t: Math.round(now), why }); return reps >= NEED; };
+  // charge.html's learnRoom and heardTry: a window whose own quarter-second
+  // was a voice learns the room from its first LEARN_FRAMES quiet frames, and
+  // meanwhile counts a try only once it ends, and only if voiced or a hiss.
+  const learnRoom = (now, rms) => {
+    if (starved(ev, rms)) return;
+    learn.push(rms); evid.calibrate(now);
+    if (learn.length < ROOM.learn) return;
+    const low = level(learn, ROOM.pct), bg = evid.measured();
+    if (bg) evid.floor(bg);
+    thr = bar(low); learn = null;
+  };
+  const heardTry = () => learn ? /^(voiced|sibilant|energy)$/.test(evid.route()) : evid.brief();
+  // With the page's room the window hears from its first frame.
+  if (page) { evid.floor(page.bg); thr = bar(page.rms); }
   for (let now = 0; now < endMs; now += dt * (1 + jitter * (rnd() - 0.5))) {
     const pos = Math.floor(now / 1000 * rate / 128) * 128; an.pos = pos; ev.pos = pos;
-    an.getByteTimeDomainData(td);
-    let sum = 0; for (let i = 0; i < 512; i++) { const d = (td[i] - 128) / 128; sum += d * d; }
-    const rms = Math.sqrt(sum / 512), active = now;
-    if (active < 250) { calRms.push(rms); calSum += rms; evid.calibrate(now); continue; }
-    if (!thr) { const c = calRms.filter(v => v > 0).sort((a, b) => a - b); thr = Math.max(0.035, (c.length ? c[c.length >> 1] : 0) * 3.0); othr = Math.max(0.035, calSum / Math.max(1, calRms.length) * 3.0); }
+    const rms = byteRms(an, td), active = now;
+    if (active < 250) { calSum += rms; calN++; if (!starved(ev, rms)) { calRms.push(rms); evid.calibrate(now); } if (!thr) continue; }
+    else if (!read) {
+      read = true; othr = Math.max(0.035, calSum / Math.max(1, calN) * 3.0);
+      const low = level(calRms, ROOM.pct);
+      if (page) {
+        // charge.html's readRoom with the page's room: a real, quieter
+        // reading may lower it (roomLower); a voice is never a room.
+        const bg = evid.measured();
+        if (low <= ROOM.max && calRms.filter(x => x > 0).length >= ROOM.min && bg && low < page.rms) page = evidence.page.lower(page, low, bg);
+        evid.floor(page.bg); thr = bar(page.rms);
+      } else {
+        // No page reading: the window's 20th percentile, as charge.html's
+        // readRoom (the median until 24 Sep 2026), never a voice's (ROOM.max).
+        voice = low > ROOM.max; thr = bar(low);
+        if (voice) { evid.resample(); learn = []; }
+      }
+    }
     // OLD engine (origin/main): mean threshold, every event is a try at onset
-    if (rms > othr) { ov++; os = 0; if (!oin && ov >= 4 && now - olast > 350) { oin = true; olast = now; oreps++; oldAt.push(Math.round(now)); } }
-    else { os++; ov = 0; if (os >= 8) oin = false; }
+    if (othr) {
+      if (rms > othr) { ov++; os = 0; if (!oin && ov >= 4 && now - olast > 350) { oin = true; olast = now; oreps++; oldAt.push(Math.round(now)); } }
+      else { os++; ov = 0; if (os >= 8) oin = false; }
+    }
     // NEW engine (mirrors charge.html tick())
     if (rms > thr) {
       voiced++; silent = 0;
       if (!inBurst && voiced >= 4 && now - lastRep > 350) { inBurst = true; burstAt = now; }
-      if (!counted) { if (evid.frame(now) && inBurst && countRep(now, 'ev')) break; }
+      if (!counted) { if (evid.frame(now) && inBurst && !learn && countRep(now, 'ev')) break; }
     } else {
       silent++; voiced = 0;
-      if (!inBurst) evid.drop();
-      if (inBurst && !counted && (silent >= 8 || evid.quietFor(now) >= EVID.quietMs) && evid.brief() && countRep(now, 'short')) break;
+      if (!inBurst) { evid.drop(); if (learn && rms <= ROOM.max) learnRoom(now, rms); }
+      if (inBurst && !counted && (silent >= 8 || evid.quietFor(now) >= EVID.quietMs) && heardTry() && countRep(now, 'short')) break;
       if (silent >= 8) { inBurst = false; counted = false; evid.drop(); }
     }
   }
-  return { reps, old: oreps, at, oldAt, thr };
+  return { reps, old: oreps, at, oldAt, thr, voice, learned: voice && !learn };
 }
 
 // ---- stream builders ----

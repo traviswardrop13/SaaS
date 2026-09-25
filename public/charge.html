@@ -476,17 +476,23 @@
         if(micOk&&micStream){
           try{if(micStream.getAudioTracks().some(function(t){return t.readyState==="live";}))return true;}catch(e){return true;}
         }
-        var epoch=practiceEpoch;
+        var epoch=practiceEpoch, landed=false;
+        // A voice line queued while the OS is still opening the mic waits for
+        // it to land (micSilence) and closes it, rather than play into it.
+        var land=function(){if(landed)return;landed=true;micOpening=Math.max(0,micOpening-1);if(!micOpening)micLanded.splice(0).forEach(function(done){done();});};
+        micOpening++;
         try{
           var stream=await navigator.mediaDevices.getUserMedia({audio:true,video:false});
           if(epoch!==practiceEpoch || practicePaused || practiceClosed || document.hidden){
             stream.getTracks().forEach(function(t){t.stop();});
+            micClosedAt=performance.now(); land();
             continue;
           }
-          micStream=stream; micOk=true;
+          micStream=stream; micOk=true; land();
           try{localStorage.setItem("sona.micok","1");}catch(e){}
           return true;
         }catch(e){
+          land();
           if(epoch!==practiceEpoch || practicePaused || document.hidden)continue;
           stopMic(); micGo(false);
           if(e && e.name === "NotAllowedError"){
@@ -590,18 +596,27 @@
       if(ITEM.level==="isolation") ask="make your "+soundName()+" sound";
       else ask="say "+(ITEM.display||ITEM.t);
       // first prompt carries the mouth cue inline; repeats stay minimal.
-      // Ellipses are pacing: TTS sprints through comma-chained commands, and
-      // "…" makes it breathe ("Say soh... five times... Go!").
-      if(!sayLine._cued && CUESHORT && ITEM.level==="isolation"){ sayLine._cued=true; return "Ready? "+CUESHORT+", and "+ask+"... "+times+"... Go!"; }
-      return "Ready? "+ask.charAt(0).toUpperCase()+ask.slice(1)+"... "+times+"... Go!";
+      // CALM, NOT HYPED (24 Sep 2026). The voice reads "!" and "… Go!" as a
+      // jump in pitch and energy, and "Ready? … Go!" on every round was the
+      // "jumpy, explosive" Travis heard. So: a comma and a full stop. The
+      // mouth cue and the practice word are untouched (Rachel's calls) —
+      // only the frame around them is quieter.
+      // No spoken "Your turn." either (24 Sep 2026, same day): Echo said it
+      // into a closed mic, half a second or more before the mic could hear,
+      // and the child who obeyed it at once was talking before anything was
+      // listening. The turn is handed over by the glowing mic, which lights
+      // only once the window can actually hear them (listenReady).
+      if(!sayLine._cued && CUESHORT && ITEM.level==="isolation"){ sayLine._cued=true; return "Ready? "+CUESHORT+", and "+ask+", "+times+"."; }
+      return "Ready? "+ask.charAt(0).toUpperCase()+ask.slice(1)+", "+times+".";
     }
     // Prefer a real human recording of the whole prompt (Rachel!) if present.
     var CUETIP=""; try{ CUETIP=(S&&S.cue)?(S.cue(SOUND).tip||""):""; }catch(e){}
     // compact articulation cue: first clause only, no similes, no sound demos
     var CUESHORT=(CUETIP.split("\u2014")[0].split(" like ")[0].split(",")[0]||"").trim().replace(/[.!]+$/,"");
-    // Human model prompts ON: /coach/say/<SOUND>.mp3 is the finished
-    // Sarah-voiced set (Rachel's takes, re-voiced) — the prompt actually
-    // PERFORMS the sound, which TTS never can. TTS remains the fallback.
+    // Human model prompts: /coach/say/<SOUND>.mp3 is Rachel's own take of the
+    // whole opening line (July 2026 wording) — the prompt actually PERFORMS
+    // the sound, which TTS never can. Not yet re-voiced into Echo's voice, so
+    // the switch is off; TTS remains the fallback either way.
     // Shared switch (Sona.HUMAN_CLIPS) — NOT a local copy. A local copy here is
     // exactly why Rachel's clips kept playing in coach-call.html.
     var HUMANCLIPS=false; try{ HUMANCLIPS=!!(S&&S.humanClipsOn&&S.humanClipsOn()); }catch(e){}
@@ -614,16 +629,49 @@
     }
     var _sayQ=Promise.resolve(),_sayN=0,_slowQueued=false;
     var audioJobs=[],AUDIO_CANCEL={},ttsPlaying=false,_ttsN=0,audioCtx=null,speaking=false,audioSuspend=Promise.resolve();
+    // ---- NO SOUND INTO A LIVE MIC (24 Sep 2026) ----
+    // On an iPhone, a web page holding the mic runs the phone-call audio
+    // mode: the volume buttons change CALL volume and everything Sona plays
+    // is processed like a call. This page used to open the mic before Echo's
+    // prompt and close it just before the loudest chime, so the phone flipped
+    // modes at the loudest moments ("too loud, too quiet, jumpy"). The order
+    // is now fixed: Echo speaks and chimes play into a CLOSED mic, and the mic
+    // opens only for the child's listening window, once Sona has been silent
+    // for ECHO_TAIL_MS (a speaker's and a Bluetooth headset's delay). The
+    // same order means Echo's own voice can never become a try, land in the
+    // parent's listen-back clip, or reach the native recognizer.
+    // Echo cancellation stays on: what the pass/fail check hears is unchanged.
+    // NO exceptions, not even the chime that used to mark each counted try
+    // (24 Sep 2026): it rang inside the open window, and the guard that kept
+    // the detector deaf to it also swallowed a quick next try ("k… k… k…"
+    // counted every other one). A counted try is now marked on screen only.
+    // SETTLE_MS: after the mic closes, the phone needs a moment to switch
+    // from call audio back to media; a sound started in that moment is
+    // clipped or snaps. So nothing of Sona's starts until SETTLE_MS after the
+    // last mic close (micSettled) — the same 200ms the games wait.
+    var ECHO_TAIL_MS=250, SETTLE_MS=200, SFX_MS={tap:120,complete:700};
+    var quietAt=0, micClosedAt=-1e9, chimeAt=-1e9, listenReady=false, micOpening=0, micLanded=[];
     function mutedSpeech(){return profile.voiceOn===false||(profile.volume!=null&&Number(profile.volume)===0);}
     function audioBlocked(){return practiceClosed||practicePaused||document.hidden;}
     function speechVolume(){var v=profile.volume!=null?Number(profile.volume):0.8;return isFinite(v)?Math.max(0,Math.min(1,v)):0.8;}
+    // Anything of Sona's queued or sounding. The mic waits for this to clear.
+    function appBusy(){return !!(speaking||ttsPlaying||_sayN>0);}
+    function appSoundEnded(){quietAt=Math.max(quietAt,performance.now()+ECHO_TAIL_MS);}
+    // Resolves once SETTLE_MS has passed since the mic last closed. Through
+    // practiceDelay, so a pause or close wakes it rather than being slept through.
+    function micSettled(){var wait=micClosedAt+SETTLE_MS-performance.now();return wait>0?practiceDelay(wait):Promise.resolve(true);}
     var turnPhase="ready";
+    // "Your turn" and the glowing mic wait for a window that can actually hear
+    // the child: mic open AND the room known (listenReady, set by tick) —
+    // at once when the page already measured the room (ROOM FLOOR), after the
+    // window's own first quarter-second when it never could.
+    function childTurn(){return !!engineOn&&listenReady;}
     function updateTurn(){
       var busy=speaking||ttsPlaying||_sayN>0, listening=!!ttsPlaying;
-      var text=practicePaused?"Practice paused":listening?"Listen to Echo":busy?"Getting Echo ready…":engineOn?"Your turn":turnPhase==="checking"?"Echo is checking…":turnPhase==="game"?"Game ready!":"Getting ready…";
+      var text=practicePaused?"Practice paused":listening?"Listen to Echo":busy?"Getting Echo ready…":childTurn()?"Your turn":turnPhase==="checking"?"Echo is checking…":turnPhase==="game"?"Game ready!":"Getting ready…";
       $("turnStatus").textContent=text;
       document.body.classList.toggle("echo-speaking",busy);
-      var enabled=!!engineOn&&!busy&&!audioBlocked();
+      var enabled=childTurn()&&!busy&&!audioBlocked();
       $("echoBuddy").disabled=!enabled; $("turtleBtn").disabled=!enabled;
       var live=enabled&&turnPhase!=="checking";
       document.body.classList.toggle("echo-listening",live);
@@ -631,7 +679,7 @@
       $("micBtn").setAttribute("aria-label",live?"Microphone listening":"Microphone off");
     }
     function ttsBegin(){_ttsN++;ttsPlaying=true;updateTurn();}
-    function ttsEnd(){if(_ttsN>0)_ttsN--;ttsPlaying=_ttsN>0;updateTurn();}
+    function ttsEnd(){if(_ttsN>0)_ttsN--;ttsPlaying=_ttsN>0;appSoundEnded();updateTurn();}
     function voiceDiagnostic(event){try{if(S&&S.voiceDiagnostic)S.voiceDiagnostic(event);}catch(e){}}
     function newAudioJob(){
       var job={epoch:practiceEpoch,cancelled:false,stops:[]};
@@ -704,7 +752,7 @@
       };
     });}
     async function speechBytes(t,job){
-      var revision=(S&&S.TTS_CACHE_VERSION)||"v7", key=(profile.voiceId||"echo")+"|"+revision+"|"+t;
+      var revision=(S&&S.TTS_CACHE_VERSION)||"v8", key=(profile.voiceId||"echo")+"|"+revision+"|"+t;
       var cached=await ttsGet(key,job);
       if(cached===AUDIO_CANCEL||!job.live())return AUDIO_CANCEL;
       if(cached){job.voiceEvent={source:"cache",cache:"device",revision:revision};return cached;}
@@ -777,6 +825,11 @@
         if(practiceTerminal&&(audioBlocked()||packet.epoch!==practiceEpoch))return;
         if(!(await practiceReady())||practiceClosed||mutedSpeech())return;
         if(audioBlocked())continue;
+        // Every voice line — prompt, coaching, a replay, the turtle, a win —
+        // passes here, so this one call is what keeps Echo out of a live mic.
+        await micSilence();
+        if(practiceClosed||mutedSpeech())return;
+        if(audioBlocked())continue;
         var job=newAudioJob(),result=null;speaking=true;updateTurn();
         try{
           if(packet.human)result=await playMedia(packet.human,false,job);
@@ -788,7 +841,7 @@
             if(result!==true&&result!==AUDIO_CANCEL)result=await speakFallback(packet.text,packet.slow,job);
           }
         }catch(e){if(!job.live())result=AUDIO_CANCEL;else result=await speakFallback(packet.text||"",packet.slow,job);}
-        finally{job.finish();speaking=false;updateTurn();}
+        finally{job.finish();speaking=false;appSoundEnded();updateTurn();}
         if(result!==AUDIO_CANCEL||practiceTerminal)return;
       }
     }
@@ -796,7 +849,63 @@
       if(!t||mutedSpeech())return res();if(speaking)return res();if(_slowQueued)return res();_slowQueued=true;
       queueSpeech(t,true,null,null).then(function(){_slowQueued=false;res();},function(){_slowQueued=false;res();});
     });}
-    function sfx(n){if(audioBlocked())return;try{if(S&&S.sfx&&S.sfx[n])S.sfx[n]();}catch(e){}}
+    // Chimes and celebrations play into a closed mic too. sfx() is
+    // synchronous, so the mic closes synchronously; every caller has already
+    // closed it, and this makes sure a new caller cannot forget to. A mic
+    // that closed under SETTLE_MS ago (the win chime lands right after the
+    // last try's window) holds the chime back until the phone has switched;
+    // a pause or close in that moment drops it, as a chime asked for while
+    // paused always was. chimeAt is when it will actually start, so a line
+    // "after the chime" (sayAfterChime) waits from there, not from the ask.
+    function sfx(n){
+      if(audioBlocked())return;
+      closeMicForSound();
+      var now=performance.now(),wait=Math.max(0,micClosedAt+SETTLE_MS-now),epoch=practiceEpoch;
+      quietAt=Math.max(quietAt,now+wait+(SFX_MS[n]||700)+ECHO_TAIL_MS);
+      chimeAt=Math.max(chimeAt,now+wait);
+      if(wait>0){practiceDelay(wait).then(function(ready){if(ready&&epoch===practiceEpoch)sfx(n);});return;}
+      try{if(S&&S.sfx&&S.sfx[n])S.sfx[n]();}catch(e){}
+    }
+    // Ends an open listening window as "model" — Sona is about to make a
+    // sound — never as a lost mic, which would show the grown-up screen, and
+    // closes the mic. Synchronous, for sfx().
+    function closeMicForSound(){
+      var seg=engineAttempt&&engineAttempt.segment;
+      if(seg&&!seg.closed)seg.yieldToApp();
+      stopMic();
+    }
+    // The full version every voice line awaits: a mic still opening is let
+    // land and then closed, and the native recognizer, which listens through
+    // its own tap rather than this page's stream, is stopped and waited for.
+    // Echo's words must never reach a transcript that decides a verdict.
+    // Then SETTLE_MS from whichever of them closed last, before Echo speaks.
+    async function micSilence(){
+      closeMicForSound();
+      if(micOpening)await new Promise(function(done){micLanded.push(done);});
+      stopMic();
+      var r=recognitionState;
+      if(r)await new Promise(function(done){
+        // A plugin that never answers must not keep Echo silent forever; its
+        // late transcript is set aside instead (heardApp), since Echo may be in it.
+        var timer=setTimeout(function(){r.heardApp=true;done();},1500);
+        recognitionStop().then(function(){clearTimeout(timer);done();},function(){clearTimeout(timer);done();});
+      });
+      // The native recognizer holds the phone's mic through its own tap: its
+      // stop is a mic close too.
+      if(r&&r.stoppedAt)micClosedAt=Math.max(micClosedAt,r.stoppedAt);
+      await micSettled();
+    }
+    // The mic opens only into silence: nothing of Sona's queued or sounding,
+    // and ECHO_TAIL_MS since the last of it ended. Polled as well as stamped,
+    // so a sound that ends without a callback still gets its tail.
+    async function quietGap(){
+      for(;;){
+        if(appBusy())appSoundEnded();
+        var wait=appBusy()?40:quietAt-performance.now();
+        if(wait<=0)return practiceReady();
+        if(!(await practiceDelay(Math.min(wait,ECHO_TAIL_MS))))return false;
+      }
+    }
 
     // ---- UI: the game's own loading scene. Saying the sound LOADS the game —
     // each counted rep pops one more piece into the sky; the rest wait as
@@ -975,10 +1084,12 @@
     // Playback runs through the speaker guard, so it can never charge a rep.
     function turtleText(){ return ITEM.level==="isolation" ? sayLine() : String(ITEM.say||ITEM.display||ITEM.t); }
     function showTurtle(on){ $("turtleBtn").classList.toggle("show",!!on); }
-    $("turtleBtn").onclick=function(){ if(engineOn&&!practicePaused&&!practiceClosed&&!document.hidden&&!speaking&&!ttsPlaying&&!_sayN)saySlow(turtleText()); };
+    // Both replays end the listening window before Echo speaks and reopen a
+    // fresh one afterwards with the tries carried (micSilence, "model").
+    $("turtleBtn").onclick=function(){ if(childTurn()&&!practicePaused&&!practiceClosed&&!document.hidden&&!speaking&&!ttsPlaying&&!_sayN)saySlow(turtleText()); };
     function micGo(on){ $("micBtn").className=on?"go":""; updateTurn(); }
     // tapping the mic replays the prompt — speaker-guarded, can't charge reps
-    $("echoBuddy").onclick=function(){ if(engineOn&&!practicePaused&&!practiceClosed&&!document.hidden&&!speaking&&!ttsPlaying&&!_sayN) playPrompt(); };
+    $("echoBuddy").onclick=function(){ if(childTurn()&&!practicePaused&&!practiceClosed&&!document.hidden&&!speaking&&!ttsPlaying&&!_sayN) playPrompt(); };
 
     // ---- sound-shape gate (bare-sound rounds only). The cloud scorer force-
     // aligns nonsense text like "rrrr" onto whatever it hears and is wrong in
@@ -1119,17 +1230,46 @@
         calibrate:function(now){
           if(!an||off||cal.length>=60||now-calAt<8) return;
           an.getFloatFrequencyData(efd);
-          for(var k=0;k<efd.length;k++) if(efd[k]>-Infinity){ calAt=now; cal.push(new Float32Array(efd)); return; }
+          for(var k=0;k<efd.length;k++) if(efd[k]>-Infinity){
+            calAt=now; var f=new Float32Array(efd),p=0;
+            for(var j=0;j<f.length;j++) if(f[j]>-Infinity) p+=Math.pow(10,f[j]/10);
+            f.power=p; cal.push(f); return;
+          }
         },
+        // The room is the QUIET end of what was sampled (24 Sep 2026): only
+        // frames within 6dB of the 20th-percentile frame's loudness count, so
+        // a child already talking through most of the quarter-second cannot
+        // lift the background over their own voice. A steady room keeps
+        // every frame (as the plain median did); fewer than 3 kept, all count.
         settle:function(){
-          var k,j,n=cal.length,col=[];
+          var k,j,n,col=[],use=cal,pw=cal.map(function(f){ return f.power; }).sort(function(a,b){ return a-b; });
+          if(pw.length){ var lim=pw[Math.floor((pw.length-1)*0.2)]*4,q=cal.filter(function(f){ return f.power<=lim; }); if(q.length>=3) use=q; }
+          n=use.length;
           bgDb=new Float32Array(efd.length);
           for(k=0;k<bgDb.length;k++){
             if(!n){ bgDb[k]=-100; continue; }
-            col.length=0; for(j=0;j<n;j++) col.push(cal[j][k]);
+            col.length=0; for(j=0;j<n;j++) col.push(use[j][k]);
             col.sort(function(a,b){ return a-b; });
             bgDb[k]=Math.max(-100,col[n>>1]);
           }
+        },
+        // ROOM FLOOR (see measureRoom). A new window samples its own quiet
+        // afresh, and a window whose samples were a voice drops them, so the
+        // background is never taken from them; the one in use is left as it
+        // is (none yet: empty, as for a mic that sent only digital zeros).
+        resample:function(){ cal=[]; },
+        // Use the page's carried background. True when it fits this analyser
+        // (or there is no evidence to feed); false changes nothing.
+        floor:function(bg){
+          if(off) return true;
+          if(!bg||!efd||bg.length!==efd.length) return false;
+          bgDb=new Float32Array(bg); return true;
+        },
+        // What this window's own samples say the room is, without touching the
+        // background in use; null when nothing was sampled.
+        measured:function(){
+          if(off||!cal.length) return null;
+          var keep=bgDb; this.settle(); var out=bgDb; bgDb=keep; return out;
         },
         drop:function(){ cur=null; },
         // One loud frame of the current event. True once the event qualifies.
@@ -1179,6 +1319,143 @@
     var micStream=null, reps=0, engineOn=false, chunks=[], rec=null, anyReps=false, micOk=false;
     var engineControl=null, engineAttempt=null, attemptInterrupted=false;
     var recognitionTexts=[], recognitionRemaining=9000, recognitionState=null;
+    // ---- ROOM FLOOR (24 Sep 2026) ----
+    // How loud the room is when nobody is talking. Two things come from it:
+    // the loudness bar a sound must clear to start a try (thr, 3x the room)
+    // and the background the speech-evidence check holds a voice against
+    // (bgDb). It used to be measured in the first quarter-second of every
+    // listening attempt. Once the mic opened only after Echo had finished
+    // (plus the moment a phone takes to open it), that quarter-second fell
+    // exactly when an eager child was already answering: their voice became
+    // "the room", the bar landed above it, and five good tries earned
+    // "I couldn't hear you!".
+    // So the room is measured ONCE per page, in known silence: on the mic the
+    // grown-up's tap opened, for ROOM_MS, before Echo's first word. Every
+    // window and attempt on the page starts from it, so each can hear the
+    // child from its first frame. A window's own first quarter-second may
+    // only LOWER it (the room got quieter), never raise it: when most of it
+    // is louder than the carried room, someone is talking. Always the quiet
+    // end of what was heard (a low percentile), never the median. A page
+    // that never got a usable reading (a mic still warming up, a pause)
+    // measures its first window instead, as every window used to, and
+    // carries that.
+    // A VOICE IS NOT A ROOM (24 Sep 2026, after review). Two ways the reading
+    // still caught the child: a mic that sends exact digital zeros while it
+    // starts used up the 300ms (so the first window measured the child), and
+    // a child who said the sound before Echo spoke WAS the reading. So:
+    //  - the reading's clock starts at the first frame that is not digital
+    //    zeros (zeros only run down the 600ms the audio path gets to start);
+    //  - ROOM_MAX: a reading whose quiet end is louder than this is someone
+    //    talking. The loudest room in the fixtures (pink noise at -40dBFS, a
+    //    fan or a TV) reads ~0.01, a mic's own hiss ~0.005, and a child saying
+    //    Rachel's R through the whole reading 0.13-0.2. Such a reading never
+    //    becomes the room — not the bar, not the speech-evidence background —
+    //    and the bar never goes above 3 x ROOM_MAX (0.09), under that voice.
+    //    A window with no room and a voice for a reading learns the room in
+    //    the child's first pause instead (learnRoom).
+    var ROOM_MS=300, ROOM_PCT=0.2, ROOM_MIN=4, ROOM_MAX=0.03, LEARN_FRAMES=8, room=null, roomProbe=null;
+    // roomLoud: a usable reading on this page came out louder than any room
+    // (a voice, or a hum/fan too loud to be one). Only then does a reopened
+    // window with no room start in learn-first mode.
+    var roomLoud=false;
+    function frameRms(an,td){an.getByteTimeDomainData(td);var sum=0;for(var i=0;i<td.length;i++){var d=(td[i]-128)/128;sum+=d*d;}return Math.sqrt(sum/td.length);}
+    // The pct-th percentile of the non-zero readings (exact zeros are the
+    // audio path still starting, never a room); 0 when there are none.
+    function roomLevel(list,pct){var v=list.filter(function(x){return x>0;}).sort(function(a,b){return a-b;});return v.length?v[Math.floor((v.length-1)*pct)]:0;}
+    function roomUsable(list){return list.filter(function(x){return x>0;}).length>=ROOM_MIN;}
+    // The loudness bar for a room level: 3x the room, never under 0.035 (a
+    // silent room) and never over 3 x ROOM_MAX (the loudest room there is).
+    function roomBar(level){return Math.min(3*ROOM_MAX,Math.max(0.035,level*3.0));}
+    // ONE READING, WHOLE (25 Sep 2026). The speech-evidence background is
+    // always ONE reading's per-bin median, the "room" #139's thresholds were
+    // set against, never stitched bin by bin from two. A window's quieter
+    // reading used to take the per-bin MINIMUM of it and the carried one,
+    // whenever its quiet end came in a hair under the carried room: in a
+    // steady room, half the time. Each reading is a median of a dozen or so
+    // frames, a couple of dB low in some bins and high in others; the minimum
+    // of two keeps every low miss, so the background came out quieter than
+    // the room either reading heard, and the room's own noise at a pure
+    // tone's missing overtones cleared it. A 440Hz tone over a fan-loud room
+    // (pink, -32dBFS) then counted on more plays than #139's own per-window
+    // reading lets through: 32 rooms in 100 against 16 at 60fps, 34 against
+    // 29 at 30fps (speechevidencetest replays it).
+    // So the background changes only to a room clearly quieter than the one
+    // it was read from (under half its power: ROOM_CLEAR), and then to that
+    // window's reading, whole. The bar (room.rms) still follows every quieter
+    // reading down, exactly as before, so an eager or soft child loses
+    // nothing. room.bgRms is the quiet end of the reading the background is.
+    var ROOM_CLEAR=Math.SQRT1_2;
+    function roomReading(level,bg){return {rms:level,bg:bg,bgRms:level};}
+    function roomLower(level,bg){
+      room.rms=level;
+      if(bg&&level<room.bgRms*ROOM_CLEAR){room.bg=bg;room.bgRms=level;}
+    }
+    // A STARVED FRAME IS NOT A ROOM (25 Sep 2026). A frame with sound in it
+    // (level) and also a run of exact digital zeros (GAP_RUN samples, 2ms at
+    // 48kHz) is an audio path still starting (a fresh analyser only part
+    // full) or one starved under CPU load, never the room: real audio, even a
+    // mic's faintest hiss, is never exactly zero for that long. Its loudness
+    // is the gap's, and a reading's quiet end is exactly where it lands: on a
+    // slow phone one such frame made a loud room (~0.025) read as ~0.001, and
+    // since a reading only ever lowers the room, for the rest of the page.
+    // Readings (the page's, a window's first quarter-second, learnRoom) skip
+    // it. Frames of nothing but zeros are handled as they always were, and
+    // without float reads (old WebKit) nothing changes.
+    var GAP_RUN=96, gapBuf=null;
+    function starved(ev,level){
+      if(!(level>0)||!ev||!ev.getFloatTimeDomainData)return false;
+      if(!gapBuf||gapBuf.length!==ev.fftSize)gapBuf=new Float32Array(ev.fftSize);
+      ev.getFloatTimeDomainData(gapBuf);
+      for(var i=0,run=0;i<gapBuf.length;i++){if(gapBuf[i]!==0)run=0;else if(++run>=GAP_RUN)return true;}
+      return false;
+    }
+    // Evidence reads its own unsmoothed analyser, so the shape checker's
+    // smoothed bytes are untouched.
+    function evidenceAnalyser(ctx,src){var ev=ctx.createAnalyser(); ev.fftSize=ctx.sampleRate>=88200?2048:ctx.sampleRate>=32000?1024:512; ev.smoothingTimeConstant=0; src.connect(ev); return ev;}
+    function measureRoom(){return new Promise(function(done){
+      if(room||!micStream||audioBlocked()){done();return;}
+      var stream=micStream,rms=[],probe=speechEvidence(),src=null,an=null,ev=null,td=null,raf=null,timer=null,began=null,cap=performance.now()+600,finished=false;
+      // complete: ROOM_MS of a running audio path were sampled. Anything less
+      // (a pause, the mic taken) is not the known-silence reading.
+      function finish(complete){
+        if(finished)return; finished=true; if(roomProbe===stop)roomProbe=null;
+        if(raf!=null)cancelAnimationFrame(raf); clearTimeout(timer);
+        try{if(src)src.disconnect();}catch(e){}
+        var bg=complete?probe.measured():null,off=!!ev&&!(ev.getFloatTimeDomainData&&ev.getFloatFrequencyData),level=roomLevel(rms,ROOM_PCT);
+        // Louder than any room (ROOM_MAX): the child was talking. No reading.
+        if(complete&&roomUsable(rms)&&(bg||off)&&level<=ROOM_MAX)room=roomReading(level,bg);
+        else if(complete&&roomUsable(rms)&&level>ROOM_MAX)roomLoud=true;
+        done();
+      }
+      function stop(){finish(false);}
+      try{
+        var ctx=getCtx(); if(!ctx){done();return;}
+        src=ctx.createMediaStreamSource(stream); an=ctx.createAnalyser(); an.fftSize=512; src.connect(an);
+        ev=evidenceAnalyser(ctx,src); td=new Uint8Array(an.fftSize); probe.attach(ev,ctx.sampleRate);
+      }catch(e){finish(false);return;}
+      roomProbe=stop;
+      // rAF stalls on a hidden page: the prompt is never held for long (up to
+      // 600ms for the audio path to start, then ROOM_MS of it, then spare).
+      timer=setTimeout(stop,600+ROOM_MS+400);
+      (function frame(){
+        raf=null; if(finished)return;
+        if(audioBlocked()||micStream!==stream){finish(false);return;}
+        var now=performance.now();
+        // A context still resuming delivers nothing yet, and nor does a mic
+        // still sending digital zeros: their time does not count, and a path
+        // not delivering within 600ms gives no reading at all. The ROOM_MS
+        // clock starts at the first frame that is not zeros, and a frame
+        // with a gap of zeros in it (starved) is not read.
+        var level=(!ctx.state||ctx.state==="running")?frameRms(an,td):0;
+        var gap=starved(ev,level);
+        if(began===null&&level>0&&!gap)began=now;
+        if(began!==null){
+          if(!gap){rms.push(level); probe.calibrate(now);}
+          if(now-began>=ROOM_MS){finish(true);return;}
+        }else if(now>cap){finish(false);return;}
+        raf=requestAnimationFrame(frame);
+      })();
+    });}
     // Native start is asynchronous (availability first). Stop once immediately,
     // then again after a late start settles, before any new segment may start.
     function recognitionStart(){
@@ -1187,7 +1464,7 @@
       recognitionState=r;
       try{ r.pending=Promise.resolve(S.speechStart({ words:[String(ITEM.word||ITEM.t||"").toLowerCase()], maxMs: Math.ceil(r.budget) })); }
       catch(e){ r.pending=Promise.resolve(false); }
-      r.pending=r.pending.then(function(v){r.settled=true;return v;},function(){r.settled=true;return false;});
+      r.pending=r.pending.then(function(v){r.settled=true;r.started=!!v;return v;},function(){r.settled=true;return false;});
       r.timer=setTimeout(function(){if(recognitionState===r)recognitionStop();},r.budget);
     }
     function recognitionStop(){
@@ -1199,7 +1476,9 @@
       function stop(){try{return Promise.resolve(S&&S.speechStop?S.speechStop():null).catch(function(){return null;});}catch(e){return Promise.resolve(null);}}
       var first=stop(), wasSettled=r.settled;
       r.stop=(wasSettled?first:Promise.all([first,r.pending]).then(stop)).then(function(result){
-        if(recognitionState===r && result && typeof result.text==="string" && result.text.trim()) recognitionTexts.push(result.text);
+        // When a recognizer that really started lets go of the mic (micSilence settles from it).
+        if(r.started)r.stoppedAt=performance.now();
+        if(recognitionState===r && !r.heardApp && result && typeof result.text==="string" && result.text.trim()) recognitionTexts.push(result.text);
       });
       return r.stop;
     }
@@ -1208,12 +1487,12 @@
         var attempt={cancelled:false,settled:false,segment:null}; engineAttempt=attempt;
         reps=0; paintReps(0); chunks=[]; rec=null; shapeReset(); attemptInterrupted=false;
         recognitionTexts=[]; recognitionRemaining=9000; recognitionState=null;
-        var voiced=0,silent=0,inBurst=false,thr=0,calRms=[],lastRep=0,burstFrames=[];
+        var voiced=0,silent=0,inBurst=false,thr=0,lastRep=0,burstFrames=[];
         var evid=speechEvidence(),counted=false,heardAt=0,burstAt=0;
         var elapsed=0,clockBase=performance.now(),nudges=0,nextNudge=8000,idleDisabled=false,successAt=null;
         function closed(){return attempt.cancelled || practiceClosed || engineAttempt!==attempt;}
         function finishAttempt(value){
-          if(attempt.settled)return; attempt.settled=true; engineOn=false;
+          if(attempt.settled)return; attempt.settled=true; engineOn=false; listenReady=false;
           if(engineControl===control)engineControl=null;
           resolve(value);
         }
@@ -1235,10 +1514,15 @@
         function runSegment(){return new Promise(function(segmentDone){
           // A replacement stream must qualify its own burst after an interruption.
           voiced=0;silent=0;inBurst=false;burstFrames=[];counted=false;evid.drop();
-          var seg={startedAt:performance.now(),modelMs:0,modelAt:null,closed:false,reason:null,timers:[],raf:null,src:null,recorder:null};
+          var seg={startedAt:performance.now(),closed:false,reason:null,timers:[],raf:null,src:null,recorder:null,stream:micStream,rms:[],read:false,learn:null};
           attempt.segment=seg;
+          // Sona is about to make a sound: this window ends as "model" and the
+          // attempt loop reopens a fresh one once it is quiet, tries carried.
+          // (Replaced below by a version that first judges a short sound the
+          // child already finished, once the detector exists.)
+          seg.yieldToApp=function(){seg.finish("model");};
           function current(){return !closed() && !seg.closed && attempt.segment===seg;}
-          function activeMs(){var now=performance.now();return elapsed+now-seg.startedAt-seg.modelMs-(seg.modelAt===null?0:now-seg.modelAt);}
+          function activeMs(){return elapsed+performance.now()-seg.startedAt;}
           function later(fn,ms){var timer=setTimeout(function(){if(current())fn();},Math.max(0,ms));seg.timers.push(timer);return timer;}
           function recorderStop(){return new Promise(function(done){
             var recorder=seg.recorder,settled=false;
@@ -1251,11 +1535,16 @@
           seg.finish=function(reason){
             if(seg.closed)return; seg.closed=true; seg.reason=reason;
             if(reason==="microphone"){attemptInterrupted=true;chunks=[];}
-            elapsed=Math.min(20000,activeMs()); engineOn=false; micGo(false);
+            elapsed=Math.min(20000,activeMs()); engineOn=false; listenReady=false; micGo(false);
             seg.timers.forEach(clearTimeout); if(seg.raf!=null)cancelAnimationFrame(seg.raf);
             try{if(seg.src)seg.src.disconnect();}catch(e){}
             try{$("micWrap").classList.remove("hear");$("echoBuddy").classList.remove("heard");}catch(e){}
             Promise.all([recorderStop(),recognitionStop()]).then(function(){
+              // The mic closes at the end of EVERY window, not only before a
+              // sound (24 Sep 2026): the next window reopens it into silence.
+              // After the recorder, so the keepsake clip is whole; and only
+              // this window's own stream, never one opened since.
+              if(micStream&&micStream===seg.stream)stopMic();
               if(attempt.segment===seg)attempt.segment=null;
               segmentDone(reason);
             });
@@ -1264,10 +1553,25 @@
             var ctx=getCtx(),src=ctx.createMediaStreamSource(micStream),an=ctx.createAnalyser();
             seg.src=src; an.fftSize=512;src.connect(an);
             var td=new Uint8Array(an.fftSize),fd=new Uint8Array(an.frequencyBinCount),binHz=ctx.sampleRate/an.fftSize;
-            // Evidence reads its own unsmoothed analyser, so the shape
-            // checker's smoothed bytes above are untouched.
-            var ev=ctx.createAnalyser(); ev.fftSize=ctx.sampleRate>=88200?2048:ctx.sampleRate>=32000?1024:512; ev.smoothingTimeConstant=0; src.connect(ev);
+            var ev=evidenceAnalyser(ctx,src);
             evid.attach(ev,ctx.sampleRate);
+            // ROOM FLOOR: start from the page's room when there is one — this
+            // window hears the child from its first frame. Without one, a bar
+            // this attempt already set in an earlier window stands, as it
+            // always did; only an attempt's first window waits, deaf, for its
+            // own first quarter-second (readRoom).
+            evid.resample();
+            if(room&&evid.floor(room.bg))thr=roomBar(room.rms);
+            // No room, an earlier window of this attempt already set a bar, and
+            // what this page has heard was louder than any room (a voice, or a
+            // hum too loud to be one): this window has no background either, so
+            // it starts in the same learn-first mode. Without this, a steady hum
+            // louder than a room can be was counted as a try every time the
+            // window reopened (a tap on Echo, the turtle, a return from the
+            // background) — the one thing noise may never be. A page that simply
+            // never got a reading (a mic still sending zeros) keeps its bar, so
+            // a child who carries on after a pause is still heard.
+            else if(thr&&roomLoud)seg.learn=[];
             // Independent recorder files cannot be concatenated into one clip.
             // Interrupted attempts retain reps/evidence but skip the keepsake.
             if(!attemptInterrupted && window.MediaRecorder && micStream){try{
@@ -1277,7 +1581,9 @@
               };
               recorder.start();
             }catch(e){seg.recorder=null;rec=null;}}
-            recognitionStart(); engineOn=true; micGo(true);
+            // The window is open; the cue waits for the first frame that can
+            // hear the child (listenReady in tick), so no glowing mic yet.
+            recognitionStart(); engineOn=true; updateTurn();
             function micLive(){
               if(!micOk||!micStream)return false;
               try{var t=micStream.getAudioTracks()[0];return !t||(t.readyState==="live"&&!t.muted);}catch(e){return true;}
@@ -1295,25 +1601,28 @@
             function tick(){
               if(!current() || practicePaused)return;
               var wallNow=performance.now();
-              // Echo starting to talk ends listening for now: a short sound
-              // that already finished is judged first, then the event drops.
+              // Echo starting to talk ends the window (24 Sep 2026): a short
+              // sound that already finished is judged first, the event drops,
+              // and the window closes as "model" — the attempt loop reopens a
+              // fresh one, tries carried, once Echo is done. Every voice line
+              // closes the window before it starts (micSilence); this catches
+              // anything that didn't. It used to hold the mic open underneath.
               if(speaking||ttsPlaying||_sayN)judgePending(wallNow);
               if(speaking||ttsPlaying||_sayN){
-                if(seg.modelAt===null)seg.modelAt=wallNow;
                 silent++;voiced=0;inBurst=false;burstFrames=[];counted=false;evid.drop();
-                try{mw.classList.remove("hear");$("echoBuddy").classList.remove("heard");}catch(e){}
-                seg.raf=requestAnimationFrame(tick);return;
+                seg.finish("model");return;
               }
-              if(seg.modelAt!==null){seg.modelMs+=wallNow-seg.modelAt;seg.modelAt=null;}
               if(!micLive()){seg.finish("microphone");return;}
               an.getByteTimeDomainData(td);an.getByteFrequencyData(fd);
               var sum=0;for(var i=0;i<td.length;i++){var d=(td[i]-128)/128;sum+=d*d;}
-              var rms=Math.sqrt(sum/td.length),active=activeMs(),now=wallNow;
-              if(active<250){calRms.push(rms);evid.calibrate(now);seg.raf=requestAnimationFrame(tick);return;}
-              // 3x the MEDIAN quiet-check loudness: a child who answers in its
-              // last moments no longer lifts the bar over their own voice.
-              // Exact zeros (the audio path still starting) are not the room.
-              if(!thr){calRms=calRms.filter(function(v){return v>0;}).sort(function(a,b){return a-b;});thr=Math.max(0.035,(calRms.length?calRms[calRms.length>>1]:0)*3.0);}
+              var rms=Math.sqrt(sum/td.length),now=wallNow;
+              // ROOM FLOOR: every window samples its own first quarter-second.
+              // With the page's room already set it listens meanwhile; without
+              // one it waits for the reading (thr stays 0 until readRoom).
+              if(now-seg.startedAt<250){if(!starved(ev,rms)){seg.rms.push(rms);evid.calibrate(now);}if(!thr){seg.raf=requestAnimationFrame(tick);return;}}
+              else if(!seg.read){seg.read=true;readRoom();}
+              // Mic open, room known: only now is it visibly the child's turn.
+              if(!listenReady){listenReady=true;micGo(true);}
               // The energy detector finds the event and its timing; the try
               // waits for speech evidence (speechEvidence above). An event
               // that never shows any is not a try: no count, no "heard", and
@@ -1323,19 +1632,78 @@
                 if(!inBurst&&voiced>=4&&(successAt!==null||now-lastRep>350)){inBurst=true;burstAt=now;}
                 if(!counted){
                   burstFrames.push(new Uint8Array(fd));
-                  if(evid.frame(now)&&inBurst)countRep(now);
+                  if(evid.frame(now)&&inBurst&&!seg.learn)countRep(now);
                 }else if(inBurst) shapeFrame(fd,binHz);
               }else{
                 silent++;voiced=0;
-                if(!inBurst){burstFrames=[];evid.drop();}
+                if(!inBurst){burstFrames=[];evid.drop();if(seg.learn&&rms<=ROOM_MAX)learnRoom(now,rms);}
                 if(silent>=3&&now-heardAt>250){try{mw.classList.remove("hear");$("echoBuddy").classList.remove("heard");}catch(e){}}
                 // A short sound (a T/K/P release, a quick "fff") is judged once
                 // it has been quiet ~130ms, or when the event closes if sooner.
-                if(inBurst&&!counted&&(silent>=8||evid.quietFor(now)>=EVID.quietMs)&&evid.brief())countRep(now);
+                if(inBurst&&!counted&&(silent>=8||evid.quietFor(now)>=EVID.quietMs)&&heardTry())countRep(now);
                 if(silent>=8){inBurst=false;counted=false;burstFrames=[];evid.drop();}
               }
               seg.raf=requestAnimationFrame(tick);
             }
+            // This window's own reading of the room: the page's first, if the
+            // page never got one; otherwise it may only lower the carried room.
+            // REWRITTEN 24 Sep 2026: it lowers whenever its QUIET END (the
+            // 20th percentile) is under the carried room. It used to need the
+            // median under it too, which a child already talking as the window
+            // opened always failed, so a room that had got quieter stayed loud
+            // for them. The low end is safe against a talking child: talking
+            // only ever adds loudness, so their voice can move the upper
+            // frames, never the quiet ones, and a child who talks through
+            // more than 80% of it reads louder than the room and changes
+            // nothing (it can only lower). A voice (over ROOM_MAX) is never
+            // read as a room at all. Too few real samples (a mic still
+            // starting) sets nothing: this window listens against its
+            // quietest reading, as before, and the next window measures again.
+            // The bar follows any quieter reading; the speech-evidence
+            // background only a clearly quieter one, whole (roomLower).
+            function readRoom(){
+              var low=roomLevel(seg.rms,ROOM_PCT),bg=evid.measured(),off=!(ev.getFloatTimeDomainData&&ev.getFloatFrequencyData),voice=low>ROOM_MAX;
+              if(voice&&roomUsable(seg.rms))roomLoud=true;
+              // The carried room describes this analyser (same frequency bins).
+              function fits(){return !!room&&(off||!!(room.bg&&bg&&room.bg.length===bg.length));}
+              if(!voice&&roomUsable(seg.rms)&&(bg||off)){
+                if(!room)room=roomReading(low,bg);
+                else if(low<room.rms&&fits())roomLower(low,bg);
+              }
+              if(fits()){evid.floor(room.bg);thr=roomBar(room.rms);seg.learn=null;}
+              else{
+                if(!thr)thr=roomBar(low);
+                // No room, and the child was talking as the window opened: the
+                // background is not taken from their voice, and the room is
+                // learned in their first pause (learnRoom).
+                if(voice){evid.resample();seg.learn=[];}
+              }
+            }
+            // LEARNING THE ROOM IN A PAUSE (24 Sep 2026). Until the window has
+            // heard LEARN_FRAMES quiet frames — between events, and no louder
+            // than a room can be (ROOM_MAX: the fading tail of a child's "ssss"
+            // is under the bar but is not the room) — it knows nothing about
+            // the room, and a room loud enough to cross the bar (a hum or a fan
+            // ten times the loudest in the fixtures) would look like a voice
+            // against an empty background. So meanwhile a try counts only
+            // once its sound has ENDED, and only if it was voiced or a hiss:
+            // a child's "rrrr" stops, a steady hum never does, and a burst of
+            // noise is neither. Then the quiet frames set the bar and the
+            // background (and the page's room, if they are quiet enough to be
+            // one), and the window listens as any other.
+            function learnRoom(now,rms){
+              if(starved(ev,rms))return;
+              seg.learn.push(rms);evid.calibrate(now);
+              if(seg.learn.length<LEARN_FRAMES)return;
+              var low=roomLevel(seg.learn,ROOM_PCT),bg=evid.measured(),off=!(ev.getFloatTimeDomainData&&ev.getFloatFrequencyData);
+              if(!room&&low<=ROOM_MAX&&roomUsable(seg.learn)&&(bg||off))room=roomReading(low,bg);
+              if(bg)evid.floor(bg);
+              thr=roomBar(low);seg.learn=null;
+            }
+            // Whether an event that has gone quiet is a try: one short sound
+            // (evid.brief) — or, while the room is being learned, one that
+            // showed voicing or a hiss, never a burst of loud room.
+            function heardTry(){return seg.learn?/^(voiced|sibilant|energy)$/.test(evid.route()):evid.brief();}
             function countRep(now){
               counted=true;
               burstFrames.forEach(function(frame){shapeFrame(frame,binHz);});burstFrames=[];
@@ -1344,14 +1712,26 @@
               if(successAt!==null)return;
               reps++;heardAt=now;lastRep=burstAt;
               try{ (window.__evid=window.__evid||[]).push(evid.route()); }catch(e){}
-              paintReps(reps);sfx("tap");
+              // Seen, not heard (24 Sep 2026): the count and the pop are the
+              // whole reward. A chime here would sound into the open mic.
+              paintReps(reps);
               var l=$("leo");l.classList.remove("cheer");void l.offsetWidth;l.classList.add("cheer");
               try{mw.classList.add("hear");$("echoBuddy").classList.add("heard");}catch(e){}
               if(reps>=NEED){successAt=activeMs()+350;later(finishTail,350);}
             }
             // A short sound that ended just before time ran out or Echo spoke
             // still counts; one still going cannot be judged and is dropped.
-            function judgePending(now){if(inBurst&&!counted&&silent>0&&evid.brief())countRep(now);}
+            // A sound still under way when Sona closes the mic for its own
+            // sound (yieldToApp) or at the 20 s deadline is judged here. While
+            // the room is being learned the bar is capped, a loud hum sits
+            // within a decibel of it, and one quiet frame is not an end — it
+            // was counted as a "voiced" try at the instant the mic closed. In
+            // learn mode a try needs the same real end tick() asks for.
+            function judgePending(now){
+              if(!(inBurst&&!counted&&heardTry()))return;
+              if(seg.learn?(silent>=8||evid.quietFor(now)>=EVID.quietMs):silent>0)countRep(now);
+            }
+            seg.yieldToApp=function(){if(seg.closed)return;judgePending(performance.now());seg.finish("model");};
             // Coaching and background pauses must not spend listening time.
             function finishTail(){var remaining=successAt-activeMs();if(remaining<=0)seg.finish("done");else later(finishTail,remaining);}
             // Preserve the existing 20-second cap, even for a final short try.
@@ -1365,6 +1745,9 @@
         (async function(){
           while(!closed()){
             if(!(await practiceReady())||closed()){finishAttempt(false);return;}
+            // Each window opens into silence (quietGap): after Echo's last
+            // word or chime has had time to leave the speaker and the room.
+            if(!(await quietGap())||closed()){finishAttempt(false);return;}
             if(!(await acquirePracticeMic())){
               if(practicePaused&&!closed())continue;
               finishAttempt(false);return;
@@ -1381,11 +1764,23 @@
               if(ctx&&ctx.state==="suspended")await ctx.resume();
             }catch(e){pausePractice();continue;}
             if(epoch!==practiceEpoch||practicePaused||closed()||document.hidden)continue;
+            // A line queued while the mic was opening goes first, into a
+            // closed mic (micSilence may already have taken the stream).
+            if(appBusy()||performance.now()<quietAt||!micStream){stopMic();continue;}
             var result=await runSegment();
             if(result==="cancel"||closed()){finishAttempt(false);return;}
             if(result==="microphone"){
               voiced=0; silent=0; inBurst=false; burstFrames=[]; counted=false; evid.drop();
               stopMic(); if(!(await showQuiet("microphone"))){finishAttempt(false);return;}
+              continue;
+            }
+            if(result==="model"){
+              // Echo spoke mid-try (a tap on Echo, the turtle, a nudge). The
+              // tries already heard carry into the next window, and listening
+              // time only runs while a window is open. A keepsake clip cannot be
+              // stitched from two recordings: with no try yet it simply starts
+              // over in the next window; after one, the attempt keeps none.
+              if(reps>0)attemptInterrupted=true; else chunks=[];
               continue;
             }
             if(result==="done"){
@@ -1433,7 +1828,9 @@
     async function burstAndVerify(n){
       var save=NEED;
       while(await practiceReady()){
-        NEED=n||save;turnPhase="practice";micGo(true);
+        // No glowing mic here: it lights when the window is open and the room
+        // measured (listenReady), not before Echo's prompt or the quiet gap.
+        NEED=n||save;turnPhase="practice";updateTurn();
         try{$("sayLbl").textContent="Say";$("leo").src="/coach/echo/echo-listening.svg";}catch(e){}
         if(!(await startEngine()) || !(await practiceReady())){NEED=save;return null;}
         NEED=save;
@@ -1526,7 +1923,15 @@
           if(firstTime) tele("demo started",{sound:SOUND});
         }
       }catch(e){}
-      // Leo speaks the prompt ONCE, then the mic is instantly hot.
+      // ROOM FLOOR: the one moment the room is known to be quiet — the mic
+      // is open and nobody has been asked to say anything yet.
+      await measureRoom();
+      if(!(await practiceReady()))return;
+      // Echo speaks the prompt ONCE into a closed mic (24 Sep 2026). The mic
+      // opened above so the permission dialog rides on the grown-up's tap
+      // (and the room is measured on it); the prompt's own playback closes it
+      // (micSilence), and the first listening window reopens it into silence
+      // once the prompt has ended.
       await playPrompt();
       if(!(await practiceReady()))return;
       // 🐢 IS AVAILABLE FROM THE FIRST TRY, NOT AS A CONSOLATION PRIZE.
@@ -1571,7 +1976,9 @@
         // TTS never performs the sound, it only describes the mouth move
         var tip=(c&&c.tip?c.tip.split("—")[0]:"").trim().replace(/[.!,]+$/,"")||("Let's try our "+soundName()+" sound again");
         showTurtle(true); // already on since the prompt; harmless if the round stepped down
-        await say("Hmm, that was a different sound! "+tip+". Try again!");
+        // Calm (24 Sep 2026): no "Hmm … !" before the tip, no "Try again!"
+        // after it. The tip itself is Rachel's CUES text, word for word.
+        await say("Let's try that one again. "+tip+".");
         if(!(await practiceReady()))return;
         v=await burstAndVerify(3);
         if(v===null || !(await practiceReady()))return;
@@ -1589,15 +1996,18 @@
             paintCard();
             try{ $("sayLbl").textContent="Echo's idea — say"; }catch(e){}
             $("gpState").textContent="An easier one — you've got this!";
-            await say("Okay, I have an idea! Let's try something easier. "+(ITEM.level==="isolation"?("Make your "+soundName()+" sound"):("Say "+(ITEM.say||ITEM.t)))+"!");
+            // Calm (24 Sep 2026), and "this one" rather than "something
+            // easier": the child hears an idea, not a demotion. The target
+            // itself (ITEM.say||ITEM.t) is untouched.
+            await say("I have an idea. Let's try this one. "+(ITEM.level==="isolation"?("Make your "+soundName()+" sound"):("Say "+(ITEM.say||ITEM.t)))+".");
             if(!(await practiceReady()))return;
             v=await burstAndVerify(3);
             if(v===null || !(await practiceReady()))return;
-            if(v==="pass"){ $("gpState").textContent="YES! That's the one!"; await say((S&&S.praiseLine)?S.praiseLine():"You did it!"); }
+            if(v==="pass"){ $("gpState").textContent="YES! That's the one!"; await say((S&&S.praiseLine)?S.praiseLine():"You did it."); }
           }
         }
         if(v==="fail"){
-          await say("Great practicing! Let's play — we'll keep working on it!");
+          await say("Good practicing. Let's play.");
         }
       }
       if(!(await practiceReady()))return;
@@ -1634,6 +2044,16 @@
     // honest scoring gates stars and rungs, never the chest. Stickers deal in
     // fixed sticker-book order: every open wins, no rarity, no duds.
     var chestTaps=0;
+    // WIN MOMENTS: Echo speaks ~600ms after the chime, not on top of it
+    // (24 Sep 2026). A voice landing on a chime and confetti was the loud
+    // "snap" at every win. `still` re-checks the moment is still on screen.
+    // Counted from when the chime really starts (chimeAt): sfx may hold it
+    // back while the phone settles from the mic.
+    var AFTER_CHIME_MS=600;
+    function sayAfterChime(text,still){
+      if(mutedSpeech())return Promise.resolve();
+      return practiceDelay(Math.max(0,chimeAt+AFTER_CHIME_MS-performance.now())).then(function(ready){if(ready&&(!still||still()))return say(text);});
+    }
     function showChestReveal(stk){
       $("chestStage").style.display="none";
       $("chestStk").textContent=stk?stk.e:"⭐";
@@ -1662,7 +2082,7 @@
         if(saved){saved.opened=true;saved.sticker=stk;runSave(run);}
         try{ if(S&&S.confetti)S.confetti(); }catch(e){}
         showChestReveal(stk);
-        try{ say("Look what we found!"); }catch(e){}
+        sayAfterChime("Look what we found.",function(){return $("chestOvl").classList.contains("show");});
       };
       $("chestClaim").onclick=function(){
         if(practicePaused || practiceClosed || document.hidden || chestTaps<3)return;
@@ -1687,6 +2107,9 @@
       $("quietTitle").textContent=microphone?"Let's get a grown-up":"I couldn't hear you!";
       $("quietCopy").textContent=microphone?"Another app may be using the microphone. Close it, then try again.":"Say it big — I'm all ears!";
       q.classList.add("show");$("app").inert=true;$("quietGo").focus({preventScroll:true});
+      // Word for word, "!" and all, while every other line went calm (24 Sep
+      // 2026): "Say it big" tells a child how to produce the sound, so any
+      // rewording is Rachel's call. The mic is already closed (stopMic above).
       if(!microphone)say("I couldn't hear you! Say it big — I'm all ears!");
       return new Promise(function(resolve){
         function finish(retry){q.classList.remove("show");$("app").inert=false;$("quietGo").onclick=null;$("quietLater").onclick=null;resolve(retry);}
@@ -1710,7 +2133,8 @@
       try{ sessionStorage.setItem("sona.play.token",GAME); sessionStorage.setItem("sona.boost.sound",SOUND); sessionStorage.removeItem("sona.play.active"); }catch(e){}
       if(isDaily&&run){ run.pending=true; runSave(run); }
       if(!isDaily&&!DEMO_REPLAY&&attemptsTotal>0&&S.recordSession)S.recordSession({activity:"practice",sound:SOUND,tries:attemptsTotal});
-      if(lastVerdict==="pass")await say("I heard you! Let's play!");
+      // Calm, and after the chime rather than on top of it (24 Sep 2026).
+      if(lastVerdict==="pass")await sayAfterChime("You did it. Let's play.");
       if(await practiceDelay(1200)){
         await closePractice(); location.href="/"+GAME+"?from=charge"+(isDaily?"&daily=1":"");
       }
@@ -1770,7 +2194,8 @@
       $("runTitle").textContent="Adventure complete!";
       $("runPractice").textContent="We finished the whole adventure!";
       $("runOvl").classList.add("show");
-      sfx("complete");if(S.confetti)S.confetti();say("We finished the whole adventure!");
+      sfx("complete");if(S.confetti)S.confetti();
+      sayAfterChime("We finished the whole adventure.",function(){return run.finishBeat==="celebrate";});
       try{$("runTitle").focus({preventScroll:true});}catch(e){$("runTitle").focus();}
       $("runOvl").querySelector(".ovlCard").scrollTop=0;
     }
@@ -1782,7 +2207,13 @@
 
     // ---- chrome ----
     function stopMic(){
-      try{if(micStream)micStream.getTracks().forEach(function(t){t.stop();});}catch(e){}
+      // A room reading in progress is on this stream: it ends with it.
+      if(roomProbe)roomProbe();
+      var live=false;
+      try{if(micStream)micStream.getTracks().forEach(function(t){if(t.readyState==="live")live=true;t.stop();});}catch(e){}
+      // When the phone last let go of the mic: nothing of Sona's sounds for
+      // SETTLE_MS after it (micSettled, sfx).
+      if(live)micClosedAt=performance.now();
       micStream=null; micOk=false;
     }
     // grown-up escape: LONG-PRESS (2s) the ✕ skips practice into the game

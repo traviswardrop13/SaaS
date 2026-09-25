@@ -49,6 +49,9 @@ const SUITES = [
   "mictest.mjs",   // MIC1: a declined mic is never a dead end; the consent copy is true
   "hwtest.mjs",    // HW1: SLP homework replaces what the app would have picked
   "pauseaudiotest.mjs", // interrupted playback and native starts cannot outlive their practice phase
+  "micquietpracticetest.mjs", // the practice screen never plays a sound into a live mic (no iPhone call mode)
+  "loudroomtest.mjs", // a room too loud to be a room is never a try, in any window of an attempt
+  "micquietgamestest.mjs", // the eight games never play a sound into a live mic; STAR MODE is gone
   "slptest.mjs",   // SLP1: the clinician dashboard — live Today, honest register, one door, real remove, the note
   "slpworkflowtest.mjs", // quick homework, per-child plans, feedback/call UI and failure recovery
   "slpcommunityapi.mjs", // shared community access, persistence, privacy and ownership

@@ -376,7 +376,11 @@
   const VOICE_PITCH = 1;
   // Shared delivery revision: server tuning must not leave families replaying
   // older, indefinitely cached prompts on their devices.
-  const TTS_CACHE_VERSION = "v7";
+  // v8 (24 Sep 2026): /api/tts now levels every clip to one loudness and uses
+  // calmer settings with a fixed seed. Moves in lockstep with VOICE_REVISION in
+  // app/api/tts/route.ts — a phone that kept its v7 copies would go on playing
+  // the loud, jumpy takes Travis heard, whatever the server now sends.
+  const TTS_CACHE_VERSION = "v8";
   const _voiceEvents = [];
   function voiceDiagnostic(event) {
     event = event || {};
@@ -1335,7 +1339,7 @@
   // Games use these so "say RRRR to keep playing" actually requires an R-ish
   // sound — a hiss or a scream won't revive. Frequency NUMBERS only, computed
   // on-device from the live analyser: nothing is recorded or uploaded, and
-  // revives/boosts are never logged as practice data.
+  // revives are never logged as practice data.
   const SHAPE_FAM = { hiss: { S:1, Z:1, SH:1, CH:1, J:1, F:1, TH:1 }, low: { R:1, L:1, M:1, N:1, B:1, D:1, G:1, V:1, THV:1 } };
   function soundFamily(s) { s = String(s || "").toUpperCase(); return SHAPE_FAM.hiss[s] ? "hiss" : (SHAPE_FAM.low[s] ? "low" : "any"); }
   const SHAPE_LUT = (() => { const t = []; for (let i = 0; i < 256; i++) t.push(Math.pow(10, (-100 + i * 70 / 255) / 20)); return t; })();
@@ -2374,14 +2378,16 @@
   }
   // master volume from the profile (so the volume slider also controls SFX); 0 = muted
   function sfxVol() { try { const p = getProfile(); if (p.soundOn === false) return 0; return (p.volume != null ? p.volume : 0.6); } catch (e) { return 0.6; } }
-  function note(freq, start, dur, type, gain) {
+  // attack: seconds to reach the peak (default 15 ms). The win chimes pass a
+  // slower one so they swell in rather than snap.
+  function note(freq, start, dur, type, gain, attack) {
     const a = ac(); const v = sfxVol(); if (!a || v === 0) return;
     const t0 = a.currentTime + start;
     const o = a.createOscillator(), g = a.createGain();
     o.type = type || "sine"; o.frequency.setValueAtTime(freq, t0);
     const peak = (gain || 0.18) * v;
     g.gain.setValueAtTime(0.0001, t0);
-    g.gain.exponentialRampToValueAtTime(peak, t0 + 0.015);
+    g.gain.exponentialRampToValueAtTime(peak, t0 + (attack || 0.015));
     g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
     o.connect(g); g.connect(_master || a.destination);
     const voice = {o, g}; _sfxNodes.add(voice);
@@ -2389,14 +2395,20 @@
     o.start(t0); o.stop(t0 + dur + 0.03);
   }
   const tone = note; // back-comat
+  const WIN_ATTACK = 0.025;
   // richer than plain beeps: core note + a soft octave/overtone shimmer
   const sfx = {
     // Stop scheduled notes too, so they cannot play when an audio context wakes.
     stop() { for (const {o, g} of _sfxNodes) { try { o.stop(); } catch (e) {} try { o.disconnect(); g.disconnect(); } catch (e) {} } _sfxNodes.clear(); },
     tap()      { note(660, 0, 0.06, "triangle", 0.10); note(990, 0.005, 0.05, "sine", 0.04); },
-    correct()  { [523.25, 659.25, 783.99].forEach((f, i) => { note(f, i * 0.08, 0.18, "sine", 0.16); note(f * 2, i * 0.08, 0.12, "sine", 0.05); }); }, // warm C-E-G + shimmer
+    // CALMER WINS (24 Sep 2026). correct and complete are the two loudest
+    // chimes and they land on the big moments, right beside Echo's voice. Each
+    // gain is 3 dB down (x0.71: 0.16 -> 0.113, 0.05 -> 0.035, 0.04 -> 0.028)
+    // and the attack is 25 ms instead of 15, so they swell rather than snap.
+    // Durations are unchanged: pages time the mic's quiet window after them.
+    correct()  { [523.25, 659.25, 783.99].forEach((f, i) => { note(f, i * 0.08, 0.18, "sine", 0.113, WIN_ATTACK); note(f * 2, i * 0.08, 0.12, "sine", 0.035, WIN_ATTACK); }); }, // warm C-E-G + shimmer
     wrong()    { note(330, 0, 0.16, "sine", 0.07); note(247, 0.1, 0.2, "sine", 0.07); },                  // gentle, never harsh
-    complete() { [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => { note(f, i * 0.1, 0.26, "sine", 0.16); note(f * 1.5, i * 0.1, 0.15, "sine", 0.04); }); },
+    complete() { [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => { note(f, i * 0.1, 0.26, "sine", 0.113, WIN_ATTACK); note(f * 1.5, i * 0.1, 0.15, "sine", 0.028, WIN_ATTACK); }); },
     reward()   { [659.25, 783.99, 1046.5, 1318.5].forEach((f, i) => note(f, i * 0.08, 0.28, "triangle", 0.14)); },
     star()     { note(1046.5, 0, 0.1, "sine", 0.14); note(1568, 0.06, 0.16, "sine", 0.12); },
     coin()     { note(988, 0, 0.07, "square", 0.09); note(1319, 0.06, 0.12, "square", 0.09); },           // coin "ching"
@@ -2888,8 +2900,12 @@
   // Model-then-try line for warm-ups and corrections: "Repeat after me… rrrr!  Now you try — rrrr!"
   function repeatCue(sound) { var s = soundSay(sound); return "Repeat after me… " + s + "!  Now you try — " + s + "!"; }
   // Short spoken praise for a correct rep — said before moving to the next prompt.
-  // Lightly varied (led by "Nice one!") so it doesn't feel robotic to a kid.
-  const PRAISES = ["Nice one!", "Nice!", "Great job!", "Awesome!", "You got it!", "Way to go!"];
+  // Lightly varied so it doesn't feel robotic to a kid.
+  // CALM, NOT HYPED (24 Sep 2026). The voice reads "!" as a jump in pitch and
+  // energy, and "Awesome!" / "Way to go!" after every good try was the jumpy,
+  // explosive sound Travis heard. Echo should sound like a grown-up talking
+  // softly to a small child: short, warm, full stops. No "!" — voicetest3 pins it.
+  const PRAISES = ["Nice one.", "Good job.", "I heard that.", "That was lovely.", "Well done."];   // not "You did it." — the win line says that right after
   function praiseLine() { return PRAISES[Math.floor(Math.random() * PRAISES.length)]; }
 
   // Corrective line for a missed attempt: re-model the sound + a placement cue.

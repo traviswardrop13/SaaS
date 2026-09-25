@@ -3,8 +3,9 @@
 //  1. REPLAY — the recordings, decoded by the browser, replayed through the
 //     shipped speechEvidence() at exact frame times (tests/_speechreplay.mjs).
 //     Deterministic, so each mechanism is pinned: overtones keep a voice
-//     countable in room noise, the octave check, the median room level, the
-//     one-second short sound, the minimum length, the 0.8s change window.
+//     countable in room noise, the octave check, the room's quiet end (its
+//     20th percentile; a voice is never a room, 24 Sep 2026), the one-second
+//     short sound, the minimum length, the 0.8s change window.
 //  2. REAL ENGINE — real Web Audio through a synthetic MediaStream (muted, no
 //     hardware), with steady room noise from before the silent calibration, at
 //     30fps (WebKit's Low Power Mode rate), held and quiet productions, and a
@@ -16,7 +17,7 @@ import { createServer } from 'node:http';
 import { readFileSync, existsSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { chromium, ROOT, launchOpts } from './_env.mjs';
-import { run, stream, fixture, gain, clip, rms, room, loadEvidence } from './_speechreplay.mjs';
+import { run, stream, fixture, gain, clip, rms, room, loadEvidence, pageRoom } from './_speechreplay.mjs';
 import { voice, cat, silence } from './_childsynth.mjs';
 const publicRoot = process.env.SONATEST_PUBLIC_ROOT || ROOT; // point at another build to compare
 const MIME = { html:'text/html', js:'text/javascript', css:'text/css', svg:'image/svg+xml', png:'image/png', webp:'image/webp', woff2:'font/woff2', mp3:'audio/mpeg' };
@@ -71,7 +72,8 @@ function device(config){
   }});
   // kind: a recording ("M-demo.mp3") or a suite noise; o.gain, o.sec (keep the
   // first `sec` seconds from the sound's onset, 60ms fade), o.max (clip length),
-  // o.at (start that many ms after the listening segment opened)
+  // o.at (start that many ms after the listening segment opened), o.times and
+  // o.every (say it `times` times, one onset every `every` seconds)
   h.play=async(kind,o={})=>{
     const ctx=h.ctx,rate=ctx.sampleRate;let buffer;
     if(kind.endsWith('.mp3'))buffer=await ctx.decodeAudioData(await(await fetch('/coach/say/'+kind)).arrayBuffer());
@@ -91,16 +93,20 @@ function device(config){
     if(o.skip)start=Math.min(x.length-1,start+Math.round(rate*o.skip));
     const len=Math.min(x.length-start,Math.round(rate*(o.sec||o.max||3))),y=ctx.createBuffer(1,len,rate),z=y.getChannelData(0),fade=o.sec?Math.round(rate*.06):0;
     for(let i=0;i<len;i++)z[i]=x[start+i]*(o.gain||1)*(i>=len-fade?(len-i)/fade:1);
+    let out=y;
+    if(o.times>1){const step=Math.round(rate*o.every);out=ctx.createBuffer(1,step*(o.times-1)+len,rate);const w=out.getChannelData(0);for(let k=0;k<o.times;k++)w.set(z,k*step);}
     if(o.at!=null){ // start o.at ms after the listening segment opened
       const seg=window.engineAttempt&&window.engineAttempt.segment,wait=(seg?seg.startedAt:performance.now())+o.at-performance.now();
       if(wait>0)await new Promise(r=>setTimeout(r,wait));
     }
-    const node=ctx.createBufferSource();node.buffer=y;node.connect(h.destination);
-    await new Promise(resolve=>{let done=false;const finish=()=>{if(done)return;done=true;clearTimeout(timer);resolve();};const timer=setTimeout(finish,Math.ceil(len/rate*1000)+500);node.onended=finish;node.start();});
+    const node=ctx.createBufferSource();node.buffer=out;node.connect(h.destination);
+    await new Promise(resolve=>{let done=false;const finish=()=>{if(done)return;done=true;clearTimeout(timer);resolve();};const timer=setTimeout(finish,Math.ceil(out.length/rate*1000)+500);node.onended=finish;node.start();});
     node.disconnect();
   };
   localStorage.setItem('sona.freeera.v1','post');localStorage.setItem('sona.freeera2.v1','done');localStorage.setItem('sona.freeera3.v1','done');localStorage.setItem('sona.micok','1');
-  localStorage.setItem('sona.profile.v1',JSON.stringify({childName:'Test child',childAge:'7',focusSounds:[config.sound],onboarded:true,voiceOn:false,soundOn:false,volume:0}));
+  // config.soundOn: the default profile's chimes on (Echo's voice stays off,
+  // so the mic opens once and stays open, as in every other case here).
+  localStorage.setItem('sona.profile.v1',JSON.stringify(config.soundOn?{childName:'Test child',childAge:'7',focusSounds:[config.sound],onboarded:true,voiceOn:false,soundOn:true,volume:.8}:{childName:'Test child',childAge:'7',focusSounds:[config.sound],onboarded:true,voiceOn:false,soundOn:false,volume:0}));
   localStorage.setItem('sona.progress.v1',JSON.stringify({sessions:[],totals:{sessions:0,words:0,stars:0,coins:0,rounds:0},streak:{count:0,lastDate:''},bySound:{},stage:{},chests:{},missed:[]}));
   sessionStorage.setItem('sona.run.v1',JSON.stringify({active:true,round:0,sum:0,scores:[],pending:false,sound:config.sound,level:1,demo:false,games:['slice','tiles','stack','run','glide']}));
 }
@@ -140,7 +146,39 @@ async function noise(label,config,kind){
     }finally{await close(context,page);}
   });
 }
+// QUICK TRIES WITH THE SOUND ON (24 Sep 2026). For one day a counted try rang
+// a short chime inside the open mic, and to stop the page hearing its own
+// chime the detector went deaf for 370ms after each count. A quick try that
+// began inside that — "t… t… t…" at two a second, a popped P or K — was
+// thrown away whole: the child said four and saw two. The chime is gone and
+// the counting rule is the one from before (a new try may start 350ms after
+// the last one STARTED). With the chimes on, as every family has them:
+//  - F, T and TH said four times, one every 500ms: all four count, as they
+//    did before the change (4 of 4; the guard made it 2 of 4);
+//  - Rachel's P and K recordings count at least as many tries as before
+//    (2 each; the guard made P 1).
+async function quickTries(){
+  for(const [s,sec] of [['F',.25],['T',.3],['TH',.25]])await scenario(`${s} said four times, 500ms apart, sound on`,async()=>{
+    const{page,context,errors}=await fresh({sound:s,soundOn:true});
+    try{
+      await page.evaluate(([f,o])=>__ev.play(f,o),[s+'-demo.mp3',{sec,times:4,every:.5}]);await settle(page);
+      const n=await tries(page);
+      ok(`${s} ×4 at 500ms with the sound on: all four count (4 of 4, as before)`,n===4,{tries:n});
+      ok(`${s} ×4 at 500ms with the sound on: no script error`,errors.length===0,errors);
+    }finally{await close(context,page);}
+  });
+  for(const s of ['P','K'])await scenario(`${s}-demo with the sound on`,async()=>{
+    const{page,context,errors}=await fresh({sound:s,soundOn:true});
+    try{
+      await page.evaluate(f=>__ev.play(f,{max:3}),s+'-demo.mp3');await settle(page);
+      const n=await tries(page);
+      ok(`${s}-demo with the sound on: at least the 2 tries it counted before the change`,n>=2,{tries:n});
+      ok(`${s}-demo with the sound on: no script error`,errors.length===0,errors);
+    }finally{await close(context,page);}
+  });
+}
 try{
+  if(process.env.SPEECHEV_ONLY==='quick'){await quickTries();throw 'quick-only';}
   // The recorded final sound must keep contributing shape after its try is
   // accepted. A stable excerpt250ms after onset isolates the completing
   // sound from its recorded lead-in. NEED=100 controls miss this boundary.
@@ -163,10 +201,37 @@ try{
   const evidence=loadEvidence();
   // The replay mirrors charge.html's tick(); these are the lines it mirrors.
   // If one changes, update tests/_speechreplay.mjs run() to match.
+  // REWRITTEN 24 Sep 2026 (ROOM FLOOR): the quiet quarter-second is now read
+  // once per page before Echo speaks, and a window measures itself only when
+  // the page has no reading. The replay is that case: one window, no reading,
+  // deaf for its first 250ms, then 3x the room's 20th percentile (the median
+  // until 24 Sep 2026; tests/_speechreplay.mjs now takes the 20th too).
+  // REWRITTEN AGAIN 24 Sep 2026 (A VOICE IS NOT A ROOM): the bar is capped at
+  // 3 x ROOM_MAX (roomBar); a quarter-second louder than ROOM_MAX was a voice,
+  // so the window drops those samples, learns the room in the first pause
+  // (learnRoom) and, until then, counts a try only once it ends and only if
+  // it was voiced or a hiss (heardTry). The replay mirrors all of it and
+  // reads ROOM_PCT, ROOM_MAX and LEARN_FRAMES from the page itself.
+  // (The speech-evidence background is extracted verbatim, so it matches.)
   const charge=readFileSync(path.join(publicRoot,'charge.html'),'utf8');
-  for(const line of ['if(!inBurst&&voiced>=4&&(successAt!==null||now-lastRep>350)){inBurst=true;burstAt=now;}','if(evid.frame(now)&&inBurst)countRep(now);',
-    'if(inBurst&&!counted&&(silent>=8||evid.quietFor(now)>=EVID.quietMs)&&evid.brief())countRep(now);','if(silent>=8){inBurst=false;counted=false;burstFrames=[];evid.drop();}',
-    'if(active<250){calRms.push(rms);evid.calibrate(now);','calRms=calRms.filter(function(v){return v>0;}).sort(function(a,b){return a-b;});thr=Math.max(0.035,(calRms.length?calRms[calRms.length>>1]:0)*3.0);','reps++;heardAt=now;lastRep=burstAt;',
+  for(const line of ['if(!inBurst&&voiced>=4&&(successAt!==null||now-lastRep>350)){inBurst=true;burstAt=now;}','if(evid.frame(now)&&inBurst&&!seg.learn)countRep(now);',
+    'if(inBurst&&!counted&&(silent>=8||evid.quietFor(now)>=EVID.quietMs)&&heardTry())countRep(now);','if(silent>=8){inBurst=false;counted=false;burstFrames=[];evid.drop();}',
+    'if(!inBurst){burstFrames=[];evid.drop();if(seg.learn&&rms<=ROOM_MAX)learnRoom(now,rms);}',
+    'if(now-seg.startedAt<250){if(!starved(ev,rms)){seg.rms.push(rms);evid.calibrate(now);}if(!thr){seg.raf=requestAnimationFrame(tick);return;}}',
+    'if(starved(ev,rms))return;','if(!(level>0)||!ev||!ev.getFloatTimeDomainData)return false;','for(var i=0,run=0;i<gapBuf.length;i++){if(gapBuf[i]!==0)run=0;else if(++run>=GAP_RUN)return true;}',
+    'var gap=starved(ev,level);','if(began===null&&level>0&&!gap)began=now;','if(!gap){rms.push(level); probe.calibrate(now);}',
+    'function roomLevel(list,pct){var v=list.filter(function(x){return x>0;}).sort(function(a,b){return a-b;});return v.length?v[Math.floor((v.length-1)*pct)]:0;}',
+    'function roomBar(level){return Math.min(3*ROOM_MAX,Math.max(0.035,level*3.0));}',
+    'var low=roomLevel(seg.rms,ROOM_PCT),bg=evid.measured(),off=!(ev.getFloatTimeDomainData&&ev.getFloatFrequencyData),voice=low>ROOM_MAX;',
+    'if(!thr)thr=roomBar(low);','if(voice){evid.resample();seg.learn=[];}',
+    'seg.learn.push(rms);evid.calibrate(now);','if(seg.learn.length<LEARN_FRAMES)return;','if(bg)evid.floor(bg);','thr=roomBar(low);seg.learn=null;',
+    'function heardTry(){return seg.learn?/^(voiced|sibilant|energy)$/.test(evid.route()):evid.brief();}',
+    'reps++;heardAt=now;lastRep=burstAt;',
+    // the page's room (pageRoom, and run()'s `room`): taken once, carried in,
+    // lowered by a window's quieter reading through roomLower (extracted)
+    'if(complete&&roomUsable(rms)&&(bg||off)&&level<=ROOM_MAX)room=roomReading(level,bg);',
+    'if(room&&evid.floor(room.bg))thr=roomBar(room.rms);',
+    'if(!voice&&roomUsable(seg.rms)&&(bg||off)){','else if(low<room.rms&&fits())roomLower(low,bg);','if(fits()){evid.floor(room.bg);thr=roomBar(room.rms);seg.learn=null;}',
     'ev.fftSize=ctx.sampleRate>=88200?2048:ctx.sampleRate>=32000?1024:512;'])
     ok('replay mirrors charge.html: '+line.slice(0,48),charge.includes(line),line);
   const dec=await browser.newPage();await dec.goto(origin+'/__blank');
@@ -185,9 +250,12 @@ try{
     return clip(x.subarray(on),rate,sec,60);
   }
   const R=48000;
+  const bars=[];
   function replay(label,expect,sig,rate=R,o={}){
     const r=run(sig,rate,{evidence,...o}),n=o.after!=null?r.at.filter(a=>a.t>=o.after*1000).length:r.reps;
+    bars.push({label,thr:r.thr,voice:r.voice,loud:!!o.loud});
     ok('replay: '+label+(expect?' counts':' earns no try'),expect?n>0:n===0,{tries:n,oldEngine:r.old,at:r.at});
+    return r;
   }
   // Room noise buries a nasal's spectrum above ~1kHz: pitch and overtones must carry it.
   for(const s of ['M','N','V'])replay(`${s} at half volume over pink room noise -40dBFS`,true,stream(R,[[gain(await rec(s+'-demo'),.5)]],{roomKind:'pink',roomDb:-40}));
@@ -235,7 +303,85 @@ try{
   // Bluetooth routes run at 16kHz.
   for(const s of ['L','S','M'])replay(`${s} at 16kHz`,true,stream(16000,[[await rec(s+'-demo',16000)]]),16000);
   for(const s of ['M','N','L'])replay(`${s} at 96kHz`,true,stream(96000,[[await rec(s+'-demo',96000)]]),96000);
+  // A VOICE IS NOT A ROOM (24 Sep 2026). A child already saying the sound
+  // through the whole quiet quarter-second used to become "the room": the bar
+  // landed above their voice and nothing counted. Now that quarter-second is
+  // not a room (louder than ROOM_MAX); the try in progress counts once it
+  // ends (if it was voiced or a hiss), and the repeats count against the room
+  // learned in the pause. The old rule (median, uncapped) counted none of
+  // these. Rachel's creaky L counts only by its loudness changing, which is
+  // just what a burst of loud room does: before a pause, nothing can tell
+  // the two apart, so the L said through the quarter-second is not counted
+  // and its two repeats are.
+  for(const [s,want] of [['R',3],['M',3],['N',3],['Z',3],['L',2]])await(async()=>{const x=await rec(s+'-demo');
+    const r=replay(`${s} said from the first frame, through the whole quiet quarter-second, then twice more`,true,stream(R,[[held(x,R,1),0],[held(x,R,.6),1.6],[held(x,R,.6),2.8]],{lead:0,roomKind:'white',roomDb:-70}),R,{loud:true});
+    ok(`replay: ${s} from the first frame: ${want===3?'all three count':'the two repeats count'}, the room is learned in the pause, the bar never above ${3*evidence.ROOM.max}`,r.reps===want&&r.voice&&r.learned&&r.thr<=3*evidence.ROOM.max+1e-9,{reps:r.reps,at:r.at,voice:r.voice,learned:r.learned,thr:r.thr});})();
+  // ...and a room loud enough to be taken for a voice still never counts: at
+  // the capped bar and above it (-20dBFS is ~0.1, twice the ceiling's bar and
+  // ten times the loudest room above), whether it has pauses to learn from
+  // (pink, white) or none (a steady hum, never quiet, never ending).
+  for(const kind of ['pink','white','hum'])for(const db of [-26,-21,-20,-15])replay(`a ${kind} room at ${db}dBFS from the first frame, nothing said`,false,room(R*8,R,kind,db,99),R,{loud:true});
+  // ONE READING, WHOLE (25 Sep 2026). The page reads the room once, before
+  // Echo speaks, and carries it into every window; a window's own quieter
+  // reading may lower it (charge.html roomLower, extracted verbatim). For a
+  // day that lowering took the speech-evidence background bin by bin, the
+  // quieter of the two readings, whenever the window came in a hair quieter
+  // (in a steady room, half the time). A background stitched from two noisy
+  // readings is quieter than the room either heard, and the room's own noise
+  // at a pure tone's missing overtones then clears #139's overtone check.
+  // Replayed as the page runs it: its reading on the fresh mic, a window 1s
+  // later over the same steady fan-loud room (pink, -32dBFS), a 1.8s 440Hz
+  // tone from 350ms into the window (as repguardtest plays it), 100 rooms.
+  // At 60fps (#139's calibration) and 30fps (WebKit's Low Power Mode),
+  // together, the page may never let the tone through more often than
+  // #139's own per-window reading does on the same rooms (one room is a
+  // coin toss either way; 200 plays are not). The stitched background did:
+  // 66 plays to 45 (32 to 16 at 60fps).
+  // NEITHER IS ZERO, and that is #139's envelope, not the page: at -32dBFS
+  // (#139's loudest room is -40, where the tone never counts) the room's
+  // noise alone meets the overtone check often enough that a held pure tone
+  // counts on some plays, and at 20fps (a phone under load) "held 45ms" is
+  // two looks. There the page's 300ms reading, a truer room than a sparse
+  // window's four frames (whose upper-middle frame reads a little loud),
+  // lets more through than #139's own window does. Tightening the check is
+  // Rachel's call; the figures print below for her.
+  if(evidence.page){
+    const tally={};
+    for(const fps of [60,30,20]){const t=tally[fps]={page:0,own:0};
+      for(let seed=1;seed<=100;seed++){
+        const sig=stream(R,[[fixture('tone',R),1.35]],{lead:0,tail:.3,roomKind:'pink',roomDb:-32,seed}),win=sig.subarray(R);
+        if(run(win,R,{fps,evidence,room:pageRoom(sig,R,{fps,evidence})}).reps)t.page++;
+        if(run(win,R,{fps,evidence}).reps)t.own++;
+      }}
+    console.log('INFO a 440Hz tone over a -32dBFS pink room, plays counted of 100 (page / #139 own window): '+[60,30,20].map(f=>f+'fps '+tally[f].page+' / '+tally[f].own).join(', '));
+    const page=tally[60].page+tally[30].page,own=tally[60].own+tally[30].own;
+    ok(`replay: over 100 fan-loud rooms at 60 and 30fps, the page's carried room lets a pure tone through no more often than #139's own window (${page} plays vs ${own})`,page<=own,tally);
+  }else console.log('INFO this build has no page room (#139 as it shipped): every window reads its own');
+  // A STARVED FRAME IS NOT A ROOM (25 Sep 2026). On a slow phone the mic path
+  // can stutter as it starts: a sliver of sound, a gap, a sliver, then sound.
+  // A frame taken on a sliver is almost all zeros, and a reading's quiet end
+  // is exactly where it lands: the fan-loud room (~0.02) read as ~0.002, the
+  // bar fell to its 0.035 floor under a room that crosses it, and the
+  // speech-evidence background went with it (as it did once in repguardtest
+  // on a 6x-throttled 20fps page). A frame with 2ms of exact zeros in it is
+  // not read now, in the page's reading or a window's.
+  if(evidence.page)for(const fps of [30,20]){
+    const pos=ms=>Math.floor(ms/1000*R/128)*128,steady=room(R*3,R,'pink',-32,99),slivers=[pos(1000/fps),pos(2000/fps)];
+    const stutter=steady.map((v,i)=>i<slivers[1]-3&&!slivers.some(p=>i>=p-3&&i<p)?0:v);
+    const read=pageRoom(stutter,R,{fps,evidence}),want=pageRoom(steady,R,{fps,evidence});
+    ok(`replay: a mic stuttering as it starts, ${fps}fps: the page's reading is the room (${read&&read.rms.toFixed(4)}), not the gap`,!!read&&!!want&&Math.abs(read.rms/want.rms-1)<.25,{read:read&&read.rms,want:want&&want.rms});
+    const bar=run(stutter,R,{fps,evidence,room:want}).thr,bar0=run(steady,R,{fps,evidence,room:want}).thr;
+    ok(`replay: a window whose mic stutters as it opens, ${fps}fps: the bar stays three times the room (${bar.toFixed(3)})`,Math.abs(bar/bar0-1)<.25,{bar,steady:bar0});
+  }
   await dec.close();
+  // REWRITTEN 24 Sep 2026: this pinned that every bar sat at the 0.035 floor
+  // (so the replay's median and the page's 20th percentile agreed). The
+  // replay takes the 20th percentile now. What is pinned instead: no room in
+  // the fixtures above is ever taken for a voice (ROOM_MAX sits clear of
+  // them), and no bar anywhere is over 3 x ROOM_MAX.
+  const misread=bars.filter(b=>!b.loud&&b.voice),over=bars.filter(b=>b.thr>3*evidence.ROOM.max+1e-9);
+  ok('replay: no fixture\'s room is read as a voice (ROOM_MAX '+evidence.ROOM.max+')',bars.length>0&&!misread.length,misread);
+  ok('replay: no bar is ever over 3 x ROOM_MAX',!over.length,over);
   if(process.env.SPEECHEV_ONLY==='replay')throw 'replay-only';
 
   // ---------- 2. REAL ENGINE ----------
@@ -270,5 +416,6 @@ try{
       ok(`${s} answered early: the clean repeat counts`,second>0,{first,second});ok(`${s} answered early: no script error`,errors.length===0,errors);
     }finally{await close(context,page);}
   });
-}catch(e){if(e!=='replay-only'&&e!=='tail-only')throw e;}finally{await browser.close();await new Promise(resolve=>server.close(resolve));}
+  await quickTries();
+}catch(e){if(e!=='replay-only'&&e!=='tail-only'&&e!=='quick-only')throw e;}finally{await browser.close();await new Promise(resolve=>server.close(resolve));}
 console.log(`Speech evidence: ${checks-failures}/${checks} passed`);process.exitCode=failures?1:0;

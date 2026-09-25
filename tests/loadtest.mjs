@@ -61,7 +61,12 @@ async function scene(game, fill) {
     Sona.markStoryRead();
   });
   await pg.goto("http://localhost:8198/charge.html?game=" + game + "&free=1");
-  await pg.waitForTimeout(1000);
+  // 24 Sep 2026: the page now measures the room and lets the phone settle
+  // before Echo's prompt, so the first listening window (which paints the
+  // stand at zero) opens later than a fixed second. Wait for it, so a
+  // reveal() below is not repainted to zero underneath the check.
+  await pg.waitForFunction(() => window.engineOn === true, {}, { timeout: 8000 }).catch(() => {});
+  await pg.waitForTimeout(300);
   if (typeof fill === "number") {
     await pg.evaluate((n) => { try { reveal(n); } catch (e) { window.__err = String(e); } }, fill);
     await pg.waitForTimeout(350);
