@@ -318,6 +318,23 @@ their dashboard account and sign-in email, as the page always did, because
 the iPhone app has no clinician side; everyone else goes to `/api/lead` with
 their email and role. `tests/landingtest.mjs` drives it.
 
+**While the app is not ready, nobody is sent to the App Store** (Travis, 25
+Sep 2026: "the app launches next week"; the iOS 27 build closes on launch).
+`APP_READY = false` in `lib/launch.ts` and `var APP_READY` in
+`for-slps.html`, pinned equal by `shiptest`. A parent or "other" is thanked
+on the page ("The Sona app launches next week. We'll email you the moment
+it's ready.") and emailed the same once through Resend (`/api/lead`,
+`launchmail:<email>`); a speech therapist goes to their dashboard's
+community (`/slp.html#community`) and their sign-in email carries the same
+P.S. Not the web app: Travis chose to wait for the app. When the app is
+live, set both switches to true.
+
+**The SLP community shows who is there** (Travis, 25 Sep 2026): the real
+number of SLP accounts and up to a dozen members' first names, newest first,
+only to signed-in members, rebuilt every ten minutes
+(`{slp-community}:members`). Never a last name, an email or an invented
+member.
+
 Still `noindex`, correctly: `slp.html` and `slp-login.html` (a private
 dashboard and its login) and `join.html` (a family's redemption link, which
 carries a credential in the URL). Those are surfaces, not marketing.

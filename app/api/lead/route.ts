@@ -3,6 +3,7 @@ import crypto from "node:crypto";
 import { kvCmd, kvConfigured, leadSig } from "@/lib/slpAuth";
 import { rateLimit } from "@/lib/rateLimit";
 import { kitConfigured, kitSubscribe, kitTagFor, type KitResult } from "@/lib/kit";
+import { APP_READY, sendWelcomeEmail } from "@/lib/launch";
 
 /**
  * THE ONE PLACE A GROWN-UP'S EMAIL GOES: the SLP sign-up (via the auth route's
@@ -56,6 +57,7 @@ export async function POST(req: NextRequest) {
     name?: string;
     role?: string;
     fbclid?: string;
+    welcome?: boolean;
   };
   try {
     body = await req.json();
@@ -249,5 +251,23 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  return NextResponse.json({ ok: true, captured });
+  /**
+   * THE WELCOME, while the app is not ready (lib/launch.ts, 25 Sep 2026): the
+   * landing page asks for it for a parent or "other"; a clinician gets the
+   * same news in their sign-in email instead. Once per address, ever — the
+   * marker is set before sending, so a double tap or a retry cannot send two,
+   * and a failed send is not retried (the lead is kept either way). Sent after
+   * the lead is safely stored, and it never fails the visitor.
+   */
+  let welcomed = false;
+  if (!APP_READY && body?.welcome === true && (lead.role === "parent" || lead.role === "other") && kvConfigured()) {
+    try {
+      const first = await kvCmd(["SET", "launchmail:" + email.toLowerCase(), new Date().toISOString(), "NX", "EX", 31536000]);
+      if (first === "OK") welcomed = await sendWelcomeEmail(email);
+    } catch {
+      // never fail the visitor on the welcome
+    }
+  }
+
+  return NextResponse.json({ ok: true, captured, welcomed });
 }

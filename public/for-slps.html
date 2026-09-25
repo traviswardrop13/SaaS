@@ -518,6 +518,17 @@
      * it gets Sona in the browser, where /families already sends it.
      */
     var APP_STORE = "https://apps.apple.com/us/app/sona-speech/id6785755867";
+    /**
+     * IS THE APP READY? (Travis, 25 Sep 2026: "the app launches next week".)
+     * While false, nobody is sent to the App Store, where the iOS 27 build
+     * closes on launch: a parent or "other" is thanked, told the app launches
+     * next week and emailed the same (/api/lead, once), and a speech therapist
+     * goes to their dashboard's community. One switch, two copies: this and
+     * APP_READY in lib/launch.ts, pinned equal by tests/shiptest.mjs. When the
+     * app is live, set both to true and everyone goes to the App Store again.
+     */
+    var APP_READY = false;
+    var LAUNCH_NOTE = "The Sona app launches next week. We'll email you the moment it's ready.";
     var android = /Android/i.test(navigator.userAgent || "");
     var NEXT_URL = android ? "/onboarding.html" : APP_STORE;
     var OPENING = android ? "Opening Sona…" : "Opening the App Store…";
@@ -547,6 +558,9 @@
     // ONE WAY OUT. Called only after the Lead has fired, and after a pause, so
     // the pixel's request leaves before the page does.
     function goNext(ms) { setTimeout(function () { location.href = NEXT_URL; }, ms); }
+    // A new clinician, while the app is not ready: into their dashboard, on
+    // the community page, where the other SLPs are (Travis, 25 Sep 2026).
+    function toDashboard(ms) { setTimeout(function () { location.href = "/slp.html#community"; }, ms); }
     $("nextGo").onclick = function () { location.href = NEXT_URL; };
     function showDone(title, msg, opts) {
       $("sentT").textContent = title;
@@ -579,7 +593,7 @@
           })
         : fetch("/api/lead", {
             method: "POST", headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(Object.assign({ email: email, role: role, source: src }, attrib)),
+            body: JSON.stringify(Object.assign({ email: email, role: role, source: src, welcome: !APP_READY }, attrib)),
           });
       req.then(function (r) { return r.json(); }).then(function (j) {
         busy(false);
@@ -601,8 +615,14 @@
           }
         } catch (e) {}
         if (role !== "slp") {
-          showDone("You're in", OPENING, { button: true });
-          goNext(900);
+          if (APP_READY) {
+            showDone("You're in", OPENING, { button: true });
+            goNext(900);
+          } else {
+            // Thanked and told, no store to leave for; the welcome email says
+            // the same thing (/api/lead sends it once).
+            showDone("You're on the list!", LAUNCH_NOTE, {});
+          }
           return;
         }
         if (j.devLink) {
@@ -616,17 +636,24 @@
          * App Store with the only door to the dashboard unexplained.
          */
         if (!j.sent && !j.signedIn) {
-          showDone("Almost there", "Your account is here, but our email didn't go out just now. Email hello@speaksona.com and we'll open your dashboard by hand — usually within the hour.", { button: true });
+          showDone("Almost there", "Your account is here, but our email didn't go out just now. Email hello@speaksona.com and we'll open your dashboard by hand — usually within the hour.", { button: APP_READY });
         } else if (!j.sent) {
           // Signed in, but the email was refused: the dashboard is one tap
           // away, and the page must not promise a link that is not coming.
-          showDone("You're in", "Our email to " + email + " didn't go out just now, so bookmark the dashboard: speaksona.com/slp", { dashboard: true, button: true });
-        } else {
+          showDone("You're in", "Our email to " + email + " didn't go out just now, so bookmark the dashboard: speaksona.com/slp", { dashboard: true, button: APP_READY });
+        } else if (APP_READY) {
           showDone("You're in", (j.signedIn
             ? "Your free dashboard is ready, and we've emailed " + email + " a link to it. "
             : "Your sign-in link is on its way to " + email + ". It opens straight into your dashboard. ") + OPENING,
             { dashboard: !!j.signedIn, button: true });
           if (!j.devLink) goNext(2600);
+        } else {
+          showDone("You're in", (j.signedIn
+            ? "Your free dashboard is opening now, and we've emailed " + email + " a link to it. "
+            : "Your sign-in link is on its way to " + email + ". It opens straight into your dashboard. ") +
+            "The Sona app for families launches next week. We'll email you when it's ready.",
+            { dashboard: !!j.signedIn });
+          if (j.signedIn && !j.devLink) toDashboard(1500);
         }
       }).catch(function () {
         busy(false);

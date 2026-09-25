@@ -647,12 +647,30 @@ if (A) {
   // into the dashboard; the dashboard link now comes by email, and the pop-up
   // offers it too, so a clinician is never left without a way in.
   const handler = slps.slice(slps.indexOf("function go()"));
-  ok("a clinician whose dashboard email went is taken on to the App Store, with the dashboard a tap away",
-    /if \(!j\.devLink\) goNext\(2600\);/.test(handler) && /\{ dashboard: !!j\.signedIn, button: true \}/.test(handler));
-  ok("…but when the email did not go, the pop-up stays open with the way in instead of leaving",
-    /else if \(!j\.sent\) \{[\s\S]*?\{ dashboard: true, button: true \}\);\s*\} else \{/.test(handler));
+  ok("once the app is ready, a clinician whose dashboard email went is taken on to the App Store, with the dashboard a tap away",
+    /\} else if \(APP_READY\) \{[\s\S]*?\{ dashboard: !!j\.signedIn, button: true \}\);\s*if \(!j\.devLink\) goNext\(2600\);/.test(handler));
+  // UNTIL THE APP IS READY (Travis, 25 Sep 2026): no App Store; a new
+  // clinician goes into their dashboard, on the community page.
+  ok("until then, a new clinician goes into their dashboard's community",
+    /if \(j\.signedIn && !j\.devLink\) toDashboard\(1500\);/.test(handler) && /location\.href = "\/slp\.html#community"/.test(slps));
+  ok("…and when the email did not go, the page stays with the way in, and no App Store button until the app is ready",
+    /else if \(!j\.sent\) \{[\s\S]*?\{ dashboard: true, button: APP_READY \}\);\s*\} else if \(APP_READY\) \{/.test(handler));
   ok("…and the page leaves only after the Lead has fired, so the pixel's request goes first",
-    handler.indexOf('sonaTrack("Lead")') > 0 && handler.indexOf('sonaTrack("Lead")') < handler.indexOf("goNext("));
+    handler.indexOf('sonaTrack("Lead")') > 0 && handler.indexOf('sonaTrack("Lead")') < handler.indexOf("goNext(") &&
+    handler.indexOf('sonaTrack("Lead")') < handler.indexOf("toDashboard("));
+
+  // THE WELCOME (25 Sep 2026): one email, to a parent or "other", while the
+  // app is not ready; a clinician hears it in their sign-in email instead.
+  const leadSrc = read("app/api/lead/route.ts");
+  ok("the lead route sends the welcome only to a parent or other, only while the app is not ready, and only when the page asks",
+    /if \(!APP_READY && body\?\.welcome === true && \(lead\.role === "parent" \|\| lead\.role === "other"\) && kvConfigured\(\)\)/.test(leadSrc));
+  ok("…once per address, marked before it is sent",
+    /kvCmd\(\["SET", "launchmail:" \+ email\.toLowerCase\(\), new Date\(\)\.toISOString\(\), "NX", "EX", 31536000\]\)/.test(leadSrc) &&
+    /if \(first === "OK"\) welcomed = await sendWelcomeEmail\(email\);/.test(leadSrc));
+  ok("…after the lead is stored, never costing the visitor anything",
+    leadSrc.indexOf('LPUSH", "leads:all"') > 0 && leadSrc.indexOf('LPUSH", "leads:all"') < leadSrc.indexOf("sendWelcomeEmail(email)"));
+  ok("the clinician's sign-in email carries the launch note while the app is not ready",
+    (read("lib/slpAuth.ts").match(/APP_READY \? "" :/g) || []).length === 2);
 }
 
 
@@ -730,6 +748,28 @@ if (A) {
   ok("the Speech Check no longer promises to email a report it never sends", !/email your child's report/.test(read("public/check.html")));
   ok("the privacy policy names Kit and says it holds nothing about a child",
     /<strong>Email list<\/strong> — Kit/.test(read("public/privacy.html")) && /never anything about a child/.test(read("public/privacy.html")));
+
+  // Behaviour, against a fake Resend: the welcome email (25 Sep 2026).
+  {
+    const sent = [];
+    const realFetch0 = globalThis.fetch;
+    const savedKey = process.env.RESEND_API_KEY;
+    globalThis.fetch = async (url, init) => { sent.push({ u: String(url), body: JSON.parse(init.body), auth: init.headers.Authorization }); return new Response("{}", { status: 200 }); };
+    try {
+      const L = await import(pathToFileURL(APP + "/lib/launch.ts").href);
+      delete process.env.RESEND_API_KEY;
+      ok("with no Resend key, no welcome is sent and nothing is called", (await L.sendWelcomeEmail("mom@example.com")) === false && sent.length === 0);
+      process.env.RESEND_API_KEY = "re_test_key";
+      const okSend = await L.sendWelcomeEmail("mom@example.com");
+      const w = sent[0] || { body: {} };
+      ok("the welcome goes to that address alone, through Resend", okSend === true && w.u === "https://api.resend.com/emails" && JSON.stringify(w.body.to) === '["mom@example.com"]' && w.auth === "Bearer re_test_key");
+      ok("…says the launch note in both its parts", w.body.text.includes(L.LAUNCH_NOTE) && w.body.html.includes(L.LAUNCH_NOTE));
+      ok("…and carries no name and nothing about a child", /^Hi,/.test(w.body.text) && !/child|kid's name|\{/.test(w.body.text));
+    } finally {
+      globalThis.fetch = realFetch0;
+      if (savedKey === undefined) delete process.env.RESEND_API_KEY; else process.env.RESEND_API_KEY = savedKey;
+    }
+  }
 
   // Behaviour, against a fake Kit: what is sent, and what counts as success.
   const calls = [];

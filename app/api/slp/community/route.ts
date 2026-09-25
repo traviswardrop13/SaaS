@@ -35,10 +35,59 @@ async function member(req: NextRequest): Promise<Member | NextResponse> {
   if (!account || typeof account !== "object" || Array.isArray(account) || account.email !== email) return fail("Please sign in to your SLP account.", 401);
   // Membership follows the real account, not profile completion or a caseload.
   // Only a first name is shared. Email, clinic, code and child data stay private.
-  const first = typeof account.name === "string" ? account.name.trim().split(/\s+/)[0].slice(0, 40) : "";
-  const author = /^[\p{L}\p{M}'’.-]+$/u.test(first) ? first : "SLP member";
+  const author = firstName(account.name) || "SLP member";
   const moderators = (process.env.SLP_COMMUNITY_MODERATOR_EMAILS || "").split(",").map(s => s.trim().toLowerCase()).filter(Boolean);
   return { id: crypto.createHash("sha256").update(email).digest("hex"), author, moderator: moderators.includes(email) };
+}
+
+/** The one piece of an account the community shows: the first word of its name. */
+function firstName(name: unknown): string {
+  const first = typeof name === "string" ? name.trim().split(/\s+/)[0].slice(0, 40) : "";
+  return /^[\p{L}\p{M}'’.-]+$/u.test(first) ? first : "";
+}
+
+/**
+ * WHO IS HERE (Travis, 25 Sep 2026: "show the number of people in the community
+ * when they join it and show their names"). Every SLP account is a member, so
+ * the count is the number of accounts and the names are real members' first
+ * names — the same first name their posts already carry. Never a last name,
+ * an email or a clinic, and never a member who does not exist. Newest first,
+ * a dozen at most, only to signed-in members (this GET's own gate), rebuilt
+ * from the accounts at most every ten minutes. If the store cannot answer,
+ * the feed still loads without it.
+ */
+const MEMBERS_KEY = PREFIX + "members";
+const MEMBER_NAMES = 12;
+async function memberSummary(): Promise<{ count: number; names: string[] } | null> {
+  try {
+    const cached = await kvCmd(["GET", MEMBERS_KEY]);
+    if (typeof cached === "string" && cached) {
+      const c = JSON.parse(cached);
+      if (c && typeof c.count === "number" && Array.isArray(c.names)) return { count: c.count, names: c.names.slice(0, MEMBER_NAMES) };
+    }
+    const seen: { name: string; at: string }[] = [];
+    let cursor = "0", rounds = 0, count = 0;
+    do {
+      const res = await kvCmd(["SCAN", cursor, "MATCH", "slpacct:*", "COUNT", 500]);
+      if (!Array.isArray(res) || res.length < 2 || !Array.isArray(res[1])) return null;
+      cursor = String(res[0]);
+      for (const key of res[1] as string[]) {
+        count++;
+        if (seen.length >= 400) continue;
+        try {
+          const a = JSON.parse(String(await kvCmd(["GET", key])));
+          const first = firstName(a && a.name);
+          if (first) seen.push({ name: first, at: String((a && a.createdAt) || "") });
+        } catch { /* an unreadable account still counts, it just shows no name */ }
+      }
+    } while (cursor !== "0" && ++rounds < 50);
+    seen.sort((x, y) => y.at.localeCompare(x.at));
+    const names: string[] = [];
+    for (const m of seen) { if (!names.includes(m.name)) names.push(m.name); if (names.length >= MEMBER_NAMES) break; }
+    const summary = { count, names };
+    try { await kvCmd(["SET", MEMBERS_KEY, JSON.stringify(summary), "EX", 600]); } catch { /* uncached is fine */ }
+    return summary;
+  } catch { return null; }
 }
 
 function publicReply(reply: Reply, viewer: Member) {
@@ -106,7 +155,8 @@ export async function GET(req: NextRequest) {
     const posts = [];
     for (let i = 0; i < Math.min(rows.length, PAGE_SIZE * 2); i += 2) posts.push(publicPost(JSON.parse(String(rows[i])), viewer));
     const pinned = welcome === null ? [] : [publicPost(JSON.parse(welcome), viewer)];
-    return response({ ok: true, pinned, posts, nextCursor: rows.length > PAGE_SIZE * 2 ? String(rows[PAGE_SIZE * 2 - 1]) : null });
+    const members = await memberSummary();
+    return response({ ok: true, pinned, posts, nextCursor: rows.length > PAGE_SIZE * 2 ? String(rows[PAGE_SIZE * 2 - 1]) : null, ...(members ? { members } : {}) });
   } catch { return unavailable(); }
 }
 

@@ -99,25 +99,40 @@ async function fill(page, email, role) {
   await context.close();
 }
 
-// ── a parent, or other: /api/lead, email and role only, then the App Store ──
+// UNTIL THE APP IS READY (Travis, 25 Sep 2026): no App Store and no web app.
+// A parent or "other" is thanked and told the app launches next week (and
+// emailed, by /api/lead); a speech therapist goes to their dashboard.
+const PAGE = readFileSync(ROOT + "/for-slps.html", "utf8");
+const READY = /var APP_READY = true;/.test(PAGE);
+const NOTE = (PAGE.match(/var LAUNCH_NOTE = "([^"]+)";/) || [])[1];
+ok("the launch note is on the page", !!NOTE);
+const leftFor = (page, ms) => page.waitForURL((u) => !String(u).startsWith(origin + "/?"), { timeout: ms }).then(() => true, () => false);
+
+// ── a parent, or other: /api/lead, email and role only, then thanked ──
 for (const role of ["parent", "other"]) {
   const { context, page, errors } = await fresh();
   posts = []; leadReply = { ok: true, captured: true };
   await fill(page, "dana@example.com", role);
-  const nav = page.waitForURL(/apps\.apple\.com/, { timeout: 5000 }).then(() => true, () => false);
   await page.click("#fGo");
-  const went = await nav;
+  await page.waitForTimeout(300);
   const p = posts[0] || { body: {} };
   ok(role + ": one post, to /api/lead", posts.length === 1 && p.path === "/api/lead", posts);
   ok(role + ": it carries the email and the role, and no name of anyone",
     p.body.role === role && p.body.email === "dana@example.com" && !("name" in p.body) && !("own_name" in p.body) && !("child" in p.body) && !("age" in p.body), p.body);
   ok(role + ": …and which ad brought them", p.body.utm_source === "fb" && p.body.utm_campaign === "launch" && p.body.fbclid === "abc123" && p.body.source === "fb", p.body);
-  ok(role + ": then the page went to the App Store listing", went && /apps\.apple\.com\/us\/app\/sona-speech\/id6785755867/.test(page.url()), page.url());
+  if (!READY) {
+    ok(role + ": …and asks for the welcome email", p.body.welcome === true, p.body);
+    ok(role + ": thanked on the page with the launch note, and nothing to tap to leave",
+      (await page.textContent("#sentT")) === "You're on the list!" && (await page.textContent("#sentMsg")) === NOTE && !(await page.isVisible("#nextGo")) && !(await page.isVisible("#straight")));
+    ok(role + ": and it stays on the page: no App Store, no web app", !(await leftFor(page, 2500)), page.url());
+  } else {
+    ok(role + ": then the page goes to the App Store listing", await page.waitForURL(/apps\.apple\.com/, { timeout: 5000 }).then(() => true, () => false));
+  }
   ok(role + ": no page errors", errors.length === 0, errors);
   await context.close();
 }
 
-// The Lead fires only after the server said yes (checked before navigation).
+// The Lead fires only after the server said yes.
 {
   const { context, page } = await fresh();
   posts = []; leadReply = { ok: false, error: "A valid email is required." };
@@ -127,31 +142,29 @@ for (const role of ["parent", "other"]) {
   ok("a refused lead shows the server's reason and stays put", /valid email is required/.test(await page.textContent("#fErr")) && /127\.0\.0\.1/.test(page.url()));
   ok("…and fires no Lead", (await page.evaluate(() => window.__track.length)) === 0);
   leadReply = { ok: true, captured: true };
-  const nav = page.waitForURL(/apps\.apple\.com/, { timeout: 5000 }).then(() => true, () => false);
-  const track = page.evaluate(() => new Promise((r) => { const t = setInterval(() => { if (window.__track.length) { clearInterval(t); r(window.__track.slice()); } }, 10); }));
   await page.click("#fGo");
-  const fired = await track;
-  ok("an accepted lead fires Lead, with no parameters, before the page leaves", JSON.stringify(fired) === '["Lead"]', fired);
-  ok("…and then leaves for the App Store", await nav);
+  await page.waitForTimeout(500);
+  ok("an accepted lead fires Lead once, with no parameters", JSON.stringify(await page.evaluate(() => window.__track)) === '["Lead"]');
   await context.close();
 }
 
-// ── an SLP or SLPA: the account and the dashboard email, then the App Store ──
+// ── an SLP or SLPA: the account and the dashboard email, then the dashboard ──
 {
   const { context, page, errors } = await fresh();
   posts = []; authReply = { ok: true, sent: true, signedIn: true };
   await fill(page, "sam@clinic.org", "slp");
-  const nav = page.waitForURL(/apps\.apple\.com/, { timeout: 6000 }).then(() => true, () => false);
+  const target = READY ? /apps\.apple\.com/ : /\/slp\.html#community$/;
+  const nav = page.waitForURL(target, { timeout: 6000 }).then(() => true, () => false);
   await page.click("#fGo");
   await page.waitForTimeout(300);
   const p = posts[0] || { body: {} };
   ok("SLP: one post, to the clinician sign-up (which forwards the lead itself)", posts.length === 1 && p.path === "/api/slp/auth/request", posts);
   ok("SLP: it carries the email and the ad, and no name", p.body.email === "sam@clinic.org" && !("name" in p.body) && p.body.attrib && p.body.attrib.fbclid === "abc123", p.body);
-  ok("SLP: told the dashboard link is in their email, with the dashboard a tap away",
-    /emailed sam@clinic\.org a link/.test(await page.textContent("#sentMsg")) && (await page.isVisible("#straight")));
+  ok("SLP: told the dashboard link is in their email" + (READY ? "" : " and the family app launches next week"),
+    /emailed sam@clinic\.org a link/.test(await page.textContent("#sentMsg")) && (READY || /launches next week/.test(await page.textContent("#sentMsg"))));
   ok("SLP: a new clinician is marked as one", JSON.stringify(await page.evaluate(() => window.__track)) === '["Lead","CompleteRegistration"]');
-  ok("SLP: then on to the App Store", await nav);
-  ok("SLP: no page errors", errors.length === 0, errors);
+  ok("SLP: then into " + (READY ? "the App Store" : "the dashboard's community"), await nav, page.url());
+  ok("SLP: no page errors", errors.filter((e) => !/api\/slp/.test(e)).length === 0, errors);
   await context.close();
 }
 for (const [label, reply, want] of [
@@ -164,18 +177,18 @@ for (const [label, reply, want] of [
   await page.click("#fGo");
   await page.waitForTimeout(3200);
   ok("SLP, " + label + ": says so, and stays, so the way in is not lost", want.test(await page.textContent("#sentMsg")) && /127\.0\.0\.1/.test(page.url()));
-  ok("SLP, " + label + ": the App Store is still one tap away", await page.isVisible("#nextGo"));
+  ok("SLP, " + label + ": " + (READY ? "the App Store is one tap away" : "and no App Store button while the app is not ready"), (await page.isVisible("#nextGo")) === READY);
   await context.close();
 }
 
-// ── Android has no Sona app: the web app instead ──
+// ── Android: the same as everyone while the app is not ready ──
 {
   const { context, page, errors } = await fresh({ ua: "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Mobile Safari/537.36" });
   posts = []; leadReply = { ok: true, captured: true };
   await fill(page, "lee@example.com", "parent");
-  const nav = page.waitForURL(/\/onboarding\.html/, { timeout: 5000 }).then(() => true, () => false);
   await page.click("#fGo");
-  ok("Android: after the lead, the web app's setup, not the App Store", await nav, page.url());
+  if (READY) ok("Android: after the lead, the web app's setup, not the App Store", await page.waitForURL(/\/onboarding\.html/, { timeout: 5000 }).then(() => true, () => false));
+  else ok("Android: thanked like everyone, and stays", (await page.waitForFunction(() => document.getElementById("sentT").textContent === "You're on the list!", null, { timeout: 3000 }).then(() => true, () => false)) && !(await leftFor(page, 1500)));
   ok("Android: no page errors", errors.length === 0, errors);
   await context.close();
 }
