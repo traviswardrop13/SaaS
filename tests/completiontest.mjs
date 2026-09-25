@@ -230,7 +230,8 @@ await scenario("human practice prompt respects sound settings", async () => {
     });
     ok("zero volume never starts the human prompt", results[0].calls.length === 0, results[0]);
     ok("disabled voice never starts the human prompt", results[1].calls.length === 0, results[1]);
-    ok("a human prompt honors the selected positive volume", results[2].calls.length === 1 && results[2].calls[0].volume === 0.35 && /\/coach\/say\/R\.mp3$/.test(results[2].calls[0].src), results[2]);
+    // 25 Sep 2026: the clip that plays is the re-voiced one (/coach/say-echo/).
+    ok("a human prompt honors the selected positive volume", results[2].calls.length === 1 && results[2].calls[0].volume === 0.35 && /\/coach\/say-echo\/R\.mp3$/.test(results[2].calls[0].src), results[2]);
   } finally { await context.close(); }
 });
 

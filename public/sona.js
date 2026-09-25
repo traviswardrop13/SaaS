@@ -3411,10 +3411,14 @@
   // `const FREE_MODE` below, beside the four free-era sweeps. This used to
   // carry its own copy of that list, and it went stale the day the list
   // changed — one description, next to the code it describes.
-  // Recorded human model clips (/coach/say/<SOUND>[-demo].mp3) are Rachel's own
-  // voice. OFF everywhere until a non-Rachel set exists. This MUST live here,
-  // not per-page: charge.html gated it locally and coach-call.html went on
-  // playing them ungated, so her voice shipped anyway.
+  // Recorded human model clips. Rachel's own takes live in /coach/say/ and
+  // never play in the app: they are the source for the tests' child fixtures
+  // and for tools/revoice.mjs, which runs them through ElevenLabs
+  // speech-to-speech into Echo's voice — her pacing and the PERFORMED sound
+  // survive, only the timbre changes. That set is /coach/say-echo/, and it is
+  // what plays. ON since 25 Sep 2026 (Travis: hear the mirrored sounds in the
+  // app). This MUST live here, not per-page: charge.html once gated a local
+  // copy and coach-call.html went on playing her raw voice ungated.
   // ── Backgrounding ──────────────────────────────────────────────────────
   // `pagehide` does NOT fire when a phone is locked or the user switches apps
   // on iOS — only `visibilitychange` does. Every page here holds a live mic
@@ -3700,7 +3704,7 @@
     } catch (e) {}
   }
 
-  const HUMAN_CLIPS = false;
+  const HUMAN_CLIPS = true;
   function humanClipsOn() { return HUMAN_CLIPS; }
 
   // ── THE FAMILY PAYWALL SWITCH ─────────────────────────────────────────

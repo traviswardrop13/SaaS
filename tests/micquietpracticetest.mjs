@@ -107,12 +107,7 @@ function device(config) {
             // config.child: the child's script, from the moment the first
             // prompt ends — they start `onset` ms later and hold `hold` ms,
             // then say it again `more` times (300ms each, 500ms apart).
-            if (h.promptEnd == null && /^Ready\?/.test(e.label)) h.promptEnd = now();
-            if (config.child && !h.childStarted && /^Ready\?/.test(e.label)) {
-              h.childStarted = true; const c = config.child; let t = c.onset;
-              say(t, c.hold); t += c.hold + 500;
-              for (let i = 0; i < c.more; i++, t += 800) say(t, 300);
-            }
+            if (/^Ready\?/.test(e.label)) promptEnded();
             if (b.onended) b.onended();
           }, 90);
         } };
@@ -147,9 +142,31 @@ function device(config) {
   window.AudioContext = window.webkitAudioContext = Context;
   class Recorder { constructor(stream) { this.stream = stream; this.state = 'inactive'; this.mimeType = 'audio/webm'; } start() { this.state = 'recording'; } stop() { if (this.state === 'inactive') return; this.state = 'inactive'; later(() => { if (this.ondataavailable) this.ondataavailable({ data: new Blob(['local'], { type: 'audio/webm' }) }); if (this.onstop) this.onstop(); }, 0); } }
   window.MediaRecorder = Recorder;
-  // ---- the slow model plays through an <audio> element ----
+  // The first prompt has ended: the child's script (config.child) starts from
+  // here — they start `onset` ms later and hold `hold` ms, then say it again
+  // `more` times (300ms each, 500ms apart).
+  function promptEnded() {
+    if (h.promptEnd == null) h.promptEnd = now();
+    if (config.child && !h.childStarted) {
+      h.childStarted = true; const c = config.child; let t = c.onset;
+      say(t, c.hold); t += c.hold + 500;
+      for (let i = 0; i < c.more; i++, t += 800) say(t, 300);
+    }
+  }
+  // ---- the slow model, and the prompt, play through an <audio> element ----
+  // 25 Sep 2026: a sound-alone round's prompt is Rachel's July take in Echo's
+  // voice (/coach/say-echo/<SOUND>.mp3) — a clip, not a TTS line, and the
+  // prompt all the same: the child's script starts from its end. With
+  // config.noClip the clip fails to play, the way a missing file does, and the
+  // page must fall back to the calm TTS line.
   window.Audio = class { constructor(src) { this.src = src; this.volume = 1; this.playbackRate = 1; }
-    play() { log('media', 'slow model'); h.sounding++; later(() => { h.sounding--; ended(now()); if (this.onended) this.onended(); }, 90); return Promise.resolve(); }
+    play() {
+      const human = /\/coach\/say-echo\//.test(this.src);
+      if (human && config.noClip) { later(() => { if (this.onerror) this.onerror(); }, 30); return Promise.resolve(); }
+      log('media', human ? 'human prompt' : 'slow model'); h.sounding++;
+      later(() => { h.sounding--; ended(now()); if (human) promptEnded(); if (this.onended) this.onended(); }, 90);
+      return Promise.resolve();
+    }
     pause() {} removeAttribute() {} load() {} };
   window.speechSynthesis.speak = (u) => { log('browser voice', u.text); h.sounding++; later(() => { h.sounding--; ended(now()); if (u.onend) u.onend(); }, 60); };
   window.speechSynthesis.cancel = () => {};
@@ -238,6 +255,7 @@ function audit(name, s) {
 }
 const voiceAt = (s, line) => (s.events.find((e) => e.kind === 'voice' && e.label === line) || {}).t;
 const lines = (s) => s.events.filter((e) => e.kind === 'voice').map((e) => e.label);
+const prompts = (s) => s.events.filter((e) => e.kind === 'media' && e.label === 'human prompt');
 function clean(name, errors) { ok(name + ': no page errors', errors.length === 0, errors); }
 
 await scenario('prompt, five tries and the win', async () => {
@@ -247,9 +265,11 @@ await scenario('prompt, five tries and the win', async () => {
     await spoken(page, "You did it. Let's play."); await page.waitForTimeout(120);
     const s = await state(page);
     audit('prompt and win', s);
-    // 24 Sep 2026: no spoken "Your turn." — the glowing mic hands the turn over.
-    ok('the prompt is calm: the cue, the sound and the count, no "Go!", no spoken "Your turn."', lines(s)[0] === 'Ready? Pull your tongue back and up, and make your R sound, five times.', lines(s));
-    const firstOpen = s.events.find((e) => e.kind === 'mic-open'), prompt = s.events.find((e) => e.kind === 'voice');
+    // 25 Sep 2026: the prompt is the clip — Rachel's take in Echo's voice —
+    // and nothing speaks it a second time. The calm TTS line is pinned below,
+    // where the clip is missing.
+    ok('the prompt is Rachel\'s take in Echo\'s voice, once, and no TTS line doubles it', prompts(s).length === 1 && !lines(s).some((l) => /^Ready\?/.test(l)), { prompts: prompts(s).length, lines: lines(s) });
+    const firstOpen = s.events.find((e) => e.kind === 'mic-open'), prompt = s.events.find((e) => WORDS.includes(e.kind));
     ok('the explainer-tap permission request still happens before Echo speaks', !!firstOpen && firstOpen.t < prompt.t && !prompt.micLive, { firstOpen, prompt });
     const firstClose = s.events.find((e) => e.kind === 'mic-close');
     ok('…and that mic stays open ~300ms to measure the room before Echo speaks', !!firstClose && firstClose.t - firstOpen.t >= 280 && firstClose.t < prompt.t, { firstOpen, firstClose, prompt });
@@ -284,20 +304,37 @@ await scenario('wrong sound: coaching, the easier word and the round end', async
   } finally { await context.close(); }
 });
 
+// The clip cannot play (a missing file, a blocked element): the page speaks
+// the calm TTS line instead — the cue, the sound and the count, no "Go!", no
+// spoken "Your turn." (24 Sep 2026) — and the round is otherwise the same.
+await scenario('the clip is missing: the calm TTS line is the prompt', async () => {
+  const { context, page, errors } = await fresh({ noClip: true });
+  try {
+    await yourTurn(page); await bursts(page, 5);
+    await spoken(page, "You did it. Let's play."); await page.waitForTimeout(120);
+    const s = await state(page);
+    audit('missing clip', s);
+    ok('the fallback prompt is calm: the cue, the sound and the count, no "Go!", no spoken "Your turn."', lines(s)[0] === 'Ready? Pull your tongue back and up, and make your R sound, five times.' && prompts(s).length === 0, lines(s));
+    ok('five tries still count and win the game', s.reps === 5 && s.meter === 5, { reps: s.reps, meter: s.meter });
+    clean('missing clip', errors);
+  } finally { await context.close(); }
+});
+
 await scenario('tap Echo, the turtle and an unprompted prompt mid-window', async () => {
   const { context, page, errors } = await fresh();
   try {
     await yourTurn(page); await bursts(page, 2);
-    const repeat = 'Ready? Make your R sound, five times.';
-    await page.locator('#echoBuddy').click(); await spoken(page, repeat);
+    // 25 Sep 2026: every replay of the prompt is the clip again.
+    const replayed = (n) => page.waitForFunction((n) => __quiet.events.filter((e) => e.kind === 'media' && e.label === 'human prompt').length === n, n, { polling: 20 });
+    await page.locator('#echoBuddy').click(); await replayed(2);
     await yourTurn(page);
     const mid = await state(page);
     ok('a tap on Echo keeps the tries already heard', mid.meter === 2 && mid.reps === 2, mid);
-    await page.locator('#turtleBtn').click(); await page.waitForFunction(() => __quiet.events.some((e) => e.kind === 'media'));
+    await page.locator('#turtleBtn').click(); await page.waitForFunction(() => __quiet.events.some((e) => e.kind === 'media' && e.label === 'slow model'));
     await yourTurn(page);
     // The idle nudge's own call (armIdle → playPrompt) made mid-window. The
     // nudge is not armed today; this pins the path it would take.
-    await page.evaluate(() => { playPrompt(); }); await page.waitForFunction((line) => __quiet.events.filter((e) => e.kind === 'voice' && e.label === line).length === 2, repeat);
+    await page.evaluate(() => { playPrompt(); }); await replayed(3);
     await yourTurn(page); await bursts(page, 3);
     await spoken(page, "You did it. Let's play."); await page.waitForTimeout(120);
     const s = await state(page);
@@ -442,7 +479,7 @@ await scenario('the quiet screen', async () => {
     await spoken(page, line); await page.waitForTimeout(120);
     const s = await state(page);
     audit('quiet screen', s);
-    ok('the quiet screen keeps Rachel\'s line word for word', lines(s)[1] === line && await page.locator('#quietOvl.show').count() === 1, lines(s));
+    ok('the quiet screen keeps Rachel\'s line word for word', lines(s)[0] === line && await page.locator('#quietOvl.show').count() === 1, lines(s));
     ok('silence is never a try', s.reps === 0 && !s.effects.includes('logAttempt') && !s.effects.includes('bumpReps'), s);
     clean('quiet screen', errors);
   } finally { await context.close(); }

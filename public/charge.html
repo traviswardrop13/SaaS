@@ -588,7 +588,7 @@
     // What Leo SPEAKS. TTS cannot perform a bare sound — a synthesized long
     // "rrrr"/"sssss" comes out mangled — so the voice asks for the sound BY
     // NAME ("make your R sound"; letter names render cleanly) and the human
-    // recording at /coach/say/<SOUND>.mp3, when present, models the real thing.
+    // recording at /coach/say-echo/<SOUND>.mp3, when present, models the real thing.
     function soundName(){ var s=String(SOUND).toUpperCase(); if(s==="THV")s="TH"; return s.length>1?s.split("").join(" "):s; }
     function sayLine(){
       var times=(NUMWORD[NEED]||NEED)+" times";
@@ -613,10 +613,11 @@
     var CUETIP=""; try{ CUETIP=(S&&S.cue)?(S.cue(SOUND).tip||""):""; }catch(e){}
     // compact articulation cue: first clause only, no similes, no sound demos
     var CUESHORT=(CUETIP.split("\u2014")[0].split(" like ")[0].split(",")[0]||"").trim().replace(/[.!]+$/,"");
-    // Human model prompts: /coach/say/<SOUND>.mp3 is Rachel's own take of the
-    // whole opening line (July 2026 wording) — the prompt actually PERFORMS
-    // the sound, which TTS never can. Not yet re-voiced into Echo's voice, so
-    // the switch is off; TTS remains the fallback either way.
+    // Human model prompts: /coach/say-echo/<SOUND>.mp3 is Rachel's July take
+    // of the whole opening line (July wording), re-voiced into Echo's voice by
+    // tools/revoice.mjs — the prompt actually PERFORMS the sound, which TTS
+    // never can. Her raw take (/coach/say/) never plays; TTS remains the
+    // fallback either way.
     // Shared switch (Sona.HUMAN_CLIPS) — NOT a local copy. A local copy here is
     // exactly why Rachel's clips kept playing in coach-call.html.
     var HUMANCLIPS=false; try{ HUMANCLIPS=!!(S&&S.humanClipsOn&&S.humanClipsOn()); }catch(e){}
@@ -624,7 +625,7 @@
       if(mutedSpeech())return Promise.resolve();
       // Human clips keep the same fallback line across an interruption. Delay
       // sayLine() until fallback is needed, as a successful human clip did before.
-      var human=ITEM.level==="isolation"&&HUMANCLIPS?"/coach/say/"+SOUND+".mp3":null;
+      var human=ITEM.level==="isolation"&&HUMANCLIPS?"/coach/say-echo/"+SOUND+".mp3":null;
       return human?queueSpeech(null,false,human,sayLine):say(sayLine());
     }
     var _sayQ=Promise.resolve(),_sayN=0,_slowQueued=false;
@@ -778,9 +779,11 @@
       var a=new Audio(url);a.volume=speechVolume();
       if(slow){a.playbackRate=0.7;try{a.preservesPitch=true;a.mozPreservesPitch=true;a.webkitPreservesPitch=true;}catch(e){}}
       ttsBegin();cleanup(function(){ttsEnd();a.onended=null;a.onerror=null;try{a.pause();a.removeAttribute("src");a.load();}catch(e){}});
-      var timer=setTimeout(function(){done(null);},15000);cleanup(function(){clearTimeout(timer);});
+      // A guard against an element that never ends, not a budget: the longest
+      // recorded prompt (D, the whole line with the sound performed) runs 19 s.
+      var timer=setTimeout(function(){done(null);},30000);cleanup(function(){clearTimeout(timer);});
       a.onended=function(){done(true);};a.onerror=function(){job.voiceReason="playback-blocked";done(null);};
-      function started(){if(job.live())voiceDiagnostic(url.indexOf("/coach/say/")===0?{source:"human"}:job.voiceEvent||{source:"server"});}
+      function started(){if(job.live())voiceDiagnostic(/^\/coach\/say-echo\//.test(url)?{source:"human"}:job.voiceEvent||{source:"server"});}
       try{var promise=a.play();if(promise&&promise.then)promise.then(started,function(){job.voiceReason="playback-blocked";done(null);});else started();}catch(e){job.voiceReason="playback-blocked";done(null);}
     });}
     function playPCM(b,job){return audioWait(job,function(done,cleanup){

@@ -71,7 +71,7 @@ const noSustained = (name, s) => {
 // ---- E2E round 1: isolation — human clip 404s → TTS gets the clean line ----
 await page.goto("http://localhost:8123/charge.html?sound=R&game=arcade-slice.html");
 await page.waitForTimeout(2500);
-// Isolation now plays the HUMAN model clip (/coach/say/R.mp3) — the real
+// Isolation now plays the HUMAN model clip (/coach/say-echo/R.mp3) — the real
 // sound, which TTS can't perform. So round 1 posts NO TTS prompt; if the
 // headless env can't decode the mp3, the exact TTS fallback line is the
 // only acceptable substitute (and noSustained still guards every post).
@@ -88,10 +88,11 @@ const r1ok = !r1prompt || r1prompt === "Ready? Pull your tongue back and up, and
 if (!r1ok) fails++;
 console.log((r1ok ? "PASS" : "FAIL") + "  E2E r1 human clip replaces TTS (or exact fallback)  → " + JSON.stringify(r1prompt || "(no TTS prompt — clip played)"));
 if (!r1ok) fails++;
-// The recorded /coach/say/<SOUND>.mp3 set is Rachel's own voice and must not
-// ship — playPrompt falls through to TTS, the same path every other line uses.
-// Flip this assertion back only when a non-Rachel clip set is in place.
-ok("Rachel's recorded clip set stays off", /var HUMANCLIPS=false/.test(html), true);
+// The clip switch is Sona.humanClipsOn() (sona.js), never a local true: the
+// page's own default is false and only the shared switch turns it on. Since
+// 25 Sep 2026 it is ON and plays /coach/say-echo/ — Rachel's takes re-voiced
+// into Echo's voice (storytest pins that the raw /coach/say/ set never plays).
+ok("the clip switch is shared, never a local true", /var HUMANCLIPS=false; try\{ HUMANCLIPS=!!\(S&&S\.humanClipsOn&&S\.humanClipsOn\(\)\); \}/.test(html), true);
 // Free play names the selected game; the daily header is a visual path.
 ok("E2E free-play header names its selected game", await page.evaluate(() => document.getElementById("ctxLine").textContent === "Fruit Slice" && document.querySelectorAll("#ctxLine .path-dot").length === 0), true);
 

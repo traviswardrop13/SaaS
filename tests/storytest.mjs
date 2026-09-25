@@ -6,10 +6,10 @@
 // — deliberately — that NO story card ever interrupts a round. The games are
 // the games.
 import { createServer } from "http";
-import { readFileSync, existsSync } from "fs";
+import { readFileSync, existsSync, readdirSync, statSync } from "fs";
 import { chromium, ROOT, launchOpts } from "./_env.mjs";
 
-const MIME = { html: "text/html", js: "text/javascript", svg: "image/svg+xml", css: "text/css", png: "image/png" };
+const MIME = { html: "text/html", js: "text/javascript", svg: "image/svg+xml", css: "text/css", png: "image/png", mp3: "audio/mpeg" };
 const srv = createServer((req, res) => {
   const u = new URL(req.url, "http://x");
   if (u.pathname.startsWith("/api/")) { res.writeHead(500); res.end("{}"); return; }
@@ -125,16 +125,57 @@ for (const url of ["/charge.html?daily=1&sound=R", "/charge.html?game=arcade-sli
 // ── the beat must FINISH SPEAKING before the round's prompt plays ──
 {
   const src = readFileSync(ROOT + "/charge.html", "utf8");
-  // Rachel's clips must be off on EVERY surface. charge.html gating its own
-  // local copy is exactly how coach-call.html kept playing them.
+  // Rachel's RAW takes (/coach/say/) never play on any surface: what plays is
+  // the set re-voiced into Echo's voice (/coach/say-echo/, tools/revoice.mjs),
+  // switched ON on 25 Sep 2026 so the mirrored sounds can be heard in the app.
+  // The switch stays shared: charge.html gating its own local copy is exactly
+  // how coach-call.html kept playing her raw voice.
   const sona = readFileSync(ROOT + "/sona.js", "utf8");
   const call = readFileSync(ROOT + "/coach-call.html", "utf8");
-  ok("the human-clip switch is shared, not per-page",
-    /const HUMAN_CLIPS = false;/.test(sona) && /humanClipsOn/.test(src),
-    "a local per-page flag lets other pages ship her voice anyway");
-  ok("coach-call.html gates its demo clips too",
-    /humanClipsOn/.test(call),
-    "playDemo() plays /coach/say/<SOUND>-demo.mp3 — Rachel's voice — and was ungated");
+  ok("the human-clip switch is shared, not per-page, and on",
+    /const HUMAN_CLIPS = true;/.test(sona) && /humanClipsOn/.test(src) && /humanClipsOn/.test(call),
+    "a local per-page flag lets other pages ship her raw voice anyway");
+  {
+    const pages = readdirSync(ROOT).filter((n) => /\.(html|js)$/.test(n));
+    const raw = pages.filter((n) => /["']\/coach\/say\//.test(readFileSync(ROOT + "/" + n, "utf8")));
+    ok("no page plays Rachel's raw takes from /coach/say/", raw.length === 0, raw.join(", "));
+    ok("practice and Coach Call play the re-voiced set", /"\/coach\/say-echo\/"\+SOUND\+"\.mp3"/.test(src) && /"\/coach\/say-echo\/"\+SOUND\+"-demo\.mp3"/.test(call));
+    const need = readdirSync(ROOT + "/coach/say").filter((n) => n.endsWith(".mp3"));
+    const missing = need.filter((n) => !existsSync(ROOT + "/coach/say-echo/" + n) || statSync(ROOT + "/coach/say-echo/" + n).size < 5000);
+    ok("every one of Rachel's " + need.length + " takes has a re-voiced twin", missing.length === 0, missing.join(", "));
+    // Loudness (25 Sep 2026). /api/tts levels every generated line on the
+    // server (-20 dB RMS over its spoken frames, no peak above -3 dB); a clip
+    // plays as-is, so it was the one sound left that could jump — the set came
+    // back from ElevenLabs 2–5 dB hotter than the lines around it, peaks at the
+    // ceiling. tools/levelclips.mjs brings every clip to the route's level with
+    // the route's own levelPcm; this holds it there, measured the way the route
+    // measures. A clip whose peak cap won sits under -20 dB on purpose.
+    const levels = await page.evaluate(async (names) => {
+      const measure = (x, rate) => {
+        const n = x.length; let peak = 0;
+        for (let i = 0; i < n; i++) { const a = Math.abs(x[i]); if (a > peak) peak = a; }
+        const F = Math.round(rate * 0.02), frames = [];
+        for (let s = 0; s < n; s += F) { const e = Math.min(n, s + F); let sum = 0; for (let i = s; i < e; i++) sum += x[i] * x[i]; frames.push({ sum, len: e - s }); }
+        const db = (a) => 20 * Math.log10(a || 1e-12), amp = (d) => Math.pow(10, d / 20);
+        const spoken = frames.filter((f) => f.sum / f.len >= amp(-50) ** 2);
+        let rms = 0;
+        if (spoken.length) {
+          const mean = spoken.reduce((t, f) => t + f.sum, 0) / spoken.reduce((t, f) => t + f.len, 0);
+          const speech = spoken.filter((f) => f.sum / f.len >= mean * amp(-20) ** 2);
+          rms = Math.sqrt(speech.reduce((t, f) => t + f.sum, 0) / speech.reduce((t, f) => t + f.len, 0));
+        }
+        return { peak: +db(peak).toFixed(1), rms: +db(rms).toFixed(1) };
+      };
+      const actx = new OfflineAudioContext(1, 1, 24000), out = {};
+      for (const n of names) {
+        try { const buf = await actx.decodeAudioData(await (await fetch("/coach/say-echo/" + n)).arrayBuffer()); out[n] = measure(buf.getChannelData(0), buf.sampleRate); }
+        catch (e) { out[n] = { err: String(e).slice(0, 80) }; }
+      }
+      return out;
+    }, need);
+    const off = Object.entries(levels).filter(([, m]) => m.err || m.peak > -2.5 || (Math.abs(m.rms + 20) > 0.7 && !(m.rms < -20 && m.peak > -3.6)));
+    ok("every re-voiced clip sits at the TTS level (-20 dB RMS, peaks under -3 dB)", off.length === 0, off.map(([n, m]) => n + " " + JSON.stringify(m)).join("; "));
+  }
   // Locking the phone fires visibilitychange, NOT pagehide. Every page holding
   // a mic must release on both, or the recording indicator stays lit in a
   // pocket and game timers keep advancing.

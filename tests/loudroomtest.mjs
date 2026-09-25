@@ -13,7 +13,7 @@
 import { createServer } from 'node:http';
 import { readFileSync, existsSync, statSync } from 'node:fs';
 import path from 'node:path';
-import { chromium, ROOT, launchOpts } from '/home/user/SaaS/tests/_env.mjs';
+import { chromium, ROOT, launchOpts } from './_env.mjs';
 const publicRoot = process.env.SONATEST_PUBLIC_ROOT || ROOT;
 const MIME = { html:'text/html', js:'text/javascript', css:'text/css', svg:'image/svg+xml', png:'image/png', webp:'image/webp', woff2:'font/woff2', mp3:'audio/mpeg' };
 const server = createServer((req,res) => {
@@ -196,6 +196,11 @@ function signalDevice(config){
 async function fresh(config={}){
   const context=await browser.newContext({viewport:{width:390,height:844}});
   await context.route('**/*',route=>route.request().url().startsWith(origin+'/')?route.continue():route.abort());
+  // 25 Sep 2026: a sound-alone round's prompt is Rachel's take in Echo's
+  // voice, a 12–19 s clip (HUMAN_CLIPS). This suite is about what the mic
+  // hears AFTER the prompt, so the clip is absent here and the calm TTS
+  // line stands in, as before. micquietpracticetest covers the clip itself.
+  await context.route(/\/coach\/say-echo\//,route=>route.fulfill({status:404,body:''}));
   await context.addInitScript(signalDevice,{sound:'R',native:false,...config});
   const page=await context.newPage();page.setDefaultTimeout(config.voice?9000:5000);const errors=[];page.on('pageerror',e=>errors.push(e.message));
   if(config.shared){await page.goto(origin+'/__shared');await page.waitForFunction(()=>window.Sona);return{context,page,errors};}
