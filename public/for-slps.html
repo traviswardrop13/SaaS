@@ -19,16 +19,20 @@
 })();
   </script>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Speech practice kids actually want to do — Sona for SLPs</title>
+  <title>Speech practice kids actually want to do — Sona</title>
   <!-- speaksona.com. next.config.js rewrites / to this file, so this is the
-       page the ads land on and the one a clinician finds by searching.
+       page the ads land on and the one a parent or a clinician finds by
+       searching. FOR BOTH (Travis, 25 Sep 2026): "I don't know who my customer
+       is", so the page speaks to parents and SLPs alike, and the one form asks
+       for an email and who they are, nothing else. The file keeps its name (for-slps.html) because
+       the rewrite, the canonical and a dozen pins point at it.
        Indexable on purpose; the dashboard, its login and the family's
        redemption link stay noindex — those are private surfaces.
 
        Built from the 23 Sep 2026 design handoff. Where the handoff's copy
        promised something the product does not do, the page says what the
        product does instead; the PR that shipped this lists each change. -->
-  <meta name="description" content="Give every family on your caseload free daily speech practice at home. You assign the sound and the position; practice days, reps and pass rate roll up to your free dashboard. No audio ever leaves the child's device. Built with a licensed pediatric SLP." />
+  <meta name="description" content="A few playful minutes of speech practice a day, at home. Every try is checked on the phone and no audio ever leaves the child's device. Free to start for families and speech therapists. Built with a licensed pediatric speech-language pathologist." />
   <link rel="canonical" href="https://speaksona.com/" />
 
   <!-- WHAT A SHARED LINK LOOKS LIKE. The growth plan is SLPs telling other
@@ -41,14 +45,14 @@
   <meta property="og:site_name" content="Sona" />
   <meta property="og:url" content="https://speaksona.com/" />
   <meta property="og:title" content="Speech practice kids actually want to do." />
-  <meta property="og:description" content="Pick the sound, and every kid on your caseload goes home with a few minutes of practice a day with Echo, free. Nothing to plan, and you see who practiced." />
+  <meta property="og:description" content="A few playful minutes of speech practice a day, at home. Free to start, for families and speech therapists." />
   <meta property="og:image" content="https://speaksona.com/og-slp.png" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
-  <meta property="og:image:alt" content="Sona for SLPs — speech practice kids actually want to do. Free for SLPs." />
+  <meta property="og:image:alt" content="Sona: speech practice kids actually want to do. Free to start." />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="Speech practice kids actually want to do." />
-  <meta name="twitter:description" content="Pick the sound; every kid goes home with daily practice, free. Nothing to plan, and you see who practiced." />
+  <meta name="twitter:description" content="A few playful minutes of speech practice a day, at home. Free to start, for families and speech therapists." />
   <meta name="twitter:image" content="https://speaksona.com/og-slp.png" />
 
   <!-- The bird with no card behind him. The home-screen icon keeps its
@@ -156,6 +160,10 @@
     .days span{width:24px;height:10px;border-radius:5px;background:#E6E1D8;}
     .days span.on{background:var(--teal);}
     .kid .s{font-size:13px;font-weight:700;color:var(--muted);}
+    .hshot{position:relative;z-index:2;display:block;width:min(82%,300px);height:auto;border-radius:28px;box-shadow:0 30px 60px -24px rgba(45,42,75,.45);}
+    .signup select{height:58px;padding:0 16px;border-radius:16px;border:2px solid var(--line2);background:#fff;font:600 17px Nunito,sans-serif;color:var(--ink);flex:1 1 200px;min-width:0;}
+    .signup select:focus{outline:none;border-color:var(--teal);}
+    .mnext{font-size:13px;font-weight:700;color:var(--muted);}
 
     /* facts */
     .facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:12px;padding-bottom:24px;}
@@ -181,6 +189,18 @@
     .bars{display:flex;align-items:flex-end;gap:8px;height:64px;}
     .bars span{flex:1;background:#fff;border-radius:8px;}
     .bars span.hi{background:var(--coral);}
+    /* the two ways in: a parent at home, an SLP with a caseload */
+    .ways{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:20px;align-items:start;}
+    .way{border-radius:28px;padding:28px;display:flex;flex-direction:column;gap:18px;}
+    .way .k{font-family:"Baloo 2",Nunito,sans-serif;font-weight:800;font-size:24px;line-height:1.1;}
+    .w1{background:var(--teal-p);} .w1 .k{color:var(--teal-dd);}
+    .w2{background:var(--yel-p);} .w2 .k{color:#7A5200;}
+    .ticks{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:14px;counter-reset:t;}
+    .ticks li{position:relative;padding-left:44px;font-size:17px;line-height:1.5;color:var(--ink);counter-increment:t;}
+    .ticks li::before{content:counter(t);position:absolute;left:0;top:-1px;width:30px;height:30px;border-radius:50%;background:#fff;font:800 16px/30px "Baloo 2",Nunito,sans-serif;text-align:center;}
+    .ticks li b{font-weight:800;}
+    .way .cl{margin-top:4px;width:100%;box-shadow:0 2px 0 #EFE6D6;}
+
 
     /* the kid side */
     .kidside{background:var(--teal);padding:88px 24px;}
@@ -234,9 +254,9 @@
 
 <header>
   <div class="wrap hbar">
-    <a class="brand" href="/" aria-label="Sona for SLPs">
+    <a class="brand" href="/" aria-label="Sona">
       <img src="/echo.png" alt="" width="40" height="40">
-      <b>Sona</b><span>for SLPs</span>
+      <b>Sona</b>
     </a>
     <nav>
       <a class="parents" id="forParents" href="/families">For parents</a>
@@ -244,20 +264,10 @@
     </nav>
   </div>
 </header>
-<script>
-  // Parents land here from the same ads as clinicians. This page's form is
-  // for SLPs, so a parent gets a way out that does not ask for an email:
-  // straight to the App Store on an iPhone or iPad (iPadOS reports itself as
-  // a Mac with a touchscreen), and the family page — which also runs in any
-  // browser — everywhere else.
-  (function () {
-    try {
-      var ua = navigator.userAgent || "";
-      var ios = /iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
-      if (ios) document.getElementById("forParents").href = "https://apps.apple.com/us/app/sona-speech/id6785755867";
-    } catch (e) {}
-  })();
-</script>
+<!-- FOR PARENTS brings a parent to the form with "Parent or caregiver"
+     chosen (script below). It used to leave the page for the App Store, which
+     skipped the one question this page now asks. Without script, the link
+     still reaches the family page. -->
 
 <main>
 <section class="wrap hero">
@@ -268,40 +278,95 @@
          send every kid home with, without having to plan it. Seeing who
          practiced is the third half, and stays. -->
     <h1>Speech practice kids actually want to do.</h1>
-    <p class="lede">Pick the sound, and every kid goes home with daily practice. Nothing to plan, and you see who practiced.</p>
+    <!-- FOR BOTH (25 Sep 2026): the lede names both readers, and keeps
+         Rachel's reason, which holds for either: nothing to plan, and you see
+         who practiced. -->
+    <p class="lede">A few playful minutes a day, at home. Parents get practice their child asks for, and SLPs pick the sound. Nothing to plan, and you see who practiced.</p>
 
-    <!-- THE SIGN-UP. First name and email, one button. The name is the
-         clinician's own — it goes on the account, into the CRM and into the
-         greeting of every email after this one. A child's name is never
-         asked for here and never leaves a family's device. -->
+    <!-- THE SIGN-UP, AS SIMPLE AS IT GETS (Travis, 25 Sep 2026): an email and
+         who they are, one button, then the App Store. No name is asked for,
+         the grown-up's or a child's. -->
     <form class="signup" id="signup" novalidate>
-      <input id="fName" type="text" autocomplete="given-name" maxlength="40" placeholder="First name" aria-label="First name" />
+      <input id="fEmail" type="email" inputmode="email" autocomplete="email" placeholder="Your email" aria-label="Your email" />
       <div class="srow">
-        <input id="fEmail" type="email" inputmode="email" autocomplete="email" placeholder="you@clinic.com" aria-label="Work email" />
-        <button class="btn" id="fGo" type="submit">Get Sona free</button>
+        <select id="fRole" aria-label="I'm a…">
+          <option value="" selected disabled>I&rsquo;m a&hellip;</option>
+          <option value="parent">Parent or caregiver</option>
+          <option value="slp">Speech therapist (SLP or SLPA)</option>
+          <option value="other">Other</option>
+        </select>
+        <button class="btn" id="fGo" type="submit">Start free</button>
       </div>
       <!-- The email also joins the Kit list, so the form says so before the
            button is pressed (Travis's wording, 24 Sep 2026). -->
       <p class="consent">We&rsquo;ll also send occasional tips from Rachel. Unsubscribe anytime.</p>
+      <p class="mnext" id="mNext">Next: the App Store, to download Sona.</p>
       <div class="serr" id="fErr" role="alert"></div>
     </form>
     <div class="sent" id="sent" hidden>
-      <div class="t">Check your email</div>
+      <div class="t" id="sentT">You&rsquo;re in</div>
       <div class="m" id="sentMsg"></div>
-      <a class="straight" id="straight" href="/slp.html" hidden>Or go straight there now →</a>
-      <div class="again" id="again">Wrong address? <a href="#" id="againLink">Try again</a></div>
+      <a class="straight" id="straight" href="/slp.html" hidden>Open my dashboard &rarr;</a>
+      <button class="btn" id="nextGo" type="button" hidden>Get the app</button>
       <div class="devbox" id="devbox" hidden></div>
     </div>
-    <div class="hnote">Your dashboard plus the kids' app to share with families, both free. One email, no card.</div>
+    <div class="hnote">For families and speech therapists. No card.</div>
   </div>
 
-  <!-- An illustration of the dashboard, not anyone's data: three made-up
-       children, first names only. Each shown pass rate sits on well over the
-       20 attempts below which the real dashboard shows no percentage. -->
-  <div class="hero-r" aria-hidden="true">
-    <div class="sun"></div>
-    <img class="mascot" src="/echo.png" alt="">
-    <div class="cl">
+  <!-- Travis's App Store image, whole (25 Sep 2026): the fruit-slicing game
+       under "Turn practice into play". -->
+  <div class="hero-r">
+    <div class="sun" aria-hidden="true"></div>
+    <img class="hshot" src="/hero-practice-play.webp" width="610" height="1328" alt="Sona's fruit-slicing game on a phone: Turn practice into play. Fast fruit-slicing games keep kids engaged.">
+  </div>
+</section>
+
+<section class="wrap facts">
+  <!-- WHAT IS FREE, AND WHAT IS NOT (Travis, 24 Sep 2026). This row said
+       "Free forever, unlimited families — for you and every kid on your
+       caseload" while every game was free. Sona now has a free version and
+       Premium, so it says exactly which is which: the dashboard is free, the
+       free version is free for every family, and every game is Caseload
+       Premium. A clinician sends families only when she is sure what they
+       will be asked to pay, so this is the row that must never overstate.
+       The clinicians who signed up under the old line keep it, free — the
+       cost answer below says so. The price is lib/caseload.ts's; this static
+       page cannot import it, so tests/shiptest.mjs pins the two together.
+       "Daily practice and free games" is the one phrase for the free
+       version on every surface (24 Sep 2026): gameAccess() opens all four
+       free games to every child, and "two games" undersold it. -->
+  <div class="fact"><b>Free for every family</b><span>Daily practice and free games, with no card.</span></div>
+  <div class="fact"><b>Free for SLPs</b><span>A dashboard with every family's practice in one place. One email, no card.</span></div>
+  <div class="fact"><b>It actually listens</b><span>Every attempt is checked on the phone. Silence never counts.</span></div>
+  <div class="fact"><b>No audio leaves the device</b><span>First name only, entered by the parent.</span></div>
+</section>
+
+<section class="wrap how" id="how">
+  <h2>One app, two ways in.</h2>
+  <div class="ways">
+    <!-- What a parent does. Each line is what the app does today: setup is
+         three questions, practice comes before games, and the weekly goal
+         and streak are on Home (momweek). -->
+    <div class="way w1">
+      <div class="k">For parents</div>
+      <ol class="ticks">
+        <li><b>Set up in about a minute.</b> Three quick questions on your phone, then your child plays.</li>
+        <li><b>A few minutes of practice a day.</b> Echo asks for the sound, listens, and a game comes after.</li>
+        <li><b>Watch the days add up.</b> A weekly goal and a streak, right in the app.</li>
+      </ol>
+    </div>
+    <!-- What an SLP does: the three steps this section used to be, shortened. -->
+    <div class="way w2">
+      <div class="k">For speech therapists</div>
+      <ol class="ticks">
+        <li><b>Set the target.</b> Pick the sound, the position and a daily goal.</li>
+        <li><b>Send the family link.</b> Copy the ready-made message. Parents set up their child in about 30 seconds.</li>
+        <li><b>Walk in prepared.</b> Practice days, reps and pass rate by sound and position.</li>
+      </ol>
+      <!-- An illustration of the dashboard, not anyone's data: three made-up
+           children, first names only. Each shown pass rate sits on well over
+           the 20 attempts below which the real dashboard shows no percentage. -->
+    <div class="cl" aria-hidden="true">
       <div class="h">Your caseload this week</div>
       <div class="kid">
         <div class="n">Maya <i>· /r/ initial</i></div>
@@ -322,50 +387,6 @@
         <div class="s">0 days</div>
       </div>
     </div>
-  </div>
-</section>
-
-<section class="wrap facts">
-  <!-- WHAT IS FREE, AND WHAT IS NOT (Travis, 24 Sep 2026). This row said
-       "Free forever, unlimited families — for you and every kid on your
-       caseload" while every game was free. Sona now has a free version and
-       Premium, so it says exactly which is which: the dashboard is free, the
-       free version is free for every family, and every game is Caseload
-       Premium. A clinician sends families only when she is sure what they
-       will be asked to pay, so this is the row that must never overstate.
-       The clinicians who signed up under the old line keep it, free — the
-       cost answer below says so. The price is lib/caseload.ts's; this static
-       page cannot import it, so tests/shiptest.mjs pins the two together.
-       "Daily practice and free games" is the one phrase for the free
-       version on every surface (24 Sep 2026): gameAccess() opens all four
-       free games to every child, and "two games" undersold it. -->
-  <div class="fact"><b>Free for you</b><span>Your dashboard, with every family's practice in one place. One email, no card.</span></div>
-  <div class="fact"><b>Free for every family</b><span>Daily practice and free games. Caseload Premium adds every game: $79.99 a year.</span></div>
-  <div class="fact"><b>It actually listens</b><span>Every attempt is checked on the phone. Silence never counts.</span></div>
-  <div class="fact"><b>No audio leaves the device</b><span>First name only, entered by the parent.</span></div>
-</section>
-
-<section class="wrap how" id="how">
-  <h2>Three steps from your session to their kitchen table.</h2>
-  <div class="steps">
-    <div class="step s1">
-      <div class="k">1 · Set the target</div>
-      <div class="chips"><span>Initial</span><span class="on">Medial</span><span>Final</span><span>Vocalic R</span><span>Blends</span></div>
-      <p>Pick the sound, the position and a daily goal. Sona makes it the next thing the child practices.</p>
-    </div>
-    <div class="step s2">
-      <div class="k">2 · Send the family link</div>
-      <!-- The dashboard's real message, shortened: it names nobody, because
-           the clinician typed initials rather than a name, and the link is
-           the one family door (join.html), not a short link that does not
-           exist. -->
-      <div class="bubble">Hi! Here's your child's Sona link — the speech-practice app I mentioned. It's free for your family: daily practice and free games. <u>speaksona.com/join.html?slp=…</u></div>
-      <p>Copy the ready-made message. Parents set up their child in about 30 seconds.</p>
-    </div>
-    <div class="step s3">
-      <div class="k">3 · Walk in prepared</div>
-      <div class="bars"><span style="height:40%"></span><span style="height:70%"></span><span style="height:55%"></span><span class="hi" style="height:100%"></span><span style="height:30%"></span><span style="height:85%"></span><span style="height:60%"></span></div>
-      <p>Practice days, reps and pass rate by sound and position. Ready for sessions, notes and parent updates.</p>
     </div>
   </div>
 </section>
@@ -378,7 +399,7 @@
            coins. Free-tier games stay free and the rest of the
            library is Premium, so the copy no longer promises three new games
            a day to every family. -->
-      <p>A daily adventure with Echo, games to play after practice and coins to earn: free games, the released library with Premium. The fun is what brings kids back, so the reps keep happening between your sessions.</p>
+      <p>A daily adventure with Echo, games to play after practice and coins to earn: free games, the released library with Premium. The fun is what brings kids back, so the practice keeps happening at home.</p>
       <div class="chips"><span>Instant feedback</span><span>Games after practice</span><span>Coins to earn</span><span>Every round ends on a win</span></div>
     </div>
     <div class="phones">
@@ -390,19 +411,19 @@
 
 <section class="wrap before">
   <div class="intro">
-    <h2>Good to know before you assign it.</h2>
-    <p>Sona is the worksheet that listens. It supports your therapy; it doesn't diagnose, evaluate or set goals.</p>
+    <h2>Good to know before you start.</h2>
+    <p>Sona is practice that listens. It supports speech therapy; it doesn't diagnose, evaluate or set goals.</p>
   </div>
   <div class="notes">
     <div class="note"><b>Read it as practice volume</b><p>The check asks whether a sound has the acoustic shape of the target. That's narrower than your ear. Treat pass rate as a rough signal, not a score.</p></div>
-    <div class="note"><b>Tuned to General American English</b><p>Dialectal or bilingual speech, like AAVE or Spanish-influenced English, may be marked as misses. Use your clinical judgment.</p></div>
-    <div class="note"><b>You decide readiness</b><p>Assign targets the child is developmentally ready for. Vocalic R, for example, isn't typically expected until about age 7.</p></div>
+    <div class="note"><b>Tuned to General American English</b><p>Dialectal or bilingual speech, like AAVE or Spanish-influenced English, may be marked as misses. A speech therapist's judgment comes first.</p></div>
+    <div class="note"><b>Readiness comes first</b><p>Sona holds a sound back until a child is typically old enough for it: vocalic R, for example, isn't expected until about age 7. An SLP assigns what each child is ready for.</p></div>
   </div>
 </section>
 
 <section class="wrap privacy" id="privacy">
   <div class="l">
-    <h2>Your questions, and your IT reviewer's, answered.</h2>
+    <h2>Your questions, answered.</h2>
     <p>Every check runs on the child's phone. No cloud scorer, no third-party listener, and the app never sends a child's voice anywhere.</p>
     <p class="more">More questions? <a href="mailto:privacy@speaksona.com">privacy@speaksona.com</a> · <a href="/privacy.html">Full privacy policy</a></p>
   </div>
@@ -422,7 +443,7 @@
     </div>
     <div class="q">
       <button type="button" aria-expanded="false" aria-controls="a2" id="q2">What's stored, and where?<span>+</span></button>
-      <p class="a" id="a2" hidden>Your account (email, name, clinic, code). For each consenting family: the child's first name and age, target sounds, practice days and counts, pass rate per sound, your assignments, and when the parent consented. Hosted on Vercel, stored in Upstash, emails via Resend, and the occasional email from Rachel via Kit. If you buy Caseload Premium, Stripe takes the payment and holds your email and card; we never see the card number, and nothing about a child goes to Stripe. If you type a parent's email when you add a child, we hand it to Resend to deliver that one email with the link, and Sona keeps no copy: not stored, not logged, not added to any list. Analytics (PostHog) on grown-up pages only, and a Meta ad pixel on this sign-up page so we can tell which of our ads work — neither ever runs where a child practices, and neither is sent a child's name. No ads in the app, no data sales, no profiling.</p>
+      <p class="a" id="a2" hidden>If you start from this page: your email and whether you're a parent, a speech therapist or something else, kept by Sona and sent to Kit so Rachel's tips can reach you. A speech therapist's account: email, name, clinic, code. For each consenting family: the child's first name and age, target sounds, practice days and counts, pass rate per sound, your assignments, and when the parent consented. Hosted on Vercel, stored in Upstash, emails via Resend, and the occasional email from Rachel via Kit. If you buy Caseload Premium, Stripe takes the payment and holds your email and card; we never see the card number, and nothing about a child goes to Stripe. If you type a parent's email when you add a child, we hand it to Resend to deliver that one email with the link, and Sona keeps no copy: not stored, not logged, not added to any list. Analytics (PostHog) on grown-up pages only, and a Meta ad pixel on this sign-up page so we can tell which of our ads work — neither ever runs where a child practices, and neither is sent a child's name. No ads in the app, no data sales, no profiling.</p>
     </div>
     <div class="q">
       <button type="button" aria-expanded="false" aria-controls="a3" id="q3">How is data deleted?<span>+</span></button>
@@ -447,18 +468,18 @@
     <div class="l">
       <img src="/echo.png" alt="" width="120" height="120">
       <div class="t">
-        <h2>Know who practiced before they walk in.</h2>
-        <p>Free for you, and free daily practice for every family on your caseload.</p>
+        <h2>Practice that feels like play.</h2>
+        <p>Free to start, for families and speech therapists.</p>
       </div>
     </div>
-    <button class="btn yel" id="finalGo" type="button">Get Sona free</button>
+    <button class="btn yel" id="finalGo" type="button">Start free</button>
   </div>
 </section>
 </main>
 
 <footer class="wrap">
   <div class="d">Sona is an at-home speech practice tool. It is not a diagnosis, evaluation, or substitute for professional care.</div>
-  <div class="links"><a href="mailto:hello@speaksona.com?subject=Sona%20for%20SLPs">Email us</a><a href="/privacy.html">Privacy</a><a href="/terms">Terms</a></div>
+  <div class="links"><a href="mailto:hello@speaksona.com?subject=Sona">Email us</a><a href="/privacy.html">Privacy</a><a href="/terms">Terms</a></div>
 </footer>
 
 <script>
@@ -491,7 +512,21 @@
       if (attrib.utm_source) src = attrib.utm_source.replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 30) || src;
     } catch (e) {}
 
-    var LABEL = "Get Sona free";
+    var LABEL = "Start free";
+    /**
+     * WHERE START FREE ENDS (Travis, 25 Sep 2026): the App Store. An iPhone or
+     * iPad opens the App Store app (iPadOS reports itself as a Mac with a
+     * touchscreen, and the link works there too), and a computer gets the
+     * app's App Store page. An Android phone has no Sona app to download, so
+     * it gets Sona in the browser, where /families already sends it.
+     */
+    var APP_STORE = "https://apps.apple.com/us/app/sona-speech/id6785755867";
+    var android = /Android/i.test(navigator.userAgent || "");
+    var NEXT_URL = android ? "/onboarding.html" : APP_STORE;
+    var OPENING = android ? "Opening Sona…" : "Opening the App Store…";
+    $("mNext").textContent = android ? "Next: Sona opens right here in your browser." : "Next: the App Store, to download Sona.";
+    $("nextGo").textContent = android ? "Open Sona" : "Get the app";
+
     // THE ERROR SITS UNDER THE BUTTON, which on a laptop is the bottom edge of
     // the window — so a refused sign-up looked like a button that did nothing.
     // Every message is brought into view as it is shown.
@@ -501,17 +536,56 @@
     }
     function busy(on) { $("fGo").disabled = on; $("fGo").textContent = on ? "Sending…" : LABEL; }
 
+    // ONE FORM, ONE PLACE. The closing Start free brings the visitor back to it
+    // rather than opening a second door, and For parents does the same with
+    // "Parent or caregiver" chosen (an answer already picked is kept).
+    function toForm(role) {
+      if (role && !$("fRole").value) $("fRole").value = role;
+      var target = $("sent").hidden ? $("signup") : $("sent");
+      target.scrollIntoView({ behavior: "smooth", block: "center" });
+      if ($("sent").hidden) setTimeout(function () { try { $("fEmail").focus({ preventScroll: true }); } catch (e) { $("fEmail").focus(); } }, 450);
+    }
+    $("finalGo").onclick = function () { toForm(""); };
+    $("forParents").onclick = function (e) { e.preventDefault(); toForm("parent"); };
+
+    // ONE WAY OUT. Called only after the Lead has fired, and after a pause, so
+    // the pixel's request leaves before the page does.
+    function goNext(ms) { setTimeout(function () { location.href = NEXT_URL; }, ms); }
+    $("nextGo").onclick = function () { location.href = NEXT_URL; };
+    function showDone(title, msg, opts) {
+      $("sentT").textContent = title;
+      $("sentMsg").textContent = msg;
+      $("straight").hidden = !opts.dashboard;
+      $("nextGo").hidden = !opts.button;
+      $("signup").hidden = true; $("sent").hidden = false;
+    }
+
     function go() {
-      var name = (($("fName").value) || "").trim();
       var email = (($("fEmail").value) || "").trim();
+      var role = $("fRole").value;
       $("fErr").textContent = "";
-      if (!name) { err("Your first name, so we know who we're writing to."); $("fName").focus(); return; }
       if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { err("Enter a valid email."); $("fEmail").focus(); return; }
+      if (!role) { err("Choose one: parent, speech therapist or other."); $("fRole").focus(); return; }
       busy(true);
-      fetch("/api/slp/auth/request", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: email, name: name, source: src, attrib: attrib }),
-      }).then(function (r) { return r.json(); }).then(function (j) {
+      /**
+       * A SPEECH THERAPIST GETS THEIR DASHBOARD TOO. The iPhone app is the
+       * family app and has no clinician side, so an SLP or SLPA is signed up
+       * exactly as this page always did: the account, the sign-in email, and
+       * the lead, which the auth route forwards to /api/lead itself. Everyone
+       * else goes to /api/lead directly, with their email and role and nothing
+       * else: no name, nothing about a child. One post per person, so a lead
+       * is counted once.
+       */
+      var req = role === "slp"
+        ? fetch("/api/slp/auth/request", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email: email, source: src, attrib: attrib }),
+          })
+        : fetch("/api/lead", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(Object.assign({ email: email, role: role, source: src }, attrib)),
+          });
+      req.then(function (r) { return r.json(); }).then(function (j) {
         busy(false);
         if (!j || !j.ok) { err((j && j.error) || "Couldn't set that up right now."); return; }
         /**
@@ -522,7 +596,7 @@
          * accounts rather than on repeat sign-ins.
          *
          * No parameters: Meta gets the fact, never the person. The email and
-         * the name stay on our side, where the clinician knowingly gave them.
+         * the answer stay on our side, where the visitor knowingly gave them.
          */
         try {
           if (window.sonaTrack) {
@@ -530,65 +604,41 @@
             if (j.signedIn) sonaTrack("CompleteRegistration");
           }
         } catch (e) {}
-        /**
-         * DO NOT SAY "CHECK YOUR EMAIL" ABOUT AN EMAIL THAT WAS REFUSED.
-         * The server reports whether it actually went. A brand-new account
-         * is signed in anyway, so the straight-through link is a real way in
-         * and the failure costs them nothing. An existing account has no
-         * other door — telling them to check an inbox that will stay empty
-         * turns a fixable problem into a clinician who quietly gives up.
-         */
-        if (!j.sent && !j.signedIn) {
-          $("sentMsg").textContent = "Your account is here, but our email didn't go out just now. Email hello@speaksona.com and we'll open your dashboard by hand — usually within the hour.";
-          $("again").hidden = true;
-        } else if (!j.sent) {
-          // Signed in, but the email was refused: the dashboard is one tap
-          // away, and the page must not promise a link that is not coming.
-          $("sentMsg").textContent = "You're in — opening your dashboard now. Our email to " + email + " didn't go out just now, so bookmark the dashboard to come back to it.";
-          $("again").hidden = true;
-        } else if (j.signedIn) {
-          $("sentMsg").textContent = "You're in — opening your dashboard now. We've also emailed " + email + " a link for next time.";
-          $("again").hidden = true;
-        } else {
-          $("sentMsg").textContent = "Your sign-in link is on its way to " + email + ". It opens straight into your dashboard — no password.";
-          $("again").hidden = false;
+        if (role !== "slp") {
+          showDone("You're in", OPENING, { button: true });
+          goNext(900);
+          return;
         }
-        // A brand-new account is signed in already, so the straight-through
-        // link works immediately; the email still lands, which is how they
-        // get back in tomorrow. An existing account has a caseload behind the
-        // door, so for them the emailed link is the only way through.
-        $("straight").hidden = !j.signedIn;
-        $("signup").hidden = true; $("sent").hidden = false;
         if (j.devLink) {
           $("devbox").hidden = false;
           $("devbox").innerHTML = 'Email isn\'t configured here, so this is your link (preview only): <a href="' + j.devLink + '">Open it →</a>';
         }
-        // STRAIGHT IN (Travis, 23 Sep 2026). A brand-new account is signed in
-        // already, so it goes to the dashboard on its own rather than stopping
-        // at "check your email" — the dashboard is where the app download and
-        // the family link live. The pause lets the pixel's Lead leave first.
-        // An existing account is not signed in here and still needs its email.
-        if (j.signedIn) setTimeout(function () { location.href = "/slp.html"; }, 700);
+        /**
+         * DO NOT SAY "CHECK YOUR EMAIL" ABOUT AN EMAIL THAT WAS REFUSED.
+         * The server reports whether it actually went. When it did not, the
+         * pop-up stays open with the way through, rather than leaving for the
+         * App Store with the only door to the dashboard unexplained.
+         */
+        if (!j.sent && !j.signedIn) {
+          showDone("Almost there", "Your account is here, but our email didn't go out just now. Email hello@speaksona.com and we'll open your dashboard by hand — usually within the hour.", { button: true });
+        } else if (!j.sent) {
+          // Signed in, but the email was refused: the dashboard is one tap
+          // away, and the page must not promise a link that is not coming.
+          showDone("You're in", "Our email to " + email + " didn't go out just now, so bookmark the dashboard: speaksona.com/slp", { dashboard: true, button: true });
+        } else {
+          showDone("You're in", (j.signedIn
+            ? "Your free dashboard is ready, and we've emailed " + email + " a link to it. "
+            : "Your sign-in link is on its way to " + email + ". It opens straight into your dashboard. ") + OPENING,
+            { dashboard: !!j.signedIn, button: true });
+          if (!j.devLink) goNext(2600);
+        }
       }).catch(function () {
         busy(false);
         err("Network hiccup — try again.");
       });
     }
     $("signup").addEventListener("submit", function (e) { e.preventDefault(); go(); });
-    $("fName").addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); $("fEmail").focus(); } });
-    $("againLink").onclick = function (e) {
-      e.preventDefault();
-      $("sent").hidden = true; $("signup").hidden = false;
-      $("fEmail").value = ""; $("fEmail").focus();
-    };
-
-    // The closing button goes back to the one form rather than opening a
-    // second door: one place to sign up means one place to get it right.
-    $("finalGo").onclick = function () {
-      var target = $("sent").hidden ? $("signup") : $("sent");
-      target.scrollIntoView({ behavior: "smooth", block: "center" });
-      if ($("sent").hidden) setTimeout(function () { $($("fName").value ? "fEmail" : "fName").focus({ preventScroll: true }); }, 450);
-    };
+    $("fEmail").addEventListener("keydown", function (e) { if (e.key === "Enter" && !$("fRole").value) { e.preventDefault(); $("fRole").focus(); } });
 
     // One answer open at a time; the first starts open.
     var qs = document.querySelectorAll("#faq .q button");

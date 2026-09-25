@@ -11,6 +11,7 @@ const SUITES = [
   "telemetrytest.mjs", // TELE1: the funnel is measurable, and carries nothing about a child
   "chartertest.mjs",   // CHARTER1: $59.99 for the first 50 families, then $99.99 — true by construction
   "shiptest.mjs",      // SHIP1: what reaches the phone — the header that makes a deploy visible, without re-downloading the app every page
+  "landingtest.mjs", // LANDING1: speaksona.com's Start free pop-up: who they are, the lead, then the App Store
   "soundmap.mjs",  // every sound is scorable + the daily ring can actually fill
   "storytest.mjs", // STORY1: episode beats, chapter pacing, cliffhanger
   "kidtest.mjs",   // KIDS1: per-child progress, switching, family-wide entitlement
