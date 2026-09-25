@@ -13,7 +13,7 @@
 import { createServer } from 'node:http';
 import { readFileSync, existsSync, statSync } from 'node:fs';
 import path from 'node:path';
-import { chromium, ROOT, launchOpts } from '/home/user/SaaS/tests/_env.mjs';
+import { chromium, ROOT, launchOpts } from './_env.mjs';
 const publicRoot = process.env.SONATEST_PUBLIC_ROOT || ROOT;
 const MIME = { html:'text/html', js:'text/javascript', css:'text/css', svg:'image/svg+xml', png:'image/png', webp:'image/webp', woff2:'font/woff2', mp3:'audio/mpeg' };
 const server = createServer((req,res) => {
