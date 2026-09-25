@@ -116,8 +116,15 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
   ok("the closing Start free brings the visitor back to that form",
     /\$\("finalGo"\)\.onclick = function \(\) \{ toForm\(""\); \};/.test(slps) &&
     (slps.replace(/<!--[\s\S]*?-->/g, "").match(/>Start free</g) || []).length === 2);
-  ok("the hero shows Travis's whole App Store image, which is in the repo",
-    /<img class="hshot" src="\/hero-practice-play\.webp" width="610" height="1328"/.test(slps) && existsSync(APP + "/public/hero-practice-play.webp"));
+  // BACK TO ECHO AND THE CASELOAD CARD (Travis, 25 Sep 2026), after one
+  // afternoon with his App Store image there instead.
+  const heroR = (slps.match(/<div class="hero-r"[\s\S]*?<\/section>/) || [""])[0];
+  ok("the hero shows Echo and the caseload card, made-up first names only",
+    /<img class="mascot" src="\/echo\.png"/.test(heroR) && /Your caseload this week/.test(heroR) &&
+    /Maya/.test(heroR) && !/hero-practice-play/.test(slps) && (slps.match(/Your caseload this week/g) || []).length === 1);
+  // NOTHING UNDER THE BUTTON (Travis, 25 Sep 2026: "get rid of this text").
+  ok("…and nothing under the form's button: no list line, no 'Next' hint, no 'No card' note",
+    !/class="consent"|id="mNext"|class="hnote"/.test(slps.replace(/<!--[\s\S]*?-->/g, "")));
 }
 
 // ── what the landing page promises: a free version and Premium (24 Sep 2026) ──

@@ -68,7 +68,8 @@ async function fill(page, email, role) {
   ok("…and nothing is chosen for them", (await page.inputValue("#fRole")) === "");
   const fit = await page.evaluate(() => { const r = document.getElementById("signup").getBoundingClientRect(); return { l: r.left, r: r.right, w: innerWidth, overflow: document.documentElement.scrollWidth > innerWidth }; });
   ok("on a phone the form fits the screen, with no sideways scroll", fit.l >= 0 && fit.r <= fit.w && !fit.overflow, fit);
-  ok("the hero shows the whole App Store image", await page.evaluate(() => { const i = document.querySelector("img.hshot"); return !!i && i.complete && i.naturalWidth === 610 && i.naturalHeight === 1328; }));
+  ok("the hero shows Echo and the caseload card", await page.evaluate(() => { const r = document.querySelector(".hero-r"); return !!r && !!r.querySelector("img.mascot") && /Your caseload this week/.test(r.textContent); }));
+  ok("…and nothing sits under the form's button", await page.evaluate(() => !document.querySelector(".consent, #mNext, .hnote")));
 
   // What the visitor is told before anything is sent.
   posts = [];
@@ -80,8 +81,6 @@ async function fill(page, email, role) {
   await fill(page, "dana@example.com");
   await page.click("#fGo");
   ok("no answer to I'm a…: asked to choose, nothing sent", /Choose one/.test(await page.textContent("#fErr")) && posts.length === 0);
-  ok("the consent line is on the form, before the email is given", /also send occasional tips from Rachel\. Unsubscribe anytime\./.test(await page.textContent("#signup")));
-  ok("…and it says where the button goes: the App Store", /App Store/.test(await page.textContent("#mNext")));
 
   // For parents and the closing Start free both come back to this one form.
   await page.evaluate(() => { document.getElementById("fRole").value = ""; window.scrollTo(0, document.body.scrollHeight); });
@@ -173,7 +172,6 @@ for (const [label, reply, want] of [
 {
   const { context, page, errors } = await fresh({ ua: "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Mobile Safari/537.36" });
   posts = []; leadReply = { ok: true, captured: true };
-  ok("Android: the form says Sona opens in the browser", /browser/.test(await page.textContent("#mNext")));
   await fill(page, "lee@example.com", "parent");
   const nav = page.waitForURL(/\/onboarding\.html/, { timeout: 5000 }).then(() => true, () => false);
   await page.click("#fGo");

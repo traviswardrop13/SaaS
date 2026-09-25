@@ -703,6 +703,12 @@ if (A) {
   ok("…and records Kit's answer on the saved lead", /kit: kitRes \? \(kitRes\.ok \? kitRes\.detail : "refused \(" \+ kitRes\.detail \+ "\)"\)/.test(lead));
   ok("the catch-up is founder-only, batched, and stops when Kit says slow down",
     /const denied = founderGate\(req\);/.test(sync) && /const BATCH = \d+;/.test(sync) && /r\.status === 429/.test(sync));
+  // Kit tags only add, so a re-run that called "Other" a parent would leave
+  // those people with both tags (25 Sep 2026).
+  ok("…and sends 'Other' as other, not as a parent",
+    /role: slp \? "slp" : l\.role === "other" \? "other" : "parent"/.test(sync) && /tag: kitTagFor\(p\.role\)/.test(sync));
+  ok("the landing page still says, in its questions, that the email goes to Kit",
+    /your email and whether you're a parent, a speech therapist or something else, kept by Sona and sent to Kit/.test(read("public/for-slps.html")));
 
   // A parent's email used to stay on the phone; it now goes to the list, with
   // the grown-up's email and nothing from the child on the same screen.
@@ -712,8 +718,11 @@ if (A) {
   ok("…and never with the child's name or age",
     fin.length > 0 && !/childName|draft\.age|achEmName|nameEl|child:/.test(fin.slice(fin.indexOf('fetch("/api/lead"'))));
 
-  // The consent line, everywhere an email can join the list (Travis's wording).
-  for (const f of ["public/for-slps.html", "public/slp-login.html", "public/onboarding.html", "public/check.html"]) {
+  // The consent line, everywhere an email can join the list (Travis's wording)
+  // — except the landing page, where Travis took it out on 25 Sep 2026 ("get
+  // rid of this text"); its "What's stored" answer still says the email goes
+  // to Kit.
+  for (const f of ["public/slp-login.html", "public/onboarding.html", "public/check.html"]) {
     ok(`${f} says the email joins the list before it is given`,
       /also send occasional tips from Rachel\. Unsubscribe anytime\./.test(read(f)));
   }

@@ -402,11 +402,16 @@ What reaches Kit: the email, a **clinician's own** first name, and the role tag
 (`sona-slp`, `sona-parent`, `sona-other`).
 Never anything about a child. Wherever an email joins the list, the page says
 so first, in Travis's words: "We'll also send occasional tips from Rachel.
-Unsubscribe anytime." Meta's `Lead` fires only when an email was given.
+Unsubscribe anytime." **Except the landing page**, where Travis took the line
+out (25 Sep 2026: "get rid of this text"); its "What's stored" answer still
+says the email goes to Kit. Meta's `Lead` fires only when an email was given.
 
 `/leads.html` (private, behind `FOUNDER_KEY`) lists every captured email and
-every clinician account, and its "Send everyone to Kit" button is the one-time
-catch-up for everyone collected before Kit existed.
+every clinician account, and its "Send everyone to Kit" button is the catch-up:
+it re-sends everyone Sona holds, tagged `sona-slp` (a clinician account or an
+SLP sign-up), `sona-other` (answered Other) or `sona-parent`, and is safe to
+press again. Kit tags only add, so a wrong tag is fixed in Kit, not by
+re-running.
 
 ## Home: choose a game, then practice
 **Home is the silent Play library (Travis, 24 Sep 2026).** `today.html` opens

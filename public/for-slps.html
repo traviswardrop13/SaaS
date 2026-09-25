@@ -160,10 +160,8 @@
     .days span{width:24px;height:10px;border-radius:5px;background:#E6E1D8;}
     .days span.on{background:var(--teal);}
     .kid .s{font-size:13px;font-weight:700;color:var(--muted);}
-    .hshot{position:relative;z-index:2;display:block;width:min(82%,300px);height:auto;border-radius:28px;box-shadow:0 30px 60px -24px rgba(45,42,75,.45);}
     .signup select{height:58px;padding:0 16px;border-radius:16px;border:2px solid var(--line2);background:#fff;font:600 17px Nunito,sans-serif;color:var(--ink);flex:1 1 200px;min-width:0;}
     .signup select:focus{outline:none;border-color:var(--teal);}
-    .mnext{font-size:13px;font-weight:700;color:var(--muted);}
 
     /* facts */
     .facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:12px;padding-bottom:24px;}
@@ -199,7 +197,6 @@
     .ticks li{position:relative;padding-left:44px;font-size:17px;line-height:1.5;color:var(--ink);counter-increment:t;}
     .ticks li::before{content:counter(t);position:absolute;left:0;top:-1px;width:30px;height:30px;border-radius:50%;background:#fff;font:800 16px/30px "Baloo 2",Nunito,sans-serif;text-align:center;}
     .ticks li b{font-weight:800;}
-    .way .cl{margin-top:4px;width:100%;box-shadow:0 2px 0 #EFE6D6;}
 
 
     /* the kid side */
@@ -297,10 +294,10 @@
         </select>
         <button class="btn" id="fGo" type="submit">Start free</button>
       </div>
-      <!-- The email also joins the Kit list, so the form says so before the
-           button is pressed (Travis's wording, 24 Sep 2026). -->
-      <p class="consent">We&rsquo;ll also send occasional tips from Rachel. Unsubscribe anytime.</p>
-      <p class="mnext" id="mNext">Next: the App Store, to download Sona.</p>
+      <!-- NOTHING UNDER THE BUTTON (Travis, 25 Sep 2026: "get rid of this
+           text"): the list line, the "Next: the App Store" hint and the
+           "No card" note are gone from this page. What the email is used for
+           is still answered below, under "What's stored, and where?". -->
       <div class="serr" id="fErr" role="alert"></div>
     </form>
     <div class="sent" id="sent" hidden>
@@ -310,14 +307,38 @@
       <button class="btn" id="nextGo" type="button" hidden>Get the app</button>
       <div class="devbox" id="devbox" hidden></div>
     </div>
-    <div class="hnote">For families and speech therapists. No card.</div>
   </div>
 
-  <!-- Travis's App Store image, whole (25 Sep 2026): the fruit-slicing game
-       under "Turn practice into play". -->
-  <div class="hero-r">
-    <div class="sun" aria-hidden="true"></div>
-    <img class="hshot" src="/hero-practice-play.webp" width="610" height="1328" alt="Sona's fruit-slicing game on a phone: Turn practice into play. Fast fruit-slicing games keep kids engaged.">
+  <!-- BACK TO ECHO AND THE CASELOAD CARD (Travis, 25 Sep 2026: "go back to
+       what we had where its the bird and its showing the name of kids and
+       their progress"). An illustration of the dashboard, not anyone's data:
+       three made-up children, first names only. Each shown pass rate sits on
+       well over the 20 attempts below which the real dashboard shows no
+       percentage. -->
+  <div class="hero-r" aria-hidden="true">
+    <div class="sun"></div>
+    <img class="mascot" src="/echo.png" alt="">
+    <div class="cl">
+      <div class="h">Your caseload this week</div>
+      <div class="kid">
+        <div class="n">Maya <i>· /r/ initial</i></div>
+        <div class="r">84%</div>
+        <div class="days"><span class="on"></span><span class="on"></span><span class="on"></span><span></span><span class="on"></span><span class="on"></span><span></span></div>
+        <div class="s">5 days · 142 reps</div>
+      </div>
+      <div class="kid">
+        <div class="n">Theo <i>· /s/ blends</i></div>
+        <div class="r">71%</div>
+        <div class="days"><span class="on"></span><span></span><span class="on"></span><span class="on"></span><span></span><span class="on"></span><span class="on"></span></div>
+        <div class="s">5 days · 96 reps</div>
+      </div>
+      <div class="kid quiet">
+        <div class="n">Ava <i>· vocalic R</i></div>
+        <div class="r">No practice yet</div>
+        <div class="days"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+        <div class="s">0 days</div>
+      </div>
+    </div>
   </div>
 </section>
 
@@ -363,30 +384,6 @@
         <li><b>Send the family link.</b> Copy the ready-made message. Parents set up their child in about 30 seconds.</li>
         <li><b>Walk in prepared.</b> Practice days, reps and pass rate by sound and position.</li>
       </ol>
-      <!-- An illustration of the dashboard, not anyone's data: three made-up
-           children, first names only. Each shown pass rate sits on well over
-           the 20 attempts below which the real dashboard shows no percentage. -->
-    <div class="cl" aria-hidden="true">
-      <div class="h">Your caseload this week</div>
-      <div class="kid">
-        <div class="n">Maya <i>· /r/ initial</i></div>
-        <div class="r">84%</div>
-        <div class="days"><span class="on"></span><span class="on"></span><span class="on"></span><span></span><span class="on"></span><span class="on"></span><span></span></div>
-        <div class="s">5 days · 142 reps</div>
-      </div>
-      <div class="kid">
-        <div class="n">Theo <i>· /s/ blends</i></div>
-        <div class="r">71%</div>
-        <div class="days"><span class="on"></span><span></span><span class="on"></span><span class="on"></span><span></span><span class="on"></span><span class="on"></span></div>
-        <div class="s">5 days · 96 reps</div>
-      </div>
-      <div class="kid quiet">
-        <div class="n">Ava <i>· vocalic R</i></div>
-        <div class="r">No practice yet</div>
-        <div class="days"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
-        <div class="s">0 days</div>
-      </div>
-    </div>
     </div>
   </div>
 </section>
@@ -524,7 +521,6 @@
     var android = /Android/i.test(navigator.userAgent || "");
     var NEXT_URL = android ? "/onboarding.html" : APP_STORE;
     var OPENING = android ? "Opening Sona…" : "Opening the App Store…";
-    $("mNext").textContent = android ? "Next: Sona opens right here in your browser." : "Next: the App Store, to download Sona.";
     $("nextGo").textContent = android ? "Open Sona" : "Get the app";
 
     // THE ERROR SITS UNDER THE BUTTON, which on a laptop is the bottom edge of
