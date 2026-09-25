@@ -98,6 +98,30 @@ async function page(mic) {
     "a clip a parent can play back exists locally; consent copy should say so");
 }
 
+// ── 1b. there is no door a child's recording could go through ──
+// The promise is true by construction: no route the family app can reach
+// accepts an uploaded recording. /api/stt (a transcription door nothing
+// called) was deleted on 25 Sep 2026 so that stays literally true. The two
+// routes that DO take a file are the founder's clip tools — cleaning and
+// re-voicing Rachel's own recordings — behind FOUNDER_KEY on production, and
+// no page under public/ calls either. Adding a third upload route, or a
+// page that posts audio, fails here on purpose.
+{
+  const { readdirSync, statSync } = await import("node:fs");
+  const API = ROOT + "/../app/api";
+  const routes = [];
+  (function walk(d) { for (const n of readdirSync(d)) { const p = d + "/" + n; if (statSync(p).isDirectory()) walk(p); else if (n === "route.ts") routes.push(p); } })(API);
+  const uploaders = routes.filter((p) => /formData\(\)|form\.get\(["']audio["']\)/.test(noComments(readFileSync(p, "utf8")))).map((p) => p.slice(API.length + 1, -"/route.ts".length)).sort();
+  ok("only the two founder clip tools accept a file; no /api/stt", JSON.stringify(uploaders) === JSON.stringify(["isolate", "voice-change"]), uploaders.join(", "));
+  for (const r of uploaders) {
+    const src = noComments(readFileSync(API + "/" + r + "/route.ts", "utf8"));
+    ok(r + " is locked behind FOUNDER_KEY on production", /FOUNDER_KEY/.test(src) && /x-founder-key/.test(src) && /isPreview/.test(src));
+  }
+  const pages = readdirSync(ROOT).filter((n) => /\.(html|js)$/.test(n));
+  const callers = pages.filter((n) => /\/api\/(stt|isolate|voice-change)\b/.test(noComments(readFileSync(ROOT + "/" + n, "utf8"))));
+  ok("no family page posts to a transcription, isolation or re-voicing route", callers.length === 0, callers.join(", "));
+}
+
 // ── 1b. every OTHER page that describes the mic tells the same truth ──
 // The primer was corrected while privacy.html and the support FAQ went on
 // describing voice clips "sent securely to our speech-scoring provider" —
