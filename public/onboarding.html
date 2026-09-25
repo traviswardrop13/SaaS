@@ -21,7 +21,7 @@
     .ob input,.move-card input{-webkit-appearance:none;appearance:none;color:var(--ink);caret-color:var(--orange-d);}
     .ob input:focus,.move-card input:focus{outline:2px solid var(--orange-d);outline-offset:2px;}
     .ob{min-height:100vh;min-height:100dvh;display:flex;flex-direction:column;max-width:560px;margin:0 auto;
-      padding:14px 18px calc(110px + env(safe-area-inset-bottom));}
+      padding:calc(14px + env(safe-area-inset-top)) 18px calc(110px + env(safe-area-inset-bottom));}
     /* progress segments — gradient fill that sweeps in as each step completes */
     .seg{display:flex;gap:6px;margin:6px 0 18px;}
     .seg > i{position:relative;height:9px;flex:1;border-radius:99px;background:#e6eef8;overflow:hidden;}
@@ -87,8 +87,14 @@
     .schips{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;}
     .schips .sound{transition:background .2s ease,border-color .2s ease,color .2s ease,transform .05s;}
     .schips .sound:active{transform:translateY(1px);}
-    #obSounds .sound{min-width:76px;flex:1 0 76px;display:flex;flex-direction:column;align-items:center;gap:2px;padding:10px 12px;}
-    #obSounds .sound small{font-family:Nunito,sans-serif;font-size:12px;font-weight:700;color:var(--muted);}
+    #obSounds{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;}
+    #obSounds .sound{min-width:0;min-height:54px;display:flex;align-items:center;justify-content:center;padding:8px 4px;font-size:27px;line-height:1.2;}
+    #obSounds .sound[data-sound="THV"]{font-size:23px;}
+    .sound-help{margin:14px 0 0;font-size:13px;}
+    #obExploreSounds{display:block;min-height:44px;padding:8px 0;color:var(--ink);text-decoration:underline;text-underline-offset:3px;}
+    .ob input{scroll-margin-block:20px 120px;}
+    body.keyboard-open .obfoot{padding-bottom:10px;}
+    body.keyboard-open .ob{padding-bottom:100px;}
     .sound:focus-visible,.skip:focus-visible,.btn:focus-visible,#moveLink:focus-visible{outline:3px solid #795534;outline-offset:3px;}
     [hidden]{display:none!important;}
     body.ob-world{background:linear-gradient(180deg,#caeafb 0%,#e7f4f8 46%,#fff0d5 100%) fixed;}
@@ -120,9 +126,9 @@
     .obfoot .inner{max-width:560px;margin:0 auto;display:flex;gap:10px;align-items:center;}
     /* role cards stack their label over the description — .choice is a flex
        row by default, which put the two side by side and wrapped both */
-    #obRole .choice,#obPath .choice{flex-direction:column;align-items:flex-start;gap:3px;}
-    #obRole .choice b,#obPath .choice b{font-size:16.5px;}
-    #obRole .choice span,#obPath .choice span{font-family:Nunito,sans-serif;font-weight:700;font-size:13.5px;color:var(--muted);line-height:1.4;}
+    #obRole .choice{flex-direction:column;align-items:flex-start;gap:3px;}
+    #obRole .choice b{font-size:16.5px;}
+    #obRole .choice span{font-family:Nunito,sans-serif;font-weight:700;font-size:13.5px;color:var(--muted);line-height:1.4;}
     .skip{background:none;border:none;color:var(--muted);font-weight:800;font-size:15px;cursor:pointer;padding:10px;}
   </style>
 </head>
@@ -173,37 +179,6 @@
       </div>
     </div>
 
-    <!-- PLAY1: the play door. Two front doors, one engine — "we're working on
-         sounds" (the speech path, pick targets) vs "just for fun" (every sound,
-         easiest first, zero clinical framing). SLPs never see this step. -->
-    <div class="step" data-step="path">
-      <div class="qh">What brings you here?</div>
-      <p class="muted">Both get the same games — this just sets how Echo picks the sounds.</p>
-      <div class="choices" id="obPath" style="margin-top:14px;">
-        <div class="choice" data-val="speech">
-          <b>We're working on specific sounds</b>
-          <span>Pick the sounds — the games aim right at them.</span>
-        </div>
-        <div class="choice" data-val="unsure">
-          <b>I'm not sure where to start</b>
-          <span>Echo plays through every sound, easiest first — the same general path as below. You can pick specific sounds any time in Settings.</span>
-        </div>
-        <div class="choice" data-val="play">
-          <b>Just for fun — letter sounds &amp; talking games</b>
-          <span>No goals needed. Echo plays through every sound, easiest first.</span>
-        </div>
-      </div>
-      <!-- "I'M NOT SURE" IS NOT A DIAGNOSIS and must never read as one. It
-           routes to the EXISTING play order — every sound, easiest first —
-           and the option says so, so a parent can see they are getting the
-           general path rather than a recommendation Sona made about their
-           child. Sona does not assess, and a third door that quietly picked
-           targets would be Sona assessing. Any change to that is Rachel's:
-           if "not sure" should narrow by age, it needs her rule, not an
-           engineering guess. -->
-      <p class="muted" style="margin-top:12px;font-size:12.5px;">Sona practices — it doesn't test or diagnose. Which sounds a child needs is a speech-language pathologist's call.</p>
-    </div>
-
     <!-- name -->
     <div class="step" data-step="name">
       <div class="qh">Who's practicing today?</div>
@@ -233,10 +208,14 @@
 
     <!-- sounds -->
     <div class="step" data-step="sounds">
-      <div class="qh">Which sounds are we practicing?</div>
-      <p class="muted">Pick the sounds your child is working on. If a speech-language pathologist gave you targets, choose them here. You can change these anytime in Settings.</p>
+      <div class="qh">Pick your sounds</div>
+      <p class="muted">Choose one or more. You can change them later.</p>
       <div class="schips" id="obSounds" aria-label="Practice sounds"></div>
-      <p class="muted" style="font-size:13px;margin-top:14px;">Not sure? Go back and choose “I’m not sure where to start.”</p>
+      <div id="obExploreOption">
+        <p class="muted sound-help">Not sure? Play through every sound, easiest first.</p>
+        <button type="button" class="skip" id="obExploreSounds">Explore all sounds</button>
+      </div>
+      <p class="muted sound-help">Sona practices — it doesn't test or diagnose.</p>
     </div>
 
     <!-- The permission belongs to the grown-up's tap, before the handoff. -->
@@ -338,6 +317,20 @@
   </div>
   <script src="/sona.js"></script>
   <script>
+    (function setupNativeKeyboard(){
+      var cap=window.Capacitor;
+      if(!cap||!cap.isNativePlatform||!cap.isNativePlatform()||!cap.getPlatform||cap.getPlatform()!=="ios")return;
+      var keyboard=cap.Plugins&&cap.Plugins.Keyboard;
+      if(!keyboard)return;
+      function safely(run){try{var result=run();if(result&&result.catch)result.catch(function(){});}catch(e){}}
+      safely(function(){return keyboard.setAccessoryBarVisible({isVisible:false});});
+      safely(function(){return keyboard.addListener("keyboardWillShow",function(){document.body.classList.add("keyboard-open");});});
+      safely(function(){return keyboard.addListener("keyboardWillHide",function(){document.body.classList.remove("keyboard-open");});});
+      safely(function(){return keyboard.addListener("keyboardDidShow",function(){
+        var input=document.activeElement;
+        if(input&&input.tagName==="INPUT")input.scrollIntoView({block:"nearest",behavior:"auto"});
+      });});
+    })();
     var p = Sona.getProfile();
     var draft = {
       childName: p.childName || "",
@@ -390,18 +383,14 @@
     function saveDraft() { try { localStorage.setItem(DRAFTKEY, JSON.stringify(draft)); } catch (e) {} }
     function clearDraft() { try { localStorage.removeItem(DRAFTKEY); } catch (e) {} }
 
-    // THREE SETUP STEPS for a parent: who is practicing, what to aim at, and
-    // the microphone. `sounds` only appears for the family that says they have
-    // targets — for everyone else the picker IS the clinical framing, so it is
-    // not shown. A clinician still gets the caseload flow, reached by the link
-    // on the welcome screen rather than by asking every parent who they are.
-    var ORDER_PARENT = ["welcome","name","path","sounds","mic"];
+    // Parents choose sounds directly, or explore the existing all-sounds path.
+    // Clinicians keep their separate browser-only setup.
+    var ORDER_PARENT = ["welcome","name","sounds","mic"];
     var ORDER_SLP    = ["welcome","name","sounds","slp","email"];
     var ORDER = ORDER_PARENT;
     var BUBBLES = {
       welcome: "Hi! I'm Echo!",
       role:    "Who am I meeting?",
-      path:    "What are we here for?",
       name:    "Nice to meet you!",
       buddy:   "Who should practice with you?",
       interests: "Ooh, what do you love?",
@@ -418,7 +407,7 @@
     var segEl = document.getElementById("seg");
     function paintSeg(){ segEl.innerHTML=""; var count=ORDER===ORDER_PARENT?3:ORDER.length-1; for(var i=0;i<count;i++)segEl.appendChild(document.createElement("i")); }
     function paintProgress(key){
-      var n=ORDER===ORDER_PARENT?({name:0,path:1,sounds:1,mic:2}[key]):idx-1;
+      var n=ORDER===ORDER_PARENT?({name:0,sounds:1,mic:2}[key]):idx-1;
       segEl.hidden=key==="welcome"||key==="achieve";
       Array.prototype.forEach.call(segEl.children,function(el,i){el.classList.toggle("on",i<=n);});
       segEl.setAttribute("role","progressbar");segEl.setAttribute("aria-label","Setup progress");
@@ -546,16 +535,15 @@
     });
 
     // Targets are the family's choice; a fresh setup never silently picks R.
-    var selSounds = new Set(draft.focusSounds);
+    var selSounds = new Set(draft.mode === "play" ? [] : draft.focusSounds);
     var sc = document.getElementById("obSounds");
-    var soundExamples={R:"rabbit",S:"sun",TH:"think",THV:"this"};
     Sona.ALL_SOUNDS.forEach(function(s){
       var b=document.createElement("button"),label=Sona.soundLabel?Sona.soundLabel(s):s;
-      var bank=Sona.WORDS&&Sona.WORDS[s],example=soundExamples[s]||(bank&&bank[0]?bank[0].w:"");
       b.type="button";b.className="sound"+(selSounds.has(s)?" on":"");b.dataset.sound=s;
-      var name=document.createElement("b"),hint=document.createElement("small");name.textContent=label;hint.textContent=example;b.appendChild(name);b.appendChild(hint);
+      b.textContent=label;
+      if(s==="TH"||s==="THV")b.setAttribute("aria-label",s==="THV"?"TH, voiced":"TH, unvoiced");
       b.setAttribute("aria-pressed",String(selSounds.has(s)));
-      b.onclick=function(){Sona.sfx.tap();if(selSounds.has(s))selSounds.delete(s);else selSounds.add(s);b.classList.toggle("on",selSounds.has(s));b.setAttribute("aria-pressed",String(selSounds.has(s)));draft.focusSounds=Array.from(selSounds);saveDraft();updateNext();};
+      b.onclick=function(){Sona.sfx.tap();if(selSounds.has(s))selSounds.delete(s);else selSounds.add(s);b.classList.toggle("on",selSounds.has(s));b.setAttribute("aria-pressed",String(selSounds.has(s)));draft.mode="speech";draft.pathReason="";draft.focusSounds=Array.from(selSounds);saveDraft();updateNext();};
       sc.appendChild(b);
     });
 
@@ -579,29 +567,14 @@
         };
       });
     })();
-    // PLAY1: the play door choice
-    (function(){
-      var pw=document.getElementById("obPath"); if(!pw)return;
-      pw.querySelectorAll(".choice").forEach(function(ch){
-        var v=ch.dataset.val;
-        // repaint the choice they made last time: "unsure" is stored as the
-        // play MODE plus a reason, so it is the reason that identifies it
-        var mine = (v==="unsure") ? (draft.mode==="play" && draft.pathReason==="unsure")
-                                  : (draft.mode===v && draft.pathReason!=="unsure");
-        if(mine) ch.classList.add("on");
-        ch.onclick=function(){ Sona.sfx.tap();
-          // "I'm not sure" and "just for fun" get the SAME content — the play
-          // order, every sound, easiest first. Storing a third mode value
-          // would have filed this family as a speech family everywhere that
-          // reads mode === "play" (library, settings, today, sona.playMode),
-          // which is the clinical framing the option exists to avoid.
-          draft.mode = (v==="unsure") ? "play" : v;
-          draft.pathReason = (v==="unsure") ? "unsure" : "";
-          saveDraft();
-          pw.querySelectorAll(".choice").forEach(function(n){n.classList.remove("on");}); ch.classList.add("on");
-        };
-      });
-    })();
+    // Skipping target selection keeps the existing general play order. It
+    // does not assess the child or infer practice targets from their age.
+    document.getElementById("obExploreSounds").onclick=function(){
+      if(ORDER!==ORDER_PARENT||ORDER[idx]!=="sounds"||finished)return;
+      Sona.sfx.tap();draft.mode="play";draft.pathReason="unsure";draft.focusSounds=[];selSounds.clear();
+      sc.querySelectorAll(".sound").forEach(function(b){b.classList.remove("on");b.setAttribute("aria-pressed","false");});
+      saveDraft();idx++;render();
+    };
     // an SLP is setting this up FOR a child, so the wording shifts from
     // "your child" to "this child" — small, but it's the difference between
     // software that knows who it's talking to and software that doesn't
@@ -677,7 +650,10 @@
 
     function render(){
       var key=ORDER[idx];
+      if(document.activeElement&&document.activeElement.tagName==="INPUT")document.activeElement.blur();
       ORDER.forEach(function(k,i){ steps[k].classList.toggle("on", i===idx); });
+      document.getElementById("obExploreOption").hidden=ORDER!==ORDER_PARENT;
+      window.scrollTo(0,0);
       document.body.dataset.setupScreen=key;document.body.classList.toggle("ob-world",key==="welcome");paintProgress(key);
       mascotForStep(key);
       bubble.textContent = BUBBLES[key] || "";
@@ -701,16 +677,11 @@
       if(key==="mic"){requestSetupMic();return;}
       if(key==="name"){ draft.childName=nameEl.value.trim(); if(!draft.childName){ nameEl.focus(); nameEl.style.borderColor="#ef6f23"; return; } }
       if(key==="interests" && selInterests.size===0){ selInterests.add("dragons"); }
-      if(key==="sounds" && selSounds.size===0)return;
+      if(key==="sounds"){if(selSounds.size===0)return;draft.mode="speech";draft.pathReason="";}
       if(key==="email"){ var em=(emailEl.value||"").trim(); if(!/^\S+@\S+\.\S+$/.test(em)){ emailEl.focus(); emailEl.style.borderColor="#ef6f23"; var ee=document.getElementById("emErr"); ee.style.display="block"; ee.textContent="Please enter a valid email — it is how you sign back in."; return; } draft.email=em; }
       Sona.sfx.tap();
       // (the "building" beat used to fire here and cover the microphone step;
       // it now plays from finish(), between the last answer and the finale)
-      // PLAY1 skip, now the only one: a family who did not say they have
-      // targets never sees the sound picker, because the picker IS the
-      // clinical framing that both general doors remove. showBuild() still
-      // runs so the hand-off feels the same either way.
-      if(key==="path" && draft.mode==="play"){ idx+=2; render(); return; }
       if(idx < ORDER.length-1){ idx++; render(); return; }
       finish();
     }
@@ -728,7 +699,6 @@
     function back(){
       if(idx<=0||micBusy||finished) return;
       Sona.sfx.tap(); idx--;
-      if(ORDER[idx]==="sounds" && draft.mode==="play") idx--;
       render();
     }
     // Email stays the default ask (it's the ad-funnel lead), but never a gate:

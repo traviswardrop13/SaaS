@@ -8,18 +8,53 @@ Ship the existing web app as a native iOS app via **Capacitor** — a thin nativ
 
 ## Prereqs (on your Mac)
 - macOS + **Xcode** (free from the App Store) + Command Line Tools
-- **Node 18+**
+- **Node 22+** (required by the pinned Capacitor 8 CLI)
 - **CocoaPods**: `sudo gem install cocoapods`
 - Your **Apple Developer account** ✅
 
 ## One-time setup (run in the repo root on your Mac)
 ```bash
-npm install @capacitor/core @capacitor/cli @capacitor/ios
+npm ci               # installs the pinned Capacitor 8 + Keyboard packages
 npx cap add ios       # generates the ios/ Xcode project
 npx cap sync ios
 npx cap open ios      # opens Xcode
 ```
 > `npm install` updates `package.json` + `package-lock.json` together — commit those. (`/ios` is gitignored; commit it later only if you want CI builds.)
+
+## Onboarding keyboard (25 Sep 2026)
+
+The iPhone build includes `@capacitor/keyboard` 8.0.5 alongside Capacitor
+8.4.1. Its config is `resize: "native"`, `style: "LIGHT"`, and
+`autoBackdropColor: "dom"`. That gives the form room above the keyboard and
+matches the exposed keyboard backdrop to the page. `resizeOnFullScreen` is an
+Android-only workaround and is intentionally omitted.
+
+`public/onboarding.html` hides the extra form-navigation toolbar only when the
+native iOS Keyboard plugin is available. Safari and older app builds keep
+working without it. The page handles safe areas itself, with
+`ios.contentInset: "never"`, so do not also add automatic native insets.
+
+This needs a **new iPhone build**, not just a website deployment. The existing
+Xcode project on Travis's Mac lives at
+`/Users/traviswardrop/Documents/SaaS/ios/App/App.xcodeproj`; `ios/` is ignored by
+Git and is not automatically present in a worktree.
+
+For future native updates, first bring the reviewed app code into the checkout
+that owns `ios/`, preserve its icon, signing, version/build and iPad settings,
+then run `npm ci` and `npx cap sync ios`. Do not sync an old checkout's `public/`
+over the app's bundled files. `npx cap update ios` updates plugin registration
+without copying existing bundled web files, but does **not** copy new plugin
+configuration; the generated `ios/App/App/capacitor.config.json` must also
+contain the Keyboard settings above. The local project was updated this way
+for this keyboard change, without replacing its bundled pages.
+
+Before submitting that build, check an actual iPhone: type a name and email;
+the field and Continue button remain reachable, the extra up/down/Done toolbar
+is hidden, and closing the keyboard restores the screen without a blank gap.
+Repeat with a hardware keyboard or VoiceOver if used. Browser tests cannot
+verify the iOS keyboard itself.
+
+Official plugin reference: https://capacitorjs.com/docs/apis/keyboard
 
 ## In Xcode
 1. **App** target → **Signing & Capabilities** → check **Automatically manage signing** → choose your **Team** (your Apple account).

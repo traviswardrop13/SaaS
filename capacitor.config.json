@@ -9,5 +9,12 @@
   },
   "ios": {
     "contentInset": "never"
+  },
+  "plugins": {
+    "Keyboard": {
+      "resize": "native",
+      "style": "LIGHT",
+      "autoBackdropColor": "dom"
+    }
   }
 }
