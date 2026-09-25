@@ -21,7 +21,7 @@
     .ob input,.move-card input{-webkit-appearance:none;appearance:none;color:var(--ink);caret-color:var(--orange-d);}
     .ob input:focus,.move-card input:focus{outline:2px solid var(--orange-d);outline-offset:2px;}
     .ob{min-height:100vh;min-height:100dvh;display:flex;flex-direction:column;max-width:560px;margin:0 auto;
-      padding:14px 18px calc(110px + env(safe-area-inset-bottom));}
+      padding:calc(14px + env(safe-area-inset-top)) 18px calc(110px + env(safe-area-inset-bottom));}
     /* progress segments — gradient fill that sweeps in as each step completes */
     .seg{display:flex;gap:6px;margin:6px 0 18px;}
     .seg > i{position:relative;height:9px;flex:1;border-radius:99px;background:#e6eef8;overflow:hidden;}
