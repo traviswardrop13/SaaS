@@ -1,89 +1,106 @@
-# SpeakUp Kids
+# Sona
 
-A Duolingo-style speech-therapy practice app for children. Built with Next.js
-(App Router) + Tailwind. The MVP runs entirely in the browser — no backend, no
-audio uploads. Speech is transcribed on-device with the Web Speech API and
-progress is saved to `localStorage`.
+A speech-practice app for kids, at [speaksona.com](https://speaksona.com).
+A child practices a target sound in short rounds, earns arcade time by doing
+it, and a grown-up gets a practice snapshot they can share with their SLP.
 
-## What's in the MVP
+Built with Rachel, a licensed pediatric speech-language pathologist (Clinical
+Fellow) and co-founder, who owns what the app asks a child to do.
 
-- **Parent setup** → create a parent profile and one or more child profiles.
-- **Kid skill tree** of speech sounds (S, R, L, SH, TH, CH), each with one or
-  more short lessons (e.g. "S at the start", "R in the middle").
-- **Pronunciation lesson player**: kid sees an emoji + word, taps to hear the
-  target word (browser TTS), then taps the mic to say it. The browser's
-  speech recognizer transcribes the attempt; a forgiving fuzzy matcher scores
-  it and animates feedback.
-- **XP, streaks, and ⭐ ratings** per lesson; lessons unlock progressively.
-- **Parent dashboard** with per-child XP, streak, total stars, and a
-  per-sound breakdown.
-- Graceful fallback for browsers without speech recognition (Firefox, older
-  Safari): the kid self-rates each word instead.
+> **This file was wrong for a long time.** It described "SpeakUp Kids" — a
+> Next.js/Tailwind skill tree that transcribed with the Web Speech API and
+> posted recordings to a Speechace scoring API. None of that is the product,
+> and `/api/score` does not exist. If something below ever stops matching the
+> code, fix this file; a README nobody trusts is worse than none.
 
-## Tech stack
+## How it is actually built
 
-- Next.js 14 (App Router) + TypeScript
-- Tailwind CSS, Framer Motion, canvas-confetti
-- Web Speech API (`SpeechRecognition` + `speechSynthesis`)
-- `localStorage` persistence (single device)
+Two halves in one repository, and the split matters:
 
-## Run locally
+- **`public/` — the app itself.** 31 static pages of plain ES5, no build
+  step, no framework, no bundler. It is deployed as-is, and the iOS shell
+  remote-loads the same live site, so **a change in `public/` is a shipped app
+  change with no App Store review.** A file broken here is a blank screen on a
+  child's device — `story.html` sat dead for about a month exactly that way.
+- **`app/` — Next.js (App Router).** The marketing pages (landing, pricing,
+  terms, privacy, support), the Stripe checkout and subscription routes, the
+  clinician dashboard API, and the server side of everything the static app
+  calls. 36 route handlers under `app/api/`.
+
+`public/sona.js` is the single source of truth for state, entitlement and
+content — pages read it, they do not reimplement it.
+
+Also here: `plugins/sona-speech`, a small Capacitor plugin wrapping Apple's
+on-device speech recognizer. The Xcode project itself is not in this repo;
+`NATIVE.md` documents the native-side settings the web app depends on.
+
+## How a verdict is decided
+
+**No audio ever leaves the device.** There is no cloud scorer. A round is
+judged on the phone: the on-device recognizer's transcript when it is
+available, and the spectral shape of what was said when it is not. One passed
+clip a day may be kept in local IndexedDB so a parent can hear it back — it is
+never uploaded. The consent copy says exactly this, and it is true because
+there is no mechanism to break it.
+
+A child's name never leaves the device to any CRM, ad pixel or analytics
+payload. Practice progress leaves only with a grown-up's explicit consent, and
+never as audio.
+
+## Running it
 
 ```bash
 npm install
-npm run dev
-# open http://localhost:3000
+npm run dev          # http://localhost:3000 — the Next.js half
 ```
 
-Chrome / Edge are the best browsers for the mic experience.
+The static app is served from `public/`, so `http://localhost:3000/today.html`
+is the app itself. Chrome gives the best microphone behaviour.
 
-## Project layout
+## Verifying it
 
-```
-app/
-  page.tsx                              # landing
-  setup/page.tsx                        # parent + child setup
-  dashboard/page.tsx                    # parent view
-  kid/[id]/page.tsx                     # kid skill tree
-  kid/[id]/lesson/[skillId]/[lessonId]/page.tsx   # lesson player
-lib/
-  lessons.ts    # skills + lesson data
-  scoring.ts    # fuzzy match for kid speech
-  speech.ts     # speech recognition + TTS helpers
-  storage.ts    # localStorage state, XP/streak logic
-```
-
-## Cloud scoring API (`/api/score`)
-
-The mobile app posts a child's recording to `POST /api/score` and gets back a
-word- and phoneme-level score. This route proxies to Speechace using a
-server-side key — the API key is never sent to the device.
-
-**Setup in Vercel:**
-
-1. Speechace dashboard → copy your product key.
-2. Vercel → `sona` project → Settings → Environment Variables.
-3. Add `SPEECHACE_API_KEY` with the key value. Check Production + Preview +
-   Development.
-4. Redeploy (any new commit triggers it).
-
-**Smoke test the deployed endpoint:**
+**There is no `npm test`.** The suites are plain Node scripts driving real
+pages in Playwright:
 
 ```bash
-API_URL=https://sona-yourdeploy.vercel.app ./scripts/test-speechace.sh rabbit R
+node tests/run-all.mjs      # all 25 suites
+node tests/iaptest.mjs      # or any one of them
 ```
 
-Records 3s from the default mic, uploads, and prints Speechace's response.
+`tests/_env.mjs` handles the Playwright setup. **Check the exit code, not the
+output** — a suite that crashes prints a stack trace and no `FAIL` line, which
+is how a broken suite once read as passing.
 
-## Roadmap (post-MVP)
+Both halves run in CI on every pull request: `tests.yml` installs Chromium and
+runs the full battery, `ci.yml` runs the typecheck and production build.
 
-- Real accounts + sync (Supabase / Clerk) so progress moves between devices.
-- Therapist accounts that can assign exercises and review recordings.
-- Minimal-pair discrimination games (ship vs chip).
-- Sticker / collectible reward layer for younger / less competitive kids.
+A new test should be shown failing against the code *before* the fix. Several
+of these suites went green for months while the bug they were meant to catch
+was live.
 
-## A note on COPPA / privacy
+## Pricing
 
-Because this MVP stores everything locally and uploads no audio, there is no
-data collection or transmission. Any future version that adds accounts or
-recording uploads needs an explicit privacy review before launch.
+One plan: **$59.99/year after a 3-day free trial** ($59.99 ÷ 12, so every
+surface says "under $5 a month"). Monthly was retired in September 2026;
+existing monthly subscribers keep their plan and can still restore it.
+
+Free regardless: families referred by an SLP (free forever, in writing), plus
+pilots, founders, and three grandfathered cohorts from earlier free windows.
+There is no payment path for an SLP or a clinic anywhere in the product — that
+channel produces engaged families and zero revenue, by design.
+
+Whether the app is free or paid is **one boolean in two files**
+(`FREE_MODE` in `public/sona.js`, mirrored by `lib/pricing.ts`). Every purchase
+surface branches on it and keeps both states. If you find yourself rewriting a
+price into a page, stop.
+
+## Working in here
+
+- `CLAUDE.md` — the working agreement: the hard rules, the clinical rules
+  Rachel owns, and the landmines that look like dead code but are promises to
+  real families.
+- `AGENTS.md` — the same ground for an outside coding agent.
+- `NATIVE.md` — what the iOS shell must do that the web app cannot.
+
+Read `CLAUDE.md` before changing anything about pricing, entitlement, or what
+a child is asked to say.

@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" width="240" height="240" role="img" aria-label="Coach">
+  <defs>
+    <clipPath id="c"><circle cx="120" cy="120" r="120"/></clipPath>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#e8f3ff"/><stop offset="1" stop-color="#fdf6e3"/>
+    </linearGradient>
+  </defs>
+  <g clip-path="url(#c)">
+    <rect width="240" height="240" fill="url(#bg)"/>
+    <!-- shoulders / cardigan -->
+    <path d="M36 240 C42 186 78 166 120 166 C162 166 198 186 204 240 Z" fill="#aebfd6"/>
+    <!-- neck -->
+    <path d="M104 158 h32 v20 a16 16 0 0 1 -32 0 Z" fill="#eec3a0"/>
+    <ellipse cx="120" cy="172" rx="18" ry="7" fill="#e0b08a"/>
+    <!-- hair back -->
+    <path d="M62 122 C62 72 88 48 120 48 C152 48 178 72 178 122 C178 152 172 170 162 188 C176 150 168 92 120 92 C72 92 64 150 78 188 C68 170 62 152 62 122 Z" fill="#5f4632"/>
+    <!-- face -->
+    <ellipse cx="120" cy="116" rx="43" ry="49" fill="#f3cdab"/>
+    <!-- hair top / fringe -->
+    <path d="M76 106 C74 70 100 50 120 50 C140 50 166 70 164 106 C151 84 138 77 120 77 C102 77 89 84 76 106 Z" fill="#5f4632"/>
+    <!-- eyes -->
+    <circle cx="104" cy="113" r="4.6" fill="#3a2f2a"/>
+    <circle cx="136" cy="113" r="4.6" fill="#3a2f2a"/>
+    <!-- brows -->
+    <path d="M95 103 q9 -5 18 1" stroke="#54402f" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <path d="M127 104 q9 -6 18 -1" stroke="#54402f" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <!-- cheeks -->
+    <circle cx="98" cy="128" r="7" fill="#f6b3a3" opacity=".5"/>
+    <circle cx="142" cy="128" r="7" fill="#f6b3a3" opacity=".5"/>
+    <!-- smile -->
+    <path d="M105 134 q15 15 30 0" stroke="#b9655a" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+  </g>
+  <circle cx="120" cy="120" r="118" fill="none" stroke="#ffffff" stroke-width="4"/>
+</svg>

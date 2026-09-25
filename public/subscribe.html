@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Sona — Your plan</title>
+  <!-- Parent-only page: mirror sona.js's grown-ups gate (sona.gate.v1 in
+       sessionStorage, 10 quiet minutes) before anything paints. A child who
+       lands here by URL is sent gently back to the home screen's gate. -->
+  <script>
+    (function () {
+      var ok = false;
+      try {
+        var t = parseInt(sessionStorage.getItem("sona.gate.v1"), 10);
+        var age = Date.now() - t;
+        ok = !!t && age >= 0 && age < 10 * 60 * 1000;
+      } catch (e) { ok = false; }
+      if (!ok) {
+        document.documentElement.style.display = "none";
+        // Carry where they were going. This guard runs BEFORE sona.js (that
+        // is the point of it — no flash of a parent page), so it cannot call
+        // Sona.gateDest; it names its own page literally instead. today.html
+        // re-checks ?to= against the allowlist on arrival, which is the side
+        // that reads an untrusted URL.
+        // ?first=1 is the hand-off from a completed run and changes the copy
+        // here, so it is the one flag worth carrying home and back.
+        location.replace("/today.html?gate=1&to=" + encodeURIComponent(
+          "/subscribe.html" + (/[?&]first=1(&|$)/.test(location.search) ? "?first=1" : "")));
+      }
+    })();
+  </script>
+  <link href="/fonts.css" rel="stylesheet">
+  <link rel="stylesheet" href="/sona.css" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <meta name="theme-color" content="#fff6e9" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Sona" />
+  <style>
+    /* standard 3-tab bottom nav (identical to Progress) */
+    .nav{position:fixed;bottom:0;left:0;right:0;max-width:480px;margin:0 auto;background:#fff;border-top:1px solid #e8eef4;display:flex;justify-content:space-around;padding:9px 0 calc(9px + env(safe-area-inset-bottom));z-index:9;}
+    .nav a{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;font-weight:800;color:#9fb0c0;text-decoration:none;}
+    .nav a .ni{font-size:21px;} .nav a.on{color:var(--blue-d);}
+
+    .hero{display:flex;align-items:center;gap:14px;}
+    .hero img{width:64px;height:64px;object-fit:contain;flex:none;
+      filter:drop-shadow(0 8px 14px rgba(140,60,0,.18));}
+    .planline{margin-top:10px;font-weight:800;font-size:14.5px;color:var(--ink);
+      background:linear-gradient(160deg,#eafaf0,#d6f3e2);border-radius:14px;padding:10px 14px;display:inline-block;}
+
+    /* ── founding-family timeline ── */
+    .tl{position:relative;margin-top:16px;padding-left:40px;}
+    .tl:before{content:"";position:absolute;left:14px;top:10px;bottom:14px;width:4px;border-radius:99px;
+      background:repeating-linear-gradient(#dbe7f5 0 9px,transparent 9px 18px);}
+    .tli{position:relative;padding:0 0 20px;}
+    .tli:last-child{padding-bottom:2px;}
+    .tld{position:absolute;left:-40px;top:-1px;width:32px;height:32px;border-radius:50%;
+      display:flex;align-items:center;justify-content:center;font-size:15px;
+      background:#fff;border:2px solid var(--line);box-shadow:0 4px 10px rgba(15,39,66,.08);}
+    .tli.now .tld{background:linear-gradient(160deg,#8ae05c,#58cc02);border-color:transparent;box-shadow:0 4px 0 0 #46a302;}
+    .tli.mail .tld{background:linear-gradient(160deg,#56b4ff,var(--blue));border-color:transparent;box-shadow:0 4px 0 0 var(--blue-d);}
+    .tli.lock .tld{background:linear-gradient(160deg,#ffb072,var(--orange));border-color:transparent;box-shadow:0 4px 0 0 var(--orange-d);}
+    .tli b{font-family:"Baloo 2";font-weight:800;font-size:16px;display:block;color:var(--ink);}
+    .tli p{font-weight:700;font-size:13.5px;color:var(--muted);margin-top:3px;line-height:1.45;}
+
+    /* Trial timeline: the same dashed rail as the founding card, tightened to
+       sit inside a plan. The dated 3-row shape is the strongest known defuser
+       of "I'll forget and get billed" — but only the rows we can actually keep
+       are here. We do NOT promise a reminder email: no trial webhook and no
+       trial mailer exist, and a promise the code can't keep is worse than no
+       promise. The middle row says what IS true — cancelling early keeps the
+       rest of the free days — and names where to do it. */
+    .tl.trial{margin-top:11px;padding-left:32px;}
+    .tl.trial:before{left:11px;top:8px;bottom:10px;width:3px;}
+    .tl.trial .tli{padding-bottom:13px;}
+    .tl.trial .tld{left:-32px;width:25px;height:25px;font-size:12px;}
+    .tl.trial .tli b{font-size:13.5px;}
+    .tl.trial .tli p{font-size:12px;margin-top:1px;}
+    .tli.clock .tld{background:linear-gradient(160deg,#56b4ff,var(--blue));border-color:transparent;box-shadow:0 3px 0 0 var(--blue-d);}
+    .tl.trial .tli.now .tld,.tl.trial .tli.lock .tld{box-shadow:0 3px 0 0 var(--orange-d);}
+    .tl.trial .tli.now .tld{background:linear-gradient(160deg,#ffc78f,var(--orange));border-color:transparent;}
+
+    /* ── plan picker (trial cohort) ── */
+    /* proof strip: the named-SLP credential ABOVE the plans — the strongest
+       paywall trust lever in the Mobbin teardown (Flo leads with proof; ours
+       is a real credentialed person, which the whole competitive set lacks). */
+    .proof{display:flex;align-items:flex-start;gap:10px;background:linear-gradient(160deg,#eafaf0,#d6f3e2);
+      border-radius:14px;padding:11px 14px;margin-top:12px;font-weight:700;font-size:13px;color:var(--ink);line-height:1.5;}
+    .proof .pem{font-size:19px;flex:none;line-height:1.2;}
+    .reassure{display:block;margin-top:9px;font-weight:700;font-size:12.5px;color:var(--muted);line-height:1.45;}
+    .plan .reassure b{display:inline;font-family:inherit;font-size:inherit;color:var(--ink);} /* outranks .plan b's display:block — the date stays inline */
+    .plan{position:relative;border:2px solid var(--line);border-radius:18px;padding:16px;margin-top:12px;cursor:pointer;background:#fff;}
+    .plan.best{border-color:var(--orange);box-shadow:0 6px 18px rgba(255,138,61,.15);}
+    .plan .tag{position:absolute;top:-11px;left:14px;background:linear-gradient(180deg,#ffe063,#ffd21c);color:#7a5200;font-family:"Baloo 2";font-weight:800;font-size:11px;letter-spacing:.06em;padding:3px 10px;border-radius:99px;}
+    .plan b{font-family:"Baloo 2";font-weight:800;font-size:17px;display:block;color:var(--ink);}
+    .plan .sub{font-weight:700;font-size:13px;color:var(--muted);margin-top:3px;line-height:1.45;}
+    .plan .go{margin-top:12px;}
+    /* The saving, said loud. Travis's ask is that yearly reads as the obvious
+       pick, so it gets its own band inside the card — a clause buried in .sub
+       grey is exactly the footnote he asked us not to write. */
+    .plan .save{display:block;margin-top:9px;background:linear-gradient(160deg,#fff0d6,#ffdfa8);
+      border-radius:12px;padding:9px 12px;font-family:"Baloo 2";font-weight:800;font-size:14px;
+      color:#7a4a00;line-height:1.35;}
+
+    /* ── remind-me module ── */
+    #remindDone{display:none;margin-top:14px;font-weight:800;font-size:15px;color:#2e7d32;
+      background:linear-gradient(160deg,#eafaf0,#d6f3e2);border-radius:14px;padding:12px 16px;}
+
+    /* ── what-free-includes ── */
+    ul.free{list-style:none;margin:12px 0 0;}
+    ul.free li{display:flex;gap:9px;font-weight:700;margin-top:9px;color:var(--ink);font-size:14.5px;line-height:1.4;}
+    ul.free li:before{content:"✓";color:var(--good);font-weight:800;flex:none;}
+    .slpline{display:flex;align-items:flex-start;gap:9px;margin-top:16px;padding-top:14px;border-top:1px solid var(--line);
+      font-weight:700;font-size:13px;color:var(--muted);line-height:1.5;}
+    .slpline .em{font-size:18px;flex:none;line-height:1.2;}
+  </style>
+</head>
+<body>
+  <div class="wrap" style="padding-bottom:96px;">
+    <header class="app">
+      <div class="brand"><span class="leo"><img src="/coach/echo/echo-avatar.svg" alt="Echo" /></span> Sona</div>
+      <div class="pills">
+        <a class="iconbtn" href="/today.html" title="Home" style="display:flex;align-items:center;justify-content:center;"><span class="pic-home"></span></a>
+        <a class="iconbtn" href="/settings.html" title="Settings" style="display:flex;align-items:center;justify-content:center;"><span class="pic-gear"></span></a>
+      </div>
+    </header>
+
+    <!-- THE RECAP, and it only appears on the hand-off from a completed run.
+         A parent arrives here having been fetched by a child who just
+         finished something, and the first thing they saw was a price. What
+         they see first now is what actually happened, in facts this device
+         recorded: which sound, how many words out loud, whether the run was
+         finished, and what the next session holds. Every line is omitted when
+         the data behind it is missing — an invented recap on the page that
+         asks for money is worse than no recap — and none of them claims the
+         child improved, because one session cannot show that and the detector
+         could not prove it if it did. -->
+    <div class="card" id="recapCard" style="display:none;">
+      <h2 id="recapTitle">Here's what just happened</h2>
+      <ul id="recapList" style="margin:10px 0 0;padding-left:20px;font-weight:800;font-size:14.5px;line-height:1.7;color:var(--ink);"></ul>
+      <p class="muted" style="margin-top:10px;font-size:12px;line-height:1.5;">A practice snapshot, not an assessment — and it stays on this device.</p>
+    </div>
+
+    <div class="card">
+      <div class="hero">
+        <img src="/coach/echo/echo-avatar.svg" alt="Echo" />
+        <div>
+          <h1>Your plan</h1>
+          <p class="muted" style="font-weight:700;font-size:14px;margin-top:3px;">One plan, told plainly — for the grown-ups.</p>
+        </div>
+      </div>
+      <span class="planline" id="planLine">Today's plan: <b>free</b> — you're a founding family.</span>
+    </div>
+
+    <!-- native paywall (App Store build): ONE plan, Apple's sheet, required
+         restore + legal links. Stripe never shows inside the shell. -->
+    <div class="card" id="iapCard" style="display:none;">
+      <!-- The plan is SONA PREMIUM, named as such on every surface that sells
+           it (24 Sep 2026): the "See the plan" button on the Premium page and
+           the one-time offer after a first run both land here, and a card
+           titled "Sona Yearly" beside "only if you keep Sona" read as buying
+           Sona itself — which, with a free version, nobody has to. -->
+      <h2 id="iapTitle">Start your free days of Sona Premium</h2>
+      <div class="proof">
+        <span class="pem">🎓</span>
+        <span><b>Built with Rachel — licensed pediatric speech-language pathologist</b> &amp; Sona co-founder. Real speech practice, disguised as games kids ask to play.</span>
+      </div>
+      <!-- NATIVE CARD — state the saving as a RATIO, never as dollars.
+           RevenueCat overwrites #iapPrice from App Store Connect at runtime,
+           so the figure in the markup is only a placeholder and the card must
+           never state a saving in dollars — ASC owns that number, not this
+           repo. Monthly was retired on 18 Sep 2026; the product id stays in
+           sona.js so an existing monthly subscriber can still RESTORE, but it
+           is never offered for purchase again. -->
+      <div class="plan best" id="iapPlan">
+        <span class="tag">3 DAYS FREE · EVERYTHING INCLUDED</span>
+        <b>Sona Premium — <span id="iapPrice">$59.99/yr</span></b>
+        <span class="save">One plan, billed once a year.</span>
+        <span class="sub">Nothing is charged during your 3 free days. Sona Premium: every game in the library. Daily practice and free games stay free either way.</span>
+        <button class="btn go" id="iapBuy">Start 3 days free</button>
+        <span class="reassure" id="iapMath">No charge today — cancel anytime during your free days.</span>
+        <div class="tl trial" id="iapTL"></div>
+      </div>
+      <p class="muted" id="iapMsg" style="margin-top:10px;font-weight:800;font-size:12.5px;min-height:16px;"></p>
+      <p class="muted" style="margin-top:8px;font-size:11.5px;line-height:1.5;">Sona Premium (yearly) starts with a 3-day free trial, then renews at the yearly price shown above. Payment is charged to your Apple&nbsp;ID; the subscription renews unless canceled at least 24 hours before the period ends. Manage or cancel in Settings&nbsp;→&nbsp;Subscriptions.</p>
+      <p style="margin-top:10px;font-weight:800;font-size:11px;">
+        <button id="iapRestore" style="border:none;background:none;color:var(--blue-d);font-weight:800;font-size:12px;cursor:pointer;padding:4px 6px;text-decoration:underline;">Restore Purchases</button>
+        · <a href="/terms" style="color:#8a6f52;">Terms of Use</a>
+        · <a href="/privacy" style="color:#8a6f52;">Privacy</a>
+      </p>
+    </div>
+
+    <div class="card" id="pickCard" style="display:none;">
+      <!-- "Pick your plan" over ONE plan asked a parent to choose between a
+           thing and nothing. There is one plan; the heading says what the
+           button does. -->
+      <h2>Start your free days of Sona Premium</h2>
+      <div class="proof">
+        <span class="pem">🎓</span>
+        <span><b>Built with Rachel — licensed pediatric speech-language pathologist</b> &amp; Sona co-founder. Real speech practice, disguised as games kids ask to play.</span>
+      </div>
+      <!-- SONA PREMIUM, and only what it actually adds (24 Sep 2026). Since the
+           free version shipped, daily practice is free for every family, so
+           this card sells GAMES — every game in the library — and says
+           plainly that practice stays free either way. Listing the Sound
+           Check or the progress report here would imply the free version
+           lacks them; it does not. -->
+      <p class="muted" style="font-size:13.5px;font-weight:700;">Sona Premium opens every game in the library, for every child on this device. Daily practice and free games stay free either way.</p>
+      <!-- WEB CARD — exact dollars, because Stripe reads its prices from this
+           repo. ONE PLAN as of 18 Sep 2026: $119.88 and "save $59.89" left
+           with the monthly tier, because both were only 12 x $9.99 and a
+           struck-through price with no monthly plan behind it is an anchor
+           against a number nobody can buy. What is left is arithmetic a parent
+           can still check: $59.99 / 12 = $4.9991, hence "under $5 a month" and
+           never "$4.99". Move the price and #planLine and trialTimeline()'s
+           final row move with it. -->
+      <div class="plan best" id="planLife">
+        <span class="tag">3 DAYS FREE · EVERYTHING INCLUDED</span>
+        <b id="webTitle">Sona Premium — $59.99/yr</b>
+        <!-- CHARTER. Filled by /api/charter at load: while the first fifty
+             spots last, this names the standard price and how many are left
+             (the count only when Stripe answered it — a guessed scarcity
+             number is the one thing this card must never show). Once they are
+             gone the whole card re-prices to the standard tier BEFORE the
+             button enables, so the price a parent sees is the price Stripe
+             charges. The native card above is untouched: App Store Connect
+             owns that figure. -->
+        <span class="reassure" id="charterLine" style="display:none;font-weight:800;color:#46a302;"></span>
+        <span class="save">Under $5 a month, billed once a year.</span>
+        <span class="sub">Every game in the library, both age groups, and every new game as it ships. Nothing is charged for the first 3 days.</span>
+        <button class="btn go" id="buyLife">Start 3 days free</button>
+        <span class="reassure" id="trialMath">No charge today — cancel anytime during your free days.</span>
+        <div class="tl trial" id="webTL"></div>
+        <span style="display:block;margin-top:9px;font-weight:800;font-size:11px;">
+          <a href="/terms" style="color:#8a6f52;text-decoration:underline;">Terms of Use</a>
+          · <a href="/privacy" style="color:#8a6f52;text-decoration:underline;">Privacy</a>
+        </span>
+      </div>
+      <p class="muted" id="pickMsg" style="margin-top:10px;font-weight:800;font-size:12.5px;"></p>
+      <p class="muted" id="webRenew" style="margin-top:8px;font-size:11.5px;line-height:1.5;">Sona Premium renews at $59.99 a year after the 3-day free trial. Cancel anytime in your account.</p>
+    </div>
+
+    <p id="declineRow" style="display:none;text-align:center;margin-top:18px;">
+      <a href="/today.html" id="declineLink" class="btn ghost" style="width:auto;padding:12px 22px;display:inline-block;text-decoration:none;">Not now — keep the free version</a>
+      <span class="muted" style="display:block;margin-top:8px;font-size:12.5px;font-weight:700;">Your practice round is still there whenever you want it.</span>
+    </p>
+
+    <!-- WHAT STAYS FREE — shown, while pricing is live, to a family who does
+         not have Premium, directly under the offer. Since 24 Sep 2026 saying
+         no to the plan does not mean losing Sona: practice is never behind
+         the paywall. A parent deciding whether to pay deserves to see what
+         they keep if they don't, in the same place they see the price. -->
+    <div class="card" id="freeTierCard" style="display:none;">
+      <h2>What stays free</h2>
+      <ul class="free">
+        <li>Daily speech practice — the whole adventure, every day</li>
+        <li>Four free games — two for each age group, open to every child</li>
+      </ul>
+      <!-- the one phrase every family surface uses for the free version
+           (24 Sep 2026); "two games" undersold what gameAccess opens -->
+      <p class="muted" style="font-size:13px;font-weight:700;margin-top:10px;">Daily practice and free games stay free for good. Sona Premium adds every other game; nothing about practice changes either way.</p>
+    </div>
+
+    <!-- The "working with a speech therapist?" card lived here. The SLP side
+         is HIDDEN (Travis, 19 Sep 2026 — not a priority): a referred family
+         arrives through the link their clinician hands them, which still
+         verifies and unlocks; nothing on this screen points at it any more. -->
+
+    <div class="card" id="foundingCard">
+      <h2>How pricing works here</h2>
+      <div class="tl">
+        <div class="tli now">
+          <span class="tld" data-ic="sprout">🌱</span>
+          <b>Today</b>
+          <p>Free while we build together. No card on file, nothing to cancel — every game is open.</p>
+        </div>
+        <div class="tli mail">
+          <span class="tld" data-ic="mail">💌</span>
+          <b>Before anything changes</b>
+          <p>We email you first. Nothing happens silently — no auto-charges, no fine print doing the talking.</p>
+        </div>
+        <!-- Post-flip this card only renders for founding / SLP-referred /
+             grandfathered families (see the !_founding hide below), so this row
+             states the promise they were actually made: they keep free. Every
+             free era has been honoured by a one-shot sweep and this one is no
+             different — if that ever stops being true, this row is the lie. -->
+        <div class="tli lock">
+          <span class="tld" data-ic="lock">🔒</span>
+          <b>Your plan stays free</b>
+          <p>Families who practiced with Sona while it was free keep it free — that includes you. Nothing to pay, nothing to cancel, and no locked screen waiting.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" id="remindCard">
+      <h2>We'll tell you first <span data-ic="mail">💌</span></h2>
+      <p class="muted" style="font-size:13.5px;font-weight:700;">That's our promise either way — this just makes it official on your end too.</p>
+      <button class="btn blue" id="remindBtn" style="margin-top:14px;">Remind me before anything changes</button>
+      <div id="remindForm" style="display:none;margin-top:12px;">
+        <input id="remindEmail" type="email" inputmode="email" autocomplete="email" placeholder="you@email.com"
+               style="width:100%;border:2px solid var(--line);border-radius:14px;padding:13px 14px;font-family:Nunito,sans-serif;font-weight:800;font-size:15px;color:var(--ink);background:#fff;" />
+        <button class="btn blue" id="remindSend" style="margin-top:10px;">Email me first</button>
+        <p id="remindErr" style="display:none;margin-top:8px;font-weight:800;font-size:12.5px;color:#c2410c;"></p>
+      </div>
+      <p id="remindDone">Done — we'll email you before anything changes.</p>
+    </div>
+
+    <div class="card" id="freeIncludesCard">
+      <h2>What free includes</h2>
+      <ul class="free">
+        <li>Every game that's in Sona today — the full practice path, no locked tiers</li>
+        <li>New levels and sounds as they ship — founding families get them first, at no charge</li>
+        <li>Progress tracking you can print or share with your SLP</li>
+        <li>A fresh set of games every day, each one earned by saying your sounds</li>
+      </ul>
+      <div class="slpline">
+        <span class="em">🎓</span>
+        <span>Sona's practice content is shaped with a pediatric speech-language pathologist, and your feedback steers what we build next.</span>
+      </div>
+    </div>
+
+    <!-- A VISIBLE WAY TO SAY NO. There was a "Back to Sona" in the nav and a
+         "Back to Settings" link, but both read as navigation — a parent who
+         had just been fetched by their child and did not want to buy anything
+         had to work out that leaving was allowed. On the hand-off it is a
+         stated option, next to the price rather than under the footer, and it
+         goes back to a home screen that still has the demonstration on it. -->
+
+    <p class="muted" style="text-align:center;margin-top:22px;font-size:12.5px;font-weight:700;max-width:420px;margin-left:auto;margin-right:auto;">
+      Sona is an at-home practice companion — not a substitute for professional care.
+    </p>
+    <p class="muted" style="text-align:center;margin-top:10px;font-size:13px;">
+      <a href="/settings.html">← Back to Settings</a>
+    </p>
+  </div>
+
+  <div class="nav">
+    <a href="/today.html"><span class="ni pic-home"></span>Back to Sona</a>
+    <a class="on" href="/settings.html"><span class="ni pic-gear"></span>Settings</a>
+  </div>
+
+  <script src="/pixel.js"></script>
+  <script src="/analytics.js"></script>
+  <script src="/sona.js"></script>
+  <script>
+    // Parent-only page: re-check the gate once the shared helper is loaded, and
+    // again on bfcache restores (back-swipe re-shows the page without scripts).
+    if (window.Sona && Sona.requireGate) Sona.requireGate();
+    window.addEventListener("pageshow", function (e) { if (e.persisted && window.Sona && Sona.requireGate) Sona.requireGate(); });
+
+    // FREE MODE (SLP-first launch): no price anywhere. Both purchase cards
+    // stay in the DOM (and under test) but neither is shown — one flag, so a
+    // clinician handing Sona to a family never hits a wall.
+    var FREE=false; try{ FREE=!!(Sona.isFree&&Sona.isFree()); }catch(e){}
+
+    // The header line for a family who holds Premium without having bought it
+    // here. Where it came from is said out loud: a clinician's plan can end,
+    // and a parent who was never told it was theirs cannot plan for that.
+    function premiumLine() {
+      var why = "every game is open.";
+      try {
+        if (Sona.caseCovered && Sona.caseCovered()) why = "included through your child's speech therapist.";
+        else if (Sona.getProfile().earlyAdopter) why = "yours to keep — you were here while Sona was free.";
+      } catch (e) {}
+      document.getElementById("planLine").innerHTML = 'Your plan: <b style="color:var(--good);">Sona Premium ✓</b> — ' + why;
+    }
+
+    // The dated trial timeline, one builder for both paywalls.
+    //
+    // Every row has to survive a parent checking it against reality: the dates
+    // are computed from the same +3 days the charge itself uses, the middle row
+    // promises only what the code can keep (no reminder email exists — see the
+    // CSS note), and the final row carries a FIGURE only on the web, where this
+    // repo is the source of truth. On iOS the App Store price is whatever App
+    // Store Connect says and RevenueCat rewrites it above, so naming a number
+    // here could contradict the button two lines up.
+    function trialTimeline(id, native) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      var fmt = function (days) {
+        try { return new Date(Date.now() + days * 86400000).toLocaleDateString("en-US", { month: "long", day: "numeric" }); }
+        catch (e) { return ""; }
+      };
+      var d0 = fmt(0), d2 = fmt(2), d3 = fmt(3);
+      if (!d3) return;                       // no dates, no timeline — the prose line stays
+      var where = native ? "Settings → Subscriptions" : "your account";
+      var last = native
+        ? "Sona Premium's yearly plan starts, at the price above — only if you kept Premium."
+        : "Sona Premium's yearly plan starts: " + (window.__yearPrice || "$59.99") + " for the year — only if you kept Premium.";
+      el.innerHTML =
+        '<div class="tli now"><span class="tld">⭐</span><b>Today, ' + d0 + ' — every game unlocks</b>' +
+          '<p>Every game in Sona Premium opens. Nothing is charged today.</p></div>' +
+        '<div class="tli clock"><span class="tld">⏰</span><b>' + d2 + ' — still free</b>' +
+          '<p>Cancel any time before day 3 in ' + where + ' and you keep the rest of your free days.</p></div>' +
+        '<div class="tli lock"><span class="tld">🔓</span><b>' + d3 + '</b><p>' + last + '</p></div>';
+      // the prose sentence said the same thing in one line; the timeline
+      // replaces it rather than repeating it
+      var prose = document.getElementById(native ? "iapMath" : "trialMath");
+      if (prose) prose.style.display = "none";
+    }
+    if (FREE) {
+      try {
+        document.getElementById("iapCard").style.display = "none";
+        document.getElementById("pickCard").style.display = "none";
+        document.getElementById("planLine").innerHTML = 'Sona is <b style="color:var(--good);">free</b> right now — every game, every sound, nothing to pay.';
+        var _fc = document.getElementById("foundingCard");
+        if (_fc) _fc.style.display = "block";
+      } catch (e) {}
+    } else {
+      // Pricing is live. These three cards are the free-era story — "Free while
+      // we build together", "no auto-charges", "What free includes" — and they
+      // sat directly under the buy buttons contradicting them. They stay for
+      // the families for whom that story is still TRUE: every grandfathered
+      // free era (earlyAdopter — which, through the era-four sweep, includes
+      // every device that redeemed a clinician's link before 24 Sep 2026) and
+      // founders. A clinician's link redeemed AFTER that is not in this
+      // cohort: slpVerified() no longer means "free forever", so it no longer
+      // earns the story that says so.
+      var _founding = false;
+      try { _founding = !!(Sona.getProfile().earlyAdopter) || !!(Sona.isFounder && Sona.isFounder()); } catch (e) {}
+      if (!_founding) {
+        try {
+          ["foundingCard", "remindCard", "freeIncludesCard"].forEach(function (id) {
+            var el = document.getElementById(id); if (el) el.style.display = "none";
+          });
+        } catch (e) {}
+      }
+    }
+
+    // Native shell (App Store build): ONE paywall — Apple's sheet via
+    // RevenueCat. Stripe cards never render in the shell (3.1.1 hygiene).
+    (function () {
+      try {
+        if (FREE) return;
+        if (!(Sona.isNativeApp && Sona.isNativeApp())) return;
+        var subbed = Sona.isSubscribed && Sona.isSubscribed();
+        document.getElementById("pickCard").style.display = "none";
+        var fc = document.getElementById("foundingCard"); if (fc) fc.style.display = "none";
+        if (subbed) { document.getElementById("planLine").innerHTML = 'Your plan: <b style="color:var(--good);">Active ✓</b> — thank you for backing Sona.'; return; }
+        // Premium from somewhere else — a grandfathered free era, a covered
+        // caseload, a founder key — is never offered Apple's sheet: selling a
+        // family what they already have is the one sale Sona must not make.
+        if (Sona.premium && Sona.premium()) { premiumLine(); return; }
+        if (!(Sona.iapAvailable && Sona.iapAvailable())) return; // old binary: no purchase UI at all
+        document.getElementById("iapCard").style.display = "block";
+        try { if (window.SonaAnalytics) SonaAnalytics.track("paywall viewed", { surface: "native" }); } catch (e) {}
+        // The offer is on screen NOW — this is the only place the one-shot is
+        // spent. Deciding to come here is not the same as arriving.
+        try { if (Sona.planShown) Sona.planShown("native"); } catch (e) {}
+        // NO dollars and NO comparison. The figure on this card arrives from
+        // App Store Connect a moment later, so a price written here would
+        // out-argue it. This line said "about half what monthly costs" until
+        // monthly was retired — a ratio against a plan nobody can buy is the
+        // same invented was-price a strike-through would be, and it sent a
+        // parent looking for a monthly button that is not on the card.
+        document.getElementById("planLine").innerHTML = "Today: the <b>free version</b>. Sona Premium: <b>3 days free</b>, then one charge a year — cancel any time before it.";
+        // greet the onboarding hand-off warmly
+        if (/[?&]welcome=1/.test(location.search)) document.getElementById("iapTitle").textContent = "One last thing — start your free days of Sona Premium";
+        try {
+          var d3 = new Date(Date.now() + 3 * 86400000);
+          var t3 = d3.toLocaleDateString("en-US", { month: "long", day: "numeric" });
+          document.getElementById("iapMath").innerHTML = "No charge today — first charge <b>" + t3 + "</b>, only if you keep Sona Premium. Cancel anytime before then.";
+        } catch (e) {}
+        trialTimeline("iapTL", true);
+        Sona.iapProduct("annual").then(function (p) {
+          if (p && (p.priceString || p.price)) document.getElementById("iapPrice").textContent = (p.priceString || ("$" + p.price)) + "/yr";
+        }).catch(function () {});
+        var msg = document.getElementById("iapMsg");
+        function iapGo(kind, value, label) {
+          msg.textContent = "Opening the App Store…";
+          try { if (window.sonaTrack) sonaTrack("InitiateCheckout", { value: value, currency: "USD", content_name: label }); } catch (e) {}
+          Sona.iapPurchase(kind).then(function () {
+            msg.textContent = "";
+            // RevenueCat has confirmed the entitlement by the time this resolves
+            // "purchase completed", NOT "trial started": sona.js fires
+            // "trial started" when the in-app 3-day clock begins, and two
+            // different funnel steps sharing one event name makes both numbers
+            // meaningless. This one means money was committed.
+            try { if (window.SonaAnalytics) SonaAnalytics.track("purchase completed", { source: "apple", plan: "annual" }); } catch (e) {}
+            try { if (Sona.confetti) Sona.confetti({ count: 160 }); if (Sona.sfx && Sona.sfx.complete) Sona.sfx.complete(); } catch (e) {}
+            document.getElementById("planLine").innerHTML = 'Your plan: <b style="color:var(--good);">Active ✓</b> — welcome to Sona!';
+            document.getElementById("iapCard").style.display = "none";
+            setTimeout(function () { location.href = "/today.html"; }, 1200);
+          }).catch(function (e) {
+            msg.textContent = (e && e.cancelled) ? "" : "That didn't go through — nothing was charged. Try again in a moment.";
+          });
+        }
+        document.getElementById("iapBuy").onclick = function () { iapGo("annual", 59.99, "iap_annual"); };
+        document.getElementById("iapRestore").onclick = function () {
+          msg.textContent = "Checking your purchases…";
+          Sona.iapRestore().then(function (active) {
+            msg.textContent = active ? "Restored ✓ — welcome back!" : "No purchases found on this Apple ID.";
+            if (active) setTimeout(function () { location.href = "/today.html"; }, 1000);
+          }).catch(function () { msg.textContent = "Couldn't reach the App Store — try again in a moment."; });
+        };
+      } catch (e) {}
+    })();
+
+    // Build the recap from what this device actually recorded. Nothing here
+    // is fetched and nothing is guessed: each line is skipped when its number
+    // is missing, so a parent who arrives after an interrupted run sees fewer
+    // lines rather than a fabricated one.
+    (function () {
+      if (!/[?&]first=1(&|$)/.test(location.search)) return;
+      try {
+        var P = Sona.getProfile ? Sona.getProfile() : {};
+        var nm = (P.childName || "").trim() || "Your child";
+        var out = [];
+
+        // which sound, by today's attempts — not by what is merely configured
+        var today = Sona.localDay ? Sona.localDay() : new Date().toISOString().slice(0, 10);
+        var o = (Sona.outcomes ? Sona.outcomes() : {}) || {};
+        var best = null;
+        Object.keys(o).forEach(function (sd) {
+          var d = o[sd] && o[sd].days && o[sd].days[today];
+          var n = d ? (d.a || 0) : 0;
+          if (n > 0 && (!best || n > best.n)) best = { s: sd, n: n };
+        });
+        if (best) {
+          var lbl = Sona.soundLabel ? Sona.soundLabel(best.s) : best.s;
+          out.push("<b>" + nm + "</b> practiced the <b>" + lbl + "</b> sound.");
+        }
+
+        var reps = Sona.repsToday ? Sona.repsToday() : 0;
+        if (reps > 0) out.push("<b>" + reps + "</b> word" + (reps === 1 ? "" : "s") + " said out loud — each one heard, none counted from silence.");
+
+        var di = Sona.dailyInfo ? Sona.dailyInfo() : null;
+        if (di && di.playedToday) out.push("Today's run is <b>finished</b>" + (di.score ? " — " + di.score + " points" : "") + ".");
+
+        // NOTHING HAPPENED MEANS NO RECAP. Every line above is something the
+        // device actually recorded; a recap of nothing, on the page that asks
+        // for money, is worse than no recap. (A "next time: tomorrow's chapter"
+        // line used to follow — it went with the books, GAMES1.)
+        if (!out.length) return;
+        document.getElementById("recapTitle").textContent = "Here's what " + nm + " just did";
+        document.getElementById("recapList").innerHTML = out.map(function (l) { return "<li>" + l + "</li>"; }).join("");
+        document.getElementById("recapCard").style.display = "block";
+        // The recap is a funnel STEP, not decoration: without it there is no
+        // way to tell a parent who read what their child did from one who was
+        // handed a price cold.
+        try { if (Sona.track) Sona.track("recap viewed", {}); } catch (e) {}
+      } catch (e) {}
+    })();
+
+    // The decline, and the only place it is offered as a decline.
+    (function () {
+      if (!/[?&]first=1(&|$)/.test(location.search)) return;
+      var row = document.getElementById("declineRow"), a = document.getElementById("declineLink");
+      if (!row || !a) return;
+      // a family who cannot be sold to is not being asked, so there is nothing
+      // for them to decline
+      var asked = true; try { asked = !(Sona.isFree && Sona.isFree()) && !(Sona.premium && Sona.premium()); } catch (e) {}
+      if (!asked) return;
+      row.style.display = "block";
+      a.addEventListener("click", function () {
+        // keepalive, because this navigates immediately afterwards
+        try { if (Sona.track) Sona.track("offer dismissed", { surface: "first-run" }); } catch (e) {}
+      });
+    })();
+
+    // Cohort routing: whoever already has Premium — subscribers, founding
+    // families, a covered clinician's caseload, founders — is never shown the
+    // picker; everyone else (the free version) gets the plan AND, right under
+    // it, what stays free if they say no. premium() is the one test, the same
+    // one the gate and the plan moment read.
+    (function () {
+      try {
+        var subbed = Sona.isSubscribed && Sona.isSubscribed();
+        var hasPremium = !!(Sona.premium && Sona.premium());
+        if (FREE) return;                                  // free mode: no picker
+        if (Sona.isNativeApp && Sona.isNativeApp()) return; // shell handled above
+        if (hasPremium && !subbed) premiumLine();
+        if (!hasPremium) {
+          document.getElementById("pickCard").style.display = "block";
+          var ft = document.getElementById("freeTierCard"); if (ft) ft.style.display = "block";
+          try{ if(/[?&]welcome=1/.test(location.search)) document.querySelector("#pickCard h2").textContent = "One last thing — start your free days of Sona Premium"; }catch(e){}
+          var fc = document.getElementById("foundingCard"); if (fc) fc.style.display = "none";
+          // the header line must match the picker, not the founding story
+          document.getElementById("planLine").innerHTML = "Today: the <b>free version</b>. Sona Premium: <b>3 days free</b>, then $59.99/yr — <b>under $5 a month</b>, billed once a year.";
+        }
+      } catch (e) {}
+      function buy(plan, value) {
+        var msg = document.getElementById("pickMsg");
+        msg.textContent = "Opening secure checkout…";
+        try { if (window.sonaTrack) sonaTrack("InitiateCheckout", { value: value, currency: "USD", content_name: plan }); } catch (e) {}
+        var email = ""; try { email = (Sona.getProfile().email || "").trim(); } catch (e) {}
+        fetch("/api/checkout", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ plan: plan, email: email }) })
+          .then(function (r) { return r.json(); })
+          .then(function (j) { if (j && j.ok && j.url) { location.href = j.url; } else { msg.textContent = (j && j.error) || "Checkout couldn't open — try again in a minute."; } })
+          .catch(function () { msg.textContent = "Checkout couldn't open — are you online?"; });
+      }
+      // web paywall impression (native fires its own with surface:"native")
+      // BOTH of these hang off one condition: the picker is actually on the
+      // screen. planShown() spends a one-shot this family only gets once, so
+      // counting it for a subscriber who was shown nothing would burn the ask
+      // AND inflate the funnel — the exact pair of bugs that killed
+      // planMoment().
+      try {
+        var offerOnScreen = document.getElementById("pickCard").style.display !== "none" && !subbed;
+        if (window.SonaAnalytics && offerOnScreen) SonaAnalytics.track("paywall viewed", { surface: "web" });
+        if (offerOnScreen) { try { if (Sona.planShown) Sona.planShown("web"); } catch (e) {} }
+      } catch (e) {}
+      // the exact-date pill: a trial started today ends on a knowable date, and
+      // naming it beats "after 3 days" for trust
+      try {
+        var _d = new Date(Date.now() + 3 * 86400000);
+        var _t = _d.toLocaleDateString("en-US", { month: "long", day: "numeric" });
+        var _tm = document.getElementById("trialMath");
+        if (_tm) _tm.innerHTML = "No charge today — first charge <b>" + _t + "</b>, only if you keep Sona Premium. Cancel anytime before then.";
+      } catch (e) {}
+      trialTimeline("webTL", false);
+      var lf = document.getElementById("buyLife");
+      var yearValue = 59.99;
+      if (lf) lf.onclick = function () { buy("annual", yearValue); };
+
+      // THE TIER, FROM THE SAME COUNT THE CHECKOUT READS. The button waits for
+      // the answer (or 2.5s) so a family never taps "$59.99" and meets $99.99
+      // on the Stripe page: the server decides the price, and this page must
+      // agree with it before it lets anyone through.
+      (function () {
+        if (!lf || document.getElementById("pickCard").style.display === "none") return;
+        var label = lf.textContent, settled = false;
+        lf.disabled = true; lf.textContent = "Checking today’s price…";
+        var release = function () { if (settled) return; settled = true; lf.disabled = false; lf.textContent = label; };
+        setTimeout(release, 2500);
+        fetch("/api/charter").then(function (r) { return r.json(); }).then(function (j) {
+          if (!j || !j.ok || j.free) return release();
+          var line = document.getElementById("charterLine");
+          if (j.open) {
+            if (line) {
+              line.textContent = j.label + " price for the first " + j.cap + " families — regular price " + j.standard + "/yr"
+                + (j.source === "stripe" ? " · " + j.left + " spot" + (j.left === 1 ? "" : "s") + " left" : "");
+              line.style.display = "block";
+            }
+          } else {
+            // spots gone: every figure on this card becomes the standard tier
+            yearValue = 99.99; window.__yearPrice = j.standard;
+            var t = document.getElementById("webTitle"); if (t) t.textContent = "Sona Premium — " + j.standard + "/yr";
+            var sv = document.querySelector("#planLife .save"); if (sv) sv.textContent = "Under $8.50 a month, billed once a year.";
+            var pl = document.getElementById("planLine"); if (pl) pl.innerHTML = "Today: the <b>free version</b>. Sona Premium: <b>3 days free</b>, then " + j.standard + "/yr — <b>under $8.50 a month</b>, billed once a year.";
+            var rn = document.getElementById("webRenew"); if (rn) rn.textContent = "Sona Premium renews at " + j.standard + " a year after the 3-day free trial. Cancel anytime in your account.";
+            trialTimeline("webTL", false);
+          }
+          release();
+        }).catch(release);
+      })();
+    })();
+
+    // Plan line: reflect an active subscription if one was restored on this device.
+    (function () {
+      try {
+        if (Sona.isSubscribed && Sona.isSubscribed()) {
+          document.getElementById("planLine").innerHTML = 'Your plan: <b style="color:var(--good);">Active ✓</b> — thank you for backing Sona.';
+        }
+      } catch (e) {}
+    })();
+
+    // "Remind me before anything changes" — now captures a real email so the
+    // promise has a mechanism (fix pack 1d). POSTs /api/lead {source:
+    // "remindPledge"}; the local flag still remembers the pledge on-device.
+    (function () {
+      var KEY = "sona.remindPledge.v1";
+      var btn = document.getElementById("remindBtn");
+      var form = document.getElementById("remindForm");
+      var email = document.getElementById("remindEmail");
+      var send = document.getElementById("remindSend");
+      var err = document.getElementById("remindErr");
+      var done = document.getElementById("remindDone");
+      function paint() {
+        var on = false;
+        try { on = !!localStorage.getItem(KEY); } catch (e) {}
+        if (on) { btn.style.display = "none"; form.style.display = "none"; done.style.display = "block"; }
+      }
+      btn.onclick = function () {
+        btn.style.display = "none"; form.style.display = "block";
+        try { var pe = (Sona.getProfile().email || "").trim(); if (pe) email.value = pe; } catch (e) {}
+        email.focus();
+      };
+      send.onclick = function () {
+        var v = (email.value || "").trim();
+        if (!/^\S+@\S+\.\S+$/.test(v)) { err.style.display = "block"; err.textContent = "Please enter a valid email."; email.focus(); return; }
+        err.style.display = "none"; send.disabled = true; send.textContent = "Saving…";
+        fetch("/api/lead", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: v, source: "remindPledge" }) })
+          .then(function (r) { return r.json(); })
+          .then(function (j) {
+            if (!(j && j.ok)) throw new Error("bad");
+            try { localStorage.setItem(KEY, String(Date.now())); } catch (e) {}
+            try { var P = Sona.getProfile(); if (!P.email) Sona.saveProfile({ email: v }); } catch (e) {}
+            paint();
+          })
+          .catch(function () { send.disabled = false; send.textContent = "Email me first"; err.style.display = "block"; err.textContent = "Couldn't save that — try again in a moment."; });
+      };
+      paint();
+    })();
+
+    // header + nav icons from the shared icon kit (emoji stay as fallback)
+    (function () { try {
+      document.querySelectorAll(".pic-home").forEach(function (n) { n.innerHTML = Sona.icon("home", 20); });
+      document.querySelectorAll(".pic-gear").forEach(function (n) { n.innerHTML = Sona.icon("gear", 20); });
+      document.querySelectorAll("[data-ic]").forEach(function (n) { var m = Sona.icon(n.dataset.ic, 18); if (m) n.innerHTML = m; });
+    } catch (e) {} })();
+  </script>
+</body>
+</html>

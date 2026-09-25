@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Leads — Sona founders</title>
+  <!-- A private founder page: every email that reached Sona, and every
+       clinician account. noindex, and no pixel or analytics — it lists
+       people's email addresses, and nothing on it should be tracked. -->
+  <meta name="robots" content="noindex, nofollow" />
+  <link href="/fonts.css" rel="stylesheet">
+  <style>
+    *{box-sizing:border-box;}
+    [hidden]{display:none !important;}
+    body{margin:0;background:#FFFAF3;color:#2D2A4B;font-family:Nunito,system-ui,sans-serif;}
+    .wrap{max-width:1200px;margin:0 auto;padding:24px;}
+    h1,h2{font-family:"Baloo 2",Nunito,sans-serif;font-weight:800;margin:0 0 8px;}
+    h1{font-size:30px;} h2{font-size:22px;margin-top:28px;}
+    .muted{color:#7A7690;font-size:14px;font-weight:700;}
+    .row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:14px 0;}
+    input{height:46px;padding:0 14px;border-radius:12px;border:2px solid #E8DFD0;font:600 16px Nunito,sans-serif;min-width:280px;}
+    button{height:46px;padding:0 18px;border:none;border-radius:12px;background:#0E7C89;color:#fff;font:800 16px "Baloo 2",Nunito,sans-serif;cursor:pointer;}
+    button.ghost{background:#fff;color:#2D2A4B;border:2px solid #E8DFD0;}
+    .err{color:#B83A3A;font-weight:800;}
+    .cards{display:flex;flex-wrap:wrap;gap:10px;margin:10px 0;}
+    .card{background:#fff;border:2px solid #F0E8DB;border-radius:16px;padding:12px 16px;min-width:150px;}
+    .card b{display:block;font-family:"Baloo 2",Nunito,sans-serif;font-size:26px;}
+    .tw{overflow-x:auto;background:#fff;border:2px solid #F0E8DB;border-radius:16px;}
+    table{border-collapse:collapse;width:100%;font-size:14px;}
+    th,td{text-align:left;padding:9px 12px;border-bottom:1px solid #F0E8DB;white-space:nowrap;}
+    th{font-weight:800;color:#4A4766;background:#FBF6EE;}
+    .ok{color:#0E6E7A;font-weight:800;} .bad{color:#B83A3A;font-weight:800;}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Leads</h1>
+  <p class="muted">Every email that reached Sona, and every therapist account. Private: unlock with your founder key.</p>
+
+  <div class="row" id="gate">
+    <input id="key" type="password" autocomplete="off" placeholder="Founder key" aria-label="Founder key" />
+    <button id="go">Show leads</button>
+    <span class="err" id="err" role="alert"></span>
+  </div>
+
+  <div id="out" hidden>
+    <div class="cards">
+      <div class="card"><span class="muted">Emails captured</span><b id="nLeads">0</b></div>
+      <div class="card"><span class="muted">In Kit</span><b id="nCrm">0</b></div>
+      <div class="card"><span class="muted">Therapist accounts</span><b id="nSlp">0</b></div>
+    </div>
+
+    <h2>Kit</h2>
+    <p class="muted">Sends everyone below — every captured email and every therapist account — to your Kit list, tagged therapist or parent. Safe to run again: Kit updates people it already has.</p>
+    <div class="row"><button id="kitSync">Send everyone to Kit</button><span class="muted" id="kitMsg" role="status"></span></div>
+
+    <h2>Emails captured</h2>
+    <p class="muted">Newest first. Kept since 24 Sep 2026 — nothing before that was stored on our side.</p>
+    <div class="row"><button class="ghost" id="csvLeads">Download CSV</button></div>
+    <div class="tw"><table id="tLeads"></table></div>
+
+    <h2>Therapist accounts</h2>
+    <p class="muted">Everyone who signed up for the dashboard, from the start. "Not yet" means Kit doesn't have them yet: the Kit button above sends them, and so does their next sign-in.</p>
+    <p class="muted">Their own Premium, on their own phone, needs a work email. Someone on gmail, yahoo or the like can press "Request access"; check they're a real clinician, then Approve. Caseload: "paid" is the $79.99 plan, "grandfathered" signed up before it and is covered free forever, "none" is neither.</p>
+    <span class="muted" id="approveMsg" role="status"></span>
+    <div class="row"><button class="ghost" id="csvSlp">Download CSV</button></div>
+    <div class="tw"><table id="tSlp"></table></div>
+  </div>
+</div>
+
+<script>
+  (function () {
+    var $ = function (id) { return document.getElementById(id); };
+    var DATA = null;
+    var LEAD_COLS = [["at", "When"], ["email", "Email"], ["first_name", "Name"], ["role", "Who"], ["source", "From"], ["utm_campaign", "Campaign"], ["utm_content", "Ad"], ["kit", "Kit"]];
+    var SLP_COLS = [["createdAt", "Signed up"], ["email", "Email"], ["name", "Name"], ["clinic", "Clinic"], ["source", "From"], ["inCrm", "Sent to email list"],
+      ["workEmail", "Work email"], ["accessRequested", "Access requested"], ["approve", "Own Premium"], ["caseload", "Caseload"]];
+    // The CSV carries the answer, not the button.
+    var SLP_CSV_COLS = SLP_COLS.map(function (c) { return c[0] === "approve" ? ["approved", "Approved"] : c; });
+
+    function esc(s) {
+      return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+        return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+      });
+    }
+    function when(s) { try { return s ? new Date(s).toLocaleString() : ""; } catch (e) { return s || ""; } }
+    function table(el, cols, rows) {
+      var h = "<tr>" + cols.map(function (c) { return "<th>" + esc(c[1]) + "</th>"; }).join("") + "</tr>";
+      if (!rows.length) { el.innerHTML = h + '<tr><td colspan="' + cols.length + '" class="muted">None yet.</td></tr>'; return; }
+      el.innerHTML = h + rows.map(function (r) {
+        return "<tr>" + cols.map(function (c) {
+          var v = r[c[0]];
+          // Approve: only for someone without a work email who is not yet
+          // approved. A work email needs no approval, and an approved one
+          // needs no second click.
+          if (c[0] === "approve") {
+            if (r.workEmail === "yes") return '<td class="muted">work email</td>';
+            if (r.approved === "yes") return '<td class="ok">approved</td>';
+            return '<td><button class="ghost" data-approve="' + esc(r.email) + '">Approve</button></td>';
+          }
+          if (c[0] === "at" || c[0] === "createdAt" || c[0] === "accessRequested") v = when(v);
+          if (c[0] === "kit" && !v) v = "—";
+          var cls = (c[0] === "kit" || c[0] === "inCrm") ? (/^(added|yes)/.test(String(v)) ? ' class="ok"' : ' class="bad"') : "";
+          return "<td" + cls + ">" + esc(v) + "</td>";
+        }).join("") + "</tr>";
+      }).join("");
+    }
+    function csv(cols, rows, name) {
+      // Anyone can put text into these fields (a UTM tag, a name at sign-up),
+      // and a cell that starts with = + - @ runs as a formula in Excel and
+      // Sheets. A leading apostrophe makes it plain text.
+      var q = function (v) {
+        v = String(v == null ? "" : v);
+        if (/^[=+\-@\t\r]/.test(v)) v = "'" + v;
+        return /[",\n\r]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
+      };
+      var body = [cols.map(function (c) { return q(c[1]); }).join(",")].concat(rows.map(function (r) {
+        return cols.map(function (c) { return q(r[c[0]]); }).join(",");
+      })).join("\n");
+      var a = document.createElement("a");
+      a.href = URL.createObjectURL(new Blob([body], { type: "text/csv" }));
+      a.download = name; document.body.appendChild(a); a.click(); a.remove();
+    }
+
+    function load() {
+      var key = ($("key").value || "").trim();
+      $("err").textContent = "";
+      if (!key) { $("err").textContent = "Enter your founder key."; return; }
+      $("go").disabled = true; $("go").textContent = "Loading…";
+      fetch("/api/founders/leads", { headers: { "x-founder-key": key }, cache: "no-store" })
+        .then(function (r) { return r.json(); })
+        .then(function (j) {
+          $("go").disabled = false; $("go").textContent = "Show leads";
+          if (!j || !j.ok) { $("err").textContent = (j && j.error) || "Couldn't load."; return; }
+          // Kept for this tab only, so a refresh doesn't ask again.
+          try { sessionStorage.setItem("sona.founderKey", key); } catch (e) {}
+          DATA = j;
+          // People, not rows: a clinician finishing setup is posted twice.
+          var uniq = function (list) { var s = {}; list.forEach(function (l) { s[String(l.email || "").toLowerCase()] = 1; }); return Object.keys(s).length; };
+          $("nLeads").textContent = uniq(j.leads);
+          $("nCrm").textContent = uniq(j.leads.filter(function (l) { return /^added/.test(String(l.kit || "")); }));
+          $("nSlp").textContent = j.clinicians.length;
+          table($("tLeads"), LEAD_COLS, j.leads);
+          table($("tSlp"), SLP_COLS, j.clinicians);
+          $("out").hidden = false;
+        })
+        .catch(function () {
+          $("go").disabled = false; $("go").textContent = "Show leads";
+          $("err").textContent = "Network hiccup — try again.";
+        });
+    }
+    // THE CATCH-UP: batches of five with a pause between them, because Kit
+    // allows about 120 requests a minute and each person can cost three.
+    // When Kit says slow down, the page waits the minute it asks for.
+    function kitSync() {
+      var key = ($("key").value || "").trim();
+      var added = 0, failed = 0;
+      $("kitSync").disabled = true;
+      function step(offset) {
+        fetch("/api/founders/kit-sync", {
+          method: "POST", headers: { "Content-Type": "application/json", "x-founder-key": key },
+          body: JSON.stringify({ offset: offset }),
+        }).then(function (r) { return r.json(); }).then(function (j) {
+          if (!j || !j.ok) { $("kitMsg").textContent = (j && j.error) || "Couldn't reach Kit."; $("kitSync").disabled = false; return; }
+          (j.results || []).forEach(function (x) { if (/^added/.test(x.result)) added++; else failed++; });
+          if (j.done) {
+            $("kitMsg").textContent = "Done — " + added + " in Kit" + (failed ? ", " + failed + " failed (see the Kit column after refreshing)" : "") + ".";
+            $("kitSync").disabled = false; load(); return;
+          }
+          var wait = j.retryAfter ? j.retryAfter * 1000 : 8000;
+          $("kitMsg").textContent = j.next + " of " + j.total + " sent" + (j.retryAfter ? " — Kit asked us to slow down, waiting a minute…" : "…");
+          setTimeout(function () { step(j.next); }, wait);
+        }).catch(function () { $("kitMsg").textContent = "Network hiccup — press it again to carry on."; $("kitSync").disabled = false; });
+      }
+      $("kitMsg").textContent = "Starting…";
+      step(0);
+    }
+    $("kitSync").onclick = kitSync;
+
+    // APPROVE a clinician's own Premium without a work email. One click, then
+    // the table reloads from the server, so what it shows is what was saved.
+    $("tSlp").addEventListener("click", function (e) {
+      var b = e.target && e.target.closest ? e.target.closest("button[data-approve]") : null;
+      if (!b) return;
+      var email = b.getAttribute("data-approve");
+      b.disabled = true; b.textContent = "Approving…";
+      fetch("/api/founders/approve", {
+        method: "POST", headers: { "Content-Type": "application/json", "x-founder-key": ($("key").value || "").trim() },
+        body: JSON.stringify({ email: email }),
+      }).then(function (r) { return r.json(); }).then(function (j) {
+        if (!j || !j.ok) { $("approveMsg").textContent = (j && j.error) || "Couldn't approve."; b.disabled = false; b.textContent = "Approve"; return; }
+        $("approveMsg").textContent = "Approved " + email + ".";
+        load();
+      }).catch(function () { $("approveMsg").textContent = "Network hiccup — try again."; b.disabled = false; b.textContent = "Approve"; });
+    });
+
+    $("go").onclick = load;
+    $("key").addEventListener("keydown", function (e) { if (e.key === "Enter") load(); });
+    $("csvLeads").onclick = function () { if (DATA) csv(LEAD_COLS, DATA.leads, "sona-leads.csv"); };
+    $("csvSlp").onclick = function () { if (DATA) csv(SLP_CSV_COLS, DATA.clinicians, "sona-therapists.csv"); };
+    try { var k = sessionStorage.getItem("sona.founderKey"); if (k) { $("key").value = k; load(); } } catch (e) {}
+  })();
+</script>
+</body>
+</html>

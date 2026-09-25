@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <!-- Strip the family key before anything else can observe it, same as
+       /join.html. This page loads no pixel/analytics either. -->
+  <script>
+    (function () {
+      try {
+        var q = new URLSearchParams(location.search);
+        window.__cred = { code: q.get("code") || q.get("slp") || "", key: q.get("k") || "" };
+        if (q.get("k")) { q.delete("k"); history.replaceState({}, "", location.pathname + (q.toString() ? "?" + q : "")); }
+      } catch (e) { window.__cred = { code: "", key: "" }; }
+    })();
+  </script>
+  <title>Sona — Pilot</title>
+  <link href="/fonts.css" rel="stylesheet">
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <meta name="theme-color" content="#1cb0f6" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <style>
+    :root{ --blue:#1cb0f6; --blue-d:#1597d4; --green:#58cc02; --green-d:#46a302; --ink:#16384f; --muted:#6b86a3; }
+    *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;font-family:"Nunito",-apple-system,"Segoe UI",Roboto,sans-serif;}
+    html,body{min-height:100%;}
+    body{background:linear-gradient(180deg,#eef7ff,#e7f1ff 50%,#eafbe9);color:var(--ink);}
+    #app{max-width:460px;margin:0 auto;min-height:100vh;min-height:100dvh;display:flex;flex-direction:column;padding:calc(18px + env(safe-area-inset-top)) 20px calc(28px + env(safe-area-inset-bottom));}
+    .brand{display:flex;align-items:center;gap:8px;font-family:"Baloo 2";font-weight:800;font-size:18px;color:var(--blue-d);}
+    .brand img{width:30px;height:30px;}
+    .hero{text-align:center;margin-top:6px;}
+    .hero img.leo{width:104px;height:104px;object-fit:contain;filter:drop-shadow(0 10px 16px rgba(20,90,160,.22));}
+    h1{font-family:"Baloo 2";font-weight:800;font-size:25px;line-height:1.15;margin-top:6px;}
+    p.lead{color:var(--muted);font-weight:700;font-size:14.5px;max-width:360px;margin:6px auto 0;line-height:1.5;}
+    .slptag{display:inline-flex;align-items:center;gap:6px;background:#eafce9;color:var(--green-d);font-weight:800;font-size:12px;border-radius:99px;padding:6px 12px;margin-top:10px;}
+    .card{background:#fff;border-radius:20px;padding:18px 16px;margin-top:16px;box-shadow:0 10px 26px -16px rgba(20,90,160,.5);}
+    label.fl{display:block;font-weight:800;font-size:13px;color:var(--muted);margin:12px 0 5px;}
+    input,select{width:100%;border:2px solid #d9e6f2;border-radius:14px;padding:13px;font-size:16px;font-weight:700;background:#fff;color:var(--ink);}
+    .sounds{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px;}
+    .snd{border:2px solid #d9e6f2;border-radius:12px;padding:9px 14px;font-family:"Baloo 2";font-weight:800;font-size:15px;color:var(--blue-d);background:#fff;cursor:pointer;}
+    .snd.on{background:var(--blue);color:#fff;border-color:var(--blue);}
+    .consent{display:flex;gap:10px;align-items:flex-start;margin-top:16px;background:#f6fbff;border:1px solid #dcebf8;border-radius:14px;padding:12px;}
+    .consent input{width:22px;height:22px;flex:0 0 auto;margin-top:1px;}
+    .consent label{font-weight:700;font-size:12.5px;color:#46627a;line-height:1.5;}
+    .consent a{color:var(--blue-d);}
+    .btn{margin-top:18px;width:100%;border:none;border-radius:18px;padding:16px;font-family:"Baloo 2";font-weight:800;font-size:18px;text-transform:uppercase;letter-spacing:.03em;color:#fff;cursor:pointer;background:linear-gradient(180deg,#5fd216,#46a302);box-shadow:0 7px 0 0 #3c8c02;transition:transform .06s,box-shadow .06s;}
+    .btn:active{transform:translateY(4px);box-shadow:0 3px 0 0 #3c8c02;}
+    .btn:disabled{opacity:.5;}
+    .err{color:#e0457b;font-weight:800;font-size:13px;margin-top:10px;min-height:18px;text-align:center;}
+    .note{color:var(--muted);font-weight:700;font-size:11.5px;text-align:center;margin-top:12px;line-height:1.45;}
+  </style>
+</head>
+<body>
+  <div id="app">
+    <div class="brand"><img src="/coach/echo/echo-avatar.svg" alt="Sona"/> Sona</div>
+
+    <div class="hero">
+      <img class="leo" src="/coach/echo/echo-idle.svg" alt="Echo" onerror="this.style.display='none';" />
+      <h1>Welcome to the Sona pilot</h1>
+      <!-- "free during the pilot" promised a grant this page no longer makes
+           (24 Sep 2026): a verified code connects a family to their
+           clinician; what is free is free for every family. -->
+      <p class="lead">Your SLP invited you to try Sona at home. Daily practice and free games are free. Set up your child below and start practicing with Echo today.</p>
+      <span class="slptag">✓ Built with a licensed SLP</span>
+    </div>
+
+    <div class="card">
+      <label class="fl" for="cName">Child's first name</label>
+      <input id="cName" type="text" placeholder="e.g. Mia" />
+
+      <label class="fl" for="cAge">Child's age</label>
+      <select id="cAge"><option value="">Choose…</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option><option>9</option></select>
+
+      <label class="fl">Sounds to practice <span style="font-weight:700;color:#aab9c8;">(pick what your SLP suggested)</span></label>
+      <div class="sounds" id="sounds"></div>
+
+      <label class="fl" for="pos">Word position <span style="font-weight:700;color:#aab9c8;">(where the sound sits)</span></label>
+      <select id="pos">
+        <option value="i">Beginning of word</option>
+        <option value="m">Middle of word</option>
+        <option value="f">End of word</option>
+        <option value="v">Vocalic R (er, ar, or…)</option>
+        <option value="b">Blends (tr, st, bl…)</option>
+        <option value="mix">Mixed — all positions</option>
+      </select>
+
+      <!-- The credential. Enrolling used to need nothing but a URL, which made
+           this page a self-serve free unlock for anyone who found it. The key
+           is verified server-side before any access is granted. -->
+      <div id="credWrap">
+        <label class="fl" for="cCode">Code from your SLP</label>
+        <input id="cCode" type="text" autocomplete="off" placeholder="e.g. rachel-k4" style="text-transform:lowercase;" />
+        <label class="fl" for="cKey">Family key</label>
+        <input id="cKey" type="text" autocomplete="off" placeholder="e.g. ABCD2345" style="text-transform:uppercase;letter-spacing:1px;" />
+      </div>
+
+      <!-- Required: the on-device recording consent, which the app genuinely
+           can't work without. -->
+      <div class="consent">
+        <input id="consent" type="checkbox" />
+        <label for="consent">I'm this child's parent or guardian. I agree Sona can listen to my child's practice to give feedback and count how often they speak. <b>Everything is processed on this device — no recording is ever uploaded.</b> <a href="/privacy" target="_blank">Privacy</a>.</label>
+      </div>
+
+      <!-- Separate and optional: sharing with the clinician. Bundling it into
+           the box you must tick to use the app isn't consent, it's a toll. -->
+      <div class="consent">
+        <input id="shareSlp" type="checkbox" />
+        <label for="shareSlp">Share progress with my SLP — practice days, how often, and how each sound is coming along. <b>Never any audio.</b> Optional; your access is the same either way.</label>
+      </div>
+
+      <div class="err" id="err"></div>
+      <button class="btn" id="go">Start the pilot →</button>
+      <p class="note">A quick at-home practice tool — not a diagnosis or a substitute for professional care.</p>
+    </div>
+
+    <!-- Consent that cannot be withdrawn is not consent. Shown only on a
+         device that is currently sharing. The server deletes — not hides —
+         everything the clinician could see, and marks the child gone so the
+         next sync cannot rebuild it; this page then records the choice
+         locally. Free access is untouched: access and sharing were separate
+         on the way in and stay separate on the way out. -->
+    <div class="card" id="stopCard" style="display:none;">
+      <div style="font-family:'Baloo 2';font-weight:800;font-size:16px;">Sharing with your speech therapist</div>
+      <p class="note" style="text-align:left;margin-top:6px;" id="stopLead">This device shares your child's practice with their speech therapist's dashboard.</p>
+      <button class="btn" id="stopOpen" style="background:#fff;color:var(--muted);box-shadow:0 7px 0 0 #d9e6f2;text-transform:none;letter-spacing:0;font-size:16px;">Stop sharing with your speech therapist</button>
+      <div id="stopConfirm" style="display:none;">
+        <p class="note" style="text-align:left;margin-top:14px;color:var(--ink);">Stop sharing with your speech therapist? Their dashboard forgets your child right away: name, age, practice history and homework are deleted, not hidden. Sona stays free for you, and your child's progress stays on this device.</p>
+        <button class="btn" id="stopYes" style="background:linear-gradient(180deg,#ff6b8a,#e0457b);box-shadow:0 7px 0 0 #b9315f;text-transform:none;letter-spacing:0;font-size:16px;">Stop sharing</button>
+        <button class="btn" id="stopNo" style="background:#fff;color:var(--muted);box-shadow:0 7px 0 0 #d9e6f2;text-transform:none;letter-spacing:0;font-size:16px;margin-top:10px;">Keep sharing</button>
+      </div>
+      <div class="err" id="stopErr"></div>
+    </div>
+  </div>
+
+  <script src="/sona.js"></script>
+  <script>
+    var $=function(id){return document.getElementById(id);};
+    var qp=new URLSearchParams(location.search);
+    var CRED=window.__cred||{code:"",key:""};
+    var CODE=(CRED.code||"pilot").slice(0,40);
+    var ALL=(window.Sona&&Sona.ALL_SOUNDS)?Sona.ALL_SOUNDS:["R","S","L","K","SH","CH","TH","G","F"];
+    var picked={};
+    // pre-fill from an SLP assignment link (?sound=R,S  &pos=v  &goal=15)
+    (qp.get("sound")||"").toUpperCase().split(",").forEach(function(s){ s=s.trim(); if(s&&ALL.indexOf(s)>=0) picked[s]=true; });
+    var ASSIGN_GOAL=parseInt(qp.get("goal"),10)||0;
+    var wrap=$("sounds");
+    ALL.forEach(function(s){
+      var b=document.createElement("div"); b.className="snd"+(picked[s]?" on":""); b.textContent=(window.Sona&&Sona.soundLabel)?Sona.soundLabel(s):s;
+      b.onclick=function(){ if(picked[s]){delete picked[s];b.classList.remove("on");} else {picked[s]=true;b.classList.add("on");} };
+      wrap.appendChild(b);
+    });
+    var _pp=qp.get("pos"); if(_pp&&$("pos")) $("pos").value=_pp;
+    if($("cCode")&&CRED.code) $("cCode").value=CRED.code;
+    if($("cKey")&&CRED.key) $("cKey").value=CRED.key;
+
+    // Stop sharing: only offered on a device that is sharing right now. The
+    // request carries the enrolment ticket (the proof this device wrote the
+    // row), the device's own opaque child id and the clinic code — nothing
+    // typed here. On success the choice is recorded on the profile; the
+    // server has already deleted the row and marked the child gone.
+    (function(){
+      var sharing=false, pi={};
+      try{ pi=(window.Sona&&Sona.pilotInfo&&Sona.pilotInfo())||{}; sharing=!!(pi.consent&&pi.childId)&&(Sona.getProfile().slpShare!==false); }catch(e){}
+      if(!sharing||!$("stopCard")) return;
+      $("stopCard").style.display="block";
+      $("stopOpen").onclick=function(){ $("stopOpen").style.display="none"; $("stopConfirm").style.display="block"; };
+      $("stopNo").onclick=function(){ $("stopConfirm").style.display="none"; $("stopOpen").style.display="block"; };
+      $("stopYes").onclick=function(){
+        var ticket=""; try{ ticket=localStorage.getItem("sona.slpticket")||""; }catch(e){}
+        var childId=String(pi.childId||""), code=String(pi.code||"");
+        if(!ticket||!childId||!code){ $("stopErr").textContent="This device isn't enrolled with a speech therapist."; return; }
+        $("stopYes").disabled=true; $("stopErr").style.color="var(--muted)"; $("stopErr").textContent="Asking their dashboard to forget your child…";
+        fetch("/api/pilot/forget",{ method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ code:code, childId:childId, ticket:ticket }) })
+          .then(function(r){ return r.json(); })
+          .then(function(j){
+            if(j&&j.ok){
+              try{ Sona.saveProfile({ slpShare:false }); }catch(e){}
+              $("stopConfirm").style.display="none";
+              $("stopLead").textContent="Done. Their dashboard no longer has your child. Sona is still free for you.";
+              $("stopErr").textContent="";
+            } else {
+              $("stopYes").disabled=false; $("stopErr").style.color="#e0457b";
+              $("stopErr").textContent="Couldn't reach the server — try again in a moment.";
+            }
+          })
+          .catch(function(){ $("stopYes").disabled=false; $("stopErr").style.color="#e0457b"; $("stopErr").textContent="Couldn't reach the server — try again in a moment."; });
+      };
+    })();
+
+    // Set the child up, then enrol ONLY on a credential the server vouches for.
+    // startPilot() used to be an entitlement (isPilot() short-circuited the
+    // gate), so calling it off an unverified URL parameter — which is what
+    // this page used to do — handed out free forever to anyone who opened the
+    // link. Since 24 Sep 2026 an SLP-code enrolment grants nothing by itself
+    // (Premium comes from the clinician's coverage, asked by slpRedeem), but
+    // it still writes to a real clinician's dashboard, so the rule stands: no
+    // verified key, no enrolment. A family without one still gets set up, on
+    // the free version everyone has.
+    function finish(name, age, sounds){
+      try{
+        if(window.Sona){
+          Sona.saveProfile({ childName:name, childAge:String(age), focusSounds:sounds.slice(0,4), practicePosition:($("pos")?$("pos").value:"i"), dailyGoal:ASSIGN_GOAL, onboarded:true });
+          if(Sona.sfx&&Sona.sfx.correct) Sona.sfx.correct();
+        }
+      }catch(e){}
+      location.href="/map.html";
+    }
+
+    $("go").onclick=function(){
+      var name=$("cName").value.trim();
+      var age=parseInt($("cAge").value,10)||0;
+      var sounds=Object.keys(picked);
+      var code=(($("cCode")&&$("cCode").value)||"").trim();
+      var key=(($("cKey")&&$("cKey").value)||"").trim();
+      if(!name){ $("err").textContent="Please enter your child's first name."; return; }
+      if(!age){ $("err").textContent="Please choose your child's age."; return; }
+      if(!sounds.length){ $("err").textContent="Pick at least one sound to practice."; return; }
+      if(!$("consent").checked){ $("err").textContent="Please check the consent box to continue."; return; }
+      if(!code||!key){ $("err").textContent="Enter the code and family key your SLP gave you."; return; }
+      $("err").style.color="var(--muted)"; $("err").textContent="Checking your SLP's code…";
+      $("go").disabled=true;
+      Sona.slpRedeem(code,key).then(function(r){
+        $("go").disabled=false;
+        if(!r.valid){
+          $("err").style.color="#e0457b";
+          // The server's own sentence (link full, check down) beats a guess.
+          $("err").textContent = r.error==="offline" ? "Couldn’t reach the server — try again." : (typeof r.error==="string"&&r.error ? r.error : "That code and key don’t match — double-check with your SLP.");
+          return;
+        }
+        // Verified — slpRedeem holds the ticket and has already asked whether
+        // this caseload is covered. Enrolling on the clinician's dashboard is
+        // the SEPARATE, optional box.
+        try{
+          if($("shareSlp")&&$("shareSlp").checked){
+            if(Sona.slpJoinCaseload) Sona.slpJoinCaseload(code);
+            else if(Sona.startPilot){ Sona.startPilot(code.toUpperCase()); Sona.sendProgress&&Sona.sendProgress("enroll"); }
+          } else {
+            Sona.saveProfile&&Sona.saveProfile({ slpShare:false });
+          }
+        }catch(e){}
+        finish(name, age, sounds);
+      });
+    };
+  </script>
+</body>
+</html>

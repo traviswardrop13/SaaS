@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#fff9ee">
+  <title>Sona — Peekaboo</title>
+  <link rel="stylesheet" href="/fonts.css">
+  <link rel="stylesheet" href="/simple-play.css">
+</head>
+<body data-simple-game="peekaboo" data-phase="intro">
+  <div class="game-shell">
+    <header class="game-header">
+      <a class="back-link" id="backLibrary" href="/activities.html"><span aria-hidden="true">←</span> Play library</a>
+      <a class="sona-brand" id="homeLink" href="/today.html" aria-label="Sona home"><img src="/coach/echo/echo-idle.svg" alt=""> Sona</a>
+      <button class="pause-button" id="pauseGame" type="button" hidden><svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M5 3v12M13 3v12" stroke="currentColor" stroke-width="4" stroke-linecap="round"/></svg><span>Pause</span></button>
+    </header>
+
+    <main>
+      <section class="start-panel" id="startPanel" aria-labelledby="gameTitle">
+        <div class="intro-copy"><p class="eyebrow">SIMPLE PLAY · NO TIMER</p><h1 id="gameTitle">Peekaboo</h1><h2>Knock, knock.<br> What’s hiding?</h2><p class="intro-description">Open a door, say the word together, and find another surprise.</p><button class="primary" id="startGame" type="button">Let’s play <span aria-hidden="true">→</span></button><p class="together-note">Five little surprises. Take your time.</p></div>
+        <div class="intro-art" aria-hidden="true"><div class="intro-house"><span class="house-roof"></span><div class="house-wall"><span class="house-window"></span><span class="house-door"><img src="/coach/echo/echo-idle.svg" alt=""></span><span class="house-window"></span></div><span class="house-grass"></span></div><span class="intro-spark spark-a"><svg viewBox="0 0 40 40" aria-hidden="true"><path d="m20 2 5 12 13 6-13 5-5 13-6-13L2 20l12-6Z" fill="currentColor"/></svg></span><span class="intro-spark spark-b"><svg viewBox="0 0 40 40" aria-hidden="true"><path d="m20 2 5 12 13 6-13 5-5 13-6-13L2 20l12-6Z" fill="currentColor"/></svg></span></div>
+      </section>
+
+      <section class="play-panel" id="playPanel" aria-label="Peekaboo game" hidden>
+        <div class="round-top"><p class="eyebrow">Peekaboo</p><p id="progressText">Surprise 1 of 5</p></div>
+        <div class="progress-dots" id="progressDots" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></div>
+        <div class="prompt"><h1 id="promptTitle" tabindex="-1">Pick a door</h1><p id="promptHint">A little surprise is waiting.</p></div>
+        <div class="play-stage" id="playStage"><div class="door-roof" aria-hidden="true"></div><div class="doors"><button type="button" class="door door-1" data-door="1" aria-label="Open the coral door"><span class="door-inside"></span><span class="door-front"><span class="door-window"></span><span class="door-knob"></span></span></button><button type="button" class="door door-2" data-door="2" aria-label="Open the blue door"><span class="door-inside"></span><span class="door-front"><span class="door-window"></span><span class="door-knob"></span></span></button><button type="button" class="door door-3" data-door="3" aria-label="Open the yellow door"><span class="door-inside"></span><span class="door-front"><span class="door-window"></span><span class="door-knob"></span></span></button></div><span class="door-garden" aria-hidden="true"></span><div class="word-discovery"><div id="wordPicture" aria-hidden="true"></div><p id="wordLabel"></p></div><span class="reveal-spark reveal-spark-a" aria-hidden="true"><svg viewBox="0 0 40 40" aria-hidden="true"><path d="m20 2 5 12 13 6-13 5-5 13-6-13L2 20l12-6Z" fill="currentColor"/></svg></span><span class="reveal-spark reveal-spark-b" aria-hidden="true"><svg viewBox="0 0 40 40" aria-hidden="true"><path d="m20 2 5 12 13 6-13 5-5 13-6-13L2 20l12-6Z" fill="currentColor"/></svg></span></div>
+        <div class="play-controls"><p class="heard-message" id="heardMessage" role="status"></p><div class="turn-buttons"><button class="secondary" id="hearWord" type="button" hidden><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4Z" fill="currentColor"/><path d="M17 8q4 4 0 8M19.5 4.5q7.5 7.5 0 15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>Hear it</button><button class="primary" id="nextTurn" type="button" hidden>Next <span aria-hidden="true">→</span></button></div></div>
+      </section>
+
+      <section class="pause-panel message-panel" id="pausePanel" aria-labelledby="pauseTitle" hidden><div class="rest-art" aria-hidden="true"><img src="/coach/echo/echo-idle.svg" alt=""></div><p class="eyebrow">TAKE YOUR TIME</p><h1 id="pauseTitle">A little break</h1><p>Your surprise will be right here.</p><button class="primary" id="resumeGame" type="button">Keep playing <span aria-hidden="true">→</span></button><a class="text-link" href="/activities.html">Back to the play library</a></section>
+
+      <section class="finish-panel message-panel" id="finishPanel" aria-labelledby="finishTitle" hidden><div class="finish-art" aria-hidden="true"><span><svg viewBox="0 0 40 40" aria-hidden="true"><path d="m20 2 5 12 13 6-13 5-5 13-6-13L2 20l12-6Z" fill="currentColor"/></svg></span><img src="/coach/echo/echo-celebrate.svg" alt=""><span><svg viewBox="0 0 40 40" aria-hidden="true"><path d="m20 2 5 12 13 6-13 5-5 13-6-13L2 20l12-6Z" fill="currentColor"/></svg></span></div><p class="eyebrow">FIVE LITTLE SURPRISES</p><h1 id="finishTitle" tabindex="-1">You found them all!</h1><p id="finishCopy">That was fun. Let’s play again!</p><button class="primary" id="playAgain" type="button">Play again <span aria-hidden="true">↻</span></button><a class="text-link" href="/activities.html">Choose another game <span aria-hidden="true">→</span></a></section>
+    </main>
+    <footer class="game-footer"><span class="footer-dot" aria-hidden="true"></span> Little discoveries, together.</footer>
+  </div>
+  <script src="/sona.js"></script>
+  <script src="/simple-play.js"></script>
+</body>
+</html>

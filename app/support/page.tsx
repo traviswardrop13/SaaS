@@ -6,7 +6,7 @@ export const metadata: Metadata = {
 };
 
 // NOTE: replace with your real support email before launch.
-const SUPPORT_EMAIL = "support@[yourdomain].com";
+const SUPPORT_EMAIL = "wardroptravis@gmail.com";
 
 export default function SupportPage() {
   return (
@@ -37,9 +37,12 @@ export default function SupportPage() {
           work. You can re-run it anytime from the parent dashboard.
         </Faq>
         <Faq q="Do you store my child's voice?">
-          Short practice clips are sent to our speech-scoring provider only to
-          measure pronunciation, then used to return a score. We don&apos;t use
-          them to identify your child or for advertising. See our{" "}
+          Sona may save one clear practice try per child per day on the phone so
+          you can listen back. The microphone listens during practice and optional
+          voice-enabled games; sound checks happen on the phone itself. Sona never
+          uploads recordings. A grown-up can choose to share a saved clip through
+          the phone&apos;s share sheet. Clearing the app&apos;s data removes local
+          clips. See our{" "}
           <a className="text-[#1cb0f6] underline" href="/privacy">
             Privacy Policy
           </a>

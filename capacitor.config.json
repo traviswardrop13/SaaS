@@ -1,0 +1,13 @@
+{
+  "appId": "com.speaksona.app",
+  "appName": "Sona",
+  "webDir": "public",
+  "server": {
+    "url": "https://speaksona.com",
+    "cleartext": false,
+    "allowNavigation": ["speaksona.com", "*.speaksona.com"]
+  },
+  "ios": {
+    "contentInset": "never"
+  }
+}

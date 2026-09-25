@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Sona — Play library</title>
+  <link href="/fonts.css" rel="stylesheet" />
+  <link href="/sona.css" rel="stylesheet" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <meta name="theme-color" content="#fff6e9" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <!-- first-run guard: a brand-new family (no onboarding done, no name) never
+       sees the home screen with a blank default profile — they set up first.
+       Covers deep links and the native shell's start URL alike. -->
+  <script>
+    (function(){
+      try{
+        // runs BEFORE sona.js, so the kid namespace has to be resolved by hand
+        // here — otherwise this always reads the first child and a freshly added
+        // sibling would skip setup (KIDS1)
+        var slot=""; try{ var kk=JSON.parse(localStorage.getItem("sona.kids.v1")||"null"); if(kk&&kk.active) slot=kk.active; }catch(e){}
+        var key="sona.profile.v1"+(slot?"@"+slot:"");
+        var p=JSON.parse(localStorage.getItem(key)||"{}");
+        if(!p.onboarded&&!p.childName){ document.documentElement.style.display="none"; location.replace("/onboarding.html"); }
+      }catch(e){}
+    })();
+  </script>
+  <style>
+    :root{--cream:#fff6e9;--ink:#4a2c14;--muted:#795c3c;}
+    html,body{min-height:100%;height:auto;background:var(--cream);}
+    body{color:var(--ink);}
+    button,a{-webkit-tap-highlight-color:transparent;}
+    button{font:inherit;}
+    button:focus-visible,a:focus-visible{outline:3px solid #157da5;outline-offset:5px;}
+    [hidden]{display:none!important;}
+    .library-wrap{max-width:860px;margin:0 auto;padding:calc(18px + env(safe-area-inset-top)) 20px calc(32px + env(safe-area-inset-bottom));}
+    .library-header{display:flex;align-items:center;justify-content:space-between;gap:16px;}
+    .library-label{font-family:"Baloo 2",sans-serif;font-size:17px;font-weight:800;color:var(--muted);}
+    .library-intro{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:25px 0 22px;}
+    .library-intro h1{font-family:"Baloo 2",sans-serif;font-size:36px;line-height:1.1;font-weight:800;}
+    .library-intro p{font-size:14px;color:var(--muted);line-height:1.5;max-width:240px;margin-top:8px;}
+    #libraryEcho{display:block;position:relative;width:84px;height:96px;flex:none;transform:rotate(5deg);}
+    #libraryEcho>.stk{background:transparent!important;}
+    .activity-group{margin-top:28px;}
+    .shelf-heading{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:0 0 12px;}
+    .shelf-heading h2{font-size:23px;line-height:1.2;}
+    .shelf-heading p{font-size:12px;line-height:1.5;color:var(--muted);margin-top:3px;}
+    .shelf-tag{display:inline-flex;align-items:center;flex:none;padding:5px 9px;border-radius:99px;background:#f6e8d3;color:#775431;font-size:11px;font-weight:800;white-space:nowrap;}
+    .shelf-tag.recommended{background:#dfeecf;color:#3b5d25;}
+    .game-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px;}
+    .game-card{position:relative;display:flex;flex-direction:column;min-width:0;border:5px solid #fff;border-radius:23px;background:#fff;box-shadow:0 4px 0 #e8d9c5;color:var(--ink);padding:0;cursor:pointer;transition:transform .12s;text-align:left;}
+    .game-card:disabled{cursor:default;}
+    .game-card:disabled .game-art{opacity:.55;filter:saturate(.5);}
+    .game-access.coming-soon{color:#715d45;background:#f0e8db;}
+    .game-card:not(:disabled):active{transform:translateY(3px) scale(.98);}
+    .game-art{position:relative;display:block;width:100%;aspect-ratio:1;border-radius:18px;overflow:hidden;}
+    .game-info{display:flex;flex-direction:column;align-items:flex-start;gap:6px;padding:10px 6px 8px;}
+    .game-name{font-family:"Baloo 2",sans-serif;font-size:18px;line-height:1.15;font-weight:800;}
+    .game-access{font-size:10px;line-height:1.3;font-weight:800;color:#3f6630;background:#eaf3dd;padding:3px 7px;border-radius:99px;}
+    .game-access.premium{color:#665093;background:#efe9f9;}
+    .featured-group{background:#f1e9fb;border:1px solid #e5d9f5;border-radius:26px;padding:17px 15px 15px;margin:20px 0 26px;}
+    .featured-group[data-collection="seasonal"]{background:#ffe9cc;border-color:#f5d9b1;}
+    .featured-grid{display:grid;grid-auto-flow:column;grid-auto-columns:calc((100% - 15px)/2);gap:15px;overflow-x:auto;padding:1px 1px 8px;scroll-snap-type:x proximity;}
+    .featured-grid .game-card{scroll-snap-align:start;box-shadow:0 4px 0 #ded0ef;}
+    .featured-group .shelf-heading h2{font-size:22px;}
+    .featured-group .shelf-tag{background:#fff9;color:#665093;}
+    #booksComingSoon{display:flex;align-items:center;gap:15px;padding:21px 17px;background:#e6f0ee;border:1px solid #d5e4de;border-radius:25px;margin-top:32px;}
+    .book-art{position:relative;display:block;width:76px;height:86px;flex:none;}
+    .book-art>.stk{background:transparent!important;}
+    #booksComingSoon h2{font-size:23px;line-height:1.2;margin-bottom:6px;}
+    #booksComingSoon p{font-size:13px;line-height:1.5;margin-top:8px;color:#536b62;max-width:300px;}
+    #booksComingSoon .shelf-tag{background:#fff9;color:#536b62;}
+    .age-note{font-size:12px;line-height:1.5;color:var(--muted);text-align:center;margin:25px 12px 0;}
+    #catalogPreviewNotice{border:1px dashed #a897ba;border-radius:16px;background:#f4eefb;padding:12px 14px;font-size:12px;line-height:1.5;margin-bottom:20px;color:#665093;}
+    #catalogPreviewNotice strong{display:block;}
+    #libraryNotice{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:20;width:calc(100% - 32px);max-width:440px;display:flex;align-items:center;gap:10px;padding:15px 14px 15px 18px;background:#fff;border:2px solid #eed7b0;border-radius:22px;box-shadow:0 10px 32px rgba(80,50,10,.2);}
+    .notice-copy{flex:1;}
+    #libraryUnlock{display:block;min-height:44px;margin-top:8px;border:0;border-radius:12px;padding:9px 15px;background:#6a508f;color:#fff;font-weight:800;cursor:pointer;}
+    #libraryMessage{font-weight:800;font-size:14px;line-height:1.45;color:var(--muted);}
+    #libraryMessageClose{flex:none;width:36px;height:36px;border:0;border-radius:50%;background:#fff0d8;color:var(--ink);font-size:23px;cursor:pointer;}
+    .library-wrap.has-message{padding-bottom:145px;}
+    @media(min-width:600px){.library-wrap{padding:26px 30px 42px;}.game-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:22px;}.featured-grid{grid-auto-columns:calc((100% - 44px)/3);gap:22px;}.library-intro{margin:28px 0;}.library-intro h1{font-size:42px;}#libraryEcho{width:100px;height:110px;}.game-name{font-size:22px;}.game-info{padding:12px 9px;}.game-access{font-size:11px;}.shelf-heading h2{font-size:27px;}.featured-group{padding:22px;}.activity-group{margin-top:34px;}}
+    @media(max-width:350px){.library-wrap{padding-left:15px;padding-right:15px;}.game-grid{gap:12px;}.library-intro h1{font-size:30px;}#libraryEcho{width:67px;height:80px;}.game-card{border-width:4px;border-radius:19px;}.game-art{border-radius:15px;}.game-name{font-size:16px;}.game-info{padding:9px 4px 6px;}.featured-group{padding:14px 11px;}.shelf-heading h2{font-size:21px;}.shelf-tag{font-size:10px;padding:4px 7px;}#booksComingSoon{gap:10px;}.book-art{width:60px;height:72px;}}
+    @media(prefers-reduced-motion:reduce){.game-card{transition:none;}}
+    :root{--label:#a17c4a;--track:#f0e4d2;--orange-d:#ef6f23;}
+    .library-label{flex:1;}
+    #buddyBtn,#parentBtn{position:relative;display:flex;align-items:center;justify-content:center;flex:none;border:3px solid #fff;width:44px;height:44px;border-radius:50%;background:#fff;cursor:pointer;box-shadow:0 4px 0 rgba(140,70,10,.14);color:#795c3c;}
+    #buddyBtn{background:#ffe5b1;overflow:hidden;}
+    /* founding banner (feedback invite — never pricing) */
+    #trialBanner{display:none;align-items:center;gap:8px;background:linear-gradient(120deg,#fff7e6,#ffe9c2);border:1px solid #ffe2a8;border-radius:14px;padding:9px 14px;font-weight:800;font-size:12.5px;color:#8a6400;text-decoration:none;}
+
+    /* parent gate + sheet (warm) */
+    .ovl{position:fixed;inset:0;z-index:50;background:rgba(74,44,20,.5);display:none;align-items:center;justify-content:center;padding:24px;}
+    .ovl.show{display:flex;}
+    .modal{background:#fff;border-radius:24px;padding:22px;width:100%;max-width:330px;text-align:center;box-shadow:0 20px 50px rgba(74,44,20,.35);}
+    .modal h3{font-family:"Baloo 2";font-weight:800;font-size:20px;color:var(--ink);}
+    .modal p{font-weight:700;font-size:13.5px;color:var(--muted);margin-top:4px;}
+    #gateQ{font-family:"Baloo 2";font-weight:800;font-size:30px;color:var(--orange-d);margin:10px 0 2px;}
+    /* the spelled-out challenge needs room for four words, so it sets its own
+       size rather than fighting the 30px the PIN lock glyph wants */
+    #gateQ.words{font-size:20px;letter-spacing:.06em;line-height:1.45;max-width:15ch;margin:10px auto 2px;}
+    #gateIn{font-family:"Baloo 2";font-weight:800;font-size:26px;letter-spacing:8px;min-height:36px;color:var(--ink);}
+    .pad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px;}
+    .pad button{border:none;border-radius:14px;padding:13px 0;font-family:"Baloo 2";font-weight:800;font-size:20px;background:var(--cream);color:var(--ink);cursor:pointer;box-shadow:0 3px 0 var(--track);}
+    .pad button:active{transform:translateY(2px);box-shadow:none;}
+    .modal.shake{animation:shake .35s;}
+    @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-9px)}75%{transform:translateX(9px)}}
+    .sheetBtn{display:flex;align-items:center;gap:12px;width:100%;border:none;border-radius:16px;padding:15px 16px;margin-top:10px;background:var(--cream);font-family:"Baloo 2";font-weight:800;font-size:16px;color:var(--ink);cursor:pointer;box-shadow:0 3px 0 var(--track);text-align:left;}
+    .sheetBtn:active{transform:translateY(2px);box-shadow:none;}
+    .ghost{border:none;background:none;color:var(--label);font-weight:800;font-size:13px;margin-top:12px;cursor:pointer;}
+    #toast{position:fixed;left:50%;bottom:calc(110px + env(safe-area-inset-bottom));transform:translateX(-50%);background:#fff;border-radius:99px;padding:10px 18px;font-family:"Baloo 2";font-weight:800;font-size:14px;color:var(--ink);box-shadow:0 8px 22px rgba(74,44,20,.3);opacity:0;transition:opacity .25s;pointer-events:none;z-index:20;white-space:nowrap;}
+    #toast.show{opacity:1;}
+    .modal{max-height:calc(100dvh - 48px);overflow-y:auto;}
+    #trialBanner{margin-top:18px;}
+  </style>
+</head>
+<body>
+  <main id="libraryApp" class="library-wrap" hidden>
+    <header class="library-header">
+      <a id="buddyBtn" href="/customize.html" aria-label="Choose your buddy"></a>
+      <span class="library-label">Play library</span>
+      <button id="parentBtn" type="button" aria-label="Parent corner"><span class="pic-gear" aria-hidden="true"></span></button>
+    </header>
+    <a id="trialBanner"><span data-ic="gift" aria-hidden="true"></span> <span id="trialMsg"></span></a>
+    <div class="library-intro"><div><h1>Pick a game!</h1><p>A little practice. A lot to explore.</p></div><span id="libraryEcho" aria-hidden="true"></span></div>
+    <aside id="catalogPreviewNotice" hidden><strong>Free &amp; Premium preview</strong><span id="catalogPreviewState"></span> <a href="/premium.html">Trial preview</a> · <a href="/activities.html?libraryPreview=0">Exit preview</a></aside>
+    <div id="featuredGroups"></div>
+    <div id="activityGroups"></div>
+    <section id="booksComingSoon" aria-labelledby="booksHeading">
+      <span class="book-art" id="libraryBooksArt" aria-hidden="true"></span>
+      <div><h2 id="booksHeading">Books</h2><span class="shelf-tag">Coming soon</span><p>Stories to share, one sound at a time.</p></div>
+    </section>
+    <p class="age-note">Ages are a guide. Explore any game that fits.</p>
+    <div id="libraryNotice" hidden><div class="notice-copy"><p id="libraryMessage" role="status"></p><button id="libraryUnlock" type="button">Ask a grown-up</button></div><button id="libraryMessageClose" aria-label="Close message">×</button></div>
+  </main>
+  <!-- parent gate -->
+  <div class="ovl" id="gateOvl">
+    <div class="modal" id="gateModal">
+      <h3>For grown-ups</h3>
+      <div id="gateQ"></div>
+      <p id="gateHint"></p>
+      <div id="gateIn"></div>
+      <div class="pad" id="pad"></div>
+      <button class="ghost" id="gateClose">Never mind</button>
+    </div>
+  </div>
+
+  <!-- parent sheet -->
+  <div class="ovl" id="sheetOvl">
+    <div class="modal">
+      <h3>Parent corner</h3>
+      <p id="ageGuide">Simple play is suggested for ages 3–4; Arcade for ages 5–8. Ages are a guide. Choose any available game that fits.</p>
+      <div id="weekCard" style="background:var(--cream);border-radius:16px;padding:14px 16px;margin-top:12px;text-align:left;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <b style="font-family:'Baloo 2';font-size:15px;color:var(--ink);">This week</b>
+          <span id="wkStreak" style="margin-left:auto;font-family:'Baloo 2';font-weight:800;font-size:12.5px;color:var(--orange-d);"></span>
+        </div>
+        <div id="wkDots" style="display:flex;gap:7px;margin-top:10px;justify-content:space-between;"></div>
+        <div id="wkMsg" style="font-weight:800;font-size:12.5px;color:var(--muted);margin-top:9px;"></div>
+        <div id="wkWins" style="font-family:'Baloo 2';font-weight:800;font-size:13px;color:var(--ink);margin-top:6px;"></div>
+        <button id="shareWeek" style="display:none;width:100%;border:none;border-radius:14px;padding:12px;margin-top:10px;background:linear-gradient(180deg,#ffa05a,#ff8a3d);box-shadow:0 4px 0 var(--orange-d);color:#fff;font-family:'Baloo 2';font-weight:800;font-size:14px;cursor:pointer;">Share this week</button>
+      </div>
+      <div id="planCard" style="display:none;background:var(--cream);border-radius:16px;padding:14px 16px;margin-top:10px;text-align:left;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <b style="font-family:'Baloo 2';font-size:15px;color:var(--ink);">This week</b>
+        </div>
+        <div id="storyBits" style="font-weight:800;font-size:12px;color:var(--ink);margin-top:9px;line-height:1.55;"></div>
+        <div style="font-weight:800;font-size:10.5px;color:var(--label);margin-top:8px;">Built with Rachel — licensed speech-language pathologist. A practice snapshot, not an evaluation.</div>
+      </div>
+      <div id="planNote" style="display:none;background:var(--cream);border-radius:16px;padding:12px 16px;margin-top:10px;text-align:left;font-weight:800;font-size:12.5px;color:var(--muted);"></div>
+      <button class="sheetBtn" id="goProgress"><span class="pic-trend"></span>&nbsp; Progress &amp; SLP report</button>
+      <button class="sheetBtn" id="goSettings"><span class="pic-gear"></span>&nbsp; Settings</button>
+      <button class="ghost" id="sheetClose">Close</button>
+    </div>
+  </div>
+
+  <!-- beta pulse — chip-first ask for founding families; X always works -->
+  <div class="ovl" id="pulseOvl">
+    <div class="modal" style="position:relative;text-align:left;">
+      <button id="pulseX" aria-label="Close" style="position:absolute;top:10px;right:10px;width:34px;height:34px;border:none;border-radius:50%;background:var(--cream);color:var(--label);font-weight:800;font-size:15px;cursor:pointer;box-shadow:0 2px 0 var(--track);">✕</button>
+      <div style="font-family:'Baloo 2';font-weight:800;font-size:12px;letter-spacing:.08em;color:var(--orange-d);padding-right:40px;">BETA · YOU'RE BUILDING SONA WITH US</div>
+      <h3 id="pulseQ" style="text-align:left;margin-top:8px;">What should we build next?</h3>
+      <div id="pulseOpts"></div>
+    </div>
+  </div>
+
+  <div id="toast"></div>
+
+  <script src="/sona.js"></script>
+  <script>
+    (function(){
+      var S=window.Sona,app=document.getElementById("libraryApp"),host=document.getElementById("activityGroups");
+      var notice=document.getElementById("libraryNotice"),message=document.getElementById("libraryMessage");
+      if(!S||!S.activityLibrary){app.hidden=false;host.textContent="Your games could not load. Please reopen Sona and try again.";return;}
+      var profile=S.getProfile();
+      if(!profile.onboarded&&!profile.childName){location.replace("/onboarding.html");return;}
+      app.hidden=false;
+      // Preview access is tab-local; real family entitlements stay untouched.
+      var preview=S.libraryPreview?S.libraryPreview():false;
+      document.getElementById("catalogPreviewNotice").hidden=!preview;
+      if(preview){
+        var plan=S.previewPlan();
+        document.getElementById("catalogPreviewState").textContent=plan.state==="trial"?"Trial preview: all available games unlocked. No payment or subscription.":plan.state==="expired"?"Trial ended preview: free games stay available. Purchases are off.":"Free games stay available. Premium games open through the grown-ups gate. Purchases are off.";
+      }
+      var library=S.activityLibrary(),lockedGame=null;
+      var unlock=document.getElementById("libraryUnlock");
+      function node(tag,className,text){var el=document.createElement(tag);if(className)el.className=className;if(text)el.textContent=text;return el;}
+      function access(game){return S.gameAccess?S.gameAccess(game.key):{allowed:!S.gated(game.key),tier:game.tier,reason:S.isFree()?"free-mode":"legacy"};}
+      function clearMessage(){notice.hidden=true;message.textContent="";lockedGame=null;unlock.hidden=false;app.classList.remove("has-message");}
+      function showLocked(game){
+        var comingSoon=game.comingSoon||access(game).reason==="coming-soon";
+        lockedGame=comingSoon?null:game;unlock.hidden=!!comingSoon;notice.hidden=false;app.classList.add("has-message");
+        if(comingSoon){message.textContent=game.name+" is coming soon. Pick another game to play.";return;}
+        message.textContent="Ask a grown-up to help open "+game.name+". Your free games are still ready to play!";
+      }
+      document.getElementById("libraryMessageClose").onclick=clearMessage;
+      unlock.onclick=function(){if(lockedGame)location.href="/premium.html?game="+encodeURIComponent(lockedGame.key);};
+      // Home stays quiet. Practice begins only after a child picks a game.
+      function launch(game){
+        if(!access(game).allowed){showLocked(game);return;}
+        clearMessage();
+        location.href=game.go;
+      }
+      function gameCard(game){
+        var button=node("button","game-card");button.type="button";button.dataset.game=game.key;
+        var grant=access(game),tier=grant.reason==="free-mode"?"free":game.tier;
+        var comingSoon=game.comingSoon||grant.reason==="coming-soon";
+        var label=comingSoon?"Coming soon":tier==="free"?"Free":grant.allowed?"Included":"Premium";
+        button.disabled=!!comingSoon;
+        button.dataset.locked=grant.allowed?"false":"true";
+        button.setAttribute("aria-label",comingSoon?game.name+". Coming soon.":game.name+". "+(game.playDescription||game.sub)+" "+(grant.allowed?label+".":"Premium. Ask a grown-up to unlock."));
+        var art=node("span","game-art");art.setAttribute("aria-hidden","true");var sticker=S.gameSticker(game.key);S.paintSticker(art,sticker[0],sticker[1]);button.appendChild(art);
+        var info=node("span","game-info");info.appendChild(node("span","game-name",game.name));
+        info.appendChild(node("span","game-access"+(comingSoon?" coming-soon":tier==="premium"?" premium":""),label));
+        button.appendChild(info);button.onclick=function(){launch(game);};return button;
+      }
+      // A cached pre-shelves sona.js still supplies the complete age groups.
+      (library.featured || []).forEach(function(collection){
+        var section=node("section","featured-group");section.dataset.collection=collection.id;section.setAttribute("aria-labelledby","collection-"+collection.id);
+        var top=node("div","shelf-heading"),heading=node("h2","",collection.name);heading.id="collection-"+collection.id;top.appendChild(heading);
+        top.appendChild(node("span","shelf-tag",collection.id==="new"?"Just added":"This season"));section.appendChild(top);
+        var grid=node("div","featured-grid");collection.games.forEach(function(game){grid.appendChild(gameCard(game));});section.appendChild(grid);document.getElementById("featuredGroups").appendChild(section);
+      });
+      library.groups.forEach(function(group){
+        var section=node("section","activity-group");section.dataset.group=group.id;section.setAttribute("aria-labelledby","group-"+group.id);
+        var top=node("div","shelf-heading"),copy=node("div"),heading=node("h2","",group.name);heading.id="group-"+group.id;copy.appendChild(heading);
+        copy.appendChild(node("p","",group.ageLabel));top.appendChild(copy);
+        if(group.recommended)top.appendChild(node("span","shelf-tag recommended","For your child"));section.appendChild(top);
+        var grid=node("div","game-grid");group.games.forEach(function(game){grid.appendChild(gameCard(game));});section.appendChild(grid);host.appendChild(section);
+      });
+      var lockedKey=new URLSearchParams(location.search).get("locked");
+      library.groups.forEach(function(group){group.games.forEach(function(game){if(game.key===lockedKey&&!access(game).allowed)showLocked(game);});});
+      // A cached library can return after a trial expires or an adult changes
+      // preview state. Re-evaluate its labels without reviving stale access.
+      window.addEventListener("pageshow",function(event){if(event.persisted)location.reload();});
+      S.paintSticker(document.getElementById("libraryEcho"),"p-echo-idle","sky");
+      var echo=document.querySelector("#libraryEcho svg");if(echo)echo.setAttribute("preserveAspectRatio","xMidYMid meet");
+      S.paintSticker(document.getElementById("libraryBooksArt"),"pt-book","sky");
+      // Cancel any previous spoken turn without changing the game voice preference.
+      if(S.speakNow)S.speakNow("");
+    })();
+  </script>
+  <script>
+    var $=function(id){return document.getElementById(id);};
+    var S=window.Sona;
+    var P=(S&&S.getProfile)?S.getProfile():{};
+    function sfx(n){try{if(S&&S.sfx&&S.sfx[n])S.sfx[n]();}catch(e){}}
+    function toast(t){var el=$("toast");el.textContent=t;el.classList.add("show");clearTimeout(toast._t);toast._t=setTimeout(function(){el.classList.remove("show");},1800);}
+    if(S&&S.buddyMarkup)$("buddyBtn").innerHTML=S.buddyMarkup(P.character||"fox",36);
+    // Bank coins already earned by honest practice, once; browsing earns nothing.
+    try{if(S&&S.mintCoins)S.mintCoins();}catch(e){}
+    try{if(S&&S.repsBeacon)S.repsBeacon();}catch(e){}
+    try{if(S&&S.syncHomework)S.syncHomework();}catch(e){}
+    try{if(S&&S.iapRefresh)S.iapRefresh();}catch(e){}
+    // Refresh clinician coverage without delaying the library. A changed
+    // cached answer refreshes card access; unchanged coverage never reloads.
+    try{
+      if(S&&S.caseRefresh&&S.premium){
+        var wasPremium=S.premium();
+        S.caseRefresh().then(function(){if(S.premium()!==wasPremium)location.reload();},function(){});
+      }
+    }catch(e){}
+    // ── parent gate: PIN if the parent set one, else four spelled-out digits ──
+    // It used to be arithmetic (3-8 × 3-8). Two problems: a seven-year-old who
+    // knows their times tables walks straight through it, and there are only
+    // about thirty plausible products to guess. Four number WORDS have to be
+    // read to be answered — which is precisely what the child this gate exists
+    // to stop cannot do — and there are ten thousand of them.
+    var NUMWORD=["ZERO","ONE","TWO","THREE","FOUR","FIVE","SIX","SEVEN","EIGHT","NINE"];
+    var gateAns="", gateNeed="", gateMode="math", gateNext=null;
+    function openGate(next){
+      gateNext=next||null; // pass a callback to run instead of the parent sheet
+      var pin=(P.parentPin||"").trim();
+      gateAns="";
+      var q=$("gateQ");
+      if(pin){
+        gateMode="pin"; gateNeed=pin; q.className=""; q.textContent="🔒";
+        $("gateHint").textContent="Enter your parent code";
+      } else {
+        gateMode="words"; var d=[];
+        for(var z=0;z<4;z++) d.push((Math.random()*10)|0);
+        gateNeed=d.join("");
+        q.className="words";
+        q.textContent=d.map(function(n){return NUMWORD[n];}).join(" · ");
+        $("gateHint").textContent="Tap these numbers in order (set a code in Settings)";
+      }
+      $("gateIn").textContent="";
+      $("gateOvl").classList.add("show");
+    }
+    $("parentBtn").onclick=function(){ sfx("tap"); openGate(); };
+    (function(){
+      var pad=$("pad"); var keys=[1,2,3,4,5,6,7,8,9,"⌫",0,"✓"];
+      keys.forEach(function(kk){
+        var b=document.createElement("button"); b.textContent=kk;
+        b.onclick=function(){
+          if(kk==="⌫"){ gateAns=gateAns.slice(0,-1); }
+          else if(kk==="✓"){
+            if(gateAns===gateNeed){ try{ if(S&&S.gateVerify)S.gateVerify(); }catch(e){} $("gateOvl").classList.remove("show"); sfx("correct"); if(gateNext){ var fn=gateNext; gateNext=null; fn(); } else { paintWeek(); paintWins(); paintPlan(); $("sheetOvl").classList.add("show"); } }
+            else { var m=$("gateModal"); m.classList.remove("shake"); void m.offsetWidth; m.classList.add("shake"); gateAns=""; }
+          }
+          else { if(gateAns.length<6) gateAns+=String(kk); }
+          $("gateIn").textContent=gateAns.replace(/./g, gateMode==="pin"?"•":"$&");
+          if(gateMode==="pin"){ $("gateIn").textContent="•".repeat(gateAns.length); }
+        };
+        pad.appendChild(b);
+      });
+    })();
+    $("gateClose").onclick=function(){ $("gateOvl").classList.remove("show"); };
+    // bounced here from a parent-only page (Sona.requireGate)? Open the gate
+    // right away — and send them ON to where they were going once they pass.
+    // Without this the parent solves a number puzzle and lands on the kid's
+    // home screen, with no sign of the plan screen (or progress page) that
+    // bounced them. Sona.gateDest re-checks the allowlist HERE too: this reads
+    // a URL, and a URL is never trusted because it arrived.
+    try{
+      if(/[?&]gate=1/.test(location.search)){
+        var _raw=""; try{ _raw=decodeURIComponent((location.search.match(/[?&]to=([^&]*)/)||[])[1]||""); }catch(e){}
+        var _to=""; try{ _to=(S&&S.gateDest)?S.gateDest(_raw):""; }catch(e){}
+        openGate(_to?function(){ location.replace(_to); }:null);
+      }
+    }catch(e){}
+    // Mom's week — her goal (3/5/7 days), her streak. Never shown to the kid.
+    function paintWeek(){
+      try{
+        var w=S.momWeek(), L=["M","T","W","T","F","S","S"], dots=$("wkDots"); dots.innerHTML="";
+        for(var i=0;i<7;i++){
+          var on=w.days[i], isToday=i===w.todayIx;
+          var d=document.createElement("div");
+          d.style.cssText="width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Baloo 2';font-weight:800;font-size:12px;"
+            +(on?"background:#58cc02;color:#fff;box-shadow:0 2px 0 #46a302;":"background:#fff;color:var(--label);box-shadow:inset 0 0 0 2px var(--track);")
+            +(isToday&&!on?"box-shadow:inset 0 0 0 2px var(--orange);color:var(--orange-d);":"");
+          d.textContent=on?"✓":L[i];
+          dots.appendChild(d);
+        }
+        var left=w.goal-w.done;
+        $("wkMsg").textContent = w.hit ? ("Goal met — "+Math.min(w.done,w.goal)+" of "+w.goal+" days. This week is won!")
+          : (w.practicedToday? "Practiced today ✓ — " : "")+(left===1? "1 more day and the week is won!" : left+" more days to hit your "+w.goal+"-day goal.");
+        $("wkStreak").innerHTML = w.weekStreak>0 ? ((S.icon?S.icon("flame",14):"")+" "+w.weekStreak+"-week streak") : "";
+      }catch(e){}
+    }
+    // weekly wins: reps + accuracy trend, plus a shareable card (mom's choice)
+    function paintWins(){
+      try{
+        var w=S.weekWins(); var el=$("wkWins"); if(!el)return; var bits=[];
+        if(w.reps>0) bits.push(w.reps+(w.reps===1?" sound":" sounds")+" practiced");
+        if(w.acc!=null && w.accPrev!=null && w.acc!==w.accPrev) bits.push(w.label+" sound "+w.accPrev+"% \u2192 "+w.acc+"%");
+        else if(w.acc!=null) bits.push(w.label+" sound at "+w.acc+"%");
+        el.textContent=bits.join(" \u00b7 ");
+        $("shareWeek").style.display=(w.reps>0)?"block":"none";
+      }catch(e){}
+    }
+    function shareCard(){
+      try{
+        var w=S.weekWins(), name=(P.childName||"We");
+        var cv=document.createElement("canvas"); cv.width=1080; cv.height=1350; var c=cv.getContext("2d");
+        c.fillStyle="#fff6e9"; c.fillRect(0,0,1080,1350);
+        c.fillStyle="#ffffff"; c.beginPath(); c.roundRect(70,120,940,1110,48); c.fill();
+        c.fillStyle="#ef6f23"; c.font="800 44px 'Baloo 2', sans-serif"; c.textAlign="center";
+        c.fillText("SPEECH WINS THIS WEEK",540,230);
+        c.fillStyle="#4a2c14"; c.font="800 76px 'Baloo 2', sans-serif";
+        c.fillText(name+" practiced",540,360);
+        c.fillStyle="#ff8a3d"; c.font="800 150px 'Baloo 2', sans-serif";
+        c.fillText(w.week.done+(w.week.done===1?" day":" days"),540,540);
+        var L=["M","T","W","T","F","S","S"];
+        for(var i=0;i<7;i++){ var x=250+i*97, y=640;
+          c.beginPath(); c.arc(x,y,36,0,7);
+          c.fillStyle=w.week.days[i]?"#58cc02":"#f0e4d2"; c.fill();
+          c.fillStyle=w.week.days[i]?"#fff":"#c9a878"; c.font="800 34px 'Baloo 2', sans-serif"; c.fillText(w.week.days[i]?"\u2713":L[i],x,y+12);
+        }
+        c.fillStyle="#4a2c14"; c.font="800 58px 'Baloo 2', sans-serif";
+        c.fillText(w.reps>0?(w.reps+" sounds, honestly scored"):"Real practice, honestly scored",540,790);
+        if(w.acc!=null&&w.accPrev!=null&&w.acc!==w.accPrev){
+          c.fillStyle="#58cc02"; c.font="800 88px 'Baloo 2', sans-serif";
+          c.fillText(w.label+" sound: "+w.accPrev+"% \u2192 "+w.acc+"%",540,930);
+        } else if(w.acc!=null){
+          c.fillStyle="#58cc02"; c.font="800 88px 'Baloo 2', sans-serif";
+          c.fillText(w.label+" sound: "+w.acc+"%",540,930);
+        }
+        c.fillStyle="#b08d63"; c.font="800 42px 'Baloo 2', sans-serif";
+        c.fillText("Practicing with Echo on Sona",540,1080);
+        c.fillStyle="#ef6f23"; c.font="800 46px 'Baloo 2', sans-serif";
+        c.fillText("speaksona.com",540,1160);
+        cv.toBlob(function(blob){
+          if(!blob)return;
+          var file=new File([blob],"sona-week.png",{type:"image/png"});
+          if(navigator.share&&navigator.canShare&&navigator.canShare({files:[file]})){
+            navigator.share({files:[file],title:"Sona",text:name+"'s speech practice this week"}).catch(function(){});
+          } else {
+            var a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="sona-week.png"; a.click();
+            toast("Saved! Share it anywhere");
+          }
+        },"image/png");
+      }catch(e){}
+    }
+    $("shareWeek").onclick=function(){ sfx("tap"); shareCard(); };
+    paintWins();
+    paintWeek();
+    try{ document.querySelectorAll(".pic-trend").forEach(function(n){ n.innerHTML=S.icon("trend",18); }); document.querySelectorAll(".pic-gear").forEach(function(n){ n.innerHTML=S.icon("gear",18); }); document.querySelectorAll("[data-ic]").forEach(function(n){ var m=S.icon(n.dataset.ic,18); if(m) n.innerHTML=m; }); }catch(e){}
+    $("goProgress").onclick=function(){ location.href="/progress.html"; };
+    $("goSettings").onclick=function(){ location.href="/settings.html"; };
+    $("sheetClose").onclick=function(){ $("sheetOvl").classList.remove("show"); };
+
+    // ── This-week card (parent corner): the week narrated from real data.
+    function paintPlan(){
+      try{
+        var story=(S.soundStory&&S.soundStory())||[];
+        if(!story.length){ $("planCard").style.display="none"; return; }
+        $("planCard").style.display="block";
+        $("storyBits").innerHTML=story.map(function(b){ return "• "+b; }).join("<br/>");
+      }catch(e){}
+    }
+
+    // ── plan status (web only; the native app has no payments) ──
+    // Hard rule: the kid home shows zero prices, trials, or countdowns.
+    // Trial status lives in the parent corner (#planNote), behind the gate.
+    // Founding families keep a kid-safe banner that opens the feedback pulse.
+    (function(){ if(!S)return; if(S.isNativeApp&&S.isNativeApp())return;
+      var b=$("trialBanner"),m=$("trialMsg"),note=$("planNote");
+      if(P.earlyAdopter){
+        if(b&&m){ m.innerHTML="Founding family — you're building Sona with us. <u>Tap to share an idea!</u>"; b.removeAttribute("href"); b.style.cursor="pointer"; b.onclick=function(ev){ if(ev&&ev.preventDefault)ev.preventDefault(); showPulse(true); }; b.style.display="flex"; }
+        if(note){ note.textContent="Your family has founding access while we build Sona together — thank you."; note.style.display="block"; }
+        return;
+      }
+      if(!note)return;
+      // Free mode: no trial, no plan, nothing to say in the parent corner. The
+      // trial key still sits on every device that met the paywall before the
+      // flip, and without this they'd read "Your free trial has ended — see
+      // plans" inside an app that is free.
+      if(S.isFree&&S.isFree())return;
+      if(S.isSubscribed&&S.isSubscribed())return;
+      // Premium through a clinician's caseload plan: say where it came from,
+      // so a parent who never bought anything is not left wondering why every
+      // game is open — or surprised if it closes when the plan ends.
+      if(S.caseCovered&&S.caseCovered()){
+        note.textContent="Sona Premium is included through your child's speech therapist — every available game is open.";
+        note.style.display="block"; return;
+      }
+      if(S.premium&&S.premium())return;
+      // Opening the home screen used to START a trial (ensureTrial), so the
+      // clock began because a parent looked at the app. It reports one now,
+      // and only if one already exists — an existing family's unexpired days
+      // are honored to the end, and nobody new is issued any.
+      var link=' <a href="/subscribe.html" style="color:var(--orange-d);font-weight:800;">';
+      // The family is on the free version and has seen what Sona does. This is
+      // the ONE place that says what that means — the kid screen never will —
+      // and it is where a parent who never saw the hand-off (a window that
+      // closed, a run never finished) learns what stays free and where Premium
+      // is. It asked gated("practice") until 24 Sep 2026; practice is never
+      // gated now, so the question is the one that is actually true: has this
+      // family got every game?
+      var sessionOver=false; try{ sessionOver=!!(S.demoDone&&S.demoDone()&&S.premium&&!S.premium()); }catch(e){}
+      var _tActive=!!(S.trialActive&&S.trialActive()), _tExpired=!!(S.trialExpired&&S.trialExpired());
+      if(sessionOver&&!_tActive&&!_tExpired){
+        note.innerHTML='Free games stay free. Explore more with Sona Premium. <a href="/premium.html" style="color:var(--orange-d);font-weight:800;">See Premium →</a>';
+        note.style.display="block"; return;
+      }
+      if(_tActive){ var dd=S.trialDaysLeft?S.trialDaysLeft():7; note.innerHTML="Your free trial: "+dd+" day"+(dd===1?"":"s")+" left."+link+"See plans →</a>"; note.style.display="block"; }
+      else if(S.trialExpired&&S.trialExpired()){ note.innerHTML="Your free trial has ended. Free games stay free."+link+"See plans →</a>"; note.style.display="block"; }
+    })();
+
+    // ── beta pulse: chip-first (a tap beats a blank box — the Mobbin study's
+    // one repeated pattern). Picking a chip reveals the optional note + Send.
+    // X always dismisses, and a send OR a dismiss quiets the auto-ask for two
+    // weeks — brand-new families must never feel nagged. Banner tap still
+    // opens it any time.
+    var PULSE_COOL=14*24*3600*1000;
+    var PULSE_CHIPS=["More games","New sounds to practice","Progress reports","Easier for my kid","Something's broken","Something else"];
+    function pulseState(){ try{ return JSON.parse(localStorage.getItem("sona.pulse.v1")||"{}"); }catch(e){ return {}; } }
+    function pulseSave(s){ try{ localStorage.setItem("sona.pulse.v1",JSON.stringify(s)); }catch(e){} }
+    function showPulse(force){
+      var st=pulseState();
+      var w=$("pulseOpts");
+      var picked={};
+      w.innerHTML='<div id="pulseChips" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;"></div>'
+        +'<div id="pulseMore" style="display:none;">'
+        +'<textarea id="pulseText" rows="2" placeholder="Anything else? (optional)" '
+        +'style="width:100%;border:2px solid var(--track);border-radius:14px;padding:12px;font-family:Nunito,sans-serif;font-weight:700;font-size:14px;color:var(--ink);resize:none;margin-top:10px;"></textarea>'
+        +'<button id="pulseSend" class="sheetBtn" style="justify-content:center;background:linear-gradient(180deg,#ffa05a,#ff8a3d);color:#fff;box-shadow:0 4px 0 var(--orange-d);">Send it</button>'
+        +'</div>';
+      var row=$("pulseChips");
+      PULSE_CHIPS.forEach(function(label){
+        var b=document.createElement("button");
+        b.type="button"; b.textContent=label; b.className="pulseChip";
+        b.style.cssText="border:2px solid var(--track);border-radius:999px;padding:9px 14px;background:#fff;color:var(--ink);font-family:'Baloo 2';font-weight:800;font-size:13px;cursor:pointer;";
+        b.onclick=function(){
+          picked[label]=!picked[label];
+          b.style.background=picked[label]?"linear-gradient(180deg,#ffa05a,#ff8a3d)":"#fff";
+          b.style.color=picked[label]?"#fff":"var(--ink)";
+          b.style.borderColor=picked[label]?"var(--orange-d)":"var(--track)";
+          var any=PULSE_CHIPS.some(function(k){ return picked[k]; });
+          $("pulseMore").style.display=any?"block":"none";
+        };
+        row.appendChild(b);
+      });
+      $("pulseSend").onclick=function(){
+        var chips=PULSE_CHIPS.filter(function(k){ return picked[k]; });
+        if(!chips.length) return;
+        var note=($("pulseText").value||"").trim().slice(0,600);
+        var code=""; try{ code=(S.pilotInfo&&S.pilotInfo().code)||""; }catch(e){}
+        try{ fetch("/api/feedback",{method:"POST",headers:{"Content-Type":"application/json"},keepalive:true,
+          body:JSON.stringify({q:"pulse.chips",text:chips.join(" + ")+(note?" · "+note:""),src:"pulse",code:code})}).catch(function(){}); }catch(e){}
+        st.last=Date.now(); st.cool=Date.now()+PULSE_COOL; pulseSave(st);
+        $("pulseOvl").classList.remove("show"); sfx("correct"); toast("Thanks! We build fast ✓");
+      };
+      $("pulseOvl").classList.add("show");
+      if(force){ st.last=Date.now(); pulseSave(st); }
+    }
+    $("pulseX").onclick=function(){ var st=pulseState(); st.last=Date.now(); st.cool=Date.now()+PULSE_COOL; pulseSave(st); $("pulseOvl").classList.remove("show"); sfx("tap"); };
+    (function(){
+      if(!P.earlyAdopter) return;
+      var st=pulseState(); st.visits=(st.visits||0)+1; pulseSave(st);
+      var dayAgo=!st.last || (Date.now()-st.last)>20*3600*1000;
+      var cooling=!!st.cool && Date.now()<st.cool;
+      var due=st.visits>=3 && st.visits%3===0 && dayAgo && !cooling;
+      if(due) setTimeout(function(){ showPulse(false); var s2=pulseState(); s2.last=Date.now(); pulseSave(s2); },900);
+    })();
+  </script>
+</body>
+</html>

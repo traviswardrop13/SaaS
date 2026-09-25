@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <title>Sona — Feed Echo</title>
+  <link href="/fonts.css" rel="stylesheet">
+  <meta name="theme-color" content="#fff6e9" />
+  <!--
+    Feed Echo — the littles game (3-5, fun for everyone). Echo ASKS for a word,
+    3-8s hear it, say it, and TAP the matching picture; Echo munches it and
+    grows a little — growth persists forever (sona.feed.v1), so Echo is
+    visibly bigger next week. Receptive word-picture matching IS legitimate
+    practice for littles (it's how clinic drill games like this work), and the
+    tap is the answer — no reading, no timer, no fail state.
+
+    Privacy hard lines, same as every game: the OPTIONAL mic listens for
+    loudness only (a cheer trigger — "Echo heard you!") — nothing is recorded,
+    uploaded, scored, or logged; skipped entirely unless the mic was already
+    granted elsewhere (this page never triggers the OS prompt). Feeds come
+    from taps (real actions), never from silence.
+  -->
+  <style>
+    :root{ --blue:#1cb0f6; --blue-d:#1597d4; --green:#58cc02; --green-d:#46a302; --orange:#ff9600; --orange-d:#e08600; --ink:#4a2c14; --muted:#8a6f52; --cream:#fff6e9; }
+    *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;font-family:"Nunito",sans-serif;}
+    html,body{min-height:100%;background:linear-gradient(180deg,#fff6e9 0%,#ffeccb 30%,#cef0b8 56%,#a9e18f 100%);color:var(--ink);}
+    #app{max-width:560px;margin:0 auto;min-height:100dvh;display:flex;flex-direction:column;padding:calc(12px + env(safe-area-inset-top)) 14px calc(18px + env(safe-area-inset-bottom));}
+    /* HUD (shared kit) */
+    #top{display:flex;align-items:center;gap:9px;}
+    #close{border:none;width:44px;height:44px;border-radius:50%;background:#fff;color:#b08d63;font-size:19px;font-weight:800;cursor:pointer;line-height:1;box-shadow:0 4px 0 rgba(160,80,20,.35);flex:none;}
+    .hudpill{display:flex;align-items:center;gap:6px;background:#fff;border-radius:99px;padding:9px 14px;box-shadow:0 4px 0 rgba(160,80,20,.35);font-family:"Baloo 2";font-weight:800;font-size:16px;color:var(--ink);}
+    #spacer{flex:1;}
+    /* Echo + bubble */
+    #stage{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;min-height:186px;position:relative;padding-top:8px;}
+    #bubble{background:#fff;border-radius:18px;padding:10px 18px;font-family:"Baloo 2";font-weight:800;box-shadow:0 6px 16px rgba(74,44,20,.12);position:relative;max-width:320px;text-align:center;line-height:1.25;}
+    #bubble:after{content:"";position:absolute;left:50%;bottom:-8px;transform:translateX(-50%) rotate(45deg);width:16px;height:16px;background:#fff;border-radius:3px;}
+    #bMain{font-size:16px;color:var(--ink);}
+    #bMain b{color:#ef6f23;font-size:clamp(26px,8vw,32px);padding-left:2px;}
+    #bSub{font-family:Nunito,sans-serif;font-weight:800;font-size:12.5px;color:#8a6f52;min-height:16px;margin-top:1px;}
+    #echoSpot{position:relative;display:flex;flex-direction:column;align-items:center;margin-top:12px;}
+    #mound{position:absolute;bottom:-4px;left:50%;transform:translateX(-50%);width:210px;height:52px;border-radius:50%;background:#8fdc7a;box-shadow:inset 0 -6px 0 rgba(90,150,60,.4);}
+    #echo{position:relative;z-index:1;width:150px;height:150px;object-fit:contain;transition:transform .35s cubic-bezier(.3,1.5,.5,1);transform-origin:bottom center;filter:drop-shadow(0 10px 14px rgba(120,70,10,.18));}
+    /* the plate IS the counter (D5): a white picnic plate with five wells —
+       each right answer lands that word's picture in the next well */
+    #plate{position:relative;z-index:2;width:min(60vw,230px);height:52px;margin-top:-10px;background:#fff;border-radius:50%;box-shadow:0 6px 14px rgba(90,120,50,.25),inset 0 -4px 0 #f0e6d6;display:flex;align-items:center;justify-content:space-evenly;padding:0 14px;}
+    #plate .well{width:28px;height:28px;border-radius:50%;background:#f6ead6;box-shadow:inset 0 2.5px 4px rgba(120,80,20,.22);display:flex;align-items:center;justify-content:center;overflow:hidden;}
+    #plate .well .fd{animation:popIn .4s cubic-bezier(.2,1.5,.4,1) both;}
+    @keyframes popIn{0%{transform:scale(.2);opacity:0}100%{transform:scale(1);opacity:1}}
+    #echo.munch{animation:munch .5s ease;}
+    @keyframes munch{0%{transform:scale(var(--sc,1))}35%{transform:scale(calc(var(--sc,1)*1.12)) rotate(-3deg)}70%{transform:scale(calc(var(--sc,1)*.96))}100%{transform:scale(var(--sc,1))}}
+    #heard{position:absolute;top:2px;right:6px;background:#ffd21c;color:#5c4500;font-family:"Baloo 2";font-weight:800;font-size:12.5px;padding:7px 12px;border-radius:99px;opacity:0;transform:scale(.6);transition:all .25s ease;pointer-events:none;box-shadow:0 3px 0 rgba(160,110,0,.35);}
+    #heard.show{opacity:1;transform:scale(1);}
+    /* cards */
+    #grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px;flex:1;align-content:center;}
+    .cardBtn{border:none;background:#fff;border-radius:22px;padding:16px 8px 12px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;box-shadow:0 6px 0 rgba(160,80,20,.22);transition:transform .08s;min-height:118px;justify-content:center;}
+    .cardBtn:active{transform:translateY(3px);box-shadow:0 3px 0 rgba(160,80,20,.22);}
+    .cardBtn .e{font-size:52px;line-height:1;}
+    .cardBtn .e{width:74px;height:74px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle,rgba(255,210,28,.2),rgba(255,210,28,.03) 75%);}
+    .cardBtn .w{font-family:"Baloo 2";font-weight:800;font-size:15.5px;color:var(--ink);}
+    .cardBtn.right{animation:flyIn .55s ease both;}
+    @keyframes flyIn{0%{transform:scale(1)}40%{transform:scale(1.15)}100%{transform:scale(.1) translateY(-160px);opacity:0;}}
+    .cardBtn.wrong{animation:wob .4s ease;}
+    @keyframes wob{0%,100%{transform:translateX(0)}25%{transform:translateX(-7px) rotate(-2deg)}75%{transform:translateX(7px) rotate(2deg)}}
+    #hint{text-align:center;font-weight:800;font-size:13.5px;color:var(--muted);min-height:20px;margin-top:10px;}
+    /* end overlay (shared warm-card kit) */
+    .ovl{position:fixed;inset:0;z-index:50;background:rgba(30,22,50,.55);display:none;align-items:center;justify-content:center;padding:24px;}
+    .ovl.show{display:flex;}
+    .ovlCard{background:var(--cream);border-radius:28px;padding:24px 20px 22px;width:100%;max-width:330px;text-align:center;box-shadow:0 18px 40px rgba(30,22,50,.45);display:flex;flex-direction:column;align-items:center;gap:9px;}
+    .big{font-size:56px;line-height:1;}
+    .endStar{animation:starDrop .35s cubic-bezier(.3,1.6,.5,1) both;}
+    @keyframes starDrop{0%{transform:translateY(-64px) scale(.4);opacity:0}70%{transform:translateY(6px) scale(1.08);opacity:1}100%{transform:translateY(0) scale(1);opacity:1}}
+    .ovl h2{font-family:"Baloo 2";font-weight:800;font-size:24px;color:var(--ink);line-height:1.18;background:#fff;border-radius:18px;padding:12px 18px;box-shadow:0 6px 16px rgba(74,44,20,.12);}
+    .ovl p{color:var(--muted);font-weight:800;font-size:14.5px;max-width:270px;}
+    .echoWin{position:relative;width:100%;height:116px;overflow:hidden;pointer-events:none;}
+    .echoWin img{position:absolute;left:50%;bottom:-40px;width:118px;margin-left:-59px;animation:echoLeap .5s cubic-bezier(.3,1.4,.5,1) both,echoHop 1.5s ease-in-out .6s infinite;}
+    @keyframes echoLeap{0%{transform:translateY(110px)}100%{transform:translateY(0)}}
+    @keyframes echoHop{0%,100%{transform:translateY(0)}45%{transform:translateY(-14px) rotate(-5deg)}}
+    /* the ukulele concert: Echo strums, notes float — music comes from real
+       synthesized string plucks (Karplus-Strong), scheduled in playUke() */
+    .uke{position:absolute;left:50%;bottom:6px;margin-left:-6px;font-size:44px;transform-origin:20% 80%;animation:strum .3s ease-in-out infinite alternate;filter:drop-shadow(0 4px 6px rgba(30,22,50,.25));}
+    @keyframes strum{0%{transform:rotate(-26deg)}100%{transform:rotate(-14deg)}}
+    .note{position:absolute;bottom:18px;font-size:20px;opacity:0;animation:noteUp 1.6s ease-out infinite;pointer-events:none;}
+    @keyframes noteUp{0%{opacity:0;transform:translateY(0) scale(.7) rotate(0deg)}20%{opacity:1}100%{opacity:0;transform:translateY(-86px) scale(1.15) rotate(14deg)}}
+    @media (prefers-reduced-motion: reduce){ .uke,.note{animation:none;} .note{opacity:.7;} }
+    .btn{border:none;border-radius:20px;padding:15px 30px;font-family:"Baloo 2";font-weight:800;font-size:17px;text-transform:uppercase;letter-spacing:.04em;color:#fff;background:linear-gradient(180deg,#ffa05a,#ff8a3d);box-shadow:0 6px 0 #ef6f23;cursor:pointer;width:100%;margin-top:4px;}
+    .btn:active{transform:translateY(4px);box-shadow:0 2px 0 #46a302;}
+    .ghost{background:none;border:none;box-shadow:none;color:var(--muted);font-family:"Baloo 2";font-weight:800;font-size:13.5px;cursor:pointer;padding:8px;}
+    #toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));transform:translateX(-50%);background:#fff;color:var(--ink);font-weight:800;font-size:13.5px;padding:11px 18px;border-radius:99px;box-shadow:0 8px 24px -8px rgba(120,70,10,.4);opacity:0;pointer-events:none;transition:opacity .25s;z-index:60;}
+    #toast.show{opacity:1;}
+    @media (prefers-reduced-motion: reduce){ .endStar,.echoWin img,#echo.munch,.cardBtn.right,.cardBtn.wrong{animation:none;} }
+    @media (max-height:700px){ #echo{width:118px;height:118px;} .cardBtn .e{font-size:44px;} #stage{min-height:150px;} }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <div id="top">
+      <button id="close" aria-label="Back">✕</button>
+      <span class="hudpill" id="ttl">Feed Echo</span>
+      <span id="spacer"></span>
+      <span class="hudpill" id="starPill" title="Echo heard you"><svg viewBox="0 0 24 24" style="width:16px;height:16px"><path d="M12 2l2.9 6.2 6.6.8-4.9 4.6 1.3 6.6L12 16.9 6.1 20.2l1.3-6.6L2.5 9l6.6-.8Z" fill="#ffd21c" stroke="#f0a800" stroke-width="1.2"/></svg> <span id="starN">0</span></span>
+    </div>
+
+    <div id="stage">
+      <span id="heard">Echo heard you! <svg viewBox="0 0 24 24" style="width:14px;height:14px;vertical-align:-2px"><path d="M12 2l2.9 6.2 6.6.8-4.9 4.6 1.3 6.6L12 16.9 6.1 20.2l1.3-6.6L2.5 9l6.6-.8Z" fill="#f0a800"/></svg></span>
+      <div id="bubble"><div id="bMain">Ready?</div><div id="bSub"></div></div>
+      <div id="echoSpot">
+        <div id="mound"></div>
+        <img id="echo" src="/coach/echo/echo-listening.svg" alt="Echo"
+             onerror="this.onerror=null;this.src='/coach/echo/echo-idle.svg';" />
+        <div id="plate" data-fed="0/5"><span class="well"></span><span class="well"></span><span class="well"></span><span class="well"></span><span class="well"></span></div>
+      </div>
+    </div>
+
+    <div id="grid"></div>
+  </div>
+
+  <div class="ovl" id="endOvl">
+    <div class="ovlCard">
+      <div class="big endStar"><svg viewBox="0 0 90 44" style="width:84px;height:40px"><ellipse cx="45" cy="22" rx="43" ry="20" fill="#fff"/><ellipse cx="45" cy="24" rx="43" ry="18" fill="none" stroke="#f0e6d6" stroke-width="3"/><circle cx="26" cy="20" r="8" fill="#ff5c5c"/><circle cx="45" cy="18" r="8" fill="#ffb100"/><circle cx="64" cy="20" r="8" fill="#a86ee3"/><circle cx="23" cy="17" r="2" fill="#fff" opacity=".8"/></svg></div>
+      <h2 id="endTitle">Yum! You fed Echo!</h2>
+      <p id="endSub"></p>
+      <div class="echoWin" id="concert">
+        <img src="/coach/echo/echo-celebrate.svg" alt="" />
+        <span class="uke" aria-hidden><svg viewBox="0 0 64 64" style="width:44px;height:44px"><ellipse cx="24" cy="42" rx="16" ry="14" fill="#e09a5a"/><circle cx="24" cy="42" r="5.5" fill="#7a4a22"/><rect x="34" y="10" width="7" height="26" rx="3" transform="rotate(35 37 23)" fill="#8a5a30"/><rect x="44" y="4" width="9" height="8" rx="2" transform="rotate(35 48 8)" fill="#6f4522"/><path d="M14 36l20 12M13 40l20 12M12 44l19 11" stroke="#fff" stroke-width="1.1" opacity=".85"/><circle cx="17" cy="33" r="2" fill="#fff" opacity=".75"/></svg></span>
+        <span class="note" style="left:22%;animation-delay:0s;"><svg viewBox="0 0 64 64" style="width:20px;height:20px"><ellipse cx="24" cy="46" rx="9" ry="7" fill="#ffd21c" transform="rotate(-20 24 46)"/><rect x="30" y="14" width="4.5" height="32" rx="2" fill="#ffd21c"/><path d="M34.5 14c8 2 12 7 10 14-1-4-5-7-10-8Z" fill="#f0a800"/></svg></span>
+        <span class="note" style="left:70%;animation-delay:.5s;"><svg viewBox="0 0 64 64" style="width:20px;height:20px"><ellipse cx="24" cy="46" rx="9" ry="7" fill="#fff" transform="rotate(-20 24 46)"/><rect x="30" y="14" width="4.5" height="32" rx="2" fill="#fff"/><path d="M34.5 14c8 2 12 7 10 14-1-4-5-7-10-8Z" fill="#fff" opacity=".85"/></svg></span>
+        <span class="note" style="left:44%;animation-delay:1s;"><svg viewBox="0 0 64 64" style="width:18px;height:18px"><ellipse cx="24" cy="46" rx="9" ry="7" fill="#ffd21c" transform="rotate(-20 24 46)"/><rect x="30" y="14" width="4.5" height="32" rx="2" fill="#ffd21c"/><path d="M34.5 14c8 2 12 7 10 14-1-4-5-7-10-8Z" fill="#f0a800"/></svg></span>
+      </div>
+      <button class="btn" id="again">Play again</button>
+      <button class="ghost" id="goHome">Back home</button>
+    </div>
+  </div>
+
+  <div id="toast"></div>
+
+  <script src="/sona.js"></script>
+  <script>
+    // Catalog access is checked before this game's resources start.
+    var S=window.Sona;
+    var feedAllowed=!!(S&&S.gameAccess("feed").allowed);
+    if(!feedAllowed&&S)S.gameBounce("feed");
+    if(feedAllowed){
+    function $(id){ return document.getElementById(id); }
+    // A game sound never plays while the listening mic is open or being
+    // asked for (24 Sep 2026): on an iPhone a page holding the mic runs as a
+    // phone call, so a chime there is processed like a call and the volume
+    // buttons change CALL volume. Every chime here follows a closed mic, and
+    // waits SETTLE_MS after it closes so the phone switches back in silence,
+    // not under the chime. Each sound also pushes quietUntil out, and the
+    // mic never opens before then: a chime's tail can't be heard as the child.
+    var SETTLE_MS=200, QUIET_MS=900, VOICE_TAIL_MS=250, quietUntil=0, ukeUntil=0, micClosedAt=-1e9;
+    // A sound asked for while the phone is still answering a mic request
+    // waits for the answer instead of being dropped (24 Sep 2026): a right
+    // pick in that moment lost its chime, and a round finished then lost its
+    // concert. Only an OPEN mic silences a sound: a wrong tap while Echo
+    // listens is answered by the wobble alone. `then` runs once the sound has
+    // really started, so the concert can follow the chime it waits for.
+    // (24 Sep 2026) chimesDue counts chimes still waiting on the mic, and
+    // chimeEnd is when the last one played will have finished (SFX_MS), so
+    // Echo's next ask, which waits on the same mic, lets the chime go first
+    // instead of starting on the same instant (see micQuiet below).
+    var SFX_MS={tap:120,correct:400,complete:700}, chimesDue=0, chimeEnd=0;
+    function sfx(n,then,due){
+      if(document.hidden||audioPaused||micStream){ if(due)chimesDue--; return; }
+      var wait=micClosedAt+SETTLE_MS-performance.now();
+      if(micAsking||wait>0){
+        if(!due)chimesDue++;
+        if(!micAsking)quietUntil=Math.max(quietUntil,performance.now()+wait+QUIET_MS);
+        setTimeout(function(){ sfx(n,then,true); },micAsking?60:wait); return;
+      }
+      if(due)chimesDue--;
+      quietUntil=Math.max(quietUntil,performance.now()+QUIET_MS);
+      chimeEnd=Math.max(chimeEnd,performance.now()+(SFX_MS[n]||400));
+      try{ if(S&&S.sfx&&S.sfx[n])S.sfx[n](); }catch(e){}
+      if(then)then();
+    }
+    function settleLeft(){ return Math.max(0,micClosedAt+SETTLE_MS-performance.now()); }
+    // Echo never starts talking while the phone is still answering a mic
+    // request (24 Sep 2026). An iPhone starts recording before getUserMedia
+    // returns, so an ask started then plays through call audio although the
+    // page never holds a live track. With a phone slow to answer (1.5 s), a
+    // right pick straight after the ask left the request pending and the
+    // next ask started ~0.5 s before it landed. Every line now waits for the
+    // answer (feedMicOpen closes a stale one and stamps micClosedAt), then
+    // SETTLE_MS, then any chime that was waiting on the same answer.
+    function micQuiet(){ return new Promise(function(done){ (function check(){
+      if(micAsking||chimesDue>0){ setTimeout(check,60); return; }
+      var wait=Math.max(settleLeft(),chimeEnd-performance.now());
+      if(wait>0){ setTimeout(check,wait); return; }
+      done();
+    })(); }); }
+    // the concert keeps its own clock: stopping it early frees the mic again
+    function quietLeft(){ return Math.max(quietUntil,ukeUntil)-performance.now(); }
+    var profile=(S&&S.getProfile)?S.getProfile():{};
+
+    // ── persistent growth: Echo is visibly bigger every week they show up ──
+    // per-child: Echo grows for the child who fed him (KIDS1)
+    var FEEDKEY=(window.Sona&&Sona.kkey)?Sona.kkey("sona.feed.v1"):"sona.feed.v1";
+    function feedState(){ try{ return JSON.parse(localStorage.getItem(FEEDKEY)||"{}"); }catch(e){ return {}; } }
+    function feedSave(s){ try{ localStorage.setItem(FEEDKEY,JSON.stringify(s)); }catch(e){} }
+    function echoScale(){ var f=feedState().fed||0; return 1+Math.min(f,80)*0.004; } // lifetime base, caps ~1.32×
+    // every bite VISIBLY grows Echo within the round (+7% each) on top of the
+    // slow lifetime growth — balloon now, keep a little forever
+    var roundBump=0;
+    function paintScale(){ var sc=echoScale()*(1+roundBump); var e=$("echo"); e.style.setProperty("--sc",sc); e.style.transform="scale("+sc+")"; }
+
+    // ── words: target from the CURRENT rotation sound (coherent with the
+    // plan); distractors from other sounds with different first letters ──
+    var SOUND=(S&&S.rotSound)?S.rotSound():"R";
+    try{ $("ttl").textContent="Feed Echo · "+((S&&S.soundLabel)?S.soundLabel(SOUND):SOUND)+" sound"; }catch(e){}
+    function paintPlate(){ try{
+      var wells=$("plate").querySelectorAll(".well");
+      $("plate").dataset.fed=fed+"/"+NEED;
+    }catch(e){} }
+    function landOnPlate(w){ try{
+      var wells=$("plate").querySelectorAll(".well");
+      var slot=wells[Math.min(fed-1,wells.length-1)];
+      if(slot) slot.innerHTML='<span class="fd">'+((S&&S.pic)?S.pic(w.w,w.e,20):w.e)+'</span>';
+      $("plate").dataset.fed=fed+"/"+NEED;
+    }catch(e){} }
+    function pool(sound){ var ws=(S&&S.wordsFor)?(S.wordsFor(sound,"i")||[]):[]; return ws.filter(function(w){ return w&&w.w&&w.e; }).sort(function(a,b){ return a.w.length-b.w.length; }).slice(0,8); }
+    var TARGETS=pool(SOUND);
+    if(!TARGETS.length){ SOUND="R"; TARGETS=pool("R"); }
+    var OTHERS=[];
+    try{
+      (S.ALL_SOUNDS||[]).forEach(function(s){ if(s===SOUND)return; (S.wordsFor(s,"i")||[]).forEach(function(w){ if(w&&w.w&&w.e&&w.w[0].toLowerCase()!==String(TARGETS[0]&&TARGETS[0].w||" ")[0].toLowerCase()) OTHERS.push(w); }); });
+    }catch(e){}
+
+    // ── tiny cached TTS (same on-device cache as charge; repeat asks are free)
+    var audioCtx=null,speaking=false,ttsPlaying=false,audioGeneration=0,audioPaused=!!document.hidden,audioStop=null,audioSuspend=Promise.resolve();
+    function audioAllowed(generation){return !document.hidden&&!audioPaused&&generation===audioGeneration;}
+    function stopFeedAudio(){
+      audioGeneration++;audioPaused=true;
+      var stop=audioStop;audioStop=null;if(stop)stop();
+      speaking=false;ttsPlaying=false;
+      try{if(window.speechSynthesis)window.speechSynthesis.cancel();}catch(e){}
+      stopUke();
+      try{if(S&&S.sfx&&S.sfx.stop)S.sfx.stop();}catch(e){}
+      try{if(audioCtx&&audioCtx.suspend)audioSuspend=Promise.resolve(audioCtx.suspend()).catch(function(){});}catch(e){}
+    }
+    function getCtx(){
+      if(document.hidden||audioPaused)throw new Error("Feed audio is paused");
+      if(!audioCtx){var AC=window.AudioContext||window.webkitAudioContext;audioCtx=new AC();}
+      if(audioCtx.state==="suspended"){var generation=audioGeneration;audioSuspend.then(function(){if(audioAllowed(generation)&&audioCtx.state==="suspended")return audioCtx.resume();}).catch(function(){});}
+      return audioCtx;
+    }
+    // iOS unlock: the first ask auto-plays at boot (no gesture) — any first
+    // tap unlocks the context so speech works from then on
+    (function(){ function un(){ if(document.hidden)return;audioPaused=false;try{ var c=getCtx(); var b=c.createBuffer(1,1,22050), s=c.createBufferSource(); s.buffer=b; s.connect(c.destination); s.start(0); }catch(e){} }
+      document.addEventListener("pointerdown", un, { passive:true, capture:true }); })();
+    function ttsDB(){ return new Promise(function(res,rej){ try{ var r=indexedDB.open("sona-tts",1); r.onupgradeneeded=function(){ r.result.createObjectStore("clips"); }; r.onsuccess=function(){res(r.result)}; r.onerror=function(){rej(r.error)}; }catch(e){rej(e);} }); }
+    function ttsGet(k){ return ttsDB().then(function(db){ return new Promise(function(res){ var tx=db.transaction("clips"); var rq=tx.objectStore("clips").get(k); rq.onsuccess=function(){res(rq.result||null)}; rq.onerror=function(){res(null)}; }); }).catch(function(){return null;}); }
+    function ttsPut(k,buf){ ttsDB().then(function(db){ try{ db.transaction("clips","readwrite").objectStore("clips").put(buf,k); }catch(e){} }).catch(function(){}); }
+    function playPCM(b,generation){return new Promise(function(res){
+      if(!audioAllowed(generation))return res();
+      var done=false,source=null;ttsPlaying=true;
+      function fin(){if(done)return;done=true;if(audioStop===cancel)audioStop=null;if(generation===audioGeneration)ttsPlaying=false;res();}
+      function cancel(){try{if(source)source.stop();}catch(e){}fin();}
+      audioStop=cancel;
+      try{
+        var c=getCtx(),n=b.byteLength>>1,ab=c.createBuffer(1,n,24000),ch=ab.getChannelData(0),dv=new DataView(b.buffer,b.byteOffset,b.byteLength);
+        for(var i=0;i<n;i++)ch[i]=dv.getInt16(i*2,true)/32768;
+        source=c.createBufferSource();source.buffer=ab;var g=c.createGain();g.gain.value=profile.volume!=null?profile.volume:0.8;
+        source.connect(g);g.connect(c.destination);source.onended=fin;source.start();
+      }catch(e){fin();}
+    });}
+    function speakFallback(t,generation){return new Promise(function(res){
+      if(!audioAllowed(generation)||!window.speechSynthesis||!window.SpeechSynthesisUtterance)return res();
+      var done=false,timer=null;
+      function fin(){if(done)return;done=true;clearTimeout(timer);if(audioStop===cancel)audioStop=null;if(generation===audioGeneration)ttsPlaying=false;res();}
+      function cancel(){try{window.speechSynthesis.cancel();}catch(e){}fin();}
+      audioStop=cancel;
+      try{
+        var u=new SpeechSynthesisUtterance(t);u.rate=.95;u.pitch=1.05;u.volume=profile.volume!=null?profile.volume:0.8;
+        u.onend=fin;u.onerror=fin;timer=setTimeout(fin,9000);ttsPlaying=true;window.speechSynthesis.speak(u);
+      }catch(e){fin();}
+    });}
+    function say(t){
+      var generation=audioGeneration;
+      if(!t||!audioAllowed(generation)||profile.voiceOn===false||Number(profile.volume)===0||speaking)return Promise.resolve();
+      speaking=true;
+      var key=(profile.voiceId||"echo")+"|"+((window.Sona&&Sona.TTS_CACHE_VERSION)||"v8")+"|"+t;
+      // Echo waits out a mic request still being answered, then the phone's
+      // switch back from a mic that has only just closed (the same SETTLE_MS
+      // the chimes wait), then a chime that was waiting on it (micQuiet)
+      return micQuiet().then(function(){ return ttsGet(key); }).then(function(cached){
+        if(!audioAllowed(generation))return true;
+        if(cached)return playPCM(new Uint8Array(cached),generation).then(function(){return true;});
+        return fetch("/api/tts",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text:t,voice:profile.voiceId||"",stable:true})})
+          .then(function(r){return r.ok?r.arrayBuffer():null;})
+          .then(function(b){if(!audioAllowed(generation))return true;if(!b)return false;ttsPut(key,b);return playPCM(new Uint8Array(b),generation).then(function(){return true;});});
+      }).then(function(played){if(!played&&audioAllowed(generation))return speakFallback(t,generation);})
+        .catch(function(){if(audioAllowed(generation))return speakFallback(t,generation);})
+        .then(function(){if(generation===audioGeneration)speaking=false;});
+    }
+
+    // ── OPTIONAL mic cheer: loudness only, only if already granted elsewhere.
+    // Never prompts, never records, never logs — a voice burst during the
+    // child's turn = "Echo heard you! ⭐". (24 Sep 2026) The mic used to open
+    // at page load and stay open under every ask, chime and the concert,
+    // which kept an iPhone in phone-call audio for the whole game. It now
+    // opens only after Echo has finished asking, VOICE_TAIL_MS after the
+    // voice stops, and closes when the turn ends (a right pick, a heard
+    // word), on Play again, at the finish and when the page hides. ──
+    var heardThisTurn=false, stars=0, micStream=null, micAsking=false, micGen=0, micSrc=null, micRaf=0, micT=0;
+    // What counts as "heard" (24 Sep 2026): the bar is 3× the room's quiet
+    // level, and that level belongs to the page, not the turn. micFloor is
+    // the 20th-percentile loudness of the quietest FLOOR_MS the mic has heard
+    // on this page, and it only ever goes DOWN. The first cut of this change
+    // averaged the first 250 ms of every turn instead, which is exactly when
+    // a child answers "Say... robot.": their own voice became the "room",
+    // the bar landed above it, and the child who answered fastest never got
+    // "Echo heard you!". A low percentile ignores a voice that fills most of
+    // the stretch; only-down means nothing a child says raises it; and the
+    // last HEARD_MS of frames are judged against the CURRENT floor, so an
+    // answer given before the first quiet breath still counts once it comes.
+    var FLOOR_MS=250, HEARD_MS=3000, micFloor=-1;
+    function p20(list){ var a=list.slice().sort(function(x,y){ return x-y; }); return a[Math.floor((a.length-1)*0.2)]; }
+    function feedMicStop(){
+      micGen++; clearTimeout(micT); if(micRaf)cancelAnimationFrame(micRaf); micRaf=0;
+      try{ if(micSrc)micSrc.disconnect(); }catch(e){} micSrc=null;
+      if(micStream){ try{ micStream.getTracks().forEach(function(t){t.stop();}); }catch(e){} micStream=null; micClosedAt=performance.now(); }
+    }
+    function listenable(){ return turnLive&&!heardThisTurn&&!speaking&&!ttsPlaying&&!document.hidden&&!audioPaused; }
+    function feedMicOpen(){
+      if(!listenable()||micStream||micAsking)return;
+      try{ if(localStorage.getItem("sona.micok")!=="1")return; }catch(e){ return; }
+      if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia||!navigator.permissions||!navigator.permissions.query)return;
+      var wait=quietLeft();
+      if(wait>0){ clearTimeout(micT); micT=setTimeout(feedMicOpen,wait); return; }
+      var gen=++micGen, asked=false; micAsking=true;
+      navigator.permissions.query({name:"microphone"}).then(function(permission){
+        if(permission.state!=="granted"||gen!==micGen||!listenable())return null;
+        asked=true;
+        return navigator.mediaDevices.getUserMedia({audio:true,video:false});
+      }).then(function(stream){
+        micAsking=false;
+        if(!stream)return;
+        if(gen!==micGen||!listenable()){ try{ stream.getTracks().forEach(function(t){t.stop();}); }catch(e){} micClosedAt=performance.now(); return; }
+        micStream=stream;
+        // a mic that can't be wired to a listener closes at once: left open,
+        // it would hear nothing and silence every chime until the turn ended
+        try{ var ctx=getCtx(),src=ctx.createMediaStreamSource(stream),an=ctx.createAnalyser(); an.fftSize=512; src.connect(an); micSrc=src; }
+        catch(e){ feedMicStop(); return; }
+        var td=new Uint8Array(an.fftSize),heard=[];
+        (function tick(){
+          if(gen!==micGen)return;
+          // belt and braces: nothing plays while this mic is open, and if
+          // anything did, its frames would never be judged or join a burst
+          if(speaking||ttsPlaying||quietLeft()>0){ heard=[]; micRaf=requestAnimationFrame(tick); return; }
+          an.getByteTimeDomainData(td);
+          var sum=0; for(var i=0;i<td.length;i++){ var d=(td[i]-128)/128; sum+=d*d; }
+          var now=performance.now();
+          heard.push({t:now,r:Math.sqrt(sum/td.length)});
+          while(now-heard[0].t>HEARD_MS) heard.shift();
+          if(now-heard[0].t>=FLOOR_MS){
+            var w=[]; for(var k=heard.length-1;k>=0&&now-heard[k].t<=FLOOR_MS;k--) w.push(heard[k].r);
+            var q=p20(w); if(micFloor<0||q<micFloor) micFloor=q;
+          }
+          if(micFloor>=0&&!heardThisTurn&&turnLive){
+            var thr=Math.max(0.035,micFloor*3.0), voiced=0;
+            for(var j=0;j<heard.length&&voiced<4;j++) voiced=heard[j].r>thr?voiced+1:0;
+            if(voiced>=4){
+              heardThisTurn=true; stars++; try{ window.__heard=stars; }catch(e){} try{ $("starN").textContent=stars; }catch(e){}
+              $("heard").classList.add("show"); setTimeout(function(){ $("heard").classList.remove("show"); },1400);
+              feedMicStop(); sfx("tap"); return;   // heard once is the whole turn: close, THEN the little chime
+            }
+          }
+          micRaf=requestAnimationFrame(tick);
+        })();
+      }).catch(function(){ micAsking=false;
+        // denied elsewhere — tap-only play, no blocker here. A request that
+        // failed after it reached the phone may already have switched it into
+        // call audio, so the next sound settles after it too.
+        if(asked)micClosedAt=Math.max(micClosedAt,performance.now()); });
+    }
+
+    // ── the round: 5 feeds, no timer, no fail ──
+    var NEED=5, fed=0, turnLive=false, target=null, usedIdx=[];
+    function shuffle(a){ for(var i=a.length-1;i>0;i--){ var j=(Math.random()*(i+1))|0,t=a[i]; a[i]=a[j]; a[j]=t; } return a; }
+    function nextTurn(){
+      feedMicStop(); heardThisTurn=false;   // Echo is about to ask: never over an open mic
+      var ti; do{ ti=(Math.random()*TARGETS.length)|0; }while(TARGETS.length>1&&usedIdx.indexOf(ti)>=0&&usedIdx.length<TARGETS.length);
+      usedIdx.push(ti); if(usedIdx.length>=TARGETS.length)usedIdx=[];
+      target=TARGETS[ti];
+      var opts=[target].concat(shuffle(OTHERS.slice()).slice(0,3));
+      if(opts.length<2){ opts=[target].concat(TARGETS.filter(function(w){return w.w!==target.w;}).slice(0,3)); }
+      shuffle(opts);
+      $("bMain").innerHTML="Where's the <b>"+target.w+"</b>?";
+      $("bSub").textContent="Say it out loud, then tap it!";
+      var g=$("grid"); g.innerHTML="";
+      opts.forEach(function(w){
+        var b=document.createElement("button"); b.className="cardBtn"; b.type="button";
+        b.innerHTML='<span class="e">'+((S&&S.pic)?S.pic(w.w,w.e,54):w.e)+'</span><span class="w">'+w.w+"</span>";
+        b.onclick=function(){ pick(w,b); };
+        g.appendChild(b);
+      });
+      turnLive=true;
+      // Calm: the ask ends on a period, not "!", which the voice reads as a
+      // burst of energy (24 Sep 2026). The practice word itself is unchanged.
+      say("Where is the "+target.w+"? Say... "+target.w+".").then(function(){
+        // listenable() decides whether this is still somebody's turn, so an
+        // older ask finishing late opens the mic for the current one
+        quietUntil=Math.max(quietUntil,performance.now()+VOICE_TAIL_MS);
+        feedMicOpen();
+      });
+    }
+    function pick(w,btn){
+      if(!turnLive)return;
+      if(w.w!==target.w){
+        btn.classList.remove("wrong"); void btn.offsetWidth; btn.classList.add("wrong");
+        $("bSub").textContent="Almost! Where's the "+target.w+"?";
+        // while the mic is listening the wobble and the hint are the whole
+        // answer: sfx() stays silent over an open mic
+        sfx("tap");
+        return; // no fail state, no strikes — littles just try again
+      }
+      turnLive=false; fed++; feedMicStop(); // the turn is over: the mic closes before the chime
+      roundBump=fed*0.07;
+      var f=feedState(); f.fed=(f.fed||0)+1; feedSave(f);
+      btn.classList.add("right"); sfx("correct");
+      var e=$("echo"); e.classList.remove("munch"); void e.offsetWidth; e.classList.add("munch");
+      paintScale();
+      landOnPlate(w);
+      $("bMain").innerHTML=(fed>=NEED)?"YUM! All full!":["Yum!","Nice one!","So tasty!","Great!"][fed%4];
+      $("bSub").textContent="";
+      if((feedState().fed||0)%10===0){ toast("Echo grew bigger!"); }
+      // Nothing is spoken on a correct tap. Every third one used to say
+      // "Mmm! <word>! More please!" — it talked over the child right as they
+      // were about to go again, and the next turn's prompt speaks the word
+      // anyway. The munch, the plate and the bubble already say "yes".
+      if(fed>=NEED){ setTimeout(finish,900); } else { setTimeout(nextTurn,900); }
+    }
+    function toast(t){ var el=$("toast"); el.textContent=t; el.classList.add("show"); clearTimeout(toast._t); toast._t=setTimeout(function(){ el.classList.remove("show"); },1800); }
+
+    // ── Echo's ukulele: real plucked strings (Karplus-Strong), no assets.
+    // A celebration jingle, not background music: one pass (~4s), volume from
+    // the profile, silent when sounds are off, stopped when the overlay closes.
+    // (24 Sep 2026) It was the loudest thing in the app: master min(0.5,
+    // volume×0.55), ~9 dB over the win chime, each pluck a raw noise burst
+    // with no attack, starting on top of the chime. Now volume×0.2 (level
+    // with the chime), a 4 ms attack on every pluck, and it waits
+    // UKE_AFTER_CHIME_MS for the chime to have its moment.
+    var ukeNodes=[], UKE_AFTER_CHIME_MS=500;
+    function pluck(ctx,dest,freq,when,vel){
+      var sr=ctx.sampleRate, N=Math.round(sr/freq), len=Math.round(sr*0.9);
+      var buf=ctx.createBuffer(1,len,sr), ch=buf.getChannelData(0);
+      for(var i=0;i<N;i++) ch[i]=Math.random()*2-1;           // the pluck burst
+      for(var n=N;n<len;n++) ch[n]=0.996*0.5*(ch[n-N]+ch[n-N+1]); // string decay
+      var s=ctx.createBufferSource(); s.buffer=buf;
+      var g=ctx.createGain(); g.gain.setValueAtTime(0.0001,when); g.gain.exponentialRampToValueAtTime(vel,when+0.004); g.gain.exponentialRampToValueAtTime(0.001,when+0.85);
+      s.connect(g); g.connect(dest); s.start(when); ukeNodes.push(s);
+    }
+    function playUke(delaySec){
+      try{
+        if(document.hidden||audioPaused||micStream||profile.soundOn===false||Number(profile.volume)===0)return;
+        // like sfx(): a mic request still being answered is waited out, not a
+        // reason to drop the concert, and the wait ends with the end card
+        if(micAsking){ setTimeout(function(){ if(concertDue())playUke(delaySec); },60); return; }
+        var ctx=getCtx(), t=ctx.currentTime+(delaySec!=null?delaySec:UKE_AFTER_CHIME_MS/1000);
+        var master=ctx.createGain(); master.gain.value=(profile.volume!=null?profile.volume:0.8)*0.2; master.connect(ctx.destination);
+        // ukulele voicings (G4-C4-E4-A4 strings): C, F, G7, C — the campfire cadence
+        var CH={ C:[392,261.6,329.6,523.3], F:[349.2,261.6,349.2,440], G:[392,293.7,392,493.9] };
+        var pat=[CH.C,CH.C,CH.F,CH.F,CH.G,CH.G,CH.C];
+        pat.forEach(function(chord,i){
+          var when=t+i*0.42, up=(i%2===1);
+          chord=up?chord.slice().reverse():chord;              // down-up strum feel
+          chord.forEach(function(fq,k){ pluck(ctx,master,fq,when+k*0.022,up?0.5:0.7); });
+        });
+        // the last chord rings with a little flourish arpeggio
+        [523.3,659.3,784].forEach(function(fq,k){ pluck(ctx,master,fq,t+7*0.42+0.25+k*0.09,0.55); });
+        ukeUntil=performance.now()+(t-ctx.currentTime)*1000+4600;   // last pluck + its 0.9 s ring + a tail
+        window.__ukePlayed=true;
+      }catch(e){}
+    }
+    // the concert belongs to the end card: a chime that waited past "Play
+    // again" must not start a concert over the next round's ask
+    function concertDue(){ return $("endOvl").classList.contains("show"); }
+    function stopUke(){ try{ ukeNodes.forEach(function(n){ try{n.stop();}catch(e){} }); ukeNodes=[]; }catch(e){} ukeUntil=0; }
+
+    function finish(){
+      feedMicStop();
+      var daily=S.simpleAdventure&&S.simpleAdventure("feed",true);
+      // These discoveries are free play. Loudness alone never advances practice.
+      $("endTitle").textContent="Yum! You fed Echo!";
+      $("endSub").textContent="Five tasty discoveries. Concert time!";
+      $("again").textContent=daily?"Keep going →":"Play again";
+      $("endOvl").classList.add("show");
+      // the chime waits out the mic's close (and any request still being
+      // answered) in sfx(); the uke starts from the moment the chime really does
+      sfx("complete",function(){ if(concertDue())playUke(UKE_AFTER_CHIME_MS/1000); });
+    }
+
+    $("again").onclick=function(){ stopUke(); feedMicStop();
+      if(S.simpleAdventure&&S.simpleAdventure("feed",false)){feedMicStop();location.href="/charge.html?daily=1&banked=0";return;}
+ fed=0; stars=0; roundBump=0; paintScale();
+      try{ $("plate").querySelectorAll(".well").forEach(function(w){ w.innerHTML=""; }); $("plate").dataset.fed="0/5"; $("starN").textContent="0"; }catch(e){}
+      $("endOvl").classList.remove("show"); sfx("tap"); nextTurn(); };
+    $("goHome").onclick=function(){ stopFeedAudio();feedMicStop(); location.href="/today.html"; };
+    $("close").onclick=function(){ stopFeedAudio();feedMicStop(); location.href="/today.html"; };
+
+    function backgroundFeed(){stopFeedAudio();feedMicStop();}
+    if(S&&S.onBackground)S.onBackground(backgroundFeed);
+    else{document.addEventListener("visibilitychange",function(){if(document.hidden)backgroundFeed();});window.addEventListener("pagehide",backgroundFeed);}
+    paintScale();
+    nextTurn();
+    }
+  </script>
+</body>
+</html>

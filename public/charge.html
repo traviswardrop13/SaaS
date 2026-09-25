@@ -1,0 +1,2264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <title>Sona — Practice</title>
+  <link href="/fonts.css" rel="stylesheet">
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <meta name="theme-color" content="#fff6e9" />
+  <style>
+    :root{
+      --cream:#fff6e9; --card:#fff; --ink:#4a2c14; --muted:#b08d63; --label:#c9a878;
+      --track:#f0e4d2; --chipbg:#ffe7d3; --chiptx:#ef6f23;
+      --green:#58cc02; --green-d:#46a302; --orange:#ff8a3d; --orange-d:#ef6f23;
+      --gold:#ffd21c; --blue:#1cb0f6; --blue-d:#1597d4;
+      --hsh:rgba(120,50,10,.16); --tsh:rgba(200,80,20,.45); --bsh:rgba(120,50,10,.2);
+    }
+    *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;font-family:"Nunito",-apple-system,sans-serif;}
+    html,body{height:100%;overflow:hidden;background:var(--cream);color:var(--ink);}
+    /* per-game skies — same values as the games themselves */
+    .g-slice{background:linear-gradient(180deg,#8fd0f5 0%,#ffe9b8 42%,#ffb066 76%,#ff8a5a 100%);}
+    .g-run{background:linear-gradient(180deg,#aee6ff 0%,#cff2e2 26%,#7ed36f 34%,#7ed36f 100%);}
+    .g-stack{background:linear-gradient(180deg,#2b2e6b 0%,#5b3f8f 44%,#a45fae 74%,#e17aa4 100%);}
+    .g-tiles{background:linear-gradient(180deg,#231a4d 0%,#2f2266 40%,#43318c 72%,#54409e 100%);}
+    .g-glide{background:linear-gradient(180deg,#3f74ab 0%,#6ea3d4 42%,#ffcf9a 78%,#ffe7c4 100%);}
+    /* --sky-ink: readable context-text color per sky (design handoff A) */
+    .g-slice{--hsh:rgba(120,50,10,.16);--tsh:rgba(200,80,20,.45);--bsh:rgba(120,50,10,.2);--sky-ink:#5c3a10;}
+    .g-run{--hsh:rgba(40,80,120,.16);--tsh:rgba(40,90,140,.4);--bsh:rgba(40,80,120,.2);--sky-ink:#1f5e4a;}
+    .g-stack{--hsh:rgba(20,16,60,.28);--tsh:rgba(40,20,80,.45);--bsh:rgba(10,6,40,.4);--sky-ink:rgba(255,255,255,.92);}
+    .g-tiles{--hsh:rgba(10,6,40,.4);--tsh:rgba(10,6,40,.5);--bsh:rgba(10,6,40,.45);--sky-ink:rgba(255,255,255,.92);}
+    .g-glide{--hsh:rgba(40,70,120,.24);--tsh:rgba(40,70,120,.4);--bsh:rgba(40,50,90,.3);--sky-ink:rgba(255,255,255,.95);}
+    #app{height:100vh;height:100dvh;max-width:560px;margin:0 auto;position:relative;overflow:hidden;overscroll-behavior:none;}
+    /* landscape rescue: same rule as the home screen — a short-wide viewport
+       unlocks scrolling instead of crushing the practice card */
+    @media (orientation:landscape) and (max-height:520px){
+      html,body{overflow:auto;height:auto;}
+      #app{height:auto;min-height:100dvh;overflow:visible;}
+    }
+    #decor{position:absolute;inset:0;pointer-events:none;}
+    #decor i{position:absolute;display:block;}
+    /* the build centerpiece — ONE physical object that fills piece-by-piece,
+       anchored above the mic (design handoff A §4) */
+    #reveals{position:absolute;left:0;right:0;bottom:calc(196px + env(safe-area-inset-bottom));display:flex;justify-content:center;pointer-events:none;z-index:2;}
+    #reveals .pop{animation:pop .45s cubic-bezier(.2,1.6,.4,1);}
+    @keyframes pop{0%{transform:scale(.25);opacity:0}70%{transform:scale(1.12)}100%{transform:scale(1);opacity:1}}
+    /* empty pieces are glassy SOLIDS — never dashed outlines */
+    /* Unearned pieces are white dashed GHOSTS, not dimmed solids — a child can
+       see the shape of the thing they are about to earn. Values are the design's
+       (README section 3): 2.5px dashed #fff at .75, fill rgba(255,255,255,.16). */
+    .glass{background:rgba(255,255,255,.16)!important;border:2.5px dashed rgba(255,255,255,.75);box-shadow:none!important;}
+    .glass.up{background:rgba(255,255,255,.24)!important;border-color:#fff;}
+    #reveals .ringed{outline:3px solid rgba(88,204,2,.45);outline-offset:3px;}
+
+    /* header: close circle · context line · star pill (design handoff A §1) */
+    #top{position:relative;z-index:3;display:flex;align-items:center;gap:8px;padding:calc(14px + env(safe-area-inset-top)) 16px 0;}
+    #close{border:none;width:44px;height:44px;border-radius:50%;background:#fff;color:#b9a98c;font-size:18px;font-weight:800;cursor:pointer;line-height:1;box-shadow:0 4px 0 var(--hsh);flex:0 0 auto;}
+    /* one line, always: "Round 1 of 5 · P sound" was wrapping to two on a 390px
+       phone between the close button, the ticket pill and the star count */
+    #ctxLine{flex:1;min-width:0;text-align:center;font-family:"Baloo 2";font-weight:800;font-size:14px;color:var(--sky-ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    /* TICKET PILL — close | ticket | stars (README section 3). Five segments,
+       filled #ff8a3d, empty #f0e4d2, so "how many more?" is answerable at a
+       glance without counting fruit. */
+    #tktPill{display:flex;align-items:center;gap:7px;background:#fff;border-radius:99px;padding:9px 12px;box-shadow:0 4px 0 var(--hsh);flex:0 0 auto;}
+    #tktPill .segs{display:flex;gap:3px;}
+    #tktPill .segs i{display:block;width:14px;height:10px;border-radius:3px;background:#f0e4d2;transition:background .18s;}
+    #tktPill .segs i.on{background:#ff8a3d;}
+    @media (max-width:359px){ #tktPill .segs i{width:11px;} }
+    #sumLbl{display:flex;align-items:center;gap:6px;background:#fff;border-radius:99px;padding:10px 13px;box-shadow:0 4px 0 var(--hsh);font-family:"Baloo 2";font-weight:800;font-size:15px;color:var(--ink);flex:0 0 auto;min-height:22px;}
+
+    /* compact rotated title */
+    #titleWrap{position:relative;z-index:3;display:flex;flex-direction:column;align-items:center;padding-top:8px;}
+    #gameTitle{font-family:"Baloo 2";font-weight:800;font-size:clamp(24px,7.4vw,28px);color:#fff;text-shadow:0 3px 0 var(--tsh);transform:rotate(-2deg);letter-spacing:.02em;}
+
+    /* Echo cluster — the ONLY voice on screen: bubble (Say + huge target +
+       verb sub-line) with Echo right below it (design handoff A §3) */
+    #echoCluster{position:relative;z-index:3;display:flex;flex-direction:column;align-items:center;margin-top:16px;}
+    #bubble{background:#fff;border-radius:20px;border-bottom-left-radius:5px;padding:12px 20px;box-shadow:0 6px 16px var(--bsh);text-align:center;max-width:86vw;}
+    #bMain{font-family:"Baloo 2";font-weight:800;font-size:15px;color:#4a2c14;line-height:1.15;}
+    #bTarget{font-family:"Baloo 2";font-weight:800;font-size:clamp(32px,10vw,40px);color:#ef6f23;display:inline-block;padding-left:6px;}
+    #gpState{font-weight:800;font-size:14.5px;color:#8a6f52;margin-top:2px;}
+    #gpState b{color:var(--chiptx);}
+    #turnStatus{font-size:13px;font-weight:900;color:#795534;line-height:1.35;margin-bottom:5px;}
+    body.echo-speaking #gpState{visibility:hidden;}
+    #micBtn:disabled,#turtleBtn:disabled{cursor:default;opacity:.6;}
+    #replayLabel{font-size:12px;font-weight:900;color:var(--sky-ink);text-align:center;}
+    #micBtn:focus-visible,#turtleBtn:focus-visible{outline:3px solid #795534;outline-offset:4px;}
+    #leo{width:100px;height:100px;object-fit:contain;margin-top:10px;filter:drop-shadow(0 8px 10px var(--bsh));}
+    #leo.cheer{animation:hop .5s ease;}
+    #leo.think{animation:think 1.1s ease-in-out infinite;} /* head-tilt while the scorer runs */
+    @keyframes think{0%,100%{transform:rotate(-4deg)}50%{transform:rotate(5deg) translateY(-3px)}}
+    @keyframes hop{0%,100%{transform:translateY(0)}45%{transform:translateY(-14px) rotate(-5deg)}}
+
+    /* mic — auto-hot, white pulse rings on the sky; TAPPING replays the prompt */
+    #bottom{position:absolute;left:16px;right:16px;bottom:calc(36px + env(safe-area-inset-bottom));display:flex;flex-direction:column;align-items:center;gap:4px;z-index:3;}
+    #micWrap{position:relative;width:104px;height:104px;display:flex;align-items:center;justify-content:center;}
+    #micWrap::before,#micWrap::after{content:"";position:absolute;border-radius:50%;}
+    #micWrap::before{inset:0;background:rgba(255,255,255,.18);animation:ring 1.6s ease-out infinite;}
+    #micWrap::after{inset:12px;background:rgba(255,255,255,.30);animation:ring 1.6s ease-out infinite .4s;}
+    @keyframes ring{0%{transform:scale(.85);opacity:0}30%{opacity:1}100%{transform:scale(1.12);opacity:0}}
+    #micBtn{position:relative;z-index:1;width:70px;height:70px;border-radius:50%;border:none;background:linear-gradient(180deg,#e7d9c4,#d8c7ad);box-shadow:0 5px 0 #c4b193;display:flex;align-items:center;justify-content:center;cursor:pointer;}
+    #micBtn svg{width:32px;height:32px;fill:#fff;}
+    #micBtn.go{background:linear-gradient(180deg,#ffa05a,#ff8a3d);box-shadow:0 5px 0 var(--orange-d);}
+    /* voice-reactive mic: rings race + brighten the instant a voiced frame
+       lands. Binary, never volume-scaled — a whisper and a shout look exactly
+       the same (precision is the skill, not loudness). Text-free signal. */
+    #micWrap.hear::before{background:rgba(255,255,255,.34);animation-duration:.8s;}
+    #micWrap.hear::after{background:rgba(255,255,255,.55);animation-duration:.8s;}
+    #micWrap.hear #micBtn{transform:scale(1.07);}
+    #micBtn{transition:background .15s,transform .12s;}
+    /* charged: the mic hands off to a full-width launch bar (A §states) */
+    #launchBar{display:none;border:none;width:100%;border-radius:20px;padding:16px 20px;font-family:"Baloo 2";font-weight:800;font-size:16px;letter-spacing:.06em;text-transform:uppercase;color:#fff;background:linear-gradient(180deg,#ffa05a,#ff8a3d);box-shadow:0 6px 0 var(--orange-d),0 0 22px rgba(255,138,61,.4);}
+    #launchBar.show{display:block;}
+    /* slow-replay pill — sits between Echo and the build on a retry */
+    #turtleBtn{display:none;position:absolute;left:50%;transform:translateX(-50%);bottom:calc(330px + env(safe-area-inset-bottom));z-index:4;border:none;background:#fff;border-radius:99px;padding:9px 16px;font-family:"Baloo 2";font-weight:800;font-size:13.5px;color:var(--ink);box-shadow:0 4px 0 var(--hsh);cursor:pointer;align-items:center;gap:6px;}
+    #turtleBtn.show{display:inline-flex;}
+    #turtleBtn svg{width:18px;height:18px;}
+    #turtleBtn:active{transform:translate(-50%,3px);box-shadow:0 1px 0 var(--hsh);}
+    /* sticker chest — tease wobble, tap thump, big reveal */
+    #chestBox{border:none;background:none;padding:0;display:block;width:128px;height:128px;margin:0 auto;cursor:pointer;}
+    #chestBox.tease{animation:wob 1.5s ease-in-out infinite;}
+    #chestBox.thump{animation:thump .3s ease;}
+    @keyframes wob{0%,100%{transform:rotate(0)}20%{transform:rotate(-5deg)}45%{transform:rotate(4deg)}70%{transform:rotate(-3deg)}}
+    @keyframes thump{0%{transform:scale(1)}40%{transform:scale(1.12) rotate(-3deg)}100%{transform:scale(1)}}
+    #chestCap{font-family:"Baloo 2";font-weight:800;font-size:16.5px;color:var(--muted);padding-top:8px;}
+    #chestStk{font-size:74px;line-height:1;animation:pop .45s cubic-bezier(.2,1.6,.4,1);margin-bottom:4px;}
+
+    /* the five builds (exact values from the A mocks, ×1.3 production) */
+    /* slice — market stand: awning + counter with five fruit wells */
+    #stand{display:flex;flex-direction:column;align-items:center;}
+    #stand .awn{width:min(72vw,300px);height:28px;border-radius:12px 12px 0 0;background:repeating-linear-gradient(90deg,#fff8ec 0 22px,#ff9d6e 22px 44px);box-shadow:0 3px 0 rgba(160,70,20,.25);}
+    #stand .cnt{width:min(78vw,325px);height:80px;background:#ffdf9e;border-radius:0 0 14px 14px;box-shadow:0 6px 0 #e0b25f;display:flex;align-items:center;justify-content:space-evenly;}
+    #stand .well{position:relative;width:50px;height:52px;border-radius:11px;background:#f3c96f;box-shadow:inset 0 3px 5px rgba(120,60,10,.28);}
+    #stand .well.up{box-shadow:inset 0 3px 5px rgba(120,60,10,.28),0 0 0 2px rgba(255,255,255,.65);}
+    #stand .well .fr{position:absolute;left:50%;bottom:4px;transform:translateX(-50%);width:46px;height:46px;filter:drop-shadow(0 4px 5px rgba(160,60,10,.25));}
+    #stand .well .fr.ghost{filter:none;opacity:.75;}
+    #stand .well .fr.ghost svg *{fill:rgba(255,255,255,.16)!important;stroke:#fff!important;stroke-width:2.5!important;stroke-dasharray:5 5!important;}
+    /* run — one receding road; the buddy stands on the top filled slab */
+    #roadCol{display:flex;flex-direction:column-reverse;gap:8px;align-items:center;}
+    #roadCol .slab{position:relative;height:34px;border-radius:10px;background:#b7c5d4;box-shadow:0 5px 0 rgba(40,80,120,.25);}
+    #roadCol .slab i{position:absolute;top:16%;bottom:16%;left:50%;width:4px;margin-left:-2px;background:repeating-linear-gradient(180deg,#fff 0 6px,transparent 6px 13px);opacity:.85;display:block;}
+    #roadCol .slab.glass i{display:none;}
+    #roadCol .rider{position:absolute;left:50%;transform:translateX(-50%);top:-52px;width:68px;height:68px;filter:drop-shadow(0 5px 6px rgba(30,60,90,.3));}
+    #roadCol .coinUp{position:absolute;left:50%;transform:translateX(-50%);top:-46px;width:29px;height:29px;filter:drop-shadow(0 3px 4px rgba(30,60,90,.25));}
+    /* stack — platform + five top-lit blocks (no hanging crane block) */
+    #stackCol{display:flex;flex-direction:column-reverse;align-items:center;}
+    #stackCol .plat{width:195px;height:18px;border-radius:8px;background:#221d4e;box-shadow:0 4px 0 #14103a;}
+    #stackCol .blk{height:39px;border-radius:10px;margin-top:-1px;box-shadow:inset 0 3px 0 rgba(255,255,255,.4);}
+    /* tiles — the hit bar: five keys light up */
+    #keyRow{display:flex;gap:9px;border-radius:13px;}
+    #keyRow .key{width:min(13.5vw,57px);height:81px;border-radius:13px;}
+    #keyRow .key.on{background:linear-gradient(180deg,#ffe887,#ffc400);box-shadow:inset 0 3px 0 rgba(255,255,255,.5),0 5px 0 rgba(10,6,40,.5),0 0 16px rgba(255,210,28,.4);}
+    /* glide — the balloon inflates toward its solid-stroke goal silhouette */
+    #balloonBox{position:relative;width:min(50vw,200px);aspect-ratio:100/130;}
+    #balloonBox .hull{position:absolute;inset:0;}
+    #balloonEl{position:absolute;bottom:2%;left:50%;transform:translateX(-50%);width:34%;transition:width .45s cubic-bezier(.2,1.4,.4,1);}
+    #balloonEl .pilot{position:absolute;bottom:9%;left:50%;transform:translateX(-50%);width:30%;}
+
+    /* short screens: same compaction rule today.html uses */
+    @media (max-height:760px){
+      #gameTitle{font-size:22px;}
+      #leo{width:84px;height:84px;margin-top:6px;}
+      #bTarget{font-size:30px;}
+      #echoCluster{margin-top:8px;}
+      #reveals{transform:scale(.85);transform-origin:bottom center;bottom:calc(178px + env(safe-area-inset-bottom));}
+      #turtleBtn{bottom:calc(296px + env(safe-area-inset-bottom));}
+    }
+    @media (prefers-reduced-motion:reduce){
+      #micWrap::before,#micWrap::after{animation:none;opacity:.45;}
+      #reveals .pop{animation:none;}
+      #leo.cheer,#leo.think{animation:none;}
+      #chestBox.tease,#chestBox.thump{animation:none;}
+      #balloonEl{transition:none;}
+    }
+
+    /* warm-card overlays */
+    .ovl{position:fixed;inset:0;z-index:60;background:rgba(74,44,20,.45);display:none;align-items:center;justify-content:center;padding:24px;}
+    .ovl.show{display:flex;}
+    .ovlCard{background:var(--cream);border-radius:28px;padding:56px 20px 22px;width:100%;max-width:340px;text-align:center;box-shadow:0 18px 40px rgba(74,44,20,.35);position:relative;display:flex;flex-direction:column;align-items:center;gap:10px;}
+    .ovlEcho{position:absolute;top:-52px;left:50%;transform:translateX(-50%);width:104px;height:104px;filter:drop-shadow(0 8px 12px rgba(74,44,20,.25));}
+    .ovl .big{font-size:64px;line-height:1;}
+    .ovl h2{font-family:"Baloo 2";font-weight:800;font-size:25px;color:var(--ink);line-height:1.15;}
+    .ovl p{color:var(--muted);font-weight:800;font-size:14.5px;max-width:280px;}
+    .btn{border:none;border-radius:20px;padding:15px 32px;font-family:"Baloo 2";font-weight:800;font-size:17px;text-transform:uppercase;letter-spacing:.04em;color:#fff;background:linear-gradient(180deg,#ffa05a,#ff8a3d);box-shadow:0 6px 0 var(--orange-d);cursor:pointer;transition:transform .05s;margin-top:4px;width:100%;}
+    .btn:active{transform:translateY(4px);box-shadow:0 2px 0 var(--orange-d);}
+    .btn.blue{background:linear-gradient(180deg,#5cc6ff,#1cb0f6);box-shadow:0 6px 0 #1480c0;}
+    .btn.blue:active{box-shadow:0 2px 0 #1480c0;}
+    .btn.ghost{background:none;color:var(--muted);box-shadow:none;text-transform:none;font-size:13px;width:auto;}
+    /* The finale scrolls inside its own card, so a short screen or larger text
+       never hides the way home. Echo stays in the flow instead of above it. */
+    #runOvl{background:linear-gradient(180deg,#e8f4f8 0%,#fff6e9 65%);padding:calc(16px + env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom));}
+    #runOvl .ovlCard{max-width:370px;padding:22px;gap:10px;max-height:calc(100vh - 32px);max-height:calc(100dvh - 32px - env(safe-area-inset-top) - env(safe-area-inset-bottom));overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;}
+    #runOvl .ovlCard > *{flex-shrink:0;}
+    .run-hero{position:relative;width:96px;height:96px;}
+    #runOvl .ovlEcho{position:static;width:96px;height:96px;transform:none;}
+    #runEmoji{position:absolute;right:-12px;bottom:0;width:36px;height:36px;line-height:1;}
+    #runEmoji svg{width:100%;height:100%;}
+    #runTitle{font-size:28px;}
+    #runRounds{font-family:"Baloo 2";font-weight:800;font-size:30px;line-height:1.15;color:#b84d0e;}
+    #runPractice{line-height:1.5;color:#795c3c;}
+    .run-arcade-score{display:grid;grid-template-columns:1fr auto;align-items:center;gap:4px 12px;width:100%;border-radius:18px;background:#f5e8d6;padding:10px 14px;margin:4px 0;text-align:left;}
+    #runScoreLabel{display:block;font-size:12px;font-weight:800;color:#795c3c;}
+    #runScore{display:block;font-family:"Baloo 2";font-weight:800;font-size:24px;color:var(--ink);line-height:1;}
+    #runBest{grid-column:1/-1;font-size:12px;font-weight:800;color:#795c3c;line-height:1.4;}
+    #runArcade{min-height:44px;width:100%;padding:10px 16px;font-size:14px;color:#795c3c;}
+    #runOvl .btn:focus-visible{outline:3px solid #1597d4;outline-offset:3px;}
+    #runTitle:focus{outline:none;}
+    @media(max-height:650px){#runOvl .ovlCard{padding:18px;gap:8px;}.run-hero{width:76px;height:76px;}#runOvl .ovlEcho{width:76px;height:76px;}#runTitle{font-size:25px;}#runRounds{font-size:27px;}}
+    #pauseOvl{z-index:120;background:rgba(74,44,20,.62);padding:20px;}
+    #pauseOvl .ovlCard{padding:24px;gap:12px;max-height:calc(100dvh - 40px);overflow-y:auto;}
+    #pauseOvl .ovlEcho{position:static;transform:none;width:88px;height:88px;flex-shrink:0;}
+    #pauseOvl p,#pauseHome{color:#795534;line-height:1.5;}
+    #pauseResume{color:#4a2c14;}
+    #pauseHome{min-height:44px;min-width:100px;font-size:15px;}
+    #pauseOvl button:focus-visible{outline:3px solid #795534;outline-offset:4px;}
+    body.practice-paused *{animation-play-state:paused!important;}
+    body.practice-paused .ovl:not(#pauseOvl){visibility:hidden;}
+
+    #ctxLine{display:flex;align-items:center;justify-content:center;gap:12px;overflow:visible;}
+    .path-dot{width:12px;height:12px;background:#fff4e0;border:2px solid rgba(124,81,38,.25);border-radius:50%;}
+    .path-dot.done{background:#ffa052;border-color:#dc7132;}
+    .path-dot.current{position:relative;overflow:hidden;width:38px;height:38px;background:#fff;border:2px solid #ef7931;display:grid;place-items:center;box-shadow:0 3px 0 rgba(100,60,20,.15);}
+    #echoBuddy{position:relative;border:0;padding:0;background:none;border-radius:50%;cursor:pointer;line-height:0;isolation:isolate;}
+    #echoBuddy:focus-visible{outline:3px solid #ad5b1d;outline-offset:6px;}
+    #echoBuddy:disabled{cursor:default;}
+    #leo{width:165px;height:165px;position:relative;z-index:1;margin-top:8px;}
+    #echoBuddy::before{content:"";position:absolute;inset:8%;border-radius:50%;z-index:0;opacity:0;}
+    .echo-speaking #echoBuddy::before{opacity:1;border:3px dotted #c98b53;}
+    .echo-listening #echoBuddy::before{opacity:1;background:rgba(255,179,71,.35);box-shadow:0 0 26px #ffca78;animation:listenGlow 1.8s ease-in-out infinite;}
+    #echoBuddy.heard #leo{transform:translateY(-5px) rotate(-3deg);}
+    .voice-bars{display:none;position:absolute;right:0;top:45%;height:26px;align-items:center;gap:4px;}
+    .voice-bars i{width:5px;height:14px;border-radius:4px;background:#ed7d30;}.voice-bars i:nth-child(2){height:24px;}
+    #echoBuddy.heard .voice-bars{display:flex;}
+    .echo-checking #echoBuddy::before{opacity:1;border:3px solid transparent;border-top-color:#ed8c4b;animation:checkSpin 1.2s linear infinite;}
+    @keyframes listenGlow{50%{transform:scale(1.08);opacity:.65;}}
+    @keyframes checkSpin{to{transform:rotate(360deg);}}
+    #micWrap{width:44px;height:44px;}#micWrap::before,#micWrap::after{display:none;animation:none;}
+    #micBtn{width:38px;height:38px;box-shadow:none;cursor:default;color:#fff;}#micBtn svg{width:23px;height:23px;}
+    #bottom{bottom:calc(28px + env(safe-area-inset-bottom));}
+    #reveals{bottom:calc(120px + env(safe-area-inset-bottom));}
+    #turtleBtn{position:static;transform:none;margin:6px 0 0;min-height:38px;padding:7px 16px;}
+    #turtleBtn:active{transform:translateY(2px);}#turtleBtn svg{width:28px;height:24px;}
+    #stand .well .fr.ghost svg *{fill:none!important;stroke:#fff5df!important;stroke-width:3!important;stroke-dasharray:none!important;}
+    #launchArt{position:relative;overflow:hidden;border-radius:10px;width:44px;height:44px;display:block;flex-shrink:0;}
+    #launchBar.show{display:flex;justify-content:center;align-items:center;gap:14px;}
+    #quietOvl{background:rgba(74,44,20,.30);z-index:85;padding:20px;}
+    #quietOvl .quiet-card{background:#fff7e9;max-height:calc(100dvh - 40px);overflow:auto;}
+    .quiet-card img{width:160px;height:150px;object-fit:contain;}
+    #pauseResume span{font-size:30px;vertical-align:-3px;margin-right:8px;}
+    [hidden]{display:none!important;}
+    @media(max-height:700px){#echoCluster{margin-top:7px;}#leo{width:96px;height:96px;}#bubble{padding:8px 15px;}#gameTitle{font-size:24px;}#turtleBtn{margin-top:3px;min-height:34px;}#balloonBox{width:140px;}}
+    @media(prefers-reduced-motion:reduce){#echoBuddy::before,#leo,#chestBox{animation:none!important;}}
+  </style>
+</head>
+<body>
+    <div id="app">
+    <div id="decor"></div>
+    <div id="reveals"></div>
+    <div id="top">
+      <button id="close" aria-label="Close">✕</button>
+      <div id="ctxLine"></div>
+
+    </div>
+
+    <div id="titleWrap">
+      <div id="gameTitle"></div>
+    </div>
+
+    <div id="echoCluster">
+      <div id="bubble">
+        <div id="turnStatus" role="status" aria-live="polite" aria-atomic="true">Getting ready…</div>
+        <div id="bMain"><span id="sayLbl">Say</span><b id="bTarget">…</b></div>
+        <div id="gpState">Say it to fill your ticket!</div>
+      </div>
+      <button id="echoBuddy" aria-label="Hear it again"><img id="leo" src="/coach/echo/echo-listening.svg" alt="Echo"/><span class="voice-bars" aria-hidden="true"><i></i><i></i><i></i></span></button>
+      <button id="turtleBtn" aria-label="Hear it slowly"><svg viewBox="0 0 40 30" aria-hidden="true"><path d="M8 21C8 4 29 4 29 21Z" fill="#79bf73"/><path d="m14 20 4-10 7 7" fill="none" stroke="#398a58" stroke-width="2"/><circle cx="33" cy="20" r="5" fill="#b9d996"/><circle cx="35" cy="19" r="1" fill="#4a2c14"/><path d="M11 23v3m14-3v3M5 21h3" stroke="#398a58" stroke-width="3" stroke-linecap="round"/></svg>Hear it slooow</button>
+    </div>
+
+    <div id="bottom">
+      <div id="micWrap">
+        <div id="micBtn" role="img" aria-label="Microphone off"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M6 10v2a6 6 0 0 0 12 0v-2M12 18v4M8 22h8" stroke="currentColor" stroke-width="2" fill="none"/></svg></div>
+      </div>
+      <div id="replayLabel">Tap Echo to hear it again</div>
+      <button id="launchBar"></button>
+    </div>
+
+  </div>
+
+  <!-- already played today -->
+  <!-- sticker chest — fires the moment the daily goal ring completes (round 5):
+       wiggle-tease → the child taps ×3 → burst + sticker reveal → claim, then the
+       final game launches. Earned by showing up; never purchasable, no timers. -->
+  <div class="ovl" id="chestOvl" role="dialog" aria-modal="true" aria-labelledby="chestCap">
+    <div class="ovlCard">
+      <img class="ovlEcho" src="/coach/echo/echo-celebrate.svg" alt="" />
+      <div id="chestStage">
+        <button id="chestBox" type="button" class="tease" aria-label="Open your treasure chest"><svg viewBox="0 0 64 64"><path d="M8 32v-6q0-14 24-14t24 14v6Z" fill="#b5875a"/><rect x="8" y="30" width="48" height="26" rx="6" fill="#a06f45"/><rect x="15" y="30" width="8" height="26" rx="2" fill="#8a5a2a"/><rect x="41" y="30" width="8" height="26" rx="2" fill="#8a5a2a"/><rect x="8" y="28" width="48" height="5" rx="2.5" fill="#6e4f2f"/><rect x="26" y="26" width="12" height="14" rx="4" fill="#ffd21c"/><circle cx="32" cy="32" r="2.6" fill="#8a5a2a"/><circle cx="20" cy="20" r="2.4" fill="#fff" opacity=".7"/></svg></button>
+        <div id="chestCap">A treasure chest! Tap, tap, tap to open!</div>
+      </div>
+      <div id="chestReveal" style="display:none">
+        <div id="chestStk">⭐</div>
+        <h2 id="chestName">Sticker!</h2>
+        <button class="btn" id="chestClaim">Put it in my sticker book!</button>
+        <p id="chestTmw" style="font-weight:800;font-size:13px;color:var(--muted);margin-top:10px;line-height:1.45;">Come back tomorrow — Echo will have a new adventure ready!</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="ovl" id="micPrime">
+    <div class="ovlCard">
+      <img class="ovlEcho" src="/coach/echo/echo-listening.svg" alt="" />
+      <h2>Let Echo hear you practice!</h2>
+      <p style="font-weight:800;font-size:13.5px;color:var(--muted);line-height:1.5;">Listen to Echo first. Then it's your turn to practice and fill the ticket for your game.</p>
+      <!-- This paragraph is a PROMISE, and it went stale: it described an upload
+           that stopped existing when the cloud scorer was removed, and said so
+           for months afterwards. Every verdict is decided on this phone now, so
+           the copy says that plainly. If a scoring path is ever added back, this
+           sentence changes FIRST — before the code that would make it false.
+           (Deliberately not quoting the old wording here: a test asserts that
+           wording is gone, and a comment repeating it would keep the check red.) -->
+      <p id="micPromise" style="font-weight:800;font-size:12px;color:var(--muted);line-height:1.5;"></p>
+      <button class="btn" id="micPrimeBtn">Turn on Echo's ears</button>
+      <button id="micPrimeSkip" style="border:none;background:none;font-family:Nunito,sans-serif;font-weight:800;font-size:13.5px;color:var(--muted);cursor:pointer;padding:8px;margin-top:2px;">Not now</button>
+    </div>
+  </div>
+
+  <div class="ovl" id="playedOvl">
+    <div class="ovlCard">
+      <img class="ovlEcho" src="/coach/echo/echo-celebrate.svg" alt="" />
+      <h2>You already played today!</h2>
+      <p id="playedSub"></p>
+      <button class="btn blue" id="playedArcade">Browse games</button>
+      <button class="btn ghost" id="playedHome">Back home</button>
+    </div>
+  </div>
+
+  <!-- run complete -->
+    </div>
+  </div>
+
+  <div class="ovl" id="runOvl" role="dialog" aria-modal="true" aria-labelledby="runTitle" aria-describedby="runPractice">
+    <div class="ovlCard">
+      <div class="run-hero">
+        <img class="ovlEcho" src="/coach/echo/echo-celebrate.svg" alt="" />
+        <div class="big" id="runEmoji" aria-hidden="true"><svg viewBox="0 0 64 64" style="width:56px;height:56px"><path d="M32 5l8.2 18.6L60 25.8 44.9 39.2 49.8 59 32 48.4 14.2 59l4.9-19.8L4 25.8l19.8-2.2Z" fill="#ffd21c"/><circle cx="25" cy="21" r="3" fill="#fff" opacity=".85"/></svg></div>
+      </div>
+      <h2 id="runTitle" tabindex="-1">Adventure complete!</h2>
+      <p id="runPractice">We finished the whole adventure!</p>
+      <!-- The STORY1 cliffhanger card lived here. It went with the books
+           (GAMES1, 19 Sep 2026): it promised a chapter that no longer opens. -->
+      <button class="btn" id="runChest">Open your chest <span aria-hidden="true">→</span></button>
+      <button class="btn" id="runDone" hidden>Done</button>
+    </div>
+  </div>
+
+  <div class="ovl" id="pauseOvl" role="dialog" aria-modal="true" aria-labelledby="pauseTitle" aria-describedby="pauseCopy">
+    <div class="ovlCard">
+      <img class="ovlEcho" src="/coach/echo/echo-waiting.svg" alt="Echo resting" />
+      <h2 id="pauseTitle">Practice paused</h2>
+      <p id="pauseCopy">Take your time. We'll keep your place.</p>
+      <button class="btn" id="pauseResume"><span aria-hidden="true">▶</span> Resume</button>
+      <button class="btn ghost" id="pauseHome">Home</button>
+    </div>
+  </div>
+
+  <script src="/sona.js"></script>
+  <script src="/scenes.js"></script>
+  <script src="/gamecontent.js"></script>
+  <script>
+    var $=function(id){return document.getElementById(id);};
+    var qp=new URLSearchParams(location.search);
+    // The legacy demonstration remains a rewardless replay when explicitly
+    // requested. Catalog access below still applies: a demo flag cannot grant
+    // a new Premium game. Entry checks run before microphone or audio work.
+    var IS_DEMO = qp.get("demo")==="1";
+    // A REPLAY EARNS NOTHING. The demonstration stays replayable after a
+    // parent declines — that is the point — but a replay that minted coins,
+    // climbed the ladder and fed the clinician's rep counts would not be a
+    // demonstration, it would be the product for free with the receipts to
+    // match. Decided HERE, at load, because demoFinish() flips demoDone()
+    // later in this same page and the answer must not change underneath us.
+    // READ FROM THE RUN RECORD TOO. The arcade returns to this page with
+    // ?banked=N and nothing else, so on rounds two to five the URL no longer
+    // says demo — and a replay was banking coins, rungs and clinical outcomes
+    // from round two onward. The run record is written below with the flag
+    // the moment a replay starts, and it is what every later round reads.
+    var _runPeek=null; try{ _runPeek=JSON.parse(sessionStorage.getItem("sona.run.v1")||"null"); }catch(e){}
+    var DEMO_REPLAY = (IS_DEMO || !!(_runPeek&&_runPeek.active&&_runPeek.demo))
+      && !!(window.Sona && window.Sona.demoDone && window.Sona.demoDone());
+    var S=window.Sona;
+    // Resolve the requested catalog item before microphone or audio work. New
+    // adventures use an accessible deck; a saved run keeps its original plan.
+    var catalogDaily=qp.get("daily")==="1"||qp.get("session")==="1";
+    var catalogMatch=/^arcade-([a-z]+)\.html$/.exec(qp.get("game")||"");
+    var catalogKey=(catalogMatch&&S.gameKey(catalogMatch[1]))||"slice";
+    var catalogBlocked=!catalogDaily&&!S.gameAccess(catalogKey).allowed;
+    if(catalogBlocked)S.gameBounce(catalogKey);
+    $("micPromise").textContent=S.MIC_PROMISE;
+    var profile=S?S.getProfile():{volume:0.8};
+    // One flow stays alive across interruptions. Nothing resumes until the
+    // child taps Resume; stale permission/audio results belong to an old epoch.
+    var practicePaused=false, practiceClosed=catalogBlocked, practiceTerminal=catalogBlocked, practiceEpoch=0;
+    var practiceWaiters=[], practiceTimers=[], pauseFocus=null, pauseInert=[], practiceClosing=Promise.resolve();
+    function practiceReady(){
+      if(practiceClosed || (practiceTerminal && document.hidden)) return Promise.resolve(false);
+      if(document.hidden && !practicePaused) pausePractice();
+      if(!practicePaused) return Promise.resolve(true);
+      return new Promise(function(resolve){ practiceWaiters.push(resolve); });
+    }
+    function releasePractice(value){ var waiting=practiceWaiters.splice(0); waiting.forEach(function(resolve){resolve(value);}); }
+    function hidePracticePause(){
+      $("pauseOvl").classList.remove("show");
+      document.body.classList.remove("practice-paused");
+      pauseInert.forEach(function(item){item.el.inert=item.was;}); pauseInert=[];
+    }
+    function pausePractice(){
+      if(practiceClosed || practicePaused) return;
+      practiceEpoch++;
+      if(!practiceTerminal) practicePaused=true;
+      if(engineControl) engineControl.pause();
+      stopMic();
+      cancelPracticeAudio();
+      try{ if(S&&S.sfx&&S.sfx.stop)S.sfx.stop(); }catch(e){}
+      practiceTimers.slice().forEach(function(wake){wake();});
+      if(practiceTerminal) return;
+      pauseFocus=document.activeElement;
+      [$("app"),$("chestOvl"),$("micPrime"),$("playedOvl"),$("runOvl"),$("quietOvl")].forEach(function(el){if(el){pauseInert.push({el:el,was:el.inert});el.inert=true;}});
+      document.body.classList.add("practice-paused");
+      $("pauseOvl").classList.add("show");
+      $("pauseResume").focus({preventScroll:true});
+    }
+    function closePractice(){
+      if(practiceClosed)return practiceClosing;
+      practiceClosed=true; practiceEpoch++;
+      if(engineControl)engineControl.cancel();
+      // A native start may still be awaiting availability. Keep this page alive
+      // until its final stop settles, or navigation can discard that cleanup.
+      practiceClosing=recognitionStop();
+      stopMic(); cancelPracticeAudio();
+      try{ if(S&&S.sfx&&S.sfx.stop)S.sfx.stop(); }catch(e){}
+      practiceTimers.slice().forEach(function(wake){wake();});
+      hidePracticePause(); releasePractice(false);
+      return practiceClosing;
+    }
+    $("pauseResume").onclick=function(){
+      if(!practicePaused || practiceClosed || document.hidden)return;
+      practicePaused=false; hidePracticePause();
+      try{getCtx();}catch(e){}
+      if(pauseFocus&&pauseFocus.isConnected)try{pauseFocus.focus({preventScroll:true});}catch(e){}
+      releasePractice(true);
+    };
+    $("pauseHome").onclick=goPracticeHome;
+    async function goPracticeHome(){await closePractice();location.href="/today.html";}
+    $("pauseOvl").onkeydown=function(e){
+      if(e.key!=="Tab")return;
+      var first=$("pauseResume"),last=$("pauseHome");
+      if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}
+      else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}
+    };
+    async function practiceDelay(ms){
+      var left=ms;
+      while(left>0){
+        if(!(await practiceReady()))return false;
+        var began=performance.now();
+        await new Promise(function(resolve){
+          var timer,done=false;
+          function wake(){if(done)return;done=true;clearTimeout(timer);var i=practiceTimers.indexOf(wake);if(i>=0)practiceTimers.splice(i,1);resolve();}
+          practiceTimers.push(wake); timer=setTimeout(wake,left);
+        });
+        left=Math.max(0,left-(performance.now()-began));
+      }
+      return practiceReady();
+    }
+    async function acquirePracticeMic(){
+      var retried=false;
+      while(await practiceReady()){
+        if(micOk&&micStream){
+          try{if(micStream.getAudioTracks().some(function(t){return t.readyState==="live";}))return true;}catch(e){return true;}
+        }
+        var epoch=practiceEpoch, landed=false;
+        // A voice line queued while the OS is still opening the mic waits for
+        // it to land (micSilence) and closes it, rather than play into it.
+        var land=function(){if(landed)return;landed=true;micOpening=Math.max(0,micOpening-1);if(!micOpening)micLanded.splice(0).forEach(function(done){done();});};
+        micOpening++;
+        try{
+          var stream=await navigator.mediaDevices.getUserMedia({audio:true,video:false});
+          if(epoch!==practiceEpoch || practicePaused || practiceClosed || document.hidden){
+            stream.getTracks().forEach(function(t){t.stop();});
+            micClosedAt=performance.now(); land();
+            continue;
+          }
+          micStream=stream; micOk=true; land();
+          try{localStorage.setItem("sona.micok","1");}catch(e){}
+          return true;
+        }catch(e){
+          land();
+          if(epoch!==practiceEpoch || practicePaused || document.hidden)continue;
+          stopMic(); micGo(false);
+          if(e && e.name === "NotAllowedError"){
+            practiceTerminal=true; closePractice();
+            if(S&&S.micDenied)S.micDenied({back:"/today.html"});
+            return false;
+          }
+          // Calls/audio-session interruptions are temporary, not denied permission.
+          if(!retried){retried=true;if(!(await practiceDelay(1000)))return false;continue;}
+          if(!(await showQuiet("microphone")))return false;
+          retried=false;
+        }
+      }
+      return false;
+    }
+
+    var SOUND=(qp.get("sound")||((S&&S.rotSound)?S.rotSound():((profile.focusSounds&&profile.focusSounds[0])||"R"))).toUpperCase();
+    if(!(S&&S.WORDS&&S.WORDS[SOUND])) SOUND="R";
+    var LEVEL=parseInt(qp.get("level"),10)||1;
+    var NEED=(S?S.chargeState().need:5);
+    var GAMES={ "arcade-slice.html":{e:"🍉",n:"Fruit Slice"}, "arcade-stack.html":{e:"🧱",n:"Block Stacker"}, "arcade-tiles.html":{e:"🎹",n:"Piano Tiles"}, "arcade-run.html":{e:"🏃",n:"Sound Sprint"}, "arcade-glide.html":{e:"🎈",n:"Flappy Glide"} };
+    ["feed","bubbles","peekaboo"].forEach(function(key){var a=S.gameAct(key);GAMES["arcade-"+key+".html"]={e:"",n:a.name,simple:true};});
+    // The shared plan also paints Home's preview. Keep all ROT_LEN rounds:
+    // practice progression, the ring and the chest still depend on that length.
+    var ADVENTURE=S.adventureGames(qp.get("first"));
+    var _runLen=Math.min((S&&S.ROT_LEN)||5,ADVENTURE.length);
+    var DAILY_SEQ=ADVENTURE.slice(0,_runLen).map(function(key){ return "arcade-"+key+".html"; });
+
+    // ---- mode: daily run vs free play ----
+    var isDaily = qp.get("daily")==="1" || qp.get("session")==="1";
+    var freeGame = qp.get("game");
+    if(freeGame && !GAMES[freeGame]) freeGame=null;
+    var RUNKEY="sona.run.v1";
+    function runGet(){ try{ return JSON.parse(sessionStorage.getItem(RUNKEY)||"null"); }catch(e){ return null; } }
+    function runSave(r){ try{ sessionStorage.setItem(RUNKEY,JSON.stringify(r)); }catch(e){} }
+    var run=runGet();
+
+    var finishedNow=false;
+    if(isDaily){
+      // Simple games persist their finish before either Home or Keep going.
+      // Resume banks that finish exactly once even without a return query.
+      var pendingKey=run&&(run.games||ADVENTURE)[run.round];
+      var pendingSimple=!!(pendingKey&&S&&S.gameAct&&S.gameAct(pendingKey).group==="simple");
+      var completedArcade=run&&run.arcadeComplete&&run.arcadeComplete.round===run.round?run.arcadeComplete:null;
+      if(run&&run.active&&run.pending&&
+        (pendingSimple?run.simpleComplete===run.round:completedArcade||qp.get("banked")!=null)){
+        var b=pendingSimple?0:Math.max(0,completedArcade?completedArcade.score|0:parseInt(qp.get("banked"),10)||0);
+        run.sum+=b; run.scores.push(b); run.pending=false; delete run.ready; delete run.simpleComplete; delete run.arcadeComplete; run.round++; runSave(run);
+      }
+      if(!(run&&run.active)){
+        if(S&&S.dailyInfo&&S.dailyInfo().playedToday){ /* shown at boot */ }
+        else { run={active:true,round:0,sum:0,scores:[],sound:SOUND,level:LEVEL,pending:false,demo:DEMO_REPLAY}; runSave(run); }
+      } else { SOUND=(run.sound||SOUND).toUpperCase(); LEVEL=run.level||LEVEL; }
+      // Snapshot new adventures and migrate older runs without resetting any
+      // earned progress, pending game return or demonstration replay status.
+      if(run&&run.active){ run.games=ADVENTURE.slice(); runSave(run); }
+      if(run&&run.active&&run.round>=DAILY_SEQ.length){ finishedNow=true; }
+    }
+    var GAME = isDaily ? DAILY_SEQ[Math.min(run?run.round:0,DAILY_SEQ.length-1)] : (freeGame||"arcade-slice.html");
+    var GMETA=GAMES[GAME];
+
+    // ---- content: SLP progression. Every round climbs the ladder the way a
+    // session would — round 1 warms up in isolation (rrr), round 2 moves to
+    // syllables (rah/ree/roo), then words, then sentences. Free play rides
+    // the rotation (sona.js): 5 rounds on one sound, then the next sound takes
+    // over. The climb is capped ONE level above the child's mastered rung, so
+    // rounds end on a stretch level and two clean stretch rounds advance the
+    // rung for good — a kid who can't say R alone never gets pushed to sentences.
+    var RUNG=(S&&S.rungOf)?S.rungOf(SOUND):0;
+    // ONE counter drives both the header and the ladder step, because they used
+    // to read different ones. The header showed today's ring position while the
+    // rung read sona.js's PERSISTENT rotation counter, so "Round 3 of 5" could
+    // hand a child a sentence, and a fresh day could open at sentences instead of
+    // warming up on the sound. Every session now starts at isolation and climbs
+    // isolation → syllable → word → sentence, still capped one level
+    // above the child's mastered rung so nobody gets pushed past what they own.
+    // Free play wraps within the block of five, because the ring keeps counting
+    // past the goal: a bonus round is a fresh session on the NEXT sound, and it
+    // has to warm up from isolation rather than inherit round six's rung.
+    var _ringN=0; try{ var _r0=(S&&S.todayRing)?S.todayRing():null; _ringN=_r0?(_r0.n|0):0; }catch(e){}
+    var ROUNDIX = isDaily ? ((run?run.round:0)|0) : (_ringN % _runLen);
+    var useRung = Math.min(ROUNDIX, RUNG+1);
+    var ITEMS=[];
+    try{ ITEMS=(S.ladderContent(SOUND,useRung)||[]).filter(function(it){return it&&it.t;}); }catch(e){}
+    if(!ITEMS.length){ try{ ITEMS=(S.ladderContent(SOUND,0)||[]).filter(function(it){return it&&it.t;}); }catch(e){} }
+    if(!ITEMS.length) ITEMS=[{t:(S?S.soundSay(SOUND):"rrrr"),say:(S?S.soundSay(SOUND):"rrrr"),display:(S?S.soundSay(SOUND):"rrrr"),mode:"phoneme",level:"isolation"}];
+    // ONE target per round: a single syllable said five times, never a
+    // rotating drill list (see → soh → soo confused kids mid-round). The
+    // shuffle still varies WHICH syllable each round gets.
+    var SEQ=ITEMS.slice(); for(var si=SEQ.length-1;si>0;si--){ var sj=(Math.random()*(si+1))|0, st=SEQ[si]; SEQ[si]=SEQ[sj]; SEQ[sj]=st; }
+    var ITEM=SEQ[0];
+    var NUMWORD={2:"two",3:"three",4:"four",5:"five",6:"six"};
+    // What Leo SPEAKS. TTS cannot perform a bare sound — a synthesized long
+    // "rrrr"/"sssss" comes out mangled — so the voice asks for the sound BY
+    // NAME ("make your R sound"; letter names render cleanly) and the human
+    // recording at /coach/say/<SOUND>.mp3, when present, models the real thing.
+    function soundName(){ var s=String(SOUND).toUpperCase(); if(s==="THV")s="TH"; return s.length>1?s.split("").join(" "):s; }
+    function sayLine(){
+      var times=(NUMWORD[NEED]||NEED)+" times";
+      var ask;
+      if(ITEM.level==="isolation") ask="make your "+soundName()+" sound";
+      else ask="say "+(ITEM.display||ITEM.t);
+      // first prompt carries the mouth cue inline; repeats stay minimal.
+      // CALM, NOT HYPED (24 Sep 2026). The voice reads "!" and "… Go!" as a
+      // jump in pitch and energy, and "Ready? … Go!" on every round was the
+      // "jumpy, explosive" Travis heard. So: a comma and a full stop. The
+      // mouth cue and the practice word are untouched (Rachel's calls) —
+      // only the frame around them is quieter.
+      // No spoken "Your turn." either (24 Sep 2026, same day): Echo said it
+      // into a closed mic, half a second or more before the mic could hear,
+      // and the child who obeyed it at once was talking before anything was
+      // listening. The turn is handed over by the glowing mic, which lights
+      // only once the window can actually hear them (listenReady).
+      if(!sayLine._cued && CUESHORT && ITEM.level==="isolation"){ sayLine._cued=true; return "Ready? "+CUESHORT+", and "+ask+", "+times+"."; }
+      return "Ready? "+ask.charAt(0).toUpperCase()+ask.slice(1)+", "+times+".";
+    }
+    // Prefer a real human recording of the whole prompt (Rachel!) if present.
+    var CUETIP=""; try{ CUETIP=(S&&S.cue)?(S.cue(SOUND).tip||""):""; }catch(e){}
+    // compact articulation cue: first clause only, no similes, no sound demos
+    var CUESHORT=(CUETIP.split("\u2014")[0].split(" like ")[0].split(",")[0]||"").trim().replace(/[.!]+$/,"");
+    // Human model prompts: /coach/say/<SOUND>.mp3 is Rachel's own take of the
+    // whole opening line (July 2026 wording) — the prompt actually PERFORMS
+    // the sound, which TTS never can. Not yet re-voiced into Echo's voice, so
+    // the switch is off; TTS remains the fallback either way.
+    // Shared switch (Sona.HUMAN_CLIPS) — NOT a local copy. A local copy here is
+    // exactly why Rachel's clips kept playing in coach-call.html.
+    var HUMANCLIPS=false; try{ HUMANCLIPS=!!(S&&S.humanClipsOn&&S.humanClipsOn()); }catch(e){}
+    function playPrompt(){
+      if(mutedSpeech())return Promise.resolve();
+      // Human clips keep the same fallback line across an interruption. Delay
+      // sayLine() until fallback is needed, as a successful human clip did before.
+      var human=ITEM.level==="isolation"&&HUMANCLIPS?"/coach/say/"+SOUND+".mp3":null;
+      return human?queueSpeech(null,false,human,sayLine):say(sayLine());
+    }
+    var _sayQ=Promise.resolve(),_sayN=0,_slowQueued=false;
+    var audioJobs=[],AUDIO_CANCEL={},ttsPlaying=false,_ttsN=0,audioCtx=null,speaking=false,audioSuspend=Promise.resolve();
+    // ---- NO SOUND INTO A LIVE MIC (24 Sep 2026) ----
+    // On an iPhone, a web page holding the mic runs the phone-call audio
+    // mode: the volume buttons change CALL volume and everything Sona plays
+    // is processed like a call. This page used to open the mic before Echo's
+    // prompt and close it just before the loudest chime, so the phone flipped
+    // modes at the loudest moments ("too loud, too quiet, jumpy"). The order
+    // is now fixed: Echo speaks and chimes play into a CLOSED mic, and the mic
+    // opens only for the child's listening window, once Sona has been silent
+    // for ECHO_TAIL_MS (a speaker's and a Bluetooth headset's delay). The
+    // same order means Echo's own voice can never become a try, land in the
+    // parent's listen-back clip, or reach the native recognizer.
+    // Echo cancellation stays on: what the pass/fail check hears is unchanged.
+    // NO exceptions, not even the chime that used to mark each counted try
+    // (24 Sep 2026): it rang inside the open window, and the guard that kept
+    // the detector deaf to it also swallowed a quick next try ("k… k… k…"
+    // counted every other one). A counted try is now marked on screen only.
+    // SETTLE_MS: after the mic closes, the phone needs a moment to switch
+    // from call audio back to media; a sound started in that moment is
+    // clipped or snaps. So nothing of Sona's starts until SETTLE_MS after the
+    // last mic close (micSettled) — the same 200ms the games wait.
+    var ECHO_TAIL_MS=250, SETTLE_MS=200, SFX_MS={tap:120,complete:700};
+    var quietAt=0, micClosedAt=-1e9, chimeAt=-1e9, listenReady=false, micOpening=0, micLanded=[];
+    function mutedSpeech(){return profile.voiceOn===false||(profile.volume!=null&&Number(profile.volume)===0);}
+    function audioBlocked(){return practiceClosed||practicePaused||document.hidden;}
+    function speechVolume(){var v=profile.volume!=null?Number(profile.volume):0.8;return isFinite(v)?Math.max(0,Math.min(1,v)):0.8;}
+    // Anything of Sona's queued or sounding. The mic waits for this to clear.
+    function appBusy(){return !!(speaking||ttsPlaying||_sayN>0);}
+    function appSoundEnded(){quietAt=Math.max(quietAt,performance.now()+ECHO_TAIL_MS);}
+    // Resolves once SETTLE_MS has passed since the mic last closed. Through
+    // practiceDelay, so a pause or close wakes it rather than being slept through.
+    function micSettled(){var wait=micClosedAt+SETTLE_MS-performance.now();return wait>0?practiceDelay(wait):Promise.resolve(true);}
+    var turnPhase="ready";
+    // "Your turn" and the glowing mic wait for a window that can actually hear
+    // the child: mic open AND the room known (listenReady, set by tick) —
+    // at once when the page already measured the room (ROOM FLOOR), after the
+    // window's own first quarter-second when it never could.
+    function childTurn(){return !!engineOn&&listenReady;}
+    function updateTurn(){
+      var busy=speaking||ttsPlaying||_sayN>0, listening=!!ttsPlaying;
+      var text=practicePaused?"Practice paused":listening?"Listen to Echo":busy?"Getting Echo ready…":childTurn()?"Your turn":turnPhase==="checking"?"Echo is checking…":turnPhase==="game"?"Game ready!":"Getting ready…";
+      $("turnStatus").textContent=text;
+      document.body.classList.toggle("echo-speaking",busy);
+      var enabled=childTurn()&&!busy&&!audioBlocked();
+      $("echoBuddy").disabled=!enabled; $("turtleBtn").disabled=!enabled;
+      var live=enabled&&turnPhase!=="checking";
+      document.body.classList.toggle("echo-listening",live);
+      document.body.classList.toggle("echo-checking",turnPhase==="checking"&&!busy);
+      $("micBtn").setAttribute("aria-label",live?"Microphone listening":"Microphone off");
+    }
+    function ttsBegin(){_ttsN++;ttsPlaying=true;updateTurn();}
+    function ttsEnd(){if(_ttsN>0)_ttsN--;ttsPlaying=_ttsN>0;appSoundEnded();updateTurn();}
+    function voiceDiagnostic(event){try{if(S&&S.voiceDiagnostic)S.voiceDiagnostic(event);}catch(e){}}
+    function newAudioJob(){
+      var job={epoch:practiceEpoch,cancelled:false,stops:[]};
+      job.live=function(){return !job.cancelled&&job.epoch===practiceEpoch&&!audioBlocked();};
+      job.cancel=function(){if(job.cancelled)return;job.cancelled=true;job.stops.slice().forEach(function(stop){stop();});};
+      job.finish=function(){var i=audioJobs.indexOf(job);if(i>=0)audioJobs.splice(i,1);job.cancel();};
+      audioJobs.push(job);return job;
+    }
+    // Each pending operation settles when cancelled, even if the browser never
+    // fires an ended/error callback or an IndexedDB/fetch request returns late.
+    function audioWait(job,begin){return new Promise(function(resolve){
+      var settled=false,cleanups=[];
+      function cleanup(fn){if(settled){try{fn();}catch(e){}}else cleanups.push(fn);}
+      function done(value){
+        if(settled)return;settled=true;
+        if(!job.live())value=AUDIO_CANCEL;
+        var i=job.stops.indexOf(cancel);if(i>=0)job.stops.splice(i,1);
+        cleanups.forEach(function(fn){try{fn();}catch(e){}});resolve(value);
+      }
+      function cancel(){done(AUDIO_CANCEL);}
+      job.stops.push(cancel);
+      if(!job.live()){cancel();return;}
+      try{begin(done,cleanup);}catch(e){done(null);}
+    });}
+    function cancelPracticeAudio(){
+      audioJobs.slice().forEach(function(job){job.cancel();});
+      try{if(window.speechSynthesis)window.speechSynthesis.cancel();}catch(e){}
+      try{if(audioCtx)audioSuspend=Promise.resolve(audioCtx.suspend()).catch(function(){});}catch(e){}
+      try{if(S&&S.sfx&&S.sfx.stop)S.sfx.stop();}catch(e){}
+      speaking=false; updateTurn();
+    }
+    function getCtx(){
+      if(audioBlocked())return audioCtx;
+      if(!audioCtx){var AC=window.AudioContext||window.webkitAudioContext;audioCtx=new AC();}
+      var ctx=audioCtx;
+      // A pending suspend must finish before a Resume-triggered resume call.
+      audioSuspend.then(function(){if(!audioBlocked()&&ctx.state==="suspended")return ctx.resume();}).catch(function(){});
+      return ctx;
+    }
+    function queueSpeech(t,slow,human,makeText){
+      if((!t&&!human)||mutedSpeech()||practiceClosed||_sayN>=2)return Promise.resolve();
+      var packet={text:t,slow:!!slow,human:human,makeText:makeText,epoch:practiceEpoch};
+      _sayN++; updateTurn();
+      var run=function(){return _say1(packet);};
+      _sayQ=_sayQ.then(run,run).then(function(){_sayN=Math.max(0,_sayN-1);updateTurn();},function(){_sayN=Math.max(0,_sayN-1);updateTurn();});
+      return _sayQ;
+    }
+    function say(t){return queueSpeech(t,false,null,null);}
+    // ---- shared on-device TTS revision; callbacks never outlive their job. ----
+    function ttsGet(key,job){return audioWait(job,function(done,cleanup){
+      var db=null,ended=false;
+      var timer=setTimeout(function(){done(null);},7000);cleanup(function(){ended=true;clearTimeout(timer);if(db)db.close();});
+      var request=indexedDB.open("sona-tts",1);
+      request.onupgradeneeded=function(){var d=request.result;if(!d.objectStoreNames.contains("clips"))d.createObjectStore("clips");};
+      request.onerror=function(){done(null);};
+      request.onsuccess=function(){
+        db=request.result;if(ended||!job.live()){db.close();done(AUDIO_CANCEL);return;}
+        try{var q=db.transaction("clips").objectStore("clips").get(key);q.onsuccess=function(){done(q.result||null);};q.onerror=function(){done(null);};}catch(e){done(null);}
+      };
+    });}
+    function ttsPut(key,bytes,job){return audioWait(job,function(done,cleanup){
+      var db=null,tx=null,ended=false;
+      var timer=setTimeout(function(){done(null);},7000);cleanup(function(){ended=true;clearTimeout(timer);if(tx){try{tx.abort();}catch(e){}}if(db)db.close();});
+      var request=indexedDB.open("sona-tts",1);
+      request.onupgradeneeded=function(){var d=request.result;if(!d.objectStoreNames.contains("clips"))d.createObjectStore("clips");};
+      request.onerror=function(){done(null);};
+      request.onsuccess=function(){
+        db=request.result;if(ended||!job.live()){db.close();done(AUDIO_CANCEL);return;}
+        try{tx=db.transaction("clips","readwrite");tx.oncomplete=function(){tx=null;done(true);};tx.onerror=function(){done(null);};tx.objectStore("clips").put(bytes,key);}catch(e){done(null);}
+      };
+    });}
+    async function speechBytes(t,job){
+      var revision=(S&&S.TTS_CACHE_VERSION)||"v8", key=(profile.voiceId||"echo")+"|"+revision+"|"+t;
+      var cached=await ttsGet(key,job);
+      if(cached===AUDIO_CANCEL||!job.live())return AUDIO_CANCEL;
+      if(cached){job.voiceEvent={source:"cache",cache:"device",revision:revision};return cached;}
+      var bytes=await audioWait(job,function(done,cleanup){
+        var controller=typeof AbortController!=="undefined"?new AbortController():null;
+        var timer=setTimeout(function(){job.voiceReason="timeout";done(null);},7000);
+        cleanup(function(){clearTimeout(timer);if(controller)controller.abort();});
+        var options={method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text:t,voice:profile.voiceId||"",stable:true})};
+        if(controller)options.signal=controller.signal;
+        fetch("/api/tts",options).then(function(r){
+          if(!r.ok){job.voiceReason="api-error";job.voiceStatus=r.status;return null;}
+          function header(name){return r.headers&&r.headers.get?r.headers.get(name):null;}
+          var provider=header("X-Sona-Voice-Provider");
+          job.voiceEvent={source:provider==="elevenlabs"||provider==="openai"?provider:"server",cache:header("X-Sona-Voice-Cache"),model:header("X-Sona-Voice-Model"),revision:header("X-Sona-Voice-Revision")||revision};
+          return r.arrayBuffer();
+        }).then(function(b){done(b&&b.byteLength?b:null);}).catch(function(){if(job.live()&&job.voiceReason!=="timeout")job.voiceReason="network-error";done(null);});
+      });
+      if(bytes===AUDIO_CANCEL||!job.live())return AUDIO_CANCEL;
+      if(bytes)ttsPut(key,bytes,job);
+      return bytes;
+    }
+    function playMedia(url,slow,job){return audioWait(job,function(done,cleanup){
+      var a=new Audio(url);a.volume=speechVolume();
+      if(slow){a.playbackRate=0.7;try{a.preservesPitch=true;a.mozPreservesPitch=true;a.webkitPreservesPitch=true;}catch(e){}}
+      ttsBegin();cleanup(function(){ttsEnd();a.onended=null;a.onerror=null;try{a.pause();a.removeAttribute("src");a.load();}catch(e){}});
+      var timer=setTimeout(function(){done(null);},15000);cleanup(function(){clearTimeout(timer);});
+      a.onended=function(){done(true);};a.onerror=function(){job.voiceReason="playback-blocked";done(null);};
+      function started(){if(job.live())voiceDiagnostic(url.indexOf("/coach/say/")===0?{source:"human"}:job.voiceEvent||{source:"server"});}
+      try{var promise=a.play();if(promise&&promise.then)promise.then(started,function(){job.voiceReason="playback-blocked";done(null);});else started();}catch(e){job.voiceReason="playback-blocked";done(null);}
+    });}
+    function playPCM(b,job){return audioWait(job,function(done,cleanup){
+      var c=getCtx();if(!c){done(null);return;}
+      var n=b.byteLength>>1;if(!n){done(null);return;}
+      var ab=c.createBuffer(1,n,24000),ch=ab.getChannelData(0),dv=new DataView(b.buffer,b.byteOffset,b.byteLength);
+      for(var i=0;i<n;i++)ch[i]=dv.getInt16(i*2,true)/32768;
+      var source=c.createBufferSource(),gain=c.createGain();source.buffer=ab;gain.gain.value=speechVolume();source.connect(gain);gain.connect(c.destination);
+      ttsBegin();cleanup(function(){ttsEnd();source.onended=null;try{source.stop();}catch(e){}try{source.disconnect();gain.disconnect();}catch(e){}});
+      source.onended=function(){done(true);};
+      var timer=setTimeout(function(){done(null);},Math.ceil(ab.duration*1000)+1500);cleanup(function(){clearTimeout(timer);});
+      audioSuspend.then(function(){if(!job.live()){done(AUDIO_CANCEL);return;}try{if(c.state==="suspended")return c.resume();}catch(e){}return null;}).then(function(){if(!job.live()){done(AUDIO_CANCEL);return;}try{source.start();voiceDiagnostic(job.voiceEvent||{source:"server"});}catch(e){job.voiceReason="playback-blocked";done(null);}}).catch(function(){job.voiceReason="playback-blocked";done(null);});
+    });}
+    function speakFallback(t,slow,job){return audioWait(job,function(done,cleanup){
+      if(!window.speechSynthesis||!window.SpeechSynthesisUtterance){done(true);return;}
+      var u=new SpeechSynthesisUtterance(String(t).replace(/\[[a-z ]{2,24}\]\s*/gi,""));
+      u.rate=slow?0.62:0.95;u.pitch=1.05;u.volume=speechVolume();
+      ttsBegin();cleanup(function(){ttsEnd();u.onend=null;u.onerror=null;try{window.speechSynthesis.cancel();}catch(e){}});
+      u.onend=function(){done(true);};u.onerror=function(){done(true);};
+      // Voice lists can load after speaking starts. An empty list must not
+      // chop a valid prompt into a 1.2-second fragment or begin the child's turn.
+      var timer=setTimeout(function(){done(true);},12000);cleanup(function(){clearTimeout(timer);});
+      window.speechSynthesis.speak(u);
+      voiceDiagnostic({source:"browser",reason:job.voiceReason||"fallback",status:job.voiceStatus});
+    });}
+    function pcmToWav(u8){
+      var n=u8.length,h=new ArrayBuffer(44),d=new DataView(h);
+      function ws(o,s2){for(var i=0;i<s2.length;i++)d.setUint8(o+i,s2.charCodeAt(i));}
+      ws(0,"RIFF");d.setUint32(4,36+n,true);ws(8,"WAVE");ws(12,"fmt ");
+      d.setUint32(16,16,true);d.setUint16(20,1,true);d.setUint16(22,1,true);
+      d.setUint32(24,24000,true);d.setUint32(28,48000,true);d.setUint16(32,2,true);d.setUint16(34,16,true);
+      ws(36,"data");d.setUint32(40,n,true);return new Blob([h,u8],{type:"audio/wav"});
+    }
+    async function playSlowClip(u8,job){
+      var url=URL.createObjectURL(pcmToWav(u8));
+      try{return await playMedia(url,true,job);}finally{URL.revokeObjectURL(url);}
+    }
+    async function _say1(packet){
+      while(!practiceClosed&&!mutedSpeech()){
+        // Completion/quiet-screen speech is optional: never replay it after
+        // backgrounding, or wait for a practice Resume on a terminal screen.
+        if(practiceTerminal&&(audioBlocked()||packet.epoch!==practiceEpoch))return;
+        if(!(await practiceReady())||practiceClosed||mutedSpeech())return;
+        if(audioBlocked())continue;
+        // Every voice line — prompt, coaching, a replay, the turtle, a win —
+        // passes here, so this one call is what keeps Echo out of a live mic.
+        await micSilence();
+        if(practiceClosed||mutedSpeech())return;
+        if(audioBlocked())continue;
+        var job=newAudioJob(),result=null;speaking=true;updateTurn();
+        try{
+          if(packet.human)result=await playMedia(packet.human,false,job);
+          if(result!==true&&result!==AUDIO_CANCEL){
+            if(packet.text==null)packet.text=packet.makeText?packet.makeText():"";
+            var bytes=await speechBytes(packet.text,job);
+            if(bytes===AUDIO_CANCEL)result=AUDIO_CANCEL;
+            else if(bytes)result=packet.slow?await playSlowClip(new Uint8Array(bytes),job):await playPCM(new Uint8Array(bytes),job);
+            if(result!==true&&result!==AUDIO_CANCEL)result=await speakFallback(packet.text,packet.slow,job);
+          }
+        }catch(e){if(!job.live())result=AUDIO_CANCEL;else result=await speakFallback(packet.text||"",packet.slow,job);}
+        finally{job.finish();speaking=false;appSoundEnded();updateTurn();}
+        if(result!==AUDIO_CANCEL||practiceTerminal)return;
+      }
+    }
+    function saySlow(t){return new Promise(function(res){
+      if(!t||mutedSpeech())return res();if(speaking)return res();if(_slowQueued)return res();_slowQueued=true;
+      queueSpeech(t,true,null,null).then(function(){_slowQueued=false;res();},function(){_slowQueued=false;res();});
+    });}
+    // Chimes and celebrations play into a closed mic too. sfx() is
+    // synchronous, so the mic closes synchronously; every caller has already
+    // closed it, and this makes sure a new caller cannot forget to. A mic
+    // that closed under SETTLE_MS ago (the win chime lands right after the
+    // last try's window) holds the chime back until the phone has switched;
+    // a pause or close in that moment drops it, as a chime asked for while
+    // paused always was. chimeAt is when it will actually start, so a line
+    // "after the chime" (sayAfterChime) waits from there, not from the ask.
+    function sfx(n){
+      if(audioBlocked())return;
+      closeMicForSound();
+      var now=performance.now(),wait=Math.max(0,micClosedAt+SETTLE_MS-now),epoch=practiceEpoch;
+      quietAt=Math.max(quietAt,now+wait+(SFX_MS[n]||700)+ECHO_TAIL_MS);
+      chimeAt=Math.max(chimeAt,now+wait);
+      if(wait>0){practiceDelay(wait).then(function(ready){if(ready&&epoch===practiceEpoch)sfx(n);});return;}
+      try{if(S&&S.sfx&&S.sfx[n])S.sfx[n]();}catch(e){}
+    }
+    // Ends an open listening window as "model" — Sona is about to make a
+    // sound — never as a lost mic, which would show the grown-up screen, and
+    // closes the mic. Synchronous, for sfx().
+    function closeMicForSound(){
+      var seg=engineAttempt&&engineAttempt.segment;
+      if(seg&&!seg.closed)seg.yieldToApp();
+      stopMic();
+    }
+    // The full version every voice line awaits: a mic still opening is let
+    // land and then closed, and the native recognizer, which listens through
+    // its own tap rather than this page's stream, is stopped and waited for.
+    // Echo's words must never reach a transcript that decides a verdict.
+    // Then SETTLE_MS from whichever of them closed last, before Echo speaks.
+    async function micSilence(){
+      closeMicForSound();
+      if(micOpening)await new Promise(function(done){micLanded.push(done);});
+      stopMic();
+      var r=recognitionState;
+      if(r)await new Promise(function(done){
+        // A plugin that never answers must not keep Echo silent forever; its
+        // late transcript is set aside instead (heardApp), since Echo may be in it.
+        var timer=setTimeout(function(){r.heardApp=true;done();},1500);
+        recognitionStop().then(function(){clearTimeout(timer);done();},function(){clearTimeout(timer);done();});
+      });
+      // The native recognizer holds the phone's mic through its own tap: its
+      // stop is a mic close too.
+      if(r&&r.stoppedAt)micClosedAt=Math.max(micClosedAt,r.stoppedAt);
+      await micSettled();
+    }
+    // The mic opens only into silence: nothing of Sona's queued or sounding,
+    // and ECHO_TAIL_MS since the last of it ended. Polled as well as stamped,
+    // so a sound that ends without a callback still gets its tail.
+    async function quietGap(){
+      for(;;){
+        if(appBusy())appSoundEnded();
+        var wait=appBusy()?40:quietAt-performance.now();
+        if(wait<=0)return practiceReady();
+        if(!(await practiceDelay(Math.min(wait,ECHO_TAIL_MS))))return false;
+      }
+    }
+
+    // ---- UI: the game's own loading scene. Saying the sound LOADS the game —
+    // each counted rep pops one more piece into the sky; the rest wait as
+    // white dashed ghosts. (Design handoff §3: there is no cream card screen.)
+    var FRUITS=[
+      '<svg viewBox="0 0 64 64"><path d="M5 25a27 27 0 0 0 54 0Z" fill="#58cc02"/><path d="M10 25a22 22 0 0 0 44 0Z" fill="#eefce2"/><path d="M14 25a18 18 0 0 0 36 0Z" fill="#ff5470"/><ellipse cx="26" cy="33" rx="2" ry="3" fill="#3d2317" transform="rotate(18 26 33)"/><ellipse cx="38" cy="33" rx="2" ry="3" fill="#3d2317" transform="rotate(-18 38 33)"/><ellipse cx="32" cy="39" rx="2" ry="3" fill="#3d2317"/></svg>',
+      '<svg viewBox="0 0 64 64"><path d="M32 15q0-7 7-9" stroke="#8a5a2a" stroke-width="3.5" fill="none" stroke-linecap="round"/><ellipse cx="25" cy="12" rx="7" ry="4" fill="#58cc02" transform="rotate(-20 25 12)"/><circle cx="22" cy="27" r="7.5" fill="#a86ee3"/><circle cx="42" cy="27" r="7.5" fill="#a86ee3"/><circle cx="32" cy="25" r="7.5" fill="#b985ea"/><circle cx="27" cy="37" r="7.5" fill="#a86ee3"/><circle cx="37" cy="37" r="7.5" fill="#b985ea"/><circle cx="32" cy="47" r="7.5" fill="#a86ee3"/><circle cx="29" cy="23" r="2.5" fill="#d9bcf5"/></svg>',
+      '<svg viewBox="0 0 64 64"><circle cx="32" cy="37" r="19" fill="#ff9d2e"/><circle cx="25" cy="30" r="4.5" fill="#ffc27a"/><circle cx="38" cy="42" r="1.4" fill="#e8801a"/><circle cx="28" cy="45" r="1.4" fill="#e8801a"/><ellipse cx="40" cy="15" rx="8" ry="4.5" fill="#58cc02" transform="rotate(18 40 15)"/><circle cx="32" cy="17" r="2.5" fill="#8a5a2a"/></svg>',
+      '<svg viewBox="0 0 64 64"><path d="M32 58C17 51 12 38 14 28c5-4 12-5 18-2 6-3 13-2 18 2 2 10-3 23-18 30Z" fill="#ff5470"/><path d="M32 58C17 51 12 38 14 28c5-4 12-5 18-2v32Z" fill="#ff6b8a"/><ellipse cx="32" cy="20" rx="9" ry="5" fill="#58cc02"/><circle cx="26" cy="36" r="1.5" fill="#ffe4a8"/><circle cx="36" cy="40" r="1.5" fill="#ffe4a8"/><circle cx="31" cy="47" r="1.5" fill="#ffe4a8"/></svg>',
+      '<svg viewBox="0 0 64 64"><ellipse cx="32" cy="36" rx="21" ry="15" fill="#ffd21c" transform="rotate(-16 32 36)"/><ellipse cx="24" cy="30" rx="5" ry="3.4" fill="#fff3b8" transform="rotate(-16 24 30)"/><ellipse cx="47" cy="26" rx="3" ry="2" fill="#8a5a2a" transform="rotate(-16 47 26)"/></svg>'
+    ];
+    var FRUIT_OUTLINES=[
+      'M5 25a27 27 0 0 0 54 0Z',
+      'M20 18Q10 23 15 33Q16 42 23 43Q24 57 32 57Q40 57 41 43Q51 39 50 29Q52 17 41 18Q31 10 20 18Z',
+      'M51 37a19 19 0 1 0-38 0 19 19 0 0 0 38 0Z',
+      'M32 58C17 51 12 38 14 28c5-4 12-5 18-2 6-3 13-2 18 2 2 10-3 23-18 30Z',
+      'M12 41C5 20 44 10 52 27C59 47 21 61 12 41Z'
+    ];
+    function ghostFruit(i){return '<svg viewBox="0 0 64 64" aria-hidden="true"><path d="'+FRUIT_OUTLINES[i]+'" fill="none" stroke="#fff5df" stroke-width="3" stroke-linejoin="round"/></svg>';}
+    var FOX='<svg viewBox="0 0 64 64"><path d="M12 40q-7 2-8 10 7 3 12-2Z" fill="#ff8a3d"/><circle cx="7" cy="49" r="3.5" fill="#fff"/><path d="M17 10l10 12-14 4Z" fill="#ff8a3d"/><path d="M47 10l-10 12 14 4Z" fill="#ff8a3d"/><path d="M20 15l6 8-9 2.5Z" fill="#e5672a"/><path d="M44 15l-6 8 9 2.5Z" fill="#e5672a"/><circle cx="32" cy="36" r="17" fill="#ff8a3d"/><ellipse cx="32" cy="44" rx="9" ry="7" fill="#fff"/><circle cx="25" cy="34" r="2.6" fill="#4a2c14"/><circle cx="39" cy="34" r="2.6" fill="#4a2c14"/><circle cx="32" cy="42" r="2.6" fill="#4a2c14"/></svg>';
+    // the buddy the child picked — never a hardcoded fox (handoff C §8)
+    function buddySvg(){ try{ if(S&&S.buddyMarkup) return S.buddyMarkup(profile.character||"fox",68); }catch(e){} return FOX; }
+    // 3-circle cloud — replaces every pill-bar "cloud" on light skies
+    var CLOUD='<svg viewBox="0 0 120 60"><ellipse cx="40" cy="42" rx="30" ry="15" fill="#fff"/><circle cx="56" cy="28" r="17" fill="#fff"/><circle cx="80" cy="38" r="19" fill="#fff"/></svg>';
+    var COIN='<svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="20" fill="#ffd21c"/><circle cx="32" cy="32" r="14.5" fill="none" stroke="#f0a800" stroke-width="3"/><path d="M32 24l2.6 5.9 6.4.7-4.8 4.3 1.5 6.3L32 37.9l-5.7 3.3 1.5-6.3-4.8-4.3 6.4-.7Z" fill="#f0a800"/><circle cx="24" cy="22" r="3" fill="#fff" opacity=".8"/></svg>',
+        SPARK='<svg viewBox="0 0 64 64"><path d="M32 8l6 18 18 6-18 6-6 18-6-18-18-6 18-6Z" fill="#ffe887"/></svg>',
+        NOTE='<svg viewBox="0 0 64 64"><ellipse cx="24" cy="46" rx="9" ry="7" fill="#fff" transform="rotate(-20 24 46)"/><rect x="30" y="14" width="4.5" height="32" rx="2" fill="#fff"/><path d="M34.5 14c8 2 12 7 10 14-1-4-5-7-10-8Z" fill="#fff"/></svg>',
+        BALLOON='<svg viewBox="0 0 100 130"><path d="M50 6C26 6 14 26 14 44c0 20 18 32 28 44h16c10-12 28-24 28-44C86 26 74 6 50 6Z" fill="#ff6b6b"/><path d="M50 6C40 6 33 26 33 44c0 20 8 32 12 44h10c4-12 12-24 12-44C67 26 60 6 50 6Z" fill="#fff4dd"/><path d="M50 6c-4 0-7 20-7 38 0 20 4 32 5.5 44h3c1.5-12 5.5-24 5.5-44C57 26 54 6 50 6Z" fill="#ffd43b"/><ellipse cx="34" cy="28" rx="8" ry="14" fill="#fff" opacity=".28" transform="rotate(-16 34 28)"/><line x1="42" y1="88" x2="40" y2="102" stroke="#a97044" stroke-width="2.5"/><line x1="58" y1="88" x2="60" y2="102" stroke="#a97044" stroke-width="2.5"/><rect x="36" y="102" width="28" height="20" rx="6" fill="#b5875a"/><line x1="36" y1="109" x2="64" y2="109" stroke="#8f6a42" stroke-width="2.5"/></svg>',
+        /* goal silhouette: solid stroke — not dashed, not a plain blob (A §4) */
+        BALLOON_HULL='<svg viewBox="0 0 100 130"><path d="M50 6C26 6 14 26 14 44c0 20 18 32 28 44h16c10-12 28-24 28-44C86 26 74 6 50 6Z" fill="rgba(255,255,255,.13)" stroke="rgba(255,255,255,.65)" stroke-width="2.5"/><rect x="36" y="102" width="28" height="20" rx="6" fill="rgba(255,255,255,.13)" stroke="rgba(255,255,255,.65)" stroke-width="2.5"/></svg>';
+    // positions are % of the mock canvas (300×650) so they scale to any phone
+    function P(x,y,w,extra){ return 'position:absolute;left:'+(x/3)+'%;top:'+(y/6.5)+'%;width:'+(w/3)+'vw;max-width:'+(w*1.6)+'px;'+(extra||''); }
+    function PR(r,y,w,extra){ return 'position:absolute;right:'+(r/3)+'%;top:'+(y/6.5)+'%;width:'+(w/3)+'vw;max-width:'+(w*1.6)+'px;'+(extra||''); }
+    var BLOCKC=[["#85e099","#69db7c"],["#ffe066","#ffd43b"],["#ffb86b","#ffa94d"],["#ff8787","#ff6b6b"],["#b197fc","#9775fa"]];
+    var SCENES={
+      "arcade-slice.html":{cls:"g-slice",title:"FRUIT SLICE",go:"and we slice!",stand:1,
+        decor:'<i style="top:9%;right:10%;width:17vw;max-width:90px;aspect-ratio:1;border-radius:50%;background:#ffd21c;box-shadow:0 0 0 12px rgba(255,210,28,.18)"></i>'
+             +'<i style="top:14%;left:-4%;width:32vw;max-width:150px;opacity:.8">'+CLOUD+'</i>'
+             +'<i style="top:22%;right:-6%;width:38vw;max-width:175px;opacity:.6">'+CLOUD+'</i>'
+             +'<i style="bottom:0;left:0;right:0;height:calc(env(safe-area-inset-bottom) + 26px);background:#e8744a"></i>'
+             +'<i style="'+P(110,300,26).replace(/width:[^;]+;/,'width:26px;')+'aspect-ratio:1;filter:drop-shadow(0 0 8px rgba(255,210,28,.7))">'+SPARK+'</i>'},
+      "arcade-run.html":{cls:"g-run",title:"SOUND SPRINT",go:"and we run!",road:1,
+        decor:'<i style="top:9%;left:8%;width:16vw;max-width:84px;aspect-ratio:1;border-radius:50%;background:#ffd21c;box-shadow:0 0 0 12px rgba(255,210,28,.2)"></i>'
+             +'<i style="top:12%;right:-4%;width:30vw;max-width:140px;opacity:.85">'+CLOUD+'</i>'
+             +'<i style="top:9%;right:26%;width:22vw;max-width:104px;opacity:.65">'+CLOUD+'</i>'
+             +'<i style="top:23%;left:-10%;width:53vw;height:90px;border-radius:50%;background:#8fdc7a"></i>'
+             +'<i style="top:24.6%;right:-13%;width:63vw;height:100px;border-radius:50%;background:#6fcf62"></i>'},
+      "arcade-stack.html":{cls:"g-stack",title:"BLOCK STACKER",go:"and we stack!",
+        decor:(function(){ var s='<i style="top:9%;right:9%;width:16vw;max-width:84px;aspect-ratio:1;border-radius:50%;background:#fff4d6;box-shadow:0 0 0 12px rgba(255,244,214,.14)"></i>';
+             var st=[[13,38,3],[20,236,2.5],[26,84,2.5],[33,264,2.5],[38,44,2]];
+             for(var i2=0;i2<st.length;i2++){ s+='<i style="top:'+st[i2][0]+'%;left:'+(st[i2][1]/3)+'%;width:'+st[i2][2]+'px;height:'+st[i2][2]+'px;border-radius:50%;background:#fff;opacity:.7"></i>'; }
+             s+='<i style="bottom:calc(env(safe-area-inset-bottom) + 18px);left:3%;width:15vw;height:58px;border-radius:8px 8px 0 0;background:#221d4e"></i>'
+              +'<i style="bottom:calc(env(safe-area-inset-bottom) + 18px);left:20%;width:18vw;height:74px;border-radius:10px 10px 0 0;background:#2a2458"></i>'
+              +'<i style="bottom:calc(env(safe-area-inset-bottom) + 18px);right:21%;width:16vw;height:52px;border-radius:8px 8px 0 0;background:#221d4e"></i>'
+              +'<i style="bottom:calc(env(safe-area-inset-bottom) + 18px);right:3%;width:17vw;height:66px;border-radius:9px 9px 0 0;background:#2a2458"></i>'
+              +'<i style="bottom:0;left:0;right:0;height:calc(env(safe-area-inset-bottom) + 18px);background:#1b1740"></i>'
+              +'<i style="'+P(132,400,18).replace(/width:[^;]+;/,'width:18px;')+'aspect-ratio:1;opacity:.9">'+SPARK+'</i>';
+             return s; })(),
+        stackCol:1},
+      "arcade-tiles.html":{cls:"g-tiles",title:"PIANO TILES",go:"and we play!",
+        decor:'<i style="top:-14%;left:50%;transform:translateX(-50%);width:140vw;height:320px;background:radial-gradient(ellipse,rgba(255,255,255,.10),transparent 65%)"></i>'
+             +'<i style="top:0;bottom:0;left:25%;width:1.5px;background:rgba(255,255,255,.07)"></i>'
+             +'<i style="top:0;bottom:0;left:50%;width:1.5px;background:rgba(255,255,255,.07)"></i>'
+             +'<i style="top:0;bottom:0;left:75%;width:1.5px;background:rgba(255,255,255,.07)"></i>'
+             +'<i style="'+P(30,196,26)+'aspect-ratio:1;opacity:.14">'+NOTE+'</i>'
+             +'<i style="'+PR(44,236,20)+'aspect-ratio:1;opacity:.12">'+NOTE+'</i>'
+             +'<i style="'+P(48,414,20)+'aspect-ratio:1;opacity:.12">'+NOTE+'</i>'
+             +'<i style="'+P(142,270,16).replace(/width:[^;]+;/,'width:16px;')+'aspect-ratio:1;opacity:.9">'+SPARK+'</i>',
+        keyRow:1},
+      "arcade-glide.html":{cls:"g-glide",title:"FLAPPY GLIDE",go:"and we fly!",
+        decor:'<i style="bottom:8%;left:50%;transform:translateX(-50%);width:50vw;max-width:240px;aspect-ratio:1;border-radius:50%;background:radial-gradient(circle,rgba(255,214,140,.9),rgba(255,214,140,0) 70%)"></i>'
+             +'<i style="top:13%;left:-5%;width:34vw;max-width:160px;opacity:.75">'+CLOUD+'</i>'
+             +'<i style="top:21%;right:-7%;width:40vw;max-width:185px;opacity:.6">'+CLOUD+'</i>'
+             +'<i style="top:49%;left:-7%;width:30vw;max-width:140px;opacity:.45">'+CLOUD+'</i>',
+        balloon:1}
+    };
+    var SCENE=SCENES[GAME]||SCENES["arcade-slice.html"];
+    document.body.className=SCENE.cls; try{ document.documentElement.classList.add(SCENE.cls); }catch(e){}
+    $("gameTitle").textContent=SCENE.title;
+    $("decor").innerHTML=SCENE.decor||"";
+    // ---- the build: one coherent object, five pieces, wired to reveal(n) ----
+    (function(){
+      var R=$("reveals"), html="", i;
+      if(SCENE.stand){
+        html='<div id="stand"><div class="awn"></div><div class="cnt" id="buildRoot">';
+        for(i=0;i<5;i++) html+='<div class="well" data-slot="'+i+'"></div>';
+        html+='</div></div>';
+      } else if(SCENE.road){
+        // column-reverse: first child = bottom slab (widest, closest)
+        var RW=[172,153,135,117,99];
+        html='<div id="roadCol">';
+        for(i=0;i<5;i++) html+='<div class="slab glass" data-slot="'+i+'" style="width:min('+Math.round(RW[i]/3.9)+'vw,'+RW[i]+'px)"><i></i></div>';
+        html+='</div>';
+      } else if(SCENE.stackCol){
+        var BW=[166,156,146,135,125];
+        html='<div id="stackCol"><div class="plat"></div>';
+        for(i=0;i<5;i++) html+='<div class="blk glass" data-slot="'+i+'" style="width:min('+Math.round(BW[i]/3.9)+'vw,'+BW[i]+'px)"></div>';
+        html+='</div>';
+      } else if(SCENE.keyRow){
+        html='<div id="keyRow">';
+        for(i=0;i<5;i++) html+='<div class="key glass" data-slot="'+i+'"></div>';
+        html+='</div>';
+      } else if(SCENE.balloon){
+        html='<div id="balloonBox"><div class="hull">'+BALLOON_HULL+'</div>'
+            +'<div id="balloonEl">'+BALLOON+'<div class="pilot">'+((S&&S.buddyMarkup)?S.buddyMarkup(profile.character||"fox",34):FOX)+'</div></div></div>';
+      }
+      R.innerHTML=html;
+    })();
+    function buildRoot(){ return $("buildRoot")||$("roadCol")||$("stackCol")||$("keyRow")||$("balloonBox"); }
+    function paintTicket(n){
+      try{
+        var segs=document.querySelectorAll("#tktSegs i");
+        for(var k=0;k<segs.length;k++) segs[k].classList.toggle("on",k<n);
+      }catch(e){}
+    }
+    function reveal(n){
+      var i,el;
+      paintTicket(n);
+      if(SCENE.balloon){ el=$("balloonEl"); if(el) el.style.width=(34+n*13.2)+"%"; return; }
+      var slots=document.querySelectorAll("#reveals [data-slot]");
+      for(i=0;i<slots.length;i++){
+        el=slots[i]; var on=i<n, was=el._on;
+        if(SCENE.stand){
+          el.classList.toggle("up",!on&&i===n);
+          if(on&&!was) el.innerHTML='<div class="fr pop">'+FRUITS[i]+'</div>';
+          else if(!on) el.innerHTML='<div class="fr ghost">'+ghostFruit(i)+'</div>';
+        } else if(SCENE.road){
+          el.classList.toggle("glass",!on);
+          el.classList.toggle("up",!on&&i===n);
+          el.style.zIndex="auto"; // reset — the rider's slab is raised below
+          var r0=el.querySelector(".rider"); if(r0) r0.remove();
+          var c0=el.querySelector(".coinUp"); if(c0) c0.remove();
+          if(on&&!was){ el.classList.remove("pop"); void el.offsetWidth; el.classList.add("pop"); }
+        } else if(SCENE.stackCol){
+          if(on){ var c=BLOCKC[i]; el.style.background="linear-gradient(180deg,"+c[0]+","+c[1]+")"; el.classList.remove("glass","up"); }
+          else { el.style.background=""; el.classList.add("glass"); el.classList.toggle("up",i===n); }
+          if(on&&!was){ el.classList.remove("pop"); void el.offsetWidth; el.classList.add("pop"); }
+        } else if(SCENE.keyRow){
+          el.classList.toggle("on",on);
+          el.classList.toggle("glass",!on);
+          el.classList.toggle("up",!on&&i===n);
+          if(on&&!was){ el.classList.remove("pop"); void el.offsetWidth; el.classList.add("pop"); }
+        }
+        el._on=on;
+      }
+      if(SCENE.road){
+        // the buddy stands on the TOP filled slab (raised above the glass slab
+        // behind it); a coin floats over the next empty slab
+        if(n>0&&slots[n-1]){ slots[n-1].style.zIndex="3"; slots[n-1].insertAdjacentHTML("beforeend",'<div class="rider">'+buddySvg()+'</div>'); }
+        if(n<slots.length&&slots[n]) slots[n].insertAdjacentHTML("beforeend",'<div class="coinUp">'+COIN+'</div>');
+      }
+    }
+    (function(){
+      if(!isDaily){$("ctxLine").textContent=GMETA.n;return;}
+      $("ctxLine").setAttribute("aria-label","Adventure, round "+Math.min(ROUNDIX+1,DAILY_SEQ.length)+" of "+DAILY_SEQ.length);
+      ADVENTURE.forEach(function(key,i){var dot=document.createElement("span");dot.className="path-dot"+(i<ROUNDIX?" done":i===ROUNDIX?" current":"");dot.setAttribute("aria-hidden","true");if(i===ROUNDIX){var art=S.gameSticker(key);S.paintSticker(dot,art[0],art[1]);}$("ctxLine").appendChild(dot);});
+    })();
+    // the bubble target — huge, orange, repainted on every syllable flip
+    function paintCard(){
+      $("bTarget").textContent = ITEM.level==="isolation" ? ((S&&S.soundSay)?S.soundSay(SOUND):"rrrr") : (ITEM.display||ITEM.t);
+    }
+    paintCard();
+    function paintReps(n){
+      try{ reveal(n); }catch(e){}
+      var left=NEED-n;
+      $("gpState").innerHTML = left<=0 ? "Here we go!"
+        : (n===0 ? "Say it <b>"+(NUMWORD[NEED]||NEED)+" times</b> "+SCENE.go
+                 : (left===1?"<b>Just 1 more!</b>":"<b>"+left+" more</b> "+SCENE.go));
+    }
+    paintReps(0);
+    window.__paintReps=paintReps; // headless-test hook
+
+
+
+    // slow-replay pill — appears on a retry; replays the model slooowly, for fun.
+    // Playback runs through the speaker guard, so it can never charge a rep.
+    function turtleText(){ return ITEM.level==="isolation" ? sayLine() : String(ITEM.say||ITEM.display||ITEM.t); }
+    function showTurtle(on){ $("turtleBtn").classList.toggle("show",!!on); }
+    // Both replays end the listening window before Echo speaks and reopen a
+    // fresh one afterwards with the tries carried (micSilence, "model").
+    $("turtleBtn").onclick=function(){ if(childTurn()&&!practicePaused&&!practiceClosed&&!document.hidden&&!speaking&&!ttsPlaying&&!_sayN)saySlow(turtleText()); };
+    function micGo(on){ $("micBtn").className=on?"go":""; updateTurn(); }
+    // tapping the mic replays the prompt — speaker-guarded, can't charge reps
+    $("echoBuddy").onclick=function(){ if(childTurn()&&!practicePaused&&!practiceClosed&&!document.hidden&&!speaking&&!ttsPlaying&&!_sayN) playPrompt(); };
+
+    // ---- sound-shape gate (bare-sound rounds only). The cloud scorer force-
+    // aligns nonsense text like "rrrr" onto whatever it hears and is wrong in
+    // BOTH directions on isolation clips (measured: an S scored 99 as R; a
+    // correct TH scored 0 as TH). So isolation rounds are judged on-device by
+    // the SHAPE of the sound in the same analyser the rep counter already
+    // uses: hissy sounds (S/SH/F/CH...) put their energy high in the spectrum;
+    // voiced sounds (R/L/M/N...) sit low. A round is flagged only when it is
+    // CLEARLY the wrong family — borderline or same-family tries always pass
+    // (never punish a wobbly-but-honest attempt; the shape gate is deliberately
+    // from syllables up). Thresholds calibrated on the SLP's recorded sounds:
+    // voiced cluster ≤1318Hz/13% high-band vs hiss cluster ≥2044Hz/26%.
+    // Only frequency-shape NUMBERS are read; nothing extra is recorded.
+    var SHAPE={
+      low:{R:1,L:1,M:1,N:1,B:1,D:1,G:1,V:1,THV:1},  // voiced targets: flag if clearly hissy
+      hiss:{S:1,Z:1,SH:1,CH:1,J:1,F:1,TH:1},        // hissy targets: flag if clearly voiced-low
+      cent:0, mag:0, high:0, frames:0               // K/T/P aspirate legitimately: no gate
+    };
+    function shapeReset(){ SHAPE.cent=0; SHAPE.mag=0; SHAPE.high=0; SHAPE.frames=0; }
+    // analyser bytes are dB-scaled (-100..-30dB): map back to linear amplitude
+    var SHAPE_LUT=(function(){ var t=[],i; for(i=0;i<256;i++) t.push(Math.pow(10,(-100+i*70/255)/20)); return t; })();
+    function shapeFrame(fd,binHz){
+      var lo=Math.max(1,Math.round(90/binHz)), hi=Math.min(fd.length-1,Math.round(12000/binHz)), h0=Math.round(3500/binHz);
+      var m=0,fm=0,hm=0,i,v;
+      for(i=lo;i<=hi;i++){ v=SHAPE_LUT[fd[i]]; m+=v; fm+=v*i*binHz; if(i>=h0)hm+=v; }
+      if(m>0){ SHAPE.cent+=fm; SHAPE.mag+=m; SHAPE.high+=hm; SHAPE.frames++; }
+    }
+    function shapeVerdict(){
+      if(SHAPE.frames<12 || !(SHAPE.mag>0)) return "unknown"; // <~200ms of voice: don't judge
+      var cent=SHAPE.cent/SHAPE.mag, high=SHAPE.high/SHAPE.mag;
+      try{ window.__shape={cent:Math.round(cent),high:Math.round(high*100)/100,frames:SHAPE.frames}; }catch(e){}
+      if(SHAPE.low[SOUND] && cent>1800 && high>0.22) return "fail";
+      if(SHAPE.hiss[SOUND] && cent<1100 && high<0.10) return "fail";
+      return "pass";
+    }
+
+    // ---- speech evidence (REPGUARD1). The energy detector below finds EVENTS:
+    // anything louder than the room. An event becomes a try only once it has
+    // shown evidence a spoken sound carries, judged over the whole event
+    // rather than frame by frame — a per-frame veto was tried and threw away
+    // real P evidence, and a continuous 150ms speech gate rejected real
+    // M/N/THV/V, brief stops and weak fricatives (APP_REVIEW_2026-09-22.md).
+    // One of:
+    //   VOICED — a voice pitch (100-700Hz) held for ~45ms, carried either by a
+    //     spectrum spread over 1.2kHz above the room or by at least 3 clear
+    //     overtones of that pitch (2 from 250Hz up: a child's pitch fits
+    //     fewer under the ~1kHz a noisy room leaves audible). A voice is a
+    //     ladder of overtones; a pure tone has none, and a mains-type hum's
+    //     few sit inside its fundamental's smear. Overtones, not width, keep
+    //     M/N/V countable over a fan or TV, which bury everything above ~1kHz.
+    //   SIBILANT — BROAD, with its hiss 8dB above its own 0.3-1.5kHz band,
+    //     for 150ms: an S or SH, however long and steady the hold. White
+    //     noise is flat and breath, fans and rooms slope the other way; a
+    //     steam or kettle hiss is acoustically an S and does count.
+    //   SHORT — BROAD (1.2kHz of the band over the room), at least ~45ms long
+    //     and over within a second, like one said sound: a T/K/P release, a
+    //     quick "fff" or "zz". A fan, hum or white noise goes on and on.
+    //   CHANGING — BROAD and, once it has lasted a second, its loudness
+    //     swells or fades 4.5dB within the last 0.8s: a long breath-driven
+    //     F/TH/L does; steady machine hiss and slow gain drift do not. The
+    //     first and latest 30ms are ignored so a hard switch-on/off edge is
+    //     not a swell. A soft, dead-steady voiceless hold longer than a second
+    //     that is not an S/SH can therefore earn nothing (Rachel's call).
+    // The rule's thresholds are milliseconds, not animation frames (WebKit
+    // drops to 30fps in Low Power Mode); the loudness contour takes a point a
+    // frame (at most one per 14ms) and the detector's own onset is still 4
+    // loud frames. The
+    // room is the per-bin MEDIAN of the silent quarter-second, like the
+    // energy threshold below, so an answer in its last moments (under half
+    // of it) does not raise either.
+    // What this cannot do (one microphone): tell humming from M, blowing or
+    // rustling from F/TH, a hiss (steam, a tap, spray) from S, a clap, knock,
+    // cough or other short household sound from T/K/P, a buzzy toy or timer
+    // tone from a voice, bass-heavy or swelling noise that starts mid-turn
+    // from speech, or the child from a nearby voice, pet, TV or music.
+    // Without float analyser reads (old WebKit) it counts on energy exactly
+    // as before rather than guess. Only numbers are read; nothing extra is
+    // recorded.
+    var EVID={broadHz:1200, overtones:3, voicedMs:45, sibDb:8, sibMs:150, minMs:45, shortMs:1000, quietMs:130, changeDb:4.5, spanMs:800, edgeMs:30};
+    function speechEvidence(){
+      var an=null,off=false,rate=48000,binHz=46.875,etd=null,efd=null,cal=[],calAt=-1e9,bgDb=null,cur=null;
+      function db(p){ return p>0 ? 4.342944819*Math.log(p) : -Infinity; }
+      // Pitch by YIN's cumulative-mean-normalised difference: the first lag
+      // whose d' falls under 0.2, walked to its local minimum. Searching from
+      // lag 2 lets a high tone report its own pitch, not a voice-range
+      // sub-harmonic. A voice with a weak fundamental dips shallowly at half
+      // its period (Rachel's G reads 400Hz for 195Hz): when that first dip is
+      // shallow and the one at twice the lag is under half as deep, the
+      // longer period is the pitch. A clean tone or hum dips to ~0 at its own
+      // period and is never moved. Returns 0 when nothing periodic is found.
+      function pitch(x){
+        var maxLag=Math.min(Math.floor(rate/100),x.length>>1),W=x.length-maxLag,run=0,best=0,bestD=0.2,second=false,end=maxLag,alt=0,altD=1,t,n,d,v,dp;
+        for(t=1;t<=end;t++){
+          d=0; for(n=0;n<W;n++){ v=x[n]-x[n+t]; d+=v*v; }
+          run+=d; dp=run>0?d*t/run:1;
+          if(t<2) continue;
+          if(!second){
+            if(dp<bestD){ best=t; bestD=dp; }
+            else if(best){
+              if(bestD<0.05||best*1.8>maxLag) break;
+              second=true; end=Math.min(maxLag,Math.round(best*2.2));
+            }
+          }else if(t>=best*1.8&&dp<altD){ alt=t; altD=dp; }
+        }
+        if(alt&&altD<bestD/2) best=alt;
+        return best ? rate/best : 0;
+      }
+      // Harmonics 2-9 (below 5kHz) of f0 that stand clear of the room (6dB),
+      // of the spectrum halfway to their neighbours (3dB), and within 40dB
+      // of the strongest harmonic.
+      function overtones(f0){
+        var lv=[],k,c,v,top=-Infinity,n=0;
+        for(k=1;k<=9&&k*f0<5000;k++){ c=Math.round(k*f0/binHz); v=Math.max(efd[c-1],efd[c],efd[c+1]); lv.push(c,v); if(v>top)top=v; }
+        for(k=2;k*2<=lv.length;k++){
+          c=lv[k*2-2]; v=lv[k*2-1];
+          if(v>=bgDb[c]+6 && v>=top-40 && v>=Math.max(efd[Math.round((k-0.5)*f0/binHz)],efd[Math.round((k+0.5)*f0/binHz)])+3) n++;
+        }
+        return n;
+      }
+      // power-mean level of a band, in dB
+      function band(a,b){
+        var k,p=0,n=0,lo=Math.ceil(a/binHz),hi=Math.min(efd.length-1,Math.floor(b/binHz));
+        for(k=lo;k<=hi;k++){ p+=Math.pow(10,efd[k]/10); n++; }
+        return n ? db(p/n) : -Infinity;
+      }
+      function med3(a,b,c){ return Math.max(Math.min(a,b),Math.min(Math.max(a,b),c)); }
+      return {
+        attach:function(node,sampleRate){
+          an=node; rate=sampleRate||48000;
+          off=!(node.getFloatTimeDomainData&&node.getFloatFrequencyData);
+          var n=node.fftSize||1024; binHz=rate/n;
+          if(!etd||etd.length!==n){ etd=new Float32Array(n); efd=new Float32Array(n>>1); cal=[]; bgDb=null; }
+        },
+        // the same silent quarter-second that sets the rep threshold, sampled
+        // at most every 8ms so the whole of it counts at any frame rate.
+        // Exact digital silence is the audio path still starting (a phone's
+        // mic warms up), never a room: it is skipped.
+        calibrate:function(now){
+          if(!an||off||cal.length>=60||now-calAt<8) return;
+          an.getFloatFrequencyData(efd);
+          for(var k=0;k<efd.length;k++) if(efd[k]>-Infinity){
+            calAt=now; var f=new Float32Array(efd),p=0;
+            for(var j=0;j<f.length;j++) if(f[j]>-Infinity) p+=Math.pow(10,f[j]/10);
+            f.power=p; cal.push(f); return;
+          }
+        },
+        // The room is the QUIET end of what was sampled (24 Sep 2026): only
+        // frames within 6dB of the 20th-percentile frame's loudness count, so
+        // a child already talking through most of the quarter-second cannot
+        // lift the background over their own voice. A steady room keeps
+        // every frame (as the plain median did); fewer than 3 kept, all count.
+        settle:function(){
+          var k,j,n,col=[],use=cal,pw=cal.map(function(f){ return f.power; }).sort(function(a,b){ return a-b; });
+          if(pw.length){ var lim=pw[Math.floor((pw.length-1)*0.2)]*4,q=cal.filter(function(f){ return f.power<=lim; }); if(q.length>=3) use=q; }
+          n=use.length;
+          bgDb=new Float32Array(efd.length);
+          for(k=0;k<bgDb.length;k++){
+            if(!n){ bgDb[k]=-100; continue; }
+            col.length=0; for(j=0;j<n;j++) col.push(use[j][k]);
+            col.sort(function(a,b){ return a-b; });
+            bgDb[k]=Math.max(-100,col[n>>1]);
+          }
+        },
+        // ROOM FLOOR (see measureRoom). A new window samples its own quiet
+        // afresh, and a window whose samples were a voice drops them, so the
+        // background is never taken from them; the one in use is left as it
+        // is (none yet: empty, as for a mic that sent only digital zeros).
+        resample:function(){ cal=[]; },
+        // Use the page's carried background. True when it fits this analyser
+        // (or there is no evidence to feed); false changes nothing.
+        floor:function(bg){
+          if(off) return true;
+          if(!bg||!efd||bg.length!==efd.length) return false;
+          bgDb=new Float32Array(bg); return true;
+        },
+        // What this window's own samples say the room is, without touching the
+        // background in use; null when nothing was sampled.
+        measured:function(){
+          if(off||!cal.length) return null;
+          var keep=bgDb; this.settle(); var out=bgDb; bgDb=keep; return out;
+        },
+        drop:function(){ cur=null; },
+        // One loud frame of the current event. True once the event qualifies.
+        frame:function(now){
+          if(off) return true;
+          if(!bgDb) this.settle();
+          an.getFloatTimeDomainData(etd); an.getFloatFrequencyData(efd);
+          if(!cur) cur={t0:now,t1:now,n:0,broad:0,run0:-1,sib0:-1,pts:[],pt:-1e9,ok:false,why:''};
+          var lo=Math.ceil(90/binHz),hi=Math.min(efd.length-1,Math.floor(8000/binHz)),wide=0,k,s=0;
+          for(k=lo;k<=hi;k++) if(efd[k]>=bgDb[k]+12) wide++;
+          for(k=0;k<etd.length;k++) s+=etd[k]*etd[k];
+          var broad=wide*binHz>=EVID.broadHz,f0=pitch(etd);
+          var voiced=f0>=100&&f0<=700&&(broad||overtones(f0)>=(f0>=250?EVID.overtones-1:EVID.overtones));
+          var sib=broad&&Math.max(band(2500,5000),band(5000,Math.min(10000,rate/2-200)))-band(300,1500)>=EVID.sibDb;
+          cur.t1=now; cur.n++; if(broad) cur.broad++;
+          if(!voiced) cur.run0=-1; else if(cur.run0<0) cur.run0=now;
+          if(!sib) cur.sib0=-1; else if(cur.sib0<0) cur.sib0=now;
+          // loudness contour: at most one point per ~14ms, 3-point median
+          if(now-cur.pt>=14){ cur.pts.push(now,Math.max(-120,db(s/etd.length))); cur.pt=now; }
+          if(cur.ok) return true;
+          if(cur.run0>=0&&now-cur.run0>=EVID.voicedMs){ cur.why='voiced'; return (cur.ok=true); }
+          if(cur.sib0>=0&&now-cur.sib0>=EVID.sibMs){ cur.why='sibilant'; return (cur.ok=true); }
+          if(cur.broad*2<=cur.n||now-cur.t0<=EVID.shortMs) return false;
+          // each point is the median of it and its neighbours when those
+          // sit within ~45ms (60fps and up); at slower frame rates three
+          // points would smear 100ms of breath, so the point stands alone
+          var P=cur.pts,i,a=null,b=null,c=null,ta=0,tb=0,tc=0,m,mn=Infinity,mx=-Infinity;
+          for(i=0;i<P.length;i+=2){
+            if(P[i]<cur.t0+EVID.edgeMs||P[i]>now-EVID.edgeMs||P[i]<now-EVID.spanMs) continue;
+            a=b; b=c; c=P[i+1]; ta=tb; tb=tc; tc=P[i];
+            if(a!==null){ m=tc-ta<=45?med3(a,b,c):b; if(m<mn)mn=m; if(m>mx)mx=m; }
+          }
+          if(mx-mn>=EVID.changeDb){ cur.why='changing'; cur.ok=true; }
+          return cur.ok;
+        },
+        // An event that went quiet without qualifying: was it one short sound?
+        brief:function(){
+          return off || (!!cur && cur.t1-cur.t0>=EVID.minMs && cur.t1-cur.t0<=EVID.shortMs && cur.broad*2>cur.n);
+        },
+        quietFor:function(now){ return cur ? now-cur.t1 : 0; },
+        // which evidence counted the event, for on-device debugging (__evid)
+        route:function(){ return off ? 'energy' : cur&&cur.why ? cur.why : 'short'; }
+      };
+    }
+
+    // ---- rapid-fire rep engine: one attempt can span visible mic segments. ----
+    var micStream=null, reps=0, engineOn=false, chunks=[], rec=null, anyReps=false, micOk=false;
+    var engineControl=null, engineAttempt=null, attemptInterrupted=false;
+    var recognitionTexts=[], recognitionRemaining=9000, recognitionState=null;
+    // ---- ROOM FLOOR (24 Sep 2026) ----
+    // How loud the room is when nobody is talking. Two things come from it:
+    // the loudness bar a sound must clear to start a try (thr, 3x the room)
+    // and the background the speech-evidence check holds a voice against
+    // (bgDb). It used to be measured in the first quarter-second of every
+    // listening attempt. Once the mic opened only after Echo had finished
+    // (plus the moment a phone takes to open it), that quarter-second fell
+    // exactly when an eager child was already answering: their voice became
+    // "the room", the bar landed above it, and five good tries earned
+    // "I couldn't hear you!".
+    // So the room is measured ONCE per page, in known silence: on the mic the
+    // grown-up's tap opened, for ROOM_MS, before Echo's first word. Every
+    // window and attempt on the page starts from it, so each can hear the
+    // child from its first frame. A window's own first quarter-second may
+    // only LOWER it (the room got quieter), never raise it: when most of it
+    // is louder than the carried room, someone is talking. Always the quiet
+    // end of what was heard (a low percentile), never the median. A page
+    // that never got a usable reading (a mic still warming up, a pause)
+    // measures its first window instead, as every window used to, and
+    // carries that.
+    // A VOICE IS NOT A ROOM (24 Sep 2026, after review). Two ways the reading
+    // still caught the child: a mic that sends exact digital zeros while it
+    // starts used up the 300ms (so the first window measured the child), and
+    // a child who said the sound before Echo spoke WAS the reading. So:
+    //  - the reading's clock starts at the first frame that is not digital
+    //    zeros (zeros only run down the 600ms the audio path gets to start);
+    //  - ROOM_MAX: a reading whose quiet end is louder than this is someone
+    //    talking. The loudest room in the fixtures (pink noise at -40dBFS, a
+    //    fan or a TV) reads ~0.01, a mic's own hiss ~0.005, and a child saying
+    //    Rachel's R through the whole reading 0.13-0.2. Such a reading never
+    //    becomes the room — not the bar, not the speech-evidence background —
+    //    and the bar never goes above 3 x ROOM_MAX (0.09), under that voice.
+    //    A window with no room and a voice for a reading learns the room in
+    //    the child's first pause instead (learnRoom).
+    var ROOM_MS=300, ROOM_PCT=0.2, ROOM_MIN=4, ROOM_MAX=0.03, LEARN_FRAMES=8, room=null, roomProbe=null;
+    // roomLoud: a usable reading on this page came out louder than any room
+    // (a voice, or a hum/fan too loud to be one). Only then does a reopened
+    // window with no room start in learn-first mode.
+    var roomLoud=false;
+    function frameRms(an,td){an.getByteTimeDomainData(td);var sum=0;for(var i=0;i<td.length;i++){var d=(td[i]-128)/128;sum+=d*d;}return Math.sqrt(sum/td.length);}
+    // The pct-th percentile of the non-zero readings (exact zeros are the
+    // audio path still starting, never a room); 0 when there are none.
+    function roomLevel(list,pct){var v=list.filter(function(x){return x>0;}).sort(function(a,b){return a-b;});return v.length?v[Math.floor((v.length-1)*pct)]:0;}
+    function roomUsable(list){return list.filter(function(x){return x>0;}).length>=ROOM_MIN;}
+    // The loudness bar for a room level: 3x the room, never under 0.035 (a
+    // silent room) and never over 3 x ROOM_MAX (the loudest room there is).
+    function roomBar(level){return Math.min(3*ROOM_MAX,Math.max(0.035,level*3.0));}
+    // ONE READING, WHOLE (25 Sep 2026). The speech-evidence background is
+    // always ONE reading's per-bin median, the "room" #139's thresholds were
+    // set against, never stitched bin by bin from two. A window's quieter
+    // reading used to take the per-bin MINIMUM of it and the carried one,
+    // whenever its quiet end came in a hair under the carried room: in a
+    // steady room, half the time. Each reading is a median of a dozen or so
+    // frames, a couple of dB low in some bins and high in others; the minimum
+    // of two keeps every low miss, so the background came out quieter than
+    // the room either reading heard, and the room's own noise at a pure
+    // tone's missing overtones cleared it. A 440Hz tone over a fan-loud room
+    // (pink, -32dBFS) then counted on more plays than #139's own per-window
+    // reading lets through: 32 rooms in 100 against 16 at 60fps, 34 against
+    // 29 at 30fps (speechevidencetest replays it).
+    // So the background changes only to a room clearly quieter than the one
+    // it was read from (under half its power: ROOM_CLEAR), and then to that
+    // window's reading, whole. The bar (room.rms) still follows every quieter
+    // reading down, exactly as before, so an eager or soft child loses
+    // nothing. room.bgRms is the quiet end of the reading the background is.
+    var ROOM_CLEAR=Math.SQRT1_2;
+    function roomReading(level,bg){return {rms:level,bg:bg,bgRms:level};}
+    function roomLower(level,bg){
+      room.rms=level;
+      if(bg&&level<room.bgRms*ROOM_CLEAR){room.bg=bg;room.bgRms=level;}
+    }
+    // A STARVED FRAME IS NOT A ROOM (25 Sep 2026). A frame with sound in it
+    // (level) and also a run of exact digital zeros (GAP_RUN samples, 2ms at
+    // 48kHz) is an audio path still starting (a fresh analyser only part
+    // full) or one starved under CPU load, never the room: real audio, even a
+    // mic's faintest hiss, is never exactly zero for that long. Its loudness
+    // is the gap's, and a reading's quiet end is exactly where it lands: on a
+    // slow phone one such frame made a loud room (~0.025) read as ~0.001, and
+    // since a reading only ever lowers the room, for the rest of the page.
+    // Readings (the page's, a window's first quarter-second, learnRoom) skip
+    // it. Frames of nothing but zeros are handled as they always were, and
+    // without float reads (old WebKit) nothing changes.
+    var GAP_RUN=96, gapBuf=null;
+    function starved(ev,level){
+      if(!(level>0)||!ev||!ev.getFloatTimeDomainData)return false;
+      if(!gapBuf||gapBuf.length!==ev.fftSize)gapBuf=new Float32Array(ev.fftSize);
+      ev.getFloatTimeDomainData(gapBuf);
+      for(var i=0,run=0;i<gapBuf.length;i++){if(gapBuf[i]!==0)run=0;else if(++run>=GAP_RUN)return true;}
+      return false;
+    }
+    // Evidence reads its own unsmoothed analyser, so the shape checker's
+    // smoothed bytes are untouched.
+    function evidenceAnalyser(ctx,src){var ev=ctx.createAnalyser(); ev.fftSize=ctx.sampleRate>=88200?2048:ctx.sampleRate>=32000?1024:512; ev.smoothingTimeConstant=0; src.connect(ev); return ev;}
+    function measureRoom(){return new Promise(function(done){
+      if(room||!micStream||audioBlocked()){done();return;}
+      var stream=micStream,rms=[],probe=speechEvidence(),src=null,an=null,ev=null,td=null,raf=null,timer=null,began=null,cap=performance.now()+600,finished=false;
+      // complete: ROOM_MS of a running audio path were sampled. Anything less
+      // (a pause, the mic taken) is not the known-silence reading.
+      function finish(complete){
+        if(finished)return; finished=true; if(roomProbe===stop)roomProbe=null;
+        if(raf!=null)cancelAnimationFrame(raf); clearTimeout(timer);
+        try{if(src)src.disconnect();}catch(e){}
+        var bg=complete?probe.measured():null,off=!!ev&&!(ev.getFloatTimeDomainData&&ev.getFloatFrequencyData),level=roomLevel(rms,ROOM_PCT);
+        // Louder than any room (ROOM_MAX): the child was talking. No reading.
+        if(complete&&roomUsable(rms)&&(bg||off)&&level<=ROOM_MAX)room=roomReading(level,bg);
+        else if(complete&&roomUsable(rms)&&level>ROOM_MAX)roomLoud=true;
+        done();
+      }
+      function stop(){finish(false);}
+      try{
+        var ctx=getCtx(); if(!ctx){done();return;}
+        src=ctx.createMediaStreamSource(stream); an=ctx.createAnalyser(); an.fftSize=512; src.connect(an);
+        ev=evidenceAnalyser(ctx,src); td=new Uint8Array(an.fftSize); probe.attach(ev,ctx.sampleRate);
+      }catch(e){finish(false);return;}
+      roomProbe=stop;
+      // rAF stalls on a hidden page: the prompt is never held for long (up to
+      // 600ms for the audio path to start, then ROOM_MS of it, then spare).
+      timer=setTimeout(stop,600+ROOM_MS+400);
+      (function frame(){
+        raf=null; if(finished)return;
+        if(audioBlocked()||micStream!==stream){finish(false);return;}
+        var now=performance.now();
+        // A context still resuming delivers nothing yet, and nor does a mic
+        // still sending digital zeros: their time does not count, and a path
+        // not delivering within 600ms gives no reading at all. The ROOM_MS
+        // clock starts at the first frame that is not zeros, and a frame
+        // with a gap of zeros in it (starved) is not read.
+        var level=(!ctx.state||ctx.state==="running")?frameRms(an,td):0;
+        var gap=starved(ev,level);
+        if(began===null&&level>0&&!gap)began=now;
+        if(began!==null){
+          if(!gap){rms.push(level); probe.calibrate(now);}
+          if(now-began>=ROOM_MS){finish(true);return;}
+        }else if(now>cap){finish(false);return;}
+        raf=requestAnimationFrame(frame);
+      })();
+    });}
+    // Native start is asynchronous (availability first). Stop once immediately,
+    // then again after a late start settles, before any new segment may start.
+    function recognitionStart(){
+      if(recognitionRemaining<=0 || !(S&&S.speechStart)) return;
+      var r={startedAt:performance.now(),budget:recognitionRemaining,settled:false,stop:null,timer:null};
+      recognitionState=r;
+      try{ r.pending=Promise.resolve(S.speechStart({ words:[String(ITEM.word||ITEM.t||"").toLowerCase()], maxMs: Math.ceil(r.budget) })); }
+      catch(e){ r.pending=Promise.resolve(false); }
+      r.pending=r.pending.then(function(v){r.settled=true;r.started=!!v;return v;},function(){r.settled=true;return false;});
+      r.timer=setTimeout(function(){if(recognitionState===r)recognitionStop();},r.budget);
+    }
+    function recognitionStop(){
+      var r=recognitionState;
+      if(!r) return Promise.resolve();
+      if(r.stop) return r.stop;
+      clearTimeout(r.timer);
+      recognitionRemaining=Math.max(0,r.budget-(performance.now()-r.startedAt));
+      function stop(){try{return Promise.resolve(S&&S.speechStop?S.speechStop():null).catch(function(){return null;});}catch(e){return Promise.resolve(null);}}
+      var first=stop(), wasSettled=r.settled;
+      r.stop=(wasSettled?first:Promise.all([first,r.pending]).then(stop)).then(function(result){
+        // When a recognizer that really started lets go of the mic (micSilence settles from it).
+        if(r.started)r.stoppedAt=performance.now();
+        if(recognitionState===r && !r.heardApp && result && typeof result.text==="string" && result.text.trim()) recognitionTexts.push(result.text);
+      });
+      return r.stop;
+    }
+    function startEngine(){
+      return new Promise(function(resolve){
+        var attempt={cancelled:false,settled:false,segment:null}; engineAttempt=attempt;
+        reps=0; paintReps(0); chunks=[]; rec=null; shapeReset(); attemptInterrupted=false;
+        recognitionTexts=[]; recognitionRemaining=9000; recognitionState=null;
+        var voiced=0,silent=0,inBurst=false,thr=0,lastRep=0,burstFrames=[];
+        var evid=speechEvidence(),counted=false,heardAt=0,burstAt=0;
+        var elapsed=0,clockBase=performance.now(),nudges=0,nextNudge=8000,idleDisabled=false,successAt=null;
+        function closed(){return attempt.cancelled || practiceClosed || engineAttempt!==attempt;}
+        function finishAttempt(value){
+          if(attempt.settled)return; attempt.settled=true; engineOn=false; listenReady=false;
+          if(engineControl===control)engineControl=null;
+          resolve(value);
+        }
+        var control={
+          pause:function(){
+            if(attempt.settled)return;
+            attemptInterrupted=true; chunks=[];
+            voiced=0; silent=0; inBurst=false; burstFrames=[]; counted=false; evid.drop();
+            if(attempt.segment)attempt.segment.finish("pause");
+          },
+          cancel:function(){
+            attempt.cancelled=true;
+            if(attempt.segment)attempt.segment.finish("cancel");
+            else recognitionStop();
+            finishAttempt(false);
+          }
+        };
+        engineControl=control;
+        function runSegment(){return new Promise(function(segmentDone){
+          // A replacement stream must qualify its own burst after an interruption.
+          voiced=0;silent=0;inBurst=false;burstFrames=[];counted=false;evid.drop();
+          var seg={startedAt:performance.now(),closed:false,reason:null,timers:[],raf:null,src:null,recorder:null,stream:micStream,rms:[],read:false,learn:null};
+          attempt.segment=seg;
+          // Sona is about to make a sound: this window ends as "model" and the
+          // attempt loop reopens a fresh one once it is quiet, tries carried.
+          // (Replaced below by a version that first judges a short sound the
+          // child already finished, once the detector exists.)
+          seg.yieldToApp=function(){seg.finish("model");};
+          function current(){return !closed() && !seg.closed && attempt.segment===seg;}
+          function activeMs(){return elapsed+performance.now()-seg.startedAt;}
+          function later(fn,ms){var timer=setTimeout(function(){if(current())fn();},Math.max(0,ms));seg.timers.push(timer);return timer;}
+          function recorderStop(){return new Promise(function(done){
+            var recorder=seg.recorder,settled=false;
+            function finish(){if(settled)return;settled=true;clearTimeout(safety);done();}
+            var safety=setTimeout(finish,1500);
+            if(!recorder || recorder.state==="inactive"){finish();return;}
+            recorder.onstop=finish;
+            try{recorder.stop();}catch(e){finish();}
+          });}
+          seg.finish=function(reason){
+            if(seg.closed)return; seg.closed=true; seg.reason=reason;
+            if(reason==="microphone"){attemptInterrupted=true;chunks=[];}
+            elapsed=Math.min(20000,activeMs()); engineOn=false; listenReady=false; micGo(false);
+            seg.timers.forEach(clearTimeout); if(seg.raf!=null)cancelAnimationFrame(seg.raf);
+            try{if(seg.src)seg.src.disconnect();}catch(e){}
+            try{$("micWrap").classList.remove("hear");$("echoBuddy").classList.remove("heard");}catch(e){}
+            Promise.all([recorderStop(),recognitionStop()]).then(function(){
+              // The mic closes at the end of EVERY window, not only before a
+              // sound (24 Sep 2026): the next window reopens it into silence.
+              // After the recorder, so the keepsake clip is whole; and only
+              // this window's own stream, never one opened since.
+              if(micStream&&micStream===seg.stream)stopMic();
+              if(attempt.segment===seg)attempt.segment=null;
+              segmentDone(reason);
+            });
+          };
+          try{
+            var ctx=getCtx(),src=ctx.createMediaStreamSource(micStream),an=ctx.createAnalyser();
+            seg.src=src; an.fftSize=512;src.connect(an);
+            var td=new Uint8Array(an.fftSize),fd=new Uint8Array(an.frequencyBinCount),binHz=ctx.sampleRate/an.fftSize;
+            var ev=evidenceAnalyser(ctx,src);
+            evid.attach(ev,ctx.sampleRate);
+            // ROOM FLOOR: start from the page's room when there is one — this
+            // window hears the child from its first frame. Without one, a bar
+            // this attempt already set in an earlier window stands, as it
+            // always did; only an attempt's first window waits, deaf, for its
+            // own first quarter-second (readRoom).
+            evid.resample();
+            if(room&&evid.floor(room.bg))thr=roomBar(room.rms);
+            // No room, an earlier window of this attempt already set a bar, and
+            // what this page has heard was louder than any room (a voice, or a
+            // hum too loud to be one): this window has no background either, so
+            // it starts in the same learn-first mode. Without this, a steady hum
+            // louder than a room can be was counted as a try every time the
+            // window reopened (a tap on Echo, the turtle, a return from the
+            // background) — the one thing noise may never be. A page that simply
+            // never got a reading (a mic still sending zeros) keeps its bar, so
+            // a child who carries on after a pause is still heard.
+            else if(thr&&roomLoud)seg.learn=[];
+            // Independent recorder files cannot be concatenated into one clip.
+            // Interrupted attempts retain reps/evidence but skip the keepsake.
+            if(!attemptInterrupted && window.MediaRecorder && micStream){try{
+              var recorder=new MediaRecorder(micStream);seg.recorder=recorder;rec=recorder;
+              recorder.ondataavailable=function(e){
+                if(engineAttempt===attempt && attempt.segment===seg && !attemptInterrupted && !attempt.cancelled && (!seg.closed || seg.reason==="done") && e.data && e.data.size)chunks.push(e.data);
+              };
+              recorder.start();
+            }catch(e){seg.recorder=null;rec=null;}}
+            // The window is open; the cue waits for the first frame that can
+            // hear the child (listenReady in tick), so no glowing mic yet.
+            recognitionStart(); engineOn=true; updateTurn();
+            function micLive(){
+              if(!micOk||!micStream)return false;
+              try{var t=micStream.getAudioTracks()[0];return !t||(t.readyState==="live"&&!t.muted);}catch(e){return true;}
+            }
+            function armIdle(){
+              if(idleDisabled||nudges>=2)return;
+              later(function(){
+                if(reps!==0||!micLive()){idleDisabled=true;return;}
+                if(inBurst){nextNudge=activeMs()+250;armIdle();return;} // a sound is still being judged
+                nudges++;playPrompt();nextNudge=activeMs()+8000;armIdle();
+              },nextNudge-activeMs());
+            }
+            // No repeated coaching before the quiet state; replay is child-directed.
+            var mw=$("micWrap");
+            function tick(){
+              if(!current() || practicePaused)return;
+              var wallNow=performance.now();
+              // Echo starting to talk ends the window (24 Sep 2026): a short
+              // sound that already finished is judged first, the event drops,
+              // and the window closes as "model" — the attempt loop reopens a
+              // fresh one, tries carried, once Echo is done. Every voice line
+              // closes the window before it starts (micSilence); this catches
+              // anything that didn't. It used to hold the mic open underneath.
+              if(speaking||ttsPlaying||_sayN)judgePending(wallNow);
+              if(speaking||ttsPlaying||_sayN){
+                silent++;voiced=0;inBurst=false;burstFrames=[];counted=false;evid.drop();
+                seg.finish("model");return;
+              }
+              if(!micLive()){seg.finish("microphone");return;}
+              an.getByteTimeDomainData(td);an.getByteFrequencyData(fd);
+              var sum=0;for(var i=0;i<td.length;i++){var d=(td[i]-128)/128;sum+=d*d;}
+              var rms=Math.sqrt(sum/td.length),now=wallNow;
+              // ROOM FLOOR: every window samples its own first quarter-second.
+              // With the page's room already set it listens meanwhile; without
+              // one it waits for the reading (thr stays 0 until readRoom).
+              if(now-seg.startedAt<250){if(!starved(ev,rms)){seg.rms.push(rms);evid.calibrate(now);}if(!thr){seg.raf=requestAnimationFrame(tick);return;}}
+              else if(!seg.read){seg.read=true;readRoom();}
+              // Mic open, room known: only now is it visibly the child's turn.
+              if(!listenReady){listenReady=true;micGo(true);}
+              // The energy detector finds the event and its timing; the try
+              // waits for speech evidence (speechEvidence above). An event
+              // that never shows any is not a try: no count, no "heard", and
+              // its frames never reach the shape checker.
+              if(rms>thr){
+                voiced++;silent=0;
+                if(!inBurst&&voiced>=4&&(successAt!==null||now-lastRep>350)){inBurst=true;burstAt=now;}
+                if(!counted){
+                  burstFrames.push(new Uint8Array(fd));
+                  if(evid.frame(now)&&inBurst&&!seg.learn)countRep(now);
+                }else if(inBurst) shapeFrame(fd,binHz);
+              }else{
+                silent++;voiced=0;
+                if(!inBurst){burstFrames=[];evid.drop();if(seg.learn&&rms<=ROOM_MAX)learnRoom(now,rms);}
+                if(silent>=3&&now-heardAt>250){try{mw.classList.remove("hear");$("echoBuddy").classList.remove("heard");}catch(e){}}
+                // A short sound (a T/K/P release, a quick "fff") is judged once
+                // it has been quiet ~130ms, or when the event closes if sooner.
+                if(inBurst&&!counted&&(silent>=8||evid.quietFor(now)>=EVID.quietMs)&&heardTry())countRep(now);
+                if(silent>=8){inBurst=false;counted=false;burstFrames=[];evid.drop();}
+              }
+              seg.raf=requestAnimationFrame(tick);
+            }
+            // This window's own reading of the room: the page's first, if the
+            // page never got one; otherwise it may only lower the carried room.
+            // REWRITTEN 24 Sep 2026: it lowers whenever its QUIET END (the
+            // 20th percentile) is under the carried room. It used to need the
+            // median under it too, which a child already talking as the window
+            // opened always failed, so a room that had got quieter stayed loud
+            // for them. The low end is safe against a talking child: talking
+            // only ever adds loudness, so their voice can move the upper
+            // frames, never the quiet ones, and a child who talks through
+            // more than 80% of it reads louder than the room and changes
+            // nothing (it can only lower). A voice (over ROOM_MAX) is never
+            // read as a room at all. Too few real samples (a mic still
+            // starting) sets nothing: this window listens against its
+            // quietest reading, as before, and the next window measures again.
+            // The bar follows any quieter reading; the speech-evidence
+            // background only a clearly quieter one, whole (roomLower).
+            function readRoom(){
+              var low=roomLevel(seg.rms,ROOM_PCT),bg=evid.measured(),off=!(ev.getFloatTimeDomainData&&ev.getFloatFrequencyData),voice=low>ROOM_MAX;
+              if(voice&&roomUsable(seg.rms))roomLoud=true;
+              // The carried room describes this analyser (same frequency bins).
+              function fits(){return !!room&&(off||!!(room.bg&&bg&&room.bg.length===bg.length));}
+              if(!voice&&roomUsable(seg.rms)&&(bg||off)){
+                if(!room)room=roomReading(low,bg);
+                else if(low<room.rms&&fits())roomLower(low,bg);
+              }
+              if(fits()){evid.floor(room.bg);thr=roomBar(room.rms);seg.learn=null;}
+              else{
+                if(!thr)thr=roomBar(low);
+                // No room, and the child was talking as the window opened: the
+                // background is not taken from their voice, and the room is
+                // learned in their first pause (learnRoom).
+                if(voice){evid.resample();seg.learn=[];}
+              }
+            }
+            // LEARNING THE ROOM IN A PAUSE (24 Sep 2026). Until the window has
+            // heard LEARN_FRAMES quiet frames — between events, and no louder
+            // than a room can be (ROOM_MAX: the fading tail of a child's "ssss"
+            // is under the bar but is not the room) — it knows nothing about
+            // the room, and a room loud enough to cross the bar (a hum or a fan
+            // ten times the loudest in the fixtures) would look like a voice
+            // against an empty background. So meanwhile a try counts only
+            // once its sound has ENDED, and only if it was voiced or a hiss:
+            // a child's "rrrr" stops, a steady hum never does, and a burst of
+            // noise is neither. Then the quiet frames set the bar and the
+            // background (and the page's room, if they are quiet enough to be
+            // one), and the window listens as any other.
+            function learnRoom(now,rms){
+              if(starved(ev,rms))return;
+              seg.learn.push(rms);evid.calibrate(now);
+              if(seg.learn.length<LEARN_FRAMES)return;
+              var low=roomLevel(seg.learn,ROOM_PCT),bg=evid.measured(),off=!(ev.getFloatTimeDomainData&&ev.getFloatFrequencyData);
+              if(!room&&low<=ROOM_MAX&&roomUsable(seg.learn)&&(bg||off))room=roomReading(low,bg);
+              if(bg)evid.floor(bg);
+              thr=roomBar(low);seg.learn=null;
+            }
+            // Whether an event that has gone quiet is a try: one short sound
+            // (evid.brief) — or, while the room is being learned, one that
+            // showed voicing or a hiss, never a burst of loud room.
+            function heardTry(){return seg.learn?/^(voiced|sibilant|energy)$/.test(evid.route()):evid.brief();}
+            function countRep(now){
+              counted=true;
+              burstFrames.forEach(function(frame){shapeFrame(frame,binHz);});burstFrames=[];
+              // Keep hearing the final try, including after a pause, without
+              // awarding another rep or replaying its reward.
+              if(successAt!==null)return;
+              reps++;heardAt=now;lastRep=burstAt;
+              try{ (window.__evid=window.__evid||[]).push(evid.route()); }catch(e){}
+              // Seen, not heard (24 Sep 2026): the count and the pop are the
+              // whole reward. A chime here would sound into the open mic.
+              paintReps(reps);
+              var l=$("leo");l.classList.remove("cheer");void l.offsetWidth;l.classList.add("cheer");
+              try{mw.classList.add("hear");$("echoBuddy").classList.add("heard");}catch(e){}
+              if(reps>=NEED){successAt=activeMs()+350;later(finishTail,350);}
+            }
+            // A short sound that ended just before time ran out or Echo spoke
+            // still counts; one still going cannot be judged and is dropped.
+            // A sound still under way when Sona closes the mic for its own
+            // sound (yieldToApp) or at the 20 s deadline is judged here. While
+            // the room is being learned the bar is capped, a loud hum sits
+            // within a decibel of it, and one quiet frame is not an end — it
+            // was counted as a "voiced" try at the instant the mic closed. In
+            // learn mode a try needs the same real end tick() asks for.
+            function judgePending(now){
+              if(!(inBurst&&!counted&&heardTry()))return;
+              if(seg.learn?(silent>=8||evid.quietFor(now)>=EVID.quietMs):silent>0)countRep(now);
+            }
+            seg.yieldToApp=function(){if(seg.closed)return;judgePending(performance.now());seg.finish("model");};
+            // Coaching and background pauses must not spend listening time.
+            function finishTail(){var remaining=successAt-activeMs();if(remaining<=0)seg.finish("done");else later(finishTail,remaining);}
+            // Preserve the existing 20-second cap, even for a final short try.
+            function deadline(){var remaining=20000-activeMs();if(remaining<=0){judgePending(performance.now());seg.finish("done");}else later(deadline,remaining);}
+
+            later(deadline,20000-activeMs());
+            if(successAt!==null)later(finishTail,successAt-activeMs());
+            tick();
+          }catch(e){seg.finish("microphone");}
+        });}
+        (async function(){
+          while(!closed()){
+            if(!(await practiceReady())||closed()){finishAttempt(false);return;}
+            // Each window opens into silence (quietGap): after Echo's last
+            // word or chime has had time to leave the speaker and the room.
+            if(!(await quietGap())||closed()){finishAttempt(false);return;}
+            if(!(await acquirePracticeMic())){
+              if(practicePaused&&!closed())continue;
+              finishAttempt(false);return;
+            }
+            if(closed()){finishAttempt(false);return;}
+            if(practicePaused)continue;
+            // A suspended analyser is not listening. Start the attempt clock
+            // only after the browser has actually resumed its audio context.
+            var epoch=practiceEpoch;
+            try{
+              await audioSuspend;
+              if(epoch!==practiceEpoch||practicePaused||closed())continue;
+              var ctx=getCtx();
+              if(ctx&&ctx.state==="suspended")await ctx.resume();
+            }catch(e){pausePractice();continue;}
+            if(epoch!==practiceEpoch||practicePaused||closed()||document.hidden)continue;
+            // A line queued while the mic was opening goes first, into a
+            // closed mic (micSilence may already have taken the stream).
+            if(appBusy()||performance.now()<quietAt||!micStream){stopMic();continue;}
+            var result=await runSegment();
+            if(result==="cancel"||closed()){finishAttempt(false);return;}
+            if(result==="microphone"){
+              voiced=0; silent=0; inBurst=false; burstFrames=[]; counted=false; evid.drop();
+              stopMic(); if(!(await showQuiet("microphone"))){finishAttempt(false);return;}
+              continue;
+            }
+            if(result==="model"){
+              // Echo spoke mid-try (a tap on Echo, the turtle, a nudge). The
+              // tries already heard carry into the next window, and listening
+              // time only runs while a window is open. A keepsake clip cannot be
+              // stitched from two recordings: with no try yet it simply starts
+              // over in the next window; after one, the attempt keeps none.
+              if(reps>0)attemptInterrupted=true; else chunks=[];
+              continue;
+            }
+            if(result==="done"){
+              if(!(await practiceReady())||closed()){finishAttempt(false);return;}
+              finishAttempt(true);return;
+            }
+          }
+          finishAttempt(false);
+        })().catch(function(){control.cancel();});
+      });
+    }
+    function clipBlob(){return !attemptInterrupted&&chunks.length?new Blob(chunks,{type:(rec&&rec.mimeType)||"audio/webm"}):null;}
+    // The same tri-state verdict, using only local evidence from this attempt.
+    // A pause does not erase an earlier transcript or change its scoring rule.
+    async function verifyClip(){
+      await recognitionStop();
+      try{
+        if(S&&S.hearVerdict){
+          var text=recognitionTexts.join(" ");
+          var hv=S.hearVerdict(text,SOUND,String(ITEM.word||ITEM.t||""));
+          try{window.__hear={text:text,verdict:hv};}catch(e){}
+          if(hv!=="unknown")return hv;
+        }
+      }catch(e){}
+      return shapeVerdict();
+    }
+
+
+    // ---- the flow ----
+    var launched=false;
+    // practice telemetry: aggregate counts only (sound/game/duration/attempts),
+    // sent FIRST-PARTY to our own /api/track (kid pages ship zero third-party
+    // scripts — the server relays to product analytics). Never audio, never
+    // transcripts, never the child's name.
+    var T0=performance.now(), attemptsTotal=0;
+    function tele(ev,props){ try{
+      var body=JSON.stringify({e:ev,p:props||{},fid:(S&&S.fid)?S.fid():""});
+      if(navigator.sendBeacon) navigator.sendBeacon("/api/track",body);
+      else fetch("/api/track",{method:"POST",headers:{"Content-Type":"application/json"},body:body,keepalive:true}).catch(function(){});
+    }catch(e){} }
+    function logV(v){
+      if(DEMO_REPLAY || reps<=0 || v==="unknown")return;
+      if(S&&S.logAttempt)S.logAttempt({game:"charge",sound:SOUND,pass:v==="pass",reps:reps,word:String(ITEM.word||ITEM.t).toLowerCase()});
+    }
+    async function burstAndVerify(n){
+      var save=NEED;
+      while(await practiceReady()){
+        // No glowing mic here: it lights when the window is open and the room
+        // measured (listenReady), not before Echo's prompt or the quiet gap.
+        NEED=n||save;turnPhase="practice";updateTurn();
+        try{$("sayLbl").textContent="Say";$("leo").src="/coach/echo/echo-listening.svg";}catch(e){}
+        if(!(await startEngine()) || !(await practiceReady())){NEED=save;return null;}
+        NEED=save;
+        // Even a native transcript cannot manufacture a try when the mic found
+        // no sustained speech. No outcomes, totals, clips, coaching or rewards.
+        if(reps===0){if(await showQuiet())continue;return null;}
+        turnPhase="checking";micGo(false);$("gpState").textContent="";
+        var l=$("leo");l.classList.add("think");
+        var v=await verifyClip();
+        if(!(await practiceReady()))return null;
+        l.classList.remove("think");
+        if(v==="unknown"){if(await showQuiet())continue;return null;}
+        anyReps=true;attemptsTotal+=reps;logV(v);
+        if(!DEMO_REPLAY){
+          if(S&&S.bumpReps)S.bumpReps(reps);
+          if(isDaily&&run){run.tries=(run.tries||0)+reps;runSave(run);}
+        }
+        lastVerdict=v;return v;
+      }
+      NEED=save;return null;
+    }
+    var lastVerdict="unknown";
+    // First-ever mic ask gets a primer BEFORE the browser prompt: what Echo
+    // hears and what happens to it, in parent-readable words. Skipped forever
+    // once permission is granted (or after the first successful open).
+    function micPrimer(){
+      return Promise.resolve().then(function(){
+        try{ if(localStorage.getItem("sona.micok")==="1") return; }catch(e){}
+        var q=(navigator.permissions&&navigator.permissions.query)?navigator.permissions.query({name:"microphone"}).catch(function(){return null;}):Promise.resolve(null);
+        return q.then(function(st){
+          if(st&&st.state==="granted"){ try{ localStorage.setItem("sona.micok","1"); }catch(e){} return; }
+          return new Promise(function(res){
+            $("micPrime").classList.add("show");
+            $("micPrimeBtn").onclick=function(){
+              if(practicePaused || practiceClosed || document.hidden)return;
+              $("micPrime").classList.remove("show"); res();
+            };
+            // soft decline: a parent who isn't ready leaves WITHOUT burning the
+            // OS prompt (a denied OS dialog is near-unrecoverable) — the primer
+            // simply asks again next time.
+            // ...but a silent bounce home left a child staring at locked games
+            // with no idea why (the Aug 10 review's dead end). Echo says one
+            // line first, so the decline is a choice with an explanation rather
+            // than a door closing. Still no OS prompt, still no sona.micok:
+            // the primer asks again next time exactly as before.
+            var sk=$("micPrimeSkip"); if(sk) sk.onclick=function(){
+              if(practicePaused || practiceClosed || document.hidden)return;
+              var card=$("micPrime").querySelector(".ovlCard");
+              if(!card){ location.href="/today.html"; return; }
+              card.innerHTML='<img class="ovlEcho" src="/coach/echo/echo-idle.svg" alt="" />'
+                +'<h2>That\'s okay!</h2>'
+                +'<p style="font-weight:800;font-size:13.5px;color:var(--muted);line-height:1.5;">Echo needs to hear you to play the games — we\'ll ask again next time you\'re ready.</p>'
+                +'<p style="font-weight:800;font-size:11.5px;color:var(--muted);line-height:1.5;">Grown-ups: you can turn the microphone on whenever you like, from this screen or your phone\'s Settings.</p>'
+                +'<button class="btn" id="micByeBtn">Okay</button>';
+              var b=card.querySelector("#micByeBtn");
+              if(b) b.onclick=goPracticeHome;
+              practiceDelay(8000).then(function(ready){ if(ready&&$("micPrime").classList.contains("show")){goPracticeHome();} });
+            };
+          });
+        });
+      });
+    }
+    // No story card before a round. The games are the games: a child taps in
+    // and practices. Story beats used to land here (STORY1, then per-house in
+    // CITY1) and they bought a card the child had to sit through every round.
+    // The one forward-looking line survives on the WIN overlay, where it costs
+    // nothing and still gives a reason to come back tomorrow.
+    async function flow(){
+      // The primer explains the mic and hands STRAIGHT to the OS prompt —
+      // anything in between and the browser dialog appears seconds after the
+      // tap that asked for it.
+      await micPrimer();
+      if(!(await acquirePracticeMic()))return;
+      // HEAR1: the speech-recognition permission is its own OS dialog on the
+      // shell. Asked AFTER the mic grant, deliberately — the mic prompt must
+      // ride directly on the primer tap (storytest pins that), and the mic
+      // dialog leading also reads sanely to a parent: hear first, then
+      // understand. No-op on web; denial just means spectral-only verdicts.
+      try{ if(S&&S.speechPerm&&S.isNativeApp&&S.isNativeApp()) S.speechPerm(); }catch(e){}
+      tele("practice started",{sound:SOUND,game:GMETA.n});
+      // Mark the demonstration as UNDER WAY the moment real practice starts,
+      // so a refresh, a back-swipe or a locked screen resumes it instead of
+      // looking like a family who never began. demoStart() is idempotent.
+      try{
+        if(S&&S.demoStart&&!(S.demoDone&&S.demoDone())){
+          var firstTime=!S.demoState().started;
+          S.demoStart();
+          // paired with "demo completed", this is the one number that says
+          // whether the demonstration actually demonstrates anything
+          if(firstTime) tele("demo started",{sound:SOUND});
+        }
+      }catch(e){}
+      // ROOM FLOOR: the one moment the room is known to be quiet — the mic
+      // is open and nobody has been asked to say anything yet.
+      await measureRoom();
+      if(!(await practiceReady()))return;
+      // Echo speaks the prompt ONCE into a closed mic (24 Sep 2026). The mic
+      // opened above so the permission dialog rides on the grown-up's tap
+      // (and the room is measured on it); the prompt's own playback closes it
+      // (micSilence), and the first listening window reopens it into silence
+      // once the prompt has ended.
+      await playPrompt();
+      if(!(await practiceReady()))return;
+      // 🐢 IS AVAILABLE FROM THE FIRST TRY, NOT AS A CONSOLATION PRIZE.
+      // showTurtle(true) used to live only inside the wrong-sound branch, so
+      // the child who most needed to hear the model slowly had to fail first
+      // to discover the control existed. Nothing about the model changes —
+      // same clip, same 0.7x, same ttsBegin/ttsEnd speaker guard — so a
+      // replay still cannot be counted as the child speaking, and saySlow's
+      // own `if(speaking) return` means repeated taps cannot stack.
+      showTurtle(true);
+      var v=await burstAndVerify();
+      if(v===null || !(await practiceReady()))return;
+      // One honest PASSED clip a day is kept ON-DEVICE (never uploaded) so the
+      // parent can hear first-try vs today on the Progress "Listen" shelf.
+      if(v==="pass" && reps>0 && !DEMO_REPLAY){ try{
+        // KIDS1: per-child, or one sibling's saved clip blocks the other's
+        var rk=(S&&S.kkey)?S.kkey("sona.reclast"):"sona.reclast", tdy=new Date().toDateString();
+        if(localStorage.getItem(rk)!==tdy){ var rb=clipBlob(); if(rb&&S&&S.saveRecording){ S.saveRecording({sound:SOUND,word:String(ITEM.word||ITEM.t).toLowerCase(),level:ITEM.level,blob:rb}); localStorage.setItem(rk,tdy); } }
+      }catch(e){} }
+      // SLP gating: the rung only ever advances on HONEST evidence — two clean
+      // scored rounds at the stretch level, never on mercy or offline scoring.
+      if(v==="pass" && useRung>=RUNG && S && S.recordRung && !DEMO_REPLAY){
+        try{
+          // KIDS1: rung wins belong to the child who earned them
+        var wk=(S&&S.kkey)?S.kkey("sona.rungwins."+SOUND+"."+useRung):("sona.rungwins."+SOUND+"."+useRung), w=1+(parseInt(localStorage.getItem(wk),10)||0);
+          if(w>=2){ S.recordRung(SOUND,useRung,1); localStorage.removeItem(wk); }
+          else localStorage.setItem(wk,String(w));
+        }catch(e){}
+      }
+      if(v==="fail"){
+        // The scorer really heard a different sound — the charge is NOT given
+        // away. Coach with the SLP cue (never "watch my mouth" — there is no
+        // mouth on screen), then re-try. Two honest fails still open the game
+        // (a kid is never hard-stuck) but the stats keep the truth.
+        var c=(S&&S.cue)?S.cue(SOUND):null;
+        // coaching moves INTO Echo's bubble: small cue line, huge target stays,
+        // warm retry line below. Echo drops to the idle pose while he coaches.
+        try{ $("sayLbl").textContent="Almost! "+(CUESHORT||"listen close")+" —"; }catch(e){}
+        $("gpState").textContent="Try again — you've got this!";
+        try{ var li=$("leo"); if(li&&li.src) li.src="/coach/echo/echo-idle.svg"; }catch(e){}
+        // spoken coaching drops the "— rrr!" demo (screen keeps the full tip):
+        // TTS never performs the sound, it only describes the mouth move
+        var tip=(c&&c.tip?c.tip.split("—")[0]:"").trim().replace(/[.!,]+$/,"")||("Let's try our "+soundName()+" sound again");
+        showTurtle(true); // already on since the prompt; harmless if the round stepped down
+        // Calm (24 Sep 2026): no "Hmm … !" before the tip, no "Try again!"
+        // after it. The tip itself is Rachel's CUES text, word for word.
+        await say("Let's try that one again. "+tip+".");
+        if(!(await practiceReady()))return;
+        v=await burstAndVerify(3);
+        if(v===null || !(await practiceReady()))return;
+        if(v==="fail" && useRung>0){
+          // Step-down: two honest misses → Echo's OWN idea is an easier
+          // same-sound target from one rung below, so the round still ends
+          // on a real, honestly-scored win instead of a shrug. Framed as fun,
+          // never as demotion. The rung can't advance from down here (the
+          // stretch gating above already ran), and next round returns to the
+          // rotation's normal level.
+          var easier=[];
+          try{ easier=(S.ladderContent(SOUND,useRung-1)||[]).filter(function(it){return it&&it.t;}); }catch(e){}
+          if(easier.length){
+            ITEM=easier[0];
+            paintCard();
+            try{ $("sayLbl").textContent="Echo's idea — say"; }catch(e){}
+            $("gpState").textContent="An easier one — you've got this!";
+            // Calm (24 Sep 2026), and "this one" rather than "something
+            // easier": the child hears an idea, not a demotion. The target
+            // itself (ITEM.say||ITEM.t) is untouched.
+            await say("I have an idea. Let's try this one. "+(ITEM.level==="isolation"?("Make your "+soundName()+" sound"):("Say "+(ITEM.say||ITEM.t)))+".");
+            if(!(await practiceReady()))return;
+            v=await burstAndVerify(3);
+            if(v===null || !(await practiceReady()))return;
+            if(v==="pass"){ $("gpState").textContent="YES! That's the one!"; await say((S&&S.praiseLine)?S.praiseLine():"You did it."); }
+          }
+        }
+        if(v==="fail"){
+          await say("Good practicing. Let's play.");
+        }
+      }
+      if(!(await practiceReady()))return;
+      // real reps happened → the rotation moves (skip button and mic-denied
+      // rounds never count; quality already gated the rung above).
+      // The daily run counts too — it is how most children practice, and while
+      // it was excluded the ring, the chest and the sound rotation were frozen
+      // for every kid on the daily path. A round advances the ring at most
+      // once, so a refresh or a ?banked= re-entry can't double-count it.
+      var ringDoneNow=false;
+      var roundKey=isDaily?(run?run.round:0):-1;
+      var alreadyRinged=isDaily&&run&&run.ringed===roundKey;
+      if(!DEMO_REPLAY && anyReps && lastVerdict!=="unknown" && !alreadyRinged && S && S.rotAdvance){ try{
+        var preDone=S.todayRing&&S.todayRing().done;
+        S.rotAdvance();
+        ringDoneNow=!preDone&&S.todayRing&&S.todayRing().done;
+        if(isDaily&&run){ run.ringed=roundKey; runSave(run); }
+      }catch(e){} }
+      // SILENCE IS NEVER A REP — and it must not be a reward either. The
+      // rotation was already guarded by anyReps, but the GAME launched no
+      // matter what, so a child could grant the mic, say nothing for twenty
+      // seconds and still be handed the arcade round. Practice is the power
+      // source, never the penalty: a quiet child isn't scolded, they're just
+      // asked once more, and the meter doesn't pretend it filled.
+      if(!anyReps){ showQuiet(); return; }
+      // Save the earned step before the chest. Home must not make a child
+      // repeat this practice or lose an unopened sticker chest.
+      if(isDaily&&run){run.ready={round:run.round,chest:null};runSave(run);}
+      launchGame();
+    }
+    // three-beat treasure chest on completing the daily goal ring: tease
+    // (wobble) → the child taps ×3 → burst + sticker reveal → claim, then the
+    // final game launches. Earned by SHOWING UP (mercy rounds included) —
+    // honest scoring gates stars and rungs, never the chest. Stickers deal in
+    // fixed sticker-book order: every open wins, no rarity, no duds.
+    var chestTaps=0;
+    // WIN MOMENTS: Echo speaks ~600ms after the chime, not on top of it
+    // (24 Sep 2026). A voice landing on a chime and confetti was the loud
+    // "snap" at every win. `still` re-checks the moment is still on screen.
+    // Counted from when the chime really starts (chimeAt): sfx may hold it
+    // back while the phone settles from the mic.
+    var AFTER_CHIME_MS=600;
+    function sayAfterChime(text,still){
+      if(mutedSpeech())return Promise.resolve();
+      return practiceDelay(Math.max(0,chimeAt+AFTER_CHIME_MS-performance.now())).then(function(ready){if(ready&&(!still||still()))return say(text);});
+    }
+    function showChestReveal(stk){
+      $("chestStage").style.display="none";
+      $("chestStk").textContent=stk?stk.e:"⭐";
+      $("chestName").textContent=stk?("You found the "+stk.name+" sticker!"):"Superstar!";
+      $("chestReveal").style.display="block";
+      $("chestClaim").focus({preventScroll:true});
+    }
+    function showChest(next){
+      var saved=isDaily&&run&&run.finishing?run.finishChest:null;
+      chestTaps=saved?Math.max(0,Math.min(3,saved.taps|0)):0;
+      $("chestOvl").classList.add("show");
+      $("chestBox").focus({preventScroll:true});
+      sfx("complete");
+      if(saved&&saved.opened){chestTaps=3;showChestReveal(saved.sticker);}
+      else if(chestTaps)$("chestCap").textContent=chestTaps===1?"Tap, tap!":"One more tap!";
+      $("chestBox").onclick=function(){
+        if(practicePaused || practiceClosed || document.hidden || chestTaps>=3)return;
+        chestTaps++;
+        sfx("tap");
+        var box=$("chestBox");
+        box.classList.remove("thump"); void box.offsetWidth; box.classList.add("thump");
+        if(saved){saved.taps=chestTaps;runSave(run);}
+        if(chestTaps<3){ $("chestCap").textContent=(chestTaps===1)?"Tap, tap!":"One more tap!"; return; }
+        box.onclick=null;
+        var stk=null; try{ stk=(!DEMO_REPLAY&&S&&S.awardNextSticker)?S.awardNextSticker():null; }catch(e){}
+        if(saved){saved.opened=true;saved.sticker=stk;runSave(run);}
+        try{ if(S&&S.confetti)S.confetti(); }catch(e){}
+        showChestReveal(stk);
+        sayAfterChime("Look what we found.",function(){return $("chestOvl").classList.contains("show");});
+      };
+      $("chestClaim").onclick=function(){
+        if(practicePaused || practiceClosed || document.hidden || chestTaps<3)return;
+        $("chestClaim").onclick=null;
+        if(saved){run.finishBeat="done";runSave(run);}
+        $("chestOvl").classList.remove("show"); next();
+      };
+    }
+
+    // A round that heard nothing ends here rather than at the arcade. Warm on
+    // purpose — the child gets Echo asking again, not a failure screen.
+    function showQuiet(cause){
+      stopMic();cancelPracticeAudio();micGo(false);turnPhase="quiet";updateTurn();
+      var q=$("quietOvl");
+      if(!q){
+        q=document.createElement("div");q.id="quietOvl";q.className="ovl";
+        q.setAttribute("role","dialog");q.setAttribute("aria-modal","true");q.setAttribute("aria-labelledby","quietTitle");
+        q.innerHTML='<div class="ovlCard quiet-card"><img src="/coach/echo/echo-listening.svg" alt="Echo"/><h2 id="quietTitle" tabindex="-1"></h2><p id="quietCopy"></p><button class="btn" id="quietGo">Try again</button><button class="btn ghost" id="quietLater">Maybe later</button></div>';
+        document.body.appendChild(q);
+      }
+      var microphone=cause==="microphone";
+      $("quietTitle").textContent=microphone?"Let's get a grown-up":"I couldn't hear you!";
+      $("quietCopy").textContent=microphone?"Another app may be using the microphone. Close it, then try again.":"Say it big — I'm all ears!";
+      q.classList.add("show");$("app").inert=true;$("quietGo").focus({preventScroll:true});
+      // Word for word, "!" and all, while every other line went calm (24 Sep
+      // 2026): "Say it big" tells a child how to produce the sound, so any
+      // rewording is Rachel's call. The mic is already closed (stopMic above).
+      if(!microphone)say("I couldn't hear you! Say it big — I'm all ears!");
+      return new Promise(function(resolve){
+        function finish(retry){q.classList.remove("show");$("app").inert=false;$("quietGo").onclick=null;$("quietLater").onclick=null;resolve(retry);}
+        $("quietGo").onclick=function(){if(practicePaused||practiceClosed||document.hidden)return;cancelPracticeAudio();finish(true);};
+        $("quietLater").onclick=function(){if(practicePaused||practiceClosed||document.hidden)return;finish(false);goPracticeHome();};
+        q.onkeydown=function(e){if(e.key!=="Tab")return;var first=$("quietGo"),last=$("quietLater");if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}};
+      });
+    }
+    async function launchGame(){
+      if(!(await practiceReady()))return;
+      if(launched)return; launched=true;
+      if(anyReps) tele("practice completed",{sound:SOUND,game:GMETA.n,duration_seconds:Math.round((performance.now()-T0)/1000),attempts_count:attemptsTotal});
+      stopMic(); turnPhase="game"; updateTurn(); try{ showTurtle(false); }catch(e){}
+      paintReps(NEED);
+      // charged (5/5): ring the build, celebrate pose, GOOO line, launch bar
+      try{ var _br=buildRoot(); if(_br) _br.classList.add("ringed"); }catch(e){}
+      try{ var _lc=$("leo"); if(_lc&&_lc.src){ _lc.src="/coach/echo/echo-celebrate.svg"; _lc.style.width="110px"; _lc.style.height="110px"; } }catch(e){}
+      try{ $("bMain").textContent=GMETA.simple?"Let’s play together!":"Here we go!"; $("gpState").textContent=""; }catch(e){}
+      try{ $("micWrap").style.display="none"; $("replayLabel").hidden=true; var _lb=$("launchBar"); _lb.innerHTML="<span id=launchArt aria-hidden=true></span><span>"+GMETA.n+"</span>";var art=S.gameSticker(GAME);S.paintSticker($("launchArt"),art[0],art[1]); _lb.classList.add("show"); }catch(e){}
+      sfx("complete"); try{ if(S&&S.confetti)S.confetti(); }catch(e){}
+      try{ sessionStorage.setItem("sona.play.token",GAME); sessionStorage.setItem("sona.boost.sound",SOUND); sessionStorage.removeItem("sona.play.active"); }catch(e){}
+      if(isDaily&&run){ run.pending=true; runSave(run); }
+      if(!isDaily&&!DEMO_REPLAY&&attemptsTotal>0&&S.recordSession)S.recordSession({activity:"practice",sound:SOUND,tries:attemptsTotal});
+      // Calm, and after the chime rather than on top of it (24 Sep 2026).
+      if(lastVerdict==="pass")await sayAfterChime("You did it. Let's play.");
+      if(await practiceDelay(1200)){
+        await closePractice(); location.href="/"+GAME+"?from=charge"+(isDaily?"&daily=1":"");
+      }
+    }
+
+    // ---- daily overlays ----
+    function showPlayed(){
+      practiceTerminal=true;
+      var d=S.dailyInfo();
+      $("playedSub").textContent="Today's arcade score: "+d.score+" · Best arcade score: "+d.best+". Choose another game whenever you're ready.";
+      $("playedOvl").classList.add("show");
+    }
+    $("playedArcade").onclick=function(){ location.href="/activities.html"; };
+    $("playedHome").onclick=function(){ location.href="/today.html"; };
+
+    function finishRun(){
+      practiceTerminal=false;stopMic();turnPhase="finish";
+      var completedRounds=Math.min(run.round,DAILY_SEQ.length);
+      if(!run.finishRecorded){
+        if(!DEMO_REPLAY){
+          S.dailyFinish(run.sum);
+          if(S.recordSession&&run.tries>0)S.recordSession({activity:"adventure",rounds:completedRounds,sound:SOUND,tries:run.tries,arcadeScore:run.sum});
+          if(run.tries>0){if(S.markLevelDone)S.markLevelDone(LEVEL);if(S.addCoins)S.addCoins(10+Math.min(20,(run.sum/10)|0));}
+          if(S.episodeAdvance)S.episodeAdvance();
+        }
+        run.finishRecorded=true;
+        if(S.demoFinish)S.demoFinish();
+      }
+      run.finishing=true;
+      if(!run.finishChest)run.finishChest={taps:0,opened:false,sticker:null};
+      if(!run.finishBeat)run.finishBeat="celebrate";
+      runSave(run);
+      $("app").hidden=true;$("app").setAttribute("aria-hidden","true");
+      function showDone(){
+        run.finishBeat="done";runSave(run);
+        $("runTitle").textContent="See you next time!";
+        $("runPractice").textContent="I'll have another adventure tomorrow.";
+        $("runChest").hidden=true;$("runDone").hidden=false;
+        var ask=!!(S.planEligible&&S.planEligible());
+        $("runDone").textContent=ask?"Show a grown-up →":"Done";
+        if(ask)$("runPractice").textContent="Go show them what you just practiced!";
+        $("runOvl").classList.add("show");$("runDone").focus({preventScroll:true});
+      }
+      function openChest(){
+        if(practicePaused||practiceClosed||document.hidden)return;
+        run.finishBeat="chest";runSave(run);$("runOvl").classList.remove("show");showChest(showDone);
+      }
+      $("runChest").onclick=openChest;
+      $("runDone").onclick=function(){
+        if(practicePaused||practiceClosed||document.hidden)return;
+        run.active=false;run.finishing=false;runSave(run);
+        var ask=!!(S.planEligible&&S.planEligible());
+        closePractice().then(function(){location.href=ask?"/subscribe.html?first=1":"/today.html";});
+      };
+      if(run.finishBeat==="done"){showDone();return;}
+      if(run.finishBeat==="chest"){openChest();return;}
+      $("runTitle").textContent="Adventure complete!";
+      $("runPractice").textContent="We finished the whole adventure!";
+      $("runOvl").classList.add("show");
+      sfx("complete");if(S.confetti)S.confetti();
+      sayAfterChime("We finished the whole adventure.",function(){return run.finishBeat==="celebrate";});
+      try{$("runTitle").focus({preventScroll:true});}catch(e){$("runTitle").focus();}
+      $("runOvl").querySelector(".ovlCard").scrollTop=0;
+    }
+    $("runOvl").onkeydown=function(e){
+      if(e.key!=="Tab"&&e.keyCode!==9)return;
+      var button=$("runDone").hidden?$("runChest"):$("runDone");
+      e.preventDefault();button.focus();
+    };
+
+    // ---- chrome ----
+    function stopMic(){
+      // A room reading in progress is on this stream: it ends with it.
+      if(roomProbe)roomProbe();
+      var live=false;
+      try{if(micStream)micStream.getTracks().forEach(function(t){if(t.readyState==="live")live=true;t.stop();});}catch(e){}
+      // When the phone last let go of the mic: nothing of Sona's sounds for
+      // SETTLE_MS after it (micSettled, sfx).
+      if(live)micClosedAt=performance.now();
+      micStream=null; micOk=false;
+    }
+    // grown-up escape: LONG-PRESS (2s) the ✕ skips practice into the game
+    // (replaces the kid-visible skip button). A normal tap still exits.
+    // The close control used to launch the game outright on a 2-second hold —
+    // an undocumented bypass a child finds by resting a thumb on it. Close is
+    // just close now.
+    $("close").onclick=goPracticeHome;
+    // Lock / app switch / bfcache entry all release the mic and wait for an
+    // explicit Resume. A foreground event alone must never turn it back on.
+    if(S&&S.onBackground) S.onBackground(pausePractice);
+    else {
+      document.addEventListener("visibilitychange",function(){if(document.hidden)pausePractice();});
+      window.addEventListener("pagehide",pausePractice);
+    }
+
+    // Boot and resume share a single flow; resuming never starts another round.
+    var booted=false;
+    async function boot(){
+      if(booted)return; booted=true;
+      if(!(await practiceReady()))return;
+      if(finishedNow){finishRun();return;}
+      if(isDaily && !(run&&run.active) && S&&S.dailyInfo&&S.dailyInfo().playedToday){showPlayed();return;}
+      // Going Home during the earned game's loading step keeps that game earned.
+      if(isDaily&&run&&run.active){
+        if(run.ready&&run.ready.round===run.round&&run.ready.chest){
+          // Old versions earned the chest before game five. Preserve its taps
+          // and sticker, but present it at the end of this same adventure.
+          run.finishChest=run.ready.chest;run.ready.chest=null;runSave(run);
+        }
+        if(run.pending||(run.ready&&run.ready.round===run.round)){launchGame();return;}
+      }
+      if(isDaily&&run&&GMETA.simple){
+        if(S.demoStart)S.demoStart();
+        run.ready={round:run.round,chest:null};runSave(run);launchGame();return;
+      }
+      getCtx(); flow();
+    }
+    document.body.addEventListener("pointerdown",function(){
+      if(practicePaused || practiceClosed || document.hidden)return;
+      try{getCtx();}catch(e){}
+    },{passive:true});
+    updateTurn();
+    if(finishedNow || (isDaily && !(run&&run.active)))boot();
+    else if(!catalogBlocked)setTimeout(boot,300);
+  </script>
+</body>
+</html>

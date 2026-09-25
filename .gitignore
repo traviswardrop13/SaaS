@@ -7,3 +7,14 @@ out
 .vercel
 next-env.d.ts
 tsconfig.tsbuildinfo
+
+# native (Capacitor) — generated on your Mac
+/ios
+/android
+
+# Claude Code agent worktrees + local state
+.claude/
+
+# Local QA / scratch tooling (screenshots, smoke tests) — never ship
+scratchpad/
+SONA_BUNDLE.md

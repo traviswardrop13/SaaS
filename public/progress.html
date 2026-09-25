@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Sona — Progress</title>
+  <link href="/fonts.css" rel="stylesheet">
+  <link rel="stylesheet" href="/sona.css" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <meta name="theme-color" content="#fff6e9" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Sona" />
+  <style>
+    /* standard 3-tab bottom nav (identical to Today / Play) */
+    .nav{position:fixed;bottom:0;left:0;right:0;max-width:480px;margin:0 auto;background:#fff;border-top:1px solid #e8eef4;display:flex;justify-content:space-around;padding:9px 0 calc(9px + env(safe-area-inset-bottom));z-index:9;}
+    .nav a{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;font-weight:800;color:#9fb0c0;text-decoration:none;}
+    .nav a .ni{font-size:21px;} .nav a.on{color:var(--blue-d);}
+    .week{display:flex;gap:8px;margin-top:12px;}
+    .gbtn{border:2px solid #e2ecf7;background:#fff;border-radius:12px;padding:8px 14px;font-family:"Baloo 2";font-weight:800;font-size:13.5px;color:#6b86a3;cursor:pointer;}
+    .gbtn.on{background:#58cc02;border-color:#58cc02;color:#fff;}
+    .day{flex:1;text-align:center;}
+    .day .d{position:relative;width:34px;height:34px;margin:0 auto 5px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+      font-size:16px;background:#eef3fb;color:var(--muted);}
+    .day .d.on{background:var(--orange);color:#fff;box-shadow:0 4px 0 0 var(--orange-d);}
+    .day .lbl{font-size:11px;font-weight:800;color:var(--muted);}
+    .ms{display:flex;justify-content:space-between;align-items:center;margin:14px 0 5px;font-weight:800;}
+    .ms .stars{color:var(--orange);letter-spacing:1px;}
+    /* accuracy by sound */
+    .accrow{padding:13px 0;border-top:1px solid var(--line);}
+    .accrow:first-child{border-top:none;}
+    .acctop{display:flex;align-items:center;gap:8px;}
+    .accname{font-family:"Baloo 2";font-weight:800;font-size:16px;}
+    .accpct{margin-left:auto;font-family:"Baloo 2";font-weight:800;font-size:20px;color:#46a302;}
+    .accchip{font-weight:800;font-size:11.5px;border-radius:99px;padding:3px 9px;}
+    .accchip.up{background:#eafce9;color:#46a302;} .accchip.flat{background:#eef3fb;color:#6b86a3;}
+    .accsub{font-weight:700;font-size:12px;color:var(--muted);margin-top:3px;}
+    .spark{display:flex;align-items:flex-end;gap:3px;height:36px;margin-top:9px;}
+    .spark i{flex:1;max-width:16px;border-radius:3px 3px 0 0;min-height:4px;background:#cfe0c4;}
+    .spark i.hi{background:#7ac96a;} .spark i.mid{background:#ffd36a;} .spark i.lo{background:#c8d9ec;}
+    .poschips{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px;}
+    .poschip{font-weight:800;font-size:11px;border-radius:99px;padding:3px 8px;background:#eef3fb;color:#46627a;}
+    /* growth-only palette: "just starting" is a calm blue-gray, never red */
+    .poschip.hi{background:#eafce9;color:#46a302;} .poschip.mid{background:#fff5e0;color:#b07908;} .poschip.lo{background:#edf2f9;color:#5b7691;}
+
+    /* ═══════════════════════════════════════════════════════════════════
+       PROGRESS — visual polish (CSS-only, additive). Builds on /sona.css
+       shared system. Reuses sona-slide-up / sona-floatY / sona-twinkle
+       names + the brand palette. Animates transform/opacity only.
+       ═══════════════════════════════════════════════════════════════════ */
+
+    /* ── Weekly grid: proper activity circles. Filled = colored + check,
+       empty = light ring. The dot text ('🔥' / '·') from JS is hidden so
+       the CSS treatment reads cleanly. ── */
+    .week .day .d{
+      font-size:0;background:#fff;border:2px solid #e3ecf8;color:transparent;
+      box-shadow:none;transition:transform .2s ease;
+    }
+    .week .day .d::before{ /* inner light fill so empty reads as a soft ring */
+      content:"";position:absolute;inset:3px;border-radius:50%;
+      background:radial-gradient(circle at 50% 38%,#f6f9ff,#eef3fb);
+    }
+    .week .day .d.on{
+      background:linear-gradient(160deg,#ffb072,var(--orange));
+      border-color:transparent;
+      box-shadow:0 4px 0 0 var(--orange-d),0 6px 12px rgba(255,138,61,.35);
+    }
+    .week .day .d.on::before{ /* check mark drawn from a rotated box */
+      content:"";position:absolute;inset:auto;left:11px;top:7px;width:7px;height:13px;
+      border:solid #fff;border-width:0 3px 3px 0;border-radius:1px;
+      transform:rotate(45deg);background:none;
+    }
+    .week .day .d.on:hover{transform:translateY(-2px);}
+    .week .day .lbl{transition:color .2s;}
+
+    /* ── Accuracy by sound: clean gradient bars + rounded caps. Values are
+       set inline by JS (height %); we only restyle the bar fills. ── */
+    .accpct{text-shadow:0 1px 0 rgba(70,163,2,.08);}
+    .spark{gap:4px;height:38px;padding:2px 0;}
+    .spark i{
+      max-width:18px;border-radius:5px 5px 2px 2px;min-height:5px;
+      will-change:transform;transform-origin:bottom;
+      animation:sona-bar-rise .55s cubic-bezier(.2,.9,.3,1) both;
+    }
+    .spark i.hi{background:linear-gradient(180deg,#9be08a,#6bbf57);}
+    .spark i.mid{background:linear-gradient(180deg,#ffe08a,#ffc94d);}
+    .spark i.lo{background:linear-gradient(180deg,#d3e2f2,#aac4de);}
+    .spark i:nth-child(2){animation-delay:.03s}.spark i:nth-child(3){animation-delay:.06s}
+    .spark i:nth-child(4){animation-delay:.09s}.spark i:nth-child(5){animation-delay:.12s}
+    .spark i:nth-child(6){animation-delay:.15s}.spark i:nth-child(7){animation-delay:.18s}
+    .spark i:nth-child(n+8){animation-delay:.2s}
+    @keyframes sona-bar-rise{from{transform:scaleY(0);opacity:0}to{transform:scaleY(1);opacity:1}}
+    /* prepared bar styling for any future horizontal accuracy bars */
+    .accrow .bar{height:13px;}
+    .accrow .bar > span{background:linear-gradient(90deg,#7ac96a,#46a302);border-radius:99px;
+      transition:width .8s cubic-bezier(.2,.9,.3,1);}
+
+    .recording-row{border-top:1px solid var(--line);padding:14px 0;}
+    .recording-pair{display:flex;gap:10px;flex-wrap:wrap;margin-top:8px;}
+    .recording-clip{flex:1;min-width:120px;padding:12px;background:#f6f8fb;border:1px solid var(--line);border-radius:14px;}
+    .recording-clip .btn{width:100%;padding:10px 8px;font-size:13px;min-height:44px;}
+    .recording-clip small{display:block;margin:0 0 8px;color:var(--muted);font-weight:800;}
+    .recording-ghost{color:#7b8c9c;border-style:dashed;background:#fafbfc;}
+    .recording-share{margin-top:8px;}
+    .share-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px;}
+    .share-actions .btn{width:auto;flex:1;min-width:150px;padding:12px 14px;min-height:44px;}
+    #shareStatus{font-size:13px;line-height:1.5;}
+    #summaryText{width:100%;min-height:180px;margin-top:12px;font:inherit;}
+    #volReps{font-family:"Baloo 2";font-weight:800;font-size:36px;color:var(--orange-d);}
+    #clearest{border-top:1px solid var(--line);padding-top:12px;margin-top:14px;font-weight:800;}
+
+    /* ── Empty states: turn the plain <p class="muted"> that JS injects
+       into the data containers into a friendly speech bubble with Echo.
+       We can't add DOM, so the avatar + bubble tail are pure pseudo-elements.
+       Scoped to #acc/#recList/#recent/#bysound/#firsts so the page's intro
+       copy and the footer link are never touched. These containers only ever
+       hold an empty-state <p> OR real data rows (divs), so the match is exact. */
+    #acc > p.muted,
+    #recList > p.muted,
+    #recent > p.muted,
+    #firsts > p.muted,
+    #bysound > p.muted{
+      position:relative;
+      margin:34px auto 6px;max-width:340px;
+      padding:16px 18px;
+      text-align:center;font-weight:800;font-size:14.5px;color:var(--muted);
+      background:linear-gradient(170deg,#fffdf8,#fff3e3);
+      border:1px solid var(--line);border-radius:18px;
+      box-shadow:0 6px 18px rgba(15,39,66,.06);
+      animation:sona-fade-in .5s ease both;
+    }
+    /* Echo, floating just above the bubble */
+    #acc > p.muted::before,
+    #recList > p.muted::before,
+    #recent > p.muted::before,
+    #firsts > p.muted::before,
+    #bysound > p.muted::before{
+      content:"";
+      position:absolute;left:50%;top:-26px;transform:translateX(-50%);
+      width:46px;height:46px;
+      background-image:url("/coach/echo/echo-avatar.svg"),linear-gradient(160deg,#ffd9b0,#ffedd5);
+      background-size:32px 32px,cover;background-position:center,center;background-repeat:no-repeat;
+      border-radius:50%;box-shadow:0 5px 12px rgba(239,111,35,.22);
+      animation:sona-floatY 3.4s ease-in-out infinite;will-change:transform;
+    }
+    /* speech-bubble tail pointing up toward Echo */
+    #acc > p.muted::after,
+    #recList > p.muted::after,
+    #recent > p.muted::after,
+    #firsts > p.muted::after,
+    #bysound > p.muted::after{
+      content:"";position:absolute;left:50%;top:-8px;transform:translateX(-50%) rotate(45deg);
+      width:16px;height:16px;background:#fffdf8;
+      border-left:1px solid var(--line);border-top:1px solid var(--line);border-radius:3px;
+    }
+
+    /* ── Share / Print button: more prominent with a subtle warm gradient.
+       It's .btn.ghost (flat white by default) — promote to a soft blue. ── */
+    #share.btn.ghost{
+      color:#fff;font-size:16px;
+      background:linear-gradient(180deg,#ffa05a,var(--orange));
+      box-shadow:0 5px 0 0 var(--orange-d),0 8px 18px rgba(255,138,61,.28);
+    }
+    #share.btn.ghost:hover{filter:brightness(1.04);}
+    #share.btn.ghost:active{transform:translateY(3px);box-shadow:0 2px 0 0 var(--orange-d);}
+    /* the existing "Send progress to my SLP" CTA: a gentle glow to draw the eye */
+    #sendProg{box-shadow:0 5px 0 0 var(--orange-d),0 8px 18px rgba(255,138,61,.26);}
+
+    /* ── Stat-tile baselines: this week vs last week, small and gray under
+       the lifetime number (Whoop-style self-comparison, growth-only). ── */
+    .stat .wk{font-size:10.5px;font-weight:800;color:var(--muted);margin-top:4px;line-height:1.4;}
+    .stat .wk:empty{display:none;}
+    .stat .wk .up{color:#46a302;}
+
+    /* ── Growth words on accuracy: plain word first, number second. ── */
+    .accpct{font-size:16px;}
+    .accpct .accnum{font-size:13px;color:var(--muted);font-weight:800;}
+
+    /* ── "How scoring works" explainer card (expandable, parent language) ── */
+    .howhead{display:flex;align-items:center;gap:12px;width:100%;background:none;border:none;padding:0;cursor:pointer;text-align:left;font-family:inherit;color:var(--ink);}
+    .howshield{width:40px;height:40px;flex:none;border-radius:50%;background:linear-gradient(160deg,#eaf4ff,#d8ecff);display:flex;align-items:center;justify-content:center;font-size:20px;}
+    .howttl{font-family:"Baloo 2";font-weight:800;font-size:17px;display:flex;flex-direction:column;line-height:1.25;}
+    .howsub{font-family:"Nunito";font-weight:800;font-size:12px;color:var(--muted);}
+    .howarrow{margin-left:auto;font-size:16px;color:#9fb0c0;transition:transform .25s ease;}
+    .howbody{margin-top:12px;border-top:1px solid var(--line);padding-top:4px;animation:sona-fade-in .35s ease both;}
+    .howbody p{font-size:13.5px;font-weight:700;color:#46627a;line-height:1.55;margin:10px 0 0;}
+    .howbody p b{color:var(--ink);}
+    .howby{display:flex;align-items:center;gap:10px;margin-top:14px;padding:10px 12px;background:linear-gradient(170deg,#fbfdff,#eef5ff);border:1px solid var(--line);border-radius:14px;font-weight:800;font-size:13px;color:var(--ink);}
+    .howava{width:34px;height:34px;flex:none;border-radius:50%;background:linear-gradient(160deg,#1cb0f6,#1597d4);color:#fff;display:flex;align-items:center;justify-content:center;font-family:"Baloo 2";font-weight:800;font-size:11px;letter-spacing:.5px;}
+
+    /* ── Dated "Firsts" shelf ── */
+    .firstrow{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--line);}
+    .firstrow:first-child{border-top:none;}
+    .firstrow .fe{width:34px;height:34px;flex:none;border-radius:50%;background:linear-gradient(160deg,#fff3e8,#ffe2c8);display:flex;align-items:center;justify-content:center;font-size:16px;}
+    .firstrow b{font-family:"Baloo 2";font-weight:800;font-size:14.5px;}
+    .firstrow .fd{margin-left:auto;font-weight:800;font-size:12px;color:var(--muted);white-space:nowrap;}
+    .firstrow.next{opacity:.8;}
+    .firstrow.next .fe{background:#fff;border:2px dashed #cfdff0;}
+    .firstrow.next b{color:#6b86a3;font-weight:800;}
+
+    @media print{
+      header.app,.noprint{display:none!important;} body{background:#fff;}
+      /* keep print clean + ink-light: drop decoration & motion */
+      .row > .stat,.card{box-shadow:none!important;animation:none!important;}
+      .row > .stat::before,#recList::before{display:none!important;}
+      .spark i{animation:none!important;}
+      /* the scoring explainer prints expanded — useful context for an SLP */
+      #howBody{display:block!important;animation:none!important;}
+      .howarrow{display:none!important;}
+    }
+  </style>
+  <script>
+    // Parent gate, inline and dependency-free: runs before first paint and
+    // still protects this page if /sona.js ever fails to load. It mirrors
+    // Sona.requireGate(): the grown-ups gate (today.html) stores the pass
+    // timestamp in sessionStorage under "sona.gate.v1", valid for 10 quiet
+    // minutes, refreshed on every gated page load. No fresh pass → hidden
+    // page + straight back to the home screen with the gate open (never a
+    // scary error). Sona.requireGate() still runs later as belt-and-braces.
+    (function () {
+      function pass() {
+        try {
+          var t = parseInt(sessionStorage.getItem("sona.gate.v1"), 10);
+          var age = Date.now() - t;
+          return !!t && age >= 0 && age < 600000; // same 10-min TTL as sona.js
+        } catch (e) { return false; }
+      }
+      function check() {
+        document.documentElement.style.visibility = "hidden";
+        if (pass()) {
+          try { sessionStorage.setItem("sona.gate.v1", String(Date.now())); } catch (e) {}
+          document.documentElement.style.visibility = "";
+        } else {
+          // Carry where they were going. This guard runs BEFORE sona.js (that
+          // is the point of it — no flash of a parent page), so it cannot call
+          // Sona.gateDest; it names its own page literally instead. today.html
+          // re-checks ?to= against the allowlist on arrival, which is the side
+          // that reads an untrusted URL.
+          try { location.replace("/today.html?gate=1&to=" + encodeURIComponent("/progress.html")); } catch (e) {}
+        }
+      }
+      check();
+      // a back-swipe can restore this page from the bfcache without re-running
+      // scripts — re-check on pageshow so the inline guard holds on its own.
+      window.addEventListener("pageshow", function (ev) { if (ev.persisted) check(); });
+    })();
+  </script>
+</head>
+<body>
+  <div class="wrap" style="padding-bottom:96px;">
+    <header class="app">
+      <div class="brand"><span class="leo"><img src="/coach/echo/echo-avatar.svg" alt="Echo" /></span> Sona</div>
+      <div class="pills">
+        <a class="iconbtn" href="/today.html" title="Home" style="display:flex;align-items:center;justify-content:center;"><span class="pic-home"></span></a>
+        <a class="iconbtn" href="/settings.html" title="Settings" style="display:flex;align-items:center;justify-content:center;"><span class="pic-gear"></span></a>
+      </div>
+    </header>
+
+    <div class="card">
+      <h1 id="title">Progress</h1>
+      <p id="storyLine" style="margin-top:8px;font-weight:800;font-size:15px;color:var(--ink);line-height:1.5;"></p>
+      <p class="muted" style="margin-top:8px;">A practice snapshot, not a clinical assessment — made to share with your child's speech-language pathologist. Recordings stay on this phone unless you choose Share. Practice sounds are checked on this phone.</p>
+      <p class="muted" style="margin-top:9px;font-size:12.5px;font-weight:800;display:flex;align-items:center;gap:8px;"><img src="/coach/echo/echo-avatar.svg" alt="" style="width:22px;height:22px;flex:none;" /> Built with Rachel — licensed speech-language pathologist &amp; Sona co-founder</p>
+      <div class="share-actions noprint">
+        <button class="btn ghost" id="share" type="button">Share this week</button>
+        <button class="btn ghost" id="copySummary" type="button">Copy summary for your SLP</button>
+      </div>
+      <p id="shareStatus" class="muted noprint" role="status" aria-live="polite"></p>
+      <textarea id="summaryText" class="noprint" aria-label="Practice summary to copy" readonly hidden></textarea>
+    </div>
+
+    <div class="card" id="recordingsCard">
+      <a id="listenCard"></a><h2>Listen to their progress <svg viewBox="0 0 64 64" style="width:18px;height:18px;vertical-align:-3px"><g id="ob-headphones"><path d="M14 38v-6a18 18 0 0 1 36 0v6" fill="none" stroke="#7c88e8" stroke-width="6" stroke-linecap="round"></path><rect x="9" y="35" width="12" height="17" rx="5.5" fill="#6270d4"></rect><rect x="43" y="35" width="12" height="17" rx="5.5" fill="#6270d4"></rect><circle cx="13" cy="39" r="2" fill="#fff" opacity=".6"></circle></g></svg></h2>
+      <p class="muted" style="font-size:13px;font-weight:700;">Saved on this phone. Listen to the first and latest saved tries, or choose a clip to share.</p>
+      <div id="recList" style="margin-top:10px;"></div>
+    </div>
+
+
+    <div class="card" id="weekCard">
+      <h2>This week</h2>
+      <div><span id="volReps">0</span> <b>tries this week</b></div>
+      <p id="volLast" class="muted" style="font-size:12.5px;margin-top:2px;"></p>
+      <p class="muted" style="font-size:13px;font-weight:700;">Days with sound practice count toward the goal you choose.</p>
+      <div class="week" id="week"></div>
+      <p id="wkGoalMsg" style="font-weight:800;font-size:13.5px;margin-top:10px;color:#6b86a3;"></p>
+      <div id="wkGoalPick" style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
+        <button class="gbtn" data-g="3">3 days/wk</button>
+        <button class="gbtn" data-g="5">5 days/wk</button>
+        <button class="gbtn" data-g="7">Every day</button>
+      </div>
+      <p id="clearest"></p>
+    </div>
+
+    <div class="card" id="accCard">
+      <h2>Accuracy by sound <span class="pic-trend"></span></h2>
+      <p class="muted" style="font-size:13px;font-weight:700;">One sound check per practice burst, not a score for every try. Percentages appear after at least 10 tries over two days.</p>
+      <div id="acc" style="margin-top:6px;"></div>
+      <button class="btn noprint" id="sendProg" style="display:none;margin-top:14px;width:auto;padding:12px 20px;"><svg viewBox="0 0 64 64" style="width:18px;height:18px;vertical-align:-4px"><rect x="8" y="16" width="48" height="34" rx="6" fill="none" stroke="#fff" stroke-width="3.5"/><path d="M10 20l22 17 22-17" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/></svg>&nbsp;&nbsp;Send progress to my SLP</button>
+    </div>
+
+    <!-- Honest-scoring explainer — plain parent language, expandable, SLP-reviewed.
+         Turns "why didn't that count?" from a support ticket into the differentiator. -->
+    <div class="card" id="howCard">
+      <button type="button" id="howToggle" class="howhead" aria-expanded="false" aria-controls="howBody">
+        <span class="howshield"><svg viewBox="0 0 64 64" style="width:20px;height:20px;vertical-align:-3px"><g id="ob-hero"><path d="M32 5l19 6v15q0 17-19 27-19-10-19-27V11Z" fill="#4db3f2"></path><path d="M32 11l13.5 4.2V29q0 13-13.5 20-13.5-7-13.5-20V15.2Z" fill="#2a8fd4"></path><path d="M35.5 17l-10 14h6.5l-3 12 10.5-14h-6.5Z" fill="#ffd21c"></path><circle cx="24" cy="13" r="2.2" fill="#fff" opacity=".8"></circle></g></svg></span>
+        <span class="howttl">How scoring works<span class="howsub">60-second read</span></span>
+        <span class="howarrow" id="howArrow">▾</span>
+      </button>
+      <div id="howBody" class="howbody" style="display:none;">
+        <p><b>Tries come from sound checks during practice.</b> The mic listens in the moment; only one clear try a day may be kept, on this phone, so you can listen back.</p>
+        <p><b>Silence never counts.</b> A try needs a detected sound burst and a sound check the app can verify. Silence and unsure checks add nothing to these numbers. Noise, nearby voices or TV can be mistaken for practice. Choose a quiet spot.</p>
+        <p><b>One honest spot-check per round.</b> Once each round, Sona listens for the actual sound. A miss simply becomes a warm try-again for your child — never a penalty, never a red mark.</p>
+        <p><b>Free play stays separate.</b> Feed Echo, Bubble Pop, Peekaboo and game voice boosts are free play and do not add tries or accuracy here.</p>
+        <p><b>You choose what to share.</b> Recordings stay on this phone unless you tap Share. Only pilot families who consented to progress sharing and have a connected speech-language pathologist account send practice summaries to their clinician. Those summaries contain no audio.</p>
+        <div class="howby">
+          <span class="howava">SLP</span>
+          <span>Reviewed by Rachel — licensed speech-language pathologist &amp; Sona co-founder</span>
+        </div>
+        <p class="muted" style="font-size:12.5px;font-weight:700;margin-top:10px;">Sona supports practice at home and is not a substitute for professional care.</p>
+      </div>
+    </div>
+
+    <!-- review pre-gate (Bear template): parent surface only, shown after real
+         value, happy → App Store, unhappy → a private line. Never incentivized. -->
+    <div class="card noprint" id="rateCard" style="display:none;position:relative;">
+      <button id="rateX" aria-label="Close" style="position:absolute;top:12px;right:12px;width:32px;height:32px;border:none;border-radius:50%;background:#f1f5fa;color:var(--muted);font-weight:800;font-size:14px;cursor:pointer;">✕</button>
+      <h2>A quick favor? <svg viewBox="0 0 64 64" style="width:18px;height:18px;vertical-align:-3px"><g id="ob-heart"><path d="M32 54C12 42 8 26 18 19c6-4 12-1 14 4 2-5 8-8 14-4 10 7 6 23-14 35Z" fill="#ff5c74"></path><circle cx="24" cy="26" r="3.5" fill="#fff" opacity=".7"></circle></g></svg></h2>
+      <p class="muted" style="margin-top:6px;">Parent to parent: if Sona's helping, a review helps other families find us. If something's off, tell us first — we fix fast.</p>
+      <a id="rateYes" class="btn" style="margin-top:12px;display:block;text-align:center;text-decoration:none;" href="https://apps.apple.com/app/id6785755867?action=write-review" target="_blank" rel="noopener">Rate Sona <svg viewBox="0 0 24 24" style="width:14px;height:14px;vertical-align:-2px"><path d="M12 2l2.9 6.2 6.6.8-4.9 4.6 1.3 6.6L12 16.9 6.1 20.2l1.3-6.6L2.5 9l6.6-.8Z" fill="#ffd21c" stroke="#f0a800" stroke-width="1.2"/></svg><svg viewBox="0 0 24 24" style="width:14px;height:14px;vertical-align:-2px"><path d="M12 2l2.9 6.2 6.6.8-4.9 4.6 1.3 6.6L12 16.9 6.1 20.2l1.3-6.6L2.5 9l6.6-.8Z" fill="#ffd21c" stroke="#f0a800" stroke-width="1.2"/></svg><svg viewBox="0 0 24 24" style="width:14px;height:14px;vertical-align:-2px"><path d="M12 2l2.9 6.2 6.6.8-4.9 4.6 1.3 6.6L12 16.9 6.1 20.2l1.3-6.6L2.5 9l6.6-.8Z" fill="#ffd21c" stroke="#f0a800" stroke-width="1.2"/></svg><svg viewBox="0 0 24 24" style="width:14px;height:14px;vertical-align:-2px"><path d="M12 2l2.9 6.2 6.6.8-4.9 4.6 1.3 6.6L12 16.9 6.1 20.2l1.3-6.6L2.5 9l6.6-.8Z" fill="#ffd21c" stroke="#f0a800" stroke-width="1.2"/></svg><svg viewBox="0 0 24 24" style="width:14px;height:14px;vertical-align:-2px"><path d="M12 2l2.9 6.2 6.6.8-4.9 4.6 1.3 6.6L12 16.9 6.1 20.2l1.3-6.6L2.5 9l6.6-.8Z" fill="#ffd21c" stroke="#f0a800" stroke-width="1.2"/></svg></a>
+      <a id="rateNo" style="display:block;text-align:center;margin-top:10px;font-weight:800;font-size:13.5px;color:var(--muted);" href="mailto:wardroptravis@gmail.com?subject=Sona%20—%20could%20be%20better">Could be better — tell Travis first</a>
+    </div>
+
+
+    <div class="card"><h2>Practice levels</h2><div id="bysound" style="margin-top:6px;"></div></div>
+
+    <!-- Dated "Firsts" shelf — proof in moments, not just numbers. Practice
+         notes for the family, never assessment records. -->
+    <div class="card" id="firstsCard">
+      <h2>Firsts <svg viewBox="0 0 64 64" style="width:17px;height:17px;vertical-align:-3px"><path d="M32 8l6 18 18 6-18 6-6 18-6-18-18-6 18-6Z" fill="#ffd21c"/><circle cx="26" cy="20" r="2.5" fill="#fff" opacity=".8"/></svg></h2>
+      <p class="muted" style="font-size:13px;font-weight:700;">Little milestones with their dates — the moments worth remembering.</p>
+      <div id="firsts" style="margin-top:8px;"></div>
+    </div>
+
+    <div class="card"><h2>Recent practice</h2><div id="recent" style="margin-top:4px;"></div></div>
+
+    <p class="muted noprint" style="text-align:center;margin-top:22px;font-size:13px;"><a href="/today.html">← Back to Home</a></p>
+  </div>
+
+  <!-- Progress is a parent page now (reached via the parent gate) — the kid
+       tab bar is gone. -->
+  <div class="nav">
+    <a class="on" href="/today.html"><span class="ni pic-home"></span>Back to Sona</a>
+    <a href="/settings.html"><span class="ni pic-gear"></span>Settings</a>
+  </div>
+
+  <script src="/sona.js"></script>
+  <script>
+    // Parent-only page: a child arriving by direct URL or back-swipe (no fresh
+    // pass of the home screen's grown-ups gate) is sent back to the gate.
+    if (window.Sona && Sona.requireGate) Sona.requireGate();
+    // back-swipe can restore this page from the bfcache without re-running
+    // scripts — re-check the gate whenever the page is shown again.
+    window.addEventListener("pageshow", function (e) { if (e.persisted && window.Sona && Sona.requireGate) Sona.requireGate(); });
+    var p = Sona.getProfile();
+    var g = Sona.getProgress();
+    var name = (p.childName || "").trim();
+    document.getElementById("title").textContent = name ? (name + "'s progress") : "Progress";
+    function esc(value) { var el = document.createElement("span"); el.textContent = String(value == null ? "" : value); return el.innerHTML; }
+    function count(value) { return Math.max(0, Math.floor(Number(value) || 0)); }
+    function triesOf(o) { return o ? count(typeof o.tries === "number" ? o.tries : o.attempts) : 0; }
+    function dayTries(o) { return o ? count(typeof o.tries === "number" ? o.tries : o.a) : 0; }
+    var out = (Sona.outcomes ? Sona.outcomes() : {}) || {};
+    function practicedDays(o) { return Object.keys((o && o.days) || {}).filter(function (d) { return dayTries(o.days[d]) > 0; }).sort(); }
+    function accOf(k) { var o = out[k]; return o && triesOf(o) >= 10 && practicedDays(o).length >= 2 && o.attempts > 0 ? Math.round(count(o.passes) / o.attempts * 100) : null; }
+    function soundLabel(k) { return Sona.soundLabel ? Sona.soundLabel(k) : k; }
+    function earlyText(k) { var n = triesOf(out[k]); return "Too early to tell — " + n + (n === 1 ? " try" : " tries") + " so far"; }
+    var keys = Object.keys(out).filter(function (k) { return triesOf(out[k]) > 0; });
+    var POSLBL = { i: "Start of word", m: "Middle of word", f: "End of word", v: "Vocalic R", b: "Blends" };
+    function posLineOf(k) {
+      var o = out[k], parts = []; if (!o || !o.byPos) return "";
+      Object.keys(o.byPos).forEach(function (pos) { var x = o.byPos[pos]; if (x.a > 0) parts.push((POSLBL[pos] || pos) + " · " + count(x.p) + " of " + count(x.a)); });
+      return parts.join("; ");
+    }
+    var thisWeekTries = Sona.weekReps ? Sona.weekReps() : 0;
+    var lastWeekTries = Sona.weekReps ? Sona.weekReps(-1) : 0;
+    document.getElementById("volReps").textContent = thisWeekTries;
+    document.getElementById("volLast").textContent = lastWeekTries > 0 && thisWeekTries > lastWeekTries
+      ? "Up from " + lastWeekTries + " tries last week" : "Last week: " + lastWeekTries + " tries";
+    var clearestKey = null;
+    keys.forEach(function (k) { var pct = accOf(k); if (pct != null && (clearestKey == null || pct > accOf(clearestKey))) clearestKey = k; });
+    document.getElementById("clearest").textContent = clearestKey
+      ? "Clearest sound so far: " + soundLabel(clearestKey) + " · " + accOf(clearestKey) + "% of sound checks"
+      : "Clearest sound: still getting to know their sounds";
+
+    // The lead uses the same detected-try count as the weekly card. A recording
+    // link is added only after IndexedDB confirms there is something to play.
+    (function () {
+      var el = document.getElementById("storyLine"), best = null;
+      var now = new Date(), mon = new Date(now.getFullYear(), now.getMonth(), now.getDate() - ((now.getDay() + 6) % 7));
+      var end = new Date(mon); end.setDate(mon.getDate() + 7);
+      keys.forEach(function (k) {
+        var n = 0; Object.keys(out[k].days || {}).forEach(function (day) {
+          var d = new Date(day + "T12:00:00"); if (d >= mon && d < end) n += dayTries(out[k].days[day]);
+        });
+        if (n > 0 && (!best || n > best.n)) best = { k: k, n: n };
+      });
+      if (thisWeekTries > 0 && best) {
+        el.innerHTML = "<b>" + esc(name || "Your child") + " practiced the " + esc(soundLabel(best.k)) + " sound with " + best.n +
+          (best.n === 1 ? " try" : " tries") + " this week" + (thisWeekTries > best.n ? " — " + thisWeekTries + " tries in all" : "") + ".</b>";
+      } else {
+        el.innerHTML = "<b>A fresh week is ready.</b> " + esc(name || "Your child") + "'s next sound practice adds its first tries to this page. " +
+          '<a href="/today.html" style="color:var(--blue-d);font-weight:800;">Start today’s practice →</a>';
+      }
+    })();
+
+    // ── review pre-gate logic: after real value (4+ sessions), quiet for 60
+    // days after any interaction, gone for good once they've rated. The gate
+    // page itself guarantees a child never triggers it. ──
+    (function () {
+      var KEY = "sona.rateask.v1";
+      function st() { try { return JSON.parse(localStorage.getItem(KEY) || "{}"); } catch (e) { return {}; } }
+      function put(s) { try { localStorage.setItem(KEY, JSON.stringify(s)); } catch (e) {} }
+      var card = document.getElementById("rateCard"); if (!card) return;
+      var s = st();
+      var sessions = (g.totals && g.totals.sessions) || 0;
+      var cooling = s.next && Date.now() < s.next;
+      if (s.rated || cooling || sessions < 4) return;
+      card.style.display = "block";
+      function quiet(days) { var s2 = st(); s2.next = Date.now() + days * 86400000; put(s2); card.style.display = "none"; }
+      document.getElementById("rateX").onclick = function () { quiet(60); };
+      document.getElementById("rateNo").onclick = function () { quiet(60); }; // the mailto still opens
+      document.getElementById("rateYes").onclick = function () { var s2 = st(); s2.rated = Date.now(); put(s2); card.style.display = "none"; };
+    })();
+
+    // Mom's week — HER goal (3/5/7 days), her streak, switchable right here.
+    // A practice day = real logged attempts; the week starts Monday.
+    (function () {
+      var wk = document.getElementById("week");
+      function paintWk() {
+        var w = Sona.momWeek(); wk.innerHTML = "";
+        var L = ["M", "T", "W", "T", "F", "S", "S"];
+        for (var i = 0; i < 7; i++) {
+          var on = w.days[i], isT = i === w.todayIx;
+          var cell = document.createElement("div"); cell.className = "day";
+          cell.innerHTML = '<div class="d' + (on ? ' on' : '') + '"' + (isT && !on ? ' style="box-shadow:inset 0 0 0 2px #ff8a3d;"' : '') + '>' + (on ? '✓' : '·') + '</div><div class="lbl">' + L[i] + '</div>';
+          wk.appendChild(cell);
+        }
+        document.getElementById("wkGoalMsg").textContent = w.done + " of " + w.goal + " days this week"
+          + (w.weekStreak > 0 ? " · " + w.weekStreak + (w.weekStreak === 1 ? " week" : " weeks") + " in a row at your goal" : "");
+        document.querySelectorAll("#wkGoalPick .gbtn").forEach(function (b) { b.classList.toggle("on", parseInt(b.dataset.g, 10) === w.goal); });
+      }
+      document.querySelectorAll("#wkGoalPick .gbtn").forEach(function (b) {
+        b.onclick = function () { Sona.saveProfile({ weeklyGoal: parseInt(b.dataset.g, 10) }); paintWk(); prepareWeeklyCard(); };
+      });
+      paintWk();
+    })();
+
+    // Per-sound detail and the summary use the same readiness rule. A sound
+    // check covers a burst, so its denominator is checks, never all voiced tries.
+    var bs = document.getElementById("bysound"), accHost = document.getElementById("acc");
+    if (!keys.length) {
+      bs.innerHTML = '<p class="muted">Sounds appear here after sound practice.</p>';
+      accHost.innerHTML = '<p class="muted">Sound practice will fill this in. Free-play games are not counted.</p>';
+    }
+    keys.sort(function (a, b) { return triesOf(out[b]) - triesOf(out[a]); }).forEach(function (k) {
+      var o = out[k], pct = accOf(k), row = document.createElement("div"); row.className = "accrow";
+      var pos = ""; Object.keys(o.byPos || {}).forEach(function (pk) {
+        var x = o.byPos[pk]; if (x.a > 0) pos += '<span class="poschip">' + esc(POSLBL[pk] || pk) + ' · ' + count(x.p) + ' of ' + count(x.a) + '</span>';
+      });
+      row.innerHTML = '<div class="acctop"><b class="accname">' + esc(soundLabel(k)) + ' sound</b></div>' +
+        '<p class="accsub">' + (pct == null ? earlyText(k) : triesOf(o) + ' tries over ' + practicedDays(o).length + ' days · ' + pct + '% of sound checks') + '</p>' +
+        (pct == null ? '' : '<p class="muted" style="font-size:12px;">' + count(o.passes) + ' of ' + count(o.attempts) + ' sound checks matched the target.</p>') +
+        (pos ? '<div class="poschips" aria-label="Sound checks by word position">' + pos + '</div>' : '');
+      accHost.appendChild(row);
+      var detail = document.createElement("div"); detail.className = "accrow";
+      detail.textContent = soundLabel(k) + " sound · " + triesOf(o) + " tries · " + (Sona.rungLabel ? Sona.rungLabel(Sona.rungOf(k)) : "Sound practice");
+      bs.appendChild(detail);
+    });
+
+    function summaryText() {
+      var prof = Sona.getProfile(), w = Sona.momWeek();
+      var lines = ["Sona — home-practice summary", (prof.childName || "Child") + (prof.childAge ? ", age " + prof.childAge : ""),
+        w.done + " of " + w.goal + " days this week · " + thisWeekTries + " tries", "Last week: " + lastWeekTries + " tries", ""];
+      keys.forEach(function (k) {
+        var o = out[k], pct = accOf(k), pos = posLineOf(k);
+        lines.push(soundLabel(k) + " sound — " + (pct == null ? earlyText(k) : triesOf(o) + " tries; " + pct + "% (" + count(o.passes) + " of " + count(o.attempts) + " sound checks)") +
+          (pos ? "; " + pos : "") + " — last practiced " + (o.lastAt || "—"));
+      });
+      lines.push("", "One sound check covers a practice burst; not every try is scored. Free-play games are not included.",
+        "Sona is an at-home practice tool, not an assessment. Scoring is a practice aid — please use your clinical judgment.");
+      return lines.join("\n");
+    }
+    function revealSummary(text) { var field = document.getElementById("summaryText"); field.value = text; field.hidden = false; field.focus(); field.select(); document.getElementById("shareStatus").textContent = "Select and copy the summary below."; }
+    function copySummary() {
+      var text = summaryText();
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(function () { document.getElementById("shareStatus").textContent = "Summary copied — ready to paste into your notes."; }, function () { revealSummary(text); });
+      } else revealSummary(text);
+    }
+    document.getElementById("copySummary").onclick = copySummary;
+    function printOrCopy() {
+      // WKWebView can expose print() while doing nothing. Offer the usable copy
+      // path there; desktop print remains available without sending any data.
+      if (typeof window.print === "function" && !(Sona.isNativeApp && Sona.isNativeApp())) {
+        try { window.print(); document.getElementById("shareStatus").textContent = "If printing is unavailable, use Copy summary for your SLP."; return; } catch (e) {}
+      }
+      copySummary();
+    }
+    var weeklyFile = null, weeklyCardVersion = 0;
+    function prepareWeeklyCard() {
+      var version = ++weeklyCardVersion;
+      try {
+        var w = Sona.momWeek(), cv = document.createElement("canvas"); cv.width = 1080; cv.height = 1350;
+        var c = cv.getContext("2d"); if (!c) return;
+        c.fillStyle = "#fff6e9"; c.fillRect(0, 0, 1080, 1350); c.fillStyle = "#fff"; c.fillRect(70, 120, 940, 1110);
+        c.textAlign = "center"; c.fillStyle = "#ef6f23"; c.font = "800 44px sans-serif"; c.fillText("PRACTICE THIS WEEK", 540, 230);
+        c.fillStyle = "#4a2c14"; c.font = "800 64px sans-serif"; c.fillText((name || "Your child") + " practiced", 540, 350, 850);
+        c.fillStyle = "#ff8a3d"; c.font = "800 125px sans-serif"; c.fillText(w.done + (w.done === 1 ? " day" : " days"), 540, 525);
+        var labels = ["M", "T", "W", "T", "F", "S", "S"];
+        for (var i = 0; i < 7; i++) { var x = 249 + i * 97; c.beginPath(); c.arc(x, 640, 36, 0, Math.PI * 2); c.fillStyle = w.days[i] ? "#58cc02" : "#eae4da"; c.fill(); c.fillStyle = w.days[i] ? "#fff" : "#786958"; c.font = "800 32px sans-serif"; c.fillText(w.days[i] ? "✓" : labels[i], x, 651); }
+        c.fillStyle = "#4a2c14"; c.font = "800 58px sans-serif"; c.fillText(thisWeekTries + " tries this week", 540, 800);
+        c.fillStyle = "#786958"; c.font = "32px sans-serif"; c.fillText("Last week: " + lastWeekTries + " tries", 540, 870);
+        c.font = "28px sans-serif"; c.fillText("A practice snapshot, not a clinical assessment", 540, 1000, 860);
+        c.fillStyle = "#ef6f23"; c.font = "800 44px sans-serif"; c.fillText("Practicing with Echo on Sona", 540, 1110, 860); c.fillText("speaksona.com", 540, 1180);
+        cv.toBlob(function (blob) { if (blob && version === weeklyCardVersion) weeklyFile = new File([blob], "sona-week.png", { type: "image/png" }); }, "image/png");
+      } catch (e) { weeklyFile = null; }
+    }
+    prepareWeeklyCard();
+    document.getElementById("share").onclick = function () {
+      if (weeklyFile && navigator.share && navigator.canShare && navigator.canShare({ files: [weeklyFile] })) {
+        navigator.share({ title: "Sona practice this week", text: summaryText(), files: [weeklyFile] }).catch(function (error) { if (!error || error.name !== "AbortError") printOrCopy(); });
+      } else printOrCopy();
+    };
+
+    // Clip access stays local. Only a separate, explicit Share tap opens the
+    // system share sheet; playing or visiting this page never transmits a clip.
+    (function () {
+      var host = document.getElementById("recList"), player = null, playingButton = null, objectUrl = null;
+      function empty() {
+        host.innerHTML = '<div class="recording-pair"><div class="recording-clip recording-ghost">First try</div><div class="recording-clip recording-ghost">Latest try</div></div><p class="muted" style="margin-top:12px;">' + esc(name || "Your child") + "'s first clear try gets saved here — then you can hear first vs latest.</p>";
+      }
+      function stop() {
+        if (player) { try { player.pause(); } catch (e) {} player.onended = player.onerror = null; player = null; }
+        if (objectUrl) { URL.revokeObjectURL(objectUrl); objectUrl = null; }
+        if (playingButton) { playingButton.textContent = playingButton.dataset.label; playingButton = null; }
+      }
+      document.addEventListener("visibilitychange", function () { if (document.hidden) stop(); });
+      window.addEventListener("pagehide", stop);
+      function play(rec, button) {
+        stop(); objectUrl = URL.createObjectURL(rec.blob); player = new Audio(objectUrl); playingButton = button;
+        button.textContent = "Playing…"; var active = player;
+        function finished() { if (player === active) stop(); }
+        player.onended = player.onerror = finished;
+        var promise = player.play(); if (promise && promise.catch) promise.catch(finished);
+      }
+      function clipFile(rec) {
+        var type = rec.blob.type || "audio/webm", ext = /wav/.test(type) ? "wav" : /mp4|m4a/.test(type) ? "m4a" : /mpeg/.test(type) ? "mp3" : /ogg/.test(type) ? "ogg" : "webm";
+        return new File([rec.blob], "sona-practice." + ext, { type: type });
+      }
+      function clipBox(rec, label) {
+        var box = document.createElement("div"); box.className = "recording-clip";
+        var date = document.createElement("small"); date.textContent = label + " · " + new Date(rec.date).toLocaleDateString(undefined, { month: "short", day: "numeric" }); box.appendChild(date);
+        var button = document.createElement("button"); button.className = "btn ghost"; button.dataset.label = "Play " + label.toLowerCase(); button.textContent = button.dataset.label; button.onclick = function () { play(rec, button); }; box.appendChild(button);
+        var share = document.createElement("button"); share.className = "btn ghost recording-share"; share.textContent = "Share " + label.toLowerCase();
+        share.onclick = function () {
+          stop(); var file = clipFile(rec);
+          if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+            navigator.share({ files: [file], title: "Sona practice recording" }).catch(function (error) { if (!error || error.name !== "AbortError") document.getElementById("shareStatus").textContent = "This phone could not share the recording. It is still saved here."; });
+          } else document.getElementById("shareStatus").textContent = "Recording sharing is not available on this phone. You can still listen here.";
+        };
+        box.appendChild(share); return box;
+      }
+      empty();
+      if (!Sona.listRecordings) return;
+      Sona.listRecordings(400).then(function (recs) {
+        recs = (recs || []).filter(function (r) { return r && r.blob && r.blob.size > 0; }); if (!recs.length) return;
+        host.innerHTML = "";
+        var link = document.createElement("a"); link.href = "#listenCard"; link.textContent = " Hear their saved tries below."; link.style.color = "var(--blue-d)"; document.getElementById("storyLine").appendChild(link);
+        var groups = Object.create(null);
+        recs.forEach(function (rec) { var word = rec.word || "Practice"; (groups[word] = groups[word] || []).push(rec); });
+        Object.keys(groups).slice(0, 12).forEach(function (word) {
+          var list = groups[word].sort(function (a, b) { return new Date(a.date) - new Date(b.date); });
+          var row = document.createElement("div"); row.className = "recording-row";
+          var title = document.createElement("b"); title.textContent = word; row.appendChild(title);
+          var pair = document.createElement("div"); pair.className = "recording-pair"; pair.appendChild(clipBox(list[0], "First try"));
+          if (list.length > 1) pair.appendChild(clipBox(list[list.length - 1], "Latest try"));
+          else { var ghost = document.createElement("div"); ghost.className = "recording-clip recording-ghost"; ghost.textContent = "Latest try · after another day of practice"; pair.appendChild(ghost); }
+          row.appendChild(pair); host.appendChild(row);
+        });
+      }).catch(function () { empty(); });
+    })();
+
+    var rc = document.getElementById("recent"), sessions = g.sessions || [];
+    if (!sessions.length) rc.innerHTML = '<p class="muted">Completed practice appears here.</p>';
+    sessions.slice(0, 12).forEach(function (session) {
+      var row = document.createElement("div"); row.className = "accrow";
+      var tries = typeof session.tries === "number" ? count(session.tries) : null;
+      // Old records stored word lists or rounds; neither is a reliable try count.
+      row.textContent = new Date(session.date).toLocaleDateString(undefined, { month: "short", day: "numeric" }) + " · " +
+        (tries != null ? tries + (tries === 1 ? " try" : " tries") : "Practice completed") + ((session.sounds || []).length ? " · " + session.sounds.join(", ") : "");
+      rc.appendChild(row);
+    });
+    // The pilot send button is available only with both consent and a verified
+    // clinician connection, exactly like the shared sendProgress function.
+    try {
+      if (Sona.isPilot && Sona.isPilot() && Sona.pilotInfo().consentAt && localStorage.getItem("sona.slpticket")) {
+        var pilotButton = document.getElementById("sendProg"); pilotButton.style.display = "";
+        pilotButton.onclick = function () { Sona.sendProgress("manual"); document.getElementById("shareStatus").textContent = "Progress sharing requested for your connected speech-language pathologist."; };
+      }
+    } catch (e) {}
+
+    // ── "How scoring works" — tap to expand, plain ES5 class-free toggle ──
+    (function () {
+      var t = document.getElementById("howToggle"), b = document.getElementById("howBody"), a = document.getElementById("howArrow");
+      if (!t || !b) return;
+      t.onclick = function () {
+        var open = b.style.display !== "none";
+        b.style.display = open ? "none" : "block";
+        t.setAttribute("aria-expanded", open ? "false" : "true");
+        if (a) a.style.transform = open ? "" : "rotate(180deg)";
+      };
+    })();
+
+    // ── Dated "Firsts" shelf ─────────────────────────────────────────────────
+    // Two sources: (1) the first clear pass per sound is derivable from the
+    // per-day history already in Sona.outcomes(), so those firsts carry their
+    // real dates retroactively; (2) rung advances aren't stored with dates, so
+    // this page keeps its own log (sona.firsts.v1) — it snapshots each sound's
+    // rung and, on later visits, dates any climb it observes. Firsts accrue
+    // from now for rungs; nothing is ever invented.
+    (function () {
+      var host = document.getElementById("firsts");
+      if (!host) return;
+      // KIDS1: milestones belong to one child, not the device
+      var KEY = (window.Sona&&Sona.kkey)?Sona.kkey("sona.firsts.v1"):"sona.firsts.v1";
+      function loadF() { try { var v = JSON.parse(localStorage.getItem(KEY)); return (v && typeof v === "object") ? v : {}; } catch (e) { return {}; } }
+      function saveF(v) { try { localStorage.setItem(KEY, JSON.stringify(v)); } catch (e) {} }
+      function sl(k) { return Sona.soundLabel ? Sona.soundLabel(k) : k; }
+      function todayKey() { var d = new Date(); return d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2); }
+      function fmtDay(day) {
+        try {
+          var q = String(day).split("-"), d = new Date(parseInt(q[0], 10), parseInt(q[1], 10) - 1, parseInt(q[2], 10));
+          var opt = { month: "short", day: "numeric" };
+          if (d.getFullYear() !== new Date().getFullYear()) opt.year = "numeric";
+          return d.toLocaleDateString(undefined, opt);
+        } catch (e) { return day; }
+      }
+      var f = loadF(); f.entries = f.entries || []; f.rungs = f.rungs || {};
+      function has(id) { for (var i = 0; i < f.entries.length; i++) { if (f.entries[i].id === id) return true; } return false; }
+      var oo = (Sona.outcomes ? Sona.outcomes() : {}) || {};
+      var L = (Sona.LADDER ? Sona.LADDER.length : 6);
+      // 1) first clear pass per sound — real dates from stored per-day history
+      Object.keys(oo).forEach(function (k) {
+        var ds = (oo[k] && oo[k].days) || {}, dks = Object.keys(ds).sort();
+        for (var i = 0; i < dks.length; i++) {
+          var x = ds[dks[i]];
+          if (x && x.p > 0) {
+            var id = "pass-" + k;
+            if (!has(id)) f.entries.push({ id: id, e: '<svg viewBox="0 0 64 64" style="width:20px;height:20px;vertical-align:-3px"><g id="rrb-party"><path d="M9 55 22 29l13 13Z" fill="#ff8a3d"></path><path d="M9 55l5-10 5 5Z" fill="#ef6f23"></path><path d="M28 22q3-9 12-10" stroke="#ff5c5c" stroke-width="3" fill="none" stroke-linecap="round"></path><path d="M40 32q8-3 13 2" stroke="#58cc02" stroke-width="3" fill="none" stroke-linecap="round"></path><rect x="42" y="10" width="7" height="7" rx="2" fill="#4db3f2" transform="rotate(18 45.5 13.5)"></rect><rect x="50" y="22" width="6" height="6" rx="2" fill="#ffd21c" transform="rotate(-14 53 25)"></rect><circle cx="33" cy="14" r="3" fill="#ffd21c"></circle><circle cx="47" cy="42" r="3" fill="#ffb9c8"></circle><circle cx="56" cy="13" r="2.6" fill="#ff5c5c"></circle><circle cx="20" cy="43" r="2" fill="#fff" opacity=".85"></circle></g></svg>', label: "First clear " + sl(k) + " sound", date: dks[i] });
+            break;
+          }
+        }
+      });
+      // 2) rung advances — dated from now, when this page first sees the climb
+      var seen = {}, sounds = [];
+      Object.keys(oo).concat(Object.keys(g.bySound || {})).forEach(function (k) { if (!seen[k]) { seen[k] = 1; sounds.push(k); } });
+      sounds.forEach(function (k) {
+        var r = Sona.rungOf ? Sona.rungOf(k) : 0, prev = f.rungs[k];
+        if (typeof prev === "number" && r > prev) {
+          var id = "rung-" + k + "-" + r;
+          var lbl = r >= L ? ("Every " + sl(k) + " level cleared") : ("First day at " + (Sona.rungLabel ? Sona.rungLabel(r) : "a new") + " level — " + sl(k) + " sound");
+          if (!has(id)) f.entries.push({ id: id, e: (r >= L ? '<svg viewBox="0 0 64 64" style="width:20px;height:20px;vertical-align:-3px"><path d="M20 10h24v6c0 10-5 16-12 16s-12-6-12-16Z" fill="#ffd21c"/><path d="M20 12h-8c0 8 4 12 10 13M44 12h8c0 8-4 12-10 13" stroke="#f0a800" stroke-width="4" fill="none"/><rect x="28" y="32" width="8" height="8" fill="#f0a800"/><rect x="20" y="42" width="24" height="7" rx="3" fill="#b97900"/><circle cx="26" cy="16" r="2.5" fill="#fff" opacity=".8"/></svg>' : '<svg viewBox="0 0 64 64" style="width:20px;height:20px;vertical-align:-3px"><g id="ob-rocket"><path d="M20 42l-8 12 13-4Z" fill="#ff5c5c"></path><path d="M44 42l8 12-13-4Z" fill="#ff5c5c"></path><path d="M32 5c9 7 12 22 8 41H24c-4-19-1-34 8-41Z" fill="#f0f0f5"></path><path d="M32 5c5 4 8 10 9 17H23c1-7 4-13 9-17Z" fill="#ff5c5c"></path><circle cx="32" cy="31" r="6" fill="#4db3f2"></circle><circle cx="32" cy="31" r="6" fill="none" stroke="#d0d5dd" stroke-width="2"></circle><path d="M26 46q6 12 12 0-6 4-12 0Z" fill="#ffb100"></path><circle cx="27" cy="15" r="2.2" fill="#fff" opacity=".75"></circle></g></svg>'), label: lbl, date: todayKey() });
+        }
+        f.rungs[k] = r;
+      });
+      saveF(f);
+      // render — newest first, plus exactly one gentle "coming up" outline row
+      if (!f.entries.length) {
+        host.innerHTML = '<p class="muted">Firsts will appear here as they happen</p>';
+        return;
+      }
+      var es = f.entries.slice().sort(function (a, b) { return a.date < b.date ? 1 : (a.date > b.date ? -1 : 0); }).slice(0, 12);
+      var html = "";
+      es.forEach(function (en) {
+        html += '<div class="firstrow"><span class="fe">' + (en.e || '<svg viewBox="0 0 64 64" style="width:20px;height:20px;vertical-align:-3px"><g id="rrb-party"><path d="M9 55 22 29l13 13Z" fill="#ff8a3d"></path><path d="M9 55l5-10 5 5Z" fill="#ef6f23"></path><path d="M28 22q3-9 12-10" stroke="#ff5c5c" stroke-width="3" fill="none" stroke-linecap="round"></path><path d="M40 32q8-3 13 2" stroke="#58cc02" stroke-width="3" fill="none" stroke-linecap="round"></path><rect x="42" y="10" width="7" height="7" rx="2" fill="#4db3f2" transform="rotate(18 45.5 13.5)"></rect><rect x="50" y="22" width="6" height="6" rx="2" fill="#ffd21c" transform="rotate(-14 53 25)"></rect><circle cx="33" cy="14" r="3" fill="#ffd21c"></circle><circle cx="47" cy="42" r="3" fill="#ffb9c8"></circle><circle cx="56" cy="13" r="2.6" fill="#ff5c5c"></circle><circle cx="20" cy="43" r="2" fill="#fff" opacity=".85"></circle></g></svg>') + '</span><b>' + en.label + '</b><span class="fd">' + fmtDay(en.date) + '</span></div>';
+      });
+      var top = null, best = -1;
+      Object.keys(oo).forEach(function (k) { var a = (oo[k] && oo[k].attempts) || 0; if (a > best) { best = a; top = k; } });
+      if (top) {
+        var next = null;
+        if (!has("pass-" + top)) { next = "First clear " + sl(top) + " sound"; }
+        else {
+          var r2 = Sona.rungOf ? Sona.rungOf(top) : 0;
+          if (r2 < L) next = (r2 + 1 >= L) ? ("Every " + sl(top) + " level cleared") : ("First day at " + (Sona.rungLabel ? Sona.rungLabel(r2 + 1) : "the next") + " level — " + sl(top) + " sound");
+        }
+        if (next) html += '<div class="firstrow next"><span class="fe"><svg viewBox="0 0 64 64" style="width:18px;height:18px;vertical-align:-3px"><path d="M32 8l6 18 18 6-18 6-6 18-6-18-18-6 18-6Z" fill="#ffd21c"/><circle cx="26" cy="20" r="2.5" fill="#fff" opacity=".8"/></svg></span><b>' + next + '</b><span class="fd">coming up</span></div>';
+      }
+      host.innerHTML = html;
+    })();
+
+    // parent-set stickers (design §9) — filled from the shared icon kit
+    (function(){ try{
+      document.querySelectorAll(".pic-home").forEach(function(n){ n.innerHTML=Sona.icon("home",20); });
+      document.querySelectorAll(".pic-gear").forEach(function(n){ n.innerHTML=Sona.icon("gear",20); });
+      document.querySelectorAll(".pic-trend").forEach(function(n){ n.innerHTML=Sona.icon("trend",17); });
+    }catch(e){} })();
+
+    // R-era density cut: the archival cards (per-sound mastery, firsts,
+    // recent sessions) tuck behind one toggle — the page leads with volume,
+    // accuracy, and the week.
+    (function(){
+      var picks=["bysound","firstsCard","recent"], cards=[];
+      picks.forEach(function(id){ var el=document.getElementById(id); if(!el)return; var c=(el.classList&&el.classList.contains("card"))?el:(el.closest?el.closest(".card"):null); if(c&&cards.indexOf(c)<0){ c.style.display="none"; cards.push(c); } });
+      if(!cards.length)return;
+      var t=document.createElement("button"); t.type="button"; t.setAttribute("aria-expanded","false"); t.className="card noprint"; t.style.cssText="width:100%;text-align:center;cursor:pointer;";
+      t.innerHTML='<b style="font-family:\'Baloo 2\';font-weight:800;font-size:14px;color:var(--muted);">More details \u25be</b>';
+      cards[0].parentNode.insertBefore(t,cards[0]);
+      t.onclick=function(){ var open=cards[0].style.display==="none"; cards.forEach(function(c){ c.style.display=open?"":"none"; }); t.setAttribute("aria-expanded",open?"true":"false"); t.firstChild.textContent=open?"Fewer details \u25b4":"More details \u25be"; };
+    })();
+  </script>
+</body>
+</html>

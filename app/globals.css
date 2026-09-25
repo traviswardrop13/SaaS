@@ -28,7 +28,7 @@ button {
 }
 
 .btn-primary {
-  @apply btn bg-grass-500 hover:bg-grass-600;
+  @apply btn bg-brand-500 hover:bg-brand-600;
 }
 
 .btn-secondary {

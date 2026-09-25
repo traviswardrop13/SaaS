@@ -1,16 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
+import { rateLimit } from "@/lib/rateLimit";
 
 /**
  * Creates a **LiveAvatar** session token (api.liveavatar.com) from the
  * server-side LIVEAVATAR_API_KEY. The classic Streaming Avatar API was sunset, so
  * we use LiveAvatar's /v1/sessions/token. The avatar + voice can be passed via
  * ?avatar=&voice= (or JSON body); they default to the configured coach.
+ *
+ * SECURITY (interim): this mints a billable vendor session with no entitlement
+ * check yet — the surface is experimental/orphaned. Rate-limited here to blunt
+ * the run-up-the-bill attack; a proper entitlement gate is required before any
+ * kid-flow release (review item F4).
  */
 // Valid LiveAvatar IDs (HeyGen IDs don't carry over). "Ann" — warm female coach.
 const DEFAULT_AVATAR = "513fd1b7-7ef9-466d-9af2-344e51eeb833";
 const DEFAULT_VOICE = "de5574fc-009e-4a01-a881-9919ef8f5a0c";
 
 export async function POST(req: NextRequest) {
+  const limited = await rateLimit(req, { key: "heygen-token", limit: 10, windowSec: 60 });
+  if (limited) return limited;
   // LiveAvatar uses its OWN key (from app.liveavatar.com/developers) — the old
   // HeyGen key is NOT compatible. Accept either env name so the rename is clean.
   const key = process.env.LIVEAVATAR_API_KEY || process.env.HEYGEN_API_KEY;
@@ -69,8 +77,13 @@ export async function POST(req: NextRequest) {
       json?.data?.access_token ??
       json?.data?.session_access_token;
     if (!token) {
+      const apiMsg =
+        (typeof json?.message === "string" && json.message) ||
+        (Array.isArray(json?.data) && json.data[0] && json.data[0].message) ||
+        (typeof json?.error === "string" && json.error) ||
+        "";
       return NextResponse.json(
-        { ok: false, error: "No token field found in LiveAvatar response.", status: r.status, raw: json },
+        { ok: false, error: apiMsg ? `LiveAvatar: ${apiMsg}` : "No token field found in LiveAvatar response.", status: r.status, raw: json },
         { status: 502 },
       );
     }

@@ -1,0 +1,217 @@
+// KIDS1: more than one child per device.
+//
+// The thing that has to be true: two children on one phone keep SEPARATE
+// practice histories, and the family's entitlement is NOT one of the things
+// that splits — a family pays once, so a second child must never land behind a
+// paywall or re-trigger the OS mic prompt.
+//
+// The first child keeps the original un-suffixed keys, so an existing family
+// needs no migration. That is the case most likely to break silently, so it is
+// asserted directly.
+import { createServer } from "http";
+import { readFileSync, existsSync } from "fs";
+import { chromium, ROOT, launchOpts } from "./_env.mjs";
+
+const MIME = { html: "text/html", js: "text/javascript", svg: "image/svg+xml", css: "text/css", png: "image/png", webp: "image/webp" };
+const srv = createServer((req, res) => {
+  const u = new URL(req.url, "http://x");
+  if (u.pathname.startsWith("/api/")) { res.writeHead(500); res.end("{}"); return; }
+  // A saved pre-fix shared script makes the sibling-run regression reproducible.
+  const p = u.pathname === "/sona.js" && process.env.KIDTEST_SONA_SOURCE ? process.env.KIDTEST_SONA_SOURCE : ROOT + u.pathname;
+  if (!existsSync(p)) { res.writeHead(404); res.end(); return; }
+  res.writeHead(200, { "content-type": MIME[p.split(".").pop()] || "application/octet-stream" });
+  res.end(readFileSync(p));
+});
+await new Promise((r) => srv.listen(8153, r));
+
+const browser = await chromium.launch(launchOpts());
+const ctx = await browser.newContext({ viewport: { width: 430, height: 932 } });
+const page = await ctx.newPage();
+let errs = [];
+page.on("pageerror", (e) => errs.push(e.message));
+await page.addInitScript(() => {
+  // an EXISTING family, already on the un-suffixed keys
+  localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Milo", childAge: "7", focusSounds: ["R"], onboarded: true, parentPin: "2468" }));
+  localStorage.setItem("sona.sub.v1", JSON.stringify({ active: true, source: "apple" }));
+  localStorage.setItem("sona.micok", "1");
+});
+let fails = 0;
+const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL ") + n + (p ? "" : "  → " + (extra || ""))); };
+
+await page.goto("http://localhost:8153/today.html");
+await page.waitForTimeout(700);
+
+// ── the existing family becomes kid one, on their own keys ──
+let st = await page.evaluate(() => ({
+  kids: Sona.kids(),
+  active: Sona.activeKid(),
+  name: Sona.getProfile().childName,
+}));
+ok("an existing family seeds one kid", st.kids.length === 1, JSON.stringify(st.kids));
+ok("that kid is the active one", !!st.active && st.active.slot === "", JSON.stringify(st.active));
+ok("their name comes from their own profile", st.name === "Milo", st.name);
+
+// An unfinished adventure belongs to this child, including an earned but
+// unopened chest. Keep the exact payload: switching must neither lose nor
+// reinterpret any completed work. No microphone or practice engine is used.
+await page.evaluate(() => {
+  window.__kidRunA = JSON.stringify({ active: true, round: 2, tries: 8, sound: "R", pending: false, scores: [12, 9], sum: 21, ready: { round: 2, chest: { taps: 1, opened: false } } });
+  window.__kidRunB = JSON.stringify({ active: true, round: 1, tries: 4, sound: "S", pending: true, scores: [7], sum: 7 });
+  window.__kidRecordingKeyA = Sona.kkey("sona.reclast");
+  sessionStorage.setItem("sona.run.v1", window.__kidRunA);
+});
+
+// ── add a sibling: separate profile, separate progress, from the first write ──
+st = await page.evaluate(() => {
+  const slot = Sona.addKid("Ana", "5");
+  const runCleared = sessionStorage.getItem("sona.run.v1") === null;
+  const recordingKey = Sona.kkey("sona.reclast");
+  sessionStorage.setItem("sona.run.v1", window.__kidRunB);
+  Sona.saveProfile({ focusSounds: ["S"], onboarded: true });
+  Sona.bumpReps(9);
+  const g = Sona.getProgress(); g.stage = g.stage || {}; g.stage.S = 2;
+  localStorage.setItem(Sona.kkey("sona.progress.v1"), JSON.stringify(g));
+  return {
+    slot, runCleared, recordingKey, originalRecordingKey: window.__kidRecordingKeyA,
+    name: Sona.getProfile().childName, age: Sona.getProfile().childAge,
+    focus: Sona.getProfile().focusSounds,
+    reps: Sona.repsToday(),
+    kids: Sona.kids().map((k) => k.name + (k.active ? "*" : "")),
+  };
+});
+ok("adding a child starts without the previous child's active adventure", st.runCleared, JSON.stringify(st));
+ok("the daily recording marker is separate for each child", st.recordingKey !== st.originalRecordingKey, JSON.stringify(st));
+ok("adding a kid takes a new slot", st.slot === "k2", st.slot);
+ok("the new kid is switched to immediately", /Ana\*/.test(st.kids.join(",")), st.kids.join(","));
+ok("their name and age land on THEIR profile", st.name === "Ana" && st.age === "5", JSON.stringify(st));
+ok("their focus sounds are their own", JSON.stringify(st.focus) === '["S"]', JSON.stringify(st.focus));
+ok("their reps are their own", st.reps === 9, String(st.reps));
+
+// ── switch back: kid one is exactly as they were ──
+st = await page.evaluate(() => {
+  Sona.switchKid("");
+  return {
+    name: Sona.getProfile().childName,
+    focus: Sona.getProfile().focusSounds,
+    pin: Sona.getProfile().parentPin,
+    reps: Sona.repsToday(),
+    stageS: (Sona.getProgress().stage || {}).S,
+    runRestored: sessionStorage.getItem("sona.run.v1") === window.__kidRunA,
+  };
+});
+ok("switching back restores the first child's exact unfinished adventure", st.runRestored, JSON.stringify(st));
+ok("switching back restores the first child's profile", st.name === "Milo", st.name);
+ok("their focus sound was never overwritten", JSON.stringify(st.focus) === '["R"]', JSON.stringify(st.focus));
+ok("their parent code survived", st.pin === "2468", st.pin);
+ok("the sibling's reps did not leak in", st.reps === 0, String(st.reps));
+ok("the sibling's earned rung did not leak in", st.stageS === undefined, JSON.stringify(st.stageS));
+
+// ── entitlement is FAMILY-wide: paying twice for two kids is not a thing ──
+st = await page.evaluate(() => {
+  const a = !!(Sona.isSubscribed && Sona.isSubscribed());
+  Sona.switchKid("k2");
+  const b = !!(Sona.isSubscribed && Sona.isSubscribed());
+  const siblingRunRestored = sessionStorage.getItem("sona.run.v1") === window.__kidRunB;
+  const mic = localStorage.getItem("sona.micok");
+  Sona.switchKid("");
+  const originalRunRestored = sessionStorage.getItem("sona.run.v1") === window.__kidRunA;
+  return { a, b, mic, siblingRunRestored, originalRunRestored };
+});
+ok("repeated switching restores each child's own run without overwriting either", st.siblingRunRestored && st.originalRunRestored, JSON.stringify(st));
+ok("both children share the family's plan", st.a === true && st.b === true, JSON.stringify(st));
+ok("the mic grant is per DEVICE, not per child", st.mic === "1", String(st.mic));
+
+// ── removing a sibling clears their data and never leaves zero children ──
+st = await page.evaluate(() => {
+  const before = Sona.kids().length;
+  // Simulate another saved step for the active child just before removal, so
+  // this check fails independently of a broken preceding switch.
+  sessionStorage.setItem("sona.run.v1", window.__kidRunA);
+  const removedLast = Sona.removeKid("");         // two exist, so this one is allowed
+  Sona.switchKid("");
+  const midway = Sona.kids().length;
+  return { before, removedLast, midway, active: Sona.activeKid().slot, survivorRun: sessionStorage.getItem("sona.run.v1") === window.__kidRunB, removedRunAbsent: sessionStorage.getItem("sona.run.v1") !== window.__kidRunA, keys: Object.keys(localStorage).filter((k) => k.indexOf("@k2") > -1).length };
+});
+ok("removing the active child restores the survivor's run without the removed run", st.active === "k2" && st.survivorRun && st.removedRunAbsent, JSON.stringify(st));
+ok("a removal takes the child out of the list", st.midway === st.before - 1, JSON.stringify(st));
+
+st = await page.evaluate(() => ({ blocked: Sona.removeKid(Sona.kids()[0].slot), n: Sona.kids().length }));
+ok("the last child can never be removed", st.blocked === false && st.n === 1, JSON.stringify(st));
+
+// ── a grandfathered household stays grandfathered through its children ──
+// (24 Sep 2026) The free-era sweeps mark the profiles that exist when they
+// run, and earlyAdopterAnyKid() only reads children still on the list. A
+// family who added a sibling and then removed the first child — the only one
+// ever marked — dropped to the free version. addKid copies the household's
+// mark onto the new child now; a household without one gives none.
+{
+  const c2 = await browser.newContext(); const p2 = await c2.newPage();
+  await p2.goto("http://localhost:8153/today.html"); await p2.waitForTimeout(400);
+  const seed = (early) => p2.evaluate((early) => {
+    localStorage.clear();
+    localStorage.setItem("sona.freeera.v1", "post"); localStorage.setItem("sona.freeera2.v1", "done");
+    localStorage.setItem("sona.freeera3.v1", "done"); localStorage.setItem("sona.freeera4.v1", "done");
+    localStorage.setItem("sona.profile.v1", JSON.stringify(Object.assign({ childName: "Ada", childAge: "6", focusSounds: ["R"], onboarded: true }, early ? { earlyAdopter: true, freeEra: true, freeEra4: true } : {})));
+    sessionStorage.setItem("sona.paidui", "1");
+    localStorage.setItem("sona.demo.v1", JSON.stringify({ started: 1, done: 1 }));
+  }, early);
+  await seed(true);
+  st = await p2.evaluate(() => {
+    const before = Sona.premium();
+    Sona.addKid("Ben", "5");
+    const copied = !!Sona.getProfile().earlyAdopter;
+    const removed = Sona.removeKid("");              // the child the sweep marked
+    return { before, copied, removed, kids: Sona.kids().length, after: Sona.premium(), tiles: Sona.gameAccess("tiles").allowed };
+  });
+  ok("a new child in a grandfathered household carries the household's grant", st.before === true && st.copied === true, JSON.stringify(st));
+  ok("…so removing the first child keeps the family's Premium", st.removed && st.kids === 1 && st.after === true && st.tiles === true, JSON.stringify(st));
+  await seed(false);
+  st = await p2.evaluate(() => { Sona.addKid("Cy", "5"); return { early: !!Sona.getProfile().earlyAdopter, premium: Sona.premium() }; });
+  ok("…while a household never grandfathered gains nothing by adding one", st.early === false && st.premium === false, JSON.stringify(st));
+  await c2.close();
+}
+
+// ── per-kid keys that pages own directly must be namespaced too ──
+// PER_KID is a promise; a key listed there but read with a raw localStorage call
+// keeps none of it. These are the live surfaces that keep their own key.
+{
+  const lib = readFileSync(ROOT + "/library.html", "utf8");
+  const feed = readFileSync(ROOT + "/arcade-feed.html", "utf8");
+  const story = readFileSync(ROOT + "/story.html", "utf8");
+  const today = readFileSync(ROOT + "/today.html", "utf8");
+  ok("library read-stars are per child", /Sona\.kkey\("sona\.lib\.read\.v1"\)/.test(lib));
+  ok("library's story-done check is per child", /kkey\("sona\.games\.v1"\)/.test(lib));
+  ok("Echo's size is per child", /Sona\.kkey\("sona\.feed\.v1"\)/.test(feed));
+  ok("Story Time's finished flag is per child", /kkey\("sona\.games\.v1"\)/.test(story));
+  // the comeback greeting was removed on Travis's call — nothing should write
+  // its key or resurrect the overlay
+  ok("the comeback popup stays gone", !/cbOvl|sona\.comeback\.v1/.test(today));
+  // the first-run guard runs before sona.js and must resolve the slot itself
+  ok("the first-run guard reads the ACTIVE child's profile",
+    /sona\.kids\.v1[\s\S]{0,320}sona\.profile\.v1"\s*\+\s*\(slot/.test(today),
+    "it would always read child one, so a new sibling would skip setup");
+}
+
+// ── Settings surfaces the switcher ──
+await page.goto("http://localhost:8153/settings.html?gate=1");
+await page.waitForTimeout(600);
+await page.evaluate(() => { try { Sona.gateVerify(); } catch (e) {} });
+await page.goto("http://localhost:8153/settings.html");
+await page.waitForTimeout(700);
+const ui = await page.evaluate(() => ({
+  card: !!document.getElementById("kidsCard"),
+  rows: document.querySelectorAll("#kidList [data-slot]").length,
+  active: document.querySelectorAll('#kidList [data-active="1"]').length,
+  addBtn: !!document.getElementById("addKidBtn"),
+  copy: (document.getElementById("kidsCard") || {}).textContent || "",
+}));
+ok("Settings has a Kids card", ui.card);
+ok("it lists every child", ui.rows >= 1, "rows=" + ui.rows);
+ok("exactly one child is marked as practicing now", ui.active === 1, "active=" + ui.active);
+ok("it offers adding a kid", ui.addBtn);
+ok("it says the settings below belong to the selected child", /belongs to whoever is selected/i.test(ui.copy), ui.copy.slice(0, 120));
+
+ok("no pageerrors", errs.length === 0, errs.join(" | "));
+await browser.close(); srv.close();
+console.log(fails ? fails + " FAILURES" : "ALL GREEN");
+process.exit(fails ? 1 : 0);
