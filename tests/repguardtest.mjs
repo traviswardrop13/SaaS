@@ -199,6 +199,11 @@ function signalDevice(config){
 async function fresh(config={}){
   const context=await browser.newContext({viewport:{width:390,height:844}});
   await context.route('**/*',route=>route.request().url().startsWith(origin+'/')?route.continue():route.abort());
+  // 25 Sep 2026: a sound-alone round's prompt is Rachel's take in Echo's
+  // voice, a 12–19 s clip (HUMAN_CLIPS). This suite is about what the mic
+  // hears AFTER the prompt, so the clip is absent here and the calm TTS
+  // line stands in, as before. micquietpracticetest covers the clip itself.
+  await context.route(/\/coach\/say-echo\//,route=>route.fulfill({status:404,body:''}));
   await context.addInitScript(signalDevice,{sound:'R',native:false,...config});
   const page=await context.newPage();page.setDefaultTimeout(config.voice||config.cpu?9000:5000);const errors=[];page.on('pageerror',e=>errors.push(e.message));
   // config.cpu: DevTools CPU throttling (this many times slower).
