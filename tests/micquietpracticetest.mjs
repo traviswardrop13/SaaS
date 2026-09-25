@@ -135,7 +135,11 @@ function device(config) {
       const a = { fftSize: 512, frequencyBinCount: 256, disconnect() {},
         getByteTimeDomainData(d) { const v = live(a), n = hiss(a), l = loud(a); for (let i = 0; i < d.length; i++) { const p = 2 * Math.PI * 187.5 * i / 48000; d[i] = v ? Math.round(128 + g * (22 * Math.sin(p) + 16 * Math.sin(2 * p) + 12 * Math.sin(3 * p) + 9 * Math.sin(4 * p))) : l ? 128 + ((i & 1) ? L : -L) : n ? 128 - (i & 1) : 128; } },
         getByteFrequencyData(d) { d.fill(0); if (live(a)) for (const k of [2, 4, 6, 8]) d[k] = 230; },
-        getFloatTimeDomainData(d) { const v = live(a); for (let i = 0; i < d.length; i++) { let x = 0; if (v) { const p = 2 * Math.PI * 187.5 * i / 48000; for (let k = 1; k <= 24; k++) x += 0.12 / k * Math.sin(k * p); } d[i] = x; } },
+        // The float samples are the same room the bytes carry (a real
+        // analyser's two views of one signal): the hiss and the loud room
+        // too, not zeros. Zeros here are a mic still starting (25 Sep 2026:
+        // a frame with a run of them is not read as the room).
+        getFloatTimeDomainData(d) { const v = live(a), n = hiss(a), l = loud(a); for (let i = 0; i < d.length; i++) { let x = 0; if (v) { const p = 2 * Math.PI * 187.5 * i / 48000; for (let k = 1; k <= 24; k++) x += 0.12 / k * Math.sin(k * p); } else if (l) x = ((i & 1) ? L : -L) / 128; else if (n) x = -(i & 1) / 128; d[i] = x; } },
         getFloatFrequencyData(d) { const v = live(a), bin = 24000 / d.length; for (let i = 0; i < d.length; i++) d[i] = v && i * bin < 6000 ? (i % 4 === 0 ? -40 : -70) : -110; } };
       return a;
     }

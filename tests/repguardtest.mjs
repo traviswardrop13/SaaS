@@ -133,9 +133,19 @@ function signalDevice(config){
         else x[i]=w;
         e+=x[i]*x[i];}
       const g=Math.pow(10,config.room.db/20)/Math.sqrt(e/n);for(let i=0;i<n;i++)x[i]*=g;
-      const src=ctx.createBufferSource();src.buffer=b;src.loop=true;connect.call(src,destination);src.start();}
+      // config.room.drop: the room is that many dB quieter from the moment
+      // the page has its one reading (a fan turned down before the child's
+      // turn); h.reading keeps a copy of that reading as the page took it.
+      const level=ctx.createGain();level.gain.value=h.dropped?Math.pow(10,-config.room.drop/20):1;(h.roomLevels=h.roomLevels||[]).push(level);
+      const src=ctx.createBufferSource();src.buffer=b;src.loop=true;connect.call(src,level);connect.call(level,destination);src.start();}
     h.ctx=ctx;h.destination=destination;h.streams.push(destination.stream);return destination.stream;
   }});
+  if(config.room&&config.room.drop){const watch=setInterval(()=>{const r=window.room;if(!r||!r.bg)return;clearInterval(watch);
+    h.reading={rms:r.rms,bg:Array.from(r.bg)};h.dropped=true;
+    for(const level of h.roomLevels||[])level.gain.setValueAtTime(Math.pow(10,-config.room.drop/20),level.context.currentTime);},5);}
+  // config.fps: animation frames at this rate (a phone under load, or in Low
+  // Power Mode), as speechevidencetest does.
+  if(config.fps){const ms=1000/config.fps;window.requestAnimationFrame=fn=>setTimeout(()=>fn(performance.now()),ms);window.cancelAnimationFrame=id=>clearTimeout(id);}
   let sona;
   Object.defineProperty(window,'Sona',{configurable:true,get:()=>sona,set(value){
     sona=value;
@@ -190,7 +200,9 @@ async function fresh(config={}){
   const context=await browser.newContext({viewport:{width:390,height:844}});
   await context.route('**/*',route=>route.request().url().startsWith(origin+'/')?route.continue():route.abort());
   await context.addInitScript(signalDevice,{sound:'R',native:false,...config});
-  const page=await context.newPage();page.setDefaultTimeout(config.voice?9000:5000);const errors=[];page.on('pageerror',e=>errors.push(e.message));
+  const page=await context.newPage();page.setDefaultTimeout(config.voice||config.cpu?9000:5000);const errors=[];page.on('pageerror',e=>errors.push(e.message));
+  // config.cpu: DevTools CPU throttling (this many times slower).
+  if(config.cpu)await(await context.newCDPSession(page)).send('Emulation.setCPUThrottlingRate',{rate:config.cpu});
   if(config.shared){await page.goto(origin+'/__shared');await page.waitForFunction(()=>window.Sona);return{context,page,errors};}
   await page.goto(origin+'/charge.html?daily=1&sound='+(config.sound||'R'));
   await page.waitForFunction(()=>window.engineOn&&window.engineAttempt?.segment&&!window.engineAttempt.segment.closed);
@@ -307,14 +319,61 @@ try{
   // than any real one (-20dBFS, ~0.1: over the capped bar itself) is never
   // taken for a room, and on its own earns nothing either: pink and white
   // are never voiced, and a steady hum never ends.
-  if(process.env.REPGUARD_ONLY!=='positive')for(const kind of ['tone','hum','white noise','breath'])await scenario(kind+' in a loud room',async()=>{
-    const{page,context,errors}=await fresh({room:{kind:'pink',db:-32}});
+  // UNDER LOAD (25 Sep 2026). Each also runs on a slow phone: DevTools CPU
+  // throttling (6x) with animation frames at 20fps, which is what load does
+  // to this page. Every look at a sound is a frame, so a sparse one gives
+  // noise fewer chances to be caught out. (Its first run caught the page
+  // reading this room as ~0.001 off a frame the starved mic path had left
+  // almost empty: charge.html, A STARVED FRAME IS NOT A ROOM.)
+  // The pure tone is played over the loudest room #139's speech evidence was
+  // calibrated for (pink, -40dBFS), not -32. Over -32dBFS its check for a
+  // voice's overtones (a harmonic 6dB over the room, within 40dB of the
+  // strongest) is met by the room's own noise at the tone's missing
+  // overtones often enough that a held pure tone counts on some plays: in
+  // the live build too (1 play in 6 under CPU load, 13 in 20 at 20fps).
+  // That is the rule's envelope, Rachel's call, and speechevidencetest
+  // prints the figures; what this page adds to it is pinned below (ONE
+  // READING, WHOLE) and in speechevidencetest.
+  const LOUD=[['tone',-40],['hum',-32],['white noise',-32],['breath',-32]];
+  for(const [load,cfg] of [['',{}],[' on a slow phone (6x CPU, 20fps)',{cpu:6,fps:20}]])
+    if(process.env.REPGUARD_ONLY!=='positive')for(const [kind,db] of LOUD)await scenario(kind+' in a loud room'+load,async()=>{
+      const{page,context,errors}=await fresh({room:{kind:'pink',db},...cfg});
+      try{
+        const before=await snapshot(page);await page.evaluate(kind=>__repHarness.play(kind),kind);await completeSegment(page);
+        // Read the count BEFORE waiting on the quiet screen: a counted noise
+        // navigates to the game, where the page's globals no longer exist, and
+        // the failure would surface as a ReferenceError instead of by name.
+        const early=await page.evaluate(()=>({reps,room:typeof room!=='undefined'&&room?room.rms:null,evid:window.__evid||[]}));
+        await page.locator('#quietOvl.show').waitFor({timeout:3000}).catch(()=>{});
+        const after=await snapshot(page).catch(()=>({navigated:true})),state=await page.evaluate(()=>({reps,room:typeof room!=='undefined'&&room?room.rms:null,quiet:!!document.querySelector('#quietOvl.show'),evid:window.__evid||[]})).catch(()=>({...early,quiet:false}));
+        const want=Math.pow(10,db/20);
+        ok(kind+' in a loud room'+load+': the room (~'+want.toFixed(3)+') was measured as the room',state.room>want/2&&state.room<=Math.min(.03,want*1.5),state);
+        ok(kind+' in a loud room'+load+': no counted repetition and no saved change',state.reps===0&&JSON.stringify(before)===JSON.stringify(after)&&state.quiet,{state,before,after});
+        ok(kind+' in a loud room'+load+': no script error',errors.length===0,errors);
+      }finally{await close(context,page);}
+    });
+  // ONE READING, WHOLE (25 Sep 2026). A window's own first quarter-second may
+  // lower the page's room. For a day that lowering took the speech-evidence
+  // background bin by bin, the quieter of the page's reading and the
+  // window's, whenever the window came in a hair quieter: in a steady room,
+  // half the time. A background stitched from two noisy readings is quieter
+  // than the room either one heard, and against it the room's own noise at a
+  // pure tone's missing overtones looked like a voice (speechevidencetest:
+  // over 100 fan-loud rooms at 60fps the page let a tone through on 32 plays
+  // to #139's own 16). Here the room turns down after the page's reading:
+  //  - by 1.5dB: the bar follows it down, as it must for a soft child, but
+  //    the background is still the page's reading, every bin of it;
+  //  - by 8dB, clearly quieter: the background is the quieter room's own
+  //    reading, a whole one.
+  if(process.env.REPGUARD_ONLY!=='positive')for(const drop of [1.5,8])await scenario('a loud room '+drop+'dB quieter by the child\'s turn',async()=>{
+    const{page,context,errors}=await fresh({room:{kind:'pink',db:-32,drop}});
     try{
-      const before=await snapshot(page);await page.evaluate(kind=>__repHarness.play(kind),kind);await completeSegment(page);
-      const after=await snapshot(page),state=await page.evaluate(()=>({reps,room:room&&room.rms,quiet:!!document.querySelector('#quietOvl.show')}));
-      ok(kind+' in a loud room: the room (~0.02) was measured as the room',state.room>.01&&state.room<=.03,state);
-      ok(kind+' in a loud room: no counted repetition and no saved change',state.reps===0&&JSON.stringify(before)===JSON.stringify(after)&&state.quiet,{state,before,after});
-      ok(kind+' in a loud room: no script error',errors.length===0,errors);
+      const s=await page.evaluate(()=>{const r=__repHarness.reading,cur=typeof room!=='undefined'?room:null,bg=cur&&cur.bg?Array.from(cur.bg):[],mean=a=>a.reduce((x,y)=>x+y,0)/Math.max(1,a.length);
+        return{read:r&&r.rms,now:cur&&cur.rms,bins:bg.length,same:!!r&&bg.length===r.bg.length&&bg.every((v,k)=>v===r.bg[k]),stitched:!!r&&bg.filter((v,k)=>v!==r.bg[k]).length,quieterBy:r?mean(r.bg)-mean(bg):null};});
+      ok('room '+drop+'dB quieter: the page took its reading before the drop, and the bar followed the room down',s.read>.01&&s.now<s.read,s);
+      if(drop<3)ok('room '+drop+'dB quieter: the speech-evidence background is still the page\'s own reading, whole (no bin taken from the window\'s)',s.bins>0&&s.same,s);
+      else ok('room '+drop+'dB quieter: the background is the quieter room\'s own reading',s.bins>0&&s.quieterBy>4,s);
+      ok('room '+drop+'dB quieter: no script error',errors.length===0,errors);
     }finally{await close(context,page);}
   });
   if(process.env.REPGUARD_ONLY!=='positive')for(const kind of ['pink','white','hum'])await scenario('a '+kind+' room louder than any real one',async()=>{

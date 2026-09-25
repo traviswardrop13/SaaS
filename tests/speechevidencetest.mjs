@@ -17,7 +17,7 @@ import { createServer } from 'node:http';
 import { readFileSync, existsSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { chromium, ROOT, launchOpts } from './_env.mjs';
-import { run, stream, fixture, gain, clip, rms, room, loadEvidence } from './_speechreplay.mjs';
+import { run, stream, fixture, gain, clip, rms, room, loadEvidence, pageRoom } from './_speechreplay.mjs';
 import { voice, cat, silence } from './_childsynth.mjs';
 const publicRoot = process.env.SONATEST_PUBLIC_ROOT || ROOT; // point at another build to compare
 const MIME = { html:'text/html', js:'text/javascript', css:'text/css', svg:'image/svg+xml', png:'image/png', webp:'image/webp', woff2:'font/woff2', mp3:'audio/mpeg' };
@@ -217,7 +217,9 @@ try{
   for(const line of ['if(!inBurst&&voiced>=4&&(successAt!==null||now-lastRep>350)){inBurst=true;burstAt=now;}','if(evid.frame(now)&&inBurst&&!seg.learn)countRep(now);',
     'if(inBurst&&!counted&&(silent>=8||evid.quietFor(now)>=EVID.quietMs)&&heardTry())countRep(now);','if(silent>=8){inBurst=false;counted=false;burstFrames=[];evid.drop();}',
     'if(!inBurst){burstFrames=[];evid.drop();if(seg.learn&&rms<=ROOM_MAX)learnRoom(now,rms);}',
-    'if(now-seg.startedAt<250){seg.rms.push(rms);evid.calibrate(now);if(!thr){seg.raf=requestAnimationFrame(tick);return;}}',
+    'if(now-seg.startedAt<250){if(!starved(ev,rms)){seg.rms.push(rms);evid.calibrate(now);}if(!thr){seg.raf=requestAnimationFrame(tick);return;}}',
+    'if(starved(ev,rms))return;','if(!(level>0)||!ev||!ev.getFloatTimeDomainData)return false;','for(var i=0,run=0;i<gapBuf.length;i++){if(gapBuf[i]!==0)run=0;else if(++run>=GAP_RUN)return true;}',
+    'var gap=starved(ev,level);','if(began===null&&level>0&&!gap)began=now;','if(!gap){rms.push(level); probe.calibrate(now);}',
     'function roomLevel(list,pct){var v=list.filter(function(x){return x>0;}).sort(function(a,b){return a-b;});return v.length?v[Math.floor((v.length-1)*pct)]:0;}',
     'function roomBar(level){return Math.min(3*ROOM_MAX,Math.max(0.035,level*3.0));}',
     'var low=roomLevel(seg.rms,ROOM_PCT),bg=evid.measured(),off=!(ev.getFloatTimeDomainData&&ev.getFloatFrequencyData),voice=low>ROOM_MAX;',
@@ -225,6 +227,11 @@ try{
     'seg.learn.push(rms);evid.calibrate(now);','if(seg.learn.length<LEARN_FRAMES)return;','if(bg)evid.floor(bg);','thr=roomBar(low);seg.learn=null;',
     'function heardTry(){return seg.learn?/^(voiced|sibilant|energy)$/.test(evid.route()):evid.brief();}',
     'reps++;heardAt=now;lastRep=burstAt;',
+    // the page's room (pageRoom, and run()'s `room`): taken once, carried in,
+    // lowered by a window's quieter reading through roomLower (extracted)
+    'if(complete&&roomUsable(rms)&&(bg||off)&&level<=ROOM_MAX)room=roomReading(level,bg);',
+    'if(room&&evid.floor(room.bg))thr=roomBar(room.rms);',
+    'if(!voice&&roomUsable(seg.rms)&&(bg||off)){','else if(low<room.rms&&fits())roomLower(low,bg);','if(fits()){evid.floor(room.bg);thr=roomBar(room.rms);seg.learn=null;}',
     'ev.fftSize=ctx.sampleRate>=88200?2048:ctx.sampleRate>=32000?1024:512;'])
     ok('replay mirrors charge.html: '+line.slice(0,48),charge.includes(line),line);
   const dec=await browser.newPage();await dec.goto(origin+'/__blank');
@@ -314,6 +321,58 @@ try{
   // ten times the loudest room above), whether it has pauses to learn from
   // (pink, white) or none (a steady hum, never quiet, never ending).
   for(const kind of ['pink','white','hum'])for(const db of [-26,-21,-20,-15])replay(`a ${kind} room at ${db}dBFS from the first frame, nothing said`,false,room(R*8,R,kind,db,99),R,{loud:true});
+  // ONE READING, WHOLE (25 Sep 2026). The page reads the room once, before
+  // Echo speaks, and carries it into every window; a window's own quieter
+  // reading may lower it (charge.html roomLower, extracted verbatim). For a
+  // day that lowering took the speech-evidence background bin by bin, the
+  // quieter of the two readings, whenever the window came in a hair quieter
+  // (in a steady room, half the time). A background stitched from two noisy
+  // readings is quieter than the room either heard, and the room's own noise
+  // at a pure tone's missing overtones then clears #139's overtone check.
+  // Replayed as the page runs it: its reading on the fresh mic, a window 1s
+  // later over the same steady fan-loud room (pink, -32dBFS), a 1.8s 440Hz
+  // tone from 350ms into the window (as repguardtest plays it), 100 rooms.
+  // At 60fps (#139's calibration) and 30fps (WebKit's Low Power Mode),
+  // together, the page may never let the tone through more often than
+  // #139's own per-window reading does on the same rooms (one room is a
+  // coin toss either way; 200 plays are not). The stitched background did:
+  // 66 plays to 45 (32 to 16 at 60fps).
+  // NEITHER IS ZERO, and that is #139's envelope, not the page: at -32dBFS
+  // (#139's loudest room is -40, where the tone never counts) the room's
+  // noise alone meets the overtone check often enough that a held pure tone
+  // counts on some plays, and at 20fps (a phone under load) "held 45ms" is
+  // two looks. There the page's 300ms reading, a truer room than a sparse
+  // window's four frames (whose upper-middle frame reads a little loud),
+  // lets more through than #139's own window does. Tightening the check is
+  // Rachel's call; the figures print below for her.
+  if(evidence.page){
+    const tally={};
+    for(const fps of [60,30,20]){const t=tally[fps]={page:0,own:0};
+      for(let seed=1;seed<=100;seed++){
+        const sig=stream(R,[[fixture('tone',R),1.35]],{lead:0,tail:.3,roomKind:'pink',roomDb:-32,seed}),win=sig.subarray(R);
+        if(run(win,R,{fps,evidence,room:pageRoom(sig,R,{fps,evidence})}).reps)t.page++;
+        if(run(win,R,{fps,evidence}).reps)t.own++;
+      }}
+    console.log('INFO a 440Hz tone over a -32dBFS pink room, plays counted of 100 (page / #139 own window): '+[60,30,20].map(f=>f+'fps '+tally[f].page+' / '+tally[f].own).join(', '));
+    const page=tally[60].page+tally[30].page,own=tally[60].own+tally[30].own;
+    ok(`replay: over 100 fan-loud rooms at 60 and 30fps, the page's carried room lets a pure tone through no more often than #139's own window (${page} plays vs ${own})`,page<=own,tally);
+  }else console.log('INFO this build has no page room (#139 as it shipped): every window reads its own');
+  // A STARVED FRAME IS NOT A ROOM (25 Sep 2026). On a slow phone the mic path
+  // can stutter as it starts: a sliver of sound, a gap, a sliver, then sound.
+  // A frame taken on a sliver is almost all zeros, and a reading's quiet end
+  // is exactly where it lands: the fan-loud room (~0.02) read as ~0.002, the
+  // bar fell to its 0.035 floor under a room that crosses it, and the
+  // speech-evidence background went with it (as it did once in repguardtest
+  // on a 6x-throttled 20fps page). A frame with 2ms of exact zeros in it is
+  // not read now, in the page's reading or a window's.
+  if(evidence.page)for(const fps of [30,20]){
+    const pos=ms=>Math.floor(ms/1000*R/128)*128,steady=room(R*3,R,'pink',-32,99),slivers=[pos(1000/fps),pos(2000/fps)];
+    const stutter=steady.map((v,i)=>i<slivers[1]-3&&!slivers.some(p=>i>=p-3&&i<p)?0:v);
+    const read=pageRoom(stutter,R,{fps,evidence}),want=pageRoom(steady,R,{fps,evidence});
+    ok(`replay: a mic stuttering as it starts, ${fps}fps: the page's reading is the room (${read&&read.rms.toFixed(4)}), not the gap`,!!read&&!!want&&Math.abs(read.rms/want.rms-1)<.25,{read:read&&read.rms,want:want&&want.rms});
+    const bar=run(stutter,R,{fps,evidence,room:want}).thr,bar0=run(steady,R,{fps,evidence,room:want}).thr;
+    ok(`replay: a window whose mic stutters as it opens, ${fps}fps: the bar stays three times the room (${bar.toFixed(3)})`,Math.abs(bar/bar0-1)<.25,{bar,steady:bar0});
+  }
   await dec.close();
   // REWRITTEN 24 Sep 2026: this pinned that every bar sat at the 0.035 floor
   // (so the replay's median and the page's 20th percentile agreed). The

@@ -613,9 +613,10 @@
     var CUETIP=""; try{ CUETIP=(S&&S.cue)?(S.cue(SOUND).tip||""):""; }catch(e){}
     // compact articulation cue: first clause only, no similes, no sound demos
     var CUESHORT=(CUETIP.split("\u2014")[0].split(" like ")[0].split(",")[0]||"").trim().replace(/[.!]+$/,"");
-    // Human model prompts ON: /coach/say/<SOUND>.mp3 is the finished
-    // Sarah-voiced set (Rachel's takes, re-voiced) — the prompt actually
-    // PERFORMS the sound, which TTS never can. TTS remains the fallback.
+    // Human model prompts: /coach/say/<SOUND>.mp3 is Rachel's own take of the
+    // whole opening line (July 2026 wording) — the prompt actually PERFORMS
+    // the sound, which TTS never can. Not yet re-voiced into Echo's voice, so
+    // the switch is off; TTS remains the fallback either way.
     // Shared switch (Sona.HUMAN_CLIPS) — NOT a local copy. A local copy here is
     // exactly why Rachel's clips kept playing in coach-call.html.
     var HUMANCLIPS=false; try{ HUMANCLIPS=!!(S&&S.humanClipsOn&&S.humanClipsOn()); }catch(e){}
@@ -1365,6 +1366,49 @@
     // The loudness bar for a room level: 3x the room, never under 0.035 (a
     // silent room) and never over 3 x ROOM_MAX (the loudest room there is).
     function roomBar(level){return Math.min(3*ROOM_MAX,Math.max(0.035,level*3.0));}
+    // ONE READING, WHOLE (25 Sep 2026). The speech-evidence background is
+    // always ONE reading's per-bin median, the "room" #139's thresholds were
+    // set against, never stitched bin by bin from two. A window's quieter
+    // reading used to take the per-bin MINIMUM of it and the carried one,
+    // whenever its quiet end came in a hair under the carried room: in a
+    // steady room, half the time. Each reading is a median of a dozen or so
+    // frames, a couple of dB low in some bins and high in others; the minimum
+    // of two keeps every low miss, so the background came out quieter than
+    // the room either reading heard, and the room's own noise at a pure
+    // tone's missing overtones cleared it. A 440Hz tone over a fan-loud room
+    // (pink, -32dBFS) then counted on more plays than #139's own per-window
+    // reading lets through: 32 rooms in 100 against 16 at 60fps, 34 against
+    // 29 at 30fps (speechevidencetest replays it).
+    // So the background changes only to a room clearly quieter than the one
+    // it was read from (under half its power: ROOM_CLEAR), and then to that
+    // window's reading, whole. The bar (room.rms) still follows every quieter
+    // reading down, exactly as before, so an eager or soft child loses
+    // nothing. room.bgRms is the quiet end of the reading the background is.
+    var ROOM_CLEAR=Math.SQRT1_2;
+    function roomReading(level,bg){return {rms:level,bg:bg,bgRms:level};}
+    function roomLower(level,bg){
+      room.rms=level;
+      if(bg&&level<room.bgRms*ROOM_CLEAR){room.bg=bg;room.bgRms=level;}
+    }
+    // A STARVED FRAME IS NOT A ROOM (25 Sep 2026). A frame with sound in it
+    // (level) and also a run of exact digital zeros (GAP_RUN samples, 2ms at
+    // 48kHz) is an audio path still starting (a fresh analyser only part
+    // full) or one starved under CPU load, never the room: real audio, even a
+    // mic's faintest hiss, is never exactly zero for that long. Its loudness
+    // is the gap's, and a reading's quiet end is exactly where it lands: on a
+    // slow phone one such frame made a loud room (~0.025) read as ~0.001, and
+    // since a reading only ever lowers the room, for the rest of the page.
+    // Readings (the page's, a window's first quarter-second, learnRoom) skip
+    // it. Frames of nothing but zeros are handled as they always were, and
+    // without float reads (old WebKit) nothing changes.
+    var GAP_RUN=96, gapBuf=null;
+    function starved(ev,level){
+      if(!(level>0)||!ev||!ev.getFloatTimeDomainData)return false;
+      if(!gapBuf||gapBuf.length!==ev.fftSize)gapBuf=new Float32Array(ev.fftSize);
+      ev.getFloatTimeDomainData(gapBuf);
+      for(var i=0,run=0;i<gapBuf.length;i++){if(gapBuf[i]!==0)run=0;else if(++run>=GAP_RUN)return true;}
+      return false;
+    }
     // Evidence reads its own unsmoothed analyser, so the shape checker's
     // smoothed bytes are untouched.
     function evidenceAnalyser(ctx,src){var ev=ctx.createAnalyser(); ev.fftSize=ctx.sampleRate>=88200?2048:ctx.sampleRate>=32000?1024:512; ev.smoothingTimeConstant=0; src.connect(ev); return ev;}
@@ -1379,7 +1423,7 @@
         try{if(src)src.disconnect();}catch(e){}
         var bg=complete?probe.measured():null,off=!!ev&&!(ev.getFloatTimeDomainData&&ev.getFloatFrequencyData),level=roomLevel(rms,ROOM_PCT);
         // Louder than any room (ROOM_MAX): the child was talking. No reading.
-        if(complete&&roomUsable(rms)&&(bg||off)&&level<=ROOM_MAX)room={rms:level,bg:bg};
+        if(complete&&roomUsable(rms)&&(bg||off)&&level<=ROOM_MAX)room=roomReading(level,bg);
         else if(complete&&roomUsable(rms)&&level>ROOM_MAX)roomLoud=true;
         done();
       }
@@ -1400,11 +1444,13 @@
         // A context still resuming delivers nothing yet, and nor does a mic
         // still sending digital zeros: their time does not count, and a path
         // not delivering within 600ms gives no reading at all. The ROOM_MS
-        // clock starts at the first frame that is not zeros.
+        // clock starts at the first frame that is not zeros, and a frame
+        // with a gap of zeros in it (starved) is not read.
         var level=(!ctx.state||ctx.state==="running")?frameRms(an,td):0;
-        if(began===null&&level>0)began=now;
+        var gap=starved(ev,level);
+        if(began===null&&level>0&&!gap)began=now;
         if(began!==null){
-          rms.push(level); probe.calibrate(now);
+          if(!gap){rms.push(level); probe.calibrate(now);}
           if(now-began>=ROOM_MS){finish(true);return;}
         }else if(now>cap){finish(false);return;}
         raf=requestAnimationFrame(frame);
@@ -1573,7 +1619,7 @@
               // ROOM FLOOR: every window samples its own first quarter-second.
               // With the page's room already set it listens meanwhile; without
               // one it waits for the reading (thr stays 0 until readRoom).
-              if(now-seg.startedAt<250){seg.rms.push(rms);evid.calibrate(now);if(!thr){seg.raf=requestAnimationFrame(tick);return;}}
+              if(now-seg.startedAt<250){if(!starved(ev,rms)){seg.rms.push(rms);evid.calibrate(now);}if(!thr){seg.raf=requestAnimationFrame(tick);return;}}
               else if(!seg.read){seg.read=true;readRoom();}
               // Mic open, room known: only now is it visibly the child's turn.
               if(!listenReady){listenReady=true;micGo(true);}
@@ -1613,17 +1659,16 @@
             // read as a room at all. Too few real samples (a mic still
             // starting) sets nothing: this window listens against its
             // quietest reading, as before, and the next window measures again.
+            // The bar follows any quieter reading; the speech-evidence
+            // background only a clearly quieter one, whole (roomLower).
             function readRoom(){
               var low=roomLevel(seg.rms,ROOM_PCT),bg=evid.measured(),off=!(ev.getFloatTimeDomainData&&ev.getFloatFrequencyData),voice=low>ROOM_MAX;
               if(voice&&roomUsable(seg.rms))roomLoud=true;
               // The carried room describes this analyser (same frequency bins).
               function fits(){return !!room&&(off||!!(room.bg&&bg&&room.bg.length===bg.length));}
               if(!voice&&roomUsable(seg.rms)&&(bg||off)){
-                if(!room)room={rms:low,bg:bg};
-                else if(low<room.rms&&fits()){
-                  room.rms=low;
-                  if(bg)for(var k=0;k<bg.length;k++)room.bg[k]=Math.min(room.bg[k],bg[k]);
-                }
+                if(!room)room=roomReading(low,bg);
+                else if(low<room.rms&&fits())roomLower(low,bg);
               }
               if(fits()){evid.floor(room.bg);thr=roomBar(room.rms);seg.learn=null;}
               else{
@@ -1647,10 +1692,11 @@
             // background (and the page's room, if they are quiet enough to be
             // one), and the window listens as any other.
             function learnRoom(now,rms){
+              if(starved(ev,rms))return;
               seg.learn.push(rms);evid.calibrate(now);
               if(seg.learn.length<LEARN_FRAMES)return;
               var low=roomLevel(seg.learn,ROOM_PCT),bg=evid.measured(),off=!(ev.getFloatTimeDomainData&&ev.getFloatFrequencyData);
-              if(!room&&low<=ROOM_MAX&&roomUsable(seg.learn)&&(bg||off))room={rms:low,bg:bg};
+              if(!room&&low<=ROOM_MAX&&roomUsable(seg.learn)&&(bg||off))room=roomReading(low,bg);
               if(bg)evid.floor(bg);
               thr=roomBar(low);seg.learn=null;
             }
@@ -1675,7 +1721,16 @@
             }
             // A short sound that ended just before time ran out or Echo spoke
             // still counts; one still going cannot be judged and is dropped.
-            function judgePending(now){if(inBurst&&!counted&&silent>0&&heardTry())countRep(now);}
+            // A sound still under way when Sona closes the mic for its own
+            // sound (yieldToApp) or at the 20 s deadline is judged here. While
+            // the room is being learned the bar is capped, a loud hum sits
+            // within a decibel of it, and one quiet frame is not an end — it
+            // was counted as a "voiced" try at the instant the mic closed. In
+            // learn mode a try needs the same real end tick() asks for.
+            function judgePending(now){
+              if(!(inBurst&&!counted&&heardTry()))return;
+              if(seg.learn?(silent>=8||evid.quietFor(now)>=EVID.quietMs):silent>0)countRep(now);
+            }
             seg.yieldToApp=function(){if(seg.closed)return;judgePending(performance.now());seg.finish("model");};
             // Coaching and background pauses must not spend listening time.
             function finishTail(){var remaining=successAt-activeMs();if(remaining<=0)seg.finish("done");else later(finishTail,remaining);}
