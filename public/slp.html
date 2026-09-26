@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
+  <link rel="icon" type="image/png" href="/assets/slp-tab-icon.png" />
   <script>
 // Clinician tools live in the browser. A restored link in the native shell
 // must return to the family app before rendering or making clinician requests.
@@ -479,7 +480,14 @@
     .feedback-tabs button { flex:1; background:transparent; border:1px solid transparent; padding:10px; border-radius:6px; font-size:12px; color:var(--muted); cursor:pointer; }
     .feedback-tabs button[aria-pressed=true] { background:white; color:var(--blue-d); border-color:var(--line); box-shadow:0 1px 2px #16384f08; }
     .feedback-intro { background:#edf4ef; border:1px solid #dce8df; border-radius:12px; padding:25px; }
-    .rachel-avatar { width:50px; height:50px; border-radius:50%; background:#dbe9df; display:grid; place-items:center; font-family:"Baloo 2",sans-serif; color:#426c5b; font-size:23px; margin-bottom:18px; }
+    .rachel-avatar { display:block; width:88px; height:88px; border-radius:50%; object-fit:cover; margin-bottom:18px; }
+    .rachel-about { margin:-4px 0 18px; font-size:13px; line-height:1.75; }
+    .rachel-about summary { width:fit-content; color:var(--blue-d); font-weight:800; cursor:pointer; padding:4px 0; }
+    .rachel-about summary:focus-visible { outline:2px solid var(--blue-d); outline-offset:4px; border-radius:4px; }
+    .rachel-bio { padding:16px 18px; margin-top:10px; border:1px solid var(--line); border-radius:12px; background:#ffffffb8; color:var(--muted); }
+    .rachel-bio strong { display:block; color:var(--ink); margin-bottom:8px; }
+    .rachel-bio p + p { margin-top:10px; }
+    img.community-avatar { object-fit:cover; }
     .feedback-intro h2 { font-size:18px; font-weight:600; margin-bottom:7px; }
     .feedback-intro p { font-size:12px; line-height:1.8; color:#597269; margin-bottom:12px; }
     .feedback-intro .signature { color:var(--ink); font-size:13px; margin-top:20px; margin-bottom:0; }
@@ -1126,6 +1134,18 @@
       <div class="page" id="page-community">
         <div class="page-header"><div class="friendly-heading"><img class="heading-echo" src="/coach/echo/echo-celebrate.svg" alt="" aria-hidden="true" width="76" height="76"/><div><div class="eyebrow">Your Sona circle</div><h1>SLP community</h1><p>Swap ideas, ask questions, and cheer each other on.</p></div></div><div class="spacer"></div><button class="btn ghost sm" id="communityRefresh">Refresh</button><button class="btn green" id="communityNew">+ Start a conversation</button></div>
         <div class="community-layout"><div class="community-main">
+          <template id="rachelAboutTemplate">
+            <details class="rachel-about">
+              <summary>About Rachel</summary>
+              <div class="rachel-bio">
+                <strong>Rachel Wardrop, MS</strong>
+                <p>Rachel is Sona's co-founder and a licensed pediatric speech-language pathologist who loves helping children build confidence in communication. She earned her master's in Speech-Language Pathology at Jacksonville University and her undergraduate degree in Communication Disorders at Brigham Young University.</p>
+                <p>Her experience spans schools, hospitals, and private practice, working with children from early childhood through school age. Her approach is play-based and family-centered, with a focus on making practice meaningful in everyday life.</p>
+                <p>Here in the Sona community, she'd love to swap practical ideas, hear what's working for you, and help make home practice a little easier.</p>
+                <p>Outside of work, she enjoys trying new recipes, playing tennis, and getting outdoors with her family.</p>
+              </div>
+            </details>
+          </template>
           <div id="communityPinned" aria-label="Pinned welcome" aria-live="polite"></div>
           <div class="community-people" id="communityPeople" hidden></div>
           <div class="community-membership"><strong>You’re already part of the community.</strong> Free with every SLP account. Other signed-in SLPs see your first name here and on your posts. Your email and caseload stay private.</div>
@@ -1165,7 +1185,7 @@
           <p class="workflow-note">Please keep feedback about the product. Leave out children's names and private information.</p><p class="workflow-note" id="fbReply"></p>
           <div class="row" style="margin-top:18px;"><button class="btn green" id="fbSend">Send to Rachel</button><span class="sub" id="fbStatus" role="status"></span></div>
           <div class="fb-success" id="fbSuccess" role="status" style="display:none;"></div>
-        </div><aside class="feedback-intro"><div class="rachel-avatar" aria-hidden="true">R</div><h2>Hi, I'm Rachel.</h2><p>I'm Sona's co-founder and a licensed pediatric speech-language pathologist.</p><p>I'd love to hear how Sona fits into your day, what could work better, and what you're curious about. A little feedback helps us build something more useful for you and your families.</p><p class="signature">Rachel · Co-founder</p><p class="credential">Licensed pediatric speech-language pathologist</p><button class="btn ghost sm" id="rachelCall">I'd love to connect →</button></aside></div>
+        </div><aside class="feedback-intro"><img class="rachel-avatar" src="/assets/rachel-wardrop-profile.jpg" width="88" height="88" alt="Rachel Wardrop"><h2>Hi, I'm Rachel.</h2><p>I'm Sona's co-founder and a licensed pediatric speech-language pathologist.</p><p>I'd love to hear how Sona fits into your day, what could work better, and what you're curious about. A little feedback helps us build something more useful for you and your families.</p><p class="signature">Rachel · Co-founder</p><p class="credential">Licensed pediatric speech-language pathologist</p><button class="btn ghost sm" id="rachelCall">I'd love to connect →</button></aside></div>
       </div>
 
     </div>
@@ -1897,7 +1917,7 @@
     var PLAN=null, PLAN_AT=0, PLAN_BUSY=false, PLAN_ERR="", PLAN_GEN=0, PLAN_SESSION="";
     var PARENT_PRICE="", PARENT_ASKED=false, BUY_BUSY=false, MANAGE_BUSY=false, SELF_BUSY=false, SELF_SENT="", SELF_DEV="", COVERED_SHOWN=null;
     try{var planSid=new URLSearchParams(location.search).get("plan_session");
-      if(planSid!=null){ if(/^cs_[A-Za-z0-9_]{10,240}$/.test(planSid))PLAN_SESSION=planSid; else history.replaceState(null,"","/slp.html#premium"); }
+      if(planSid!=null){ if(/^cs_[A-Za-z0-9_]{10,240}$/.test(planSid))PLAN_SESSION=planSid; else history.replaceState(null,"",location.pathname+"#premium"); }
     }catch(e){}
     // Paid or grandfathered: the families on this link have every game.
     function caseCovered(){return !!(PLAN&&PLAN.active);}
@@ -1917,7 +1937,7 @@
         // A REFUSAL (activated:false with no retry flag: another account's
         // session, a family's) will never succeed, so it leaves too; Check
         // again then finds a real plan by the recovery search instead.
-        if(sid&&(res.j.activated===true||res.j.active===true||res.j.retry!==true)){PLAN_SESSION="";try{history.replaceState(null,"","/slp.html#premium");}catch(e){}}
+        if(sid&&(res.j.activated===true||res.j.active===true||res.j.retry!==true)){PLAN_SESSION="";try{history.replaceState(null,"",location.pathname+"#premium");}catch(e){}}
         PLAN=res.j;PLAN_AT=Date.now();PLAN_ERR="";
         if(sid)paintReturn(true);
         paintPremium();paintCoverage();
@@ -2151,7 +2171,9 @@
       document.querySelectorAll("[data-community-filter]").forEach(function(b){b.setAttribute("aria-pressed",String(b.dataset.communityFilter===COMMUNITY_FILTER));});
       function postHtml(p){
         var id=esc(p.id),open=!!COMMUNITY_OPEN[p.id],replies=(p.replies||[]).map(function(r){return '<div class="community-reply"><strong>'+esc(r.author)+'</strong><small>'+esc(communityDate(r.createdAt))+'</small><p>'+communityText(r.text)+'</p><div class="community-post-actions">'+communityActions(p.id,r.id,r.canDelete)+'</div></div>';}).join("");
-        return '<article class="card community-post'+(p.pinned?' community-pinned':'')+'"><div class="community-post-header"><span class="community-avatar" aria-hidden="true">'+esc((p.author||"S").charAt(0).toUpperCase())+'</span><div><strong>'+esc(p.author)+'</strong><p>'+esc(communityDate(p.createdAt))+'</p></div><span class="community-topic">'+esc(p.pinned?"Pinned · From Rachel":(COMMUNITY_TOPICS[p.category]||"Discussions"))+'</span></div><h3>'+esc(p.title)+'</h3><p class="community-body">'+communityText(p.text)+'</p><div class="community-post-actions"><button type="button" data-community-reply="'+id+'" aria-expanded="'+String(open)+'" aria-controls="community-replies-'+id+'">'+(open?'Hide replies':'Reply')+'</button><span class="reply-count">'+(p.replies||[]).length+' '+((p.replies||[]).length===1?'reply':'replies')+'</span>'+communityActions(p.id,null,p.canDelete)+'</div><div class="community-replies" id="community-replies-'+id+'"'+(open?'':' hidden')+'>'+replies+'<form data-community-reply-form="'+id+'"><label class="fl" for="community-reply-'+id+'">Your reply</label><textarea id="community-reply-'+id+'" maxlength="1000" required placeholder="Add to the conversation…">'+esc(COMMUNITY_REPLY_DRAFTS[p.id]||'')+'</textarea><button class="btn ghost sm" type="submit" style="margin-top:8px;">Post reply</button><span class="sub" id="community-reply-status-'+id+'" role="status"></span></form></div></article>';
+        // Only the server-verified team welcome receives Rachel's profile.
+        var avatar=p.pinned?'<img class="community-avatar" src="/assets/rachel-wardrop-profile.jpg" width="42" height="42" alt="Rachel Wardrop">':'<span class="community-avatar" aria-hidden="true">'+esc((p.author||"S").charAt(0).toUpperCase())+'</span>';
+        return '<article class="card community-post'+(p.pinned?' community-pinned':'')+'"><div class="community-post-header">'+avatar+'<div><strong>'+esc(p.author)+'</strong><p>'+esc(communityDate(p.createdAt))+'</p></div><span class="community-topic">'+esc(p.pinned?"Pinned · From Rachel":(COMMUNITY_TOPICS[p.category]||"Discussions"))+'</span></div>'+(p.pinned?$("rachelAboutTemplate").innerHTML:"")+'<h3>'+esc(p.title)+'</h3><p class="community-body">'+communityText(p.text)+'</p><div class="community-post-actions"><button type="button" data-community-reply="'+id+'" aria-expanded="'+String(open)+'" aria-controls="community-replies-'+id+'">'+(open?'Hide replies':'Reply')+'</button><span class="reply-count">'+(p.replies||[]).length+' '+((p.replies||[]).length===1?'reply':'replies')+'</span>'+communityActions(p.id,null,p.canDelete)+'</div><div class="community-replies" id="community-replies-'+id+'"'+(open?'':' hidden')+'>'+replies+'<form data-community-reply-form="'+id+'"><label class="fl" for="community-reply-'+id+'">Your reply</label><textarea id="community-reply-'+id+'" maxlength="1000" required placeholder="Add to the conversation…">'+esc(COMMUNITY_REPLY_DRAFTS[p.id]||'')+'</textarea><button class="btn ghost sm" type="submit" style="margin-top:8px;">Post reply</button><span class="sub" id="community-reply-status-'+id+'" role="status"></span></form></div></article>';
       }
       var html=COMMUNITY_POSTS.map(postHtml).join("");
       $("communityPinned").innerHTML=COMMUNITY_PINNED.map(postHtml).join("");
