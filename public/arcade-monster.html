@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <title>Sona — Monster Makeover</title>
+  <link href="/fonts.css" rel="stylesheet">
+  <link href="/sayplay.css" rel="stylesheet">
+  <meta name="theme-color" content="#f3e9ff" />
+  <!--
+    Monster Makeover: a Say & Play game (suggested ages 5-8). Every word gives Moe the monster something silly: three eyes, horns, spots, a grin, arms, shoes, a bow tie and a crown.
+    Written by tools/gameart/build.mjs: change the game there and rebuild,
+    not here. What the mic may do, and why a spoken move is play and never
+    practice data, is at the top of /sayplay.js.
+  -->
+  <style>:root{--top:#f3e9ff;--bottom:#e4d4fb;}</style>
+</head>
+<body data-phase="boot">
+  <div id="app">
+    <div id="top">
+      <button id="close" aria-label="Back">✕</button>
+      <span class="hudpill"><span id="ttl">Monster Makeover</span></span>
+      <span id="spacer"></span>
+      <span class="hudpill" id="dots" role="img" aria-label="0 of 8"></span>
+    </div>
+    <div id="stageWrap"><svg id="stage" viewBox="0 0 440 400" role="img" aria-label="A plain, friendly monster standing in a purple room."><rect x="0" y="0" width="440" height="330" rx="0" fill="#d9c4f5"></rect><circle cx="24" cy="24" r="5" fill="#cbb2ef"></circle><circle cx="74" cy="24" r="5" fill="#cbb2ef"></circle><circle cx="124" cy="24" r="5" fill="#cbb2ef"></circle><circle cx="174" cy="24" r="5" fill="#cbb2ef"></circle><circle cx="224" cy="24" r="5" fill="#cbb2ef"></circle><circle cx="274" cy="24" r="5" fill="#cbb2ef"></circle><circle cx="324" cy="24" r="5" fill="#cbb2ef"></circle><circle cx="374" cy="24" r="5" fill="#cbb2ef"></circle><circle cx="424" cy="24" r="5" fill="#cbb2ef"></circle><circle cx="49" cy="68" r="5" fill="#cbb2ef"></circle><circle cx="99" cy="68" r="5" fill="#cbb2ef"></circle><circle cx="149" cy="68" r="5" fill="#cbb2ef"></circle><circle cx="199" cy="68" r="5" fill="#cbb2ef"></circle><circle cx="249" cy="68" r="5" fill="#cbb2ef"></circle><circle cx="299" cy="68" r="5" fill="#cbb2ef"></circle><circle cx="349" cy="68" r="5" fill="#cbb2ef"></circle><circle cx="399" cy="68" r="5" fill="#cbb2ef"></circle><circle cx="449" cy="68" r="5" fill="#cbb2ef"></circle><circle cx="24" cy="112" r="5" fill="#cbb2ef"></circle><circle cx="74" cy="112" r="5" fill="#cbb2ef"></circle><circle cx="124" cy="112" r="5" fill="#cbb2ef"></circle><circle cx="174" cy="112" r="5" fill="#cbb2ef"></circle><circle cx="224" cy="112" r="5" fill="#cbb2ef"></circle><circle cx="274" cy="112" r="5" fill="#cbb2ef"></circle><circle cx="324" cy="112" r="5" fill="#cbb2ef"></circle><circle cx="374" cy="112" r="5" fill="#cbb2ef"></circle><circle cx="424" cy="112" r="5" fill="#cbb2ef"></circle><circle cx="49" cy="156" r="5" fill="#cbb2ef"></circle><circle cx="99" cy="156" r="5" fill="#cbb2ef"></circle><circle cx="149" cy="156" r="5" fill="#cbb2ef"></circle><circle cx="199" cy="156" r="5" fill="#cbb2ef"></circle><circle cx="249" cy="156" r="5" fill="#cbb2ef"></circle><circle cx="299" cy="156" r="5" fill="#cbb2ef"></circle><circle cx="349" cy="156" r="5" fill="#cbb2ef"></circle><circle cx="399" cy="156" r="5" fill="#cbb2ef"></circle><circle cx="449" cy="156" r="5" fill="#cbb2ef"></circle><circle cx="24" cy="200" r="5" fill="#cbb2ef"></circle><circle cx="74" cy="200" r="5" fill="#cbb2ef"></circle><circle cx="124" cy="200" r="5" fill="#cbb2ef"></circle><circle cx="174" cy="200" r="5" fill="#cbb2ef"></circle><circle cx="224" cy="200" r="5" fill="#cbb2ef"></circle><circle cx="274" cy="200" r="5" fill="#cbb2ef"></circle><circle cx="324" cy="200" r="5" fill="#cbb2ef"></circle><circle cx="374" cy="200" r="5" fill="#cbb2ef"></circle><circle cx="424" cy="200" r="5" fill="#cbb2ef"></circle><circle cx="49" cy="244" r="5" fill="#cbb2ef"></circle><circle cx="99" cy="244" r="5" fill="#cbb2ef"></circle><circle cx="149" cy="244" r="5" fill="#cbb2ef"></circle><circle cx="199" cy="244" r="5" fill="#cbb2ef"></circle><circle cx="249" cy="244" r="5" fill="#cbb2ef"></circle><circle cx="299" cy="244" r="5" fill="#cbb2ef"></circle><circle cx="349" cy="244" r="5" fill="#cbb2ef"></circle><circle cx="399" cy="244" r="5" fill="#cbb2ef"></circle><circle cx="449" cy="244" r="5" fill="#cbb2ef"></circle><circle cx="24" cy="288" r="5" fill="#cbb2ef"></circle><circle cx="74" cy="288" r="5" fill="#cbb2ef"></circle><circle cx="124" cy="288" r="5" fill="#cbb2ef"></circle><circle cx="174" cy="288" r="5" fill="#cbb2ef"></circle><circle cx="224" cy="288" r="5" fill="#cbb2ef"></circle><circle cx="274" cy="288" r="5" fill="#cbb2ef"></circle><circle cx="324" cy="288" r="5" fill="#cbb2ef"></circle><circle cx="374" cy="288" r="5" fill="#cbb2ef"></circle><circle cx="424" cy="288" r="5" fill="#cbb2ef"></circle><circle cx="49" cy="332" r="5" fill="#cbb2ef"></circle><circle cx="99" cy="332" r="5" fill="#cbb2ef"></circle><circle cx="149" cy="332" r="5" fill="#cbb2ef"></circle><circle cx="199" cy="332" r="5" fill="#cbb2ef"></circle><circle cx="249" cy="332" r="5" fill="#cbb2ef"></circle><circle cx="299" cy="332" r="5" fill="#cbb2ef"></circle><circle cx="349" cy="332" r="5" fill="#cbb2ef"></circle><circle cx="399" cy="332" r="5" fill="#cbb2ef"></circle><circle cx="449" cy="332" r="5" fill="#cbb2ef"></circle><rect x="0" y="330" width="440" height="70" rx="0" fill="#b48be0"></rect><ellipse cx="220" cy="384" rx="150" ry="16" fill="#ff8fb0" opacity="0.6"></ellipse><g id="p-arms" class="part hid" transform="translate(220 368)"><g class="pm"><g class="pa"><path d="M-80 -80 Q-120 -100 -128 -140 Q-116 -144 -108 -124 Q-96 -104 -74 -96 Z" fill="#4fd1c5"></path><circle cx="-124" cy="-144" r="10" fill="#4fd1c5"></circle><path d="M80 -80 Q120 -100 128 -140 Q116 -144 108 -124 Q96 -104 74 -96 Z" fill="#4fd1c5"></path><circle cx="124" cy="-144" r="10" fill="#4fd1c5"></circle></g></g></g><g id="p-body" class="part" transform="translate(220 368)"><g class="pm"><g class="pa"><path d="M-80 -10 Q-96 -120 -40 -170 Q0 -196 40 -170 Q96 -120 80 -10 Q60 6 0 4 Q-60 6 -80 -10 Z" fill="#4fd1c5"></path><path d="M-50 -30 Q0 -10 50 -30 Q40 -90 0 -96 Q-40 -90 -50 -30 Z" fill="#8fe8de" opacity="0.5"></path><ellipse cx="-54" cy="-140" rx="8" ry="16" fill="#ffffff" opacity="0.4"></ellipse><ellipse cx="0" cy="2" rx="70" ry="8" fill="#3cb8ad" opacity="0.4"></ellipse></g></g></g><g id="p-horns" class="part hid" transform="translate(220 368)" style="--o:50% 100%"><g class="pm"><g class="pa"><path d="M-50 -156 Q-70 -200 -44 -214 Q-50 -186 -32 -166 Z" fill="#ffd21c"></path><path d="M50 -156 Q70 -200 44 -214 Q50 -186 32 -166 Z" fill="#ffd21c"></path></g></g></g><g id="p-spots" class="part hid" transform="translate(220 368)"><g class="pm"><g class="pa"><circle cx="-54" cy="-70" r="10" fill="#9b7fd8"></circle><circle cx="54" cy="-60" r="12" fill="#9b7fd8"></circle><circle cx="-30" cy="-40" r="7" fill="#9b7fd8"></circle><circle cx="40" cy="-100" r="7" fill="#9b7fd8"></circle><circle cx="-60" cy="-110" r="6" fill="#9b7fd8"></circle><circle cx="20" cy="-30" r="6" fill="#9b7fd8"></circle></g></g></g><g id="p-eyes0" class="part" transform="translate(220 368)"><g class="pm"><g class="pa"><circle cx="-18" cy="-120" r="5" fill="#4a2c14"></circle><circle cx="18" cy="-120" r="5" fill="#4a2c14"></circle></g></g></g><g id="p-mouth0" class="part" transform="translate(220 368)"><g class="pm"><g class="pa"><path d="M-10 -96 Q0 -90 10 -96" stroke="#4a2c14" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></g></g></g><g id="p-eyes" class="part hid" transform="translate(220 368)"><g class="pm"><g class="pa"><circle cx="-36" cy="-124" r="17" fill="#ffffff"></circle><circle cx="-34" cy="-122" r="8.5" fill="#4a2c14"></circle><circle cx="-32" cy="-125" r="3.1" fill="#ffffff"></circle><circle cx="36" cy="-124" r="17" fill="#ffffff"></circle><circle cx="38" cy="-122" r="8.5" fill="#4a2c14"></circle><circle cx="40" cy="-125" r="3.1" fill="#ffffff"></circle><circle cx="0" cy="-150" r="14" fill="#ffffff"></circle><circle cx="2" cy="-148" r="7" fill="#4a2c14"></circle><circle cx="4" cy="-151" r="2.5" fill="#ffffff"></circle></g></g></g><g id="p-grin" class="part hid" transform="translate(220 368)"><g class="pm"><g class="pa"><path d="M-34 -92 Q0 -52 34 -92 Z" fill="#c0475a"></path><path d="M-24 -88 L-18 -78 L-12 -88 Z M12 -88 L18 -78 L24 -88 Z" fill="#ffffff"></path><ellipse cx="0" cy="-74" rx="10" ry="5" fill="#ff8fa3"></ellipse></g></g></g><g id="p-shoes" class="part hid" transform="translate(220 374)"><g class="pm"><g class="pa"><path d="M-66 0 Q-68 -18 -44 -18 Q-26 -18 -22 0 Z" fill="#ff5c5c"></path><rect x="-68" y="-4" width="48" height="8" rx="4" fill="#ffffff"></rect><path d="M-50 -14 L-44 -8 M-42 -16 L-36 -10" stroke="#ffffff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"></path><path d="M66 0 Q68 -18 44 -18 Q26 -18 22 0 Z" fill="#ff5c5c"></path><rect x="20" y="-4" width="48" height="8" rx="4" fill="#ffffff"></rect><path d="M50 -14 L44 -8 M42 -16 L36 -10" stroke="#ffffff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></g></g></g><g id="p-bow" class="part hid" transform="translate(220 322)"><g class="pm"><g class="pa"><path d="M0 0 L-22 -12 L-22 12 Z" fill="#ff5c8a"></path><path d="M0 0 L22 -12 L22 12 Z" fill="#ff5c8a"></path><circle cx="0" cy="0" r="6" fill="#e84a78"></circle><circle cx="-14" cy="-2" r="2.2" fill="#ffffff"></circle><circle cx="14" cy="2" r="2.2" fill="#ffffff"></circle></g></g></g><g id="p-crown" class="part hid" transform="translate(220 196)"><g class="pm"><g class="pa"><path d="M-34 0 L-34 -30 L-18 -14 L0 -38 L18 -14 L34 -30 L34 0 Z" fill="#ffd21c"></path><rect x="-34" y="-6" width="68" height="8" rx="3" fill="#f0b800"></rect><circle cx="0" cy="-38" r="5" fill="#ff5c8a"></circle><circle cx="-34" cy="-30" r="4" fill="#4db3f2"></circle><circle cx="34" cy="-30" r="4" fill="#4db3f2"></circle></g></g></g><g id="p-hearts" class="part hid" transform="translate(0 0)"><g class="pm"><g class="pa"><g transform="translate(70 120) scale(1.6 1.6)"><path d="M0 8 C -12 0 -10 -12 0 -6 C 10 -12 12 0 0 8 Z" fill="#ff5c7a"></path></g><g transform="translate(372 100) scale(1.4 1.4)"><path d="M0 8 C -12 0 -10 -12 0 -6 C 10 -12 12 0 0 8 Z" fill="#ff8fb0"></path></g><g transform="translate(400 220) scale(1.2 1.2)"><path d="M0 8 C -12 0 -10 -12 0 -6 C 10 -12 12 0 0 8 Z" fill="#ffd21c"></path></g><g transform="translate(50 240) scale(1.1 1.1)"><path d="M0 8 C -12 0 -10 -12 0 -6 C 10 -12 12 0 0 8 Z" fill="#4db3f2"></path></g></g></g></g></svg></div>
+    <div id="turnPanel" aria-live="polite">
+      <div id="picBox"><span id="pic"></span></div>
+      <div id="word"></div>
+      <button id="hear" aria-label="Hear it again"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4Z" fill="#1cb0f6"/><path d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="#1cb0f6" stroke-width="2.2" stroke-linecap="round"/></svg><span>Hear it</span></button>
+      <div id="listenRow">
+        <span id="echoWrap"><img id="echoFace" src="/coach/echo/echo-idle.svg" alt="Echo" /></span>
+        <span id="micState"></span>
+        <span id="cheer"></span>
+        <button id="micBtn" hidden aria-label="Listen again"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8.5" y="3" width="7" height="12" rx="3.5" fill="#fff"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M8.5 21h7" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/></svg></button>
+      </div>
+    </div>
+  </div>
+
+  <div class="ovl" id="startOvl">
+    <div class="ovlCard">
+      <h2 id="startTitle">Monster Makeover</h2>
+      <p>Say each word to give the monster a makeover.</p>
+      <p class="small" id="startSound"></p>
+      <button id="startBtn" aria-label="Play"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15a1 1 0 0 0 1.5.9l12-7.5a1 1 0 0 0 0-1.8l-12-7.5A1 1 0 0 0 7 4.5Z" fill="#fff"/></svg></button>
+    </div>
+  </div>
+  <div class="ovl" id="primer">
+    <div class="ovlCard">
+      <img class="ovlEcho" src="/coach/echo/echo-listening.svg" alt="" />
+      <h2>Let Echo hear you!</h2>
+      <p>Say each word, and watch what happens.</p>
+      <p class="small" id="micPromise"></p>
+      <button class="btn" id="primerYes">Turn on Echo's ears</button>
+      <button class="ghost" id="primerNo">Not now</button>
+    </div>
+  </div>
+  <div class="ovl" id="pauseOvl">
+    <div class="ovlCard">
+      <img class="ovlEcho" src="/coach/echo/echo-idle.svg" alt="" />
+      <h2>Paused</h2>
+      <button class="btn" id="resume">Keep playing</button>
+    </div>
+  </div>
+  <div class="ovl" id="endOvl">
+    <div class="ovlCard">
+      <img class="ovlEcho endStar" src="/coach/echo/echo-celebrate.svg" alt="" />
+      <h2 id="endTitle"></h2>
+      <p id="endSub"></p>
+      <button class="btn" id="again">Play again</button>
+      <button class="ghost" id="goHome">Back home</button>
+    </div>
+  </div>
+
+  <script src="/sona.js"></script>
+  <script src="/sayplay.js"></script>
+  <script>SayPlay.start({"key":"monster","title":"Monster Makeover","steps":[[{"a":"hide","id":"eyes0"},{"a":"show","id":"eyes","fx":"pop"},{"a":"fx","id":"body","fx":"wiggle","at":250}],[{"a":"show","id":"horns","fx":"grow"},{"a":"fx","id":"body","fx":"wiggle","at":250}],[{"a":"show","id":"spots","fx":"pop"},{"a":"fx","id":"body","fx":"wiggle","at":250}],[{"a":"hide","id":"mouth0"},{"a":"show","id":"grin","fx":"pop"},{"a":"fx","id":"body","fx":"wiggle","at":250}],[{"a":"show","id":"arms","fx":"pop"},{"a":"fx","id":"body","fx":"wiggle","at":250}],[{"a":"show","id":"shoes","fx":"drop"},{"a":"fx","id":"body","fx":"wiggle","at":250}],[{"a":"show","id":"bow","fx":"pop"},{"a":"fx","id":"body","fx":"wiggle","at":250}],[{"a":"show","id":"crown","fx":"drop"},{"a":"fx","id":"body","fx":"wiggle","at":250}]],"finale":[{"a":"fx","id":"body","fx":"hop"},{"a":"fx","id":"eyes0","fx":"hop"},{"a":"fx","id":"mouth0","fx":"hop"},{"a":"fx","id":"eyes","fx":"hop"},{"a":"fx","id":"horns","fx":"hop"},{"a":"fx","id":"spots","fx":"hop"},{"a":"fx","id":"grin","fx":"hop"},{"a":"fx","id":"arms","fx":"hop"},{"a":"fx","id":"shoes","fx":"hop"},{"a":"fx","id":"bow","fx":"hop"},{"a":"fx","id":"crown","fx":"hop"},{"a":"show","id":"hearts","fx":"pop","at":300},{"a":"fx","id":"hearts","fx":"float","at":900}],"done":{"title":"What a silly monster!","sub":"Eight words gave Moe a whole new look."}});</script>
+</body>
+</html>

@@ -26,8 +26,14 @@ async function section(name, fn) {
   try { await fn(); }
   catch (error) { ok(name + " completes without a browser/test exception", false, error.message); }
 }
-const simpleKeys = ["bubbles", "feed", "peekaboo"];
-const arcadeKeys = ["glide", "run", "slice", "stack", "tiles"];
+// The twenty Say & Play games (26 Sep 2026) open straight to their own page
+// and never join the daily adventure, whose deck stays the five arcade games.
+const sayLittle = ["balloon", "cake", "fishtank", "flower", "gifts", "puppy", "rocket", "snowman", "stars", "train"];
+const sayBig = ["castle", "dino", "hoops", "monster", "pizza", "racecar", "robot", "soccer", "space", "treasure"];
+const adventureKeys = ["glide", "run", "slice", "stack", "tiles"];
+const simpleKeys = ["bubbles", "feed", "peekaboo", ...sayLittle].sort();
+const arcadeKeys = [...adventureKeys, ...sayBig].sort();
+const directKeys = ["bubbles", "feed", "peekaboo", ...sayLittle, ...sayBig];
 const allKeys = [...simpleKeys, ...arcadeKeys].sort();
 const comingSoonKeys = ["bubbles", "peekaboo"];
 let playableKeys = [], freeKeys = [], premiumKeys = [];
@@ -112,7 +118,7 @@ await section("library prerequisites", async () => {
       premiumKeys = games.filter(game => game.available && !game.comingSoon && game.tier === "premium").map(game => game.key).sort();
       ok("only Bubble Pop and Peekaboo are Coming soon", same(games.filter(game => game.comingSoon).map(game => game.key).sort(), comingSoonKeys));
     }
-    ok("Home itself presents the game picker", await pg.getByRole("heading", {name:"Pick a game!",exact:true}).count() === 1 && await pg.locator("#activityGroups button[data-game]").count() === 8);
+    ok("Home itself presents the game picker", await pg.getByRole("heading", {name:"Pick a game!",exact:true}).count() === 1 && await pg.locator("#activityGroups button[data-game]").count() === allKeys.length);
   } finally { await ctx.close(); }
 });
 
@@ -134,7 +140,7 @@ if (present && hasContract) {
         const label = "age " + JSON.stringify(age);
         ok(label + ": recommendation uses only a valid supported age", model.recommended === recommended, model.recommended);
         ok(label + ": both play groups remain available", same(sorted(model.groups.map((g) => g.id)), ["arcade", "simple"]), model.groups);
-        ok(label + ": all eight catalog cards remain visible", same(sorted(model.groups.flatMap((g) => g.games.map((game) => game.key))), allKeys));
+        ok(label + ": every catalog card remains visible", same(sorted(model.groups.flatMap((g) => g.games.map((game) => game.key))), allKeys));
         ok(label + ": only the recommended group is marked",
           model.groups.every((g) => g.recommended === (g.id === recommended)), model.groups.map((g) => ({ id: g.id, recommended: g.recommended })));
         if (recommended) ok(label + ": the recommended group comes first", model.groups[0]?.id === recommended, model.groups.map((g) => g.id));
@@ -142,9 +148,9 @@ if (present && hasContract) {
       const model = await pg.evaluate(() => Sona.activityLibrary());
       const simple = model.groups.find((g) => g.id === "simple");
       const arcade = model.groups.find((g) => g.id === "arcade");
-      ok("Simple play contains Feed Echo, Bubble Pop and Peekaboo", same(sorted(simple.games.map((g) => g.key)), simpleKeys));
-      ok("the daily adventure remains five arcade games", same(sorted(await pg.evaluate(() => Sona.adventureGames())), arcadeKeys));
-      ok("Arcade contains the five earned arcade games", same(sorted(arcade.games.map((g) => g.key)), arcadeKeys));
+      ok("Simple play contains Feed Echo, Bubble Pop, Peekaboo and the ten Say & Play games for 3-4", same(sorted(simple.games.map((g) => g.key)), simpleKeys));
+      ok("the daily adventure remains five arcade games", same(sorted(await pg.evaluate(() => Sona.adventureGames())), adventureKeys));
+      ok("Arcade contains the five earned arcade games and the ten Say & Play games for 5-8", same(sorted(arcade.games.map((g) => g.key)), arcadeKeys));
       ok("Simple play presents the suggested 3–4 range", simple.ageLabel === "Suggested ages 3–4", simple.ageLabel);
       ok("Arcade presents the suggested 5–8 range", arcade.ageLabel === "Suggested ages 5–8", arcade.ageLabel);
       ok("every game has explicit catalog metadata",
@@ -163,7 +169,7 @@ if (present && hasContract) {
       const { ctx, pg, errors } = await fixture({ age });
       try {
         ok("age " + age + ": the browser title names the play library", /play library/i.test(await pg.title()), await pg.title());
-        ok("age " + age + ": All games initially shows eight games", same(sorted(await visibleGames(pg)), allKeys));
+        ok("age " + age + ": All games initially shows every game", same(sorted(await visibleGames(pg)), allKeys));
         const recommended = age === "4" ? "simple" : age == null ? null : "arcade";
         if (recommended) ok("age " + age + ": recommended cards render first", (await visibleGroups(pg))[0] === recommended);
         const games = await pg.evaluate(() => Sona.activityLibrary().groups.flatMap((g) => g.games));
@@ -257,7 +263,7 @@ if (present && hasContract) {
     try {
       const featured = pg.locator("#featuredGroups");
       ok("the New shelf shows only the two current releases", same(sorted(await featured.locator("button[data-game]").evaluateAll((els) => els.map((el) => el.dataset.game))), ["feed", "slice"]));
-      ok("featured cards leave eight unique games in the age groups", same(sorted(await visibleGames(pg)), allKeys));
+      ok("featured cards leave every game once in the age groups", same(sorted(await visibleGames(pg)), allKeys));
       const shelf = await featured.locator("button[data-game]").evaluateAll((els) => els.map((el) => { const r = el.getBoundingClientRect(); return { x: r.x, y: r.y }; }));
       ok("featured cards share a horizontal shelf", shelf.length === 2 && Math.abs(shelf[0].y - shelf[1].y) < 2 && shelf[1].x > shelf[0].x, shelf);
       const button = featured.locator('button[data-game="feed"]');
@@ -323,7 +329,7 @@ if (present && hasContract) {
         })();`
       }));
       await pg.reload();
-      ok("an older cached catalog still renders all eight game choices", same(sorted(await visibleGames(pg)), allKeys));
+      ok("an older cached catalog still renders every game choice", same(sorted(await visibleGames(pg)), allKeys));
       ok("an older cached catalog causes no runtime errors", errors.length === 0, errors);
     } finally { await ctx.close(); }
   });
@@ -366,10 +372,10 @@ if (present && hasContract) {
         const button = pg.locator('#activityGroups button[data-game="' + key + '"]');
         if (!(await button.count())) { ok(key + ": launch card exists", false); continue; }
         await button.click();
-        await pg.waitForURL(simpleKeys.includes(key) ? new RegExp("/arcade-" + key + "\\.html(?:[?#]|$)") : /\/charge\.html\?/);
+        await pg.waitForURL(directKeys.includes(key) ? new RegExp("/arcade-" + key + "\\.html(?:[?#]|$)") : /\/charge\.html\?/);
         const url = new URL(pg.url());
         ok(key + ": launch follows the existing practice route",
-          simpleKeys.includes(key) ? url.pathname === "/arcade-" + key + ".html"
+          directKeys.includes(key) ? url.pathname === "/arcade-" + key + ".html"
             : url.pathname === "/charge.html" && url.searchParams.get("game") === "arcade-" + key + ".html"
               && url.searchParams.get("daily") !== "1", pg.url());
       }

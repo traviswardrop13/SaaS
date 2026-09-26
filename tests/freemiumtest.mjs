@@ -6,7 +6,10 @@ import { chromium, ROOT as SOURCE_ROOT, launchOpts } from "./_env.mjs";
 const ROOT = process.env.SONATEST_PUBLIC_ROOT || SOURCE_ROOT;
 const appFree = /const FREE_MODE = true;/.test(readFileSync(ROOT + "/sona.js", "utf8"));
 const BASE = "http://localhost:8196";
-const ALL = ["bubbles", "feed", "glide", "peekaboo", "run", "slice", "stack", "tiles"];
+// the eight original titles and the twenty Say & Play games (26 Sep 2026)
+const ALL = ["bubbles", "feed", "glide", "peekaboo", "run", "slice", "stack", "tiles",
+  "balloon", "cake", "castle", "dino", "fishtank", "flower", "gifts", "hoops", "monster", "pizza",
+  "puppy", "racecar", "robot", "rocket", "snowman", "soccer", "space", "stars", "train", "treasure"].sort();
 const COMING_SOON = ["bubbles", "peekaboo"];
 let FREE = [], PREMIUM = [], PLAYABLE = [];
 const MIME = { html: "text/html", js: "text/javascript", css: "text/css", svg: "image/svg+xml", png: "image/png", webp: "image/webp", woff2: "font/woff2" };

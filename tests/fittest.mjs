@@ -54,7 +54,7 @@ for (const [dev, w, h] of PORTRAIT) {
   let m = await measure(page, "today.html");
   ok(dev + " today: no sideways overflow", m.oX <= 1, "oX=" + m.oX);
   ok(dev + " today: library cards have a usable touch area", m.firstCard && m.firstCard.w >= 120 && m.firstCard.h >= 160, JSON.stringify(m.firstCard));
-  ok(dev + " today: all eight game cards remain visible by scrolling", m.cards === 8 && !m.scrollLocked, JSON.stringify(m));
+  ok(dev + " today: all 28 game cards remain visible by scrolling", m.cards === 28 && !m.scrollLocked, JSON.stringify(m));
   ok(dev + " today: no retired adventure action is visible", m.go === null, JSON.stringify(m));
   m = await measure(page, "charge.html?game=arcade-slice.html");
   ok(dev + " charge: mic clears the home bar", m.mic && m.mic.bottom <= m.innerH - HOME_BAR + 1, m.mic && m.mic.bottom + "/" + (m.innerH - HOME_BAR));
@@ -108,7 +108,7 @@ for (const [dev, w, h] of LANDSCAPE) {
     localStorage.setItem("sona.micok", "1");
   });
   let m = await measure(page, "today.html");
-  ok(dev + " today: game cards have a real size in landscape", m.cards === 8 && m.firstCard && m.firstCard.w >= 120 && m.firstCard.h >= 160, JSON.stringify(m));
+  ok(dev + " today: game cards have a real size in landscape", m.cards === 28 && m.firstCard && m.firstCard.w >= 120 && m.firstCard.h >= 160, JSON.stringify(m));
   ok(dev + " today: landscape scrolls instead of clipping", !m.scrollLocked, "overflow still hidden");
   m = await measure(page, "charge.html?game=arcade-slice.html");
   ok(dev + " charge: landscape scrolls instead of clipping", !m.scrollLocked, "overflow still hidden");

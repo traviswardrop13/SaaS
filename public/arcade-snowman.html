@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <title>Sona — Build a Snowman</title>
+  <link href="/fonts.css" rel="stylesheet">
+  <link href="/sayplay.css" rel="stylesheet">
+  <meta name="theme-color" content="#eef7ff" />
+  <!--
+    Build a Snowman: a Say & Play game (suggested ages 3-4). Every word adds to the snowman: three snowballs, a face, then a hat, a scarf and twig arms.
+    Written by tools/gameart/build.mjs: change the game there and rebuild,
+    not here. What the mic may do, and why a spoken move is play and never
+    practice data, is at the top of /sayplay.js.
+  -->
+  <style>:root{--top:#eef7ff;--bottom:#dcecf8;}</style>
+</head>
+<body data-phase="boot">
+  <div id="app">
+    <div id="top">
+      <button id="close" aria-label="Back">✕</button>
+      <span class="hudpill"><span id="ttl">Build a Snowman</span></span>
+      <span id="spacer"></span>
+      <span class="hudpill" id="dots" role="img" aria-label="0 of 5"></span>
+    </div>
+    <div id="stageWrap"><svg id="stage" viewBox="0 0 440 400" role="img" aria-label="A snowy hill with pine trees, ready for a snowman."><rect x="0" y="0" width="440" height="400" rx="0" fill="#d7ecf7"></rect><circle cx="372" cy="70" r="30" fill="#ffffff" opacity="0.6"></circle><g transform="translate(90 64) scale(0.9 0.9)"><ellipse cx="0" cy="10" rx="42" ry="14" fill="#ffffff"></ellipse><circle cx="-14" cy="2" r="15" fill="#ffffff"></circle><circle cx="10" cy="-4" r="19" fill="#ffffff"></circle><circle cx="28" cy="6" r="12" fill="#ffffff"></circle></g><g transform="translate(280 44) scale(0.6 0.6)"><ellipse cx="0" cy="10" rx="42" ry="14" fill="#ffffff"></ellipse><circle cx="-14" cy="2" r="15" fill="#ffffff"></circle><circle cx="10" cy="-4" r="19" fill="#ffffff"></circle><circle cx="28" cy="6" r="12" fill="#ffffff"></circle></g><path d="M0 262 Q 90 232 180 258 Q 280 284 360 252 Q 410 240 440 254 L440 400 L0 400 Z" fill="#e3eef8"></path><path d="M0 312 Q 220 292 440 316 L440 400 L0 400 Z" fill="#f0f6fc"></path><g transform="translate(52 318) scale(0.9 0.9)"><rect x="-5" y="-14" width="10" height="16" rx="3" fill="#8f5f33"></rect><path d="M-34 -12 L0 -58 L34 -12 Z" fill="#3f9a5a"></path><path d="M-28 -40 L0 -84 L28 -40 Z" fill="#3f9a5a"></path><path d="M-20 -66 L0 -104 L20 -66 Z" fill="#3f9a5a"></path><path d="M-34 -12 Q0 -22 34 -12 L30 -16 Q0 -26 -30 -16 Z" fill="#ffffff"></path><path d="M-20 -66 L0 -104 L20 -66 Q0 -74 -20 -66 Z" fill="#ffffff" opacity="0.9"></path></g><g transform="translate(106 300) scale(0.6 0.6)"><rect x="-5" y="-14" width="10" height="16" rx="3" fill="#8f5f33"></rect><path d="M-34 -12 L0 -58 L34 -12 Z" fill="#3f9a5a"></path><path d="M-28 -40 L0 -84 L28 -40 Z" fill="#3f9a5a"></path><path d="M-20 -66 L0 -104 L20 -66 Z" fill="#3f9a5a"></path><path d="M-34 -12 Q0 -22 34 -12 L30 -16 Q0 -26 -30 -16 Z" fill="#ffffff"></path><path d="M-20 -66 L0 -104 L20 -66 Q0 -74 -20 -66 Z" fill="#ffffff" opacity="0.9"></path></g><g transform="translate(396 326) scale(1.1 1.1)"><rect x="-5" y="-14" width="10" height="16" rx="3" fill="#8f5f33"></rect><path d="M-34 -12 L0 -58 L34 -12 Z" fill="#3f9a5a"></path><path d="M-28 -40 L0 -84 L28 -40 Z" fill="#3f9a5a"></path><path d="M-20 -66 L0 -104 L20 -66 Z" fill="#3f9a5a"></path><path d="M-34 -12 Q0 -22 34 -12 L30 -16 Q0 -26 -30 -16 Z" fill="#ffffff"></path><path d="M-20 -66 L0 -104 L20 -66 Q0 -74 -20 -66 Z" fill="#ffffff" opacity="0.9"></path></g><g transform="translate(348 296) scale(0.6 0.6)"><rect x="-5" y="-14" width="10" height="16" rx="3" fill="#8f5f33"></rect><path d="M-34 -12 L0 -58 L34 -12 Z" fill="#3f9a5a"></path><path d="M-28 -40 L0 -84 L28 -40 Z" fill="#3f9a5a"></path><path d="M-20 -66 L0 -104 L20 -66 Z" fill="#3f9a5a"></path><path d="M-34 -12 Q0 -22 34 -12 L30 -16 Q0 -26 -30 -16 Z" fill="#ffffff"></path><path d="M-20 -66 L0 -104 L20 -66 Q0 -74 -20 -66 Z" fill="#ffffff" opacity="0.9"></path></g><path d="M0 356 Q 220 342 440 358 L440 400 L0 400 Z" fill="#ffffff"></path><ellipse cx="220" cy="372" rx="90" ry="10" fill="#dbe8f5"></ellipse><circle cx="40" cy="120" r="3" fill="#ffffff" opacity="1"></circle><circle cx="130" cy="170" r="2.5" fill="#ffffff" opacity="1"></circle><circle cx="300" cy="150" r="3" fill="#ffffff" opacity="1"></circle><circle cx="410" cy="190" r="2.5" fill="#ffffff" opacity="1"></circle><circle cx="180" cy="60" r="2.5" fill="#ffffff" opacity="1"></circle><circle cx="250" cy="110" r="2" fill="#ffffff" opacity="1"></circle><g id="p-ball1" class="part hid" transform="translate(220 372)"><g class="pm"><g class="pa"><circle cx="0" cy="-62" r="62" fill="#dce9f5"></circle><circle cx="-6.2" cy="-66.3" r="57" fill="#ffffff"></circle><circle cx="-24.8" cy="-86.8" r="8.7" fill="#eef5fb"></circle><circle cx="21.7" cy="-77.5" r="6.2" fill="#e3eef8"></circle></g></g></g><g id="p-ball2" class="part hid" transform="translate(220 262)"><g class="pm"><g class="pa"><circle cx="0" cy="-46" r="46" fill="#dce9f5"></circle><circle cx="-4.6" cy="-49.2" r="42.3" fill="#ffffff"></circle><circle cx="-18.4" cy="-64.4" r="6.4" fill="#eef5fb"></circle><circle cx="16.1" cy="-57.5" r="4.6" fill="#e3eef8"></circle></g></g></g><g id="p-arms" class="part hid" transform="translate(220 216)"><g class="pm"><g class="pa"><path d="M-40 -4 L-92 -36 M-78 -27 L-88 -48 M-78 -27 L-102 -26" stroke="#8f5f33" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"></path><path d="M40 -4 L92 -40 M78 -30 L82 -52 M78 -30 L102 -28" stroke="#8f5f33" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></g></g></g><g id="p-buttons" class="part hid" transform="translate(220 218)"><g class="pm"><g class="pa"><circle cx="0" cy="-26" r="4.5" fill="#4a2c14"></circle><circle cx="0" cy="-8" r="4.5" fill="#4a2c14"></circle><circle cx="0" cy="10" r="4.5" fill="#4a2c14"></circle></g></g></g><g id="p-ball3" class="part hid" transform="translate(220 186)"><g class="pm"><g class="pa"><circle cx="0" cy="-34" r="34" fill="#dce9f5"></circle><circle cx="-3.4" cy="-36.4" r="31.3" fill="#ffffff"></circle><circle cx="-13.6" cy="-47.6" r="4.8" fill="#eef5fb"></circle><circle cx="11.9" cy="-42.5" r="3.4" fill="#e3eef8"></circle></g></g></g><g id="p-face" class="part hid" transform="translate(220 152)"><g class="pm"><g class="pa"><circle cx="-11" cy="-10" r="4" fill="#4a2c14"></circle><circle cx="11" cy="-10" r="4" fill="#4a2c14"></circle><circle cx="-9.5" cy="-11.5" r="1.2" fill="#ffffff"></circle><circle cx="12.5" cy="-11.5" r="1.2" fill="#ffffff"></circle><path d="M-2 -4 L26 2 L-2 4 Z" fill="#ff8a3d"></path><circle cx="-12" cy="8" r="2.2" fill="#4a2c14"></circle><circle cx="-5" cy="11" r="2.2" fill="#4a2c14"></circle><circle cx="3" cy="12" r="2.2" fill="#4a2c14"></circle><circle cx="10" cy="10" r="2.2" fill="#4a2c14"></circle><circle cx="-20" cy="0" r="4.5" fill="#ffb9c8" opacity="0.8"></circle><circle cx="20" cy="0" r="4.5" fill="#ffb9c8" opacity="0.8"></circle></g></g></g><g id="p-scarf" class="part hid" transform="translate(220 180)"><g class="pm"><g class="pa"><path d="M-36 -8 Q0 10 36 -8 L36 4 Q0 22 -36 4 Z" fill="#ff5c5c"></path><path d="M14 4 L22 40 L34 38 L28 2 Z" fill="#e84a4a"></path><path d="M-24 0 V10 M-8 5 V16 M8 5 V16 M24 0 V10" stroke="#ffd21c" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"></path><path d="M20 32 l4 8 M27 32 l3 8" stroke="#ffd21c" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></g></g></g><g id="p-hat" class="part hid" transform="translate(220 126)" style="--o:50% 100%"><g class="pm"><g class="pa"><rect x="-30" y="-8" width="60" height="9" rx="4" fill="#3d3a4a"></rect><rect x="-20" y="-46" width="40" height="40" rx="5" fill="#3d3a4a"></rect><rect x="-20" y="-18" width="40" height="8" rx="2" fill="#ff5c5c"></rect><circle cx="12" cy="-14" r="3" fill="#ffd21c"></circle></g></g></g><g id="p-kid" class="part hid" transform="translate(78 386)"><g class="pm"><g class="pa"><g transform="scale(1.05)"><ellipse cx="0" cy="0" rx="24" ry="4.6" fill="#2f6b1a" opacity="0.2"></ellipse><ellipse cx="-21.9" cy="-53.8" rx="6" ry="12" fill="#ff5c5c" transform="rotate(145 -21.9 -53.8)"></ellipse><circle cx="-28.8" cy="-63.7" r="5" fill="#ffd9b8"></circle><ellipse cx="21.9" cy="-53.8" rx="6" ry="12" fill="#ff5c5c" transform="rotate(-145 21.9 -53.8)"></ellipse><circle cx="28.8" cy="-63.7" r="5" fill="#ffd9b8"></circle><ellipse cx="-8" cy="-3" rx="8" ry="4" fill="#ff5c5c"></ellipse><ellipse cx="8" cy="-3" rx="8" ry="4" fill="#ff5c5c"></ellipse><rect x="-15" y="-50" width="30" height="26" rx="8" fill="#ff5c5c"></rect><rect x="-15" y="-28" width="30" height="14" rx="5" fill="#4f8fe0"></rect><rect x="-12" y="-16" width="9" height="12" rx="3" fill="#4f8fe0"></rect><rect x="3" y="-16" width="9" height="12" rx="3" fill="#4f8fe0"></rect><rect x="-4" y="-56" width="8" height="8" rx="3" fill="#ffd9b8"></rect><circle cx="0" cy="-76" r="21" fill="#ffd9b8"></circle><path d="M-21 -80 Q-20 -100 0 -100 Q20 -100 21 -80 Q12 -90 0 -88 Q-10 -90 -21 -80 Z" fill="#6b4a2e"></path><circle cx="-12" cy="-68" r="4.6" fill="#ffb9c8" opacity="0.8"></circle><circle cx="12" cy="-68" r="4.6" fill="#ffb9c8" opacity="0.8"></circle><circle cx="-7.5" cy="-76" r="2.9" fill="#4a2c14"></circle><circle cx="7.5" cy="-76" r="2.9" fill="#4a2c14"></circle><circle cx="-6.5" cy="-77.2" r="1" fill="#ffffff"></circle><circle cx="8.5" cy="-77.2" r="1" fill="#ffffff"></circle><path d="M-5.5 -67 Q0 -58.3 5.5 -67 Z" fill="#c0475a"></path></g></g></g></g><g id="p-snow" class="part hid" transform="translate(0 0)"><g class="pm"><g class="pa"><circle cx="30" cy="40" r="4" fill="#ffffff" opacity="1"></circle><circle cx="90" cy="100" r="3" fill="#ffffff" opacity="1"></circle><circle cx="150" cy="30" r="4" fill="#ffffff" opacity="1"></circle><circle cx="200" cy="90" r="3" fill="#ffffff" opacity="1"></circle><circle cx="270" cy="50" r="4" fill="#ffffff" opacity="1"></circle><circle cx="330" cy="110" r="3" fill="#ffffff" opacity="1"></circle><circle cx="400" cy="60" r="4" fill="#ffffff" opacity="1"></circle><circle cx="60" cy="200" r="3" fill="#ffffff" opacity="1"></circle><circle cx="360" cy="220" r="4" fill="#ffffff" opacity="1"></circle><circle cx="420" cy="150" r="3" fill="#ffffff" opacity="1"></circle><circle cx="120" cy="260" r="3" fill="#ffffff" opacity="1"></circle></g></g></g><g id="p-glow" class="part hid" transform="translate(0 0)"><g class="pm"><g class="pa"><g transform="translate(140 110) scale(0.9 0.9)"><path d="M0 -9 L2.2 -2.2 L9 0 L2.2 2.2 L0 9 L-2.2 2.2 L-9 0 L-2.2 -2.2 Z" fill="#ffd21c"></path></g><g transform="translate(300 120) scale(0.8 0.8)"><path d="M0 -9 L2.2 -2.2 L9 0 L2.2 2.2 L0 9 L-2.2 2.2 L-9 0 L-2.2 -2.2 Z" fill="#ffd21c"></path></g><g transform="translate(320 250) scale(0.7 0.7)"><path d="M0 -9 L2.2 -2.2 L9 0 L2.2 2.2 L0 9 L-2.2 2.2 L-9 0 L-2.2 -2.2 Z" fill="#ffd21c"></path></g></g></g></g></svg></div>
+    <div id="turnPanel" aria-live="polite">
+      <div id="picBox"><span id="pic"></span></div>
+      <div id="word"></div>
+      <button id="hear" aria-label="Hear it again"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4Z" fill="#1cb0f6"/><path d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="#1cb0f6" stroke-width="2.2" stroke-linecap="round"/></svg><span>Hear it</span></button>
+      <div id="listenRow">
+        <span id="echoWrap"><img id="echoFace" src="/coach/echo/echo-idle.svg" alt="Echo" /></span>
+        <span id="micState"></span>
+        <span id="cheer"></span>
+        <button id="micBtn" hidden aria-label="Listen again"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8.5" y="3" width="7" height="12" rx="3.5" fill="#fff"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M8.5 21h7" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/></svg></button>
+      </div>
+    </div>
+  </div>
+
+  <div class="ovl" id="startOvl">
+    <div class="ovlCard">
+      <h2 id="startTitle">Build a Snowman</h2>
+      <p>Say each word to build a snowman.</p>
+      <p class="small" id="startSound"></p>
+      <button id="startBtn" aria-label="Play"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15a1 1 0 0 0 1.5.9l12-7.5a1 1 0 0 0 0-1.8l-12-7.5A1 1 0 0 0 7 4.5Z" fill="#fff"/></svg></button>
+    </div>
+  </div>
+  <div class="ovl" id="primer">
+    <div class="ovlCard">
+      <img class="ovlEcho" src="/coach/echo/echo-listening.svg" alt="" />
+      <h2>Let Echo hear you!</h2>
+      <p>Say each word, and watch what happens.</p>
+      <p class="small" id="micPromise"></p>
+      <button class="btn" id="primerYes">Turn on Echo's ears</button>
+      <button class="ghost" id="primerNo">Not now</button>
+    </div>
+  </div>
+  <div class="ovl" id="pauseOvl">
+    <div class="ovlCard">
+      <img class="ovlEcho" src="/coach/echo/echo-idle.svg" alt="" />
+      <h2>Paused</h2>
+      <button class="btn" id="resume">Keep playing</button>
+    </div>
+  </div>
+  <div class="ovl" id="endOvl">
+    <div class="ovlCard">
+      <img class="ovlEcho endStar" src="/coach/echo/echo-celebrate.svg" alt="" />
+      <h2 id="endTitle"></h2>
+      <p id="endSub"></p>
+      <button class="btn" id="again">Play again</button>
+      <button class="ghost" id="goHome">Back home</button>
+    </div>
+  </div>
+
+  <script src="/sona.js"></script>
+  <script src="/sayplay.js"></script>
+  <script>SayPlay.start({"key":"snowman","title":"Build a Snowman","steps":[[{"a":"show","id":"ball1","fx":"drop"}],[{"a":"show","id":"ball2","fx":"drop"}],[{"a":"show","id":"ball3","fx":"drop"}],[{"a":"show","id":"face","fx":"pop"},{"a":"show","id":"buttons","fx":"pop","at":250}],[{"a":"show","id":"hat","fx":"drop"},{"a":"show","id":"scarf","fx":"pop","at":250},{"a":"show","id":"arms","fx":"pop","at":450}]],"finale":[{"a":"fx","id":"arms","fx":"wiggle"},{"a":"fx","id":"hat","fx":"bounce","at":150},{"a":"show","id":"kid","fx":"slideL","at":100},{"a":"fx","id":"kid","fx":"hop","at":1000},{"a":"show","id":"snow","fx":"fade","at":200},{"a":"fx","id":"snow","fx":"float","at":900},{"a":"show","id":"glow","fx":"fade","at":400}],"done":{"title":"Hello, snowman!","sub":"Your words built a snowman."}});</script>
+</body>
+</html>

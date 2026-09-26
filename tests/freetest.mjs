@@ -280,6 +280,7 @@ if (appFree) {
       free: keys.filter((k) => Sona.GAME_ACTS[k].tier === "free" && !Sona.GAME_ACTS[k].comingSoon).map((k) => [k, Sona.gameAccess(k).allowed]),
       paid: keys.filter((k) => Sona.GAME_ACTS[k].tier === "premium" && !Sona.GAME_ACTS[k].comingSoon).map((k) => [k, Sona.gameAccess(k).allowed, Sona.gated(k)]),
       parked: keys.filter(k => Sona.GAME_ACTS[k].comingSoon).map(k => ({key:k,access:Sona.gameAccess(k)})),
+      released: keys.filter((k) => Sona.GAME_ACTS[k].tier === "premium" && !Sona.GAME_ACTS[k].comingSoon).length,
       story: Sona.gated("story"),
       unnamed: Sona.gated(),
       deck: Sona.adventureGames().map((k) => [k, Sona.gameAccess(k).allowed]),
@@ -315,7 +316,7 @@ if (appFree) {
     open:[...document.querySelectorAll('#activityGroups .game-card[data-locked="false"]')].map(t=>t.dataset.game),
   }));
   ok("Home waits for a chosen game without starting a daily run or replay", /pick a game/i.test(home.heading)&&!home.automatic&&!home.run,JSON.stringify(home));
-  ok("a locked released tile says Premium and asks for a grown-up",home.locked.length===3&&home.locked.every(t=>t.tag==="Premium"&&/Ask a grown-up/.test(t.aria)),JSON.stringify(home.locked));
+  ok("a locked released tile says Premium and asks for a grown-up",home.locked.length===st.released&&st.released>0&&home.locked.every(t=>t.tag==="Premium"&&/Ask a grown-up/.test(t.aria)),JSON.stringify(home.locked));
   ok("…and nothing a child can read on Home names a price",!/\$\s?\d/.test(home.kid),(home.kid.match(/\$\s?\d[^\s]*/) || [])[0]);
   await pg.locator('#activityGroups .game-card[data-game="slice"]').click();
   await pg.waitForURL(/charge\.html/);
