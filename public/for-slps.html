@@ -115,7 +115,6 @@
     nav{display:flex;align-items:center;gap:20px;font-weight:700;font-size:15px;}
     nav a{color:var(--body);text-decoration:none;}
     nav a.signin{color:var(--ink);border:2px solid var(--line2);padding:8px 16px;border-radius:12px;}
-    nav a.parents{color:var(--teal-dd);font-weight:800;}
     @media(max-width:620px){ nav a.nl{display:none;} nav{gap:14px;} }
     nav a{white-space:nowrap;}
     @media(max-width:400px){ .brand span{display:none;} nav{font-size:14px;gap:12px;} nav a.signin{padding:7px 12px;} }
@@ -255,16 +254,14 @@
       <img src="/echo.png" alt="" width="40" height="40">
       <b>Sona</b>
     </a>
+    <!-- JUST SIGN IN (Travis, 26 Sep 2026: "get rid of for parents"). The
+         page speaks to parents and SLPs alike, and the form asks who they
+         are, so a parents-only door at the top was one more thing to read. -->
     <nav>
-      <a class="parents" id="forParents" href="/families">For parents</a>
       <a class="signin" href="/slp-login.html">Sign in</a>
     </nav>
   </div>
 </header>
-<!-- FOR PARENTS brings a parent to the form with "Parent or caregiver"
-     chosen (script below). It used to leave the page for the App Store, which
-     skipped the one question this page now asks. Without script, the link
-     still reaches the family page. -->
 
 <main>
 <section class="wrap hero">
@@ -544,8 +541,8 @@
     function busy(on) { $("fGo").disabled = on; $("fGo").textContent = on ? "Sending…" : LABEL; }
 
     // ONE FORM, ONE PLACE. The closing Start free brings the visitor back to it
-    // rather than opening a second door, and For parents does the same with
-    // "Parent or caregiver" chosen (an answer already picked is kept).
+    // rather than opening a second door. (A role passed in is chosen only if
+    // nothing is chosen yet.)
     function toForm(role) {
       if (role && !$("fRole").value) $("fRole").value = role;
       var target = $("sent").hidden ? $("signup") : $("sent");
@@ -553,7 +550,6 @@
       if ($("sent").hidden) setTimeout(function () { try { $("fEmail").focus({ preventScroll: true }); } catch (e) { $("fEmail").focus(); } }, 450);
     }
     $("finalGo").onclick = function () { toForm(""); };
-    $("forParents").onclick = function (e) { e.preventDefault(); toForm("parent"); };
 
     // ONE WAY OUT. Called only after the Lead has fired, and after a pause, so
     // the pixel's request leaves before the page does.

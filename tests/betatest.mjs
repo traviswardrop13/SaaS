@@ -102,8 +102,6 @@ const clickNext = async () => { await page.evaluate(() => (document.querySelecto
 await clickNext(); // welcome →
 await page.evaluate(() => { document.getElementById("obName").value = "Milo"; });
 await clickNext(); // name →
-await page.evaluate(() => document.querySelector('#obPath .choice[data-val="speech"]').click());
-await clickNext(); // path → sounds
 await page.locator('#obSounds [data-sound="R"]').click();
 await clickNext(); // sounds → mic
 // The "building the plan" beat used to fire HERE, on the way into the
@@ -164,9 +162,8 @@ ok("onboarding no pageerrors", errs.length === 0);
 // nobody could see; and the welcome never said how long setup was.
 {
   const ob = readFileSync(ROOT + "/onboarding.html", "utf8");
-  ok("the practice-direction cards stack their title over their text, like the role cards",
-    /#obRole \.choice,#obPath \.choice\{flex-direction:column/.test(ob),
-    "a row layout wraps a six-word title one word per line");
+  ok("the extra practice-direction page has been removed",
+    !/data-step="path"/.test(ob));
   ok("the picked age chip uses the app's one selection colour",
     /\.schips \.sound\.on\{[^}]*border-color:#58cc02/.test(ob),
     "cream on white is not a selection anyone can see");
@@ -177,14 +174,11 @@ ok("onboarding no pageerrors", errs.length === 0);
     return { howLong: how ? how.textContent : "" };
   });
   ok("the welcome says how long setup takes", /Three quick questions/.test(seen.howLong) && /minute/.test(seen.howLong), seen.howLong);
-  // the card that broke: every title now sits on one line at phone width
+  // Parents now go directly from the child's details to a compact sound grid.
   await pg2.evaluate(() => (document.querySelector('[data-step="mic"].on') ? document.getElementById("micNotNow") : document.getElementById("nextBtn")).click()); await pg2.waitForTimeout(200);
   await pg2.evaluate(() => { document.getElementById("obName").value = "Milo"; (document.querySelector('[data-step="mic"].on') ? document.getElementById("micNotNow") : document.getElementById("nextBtn")).click(); }); await pg2.waitForTimeout(300);
-  // line-height computes to "normal" here, so count lines by font size
-  const lines = await pg2.evaluate(() => [...document.querySelectorAll("#obPath .choice b")].map((b) => {
-    const cs = getComputedStyle(b); return +(b.getBoundingClientRect().height / parseFloat(cs.fontSize)).toFixed(1);
-  }));
-  ok("…and no practice-direction title wraps past two lines at 390px", lines.length === 3 && lines.every((n) => n <= 2.8), JSON.stringify(lines));
+  const grid = await pg2.evaluate(() => ({onSounds:document.querySelector('[data-step="sounds"]').classList.contains('on'),overflow:document.documentElement.scrollWidth>innerWidth,labels:[...document.querySelectorAll('#obSounds .sound')].map(b=>b.textContent.trim())}));
+  ok("…and the sound grid is the next screen and fits at 390px", grid.onSounds&&!grid.overflow&&grid.labels.length===19, JSON.stringify(grid));
   await pg2.close();
 }
 
@@ -216,11 +210,10 @@ ok("onboarding no pageerrors", errs.length === 0);
   // it is a scratchpad, not a profile: finishing must clear it, or a stale
   // draft shadows the real thing on the next visit
   // the reload put them back at the top with their answers intact, so this
-  // walks the whole short flow again: welcome → name → path → mic → finish
+  // walks the whole short flow again: welcome → name → sounds → mic → finish
   await pg.evaluate(() => (document.querySelector('[data-step="mic"].on') ? document.getElementById("micNotNow") : document.getElementById("nextBtn")).click()); await pg.waitForTimeout(250);
   await pg.evaluate(() => (document.querySelector('[data-step="mic"].on') ? document.getElementById("micNotNow") : document.getElementById("nextBtn")).click()); await pg.waitForTimeout(250);
-  await pg.evaluate(() => document.querySelector('#obPath .choice[data-val="play"]').click());
-  await pg.evaluate(() => (document.querySelector('[data-step="mic"].on') ? document.getElementById("micNotNow") : document.getElementById("nextBtn")).click()); await pg.waitForTimeout(400);
+  await pg.locator('#obExploreSounds').click();
   await pg.evaluate(() => (document.querySelector('[data-step="mic"].on') ? document.getElementById("micNotNow") : document.getElementById("nextBtn")).click()); await pg.waitForTimeout(700);
   const after = await pg.evaluate(() => ({
     draft: localStorage.getItem("sona.obdraft.v1"),
@@ -242,8 +235,8 @@ ok("onboarding no pageerrors", errs.length === 0);
   await pg.evaluate(() => { localStorage.clear(); sessionStorage.clear(); });
   await pg.goto("http://localhost:8129/onboarding.html"); await pg.waitForTimeout(800);
   const door = await pg.evaluate(() => ({
-    has: !!document.querySelector('#obPath .choice[data-val="unsure"]'),
-    says: document.querySelector('[data-step="path"]').textContent,
+    has: !!document.querySelector('#obExploreSounds'),
+    says: document.querySelector('[data-step="sounds"]').textContent,
   }));
   ok("a parent can say they don't know where to start", door.has);
   ok("…and the screen says plainly that Sona does not test or diagnose",
@@ -255,13 +248,12 @@ ok("onboarding no pageerrors", errs.length === 0);
   await pg.evaluate(() => (document.querySelector('[data-step="mic"].on') ? document.getElementById("micNotNow") : document.getElementById("nextBtn")).click()); await pg.waitForTimeout(250);
   await pg.evaluate(() => { document.getElementById("obName").value = "Sam"; });
   await pg.evaluate(() => (document.querySelector('[data-step="mic"].on') ? document.getElementById("micNotNow") : document.getElementById("nextBtn")).click()); await pg.waitForTimeout(250);
-  await pg.evaluate(() => document.querySelector('#obPath .choice[data-val="unsure"]').click());
-  await pg.evaluate(() => (document.querySelector('[data-step="mic"].on') ? document.getElementById("micNotNow") : document.getElementById("nextBtn")).click()); await pg.waitForTimeout(400);
+  await pg.locator('#obExploreSounds').click();
   const landed = await pg.evaluate(() => ({
     onSounds: document.querySelector('[data-step="sounds"]').classList.contains("on"),
     onMic: document.querySelector('[data-step="mic"]').classList.contains("on"),
   }));
-  ok("…and is never shown the sound picker, which IS the clinical framing",
+  ok("…and can continue without choosing a target",
     !landed.onSounds && landed.onMic, JSON.stringify(landed));
   await pg.evaluate(() => (document.querySelector('[data-step="mic"].on') ? document.getElementById("micNotNow") : document.getElementById("nextBtn")).click()); await pg.waitForTimeout(700);
   const prof = await pg.evaluate(() => JSON.parse(localStorage.getItem("sona.profile.v1") || "{}"));
@@ -280,14 +272,10 @@ await page.evaluate(() => { localStorage.clear(); sessionStorage.clear(); });
 await page.goto("http://localhost:8129/onboarding.html"); await page.waitForTimeout(900);
 const nameStep = await page.evaluate(() => document.querySelector('[data-step="name"]').textContent);
 ok("name question carries justification microcopy", /cheers them on by name/.test(nameStep));
-// The clinician door is gone from this screen (the SLP side is hidden), so
-// its onboarding branch is unreachable; what is walked here is the PARENT
-// path that shares the sound picker with it.
-await clickNext(); // welcome → name (the old clinician link used to skip this step)
+// This is the parent path, with an optional email after the core setup.
+await clickNext(); // welcome → name
 await page.evaluate(() => { document.getElementById("obName").value = "Zoe"; });
-await clickNext(); // name → path
-await page.evaluate(() => document.querySelector('#obPath .choice[data-val="speech"]').click());
-await clickNext(); // path → sounds
+await clickNext(); // name → sounds
 // SOUNDS1: the picker is open for everyone (no SLP code) — choose R and S
 const pickState = await page.evaluate(() => {
   const chips = [...document.querySelectorAll("#obSounds .sound")];
@@ -329,22 +317,20 @@ ok("the parent finish lands on the finale", skipFin.achieveShown && skipFin.prof
 ok("open sound picker: S saved next to R", (skipFin.prof.focusSounds || []).includes("S") && (skipFin.prof.focusSounds || []).includes("R"), JSON.stringify(skipFin.prof.focusSounds));
 ok("nobody becomes an SLP by accident", skipFin.prof.role !== "slp", JSON.stringify(skipFin.prof.role));
 
-// ── PLAY1: the play door — no sound picker, every sound, easiest first ──
-// The niece case: a kid who doesn't need speech help still gets the games.
-// The picker IS the clinical framing, so the play path must never show it.
+// ── PLAY1: explore every sound without choosing targets, easiest first ──
+// General play remains a one-tap option on the shared sound-selection screen.
 await page.evaluate(() => { localStorage.clear(); sessionStorage.clear(); });
 await page.goto("http://localhost:8129/onboarding.html"); await page.waitForTimeout(900);
 await clickNext(); // welcome →
 await page.evaluate(() => { document.getElementById("obName").value = "Nora"; });
 await clickNext(); // name →
-await page.evaluate(() => document.querySelector('#obPath .choice[data-val="play"]').click());
-await clickNext(); // path → (sounds is SKIPPED; the build beat fires here)
+await page.locator('#obExploreSounds').click();
 const playSkip = await page.evaluate(() => ({
   onSounds: document.querySelector('[data-step="sounds"]').classList.contains("on"),
   onMic: document.querySelector('[data-step="mic"]').classList.contains("on"),
   build: (document.getElementById("obBuild") || {}).textContent || "",
 }));
-ok("play path skips the sound picker entirely", !playSkip.onSounds && playSkip.onMic, JSON.stringify(playSkip));
+ok("explore opens microphone setup without selected targets", !playSkip.onSounds && playSkip.onMic, JSON.stringify(playSkip));
 // the beat plays from finish() now — walk the last step and look there
 await clickNext(); // mic → finish()
 await page.waitForTimeout(150);

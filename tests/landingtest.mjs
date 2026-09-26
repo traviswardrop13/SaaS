@@ -82,18 +82,13 @@ async function fill(page, email, role) {
   await page.click("#fGo");
   ok("no answer to I'm a…: asked to choose, nothing sent", /Choose one/.test(await page.textContent("#fErr")) && posts.length === 0);
 
-  // For parents and the closing Start free both come back to this one form.
-  await page.evaluate(() => { document.getElementById("fRole").value = ""; window.scrollTo(0, document.body.scrollHeight); });
-  // WAIT FOR THE SCROLL, DON'T GUESS IT (25 Sep 2026): these waited a fixed
+  // The closing Start free comes back to this one form. (There is no For
+  // parents link any more: Travis, 26 Sep 2026.)
+  ok("the header has no For parents link", (await page.$("#forParents")) === null);
+  // WAIT FOR THE SCROLL, DON'T GUESS IT (25 Sep 2026): this waited a fixed
   // 700 ms, and on GitHub's slower runner the smooth scroll and the focus
   // after it had not landed yet, so main went red on a page that worked.
   const settles = (fn) => page.waitForFunction(fn, null, { timeout: 5000, polling: 50 }).then(() => true, () => false);
-  await page.click("#forParents");
-  ok("For parents brings a parent to the form, with Parent or caregiver chosen and the email box ready",
-    (await page.inputValue("#fRole")) === "parent" && await settles(() => document.activeElement && document.activeElement.id === "fEmail"));
-  await page.selectOption("#fRole", "other");
-  await page.click("#forParents");
-  ok("…and never overwrites an answer already chosen", (await page.inputValue("#fRole")) === "other");
   await page.evaluate(() => { document.activeElement.blur(); window.scrollTo(0, document.body.scrollHeight); });
   await page.click("#finalGo");
   ok("the closing Start free comes back to the same form", await settles(() => { const r = document.getElementById("signup").getBoundingClientRect(); return r.top >= 0 && r.bottom <= innerHeight && document.activeElement && document.activeElement.id === "fEmail"; }));

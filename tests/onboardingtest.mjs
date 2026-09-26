@@ -13,6 +13,11 @@ function ok(name,pass,detail=''){checks++;if(!pass)failures++;console.log((pass?
 async function scenario(name,fn){try{await fn();}catch(e){ok(name+' completes without a page/harness error',false,e.stack);}}
 function edges(config){
   const h=window.__setup={requests:[],tracks:[],order:[],hidden:false,speech:[],complete:0,confetti:0};
+  h.keyboardCalls=[];h.keyboardListeners={};
+  if(config.keyboardPlatform){
+    const keyboard={setAccessoryBarVisible(options){h.keyboardCalls.push(options);return Promise.resolve();},addListener(name,callback){h.keyboardListeners[name]=callback;return Promise.resolve({remove(){}});}};
+    window.Capacitor={isNativePlatform:()=>!!config.native,getPlatform:()=>config.keyboardPlatform,Plugins:config.keyboardMissing?{}:{Keyboard:keyboard}};
+  }
   Object.defineProperty(document,'hidden',{configurable:true,get:()=>h.hidden});
   h.background=()=>{h.hidden=true;document.dispatchEvent(new Event('visibilitychange'));};h.foreground=()=>{h.hidden=false;document.dispatchEvent(new Event('visibilitychange'));};
   navigator.mediaDevices.getUserMedia=()=>new Promise((resolve,reject)=>{h.order.push('microphone');const req={grant(){const tracks=[0,1].map(()=>{const t={readyState:'live',stop(){t.readyState='ended';h.order.push('stop');}};h.tracks.push(t);return t;});resolve({getTracks:()=>tracks,getAudioTracks:()=>tracks});},deny(){reject(new DOMException('Denied','NotAllowedError'));}};h.requests.push(req);if(config.permission==='grant')req.grant();else if(config.permission==='deny')req.deny();});
@@ -30,7 +35,7 @@ async function fresh(config={}){
   page.on('dialog',dialog=>dialog.dismiss());await page.goto(base+'/onboarding.html');return {context,page,errors,requests};
 }
 async function next(page){await page.locator('#nextBtn').click();}
-async function enter(page,{mode='speech',age='4',name='Milo'}={}){await next(page);await page.locator('#obName').fill(name);await page.locator('#obAge [data-age="'+age+'"]').click();await next(page);await page.locator('#obPath [data-val="'+mode+'"]').click();await next(page);}
+async function enter(page,{mode='speech',age='4',name='Milo'}={}){await next(page);await page.locator('#obName').fill(name);await page.locator('#obAge [data-age="'+age+'"]').click();await next(page);if(mode!=='speech')await page.locator('#obExploreSounds').click();}
 async function choose(page,sound='R'){
   const chip=page.locator('#obSounds [data-sound="'+sound+'"]');
   if(await chip.count())await chip.click();else await page.locator('#obSounds .sound').filter({hasText:new RegExp('^'+sound+'$')}).click();
@@ -46,8 +51,12 @@ await scenario('sound selection and private paced handoff',async()=>{
   ok('three progress groups match the three setup questions',await page.locator('#seg i').count()===3);
   ok('the younger age band includes two-year-olds',/2–4/.test(await page.locator('#obAge [data-age="4"]').innerText()));
   await enter(page);
+  ok('name and age lead directly to sound choices without a direction page',await page.locator('[data-step="sounds"].on').count()===1&&await page.locator('[data-step="path"]').count()===0);
   ok('specific-sound setup starts without an invented target',await page.locator('#obSounds .on').count()===0&&await page.locator('#nextBtn').isDisabled());
-  const examples=await page.locator('#obSounds').innerText();ok('sound labels include useful R S TH and voiced-TH examples',/rabbit/.test(examples)&&/sun/.test(examples)&&/think/.test(examples)&&/this/.test(examples));
+  const choices=await page.evaluate(()=>({labels:[...document.querySelectorAll('#obSounds .sound')].map(b=>({text:b.textContent.trim(),label:Sona.soundLabel(b.dataset.sound),font:parseFloat(getComputedStyle(b.querySelector('span')||b).fontSize),width:b.getBoundingClientRect().width,height:b.getBoundingClientRect().height})),copy:document.querySelector('[data-step="sounds"]').textContent,overflow:document.documentElement.scrollWidth>innerWidth}));
+  ok('sound choices show large letters without example words',choices.labels.length===19&&choices.labels.every(b=>b.text===b.label&&b.font>=23),choices.labels);
+  ok('sound selection stays concise and uses no clinician terminology',choices.copy.trim().split(/\s+/).length<65&&!/\bSLPs?\b|speech-language|pathologist/i.test(choices.copy),choices.copy);
+  ok('sound buttons remain easy to tap without overflowing a small phone',!choices.overflow&&choices.labels.every(b=>b.width>=44&&b.height>=44),choices);
   await choose(page);ok('selecting a target enables Continue',await page.locator('#nextBtn').isEnabled());
   await choose(page);ok('the last selected target can be cleared',await page.locator('#obSounds .on').count()===0&&await page.locator('#nextBtn').isDisabled());
   await choose(page,'S');await next(page);
@@ -81,6 +90,22 @@ await scenario('sound selection and private paced handoff',async()=>{
  }finally{await context.close();}
 });
 
+await scenario('exploring sounds stays optional and can be changed before finishing',async()=>{
+ const {context,page,errors}=await fresh();try{
+  await enter(page);await choose(page,'R');await page.locator('#obExploreSounds').click();
+  ok('Explore all sounds opens microphone permission without inventing targets',await page.locator('[data-step="mic"].on').count()===1&&await page.evaluate(()=>draft.mode==='play'&&draft.pathReason==='unsure'&&draft.focusSounds.length===0));
+  await page.locator('#backBtn').click();
+  ok('Back from microphone returns to the same sound choices after exploring',await page.locator('[data-step="sounds"].on').count()===1&&await page.locator('#obSounds .on').count()===0&&await page.locator('#nextBtn').isDisabled());
+  await choose(page,'S');await next(page);
+  ok('choosing a sound replaces the general-play choice',await page.evaluate(()=>draft.mode==='speech'&&draft.pathReason===''&&JSON.stringify(draft.focusSounds)==='["S"]'));
+  await page.locator('#backBtn').click();await page.locator('#backBtn').click();
+  ok('Back from the sound picker returns straight to name and age',await page.locator('[data-step="name"].on').count()===1);
+  await next(page);await next(page);await notNow(page);await atHandoff(page);
+  ok('the final profile keeps only the explicitly chosen sound',await page.evaluate(()=>Sona.getProfile().mode==='speech'&&JSON.stringify(Sona.getProfile().focusSounds)==='["S"]'));
+  clean('explore and change',errors);
+ }finally{await context.close();}
+});
+
 await scenario('Done closes typing without accepting setup choices',async()=>{
  const {context,page,errors,requests}=await fresh();try{
   await page.locator('#slpLink').click();await page.locator('#obName').fill('Milo');await page.locator('#obName').press('Enter');
@@ -98,6 +123,25 @@ await scenario('Done closes typing without accepting setup choices',async()=>{
   ok('Continue still accepts the clinician email and sends each intended request once',await page.evaluate(()=>Sona.getProfile().email==='clinician@example.com')&&accountPosts().filter(r=>new URL(r.url).pathname==='/api/lead').length===1&&accountPosts().filter(r=>new URL(r.url).pathname==='/api/slp/auth/request').length===1,accountPosts());
   clean('Done actions',errors);
  }finally{await context.close();}
+});
+
+// These tests check the native bridge contract, not a simulated iOS keyboard.
+await scenario('native iPhone keyboard integration and safe fallbacks',async()=>{
+ for(const config of [{native:true,keyboardPlatform:'ios'},{native:true,keyboardPlatform:'android'},{keyboardPlatform:'web'},{native:true,keyboardPlatform:'ios',keyboardMissing:true}]){
+  const {context,page,errors}=await fresh(config);try{
+   const enabled=config.native&&config.keyboardPlatform==='ios'&&!config.keyboardMissing;
+   const bridge=await page.evaluate(()=>({calls:__setup.keyboardCalls,listeners:Object.keys(__setup.keyboardListeners)}));
+   ok('keyboard toolbar changes only inside a supported iPhone app: '+JSON.stringify(config),enabled?bridge.calls.length===1&&bridge.calls[0].isVisible===false&&bridge.listeners.includes('keyboardWillShow')&&bridge.listeners.includes('keyboardWillHide'):bridge.calls.length===0&&bridge.listeners.length===0,bridge);
+   if(enabled){
+    await next(page);await page.locator('#obName').fill('Milo');await page.locator('#obName').focus();
+    await page.evaluate(()=>__setup.keyboardListeners.keyboardWillShow({keyboardHeight:260}));
+    ok('the native show event applies the keyboard layout without advancing setup',await page.evaluate(()=>document.body.classList.contains('keyboard-open')&&document.body.dataset.setupScreen==='name'));
+    await page.locator('#obName').press('Enter');await page.evaluate(()=>__setup.keyboardListeners.keyboardWillHide());
+    ok('Done dismisses focus and native hide restores the normal layout',await page.evaluate(()=>document.activeElement.id!=='obName'&&!document.body.classList.contains('keyboard-open')&&document.body.dataset.setupScreen==='name'));
+   }
+   clean('keyboard '+JSON.stringify(config),errors);
+  }finally{await context.close();}
+ }
 });
 
 await scenario('granted microphone in native setup',async()=>{

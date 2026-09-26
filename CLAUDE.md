@@ -312,8 +312,8 @@ historical; the rewrite and the pins point at it). The headline stays; the
 one form, on the page itself, asks for **an email and "I'm a…"** (Parent or
 caregiver · Speech therapist (SLP or SLPA) · Other) and nothing else — no
 name, "as simple as possible" — then goes to the App Store (Android: the web
-app, which has no store listing to send it to). "For parents" in the header
-brings a parent to that form with Parent chosen. An SLP or SLPA also gets
+app, which has no store listing to send it to). The header is just Sign in
+(Travis, 26 Sep 2026: "get rid of for parents"). An SLP or SLPA also gets
 their dashboard account and sign-in email, as the page always did, because
 the iPhone app has no clinician side; everyone else goes to `/api/lead` with
 their email and role. `tests/landingtest.mjs` drives it.
