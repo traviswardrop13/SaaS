@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
+  <link rel="icon" type="image/png" href="/assets/slp-tab-icon.png" />
   <script>
 // Clinician tools live in the browser. A restored link in the native shell
 // must return to the family app before rendering or making clinician requests.
@@ -1916,7 +1917,7 @@
     var PLAN=null, PLAN_AT=0, PLAN_BUSY=false, PLAN_ERR="", PLAN_GEN=0, PLAN_SESSION="";
     var PARENT_PRICE="", PARENT_ASKED=false, BUY_BUSY=false, MANAGE_BUSY=false, SELF_BUSY=false, SELF_SENT="", SELF_DEV="", COVERED_SHOWN=null;
     try{var planSid=new URLSearchParams(location.search).get("plan_session");
-      if(planSid!=null){ if(/^cs_[A-Za-z0-9_]{10,240}$/.test(planSid))PLAN_SESSION=planSid; else history.replaceState(null,"","/slp.html#premium"); }
+      if(planSid!=null){ if(/^cs_[A-Za-z0-9_]{10,240}$/.test(planSid))PLAN_SESSION=planSid; else history.replaceState(null,"",location.pathname+"#premium"); }
     }catch(e){}
     // Paid or grandfathered: the families on this link have every game.
     function caseCovered(){return !!(PLAN&&PLAN.active);}
@@ -1936,7 +1937,7 @@
         // A REFUSAL (activated:false with no retry flag: another account's
         // session, a family's) will never succeed, so it leaves too; Check
         // again then finds a real plan by the recovery search instead.
-        if(sid&&(res.j.activated===true||res.j.active===true||res.j.retry!==true)){PLAN_SESSION="";try{history.replaceState(null,"","/slp.html#premium");}catch(e){}}
+        if(sid&&(res.j.activated===true||res.j.active===true||res.j.retry!==true)){PLAN_SESSION="";try{history.replaceState(null,"",location.pathname+"#premium");}catch(e){}}
         PLAN=res.j;PLAN_AT=Date.now();PLAN_ERR="";
         if(sid)paintReturn(true);
         paintPremium();paintCoverage();

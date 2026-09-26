@@ -34,6 +34,8 @@ const server = createServer((req, res) => {
   req.on('end', () => {
     let b = {};
     try { if(body) b=JSON.parse(body); } catch { return json({ok:false,error:'Invalid JSON'},400); }
+    if(u.pathname === '/slp.html' || u.pathname === '/slp') { res.writeHead(308, { location:'/slps'+u.search }); return res.end(); }
+    if(u.pathname === '/slps') u.pathname='/slp.html';
     if(u.pathname === '/api/preview/reset' && req.method === 'POST') { data=makeFixture(); account={...initialAccount}; writes=0; communityPosts=[]; communityWelcome=makeWelcome(); return json({ok:true}); }
     if(u.pathname === '/api/slp/auth/me') return json(account);
     if(u.pathname === '/api/slp/auth/logout') return json({ok:true});
