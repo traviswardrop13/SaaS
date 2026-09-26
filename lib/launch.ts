@@ -4,11 +4,11 @@
  * people there. Instead it thanks them, says the app launches next week, and
  * emails them to say the same; a speech therapist goes to their dashboard.
  *
- * ONE SWITCH, TWO COPIES, like FREE_MODE: this one (the emails) and
- * `var APP_READY` in public/for-slps.html (the page), which is static and
- * cannot import this. tests/landingtest.mjs fails if they disagree. When the
- * app is live, set both to true: the page sends people to the App Store again
- * and these emails stop.
+ * ONE SWITCH, THREE COPIES, like FREE_MODE: this one (the emails) and
+ * `var APP_READY` in public/parents.html (the root) and public/for-slps.html,
+ * which are static and cannot import this. tests/shiptest.mjs fails if they
+ * disagree. When the app is live, set all three to true: the pages send people
+ * to the App Store again and these emails stop.
  */
 export const APP_READY = false;
 

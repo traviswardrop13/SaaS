@@ -127,13 +127,24 @@ const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL 
   ok("…and a brand-new clinician is marked as one",
     /if \(j\.signedIn\) sonaTrack\("CompleteRegistration"\)/.test(handler));
 
+  // THE ROOT IS THE PARENT PAGE NOW (26 Sep 2026), and the parent ads land on
+  // it: the same regression, the same rule. PageView on load, Lead only once
+  // the server said yes, and no CompleteRegistration — a parent has no account.
+  const parents = readFileSync(ROOT + "/parents.html", "utf8");
+  ok("the parent page, where the parent ads land, loads the pixel", /<script src="\/pixel\.js"><\/script>/.test(parents));
+  const pgo = parents.slice(parents.indexOf("function go()"));
+  ok("…and fires Lead only after the server accepted the sign-up",
+    pgo.indexOf("if (!j || !j.ok)") > 0 && pgo.indexOf('sonaTrack("Lead")') > pgo.indexOf("if (!j || !j.ok)"));
+  ok("…with no parameters, and never CompleteRegistration", /sonaTrack\("Lead"\); \} catch/.test(pgo) && !/CompleteRegistration/.test(parents));
+  ok("…and the ad's own click id rides along with the lead", /"fbclid"/.test(parents) && /utm_content/.test(parents) && /\}, attrib\)\)/.test(parents));
+
   // WHERE THE PIXEL MAY LOAD, as an allow-list. A deny-list would mean every
   // new page is tracked until someone remembers to exclude it, and the pages
   // that come next are a child's. These four are the grown-up marketing
   // funnel; every other page — the practice screens, the clinician's caseload,
   // the family's redemption link — carries or is one keystroke from a child's
   // identity and gets no ad tracking at all.
-  const MARKETING = new Set(["check.html", "subscribe.html", "onboarding.html", "for-slps.html"]);
+  const MARKETING = new Set(["check.html", "subscribe.html", "onboarding.html", "for-slps.html", "parents.html"]);
   const pages = readdirSync(ROOT).filter((f) => f.endsWith(".html"));
   const strays = pages.filter((f) => !MARKETING.has(f) && /pixel\.js/.test(readFileSync(ROOT + "/" + f, "utf8")));
   ok("no page outside the grown-up marketing funnel loads the ad pixel", strays.length === 0, strays.join(", "));
