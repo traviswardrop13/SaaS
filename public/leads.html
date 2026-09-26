@@ -50,6 +50,16 @@
       <div class="card"><span class="muted">Therapist accounts</span><b id="nSlp">0</b></div>
     </div>
 
+    <h2>Since the new landing page</h2>
+    <p class="muted">Everyone who left an email since 25 Sep 2026, 1:20 pm Mountain, when speaksona.com started asking “I’m a…”. Each person counts once.</p>
+    <div class="cards">
+      <div class="card"><span class="muted">People</span><b id="sAll">0</b></div>
+      <div class="card"><span class="muted">Speech therapists</span><b id="sSlp">0</b></div>
+      <div class="card"><span class="muted">Parents</span><b id="sParent">0</b></div>
+      <div class="card"><span class="muted">Other</span><b id="sOther">0</b></div>
+    </div>
+    <p class="muted" id="sNone" hidden></p>
+
     <h2>Kit</h2>
     <p class="muted">Sends everyone below — every captured email and every therapist account — to your Kit list, tagged therapist or parent. Safe to run again: Kit updates people it already has.</p>
     <div class="row"><button id="kitSync">Send everyone to Kit</button><span class="muted" id="kitMsg" role="status"></span></div>
@@ -122,6 +132,31 @@
       a.download = name; document.body.appendChild(a); a.click(); a.remove();
     }
 
+    // SINCE THE NEW LANDING PAGE (Travis, 26 Sep 2026: "how many leads since
+    // we changed the landing page? and how many chose slp v parent"). The page
+    // that asks "I'm a…" went live with #148, merged 25 Sep 2026, 13:20 MDT.
+    // People, not rows: each email counts once, with the newest answer it
+    // gave (leads arrive newest first). Someone who also came through the app
+    // or a join link keeps the answer they gave on the landing page.
+    var LANDING_SINCE = Date.parse("2026-09-25T19:20:04Z");
+    function sinceLanding(leads) {
+      var who = {}, n = { all: 0, slp: 0, parent: 0, other: 0, none: 0 };
+      leads.forEach(function (l) {
+        var e = String(l.email || "").toLowerCase();
+        if (!e || !(Date.parse(l.at || "") >= LANDING_SINCE)) return;
+        var r = l.role === "slp" || l.role === "parent" || l.role === "other" ? l.role : "";
+        if (!(e in who) || (!who[e] && r)) who[e] = r;
+      });
+      Object.keys(who).forEach(function (e) { n.all++; n[who[e] || "none"]++; });
+      return n;
+    }
+    function paintSince(leads) {
+      var n = sinceLanding(leads);
+      $("sAll").textContent = n.all; $("sSlp").textContent = n.slp; $("sParent").textContent = n.parent; $("sOther").textContent = n.other;
+      $("sNone").textContent = n.none ? "Of these, " + n.none + " came from the app, the Speech Check or a join link, and weren’t asked." : "";
+      $("sNone").hidden = !n.none;
+    }
+
     function load() {
       var key = ($("key").value || "").trim();
       $("err").textContent = "";
@@ -140,6 +175,7 @@
           $("nLeads").textContent = uniq(j.leads);
           $("nCrm").textContent = uniq(j.leads.filter(function (l) { return /^added/.test(String(l.kit || "")); }));
           $("nSlp").textContent = j.clinicians.length;
+          paintSince(j.leads);
           table($("tLeads"), LEAD_COLS, j.leads);
           table($("tSlp"), SLP_COLS, j.clinicians);
           $("out").hidden = false;

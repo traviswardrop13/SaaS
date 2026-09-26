@@ -324,7 +324,8 @@ Sep 2026: "the app launches next week"; the iOS 27 build closes on launch).
 `for-slps.html`, pinned equal by `shiptest`. A parent or "other" is thanked
 on the page ("The Sona app launches next week. We'll email you the moment
 it's ready.") and emailed the same once through Resend (`/api/lead`,
-`launchmail:<email>`); a speech therapist goes to their dashboard's
+`launchmail:<email>`; a reply goes to `RESEND_REPLY_TO` when it is set, and
+nowhere otherwise); a speech therapist goes to their dashboard's
 community (`/slp.html#community`) and their sign-in email carries the same
 P.S. Not the web app: Travis chose to wait for the app. When the app is
 live, set both switches to true.
@@ -430,7 +431,8 @@ out (25 Sep 2026: "get rid of this text"); its "What's stored" answer still
 says the email goes to Kit. Meta's `Lead` fires only when an email was given.
 
 `/leads.html` (private, behind `FOUNDER_KEY`) lists every captured email and
-every clinician account, and its "Send everyone to Kit" button is the catch-up:
+every clinician account, counts everyone since the "I'm a…" landing page
+(25 Sep 2026) by what they chose, and its "Send everyone to Kit" button is the catch-up:
 it re-sends everyone Sona holds, tagged `sona-slp` (a clinician account or an
 SLP sign-up), `sona-other` (answered Other) or `sona-parent`, and is safe to
 press again. Kit tags only add, so a wrong tag is fixed in Kit, not by
