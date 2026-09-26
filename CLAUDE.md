@@ -78,7 +78,8 @@ Caseload Premium merge).** `FREE_MODE = true` in `public/sona.js` and
 `lib/pricing.ts`. Do not make family pricing live until Travis explicitly
 approves it. All six released games are available; Bubble Pop and Peekaboo
 are disabled “Coming soon” cards, regardless of subscription, free mode,
-trial, or earned access. Books remain coming soon.
+trial, or earned access. The books are on (Travis, 26 Sep 2026: "yes turn
+them on"): Premium content, free while the app is free.
 
 The dormant paid rail remains tested: daily practice and released free-tier
 games stay free, while `premium()` recognizes subscriptions, founders,
@@ -457,7 +458,10 @@ Every page is a drawn scene: Rory and the Rainbow's were drawn by hand on a
 Claude Design canvas (`public/assets/books/rory-rainbow/`); the other 18 are
 built from one shared cast by `node tools/bookart/build.mjs`. Edit the layouts
 in `tools/bookart/`, rebuild, and commit the SVGs; the app only loads files.
-Books stay parked: adding one opens no menu.
+**The books are on** (Travis, 26 Sep 2026: "yes turn them on"): Home's Books
+card opens `library.html`. Books are Premium content (`Sona.gated("books")`),
+free while the app is free; a locked family gets the grown-up message, and
+`library.html` sends a typed address back to Home (`?locked=books`).
 
 **Say & Play** (Travis, 26 Sep 2026: "10 more games for ages 3-4 and 10
 more games for ages 5-8 ... incorporating practice into it"): twenty games
@@ -475,8 +479,9 @@ daily adventure.
 
 Bubble Pop and Peekaboo stay visible only as disabled “Coming soon” cards,
 with no New shelf promotion and no direct-link, paid or earned bypass.
-Their engines remain in the repo for future work. Books are also parked;
-reader engines and their tests stay, but no public menu opens a book.
+Their engines remain in the repo for future work. The adventure
+(`story.html`) and chapter readers are still parked: their engines and tests
+stay, but no public menu opens them, and the bookshelf hides its adventure tile.
 The existing practice, honest-rep, rotation and earned arcade-turn rules
 still apply after a child chooses an available game.
 

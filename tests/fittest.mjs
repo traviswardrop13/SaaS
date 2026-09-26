@@ -94,8 +94,8 @@ for (const [dev, w, h] of PORTRAIT) {
   });
   ok("small portrait today: the final game can be reached and tapped", target.visible&&target.reachable,JSON.stringify(target));
   ok("small portrait today: no sideways overflow",target.overflowX<=1,JSON.stringify(target));
-  await page.locator("#booksComingSoon").scrollIntoViewIfNeeded();
-  ok("small portrait today: the parked book shelf is reachable",await page.locator("#booksComingSoon").isVisible());
+  await page.locator("#booksCard").scrollIntoViewIfNeeded();
+  ok("small portrait today: the Books card is reachable",await page.locator("#booksCard").isVisible());
   const heading=await page.locator(".library-intro h1").boundingBox();
   ok("small portrait today: content scrolls rather than clipping below the fold", heading.y<0,JSON.stringify(heading));
   await page.close();

@@ -64,12 +64,16 @@
     .featured-grid .game-card{scroll-snap-align:start;box-shadow:0 4px 0 #ded0ef;}
     .featured-group .shelf-heading h2{font-size:22px;}
     .featured-group .shelf-tag{background:#fff9;color:#665093;}
-    #booksComingSoon{display:flex;align-items:center;gap:15px;padding:21px 17px;background:#e6f0ee;border:1px solid #d5e4de;border-radius:25px;margin-top:32px;}
+    #booksCard{display:flex;align-items:center;gap:15px;width:100%;padding:18px 17px;background:#e6f0ee;border:1px solid #d5e4de;border-radius:25px;margin-top:32px;box-shadow:0 4px 0 #cfe0d9;color:var(--ink);font:inherit;text-align:left;cursor:pointer;transition:transform .12s;}
+    #booksCard:active{transform:translateY(3px) scale(.99);}
     .book-art{position:relative;display:block;width:76px;height:86px;flex:none;}
     .book-art>.stk{background:transparent!important;}
-    #booksComingSoon h2{font-size:23px;line-height:1.2;margin-bottom:6px;}
-    #booksComingSoon p{font-size:13px;line-height:1.5;margin-top:8px;color:#536b62;max-width:300px;}
-    #booksComingSoon .shelf-tag{background:#fff9;color:#536b62;}
+    .books-copy{display:flex;flex-direction:column;gap:6px;flex:1;min-width:0;}
+    .books-head{display:flex;align-items:center;gap:9px;flex-wrap:wrap;}
+    #booksHeading{font-family:"Baloo 2",sans-serif;font-size:23px;line-height:1.2;font-weight:800;}
+    #booksLine{font-size:13px;line-height:1.5;color:#536b62;max-width:300px;}
+    #booksCard .shelf-tag{background:#fff9;color:#536b62;}
+    .books-go{flex:none;font-size:30px;line-height:1;color:#536b62;}
     .age-note{font-size:12px;line-height:1.5;color:var(--muted);text-align:center;margin:25px 12px 0;}
     #catalogPreviewNotice{border:1px dashed #a897ba;border-radius:16px;background:#f4eefb;padding:12px 14px;font-size:12px;line-height:1.5;margin-bottom:20px;color:#665093;}
     #catalogPreviewNotice strong{display:block;}
@@ -80,7 +84,7 @@
     #libraryMessageClose{flex:none;width:36px;height:36px;border:0;border-radius:50%;background:#fff0d8;color:var(--ink);font-size:23px;cursor:pointer;}
     .library-wrap.has-message{padding-bottom:145px;}
     @media(min-width:600px){.library-wrap{padding:26px 30px 42px;}.game-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:22px;}.featured-grid{grid-auto-columns:calc((100% - 44px)/3);gap:22px;}.library-intro{margin:28px 0;}.library-intro h1{font-size:42px;}#libraryEcho{width:100px;height:110px;}.game-name{font-size:22px;}.game-info{padding:12px 9px;}.game-access{font-size:11px;}.shelf-heading h2{font-size:27px;}.featured-group{padding:22px;}.activity-group{margin-top:34px;}}
-    @media(max-width:350px){.library-wrap{padding-left:15px;padding-right:15px;}.game-grid{gap:12px;}.library-intro h1{font-size:30px;}#libraryEcho{width:67px;height:80px;}.game-card{border-width:4px;border-radius:19px;}.game-art{border-radius:15px;}.game-name{font-size:16px;}.game-info{padding:9px 4px 6px;}.featured-group{padding:14px 11px;}.shelf-heading h2{font-size:21px;}.shelf-tag{font-size:10px;padding:4px 7px;}#booksComingSoon{gap:10px;}.book-art{width:60px;height:72px;}}
+    @media(max-width:350px){.library-wrap{padding-left:15px;padding-right:15px;}.game-grid{gap:12px;}.library-intro h1{font-size:30px;}#libraryEcho{width:67px;height:80px;}.game-card{border-width:4px;border-radius:19px;}.game-art{border-radius:15px;}.game-name{font-size:16px;}.game-info{padding:9px 4px 6px;}.featured-group{padding:14px 11px;}.shelf-heading h2{font-size:21px;}.shelf-tag{font-size:10px;padding:4px 7px;}#booksCard{gap:10px;}.book-art{width:60px;height:72px;}}
     @media(prefers-reduced-motion:reduce){.game-card{transition:none;}}
     :root{--label:#a17c4a;--track:#f0e4d2;--orange-d:#ef6f23;}
     .library-label{flex:1;}
@@ -126,10 +130,15 @@
     <aside id="catalogPreviewNotice" hidden><strong>Free &amp; Premium preview</strong><span id="catalogPreviewState"></span> <a href="/premium.html">Trial preview</a> · <a href="/activities.html?libraryPreview=0">Exit preview</a></aside>
     <div id="featuredGroups"></div>
     <div id="activityGroups"></div>
-    <section id="booksComingSoon" aria-labelledby="booksHeading">
+    <!-- BOOKS ARE ON (Travis, 26 Sep 2026: "yes turn them on"). One card opens
+         the bookshelf: a twelve-page picture book for every sound. Books are
+         Premium content (Sona.gated("books")), so they are free while the app
+         is free, and a locked family gets the grown-up message a game gets. -->
+    <button id="booksCard" type="button">
       <span class="book-art" id="libraryBooksArt" aria-hidden="true"></span>
-      <div><h2 id="booksHeading">Books</h2><span class="shelf-tag">Coming soon</span><p>Stories to share, one sound at a time.</p></div>
-    </section>
+      <span class="books-copy"><span class="books-head"><span id="booksHeading">Books</span><span class="shelf-tag" id="booksTag">Free</span></span><span id="booksLine">A picture book for every sound. Echo reads along.</span></span>
+      <span class="books-go" aria-hidden="true">›</span>
+    </button>
     <p class="age-note">Ages are a guide. Explore any game that fits.</p>
     <div id="libraryNotice" hidden><div class="notice-copy"><p id="libraryMessage" role="status"></p><button id="libraryUnlock" type="button">Ask a grown-up</button></div><button id="libraryMessageClose" aria-label="Close message">×</button></div>
   </main>
@@ -250,6 +259,14 @@
       });
       var lockedKey=new URLSearchParams(location.search).get("locked");
       library.groups.forEach(function(group){group.games.forEach(function(game){if(game.key===lockedKey&&!access(game).allowed)showLocked(game);});});
+      // BOOKS: free while the app is free, then Premium. The bookshelf page
+      // bounces a locked family back here with ?locked=books, so a typed
+      // address meets the same message as the card.
+      var booksCard=document.getElementById("booksCard");
+      document.getElementById("booksTag").textContent=S.isFree()?"Free":S.gated("books")?"Premium":"Included";
+      function showBooksLocked(){lockedGame={key:"books",name:"the books"};unlock.hidden=false;notice.hidden=false;app.classList.add("has-message");message.textContent="Ask a grown-up to help open the books. Your free games are still ready to play!";}
+      booksCard.onclick=function(){if(S.gated("books")){showBooksLocked();return;}clearMessage();location.href="/library.html";};
+      if(lockedKey==="books"&&S.gated("books"))showBooksLocked();
       // A cached library can return after a trial expires or an adult changes
       // preview state. Re-evaluate its labels without reviving stale access.
       window.addEventListener("pageshow",function(event){if(event.persisted)location.reload();});
