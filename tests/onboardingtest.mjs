@@ -3,6 +3,7 @@
 import {createServer} from 'http';
 import {readFileSync,existsSync,statSync} from 'fs';
 import path from 'path';
+import {tmpdir} from 'os';
 import {chromium,ROOT,launchOpts} from './_env.mjs';
 const root=process.env.SONATEST_PUBLIC_ROOT||ROOT,base='http://127.0.0.1:8198';
 const mime={html:'text/html',js:'text/javascript',css:'text/css',svg:'image/svg+xml',png:'image/png',webp:'image/webp',woff2:'font/woff2'};
@@ -201,11 +202,11 @@ await scenario('phone fit and optional email close',async()=>{
   await page.setViewportSize({width:393,height:852});
   await page.waitForTimeout(300);
   ok('welcome fits the phone without scrolling',await page.evaluate(()=>{var ob=document.querySelector('.ob');return ob.scrollHeight<=ob.clientHeight+1&&document.documentElement.scrollHeight<=innerHeight;}));
-  await page.screenshot({path:'/private/tmp/sona-welcome-polish.png'});
-  await enter(page);await page.waitForTimeout(600);await page.screenshot({path:'/private/tmp/sona-sounds-polish.png'});await next(page);await notNow(page);await atHandoff(page);
+  await page.screenshot({path:path.join(tmpdir(),'sona-welcome-polish.png')});
+  await enter(page);await page.waitForTimeout(600);await page.screenshot({path:path.join(tmpdir(),'sona-sounds-polish.png')});await next(page);await notNow(page);await atHandoff(page);
   ok('email handoff fits without scrolling',await page.evaluate(()=>{var ob=document.querySelector('.ob');return ob.scrollHeight<=ob.clientHeight+1;}));
   ok('email copy is short and does not promise extra tips',!/Rachel|occasional tips/.test(await page.locator('[data-step="achieve"]').innerText()));
-  await page.screenshot({path:'/private/tmp/sona-email-polish.png'});
+  await page.screenshot({path:path.join(tmpdir(),'sona-email-polish.png')});
   await page.setViewportSize({width:393,height:430});
   await page.evaluate(()=>__setup.keyboardListeners.keyboardWillShow({keyboardHeight:422}));
   await page.locator('#achEmailInput').fill('skip@example.com');
