@@ -79,25 +79,13 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
     !/actually practiced at home|Never plan speech homework/.test(slps));
   ok("…and the lede keeps Rachel's point: nothing to plan", /Nothing to plan, and you see who practiced\./.test(slps));
 
-  // PARENTS COME FROM THE SAME ADS (Travis, 24 Sep 2026). The form on this
-  // page is for clinicians, so a parent needs a door out that does not ask
-  // for an email: the App Store on an iPhone or iPad, the family page (which
-  // also runs in any browser) everywhere else. It has to show on a phone,
-  // where the ads land, so it must not carry the class that hides nav links
-  // under 620px.
+  // JUST SIGN IN (Travis, 26 Sep 2026: "get rid of for parents"). The header
+  // was For parents and Sign in (24 Sep); the page now speaks to parents and
+  // SLPs alike and its one form asks who they are.
   const header = (slps.match(/<header>[\s\S]*?<\/header>/) || [""])[0];
-  ok("the header has a For parents link, top right, before Sign in",
-    /<a class="parents" id="forParents" href="\/families">For parents<\/a>\s*<a class="signin"/.test(header));
-  ok("…that is never hidden on a phone", !/class="[^"]*\bnl\b[^"]*" id="forParents"/.test(header));
-  // TWO LINKS, NOTHING ELSE (Travis, 24 Sep 2026): the header is For parents
-  // and Sign in. How it works and Privacy are on the page below the fold.
-  ok("…and the header carries only For parents and Sign in", (header.match(/<a\b/g) || []).length === 3 && !/How it works|>Privacy</.test(header));
-  // REWRITTEN 25 Sep 2026 (Travis): this pinned For parents leaving for the
-  // App Store on an iPhone, which skipped the one question the page now asks.
-  // It brings a parent to the form with Parent chosen; the form ends at the
-  // App Store, or at the web app on Android, which has no Sona app to get.
-  ok("…and brings a parent to the form with Parent chosen",
-    /\$\("forParents"\)\.onclick = function \(e\) \{ e\.preventDefault\(\); toForm\("parent"\); \}/.test(slps));
+  ok("the header carries only Sign in: no For parents, How it works or Privacy",
+    (header.match(/<a\b/g) || []).length === 2 && /<a class="signin" href="\/slp-login\.html">Sign in<\/a>/.test(header) &&
+    !/For parents|forParents|How it works|>Privacy</.test(header) && !/forParents/.test(slps));
   ok("the form ends at the App Store, or at the web app on Android",
     /var APP_STORE = "https:\/\/apps\.apple\.com\/us\/app\/sona-speech\/id6785755867";/.test(slps) &&
     /var NEXT_URL = android \? "\/onboarding\.html" : APP_STORE;/.test(slps));
