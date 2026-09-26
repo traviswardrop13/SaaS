@@ -47,6 +47,7 @@ const nextConfig = {
       { source: "/icon-192.png", headers: noStore },
       { source: "/icon-512.png", headers: noStore },
       { source: "/", headers: noStore },
+      { source: "/slps", headers: noStore },
       { source: "/subscribe", headers: noStore },
       { source: "/subscribe/success", headers: noStore },
     ];
@@ -65,7 +66,13 @@ const nextConfig = {
       { source: "/", destination: "/for-slps.html" },
       { source: "/for-slps", destination: "/for-slps.html" },
       { source: "/slp-login", destination: "/slp-login.html" },
-      { source: "/slp", destination: "/slp.html" },
+      { source: "/slps", destination: "/slp.html" },
+    ];
+  },
+  async redirects() {
+    return [
+      { source: "/slp", destination: "/slps", permanent: true },
+      { source: "/slp.html", destination: "/slps", permanent: true },
     ];
   },
 };
