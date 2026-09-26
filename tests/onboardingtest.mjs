@@ -206,7 +206,11 @@ await scenario('phone fit and optional email close',async()=>{
   ok('email handoff fits without scrolling',await page.evaluate(()=>{var ob=document.querySelector('.ob');return ob.scrollHeight<=ob.clientHeight+1;}));
   ok('email copy is short and does not promise extra tips',!/Rachel|occasional tips/.test(await page.locator('[data-step="achieve"]').innerText()));
   await page.screenshot({path:'/private/tmp/sona-email-polish.png'});
-  await page.locator('#achEmailInput').fill('skip@example.com');await page.locator('#skipEmail').click();await page.waitForURL('**/today.html');
+  await page.setViewportSize({width:393,height:430});
+  await page.evaluate(()=>__setup.keyboardListeners.keyboardWillShow({keyboardHeight:422}));
+  await page.locator('#achEmailInput').fill('skip@example.com');
+  ok('email X stays visible when the keyboard reduces the screen',await page.locator('#skipEmail').evaluate(el=>{var r=el.getBoundingClientRect();return r.top>=0&&r.bottom<innerHeight&&r.width>=44&&r.height>=44;}));
+  await page.locator('#skipEmail').click();await page.waitForURL('**/today.html');
   ok('X skips email and still completes setup',!requests.some(r=>new URL(r.url).pathname==='/api/lead'&&r.method==='POST')&&await page.evaluate(()=>!JSON.parse(localStorage.getItem('sona.profile.v1')).email));
   clean('phone fit and skip',errors);
  }finally{await context.close();}
