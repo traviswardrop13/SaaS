@@ -444,6 +444,19 @@ game. There is no old adventure-map Home or menu narration. Voice remains
 inside deliberate game/practice sessions. Parent settings, progress,
 profiles, earned coins, homework and entitlement sync remain available.
 
+**The fuller books** (Travis, 26 Sep 2026: "do one for each letter"): one
+twelve-page story per sound, first on each sound's shelf in `library.html`.
+Each puts its sound at the start of a word, before a vowel, on every page, and
+nowhere else in the book (not mid-word, not at the end, not in a blend).
+Spelling can't check that, so `readtest` checks every line against
+`tests/booklex.json` (pronouncing-dictionary entries); a new word needs its
+entry there. The reader tints only the start of each book's listed `words`.
+Every page is a drawn scene: Rory and the Rainbow's were drawn by hand on a
+Claude Design canvas (`public/assets/books/rory-rainbow/`); the other 18 are
+built from one shared cast by `node tools/bookart/build.mjs`. Edit the layouts
+in `tools/bookart/`, rebuild, and commit the SVGs; the app only loads files.
+Books stay parked: adding one opens no menu.
+
 Bubble Pop and Peekaboo stay visible only as disabled “Coming soon” cards,
 with no New shelf promotion and no direct-link, paid or earned bypass.
 Their engines remain in the repo for future work. Books are also parked;

@@ -358,8 +358,10 @@ for (const age of ["3", "4", "5", "8"]) {
   const all = await pg.evaluate(() => document.querySelectorAll(".bookBtn").length);
   ok("a play-mode child keeps the whole shelf", all > r.length, all + " vs " + r.length);
 
-  // a sound with no books must never leave an empty room
-  await pg.evaluate(() => localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Mia", childAge: "7", focusSounds: ["Z"], onboarded: true })));
+  // a sound with no books must never leave an empty room. Every one of the 19
+  // sounds has a book now (the fuller books, 26 Sep 2026), so a code the shelf
+  // doesn't carry stands in for the next sound someone adds without one.
+  await pg.evaluate(() => localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Mia", childAge: "7", focusSounds: ["XX"], onboarded: true })));
   await pg.goto("http://localhost:8178/library.html"); await pg.waitForTimeout(700);
   const none = await pg.evaluate(() => document.querySelectorAll(".bookBtn").length);
   ok("a sound with no books falls back to the full shelf, never an empty one", none > 0, String(none));

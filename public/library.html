@@ -53,6 +53,11 @@
       clip-path:polygon(0 0,100% 0,100% 100%,50% 84%,0 100%);display:flex;flex-direction:column;align-items:center;
       font-family:"Baloo 2";font-weight:800;font-size:11px;color:#fff;padding-top:8px;line-height:1.25;filter:drop-shadow(0 2px 2px rgba(120,60,10,.2));}
     .bkart{width:min(52vw,190px);height:min(52vw,190px);margin:0 auto 10px;border-radius:14px;display:flex;align-items:center;justify-content:center;}
+    /* a drawn scene (the fuller books): the whole picture, edge to edge — no
+       float and no sticker glow, which suit a lone sticker, not a scene */
+    .bkart.scene{width:100%;height:auto;aspect-ratio:440/400;overflow:hidden;background:#bfe8fb;}
+    .bkart.scene img{display:block;width:100%;height:100%;}
+    .bkcover{display:block;width:min(74vw,300px);height:auto;aspect-ratio:1;margin:0 auto;border-radius:22px;box-shadow:0 14px 30px rgba(140,90,20,.2);}
     .bkpic{line-height:1;filter:drop-shadow(0 10px 16px rgba(150,90,10,.16));animation:bkfloat 3.4s ease-in-out infinite;}
     @keyframes bkfloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
     .bktext{margin-top:10px;font-family:"Baloo 2";font-weight:800;font-size:clamp(20px,5.8vw,25px);color:#5b2d05;line-height:1.4;}
@@ -139,6 +144,328 @@
     var PITCH = Sona.VOICE_PITCH || 1.15;
 
     var STORIES = [
+      // THE FULLER BOOKS (Travis, 26 Sep 2026: "start with a good solid book with
+      // the letter R", then "I want to write a bunch of books. So do one for each
+      // letter"). One twelve-page story per sound, with a beginning, a middle and
+      // an end, where the six-page books further down are a picture and a line
+      // each. They lead each sound's shelf.
+      //
+      // Each is built to practise its sound in ONE spot, the start of a word,
+      // before a vowel. Every line has such a word, and the sound appears nowhere
+      // else in the book: not mid-word, not at the end, not in a blend. English
+      // spelling can't be trusted for that ("the" is not a T word, "says" ends in
+      // a Z), so every word was checked against a pronouncing dictionary, and
+      // readtest re-checks every line against tests/booklex.json, so a word edited
+      // in later can't quietly break it. `words` lists each book's practice words:
+      // the reader tints the start of those and nothing else. `allow` names the one
+      // exception (Rory, whose second r is mid-word), and `forbid` keeps the
+      // other th out of each th book. Which words a child hears is Rachel's call.
+      //
+      // Every page is a drawn scene (`art`). Rory's were drawn by hand on a
+      // Claude Design canvas; the other eighteen are built from one shared cast
+      // by tools/bookart (node tools/bookart/build.mjs), so the shelf reads as
+      // one series. Their alt is empty because the line under each picture
+      // already says what it shows, and Echo reads it aloud.
+      { sound: "R", emoji: "🌈", title: "Rory and the Rainbow", colors: ["#ff7a6e", "#8a6fc4"],
+        cover: "/assets/books/rory-rainbow/cover.svg", coverAlt: "Rory the rabbit cheers on a green hill under a big rainbow",
+        words: ["rabbit", "raccoon", "raft", "rain", "rainbow", "reach", "red", "reeds", "remy", "ribbon", "ride", "river", "road", "robot", "rocket", "roof", "room", "rory", "roses", "rows", "run", "runs", "rushing"],
+        allow: ["rory"], pages: [
+        { e: "🌧️", t: "Rain taps on the roof. Rory the rabbit looks up.",
+          art: "/assets/books/rory-rainbow/p01.svg", alt: "Rain falls on a little house with a red roof. Rory the rabbit stands in a puddle and looks up." },
+        { e: "🌈", t: "The rain stops. Look, a rainbow!",
+          art: "/assets/books/rory-rainbow/p02.svg", alt: "The rain has stopped. A big rainbow shines over the hills, and Rory points up at it." },
+        { e: "🛣️", t: "Rory runs down the road to reach it.",
+          art: "/assets/books/rory-rainbow/p03.svg", alt: "Rory runs down a winding road toward the rainbow far away." },
+        { e: "🌊", t: "The road ends at a rushing river.",
+          art: "/assets/books/rory-rainbow/p04.svg", alt: "The road stops at a wide, rushing river. Rory stands at the edge and says whoa." },
+        { e: "🌿", t: "Rory ties reeds into a raft.",
+          art: "/assets/books/rory-rainbow/p05.svg", alt: "By the river, Rory ties a bundle of tall reeds with rope. A raft made of reeds lies on the grass." },
+        { e: "🚣", t: "He rows the raft on the river.",
+          art: "/assets/books/rory-rainbow/p06.svg", alt: "Rory sits on his reed raft and rows across the river with a wooden paddle." },
+        { e: "🦝", t: "Remy the raccoon waves. \"Room on the raft?\"",
+          art: "/assets/books/rory-rainbow/p07.svg", alt: "Remy the raccoon stands on a rock in the river and waves. Rory, on the raft, holds out a paw to welcome him." },
+        { e: "🤖", t: "Then they see a robot, stuck in the mud.",
+          art: "/assets/books/rory-rainbow/p08.svg", alt: "From the raft, Rory and Remy see a blue robot stuck up to its middle in brown mud, waving its arms for help." },
+        { e: "🎀", t: "Rory and Remy pull him out with a red ribbon.",
+          art: "/assets/books/rory-rainbow/p09.svg", alt: "Rory and Remy lean back and pull a long red ribbon. The robot pops out of the mud with a happy face." },
+        { e: "🚀", t: "\"Thank you! Ride in my rocket!\" says the robot.",
+          art: "/assets/books/rory-rainbow/p10.svg", alt: "The happy robot points to its red and white rocket. Rory and Remy cheer." },
+        { e: "🌹", t: "They land by the rainbow, in a field of roses.",
+          art: "/assets/books/rory-rainbow/p11.svg", alt: "The rocket has landed in a field of red and pink roses, right where the rainbow touches the ground. Rory, Remy and the robot smile." },
+        { e: "🎉", t: "Rory, Remy, and the robot run and play!",
+          art: "/assets/books/rory-rainbow/p12.svg", alt: "Under the rainbow, Rory jumps for a red ball, Remy runs and the robot hops, with confetti everywhere." } ] },
+      { sound: "P", emoji: "🐧", title: "Penny's Pebble Party", colors: ["#6ec3ff", "#3d9be0"],
+        cover: "/assets/books/penny-pebble-party/cover.svg", coverAlt: "",
+        words: ["pail", "paint", "parrot", "party", "pat", "peach", "pebble", "pebbles", "peeks", "penguin", "penny", "penny's", "pie", "pig", "pink", "pole", "polly", "pond", "put", "puts"], pages: [
+        { e: "🐧", t: "Penny the penguin has a pink pail.", art: "/assets/books/penny-pebble-party/p01.svg", alt: "" },
+        { e: "🐧", t: "Penny waddles down to the pond.", art: "/assets/books/penny-pebble-party/p02.svg", alt: "" },
+        { e: "🪨", t: "Penny finds a pebble. Then another pebble!", art: "/assets/books/penny-pebble-party/p03.svg", alt: "" },
+        { e: "🪣", t: "Penny puts the pebbles in the pail.", art: "/assets/books/penny-pebble-party/p04.svg", alt: "" },
+        { e: "🐷", t: "Pat the pig peeks in. \"Can I paint them?\"", art: "/assets/books/penny-pebble-party/p05.svg", alt: "" },
+        { e: "🎨", t: "Penny and Pat paint the pebbles.", art: "/assets/books/penny-pebble-party/p06.svg", alt: "" },
+        { e: "🎨", t: "Pink pebbles! Peach pebbles!", art: "/assets/books/penny-pebble-party/p07.svg", alt: "" },
+        { e: "🦜", t: "Polly the parrot lands on a pole.", art: "/assets/books/penny-pebble-party/p08.svg", alt: "" },
+        { e: "🎉", t: "\"Polly! Come to our party!\" says Penny.", art: "/assets/books/penny-pebble-party/p09.svg", alt: "" },
+        { e: "🥧", t: "Polly brings a pie to the party.", art: "/assets/books/penny-pebble-party/p10.svg", alt: "" },
+        { e: "🪨", t: "They put the pebbles in a row by the pond.", art: "/assets/books/penny-pebble-party/p11.svg", alt: "" },
+        { e: "🎉", t: "Penny, Pat, and Polly have a pebble party!", art: "/assets/books/penny-pebble-party/p12.svg", alt: "" } ] },
+      { sound: "B", emoji: "🐻", title: "Bo's Beach Day", colors: ["#ffb75e", "#f0932b"],
+        cover: "/assets/books/bo-beach-day/cover.svg", coverAlt: "",
+        words: ["back", "ball", "banana", "basket", "beach", "bear", "bee", "bella", "ben", "berries", "big", "bo", "bo's", "boat", "bounces", "bumps", "bunny", "buns", "buzz", "buzzes", "by"], pages: [
+        { e: "🐻", t: "Bo the bear has a big boat.", art: "/assets/books/bo-beach-day/p01.svg", alt: "" },
+        { e: "🧺", t: "Bo puts a basket in the boat.", art: "/assets/books/bo-beach-day/p02.svg", alt: "" },
+        { e: "🧺", t: "In the basket: berries, buns, and a banana.", art: "/assets/books/bo-beach-day/p03.svg", alt: "" },
+        { e: "🚣", t: "Bo rows the boat to the beach.", art: "/assets/books/bo-beach-day/p04.svg", alt: "" },
+        { e: "🐝", t: "A bee buzzes by. Buzz, buzz!", art: "/assets/books/bo-beach-day/p05.svg", alt: "" },
+        { e: "🐝", t: "\"Can I come?\" asks Bella the bee.", art: "/assets/books/bo-beach-day/p06.svg", alt: "" },
+        { e: "🏖️", t: "Bo and Bella sit on the beach.", art: "/assets/books/bo-beach-day/p07.svg", alt: "" },
+        { e: "⚽", t: "A ball bounces by the boat.", art: "/assets/books/bo-beach-day/p08.svg", alt: "" },
+        { e: "🐰", t: "Ben the bunny wants the ball back.", art: "/assets/books/bo-beach-day/p09.svg", alt: "" },
+        { e: "⚽", t: "Bo bumps the ball to Ben.", art: "/assets/books/bo-beach-day/p10.svg", alt: "" },
+        { e: "🍌", t: "Ben and Bella and Bo eat berries and buns.", art: "/assets/books/bo-beach-day/p11.svg", alt: "" },
+        { e: "🏖️", t: "What a fun day at the beach, Bo!", art: "/assets/books/bo-beach-day/p12.svg", alt: "" } ] },
+      { sound: "M", emoji: "🐭", title: "Mia Makes Muffins", colors: ["#c49cff", "#9b6fe0"],
+        cover: "/assets/books/mia-makes-muffins/cover.svg", coverAlt: "",
+        words: ["make", "makes", "many", "maple", "max", "may", "meadow", "meal", "melon", "mess", "mia", "milk", "mixes", "mixing", "mole", "molly", "moon", "moose", "more", "mouse", "muffins", "munch"], pages: [
+        { e: "🐭", t: "Mia the mouse wants to make muffins.", art: "/assets/books/mia-makes-muffins/p01.svg", alt: "" },
+        { e: "🥛", t: "Mia gets milk and a mixing bowl.", art: "/assets/books/mia-makes-muffins/p02.svg", alt: "" },
+        { e: "🥣", t: "Mia mixes and mixes. What a mess!", art: "/assets/books/mia-makes-muffins/p03.svg", alt: "" },
+        { e: "🐹", t: "Max the mole peeks in. \"More milk?\"", art: "/assets/books/mia-makes-muffins/p04.svg", alt: "" },
+        { e: "🍈", t: "Max adds melon. Mia adds maple syrup.", art: "/assets/books/mia-makes-muffins/p05.svg", alt: "" },
+        { e: "🧁", t: "Mia puts the muffins in the oven.", art: "/assets/books/mia-makes-muffins/p06.svg", alt: "" },
+        { e: "🌙", t: "The moon rises over the meadow.", art: "/assets/books/mia-makes-muffins/p07.svg", alt: "" },
+        { e: "🧁", t: "The muffins are ready at last!", art: "/assets/books/mia-makes-muffins/p08.svg", alt: "" },
+        { e: "🧁", t: "Max and Mia munch muffins.", art: "/assets/books/mia-makes-muffins/p09.svg", alt: "" },
+        { e: "🫎", t: "\"Mia, may I take one to Molly?\" asks Max.", art: "/assets/books/mia-makes-muffins/p10.svg", alt: "" },
+        { e: "🫎", t: "Molly the moose says, \"Many thanks!\"", art: "/assets/books/mia-makes-muffins/p11.svg", alt: "" },
+        { e: "🌙", t: "Mia, Max, and Molly share a meal under the moon.", art: "/assets/books/mia-makes-muffins/p12.svg", alt: "" } ] },
+      { sound: "N", emoji: "🦎", title: "Ned Needs a Net", colors: ["#5fcf9a", "#2fae74"],
+        cover: "/assets/books/ned-needs-a-net/cover.svg", coverAlt: "",
+        words: ["knock", "nap", "near", "neat", "ned", "needs", "nest", "net", "newt", "nice", "night", "no", "noise", "noodles", "nora", "nose", "nudges"], pages: [
+        { e: "🪺", t: "Nora the newt has a nice, neat nest.", art: "/assets/books/ned-needs-a-net/p01.svg", alt: "" },
+        { e: "💤", t: "Nora takes a nap.", art: "/assets/books/ned-needs-a-net/p02.svg", alt: "" },
+        { e: "🚪", t: "Knock, knock! A noise wakes Nora.", art: "/assets/books/ned-needs-a-net/p03.svg", alt: "" },
+        { e: "🦎", t: "It is Ned the newt. \"My net is lost!\"", art: "/assets/books/ned-needs-a-net/p04.svg", alt: "" },
+        { e: "🪺", t: "Nora looks near the nest.", art: "/assets/books/ned-needs-a-net/p05.svg", alt: "" },
+        { e: "🪵", t: "Ned looks by the old log.", art: "/assets/books/ned-needs-a-net/p06.svg", alt: "" },
+        { e: "🦎", t: "\"No net here,\" says Ned.", art: "/assets/books/ned-needs-a-net/p07.svg", alt: "" },
+        { e: "🌳", t: "Nora spots a net up a tree.", art: "/assets/books/ned-needs-a-net/p08.svg", alt: "" },
+        { e: "👃", t: "Nora nudges it with her nose.", art: "/assets/books/ned-needs-a-net/p09.svg", alt: "" },
+        { e: "🥅", t: "The net drops. \"Neat!\" says Ned.", art: "/assets/books/ned-needs-a-net/p10.svg", alt: "" },
+        { e: "🍜", t: "Night falls. Nora makes noodles.", art: "/assets/books/ned-needs-a-net/p11.svg", alt: "" },
+        { e: "🌙", t: "Ned eats noodles with Nora. What a nice night!", art: "/assets/books/ned-needs-a-net/p12.svg", alt: "" } ] },
+      { sound: "T", emoji: "🐯", title: "Toby's Tiny Tuba", colors: ["#ff9f5a", "#e6762b"],
+        cover: "/assets/books/toby-tiny-tuba/cover.svg", coverAlt: "",
+        words: ["takes", "tap", "taps", "tea", "ten", "tia", "tiger", "time", "tiny", "to", "toad", "toby", "toby's", "toes", "too", "toucan", "town", "tuba", "tune", "turkeys"], pages: [
+        { e: "🐯", t: "Toby the tiger has a tiny tuba.", art: "/assets/books/toby-tiny-tuba/p01.svg", alt: "" },
+        { e: "🐯", t: "Toby taps his toes.", art: "/assets/books/toby-tiny-tuba/p02.svg", alt: "" },
+        { e: "🎺", t: "\"Too, too, too!\" goes the tuba.", art: "/assets/books/toby-tiny-tuba/p03.svg", alt: "" },
+        { e: "🐦", t: "Tia the toucan comes by.", art: "/assets/books/toby-tiny-tuba/p04.svg", alt: "" },
+        { e: "🎵", t: "Tia likes the tune. She taps along.", art: "/assets/books/toby-tiny-tuba/p05.svg", alt: "" },
+        { e: "🏘️", t: "Toby and Tia play for the town.", art: "/assets/books/toby-tiny-tuba/p06.svg", alt: "" },
+        { e: "🦃", t: "Ten turkeys come to hear.", art: "/assets/books/toby-tiny-tuba/p07.svg", alt: "" },
+        { e: "🦃", t: "The turkeys tap their toes too.", art: "/assets/books/toby-tiny-tuba/p08.svg", alt: "" },
+        { e: "🐸", t: "A tiny toad jumps on the tuba.", art: "/assets/books/toby-tiny-tuba/p09.svg", alt: "" },
+        { e: "🐸", t: "The toad sings a tune.", art: "/assets/books/toby-tiny-tuba/p10.svg", alt: "" },
+        { e: "👏", t: "Everyone claps. Toby takes a bow.", art: "/assets/books/toby-tiny-tuba/p11.svg", alt: "" },
+        { e: "🍵", t: "\"Time for tea!\" says Toby.", art: "/assets/books/toby-tiny-tuba/p12.svg", alt: "" } ] },
+      { sound: "D", emoji: "🦆", title: "Dot Digs a Pool", colors: ["#ffd45e", "#e6b12b"],
+        cover: "/assets/books/dot-digs-a-pool/cover.svg", coverAlt: "",
+        words: ["dan", "day", "deep", "dig", "digs", "dips", "dive", "dives", "dog", "dot", "down", "duck", "dust"], pages: [
+        { e: "🦆", t: "Dot the duck wants a pool to dive in.", art: "/assets/books/dot-digs-a-pool/p01.svg", alt: "" },
+        { e: "🕳️", t: "Dot digs a hole. Dig, dig, dig!", art: "/assets/books/dot-digs-a-pool/p02.svg", alt: "" },
+        { e: "🐶", t: "Dan the dog comes to help.", art: "/assets/books/dot-digs-a-pool/p03.svg", alt: "" },
+        { e: "🐶", t: "Dan digs too. Dust flies!", art: "/assets/books/dot-digs-a-pool/p04.svg", alt: "" },
+        { e: "🕳️", t: "The hole gets deep.", art: "/assets/books/dot-digs-a-pool/p05.svg", alt: "" },
+        { e: "🌧️", t: "Down comes the rain.", art: "/assets/books/dot-digs-a-pool/p06.svg", alt: "" },
+        { e: "🌧️", t: "The rain fills the hole all day.", art: "/assets/books/dot-digs-a-pool/p07.svg", alt: "" },
+        { e: "🦆", t: "Now Dot has a deep pool!", art: "/assets/books/dot-digs-a-pool/p08.svg", alt: "" },
+        { e: "🦆", t: "Dot dips her toes.", art: "/assets/books/dot-digs-a-pool/p09.svg", alt: "" },
+        { e: "🐶", t: "\"Dan, let's dive!\" says Dot.", art: "/assets/books/dot-digs-a-pool/p10.svg", alt: "" },
+        { e: "💦", t: "Dot dives. Dan dives. Splash!", art: "/assets/books/dot-digs-a-pool/p11.svg", alt: "" },
+        { e: "🦆", t: "Dot is a happy duck. Dan is a happy dog!", art: "/assets/books/dot-digs-a-pool/p12.svg", alt: "" } ] },
+      { sound: "K", emoji: "🦘", title: "Kip's Kite", colors: ["#7fd1ff", "#43a8e6"],
+        cover: "/assets/books/kip-kite/cover.svg", coverAlt: "",
+        words: ["calls", "can", "carries", "carrot", "catches", "cody", "come", "comes", "corn", "cow", "kangaroo", "kip", "kip's", "kite"], pages: [
+        { e: "🦘", t: "Kip the kangaroo has a kite.", art: "/assets/books/kip-kite/p01.svg", alt: "" },
+        { e: "🪁", t: "The kite has a long tail.", art: "/assets/books/kip-kite/p02.svg", alt: "" },
+        { e: "🦘", t: "Kip hops up the hill.", art: "/assets/books/kip-kite/p03.svg", alt: "" },
+        { e: "🪁", t: "Whoosh! The wind catches the kite.", art: "/assets/books/kip-kite/p04.svg", alt: "" },
+        { e: "🪁", t: "Up, up, up goes Kip's kite!", art: "/assets/books/kip-kite/p05.svg", alt: "" },
+        { e: "🐮", t: "Cody the cow comes to see.", art: "/assets/books/kip-kite/p06.svg", alt: "" },
+        { e: "🐮", t: "\"Can I hold it?\" says Cody.", art: "/assets/books/kip-kite/p07.svg", alt: "" },
+        { e: "🪁", t: "Cody holds the kite. The wind gets strong!", art: "/assets/books/kip-kite/p08.svg", alt: "" },
+        { e: "🐮", t: "The kite carries Cody up in the air!", art: "/assets/books/kip-kite/p09.svg", alt: "" },
+        { e: "🦘", t: "\"Come down, Cody!\" calls Kip.", art: "/assets/books/kip-kite/p10.svg", alt: "" },
+        { e: "🌽", t: "Cody comes down in the corn.", art: "/assets/books/kip-kite/p11.svg", alt: "" },
+        { e: "🥕", t: "Kip gives Cody a carrot. What a day!", art: "/assets/books/kip-kite/p12.svg", alt: "" } ] },
+      { sound: "G", emoji: "🪿", title: "Goldie's Guitar", colors: ["#ffcf6e", "#e0a73a"],
+        cover: "/assets/books/goldie-guitar/cover.svg", coverAlt: "",
+        words: ["garden", "gate", "gets", "gift", "give", "go", "goat", "goes", "goldie", "goldie's", "good", "goose", "gophers", "guitar", "gus"], pages: [
+        { e: "🎁", t: "Goldie the goose gets a gift.", art: "/assets/books/goldie-guitar/p01.svg", alt: "" },
+        { e: "🎸", t: "The gift is a guitar!", art: "/assets/books/goldie-guitar/p02.svg", alt: "" },
+        { e: "🌷", t: "Goldie goes to the garden.", art: "/assets/books/goldie-guitar/p03.svg", alt: "" },
+        { e: "🎸", t: "Goldie plays a happy tune.", art: "/assets/books/goldie-guitar/p04.svg", alt: "" },
+        { e: "🐐", t: "Gus the goat comes to the gate.", art: "/assets/books/goldie-guitar/p05.svg", alt: "" },
+        { e: "🐐", t: "\"Goldie, can I have a go?\" asks Gus.", art: "/assets/books/goldie-guitar/p06.svg", alt: "" },
+        { e: "🎸", t: "Gus gets the guitar.", art: "/assets/books/goldie-guitar/p07.svg", alt: "" },
+        { e: "🐐", t: "Gus is no good at it!", art: "/assets/books/goldie-guitar/p08.svg", alt: "" },
+        { e: "🪿", t: "Goldie shows Gus how.", art: "/assets/books/goldie-guitar/p09.svg", alt: "" },
+        { e: "🎸", t: "Gus gets better and better.", art: "/assets/books/goldie-guitar/p10.svg", alt: "" },
+        { e: "🐿️", t: "The garden gophers come to hear.", art: "/assets/books/goldie-guitar/p11.svg", alt: "" },
+        { e: "🎶", t: "Goldie and Gus give a garden show!", art: "/assets/books/goldie-guitar/p12.svg", alt: "" } ] },
+      { sound: "F", emoji: "🐟", title: "Finn Finds a Feather", colors: ["#5fc6e8", "#2f9fc6"],
+        cover: "/assets/books/finn-finds-a-feather/cover.svg", coverAlt: "",
+        words: ["family", "far", "fast", "fay", "feather", "feels", "finds", "fine", "finn", "fins", "fish", "fox", "fun"], pages: [
+        { e: "🐟", t: "Finn the fish lives by a big rock.", art: "/assets/books/finn-finds-a-feather/p01.svg", alt: "" },
+        { e: "🐟", t: "Finn has fast fins.", art: "/assets/books/finn-finds-a-feather/p02.svg", alt: "" },
+        { e: "🪶", t: "One day, Finn finds a feather.", art: "/assets/books/finn-finds-a-feather/p03.svg", alt: "" },
+        { e: "🪶", t: "\"Whose feather?\" asks Finn.", art: "/assets/books/finn-finds-a-feather/p04.svg", alt: "" },
+        { e: "🐟", t: "Finn swims far and fast.", art: "/assets/books/finn-finds-a-feather/p05.svg", alt: "" },
+        { e: "🦊", t: "Finn meets Fay the fox by the shore.", art: "/assets/books/finn-finds-a-feather/p06.svg", alt: "" },
+        { e: "🦊", t: "\"Not my feather,\" says Fay.", art: "/assets/books/finn-finds-a-feather/p07.svg", alt: "" },
+        { e: "🦆", t: "Finn meets a family of ducks.", art: "/assets/books/finn-finds-a-feather/p08.svg", alt: "" },
+        { e: "🦆", t: "\"Not our feather,\" they say.", art: "/assets/books/finn-finds-a-feather/p09.svg", alt: "" },
+        { e: "🐦", t: "Then a gull swoops down. It has no tail feather!", art: "/assets/books/finn-finds-a-feather/p10.svg", alt: "" },
+        { e: "🪶", t: "Finn gives the feather back. \"Thank you!\" says the gull.", art: "/assets/books/finn-finds-a-feather/p11.svg", alt: "" },
+        { e: "🐟", t: "Finn feels fine. What a fun day!", art: "/assets/books/finn-finds-a-feather/p12.svg", alt: "" } ] },
+      { sound: "V", emoji: "🚐", title: "Val the Van", colors: ["#ff8fb0", "#e0648a"],
+        cover: "/assets/books/val-the-van/cover.svg", coverAlt: "",
+        words: ["val", "valley", "van", "vase", "vegetables", "very", "vet", "vicky", "village", "vince", "violet", "violin"], pages: [
+        { e: "🚐", t: "Val the van is in a valley.", art: "/assets/books/val-the-van/p01.svg", alt: "" },
+        { e: "🏘️", t: "Val goes to the village.", art: "/assets/books/val-the-van/p02.svg", alt: "" },
+        { e: "🚐", t: "\"Beep, beep!\" goes Val.", art: "/assets/books/val-the-van/p03.svg", alt: "" },
+        { e: "🏺", t: "Val takes a vase to Vicky.", art: "/assets/books/val-the-van/p04.svg", alt: "" },
+        { e: "🌸", t: "Vicky puts a violet in the vase.", art: "/assets/books/val-the-van/p05.svg", alt: "" },
+        { e: "🥕", t: "Val takes vegetables to the vet.", art: "/assets/books/val-the-van/p06.svg", alt: "" },
+        { e: "🐾", t: "The vet shares them with the animals.", art: "/assets/books/val-the-van/p07.svg", alt: "" },
+        { e: "🎻", t: "Val takes a violin to Vince.", art: "/assets/books/val-the-van/p08.svg", alt: "" },
+        { e: "🎻", t: "Vince plays a very sweet tune.", art: "/assets/books/val-the-van/p09.svg", alt: "" },
+        { e: "🏘️", t: "The village comes to hear.", art: "/assets/books/val-the-van/p10.svg", alt: "" },
+        { e: "🫧", t: "Vicky washes Val. Val looks very shiny.", art: "/assets/books/val-the-van/p11.svg", alt: "" },
+        { e: "🚐", t: "\"Thank you, Val!\" says the village.", art: "/assets/books/val-the-van/p12.svg", alt: "" } ] },
+      { sound: "S", emoji: "🐦", title: "Sid the Seagull", colors: ["#6fd0e0", "#3aaec2"],
+        cover: "/assets/books/sid-the-seagull/cover.svg", coverAlt: "",
+        words: ["sad", "sadie", "sand", "sandwich", "says", "sea", "seagull", "seashell", "seat", "sees", "sid", "silly", "sings", "sit", "some", "song", "sun"], pages: [
+        { e: "🐦", t: "Sid the seagull lives by the sea.", art: "/assets/books/sid-the-seagull/p01.svg", alt: "" },
+        { e: "☀️", t: "The sun is up. The sand is warm.", art: "/assets/books/sid-the-seagull/p02.svg", alt: "" },
+        { e: "🥪", t: "Sid sees a sandwich on a seat.", art: "/assets/books/sid-the-seagull/p03.svg", alt: "" },
+        { e: "👧", t: "\"Sadie, may I have some?\" says Sid.", art: "/assets/books/sid-the-seagull/p04.svg", alt: "" },
+        { e: "🥪", t: "Sadie gives Sid a bite.", art: "/assets/books/sid-the-seagull/p05.svg", alt: "" },
+        { e: "🎵", t: "\"Thank you, Sadie!\" Sid sings a song.", art: "/assets/books/sid-the-seagull/p06.svg", alt: "" },
+        { e: "🏖️", t: "Sadie and Sid sit in the sand.", art: "/assets/books/sid-the-seagull/p07.svg", alt: "" },
+        { e: "🏖️", t: "They dig a big sand hill.", art: "/assets/books/sid-the-seagull/p08.svg", alt: "" },
+        { e: "🐚", t: "Sid adds a seashell on top.", art: "/assets/books/sid-the-seagull/p09.svg", alt: "" },
+        { e: "🌊", t: "Oh no! The sea rolls in.", art: "/assets/books/sid-the-seagull/p10.svg", alt: "" },
+        { e: "🐦", t: "The sand hill is gone. Sid is sad.", art: "/assets/books/sid-the-seagull/p11.svg", alt: "" },
+        { e: "👧", t: "\"Silly Sid! We can make one more!\" says Sadie.", art: "/assets/books/sid-the-seagull/p12.svg", alt: "" } ] },
+      { sound: "Z", emoji: "🦓", title: "Zoe and the Zipper", colors: ["#9aa7b8", "#5b6474"],
+        cover: "/assets/books/zoe-and-the-zipper/cover.svg", coverAlt: "",
+        words: ["zack", "zap", "zebra", "zip", "zipper", "zoe", "zoo", "zookeeper", "zoom", "zoomed", "zucchini"], pages: [
+        { e: "🦓", t: "Zoe the zebra woke up at the zoo.", art: "/assets/books/zoe-and-the-zipper/p01.svg", alt: "" },
+        { e: "🧥", t: "It felt cold. Zoe got her coat.", art: "/assets/books/zoe-and-the-zipper/p02.svg", alt: "" },
+        { e: "🧥", t: "Zoe pulled the zipper. Zip!", art: "/assets/books/zoe-and-the-zipper/p03.svg", alt: "" },
+        { e: "🧥", t: "Oh no! The zipper got stuck.", art: "/assets/books/zoe-and-the-zipper/p04.svg", alt: "" },
+        { e: "👨", t: "Zoe called Zack the zookeeper.", art: "/assets/books/zoe-and-the-zipper/p05.svg", alt: "" },
+        { e: "👨", t: "Zack tugged the zipper. Zip, zip!", art: "/assets/books/zoe-and-the-zipper/p06.svg", alt: "" },
+        { e: "⚡", t: "Zap! The zipper went up.", art: "/assets/books/zoe-and-the-zipper/p07.svg", alt: "" },
+        { e: "🦓", t: "\"Thank you, Zack!\" said Zoe.", art: "/assets/books/zoe-and-the-zipper/p08.svg", alt: "" },
+        { e: "🦓", t: "Zoe zoomed out to play.", art: "/assets/books/zoe-and-the-zipper/p09.svg", alt: "" },
+        { e: "🦓", t: "Zoom, zoom, all around the zoo!", art: "/assets/books/zoe-and-the-zipper/p10.svg", alt: "" },
+        { e: "🥒", t: "Zack gave Zoe a zucchini for lunch.", art: "/assets/books/zoe-and-the-zipper/p11.svg", alt: "" },
+        { e: "🦓", t: "Zoe the zebra felt warm and happy.", art: "/assets/books/zoe-and-the-zipper/p12.svg", alt: "" } ] },
+      { sound: "SH", emoji: "🦈", title: "Shay the Shy Shark", colors: ["#7fb8ff", "#4f8fe0"],
+        cover: "/assets/books/shay-the-shy-shark/cover.svg", coverAlt: "",
+        words: ["shadow", "shake", "shakes", "shark", "shay", "she", "shell", "shimmer", "shines", "shiny", "ship", "shout", "show", "shows", "shy", "sure"], pages: [
+        { e: "🦈", t: "Shay the shark is shy.", art: "/assets/books/shay-the-shy-shark/p01.svg", alt: "" },
+        { e: "🚢", t: "Shay hides in the shadow of a ship.", art: "/assets/books/shay-the-shy-shark/p02.svg", alt: "" },
+        { e: "🦀", t: "\"Come and see the show!\" shout the crabs.", art: "/assets/books/shay-the-shy-shark/p03.svg", alt: "" },
+        { e: "🦈", t: "Shay shakes her head.", art: "/assets/books/shay-the-shy-shark/p04.svg", alt: "" },
+        { e: "🐴", t: "Shimmer the seahorse swims by.", art: "/assets/books/shay-the-shy-shark/p05.svg", alt: "" },
+        { e: "🐴", t: "\"Shay, come with me to the show!\" says Shimmer.", art: "/assets/books/shay-the-shy-shark/p06.svg", alt: "" },
+        { e: "🦈", t: "Shay is not sure.", art: "/assets/books/shay-the-shy-shark/p07.svg", alt: "" },
+        { e: "🐚", t: "Shimmer shows Shay a shiny shell.", art: "/assets/books/shay-the-shy-shark/p08.svg", alt: "" },
+        { e: "🐚", t: "\"Shake it in the show!\" says Shimmer.", art: "/assets/books/shay-the-shy-shark/p09.svg", alt: "" },
+        { e: "🐚", t: "Shay shakes the shell. Shh, shh, shh!", art: "/assets/books/shay-the-shy-shark/p10.svg", alt: "" },
+        { e: "🦀", t: "The crabs cheer. \"Shay, you are a star!\"", art: "/assets/books/shay-the-shy-shark/p11.svg", alt: "" },
+        { e: "⭐", t: "Shay is not shy now. She shines!", art: "/assets/books/shay-the-shy-shark/p12.svg", alt: "" } ] },
+      { sound: "CH", emoji: "🐿️", title: "Chip the Chipmunk", colors: ["#ff9b7a", "#e66f4b"],
+        cover: "/assets/books/chip-the-chipmunk/cover.svg", coverAlt: "",
+        words: ["chair", "chat", "checks", "cheeks", "cheep", "cheers", "chestnuts", "chew", "chews", "chick", "chilly", "chimney", "chip", "chipmunk", "chirps", "chubby"], pages: [
+        { e: "🐿️", t: "Chip the chipmunk has chubby cheeks.", art: "/assets/books/chip-the-chipmunk/p01.svg", alt: "" },
+        { e: "🌰", t: "Chip chews on chestnuts.", art: "/assets/books/chip-the-chipmunk/p02.svg", alt: "" },
+        { e: "🍂", t: "It is chilly. Chip needs a cozy spot.", art: "/assets/books/chip-the-chipmunk/p03.svg", alt: "" },
+        { e: "🏠", t: "Chip checks the old chimney.", art: "/assets/books/chip-the-chipmunk/p04.svg", alt: "" },
+        { e: "🐤", t: "A chick is in the chimney!", art: "/assets/books/chip-the-chipmunk/p05.svg", alt: "" },
+        { e: "🐤", t: "\"Cheep, cheep!\" says the chick.", art: "/assets/books/chip-the-chipmunk/p06.svg", alt: "" },
+        { e: "🐤", t: "The chick is chilly too.", art: "/assets/books/chip-the-chipmunk/p07.svg", alt: "" },
+        { e: "🌰", t: "Chip shares his chestnuts.", art: "/assets/books/chip-the-chipmunk/p08.svg", alt: "" },
+        { e: "🐿️", t: "Chip and the chick chat and chew.", art: "/assets/books/chip-the-chipmunk/p09.svg", alt: "" },
+        { e: "🪑", t: "They find a comfy chair.", art: "/assets/books/chip-the-chipmunk/p10.svg", alt: "" },
+        { e: "🪑", t: "Chip and the chick cuddle up in the chair.", art: "/assets/books/chip-the-chipmunk/p11.svg", alt: "" },
+        { e: "🐤", t: "\"Cheers for a new pal!\" chirps the chick.", art: "/assets/books/chip-the-chipmunk/p12.svg", alt: "" } ] },
+      { sound: "J", emoji: "🐆", title: "Jax and the Jam Jar", colors: ["#7ccf5a", "#4fae32"],
+        cover: "/assets/books/jax-and-the-jam-jar/cover.svg", coverAlt: "",
+        words: ["giraffe", "jaguar", "jam", "jar", "jax", "jill", "jog", "join", "joke", "jolly", "joy", "juice", "jump", "jumps", "jungle"], pages: [
+        { e: "🐆", t: "Jax the jaguar lives in the jungle.", art: "/assets/books/jax-and-the-jam-jar/p01.svg", alt: "" },
+        { e: "🐆", t: "Jax likes to jump and jog.", art: "/assets/books/jax-and-the-jam-jar/p02.svg", alt: "" },
+        { e: "🫙", t: "One day, Jax finds a jar of jam.", art: "/assets/books/jax-and-the-jam-jar/p03.svg", alt: "" },
+        { e: "🐆", t: "\"Yum, jam!\" Jax jumps for joy.", art: "/assets/books/jax-and-the-jam-jar/p04.svg", alt: "" },
+        { e: "🫙", t: "Jax cannot get the lid off the jar.", art: "/assets/books/jax-and-the-jam-jar/p05.svg", alt: "" },
+        { e: "🦒", t: "Along comes Jill the giraffe.", art: "/assets/books/jax-and-the-jam-jar/p06.svg", alt: "" },
+        { e: "🦒", t: "Jill gives the jar a twist.", art: "/assets/books/jax-and-the-jam-jar/p07.svg", alt: "" },
+        { e: "🫙", t: "Pop! The jar is open.", art: "/assets/books/jax-and-the-jam-jar/p08.svg", alt: "" },
+        { e: "🐆", t: "\"Join me for jam!\" says Jax.", art: "/assets/books/jax-and-the-jam-jar/p09.svg", alt: "" },
+        { e: "🧃", t: "Jax and Jill eat jam and drink juice.", art: "/assets/books/jax-and-the-jam-jar/p10.svg", alt: "" },
+        { e: "🦒", t: "Jill tells a joke. Jax giggles.", art: "/assets/books/jax-and-the-jam-jar/p11.svg", alt: "" },
+        { e: "🌴", t: "What a jolly day in the jungle!", art: "/assets/books/jax-and-the-jam-jar/p12.svg", alt: "" } ] },
+      { sound: "L", emoji: "🐑", title: "Leo's Lucky Leaf", colors: ["#9fdc7a", "#6fbf4a"],
+        cover: "/assets/books/leo-lucky-leaf/cover.svg", coverAlt: "",
+        words: ["ladybug", "lake", "lamb", "lands", "laughs", "lay", "lazy", "leaf", "leap", "leaps", "leo", "leo's", "let's", "licks", "likes", "lips", "lizard", "log", "look", "luck", "lucky", "lucy", "lunch"], pages: [
+        { e: "🐑", t: "Leo the lamb likes to leap.", art: "/assets/books/leo-lucky-leaf/p01.svg", alt: "" },
+        { e: "🐑", t: "Leo leaps by the lake.", art: "/assets/books/leo-lucky-leaf/p02.svg", alt: "" },
+        { e: "🍃", t: "A leaf lands on Leo's head.", art: "/assets/books/leo-lucky-leaf/p03.svg", alt: "" },
+        { e: "🍃", t: "\"A lucky leaf!\" Leo laughs.", art: "/assets/books/leo-lucky-leaf/p04.svg", alt: "" },
+        { e: "🦎", t: "Leo takes the leaf to Lucy.", art: "/assets/books/leo-lucky-leaf/p05.svg", alt: "" },
+        { e: "🦎", t: "Lucy is a lazy lizard on a log.", art: "/assets/books/leo-lucky-leaf/p06.svg", alt: "" },
+        { e: "🍃", t: "\"Look, Lucy! A lucky leaf!\" says Leo.", art: "/assets/books/leo-lucky-leaf/p07.svg", alt: "" },
+        { e: "🦎", t: "Lucy licks her lips. \"Is it lunch?\"", art: "/assets/books/leo-lucky-leaf/p08.svg", alt: "" },
+        { e: "🍃", t: "\"No, Lucy! Let's make a leaf boat!\"", art: "/assets/books/leo-lucky-leaf/p09.svg", alt: "" },
+        { e: "🍃", t: "They lay the leaf on the lake.", art: "/assets/books/leo-lucky-leaf/p10.svg", alt: "" },
+        { e: "🐞", t: "A ladybug rides the leaf boat.", art: "/assets/books/leo-lucky-leaf/p11.svg", alt: "" },
+        { e: "🐞", t: "Leo and Lucy wave. What luck!", art: "/assets/books/leo-lucky-leaf/p12.svg", alt: "" } ] },
+      { sound: "TH", emoji: "🦥", title: "Theo's Thunder Day", colors: ["#a7b4ff", "#7a88e6"],
+        cover: "/assets/books/theo-thunder-day/cover.svg", coverAlt: "",
+        words: ["thanks", "thea", "theo", "theo's", "thick", "thing", "think", "thinks", "thirsty", "thud", "thumb", "thumbs", "thump", "thunder"],
+        forbid: ["DH"], pages: [
+        { e: "🦥", t: "Theo thinks it is a fun day.", art: "/assets/books/theo-thunder-day/p01.svg", alt: "" },
+        { e: "🥤", t: "Theo is thirsty. He sips a big drink.", art: "/assets/books/theo-thunder-day/p02.svg", alt: "" },
+        { e: "⛈️", t: "Thump! Thud! What is it?", art: "/assets/books/theo-thunder-day/p03.svg", alt: "" },
+        { e: "⛈️", t: "It is thunder! Theo hides his head.", art: "/assets/books/theo-thunder-day/p04.svg", alt: "" },
+        { e: "🦥", t: "Theo feels a bit scared.", art: "/assets/books/theo-thunder-day/p05.svg", alt: "" },
+        { e: "🦥", t: "Theo's pal Thea comes over.", art: "/assets/books/theo-thunder-day/p06.svg", alt: "" },
+        { e: "💭", t: "\"Theo, think of a fun thing!\" says Thea.", art: "/assets/books/theo-thunder-day/p07.svg", alt: "" },
+        { e: "🛏️", t: "Theo thinks of a thick, warm blanket.", art: "/assets/books/theo-thunder-day/p08.svg", alt: "" },
+        { e: "🛏️", t: "Theo and Thea sit under a thick blanket.", art: "/assets/books/theo-thunder-day/p09.svg", alt: "" },
+        { e: "👍", t: "Thea hums a tune. Theo taps his thumb.", art: "/assets/books/theo-thunder-day/p10.svg", alt: "" },
+        { e: "🌤️", t: "Soon, no more thunder.", art: "/assets/books/theo-thunder-day/p11.svg", alt: "" },
+        { e: "👍", t: "\"Thanks, Thea!\" Theo gives a big thumbs up.", art: "/assets/books/theo-thunder-day/p12.svg", alt: "" } ] },
+      { sound: "THV", emoji: "🐻", title: "This Bear, That Bee", colors: ["#ffb3c7", "#e68aa3"],
+        cover: "/assets/books/this-bear-that-bee/cover.svg", coverAlt: "",
+        words: ["that", "the", "them", "then", "there", "these", "they", "this", "those"],
+        forbid: ["TH"], pages: [
+        { e: "🐻", t: "This is a big bear. That is a little bee.", art: "/assets/books/this-bear-that-bee/p01.svg", alt: "" },
+        { e: "🐝", t: "They are pals. They like to play.", art: "/assets/books/this-bear-that-bee/p02.svg", alt: "" },
+        { e: "⛰️", t: "\"Let's go there!\" says the bear.", art: "/assets/books/this-bear-that-bee/p03.svg", alt: "" },
+        { e: "🏞️", t: "There is a pond by the hill.", art: "/assets/books/this-bear-that-bee/p04.svg", alt: "" },
+        { e: "🦆", t: "Then they see the ducks.", art: "/assets/books/this-bear-that-bee/p05.svg", alt: "" },
+        { e: "🦆", t: "\"Look at those ducks!\" says the bee.", art: "/assets/books/this-bear-that-bee/p06.svg", alt: "" },
+        { e: "🦆", t: "The ducks swim in a line.", art: "/assets/books/this-bear-that-bee/p07.svg", alt: "" },
+        { e: "🌻", t: "\"These seeds are for them,\" says the bee.", art: "/assets/books/this-bear-that-bee/p08.svg", alt: "" },
+        { e: "🌻", t: "They toss the seeds to the ducks.", art: "/assets/books/this-bear-that-bee/p09.svg", alt: "" },
+        { e: "🦆", t: "The ducks quack, \"Yum, yum!\"", art: "/assets/books/this-bear-that-bee/p10.svg", alt: "" },
+        { e: "🌅", t: "Then the sun sets.", art: "/assets/books/this-bear-that-bee/p11.svg", alt: "" },
+        { e: "🐻", t: "\"That was the best day!\" say the pals.", art: "/assets/books/this-bear-that-bee/p12.svg", alt: "" } ] },
       { sound: "R", emoji: "🐰", title: "Rory the Rabbit", colors: ["#ff7a6e", "#ef6557"], pages: [
         { e: "🚀", t: "Rory the rabbit rides a red rocket." },
         { e: "🌈", t: "The rocket roars over the rainbow." },
@@ -382,7 +709,11 @@
       "🌳":"tree",
       "⭐":"__star"
     };
+    // THV is the code for the voiced th ("this"); people see Sona's label for it
+    function sndLabel(s){ return (window.Sona&&Sona.soundLabel)?Sona.soundLabel(s):s; }
+    function escAttr(s){ return String(s||"").replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;"); }
     function readerArt(pg){
+      if(pg.art) return '<img src="'+escAttr(pg.art)+'" alt="'+escAttr(pg.alt)+'">';
       var a=READER_ART[pg.e];
       if(a){
         if(a==="__star") return (window.Sona&&Sona.icon)?Sona.icon("star",116):(pg.e||"");
@@ -399,7 +730,7 @@
         +'<circle cx="30" cy="39" r="20" fill="'+c0+'" opacity=".15"/>'
         +(face?('<g transform="translate(12,21) scale(0.56)">'+face+'</g>'):'')
         +'<circle cx="52" cy="10" r="10" fill="'+c1+'"/>'
-        +'<text x="52" y="14" text-anchor="middle" font-family="Baloo 2" font-weight="800" font-size="'+(String(st.sound).length>1?8:10)+'" fill="#fff">'+st.sound+'</text>'
+        +'<text x="52" y="14" text-anchor="middle" font-family="Baloo 2" font-weight="800" font-size="'+(sndLabel(st.sound).length>3?6:sndLabel(st.sound).length>1?8:10)+'" fill="#fff">'+sndLabel(st.sound)+'</text>'
         +'</svg>'; }
     // per-story wash for the reader background (D2): story tint over cream
     function hexRgba(hex, a) { try { var h = hex.replace("#", ""); return "rgba(" + parseInt(h.substr(0, 2), 16) + "," + parseInt(h.substr(2, 2), 16) + "," + parseInt(h.substr(4, 2), 16) + "," + a + ")"; } catch (e) { return "rgba(255,122,110," + a + ")"; } }
@@ -412,7 +743,7 @@
       bk.classList.add("show");
       // tint layers OVER the opaque cream (backgroundImage keeps the base color)
       bk.style.backgroundImage = "linear-gradient(180deg," + hexRgba(st.colors[0], .18) + ", #fff6e9 52%, #ffedd8)";
-      bkHead.textContent = st.title + " · " + st.sound + " sound";
+      bkHead.textContent = st.title + " · " + sndLabel(st.sound) + " sound";
       bkHead.style.color = st.colors[1];
       showPage();
     }
@@ -424,6 +755,29 @@
       return html.replace(/>([^<]+)</g, function(m, txt){
         return ">"+txt.replace(new RegExp("(["+L.toLowerCase()+L.toUpperCase()+"])","g"), '<b style="color:#ef6f23">$1</b>')+"<"; // kid accent, matches the sound chip (1c)
       }); }catch(e){ return html; } }
+    // A book that lists its practice words tints only the START of those words
+    // (the letters that make the sound). tintSound above colours every matching
+    // letter, which in a T book lights up "the" and in an S book lights up the z
+    // at the end of "says": a cue pointing at a sound that isn't there. LEAD is
+    // each sound's possible opening letters, longest first ("sure" is an SH word).
+    var LEAD = { SH: ["sh", "s"], CH: ["ch"], TH: ["th"], THV: ["th"], K: ["k", "c", "q"], N: ["kn", "n"],
+      R: ["wr", "r"], F: ["ph", "f"], J: ["j", "g"], S: ["s", "c"], Z: ["z", "x"], G: ["gh", "g"] };
+    function tintWords(t, book) {
+      var set = {}; book.words.forEach(function (w) { set[w] = 1; });
+      var leads = LEAD[book.sound] || [String(book.sound).charAt(0).toLowerCase()];
+      return t.split(" ").map(function (w) {
+        var key = w.toLowerCase().replace(/[^a-z']/g, "").replace(/^'+|'+$/g, ""), html = w;
+        if (set[key]) {
+          var i = w.search(/[A-Za-z]/), lw = w.slice(i).toLowerCase();
+          for (var k = 0; k < leads.length; k++) if (lw.indexOf(leads[k]) === 0) {
+            var n = leads[k].length;
+            html = w.slice(0, i) + '<b style="color:#ef6f23">' + w.slice(i, i + n) + "</b>" + w.slice(i + n);
+            break;
+          }
+        }
+        return "<span>" + html + "</span>";
+      }).join(" ");
+    }
     function closeBook() { stopSpeech(); document.getElementById("book").classList.remove("show"); BOOK = null; }
 
     function tappable(t) {
@@ -443,9 +797,10 @@
       prev.style.visibility = page <= -1 ? "hidden" : "visible";
       var N = BOOK.pages.length, left = N - 1 - page; // pages after this one
       if (page === -1) {
-        bkStage.innerHTML = '<div class="bkpic">' + cover(BOOK, 150) + '</div><div class="bktitle">' + BOOK.title + '</div><div class="bksub">A story full of ' + BOOK.sound + ' sounds — Echo reads it to you!</div>';
+        bkStage.innerHTML = (BOOK.cover ? '<img class="bkcover" src="' + escAttr(BOOK.cover) + '" alt="' + escAttr(BOOK.coverAlt) + '">' : '<div class="bkpic">' + cover(BOOK, 150) + '</div>')
+          + '<div class="bktitle">' + BOOK.title + '</div><div class="bksub">A story full of ' + sndLabel(BOOK.sound) + ' sounds — Echo reads it to you!</div>';
         next.textContent = "Start →"; hear.style.visibility = "hidden";
-        say(BOOK.title + "! A story full of " + BOOK.sound + " sounds.");
+        say(BOOK.title + "! A story full of " + sndLabel(BOOK.sound).replace(" (v)", "") + " sounds.");
       } else if (page >= N) {
         // The End: star burst IN the art panel, no page-edge stack left
         bkStage.innerHTML = '<div class="paperWrap"><div class="paper">'
@@ -465,9 +820,10 @@
           + (left >= 1 ? '<div class="pstack"></div>' : "")
           + '<div class="paper">'
           + '<span class="ribbon" style="background:' + BOOK.colors[0] + '">' + (page + 1) + '<span style="font-size:8.5px;opacity:.85">of ' + N + '</span></span>'
-          + '<div class="bkart" style="background:radial-gradient(circle,' + hexRgba(BOOK.colors[0], .16) + ',' + hexRgba(BOOK.colors[1], .05) + ' 75%)"><div class="bkpic" style="filter:none">' + readerArt(pg) + '</div></div>'
-          + '<div style="display:inline-block;background:#ffe7d3;color:#ef6f23;font-family:Baloo 2;font-weight:800;font-size:11px;letter-spacing:.08em;border-radius:99px;padding:4px 12px;">' + BOOK.sound + ' SOUND</div>'
-          + '<div class="bktext">' + tintSound(tappable(pg.t), BOOK.sound) + '</div>'
+          + (pg.art ? '<div class="bkart scene">' + readerArt(pg) + '</div>'
+            : '<div class="bkart" style="background:radial-gradient(circle,' + hexRgba(BOOK.colors[0], .16) + ',' + hexRgba(BOOK.colors[1], .05) + ' 75%)"><div class="bkpic" style="filter:none">' + readerArt(pg) + '</div></div>')
+          + '<div style="display:inline-block;background:#ffe7d3;color:#ef6f23;font-family:Baloo 2;font-weight:800;font-size:11px;letter-spacing:.08em;border-radius:99px;padding:4px 12px;">' + sndLabel(BOOK.sound) + ' SOUND</div>'
+          + '<div class="bktext">' + (BOOK.words ? tintWords(pg.t, BOOK) : tintSound(tappable(pg.t), BOOK.sound)) + '</div>'
           + '<div class="bkhint">TAP ANY WORD TO HEAR IT</div>'
           + '<img class="pgEcho" id="pgEcho" src="/coach/echo/echo-listening.svg" alt="Echo" />'
           + '</div></div>';

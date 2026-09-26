@@ -128,6 +128,125 @@ async function waitSpoke(pg, ms) {
   await ctx.close();
 }
 
+// ── the first fuller book (26 Sep 2026): Rory and the Rainbow ──
+// Travis: "start with a good solid book with the letter R as the focus", then
+// better pictures for it. It leads the R shelf, runs twelve pages, and every
+// page is a drawn scene that actually loads: a broken image in a picture book
+// is a blank page.
+{
+  ttsMode = "dead";
+  const { ctx, pg, errs } = await mkPage();
+  await pg.goto("http://localhost:8153/library.html");
+  await pg.waitForTimeout(800);
+  const first = await pg.evaluate(() => (document.querySelector("#shelf .bookBtn .bt") || {}).textContent);
+  ok("the R shelf opens with Rory and the Rainbow", first === "Rory and the Rainbow", first);
+  await pg.evaluate(() => document.querySelector("#shelf .bookBtn").click());
+  const loaded = (sel) => pg.waitForFunction((s) => { const i = document.querySelector(s); return !!(i && i.complete && i.naturalWidth > 0); }, sel, { timeout: 4000 }).then(() => true, () => false);
+  ok("…its cover is the drawn cover", await loaded("#bkStage img.bkcover"));
+  const pages = [];
+  for (let i = 0; i < 12; i++) {
+    await pg.evaluate(() => document.getElementById("bkNext").click());
+    const art = await loaded("#bkStage .bkart.scene img");
+    pages.push(await pg.evaluate((art) => ({
+      art, alt: !!(document.querySelector("#bkStage .bkart.scene img") || {}).alt,
+      text: ((document.querySelector("#bkStage .bktext") || {}).textContent || "").trim(),
+      tint: [...document.querySelectorAll("#bkStage .bktext b")].map((b) => b.textContent).join(""),
+    }), art));
+  }
+  ok("…twelve pages, every one a drawn scene that loads, with words for a screen reader",
+    pages.length === 12 && pages.every((p) => p.art && p.alt && p.text), JSON.stringify(pages.filter((p) => !p.art || !p.alt || !p.text)));
+  ok("…and only the R that starts each practice word is tinted (Rory's second r is not)",
+    pages[0].text === "Rain taps on the roof. Rory the rabbit looks up." && pages[0].tint === "RrRr", JSON.stringify(pages[0]));
+  await pg.evaluate(() => document.getElementById("bkNext").click());
+  await pg.waitForTimeout(200);
+  ok("…and ends on The End", /The End!/.test(await pg.evaluate(() => document.getElementById("bkStage").textContent)));
+  ok("no pageerrors reading Rory and the Rainbow", errs.length === 0, errs.join(" | "));
+  await ctx.close();
+}
+
+// ── every fuller book practises its sound in the one spot it says it does ──
+// Travis: "do one for each letter". Each twelve-page book puts its sound at the
+// start of a word, before a vowel, on every page, and nowhere else: not mid-word,
+// not at the end, not in a blend, so every time the child hears the sound it is
+// the one being practised. Spelling can't check that ("the" has no T sound,
+// "says" ends in Z), so the words were checked against a pronouncing dictionary
+// when the books were written, and this re-checks every line against those
+// entries (tests/booklex.json). A word edited in later that the lexicon has never
+// seen fails here until someone looks up how it sounds.
+{
+  const LEX = JSON.parse(readFileSync(new URL("./booklex.json", import.meta.url), "utf8"));
+  const TARGET = { R: "R", P: "P", B: "B", M: "M", N: "N", T: "T", D: "D", K: "K", G: "G", F: "F", V: "V",
+    S: "S", Z: "Z", SH: "SH", CH: "CH", J: "JH", L: "L", TH: "TH", THV: "DH" };
+  const VOWEL = /^(AA|AE|AH|AO|AW|AY|EH|ER|EY|IH|IY|OW|OY|UH|UW)$/;
+  const phones = (w) => LEX[w].split(" ").map((x) => x.replace(/\d/, ""));
+  const toks = (t) => t.split(/[^A-Za-z']+/).map((w) => w.replace(/^'+|'+$/g, "").toLowerCase()).filter(Boolean);
+  const { ctx, pg, errs } = await mkPage(() => {
+    localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Milo", childAge: "7", focusSounds: [], onboarded: true, earlyAdopter: true }));
+  });
+  await pg.goto("http://localhost:8153/library.html");
+  await pg.waitForTimeout(800);
+  const books = await pg.evaluate(() => STORIES.filter((b) => b.words).map((b) => ({ sound: b.sound, title: b.title,
+    words: b.words, allow: b.allow || [], forbid: b.forbid || [], pages: b.pages.map((p) => p.t) })));
+  const have = new Set(books.map((b) => b.sound));
+  ok("there is a fuller book for every one of the 19 sounds", Object.keys(TARGET).every((s) => have.has(s)),
+    Object.keys(TARGET).filter((s) => !have.has(s)).join(" "));
+  const probs = [];
+  for (const b of books) {
+    const tp = TARGET[b.sound];
+    if (b.pages.length !== 12) probs.push(`${b.title}: ${b.pages.length} pages`);
+    for (const w of b.words) {
+      const ph = w in LEX ? phones(w) : [];
+      if (ph[0] !== tp || !VOWEL.test(ph[1] || "")) probs.push(`${b.title}: "${w}" is a practice word that doesn't start with ${b.sound} and a vowel`);
+    }
+    [b.title, ...b.pages].forEach((line, i) => {
+      const ws = toks(line);
+      if (i > 0 && !ws.some((w) => b.words.includes(w))) probs.push(`${b.title} p${i}: no practice word`);
+      for (const w of ws) {
+        if (!(w in LEX)) { probs.push(`${b.title}: "${w}" is not in tests/booklex.json`); continue; }
+        const ph = phones(w);
+        if (ph.slice(1).includes(tp) && !b.allow.includes(w)) probs.push(`${b.title}: "${w}" has ${b.sound} inside the word`);
+        if (ph[0] === tp && ph.length > 1 && !VOWEL.test(ph[1])) probs.push(`${b.title}: "${w}" puts ${b.sound} in a blend`);
+        for (const f of b.forbid) if (ph.includes(f)) probs.push(`${b.title}: "${w}" has the other th (${f})`);
+        if (ph[0] === tp && VOWEL.test(ph[1] || "") && !b.words.includes(w)) probs.push(`${b.title}: "${w}" starts with ${b.sound} but isn't a listed practice word, so it won't be tinted`);
+      }
+    });
+  }
+  ok("…every line has a word that starts with its sound, and the sound is nowhere else in the book",
+    books.length >= 19 && probs.length === 0, probs.slice(0, 8).join(" | "));
+
+  // every fuller page is a drawn scene, and every file it names is really there:
+  // the reader shows art over the sticker, so a missing file is a blank page
+  const art = await pg.evaluate(() => STORIES.filter((b) => b.words).map((b) => ({ title: b.title, cover: b.cover, pages: b.pages.map((p) => p.art) })));
+  const gone = [];
+  for (const b of art) for (const f of [b.cover, ...b.pages]) if (!f || !existsSync(ROOT + f)) gone.push(b.title + ": " + (f || "(no picture)"));
+  ok("…and every one of their covers and pages is a drawn picture that exists", art.length >= 19 && gone.length === 0, gone.slice(0, 6).join(" | "));
+  await pg.evaluate(() => { openBook(STORIES.filter((b) => b.title === "Penny's Pebble Party")[0]); });
+  const pennyCover = await pg.waitForFunction(() => { const i = document.querySelector("#bkStage img.bkcover"); return !!(i && i.complete && i.naturalWidth > 0); }, null, { timeout: 4000 }).then(() => true, () => false);
+  await pg.evaluate(() => document.getElementById("bkNext").click());
+  const pennyPage = await pg.waitForFunction(() => { const i = document.querySelector("#bkStage .bkart.scene img"); return !!(i && i.complete && i.naturalWidth > 0); }, null, { timeout: 4000 }).then(() => true, () => false);
+  ok("…and a built book's cover and first page load in the reader", pennyCover && pennyPage, JSON.stringify({ pennyCover, pennyPage }));
+  await pg.evaluate(() => closeBook());
+
+  // the tint follows the sound, not the letter: "the" is not a T word, and
+  // in the voiced-th book only the th that starts This and That lights up
+  const tint = async (title, page) => {
+    await pg.evaluate((t) => { closeBook(); openBook(STORIES.filter((b) => b.title === t)[0]); }, title);
+    for (let i = 0; i < page; i++) await pg.evaluate(() => document.getElementById("bkNext").click());
+    await pg.waitForTimeout(150);
+    return pg.evaluate(() => [...document.querySelectorAll("#bkStage .bktext b")].map((b) => b.textContent + ">" + b.parentNode.textContent));
+  };
+  const toby = await tint("Toby's Tiny Tuba", 5);
+  ok("the T book tints Tia, tune and taps, and not the t in \"the\"",
+    JSON.stringify(toby) === JSON.stringify(["T>Tia", "t>tune.", "t>taps"]), JSON.stringify(toby));
+  const bee = await tint("This Bear, That Bee", 1);
+  ok("…the voiced-th book tints the th of This and That",
+    JSON.stringify(bee) === JSON.stringify(["Th>This", "Th>That"]), JSON.stringify(bee));
+  const head = await pg.evaluate(() => document.getElementById("bkHead").textContent);
+  ok("…and calls its sound TH (v), never the internal code THV", /TH \(v\) sound/.test(head) && !/THV/.test(head), head);
+  ok("no pageerrors across the fuller books", errs.length === 0, errs.join(" | "));
+  await ctx.close();
+}
+
 // ── chapter: a HUNG TTS cannot wedge "Read it to me" ──
 // The auto-read is already stuck in the hung fetch when the child taps. The
 // old pipeline dropped the tap at the depth cap — silence, forever. Now the
