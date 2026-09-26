@@ -160,12 +160,15 @@ function device(config) {
   // config.noClip the clip fails to play, the way a missing file does, and the
   // page must fall back to the calm TTS line.
   window.Audio = class { constructor(src) { this.src = src; this.volume = 1; this.playbackRate = 1; }
-    play() {
-      const human = /\/coach\/say-echo\//.test(this.src);
-      if (human && config.noClip) { later(() => { if (this.onerror) this.onerror(); }, 30); return Promise.resolve(); }
-      log('media', human ? 'human prompt' : 'slow model'); h.sounding++;
-      later(() => { h.sounding--; ended(now()); if (human) promptEnded(); if (this.onended) this.onended(); }, 90);
-      return Promise.resolve();
+    async play() {
+      const human = /\/coach\/say-echo\//.test(this.src), generated=this.src.indexOf('blob:')===0&&this.playbackRate===1;
+      if (human && config.noClip) { later(() => { if (this.onerror) this.onerror(); }, 30); return; }
+      // The native route wraps the same PCM in WAV. Read its carried line id
+      // so timing/overlap assertions still observe the actual generated line.
+      let label=human?'human prompt':'slow model';
+      if(generated){const bytes=await(await realFetch(this.src)).arrayBuffer();label=h.lines[new DataView(bytes).getInt16(44,true)-1]||'?';}
+      log(generated?'voice':'media',label);h.sounding++;
+      later(() => { h.sounding--; ended(now()); if (human || /^Ready\?/.test(label)) promptEnded(); if (this.onended) this.onended(); }, 90);
     }
     pause() {} removeAttribute() {} load() {} };
   window.speechSynthesis.speak = (u) => { log('browser voice', u.text); h.sounding++; later(() => { h.sounding--; ended(now()); if (u.onend) u.onend(); }, 60); };

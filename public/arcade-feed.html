@@ -251,7 +251,16 @@
     function ttsDB(){ return new Promise(function(res,rej){ try{ var r=indexedDB.open("sona-tts",1); r.onupgradeneeded=function(){ r.result.createObjectStore("clips"); }; r.onsuccess=function(){res(r.result)}; r.onerror=function(){rej(r.error)}; }catch(e){rej(e);} }); }
     function ttsGet(k){ return ttsDB().then(function(db){ return new Promise(function(res){ var tx=db.transaction("clips"); var rq=tx.objectStore("clips").get(k); rq.onsuccess=function(){res(rq.result||null)}; rq.onerror=function(){res(null)}; }); }).catch(function(){return null;}); }
     function ttsPut(k,buf){ ttsDB().then(function(db){ try{ db.transaction("clips","readwrite").objectStore("clips").put(buf,k); }catch(e){} }).catch(function(){}); }
-    function playPCM(b,generation){return new Promise(function(res){
+    function playPCM(b,generation){return S.isNativeApp()?playPhonePCM(b,generation):playWebPCM(b,generation);}
+    function playPhonePCM(b,generation){return new Promise(function(res){
+      if(!audioAllowed(generation))return res();
+      var url=URL.createObjectURL(S.pcmWave(b)),a=new Audio(url),done=false,timer;
+      a.volume=profile.volume!=null?profile.volume:0.8;ttsPlaying=true;
+      function fin(played){if(done)return;done=true;clearTimeout(timer);a.onended=null;a.onerror=null;try{a.pause();a.removeAttribute("src");a.load();}catch(e){}URL.revokeObjectURL(url);if(audioStop===fin)audioStop=null;if(generation===audioGeneration)ttsPlaying=false;res(played===true);}
+      audioStop=fin;a.onended=function(){fin(true);};a.onerror=function(){fin(false);};timer=setTimeout(function(){fin(false);},30000);
+      try{var played=a.play();if(played&&played.catch)played.catch(fin);}catch(e){fin();}
+    });}
+    function playWebPCM(b,generation){return new Promise(function(res){
       if(!audioAllowed(generation))return res();
       var done=false,source=null;ttsPlaying=true;
       function fin(){if(done)return;done=true;if(audioStop===cancel)audioStop=null;if(generation===audioGeneration)ttsPlaying=false;res();}
@@ -285,10 +294,10 @@
       // the chimes wait), then a chime that was waiting on it (micQuiet)
       return micQuiet().then(function(){ return ttsGet(key); }).then(function(cached){
         if(!audioAllowed(generation))return true;
-        if(cached)return playPCM(new Uint8Array(cached),generation).then(function(){return true;});
+        if(cached)return playPCM(new Uint8Array(cached),generation).then(function(played){return played!==false;});
         return fetch("/api/tts",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text:t,voice:profile.voiceId||"",stable:true})})
           .then(function(r){return r.ok?r.arrayBuffer():null;})
-          .then(function(b){if(!audioAllowed(generation))return true;if(!b)return false;ttsPut(key,b);return playPCM(new Uint8Array(b),generation).then(function(){return true;});});
+          .then(function(b){if(!audioAllowed(generation))return true;if(!b)return false;ttsPut(key,b);return playPCM(new Uint8Array(b),generation).then(function(played){return played!==false;});});
       }).then(function(played){if(!played&&audioAllowed(generation))return speakFallback(t,generation);})
         .catch(function(){if(audioAllowed(generation))return speakFallback(t,generation);})
         .then(function(){if(generation===audioGeneration)speaking=false;});

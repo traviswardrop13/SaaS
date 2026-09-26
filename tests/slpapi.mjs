@@ -744,7 +744,7 @@ if (A) {
     ok(`${f} says the email joins the list before it is given`,
       /also send occasional tips from Rachel\. Unsubscribe anytime\./.test(read(f)));
   }
-  ok("…on both of the app's email boxes", (ob.match(/also send occasional tips from Rachel/g) || []).length >= 2);
+  ok("family email explains the optional weekly update and unsubscribe", /Get a weekly practice update. Optional./.test(ob) && /Unsubscribe anytime/.test(ob));
   ok("the Speech Check no longer promises to email a report it never sends", !/email your child's report/.test(read("public/check.html")));
   ok("the privacy policy names Kit and says it holds nothing about a child",
     /<strong>Email list<\/strong> — Kit/.test(read("public/privacy.html")) && /never anything about a child/.test(read("public/privacy.html")));

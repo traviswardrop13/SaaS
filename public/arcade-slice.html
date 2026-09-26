@@ -210,7 +210,7 @@
       if(REV>0 && CAN_LISTEN){
         $("revTitle").textContent="Say \u201C"+SAYTXT+"\u201D to keep playing!";
         $("revHearts").innerHTML=(window.Sona&&Sona.heartRow)?Sona.heartRow(REV,3,28):String(REV);
-        reviveWait=true; $("revOvl").classList.add("show"); openReviveMic();
+        reviveWait=true; $("revOvl").classList.add("show"); speakRevive();
       } else { endRound(); }
     }
     function doRevive(){
@@ -237,7 +237,48 @@
       SND=String(snd).toUpperCase(); SAYTXT=(S&&S.soundSay)?S.soundSay(SND):"rrrr";
     })();
     function listenNote(t){ try{ $("revListen").textContent=t; }catch(e){} }
+    var reviveVoice=0,reviveSpeaking=false,reviveStop=null,reviveFetch=null;
+    function stopReviveVoice(){
+      reviveVoice++;reviveSpeaking=false;
+      if(reviveFetch){reviveFetch.abort();reviveFetch=null;}
+      if(reviveStop){var stop=reviveStop;reviveStop=null;stop();}
+    }
+    function reviveAudio(url,gen){return new Promise(function(resolve){
+      if(gen!==reviveVoice||!reviveWait||document.hidden)return resolve();
+      var a=new Audio(url),ended=false,timer;
+      var profile=S.getProfile();a.volume=profile.volume!=null?profile.volume:0.8;
+      function finish(){if(ended)return;ended=true;clearTimeout(timer);a.onended=null;a.onerror=null;try{a.pause();a.removeAttribute("src");a.load();}catch(e){}if(reviveStop===finish)reviveStop=null;resolve();}
+      reviveStop=finish;a.onended=finish;a.onerror=finish;timer=setTimeout(finish,15000);
+      try{var playing=a.play();if(playing&&playing.catch)playing.catch(finish);}catch(e){finish();}
+    });}
+    async function reviveLine(text,gen){
+      if(gen!==reviveVoice||document.hidden)return;
+      var controller=new AbortController();reviveFetch=controller;
+      var timer=setTimeout(function(){controller.abort();},7000),url;
+      try{
+        var profile=S.getProfile(),response=await fetch("/api/tts",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text:text,voice:profile.voiceId||"",stable:true}),signal:controller.signal});
+        if(!response.ok)return;
+        var bytes=await response.arrayBuffer();
+        if(gen!==reviveVoice||document.hidden)return;
+        url=URL.createObjectURL(S.pcmWave(bytes));await reviveAudio(url,gen);
+      }catch(e){}finally{clearTimeout(timer);if(url)URL.revokeObjectURL(url);if(reviveFetch===controller)reviveFetch=null;}
+    }
+    async function speakRevive(){
+      stopReviveVoice();var gen=reviveVoice,profile=S.getProfile();
+      if(profile.voiceOn===false||Number(profile.volume)===0){openReviveMic();return;}
+      reviveSpeaking=true;listenNote("Listen to Echo…");
+      // A delayed microphone request may still own the iPhone audio session.
+      // Wait for it to settle and close before starting the speaker route.
+      while(gen===reviveVoice&&!document.hidden&&(rv.pending||rv.st||performance.now()<Math.max(quietUntil,micClosedAt+SETTLE_MS)))await new Promise(function(done){setTimeout(done,40);});
+      if(gen!==reviveVoice||document.hidden)return;
+      await reviveLine("To keep playing, say",gen);
+      // Model the real sound from Rachel's recording, never a synthesized letter name.
+      if(gen===reviveVoice&&S.ALL_SOUNDS.indexOf(SND)>=0)await reviveAudio("/coach/say-echo/"+SND+"-demo.mp3",gen);
+      if(gen!==reviveVoice)return;
+      reviveSpeaking=false;listenNote("Get ready…");quietUntil=Math.max(quietUntil,performance.now()+QUIET_MS);openReviveMic();
+    }
     function closeReviveMic(){
+      stopReviveVoice();
       rv.gen++; clearTimeout(rv.t); if(rv.raf)cancelAnimationFrame(rv.raf); rv.raf=0;
       try{ if(rv.src)rv.src.disconnect(); }catch(e){} rv.src=null;
       if(rv.st){ try{ rv.st.getTracks().forEach(function(t){t.stop();}); }catch(e){} rv.st=null; micClosedAt=performance.now(); }
@@ -250,7 +291,7 @@
     // ready…" for good and only "I'm done playing" got the child out.
     function askAgain(){ if(reviveWait&&!document.hidden&&!rv.st) openReviveMic(); }
     function openReviveMic(){
-      if(!reviveWait||rv.st||rv.pending||document.hidden) return;
+      if(!reviveWait||reviveSpeaking||rv.st||rv.pending||document.hidden) return;
       var wait=quietUntil-performance.now();
       if(wait>0){ clearTimeout(rv.t); rv.t=setTimeout(openReviveMic,wait); return; }
       var gen=++rv.gen; rv.pending++;
@@ -261,7 +302,7 @@
         if(gen!==rv.gen||!reviveWait||document.hidden){ try{ st.getTracks().forEach(function(t){t.stop();}); }catch(e){} micClosedAt=performance.now(); askAgain(); return; }
         rv.st=st; listenFor(st,gen);
       }).catch(function(){
-        rv.pending--;
+        rv.pending--;micClosedAt=performance.now();
         // a request cut short by the page hiding asks again on the way back
         if(gen!==rv.gen||!reviveWait||document.hidden){ askAgain(); return; }
         // no microphone: the card can't hear anyone, so the round ends kindly
@@ -329,7 +370,7 @@
     // lock/app-switch fires visibilitychange, NOT pagehide — a mic left open
     // there stays lit in a pocket. Coming back to the card listens again.
     if(window.Sona&&Sona.onBackground) Sona.onBackground(closeReviveMic); else window.addEventListener("pagehide",closeReviveMic);
-    document.addEventListener("visibilitychange",function(){ if(!document.hidden&&reviveWait) openReviveMic(); });
+    document.addEventListener("visibilitychange",function(){ if(!document.hidden&&reviveWait) speakRevive(); });
 
     // slicing: pointer trail + segment-vs-circle hit
     var pDown=false,lx=0,ly=0;

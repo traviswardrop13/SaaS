@@ -158,7 +158,11 @@ function fakeDevice(cfg) {
     return an;
   };
   window.AudioContext = window.webkitAudioContext = AC;
-  HTMLMediaElement.prototype.play = function () { return Promise.resolve(); };
+  HTMLMediaElement.prototype.play = function () {
+    const media=this,rec={kind:"media",start:now(),end:Infinity,live:h.micOn()};h.sounds.push(rec);media.__quietRecord=rec;
+    media.__quietTimer=setTimeout(()=>{rec.end=now();if(media.onended)media.onended();},cfg.speechMs||400);return Promise.resolve();
+  };
+  HTMLMediaElement.prototype.pause = function(){clearTimeout(this.__quietTimer);if(this.__quietRecord)this.__quietRecord.end=Math.min(this.__quietRecord.end,now());};
 
   if (window.speechSynthesis) {
     const pending = new Set();
@@ -251,13 +255,13 @@ for (const [key, file] of ARCADE) {
       await page.evaluate(() => { if (playing) crash(); });
       await page.locator("#revOvl.show").waitFor();
       await page.waitForTimeout(150);
-      ok(key + ": the card waits out the crash sound before it listens", (await live(page)) === 0 && /Get ready/.test(await page.locator("#revListen").innerText()));
+      ok(key + ": the card waits out the crash sound before it listens", (await live(page)) === 0 && /Get ready|Listen to Echo/.test(await page.locator("#revListen").innerText()));
       await page.waitForFunction(() => __quiet.live() === 1);
       // 24 Sep 2026: this pin used to expect "I'm listening…" the instant the
       // mic opened. The first card on a page now measures the room first
       // (FLOOR_MS, while the card still says "Get ready…") and says it is
       // listening only once there is a floor to listen against.
-      ok(key + ": the first card measures the room before it says it is listening", /Get ready/.test(await page.locator("#revListen").innerText()));
+      ok(key + ": the first card measures the room before it says it is listening", /Get ready|Listen to Echo/.test(await page.locator("#revListen").innerText()));
       await page.waitForFunction(() => /listening/i.test(document.getElementById("revListen").textContent));
       ok(key + ": then it says it is listening, with the mic open", (await live(page)) === 1);
       // a game sound asked for while the card listens is dropped, not played
