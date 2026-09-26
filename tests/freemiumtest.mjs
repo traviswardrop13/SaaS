@@ -380,7 +380,8 @@ if (hasContract && premiumPresent) {
       const body = await pg.locator("body").innerText();
       ok("the parent sees that this is a local simulation", await pg.locator("#premiumPreviewNotice").isVisible() && /preview|simulat/i.test(body));
       ok("the offer promises no unverified price", !/\$\s?\d/.test(body));
-      ok("books remain clearly coming soon", /books[\s\S]{0,100}coming soon|coming soon[\s\S]{0,100}books/i.test(body));
+      // The books are on (26 Sep 2026) and part of Premium.
+      ok("the offer includes the picture books, and no longer calls them coming soon", /picture book/i.test(body) && !/books[\s\S]{0,100}coming soon|coming soon[\s\S]{0,100}books/i.test(body));
       ok("a real purchase remains disabled pending release and product verification", await pg.locator("#premiumBuy").isDisabled());
       await pg.locator("#previewTrial").click();
       await pg.waitForURL(/\/charge\.html\?game=arcade-tiles\.html/);

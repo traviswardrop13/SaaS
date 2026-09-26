@@ -20,12 +20,12 @@
   </script>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Speech practice kids actually want to do — Sona</title>
-  <!-- speaksona.com. next.config.js rewrites / to this file, so this is the
-       page the ads land on and the one a parent or a clinician finds by
-       searching. FOR BOTH (Travis, 25 Sep 2026): "I don't know who my customer
-       is", so the page speaks to parents and SLPs alike, and the one form asks
-       for an email and who they are, nothing else. The file keeps its name (for-slps.html) because
-       the rewrite, the canonical and a dozen pins point at it.
+  <!-- speaksona.com/for-slps. This was the root from 22 to 26 Sep 2026; the
+       root is now the parent page (parents.html, Travis, 26 Sep 2026: "target
+       parents and caregivers only"), and this page stays where a clinician's
+       ad, a clinician's bookmark and the parent page's footer find it. It
+       still speaks to parents and SLPs alike (25 Sep 2026), and the one form
+       asks for an email and who they are, nothing else.
        Indexable on purpose; the dashboard, its login and the family's
        redemption link stay noindex — those are private surfaces.
 
@@ -33,7 +33,7 @@
        promised something the product does not do, the page says what the
        product does instead; the PR that shipped this lists each change. -->
   <meta name="description" content="A few playful minutes of speech practice a day, at home. Every try is checked on the phone and no audio ever leaves the child's device. Free to start for families and speech therapists. Built with a licensed pediatric speech-language pathologist." />
-  <link rel="canonical" href="https://speaksona.com/" />
+  <link rel="canonical" href="https://speaksona.com/for-slps" />
 
   <!-- WHAT A SHARED LINK LOOKS LIKE. The growth plan is SLPs telling other
        SLPs, which means the link gets pasted into a Facebook group, a district
@@ -43,7 +43,7 @@
        against nothing. -->
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="Sona" />
-  <meta property="og:url" content="https://speaksona.com/" />
+  <meta property="og:url" content="https://speaksona.com/for-slps" />
   <meta property="og:title" content="Speech practice kids actually want to do." />
   <meta property="og:description" content="A few playful minutes of speech practice a day, at home. Free to start, for families and speech therapists." />
   <meta property="og:image" content="https://speaksona.com/og-slp.png" />
@@ -520,9 +520,10 @@
      * While false, nobody is sent to the App Store, where the iOS 27 build
      * closes on launch: a parent or "other" is thanked, told the app launches
      * next week and emailed the same (/api/lead, once), and a speech therapist
-     * goes to their dashboard's community. One switch, two copies: this and
-     * APP_READY in lib/launch.ts, pinned equal by tests/shiptest.mjs. When the
-     * app is live, set both to true and everyone goes to the App Store again.
+     * goes to their dashboard's community. One switch, three copies: this,
+     * parents.html's and APP_READY in lib/launch.ts, pinned equal by
+     * tests/shiptest.mjs. When the app is live, set all three to true and
+     * everyone goes to the App Store again.
      */
     var APP_READY = false;
     var LAUNCH_NOTE = "The Sona app launches next week. We'll email you the moment it's ready.";

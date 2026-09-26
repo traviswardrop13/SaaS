@@ -46,8 +46,8 @@ for (const age of ["3", "4", "5", "8"]) {
     parked: [...document.querySelectorAll("#activityGroups .game-card")].filter(e => ["bubbles", "peekaboo"].includes(e.dataset.game)).map(e => ({key:e.dataset.game,disabled:e.disabled,label:e.textContent,access:Sona.gameAccess(e.dataset.game)})),
     forbidden: !!document.querySelector("#goBtn, #heroCard, #jarRow"),
     run: sessionStorage.getItem("sona.run.v1"),
-    books: document.getElementById("booksComingSoon")?.textContent || "",
-    bookDoors: document.querySelectorAll('a[href*="chapter.html"],a[href*="library.html"],a[href*="story.html"],#booksComingSoon button,#booksComingSoon a').length,
+    books: document.getElementById("booksCard")?.textContent || "",
+    bookDoors: document.querySelectorAll('a[href*="chapter.html"],a[href*="story.html"]').length,
   }));
   ok("age " + age + ": Home opens directly to Pick a game", /pick a game/i.test(st.heading) && new URL(pg.url()).pathname === "/today.html", JSON.stringify(st));
   // 28 = the six released games, the twenty Say & Play games, and two parked
@@ -55,7 +55,9 @@ for (const age of ["3", "4", "5", "8"]) {
   ok("age " + age + ": both suggested age groups remain available", st.groups.length === 2 && st.playable.length === 26 && st.playable.every(e => e.accessible), JSON.stringify(st));
   ok("age " + age + ": Bubble Pop and Peekaboo stay visible as disabled Coming soon cards", st.parked.length === 2 && st.parked.every(e => e.disabled && /coming soon/i.test(e.label) && e.access.allowed === false && e.access.reason === "coming-soon"), JSON.stringify(st.parked));
   ok("age " + age + ": opening Home does not start a journey or display the retired adventure", !st.run && !st.forbidden, JSON.stringify(st));
-  ok("age " + age + ": books remain passive Coming soon", /coming soon/i.test(st.books) && st.bookDoors === 0, JSON.stringify(st));
+  // The books are on (Travis, 26 Sep 2026: "yes turn them on"); the
+  // adventure and chapter readers stay parked.
+  ok("age " + age + ": books are one open card, and no parked reader has a door", /books/i.test(st.books) && !/coming soon/i.test(st.books) && st.bookDoors === 0, JSON.stringify(st));
   await ctx.close();
 }
 
@@ -84,13 +86,14 @@ for (const age of ["3", "4", "5", "8"]) {
 {
   const {ctx, pg} = await home("7");
   const errs = []; pg.on("pageerror", e => errs.push(String(e)));
-  await pg.goto("http://localhost:8178/activities.html?libraryPreview=1&locked=tiles#booksComingSoon");
+  await pg.goto("http://localhost:8178/activities.html?libraryPreview=1&locked=tiles#booksCard");
   await pg.waitForURL(/today\.html/);
   const u = new URL(pg.url());
-  ok("the old library URL preserves query and fragment on the new Home", u.pathname === "/today.html" && u.searchParams.get("libraryPreview") === "1" && u.searchParams.get("locked") === "tiles" && u.hash === "#booksComingSoon", pg.url());
+  ok("the old library URL preserves query and fragment on the new Home", u.pathname === "/today.html" && u.searchParams.get("libraryPreview") === "1" && u.searchParams.get("locked") === "tiles" && u.hash === "#booksCard", pg.url());
   ok("the Home library loads without page errors", errs.length === 0, errs.join(" | "));
   const homeSource = readFileSync(ROOT + "/today.html", "utf8").replace(/<!--[\s\S]*?-->/g, "").replace(/\/\/[^\n]*/g, "");
-  ok("Home has no door to a parked reader", !/chapter\.html|library\.html|story\.html/.test(homeSource));
+  ok("Home has no door to a parked reader", !/chapter\.html|story\.html/.test(homeSource));
+  ok("…and its one book door is the bookshelf", /location\.href="\/library\.html"/.test(homeSource));
   await ctx.close();
 }
 
