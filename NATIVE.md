@@ -6,6 +6,49 @@ Ship the existing web app as a native iOS app via **Capacitor** — a thin nativ
 
 ---
 
+## iOS 27: the app must start through a "scene" (25 Sep 2026)
+
+**What happened.** Version 1.0.2 opened to a black screen and closed about half
+a second later, every time, on Travis's iPhone (screen recording, 25 Sep 2026).
+It closes before it asks speaksona.com for anything, so no website change can
+cause it or fix it.
+
+**Why.** Apple's rule for this year: an app built with the iOS 27 SDK (Xcode 27)
+must use UIKit's *scene* life cycle, or iOS 27 refuses to launch it —
+"Application failed to launch: UIScene life cycle is required for apps built
+with this SDK" (Apple technote TN3187). Sona's Xcode project was generated
+on Capacitor 8.4, whose template has no scene setup. A build from the older
+SDK (1.0.1) keeps working; any build from Xcode 27 does not, on iOS 27.
+Phones still on iOS 26 should open it, which is how a build can pass review
+and still fail for families.
+
+**The fix is `scripts/install-ios-lifecycle.py`** (#149, 25 Sep 2026; see
+"Required scene lifecycle" below). It adds the scene manifest and Sona's own
+`SceneDelegate` (`native/ios/App/SceneDelegate.swift`, compiled through
+AppDelegate.swift), keeps Main.storyboard (so `MainViewController` and the
+SonaAudio plugin stay) and **needs no Capacitor upgrade**: it uses
+`ApplicationDelegateProxy`, which Capacitor 8.4 has. An earlier version of
+this section said to upgrade to 8.5.2 and run `npx cap migrate`; do not do
+both — the script is the one fix.
+
+**Then ship it:**
+1. Run the script, then App target → General: Version **1.0.3**, Build one
+   higher than 1.0.2's.
+2. Run it on an iOS 27 iPhone: Sona must open on Home ("Pick a game!"). Start
+   one practice round and check the mic hears the child.
+3. Product → Archive → Distribute App → App Store Connect → Upload.
+4. App Store Connect: version 1.0.3, pick the build, What's New: "Fixes the app
+   closing as soon as it opens on iOS 27." Submit, then ask for an **Expedited
+   Review** (developer.apple.com/contact/app-store/?topic=expedite): "1.0.2
+   closes immediately on launch on iOS 27 because it was built with the iOS 27
+   SDK without the UIScene life cycle. 1.0.3 adopts it. Families on iOS 27
+   cannot open the app."
+5. If 1.0.2 went out as a *phased release*, pause it in App Store Connect now:
+   that stops more iPhones auto-updating into the broken build.
+
+A family's progress is safe: an app that cannot open keeps its data, and the
+update brings it back.
+
 ## Prereqs (on your Mac)
 - macOS + **Xcode** (free from the App Store) + Command Line Tools
 - **Node 22+** (required by the pinned Capacitor 8 CLI)
@@ -55,6 +98,28 @@ Repeat with a hardware keyboard or VoiceOver if used. Browser tests cannot
 verify the iOS keyboard itself.
 
 Official plugin reference: https://capacitorjs.com/docs/apis/keyboard
+
+## Required scene lifecycle (iOS 27 launch fix)
+
+After generating the iOS project, install Sona's scene lifecycle before building:
+
+```bash
+python3 scripts/install-ios-lifecycle.py
+# If the generated project is in another checkout:
+python3 scripts/install-ios-lifecycle.py /path/to/SaaS/ios/App/App
+```
+
+This adds the scene manifest and compiles `native/ios/App/SceneDelegate.swift`
+through the existing AppDelegate source entry. It preserves the existing
+Capacitor storyboard, plugins, icon, signing, permissions, and orientations.
+Original files are backed up to a temporary directory; repeating it is safe.
+Do not separately add SceneDelegate.swift to the Xcode target.
+
+**A successful archive is not a launch test.** Before uploading, install and
+launch the build on an iOS 27 simulator and a physical device. Verify a cold
+launch, background/reopen, and arrival at the family library or first-run setup.
+An app built against SDK 27 without a scene configuration exits immediately.
+[Apple's migration guide](https://developer.apple.com/documentation/uikit/transitioning-to-the-uikit-scene-based-life-cycle)
 
 ## In Xcode
 1. **App** target → **Signing & Capabilities** → check **Automatically manage signing** → choose your **Team** (your Apple account).

@@ -71,7 +71,9 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
   // into a Facebook group sells a page that isn't there.
   ok("the headline, the tab title and the shared card all say 'Speech practice kids actually want to do'",
     /<h1>Speech practice kids actually want to do\.<\/h1>/.test(slps) &&
-    /<title>Speech practice kids actually want to do — Sona for SLPs<\/title>/.test(slps) &&
+    // "— Sona", not "— Sona for SLPs" (25 Sep 2026): the page speaks to
+    // parents and SLPs alike now.
+    /<title>Speech practice kids actually want to do — Sona<\/title>/.test(slps) &&
     /og:title" content="Speech practice kids actually want to do\."/.test(slps) &&
     /twitter:title" content="Speech practice kids actually want to do\."/.test(slps) &&
     !/actually practiced at home|Never plan speech homework/.test(slps));
@@ -90,9 +92,50 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
   // TWO LINKS, NOTHING ELSE (Travis, 24 Sep 2026): the header is For parents
   // and Sign in. How it works and Privacy are on the page below the fold.
   ok("…and the header carries only For parents and Sign in", (header.match(/<a\b/g) || []).length === 3 && !/How it works|>Privacy</.test(header));
-  ok("…and goes straight to the App Store on an iPhone or iPad",
-    /getElementById\("forParents"\)\.href = "https:\/\/apps\.apple\.com\/us\/app\/sona-speech\/id6785755867"/.test(slps) &&
-    /iPhone\|iPad\|iPod/.test(slps) && /maxTouchPoints > 1/.test(slps));
+  // REWRITTEN 25 Sep 2026 (Travis): this pinned For parents leaving for the
+  // App Store on an iPhone, which skipped the one question the page now asks.
+  // It brings a parent to the form with Parent chosen; the form ends at the
+  // App Store, or at the web app on Android, which has no Sona app to get.
+  ok("…and brings a parent to the form with Parent chosen",
+    /\$\("forParents"\)\.onclick = function \(e\) \{ e\.preventDefault\(\); toForm\("parent"\); \}/.test(slps));
+  ok("the form ends at the App Store, or at the web app on Android",
+    /var APP_STORE = "https:\/\/apps\.apple\.com\/us\/app\/sona-speech\/id6785755867";/.test(slps) &&
+    /var NEXT_URL = android \? "\/onboarding\.html" : APP_STORE;/.test(slps));
+
+  // AS SIMPLE AS IT GETS (Travis, 25 Sep 2026): on the page itself, an email
+  // and "I'm a…", one button. No name box of any kind, no pop-up, and one
+  // form, so there is no second door to get out of step with it.
+  const form = (slps.match(/<form class="signup" id="signup"[\s\S]*?<\/form>/) || [""])[0];
+  ok("one form: an email, 'I'm a…', one button, and no name",
+    /id="fEmail" type="email"/.test(form) && /<select id="fRole"/.test(form) && (form.match(/<button\b/g) || []).length === 1 &&
+    (form.match(/<input\b/g) || []).length === 1 && !/name/i.test(form.replace(/aria-label|class="|autocomplete="email"/g, "")) &&
+    (slps.match(/<form\b/g) || []).length === 1 && !/id="startModal"/.test(slps));
+  ok("…and the answers are Parent or caregiver, Speech therapist (SLP or SLPA), Other",
+    /<option value="parent">Parent or caregiver<\/option>/.test(form) &&
+    /<option value="slp">Speech therapist \(SLP or SLPA\)<\/option>/.test(form) && /<option value="other">Other<\/option>/.test(form));
+  ok("the closing Start free brings the visitor back to that form",
+    /\$\("finalGo"\)\.onclick = function \(\) \{ toForm\(""\); \};/.test(slps) &&
+    (slps.replace(/<!--[\s\S]*?-->/g, "").match(/>Start free</g) || []).length === 2);
+  // IS THE APP READY? One switch, two copies, like FREE_MODE (25 Sep 2026):
+  // the page's and lib/launch.ts's, and the same launch note in both.
+  {
+    const launch = readFileSync(APP + "/lib/launch.ts", "utf8");
+    const pageReady = (slps.match(/var APP_READY = (true|false);/) || [])[1];
+    const libReady = (launch.match(/export const APP_READY = (true|false);/) || [])[1];
+    const pageNote = (slps.match(/var LAUNCH_NOTE = "([^"]+)";/) || [])[1];
+    const libNote = (launch.match(/export const LAUNCH_NOTE = "([^"]+)";/) || [])[1];
+    ok("the landing page and lib/launch.ts agree on whether the app is ready", !!pageReady && pageReady === libReady, pageReady + " vs " + libReady);
+    ok("…and say the same launch note", !!pageNote && pageNote === libNote, pageNote + " | " + libNote);
+  }
+  // BACK TO ECHO AND THE CASELOAD CARD (Travis, 25 Sep 2026), after one
+  // afternoon with his App Store image there instead.
+  const heroR = (slps.match(/<div class="hero-r"[\s\S]*?<\/section>/) || [""])[0];
+  ok("the hero shows Echo and the caseload card, made-up first names only",
+    /<img class="mascot" src="\/echo\.png"/.test(heroR) && /Your caseload this week/.test(heroR) &&
+    /Maya/.test(heroR) && !/hero-practice-play/.test(slps) && (slps.match(/Your caseload this week/g) || []).length === 1);
+  // NOTHING UNDER THE BUTTON (Travis, 25 Sep 2026: "get rid of this text").
+  ok("…and nothing under the form's button: no list line, no 'Next' hint, no 'No card' note",
+    !/class="consent"|id="mNext"|class="hnote"/.test(slps.replace(/<!--[\s\S]*?-->/g, "")));
 }
 
 // ── what the landing page promises: a free version and Premium (24 Sep 2026) ──
@@ -108,7 +151,8 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
     !/unlimited|forever/i.test(shown), (shown.match(/[^.>]*(unlimited|forever)[^.<]*/i) || [""])[0]);
   // Keep the free-game promise independent of the number of available titles.
   ok("…says what is free: the dashboard for you, the free version for every family",
-    /<b>Free for you<\/b>/.test(shown) && /<b>Free for every family<\/b>/.test(shown) && /Daily practice and free games/.test(shown));
+    // "Free for SLPs", not "Free for you" (25 Sep 2026): "you" is anyone now.
+    /<b>Free for SLPs<\/b>/.test(shown) && /<b>Free for every family<\/b>/.test(shown) && /Daily practice and free games/.test(shown));
   ok("…answers 'What does it cost?'",
     /What does it cost\?/.test(shown) && /Caseload Premium is optional: \$79\.99 a year \(under \$7 a month\) gives every family who joins through your link every game/.test(shown));
   ok("…with the plan's real terms: no trial, yearly, cancel anytime, families keep it to the end of the paid year",

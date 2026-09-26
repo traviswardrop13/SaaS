@@ -23,7 +23,7 @@
 // process only.
 import { spawnSync } from "child_process";
 import { fileURLToPath, pathToFileURL } from "url";
-import { readFileSync, existsSync } from "fs";
+import { readFileSync, existsSync, readdirSync } from "fs";
 import { register } from "node:module";
 import path from "path";
 
@@ -592,9 +592,14 @@ if (A) {
 
   // The clinician's own first name reaches the CRM — as its own field, only
   // on the clinician path, and never through `name`, which stays blank
-  // because on the parent path the only name there is a child's.
+  // because on the parent path the only name there is a child's. The landing
+  // page asks nobody for a name (25 Sep 2026).
   ok("the clinician's first name travels only when the caller is a clinician",
-    /first_name: body\?\.role === "slp" && typeof body\?\.name === "string"/.test(lead));
+    /first_name: body\?\.role === "slp" && typeof body\?\.name === "string" \? body\.name\.trim\(\)\.slice\(0, 60\) : "",/.test(lead));
+  {
+    const named = readdirSync(APP + "/public").filter((f) => f.endsWith(".html") && /own_name|"fName"/.test(read("public/" + f)));
+    ok("…and no page sends a second kind of name to the list", named.length === 0, named.join(", "));
+  }
   ok("…and reaches the webhook through the allow-list",
     /first_name: lead\.first_name,/.test(lead) && /role: lead\.role,/.test(lead) && /fbclid: lead\.fbclid,/.test(lead));
 }
@@ -637,10 +642,35 @@ if (A) {
 // ── a new clinician goes straight into the dashboard ──
 {
   const slps = read("public/for-slps.html");
-  ok("a brand-new, signed-in clinician is taken into the dashboard without a 'check your email' stop",
-    /if \(j\.signedIn\) setTimeout\(function \(\) \{ location\.href = "\/slp\.html"; \}/.test(slps));
-  ok("…after the Lead has fired, so the pixel's request leaves first",
-    slps.indexOf('sonaTrack("Lead")') > 0 && slps.indexOf('sonaTrack("Lead")') < slps.indexOf('if (j.signedIn) setTimeout('));
+  // REWRITTEN 25 Sep 2026 (Travis): after Start free everyone goes to the
+  // App Store, clinicians included. This pinned a new clinician going straight
+  // into the dashboard; the dashboard link now comes by email, and the pop-up
+  // offers it too, so a clinician is never left without a way in.
+  const handler = slps.slice(slps.indexOf("function go()"));
+  ok("once the app is ready, a clinician whose dashboard email went is taken on to the App Store, with the dashboard a tap away",
+    /\} else if \(APP_READY\) \{[\s\S]*?\{ dashboard: !!j\.signedIn, button: true \}\);\s*if \(!j\.devLink\) goNext\(2600\);/.test(handler));
+  // UNTIL THE APP IS READY (Travis, 25 Sep 2026): no App Store; a new
+  // clinician goes into their dashboard, on the community page.
+  ok("until then, a new clinician goes into their dashboard's community",
+    /if \(j\.signedIn && !j\.devLink\) toDashboard\(1500\);/.test(handler) && /location\.href = "\/slp\.html#community"/.test(slps));
+  ok("…and when the email did not go, the page stays with the way in, and no App Store button until the app is ready",
+    /else if \(!j\.sent\) \{[\s\S]*?\{ dashboard: true, button: APP_READY \}\);\s*\} else if \(APP_READY\) \{/.test(handler));
+  ok("…and the page leaves only after the Lead has fired, so the pixel's request goes first",
+    handler.indexOf('sonaTrack("Lead")') > 0 && handler.indexOf('sonaTrack("Lead")') < handler.indexOf("goNext(") &&
+    handler.indexOf('sonaTrack("Lead")') < handler.indexOf("toDashboard("));
+
+  // THE WELCOME (25 Sep 2026): one email, to a parent or "other", while the
+  // app is not ready; a clinician hears it in their sign-in email instead.
+  const leadSrc = read("app/api/lead/route.ts");
+  ok("the lead route sends the welcome only to a parent or other, only while the app is not ready, and only when the page asks",
+    /if \(!APP_READY && body\?\.welcome === true && \(lead\.role === "parent" \|\| lead\.role === "other"\) && kvConfigured\(\)\)/.test(leadSrc));
+  ok("…once per address, marked before it is sent",
+    /kvCmd\(\["SET", "launchmail:" \+ email\.toLowerCase\(\), new Date\(\)\.toISOString\(\), "NX", "EX", 31536000\]\)/.test(leadSrc) &&
+    /if \(first === "OK"\) welcomed = await sendWelcomeEmail\(email\);/.test(leadSrc));
+  ok("…after the lead is stored, never costing the visitor anything",
+    leadSrc.indexOf('LPUSH", "leads:all"') > 0 && leadSrc.indexOf('LPUSH", "leads:all"') < leadSrc.indexOf("sendWelcomeEmail(email)"));
+  ok("the clinician's sign-in email carries the launch note while the app is not ready",
+    (read("lib/slpAuth.ts").match(/APP_READY \? "" :/g) || []).length === 2);
 }
 
 
@@ -685,11 +715,18 @@ if (A) {
   ok("Kit is reached with the v4 API key header", /"X-Kit-Api-Key": process\.env\.KIT_API_KEY/.test(kitSrc));
   ok("the lead route sends every lead to Kit, tagged by role, with only a clinician's own first name",
     /kitSubscribe\(\{ email: safeLead\.email, firstName: safeLead\.first_name, tag: kitTagFor\(safeLead\.role\) \}\)/.test(lead) &&
-    /first_name: body\?\.role === "slp" && typeof body\?\.name === "string"/.test(lead),
+    /first_name: body\?\.role === "slp" && typeof body\?\.name === "string"/.test(lead) &&
+    /role: body\?\.role === "slp" \? "slp" : body\?\.role === "parent" \? "parent" : body\?\.role === "other" \? "other" : ""/.test(lead),
     "first_name is only ever a clinician's own name; a parent's lead carries none");
   ok("…and records Kit's answer on the saved lead", /kit: kitRes \? \(kitRes\.ok \? kitRes\.detail : "refused \(" \+ kitRes\.detail \+ "\)"\)/.test(lead));
   ok("the catch-up is founder-only, batched, and stops when Kit says slow down",
     /const denied = founderGate\(req\);/.test(sync) && /const BATCH = \d+;/.test(sync) && /r\.status === 429/.test(sync));
+  // Kit tags only add, so a re-run that called "Other" a parent would leave
+  // those people with both tags (25 Sep 2026).
+  ok("…and sends 'Other' as other, not as a parent",
+    /role: slp \? "slp" : l\.role === "other" \? "other" : "parent"/.test(sync) && /tag: kitTagFor\(p\.role\)/.test(sync));
+  ok("the landing page still says, in its questions, that the email goes to Kit",
+    /your email and whether you're a parent, a speech therapist or something else, kept by Sona and sent to Kit/.test(read("public/for-slps.html")));
 
   // A parent's email used to stay on the phone; it now goes to the list, with
   // the grown-up's email and nothing from the child on the same screen.
@@ -699,8 +736,11 @@ if (A) {
   ok("…and never with the child's name or age",
     fin.length > 0 && !/childName|draft\.age|achEmName|nameEl|child:/.test(fin.slice(fin.indexOf('fetch("/api/lead"'))));
 
-  // The consent line, everywhere an email can join the list (Travis's wording).
-  for (const f of ["public/for-slps.html", "public/slp-login.html", "public/onboarding.html", "public/check.html"]) {
+  // The consent line, everywhere an email can join the list (Travis's wording)
+  // — except the landing page, where Travis took it out on 25 Sep 2026 ("get
+  // rid of this text"); its "What's stored" answer still says the email goes
+  // to Kit.
+  for (const f of ["public/slp-login.html", "public/onboarding.html", "public/check.html"]) {
     ok(`${f} says the email joins the list before it is given`,
       /also send occasional tips from Rachel\. Unsubscribe anytime\./.test(read(f)));
   }
@@ -708,6 +748,28 @@ if (A) {
   ok("the Speech Check no longer promises to email a report it never sends", !/email your child's report/.test(read("public/check.html")));
   ok("the privacy policy names Kit and says it holds nothing about a child",
     /<strong>Email list<\/strong> — Kit/.test(read("public/privacy.html")) && /never anything about a child/.test(read("public/privacy.html")));
+
+  // Behaviour, against a fake Resend: the welcome email (25 Sep 2026).
+  {
+    const sent = [];
+    const realFetch0 = globalThis.fetch;
+    const savedKey = process.env.RESEND_API_KEY;
+    globalThis.fetch = async (url, init) => { sent.push({ u: String(url), body: JSON.parse(init.body), auth: init.headers.Authorization }); return new Response("{}", { status: 200 }); };
+    try {
+      const L = await import(pathToFileURL(APP + "/lib/launch.ts").href);
+      delete process.env.RESEND_API_KEY;
+      ok("with no Resend key, no welcome is sent and nothing is called", (await L.sendWelcomeEmail("mom@example.com")) === false && sent.length === 0);
+      process.env.RESEND_API_KEY = "re_test_key";
+      const okSend = await L.sendWelcomeEmail("mom@example.com");
+      const w = sent[0] || { body: {} };
+      ok("the welcome goes to that address alone, through Resend", okSend === true && w.u === "https://api.resend.com/emails" && JSON.stringify(w.body.to) === '["mom@example.com"]' && w.auth === "Bearer re_test_key");
+      ok("…says the launch note in both its parts", w.body.text.includes(L.LAUNCH_NOTE) && w.body.html.includes(L.LAUNCH_NOTE));
+      ok("…and carries no name and nothing about a child", /^Hi,/.test(w.body.text) && !/child|kid's name|\{/.test(w.body.text));
+    } finally {
+      globalThis.fetch = realFetch0;
+      if (savedKey === undefined) delete process.env.RESEND_API_KEY; else process.env.RESEND_API_KEY = savedKey;
+    }
+  }
 
   // Behaviour, against a fake Kit: what is sent, and what counts as success.
   const calls = [];
@@ -727,6 +789,8 @@ if (A) {
   process.env.KIT_API_KEY = "kit_test_key"; process.env.KIT_FORM_ID = "12345";
   try {
     const K = await import(pathToFileURL(APP + "/lib/kit.ts").href);
+    ok("tags: SLPs and SLPAs sona-slp, Other sona-other, parents and every lead with no role sona-parent",
+      K.kitTagFor("slp") === "sona-slp" && K.kitTagFor("other") === "sona-other" && K.kitTagFor("parent") === "sona-parent" && K.kitTagFor("") === "sona-parent");
     const r1 = await K.kitSubscribe({ email: "mom@example.com", firstName: "", tag: K.kitTagFor("parent") });
     const create = calls.find((c) => c.u.endsWith("/v4/subscribers"));
     ok("a parent is created in Kit with their email and no name", !!create && create.body.email_address === "mom@example.com" && !("first_name" in create.body));

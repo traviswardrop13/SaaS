@@ -518,6 +518,13 @@
     .community-pinned { background:#eaf1ed; border-color:#d9e5dd; margin-bottom:22px; }
     .community-pinned .community-body { color:#3e5e51; }
     .community-pinned .community-topic { background:#fff; color:#345f4b; }
+    /* WHO IS HERE (25 Sep 2026): the real member count and first names. */
+    .community-people { display:flex; align-items:center; gap:12px; margin-bottom:14px; font-size:13px; color:#3e5e51; }
+    .community-people[hidden] { display:none; }
+    .community-people p { margin:0; line-height:1.5; }
+    .community-faces { display:flex; flex:none; }
+    .community-faces .community-avatar { width:32px; height:32px; border:2px solid #fff; margin-left:-8px; }
+    .community-faces .community-avatar:first-child { margin-left:0; }
     .community-membership { border:1px dashed #c4d4ca; background:#f8faf7; border-radius:8px; padding:10px 14px; color:#66766b; font-size:11px; line-height:1.6; margin-bottom:18px; }
     .community-composer { display:flex; align-items:center; gap:12px; width:100%; padding:18px; background:white; border:1px solid var(--line); border-radius:10px; color:var(--muted); text-align:left; cursor:pointer; font:inherit; font-size:12px; }
     .community-composer:hover { border-color:#94b1a0; }
@@ -1120,7 +1127,8 @@
         <div class="page-header"><div class="friendly-heading"><img class="heading-echo" src="/coach/echo/echo-celebrate.svg" alt="" aria-hidden="true" width="76" height="76"/><div><div class="eyebrow">Your Sona circle</div><h1>SLP community</h1><p>Swap ideas, ask questions, and cheer each other on.</p></div></div><div class="spacer"></div><button class="btn ghost sm" id="communityRefresh">Refresh</button><button class="btn green" id="communityNew">+ Start a conversation</button></div>
         <div class="community-layout"><div class="community-main">
           <div id="communityPinned" aria-label="Pinned welcome" aria-live="polite"></div>
-          <div class="community-membership"><strong>You’re already part of the community.</strong> Free with every SLP account. Posts are shared with other signed-in SLPs using your first name. Your email and caseload stay private.</div>
+          <div class="community-people" id="communityPeople" hidden></div>
+          <div class="community-membership"><strong>You’re already part of the community.</strong> Free with every SLP account. Other signed-in SLPs see your first name here and on your posts. Your email and caseload stay private.</div>
           <button class="community-composer" id="communityCompose"><span class="community-avatar" id="communityAvatar" aria-hidden="true">You</span><span>Ask a question or share an idea…</span><span class="compose-plus" aria-hidden="true">+</span></button>
           <form class="card community-editor" id="communityEditor" hidden>
             <h2>Start a conversation</h2><label class="fl" for="communityCategory">Post in</label><select id="communityCategory"><option value="discussions">Discussions</option><option value="resources">Resources &amp; ideas</option><option value="cf">CF corner</option></select>
@@ -2074,7 +2082,7 @@
     };
 
     /* All signed-in SLPs share this feed. Drafts stay here until the server confirms a save. */
-    var COMMUNITY_FILTER="all", COMMUNITY_POSTS=[], COMMUNITY_PINNED=[], COMMUNITY_CURSOR=null, COMMUNITY_OPEN={}, COMMUNITY_REPLY_DRAFTS={};
+    var COMMUNITY_FILTER="all", COMMUNITY_POSTS=[], COMMUNITY_PINNED=[], COMMUNITY_CURSOR=null, COMMUNITY_OPEN={}, COMMUNITY_REPLY_DRAFTS={}, COMMUNITY_MEMBERS=null;
     var COMMUNITY_LOADING=false, COMMUNITY_WRITING=false, COMMUNITY_FETCH=0, COMMUNITY_RETRIES={};
     var COMMUNITY_TOPICS={discussions:"Discussions",resources:"Resources & ideas",cf:"CF corner"};
     function communityEditor(category){
@@ -2111,6 +2119,7 @@
         if(generation!==COMMUNITY_FETCH)return;
         var seen={};COMMUNITY_POSTS=(more?COMMUNITY_POSTS:[]).concat(j.posts).filter(function(p){if(seen[p.id])return false;seen[p.id]=true;return true;});
         if(Array.isArray(j.pinned))COMMUNITY_PINNED=j.pinned;
+        if(j.members&&typeof j.members.count==="number")COMMUNITY_MEMBERS=j.members;
         COMMUNITY_CURSOR=j.nextCursor||null;COMMUNITY_LOADING=false;communityStatus("");renderCommunity();
       });}).catch(function(e){if(generation!==COMMUNITY_FETCH)return;COMMUNITY_LOADING=false;communityStatus(e.message||"Couldn't load conversations. Try Refresh.");communityControls();});
     }
@@ -2122,7 +2131,21 @@
       var attr='="'+esc(postId)+'"'+(replyId?' data-reply-id="'+esc(replyId)+'"':'');
       return '<button type="button" data-community-report'+attr+'>Report</button>'+(canDelete?'<button type="button" data-community-delete'+attr+'>Delete</button>':'');
     }
+    // WHO IS HERE: the server's real count and first names, newest first
+    // (never invented), shown only once it has answered.
+    function renderCommunityPeople(){
+      var el=$("communityPeople"),m=COMMUNITY_MEMBERS;
+      if(!el)return;
+      if(!m||typeof m.count!=="number"||m.count<1){el.hidden=true;return;}
+      var shown=(Array.isArray(m.names)?m.names:[]).slice(0,8),rest=Math.max(0,m.count-shown.length);
+      var faces=shown.map(function(n){return '<span class="community-avatar" title="'+esc(n)+'">'+esc(String(n).charAt(0).toUpperCase())+'</span>';}).join("");
+      var line=m.count===1?"<strong>You’re the first SLP here.</strong> Start a conversation and the next one in will see it."
+        :"<strong>"+m.count+" SLPs are here.</strong>"+(shown.length?" Say hi to "+esc(shown.join(", "))+(rest>0?" and "+rest+" more":"")+".":"");
+      el.innerHTML=(faces?'<div class="community-faces" aria-hidden="true">'+faces+'</div>':'')+'<p>'+line+'</p>';
+      el.hidden=false;
+    }
     function renderCommunity(){
+      renderCommunityPeople();
       var name=(account&&account.name)||"You";
       $("communityAvatar").textContent=name.charAt(0).toUpperCase();
       document.querySelectorAll("[data-community-filter]").forEach(function(b){b.setAttribute("aria-pressed",String(b.dataset.communityFilter===COMMUNITY_FILTER));});

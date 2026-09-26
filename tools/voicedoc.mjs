@@ -113,7 +113,7 @@ function sayLine(sound, item, need, cuedAlready) {
 const TEMPLATE_ENV = { NUMWORD: { [NEED_DEFAULT]: "{n}" }, soundName: () => "{sound}", NEED: NEED_DEFAULT, CUESHORT: "{cue}" };
 const isoItem = (sound) => S.ladderContent(sound, 0)[0];
 const promptCall = find(CH, /return human\?queueSpeech\(null,false,human,sayLine\):say\(sayLine\(\)\);/, "playPrompt");
-const humanPath = find(CH, /var human=ITEM\.level==="isolation"&&HUMANCLIPS\?"\/coach\/say\/"\+SOUND\+"\.mp3":null;/, "human clip path");
+const humanPath = find(CH, /var human=ITEM\.level==="isolation"&&HUMANCLIPS\?"\/coach\/say-echo\/"\+SOUND\+"\.mp3":null;/, "human clip path");
 const promptStart = find(CH, /await playPrompt\(\);/, "the first prompt of a round");
 const promptTap = find(CH, /\$\("echoBuddy"\)\.onclick=function\(\)\{.*playPrompt\(\); \};/, "tap on Echo replays the prompt");
 const turtle = find(CH, /function turtleText\(\)\{ return ITEM\.level==="isolation" \? sayLine\(\) : String\(ITEM\.say\|\|ITEM\.display\|\|ITEM\.t\); \}/, "turtle text");
@@ -387,11 +387,12 @@ P("  character (`tests/voicetest3.mjs`, `tests/micquietpracticetest.mjs`); a rec
 P("  that says something else needs a code change to match, which is fine — but it is");
 P("  a decision, not an accident. Where the code says a letter name (\"make your R");
 P("  sound\") you may perform the sound instead; which wording per sound is Rachel's call.");
-P("- **Save as `<File name>.mp3`** (44.1 kHz, mono is fine). Level the finished set");
-P("  to about −20 dB RMS / −3 dB peak so a recording sits at the same loudness as a");
-P("  TTS line (`/api/tts` levels its output to that; a file plays as-is).");
+P("- **Save as `<File name>.mp3`** (44.1 kHz, mono is fine), then run");
+P("  `node tools/levelclips.mjs <folder>`: it brings every file to the loudness of a TTS");
+P("  line (−20 dB RMS / −3 dB peak, with `/api/tts`'s own levelling), because a file");
+P("  plays as-is, and an unlevelled one is the one sound that can still jump.");
 P();
-P(`Switch state right now: \`HUMAN_CLIPS = ${HUMAN_ON}\` (${humanSwitch.cite}) — Rachel's clips are ${HUMAN_ON ? "ON" : "OFF"}; the app speaks every line below through TTS.`);
+P(`Switch state right now: \`HUMAN_CLIPS = ${HUMAN_ON}\` (${humanSwitch.cite}) — the re-voiced sound models of Part A are ${HUMAN_ON ? "ON, and replace the C1 prompt for their sound" : "OFF"}; every other line below is spoken through TTS.`);
 
 // ── Part A ──
 P();
@@ -404,8 +405,11 @@ P("recorded them in July (`git show 7ad8219`): 19 practice prompts and 19 bare-s
 P("demos in `public/coach/say/`. Each prompt clip is the whole opening line with the");
 P("sound actually performed in it (her \"Ready?\" stitched on the front, a \"Go\" at the");
 P("end — July wording, before the calm rewrite), because TTS cannot perform a stretched");
-P("or popped sound. With the switch on, `<SOUND>.mp3` plays *in place of* the C1 prompt");
-P(`for that sound (${humanPath.cite}); \`<SOUND>-demo.mp3\` is used only by the parked Coach Call.`);
+P("or popped sound. Her raw voice never plays: `tools/revoice.mjs` runs each take through");
+P("ElevenLabs speech-to-speech into Echo's voice, into `public/coach/say-echo/` (25 Sep");
+P("2026) — her pacing and the performed sound survive, the timbre is Echo's. With the");
+P("switch on, `say-echo/<SOUND>.mp3` plays *in place of* the C1 prompt for that sound");
+P(`(${humanPath.cite}); \`say-echo/<SOUND>-demo.mp3\` is used only by the parked Coach Call.`);
 P();
 P("Continuants are **stretched** (held about 1.5 s); stops are **popped** (one crisp");
 P("burst, never held — a held /p/ teaches a schwa the child then has to unlearn).");
@@ -482,7 +486,7 @@ P(`\`${cuedTemplate}\` (${promptStart.cite}, built at ${sayLineFn.cite})`);
 P();
 P("Spoken once, into a closed mic, right after the mic opens and the room is measured.");
 P("Every session's first round is a sound-alone round, so a child hears this every day.");
-P(`With Rachel's clips on, \`/coach/say/{SOUND}.mp3\` plays instead (${promptCall.cite}).`);
+P(`With the sound models on, \`/coach/say-echo/{SOUND}.mp3\` (Part A) plays instead (${promptCall.cite}).`);
 P();
 P("**Fillers.**");
 P();
