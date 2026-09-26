@@ -38,7 +38,7 @@ async function next(page){await page.locator('#nextBtn').click();}
 async function enter(page,{mode='speech',age='4',name='Milo'}={}){await next(page);await page.locator('#obName').fill(name);await page.locator('#obAge [data-age="'+age+'"]').click();await next(page);if(mode!=='speech')await page.locator('#obExploreSounds').click();}
 async function choose(page,sound='R'){
   const chip=page.locator('#obSounds [data-sound="'+sound+'"]');
-  if(await chip.count())await chip.click();else await page.locator('#obSounds .sound').filter({hasText:new RegExp('^'+sound+'$')}).click();
+  if(await chip.count()){if(await chip.getAttribute('aria-pressed')!=='true')await chip.click();}else await page.locator('#obSounds .sound').filter({hasText:new RegExp('^'+sound+'$')}).click();
 }
 async function notNow(page){const b=page.locator('#micNotNow');if(await b.count())await b.click();else await next(page);}
 async function atHandoff(page){await page.locator('[data-step="achieve"].on').waitFor();}
@@ -52,13 +52,13 @@ await scenario('sound selection and private paced handoff',async()=>{
   ok('the younger age band includes two-year-olds',/2–4/.test(await page.locator('#obAge [data-age="4"]').innerText()));
   await enter(page);
   ok('name and age lead directly to sound choices without a direction page',await page.locator('[data-step="sounds"].on').count()===1&&await page.locator('[data-step="path"]').count()===0);
-  ok('specific-sound setup starts without an invented target',await page.locator('#obSounds .on').count()===0&&await page.locator('#nextBtn').isDisabled());
+  ok('R starts selected and the first row is R S L TH',await page.locator('#obSounds .on').getAttribute('data-sound')==='R'&&JSON.stringify(await page.locator('#obSounds .sound').evaluateAll(bs=>bs.slice(0,4).map(b=>b.dataset.sound)))==='["R","S","L","TH"]');
   const choices=await page.evaluate(()=>({labels:[...document.querySelectorAll('#obSounds .sound')].map(b=>({text:b.textContent.trim(),label:Sona.soundLabel(b.dataset.sound),font:parseFloat(getComputedStyle(b.querySelector('span')||b).fontSize),width:b.getBoundingClientRect().width,height:b.getBoundingClientRect().height})),copy:document.querySelector('[data-step="sounds"]').textContent,overflow:document.documentElement.scrollWidth>innerWidth}));
   ok('sound choices show large letters without example words',choices.labels.length===19&&choices.labels.every(b=>b.text===b.label&&b.font>=23),choices.labels);
   ok('sound selection stays concise and uses no clinician terminology',choices.copy.trim().split(/\s+/).length<65&&!/\bSLPs?\b|speech-language|pathologist/i.test(choices.copy),choices.copy);
   ok('sound buttons remain easy to tap without overflowing a small phone',!choices.overflow&&choices.labels.every(b=>b.width>=44&&b.height>=44),choices);
   await choose(page);ok('selecting a target enables Continue',await page.locator('#nextBtn').isEnabled());
-  await choose(page);ok('the last selected target can be cleared',await page.locator('#obSounds .on').count()===0&&await page.locator('#nextBtn').isDisabled());
+  await page.locator('#obSounds [data-sound="R"]').click();ok('the last selected target can be cleared',await page.locator('#obSounds .on').count()===0&&await page.locator('#nextBtn').isDisabled());
   await choose(page,'S');await next(page);
   const promise=await page.evaluate(()=>({visible:document.getElementById('micPromise')?.textContent||'',shared:Sona.MIC_PROMISE||''}));
   ok('setup renders the shared accurate microphone promise',!!promise.shared&&promise.visible===promise.shared&&/games/.test(promise.visible)&&/saved/.test(promise.visible));
@@ -194,6 +194,21 @@ await scenario('move-in code sheet',async()=>{
   }
   ok('code entry only retrieves an explicitly entered backup',pairPosts(requests).length===0);
   clean('code sheet',errors);
+ }finally{await context.close();}
+});
+await scenario('phone fit and optional email close',async()=>{
+ const {context,page,errors,requests}=await fresh({native:true,keyboardPlatform:'ios'});try{
+  await page.setViewportSize({width:393,height:852});
+  await page.waitForTimeout(300);
+  ok('welcome fits the phone without scrolling',await page.evaluate(()=>{var ob=document.querySelector('.ob');return ob.scrollHeight<=ob.clientHeight+1&&document.documentElement.scrollHeight<=innerHeight;}));
+  await page.screenshot({path:'/private/tmp/sona-welcome-polish.png'});
+  await enter(page);await page.waitForTimeout(600);await page.screenshot({path:'/private/tmp/sona-sounds-polish.png'});await next(page);await notNow(page);await atHandoff(page);
+  ok('email handoff fits without scrolling',await page.evaluate(()=>{var ob=document.querySelector('.ob');return ob.scrollHeight<=ob.clientHeight+1;}));
+  ok('email copy is short and does not promise extra tips',!/Rachel|occasional tips/.test(await page.locator('[data-step="achieve"]').innerText()));
+  await page.screenshot({path:'/private/tmp/sona-email-polish.png'});
+  await page.locator('#achEmailInput').fill('skip@example.com');await page.locator('#skipEmail').click();await page.waitForURL('**/today.html');
+  ok('X skips email and still completes setup',!requests.some(r=>new URL(r.url).pathname==='/api/lead'&&r.method==='POST')&&await page.evaluate(()=>!JSON.parse(localStorage.getItem('sona.profile.v1')).email));
+  clean('phone fit and skip',errors);
  }finally{await context.close();}
 });
 await browser.close();await new Promise(resolve=>server.close(resolve));console.log(failures?failures+' FAILURES / '+checks+' assertions':'ALL GREEN — '+checks+' assertions');process.exit(failures?1:0);

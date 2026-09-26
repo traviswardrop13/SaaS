@@ -786,7 +786,17 @@
       function started(){if(job.live())voiceDiagnostic(/^\/coach\/say-echo\//.test(url)?{source:"human"}:job.voiceEvent||{source:"server"});}
       try{var promise=a.play();if(promise&&promise.then)promise.then(started,function(){job.voiceReason="playback-blocked";done(null);});else started();}catch(e){job.voiceReason="playback-blocked";done(null);}
     });}
-    function playPCM(b,job){return audioWait(job,function(done,cleanup){
+    function playPCM(b,job){
+      // iPhone media output matches the recorded models. Keep the browser's
+      // existing Web Audio path, including its gesture unlock behavior.
+      if(S.isNativeApp()){
+        if(!b.byteLength)return Promise.resolve(null);
+        var url=URL.createObjectURL(S.pcmWave(b));
+        return playMedia(url,false,job).then(function(result){URL.revokeObjectURL(url);return result;},function(error){URL.revokeObjectURL(url);throw error;});
+      }
+      return playWebPCM(b,job);
+    }
+    function playWebPCM(b,job){return audioWait(job,function(done,cleanup){
       var c=getCtx();if(!c){done(null);return;}
       var n=b.byteLength>>1;if(!n){done(null);return;}
       var ab=c.createBuffer(1,n,24000),ch=ab.getChannelData(0),dv=new DataView(b.buffer,b.byteOffset,b.byteLength);

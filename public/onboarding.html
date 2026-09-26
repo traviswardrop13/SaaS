@@ -130,6 +130,22 @@
     #obRole .choice b{font-size:16.5px;}
     #obRole .choice span{font-family:Nunito,sans-serif;font-weight:700;font-size:13.5px;color:var(--muted);line-height:1.4;}
     .skip{background:none;border:none;color:var(--muted);font-weight:800;font-size:15px;cursor:pointer;padding:10px;}
+
+    /* Keep the welcome and email handoff inside the phone, with a separate
+       scroll region only when a keyboard or accessibility text needs room. */
+    html,body{height:100%;min-height:0;overflow:hidden;}
+    .ob{height:100%;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding-bottom:calc(110px + env(safe-area-inset-bottom));}
+    body[data-setup-screen="welcome"] .ob,body[data-setup-screen="achieve"] .ob{display:flex;}
+    .ob-world .step.on{flex:1;min-height:0;display:flex;flex-direction:column;}
+    .ob-world .world-scene{flex:1;min-height:100px;max-height:220px;height:auto;margin-top:8px;}
+    body[data-setup-screen="welcome"] .world-scene{max-height:340px;}
+    .ob-world .world-scene img{width:min(42vw,180px);height:min(42vw,180px);max-height:100%;}
+    .ob-world .qh{font-size:28px;margin:8px auto;}
+    .ob-world .mascot{margin-bottom:8px;}
+    #skipEmail{position:absolute;right:18px;top:calc(8px + env(safe-area-inset-top));width:44px;height:44px;font-size:30px;background:#fff;border-radius:50%;z-index:2;}
+    body[data-setup-screen="achieve"] #handoffTitle{padding:0 38px;font-size:24px;}
+    body.keyboard-open .world-scene,body.keyboard-open #handoffTitle{display:none;}
+    @media(max-height:700px){.ob-world .world-scene{max-height:150px;}.ob-world .world-scene img{width:130px;height:130px;}.ob-world .qh{font-size:24px;}.mascot{margin-bottom:10px;}#leo{width:48px!important;height:48px!important;}.bubble2{padding:9px 12px;}#obSounds .sound{min-height:44px;padding:4px;font-size:27px;}.sound-help{margin-top:8px;}}
   </style>
 </head>
 <body class="ob-world" data-setup-screen="welcome">
@@ -154,8 +170,8 @@
          save somewhere else. -->
     <div class="step on" data-step="welcome">
       <div class="qh">Let's make talking fun!</div>
-      <p class="muted">Short, friendly practice — a few minutes a day. Designed with a speech-language pathologist.</p>
-      <p class="muted" id="howLong" style="margin-top:12px;font-weight:800;color:var(--ink);">Three quick questions, then your child plays. About a minute.</p>
+      <p class="muted">Little games. Lots to say.</p>
+      <p class="muted" id="howLong" style="margin-top:12px;font-weight:800;color:var(--ink);">A quick setup, then it’s playtime.</p>
       <!-- Clinician setup remains available in browsers, never in the native family app. -->
       <p class="muted" id="slpRow" hidden style="margin-top:10px;font-size:13px;"><a href="#" id="slpLink"><b>I'm a speech-language pathologist</b> — setting Sona up for my caseload →</a></p>
       <div class="world-scene" aria-hidden="true"><img src="/coach/echo/echo-listening.svg" alt="" /></div>
@@ -209,7 +225,7 @@
     <!-- sounds -->
     <div class="step" data-step="sounds">
       <div class="qh">Pick your sounds</div>
-      <p class="muted">Choose one or more. You can change them later.</p>
+      <p class="muted">Pick sounds to practice. Change them anytime.</p>
       <div class="schips" id="obSounds" aria-label="Practice sounds"></div>
       <div id="obExploreOption">
         <p class="muted sound-help">Not sure? Play through every sound, easiest first.</p>
@@ -240,13 +256,14 @@
 
     <!-- The child takes over only when the grown-up is ready. -->
     <div class="step" data-step="achieve">
+      <button type="button" id="skipEmail" class="skip" aria-label="Skip email and play">×</button>
       <div class="qh" id="handoffTitle" tabindex="-1">Hand the phone to <span id="achName">your child</span>!</div>
       <div class="world-scene" aria-hidden="true"><img src="/coach/echo/echo-listening.svg" alt="" /></div>
       <div id="achEmail" style="display:none;margin-top:14px;background:#f7fbff;border:2px solid #dcecfa;border-radius:14px;padding:13px 15px;text-align:left;">
         <div style="font-family:'Baloo 2';font-weight:800;font-size:14.5px;">Want <span id="achEmName">your child</span>'s weekly summary?</div>
-        <p class="muted" style="font-size:12.5px;margin-top:4px;line-height:1.5;">One short email a week — which days they practiced and the sounds they worked on. Optional, and you can add it later in Settings.</p>
+        <p class="muted" style="font-size:12.5px;margin-top:4px;line-height:1.5;">Get a weekly practice update. Optional.</p>
         <input id="achEmailInput" type="email" inputmode="email" autocomplete="email" autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="done" placeholder="you@email.com" style="margin-top:9px;" />
-        <p class="muted" style="font-size:11.5px;margin-top:6px;">We&rsquo;ll also send occasional tips from Rachel. Unsubscribe anytime.</p>
+        <p class="muted" style="font-size:11.5px;margin-top:6px;">Unsubscribe anytime.</p>
         <p id="achEmailMsg" class="muted" style="font-size:12px;margin-top:7px;"></p>
       </div>
       <div id="obSlpCred" hidden style="margin-top:12px;background:#fff;border-radius:14px;padding:13px 15px;text-align:left;"></div>
@@ -339,7 +356,7 @@
       // a fresh one holds a legacy default list, not a choice by this family
       role: p.role || "",
       mode: p.mode || "",
-      focusSounds: (p.onboarded && p.focusSounds && p.focusSounds.length) ? p.focusSounds.slice() : [],
+      focusSounds: (p.onboarded && p.focusSounds && p.focusSounds.length) ? p.focusSounds.slice() : ["R"],
       slpEvaluated: p.slpEvaluated || "",
       goals: p.goals || "",
       email: p.email || "",
@@ -534,10 +551,10 @@
       ig.appendChild(el);
     });
 
-    // Targets are the family's choice; a fresh setup never silently picks R.
+    // R starts selected; a parent can change it or explore all sounds.
     var selSounds = new Set(draft.mode === "play" ? [] : draft.focusSounds);
     var sc = document.getElementById("obSounds");
-    Sona.ALL_SOUNDS.forEach(function(s){
+    ["R","S","L","TH"].concat(Sona.ALL_SOUNDS.filter(function(s){return ["R","S","L","TH"].indexOf(s)<0;})).forEach(function(s){
       var b=document.createElement("button"),label=Sona.soundLabel?Sona.soundLabel(s):s;
       b.type="button";b.className="sound"+(selSounds.has(s)?" on":"");b.dataset.sound=s;
       b.textContent=label;
@@ -812,6 +829,7 @@
           if(pay){try{sessionStorage.setItem("sona.gate.v1",String(Date.now()));}catch(e){}}
           location.href="/today.html";
         };
+        document.getElementById("skipEmail").onclick=function(){document.getElementById("achEmailInput").value="";nextBtn.onclick();};
         window.scrollTo(0,0);try{document.getElementById("handoffTitle").focus({preventScroll:true});}catch(e){}
         // Setup and menus stay quiet; spoken coaching belongs inside games.
       });

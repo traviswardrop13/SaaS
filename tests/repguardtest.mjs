@@ -70,7 +70,14 @@ function signalDevice(config){
     const RealAudio=window.Audio;
     window.Audio=function(src){const el=new RealAudio(src);try{const node=h.shared().createMediaElementSource(el);node.connect(h.ctx.destination);}catch(e){h.audioRouteError=String(e);}return el;};
     const play=HTMLMediaElement.prototype.play;
-    HTMLMediaElement.prototype.play=function(){h.mediaPlays++;return play.call(this);};
+    HTMLMediaElement.prototype.play=function(){
+      h.mediaPlays++;
+      // Native generated PCM now travels in a WAV media element; count that
+      // prompt too while still routing its actual samples through the room.
+      if(this.src.indexOf('blob:')===0)h.voicePlays++;
+      h.shared().resume(); // media output is independent of the app's suspended Web Audio context
+      return play.call(this);
+    };
     const start=AudioBufferSourceNode.prototype.start;
     AudioBufferSourceNode.prototype.start=function(...args){
       if(this.buffer&&this.buffer.sampleRate===24000){

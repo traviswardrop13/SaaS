@@ -25,6 +25,7 @@ const SUITES = [
   "momweek.mjs",   // parent weekly goal + streak math + the three UIs
   "nativefamilytest.mjs", // native family entry; clinician routes stay browser-only
   "onboardingtest.mjs", // reviewed setup, permission and explicit handoff
+  "iphonepolishtest.mjs", // spoken revive, cancellation and native audio format
   "progressreviewtest.mjs", // honest parent counts, local clips and explicit sharing
   "repguardtest.mjs", // non-speech evidence cannot create practice
   "speechevidencetest.mjs", // SPEECHEV1: that rule in room noise, at 30fps, for held/quiet sounds and early answers

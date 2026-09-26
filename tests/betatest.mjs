@@ -102,7 +102,7 @@ const clickNext = async () => { await page.evaluate(() => (document.querySelecto
 await clickNext(); // welcome →
 await page.evaluate(() => { document.getElementById("obName").value = "Milo"; });
 await clickNext(); // name →
-await page.locator('#obSounds [data-sound="R"]').click();
+if(await page.locator('#obSounds [data-sound="R"]').getAttribute('aria-pressed')!=='true')await page.locator('#obSounds [data-sound="R"]').click();
 await clickNext(); // sounds → mic
 // The "building the plan" beat used to fire HERE, on the way into the
 // microphone step, and sit over it for 1.8s — the one setup screen whose
@@ -173,7 +173,7 @@ ok("onboarding no pageerrors", errs.length === 0);
     const how = document.getElementById("howLong");
     return { howLong: how ? how.textContent : "" };
   });
-  ok("the welcome says how long setup takes", /Three quick questions/.test(seen.howLong) && /minute/.test(seen.howLong), seen.howLong);
+  ok("the welcome briefly explains setup leads to play", /setup/i.test(seen.howLong) && /play/i.test(seen.howLong) && seen.howLong.trim().split(/\s+/).length <= 10, seen.howLong);
   // Parents now go directly from the child's details to a compact sound grid.
   await pg2.evaluate(() => (document.querySelector('[data-step="mic"].on') ? document.getElementById("micNotNow") : document.getElementById("nextBtn")).click()); await pg2.waitForTimeout(200);
   await pg2.evaluate(() => { document.getElementById("obName").value = "Milo"; (document.querySelector('[data-step="mic"].on') ? document.getElementById("micNotNow") : document.getElementById("nextBtn")).click(); }); await pg2.waitForTimeout(300);
@@ -279,7 +279,7 @@ await clickNext(); // name → sounds
 // SOUNDS1: the picker is open for everyone (no SLP code) — choose R and S
 const pickState = await page.evaluate(() => {
   const chips = [...document.querySelectorAll("#obSounds .sound")];
-  chips.find((b) => b.dataset.sound === "R").click();
+  if(!chips.find((b) => b.dataset.sound === "R").classList.contains("on"))chips.find((b) => b.dataset.sound === "R").click();
   chips.find((b) => b.dataset.sound === "S").click();
   return { total: chips.length, soon: document.querySelectorAll("#obSounds .soon").length };
 });

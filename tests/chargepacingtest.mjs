@@ -52,7 +52,7 @@ function device(config){
   const fetch=window.fetch.bind(window);
   window.fetch=(url,options)=>String(url)==='/api/tts'?(h.fetches++,Promise.resolve({ok:!!config.server,status:config.server?200:503,headers:{get:name=>config.server?({'X-Sona-Voice-Provider':'elevenlabs','X-Sona-Voice-Cache':'miss','X-Sona-Voice-Model':'eleven_multilingual_v2','X-Sona-Voice-Revision':'v8'}[name]||null):null},arrayBuffer:async()=>new ArrayBuffer(96000)})):fetch(url,options);
   let sona;
-  Object.defineProperty(window,'Sona',{configurable:true,get:()=>sona,set(value){sona=value;value.humanClipsOn=()=>!!config.human;value.confetti=()=>{};value.speechStart=()=>Promise.resolve(false);value.speechStop=()=>Promise.resolve(null);const diagnostic=value.voiceDiagnostic;value.voiceDiagnostic=event=>{const saved=diagnostic?diagnostic(event):event;h.diagnostics.push(saved);return saved;};}});
+  Object.defineProperty(window,'Sona',{configurable:true,get:()=>sona,set(value){sona=value;value.isNativeApp=()=>!!config.native;value.humanClipsOn=()=>!!config.human;value.confetti=()=>{};value.speechStart=()=>Promise.resolve(false);value.speechStop=()=>Promise.resolve(null);const diagnostic=value.voiceDiagnostic;value.voiceDiagnostic=event=>{const saved=diagnostic?diagnostic(event):event;h.diagnostics.push(saved);return saved;};}});
   localStorage.setItem('sona.freeera.v1','post');localStorage.setItem('sona.freeera2.v1','done');localStorage.setItem('sona.freeera3.v1','done');localStorage.setItem('sona.freeera4.v1','done');localStorage.setItem('sona.micok','1');
   localStorage.setItem('sona.profile.v1',JSON.stringify({childName:'Mia',childAge:'7',focusSounds:['R'],onboarded:true,earlyAdopter:true,volume:config.muted?0:0.4,voiceOn:!config.muted,soundOn:false}));
   sessionStorage.setItem('sona.run.v1',JSON.stringify({active:true,round:0,sum:0,scores:[],sound:'R',level:1,pending:false,games:['slice','tiles','stack','run','glide']}));
@@ -150,6 +150,18 @@ await scenario('server and cached playback',async()=>{
     ok('cached model keeps the listening cue',/Listen to Echo/.test(await status(page)));
     clean('server/cache',errors);
   }finally{await context.close();}
+});
+
+await scenario('native generated voice matches recorded playback',async()=>{
+ const {context,page,errors}=await fresh({server:true,native:true});try{
+  await page.waitForFunction(()=>__pacing.media.some(a=>a.active));
+  ok('native generated voice uses the same media route as human models',await page.evaluate(()=>__pacing.media.some(a=>a.active)&&!__pacing.pcm.some(a=>a.active)));
+  ok('native generated voice preserves the family volume',await page.evaluate(()=>__pacing.media.find(a=>a.active).volume===0.4));
+  ok('native model keeps microphone closed until playback finishes',await page.evaluate(()=>!__pacing.micLive())&&/Listen to Echo/.test(await status(page)));
+  await page.evaluate(()=>__pacing.media.find(a=>a.active).end());await childTurn(page);
+  ok('native generated model hands over to child after completion',await page.evaluate(()=>__pacing.micLive()));
+  clean('native model',errors);
+ }finally{await context.close();}
 });
 
 await scenario('muted practice',async()=>{
