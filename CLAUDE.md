@@ -457,6 +457,20 @@ built from one shared cast by `node tools/bookart/build.mjs`. Edit the layouts
 in `tools/bookart/`, rebuild, and commit the SVGs; the app only loads files.
 Books stay parked: adding one opens no menu.
 
+**Say & Play** (Travis, 26 Sep 2026: "10 more games for ages 3-4 and 10
+more games for ages 5-8 ... incorporating practice into it"): twenty games
+where every word the child says moves the game one step, five words for 3-4
+(Simple play) and eight for 5-8 (Arcade). One engine, `public/sayplay.js`;
+each `arcade-<key>.html` is written by `node tools/gameart/build.mjs` from
+`tools/gameart/little.mjs` and `big.mjs` (edit there and rebuild:
+`sayplaytest` fails if a page drifts), and `node tools/gameart/cards.mjs`
+draws their Home cards. Only a voice moves a game: no tap stands in for
+talking, and the mic button only listens again. The mic keeps every quiet
+rule the other games keep. A spoken move is play, never practice data:
+whether it should count toward the day's practice is Rachel's call, and until
+she makes it, it doesn't. They open straight from Home and never join the
+daily adventure.
+
 Bubble Pop and Peekaboo stay visible only as disabled “Coming soon” cards,
 with no New shelf promotion and no direct-link, paid or earned bypass.
 Their engines remain in the repo for future work. Books are also parked;

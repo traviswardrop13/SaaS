@@ -28,7 +28,9 @@ async function fixture(config={}){
  const page=await context.newPage();page.setDefaultTimeout(4000);const errors=[];page.on('pageerror',e=>errors.push(e.message));await page.goto(BASE+'/today.html');return {context,page,errors};
 }
 
-const ALL=['bubbles','feed','glide','peekaboo','run','slice','stack','tiles'];
+// the eight original titles and the twenty Say & Play games (26 Sep 2026)
+const ALL=['bubbles','feed','glide','peekaboo','run','slice','stack','tiles',
+ 'balloon','cake','castle','dino','fishtank','flower','gifts','hoops','monster','pizza','puppy','racecar','robot','rocket','snowman','soccer','space','stars','train','treasure'].sort();
 async function state(page){return page.evaluate(()=>({
  keys:Array.from(document.querySelectorAll('#activityGroups button[data-game]')).map(el=>el.dataset.game).sort(),
  groups:Array.from(document.querySelectorAll('#activityGroups [data-group]')).map(el=>el.dataset.group),
@@ -40,7 +42,7 @@ function clean(name,errors){ok(name+': no runtime errors',errors.length===0,erro
 for(const age of ['2','3','4','5','8',null,'4 years','4.5'])await scenario('age '+age,async()=>{
  const {context,page,errors}=await fixture({age});try{
   await page.waitForTimeout(200);const st=await state(page);
-  ok('age '+age+': Home itself presents all eight catalog cards',JSON.stringify(st.keys)===JSON.stringify(ALL),st.keys);
+  ok('age '+age+': Home itself presents every catalog card',JSON.stringify(st.keys)===JSON.stringify(ALL),st.keys);
   const parked=await page.locator('#activityGroups button[data-game]:disabled').evaluateAll(els=>els.map(el=>({key:el.dataset.game,text:el.innerText})).sort((a,b)=>a.key.localeCompare(b.key)));
   ok('age '+age+': Bubble Pop and Peekaboo are explicitly Coming soon',JSON.stringify(parked.map(game=>game.key))===JSON.stringify(['bubbles','peekaboo'])&&parked.every(game=>/Coming soon/.test(game.text)),parked);
   ok('age '+age+': Home invites a choice',await page.getByRole('heading',{name:'Pick a game!',exact:true}).count()===1);

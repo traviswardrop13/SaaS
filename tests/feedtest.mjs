@@ -176,7 +176,7 @@ async function readLibrary(){return page.evaluate(()=>({
 await page.goto("http://localhost:8145/today.html"); await page.waitForTimeout(900);
 let deck=await readLibrary();
 ok("age 4: simple play is suggested first",deck.group==='simple',JSON.stringify(deck));
-ok("Home shows all eight titles with six playable and two coming soon",deck.games.length===8&&deck.playable.length===6&&deck.playable.includes('feed')&&JSON.stringify(deck.comingSoon)===JSON.stringify(['bubbles','peekaboo']),JSON.stringify(deck));
+ok("Home shows all 28 titles with 26 playable and two coming soon",deck.games.length===28&&deck.playable.length===26&&deck.playable.includes('feed')&&JSON.stringify(deck.comingSoon)===JSON.stringify(['bubbles','peekaboo']),JSON.stringify(deck));
 ok("Home waits for a choice instead of starting an adventure",!deck.hero&&page.url().endsWith('/today.html'));
 await page.evaluate(()=>Sona.dailyFinish(10));
 await page.reload();await page.waitForTimeout(900);deck=await readLibrary();

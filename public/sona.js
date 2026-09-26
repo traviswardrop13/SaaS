@@ -2566,12 +2566,41 @@
     feed:  { name: "Feed Echo",     sub: "Say it & tap — Echo's hungry!", go: "/arcade-feed.html", group: "simple", tier: "free", playDescription: "Find the picture and feed Echo. No timer." },
     bubbles: { name: "Bubble Pop", sub: "Pop, discover and say it together", go: "/arcade-bubbles.html", group: "simple", tier: "free", comingSoon: true, releasedOn: "2026-09-21", playDescription: "Pop a bubble. Find a little surprise." },
     peekaboo: { name: "Peekaboo", sub: "Open a door and say it together", go: "/arcade-peekaboo.html", group: "simple", tier: "premium", comingSoon: true, releasedOn: "2026-09-21", playDescription: "Knock, knock! See what’s hiding." },
+    // Say & Play (Travis, 26 Sep 2026: "10 more games for ages 3-4 and 10
+    // more games for ages 5-8 ... incorporating practice into it"). Every
+    // word the child says moves the game one step, so each opens straight to
+    // its game; public/sayplay.js is the one engine behind all twenty, and
+    // tools/gameart/ draws them. They are not in the daily adventure (see
+    // adventureGames), and a spoken move is play, never practice data.
+    balloon: { name: "Balloon Party", sub: "Say it to blow up the balloon", go: "/arcade-balloon.html", group: "simple", tier: "premium", say: true, playDescription: "Every word you say blows the balloon bigger." },
+    flower: { name: "Grow a Flower", sub: "Say it to water the seed", go: "/arcade-flower.html", group: "simple", tier: "premium", say: true, playDescription: "Water the seed with your words and watch it grow." },
+    rocket: { name: "Rocket Blast", sub: "Say it to count down", go: "/arcade-rocket.html", group: "simple", tier: "premium", say: true, playDescription: "Every word lights the countdown. Then blast off!" },
+    snowman: { name: "Build a Snowman", sub: "Say it to build a snowman", go: "/arcade-snowman.html", group: "simple", tier: "premium", say: true, playDescription: "Every word you say builds the snowman." },
+    train: { name: "Choo-Choo Train", sub: "Say it to help a friend aboard", go: "/arcade-train.html", group: "simple", tier: "premium", say: true, playDescription: "Every word helps a friend climb aboard the train." },
+    puppy: { name: "Puppy Bath", sub: "Say it to wash the puppy", go: "/arcade-puppy.html", group: "simple", tier: "premium", say: true, playDescription: "Every word washes a muddy spot away." },
+    stars: { name: "Bedtime Stars", sub: "Say it to light a star", go: "/arcade-stars.html", group: "simple", tier: "premium", say: true, playDescription: "Every word lights a star in the night sky." },
+    cake: { name: "Birthday Cake", sub: "Say it to make the cake", go: "/arcade-cake.html", group: "simple", tier: "premium", say: true, playDescription: "Every word adds to the birthday cake." },
+    gifts: { name: "Surprise Boxes", sub: "Say it to open a present", go: "/arcade-gifts.html", group: "simple", tier: "premium", say: true, playDescription: "Every word opens a present. Who is inside?" },
+    fishtank: { name: "Fish Tank", sub: "Say it to add a fish", go: "/arcade-fishtank.html", group: "simple", tier: "premium", say: true, playDescription: "Every word brings a new fish to the tank." },
+    racecar: { name: "Race Car", sub: "Say it to zoom ahead", go: "/arcade-racecar.html", group: "arcade", tier: "premium", say: true, playDescription: "Every word zooms your race car closer to the finish line." },
+    treasure: { name: "Treasure Map", sub: "Say it to sail to the treasure", go: "/arcade-treasure.html", group: "arcade", tier: "premium", say: true, playDescription: "Every word sails your boat to the next stop on the map." },
+    soccer: { name: "Soccer Goal", sub: "Say it to kick a goal", go: "/arcade-soccer.html", group: "arcade", tier: "premium", say: true, playDescription: "Every word kicks the ball into the net." },
+    hoops: { name: "Hoops", sub: "Say it to shoot a basket", go: "/arcade-hoops.html", group: "arcade", tier: "premium", say: true, playDescription: "Every word shoots the ball through the hoop." },
+    robot: { name: "Robot Builder", sub: "Say it to build a robot", go: "/arcade-robot.html", group: "arcade", tier: "premium", say: true, playDescription: "Every word adds a new part to your robot." },
+    castle: { name: "Castle Builder", sub: "Say it to build a castle", go: "/arcade-castle.html", group: "arcade", tier: "premium", say: true, playDescription: "Every word builds another part of your castle." },
+    dino: { name: "Dino Dig", sub: "Say it to dig up a dinosaur", go: "/arcade-dino.html", group: "arcade", tier: "premium", say: true, playDescription: "Every word brushes the sand off a dinosaur bone." },
+    space: { name: "Space Trip", sub: "Say it to fly to a planet", go: "/arcade-space.html", group: "arcade", tier: "premium", say: true, playDescription: "Every word flies your rocket to the next planet." },
+    pizza: { name: "Pizza Chef", sub: "Say it to make a pizza", go: "/arcade-pizza.html", group: "arcade", tier: "premium", say: true, playDescription: "Every word adds something to your pizza." },
+    monster: { name: "Monster Makeover", sub: "Say it to dress up the monster", go: "/arcade-monster.html", group: "arcade", tier: "premium", say: true, playDescription: "Every word gives the monster a silly new look." },
   };
   // Catalog access is separate from the speech needed to earn an arcade turn.
   // Free access opens released games; unfinished games stay parked for everyone.
   // Preserve the existing story and mystery deck; new library games stand alone.
   const GAME_KEYS = ["slice", "tiles", "stack", "run", "glide", "feed"];
-  const ACTIVITY_KEYS = GAME_KEYS.concat(["bubbles", "peekaboo"]);
+  // The Say & Play games list themselves (say: true), in catalog order, and
+  // sit before the two parked titles so Home ends each shelf on Coming soon.
+  const SAY_KEYS = Object.keys(GAME_ACTS).filter(function (key) { return GAME_ACTS[key].say; });
+  const ACTIVITY_KEYS = GAME_KEYS.concat(SAY_KEYS, ["bubbles", "peekaboo"]);
   function gameAct(key) { return GAME_ACTS[key] || null; }
 
   const LIBRARY_PREVIEW_KEY = "sona.librarypreview.v1", PREVIEW_PLAN_KEY = "sona.previewplan.v1";
@@ -2723,7 +2752,9 @@
   // A started adventure keeps its order when a family pauses over midnight.
   function adventureGames(firstGame) {
     var style = playStyle();
-    var deck = ACTIVITY_KEYS.filter(function (key) { return GAME_ACTS[key].group === style && gameAccess(key).allowed; });
+    // A Say & Play game is its own practice-shaped loop with no earned turn
+    // to bank, so it never joins the adventure's deck.
+    var deck = ACTIVITY_KEYS.filter(function (key) { return GAME_ACTS[key].group === style && !GAME_ACTS[key].say && gameAccess(key).allowed; });
     var count = ROT_LEN;
     try {
       var run = JSON.parse(sessionStorage.getItem(RUNKEY) || "null");
@@ -3490,6 +3521,8 @@
     bubbles: ["st-bubbles", "sky"], peekaboo: ["st-peekaboo", "peach"],
     story: ["st-story", "peach"], chapter: ["st-story", "peach"],
   };
+  // Each Say & Play game wears its own scene (sp-<key>, tools/gameart/cards.mjs).
+  SAY_KEYS.forEach(function (key) { GAME_STICKER[key] = ["sp-" + key, "sky"]; });
   function gameSticker(key) { return GAME_STICKER[String(key || "").replace(/^arcade-|\.html$/g, "")] || GAME_STICKER.story; }
 
   // ── HEAR1: on-device speech recognition (native shell only) ────────────

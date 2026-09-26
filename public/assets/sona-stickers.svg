@@ -448,4 +448,26 @@
   <g transform="scale(1.875)"><use href="#wb-rabbit" xlink:href="#wb-rabbit"></use></g>
 </g>
 </g>
+<!-- Say & Play game cards: written by tools/gameart/cards.mjs -->
+<g id="sp-balloon"><image href="/assets/games/balloon.svg" xlink:href="/assets/games/balloon.svg" width="120" height="120" preserveAspectRatio="xMidYMid slice"></image></g>
+<g id="sp-flower"><image href="/assets/games/flower.svg" xlink:href="/assets/games/flower.svg" width="120" height="120" preserveAspectRatio="xMidYMid slice"></image></g>
+<g id="sp-rocket"><image href="/assets/games/rocket.svg" xlink:href="/assets/games/rocket.svg" width="120" height="120" preserveAspectRatio="xMidYMid slice"></image></g>
+<g id="sp-snowman"><image href="/assets/games/snowman.svg" xlink:href="/assets/games/snowman.svg" width="120" height="120" preserveAspectRatio="xMidYMid slice"></image></g>
+<g id="sp-train"><image href="/assets/games/train.svg" xlink:href="/assets/games/train.svg" width="120" height="120" preserveAspectRatio="xMidYMid slice"></image></g>
+<g id="sp-puppy"><image href="/assets/games/puppy.svg" xlink:href="/assets/games/puppy.svg" width="120" height="120" preserveAspectRatio="xMidYMid slice"></image></g>
+<g id="sp-stars"><image href="/assets/games/stars.svg" xlink:href="/assets/games/stars.svg" width="120" height="120" preserveAspectRatio="xMidYMid slice"></image></g>
+<g id="sp-cake"><image href="/assets/games/cake.svg" xlink:href="/assets/games/cake.svg" width="120" height="120" preserveAspectRatio="xMidYMid slice"></image></g>
+<g id="sp-gifts"><image href="/assets/games/gifts.svg" xlink:href="/assets/games/gifts.svg" width="120" height="120" preserveAspectRatio="xMidYMid slice"></image></g>
+<g id="sp-fishtank"><image href="/assets/games/fishtank.svg" xlink:href="/assets/games/fishtank.svg" width="120" height="120" preserveAspectRatio="xMidYMid slice"></image></g>
+<g id="sp-racecar"><image href="/assets/games/racecar.svg" xlink:href="/assets/games/racecar.svg" width="120" height="120" preserveAspectRatio="xMidYMid slice"></image></g>
+<g id="sp-treasure"><image href="/assets/games/treasure.svg" xlink:href="/assets/games/treasure.svg" width="120" height="120" preserveAspectRatio="xMidYMid slice"></image></g>
+<g id="sp-soccer"><image href="/assets/games/soccer.svg" xlink:href="/assets/games/soccer.svg" width="120" height="120" preserveAspectRatio="xMidYMid slice"></image></g>
+<g id="sp-hoops"><image href="/assets/games/hoops.svg" xlink:href="/assets/games/hoops.svg" width="120" height="120" preserveAspectRatio="xMidYMid slice"></image></g>
+<g id="sp-robot"><image href="/assets/games/robot.svg" xlink:href="/assets/games/robot.svg" width="120" height="120" preserveAspectRatio="xMidYMid slice"></image></g>
+<g id="sp-castle"><image href="/assets/games/castle.svg" xlink:href="/assets/games/castle.svg" width="120" height="120" preserveAspectRatio="xMidYMid slice"></image></g>
+<g id="sp-dino"><image href="/assets/games/dino.svg" xlink:href="/assets/games/dino.svg" width="120" height="120" preserveAspectRatio="xMidYMid slice"></image></g>
+<g id="sp-space"><image href="/assets/games/space.svg" xlink:href="/assets/games/space.svg" width="120" height="120" preserveAspectRatio="xMidYMid slice"></image></g>
+<g id="sp-pizza"><image href="/assets/games/pizza.svg" xlink:href="/assets/games/pizza.svg" width="120" height="120" preserveAspectRatio="xMidYMid slice"></image></g>
+<g id="sp-monster"><image href="/assets/games/monster.svg" xlink:href="/assets/games/monster.svg" width="120" height="120" preserveAspectRatio="xMidYMid slice"></image></g>
+<!-- /Say & Play game cards -->
 </defs></svg>

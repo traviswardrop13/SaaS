@@ -67,7 +67,7 @@ const card = await page.evaluate(() => ({
   title:document.querySelector('h1').textContent
 }));
 ok("Home offers games and never exposes Coach Call",
-  card.keys.length===8&&card.title==='Pick a game!'&&!card.keys.some(k=>/call/i.test(k)),JSON.stringify(card));
+  card.keys.length===28&&card.title==='Pick a game!'&&!card.keys.some(k=>/call/i.test(k)),JSON.stringify(card));
 
 await browser.close(); srv.close();
 console.log(fails ? fails + " FAILURES" : "ALL GREEN");
