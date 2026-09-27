@@ -52,7 +52,8 @@ for(const age of ['2','3','4','5','8',null,'4 years','4.5'])await scenario('age 
   ok('age '+age+': Home creates no run, practice credit or demonstration',st.ring.n===0&&st.reps===0&&!st.run&&!st.demo.started,st);
   ok('age '+age+': menus are silent even with voice enabled',st.speech.length===0,st.speech);
   ok('age '+age+': buddy and parent controls remain available',await page.locator('#buddyBtn').count()===1&&await page.locator('#buddyBtn').getAttribute('href')==='/customize.html'&&await page.locator('#parentBtn').count()===1);
-  ok('age '+age+': books are still coming soon with no reader action',await page.locator('#booksComingSoon').count()===1&&await page.locator('#booksComingSoon a,#booksComingSoon button').count()===0);
+  // The books are on (Travis, 26 Sep 2026): one card that opens the bookshelf.
+  ok('age '+age+': books are one card, no longer coming soon',await page.locator('#booksCard').count()===1&&!/coming soon/i.test(await page.locator('#booksCard').innerText()));
   clean('age '+age,errors);
  }finally{await context.close();}
 });

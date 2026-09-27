@@ -312,7 +312,7 @@ ok("denied state offers try-again + back", mp.retry && /Back home/.test(mp.txt))
   // loaders AND remote script hosts (Vercel Insights, esm.sh, jsDelivr, unpkg).
   // Parent/marketing/SLP surfaces are allowed analytics and are excluded.
   const PARENT_PAGES = new Set([
-    "onboarding.html", "subscribe.html", "check.html", "for-slps.html", "slp.html",
+    "onboarding.html", "subscribe.html", "check.html", "for-slps.html", "parents.html", "slp.html",
     "slp-login.html", "settings.html", "voices.html", "progress.html", "trial.html",
     "pilot.html", "privacy.html", "founders.html", "founding.html", "join.html",
     // experimental HeyGen live-avatar pages — orphaned (nothing links to them),

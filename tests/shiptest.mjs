@@ -28,62 +28,125 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
 
 
 // ── the root, and what a shared link looks like ──
+// THE ROOT IS FOR PARENTS (Travis, 26 Sep 2026: "change it to target parents
+// and caregivers only. not slps"). The clinician page it replaced keeps its
+// own address, /for-slps, and its own card.
 {
+  const parents = readFileSync(APP + "/public/parents.html", "utf8");
   const slps = readFileSync(APP + "/public/for-slps.html", "utf8");
 
   // A REWRITE, NOT A REDIRECT. Cold paid traffic pays for the extra hop, and
   // two URLs serving one page splits whatever ranking the page earns.
-  ok("/ serves the SLP page",
-    /source:\s*"\/"\s*,\s*destination:\s*"\/for-slps\.html"/.test(code),
+  ok("/ serves the parent page",
+    /source:\s*"\/"\s*,\s*destination:\s*"\/parents\.html"/.test(code),
     "the ad points at the root; the root has to be the page the ad promised");
-  ok("…as a rewrite, so the URL stays speaksona.com", !/redirects\(\)[\s\S]*for-slps\.html/.test(code));
-  ok("…and the page says which URL it is", /rel="canonical" href="https:\/\/speaksona\.com\/"/.test(slps));
+  ok("…as a rewrite, so the URL stays speaksona.com", !/redirects\(\)[\s\S]*parents\.html/.test(code));
+  ok("…and the page says which URL it is", /rel="canonical" href="https:\/\/speaksona\.com\/"/.test(parents));
+  ok("the clinician page stays at /for-slps, and says that is its address",
+    /source:\s*"\/for-slps"\s*,\s*destination:\s*"\/for-slps\.html"/.test(code) &&
+    /rel="canonical" href="https:\/\/speaksona\.com\/for-slps"/.test(slps) && /og:url" content="https:\/\/speaksona\.com\/for-slps"/.test(slps) &&
+    !/rel="canonical" href="https:\/\/speaksona\.com\/"/.test(slps));
+  ok("…and a deploy shows on /for-slps at once, like the root", /source: "\/for-slps", headers: noStore/.test(code));
 
-  // THE GROWTH PLAN IS SLPS TELLING SLPS, so the link gets pasted into a
-  // Facebook group and a district Slack. A link with no card is a grey box.
-  // The old root got its title and icons from app/layout.tsx; this page is
-  // static and inherits nothing, which is exactly how it lost them.
-  for (const tag of ["og:title", "og:description", "og:image", "og:url", "twitter:card"]) {
-    ok(`a shared link carries ${tag}`, new RegExp('(property|name)="' + tag + '"').test(slps));
+  // A LINK WITH NO CARD IS A GREY BOX. Both pages are static and inherit
+  // nothing from app/layout.tsx, so each carries its own.
+  for (const [name, page, img] of [["the parent page", parents, "og-parents.png"], ["the clinician page", slps, "og-slp.png"]]) {
+    for (const tag of ["og:title", "og:description", "og:image", "og:url", "twitter:card"]) {
+      ok(`${name}: a shared link carries ${tag}`, new RegExp('(property|name)="' + tag + '"').test(page));
+    }
+    ok(`${name}: the card's image is an absolute URL, because a scraper resolves it against nothing`,
+      new RegExp('og:image" content="https://speaksona\\.com/' + img.replace(".", "\\.") + '"').test(page));
+    // A CARD POINTING AT A 404 IS WORSE THAN NO CARD.
+    const og = APP + "/public/" + img;
+    ok(`${name}: …and that image is actually in the repo`, existsSync(og));
+    if (existsSync(og)) {
+      const b = readFileSync(og);
+      const w = b.readUInt32BE(16), h = b.readUInt32BE(20);
+      ok(`${name}: …at the dimensions the tags promise`, w === 1200 && h === 630, w + "x" + h);
+      ok(`${name}: …declared, so the scraper does not have to fetch it to lay the card out`,
+        /og:image:width" content="1200"/.test(page) && /og:image:height" content="630"/.test(page));
+    }
+    ok(`${name} declares an icon, so the tab is not blank`, /rel="icon"/.test(page) && /rel="apple-touch-icon"/.test(page));
+    ok(`${name} never claims a certification Rachel does not hold`,
+      !/\bCCC\b|board-certified|ASHA-certified|\bcertified\b|fully licensed/i.test(page));
   }
-  ok("the card's image is an absolute URL, because a scraper resolves it against nothing",
-    /og:image" content="https:\/\/speaksona\.com\/og-slp\.png"/.test(slps));
 
-  // A CARD POINTING AT A 404 IS WORSE THAN NO CARD: the preview renders empty
-  // and the link looks broken. So the file exists, and it is the size claimed.
-  const og = APP + "/public/og-slp.png";
-  ok("…and that image is actually in the repo", existsSync(og));
-  if (existsSync(og)) {
-    const b = readFileSync(og);
-    const w = b.readUInt32BE(16), h = b.readUInt32BE(20);
-    ok("…at the dimensions the tags promise", w === 1200 && h === 630, w + "x" + h);
-    ok("…declared, so the scraper does not have to fetch it to lay the card out",
-      /og:image:width" content="1200"/.test(slps) && /og:image:height" content="630"/.test(slps));
-  }
+  // ONE PROMISE, EVERYWHERE IT IS READ: the parent ads' own headline, on the
+  // page, the tab and the card, so the page says what the ad said.
+  ok("the parent page's headline, tab title and shared card all say 'Speech practice kids ask for'",
+    /<h1>Speech practice kids ask for\.<\/h1>/.test(parents) &&
+    /<title>Speech practice kids ask for — Sona<\/title>/.test(parents) &&
+    /og:title" content="Speech practice kids ask for\."/.test(parents) &&
+    /twitter:title" content="Speech practice kids ask for\."/.test(parents));
+  ok("…and it names Rachel's credential in the settled words", /a licensed pediatric speech-language pathologist/.test(parents));
 
-  ok("the landing page declares an icon, so the tab is not blank",
-    /rel="icon"/.test(slps) && /rel="apple-touch-icon"/.test(slps));
-  ok("…and never claims a certification Rachel does not hold",
-    !/\bCCC\b|board-certified|ASHA-certified|\bcertified\b/i.test(slps));
+  // A PARENT PAGE HAS NO SIGN IN. A speech therapist finds their own page,
+  // and its Sign in, from the footer.
+  const pHeader = (parents.match(/<header[\s\S]*?<\/header>/) || [""])[0].replace(/<!--[\s\S]*?-->/g, "");
+  const pShown = parents.replace(/<!--[\s\S]*?-->/g, "").replace(/<script[\s\S]*?<\/script>/g, "").replace(/<style[\s\S]*?<\/style>/g, "");
+  ok("the parent page's header: the logo and one Start free, no Sign in",
+    (pHeader.match(/<a\b/g) || []).length === 1 && /<button class="btn sm" id="topGo" type="button">Start free<\/button>/.test(pHeader) && !/Sign in|slp-login/.test(pHeader));
+  ok("…and its footer points a speech therapist at /for-slps", /<footer[\s\S]*href="\/for-slps"[\s\S]*<\/footer>/.test(parents));
+  const pForm = (parents.match(/<form class="signup" id="signup"[\s\S]*?<\/form>/) || [""])[0];
+  ok("the parent page's one form: an email, one button, no 'I'm a…' and no name",
+    /id="fEmail" type="email"/.test(pForm) && (pForm.match(/<button\b/g) || []).length === 1 && (pForm.match(/<input\b/g) || []).length === 1 &&
+    !/<select/.test(pForm) && !/name/i.test(pForm.replace(/aria-label|class="|autocomplete="email"/g, "")) &&
+    (parents.match(/<form\b/g) || []).length === 1);
+  ok("…it posts as a parent, and asks for nothing about a child",
+    /JSON\.stringify\(Object\.assign\(\{ email: email, role: "parent", source: src, welcome: !APP_READY \}, attrib\)\)/.test(parents));
+  ok("…and both other Start free buttons bring the visitor back to it",
+    /\$\("topGo"\)\.onclick = toForm;/.test(parents) && /\$\("finalGo"\)\.onclick = toForm;/.test(parents) &&
+    (pShown.match(/>Start free</g) || []).length === 3);
+  ok("…with nothing under the form's button: no list line, no 'Next' hint, no 'No card' note",
+    !/class="consent"|id="mNext"|class="hnote"/.test(pShown));
+  ok("the parent page ends at the App Store, or at the web app on Android",
+    /var APP_STORE = "https:\/\/apps\.apple\.com\/us\/app\/sona-speech\/id6785755867";/.test(parents) &&
+    /var NEXT_URL = android \? "\/onboarding\.html" : APP_STORE;/.test(parents));
 
-  // ONE PROMISE, EVERYWHERE IT IS READ (24 Sep 2026): the headline, the tab
-  // title and the shared-link card must say the same thing, or a link pasted
-  // into a Facebook group sells a page that isn't there.
-  ok("the headline, the tab title and the shared card all say 'Speech practice kids actually want to do'",
+  // NO PRICE ON THE PARENT PAGE. The App Store sets the iPhone price and the
+  // family price moves with the charter count; the page reads the switch from
+  // /api/charter for its cost answer and never prints a figure.
+  ok("the parent page never quotes a dollar figure", !/\$\s?\d/.test(pShown) && !/\$\s?\d/.test((parents.match(/<script>\s*\(function \(\) \{[\s\S]*<\/script>/) || [""])[0].replace(/\$\(/g, "")));
+  ok("…and its cost answer reads the switch", /fetch\("\/api\/charter"\)/.test(parents) && /typeof j\.free !== "boolean"/.test(parents));
+
+  // THE PICTURES SHOW THE APP AS IT IS. The ads' screens asked for STAR MODE
+  // power-ups, removed on 24 Sep; those are painted out of the pictures, and
+  // no word of them may come back in the copy.
+  ok("the parent page never mentions the removed power-ups", !/golden keys|frenzy|star mode|power-?up/i.test(pShown));
+  const srcs = [...new Set([...parents.matchAll(/(?:src|href)="(\/[^"#?]+\.(?:webp|png|jpg|svg|woff2|css))"/g)].map((m) => m[1]))];
+  const missing = srcs.filter((u) => !existsSync(APP + "/public" + u));
+  ok("every picture, font and stylesheet the parent page asks for is in the repo", srcs.length > 40 && missing.length === 0, missing.join(", "));
+
+  // THE COUNTS ARE THE CATALOG'S. "26 games" is every game Home opens (not
+  // the two still "coming soon"), "19 picture books" is the bookshelf, and
+  // "19 speech sounds" is ALL_SOUNDS. Add one and this fails until the page
+  // says so.
+  const sona = readFileSync(APP + "/public/sona.js", "utf8");
+  const acts = sona.slice(sona.indexOf("const GAME_ACTS = {"), sona.indexOf("\n  };", sona.indexOf("const GAME_ACTS = {")));
+  const games = [...acts.matchAll(/^\s{4}(\w+):\s*\{ name: "([^"]+)"([^\n]*)/gm)].filter((m) => !/comingSoon: true/.test(m[3]));
+  const books = (readFileSync(APP + "/public/library.html", "utf8").match(/\/assets\/books\/[a-z-]+\//g) || []).filter((v, i, a) => a.indexOf(v) === i);
+  const sounds = JSON.parse((sona.match(/const ALL_SOUNDS = (\[[^\]]*\]);/) || [, "[]"])[1]);
+  ok("the parent page's game count is the catalog's", games.length > 20 && new RegExp('<span class="n">' + games.length + "</span> games\\.").test(parents), games.length);
+  ok("…and its game strip shows every one of them", (parents.match(/<li class="tile g">/g) || []).length === games.length &&
+    games.every((g) => parents.includes("<span>" + g[2].replace(/'/g, "&rsquo;") + "</span>")), games.map((g) => g[2]).filter((n) => !parents.includes("<span>" + n + "</span>")).join(", "));
+  ok("its book count is the bookshelf's, one book for every sound", books.length === sounds.length && new RegExp('<span class="n">' + books.length + "</span> picture books\\.").test(parents) &&
+    (parents.match(/<li class="tile b">/g) || []).length === books.length, books.length + " books, " + sounds.length + " sounds");
+  ok("…and the sounds answer names all " + sounds.length, new RegExp(sounds.length + " speech sounds: P, B, M, N, T, D, K, G, F, V, S, Z, SH, CH, J, L, R, and both TH sounds").test(pShown));
+
+  // THE CLINICIAN PAGE, AT /for-slps, is the page it was.
+  ok("the clinician page's headline, tab title and shared card all say 'Speech practice kids actually want to do'",
     /<h1>Speech practice kids actually want to do\.<\/h1>/.test(slps) &&
     // "— Sona", not "— Sona for SLPs" (25 Sep 2026): the page speaks to
-    // parents and SLPs alike now.
+    // parents and SLPs alike.
     /<title>Speech practice kids actually want to do — Sona<\/title>/.test(slps) &&
     /og:title" content="Speech practice kids actually want to do\."/.test(slps) &&
     /twitter:title" content="Speech practice kids actually want to do\."/.test(slps) &&
     !/actually practiced at home|Never plan speech homework/.test(slps));
   ok("…and the lede keeps Rachel's point: nothing to plan", /Nothing to plan, and you see who practiced\./.test(slps));
 
-  // JUST SIGN IN (Travis, 26 Sep 2026: "get rid of for parents"). The header
-  // was For parents and Sign in (24 Sep); the page now speaks to parents and
-  // SLPs alike and its one form asks who they are.
+  // JUST SIGN IN (Travis, 26 Sep 2026: "get rid of for parents").
   const header = (slps.match(/<header>[\s\S]*?<\/header>/) || [""])[0];
-  ok("the header carries only Sign in: no For parents, How it works or Privacy",
+  ok("the clinician page's header carries only Sign in: no For parents, How it works or Privacy",
     (header.match(/<a\b/g) || []).length === 2 && /<a class="signin" href="\/slp-login\.html">Sign in<\/a>/.test(header) &&
     !/For parents|forParents|How it works|>Privacy</.test(header) && !/forParents/.test(slps));
   ok("the form ends at the App Store, or at the web app on Android",
@@ -104,21 +167,23 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
   ok("the closing Start free brings the visitor back to that form",
     /\$\("finalGo"\)\.onclick = function \(\) \{ toForm\(""\); \};/.test(slps) &&
     (slps.replace(/<!--[\s\S]*?-->/g, "").match(/>Start free</g) || []).length === 2);
-  // IS THE APP READY? One switch, two copies, like FREE_MODE (25 Sep 2026):
-  // the page's and lib/launch.ts's, and the same launch note in both.
+  // IS THE APP READY? One switch, three copies, like FREE_MODE (25 Sep 2026):
+  // lib/launch.ts's and each page's, and the same launch note in all three.
   {
     const launch = readFileSync(APP + "/lib/launch.ts", "utf8");
-    const pageReady = (slps.match(/var APP_READY = (true|false);/) || [])[1];
     const libReady = (launch.match(/export const APP_READY = (true|false);/) || [])[1];
-    const pageNote = (slps.match(/var LAUNCH_NOTE = "([^"]+)";/) || [])[1];
     const libNote = (launch.match(/export const LAUNCH_NOTE = "([^"]+)";/) || [])[1];
-    ok("the landing page and lib/launch.ts agree on whether the app is ready", !!pageReady && pageReady === libReady, pageReady + " vs " + libReady);
-    ok("…and say the same launch note", !!pageNote && pageNote === libNote, pageNote + " | " + libNote);
+    for (const [name, page] of [["the parent page", parents], ["the clinician page", slps]]) {
+      const pageReady = (page.match(/var APP_READY = (true|false);/) || [])[1];
+      const pageNote = (page.match(/var LAUNCH_NOTE = "([^"]+)";/) || [])[1];
+      ok(name + " and lib/launch.ts agree on whether the app is ready", !!pageReady && pageReady === libReady, pageReady + " vs " + libReady);
+      ok("…and say the same launch note", !!pageNote && pageNote === libNote, pageNote + " | " + libNote);
+    }
   }
   // BACK TO ECHO AND THE CASELOAD CARD (Travis, 25 Sep 2026), after one
   // afternoon with his App Store image there instead.
   const heroR = (slps.match(/<div class="hero-r"[\s\S]*?<\/section>/) || [""])[0];
-  ok("the hero shows Echo and the caseload card, made-up first names only",
+  ok("the clinician page's hero shows Echo and the caseload card, made-up first names only",
     /<img class="mascot" src="\/echo\.png"/.test(heroR) && /Your caseload this week/.test(heroR) &&
     /Maya/.test(heroR) && !/hero-practice-play/.test(slps) && (slps.match(/Your caseload this week/g) || []).length === 1);
   // NOTHING UNDER THE BUTTON (Travis, 25 Sep 2026: "get rid of this text").
@@ -203,7 +268,7 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
 // parked content cannot inflate it. freemiumtest holds the family surfaces.
 {
   const decomment = (t) => t.replace(/<!--[\s\S]*?-->/g, " ").replace(/\{?\/\*[\s\S]*?\*\/\}?/g, " ").replace(/(^|[^:"'\\])\/\/[^\n]*/g, "$1");
-  for (const rel of ["public/for-slps.html", "public/slp.html", "public/privacy.html", "app/terms/page.tsx", "app/families/page.tsx"]) {
+  for (const rel of ["public/parents.html", "public/for-slps.html", "public/slp.html", "public/privacy.html", "app/terms/page.tsx", "app/families/page.tsx"]) {
     const src = decomment(readFileSync(APP + "/" + rel, "utf8")).replace(/\s+/g, " ");
     ok(rel + " names the free version as 'daily practice and free games'", /daily practice (and|\+) free games/i.test(src));
     ok(rel + " never undersells it as 'two games'", !/\btwo (free )?games\b/i.test(src), (src.match(/.{0,60}\btwo (free )?games\b.{0,40}/i) || [])[0]);

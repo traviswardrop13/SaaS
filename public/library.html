@@ -12,6 +12,8 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="mobile-web-app-capable" content="yes" />
   <style>
+    /* the hidden attribute beats the inline display:flex on the two tiles */
+    [hidden]{display:none!important;}
     body{background:linear-gradient(180deg,#fff7ec,#ffe9d2) fixed;}
     .shelfhead{display:flex;align-items:center;gap:10px;margin:18px 2px 8px;}
     .shelfhead h2{margin:0;}
@@ -98,14 +100,18 @@
     </div>
 
     <!-- Feed Echo lives here for EVERYONE (it's the littles' main game, but
-         big kids love feeding him too) — the library is the no-scores zone -->
-    <button id="feedTile" onclick="location.href='/arcade-feed.html'" style="width:100%;border:none;cursor:pointer;border-radius:18px;padding:14px 16px;margin-top:14px;text-align:left;display:flex;align-items:center;gap:14px;background:linear-gradient(120deg,#cef0b8,#a9e18f);box-shadow:0 6px 0 rgba(90,150,60,.35);">
+         big kids love feeding him too) — the library is the no-scores zone.
+         Hidden since the books came back (26 Sep 2026): Home's Books card
+         opens this page, and a books page should lead with books. -->
+    <button id="feedTile" hidden onclick="location.href='/arcade-feed.html'" style="width:100%;border:none;cursor:pointer;border-radius:18px;padding:14px 16px;margin-top:14px;text-align:left;display:flex;align-items:center;gap:14px;background:linear-gradient(120deg,#cef0b8,#a9e18f);box-shadow:0 6px 0 rgba(90,150,60,.35);">
       <svg viewBox="0 0 64 64" style="width:40px;height:40px;flex:0 0 auto"><circle cx="32" cy="32" r="30" fill="#fff" opacity=".85"/><ellipse cx="32" cy="46" rx="16" ry="6" fill="#8fdc7a"/><circle cx="32" cy="30" r="13" fill="#ff5c5c"/><path d="M32 18q4-4 8-2-3 4-8 2Z" fill="#58cc02"/><rect x="31" y="14" width="2.5" height="6" rx="1.2" fill="#8a5a2a"/><circle cx="27" cy="26" r="2" fill="#fff" opacity=".85"/></svg>
       <span><b style="display:block;font-family:'Baloo 2';font-weight:800;font-size:16px;color:#2e5c1a;">Feed Echo</b>
       <span style="display:block;font-weight:800;font-size:12px;color:#3f7d2a;margin-top:2px;">Say the word, tap the picture — watch Echo grow!</span></span>
     </button>
 
-    <button id="advTile" onclick="location.href='/story.html'" style="width:100%;border:none;cursor:pointer;border-radius:18px;padding:16px;margin-top:14px;text-align:left;display:flex;align-items:center;gap:14px;background:linear-gradient(120deg,#35407e,#6a5aa8 70%,#8a6fc4);box-shadow:0 6px 0 rgba(30,24,70,.35);">
+    <!-- The adventure (story.html) stays parked: turning the books on opened
+         the picture books, not the story engine. -->
+    <button id="advTile" hidden onclick="location.href='/story.html'" style="width:100%;border:none;cursor:pointer;border-radius:18px;padding:16px;margin-top:14px;text-align:left;display:flex;align-items:center;gap:14px;background:linear-gradient(120deg,#35407e,#6a5aa8 70%,#8a6fc4);box-shadow:0 6px 0 rgba(30,24,70,.35);">
       <svg viewBox="0 0 64 64" style="width:44px;height:44px;flex:0 0 auto"><path d="M32 5l8.2 18.6L60 25.8 44.9 39.2 49.8 59 32 48.4 14.2 59l4.9-19.8L4 25.8l19.8-2.2Z" fill="#ffd21c"/><circle cx="25" cy="21" r="3" fill="#fff" opacity=".85"/></svg>
       <span><b id="advTitle" style="display:block;font-family:'Baloo 2';font-weight:800;font-size:17px;color:#fff;">Your Adventure</b>
       <span id="advSub" style="display:block;font-weight:800;font-size:12px;color:rgba(255,255,255,.85);margin-top:2px;">A brand-new story, written just for you — never the same twice</span></span>
@@ -135,6 +141,13 @@
   </div>
 
   <script src="/sona.js"></script>
+  <script>
+    // BOOKS ARE PREMIUM CONTENT (Travis, 26 Sep 2026: "yes turn them on").
+    // Free while the app is free; a family without access who opens this
+    // address goes back to Home, which says why. Nothing here speaks until a
+    // tap, so the redirect is silent.
+    if (window.Sona && Sona.gated && Sona.gated("books")) { document.body.hidden = true; location.replace("/today.html?locked=books"); }
+  </script>
   <script>
     var profile = Sona.getProfile();
     try{ var nm=(profile.childName||"").trim(), it=(profile.interests&&profile.interests[0])||"";

@@ -78,7 +78,8 @@ Caseload Premium merge).** `FREE_MODE = true` in `public/sona.js` and
 `lib/pricing.ts`. Do not make family pricing live until Travis explicitly
 approves it. All six released games are available; Bubble Pop and Peekaboo
 are disabled “Coming soon” cards, regardless of subscription, free mode,
-trial, or earned access. Books remain coming soon.
+trial, or earned access. The books are on (Travis, 26 Sep 2026: "yes turn
+them on"): Premium content, free while the app is free.
 
 The dormant paid rail remains tested: daily practice and released free-tier
 games stay free, while `premium()` recognizes subscriptions, founders,
@@ -306,28 +307,43 @@ also pay: the dashboard and the free version stay free, and a clinician who
 wants every game for their families buys Caseload Premium — one yearly price,
 never per family, never to the clinician.
 
-**speaksona.com speaks to parents AND SLPs** (Travis, 25 Sep 2026: "I don't
-know who my customer is"). The root is still `for-slps.html` (the name is
-historical; the rewrite and the pins point at it). The headline stays; the
-one form, on the page itself, asks for **an email and "I'm a…"** (Parent or
-caregiver · Speech therapist (SLP or SLPA) · Other) and nothing else — no
-name, "as simple as possible" — then goes to the App Store (Android: the web
-app, which has no store listing to send it to). The header is just Sign in
-(Travis, 26 Sep 2026: "get rid of for parents"). An SLP or SLPA also gets
-their dashboard account and sign-in email, as the page always did, because
-the iPhone app has no clinician side; everyone else goes to `/api/lead` with
-their email and role. `tests/landingtest.mjs` drives it.
+**speaksona.com is for parents and caregivers** (Travis, 26 Sep 2026: "change
+it to target parents and caregivers only. not slps"). The root is
+`parents.html`: the parent ads' headline ("Speech practice kids ask for."),
+the new Echo and the two game screens from those ads, one email box and one
+button (role `parent`, nothing else — no name, no "I'm a…"), then the App
+Store (Android: the web app). No Sign in in its header; the footer sends a
+speech therapist to `/for-slps`. Its pictures were cut from the ads and
+changed only where the ads showed what the app no longer does — the STAR MODE
+gold tile, gold key and star fruit, and the "Say rrrr for GOLDEN KEYS / a
+FRENZY" banners are painted out — and the ads' text thread and "Max's" fridge
+note are not used: they quote parents who do not exist. It never prints a
+dollar figure; its cost answer reads the switch from `/api/charter`. Its
+"26 games", "19 picture books" and "19 speech sounds" are pinned to the
+catalog by `shiptest`, so a new game fails until the page says so.
+
+**The clinician page lives at `/for-slps`** (the root from 22 to 26 Sep). It
+still speaks to parents and SLPs alike (Travis, 25 Sep 2026: "I don't know
+who my customer is"): the headline stays, and the one form asks for **an
+email and "I'm a…"** (Parent or caregiver · Speech therapist (SLP or SLPA) ·
+Other) and nothing else. The header is just Sign in (Travis, 26 Sep 2026:
+"get rid of for parents"). An SLP or SLPA also gets their dashboard account
+and sign-in email, because the iPhone app has no clinician side; everyone
+else goes to `/api/lead` with their email and role. An ad aimed at speech
+therapists belongs on speaksona.com/for-slps. `tests/landingtest.mjs` drives
+both pages.
 
 **While the app is not ready, nobody is sent to the App Store** (Travis, 25
 Sep 2026: "the app launches next week"; the iOS 27 build closes on launch).
-`APP_READY = false` in `lib/launch.ts` and `var APP_READY` in
-`for-slps.html`, pinned equal by `shiptest`. A parent or "other" is thanked
+`APP_READY = false` in `lib/launch.ts` and `var APP_READY` in `parents.html`
+and `for-slps.html`, pinned equal by `shiptest`. A parent or "other" is thanked
 on the page ("The Sona app launches next week. We'll email you the moment
 it's ready.") and emailed the same once through Resend (`/api/lead`,
-`launchmail:<email>`); a speech therapist goes to their dashboard's
+`launchmail:<email>`; a reply goes to `RESEND_REPLY_TO` when it is set, and
+nowhere otherwise); a speech therapist goes to their dashboard's
 community (`/slp.html#community`) and their sign-in email carries the same
 P.S. Not the web app: Travis chose to wait for the app. When the app is
-live, set both switches to true.
+live, set all three switches to true.
 
 **The SLP community shows who is there** (Travis, 25 Sep 2026): the real
 number of SLP accounts and up to a dozen members' first names, newest first,
@@ -425,12 +441,13 @@ What reaches Kit: the email, a **clinician's own** first name, and the role tag
 (`sona-slp`, `sona-parent`, `sona-other`).
 Never anything about a child. Wherever an email joins the list, the page says
 so first, in Travis's words: "We'll also send occasional tips from Rachel.
-Unsubscribe anytime." **Except the landing page**, where Travis took the line
-out (25 Sep 2026: "get rid of this text"); its "What's stored" answer still
-says the email goes to Kit. Meta's `Lead` fires only when an email was given.
+Unsubscribe anytime." **Except the landing pages**, where Travis took the line
+out (25 Sep 2026: "get rid of this text"); their "What's stored" answers
+still say the email goes to Kit. Meta's `Lead` fires only when an email was given.
 
 `/leads.html` (private, behind `FOUNDER_KEY`) lists every captured email and
-every clinician account, and its "Send everyone to Kit" button is the catch-up:
+every clinician account, counts everyone since the "I'm a…" landing page
+(25 Sep 2026) by what they chose, and its "Send everyone to Kit" button is the catch-up:
 it re-sends everyone Sona holds, tagged `sona-slp` (a clinician account or an
 SLP sign-up), `sona-other` (answered Other) or `sona-parent`, and is safe to
 press again. Kit tags only add, so a wrong tag is fixed in Kit, not by
@@ -455,7 +472,10 @@ Every page is a drawn scene: Rory and the Rainbow's were drawn by hand on a
 Claude Design canvas (`public/assets/books/rory-rainbow/`); the other 18 are
 built from one shared cast by `node tools/bookart/build.mjs`. Edit the layouts
 in `tools/bookart/`, rebuild, and commit the SVGs; the app only loads files.
-Books stay parked: adding one opens no menu.
+**The books are on** (Travis, 26 Sep 2026: "yes turn them on"): Home's Books
+card opens `library.html`. Books are Premium content (`Sona.gated("books")`),
+free while the app is free; a locked family gets the grown-up message, and
+`library.html` sends a typed address back to Home (`?locked=books`).
 
 **Say & Play** (Travis, 26 Sep 2026: "10 more games for ages 3-4 and 10
 more games for ages 5-8 ... incorporating practice into it"): twenty games
@@ -473,8 +493,9 @@ daily adventure.
 
 Bubble Pop and Peekaboo stay visible only as disabled “Coming soon” cards,
 with no New shelf promotion and no direct-link, paid or earned bypass.
-Their engines remain in the repo for future work. Books are also parked;
-reader engines and their tests stay, but no public menu opens a book.
+Their engines remain in the repo for future work. The adventure
+(`story.html`) and chapter readers are still parked: their engines and tests
+stay, but no public menu opens them, and the bookshelf hides its adventure tile.
 The existing practice, honest-rep, rotation and earned arcade-turn rules
 still apply after a child chooses an available game.
 

@@ -1034,7 +1034,17 @@ const count = (pred) => S.calls.filter(pred).length;
       if (u.pathname === "/leads.html") return route.fulfill({ status: 200, contentType: "text/html", body: read("public/leads.html") });
       if (u.pathname === "/api/founders/leads") {
         loads++;
-        return json({ ok: true, leads: [], clinicians: [
+        // newest first, as the ledger returns them
+        const lead = (email, role, at) => ({ email, role, at, source: "for-slps", kit: "added" });
+        return json({ ok: true, leads: [
+          lead("dad@gmail.com", "", "2026-09-26T09:00:00Z"),          // came back through the app: keeps "parent"
+          lead("app@gmail.com", "", "2026-09-26T08:00:00Z"),          // the app only: never asked
+          lead("rachel@clinic.org", "slp", "2026-09-26T07:00:00Z"),
+          lead("mom@gmail.com", "parent", "2026-09-26T06:00:00Z"),
+          lead("dad@gmail.com", "parent", "2026-09-25T22:00:00Z"),
+          lead("aunt@gmail.com", "other", "2026-09-25T20:00:00Z"),
+          lead("early@gmail.com", "parent", "2026-09-25T19:00:00Z"),  // before the page changed
+        ], clinicians: [
           row({ email: "asked@gmail.com", workEmail: "no", accessRequested: iso(), approved: loads > 1 ? "yes" : "no", caseload: "none" }),
           row({ email: "school@district.k12.ca.us", workEmail: "yes", caseload: "paid" }),
           row({ email: "early@clinic.org", workEmail: "yes", caseload: "grandfathered" }),
@@ -1057,6 +1067,12 @@ const count = (pred) => S.calls.filter(pred).length;
       ["Work email", "Access requested", "Own Premium", "Caseload"].every((h) => heads.includes(h)), heads.join("|"));
     ok("…an Approve button only for the free-mail clinician who is not yet approved", JSON.stringify(buttons) === JSON.stringify(["asked@gmail.com"]), JSON.stringify(buttons));
     ok("…and the caseload column reads paid / grandfathered / none", cells.some((c) => /paid/.test(c)) && cells.some((c) => /grandfathered/.test(c)) && cells.some((c) => /none/.test(c)));
+    // Travis, 26 Sep 2026: "how many leads since we changed the landing page?
+    // and how many chose slp v parent". Each person once, with their answer.
+    const since = await page.evaluate(() => ["sAll", "sSlp", "sParent", "sOther"].map((id) => document.getElementById(id).textContent)
+      .concat(document.getElementById("sNone").hidden ? "" : document.getElementById("sNone").textContent));
+    ok("since the new landing page: five people, one therapist, two parents, one other, and the one the app never asked",
+      JSON.stringify(since.slice(0, 4)) === JSON.stringify(["5", "1", "2", "1"]) && /Of these, 1 came from the app/.test(since[4]), JSON.stringify(since));
     await page.click("#tSlp button[data-approve]");
     await page.waitForFunction(() => document.getElementById("approveMsg").textContent.indexOf("Approved") === 0, null, { timeout: 5000 });
     await page.waitForFunction(() => !document.querySelector("#tSlp button[data-approve]"), null, { timeout: 5000 });

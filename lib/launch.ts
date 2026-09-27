@@ -4,11 +4,11 @@
  * people there. Instead it thanks them, says the app launches next week, and
  * emails them to say the same; a speech therapist goes to their dashboard.
  *
- * ONE SWITCH, TWO COPIES, like FREE_MODE: this one (the emails) and
- * `var APP_READY` in public/for-slps.html (the page), which is static and
- * cannot import this. tests/landingtest.mjs fails if they disagree. When the
- * app is live, set both to true: the page sends people to the App Store again
- * and these emails stop.
+ * ONE SWITCH, THREE COPIES, like FREE_MODE: this one (the emails) and
+ * `var APP_READY` in public/parents.html (the root) and public/for-slps.html,
+ * which are static and cannot import this. tests/shiptest.mjs fails if they
+ * disagree. When the app is live, set all three to true: the pages send people
+ * to the App Store again and these emails stop.
  */
 export const APP_READY = false;
 
@@ -26,6 +26,11 @@ export async function sendWelcomeEmail(email: string): Promise<boolean> {
   const key = process.env.RESEND_API_KEY;
   if (!key) return false;
   const from = process.env.RESEND_FROM || "Sona <login@speaksona.com>";
+  // WHERE A REPLY GOES (Travis, 26 Sep 2026: "where can i look to see if
+  // there's been a response"). login@speaksona.com is a sending address with
+  // no inbox behind it, so a family who writes back reaches nobody. Set
+  // RESEND_REPLY_TO in Vercel to an inbox that is read and replies land there.
+  const replyTo = (process.env.RESEND_REPLY_TO || "").trim();
   try {
     const r = await fetch("https://api.resend.com/emails", {
       method: "POST",
@@ -33,6 +38,7 @@ export async function sendWelcomeEmail(email: string): Promise<boolean> {
       body: JSON.stringify({
         from,
         to: [email],
+        ...(/^\S+@\S+\.\S+$/.test(replyTo) ? { reply_to: replyTo } : {}),
         subject: "You're on the list for Sona",
         html:
           `<div style="font-family:system-ui,Segoe UI,Roboto,sans-serif;font-size:15px;color:#16384f;line-height:1.6;max-width:520px;">` +

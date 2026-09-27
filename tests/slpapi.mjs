@@ -765,6 +765,15 @@ if (A) {
       ok("the welcome goes to that address alone, through Resend", okSend === true && w.u === "https://api.resend.com/emails" && JSON.stringify(w.body.to) === '["mom@example.com"]' && w.auth === "Bearer re_test_key");
       ok("…says the launch note in both its parts", w.body.text.includes(L.LAUNCH_NOTE) && w.body.html.includes(L.LAUNCH_NOTE));
       ok("…and carries no name and nothing about a child", /^Hi,/.test(w.body.text) && !/child|kid's name|\{/.test(w.body.text));
+      // 26 Sep 2026: replies reach whatever inbox RESEND_REPLY_TO names, and
+      // with it unset the email is exactly what it was.
+      ok("…with no reply-to unless one is set", !("reply_to" in w.body));
+      const savedReply = process.env.RESEND_REPLY_TO;
+      process.env.RESEND_REPLY_TO = "hello@example.com";
+      try {
+        await L.sendWelcomeEmail("dad@example.com");
+        ok("…and a family's reply goes to RESEND_REPLY_TO when it is set", (sent[1] || { body: {} }).body.reply_to === "hello@example.com");
+      } finally { if (savedReply === undefined) delete process.env.RESEND_REPLY_TO; else process.env.RESEND_REPLY_TO = savedReply; }
     } finally {
       globalThis.fetch = realFetch0;
       if (savedKey === undefined) delete process.env.RESEND_API_KEY; else process.env.RESEND_API_KEY = savedKey;

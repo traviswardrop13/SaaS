@@ -198,9 +198,11 @@ if (present && hasContract) {
         const parked = await pg.locator("#activityGroups button[data-game]:disabled").allInnerTexts();
         ok("age " + age + ": both parked titles say Coming soon", parked.length === 2 && parked.every(text => /Coming soon/.test(text)), parked);
         ok("age " + age + ": proposed tier preview stays hidden by default", !await pg.locator("#catalogPreviewNotice").isVisible());
-        const books = pg.locator("#booksComingSoon");
-        ok("age " + age + ": books have a visible Coming soon section", await books.isVisible() && /books/i.test(await books.innerText()) && /coming soon/i.test(await books.innerText()));
-        ok("age " + age + ": parked books offer no action or reader link", await books.locator('a,button,[role="button"],input,select,textarea').count() === 0);
+        // BOOKS ARE ON (Travis, 26 Sep 2026: "yes turn them on"): one card,
+        // free while the app is free, that opens the bookshelf.
+        const books = pg.locator("#booksCard");
+        ok("age " + age + ": the Books card is visible, no longer Coming soon", await books.isVisible() && /books/i.test(await books.innerText()) && !/coming soon/i.test(await books.innerText()));
+        if (isFree) ok("age " + age + ": while the app is free the Books card says Free", /\bFree\b/.test(await books.innerText()), await books.innerText());
         ok("age " + age + ": no runtime errors", errors.length === 0, errors);
       } finally { await ctx.close(); }
     });
@@ -359,7 +361,8 @@ if (present && hasContract) {
       await pg.waitForURL(/\/today\.html(?:[?#]|$)/);
       await pg.locator("#activityGroups button[data-game]").last().scrollIntoViewIfNeeded();
       ok("browsing creates no practice, rewards, run, token or entitlement", same(await state(pg), before), { before, after: await state(pg) });
-      const parked = await pg.locator("a[href]").evaluateAll((links) => links.map((link) => link.getAttribute("href")).filter((href) => /(?:chapter|story|library)\.html(?:[?#]|$)/.test(href)));
+      // The books are on (26 Sep 2026); the adventure and chapter readers stay parked.
+      const parked = await pg.locator("a[href]").evaluateAll((links) => links.map((link) => link.getAttribute("href")).filter((href) => /(?:chapter|story)\.html(?:[?#]|$)/.test(href)));
       ok("the play library has no parked reader links", parked.length === 0, parked);
     } finally { await ctx.close(); }
   });
@@ -406,6 +409,36 @@ if (present && hasContract) {
             && /grown[\s-]*up|parent|adult/i.test(await message.innerText()), await message.innerText());
       }
       ok("gated browsing does not grant access or create practice", same(await state(pg), before), { before, after: await state(pg) });
+    } finally { await ctx.close(); }
+  });
+
+  // BOOKS ARE ON (Travis, 26 Sep 2026: "yes turn them on"). Premium content:
+  // open while the app is free, a grown-up's message when it is not, and the
+  // bookshelf's own address cannot get round that.
+  await section("the Books card", async () => {
+    const free = await fixture();
+    try {
+      if (await free.pg.evaluate(() => Sona.isFree())) {
+        await free.pg.locator("#booksCard").click();
+        await free.pg.waitForURL(/\/library\.html(?:[?#]|$)/);
+        ok("the Books card opens the bookshelf", new URL(free.pg.url()).pathname === "/library.html");
+        ok("…which leads with the books: the adventure and Feed Echo tiles are hidden",
+          await free.pg.locator("#shelf .bookBtn").count() > 0 && !await free.pg.locator("#advTile").isVisible() && !await free.pg.locator("#feedTile").isVisible());
+      } else ok("the paid release still has a free-mode Books test to run", true);
+    } finally { await free.ctx.close(); }
+    const { ctx, pg } = await fixture({ paid: true });
+    try {
+      const before = await state(pg);
+      ok("a family without Premium sees the books marked Premium", /Premium/.test(await pg.locator("#booksCard").innerText()), await pg.locator("#booksCard").innerText());
+      await pg.locator("#booksCard").click();
+      await pg.waitForTimeout(50);
+      ok("…tapping it stays on Home and asks for a grown-up", new URL(pg.url()).pathname === "/today.html"
+        && await pg.locator("#libraryMessage").isVisible() && /grown[\s-]*up/i.test(await pg.locator("#libraryMessage").innerText()) && /books/i.test(await pg.locator("#libraryMessage").innerText()));
+      await pg.goto(BASE + "/library.html");
+      await pg.waitForURL(/\/today\.html\?locked=books/);
+      ok("…and typing the bookshelf's address comes back to Home with the same message",
+        await pg.locator("#libraryMessage").isVisible() && /books/i.test(await pg.locator("#libraryMessage").innerText()));
+      ok("…without granting access or starting practice", same(await state(pg), before));
     } finally { await ctx.close(); }
   });
 
