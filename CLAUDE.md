@@ -577,6 +577,17 @@ handed the sliver back); a golden block makes the tower full width again. A
 rocket on the top ends it: any tap launches it, and it goes by itself after a
 few seconds. `tests/stacktest.mjs` plays a whole round.
 
+**Piano Tiles is the same round, as songs** (27 Sep 2026): Twinkle Twinkle,
+Mary Had a Little Lamb and Row, Row, Row Your Boat, each tile one note of the
+tune in a lane by pitch, so tapping the tiles plays the song; the say-it card
+between songs; then Ode to Joy as a grand finale whose tiles all wait on the
+keys, so it ends in a win. A tile that slips by fades and the song plays on
+(after two in a row the next tiles slow and wait); the first three tiles wait
+on the keys until tapped; and a tile takes the song's fall time on every
+screen (it was 2.2 s on a small iPhone and 0.5 s on a big iPad). One tap, one
+note: `micquietgamestest` pins its loudness to the Sound setting.
+`tests/tilestest.mjs` plays a whole round.
+
 Bubble Pop and Peekaboo stay visible only as disabled “Coming soon” cards,
 with no New shelf promotion and no direct-link, paid or earned bypass.
 Their engines remain in the repo for future work. The adventure
