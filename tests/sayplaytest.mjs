@@ -13,7 +13,12 @@
 //   - a locked game bounces before any mic or sound starts;
 //   - the catalog: ten games in each age group, each with its page, its card
 //     picture and its sticker, none in the daily adventure, and every page is
-//     exactly what tools/gameart/build.mjs writes.
+//     exactly what tools/gameart/build.mjs writes;
+//   - COMING SOON (Travis, 26 Sep 2026: "put the 20 games as coming soon"):
+//     a parked game's card is greyed out, and its page sends a typed address
+//     back to Home before any mic or sound. The engine is still played through
+//     below, on a copy of sona.js with the parking lifted, because each game
+//     comes back on this engine, one at a time.
 //
 // The device is fake (no real mic, speaker or voice), on one shared clock, the
 // same harness as micquietgamestest.
@@ -169,9 +174,16 @@ function fakeDevice(cfg) {
   }
 }
 
+// The engine's own checks run on the catalog as it will be when a game comes
+// back: the same sona.js, with each Say & Play game's comingSoon lifted.
+const UNPARKED_SONA = readFileSync(ROOT + "/sona.js", "utf8").replace(/\bsay: true, comingSoon: true, /g, "say: true, ");
 async function fresh(file, cfg = {}) {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 }, reducedMotion: "reduce" });
-  await context.route("**/*", (route) => (route.request().url().startsWith(BASE + "/") ? route.continue() : route.abort()));
+  await context.route("**/*", (route) => {
+    const url = route.request().url();
+    if (cfg.unparked && url.split("?")[0] === BASE + "/sona.js") return route.fulfill({ status: 200, contentType: "text/javascript", body: UNPARKED_SONA });
+    return url.startsWith(BASE + "/") ? route.continue() : route.abort();
+  });
   await context.addInitScript(fakeDevice, cfg);
   const page = await context.newPage(); page.setDefaultTimeout(6000);
   const errors = []; page.on("pageerror", (e) => errors.push(e.message));
@@ -253,18 +265,32 @@ await scenario("catalog in the app", async () => {
     ok("no Say & Play game joins the daily adventure", !cat.adventure.some((k) => KEYS.includes(k)), cat.adventure);
     ok("each game wears its own sticker", cat.stickers.every((s, i) => s === "sp-" + KEYS[i]));
     ok("Home shows a card for every game", KEYS.every((k) => cat.cards.includes(k)));
-    const btn = page.locator('#activityGroups button[data-game="balloon"]');
-    await btn.click();
-    await page.waitForURL(/\/arcade-balloon\.html$/);
-    ok("a card opens its game straight away, with no practice first", new URL(page.url()).pathname === "/arcade-balloon.html");
+    // COMING SOON: the card is there, greyed out, and says so.
+    const parked = KEYS.filter((k, i) => cat.acts[i] && cat.acts[i].comingSoon);
+    const cards = await page.evaluate((keys) => keys.map((k) => { const b = document.querySelector('#activityGroups button[data-game="' + k + '"]'); return { k, disabled: !!b && b.disabled, text: b ? b.innerText : "", faded: b ? getComputedStyle(b.querySelector(".game-art")).opacity : "" }; }), parked);
+    ok("every parked game shows a greyed-out Coming soon card that cannot be tapped", parked.length > 0 && cards.every((c) => c.disabled && /Coming soon/.test(c.text) && Number(c.faded) < 1), cards.filter((c) => !c.disabled || !/Coming soon/.test(c.text)));
     clean("catalog", errors);
   } finally { await context.close(); }
 });
 
+// ── a parked game's page sends a typed address home before anything starts ──
+for (const key of KEYS.filter((k) => /\bsay: true, comingSoon: true\b/.test((readFileSync(ROOT + "/sona.js", "utf8").match(new RegExp("^\\s{4}" + k + ": \\{[^\\n]*", "m")) || [""])[0]))) {
+  await scenario(key + " parked", async () => {
+    const { context, page, errors } = await fresh("arcade-" + key + ".html", { age: "7", micok: true, permission: "granted" });
+    try {
+      await page.waitForURL(/\/(?:activities|today)\.html/, { timeout: 6000 });
+      await page.waitForFunction(() => !!document.getElementById("libraryMessage"), null, { timeout: 6000 });
+      ok(key + ": a typed address goes back to Home, before any mic or sound", (await page.evaluate(() => __quiet.requests)) === 0 && (await page.evaluate(() => __quiet.sounds.length)) === 0);
+      ok(key + ": …which says the game is coming soon", await until(page, () => /is coming soon/.test(document.getElementById("libraryMessage").textContent), 4000));
+      clean(key + " parked", errors);
+    } finally { await context.close(); }
+  });
+}
+
 // ── a whole game, twice: once small (five words), once big (eight) ──
 for (const key of ["balloon", "racecar"]) {
   await scenario(key + " played through", async () => {
-    const { context, page, errors } = await fresh("arcade-" + key + ".html", { age: key === "balloon" ? "4" : "7", micok: true, permission: "granted" });
+    const { context, page, errors } = await fresh("arcade-" + key + ".html", { age: key === "balloon" ? "4" : "7", micok: true, permission: "granted", unparked: true });
     try {
       await page.locator("#startOvl.show").waitFor();
       await page.waitForTimeout(400);
@@ -312,7 +338,7 @@ for (const key of ["balloon", "racecar"]) {
 // ── every game: its first word moves it, with no errors ──
 for (const g of GAMES) {
   await scenario(g.key + " first word", async () => {
-    const { context, page, errors } = await fresh("arcade-" + g.key + ".html", { age: g.group === "simple" ? "4" : "7", micok: true, permission: "granted", voiceOn: false });
+    const { context, page, errors } = await fresh("arcade-" + g.key + ".html", { age: g.group === "simple" ? "4" : "7", micok: true, permission: "granted", voiceOn: false, unparked: true });
     try {
       await page.locator("#startOvl.show").waitFor();
       ok(g.key + ": the start card names the game", (await page.locator("#startTitle").innerText()) === g.title);
@@ -329,7 +355,7 @@ for (const g of GAMES) {
 
 // ── the first time: a grown-up says yes before any mic prompt ──
 await scenario("primer: not now", async () => {
-  const { context, page, errors } = await fresh("arcade-rocket.html", { age: "4", permission: "prompt" });
+  const { context, page, errors } = await fresh("arcade-rocket.html", { age: "4", permission: "prompt", unparked: true });
   try {
     await page.locator("#startBtn").click();
     await page.locator("#primer.show").waitFor();
@@ -344,7 +370,7 @@ await scenario("primer: not now", async () => {
   } finally { await context.close(); }
 });
 await scenario("primer: yes", async () => {
-  const { context, page, errors } = await fresh("arcade-rocket.html", { age: "4", permission: "prompt" });
+  const { context, page, errors } = await fresh("arcade-rocket.html", { age: "4", permission: "prompt", unparked: true });
   try {
     await page.locator("#startBtn").click();
     await page.locator("#primer.show").waitFor();
@@ -356,7 +382,7 @@ await scenario("primer: yes", async () => {
   } finally { await context.close(); }
 });
 await scenario("primer: refused", async () => {
-  const { context, page, errors } = await fresh("arcade-rocket.html", { age: "4", permission: "prompt", micMode: "deny" });
+  const { context, page, errors } = await fresh("arcade-rocket.html", { age: "4", permission: "prompt", micMode: "deny", unparked: true });
   try {
     await page.locator("#startBtn").click();
     await page.locator("#primerYes").click();
@@ -367,7 +393,7 @@ await scenario("primer: refused", async () => {
 
 // ── a hidden page pauses; coming back takes a tap ──
 await scenario("pause", async () => {
-  const { context, page, errors } = await fresh("arcade-castle.html", { age: "7", micok: true, permission: "granted" });
+  const { context, page, errors } = await fresh("arcade-castle.html", { age: "7", micok: true, permission: "granted", unparked: true });
   try {
     await page.locator("#startBtn").click();
     await page.waitForFunction(() => window.__sayplay.listening === true);
@@ -391,7 +417,7 @@ await scenario("pause", async () => {
 
 // ── a quiet child: the mic closes after a while and waits for a tap to listen again ──
 await scenario("quiet child", async () => {
-  const { context, page, errors } = await fresh("arcade-stars.html", { age: "4", micok: true, permission: "granted", voiceOn: false });
+  const { context, page, errors } = await fresh("arcade-stars.html", { age: "4", micok: true, permission: "granted", voiceOn: false, unparked: true });
   try {
     await page.locator("#startBtn").click();
     await page.waitForFunction(() => window.__sayplay.listening === true);
@@ -408,7 +434,7 @@ await scenario("quiet child", async () => {
 
 // ── a locked game goes back to Home before anything starts ──
 await scenario("locked", async () => {
-  const { context, page, errors } = await fresh("arcade-monster.html", { age: "7", micok: true, permission: "granted", premium: false, paid: true });
+  const { context, page, errors } = await fresh("arcade-monster.html", { age: "7", micok: true, permission: "granted", premium: false, paid: true, unparked: true });
   try {
     await page.waitForURL(/\/(?:activities|today)\.html/, { timeout: 6000 });
     ok("locked: a Premium game bounces a family without it, before any mic or sound", (await page.evaluate(() => __quiet.requests)) === 0 && /locked=monster/.test(page.url() + (await page.evaluate(() => location.search))));

@@ -319,8 +319,10 @@ gold tile, gold key and star fruit, and the "Say rrrr for GOLDEN KEYS / a
 FRENZY" banners are painted out — and the ads' text thread and "Max's" fridge
 note are not used: they quote parents who do not exist. It never prints a
 dollar figure; its cost answer reads the switch from `/api/charter`. Its
-"26 games", "19 picture books" and "19 speech sounds" are pinned to the
-catalog by `shiptest`, so a new game fails until the page says so.
+game count (every game Home opens, never a Coming soon one), "19 picture
+books" and "19 speech sounds" are pinned to the catalog by `shiptest`, and
+its game strip shows only games a child can open: bring a game back and the
+test fails until the page says so.
 
 **The clinician page lives at `/for-slps`** (the root from 22 to 26 Sep). It
 still speaks to parents and SLPs alike (Travis, 25 Sep 2026: "I don't know
@@ -490,6 +492,19 @@ rule the other games keep. A spoken move is play, never practice data:
 whether it should count toward the day's practice is Rachel's call, and until
 she makes it, it doesn't. They open straight from Home and never join the
 daily adventure.
+
+**All twenty are parked as Coming soon** (Travis, 26 Sep 2026: "these games
+are not good. they are essentially all the exact same but with a different
+look ... if its basketball, we want them shooting a hoop", then "put the 20
+games as coming soon. so show them but greyed out. except for old ones like
+fruit slice and piano tiles that actually work. leave those"). The child only
+talked and watched; nothing let them *play*. Each comes back **one at a
+time**, rebuilt as a real game — what the child sees, what their finger does
+and what saying the word does, agreed with Travis in plain words first, then
+played by him on his phone — by taking `comingSoon` off its own line in
+`GAME_ACTS`. Home lists playable games before parked ones. `sayplaytest`
+still plays the engine, on a copy of `sona.js` with the parking lifted, and
+checks every parked page sends a typed address home before any mic or sound.
 
 Bubble Pop and Peekaboo stay visible only as disabled “Coming soon” cards,
 with no New shelf promotion and no direct-link, paid or earned bypass.
