@@ -567,6 +567,16 @@ solid one at a time, and this is the first:
   every round ends on a win.
 `tests/slicetest.mjs` plays a whole round.
 
+**Block Stacker is the same round, as a tower** (27 Sep 2026): it stands on the
+five blocks the "Say it 5 times" page built; three floors of 5, 6 and 7 go on
+top, with the say-it card between floors ("Say “rrrr” for floor 2!"). A missed
+block tumbles off and a fresh one slides in, slower (and after two misses the
+landing zone widens); a close drop snaps into place; no block is ever narrower
+than 60% of the first (the old tower cut kids down to a sliver, and the card
+handed the sliver back); a golden block makes the tower full width again. A
+rocket on the top ends it: any tap launches it, and it goes by itself after a
+few seconds. `tests/stacktest.mjs` plays a whole round.
+
 Bubble Pop and Peekaboo stay visible only as disabled “Coming soon” cards,
 with no New shelf promotion and no direct-link, paid or earned bypass.
 Their engines remain in the repo for future work. The adventure
