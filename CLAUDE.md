@@ -588,6 +588,20 @@ screen (it was 2.2 s on a small iPhone and 0.5 s on a big iPad). One tap, one
 note: `micquietgamestest` pins its loudness to the Sound setting.
 `tests/tilestest.mjs` plays a whole round.
 
+**Sound Sprint is the same round, as a race** (27 Sep 2026): the park, the
+beach and the forest, a checkpoint between each with the say-it card ("Say
+“rrrr” to run to the beach!"), and a finish line that always ends the race in
+a win. A rock is a tumble (a second off the road, ten metres back), never the
+card; after two tumbles in a stretch the rocks thin out and the road slows.
+The child taps the lane they want or swipes (a tap used to count only as the
+left or right half of the screen). A golden coin is a coin magnet. The top
+bar shows coins and the stretch; the end card counts metres (it said
+"treats"). `tests/runtest.mjs` runs a whole race.
+
+**Flappy Glide is next, and waits for Travis:** the review found it the
+hardest of the six (a steady tap every half-second), and the fix it proposes
+changes the control to hold-to-rise, which is his call before it is built.
+
 Bubble Pop and Peekaboo stay visible only as disabled “Coming soon” cards,
 with no New shelf promotion and no direct-link, paid or earned bypass.
 Their engines remain in the repo for future work. The adventure
