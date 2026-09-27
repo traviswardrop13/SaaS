@@ -51,6 +51,25 @@
     @keyframes echoLeap{0%{transform:translateY(110px)}100%{transform:translateY(0)}}
     @keyframes echoHop{0%,100%{transform:translateY(0)}45%{transform:translateY(-14px) rotate(-5deg)}}
     @media (prefers-reduced-motion: reduce){ .endStar,.echoWin img{animation:none;} }
+    /* ── the flight's HUD, banner and card (27 Sep 2026) ── */
+    #tapHint{color:#fff!important;text-shadow:0 2px 3px rgba(120,60,20,.55);}
+    #timer{color:#4a2c14;letter-spacing:0;gap:8px;}
+    #timer .wv{white-space:nowrap;}
+    #timer .wbar{display:block;width:60px;height:10px;border-radius:99px;background:#fbe8d6;overflow:hidden;}
+    #timer .wbar i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#ffb86b,#ff6b8a);transition:width .25s;}
+    #banner{position:absolute;left:0;right:0;top:17%;text-align:center;z-index:4;pointer-events:none;opacity:0;padding:0 16px;}
+    #banner .pill{display:inline-block;background:rgba(255,255,255,.95);border-radius:26px;padding:10px 26px 12px;box-shadow:0 6px 0 rgba(140,70,30,.28);}
+    #banner b{display:block;font-family:"Baloo 2";font-weight:800;font-size:38px;color:#e2621a;line-height:1.05;}
+    #banner span{display:block;font-family:"Baloo 2";font-weight:800;font-size:17px;color:#8a6f52;margin-top:2px;}
+    #banner span:empty{display:none;}
+    #banner.in{animation:bannerIn 1.9s ease both;}
+    @keyframes bannerIn{0%{opacity:0;transform:scale(.6)}12%{opacity:1;transform:scale(1.08)}20%{transform:scale(1)}80%{opacity:1;transform:scale(1)}100%{opacity:0;transform:translateY(-12px)}}
+    @keyframes bannerFade{0%,100%{opacity:0}15%,80%{opacity:1}}
+    #revHearts{display:flex;justify-content:center;gap:8px;}
+    #revHearts .wdot{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#f3e3cf;color:#b08d63;font-family:"Baloo 2";font-weight:800;font-size:17px;}
+    #revHearts .wdot.on{background:#58cc02;box-shadow:0 3px 0 #46a302;}
+    #revHearts .wdot svg{width:20px;height:20px;}
+    @media (prefers-reduced-motion: reduce){ #banner.in{animation-name:bannerFade;} }
   </style>
 </head>
 <body>
@@ -63,7 +82,8 @@
       <div id="timer" class="hudpill"></div>
     </div>
     <div id="flash"></div>
-    <div id="tapHint">Tap to flap! Glide through the gaps!</div>
+    <div id="tapHint">Tap to float up! Fly through the gaps!</div>
+    <div id="banner" aria-live="polite"><div class="pill"><b id="bnBig"></b><span id="bnSmall"></span></div></div>
   </div>
 
   <div class="ovl" id="needOvl">
@@ -155,121 +175,186 @@
     // ---- game state ----
     var playing=true, score=0;
     var BESTK="sona.best.glide", BEST=0; try{ BEST=parseInt(localStorage.getItem(BESTK)||"0",10)||0; }catch(e){}
-    // ── lives: a crash → say your sound for a new life (3 per run) ──
-    var REV=3, reviveWait=false;
-    function hearts(){ $("timer").innerHTML=(window.Sona&&Sona.heartRow)?Sona.heartRow(REV,3,17):String(REV); }
-    function crash(){
-      if(!playing) return;
-      playing=false; gates=[]; sfx("tap");
-      if(REV>0 && CAN_LISTEN){
-        $("revTitle").textContent="Say \u201C"+SAYTXT+"\u201D to keep playing!";
-        $("revHearts").innerHTML=(window.Sona&&Sona.heartRow)?Sona.heartRow(REV,3,28):String(REV);
-        reviveWait=true; $("revOvl").classList.add("show"); openReviveMic();
-      } else { endRound(); }
-    }
-    function doRevive(){
-      reviveWait=false; REV--; hearts();
-      $("revOvl").classList.remove("show");
-      // the mic has just closed: sfx() holds this chime SETTLE_MS
-      sfx("complete"); try{ if(S&&S.confetti)S.confetti(); }catch(e){}
-      py=H*0.45; vy=0; mercyT=performance.now(); playing=true; draw(); // the gated rAF died on crash — restart it
-    }
-    $("revDone").onclick=function(){ closeReviveMic(); reviveWait=false; $("revOvl").classList.remove("show"); endRound(); };
-    hearts();
+    var REV=3, reviveWait=false;   // say-the-sound cards: one on each cloud rest
 
-    var G=H*0.00052, FLAP=-H*0.0095; // floaty, kid-gentle physics
+    // ── the flight: three legs, a cloud rest between, then a fireworks landing (27 Sep 2026) ──
+    // The round Travis said yes to for Fruit Slice, as a balloon flight, with
+    // what the review of the older games found: the hardest of the six (a
+    // steady tap about every half-second, with hedges almost back to back, and
+    // a bump that stopped play). The balloon now floats and sinks slowly (a
+    // tap about every second holds it level), the gaps are wider and further
+    // apart, a hedge is a soft bounce back into the gap and never the card,
+    // and after two bumps in a leg the gaps open wider and the hedges slow.
+    // The say-it card waits on a cloud between legs; after the third the
+    // balloon lands in fireworks, so every flight ends in a win. Stars float
+    // in the gaps to catch. (Hold-to-rise, the review's other idea, changes the
+    // control, so it waits for Travis.)
+    var LEGS=[{goal:6},{goal:7},{goal:8}];
+    var leg=0, legGot=0, phase="fly", bumps=0, landing=null, finaleDone=false, echoT=-1e9, sparks=[];
+    var G=H*0.00028, FLAP=-H*0.0072, VMAX=H*0.0058;   // floaty: a tap about every second holds it level
     var py=H*0.45, vy=0, px=W*0.32;
-    var gates=[], gapH=H*0.42, gspeed=W*0.0030, spawnMs=2300; // wide gaps, slow drift
+    var gates=[], gapBase=H*0.46, gapH=gapBase, gspeed0=W*0.0026, gspeed=gspeed0, gateEvery=2900, gateMs=2000;
     var falling={on:false,t0:0}, mercyT=0;
     var RUNNER="🦊";
-    // the kid's chosen buddy as a real sticker sprite (emoji stays the fallback)
     var BUDDYIMG=(function(){ try{ var c=S.characterById((S.getProfile()||{}).character||"fox"); if(c&&c.svg){ var im=new Image(); im.src="data:image/svg+xml;utf8,"+encodeURIComponent(c.svg); return im; } }catch(e){} return null; })();
     function drawBuddy(x,y,sz){ if(BUDDYIMG&&BUDDYIMG.complete&&BUDDYIMG.naturalWidth){ ctx.drawImage(BUDDYIMG,x-sz/2,y-sz/2,sz,sz); return true; } return false; }
-
     try{ var c=S.characterById((S.getProfile()||{}).character||"fox"); if(c&&c.emoji)RUNNER=c.emoji; }catch(e){}
 
     function spawnGate(){
-      var cy=H*(0.30+Math.random()*0.40);
-      gates.push({x:W+70,cy:cy,passed:false});
+      var cy=H*(0.32+Math.random()*0.34);
+      gates.push({x:W+70,cy:cy,passed:false,star:Math.random()<0.7,gold:leg>0&&Math.random()<0.15,got:false});
     }
-    var spawnTimer=setInterval(function(){ if(document.hidden)return; if(playing&&!falling.on) spawnGate(); },spawnMs);
-    var rampIv=setInterval(function(){ if(document.hidden)return; if(playing){ gspeed*=1.03; if(gapH>H*0.32) gapH*=0.992; } },12000); // very gentle ramp
-    
+    function startLeg(i){
+      leg=i; legGot=0; phase="fly"; bumps=0; gapH=gapBase; gspeed=gspeed0*(1+0.1*i); gateMs=gateEvery-900; gates=[]; landing=null;
+      py=H*0.45; vy=0; mercyT=performance.now(); hud();
+      banner("Leg "+(i+1),"Fly through "+LEGS[i].goal+" gaps!");
+    }
+    function endLeg(){
+      phase="rest"; hud();
+      var last=leg===LEGS.length-1;
+      landing={y:H+80,ty:H*0.64,big:last,t0:performance.now()};   // a cloud floats up under the balloon
+      banner(last?"Landing time!":"Rest on a cloud!", last?"What a flight!":"Leg "+(leg+1)+" done!"); sfx("complete"); echoT=performance.now();
+      setTimeout(function(){
+        if(window.__ended||!playing) return;
+        if(last){ finaleDone=true; phase="done"; hud(); fireworks(); setTimeout(endRound,2000); }
+        else sayCard("Say \u201C"+SAYTXT+"\u201D to fly on!","none");
+      },2200);
+    }
+    function fireworks(){
+      try{ if(S&&S.confetti)S.confetti(); }catch(e){}
+      var cols=["#ff6b8a","#ffd43b","#69db7c","#4dabf7","#b197fc"];
+      for(var b=0;b<4;b++){ var cx=W*(0.2+b*0.2), cy=H*(0.2+(b%2)*0.12);
+        for(var k=0;k<22;k++){ var a=k/22*6.28, v=2+Math.random()*3; sparks.push({x:cx,y:cy,vx:Math.cos(a)*v,vy:Math.sin(a)*v,life:1+b*0.15,c:cols[(b+k)%5]}); } }
+      echoT=performance.now();
+    }
 
-    cv.addEventListener("pointerdown",function(){
-      if(!playing||falling.on)return;
+    // ── the HUD: this leg's gaps, then the landing ──
+    function hud(){
+      var t=$("timer");
+      if(phase==="done"||(phase==="rest"&&leg===LEGS.length-1)){ t.innerHTML='<span class="wv">Landing!</span>'; t.setAttribute("aria-label","The landing"); return; }
+      var L=LEGS[leg], got=phase==="rest"?L.goal:Math.min(legGot,L.goal);
+      t.innerHTML='<span class="wv">Leg '+(leg+1)+'</span><span class="wbar"><i style="width:'+Math.round(got/L.goal*100)+'%"></i></span>';
+      t.setAttribute("aria-label","Leg "+(leg+1)+" of 3: "+got+" of "+L.goal+" gaps");
+    }
+    var TICK='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    function legDots(){ var s=""; for(var i=0;i<LEGS.length;i++) s+='<span class="wdot'+(i<=leg?' on':'')+'">'+(i<=leg?TICK:String(i+1))+'</span>'; return s; }
+    function banner(big,small){ var b=$("banner"); $("bnBig").textContent=big; $("bnSmall").textContent=small||""; b.classList.remove("in"); void b.offsetWidth; b.classList.add("in"); }
+
+    // ── the say-it card, on a cloud between legs ──
+    function sayCard(title,snd){
+      if(!playing) return;
+      playing=false; gates=[]; if(snd!=="none") sfx(snd||"tap");
+      if(REV>0 && CAN_LISTEN){
+        $("revTitle").textContent=title||("Say \u201C"+SAYTXT+"\u201D to keep playing!");
+        $("revHearts").innerHTML=legDots();
+        reviveWait=true; $("revOvl").classList.add("show"); openReviveMic();
+      } else { endRound(); }
+    }
+    // The card's old name, from when a hedge opened it. Kept because the
+    // quiet-mic suites open the card through it.
+    function crash(){ sayCard(); }
+    function doRevive(){
+      reviveWait=false; REV--; hud();
+      $("revOvl").classList.remove("show");
+      // the mic has just closed: sfx() holds this chime SETTLE_MS
+      sfx("complete"); try{ if(S&&S.confetti)S.confetti(); }catch(e){}
+      py=H*0.45; vy=0; mercyT=performance.now(); playing=true;
+      if(phase==="rest") startLeg(leg+1);
+      draw(); // the gated rAF died on the card — restart it
+    }
+    $("revDone").onclick=function(){ closeReviveMic(); reviveWait=false; $("revOvl").classList.remove("show"); endRound(); };
+
+    function flap(){
+      if(!playing||falling.on||phase!=="fly")return;
       vy=FLAP; sfx("tap"); $("tapHint").style.display="none";
-    });
+    }
+    cv.addEventListener("pointerdown",flap);
+    window.addEventListener("keydown",function(e){ if(e.key===" "||e.key==="ArrowUp") flap(); });
     function flash(t){ var f=$("flash"); f.textContent=t; f.style.opacity=1; f.style.transform="scale(1.15)"; setTimeout(function(){f.style.opacity=0;f.style.transform="scale(1)";},600); }
-
-    // Mario-Kart fall: bonk a tower → tumble off the sky (~1.1s) → float back
-    // in on the balloon, keep gliding. Never a "you lose" screen.
+    // a hedge is a soft bounce back towards the gap, never a stop; two in a
+    // leg and the gaps open wider and the hedges slow down
+    function bump(g){
+      mercyT=performance.now(); bumps++;
+      vy=(py<g.cy?1:-1)*H*0.004; py+=(py<g.cy?1:-1)*10;
+      flash("Boing!"); sfx("drop");
+      if(bumps>=2){ gapH=Math.min(H*0.6,gapH*1.12); gspeed=Math.max(gspeed0*0.8,gspeed*0.9); }
+    }
     function startFall(){ falling={on:true,t0:performance.now()}; flash("WHOOOA!"); sfx("tap"); }
-
-    
-    // vector hot-air balloon (SVG → Image) that carries the buddy
     var BAL=new Image(), BALOK=false;
     BAL.onload=function(){ BALOK=true; };
     BAL.src="data:image/svg+xml;charset=utf-8,"+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="240" height="300" viewBox="0 0 100 125"><path d="M50 4 C24 4 12 24 12 42 C12 62 30 74 40 84 L60 84 C70 74 88 62 88 42 C88 24 76 4 50 4" fill="#fa5252"/><path d="M50 4 C36 4 28 24 28 42 C28 62 38 74 42 84 L50 84 Z" fill="#ff8787"/><path d="M50 4 C60 4 68 24 68 42 C68 62 60 74 56 84 L50 84 Z" fill="#ffd43b"/><path d="M50 4 C46 4 42 24 42 42 C42 62 46 74 48 84 L52 84 C54 74 58 62 58 42 C58 24 54 4 50 4" fill="#fff" opacity=".22"/><path d="M40 84 L37 96 M60 84 L63 96 M50 84 L50 96" stroke="#8a5a2e" stroke-width="2.5"/><rect x="34" y="96" width="32" height="22" rx="6" fill="#a97044"/><rect x="34" y="96" width="32" height="8" rx="4" fill="#c08a5a"/><path d="M38 104 h24 M38 111 h24" stroke="#8a5a2e" stroke-width="2" opacity=".6"/></svg>');
     var COLW=74;
+    var ECHO=new Image(); ECHO.src="/coach/echo/echo-celebrate.svg";
+    var lastT=performance.now();
+    function cloudShape(x,y,w){ ctx.beginPath(); ctx.ellipse(x,y,w*0.5,w*0.16,0,0,7); ctx.ellipse(x-w*0.22,y-w*0.08,w*0.2,w*0.14,0,0,7); ctx.ellipse(x+w*0.12,y-w*0.12,w*0.24,w*0.17,0,0,7); ctx.fill(); }
+    function star5(x,y,r){ ctx.beginPath(); for(var k=0;k<10;k++){ var rr2=k%2?r*0.45:r, a=-Math.PI/2+k*Math.PI/5; ctx.lineTo(x+Math.cos(a)*rr2,y+Math.sin(a)*rr2); } ctx.closePath(); ctx.fill(); }
     function draw(){
+      var now=performance.now(), dt=Math.min(100,now-lastT), i; lastT=now;
       ctx.clearRect(0,0,W,H);
-      // drifting clouds
       ctx.fillStyle="rgba(255,255,255,.35)";
-      for(var i=0;i<5;i++){ var cx=((i*173-performance.now()*0.02*(1+i*0.2))%(W+140)+W+140)%(W+140)-70; var cy2=H*0.12+i*H*0.14; ctx.beginPath(); ctx.ellipse(cx,cy2,52,20,0,0,7); ctx.fill(); }
-      // gates (hedge towers)
-      for(var i=gates.length-1;i>=0;i--){ var g=gates[i];
-        g.x-=gspeed;
+      for(i=0;i<5;i++){ var cx=((i*173-now*0.02*(1+i*0.2))%(W+140)+W+140)%(W+140)-70; var cy2=H*0.12+i*H*0.14; ctx.beginPath(); ctx.ellipse(cx,cy2,52,20,0,0,7); ctx.fill(); }
+      // the next hedge on the leg's beat; the leg ends when its gaps are flown
+      if(playing&&phase==="fly"&&!falling.on){
+        gateMs+=dt;
+        var toSpawn=LEGS[leg].goal-legGot-gates.filter(function(g){ return !g.passed; }).length;
+        if(gateMs>=gateEvery&&toSpawn>0){ spawnGate(); gateMs=0; }
+        if(legGot>=LEGS[leg].goal) endLeg();
+      }
+      for(i=gates.length-1;i>=0;i--){ var g=gates[i];
+        g.x-=gspeed;   // the hedges drift on by, even while the balloon rests
         if(g.x<-90){ gates.splice(i,1); continue; }
         var topH=g.cy-gapH/2, botY=g.cy+gapH/2;
         ctx.fillStyle="#2f9e44";
         rr(g.x-COLW/2,-12,COLW,topH+12,18); ctx.fill();
         rr(g.x-COLW/2,botY,COLW,H-botY+12,18); ctx.fill();
-        // topiary caps + leaf dots (design 4: Flappy Glide)
         ctx.fillStyle="#5cbf6a";
         rr(g.x-COLW/2-5,topH-16,COLW+10,18,10); ctx.fill();
         rr(g.x-COLW/2-5,botY-2,COLW+10,18,10); ctx.fill();
         ctx.fillStyle="rgba(255,255,255,.25)";
         for(var di=0;di<3;di++){ ctx.beginPath(); ctx.arc(g.x-COLW/4+di*(COLW/4), topH-30-((di%2)*14), 3.2, 0, 7); ctx.fill();
           ctx.beginPath(); ctx.arc(g.x-COLW/4+di*(COLW/4), botY+30+((di%2)*14), 3.2, 0, 7); ctx.fill(); }
-        // score when the gate passes the player
-        if(!g.passed && g.x<px-COLW/2){ g.passed=true; score++; $("score").textContent=score; sfx("tap"); if(score%10===0)flash(score+" GATES!"); }
-        // collide (skip during fall/mercy)
-        if(!falling.on && performance.now()-mercyT>1200 &&
-           Math.abs(g.x-px)<(COLW/2+22) && (py<topH+22||py>botY-22)){
-          crash();
-        }
+        // a star floats in the gap: fly through it to catch it
+        if(g.star&&!g.got){ ctx.fillStyle=g.gold?"#ffd21c":"#fff6b8"; if(g.gold){ ctx.globalAlpha=0.5+0.5*Math.sin(now/120); ctx.beginPath(); ctx.arc(g.x,g.cy,24,0,7); ctx.fill(); ctx.globalAlpha=1; ctx.fillStyle="#ffd21c"; } star5(g.x,g.cy,g.gold?16:12);
+          if(Math.abs(g.x-px)<26&&Math.abs(g.cy-py)<46){ g.got=true; score+=g.gold?3:1; $("score").textContent=score; sfx(g.gold?"reward":"star"); if(g.gold){ flash("GOLDEN STAR! +3"); echoT=now; }
+            for(var k=0;k<10;k++){ var a=Math.random()*6.28; sparks.push({x:g.x,y:g.cy,vx:Math.cos(a)*2.5,vy:Math.sin(a)*2.5,life:1,c:g.gold?"#ffd21c":"#fff6b8"}); } } }
+        if(!g.passed && g.x<px-COLW/2){ g.passed=true; legGot++; score++; $("score").textContent=score; hud(); if(legGot%3===0) echoT=now; }
+        if(phase==="fly"&&!falling.on && now-mercyT>900 && Math.abs(g.x-px)<(COLW/2+22) && (py<topH+22||py>botY-22)) bump(g);
       }
-      // player physics
+      // the cloud rest, or the landing, floats up under the balloon
+      if(landing){ landing.y+=(landing.ty-landing.y)*0.05; ctx.fillStyle="#ffffff"; cloudShape(px+10,landing.y+40,landing.big?W*0.9:W*0.5); }
       if(!falling.on){
-        vy+=G; py+=vy;
-        if(py<44){ py=44; vy=0; }
-        if(py>H-120){ py=H-120; vy=FLAP*0.6; } // soft bounce off the ground — no floor deaths
+        if(phase==="fly"){ vy=Math.min(VMAX,vy+G); py+=vy;
+          if(py<44){ py=44; vy=0; }
+          if(py>H-120){ py=H-120; vy=FLAP*0.6; } }   // soft bounce off the ground — no floor deaths
+        else if(landing){ py+=(landing.y-20-py)*0.08; vy=0; }
       }
-      // player (balloon + buddy; falling = tumble)
       if(falling.on){
-        var ft=(performance.now()-falling.t0)/1100;
-        if(ft>=1){ falling.on=false; mercyT=performance.now(); py=H*0.45; vy=0; flash("Back in the sky!"); }
+        var ft=(now-falling.t0)/1100;
+        if(ft>=1){ falling.on=false; mercyT=now; py=H*0.45; vy=0; flash("Back in the sky!"); }
         else{ ctx.save(); ctx.translate(px,py+ft*ft*320); ctx.rotate(ft*10); ctx.globalAlpha=1-ft*0.4; ctx.fillStyle="#000"; ctx.textAlign="center"; ctx.textBaseline="middle";
           if(BALOK){ ctx.drawImage(BAL,-40,-78,80,100); if(!drawBuddy(0,6,34)){ ctx.font="34px sans-serif"; ctx.fillText(RUNNER,0,16); } } else if(!drawBuddy(0,-6,52)){ ctx.font="50px sans-serif"; ctx.fillText(RUNNER,0,0); }
           ctx.restore(); }
       } else {
-        var blink=(performance.now()-mercyT<1200)&&(((performance.now()/120)|0)%2===0);
+        var blink=(now-mercyT<900)&&phase==="fly"&&(((now/120)|0)%2===0);
         if(!blink){
-          // opaque paint before emoji: canvases modulate color glyphs by the
-          // fill's alpha, so a leftover translucent fillStyle ghosts the buddy
           ctx.fillStyle="#000"; ctx.textAlign="center"; ctx.textBaseline="middle";
-          var bob=Math.sin(performance.now()/300)*3;
+          var bob=Math.sin(now/300)*3;
           ctx.save(); ctx.translate(px,py+bob); ctx.rotate(Math.max(-0.22,Math.min(0.34,vy*0.02)));
           if(BALOK){ ctx.drawImage(BAL,-40,-78,80,100); if(!drawBuddy(0,6,34)){ ctx.font="34px sans-serif"; ctx.fillText(RUNNER,0,16); } }
           else { ctx.font="34px sans-serif"; ctx.fillText("🎈",0,-40); if(!drawBuddy(0,10,52)){ ctx.font="50px sans-serif"; ctx.fillText(RUNNER,0,0); } }
           ctx.restore();
         }
       }
+      // Echo flies alongside
+      if(ECHO.complete&&ECHO.naturalWidth){ var hp=(now-echoT)/700, ey=hp>=0&&hp<1?-Math.sin(hp*Math.PI)*22:Math.sin(now/420)*6, es=Math.min(56,W*0.13);
+        ctx.drawImage(ECHO,px-es*1.9,py-es*1.6+ey,es,es*1.07); }
+      // stars caught, and the landing's fireworks
+      for(i=sparks.length-1;i>=0;i--){ var s=sparks[i]; s.x+=s.vx; s.y+=s.vy; s.vy+=0.05; s.life-=0.02; if(s.life<=0){ sparks.splice(i,1); continue; }
+        ctx.globalAlpha=Math.min(1,s.life); ctx.fillStyle=s.c; ctx.beginPath(); ctx.arc(s.x,s.y,3,0,7); ctx.fill(); ctx.globalAlpha=1; }
       requestAnimationFrame(playing?draw:function(){});
     }
     function rr(x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
-    spawnGate(); draw();
+    startLeg(0); draw();
 
     // ── "Say your sound to keep playing": the only time this game listens ──
     // (24 Sep 2026) STAR MODE is gone. It held the mic open for the whole
@@ -386,7 +471,7 @@
       closeReviveMic();
       if(window.__ended)return; window.__ended=true;
       S.finishGameTurn("glide",isDaily?score:null);
-      playing=false; reviveWait=false; clearInterval(spawnTimer); clearInterval(rampIv);
+      playing=false; reviveWait=false; phase="done";
       var isBest=score>BEST; if(isBest){ BEST=score; try{ localStorage.setItem(BESTK,String(BEST)); }catch(e){} }
       var coins=Math.min(10,(score/3)|0);
       try{ if(coins&&S&&S.addCoins)S.addCoins(coins); }catch(e){}
@@ -411,15 +496,15 @@
         return;
       }
       // one reward per moment: star + one line + Echo — no stat rows or coin counters here
-      $("endTitle").textContent=isBest&&score>0?"NEW BEST! We flew SO far!":"What a flight, little glider!";
-      var _es=$("endSub"); _es.textContent=score+" pipes · Best: "+BEST; _es.className="later";
+      $("endTitle").textContent=finaleDone?"What a flight! You landed with fireworks!":isBest&&score>0?"NEW BEST! We flew SO far!":"What a flight, little glider!";
+      var _es=$("endSub"); _es.textContent=score+" stars and gaps · Best: "+BEST; _es.className="later";
       setTimeout(function(){ _es.classList.add("in"); },1000);
       $("endAgain").style.display="none";
       $("endOvl").classList.add("show");
     }
     $("endCharge").onclick=function(){ location.href=isDaily?"/charge.html?daily=1":(S.gameAccess("slice").allowed?"/charge.html?game=arcade-slice.html":"/activities.html"); };
     $("endHome").onclick=function(){ S.finishGameTurn("glide"); location.href="/today.html#play"; };
-    $("close").onclick=function(){ closeReviveMic(); S.finishGameTurn("glide"); if(playing){ playing=false; clearInterval(spawnTimer); clearInterval(rampIv); } if(isDaily){ bankAndContinue(); return; } location.href="/today.html#play"; };
+    $("close").onclick=function(){ closeReviveMic(); S.finishGameTurn("glide"); if(playing){ playing=false; } if(isDaily){ bankAndContinue(); return; } location.href="/today.html#play"; };
     }
   </script>
 </body>

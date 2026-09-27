@@ -58,6 +58,7 @@ const SUITES = [
   "stacktest.mjs", // STACK2: Block Stacker is a round: three floors on the practice page's five, a rocket to the moon
   "tilestest.mjs", // TILES2: Piano Tiles is a round: three songs a child knows, the same speed on every screen, a finale that waits
   "runtest.mjs", // RUN2: Sound Sprint is a race: park, beach, forest, a checkpoint card between, a finish line that always wins
+  "glidetest.mjs", // GLIDE2: Flappy Glide is a flight: three legs, a cloud rest card between, a fireworks landing; the balloon floats
   "sayplaytest.mjs", // SAYPLAY1: the twenty Say & Play games: only a voice moves them, quiet mic, no practice data
   "slptest.mjs",   // SLP1: the clinician dashboard — live Today, honest register, one door, real remove, the note
   "slpworkflowtest.mjs", // quick homework, per-child plans, feedback/call UI and failure recovery

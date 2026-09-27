@@ -598,9 +598,16 @@ left or right half of the screen). A golden coin is a coin magnet. The top
 bar shows coins and the stretch; the end card counts metres (it said
 "treats"). `tests/runtest.mjs` runs a whole race.
 
-**Flappy Glide is next, and waits for Travis:** the review found it the
-hardest of the six (a steady tap every half-second), and the fix it proposes
-changes the control to hold-to-rise, which is his call before it is built.
+**Flappy Glide is the same round, as a flight** (27 Sep 2026): three legs of
+6, 7 and 8 gaps, a rest on a cloud between each with the say-it card ("Say
+“rrrr” to fly on!"), and a fireworks landing that always ends the flight in a
+win. The review found it the hardest of the six (a steady tap every
+half-second, hedges nearly back to back), so the balloon floats and sinks
+slowly (a tap about every second holds it level), the gaps are wider and
+further apart, and a hedge is a soft bounce back into the gap, never the card;
+after two bumps in a leg the gaps open wider and the hedges slow. Stars in the
+gaps can be caught. **Hold-to-rise**, the review's other idea, changes the
+control, so it waits for Travis. `tests/glidetest.mjs` flies a whole flight.
 
 Bubble Pop and Peekaboo stay visible only as disabled “Coming soon” cards,
 with no New shelf promotion and no direct-link, paid or earned bypass.
