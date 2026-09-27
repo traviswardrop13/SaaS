@@ -14,6 +14,10 @@
 //   - the catalog: ten games in each age group, each with its page, its card
 //     picture and its sticker, none in the daily adventure, and every page is
 //     exactly what tools/gameart/build.mjs writes;
+//   - HOOPS (26 Sep 2026), the first game rebuilt to be played: no ball
+//     before the word, a tap is not a shot, a miss never costs a word, the
+//     help grows until every ball goes in, a pause holds the same ball, eight
+//     baskets win, and the court's own sounds keep the quiet rules;
 //   - COMING SOON (Travis, 26 Sep 2026: "put the 20 games as coming soon"):
 //     a parked game's card is greyed out, and its page sends a typed address
 //     back to Home before any mic or sound. The engine is still played through
@@ -124,6 +128,7 @@ function fakeDevice(cfg) {
       stop(t) { if (s.rec) s.rec.end = Math.min(s.rec.end, endAt(t)); clearTimeout(s.timer); if (s.onended) s.onended(); } };
     return s;
   };
+  AC.prototype.createBiquadFilter = function () { return { type: "lowpass", Q: param(1), frequency: param(350), gain: param(0), connect() {}, disconnect() {} }; };
   AC.prototype.createMediaStreamSource = function (stream) { return { stream, on: false, connect(an) { an.src = this; this.on = true; }, disconnect() { this.on = false; } }; };
   AC.prototype.createAnalyser = function () {
     const an = { fftSize: 2048, src: null, context: this, connect() {}, disconnect() {} };
@@ -230,7 +235,15 @@ async function sayIt(page) {
 const { GAMES } = await import("../tools/gameart/games.mjs");
 const { page: pageFor } = await import("../tools/gameart/page.mjs");
 const KEYS = GAMES.map((g) => g.key);
-ok("twenty Say & Play games, ten for each age group", GAMES.length === 20 && GAMES.filter((g) => g.group === "simple").length === 10 && GAMES.filter((g) => g.group === "arcade").length === 10);
+// Hoops is rebuilt by hand (public/hoops.js), so the generator writes nineteen
+ok("nineteen scene games and Hoops: ten for each age group", GAMES.length === 19 && GAMES.filter((g) => g.group === "simple").length === 10 && GAMES.filter((g) => g.group === "arcade").length === 9 && !GAMES.some((g) => g.key === "hoops"));
+{
+  const hp = readFileSync(ROOT + "/arcade-hoops.html", "utf8");
+  ok("Hoops is its own page: the engine for the word, the court for the shot", /<script src="\/sayplay\.js"><\/script>/.test(hp) && /<script src="\/hoops\.js"><\/script>/.test(hp) && /<canvas id="court"/.test(hp) && /play: window\.Hoops/.test(hp));
+  ok("…and its Home card is a frame of the court", existsSync(ROOT + "/assets/games/hoops.webp") && readFileSync(ROOT + "/assets/sona-stickers.svg", "utf8").includes('<g id="sp-hoops"><image href="/assets/games/hoops.webp"'));
+  const court = readFileSync(ROOT + "/hoops.js", "utf8").replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:"'\\])\/\/[^\n]*/g, "$1");
+  ok("the court never touches the mic, and writes no practice", !/getUserMedia|logAttempt|bumpReps|recordSession|recordRung|rotAdvance|awardSticker|addCoins|mintCoins|addTickets|localStorage|sessionStorage/.test(court));
+}
 ok("ages 3-4 play five words a game and ages 5-8 play eight", GAMES.every((g) => g.steps.length === (g.group === "simple" ? 5 : 8)));
 for (const g of GAMES) {
   const file = ROOT + "/arcade-" + g.key + ".html";
@@ -243,6 +256,8 @@ const engine = readFileSync(ROOT + "/sayplay.js", "utf8").replace(/\/\*[\s\S]*?\
 ok("the engine writes no practice: no attempt, rep, session, rung, rotation, sticker or coin", !/logAttempt|bumpReps|recordSession|recordRung|rotAdvance|awardSticker|awardNextSticker|awardRandomSticker|addCoins|mintCoins|addTickets|chargeAdd|saveRecording|captureClip/.test(engine));
 ok("the engine records nothing and uploads nothing: no recorder, no upload", !/MediaRecorder|sendProgress|repsBeacon|FormData|sendBeacon/.test(engine));
 const flat = engine.replace(/\s+/g, " ");
+ok("a play game's step counts only when the game says the move is done, and only in its play phase",
+  /function moveDone\(\) \{ if \(phase !== "play" \|\| paused\) return; step\+\+; paintDots\(\);/.test(flat) && (flat.match(/moveDone/g) || []).length === 2);
 ok("no tap moves a game: the only caller of a step is the voice check, after the sound-family check",
   (flat.match(/(?<!function )gotIt\(\)/g) || []).length === 1 && /if \(!famOK\(shp\)\) \{ voiced = 0; shp = null; \} else \{ gotIt\(\); return; \}/.test(flat));
 
@@ -352,6 +367,103 @@ for (const g of GAMES) {
     } finally { await context.close(); }
   });
 }
+
+// ── HOOPS: the first game rebuilt to be played (Travis, 26 Sep 2026: "if its
+// basketball, we want them shooting a hoop"). The word earns the ball; the
+// child swipes it into a hoop that glides side to side; a miss comes back to
+// shoot again and never costs a word; eight baskets win. ──
+const court = async (page) => page.locator("#court").boundingBox();
+const hoops = (page) => page.evaluate(() => window.__hoops || {});
+// a swipe up from the ball, drifting sideways so it ends toward a point
+async function swipe(page, box, sideFrac, upPx, ms = 60) {
+  const x0 = box.x + box.width / 2, y0 = box.y + box.height * 0.86;
+  await page.mouse.move(x0, y0); await page.mouse.down();
+  for (let i = 1; i <= 6; i++) { await page.mouse.move(x0 + sideFrac * box.width * i / 6, y0 - upPx * i / 6); await page.waitForTimeout(ms / 6); }
+  await page.mouse.up();
+}
+// aim where the hoop is now, the way a child would
+async function shootAtHoop(page, box) {
+  const h = await hoops(page), up = 240;
+  await swipe(page, box, (h.hoopX / 2.4) * up / box.width, up);
+}
+async function sayForBall(page) {
+  if (!(await sayIt(page))) return false;
+  return until(page, () => window.__hoops && window.__hoops.state === "ready", 5000);
+}
+await scenario("hoops played through", async () => {
+  const { context, page, errors } = await fresh("arcade-hoops.html", { age: "7", micok: true, permission: "granted" });
+  try {
+    await page.locator("#startOvl.show").waitFor();
+    ok("hoops: the start card says how to play: say the word, then swipe up to shoot", /Say the word to get the ball/.test(await page.locator("#startOvl").innerText()) && /swipe up to shoot/i.test(await page.locator("#startOvl").innerText()));
+    const before = await practiceState(page);
+    await page.locator("#startBtn").click();
+    const box = await court(page);
+    await page.waitForFunction(() => window.__sayplay.listening === true);
+    // NO WORD, NO BALL: a swipe before the word does nothing
+    await swipe(page, box, 0, 240);
+    await page.waitForTimeout(300);
+    let h = await hoops(page);
+    ok("hoops: before the word there is no ball, and a swipe shoots nothing", h.state === "idle" && h.shots === 0, h);
+    await page.waitForTimeout(1500);
+    ok("hoops: silence brings no ball", (await hoops(page)).state === "idle" && (await game(page)).step === 0);
+    ok("hoops: the child's word brings the ball, and the mic closes", await sayForBall(page) && (await live(page)) === 0);
+    ok("hoops: the word alone is not a basket: the step waits for the shot", (await game(page)).step === 0 && (await game(page)).phase === "play");
+    ok("hoops: it says how to shoot", /Swipe up to shoot/.test(await page.locator("#micState").innerText()));
+    // a tap is not a shot
+    await page.mouse.click(box.x + box.width / 2, box.y + box.height * 0.86);
+    await page.waitForTimeout(250);
+    ok("hoops: a tap is not a shot", (await hoops(page)).shots === 0 && (await hoops(page)).state === "ready");
+    // a good shot goes in, and the step counts
+    await shootAtHoop(page, box);
+    ok("hoops: a good swipe at the hoop scores", await until(page, () => window.__hoops.baskets === 1, 4000), await hoops(page));
+    ok("hoops: the basket moves the game one step and fills a dot", await until(page, () => window.__sayplay.step === 1, 3000) && (await page.locator("#dots i.on").count()) === 1);
+    ok("hoops: then the next word is asked for", await until(page, () => window.__sayplay.listening === true, 8000));
+    // A MISS NEVER COSTS A WORD: the ball comes back, no word is asked
+    await sayForBall(page);
+    const turnsBefore = (await log(page)).speech.length;
+    await swipe(page, box, 0.45, 200);
+    ok("hoops: a wild swipe misses", await until(page, () => window.__hoops.misses === 1, 6000), await hoops(page));
+    ok("hoops: …and the ball comes back to shoot again", await until(page, () => window.__hoops.state === "ready", 4000));
+    ok("hoops: a miss moves nothing and asks for no new word", (await game(page)).step === 1 && (await game(page)).phase === "play" && (await log(page)).speech.length === turnsBefore && (await live(page)) === 0);
+    // EVERY BALL ENDS IN A BASKET: the help grows until the next swipe goes in
+    await swipe(page, box, -0.45, 200); await until(page, () => window.__hoops.misses === 2 && window.__hoops.state === "ready", 7000);
+    await swipe(page, box, 0.45, 200); await until(page, () => window.__hoops.misses === 3 && window.__hoops.state === "ready", 7000);
+    ok("hoops: after misses the hoop stops and the page points the way", (await hoops(page)).misses === 3 && /Aim for the hoop/.test(await page.locator("#micState").innerText()));
+    await swipe(page, box, 0.45, 200);
+    ok("hoops: from the third miss on, any swipe up goes in", await until(page, () => window.__hoops.baskets === 2, 4000), await hoops(page));
+    // PAUSE with the ball in hand: the same ball waits
+    await until(page, () => window.__sayplay.listening === true, 8000);
+    await sayForBall(page);
+    await page.evaluate(() => __quiet.background());
+    await page.waitForTimeout(200);
+    ok("hoops: hiding the page pauses the court", (await page.locator("#pauseOvl.show").count()) === 1 && (await hoops(page)).frozen === true);
+    await page.evaluate(() => __quiet.foreground());
+    await page.locator("#resume").click();
+    ok("hoops: Keep playing gives the same ball back, with no new word", (await hoops(page)).state === "ready" && (await game(page)).phase === "play" && (await game(page)).step === 2);
+    // the rest of the game
+    for (let n = 3; n <= 8; n++) {
+      if (n > 3) { await until(page, () => window.__sayplay.listening === true, 8000); await sayForBall(page); }
+      for (let t = 0; t < 5 && (await hoops(page)).baskets < n; t++) {
+        await until(page, () => window.__hoops.state === "ready", 6000);
+        await shootAtHoop(page, box);
+        await until(page, (k) => window.__hoops.baskets >= k || window.__hoops.state === "back", 5000, n);
+      }
+      ok("hoops basket " + n + ": in", (await hoops(page)).baskets === n, await hoops(page));
+    }
+    await page.locator("#endOvl.show").waitFor({ timeout: 9000 });
+    ok("hoops: eight baskets end the game on a win", (await game(page)).phase === "end" && (await game(page)).step === 8 && /Hoops star/.test(await page.locator("#endTitle").innerText()));
+    await page.waitForTimeout(300);
+    const l = await log(page);
+    noOverlap("hoops", l);
+    ok("hoops: every chime and court sound waited for a closed mic", l.sfx.every((c) => c.live === 0), l.sfx.filter((c) => c.live));
+    ok("hoops: the court made its own sounds (swish, bounce) through the engine", l.sounds.some((s) => s.kind === "buf" && s.len > 1000), l.sounds.length);
+    ok("hoops: Echo's words are one word each, calm, with no carrier phrase", l.speech.every((t) => /^Say\.\.\. [a-z]+\.$/i.test(t)), l.speech);
+    ok("hoops: nothing was written as practice", JSON.stringify(await practiceState(page)) === JSON.stringify(before));
+    await page.locator("#again").click();
+    ok("hoops: Play again starts over: no baskets, no ball", (await game(page)).step === 0 && (await hoops(page)).baskets === 0 && (await page.locator("#dots i.on").count()) === 0);
+    clean("hoops", errors);
+  } finally { await context.close(); }
+});
 
 // ── the first time: a grown-up says yes before any mic prompt ──
 await scenario("primer: not now", async () => {

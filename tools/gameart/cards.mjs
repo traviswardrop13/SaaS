@@ -41,6 +41,9 @@ export function finalScene(g, withFinale = false) {
 
 mkdirSync("public/assets/games", { recursive: true });
 const groups = [];
+// Hoops is a real game now (public/hoops.js), not a scene: its card is a
+// frame of the court itself, public/assets/games/hoops.webp, drawn once.
+const PLAYED = [["hoops", "/assets/games/hoops.webp"]];
 for (const g of GAMES) {
   check(g);
   const [x, y, size] = (g.card && g.card.crop) || [20, 0, 400];
@@ -48,6 +51,7 @@ for (const g of GAMES) {
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${x} ${y} ${size} ${size}" width="240" height="240">${finalScene(g, g.card && g.card.finale)}</svg>\n`);
   groups.push(`<g id="sp-${g.key}"><image href="/assets/games/${g.key}.svg" xlink:href="/assets/games/${g.key}.svg" width="120" height="120" preserveAspectRatio="xMidYMid slice"></image></g>`);
 }
+for (const [key, file] of PLAYED) groups.push(`<g id="sp-${key}"><image href="${file}" xlink:href="${file}" width="120" height="120" preserveAspectRatio="xMidYMid slice"></image></g>`);
 let sheet = readFileSync(SHEET, "utf8");
 const block = OPEN + "\n" + groups.join("\n") + "\n" + CLOSE + "\n";
 const a = sheet.indexOf(OPEN), b = sheet.indexOf(CLOSE);

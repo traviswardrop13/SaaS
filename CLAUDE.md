@@ -308,8 +308,10 @@ wants every game for their families buys Caseload Premium — one yearly price,
 never per family, never to the clinician.
 
 **speaksona.com is for parents and caregivers** (Travis, 26 Sep 2026: "change
-it to target parents and caregivers only. not slps"). The root is
-`parents.html`: the parent ads' headline ("Speech practice kids ask for."),
+it to target parents and caregivers only. not slps"). Its yellow is pale
+butter, not sun (27 Sep 2026: "the more pale yellow. to help the app icon in
+top left stand out"), so Echo's bright tile is the yellowest thing on it. The
+root is `parents.html`: the parent ads' headline ("Speech practice kids ask for."),
 the new Echo and the two game screens from those ads, one email box and one
 button (role `parent`, nothing else — no name, no "I'm a…"), then the App
 Store (Android: the web app). No Sign in in its header; the footer sends a
@@ -487,7 +489,8 @@ each `arcade-<key>.html` is written by `node tools/gameart/build.mjs` from
 `tools/gameart/little.mjs` and `big.mjs` (edit there and rebuild:
 `sayplaytest` fails if a page drifts), and `node tools/gameart/cards.mjs`
 draws their Home cards. Only a voice moves a game: no tap stands in for
-talking, and the mic button only listens again. The mic keeps every quiet
+talking, and the mic button only listens again (in a play game like Hoops
+a finger plays the move, but only a move a word has earned). The mic keeps every quiet
 rule the other games keep. A spoken move is play, never practice data:
 whether it should count toward the day's practice is Rachel's call, and until
 she makes it, it doesn't. They open straight from Home and never join the
@@ -505,6 +508,31 @@ played by him on his phone — by taking `comingSoon` off its own line in
 `GAME_ACTS`. Home lists playable games before parked ones. `sayplaytest`
 still plays the engine, on a copy of `sona.js` with the parking lifted, and
 checks every parked page sends a typed address home before any mic or sound.
+
+**Hoops is the first one back, rebuilt to be played** (Travis, 26 Sep 2026:
+"yes build hoops", to the plan: the hoop slides slowly side to side; say the
+word and get a basketball; swipe it up to shoot; a miss bounces off and you
+shoot again; eight words, eight baskets). `public/hoops.js` draws the court
+on a canvas and flies the ball; `public/arcade-hoops.html` is written by
+hand (the generator no longer makes it), and every word turn, the mic and
+its quiet rules stay `sayplay.js`'s. What it keeps:
+- **The word earns the ball; the finger shoots it.** No ball before the
+  word, a swipe (or a tap) with no ball does nothing, and a miss never costs
+  a word: the ball comes back. The step, and the dot, count on the basket.
+  This is the engine's **play game** hook (`game.play`: `init`, `onWord`,
+  `pause`, `resume`, `reset`, `finale`, calling back `api.done()`), so the
+  next rebuilt game can use it too.
+- **Every ball ends in a basket.** A swipe toward the hoop (where the child
+  sees it; the ball is sent where it will be) with about the right strength
+  goes in. After one miss the hoop slows and the window widens; after two it
+  stops, glows, and an arrow points the way; from the third, any swipe up
+  goes in. The hoop is still for the first two baskets and holds still while
+  a word is said and while a basket is cheered.
+- **Its sounds go through the engine** (`game.sounds`: swish, whoosh, clank,
+  bounce, made on the phone), so each waits for a closed mic like a chime.
+- **Nothing is practice data**, as in every Say & Play game.
+Its Home card, `public/assets/games/hoops.webp`, is a frame of the court
+itself; `tools/gameart/cards.mjs` points `sp-hoops` at it.
 
 Bubble Pop and Peekaboo stay visible only as disabled “Coming soon” cards,
 with no New shelf promotion and no direct-link, paid or earned bypass.

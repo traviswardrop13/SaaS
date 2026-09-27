@@ -105,6 +105,18 @@ await scenario('homework and child switching preserve the picker',async()=>{
   clean('sibling goals',errors);
  }finally{await context.close();}
 });
+// No white past either end (Travis, 27 Sep 2026): the page stops at its top
+// and bottom, and the iPhone app paints Home's cream behind it, not white.
+await scenario('no white past either end',async()=>{
+ const {context,page,errors}=await fixture({age:'4'});try{
+  const look=await page.evaluate(()=>{const h=getComputedStyle(document.documentElement),b=getComputedStyle(document.body);return {html:h.overscrollBehaviorY+'/'+h.overscrollBehaviorX,body:b.overscrollBehaviorY,bg:h.backgroundColor,cream:h.getPropertyValue('--cream').trim().toLowerCase()};});
+  ok('Home stops at its top and bottom instead of bouncing',look.html==='none/none'&&look.body==='none',look);
+  const cap=JSON.parse(readFileSync(path.join(SOURCE_ROOT,'..','capacitor.config.json'),'utf8'));
+  const hex=c=>'#'+(c.match(/\d+/g)||[]).slice(0,3).map(n=>(+n).toString(16).padStart(2,'0')).join('');
+  ok('the iPhone app paints Home\'s cream behind the page, never the system white',/^#[0-9a-f]{6}$/.test(look.cream)&&String(cap.ios&&cap.ios.backgroundColor).toLowerCase()===look.cream&&hex(look.bg)===look.cream,{ios:cap.ios,look});
+  clean('no white',errors);
+ }finally{await context.close();}
+});
 for(const width of [320,375,390])await scenario('phone '+width,async()=>{
  const {context,page,errors}=await fixture({age:'4',viewport:{width,height:width===320?568:width===375?667:844}});try{
   const last=page.locator('#activityGroups button[data-game]').last();if(!await last.count()){ok('phone '+width+': picker cards exist',false);return;}

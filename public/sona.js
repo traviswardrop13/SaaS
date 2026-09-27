@@ -2604,7 +2604,9 @@
     racecar: { name: "Race Car", sub: "Say it to zoom ahead", go: "/arcade-racecar.html", group: "arcade", tier: "premium", say: true, comingSoon: true, playDescription: "Every word zooms your race car closer to the finish line." },
     treasure: { name: "Treasure Map", sub: "Say it to sail to the treasure", go: "/arcade-treasure.html", group: "arcade", tier: "premium", say: true, comingSoon: true, playDescription: "Every word sails your boat to the next stop on the map." },
     soccer: { name: "Soccer Goal", sub: "Say it to kick a goal", go: "/arcade-soccer.html", group: "arcade", tier: "premium", say: true, comingSoon: true, playDescription: "Every word kicks the ball into the net." },
-    hoops: { name: "Hoops", sub: "Say it to shoot a basket", go: "/arcade-hoops.html", group: "arcade", tier: "premium", say: true, comingSoon: true, playDescription: "Every word shoots the ball through the hoop." },
+    // REBUILT (Travis, 26 Sep 2026: "yes build hoops"): the word earns the
+    // ball and the child swipes it into a gliding hoop (public/hoops.js).
+    hoops: { name: "Hoops", sub: "Say it, then shoot!", go: "/arcade-hoops.html", group: "arcade", tier: "premium", say: true, playDescription: "Say the word to get the ball, then swipe up to shoot hoops." },
     robot: { name: "Robot Builder", sub: "Say it to build a robot", go: "/arcade-robot.html", group: "arcade", tier: "premium", say: true, comingSoon: true, playDescription: "Every word adds a new part to your robot." },
     castle: { name: "Castle Builder", sub: "Say it to build a castle", go: "/arcade-castle.html", group: "arcade", tier: "premium", say: true, comingSoon: true, playDescription: "Every word builds another part of your castle." },
     dino: { name: "Dino Dig", sub: "Say it to dig up a dinosaur", go: "/arcade-dino.html", group: "arcade", tier: "premium", say: true, comingSoon: true, playDescription: "Every word brushes the sand off a dinosaur bone." },

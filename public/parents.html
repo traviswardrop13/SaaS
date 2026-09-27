@@ -56,7 +56,7 @@ document.documentElement.className += " js";
   <link rel="icon" type="image/png" href="/favicon.png" />
   <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
   <link rel="manifest" href="/manifest.webmanifest" />
-  <meta name="theme-color" content="#FFD84A" />
+  <meta name="theme-color" content="#FFF7DE" />
   <link rel="preload" as="image" href="/assets/site/echo.webp" type="image/webp" />
 
   <!-- Self-hosted, like the rest of Sona: Baloo 2 and Nunito from fonts.css,
@@ -74,6 +74,10 @@ document.documentElement.className += " js";
   <style>
     :root{
       --sun:#FFD84A; --sun-l:#FFEFA3; --sun-d:#F2BE12;
+      /* the page's own yellow is pale (Travis, 27 Sep 2026: "the more pale
+         yellow. to help the app icon in top left stand out"), so Echo's
+         bright tile is the yellowest thing on it; --sun stays for accents */
+      --butter:#FFF7DE; --butter-2:#FFEFC2; --butter-3:#FFE6A6;
       --ink:#1D2B4F; --body:#46506B; --muted:#6D7590;
       --paper:#F7F2E8; --paper-d:#EDE5D5; --line:#E6DCC9;
       --teal:#1FB3C6; --teal-d:#0E7C89; --teal-p:#DCF3F5;
@@ -106,7 +110,7 @@ document.documentElement.className += " js";
     :focus-visible{outline:3px solid var(--teal);outline-offset:3px;}
 
     /* ── header ── */
-    header{position:sticky;top:0;z-index:30;background:rgba(255,216,74,.88);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);transition:background .3s,box-shadow .3s;}
+    header{position:sticky;top:0;z-index:30;background:rgba(255,249,232,.9);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);transition:background .3s,box-shadow .3s;}
     header.past{background:rgba(247,242,232,.9);box-shadow:0 1px 0 var(--line);}
     /* the hero has its own form, so the header's button waits until it is gone */
     #topGo{transition:opacity .25s,transform .25s,visibility .25s;}
@@ -117,17 +121,17 @@ document.documentElement.className += " js";
     .brand b{font-family:"Baloo 2",Nunito,sans-serif;font-weight:800;font-size:28px;letter-spacing:-.5px;line-height:1;}
 
     /* ── hero ── */
-    .hero{position:relative;background:radial-gradient(ellipse 70% 60% at 68% 42%,var(--sun-l) 0%,#FFE36E 38%,var(--sun) 72%);padding-bottom:40px;}
+    .hero{position:relative;background:linear-gradient(180deg,#FFF9EA 0%,var(--butter) 55%,var(--butter-2) 100%);padding-bottom:40px;}
     .hero-in{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,440px),1fr));gap:28px 48px;align-items:center;padding-top:36px;}
     .hero-l{display:flex;flex-direction:column;gap:22px;position:relative;z-index:2;}
-    .launch{align-self:flex-start;display:inline-flex;align-items:center;gap:9px;background:#fff;border-radius:999px;padding:8px 16px 8px 12px;font-weight:800;font-size:14px;color:var(--ink);box-shadow:0 3px 0 rgba(29,43,79,.12);}
+    .launch{align-self:flex-start;display:inline-flex;align-items:center;gap:9px;background:#fff;border-radius:999px;padding:8px 16px 8px 12px;font-weight:800;font-size:14px;color:var(--ink);box-shadow:0 0 0 1.5px #F0E3C0,0 3px 0 rgba(29,43,79,.08);}
     .launch .dot{width:10px;height:10px;border-radius:50%;background:var(--coral);box-shadow:0 0 0 0 rgba(232,88,74,.5);animation:ping 2s infinite;}
     @keyframes ping{0%{box-shadow:0 0 0 0 rgba(232,88,74,.55)}80%,100%{box-shadow:0 0 0 10px rgba(232,88,74,0)}}
     .hero h1{font-size:clamp(46px,7.4vw,88px);line-height:.95;letter-spacing:-.035em;}
     .lede{font-size:clamp(18px,2vw,21px);line-height:1.5;color:#34405F;max-width:520px;text-wrap:pretty;font-weight:600;}
     .signup{display:flex;flex-direction:column;gap:10px;max-width:520px;}
     .srow{display:flex;flex-wrap:wrap;gap:10px;}
-    .srow input{flex:1 1 240px;min-width:0;height:60px;padding:0 20px;border-radius:18px;border:3px solid #fff;background:#fff;font:700 17px Nunito,sans-serif;color:var(--ink);box-shadow:0 4px 0 rgba(29,43,79,.12);}
+    .srow input{flex:1 1 240px;min-width:0;height:60px;padding:0 20px;border-radius:18px;border:3px solid #F0E3C0;background:#fff;font:700 17px Nunito,sans-serif;color:var(--ink);box-shadow:0 4px 0 rgba(29,43,79,.06);}
     .srow input::placeholder{color:#8A90A6;}
     .srow input:focus{outline:none;border-color:var(--ink);}
     .srow .btn{flex:none;}
@@ -146,7 +150,7 @@ document.documentElement.className += " js";
        a phone to a desktop. The px values before each cqw are for browsers
        without container units. */
     .stage{position:relative;width:100%;max-width:580px;margin:0 auto;aspect-ratio:1/1;container-type:inline-size;}
-    .stage .halo{position:absolute;left:17%;top:14%;width:66%;height:66%;border-radius:50%;background:radial-gradient(circle,#FFFBE0 0%,rgba(255,248,200,.7) 45%,rgba(255,240,160,0) 70%);}
+    .stage .halo{position:absolute;left:12%;top:9%;width:76%;height:76%;border-radius:50%;background:radial-gradient(circle,#FFE9A8 0%,rgba(255,233,168,.75) 48%,rgba(255,233,168,0) 71%);}
     .ph{position:absolute;width:35%;padding:6px;padding:1.1cqw;background:#fff;border-radius:34px;border-radius:5.4cqw;box-shadow:0 18px 40px -10px rgba(29,43,79,.35);}
     .ph img{display:block;width:100%;height:auto;border-radius:26px;border-radius:4.2cqw;}
     .ph-l{left:3%;top:19%;transform:rotate(-9deg);animation:bobL 7s ease-in-out infinite;}
@@ -237,7 +241,7 @@ document.documentElement.className += " js";
     .step h3{font-size:25px;line-height:1.1;}
     .step p{font-size:17px;line-height:1.55;color:var(--body);font-weight:600;}
     .viz{height:128px;border-radius:20px;display:flex;align-items:center;justify-content:center;gap:12px;overflow:hidden;position:relative;}
-    .v1{background:var(--teal-p);} .v2{background:#FFF1BF;} .v3{background:var(--coral-p);}
+    .v1{background:var(--teal-p);} .v2{background:var(--butter-2);} .v3{background:var(--coral-p);}
     .n1{background:var(--teal-d);} .n2{background:#C28A00;} .n3{background:#C9412F;}
     .v1 img{width:78px;height:78px;border-radius:18px;transform:rotate(-5deg);}
     .say{background:#fff;border-radius:18px 18px 18px 4px;padding:10px 16px;font:800 20px Nunito,sans-serif;color:var(--ink);box-shadow:0 3px 0 rgba(29,43,79,.08);}
@@ -282,7 +286,7 @@ document.documentElement.className += " js";
     .half{display:flex;flex-direction:column;align-items:center;gap:26px;padding:34px 22px 40px;}
     .half .lab{font:900 clamp(24px,3vw,34px)/1.05 Nunito,sans-serif;text-align:center;}
     .half.a{background:#D9D3C7;background-image:radial-gradient(rgba(0,0,0,.08) 1px,transparent 1.2px);background-size:9px 9px;}
-    .half.b{background:radial-gradient(ellipse at 50% 40%,#FFEE9A,var(--sun) 70%);}
+    .half.b{background:radial-gradient(ellipse at 50% 40%,#FFF6D6,var(--butter-3) 75%);}
     .sheet{width:min(100%,330px);background:#FBFAF4;border-radius:6px;padding:26px 24px 22px;transform:rotate(-3deg);box-shadow:0 20px 30px -16px rgba(0,0,0,.35);color:#2B2B2B;font-family:Nunito,sans-serif;}
     .sheet .top{display:flex;justify-content:space-between;align-items:baseline;gap:10px;}
     .sheet h3{font-size:30px;letter-spacing:-.02em;}
@@ -303,7 +307,7 @@ document.documentElement.className += " js";
     @media(max-width:760px){ .r-in{grid-template-columns:1fr;padding:30px 22px;gap:28px;} }
     .r-photo{position:relative;justify-self:center;width:min(100%,300px);}
     .r-photo img{display:block;width:100%;height:auto;border-radius:50%;border:8px solid var(--teal-p);}
-    .r-photo .tag{position:absolute;right:-6px;bottom:18px;background:var(--sun);color:var(--ink);font:400 24px/1 var(--hand);padding:8px 14px;border-radius:14px;transform:rotate(-6deg);box-shadow:0 4px 0 #C99A00;}
+    .r-photo .tag{position:absolute;right:-6px;bottom:18px;background:var(--butter-3);color:var(--ink);font:400 24px/1 var(--hand);padding:8px 14px;border-radius:14px;transform:rotate(-6deg);box-shadow:0 4px 0 #E3C679;}
     .r-txt{display:flex;flex-direction:column;gap:16px;}
     .r-txt .by{font-weight:800;font-size:16px;color:var(--teal-d);}
     .r-txt p{font-size:18px;line-height:1.6;color:var(--body);font-weight:600;}
@@ -329,13 +333,13 @@ document.documentElement.className += " js";
     .faq{display:flex;flex-direction:column;gap:10px;}
     .q{background:#fff;border-radius:20px;overflow:hidden;box-shadow:0 2px 0 var(--line);}
     .q button{width:100%;display:flex;justify-content:space-between;align-items:center;gap:16px;padding:20px 22px;background:none;border:none;cursor:pointer;text-align:left;font:900 19px/1.25 Nunito,sans-serif;color:var(--ink);}
-    .q button span{flex:none;width:30px;height:30px;border-radius:50%;background:var(--sun);display:grid;place-items:center;font-size:22px;line-height:1;transition:transform .2s;}
+    .q button span{flex:none;width:30px;height:30px;border-radius:50%;background:var(--butter-3);display:grid;place-items:center;font-size:22px;line-height:1;transition:transform .2s;}
     .q button[aria-expanded="true"] span{transform:rotate(45deg);}
     .q .a{padding:0 22px 20px;font-size:16px;line-height:1.6;color:var(--body);font-weight:600;}
 
     /* ── last call ── */
     .final{padding:0 20px 72px;}
-    .final .in{max-width:1160px;margin:0 auto;background:radial-gradient(ellipse at 20% 30%,#FFEE9A,var(--sun) 65%);border-radius:40px;padding:56px 44px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:32px;position:relative;overflow:hidden;}
+    .final .in{max-width:1160px;margin:0 auto;background:radial-gradient(ellipse at 20% 30%,#FFF9E6,var(--butter-2) 70%);box-shadow:inset 0 0 0 1.5px #F2E4BF;border-radius:40px;padding:56px 44px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:32px;position:relative;overflow:hidden;}
     .final .l{display:flex;align-items:center;gap:28px;flex-wrap:wrap;}
     .final img{width:132px;height:132px;animation:float 5.5s ease-in-out infinite;filter:drop-shadow(0 14px 20px rgba(29,43,79,.25));}
     .final .t{display:flex;flex-direction:column;gap:8px;max-width:560px;}
@@ -410,11 +414,11 @@ document.documentElement.className += " js";
       <div class="ph ph-r"><img src="/assets/site/piano.webp" width="342" height="692" alt=""></div>
       <div class="echo-wrap"><img src="/assets/site/echo.webp" width="458" height="458" alt="" fetchpriority="high"></div>
       <div class="bubble pop" id="bubble">rrrr!</div>
-      <svg class="spark s1" viewBox="0 0 24 24"><path d="M12 1l2.6 8.4L23 12l-8.4 2.6L12 23l-2.6-8.4L1 12l8.4-2.6Z" fill="#fff"/></svg>
-      <svg class="spark s2" viewBox="0 0 24 24"><path d="M12 1l2.6 8.4L23 12l-8.4 2.6L12 23l-2.6-8.4L1 12l8.4-2.6Z" fill="#fff"/></svg>
-      <svg class="spark s3" viewBox="0 0 24 24"><path d="M12 1l2.6 8.4L23 12l-8.4 2.6L12 23l-2.6-8.4L1 12l8.4-2.6Z" fill="#FFF7D1"/></svg>
-      <svg class="spark s4" viewBox="0 0 24 24"><path d="M12 1l2.6 8.4L23 12l-8.4 2.6L12 23l-2.6-8.4L1 12l8.4-2.6Z" fill="#fff"/></svg>
-      <svg class="spark s5" viewBox="0 0 24 24"><path d="M12 1l2.6 8.4L23 12l-8.4 2.6L12 23l-2.6-8.4L1 12l8.4-2.6Z" fill="#FFF7D1"/></svg>
+      <svg class="spark s1" viewBox="0 0 24 24"><path d="M12 1l2.6 8.4L23 12l-8.4 2.6L12 23l-2.6-8.4L1 12l8.4-2.6Z" fill="#FFD84A"/></svg>
+      <svg class="spark s2" viewBox="0 0 24 24"><path d="M12 1l2.6 8.4L23 12l-8.4 2.6L12 23l-2.6-8.4L1 12l8.4-2.6Z" fill="#FFC93D"/></svg>
+      <svg class="spark s3" viewBox="0 0 24 24"><path d="M12 1l2.6 8.4L23 12l-8.4 2.6L12 23l-2.6-8.4L1 12l8.4-2.6Z" fill="#FFE08A"/></svg>
+      <svg class="spark s4" viewBox="0 0 24 24"><path d="M12 1l2.6 8.4L23 12l-8.4 2.6L12 23l-2.6-8.4L1 12l8.4-2.6Z" fill="#FFD84A"/></svg>
+      <svg class="spark s5" viewBox="0 0 24 24"><path d="M12 1l2.6 8.4L23 12l-8.4 2.6L12 23l-2.6-8.4L1 12l8.4-2.6Z" fill="#FFE08A"/></svg>
       <svg class="note-ic m1" viewBox="0 0 24 24"><path d="M9 18.5a3 3 0 1 1-2-2.83V4l12-2v13.5a3 3 0 1 1-2-2.83V6.2L9 7.6Z" fill="currentColor"/></svg>
       <svg class="note-ic m2" viewBox="0 0 24 24"><path d="M9 18.5a3 3 0 1 1-2-2.83V4l12-2v13.5a3 3 0 1 1-2-2.83V6.2L9 7.6Z" fill="currentColor"/></svg>
     </div>
@@ -506,7 +510,7 @@ document.documentElement.className += " js";
 <section class="lib" id="library">
   <div class="wrap">
     <div class="kicker rv" style="color:var(--sun);">Games and books</div>
-    <h2 class="rv d1" style="margin-top:10px;"><span class="n">6</span> games. <span class="n">19</span> picture books.</h2>
+    <h2 class="rv d1" style="margin-top:10px;"><span class="n">7</span> games. <span class="n">19</span> picture books.</h2>
     <p class="sub rv d2" style="margin-top:14px;">Games for ages 3 to 8, with more on the way, and a picture book for every sound, read along with Echo.</p>
   </div>
   <div class="strip go" aria-label="Sona's games">
@@ -516,6 +520,7 @@ document.documentElement.className += " js";
           <li class="tile g"><img src="/assets/site/games/stack.webp" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Block Stacker</span></li>
           <li class="tile g"><img src="/assets/site/games/run.webp" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Sound Sprint</span></li>
           <li class="tile g"><img src="/assets/site/games/glide.webp" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Flappy Glide</span></li>
+          <li class="tile g"><img src="/assets/games/hoops.webp" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Hoops</span></li>
           <li class="tile g"><img src="/assets/site/games/feed.webp" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Feed Echo</span></li>
     </ul>
   </div>
