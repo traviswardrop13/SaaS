@@ -9,6 +9,12 @@
   font-family:"Nunito",-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-tap-highlight-color:transparent;}
 html,body{height:100%;}
 body{min-height:100vh;background:radial-gradient(1000px 700px at 50% -10%, var(--bg1), var(--bg2)) fixed;color:var(--ink);}
+/* A page stops at its top and bottom instead of bouncing past them. On an
+   iPhone the bounce shows whatever sits BEHIND the page, and in the app that
+   was plain white (Travis, 27 Sep 2026: "white space at the top ... and at the
+   bottom"). Capacitor's own no-bounce setting stopped holding on iOS 16, when
+   WebKit began taking bounce from this property instead. */
+html,body{overscroll-behavior:none;}
 h1,h2,h3,.brand,.btn,.stat .n,.node b{font-family:"Baloo 2","Nunito",sans-serif;}
 a{color:var(--blue-d);text-decoration:none;}
 /* mobile-first app column */

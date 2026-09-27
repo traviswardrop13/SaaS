@@ -121,6 +121,25 @@ verify the iOS keyboard itself.
 
 Official plugin reference: https://capacitorjs.com/docs/apis/keyboard
 
+## Cream behind the page, not white (27 Sep 2026)
+
+Travis saw white strips at the top and bottom of Home when he scrolled past
+either end. Two halves fix it:
+
+- **Web, already live:** `public/sona.css` sets `overscroll-behavior: none`, so
+  app pages stop at their ends instead of bouncing. Capacitor sets
+  `bounces = false`, but from iOS 16 WebKit takes bounce from this CSS
+  property, so the native setting alone stopped holding.
+- **Native, next iPhone build:** `ios.backgroundColor` in `capacitor.config.json`
+  is `#fff6e9`, Home's cream. Capacitor paints the web view and its scroll view
+  with it. Without it they use the system background: white, or black in dark
+  mode. That is what any bounce shows, and it is also the flash before the
+  first page draws. `npx cap sync ios` copies the setting into
+  `ios/App/App/capacitor.config.json`; check that file has it before archiving.
+
+Check on the phone: pull Home down past the top and up past the bottom. No
+white.
+
 ## In Xcode
 1. **App** target → **Signing & Capabilities** → check **Automatically manage signing** → choose your **Team** (your Apple account).
 2. **Bundle Identifier** = `com.speaksona.app` (matches `appId`; Xcode can create the App ID for you).
