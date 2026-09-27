@@ -134,6 +134,10 @@
     #stand .well .fr{position:absolute;left:50%;bottom:4px;transform:translateX(-50%);width:46px;height:46px;filter:drop-shadow(0 4px 5px rgba(160,60,10,.25));}
     #stand .well .fr.ghost{filter:none;opacity:.75;}
     #stand .well .fr.ghost svg *{fill:rgba(255,255,255,.16)!important;stroke:#fff!important;stroke-width:2.5!important;stroke-dasharray:5 5!important;}
+    /* each heard try drops its fruit onto the counter (27 Sep 2026): the
+       five a child says here are the first five thrown in the game */
+    #stand .well .fr.pop{animation:fruitDrop .6s cubic-bezier(.3,1.25,.5,1);}
+    @keyframes fruitDrop{0%{transform:translate(-50%,-150px) rotate(-18deg);opacity:0}25%{opacity:1}60%{transform:translate(-50%,5px) rotate(5deg)}80%{transform:translate(-50%,-7px) rotate(-2deg)}100%{transform:translate(-50%,0) rotate(0)}}
     /* run — one receding road; the buddy stands on the top filled slab */
     #roadCol{display:flex;flex-direction:column-reverse;gap:8px;align-items:center;}
     #roadCol .slab{position:relative;height:34px;border-radius:10px;background:#b7c5d4;box-shadow:0 5px 0 rgba(40,80,120,.25);}
@@ -166,7 +170,7 @@
     }
     @media (prefers-reduced-motion:reduce){
       #micWrap::before,#micWrap::after{animation:none;opacity:.45;}
-      #reveals .pop{animation:none;}
+      #reveals .pop,#stand .well .fr.pop{animation:none;}
       #leo.cheer,#leo.think{animation:none;}
       #chestBox.tease,#chestBox.thump{animation:none;}
       #balloonEl{transition:none;}

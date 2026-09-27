@@ -534,6 +534,25 @@ its quiet rules stay `sayplay.js`'s. What it keeps:
 Its Home card, `public/assets/games/hoops.webp`, is a frame of the court
 itself; `tools/gameart/cards.mjs` points `sp-hoops` at it.
 
+**Fruit Slice is a round now** (Travis, 27 Sep 2026, yes to: "three waves of
+fruit, then one giant watermelon to finish. It always ends in a win. Missing is
+OK... The talking moves to between waves"). The six first games are being made
+solid one at a time, and this is the first:
+- **A wave ends** when its fruit are sliced (6, 8, then 10; a golden fruit
+  counts three) or after 45 seconds of play, whatever the count.
+- **A missed fruit just falls.** Nothing stops and nothing is lost; after two
+  misses in a row the fruit come one at a time, bigger and slower.
+- **The say-it card shows only between waves** ("Say “rrrr” for wave 2!"),
+  never after a miss. Its listening and quiet rules are the ones every arcade
+  card shares (`micquietgamestest`); `crash()` is kept as the card's old name
+  because those suites open it through it.
+- **The fruit are thrown from the stand** at the bottom of the screen. The first
+  five are the five the "Say it 5 times" page filled, in its order, and on that
+  page each heard try now drops its fruit onto the counter.
+- **Wave 3 ends in a giant watermelon:** five swipes across it and it bursts, so
+  every round ends on a win.
+`tests/slicetest.mjs` plays a whole round.
+
 Bubble Pop and Peekaboo stay visible only as disabled “Coming soon” cards,
 with no New shelf promotion and no direct-link, paid or earned bypass.
 Their engines remain in the repo for future work. The adventure
