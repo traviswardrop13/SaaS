@@ -499,45 +499,27 @@ document.documentElement.className += " js";
 </section>
 
 <!-- THE LIBRARY. The counts are the catalog's own (tests/shiptest.mjs holds
-     them to it): every game Home opens, not the two still "coming soon", and
-     one book for every sound. -->
+     them to it): every game Home opens, and none it shows as Coming soon —
+     the Say & Play games are parked until each is rebuilt (Travis, 26 Sep
+     2026), so they are not on this strip either — and one book for every
+     sound. -->
 <section class="lib" id="library">
   <div class="wrap">
     <div class="kicker rv" style="color:var(--sun);">Games and books</div>
-    <h2 class="rv d1" style="margin-top:10px;"><span class="n">26</span> games. <span class="n">19</span> picture books.</h2>
-    <p class="sub rv d2" style="margin-top:14px;">Games for ages 3 to 8, and a picture book for every sound, read along with Echo.</p>
+    <h2 class="rv d1" style="margin-top:10px;"><span class="n">6</span> games. <span class="n">19</span> picture books.</h2>
+    <p class="sub rv d2" style="margin-top:14px;">Games for ages 3 to 8, with more on the way, and a picture book for every sound, read along with Echo.</p>
   </div>
-  <div class="strip go" style="--dur:90s;" aria-label="Sona's games">
+  <div class="strip go" aria-label="Sona's games">
     <ul class="track">
-          <li class="tile g"><img src="/assets/games/balloon.svg" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Balloon Party</span></li>
-          <li class="tile g"><img src="/assets/games/flower.svg" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Grow a Flower</span></li>
-          <li class="tile g"><img src="/assets/games/rocket.svg" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Rocket Blast</span></li>
           <li class="tile g"><img src="/assets/site/games/slice.webp" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Fruit Slice</span></li>
-          <li class="tile g"><img src="/assets/games/snowman.svg" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Build a Snowman</span></li>
-          <li class="tile g"><img src="/assets/games/train.svg" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Choo-Choo Train</span></li>
-          <li class="tile g"><img src="/assets/games/puppy.svg" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Puppy Bath</span></li>
           <li class="tile g"><img src="/assets/site/games/tiles.webp" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Piano Tiles</span></li>
-          <li class="tile g"><img src="/assets/games/stars.svg" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Bedtime Stars</span></li>
-          <li class="tile g"><img src="/assets/games/cake.svg" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Birthday Cake</span></li>
-          <li class="tile g"><img src="/assets/games/gifts.svg" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Surprise Boxes</span></li>
           <li class="tile g"><img src="/assets/site/games/stack.webp" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Block Stacker</span></li>
-          <li class="tile g"><img src="/assets/games/fishtank.svg" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Fish Tank</span></li>
-          <li class="tile g"><img src="/assets/games/racecar.svg" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Race Car</span></li>
-          <li class="tile g"><img src="/assets/games/treasure.svg" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Treasure Map</span></li>
           <li class="tile g"><img src="/assets/site/games/run.webp" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Sound Sprint</span></li>
-          <li class="tile g"><img src="/assets/games/soccer.svg" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Soccer Goal</span></li>
-          <li class="tile g"><img src="/assets/games/hoops.svg" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Hoops</span></li>
-          <li class="tile g"><img src="/assets/games/robot.svg" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Robot Builder</span></li>
           <li class="tile g"><img src="/assets/site/games/glide.webp" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Flappy Glide</span></li>
-          <li class="tile g"><img src="/assets/games/castle.svg" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Castle Builder</span></li>
-          <li class="tile g"><img src="/assets/games/dino.svg" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Dino Dig</span></li>
-          <li class="tile g"><img src="/assets/games/space.svg" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Space Trip</span></li>
           <li class="tile g"><img src="/assets/site/games/feed.webp" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Feed Echo</span></li>
-          <li class="tile g"><img src="/assets/games/pizza.svg" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Pizza Chef</span></li>
-          <li class="tile g"><img src="/assets/games/monster.svg" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Monster Makeover</span></li>
     </ul>
   </div>
-  <div class="strip go rev" style="--dur:75s;" aria-label="Sona's picture books">
+  <div class="strip go rev" aria-label="Sona's picture books">
     <ul class="track">
           <li class="tile b"><img src="/assets/books/rory-rainbow/cover.svg" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Rory and the Rainbow</span></li>
           <li class="tile b"><img src="/assets/books/penny-pebble-party/cover.svg" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Penny&rsquo;s Pebble Party</span></li>
@@ -851,10 +833,16 @@ document.documentElement.className += " js";
       }, 260);
     }, 2600);
 
-    // The two strips loop forever: each list is doubled, the copy hidden
-    // from screen readers, and the track slides by exactly one list.
+    // The two strips loop forever. A short list is first repeated until it
+    // is wider than the screen; then the whole run is doubled and the track
+    // slides by exactly half, at one steady speed whatever its length. Every
+    // copy is hidden from screen readers, so each game and book is read once.
     if (!reduce) [].forEach.call(document.querySelectorAll(".strip .track"), function (t) {
-      [].forEach.call(t.children, function (li) { var c = li.cloneNode(true); c.setAttribute("aria-hidden", "true"); t.appendChild(c); });
+      var items = [].slice.call(t.children), want = Math.max(window.innerWidth, 800) + 200, guard = 0;
+      function copy(li) { var c = li.cloneNode(true); c.setAttribute("aria-hidden", "true"); t.appendChild(c); }
+      while (t.scrollWidth < want && guard++ < 12) items.forEach(copy);
+      [].slice.call(t.children).forEach(copy);
+      t.style.setProperty("--dur", Math.round(t.scrollWidth / 2 / 36) + "s");
     });
     else [].forEach.call(document.querySelectorAll(".strip"), function (s) { s.classList.remove("go"); });
 

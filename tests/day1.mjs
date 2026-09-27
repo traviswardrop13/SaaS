@@ -42,18 +42,22 @@ for (const age of ["3", "4", "5", "8"]) {
     heading: document.querySelector("h1")?.textContent || "",
     keys: [...document.querySelectorAll("#activityGroups .game-card")].map(e => e.dataset.game),
     groups: [...document.querySelectorAll("#activityGroups .activity-group")].map(e => e.dataset.group),
-    playable: [...document.querySelectorAll("#activityGroups .game-card")].filter(e => !["bubbles", "peekaboo"].includes(e.dataset.game)).map(e => ({key:e.dataset.game,accessible:e.dataset.locked === "false"&&!e.disabled})),
-    parked: [...document.querySelectorAll("#activityGroups .game-card")].filter(e => ["bubbles", "peekaboo"].includes(e.dataset.game)).map(e => ({key:e.dataset.game,disabled:e.disabled,label:e.textContent,access:Sona.gameAccess(e.dataset.game)})),
+    playable: [...document.querySelectorAll("#activityGroups .game-card")].filter(e => !Sona.gameAct(e.dataset.game).comingSoon).map(e => ({key:e.dataset.game,accessible:e.dataset.locked === "false"&&!e.disabled})),
+    parked: [...document.querySelectorAll("#activityGroups .game-card")].filter(e => Sona.gameAct(e.dataset.game).comingSoon).map(e => ({key:e.dataset.game,disabled:e.disabled,label:e.textContent,access:Sona.gameAccess(e.dataset.game)})),
     forbidden: !!document.querySelector("#goBtn, #heroCard, #jarRow"),
     run: sessionStorage.getItem("sona.run.v1"),
     books: document.getElementById("booksCard")?.textContent || "",
     bookDoors: document.querySelectorAll('a[href*="chapter.html"],a[href*="story.html"]').length,
   }));
   ok("age " + age + ": Home opens directly to Pick a game", /pick a game/i.test(st.heading) && new URL(pg.url()).pathname === "/today.html", JSON.stringify(st));
-  // 28 = the six released games, the twenty Say & Play games, and two parked
+  // 28 = the six released games, the twenty Say & Play games, and two parked.
+  // The Say & Play games are Coming soon until each is rebuilt (Travis, 26
+  // Sep 2026), so what is playable is the six first games plus any rebuilt.
   ok("age " + age + ": every catalog game appears once in the age shelves", st.keys.length === 28 && new Set(st.keys).size === 28, JSON.stringify(st.keys));
-  ok("age " + age + ": both suggested age groups remain available", st.groups.length === 2 && st.playable.length === 26 && st.playable.every(e => e.accessible), JSON.stringify(st));
-  ok("age " + age + ": Bubble Pop and Peekaboo stay visible as disabled Coming soon cards", st.parked.length === 2 && st.parked.every(e => e.disabled && /coming soon/i.test(e.label) && e.access.allowed === false && e.access.reason === "coming-soon"), JSON.stringify(st.parked));
+  ok("age " + age + ": both suggested age groups remain available, with the six first games playable", st.groups.length === 2 && st.playable.length >= 6 && st.playable.every(e => e.accessible) &&
+    ["slice", "tiles", "stack", "run", "glide", "feed"].every(k => st.playable.some(e => e.key === k)), JSON.stringify(st));
+  ok("age " + age + ": Bubble Pop, Peekaboo and the parked Say & Play games stay visible as disabled Coming soon cards", st.parked.length === 28 - st.playable.length && ["bubbles", "peekaboo"].every(k => st.parked.some(e => e.key === k)) &&
+    st.parked.every(e => e.disabled && /coming soon/i.test(e.label) && e.access.allowed === false && e.access.reason === "coming-soon"), JSON.stringify(st.parked));
   ok("age " + age + ": opening Home does not start a journey or display the retired adventure", !st.run && !st.forbidden, JSON.stringify(st));
   // The books are on (Travis, 26 Sep 2026: "yes turn them on"); the
   // adventure and chapter readers stay parked.
@@ -73,8 +77,8 @@ for (const age of ["3", "4", "5", "8"]) {
   }));
   const released=st.cards.filter(c => !c.comingSoon), parked=st.cards.filter(c => c.comingSoon);
   ok("the paid-state seam still opens directly to the game library", /pick a game/i.test(st.heading) && await pg.locator("#goBtn").count()===0, st);
-  ok("the paid-state seam locks exactly the released Premium games without prices", released.length===26&&released.every(c=>c.locked===(c.tier==="premium")&&!c.disabled&&c.tag===(c.tier==="premium"?"Premium":"Free")), released);
-  ok("Coming soon stays disabled even on the paid-state seam", parked.length===2&&parked.every(c=>c.locked&&c.disabled&&c.tag==="Coming soon"), parked);
+  ok("the paid-state seam locks exactly the released Premium games without prices", released.length>=6&&released.length+parked.length===28&&released.every(c=>c.locked===(c.tier==="premium")&&!c.disabled&&c.tag===(c.tier==="premium"?"Premium":"Free")), released);
+  ok("Coming soon stays disabled even on the paid-state seam", parked.length>=2&&parked.every(c=>c.locked&&c.disabled&&c.tag==="Coming soon"), parked);
   await pg.locator('#activityGroups .game-card[data-game="slice"]').click();
   await pg.waitForURL(/charge\.html/);
   ok("the paid-state seam keeps free game practice one tap away",new URL(pg.url()).pathname==="/charge.html"&&new URL(pg.url()).searchParams.get("game")==="arcade-slice.html",pg.url());

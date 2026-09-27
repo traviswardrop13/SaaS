@@ -35,7 +35,14 @@ const simpleKeys = ["bubbles", "feed", "peekaboo", ...sayLittle].sort();
 const arcadeKeys = [...adventureKeys, ...sayBig].sort();
 const directKeys = ["bubbles", "feed", "peekaboo", ...sayLittle, ...sayBig];
 const allKeys = [...simpleKeys, ...arcadeKeys].sort();
-const comingSoonKeys = ["bubbles", "peekaboo"];
+// COMING SOON (Travis, 26 Sep 2026): Bubble Pop and Peekaboo, and every Say &
+// Play game until it is rebuilt as a real game ("put the 20 games as coming
+// soon ... except for old ones ... that actually work. leave those"). Which
+// Say & Play games are still parked is read from the catalog: each comes back
+// one at a time by taking comingSoon off its own line in sona.js.
+const SONA_SRC = readFileSync(ROOT + "/sona.js", "utf8");
+const parkedSay = [...SONA_SRC.matchAll(/^\s{4}(\w+): \{[^\n]*\bsay: true, comingSoon: true\b/gm)].map((m) => m[1]);
+const comingSoonKeys = ["bubbles", "peekaboo", ...parkedSay].sort();
 let playableKeys = [], freeKeys = [], premiumKeys = [];
 const sorted = (values) => [...values].sort();
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
@@ -116,7 +123,8 @@ await section("library prerequisites", async () => {
       playableKeys = games.filter(game => game.available && !game.comingSoon).map(game => game.key).sort();
       freeKeys = games.filter(game => game.available && !game.comingSoon && game.tier === "free").map(game => game.key).sort();
       premiumKeys = games.filter(game => game.available && !game.comingSoon && game.tier === "premium").map(game => game.key).sort();
-      ok("only Bubble Pop and Peekaboo are Coming soon", same(games.filter(game => game.comingSoon).map(game => game.key).sort(), comingSoonKeys));
+      ok("Coming soon: Bubble Pop, Peekaboo and every Say & Play game not rebuilt yet", same(games.filter(game => game.comingSoon).map(game => game.key).sort(), comingSoonKeys) && parkedSay.every((key) => sayLittle.includes(key) || sayBig.includes(key)));
+      ok("…and the six first games are never Coming soon", ["feed", ...adventureKeys].every((key) => playableKeys.includes(key)), playableKeys);
     }
     ok("Home itself presents the game picker", await pg.getByRole("heading", {name:"Pick a game!",exact:true}).count() === 1 && await pg.locator("#activityGroups button[data-game]").count() === allKeys.length);
   } finally { await ctx.close(); }
@@ -196,7 +204,7 @@ if (present && hasContract) {
         const isFree = await pg.evaluate(() => Sona.isFree());
         if (isFree) ok("age " + age + ": normal free access is labeled Free on every playable card", cards.every((text) => /\bFree\b/.test(text) && !/\bPremium\b/.test(text)), cards);
         const parked = await pg.locator("#activityGroups button[data-game]:disabled").allInnerTexts();
-        ok("age " + age + ": both parked titles say Coming soon", parked.length === 2 && parked.every(text => /Coming soon/.test(text)), parked);
+        ok("age " + age + ": every parked title says Coming soon", parked.length === comingSoonKeys.length && parked.every(text => /Coming soon/.test(text)), parked);
         ok("age " + age + ": proposed tier preview stays hidden by default", !await pg.locator("#catalogPreviewNotice").isVisible());
         // BOOKS ARE ON (Travis, 26 Sep 2026: "yes turn them on"): one card,
         // free while the app is free, that opens the bookshelf.

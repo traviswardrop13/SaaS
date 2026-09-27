@@ -115,20 +115,25 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
   ok("the parent page never mentions the removed power-ups", !/golden keys|frenzy|star mode|power-?up/i.test(pShown));
   const srcs = [...new Set([...parents.matchAll(/(?:src|href)="(\/[^"#?]+\.(?:webp|png|jpg|svg|woff2|css))"/g)].map((m) => m[1]))];
   const missing = srcs.filter((u) => !existsSync(APP + "/public" + u));
-  ok("every picture, font and stylesheet the parent page asks for is in the repo", srcs.length > 40 && missing.length === 0, missing.join(", "));
+  ok("every picture, font and stylesheet the parent page asks for is in the repo", srcs.length > 25 && missing.length === 0, missing.join(", "));
 
-  // THE COUNTS ARE THE CATALOG'S. "26 games" is every game Home opens (not
-  // the two still "coming soon"), "19 picture books" is the bookshelf, and
-  // "19 speech sounds" is ALL_SOUNDS. Add one and this fails until the page
-  // says so.
+  // THE COUNTS ARE THE CATALOG'S. The game count is every game Home opens,
+  // never one it shows as Coming soon (the Say & Play games are parked until
+  // each is rebuilt, Travis, 26 Sep 2026), "19 picture books" is the
+  // bookshelf, and "19 speech sounds" is ALL_SOUNDS. Bring a game back and
+  // this fails until the page says so.
   const sona = readFileSync(APP + "/public/sona.js", "utf8");
   const acts = sona.slice(sona.indexOf("const GAME_ACTS = {"), sona.indexOf("\n  };", sona.indexOf("const GAME_ACTS = {")));
-  const games = [...acts.matchAll(/^\s{4}(\w+):\s*\{ name: "([^"]+)"([^\n]*)/gm)].filter((m) => !/comingSoon: true/.test(m[3]));
+  const all = [...acts.matchAll(/^\s{4}(\w+):\s*\{ name: "([^"]+)"([^\n]*)/gm)];
+  const games = all.filter((m) => !/comingSoon: true/.test(m[3])), parkedGames = all.filter((m) => /comingSoon: true/.test(m[3]));
   const books = (readFileSync(APP + "/public/library.html", "utf8").match(/\/assets\/books\/[a-z-]+\//g) || []).filter((v, i, a) => a.indexOf(v) === i);
   const sounds = JSON.parse((sona.match(/const ALL_SOUNDS = (\[[^\]]*\]);/) || [, "[]"])[1]);
-  ok("the parent page's game count is the catalog's", games.length > 20 && new RegExp('<span class="n">' + games.length + "</span> games\\.").test(parents), games.length);
+  ok("the parent page's game count is the catalog's", games.length >= 6 && new RegExp('<span class="n">' + games.length + "</span> games\\.").test(parents), games.length);
   ok("…and its game strip shows every one of them", (parents.match(/<li class="tile g">/g) || []).length === games.length &&
     games.every((g) => parents.includes("<span>" + g[2].replace(/'/g, "&rsquo;") + "</span>")), games.map((g) => g[2]).filter((n) => !parents.includes("<span>" + n + "</span>")).join(", "));
+  const gameTiles = (parents.match(/<li class="tile g">[\s\S]*?<\/li>/g) || []).join("");
+  ok("…and not one game it shows as Coming soon", parkedGames.length > 0 && parkedGames.every((g) => !gameTiles.includes("<span>" + g[2].replace(/'/g, "&rsquo;") + "</span>") && !gameTiles.includes("/assets/games/" + g[1] + ".svg")),
+    parkedGames.filter((g) => gameTiles.includes("<span>" + g[2] + "</span>")).map((g) => g[2]).join(", "));
   ok("its book count is the bookshelf's, one book for every sound", books.length === sounds.length && new RegExp('<span class="n">' + books.length + "</span> picture books\\.").test(parents) &&
     (parents.match(/<li class="tile b">/g) || []).length === books.length, books.length + " books, " + sounds.length + " sounds");
   ok("…and the sounds answer names all " + sounds.length, new RegExp(sounds.length + " speech sounds: P, B, M, N, T, D, K, G, F, V, S, Z, SH, CH, J, L, R, and both TH sounds").test(pShown));
