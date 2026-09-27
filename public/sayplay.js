@@ -11,6 +11,13 @@
    carries its drawn scene and calls SayPlay.start(game) with its steps. This
    file owns everything else, once, so twenty games can't drift apart.
 
+   A PLAY GAME (game.play; Hoops is the first, 26 Sep 2026) is one where the
+   child does something with the move the word earned: the word brings the
+   ball, and the child shoots it. The step counts only when the game says the
+   move is done (the basket), so a word is never spent on a miss; the mic is
+   closed for all of it, and the game's own sounds go through sfx() below, so
+   they keep every quiet rule a chime keeps.
+
    What the mic is allowed to do, same hard lines as Feed Echo and the arcade
    keep-playing card:
    - It hears loudness and the sound's rough shape only (voiced vs hiss). It
@@ -21,7 +28,8 @@
      until she makes it, it doesn't.
    - Only a voice moves a game. Silence never does, and there is no tap that
      stands in for talking: a child who doesn't speak gets the word again,
-     not a free step (that would teach that not talking works).
+     not a free step (that would teach that not talking works). In a play
+     game a finger plays the move, but only a move a word has earned.
    - It is open only while it is the child's turn, never under Echo's voice
      or a chime. On an iPhone a page holding the mic runs as a phone call, so
      every sound waits for the mic to close and SETTLE_MS more, and the mic
@@ -153,8 +161,13 @@
     }
     if (due) chimesDue--;
     quietUntil = Math.max(quietUntil, performance.now() + QUIET_MS);
-    chimeEnd = Math.max(chimeEnd, performance.now() + (SFX_MS[n] || 400));
-    try { if (profile.soundOn !== false && S && S.sfx && S.sfx[n]) S.sfx[n](); } catch (e) {}
+    chimeEnd = Math.max(chimeEnd, performance.now() + (SFX_MS[n] || (G && G.soundMs && G.soundMs[n]) || 400));
+    try {
+      if (profile.soundOn !== false) {
+        if (G && G.sounds && G.sounds[n]) G.sounds[n](getCtx(), volume());
+        else if (S && S.sfx && S.sfx[n]) S.sfx[n]();
+      }
+    } catch (e) {}
     if (then) then();
   }
 
@@ -370,6 +383,17 @@
   function gotIt() {
     if (!turnLive) return;
     heardThisTurn = true; turnLive = false; micStop();
+    if (G.play) {
+      // the word earned the move; the child makes it (see moveDone)
+      try {
+        $("cheer").textContent = CHEERS[(step + 1) % CHEERS.length]; $("micBtn").hidden = true; $("micState").textContent = "";
+        $("turnPanel").classList.add("yay");
+      } catch (e) {}
+      sfx("correct");
+      setPhase("play");
+      G.play.onWord(step);
+      return;
+    }
     step++; paintDots();
     try {
       $("cheer").textContent = CHEERS[step % CHEERS.length]; $("micBtn").hidden = true; $("micState").textContent = "";
@@ -381,10 +405,19 @@
     if (step >= G.steps.length) nextTurn._t = setTimeout(finish, STEP_MS);
     else nextTurn._t = setTimeout(function () { if (!paused) nextTurn(); }, STEP_MS);
   }
+  // A play game's move is done (a basket): the step counts now, and the next
+  // word follows. Only the game calls this, and only in its own play phase.
+  function moveDone() {
+    if (phase !== "play" || paused) return;
+    step++; paintDots();
+    if (step >= G.steps.length) finish();
+    else nextTurn._t = setTimeout(function () { if (!paused) nextTurn(); }, 250);
+  }
   function finish() {
     micStop(); turnLive = false; setPhase("finale");
     try { $("turnPanel").classList.add("done"); } catch (e) {}
     run(G.finale);
+    if (G.play && G.play.finale) G.play.finale();
     sfx("complete", function () { try { if (S && S.confetti) S.confetti({ count: 120, duration: 2000 }); } catch (e) {} });
     clearTimeout(finish._t);
     finish._t = setTimeout(showEnd, FINALE_MS);
@@ -397,7 +430,8 @@
   function again() {
     $("endOvl").classList.remove("show");
     try { $("turnPanel").classList.remove("done"); } catch (e) {}
-    resetStage(); step = 0; paintDots(); used = [];
+    if (G.play) G.play.reset(); else resetStage();
+    step = 0; paintDots(); used = [];
     sfx("tap"); nextTurn();
   }
   function home() { stopAudio(); micStop(); location.href = "/today.html"; }
@@ -405,13 +439,17 @@
   // ── pause: a hidden page stops everything; coming back needs one tap ──
   function pause() {
     stopAudio(); micStop();
-    if (phase !== "turn" && phase !== "nudge" && phase !== "step" && phase !== "finale") return;
+    if (phase !== "turn" && phase !== "nudge" && phase !== "step" && phase !== "finale" && phase !== "play") return;
     paused = true; turnLive = false; clearTimeout(nextTurn._t); clearTimeout(finish._t);
+    if (G.play && G.play.pause) G.play.pause();
     $("pauseOvl").classList.add("show"); setPhase(phase);
   }
   function resume() {
     if (!paused) return;
     paused = false; audioPaused = false; $("pauseOvl").classList.remove("show");
+    if (G.play && G.play.resume) G.play.resume();
+    // paused with the ball in hand (or in the air): the same move goes on
+    if (phase === "play") { setPhase("play"); return; }
     if (step >= G.steps.length) { showEnd(); return; }
     // paused mid-turn: the same word again; paused after a step: the next one
     nextTurn(phase !== "step");
@@ -433,8 +471,14 @@
     // the grown-up reads the practice sound on the start card; the bar keeps
     // the game's name, which is all that fits beside eight dots on a phone
     try { $("startSound").textContent = "Today’s sound: " + ((S.soundLabel) ? S.soundLabel(SOUND) : SOUND); } catch (e) {}
-    stageHTML = $("stage").innerHTML;
+    stageHTML = $("stage") ? $("stage").innerHTML : "";
     paintDots(); unlockOnTap();
+    if (G.play) G.play.init({
+      sfx: function (n) { sfx(n); },
+      done: moveDone,
+      hint: function (t) { try { $("micState").textContent = t; } catch (e) {} },
+      cheer: function (t) { try { $("cheer").textContent = t; } catch (e) {} },
+    }, G.steps.length);
     $("close").onclick = home; $("goHome").onclick = home; $("again").onclick = again; $("startBtn").onclick = begin;
     $("hear").onclick = function () { if (!turnLive || paused) return; nextTurn(true); };
     $("micBtn").onclick = function () {

@@ -111,41 +111,6 @@ const soccerGame = {
   done: { title: "Goal! Eight goals!", sub: "Your words kicked every ball in." },
 };
 
-// ── 4. Hoops: every word shoots a basket, swish ──
-const HAND = [134, 282], RIM = [326, 150];
-const PILE = [[300, 384], [332, 388], [362, 384], [314, 368], [346, 370], [300, 356], [330, 352], [360, 356]];
-const hoopsGame = {
-  key: "hoops", title: "Hoops", group: "arcade", top: "#fff3e0", bottom: "#f0d2a8",
-  sub: "Say it to shoot a basket", playDescription: "Every word shoots the ball through the hoop.",
-  how: "Say each word to shoot a basket.", blurb: "Every word shoots the ball through the hoop, and the balls pile up under it.",
-  alt: "A gym with a basketball hoop and a player holding a ball.",
-  bg: R(0, 0, W, 300, 0, "#ffe9c9") + R(0, 110, W, 16, 0, "#ff9d3d") + R(0, 126, W, 6, 0, "#4db3f2")
-    + R(0, 300, W, 100, 0, "#e8b370") + range(12).map((i) => L(`M${i * 40} 300 V400`, "#d9a05a", 2)).join("") + L("M0 340 Q220 320 440 340", "#ffffff", 3, { opacity: 0.8 })
-    + R(24, 20, 200, 40, 20, "#2d3642") + range(8).map((i) => G(`translate(${48 + i * 22} 40)`, A.scoreDot(false))).join("")
-    + G(at(368, 176, 1), A.backboard()),
-  parts: [
-    ...PILE.map((p, i) => ({ id: "b" + (i + 1), x: HAND[0], y: HAND[1], hid: true, svg: A.basketball(15) })),
-    { id: "net", x: RIM[0], y: RIM[1], o: "50% 0%", svg: A.hoopNet() },
-    { id: "rim", x: RIM[0], y: RIM[1], svg: A.hoopRim() },
-    { id: "player", x: 96, y: 372, svg: G("scale(1.2)", cast.kid({ pose: "cheer", face: "grin", skin: "c", hair: "#2d2420", style: "curly", top: "#4db3f2", bottom: "#ffffff", shoes: "#ff5c5c" })) },
-    { id: "hb", x: HAND[0], y: HAND[1], svg: A.basketball(15) },
-    ...range(8).map((i) => ({ id: "sc" + (i + 1), x: 48 + i * 22, y: 40, hid: true, svg: A.scoreDot(true) })),
-    { id: "cup", x: 206, y: 250, hid: true, svg: A.trophy() },
-  ],
-  steps: PILE.map(([x, y], i) => [
-    { a: "hide", id: "hb" }, { a: "show", id: "b" + (i + 1), fx: "fade" },
-    { a: "move", id: "b" + (i + 1), x: RIM[0] - HAND[0], y: RIM[1] - 70 - HAND[1] },
-    { a: "move", id: "b" + (i + 1), x: RIM[0] - HAND[0], y: RIM[1] + 26 - HAND[1], at: 480 }, { a: "fx", id: "net", fx: "shake", at: 560 },
-    { a: "show", id: "sc" + (i + 1), fx: "pop", at: 620 }, { a: "move", id: "b" + (i + 1), x: x - HAND[0], y: y - 16 - HAND[1], at: 900 },
-    ...(i < 7 ? [{ a: "show", id: "hb", fx: "pop", at: 1150 }] : []),
-  ]),
-  finale: [
-    { a: "fx", id: "player", fx: "hop" }, ...range(8).map((i) => ({ a: "fx", id: "sc" + (i + 1), fx: "twinkle", at: i * 90 })),
-    { a: "show", id: "cup", fx: "drop", at: 400 },
-  ],
-  done: { title: "Swish! Eight baskets!", sub: "Your words sank every shot." },
-};
-
 // ── 5. Robot Builder: every word adds a part; then the robot dances ──
 const ROBOT = ["legs", "body", "armL", "armR", "head", "eyes", "antenna", "heart"];
 const robotGame = {
@@ -356,4 +321,4 @@ const monsterGame = {
   done: { title: "What a silly monster!", sub: "Eight words gave Moe a whole new look." },
 };
 
-export const BIG = [raceGame, mapGame, soccerGame, hoopsGame, robotGame, castleGame, dinoGame, spaceGame, pizzaGame, monsterGame];
+export const BIG = [raceGame, mapGame, soccerGame, robotGame, castleGame, dinoGame, spaceGame, pizzaGame, monsterGame];
