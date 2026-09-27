@@ -59,6 +59,10 @@ function fakePhone() {
       getByteTimeDomainData(a) { a.fill(128); }, getFloatTimeDomainData(a) { a.fill(0); }, getByteFrequencyData(a) { a.fill(0); }, getFloatFrequencyData(a) { a.fill(-120); } }; },
   };
   window.AudioContext = window.webkitAudioContext = AC;
+  // Echo's lead-in and Rachel's sound clip end at once: on a slow CI runner
+  // real media playback held the card's mic back past the test's patience
+  // (27 Sep 2026: GitHub's runner took 5.8 s for the first card)
+  window.Audio = function (src) { const a = { src, volume: 1, paused: false, play() { setTimeout(() => { if (a.onended) a.onended(); }, 20); return Promise.resolve(); }, pause() { a.paused = true; }, removeAttribute() {}, load() {} }; return a; };
   // every Sona sound, with whether a mic was live as it started
   let sona;
   Object.defineProperty(window, "Sona", { configurable: true, get: () => sona, set: (v) => { sona = v;
@@ -103,16 +107,16 @@ await scenario("a whole flight", async () => {
     ok("flying through a golden star catches it, worth three", (await page.evaluate(() => score)) - before === 3);
     // the cloud rest
     await nearEnd(page);
-    await page.locator("#revOvl.show").waitFor({ timeout: 8000 });
+    await page.locator("#revOvl.show").waitFor({ timeout: 12000 });
     s = await st(page);
     ok("the end of leg 1 is a rest on a cloud, and the card asks for the sound to fly on", /^Say “rrrr” to fly on!$/.test(s.title) && s.leg === 0, s);
-    await page.waitForFunction(() => __f.live === 1, null, { timeout: 6000 });
+    await page.waitForFunction(() => __f.live === 1, null, { timeout: 12000 });
     await heard(page);
     s = await st(page);
     ok("the child's sound starts leg 2, and the mic is closed again", s.leg === 1 && s.phase === "fly" && s.playing && !s.card && s.REV === 2 && s.live === 0, s);
     await nearEnd(page);
-    await page.locator("#revOvl.show").waitFor({ timeout: 8000 });
-    await page.waitForFunction(() => __f.live === 1, null, { timeout: 6000 });
+    await page.locator("#revOvl.show").waitFor({ timeout: 12000 });
+    await page.waitForFunction(() => __f.live === 1, null, { timeout: 12000 });
     await heard(page);
     await nearEnd(page);
     await page.waitForFunction(() => phase === "done", null, { timeout: 8000 });

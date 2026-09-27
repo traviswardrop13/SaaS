@@ -61,6 +61,10 @@ function fakePhone() {
       getByteTimeDomainData(a) { a.fill(128); }, getFloatTimeDomainData(a) { a.fill(0); }, getByteFrequencyData(a) { a.fill(0); }, getFloatFrequencyData(a) { a.fill(-120); } }; },
   };
   window.AudioContext = window.webkitAudioContext = AC;
+  // Echo's lead-in and Rachel's sound clip end at once: on a slow CI runner
+  // real media playback held the card's mic back past the test's patience
+  // (27 Sep 2026: GitHub's runner took 5.8 s for the first card)
+  window.Audio = function (src) { const a = { src, volume: 1, paused: false, play() { setTimeout(() => { if (a.onended) a.onended(); }, 20); return Promise.resolve(); }, pause() { a.paused = true; }, removeAttribute() {}, load() {} }; return a; };
   // every Sona sound, with whether a mic was live as it started
   let sona;
   Object.defineProperty(window, "Sona", { configurable: true, get: () => sona, set: (v) => { sona = v;
@@ -121,11 +125,11 @@ await scenario("a whole round", async () => {
     ok("…and snaps into place, nothing cut", snapped && (await page.evaluate(() => stack[stack.length - 1].w)) === before);
     // finish floor 1
     while ((await st(page)).phase === "floor") await dropWhere(page, "snap");
-    await page.locator("#revOvl.show").waitFor({ timeout: 6000 });
+    await page.locator("#revOvl.show").waitFor({ timeout: 12000 });
     s = await st(page);
     ok("five blocks finish floor 1, then the say-it card asks for the sound for floor 2", /^Say “rrrr” for floor 2!$/.test(s.title) && s.floor === 0, s);
     ok("…with floor 1 ticked on the card", (await page.locator("#revHearts .wdot.on").count()) === 1);
-    await page.waitForFunction(() => __f.live === 1, null, { timeout: 6000 });
+    await page.waitForFunction(() => __f.live === 1, null, { timeout: 12000 });
     await heard(page);
     s = await st(page);
     ok("the child's sound starts floor 2, and the mic is closed again", s.floor === 1 && s.phase === "floor" && s.playing && !s.card && s.REV === 2 && s.live === 0, s);
@@ -134,9 +138,9 @@ await scenario("a whole round", async () => {
     ok("a golden block is dropped", await dropWhere(page, "snap"));
     ok("…and makes the tower full width again", await page.evaluate(() => Math.abs(stack[stack.length - 1].w - baseW) < 0.5));
     while ((await st(page)).phase === "floor") await dropWhere(page, "snap");
-    await page.locator("#revOvl.show").waitFor({ timeout: 6000 });
+    await page.locator("#revOvl.show").waitFor({ timeout: 12000 });
     ok("floor 2 ends on the card for floor 3", /for floor 3!$/.test((await st(page)).title));
-    await page.waitForFunction(() => __f.live === 1, null, { timeout: 6000 });
+    await page.waitForFunction(() => __f.live === 1, null, { timeout: 12000 });
     await heard(page);
     while ((await st(page)).phase === "floor") await dropWhere(page, "snap");
     await page.waitForFunction(() => phase === "finale" && rocket, null, { timeout: 8000 });

@@ -62,6 +62,10 @@ function fakePhone() {
       getByteTimeDomainData(a) { a.fill(128); }, getFloatTimeDomainData(a) { a.fill(0); }, getByteFrequencyData(a) { a.fill(0); }, getFloatFrequencyData(a) { a.fill(-120); } }; },
   };
   window.AudioContext = window.webkitAudioContext = AC;
+  // Echo's lead-in and Rachel's sound clip end at once: on a slow CI runner
+  // real media playback held the card's mic back past the test's patience
+  // (27 Sep 2026: GitHub's runner took 5.8 s for the first card)
+  window.Audio = function (src) { const a = { src, volume: 1, paused: false, play() { setTimeout(() => { if (a.onended) a.onended(); }, 20); return Promise.resolve(); }, pause() { a.paused = true; }, removeAttribute() {}, load() {} }; return a; };
   // every Sona sound, with whether a mic was live as it started
   let sona;
   Object.defineProperty(window, "Sona", { configurable: true, get: () => sona, set: (v) => { sona = v;
@@ -115,11 +119,11 @@ await scenario("a whole round", async () => {
     ok("after two misses in a row the next fruit comes bigger and slower", true);
     // slice through wave 1
     ok("slicing six fruit finishes wave 1", await sliceUntil(page, () => phase !== "wave"));
-    await page.locator("#revOvl.show").waitFor({ timeout: 6000 });
+    await page.locator("#revOvl.show").waitFor({ timeout: 12000 });
     s = await st(page);
     ok("…then the say-it card asks for the sound for wave 2", /^Say “rrrr” for wave 2!$/.test(s.title) && s.wave === 0 && !s.playing, s);
     ok("…with wave 1 ticked on the card", (await page.locator("#revHearts .wdot.on").count()) === 1 && (await page.locator("#revHearts .wdot").count()) === 3);
-    await page.waitForFunction(() => __f.live === 1, null, { timeout: 6000 });
+    await page.waitForFunction(() => __f.live === 1, null, { timeout: 12000 });
     ok("the card's mic opens only after the wave's cheer, never during play", (await page.evaluate(() => __f.mics)) === 1);
     await heard(page);
     s = await st(page);
@@ -135,10 +139,10 @@ await scenario("a whole round", async () => {
     ok("a golden fruit counts three, toward the wave too", after.score - before.score >= 3 && after.waveGot - before.waveGot >= 3, { before, after });
     // a wave that runs long ends anyway: nobody is stuck in one
     await page.evaluate(() => { WAVE_CAP_MS = 700; });
-    await page.locator("#revOvl.show").waitFor({ timeout: 8000 });
+    await page.locator("#revOvl.show").waitFor({ timeout: 12000 });
     s = await st(page);
     ok("a wave ends at its time limit whatever the count, and wave 3 is asked for", s.wave === 1 && /for wave 3!$/.test(s.title), s);
-    await page.waitForFunction(() => __f.live === 1, null, { timeout: 6000 });
+    await page.waitForFunction(() => __f.live === 1, null, { timeout: 12000 });
     await heard(page);
     // wave 3 ends: no card this time, the giant comes straight in
     await page.waitForFunction(() => phase === "finale" && giant && giant.y <= giant.ty + giant.r * 0.6, null, { timeout: 12000 });
