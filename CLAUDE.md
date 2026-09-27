@@ -321,10 +321,12 @@ gold tile, gold key and star fruit, and the "Say rrrr for GOLDEN KEYS / a
 FRENZY" banners are painted out — and the ads' text thread and "Max's" fridge
 note are not used: they quote parents who do not exist. It never prints a
 dollar figure; its cost answer reads the switch from `/api/charter`. Its
-game count (every game Home opens, never a Coming soon one), "19 picture
-books" and "19 speech sounds" are pinned to the catalog by `shiptest`, and
-its game strip shows only games a child can open: bring a game back and the
-test fails until the page says so.
+game count (every game Home opens, never a Coming soon one), its book count
+(only the books the shelf has opened: each book tile carries its opening day,
+and the page counts and tags them on the visitor's own calendar) and "19
+speech sounds" are pinned to the catalog by `shiptest`, and its game strip
+shows only games a child can open: bring a game back and the test fails until
+the page says so.
 
 **The clinician page lives at `/for-slps`** (the root from 22 to 26 Sep). It
 still speaks to parents and SLPs alike (Travis, 25 Sep 2026: "I don't know
@@ -480,6 +482,18 @@ in `tools/bookart/`, rebuild, and commit the SVGs; the app only loads files.
 card opens `library.html`. Books are Premium content (`Sona.gated("books")`),
 free while the app is free; a locked family gets the grown-up message, and
 `library.html` sends a typed address back to Home (`?locked=books`).
+
+**The books open a few a week** (Travis, 27 Sep 2026: "a solid book for the
+top four or five most popular letters... everything else, we can just set a
+date on it... new drops every week"). R, S, L, SH and TH are open. Every
+other book in `STORIES` carries `opens` (a Sunday, at most three a week) and
+waits on the shelf greyed, "Coming Oct 4", until that day on the phone's own
+calendar; a tap or `openBook()` does nothing before it. The six-page emoji
+books come after every twelve-page one: they put the sound anywhere in a word
+and are last in line to be redone. A child whose sounds have nothing open yet
+sees every open book first, then their own, coming. Home's card and the
+website say "new ones every week", never "a book for every sound".
+`readtest` pins the dates and the shelf; `landingtest` the website's count.
 
 **Say & Play** (Travis, 26 Sep 2026: "10 more games for ages 3-4 and 10
 more games for ages 5-8 ... incorporating practice into it"): twenty games

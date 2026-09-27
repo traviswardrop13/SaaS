@@ -119,8 +119,8 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
 
   // THE COUNTS ARE THE CATALOG'S. The game count is every game Home opens,
   // never one it shows as Coming soon (the Say & Play games are parked until
-  // each is rebuilt, Travis, 26 Sep 2026), "19 picture books" is the
-  // bookshelf, and "19 speech sounds" is ALL_SOUNDS. Bring a game back and
+  // each is rebuilt, Travis, 26 Sep 2026), the books are the bookshelf's
+  // (below), and "19 speech sounds" is ALL_SOUNDS. Bring a game back and
   // this fails until the page says so.
   const sona = readFileSync(APP + "/public/sona.js", "utf8");
   const acts = sona.slice(sona.indexOf("const GAME_ACTS = {"), sona.indexOf("\n  };", sona.indexOf("const GAME_ACTS = {")));
@@ -134,8 +134,20 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
   const gameTiles = (parents.match(/<li class="tile g">[\s\S]*?<\/li>/g) || []).join("");
   ok("…and not one game it shows as Coming soon", parkedGames.length > 0 && parkedGames.every((g) => !gameTiles.includes("<span>" + g[2].replace(/'/g, "&rsquo;") + "</span>") && !gameTiles.includes("/assets/games/" + g[1] + ".svg")),
     parkedGames.filter((g) => gameTiles.includes("<span>" + g[2] + "</span>")).map((g) => g[2]).join(", "));
-  ok("its book count is the bookshelf's, one book for every sound", books.length === sounds.length && new RegExp('<span class="n">' + books.length + "</span> picture books\\.").test(parents) &&
-    (parents.match(/<li class="tile b">/g) || []).length === books.length, books.length + " books, " + sounds.length + " sounds");
+  // THE BOOKS OPEN A FEW A WEEK (27 Sep 2026). The strip holds every
+  // twelve-page book, each tile carrying the day the bookshelf opens it, and
+  // the page counts only the open ones and tags the rest "Coming", worked out
+  // on the phone from those days (landingtest plays it), so it is never
+  // ahead of the shelf.
+  const lib = readFileSync(APP + "/public/library.html", "utf8");
+  const shelfDays = [...lib.matchAll(/\{ sound: "\w+", emoji: "[^"]*", (?:opens: "([\d-]+)", )?title: "[^"]+"[^\n]*\n\s*cover: "\/assets\/books\/([a-z-]+)\/cover\.svg"/g)].map((m) => ({ slug: m[2], opens: m[1] || "" }));
+  const tileDay = (slug) => (parents.match(new RegExp('<li class="tile b"(?: data-opens="([\\d-]+)")?><img src="/assets/books/' + slug + '/cover\\.svg"')) || [null, null]);
+  ok("its book strip is the bookshelf's, one book for every sound, each tile with the day the shelf opens it",
+    books.length === sounds.length && shelfDays.length === books.length && (parents.match(/<li class="tile b"/g) || []).length === books.length &&
+    shelfDays.every((b) => tileDay(b.slug)[0] && (tileDay(b.slug)[1] || "") === b.opens),
+    shelfDays.filter((b) => !tileDay(b.slug)[0] || (tileDay(b.slug)[1] || "") !== b.opens).map((b) => b.slug).join(", "));
+  ok("…and its book count is only the open ones, worked out from those days",
+    /<span class="n" id="bookCount">\d+<\/span> picture books\./.test(parents) && /\$\("bookCount"\)/.test(parents) && !/a picture book for every sound/.test(parents));
   ok("…and the sounds answer names all " + sounds.length, new RegExp(sounds.length + " speech sounds: P, B, M, N, T, D, K, G, F, V, S, Z, SH, CH, J, L, R, and both TH sounds").test(pShown));
 
   // THE CLINICIAN PAGE, AT /for-slps, is the page it was.
