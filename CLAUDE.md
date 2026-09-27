@@ -81,10 +81,11 @@ are disabled “Coming soon” cards, regardless of subscription, free mode,
 trial, or earned access. The books are on (Travis, 26 Sep 2026: "yes turn
 them on"): Premium content, free while the app is free.
 
-The dormant paid rail remains tested: daily practice and released free-tier
-games stay free, while `premium()` recognizes subscriptions, founders,
-free-era families, founding pilots, and covered caseloads. Avoid a fixed
-“four free games” claim while Bubble Pop is parked. Clinician dashboard and
+The dormant paid rail remains tested: daily practice and the free games
+(Fruit Slice and Feed Echo; Block Stacker joined Premium on 27 Sep 2026)
+stay free, while `premium()` recognizes subscriptions, founders, free-era
+families, founding pilots, and covered caseloads. Never a fixed count of free
+games: the plan screen names them from the catalog. Clinician dashboard and
 Caseload Premium work from the earlier merge stays separate and intact.
 
 The earlier paid release shipped `_grandfatherFreeEra4()`; preserve all four
@@ -155,10 +156,19 @@ ASC, not this repo. And **flipping to free here cancels no Apple or Stripe
 subscription** — anyone who bought during a paid window keeps being billed
 until it is stopped in those dashboards. That is an operations task.
 
-**The ask happens after the product proves itself.** The offer fires once, on
-the first COMPLETED practice run — never during onboarding, which used to end
-at a price screen before the child had said a word. It is an offer, not a wall,
-it is inert while free, and it never fires for anyone already entitled.
+**The ask happens after the product proves itself.** Setup goes straight into
+the first game (Travis, 27 Sep 2026: "it will choose feed echo for the littles
+and fruit slice for ages five and up ... when they finish the game, that is
+when I want the paywall to come up"): Feed Echo for ages 3-4, Fruit Slice (its
+practice page first) from 5, a clinician's own setup still ends on Home. That
+first game's end card is where the offer is made, once: "Show a grown-up →"
+to `/subscribe.html?first=1` while `planEligible()` says so, else the usual
+end. `Sona.firstGameStart()` marks the game for this tab and
+`firstGameEnd(key)` answers once; `tests/firstgametest.mjs` pins it. Never
+during onboarding, which used to end at a price screen before the child had
+said a word. It is an offer, not a wall, it is inert while free, and it never
+fires for anyone already entitled. Declining leaves Home with every game but
+the two free ones greyed out (still tappable: "ask a grown-up").
 
 **Eligibility and impression are two functions, and merging them is the bug.**
 `planEligible()` answers "should we take them to the plan screen" and changes
@@ -274,8 +284,8 @@ so they hold in either state. A test that must be hand-edited on a business
 decision guards nothing and taxes every flip. `IS_FREE_NOW` in `iaptest.mjs`
 reads the live state from source where a suite genuinely needs it.
 
-Free regardless of the switch: practice and the four free games, for every
-family; founding pilots (`ff-` codes) and founders; every device onboarded, or
+Free regardless of the switch: practice and the free games (Fruit Slice and
+Feed Echo), for every family; founding pilots (`ff-` codes) and founders; every device onboarded, or
 that redeemed a clinician's link, before the Caseload Premium build. **Not**
 an SLP-code pilot: "Yes, share progress" makes every consenting family a
 pilot, so counting `isPilot()` in `premium()` would hand every uncovered
@@ -462,8 +472,9 @@ re-running.
 ## Home: choose a game, then practice
 **Home is the silent Play library (Travis, 24 Sep 2026).** `today.html` opens
 on “Pick a game!”; `activities.html` preserves old query/hash links by
-redirecting there. Setup finishes at Home, without starting practice or a
-game. There is no old adventure-map Home or menu narration. Voice remains
+redirecting there. Setup finishes in the first game (Feed Echo for 3-4,
+Fruit Slice from 5; see "The ask happens after the product proves itself"),
+and every visit after that opens on Home. There is no old adventure-map Home or menu narration. Voice remains
 inside deliberate game/practice sessions. Parent settings, progress,
 profiles, earned coins, homework and entitlement sync remain available.
 

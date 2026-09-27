@@ -255,7 +255,7 @@
       <h2>What stays free</h2>
       <ul class="free">
         <li>Daily speech practice — the whole adventure, every day</li>
-        <li>Four free games — two for each age group, open to every child</li>
+        <li id="freeGames">Free games, open to every child</li>
       </ul>
       <!-- the one phrase every family surface uses for the free version
            (24 Sep 2026); "two games" undersold what gameAccess opens -->
@@ -348,6 +348,15 @@
     // again on bfcache restores (back-swipe re-shows the page without scripts).
     if (window.Sona && Sona.requireGate) Sona.requireGate();
     window.addEventListener("pageshow", function (e) { if (e.persisted && window.Sona && Sona.requireGate) Sona.requireGate(); });
+
+    // The free games, named from the catalog (27 Sep 2026): a fixed "Four
+    // free games" went stale the day Bubble Pop was parked.
+    try {
+      var freeGames = Object.keys(Sona.GAME_ACTS).filter(function (k) { var g = Sona.GAME_ACTS[k]; return g.tier === "free" && !g.comingSoon; })
+        .map(function (k) { return Sona.GAME_ACTS[k].name; });
+      if (freeGames.length) document.getElementById("freeGames").textContent =
+        (freeGames.length > 1 ? freeGames.slice(0, -1).join(", ") + " and " + freeGames[freeGames.length - 1] : freeGames[0]) + ", free for every child";
+    } catch (e) {}
 
     // FREE MODE (SLP-first launch): no price anywhere. Both purchase cards
     // stay in the DOM (and under test) but neither is shown — one flag, so a

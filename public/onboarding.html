@@ -829,7 +829,11 @@
           try{if(window.SonaAnalytics)SonaAnalytics.track("onboarding completed");}catch(e){}
           var pay=false;try{pay=!(Sona.isFree&&Sona.isFree())&&!(Sona.isSubscribed&&Sona.isSubscribed())&&!(Sona.isPilot&&Sona.isPilot())&&!(Sona.getProfile&&Sona.getProfile().earlyAdopter);}catch(e){}
           if(pay){try{sessionStorage.setItem("sona.gate.v1",String(Date.now()));}catch(e){}}
-          location.href="/today.html";
+          // Straight into the first game (Travis, 27 Sep 2026): Feed Echo for
+          // ages 3-4, Fruit Slice (its practice page first) from 5. A
+          // clinician setting up their own phone still lands on Home.
+          var first="/today.html";try{if(draft.role!=="slp"&&Sona.firstGameStart)first=Sona.firstGameStart();}catch(e){}
+          location.href=first;
         };
         document.getElementById("skipEmail").onclick=function(){document.getElementById("achEmailInput").value="";nextBtn.onclick();};
         window.scrollTo(0,0);try{document.getElementById("handoffTitle").focus({preventScroll:true});}catch(e){}

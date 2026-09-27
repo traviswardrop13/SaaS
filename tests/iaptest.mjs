@@ -1340,7 +1340,8 @@ ok("no pageerrors", errs.length === 0, errs.join(" | "));
 // already burning. At 20 downloads that is the difference between learning
 // "will parents pay" and learning nothing. These pin the new order.
 {
-  // Setup ends at the library; choosing the first game remains the family's action.
+  // Setup ends in the first game (Travis, 27 Sep 2026): from age 5 that is
+  // Fruit Slice's practice page. Never a price screen, never a trial.
   const obContext = await browser.newContext(); const obPage = await obContext.newPage();
   try {
     await obPage.goto("http://localhost:8147/onboarding.html");
@@ -1352,9 +1353,9 @@ ok("no pageerrors", errs.length === 0, errs.join(" | "));
     });
     await obPage.locator('[data-step="achieve"].on').waitFor();
     ok("onboarding waits for an explicit child handoff without starting a trial", /onboarding\.html/.test(obPage.url()) && await obPage.evaluate(() => !localStorage.getItem("sona.trial.v1")));
-    await obPage.locator("#nextBtn").click(); await obPage.waitForURL(/today\.html/);
+    await obPage.locator("#nextBtn").click(); await obPage.waitForURL(/charge\.html/);
     const destination = new URL(obPage.url());
-    ok("onboarding ends at the game library without starting practice or a trial", destination.pathname === "/today.html" && !destination.search && await obPage.locator("#libraryApp").isVisible() && await obPage.evaluate(() => !localStorage.getItem("sona.trial.v1") && !sessionStorage.getItem("sona.run.v1")), obPage.url());
+    ok("onboarding ends in the first game's practice page, not a price screen or a trial", destination.pathname === "/charge.html" && destination.searchParams.get("game") === "arcade-slice.html" && await obPage.evaluate(() => sessionStorage.getItem("sona.firstgame.v1") === "slice") && await obPage.evaluate(() => !localStorage.getItem("sona.trial.v1") && !sessionStorage.getItem("sona.run.v1")), obPage.url());
   } finally { await obContext.close(); }
 
   // DECIDING is not SHOWING. These were one function and it cost the family

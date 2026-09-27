@@ -679,6 +679,10 @@
         $("endOvl").classList.add("show");
         return;
       }
+      // the first game after setup: the grown-up's plan screen when it is due,
+      // else Home (Sona.firstGameEnd answers once)
+      var after=(S&&S.firstGameEnd)?S.firstGameEnd("slice"):null;
+      if(after){ $("endCharge").textContent=/subscribe/.test(after)?"Show a grown-up →":"Pick a game →"; $("endCharge").onclick=function(){ location.href=after; }; }
       // one reward per moment: star + one line + Echo — no stat rows or coin counters here
       $("endTitle").textContent=finaleDone?(isBest?"A new best! You sliced the giant watermelon!":"You sliced the giant watermelon!"):(isBest?"WOW — a new best! I saw "+score+" fruits fly!":"I saw "+score+" fruits fly! So fun!");
       var _es=$("endSub"); _es.textContent=score+" fruits · Best: "+BEST; _es.className="later";

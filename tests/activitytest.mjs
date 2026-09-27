@@ -165,7 +165,8 @@ if (present && hasContract) {
         model.groups.every((g) => g.games.every((game) => ["free", "premium"].includes(game.tier)
           && Object.hasOwn(game, "releasedOn") && (game.releasedOn === null || /^\d{4}-\d{2}-\d{2}$/.test(game.releasedOn)) && game.available === true && typeof game.comingSoon === "boolean")));
       ok("each suggested age group retains a playable free game", model.groups.every((g) => g.games.some((game) => game.tier === "free" && !game.comingSoon)));
-      ok("the playable free games are Feed Echo, Fruit Slice and Block Stacker", same(freeKeys, ["feed", "slice", "stack"]));
+      // Travis, 27 Sep 2026: once the plan screen has been seen, only Feed Echo and Fruit Slice stay open
+      ok("the playable free games are Feed Echo and Fruit Slice", same(freeKeys, ["feed", "slice"]));
       ok("every game has a usable name, description and destination",
         model.groups.every((g) => [g.name, g.ageLabel, g.description].every((v) => typeof v === "string" && v.trim())
           && g.games.every((game) => [game.name, game.sub, game.go, game.playDescription].every((v) => typeof v === "string" && v.trim()))));
