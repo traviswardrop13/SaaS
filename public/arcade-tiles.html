@@ -50,6 +50,24 @@
     @keyframes echoLeap{0%{transform:translateY(110px)}100%{transform:translateY(0)}}
     @keyframes echoHop{0%,100%{transform:translateY(0)}45%{transform:translateY(-14px) rotate(-5deg)}}
     @media (prefers-reduced-motion: reduce){ .endStar,.echoWin img{animation:none;} }
+    /* ── the round's HUD, banner and card (27 Sep 2026) ── */
+    #timer{color:#4a2c14;letter-spacing:0;gap:8px;}
+    #timer .wv{white-space:nowrap;}
+    #timer .wbar{display:block;width:64px;height:10px;border-radius:99px;background:#e9e2f6;overflow:hidden;}
+    #timer .wbar i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#4dabf7,#ff6b8a);transition:width .25s;}
+    #banner{position:absolute;left:0;right:0;top:17%;text-align:center;z-index:4;pointer-events:none;opacity:0;padding:0 16px;}
+    #banner .pill{display:inline-block;background:rgba(255,255,255,.95);border-radius:26px;padding:10px 26px 12px;box-shadow:0 6px 0 rgba(20,10,60,.4);}
+    #banner b{display:block;font-family:"Baloo 2";font-weight:800;font-size:38px;color:#43318c;line-height:1.05;}
+    #banner span{display:block;font-family:"Baloo 2";font-weight:800;font-size:17px;color:#8a6f52;margin-top:2px;}
+    #banner span:empty{display:none;}
+    #banner.in{animation:bannerIn 1.9s ease both;}
+    @keyframes bannerIn{0%{opacity:0;transform:scale(.6)}12%{opacity:1;transform:scale(1.08)}20%{transform:scale(1)}80%{opacity:1;transform:scale(1)}100%{opacity:0;transform:translateY(-12px)}}
+    @keyframes bannerFade{0%,100%{opacity:0}15%,80%{opacity:1}}
+    #revHearts{display:flex;justify-content:center;gap:8px;}
+    #revHearts .wdot{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#f3e3cf;color:#b08d63;font-family:"Baloo 2";font-weight:800;font-size:17px;}
+    #revHearts .wdot.on{background:#58cc02;box-shadow:0 3px 0 #46a302;}
+    #revHearts .wdot svg{width:20px;height:20px;}
+    @media (prefers-reduced-motion: reduce){ #banner.in{animation-name:bannerFade;} }
   </style>
   <link href="/crafted-games.css" rel="stylesheet">
 </head>
@@ -63,6 +81,7 @@
       <div id="timer" class="hudpill"></div>
     </div>
     <div id="flash"></div>
+    <div id="banner" aria-live="polite"><div class="pill"><b id="bnBig"></b><span id="bnSmall"></span></div></div>
   </div>
 
   <div class="ovl" id="needOvl">
@@ -94,7 +113,7 @@
       <div class="echoWin"><img src="/assets/crafted/echo-welcome.webp" alt="" /></div>
       <button class="btn blue" id="endCharge">WOOHOO! Next →</button>
       <button class="btn" id="endAgain" style="display:none;"></button>
-      <button class="btn ghost" id="endHome">Back to the house</button>
+      <button class="btn ghost" id="endHome">Back home</button>
     </div>
   </div>
 
@@ -181,45 +200,95 @@
     // ---- game state ----
     var LANES=4, playing=true, score=0, comboN=0;
     var BESTK="sona.best.tiles", BEST=0; try{ BEST=parseInt(localStorage.getItem(BESTK)||"0",10)||0; }catch(e){}
-    // ── lives: a crash → say your sound for a new life (3 per run) ──
-    var REV=3, reviveWait=false;
-    function hearts(){ $("timer").innerHTML=(window.Sona&&Sona.heartRow)?Sona.heartRow(REV,3,17):String(REV); }
-    function crash(){
+    var REV=3, reviveWait=false;   // say-the-sound cards: one between songs
+
+    // ── the round: three songs, then a grand finale (27 Sep 2026) ──
+    // The round Travis said yes to for Fruit Slice ("a clear goal... It always
+    // ends in a win. Missing is OK... The talking moves to between waves"),
+    // for the piano, with what the review of the older games asked for: tiles
+    // that play songs a child knows, a missed tile that fades while the song
+    // plays on (and the next ones slow down and wait), the first tiles waiting
+    // at the keys until tapped, the same speed on every screen (a tile took
+    // 2.2 s to fall on a small iPhone and 0.5 s on a big iPad), the say-it
+    // card between songs, and a finale whose tiles all wait for the child, so
+    // every round ends in a win.
+    var HZ={C:261.63,D:293.66,E:329.63,F:349.23,G:392.00,A:440.00,B:493.88};
+    var LANE_OF={C:0,D:0,E:1,F:1,G:2,A:3,B:3};   // the tune's shape: higher notes further right
+    var SONGS=[
+      {name:"Twinkle Twinkle", notes:"CCGGAAG FFEEDDC", beat:760, fall:2.5},
+      {name:"Mary Had a Little Lamb", notes:"EDCDEEE DDD EGG", beat:700, fall:2.3},
+      {name:"Row, Row, Row Your Boat", notes:"CCCDE EDEFG", beat:660, fall:2.1},
+      {name:"Ode to Joy", notes:"EEFGGFED CCDEEDD", beat:620, fall:2.2, finale:true}
+    ];
+    var song=0, songIx=0, songMs=0, nextAt=900, phase="song", missRun=0, waitLeft=3, finaleDone=false;
+    var tiles=[], sparks=[], keyGlow=[-1e9,-1e9,-1e9,-1e9], echoT=-1e9;
+    var HITY=function(){ return H-140; };   // the top of the keys
+    function songNotes(i){ return SONGS[i].notes.replace(/ /g,""); }
+    // pixels a second, so a tile takes the song's fall time on every screen
+    function speedPx(){ return (HITY()+90)/(SONGS[song].fall*(missRun>=2?1.3:1)); }
+    function spawn(){
+      var s=SONGS[song], ch=songNotes(song).charAt(songIx++);
+      tiles.push({lane:LANE_OF[ch],y:-90,h:88,hit:false,gone:false,note:HZ[ch],
+        wait:!!s.finale||waitLeft>0||missRun>=2, gold:!s.finale&&song>0&&songIx>2&&Math.random()<0.12});
+      if(waitLeft>0) waitLeft--;
+    }
+    function startSong(i){
+      song=i; songIx=0; songMs=0; nextAt=900; phase="song"; missRun=0; hud();
+      banner(SONGS[i].finale?"Grand finale!":"Song "+(i+1), SONGS[i].name);
+    }
+    function endSong(){
+      phase="break"; hud();
+      var last=song===SONGS.length-1, next=song+1;
+      setTimeout(function(){
+        if(window.__ended||!playing) return;
+        banner(last?"Bravo!":"You played it!", last?"What a concert!":SONGS[song].name);
+        sfx("complete"); echoT=performance.now();
+        setTimeout(function(){
+          if(window.__ended||!playing) return;
+          if(last){ finaleDone=true; endRound(); }
+          else if(SONGS[next].finale) startSong(next);   // the finale follows the third song straight away
+          else sayCard("Say \u201C"+SAYTXT+"\u201D for song "+(next+1)+"!","none");
+        },1700);
+      },600);
+    }
+
+    // ── the HUD: this song's notes, the say-it card's songs ──
+    function hud(){
+      var t=$("timer"), s=SONGS[song], n=songNotes(song).length, got=phase==="break"?n:Math.min(n,songIx-tiles.filter(function(q){ return !q.hit&&!q.gone; }).length);
+      t.innerHTML='<span class="wv">'+(s.finale?"Finale":"Song "+(song+1))+'</span><span class="wbar"><i style="width:'+Math.round(Math.max(0,got)/n*100)+'%"></i></span>';
+      t.setAttribute("aria-label",(s.finale?"Grand finale":"Song "+(song+1)+" of 3")+": "+s.name);
+    }
+    var TICK='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    function songDots(){ var s=""; for(var i=0;i<3;i++) s+='<span class="wdot'+(i<=song?' on':'')+'">'+(i<=song?TICK:String(i+1))+'</span>'; return s; }
+    function banner(big,small){ var b=$("banner"); $("bnBig").textContent=big; $("bnSmall").textContent=small||""; b.classList.remove("in"); void b.offsetWidth; b.classList.add("in"); }
+    function flash(t){ var f=$("flash"); f.textContent=t; f.style.opacity=1; f.style.transform="scale(1.15)"; setTimeout(function(){f.style.opacity=0;f.style.transform="scale(1)";},600); }
+
+    // ── the say-it card, between songs ──
+    function sayCard(title,snd){
       if(!playing) return;
-      playing=false; tiles=[]; sfx("tap");
+      playing=false; tiles=[]; if(snd!=="none") sfx(snd||"tap");
       if(REV>0 && CAN_LISTEN){
-        $("revTitle").textContent="Say \u201C"+SAYTXT+"\u201D to keep playing!";
-        $("revHearts").innerHTML=(window.Sona&&Sona.heartRow)?Sona.heartRow(REV,3,28):String(REV);
+        $("revTitle").textContent=title||("Say \u201C"+SAYTXT+"\u201D to keep playing!");
+        $("revHearts").innerHTML=songDots();
         reviveWait=true; $("revOvl").classList.add("show"); openReviveMic();
       } else { endRound(); }
     }
+    // The card's old name, from when a missed tile opened it. Kept because
+    // the quiet-mic suites open the card through it.
+    function crash(){ sayCard(); }
     function doRevive(){
-      reviveWait=false; REV--; hearts();
+      reviveWait=false; REV--; hud();
       $("revOvl").classList.remove("show");
       // the mic has just closed: sfx() holds this chime SETTLE_MS
       sfx("complete"); try{ if(S&&S.confetti)S.confetti(); }catch(e){}
-       playing=true;
+      playing=true;
+      if(phase==="break") startSong(song+1);
     }
     $("revDone").onclick=function(){ closeReviveMic(); reviveWait=false; $("revOvl").classList.remove("show"); endRound(); };
-    hearts();
 
     var LCOL=["#ff6b8a","#4dabf7","#69db7c","#ffd43b"];
-    // founder-tuned: start noticeably SLOWER, let the ramp do the work
-    var tiles=[], fall=H*0.0031, spawnMs=920, noteIx=0, melodyDir=1;
-    var HITY=function(){ return H-140-Math.max(0,0); }; // hit line y (bar height 90 above bottom bar)
 
-    function spawn(){
-      var lane=(Math.random()*LANES)|0;
-      // gentle melody walk so consecutive notes feel intentional
-      noteIx+=melodyDir*(1+((Math.random()*2)|0)); if(noteIx>=NOTES.length-1){noteIx=NOTES.length-1;melodyDir=-1;} if(noteIx<=0){noteIx=0;melodyDir=1;}
-      tiles.push({lane:lane,y:-90,h:88,hit:false,gone:false,note:NOTES[noteIx]});
-    }
-    var spawnTimer=setInterval(function(){ if(document.hidden)return; if(playing) spawn(); },spawnMs);
-    function retime(ms){ clearInterval(spawnTimer); spawnMs=ms; spawnTimer=setInterval(function(){ if(document.hidden)return; if(playing) spawn(); },spawnMs); }
-    // gentle ramp: a touch faster every 12s, capped so it never gets frantic
-    var rampIv=setInterval(function(){ if(document.hidden)return; if(!playing)return; if(fall<H*0.0058) fall*=1.06; if(spawnMs>600) retime(spawnMs-50); },12000);
-
-    // ---- input: tap a lane when a tile is over the hit bar ----
+    // ---- input: tap a lane when a tile is over the keys ----
     function laneAt(x){ return Math.max(0,Math.min(LANES-1,(x/(W/LANES))|0)); }
     var shakeT=0;
     cv.addEventListener("pointerdown",function(e){
@@ -228,22 +297,33 @@
       var zoneTop=HITY()-96, zoneBot=HITY()+70, best=null;
       for(var i=0;i<tiles.length;i++){ var t=tiles[i];
         if(t.lane===lane&&!t.hit&&!t.gone&&t.y+t.h>zoneTop&&t.y<zoneBot){ if(!best||t.y>best.y)best=t; } }
+      keyGlow[lane]=performance.now();
       if(best){
-        best.hit=true; comboN++;
-        score++;
-        $("score").textContent=score;
-        tone(best.note,0.5,0.10); if(comboN%8===0){ flash(comboN+" NOTE STREAK!"); }
+        best.hit=true; comboN++; missRun=0;
+        score+=best.gold?3:1; $("score").textContent=score; hud();
+        tone(best.note,0.5,0.10);   // one note: the song's own
+        var fin=!!SONGS[song].finale, lw=W/LANES;
+        for(var k=0;k<(fin?22:best.gold?16:8);k++){ var a=Math.random()*6.28, v=(fin?3:2)+Math.random()*(fin?5:3);
+          sparks.push({x:best.lane*lw+lw/2,y:fin?best.y:HITY()-10,vx:Math.cos(a)*v,vy:Math.sin(a)*v-(fin?4:2),life:1,c:best.gold?"#ffd21c":fin?LCOL[(Math.random()*4)|0]:LCOL[best.lane]}); }
+        if(best.gold){ flash("GOLDEN NOTE! +3"); echoT=performance.now(); }
+        else if(comboN%8===0){ flash(comboN+" NOTE STREAK!"); echoT=performance.now(); }
       } else {
         comboN=0; shakeT=performance.now(); tone(130.8,0.18,0.025); // soft low thud, never a death
       }
     });
-    function flash(t){ var f=$("flash"); f.textContent=t; f.style.opacity=1; f.style.transform="scale(1.15)"; setTimeout(function(){f.style.opacity=0;f.style.transform="scale(1)";},600); }
-
-    // timer
-    
 
     // ---- draw ----
+    var ECHO=new Image(); ECHO.src="/assets/crafted/echo-welcome.webp";
+    var lastT=performance.now();
     function draw(){
+      var now=performance.now(), dt=Math.min(100,now-lastT), i, l; lastT=now;
+      // the song: its next tile on the beat, and none while a tile waits
+      if(playing&&phase==="song"){
+        var notes=songNotes(song), waiting=tiles.some(function(t){ return t.wait&&!t.hit&&!t.gone; });
+        if(!waiting) songMs+=dt;
+        if(songIx<notes.length&&songMs>=nextAt&&!waiting){ spawn(); nextAt=songMs+SONGS[song].beat*(missRun>=2?1.3:1); }
+        if(songIx>=notes.length&&!tiles.some(function(t){ return !t.hit&&!t.gone; })) endSong();
+      }
       ctx.clearRect(0,0,W,H);
       // concert spotlight (design 4: Piano Tiles)
       var sp=ctx.createRadialGradient(W/2,0,10,W/2,0,H*0.85);
@@ -251,38 +331,56 @@
       ctx.fillStyle=sp; ctx.fillRect(0,0,W,H);
       var lw=W/LANES, hitY=HITY();
       // lanes
-      for(var l=0;l<LANES;l++){ ctx.fillStyle="rgba(255,255,255,"+(l%2?0.03:0.05)+")"; ctx.fillRect(l*lw,0,lw,H); }
-      for(var l=1;l<LANES;l++){ ctx.fillStyle="rgba(255,255,255,.08)"; ctx.fillRect(l*lw-1,0,2,H); }
+      for(l=0;l<LANES;l++){ ctx.fillStyle="rgba(255,255,255,"+(l%2?0.03:0.05)+")"; ctx.fillRect(l*lw,0,lw,H); }
+      for(l=1;l<LANES;l++){ ctx.fillStyle="rgba(255,255,255,.08)"; ctx.fillRect(l*lw-1,0,2,H); }
       // hit bar — the keys run all the way to the screen bottom, no dead band
       ctx.fillStyle="rgba(255,255,255,.12)";
       ctx.fillRect(0,hitY-8,W,H-(hitY-8));
-      // piano-key hit bar: white keys with hard shadows
-      for(var l=0;l<LANES;l++){
-        var kx=l*lw+5, kw=lw-10;
+      // piano keys with hard shadows; a tapped key lights up in its lane's colour
+      for(l=0;l<LANES;l++){
+        var kx=l*lw+5, kw=lw-10, glow=Math.max(0,1-(now-keyGlow[l])/260);
         ctx.fillStyle="rgba(0,0,0,.28)"; rr(kx,hitY-4,kw,H-(hitY-4)+12,10); ctx.fill();
         var ivory=ctx.createLinearGradient(kx,0,kx+kw,0);ivory.addColorStop(0,"#dccaab");ivory.addColorStop(.15,"#fff9e9");ivory.addColorStop(.85,"#fff5db");ivory.addColorStop(1,"#cfb98e");
         ctx.fillStyle=ivory;rr(kx,hitY-8,kw,H-(hitY-8)+12,10);ctx.fill();
+        if(glow>0){ ctx.globalAlpha=glow*0.75; ctx.fillStyle=LCOL[l]; rr(kx,hitY-8,kw,H-(hitY-8)+12,10); ctx.fill(); ctx.globalAlpha=1; }
         ctx.strokeStyle="#ffffff99";ctx.lineWidth=2;rr(kx+2,hitY-6,kw-4,H-(hitY-8)+8,8);ctx.stroke();
         ctx.fillStyle="#26233f";rr(kx+kw*.66,hitY-8,kw*.30,40,5);ctx.fill();
         ctx.fillStyle="#4d4967";rr(kx+kw*.69,hitY-6,kw*.24,32,3);ctx.fill();
       }
       // screen shake on miss-tap
-      var sh=performance.now()-shakeT<180 ? Math.sin(performance.now()/14)*4 : 0;
+      var sh=now-shakeT<180 ? Math.sin(now/14)*4 : 0, fall=speedPx()*dt/1000;
       // tiles
-      for(var i=tiles.length-1;i>=0;i--){ var t=tiles[i];
-        t.y+=fall*(H/700);
+      for(i=tiles.length-1;i>=0;i--){ var t=tiles[i];
         if(t.hit){ t.h-=10; t.y+=5; if(t.h<=6){ tiles.splice(i,1); continue; } }
-        if(t.y>H+20){ tiles.splice(i,1); if(playing){ crash(); } continue; } // a missed tile costs a life
+        else if(t.gone){ t.fade=(t.fade==null?1:t.fade)-0.06; t.y+=fall; if(t.fade<=0){ tiles.splice(i,1); continue; } }
+        else {
+          t.y+=fall;
+          var rest=hitY-t.h+40;   // a waiting tile stops on its key
+          if(t.wait&&t.y>rest) t.y=rest;
+          // a tile that slips past just fades; the song plays on
+          if(!t.wait&&t.y>hitY+70){ t.gone=true; if(playing&&phase==="song"){ missRun++; comboN=0; } }
+        }
         var x=t.lane*lw+6+sh, w=lw-12;
+        ctx.globalAlpha=t.gone?Math.max(0,t.fade)*0.45:1;
         ctx.save();ctx.shadowColor="rgba(17,8,40,.35)";ctx.shadowOffsetY=4;ctx.shadowBlur=5;
-        ctx.fillStyle=t.hit?"#fff":LCOL[t.lane];rr(x,t.y,w,t.h,14);ctx.fill();ctx.shadowColor="transparent";
+        ctx.fillStyle=t.hit?"#fff":t.gold?"#ffd21c":LCOL[t.lane];rr(x,t.y,w,t.h,14);ctx.fill();ctx.shadowColor="transparent";
         var tileLight=ctx.createLinearGradient(0,t.y,0,t.y+t.h);tileLight.addColorStop(0,"rgba(255,255,255,.4)");tileLight.addColorStop(.55,"rgba(255,255,255,.02)");tileLight.addColorStop(1,"rgba(39,12,62,.2)");ctx.fillStyle=tileLight;rr(x,t.y,w,t.h,14);ctx.fill();
         ctx.strokeStyle="rgba(255,249,222,.6)";ctx.lineWidth=1.2;if(t.h>5){rr(x+2,t.y+2,w-4,t.h-4,12);ctx.stroke();}ctx.restore();
-        if(!t.hit){ ctx.fillStyle="rgba(69,31,91,.70)"; ctx.font="800 24px 'Baloo 2',sans-serif"; ctx.textAlign="center"; ctx.fillText("♪",x+w/2,t.y+t.h/2+9); }
+        if(!t.hit&&t.wait&&!t.gone&&t.y>=hitY-t.h+39){ ctx.strokeStyle="rgba(255,255,255,"+(0.55+0.45*Math.sin(now/140))+")"; ctx.lineWidth=4; rr(x-3,t.y-3,w+6,t.h+6,16); ctx.stroke();
+          ctx.fillStyle="#fff"; ctx.font="800 18px 'Baloo 2',sans-serif"; ctx.textAlign="center"; ctx.fillText("Tap!",x+w/2,t.y-12); }
+        if(!t.hit){ ctx.fillStyle="rgba(69,31,91,.70)"; ctx.font="800 24px 'Baloo 2',sans-serif"; ctx.textAlign="center"; ctx.fillText(t.gold?"★":"♪",x+w/2,t.y+t.h/2+9); }
+        ctx.globalAlpha=1;
       }
+      // sparkles over a played note; fireworks in the finale
+      for(i=sparks.length-1;i>=0;i--){ var s=sparks[i]; s.x+=s.vx; s.y+=s.vy; s.vy+=0.12; s.life-=0.025; if(s.life<=0){ sparks.splice(i,1); continue; }
+        ctx.globalAlpha=s.life; ctx.fillStyle=s.c; ctx.beginPath(); ctx.arc(s.x,s.y,3+2*s.life,0,7); ctx.fill(); ctx.globalAlpha=1; }
+      // Echo dances in the corner
+      if(ECHO.complete&&ECHO.naturalWidth){ var hp=(now-echoT)/700, ey=hp>=0&&hp<1?-Math.sin(hp*Math.PI)*22:Math.sin(now/300)*2, es=Math.min(64,W*0.15);
+        ctx.drawImage(ECHO,W-es-12,78+ey,es,es*1.07); }
       requestAnimationFrame(draw);
     }
     function rr(x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
+    startSong(0);
     draw();
 
     // ── "Say your sound to keep playing": the only time this game listens ──
@@ -400,7 +498,7 @@
       closeReviveMic();
       if(window.__ended)return; window.__ended=true;
       S.finishGameTurn("tiles",isDaily?score:null);
-      playing=false; reviveWait=false; clearInterval(spawnTimer); clearInterval(rampIv);
+      playing=false; reviveWait=false; phase="done";
       var isBest=score>BEST; if(isBest){ BEST=score; try{ localStorage.setItem(BESTK,String(BEST)); }catch(e){} }
       var coins=Math.min(10,(score/5)|0);
       try{ if(coins&&S&&S.addCoins)S.addCoins(coins); }catch(e){}
@@ -425,14 +523,14 @@
         return;
       }
       // one reward per moment: star + one line + Echo — no stat rows or coin counters here
-      $("endTitle").textContent=score>=30?"You\u2019re a piano star! My feathers were dancing!":"What beautiful music we made!";
+      $("endTitle").textContent=finaleDone?"Bravo! You played four songs!":score>=30?"You\u2019re a piano star! My feathers were dancing!":"What beautiful music we made!";
       var _es=$("endSub"); _es.textContent=score+" notes · Best: "+BEST; _es.className="later";
       setTimeout(function(){ _es.classList.add("in"); },1000);
       $("endOvl").classList.add("show");
     }
     $("endCharge").onclick=function(){ location.href=isDaily?"/charge.html?daily=1":(S.gameAccess("stack").allowed?"/charge.html?game=arcade-stack.html":"/activities.html"); };
     $("endHome").onclick=function(){ S.finishGameTurn("tiles"); location.href="/today.html#play"; };
-    $("close").onclick=function(){ closeReviveMic(); S.finishGameTurn("tiles"); if(playing){ playing=false; clearInterval(spawnTimer); clearInterval(rampIv); } if(isDaily){ bankAndContinue(); return; } location.href="/today.html#play"; };
+    $("close").onclick=function(){ closeReviveMic(); S.finishGameTurn("tiles"); if(playing){ playing=false; } if(isDaily){ bankAndContinue(); return; } location.href="/today.html#play"; };
     }
   </script>
 </body>

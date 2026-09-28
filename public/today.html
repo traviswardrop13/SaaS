@@ -51,6 +51,9 @@
     .game-card{position:relative;display:flex;flex-direction:column;min-width:0;border:5px solid #fff;border-radius:23px;background:#fff;box-shadow:0 4px 0 #e8d9c5;color:var(--ink);padding:0;cursor:pointer;transition:transform .12s;text-align:left;}
     .game-card:disabled{cursor:default;}
     .game-card:disabled .game-art{opacity:.55;filter:saturate(.5);}
+    /* a Premium game a family hasn't opened is greyed too, but still taps
+       through to the grown-up message (only ever seen when pricing is on) */
+    .game-card[data-locked="true"] .game-art{opacity:.55;filter:saturate(.5);}
     .game-access.coming-soon{color:#715d45;background:#f0e8db;}
     .game-card:not(:disabled):active{transform:translateY(3px) scale(.98);}
     .game-art{position:relative;display:block;width:100%;aspect-ratio:1;border-radius:18px;overflow:hidden;}
@@ -132,12 +135,13 @@
     <div id="featuredGroups"></div>
     <div id="activityGroups"></div>
     <!-- BOOKS ARE ON (Travis, 26 Sep 2026: "yes turn them on"). One card opens
-         the bookshelf: a twelve-page picture book for every sound. Books are
+         the bookshelf: a twelve-page picture book for every sound, opening
+         a few a week (27 Sep 2026; the dates live in library.html). Books are
          Premium content (Sona.gated("books")), so they are free while the app
          is free, and a locked family gets the grown-up message a game gets. -->
     <button id="booksCard" type="button">
       <span class="book-art" id="libraryBooksArt" aria-hidden="true"></span>
-      <span class="books-copy"><span class="books-head"><span id="booksHeading">Books</span><span class="shelf-tag" id="booksTag">Free</span></span><span id="booksLine">A picture book for every sound. Echo reads along.</span></span>
+      <span class="books-copy"><span class="books-head"><span id="booksHeading">Books</span><span class="shelf-tag" id="booksTag">Free</span></span><span id="booksLine">Picture books Echo reads with you. New ones every week.</span></span>
       <span class="books-go" aria-hidden="true">›</span>
     </button>
     <p class="age-note">Ages are a guide. Explore any game that fits.</p>

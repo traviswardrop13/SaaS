@@ -81,10 +81,11 @@ are disabled “Coming soon” cards, regardless of subscription, free mode,
 trial, or earned access. The books are on (Travis, 26 Sep 2026: "yes turn
 them on"): Premium content, free while the app is free.
 
-The dormant paid rail remains tested: daily practice and released free-tier
-games stay free, while `premium()` recognizes subscriptions, founders,
-free-era families, founding pilots, and covered caseloads. Avoid a fixed
-“four free games” claim while Bubble Pop is parked. Clinician dashboard and
+The dormant paid rail remains tested: daily practice and the free games
+(Fruit Slice and Feed Echo; Block Stacker joined Premium on 27 Sep 2026)
+stay free, while `premium()` recognizes subscriptions, founders, free-era
+families, founding pilots, and covered caseloads. Never a fixed count of free
+games: the plan screen names them from the catalog. Clinician dashboard and
 Caseload Premium work from the earlier merge stays separate and intact.
 
 The earlier paid release shipped `_grandfatherFreeEra4()`; preserve all four
@@ -155,10 +156,19 @@ ASC, not this repo. And **flipping to free here cancels no Apple or Stripe
 subscription** — anyone who bought during a paid window keeps being billed
 until it is stopped in those dashboards. That is an operations task.
 
-**The ask happens after the product proves itself.** The offer fires once, on
-the first COMPLETED practice run — never during onboarding, which used to end
-at a price screen before the child had said a word. It is an offer, not a wall,
-it is inert while free, and it never fires for anyone already entitled.
+**The ask happens after the product proves itself.** Setup goes straight into
+the first game (Travis, 27 Sep 2026: "it will choose feed echo for the littles
+and fruit slice for ages five and up ... when they finish the game, that is
+when I want the paywall to come up"): Feed Echo for ages 3-4, Fruit Slice (its
+practice page first) from 5, a clinician's own setup still ends on Home. That
+first game's end card is where the offer is made, once: "Show a grown-up →"
+to `/subscribe.html?first=1` while `planEligible()` says so, else the usual
+end. `Sona.firstGameStart()` marks the game for this tab and
+`firstGameEnd(key)` answers once; `tests/firstgametest.mjs` pins it. Never
+during onboarding, which used to end at a price screen before the child had
+said a word. It is an offer, not a wall, it is inert while free, and it never
+fires for anyone already entitled. Declining leaves Home with every game but
+the two free ones greyed out (still tappable: "ask a grown-up").
 
 **Eligibility and impression are two functions, and merging them is the bug.**
 `planEligible()` answers "should we take them to the plan screen" and changes
@@ -274,8 +284,8 @@ so they hold in either state. A test that must be hand-edited on a business
 decision guards nothing and taxes every flip. `IS_FREE_NOW` in `iaptest.mjs`
 reads the live state from source where a suite genuinely needs it.
 
-Free regardless of the switch: practice and the four free games, for every
-family; founding pilots (`ff-` codes) and founders; every device onboarded, or
+Free regardless of the switch: practice and the free games (Fruit Slice and
+Feed Echo), for every family; founding pilots (`ff-` codes) and founders; every device onboarded, or
 that redeemed a clinician's link, before the Caseload Premium build. **Not**
 an SLP-code pilot: "Yes, share progress" makes every consenting family a
 pilot, so counting `isPilot()` in `premium()` would hand every uncovered
@@ -321,10 +331,12 @@ gold tile, gold key and star fruit, and the "Say rrrr for GOLDEN KEYS / a
 FRENZY" banners are painted out — and the ads' text thread and "Max's" fridge
 note are not used: they quote parents who do not exist. It never prints a
 dollar figure; its cost answer reads the switch from `/api/charter`. Its
-game count (every game Home opens, never a Coming soon one), "19 picture
-books" and "19 speech sounds" are pinned to the catalog by `shiptest`, and
-its game strip shows only games a child can open: bring a game back and the
-test fails until the page says so.
+game count (every game Home opens, never a Coming soon one), its book count
+(only the books the shelf has opened: each book tile carries its opening day,
+and the page counts and tags them on the visitor's own calendar) and "19
+speech sounds" are pinned to the catalog by `shiptest`, and its game strip
+shows only games a child can open: bring a game back and the test fails until
+the page says so.
 
 **The clinician page lives at `/for-slps`** (the root from 22 to 26 Sep). It
 still speaks to parents and SLPs alike (Travis, 25 Sep 2026: "I don't know
@@ -460,8 +472,9 @@ re-running.
 ## Home: choose a game, then practice
 **Home is the silent Play library (Travis, 24 Sep 2026).** `today.html` opens
 on “Pick a game!”; `activities.html` preserves old query/hash links by
-redirecting there. Setup finishes at Home, without starting practice or a
-game. There is no old adventure-map Home or menu narration. Voice remains
+redirecting there. Setup finishes in the first game (Feed Echo for 3-4,
+Fruit Slice from 5; see "The ask happens after the product proves itself"),
+and every visit after that opens on Home. There is no old adventure-map Home or menu narration. Voice remains
 inside deliberate game/practice sessions. Parent settings, progress,
 profiles, earned coins, homework and entitlement sync remain available.
 
@@ -480,6 +493,18 @@ in `tools/bookart/`, rebuild, and commit the SVGs; the app only loads files.
 card opens `library.html`. Books are Premium content (`Sona.gated("books")`),
 free while the app is free; a locked family gets the grown-up message, and
 `library.html` sends a typed address back to Home (`?locked=books`).
+
+**The books open a few a week** (Travis, 27 Sep 2026: "a solid book for the
+top four or five most popular letters... everything else, we can just set a
+date on it... new drops every week"). R, S, L, SH and TH are open. Every
+other book in `STORIES` carries `opens` (a Sunday, at most three a week) and
+waits on the shelf greyed, "Coming Oct 4", until that day on the phone's own
+calendar; a tap or `openBook()` does nothing before it. The six-page emoji
+books come after every twelve-page one: they put the sound anywhere in a word
+and are last in line to be redone. A child whose sounds have nothing open yet
+sees every open book first, then their own, coming. Home's card and the
+website say "new ones every week", never "a book for every sound".
+`readtest` pins the dates and the shelf; `landingtest` the website's count.
 
 **Say & Play** (Travis, 26 Sep 2026: "10 more games for ages 3-4 and 10
 more games for ages 5-8 ... incorporating practice into it"): twenty games
@@ -534,6 +559,67 @@ its quiet rules stay `sayplay.js`'s. What it keeps:
 Its Home card, `public/assets/games/hoops.webp`, is a frame of the court
 itself; `tools/gameart/cards.mjs` points `sp-hoops` at it.
 
+**Fruit Slice is a round now** (Travis, 27 Sep 2026, yes to: "three waves of
+fruit, then one giant watermelon to finish. It always ends in a win. Missing is
+OK... The talking moves to between waves"). The six first games are being made
+solid one at a time, and this is the first:
+- **A wave ends** when its fruit are sliced (6, 8, then 10; a golden fruit
+  counts three) or after 45 seconds of play, whatever the count.
+- **A missed fruit just falls.** Nothing stops and nothing is lost; after two
+  misses in a row the fruit come one at a time, bigger and slower.
+- **The say-it card shows only between waves** ("Say “rrrr” for wave 2!"),
+  never after a miss. Its listening and quiet rules are the ones every arcade
+  card shares (`micquietgamestest`); `crash()` is kept as the card's old name
+  because those suites open it through it.
+- **The fruit are thrown from the stand** at the bottom of the screen. The first
+  five are the five the "Say it 5 times" page filled, in its order, and on that
+  page each heard try now drops its fruit onto the counter.
+- **Wave 3 ends in a giant watermelon:** five swipes across it and it bursts, so
+  every round ends on a win.
+`tests/slicetest.mjs` plays a whole round.
+
+**Block Stacker is the same round, as a tower** (27 Sep 2026): it stands on the
+five blocks the "Say it 5 times" page built; three floors of 5, 6 and 7 go on
+top, with the say-it card between floors ("Say “rrrr” for floor 2!"). A missed
+block tumbles off and a fresh one slides in, slower (and after two misses the
+landing zone widens); a close drop snaps into place; no block is ever narrower
+than 60% of the first (the old tower cut kids down to a sliver, and the card
+handed the sliver back); a golden block makes the tower full width again. A
+rocket on the top ends it: any tap launches it, and it goes by itself after a
+few seconds. `tests/stacktest.mjs` plays a whole round.
+
+**Piano Tiles is the same round, as songs** (27 Sep 2026): Twinkle Twinkle,
+Mary Had a Little Lamb and Row, Row, Row Your Boat, each tile one note of the
+tune in a lane by pitch, so tapping the tiles plays the song; the say-it card
+between songs; then Ode to Joy as a grand finale whose tiles all wait on the
+keys, so it ends in a win. A tile that slips by fades and the song plays on
+(after two in a row the next tiles slow and wait); the first three tiles wait
+on the keys until tapped; and a tile takes the song's fall time on every
+screen (it was 2.2 s on a small iPhone and 0.5 s on a big iPad). One tap, one
+note: `micquietgamestest` pins its loudness to the Sound setting.
+`tests/tilestest.mjs` plays a whole round.
+
+**Sound Sprint is the same round, as a race** (27 Sep 2026): the park, the
+beach and the forest, a checkpoint between each with the say-it card ("Say
+“rrrr” to run to the beach!"), and a finish line that always ends the race in
+a win. A rock is a tumble (a second off the road, ten metres back), never the
+card; after two tumbles in a stretch the rocks thin out and the road slows.
+The child taps the lane they want or swipes (a tap used to count only as the
+left or right half of the screen). A golden coin is a coin magnet. The top
+bar shows coins and the stretch; the end card counts metres (it said
+"treats"). `tests/runtest.mjs` runs a whole race.
+
+**Flappy Glide is the same round, as a flight** (27 Sep 2026): three legs of
+6, 7 and 8 gaps, a rest on a cloud between each with the say-it card ("Say
+“rrrr” to fly on!"), and a fireworks landing that always ends the flight in a
+win. The review found it the hardest of the six (a steady tap every
+half-second, hedges nearly back to back), so the balloon floats and sinks
+slowly (a tap about every second holds it level), the gaps are wider and
+further apart, and a hedge is a soft bounce back into the gap, never the card;
+after two bumps in a leg the gaps open wider and the hedges slow. Stars in the
+gaps can be caught. **Hold-to-rise**, the review's other idea, changes the
+control, so it waits for Travis. `tests/glidetest.mjs` flies a whole flight.
+
 Bubble Pop and Peekaboo stay visible only as disabled “Coming soon” cards,
 with no New shelf promotion and no direct-link, paid or earned bypass.
 Their engines remain in the repo for future work. The adventure
@@ -583,6 +669,21 @@ are enforced in code and pinned by tests — change them only on Rachel's say-so
   that sound like this sound", not "was that word correct". Any percentage
   shown to a parent or an SLP is built on that narrower signal. Rachel decides
   whether it should still be shown as a percentage, softened, or dropped.
+- **Apple's listening check: in the ballpark, never "taco"** (Travis, 28 Sep
+  2026: "I just don't want kids saying taco and getting a correct score. We
+  want them to be in the ballpark"). In the iPhone app the practice page asks
+  Apple's on-device recognizer what was said (SonaSpeech, never Apple's
+  servers) and `hearVerdict` in sona.js decides. Pass: the word, a close try
+  (each sound's typical errors, `HEAR_SUBS`: "wabbit", "wed", "cah"), or
+  another word with the sound in the same place. Fail: clear words that are
+  none of those ("taco", "Here is a taco", "sock" for rock). Unknown, handed
+  to the sound-shape check: nothing clear (filler like "uh", or only the
+  sentence's own words). A grown-up's "say rabbit" and a sentence's other
+  words ("Here is a") are set aside first. The plugin was written in August
+  but never reached the app until `scripts/install-ios-speech.py`; the website
+  cannot use it and still judges by sound shape, and the games do not use it
+  yet. Which errors count as close (`HEAR_SUBS`) is Rachel's call;
+  `heartest` pins the rules.
 - **Cueing** — TODO, Rachel to specify. Her highest-value ask was the
   "sssoup" prompt: model the target sound stretched and attached to the word
   rather than saying the word cold. Needs her exact wording and which sounds

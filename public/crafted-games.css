@@ -160,3 +160,18 @@ body[data-crafted="run"] #tapHint,body[data-crafted="glide"] #tapHint{background
 .crafted-word{display:inline-flex;flex:none;align-items:center;justify-content:center;vertical-align:middle;}
 .crafted-word-crop{display:block;flex:none;background-repeat:no-repeat;}
 body[data-crafted="feed"] .cardBtn .e>.crafted-word{width:100%!important;height:100%!important;}
+
+/* New round/checkpoint HUDs use the same crafted controls. Their progress
+   values, speech breaks and finale behavior remain owned by each game. */
+body[data-crafted] #banner .pill{background:linear-gradient(140deg,#fffdf5,#fff3df);border:1px solid #fff8e6;border-radius:25px;box-shadow:0 5px 0 #ad8c6040,0 9px 20px #41251425;padding:12px 24px;}
+body[data-crafted] #banner b{color:#573416;font-size:clamp(29px,9vw,37px);}
+body[data-crafted] #banner span{color:#846648;font-size:15px;}
+body[data-crafted] #best .wbar,body[data-crafted] #timer .wbar{background:#e9dfcc;}
+body[data-crafted] #best .wbar i,body[data-crafted] #timer .wbar i{background:linear-gradient(90deg,#35b5b7,#078d9c);}
+body[data-crafted] #timer .notch i{background:#e9dfcc;}
+body[data-crafted] #timer .notch i.on{background:#10949c;}
+body[data-crafted] #revHearts .wdot{background:#f0e2cc;color:#a0825c;}
+body[data-crafted] #revHearts .wdot.on{background:#169ca5;box-shadow:0 3px 0 #087882;color:#fff;}
+body[data-crafted="run"] #tapHint,body[data-crafted="glide"] #tapHint{color:#52371d!important;}
+body[data-crafted="stack"] #tapHint{top:32%;bottom:auto;left:20px;right:20px;background:#fff9eaeF;color:#52371d;border:1px solid #eadac0;border-radius:16px;padding:10px 12px;text-shadow:none;box-shadow:0 3px 0 #b2946355;}
+@media(max-width:350px){body[data-crafted] #best .wbar,body[data-crafted] #timer .wbar{width:42px;}body[data-crafted] #banner .pill{padding:10px 17px;}}

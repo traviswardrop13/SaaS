@@ -496,6 +496,10 @@
       $("endTitle").textContent="Yum! You fed Echo!";
       $("endSub").textContent="Five tasty discoveries. Concert time!";
       $("again").textContent=daily?"Keep going →":"Play again";
+      // the first game after setup: the grown-up's plan screen when it is due,
+      // else Home (Sona.firstGameEnd answers once)
+      var after=(!daily&&S.firstGameEnd)?S.firstGameEnd("feed"):null;
+      if(after&&/subscribe/.test(after)){ $("goHome").textContent="Show a grown-up →"; $("goHome").onclick=function(){ stopFeedAudio();feedMicStop(); location.href=after; }; }
       $("endOvl").classList.add("show");
       // the chime waits out the mic's close (and any request still being
       // answered) in sfx(); the uke starts from the moment the chime really does

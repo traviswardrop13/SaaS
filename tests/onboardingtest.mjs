@@ -40,6 +40,7 @@ async function fresh(config={}){
   // Follow the real handoff URL without starting a second test's game/mic.
   await context.route('**/charge.html?**',route=>route.fulfill({status:200,contentType:'text/html',body:'<p>Practice destination</p>'}));
   await context.route('**/today.html',route=>route.fulfill({status:200,contentType:'text/html',body:'<p>Home destination</p>'}));
+  await context.route('**/arcade-*.html',route=>route.fulfill({status:200,contentType:'text/html',body:'<p>Game destination</p>'}));
   const page=await context.newPage();page.setDefaultTimeout(3500);const errors=[],requests=[];page.on('pageerror',e=>errors.push(e.message));page.on('request',r=>requests.push({url:r.url(),method:r.method(),body:r.postData()}));
   page.on('dialog',dialog=>dialog.dismiss());await page.goto(base+'/onboarding.html');return {context,page,errors,requests};
 }
@@ -91,8 +92,10 @@ await scenario('sound selection and private paced handoff',async()=>{
    ok('young-child setup prepares the Simple play suggestion on Home',result.recommended==='simple',result.recommended);
    await page.locator('#achEmailInput').fill('parent@example.com');await page.locator('#achEmailInput').press('Enter');
    ok('Done in the optional email leaves the family in control of the handoff',new URL(page.url()).pathname==='/onboarding.html'&&await page.evaluate(()=>document.activeElement.id!=='achEmailInput'&&!Sona.getProfile().email));
-   await next(page);await page.waitForURL(url=>['/today.html','/charge.html'].includes(url.pathname));const u=new URL(page.url());ok('handoff opens Home so the child can choose a game',u.pathname==='/today.html'&&!u.search);
-   ok('setup never launches practice or creates a run automatically',!requests.some(r=>/\/(?:charge|arcade-[a-z]+)\.html/.test(new URL(r.url).pathname))&&await page.evaluate(()=>!sessionStorage.getItem('sona.run.v1')));
+   await next(page);await page.waitForURL(url=>['/today.html','/charge.html','/arcade-feed.html'].includes(url.pathname));const u=new URL(page.url());
+   // Travis, 27 Sep 2026: setup goes straight to the first game, Feed Echo for ages 3-4
+   ok('handoff opens the first game for the child\'s age: Feed Echo at 4',u.pathname==='/arcade-feed.html'&&!u.search&&await page.evaluate(()=>sessionStorage.getItem('sona.firstgame.v1')==='feed'));
+   ok('setup creates no run and starts no practice of its own',!requests.some(r=>new URL(r.url).pathname==='/charge.html')&&await page.evaluate(()=>!sessionStorage.getItem('sona.run.v1')));
    ok('the play button still saves an explicitly entered optional email',await page.evaluate(()=>JSON.parse(localStorage.getItem('sona.profile.v1')).email==='parent@example.com'));
   }
   clean('sound/skip handoff',errors);
@@ -251,7 +254,7 @@ await scenario('phone fit and optional email close',async()=>{
   await page.evaluate(()=>__setup.keyboardListeners.keyboardWillShow({keyboardHeight:422}));
   await page.locator('#achEmailInput').fill('skip@example.com');
   ok('email X stays visible when the keyboard reduces the screen',await page.locator('#skipEmail').evaluate(el=>{var r=el.getBoundingClientRect();return r.top>=0&&r.bottom<innerHeight&&r.width>=44&&r.height>=44;}));
-  await page.locator('#skipEmail').click();await page.waitForURL('**/today.html');
+  await page.locator('#skipEmail').click();await page.waitForURL('**/arcade-feed.html');
   ok('X skips email and still completes setup',!requests.some(r=>new URL(r.url).pathname==='/api/lead'&&r.method==='POST')&&await page.evaluate(()=>!JSON.parse(localStorage.getItem('sona.profile.v1')).email));
   clean('phone fit and skip',errors);
  }finally{await context.close();}
