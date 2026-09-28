@@ -40,7 +40,7 @@
   <div class="wrap">
     <header class="app family-header">
       <a class="brand" href="/today.html" aria-label="Sona Home"><span class="leo"><img src="/assets/crafted/echo-welcome.webp" alt="" /></span> Sona</a>
-      <a class="family-back" href="/today.html"><span class="pic-home" aria-hidden="true"></span> Back to play</a>
+      <a class="family-back" href="/today.html"><svg class="family-symbol" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h10c2 0 3 2 3.5 4l1 5c.4 2-1.5 3-3 1.5L16 15H8l-2.5 2.5C4 19 2 18 2.5 16l1-5C4 9 5 7 7 7Z"/><path d="M7 9.5v5M4.5 12h5"/><circle cx="15.5" cy="10.5" r=".7" fill="currentColor" stroke="none"/><circle cx="18" cy="13" r=".7" fill="currentColor" stroke="none"/></svg> Back to play</a>
     </header>
     <nav class="family-tabs" aria-label="Grown-up pages"><a href="/progress.html">Overview</a><a href="/settings.html" aria-current="page">Settings</a></nav>
 
@@ -65,14 +65,17 @@
       <button id="addKidBtn" class="btn ghost" style="margin-top:10px;">+ Add a kid</button>
     </div>
 
-    <div class="card">
+    <div class="card settings-main">
       <h1>Settings</h1>
+      <div class="settings-identity"><div>
       <label class="field" for="childName">Child's name</label>
       <input id="childName" type="text" placeholder="e.g. Mia" />
 
+      </div><div>
       <label class="field" for="childAge">Child's age <span class="muted" style="font-weight:700;font-size:12px;">— helps pick developmentally-right sounds</span></label>
       <input id="childAge" type="number" min="2" max="14" inputmode="numeric" placeholder="e.g. 5" />
 
+      </div></div>
       <label class="field" for="parentPin">Parent code <span class="muted" style="font-weight:700;font-size:12px;">— unlocks this parent corner from the home screen (blank = four number words to read instead)</span></label>
       <input id="parentPin" type="text" inputmode="numeric" maxlength="6" placeholder="e.g. 2468" />
 
@@ -115,7 +118,7 @@
       <div style="margin-top:24px;display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
         <button class="btn" id="save">Save</button>
         <a class="btn ghost" href="/today.html">Back to Home</a>
-        <span id="saved" class="muted" style="display:none;font-weight:800;">Saved ✓</span>
+        <span id="saved" class="muted" role="status" aria-live="polite" style="display:none;font-weight:800;">Saved ✓</span>
       </div>
     </div>
 
@@ -257,7 +260,7 @@
     var sel = new Set(p.focusSounds || []);
     var kidAge = parseInt(p.childAge, 10) || 0;
     Sona.ALL_SOUNDS.forEach(function (s) {
-      var b = document.createElement("div");
+      var b = document.createElement("button"); b.type = "button"; b.setAttribute("aria-pressed", String(sel.has(s)));
       var norm = Sona.soundNorm ? Sona.soundNorm(s) : null;
       var early = !!(norm && kidAge && kidAge < norm);
       // every sound is selectable (SLP caseloads work letters beyond R);
@@ -266,7 +269,7 @@
       b.innerHTML = (Sona.soundLabel ? Sona.soundLabel(s) : s) +
         (norm ? '<span style="display:block;font-size:9.5px;font-weight:800;margin-top:1px;color:' + (early ? "#c0392b" : "var(--muted)") + ';">' + (early ? "⚠ " : "") + "by ~" + norm + 'y</span>' : "");
       if (norm) b.title = "Most children produce this sound by about age " + norm + (early ? " — older than your child, so check with your SLP before targeting it." : ".");
-      b.onclick = function () { if (sel.has(s)) { if (sel.size > 1) { sel.delete(s); b.classList.remove("on"); } } else { sel.add(s); b.classList.add("on"); } };
+      b.onclick = function () { if (sel.has(s)) { if (sel.size > 1) { sel.delete(s); b.classList.remove("on"); } } else { sel.add(s); b.classList.add("on"); } b.setAttribute("aria-pressed", String(sel.has(s))); };
       wrap.appendChild(b);
     });
     // PLAY1: the note shows in play mode; changing the chips is how a family
@@ -278,7 +281,7 @@
       var keep=document.getElementById("playKeep");
       if(keep) keep.onclick=function(ev){ ev.preventDefault();
         sel=new Set(Sona.PLAY_ORDER);
-        wrap.querySelectorAll(".sound").forEach(function(b){ b.classList.add("on"); });
+        wrap.querySelectorAll(".sound").forEach(function(b){ b.classList.add("on"); b.setAttribute("aria-pressed", "true"); });
         Sona.saveProfile({ mode:"play", focusSounds: Sona.PLAY_ORDER.slice() });
         var sv=document.getElementById("saved"); sv.style.display="inline"; setTimeout(function(){ sv.style.display="none"; },1800);
       };

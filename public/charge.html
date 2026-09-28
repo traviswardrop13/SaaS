@@ -255,6 +255,7 @@
     @media(prefers-reduced-motion:reduce){#echoBuddy::before,#leo,#chestBox{animation:none!important;}}
   </style>
   <link href="/crafted-games.css" rel="stylesheet">
+  <link href="/crafted-practice.css" rel="stylesheet">
 </head>
 <body data-crafted="practice">
     <div id="app">
@@ -302,7 +303,7 @@
         <div id="chestCap">A treasure chest! Tap, tap, tap to open!</div>
       </div>
       <div id="chestReveal" style="display:none">
-        <div id="chestStk">⭐</div>
+        <div id="chestStk"></div>
         <h2 id="chestName">Sticker!</h2>
         <button class="btn" id="chestClaim">Put it in my sticker book!</button>
         <p id="chestTmw" style="font-weight:800;font-size:13px;color:var(--muted);margin-top:10px;line-height:1.45;">Come back tomorrow — Echo will have a new adventure ready!</p>
@@ -368,6 +369,8 @@
   </div>
 
   <script src="/sona.js"></script>
+  <script src="/crafted-buddies.js"></script>
+  <script src="/crafted-rewards.js"></script>
   <script src="/scenes.js"></script>
   <script src="/gamecontent.js"></script>
   <script>
@@ -947,7 +950,7 @@
     function ghostFruit(i){return '<svg viewBox="0 0 64 64" aria-hidden="true"><path d="'+FRUIT_OUTLINES[i]+'" fill="none" stroke="#fff5df" stroke-width="3" stroke-linejoin="round"/></svg>';}
     var FOX='<svg viewBox="0 0 64 64"><path d="M12 40q-7 2-8 10 7 3 12-2Z" fill="#ff8a3d"/><circle cx="7" cy="49" r="3.5" fill="#fff"/><path d="M17 10l10 12-14 4Z" fill="#ff8a3d"/><path d="M47 10l-10 12 14 4Z" fill="#ff8a3d"/><path d="M20 15l6 8-9 2.5Z" fill="#e5672a"/><path d="M44 15l-6 8 9 2.5Z" fill="#e5672a"/><circle cx="32" cy="36" r="17" fill="#ff8a3d"/><ellipse cx="32" cy="44" rx="9" ry="7" fill="#fff"/><circle cx="25" cy="34" r="2.6" fill="#4a2c14"/><circle cx="39" cy="34" r="2.6" fill="#4a2c14"/><circle cx="32" cy="42" r="2.6" fill="#4a2c14"/></svg>';
     // the buddy the child picked — never a hardcoded fox (handoff C §8)
-    function buddySvg(){ try{ if(S&&S.buddyMarkup) return S.buddyMarkup(profile.character||"fox",68); }catch(e){} return FOX; }
+    function buddySvg(){ try{ if(S&&S.buddyMarkup) return SonaCraftedBuddies.markup(profile.character||"fox",68); }catch(e){} return FOX; }
     // 3-circle cloud — replaces every pill-bar "cloud" on light skies
     var CLOUD='<svg viewBox="0 0 120 60"><ellipse cx="40" cy="42" rx="30" ry="15" fill="#fff"/><circle cx="56" cy="28" r="17" fill="#fff"/><circle cx="80" cy="38" r="19" fill="#fff"/></svg>';
     var COIN='<svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="20" fill="#ffd21c"/><circle cx="32" cy="32" r="14.5" fill="none" stroke="#f0a800" stroke-width="3"/><path d="M32 24l2.6 5.9 6.4.7-4.8 4.3 1.5 6.3L32 37.9l-5.7 3.3 1.5-6.3-4.8-4.3 6.4-.7Z" fill="#f0a800"/><circle cx="24" cy="22" r="3" fill="#fff" opacity=".8"/></svg>',
@@ -1030,7 +1033,7 @@
         html+='</div>';
       } else if(SCENE.balloon){
         html='<div id="balloonBox"><div class="hull">'+BALLOON_HULL+'</div>'
-            +'<div id="balloonEl">'+BALLOON+'<div class="pilot">'+((S&&S.buddyMarkup)?S.buddyMarkup(profile.character||"fox",34):FOX)+'</div></div></div>';
+            +'<div id="balloonEl"><img class="craft-balloon" src="/assets/crafted/balloon-practice-v2.webp" alt=""><div class="pilot">'+((S&&S.buddyMarkup)?SonaCraftedBuddies.markup(profile.character||"fox",34):FOX)+'</div></div></div>';
       }
       R.innerHTML=html;
     })();
@@ -1060,7 +1063,7 @@
           var c0=el.querySelector(".coinUp"); if(c0) c0.remove();
           if(on&&!was){ el.classList.remove("pop"); void el.offsetWidth; el.classList.add("pop"); }
         } else if(SCENE.stackCol){
-          if(on){ var c=BLOCKC[i]; el.style.background="linear-gradient(180deg,"+c[0]+","+c[1]+")"; el.classList.remove("glass","up"); }
+          if(on){ var c=BLOCKC[i]; el.style.background="linear-gradient(180deg,"+c[0]+","+c[1]+")"; el.style.backgroundColor=c[0]; el.classList.remove("glass","up"); }
           else { el.style.background=""; el.classList.add("glass"); el.classList.toggle("up",i===n); }
           if(on&&!was){ el.classList.remove("pop"); void el.offsetWidth; el.classList.add("pop"); }
         } else if(SCENE.keyRow){
@@ -2083,7 +2086,7 @@
     }
     function showChestReveal(stk){
       $("chestStage").style.display="none";
-      $("chestStk").textContent=stk?stk.e:"⭐";
+      $("chestStk").innerHTML=window.SonaRewardArt?SonaRewardArt(stk?stk.id:"star"):S.icon("star",74);
       $("chestName").textContent=stk?("You found the "+stk.name+" sticker!"):"Superstar!";
       $("chestReveal").style.display="block";
       $("chestClaim").focus({preventScroll:true});

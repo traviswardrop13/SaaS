@@ -122,6 +122,7 @@
 
 
   <script src="/sona.js"></script>
+  <script src="/crafted-buddies.js"></script>
   <script>
     // Check access before any game resources start. The earned speech token
     // remains a separate requirement; a catalog unlock never creates one.
@@ -197,8 +198,11 @@
     var gates=[], gapBase=H*0.46, gapH=gapBase, gspeed0=W*0.0026, gspeed=gspeed0, gateEvery=2900, gateMs=2000;
     var falling={on:false,t0:0}, mercyT=0;
     var RUNNER="🦊";
-    var BUDDYIMG=(function(){ try{ var c=S.characterById((S.getProfile()||{}).character||"fox"); if(c&&c.svg){ var im=new Image(); im.src="data:image/svg+xml;utf8,"+encodeURIComponent(c.svg); return im; } }catch(e){} return null; })();
-    function drawBuddy(x,y,sz){ if(BUDDYIMG&&BUDDYIMG.complete&&BUDDYIMG.naturalWidth){ ctx.drawImage(BUDDYIMG,x-sz/2,y-sz/2,sz,sz); return true; } return false; }
+    var BUDDYIMG=(function(){ try{ var c=S.characterById((S.getProfile()||{}).character||"fox"); if(c&&c.svg){ var im=new Image(); im.src="data:image/svg+xml;utf8,"+encodeURIComponent(c.svg.replace("<svg ",'<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" ')); return im; } }catch(e){} return null; })();
+    var CRAFTBUDDY=null,buddyPortrait=new Image();
+    buddyPortrait.onload=function(){CRAFTBUDDY=buddyPortrait;};
+    buddyPortrait.src=SonaCraftedBuddies.source((S.getProfile()||{}).character||"fox")||"";
+    function drawBuddy(x,y,sz){ if(CRAFTBUDDY){ctx.drawImage(CRAFTBUDDY,x-sz/2,y-sz/2,sz,sz);return true;} if(BUDDYIMG&&BUDDYIMG.complete&&BUDDYIMG.naturalWidth){ ctx.drawImage(BUDDYIMG,x-sz/2,y-sz/2,sz,sz); return true; } return false; }
     try{ var c=S.characterById((S.getProfile()||{}).character||"fox"); if(c&&c.emoji)RUNNER=c.emoji; }catch(e){}
 
     function spawnGate(){
@@ -286,18 +290,23 @@
     BAL.src="data:image/svg+xml;charset=utf-8,"+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="240" height="300" viewBox="0 0 100 125"><path d="M50 4 C24 4 12 24 12 42 C12 62 30 74 40 84 L60 84 C70 74 88 62 88 42 C88 24 76 4 50 4" fill="#fa5252"/><path d="M50 4 C36 4 28 24 28 42 C28 62 38 74 42 84 L50 84 Z" fill="#ff8787"/><path d="M50 4 C60 4 68 24 68 42 C68 62 60 74 56 84 L50 84 Z" fill="#ffd43b"/><path d="M50 4 C46 4 42 24 42 42 C42 62 46 74 48 84 L52 84 C54 74 58 62 58 42 C58 24 54 4 50 4" fill="#fff" opacity=".22"/><path d="M40 84 L37 96 M60 84 L63 96 M50 84 L50 96" stroke="#8a5a2e" stroke-width="2.5"/><rect x="34" y="96" width="32" height="22" rx="6" fill="#a97044"/><rect x="34" y="96" width="32" height="8" rx="4" fill="#c08a5a"/><path d="M38 104 h24 M38 111 h24" stroke="#8a5a2e" stroke-width="2" opacity=".6"/></svg>');
     var CRAFTBAL=null, balloonArt=new Image();
     balloonArt.onload=function(){CRAFTBAL=balloonArt;};balloonArt.src="/assets/crafted/balloon-craft.webp";
-    function drawBalloon(){if(CRAFTBAL){ctx.drawImage(CRAFTBAL,235,25,790,1170,-40,-78,80,100);}else{ctx.drawImage(BAL,-40,-78,80,100);}}
-    // The hedge silhouette matches the original collision area; surface
-    // shading and leaves make the live obstacles belong to the countryside.
+    function drawBalloon(){
+      if(CRAFTBAL){var bw=Math.max(84,Math.min(104,W*.265)),bh=bw*1170/790;
+        ctx.drawImage(CRAFTBAL,235,25,790,1170,-bw/2,22-bh,bw,bh);
+      }else{ctx.drawImage(BAL,-40,-78,80,100);}
+    }
+    var HEDGEART=null,hedgeArt=new Image();
+    hedgeArt.onload=function(){HEDGEART=hedgeArt;};hedgeArt.src="/assets/crafted/hedge-leaves-v2.webp";
+    // Dense painted leaves fill the live hedge's exact collision area.
+    // Rounded edges and soft shading replace the old pipe-shaped caps.
     function paintHedge(x,y,w,h,fromTop){
-      ctx.save();var green=ctx.createLinearGradient(x,0,x+w,0);green.addColorStop(0,"#286b39");green.addColorStop(.35,"#79a948");green.addColorStop(.65,"#629d3e");green.addColorStop(1,"#245a32");ctx.fillStyle=green;
-      rr(x,y,w,h,18);ctx.fill();ctx.save();rr(x,y,w,h,18);ctx.clip();
-      for(var row=0;row<Math.ceil(h/26);row++){for(var col=0;col<4;col++){
-        var lx=x+col*22+(row%2?12:0),ly=y+row*26+13;
-        ctx.fillStyle=(row+col)%3===0?"#91b85b66":"#2f713b4d";
-        ctx.beginPath();ctx.ellipse(lx,ly,12,8,(col%2?-.55:.55),0,7);ctx.fill();
-      }}ctx.restore();
-      var capY=fromTop?y-2:y+h-16,cap=ctx.createLinearGradient(0,capY,0,capY+18);cap.addColorStop(0,"#a5c966");cap.addColorStop(.45,"#75ac47");cap.addColorStop(1,"#427b35");ctx.fillStyle=cap;rr(x-5,capY,w+10,18,10);ctx.fill();ctx.restore();
+      if(h<=0)return;
+      ctx.save();rr(x,y,w,h,Math.min(16,w/4,h/2));
+      ctx.shadowColor="rgba(36,70,39,.22)";ctx.shadowBlur=7;ctx.shadowOffsetX=2;ctx.shadowOffsetY=3;
+      ctx.fillStyle="#568d39";ctx.fill();ctx.shadowColor="transparent";ctx.clip();
+      if(HEDGEART){var tile=w*1.65;for(var hy=y;hy<y+h;hy+=tile){ctx.drawImage(HEDGEART,x-w*.3,hy,tile,tile);}}
+      var shade=ctx.createLinearGradient(x,0,x+w,0);shade.addColorStop(0,"rgba(31,68,36,.2)");shade.addColorStop(.3,"rgba(244,253,169,.08)");shade.addColorStop(.7,"rgba(40,68,30,0)");shade.addColorStop(1,"rgba(25,54,30,.28)");
+      ctx.fillStyle=shade;ctx.fillRect(x,y,w,h);ctx.restore();
     }
     var COLW=74;
     var ECHO=new Image(); ECHO.src="/assets/crafted/echo-welcome.webp";
@@ -307,8 +316,8 @@
     function draw(){
       var now=performance.now(), dt=Math.min(100,now-lastT), i; lastT=now;
       ctx.clearRect(0,0,W,H);
-      ctx.fillStyle="rgba(255,255,255,.35)";
-      for(i=0;i<5;i++){ var cx=((i*173-now*0.02*(1+i*0.2))%(W+140)+W+140)%(W+140)-70; var cy2=H*0.12+i*H*0.14; ctx.beginPath(); ctx.ellipse(cx,cy2,52,20,0,0,7); ctx.fill(); }
+      // The countryside already contains painted clouds; keep its open sky
+      // clear so the balloon and next safe gap remain easy to read.
       // the next hedge on the leg's beat; the leg ends when its gaps are flown
       if(playing&&phase==="fly"&&!falling.on){
         gateMs+=dt;
@@ -341,7 +350,7 @@
         var ft=(now-falling.t0)/1100;
         if(ft>=1){ falling.on=false; mercyT=now; py=H*0.45; vy=0; flash("Back in the sky!"); }
         else{ ctx.save(); ctx.translate(px,py+ft*ft*320); ctx.rotate(ft*10); ctx.globalAlpha=1-ft*0.4; ctx.fillStyle="#000"; ctx.textAlign="center"; ctx.textBaseline="middle";
-          if(BALOK){ drawBalloon(); if(!drawBuddy(0,6,34)){ ctx.font="34px sans-serif"; ctx.fillText(RUNNER,0,16); } } else if(!drawBuddy(0,-6,52)){ ctx.font="50px sans-serif"; ctx.fillText(RUNNER,0,0); }
+          if(BALOK){ if(!drawBuddy(0,-18,34)){ ctx.fillStyle="#b48148";ctx.beginPath();ctx.arc(0,-18,12,0,Math.PI*2);ctx.fill(); } drawBalloon(); } else { drawBuddy(0,-6,52); }
           ctx.restore(); }
       } else {
         var blink=(now-mercyT<900)&&phase==="fly"&&(((now/120)|0)%2===0);
@@ -349,8 +358,8 @@
           ctx.fillStyle="#000"; ctx.textAlign="center"; ctx.textBaseline="middle";
           var bob=Math.sin(now/300)*3;
           ctx.save(); ctx.translate(px,py+bob); ctx.rotate(Math.max(-0.22,Math.min(0.34,vy*0.02)));
-          if(BALOK){ drawBalloon(); if(!drawBuddy(0,6,34)){ ctx.font="34px sans-serif"; ctx.fillText(RUNNER,0,16); } }
-          else { ctx.font="34px sans-serif"; ctx.fillText("🎈",0,-40); if(!drawBuddy(0,10,52)){ ctx.font="50px sans-serif"; ctx.fillText(RUNNER,0,0); } }
+          if(BALOK){ if(!drawBuddy(0,-18,34)){ ctx.fillStyle="#b48148";ctx.beginPath();ctx.arc(0,-18,12,0,Math.PI*2);ctx.fill(); } drawBalloon(); }
+          else { ctx.fillStyle="#efaf6a";ctx.beginPath();ctx.ellipse(0,-40,27,35,0,0,Math.PI*2);ctx.fill(); drawBuddy(0,10,34); }
           ctx.restore();
         }
       }

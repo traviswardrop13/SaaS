@@ -201,6 +201,7 @@
   <div id="toast"></div>
 
   <script src="/sona.js"></script>
+  <script src="/crafted-buddies.js"></script>
   <script>
     (function(){
       var S=window.Sona,app=document.getElementById("libraryApp"),host=document.getElementById("activityGroups");
@@ -296,7 +297,7 @@
     var P=(S&&S.getProfile)?S.getProfile():{};
     function sfx(n){try{if(S&&S.sfx&&S.sfx[n])S.sfx[n]();}catch(e){}}
     function toast(t){var el=$("toast");el.textContent=t;el.classList.add("show");clearTimeout(toast._t);toast._t=setTimeout(function(){el.classList.remove("show");},1800);}
-    if(S&&S.buddyMarkup)$("buddyBtn").innerHTML=S.buddyMarkup(P.character||"fox",36);
+    if(S&&S.buddyMarkup)$("buddyBtn").innerHTML=SonaCraftedBuddies.markup(P.character||"fox",36);
     // Bank coins already earned by honest practice, once; browsing earns nothing.
     try{if(S&&S.mintCoins)S.mintCoins();}catch(e){}
     try{if(S&&S.repsBeacon)S.repsBeacon();}catch(e){}

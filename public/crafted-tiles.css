@@ -1,0 +1,14 @@
+/* Painted stage and compact music HUD; all playable geometry stays in canvas. */
+body[data-crafted="tiles"] #app{background-image:url('/assets/crafted/piano-stage-v2.webp');background-size:100% 100%;background-position:center;background-color:#2e225c;}
+body[data-crafted="tiles"] #top{gap:9px;padding-left:14px;padding-right:14px;}
+body[data-crafted="tiles"] #close{width:46px;height:46px;font-size:26px;}
+body[data-crafted="tiles"] .hudpill{padding:10px 14px;min-height:45px;font-size:18px;}
+body[data-crafted="tiles"] #timer{gap:7px;font-size:15px;}
+body[data-crafted="tiles"] #banner{top:calc(82px + env(safe-area-inset-top));}
+body[data-crafted="tiles"] #banner .pill{padding:10px 22px;border-radius:20px;}
+body[data-crafted="tiles"] #banner b{font-size:26px;color:#644090;}
+body[data-crafted="tiles"] #banner span{font-size:14px;margin-top:3px;}
+body[data-crafted="tiles"] #flash{font-size:29px;top:29%;color:#fff0a3;text-shadow:0 3px 0 #3a244a;}
+body[data-crafted="tiles"] #timer .wbar{background:#e7dcec;}
+body[data-crafted="tiles"] #timer .wbar i{background:linear-gradient(90deg,#c699de,#8760ba);}
+@media(max-width:350px){body[data-crafted="tiles"] #top{gap:7px;padding-left:10px;padding-right:10px;}body[data-crafted="tiles"] .hudpill{padding:8px 10px;font-size:16px;}body[data-crafted="tiles"] #timer{font-size:13px;gap:5px;}body[data-crafted="tiles"] #timer .wbar{width:36px;}body[data-crafted="tiles"] #close{width:43px;height:43px;}body[data-crafted="tiles"] #banner b{font-size:23px;}}

@@ -249,19 +249,18 @@
   <link rel="stylesheet" href="/crafted-family.css" />
 </head>
 <body class="crafted-family family-progress">
-  <div class="wrap" style="padding-bottom:96px;">
+  <div class="wrap">
     <header class="app family-header">
       <a class="brand" href="/today.html" aria-label="Sona Home"><span class="leo"><img src="/assets/crafted/echo-welcome.webp" alt="" /></span> Sona</a>
-      <a class="family-back" href="/today.html"><span class="pic-home" aria-hidden="true"></span> Back to play</a>
+      <a class="family-back" href="/today.html"><svg class="family-symbol" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h10c2 0 3 2 3.5 4l1 5c.4 2-1.5 3-3 1.5L16 15H8l-2.5 2.5C4 19 2 18 2.5 16l1-5C4 9 5 7 7 7Z"/><path d="M7 9.5v5M4.5 12h5"/><circle cx="15.5" cy="10.5" r=".7" fill="currentColor" stroke="none"/><circle cx="18" cy="13" r=".7" fill="currentColor" stroke="none"/></svg> Back to play</a>
     </header>
+    <div class="family-child"><img src="/assets/crafted/echo-welcome.webp" alt="" /><h1 id="title">Progress</h1></div>
     <nav class="family-tabs" aria-label="Grown-up pages"><a href="/progress.html" aria-current="page">Overview</a><a href="/settings.html">Settings</a></nav>
 
-    <div class="family-child"><img src="/assets/crafted/echo-welcome.webp" alt="" /><h1 id="title">Progress</h1></div>
     <div class="card" id="weekCard">
       <h2>Practice this week</h2>
-      <div><span id="volReps">0</span> <b>tries this week</b></div>
-      <p id="volLast" class="muted" style="font-size:12.5px;margin-top:2px;"></p>
-      <p class="muted" style="font-size:13px;font-weight:700;">Days with sound practice count toward the goal you choose.</p>
+      <div class="week-totals"><span><span id="volReps">0</span> <b>tries this week</b></span>
+      <span id="volLast" class="muted"></span></div>
       <div class="week" id="week"></div>
       <p id="wkGoalMsg" style="font-weight:800;font-size:13.5px;margin-top:10px;color:#6b86a3;"></p>
       <div id="wkGoalPick" style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
@@ -269,6 +268,7 @@
         <button class="gbtn" data-g="5">5 days/wk</button>
         <button class="gbtn" data-g="7">Every day</button>
       </div>
+      <p class="goal-note muted">Days with sound practice count toward your goal.</p>
       <p id="clearest"></p>
     </div>
 
@@ -344,13 +344,6 @@
     <div class="card"><h2>Recent practice</h2><div id="recent" style="margin-top:4px;"></div></div>
 
     <p class="muted noprint" style="text-align:center;margin-top:22px;font-size:13px;"><a href="/today.html">← Back to Home</a></p>
-  </div>
-
-  <!-- Progress is a parent page now (reached via the parent gate) — the kid
-       tab bar is gone. -->
-  <div class="nav">
-    <a class="on" href="/today.html"><span class="ni pic-home"></span>Back to Sona</a>
-    <a href="/settings.html"><span class="ni pic-gear"></span>Settings</a>
   </div>
 
   <script src="/sona.js"></script>

@@ -71,12 +71,13 @@
     @media (prefers-reduced-motion: reduce){ #banner.in{animation-name:bannerFade;} }
   </style>
   <link href="/crafted-games.css" rel="stylesheet">
+  <link href="/crafted-stack.css" rel="stylesheet">
 </head>
 <body data-crafted="stack">
   <div id="app">
     <canvas id="cv"></canvas>
     <div id="top">
-      <button id="close">✕</button>
+      <button id="close" aria-label="Back to games">✕</button>
       <div class="hudpill"><svg viewBox="0 0 64 64" style="width:19px;height:19px;vertical-align:-4px"><rect x="8" y="19" width="48" height="27" rx="7" fill="#69db7c"/><rect x="8" y="19" width="48" height="9" rx="4.5" fill="#85e099"/><circle cx="18" cy="26" r="2.5" fill="#fff" opacity=".85"/></svg> <b id="score">0</b></div>
       <div id="hudspacer"></div>
       <div id="best" class="hudpill"></div>
@@ -177,7 +178,7 @@
     fit(); window.addEventListener("resize",fit);
 
     var COLORS=["#ff6b6b","#ffa94d","#ffd43b","#69db7c","#4dabf7","#9775fa","#f783ac"];
-    var BH=34;                       // block height
+    var BH=Math.min(52,Math.max(30,H*0.06)); // painted block height follows the portrait stage
     var baseW=Math.min(W*0.62,240); // starting width
     // A block is never narrower than this. The old tower cut every slightly-off
     // drop down, so a young child was soon aiming a sliver, missing it, and
@@ -237,7 +238,7 @@
     var TICK='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
     function floorDots(){ var s=""; for(var i=0;i<FLOORS.length;i++) s+='<span class="wdot'+(i<=floor?' on':'')+'">'+(i<=floor?TICK:String(i+1))+'</span>'; return s; }
     function banner(big,small){ var b=$("banner"); $("bnBig").textContent=big; $("bnSmall").textContent=small||""; b.classList.remove("in"); void b.offsetWidth; b.classList.add("in"); }
-    var ECHO=new Image(), echoT=-1e9; ECHO.src="/assets/crafted/echo-welcome.webp";
+    var echoT=-1e9;
     function echoHop(){ echoT=performance.now(); }
 
     // ── the say-it card, between floors ──
@@ -267,7 +268,8 @@
 
 
     function flash(t){ var f=$("flash"); f.textContent=t; f.style.opacity=1; f.style.transform="scale(1.18)"; setTimeout(function(){f.style.opacity=0;f.style.transform="scale(1)";},520); }
-    function blockY(i){ return H-46-(i+1)*BH+camY; }
+    function tableY(){ return H*0.80; }
+    function blockY(i){ return tableY()-(i+1)*BH+camY; }
 
     // ── the game's own sounds, made on the phone (27 Sep 2026) ──
     // They join Sona's sfx set on this page only, so each goes through sfx()
@@ -463,12 +465,18 @@
     if(window.Sona&&Sona.onBackground) Sona.onBackground(closeReviveMic); else window.addEventListener("pagehide",closeReviveMic);
     document.addEventListener("visibilitychange",function(){ if(!document.hidden&&reviveWait) openReviveMic(); });
 
-    function drawBlock(b,y){
+    var WOOD={}, WOOD_COLORS={"#ff6b6b":"coral","#ff8787":"coral","#ffa94d":"orange","#ffb86b":"orange","#ffd43b":"yellow","#ffe066":"yellow","#69db7c":"green","#85e099":"green","#4dabf7":"blue","#9775fa":"purple","#b197fc":"purple","#f783ac":"pink","#ffd21c":"gold"};
+    ["coral","orange","yellow","green","blue","purple","pink","gold"].forEach(function(name){var im=new Image();im.src="/assets/crafted/stack-block-"+name+"-v2.webp";WOOD[name]=im;});
+    var ROCKET_ART=new Image();ROCKET_ART.src="/assets/crafted/stack-rocket-v2.webp";
+    function drawBlock(b,y,index){
       paintBlock(b.x,y,b.w,BH-3,b.c);
-      // lit windows: it's a tower people live in
-      ctx.fillStyle=b.gold?"#fff7c2":"rgba(255,240,190,.85)";
-      var n=Math.max(1,Math.floor(b.w/36));
-      for(var k=0;k<n;k++) ctx.fillRect(b.x+(k+0.5)*b.w/n-4,y+12,8,9);
+      // A few of the wooden toys smile, without making faces a game signal.
+      if(b.w>90&&(index===2||index>4&&index%6===3)){
+        var mx=b.x+b.w/2, my=y+(BH-3)*.54;
+        ctx.fillStyle="#3f3433";ctx.beginPath();ctx.ellipse(mx-14,my-2,3,4,0,0,7);ctx.ellipse(mx+14,my-2,3,4,0,0,7);ctx.fill();
+        ctx.strokeStyle="#3f3433";ctx.lineWidth=1.8;ctx.lineCap="round";ctx.beginPath();ctx.arc(mx,my+1,4,0,Math.PI);ctx.stroke();
+        ctx.fillStyle="rgba(240,125,108,.7)";ctx.beginPath();ctx.ellipse(mx-22,my+4,4,2,0,0,7);ctx.ellipse(mx+22,my+4,4,2,0,0,7);ctx.fill();
+      }
     }
     function drawRocket(x,y,flame){   // (x, y) is the middle of its base
       ctx.save(); ctx.translate(x,y);
@@ -477,6 +485,7 @@
         ctx.fillStyle="#ffb100"; ctx.beginPath(); ctx.moveTo(-11,-2); ctx.quadraticCurveTo(0,f+10,11,-2); ctx.closePath(); ctx.fill();
         ctx.fillStyle="#fff1a8"; ctx.beginPath(); ctx.moveTo(-6,-2); ctx.quadraticCurveTo(0,f*0.6,6,-2); ctx.closePath(); ctx.fill();
       }
+      if(ROCKET_ART.complete&&ROCKET_ART.naturalWidth){ctx.drawImage(ROCKET_ART,-41,-119,82,123);ctx.restore();return;}
       ctx.fillStyle="#ff5c5c";
       ctx.beginPath(); ctx.moveTo(-13,-6); ctx.lineTo(-26,4); ctx.lineTo(-24,-18); ctx.lineTo(-13,-28); ctx.closePath(); ctx.fill();
       ctx.beginPath(); ctx.moveTo(13,-6); ctx.lineTo(26,4); ctx.lineTo(24,-18); ctx.lineTo(13,-28); ctx.closePath(); ctx.fill();
@@ -495,21 +504,21 @@
       if(finaleDone){ ctx.strokeStyle="#fff"; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(W*0.82+6,H*0.14-24); ctx.lineTo(W*0.82+6,H*0.14-46); ctx.stroke(); ctx.fillStyle="#ff5c5c"; ctx.beginPath(); ctx.moveTo(W*0.82+6,H*0.14-46); ctx.lineTo(W*0.82+24,H*0.14-40); ctx.lineTo(W*0.82+6,H*0.14-34); ctx.closePath(); ctx.fill(); }
       // parallax stars
       ctx.globalAlpha=0.22; ctx.fillStyle="#bfe0ff"; for(i=0;i<24;i++){ ctx.fillRect(((i*89)%W),(((i*173)+camY*0.3)%H+H)%H,2,2); } ctx.globalAlpha=1;
-      var towerTopY=H-46-stack.length*BH+camY;
+      var towerTopY=tableY()-stack.length*BH+camY;
       var want= towerTopY<H*0.42 ? camY+(H*0.42-towerTopY) : camY;
       camY+=(want-camY)*0.08;
-      // ground: a low street in the town's silhouette tone — blends into the
-      // dusk instead of reading as a dead navy band
-      ctx.fillStyle="rgba(20,14,50,.55)"; ctx.fillRect(0,H-46+camY,W,46);
-      // Echo cheers from the street
-      if(ECHO.complete&&ECHO.naturalWidth){ var hp=(now-echoT)/700, ey=hp>=0&&hp<1?-Math.sin(hp*Math.PI)*26:0, es=Math.min(78,W*0.17);
-        ctx.drawImage(ECHO,W*0.04,H-46+camY-es*0.92+ey,es,es*1.07); }
+      // The painting's table and cheering characters stay fixed. Only the
+      // tower's visual stage narrows to fit between them; physics stays unchanged.
+      ctx.save();ctx.beginPath();ctx.rect(0,0,W,tableY()+1);ctx.clip();ctx.translate(W*.1,0);ctx.scale(.8,1);
+      // A quick cheer sparkles beside the two painted helpers.
+      var cheer=(now-echoT)/700;
+      if(cheer>=0&&cheer<1){ctx.save();ctx.globalAlpha=1-cheer;ctx.strokeStyle="#ffe7a2";ctx.lineWidth=2;for(var cs=0;cs<6;cs++){var px=W*(cs<3?.08:.92)+(cs%3-1)*12,py=tableY()-H*.20-cheer*30-(cs%3)*13;ctx.beginPath();ctx.moveTo(px-4,py);ctx.lineTo(px+4,py);ctx.moveTo(px,py-4);ctx.lineTo(px,py+4);ctx.stroke();}ctx.restore();}
       // stack
-      for(i=0;i<stack.length;i++) drawBlock(stack[i],blockY(i));
+      for(i=0;i<stack.length;i++) drawBlock(stack[i],blockY(i),i);
       // offcuts and missed blocks, tumbling away
       for(i=falling.length-1;i>=0;i--){ var fb=falling[i]; fb.vy+=0.5; fb.x+=fb.vx; fb.y+=fb.vy; fb.rot+=fb.vr;
         if(fb.y>H+120){ falling.splice(i,1); continue; }
-        ctx.save(); ctx.translate(fb.x+fb.w/2,fb.y+BH/2); ctx.rotate(fb.rot); ctx.fillStyle=fb.c; rr(-fb.w/2,-BH/2,fb.w,BH-3,7); ctx.fill(); ctx.restore(); }
+        ctx.save(); ctx.translate(fb.x+fb.w/2,fb.y+BH/2); ctx.rotate(fb.rot); paintBlock(-fb.w/2,-BH/2,fb.w,BH-3,fb.c); ctx.restore(); }
       // dust where a block lands
       for(i=puffs.length-1;i>=0;i--){ var pf=puffs[i]; pf.x+=pf.vx; pf.y+=pf.vy; pf.r+=0.25; pf.life-=0.03; if(pf.life<=0){ puffs.splice(i,1); continue; }
         ctx.globalAlpha=pf.life*0.5; ctx.fillStyle="#fff4d6"; ctx.beginPath(); ctx.arc(pf.x,pf.y,pf.r,0,7); ctx.fill(); ctx.globalAlpha=1; }
@@ -517,8 +526,14 @@
       if(playing&&phase==="floor"&&cur){
         cur.x+=cur.dir*speed;
         if(cur.x<-8){cur.x=-8;cur.dir=1;} if(cur.x+cur.w>W+8){cur.x=W+8-cur.w;cur.dir=-1;}
-        var y=blockY(stack.length);
-        drawBlock(cur,y);
+        var landingY=blockY(stack.length), gap=Math.min(76,H*.095), y=landingY-gap;
+        // A dotted plumb line and warm landing glow show exactly where a tap
+        // will drop the current block. They never change the snap window.
+        var cx=cur.x+cur.w/2, topBlock=stack[stack.length-1];
+        ctx.save();ctx.strokeStyle="rgba(255,244,206,.82)";ctx.lineWidth=2;ctx.setLineDash([4,7]);ctx.beginPath();ctx.moveTo(cx,y+BH+4);ctx.lineTo(cx,landingY+BH-6);ctx.stroke();ctx.setLineDash([]);
+        var glowX=Math.max(topBlock.x,cur.x), glowR=Math.min(topBlock.x+topBlock.w,cur.x+cur.w);
+        if(glowR>glowX){ctx.shadowColor="#ffe8a0";ctx.shadowBlur=14;ctx.fillStyle="rgba(255,237,174,.8)";rr(glowX,landingY+BH-4,glowR-glowX,3,1.5);ctx.fill();}ctx.restore();
+        drawBlock(cur,y,-1);
         if(cur.gold){ ctx.strokeStyle="rgba(255,244,180,"+(0.5+0.5*Math.sin(now/120))+")"; ctx.lineWidth=3; rr(cur.x-3,y-3,cur.w+6,BH+3,9); ctx.stroke(); }
       }
       // the rocket on the top, then away to the moon
@@ -529,13 +544,22 @@
           if(Math.random()<0.8) puffs.push({x:rx+(Math.random()-0.5)*14+(W*0.82-rx)*Math.min(1,rocket.lift/H)*0.4,y:ry-rocket.lift+6,r:6+Math.random()*5,life:1,vx:(Math.random()-0.5)*1.2,vy:0.6}); }
         var sx=rx+(W*0.82-rx)*Math.min(1,rocket.lift/H)*0.4;
         drawRocket(sx,ry-rocket.lift,rocket.launched);
-        if(!rocket.launched){ ctx.globalAlpha=0.5+0.5*Math.sin(now/200); ctx.fillStyle="#fff"; ctx.font='800 20px "Baloo 2",sans-serif'; ctx.textAlign="center"; ctx.fillText("Tap!",sx,ry-104); ctx.globalAlpha=1; }
+        if(!rocket.launched){ ctx.globalAlpha=0.5+0.5*Math.sin(now/200); ctx.fillStyle="#fff"; ctx.font='800 20px "Baloo 2",sans-serif'; ctx.textAlign="center"; ctx.fillText("Tap!",sx,ry-134); ctx.globalAlpha=1; }
         if(ry-rocket.lift<-140) landed();
       }
+      ctx.restore();
+      // The live instruction belongs on the painted plaque, clear of the
+      // home indicator. Keeping it visible helps a child who cannot read yet
+      // follow a grown-up's prompt without a floating card over the game.
+      ctx.fillStyle="#fff2d6";ctx.textAlign="center";ctx.font='800 '+Math.max(16,Math.min(22,W*.055))+'px "Baloo 2",sans-serif';
+      var plaqueText=$("flash").style.opacity==="1"?$("flash").textContent:(phase==="finale"?"Tap to blast off!":phase==="done"?"To the moon!":"Tap to drop the block!");
+      ctx.fillText(plaqueText,W/2,H*.908,W*.72);
       requestAnimationFrame(draw);
     }
     // Toy-block finish changes paint only; the landing edges stay exact.
     function paintBlock(x,y,w,h,color){
+      var wood=WOOD[WOOD_COLORS[color]||"blue"];
+      if(wood&&wood.complete&&wood.naturalWidth){ctx.save();ctx.shadowColor="rgba(18,10,39,.3)";ctx.shadowBlur=4;ctx.shadowOffsetY=3;ctx.drawImage(wood,x,y,w,h);ctx.restore();return;}
       ctx.save();ctx.shadowColor="rgba(18,10,39,.3)";ctx.shadowBlur=6;ctx.shadowOffsetY=4;
       ctx.fillStyle=color;rr(x,y,w,h,7);ctx.fill();ctx.shadowColor="transparent";
       var shine=ctx.createLinearGradient(0,y,0,y+h);shine.addColorStop(0,"rgba(255,255,255,.38)");shine.addColorStop(.45,"rgba(255,255,255,.02)");shine.addColorStop(1,"rgba(44,15,29,.2)");ctx.fillStyle=shine;rr(x,y,w,h,7);ctx.fill();

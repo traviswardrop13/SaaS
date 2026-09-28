@@ -1,0 +1,43 @@
+/* Local dressing-room presentation; shared buddy ids, ownership and saves stay intact. */
+.family-customize .wrap{padding-bottom:calc(126px + env(safe-area-inset-bottom));}
+.family-customize header.app{margin-bottom:16px;}
+.family-customize .customize-intro{margin:0 1px 18px;color:#8a7154;font-size:14px;line-height:1.45;}
+.family-customize #preview{height:278px;border:5px solid #fffaf0;border-radius:27px;box-shadow:0 4px 0 #d7bf96,0 10px 24px #6a48252b;isolation:isolate;}
+.family-customize #scene{inset:0;}
+.family-customize #scene .setting-scene{opacity:1;inset:0;}
+.family-customize .setting-scene{position:relative;display:block;width:100%;height:100%;overflow:hidden;}
+.family-customize .setting-scene>svg,.family-customize .setting-scene>img{position:absolute;inset:0;display:block;width:100%;height:100%;object-fit:cover;}
+.family-customize #preview:after{content:"";position:absolute;left:0;right:0;bottom:0;height:30px;z-index:0;background:linear-gradient(#dcc091,#bd9562);border-top:3px solid #f5ddba;box-shadow:0 -3px 7px #75542626;}
+.family-customize .scene-caption{position:absolute;top:14px;left:16px;z-index:1;border:1px solid #fff6dba3;border-radius:20px;background:#fff9ebdd;padding:5px 12px;color:#604223;box-shadow:0 2px 4px #72522a12;font:800 12px/1.3 "Nunito",sans-serif;}
+.family-customize .hero{margin:0 0 28px;z-index:1;animation:none;}
+.family-customize #heroChar{display:block;width:154px;height:154px;padding:9px;border-radius:50%;background:#f3d3a0 url('/assets/crafted/painted-wood-ivory.webp') center/cover;border:2px solid #e3c394;box-shadow:inset 0 0 0 3px #fff2d2,0 5px 0 #b89360,0 10px 18px #5a3e3433;filter:none;}
+.family-customize #heroChar>span{display:block!important;width:132px!important;height:132px!important;}
+.family-customize #heroName{bottom:-14px;z-index:3;min-width:84px;text-align:center;font-size:17px;padding:5px 16px;background:#fff9e9;border:1px solid #dec297;box-shadow:0 3px 0 #cba16b;}
+.family-customize #heroOutfit{top:8px;}
+.family-customize #heroOutfit[data-outfit="shades"]{top:64px;}
+.family-customize #heroOutfit[data-outfit="bow"]{top:16px;left:65%;}
+.family-customize #heroOutfit[data-outfit="cap"]{top:16px;}
+.family-customize #heroOutfit[data-outfit="party"]{top:-11px;}
+.family-customize h2{font-size:21px;}
+.family-customize .grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:13px;}
+.family-customize .opt{appearance:none;-webkit-appearance:none;min-width:0;min-height:111px;border:2px solid #e9dac3;border-radius:18px;background:linear-gradient(145deg,#fffefa,#fcf1dd);padding:12px 6px 9px;box-shadow:inset 0 1px 0 #fff,0 4px 0 #ddc39b,0 6px 10px #79502a10;color:var(--ink);font:inherit;}
+.family-customize .opt .em{height:60px;}
+.family-customize #chars .opt .em{border-radius:50%;border:2px solid #fffbef;box-shadow:0 2px 0 #d8b98b,0 3px 8px #8c603d25;}
+.family-customize .opt .nm{font-size:14px;line-height:1.2;margin-top:5px;}
+.family-customize .opt.on{border:2px solid #3e9391;background:linear-gradient(#f5fcf0,#dfeddf);box-shadow:inset 0 1px 0 #fff,0 4px 0 #8ab9a8,0 6px 10px #3f796418;}
+.family-customize .opt.on:after{content:"✓";position:absolute;right:6px;top:6px;display:grid;place-items:center;width:20px;height:20px;border-radius:50%;background:#287e7d;color:#fffdf4;border:2px solid #fff8e9;font:800 12px/1 "Nunito",sans-serif;box-shadow:0 2px 3px #305c5030;}
+.family-customize .opt:active{transform:translateY(2px);}
+.family-customize #outfits .opt{min-height:94px;}
+.family-customize #outfits .em{height:48px;}
+.family-customize #outfits .em>svg{width:48px;height:48px;}
+.family-customize #backdrops{grid-template-columns:repeat(2,minmax(0,1fr));gap:13px;}
+.family-customize #backdrops .opt{padding:5px 5px 10px;overflow:hidden;}
+.family-customize .opt.bd .em{height:104px;border-radius:12px;}
+.family-customize #backdrops .nm{margin-top:3px;}
+.family-customize .customize-footer{position:fixed;left:50%;bottom:0;transform:translateX(-50%);z-index:20;width:100%;max-width:540px;box-sizing:border-box;padding:10px 20px calc(14px + env(safe-area-inset-bottom));background:linear-gradient(#fffaf0ef,#fff8eafc);border-top:1px solid #e8d6bb;box-shadow:0 -5px 20px #8a663513;backdrop-filter:blur(12px);}
+.family-customize #choiceSaved{display:block;text-align:center;margin:0 0 7px;color:#7a6953;font-size:11px;font-weight:700;line-height:1.3;}
+.family-customize #done{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:49px;margin:0;}
+@media(max-width:350px){.family-customize #preview{height:239px;}.family-customize .customize-intro{font-size:12px;}.family-customize .grid{gap:9px;}.family-customize .opt{min-height:105px;padding-left:4px;padding-right:4px;}.family-customize .opt .nm{font-size:13px;}.family-customize .opt.bd .em{height:88px;}.family-customize .customize-footer{padding-left:14px;padding-right:14px;}.family-customize h2{font-size:20px;}}
+
+.family-customize .crafted-buddy{position:relative;display:inline-block;flex:none;border-radius:50%;overflow:hidden;vertical-align:middle;}
+.family-customize .crafted-buddy>img{position:absolute;inset:0;display:block;width:100%;height:100%;object-fit:cover;border-radius:50%;filter:none;}

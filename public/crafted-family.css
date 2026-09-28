@@ -191,3 +191,55 @@ body.crafted-family{
  .family-join .jhero h1{font-size:25px;}
 }
 @media(prefers-reduced-motion:reduce){.family-voices .vrow{transition:none;}}
+
+/* Keep the grown-up overview as compact as the original paper-card board.
+   Navigation is at the top, so no duplicate bar hides saved tries below. */
+.family-progress .family-header,.family-settings .family-header{padding-bottom:12px;}
+.family-progress .family-child{padding:8px 12px;margin-bottom:10px;min-height:54px;border-radius:15px;}
+.family-progress .family-child img{width:34px;height:38px;}
+.family-progress .family-child h1{font-size:18px;}
+.family-progress .family-tabs,.family-settings .family-tabs{margin-bottom:12px;}
+.family-progress .family-tabs a,.family-settings .family-tabs a{min-height:36px;}
+.family-progress #weekCard,.family-progress #recordingsCard{padding:16px 18px;border-radius:20px;}
+.family-progress .card+.card{margin-top:12px;}
+.family-progress .week-totals{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-top:7px;flex-wrap:wrap;}
+.family-progress .week-totals>span:first-child{font-size:13px;}
+.family-progress #volReps{font-size:24px;line-height:1.1;}
+.family-progress #volLast{font-size:11px;line-height:1.2;}
+.family-progress .week{margin-top:14px;}
+.family-progress #wkGoalMsg{margin-top:8px!important;font-size:12px!important;}
+.family-progress #wkGoalPick{margin-top:8px!important;}
+.family-progress .gbtn{min-height:44px;padding:7px 4px;}
+.family-progress .goal-note{font-size:11px;line-height:1.35;margin:10px 0 0;}
+.family-progress #clearest{font-size:11px;padding-top:9px;margin-top:10px;}
+.family-progress #recordingsCard>p{font-size:12px!important;line-height:1.45;margin-top:5px;}
+.family-progress #recList>p.muted{margin:10px 0 0;max-width:none;padding:0;background:none;border:0;border-radius:0;box-shadow:none;text-align:left;font-size:12px;font-weight:600;}
+.family-progress #recList>p.muted:before,.family-progress #recList>p.muted:after{display:none;}
+.family-progress .recording-ghost{font-size:13px;min-height:44px;display:flex;align-items:center;padding:10px 12px;border-style:solid;box-shadow:inset 0 1px 2px #87664006;}
+.family-progress #recordingsCard h2>svg{color:#518b86;}
+.family-progress #recordingsCard h2>svg path{stroke:currentColor;}
+.family-progress #recordingsCard h2>svg rect{fill:currentColor;}
+.family-settings #kidsCard{padding:14px 16px;}
+.family-settings #kidsCard h2{font-size:19px;}
+.family-settings #kidsCard>p{font-size:12px!important;line-height:1.4;margin-top:4px;}
+.family-settings #kidList{margin-top:9px!important;}
+.family-settings #addKidBtn{min-height:44px;padding:9px 14px;font-size:14px;}
+.family-settings .settings-main{padding:18px;}
+.family-settings .settings-identity{display:grid;grid-template-columns:minmax(0,1fr) 90px;gap:12px;align-items:start;}
+.family-settings .settings-identity label.field{margin-top:14px;}
+.family-settings .settings-identity label.field .muted{font-size:10px!important;line-height:1.3;max-width:90px;}
+.family-settings .settings-identity input{margin-top:6px;}
+.family-settings label[for=childAge] .muted{display:none;}
+.family-settings .settings-identity+label.field{margin-top:16px;}
+.family-settings .sound{font-family:"Baloo 2",sans-serif;font-weight:800;cursor:pointer;}
+.family-settings .sound:active{transform:translateY(1px);}
+.family-settings #saved{padding:7px 12px;border-radius:12px;background:#e7f1e5;}
+.family-back .family-symbol{width:18px;height:18px;color:#15878f;}
+@media(max-width:350px){
+ .family-progress #weekCard,.family-progress #recordingsCard{padding:14px;}
+ .family-progress .family-child h1{font-size:17px;}
+ .family-progress .week-totals{gap:5px;}
+ .family-progress #volLast{font-size:10px;}
+ .family-settings .settings-main{padding:15px;}
+ .family-settings .settings-identity{grid-template-columns:minmax(0,1fr) 78px;gap:10px;}
+}

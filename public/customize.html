@@ -44,22 +44,25 @@
     .opt.none-outfit .em{color:var(--muted);font-size:13px;font-weight:800;font-family:"Baloo 2";}
   </style>
   <link rel="stylesheet" href="/crafted-family.css" />
+  <link rel="stylesheet" href="/crafted-customize.css" />
 </head>
 <body class="crafted-family family-customize">
   <div class="wrap">
     <header class="app">
       <div class="brand"><span class="leo"><img src="/assets/crafted/echo-welcome.webp" alt="" /></span> Make it yours</div>
       <div class="pills">
-        <a class="iconbtn" href="/today.html" title="Home" style="display:flex;align-items:center;justify-content:center;">✕</a>
+        <a class="iconbtn" href="/today.html" title="Home" aria-label="Back to games" style="display:flex;align-items:center;justify-content:center;">✕</a>
       </div>
     </header>
 
-    <div id="preview">
-      <div id="scene"></div>
+    <p class="customize-intro">A buddy. A little style. A world of your own.</p>
+    <div id="preview" aria-label="Your buddy preview">
+      <div id="scene" aria-hidden="true"></div>
+      <div class="scene-caption" id="sceneName"></div>
       <div class="hero">
         <span id="heroOutfit"></span>
         <span id="heroChar"></span>
-        <span id="heroName">Echo</span>
+        <span id="heroName"></span>
       </div>
     </div>
 
@@ -72,11 +75,11 @@
     <h2 style="margin:22px 2px 2px;">Pick a place</h2>
     <div class="grid" id="backdrops"></div>
 
-    <a class="btn" id="done" href="/map.html" style="margin-top:22px;">Done&nbsp;&nbsp;✓</a>
-    <p class="muted" style="text-align:center;margin-top:12px;font-size:13px;">More buddies coming soon!</p>
+    <div class="customize-footer"><span id="choiceSaved" role="status" aria-live="polite">Your choices save as you go</span><a class="btn" id="done" href="/map.html">Done <span aria-hidden="true">✓</span></a></div>
   </div>
 
   <script src="/sona.js"></script>
+  <script src="/crafted-buddies.js"></script>
   <script>
     var p = Sona.getProfile();
     var sel = { character: p.character || "leo", outfit: p.outfit || "none", backdrop: p.backdrop || "sky" };
@@ -100,7 +103,7 @@
       };
       return '<svg viewBox="0 0 64 64" aria-hidden="true">' + (paths[id] || paths.none) + '</svg>';
     }
-    function backdropArt(id) {
+    function backdropFallback(id) {
       var cloud='<g fill="#fffaf0" opacity=".86"><ellipse cx="72" cy="47" rx="31" ry="13"/><circle cx="65" cy="39" r="17"/><circle cx="88" cy="44" r="13"/><ellipse cx="318" cy="68" rx="35" ry="12"/><circle cx="305" cy="60" r="17"/></g>';
       var scenes={
         sky: '<circle cx="318" cy="39" r="25" fill="#edc968"/>'+cloud+'<path d="M0 221Q95 181 203 214T400 201v39H0Z" fill="#a1cda8"/>',
@@ -113,33 +116,54 @@
       return '<svg viewBox="0 0 400 240" preserveAspectRatio="xMidYMid slice" aria-hidden="true">'+(scenes[id]||scenes.sky)+'</svg>';
     }
 
+    function backdropArt(id) {
+      var valid = ["sky", "jungle", "forest", "mountain", "space", "beach"];
+      var scene = valid.indexOf(id) === -1 ? "sky" : id;
+      return '<span class="setting-scene">' + backdropFallback(scene) + '<img src="/assets/crafted/customize-' + scene + '-v2.webp" alt="" onerror="this.style.display=\'none\'" /></span>';
+    }
+
+    // Local crafted portraits retain the shared catalog ids and SVG fallbacks.
+    function buddyArt(id, size) {
+      return SonaCraftedBuddies.markup(id, size);
+    }
+
+    function selectOption(host, el) {
+      host.querySelectorAll(".opt").forEach(function (n) { n.classList.remove("on"); n.setAttribute("aria-pressed", "false"); });
+      el.classList.add("on"); el.setAttribute("aria-pressed", "true");
+    }
+
     function renderPreview() {
       var c = Sona.characterById(sel.character),
           o = Sona.outfitById(sel.outfit),
           b = Sona.backdropById(sel.backdrop);
-      heroChar.innerHTML = Sona.buddyMarkup(sel.character, 132);
+      heroChar.innerHTML = buddyArt(sel.character, 132);
       heroName.textContent = c.name;
+      heroChar.setAttribute("data-character", c.id);
+      document.getElementById("sceneName").textContent = b.name;
       heroOutfit.innerHTML = sel.outfit === "none" ? "" : outfitArt(sel.outfit);
       heroOutfit.setAttribute("data-outfit",sel.outfit);
       previewEl.style.background = b.css;
       sceneEl.innerHTML = backdropArt(sel.backdrop);
     }
 
-    function persist() { Sona.saveProfile({ character: sel.character, outfit: sel.outfit, backdrop: sel.backdrop }); }
+    function persist() { Sona.saveProfile({ character: sel.character, outfit: sel.outfit, backdrop: sel.backdrop }); document.getElementById("choiceSaved").textContent = "Saved — looking good!"; }
 
 
     // grandfather whatever the child already has selected (don't charge for it)
     Sona.addOwned("outfits", sel.outfit); Sona.addOwned("backdrops", sel.backdrop);
 
-    // characters: Leo free, others "coming soon" (not buyable yet)
+    // Keep the shared catalog identity and unlock rules for each buddy.
     function buildChars() {
       var host = document.getElementById("chars"); host.innerHTML = "";
       Sona.CHARACTERS.forEach(function (it) {
         var locked = !!it.locked;
-        var el = document.createElement("div");
-        el.className = "opt" + (sel.character === it.id && !locked ? " on" : "") + (locked ? " locked" : "");
-        el.innerHTML = '<span class="em">' + Sona.buddyMarkup(it.id, 40) + '</span><span class="nm">' + it.name + '</span>' + (locked ? '<span class="soon">SOON</span>' : "");
-        if (!locked) el.onclick = function () { if (window.Sona) Sona.sfx.tap(); sel.character = it.id; host.querySelectorAll(".opt").forEach(function (n) { n.classList.remove("on"); }); el.classList.add("on"); renderPreview(); persist(); };
+        var el = document.createElement("button");
+        el.type = "button";
+        el.className = "opt" + (Sona.characterById(sel.character).id === it.id && !locked ? " on" : "") + (locked ? " locked" : "");
+        el.setAttribute("aria-pressed", el.classList.contains("on") ? "true" : "false");
+        el.disabled = locked;
+        el.innerHTML = '<span class="em">' + buddyArt(it.id, 58) + '</span><span class="nm">' + it.name + '</span>' + (locked ? '<span class="soon">SOON</span>' : "");
+        if (!locked) el.onclick = function () { if (window.Sona) Sona.sfx.tap(); sel.character = it.id; selectOption(host, el); renderPreview(); persist(); };
         host.appendChild(el);
       });
     }
@@ -149,11 +173,13 @@
       var host = document.getElementById(elId); host.innerHTML = "";
       items.forEach(function (it) {
         var owned = true; // beta: everything's unlocked — just pick what you like
-        var el = document.createElement("div");
+        var el = document.createElement("button");
+        el.type = "button";
         el.className = "opt" + render.cls(it) + (sel[key] === it.id ? " on" : "");
+        el.setAttribute("aria-pressed", sel[key] === it.id ? "true" : "false");
         el.innerHTML = render.inner(it) + (owned ? "" : '<span class="price">'+Sona.icon('coin',12)+' ' + it.cost + '</span>');
         el.onclick = function () {
-          if (owned) { if (window.Sona) Sona.sfx.tap(); sel[key] = it.id; host.querySelectorAll(".opt").forEach(function (n) { n.classList.remove("on"); }); el.classList.add("on"); renderPreview(); persist(); return; }
+          if (owned) { if (window.Sona) Sona.sfx.tap(); sel[key] = it.id; selectOption(host, el); renderPreview(); persist(); return; }
           if (coins >= it.cost) {
             if (confirm("Unlock " + it.name + " for " + it.cost + " coins?")) {
               Sona.spendCoins(it.cost); Sona.addOwned(kind, it.id); coins = Sona.getCoins(); setCoinBal();
