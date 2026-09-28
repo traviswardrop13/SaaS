@@ -47,8 +47,12 @@ ok('"rabbit" for rabbit passes', (await V("rabbit", "R", "rabbit")) === "pass");
 ok('"wabbit" for rabbit passes (a close try — that IS the practice)',
   (await V("wabbit", "R", "rabbit")) === "pass");
 ok('"the rabbit" inside a phrase passes', (await V("the rabbit", "R", "rabbit")) === "pass");
-ok('"run" carries the R sound → passes even against another word',
-  (await V("run", "R", "rain")) === "pass");
+// A different word does not count, even one starting with the sound (Travis,
+// 28 Sep 2026: "ideally the exact / close word"). It used to: "run" for rain.
+ok('"run" for rain FAILS (a different word, though it starts with R)',
+  (await V("run", "R", "rain")) === "fail");
+ok('"rocket" for rabbit FAILS', (await V("rocket", "R", "rabbit", { level: "word" })) === "fail");
+ok('"rainy" for rain passes (close to the word itself)', (await V("rainy", "R", "rain", { level: "word" })) === "pass");
 ok('"are" for isolated R practice passes', (await V("are", "R", "")) === "pass");
 
 // digraphs match their spelling, not their letters

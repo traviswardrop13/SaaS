@@ -673,17 +673,16 @@ are enforced in code and pinned by tests — change them only on Rachel's say-so
   2026: "I just don't want kids saying taco and getting a correct score. We
   want them to be in the ballpark"). In the iPhone app the practice page asks
   Apple's on-device recognizer what was said (SonaSpeech, never Apple's
-  servers) and `hearVerdict` in sona.js decides. Pass: the word, a close try
-  (each sound's typical errors, `HEAR_SUBS`: "wabbit", "wed", "cah"), or
-  another word that starts with the sound when the word does ("run" for
-  rain); with the sound anywhere else, a different word must be close to the
-  target itself ("parrot" for carrot passes, "fridge" does not). On a
+  servers) and `hearVerdict` in sona.js decides. Pass: the word or a close
+  try (each sound's typical errors, `HEAR_SUBS`: "wabbit", "wed", "cah"; or a
+  letter or two off with the sound intact: "rainy", "parrot" for carrot), and
+  nothing else. A different word does not count, even one starting with the
+  sound (Travis: "ideally the exact / close word"; not "run" for rain). On a
   bare-sound round only a short sound or mostly the sound itself counts
   ("Er", "Rrrr"), never a word that merely has it. Fail: clear words that
   are none of those ("taco", "poop", "fridge", "Here is a taco", "sock" for
-  rock). Unknown, handed
-  to the sound-shape check: nothing clear (filler like "uh", or only the
-  sentence's own words). A grown-up's "say rabbit" and a sentence's other
+  rock). Unknown, handed to the sound-shape check: nothing clear (filler like
+  "uh", or only the sentence's own words). A grown-up's "say rabbit" and a sentence's other
   words ("Here is a") are set aside first. The plugin was written in August
   but never reached the app until `scripts/install-ios-speech.py`; the website
   cannot use it and still judges by sound shape, and the games do not use it

@@ -3703,13 +3703,14 @@
    * opts: { level: "isolation"|"syllable"|"word"|"sentence", frame: the
    *         sentence the child was asked to say, when there is one }
    *
-   * pass    — a real try at the target, in the ballpark: the word, a close
-   *           version of it ("wabbit" for rabbit, "wed" for red, "cah" for
-   *           car; "wabbit" IS the practice, per Travis), or another word with
-   *           the sound in the same place ("run" when the word is rain). On a
-   *           bare-sound round, anything with the sound in it ("rrr", "er").
+   * pass    — a real try at the target: the word, or a close version of it
+   *           ("wabbit" for rabbit, "wed" for red, "cah" for car, "rainy" for
+   *           rain; "wabbit" IS the practice, per Travis). Never a different
+   *           word (Travis: "the exact / close word"). On a bare-sound round, a
+   *           short sound or mostly the sound itself ("rrr", "er").
    * fail    — the child said clear words and none of them is a try at the
-   *           target: "taco" for R, "Here is a taco", "sock" for rock.
+   *           target: "taco" or "fridge" for rabbit, "Here is a taco", "sock"
+   *           for rock, "run" for rain.
    * unknown — nothing to judge: no words, only filler ("uh", "hmm"), or only
    *           the words around the target ("Here is a …"). Unknown is NEVER a
    *           fail. Apple's models are tuned on adults and a child's speech
@@ -3758,7 +3759,7 @@
       }
       return "fail";
     }
-    const vars = _hearVariants(w, S2), want = _hearSpots(w, S2);
+    const vars = _hearVariants(w, S2);
     const near = Math.max(1, Math.floor(w.length / 3)), subs = HEAR_SUBS[S2] || [];
     for (let i = 0; i < content.length; i++) {
       const t = content[i];
@@ -3766,13 +3767,12 @@
         const v = vars[k];
         if (t === v || t === v + "s" || t === v + "es" || t === v + "'s") return "pass";
       }
-      if (w.length >= 3 && t.indexOf(w) === 0) return "pass";           // "rabbits", "rainbow"
+      // Otherwise it has to be close to the word itself, and still carry the
+      // sound or its usual error: "rainy" for rain, "parrot" or "cawwot" for
+      // carrot, "crib" for crab. A different word does not count, even one
+      // with the sound in the same place (Travis, 28 Sep 2026: "ideally the
+      // exact / close word"): not "run" for rain, not "fridge" for carrot.
       const has = _hearSpots(t, S2);
-      if (want.i && has.i) return "pass";                               // the sound, starting the word: "run" for rain
-      // Anywhere else, a different word with the sound in it is not a try at
-      // this one ("fridge" for carrot, "tractor" for car). It has to be close
-      // to the word itself, and still carry the sound or its usual error:
-      // "parrot" for carrot, "cawwot", "crib" for crab.
       let carries = Object.keys(has).length > 0;
       for (let k = 0; !carries && k < subs.length; k++) carries = !!subs[k] && t.indexOf(subs[k]) >= 0;
       if (carries && _hearNear(t, w, near)) return "pass";
