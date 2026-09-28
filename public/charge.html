@@ -772,11 +772,14 @@
           function header(name){return r.headers&&r.headers.get?r.headers.get(name):null;}
           var provider=header("X-Sona-Voice-Provider");
           job.voiceEvent={source:provider==="elevenlabs"||provider==="openai"?provider:"server",cache:header("X-Sona-Voice-Cache"),model:header("X-Sona-Voice-Model"),revision:header("X-Sona-Voice-Revision")||revision};
+          // "0": the usual voice model was busy and this is a stand-in. Play
+          // it, never save it — saved, it would replay the old voice forever.
+          job.voiceKeep=header("X-Sona-Voice-Keep")!=="0";
           return r.arrayBuffer();
         }).then(function(b){done(b&&b.byteLength?b:null);}).catch(function(){if(job.live()&&job.voiceReason!=="timeout")job.voiceReason="network-error";done(null);});
       });
       if(bytes===AUDIO_CANCEL||!job.live())return AUDIO_CANCEL;
-      if(bytes)ttsPut(key,bytes,job);
+      if(bytes&&job.voiceKeep!==false)ttsPut(key,bytes,job);
       return bytes;
     }
     function playMedia(url,slow,job){return audioWait(job,function(done,cleanup){

@@ -308,6 +308,8 @@
         if (!response.ok) { job.reason = "api-error"; job.status = response.status; return null; }
         job.voiceInfo = { source: response.headers.get("X-Sona-Voice-Provider") || "server", model: response.headers.get("X-Sona-Voice-Model"),
           cache: response.headers.get("X-Sona-Voice-Cache"), revision: response.headers.get("X-Sona-Voice-Revision") };
+        // "0": a stand-in while the usual voice model was busy — play, never save.
+        job.keep = response.headers.get("X-Sona-Voice-Keep") !== "0";
         return response.arrayBuffer();
       }).then(function (bytes) { done(bytes && bytes.byteLength ? bytes : null); }).catch(function () { job.reason = "network-error"; done(null); });
     });
@@ -362,7 +364,7 @@
     cache(job, key).then(function (bytes) {
       if (!job.live()) return null;
       if (bytes) { job.voiceInfo = { source: "cache", cache: "device", revision: S.TTS_CACHE_VERSION || "v9" }; return bytes; }
-      return fetchWord(job, word).then(function (fresh) { if (fresh && job.live()) cache(job, key, fresh); return fresh; });
+      return fetchWord(job, word).then(function (fresh) { if (fresh && job.live() && job.keep !== false) cache(job, key, fresh); return fresh; });
     }).then(function (bytes) {
       if (!job.live()) return;
       return settle(job).then(function () {

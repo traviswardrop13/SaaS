@@ -192,9 +192,11 @@
       var key=(profile.voiceId||"echo")+"|"+((window.Sona&&Sona.TTS_CACHE_VERSION)||"v9")+"|"+plain;
       ttsGet(key).then(function(cached){
         if(cached) return playPCM(new Uint8Array(cached));
+        // X-Sona-Voice-Keep "0": a stand-in while the usual voice model was busy — play, never save.
+        var keep=true;
         return fetch("/api/tts",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text:plain,voice:profile.voiceId||"",stable:true})})
-          .then(function(r){return r.ok?r.arrayBuffer():null;})
-          .then(function(b){ if(!b)return null; ttsPut(key,b); return playPCM(new Uint8Array(b)); });
+          .then(function(r){ if(!r.ok)return null; keep=!(r.headers&&r.headers.get&&r.headers.get("X-Sona-Voice-Keep")==="0"); return r.arrayBuffer(); })
+          .then(function(b){ if(!b)return null; if(keep)ttsPut(key,b); return playPCM(new Uint8Array(b)); });
       }).catch(function(){}).finally(function(){ speaking=false; pose("idle"); res(); });
     }); }
     // Rachel's human demo of the bare sound, when recorded (TTS never performs

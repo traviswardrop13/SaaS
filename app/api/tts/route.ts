@@ -18,7 +18,7 @@ import { rateLimit } from "@/lib/rateLimit";
  * Optional env:
  *   ELEVENLABS_VOICE_ID (default "qBDvhofpxp92JgXJxDjB" — the app's kid coach voice)
  *   ELEVENLABS_PRIMARY_MODEL (default "eleven_v4_turbo" — the model every line is made with)
- *   ELEVENLABS_MODEL    (default "eleven_multilingual_v2" — only if the primary model refuses)
+ *   ELEVENLABS_MODEL    (default "eleven_multilingual_v2" — only when the primary model refuses or fails)
  *   ELEVENLABS_V3="1"   opt in to trying eleven_v3 first (different cadence)
  *   OPENAI_TTS_VOICE / OPENAI_TTS_MODEL
  */
@@ -54,9 +54,15 @@ const PCM_HEADERS = {
 //     access, or v4 Turbo on a voice it cannot use), stop paying a doomed round
 //     trip before the fallback on every single call. Keyed by model AND voice:
 //     one family's voice being refused must not move every other family off v4.
+//     Capped, because the voice is whatever string a page sends.
 //  2. audioCache — the game loop repeats a small set of short prompts ("say rrrr",
 //     "your turn!", praise lines) constantly; serve identical clips instantly.
 const refused = new Set<string>();
+const REFUSED_MAX = 200;
+function rememberRefusal(k: string) {
+  if (refused.size >= REFUSED_MAX) refused.clear();
+  refused.add(k);
+}
 const audioCache = new Map<string, ArrayBuffer>();
 const CACHE_MAX = 48;
 function cacheGet(k: string): ArrayBuffer | undefined {
@@ -101,8 +107,10 @@ function elevenSettings(model: string, config: ReturnType<typeof elevenConfig>):
   // call, and similarity is the setting that moved a modelled /r/ toward /w/
   // in the voice changer (app/api/voice-change/route.ts) — not one to touch
   // without her ears on the practice words. Eleven v4 Turbo takes these same
-  // controls (checked against the live API, 28 Sep 2026), so the switch to it
-  // changed the model and nothing else.
+  // controls (checked against the live API, 28 Sep 2026), so the settings did
+  // not change with it — but the voice did: on every voice a family can pick,
+  // v4 Turbo speaks higher and moves its pitch more than v2 did. Those are
+  // Rachel's ears on the practice words, not a settings question.
   return {
     stability: 0.7,
     similarity_boost: 0.85,
@@ -116,12 +124,17 @@ function openaiVoice(requested?: string) {
   return requested && OPENAI_VOICES.has(requested)
     ? requested : process.env.OPENAI_TTS_VOICE || "shimmer";
 }
-function voiceHeaders(provider: string, model: string, cache: "hit" | "miss" = "miss") {
+function voiceHeaders(provider: string, model: string, cache: "hit" | "miss" = "miss", keep = true) {
   return {
     "X-Sona-Voice-Provider": provider,
     "X-Sona-Voice-Model": model,
     "X-Sona-Voice-Cache": cache,
     "X-Sona-Voice-Revision": VOICE_REVISION,
+    // "0" = a stand-in: the usual model for this voice was busy or broken just
+    // now, so this clip is the fallback's. Play it, never save it on the phone.
+    // The phone keys saved clips by voice, revision and text — not model — so a
+    // saved stand-in would replay the old model's take of that line forever.
+    "X-Sona-Voice-Keep": keep ? "1" : "0",
   };
 }
 function assertPcm(buf: ArrayBuffer) {
@@ -202,10 +215,10 @@ function levelPcm(buf: ArrayBuffer): ArrayBuffer {
   return out;
 }
 
-function pcmResponse(buf: ArrayBuffer, provider: string, model: string, cache: "hit" | "miss" = "miss") {
+function pcmResponse(buf: ArrayBuffer, provider: string, model: string, cache: "hit" | "miss" = "miss", keep = true) {
   assertPcm(buf);
   return new NextResponse(buf.slice(0), {
-    status: 200, headers: { ...PCM_HEADERS, ...voiceHeaders(provider, model, cache) },
+    status: 200, headers: { ...PCM_HEADERS, ...voiceHeaders(provider, model, cache, keep) },
   });
 }
 
@@ -256,6 +269,16 @@ export async function POST(req: NextRequest) {
        .filter((candidate) => candidate === config.fallbackModel || !refused.has(`${candidate}|${voiceId}`));
 
       let lastStatus: number | undefined;
+      // standIn: an earlier model in THIS request was busy or broken, so the
+      // clip that answers is a stand-in the phone must not keep. refusals: the
+      // models that refused this voice, remembered only once a later model has
+      // answered — that success proves the key, voice and text were fine, so
+      // the refusal really was about the model. (Remembered on the refusal
+      // alone, a voice or text that every model rejects would pin that voice
+      // to the fallback for the life of the server.)
+      let standIn = false;
+      const refusals: string[] = [];
+      const finalModel = attempts[attempts.length - 1];
       for (model of attempts) {
         const isV3 = model === config.v3Model || model === "eleven_v3";
         const settings = elevenSettings(model, config);
@@ -272,30 +295,48 @@ export async function POST(req: NextRequest) {
         const cacheable = sendText.length <= 120;
         if (cacheable) {
           const hit = cacheGet(cacheKey);
-          if (hit) return pcmResponse(hit, provider, model, "hit");
+          if (hit) { refusals.forEach(rememberRefusal); return pcmResponse(hit, provider, model, "hit", !standIn); }
         }
-        const r = await fetch(
-          `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?output_format=pcm_24000`,
-          {
-            method: "POST",
-            headers: { "xi-api-key": elevenKey, "Content-Type": "application/json" },
-            body: JSON.stringify({ text: sendText, model_id: model, voice_settings: settings, seed: VOICE_SEED }),
-            signal: controller.signal,
-          },
-        );
-        if (r.ok) {
+        // A dropped connection or a broken body from a model that has another
+        // behind it moves on to that one while the deadline allows: the child
+        // should hear Echo in the older voice rather than the robot voice.
+        // The last model, or a spent deadline, still ends the request.
+        let r: Response;
+        let buf: ArrayBuffer | null = null;
+        try {
+          r = await fetch(
+            `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?output_format=pcm_24000`,
+            {
+              method: "POST",
+              headers: { "xi-api-key": elevenKey, "Content-Type": "application/json" },
+              body: JSON.stringify({ text: sendText, model_id: model, voice_settings: settings, seed: VOICE_SEED }),
+              signal: controller.signal,
+            },
+          );
           // Level once, then cache the LEVELLED clip: a cache hit is already
           // levelled and must not be levelled again.
-          const buf = levelPcm(await r.arrayBuffer());
-          const response = pcmResponse(buf, provider, model);
+          if (r.ok) buf = levelPcm(await r.arrayBuffer());
+        } catch (e) {
+          if (controller.signal.aborted || model === finalModel) throw e;
+          console.warn(`tts: ${model} failed without an answer; trying the next model`);
+          standIn = true;
+          continue;
+        }
+        if (buf) {
+          refusals.forEach(rememberRefusal);
+          const response = pcmResponse(buf, provider, model, "miss", !standIn);
           if (cacheable) cacheSet(cacheKey, buf);
           return response;
         }
-        // A refusal of this model for this voice is remembered; a 401 only for
-        // v3 (an account without v3 access), because for any other model a 401
-        // is the key itself, and the fallback would meet the same one. Busy or
-        // broken (429, 5xx) is never remembered: next time may work.
-        if (model !== config.fallbackModel && [400, 403, 404, 422, ...(isV3 ? [401] : [])].includes(r.status)) refused.add(`${model}|${voiceId}`);
+        // A refusal of this model for this voice (remembered once a later model
+        // answers); a 401 counts only for v3 (an account without v3 access),
+        // because for any other model a 401 is the key itself, and the fallback
+        // would meet the same one. Busy or broken (429, 5xx) is a stand-in and
+        // never remembered: next time may work.
+        if (model !== config.fallbackModel && [400, 403, 404, 422, ...(isV3 ? [401] : [])].includes(r.status)) refusals.push(`${model}|${voiceId}`);
+        else standIn = true;
+        // Model and status only: the text can hold a child's name.
+        if (model !== finalModel) console.warn(`tts: ${model} answered ${r.status}; trying the next model`);
         lastStatus = r.status;
         // Vendor bodies can contain account details. Never forward them.
         void r.body?.cancel().catch(() => {});

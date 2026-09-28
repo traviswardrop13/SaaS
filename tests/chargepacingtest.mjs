@@ -50,7 +50,7 @@ function device(config){
   speechSynthesis.speak=u=>{h.voices.push({u,active:true,end(){this.active=false;if(u.onend)u.onend();}});};
   speechSynthesis.cancel=()=>h.voices.forEach(v=>v.active=false);
   const fetch=window.fetch.bind(window);
-  window.fetch=(url,options)=>String(url)==='/api/tts'?(h.fetches++,Promise.resolve({ok:!!config.server,status:config.server?200:503,headers:{get:name=>config.server?({'X-Sona-Voice-Provider':'elevenlabs','X-Sona-Voice-Cache':'miss','X-Sona-Voice-Model':'eleven_multilingual_v2','X-Sona-Voice-Revision':'v8'}[name]||null):null},arrayBuffer:async()=>new ArrayBuffer(96000)})):fetch(url,options);
+  window.fetch=(url,options)=>String(url)==='/api/tts'?(h.fetches++,Promise.resolve({ok:!!config.server,status:config.server?200:503,headers:{get:name=>config.server?({'X-Sona-Voice-Provider':'elevenlabs','X-Sona-Voice-Cache':'miss','X-Sona-Voice-Model':'eleven_multilingual_v2','X-Sona-Voice-Revision':'v8','X-Sona-Voice-Keep':config.standin?'0':'1'}[name]||null):null},arrayBuffer:async()=>new ArrayBuffer(96000)})):fetch(url,options);
   let sona;
   Object.defineProperty(window,'Sona',{configurable:true,get:()=>sona,set(value){sona=value;value.isNativeApp=()=>!!config.native;value.humanClipsOn=()=>!!config.human;value.confetti=()=>{};value.speechStart=()=>Promise.resolve(false);value.speechStop=()=>Promise.resolve(null);const diagnostic=value.voiceDiagnostic;value.voiceDiagnostic=event=>{const saved=diagnostic?diagnostic(event):event;h.diagnostics.push(saved);return saved;};}});
   localStorage.setItem('sona.freeera.v1','post');localStorage.setItem('sona.freeera2.v1','done');localStorage.setItem('sona.freeera3.v1','done');localStorage.setItem('sona.freeera4.v1','done');localStorage.setItem('sona.micok','1');
@@ -149,6 +149,23 @@ await scenario('server and cached playback',async()=>{
     ok('cached playback reports cache reuse without claiming a fresh provider call',await page.evaluate(()=>__pacing.diagnostics.some(e=>e.source==='cache'&&e.cache==='device')));
     ok('cached model keeps the listening cue',/Listen to Echo/.test(await status(page)));
     clean('server/cache',errors);
+  }finally{await context.close();}
+});
+
+// 28 Sep 2026: while v4 Turbo is busy the server answers with a v2 stand-in
+// marked X-Sona-Voice-Keep: 0. Saved on the phone it would replay the old voice
+// for that line forever, so the page plays it and asks again next time.
+await scenario('a stand-in clip is played but never kept on the phone',async()=>{
+  const {context,page,errors}=await fresh({server:true,standin:true});try{
+    await page.waitForFunction(()=>__pacing.pcm.some(p=>p.active));
+    await page.evaluate(()=>__pacing.pcm.find(p=>p.active).end());await childTurn(page);
+    const before=await page.evaluate(()=>__pacing.fetches);
+    for(let i=0;i<2;i++){
+      await page.evaluate(()=>{window.__standIn=say('A stand-in line.');});await page.waitForFunction(()=>__pacing.pcm.some(p=>p.active));
+      await page.evaluate(()=>__pacing.pcm.find(p=>p.active).end());await page.waitForTimeout(30);
+    }
+    ok('a stand-in is asked for again instead of replayed from the phone',await page.evaluate(b=>__pacing.fetches===b+2&&!__pacing.diagnostics.some(e=>e.source==='cache'),before),await page.evaluate(()=>({fetches:__pacing.fetches,cache:__pacing.diagnostics.filter(e=>e.source==='cache').length})));
+    clean('stand-in',errors);
   }finally{await context.close();}
 });
 
