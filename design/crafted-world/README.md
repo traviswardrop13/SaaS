@@ -11,7 +11,7 @@ Travis explicitly expanded this work to the full family app and removed the 20-m
 - **Practice and games:** Fruit Slice, Piano Tiles, Block Stacker, Sound Sprint, Flappy Glide, Feed Echo and Hoops receive the new scenery, controls, character treatment, retry and finish surfaces. Fruit, runner and balloon artwork replace flat drawings where appropriate. The new main-branch multi-round game behavior and Apple speech-check integration are retained; the redesign adds presentation without replacing those rules.
 - **Feed Echo:** all 294 existing word-bank entries have matching object illustrations in 33 transparent WebP atlases. Per-word crops are validated and preserve aspect ratio. This changes pictures, not vocabulary or answer rules. Atlas loading is on demand through the displayed choices, not an all-at-once download.
 - **Family screens:** settings, progress, customization, stickers, plans/trial, voice selection and family invitation use the same visual system. Consent, purchase/restore, free-mode and sharing behavior are preserved.
-- **Books:** no book pages, content, assets, generator, reader or shared Sona files are edited. Coming-soon games remain parked.
+- **Books:** the redesign diff against main contains no changes to book pages, content, assets, generator, reader or shared Sona files. Newer main-branch book work was incorporated unchanged. Coming-soon games remain parked.
 
 ### Review
 
@@ -21,7 +21,7 @@ Artwork is production WebP. The former welcome PNGs were converted, and every ac
 
 ### Verification status
 
-Browser checks cover 320×568 and 393×852 layouts, simulated native safe areas, keyboard space, menus, parent gates, game entry, listening/earned pieces, retry/finish, and family screens. The comprehensive release battery is being completed on isolated test ports to avoid interrupting other worktrees. TypeScript passed. The new illustration-coverage check and onboarding layout regressions were demonstrated failing against their pre-fix versions.
+Browser checks cover 320×568 and 393×852 layouts, simulated native safe areas, keyboard space, menus, parent gates, game entry, listening/earned pieces, between-round cards/finales, and family screens. The final branch integrates main at `765bcdc`; game checks and screenshots were refreshed after resolving that integration. All 63 suites in `tests/run-all.mjs` passed, with every subprocess exit code checked. The unchanged suite assertions ran on isolated test ports with three concurrent workers to avoid interrupting other worktrees. `tsc --noEmit -p tsconfig.json` and `git diff --check` passed. The new illustration-coverage check and onboarding layout regressions were demonstrated failing against their pre-fix versions.
 
 Physical-device keyboard, audio routing and visual review remain necessary before release; desktop simulations do not replace them. No merge or production release is authorized for this redesign.
 
