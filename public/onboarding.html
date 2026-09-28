@@ -156,7 +156,7 @@
     <div class="seg" id="seg"></div>
 
     <div class="mascot">
-      <span class="leo" id="leo" style="width:64px;height:64px;border-radius:50%;background:#dff4f7;display:flex;align-items:center;justify-content:center;overflow:hidden;"><img src="/coach/echo/echo-avatar.svg" alt="Echo" style="width:54px;height:54px;object-fit:contain;" /></span>
+      <span class="leo" id="leo" style="width:64px;height:64px;border-radius:50%;background:#dff4f7;display:flex;align-items:center;justify-content:center;overflow:hidden;"><img src="/assets/crafted/echo-welcome.png" alt="Echo" style="width:54px;height:54px;object-fit:contain;" /></span>
       <div class="bubble2" id="bubble">Hi! I'm Echo!</div>
     </div>
 
@@ -180,7 +180,7 @@
       </div>
       <!-- Clinician setup remains available in browsers, never in the native family app. -->
       <p class="muted" id="slpRow" hidden style="margin-top:10px;font-size:13px;"><a href="#" id="slpLink"><b>I'm a speech-language pathologist</b> — setting Sona up for my caseload →</a></p>
-      <div class="world-scene" aria-hidden="true"><img src="/coach/echo/echo-listening.svg" alt="" /></div>
+      <div class="world-scene" aria-hidden="true"><img src="/assets/crafted/echo-welcome.png" alt="" /></div>
       <p class="muted" id="moveRow" style="margin-top:12px;font-size:13px;"><a href="#" id="moveLink">Moving from another phone? Enter your code</a></p>
     </div>
 
@@ -204,10 +204,11 @@
     <!-- name -->
     <div class="step" data-step="name">
       <div class="qh">Who's practicing today?</div>
-      <input id="obName" type="text" placeholder="First name" autocomplete="off" autocapitalize="words" autocorrect="off" spellcheck="false" enterkeyhint="done" />
-      <p class="muted" style="font-size:13px;margin-top:10px;">Echo cheers them on by name — and the progress report uses it too.</p>
-      <p class="muted" style="font-size:13px;margin-top:16px;margin-bottom:2px;"><b style="color:var(--ink);">How old are they?</b> Little ones get simpler tap-and-say games.</p>
-      <div class="schips" id="obAge">
+      <label class="field setup-label" for="obName">First name or nickname</label>
+      <input aria-describedby="nameHint" id="obName" type="text" placeholder="First name" autocomplete="off" autocapitalize="words" autocorrect="off" spellcheck="false" enterkeyhint="done" />
+      <p class="muted setup-hint" id="nameHint">So Echo knows who to cheer for.</p>
+      <p class="setup-label" id="ageLabel">How old are they?</p>
+      <div class="schips" id="obAge" role="group" aria-labelledby="ageLabel">
         <button type="button" class="sound" data-age="4" aria-pressed="false">2–4</button>
         <button type="button" class="sound" data-age="6" aria-pressed="false">5–6</button>
         <button type="button" class="sound" data-age="8" aria-pressed="false">7+</button>
@@ -231,11 +232,10 @@
     <!-- sounds -->
     <div class="step" data-step="sounds">
       <div class="qh">Pick your sounds</div>
-      <p class="muted">Pick sounds to practice. Change them anytime.</p>
+      <p class="muted">Choose your practice sounds.</p>
       <div class="schips" id="obSounds" aria-label="Practice sounds"></div>
       <div id="obExploreOption">
-        <p class="muted sound-help">Not sure? Play through every sound, easiest first.</p>
-        <button type="button" class="skip" id="obExploreSounds">Explore all sounds</button>
+        <button type="button" class="skip" id="obExploreSounds">Not sure? Explore all sounds</button>
       </div>
       <p class="muted sound-help">Sona practices — it doesn't test or diagnose.</p>
     </div>
@@ -243,7 +243,7 @@
     <!-- The permission belongs to the grown-up's tap, before the handoff. -->
     <div class="step" data-step="mic">
       <div class="qh">Let Echo hear you</div>
-      <p class="muted">Echo listens while <span id="micName">your child</span> practices. Turn on the microphone now so they're ready to play.</p>
+      <p class="muted">Turn on the microphone so Echo can hear <span id="micName">your child</span> practice.</p>
       <p class="muted" id="micPromise" style="margin-top:14px;font-size:13px;line-height:1.55;"></p>
       <p id="micStatus" role="status" aria-live="polite"></p>
       <button type="button" class="skip" id="micNotNow">Not now</button>
@@ -263,10 +263,11 @@
     <!-- The child takes over only when the grown-up is ready. -->
     <div class="step" data-step="achieve">
       <div class="qh" id="handoffTitle" tabindex="-1">Hand the phone to <span id="achName">your child</span>!</div>
-      <div class="world-scene" aria-hidden="true"><img src="/coach/echo/echo-listening.svg" alt="" /></div>
-      <div id="achEmail" style="display:none;margin-top:14px;background:#f7fbff;border:2px solid #dcecfa;border-radius:14px;padding:13px 15px;text-align:left;">
+      <div class="world-scene" aria-hidden="true"><img src="/assets/crafted/echo-welcome.png" alt="" /></div>
+      <div id="achEmail" class="setup-email" style="display:none;">
         <div style="font-family:'Baloo 2';font-weight:800;font-size:14.5px;">Want <span id="achEmName">your child</span>'s weekly summary?</div>
         <p class="muted" style="font-size:12.5px;margin-top:4px;line-height:1.5;">Get a weekly practice update. Optional.</p>
+        <label class="field setup-label" for="achEmailInput">Your email (optional)</label>
         <input id="achEmailInput" type="email" inputmode="email" autocomplete="email" autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="done" placeholder="you@email.com" style="margin-top:9px;" />
         <p class="muted" style="font-size:11.5px;margin-top:6px;">Unsubscribe anytime.</p>
         <p id="achEmailMsg" class="muted" style="font-size:12px;margin-top:7px;"></p>
@@ -470,6 +471,8 @@
           status.textContent="You can turn the microphone on in your phone's Settings, or choose Not now.";
           if(Sona.micDenied){
             Sona.micDenied({onClose:function(){nextBtn.focus();}});
+            var deniedEcho=document.querySelector("#sonaMicDenied img");
+            if(deniedEcho)deniedEcho.src="/assets/crafted/echo-welcome.png";
             var close=document.getElementById("sonaMicBack"),retry=document.getElementById("sonaMicRetry");
             if(close)close.textContent="Back to setup";
             if(retry)retry.onclick=function(){var dialog=document.getElementById("sonaMicDenied");if(dialog)dialog.remove();requestSetupMic();};
@@ -482,7 +485,7 @@
     else {document.addEventListener("visibilitychange",function(){if(document.hidden)cancelSetupMic();});window.addEventListener("pagehide",cancelSetupMic);}
 
     function mascotMarkup(id) {
-      if (id === "leo") return '<img src="/coach/echo/echo-avatar.svg" alt="Echo" style="width:62px;height:62px;object-fit:contain;display:block;" />';
+      if (id === "leo") return '<img src="/assets/crafted/echo-welcome.png" alt="Echo" style="width:62px;height:62px;object-fit:contain;display:block;" />';
       return Sona.buddyMarkup(id, 64);
     }
 
@@ -682,7 +685,8 @@
       bubble.textContent = BUBBLES[key] || "";
       nextBtn.textContent = CTA[key] || "Continue";
       backBtn.style.display = idx === 0 ? "none" : "block";
-      if(key==="name") setTimeout(function(){ nameEl.focus(); }, 80);
+      // Focus during entry so a delayed callback cannot reopen a dismissed keyboard.
+      if(key==="name") nameEl.focus();
       if(key==="interests"){ var nmi=(nameEl.value||draft.childName||"").trim(); document.getElementById("intName").textContent = nmi || "your child"; }
       if(key==="achieve"){ var nm=(nameEl.value||draft.childName||"").trim(); document.getElementById("achName").textContent = nm || "your child"; }
       if(key==="email"){
@@ -711,7 +715,7 @@
     function showBuild(done){
       var nm=(nameEl.value||draft.childName||"").trim()||"your child",d=document.createElement("div");d.id="obBuild";d.className="show";
       d.setAttribute("role","status");d.setAttribute("aria-live","polite");
-      d.innerHTML='<img src="/coach/echo/echo-listening.svg" alt="" /><div id="obBuildT"></div><div id="obBuildAnswers"></div>';
+      d.innerHTML='<img src="/assets/crafted/echo-welcome.png" alt="" /><div id="obBuildT"></div><div id="obBuildAnswers"></div>';
       document.body.appendChild(d);
       document.getElementById("obBuildT").textContent="Building "+nm+"'s "+(draft.mode==="play"?"play list":"sound plan")+"…";
       var age=Number(draft.childAge),ageLabel=age>=2&&age<=4?"Ages 2–4":age>=5&&age<=6?"Ages 5–6":age>=7?"Ages 7+":"Your pace";

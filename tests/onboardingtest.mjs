@@ -126,6 +126,19 @@ await scenario('Done closes typing without accepting setup choices',async()=>{
  }finally{await context.close();}
 });
 
+// Freeze the step-entry clock so a quick Done press happens before any delayed
+// autofocus. A stale timer must not reopen the keyboard after it was dismissed.
+await scenario('quick Done does not reopen the name keyboard',async()=>{
+ const {context,page,errors}=await fresh({native:true,keyboardPlatform:'ios'});try{
+  await page.clock.install({time:new Date('2026-09-28T00:00:00Z')});
+  await page.clock.pauseAt(new Date('2026-09-28T00:00:01Z'));
+  await next(page);await page.locator('#obName').fill('Milo');await page.locator('#obName').press('Enter');
+  await page.clock.fastForward(200);
+  ok('Done stays dismissed after the step-entry focus window',await page.evaluate(()=>document.activeElement.id!=='obName'&&document.body.dataset.setupScreen==='name'));
+  clean('quick Done',errors);
+ }finally{await context.close();}
+});
+
 // These tests check the native bridge contract, not a simulated iOS keyboard.
 await scenario('native iPhone keyboard integration and safe fallbacks',async()=>{
  for(const config of [{native:true,keyboardPlatform:'ios'},{native:true,keyboardPlatform:'android'},{keyboardPlatform:'web'},{native:true,keyboardPlatform:'ios',keyboardMissing:true}]){

@@ -14,6 +14,10 @@ All five source PNGs were recovered from `/Users/traviswardrop/.codex/generated_
 | 04-grownups-and-results.png | exec-b9e256b1-42ee-4fca-aa89-a82cf46949ad.png | Parent overview, settings, results |
 | 05-library-practice-feed-final.png | exec-2f140596-d422-4dd6-9df2-0708ac4febda.png | Home, practice, Feed Echo (final reference) |
 
+## Ownership boundary — 28 September
+
+**Books are owned by another worktree. Do not edit book pages, book content, book artwork, reader logic, or book-generation tools in this redesign branch.** Travis explicitly assigned this chat games, onboarding and the main homepage only. A Books link on Home must preserve its existing behavior.
+
 ## Visual contract
 
 Warm ivory `#fff6e9` base, deep cocoa rounded headings, soft brown text, teal primary controls, subtly raised cream cards, and detailed tactile storybook scenery. Echo is a plump cyan bird with coral/yellow crest, pale cyan belly, pink cheeks, navy pupils, and golden-orange beak/feet. Artwork must match the boards rather than reuse the current flat icon assets. Keep real HTML controls and game objects separate from illustrated scenery. No screenshot-as-interface, emoji substitutes, made-up progress or decorative fake controls.
@@ -37,7 +41,7 @@ This is a local first-screen implementation, not the completed app redesign. No 
 3. Fruit Slice practice (`public/charge.html`) then its game (`public/arcade-slice.html`): orchard layers, Echo, tray, fruit, HUD, microphone and spoken prompts. Practice screen and game are distinct surfaces.
 4. Feed Echo picnic: background, plate, character states and clear illustrated choices.
 5. Each remaining released game: distinct background, play objects, UI and results matching its board. Preserve playable mechanics.
-6. Grown-up overview/settings and results using board 04. Extend same visual system to books when reached; no existing book redesign board was recovered.
+6. Grown-up overview/settings and results using board 04. Books are excluded and belong to the separate books worktree.
 
 For each batch: verify native safe areas, small phones, keyboard, reduced motion, selected/disabled/loading/error states and intended game behavior. Run full `node tests/run-all.mjs` and TypeScript check before any push. Merge only on Travis’s explicit instruction.
 
@@ -46,3 +50,18 @@ For each batch: verify native safe areas, small phones, keyboard, reduced motion
 Built-in image generator; board 05 supplied as reference; opaque 1024 × 1536 portrait output. Create a standalone production orchard scene, faithful 3D handmade/clay-toy storybook Echo, soft daylight, tactile foliage, orange trees, small white fence, daisies, sandy path. Echo full-body centered in lower-middle waving; upper 35% calm sky for real HTML text; lower 15% sandy space for controls. No lettering, UI, microphone, cards, phone frame, watermark or additional mascot. Character: round cyan/teal body, coral-red/yellow crest, white eyes/navy pupils, golden-orange beak and feet, cyan belly, pink cheeks, darker teal wings. The exact tool invocation remains in the chat history.
 
 Session started 15:32:44 UTC; maximum deadline 15:52:44 UTC. Work was intentionally limited to recovery and a first welcome-screen implementation.
+
+
+## Second batch — onboarding visuals (28 September)
+
+Start 15:49:04 UTC, hard deadline 16:09:04 UTC. Only onboarding files, onboarding tests, onboarding assets and these design notes changed. No shared application code or books changed.
+
+- Added transparent crafted Echo artwork at `public/assets/crafted/echo-welcome.png`, generated with built-in image generation using board 05 as reference. Source: `exec-45e14ae6-4e0c-4455-8d51-ab488e0ba386.png`. Prompt: a single faithful full-body front-view cutout of the reference’s round teal clay/storybook Echo; coral/yellow crest, white/navy eyes, pink cheeks, cyan belly, gold beak/feet, one raised wing; transparent alpha, centered, no scene, text, UI, props, floor or extra character. Exact invocation is in chat history.
+- Restyled name/age, sound choices, microphone, optional email, build transition and microphone-denial recovery. Cream cards, teal selection/actions, cocoa text; visible labels for name and email.
+- Large sound letters only; R remains selected first, followed by S, L and TH. The longer TH(v) choice spans two columns to avoid wrapping.
+- On short viewports, redundant decorative header artwork is hidden to leave room for real controls. Keyboard layouts retain scrolling for focused inputs, visible Continue/skip controls, and the email close button.
+- Existing permission, skip, profile, clinician path, free/paid behavior and completion destination are unchanged. The desired future first-game handoff still needs separate implementation; today’s setup continues to Home.
+- `onboarding-preview.html` shows the actual rendered screens. The `onboarding/` folder includes 393×852 and 320×568 screenshots, microphone recovery, and 393×430 keyboard space.
+- Final onboarding suite: 77 assertions passed. Fixed a delayed autofocus race that could reopen the keyboard after a quick Done press; the new deterministic regression failed before the fix and passed afterward. Syntax check and git diff whitespace check passed. Additional visual-flow checks passed for both phone sizes and keyboard layouts with no runtime errors. At 320×568, optional content/recovery may still scroll inside the page; controls stay visible. Real iPhone keyboard and safe-area testing remains required.
+
+The next implementation batch is the main game library, followed by individual games. Before pushing, run the full release battery and TypeScript check. No merge/release has been requested for this redesign.
