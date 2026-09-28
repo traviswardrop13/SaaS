@@ -50,6 +50,31 @@
     @keyframes echoLeap{0%{transform:translateY(110px)}100%{transform:translateY(0)}}
     @keyframes echoHop{0%,100%{transform:translateY(0)}45%{transform:translateY(-14px) rotate(-5deg)}}
     @media (prefers-reduced-motion: reduce){ .endStar,.echoWin img{animation:none;} }
+    /* ── the round's HUD, banner and Echo at the fruit stand (27 Sep 2026) ── */
+    #timer{color:#4a2c14;letter-spacing:0;gap:8px;}
+    #timer .wv{white-space:nowrap;}
+    #timer .wbar{display:block;width:64px;height:10px;border-radius:99px;background:#f3e3cf;overflow:hidden;}
+    #timer .wbar i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#ff8a5a,#ff5470);transition:width .25s;}
+    #timer .notch{display:flex;gap:3px;}
+    #timer .notch i{width:9px;height:13px;border-radius:3px;background:#f3e3cf;}
+    #timer .notch i.on{background:#ff5470;}
+    #banner{position:absolute;left:0;right:0;top:17%;text-align:center;z-index:4;pointer-events:none;opacity:0;padding:0 16px;}
+    #banner .pill{display:inline-block;background:rgba(255,255,255,.95);border-radius:26px;padding:10px 26px 12px;box-shadow:0 6px 0 rgba(160,80,20,.28);}
+    #banner b{display:block;font-family:"Baloo 2";font-weight:800;font-size:40px;color:#ff5c74;line-height:1.05;}
+    #banner span{display:block;font-family:"Baloo 2";font-weight:800;font-size:17px;color:#b0683a;margin-top:2px;}
+    #banner span:empty{display:none;}
+    #banner.in{animation:bannerIn 1.9s ease both;}
+    @keyframes bannerIn{0%{opacity:0;transform:scale(.6)}12%{opacity:1;transform:scale(1.08)}20%{transform:scale(1)}80%{opacity:1;transform:scale(1)}100%{opacity:0;transform:translateY(-12px)}}
+    @keyframes bannerFade{0%,100%{opacity:0}15%,80%{opacity:1}}
+    #sliceEcho{position:absolute;left:3%;bottom:calc(env(safe-area-inset-bottom) + 46px);width:17%;max-width:78px;z-index:3;pointer-events:none;filter:drop-shadow(0 4px 6px rgba(90,50,15,.25));}
+    #sliceEcho.hop{animation:echoJump .9s cubic-bezier(.3,1.5,.5,1);}
+    @keyframes echoJump{0%,100%{transform:translateY(0) rotate(0)}30%{transform:translateY(-34%) rotate(-10deg)}60%{transform:translateY(0) rotate(6deg)}80%{transform:translateY(-10%)}}
+    #sab{position:absolute;visibility:hidden;pointer-events:none;padding-bottom:env(safe-area-inset-bottom);}
+    #revHearts{display:flex;justify-content:center;gap:8px;}
+    #revHearts .wdot{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#f3e3cf;color:#b08d63;font-family:"Baloo 2";font-weight:800;font-size:17px;}
+    #revHearts .wdot.on{background:#58cc02;box-shadow:0 3px 0 #46a302;}
+    #revHearts .wdot svg{width:20px;height:20px;}
+    @media (prefers-reduced-motion: reduce){ #banner.in{animation-name:bannerFade;} #sliceEcho.hop{animation:none;} }
   </style>
 </head>
 <body>
@@ -62,6 +87,9 @@
       <div id="timer" class="hudpill"></div>
     </div>
     <div id="combo"></div>
+    <div id="banner" aria-live="polite"><div class="pill"><b id="bnBig"></b><span id="bnSmall"></span></div></div>
+    <img id="sliceEcho" src="/coach/echo/echo-celebrate.svg" alt="" />
+    <div id="sab"></div>
   </div>
 
   <div class="ovl" id="needOvl">
@@ -93,7 +121,7 @@
       <div class="echoWin"><img src="/coach/echo/echo-celebrate.svg" alt="" /></div>
       <button class="btn blue" id="endCharge">WOOHOO! Next →</button>
       <button class="btn" id="endAgain" style="display:none;"></button>
-      <button class="btn ghost" id="endHome">Back to the house</button>
+      <button class="btn ghost" id="endHome">Back home</button>
     </div>
   </div>
 
@@ -176,49 +204,109 @@
       ctx.fillStyle="#000"; ctx.font=size+"px sans-serif"; ctx.fillText(e,0,0); // not decoded yet → emoji
     }
 
-    var cv=$("cv"), ctx=cv.getContext("2d"), W=0,H=0,DPR=Math.min(2,window.devicePixelRatio||1);
-    function fit(){ var r=$("app").getBoundingClientRect(); W=r.width; H=r.height; cv.width=W*DPR; cv.height=H*DPR; ctx.setTransform(DPR,0,0,DPR,0,0); }
+    var cv=$("cv"), ctx=cv.getContext("2d"), W=0,H=0,DPR=Math.min(2,window.devicePixelRatio||1), SAB=0;
+    function fit(){ var r=$("app").getBoundingClientRect(); W=r.width; H=r.height; cv.width=W*DPR; cv.height=H*DPR; ctx.setTransform(DPR,0,0,DPR,0,0);
+      try{ SAB=parseFloat(getComputedStyle($("sab")).paddingBottom)||0; }catch(e){ SAB=0; } }
     fit(); window.addEventListener("resize",fit);
 
     var playing=true, score=0, combo=0, comboT=0;
-    var REV=3, reviveWait=false;   // say-the-sound lives
+    var REV=3, reviveWait=false;   // say-the-sound cards: one between each wave
     var BESTK="sona.best.slice", BEST=0; try{ BEST=parseInt(localStorage.getItem(BESTK)||"0",10)||0; }catch(e){}
-    var fruits=[], parts=[], trail=[];
+    var fruits=[], parts=[], trail=[], splats=[], floats=[];
     // Kid-tuned physics: floaty gravity + launch speed derived from the screen
     // so every fruit rises to ~55-75% of the screen and hangs ~1.8s.
     var G=H*0.0002||0.18; // kid-slow: same arc height as before, ~1.5x hang time
 
+    // ── the round: three waves, then one giant watermelon (27 Sep 2026) ──
+    // Travis said yes to: "a clear goal: three waves of fruit, then one giant
+    // watermelon to finish. It always ends in a win. Missing is OK. A missed
+    // fruit just falls, and the game keeps going. The talking moves to
+    // between waves." A wave ends when its fruit are sliced, or after
+    // WAVE_CAP_MS of play whatever the count, so a child who can't land a
+    // swipe still reaches the giant. Misses grow the help: after two in a row
+    // the fruit come one at a time, bigger and slower, until one is sliced.
+    var WAVES=[{goal:6,every:1900,most:1,gold:0},{goal:8,every:1700,most:2,gold:0.12},{goal:10,every:1500,most:3,gold:0.16}];
+    var WAVE_CAP_MS=45000, GIANT_CUTS=5;
+    var wave=0, waveGot=0, waveMs=0, nextToss=900, phase="wave", missRun=0, giant=null, finaleDone=false;
+
+    // ── the fruit stand from the "Say it 5 times" page, now at the bottom ──
+    // Its five fruit, in its order, are the first five thrown: each jumps out
+    // of its own place on the counter, so the first fruit a child slices are
+    // the ones their own voice put there. After that every fruit is thrown
+    // from the stand too, and an emptied place restocks a moment later.
+    var WELLS=[{e:"🍉"},{e:"🍇"},{e:"🍊"},{e:"🍓"},{e:"🍋"}], firstI=0;
+    function standTop(){ return H-SAB-58; }
+    function wellX(i){ return W*(0.29+i*0.155); }
     function toss(){
-      var n=1+(Math.random()<0.2?1:0)+(score>35?1:0); // gentle, ramps with skill
+      var w=WAVES[wave], help=missRun>=2, n=help?1:Math.min(w.most,1+(Math.random()<0.35?1:0)+(Math.random()<0.3?1:0));
       for(var i=0;i<n;i++){
-        var x=W*(0.18+Math.random()*0.64);
-        fruits.push({ e:FRUITS[(Math.random()*FRUITS.length)|0], x:x, y:H+40,
-          vx:(W*0.5-x)*0.0017+(Math.random()-0.5)*0.8,
-          vy:-(H*(0.015+Math.random()*0.0027)),
-          r:32+Math.random()*12, rot:Math.random()*6, vr:(Math.random()-0.5)*0.08, sliced:false });
+        var first=firstI<WELLS.length, well=-1, k=help?0.72:1;   // k<1: a slower fall to the same height
+        if(first) well=firstI++;
+        else { var full=[]; for(var j=0;j<WELLS.length;j++) if(WELLS[j].e) full.push(j); if(full.length) well=full[(Math.random()*full.length)|0]; }
+        var x=well>=0?wellX(well):W*(0.2+Math.random()*0.6), e=well>=0?WELLS[well].e:FRUITS[(Math.random()*FRUITS.length)|0];
+        if(well>=0){ WELLS[well].e=null; WELLS[well].back=performance.now()+2400; }
+        fruits.push({ e:e, gold:!first&&!help&&Math.random()<w.gold, x:x, y:well>=0?standTop()+10:H+40, g:G*k,
+          vx:(W*0.5-x)*0.0017*Math.sqrt(k)+(Math.random()-0.5)*0.8,
+          vy:-(H*(0.015+Math.random()*0.0027))*Math.sqrt(k)*(well>=0?0.94:1),
+          r:(32+Math.random()*12)*(help?1.3:1), rot:Math.random()*6, vr:(Math.random()-0.5)*0.08, sliced:false });
       }
     }
-    var tossIv=setInterval(function(){ if(document.hidden)return; if(playing) toss(); },2100);
-    toss();
+    function startWave(i){
+      wave=i; waveGot=0; waveMs=0; nextToss=900; phase="wave"; missRun=0; hud();
+      banner("Wave "+(i+1),"Slice "+WAVES[i].goal+" fruit!");
+    }
+    function endWave(){
+      phase="break"; hud();
+      var last=wave===WAVES.length-1;
+      setTimeout(function(){
+        if(window.__ended||!playing) return;
+        banner(last?"Amazing slicing!":"Wave "+(wave+1)+" done!", last?"Here comes a giant watermelon…":"Great job!");
+        sfx("complete"); echoHop();
+        setTimeout(function(){
+          if(window.__ended||!playing) return;
+          if(last) startFinale();
+          else sayCard("Say \u201C"+SAYTXT+"\u201D for wave "+(wave+2)+"!","none");
+        },1700);
+      },900);
+    }
 
-    // ── lives: miss a fruit → say your sound for a new life (3 per run) ──
-    function hearts(){ $("timer").innerHTML=(window.Sona&&Sona.heartRow)?Sona.heartRow(REV,3,17):String(REV); }
-    hearts();
-    function crash(){
+    // ── the HUD: this wave's progress, then the giant's five cuts ──
+    function hud(){
+      var t=$("timer"), s, i;
+      if(phase==="finale"||phase==="done"){
+        var c=phase==="done"?GIANT_CUTS:(giant?giant.cuts:0);
+        s='<span class="wv">Giant</span><span class="notch">'; for(i=0;i<GIANT_CUTS;i++) s+='<i'+(i<c?' class="on"':'')+'></i>';
+        t.innerHTML=s+'</span>'; t.setAttribute("aria-label","Giant watermelon: "+c+" of "+GIANT_CUTS+" cuts"); return;
+      }
+      var w=WAVES[wave], got=phase==="break"?w.goal:Math.min(waveGot,w.goal);
+      t.innerHTML='<span class="wv">Wave '+(wave+1)+'</span><span class="wbar"><i style="width:'+Math.round(got/w.goal*100)+'%"></i></span>';
+      t.setAttribute("aria-label","Wave "+(wave+1)+" of 3: "+got+" of "+w.goal+" fruit");
+    }
+    var TICK='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    function waveDots(){ var s=""; for(var i=0;i<WAVES.length;i++) s+='<span class="wdot'+(i<=wave?' on':'')+'">'+(i<=wave?TICK:String(i+1))+'</span>'; return s; }
+    function banner(big,small){ var b=$("banner"); $("bnBig").textContent=big; $("bnSmall").textContent=small||""; b.classList.remove("in"); void b.offsetWidth; b.classList.add("in"); }
+    function echoHop(){ var e=$("sliceEcho"); if(!e) return; e.classList.remove("hop"); void e.offsetWidth; e.classList.add("hop"); }
+
+    // ── the say-it card, between waves ──
+    function sayCard(title,snd){
       if(!playing) return;
-      playing=false; fruits=[]; trail.length=0; sfx("tap");
+      playing=false; fruits=[]; trail.length=0; if(snd!=="none") sfx(snd||"tap");
       if(REV>0 && CAN_LISTEN){
-        $("revTitle").textContent="Say \u201C"+SAYTXT+"\u201D to keep playing!";
-        $("revHearts").innerHTML=(window.Sona&&Sona.heartRow)?Sona.heartRow(REV,3,28):String(REV);
+        $("revTitle").textContent=title||("Say \u201C"+SAYTXT+"\u201D to keep playing!");
+        $("revHearts").innerHTML=waveDots();
         reviveWait=true; $("revOvl").classList.add("show"); speakRevive();
       } else { endRound(); }
     }
+    // The card's old name, from when a missed fruit opened it. Kept because
+    // the quiet-mic and retry suites open the card through it.
+    function crash(){ sayCard(); }
     function doRevive(){
-      reviveWait=false; REV--; hearts();
+      reviveWait=false; REV--; hud();
       $("revOvl").classList.remove("show");
       // the mic has just closed: sfx() holds this chime SETTLE_MS
       sfx("complete"); try{ if(S&&S.confetti)S.confetti(); }catch(e){}
       playing=true;
+      if(phase==="break") startWave(wave+1);
     }
     $("revDone").onclick=function(){ closeReviveMic(); reviveWait=false; $("revOvl").classList.remove("show"); endRound(); };
 
@@ -372,58 +460,192 @@
     if(window.Sona&&Sona.onBackground) Sona.onBackground(closeReviveMic); else window.addEventListener("pagehide",closeReviveMic);
     document.addEventListener("visibilitychange",function(){ if(!document.hidden&&reviveWait) speakRevive(); });
 
+    // ── the game's own sounds, made on the phone (27 Sep 2026) ──
+    // They join Sona's sfx set on this page only, so each goes through sfx()
+    // above and keeps its quiet rules: nothing plays while the keep-playing
+    // card's mic is open, or in the moment after it closes.
+    var SAC=null;
+    function sac(){ try{ if(!SAC) SAC=new (window.AudioContext||window.webkitAudioContext)(); if(SAC.state==="suspended") SAC.resume(); }catch(e){ SAC=null; } return SAC; }
+    function sndVol(){ try{ var p=S.getProfile(); if(p.soundOn===false) return 0; return p.volume!=null?p.volume:0.6; }catch(e){ return 0.6; } }
+    // noise through a one-pole filter whose corner sweeps from f0 to f1 Hz;
+    // bright keeps what the filter takes out (a whoosh), else what it keeps
+    function hiss(dur,f0,f1,gain,bright){
+      var a=sac(), v=sndVol(); if(!a||!v) return;
+      var n=Math.max(1,Math.round(a.sampleRate*dur)), buf=a.createBuffer(1,n,a.sampleRate), d=buf.getChannelData(0), y=0;
+      for(var i=0;i<n;i++){ var fc=f0+(f1-f0)*i/n, k=1-Math.exp(-2*Math.PI*fc/a.sampleRate), x=Math.random()*2-1; y+=k*(x-y); d[i]=(bright?x-y:y)*Math.pow(1-i/n,1.5); }
+      var src=a.createBufferSource(), g=a.createGain(), t=a.currentTime; src.buffer=buf; g.gain.setValueAtTime(gain*v,t); src.connect(g); g.connect(a.destination); src.start(t); src.stop(t+dur+0.02);
+    }
+    function thud(f0,f1,dur,gain){
+      var a=sac(), v=sndVol(); if(!a||!v) return;
+      var o=a.createOscillator(), g=a.createGain(), t=a.currentTime; o.type="sine";
+      o.frequency.setValueAtTime(f0,t); o.frequency.exponentialRampToValueAtTime(f1,t+dur);
+      g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(gain*v,t+0.008); g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+      o.connect(g); g.connect(a.destination); o.start(t); o.stop(t+dur+0.02);
+    }
+    if(S&&S.sfx){
+      S.sfx.swish=function(){ hiss(0.15,6000,1500,0.28,true); thud(240,110,0.09,0.12); };
+      S.sfx.splat=function(){ thud(200,60,0.2,0.4); hiss(0.18,2500,500,0.22,false); };
+      S.sfx.gold=function(){ hiss(0.12,6000,1500,0.24,true); S.sfx.star(); };
+      S.sfx.giant=function(){ thud(150,40,0.45,0.5); hiss(0.4,3000,300,0.3,false); S.sfx.reward(); };
+    }
+    // An iPhone lets a page start sound only after a finished touch: the
+    // first one wakes this page's player before a slice needs it.
+    window.addEventListener("pointerup",function wake(){ window.removeEventListener("pointerup",wake); sac(); });
+
     // slicing: pointer trail + segment-vs-circle hit
     var pDown=false,lx=0,ly=0;
     function pt(e){ var r=cv.getBoundingClientRect(); var t=(e.touches&&e.touches[0])||e; return {x:t.clientX-r.left, y:t.clientY-r.top}; }
     function segHit(x1,y1,x2,y2,cx,cy,r){ var dx=x2-x1,dy=y2-y1,L2=dx*dx+dy*dy||1,t=Math.max(0,Math.min(1,((cx-x1)*dx+(cy-y1)*dy)/L2)),px=x1+t*dx,py=y1+t*dy,ddx=cx-px,ddy=cy-py; return ddx*ddx+ddy*ddy<=r*r; }
-    function onMove(e){ if(!pDown||!playing)return; var p=pt(e); trail.push({x:p.x,y:p.y,t:performance.now()});
-      var hit=0;
+    function juice(x,y,col,n,gold){ for(var k=0;k<n;k++) parts.push({x:x,y:y,vx:(Math.random()-0.5)*7,vy:-Math.random()*6,r:3+Math.random()*4,life:1,col:gold&&k%2?"#ffd21c":col}); }
+    function splat(x,y,r,col){ var d=[],a,q; for(var i=0;i<9;i++){ a=Math.random()*6.28; q=r*(0.35+Math.random()*0.9); d.push([Math.cos(a)*q,Math.sin(a)*q,r*(0.07+Math.random()*0.16)]); } splats.push({x:x,y:y,r:r*0.42,col:col,life:1,d:d}); }
+    function floatText(x,y,t,col){ floats.push({x:x,y:y,t:t,col:col,life:1}); }
+    function showCombo(t){ var c=$("combo"); c.textContent=t; c.style.opacity=1; c.style.transform="scale(1.15)"; setTimeout(function(){c.style.opacity=0;c.style.transform="scale(1)";},550); }
+    function onMove(e){ if(!pDown||!playing)return; var p=pt(e), now=performance.now(); trail.push({x:p.x,y:p.y,t:now});
+      var hit=0, gold=0;
       for(var i=0;i<fruits.length;i++){ var f=fruits[i];
-        if(!f.sliced && segHit(lx,ly,p.x,p.y,f.x,f.y,f.r+16)){ f.sliced=true; hit++; score++; combo++;
-          for(var k=0;k<10;k++) parts.push({x:f.x,y:f.y,vx:(Math.random()-0.5)*7,vy:-Math.random()*6,r:3+Math.random()*4,life:1,col:(JUICE[f.e]||"#ffd21c")});
+        if(!f.sliced && segHit(lx,ly,p.x,p.y,f.x,f.y,f.r+16)){ f.sliced=true; hit++; combo++;
+          var worth=f.gold?3:1, col=JUICE[f.e]||"#ffd21c"; score+=worth; if(phase==="wave") waveGot+=worth;
+          juice(f.x,f.y,col,f.gold?16:10,f.gold); splat(f.x,f.y,f.r,col);
           parts.push({x:f.x,y:f.y,vx:-2.4,vy:-2,e:f.e,half:1,life:1}); parts.push({x:f.x,y:f.y,vx:2.4,vy:-2,e:f.e,half:2,life:1});
+          if(f.gold){ gold++; floatText(f.x,f.y-f.r,"+3","#ffd21c"); }
         } }
-      if(hit){ sfx("tap"); $("score").textContent=score; comboT=performance.now();
-        if(combo>=3){ var c=$("combo"); c.textContent=combo+" COMBO! 🔥"; c.style.opacity=1; c.style.transform="scale(1.15)"; setTimeout(function(){c.style.opacity=0;c.style.transform="scale(1)";},550); } }
+      if(hit){ missRun=0; sfx(gold?"gold":"swish"); $("score").textContent=score; comboT=now; hud();
+        if(gold||combo===5||combo===10) echoHop();
+        if(gold) showCombo("GOLDEN! +3"); else if(combo>=3) showCombo(combo+" COMBO! 🔥"); }
+      if(phase==="finale"&&giant) giantMove(lx,ly,p.x,p.y,now);
       lx=p.x; ly=p.y; e.preventDefault&&e.preventDefault();
     }
-    cv.addEventListener("pointerdown",function(e){ pDown=true; var p=pt(e); lx=p.x; ly=p.y; trail.length=0; });
+    cv.addEventListener("pointerdown",function(e){ pDown=true; var p=pt(e); lx=p.x; ly=p.y; trail.length=0; if(giant) giant.inside=false; });
     cv.addEventListener("pointermove",onMove);
     window.addEventListener("pointerup",function(){ pDown=false; });
 
     var comboIv=setInterval(function(){ if(document.hidden)return; if(combo&&performance.now()-comboT>1400) combo=0; },500);
 
+    // ── the finale: one giant watermelon, five cuts ──
+    // It rises and waits in the middle of the sky; every swipe that crosses it
+    // is one cut (a swipe back across counts again), five and it bursts. It
+    // cannot be missed, so the round always ends on a win.
+    function startFinale(){
+      phase="finale";
+      var R=Math.min(W*0.34,H*0.21);
+      giant={x:W/2,y:H+R+30,ty:H*0.42,r:R,cuts:0,t:0,inside:false,lastCut:0,shake:0,gashes:[],hint:performance.now()+4000};
+      hud(); banner("Giant watermelon!","Swipe it "+GIANT_CUTS+" times!"); echoHop();
+    }
+    function giantY(){ return giant.y+Math.sin(giant.t/520)*7; }
+    function giantMove(x1,y1,x2,y2,now){
+      var g=giant, gy=giantY(), dx=x2-g.x, dy=y2-gy;
+      if(g.y>g.ty+g.r*0.6) return;                    // still rising
+      if(dx*dx+dy*dy>g.r*g.r*1.1) g.inside=false;      // out again: the next pass is a new cut
+      if(g.inside||now-g.lastCut<160||!segHit(x1,y1,x2,y2,g.x,gy,g.r)) return;
+      g.inside=true; g.lastCut=now; g.cuts++; g.shake=12; g.hint=now+4000; score++;
+      var a=Math.atan2(y2-y1,x2-x1), o=(x1-g.x)*-Math.sin(a)+(y1-gy)*Math.cos(a);   // the swipe's line: angle, and offset from the centre
+      for(var j=0;j<g.gashes.length;j++) if(Math.abs(g.gashes[j].o-o)<g.r*0.2&&Math.abs(Math.sin(g.gashes[j].a-a))<0.3) o+=(o>0?-1:1)*g.r*0.34;
+      g.gashes.push({a:a,o:Math.max(-g.r*0.7,Math.min(g.r*0.7,o))});
+      juice(x2,y2,"#ff5470",14,false); sfx("splat"); $("score").textContent=score; hud();
+      if(g.cuts>=GIANT_CUTS) burstGiant();
+    }
+    function burstGiant(){
+      var g=giant, gy=giantY(), i, a;
+      phase="done"; finaleDone=true; hud();
+      for(i=0;i<18;i++){ a=i/18*Math.PI*2; parts.push({x:g.x,y:gy,vx:Math.cos(a)*(4+Math.random()*4),vy:Math.sin(a)*(4+Math.random()*4)-4,e:"🍉",half:(i%2)+1,life:1.3}); }
+      juice(g.x,gy,"#ff5470",46,false); juice(g.x,gy,"#58cc02",14,false); splat(g.x,gy,g.r*1.2,"#ff5470");
+      giant=null; sfx("giant"); echoHop();
+      try{ if(S&&S.confetti)S.confetti(); }catch(e){}
+      banner("You did it!","The giant watermelon is sliced!");
+      setTimeout(endRound,1800);
+    }
+    function drawGiant(dt,now){
+      var g=giant; g.t+=dt; g.y+=(g.ty-g.y)*0.06; g.shake*=0.85;
+      var gy=giantY(), sx=g.shake>0.5?(Math.random()-0.5)*g.shake:0, R=g.r, i;
+      if(now>g.hint&&g.y<g.ty+R*0.6){   // nothing for a while: a ring and a word say where to swipe
+        var p=(now%1200)/1200; ctx.strokeStyle="rgba(255,255,255,"+(0.8*(1-p))+")"; ctx.lineWidth=5; ctx.beginPath(); ctx.arc(g.x,gy,R*(1.05+p*0.35),0,7); ctx.stroke();
+        ctx.font='800 22px "Baloo 2",sans-serif'; ctx.lineWidth=5; ctx.strokeStyle="rgba(120,50,10,.5)"; ctx.strokeText("Swipe across it!",g.x,gy-R-28); ctx.fillStyle="#fff"; ctx.fillText("Swipe across it!",g.x,gy-R-28);
+      }
+      ctx.save(); ctx.translate(g.x+sx,gy); ctx.rotate(Math.sin(g.t/900)*0.06);
+      ctx.fillStyle="#2f9e44"; ctx.beginPath(); ctx.ellipse(0,0,R,R*0.86,0,0,7); ctx.fill();
+      ctx.save(); ctx.beginPath(); ctx.ellipse(0,0,R,R*0.86,0,0,7); ctx.clip();
+      ctx.strokeStyle="#1d7a34"; ctx.lineWidth=R*0.11;
+      for(i=-3;i<=3;i++){ ctx.beginPath(); ctx.ellipse(i*R*0.29,0,R*0.1,R*0.95,0,0,7); ctx.stroke(); }
+      for(i=0;i<g.gashes.length;i++){ var h=g.gashes[i], nx=-Math.sin(h.a)*h.o, ny=Math.cos(h.a)*h.o, ux=Math.cos(h.a)*R*1.2, uy=Math.sin(h.a)*R*1.2;
+        ctx.lineCap="round"; ctx.strokeStyle="#ff5470"; ctx.lineWidth=R*0.17; ctx.beginPath(); ctx.moveTo(nx-ux,ny-uy); ctx.lineTo(nx+ux,ny+uy); ctx.stroke();
+        ctx.strokeStyle="#ffc2cc"; ctx.lineWidth=R*0.05; ctx.beginPath(); ctx.moveTo(nx-ux,ny-uy); ctx.lineTo(nx+ux,ny+uy); ctx.stroke(); }
+      ctx.restore();
+      ctx.fillStyle="rgba(255,255,255,.22)"; ctx.beginPath(); ctx.ellipse(-R*0.38,-R*0.4,R*0.26,R*0.13,-0.6,0,7); ctx.fill();
+      ctx.restore();
+    }
+
+    // ── the stand at the bottom: fruit waiting on the counter, restocked ──
+    function drawStand(now){
+      var top=standTop(), i, x, k, sw=24, lip=6, band=16;
+      for(i=0;i<WELLS.length;i++){ var wl=WELLS[i];
+        if(!wl.e&&wl.back&&now>=wl.back){ wl.e=FRUITS[(Math.random()*FRUITS.length)|0]; wl.pop=now; }
+        if(!wl.e) continue;
+        var t=wl.pop?Math.min(1,(now-wl.pop)/350):1, sc=t<1?0.4+0.6*t+Math.sin(t*Math.PI)*0.25:1;
+        ctx.save(); ctx.translate(wellX(i),top-12); ctx.scale(sc,sc); drawFruit(wl.e,48); ctx.restore(); }
+      ctx.fillStyle="#ffdf9e"; ctx.fillRect(0,top,W,H-top);
+      ctx.fillStyle="#e0b25f"; ctx.fillRect(0,top,W,lip);
+      for(x=0,k=0;x<W;x+=sw,k++){ ctx.fillStyle=k%2?"#ff9d6e":"#fff8ec"; ctx.beginPath(); ctx.moveTo(x,top+lip); ctx.lineTo(x+sw,top+lip); ctx.lineTo(x+sw,top+lip+band); ctx.arc(x+sw/2,top+lip+band,sw/2,0,Math.PI); ctx.closePath(); ctx.fill(); }
+    }
+    function glow(r,now){
+      var gl=ctx.createRadialGradient(0,0,r*0.4,0,0,r*1.7); gl.addColorStop(0,"rgba(255,214,51,.9)"); gl.addColorStop(1,"rgba(255,214,51,0)");
+      ctx.fillStyle=gl; ctx.beginPath(); ctx.arc(0,0,r*1.7,0,7); ctx.fill();
+      ctx.fillStyle="#fff7c2";
+      for(var k=0;k<4;k++){ var a=now/400+k*1.571, d=r*1.3, s=5+2*Math.sin(now/150+k), x=Math.cos(a)*d, y=Math.sin(a)*d;
+        ctx.beginPath(); ctx.moveTo(x,y-s); ctx.quadraticCurveTo(x,y,x+s,y); ctx.quadraticCurveTo(x,y,x,y+s); ctx.quadraticCurveTo(x,y,x-s,y); ctx.quadraticCurveTo(x,y,x,y-s); ctx.fill(); }
+    }
+
+    var lastT=performance.now();
     function draw(){
+      var now=performance.now(), dt=Math.min(100,now-lastT), i; lastT=now;
+      if(playing&&phase==="wave"){
+        waveMs+=dt;
+        if(waveMs>=nextToss){ toss(); nextToss=waveMs+WAVES[wave].every*(missRun>=2?1.25:1); }
+        if(waveGot>=WAVES[wave].goal||waveMs>=WAVE_CAP_MS) endWave();
+      }
       ctx.clearRect(0,0,W,H);
       // sunset skyline silhouettes (design 4: Fruit Slice sky)
       ctx.fillStyle="rgba(200,90,60,.18)";
-      for(var i=0;i<6;i++){ var bw=W*0.16, bx=i*bw*1.05-10, bh=H*(0.10+((i*37)%3)*0.035); ctx.fillRect(bx,H-bh,bw,bh); }
+      for(i=0;i<6;i++){ var bw=W*0.16, bx=i*bw*1.05-10, bh=H*(0.10+((i*37)%3)*0.035)+62; ctx.fillRect(bx,H-bh,bw,bh); }
       ctx.fillStyle="rgba(160,60,40,.22)";
-      for(var i=0;i<5;i++){ var bw2=W*0.13, bx2=i*bw2*1.55+20, bh2=H*(0.06+((i*53)%3)*0.03); ctx.fillRect(bx2,H-bh2,bw2,bh2); }
-      // trail
-      if(trail.length>1){ ctx.strokeStyle="rgba(255,255,255,.85)"; ctx.lineWidth=5; ctx.lineCap="round"; ctx.beginPath();
-        var now=performance.now(); var pts=trail.filter(function(p){return now-p.t<130;});
-        for(var i=0;i<pts.length;i++){ i?ctx.lineTo(pts[i].x,pts[i].y):ctx.moveTo(pts[i].x,pts[i].y); } ctx.stroke(); }
+      for(i=0;i<5;i++){ var bw2=W*0.13, bx2=i*bw2*1.55+20, bh2=H*(0.06+((i*53)%3)*0.03)+62; ctx.fillRect(bx2,H-bh2,bw2,bh2); }
+      // juice left on the sky by each slice, fading
+      for(i=splats.length-1;i>=0;i--){ var s=splats[i]; s.life-=0.012; if(s.life<=0){ splats.splice(i,1); continue; }
+        ctx.globalAlpha=s.life*0.42; ctx.fillStyle=s.col; ctx.beginPath(); ctx.arc(s.x,s.y,s.r,0,7); ctx.fill();
+        for(var q=0;q<s.d.length;q++){ ctx.beginPath(); ctx.arc(s.x+s.d[q][0],s.y+s.d[q][1],s.d[q][2],0,7); ctx.fill(); }
+        ctx.globalAlpha=1; }
       // fruit
       ctx.textAlign="center"; ctx.textBaseline="middle";
-      for(var i=fruits.length-1;i>=0;i--){ var f=fruits[i];
-        f.x+=f.vx; f.y+=f.vy; f.vy+=G; f.rot+=f.vr;
+      for(i=fruits.length-1;i>=0;i--){ var f=fruits[i];
+        f.x+=f.vx; f.y+=f.vy; f.vy+=f.g||G; f.rot+=f.vr;
         if(f.sliced){ fruits.splice(i,1); continue; }
-        if(f.y>H+80){ fruits.splice(i,1); if(playing){ crash(); } continue; }
-        ctx.save(); ctx.translate(f.x,f.y); ctx.rotate(f.rot);
+        // a miss just falls away: nothing stops and nothing is lost; the help grows instead
+        if(f.y>H+80){ fruits.splice(i,1); if(playing&&phase==="wave"){ missRun++; combo=0; } continue; }
+        ctx.save(); ctx.translate(f.x,f.y);
+        if(f.gold) glow(f.r,now);
+        ctx.rotate(f.rot);
         // opaque paint before emoji — translucent fillStyle ghosts color glyphs
         drawFruit(f.e,f.r*2.15); ctx.restore();
       }
       // particles + halves
-      for(var i=parts.length-1;i>=0;i--){ var p=parts[i];
+      for(i=parts.length-1;i>=0;i--){ var p=parts[i];
         p.x+=p.vx; p.y+=p.vy; p.vy+=G*0.8; p.life-=0.02;
         if(p.life<=0||p.y>H+60){ parts.splice(i,1); continue; }
-        if(p.e){ ctx.save(); ctx.globalAlpha=Math.max(0,p.life); ctx.translate(p.x,p.y);
+        if(p.e){ ctx.save(); ctx.globalAlpha=Math.max(0,Math.min(1,p.life)); ctx.translate(p.x,p.y);
           ctx.beginPath(); if(p.half===1)ctx.rect(-30,-30,30,60); else ctx.rect(0,-30,30,60); ctx.clip(); drawFruit(p.e,52); ctx.restore(); }
-        else { ctx.globalAlpha=Math.max(0,p.life); ctx.fillStyle=p.col; ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,7); ctx.fill(); ctx.globalAlpha=1; }
+        else { ctx.globalAlpha=Math.max(0,Math.min(1,p.life)); ctx.fillStyle=p.col; ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,7); ctx.fill(); ctx.globalAlpha=1; }
       }
+      drawStand(now);
+      if(giant) drawGiant(dt,now);
+      // trail
+      if(trail.length>1){ ctx.strokeStyle="rgba(255,255,255,.85)"; ctx.lineWidth=5; ctx.lineCap="round"; ctx.beginPath();
+        var pts=trail.filter(function(q){return now-q.t<130;});
+        for(i=0;i<pts.length;i++){ i?ctx.lineTo(pts[i].x,pts[i].y):ctx.moveTo(pts[i].x,pts[i].y); } ctx.stroke(); }
+      // "+3" over a golden fruit
+      for(i=floats.length-1;i>=0;i--){ var ft=floats[i]; ft.y-=0.9; ft.life-=0.018; if(ft.life<=0){ floats.splice(i,1); continue; }
+        ctx.globalAlpha=Math.min(1,ft.life*1.6); ctx.font='800 30px "Baloo 2",sans-serif'; ctx.lineWidth=5; ctx.strokeStyle="rgba(120,50,10,.55)"; ctx.strokeText(ft.t,ft.x,ft.y); ctx.fillStyle=ft.col; ctx.fillText(ft.t,ft.x,ft.y); ctx.globalAlpha=1; }
       requestAnimationFrame(draw);
     }
+    startWave(0);
     draw();
 
     // ---- round over ----
@@ -432,7 +654,7 @@
       closeReviveMic();
       if(window.__ended)return; window.__ended=true;
       S.finishGameTurn("slice",isDaily?score:null);
-      playing=false; reviveWait=false; clearInterval(tossIv); clearInterval(comboIv);
+      playing=false; reviveWait=false; clearInterval(comboIv);
       var isBest=score>BEST; if(isBest){ BEST=score; try{ localStorage.setItem(BESTK,String(BEST)); }catch(e){} }
       var coins=Math.min(10,(score/4)|0);
       try{ if(coins&&S&&S.addCoins)S.addCoins(coins); }catch(e){}
@@ -457,8 +679,12 @@
         $("endOvl").classList.add("show");
         return;
       }
+      // the first game after setup: the grown-up's plan screen when it is due,
+      // else Home (Sona.firstGameEnd answers once)
+      var after=(S&&S.firstGameEnd)?S.firstGameEnd("slice"):null;
+      if(after){ $("endCharge").textContent=/subscribe/.test(after)?"Show a grown-up →":"Pick a game →"; $("endCharge").onclick=function(){ location.href=after; }; }
       // one reward per moment: star + one line + Echo — no stat rows or coin counters here
-      $("endTitle").textContent=isBest&&score>0?"WOW — a new best! I saw "+score+" fruits fly!":"I saw "+score+" fruits fly! So fun!";
+      $("endTitle").textContent=finaleDone?(isBest?"A new best! You sliced the giant watermelon!":"You sliced the giant watermelon!"):(isBest?"WOW — a new best! I saw "+score+" fruits fly!":"I saw "+score+" fruits fly! So fun!");
       var _es=$("endSub"); _es.textContent=score+" fruits · Best: "+BEST; _es.className="later";
       setTimeout(function(){ _es.classList.add("in"); },1000);
       $("endAgain").style.display="none";
@@ -467,7 +693,7 @@
     $("endCharge").onclick=function(){ location.href=isDaily?"/charge.html?daily=1":(S.gameAccess("tiles").allowed?"/charge.html?game=arcade-tiles.html":"/activities.html"); };
     $("endAgain").onclick=function(){ location.reload(); };
     $("endHome").onclick=function(){ S.finishGameTurn("slice"); location.href="/today.html#play"; };
-    $("close").onclick=function(){ closeReviveMic(); S.finishGameTurn("slice"); if(playing){ playing=false; clearInterval(tossIv); clearInterval(comboIv); } if(isDaily){ bankAndContinue(); return; } location.href="/today.html#play"; };
+    $("close").onclick=function(){ closeReviveMic(); S.finishGameTurn("slice"); if(playing){ playing=false; clearInterval(comboIv); } if(isDaily){ bankAndContinue(); return; } location.href="/today.html#play"; };
     }
   </script>
 </body>

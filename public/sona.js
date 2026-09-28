@@ -2572,7 +2572,10 @@
   const GAME_ACTS = {
     slice: { name: "Fruit Slice",   sub: "Say it 5× to play",          go: "/charge.html?game=arcade-slice.html", group: "arcade", tier: "free", playDescription: "Swipe through the fruit." },
     tiles: { name: "Piano Tiles",   sub: "Say it 5× to play",          go: "/charge.html?game=arcade-tiles.html", group: "arcade", tier: "premium", playDescription: "Tap each tile as it reaches the line." },
-    stack: { name: "Block Stacker", sub: "Say it 5× to play",          go: "/charge.html?game=arcade-stack.html", group: "arcade", tier: "free", playDescription: "Time your tap to stack the blocks." },
+    // Premium since 27 Sep 2026 (Travis: once the plan screen has been seen,
+    // "all the other games are ... grayed out except they can replay feed echo
+    // and fruit slice"). Only matters when pricing is on; free while Sona is.
+    stack: { name: "Block Stacker", sub: "Say it 5× to play",          go: "/charge.html?game=arcade-stack.html", group: "arcade", tier: "premium", playDescription: "Time your tap to stack the blocks." },
     run:   { name: "Sound Sprint",  sub: "Say it 5× to play",          go: "/charge.html?game=arcade-run.html", group: "arcade", tier: "premium", playDescription: "Switch lanes and collect coins." },
     glide: { name: "Flappy Glide",  sub: "Say it 5× to play",          go: "/charge.html?game=arcade-glide.html", group: "arcade", tier: "premium", playDescription: "Tap to glide through the gaps." },
     feed:  { name: "Feed Echo",     sub: "Say it & tap — Echo's hungry!", go: "/arcade-feed.html", group: "simple", tier: "free", playDescription: "Find the picture and feed Echo. No timer." },
@@ -3443,6 +3446,28 @@
   // never spends the one-shot; nothing in this repo calls it.
   function planMoment() { return planEligible(); }
 
+  // ── the first game, straight from setup (Travis, 27 Sep 2026) ──
+  // "upon completing the few steps inside the onboarding ... it will choose
+  // feed echo for the littles and fruit slice for ages five and up ... it'll
+  // literally go straight to the game ... And then when they finish the game,
+  // that is when I want the paywall to come up". Setup marks which game is the
+  // first (this tab only); that game's end card asks firstGameEnd() once where
+  // to go next: the plan screen while planEligible() says so (never while Sona
+  // is free, never for a family that already has every game), else Home.
+  const FIRSTKEY = "sona.firstgame.v1";
+  function firstGameKey() { return playStyle() === "simple" ? "feed" : "slice"; }
+  function firstGameStart() {
+    const key = firstGameKey();
+    try { sessionStorage.setItem(FIRSTKEY, key); } catch (e) {}
+    return (GAME_ACTS[key] && GAME_ACTS[key].go) || "/today.html";
+  }
+  function firstGameEnd(key) {
+    let mine = false;
+    try { mine = sessionStorage.getItem(FIRSTKEY) === gameKey(key); if (mine) sessionStorage.removeItem(FIRSTKEY); } catch (e) {}
+    if (!mine) return null;
+    return planEligible() ? "/subscribe.html?first=1" : "/today.html";
+  }
+
 
   // The button path: stop whatever is talking and say THIS, now.
   // The button path: a child ASKED to hear this, so it must make a sound now.
@@ -3637,61 +3662,133 @@
     return P.stop().then((r) => (r && r.onDevice ? r : null)).catch(() => null);
   }
 
-  // What a digraph sounds like in a transcript. Single letters match
-  // themselves; TH matches both voiced and unvoiced spellings.
-  const HEAR_HINT = { SH: ["sh"], CH: ["ch", "tch"], TH: ["th"], THV: ["th"] };
-  function _lev1(a, b) {
-    // is edit distance <= 1? (one substitution/insert/delete) — cheap check,
-    // no full matrix needed
-    if (a === b) return true;
-    const la = a.length, lb = b.length;
-    if (Math.abs(la - lb) > 1) return false;
-    let i = 0, j = 0, edits = 0;
-    while (i < la && j < lb) {
-      if (a[i] === b[j]) { i++; j++; continue; }
-      if (++edits > 1) return false;
-      if (la === lb) { i++; j++; }
-      else if (la > lb) { i++; }
-      else { j++; }
+  // HEAR2 (28 Sep 2026): Travis, "I just don't want kids saying taco and
+  // getting a correct score. We want them to be in the ballpark." The first
+  // rules passed any word with the target LETTER anywhere in it and any word
+  // one letter off the target. So "Here is a taco" passed R ("here" has an r),
+  // "water" passed for rabbit, and "sock" passed for rock. The rules below keep
+  // the close tries and drop those.
+  //
+  // A transcript only has spelling, so each sound is matched by the ways it is
+  // spelled in the words a child practises (K is "c" in cat, F is "ph" in
+  // phone, S is "c" in ice).
+  const HEAR_SPELL = {
+    R: "r", L: "l", S: "s(?!h)|c(?=[eiy])", Z: "z", SH: "sh", CH: "t?ch", J: "dge|j|g(?=[eiy])",
+    K: "ck|k|q|c(?![eiyh])", G: "g", F: "ph|f", V: "v", TH: "th", THV: "th",
+    P: "p", B: "b", M: "m", N: "n", T: "t(?!h)", D: "d",
+  };
+  // What a close try at each sound usually comes out as: the errors a child
+  // working on that sound typically makes ("wabbit", "wed", "thun", "tat").
+  // Rachel to confirm the list; it is here so she can change it without an
+  // App Store review.
+  const HEAR_SUBS = {
+    R: ["w", "l"], L: ["w", "y"], S: ["th", "t", "sh"], Z: ["th", "d", "s"], SH: ["s", "ch"],
+    CH: ["sh", "t", "ts"], J: ["d", "z", "ch"], TH: ["f", "s", "t", "d"], THV: ["d", "v", "z"],
+    K: ["t"], G: ["d"], F: ["p", "b"], V: ["b", "f"],
+  };
+  // At the very end of a word, R and L often melt into the vowel ("cah" for car).
+  const HEAR_SUBS_END = { R: ["", "h", "w"], L: ["", "w", "o"] };
+  // How a transcript writes a sound that is not a word. On a bare-sound round
+  // these say nothing either way, so they are "unknown", never a fail.
+  const HEAR_FILLER = { a: 1, uh: 1, uhh: 1, um: 1, umm: 1, ah: 1, ahh: 1, aah: 1, eh: 1, oh: 1, ooh: 1, oo: 1, hmm: 1, hm: 1, mm: 1, mmm: 1, huh: 1, ha: 1, hah: 1, mhm: 1, er: 1, erm: 1, err: 1, aw: 1, ew: 1, whoa: 1, woah: 1 };
+  const HEAR_NUM = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve"];
+  // Where a sound sits in a word: "i" at the start, "f" at the end (a silent
+  // final e does not count: house, cake), "m" anywhere between.
+  function _hearSpots(str, sound) {
+    const out = {}, src = HEAR_SPELL[sound];
+    if (!src || !str) return out;
+    const re = new RegExp(src, "g"), end = str.length - (str.length > 2 && /e$/.test(str) ? 1 : 0);
+    let m;
+    while ((m = re.exec(str))) {
+      const at = m.index, len = m[0].length || 1;
+      out[at === 0 ? "i" : (at + len >= end ? "f" : "m")] = true;
+      if (!m[0].length) re.lastIndex++;
     }
-    return edits + (la - i) + (lb - j) <= 1;
+    return out;
+  }
+  // The target word plus its close tries: each place the sound is spelled,
+  // swapped for a typical error. "rabbit" → wabbit, labbit; "car" → caw, cah.
+  function _hearVariants(w, sound) {
+    const out = [w], src = HEAR_SPELL[sound];
+    if (!src) return out;
+    const re = new RegExp(src, "g");
+    let m;
+    while ((m = re.exec(w))) {
+      const at = m.index, len = m[0].length || 1;
+      const subs = (HEAR_SUBS[sound] || []).concat(at + len >= w.length ? (HEAR_SUBS_END[sound] || []) : []);
+      for (let k = 0; k < subs.length; k++) {
+        const v = w.slice(0, at) + subs[k] + w.slice(at + len);
+        if (v.length >= 2) out.push(v);
+      }
+      if (!m[0].length) re.lastIndex++;
+    }
+    return out;
+  }
+  function _hearTokens(text) {
+    return String(text || "").toLowerCase()
+      .replace(/\d+/g, (d) => " " + (HEAR_NUM[+d] || d) + " ")     // Apple writes "four" as "4"
+      .replace(/[^a-z' ]+/g, " ").split(/\s+/)
+      .map((t) => t.replace(/^'+|'+$/g, "")).filter(Boolean);
   }
   /**
-   * hearVerdict(transcript, sound, word) → "pass" | "fail" | "unknown"
+   * hearVerdict(transcript, sound, word, opts?) → "pass" | "fail" | "unknown"
+   * opts: { level: "isolation"|"syllable"|"word"|"sentence", frame: the
+   *         sentence the child was asked to say, when there is one }
    *
-   * pass    — the transcript is a real attempt at the target: the word (or one
-   *           edit away from it — "wabbit" for "rabbit" IS the practice, per
-   *           Travis: anything semi-close advances), or any word carrying the
-   *           target sound at all.
-   * fail    — the child said intelligible words with none of the target sound
-   *           in them. This is the "poopoo instead of R" case, and it is the
-   *           whole reason the recognizer exists.
-   * unknown — the recognizer heard nothing it could transcribe. NEVER a fail:
-   *           disordered child speech often will not transcribe, and Apple's
-   *           models are tuned on adults. Unknown defers to the spectral
-   *           check, so a child the recognizer cannot parse is judged exactly
-   *           as they were before this feature existed.
+   * pass    — a real try at the target, in the ballpark: the word, a close
+   *           version of it ("wabbit" for rabbit, "wed" for red, "cah" for
+   *           car; "wabbit" IS the practice, per Travis), or another word with
+   *           the sound in the same place ("run" when the word is rain). On a
+   *           bare-sound round, anything with the sound in it ("rrr", "er").
+   * fail    — the child said clear words and none of them is a try at the
+   *           target: "taco" for R, "Here is a taco", "sock" for rock.
+   * unknown — nothing to judge: no words, only filler ("uh", "hmm"), or only
+   *           the words around the target ("Here is a …"). Unknown is NEVER a
+   *           fail. Apple's models are tuned on adults and a child's speech
+   *           often will not transcribe, so unknown hands the try to the
+   *           sound-shape check, exactly as before this feature existed.
+   *
+   * Two things are set aside before judging: a grown-up coaching ("say
+   * rabbit") — the word after "say" is theirs, not the child's — and, on a
+   * sentence round, the sentence's other words. Without the first, a parent
+   * in the room made "taco" pass; without the second, "Here is a" did.
    */
-  function hearVerdict(transcript, sound, word) {
-    const raw = String(transcript || "").toLowerCase().replace(/[^a-z' ]+/g, " ").trim();
-    if (!raw) return "unknown";
-    const tokens = raw.split(/\s+/).filter(Boolean);
-    if (!tokens.length) return "unknown";
-    const w = String(word || "").toLowerCase().replace(/[^a-z']/g, "");
-    if (w) {
-      for (let i = 0; i < tokens.length; i++) {
-        const t = tokens[i];
-        if (t === w) return "pass";
-        if (w.length >= 4 && _lev1(t, w)) return "pass";
-        if (t.indexOf(w) === 0 && w.length >= 3) return "pass";
-      }
-    }
+  function hearVerdict(transcript, sound, word, opts) {
+    opts = opts || {};
     const S2 = String(sound || "").toUpperCase();
-    const hints = HEAR_HINT[S2] || (S2 ? [S2.toLowerCase()] : []);
+    let tokens = _hearTokens(transcript);
+    if (!tokens.length) return "unknown";
+    const said = [];
     for (let i = 0; i < tokens.length; i++) {
-      for (let h = 0; h < hints.length; h++) {
-        if (tokens[i].indexOf(hints[h]) >= 0) return "pass";
+      if (tokens[i] === "say" || tokens[i] === "said" || tokens[i] === "saying") { i++; continue; }
+      said.push(tokens[i]);
+    }
+    tokens = said;
+    const w = String(word || "").toLowerCase().replace(/[^a-z']/g, "");
+    if (opts.frame) {
+      const skip = {};
+      _hearTokens(opts.frame).forEach((t) => { if (t !== w) skip[t] = 1; });
+      tokens = tokens.filter((t) => !skip[t]);
+    }
+    // what is left that says something: filler is only filler when it has no
+    // trace of the target ("er" is a fine R, "mm" a fine M)
+    const content = tokens.filter((t) => !HEAR_FILLER[t] || Object.keys(_hearSpots(t, S2)).length);
+    if (!content.length) return "unknown";
+    const bare = opts.level === "isolation" || !w || w === String(SOUND_SAY[S2] || "");
+    if (bare) {
+      for (let i = 0; i < content.length; i++) if (Object.keys(_hearSpots(content[i], S2)).length) return "pass";
+      return "fail";
+    }
+    const vars = _hearVariants(w, S2), want = _hearSpots(w, S2);
+    for (let i = 0; i < content.length; i++) {
+      const t = content[i];
+      for (let k = 0; k < vars.length; k++) {
+        const v = vars[k];
+        if (t === v || t === v + "s" || t === v + "es" || t === v + "'s") return "pass";
       }
+      if (w.length >= 3 && t.indexOf(w) === 0) return "pass";           // "rabbits", "rainbow"
+      const has = _hearSpots(t, S2);
+      for (const p in want) if (has[p]) return "pass";                  // the sound, in the same place
     }
     return "fail";
   }
@@ -4096,5 +4193,5 @@
   try { _grandfatherFreeEra4(); } catch (e) {}
   try { installDebug(); } catch (e) {}
 
-  global.Sona = { pcmWave, libraryPreview, previewPlan, setPreviewPlan, gameKey, gameAccess, gameBounce, finishGameTurn, catalogRun, simpleAdventure, MIC_PROMISE, playStyle, pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, TTS_CACHE_VERSION, voiceDiagnostic, voiceStatus, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, saveFor, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, ladderContent, FREE_MODE, isFree, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, adventureGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, activityLibrary, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, premium, caseCovered, caseRefresh, gated, gateVerify, gateOk, requireGate, gateDest, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, planMoment, planEligible, planShown, speak, speakNow, speakUnlock, speechAvailable, speechPerm, speechStart, speechStop, hearVerdict, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, demoState, demoDone, demoStart, demoFinish, runActive, gateBounce, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repWeeks, repsBeacon, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES };
+  global.Sona = { pcmWave, libraryPreview, previewPlan, setPreviewPlan, gameKey, gameAccess, gameBounce, finishGameTurn, catalogRun, simpleAdventure, MIC_PROMISE, playStyle, pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, TTS_CACHE_VERSION, voiceDiagnostic, voiceStatus, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, saveFor, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, ladderContent, FREE_MODE, isFree, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, adventureGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, activityLibrary, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, premium, caseCovered, caseRefresh, gated, gateVerify, gateOk, requireGate, gateDest, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, planMoment, planEligible, planShown, firstGameKey, firstGameStart, firstGameEnd, speak, speakNow, speakUnlock, speechAvailable, speechPerm, speechStart, speechStop, hearVerdict, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, demoState, demoDone, demoStart, demoFinish, runActive, gateBounce, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repWeeks, repsBeacon, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES };
 })(window);

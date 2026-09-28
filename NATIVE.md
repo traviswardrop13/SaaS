@@ -49,6 +49,26 @@ both — the script is the one fix.
 A family's progress is safe: an app that cannot open keeps its data, and the
 update brings it back.
 
+## Apple's listening check (28 Sep 2026)
+
+**What happened.** Apple's on-device speech check (the SonaSpeech plugin, in
+`plugins/sona-speech`) was written on 31 Aug and never reached the app. Nothing
+compiled it, nothing registered it, and Info.plist had no speech-permission
+text. So every build through 1.0.3 judged each practice try by the sound-shape
+check alone, and a child who said "taco" for R got it counted.
+
+**The fix is one script, then a new build:**
+```bash
+python3 scripts/install-ios-speech.py
+```
+It compiles the plugin through AppDelegate.swift (like the scene fix above),
+registers it beside SonaAudio in MainViewController, and adds
+NSSpeechRecognitionUsageDescription. Then build to a real iPhone, check
+`window.Capacitor.Plugins.SonaSpeech` in Safari's Web Inspector, and run the
+device checklist in `SPEECH_PLUGIN.md` before archiving. The judging rules
+live in `public/sona.js` and go live with the website; only the plugin needs
+the new build.
+
 ## Prereqs (on your Mac)
 - macOS + **Xcode** (free from the App Store) + Command Line Tools
 - **Node 22+** (required by the pinned Capacitor 8 CLI)
@@ -150,6 +170,7 @@ white.
 ## Required permission (or it crashes on mic use)
 In `Info.plist` add:
 - **NSMicrophoneUsageDescription** = "Sona uses the microphone so your child can practice saying their sounds."
+- **NSSpeechRecognitionUsageDescription** — `scripts/install-ios-speech.py` adds it. iOS closes the app if the speech permission is asked without it.
 
 ## Echo's real voice on auto-spoken lines (Xcode, 5 minutes)
 

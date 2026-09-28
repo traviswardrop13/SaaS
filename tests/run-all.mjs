@@ -55,6 +55,12 @@ const SUITES = [
   "micquietpracticetest.mjs", // the practice screen never plays a sound into a live mic (no iPhone call mode)
   "loudroomtest.mjs", // a room too loud to be a room is never a try, in any window of an attempt
   "micquietgamestest.mjs", // the eight games never play a sound into a live mic; STAR MODE is gone
+  "slicetest.mjs", // SLICE2: Fruit Slice is a round: three waves, the say-it card between them, a giant watermelon win
+  "stacktest.mjs", // STACK2: Block Stacker is a round: three floors on the practice page's five, a rocket to the moon
+  "tilestest.mjs", // TILES2: Piano Tiles is a round: three songs a child knows, the same speed on every screen, a finale that waits
+  "runtest.mjs", // RUN2: Sound Sprint is a race: park, beach, forest, a checkpoint card between, a finish line that always wins
+  "glidetest.mjs", // GLIDE2: Flappy Glide is a flight: three legs, a cloud rest card between, a fireworks landing; the balloon floats
+  "firstgametest.mjs", // FIRST1: setup goes straight to the first game; its end card is the one offer; Home greys the rest
   "sayplaytest.mjs", // SAYPLAY1: the twenty Say & Play games: only a voice moves them, quiet mic, no practice data
   "slptest.mjs",   // SLP1: the clinician dashboard — live Today, honest register, one door, real remove, the note
   "slpworkflowtest.mjs", // quick homework, per-child plans, feedback/call UI and failure recovery

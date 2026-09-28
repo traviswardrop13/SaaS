@@ -110,25 +110,39 @@ const shimmer = (x, y, s, o = {}) => put(A.seahorse, x, y, s, o);
 const crab = (x, y, s, o = {}) => put(A.crab, x, y, s, o);
 const shell = (x, y, s = 1) => place(O.seashell("#ffe0f0"), x, y, s) + K.sparkle(x - 12 * s, y - 22 * s, 0.7 * s) + K.sparkle(x + 14 * s, y - 16 * s, 0.5 * s);
 const stage = (x = 300) => place(O.stageRock(), x, 350, 1) + place(O.starfish(), x - 50, 318) + place(O.starfish("#ff8fb0"), x + 50, 318, 0.8);
+// A fuller sea (27 Sep 2026): Shay's is one of the five books open first, and
+// its pages were the thinnest art of the nineteen. Light from the surface, a
+// far reef, coral and pebbles on the sand, and a few small fish far off, which
+// move page to page (or stay away, where the page is busy already).
+const school = (x, y) => G(`translate(${x} ${y})`, put(A.fish, 0, 0, 0.26, { color: "#ffd166", fin: "#ffb100" })
+  + put(A.fish, 28, 16, 0.2, { color: "#ffd166", fin: "#ffb100" }) + put(A.fish, -22, 20, 0.18, { color: "#ffd166", fin: "#ffb100" }), { opacity: 0.8 });
+const sea = (o = {}) => S.seaBg(o)
+  + P("M52 0 H122 L64 300 H8 Z", "#ffffff", { opacity: 0.08 }) + P("M236 0 H282 L250 250 H204 Z", "#ffffff", { opacity: 0.07 })
+  + P("M352 0 H412 L396 280 H330 Z", "#ffffff", { opacity: 0.06 })
+  + P(`M0 ${(o.h || 400) - 64} Q30 ${(o.h || 400) - 100} 70 ${(o.h || 400) - 78} Q100 ${(o.h || 400) - 108} 150 ${(o.h || 400) - 82} Q170 ${(o.h || 400) - 88} 184 ${(o.h || 400) - 70} L184 ${(o.h || 400) - 54} L0 ${(o.h || 400) - 54} Z`, "#3e93c4", { opacity: 0.45 })
+  + P(`M292 ${(o.h || 400) - 70} Q330 ${(o.h || 400) - 102} 372 ${(o.h || 400) - 82} Q404 ${(o.h || 400) - 104} 440 ${(o.h || 400) - 82} L440 ${(o.h || 400) - 56} L292 ${(o.h || 400) - 56} Z`, "#3e93c4", { opacity: 0.45 })
+  + K.coral(64, (o.h || 400) - 24, 1.0, "#ff8fb0") + K.coral(92, (o.h || 400) - 20, 0.7, "#ffb86b") + K.coral(376, (o.h || 400) - 28, 0.9, "#ffb86b")
+  + place(O.pebble("#d8cdb9"), 160, (o.h || 400) - 16, 0.7) + place(O.pebble("#c9bfae"), 286, (o.h || 400) - 12, 0.55)
+  + (o.fish === false ? "" : school(o.fx ?? 330, o.fy ?? 104));
 export const SH_BOOK = {
   slug: "shay-the-shy-shark",
-  cover: () => S.seaBg({ h: 440 }) + S.kelp(40, 412, 1.2) + S.kelp(404, 410, 1.1) + shay(210, 220, 1.7, { face: "happy" }) + shell(330, 300, 1.3)
+  cover: () => sea({ h: 440, fx: 330, fy: 96 }) + S.kelp(40, 412, 1.2) + S.kelp(404, 410, 1.1) + shay(210, 220, 1.7, { face: "happy" }) + shell(330, 300, 1.3)
     + S.starsList([[100, 120], [340, 140, 0.7], [220, 90, 0.6]], "#fff1b8"),
   pages: [
-    () => S.seaBg() + S.kelp(410, 370, 1.1) + shay(250, 240, 1.4, { face: "shy" }) + place(K.rock(0, 0, 1), 190, 340, 3.2),
-    () => S.seaBg() + place(O.ship(), 230, 300, 1.4) + E(250, 270, 150, 50, "#1f4f73", { opacity: 0.35 }) + shay(260, 250, 1.1, { face: "shy" }),
-    () => S.seaBg() + stage() + crab(250, 370, 1.0, { pose: "cheer" }) + crab(330, 376, 1.1, { pose: "cheer" }) + crab(400, 370, 0.9, { pose: "cheer" })
+    () => sea({ fx: 110, fy: 110 }) + S.kelp(410, 370, 1.1) + shay(250, 240, 1.4, { face: "shy" }) + place(K.rock(0, 0, 1), 190, 340, 3.2),
+    () => sea({ fish: false }) + place(O.ship(), 230, 300, 1.4) + E(250, 270, 150, 50, "#1f4f73", { opacity: 0.35 }) + shay(260, 250, 1.1, { face: "shy" }),
+    () => sea({ fx: 330, fy: 120 }) + stage() + crab(250, 370, 1.0, { pose: "cheer" }) + crab(330, 376, 1.1, { pose: "cheer" }) + crab(400, 370, 0.9, { pose: "cheer" })
       + shay(90, 200, 0.9, { face: "shy" }) + S.sound(290, 270, 0.8),
-    () => S.seaBg() + S.kelp(40, 370) + shay(230, 220, 1.5, { face: "shy" }) + L("M60 180 q-10 20 0 40 M44 170 q-14 30 0 60 M380 190 q10 20 0 40 M396 180 q14 30 0 60", "#dff4ff", 3),
-    () => S.seaBg() + S.kelp(400, 372) + shimmer(300, 290, 1.5) + S.bubblesUp([[270, 150], [280, 128, 4]]) + shay(110, 250, 0.9, { face: "shy", look: [2, 0] }),
-    () => S.seaBg() + stage(380) + shimmer(260, 290, 1.4) + shay(120, 240, 1.0, { face: "o" }),
-    () => S.seaBg() + S.kelp(40, 372) + shay(180, 230, 1.4, { face: "shy" }) + S.qmark(320, 150, 1.4) + shimmer(360, 330, 1.0),
-    () => S.seaBg() + shimmer(290, 300, 1.4) + shell(250, 250, 1.6) + shay(110, 230, 1.0, { face: "o", look: [2, 1] }),
-    () => S.seaBg() + shimmer(220, 300, 1.5) + shell(300, 240, 1.4) + L("M270 200 l-10 -10 M330 200 l10 -10 M272 262 l-12 6 M332 262 l12 6", "#ffffff", 3),
-    () => S.seaBg() + shay(200, 230, 1.4, { face: "happy" }) + shell(300, 272, 1.2) + L("M320 220 q14 14 0 28 M336 212 q22 22 0 44", "#ffffff", 3.4) + S.notes([[360, 170, 0.9, "#ffffff"]]),
-    () => S.seaBg() + stage() + shay(300, 250, 1.1, { face: "happy" }) + shell(360, 296, 0.9) + crab(80, 372, 1.0, { pose: "cheer" }) + crab(150, 378, 0.9, { pose: "cheer" })
+    () => sea({ fx: 330, fy: 96 }) + S.kelp(40, 370) + shay(230, 220, 1.5, { face: "shy" }) + L("M60 180 q-10 20 0 40 M44 170 q-14 30 0 60 M380 190 q10 20 0 40 M396 180 q14 30 0 60", "#dff4ff", 3),
+    () => sea({ fx: 200, fy: 90 }) + S.kelp(400, 372) + shimmer(300, 290, 1.5) + S.bubblesUp([[270, 150], [280, 128, 4]]) + shay(110, 250, 0.9, { face: "shy", look: [2, 0] }),
+    () => sea({ fx: 360, fy: 110 }) + stage(380) + shimmer(260, 290, 1.4) + shay(120, 240, 1.0, { face: "o" }),
+    () => sea({ fish: false }) + S.kelp(40, 372) + shay(180, 230, 1.4, { face: "shy" }) + S.qmark(320, 150, 1.4) + shimmer(360, 330, 1.0),
+    () => sea({ fx: 360, fy: 100 }) + shimmer(290, 300, 1.4) + shell(250, 250, 1.6) + shay(110, 230, 1.0, { face: "o", look: [2, 1] }),
+    () => sea({ fx: 110, fy: 120 }) + shimmer(220, 300, 1.5) + shell(300, 240, 1.4) + L("M270 200 l-10 -10 M330 200 l10 -10 M272 262 l-12 6 M332 262 l12 6", "#ffffff", 3),
+    () => sea({ fx: 90, fy: 110 }) + shay(200, 230, 1.4, { face: "happy" }) + shell(300, 272, 1.2) + L("M320 220 q14 14 0 28 M336 212 q22 22 0 44", "#ffffff", 3.4) + S.notes([[360, 170, 0.9, "#ffffff"]]),
+    () => sea({ fish: false }) + stage() + shay(300, 250, 1.1, { face: "happy" }) + shell(360, 296, 0.9) + crab(80, 372, 1.0, { pose: "cheer" }) + crab(150, 378, 0.9, { pose: "cheer" })
       + S.starsList([[240, 140], [320, 110, 0.7], [390, 150, 0.6]], "#fff1b8"),
-    () => S.seaBg() + C(220, 220, 110, "#fff6c8", { opacity: 0.35 }) + shay(220, 230, 1.5, { face: "happy" })
+    () => sea({ fish: false }) + C(220, 220, 110, "#fff6c8", { opacity: 0.35 }) + shay(220, 230, 1.5, { face: "happy" })
       + S.starsList([[100, 130], [340, 120], [120, 300, 0.7], [330, 310, 0.7], [220, 90, 0.6]], "#fff1b8") + shimmer(380, 360, 0.8) + crab(60, 380, 0.8, { pose: "cheer" }),
   ],
 };
