@@ -17,18 +17,19 @@ import { rateLimit } from "@/lib/rateLimit";
  *
  * Optional env:
  *   ELEVENLABS_VOICE_ID (default "qBDvhofpxp92JgXJxDjB" — the app's kid coach voice)
- *   ELEVENLABS_MODEL    (default "eleven_multilingual_v2" — natural; turbo = faster)
+ *   ELEVENLABS_PRIMARY_MODEL (default "eleven_v4_turbo" — the model every line is made with)
+ *   ELEVENLABS_MODEL    (default "eleven_multilingual_v2" — only if the primary model refuses)
  *   ELEVENLABS_V3="1"   opt in to trying eleven_v3 first (different cadence)
  *   OPENAI_TTS_VOICE / OPENAI_TTS_MODEL
  */
 export const runtime = "nodejs";
 
-// v8 (24 Sep 2026): every clip is now loudness-levelled (levelPcm below) and
-// made with calmer settings and a fixed seed. Bumped together with
-// TTS_CACHE_VERSION in public/sona.js — the phone keys its saved clips by that
-// value, so bumping only one side leaves families replaying the old, unlevelled,
-// excitable takes forever.
-const VOICE_REVISION = "v8";
+// v9 (28 Sep 2026): every line is made with Eleven v4 Turbo instead of
+// Multilingual v2. v8 (24 Sep 2026) was loudness levelling (levelPcm below),
+// calmer settings and a fixed seed. Bumped together with TTS_CACHE_VERSION in
+// public/sona.js — the phone keys its saved clips by that value, so bumping only
+// one side leaves families replaying the old model's takes forever.
+const VOICE_REVISION = "v9";
 const VENDOR_TIMEOUT_MS = 6000; // leave room inside the browser's seven-second timeout
 const DEFAULT_ELEVEN_VOICE = "qBDvhofpxp92JgXJxDjB";
 const OPENAI_VOICES = new Set([
@@ -49,11 +50,13 @@ const PCM_HEADERS = {
 
 // Warm-instance memo + cache (module scope survives across requests on the same
 // serverless instance). Kills the two biggest sources of TTS dead air:
-//  1. v3Broken — once eleven_v3 rejects (account without v3 access), stop paying
-//     a doomed round trip before the v2 fallback on every single call.
+//  1. refused — once a model rejects a voice (eleven_v3 on an account without v3
+//     access, or v4 Turbo on a voice it cannot use), stop paying a doomed round
+//     trip before the fallback on every single call. Keyed by model AND voice:
+//     one family's voice being refused must not move every other family off v4.
 //  2. audioCache — the game loop repeats a small set of short prompts ("say rrrr",
 //     "your turn!", praise lines) constantly; serve identical clips instantly.
-let v3Broken = false;
+const refused = new Set<string>();
 const audioCache = new Map<string, ArrayBuffer>();
 const CACHE_MAX = 48;
 function cacheGet(k: string): ArrayBuffer | undefined {
@@ -71,6 +74,16 @@ function elevenConfig() {
   return {
     voiceId: process.env.ELEVENLABS_VOICE_ID || DEFAULT_ELEVEN_VOICE,
     v3Model,
+    // ELEVEN V4 TURBO FOR EVERY LINE (Travis, 28 Sep 2026, after an A/B listen
+    // against v2 and v4). Same pace as v4 — identical timing on every test line —
+    // but a clip is ready in about 0.7 s instead of 1.2 s, and a child waits
+    // through that gap before every prompt. It is its own variable rather than
+    // ELEVENLABS_MODEL because production may still set ELEVENLABS_MODEL to
+    // v2 from before, and the switch must not depend on someone remembering to
+    // delete it: that setting now only names the fallback.
+    primaryModel: process.env.ELEVENLABS_PRIMARY_MODEL || "eleven_v4_turbo",
+    // Only when the primary model refuses or fails: the model Echo used through
+    // 28 Sep, so a child still hears Echo rather than the phone's robot voice.
     fallbackModel: process.env.ELEVENLABS_MODEL || "eleven_multilingual_v2",
     wantV3: process.env.ELEVENLABS_V3 === "1",
     speed: Math.min(1.05, Math.max(0.85, parseFloat(process.env.ELEVENLABS_SPEED || "") || 0.93)),
@@ -87,7 +100,9 @@ function elevenSettings(model: string, config: ReturnType<typeof elevenConfig>):
   // also the rate of the practice word the child copies, so it is Rachel's
   // call, and similarity is the setting that moved a modelled /r/ toward /w/
   // in the voice changer (app/api/voice-change/route.ts) — not one to touch
-  // without her ears on the practice words.
+  // without her ears on the practice words. Eleven v4 Turbo takes these same
+  // controls (checked against the live API, 28 Sep 2026), so the switch to it
+  // changed the model and nothing else.
   return {
     stability: 0.7,
     similarity_boost: 0.85,
@@ -222,7 +237,7 @@ export async function POST(req: NextRequest) {
 
   const provider = elevenKey ? "elevenlabs" : "openai";
   let model = "none";
-  // One budget includes all vendor attempts and response-body reads. A v3
+  // One budget includes all vendor attempts and response-body reads. A
   // fallback cannot start another full timeout after the browser has given up.
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), VENDOR_TIMEOUT_MS);
@@ -230,19 +245,23 @@ export async function POST(req: NextRequest) {
     if (elevenKey) {
       const config = elevenConfig();
       const voiceId = voiceOverride || config.voiceId;
-      // Keep the existing v2 voice and delivery until an intentional listening
-      // review chooses otherwise. v3 is still an explicit environment opt-in.
+      // v4 Turbo for every line; v2 only if it refuses or fails, so the child
+      // still hears Echo. v3 is still an explicit environment opt-in. The
+      // fallback is never skipped: it is the last voice before the robot one.
       const attempts = [
         ...(config.wantV3 ? [config.v3Model] : []),
+        config.primaryModel,
         config.fallbackModel,
       ].filter((candidate, i, arr) => arr.indexOf(candidate) === i)
-       .filter((candidate) => !(v3Broken && candidate === config.v3Model));
+       .filter((candidate) => candidate === config.fallbackModel || !refused.has(`${candidate}|${voiceId}`));
 
       let lastStatus: number | undefined;
       for (model of attempts) {
         const isV3 = model === config.v3Model || model === "eleven_v3";
         const settings = elevenSettings(model, config);
-        // v3 performs [tags]; older models would read them aloud — strip.
+        // v3 performs [tags] and v4 would too; v2 would read them aloud. Only
+        // the v3 opt-in keeps them: since the calm rewrite of 24 Sep no line
+        // asks Echo for a performance, so every other model gets them stripped.
         const sendText = isV3 ? text : text.replace(/\[[a-z ]{2,24}\]\s*/gi, "");
         if (!sendText.trim()) {
           return NextResponse.json({ ok: false, error: "text is required" }, { status: 400 });
@@ -272,7 +291,11 @@ export async function POST(req: NextRequest) {
           if (cacheable) cacheSet(cacheKey, buf);
           return response;
         }
-        if (isV3 && [400, 401, 403, 404, 422].includes(r.status)) v3Broken = true;
+        // A refusal of this model for this voice is remembered; a 401 only for
+        // v3 (an account without v3 access), because for any other model a 401
+        // is the key itself, and the fallback would meet the same one. Busy or
+        // broken (429, 5xx) is never remembered: next time may work.
+        if (model !== config.fallbackModel && [400, 403, 404, 422, ...(isV3 ? [401] : [])].includes(r.status)) refused.add(`${model}|${voiceId}`);
         lastStatus = r.status;
         // Vendor bodies can contain account details. Never forward them.
         void r.body?.cancel().catch(() => {});
@@ -320,7 +343,7 @@ export async function GET() {
   const provider = hasElevenLabsKey ? "elevenlabs" : hasOpenAIKey ? "openai" : "none";
   const config = elevenConfig();
   const model = provider === "elevenlabs"
-    ? (config.wantV3 ? config.v3Model : config.fallbackModel)
+    ? (config.wantV3 ? config.v3Model : config.primaryModel)
     : provider === "openai" ? process.env.OPENAI_TTS_MODEL || "gpt-4o-mini-tts" : null;
   return NextResponse.json({
     ok: true,

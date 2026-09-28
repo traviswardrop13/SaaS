@@ -388,11 +388,12 @@
   const VOICE_PITCH = 1;
   // Shared delivery revision: server tuning must not leave families replaying
   // older, indefinitely cached prompts on their devices.
-  // v8 (24 Sep 2026): /api/tts now levels every clip to one loudness and uses
-  // calmer settings with a fixed seed. Moves in lockstep with VOICE_REVISION in
-  // app/api/tts/route.ts — a phone that kept its v7 copies would go on playing
-  // the loud, jumpy takes Travis heard, whatever the server now sends.
-  const TTS_CACHE_VERSION = "v8";
+  // v9 (28 Sep 2026): /api/tts makes every line with Eleven v4 Turbo instead of
+  // Multilingual v2. v8 (24 Sep) levelled every clip to one loudness with
+  // calmer settings and a fixed seed. Moves in lockstep with VOICE_REVISION in
+  // app/api/tts/route.ts — a phone that kept its v8 copies would go on playing
+  // the old model's takes for every line it had already heard.
+  const TTS_CACHE_VERSION = "v9";
   const _voiceEvents = [];
   function voiceDiagnostic(event) {
     event = event || {};

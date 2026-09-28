@@ -358,10 +358,10 @@
     job.cancel = function () { if (job.cancelled) return; job.cancelled = true; job.stops.slice().forEach(function (stop) { stop(); }); };
     audioJob = job; speaking = true; unlockContext();
     $("promptHint").textContent = "Getting Echo ready…";
-    var key = (profile.voiceId || "echo") + "|" + (S.TTS_CACHE_VERSION || "v8") + "|" + word;
+    var key = (profile.voiceId || "echo") + "|" + (S.TTS_CACHE_VERSION || "v9") + "|" + word;
     cache(job, key).then(function (bytes) {
       if (!job.live()) return null;
-      if (bytes) { job.voiceInfo = { source: "cache", cache: "device", revision: S.TTS_CACHE_VERSION || "v8" }; return bytes; }
+      if (bytes) { job.voiceInfo = { source: "cache", cache: "device", revision: S.TTS_CACHE_VERSION || "v9" }; return bytes; }
       return fetchWord(job, word).then(function (fresh) { if (fresh && job.live()) cache(job, key, fresh); return fresh; });
     }).then(function (bytes) {
       if (!job.live()) return;

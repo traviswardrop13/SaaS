@@ -757,7 +757,7 @@
       };
     });}
     async function speechBytes(t,job){
-      var revision=(S&&S.TTS_CACHE_VERSION)||"v8", key=(profile.voiceId||"echo")+"|"+revision+"|"+t;
+      var revision=(S&&S.TTS_CACHE_VERSION)||"v9", key=(profile.voiceId||"echo")+"|"+revision+"|"+t;
       var cached=await ttsGet(key,job);
       if(cached===AUDIO_CANCEL||!job.live())return AUDIO_CANCEL;
       if(cached){job.voiceEvent={source:"cache",cache:"device",revision:revision};return cached;}

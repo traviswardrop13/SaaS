@@ -288,7 +288,7 @@
       var generation=audioGeneration;
       if(!t||!audioAllowed(generation)||profile.voiceOn===false||Number(profile.volume)===0||speaking)return Promise.resolve();
       speaking=true;
-      var key=(profile.voiceId||"echo")+"|"+((window.Sona&&Sona.TTS_CACHE_VERSION)||"v8")+"|"+t;
+      var key=(profile.voiceId||"echo")+"|"+((window.Sona&&Sona.TTS_CACHE_VERSION)||"v9")+"|"+t;
       // Echo waits out a mic request still being answered, then the phone's
       // switch back from a mic that has only just closed (the same SETTLE_MS
       // the chimes wait), then a chime that was waiting on it (micQuiet)

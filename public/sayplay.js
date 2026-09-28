@@ -140,7 +140,7 @@
     var generation = audioGeneration;
     if (!t || !audioAllowed(generation) || profile.voiceOn === false || volume() === 0 || speaking) return Promise.resolve();
     speaking = true;
-    var key = (profile.voiceId || "echo") + "|" + ((S && S.TTS_CACHE_VERSION) || "v8") + "|" + t;
+    var key = (profile.voiceId || "echo") + "|" + ((S && S.TTS_CACHE_VERSION) || "v9") + "|" + t;
     return micQuiet().then(function () { return ttsGet(key); }).then(function (cached) {
       if (!audioAllowed(generation)) return true;
       if (cached) return playPCM(new Uint8Array(cached), generation).then(function () { return true; });
