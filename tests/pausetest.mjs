@@ -153,14 +153,17 @@ function fakeDevice(config) {
   let sona;
   Object.defineProperty(window, 'Sona', { configurable: true, get: () => sona, set(value) {
     sona = value;
-    value.speechStart = () => {
+    // The recognizer "hears" the word the round asked Apple to listen for. A fixed
+    // "rrrr" stopped passing word rounds on 28 Sep (only the word or a close version counts).
+    value.speechStart = (o) => {
+      h.heardWord = (o && o.words && o.words[0]) || 'rrrr';
       h.nativeStarts++;
       return h.nativeStartMode === 'pending' ? new Promise((resolve) => h.nativeWaiters.push(resolve)) : Promise.resolve(true);
     };
     value.speechStop = () => {
       h.nativeStops++;
       if (h.verifyMode === 'deferred') return new Promise((resolve) => h.speechWaiters.push(resolve));
-      return Promise.resolve({ text: h.verifyMode === 'unknown' ? '' : h.verifyMode === 'fail' ? 'poopoo' : 'rrrr' });
+      return Promise.resolve({ text: h.verifyMode === 'unknown' ? '' : h.verifyMode === 'fail' ? 'poopoo' : h.heardWord });
     };
     value.saveRecording = () => { h.effects.push('saveRecording'); return Promise.resolve(); };
     value.confetti = () => {};
@@ -170,7 +173,7 @@ function fakeDevice(config) {
     }
   } });
   h.resolveNativeStart = () => h.nativeWaiters.splice(0).forEach((resolve) => resolve(true));
-  h.resolveSpeech = () => { const pending = h.speechWaiters.splice(0); pending.forEach((resolve) => resolve({ text: 'rrrr' })); };
+  h.resolveSpeech = () => { const pending = h.speechWaiters.splice(0); pending.forEach((resolve) => resolve({ text: h.heardWord || 'rrrr' })); };
 
   if (!localStorage.getItem('sona.test.pauseSeed')) {
     localStorage.setItem('sona.test.pauseSeed', '1');

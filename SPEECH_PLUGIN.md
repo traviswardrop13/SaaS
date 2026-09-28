@@ -27,13 +27,20 @@ npm package, and its `Package.swift` asks for Capacitor 6 while the app is on 8.
 In the checkout that owns `ios/` (`/Users/traviswardrop/Documents/SaaS`), with
 this branch's code:
 
-1. `python3 scripts/install-ios-speech.py`
+1. `python3 scripts/install-ios-speech.py` (add `--check` first to see what it
+   would change without writing anything).
    It compiles the plugin through `AppDelegate.swift` (the way the iOS 27 scene
-   fix is compiled), registers it in the project's `MainViewController` beside
-   SonaAudio, and adds `NSSpeechRecognitionUsageDescription` to Info.plist.
-   Without that text iOS closes the app the moment the speech permission is
-   asked. Running it again is safe. It stops, changing nothing, if the plugin
-   is already in the app some other way.
+   fix is compiled), registers it, and adds
+   `NSSpeechRecognitionUsageDescription` to Info.plist. Without that text iOS
+   closes the app the moment the speech permission is asked. To register it,
+   it reads which controller `Main.storyboard` loads: MainViewController gets
+   the registration wherever the project compiles it from; Capacitor's own
+   controller (Travis's project, 28 Sep: MainViewController had never been
+   added) is swapped for a small `SonaBridgeViewController` that registers it,
+   in the storyboard and in any code that builds Capacitor's controller itself
+   (a project made with Capacitor 8.5 or later builds it in `SceneDelegate.swift`,
+   and that is the one on screen). Running it again is safe. It stops, changing nothing, on a project it does
+   not understand, and says what it found.
 2. Open Xcode, bump the Build number, and build to a **real iPhone** (the
    simulator has no usable on-device model).
 3. In Safari → Develop → your iPhone → Sona, check

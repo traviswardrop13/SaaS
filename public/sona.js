@@ -3680,6 +3680,18 @@
     }
     return out;
   }
+  // Is a within n edits (letters changed, added or dropped) of b?
+  function _hearNear(a, b, n) {
+    if (Math.abs(a.length - b.length) > n) return false;
+    let prev = [];
+    for (let j = 0; j <= b.length; j++) prev.push(j);
+    for (let i = 1; i <= a.length; i++) {
+      const row = [i];
+      for (let j = 1; j <= b.length; j++) row.push(Math.min(prev[j] + 1, row[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)));
+      prev = row;
+    }
+    return prev[b.length] <= n;
+  }
   function _hearTokens(text) {
     return String(text || "").toLowerCase()
       .replace(/\d+/g, (d) => " " + (HEAR_NUM[+d] || d) + " ")     // Apple writes "four" as "4"
@@ -3691,13 +3703,14 @@
    * opts: { level: "isolation"|"syllable"|"word"|"sentence", frame: the
    *         sentence the child was asked to say, when there is one }
    *
-   * pass    — a real try at the target, in the ballpark: the word, a close
-   *           version of it ("wabbit" for rabbit, "wed" for red, "cah" for
-   *           car; "wabbit" IS the practice, per Travis), or another word with
-   *           the sound in the same place ("run" when the word is rain). On a
-   *           bare-sound round, anything with the sound in it ("rrr", "er").
+   * pass    — a real try at the target: the word, or a close version of it
+   *           ("wabbit" for rabbit, "wed" for red, "cah" for car, "rainy" for
+   *           rain; "wabbit" IS the practice, per Travis). Never a different
+   *           word (Travis: "the exact / close word"). On a bare-sound round, a
+   *           short sound or mostly the sound itself ("rrr", "er").
    * fail    — the child said clear words and none of them is a try at the
-   *           target: "taco" for R, "Here is a taco", "sock" for rock.
+   *           target: "taco" or "fridge" for rabbit, "Here is a taco", "sock"
+   *           for rock, "run" for rain.
    * unknown — nothing to judge: no words, only filler ("uh", "hmm"), or only
    *           the words around the target ("Here is a …"). Unknown is NEVER a
    *           fail. Apple's models are tuned on adults and a child's speech
@@ -3732,19 +3745,37 @@
     if (!content.length) return "unknown";
     const bare = opts.level === "isolation" || !w || w === String(SOUND_SAY[S2] || "");
     if (bare) {
-      for (let i = 0; i < content.length; i++) if (Object.keys(_hearSpots(content[i], S2)).length) return "pass";
+      // A bare sound comes back short ("Er", "Grr", "Are") or as mostly the
+      // sound itself ("Rrrrr", "Shhhh", "Error"). A word that merely has the
+      // sound in it ("fridge", "water", "taco" for K) is not a try at the
+      // sound on its own.
+      const own = String(SOUND_SAY[S2] || S2.toLowerCase()).replace(/[aeiou]/g, "");
+      for (let i = 0; i < content.length; i++) {
+        const t = content[i];
+        if (!Object.keys(_hearSpots(t, S2)).length) continue;
+        let n = 0;
+        for (let k = 0; k < t.length; k++) if (own.indexOf(t[k]) >= 0) n++;
+        if (t.length <= 3 || n * 2 >= t.length) return "pass";
+      }
       return "fail";
     }
-    const vars = _hearVariants(w, S2), want = _hearSpots(w, S2);
+    const vars = _hearVariants(w, S2);
+    const near = Math.max(1, Math.floor(w.length / 3)), subs = HEAR_SUBS[S2] || [];
     for (let i = 0; i < content.length; i++) {
       const t = content[i];
       for (let k = 0; k < vars.length; k++) {
         const v = vars[k];
         if (t === v || t === v + "s" || t === v + "es" || t === v + "'s") return "pass";
       }
-      if (w.length >= 3 && t.indexOf(w) === 0) return "pass";           // "rabbits", "rainbow"
+      // Otherwise it has to be close to the word itself, and still carry the
+      // sound or its usual error: "rainy" for rain, "parrot" or "cawwot" for
+      // carrot, "crib" for crab. A different word does not count, even one
+      // with the sound in the same place (Travis, 28 Sep 2026: "ideally the
+      // exact / close word"): not "run" for rain, not "fridge" for carrot.
       const has = _hearSpots(t, S2);
-      for (const p in want) if (has[p]) return "pass";                  // the sound, in the same place
+      let carries = Object.keys(has).length > 0;
+      for (let k = 0; !carries && k < subs.length; k++) carries = !!subs[k] && t.indexOf(subs[k]) >= 0;
+      if (carries && _hearNear(t, w, near)) return "pass";
     }
     return "fail";
   }
