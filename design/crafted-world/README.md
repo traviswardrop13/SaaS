@@ -2,6 +2,31 @@
 
 User direction, 28 September 2026: redesign the family app to match these exact concept boards, including a complete onboarding redesign. This replaces the speech-check task for this session.
 
+## Current implementation — 28 September 2026
+
+Travis explicitly expanded this work to the full family app and removed the 20-minute session cap. Books remain owned by the other worktree. The earlier batch notes below are historical; this section describes the current branch.
+
+- **Home:** illustrated landscape cards for the seven released games, cream title strips, a wide Glide card, and horizontal Feed Echo/Hoops cards. Age ordering, all existing catalog entries, parked-game availability, parent gates and the Books link keep their existing behavior.
+- **Onboarding:** every setup step uses the crafted palette and artwork. The purpose-selection page is removed; sound choices are large letters only with R selected first. Name/age and email controls stay reachable with a keyboard. Email is optional and has a close control. Setup still ends at the game library; this visual release does not turn pricing on or add an automatic first-game/paywall flow.
+- **Practice and games:** Fruit Slice, Piano Tiles, Block Stacker, Sound Sprint, Flappy Glide, Feed Echo and Hoops receive the new scenery, controls, character treatment, retry and finish surfaces. Fruit, runner and balloon artwork replace flat drawings where appropriate. Speech checks, target selection, game physics, score/earned-ticket logic and audio timing stay intact.
+- **Feed Echo:** all 294 existing word-bank entries have matching object illustrations in 33 transparent WebP atlases. Per-word crops are validated and preserve aspect ratio. This changes pictures, not vocabulary or answer rules. Atlas loading is on demand through the displayed choices, not an all-at-once download.
+- **Family screens:** settings, progress, customization, stickers, plans/trial, voice selection and family invitation use the same visual system. Consent, purchase/restore, free-mode and sharing behavior are preserved.
+- **Books:** no book pages, content, assets, generator, reader or shared Sona files are edited. Coming-soon games remain parked.
+
+### Review
+
+`app-preview.html` contains 32 actual app screenshots grouped by Home, Onboarding, Practice, Games and Grown-ups. The local review URL is `http://127.0.0.1:8259/design/crafted-world/app-preview.html`; live app pages use port 8258. These require the local preview servers to remain running.
+
+Artwork is production WebP. The former welcome PNGs were converted, and every active consumer was updated. Scene/mascot/game-object art totals approximately 1.9 MB; all word atlases together total approximately 10 MB. Each game fetches only its own imagery. Source paths, crop maps and generation briefs are recorded in the adjacent asset documents.
+
+### Verification status
+
+Browser checks cover 320×568 and 393×852 layouts, simulated native safe areas, keyboard space, menus, parent gates, game entry, listening/earned pieces, retry/finish, and family screens. The comprehensive release battery is being completed on isolated test ports to avoid interrupting other worktrees. TypeScript passed. The new illustration-coverage check and onboarding layout regressions were demonstrated failing against their pre-fix versions.
+
+Physical-device keyboard, audio routing and visual review remain necessary before release; desktop simulations do not replace them. No merge or production release is authorized for this redesign.
+
+---
+
 ## Original artwork
 
 All five source PNGs were recovered from `/Users/traviswardrop/.codex/generated_images/01a0e0be-c91e-7a82-88ba-8bea7061dcdf/` and copied unchanged into `references/`. Each original is 1536 × 1024. Board 05 matches the supplied screenshot. Board 01 is an earlier version of those same three screens, not three additional screens. No original onboarding board was found.

@@ -90,8 +90,9 @@
     @media (prefers-reduced-motion: reduce){ .endStar,.echoWin img,#echo.munch,.cardBtn.right,.cardBtn.wrong{animation:none;} }
     @media (max-height:700px){ #echo{width:118px;height:118px;} .cardBtn .e{font-size:44px;} #stage{min-height:150px;} }
   </style>
+  <link href="/crafted-games.css" rel="stylesheet">
 </head>
-<body>
+<body data-crafted="feed">
   <div id="app">
     <div id="top">
       <button id="close" aria-label="Back">✕</button>
@@ -105,7 +106,7 @@
       <div id="bubble"><div id="bMain">Ready?</div><div id="bSub"></div></div>
       <div id="echoSpot">
         <div id="mound"></div>
-        <img id="echo" src="/coach/echo/echo-listening.svg" alt="Echo"
+        <img id="echo" src="/assets/crafted/echo-welcome.webp" alt="Echo"
              onerror="this.onerror=null;this.src='/coach/echo/echo-idle.svg';" />
         <div id="plate" data-fed="0/5"><span class="well"></span><span class="well"></span><span class="well"></span><span class="well"></span><span class="well"></span></div>
       </div>
@@ -120,7 +121,7 @@
       <h2 id="endTitle">Yum! You fed Echo!</h2>
       <p id="endSub"></p>
       <div class="echoWin" id="concert">
-        <img src="/coach/echo/echo-celebrate.svg" alt="" />
+        <img src="/assets/crafted/echo-welcome.webp" alt="" />
         <span class="uke" aria-hidden><svg viewBox="0 0 64 64" style="width:44px;height:44px"><ellipse cx="24" cy="42" rx="16" ry="14" fill="#e09a5a"/><circle cx="24" cy="42" r="5.5" fill="#7a4a22"/><rect x="34" y="10" width="7" height="26" rx="3" transform="rotate(35 37 23)" fill="#8a5a30"/><rect x="44" y="4" width="9" height="8" rx="2" transform="rotate(35 48 8)" fill="#6f4522"/><path d="M14 36l20 12M13 40l20 12M12 44l19 11" stroke="#fff" stroke-width="1.1" opacity=".85"/><circle cx="17" cy="33" r="2" fill="#fff" opacity=".75"/></svg></span>
         <span class="note" style="left:22%;animation-delay:0s;"><svg viewBox="0 0 64 64" style="width:20px;height:20px"><ellipse cx="24" cy="46" rx="9" ry="7" fill="#ffd21c" transform="rotate(-20 24 46)"/><rect x="30" y="14" width="4.5" height="32" rx="2" fill="#ffd21c"/><path d="M34.5 14c8 2 12 7 10 14-1-4-5-7-10-8Z" fill="#f0a800"/></svg></span>
         <span class="note" style="left:70%;animation-delay:.5s;"><svg viewBox="0 0 64 64" style="width:20px;height:20px"><ellipse cx="24" cy="46" rx="9" ry="7" fill="#fff" transform="rotate(-20 24 46)"/><rect x="30" y="14" width="4.5" height="32" rx="2" fill="#fff"/><path d="M34.5 14c8 2 12 7 10 14-1-4-5-7-10-8Z" fill="#fff" opacity=".85"/></svg></span>
@@ -134,6 +135,7 @@
   <div id="toast"></div>
 
   <script src="/sona.js"></script>
+  <script src="/crafted-words.js"></script>
   <script>
     // Catalog access is checked before this game's resources start.
     var S=window.Sona;
@@ -215,7 +217,7 @@
     function landOnPlate(w){ try{
       var wells=$("plate").querySelectorAll(".well");
       var slot=wells[Math.min(fed-1,wells.length-1)];
-      if(slot) slot.innerHTML='<span class="fd">'+((S&&S.pic)?S.pic(w.w,w.e,20):w.e)+'</span>';
+      if(slot) slot.innerHTML='<span class="fd">'+((window.SonaCraftedWords&&SonaCraftedWords.picture(w.w,20))||((S&&S.pic)?S.pic(w.w,w.e,20):w.e))+'</span>';
       $("plate").dataset.fed=fed+"/"+NEED;
     }catch(e){} }
     function pool(sound){ var ws=(S&&S.wordsFor)?(S.wordsFor(sound,"i")||[]):[]; return ws.filter(function(w){ return w&&w.w&&w.e; }).sort(function(a,b){ return a.w.length-b.w.length; }).slice(0,8); }
@@ -400,7 +402,7 @@
       var g=$("grid"); g.innerHTML="";
       opts.forEach(function(w){
         var b=document.createElement("button"); b.className="cardBtn"; b.type="button";
-        b.innerHTML='<span class="e">'+((S&&S.pic)?S.pic(w.w,w.e,54):w.e)+'</span><span class="w">'+w.w+"</span>";
+        b.innerHTML='<span class="e">'+((window.SonaCraftedWords&&SonaCraftedWords.picture(w.w,54))||((S&&S.pic)?S.pic(w.w,w.e,54):w.e))+'</span><span class="w">'+w.w+"</span>";
         b.onclick=function(){ pick(w,b); };
         g.appendChild(b);
       });

@@ -1,7 +1,7 @@
 /* Crafted-world welcome, based on reference board 05. Artwork is decorative;
    the existing setup controls, permission flow and saved answers stay real. */
 body[data-setup-screen="welcome"] {
-  background: #fff6e9 url('/assets/crafted/welcome-orchard.png') center center / cover no-repeat;
+  background: #fff6e9 url('/assets/crafted/welcome-orchard.webp') center center / cover no-repeat;
 }
 body[data-setup-screen="welcome"] .ob {
   max-width: 480px;
@@ -134,3 +134,24 @@ body.keyboard-open .world-scene { display: none; }
   .ob #obSounds { gap: 5px; }
   .ob #obExploreSounds { margin-top: 6px; }
 }
+
+/* Notches and the home indicator use real room. Keep the full picker above
+   Continue on a phone without shrinking its letters or its tap targets. */
+body[data-setup-screen="sounds"] .ob .seg { margin-bottom: 12px; }
+body[data-setup-screen="sounds"] .ob .mascot { margin-bottom: 14px; }
+body[data-setup-screen="sounds"] .ob #leo { width: 48px !important; height: 54px !important; }
+@media (min-height: 701px) and (max-height: 900px) {
+  body[data-setup-screen="sounds"] .ob .step[data-step="sounds"] { padding: 18px 20px; }
+  .ob #obSounds { margin-top: 14px; gap: 8px; }
+  .ob #obSounds .sound { min-height: 52px; }
+}
+@media (max-height: 700px) {
+  body[data-setup-screen="sounds"] .ob .step[data-step="sounds"] { padding: 12px; }
+  .ob #obExploreSounds { margin-top: 6px; }
+  .ob .sound-help { margin-top: 4px; }
+}
+
+/* Keep the age choices reachable while the grown-up types a name. */
+body.keyboard-open .ob .step[data-step="name"] .setup-hint { display: none; }
+body.keyboard-open .ob .step[data-step="name"] .setup-label { margin-top: 14px; }
+body.keyboard-open .ob #obAge .sound { min-height: 50px; }

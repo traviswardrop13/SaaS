@@ -501,11 +501,12 @@ if (present && hasContract) {
         const grids = await pg.locator("#activityGroups [data-group]").evaluateAll(groups => groups.map(group =>
           Array.from(group.querySelectorAll("button[data-game]")).map(el => {
             const r = el.getBoundingClientRect(), art = el.querySelector(".game-art")?.getBoundingClientRect();
-            return { x: r.x, y: r.y, w: r.width, h: r.height, artW: art?.width, artH: art?.height };
+            return { x: r.x, y: r.y, w: r.width, h: r.height, artW: art?.width, artH: art?.height, parked: el.disabled };
           })));
-        ok(viewport.width + "px: each age group uses the intended grid with square art", grids.length === 2 && grids.every(tiles =>
-          tiles.filter(t => Math.abs(t.y - tiles[0].y) < 2).length === Math.min(tiles.length, viewport.width >= 600 ? 3 : 2)
-          && tiles.every(t => Math.abs(t.artW - t.artH) < 2 && t.artW > 80)), grids);
+        // The crafted reference uses landscape scenes and compact parked rows.
+        // Protect readable/tappable cards without pinning decorative pixel values.
+        ok(viewport.width + "px: playable cards have wide scene art and parked cards stay usable", grids.length === 2 && grids.every(tiles =>
+          tiles.every(t => t.w >= 90 && t.h >= 44 && (t.parked ? t.artW >= 32 && t.artH >= 32 : t.artW > t.artH * 1.3 && t.artW > 80))), grids);
         const overflow = await pg.evaluate(() => Math.max(document.documentElement.scrollWidth, document.body.scrollWidth) - innerWidth);
         ok(viewport.width + "px: library has no horizontal overflow", overflow <= 1, overflow);
         await pg.locator("#activityGroups button[data-game]:visible").last().scrollIntoViewIfNeeded();

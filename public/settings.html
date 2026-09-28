@@ -34,18 +34,20 @@
       }
     })();
   </script>
+  <link rel="stylesheet" href="/crafted-family.css" />
 </head>
-<body>
+<body class="crafted-family family-settings">
   <div class="wrap">
-    <header class="app">
-      <div class="brand"><span class="dot"></span> Sona</div>
-      <nav class="app"><a href="/today.html">Home</a><a href="/progress.html">Progress</a><a class="active" href="/settings.html">Settings</a></nav>
+    <header class="app family-header">
+      <a class="brand" href="/today.html" aria-label="Sona Home"><span class="leo"><img src="/assets/crafted/echo-welcome.webp" alt="" /></span> Sona</a>
+      <a class="family-back" href="/today.html"><span class="pic-home" aria-hidden="true"></span> Back to play</a>
     </header>
+    <nav class="family-tabs" aria-label="Grown-up pages"><a href="/progress.html">Overview</a><a href="/settings.html" aria-current="page">Settings</a></nav>
 
     <!-- KIDS1: siblings share a phone and an SLP shares one iPad. Each child
          gets their own saved progress; switching is one tap. -->
     <div class="card" id="kidsCard">
-      <h2>Kids 👧🧒</h2>
+      <h2>Your family</h2>
       <p class="muted" style="font-size:13px;font-weight:700;">Each child keeps their own sounds, progress and stickers. Everything below this card belongs to whoever is selected.</p>
       <div id="kidList" style="display:flex;flex-direction:column;gap:8px;margin-top:12px;"></div>
       <div id="addKidRow" style="display:none;gap:8px;margin-top:10px;flex-wrap:wrap;align-items:flex-end;">
@@ -78,7 +80,7 @@
       <!-- PLAY1: a play-mode family rotates through every sound; picking
            specific chips below switches them to focus mode. -->
       <div id="playNote" style="display:none;background:#fff6e9;border-radius:14px;padding:11px 14px;margin-bottom:10px;font-weight:800;font-size:12.5px;color:var(--muted);">
-        🎲 <b style="color:var(--ink);">Play mode</b> — Echo rotates through every sound, easiest first.
+        <b style="color:var(--ink);">Play mode</b> — Echo rotates through every sound, easiest first.
         Picking sounds below switches to focus mode. <a href="#" id="playKeep" style="font-weight:800;">Stay in play mode</a>
       </div>
       <div class="sounds" id="sounds"></div>
@@ -100,14 +102,14 @@
            the flags the game pages read can never contradict what a parent set. -->
       <label class="field" for="volume">Sound</label>
       <div style="display:flex;align-items:center;gap:12px;">
-        <span style="font-size:17px;">🔈</span>
+        <span style="font-size:17px;"><svg class="family-symbol" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M10 5 5 9H2v6h3l5 4V5Z"/></svg></span>
         <input id="volume" type="range" min="0" max="100" step="5" style="flex:1;accent-color:var(--orange,#ff8a3d);" />
-        <span style="font-size:19px;">🔊</span>
+        <span style="font-size:19px;"><svg class="family-symbol" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M10 5 5 9H2v6h3l5 4V5ZM14 8a6 6 0 0 1 0 8M17 4a11 11 0 0 1 0 16"/></svg></span>
       </div>
       <p class="muted" id="volLbl" style="font-weight:800;font-size:12.5px;margin-top:6px;"></p>
 
       <label class="field">Coach voice</label>
-      <a class="btn ghost" href="/voices.html" style="width:auto;padding:12px 18px;">🔊&nbsp;&nbsp;Choose coach voice →</a>
+      <a class="btn ghost" href="/voices.html" style="width:auto;padding:12px 18px;">Choose coach voice →</a>
 
 
       <div style="margin-top:24px;display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
@@ -118,9 +120,9 @@
     </div>
 
     <a class="card" href="/customize.html" style="display:flex;gap:14px;align-items:center;color:inherit;">
-      <div class="leo" style="width:56px;height:56px;flex:0 0 auto;"><img src="/coach/echo/echo-idle.svg" alt="Echo" style="width:52px;height:52px;object-fit:contain;" /></div>
+      <div class="leo" style="width:56px;height:56px;flex:0 0 auto;"><img src="/assets/crafted/echo-welcome.webp" alt="Echo" style="width:52px;height:52px;object-fit:contain;" /></div>
       <div style="flex:1;min-width:0;">
-        <h2>Character &amp; world ✨</h2>
+        <h2>Character &amp; world</h2>
         <p class="muted">Choose your buddy, an outfit, and a backdrop.</p>
       </div>
       <span style="font-size:22px;color:var(--muted);">›</span>
@@ -143,7 +145,7 @@
          isn't setting a goal for one child — it's getting Sona into the hands
          of a caseload and watching who's actually practicing. -->
     <div class="card" id="slpCard" style="display:none;">
-      <h2>Your caseload 🎓</h2>
+      <h2>Your caseload <svg class="family-symbol" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-5 9 5-9 5-9-5Z"/><path d="M7 12v5c3 2 7 2 10 0v-5M21 9v7"/></svg></h2>
       <!-- WHAT THE LINK DOES, and nothing more (24 Sep 2026). It said "free
            for them — no trial, no paywall", which was the grant a link used to
            BE. A link now connects a family to this dashboard; the free version
@@ -175,9 +177,9 @@
     </div>
 
     <details class="card" id="moreCard">
-      <summary style="cursor:pointer;font-family:'Baloo 2';font-weight:800;font-size:16px;list-style:none;">More ⚙️</summary>
+      <summary style="cursor:pointer;font-family:'Baloo 2';font-weight:800;font-size:16px;list-style:none;">More settings</summary>
     <div style="margin-top:18px;">
-      <h3 style="font-family:'Baloo 2';font-weight:800;font-size:15px;margin-bottom:6px;">Help us improve 💬</h3>
+      <h3 style="font-family:'Baloo 2';font-weight:800;font-size:15px;margin-bottom:6px;">Help us improve</h3>
       <p class="muted" style="margin-bottom:4px;" id="fbLead">Sona is in beta — what would you change?</p>
       <!-- Chips first, typing optional. A blank box gets blank answers; a
            tapped chip gets an answer from someone who'd never have written in. -->
@@ -195,7 +197,7 @@
     </div>
 
     <div style="margin-top:18px;">
-      <h3 style="font-family:'Baloo 2';font-weight:800;font-size:15px;margin-bottom:6px;">Backup &amp; restore 💾</h3>
+      <h3 style="font-family:'Baloo 2';font-weight:800;font-size:15px;margin-bottom:6px;">Backup &amp; restore</h3>
       <p class="muted" style="margin-bottom:10px;">This is the only way to move practice off this device — it is never uploaded anywhere, so nothing restores it but the code or file you keep. The code does not expire.</p>
       <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
         <button class="btn ghost" id="backupCopy" style="width:auto;padding:12px 18px;">Copy backup code</button>

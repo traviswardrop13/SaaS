@@ -52,8 +52,9 @@
     @keyframes echoHop{0%,100%{transform:translateY(0)}45%{transform:translateY(-14px) rotate(-5deg)}}
     @media (prefers-reduced-motion: reduce){ .endStar,.echoWin img{animation:none;} }
   </style>
+  <link href="/crafted-games.css" rel="stylesheet">
 </head>
-<body>
+<body data-crafted="stack">
   <div id="app">
     <canvas id="cv"></canvas>
     <div id="top">
@@ -68,7 +69,7 @@
 
   <div class="ovl" id="needOvl">
     <div class="ovlCard">
-      <img class="ovlEcho" src="/coach/echo/echo-star.svg" alt="" />
+      <img class="ovlEcho" src="/assets/crafted/echo-welcome.webp" alt="" />
       <h2 id="needTitle">This game needs a ticket!</h2>
       <p>Say your sound 5 times to fill it up</p>
       <button class="btn" id="goCharge"><svg viewBox="0 0 64 64" style="width:18px;height:18px;vertical-align:-3px"><path d="M36 4 14 36h13l-5 24 24-34H33Z" fill="#ffd21c" stroke="#f0a800" stroke-width="2.5" stroke-linejoin="round"/><circle cx="30" cy="15" r="2.5" fill="#fff" opacity=".9"/></svg> Fill my ticket!</button>
@@ -78,7 +79,7 @@
 
   <div class="ovl" id="revOvl">
     <div class="ovlCard">
-      <img class="ovlEcho" src="/coach/echo/echo-listening.svg" alt="" />
+      <img class="ovlEcho" src="/assets/crafted/echo-welcome.webp" alt="" />
       <h2 id="revTitle">Say it!</h2>
       <p id="revHearts" style="font-size:26px;"></p>
       <div style="width:56px;height:56px;border-radius:50%;background:linear-gradient(180deg,#ffa05a,#ff8a3d);box-shadow:0 4px 0 #ef6f23,0 0 0 10px rgba(255,138,61,.14);display:flex;align-items:center;justify-content:center;margin:2px 0;"><svg viewBox="0 0 24 24" style="width:24px;height:24px;fill:#fff"><path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v5a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z"/></svg></div>
@@ -92,7 +93,7 @@
       <div class="big endStar" id="endEmoji"><svg viewBox="0 0 64 64" style="width:56px;height:56px"><path d="M32 5l8.2 18.6L60 25.8 44.9 39.2 49.8 59 32 48.4 14.2 59l4.9-19.8L4 25.8l19.8-2.2Z" fill="#ffd21c"/><circle cx="25" cy="21" r="3" fill="#fff" opacity=".85"/></svg></div>
       <h2 id="endTitle">Great round!</h2>
       <p id="endSub"></p>
-      <div class="echoWin"><img src="/coach/echo/echo-celebrate.svg" alt="" /></div>
+      <div class="echoWin"><img src="/assets/crafted/echo-welcome.webp" alt="" /></div>
       <button class="btn blue" id="endCharge">WOOHOO! Next →</button>
       <button class="btn" id="endAgain" style="display:none;"></button>
       <button class="btn ghost" id="endHome">Back to the house</button>
@@ -321,13 +322,7 @@
 
     function draw(){
       ctx.clearRect(0,0,W,H);
-      // dusk scenery: stars, moon, toy-town lights (design 4: Block Stacker)
-      ctx.fillStyle="rgba(255,255,255,.5)"; for(var si=0;si<16;si++){ ctx.fillRect(((si*131)%W),((si*197)%(H*0.5)),2,2); }
-      ctx.fillStyle="#fff4d6"; ctx.beginPath(); ctx.arc(W*0.82,H*0.14,26,0,7); ctx.fill();
-      ctx.fillStyle="rgba(255,244,214,.25)"; ctx.beginPath(); ctx.arc(W*0.82,H*0.14,36,0,7); ctx.fill();
-      ctx.fillStyle="rgba(20,14,50,.45)";
-      for(var bi=0;bi<7;bi++){ var tw=W*0.15, tx=bi*tw*0.98-8, th=H*(0.08+((bi*29)%3)*0.04); ctx.fillRect(tx,H-th,tw,th);
-        ctx.fillStyle="#ffd88a"; for(var wi=0;wi<2;wi++){ ctx.fillRect(tx+6+wi*13, H-th+8, 6,7); } ctx.fillStyle="rgba(20,14,50,.45)"; }
+      // The village painting sits beneath the transparent canvas.
       // parallax stars
       ctx.globalAlpha=0.22; ctx.fillStyle="#bfe0ff"; for(var i=0;i<24;i++){ ctx.fillRect(((i*89)%W),(((i*173)+camY*0.3)%H+H)%H,2,2); } ctx.globalAlpha=1;
       var towerTopY=H-46-stack.length*BH+camY;
@@ -338,18 +333,24 @@
       ctx.fillStyle="rgba(20,14,50,.55)"; ctx.fillRect(0,H-46+camY,W,46);
       // stack
       for(var i=0;i<stack.length;i++){ var b=stack[i], y=H-46-(i+1)*BH+camY;
-        ctx.fillStyle=b.c; rr(b.x,y,b.w,BH-3,7); ctx.fill();
-        ctx.fillStyle="rgba(255,255,255,.18)"; rr(b.x,y,b.w,7,4); ctx.fill();
+        paintBlock(b.x,y,b.w,BH-3,b.c);
       }
       // moving block
       if(playing){
         cur.x+=cur.dir*speed;
         if(cur.x<-8){cur.x=-8;cur.dir=1;} if(cur.x+cur.w>W+8){cur.x=W+8-cur.w;cur.dir=-1;}
         var y=H-46-(stack.length+1)*BH+camY;
-        ctx.fillStyle=cur.c; rr(cur.x,y,cur.w,BH-3,7); ctx.fill();
-        ctx.fillStyle="rgba(255,255,255,.25)"; rr(cur.x,y,cur.w,7,4); ctx.fill();
+        paintBlock(cur.x,y,cur.w,BH-3,cur.c);
       }
       requestAnimationFrame(draw);
+    }
+    // Toy-block finish changes paint only; the landing edges stay exact.
+    function paintBlock(x,y,w,h,color){
+      ctx.save();ctx.shadowColor="rgba(18,10,39,.3)";ctx.shadowBlur=6;ctx.shadowOffsetY=4;
+      ctx.fillStyle=color;rr(x,y,w,h,7);ctx.fill();ctx.shadowColor="transparent";
+      var shine=ctx.createLinearGradient(0,y,0,y+h);shine.addColorStop(0,"rgba(255,255,255,.38)");shine.addColorStop(.45,"rgba(255,255,255,.02)");shine.addColorStop(1,"rgba(44,15,29,.2)");ctx.fillStyle=shine;rr(x,y,w,h,7);ctx.fill();
+      ctx.strokeStyle="rgba(255,244,224,.45)";ctx.lineWidth=1;rr(x+1.5,y+1.5,w-3,h-3,6);ctx.stroke();
+      ctx.strokeStyle="rgba(73,30,19,.09)";ctx.lineWidth=.7;for(var grain=8;grain<h-4;grain+=6){ctx.beginPath();ctx.moveTo(x+7,y+grain);ctx.bezierCurveTo(x+w*.32,y+grain-2,x+w*.6,y+grain+2,x+w-7,y+grain);ctx.stroke();}ctx.restore();
     }
     function rr(x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
     draw();

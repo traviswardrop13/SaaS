@@ -51,8 +51,9 @@
     @keyframes echoHop{0%,100%{transform:translateY(0)}45%{transform:translateY(-14px) rotate(-5deg)}}
     @media (prefers-reduced-motion: reduce){ .endStar,.echoWin img{animation:none;} }
   </style>
+  <link href="/crafted-games.css" rel="stylesheet">
 </head>
-<body>
+<body data-crafted="tiles">
   <div id="app">
     <canvas id="cv"></canvas>
     <div id="top">
@@ -66,7 +67,7 @@
 
   <div class="ovl" id="needOvl">
     <div class="ovlCard">
-      <img class="ovlEcho" src="/coach/echo/echo-star.svg" alt="" />
+      <img class="ovlEcho" src="/assets/crafted/echo-welcome.webp" alt="" />
       <h2 id="needTitle">This game needs a ticket!</h2>
       <p>Say your sound 5 times to fill it up</p>
       <button class="btn" id="goCharge"><svg viewBox="0 0 64 64" style="width:18px;height:18px;vertical-align:-3px"><path d="M36 4 14 36h13l-5 24 24-34H33Z" fill="#ffd21c" stroke="#f0a800" stroke-width="2.5" stroke-linejoin="round"/><circle cx="30" cy="15" r="2.5" fill="#fff" opacity=".9"/></svg> Fill my ticket!</button>
@@ -76,7 +77,7 @@
 
   <div class="ovl" id="revOvl">
     <div class="ovlCard">
-      <img class="ovlEcho" src="/coach/echo/echo-listening.svg" alt="" />
+      <img class="ovlEcho" src="/assets/crafted/echo-welcome.webp" alt="" />
       <h2 id="revTitle">Say it!</h2>
       <p id="revHearts" style="font-size:26px;"></p>
       <div style="width:56px;height:56px;border-radius:50%;background:linear-gradient(180deg,#ffa05a,#ff8a3d);box-shadow:0 4px 0 #ef6f23,0 0 0 10px rgba(255,138,61,.14);display:flex;align-items:center;justify-content:center;margin:2px 0;"><svg viewBox="0 0 24 24" style="width:24px;height:24px;fill:#fff"><path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v5a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z"/></svg></div>
@@ -90,7 +91,7 @@
       <div class="big endStar" id="endEmoji"><svg viewBox="0 0 64 64" style="width:56px;height:56px"><path d="M32 5l8.2 18.6L60 25.8 44.9 39.2 49.8 59 32 48.4 14.2 59l4.9-19.8L4 25.8l19.8-2.2Z" fill="#ffd21c"/><circle cx="25" cy="21" r="3" fill="#fff" opacity=".85"/></svg></div>
       <h2 id="endTitle">Great round!</h2>
       <p id="endSub"></p>
-      <div class="echoWin"><img src="/coach/echo/echo-celebrate.svg" alt="" /></div>
+      <div class="echoWin"><img src="/assets/crafted/echo-welcome.webp" alt="" /></div>
       <button class="btn blue" id="endCharge">WOOHOO! Next →</button>
       <button class="btn" id="endAgain" style="display:none;"></button>
       <button class="btn ghost" id="endHome">Back to the house</button>
@@ -259,8 +260,11 @@
       for(var l=0;l<LANES;l++){
         var kx=l*lw+5, kw=lw-10;
         ctx.fillStyle="rgba(0,0,0,.28)"; rr(kx,hitY-4,kw,H-(hitY-4)+12,10); ctx.fill();
-        ctx.fillStyle="#ffffff"; rr(kx,hitY-8,kw,H-(hitY-8)+12,10); ctx.fill();
-        ctx.fillStyle="rgba(0,0,0,.07)"; ctx.fillRect(kx+kw*0.36,hitY-8,kw*0.28,30);
+        var ivory=ctx.createLinearGradient(kx,0,kx+kw,0);ivory.addColorStop(0,"#dccaab");ivory.addColorStop(.15,"#fff9e9");ivory.addColorStop(.85,"#fff5db");ivory.addColorStop(1,"#cfb98e");
+        ctx.fillStyle=ivory;rr(kx,hitY-8,kw,H-(hitY-8)+12,10);ctx.fill();
+        ctx.strokeStyle="#ffffff99";ctx.lineWidth=2;rr(kx+2,hitY-6,kw-4,H-(hitY-8)+8,8);ctx.stroke();
+        ctx.fillStyle="#26233f";rr(kx+kw*.66,hitY-8,kw*.30,40,5);ctx.fill();
+        ctx.fillStyle="#4d4967";rr(kx+kw*.69,hitY-6,kw*.24,32,3);ctx.fill();
       }
       // screen shake on miss-tap
       var sh=performance.now()-shakeT<180 ? Math.sin(performance.now()/14)*4 : 0;
@@ -270,10 +274,11 @@
         if(t.hit){ t.h-=10; t.y+=5; if(t.h<=6){ tiles.splice(i,1); continue; } }
         if(t.y>H+20){ tiles.splice(i,1); if(playing){ crash(); } continue; } // a missed tile costs a life
         var x=t.lane*lw+6+sh, w=lw-12;
-        ctx.fillStyle=t.hit?"#fff":LCOL[t.lane];
-        rr(x,t.y,w,t.h,14); ctx.fill();
-        ctx.fillStyle="rgba(255,255,255,.25)"; rr(x,t.y,w,10,6); ctx.fill();
-        if(!t.hit){ ctx.fillStyle="rgba(255,255,255,.9)"; ctx.font="800 24px 'Baloo 2',sans-serif"; ctx.textAlign="center"; ctx.fillText("♪",x+w/2,t.y+t.h/2+9); }
+        ctx.save();ctx.shadowColor="rgba(17,8,40,.35)";ctx.shadowOffsetY=4;ctx.shadowBlur=5;
+        ctx.fillStyle=t.hit?"#fff":LCOL[t.lane];rr(x,t.y,w,t.h,14);ctx.fill();ctx.shadowColor="transparent";
+        var tileLight=ctx.createLinearGradient(0,t.y,0,t.y+t.h);tileLight.addColorStop(0,"rgba(255,255,255,.4)");tileLight.addColorStop(.55,"rgba(255,255,255,.02)");tileLight.addColorStop(1,"rgba(39,12,62,.2)");ctx.fillStyle=tileLight;rr(x,t.y,w,t.h,14);ctx.fill();
+        ctx.strokeStyle="rgba(255,249,222,.6)";ctx.lineWidth=1.2;if(t.h>5){rr(x+2,t.y+2,w-4,t.h-4,12);ctx.stroke();}ctx.restore();
+        if(!t.hit){ ctx.fillStyle="rgba(69,31,91,.70)"; ctx.font="800 24px 'Baloo 2',sans-serif"; ctx.textAlign="center"; ctx.fillText("♪",x+w/2,t.y+t.h/2+9); }
       }
       requestAnimationFrame(draw);
     }

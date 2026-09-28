@@ -156,7 +156,7 @@
     <div class="seg" id="seg"></div>
 
     <div class="mascot">
-      <span class="leo" id="leo" style="width:64px;height:64px;border-radius:50%;background:#dff4f7;display:flex;align-items:center;justify-content:center;overflow:hidden;"><img src="/assets/crafted/echo-welcome.png" alt="Echo" style="width:54px;height:54px;object-fit:contain;" /></span>
+      <span class="leo" id="leo" style="width:64px;height:64px;border-radius:50%;background:#dff4f7;display:flex;align-items:center;justify-content:center;overflow:hidden;"><img src="/assets/crafted/echo-welcome.webp" alt="Echo" style="width:54px;height:54px;object-fit:contain;" /></span>
       <div class="bubble2" id="bubble">Hi! I'm Echo!</div>
     </div>
 
@@ -180,7 +180,7 @@
       </div>
       <!-- Clinician setup remains available in browsers, never in the native family app. -->
       <p class="muted" id="slpRow" hidden style="margin-top:10px;font-size:13px;"><a href="#" id="slpLink"><b>I'm a speech-language pathologist</b> — setting Sona up for my caseload →</a></p>
-      <div class="world-scene" aria-hidden="true"><img src="/assets/crafted/echo-welcome.png" alt="" /></div>
+      <div class="world-scene" aria-hidden="true"><img src="/assets/crafted/echo-welcome.webp" alt="" /></div>
       <p class="muted" id="moveRow" style="margin-top:12px;font-size:13px;"><a href="#" id="moveLink">Moving from another phone? Enter your code</a></p>
     </div>
 
@@ -263,7 +263,7 @@
     <!-- The child takes over only when the grown-up is ready. -->
     <div class="step" data-step="achieve">
       <div class="qh" id="handoffTitle" tabindex="-1">Hand the phone to <span id="achName">your child</span>!</div>
-      <div class="world-scene" aria-hidden="true"><img src="/assets/crafted/echo-welcome.png" alt="" /></div>
+      <div class="world-scene" aria-hidden="true"><img src="/assets/crafted/echo-welcome.webp" alt="" /></div>
       <div id="achEmail" class="setup-email" style="display:none;">
         <div style="font-family:'Baloo 2';font-weight:800;font-size:14.5px;">Want <span id="achEmName">your child</span>'s weekly summary?</div>
         <p class="muted" style="font-size:12.5px;margin-top:4px;line-height:1.5;">Get a weekly practice update. Optional.</p>
@@ -472,7 +472,7 @@
           if(Sona.micDenied){
             Sona.micDenied({onClose:function(){nextBtn.focus();}});
             var deniedEcho=document.querySelector("#sonaMicDenied img");
-            if(deniedEcho)deniedEcho.src="/assets/crafted/echo-welcome.png";
+            if(deniedEcho)deniedEcho.src="/assets/crafted/echo-welcome.webp";
             var close=document.getElementById("sonaMicBack"),retry=document.getElementById("sonaMicRetry");
             if(close)close.textContent="Back to setup";
             if(retry)retry.onclick=function(){var dialog=document.getElementById("sonaMicDenied");if(dialog)dialog.remove();requestSetupMic();};
@@ -485,7 +485,7 @@
     else {document.addEventListener("visibilitychange",function(){if(document.hidden)cancelSetupMic();});window.addEventListener("pagehide",cancelSetupMic);}
 
     function mascotMarkup(id) {
-      if (id === "leo") return '<img src="/assets/crafted/echo-welcome.png" alt="Echo" style="width:62px;height:62px;object-fit:contain;display:block;" />';
+      if (id === "leo") return '<img src="/assets/crafted/echo-welcome.webp" alt="Echo" style="width:62px;height:62px;object-fit:contain;display:block;" />';
       return Sona.buddyMarkup(id, 64);
     }
 
@@ -715,7 +715,7 @@
     function showBuild(done){
       var nm=(nameEl.value||draft.childName||"").trim()||"your child",d=document.createElement("div");d.id="obBuild";d.className="show";
       d.setAttribute("role","status");d.setAttribute("aria-live","polite");
-      d.innerHTML='<img src="/assets/crafted/echo-welcome.png" alt="" /><div id="obBuildT"></div><div id="obBuildAnswers"></div>';
+      d.innerHTML='<img src="/assets/crafted/echo-welcome.webp" alt="" /><div id="obBuildT"></div><div id="obBuildAnswers"></div>';
       document.body.appendChild(d);
       document.getElementById("obBuildT").textContent="Building "+nm+"'s "+(draft.mode==="play"?"play list":"sound plan")+"…";
       var age=Number(draft.childAge),ageLabel=age>=2&&age<=4?"Ages 2–4":age>=5&&age<=6?"Ages 5–6":age>=7?"Ages 7+":"Your pace";

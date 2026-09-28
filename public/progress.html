@@ -139,7 +139,7 @@
       content:"";
       position:absolute;left:50%;top:-26px;transform:translateX(-50%);
       width:46px;height:46px;
-      background-image:url("/coach/echo/echo-avatar.svg"),linear-gradient(160deg,#ffd9b0,#ffedd5);
+      background-image:url("/assets/crafted/echo-welcome.webp"),linear-gradient(160deg,#ffd9b0,#ffedd5);
       background-size:32px 32px,cover;background-position:center,center;background-repeat:no-repeat;
       border-radius:50%;box-shadow:0 5px 12px rgba(239,111,35,.22);
       animation:sona-floatY 3.4s ease-in-out infinite;will-change:transform;
@@ -246,39 +246,19 @@
       window.addEventListener("pageshow", function (ev) { if (ev.persisted) check(); });
     })();
   </script>
+  <link rel="stylesheet" href="/crafted-family.css" />
 </head>
-<body>
+<body class="crafted-family family-progress">
   <div class="wrap" style="padding-bottom:96px;">
-    <header class="app">
-      <div class="brand"><span class="leo"><img src="/coach/echo/echo-avatar.svg" alt="Echo" /></span> Sona</div>
-      <div class="pills">
-        <a class="iconbtn" href="/today.html" title="Home" style="display:flex;align-items:center;justify-content:center;"><span class="pic-home"></span></a>
-        <a class="iconbtn" href="/settings.html" title="Settings" style="display:flex;align-items:center;justify-content:center;"><span class="pic-gear"></span></a>
-      </div>
+    <header class="app family-header">
+      <a class="brand" href="/today.html" aria-label="Sona Home"><span class="leo"><img src="/assets/crafted/echo-welcome.webp" alt="" /></span> Sona</a>
+      <a class="family-back" href="/today.html"><span class="pic-home" aria-hidden="true"></span> Back to play</a>
     </header>
+    <nav class="family-tabs" aria-label="Grown-up pages"><a href="/progress.html" aria-current="page">Overview</a><a href="/settings.html">Settings</a></nav>
 
-    <div class="card">
-      <h1 id="title">Progress</h1>
-      <p id="storyLine" style="margin-top:8px;font-weight:800;font-size:15px;color:var(--ink);line-height:1.5;"></p>
-      <p class="muted" style="margin-top:8px;">A practice snapshot, not a clinical assessment — made to share with your child's speech-language pathologist. Recordings stay on this phone unless you choose Share. Practice sounds are checked on this phone.</p>
-      <p class="muted" style="margin-top:9px;font-size:12.5px;font-weight:800;display:flex;align-items:center;gap:8px;"><img src="/coach/echo/echo-avatar.svg" alt="" style="width:22px;height:22px;flex:none;" /> Built with Rachel — licensed speech-language pathologist &amp; Sona co-founder</p>
-      <div class="share-actions noprint">
-        <button class="btn ghost" id="share" type="button">Share this week</button>
-        <button class="btn ghost" id="copySummary" type="button">Copy summary for your SLP</button>
-      </div>
-      <p id="shareStatus" class="muted noprint" role="status" aria-live="polite"></p>
-      <textarea id="summaryText" class="noprint" aria-label="Practice summary to copy" readonly hidden></textarea>
-    </div>
-
-    <div class="card" id="recordingsCard">
-      <a id="listenCard"></a><h2>Listen to their progress <svg viewBox="0 0 64 64" style="width:18px;height:18px;vertical-align:-3px"><g id="ob-headphones"><path d="M14 38v-6a18 18 0 0 1 36 0v6" fill="none" stroke="#7c88e8" stroke-width="6" stroke-linecap="round"></path><rect x="9" y="35" width="12" height="17" rx="5.5" fill="#6270d4"></rect><rect x="43" y="35" width="12" height="17" rx="5.5" fill="#6270d4"></rect><circle cx="13" cy="39" r="2" fill="#fff" opacity=".6"></circle></g></svg></h2>
-      <p class="muted" style="font-size:13px;font-weight:700;">Saved on this phone. Listen to the first and latest saved tries, or choose a clip to share.</p>
-      <div id="recList" style="margin-top:10px;"></div>
-    </div>
-
-
+    <div class="family-child"><img src="/assets/crafted/echo-welcome.webp" alt="" /><h1 id="title">Progress</h1></div>
     <div class="card" id="weekCard">
-      <h2>This week</h2>
+      <h2>Practice this week</h2>
       <div><span id="volReps">0</span> <b>tries this week</b></div>
       <p id="volLast" class="muted" style="font-size:12.5px;margin-top:2px;"></p>
       <p class="muted" style="font-size:13px;font-weight:700;">Days with sound practice count toward the goal you choose.</p>
@@ -290,6 +270,25 @@
         <button class="gbtn" data-g="7">Every day</button>
       </div>
       <p id="clearest"></p>
+    </div>
+
+    <div class="card" id="recordingsCard">
+      <a id="listenCard"></a><h2>Saved tries <svg viewBox="0 0 64 64" style="width:18px;height:18px;vertical-align:-3px"><g id="ob-headphones"><path d="M14 38v-6a18 18 0 0 1 36 0v6" fill="none" stroke="#7c88e8" stroke-width="6" stroke-linecap="round"></path><rect x="9" y="35" width="12" height="17" rx="5.5" fill="#6270d4"></rect><rect x="43" y="35" width="12" height="17" rx="5.5" fill="#6270d4"></rect><circle cx="13" cy="39" r="2" fill="#fff" opacity=".6"></circle></g></svg></h2>
+      <p class="muted" style="font-size:13px;font-weight:700;">Saved on this phone. Listen to the first and latest saved tries, or choose a clip to share.</p>
+      <div id="recList" style="margin-top:10px;"></div>
+    </div>
+
+
+    <div class="card family-summary">
+      <p id="storyLine" style="margin-top:8px;font-weight:800;font-size:15px;color:var(--ink);line-height:1.5;"></p>
+      <p class="muted" style="margin-top:8px;">A practice snapshot, not a clinical assessment — made to share with your child's speech-language pathologist. Recordings stay on this phone unless you choose Share. Practice sounds are checked on this phone.</p>
+      <p class="muted" style="margin-top:9px;font-size:12.5px;font-weight:800;display:flex;align-items:center;gap:8px;"><img src="/assets/crafted/echo-welcome.webp" alt="" style="width:22px;height:22px;flex:none;" /> Built with Rachel — licensed speech-language pathologist &amp; Sona co-founder</p>
+      <div class="share-actions noprint">
+        <button class="btn ghost" id="share" type="button">Share this week</button>
+        <button class="btn ghost" id="copySummary" type="button">Copy summary for your SLP</button>
+      </div>
+      <p id="shareStatus" class="muted noprint" role="status" aria-live="polite"></p>
+      <textarea id="summaryText" class="noprint" aria-label="Practice summary to copy" readonly hidden></textarea>
     </div>
 
     <div class="card" id="accCard">

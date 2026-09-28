@@ -1,0 +1,162 @@
+/* The crafted-world game layer is opt-in. Books and shared speech behavior
+   keep their own styles; game art never captures a tap or changes a hit box. */
+body[data-crafted]{--cream:#fff9ec;--ink:#44270f;--muted:#806446;--crafted-teal:#0799a8;--crafted-teal-dark:#047482;background:#f3e5cb;color:var(--ink);}
+body[data-crafted] #app{background-position:center;background-size:cover;background-repeat:no-repeat;}
+body[data-crafted="slice"] #app,body[data-crafted="practice"].g-slice #app{background-image:url('/assets/crafted/orchard-game.webp');background-color:#efdcab;}
+body[data-crafted="tiles"] #app,body[data-crafted="practice"].g-tiles #app{background-image:url('/assets/crafted/piano-stage.webp');background-color:#302363;}
+body[data-crafted="stack"] #app,body[data-crafted="practice"].g-stack #app{background-image:url('/assets/crafted/moon-village.webp');background-color:#272665;}
+body[data-crafted="feed"] #app{background-image:url('/assets/crafted/picnic-game.webp');background-color:#cbe3a2;}
+body[data-crafted] #close{background:linear-gradient(#fffdf5,#fff6e5);border:1px solid #e9dbc5;color:#987047;box-shadow:0 3px 0 #cbb694,0 5px 10px #38200d20;font-size:24px;flex-shrink:0;}
+body[data-crafted] .hudpill,body[data-crafted] .statPill,body[data-crafted] #sumLbl,body[data-crafted] #tktPill{background:linear-gradient(#fffdf6,#fff8e9);border:1px solid #eadfc9;color:#44270f;box-shadow:0 3px 0 #cbb694,0 5px 12px #38200d18;}
+body[data-crafted] .ovl{background:rgba(27,27,43,.54);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);padding:calc(24px + env(safe-area-inset-top)) 22px calc(24px + env(safe-area-inset-bottom));}
+body[data-crafted] .ovlCard{background:linear-gradient(150deg,#fffdf4,#fff5e2);border:1px solid #fffef7;box-shadow:0 8px 0 #b9987138,0 22px 55px #2e1b1840;border-radius:30px;max-width:350px;}
+body[data-crafted] .ovl p{color:#806446;}
+body[data-crafted] .ovl h2{color:#44270f;}
+body[data-crafted] .ovl h2 b{color:#bf5d24;}
+body[data-crafted] .ovlEcho{object-fit:contain;width:132px;height:132px;top:-75px;filter:drop-shadow(0 9px 8px #70492130);}
+body[data-crafted] .btn,body[data-crafted] .btn.blue,body[data-crafted] #launchBar{background:linear-gradient(#19b6bb,#078e9d);box-shadow:inset 0 2px 0 #ffffff88,0 5px 0 #056c7c,0 8px 15px #16565720;border:1px solid #068a98;color:#fff;text-transform:none;letter-spacing:0;min-height:48px;}
+body[data-crafted] .btn:active,body[data-crafted] .btn.blue:active{box-shadow:inset 0 2px 0 #ffffff88,0 2px 0 #056c7c;}
+body[data-crafted] .btn.ghost,body[data-crafted] button.ghost{background:#f5e9d0;color:#6a4829;border:1px solid #ead9bd;box-shadow:0 3px 0 #c5ac8640;min-height:44px;border-radius:22px;padding:10px 20px;text-transform:none;}
+body[data-crafted] .echoWin{height:120px;overflow:visible;}
+body[data-crafted] .echoWin img{bottom:0;width:132px;height:132px;object-fit:contain;margin-left:-66px;}
+body[data-crafted] #endTitle{background:transparent;box-shadow:none;}
+body[data-crafted] #endTitle:after{display:none;}
+body[data-crafted] #revOvl .ovlCard{padding-top:70px;gap:14px;}
+body[data-crafted] #revOvl .ovlCard>div[style]{width:76px!important;height:76px!important;background:linear-gradient(#22babf,#098b9d)!important;border:3px solid #fff9ea;box-shadow:0 4px 0 #087182,0 0 0 9px #d5eeee!important;flex-shrink:0;}
+body[data-crafted] #revOvl .ovlCard>div[style] svg{width:34px!important;height:34px!important;}
+body[data-crafted] #revListen{color:#087e91;font-weight:900;font-size:16px!important;}
+body[data-crafted] #revDone{width:100%;margin-top:10px;}
+body[data-crafted] #endOvl .ovlCard{padding-top:24px;}
+body[data-crafted] button:focus-visible{outline:3px solid #047482;outline-offset:4px;}
+/* Practice is a single fitted composition: prompt, Echo, earned pieces,
+   microphone. Each has a layout row, so none can fall under a phone edge. */
+body[data-crafted="practice"] #app{display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto minmax(0,1fr) auto auto;padding-bottom:calc(20px + env(safe-area-inset-bottom));--sky-ink:#553116;}
+body[data-crafted="practice"] #app>*{min-width:0;}
+body[data-crafted="practice"].g-stack #app,body[data-crafted="practice"].g-tiles #app{--sky-ink:#fff6e6;}
+body[data-crafted="practice"] #decor{display:none;}
+body[data-crafted="practice"] #top{grid-row:1;padding:calc(14px + env(safe-area-inset-top)) 18px 0;}
+body[data-crafted="practice"] #titleWrap{grid-row:2;padding-top:8px;}
+body[data-crafted="practice"].practice-single #titleWrap{display:none;}
+body[data-crafted="practice"].practice-single #ctxLine{font-size:21px;}
+body[data-crafted="practice"] #top:after{content:"";width:44px;flex-shrink:0;}
+body[data-crafted="practice"] #gameTitle{color:var(--sky-ink);text-shadow:none;transform:none;letter-spacing:0;font-size:23px;}
+body[data-crafted="practice"] #echoCluster{grid-row:3;min-height:0;margin:12px 0 0;justify-content:flex-start;gap:0;}
+body[data-crafted="practice"] #bubble{background:linear-gradient(135deg,#fffdf6,#fff7e8);border:1px solid #fffdf6;border-radius:26px;padding:14px 18px;box-shadow:0 5px 0 #baa2763b,0 9px 20px #573b1e1a;max-width:calc(100% - 56px);width:340px;flex-shrink:0;}
+body[data-crafted="practice"] #bMain{font-size:24px;line-height:1.2;}
+body[data-crafted="practice"] #bTarget{font-size:clamp(32px,10vw,43px);color:#d86a24;}
+body[data-crafted="practice"] #gpState{font-size:14px;color:#765332;margin-top:5px;}
+body[data-crafted="practice"] #gpState b{color:#a65325;}
+body[data-crafted="practice"] #turnStatus{font-size:12px;color:#876b4c;}
+body[data-crafted="practice"] #echoBuddy{min-height:0;flex:1;display:flex;align-items:flex-end;justify-content:center;margin:4px 0 0;max-height:none;}
+body[data-crafted="practice"] #leo{width:clamp(160px,56vw,260px);height:100%;max-height:290px;min-height:0;margin:0;object-fit:contain;object-position:center bottom;filter:drop-shadow(0 12px 12px #64422430);}
+body[data-crafted="practice"] #turtleBtn{order:-1;margin:10px 0 0;min-height:38px;background:#fff9ed;border:1.5px solid #a8825d;box-shadow:0 3px 0 #c6aa8340;flex-shrink:0;color:#664326;}
+body[data-crafted="practice"] #bubble{order:-2;}
+body[data-crafted="practice"] #turtleBtn svg{display:none;}
+body[data-crafted="practice"] #reveals{grid-row:4;position:relative;inset:auto;transform:none;margin:0 16px 12px;align-self:end;}
+body[data-crafted="practice"] #bottom{grid-row:5;position:relative;inset:auto;margin:0 22px;gap:4px;align-self:end;}
+body[data-crafted="practice"] #micWrap{width:84px;height:84px;}
+body[data-crafted="practice"] #micBtn{width:76px;height:76px;border:3px solid #fff7e7;background:linear-gradient(#c4cfc4,#8f9e91);box-shadow:0 4px 0 #667b6c,0 6px 14px #304f382e;}
+body[data-crafted="practice"] #micBtn.go{background:linear-gradient(#21bbc1,#078f9f);box-shadow:inset 0 2px 0 #c8ffffaa,0 4px 0 #056c7c,0 7px 16px #215d6130;}
+body[data-crafted="practice"] #micBtn svg{width:38px;height:38px;}
+body[data-crafted="practice"] #replayLabel{font-size:12px;color:var(--sky-ink);text-shadow:0 1px 3px #fff9ed99;}
+body[data-crafted="practice"] .path-dot{background:#fff7e8;border-color:#a28254;}
+body[data-crafted="practice"] .path-dot.done{background:#0ba5ae;border-color:#087c87;}
+body[data-crafted="practice"] .path-dot.current{background:#fff9ed;border-color:#098d9a;box-shadow:0 3px 0 #81684730;}
+body[data-crafted="practice"] #stand .awn{height:15px;background:linear-gradient(#edba73,#c98b43);border:1px solid #b78443;border-radius:7px 7px 2px 2px;width:min(86vw,350px);box-shadow:inset 0 2px #fff1c680,0 3px 2px #69371930;}
+body[data-crafted="practice"] #stand .cnt{width:min(84vw,340px);height:76px;background:repeating-linear-gradient(3deg,#ce9457 0 2px,#d9a565 3px 19px,#c38b4a 20px 21px);border:2px solid #b2783e;border-top:0;border-radius:0 0 8px 8px;box-shadow:inset 0 2px 8px #7d492c30,0 7px 0 #996335,0 11px 13px #764c2338;}
+body[data-crafted="practice"] #stand .well{border-radius:50%;width:48px;height:48px;border:2px dashed #efd2a1;background:#7d4c242b;box-shadow:inset 0 3px 4px #70411b30;}
+body[data-crafted="practice"] #stand .well .fr{bottom:0;}
+body[data-crafted="practice"] #keyRow .key{height:60px;}
+body[data-crafted="practice"] #stackCol .blk{height:27px;box-shadow:inset 0 2px 0 #ffffff77,inset 0 -3px 0 #45284b22,0 3px 4px #2c164632;}
+body[data-crafted="practice"] #stackCol .plat{height:12px;}
+body[data-crafted="practice"] #roadCol{gap:5px;}
+body[data-crafted="practice"] #roadCol .slab{height:22px;}
+body[data-crafted="practice"] #balloonBox{width:125px;}
+body[data-crafted="practice"] #launchBar{padding:12px 18px;font-size:18px;}
+body[data-crafted="practice"] #runOvl{background:linear-gradient(#e9f3e7,#fff4dd);}
+/* Feed Echo's four choices stay large and visible. The picnic is scenery;
+   the live plate and word pictures remain the actual game controls. */
+body[data-crafted="feed"]{height:100%;overflow:hidden;}
+body[data-crafted="feed"] #app{height:100dvh;min-height:0;display:grid;grid-template-rows:auto minmax(230px,42%) minmax(0,1fr);gap:12px;padding:calc(14px + env(safe-area-inset-top)) 16px calc(20px + env(safe-area-inset-bottom));overflow:hidden;}
+body[data-crafted="feed"] #top{gap:8px;}
+body[data-crafted="feed"] #ttl{border:0;box-shadow:none;background:#fff8e6d9;font-size:14px;padding:10px;white-space:nowrap;}
+body[data-crafted="feed"] #spacer{min-width:0;}
+body[data-crafted="feed"] #starPill{padding:9px 12px;}
+body[data-crafted="feed"] #stage{min-height:0;padding:0;justify-content:space-between;}
+body[data-crafted="feed"] #bubble{background:linear-gradient(140deg,#fffdf4,#fff6e5);border-radius:25px;padding:13px 17px;border:1px solid #fffbe9;box-shadow:0 5px 0 #99785025,0 10px 24px #54371620;z-index:3;}
+body[data-crafted="feed"] #bubble:after{background:#fff7e6;}
+body[data-crafted="feed"] #bMain{font-size:20px;}
+body[data-crafted="feed"] #bMain b{font-size:29px;}
+body[data-crafted="feed"] #bSub{font-size:12px;margin-top:3px;}
+body[data-crafted="feed"] #echoSpot{margin:0;min-height:0;}
+body[data-crafted="feed"] #echo{width:clamp(116px,19dvh,180px);height:clamp(116px,19dvh,180px);}
+body[data-crafted="feed"] #mound{display:none;}
+body[data-crafted="feed"] #plate{margin-top:-4px;width:min(76vw,320px);height:45px;background:linear-gradient(#fffef7,#fff9e7);box-shadow:0 5px 0 #c4b084,0 8px 14px #6a492d30,inset 0 -4px 0 #ece0c5;}
+body[data-crafted="feed"] #grid{margin:0;gap:11px;align-content:stretch;grid-template-rows:1fr 1fr;min-height:0;}
+body[data-crafted="feed"] .cardBtn{min-height:0;padding:9px 7px 7px;border:1px solid #fffdf2;border-radius:23px;background:linear-gradient(145deg,#fffdf4,#fff1d8);box-shadow:0 5px 0 #cfaf8170,0 7px 15px #74482324;gap:3px;overflow:hidden;}
+body[data-crafted="feed"] .cardBtn .e{width:clamp(68px,14dvh,125px);height:clamp(68px,14dvh,125px);background:none;}
+body[data-crafted="feed"] .cardBtn .e img,body[data-crafted="feed"] .cardBtn .e svg{width:100%!important;height:100%!important;max-width:100%;max-height:100%;}
+body[data-crafted="feed"] .cardBtn .e>span{font-size:70px!important;}
+body[data-crafted="feed"] .cardBtn .w{font-size:21px;line-height:1.15;}
+body[data-crafted="feed"] #heard{z-index:4;top:auto;bottom:38px;right:0;}
+body[data-crafted="hoops"] #app{background:linear-gradient(#fff9ec,#f5e6cb);}
+body[data-crafted="hoops"] #stageWrap{border:5px solid #fff9ea;border-radius:27px;box-shadow:0 5px 0 #c5a47b,0 13px 22px #734b2220;}
+body[data-crafted="hoops"] #turnPanel{background:linear-gradient(#fffdf5,#fff3df);border:1px solid #e5d2b3;border-radius:25px;box-shadow:0 4px 0 #bea17b55;}
+body[data-crafted="hoops"] #hear{background:#e0f1eb;color:#087d86;}
+body[data-crafted="hoops"] #startBtn,body[data-crafted="hoops"] #micBtn{background:linear-gradient(#22b8bd,#078d9a);box-shadow:0 4px 0 #086d78;}
+body[data-crafted="hoops"] #echoWrap{background:#e7f2e7;}
+body[data-crafted="hoops"] #dots i.on{background:#129fa6;}
+@media(max-height:700px){
+ body[data-crafted="practice"] #app{padding-bottom:calc(16px + env(safe-area-inset-bottom));}
+ body[data-crafted="practice"] #titleWrap{padding-top:4px;}
+ body[data-crafted="practice"] #gameTitle{font-size:20px;}
+ body[data-crafted="practice"] #echoCluster{margin-top:7px;}
+ body[data-crafted="practice"] #bubble{padding:9px 13px;}
+ body[data-crafted="practice"] #bMain{font-size:21px;}
+ body[data-crafted="practice"] #bTarget{font-size:30px;}
+ body[data-crafted="practice"] #turtleBtn{margin-top:7px;min-height:34px;font-size:12px;padding:5px 14px;}
+ body[data-crafted="practice"] #micWrap{width:66px;height:66px;}
+ body[data-crafted="practice"] #micBtn{width:60px;height:60px;}
+ body[data-crafted="practice"] #micBtn svg{width:31px;height:31px;}
+ body[data-crafted="practice"] #reveals{margin-bottom:9px;}
+ body[data-crafted="practice"] #stand .cnt{height:61px;}
+ body[data-crafted="practice"] #stand .well{width:41px;height:41px;}
+ body[data-crafted="practice"] #stand .well .fr{width:39px;height:39px;}
+ body[data-crafted="practice"] #stackCol .blk{height:21px;}
+ body[data-crafted="practice"] #keyRow .key{height:47px;}
+ body[data-crafted="practice"] #balloonBox{width:100px;}
+ body[data-crafted="feed"] #app{grid-template-rows:auto minmax(205px,43%) minmax(0,1fr);gap:9px;padding-left:12px;padding-right:12px;}
+ body[data-crafted="feed"] #bubble{padding:9px 13px;}
+ body[data-crafted="feed"] #bMain{font-size:17px;}body[data-crafted="feed"] #bMain b{font-size:25px;}
+ body[data-crafted="feed"] #echo{width:110px;height:110px;}
+ body[data-crafted="feed"] #plate{height:35px;}
+ body[data-crafted="feed"] .cardBtn .e{width:57px;height:57px;}
+ body[data-crafted="feed"] .cardBtn .w{font-size:18px;}
+ body[data-crafted="feed"] #ttl{font-size:12px;padding:9px 6px;}
+ body[data-crafted] .ovlCard{gap:8px;}
+ body[data-crafted] #revOvl .ovlCard{padding-top:52px;gap:10px;}
+ body[data-crafted] .ovlEcho{width:108px;height:108px;top:-64px;}
+}
+@media(orientation:landscape) and (max-height:520px){
+ body[data-crafted="practice"],body[data-crafted="feed"]{height:auto;overflow:auto;}
+ body[data-crafted="practice"] #app{min-height:700px;overflow:visible;}
+ body[data-crafted="feed"] #app{min-height:680px;height:auto;grid-template-rows:auto 280px 280px;overflow:visible;}
+}
+@media(prefers-reduced-motion:reduce){body[data-crafted] .ovlEcho,body[data-crafted] .echoWin img{animation:none;}}
+
+body[data-crafted="run"] #app,body[data-crafted="practice"].g-run #app{background-image:url('/assets/crafted/sprint-lane.webp');background-color:#a8bdd0;background-size:100% 100%;}
+body[data-crafted="glide"] #app,body[data-crafted="practice"].g-glide #app{background-image:url('/assets/crafted/glide-countryside.webp');background-color:#a8d2ed;}
+body[data-crafted="run"] #tapHint,body[data-crafted="glide"] #tapHint{background:#fff9eae6;color:#52371d;bottom:calc(20px + env(safe-area-inset-bottom));left:16px;right:16px;width:auto;border:1px solid #eadac0;border-radius:16px;padding:10px 12px;text-shadow:none;box-shadow:0 3px 0 #b2946355;}
+
+@media(max-width:370px){
+ body[data-crafted="run"] #top{gap:6px;padding-left:10px;padding-right:10px;}
+ body[data-crafted="run"] .hudpill{padding:9px 9px;gap:4px;font-size:14px;flex-shrink:0;}
+ body[data-crafted="run"] #hudspacer{display:none;}
+ body[data-crafted="run"] #timer{margin-left:auto;letter-spacing:0;}
+}
+
+/* Illustrated word atlas cells are presentation only; the parent buttons keep
+   their original spoken labels, targets, and touch areas. */
+.crafted-word{display:inline-flex;flex:none;align-items:center;justify-content:center;vertical-align:middle;}
+.crafted-word-crop{display:block;flex:none;background-repeat:no-repeat;}
+body[data-crafted="feed"] .cardBtn .e>.crafted-word{width:100%!important;height:100%!important;}

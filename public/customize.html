@@ -43,11 +43,12 @@
     .opt.bd .em{width:100%;height:46px;border-radius:12px;font-size:22px;}
     .opt.none-outfit .em{color:var(--muted);font-size:13px;font-weight:800;font-family:"Baloo 2";}
   </style>
+  <link rel="stylesheet" href="/crafted-family.css" />
 </head>
-<body>
+<body class="crafted-family family-customize">
   <div class="wrap">
     <header class="app">
-      <div class="brand"><span class="leo">🦜</span> Make it yours</div>
+      <div class="brand"><span class="leo"><img src="/assets/crafted/echo-welcome.webp" alt="" /></span> Make it yours</div>
       <div class="pills">
         <a class="iconbtn" href="/today.html" title="Home" style="display:flex;align-items:center;justify-content:center;">✕</a>
       </div>
@@ -57,7 +58,7 @@
       <div id="scene"></div>
       <div class="hero">
         <span id="heroOutfit"></span>
-        <span id="heroChar">🦜</span>
+        <span id="heroChar"></span>
         <span id="heroName">Echo</span>
       </div>
     </div>
@@ -72,7 +73,7 @@
     <div class="grid" id="backdrops"></div>
 
     <a class="btn" id="done" href="/map.html" style="margin-top:22px;">Done&nbsp;&nbsp;✓</a>
-    <p class="muted" style="text-align:center;margin-top:12px;font-size:13px;">More buddies coming soon! 🐸🐻🦊</p>
+    <p class="muted" style="text-align:center;margin-top:12px;font-size:13px;">More buddies coming soon!</p>
   </div>
 
   <script src="/sona.js"></script>
@@ -86,15 +87,42 @@
         previewEl = document.getElementById("preview"),
         sceneEl = document.getElementById("scene");
 
+    // Page-local artwork keeps the saved choices and shared catalog intact.
+    function outfitArt(id) {
+      var paths = {
+        none:'<circle cx="32" cy="32" r="18" fill="none" stroke="#c8b69b" stroke-width="3"/><path d="m20 44 24-24" stroke="#c8b69b" stroke-width="3"/>',
+        crown:'<path d="m9 19 13 9L32 12l10 16 13-9-5 30H14Z" fill="#edc665" stroke="#bc8f35" stroke-width="2"/><rect x="14" y="45" width="36" height="8" rx="3" fill="#dba844"/><circle cx="32" cy="35" r="4" fill="#37a5a6"/><circle cx="11" cy="17" r="3" fill="#ffdf88"/><circle cx="32" cy="10" r="3" fill="#ffdf88"/><circle cx="53" cy="17" r="3" fill="#ffdf88"/>',
+        tophat:'<ellipse cx="32" cy="48" rx="27" ry="7" fill="#44365c"/><path d="M16 13q16-5 32 0l-3 32q-13 5-26 0Z" fill="#615072"/><path d="M18 35q14 4 28 0v9q-14 5-28 0Z" fill="#cca355"/><ellipse cx="32" cy="13" rx="16" ry="4" fill="#887197"/>',
+        cap:'<path d="M10 39v-6a22 22 0 0 1 44 0v6Z" fill="#3b9c9e"/><path d="M32 11c-8 6-10 15-10 28M32 11c8 6 10 15 10 28" stroke="#6ec1b9" stroke-width="2" fill="none"/><path d="M10 39c20-7 37-2 48 7-18 5-33 7-48-7Z" fill="#207980"/><circle cx="32" cy="11" r="3" fill="#247c81"/>',
+        shades:'<path d="M5 23h21l-2 16q-8 9-16 0ZM38 23h21l-3 16q-8 9-16 0Z" fill="#526477" stroke="#384757" stroke-width="3"/><path d="M26 28q6-5 12 0M1 23h4M59 23h4" stroke="#384757" stroke-width="4" fill="none"/><path d="m11 28 7 1m27-1 7 1" stroke="#a4c5cf" stroke-width="3" stroke-linecap="round"/>',
+        bow:'<path d="M30 30C10 10 4 17 10 42c4 7 12 1 20-7ZM34 30c20-20 26-13 20 12-4 7-12 1-20-7Z" fill="#de7d89" stroke="#b35772" stroke-width="2"/><rect x="26" y="25" width="12" height="15" rx="4" fill="#ed9fa5"/><path d="m26 34-7 17 12-5 4-10m4-2 7 17-12-5-4-10" fill="#ca6980"/>',
+        party:'<path d="m32 8 22 44H10Z" fill="#d5b0df" stroke="#a37cb6" stroke-width="2"/><path d="m24 24 14-5 6 11-27 9m-3 8 35-6" stroke="#faf0ce" stroke-width="6"/><ellipse cx="32" cy="52" rx="23" ry="4" fill="#9b75b1"/><circle cx="32" cy="7" r="5" fill="#f0cc6b"/>'
+      };
+      return '<svg viewBox="0 0 64 64" aria-hidden="true">' + (paths[id] || paths.none) + '</svg>';
+    }
+    function backdropArt(id) {
+      var cloud='<g fill="#fffaf0" opacity=".86"><ellipse cx="72" cy="47" rx="31" ry="13"/><circle cx="65" cy="39" r="17"/><circle cx="88" cy="44" r="13"/><ellipse cx="318" cy="68" rx="35" ry="12"/><circle cx="305" cy="60" r="17"/></g>';
+      var scenes={
+        sky: '<circle cx="318" cy="39" r="25" fill="#edc968"/>'+cloud+'<path d="M0 221Q95 181 203 214T400 201v39H0Z" fill="#a1cda8"/>',
+        jungle: '<path d="M0 240V82Q43 36 42 0h30Q49 73 20 106v134M400 240V72Q357 32 360 0h-25q14 77 45 99v141" fill="#9b8452"/><g fill="#55936d"><ellipse cx="38" cy="33" rx="67" ry="19" transform="rotate(-24 38 33)"/><ellipse cx="11" cy="74" rx="53" ry="17" transform="rotate(24 11 74)"/><ellipse cx="378" cy="33" rx="68" ry="19" transform="rotate(29 378 33)"/><ellipse cx="403" cy="76" rx="54" ry="18" transform="rotate(-25 403 76)"/></g><path d="M0 220q50-54 87 0 35-32 62 2 55-36 96-1 69-45 155-3v22H0" fill="#76b986"/>',
+        forest: cloud+'<g fill="#679b74"><path d="m48 24-44 107h24L0 197h96l-29-66h25Z"/><path d="m345 18-48 110h22l-29 64h110l-33-64h27Z"/></g><g fill="#a7c2a1"><path d="m128 75-31 73h15l-19 49h72l-21-49h17ZM265 49l-42 104h19l-22 49h92l-25-49h19Z"/></g><path d="M0 219q100-30 200 0t200 0v21H0Z" fill="#90b876"/>',
+        mountain: cloud+'<path d="m-28 227 131-165 107 165 105-195 125 195v13H0Z" fill="#a7bec9"/><path d="m69 105 34-43 30 38-21-9-15 13-14-11Zm211-15 35-58 32 52-22-11-17 15-10-12Z" fill="#fffaf0"/><path d="M0 226 90 145l100 81 95-71 115 73v12H0Z" fill="#6e9a92"/>',
+        space: '<rect width="400" height="240" fill="#4c4a73"/><g fill="#fff0bb"><circle cx="36" cy="32" r="2"/><circle cx="176" cy="23" r="2"/><circle cx="265" cy="49" r="2"/><circle cx="110" cy="83" r="2"/><circle cx="338" cy="160" r="2"/><circle cx="209" cy="189" r="2"/></g><circle cx="322" cy="61" r="29" fill="#dcbaa1"/><ellipse cx="322" cy="61" rx="45" ry="9" fill="none" stroke="#eee0b7" stroke-width="5" transform="rotate(-24 322 61)"/><circle cx="65" cy="185" r="19" fill="#8e98bf"/>',
+        beach: cloud+'<circle cx="323" cy="34" r="24" fill="#edca68"/><path d="M0 131q100-12 201 2t199 0v107H0Z" fill="#88c5c7"/><path d="M0 151q100-12 201 2t199 0M0 174q100-12 201 2t199 0" fill="none" stroke="#d0ede5" stroke-width="4"/><path d="M0 210q185-30 400 4v26H0Z" fill="#edd6a5"/><path d="m57 214 8-103" stroke="#a6845b" stroke-width="9"/><path d="M65 110Q20 67 9 118q26-20 56-8Zm0 0q19-53 54-20-33-1-54 20Zm0 0q41-15 56 31-29-25-56-31Z" fill="#66996f"/>'
+      };
+      return '<svg viewBox="0 0 400 240" preserveAspectRatio="xMidYMid slice" aria-hidden="true">'+(scenes[id]||scenes.sky)+'</svg>';
+    }
+
     function renderPreview() {
       var c = Sona.characterById(sel.character),
           o = Sona.outfitById(sel.outfit),
           b = Sona.backdropById(sel.backdrop);
       heroChar.innerHTML = Sona.buddyMarkup(sel.character, 132);
       heroName.textContent = c.name;
-      heroOutfit.textContent = o.emoji || "";
+      heroOutfit.innerHTML = sel.outfit === "none" ? "" : outfitArt(sel.outfit);
+      heroOutfit.setAttribute("data-outfit",sel.outfit);
       previewEl.style.background = b.css;
-      sceneEl.innerHTML = (b.scene || []).map(function (e, i) { return '<span class="s' + i + '">' + e + '</span>'; }).join("");
+      sceneEl.innerHTML = backdropArt(sel.backdrop);
     }
 
     function persist() { Sona.saveProfile({ character: sel.character, outfit: sel.outfit, backdrop: sel.backdrop }); }
@@ -123,16 +151,16 @@
         var owned = true; // beta: everything's unlocked — just pick what you like
         var el = document.createElement("div");
         el.className = "opt" + render.cls(it) + (sel[key] === it.id ? " on" : "");
-        el.innerHTML = render.inner(it) + (owned ? "" : '<span class="price">🪙 ' + it.cost + '</span>');
+        el.innerHTML = render.inner(it) + (owned ? "" : '<span class="price">'+Sona.icon('coin',12)+' ' + it.cost + '</span>');
         el.onclick = function () {
           if (owned) { if (window.Sona) Sona.sfx.tap(); sel[key] = it.id; host.querySelectorAll(".opt").forEach(function (n) { n.classList.remove("on"); }); el.classList.add("on"); renderPreview(); persist(); return; }
           if (coins >= it.cost) {
-            if (confirm("Unlock " + it.name + " for " + it.cost + " 🪙?")) {
+            if (confirm("Unlock " + it.name + " for " + it.cost + " coins?")) {
               Sona.spendCoins(it.cost); Sona.addOwned(kind, it.id); coins = Sona.getCoins(); setCoinBal();
               if (window.Sona) { Sona.sfx.reward(); Sona.confetti({ count: 90, duration: 1600 }); }
               sel[key] = it.id; persist(); buildShop(elId, items, key, kind, render); renderPreview();
             }
-          } else { alert("You need " + (it.cost - coins) + " more 🪙 — practice to earn coins!"); }
+          } else { alert("You need " + (it.cost - coins) + " more coins — practice to earn coins!"); }
         };
         host.appendChild(el);
       });
@@ -141,12 +169,12 @@
     buildChars();
     buildShop("outfits", Sona.OUTFITS, "outfit", "outfits", {
       cls: function (it) { return it.id === "none" ? " none-outfit" : ""; },
-      inner: function (it) { return '<span class="em">' + (it.emoji || "None") + '</span><span class="nm">' + it.name + '</span>'; },
+      inner: function (it) { return '<span class="em">' + outfitArt(it.id) + '</span><span class="nm">' + it.name + '</span>'; },
     });
     buildShop("backdrops", Sona.BACKDROPS, "backdrop", "backdrops", {
       cls: function () { return " bd"; },
       inner: function (it) {
-        var sc = (it.scene || [])[0] || "";
+        var sc = backdropArt(it.id);
         return '<span class="em" style="background:' + it.css + ';display:flex;align-items:center;justify-content:center;">' + sc + '</span><span class="nm">' + it.name + '</span>';
       },
     });

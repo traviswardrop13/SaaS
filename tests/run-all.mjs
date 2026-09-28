@@ -61,6 +61,7 @@ const SUITES = [
   "slpcommunitytest.mjs", // shared conversations, draft recovery and mobile layout
   "slpfeedbacktest.mjs", // authenticated feedback and call requests; confirmed receipt only
   "slpdesigntest.mjs", // SLP workspace: filters, failure recovery, bulk assignments, mobile layout
+  "craftedarttest.mjs", // every Feed word has loadable, usable illustrated artwork
   "arttest.mjs",   // ART1: every sticker renders, fits its box and stays in the safe band
 ];
 
