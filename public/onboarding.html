@@ -149,6 +149,7 @@
     body.keyboard-open .world-scene,body.keyboard-open #handoffTitle{display:none;}
     @media(max-height:700px){.ob-world .world-scene{max-height:150px;}.ob-world .world-scene img{width:130px;height:130px;}.ob-world .qh{font-size:24px;}.mascot{margin-bottom:10px;}#leo{width:48px!important;height:48px!important;}.bubble2{padding:9px 12px;}#obSounds .sound{min-height:44px;padding:4px;font-size:27px;}.sound-help{margin-top:8px;}}
   </style>
+  <link rel="stylesheet" href="/onboarding-crafted.css" />
 </head>
 <body class="ob-world" data-setup-screen="welcome">
   <div class="ob">
@@ -171,9 +172,12 @@
          up for a caseload, and a family who already paid or already has a
          save somewhere else. -->
     <div class="step on" data-step="welcome">
-      <div class="qh">Let's make talking fun!</div>
-      <p class="muted">Little games. Lots to say.</p>
-      <p class="muted" id="howLong" style="margin-top:12px;font-weight:800;color:var(--ink);">A quick setup, then it’s playtime.</p>
+      <div class="welcome-brand" aria-label="Sona">Sona<span>A little world of play</span></div>
+      <div class="welcome-copy">
+        <h1 class="qh">A little practice.<br>A world of play.</h1>
+        <p class="muted">Find your sound. Play with Echo.</p>
+        <p class="muted" id="howLong">A quick setup, then it’s playtime.</p>
+      </div>
       <!-- Clinician setup remains available in browsers, never in the native family app. -->
       <p class="muted" id="slpRow" hidden style="margin-top:10px;font-size:13px;"><a href="#" id="slpLink"><b>I'm a speech-language pathologist</b> — setting Sona up for my caseload →</a></p>
       <div class="world-scene" aria-hidden="true"><img src="/coach/echo/echo-listening.svg" alt="" /></div>
