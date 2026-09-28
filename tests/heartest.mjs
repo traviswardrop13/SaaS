@@ -257,55 +257,102 @@ ok('"cat" does not fuzzy-match "car"... it does not need to — it has no R; but
 // compiled it, nothing registered it, and Info.plist had no speech text (iOS
 // closes an app that asks for the speech permission without one). The script
 // does all three on the Mac's generated (git-ignored) project; here it runs on
-// a stand-in for that project.
+// stand-ins for that project. Its first version assumed MainViewController was
+// in the app folder; on Travis's Mac it was not (28 Sep 2026), so it now reads
+// which controller the storyboard loads, and where the project compiles files.
 {
   const script = path.join(ROOT, "../scripts/install-ios-speech.py");
   const plugin = readFileSync(ROOT + "/../plugins/sona-speech/ios/Sources/SonaSpeechPlugin/SonaSpeechPlugin.swift", "utf8");
-  const fresh = () => {
+  const board = (cls) => '<?xml version="1.0" encoding="UTF-8"?>\n<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" initialViewController="BYZ-38-t0r">\n    <scenes>\n        <scene sceneID="tne-QT-ifu">\n            <objects>\n                <viewController id="BYZ-38-t0r" ' + cls + ' sceneMemberID="viewController"/>\n            </objects>\n        </scene>\n    </scenes>\n</document>\n';
+  const CAP = 'customClass="CAPBridgeViewController" customModule="Capacitor"';
+  const MAIN = 'customClass="MainViewController" customModule="App" customModuleProvider="target"';
+  const fresh = (cls) => {
     const dir = mkdtempSync(path.join(tmpdir(), "sona-speech-"));
     const app = path.join(dir, "App", "App");
-    mkdirSync(app, { recursive: true });
+    mkdirSync(path.join(app, "Base.lproj"), { recursive: true });
+    mkdirSync(path.join(dir, "App", "App.xcodeproj"), { recursive: true });
     writeFileSync(path.join(app, "AppDelegate.swift"), "import UIKit\nimport Capacitor\n\n@UIApplicationMain\nclass AppDelegate: UIResponder, UIApplicationDelegate {\n    var window: UIWindow?\n}\n");
     writeFileSync(path.join(app, "Info.plist"), '<?xml version="1.0" encoding="UTF-8"?>\n<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">\n<plist version="1.0"><dict><key>CFBundleName</key><string>Sona</string></dict></plist>\n');
-    writeFileSync(path.join(app, "MainViewController.swift"), "import UIKit\nimport Capacitor\n\nclass MainViewController: CAPBridgeViewController {\n    override func capacitorDidLoad() {\n        bridge?.registerPluginInstance(SonaAudioPlugin())\n    }\n}\n");
-    return { dir, app };
+    writeFileSync(path.join(app, "Base.lproj", "Main.storyboard"), board(cls));
+    writeFileSync(path.join(dir, "App", "App.xcodeproj", "project.pbxproj"), "504EC3071FED79650016851F /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; };\n");
+    return { dir, app, file: (f) => path.join(app, f) };
   };
-  const run = (app) => spawnSync("python3", [script, app], { encoding: "utf8" });
-  const { dir, app } = fresh();
-  const first = run(app);
-  const delegate = readFileSync(path.join(app, "AppDelegate.swift"), "utf8");
-  const control = readFileSync(path.join(app, "MainViewController.swift"), "utf8");
-  const plist = readFileSync(path.join(app, "Info.plist"), "utf8");
-  ok("the installer runs", first.status === 0, first.stderr || first.stdout);
-  ok("…compiles the plugin through AppDelegate.swift, whole and unchanged",
-    delegate.includes("// BEGIN SONA SPEECH PLUGIN\n" + plugin.trimEnd() + "\n// END SONA SPEECH PLUGIN"));
-  ok("…registers it once, beside SonaAudio",
-    (control.match(/registerPluginInstance\(SonaSpeechPlugin\(\)\)/g) || []).length === 1
-    && /registerPluginInstance\(SonaAudioPlugin\(\)\)\n\s+bridge\?\.registerPluginInstance\(SonaSpeechPlugin\(\)\)/.test(control));
-  ok("…and adds the speech-permission text, which says it stays on the phone",
-    /<key>NSSpeechRecognitionUsageDescription<\/key>\s*<string>[^<]*on the phone[^<]*no audio is sent anywhere/.test(plist), plist);
-  const again = run(app);
-  ok("running it again changes nothing",
-    again.status === 0 && /already installed/.test(again.stdout)
-    && readFileSync(path.join(app, "AppDelegate.swift"), "utf8") === delegate
-    && readFileSync(path.join(app, "MainViewController.swift"), "utf8") === control, again.stdout + again.stderr);
-  rmSync(dir, { recursive: true, force: true });
+  const run = (app, ...flags) => spawnSync("python3", [script, app, ...flags], { encoding: "utf8" });
+  const text = (f) => readFileSync(f, "utf8");
+  const pluginBlock = (d) => text(d).includes("// BEGIN SONA SPEECH PLUGIN\n" + plugin.trimEnd() + "\n");
 
-  // two copies of one plugin class cannot both compile: it stops instead
-  const pk = fresh();
-  mkdirSync(path.join(pk.dir, "App", "CapApp-SPM"), { recursive: true });
-  writeFileSync(path.join(pk.dir, "App", "CapApp-SPM", "Package.swift"), '.package(name: "SonaSpeech", path: "../../../node_modules/sona-speech")');
-  const packaged = run(pk.app);
-  ok("it stops, changing nothing, when the plugin is already in the app as a package",
-    packaged.status !== 0 && /already in the app as a package/.test(packaged.stderr)
-    && !readFileSync(path.join(pk.app, "AppDelegate.swift"), "utf8").includes("SONA SPEECH"), packaged.stderr);
-  rmSync(pk.dir, { recursive: true, force: true });
-  const cp = fresh();
-  writeFileSync(path.join(cp.app, "SonaSpeechPlugin.swift"), plugin);
-  const copied = run(cp.app);
-  ok("…or already compiled from its own Swift file",
-    copied.status !== 0 && /already compiled from/.test(copied.stderr), copied.stderr);
-  rmSync(cp.dir, { recursive: true, force: true });
+  // A. Capacitor's own controller, no MainViewController anywhere (Travis's Mac)
+  {
+    const p = fresh(CAP);
+    const check = run(p.app, "--check");
+    ok("--check reports and writes nothing", check.status === 0 && /nothing written/.test(check.stdout)
+      && !text(p.file("AppDelegate.swift")).includes("SONA SPEECH"), check.stdout + check.stderr);
+    const first = run(p.app);
+    const delegate = text(p.file("AppDelegate.swift")), sb = text(p.file("Base.lproj/Main.storyboard"));
+    ok("with Capacitor's own controller: the installer runs", first.status === 0, first.stderr || first.stdout);
+    ok("…compiles the plugin through AppDelegate.swift, whole and unchanged", pluginBlock(p.file("AppDelegate.swift")));
+    ok("…and a SonaBridgeViewController that registers it",
+      /@objc\(SonaBridgeViewController\)\s*class SonaBridgeViewController: CAPBridgeViewController \{\s*override func capacitorDidLoad\(\) \{\s*bridge\?\.registerPluginInstance\(SonaSpeechPlugin\(\)\)/.test(delegate));
+    ok("…and points the storyboard at it, by its Objective-C name (no module)",
+      /<viewController id="BYZ-38-t0r" customClass="SonaBridgeViewController" sceneMemberID="viewController"\/>/.test(sb), sb);
+    ok("…and adds the speech-permission text, which says it stays on the phone",
+      /<key>NSSpeechRecognitionUsageDescription<\/key>\s*<string>[^<]*on the phone[^<]*no audio is sent anywhere/.test(text(p.file("Info.plist"))));
+    const again = run(p.app);
+    ok("…and running it again changes nothing",
+      again.status === 0 && /already installed/.test(again.stdout) && text(p.file("AppDelegate.swift")) === delegate
+      && text(p.file("Base.lproj/Main.storyboard")) === sb, again.stdout + again.stderr);
+    rmSync(p.dir, { recursive: true, force: true });
+  }
+  // B. MainViewController in the app folder (native/README.md, "Copy items if needed")
+  {
+    const p = fresh(MAIN);
+    writeFileSync(p.file("MainViewController.swift"), "import UIKit\nimport Capacitor\n\nclass MainViewController: CAPBridgeViewController {\n    override func capacitorDidLoad() {\n        bridge?.registerPluginInstance(SonaAudioPlugin())\n    }\n}\n");
+    const r = run(p.app), control = text(p.file("MainViewController.swift"));
+    ok("with MainViewController in the app: registers it there once, beside SonaAudio",
+      r.status === 0 && (control.match(/registerPluginInstance\(SonaSpeechPlugin\(\)\)/g) || []).length === 1
+      && /registerPluginInstance\(SonaAudioPlugin\(\)\)\n\s+bridge\?\.registerPluginInstance\(SonaSpeechPlugin\(\)\)/.test(control)
+      && !text(p.file("AppDelegate.swift")).includes("SonaBridgeViewController"), r.stderr || control);
+    const again = run(p.app);
+    ok("…and a rerun leaves it registered once", again.status === 0 && text(p.file("MainViewController.swift")) === control);
+    rmSync(p.dir, { recursive: true, force: true });
+  }
+  // C. MainViewController compiled from the repo's own file
+  {
+    const p = fresh(MAIN);
+    writeFileSync(path.join(p.dir, "App", "App.xcodeproj", "project.pbxproj"),
+      "AAA /* MainViewController.swift in Sources */ = {isa = PBXBuildFile; };\nBBB /* MainViewController.swift */ = {isa = PBXFileReference; path = /nowhere/native/ios/App/MainViewController.swift; sourceTree = \"<absolute>\"; };\n");
+    const before = text(ROOT + "/../native/ios/App/MainViewController.swift");
+    const r = run(p.app);
+    ok("with MainViewController compiled from the repo: finds it, already registering, and leaves it alone",
+      r.status === 0 && /already registers it/.test(r.stdout) && text(ROOT + "/../native/ios/App/MainViewController.swift") === before
+      && pluginBlock(p.file("AppDelegate.swift")), r.stdout + r.stderr);
+    rmSync(p.dir, { recursive: true, force: true });
+  }
+  // D. an older copy of the plugin already compiled: brought up to date, not doubled
+  {
+    const p = fresh(CAP);
+    writeFileSync(p.file("SonaSpeechPlugin.swift"), plugin.replace("private var settleTimer: Timer?", "// an older copy"));
+    const r = run(p.app);
+    ok("an older copy of the plugin is brought up to date, never compiled twice",
+      r.status === 0 && text(p.file("SonaSpeechPlugin.swift")) === plugin.trimEnd() + "\n"
+      && !/class SonaSpeechPlugin/.test(text(p.file("AppDelegate.swift"))) && /class SonaBridgeViewController/.test(text(p.file("AppDelegate.swift"))), r.stdout + r.stderr);
+    rmSync(p.dir, { recursive: true, force: true });
+  }
+  // E/F. what it will not guess at: it stops, and changes nothing
+  {
+    const p = fresh(CAP);
+    mkdirSync(path.join(p.dir, "App", "CapApp-SPM"), { recursive: true });
+    writeFileSync(path.join(p.dir, "App", "CapApp-SPM", "Package.swift"), '.package(name: "SonaSpeech", path: "../../../node_modules/sona-speech")');
+    const r = run(p.app);
+    ok("it stops, changing nothing, when the plugin is already in the app as a package",
+      r.status !== 0 && /already in the app as a package/.test(r.stderr) && !text(p.file("AppDelegate.swift")).includes("SONA SPEECH"), r.stderr);
+    rmSync(p.dir, { recursive: true, force: true });
+    const q = fresh('customClass="SomethingElse" customModule="App"');
+    const u = run(q.app);
+    ok("…or when the storyboard loads a controller it does not know",
+      u.status !== 0 && /Could not tell which controller/.test(u.stderr) && !text(q.file("AppDelegate.swift")).includes("SONA SPEECH"), u.stderr);
+    rmSync(q.dir, { recursive: true, force: true });
+  }
 }
 
 await browser.close(); srv.close();

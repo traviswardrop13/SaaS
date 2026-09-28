@@ -62,8 +62,9 @@ check alone, and a child who said "taco" for R got it counted.
 python3 scripts/install-ios-speech.py
 ```
 It compiles the plugin through AppDelegate.swift (like the scene fix above),
-registers it beside SonaAudio in MainViewController, and adds
-NSSpeechRecognitionUsageDescription. Then build to a real iPhone, check
+registers it (in MainViewController if the storyboard loads one, otherwise
+through a small SonaBridgeViewController it points the storyboard at), and
+adds NSSpeechRecognitionUsageDescription. `--check` shows what it would change. Then build to a real iPhone, check
 `window.Capacitor.Plugins.SonaSpeech` in Safari's Web Inspector, and run the
 device checklist in `SPEECH_PLUGIN.md` before archiving. The judging rules
 live in `public/sona.js` and go live with the website; only the plugin needs
