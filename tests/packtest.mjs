@@ -54,14 +54,15 @@ ok("detective variant on call #3", /sound detectives/.test(s3));
 await page.addInitScript(() => {
   const day = (off) => { const d = new Date(); d.setDate(d.getDate() + off); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); };
   const dow = (new Date().getDay() + 6) % 7;
-  const days = {}; days[day(0)] = { a: 20, p: 14 }; days[day(-(dow + 2))] = { a: 20, p: 10 };
+  const days = {}; days[day(0)] = { a: 20, p: 14, tries: 60 }; days[day(-(dow + 2))] = { a: 20, p: 10, tries: 50 };
   localStorage.setItem("sona.outcomes.v1", JSON.stringify({ R: { attempts: 40, passes: 24, firstAt: day(-9), lastAt: day(0), days } }));
 });
 await page.goto("http://localhost:8134/today.html");
 await page.waitForTimeout(1000);
 const wins = await page.evaluate(() => ({ txt: document.getElementById("wkWins").textContent, share: getComputedStyle(document.getElementById("shareWeek")).display !== "none" }));
 console.log("      wins:", wins.txt);
-ok("wins line shows reps + delta", /sounds practiced/.test(wins.txt) && /%/.test(wins.txt));
+// REPWEEKS1: the same reps as Home's corner (60 voiced tries), not the 20 sound checks.
+ok("wins line shows reps + delta", /\b60 reps this week\b/.test(wins.txt) && !/\b20 reps\b/.test(wins.txt) && /%/.test(wins.txt));
 ok("share button visible", wins.share);
 await page.evaluate(() => { document.getElementById("sheetOvl").classList.add("show"); });
 await page.screenshot({ path: OUT + "/pack-sheet.png" });

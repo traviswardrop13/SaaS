@@ -12,6 +12,32 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-title" content="Sona" />
+  <style>
+    /* REPWEEKS1 — the week-by-week card. Growth colours only, never red.
+       Home's count lands here by #reps; in the iOS app the page draws under
+       the status bar, so the jump stops below it. */
+    #reps{scroll-margin-top:calc(12px + env(safe-area-inset-top));}
+    .sr{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0;}
+    .rw-now{display:flex;align-items:baseline;gap:8px;margin-top:10px;}
+    #rwThis{font-family:"Baloo 2";font-weight:800;font-size:40px;line-height:1;color:var(--orange-d);}
+    #rwThisUnit{font-weight:800;font-size:15px;}
+    .rw-line{font-weight:800;font-size:13.5px;margin-top:6px;}
+    .rw-line:empty{display:none;}
+    #rwBest.new{color:#3f7a12;}
+    .rw-bars{list-style:none;display:grid;grid-auto-columns:minmax(0,1fr);grid-auto-flow:column;gap:6px;align-items:end;height:136px;margin-top:16px;padding-bottom:2px;border-bottom:2px solid var(--line);}
+    .rw-bars:empty{display:none;}
+    .rw-bars li{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;min-width:0;height:100%;}
+    .rw-val{font-family:"Baloo 2";font-weight:800;font-size:12px;line-height:1.2;color:var(--muted);white-space:nowrap;}
+    .rw-star{display:block;font-size:11px;line-height:1;color:#c98a00;text-align:center;}
+    .rw-bar{width:100%;max-width:34px;border-radius:8px 8px 3px 3px;background:#f6dcc2;margin-top:3px;}
+    .rw-bars li.best .rw-bar{background:#ffc56b;}
+    .rw-bars li.now .rw-bar{background:var(--orange);}
+    .rw-bars li.now .rw-val{color:#a8521c;}
+    .rw-days{display:grid;grid-auto-columns:minmax(0,1fr);grid-auto-flow:column;gap:6px;margin-top:5px;}
+    .rw-days span{font-size:10px;font-weight:800;line-height:1.25;color:var(--muted);text-align:center;white-space:nowrap;overflow:hidden;}
+    .rw-days span.now{color:#a8521c;}
+    .rw-note{font-size:12px;font-weight:700;line-height:1.5;margin-top:12px;}
+  </style>
   <script>
     /* Parent gate, checked before anything paints: if sona.js is slow or
        missing this page must fail CLOSED, not open. Mirrors the key + TTL of
@@ -61,6 +87,22 @@
         <button id="newKidCancel" class="btn ghost" style="flex:0 0 auto;">Cancel</button>
       </div>
       <button id="addKidBtn" class="btn ghost" style="margin-top:10px;">+ Add a kid</button>
+    </div>
+
+    <!-- REPWEEKS1 (Travis, 28 Sep 2026): the week's reps — the same count as
+         Home's top corner — and how it compares week to week. Below the Kids
+         card because it belongs to whoever is selected. Home's rep count opens
+         the grown-ups gate and lands here (#reps). -->
+    <div class="card" id="reps">
+      <h2 id="rwHead">Reps, week by week</h2>
+      <div class="rw-now"><span id="rwThis">0</span> <b id="rwThisUnit">reps this week</b></div>
+      <p id="rwLast" class="rw-line"></p>
+      <p id="rwBest" class="rw-line"></p>
+      <!-- role="list": Safari drops list semantics from a list-style:none list,
+           and VoiceOver reads the text inside an item, not a label on it. -->
+      <ol id="rwBars" class="rw-bars" role="list" aria-label="Reps each week"></ol>
+      <div id="rwDays" class="rw-days" aria-hidden="true"></div>
+      <p class="muted rw-note">A rep is each time <span id="rwWho">your child</span> says the practice sound or word out loud in the practice before a game, whether or not it sounded right yet. Silence never counts, and words said during the game itself add none. Weeks run Monday to Sunday, counted on this device.</p>
     </div>
 
     <div class="card">
@@ -301,6 +343,53 @@
         practicePosition: posEl.value, focusSounds: [].concat(Array.from(sel)) });
       var s = document.getElementById("saved"); s.style.display = "inline"; setTimeout(function () { s.style.display = "none"; }, 1800);
     };
+    // REPWEEKS1: week by week, from Sona.repWeeks — the one count Home, the
+    // parent corner and Progress read too. A week behind is said as how many
+    // more reps pass it, never as a drop, and nothing here is ever red.
+    (function () {
+      if (!Sona.repWeeks) { document.getElementById("reps").style.display = "none"; return; }
+      var r = Sona.repWeeks(8), name = (p.childName || "").trim();
+      var MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+      function num(n) { n = String(Math.max(0, Math.floor(Number(n) || 0))); var o = ""; while (n.length > 3) { o = "," + n.slice(-3) + o; n = n.slice(0, -3); } return n + o; }
+      function reps(n) { return num(n) + (n === 1 ? " rep" : " reps"); }
+      // "Sep 21" with a no-break space, so a sentence never strands the 21;
+      // a week from another year says which year.
+      function parts(k) { var x = String(k).split("-"); return { m: MON[(+x[1] - 1) % 12], d: String(+x[2]), y: +x[0] }; }
+      function day(k) { var q = parts(k); return q.m + "\u00a0" + q.d + (q.y !== new Date().getFullYear() ? ", " + q.y : ""); }
+      if (name) { document.getElementById("rwHead").textContent = name + "\u2019s reps, week by week"; document.getElementById("rwWho").textContent = name; }
+      document.getElementById("rwThis").textContent = num(r.thisWeek);
+      document.getElementById("rwThisUnit").textContent = (r.thisWeek === 1 ? "rep" : "reps") + " this week";
+      var last = "", t = r.thisWeek, l = r.lastWeek;
+      if (l > 0 && t > l) last = reps(t - l) + " more than last week\u2019s " + num(l) + ".";
+      else if (l > 0 && t === l) last = "Tied with last week\u2019s " + num(l) + ". One more rep beats it.";
+      else if (l > 0) last = num(l - t + 1) + " more to beat last week\u2019s " + num(l) + ".";
+      else if (r.best) last = "Last week: 0 reps.";
+      else if (t > 0) last = "The first week counted.";
+      // Also what a family sees whose practice all came before reps were
+      // counted: true for them too, where "has not practiced" would not be.
+      else last = "No reps counted yet. " + (name ? name + "\u2019s" : "Your child\u2019s") + " next practice adds the first.";
+      document.getElementById("rwLast").textContent = last;
+      var best = document.getElementById("rwBest");
+      if (r.newBest) { best.className = "rw-line new"; best.textContent = "New best week! The last best was " + reps(r.best.reps) + ", the week of " + day(r.best.start) + "."; }
+      else if (r.best) best.textContent = "Best week: " + reps(r.best.reps) + ", the week of " + day(r.best.start) + ".";
+      if (!r.since) return;
+      var max = 0; r.weeks.forEach(function (w) { if (w.reps > max) max = w.reps; });
+      var bars = document.getElementById("rwBars"), days = document.getElementById("rwDays");
+      r.weeks.forEach(function (w) {
+        // One star: once this week passes the old best, the old best stops being it.
+        var isBest = r.newBest ? w.current : w.best;
+        var li = document.createElement("li"); li.className = (w.current ? "now" : "") + (isBest ? " best" : ""); li.setAttribute("role", "listitem");
+        var sr = document.createElement("span"); sr.className = "sr"; sr.textContent = (w.current ? "This week" : "Week of " + day(w.start)) + ": " + reps(w.reps) + (isBest ? ", best week" : "");
+        var seen = document.createElement("span"); seen.setAttribute("aria-hidden", "true"); seen.style.cssText = "display:flex;flex-direction:column;align-items:center;justify-content:flex-end;width:100%;height:100%;";
+        if (isBest) { var st = document.createElement("span"); st.className = "rw-star"; st.textContent = "\u2605"; seen.appendChild(st); }
+        var v = document.createElement("span"); v.className = "rw-val"; v.textContent = w.reps >= 1000 ? (Math.floor(w.reps / 100) / 10) + "k" : num(w.reps);
+        var b = document.createElement("span"); b.className = "rw-bar"; b.style.height = (w.reps > 0 && max > 0 ? Math.max(6, Math.round(w.reps / max * 96)) : 2) + "px";
+        seen.appendChild(v); seen.appendChild(b); li.appendChild(sr); li.appendChild(seen); bars.appendChild(li);
+        // Two short lines ("Sep" over "21") so eight weeks fit a 320px phone.
+        var q = parts(w.start), d = document.createElement("span"), dl = w.current ? ["This", "week"] : [q.m, q.d];
+        d.className = w.current ? "now" : ""; d.appendChild(document.createTextNode(dl[0])); d.appendChild(document.createElement("br")); d.appendChild(document.createTextNode(dl[1])); days.appendChild(d);
+      });
+    })();
     document.getElementById("reset").onclick = function () {
       if (confirm("Reset all progress on this device? This cannot be undone.")) { Sona.resetProgress(); alert("Progress reset."); }
     };
