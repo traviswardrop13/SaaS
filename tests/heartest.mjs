@@ -93,10 +93,25 @@ ok('"cat" does not fuzzy-match "car"... it does not need to — it has no R; but
   ok('"4" for four passes (Apple writes numbers as digits)', (await V("4", "R", "four", W)) === "pass");
   ok('a grown-up\'s "say rabbit" does not pass the child\'s "taco"', (await V("say rabbit taco", "R", "rabbit", W)) === "fail");
   ok('…while the child\'s own "rabbit" after it still passes', (await V("say rabbit rabbit", "R", "rabbit", W)) === "pass");
+  // "taco is just an example. it could be anything that is way off like poop
+  // or fridge" (Travis, 28 Sep). A different word counts only when it starts
+  // with the same sound; with the sound anywhere else it must be close to the
+  // word itself. "fridge" has an r, and passed every middle-R word until this.
+  ok('"poop" for rabbit FAILS', (await V("poop", "R", "rabbit", W)) === "fail");
+  ok('"fridge" for rabbit FAILS', (await V("fridge", "R", "rabbit", W)) === "fail");
+  ok('"fridge" for carrot FAILS (an r in the middle is not enough)', (await V("fridge", "R", "carrot", W)) === "fail");
+  ok('"tractor" for car FAILS (an r at the end is not enough either)', (await V("tractor", "R", "car", W)) === "fail");
+  ok('"parrot" for carrot passes (close, the R intact)', (await V("parrot", "R", "carrot", W)) === "pass");
+  ok('"cawwot" for carrot passes (both Rs glided)', (await V("cawwot", "R", "carrot", W)) === "pass");
+  ok('"cannot" for carrot FAILS (close, but no R and no R error)', (await V("cannot", "R", "carrot", W)) === "fail");
   const ISO = { level: "isolation" };
   ok('a bare-sound round: "uh" is unknown (how Apple writes a sound it cannot spell)', (await V("uh", "R", "rrrr", ISO)) === "unknown");
   ok('…"Er" passes', (await V("Er", "R", "rrrr", ISO)) === "pass");
   ok('…"taco" FAILS', (await V("taco", "R", "rrrr", ISO)) === "fail");
+  ok('…"fridge" FAILS (a word with an r in it is not the bare sound)', (await V("fridge", "R", "rrrr", ISO)) === "fail");
+  ok('…"Rrrrrr" and "Error" pass (mostly the sound itself)',
+    (await V("Rrrrrr", "R", "rrrr", ISO)) === "pass" && (await V("Error", "R", "rrrr", ISO)) === "pass");
+  ok('…"taco" FAILS a bare K too, though it has a k sound', (await V("taco", "K", "kuh", ISO)) === "fail");
   const SYL = { level: "syllable" };
   ok('a syllable round: "wah" for rah passes', (await V("wah", "R", "rah", SYL)) === "pass");
   ok('…"ah" is unknown', (await V("ah", "R", "rah", SYL)) === "unknown");

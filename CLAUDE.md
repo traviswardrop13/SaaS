@@ -675,8 +675,13 @@ are enforced in code and pinned by tests — change them only on Rachel's say-so
   Apple's on-device recognizer what was said (SonaSpeech, never Apple's
   servers) and `hearVerdict` in sona.js decides. Pass: the word, a close try
   (each sound's typical errors, `HEAR_SUBS`: "wabbit", "wed", "cah"), or
-  another word with the sound in the same place. Fail: clear words that are
-  none of those ("taco", "Here is a taco", "sock" for rock). Unknown, handed
+  another word that starts with the sound when the word does ("run" for
+  rain); with the sound anywhere else, a different word must be close to the
+  target itself ("parrot" for carrot passes, "fridge" does not). On a
+  bare-sound round only a short sound or mostly the sound itself counts
+  ("Er", "Rrrr"), never a word that merely has it. Fail: clear words that
+  are none of those ("taco", "poop", "fridge", "Here is a taco", "sock" for
+  rock). Unknown, handed
   to the sound-shape check: nothing clear (filler like "uh", or only the
   sentence's own words). A grown-up's "say rabbit" and a sentence's other
   words ("Here is a") are set aside first. The plugin was written in August

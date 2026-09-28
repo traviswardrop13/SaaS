@@ -3680,6 +3680,18 @@
     }
     return out;
   }
+  // Is a within n edits (letters changed, added or dropped) of b?
+  function _hearNear(a, b, n) {
+    if (Math.abs(a.length - b.length) > n) return false;
+    let prev = [];
+    for (let j = 0; j <= b.length; j++) prev.push(j);
+    for (let i = 1; i <= a.length; i++) {
+      const row = [i];
+      for (let j = 1; j <= b.length; j++) row.push(Math.min(prev[j] + 1, row[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)));
+      prev = row;
+    }
+    return prev[b.length] <= n;
+  }
   function _hearTokens(text) {
     return String(text || "").toLowerCase()
       .replace(/\d+/g, (d) => " " + (HEAR_NUM[+d] || d) + " ")     // Apple writes "four" as "4"
@@ -3732,10 +3744,22 @@
     if (!content.length) return "unknown";
     const bare = opts.level === "isolation" || !w || w === String(SOUND_SAY[S2] || "");
     if (bare) {
-      for (let i = 0; i < content.length; i++) if (Object.keys(_hearSpots(content[i], S2)).length) return "pass";
+      // A bare sound comes back short ("Er", "Grr", "Are") or as mostly the
+      // sound itself ("Rrrrr", "Shhhh", "Error"). A word that merely has the
+      // sound in it ("fridge", "water", "taco" for K) is not a try at the
+      // sound on its own.
+      const own = String(SOUND_SAY[S2] || S2.toLowerCase()).replace(/[aeiou]/g, "");
+      for (let i = 0; i < content.length; i++) {
+        const t = content[i];
+        if (!Object.keys(_hearSpots(t, S2)).length) continue;
+        let n = 0;
+        for (let k = 0; k < t.length; k++) if (own.indexOf(t[k]) >= 0) n++;
+        if (t.length <= 3 || n * 2 >= t.length) return "pass";
+      }
       return "fail";
     }
     const vars = _hearVariants(w, S2), want = _hearSpots(w, S2);
+    const near = Math.max(1, Math.floor(w.length / 3)), subs = HEAR_SUBS[S2] || [];
     for (let i = 0; i < content.length; i++) {
       const t = content[i];
       for (let k = 0; k < vars.length; k++) {
@@ -3744,7 +3768,14 @@
       }
       if (w.length >= 3 && t.indexOf(w) === 0) return "pass";           // "rabbits", "rainbow"
       const has = _hearSpots(t, S2);
-      for (const p in want) if (has[p]) return "pass";                  // the sound, in the same place
+      if (want.i && has.i) return "pass";                               // the sound, starting the word: "run" for rain
+      // Anywhere else, a different word with the sound in it is not a try at
+      // this one ("fridge" for carrot, "tractor" for car). It has to be close
+      // to the word itself, and still carry the sound or its usual error:
+      // "parrot" for carrot, "cawwot", "crib" for crab.
+      let carries = Object.keys(has).length > 0;
+      for (let k = 0; !carries && k < subs.length; k++) carries = !!subs[k] && t.indexOf(subs[k]) >= 0;
+      if (carries && _hearNear(t, w, near)) return "pass";
     }
     return "fail";
   }
