@@ -82,7 +82,9 @@
     #catalogPreviewNotice strong{display:block;}
     #libraryNotice{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:20;width:calc(100% - 32px);max-width:440px;display:flex;align-items:center;gap:10px;padding:15px 14px 15px 18px;background:#fff;border:2px solid #eed7b0;border-radius:22px;box-shadow:0 10px 32px rgba(80,50,10,.2);}
     .notice-copy{flex:1;}
-    #libraryUnlock{display:block;min-height:44px;margin-top:8px;border:0;border-radius:12px;padding:9px 15px;background:#6a508f;color:#fff;font-weight:800;cursor:pointer;}
+    /* buttons are the teal action pill (action.css, via sona.css; design brief
+       28 Sep 2026); chips and dots keep their own selection colours */
+    #libraryUnlock{display:block;min-height:44px;margin-top:8px;border:0;border-radius:999px;padding:9px 18px;background:linear-gradient(180deg,var(--act-hi),var(--act));box-shadow:0 4px 0 var(--act-d);text-shadow:0 1px 0 var(--act-d);color:#fff;font-weight:800;cursor:pointer;}
     #libraryMessage{font-weight:800;font-size:14px;line-height:1.45;color:var(--muted);}
     #libraryMessageClose{flex:none;width:36px;height:36px;border:0;border-radius:50%;background:#fff0d8;color:var(--ink);font-size:23px;cursor:pointer;}
     .library-wrap.has-message{padding-bottom:145px;}
@@ -171,7 +173,7 @@
         <div id="wkDots" style="display:flex;gap:7px;margin-top:10px;justify-content:space-between;"></div>
         <div id="wkMsg" style="font-weight:800;font-size:12.5px;color:var(--muted);margin-top:9px;"></div>
         <div id="wkWins" style="font-family:'Baloo 2';font-weight:800;font-size:13px;color:var(--ink);margin-top:6px;"></div>
-        <button id="shareWeek" style="display:none;width:100%;border:none;border-radius:14px;padding:12px;margin-top:10px;background:linear-gradient(180deg,#ffa05a,#ff8a3d);box-shadow:0 4px 0 var(--orange-d);color:#fff;font-family:'Baloo 2';font-weight:800;font-size:14px;cursor:pointer;">Share this week</button>
+        <button id="shareWeek" style="display:none;width:100%;min-height:44px;border:none;border-radius:999px;padding:12px;margin-top:10px;background:linear-gradient(180deg,var(--act-hi),var(--act));box-shadow:0 4px 0 var(--act-d);text-shadow:0 1px 0 var(--act-d);color:#fff;font-family:'Baloo 2';font-weight:800;font-size:14px;cursor:pointer;">Share this week</button>
       </div>
       <div id="planCard" style="display:none;background:var(--cream);border-radius:16px;padding:14px 16px;margin-top:10px;text-align:left;">
         <div style="display:flex;align-items:center;gap:8px;">
@@ -516,7 +518,7 @@
         +'<div id="pulseMore" style="display:none;">'
         +'<textarea id="pulseText" rows="2" placeholder="Anything else? (optional)" '
         +'style="width:100%;border:2px solid var(--track);border-radius:14px;padding:12px;font-family:Nunito,sans-serif;font-weight:700;font-size:14px;color:var(--ink);resize:none;margin-top:10px;"></textarea>'
-        +'<button id="pulseSend" class="sheetBtn" style="justify-content:center;background:linear-gradient(180deg,#ffa05a,#ff8a3d);color:#fff;box-shadow:0 4px 0 var(--orange-d);">Send it</button>'
+        +'<button id="pulseSend" class="sheetBtn" style="justify-content:center;border-radius:999px;background:linear-gradient(180deg,var(--act-hi),var(--act));color:#fff;text-shadow:0 1px 0 var(--act-d);box-shadow:0 4px 0 var(--act-d);">Send it</button>'
         +'</div>';
       var row=$("pulseChips");
       PULSE_CHIPS.forEach(function(label){

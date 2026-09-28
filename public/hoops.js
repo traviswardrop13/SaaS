@@ -216,7 +216,11 @@
     var cols = ["#FFD21C", "#FF6B6B", "#34BFCF", "#8A6FF2", "#58CC02"];
     for (var i = 0; i < (n || 18); i++) { var a = Math.random() * Math.PI * 2, sp = 90 + Math.random() * 170; fx.push({ kind: "spark", x: x, y: y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 130, s: 5 + Math.random() * 6, c: cols[i % cols.length], t: 0, life: 0.9 + Math.random() * 0.4 }); }
   }
-  function shout(text, c, big, where) { var p = where || project(hoopX, RIM_Y - 1.0, HOOP_Z); fx.push({ kind: "word", text: text, x: p.x, y: p.y, c: c || "#FF8A3D", t: 0, life: big ? 2.4 : 1.3, big: big }); }
+  // The court's cheers are the action teal (/action.css --act, read once at
+  // init): orange now means only the practice sound's letters (design brief,
+  // 28 Sep 2026), and the ball is the one orange thing on the court.
+  var SHOUT = "#1FA6B8";
+  function shout(text, c, big, where) { var p = where || project(hoopX, RIM_Y - 1.0, HOOP_Z); fx.push({ kind: "word", text: text, x: p.x, y: p.y, c: c || SHOUT, t: 0, life: big ? 2.4 : 1.3, big: big }); }
 
   // How to shoot, shown on the first ball and again whenever the ball has sat
   // in the child's hand for a while: a fingertip sliding up from the ball.
@@ -329,7 +333,7 @@
     var p = project(hoopX, RIM_Y - 0.15, HOOP_Z);
     burst(p.x, p.y);
     lastShot = ball.board ? "bank" : ball.rim ? "rim" : "swish";
-    shout(lastShot === "swish" ? "SWISH!" : lastShot === "bank" ? "Bank shot!" : "It's in!", lastShot === "swish" ? "#FF8A3D" : "#1FA6B8");
+    shout(lastShot === "swish" ? "SWISH!" : lastShot === "bank" ? "Bank shot!" : "It's in!");
     sound("swish");
     cheerAt = clock;
     try { api.cheer(lastShot === "swish" ? "Swish!" : "Basket!"); api.hint(""); } catch (e) {}
@@ -411,6 +415,7 @@
   var Hoops = {
     init: function (engineApi, n) {
       api = engineApi; count = n || 8;
+      try { SHOUT = getComputedStyle(document.documentElement).getPropertyValue("--act").trim() || SHOUT; } catch (e) {}
       cv = document.getElementById("court"); ctx = cv.getContext("2d");
       resize(); window.addEventListener("resize", resize);
       cv.addEventListener("pointerdown", down); cv.addEventListener("pointermove", move);
@@ -439,7 +444,7 @@
       cheerAt = clock + 0.2;
       var p = project(hoopX, RIM_Y, HOOP_Z);
       burst(p.x, p.y, 24); burst(W * 0.25, H * 0.45, 16); burst(W * 0.75, H * 0.45, 16);
-      shout(count + " baskets!", "#FF8A3D", true, { x: W / 2, y: H * 0.56 });
+      shout(count + " baskets!", null, true, { x: W / 2, y: H * 0.56 });
     },
     snapshot: function () { return window.__hoops; },
   };

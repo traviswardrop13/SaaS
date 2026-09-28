@@ -188,7 +188,7 @@ async function waitSpoke(pg, ms) {
   await pg.goto("http://localhost:8153/library.html");
   await pg.waitForTimeout(800);
   const books = await pg.evaluate(() => STORIES.filter((b) => b.words).map((b) => ({ sound: b.sound, title: b.title,
-    words: b.words, allow: b.allow || [], forbid: b.forbid || [], pages: b.pages.map((p) => p.t) })));
+    words: b.words, allow: b.allow || [], forbid: b.forbid || [], keys: b.keys || [], pages: b.pages.map((p) => p.t) })));
   const have = new Set(books.map((b) => b.sound));
   ok("there is a fuller book for every one of the 19 sounds", Object.keys(TARGET).every((s) => have.has(s)),
     Object.keys(TARGET).filter((s) => !have.has(s)).join(" "));
@@ -215,6 +215,27 @@ async function waitSpoke(pg, ms) {
   }
   ok("…every line has a word that starts with its sound, and the sound is nowhere else in the book",
     books.length >= 19 && probs.length === 0, probs.slice(0, 8).join(" | "));
+
+  // THE KEY WORDS (family redesign brief, 28 Sep 2026): one word per page that
+  // Echo asks the child to say before the page turns. They came from the
+  // brief's book-keywords.json, picked automatically, so each is held to the
+  // same rule as the book's other practice words: a whole word ON its own
+  // page, one of the book's listed words (so it is tinted), and the book's
+  // sound at the start before a vowel. Which word a child is asked to say is
+  // Rachel's call; this only keeps an edited one honest.
+  const keyProbs = [];
+  for (const b of books) {
+    const tp = TARGET[b.sound];
+    if (b.keys.length !== 12) keyProbs.push(`${b.title}: ${b.keys.length} key words, not 12`);
+    b.keys.forEach((k, i) => {
+      if (!toks(b.pages[i] || "").includes(k)) keyProbs.push(`${b.title} p${i + 1}: key "${k}" is not a word on its page`);
+      if (!b.words.includes(k)) keyProbs.push(`${b.title} p${i + 1}: key "${k}" is not one of the book's practice words`);
+      const ph = k in LEX ? phones(k) : [];
+      if (ph[0] !== tp || !VOWEL.test(ph[1] || "")) keyProbs.push(`${b.title} p${i + 1}: key "${k}" doesn't start with ${b.sound} and a vowel`);
+    });
+  }
+  ok("every fuller book asks for one key word a page, each a practice word on that page that starts with the sound",
+    books.length >= 19 && books.reduce((n, b) => n + b.keys.length, 0) === 228 && keyProbs.length === 0, keyProbs.slice(0, 8).join(" | "));
 
   // every fuller page is a drawn scene, and every file it names is really there:
   // the reader shows art over the sticker, so a missing file is a blank page

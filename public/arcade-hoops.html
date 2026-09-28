@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
   <title>Sona — Hoops</title>
   <link href="/fonts.css" rel="stylesheet">
+  <link href="/action.css" rel="stylesheet">
   <link href="/sayplay.css" rel="stylesheet">
   <meta name="theme-color" content="#fff3e0" />
   <!--
@@ -14,7 +15,8 @@
     side to side; a miss comes back to flick again; eight baskets win.
     Written by hand, not by tools/gameart/build.mjs: the court is drawn and
     played in /hoops.js, and every word turn, the mic and its quiet rules are
-    /sayplay.js's, as in every Say & Play game.
+    /sayplay.js's, as in every Say & Play game. Its start card is the same
+    teal "Let's play" pill the builder writes (tools/gameart/page.mjs), by hand.
   -->
   <style>
     :root{--top:#fff3e0;--bottom:#f0d2a8;}
@@ -57,7 +59,7 @@
       <h2 id="startTitle">Hoops</h2>
       <p>Say the word to get the ball. Then swipe up to shoot it into the hoop!</p>
       <p class="small" id="startSound"></p>
-      <button id="startBtn" aria-label="Play"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15a1 1 0 0 0 1.5.9l12-7.5a1 1 0 0 0 0-1.8l-12-7.5A1 1 0 0 0 7 4.5Z" fill="#fff"/></svg></button>
+      <button id="startBtn" class="act-pill"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15a1 1 0 0 0 1.5.9l12-7.5a1 1 0 0 0 0-1.8l-12-7.5A1 1 0 0 0 7 4.5Z" fill="#fff"/></svg><span>Let's play</span></button>
     </div>
   </div>
   <div class="ovl" id="primer">

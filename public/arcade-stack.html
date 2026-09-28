@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
   <title>Sona — Block Stacker</title>
   <link href="/fonts.css" rel="stylesheet">
+  <link rel="stylesheet" href="/action.css">
   <meta name="theme-color" content="#2b2e6b" />
   <style>
     :root{ --blue:#1cb0f6; --blue-d:#1597d4; --green:#58cc02; --green-d:#46a302; --orange:#ff9600; --orange-d:#e08600; }
@@ -12,7 +13,7 @@
     html,body{height:100%;overflow:hidden;background:linear-gradient(180deg,#2b2e6b,#5b3f8f 45%,#a45fae 75%,#e17aa4);}
     #app{position:fixed;inset:0;max-width:560px;margin:0 auto;overscroll-behavior:none;touch-action:manipulation;}
     canvas{position:absolute;inset:0;width:100%;height:100%;}
-    #flash{position:absolute;left:0;right:0;top:24%;text-align:center;font-family:"Baloo 2";font-weight:800;font-size:32px;color:#ffd21c;opacity:0;transition:opacity .12s, transform .3s;z-index:4;pointer-events:none;text-shadow:0 3px 0 rgba(0,0,0,.25);}
+    #flash{position:absolute;left:0;right:0;top:24%;text-align:center;font-family:"Baloo 2";font-weight:800;font-size:32px;color:#ffd21c;opacity:0;transition:opacity .12s, transform .3s;z-index:4;pointer-events:none;text-shadow:0 3px 0 rgba(0,0,0,.25);transform:rotate(-4deg);}
     #tapHint{position:absolute;left:0;right:0;bottom:calc(26px + env(safe-area-inset-bottom));text-align:center;font-family:"Baloo 2";font-weight:800;font-size:16px;color:#cfe3f7;z-index:4;pointer-events:none;}
     /* ── designed HUD kit (handoff section 4) ── */
     #top{position:absolute;left:0;right:0;top:0;display:flex;align-items:center;gap:9px;padding:calc(12px + env(safe-area-inset-top)) 14px 6px;z-index:5;}
@@ -21,36 +22,56 @@
     #score{flex:none;}
     #hudspacer{flex:1;}
     #timer{color:#ff5c74;letter-spacing:1px;}
-    /* ── warm-card overlays (handoff section 5) ── */
-    .ovl{position:fixed;inset:0;z-index:50;background:rgba(30,22,50,.55);display:none;align-items:center;justify-content:center;padding:24px;}
+    /* ── cards over the game (the family's redesign brief, 28 Sep 2026) ──
+       Echo peeks over the card's top edge from BEHIND it (designs 10, 11):
+       he sits in the wrapper under the card, so the card's own edge hides
+       him below the beak. Drawn inside the card he would paint over it.
+       Teal is the one action colour and cream the second choice; both come
+       from /action.css and are never pasted here. */
+    .ovl{position:fixed;inset:0;z-index:50;background:rgba(30,22,50,.55);display:none;padding:calc(16px + env(safe-area-inset-top)) 20px calc(16px + env(safe-area-inset-bottom));overflow-y:auto;}
     .ovl.show{display:flex;}
-    .ovlCard{background:#fff6e9;border-radius:28px;padding:58px 20px 22px;width:100%;max-width:330px;text-align:center;box-shadow:0 18px 40px rgba(30,22,50,.45);position:relative;display:flex;flex-direction:column;align-items:center;gap:9px;}
-    .ovlEcho{position:absolute;top:-54px;left:50%;transform:translateX(-50%);width:106px;height:106px;filter:drop-shadow(0 8px 12px rgba(30,22,50,.3));}
-    .ovl .big{font-size:56px;line-height:1;}
-    .ovl h2{font-family:"Baloo 2";font-weight:800;font-size:24px;color:#4a2c14;line-height:1.18;}
-    .ovl h2 b{color:#7048c9;}
-    .ovl p{color:#b08d63;font-weight:800;font-size:14.5px;max-width:270px;}
-    .statRow{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;}
-    .statPill{background:#fff;border-radius:99px;padding:8px 15px;font-family:"Baloo 2";font-weight:800;font-size:14.5px;color:#4a2c14;box-shadow:0 3px 0 rgba(120,80,20,.12);}
-    .btn{border:none;border-radius:20px;padding:15px 30px;font-family:"Baloo 2";font-weight:800;font-size:17px;text-transform:uppercase;letter-spacing:.04em;color:#fff;background:linear-gradient(180deg,#ffa05a,#ff8a3d);box-shadow:0 6px 0 #ef6f23;cursor:pointer;transition:transform .05s;margin-top:4px;width:100%;}
-    .btn:active{transform:translateY(4px);box-shadow:0 2px 0 #46a302;}
-    .btn.blue{background:linear-gradient(180deg,#5cc6ff,#1cb0f6);box-shadow:0 6px 0 #1480c0;}
-    .btn.blue:active{box-shadow:0 2px 0 #1480c0;}
-    .btn.ghost{background:none;box-shadow:none;color:#b08d63;text-transform:none;font-size:13px;width:auto;padding:8px;}
-    /* Echo speaks the win: bubble with a tail toward the leap; numbers fade in later */
-    #endTitle{position:relative;background:#fff;border-radius:18px;padding:12px 18px;box-shadow:0 6px 16px rgba(74,44,20,.12);display:inline-block;}
-    #endTitle:after{content:"";position:absolute;left:50%;bottom:-8px;transform:translateX(-50%) rotate(45deg);width:16px;height:16px;background:#fff;border-radius:3px;}
-    #endSub.later{display:block!important;opacity:0;font-size:12.5px;color:var(--muted,#b08d63);transition:opacity .5s ease;margin-top:2px;}
-    #endSub.later.in{opacity:1;}
-    /* ── end-overlay celebration: star drop + Echo leap (Duolingo-ABC three-element stack) ── */
-    #endOvl .ovlCard{padding-top:24px;}
+    .cardWrap{position:relative;width:100%;max-width:340px;margin:auto;padding-top:76px;}
+    .peek{position:absolute;top:0;left:50%;width:112px;margin-left:-56px;z-index:0;pointer-events:none;filter:drop-shadow(0 -2px 8px rgba(30,22,50,.25));animation:peekUp .45s cubic-bezier(.3,1.4,.5,1) both;}
+    @keyframes peekUp{0%{transform:translateY(56px)}100%{transform:translateY(0)}}
+    .ovlCard{position:relative;z-index:1;background:var(--cream-card);border-radius:28px;padding:22px 20px 20px;text-align:center;box-shadow:0 18px 40px rgba(30,22,50,.45);display:flex;flex-direction:column;align-items:center;gap:8px;}
+    .ovl h2{font-family:"Baloo 2";font-weight:800;font-size:23px;color:#4a2c14;line-height:1.18;}
+    .ovl h2 b{color:var(--snd);}   /* the practice sound: orange, and nothing else is */
+    .ovl p{color:#b08d63;font-weight:800;font-size:14.5px;max-width:280px;}
+    .ovlCard .act-pill,.ovlCard .cream-pill{width:100%;min-height:54px;padding:12px 20px;font-size:19px;margin-top:4px;}
+    .ovlCard .cream-pill{min-height:50px;font-size:17px;}
+    /* the say-it card between floors: a cheer, not a "Whoops!" (a missed
+       block no longer opens it), so its one line is the heading */
+    #revTitle{font-size:25px;}
+    #revHearts{line-height:1;}
+    .revMic{width:78px;height:78px;display:flex;align-items:center;justify-content:center;margin:6px 0 2px;}
+    .revMic svg{width:34px;height:34px;fill:#fff;}
+    .ovl #revListen{color:var(--act-d);font-family:"Baloo 2";font-size:18px;}
+    /* great round */
+    .eyebrow{font-family:"Baloo 2";font-weight:800;letter-spacing:.14em;text-transform:uppercase;}
+    .ovl .eyebrow{font-size:13px;color:#8a6f52;margin-bottom:-8px;}   /* the page's darker tan: the lighter one is under 3:1 on the cream at 13px */
+    #endTitle{font-size:34px;line-height:1.05;}
+    .stars{display:flex;align-items:flex-end;justify-content:center;gap:2px;height:54px;}
     .endStar{animation:starDrop .35s cubic-bezier(.3,1.6,.5,1) both;}
+    .endStar:nth-child(2){animation-delay:.12s;} .endStar:nth-child(3){animation-delay:.24s;}
     @keyframes starDrop{0%{transform:translateY(-64px) scale(.4);opacity:0}70%{transform:translateY(6px) scale(1.08);opacity:1}100%{transform:translateY(0) scale(1);opacity:1}}
-    .echoWin{position:relative;width:100%;height:96px;overflow:hidden;pointer-events:none;}
-    .echoWin img{position:absolute;left:50%;bottom:-40px;width:118px;margin-left:-59px;filter:drop-shadow(0 6px 8px rgba(30,22,50,.18));animation:echoLeap .5s cubic-bezier(.3,1.4,.5,1) both,echoHop 1.5s ease-in-out .6s infinite;}
-    @keyframes echoLeap{0%{transform:translateY(110px)}100%{transform:translateY(0)}}
-    @keyframes echoHop{0%,100%{transform:translateY(0)}45%{transform:translateY(-14px) rotate(-5deg)}}
-    @media (prefers-reduced-motion: reduce){ .endStar,.echoWin img{animation:none;} }
+    /* the finale's title keeps its whole sentence in one heading (the round's
+       test reads it whole), but only "Blast off!" is headline-sized: the rest
+       drops to its own line, smaller, so it doesn't wrap into three */
+    #endTitle .more{display:inline-block;width:100%;font-size:21px;line-height:1.2;margin-top:4px;text-wrap:balance;}
+    .endPic{display:flex;justify-content:center;} .endPic:empty{display:none;}
+    .ovl #endSub{font-size:15px;color:#8a6f52;}
+    .statRow{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;}
+    .statPill{display:inline-flex;align-items:center;gap:5px;background:#fff;border-radius:99px;padding:7px 16px;font-family:"Baloo 2";font-weight:800;font-size:17px;color:#4a2c14;box-shadow:0 3px 0 rgba(120,80,20,.12);}
+    /* a short phone (an SE is 568 tall): the same card, tighter, so both
+       buttons stay on screen without scrolling */
+    @media (max-height:680px){
+      .cardWrap{padding-top:60px;} .peek{width:92px;margin-left:-46px;}
+      .ovlCard{gap:6px;padding:18px 18px 16px;}
+      #endTitle{font-size:28px;} #endTitle .more{font-size:18px;}
+      .endPic svg{width:140px;height:84px;}
+      .ovlCard .act-pill,.ovlCard .cream-pill{min-height:48px;}
+    }
+    @media (prefers-reduced-motion: reduce){ .endStar,.peek{animation:none;} }
     /* ── the round's HUD, banner and card (27 Sep 2026) ── */
     #best{color:#4a2c14;gap:8px;}
     #best .wv{white-space:nowrap;}
@@ -86,38 +107,46 @@
   </div>
 
   <div class="ovl" id="needOvl">
-    <div class="ovlCard">
-      <img class="ovlEcho" src="/coach/echo/echo-star.svg" alt="" />
-      <h2 id="needTitle">This game needs a ticket!</h2>
-      <p>Say your sound 5 times to fill it up</p>
-      <button class="btn" id="goCharge"><svg viewBox="0 0 64 64" style="width:18px;height:18px;vertical-align:-3px"><path d="M36 4 14 36h13l-5 24 24-34H33Z" fill="#ffd21c" stroke="#f0a800" stroke-width="2.5" stroke-linejoin="round"/><circle cx="30" cy="15" r="2.5" fill="#fff" opacity=".9"/></svg> Fill my ticket!</button>
-      <button class="btn ghost" id="needHome">Back home</button>
+    <div class="cardWrap">
+      <img class="peek" src="/coach/echo/echo-star.svg" alt="" />
+      <div class="ovlCard">
+        <h2 id="needTitle">This game needs a ticket!</h2>
+        <p>Say your sound 5 times to fill it up</p>
+        <button class="act-pill" id="goCharge"><svg viewBox="0 0 64 64" style="width:18px;height:18px;vertical-align:-3px"><path d="M36 4 14 36h13l-5 24 24-34H33Z" fill="#ffd21c" stroke="#f0a800" stroke-width="2.5" stroke-linejoin="round"/><circle cx="30" cy="15" r="2.5" fill="#fff" opacity=".9"/></svg> Fill my ticket!</button>
+        <button class="cream-pill" id="needHome">Back home</button>
+      </div>
     </div>
   </div>
 
   <div class="ovl" id="revOvl">
-    <div class="ovlCard">
-      <img class="ovlEcho" src="/coach/echo/echo-listening.svg" alt="" />
-      <h2 id="revTitle">Say it!</h2>
-      <p id="revHearts" style="font-size:26px;"></p>
-      <div style="width:56px;height:56px;border-radius:50%;background:linear-gradient(180deg,#ffa05a,#ff8a3d);box-shadow:0 4px 0 #ef6f23,0 0 0 10px rgba(255,138,61,.14);display:flex;align-items:center;justify-content:center;margin:2px 0;"><svg viewBox="0 0 24 24" style="width:24px;height:24px;fill:#fff"><path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v5a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z"/></svg></div>
-      <p id="revListen" style="font-size:13px;">Get ready…</p>
-      <button class="btn ghost" id="revDone">I'm done playing</button>
+    <div class="cardWrap">
+      <img class="peek" src="/coach/echo/echo-listening.svg" alt="" />
+      <div class="ovlCard">
+        <h2 id="revTitle">Say it!</h2>
+        <p id="revHearts"></p>
+        <div class="act-mic revMic" role="img" aria-label="Microphone"><svg viewBox="0 0 24 24"><path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v5a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z"/></svg></div>
+        <p id="revListen">Get ready…</p>
+        <button class="cream-pill" id="revDone">I'm done playing</button>
+      </div>
     </div>
   </div>
 
   <div class="ovl" id="endOvl">
-    <div class="ovlCard">
-      <div class="big endStar" id="endEmoji"><svg viewBox="0 0 64 64" style="width:56px;height:56px"><path d="M32 5l8.2 18.6L60 25.8 44.9 39.2 49.8 59 32 48.4 14.2 59l4.9-19.8L4 25.8l19.8-2.2Z" fill="#ffd21c"/><circle cx="25" cy="21" r="3" fill="#fff" opacity=".85"/></svg></div>
-      <h2 id="endTitle">Great round!</h2>
-      <p id="endSub"></p>
-      <div class="echoWin"><img src="/coach/echo/echo-celebrate.svg" alt="" /></div>
-      <button class="btn blue" id="endCharge">WOOHOO! Next →</button>
-      <button class="btn" id="endAgain" style="display:none;"></button>
-      <button class="btn ghost" id="endHome">Back home</button>
+    <div class="cardWrap">
+      <img class="peek" src="/coach/echo/echo-celebrate.svg" alt="" />
+      <div class="ovlCard">
+        <p class="eyebrow" id="endGame">Block Stacker</p>
+        <h2 id="endTitle">Great round!</h2>
+        <div class="stars" id="endEmoji" aria-hidden="true"><svg class="endStar" viewBox="0 0 64 64" style="width:42px;height:42px"><path d="M32 5l8.2 18.6L60 25.8 44.9 39.2 49.8 59 32 48.4 14.2 59l4.9-19.8L4 25.8l19.8-2.2Z" fill="#ffd21c" stroke="#f0b400" stroke-width="2" stroke-linejoin="round"/><circle cx="25" cy="21" r="3" fill="#fff" opacity=".85"/></svg><svg class="endStar" viewBox="0 0 64 64" style="width:54px;height:54px"><path d="M32 5l8.2 18.6L60 25.8 44.9 39.2 49.8 59 32 48.4 14.2 59l4.9-19.8L4 25.8l19.8-2.2Z" fill="#ffd21c" stroke="#f0b400" stroke-width="2" stroke-linejoin="round"/><circle cx="25" cy="21" r="3" fill="#fff" opacity=".85"/></svg><svg class="endStar" viewBox="0 0 64 64" style="width:42px;height:42px"><path d="M32 5l8.2 18.6L60 25.8 44.9 39.2 49.8 59 32 48.4 14.2 59l4.9-19.8L4 25.8l19.8-2.2Z" fill="#ffd21c" stroke="#f0b400" stroke-width="2" stroke-linejoin="round"/><circle cx="25" cy="21" r="3" fill="#fff" opacity=".85"/></svg></div>
+        <div class="endPic" id="endPic" aria-hidden="true"></div>
+        <p id="endSub"></p>
+        <div class="statRow" id="endStats"><span class="statPill" id="endScore"></span><span class="statPill" id="endCoins"></span></div>
+        <button class="act-pill" id="endCharge">Next</button>
+        <button class="act-pill" id="endAgain" style="display:none;"></button>
+        <button class="cream-pill" id="endHome">Back to games</button>
+      </div>
     </div>
   </div>
-
 
   <script src="/sona.js"></script>
   <script>
@@ -167,16 +196,24 @@
     var tok=false; try{ var _t=sessionStorage.getItem("sona.play.token"); if(_t===SELF||_t==="1"){ tok=true; sessionStorage.setItem("sona.play.active",SELF); sessionStorage.removeItem("sona.play.token"); } else if(sessionStorage.getItem("sona.play.active")===SELF){ tok=true; } }catch(e){}
     if(!tok){ try{ $("needTitle").textContent="Block Stacker needs a ticket!"; }catch(e){} $("needOvl").classList.add("show"); }
 
-    // best height (local, just for pride)
+    // best height (local, just for pride). It no longer has a pill of its
+    // own in the top bar: that place shows this floor's progress, and every
+    // finished round is the same 18 blocks, so a running record would only
+    // ever read 18. A new best still gets its banner at the end.
     var BKEY="sona.stack.best"; var best=0; try{ best=parseInt(localStorage.getItem(BKEY)||"0",10)||0; }catch(e){}
-    if(best) $("best").textContent="Best: "+best;
 
     var cv=$("cv"), ctx=cv.getContext("2d"), W=0,H=0,DPR=Math.min(2,window.devicePixelRatio||1);
-    function fit(){ var r=$("app").getBoundingClientRect(); W=r.width; H=r.height; cv.width=W*DPR; cv.height=H*DPR; ctx.setTransform(DPR,0,0,DPR,0,0); }
+    var ROPE0=70;   // where the hook's rope starts: just under the HUD, so it never runs behind the top bar's pills
+    function fit(){ var r=$("app").getBoundingClientRect(); W=r.width; H=r.height; cv.width=W*DPR; cv.height=H*DPR; ctx.setTransform(DPR,0,0,DPR,0,0); ROPE0=$("top").getBoundingClientRect().bottom-r.top; }
     fit(); window.addEventListener("resize",fit);
 
     var COLORS=["#ff6b6b","#ffa94d","#ffd43b","#69db7c","#4dabf7","#9775fa","#f783ac"];
     var BH=34;                       // block height
+    var HANG=BH*1.5;                 // how far above the tower the hook holds the block (picture only)
+    // A dropped block is placed the instant the child taps, exactly as
+    // before; only its picture falls the HANG it hung above the tower, in
+    // FALL_MS, so a tap on "drop" looks like a drop and not a jump.
+    var FALL_MS=140, landT=-1e9;
     var baseW=Math.min(W*0.62,240); // starting width
     // A block is never narrower than this. The old tower cut every slightly-off
     // drop down, so a young child was soon aiming a sliver, missing it, and
@@ -240,11 +277,18 @@
     function echoHop(){ echoT=performance.now(); }
 
     // ── the say-it card, between floors ──
+    // The sound's letters are orange (the family's redesign brief: orange
+    // means the practice sound and nothing else), so the title is written as
+    // HTML: everything but the quoted sound is escaped text, and the sound
+    // goes through Sona.soundMark. Its words are the round's own.
+    function esc(t){ return String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+    function sayMark(){ return (window.Sona&&Sona.soundMark)?Sona.soundMark(SAYTXT,SND):'<b class="snd">'+esc(SAYTXT)+'</b>'; }
+    function markTitle(t){ var q="\u201C"+SAYTXT+"\u201D", i=t.indexOf(q); return i<0?esc(t):esc(t.slice(0,i))+"\u201C"+sayMark()+"\u201D"+esc(t.slice(i+q.length)); }
     function sayCard(title,snd){
       if(!playing) return;
       playing=false; if(snd!=="none") sfx(snd||"tap");
       if(REV>0 && CAN_LISTEN){
-        $("revTitle").textContent=title||("Say \u201C"+SAYTXT+"\u201D to keep playing!");
+        $("revTitle").innerHTML=markTitle(title||("Say \u201C"+SAYTXT+"\u201D to keep playing!"));
         $("revHearts").innerHTML=floorDots();
         reviveWait=true; $("revOvl").classList.add("show"); openReviveMic();
       } else { endRound(); }
@@ -265,7 +309,7 @@
     hud(); banner("Floor 1","Stack 5 blocks!");
 
 
-    function flash(t){ var f=$("flash"); f.textContent=t; f.style.opacity=1; f.style.transform="scale(1.18)"; setTimeout(function(){f.style.opacity=0;f.style.transform="scale(1)";},520); }
+    function flash(t){ var f=$("flash"); f.textContent=t; f.style.opacity=1; f.style.transform="rotate(-4deg) scale(1.18)"; setTimeout(function(){f.style.opacity=0;f.style.transform="rotate(-4deg) scale(1)";},520); }
     function blockY(i){ return H-46-(i+1)*BH+camY; }
 
     // ── the game's own sounds, made on the phone (27 Sep 2026) ──
@@ -304,25 +348,27 @@
       var left=Math.max(cur.x,top.x), right=Math.min(cur.x+cur.w,top.x+top.w), overlap=right-left;
       if(overlap<=6){
         // missed: it tumbles off, a fresh one slides in, and the next comes slower
-        falling.push({x:cur.x,y:y,w:cur.w,c:cur.c,vx:cur.dir*2,vy:-3,rot:0,vr:cur.dir*0.06});
+        falling.push({x:cur.x,y:y-HANG,w:cur.w,c:cur.c,vx:cur.dir*2,vy:-3,rot:0,vr:cur.dir*0.06});
         missRun++; perfectRun=0; speed=Math.max(speed0*(missRun>=3?0.55:0.7),speed*0.8); sfx("drop");
         nextBlock(Math.max(MINW,top.w)); dropping=false; return;
       }
-      var x, w;
+      var x, w, hy=y-HANG;   // hy: where the child saw it, hanging on the hook
       if(Math.abs(cur.x-top.x)<Math.max(8,top.w*(missRun>=2?0.4:0.18))){
         // close is good enough: it snaps into place, nothing is cut
-        x=top.x; w=top.w; perfectRun++; flash(perfectRun>=3?"PERFECT x"+perfectRun+"!":"PERFECT!"); sfx("correct");
+        x=top.x; w=top.w; perfectRun++; flash(perfectRun>=3?"Perfect x"+perfectRun+"!":"Perfect!"); sfx("correct");
       } else {
-        // the part hanging over the edge is cut off and falls
-        if(cur.x<top.x) falling.push({x:cur.x,y:y,w:top.x-cur.x,c:cur.c,vx:-1.6,vy:-1.5,rot:0,vr:-0.07});
-        if(cur.x+cur.w>top.x+top.w) falling.push({x:top.x+top.w,y:y,w:cur.x+cur.w-(top.x+top.w),c:cur.c,vx:1.6,vy:-1.5,rot:0,vr:0.07});
+        // the part hanging over the edge is cut off and falls, from where it hung
+        if(cur.x<top.x) falling.push({x:cur.x,y:hy,w:top.x-cur.x,c:cur.c,vx:-1.6,vy:-1.5,rot:0,vr:-0.07});
+        if(cur.x+cur.w>top.x+top.w) falling.push({x:top.x+top.w,y:hy,w:cur.x+cur.w-(top.x+top.w),c:cur.c,vx:1.6,vy:-1.5,rot:0,vr:0.07});
         x=left; w=overlap; perfectRun=0; sfx("thunk");
         // …but never down to a sliver: a narrow landing keeps MINW, over the block below
         if(w<MINW){ w=Math.min(MINW,top.w); x=Math.min(Math.max(left+overlap/2-w/2,top.x),top.x+top.w-w); }
       }
-      if(cur.gold){ var mid=x+w/2; w=baseW; x=Math.min(Math.max(mid-w/2,4),W-4-w); flash("GOLDEN! WIDER!"); sfx("gold"); echoHop(); }
-      stack.push({x:x,w:w,c:cur.c,gold:cur.gold});
-      for(var k=0;k<6;k++) puffs.push({x:x+Math.random()*w,y:y+BH-4,r:4+Math.random()*4,life:1,vx:(Math.random()-0.5)*1.4,vy:-Math.random()*0.8});
+      if(cur.gold){ var mid=x+w/2; w=baseW; x=Math.min(Math.max(mid-w/2,4),W-4-w); flash("Golden! Wider!"); sfx("gold"); echoHop(); }
+      stack.push({x:x,w:w,c:cur.c,gold:cur.gold}); landT=performance.now();
+      // the dust comes up when the picture lands, FALL_MS after the tap
+      var at=stack.length-1;
+      setTimeout(function(){ var ly=blockY(at); for(var k=0;k<6;k++) puffs.push({x:x+Math.random()*w,y:ly+BH-4,r:4+Math.random()*4,life:1,vx:(Math.random()-0.5)*1.4,vy:-Math.random()*0.8}); },FALL_MS);
       score++; floorGot++; missRun=0; $("score").textContent=score; hud();
       if(perfectRun===3||floorGot===FLOORS[floor].goal) echoHop();
       speed=Math.min(W*0.011*FLOORS[floor].speed,speed+0.05);
@@ -341,7 +387,7 @@
     }
     function launch(){
       if(!rocket||rocket.launched) return;
-      rocket.launched=true; sfx("blast"); echoHop(); flash("3… 2… 1… BLAST OFF!");
+      rocket.launched=true; sfx("blast"); echoHop(); flash("3… 2… 1… Blast off!");
     }
     function landed(){
       if(!rocket||rocket.gone) return; rocket.gone=true;
@@ -462,9 +508,18 @@
     if(window.Sona&&Sona.onBackground) Sona.onBackground(closeReviveMic); else window.addEventListener("pagehide",closeReviveMic);
     document.addEventListener("visibilitychange",function(){ if(!document.hidden&&reviveWait) openReviveMic(); });
 
-    function drawBlock(b,y){
+    function drawBlock(b,y,face){
       ctx.fillStyle=b.c; rr(b.x,y,b.w,BH-3,7); ctx.fill();
-      ctx.fillStyle="rgba(255,255,255,.18)"; rr(b.x,y,b.w,7,4); ctx.fill();
+      ctx.fillStyle="rgba(255,255,255,"+(face?".25":".18")+")"; rr(b.x,y,b.w,7,4); ctx.fill();
+      if(face){
+        // the block on the hook has a face (design 07); windows would sit
+        // right on its cheeks, so it gets them once it joins the tower
+        var mid=b.x+b.w/2;
+        ctx.fillStyle="rgba(255,120,140,.35)"; ctx.beginPath(); ctx.arc(mid-13,y+18,3.2,0,7); ctx.arc(mid+13,y+18,3.2,0,7); ctx.fill();
+        ctx.fillStyle="#3d2317"; ctx.beginPath(); ctx.arc(mid-7,y+13,2.6,0,7); ctx.arc(mid+7,y+13,2.6,0,7); ctx.fill();
+        ctx.strokeStyle="#3d2317"; ctx.lineWidth=2; ctx.lineCap="round"; ctx.beginPath(); ctx.arc(mid,y+16,4.5,0.2*Math.PI,0.8*Math.PI); ctx.stroke();
+        return;
+      }
       // lit windows: it's a tower people live in
       ctx.fillStyle=b.gold?"#fff7c2":"rgba(255,240,190,.85)";
       var n=Math.max(1,Math.floor(b.w/36));
@@ -493,9 +548,17 @@
       ctx.clearRect(0,0,W,H);
       // dusk scenery: stars, moon, toy-town lights (design 4: Block Stacker)
       ctx.fillStyle="rgba(255,255,255,.5)"; for(var si=0;si<16;si++){ ctx.fillRect(((si*131)%W),((si*197)%(H*0.5)),2,2); }
-      ctx.fillStyle="#fff4d6"; ctx.beginPath(); ctx.arc(W*0.82,H*0.14,26,0,7); ctx.fill();
-      ctx.fillStyle="rgba(255,244,214,.25)"; ctx.beginPath(); ctx.arc(W*0.82,H*0.14,36,0,7); ctx.fill();
-      if(finaleDone){ ctx.strokeStyle="#fff"; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(W*0.82+6,H*0.14-24); ctx.lineTo(W*0.82+6,H*0.14-46); ctx.stroke(); ctx.fillStyle="#ff5c5c"; ctx.beginPath(); ctx.moveTo(W*0.82+6,H*0.14-46); ctx.lineTo(W*0.82+24,H*0.14-40); ctx.lineTo(W*0.82+6,H*0.14-34); ctx.closePath(); ctx.fill(); }
+      // a crescent moon (design 07): the disc with a second disc cut out of
+      // it by a clip, so the cut never erases the stars behind it. It sits
+      // at least clear of the HUD: on a notched phone the HUD drops by the
+      // safe area and would otherwise cover it with the top bar's pills.
+      var mx=W*0.82, my=Math.max(H*0.14,ROPE0+44);
+      ctx.fillStyle="rgba(255,244,214,.14)"; ctx.beginPath(); ctx.arc(mx,my,40,0,7); ctx.fill();
+      ctx.save(); ctx.beginPath(); ctx.rect(0,0,W,H); ctx.moveTo(mx+33,my-8); ctx.arc(mx+11,my-8,22,0,Math.PI*2); ctx.clip("evenodd");
+      ctx.fillStyle="#fff4d6"; ctx.beginPath(); ctx.arc(mx,my,26,0,7); ctx.fill(); ctx.restore();
+      // once the rocket gets there, a flag on the moon: planted on the lit
+      // part of the crescent (the cut-out part is sky)
+      if(finaleDone){ ctx.strokeStyle="#fff"; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(mx-14,my-18); ctx.lineTo(mx-14,my-42); ctx.stroke(); ctx.fillStyle="#ff5c5c"; ctx.beginPath(); ctx.moveTo(mx-14,my-42); ctx.lineTo(mx+4,my-36); ctx.lineTo(mx-14,my-30); ctx.closePath(); ctx.fill(); }
       ctx.fillStyle="rgba(20,14,50,.45)";
       for(var bi=0;bi<7;bi++){ var tw=W*0.15, tx=bi*tw*0.98-8, th=H*(0.08+((bi*29)%3)*0.04); ctx.fillRect(tx,H-th,tw,th);
         ctx.fillStyle="#ffd88a"; for(var wi=0;wi<2;wi++){ ctx.fillRect(tx+6+wi*13, H-th+8, 6,7); } ctx.fillStyle="rgba(20,14,50,.45)"; }
@@ -511,7 +574,11 @@
       if(ECHO.complete&&ECHO.naturalWidth){ var hp=(now-echoT)/700, ey=hp>=0&&hp<1?-Math.sin(hp*Math.PI)*26:0, es=Math.min(78,W*0.17);
         ctx.drawImage(ECHO,W*0.04,H-46+camY-es*0.92+ey,es,es*1.07); }
       // stack
-      for(i=0;i<stack.length;i++) drawBlock(stack[i],blockY(i));
+      // (a dropped block is placed the instant it is tapped; only its
+      // picture falls the HANG it hung above the tower, in FALL_MS)
+      for(i=0;i<stack.length;i++){ var by=blockY(i);
+        if(!stack[i].base&&i===stack.length-1){ var fk=Math.min(1,(now-landT)/FALL_MS); by-=HANG*(1-fk*fk); }
+        drawBlock(stack[i],by); }
       // offcuts and missed blocks, tumbling away
       for(i=falling.length-1;i>=0;i--){ var fb=falling[i]; fb.vy+=0.5; fb.x+=fb.vx; fb.y+=fb.vy; fb.rot+=fb.vr;
         if(fb.y>H+120){ falling.splice(i,1); continue; }
@@ -519,12 +586,21 @@
       // dust where a block lands
       for(i=puffs.length-1;i>=0;i--){ var pf=puffs[i]; pf.x+=pf.vx; pf.y+=pf.vy; pf.r+=0.25; pf.life-=0.03; if(pf.life<=0){ puffs.splice(i,1); continue; }
         ctx.globalAlpha=pf.life*0.5; ctx.fillStyle="#fff4d6"; ctx.beginPath(); ctx.arc(pf.x,pf.y,pf.r,0,7); ctx.fill(); ctx.globalAlpha=1; }
-      // moving block
+      // moving block (design 07): it hangs on a rope and hook a little above
+      // the tower, with a face and a faint dashed line to where it will land.
+      // Only the picture moved: it still slides the same way at the same
+      // speed, and a drop is still judged on left/right overlap alone (a
+      // real pendulum swing would change how hard the game is).
       if(playing&&phase==="floor"&&cur){
         cur.x+=cur.dir*speed;
         if(cur.x<-8){cur.x=-8;cur.dir=1;} if(cur.x+cur.w>W+8){cur.x=W+8-cur.w;cur.dir=-1;}
-        var y=blockY(stack.length);
-        drawBlock(cur,y);
+        var y=blockY(stack.length)-HANG, mid=cur.x+cur.w/2;
+        var rope=ctx.createLinearGradient(0,ROPE0-6,0,ROPE0+44); rope.addColorStop(0,"rgba(232,228,247,0)"); rope.addColorStop(1,"rgba(232,228,247,.8)");
+        ctx.strokeStyle=rope; ctx.lineWidth=2.5; ctx.beginPath(); ctx.moveTo(mid,ROPE0-6); ctx.lineTo(mid,y-8); ctx.stroke();
+        ctx.fillStyle="#c9c3e6"; ctx.beginPath(); ctx.moveTo(mid-6,y-11); ctx.lineTo(mid+6,y-11); ctx.lineTo(mid+10,y+1); ctx.lineTo(mid-10,y+1); ctx.closePath(); ctx.fill();
+        ctx.save(); ctx.setLineDash([4,7]); ctx.lineCap="round"; ctx.strokeStyle="rgba(255,255,255,.4)"; ctx.lineWidth=2.5;
+        ctx.beginPath(); ctx.moveTo(mid,y+BH+3); ctx.lineTo(mid,y+BH+HANG-6); ctx.stroke(); ctx.restore();
+        drawBlock(cur,y,true);
         if(cur.gold){ ctx.strokeStyle="rgba(255,244,180,"+(0.5+0.5*Math.sin(now/120))+")"; ctx.lineWidth=3; rr(cur.x-3,y-3,cur.w+6,BH+3,9); ctx.stroke(); }
       }
       // the rocket on the top, then away to the moon
@@ -543,6 +619,49 @@
     function rr(x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
     draw();
 
+    // ---- round over ----
+    // ── the Great round card (the family's redesign brief, 28 Sep 2026) ──
+    // It was one star, one line and Echo, with "no stat rows or coin
+    // counters". The brief asks for the game's name, three stars, what the
+    // round earned in the game's own unit, the coins the round already
+    // awarded (the coin maths is unchanged; the card only says it) and one
+    // next step. The stars are not a grade: every round with points gets all
+    // three and a round with none gets "Good try!" and no stars, so there is
+    // never an empty star to fall short of. "Next" follows the arcade chain
+    // (slice → tiles → stack → run → glide → slice) and shows only when that
+    // game opens for this family (Sona.gameAccess); otherwise "Back to games"
+    // stands alone and takes the teal.
+    var NEXT="run";
+    function gameName(k,fb){ try{ var a=S.gameAct(k); if(a&&a.name) return a.name; }catch(e){} return fb; }
+    function nextOpen(){ try{ return !!S.gameAct(NEXT)&&S.gameAccess(NEXT).allowed; }catch(e){ return false; } }
+    function endCard(o){
+      $("endGame").textContent=gameName("stack","Block Stacker");
+      $("endTitle").innerHTML=esc(o.title)+(o.more?' <span class="more">'+esc(o.more)+"</span>":"");
+      $("endEmoji").style.display=o.stars?"":"none";
+      $("endPic").innerHTML=o.pic||"";
+      $("endSub").textContent=o.line||""; $("endSub").style.display=o.line?"":"none";
+      $("endScore").textContent=o.stat||""; $("endScore").style.display=o.stat?"":"none";
+      var c=$("endCoins"); c.style.display=o.coins>0?"":"none";
+      if(o.coins>0){ c.innerHTML=((S&&S.icon)?S.icon("coin",20):"")+"+"+o.coins; c.setAttribute("aria-label",o.coins+" coins"); }
+      $("endStats").style.display=(o.stat||o.coins>0)?"":"none";
+      var next=!!o.buttons&&!o.again&&nextOpen();
+      $("endCharge").style.display=next?"":"none"; if(next) $("endCharge").textContent="Next: "+gameName(NEXT,"");
+      var ea=$("endAgain"); ea.style.display=o.again?"":"none"; if(o.again){ ea.textContent=o.again; ea.onclick=backToCharge; }
+      $("endHome").style.display=o.buttons?"":"none"; $("endHome").className=(next||o.again)?"cream-pill":"act-pill";
+    }
+    function blocksSaid(n){ return n+(n===1?" block":" blocks"); }
+    // What the round earned, drawn (design 11's "what they earned"): the top
+    // of this child's own tower, block for block in its colours and widths,
+    // the top one with the face it wore on the hook. No new art.
+    function towerPic(){
+      var top=stack.slice(1).slice(-7); if(!top.length) return "";
+      var L=Infinity, R=-Infinity; top.forEach(function(b){ L=Math.min(L,b.x); R=Math.max(R,b.x+b.w); });
+      var k=Math.min(110/baseW,170/Math.max(1,R-L)), cx=(L+R)/2, h=13, H0=top.length*h+4, out="";
+      for(var i=0;i<top.length;i++){ var b=top[i], y=H0-(i+1)*h, x=90+(b.x-cx)*k, w=Math.max(6,b.w*k);
+        out+='<rect x="'+x.toFixed(1)+'" y="'+y+'" width="'+w.toFixed(1)+'" height="'+(h-2)+'" rx="4" fill="'+b.c+'"/><rect x="'+(x+2).toFixed(1)+'" y="'+(y+1.5)+'" width="'+Math.max(2,w-4).toFixed(1)+'" height="3" rx="1.5" fill="#fff" opacity=".3"/>';
+        if(i===top.length-1){ var fx=x+w/2; out+='<circle cx="'+(fx-4).toFixed(1)+'" cy="'+(y+5)+'" r="1.3" fill="#3d2317"/><circle cx="'+(fx+4).toFixed(1)+'" cy="'+(y+5)+'" r="1.3" fill="#3d2317"/><path d="M'+(fx-2.5).toFixed(1)+' '+(y+7.5)+'q2.5 2 5 0" fill="none" stroke="#3d2317" stroke-width="1.2" stroke-linecap="round"/>'; } }
+      return '<svg viewBox="0 0 180 '+(H0+6)+'" width="180" height="'+(H0+6)+'"><ellipse cx="90" cy="'+(H0+2)+'" rx="64" ry="4" fill="rgba(74,44,20,.12)"/>'+out+'</svg>';
+    }
     function bankAndContinue(){ S.finishGameTurn("stack",score); location.href="/charge.html?daily=1&banked="+score; }
     function endRound(){
       closeReviveMic();
@@ -551,36 +670,31 @@
       playing=false; reviveWait=false; phase="done";
       var coins=Math.min(10,(score/3)|0);
       try{ if(coins&&S&&S.addCoins)S.addCoins(coins); }catch(e){}
-      if(score>best){ best=score; try{ localStorage.setItem(BKEY,String(best)); }catch(e){} flash("NEW BEST!"); }
+      if(score>best){ best=score; try{ localStorage.setItem(BKEY,String(best)); }catch(e){} flash("New best!"); }
       sfx("complete"); try{ if(S&&S.confetti)S.confetti(); }catch(e){}
       if(isDaily){
         // Daily Run: bank the score and keep the run moving — no buttons, no stall.
-        if(score===0){ $("endEmoji").style.opacity=".25"; } // gentle zero tier: dim the star, keep it warm
-        $("endTitle").textContent=score===0?"Good try!":("+"+score+" points!");
-        $("endSub").textContent=score===0?"On to the next game…":"Banking your score…";
-        $("endCharge").style.display="none"; $("endAgain").style.display="none"; $("endHome").style.display="none";
+        endCard({title:score===0?"Good try!":"Great round!", stars:score>0, stat:score?blocksSaid(score):"", coins:coins,
+          line:score===0?"On to the next game…":"Banking your score…"});
         setTimeout(function(){ $("endOvl").classList.add("show"); },350);
         setTimeout(bankAndContinue,1500);
         return;
       }
       if(score===0){
-        // gentle zero tier: encouraging copy, dimmed star, happy Echo, one warm "again" button
-        $("endEmoji").style.opacity=".25";
-        $("endTitle").textContent="Good try! Wanna go again?";
-        $("endSub").className=""; $("endSub").style.display="none";
-        $("endCharge").style.display="none";
-        var ea=$("endAgain"); ea.textContent="Yes! Play again"; ea.style.display=""; ea.onclick=backToCharge;
+        // gentle zero tier: encouraging copy, happy Echo, one warm "again" button
+        endCard({title:"Good try! Wanna go again?", buttons:true, again:"Yes! Play again"});
         setTimeout(function(){ $("endOvl").classList.add("show"); },450);
         return;
       }
-      // one reward per moment: star + one line + Echo — no stat rows or coin counters here
-      $("endTitle").textContent=finaleDone?"Blast off! You built "+score+" blocks to the moon!":score>=14?"We built it SKY-HIGH! "+score+" blocks!":"Look at our tower — "+score+" blocks!";
-      var _es=$("endSub"); _es.textContent=score+" blocks · Best: "+best; // was BEST, never declared on this page: the line threw and the win card never opened
-      setTimeout(function(){ _es.classList.add("in"); },1000);
-      $("endAgain").style.display="none";
+      // The rocket reached the moon: the round's own headline takes the
+      // title's place ("Blast off!", then how many blocks sent it up). A
+      // round stopped early on the say-it card is still a Great round.
+      if(finaleDone) endCard({title:"Blast off!", more:"You built "+score+" blocks to the moon!", stars:true, pic:towerPic(), stat:blocksSaid(score), coins:coins, buttons:true});
+      else endCard({title:"Great round!", stars:true, pic:towerPic(), stat:blocksSaid(score), coins:coins, buttons:true,
+        line:score>=14?"We built it SKY-HIGH! "+score+" blocks!":"Look at our tower — "+score+" blocks!"});
       setTimeout(function(){ $("endOvl").classList.add("show"); },450);
     }
-    $("endCharge").onclick=function(){ location.href=isDaily?"/charge.html?daily=1":(S.gameAccess("run").allowed?"/charge.html?game=arcade-run.html":"/activities.html"); };
+    $("endCharge").onclick=function(){ location.href=isDaily?"/charge.html?daily=1":(nextOpen()?"/charge.html?game=arcade-"+NEXT+".html":"/today.html#play"); };
     $("endAgain").onclick=function(){ location.reload(); };
     $("endHome").onclick=function(){ S.finishGameTurn("stack"); location.href="/today.html#play"; };
     $("close").onclick=function(){ closeReviveMic(); S.finishGameTurn("stack"); if(isDaily){ bankAndContinue(); return; } location.href="/today.html#play"; };

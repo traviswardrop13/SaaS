@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
   <title>Sona — Flappy Glide</title>
   <link href="/fonts.css" rel="stylesheet">
+  <link rel="stylesheet" href="/action.css">
   <meta name="theme-color" content="#3f74ab" />
   <style>
     :root{ --blue:#1cb0f6; --blue-d:#1597d4; --green:#58cc02; --green-d:#46a302; }
@@ -21,36 +22,55 @@
     #score{flex:none;}
     #hudspacer{flex:1;}
     #timer{color:#ff5c74;letter-spacing:1px;}
-    /* ── warm-card overlays (handoff section 5) ── */
-    .ovl{position:fixed;inset:0;z-index:50;background:rgba(30,22,50,.55);display:none;align-items:center;justify-content:center;padding:24px;}
+    /* ── cards over the game (the family's redesign brief, 28 Sep 2026) ──
+       Echo peeks over the card's top edge from BEHIND it (designs 10, 11):
+       he sits in the wrapper under the card, so the card's own edge hides
+       him below the beak. Drawn inside the card he would paint over it.
+       Teal is the one action colour and cream the second choice; both come
+       from /action.css and are never pasted here. */
+    .ovl{position:fixed;inset:0;z-index:50;background:rgba(30,22,50,.55);display:none;padding:calc(16px + env(safe-area-inset-top)) 20px calc(16px + env(safe-area-inset-bottom));overflow-y:auto;}
     .ovl.show{display:flex;}
-    .ovlCard{background:#fff6e9;border-radius:28px;padding:58px 20px 22px;width:100%;max-width:330px;text-align:center;box-shadow:0 18px 40px rgba(30,22,50,.45);position:relative;display:flex;flex-direction:column;align-items:center;gap:9px;}
-    .ovlEcho{position:absolute;top:-54px;left:50%;transform:translateX(-50%);width:106px;height:106px;filter:drop-shadow(0 8px 12px rgba(30,22,50,.3));}
-    .ovl .big{font-size:56px;line-height:1;}
-    .ovl h2{font-family:"Baloo 2";font-weight:800;font-size:24px;color:#4a2c14;line-height:1.18;}
-    .ovl h2 b{color:#7048c9;}
-    .ovl p{color:#b08d63;font-weight:800;font-size:14.5px;max-width:270px;}
-    .statRow{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;}
-    .statPill{background:#fff;border-radius:99px;padding:8px 15px;font-family:"Baloo 2";font-weight:800;font-size:14.5px;color:#4a2c14;box-shadow:0 3px 0 rgba(120,80,20,.12);}
-    .btn{border:none;border-radius:20px;padding:15px 30px;font-family:"Baloo 2";font-weight:800;font-size:17px;text-transform:uppercase;letter-spacing:.04em;color:#fff;background:linear-gradient(180deg,#ffa05a,#ff8a3d);box-shadow:0 6px 0 #ef6f23;cursor:pointer;transition:transform .05s;margin-top:4px;width:100%;}
-    .btn:active{transform:translateY(4px);box-shadow:0 2px 0 #46a302;}
-    .btn.blue{background:linear-gradient(180deg,#5cc6ff,#1cb0f6);box-shadow:0 6px 0 #1480c0;}
-    .btn.blue:active{box-shadow:0 2px 0 #1480c0;}
-    .btn.ghost{background:none;box-shadow:none;color:#b08d63;text-transform:none;font-size:13px;width:auto;padding:8px;}
-    /* Echo speaks the win: bubble with a tail toward the leap; numbers fade in later */
-    #endTitle{position:relative;background:#fff;border-radius:18px;padding:12px 18px;box-shadow:0 6px 16px rgba(74,44,20,.12);display:inline-block;}
-    #endTitle:after{content:"";position:absolute;left:50%;bottom:-8px;transform:translateX(-50%) rotate(45deg);width:16px;height:16px;background:#fff;border-radius:3px;}
-    #endSub.later{display:block!important;opacity:0;font-size:12.5px;color:var(--muted,#b08d63);transition:opacity .5s ease;margin-top:2px;}
-    #endSub.later.in{opacity:1;}
-    /* ── end-overlay celebration: star drop + Echo leap (Duolingo-ABC three-element stack) ── */
-    #endOvl .ovlCard{padding-top:24px;}
+    .cardWrap{position:relative;width:100%;max-width:340px;margin:auto;padding-top:76px;}
+    .peek{position:absolute;top:0;left:50%;width:112px;margin-left:-56px;z-index:0;pointer-events:none;filter:drop-shadow(0 -2px 8px rgba(30,22,50,.25));animation:peekUp .45s cubic-bezier(.3,1.4,.5,1) both;}
+    @keyframes peekUp{0%{transform:translateY(56px)}100%{transform:translateY(0)}}
+    .ovlCard{position:relative;z-index:1;background:var(--cream-card);border-radius:28px;padding:22px 20px 20px;text-align:center;box-shadow:0 18px 40px rgba(30,22,50,.45);display:flex;flex-direction:column;align-items:center;gap:8px;}
+    .ovl h2{font-family:"Baloo 2";font-weight:800;font-size:23px;color:#4a2c14;line-height:1.18;}
+    .ovl h2 b{color:var(--snd);}   /* the practice sound: orange, and nothing else is */
+    .ovl p{color:#b08d63;font-weight:800;font-size:14.5px;max-width:280px;}
+    .ovlCard .act-pill,.ovlCard .cream-pill{width:100%;min-height:54px;padding:12px 20px;font-size:19px;margin-top:4px;}
+    .ovlCard .cream-pill{min-height:50px;font-size:17px;}
+    /* the say-it card, on a cloud between legs: the ask is its headline
+       (it follows a finished leg, not a miss, so no "Whoops!") */
+    #revTitle{font-size:24px;}
+    #revHearts{line-height:1;}
+    .revMic{width:78px;height:78px;display:flex;align-items:center;justify-content:center;margin:6px 0 2px;}
+    .revMic svg{width:34px;height:34px;fill:#fff;}
+    .ovl #revListen{color:var(--act-d);font-family:"Baloo 2";font-size:18px;}
+    /* great round */
+    .eyebrow{font-family:"Baloo 2";font-weight:800;letter-spacing:.14em;text-transform:uppercase;}
+    .ovl .eyebrow{font-size:13px;color:#8a6f52;margin-bottom:-8px;}   /* the page's darker tan: the lighter one is under 3:1 on the cream at 13px */
+    #endTitle{font-size:34px;line-height:1.05;}
+    .stars{display:flex;align-items:flex-end;justify-content:center;gap:2px;height:54px;}
     .endStar{animation:starDrop .35s cubic-bezier(.3,1.6,.5,1) both;}
+    .endStar:nth-child(2){animation-delay:.12s;} .endStar:nth-child(3){animation-delay:.24s;}
     @keyframes starDrop{0%{transform:translateY(-64px) scale(.4);opacity:0}70%{transform:translateY(6px) scale(1.08);opacity:1}100%{transform:translateY(0) scale(1);opacity:1}}
-    .echoWin{position:relative;width:100%;height:96px;overflow:hidden;pointer-events:none;}
-    .echoWin img{position:absolute;left:50%;bottom:-40px;width:118px;margin-left:-59px;filter:drop-shadow(0 6px 8px rgba(30,22,50,.18));animation:echoLeap .5s cubic-bezier(.3,1.4,.5,1) both,echoHop 1.5s ease-in-out .6s infinite;}
-    @keyframes echoLeap{0%{transform:translateY(110px)}100%{transform:translateY(0)}}
-    @keyframes echoHop{0%,100%{transform:translateY(0)}45%{transform:translateY(-14px) rotate(-5deg)}}
-    @media (prefers-reduced-motion: reduce){ .endStar,.echoWin img{animation:none;} }
+    /* the landing's line sits under "Great round!" inside the title: the
+       flight is always won, and the card says how */
+    #endTitle .finale{display:block;font-size:19px;line-height:1.2;color:#4a2c14;margin-top:6px;}
+    .endPic{display:flex;justify-content:center;} .endPic:empty{display:none;}
+    .ovl #endSub{font-size:15px;color:#8a6f52;}
+    .statRow{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;}
+    .statPill{display:inline-flex;align-items:center;gap:5px;background:#fff;border-radius:99px;padding:7px 16px;font-family:"Baloo 2";font-weight:800;font-size:17px;color:#4a2c14;box-shadow:0 3px 0 rgba(120,80,20,.12);}
+    /* a short phone (an SE is 568 tall): the same card, tighter, so both
+       buttons stay on screen without scrolling */
+    @media (max-height:680px){
+      .cardWrap{padding-top:60px;} .peek{width:92px;margin-left:-46px;}
+      .ovlCard{gap:6px;padding:18px 18px 16px;}
+      #endTitle{font-size:28px;} #endTitle .finale{font-size:17px;}
+      .endPic svg{width:140px;height:84px;}
+      .ovlCard .act-pill,.ovlCard .cream-pill{min-height:48px;}
+    }
+    @media (prefers-reduced-motion: reduce){ .endStar,.peek{animation:none;} }
     /* ── the flight's HUD, banner and card (27 Sep 2026) ── */
     #tapHint{color:#fff!important;text-shadow:0 2px 3px rgba(120,60,20,.55);}
     #timer{color:#4a2c14;letter-spacing:0;gap:8px;}
@@ -87,38 +107,46 @@
   </div>
 
   <div class="ovl" id="needOvl">
-    <div class="ovlCard">
-      <img class="ovlEcho" src="/coach/echo/echo-star.svg" alt="" />
-      <h2 id="needTitle">This game needs a ticket!</h2>
-      <p>Say your sound 5 times to fill it up</p>
-      <button class="btn" id="goCharge"><svg viewBox="0 0 64 64" style="width:18px;height:18px;vertical-align:-3px"><path d="M36 4 14 36h13l-5 24 24-34H33Z" fill="#ffd21c" stroke="#f0a800" stroke-width="2.5" stroke-linejoin="round"/><circle cx="30" cy="15" r="2.5" fill="#fff" opacity=".9"/></svg> Fill my ticket!</button>
-      <button class="btn ghost" id="needHome">Back home</button>
+    <div class="cardWrap">
+      <img class="peek" src="/coach/echo/echo-star.svg" alt="" />
+      <div class="ovlCard">
+        <h2 id="needTitle">This game needs a ticket!</h2>
+        <p>Say your sound 5 times to fill it up</p>
+        <button class="act-pill" id="goCharge"><svg viewBox="0 0 64 64" style="width:18px;height:18px;vertical-align:-3px"><path d="M36 4 14 36h13l-5 24 24-34H33Z" fill="#ffd21c" stroke="#f0a800" stroke-width="2.5" stroke-linejoin="round"/><circle cx="30" cy="15" r="2.5" fill="#fff" opacity=".9"/></svg> Fill my ticket!</button>
+        <button class="cream-pill" id="needHome">Back home</button>
+      </div>
     </div>
   </div>
 
   <div class="ovl" id="revOvl">
-    <div class="ovlCard">
-      <img class="ovlEcho" src="/coach/echo/echo-listening.svg" alt="" />
-      <h2 id="revTitle">Say it!</h2>
-      <p id="revHearts" style="font-size:26px;"></p>
-      <div style="width:56px;height:56px;border-radius:50%;background:linear-gradient(180deg,#ffa05a,#ff8a3d);box-shadow:0 4px 0 #ef6f23,0 0 0 10px rgba(255,138,61,.14);display:flex;align-items:center;justify-content:center;margin:2px 0;"><svg viewBox="0 0 24 24" style="width:24px;height:24px;fill:#fff"><path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v5a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z"/></svg></div>
-      <p id="revListen" style="font-size:13px;">Get ready…</p>
-      <button class="btn ghost" id="revDone">I'm done playing</button>
+    <div class="cardWrap">
+      <img class="peek" src="/coach/echo/echo-listening.svg" alt="" />
+      <div class="ovlCard">
+        <h2 id="revTitle">Say it!</h2>
+        <p id="revHearts"></p>
+        <div class="act-mic revMic" role="img" aria-label="Microphone"><svg viewBox="0 0 24 24"><path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v5a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z"/></svg></div>
+        <p id="revListen">Get ready…</p>
+        <button class="cream-pill" id="revDone">I'm done playing</button>
+      </div>
     </div>
   </div>
 
   <div class="ovl" id="endOvl">
-    <div class="ovlCard">
-      <div class="big endStar" id="endEmoji"><svg viewBox="0 0 64 64" style="width:56px;height:56px"><path d="M32 5l8.2 18.6L60 25.8 44.9 39.2 49.8 59 32 48.4 14.2 59l4.9-19.8L4 25.8l19.8-2.2Z" fill="#ffd21c"/><circle cx="25" cy="21" r="3" fill="#fff" opacity=".85"/></svg></div>
-      <h2 id="endTitle">Great round!</h2>
-      <p id="endSub"></p>
-      <div class="echoWin"><img src="/coach/echo/echo-celebrate.svg" alt="" /></div>
-      <button class="btn blue" id="endCharge">WOOHOO! Next →</button>
-      <button class="btn" id="endAgain" style="display:none;"></button>
-      <button class="btn ghost" id="endHome">Back home</button>
+    <div class="cardWrap">
+      <img class="peek" src="/coach/echo/echo-celebrate.svg" alt="" />
+      <div class="ovlCard">
+        <p class="eyebrow" id="endGame">Flappy Glide</p>
+        <h2 id="endTitle">Great round!</h2>
+        <div class="stars" id="endEmoji" aria-hidden="true"><svg class="endStar" viewBox="0 0 64 64" style="width:42px;height:42px"><path d="M32 5l8.2 18.6L60 25.8 44.9 39.2 49.8 59 32 48.4 14.2 59l4.9-19.8L4 25.8l19.8-2.2Z" fill="#ffd21c" stroke="#f0b400" stroke-width="2" stroke-linejoin="round"/><circle cx="25" cy="21" r="3" fill="#fff" opacity=".85"/></svg><svg class="endStar" viewBox="0 0 64 64" style="width:54px;height:54px"><path d="M32 5l8.2 18.6L60 25.8 44.9 39.2 49.8 59 32 48.4 14.2 59l4.9-19.8L4 25.8l19.8-2.2Z" fill="#ffd21c" stroke="#f0b400" stroke-width="2" stroke-linejoin="round"/><circle cx="25" cy="21" r="3" fill="#fff" opacity=".85"/></svg><svg class="endStar" viewBox="0 0 64 64" style="width:42px;height:42px"><path d="M32 5l8.2 18.6L60 25.8 44.9 39.2 49.8 59 32 48.4 14.2 59l4.9-19.8L4 25.8l19.8-2.2Z" fill="#ffd21c" stroke="#f0b400" stroke-width="2" stroke-linejoin="round"/><circle cx="25" cy="21" r="3" fill="#fff" opacity=".85"/></svg></div>
+        <div class="endPic" id="endPic" aria-hidden="true"></div>
+        <p id="endSub"></p>
+        <div class="statRow" id="endStats"><span class="statPill" id="endScore"></span><span class="statPill" id="endCoins"></span></div>
+        <button class="act-pill" id="endCharge">Next</button>
+        <button class="act-pill" id="endAgain" style="display:none;"></button>
+        <button class="cream-pill" id="endHome">Back to games</button>
+      </div>
     </div>
   </div>
-
 
   <script src="/sona.js"></script>
   <script>
@@ -176,6 +204,15 @@
     var playing=true, score=0;
     var BESTK="sona.best.glide", BEST=0; try{ BEST=parseInt(localStorage.getItem(BESTK)||"0",10)||0; }catch(e){}
     var REV=3, reviveWait=false;   // say-the-sound cards: one on each cloud rest
+    // The say-it card's line keeps its words; only the practice sound's
+    // letters turn orange (the family's redesign brief, 28 Sep 2026: orange
+    // means the sound and nothing else). Sona.soundMark decides which letters.
+    function esc(t){ return String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+    function sayMark(){ return (window.Sona&&Sona.soundMark)?Sona.soundMark(SAYTXT,SND):'<b class="snd">'+esc(SAYTXT)+'</b>'; }
+    function markSay(t){
+      var q="\u201C"+SAYTXT+"\u201D", i=t.indexOf(q);
+      return i<0?esc(t):esc(t.slice(0,i))+"\u201C"+sayMark()+"\u201D"+esc(t.slice(i+q.length));
+    }
 
     // ── the flight: three legs, a cloud rest between, then a fireworks landing (27 Sep 2026) ──
     // The round Travis said yes to for Fruit Slice, as a balloon flight, with
@@ -245,7 +282,7 @@
       if(!playing) return;
       playing=false; gates=[]; if(snd!=="none") sfx(snd||"tap");
       if(REV>0 && CAN_LISTEN){
-        $("revTitle").textContent=title||("Say \u201C"+SAYTXT+"\u201D to keep playing!");
+        $("revTitle").innerHTML=markSay(title||("Say \u201C"+SAYTXT+"\u201D to keep playing!"));
         $("revHearts").innerHTML=legDots();
         reviveWait=true; $("revOvl").classList.add("show"); openReviveMic();
       } else { endRound(); }
@@ -466,6 +503,40 @@
     document.addEventListener("visibilitychange",function(){ if(!document.hidden&&reviveWait) openReviveMic(); });
 
     // ---- round over ----
+    // ── the Great round card (the family's redesign brief, 28 Sep 2026) ──
+    // It was one star, one line and Echo, with "no stat rows or coin
+    // counters". The brief asks for the game's name, three stars, what the
+    // round earned in the game's own unit, the coins the round already
+    // awarded (the coin maths is unchanged; the card only says it) and one
+    // next step. The stars are not a grade: every round with points gets all
+    // three and a round with none gets "Good try!" and no stars, so there is
+    // never an empty star to fall short of. "Next" follows the arcade chain
+    // (slice → tiles → stack → run → glide → slice) and shows only when that
+    // game opens for this family (Sona.gameAccess); otherwise "Back to games"
+    // stands alone and takes the teal. A flight that landed says so under
+    // "Great round!", inside the title (the landing's own line, 27 Sep 2026).
+    var NEXT="slice";
+    function gameName(k,fb){ try{ var a=S.gameAct(k); if(a&&a.name) return a.name; }catch(e){} return fb; }
+    function nextOpen(){ try{ return !!S.gameAct(NEXT)&&S.gameAccess(NEXT).allowed; }catch(e){ return false; } }
+    function endCard(o){
+      $("endGame").textContent=gameName("glide","Flappy Glide");
+      var t=$("endTitle"); t.textContent=o.title;
+      if(o.finale){ var f=document.createElement("span"); f.className="finale"; f.textContent=o.finale; t.appendChild(f); }
+      $("endEmoji").style.display=o.stars?"":"none";
+      $("endPic").innerHTML=o.pic||"";
+      $("endSub").textContent=o.line||""; $("endSub").style.display=o.line?"":"none";
+      $("endScore").textContent=o.stat||""; $("endScore").style.display=o.stat?"":"none";
+      var c=$("endCoins"); c.style.display=o.coins>0?"":"none";
+      if(o.coins>0){ c.innerHTML=((S&&S.icon)?S.icon("coin",20):"")+"+"+o.coins; c.setAttribute("aria-label",o.coins+" coins"); }
+      $("endStats").style.display=(o.stat||o.coins>0)?"":"none";
+      var next=!!o.buttons&&!o.again&&nextOpen();
+      $("endCharge").style.display=next?"":"none"; if(next) $("endCharge").textContent="Next: "+gameName(NEXT,"");
+      var ea=$("endAgain"); ea.style.display=o.again?"":"none"; if(o.again){ ea.textContent=o.again; ea.onclick=backToCharge; }
+      $("endHome").style.display=o.buttons?"":"none"; $("endHome").className=(next||o.again)?"cream-pill":"act-pill";
+    }
+    // the score is the gaps flown plus the stars caught (a golden one is
+    // three), so it is said as both, in the flight's own words
+    function pointsSaid(n){ return n+" stars and gaps"; }
     function bankAndContinue(){ S.finishGameTurn("glide",score); location.href="/charge.html?daily=1&banked="+score; }
     function endRound(){
       closeReviveMic();
@@ -477,32 +548,27 @@
       try{ if(coins&&S&&S.addCoins)S.addCoins(coins); }catch(e){}
       sfx("complete"); try{ if(S&&S.confetti)S.confetti(); }catch(e){}
       if(isDaily){
-        if(score===0){ $("endEmoji").style.opacity=".25"; } // gentle zero tier: dim the star, keep it warm
-        $("endTitle").textContent=score===0?"Good try!":("+"+score+" points!");
-        $("endSub").textContent=score===0?"On to the next game…":"Banking your score…";
-        $("endCharge").style.display="none"; $("endAgain").style.display="none"; $("endHome").style.display="none";
+        endCard({title:score===0?"Good try!":"Great round!", stars:score>0, stat:score?pointsSaid(score):"", coins:coins,
+          line:score===0?"On to the next game…":"Banking your score…"});
         $("endOvl").classList.add("show");
         setTimeout(bankAndContinue,1400);
         return;
       }
       if(score===0){
-        // gentle zero tier: encouraging copy, dimmed star, happy Echo, one warm "again" button
-        $("endEmoji").style.opacity=".25";
-        $("endTitle").textContent="Good try! Wanna go again?";
-        $("endSub").className=""; $("endSub").style.display="none";
-        $("endCharge").style.display="none";
-        var ea=$("endAgain"); ea.textContent="Yes! Play again"; ea.style.display=""; ea.onclick=backToCharge;
+        // gentle zero tier: encouraging copy, happy Echo, one warm "again" button
+        endCard({title:"Good try! Wanna go again?", buttons:true, again:"Yes! Play again"});
         $("endOvl").classList.add("show");
         return;
       }
-      // one reward per moment: star + one line + Echo — no stat rows or coin counters here
-      $("endTitle").textContent=finaleDone?"What a flight! You landed with fireworks!":isBest&&score>0?"NEW BEST! We flew SO far!":"What a flight, little glider!";
-      var _es=$("endSub"); _es.textContent=score+" stars and gaps · Best: "+BEST; _es.className="later";
-      setTimeout(function(){ _es.classList.add("in"); },1000);
-      $("endAgain").style.display="none";
+      // a landed flight: its line replaces Echo's, as it did the title
+      // A landed flight leads with its own win, like the other four rounds;
+      // "Great round!" is for a flight the child ended early.
+      endCard({title:finaleDone?"What a flight!":"Great round!", stars:true, stat:pointsSaid(score), coins:coins, buttons:true,
+        finale:finaleDone?"You landed with fireworks!":"",
+        line:finaleDone?"":isBest?"NEW BEST! We flew SO far!":"What a flight, little glider!"});
       $("endOvl").classList.add("show");
     }
-    $("endCharge").onclick=function(){ location.href=isDaily?"/charge.html?daily=1":(S.gameAccess("slice").allowed?"/charge.html?game=arcade-slice.html":"/activities.html"); };
+    $("endCharge").onclick=function(){ location.href=isDaily?"/charge.html?daily=1":(nextOpen()?"/charge.html?game=arcade-"+NEXT+".html":"/today.html#play"); };
     $("endHome").onclick=function(){ S.finishGameTurn("glide"); location.href="/today.html#play"; };
     $("close").onclick=function(){ closeReviveMic(); S.finishGameTurn("glide"); if(playing){ playing=false; } if(isDaily){ bankAndContinue(); return; } location.href="/today.html#play"; };
     }

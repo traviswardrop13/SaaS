@@ -260,7 +260,8 @@ async function page(mic) {
   const sona = readFileSync(ROOT + "/sona.js", "utf8");
   ok("micDenied lives in sona.js and is exported", /function micDenied/.test(sona) && /\bmicDenied,/.test(sona),
     "every recording page must reach the same screen — a second copy drifts");
-  for (const f of ["charge.html", "story.html", "check.html", "coach-call.html"]) {
+  // library.html listens for a picture book's key word (28 Sep 2026)
+  for (const f of ["charge.html", "story.html", "check.html", "coach-call.html", "library.html"]) {
     const src = noComments(readFileSync(ROOT + "/" + f, "utf8"));
     ok(f + " routes a denial to that screen", /micDenied\(/.test(src),
       "a page that records must never leave a denial unexplained");

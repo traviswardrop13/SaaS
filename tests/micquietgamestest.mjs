@@ -240,10 +240,18 @@ function stripComments(src) { return src.replace(/\/\*[\s\S]*?\*\//g, "").replac
 // ── the five arcade games: STAR MODE is gone; the keep-playing card is the
 // only listener, and only while it shows ──
 const ARCADE = [["run", "arcade-run.html"], ["slice", "arcade-slice.html"], ["stack", "arcade-stack.html"], ["tiles", "arcade-tiles.html"], ["glide", "arcade-glide.html"]];
+// The Great round card's "Next" follows the arcade chain (the family's
+// redesign brief, 28 Sep 2026), and each game sets its own score to reach
+// the card with points: a round with none ends on "Good try!" and no Next.
+const NEXT_GAME = { slice: "tiles", tiles: "stack", stack: "run", run: "glide", glide: "slice" };
+const SCORED = { slice: () => { score = 7; }, tiles: () => { score = 7; }, stack: () => { score = 7; }, run: () => { dist = 70; }, glide: () => { score = 7; } };
 for (const [key, file] of ARCADE) {
   const code = stripComments(readFileSync(ROOT + "/" + file, "utf8"));
+  // The brief's mockups still show the boost pills ("Say rrrr for FRENZY /
+  // GOLDEN KEYS"); they predate the 24 Sep removal and must not come back
+  // with the redesign.
   ok(key + ": STAR MODE and its always-on boost mic are gone from the code",
-    !/boostChip|fireBoost|paintChip|STAR MODE|FRUIT FRENZY|GOLDEN KEYS|SLOW-MO|SUPER FLOAT|boost\.on/.test(code), "a power-up that listens for the whole game keeps an iPhone in call audio");
+    !/boostChip|fireBoost|paintChip|STAR MODE|FRENZY|GOLDEN KEYS|SLOW-MO|SUPER FLOAT|boost\.on/.test(code), "a power-up that listens for the whole game keeps an iPhone in call audio");
   ok(key + ": the keep-playing card still asks for the sound, family-checked", /to keep playing!/.test(code) && /famOK/.test(code) && /Sona\.frameShape/.test(code));
 
   await scenario(key + " keep-playing card", async () => {
@@ -252,8 +260,30 @@ for (const [key, file] of ARCADE) {
       await page.waitForFunction(() => window.gameEntryAllowed === true && typeof crash === "function");
       await page.waitForTimeout(600);
       ok(key + ": the game asks for no microphone while it plays", (await page.evaluate(() => __quiet.requests)) === 0 && !(await page.locator("#boostChip").count()));
+      // crash() is the card's old name, kept so these suites can open it:
+      // since the rounds (27 Sep 2026) the card shows only between stages, and
+      // a miss never opens it (the miss scenarios below pin that half)
       await page.evaluate(() => { if (playing) crash(); });
       await page.locator("#revOvl.show").waitFor();
+      // the redesigned card (the family's redesign brief, 28 Sep 2026), on
+      // the rounds: the ask is the heading, with the sound's letters in the
+      // sound's orange. Opened by its old name it falls back to "…to keep
+      // playing!"; between stages it is the round's own line, which each
+      // game's round test pins. No "Whoops!": the card follows a finished
+      // stage, never a miss. Under the ask, the round's three stage dots,
+      // where hearts used to be: nothing is lost on this card.
+      const card = await page.evaluate(() => {
+        const snd = document.querySelector("#revTitle .snd"), dots = document.getElementById("revHearts");
+        // the sound's colour is action.css's --snd token, read through a
+        // probe, so a new value from the designer doesn't need this test edited
+        const probe = document.body.appendChild(document.createElement("i")); probe.style.color = "var(--snd)";
+        const token = getComputedStyle(probe).color; probe.remove();
+        return { whoops: !!document.querySelector("#revOvl .whoops") || /whoops/i.test(document.getElementById("revOvl").textContent), title: document.getElementById("revTitle").textContent,
+          snd: snd && snd.textContent === SAYTXT, orange: snd && getComputedStyle(snd).color, token, rev: REV,
+          dots: dots.querySelectorAll(".wdot").length, onlyDots: dots.children.length > 0 && [...dots.children].every((c) => c.classList.contains("wdot")) };
+      });
+      ok(key + ": the say-it card asks for the sound (“to keep playing!” by its old name) with the sound in orange, and says no Whoops!", !card.whoops && /to keep playing!$/.test(card.title) && card.snd && !!card.token && card.token !== "rgb(0, 0, 0)" && card.orange === card.token, card);
+      ok(key + ": under the ask, the round's three stage dots, not hearts", card.rev === 3 && card.dots === 3 && card.onlyDots, card);
       await page.waitForTimeout(150);
       ok(key + ": the card waits out the crash sound before it listens", (await live(page)) === 0 && /Get ready|Listen to Echo/.test(await page.locator("#revListen").innerText()));
       await page.waitForFunction(() => __quiet.live() === 1);
@@ -283,14 +313,108 @@ for (const [key, file] of ARCADE) {
       await page.evaluate(() => { if (playing) crash(); });
       await page.locator("#revOvl.show").waitFor();
       await page.waitForFunction(() => __quiet.live() === 1);
+      await page.evaluate(SCORED[key]);
       await page.locator("#revDone").click();
       await page.locator("#endOvl.show").waitFor();
+      // the Great round card (design 11): the game's name, "Great round!",
+      // three stars, and one next step — "Next: <the next game>" when that
+      // game opens for this family, and "Back to games" beside it (alone,
+      // and teal, when the next game is closed to them). A round the child
+      // stops early says "Great round!"; a finished round leads with its own
+      // finale line instead, which each game's round test pins.
+      const end = await page.evaluate(([k, nx]) => {
+        const vis = (id) => { const e = document.getElementById(id); return e && getComputedStyle(e).display !== "none" ? e.textContent.trim() : null; };
+        return { game: vis("endGame"), want: Sona.gameAct(k).name, title: vis("endTitle"), stars: document.querySelectorAll("#endEmoji .endStar").length, starsShown: vis("endEmoji") !== null,
+          stat: vis("endScore"), next: vis("endCharge"), home: vis("endHome"), homeTeal: document.getElementById("endHome").classList.contains("act-pill"),
+          open: Sona.gameAccess(nx).allowed, nextName: Sona.gameAct(nx).name };
+      }, [key, NEXT_GAME[key]]).catch((e) => ({ error: String(e) }));
+      ok(key + ": the Great round card names the game, says Great round!, and shows three stars and what the round earned", end.game === end.want && end.title === "Great round!" && end.stars === 3 && end.starsShown && !!end.stat, end);
+      ok(key + ": it offers \u201CNext: " + NEXT_GAME[key] + "\u201D and \u201CBack to games\u201D, or Back to games alone when that game is closed",
+        end.home === "Back to games" && (end.open ? end.next === "Next: " + end.nextName && !end.homeTeal : end.next === null && end.homeTeal), end);
       await page.waitForTimeout(500);
       l = await log(page);
       ok(key + ": \"I'm done playing\" closes the mic, then the round ends with a chime", (await live(page)) === 0 && l.sfx.some((c) => c.name === "complete" && c.live === 0 && c.at > l.mics[l.mics.length - 1].end));
       noOverlap(key, l);
       ok(key + ": the game's own sounds never counted as the child", (await page.evaluate(() => REV)) === 2);
       clean(key, errors);
+    } finally { await context.close(); }
+  });
+}
+
+// ── the Great round card when the next game is closed to this family ──
+// Fruit Slice's Next is Piano Tiles, a Premium game. Through the paid seam,
+// for a family holding no plan, the card must not offer a door that bounces
+// them: "Back to games" stands alone and takes the teal. This holds whichever
+// way pricing points, because the seam shows the paid state either way.
+await scenario("slice: Great round with Piano Tiles closed", async () => {
+  const context = await browser.newContext({ viewport: { width: 390, height: 844 }, reducedMotion: "reduce" });
+  await context.route("**/*", (route) => (route.request().url().startsWith(BASE + "/") ? route.continue() : route.abort()));
+  await context.addInitScript(fakeDevice, { token: "arcade-slice.html" });
+  await context.addInitScript(() => {
+    sessionStorage.setItem("sona.paidui", "1");
+    try { const p = JSON.parse(localStorage.getItem("sona.profile.v1") || "{}"); delete p.earlyAdopter; localStorage.setItem("sona.profile.v1", JSON.stringify(p)); } catch (e) {}
+  });
+  const page = await context.newPage(); page.setDefaultTimeout(5000);
+  const errors = []; page.on("pageerror", (e) => errors.push(e.message));
+  try {
+    await page.goto(BASE + "/arcade-slice.html?from=charge");
+    await page.waitForFunction(() => window.gameEntryAllowed === true && typeof endRound === "function");
+    await page.evaluate(() => { score = 7; endRound(); });
+    await page.locator("#endOvl.show").waitFor();
+    const end = await page.evaluate(() => ({ closed: !Sona.gameAccess("tiles").allowed, next: getComputedStyle(document.getElementById("endCharge")).display,
+      home: document.getElementById("endHome").textContent.trim(), teal: document.getElementById("endHome").classList.contains("act-pill") }));
+    ok("slice: with Piano Tiles closed, the card offers Back to games alone, in teal", end.closed && end.next === "none" && end.home === "Back to games" && end.teal, end);
+    clean("slice closed-next card", errors);
+  } finally { await context.close(); }
+});
+
+// ── a miss mid-play opens no card, and the game keeps moving ──
+// Since the rounds (27 Sep 2026) a miss is never the card: a fruit just
+// falls, a tile fades, a block tumbles off, a rock or cone is a tumble, a
+// hedge a soft bounce. Each game sets up that miss for real, and this pins
+// that the game counted it (so the pin is not vacuous), that no card opened
+// and no microphone was asked for, and that the draw loop keeps moving after
+// it. The last half still guards the 28 Sep 2026 freeze: a miss that emptied
+// the list the draw loop was walking threw inside the loop, which in Fruit
+// Slice and Piano Tiles killed it for good (a frozen game only the ✕ could
+// leave). In Piano Tiles the slipped tile also ends the "N in a row!" run,
+// so that banner is always true.
+const MISS = {
+  // [set up the miss, did the game count it, place one moving thing, read where it is]
+  slice: [() => { missRun = 0; fruits.length = 0; fruits.push({ e: "🍎", x: W * 0.3, y: H * 0.5, vx: 0, vy: 0, r: 38, rot: 0, vr: 0, sliced: false }, { e: "🍊", x: W * 0.6, y: H + 200, vx: 0, vy: 5, r: 38, rot: 0, vr: 0, sliced: false }); },
+    () => missRun >= 1,
+    () => { fruits.length = 0; fruits.push({ e: "🍎", x: 100, y: 300, vx: 0, vy: 1, r: 38, rot: 0, vr: 0, sliced: false }); }, () => fruits[0] && fruits[0].y],
+  tiles: [() => { waitLeft = 0; missRun = 0; comboN = 4; tiles.length = 0; tiles.push({ lane: 0, y: H * 0.3, h: 88, hit: false, gone: false, note: 440, wait: false }, { lane: 1, y: HITY() + 100, h: 88, hit: false, gone: false, note: 440, wait: false }); },
+    () => missRun >= 1 && comboN === 0,
+    () => { tiles.length = 0; tiles.push({ lane: 0, y: 100, h: 88, hit: false, gone: false, note: 440, wait: false }); }, () => tiles[0] && tiles[0].y],
+  stack: [() => { missRun = 0; const top = stack[stack.length - 1]; cur.x = top.x - cur.w - 10; drop(); },
+    () => missRun >= 1 && falling.length >= 1,
+    () => {}, () => cur && cur.x],
+  glide: [() => { mercyT = -1e9; falling.on = false; bumps = 0; gates.length = 0; gates.push({ x: W * 0.9, cy: H * 0.5, passed: false }, { x: px, cy: py + H, passed: false }); },
+    () => bumps >= 1,
+    () => { gates.length = 0; gates.push({ x: W + 10, cy: H * 0.5, passed: false }); }, () => gates[0] && gates[0].x],
+  run: [() => { hurtT = -1e9; falling.on = false; tumbles = 0; things.length = 0; things.push({ t: "c", e: "🪙", lane: 0, y: 40 }, { t: "o", e: OBST[0], lane: Math.round(laneX), y: PLAYY() }); },
+    () => tumbles >= 1,
+    () => { things.length = 0; things.push({ t: "c", e: "🪙", lane: 0, y: 0 }); }, () => things[0] && things[0].y],
+};
+for (const [key, [setup, missed, place, read]] of Object.entries(MISS)) {
+  await scenario(key + ": a miss mid-play", async () => {
+    const file = "arcade-" + key + ".html";
+    const { context, page, errors } = await fresh(file + "?from=charge", { token: file });
+    try {
+      await page.waitForFunction(() => window.gameEntryAllowed === true && typeof crash === "function");
+      await page.waitForTimeout(600);
+      await page.evaluate(setup);
+      const counted = await until(page, missed, 2000);
+      const card = await until(page, () => document.getElementById("revOvl").classList.contains("show"), 800);
+      const state = await page.evaluate(() => ({ playing, requests: __quiet.requests }));
+      ok(key + ": a miss in the middle of play is counted as a miss, opens no card and asks for no microphone", counted && !card && state.playing && state.requests === 0, { counted, card, ...state });
+      await page.evaluate(place);
+      const a = await page.evaluate(read);
+      await page.waitForTimeout(300);
+      const b = await page.evaluate(read);
+      ok(key + ": after the miss the game keeps moving", typeof a === "number" && typeof b === "number" && b !== a, { a, b });
+      clean(key + " mid-play miss", errors);
     } finally { await context.close(); }
   });
 }

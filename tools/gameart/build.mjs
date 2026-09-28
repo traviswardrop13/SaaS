@@ -1,17 +1,31 @@
-// Writes every Say & Play game page: public/arcade-<key>.html.
-//   node tools/gameart/build.mjs            all twenty
+// Writes every generated Say & Play game page: public/arcade-<key>.html.
+//   node tools/gameart/build.mjs            all nineteen
 //   node tools/gameart/build.mjs balloon    one game
 // The page is generated; the game lives here (little.mjs for ages 3-4,
-// big.mjs for ages 5-8), its engine in public/sayplay.js.
-import { writeFileSync } from "fs";
+// big.mjs for ages 5-8), its engine in public/sayplay.js. Hoops, the twentieth,
+// is written by hand (public/arcade-hoops.html and hoops.js), as are the older
+// arcade pages (slice, run, stack, …). Paths are relative to the working
+// directory: run it from the repo root (tests/arttooltest.mjs runs it from a
+// scratch folder instead).
+//
+// It overwrites only its own pages: one that exists without page.mjs's MARK
+// was written by hand, and a game that reuses its key (Hoops was a scene here
+// until it was rebuilt to be played) would clobber it. So it checks every page
+// first and writes only if all of them are clean; a refusal touches nothing.
+import { existsSync, readFileSync, writeFileSync } from "fs";
 import { GAMES } from "./games.mjs";
-import { page } from "./page.mjs";
+import { MARK, page } from "./page.mjs";
+
+const refuse = (why) => { console.error("tools/gameart/build.mjs refused: " + why + "\nNothing was written."); process.exit(1); };
 
 const only = process.argv[2];
-let n = 0;
+if (only && !GAMES.some((g) => g.key === only)) refuse("no game called " + only + " in little.mjs or big.mjs.");
+const plan = [];
 for (const g of GAMES) {
   if (only && g.key !== only) continue;
-  writeFileSync("public/arcade-" + g.key + ".html", page(g));
-  n++;
+  const file = "public/arcade-" + g.key + ".html";
+  if (existsSync(file) && !readFileSync(file, "utf8").includes(MARK)) refuse(file + " was written by hand (it lacks \"" + MARK + "\"). Give the game another key, or delete it from little.mjs or big.mjs.");
+  plan.push([file, page(g)]);
 }
-console.log("built", n, "games");
+for (const [file, html] of plan) writeFileSync(file, html);
+console.log("built", plan.length, "games");

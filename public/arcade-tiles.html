@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
   <title>Sona — Piano Tiles</title>
   <link href="/fonts.css" rel="stylesheet">
+  <link rel="stylesheet" href="/action.css">
   <meta name="theme-color" content="#231a4d" />
   <style>
     :root{ --blue:#1cb0f6; --blue-d:#1597d4; --green:#58cc02; --green-d:#46a302; }
@@ -12,7 +13,7 @@
     html,body{height:100%;overflow:hidden;background:linear-gradient(180deg,#231a4d,#2f2266 40%,#43318c 72%,#54409e);}
     #app{position:fixed;inset:0;max-width:560px;margin:0 auto;overscroll-behavior:none;touch-action:manipulation;}
     canvas{position:absolute;inset:0;width:100%;height:100%;}
-    #flash{position:absolute;left:0;right:0;top:24%;text-align:center;font-family:"Baloo 2";font-weight:800;font-size:32px;color:#ffd21c;opacity:0;transition:opacity .12s, transform .3s;z-index:4;pointer-events:none;text-shadow:0 3px 0 rgba(0,0,0,.3);}
+    #flash{position:absolute;left:0;right:0;top:24%;text-align:center;font-family:"Baloo 2";font-weight:800;font-size:32px;color:#ffd21c;opacity:0;transition:opacity .12s, transform .3s;z-index:4;pointer-events:none;text-shadow:0 3px 0 rgba(0,0,0,.3);transform:rotate(-4deg);}
     /* ── designed HUD kit (handoff section 4) ── */
     #top{position:absolute;left:0;right:0;top:0;display:flex;align-items:center;gap:9px;padding:calc(12px + env(safe-area-inset-top)) 14px 6px;z-index:5;}
     #close{border:none;width:44px;height:44px;border-radius:50%;background:#fff;color:#b08d63;font-size:19px;font-weight:800;cursor:pointer;line-height:1;box-shadow:0 4px 0 rgba(20,12,50,.5);}
@@ -20,36 +21,53 @@
     #score{flex:none;}
     #hudspacer{flex:1;}
     #timer{color:#ff5c74;letter-spacing:1px;}
-    /* ── warm-card overlays (handoff section 5) ── */
-    .ovl{position:fixed;inset:0;z-index:50;background:rgba(30,22,50,.55);display:none;align-items:center;justify-content:center;padding:24px;}
+    /* ── cards over the game (the family's redesign brief, 28 Sep 2026) ──
+       Echo peeks over the card's top edge from BEHIND it (designs 10, 11):
+       he sits in the wrapper under the card, so the card's own edge hides
+       him below the beak. Drawn inside the card he would paint over it.
+       Teal is the one action colour and cream the second choice; both come
+       from /action.css and are never pasted here. */
+    .ovl{position:fixed;inset:0;z-index:50;background:rgba(30,22,50,.55);display:none;padding:calc(16px + env(safe-area-inset-top)) 20px calc(16px + env(safe-area-inset-bottom));overflow-y:auto;}
     .ovl.show{display:flex;}
-    .ovlCard{background:#fff6e9;border-radius:28px;padding:58px 20px 22px;width:100%;max-width:330px;text-align:center;box-shadow:0 18px 40px rgba(30,22,50,.45);position:relative;display:flex;flex-direction:column;align-items:center;gap:9px;}
-    .ovlEcho{position:absolute;top:-54px;left:50%;transform:translateX(-50%);width:106px;height:106px;filter:drop-shadow(0 8px 12px rgba(30,22,50,.3));}
-    .ovl .big{font-size:56px;line-height:1;}
-    .ovl h2{font-family:"Baloo 2";font-weight:800;font-size:24px;color:#4a2c14;line-height:1.18;}
-    .ovl h2 b{color:#7048c9;}
-    .ovl p{color:#b08d63;font-weight:800;font-size:14.5px;max-width:270px;}
-    .statRow{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;}
-    .statPill{background:#fff;border-radius:99px;padding:8px 15px;font-family:"Baloo 2";font-weight:800;font-size:14.5px;color:#4a2c14;box-shadow:0 3px 0 rgba(120,80,20,.12);}
-    .btn{border:none;border-radius:20px;padding:15px 30px;font-family:"Baloo 2";font-weight:800;font-size:17px;text-transform:uppercase;letter-spacing:.04em;color:#fff;background:linear-gradient(180deg,#ffa05a,#ff8a3d);box-shadow:0 6px 0 #ef6f23;cursor:pointer;transition:transform .05s;margin-top:4px;width:100%;}
-    .btn:active{transform:translateY(4px);box-shadow:0 2px 0 #46a302;}
-    .btn.blue{background:linear-gradient(180deg,#5cc6ff,#1cb0f6);box-shadow:0 6px 0 #1480c0;}
-    .btn.blue:active{box-shadow:0 2px 0 #1480c0;}
-    .btn.ghost{background:none;box-shadow:none;color:#b08d63;text-transform:none;font-size:13px;width:auto;padding:8px;}
-    /* Echo speaks the win: bubble with a tail toward the leap; numbers fade in later */
-    #endTitle{position:relative;background:#fff;border-radius:18px;padding:12px 18px;box-shadow:0 6px 16px rgba(74,44,20,.12);display:inline-block;}
-    #endTitle:after{content:"";position:absolute;left:50%;bottom:-8px;transform:translateX(-50%) rotate(45deg);width:16px;height:16px;background:#fff;border-radius:3px;}
-    #endSub.later{display:block!important;opacity:0;font-size:12.5px;color:var(--muted,#b08d63);transition:opacity .5s ease;margin-top:2px;}
-    #endSub.later.in{opacity:1;}
-    /* ── end-overlay celebration: star drop + Echo leap (Duolingo-ABC three-element stack) ── */
-    #endOvl .ovlCard{padding-top:24px;}
+    .cardWrap{position:relative;width:100%;max-width:340px;margin:auto;padding-top:76px;}
+    .peek{position:absolute;top:0;left:50%;width:112px;margin-left:-56px;z-index:0;pointer-events:none;filter:drop-shadow(0 -2px 8px rgba(30,22,50,.25));animation:peekUp .45s cubic-bezier(.3,1.4,.5,1) both;}
+    @keyframes peekUp{0%{transform:translateY(56px)}100%{transform:translateY(0)}}
+    .ovlCard{position:relative;z-index:1;background:var(--cream-card);border-radius:28px;padding:22px 20px 20px;text-align:center;box-shadow:0 18px 40px rgba(30,22,50,.45);display:flex;flex-direction:column;align-items:center;gap:8px;}
+    .ovl h2{font-family:"Baloo 2";font-weight:800;font-size:23px;color:#4a2c14;line-height:1.18;}
+    .ovl h2 b{color:var(--snd);}   /* the practice sound: orange, and nothing else is */
+    .ovl p{color:#b08d63;font-weight:800;font-size:14.5px;max-width:280px;}
+    .ovlCard .act-pill,.ovlCard .cream-pill{width:100%;min-height:54px;padding:12px 20px;font-size:19px;margin-top:4px;}
+    .ovlCard .cream-pill{min-height:50px;font-size:17px;}
+    /* the say-it card, between songs. It follows a finished song, never a
+       miss, so it has no "Whoops!" heading: its own line is the heading. */
+    #revTitle{font-size:25px;}
+    #revHearts{line-height:1;}
+    .revMic{width:78px;height:78px;display:flex;align-items:center;justify-content:center;margin:6px 0 2px;}
+    .revMic svg{width:34px;height:34px;fill:#fff;}
+    .ovl #revListen{color:var(--act-d);font-family:"Baloo 2";font-size:18px;}
+    /* great round */
+    .eyebrow{font-family:"Baloo 2";font-weight:800;letter-spacing:.14em;text-transform:uppercase;}
+    .ovl .eyebrow{font-size:13px;color:#8a6f52;margin-bottom:-8px;}   /* the page's darker tan: the lighter one is under 3:1 on the cream at 13px */
+    #endTitle{font-size:34px;line-height:1.05;}
+    #endTitle.long{font-size:28px;}   /* the finale's "Bravo! You played four songs!" */
+    .stars{display:flex;align-items:flex-end;justify-content:center;gap:2px;height:54px;}
     .endStar{animation:starDrop .35s cubic-bezier(.3,1.6,.5,1) both;}
+    .endStar:nth-child(2){animation-delay:.12s;} .endStar:nth-child(3){animation-delay:.24s;}
     @keyframes starDrop{0%{transform:translateY(-64px) scale(.4);opacity:0}70%{transform:translateY(6px) scale(1.08);opacity:1}100%{transform:translateY(0) scale(1);opacity:1}}
-    .echoWin{position:relative;width:100%;height:96px;overflow:hidden;pointer-events:none;}
-    .echoWin img{position:absolute;left:50%;bottom:-40px;width:118px;margin-left:-59px;filter:drop-shadow(0 6px 8px rgba(30,22,50,.18));animation:echoLeap .5s cubic-bezier(.3,1.4,.5,1) both,echoHop 1.5s ease-in-out .6s infinite;}
-    @keyframes echoLeap{0%{transform:translateY(110px)}100%{transform:translateY(0)}}
-    @keyframes echoHop{0%,100%{transform:translateY(0)}45%{transform:translateY(-14px) rotate(-5deg)}}
-    @media (prefers-reduced-motion: reduce){ .endStar,.echoWin img{animation:none;} }
+    .endPic{display:flex;justify-content:center;} .endPic:empty{display:none;}
+    .ovl #endSub{font-size:15px;color:#8a6f52;}
+    .statRow{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;}
+    .statPill{display:inline-flex;align-items:center;gap:5px;background:#fff;border-radius:99px;padding:7px 16px;font-family:"Baloo 2";font-weight:800;font-size:17px;color:#4a2c14;box-shadow:0 3px 0 rgba(120,80,20,.12);}
+    /* a short phone (an SE is 568 tall): the same card, tighter, so both
+       buttons stay on screen without scrolling */
+    @media (max-height:680px){
+      .cardWrap{padding-top:60px;} .peek{width:92px;margin-left:-46px;}
+      .ovlCard{gap:6px;padding:18px 18px 16px;}
+      #endTitle{font-size:28px;} #endTitle.long{font-size:24px;}
+      .endPic svg{width:140px;height:84px;}
+      .ovlCard .act-pill,.ovlCard .cream-pill{min-height:48px;}
+    }
+    @media (prefers-reduced-motion: reduce){ .endStar,.peek{animation:none;} }
     /* ── the round's HUD, banner and card (27 Sep 2026) ── */
     #timer{color:#4a2c14;letter-spacing:0;gap:8px;}
     #timer .wv{white-space:nowrap;}
@@ -75,7 +93,7 @@
     <canvas id="cv"></canvas>
     <div id="top">
       <button id="close">✕</button>
-      <div class="hudpill"><svg viewBox="0 0 64 64" style="width:19px;height:19px;vertical-align:-4px"><rect x="8" y="14" width="48" height="36" rx="6" fill="#fff" stroke="#d8cfec" stroke-width="2"/><line x1="20" y1="14" x2="20" y2="50" stroke="#d8cfec" stroke-width="2.5"/><line x1="32" y1="14" x2="32" y2="50" stroke="#d8cfec" stroke-width="2.5"/><line x1="44" y1="14" x2="44" y2="50" stroke="#d8cfec" stroke-width="2.5"/><rect x="16" y="14" width="8" height="19" rx="2" fill="#2f2266"/><rect x="40" y="14" width="8" height="19" rx="2" fill="#2f2266"/></svg> <b id="score">0</b></div>
+      <div class="hudpill"><svg viewBox="0 0 64 64" style="width:22px;height:22px;vertical-align:-5px"><rect x="4" y="4" width="56" height="56" rx="14" fill="#9775fa"/><rect x="4" y="4" width="56" height="20" rx="10" fill="#b197fc" opacity=".55"/><path d="M28 14v26.5a8 8 0 1 0 5 7.4V24c6 1 10 4 12 9 1-9-6-15-17-19Z" fill="#fff"/></svg> <b id="score">0</b></div>
       <div id="hudspacer"></div>
       <div id="timer" class="hudpill"></div>
     </div>
@@ -84,38 +102,46 @@
   </div>
 
   <div class="ovl" id="needOvl">
-    <div class="ovlCard">
-      <img class="ovlEcho" src="/coach/echo/echo-star.svg" alt="" />
-      <h2 id="needTitle">This game needs a ticket!</h2>
-      <p>Say your sound 5 times to fill it up</p>
-      <button class="btn" id="goCharge"><svg viewBox="0 0 64 64" style="width:18px;height:18px;vertical-align:-3px"><path d="M36 4 14 36h13l-5 24 24-34H33Z" fill="#ffd21c" stroke="#f0a800" stroke-width="2.5" stroke-linejoin="round"/><circle cx="30" cy="15" r="2.5" fill="#fff" opacity=".9"/></svg> Fill my ticket!</button>
-      <button class="btn ghost" id="needHome">Back home</button>
+    <div class="cardWrap">
+      <img class="peek" src="/coach/echo/echo-star.svg" alt="" />
+      <div class="ovlCard">
+        <h2 id="needTitle">This game needs a ticket!</h2>
+        <p>Say your sound 5 times to fill it up</p>
+        <button class="act-pill" id="goCharge"><svg viewBox="0 0 64 64" style="width:18px;height:18px;vertical-align:-3px"><path d="M36 4 14 36h13l-5 24 24-34H33Z" fill="#ffd21c" stroke="#f0a800" stroke-width="2.5" stroke-linejoin="round"/><circle cx="30" cy="15" r="2.5" fill="#fff" opacity=".9"/></svg> Fill my ticket!</button>
+        <button class="cream-pill" id="needHome">Back home</button>
+      </div>
     </div>
   </div>
 
   <div class="ovl" id="revOvl">
-    <div class="ovlCard">
-      <img class="ovlEcho" src="/coach/echo/echo-listening.svg" alt="" />
-      <h2 id="revTitle">Say it!</h2>
-      <p id="revHearts" style="font-size:26px;"></p>
-      <div style="width:56px;height:56px;border-radius:50%;background:linear-gradient(180deg,#ffa05a,#ff8a3d);box-shadow:0 4px 0 #ef6f23,0 0 0 10px rgba(255,138,61,.14);display:flex;align-items:center;justify-content:center;margin:2px 0;"><svg viewBox="0 0 24 24" style="width:24px;height:24px;fill:#fff"><path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v5a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z"/></svg></div>
-      <p id="revListen" style="font-size:13px;">Get ready…</p>
-      <button class="btn ghost" id="revDone">I'm done playing</button>
+    <div class="cardWrap">
+      <img class="peek" src="/coach/echo/echo-listening.svg" alt="" />
+      <div class="ovlCard">
+        <h2 id="revTitle">Say it!</h2>
+        <p id="revHearts"></p>
+        <div class="act-mic revMic" role="img" aria-label="Microphone"><svg viewBox="0 0 24 24"><path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v5a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z"/></svg></div>
+        <p id="revListen">Get ready…</p>
+        <button class="cream-pill" id="revDone">I'm done playing</button>
+      </div>
     </div>
   </div>
 
   <div class="ovl" id="endOvl">
-    <div class="ovlCard">
-      <div class="big endStar" id="endEmoji"><svg viewBox="0 0 64 64" style="width:56px;height:56px"><path d="M32 5l8.2 18.6L60 25.8 44.9 39.2 49.8 59 32 48.4 14.2 59l4.9-19.8L4 25.8l19.8-2.2Z" fill="#ffd21c"/><circle cx="25" cy="21" r="3" fill="#fff" opacity=".85"/></svg></div>
-      <h2 id="endTitle">Great round!</h2>
-      <p id="endSub"></p>
-      <div class="echoWin"><img src="/coach/echo/echo-celebrate.svg" alt="" /></div>
-      <button class="btn blue" id="endCharge">WOOHOO! Next →</button>
-      <button class="btn" id="endAgain" style="display:none;"></button>
-      <button class="btn ghost" id="endHome">Back home</button>
+    <div class="cardWrap">
+      <img class="peek" src="/coach/echo/echo-celebrate.svg" alt="" />
+      <div class="ovlCard">
+        <p class="eyebrow" id="endGame">Piano Tiles</p>
+        <h2 id="endTitle">Great round!</h2>
+        <div class="stars" id="endEmoji" aria-hidden="true"><svg class="endStar" viewBox="0 0 64 64" style="width:42px;height:42px"><path d="M32 5l8.2 18.6L60 25.8 44.9 39.2 49.8 59 32 48.4 14.2 59l4.9-19.8L4 25.8l19.8-2.2Z" fill="#ffd21c" stroke="#f0b400" stroke-width="2" stroke-linejoin="round"/><circle cx="25" cy="21" r="3" fill="#fff" opacity=".85"/></svg><svg class="endStar" viewBox="0 0 64 64" style="width:54px;height:54px"><path d="M32 5l8.2 18.6L60 25.8 44.9 39.2 49.8 59 32 48.4 14.2 59l4.9-19.8L4 25.8l19.8-2.2Z" fill="#ffd21c" stroke="#f0b400" stroke-width="2" stroke-linejoin="round"/><circle cx="25" cy="21" r="3" fill="#fff" opacity=".85"/></svg><svg class="endStar" viewBox="0 0 64 64" style="width:42px;height:42px"><path d="M32 5l8.2 18.6L60 25.8 44.9 39.2 49.8 59 32 48.4 14.2 59l4.9-19.8L4 25.8l19.8-2.2Z" fill="#ffd21c" stroke="#f0b400" stroke-width="2" stroke-linejoin="round"/><circle cx="25" cy="21" r="3" fill="#fff" opacity=".85"/></svg></div>
+        <div class="endPic" id="endPic" aria-hidden="true"></div>
+        <p id="endSub"></p>
+        <div class="statRow" id="endStats"><span class="statPill" id="endScore"></span><span class="statPill" id="endCoins"></span></div>
+        <button class="act-pill" id="endCharge">Next</button>
+        <button class="act-pill" id="endAgain" style="display:none;"></button>
+        <button class="cream-pill" id="endHome">Back to games</button>
+      </div>
     </div>
   </div>
-
 
   <script src="/sona.js"></script>
   <script>
@@ -220,7 +246,7 @@
       {name:"Ode to Joy", notes:"EEFGGFED CCDEEDD", beat:620, fall:2.2, finale:true}
     ];
     var song=0, songIx=0, songMs=0, nextAt=900, phase="song", missRun=0, waitLeft=3, finaleDone=false;
-    var tiles=[], sparks=[], keyGlow=[-1e9,-1e9,-1e9,-1e9], echoT=-1e9;
+    var tiles=[], sparks=[], keyGlow=[-1e9,-1e9,-1e9,-1e9], keyGold=[false,false,false,false], echoT=-1e9;   // keyGold: that tap played a note
     var HITY=function(){ return H-140; };   // the top of the keys
     function songNotes(i){ return SONGS[i].notes.replace(/ /g,""); }
     // pixels a second, so a tile takes the song's fall time on every screen
@@ -260,14 +286,23 @@
     var TICK='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
     function songDots(){ var s=""; for(var i=0;i<3;i++) s+='<span class="wdot'+(i<=song?' on':'')+'">'+(i<=song?TICK:String(i+1))+'</span>'; return s; }
     function banner(big,small){ var b=$("banner"); $("bnBig").textContent=big; $("bnSmall").textContent=small||""; b.classList.remove("in"); void b.offsetWidth; b.classList.add("in"); }
-    function flash(t){ var f=$("flash"); f.textContent=t; f.style.opacity=1; f.style.transform="scale(1.15)"; setTimeout(function(){f.style.opacity=0;f.style.transform="scale(1)";},600); }
+    // tilted like a sticker (design 08): the tilt rides every transform, or
+    // the pop would snap it straight
+    function flash(t){ var f=$("flash"); f.textContent=t; f.style.opacity=1; f.style.transform="rotate(-4deg) scale(1.15)"; setTimeout(function(){f.style.opacity=0;f.style.transform="rotate(-4deg) scale(1)";},600); }
 
     // ── the say-it card, between songs ──
+    // The line is the round's ("Say “rrrr” for song 2!"); the family's
+    // redesign brief (28 Sep 2026) only colours it: the sound's letters in
+    // the practice orange (Sona.soundMark), which nothing else on the card
+    // is. The rest of the line is escaped text, as textContent had it.
+    function esc(t){ return String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+    function sayMark(){ return (window.Sona&&Sona.soundMark)?Sona.soundMark(SAYTXT,SND):'<b class="snd">'+esc(SAYTXT)+'</b>'; }
+    function markSound(t){ var q="\u201C"+SAYTXT+"\u201D", i=t.indexOf(q); return i<0?esc(t):esc(t.slice(0,i+1))+sayMark()+esc(t.slice(i+q.length-1)); }
     function sayCard(title,snd){
       if(!playing) return;
       playing=false; tiles=[]; if(snd!=="none") sfx(snd||"tap");
       if(REV>0 && CAN_LISTEN){
-        $("revTitle").textContent=title||("Say \u201C"+SAYTXT+"\u201D to keep playing!");
+        $("revTitle").innerHTML=markSound(title||("Say \u201C"+SAYTXT+"\u201D to keep playing!"));
         $("revHearts").innerHTML=songDots();
         reviveWait=true; $("revOvl").classList.add("show"); openReviveMic();
       } else { endRound(); }
@@ -296,16 +331,18 @@
       var zoneTop=HITY()-96, zoneBot=HITY()+70, best=null;
       for(var i=0;i<tiles.length;i++){ var t=tiles[i];
         if(t.lane===lane&&!t.hit&&!t.gone&&t.y+t.h>zoneTop&&t.y<zoneBot){ if(!best||t.y>best.y)best=t; } }
-      keyGlow[lane]=performance.now();
+      keyGlow[lane]=performance.now(); keyGold[lane]=!!best;
       if(best){
-        best.hit=true; comboN++; missRun=0;
+        best.hit=true; comboN++; missRun=0; NOTESN++;
         score+=best.gold?3:1; $("score").textContent=score; hud();
         tone(best.note,0.5,0.10);   // one note: the song's own
         var fin=!!SONGS[song].finale, lw=W/LANES;
         for(var k=0;k<(fin?22:best.gold?16:8);k++){ var a=Math.random()*6.28, v=(fin?3:2)+Math.random()*(fin?5:3);
           sparks.push({x:best.lane*lw+lw/2,y:fin?best.y:HITY()-10,vx:Math.cos(a)*v,vy:Math.sin(a)*v-(fin?4:2),life:1,c:best.gold?"#ffd21c":fin?LCOL[(Math.random()*4)|0]:LCOL[best.lane]}); }
-        if(best.gold){ flash("GOLDEN NOTE! +3"); echoT=performance.now(); }
-        else if(comboN%8===0){ flash(comboN+" NOTE STREAK!"); echoT=performance.now(); }
+        // the banners in the calm, tilted style of the redesign (design 08):
+        // "5 in a row!" every five; comboN ends on any miss, so it is true
+        if(best.gold){ flash("Golden note! +3"); echoT=performance.now(); }
+        else if(comboN%5===0){ flash(comboN+" in a row!"); echoT=performance.now(); }
       } else {
         comboN=0; shakeT=performance.now(); tone(130.8,0.18,0.025); // soft low thud, never a death
       }
@@ -335,13 +372,34 @@
       // hit bar — the keys run all the way to the screen bottom, no dead band
       ctx.fillStyle="rgba(255,255,255,.12)";
       ctx.fillRect(0,hitY-8,W,H-(hitY-8));
-      // piano keys with hard shadows; a tapped key lights up in its lane's colour
+      // piano keys with hard shadows. A tapped key lights up: gold, with a
+      // soft halo above it, when the tap played a note (design 08), and in
+      // its lane's colour when it found no tile, so every tap still answers.
       for(l=0;l<LANES;l++){
         var kx=l*lw+5, kw=lw-10, glow=Math.max(0,1-(now-keyGlow[l])/260);
         ctx.fillStyle="rgba(0,0,0,.28)"; rr(kx,hitY-4,kw,H-(hitY-4)+12,10); ctx.fill();
         ctx.fillStyle="#ffffff"; rr(kx,hitY-8,kw,H-(hitY-8)+12,10); ctx.fill();
-        if(glow>0){ ctx.globalAlpha=glow*0.75; ctx.fillStyle=LCOL[l]; rr(kx,hitY-8,kw,H-(hitY-8)+12,10); ctx.fill(); ctx.globalAlpha=1; }
-        ctx.fillStyle="rgba(0,0,0,.07)"; ctx.fillRect(kx+kw*0.36,hitY-8,kw*0.28,30);
+        if(glow>0&&keyGold[l]){
+          ctx.save(); ctx.globalAlpha=glow;
+          var halo=ctx.createRadialGradient(kx+kw/2,hitY-8,4,kx+kw/2,hitY-8,lw*0.9);
+          halo.addColorStop(0,"rgba(255,212,59,.55)"); halo.addColorStop(1,"rgba(255,212,59,0)");
+          ctx.fillStyle=halo; ctx.fillRect(kx-lw*0.5,hitY-8-lw*0.9,kw+lw,lw*0.9+30);
+          var gold=ctx.createLinearGradient(0,hitY-8,0,H); gold.addColorStop(0,"#ffe066"); gold.addColorStop(1,"#f5b400");
+          ctx.shadowColor="rgba(255,200,40,.9)"; ctx.shadowBlur=18;
+          ctx.fillStyle=gold; rr(kx,hitY-8,kw,H-(hitY-8)+12,10); ctx.fill();
+          ctx.restore();
+        } else if(glow>0){ ctx.globalAlpha=glow*0.75; ctx.fillStyle=LCOL[l]; rr(kx,hitY-8,kw,H-(hitY-8)+12,10); ctx.fill(); ctx.globalAlpha=1; }
+        ctx.fillStyle="rgba(255,255,255,.55)"; rr(kx+6,hitY-3,kw-12,7,3.5); ctx.fill();   // the key's top shine
+      }
+      // two black keys on the seams, like a real keyboard (design 08). Only
+      // a picture: a tap still picks one of the four lanes by where it lands,
+      // exactly as before.
+      var bw=Math.min(30,lw*0.34), bh=Math.min(64,(H-hitY)*0.46);
+      for(var b=1;b<=2;b++){
+        var bx=b*lw-bw/2;
+        ctx.fillStyle="rgba(0,0,0,.3)"; rr(bx+2,hitY-8,bw,bh+4,7); ctx.fill();
+        ctx.fillStyle="#2a2150"; rr(bx,hitY-8,bw,bh,7); ctx.fill();
+        ctx.fillStyle="rgba(255,255,255,.14)"; rr(bx+5,hitY-4,bw-10,8,4); ctx.fill();
       }
       // screen shake on miss-tap
       var sh=now-shakeT<180 ? Math.sin(now/14)*4 : 0, fall=speedPx()*dt/1000;
@@ -488,6 +546,39 @@
     document.addEventListener("visibilitychange",function(){ if(!document.hidden&&reviveWait) openReviveMic(); });
 
     // ---- round over ----
+    // ── the Great round card (the family's redesign brief, 28 Sep 2026) ──
+    // It was one star, one line and Echo, with "no stat rows or coin
+    // counters". The brief asks for the game's name, three stars, what the
+    // round earned in the game's own unit, the coins the round already
+    // awarded (the coin maths is unchanged; the card only says it) and one
+    // next step. The stars are not a grade: every round with points gets all
+    // three and a round with none gets "Good try!" and no stars, so there is
+    // never an empty star to fall short of. "Next" follows the arcade chain
+    // (slice → tiles → stack → run → glide → slice) and shows only when that
+    // game opens for this family (Sona.gameAccess); otherwise "Back to games"
+    // stands alone and takes the teal.
+    var NEXT="stack";
+    function gameName(k,fb){ try{ var a=S.gameAct(k); if(a&&a.name) return a.name; }catch(e){} return fb; }
+    function nextOpen(){ try{ return !!S.gameAct(NEXT)&&S.gameAccess(NEXT).allowed; }catch(e){ return false; } }
+    function endCard(o){
+      $("endGame").textContent=gameName("tiles","Piano Tiles");
+      $("endTitle").textContent=o.title; $("endTitle").className=o.title.length>16?"long":"";   // a long line steps down a size, so it keeps to two lines
+      $("endEmoji").style.display=o.stars?"":"none";
+      $("endPic").innerHTML=o.pic||"";
+      $("endSub").textContent=o.line||""; $("endSub").style.display=o.line?"":"none";
+      $("endScore").textContent=o.stat||""; $("endScore").style.display=o.stat?"":"none";
+      var c=$("endCoins"); c.style.display=o.coins>0?"":"none";
+      if(o.coins>0){ c.innerHTML=((S&&S.icon)?S.icon("coin",20):"")+"+"+o.coins; c.setAttribute("aria-label",o.coins+" coins"); }
+      $("endStats").style.display=(o.stat||o.coins>0)?"":"none";
+      var next=!!o.buttons&&!o.again&&nextOpen();
+      $("endCharge").style.display=next?"":"none"; if(next) $("endCharge").textContent="Next: "+gameName(NEXT,"");
+      var ea=$("endAgain"); ea.style.display=o.again?"":"none"; if(o.again){ ea.textContent=o.again; ea.onclick=backToCharge; }
+      $("endHome").style.display=o.buttons?"":"none"; $("endHome").className=(next||o.again)?"cream-pill":"act-pill";
+    }
+    // Real notes played, not the score: a golden tile scores 3, so "N notes"
+    // read off the score was untrue.
+    var NOTESN=0;
+    function notesSaid(n){ return n+(n===1?" note":" notes"); }
     function bankAndContinue(){ S.finishGameTurn("tiles",score); location.href="/charge.html?daily=1&banked="+score; }
     function endRound(){
       closeReviveMic();
@@ -499,31 +590,25 @@
       try{ if(coins&&S&&S.addCoins)S.addCoins(coins); }catch(e){}
       sfx("complete"); try{ if(S&&S.confetti)S.confetti(); }catch(e){}
       if(isDaily){
-        if(score===0){ $("endEmoji").style.opacity=".25"; } // gentle zero tier: dim the star, keep it warm
-        $("endTitle").textContent=score===0?"Good try!":("+"+score+" points!");
-        $("endSub").textContent=score===0?"On to the next game…":"Banking your score…";
-        $("endCharge").style.display="none"; $("endAgain").style.display="none"; $("endHome").style.display="none";
+        endCard({title:score===0?"Good try!":"Great round!", stars:score>0, stat:score?notesSaid(NOTESN):"", coins:coins,
+          line:score===0?"On to the next game…":"Banking your score…"});
         $("endOvl").classList.add("show");
         setTimeout(bankAndContinue,1400);
         return;
       }
       if(score===0){
-        // gentle zero tier: encouraging copy, dimmed star, happy Echo, one warm "again" button
-        $("endEmoji").style.opacity=".25";
-        $("endTitle").textContent="Good try! Wanna go again?";
-        $("endSub").className=""; $("endSub").style.display="none";
-        $("endCharge").style.display="none";
-        var ea=$("endAgain"); ea.textContent="Yes! Play again"; ea.style.display=""; ea.onclick=backToCharge;
+        // gentle zero tier: encouraging copy, happy Echo, one warm "again" button
+        endCard({title:"Good try! Wanna go again?", buttons:true, again:"Yes! Play again"});
         $("endOvl").classList.add("show");
         return;
       }
-      // one reward per moment: star + one line + Echo — no stat rows or coin counters here
-      $("endTitle").textContent=finaleDone?"Bravo! You played four songs!":score>=30?"You\u2019re a piano star! My feathers were dancing!":"What beautiful music we made!";
-      var _es=$("endSub"); _es.textContent=score+" notes · Best: "+BEST; _es.className="later";
-      setTimeout(function(){ _es.classList.add("in"); },1000);
+      // A finished concert keeps the round's own title ("Bravo! You played
+      // four songs!"); a round the child ended early is a "Great round!".
+      endCard({title:finaleDone?"Bravo! You played four songs!":"Great round!", stars:true, stat:notesSaid(NOTESN), coins:coins, buttons:true,
+        line:score>=30?"You\u2019re a piano star! My feathers were dancing!":"What beautiful music we made!"});
       $("endOvl").classList.add("show");
     }
-    $("endCharge").onclick=function(){ location.href=isDaily?"/charge.html?daily=1":(S.gameAccess("stack").allowed?"/charge.html?game=arcade-stack.html":"/activities.html"); };
+    $("endCharge").onclick=function(){ location.href=isDaily?"/charge.html?daily=1":(nextOpen()?"/charge.html?game=arcade-"+NEXT+".html":"/today.html#play"); };
     $("endHome").onclick=function(){ S.finishGameTurn("tiles"); location.href="/today.html#play"; };
     $("close").onclick=function(){ closeReviveMic(); S.finishGameTurn("tiles"); if(playing){ playing=false; } if(isDaily){ bankAndContinue(); return; } location.href="/today.html#play"; };
     }
