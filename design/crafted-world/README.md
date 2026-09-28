@@ -2,7 +2,13 @@
 
 User direction, 28 September 2026: redesign the family app to match these exact concept boards, including a complete onboarding redesign. This replaces the speech-check task for this session.
 
-## Current implementation — 28 September 2026
+## Visual correction in progress — 28 September 2026
+
+The first implementation passed functional checks, but Travis rejected the gameplay visuals. The app redesign is **not visually complete**. This focused follow-up fixes Fruit Slice gameplay only: original-board market art, prominent characters, cropped fruit sprites, full-size cut halves, juice and tapered swipe trail. See `fruit-slice-review.html` for original / previous / real gameplay comparison. Piano Tiles and Block Stacker remain next. No book files changed.
+
+Current validation: Slice 26/26 and microphone-quiet game checks 315/315 passed. Actual pointer gameplay at 393×852 and 320×568 has no runtime errors, missing local assets or document overflow; native safe areas are simulated. Physical iPhone verification remains pending. Previous full-suite results below predate this correction and do not constitute a release check for the current edits.
+
+## First-pass implementation — 28 September 2026
 
 Travis explicitly expanded this work to the full family app and removed the 20-minute session cap. Books remain owned by the other worktree. The earlier batch notes below are historical; this section describes the current branch.
 
