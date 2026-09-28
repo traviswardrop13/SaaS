@@ -1335,7 +1335,12 @@
     // ---- rapid-fire rep engine: one attempt can span visible mic segments. ----
     var micStream=null, reps=0, engineOn=false, chunks=[], rec=null, anyReps=false, micOk=false;
     var engineControl=null, engineAttempt=null, attemptInterrupted=false;
-    var recognitionTexts=[], recognitionRemaining=9000, recognitionState=null;
+    // How long Apple's recognizer may listen across one attempt's windows. It
+    // was 9 s, so a child who waited for Echo's 8-second nudge got about one
+    // second of it, and their tries went to the looser sound-shape check.
+    // 15 s is also the most the plugin allows one listen (SonaSpeechPlugin).
+    var REC_BUDGET=15000;
+    var recognitionTexts=[], recognitionRemaining=REC_BUDGET, recognitionState=null;
     // ---- ROOM FLOOR (24 Sep 2026) ----
     // How loud the room is when nobody is talking. Two things come from it:
     // the loudness bar a sound must clear to start a try (thr, 3x the room)
@@ -1503,7 +1508,7 @@
       return new Promise(function(resolve){
         var attempt={cancelled:false,settled:false,segment:null}; engineAttempt=attempt;
         reps=0; paintReps(0); chunks=[]; rec=null; shapeReset(); attemptInterrupted=false;
-        recognitionTexts=[]; recognitionRemaining=9000; recognitionState=null;
+        recognitionTexts=[]; recognitionRemaining=REC_BUDGET; recognitionState=null;
         var voiced=0,silent=0,inBurst=false,thr=0,lastRep=0,burstFrames=[];
         var evid=speechEvidence(),counted=false,heardAt=0,burstAt=0;
         var elapsed=0,clockBase=performance.now(),nudges=0,nextNudge=8000,idleDisabled=false,successAt=null;
@@ -1817,7 +1822,9 @@
       try{
         if(S&&S.hearVerdict){
           var text=recognitionTexts.join(" ");
-          var hv=S.hearVerdict(text,SOUND,String(ITEM.word||ITEM.t||""));
+          // The round's kind and, on a sentence round, the sentence itself: its
+          // other words ("Here is a …") are set aside, so only the target counts.
+          var hv=S.hearVerdict(text,SOUND,String(ITEM.word||ITEM.t||""),{level:ITEM.level,frame:ITEM.level==="sentence"?String(ITEM.t||""):""});
           try{window.__hear={text:text,verdict:hv};}catch(e){}
           if(hv!=="unknown")return hv;
         }

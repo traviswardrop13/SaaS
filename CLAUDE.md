@@ -669,6 +669,21 @@ are enforced in code and pinned by tests — change them only on Rachel's say-so
   that sound like this sound", not "was that word correct". Any percentage
   shown to a parent or an SLP is built on that narrower signal. Rachel decides
   whether it should still be shown as a percentage, softened, or dropped.
+- **Apple's listening check: in the ballpark, never "taco"** (Travis, 28 Sep
+  2026: "I just don't want kids saying taco and getting a correct score. We
+  want them to be in the ballpark"). In the iPhone app the practice page asks
+  Apple's on-device recognizer what was said (SonaSpeech, never Apple's
+  servers) and `hearVerdict` in sona.js decides. Pass: the word, a close try
+  (each sound's typical errors, `HEAR_SUBS`: "wabbit", "wed", "cah"), or
+  another word with the sound in the same place. Fail: clear words that are
+  none of those ("taco", "Here is a taco", "sock" for rock). Unknown, handed
+  to the sound-shape check: nothing clear (filler like "uh", or only the
+  sentence's own words). A grown-up's "say rabbit" and a sentence's other
+  words ("Here is a") are set aside first. The plugin was written in August
+  but never reached the app until `scripts/install-ios-speech.py`; the website
+  cannot use it and still judges by sound shape, and the games do not use it
+  yet. Which errors count as close (`HEAR_SUBS`) is Rachel's call;
+  `heartest` pins the rules.
 - **Cueing** — TODO, Rachel to specify. Her highest-value ask was the
   "sssoup" prompt: model the target sound stretched and attached to the word
   rather than saying the word cold. Needs her exact wording and which sounds
