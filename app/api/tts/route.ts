@@ -130,8 +130,8 @@ function voiceHeaders(provider: string, model: string, cache: "hit" | "miss" = "
     "X-Sona-Voice-Model": model,
     "X-Sona-Voice-Cache": cache,
     "X-Sona-Voice-Revision": VOICE_REVISION,
-    // "0" = a stand-in: the usual model for this voice was busy or broken just
-    // now, so this clip is the fallback's. Play it, never save it on the phone.
+    // "0" = a stand-in: the fallback made this clip because the usual model
+    // was busy, broken or refused just now. Play it, never save it on the phone.
     // The phone keys saved clips by voice, revision and text — not model — so a
     // saved stand-in would replay the old model's take of that line forever.
     "X-Sona-Voice-Keep": keep ? "1" : "0",
@@ -279,6 +279,14 @@ export async function POST(req: NextRequest) {
       let standIn = false;
       const refusals: string[] = [];
       const finalModel = attempts[attempts.length - 1];
+      // The phone may keep a clip only if the model the v9 key stands for made
+      // it, on an ordinary answer. A fallback clip is never kept — not after a
+      // busy v4, and not after a refusal either: the route cannot tell "v4
+      // refuses this voice" from "v4 refuses everyone right now" (a retired
+      // model, a mistyped ELEVENLABS_PRIMARY_MODEL), and a phone that saved
+      // the old voice under v9 would keep it after the cause was fixed. All ten
+      // family voices work on v4 Turbo (28 Sep 2026), so this costs nothing.
+      const keepable = (m: string) => !standIn && (m !== config.fallbackModel || config.primaryModel === config.fallbackModel);
       for (model of attempts) {
         const isV3 = model === config.v3Model || model === "eleven_v3";
         const settings = elevenSettings(model, config);
@@ -295,7 +303,7 @@ export async function POST(req: NextRequest) {
         const cacheable = sendText.length <= 120;
         if (cacheable) {
           const hit = cacheGet(cacheKey);
-          if (hit) { refusals.forEach(rememberRefusal); return pcmResponse(hit, provider, model, "hit", !standIn); }
+          if (hit) { refusals.forEach(rememberRefusal); return pcmResponse(hit, provider, model, "hit", keepable(model)); }
         }
         // A dropped connection or a broken body from a model that has another
         // behind it moves on to that one while the deadline allows: the child
@@ -324,7 +332,7 @@ export async function POST(req: NextRequest) {
         }
         if (buf) {
           refusals.forEach(rememberRefusal);
-          const response = pcmResponse(buf, provider, model, "miss", !standIn);
+          const response = pcmResponse(buf, provider, model, "miss", keepable(model));
           if (cacheable) cacheSet(cacheKey, buf);
           return response;
         }
