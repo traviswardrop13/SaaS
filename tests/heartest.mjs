@@ -342,6 +342,21 @@ ok('"cat" does not fuzzy-match "car"... it does not need to — it has no R; but
       && !/class SonaSpeechPlugin/.test(text(p.file("AppDelegate.swift"))) && /class SonaBridgeViewController/.test(text(p.file("AppDelegate.swift"))), r.stdout + r.stderr);
     rmSync(p.dir, { recursive: true, force: true });
   }
+  // G. Capacitor 8.5's template builds the window in SceneDelegate.swift, and
+  //    that controller is the one on screen: switching only the storyboard
+  //    would register nothing, and still say it had
+  {
+    const p = fresh(CAP);
+    writeFileSync(p.file("SceneDelegate.swift"), "import UIKit\nimport Capacitor\n\nclass SceneDelegate: UIResponder, UIWindowSceneDelegate {\n    var window: UIWindow?\n\n    func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {\n        guard let windowScene = scene as? UIWindowScene else { return }\n\n        window = UIWindow(windowScene: windowScene)\n        window?.rootViewController = CAPBridgeViewController()\n        window?.makeKeyAndVisible()\n    }\n}\n");
+    const r = run(p.app), scene = text(p.file("SceneDelegate.swift")), delegate = text(p.file("AppDelegate.swift"));
+    ok("a window built in code (Capacitor 8.5's SceneDelegate) now builds SonaBridgeViewController",
+      r.status === 0 && /window\?\.rootViewController = SonaBridgeViewController\(\)/.test(scene) && !/CAPBridgeViewController\(/.test(scene)
+      && (delegate.match(/class SonaBridgeViewController/g) || []).length === 1, r.stdout + r.stderr + scene);
+    const again = run(p.app);
+    ok("…and a rerun changes nothing", again.status === 0 && /already installed/.test(again.stdout)
+      && text(p.file("SceneDelegate.swift")) === scene && text(p.file("AppDelegate.swift")) === delegate, again.stdout + again.stderr);
+    rmSync(p.dir, { recursive: true, force: true });
+  }
   // E/F. what it will not guess at: it stops, and changes nothing
   {
     const p = fresh(CAP);

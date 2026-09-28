@@ -63,7 +63,8 @@ python3 scripts/install-ios-speech.py
 ```
 It compiles the plugin through AppDelegate.swift (like the scene fix above),
 registers it (in MainViewController if the storyboard loads one, otherwise
-through a small SonaBridgeViewController it points the storyboard at), and
+through a small SonaBridgeViewController it points the storyboard at, and any
+code that builds Capacitor's controller: Capacitor 8.5's SceneDelegate does), and
 adds NSSpeechRecognitionUsageDescription. `--check` shows what it would change. Then build to a real iPhone, check
 `window.Capacitor.Plugins.SonaSpeech` in Safari's Web Inspector, and run the
 device checklist in `SPEECH_PLUGIN.md` before archiving. The judging rules

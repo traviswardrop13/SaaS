@@ -36,8 +36,10 @@ this branch's code:
    it reads which controller `Main.storyboard` loads: MainViewController gets
    the registration wherever the project compiles it from; Capacitor's own
    controller (Travis's project, 28 Sep: MainViewController had never been
-   added) is swapped for a small `SonaBridgeViewController` that registers it.
-   Running it again is safe. It stops, changing nothing, on a project it does
+   added) is swapped for a small `SonaBridgeViewController` that registers it,
+   in the storyboard and in any code that builds Capacitor's controller itself
+   (a project made with Capacitor 8.5 or later builds it in `SceneDelegate.swift`,
+   and that is the one on screen). Running it again is safe. It stops, changing nothing, on a project it does
    not understand, and says what it found.
 2. Open Xcode, bump the Build number, and build to a **real iPhone** (the
    simulator has no usable on-device model).

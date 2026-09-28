@@ -13,12 +13,14 @@ install-ios-lifecycle.py installs the scene fix:
    date instead (two copies of one class cannot both compile).
 2. Registers it with Capacitor. Local plugins are not found on their own; the
    bridge view controller has to register them. The app's storyboard names
-   that controller:
+   that controller, or the app's own code builds it (Capacitor 8.5's template
+   does, in SceneDelegate.swift):
    - MainViewController (native/README.md): the registration is added to it,
      wherever the project compiles it from;
    - Capacitor's own CAPBridgeViewController (no local plugin was ever set up):
      a small SonaBridgeViewController that registers SonaSpeech is compiled
-     through AppDelegate.swift too, and the storyboard is pointed at it.
+     through AppDelegate.swift too, and the storyboard, and any code that built
+     Capacitor's own, is pointed at it.
 3. Adds NSSpeechRecognitionUsageDescription to Info.plist. Without it iOS
    closes the app the moment the speech permission is asked.
 
@@ -129,16 +131,27 @@ def plan(app):
         block += plugin
         notes.append("compiles the plugin through AppDelegate.swift")
 
-    # 2. registration, through whichever controller the storyboard loads
+    # 2. registration, through whichever controller the app loads. The storyboard
+    #    names one; the app's own code may also build one, and that one is on
+    #    screen: Capacitor 8.5's template does `rootViewController =
+    #    CAPBridgeViewController()` in SceneDelegate.swift, where switching only
+    #    the storyboard would register nothing and still report success.
     board = app / "Base.lproj/Main.storyboard"
     storyboard = read(board)
     name, tag = bridge_class(storyboard)
-    if name == "MainViewController":
+    known = ("MainViewController", "CAPBridgeViewController", BRIDGE)
+    code = {p: (source if p == delegate else p.read_text()) for p in [delegate] + swift}
+    built = {c for c in known if any(re.search(r"\b" + c + r"\s*\(", t) for t in code.values())}
+    if (name and name not in known) or not (name or built):
+        raise ValueError(f"Could not tell which controller {board} loads (found: {name or 'nothing'}). "
+                         "Set its Bridge View Controller's class by hand, or send this message to Claude.")
+    live = built | {name} - {None}
+    if "MainViewController" in live:
         controller = next((p for p in swift if re.search(r"class\s+MainViewController\b", p.read_text())), None)
         if not controller:
             controller = resolve(app, pbx_paths(pbx, "MainViewController.swift"))
         if not controller:
-            raise ValueError("The storyboard loads MainViewController, but this script cannot find the file the "
+            raise ValueError("The app loads MainViewController, but this script cannot find the file the "
                              f"project compiles it from ({', '.join(pbx_paths(pbx, 'MainViewController.swift')) or 'no path'}). "
                              f"Add `{REGISTER}` to its capacitorDidLoad() by hand.")
         control = controller.read_text()
@@ -155,18 +168,26 @@ def plan(app):
                 raise ValueError(f"No capacitorDidLoad() in {controller}; register {REGISTER} by hand.")
             writes[controller] = control
             notes.append(f"registered it in MainViewController ({controller})")
-    elif name in ("CAPBridgeViewController", BRIDGE):
+    if live & {"CAPBridgeViewController", BRIDGE}:
         block += BRIDGE_SOURCE
+        switched = False
         if name == "CAPBridgeViewController":
             new_tag = re.sub(r'\s+customModuleProvider="[^"]*"', "", re.sub(r'\s+customModule="[^"]*"', "",
                               tag.replace('customClass="CAPBridgeViewController"', f'customClass="{BRIDGE}"')))
             writes[board] = storyboard.replace(tag, new_tag, 1)
             notes.append(f"the storyboard loaded Capacitor's own controller; it now loads {BRIDGE}, which registers it")
-        else:
-            notes.append(f"the storyboard already loads {BRIDGE}")
-    else:
-        raise ValueError(f"Could not tell which controller {board} loads (found: {name or 'nothing'}). "
-                         "Set its Bridge View Controller's class by hand, or send this message to Claude.")
+            switched = True
+        for p, t in code.items():
+            if re.search(r"\bCAPBridgeViewController\s*\(", t):
+                t = re.sub(r"\bCAPBridgeViewController(\s*\()", BRIDGE + r"\1", t)
+                if p == delegate:
+                    source = t
+                else:
+                    writes[p] = t
+                notes.append(f"{p.name} built Capacitor's own controller; it now builds {BRIDGE}, which registers it")
+                switched = True
+        if not switched:
+            notes.append(f"the app already loads {BRIDGE}")
 
     if block or START in read(delegate):
         updated = source.rstrip() + "\n" + ("\n" + START + "\n" + block.rstrip() + "\n" + END + "\n" if block else "")
