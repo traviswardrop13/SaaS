@@ -1,41 +1,63 @@
-# SonaSpeech — the on-device recognizer (Xcode handoff)
+# SonaSpeech — Apple's on-device listening check (Xcode handoff)
 
-The repo now carries a local Capacitor plugin at `plugins/sona-speech`. It runs
+The repo carries a local Capacitor plugin at `plugins/sona-speech`. It runs
 Apple's `SFSpeechRecognizer` with `requiresOnDeviceRecognition = true` on every
 request, and **refuses to start** when on-device recognition is unavailable —
 it never falls back to Apple's servers. That is what keeps "no audio ever
 leaves the device" true as a mechanism, not a promise.
 
 The plugin returns **raw transcripts only**. Pass/fail lives in `sona.js`
-(`hearVerdict`) so Rachel can tune what counts as an attempt without an App
-Store review. `charge.html` starts a bounded listen each round, biased toward
-the practice word, and `verifyClip()` prefers the transcript verdict; a child
-the recognizer can't parse gets "unknown", which defers to the spectral check —
-never a fail caused by the recognizer.
+(`hearVerdict`) so Rachel can tune what counts as a try without an App Store
+review. `charge.html` listens during each practice attempt (up to 15 s), biased
+toward the practice word, and `verifyClip()` prefers the transcript verdict; a
+try the recognizer can't make out is "unknown", which defers to the spectral
+check — never a fail caused by the recognizer.
 
-## Steps on the Mac
+## It was never switched on (found 28 Sep 2026)
 
-1. In the shell project's `package.json`, add:
-       "sona-speech": "file:../SaaS/plugins/sona-speech"
-   (adjust the relative path to wherever this repo sits next to the shell)
-2. `npm install && npx cap sync ios`
-3. In Xcode, add to `App/App/Info.plist`:
-       <key>NSSpeechRecognitionUsageDescription</key>
-       <string>Sona checks your child's practice sounds right on this device.
-       Speech recognition runs on the phone — nothing is sent anywhere.</string>
-   (`NSMicrophoneUsageDescription` already exists.)
-4. Build to a REAL device (the simulator has no usable on-device model).
+The plugin was written on 31 Aug (#110) and never reached the app. Nothing in
+the Xcode project compiled it, nothing registered it, and Info.plist had no
+speech-permission text. So in every build up to 1.0.3, every practice try was
+judged by the sound-shape check alone, which passes "taco" for R. The earlier
+steps here also could not have worked as written: they added the plugin as an
+npm package, and its `Package.swift` asks for Capacitor 6 while the app is on 8.
+
+## Steps on the Mac (about 10 minutes)
+
+In the checkout that owns `ios/` (`/Users/traviswardrop/Documents/SaaS`), with
+this branch's code:
+
+1. `python3 scripts/install-ios-speech.py`
+   It compiles the plugin through `AppDelegate.swift` (the way the iOS 27 scene
+   fix is compiled), registers it in the project's `MainViewController` beside
+   SonaAudio, and adds `NSSpeechRecognitionUsageDescription` to Info.plist.
+   Without that text iOS closes the app the moment the speech permission is
+   asked. Running it again is safe. It stops, changing nothing, if the plugin
+   is already in the app some other way.
+2. Open Xcode, bump the Build number, and build to a **real iPhone** (the
+   simulator has no usable on-device model).
+3. In Safari → Develop → your iPhone → Sona, check
+   `window.Capacitor.Plugins.SonaSpeech` is defined (not `undefined`).
+4. Run the checklist below, then Archive and upload as usual (NATIVE.md).
+
+The website half (the rules in `sona.js`, the listening time in `charge.html`)
+goes live with a normal merge; only the plugin itself needs the new build.
 
 ## Device test checklist — do these before submitting
 
 - [ ] First practice round: mic prompt, then the speech prompt, both at setup.
-- [ ] Say "poopoo" at an R word → the segment must NOT fill; Echo retries.
-- [ ] Say the word (even imperfectly — "wabbit") → fills.
+      Read the speech prompt: note any sentence Apple adds about sending speech
+      to Apple (the code keeps it on the phone; the prompt is Apple's text).
+- [ ] At an R word, say "taco" → it must NOT count; Echo asks again.
+- [ ] Say "Here is a taco" on a sentence round → must NOT count.
+- [ ] Say the word, even imperfectly ("wabbit") → counts.
+- [ ] Say the word as your last try, just before Echo ends the turn → counts
+      (the final word used to be cut off).
 - [ ] Mumble something unintelligible → behaves exactly like the app did
       before this feature (spectral check decides). This is the "unknown" path.
 - [ ] **Audio-session coexistence (the known risk):** while the recognizer is
       listening, the page's own rep counter (its getUserMedia stream) must
-      keep counting, and Echo's TTS must still play afterwards. If either
+      keep counting, and Echo's voice must still play afterwards. If either
       breaks, the fix is in `SonaSpeechPlugin.swift`'s AVAudioSession options —
       say so and we iterate there.
 - [ ] Airplane mode ON: everything above still works identically. If it does

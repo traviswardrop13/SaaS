@@ -412,7 +412,7 @@ for (const age of ["3", "4", "5", "8"]) {
   // to a price
   for (const g of ARCADE) {
     const key = g.replace(/^arcade-|\.html$/g, "");
-    const tier = key === "slice" || key === "stack" ? "free" : "premium";
+    const tier = key === "slice" ? "free" : "premium";   // Block Stacker joined Premium, 27 Sep 2026
     const to = await land(g, 'sessionStorage.setItem("sona.paidui","1")', true);
     ok(`on the free version, typed ${g} is refused (${tier})`,
       tier === "free" ? to === "/today.html" : to === "/today.html?locked=" + key, to);

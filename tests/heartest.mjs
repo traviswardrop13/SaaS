@@ -7,7 +7,10 @@
 // the two safety properties: unknown NEVER fails a child the recognizer can't
 // parse, and the plugin is never trusted unless it attests on-device.
 import { createServer } from "http";
-import { readFileSync, existsSync } from "fs";
+import { readFileSync, existsSync, mkdtempSync, mkdirSync, writeFileSync, rmSync } from "fs";
+import { spawnSync } from "child_process";
+import { tmpdir } from "os";
+import path from "path";
 import { chromium, ROOT, launchOpts } from "./_env.mjs";
 
 const MIME = { html: "text/html", js: "text/javascript", svg: "image/svg+xml", css: "text/css", woff2: "font/woff2" };
@@ -30,7 +33,7 @@ await page.goto("http://localhost:8206/today.html");
 await page.waitForTimeout(500);
 
 // ── 1. the verdict rules, case by case ──
-const V = (t, sound, word) => page.evaluate(([a, b, c]) => Sona.hearVerdict(a, b, c), [t, sound, word]);
+const V = (t, sound, word, opts) => page.evaluate(([a, b, c, d]) => Sona.hearVerdict(a, b, c, d), [t, sound, word, opts || null]);
 
 // THE MOTIVATING CASE. "poopoo" carries no R anywhere — intelligible speech
 // with none of the target sound is a fail, and the segment must not advance.
@@ -41,7 +44,7 @@ ok('"banana banana" for R FAILS', (await V("banana banana", "R", "rain")) === "f
 // Anything semi-close advances — Travis's rule, and the clinical one: the
 // misarticulation IS the practice.
 ok('"rabbit" for rabbit passes', (await V("rabbit", "R", "rabbit")) === "pass");
-ok('"wabbit" for rabbit passes (one edit away — that IS the practice)',
+ok('"wabbit" for rabbit passes (a close try — that IS the practice)',
   (await V("wabbit", "R", "rabbit")) === "pass");
 ok('"the rabbit" inside a phrase passes', (await V("the rabbit", "R", "rabbit")) === "pass");
 ok('"run" carries the R sound → passes even against another word',
@@ -63,6 +66,42 @@ ok("punctuation-only noise is unknown", (await V("...!!", "R", "rabbit")) === "u
 // short words never fuzzy-match into a false pass
 ok('"cat" does not fuzzy-match "car"... it does not need to — it has no R; but "bat" vs target "bar": no R anywhere → fail',
   (await V("bat", "R", "bar")) === "fail");
+
+// ── 1b. HEAR2: in the ballpark, and not "taco" (Travis, 28 Sep 2026) ──
+// The first rules passed any word with the target LETTER in it and any word
+// one letter off. So "Here is a taco" passed R, "water" passed for rabbit and
+// "sock" passed for rock. Close tries must still pass; those must not.
+{
+  const W = { level: "word" };
+  ok('"taco" for rabbit FAILS', (await V("taco", "R", "rabbit", W)) === "fail");
+  ok('"water" for rabbit FAILS (an r, but not where rabbit has it)', (await V("water", "R", "rabbit", W)) === "fail");
+  ok('"here is a taco" FAILS on a word round', (await V("here is a taco", "R", "rabbit", W)) === "fail");
+  const HERE = { level: "sentence", frame: "Here is a rabbit." };
+  ok('"Here is a taco." FAILS the sentence "Here is a rabbit."', (await V("Here is a taco.", "R", "rabbit", HERE)) === "fail");
+  ok('"Here is a rabbit." passes it', (await V("Here is a rabbit.", "R", "rabbit", HERE)) === "pass");
+  ok('only the sentence\'s other words ("here is a") is unknown, not a pass', (await V("here is a", "R", "rabbit", HERE)) === "unknown");
+  ok('"I see a taco" FAILS "I see a sun." ("see" is the sentence\'s, not the child\'s)',
+    (await V("I see a taco", "S", "sun", { level: "sentence", frame: "I see a sun." })) === "fail");
+  ok('"sock" for rock FAILS (a rhyme, not a close try)', (await V("sock", "R", "rock", W)) === "fail");
+  ok('"sing" for ring FAILS', (await V("sing", "R", "ring", W)) === "fail");
+  ok('"wock" for rock passes (the typical R error)', (await V("wock", "R", "rock", W)) === "pass");
+  ok('"wed" for red passes (short words get close tries too)', (await V("wed", "R", "red", W)) === "pass");
+  ok('"bed" for red FAILS', (await V("bed", "R", "red", W)) === "fail");
+  ok('"cah" for car passes (a final R melting into the vowel)', (await V("cah", "R", "car", W)) === "pass");
+  ok('"tat" for cat passes (K fronted to T)', (await V("tat", "K", "cat", W)) === "pass");
+  ok('"sip" for the word ship passes (the typical SH error)', (await V("sip", "SH", "ship", W)) === "pass");
+  ok('"4" for four passes (Apple writes numbers as digits)', (await V("4", "R", "four", W)) === "pass");
+  ok('a grown-up\'s "say rabbit" does not pass the child\'s "taco"', (await V("say rabbit taco", "R", "rabbit", W)) === "fail");
+  ok('…while the child\'s own "rabbit" after it still passes', (await V("say rabbit rabbit", "R", "rabbit", W)) === "pass");
+  const ISO = { level: "isolation" };
+  ok('a bare-sound round: "uh" is unknown (how Apple writes a sound it cannot spell)', (await V("uh", "R", "rrrr", ISO)) === "unknown");
+  ok('…"Er" passes', (await V("Er", "R", "rrrr", ISO)) === "pass");
+  ok('…"taco" FAILS', (await V("taco", "R", "rrrr", ISO)) === "fail");
+  const SYL = { level: "syllable" };
+  ok('a syllable round: "wah" for rah passes', (await V("wah", "R", "rah", SYL)) === "pass");
+  ok('…"ah" is unknown', (await V("ah", "R", "rah", SYL)) === "unknown");
+  ok('…"taco" FAILS', (await V("taco", "R", "rah", SYL)) === "fail");
+}
 
 // ── 2. availability fails CLOSED ──
 // A plugin that reports onDevice:false must never be used, whatever else it
@@ -147,6 +186,19 @@ ok('"cat" does not fuzzy-match "car"... it does not need to — it has no R; but
     && /function recognitionStop\(\)[\s\S]{0,700}S\.speechStop\(\)/.test(charge));
   ok("the round biases recognition toward the practice word",
     /speechStart\(\{ words:/.test(charge));
+  ok("the judge is told the round's kind and, on a sentence round, the sentence",
+    /S\.hearVerdict\(text,SOUND,[^;]*\{level:ITEM\.level,frame:ITEM\.level==="sentence"\?String\(ITEM\.t\|\|""\):""\}\)/.test(charge));
+  ok("Apple listens up to 15 s an attempt (9 s left a child who waited for Echo's nudge about one)",
+    /var REC_BUDGET=15000;/.test(charge) && (charge.match(/recognitionRemaining=REC_BUDGET/g) || []).length === 2 && !/recognitionRemaining=9000/.test(charge));
+  ok("stop() waits for Apple's final transcript instead of answering with a partial guess",
+    /private func beginStop[\s\S]{0,400}request\?\.endAudio\(\)\s*task\?\.finish\(\)\s*settleTimer = Timer\.scheduledTimer/.test(swift)
+    && /private func recognitionEnded\(\)[\s\S]{0,200}if settleTimer != nil \{ settle\(\) \}/.test(swift));
+  ok("…and a late answer from an older listen is ignored",
+    /let mine = session/.test(swift) && /guard let self = self, self\.session == mine else \{ return \}/.test(swift));
+  ok("…and a start clears what the last listen heard, so a failed start returns no old word",
+    /private func begin\(_ call: CAPPluginCall\) \{[\s\S]{0,300}settle\(\)\s*session \+= 1\s*let mine = session\s*latestText = ""/.test(swift));
+  ok("MainViewController registers SonaSpeech beside SonaAudio",
+    /registerPluginInstance\(SonaAudioPlugin\(\)\)\s*bridge\?\.registerPluginInstance\(SonaSpeechPlugin\(\)\)/.test(readFileSync(ROOT + "/../native/ios/App/MainViewController.swift", "utf8")));
   ok("the verdict rules live in sona.js, not the binary",
     /function hearVerdict/.test(sona),
     "clinical tuning must never need an App Store review");
@@ -183,6 +235,62 @@ ok('"cat" does not fuzzy-match "car"... it does not need to — it has no R; but
     /function saySlow\([\s\S]{0,160}if\(speaking\)return res\(\);/.test(charge));
   ok("…and both help controls say what they do, to a screen reader too",
     /aria-label="Hear it again"/.test(charge) && /aria-label="Hear it slowly"/.test(charge));
+}
+
+// ── 5. switching it on: scripts/install-ios-speech.py ──
+// The plugin sat in the repo from August and never reached the app: nothing
+// compiled it, nothing registered it, and Info.plist had no speech text (iOS
+// closes an app that asks for the speech permission without one). The script
+// does all three on the Mac's generated (git-ignored) project; here it runs on
+// a stand-in for that project.
+{
+  const script = path.join(ROOT, "../scripts/install-ios-speech.py");
+  const plugin = readFileSync(ROOT + "/../plugins/sona-speech/ios/Sources/SonaSpeechPlugin/SonaSpeechPlugin.swift", "utf8");
+  const fresh = () => {
+    const dir = mkdtempSync(path.join(tmpdir(), "sona-speech-"));
+    const app = path.join(dir, "App", "App");
+    mkdirSync(app, { recursive: true });
+    writeFileSync(path.join(app, "AppDelegate.swift"), "import UIKit\nimport Capacitor\n\n@UIApplicationMain\nclass AppDelegate: UIResponder, UIApplicationDelegate {\n    var window: UIWindow?\n}\n");
+    writeFileSync(path.join(app, "Info.plist"), '<?xml version="1.0" encoding="UTF-8"?>\n<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">\n<plist version="1.0"><dict><key>CFBundleName</key><string>Sona</string></dict></plist>\n');
+    writeFileSync(path.join(app, "MainViewController.swift"), "import UIKit\nimport Capacitor\n\nclass MainViewController: CAPBridgeViewController {\n    override func capacitorDidLoad() {\n        bridge?.registerPluginInstance(SonaAudioPlugin())\n    }\n}\n");
+    return { dir, app };
+  };
+  const run = (app) => spawnSync("python3", [script, app], { encoding: "utf8" });
+  const { dir, app } = fresh();
+  const first = run(app);
+  const delegate = readFileSync(path.join(app, "AppDelegate.swift"), "utf8");
+  const control = readFileSync(path.join(app, "MainViewController.swift"), "utf8");
+  const plist = readFileSync(path.join(app, "Info.plist"), "utf8");
+  ok("the installer runs", first.status === 0, first.stderr || first.stdout);
+  ok("…compiles the plugin through AppDelegate.swift, whole and unchanged",
+    delegate.includes("// BEGIN SONA SPEECH PLUGIN\n" + plugin.trimEnd() + "\n// END SONA SPEECH PLUGIN"));
+  ok("…registers it once, beside SonaAudio",
+    (control.match(/registerPluginInstance\(SonaSpeechPlugin\(\)\)/g) || []).length === 1
+    && /registerPluginInstance\(SonaAudioPlugin\(\)\)\n\s+bridge\?\.registerPluginInstance\(SonaSpeechPlugin\(\)\)/.test(control));
+  ok("…and adds the speech-permission text, which says it stays on the phone",
+    /<key>NSSpeechRecognitionUsageDescription<\/key>\s*<string>[^<]*on the phone[^<]*no audio is sent anywhere/.test(plist), plist);
+  const again = run(app);
+  ok("running it again changes nothing",
+    again.status === 0 && /already installed/.test(again.stdout)
+    && readFileSync(path.join(app, "AppDelegate.swift"), "utf8") === delegate
+    && readFileSync(path.join(app, "MainViewController.swift"), "utf8") === control, again.stdout + again.stderr);
+  rmSync(dir, { recursive: true, force: true });
+
+  // two copies of one plugin class cannot both compile: it stops instead
+  const pk = fresh();
+  mkdirSync(path.join(pk.dir, "App", "CapApp-SPM"), { recursive: true });
+  writeFileSync(path.join(pk.dir, "App", "CapApp-SPM", "Package.swift"), '.package(name: "SonaSpeech", path: "../../../node_modules/sona-speech")');
+  const packaged = run(pk.app);
+  ok("it stops, changing nothing, when the plugin is already in the app as a package",
+    packaged.status !== 0 && /already in the app as a package/.test(packaged.stderr)
+    && !readFileSync(path.join(pk.app, "AppDelegate.swift"), "utf8").includes("SONA SPEECH"), packaged.stderr);
+  rmSync(pk.dir, { recursive: true, force: true });
+  const cp = fresh();
+  writeFileSync(path.join(cp.app, "SonaSpeechPlugin.swift"), plugin);
+  const copied = run(cp.app);
+  ok("…or already compiled from its own Swift file",
+    copied.status !== 0 && /already compiled from/.test(copied.stderr), copied.stderr);
+  rmSync(cp.dir, { recursive: true, force: true });
 }
 
 await browser.close(); srv.close();

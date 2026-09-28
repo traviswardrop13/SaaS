@@ -276,6 +276,8 @@ document.documentElement.className += " js";
     .tile{flex:none;width:150px;display:flex;flex-direction:column;gap:8px;}
     .tile img{display:block;width:150px;height:150px;border-radius:24px;background:#2B3A63;object-fit:cover;}
     .tile.b img{border-radius:10px 24px 24px 10px;box-shadow:inset 6px 0 0 rgba(0,0,0,.12);}
+    .tile.b.soon img{opacity:.5;filter:saturate(.4);}
+    .tile .soon-tag{align-self:flex-start;font-style:normal;font-size:12px;font-weight:800;color:var(--muted);background:var(--paper-d);border-radius:99px;padding:2px 9px;}
     .tile span{font:800 15px Nunito,sans-serif;color:#E7EAF5;text-align:center;line-height:1.2;}
     .lib-note{margin-top:30px;text-align:center;font-size:15px;color:#AEB6D0;font-weight:600;}
 
@@ -505,13 +507,15 @@ document.documentElement.className += " js";
 <!-- THE LIBRARY. The counts are the catalog's own (tests/shiptest.mjs holds
      them to it): every game Home opens, and none it shows as Coming soon —
      the Say & Play games are parked until each is rebuilt (Travis, 26 Sep
-     2026), so they are not on this strip either — and one book for every
-     sound. -->
+     2026), so they are not on this strip either. The bookshelf opens its
+     books a few a week (27 Sep 2026): each book tile carries the date the
+     shelf opens it, and the count and the "Coming" tags are worked out on
+     the phone from those dates, so the page is never ahead of the shelf. -->
 <section class="lib" id="library">
   <div class="wrap">
     <div class="kicker rv" style="color:var(--sun);">Games and books</div>
-    <h2 class="rv d1" style="margin-top:10px;"><span class="n">7</span> games. <span class="n">19</span> picture books.</h2>
-    <p class="sub rv d2" style="margin-top:14px;">Games for ages 3 to 8, with more on the way, and a picture book for every sound, read along with Echo.</p>
+    <h2 class="rv d1" style="margin-top:10px;"><span class="n">7</span> games. <span class="n" id="bookCount">5</span> picture books.</h2>
+    <p class="sub rv d2" style="margin-top:14px;">Games for ages 3 to 8, with more on the way, and picture books read along with Echo, with new ones every week.</p>
   </div>
   <div class="strip go" aria-label="Sona's games">
     <ul class="track">
@@ -527,24 +531,24 @@ document.documentElement.className += " js";
   <div class="strip go rev" aria-label="Sona's picture books">
     <ul class="track">
           <li class="tile b"><img src="/assets/books/rory-rainbow/cover.svg" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Rory and the Rainbow</span></li>
-          <li class="tile b"><img src="/assets/books/penny-pebble-party/cover.svg" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Penny&rsquo;s Pebble Party</span></li>
-          <li class="tile b"><img src="/assets/books/bo-beach-day/cover.svg" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Bo&rsquo;s Beach Day</span></li>
-          <li class="tile b"><img src="/assets/books/mia-makes-muffins/cover.svg" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Mia Makes Muffins</span></li>
-          <li class="tile b"><img src="/assets/books/ned-needs-a-net/cover.svg" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Ned Needs a Net</span></li>
-          <li class="tile b"><img src="/assets/books/toby-tiny-tuba/cover.svg" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Toby&rsquo;s Tiny Tuba</span></li>
-          <li class="tile b"><img src="/assets/books/dot-digs-a-pool/cover.svg" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Dot Digs a Pool</span></li>
-          <li class="tile b"><img src="/assets/books/kip-kite/cover.svg" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Kip&rsquo;s Kite</span></li>
-          <li class="tile b"><img src="/assets/books/goldie-guitar/cover.svg" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Goldie&rsquo;s Guitar</span></li>
-          <li class="tile b"><img src="/assets/books/finn-finds-a-feather/cover.svg" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Finn Finds a Feather</span></li>
-          <li class="tile b"><img src="/assets/books/val-the-van/cover.svg" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Val the Van</span></li>
           <li class="tile b"><img src="/assets/books/sid-the-seagull/cover.svg" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Sid the Seagull</span></li>
-          <li class="tile b"><img src="/assets/books/zoe-and-the-zipper/cover.svg" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Zoe and the Zipper</span></li>
           <li class="tile b"><img src="/assets/books/shay-the-shy-shark/cover.svg" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Shay the Shy Shark</span></li>
-          <li class="tile b"><img src="/assets/books/chip-the-chipmunk/cover.svg" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Chip the Chipmunk</span></li>
-          <li class="tile b"><img src="/assets/books/jax-and-the-jam-jar/cover.svg" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Jax and the Jam Jar</span></li>
           <li class="tile b"><img src="/assets/books/leo-lucky-leaf/cover.svg" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Leo&rsquo;s Lucky Leaf</span></li>
           <li class="tile b"><img src="/assets/books/theo-thunder-day/cover.svg" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Theo&rsquo;s Thunder Day</span></li>
-          <li class="tile b"><img src="/assets/books/this-bear-that-bee/cover.svg" width="240" height="240" loading="lazy" decoding="async" alt=""><span>This Bear, That Bee</span></li>
+          <li class="tile b" data-opens="2026-10-04"><img src="/assets/books/kip-kite/cover.svg" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Kip&rsquo;s Kite</span></li>
+          <li class="tile b" data-opens="2026-10-04"><img src="/assets/books/zoe-and-the-zipper/cover.svg" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Zoe and the Zipper</span></li>
+          <li class="tile b" data-opens="2026-10-04"><img src="/assets/books/chip-the-chipmunk/cover.svg" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Chip the Chipmunk</span></li>
+          <li class="tile b" data-opens="2026-10-11"><img src="/assets/books/goldie-guitar/cover.svg" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Goldie&rsquo;s Guitar</span></li>
+          <li class="tile b" data-opens="2026-10-11"><img src="/assets/books/jax-and-the-jam-jar/cover.svg" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Jax and the Jam Jar</span></li>
+          <li class="tile b" data-opens="2026-10-11"><img src="/assets/books/this-bear-that-bee/cover.svg" width="240" height="240" loading="lazy" decoding="async" alt=""><span>This Bear, That Bee</span></li>
+          <li class="tile b" data-opens="2026-10-18"><img src="/assets/books/toby-tiny-tuba/cover.svg" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Toby&rsquo;s Tiny Tuba</span></li>
+          <li class="tile b" data-opens="2026-10-18"><img src="/assets/books/finn-finds-a-feather/cover.svg" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Finn Finds a Feather</span></li>
+          <li class="tile b" data-opens="2026-10-18"><img src="/assets/books/val-the-van/cover.svg" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Val the Van</span></li>
+          <li class="tile b" data-opens="2026-10-25"><img src="/assets/books/penny-pebble-party/cover.svg" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Penny&rsquo;s Pebble Party</span></li>
+          <li class="tile b" data-opens="2026-10-25"><img src="/assets/books/ned-needs-a-net/cover.svg" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Ned Needs a Net</span></li>
+          <li class="tile b" data-opens="2026-10-25"><img src="/assets/books/dot-digs-a-pool/cover.svg" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Dot Digs a Pool</span></li>
+          <li class="tile b" data-opens="2026-11-01"><img src="/assets/books/bo-beach-day/cover.svg" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Bo&rsquo;s Beach Day</span></li>
+          <li class="tile b" data-opens="2026-11-01"><img src="/assets/books/mia-makes-muffins/cover.svg" width="240" height="240" loading="lazy" decoding="async" alt=""><span>Mia Makes Muffins</span></li>
     </ul>
   </div>
 </section>
@@ -837,6 +841,20 @@ document.documentElement.className += " js";
         bubble.className = "bubble"; void bubble.offsetWidth; bubble.className = "bubble pop";
       }, 260);
     }, 2600);
+
+    // Books the shelf hasn't opened yet say when they will, and the count is
+    // only the open ones: both from each tile's date, on this phone's own
+    // calendar, before the strips are copied for the loop below.
+    (function () {
+      var d = new Date(), today = d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2), open = 0;
+      [].forEach.call(document.querySelectorAll(".tile.b"), function (li) {
+        var o = li.getAttribute("data-opens");
+        if (!o || o <= today) { open++; return; }
+        var p = o.split("-"), when = new Date(+p[0], +p[1] - 1, +p[2]).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+        li.classList.add("soon"); li.insertAdjacentHTML("beforeend", '<em class="soon-tag">Coming ' + when + "</em>");
+      });
+      var n = $("bookCount"); if (n) n.textContent = open;
+    })();
 
     // The two strips loop forever. A short list is first repeated until it
     // is wider than the screen; then the whole run is doubled and the track
