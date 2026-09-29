@@ -657,6 +657,33 @@ note: `micquietgamestest` pins its loudness to the Sound setting.
 
 **Sound-powered help across live games** (28 Sep 2026): Fruit Slice slows fruit motion and spawning, Block Stacker slows the moving block, Sound Sprint slows its course and progress, and Flappy Glide slows hedges and their arrival while preserving balloon control. Each uses `arcade-speech-help.js`/`.css`: tap Echo, hear the existing target recording, then a qualifying attempt earns eight active seconds at 55% speed. The scene holds during speech. Between-round prompts remain. Permission/native cleanup completes before resuming audio or navigating. No gameplay attempts enter practice records. Feed Echo now reveals the matching picture after a voice burst with a compatible broad sound family; it remains a participation hint, not a pronunciation grade. Hoops already requires a word to earn each shot. `arcadespeechhelptest` drives the four new helpers; `micquietgamestest` covers the Feed hint. Books and parked games are outside this change.
 
+**Super Slice: Fruit Slice's sound power** (Travis, 29 Sep 2026: "give them an
+option to say the sound to slow the game down ... they go into some frenzy
+mode or easy mode or beast mode when they say their target sounds ... one at
+a time"). Fruit Slice's help became a mode a child wants to earn, and the
+other games copy it one at a time:
+- **Tap Echo, then say it up to three times.** The board holds and dims (the
+  mic may only open while nothing plays), three stars show, and each try
+  lights one. The first turn Echo says "Super Slice! Say it three times."
+  then plays the recorded sound; later turns play only the sound.
+- **Every try buys time:** one try 8 seconds, two 10, three 12. A try is the
+  say-it card's own burst (six loud frames that pass the family check); it
+  ends after 160 ms below the bar, so one long "rrrrrr" is one try. The turn
+  ends at the third try, or 1.5 s after a child who has said it stops.
+  Silence, "Keep playing" and (on the iPhone) "taco" earn nothing.
+- **Super Slice itself:** the fruit slow to 55%, the stand throws five at
+  once (one golden), every toss after is two or three, the swipe becomes a
+  wide rainbow blade (it slices 34 px past a fruit's edge, not 16), and the
+  screen edge glows gold. Time left when a wave ends waits through the
+  break and carries into the next wave (the burst alone can finish wave 1);
+  the giant watermelon ends it.
+- **Still play, never practice data**, and the round still ends on the giant
+  watermelon whether or not a child ever says a word. Whether these tries
+  count toward the week's reps, and the three-tries ask itself, are Rachel's
+  calls. The retired names (STAR MODE, FRUIT FRENZY, SLOW-MO…) stay banned.
+  `tests/superslicetest.mjs` plays it; Block Stacker, Sound Sprint and Flappy
+  Glide keep the one-try, eight-second help until each gets its own.
+
 
 **Sound Sprint is the same round, as a race** (27 Sep 2026): the park, the
 beach and the forest, a checkpoint between each with the say-it card ("Say
