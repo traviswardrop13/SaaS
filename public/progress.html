@@ -385,14 +385,18 @@
       ? "Clearest sound so far: " + soundLabel(clearestKey) + " · " + accOf(clearestKey) + "% of sound checks"
       : "Clearest sound: still getting to know their sounds";
 
-    // The lead uses the same detected-try count as the weekly card. A recording
+    // The lead uses the same detected-try count as the weekly card: per sound
+    // through Sona.weekReps, so a sound-check-only day cannot put a number in
+    // the lead that the card beside it does not count (REPWEEKS1). A recording
     // link is added only after IndexedDB confirms there is something to play.
     (function () {
       var el = document.getElementById("storyLine"), best = null;
       var now = new Date(), mon = new Date(now.getFullYear(), now.getMonth(), now.getDate() - ((now.getDay() + 6) % 7));
       var end = new Date(mon); end.setDate(mon.getDate() + 7);
       keys.forEach(function (k) {
-        var n = 0; Object.keys(out[k].days || {}).forEach(function (day) {
+        var n = 0;
+        if (Sona.repWeeks) n = Sona.weekReps(0, k);
+        else Object.keys(out[k].days || {}).forEach(function (day) {
           var d = new Date(day + "T12:00:00"); if (d >= mon && d < end) n += dayTries(out[k].days[day]);
         });
         if (n > 0 && (!best || n > best.n)) best = { k: k, n: n };
