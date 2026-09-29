@@ -92,7 +92,7 @@ try {
         removed: ['sStreak', 'sSessions', 'sWords', 'sStars', 'volChip', 'volNext', 'goalCard'].filter(id => document.getElementById(id)),
         share: window.__shares.length, mic: window.__mic, overflow: document.documentElement.scrollWidth > innerWidth,
       }));
-      ok('recordings sit immediately after the narrative, then the weekly card', state.firstCards[1] === 'recordingsCard' && state.firstCards[2] === 'weekCard', state.firstCards);
+      ok('weekly practice leads the overview, followed by saved tries and the narrative', state.firstCards[0] === 'weekCard' && state.firstCards[1] === 'recordingsCard' && state.firstCards[2] === '', state.firstCards);
       ok('empty recordings show honest first/latest placeholders', /First try/.test(state.ghost) && /Latest try/.test(state.ghost) && /Milo.s first clear try gets saved here/.test(state.ghost), state.ghost);
       ok('no fake waveform or unavailable listen link', ['none', 'normal'].includes(state.wave) && !state.hear, state);
       ok('empty report has one practice action', state.actions === 1, state.actions);

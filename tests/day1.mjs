@@ -445,23 +445,43 @@ for (const age of ["3", "4", "5", "8"]) {
 // ── Deliberate selection, not an automatic adventure. ──
 // Every visible choice names and illustrates the game practice actually earns.
 // The card may appear in New as well, so exercise each canonical age shelf.
+const CHOSEN_ART = {
+  feed: {card:"home-feed.webp", scene:"picnic-game.webp", title:"Feed Echo"},
+  slice: {card:"home-fruit.webp", scene:"orchard-game.webp", title:"Fruit Slice"},
+  tiles: {card:"home-piano.webp", scene:"piano-stage.webp", title:"Piano Tiles"},
+  stack: {card:"home-stack.webp", scene:"moon-village.webp", title:"Block Stacker"},
+  run: {card:"home-run.webp", scene:"sprint-lane.webp", title:"Sound Sprint"},
+  glide: {card:"home-glide.webp", scene:"glide-countryside.webp", title:"Flappy Glide"},
+};
 for (const key of ["feed", "slice", "tiles", "stack", "run", "glide"]) {
+  const expected = CHOSEN_ART[key];
   const {ctx, pg} = await home("7", true);
   const card = pg.locator('#activityGroups .game-card[data-game="' + key + '"]');
-  const visible = await card.evaluate(e => ({name:e.querySelector(".game-name").textContent,art:e.querySelector("use").getAttribute("href")}));
+  await card.scrollIntoViewIfNeeded();
+  const visible = await card.evaluate(async e => {
+    const picture = e.querySelector(".game-art img");
+    if (picture) await picture.decode().catch(() => {});
+    return {
+      name:e.querySelector(".game-name").textContent,
+      art:picture ? new URL(picture.currentSrc || picture.src).pathname : "",
+      decoded:!!picture && picture.complete && picture.naturalWidth > 0 && picture.naturalHeight > 0,
+    };
+  });
+  ok(key + ": the chosen card names and loads the right illustrated game", visible.name === expected.title && visible.art === "/assets/crafted/" + expected.card && visible.decoded, JSON.stringify(visible));
   await card.click();
   await pg.waitForURL(/(?:charge|arcade-(?:feed|bubbles|peekaboo))\.html/);
   const result = await pg.evaluate(() => ({
     game: window.GAME || null, title: (document.getElementById("gameTitle") || {}).textContent,
     run: sessionStorage.getItem("sona.run.v1"), ticket: sessionStorage.getItem("sona.play.token"),
-    sticker: "#" + Sona.gameSticker(window.GAME || location.pathname.split("/").pop())[0],
+    scene: getComputedStyle(document.getElementById("app")).backgroundImage,
   }));
   if (key === "feed") {
     ok(key + ": choosing the simple game opens its integrated practice", new URL(pg.url()).pathname === "/arcade-" + key + ".html", pg.url());
+    ok(key + ": integrated practice keeps its picnic theme", result.scene.includes("/assets/crafted/" + expected.scene), result.scene);
   } else {
     const u = new URL(pg.url());
     ok(key + ": choosing the game opens its practice, not an unrelated daily run", u.pathname === "/charge.html" && u.searchParams.get("game") === "arcade-" + key + ".html" && !u.searchParams.has("daily") && String(result.title).toLowerCase() === visible.name.toLowerCase(), JSON.stringify({url:pg.url(),visible,result}));
-    ok(key + ": practice preserves the chosen card's art", visible.art === result.sticker, JSON.stringify({visible,result}));
+    ok(key + ": practice preserves the chosen card's game theme", result.game === "arcade-" + key + ".html" && result.scene.includes("/assets/crafted/" + expected.scene), JSON.stringify({visible,result}));
   }
   ok(key + ": choosing a card never awards a ticket or creates a daily journey", result.ticket === null && result.run === null, JSON.stringify(result));
   await ctx.close();

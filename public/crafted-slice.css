@@ -1,0 +1,31 @@
+/* Fruit Slice follows the original market board. Decorative art stays below
+   the live canvas; all slicing and earned-wave rules remain in the game. */
+body[data-crafted="slice"] #app{
+ background-image:url('/assets/crafted/fruit-market-v2.webp');
+ background-size:100% 100%;background-position:center;
+ background-color:#efd69e;
+}
+body[data-crafted="slice"] #sliceEcho{display:none;}
+body[data-crafted="slice"] #top{gap:9px;padding-left:14px;padding-right:14px;}
+body[data-crafted="slice"] #close{width:46px;height:46px;font-size:26px;}
+body[data-crafted="slice"] .hudpill{padding:10px 14px;min-height:45px;font-size:18px;}
+body[data-crafted="slice"] #timer{gap:7px;font-size:15px;}
+body[data-crafted="slice"] #banner{top:calc(82px + env(safe-area-inset-top));}
+body[data-crafted="slice"] #banner .pill{padding:10px 22px;border-radius:20px;}
+body[data-crafted="slice"] #banner b{font-size:26px;}
+body[data-crafted="slice"] #banner span{font-size:14px;margin-top:3px;}
+body[data-crafted="slice"] #sliceHint{
+ position:absolute;left:14%;right:14%;bottom:5.5%;z-index:4;
+ pointer-events:none;text-align:center;color:#fff9e9;
+ font-family:"Baloo 2",sans-serif;font-size:clamp(19px,5.8vw,25px);
+ font-weight:800;line-height:1.15;text-shadow:0 2px 2px #221a12;
+}
+body[data-crafted="slice"] #combo{font-size:29px;top:27%;color:#fff0a3;}
+@media(max-width:350px){
+ body[data-crafted="slice"] #top{gap:7px;padding-left:10px;padding-right:10px;}
+ body[data-crafted="slice"] .hudpill{padding:8px 10px;font-size:16px;}
+ body[data-crafted="slice"] #timer{font-size:13px;gap:5px;}
+ body[data-crafted="slice"] #timer .wbar{width:36px;}
+ body[data-crafted="slice"] #close{width:43px;height:43px;}
+ body[data-crafted="slice"] #banner b{font-size:23px;}
+}

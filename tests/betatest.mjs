@@ -74,7 +74,7 @@ for (const [who, seed] of [["a fresh family", () => {}],
     says: (document.getElementById("bubble") || {}).textContent || "",
   }));
   ok(who + " meets Echo, not a fox wearing Echo's words",
-    /echo-avatar\.svg/.test(m.html) && !/bFox/i.test(m.html));
+    /(echo-avatar\.svg|echo-welcome\.webp)/.test(m.html) && !/bFox/i.test(m.html));
   ok("…and the bubble beside it is Echo's", /Echo/.test(m.says));
 
   const hosts = await ob2.evaluate(async () => {
@@ -83,7 +83,7 @@ for (const [who, seed] of [["a fresh family", () => {}],
     for (let i = 0; i < 8; i++) {
       const cur = (document.querySelector(".step.on") || {}).dataset?.step;
       if (!cur) break;
-      seen.push(cur + ":" + (/echo-avatar/.test(document.getElementById("leo").innerHTML) ? "echo" : "other"));
+      seen.push(cur + ":" + (/(echo-avatar\.svg|echo-welcome\.webp)/.test(document.getElementById("leo").innerHTML) ? "echo" : "other"));
       if (cur === "mic") break;
       if (cur === "name" && nm && !nm.value) nm.value = "Milo";
       if (cur === "sounds" && !document.querySelector("#obSounds .on")) document.querySelector('#obSounds [data-sound="R"]').click();
@@ -271,7 +271,7 @@ ok("onboarding no pageerrors", errs.length === 0);
 await page.evaluate(() => { localStorage.clear(); sessionStorage.clear(); });
 await page.goto("http://localhost:8129/onboarding.html"); await page.waitForTimeout(900);
 const nameStep = await page.evaluate(() => document.querySelector('[data-step="name"]').textContent);
-ok("name question carries justification microcopy", /cheers them on by name/.test(nameStep));
+ok("name question carries justification microcopy", /cheers them on by name|knows who to cheer for/.test(nameStep));
 // This is the parent path, with an optional email after the core setup.
 await clickNext(); // welcome → name
 await page.evaluate(() => { document.getElementById("obName").value = "Zoe"; });
