@@ -62,8 +62,15 @@ check alone, and a child who said "taco" for R got it counted.
 python3 scripts/install-ios-speech.py
 ```
 It compiles the plugin through AppDelegate.swift (like the scene fix above),
-registers it beside SonaAudio in MainViewController, and adds
-NSSpeechRecognitionUsageDescription. Then build to a real iPhone, check
+registers it (in MainViewController if the storyboard loads one, otherwise
+through a small SonaBridgeViewController it points the storyboard at, and any
+code that builds Capacitor's controller: Capacitor 8.5's SceneDelegate does), and
+adds NSSpeechRecognitionUsageDescription. `--check` shows what it would change.
+**Build 6 opened to a black screen** (28 Sep 2026): the script's first version
+named SonaBridgeViewController in the storyboard by a bare name, which iOS
+cannot resolve for a subclass of Capacitor's binary framework until Swift code
+has touched it. It now names the app's module, as Capacitor does for
+MainViewController; running it again repairs a project left the old way. Then build to a real iPhone, check
 `window.Capacitor.Plugins.SonaSpeech` in Safari's Web Inspector, and run the
 device checklist in `SPEECH_PLUGIN.md` before archiving. The judging rules
 live in `public/sona.js` and go live with the website; only the plugin needs

@@ -76,8 +76,8 @@ function device(config){
   function nativeEvent(event){const entries=JSON.parse(sessionStorage.getItem('sona.test.nativeEvents')||'[]');entries.push(event);sessionStorage.setItem('sona.test.nativeEvents',JSON.stringify(entries));}
   let sona;
   Object.defineProperty(window,'Sona',{configurable:true,get:()=>sona,set(value){sona=value;value.confetti=()=>{};
-    value.speechStart=()=>new Promise(resolve=>{const entry={id:h.nativeStarts.length+1,settled:false,grant(){if(this.settled)return;this.settled=true;h.nativeActive=this.id;nativeEvent('start:'+this.id);resolve(true);}};h.nativeStarts.push(entry);if(!h.deferNative)entry.grant();});
-    value.speechStop=()=>{const id=h.nativeActive;h.nativeStops.push(id);if(id!==null)nativeEvent('stop:'+id);h.nativeActive=null;return Promise.resolve({text:'rrrr',onDevice:true});};
+    value.speechStart=(o)=>new Promise(resolve=>{h.heardWord=(o&&o.words&&o.words[0])||'rrrr';const entry={id:h.nativeStarts.length+1,settled:false,grant(){if(this.settled)return;this.settled=true;h.nativeActive=this.id;nativeEvent('start:'+this.id);resolve(true);}};h.nativeStarts.push(entry);if(!h.deferNative)entry.grant();});
+    value.speechStop=()=>{const id=h.nativeActive;h.nativeStops.push(id);if(id!==null)nativeEvent('stop:'+id);h.nativeActive=null;return Promise.resolve({text:h.heardWord||'rrrr',onDevice:true});};
   }});
   if(!localStorage.getItem('sona.test.audioSeed')){
     localStorage.setItem('sona.test.audioSeed','1');

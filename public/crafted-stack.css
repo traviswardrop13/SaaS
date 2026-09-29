@@ -1,0 +1,14 @@
+/* Block Stacker: the original wooden-toy board, scoped to this game. */
+body[data-crafted="stack"]{background:#252963;}
+body[data-crafted="stack"] #app{background-image:url('/assets/crafted/stack-workshop-v2.webp');background-size:100% 100%;background-position:center;}
+body[data-crafted="stack"] #tapHint{display:none!important;}
+body[data-crafted="stack"] #flash{top:calc(104px + env(safe-area-inset-top));font-size:clamp(22px,6vw,30px);color:#ffefb9;text-shadow:0 2px 0 #543343,0 4px 10px #20194480;}
+body[data-crafted="stack"] #banner{top:calc(92px + env(safe-area-inset-top));}
+body[data-crafted="stack"] #banner .pill{background:#fff7e8;border:2px solid #f0ddbc;border-radius:23px;box-shadow:0 4px 0 #897256,0 9px 18px #16143238;}
+body[data-crafted="stack"] #banner b{color:#554171;}
+body[data-crafted="stack"] #best .wbar i{background:linear-gradient(90deg,#b49ada,#9472c2);}
+body[data-crafted="stack"] .ovl{background:rgba(23,19,60,.55);}
+@media(max-height:650px){body[data-crafted="stack"] #banner{top:calc(74px + env(safe-area-inset-top));}body[data-crafted="stack"] #banner b{font-size:28px;}body[data-crafted="stack"] #banner .pill{padding:8px 18px 10px;}body[data-crafted="stack"] #flash{top:calc(116px + env(safe-area-inset-top));}}
+
+/* Brief praise is drawn inside the workbench plaque, never over a moving block. */
+body[data-crafted="stack"] #flash{display:none;}

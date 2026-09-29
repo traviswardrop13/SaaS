@@ -142,7 +142,7 @@ await scenario("Home's corner", async () => {
   ok("its name says the number and where a grown-up can see more", /^28 reps this week\./.test(s.aria) && /For grown-ups/.test(s.aria), s.aria);
   ok("it is a real button with a full-size tap target", s.tag === "BUTTON" && s.pill.h >= 44, s);
   ok("it sits in the header, between the buddy and the gear, touching neither", s.inHeader && s.pill.l >= s.buddy.r && s.pill.r <= s.gear.l && s.pill.t >= s.gear.t - 1 && s.pill.b <= s.gear.b + 1, s);
-  ok("at 375px 'Play library' still shows, unclipped", s.label !== "none" && !s.labelClipped, s);
+  ok("on a phone the 'Sona' wordmark steps aside for the count and the Grown-ups button", s.label === "none", s);
   ok("the page's first heading is still Pick a game!", s.firstH1 === "Pick a game!", s.firstH1);
   ok("Home stores nothing new about reps or weeks", JSON.stringify(before) === JSON.stringify(keys), { before, keys });
   ok("no sideways scroll at 375px", (await overflow(page)) <= 1);
@@ -155,8 +155,9 @@ await scenario("Home's corner", async () => {
       return { apart: p.left >= b.right && p.right <= g.left, inside: g.right <= document.documentElement.clientWidth, oneLine: p.height <= 45, label: getComputedStyle(l).display, clipped: l.scrollWidth > l.clientWidth + 1 };
     });
     ok(width + "px: the count, buddy and gear fit side by side on screen", fit.apart && fit.inside && fit.oneLine && (await overflow(page)) <= 1, fit);
-    ok(width + "px: 'Play library' is either whole or gone, never cut off", fit.label === "none" || !fit.clipped, fit);
-    if (width === 320) { ok("320px drops the 'Play library' label rather than squeezing the count", fit.label === "none", fit); await page.screenshot({ path: OUT + "/repweek-home-320.png" }); }
+    ok(width + "px: the 'Sona' wordmark is either whole or gone, never cut off", fit.label === "none" || !fit.clipped, fit);
+    if (width === 320) await page.screenshot({ path: OUT + "/repweek-home-320.png" });
+    if (width === 768) { ok("a wide screen has room for the wordmark too", fit.label !== "none" && !fit.clipped, fit); await page.screenshot({ path: OUT + "/repweek-home-768.png" }); }
   }
   ok("no page errors", errors.length === 0, errors);
   await context.close();

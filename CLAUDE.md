@@ -315,7 +315,10 @@ branch dead code — `for-slps.html` is indexable and linked from the landing
 footer, and `betatest` pins the door OPEN. Since 24 Sep 2026 the channel can
 also pay: the dashboard and the free version stay free, and a clinician who
 wants every game for their families buys Caseload Premium — one yearly price,
-never per family, never to the clinician.
+never per family, never to the clinician. **Parents come first now** (Travis,
+29 Sep 2026: "lose my attachment in stop caring about the SLP stuff, but still
+leave the $5 a day add on"): the SLP ad keeps running and the $80 offer sits in
+plain sight on the dashboard, but the new ads, and the work, go to parents.
 
 **speaksona.com is for parents and caregivers** (Travis, 26 Sep 2026: "change
 it to target parents and caregivers only. not slps"). Its yellow is pale
@@ -384,7 +387,12 @@ who went quiet, what ends soon — one action per row) → Caseload (every child
 oldest-practiced first, **Copy note on every row**) → a child page (8-week
 strip, pass rate by sound and position, the current homework, the composer)
 → Caseload Premium (its own page, 24 Sep 2026: Today keeps exactly its four
-cards, and no price ever appears there; viewing it only reads) → Settings.
+cards, and no price ever appears in them; viewing it only reads) → Settings.
+Since 29 Sep 2026 (Travis: "yes add the $80 button to the first screen") a
+**Get Premium** button with the server's price sits in the top bar of every
+page but the Premium page, because a clinician from the ad lands on Community
+and never saw the price. Only once the plan has answered, never to a covered
+caseload; `slptest` 9b pins it.
 Reviewed by three lenses — a school SLP, a district privacy
 officer, an engineer — whose rulings are now rules:
 - **Register.** "Pass rate" (defined on the page as "did that sound like this
@@ -506,6 +514,23 @@ sees every open book first, then their own, coming. Home's card and the
 website say "new ones every week", never "a book for every sound".
 `readtest` pins the dates and the shelf; `landingtest` the website's count.
 
+**The six-page books are painted** (Codex, 28 Sep 2026, with ChatGPT's image
+tool; brought over 29 Sep): one picture per book in `public/assets/books/painted/`
+holding its six scenes, three across and two down, in reading order, plus a
+small `-cover` copy of scene 1 for the shelf. The reader shows each page's
+scene by position. The art was drawn for those exact 78 sentences, so
+`readtest` pins them: change a sentence and redraw its scene. Codex's
+say-a-word-to-turn-the-page prototype was not brought over; it changes what a
+child is asked to say, so it waits for Rachel.
+
+**The app's look is the crafted world** (Codex, 28 Sep 2026: Travis's five
+concept boards, in `design/crafted-world/references/`). Painted scenes and game
+objects live in `public/assets/crafted/`, each surface's styles in
+`public/crafted-*.css`, and `design/crafted-world/README.md` is the handoff.
+Real controls and game objects stay HTML and canvas; a picture is never the
+interface. New art in this style comes from an image model (Travis generates
+it in ChatGPT); the twelve-page books are still the simpler drawings.
+
 **Say & Play** (Travis, 26 Sep 2026: "10 more games for ages 3-4 and 10
 more games for ages 5-8 ... incorporating practice into it"): twenty games
 where every word the child says moves the game one step, five words for 3-4
@@ -599,6 +624,11 @@ screen (it was 2.2 s on a small iPhone and 0.5 s on a big iPad). One tap, one
 note: `micquietgamestest` pins its loudness to the Sound setting.
 `tests/tilestest.mjs` plays a whole round.
 
+**Piano slow keys** (Travis, 28 Sep 2026: “inside the game ... they say the sound to slow down the keys”). The child taps Echo on the piano board. The current song holds while Echo speaks a short instruction and plays the existing recorded sound. A voiced, family-checked attempt earns eight active gameplay seconds at 55% speed, including the arrival of new tiles. Native Apple recognition, when available, uses the existing isolation verdict to reject a clear unrelated word; unknown keeps the existing sound-shape fallback. Tapping, silence, cancellation and timeout earn nothing. Both microphone owners must close before music or navigation resumes. The between-song prompts remain. These in-game attempts are play, not SLP practice data. `tests/tilesspeechtest.mjs` checks the mechanic and interruption cleanup.
+
+**Sound-powered help across live games** (28 Sep 2026): Fruit Slice slows fruit motion and spawning, Block Stacker slows the moving block, Sound Sprint slows its course and progress, and Flappy Glide slows hedges and their arrival while preserving balloon control. Each uses `arcade-speech-help.js`/`.css`: tap Echo, hear the existing target recording, then a qualifying attempt earns eight active seconds at 55% speed. The scene holds during speech. Between-round prompts remain. Permission/native cleanup completes before resuming audio or navigating. No gameplay attempts enter practice records. Feed Echo now reveals the matching picture after a voice burst with a compatible broad sound family; it remains a participation hint, not a pronunciation grade. Hoops already requires a word to earn each shot. `arcadespeechhelptest` drives the four new helpers; `micquietgamestest` covers the Feed hint. Books and parked games are outside this change.
+
+
 **Sound Sprint is the same round, as a race** (27 Sep 2026): the park, the
 beach and the forest, a checkpoint between each with the say-it card ("Say
 “rrrr” to run to the beach!"), and a finish line that always ends the race in
@@ -673,16 +703,21 @@ are enforced in code and pinned by tests — change them only on Rachel's say-so
   2026: "I just don't want kids saying taco and getting a correct score. We
   want them to be in the ballpark"). In the iPhone app the practice page asks
   Apple's on-device recognizer what was said (SonaSpeech, never Apple's
-  servers) and `hearVerdict` in sona.js decides. Pass: the word, a close try
-  (each sound's typical errors, `HEAR_SUBS`: "wabbit", "wed", "cah"), or
-  another word with the sound in the same place. Fail: clear words that are
-  none of those ("taco", "Here is a taco", "sock" for rock). Unknown, handed
-  to the sound-shape check: nothing clear (filler like "uh", or only the
-  sentence's own words). A grown-up's "say rabbit" and a sentence's other
+  servers) and `hearVerdict` in sona.js decides. Pass: the word or a close
+  try (each sound's typical errors, `HEAR_SUBS`: "wabbit", "wed", "cah"; or a
+  letter or two off with the sound intact: "rainy", "parrot" for carrot), and
+  nothing else. A different word does not count, even one starting with the
+  sound (Travis: "ideally the exact / close word"; not "run" for rain). On a
+  bare-sound round only a short sound or mostly the sound itself counts
+  ("Er", "Rrrr"), never a word that merely has it. Fail: clear words that
+  are none of those ("taco", "poop", "fridge", "Here is a taco", "sock" for
+  rock). Unknown, handed to the sound-shape check: nothing clear (filler like
+  "uh", or only the sentence's own words). A grown-up's "say rabbit" and a sentence's other
   words ("Here is a") are set aside first. The plugin was written in August
   but never reached the app until `scripts/install-ios-speech.py`; the website
-  cannot use it and still judges by sound shape, and the games do not use it
-  yet. Which errors count as close (`HEAR_SUBS`) is Rachel's call;
+  cannot use it and still judges by sound shape. The arcade slowdown turns
+  now use it when available; older checkpoint and Feed/Hoops checks remain
+  sound-shape based. Which errors count as close (`HEAR_SUBS`) is Rachel's call;
   `heartest` pins the rules.
 - **Cueing** — TODO, Rachel to specify. Her highest-value ask was the
   "sssoup" prompt: model the target sound stretched and attached to the word

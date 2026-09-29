@@ -19,23 +19,23 @@
     #reps{scroll-margin-top:calc(12px + env(safe-area-inset-top));}
     .sr{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0;}
     .rw-now{display:flex;align-items:baseline;gap:8px;margin-top:10px;}
-    #rwThis{font-family:"Baloo 2";font-weight:800;font-size:40px;line-height:1;color:var(--orange-d);}
+    #rwThis{font-family:"Baloo 2";font-weight:800;font-size:40px;line-height:1;color:var(--family-teal-dark,var(--orange-d));}
     #rwThisUnit{font-weight:800;font-size:15px;}
     .rw-line{font-weight:800;font-size:13.5px;margin-top:6px;}
     .rw-line:empty{display:none;}
-    #rwBest.new{color:#3f7a12;}
+    #rwBest.new{color:var(--good,#3f7a12);}
     .rw-bars{list-style:none;display:grid;grid-auto-columns:minmax(0,1fr);grid-auto-flow:column;gap:6px;align-items:end;height:136px;margin-top:16px;padding-bottom:2px;border-bottom:2px solid var(--line);}
     .rw-bars:empty{display:none;}
     .rw-bars li{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;min-width:0;height:100%;}
     .rw-val{font-family:"Baloo 2";font-weight:800;font-size:12px;line-height:1.2;color:var(--muted);white-space:nowrap;}
     .rw-star{display:block;font-size:11px;line-height:1;color:#c98a00;text-align:center;}
-    .rw-bar{width:100%;max-width:34px;border-radius:8px 8px 3px 3px;background:#f6dcc2;margin-top:3px;}
+    .rw-bar{width:100%;max-width:34px;border-radius:8px 8px 3px 3px;background:#eadcc7;margin-top:3px;}
     .rw-bars li.best .rw-bar{background:#ffc56b;}
-    .rw-bars li.now .rw-bar{background:var(--orange);}
-    .rw-bars li.now .rw-val{color:#a8521c;}
+    .rw-bars li.now .rw-bar{background:var(--family-teal,var(--orange));}
+    .rw-bars li.now .rw-val{color:var(--family-teal-dark,#a8521c);}
     .rw-days{display:grid;grid-auto-columns:minmax(0,1fr);grid-auto-flow:column;gap:6px;margin-top:5px;}
     .rw-days span{font-size:10px;font-weight:800;line-height:1.25;color:var(--muted);text-align:center;white-space:nowrap;overflow:hidden;}
-    .rw-days span.now{color:#a8521c;}
+    .rw-days span.now{color:var(--family-teal-dark,#a8521c);}
     .rw-note{font-size:12px;font-weight:700;line-height:1.5;margin-top:12px;}
   </style>
   <script>
@@ -60,18 +60,20 @@
       }
     })();
   </script>
+  <link rel="stylesheet" href="/crafted-family.css" />
 </head>
-<body>
+<body class="crafted-family family-settings">
   <div class="wrap">
-    <header class="app">
-      <div class="brand"><span class="dot"></span> Sona</div>
-      <nav class="app"><a href="/today.html">Home</a><a href="/progress.html">Progress</a><a class="active" href="/settings.html">Settings</a></nav>
+    <header class="app family-header">
+      <a class="brand" href="/today.html" aria-label="Sona Home"><span class="leo"><img src="/assets/crafted/echo-welcome.webp" alt="" /></span> Sona</a>
+      <a class="family-back" href="/today.html"><svg class="family-symbol" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h10c2 0 3 2 3.5 4l1 5c.4 2-1.5 3-3 1.5L16 15H8l-2.5 2.5C4 19 2 18 2.5 16l1-5C4 9 5 7 7 7Z"/><path d="M7 9.5v5M4.5 12h5"/><circle cx="15.5" cy="10.5" r=".7" fill="currentColor" stroke="none"/><circle cx="18" cy="13" r=".7" fill="currentColor" stroke="none"/></svg> Back to play</a>
     </header>
+    <nav class="family-tabs" aria-label="Grown-up pages"><a href="/progress.html">Overview</a><a href="/settings.html" aria-current="page">Settings</a></nav>
 
     <!-- KIDS1: siblings share a phone and an SLP shares one iPad. Each child
          gets their own saved progress; switching is one tap. -->
     <div class="card" id="kidsCard">
-      <h2>Kids 👧🧒</h2>
+      <h2>Your family</h2>
       <p class="muted" style="font-size:13px;font-weight:700;">Each child keeps their own sounds, progress and stickers. Everything below this card belongs to whoever is selected.</p>
       <div id="kidList" style="display:flex;flex-direction:column;gap:8px;margin-top:12px;"></div>
       <div id="addKidRow" style="display:none;gap:8px;margin-top:10px;flex-wrap:wrap;align-items:flex-end;">
@@ -105,14 +107,17 @@
       <p class="muted rw-note">A rep is each time <span id="rwWho">your child</span> says the practice sound or word out loud in the practice before a game, whether or not it sounded right yet. Silence never counts, and words said during the game itself add none. Weeks run Monday to Sunday, counted on this device.</p>
     </div>
 
-    <div class="card">
+    <div class="card settings-main">
       <h1>Settings</h1>
+      <div class="settings-identity"><div>
       <label class="field" for="childName">Child's name</label>
       <input id="childName" type="text" placeholder="e.g. Mia" />
 
+      </div><div>
       <label class="field" for="childAge">Child's age <span class="muted" style="font-weight:700;font-size:12px;">— helps pick developmentally-right sounds</span></label>
       <input id="childAge" type="number" min="2" max="14" inputmode="numeric" placeholder="e.g. 5" />
 
+      </div></div>
       <label class="field" for="parentPin">Parent code <span class="muted" style="font-weight:700;font-size:12px;">— unlocks this parent corner from the home screen (blank = four number words to read instead)</span></label>
       <input id="parentPin" type="text" inputmode="numeric" maxlength="6" placeholder="e.g. 2468" />
 
@@ -120,7 +125,7 @@
       <!-- PLAY1: a play-mode family rotates through every sound; picking
            specific chips below switches them to focus mode. -->
       <div id="playNote" style="display:none;background:#fff6e9;border-radius:14px;padding:11px 14px;margin-bottom:10px;font-weight:800;font-size:12.5px;color:var(--muted);">
-        🎲 <b style="color:var(--ink);">Play mode</b> — Echo rotates through every sound, easiest first.
+        <b style="color:var(--ink);">Play mode</b> — Echo rotates through every sound, easiest first.
         Picking sounds below switches to focus mode. <a href="#" id="playKeep" style="font-weight:800;">Stay in play mode</a>
       </div>
       <div class="sounds" id="sounds"></div>
@@ -142,27 +147,27 @@
            the flags the game pages read can never contradict what a parent set. -->
       <label class="field" for="volume">Sound</label>
       <div style="display:flex;align-items:center;gap:12px;">
-        <span style="font-size:17px;">🔈</span>
+        <span style="font-size:17px;"><svg class="family-symbol" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M10 5 5 9H2v6h3l5 4V5Z"/></svg></span>
         <input id="volume" type="range" min="0" max="100" step="5" style="flex:1;accent-color:var(--orange,#ff8a3d);" />
-        <span style="font-size:19px;">🔊</span>
+        <span style="font-size:19px;"><svg class="family-symbol" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M10 5 5 9H2v6h3l5 4V5ZM14 8a6 6 0 0 1 0 8M17 4a11 11 0 0 1 0 16"/></svg></span>
       </div>
       <p class="muted" id="volLbl" style="font-weight:800;font-size:12.5px;margin-top:6px;"></p>
 
       <label class="field">Coach voice</label>
-      <a class="btn ghost" href="/voices.html" style="width:auto;padding:12px 18px;">🔊&nbsp;&nbsp;Choose coach voice →</a>
+      <a class="btn ghost" href="/voices.html" style="width:auto;padding:12px 18px;">Choose coach voice →</a>
 
 
       <div style="margin-top:24px;display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
         <button class="btn" id="save">Save</button>
         <a class="btn ghost" href="/today.html">Back to Home</a>
-        <span id="saved" class="muted" style="display:none;font-weight:800;">Saved ✓</span>
+        <span id="saved" class="muted" role="status" aria-live="polite" style="display:none;font-weight:800;">Saved ✓</span>
       </div>
     </div>
 
     <a class="card" href="/customize.html" style="display:flex;gap:14px;align-items:center;color:inherit;">
-      <div class="leo" style="width:56px;height:56px;flex:0 0 auto;"><img src="/coach/echo/echo-idle.svg" alt="Echo" style="width:52px;height:52px;object-fit:contain;" /></div>
+      <div class="leo" style="width:56px;height:56px;flex:0 0 auto;"><img src="/assets/crafted/echo-welcome.webp" alt="Echo" style="width:52px;height:52px;object-fit:contain;" /></div>
       <div style="flex:1;min-width:0;">
-        <h2>Character &amp; world ✨</h2>
+        <h2>Character &amp; world</h2>
         <p class="muted">Choose your buddy, an outfit, and a backdrop.</p>
       </div>
       <span style="font-size:22px;color:var(--muted);">›</span>
@@ -185,7 +190,7 @@
          isn't setting a goal for one child — it's getting Sona into the hands
          of a caseload and watching who's actually practicing. -->
     <div class="card" id="slpCard" style="display:none;">
-      <h2>Your caseload 🎓</h2>
+      <h2>Your caseload <svg class="family-symbol" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-5 9 5-9 5-9-5Z"/><path d="M7 12v5c3 2 7 2 10 0v-5M21 9v7"/></svg></h2>
       <!-- WHAT THE LINK DOES, and nothing more (24 Sep 2026). It said "free
            for them — no trial, no paywall", which was the grant a link used to
            BE. A link now connects a family to this dashboard; the free version
@@ -217,9 +222,9 @@
     </div>
 
     <details class="card" id="moreCard">
-      <summary style="cursor:pointer;font-family:'Baloo 2';font-weight:800;font-size:16px;list-style:none;">More ⚙️</summary>
+      <summary style="cursor:pointer;font-family:'Baloo 2';font-weight:800;font-size:16px;list-style:none;">More settings</summary>
     <div style="margin-top:18px;">
-      <h3 style="font-family:'Baloo 2';font-weight:800;font-size:15px;margin-bottom:6px;">Help us improve 💬</h3>
+      <h3 style="font-family:'Baloo 2';font-weight:800;font-size:15px;margin-bottom:6px;">Help us improve</h3>
       <p class="muted" style="margin-bottom:4px;" id="fbLead">Sona is in beta — what would you change?</p>
       <!-- Chips first, typing optional. A blank box gets blank answers; a
            tapped chip gets an answer from someone who'd never have written in. -->
@@ -237,7 +242,7 @@
     </div>
 
     <div style="margin-top:18px;">
-      <h3 style="font-family:'Baloo 2';font-weight:800;font-size:15px;margin-bottom:6px;">Backup &amp; restore 💾</h3>
+      <h3 style="font-family:'Baloo 2';font-weight:800;font-size:15px;margin-bottom:6px;">Backup &amp; restore</h3>
       <p class="muted" style="margin-bottom:10px;">This is the only way to move practice off this device — it is never uploaded anywhere, so nothing restores it but the code or file you keep. The code does not expire.</p>
       <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
         <button class="btn ghost" id="backupCopy" style="width:auto;padding:12px 18px;">Copy backup code</button>
@@ -297,7 +302,7 @@
     var sel = new Set(p.focusSounds || []);
     var kidAge = parseInt(p.childAge, 10) || 0;
     Sona.ALL_SOUNDS.forEach(function (s) {
-      var b = document.createElement("div");
+      var b = document.createElement("button"); b.type = "button"; b.setAttribute("aria-pressed", String(sel.has(s)));
       var norm = Sona.soundNorm ? Sona.soundNorm(s) : null;
       var early = !!(norm && kidAge && kidAge < norm);
       // every sound is selectable (SLP caseloads work letters beyond R);
@@ -306,7 +311,7 @@
       b.innerHTML = (Sona.soundLabel ? Sona.soundLabel(s) : s) +
         (norm ? '<span style="display:block;font-size:9.5px;font-weight:800;margin-top:1px;color:' + (early ? "#c0392b" : "var(--muted)") + ';">' + (early ? "⚠ " : "") + "by ~" + norm + 'y</span>' : "");
       if (norm) b.title = "Most children produce this sound by about age " + norm + (early ? " — older than your child, so check with your SLP before targeting it." : ".");
-      b.onclick = function () { if (sel.has(s)) { if (sel.size > 1) { sel.delete(s); b.classList.remove("on"); } } else { sel.add(s); b.classList.add("on"); } };
+      b.onclick = function () { if (sel.has(s)) { if (sel.size > 1) { sel.delete(s); b.classList.remove("on"); } } else { sel.add(s); b.classList.add("on"); } b.setAttribute("aria-pressed", String(sel.has(s))); };
       wrap.appendChild(b);
     });
     // PLAY1: the note shows in play mode; changing the chips is how a family
@@ -318,7 +323,7 @@
       var keep=document.getElementById("playKeep");
       if(keep) keep.onclick=function(ev){ ev.preventDefault();
         sel=new Set(Sona.PLAY_ORDER);
-        wrap.querySelectorAll(".sound").forEach(function(b){ b.classList.add("on"); });
+        wrap.querySelectorAll(".sound").forEach(function(b){ b.classList.add("on"); b.setAttribute("aria-pressed", "true"); });
         Sona.saveProfile({ mode:"play", focusSounds: Sona.PLAY_ORDER.slice() });
         var sv=document.getElementById("saved"); sv.style.display="inline"; setTimeout(function(){ sv.style.display="none"; },1800);
       };

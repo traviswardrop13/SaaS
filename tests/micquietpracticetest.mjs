@@ -185,8 +185,8 @@ function device(config) {
   Object.defineProperty(window, 'Sona', { configurable: true, get: () => sona, set(value) {
     sona = value;
     value.isNativeApp = () => true; value.speechPerm = () => Promise.resolve(true);
-    value.speechStart = () => { h.recognizing = true; log('recognizer-start'); return Promise.resolve(true); };
-    value.speechStop = () => { h.recognizing = false; return Promise.resolve({ text: h.verify === 'fail' ? 'poopoo' : 'rrrr' }); };
+    value.speechStart = (o) => { h.heardWord = (o && o.words && o.words[0]) || 'rrrr'; h.recognizing = true; log('recognizer-start'); return Promise.resolve(true); };
+    value.speechStop = () => { h.recognizing = false; return Promise.resolve({ text: h.verify === 'fail' ? 'poopoo' : h.heardWord }); };
     value.confetti = () => { log('celebration', 'confetti'); };
     for (const key of Object.keys(value.sfx || {})) {
       if (key === 'stop' || typeof value.sfx[key] !== 'function') continue;
