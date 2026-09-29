@@ -64,6 +64,12 @@
     .bkart.scene{width:100%;height:auto;aspect-ratio:440/400;overflow:hidden;background:#bfe8fb;}
     .bkart.scene img{display:block;width:100%;height:100%;}
     .bkcover{display:block;width:min(74vw,300px);height:auto;aspect-ratio:1;margin:0 auto;border-radius:22px;box-shadow:0 14px 30px rgba(140,90,20,.2);}
+    /* Painted books: one picture per book holds all six scenes, three across
+       and two down; each page shows its own by position. Square, and no
+       taller than the phone allows, so the line and the buttons still fit. */
+    .painted{background-size:300% 200%;background-repeat:no-repeat;background-color:#f6ead8;}
+    .bkart.scene.painted{aspect-ratio:1;width:min(100%,44vh);margin:0 auto 10px;}
+    .bkcover.painted{width:min(74vw,300px,40vh);}
     .bkpic{line-height:1;filter:drop-shadow(0 10px 16px rgba(150,90,10,.16));animation:bkfloat 3.4s ease-in-out infinite;}
     @keyframes bkfloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
     .bktext{margin-top:10px;font-family:"Baloo 2";font-weight:800;font-size:clamp(20px,5.8vw,25px);color:#5b2d05;line-height:1.4;}
@@ -491,91 +497,91 @@
         { e: "🦆", t: "The ducks quack, \"Yum, yum!\"", art: "/assets/books/this-bear-that-bee/p10.svg", alt: "" },
         { e: "🌅", t: "Then the sun sets.", art: "/assets/books/this-bear-that-bee/p11.svg", alt: "" },
         { e: "🐻", t: "\"That was the best day!\" say the pals.", art: "/assets/books/this-bear-that-bee/p12.svg", alt: "" } ] },
-      { sound: "R", emoji: "🐰", opens: "2026-11-08", title: "Rory the Rabbit", colors: ["#ff7a6e", "#ef6557"], pages: [
+      { sound: "R", emoji: "🐰", opens: "2026-11-08", title: "Rory the Rabbit", painted: "rory", colors: ["#ff7a6e", "#ef6557"], pages: [
         { e: "🚀", t: "Rory the rabbit rides a red rocket." },
         { e: "🌈", t: "The rocket roars over the rainbow." },
         { e: "🤖", t: "Rory sees a robot on a rock." },
         { e: "💍", t: "The robot gives Rory a ring." },
         { e: "🌊", t: "They race around the river." },
         { e: "🎉", t: "Rory roars: hooray, hooray!" } ] },
-      { sound: "R", emoji: "🤖", opens: "2026-11-08", title: "Reba the Robot", colors: ["#ff9a6e", "#ef7d47"], pages: [
+      { sound: "R", emoji: "🤖", opens: "2026-11-08", title: "Reba the Robot", painted: "reba", colors: ["#ff9a6e", "#ef7d47"], pages: [
         { e: "🤖", t: "Reba the robot runs on a road." },
         { e: "🌹", t: "Reba rolls past a red rose." },
         { e: "🐇", t: "A rabbit races right by." },
         { e: "🎀", t: "Reba wraps it in a ribbon." },
         { e: "🌧️", t: "Rain! They run for the roof." },
         { e: "🌈", t: "Reba the robot: ready, ready!" } ] },
-      { sound: "R", emoji: "🐓", opens: "2026-11-08", title: "Ruby the Rooster", colors: ["#ff6e8e", "#ef5772"], pages: [
+      { sound: "R", emoji: "🐓", opens: "2026-11-08", title: "Ruby the Rooster", painted: "ruby", colors: ["#ff6e8e", "#ef5772"], pages: [
         { e: "🐓", t: "Ruby the rooster rises at dawn." },
         { e: "🌅", t: "Ruby crows: rise and shine!" },
         { e: "🏃", t: "She runs around the red barn." },
         { e: "🪱", t: "Ruby finds a wriggly worm." },
         { e: "🌽", t: "The rooster pecks rows of corn." },
         { e: "💤", t: "Ruby rests. What a great run!" } ] },
-      { sound: "R", emoji: "🦝", opens: "2026-11-15", title: "Remy the Raccoon", colors: ["#ffb066", "#ef923c"], pages: [
+      { sound: "R", emoji: "🦝", opens: "2026-11-15", title: "Remy the Raccoon", painted: "remy", colors: ["#ffb066", "#ef923c"], pages: [
         { e: "🦝", t: "Remy the raccoon roams the river." },
         { e: "🪨", t: "He reaches under a round rock." },
         { e: "🍇", t: "Remy grabs a ripe, red grape." },
         { e: "🚣", t: "He rows a raft in the rain." },
         { e: "🌿", t: "Remy rests in the reeds." },
         { e: "⭐", t: "Remy the raccoon: hooray!" } ] },
-      { sound: "R", emoji: "🦏", opens: "2026-11-15", title: "Rex the Rhino", colors: ["#ff7a6e", "#e05a9c"], pages: [
+      { sound: "R", emoji: "🦏", opens: "2026-11-15", title: "Rex the Rhino", painted: "rex", colors: ["#ff7a6e", "#e05a9c"], pages: [
         { e: "🦏", t: "Rex the rhino runs really fast." },
         { e: "🛣️", t: "He roars down the rocky road." },
         { e: "🌳", t: "Rex rolls in the rich, green grass." },
         { e: "🍎", t: "He reaches for a red apple." },
         { e: "🤝", t: "Rex meets a friendly rabbit." },
         { e: "🎉", t: "Run, Rex, run! Hooray!" } ] },
-      { sound: "S", emoji: "🦭", opens: "2026-11-15", title: "Sunny the Seal", colors: ["#62bdff", "#46a6ec"], pages: [
+      { sound: "S", emoji: "🦭", opens: "2026-11-15", title: "Sunny the Seal", painted: "sunny", colors: ["#62bdff", "#46a6ec"], pages: [
         { e: "☀️", t: "Sunny the seal sits in the sun." },
         { e: "🐍", t: "Sunny sees a silly snake." },
         { e: "🏖️", t: "The snake slides on the soft sand." },
         { e: "🥄", t: "They sip soup with a silver spoon." },
         { e: "🎵", t: "Sunny sings a silly song." },
         { e: "😴", t: "So sleepy! Sunny says goodnight." } ] },
-      { sound: "L", emoji: "🦁", opens: "2026-11-22", title: "Lily the Lion", colors: ["#ffd45e", "#f0bb33"], pages: [
+      { sound: "L", emoji: "🦁", opens: "2026-11-22", title: "Lily the Lion", painted: "lily", colors: ["#ffd45e", "#f0bb33"], pages: [
         { e: "🍭", t: "Lily the lion licks a lemon lollipop." },
         { e: "🪵", t: "Lily leaps over a little log." },
         { e: "🐞", t: "A ladybug lands on a leaf." },
         { e: "😄", t: "Lily laughs: la la la!" },
         { e: "🎈", t: "They look at a yellow balloon." },
         { e: "💛", t: "Lily loves to play all day." } ] },
-      { sound: "K", emoji: "🐨", opens: "2026-11-22", title: "Kiki the Koala", colors: ["#7dd470", "#63bd57"], pages: [
+      { sound: "K", emoji: "🐨", opens: "2026-11-22", title: "Kiki the Koala", painted: "kiki", colors: ["#7dd470", "#63bd57"], pages: [
         { e: "🍰", t: "Kiki the koala bakes a cake." },
         { e: "🔑", t: "A kind king comes with a key." },
         { e: "🪁", t: "The king flies a colorful kite." },
         { e: "🍪", t: "Kiki gives the king a cookie." },
         { e: "🐮", t: "A cat and a cow come to play." },
         { e: "🌞", t: "What a cool day for Kiki!" } ] },
-      { sound: "SH", emoji: "🐑", opens: "2026-11-22", title: "Shelly the Sheep", colors: ["#c08cf0", "#a86fe0"], pages: [
+      { sound: "SH", emoji: "🐑", opens: "2026-11-22", title: "Shelly the Sheep", painted: "shelly", colors: ["#c08cf0", "#a86fe0"], pages: [
         { e: "👟", t: "Shelly the sheep shines her shoes." },
         { e: "🐚", t: "She shows a shiny shell to a fish." },
         { e: "🚢", t: "They sail on a big ship. Shhh!" },
         { e: "⭐", t: "Shelly makes a wish on a star." },
         { e: "🥤", t: "She sips a milkshake — so fresh." },
         { e: "😴", t: "Shhh… Shelly is sleeping now." } ] },
-      { sound: "CH", emoji: "🐥", opens: "2026-11-29", title: "Charlie the Chick", colors: ["#ff9446", "#ef7d2c"], pages: [
+      { sound: "CH", emoji: "🐥", opens: "2026-11-29", title: "Charlie the Chick", painted: "charlie", colors: ["#ff9446", "#ef7d2c"], pages: [
         { e: "🍒", t: "Charlie the chick chews chewy cherries." },
         { e: "🚂", t: "Charlie rides the choo-choo train." },
         { e: "🧀", t: "He munches cheese at lunch." },
         { e: "🐿️", t: "A chipmunk sits on a chair." },
         { e: "🍫", t: "They share chocolate chips. Crunch!" },
         { e: "😁", t: "Charlie chirps: cheep, cheep, cheep." } ] },
-      { sound: "TH", emoji: "🦥", opens: "2026-11-29", title: "Theo the Sloth", colors: ["#9aa7ff", "#7f8eef"], pages: [
+      { sound: "TH", emoji: "🦥", opens: "2026-11-29", title: "Theo the Sloth", painted: "theo", colors: ["#9aa7ff", "#7f8eef"], pages: [
         { e: "💭", t: "Theo the sloth thinks happy thoughts." },
         { e: "3️⃣", t: "Theo counts: one, two, three!" },
         { e: "👍", t: "He gives a big thumbs up." },
         { e: "🦷", t: "Theo brushes his three teeth." },
         { e: "🛁", t: "Then a warm bath — both feet in." },
         { e: "🌙", t: "Thank you, moon. Theo says goodnight." } ] },
-      { sound: "G", emoji: "🐐", opens: "2026-11-29", title: "Gus the Goat", colors: ["#58c7b5", "#3fae9c"], pages: [
+      { sound: "G", emoji: "🐐", opens: "2026-11-29", title: "Gus the Goat", painted: "gus", colors: ["#58c7b5", "#3fae9c"], pages: [
         { e: "🌱", t: "Gus the goat grows a green garden." },
         { e: "🎁", t: "A goose gives Gus a gift." },
         { e: "🎸", t: "Gus plays a goofy guitar." },
         { e: "🍇", t: "They gobble grapes by the gate." },
         { e: "🐛", t: "A bug giggles on the grass." },
         { e: "🌟", t: "Good game, Gus. Goodnight!" } ] },
-      { sound: "F", emoji: "🦊", opens: "2026-12-06", title: "Fifi the Fox", colors: ["#ff7fab", "#ef6595"], pages: [
+      { sound: "F", emoji: "🦊", opens: "2026-12-06", title: "Fifi the Fox", painted: "fifi", colors: ["#ff7fab", "#ef6595"], pages: [
         { e: "🪶", t: "Fifi the fox finds four feathers." },
         { e: "🐟", t: "Fifi feeds a funny fish." },
         { e: "🔥", t: "They warm five feet by the fire." },
@@ -758,13 +764,26 @@
       }
       return (window.Sona&&Sona.pic)?Sona.pic(readerWord(pg.t),pg.e,118):(pg.e||"");
     }
+    // A painted book (Codex, 28 Sep 2026, drawn with ChatGPT's image tool) is
+    // one picture holding its six scenes in reading order, three across and
+    // two down. The reader shows page i's scene by position, so a whole book
+    // is one download; the shelf shows a small copy of scene 1, so a book
+    // that isn't open yet never pulls the big picture.
+    function paintedScene(st,i,cls){
+      return '<div class="'+cls+' painted" aria-hidden="true" style="background-image:url(/assets/books/painted/'+st.painted+'.webp);background-position:'+(i%3*50)+'% '+(Math.floor(i/3)*100)+'%"></div>';
+    }
     function cover(st,w){ var c0=st.colors[0],c1=st.colors[1];
       var face=(window.Sona&&Sona.COVER_FACES&&Sona.COVER_FACES[st.sound])||"";
+      var clip="pc-"+st.painted;
       return '<svg viewBox="0 0 60 76" style="width:'+w+'px;height:'+Math.round(w*76/60)+'px;overflow:visible">'
         +'<rect x="2" y="8" width="52" height="62" rx="7" fill="#fff" style="filter:drop-shadow(0 3px 5px rgba(0,0,0,.18))"/>'
-        +'<rect x="2" y="8" width="6" height="62" rx="3" fill="'+c0+'"/>'
-        +'<circle cx="30" cy="39" r="20" fill="'+c0+'" opacity=".15"/>'
-        +(face?('<g transform="translate(12,21) scale(0.56)">'+face+'</g>'):'')
+        +(st.painted
+          ?('<clipPath id="'+clip+'"><rect x="2" y="8" width="52" height="62" rx="7"/></clipPath>'
+            +'<image href="/assets/books/painted/'+st.painted+'-cover.webp" x="2" y="8" width="52" height="62" preserveAspectRatio="xMidYMid slice" clip-path="url(#'+clip+')"/>'
+            +'<rect x="2" y="8" width="6" height="62" rx="3" fill="'+c0+'"/>')
+          :('<rect x="2" y="8" width="6" height="62" rx="3" fill="'+c0+'"/>'
+            +'<circle cx="30" cy="39" r="20" fill="'+c0+'" opacity=".15"/>'
+            +(face?('<g transform="translate(12,21) scale(0.56)">'+face+'</g>'):'')))
         +'<circle cx="52" cy="10" r="10" fill="'+c1+'"/>'
         +'<text x="52" y="14" text-anchor="middle" font-family="Baloo 2" font-weight="800" font-size="'+(sndLabel(st.sound).length>3?6:sndLabel(st.sound).length>1?8:10)+'" fill="#fff">'+sndLabel(st.sound)+'</text>'
         +'</svg>'; }
@@ -834,7 +853,7 @@
       prev.style.visibility = page <= -1 ? "hidden" : "visible";
       var N = BOOK.pages.length, left = N - 1 - page; // pages after this one
       if (page === -1) {
-        bkStage.innerHTML = (BOOK.cover ? '<img class="bkcover" src="' + escAttr(BOOK.cover) + '" alt="' + escAttr(BOOK.coverAlt) + '">' : '<div class="bkpic">' + cover(BOOK, 150) + '</div>')
+        bkStage.innerHTML = (BOOK.painted ? paintedScene(BOOK, 0, "bkcover") : BOOK.cover ? '<img class="bkcover" src="' + escAttr(BOOK.cover) + '" alt="' + escAttr(BOOK.coverAlt) + '">' : '<div class="bkpic">' + cover(BOOK, 150) + '</div>')
           + '<div class="bktitle">' + BOOK.title + '</div><div class="bksub">A story full of ' + sndLabel(BOOK.sound) + ' sounds — Echo reads it to you!</div>';
         next.textContent = "Start →"; hear.style.visibility = "hidden";
         say(BOOK.title + "! A story full of " + sndLabel(BOOK.sound).replace(" (v)", "") + " sounds.");
@@ -857,7 +876,8 @@
           + (left >= 1 ? '<div class="pstack"></div>' : "")
           + '<div class="paper">'
           + '<span class="ribbon" style="background:' + BOOK.colors[0] + '">' + (page + 1) + '<span style="font-size:8.5px;opacity:.85">of ' + N + '</span></span>'
-          + (pg.art ? '<div class="bkart scene">' + readerArt(pg) + '</div>'
+          + (BOOK.painted ? paintedScene(BOOK, page, "bkart scene")
+            : pg.art ? '<div class="bkart scene">' + readerArt(pg) + '</div>'
             : '<div class="bkart" style="background:radial-gradient(circle,' + hexRgba(BOOK.colors[0], .16) + ',' + hexRgba(BOOK.colors[1], .05) + ' 75%)"><div class="bkpic" style="filter:none">' + readerArt(pg) + '</div></div>')
           + '<div style="display:inline-block;background:#ffe7d3;color:#ef6f23;font-family:Baloo 2;font-weight:800;font-size:11px;letter-spacing:.08em;border-radius:99px;padding:4px 12px;">' + sndLabel(BOOK.sound) + ' SOUND</div>'
           + '<div class="bktext">' + (BOOK.words ? tintWords(pg.t, BOOK) : tintSound(tappable(pg.t), BOOK.sound)) + '</div>'
