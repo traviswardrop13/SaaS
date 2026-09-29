@@ -57,7 +57,9 @@ So: **"licensed speech-language pathologist" is TRUE** and is used across the
 app — under-claiming a real credential is not a virtue. **The fellowship is no
 longer named in product copy** (Travis, 23 Sep 2026: "we can take out clinical
 fellow") — "licensed pediatric speech-language pathologist" and nothing after
-it. She still is a Clinical Fellow: if an SLP, a district or a board asks, the
+it. **One exception, by Travis (29 Sep 2026): the Meet Rachel setup screen
+is her photo, "Built with", and "Rachel Wardrop, MS, CF-SLP"** — letters after
+a name, where the fellowship is stated plainly rather than implied away. She still is a Clinical Fellow: if an SLP, a district or a board asks, the
 answer is yes, and no copy may imply otherwise — never "fully licensed", never
 anything that suggests the fellowship is behind her.
 
@@ -65,7 +67,9 @@ anything that suggests the fellowship is behind her.
 landing page claimed "Licensed & board-certified (CCC-SLP)" until it was caught
 — a specific, checkable false claim about a trademarked certification, on the
 page that sells the app. `tests/iaptest.mjs` fails if it comes back, and if
-the licence ever lapses or she moves state, that pin is where to start.
+the licence ever lapses or she moves state, that pin is where to start — and
+the Meet Rachel setup screen (`onboarding.html`, pinned in
+`tests/onboardingtest.mjs`) shows her credential to every new family.
 If a change
 touches what a child is asked to say, how a sound is cued, what counts as
 practice, or what an SLP is shown, it is Rachel's call, not an engineering

@@ -600,10 +600,11 @@
     var SEQ=ITEMS.slice(); for(var si=SEQ.length-1;si>0;si--){ var sj=(Math.random()*(si+1))|0, st=SEQ[si]; SEQ[si]=SEQ[sj]; SEQ[sj]=st; }
     var ITEM=SEQ[0];
     var NUMWORD={2:"two",3:"three",4:"four",5:"five",6:"six"};
-    // What Leo SPEAKS. TTS cannot perform a bare sound — a synthesized long
-    // "rrrr"/"sssss" comes out mangled — so the voice asks for the sound BY
-    // NAME ("make your R sound"; letter names render cleanly) and the human
-    // recording at /coach/say-echo/<SOUND>.mp3, when present, models the real thing.
+    // What Leo SPEAKS. TTS cannot perform every bare sound — a synthesized
+    // long "rrrr" or a popped "p" comes out mangled — so the line names the
+    // sound ("make your R sound"; letter names render cleanly), and on a
+    // sound round Rachel's recording of the sound itself takes the letter's
+    // place when it plays (soundSlot, below).
     function soundName(){ var s=String(SOUND).toUpperCase(); if(s==="THV")s="TH"; return s.length>1?s.split("").join(" "):s; }
     function sayLine(){
       var times=(NUMWORD[NEED]||NEED)+" times";
@@ -624,24 +625,40 @@
       if(!sayLine._cued && CUESHORT && ITEM.level==="isolation"){ sayLine._cued=true; return "Ready? "+CUESHORT+", and "+ask+", "+times+"."; }
       return "Ready? "+ask.charAt(0).toUpperCase()+ask.slice(1)+", "+times+".";
     }
-    // Prefer a real human recording of the whole prompt (Rachel!) if present.
     var CUETIP=""; try{ CUETIP=(S&&S.cue)?(S.cue(SOUND).tip||""):""; }catch(e){}
     // compact articulation cue: first clause only, no similes, no sound demos
     var CUESHORT=(CUETIP.split("\u2014")[0].split(" like ")[0].split(",")[0]||"").trim().replace(/[.!]+$/,"");
-    // Human model prompts: /coach/say-echo/<SOUND>.mp3 is Rachel's July take
-    // of the whole opening line (July wording), re-voiced into Echo's voice by
-    // tools/revoice.mjs — the prompt actually PERFORMS the sound, which TTS
-    // never can. Her raw take (/coach/say/) never plays; TTS remains the
-    // fallback either way.
     // Shared switch (Sona.HUMAN_CLIPS) — NOT a local copy. A local copy here is
     // exactly why Rachel's clips kept playing in coach-call.html.
     var HUMANCLIPS=false; try{ HUMANCLIPS=!!(S&&S.humanClipsOn&&S.humanClipsOn()); }catch(e){}
+    // ECHO'S WORDS, RACHEL'S SOUND (Travis, 29 Sep 2026: "use Turbo v4 for
+    // everything, but when it comes to the actual sound, like Rrrr ... swap in
+    // just for that split moment the audio of my wife"). Until then the first
+    // line of a sound round was her whole July take re-voiced into Echo's
+    // voice (/coach/say-echo/<SOUND>.mp3, the July wording) — every other line
+    // came from v4 Turbo, so that one line sounded like someone else. Now v4
+    // Turbo says every word, and where a line on a sound round names the
+    // target sound ("make your R sound") ONE recorded take of that sound
+    // plays in the letter's place: "…and make your [rrrr] sound, five times."
+    // The takes are built by tools/soundclips.mjs: voiced sounds are Rachel's
+    // re-voiced takes; voiceless ones are v4 Turbo's own, because the voice
+    // changer buzzed them (the tool has the measurements). It covers every
+    // line that names the sound: the first prompt, a tap on Echo, the turtle,
+    // and Echo's idea when it steps down to the sound. Her raw take
+    // (/coach/say/) never plays. If the take is missing, the whole line is
+    // spoken by TTS as before, letter and all; if the voice service is down,
+    // her whole July line plays, as it did before.
+    function soundSlot(text){
+      if(!HUMANCLIPS||!ITEM||ITEM.level!=="isolation"||typeof text!=="string")return null;
+      var mark="your "+soundName()+" sound",i=text.indexOf(mark);
+      if(i<0)return null;
+      // whole: her full July line, played only if the voice service is down
+      // (it needs no TTS, and it is what this round played before).
+      return {before:text.slice(0,i+4),clip:"/coach/say-echo/"+SOUND+"-sound.wav",after:text.slice(i+mark.length-5).trim(),whole:"/coach/say-echo/"+SOUND+".mp3"};
+    }
     function playPrompt(){
       if(mutedSpeech())return Promise.resolve();
-      // Human clips keep the same fallback line across an interruption. Delay
-      // sayLine() until fallback is needed, as a successful human clip did before.
-      var human=ITEM.level==="isolation"&&HUMANCLIPS?"/coach/say-echo/"+SOUND+".mp3":null;
-      return human?queueSpeech(null,false,human,sayLine):say(sayLine());
+      return say(sayLine());
     }
     var _sayQ=Promise.resolve(),_sayN=0,_slowQueued=false;
     var audioJobs=[],AUDIO_CANCEL={},ttsPlaying=false,_ttsN=0,audioCtx=null,speaking=false,audioSuspend=Promise.resolve();
@@ -735,15 +752,18 @@
       audioSuspend.then(function(){if(!audioBlocked()&&ctx.state==="suspended")return ctx.resume();}).catch(function(){});
       return ctx;
     }
-    function queueSpeech(t,slow,human,makeText){
-      if((!t&&!human)||mutedSpeech()||practiceClosed||_sayN>=2)return Promise.resolve();
-      var packet={text:t,slow:!!slow,human:human,makeText:makeText,epoch:practiceEpoch};
+    function queueSpeech(t,slow){
+      if(!t||mutedSpeech()||practiceClosed||_sayN>=2)return Promise.resolve();
+      // The sound slot is read NOW, against the item on screen: Echo's idea
+      // swaps the item just before it speaks, and a line waiting in the queue
+      // must not pick up a later round's sound.
+      var packet={text:t,slow:!!slow,slot:soundSlot(t),epoch:practiceEpoch};
       _sayN++; updateTurn();
       var run=function(){return _say1(packet);};
       _sayQ=_sayQ.then(run,run).then(function(){_sayN=Math.max(0,_sayN-1);updateTurn();},function(){_sayN=Math.max(0,_sayN-1);updateTurn();});
       return _sayQ;
     }
-    function say(t){return queueSpeech(t,false,null,null);}
+    function say(t){return queueSpeech(t,false);}
     // ---- shared on-device TTS revision; callbacks never outlive their job. ----
     function ttsGet(key,job){return audioWait(job,function(done,cleanup){
       var db=null,ended=false;
@@ -772,6 +792,7 @@
       var cached=await ttsGet(key,job);
       if(cached===AUDIO_CANCEL||!job.live())return AUDIO_CANCEL;
       if(cached){job.voiceEvent={source:"cache",cache:"device",revision:revision};return cached;}
+      var keep=true;
       var bytes=await audioWait(job,function(done,cleanup){
         var controller=typeof AbortController!=="undefined"?new AbortController():null;
         var timer=setTimeout(function(){job.voiceReason="timeout";done(null);},7000);
@@ -785,20 +806,65 @@
           job.voiceEvent={source:provider==="elevenlabs"||provider==="openai"?provider:"server",cache:header("X-Sona-Voice-Cache"),model:header("X-Sona-Voice-Model"),revision:header("X-Sona-Voice-Revision")||revision};
           // "0": the usual voice model was busy and this is a stand-in. Play
           // it, never save it — saved, it would replay the old voice forever.
-          job.voiceKeep=header("X-Sona-Voice-Keep")!=="0";
+          // Kept per request, not on the job: a sound slot asks for both
+          // halves of its line at once on one job.
+          keep=header("X-Sona-Voice-Keep")!=="0";
           return r.arrayBuffer();
         }).then(function(b){done(b&&b.byteLength?b:null);}).catch(function(){if(job.live()&&job.voiceReason!=="timeout")job.voiceReason="network-error";done(null);});
       });
       if(bytes===AUDIO_CANCEL||!job.live())return AUDIO_CANCEL;
-      if(bytes&&job.voiceKeep!==false)ttsPut(key,bytes,job);
+      if(bytes&&keep)ttsPut(key,bytes,job);
       return bytes;
+    }
+    // The recorded take for a slot: a WAV tools/soundclips.mjs wrote at
+    // the rate /api/tts speaks (24 kHz, mono, 16-bit, a 44-byte header), so
+    // its samples join Echo's words as they are. Anything else is refused,
+    // and the line falls back to TTS whole.
+    function clipPcm(url,job){return audioWait(job,function(done,cleanup){
+      var controller=typeof AbortController!=="undefined"?new AbortController():null;
+      var timer=setTimeout(function(){done(null);},7000);
+      cleanup(function(){clearTimeout(timer);if(controller)controller.abort();});
+      fetch(url,controller?{signal:controller.signal}:undefined).then(function(r){return r.ok?r.arrayBuffer():null;}).then(function(b){
+        if(!b||b.byteLength<=44||(b.byteLength-44)%2){done(null);return;}
+        var v=new DataView(b);
+        var ok=v.getUint32(0,false)===0x52494646&&v.getUint16(22,true)===1&&v.getUint32(24,true)===24000&&v.getUint16(34,true)===16&&v.getUint32(36,false)===0x64617461;
+        done(ok?b.slice(44):null);
+      }).catch(function(){done(null);});
+    });}
+    // Quiet (under −45 dBFS) trimmed from one end of a 24 kHz PCM clip,
+    // keeping 50 ms of it.
+    function trimQuiet(buf,atEnd){
+      var v=new DataView(buf),n=buf.byteLength>>1,keep=1200,floor=184,i;
+      if(atEnd){for(i=n-1;i>0&&Math.abs(v.getInt16(i*2,true))<floor;i--);return buf.slice(0,Math.min(n,i+1+keep)*2);}
+      for(i=0;i<n&&Math.abs(v.getInt16(i*2,true))<floor;i++);return buf.slice(Math.max(0,i-keep)*2);
+    }
+    // One line, three pieces, played as ONE clip: Echo's words up to the
+    // sound, the recorded take, Echo's words after it. Everything is fetched
+    // first and joined, so the line plays with no gaps, pauses and resumes as
+    // one clip and slows as one for the turtle — and if any piece is missing,
+    // nothing has been said yet and the whole line falls back to TTS.
+    // If her sound is here but the voice service is not (credits, an outage,
+    // a timeout), the answer is "voice-down": the caller plays her whole July
+    // line rather than ask the same failing service for the whole line too.
+    async function playSlot(slot,slow,job){
+      var parts=await Promise.all([speechBytes(slot.before,job),clipPcm(slot.clip,job),speechBytes(slot.after,job)]);
+      if(!job.live()||parts.indexOf(AUDIO_CANCEL)>=0)return AUDIO_CANCEL;
+      if(parts[1]&&(!parts[0]||!parts[2]))return "voice-down";
+      if(!parts[0]||!parts[1]||!parts[2])return null;
+      // Each half arrives with its own quiet lead-in and tail; left in, the
+      // sentence stops twice around her sound. Keep 50 ms either side.
+      parts[0]=trimQuiet(parts[0],true);parts[2]=trimQuiet(parts[2],false);
+      var words=job.voiceEvent||{},line=new Uint8Array(parts[0].byteLength+parts[1].byteLength+parts[2].byteLength),at=0;
+      parts.forEach(function(p){line.set(new Uint8Array(p),at);at+=p.byteLength;});
+      job.voiceEvent={source:"human",cache:words.cache,model:words.model,revision:words.revision};
+      return slow?await playSlowClip(line,job):await playPCM(line,job);
     }
     function playMedia(url,slow,job){return audioWait(job,function(done,cleanup){
       var a=new Audio(url);a.volume=speechVolume();
       if(slow){a.playbackRate=0.7;try{a.preservesPitch=true;a.mozPreservesPitch=true;a.webkitPreservesPitch=true;}catch(e){}}
       ttsBegin();cleanup(function(){ttsEnd();a.onended=null;a.onerror=null;try{a.pause();a.removeAttribute("src");a.load();}catch(e){}});
       // A guard against an element that never ends, not a budget: the longest
-      // recorded prompt (D, the whole line with the sound performed) runs 19 s.
+      // recorded line (D's July take, the voice-down fallback) runs 19 s.
       var timer=setTimeout(function(){done(null);},30000);cleanup(function(){clearTimeout(timer);});
       a.onended=function(){done(true);};a.onerror=function(){job.voiceReason="playback-blocked";done(null);};
       function started(){if(job.live())voiceDiagnostic(/^\/coach\/say-echo\//.test(url)?{source:"human"}:job.voiceEvent||{source:"server"});}
@@ -863,9 +929,11 @@
         if(audioBlocked())continue;
         var job=newAudioJob(),result=null;speaking=true;updateTurn();
         try{
-          if(packet.human)result=await playMedia(packet.human,false,job);
+          if(packet.slot){
+            result=await playSlot(packet.slot,packet.slow,job);
+            if(result==="voice-down")result=await playMedia(packet.slot.whole,packet.slow,job);
+          }
           if(result!==true&&result!==AUDIO_CANCEL){
-            if(packet.text==null)packet.text=packet.makeText?packet.makeText():"";
             var bytes=await speechBytes(packet.text,job);
             if(bytes===AUDIO_CANCEL)result=AUDIO_CANCEL;
             else if(bytes)result=packet.slow?await playSlowClip(new Uint8Array(bytes),job):await playPCM(new Uint8Array(bytes),job);
@@ -878,7 +946,7 @@
     }
     function saySlow(t){return new Promise(function(res){
       if(!t||mutedSpeech())return res();if(speaking)return res();if(_slowQueued)return res();_slowQueued=true;
-      queueSpeech(t,true,null,null).then(function(){_slowQueued=false;res();},function(){_slowQueued=false;res();});
+      queueSpeech(t,true).then(function(){_slowQueued=false;res();},function(){_slowQueued=false;res();});
     });}
     // Chimes and celebrations play into a closed mic too. sfx() is
     // synchronous, so the mic closes synchronously; every caller has already
@@ -1992,8 +2060,9 @@
       // 🐢 IS AVAILABLE FROM THE FIRST TRY, NOT AS A CONSOLATION PRIZE.
       // showTurtle(true) used to live only inside the wrong-sound branch, so
       // the child who most needed to hear the model slowly had to fail first
-      // to discover the control existed. Nothing about the model changes —
-      // same clip, same 0.7x, same ttsBegin/ttsEnd speaker guard — so a
+      // to discover the control existed. The turtle replays the model's own
+      // line at 0.7x (on a sound round that includes Rachel's recorded sound,
+      // slowed with it), behind the same ttsBegin/ttsEnd speaker guard — so a
       // replay still cannot be counted as the child speaking, and saySlow's
       // own `if(speaking) return` means repeated taps cannot stack.
       showTurtle(true);
