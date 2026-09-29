@@ -32,6 +32,7 @@ Physical iPhone verification of keyboard behavior, microphone recognition and sp
 
 ## Visual source notes
 
+- `onboarding-valley-prompts.md` — the next look for setup (Travis's ChatGPT boards, 29 Sep 2026) with Echo leading, and the prompts for its pictures.
 - `fruit-market-v2.md` — Fruit Slice source and renderer correction.
 - `piano-v2.md` — stage and shared timber texture.
 - `stack-v2.md` and `stack-v2-assets.json` — blocks, workshop and rocket.
