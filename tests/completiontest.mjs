@@ -210,14 +210,18 @@ await scenario("human practice prompt respects sound settings", async () => {
   try {
     await finish(page);
     // Exercise the actual prompt function with human clips enabled locally.
-    // Audio is a silent spy: no file or OS audio device is ever played.
+    // 29 Sep 2026: the prompt is Echo's words with Rachel's recorded sound in
+    // the letter's place, joined into one clip. Playback is a silent spy: no
+    // file or OS audio device is ever played.
     const results = await page.evaluate(async () => {
-      const oldAudio = window.Audio, oldHuman = HUMANCLIPS, oldItem = ITEM, oldProfile = profile;
+      const oldPCM = playPCM, oldFetch = window.fetch, oldHuman = HUMANCLIPS, oldItem = ITEM, oldProfile = profile;
       const calls = [];
-      window.Audio = class {
-        constructor(src) { this.src = src; this.volume = 1; }
-        play() { calls.push({ src: this.src, volume: this.volume }); queueMicrotask(() => this.onended && this.onended()); return Promise.resolve(); }
+      window.fetch = (url, opts) => {
+        calls.push({ fetch: String(url) });
+        if (String(url) === "/api/tts") return Promise.resolve(new Response(new Uint8Array(4800), { headers: { "X-Sona-Voice-Keep": "0" } }));
+        return oldFetch(url, opts);
       };
+      playPCM = (bytes) => { calls.push({ play: bytes.byteLength, volume: speechVolume() }); return Promise.resolve(true); };
       HUMANCLIPS = true; ITEM = { level: "isolation" };
       const results = [];
       try {
@@ -225,13 +229,14 @@ await scenario("human practice prompt respects sound settings", async () => {
           profile = Object.assign({}, oldProfile, settings); calls.length = 0;
           await playPrompt(); results.push({ settings, calls: calls.slice() });
         }
-      } finally { window.Audio = oldAudio; HUMANCLIPS = oldHuman; ITEM = oldItem; profile = oldProfile; }
+      } finally { window.fetch = oldFetch; playPCM = oldPCM; HUMANCLIPS = oldHuman; ITEM = oldItem; profile = oldProfile; }
       return results;
     });
     ok("zero volume never starts the human prompt", results[0].calls.length === 0, results[0]);
     ok("disabled voice never starts the human prompt", results[1].calls.length === 0, results[1]);
-    // 25 Sep 2026: the clip that plays is the re-voiced one (/coach/say-echo/).
-    ok("a human prompt honors the selected positive volume", results[2].calls.length === 1 && results[2].calls[0].volume === 0.35 && /\/coach\/say-echo\/R\.mp3$/.test(results[2].calls[0].src), results[2]);
+    const c = results[2].calls, plays = c.filter((x) => x.play);
+    ok("a human prompt asks for her one R and Echo's two halves", c.filter((x) => x.fetch === "/coach/say-echo/R-sound.wav").length === 1 && c.filter((x) => x.fetch === "/api/tts").length === 2, c);
+    ok("a human prompt plays once, as one clip, at the selected positive volume", plays.length === 1 && plays[0].volume === 0.35 && plays[0].play > 9600, c);
   } finally { await context.close(); }
 });
 
