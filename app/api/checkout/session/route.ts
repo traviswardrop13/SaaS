@@ -15,8 +15,8 @@ import Stripe from "stripe";
  * handed to the buyer by Stripe's redirect, and the response contains only
  * their own purchase facts.
  *
- * `plan` is the session's metadata.plan (24 Sep 2026): "slp-caseload" for a
- * clinician's caseload plan, null for a family's. The family success page
+ * `plan` is the session's metadata.plan (24 Sep 2026): "slp-caseload" or
+ * (from 29 Sep 2026) "slp-self" for a clinician's plans, null for a family's. The family success page
  * reads it to REFUSE to unlock a device on a clinician's receipt — that plan
  * covers the families who join through the clinician's link, not whatever
  * browser the session id is pasted into.

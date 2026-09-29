@@ -1998,9 +1998,9 @@
   }
 
   // ── CASELOAD COVERAGE: Premium that a clinician's plan pays for ─────────
-  // A family who joined through a clinician whose caseload is covered (the
-  // $79.99 "Sona Premium for your caseload" plan, or a clinician grandfathered
-  // from before it existed) gets Premium — whether or not they chose to share
+  // A family who joined through a clinician whose caseload is covered ("Sona
+  // Premium for your caseload", or a clinician grandfathered from before it
+  // existed) gets Premium — whether or not they chose to share
   // progress. Access and sharing stay separate decisions.
   //
   // The SERVER decides, from the enrolment ticket this device earned by

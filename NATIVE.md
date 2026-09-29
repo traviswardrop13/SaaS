@@ -292,13 +292,17 @@ native card describes exactly that. Do not add charter copy to the native
 card ahead of the ASC change: a card that says "first 50 families" over a
 price ASC controls is the same untrue promise the web half was built to avoid.
 
-## Caseload Premium is web-only (24 Sep 2026)
+## The clinician plans are web-only (24 Sep 2026; re-priced 29 Sep 2026)
 
-"Sona Premium for your caseload" ($79.99 a year) is sold to clinicians on
-speaksona.com, from the dashboard — and the dashboard never renders in the
-app: `slp.html` sends a native shell straight to Home before it draws or calls
-anything. So no clinician buy button can appear in the iOS build, **there is no
-App Store product for this plan, and none should be created.**
+"Sona Premium for you" ($59.99 a year, the clinician's own phone) and "Sona
+Premium for your caseload" ($59.99 a year more, every family on their link)
+are sold to clinicians on speaksona.com, from the dashboard — and the
+dashboard never renders in the app: `slp.html` sends a native shell straight
+to Home before it draws or calls anything. So no clinician buy button can
+appear in the iOS build, **there is no App Store product for either plan, and
+none should be created.** The clinician's own Premium reaches their phone the
+same way a family's coverage does: by a link, and the server's answer to the
+ticket it earns.
 
 What reaches the app is the result, not the sale: a family whose clinician's
 caseload is covered gets Premium from the server's coverage answer, the way a
