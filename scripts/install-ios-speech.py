@@ -44,15 +44,22 @@ REGISTER = "bridge?.registerPluginInstance(SonaSpeechPlugin())"
 BRIDGE = "SonaBridgeViewController"
 BRIDGE_SOURCE = """
 // The app's bridge view controller: Capacitor's own, plus Sona's local
-// plugins, which Capacitor does not find by itself. The storyboard names it
-// by this Objective-C name, so no module name is needed there.
-@objc(SonaBridgeViewController)
+// plugins, which Capacitor does not find by itself. Main.storyboard names it
+// with the app's module, the way Capacitor documents MainViewController.
+// Never by a bare @objc name: its superclass comes from Capacitor's binary
+// framework, so Swift registers it with the Objective-C runtime only once
+// Swift code first touches it. A storyboard that looks it up by a bare name
+// finds nothing and shows a black screen (build 6, 28 Sep 2026).
 class SonaBridgeViewController: CAPBridgeViewController {
     override func capacitorDidLoad() {
         bridge?.registerPluginInstance(SonaSpeechPlugin())
     }
 }
 """
+# How the storyboard names it: "Inherit Module From Target" in Xcode's terms.
+# The storyboard then asks for the class by its Swift (mangled) name, which the
+# Swift runtime resolves even before anything has touched the class.
+MODULE = ' customModule="App" customModuleProvider="target"'
 USAGE_KEY = "NSSpeechRecognitionUsageDescription"
 USAGE = ("Sona checks your child's practice words right on this iPhone. "
          "Speech recognition runs on the phone, and no audio is sent anywhere.")
@@ -81,6 +88,12 @@ def resolve(app, found):
         if raw.endswith("native/ios/App/MainViewController.swift"):
             return (ROOT / "native/ios/App/MainViewController.swift").resolve()
     return None
+
+
+def bridge_tag(tag):
+    """The storyboard's controller tag, naming SonaBridgeViewController in the app's module."""
+    tag = re.sub(r'\s+customModuleProvider="[^"]*"', "", re.sub(r'\s+customModule="[^"]*"', "", tag))
+    return re.sub(r'customClass="[^"]*"', f'customClass="{BRIDGE}"' + MODULE, tag, count=1)
 
 
 def bridge_class(storyboard):
@@ -171,11 +184,12 @@ def plan(app):
     if live & {"CAPBridgeViewController", BRIDGE}:
         block += BRIDGE_SOURCE
         switched = False
-        if name == "CAPBridgeViewController":
-            new_tag = re.sub(r'\s+customModuleProvider="[^"]*"', "", re.sub(r'\s+customModule="[^"]*"', "",
-                              tag.replace('customClass="CAPBridgeViewController"', f'customClass="{BRIDGE}"')))
-            writes[board] = storyboard.replace(tag, new_tag, 1)
-            notes.append(f"the storyboard loaded Capacitor's own controller; it now loads {BRIDGE}, which registers it")
+        if name in ("CAPBridgeViewController", BRIDGE) and bridge_tag(tag) != tag:
+            writes[board] = storyboard.replace(tag, bridge_tag(tag), 1)
+            notes.append(f"the storyboard loaded Capacitor's own controller; it now loads {BRIDGE}, which registers it"
+                         if name == "CAPBridgeViewController" else
+                         f"the storyboard named {BRIDGE} without the app's module, so iOS could not find it and "
+                         "the app opened to a black screen; it now names the module")
             switched = True
         for p, t in code.items():
             if re.search(r"\bCAPBridgeViewController\s*\(", t):
