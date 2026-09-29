@@ -514,6 +514,23 @@ sees every open book first, then their own, coming. Home's card and the
 website say "new ones every week", never "a book for every sound".
 `readtest` pins the dates and the shelf; `landingtest` the website's count.
 
+**The six-page books are painted** (Codex, 28 Sep 2026, with ChatGPT's image
+tool; brought over 29 Sep): one picture per book in `public/assets/books/painted/`
+holding its six scenes, three across and two down, in reading order, plus a
+small `-cover` copy of scene 1 for the shelf. The reader shows each page's
+scene by position. The art was drawn for those exact 78 sentences, so
+`readtest` pins them: change a sentence and redraw its scene. Codex's
+say-a-word-to-turn-the-page prototype was not brought over; it changes what a
+child is asked to say, so it waits for Rachel.
+
+**The app's look is the crafted world** (Codex, 28 Sep 2026: Travis's five
+concept boards, in `design/crafted-world/references/`). Painted scenes and game
+objects live in `public/assets/crafted/`, each surface's styles in
+`public/crafted-*.css`, and `design/crafted-world/README.md` is the handoff.
+Real controls and game objects stay HTML and canvas; a picture is never the
+interface. New art in this style comes from an image model (Travis generates
+it in ChatGPT); the twelve-page books are still the simpler drawings.
+
 **Say & Play** (Travis, 26 Sep 2026: "10 more games for ages 3-4 and 10
 more games for ages 5-8 ... incorporating practice into it"): twenty games
 where every word the child says moves the game one step, five words for 3-4
