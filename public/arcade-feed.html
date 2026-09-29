@@ -288,16 +288,18 @@
       var generation=audioGeneration;
       if(!t||!audioAllowed(generation)||profile.voiceOn===false||Number(profile.volume)===0||speaking)return Promise.resolve();
       speaking=true;
-      var key=(profile.voiceId||"echo")+"|"+((window.Sona&&Sona.TTS_CACHE_VERSION)||"v8")+"|"+t;
+      var key=(profile.voiceId||"echo")+"|"+((window.Sona&&Sona.TTS_CACHE_VERSION)||"v9")+"|"+t;
       // Echo waits out a mic request still being answered, then the phone's
       // switch back from a mic that has only just closed (the same SETTLE_MS
       // the chimes wait), then a chime that was waiting on it (micQuiet)
       return micQuiet().then(function(){ return ttsGet(key); }).then(function(cached){
         if(!audioAllowed(generation))return true;
         if(cached)return playPCM(new Uint8Array(cached),generation).then(function(played){return played!==false;});
+        // X-Sona-Voice-Keep "0": a stand-in while the usual voice model was busy — play, never save.
+        var keep=true;
         return fetch("/api/tts",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text:t,voice:profile.voiceId||"",stable:true})})
-          .then(function(r){return r.ok?r.arrayBuffer():null;})
-          .then(function(b){if(!audioAllowed(generation))return true;if(!b)return false;ttsPut(key,b);return playPCM(new Uint8Array(b),generation).then(function(played){return played!==false;});});
+          .then(function(r){if(!r.ok)return null;keep=!(r.headers&&r.headers.get&&r.headers.get("X-Sona-Voice-Keep")==="0");return r.arrayBuffer();})
+          .then(function(b){if(!audioAllowed(generation))return true;if(!b)return false;if(keep)ttsPut(key,b);return playPCM(new Uint8Array(b),generation).then(function(played){return played!==false;});});
       }).then(function(played){if(!played&&audioAllowed(generation))return speakFallback(t,generation);})
         .catch(function(){if(audioAllowed(generation))return speakFallback(t,generation);})
         .then(function(){if(generation===audioGeneration)speaking=false;});

@@ -34,8 +34,16 @@ import { chromium, ROOT as SOURCE_ROOT, launchOpts } from "./_env.mjs";
 const ROOT = process.env.SONATEST_PUBLIC_ROOT || SOURCE_ROOT;
 const BASE = "http://127.0.0.1:8233";
 const MIME = { html: "text/html", js: "text/javascript", css: "text/css", svg: "image/svg+xml", png: "image/png", webp: "image/webp", woff2: "font/woff2" };
+// Echo's voice server is down (503) in every scenario but the stand-in one,
+// which answers real PCM marked X-Sona-Voice-Keep "1" or "0" (28 Sep 2026).
+const tts = { mode: "down", calls: 0 };
 const server = createServer((req, res) => {
   const url = new URL(req.url, BASE), file = path.join(ROOT, url.pathname);
+  if (url.pathname === "/api/tts" && tts.mode !== "down") {
+    tts.calls++;
+    res.writeHead(200, { "content-type": "audio/L16; rate=24000; channels=1", "X-Sona-Voice-Provider": "elevenlabs", "X-Sona-Voice-Model": tts.mode === "standin" ? "eleven_multilingual_v2" : "eleven_v4_turbo", "X-Sona-Voice-Keep": tts.mode === "standin" ? "0" : "1" });
+    res.end(Buffer.alloc(9600)); return;
+  }
   if (url.pathname.startsWith("/api/")) { res.writeHead(503, { "content-type": "application/json" }); res.end("{}"); return; }
   if (!existsSync(file) || !statSync(file).isFile()) { res.writeHead(404); res.end(); return; }
   res.writeHead(200, { "content-type": MIME[file.split(".").pop()] || "application/octet-stream" });
@@ -299,6 +307,43 @@ for (const key of KEYS.filter((k) => /\bsay: true, comingSoon: true\b/.test((rea
       ok(key + ": …which says the game is coming soon", await until(page, () => /is coming soon/.test(document.getElementById("libraryMessage").textContent), 4000));
       clean(key + " parked", errors);
     } finally { await context.close(); }
+  });
+}
+
+// ── a stand-in voice is played, never kept (28 Sep 2026) ──
+// While v4 Turbo is busy the server answers with the old v2 voice, marked
+// X-Sona-Voice-Keep: 0. The phone keys saved clips by voice|revision|text, so a
+// saved stand-in would replay the old voice for that word forever. Control: an
+// ordinary clip ("1") IS saved and "Hear it" replays it without asking again.
+for (const mode of ["keep", "standin"]) {
+  await scenario("racecar voice " + mode, async () => {
+    tts.mode = mode; tts.calls = 0;
+    const { context, page, errors } = await fresh("arcade-racecar.html", { age: "7", micok: true, permission: "granted", unparked: true });
+    try {
+      await page.locator("#startOvl.show").waitFor();
+      await page.locator("#startBtn").click();
+      await page.waitForFunction(() => __quiet.sounds.filter((x) => x.kind === "buf").length >= 1);
+      await page.waitForFunction(() => window.__sayplay.listening === true);
+      const first = tts.calls;
+      await page.locator("#hear").click();
+      await page.waitForFunction(() => __quiet.sounds.filter((x) => x.kind === "buf").length >= 2);
+      await page.waitForFunction(() => window.__sayplay.listening === true);
+      const saved = await page.evaluate(() => new Promise((done) => {
+        const r = indexedDB.open("sona-tts", 1);
+        r.onupgradeneeded = () => r.result.createObjectStore("clips");
+        r.onerror = () => done(-1);
+        r.onsuccess = () => { try { const q = r.result.transaction("clips", "readonly").objectStore("clips").count(); q.onsuccess = () => done(q.result); q.onerror = () => done(-1); } catch (e) { done(-1); } };
+      }));
+      ok("racecar " + mode + ": Echo's word comes from the voice server", first === 1, { first });
+      if (mode === "keep") {
+        ok("racecar keep: an ordinary clip is saved on the phone", saved === 1, { saved });
+        ok("racecar keep: \"Hear it\" replays the saved clip without asking again", tts.calls === 1, { calls: tts.calls });
+      } else {
+        ok("racecar stand-in: nothing is saved on the phone", saved === 0, { saved });
+        ok("racecar stand-in: \"Hear it\" asks the server again instead of replaying the old voice", tts.calls === 2, { calls: tts.calls });
+      }
+      clean("racecar voice " + mode, errors);
+    } finally { tts.mode = "down"; await context.close(); }
   });
 }
 
