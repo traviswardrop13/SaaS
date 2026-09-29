@@ -15,7 +15,7 @@
     tap is the answer — no reading, no timer, no fail state.
 
     Privacy hard lines, same as every game: the OPTIONAL mic listens for
-    loudness only (a cheer trigger — "Echo heard you!") — nothing is recorded,
+    voice activity and sound family (a hint and cheer trigger — "Echo heard you!") — nothing is recorded,
     uploaded, scored, or logged; skipped entirely unless the mic was already
     granted elsewhere (this page never triggers the OS prompt). Feeds come
     from taps (real actions), never from silence.
@@ -56,6 +56,7 @@
     .cardBtn:active{transform:translateY(3px);box-shadow:0 3px 0 rgba(160,80,20,.22);}
     .cardBtn .e{font-size:52px;line-height:1;}
     .cardBtn .e{width:74px;height:74px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle,rgba(255,210,28,.2),rgba(255,210,28,.03) 75%);}
+    .cardBtn.speechHint{outline:4px solid #27b5b9;outline-offset:-4px;box-shadow:0 0 0 5px #c4f1df,0 6px 0 #7d9768;}
     .cardBtn .w{font-family:"Baloo 2";font-weight:800;font-size:15.5px;color:var(--ink);}
     .cardBtn.right{animation:flyIn .55s ease both;}
     @keyframes flyIn{0%{transform:scale(1)}40%{transform:scale(1.15)}100%{transform:scale(.1) translateY(-160px);opacity:0;}}
@@ -353,7 +354,7 @@
         // it would hear nothing and silence every chime until the turn ended
         try{ var ctx=getCtx(),src=ctx.createMediaStreamSource(stream),an=ctx.createAnalyser(); an.fftSize=512; src.connect(an); micSrc=src; }
         catch(e){ feedMicStop(); return; }
-        var td=new Uint8Array(an.fftSize),heard=[];
+        var td=new Uint8Array(an.fftSize),fd=new Uint8Array(an.frequencyBinCount),binHz=ctx.sampleRate/an.fftSize,heard=[];
         (function tick(){
           if(gen!==micGen)return;
           // belt and braces: nothing plays while this mic is open, and if
@@ -362,16 +363,30 @@
           an.getByteTimeDomainData(td);
           var sum=0; for(var i=0;i<td.length;i++){ var d=(td[i]-128)/128; sum+=d*d; }
           var now=performance.now();
-          heard.push({t:now,r:Math.sqrt(sum/td.length)});
+          var shape=null; if(S&&S.frameShape){an.getByteFrequencyData(fd);shape=S.frameShape(fd,binHz);}
+          heard.push({t:now,r:Math.sqrt(sum/td.length),s:shape});
           while(now-heard[0].t>HEARD_MS) heard.shift();
           if(now-heard[0].t>=FLOOR_MS){
             var w=[]; for(var k=heard.length-1;k>=0&&now-heard[k].t<=FLOOR_MS;k--) w.push(heard[k].r);
             var q=p20(w); if(micFloor<0||q<micFloor) micFloor=q;
           }
           if(micFloor>=0&&!heardThisTurn&&turnLive){
-            var thr=Math.max(0.035,micFloor*3.0), voiced=0;
-            for(var j=0;j<heard.length&&voiced<4;j++) voiced=heard[j].r>thr?voiced+1:0;
+            var thr=Math.max(0.035,micFloor*3.0), voiced=0,shapeSum=null;
+            for(var j=0;j<heard.length&&voiced<4;j++){
+              if(heard[j].r>thr){
+                voiced++; var sh=heard[j].s;
+                if(sh){if(!shapeSum)shapeSum={m:0,fm:0,hm:0};shapeSum.m+=sh.m;shapeSum.fm+=sh.fm;shapeSum.hm+=sh.hm;}
+              }else{voiced=0;shapeSum=null;}
+              if(voiced>=4&&shapeSum&&shapeSum.m&&S.soundFamily){
+                var family=S.soundFamily(SOUND),cent=shapeSum.fm/shapeSum.m,high=shapeSum.hm/shapeSum.m;
+                if((family==="low"&&cent>1800&&high>.22)||(family==="hiss"&&cent<1100&&high<.10)){voiced=0;shapeSum=null;}
+              }
+            }
             if(voiced>=4){
+              // Speaking reveals a helpful picture, never a pronunciation grade.
+              var cards=document.querySelectorAll("#grid .cardBtn");
+              for(var c=0;c<cards.length;c++)if(cards[c].querySelector(".w").textContent===target.w)cards[c].classList.add("speechHint");
+              $("bSub").textContent="Tap the glowing picture!";
               heardThisTurn=true; stars++; try{ window.__heard=stars; }catch(e){} try{ $("starN").textContent=stars; }catch(e){}
               $("heard").classList.add("show"); setTimeout(function(){ $("heard").classList.remove("show"); },1400);
               feedMicStop(); sfx("tap"); return;   // heard once is the whole turn: close, THEN the little chime

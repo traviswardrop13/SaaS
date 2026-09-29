@@ -78,10 +78,16 @@
   </style>
   <link href="/crafted-games.css" rel="stylesheet">
   <link href="/crafted-slice.css" rel="stylesheet">
+  <link href="/arcade-speech-help.css" rel="stylesheet">
 </head>
 <body data-crafted="slice">
   <div id="app">
     <canvas id="cv"></canvas>
+    <div id="slowControl" hidden>
+      <button id="slowKeys" type="button"><img src="/assets/crafted/echo-welcome.webp" alt=""><span id="slowSound">rrrr</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v5a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z"/></svg></button>
+      <p id="slowStatus" role="status">Tap Echo to slow the fruit</p><span class="slowTrack"><i id="slowMeter"></i></span>
+      <button id="slowCancel" type="button" hidden>Keep playing</button>
+    </div>
     <div id="top">
       <button id="close">✕</button>
       <div class="hudpill"><svg viewBox="0 0 64 64" style="width:19px;height:19px;vertical-align:-4px"><path d="M5 25a27 27 0 0 0 54 0Z" fill="#58cc02"/><path d="M10 25a22 22 0 0 0 44 0Z" fill="#eefce2"/><path d="M14 25a18 18 0 0 0 36 0Z" fill="#ff5470"/><ellipse cx="26" cy="33" rx="2" ry="3" fill="#3d2317" transform="rotate(18 26 33)"/><ellipse cx="38" cy="33" rx="2" ry="3" fill="#3d2317" transform="rotate(-18 38 33)"/></svg> <b id="score">0</b></div>
@@ -129,6 +135,8 @@
   </div>
 
   <script src="/sona.js"></script>
+  <script>window.SLOW_HELP={phase:"wave",action:"slow the fruit",earned:"Slow fruit!"};</script>
+  <script src="/arcade-speech-help.js"></script>
   <script>
     // Check access before any game resources start. The earned speech token
     // remains a separate requirement; a catalog unlock never creates one.
@@ -161,7 +169,7 @@
     var SETTLE_MS=200, QUIET_MS=900, quietUntil=0, micClosedAt=-1e9;
     var rv={st:null,pending:0,gen:0,raf:0,t:0,ctx:null,src:null,floor:-1};   // floor: the room's quiet level, measured once per page (see listenFor)
     function sfx(n){
-      if(rv.st) return;
+      if(rv.st||slowTurn) return;
       if(rv.pending){ setTimeout(function(){ sfx(n); },60); return; }
       var wait=micClosedAt+SETTLE_MS-performance.now();
       if(wait>0){ quietUntil=Math.max(quietUntil,performance.now()+wait+QUIET_MS); setTimeout(function(){ sfx(n); },wait); return; }
@@ -266,7 +274,7 @@
       }
     }
     function startWave(i){
-      wave=i; waveGot=0; waveMs=0; nextToss=900; phase="wave"; missRun=0; hud();
+      slowMs=0; $("slowStatus").textContent="Tap Echo to slow the fruit"; wave=i; waveGot=0; waveMs=0; nextToss=900; phase="wave"; missRun=0; hud();
       banner("Wave "+(i+1),"Slice "+WAVES[i].goal+" fruit!");
     }
     function endWave(){
@@ -315,6 +323,7 @@
     // the quiet-mic and retry suites open the card through it.
     function crash(){ sayCard(); }
     function doRevive(){
+      if(slowTurn){finishSlowKeys(true);return;}
       reviveWait=false; REV--; hud();
       $("revOvl").classList.remove("show");
       // the mic has just closed: sfx() holds this chime SETTLE_MS
@@ -324,11 +333,11 @@
     }
     $("revDone").onclick=function(){ closeReviveMic(); reviveWait=false; $("revOvl").classList.remove("show"); endRound(); };
 
-    // ── "Say your sound to keep playing": the only time this game listens ──
+    // ── Short speech turns: between rounds and when Echo offers a slow-down ──
     // (24 Sep 2026) STAR MODE is gone. It held the mic open for the whole
     // game so a shout could fire a power-up, which kept an iPhone in
     // phone-call audio from the first frame to the last. The mic now opens
-    // only while the keep-playing card shows, after the quiet window above,
+    // only during a deliberate speech turn, after the quiet window above,
     // and closes before the revive chime. Loudness and sound-shape numbers
     // only: nothing is recorded, nothing leaves the device, and a revive is
     // play, never practice data.
@@ -338,7 +347,7 @@
       if(!snd){ try{ snd=((S&&S.getProfile&&S.getProfile().focusSounds)||["R"])[0]; }catch(e){ snd="R"; } }
       SND=String(snd).toUpperCase(); SAYTXT=(S&&S.soundSay)?S.soundSay(SND):"rrrr";
     })();
-    function listenNote(t){ try{ $("revListen").textContent=t; }catch(e){} }
+    function listenNote(t){ try{ $("revListen").textContent=t;if(slowTurn&&!slowTurn.finishing)$("slowStatus").textContent=t; }catch(e){} }
     var reviveVoice=0,reviveSpeaking=false,reviveStop=null,reviveFetch=null;
     function stopReviveVoice(){
       reviveVoice++;reviveSpeaking=false;
@@ -402,11 +411,19 @@
         // the card closed (or the page hid) while the phone was asking: this
         // stream is already late, so it goes straight back
         if(gen!==rv.gen||!reviveWait||document.hidden){ try{ st.getTracks().forEach(function(t){t.stop();}); }catch(e){} micClosedAt=performance.now(); askAgain(); return; }
-        rv.st=st; listenFor(st,gen);
+        rv.st=st;
+        if(slowTurn){
+          var turn=slowTurn;
+          try{turn.native=Promise.resolve(S.speechStart?S.speechStart({words:[SAYTXT],maxMs:6500}):false);}catch(e){turn.native=Promise.resolve(false);}
+          turn.native=turn.native.then(function(v){turn.nativeSettled=true;turn.nativeStarted=!!v;return v;},function(){turn.nativeSettled=true;return false;});
+          turn.timer=setTimeout(function(){if(slowTurn===turn)finishSlowKeys(false,"Tap Echo to try again");},6500);
+        }
+        listenFor(st,gen);
       }).catch(function(){
         rv.pending--;micClosedAt=performance.now();
         // a request cut short by the page hiding asks again on the way back
         if(gen!==rv.gen||!reviveWait||document.hidden){ askAgain(); return; }
+        if(slowTurn){finishSlowKeys(false,"Microphone is off");return;}
         // no microphone: the card can't hear anyone, so the round ends kindly
         reviveWait=false; $("revOvl").classList.remove("show"); endRound();
       });
@@ -436,7 +453,7 @@
         if(rv.ctx.state==="suspended") rv.ctx.resume();
         rv.src=rv.ctx.createMediaStreamSource(st); an=rv.ctx.createAnalyser(); an.fftSize=512; rv.src.connect(an);
         td=new Uint8Array(an.fftSize); fd=new Uint8Array(an.frequencyBinCount); binHz=rv.ctx.sampleRate/an.fftSize;
-      }catch(e){ closeReviveMic(); reviveWait=false; $("revOvl").classList.remove("show"); endRound(); return; }
+      }catch(e){ if(slowTurn){finishSlowKeys(false,"Microphone unavailable");return;} closeReviveMic(); reviveWait=false; $("revOvl").classList.remove("show"); endRound(); return; }
       // family check: the burst must SOUND like the target's family (voiced
       // vs hiss) to fire — a scream or an S can't revive an R kid. Shape
       // numbers only; nothing recorded (see Sona.frameShape).
@@ -463,7 +480,15 @@
           for(var j=0;j<heard.length;j++){ var f=heard[j];
             if(f.r>thr){ voiced++;
               if(f.s){ if(!shp)shp={m:0,fm:0,hm:0}; shp.m+=f.s.m; shp.fm+=f.s.fm; shp.hm+=f.s.hm; }
-              if(voiced>=6){ if(!famOK(shp)){ voiced=0; shp=null; } else { closeReviveMic(); doRevive(); return; } } }
+              if(voiced>=6){ if(!famOK(shp)){ voiced=0; shp=null; } else {
+                if(slowTurn){
+                  if(!slowTurn.heardAt)slowTurn.heardAt=now;
+                  // Give on-device recognition the rest of a short utterance;
+                  // the first six voiced frames alone can be only its onset.
+                  if(now-slowTurn.heardAt<550){rv.raf=requestAnimationFrame(tick);return;}
+                }
+                closeReviveMic(); doRevive(); return;
+              } } }
             else { voiced=0; shp=null; } }
         }
         rv.raf=requestAnimationFrame(tick);
@@ -471,8 +496,9 @@
     }
     // lock/app-switch fires visibilitychange, NOT pagehide — a mic left open
     // there stays lit in a pocket. Coming back to the card listens again.
-    if(window.Sona&&Sona.onBackground) Sona.onBackground(closeReviveMic); else window.addEventListener("pagehide",closeReviveMic);
-    document.addEventListener("visibilitychange",function(){ if(!document.hidden&&reviveWait) speakRevive(); });
+    function speechBackground(){if(slowTurn){slowTurn.cancelled=true;finishSlowKeys(false);}else closeReviveMic();}
+    if(window.Sona&&Sona.onBackground) Sona.onBackground(speechBackground); else window.addEventListener("pagehide",speechBackground);
+    document.addEventListener("visibilitychange",function(){ if(!document.hidden&&reviveWait&&!slowTurn) speakRevive(); });
 
     // ── the game's own sounds, made on the phone (27 Sep 2026) ──
     // They join Sona's sfx set on this page only, so each goes through sfx()
@@ -616,8 +642,13 @@
     var lastT=performance.now();
     function draw(){
       var now=performance.now(), dt=Math.min(100,now-lastT), i; lastT=now;
+      // Keep the exact board still while Echo models and listens; no game
+      // time, falling object or earned help is spent while the page is hidden.
+      if(document.hidden||slowTurn){paintSlowKeys();requestAnimationFrame(draw);return;}
+      if(playing&&phase==="wave"&&slowMs>0){slowMs=Math.max(0,slowMs-dt);if(!slowMs)$("slowStatus").textContent="Tap Echo to slow the fruit";}
+      paintSlowKeys();
       if(playing&&phase==="wave"){
-        waveMs+=dt;
+        waveMs+=dt*slowFactor();
         if(waveMs>=nextToss){ toss(); nextToss=waveMs+WAVES[wave].every*(missRun>=2?1.25:1); }
         if(waveGot>=WAVES[wave].goal||waveMs>=WAVE_CAP_MS) endWave();
       }
@@ -631,7 +662,7 @@
       // fruit
       ctx.textAlign="center"; ctx.textBaseline="middle";
       for(i=fruits.length-1;i>=0;i--){ var f=fruits[i];
-        f.x+=f.vx; f.y+=f.vy; f.vy+=f.g||G; f.rot+=f.vr;
+        var factor=slowFactor(); f.x+=f.vx*factor; f.y+=f.vy*factor; f.vy+=(f.g||G)*factor; f.rot+=f.vr*factor;
         if(f.sliced){ fruits.splice(i,1); continue; }
         // a miss just falls away: nothing stops and nothing is lost; the help grows instead
         if(f.y>H+80){ fruits.splice(i,1); if(playing&&phase==="wave"){ missRun++; combo=0; } continue; }
@@ -683,6 +714,7 @@
     // ---- round over ----
     function bankAndContinue(){ S.finishGameTurn("slice",score); location.href="/charge.html?daily=1&banked="+score; }
     function endRound(){
+      if(slowTurn){slowTurn.cancelled=true;return finishSlowKeys(false).then(endRound);}
       closeReviveMic();
       if(window.__ended)return; window.__ended=true;
       S.finishGameTurn("slice",isDaily?score:null);
@@ -725,7 +757,11 @@
     $("endCharge").onclick=function(){ location.href=isDaily?"/charge.html?daily=1":(S.gameAccess("tiles").allowed?"/charge.html?game=arcade-tiles.html":"/activities.html"); };
     $("endAgain").onclick=function(){ location.reload(); };
     $("endHome").onclick=function(){ S.finishGameTurn("slice"); location.href="/today.html#play"; };
-    $("close").onclick=function(){ closeReviveMic(); S.finishGameTurn("slice"); if(playing){ playing=false; clearInterval(comboIv); } if(isDaily){ bankAndContinue(); return; } location.href="/today.html#play"; };
+    $("close").onclick=function(){
+      if(window.__speechLeaving)return;window.__speechLeaving=true;
+      function leave(){closeReviveMic();playing=false;clearInterval(comboIv);S.finishGameTurn("slice");if(isDaily){bankAndContinue();return;}location.href="/today.html#play";}
+      if(slowTurn){slowTurn.cancelled=true;finishSlowKeys(false).then(leave);}else leave();
+    };
     }
   </script>
 </body>

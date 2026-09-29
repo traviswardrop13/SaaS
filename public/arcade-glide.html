@@ -72,6 +72,7 @@
     @media (prefers-reduced-motion: reduce){ #banner.in{animation-name:bannerFade;} }
   </style>
   <link href="/crafted-games.css" rel="stylesheet">
+  <link href="/arcade-speech-help.css" rel="stylesheet">
 </head>
 <body data-crafted="glide">
   <div id="app">
@@ -81,6 +82,11 @@
       <div class="hudpill"><svg viewBox="0 0 64 64" style="width:19px;height:19px;vertical-align:-4px"><path d="M32 4C18 4 11 16 11 27c0 12 11 19 17 26h8c6-7 17-14 17-26C53 16 46 4 32 4Z" fill="#ff6b6b"/><path d="M32 4c-6 0-10 12-10 23 0 12 5 19 7 26h6c2-7 7-14 7-26C42 16 38 4 32 4Z" fill="#fff4dd"/><path d="M32 4c-2 0-4 12-4 23 0 12 2 19 3 26h2c1-7 3-14 3-26C36 16 34 4 32 4Z" fill="#ffd43b"/><rect x="25" y="53" width="14" height="9" rx="3" fill="#b5875a"/></svg> <b id="score">0</b></div>
       <div id="hudspacer"></div>
       <div id="timer" class="hudpill"></div>
+    </div>
+    <div id="slowControl" hidden>
+      <button id="slowKeys" type="button"><img src="/assets/crafted/echo-welcome.webp" alt=""><span id="slowSound">rrrr</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v5a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z"/></svg></button>
+      <p id="slowStatus" role="status">Tap Echo to slow the hedges</p><span class="slowTrack"><i id="slowMeter"></i></span>
+      <button id="slowCancel" type="button" hidden>Keep playing</button>
     </div>
     <div id="flash"></div>
     <div id="tapHint">Tap to float up! Fly through the gaps!</div>
@@ -136,6 +142,8 @@
       gameEntryAllowed=true;
     })();
   </script>
+  <script>window.SLOW_HELP={phase:"fly",action:"slow the hedges",earned:"Slow hedges!",eligible:function(){return !falling.on;}};</script>
+  <script src="/arcade-speech-help.js"></script>
   <script>
     if(gameEntryAllowed){
     var $=function(id){return document.getElementById(id);};
@@ -154,7 +162,7 @@
     var SETTLE_MS=200, QUIET_MS=900, quietUntil=0, micClosedAt=-1e9;
     var rv={st:null,pending:0,gen:0,raf:0,t:0,ctx:null,src:null,floor:-1};   // floor: the room's quiet level, measured once per page (see listenFor)
     function sfx(n){
-      if(rv.st) return;
+      if(rv.st||slowTurn) return;
       if(rv.pending){ setTimeout(function(){ sfx(n); },60); return; }
       var wait=micClosedAt+SETTLE_MS-performance.now();
       if(wait>0){ quietUntil=Math.max(quietUntil,performance.now()+wait+QUIET_MS); setTimeout(function(){ sfx(n); },wait); return; }
@@ -259,6 +267,7 @@
     // quiet-mic suites open the card through it.
     function crash(){ sayCard(); }
     function doRevive(){
+      if(slowTurn){finishSlowKeys(true);return;}
       reviveWait=false; REV--; hud();
       $("revOvl").classList.remove("show");
       // the mic has just closed: sfx() holds this chime SETTLE_MS
@@ -314,33 +323,37 @@
     function cloudShape(x,y,w){ ctx.beginPath(); ctx.ellipse(x,y,w*0.5,w*0.16,0,0,7); ctx.ellipse(x-w*0.22,y-w*0.08,w*0.2,w*0.14,0,0,7); ctx.ellipse(x+w*0.12,y-w*0.12,w*0.24,w*0.17,0,0,7); ctx.fill(); }
     function star5(x,y,r){ ctx.beginPath(); for(var k=0;k<10;k++){ var rr2=k%2?r*0.45:r, a=-Math.PI/2+k*Math.PI/5; ctx.lineTo(x+Math.cos(a)*rr2,y+Math.sin(a)*rr2); } ctx.closePath(); ctx.fill(); }
     function draw(){
-      var now=performance.now(), dt=Math.min(100,now-lastT), i; lastT=now;
+      var now=performance.now(), dt=document.hidden?0:Math.min(100,now-lastT), i; lastT=now;
+      if(playing&&phase==="fly"&&slowMs>0){slowMs=Math.max(0,slowMs-dt);if(!slowMs)$("slowStatus").textContent="Tap Echo to slow the hedges";}
+      paintSlowKeys();
+      var moving=playing&&!document.hidden,pace=phase==="fly"?slowFactor():1;
+      if(slowTurn)mercyT+=dt;
       ctx.clearRect(0,0,W,H);
       // The countryside already contains painted clouds; keep its open sky
       // clear so the balloon and next safe gap remain easy to read.
       // the next hedge on the leg's beat; the leg ends when its gaps are flown
-      if(playing&&phase==="fly"&&!falling.on){
-        gateMs+=dt;
+      if(moving&&phase==="fly"&&!falling.on){
+        gateMs+=dt*pace;
         var toSpawn=LEGS[leg].goal-legGot-gates.filter(function(g){ return !g.passed; }).length;
         if(gateMs>=gateEvery&&toSpawn>0){ spawnGate(); gateMs=0; }
         if(legGot>=LEGS[leg].goal) endLeg();
       }
       for(i=gates.length-1;i>=0;i--){ var g=gates[i];
-        g.x-=gspeed;   // the hedges drift on by, even while the balloon rests
+        g.x-=moving?gspeed*pace:0;   // the hedges drift on by, even while the balloon rests
         if(g.x<-90){ gates.splice(i,1); continue; }
         var topH=g.cy-gapH/2, botY=g.cy+gapH/2;
         paintHedge(g.x-COLW/2,-12,COLW,topH+12,false);
         paintHedge(g.x-COLW/2,botY,COLW,H-botY+12,true);
         // a star floats in the gap: fly through it to catch it
         if(g.star&&!g.got){ ctx.fillStyle=g.gold?"#ffd21c":"#fff6b8"; if(g.gold){ ctx.globalAlpha=0.5+0.5*Math.sin(now/120); ctx.beginPath(); ctx.arc(g.x,g.cy,24,0,7); ctx.fill(); ctx.globalAlpha=1; ctx.fillStyle="#ffd21c"; } star5(g.x,g.cy,g.gold?16:12);
-          if(Math.abs(g.x-px)<26&&Math.abs(g.cy-py)<46){ g.got=true; score+=g.gold?3:1; $("score").textContent=score; sfx(g.gold?"reward":"star"); if(g.gold){ flash("GOLDEN STAR! +3"); echoT=now; }
+          if(moving&&Math.abs(g.x-px)<26&&Math.abs(g.cy-py)<46){ g.got=true; score+=g.gold?3:1; $("score").textContent=score; sfx(g.gold?"reward":"star"); if(g.gold){ flash("GOLDEN STAR! +3"); echoT=now; }
             for(var k=0;k<10;k++){ var a=Math.random()*6.28; sparks.push({x:g.x,y:g.cy,vx:Math.cos(a)*2.5,vy:Math.sin(a)*2.5,life:1,c:g.gold?"#ffd21c":"#fff6b8"}); } } }
-        if(!g.passed && g.x<px-COLW/2){ g.passed=true; legGot++; score++; $("score").textContent=score; hud(); if(legGot%3===0) echoT=now; }
-        if(phase==="fly"&&!falling.on && now-mercyT>900 && Math.abs(g.x-px)<(COLW/2+22) && (py<topH+22||py>botY-22)) bump(g);
+        if(moving&&!g.passed && g.x<px-COLW/2){ g.passed=true; legGot++; score++; $("score").textContent=score; hud(); if(legGot%3===0) echoT=now; }
+        if(moving&&phase==="fly"&&!falling.on && now-mercyT>900 && Math.abs(g.x-px)<(COLW/2+22) && (py<topH+22||py>botY-22)) bump(g);
       }
       // the cloud rest, or the landing, floats up under the balloon
-      if(landing){ landing.y+=(landing.ty-landing.y)*0.05; ctx.fillStyle="#ffffff"; cloudShape(px+10,landing.y+40,landing.big?W*0.9:W*0.5); }
-      if(!falling.on){
+      if(landing){ if(moving)landing.y+=(landing.ty-landing.y)*0.05; ctx.fillStyle="#ffffff"; cloudShape(px+10,landing.y+40,landing.big?W*0.9:W*0.5); }
+      if(moving&&!falling.on){
         if(phase==="fly"){ vy=Math.min(VMAX,vy+G); py+=vy;
           if(py<44){ py=44; vy=0; }
           if(py>H-120){ py=H-120; vy=FLAP*0.6; } }   // soft bounce off the ground — no floor deaths
@@ -367,28 +380,28 @@
       if(ECHO.complete&&ECHO.naturalWidth){ var hp=(now-echoT)/700, ey=hp>=0&&hp<1?-Math.sin(hp*Math.PI)*22:Math.sin(now/420)*6, es=Math.min(56,W*0.13);
         ctx.drawImage(ECHO,px-es*1.9,py-es*1.6+ey,es,es*1.07); }
       // stars caught, and the landing's fireworks
-      for(i=sparks.length-1;i>=0;i--){ var s=sparks[i]; s.x+=s.vx; s.y+=s.vy; s.vy+=0.05; s.life-=0.02; if(s.life<=0){ sparks.splice(i,1); continue; }
+      for(i=sparks.length-1;i>=0;i--){ var s=sparks[i]; if(moving){s.x+=s.vx; s.y+=s.vy; s.vy+=0.05; s.life-=0.02;} if(s.life<=0){ sparks.splice(i,1); continue; }
         ctx.globalAlpha=Math.min(1,s.life); ctx.fillStyle=s.c; ctx.beginPath(); ctx.arc(s.x,s.y,3,0,7); ctx.fill(); ctx.globalAlpha=1; }
-      requestAnimationFrame(playing?draw:function(){});
+      requestAnimationFrame((playing||slowTurn)?draw:function(){});
     }
     function rr(x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
-    startLeg(0); draw();
+    startLeg(0); requestAnimationFrame(draw);
 
-    // ── "Say your sound to keep playing": the only time this game listens ──
+    // ── Shared short listening path for checkpoints and sound-powered help ──
     // (24 Sep 2026) STAR MODE is gone. It held the mic open for the whole
     // game so a shout could fire a power-up, which kept an iPhone in
     // phone-call audio from the first frame to the last. The mic now opens
-    // only while the keep-playing card shows, after the quiet window above,
-    // and closes before the revive chime. Loudness and sound-shape numbers
-    // only: nothing is recorded, nothing leaves the device, and a revive is
-    // play, never practice data.
+    // only for checkpoints or a requested help turn, after the quiet window
+    // above, and closes before a chime. Native recognition supplements the
+    // sound-shape check for help turns when available; audio stays on device.
+    // These gameplay turns never become practice data.
     var SND="R", SAYTXT="rrrr", CAN_LISTEN=!!(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia);
     (function(){
       var snd=""; try{ snd=sessionStorage.getItem("sona.boost.sound")||""; }catch(e){}
       if(!snd){ try{ snd=((S&&S.getProfile&&S.getProfile().focusSounds)||["R"])[0]; }catch(e){ snd="R"; } }
       SND=String(snd).toUpperCase(); SAYTXT=(S&&S.soundSay)?S.soundSay(SND):"rrrr";
     })();
-    function listenNote(t){ try{ $("revListen").textContent=t; }catch(e){} }
+    function listenNote(t){ try{ $("revListen").textContent=t;if(slowTurn&&!slowTurn.finishing)$("slowStatus").textContent=t; }catch(e){} }
     function closeReviveMic(){
       rv.gen++; clearTimeout(rv.t); if(rv.raf)cancelAnimationFrame(rv.raf); rv.raf=0;
       try{ if(rv.src)rv.src.disconnect(); }catch(e){} rv.src=null;
@@ -411,11 +424,19 @@
         // the card closed (or the page hid) while the phone was asking: this
         // stream is already late, so it goes straight back
         if(gen!==rv.gen||!reviveWait||document.hidden){ try{ st.getTracks().forEach(function(t){t.stop();}); }catch(e){} micClosedAt=performance.now(); askAgain(); return; }
-        rv.st=st; listenFor(st,gen);
+        rv.st=st;
+        if(slowTurn){
+          var turn=slowTurn;
+          try{turn.native=Promise.resolve(S.speechStart?S.speechStart({words:[SAYTXT],maxMs:6500}):false);}catch(e){turn.native=Promise.resolve(false);}
+          turn.native=turn.native.then(function(v){turn.nativeSettled=true;turn.nativeStarted=!!v;return v;},function(){turn.nativeSettled=true;return false;});
+          turn.timer=setTimeout(function(){if(slowTurn===turn)finishSlowKeys(false,"Tap Echo to try again");},6500);
+        }
+        listenFor(st,gen);
       }).catch(function(){
         rv.pending--;
         // a request cut short by the page hiding asks again on the way back
         if(gen!==rv.gen||!reviveWait||document.hidden){ askAgain(); return; }
+        if(slowTurn){finishSlowKeys(false,"Microphone is off");return;}
         // no microphone: the card can't hear anyone, so the round ends kindly
         reviveWait=false; $("revOvl").classList.remove("show"); endRound();
       });
@@ -445,7 +466,7 @@
         if(rv.ctx.state==="suspended") rv.ctx.resume();
         rv.src=rv.ctx.createMediaStreamSource(st); an=rv.ctx.createAnalyser(); an.fftSize=512; rv.src.connect(an);
         td=new Uint8Array(an.fftSize); fd=new Uint8Array(an.frequencyBinCount); binHz=rv.ctx.sampleRate/an.fftSize;
-      }catch(e){ closeReviveMic(); reviveWait=false; $("revOvl").classList.remove("show"); endRound(); return; }
+      }catch(e){ if(slowTurn){finishSlowKeys(false,"Microphone unavailable");return;} closeReviveMic(); reviveWait=false; $("revOvl").classList.remove("show"); endRound(); return; }
       // family check: the burst must SOUND like the target's family (voiced
       // vs hiss) to fire — a scream or an S can't revive an R kid. Shape
       // numbers only; nothing recorded (see Sona.frameShape).
@@ -472,7 +493,15 @@
           for(var j=0;j<heard.length;j++){ var f=heard[j];
             if(f.r>thr){ voiced++;
               if(f.s){ if(!shp)shp={m:0,fm:0,hm:0}; shp.m+=f.s.m; shp.fm+=f.s.fm; shp.hm+=f.s.hm; }
-              if(voiced>=6){ if(!famOK(shp)){ voiced=0; shp=null; } else { closeReviveMic(); doRevive(); return; } } }
+              if(voiced>=6){ if(!famOK(shp)){ voiced=0; shp=null; } else {
+                if(slowTurn){
+                  if(!slowTurn.heardAt)slowTurn.heardAt=now;
+                  // Give on-device recognition the rest of a short utterance;
+                  // the first six voiced frames alone can be only its onset.
+                  if(now-slowTurn.heardAt<550){rv.raf=requestAnimationFrame(tick);return;}
+                }
+                closeReviveMic(); doRevive(); return;
+              } } }
             else { voiced=0; shp=null; } }
         }
         rv.raf=requestAnimationFrame(tick);
@@ -480,12 +509,14 @@
     }
     // lock/app-switch fires visibilitychange, NOT pagehide — a mic left open
     // there stays lit in a pocket. Coming back to the card listens again.
-    if(window.Sona&&Sona.onBackground) Sona.onBackground(closeReviveMic); else window.addEventListener("pagehide",closeReviveMic);
-    document.addEventListener("visibilitychange",function(){ if(!document.hidden&&reviveWait) openReviveMic(); });
+    function speechBackground(){if(slowTurn){slowTurn.cancelled=true;finishSlowKeys(false);}else closeReviveMic();}
+    if(window.Sona&&Sona.onBackground) Sona.onBackground(speechBackground); else window.addEventListener("pagehide",speechBackground);
+    document.addEventListener("visibilitychange",function(){ if(!document.hidden&&reviveWait&&!slowTurn) openReviveMic(); });
 
     // ---- round over ----
     function bankAndContinue(){ S.finishGameTurn("glide",score); location.href="/charge.html?daily=1&banked="+score; }
     function endRound(){
+      if(slowTurn){slowTurn.cancelled=true;return finishSlowKeys(false).then(endRound);}
       closeReviveMic();
       if(window.__ended)return; window.__ended=true;
       S.finishGameTurn("glide",isDaily?score:null);
@@ -522,7 +553,11 @@
     }
     $("endCharge").onclick=function(){ location.href=isDaily?"/charge.html?daily=1":(S.gameAccess("slice").allowed?"/charge.html?game=arcade-slice.html":"/activities.html"); };
     $("endHome").onclick=function(){ S.finishGameTurn("glide"); location.href="/today.html#play"; };
-    $("close").onclick=function(){ closeReviveMic(); S.finishGameTurn("glide"); if(playing){ playing=false; } if(isDaily){ bankAndContinue(); return; } location.href="/today.html#play"; };
+    $("close").onclick=function(){
+      if(window.__speechLeaving)return;window.__speechLeaving=true;
+      function leave(){closeReviveMic();playing=false;S.finishGameTurn("glide");if(isDaily){bankAndContinue();return;}location.href="/today.html#play";}
+      if(slowTurn){slowTurn.cancelled=true;finishSlowKeys(false).then(leave);}else leave();
+    };
     }
   </script>
 </body>

@@ -72,10 +72,16 @@
   </style>
   <link href="/crafted-games.css" rel="stylesheet">
   <link href="/crafted-stack.css" rel="stylesheet">
+  <link href="/arcade-speech-help.css" rel="stylesheet">
 </head>
 <body data-crafted="stack">
   <div id="app">
     <canvas id="cv"></canvas>
+    <div id="slowControl" hidden>
+      <button id="slowKeys" type="button"><img src="/assets/crafted/echo-welcome.webp" alt=""><span id="slowSound">rrrr</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v5a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z"/></svg></button>
+      <p id="slowStatus" role="status">Tap Echo to slow the block</p><span class="slowTrack"><i id="slowMeter"></i></span>
+      <button id="slowCancel" type="button" hidden>Keep playing</button>
+    </div>
     <div id="top">
       <button id="close" aria-label="Back to games">✕</button>
       <div class="hudpill"><svg viewBox="0 0 64 64" style="width:19px;height:19px;vertical-align:-4px"><rect x="8" y="19" width="48" height="27" rx="7" fill="#69db7c"/><rect x="8" y="19" width="48" height="9" rx="4.5" fill="#85e099"/><circle cx="18" cy="26" r="2.5" fill="#fff" opacity=".85"/></svg> <b id="score">0</b></div>
@@ -122,6 +128,8 @@
 
 
   <script src="/sona.js"></script>
+  <script>window.SLOW_HELP={phase:"floor",action:"slow the block",earned:"Slow blocks!",eligible:function(){return !dropping;}};</script>
+  <script src="/arcade-speech-help.js"></script>
   <script>
     // Check access before any game resources start. The earned speech token
     // remains a separate requirement; a catalog unlock never creates one.
@@ -154,7 +162,7 @@
     var SETTLE_MS=200, QUIET_MS=900, quietUntil=0, micClosedAt=-1e9;
     var rv={st:null,pending:0,gen:0,raf:0,t:0,ctx:null,src:null,floor:-1};   // floor: the room's quiet level, measured once per page (see listenFor)
     function sfx(n){
-      if(rv.st) return;
+      if(rv.st||slowTurn) return;
       if(rv.pending){ setTimeout(function(){ sfx(n); },60); return; }
       var wait=micClosedAt+SETTLE_MS-performance.now();
       if(wait>0){ quietUntil=Math.max(quietUntil,performance.now()+wait+QUIET_MS); setTimeout(function(){ sfx(n); },wait); return; }
@@ -207,7 +215,7 @@
     }
     nextBlock(stack[stack.length-1].w);
     function startFloor(i){
-      floor=i; floorGot=0; phase="floor"; missRun=0; speed=speed0*FLOORS[i].speed;
+      slowMs=0; $("slowStatus").textContent="Tap Echo to slow the block"; floor=i; floorGot=0; phase="floor"; missRun=0; speed=speed0*FLOORS[i].speed;
       nextBlock(Math.max(MINW,stack[stack.length-1].w)); hud();
       banner("Floor "+(i+1),"Stack "+FLOORS[i].goal+" blocks!");
     }
@@ -255,6 +263,7 @@
     // the quiet-mic suites open the card through it.
     function crash(){ sayCard(); }
     function doRevive(){
+      if(slowTurn){finishSlowKeys(true);return;}
       reviveWait=false; REV--; hud();
       $("revOvl").classList.remove("show");
       // the mic has just closed: sfx() holds this chime SETTLE_MS
@@ -354,13 +363,13 @@
       setTimeout(endRound,1800);
     }
     cv.addEventListener("pointerdown",function(){ if(phase==="finale") launch(); else drop(); });
-    window.addEventListener("keydown",function(e){ if(e.key===" "||e.key==="Enter"){ if(phase==="finale") launch(); else drop(); } });
+    window.addEventListener("keydown",function(e){ if(e.target&&e.target.closest&&e.target.closest("button"))return; if(e.key===" "||e.key==="Enter"){ if(phase==="finale") launch(); else drop(); } });
 
-    // ── "Say your sound to keep playing": the only time this game listens ──
+    // ── Short speech turns: between rounds and when Echo offers a slow-down ──
     // (24 Sep 2026) STAR MODE is gone. It held the mic open for the whole
     // game so a shout could fire a power-up, which kept an iPhone in
     // phone-call audio from the first frame to the last. The mic now opens
-    // only while the keep-playing card shows, after the quiet window above,
+    // only during a deliberate speech turn, after the quiet window above,
     // and closes before the revive chime. Loudness and sound-shape numbers
     // only: nothing is recorded, nothing leaves the device, and a revive is
     // play, never practice data.
@@ -370,7 +379,7 @@
       if(!snd){ try{ snd=((S&&S.getProfile&&S.getProfile().focusSounds)||["R"])[0]; }catch(e){ snd="R"; } }
       SND=String(snd).toUpperCase(); SAYTXT=(S&&S.soundSay)?S.soundSay(SND):"rrrr";
     })();
-    function listenNote(t){ try{ $("revListen").textContent=t; }catch(e){} }
+    function listenNote(t){ try{ $("revListen").textContent=t;if(slowTurn&&!slowTurn.finishing)$("slowStatus").textContent=t; }catch(e){} }
     function closeReviveMic(){
       rv.gen++; clearTimeout(rv.t); if(rv.raf)cancelAnimationFrame(rv.raf); rv.raf=0;
       try{ if(rv.src)rv.src.disconnect(); }catch(e){} rv.src=null;
@@ -393,11 +402,19 @@
         // the card closed (or the page hid) while the phone was asking: this
         // stream is already late, so it goes straight back
         if(gen!==rv.gen||!reviveWait||document.hidden){ try{ st.getTracks().forEach(function(t){t.stop();}); }catch(e){} micClosedAt=performance.now(); askAgain(); return; }
-        rv.st=st; listenFor(st,gen);
+        rv.st=st;
+        if(slowTurn){
+          var turn=slowTurn;
+          try{turn.native=Promise.resolve(S.speechStart?S.speechStart({words:[SAYTXT],maxMs:6500}):false);}catch(e){turn.native=Promise.resolve(false);}
+          turn.native=turn.native.then(function(v){turn.nativeSettled=true;turn.nativeStarted=!!v;return v;},function(){turn.nativeSettled=true;return false;});
+          turn.timer=setTimeout(function(){if(slowTurn===turn)finishSlowKeys(false,"Tap Echo to try again");},6500);
+        }
+        listenFor(st,gen);
       }).catch(function(){
         rv.pending--;
         // a request cut short by the page hiding asks again on the way back
         if(gen!==rv.gen||!reviveWait||document.hidden){ askAgain(); return; }
+        if(slowTurn){finishSlowKeys(false,"Microphone is off");return;}
         // no microphone: the card can't hear anyone, so the round ends kindly
         reviveWait=false; $("revOvl").classList.remove("show"); endRound();
       });
@@ -427,7 +444,7 @@
         if(rv.ctx.state==="suspended") rv.ctx.resume();
         rv.src=rv.ctx.createMediaStreamSource(st); an=rv.ctx.createAnalyser(); an.fftSize=512; rv.src.connect(an);
         td=new Uint8Array(an.fftSize); fd=new Uint8Array(an.frequencyBinCount); binHz=rv.ctx.sampleRate/an.fftSize;
-      }catch(e){ closeReviveMic(); reviveWait=false; $("revOvl").classList.remove("show"); endRound(); return; }
+      }catch(e){ if(slowTurn){finishSlowKeys(false,"Microphone unavailable");return;} closeReviveMic(); reviveWait=false; $("revOvl").classList.remove("show"); endRound(); return; }
       // family check: the burst must SOUND like the target's family (voiced
       // vs hiss) to fire — a scream or an S can't revive an R kid. Shape
       // numbers only; nothing recorded (see Sona.frameShape).
@@ -454,7 +471,15 @@
           for(var j=0;j<heard.length;j++){ var f=heard[j];
             if(f.r>thr){ voiced++;
               if(f.s){ if(!shp)shp={m:0,fm:0,hm:0}; shp.m+=f.s.m; shp.fm+=f.s.fm; shp.hm+=f.s.hm; }
-              if(voiced>=6){ if(!famOK(shp)){ voiced=0; shp=null; } else { closeReviveMic(); doRevive(); return; } } }
+              if(voiced>=6){ if(!famOK(shp)){ voiced=0; shp=null; } else {
+                if(slowTurn){
+                  if(!slowTurn.heardAt)slowTurn.heardAt=now;
+                  // Give on-device recognition the rest of a short utterance;
+                  // the first six voiced frames alone can be only its onset.
+                  if(now-slowTurn.heardAt<550){rv.raf=requestAnimationFrame(tick);return;}
+                }
+                closeReviveMic(); doRevive(); return;
+              } } }
             else { voiced=0; shp=null; } }
         }
         rv.raf=requestAnimationFrame(tick);
@@ -462,8 +487,9 @@
     }
     // lock/app-switch fires visibilitychange, NOT pagehide — a mic left open
     // there stays lit in a pocket. Coming back to the card listens again.
-    if(window.Sona&&Sona.onBackground) Sona.onBackground(closeReviveMic); else window.addEventListener("pagehide",closeReviveMic);
-    document.addEventListener("visibilitychange",function(){ if(!document.hidden&&reviveWait) openReviveMic(); });
+    function speechBackground(){if(slowTurn){slowTurn.cancelled=true;finishSlowKeys(false);}else closeReviveMic();}
+    if(window.Sona&&Sona.onBackground) Sona.onBackground(speechBackground); else window.addEventListener("pagehide",speechBackground);
+    document.addEventListener("visibilitychange",function(){ if(!document.hidden&&reviveWait&&!slowTurn) openReviveMic(); });
 
     var WOOD={}, WOOD_COLORS={"#ff6b6b":"coral","#ff8787":"coral","#ffa94d":"orange","#ffb86b":"orange","#ffd43b":"yellow","#ffe066":"yellow","#69db7c":"green","#85e099":"green","#4dabf7":"blue","#9775fa":"purple","#b197fc":"purple","#f783ac":"pink","#ffd21c":"gold"};
     ["coral","orange","yellow","green","blue","purple","pink","gold"].forEach(function(name){var im=new Image();im.src="/assets/crafted/stack-block-"+name+"-v2.webp";WOOD[name]=im;});
@@ -499,6 +525,11 @@
     var lastT=performance.now();
     function draw(){
       var now=performance.now(), dt=Math.min(100,now-lastT), i; lastT=now;
+      // Keep the exact board still while Echo models and listens; no game
+      // time, falling object or earned help is spent while the page is hidden.
+      if(document.hidden||slowTurn){paintSlowKeys();requestAnimationFrame(draw);return;}
+      if(playing&&phase==="floor"&&slowMs>0){slowMs=Math.max(0,slowMs-dt);if(!slowMs)$("slowStatus").textContent="Tap Echo to slow the block";}
+      paintSlowKeys();
       ctx.clearRect(0,0,W,H);
       // The village painting sits beneath the transparent canvas.
       if(finaleDone){ ctx.strokeStyle="#fff"; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(W*0.82+6,H*0.14-24); ctx.lineTo(W*0.82+6,H*0.14-46); ctx.stroke(); ctx.fillStyle="#ff5c5c"; ctx.beginPath(); ctx.moveTo(W*0.82+6,H*0.14-46); ctx.lineTo(W*0.82+24,H*0.14-40); ctx.lineTo(W*0.82+6,H*0.14-34); ctx.closePath(); ctx.fill(); }
@@ -524,7 +555,7 @@
         ctx.globalAlpha=pf.life*0.5; ctx.fillStyle="#fff4d6"; ctx.beginPath(); ctx.arc(pf.x,pf.y,pf.r,0,7); ctx.fill(); ctx.globalAlpha=1; }
       // moving block
       if(playing&&phase==="floor"&&cur){
-        cur.x+=cur.dir*speed;
+        cur.x+=cur.dir*speed*slowFactor();
         if(cur.x<-8){cur.x=-8;cur.dir=1;} if(cur.x+cur.w>W+8){cur.x=W+8-cur.w;cur.dir=-1;}
         var landingY=blockY(stack.length), gap=Math.min(76,H*.095), y=landingY-gap;
         // A dotted plumb line and warm landing glow show exactly where a tap
@@ -571,6 +602,7 @@
 
     function bankAndContinue(){ S.finishGameTurn("stack",score); location.href="/charge.html?daily=1&banked="+score; }
     function endRound(){
+      if(slowTurn){slowTurn.cancelled=true;return finishSlowKeys(false).then(endRound);}
       closeReviveMic();
       if(window.__ended)return; window.__ended=true;
       S.finishGameTurn("stack",isDaily?score:null);
@@ -609,7 +641,11 @@
     $("endCharge").onclick=function(){ location.href=isDaily?"/charge.html?daily=1":(S.gameAccess("run").allowed?"/charge.html?game=arcade-run.html":"/activities.html"); };
     $("endAgain").onclick=function(){ location.reload(); };
     $("endHome").onclick=function(){ S.finishGameTurn("stack"); location.href="/today.html#play"; };
-    $("close").onclick=function(){ closeReviveMic(); S.finishGameTurn("stack"); if(isDaily){ bankAndContinue(); return; } location.href="/today.html#play"; };
+    $("close").onclick=function(){
+      if(window.__speechLeaving)return;window.__speechLeaving=true;
+      function leave(){closeReviveMic();playing=false;S.finishGameTurn("stack");if(isDaily){bankAndContinue();return;}location.href="/today.html#play";}
+      if(slowTurn){slowTurn.cancelled=true;finishSlowKeys(false).then(leave);}else leave();
+    };
     }
   </script>
 </body>

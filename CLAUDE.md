@@ -601,6 +601,9 @@ note: `micquietgamestest` pins its loudness to the Sound setting.
 
 **Piano slow keys** (Travis, 28 Sep 2026: “inside the game ... they say the sound to slow down the keys”). The child taps Echo on the piano board. The current song holds while Echo speaks a short instruction and plays the existing recorded sound. A voiced, family-checked attempt earns eight active gameplay seconds at 55% speed, including the arrival of new tiles. Native Apple recognition, when available, uses the existing isolation verdict to reject a clear unrelated word; unknown keeps the existing sound-shape fallback. Tapping, silence, cancellation and timeout earn nothing. Both microphone owners must close before music or navigation resumes. The between-song prompts remain. These in-game attempts are play, not SLP practice data. `tests/tilesspeechtest.mjs` checks the mechanic and interruption cleanup.
 
+**Sound-powered help across live games** (28 Sep 2026): Fruit Slice slows fruit motion and spawning, Block Stacker slows the moving block, Sound Sprint slows its course and progress, and Flappy Glide slows hedges and their arrival while preserving balloon control. Each uses `arcade-speech-help.js`/`.css`: tap Echo, hear the existing target recording, then a qualifying attempt earns eight active seconds at 55% speed. The scene holds during speech. Between-round prompts remain. Permission/native cleanup completes before resuming audio or navigating. No gameplay attempts enter practice records. Feed Echo now reveals the matching picture after a voice burst with a compatible broad sound family; it remains a participation hint, not a pronunciation grade. Hoops already requires a word to earn each shot. `arcadespeechhelptest` drives the four new helpers; `micquietgamestest` covers the Feed hint. Books and parked games are outside this change.
+
+
 **Sound Sprint is the same round, as a race** (27 Sep 2026): the park, the
 beach and the forest, a checkpoint between each with the say-it card ("Say
 “rrrr” to run to the beach!"), and a finish line that always ends the race in
@@ -683,8 +686,9 @@ are enforced in code and pinned by tests — change them only on Rachel's say-so
   sentence's own words). A grown-up's "say rabbit" and a sentence's other
   words ("Here is a") are set aside first. The plugin was written in August
   but never reached the app until `scripts/install-ios-speech.py`; the website
-  cannot use it and still judges by sound shape, and the games do not use it
-  yet. Which errors count as close (`HEAR_SUBS`) is Rachel's call;
+  cannot use it and still judges by sound shape. The arcade slowdown turns
+  now use it when available; older checkpoint and Feed/Hoops checks remain
+  sound-shape based. Which errors count as close (`HEAR_SUBS`) is Rachel's call;
   `heartest` pins the rules.
 - **Cueing** — TODO, Rachel to specify. Her highest-value ask was the
   "sssoup" prompt: model the target sound stretched and attached to the word
