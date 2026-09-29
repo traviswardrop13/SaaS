@@ -411,7 +411,11 @@
     // Clinicians keep their separate browser-only setup.
     var ORDER_PARENT = ["welcome","name","sounds","mic"];
     var ORDER_SLP    = ["welcome","name","sounds","slp","email"];
-    var ORDER = ORDER_PARENT;
+    // A reload mid-setup restores draft.role, so the order must follow it.
+    // Always starting on ORDER_PARENT sent a clinician down the family path:
+    // no email step, so no account and no sign-in link, yet finish() still
+    // saved role "slp". idx 0 is "welcome" in both, so they resume there.
+    var ORDER = (!nativeFamily && draft.role === "slp") ? ORDER_SLP : ORDER_PARENT;
     var BUBBLES = {
       welcome: "Hi! I'm Echo!",
       role:    "Who am I meeting?",

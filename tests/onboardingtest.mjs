@@ -137,6 +137,28 @@ await scenario('Done closes typing without accepting setup choices',async()=>{
  }finally{await context.close();}
 });
 
+// A reload restores draft.role; the order has to follow it or a clinician
+// finishes on the family path with no email step and no account.
+async function walk(page){const seen=[];for(let i=0;i<8;i++){const s=await page.evaluate(()=>document.body.dataset.setupScreen);seen.push(s);if(s==='email'||s==='mic')break;await next(page);}return seen;}
+await scenario('clinician setup survives a reload',async()=>{
+ const {context,page,errors,requests}=await fresh();try{
+  await page.locator('#slpLink').click();await page.locator('#obName').fill('Milo');await next(page);
+  await page.reload();
+  ok('a reloaded clinician draft resumes on the clinician order at welcome',await page.evaluate(()=>draft.role==='slp'&&ORDER===ORDER_SLP&&document.body.dataset.setupScreen==='welcome'&&/Which child/.test(document.querySelector('[data-step="name"] .qh').textContent)));
+  const seen=await walk(page);
+  ok('going on reaches the clinician email step, never Meet Rachel or the family mic',seen.at(-1)==='email'&&!seen.includes('rachel')&&!seen.includes('mic')&&await page.locator('[data-step="rachel"].on,[data-step="mic"].on').count()===0,seen);
+  await page.locator('#obEmail').fill('clinician@example.com');await next(page);await atHandoff(page);
+  ok('the reloaded clinician still gets an account and a sign-in email',await page.evaluate(()=>Sona.getProfile().role==='slp'&&Sona.getProfile().childName==='Milo')&&requests.filter(r=>r.method==='POST'&&new URL(r.url).pathname==='/api/slp/auth/request').length===1);
+  clean('clinician reload',errors);
+ }finally{await context.close();}
+ const native=await fresh({native:true});try{
+  await native.page.evaluate(()=>localStorage.setItem('sona.obdraft.v1',JSON.stringify({role:'slp',childName:'Milo'})));await native.page.reload();
+  ok('a native reload with a clinician draft stays on the family order',await native.page.evaluate(()=>draft.role==='parent'&&ORDER===ORDER_PARENT));
+  const seen=await walk(native.page);ok('native setup never reaches the clinician email step',seen.at(-1)==='mic'&&!seen.includes('email')&&!seen.includes('slp'),seen);
+  clean('native clinician draft',native.errors);
+ }finally{await native.context.close();}
+});
+
 // Freeze the step-entry clock so a quick Done press happens before any delayed
 // autofocus. A stale timer must not reopen the keyboard after it was dismissed.
 await scenario('quick Done does not reopen the name keyboard',async()=>{
