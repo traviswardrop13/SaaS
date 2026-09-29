@@ -614,7 +614,6 @@
       if(!sayLine._cued && CUESHORT && ITEM.level==="isolation"){ sayLine._cued=true; return "Ready? "+CUESHORT+", and "+ask+", "+times+"."; }
       return "Ready? "+ask.charAt(0).toUpperCase()+ask.slice(1)+", "+times+".";
     }
-    // Prefer a real human recording of the whole prompt (Rachel!) if present.
     var CUETIP=""; try{ CUETIP=(S&&S.cue)?(S.cue(SOUND).tip||""):""; }catch(e){}
     // compact articulation cue: first clause only, no similes, no sound demos
     var CUESHORT=(CUETIP.split("\u2014")[0].split(" like ")[0].split(",")[0]||"").trim().replace(/[.!]+$/,"");
@@ -628,18 +627,23 @@
     // voice (/coach/say-echo/<SOUND>.mp3, the July wording) — every other line
     // came from v4 Turbo, so that one line sounded like someone else. Now v4
     // Turbo says every word, and where a line on a sound round names the
-    // target sound ("make your R sound") her recording of that ONE sound —
-    // cut from her re-voiced demo by tools/soundclips.mjs — plays in the
-    // letter's place: "…and make your [rrrr] sound, five times." It covers
-    // every line that names the sound: the first prompt, a tap on Echo, the
-    // turtle, and Echo's idea when it steps down to the sound. Her raw take
-    // (/coach/say/) never plays. If the recording or either half of the line
-    // cannot be had, the whole line is spoken as before, letter and all.
+    // target sound ("make your R sound") ONE recorded take of that sound
+    // plays in the letter's place: "…and make your [rrrr] sound, five times."
+    // The takes are built by tools/soundclips.mjs: voiced sounds are Rachel's
+    // re-voiced takes; voiceless ones are v4 Turbo's own, because the voice
+    // changer buzzed them (the tool has the measurements). It covers every
+    // line that names the sound: the first prompt, a tap on Echo, the turtle,
+    // and Echo's idea when it steps down to the sound. Her raw take
+    // (/coach/say/) never plays. If the take is missing, the whole line is
+    // spoken by TTS as before, letter and all; if the voice service is down,
+    // her whole July line plays, as it did before.
     function soundSlot(text){
       if(!HUMANCLIPS||!ITEM||ITEM.level!=="isolation"||typeof text!=="string")return null;
       var mark="your "+soundName()+" sound",i=text.indexOf(mark);
       if(i<0)return null;
-      return {before:text.slice(0,i+4),clip:"/coach/say-echo/"+SOUND+"-sound.wav",after:text.slice(i+mark.length-5).trim()};
+      // whole: her full July line, played only if the voice service is down
+      // (it needs no TTS, and it is what this round played before).
+      return {before:text.slice(0,i+4),clip:"/coach/say-echo/"+SOUND+"-sound.wav",after:text.slice(i+mark.length-5).trim(),whole:"/coach/say-echo/"+SOUND+".mp3"};
     }
     function playPrompt(){
       if(mutedSpeech())return Promise.resolve();
@@ -801,7 +805,7 @@
       if(bytes&&keep)ttsPut(key,bytes,job);
       return bytes;
     }
-    // Rachel's recorded sound for a slot: a WAV tools/soundclips.mjs wrote at
+    // The recorded take for a slot: a WAV tools/soundclips.mjs wrote at
     // the rate /api/tts speaks (24 kHz, mono, 16-bit, a 44-byte header), so
     // its samples join Echo's words as they are. Anything else is refused,
     // and the line falls back to TTS whole.
@@ -816,15 +820,29 @@
         done(ok?b.slice(44):null);
       }).catch(function(){done(null);});
     });}
+    // Quiet (under −45 dBFS) trimmed from one end of a 24 kHz PCM clip,
+    // keeping 50 ms of it.
+    function trimQuiet(buf,atEnd){
+      var v=new DataView(buf),n=buf.byteLength>>1,keep=1200,floor=184,i;
+      if(atEnd){for(i=n-1;i>0&&Math.abs(v.getInt16(i*2,true))<floor;i--);return buf.slice(0,Math.min(n,i+1+keep)*2);}
+      for(i=0;i<n&&Math.abs(v.getInt16(i*2,true))<floor;i++);return buf.slice(Math.max(0,i-keep)*2);
+    }
     // One line, three pieces, played as ONE clip: Echo's words up to the
-    // sound, Rachel's sound, Echo's words after it. Everything is fetched
+    // sound, the recorded take, Echo's words after it. Everything is fetched
     // first and joined, so the line plays with no gaps, pauses and resumes as
     // one clip and slows as one for the turtle — and if any piece is missing,
     // nothing has been said yet and the whole line falls back to TTS.
+    // If her sound is here but the voice service is not (credits, an outage,
+    // a timeout), the answer is "voice-down": the caller plays her whole July
+    // line rather than ask the same failing service for the whole line too.
     async function playSlot(slot,slow,job){
       var parts=await Promise.all([speechBytes(slot.before,job),clipPcm(slot.clip,job),speechBytes(slot.after,job)]);
       if(!job.live()||parts.indexOf(AUDIO_CANCEL)>=0)return AUDIO_CANCEL;
+      if(parts[1]&&(!parts[0]||!parts[2]))return "voice-down";
       if(!parts[0]||!parts[1]||!parts[2])return null;
+      // Each half arrives with its own quiet lead-in and tail; left in, the
+      // sentence stops twice around her sound. Keep 50 ms either side.
+      parts[0]=trimQuiet(parts[0],true);parts[2]=trimQuiet(parts[2],false);
       var words=job.voiceEvent||{},line=new Uint8Array(parts[0].byteLength+parts[1].byteLength+parts[2].byteLength),at=0;
       parts.forEach(function(p){line.set(new Uint8Array(p),at);at+=p.byteLength;});
       job.voiceEvent={source:"human",cache:words.cache,model:words.model,revision:words.revision};
@@ -835,7 +853,7 @@
       if(slow){a.playbackRate=0.7;try{a.preservesPitch=true;a.mozPreservesPitch=true;a.webkitPreservesPitch=true;}catch(e){}}
       ttsBegin();cleanup(function(){ttsEnd();a.onended=null;a.onerror=null;try{a.pause();a.removeAttribute("src");a.load();}catch(e){}});
       // A guard against an element that never ends, not a budget: the longest
-      // recorded prompt (D, the whole line with the sound performed) runs 19 s.
+      // recorded line (D's July take, the voice-down fallback) runs 19 s.
       var timer=setTimeout(function(){done(null);},30000);cleanup(function(){clearTimeout(timer);});
       a.onended=function(){done(true);};a.onerror=function(){job.voiceReason="playback-blocked";done(null);};
       function started(){if(job.live())voiceDiagnostic(/^\/coach\/say-echo\//.test(url)?{source:"human"}:job.voiceEvent||{source:"server"});}
@@ -900,7 +918,10 @@
         if(audioBlocked())continue;
         var job=newAudioJob(),result=null;speaking=true;updateTurn();
         try{
-          if(packet.slot)result=await playSlot(packet.slot,packet.slow,job);
+          if(packet.slot){
+            result=await playSlot(packet.slot,packet.slow,job);
+            if(result==="voice-down")result=await playMedia(packet.slot.whole,packet.slow,job);
+          }
           if(result!==true&&result!==AUDIO_CANCEL){
             var bytes=await speechBytes(packet.text,job);
             if(bytes===AUDIO_CANCEL)result=AUDIO_CANCEL;
@@ -2011,8 +2032,9 @@
       // 🐢 IS AVAILABLE FROM THE FIRST TRY, NOT AS A CONSOLATION PRIZE.
       // showTurtle(true) used to live only inside the wrong-sound branch, so
       // the child who most needed to hear the model slowly had to fail first
-      // to discover the control existed. Nothing about the model changes —
-      // same clip, same 0.7x, same ttsBegin/ttsEnd speaker guard — so a
+      // to discover the control existed. The turtle replays the model's own
+      // line at 0.7x (on a sound round that includes Rachel's recorded sound,
+      // slowed with it), behind the same ttsBegin/ttsEnd speaker guard — so a
       // replay still cannot be counted as the child speaking, and saySlow's
       // own `if(speaking) return` means repeated taps cannot stack.
       showTurtle(true);

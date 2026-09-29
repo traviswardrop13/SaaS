@@ -4,6 +4,8 @@ import {createServer} from 'http';
 import {existsSync,readFileSync,statSync} from 'fs';
 import path from 'path';
 import {chromium,ROOT,launchOpts} from './_env.mjs';
+// Samples in her one R take (29 Sep 2026), for the joined-line length check.
+const R_TAKE=(readFileSync(new URL('../public/coach/say-echo/R-sound.wav',import.meta.url)).length-44)/2;
 const root=process.env.SONATEST_PUBLIC_ROOT||ROOT, origin='http://127.0.0.1:8197';
 const mime={html:'text/html',js:'text/javascript',css:'text/css',svg:'image/svg+xml',png:'image/png',webp:'image/webp',woff2:'font/woff2'};
 const server=createServer((req,res)=>{
@@ -43,7 +45,7 @@ function device(config){
   class Recorder{constructor(){this.state='inactive';this.mimeType='audio/webm';}start(){this.state='recording';}stop(){this.state='inactive';queueMicrotask(()=>{if(this.onstop)this.onstop();});}}
   window.MediaRecorder=Recorder;
   class Media{
-    constructor(){this.active=false;h.media.push(this);}play(){this.active=true;return Promise.resolve();}pause(){this.active=false;}removeAttribute(){}load(){}end(){this.active=false;if(this.onended)this.onended();}
+    constructor(src){this.src=src;this.active=false;h.media.push(this);}play(){this.active=true;return Promise.resolve();}pause(){this.active=false;}removeAttribute(){}load(){}end(){this.active=false;if(this.onended)this.onended();}
   }
   window.Audio=Media;
   speechSynthesis.getVoices=()=>[];
@@ -132,7 +134,9 @@ await scenario('human model and interruption',async()=>{
     ok('Echo says the words around the sound and never the letter',said.includes('Ready? Pull your tongue back and up, and make your')&&said.includes('sound, five times.')&&!said.some(t=>/make your R sound/.test(t)),said);
     ok('her whole recorded line never plays',await page.evaluate(()=>__pacing.media.length===0));
     const lens=await page.evaluate(()=>__pacing.bufLens.slice());
-    ok('the three pieces play as ONE clip: both halves and her one R',lens.length===1&&lens[0]>96000&&lens[0]<96000+24000*3,lens);
+    // Her R take plus both halves, each trimmed to 50 ms of quiet at the join
+    // (this fake voice sends silence, so the halves shrink to ~1,200 samples).
+    ok('the three pieces play as ONE clip: both halves and her one R',lens.length===1&&lens[0]>R_TAKE&&lens[0]<R_TAKE+48000*2+2400,{lens,R_TAKE});
     const target=await page.locator('#bTarget').innerText();
     await page.evaluate(()=>__pacing.background());await page.locator('#pauseOvl.show').waitFor();
     ok('pausing stops the line and withholds the child turn',await page.evaluate(()=>!__pacing.pcm.some(p=>p.active)&&!engineOn));
@@ -144,6 +148,17 @@ await scenario('human model and interruption',async()=>{
     await page.locator('#turtleBtn').click();await page.waitForFunction(()=>__pacing.media.some(m=>m.active));
     ok('the turtle slows the joined line as one clip, her sound included',await page.evaluate(()=>__pacing.media.length===1&&__pacing.media[0].playbackRate===0.7&&__pacing.diagnostics.filter(e=>e.source==='human').length>=3));
     clean('human model',errors);
+  }finally{await context.close();}
+});
+
+await scenario('the voice service is down: her whole July line plays',async()=>{
+  const {context,page,errors}=await fresh({human:true,server:false});try{
+    await page.waitForFunction(()=>__pacing.media.some(m=>m.active));
+    ok('with no voice service, her recording needs none: the whole July line plays',await page.evaluate(()=>__pacing.media.length===1&&/\/coach\/say-echo\/R\.mp3$/.test(__pacing.media[0].src)&&__pacing.voices.length===0));
+    ok('…and nothing asks the failing service for the whole line on top',await page.evaluate(()=>!__pacing.ttsTexts.includes('Ready? Pull your tongue back and up, and make your R sound, five times.')));
+    await page.evaluate(()=>__pacing.media[0].end());await childTurn(page);
+    ok('her line hands over to the child as the joined one does',/Your turn/.test(await status(page)));
+    clean('voice down',errors);
   }finally{await context.close();}
 });
 

@@ -144,7 +144,9 @@ for (const url of ["/charge.html?daily=1&sound=R", "/charge.html?game=arcade-sli
     // still reaches for the demos.
     const slice = readFileSync(ROOT + "/arcade-slice.html", "utf8");
     ok("practice, Fruit Slice and Coach Call play the re-voiced set", /"\/coach\/say-echo\/"\+SOUND\+"-sound\.wav"/.test(src) && /"\/coach\/say-echo\/"\+SND\+"-sound\.wav"/.test(slice) && /"\/coach\/say-echo\/"\+SOUND\+"-demo\.mp3"/.test(call));
-    ok("her whole July line no longer plays in practice", !/"\/coach\/say-echo\/"\+SOUND\+"\.mp3"/.test(src));
+    // Her whole July line is kept for ONE case: the voice service is down
+    // (it needs no TTS). It is never the prompt otherwise.
+    ok("her whole July line plays in practice only when the voice service is down", (src.match(/"\/coach\/say-echo\/"\+SOUND\+"\.mp3"/g) || []).length === 1 && /whole:"\/coach\/say-echo\/"\+SOUND\+"\.mp3"/.test(src) && /result==="voice-down"\)result=await playMedia\(packet\.slot\.whole/.test(src));
     // The cut sounds join Echo's PCM sample for sample, so the page refuses
     // anything but the route's own format: 24 kHz, mono, 16-bit, 44-byte header.
     const cuts = ["P", "B", "M", "N", "T", "D", "K", "G", "F", "V", "S", "Z", "SH", "CH", "J", "L", "R", "TH", "THV"].map((k) => k + "-sound.wav");
@@ -186,9 +188,22 @@ for (const url of ["/charge.html?daily=1&sound=R", "/charge.html?game=arcade-sli
         catch (e) { out[n] = { err: String(e).slice(0, 80) }; }
       }
       return out;
-    }, need.concat(cuts));
+    }, need);
     const off = Object.entries(levels).filter(([, m]) => m.err || m.peak > -2.5 || (Math.abs(m.rms + 20) > 0.7 && !(m.rms < -20 && m.peak > -3.6)));
     ok("every re-voiced clip sits at the TTS level (-20 dB RMS, peaks under -3 dB)", off.length === 0, off.map(([n, m]) => n + " " + JSON.stringify(m)).join("; "));
+    // The cut takes are levelled to sound as loud as Echo's words to the ear
+    // (A-weighted, tools/aweight.mjs): a plain RMS match left hisses louder
+    // and hums quieter than the words around them. Every take sits within
+    // 1 dB of the others (the peak cap may hold one a little under), and no
+    // peak goes over −3 dBFS.
+    const { aWeightedLevel } = await import("../tools/aweight.mjs");
+    const aLevels = cuts.map((n) => {
+      const b = readFileSync(ROOT + "/coach/say-echo/" + n), x = Float64Array.from({ length: (b.length - 44) >> 1 }, (_, i) => b.readInt16LE(44 + i * 2) / 32768);
+      return { n, a: aWeightedLevel(x, 24000), peak: 20 * Math.log10(x.reduce((m, v) => Math.max(m, Math.abs(v)), 0)) };
+    });
+    const top = Math.max(...aLevels.map((l) => l.a));
+    const uneven = aLevels.filter((l) => top - l.a > 1 || l.peak > -2.95);
+    ok("every cut take sounds as loud as the others to the ear, peaks under -3 dB", uneven.length === 0, uneven.map((l) => `${l.n} ${l.a.toFixed(1)}A pk${l.peak.toFixed(1)}`).join("; "));
   }
   // Locking the phone fires visibilitychange, NOT pagehide. Every page holding
   // a mic must release on both, or the recording indicator stays lit in a
