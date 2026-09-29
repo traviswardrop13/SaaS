@@ -26,6 +26,7 @@ const SUITES = [
   "arttooltest.mjs", // ART2: the book and game art tools never draw over hand-made art
   "soundmarktest.mjs", // SNDMARK1: only the practice sound's letters are orange, for every bank word
   "momweek.mjs",   // parent weekly goal + streak math + the three UIs
+  "repweektest.mjs", // REPWEEKS1: the week's reps in Home's corner, week by week in Settings — one count everywhere
   "nativefamilytest.mjs", // native family entry; clinician routes stay browser-only
   "onboardingtest.mjs", // reviewed setup, permission and explicit handoff
   "iphonepolishtest.mjs", // spoken revive, cancellation and native audio format
