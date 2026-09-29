@@ -23,7 +23,8 @@ try{
  ok('retry speaks the instruction before asking for microphone',await page.evaluate(()=>h.media.length===1&&h.mic===0)&&texts.includes('To keep playing, say'));
  if(await page.evaluate(()=>h.media.length===1)){
   await page.evaluate(()=>h.media[0].onended());await page.waitForFunction(()=>h.media.length===2);
-  ok('retry models P using Rachel audio rather than TTS spelling',await page.evaluate(()=>h.media[1].src==='/coach/say-echo/P-demo.mp3'&&h.mic===0));
+  // 29 Sep 2026: ONE take of her sound (tools/soundclips.mjs), not the demo that repeats it.
+  ok('retry models P using Rachel audio rather than TTS spelling',await page.evaluate(()=>h.media[1].src==='/coach/say-echo/P-sound.wav'&&h.mic===0));
   await page.locator('#revDone').click();await page.waitForTimeout(1100);
   ok('leaving retry cancels audio without opening microphone',await page.evaluate(()=>h.media[1].paused&&h.mic===0));
   await page.evaluate(()=>{playing=true;crash();});await page.waitForFunction(()=>h.media.length===3);await page.evaluate(()=>{h.hidden=true;document.dispatchEvent(new Event('visibilitychange'));});

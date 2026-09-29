@@ -139,7 +139,21 @@ for (const url of ["/charge.html?daily=1&sound=R", "/charge.html?game=arcade-sli
     const pages = readdirSync(ROOT).filter((n) => /\.(html|js)$/.test(n));
     const raw = pages.filter((n) => /["']\/coach\/say\//.test(readFileSync(ROOT + "/" + n, "utf8")));
     ok("no page plays Rachel's raw takes from /coach/say/", raw.length === 0, raw.join(", "));
-    ok("practice and Coach Call play the re-voiced set", /"\/coach\/say-echo\/"\+SOUND\+"\.mp3"/.test(src) && /"\/coach\/say-echo\/"\+SOUND\+"-demo\.mp3"/.test(call));
+    // 29 Sep 2026: practice and Fruit Slice play ONE cut take of her sound
+    // (tools/soundclips.mjs) inside Echo's v4 Turbo words; parked Coach Call
+    // still reaches for the demos.
+    const slice = readFileSync(ROOT + "/arcade-slice.html", "utf8");
+    ok("practice, Fruit Slice and Coach Call play the re-voiced set", /"\/coach\/say-echo\/"\+SOUND\+"-sound\.wav"/.test(src) && /"\/coach\/say-echo\/"\+SND\+"-sound\.wav"/.test(slice) && /"\/coach\/say-echo\/"\+SOUND\+"-demo\.mp3"/.test(call));
+    ok("her whole July line no longer plays in practice", !/"\/coach\/say-echo\/"\+SOUND\+"\.mp3"/.test(src));
+    // The cut sounds join Echo's PCM sample for sample, so the page refuses
+    // anything but the route's own format: 24 kHz, mono, 16-bit, 44-byte header.
+    const cuts = ["P", "B", "M", "N", "T", "D", "K", "G", "F", "V", "S", "Z", "SH", "CH", "J", "L", "R", "TH", "THV"].map((k) => k + "-sound.wav");
+    const badCut = cuts.filter((n) => {
+      const f = ROOT + "/coach/say-echo/" + n; if (!existsSync(f)) return true;
+      const b = readFileSync(f);
+      return b.toString("ascii", 0, 4) !== "RIFF" || b.readUInt16LE(22) !== 1 || b.readUInt32LE(24) !== 24000 || b.readUInt16LE(34) !== 16 || b.toString("ascii", 36, 40) !== "data" || (b.length - 44) % 2 || (b.length - 44) / 48000 > 2.5 || (b.length - 44) / 48000 < 0.2;
+    });
+    ok("every sound has one short cut take in the format Echo's words play in", badCut.length === 0, badCut.join(", "));
     const need = readdirSync(ROOT + "/coach/say").filter((n) => n.endsWith(".mp3"));
     const missing = need.filter((n) => !existsSync(ROOT + "/coach/say-echo/" + n) || statSync(ROOT + "/coach/say-echo/" + n).size < 5000);
     ok("every one of Rachel's " + need.length + " takes has a re-voiced twin", missing.length === 0, missing.join(", "));
@@ -172,7 +186,7 @@ for (const url of ["/charge.html?daily=1&sound=R", "/charge.html?game=arcade-sli
         catch (e) { out[n] = { err: String(e).slice(0, 80) }; }
       }
       return out;
-    }, need);
+    }, need.concat(cuts));
     const off = Object.entries(levels).filter(([, m]) => m.err || m.peak > -2.5 || (Math.abs(m.rms + 20) > 0.7 && !(m.rms < -20 && m.peak > -3.6)));
     ok("every re-voiced clip sits at the TTS level (-20 dB RMS, peaks under -3 dB)", off.length === 0, off.map(([n, m]) => n + " " + JSON.stringify(m)).join("; "));
   }

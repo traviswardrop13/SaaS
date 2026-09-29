@@ -175,7 +175,13 @@ function device(config) {
   window.speechSynthesis.cancel = () => {};
   // ---- the voice service: every line gets an id, carried in its PCM ----
   const realFetch = window.fetch.bind(window);
+  // 29 Sep 2026: Rachel's one recorded sound (/coach/say-echo/<S>-sound.wav)
+  // is fetched and joined into Echo's line; config.noClip makes it missing.
   window.fetch = (url, options) => {
+    if (/\/coach\/say-echo\//.test(String(url))) {
+      h.clips = (h.clips || 0) + 1;
+      if (config.noClip) return Promise.resolve({ ok: false, status: 404, arrayBuffer: async () => new ArrayBuffer(0) });
+    }
     if (String(url) !== '/api/tts') return realFetch(url, options);
     const id = h.lines.push(JSON.parse(options.body).text), pcm = new Int16Array(2400); pcm[0] = id;
     return Promise.resolve({ ok: true, status: 200, headers: { get: () => null }, arrayBuffer: async () => pcm.buffer.slice(0) });
@@ -268,10 +274,12 @@ await scenario('prompt, five tries and the win', async () => {
     await spoken(page, "You did it. Let's play."); await page.waitForTimeout(120);
     const s = await state(page);
     audit('prompt and win', s);
-    // 25 Sep 2026: the prompt is the clip — Rachel's take in Echo's voice —
-    // and nothing speaks it a second time. The calm TTS line is pinned below,
-    // where the clip is missing.
-    ok('the prompt is Rachel\'s take in Echo\'s voice, once, and no TTS line doubles it', prompts(s).length === 1 && !lines(s).some((l) => /^Ready\?/.test(l)), { prompts: prompts(s).length, lines: lines(s) });
+    // 29 Sep 2026: the prompt is Echo's words with Rachel's recorded R in the
+    // letter's place, joined into ONE clip (its label is its first half) —
+    // her whole July line no longer plays, and nothing speaks it twice. The
+    // calm whole TTS line is pinned below, where her recording is missing.
+    const asked = await page.evaluate(() => __quiet.lines.slice());
+    ok('the prompt is Echo\'s words with Rachel\'s R, once, as one clip', prompts(s).length === 0 && lines(s).filter((l) => /^Ready\?/.test(l)).length === 1 && lines(s)[0] === 'Ready? Pull your tongue back and up, and make your' && asked.includes('sound, five times.') && !asked.some((l) => /make your R sound/.test(l)) && await page.evaluate(() => __quiet.clips >= 1), { prompts: prompts(s).length, lines: lines(s), asked });
     const firstOpen = s.events.find((e) => e.kind === 'mic-open'), prompt = s.events.find((e) => WORDS.includes(e.kind));
     ok('the explainer-tap permission request still happens before Echo speaks', !!firstOpen && firstOpen.t < prompt.t && !prompt.micLive, { firstOpen, prompt });
     const firstClose = s.events.find((e) => e.kind === 'mic-close');
@@ -295,20 +303,23 @@ await scenario('wrong sound: coaching, the easier word and the round end', async
     await yourTurn(page); await bursts(page, 5);
     await spoken(page, "Let's try that one again. Pull your tongue back and up like a tiger growl.");
     await yourTurn(page); await bursts(page, 3);
-    await spoken(page, "I have an idea. Let's try this one. Make your R sound.");
+    // Echo's idea steps down to the sound: her R takes the letter's place,
+    // so the joined line's label is its first half.
+    await spoken(page, "I have an idea. Let's try this one. Make your");
     await yourTurn(page); await bursts(page, 3);
     await spoken(page, "Good practicing. Let's play."); await page.waitForTimeout(120);
     const s = await state(page);
     audit('coaching', s);
     ok('the syllable prompt is calm too', /^Ready\? Say [a-z]+, five times\.$/.test(lines(s)[0]), lines(s));
-    ok('no coaching line shouts: every one ends in a full stop', lines(s).length === 4 && lines(s).every((l) => /\.$/.test(l) && !/!/.test(l)), lines(s));
+    const asked = await page.evaluate(() => __quiet.lines.slice());
+    ok('no coaching line shouts: every one ends in a full stop (the idea line on its second half)', lines(s).length === 4 && lines(s).every((l) => !/!/.test(l)) && lines(s).filter((l) => !/\.$/.test(l)).join() === "I have an idea. Let's try this one. Make your" && asked.includes('sound.'), { lines: lines(s), asked });
     ok('each retry opened a fresh mic after the coaching line', s.events.filter((e) => e.kind === 'mic-open').length === 4, s.events.filter((e) => e.kind === 'mic-open'));
     clean('coaching', errors);
   } finally { await context.close(); }
 });
 
-// The clip cannot play (a missing file, a blocked element): the page speaks
-// the calm TTS line instead — the cue, the sound and the count, no "Go!", no
+// Rachel's recorded sound is missing (a missing file): the page speaks the
+// calm whole TTS line instead, letter and all — the cue, the sound and the count, no "Go!", no
 // spoken "Your turn." (24 Sep 2026) — and the round is otherwise the same.
 await scenario('the clip is missing: the calm TTS line is the prompt', async () => {
   const { context, page, errors } = await fresh({ noClip: true });
@@ -327,8 +338,9 @@ await scenario('tap Echo, the turtle and an unprompted prompt mid-window', async
   const { context, page, errors } = await fresh();
   try {
     await yourTurn(page); await bursts(page, 2);
-    // 25 Sep 2026: every replay of the prompt is the clip again.
-    const replayed = (n) => page.waitForFunction((n) => __quiet.events.filter((e) => e.kind === 'media' && e.label === 'human prompt').length === n, n, { polling: 20 });
+    // 29 Sep 2026: every replay of the prompt is Echo's words with her R
+    // joined in again, one clip each (labelled by its first half).
+    const replayed = (n) => page.waitForFunction((n) => __quiet.events.filter((e) => e.kind === 'voice' && /^Ready\?/.test(e.label)).length === n, n, { polling: 20 });
     await page.locator('#echoBuddy').click(); await replayed(2);
     await yourTurn(page);
     const mid = await state(page);
@@ -482,7 +494,7 @@ await scenario('the quiet screen', async () => {
     await spoken(page, line); await page.waitForTimeout(120);
     const s = await state(page);
     audit('quiet screen', s);
-    ok('the quiet screen keeps Rachel\'s line word for word', lines(s)[0] === line && await page.locator('#quietOvl.show').count() === 1, lines(s));
+    ok('the quiet screen keeps Rachel\'s line word for word', lines(s).filter((l) => !/^Ready\?/.test(l))[0] === line && await page.locator('#quietOvl.show').count() === 1, lines(s));
     ok('silence is never a try', s.reps === 0 && !s.effects.includes('logAttempt') && !s.effects.includes('bumpReps'), s);
     clean('quiet screen', errors);
   } finally { await context.close(); }

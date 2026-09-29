@@ -18,7 +18,7 @@ let assertions=0,failures=0;
 function ok(name,pass,detail=''){assertions++;if(!pass)failures++;console.log((pass?'PASS ':'FAIL ')+name+(pass?'':' → '+JSON.stringify(detail)));}
 async function scenario(name,fn){try{await fn();}catch(e){ok(name+' completes without exception',false,e.stack);}}
 function device(config){
-  const h=window.__pacing={voices:[],media:[],pcm:[],streams:[],diagnostics:[],fetches:0,hidden:false};
+  const h=window.__pacing={voices:[],media:[],pcm:[],streams:[],diagnostics:[],fetches:0,hidden:false,ttsTexts:[],bufLens:[]};
   Object.defineProperty(document,'hidden',{configurable:true,get:()=>h.hidden});
   Object.defineProperty(document,'visibilityState',{configurable:true,get:()=>h.hidden?'hidden':'visible'});
   h.background=()=>{h.hidden=true;document.dispatchEvent(new Event('visibilitychange'));};
@@ -34,7 +34,7 @@ function device(config){
     constructor(){this.state='running';this.currentTime=0;this.sampleRate=48000;this.destination={};}
     resume(){this.state='running';return Promise.resolve();}suspend(){this.state='suspended';return Promise.resolve();}
     createGain(){return node();}createOscillator(){return node();}
-    createBuffer(c,n,rate){return {duration:n/rate,getChannelData:()=>new Float32Array(n)};}
+    createBuffer(c,n,rate){h.bufLens.push(n);return {duration:n/rate,getChannelData:()=>new Float32Array(n)};}
     createBufferSource(){const p={active:false,connect(){},disconnect(){},start(){this.active=true;},stop(){this.active=false;},end(){this.active=false;if(this.onended)this.onended();}};h.pcm.push(p);return p;}
     createMediaStreamSource(){return {connect(){},disconnect(){}};}
     createAnalyser(){return {fftSize:512,frequencyBinCount:256,getByteTimeDomainData(a){a.fill(128);},getByteFrequencyData(a){a.fill(0);}};}
@@ -50,7 +50,7 @@ function device(config){
   speechSynthesis.speak=u=>{h.voices.push({u,active:true,end(){this.active=false;if(u.onend)u.onend();}});};
   speechSynthesis.cancel=()=>h.voices.forEach(v=>v.active=false);
   const fetch=window.fetch.bind(window);
-  window.fetch=(url,options)=>String(url)==='/api/tts'?(h.fetches++,Promise.resolve({ok:!!config.server,status:config.server?200:503,headers:{get:name=>config.server?({'X-Sona-Voice-Provider':'elevenlabs','X-Sona-Voice-Cache':'miss','X-Sona-Voice-Model':'eleven_multilingual_v2','X-Sona-Voice-Revision':'v8','X-Sona-Voice-Keep':config.standin?'0':'1'}[name]||null):null},arrayBuffer:async()=>new ArrayBuffer(96000)})):fetch(url,options);
+  window.fetch=(url,options)=>config.noClip&&/-sound\.wav$/.test(String(url))?Promise.resolve({ok:false,status:404,arrayBuffer:async()=>new ArrayBuffer(0)}):String(url)==='/api/tts'?(h.fetches++,h.ttsTexts.push(JSON.parse(options.body).text),Promise.resolve({ok:!!config.server,status:config.server?200:503,headers:{get:name=>config.server?({'X-Sona-Voice-Provider':'elevenlabs','X-Sona-Voice-Cache':'miss','X-Sona-Voice-Model':'eleven_multilingual_v2','X-Sona-Voice-Revision':'v8','X-Sona-Voice-Keep':config.standin?'0':'1'}[name]||null):null},arrayBuffer:async()=>new ArrayBuffer(96000)})):fetch(url,options);
   let sona;
   Object.defineProperty(window,'Sona',{configurable:true,get:()=>sona,set(value){sona=value;value.isNativeApp=()=>!!config.native;value.humanClipsOn=()=>!!config.human;value.confetti=()=>{};value.speechStart=()=>Promise.resolve(false);value.speechStop=()=>Promise.resolve(null);const diagnostic=value.voiceDiagnostic;value.voiceDiagnostic=event=>{const saved=diagnostic?diagnostic(event):event;h.diagnostics.push(saved);return saved;};}});
   localStorage.setItem('sona.freeera.v1','post');localStorage.setItem('sona.freeera2.v1','done');localStorage.setItem('sona.freeera3.v1','done');localStorage.setItem('sona.freeera4.v1','done');localStorage.setItem('sona.micok','1');
@@ -116,20 +116,44 @@ await scenario('cold browser voice list',async()=>{
   }finally{await context.close();}
 });
 
+// 29 Sep 2026 — ECHO'S WORDS, RACHEL'S SOUND. With her clips on, the first
+// line of a sound round is ONE clip joined on the phone: v4 Turbo says the
+// words up to "make your", her recorded R (/coach/say-echo/R-sound.wav) takes
+// the letter's place, and v4 Turbo says "sound, five times." Her whole July
+// line never plays. It is one listening turn, pauses and resumes as one line,
+// slows as one for the turtle, and falls back to the whole TTS line if her
+// recording is missing.
 await scenario('human model and interruption',async()=>{
-  const {context,page,errors}=await fresh({human:true});try{
-    await page.waitForFunction(()=>__pacing.media.some(m=>m.active));
-    ok('human recording uses the same listening cue',/Listen to Echo/.test(await status(page)));
-    ok('human playback is identified locally',await page.evaluate(()=>__pacing.diagnostics.some(e=>e.source==='human')));
+  const {context,page,errors}=await fresh({human:true,server:true});try{
+    await page.waitForFunction(()=>__pacing.pcm.some(p=>p.active));
+    ok('the joined line uses the same listening cue',/Listen to Echo/.test(await status(page)));
+    ok('the joined line is identified locally as carrying her recording',await page.evaluate(()=>__pacing.diagnostics.some(e=>e.source==='human')));
+    const said=await page.evaluate(()=>__pacing.ttsTexts.slice());
+    ok('Echo says the words around the sound and never the letter',said.includes('Ready? Pull your tongue back and up, and make your')&&said.includes('sound, five times.')&&!said.some(t=>/make your R sound/.test(t)),said);
+    ok('her whole recorded line never plays',await page.evaluate(()=>__pacing.media.length===0));
+    const lens=await page.evaluate(()=>__pacing.bufLens.slice());
+    ok('the three pieces play as ONE clip: both halves and her one R',lens.length===1&&lens[0]>96000&&lens[0]<96000+24000*3,lens);
     const target=await page.locator('#bTarget').innerText();
     await page.evaluate(()=>__pacing.background());await page.locator('#pauseOvl.show').waitFor();
-    ok('pausing stops the model and withholds the child turn',await page.evaluate(()=>!__pacing.media.some(m=>m.active)&&!engineOn));
+    ok('pausing stops the line and withholds the child turn',await page.evaluate(()=>!__pacing.pcm.some(p=>p.active)&&!engineOn));
     await page.evaluate(()=>__pacing.foreground());await page.locator('#pauseResume').click();
-    await page.waitForFunction(()=>__pacing.media.filter(m=>m.active).length===1&&__pacing.media.length===2);
-    ok('Resume first completes the same model before listening to the child',/Listen to Echo/.test(await status(page))&&await page.locator('#bTarget').innerText()===target&&!(await state(page)).engine);
-    await page.evaluate(()=>__pacing.media[1].end());await childTurn(page);
-    ok('resumed model hands over once to the child',/Your turn/.test(await status(page)));
+    await page.waitForFunction(()=>__pacing.pcm.filter(p=>p.active).length===1&&__pacing.pcm.length===2);
+    ok('Resume first completes the same line before listening to the child',/Listen to Echo/.test(await status(page))&&await page.locator('#bTarget').innerText()===target&&!(await state(page)).engine);
+    await page.evaluate(()=>__pacing.pcm[1].end());await childTurn(page);
+    ok('the resumed line hands over once to the child',/Your turn/.test(await status(page)));
+    await page.locator('#turtleBtn').click();await page.waitForFunction(()=>__pacing.media.some(m=>m.active));
+    ok('the turtle slows the joined line as one clip, her sound included',await page.evaluate(()=>__pacing.media.length===1&&__pacing.media[0].playbackRate===0.7&&__pacing.diagnostics.filter(e=>e.source==='human').length>=3));
     clean('human model',errors);
+  }finally{await context.close();}
+});
+
+await scenario('a missing recording falls back to the whole line',async()=>{
+  const {context,page,errors}=await fresh({human:true,server:true,noClip:true});try{
+    await page.waitForFunction(()=>__pacing.pcm.some(p=>p.active));
+    const said=await page.evaluate(()=>__pacing.ttsTexts.slice());
+    ok('without her recording Echo says the whole line, letter and all',said.includes('Ready? Pull your tongue back and up, and make your R sound, five times.'),said);
+    ok('nothing half-said: the fallback is one clip and no human playback',await page.evaluate(()=>__pacing.pcm.length===1&&!__pacing.diagnostics.some(e=>e.source==='human')));
+    clean('missing recording',errors);
   }finally{await context.close();}
 });
 
