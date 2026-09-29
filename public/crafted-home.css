@@ -1,6 +1,9 @@
 /* Crafted Home is scoped to this page; book readers and shared app styles stay independent. */
 :root{--cream:#fff6e9;--ink:#45270f;--muted:#80664d;--label:#897055;--track:#eadcc6;--orange-d:#167f87;--craft-teal:#14858d;}
 html,body{background:#fff6e9;background-image:radial-gradient(ellipse at 16% 12%,#ffefcf66,transparent 46%),radial-gradient(ellipse at 88% 62%,#f4e5c944,transparent 52%);}
+/* Cards scrolled up under the clock and battery; a strip the height of the
+   status bar (0 on phones without one, and in a browser) covers that band. */
+body::before{content:"";position:fixed;left:0;right:0;top:0;height:env(safe-area-inset-top);background:#fff6e9;z-index:30;pointer-events:none;}
 .library-wrap{max-width:840px;padding:calc(20px + env(safe-area-inset-top)) 22px calc(30px + env(safe-area-inset-bottom));}
 .library-header{gap:12px;min-height:48px;}
 .library-label{font-size:29px;color:var(--ink);line-height:1;font-weight:800;letter-spacing:-.8px;}

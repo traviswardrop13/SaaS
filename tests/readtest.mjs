@@ -313,8 +313,8 @@ async function waitSpoke(pg, ms) {
   ok("…and the 78 sentences are the ones the pictures were drawn for (change one, redraw its scene)",
     createHash("sha1").update(JSON.stringify(painted.map((b) => [b.title, b.lines]))).digest("hex") === "73b75ea59038d1d5609747e499180af69189158f");
 
-  const reader = async (when) => {
-    const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  const reader = async (when, width = 390, height = 844) => {
+    const ctx = await browser.newContext({ viewport: { width, height } });
     const pg = await ctx.newPage(); const errs = [], got = [];
     pg.on("pageerror", (e) => errs.push(e.message));
     pg.on("request", (q) => { const m = q.url().match(/\/painted\/([a-z-]+)\.webp/); if (m) got.push(m[1]); });
@@ -337,6 +337,22 @@ async function waitSpoke(pg, ms) {
     JSON.stringify(seen) === JSON.stringify(["0% 0%", "0% 0%", "50% 0%", "100% 0%", "0% 100%", "50% 100%", "100% 100%"]), JSON.stringify(seen));
   ok("…and the line and Next stay on a 390 x 844 phone beside the picture", fits);
   ok("…with no page errors", r.errs.length === 0, r.errs.join(" | ")); await r.ctx.close();
+  // The End's "Read again" and "All done" used to run off both sides of a
+  // 375 px phone: the hidden "Hear it" button between them still took its room.
+  const ends = [];
+  for (const [w, h] of [[375, 667], [320, 693]]) {
+    r = await reader("2026-12-07T10:00:00", w, h);
+    await r.pg.locator(".bookBtn", { hasText: "Rory the Rabbit" }).click(); await r.pg.waitForTimeout(250);
+    for (let i = 0; i < 7; i++) { await r.pg.click("#bkNext"); await r.pg.waitForTimeout(120); }
+    ends.push(await r.pg.evaluate(() => {
+      const box = (id) => document.getElementById(id).getBoundingClientRect();
+      const p = box("bkPrev"), n = box("bkNext");
+      return { w: innerWidth, end: /The End!/.test(document.getElementById("bkStage").textContent), prev: [p.left, p.right], next: [n.left, n.right],
+        fits: p.left >= 0 && n.right <= innerWidth && p.right <= n.left && document.getElementById("bkNext").scrollWidth <= document.getElementById("bkNext").clientWidth };
+    }));
+    await r.ctx.close();
+  }
+  ok("…and The End's \"Read again\" and \"All done\" fit a 375 and a 320 px phone", ends.every((e) => e.end && e.fits), JSON.stringify(ends));
   r = await reader("2026-09-29T10:00:00");
   ok("a painted book that isn't open yet costs only its small cover, never its whole picture",
     r.got.length === 5 && r.got.every((n) => /-cover$/.test(n)), JSON.stringify(r.got)); await r.ctx.close();

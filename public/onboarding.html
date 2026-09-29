@@ -841,6 +841,9 @@
           // ages 3-4, Fruit Slice (its practice page first) from 5. A
           // clinician setting up their own phone still lands on Home.
           var first="/today.html";try{if(draft.role!=="slp"&&Sona.firstGameStart)first=Sona.firstGameStart();}catch(e){}
+          // Close the keyboard first: the app resizes its web view for the
+          // keyboard, and the first game must open at full height.
+          if(document.activeElement&&document.activeElement.blur)document.activeElement.blur();
           location.href=first;
         };
         document.getElementById("skipEmail").onclick=function(){document.getElementById("achEmailInput").value="";nextBtn.onclick();};
