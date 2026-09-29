@@ -296,9 +296,16 @@ ok('"cat" does not fuzzy-match "car"... it does not need to — it has no R; but
     ok("with Capacitor's own controller: the installer runs", first.status === 0, first.stderr || first.stdout);
     ok("…compiles the plugin through AppDelegate.swift, whole and unchanged", pluginBlock(p.file("AppDelegate.swift")));
     ok("…and a SonaBridgeViewController that registers it",
-      /@objc\(SonaBridgeViewController\)\s*class SonaBridgeViewController: CAPBridgeViewController \{\s*override func capacitorDidLoad\(\) \{\s*bridge\?\.registerPluginInstance\(SonaSpeechPlugin\(\)\)/.test(delegate));
-    ok("…and points the storyboard at it, by its Objective-C name (no module)",
-      /<viewController id="BYZ-38-t0r" customClass="SonaBridgeViewController" sceneMemberID="viewController"\/>/.test(sb), sb);
+      /\nclass SonaBridgeViewController: CAPBridgeViewController \{\s*override func capacitorDidLoad\(\) \{\s*bridge\?\.registerPluginInstance\(SonaSpeechPlugin\(\)\)/.test(delegate));
+    // BUILD 6 OPENED TO A BLACK SCREEN (28 Sep 2026). The storyboard named the
+    // class by a bare @objc name. Its superclass comes from Capacitor's binary
+    // framework, so Swift leaves it out of the Objective-C class list until
+    // Swift code touches it: the bare-name lookup found nothing, and iOS put up
+    // an empty controller. Named with the app's module (Xcode's "Inherit Module
+    // From Target"), the lookup goes through the Swift runtime, which finds it.
+    ok("…and points the storyboard at it with the app's module, never a bare Objective-C name",
+      /<viewController id="BYZ-38-t0r" customClass="SonaBridgeViewController" customModule="App" customModuleProvider="target" sceneMemberID="viewController"\/>/.test(sb)
+      && !/@objc\(SonaBridgeViewController\)/.test(delegate), sb);
     ok("…and adds the speech-permission text, which says it stays on the phone",
       /<key>NSSpeechRecognitionUsageDescription<\/key>\s*<string>[^<]*on the phone[^<]*no audio is sent anywhere/.test(text(p.file("Info.plist"))));
     const again = run(p.app);
@@ -355,6 +362,24 @@ ok('"cat" does not fuzzy-match "car"... it does not need to — it has no R; but
     const again = run(p.app);
     ok("…and a rerun changes nothing", again.status === 0 && /already installed/.test(again.stdout)
       && text(p.file("SceneDelegate.swift")) === scene && text(p.file("AppDelegate.swift")) === delegate, again.stdout + again.stderr);
+    rmSync(p.dir, { recursive: true, force: true });
+  }
+  // H. build 6's project, as the earlier script left it: the storyboard names
+  //    the class bare and the block renames it for Objective-C. Rerunning the
+  //    script is the repair, so it must recognise that state and fix both.
+  {
+    const p = fresh('customClass="SonaBridgeViewController"');
+    writeFileSync(p.file("AppDelegate.swift"), text(p.file("AppDelegate.swift")).trimEnd() + "\n\n// BEGIN SONA SPEECH PLUGIN\n" + plugin.trimEnd()
+      + "\n\n@objc(SonaBridgeViewController)\nclass SonaBridgeViewController: CAPBridgeViewController {\n    override func capacitorDidLoad() {\n        bridge?.registerPluginInstance(SonaSpeechPlugin())\n    }\n}\n// END SONA SPEECH PLUGIN\n");
+    const r = run(p.app), sb = text(p.file("Base.lproj/Main.storyboard")), delegate = text(p.file("AppDelegate.swift"));
+    ok("build 6's black screen is repaired: the storyboard gains the app's module, the bare rename goes",
+      r.status === 0 && /black screen/.test(r.stdout)
+      && /customClass="SonaBridgeViewController" customModule="App" customModuleProvider="target" sceneMemberID/.test(sb)
+      && !/@objc\(SonaBridgeViewController\)/.test(delegate) && (delegate.match(/class SonaBridgeViewController/g) || []).length === 1
+      && (delegate.match(/BEGIN SONA SPEECH PLUGIN/g) || []).length === 1, r.stdout + r.stderr + sb);
+    const again = run(p.app);
+    ok("…and a rerun changes nothing", again.status === 0 && /already installed/.test(again.stdout)
+      && text(p.file("Base.lproj/Main.storyboard")) === sb && text(p.file("AppDelegate.swift")) === delegate, again.stdout + again.stderr);
     rmSync(p.dir, { recursive: true, force: true });
   }
   // E/F. what it will not guess at: it stops, and changes nothing

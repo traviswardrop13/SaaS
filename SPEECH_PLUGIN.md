@@ -39,7 +39,13 @@ this branch's code:
    added) is swapped for a small `SonaBridgeViewController` that registers it,
    in the storyboard and in any code that builds Capacitor's controller itself
    (a project made with Capacitor 8.5 or later builds it in `SceneDelegate.swift`,
-   and that is the one on screen). Running it again is safe. It stops, changing nothing, on a project it does
+   and that is the one on screen). Running it again is safe.
+   The storyboard names it with the app's module ("Inherit Module From
+   Target"), never by a bare name. Build 6 (28 Sep) opened to a black screen
+   because the script's first version used the bare name: the class's parent
+   comes from Capacitor's binary framework, so iOS cannot look it up that way
+   until Swift code has touched it, and the storyboard fell back to an empty
+   controller. Running the script again repairs a project left that way. It stops, changing nothing, on a project it does
    not understand, and says what it found.
 2. Open Xcode, bump the Build number, and build to a **real iPhone** (the
    simulator has no usable on-device model).
@@ -52,6 +58,9 @@ goes live with a normal merge; only the plugin itself needs the new build.
 
 ## Device test checklist — do these before submitting
 
+- [ ] Sona opens to its own screen, not a black one. Black means the
+      storyboard cannot find `SonaBridgeViewController`; Xcode's console says
+      "Unknown class". Run the script again.
 - [ ] First practice round: mic prompt, then the speech prompt, both at setup.
       Read the speech prompt: note any sentence Apple adds about sending speech
       to Apple (the code keeps it on the phone; the prompt is Apple's text).

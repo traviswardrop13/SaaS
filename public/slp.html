@@ -749,6 +749,17 @@
     #invEmailed { margin:0 0 12px; font-weight:500; color:var(--green-d); }
     #invEmailed.bad { color:var(--pink); }
     @media (max-width:1100px) { .premium-layout { grid-template-columns:minmax(0,1fr); } }
+    /* The offer in the top bar: warm, so it never reads as the app link beside
+       it. .btn sets display, so hidden has to be told to win here too. */
+    .premium-top { background:#ffe9a6; color:#5c4412; border:1px solid #f1d27c; }
+    .premium-top[hidden] { display:none !important; }
+    /* On a phone three buttons don't fit one row: the offer takes its own,
+       above the app buttons, and the bar grows to hold it. */
+    @media (max-width:600px) {
+      .workspace-bar { height:auto; padding-top:10px; padding-bottom:10px; }
+      .app-actions { flex-wrap:wrap; }
+      .premium-top { order:-1; flex:1 1 100%; }
+    }
     @media (max-width:768px) { .premium-card { padding:20px 16px; } .card .premium-title { font-size:19px; } .premium-price b { font-size:24px; } }
   </style>
 </head>
@@ -787,6 +798,7 @@
     <div class="workspace-bar">
       <div class="crumb">Workspace <span>/</span> <b id="pageCrumb">Today</b></div>
       <div class="app-actions">
+        <a class="btn app-download premium-top" id="premiumTop" href="#premium" hidden><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.6l-5.4 2.9 1.2-6-4.5-4.2 6.1-.7Z"/></svg><span>Get Premium<small id="premiumTopPrice"></small></span></a>
         <a class="btn green app-download" id="downloadApp" href="https://apps.apple.com/us/app/sona-speech/id6785755867" target="_blank" rel="noopener noreferrer"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="2" width="12" height="20" rx="3"/><path d="M10 18h4M12 6v8m-3-3 3 3 3-3"/></svg><span>Download the app<small>iPhone &amp; iPad</small></span></a>
         <button class="btn ghost sm" id="copyAppLink" type="button">Copy app link</button>
       </div>
@@ -1352,6 +1364,7 @@
       if(name==="caseload")renderCaseload();
       if(name==="child")renderChild(arg);
       if(name==="premium")renderPremium();
+      paintTopBuy();
       if(name==="settings")renderSettings();
       if(name==="feedback")paintFeedback();
       if(name==="community"){renderCommunity();loadCommunity(false);}
@@ -1975,6 +1988,7 @@
       $("premiumErrorText").textContent=PLAN_ERR+(PLAN&&PLAN_ERR?" What's below is the last answer we had.":"");
       $("premiumRetry").disabled=PLAN_BUSY;$("premiumCheck").disabled=PLAN_BUSY;
       $("premiumOffer").hidden=st!=="none";$("premiumPaid").hidden=st!=="paid";$("premiumFree").hidden=st!=="free";
+      paintTopBuy();
       if(st==="none"){
         $("premiumPriceLine").hidden=!PLAN.price;$("premiumPrice").textContent=PLAN.price||"";$("premiumPerMonth").textContent=PLAN.perMonth||"";
         loadParentPrice();
@@ -2010,6 +2024,16 @@
       if(COVERED_SHOWN===covered)return;COVERED_SHOWN=covered;
       $("linkCoverage").innerHTML=covered?"Your caseload has Premium, so they get every game too.":'With <a href="#premium">Caseload Premium</a> they get every game.';
       if(code)paintLinkCard();
+    }
+    // The offer in the top bar (Travis, 29 Sep 2026: "yes add the $80 button
+    // to the first screen"). A clinician from the ad lands on Community, and a
+    // returning one on Today, so the offer follows them to every page but the
+    // Premium page itself. Only once the plan has answered, with the server's
+    // price: never a guessed figure, and never to a caseload already covered.
+    function paintTopBuy(){
+      var show=!!(PLAN&&PLAN.active===false&&PLAN.price)&&!$("page-premium").classList.contains("active");
+      $("premiumTop").hidden=!show;
+      $("premiumTopPrice").textContent=show?PLAN.price+" a year":"";
     }
     function renderPremium(){
       paintPremium();

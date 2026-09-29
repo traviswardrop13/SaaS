@@ -46,8 +46,9 @@
     .cta{display:block;margin:22px auto 0;text-align:center;}
     .btn{display:inline-block;border:none;border-radius:14px;padding:13px 22px;font-family:"Baloo 2";font-weight:800;font-size:15px;color:#fff;background:var(--blue);box-shadow:0 4px 0 var(--blue-d);text-decoration:none;cursor:pointer;}
   </style>
+  <link rel="stylesheet" href="/crafted-family.css" />
 </head>
-<body>
+<body class="crafted-family family-stickers">
   <div class="wrap">
     <header>
       <button id="back" title="Back">‹</button>
@@ -55,12 +56,13 @@
     </header>
     <div class="bar"><span id="barFill" style="width:0%"></span></div>
     <div class="grid" id="grid"></div>
-    <p class="empty" id="empty" style="display:none;">No stickers yet — finish a level or visit the Prize Machine to earn your first one! ✨</p>
+    <p class="empty" id="empty" style="display:none;">No stickers yet. Finish an adventure to collect your first one!</p>
     <div class="cta"><a class="btn" href="/today.html">← Back home</a></div>
   </div>
   <div id="toast"></div>
 
   <script src="/sona.js"></script>
+  <script src="/crafted-rewards.js"></script>
   <script>
     var $=function(id){return document.getElementById(id);};
     $("back").onclick=function(){ try{ if(window.Sona&&Sona.sfx&&Sona.sfx.tap)Sona.sfx.tap(); }catch(e){} location.href="/map.html"; };
@@ -76,15 +78,18 @@
     // the very next earnable sticker — awards go in STICKERS order (Sona.awardNextSticker)
     var nextId="";
     for(var ni=0;ni<all.length;ni++){ if(!earned[all[ni].id]){ nextId=all[ni].id; break; } }
+    // Draw the reward itself; the shared catalog still owns names and earning.
+
+
     all.forEach(function(s){
       var has=!!earned[s.id];
       var isNext=!has&&s.id===nextId;
       var d=document.createElement("div");
       d.className="st"+(has?"":" locked")+(isNext?" next":"")+(has&&s.id===justNew?" new":"");
       // locked stickers show their real art as a dark silhouette (CSS) — a tease, no padlocks
-      d.innerHTML='<div class="e">'+s.e+'</div><div class="n">'+(has?s.name:"?")+'</div>'+(isNext?'<span class="tag">Next!</span>':"");
+      d.innerHTML='<div class="e">'+SonaRewardArt(s.id)+'</div><div class="n">'+(has?s.name:"?")+'</div>'+(isNext?'<span class="tag">Next!</span>':"");
       // quest, not padlock: locked taps name the true unlock condition
-      if(!has){ d.onclick=function(){ toast(isNext?"This one's next — finish a practice round to win it!":"One new sticker for every round you finish!"); }; }
+      if(!has){ d.onclick=function(){ toast(isNext?"This one's next — finish an adventure to collect it!":"Finish an adventure to collect a new sticker!"); }; }
       grid.appendChild(d);
     });
     if(!got){ $("empty").style.display="block"; }

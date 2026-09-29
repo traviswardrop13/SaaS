@@ -371,7 +371,7 @@
     micStop(); heardThisTurn = false; clearTimeout(nextTurn._t);
     if (!same || !word) word = pickWord();
     try {
-      $("pic").innerHTML = (S && S.pic) ? S.pic(word.w, word.e, 64) : word.e;
+      $("pic").innerHTML = ((window.SonaCraftedWords && window.SonaCraftedWords.picture(word.w, 64)) || ((S && S.pic) ? S.pic(word.w, word.e, 64) : word.e));
       $("word").textContent = word.w;
       $("micBtn").hidden = true;
       $("cheer").textContent = "";

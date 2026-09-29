@@ -72,8 +72,10 @@
     #revHearts .wdot svg{width:20px;height:20px;}
     @media (prefers-reduced-motion: reduce){ #banner.in{animation-name:bannerFade;} }
   </style>
+  <link href="/crafted-games.css" rel="stylesheet">
+  <link href="/arcade-speech-help.css" rel="stylesheet">
 </head>
-<body>
+<body data-crafted="run">
   <div id="app">
     <canvas id="cv"></canvas>
     <div id="top">
@@ -83,6 +85,11 @@
       <div id="coinLbl" class="hudpill" style="color:#9a6a00;font-size:14px;"><svg viewBox="0 0 64 64" style="width:17px;height:17px;vertical-align:-3px" aria-hidden="true"><circle cx="32" cy="32" r="22" fill="#f0a500"/><circle cx="32" cy="30" r="19" fill="#ffd21c"/><circle cx="32" cy="30" r="12" fill="none" stroke="#f0b400" stroke-width="3"/></svg> <b id="coinN">0</b></div>
       <div id="timer" class="hudpill"></div>
     </div>
+    <div id="slowControl" hidden>
+      <button id="slowKeys" type="button"><img src="/assets/crafted/echo-welcome.webp" alt=""><span id="slowSound">rrrr</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v5a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z"/></svg></button>
+      <p id="slowStatus" role="status">Tap Echo to slow the course</p><span class="slowTrack"><i id="slowMeter"></i></span>
+      <button id="slowCancel" type="button" hidden>Keep playing</button>
+    </div>
     <div id="flash"></div>
     <div id="tapHint">Tap a lane to run there!</div>
     <div id="banner" aria-live="polite"><div class="pill"><b id="bnBig"></b><span id="bnSmall"></span></div></div>
@@ -90,7 +97,7 @@
 
   <div class="ovl" id="needOvl">
     <div class="ovlCard">
-      <img class="ovlEcho" src="/coach/echo/echo-star.svg" alt="" />
+      <img class="ovlEcho" src="/assets/crafted/echo-welcome.webp" alt="" />
       <h2 id="needTitle">This game needs a ticket!</h2>
       <p>Say your sound 5 times to fill it up</p>
       <button class="btn" id="goCharge"><svg viewBox="0 0 64 64" style="width:18px;height:18px;vertical-align:-3px"><path d="M36 4 14 36h13l-5 24 24-34H33Z" fill="#ffd21c" stroke="#f0a800" stroke-width="2.5" stroke-linejoin="round"/><circle cx="30" cy="15" r="2.5" fill="#fff" opacity=".9"/></svg> Fill my ticket!</button>
@@ -100,7 +107,7 @@
 
   <div class="ovl" id="revOvl">
     <div class="ovlCard">
-      <img class="ovlEcho" src="/coach/echo/echo-listening.svg" alt="" />
+      <img class="ovlEcho" src="/assets/crafted/echo-welcome.webp" alt="" />
       <h2 id="revTitle">Say it!</h2>
       <p id="revHearts" style="font-size:26px;"></p>
       <div style="width:56px;height:56px;border-radius:50%;background:linear-gradient(180deg,#ffa05a,#ff8a3d);box-shadow:0 4px 0 #ef6f23,0 0 0 10px rgba(255,138,61,.14);display:flex;align-items:center;justify-content:center;margin:2px 0;"><svg viewBox="0 0 24 24" style="width:24px;height:24px;fill:#fff"><path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v5a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z"/></svg></div>
@@ -114,7 +121,7 @@
       <div class="big endStar" id="endEmoji"><svg viewBox="0 0 64 64" style="width:56px;height:56px"><path d="M32 5l8.2 18.6L60 25.8 44.9 39.2 49.8 59 32 48.4 14.2 59l4.9-19.8L4 25.8l19.8-2.2Z" fill="#ffd21c"/><circle cx="25" cy="21" r="3" fill="#fff" opacity=".85"/></svg></div>
       <h2 id="endTitle">Great round!</h2>
       <p id="endSub"></p>
-      <div class="echoWin"><img src="/coach/echo/echo-celebrate.svg" alt="" /></div>
+      <div class="echoWin"><img src="/assets/crafted/echo-welcome.webp" alt="" /></div>
       <button class="btn blue" id="endCharge">WOOHOO! Next →</button>
       <button class="btn" id="endAgain" style="display:none;"></button>
       <button class="btn ghost" id="endHome">Back home</button>
@@ -123,6 +130,7 @@
 
 
   <script src="/sona.js"></script>
+  <script src="/crafted-buddies.js"></script>
   <script>
     // Check access before any game resources start. The earned speech token
     // remains a separate requirement; a catalog unlock never creates one.
@@ -136,6 +144,8 @@
       gameEntryAllowed=true;
     })();
   </script>
+  <script>window.SLOW_HELP={phase:"run",action:"slow the course",earned:"Slow course!",eligible:function(){return !falling.on;}};</script>
+  <script src="/arcade-speech-help.js"></script>
   <script>
     if(gameEntryAllowed){
     var $=function(id){return document.getElementById(id);};
@@ -154,7 +164,7 @@
     var SETTLE_MS=200, QUIET_MS=900, quietUntil=0, micClosedAt=-1e9;
     var rv={st:null,pending:0,gen:0,raf:0,t:0,ctx:null,src:null,floor:-1};   // floor: the room's quiet level, measured once per page (see listenFor)
     function sfx(n){
-      if(rv.st) return;
+      if(rv.st||slowTurn) return;
       if(rv.pending){ setTimeout(function(){ sfx(n); },60); return; }
       var wait=micClosedAt+SETTLE_MS-performance.now();
       if(wait>0){ quietUntil=Math.max(quietUntil,performance.now()+wait+QUIET_MS); setTimeout(function(){ sfx(n); },wait); return; }
@@ -232,6 +242,7 @@
     // quiet-mic suites open the card through it.
     function crash(){ sayCard(); }
     function doRevive(){
+      if(slowTurn){finishSlowKeys(true);return;}
       reviveWait=false; REV--; hud();
       $("revOvl").classList.remove("show");
       // the mic has just closed: sfx() holds this chime SETTLE_MS
@@ -257,17 +268,35 @@
     var SPRITES={};
     Object.keys(SVGS).forEach(function(k){ var im=new Image(); im.onload=function(){ SPRITES[k]=im; };
       im.src="data:image/svg+xml;charset=utf-8,"+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 100 100">'+SVGS[k]+'</svg>'); });
+    // Cropped, painted toy objects retain the existing live collision footprint.
+    var CRAFTSPRITES={};
+    ["rock","cactus","cone","log","coin","tree","palm","pine","daisy"].forEach(function(k){
+      var im=new Image();im.onload=function(){CRAFTSPRITES[k]=im;};im.src="/assets/crafted/run-"+k+"-v2.webp";
+    });
+    function paintedThing(key,x,y,size){
+      var im=CRAFTSPRITES[key];if(!im)return false;
+      var f=size/Math.max(im.naturalWidth,im.naturalHeight),w=im.naturalWidth*f,h=im.naturalHeight*f;
+      ctx.save();ctx.shadowColor="rgba(40,47,57,.2)";ctx.shadowBlur=4;ctx.shadowOffsetY=3;
+      ctx.drawImage(im,x-w/2,y-h/2,w,h);ctx.restore();return true;
+    }
     function drawThing(e,x,y,size){
+      if(paintedThing(SPRITEKEY[e],x,y,size))return;
       var sp=SPRITES[SPRITEKEY[e]];
       if(sp){ ctx.drawImage(sp,x-size/2,y-size/2,size,size); return; }
-      ctx.fillStyle="#000"; ctx.font=(size*0.9)+"px sans-serif"; ctx.fillText(e,x,y);
+      // The bundled vector is the loading fallback; never flash an emoji.
+      ctx.fillStyle="#ffd15b";ctx.beginPath();ctx.arc(x,y,size*.3,0,Math.PI*2);ctx.fill();
     }
 
     // the runner = the kid's own buddy character (mascot-neutral)
     var RUNNER="🦊";
     // the kid's chosen buddy as a real sticker sprite (emoji stays the fallback)
-    var BUDDYIMG=(function(){ try{ var c=S.characterById((S.getProfile()||{}).character||"fox"); if(c&&c.svg){ var im=new Image(); im.src="data:image/svg+xml;utf8,"+encodeURIComponent(c.svg); return im; } }catch(e){} return null; })();
-    function drawBuddy(x,y,sz){ if(BUDDYIMG&&BUDDYIMG.complete&&BUDDYIMG.naturalWidth){ ctx.drawImage(BUDDYIMG,x-sz/2,y-sz/2,sz,sz); return true; } return false; }
+    var BUDDYIMG=(function(){ try{ var c=S.characterById((S.getProfile()||{}).character||"fox"); if(c&&c.svg){ var im=new Image(); im.src="data:image/svg+xml;utf8,"+encodeURIComponent(c.svg.replace("<svg ",'<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" ')); return im; } }catch(e){} return null; })();
+    var CRAFTFOX=null;
+    if(((S.getProfile()||{}).character||"fox")==="fox"){var fox=new Image();fox.onload=function(){CRAFTFOX=fox;};fox.src="/assets/crafted/fox-runner.webp";}
+    var CRAFTBUDDY=null,buddyPortrait=new Image();
+    buddyPortrait.onload=function(){CRAFTBUDDY=buddyPortrait;};
+    buddyPortrait.src=SonaCraftedBuddies.source((S.getProfile()||{}).character||"fox")||"";
+    function drawBuddy(x,y,sz){ if(CRAFTFOX){ctx.drawImage(CRAFTFOX,390,205,480,840,x-sz/2,y-sz*.7,sz,sz*1.4);return true;} if(CRAFTBUDDY){ctx.drawImage(CRAFTBUDDY,x-sz/2,y-sz/2,sz,sz);return true;} if(BUDDYIMG&&BUDDYIMG.complete&&BUDDYIMG.naturalWidth){ ctx.drawImage(BUDDYIMG,x-sz/2,y-sz/2,sz,sz); return true; } return false; }
 
     try{ var c=S.characterById((S.getProfile()||{}).character||"fox"); if(c&&c.emoji)RUNNER=c.emoji; }catch(e){}
 
@@ -299,9 +328,11 @@
     var PLAYY=function(){ return H-170; };
     function flash(t){ var f=$("flash"); f.textContent=t; f.style.opacity=1; f.style.transform="scale(1.15)"; setTimeout(function(){f.style.opacity=0;f.style.transform="scale(1)";},600); }
 
+    var distSlowRemainder=0;
     var distIv=setInterval(function(){
       if(document.hidden)return; if(!playing||falling.on||phase!=="run")return;
-      dist+=1; $("score").textContent=dist+"m"; hud();
+      distSlowRemainder+=slowFactor();var metres=Math.floor(distSlowRemainder);distSlowRemainder-=metres;
+      dist+=metres; $("score").textContent=dist+"m"; hud();
       if(dist-stretchStart>=STRETCHES[stretch].len) endStretch();
     },100);
     // a touch faster through a stretch, unless the child keeps tumbling
@@ -319,6 +350,7 @@
 
     // roadside scenery for each stretch
     function side(kind,x,y,s){
+      if(paintedThing(kind,x,y-7,64*s))return;
       ctx.save(); ctx.translate(x,y); ctx.scale(s,s);
       if(kind==="tree"){ ctx.fillStyle="#8a5a2e"; ctx.fillRect(-4,-4,8,22); ctx.fillStyle="#3f9d3a"; ctx.beginPath(); ctx.arc(0,-14,17,0,7); ctx.fill(); ctx.fillStyle="#58c04f"; ctx.beginPath(); ctx.arc(-5,-18,9,0,7); ctx.fill(); }
       else if(kind==="palm"){ ctx.strokeStyle="#b07a45"; ctx.lineWidth=6; ctx.lineCap="round"; ctx.beginPath(); ctx.moveTo(0,18); ctx.quadraticCurveTo(6,0,0,-18); ctx.stroke();
@@ -333,38 +365,45 @@
       ctx.fillStyle="#ff5c74"; rr(rx,y-70,road,34,8); ctx.fill();
       ctx.fillStyle="#fff"; ctx.font="800 22px 'Baloo 2',sans-serif"; ctx.textAlign="center"; ctx.textBaseline="middle"; ctx.fillText("FINISH",rx+road/2,y-52);
     }
-    var ECHO=new Image(); ECHO.src="/coach/echo/echo-celebrate.svg";
+    var ECHO=new Image(); ECHO.src="/assets/crafted/echo-welcome.webp";
 
+    var lastT=performance.now(),dashOff=0;
     function draw(){
-      var now=performance.now();
+      var now=performance.now(),dt=document.hidden?0:Math.min(100,now-lastT);lastT=now;
+      if(playing&&phase==="run"&&slowMs>0){slowMs=Math.max(0,slowMs-dt);if(!slowMs)$("slowStatus").textContent="Tap Echo to slow the course";}
+      paintSlowKeys();
+      var step=playing&&!document.hidden?speed*(phase==="run"?slowFactor():1):0;
+      if(slowTurn){if(magnetUntil>now-dt)magnetUntil+=dt;hurtT+=dt;}
       ctx.clearRect(0,0,W,H);
       var road=W*ROADF, rx=(W-road)/2, lw=road/LANES, S0=STRETCHES[stretch];
-      // the sides: this stretch's ground and its trees, going by
-      ctx.fillStyle=S0.grass; ctx.fillRect(0,0,rx,H); ctx.fillRect(rx+road,0,W-rx-road,H);
-      ctx.fillStyle=S0.edge; ctx.fillRect(0,0,Math.max(6,rx*0.28),H); ctx.fillRect(W-Math.max(6,rx*0.28),0,Math.max(6,rx*0.28),H);
-      if(phase!=="done") sideOff=(sideOff+speed)%150;
+      // Keep the painted roadside visible. The world tint and moving trees
+      // distinguish the beach and forest without flat strips over the art.
+      if(stretch>0){ctx.fillStyle=stretch===1?"rgba(247,212,142,.38)":"rgba(34,100,58,.24)";
+        ctx.fillRect(0,0,rx,H);ctx.fillRect(rx+road,0,W-rx-road,H);}
+      ctx.fillStyle="rgba(253,246,222,.26)";ctx.fillRect(rx-2,0,2,H);ctx.fillRect(rx+road,0,2,H);
+      if(phase!=="done") sideOff=(sideOff+step)%150;
       var ts=Math.max(0.6,Math.min(1.1,rx/46));
       for(var yy=-150+sideOff;yy<H+150;yy+=150){ side(S0.side,rx*0.58,yy,ts); side(S0.side,rx+road+(W-rx-road)*0.42,yy+75,ts); }
       // road + moving dashes
-      ctx.fillStyle="#b7c5d4"; rr(rx-8,-10,road+16,H+20,26); ctx.fill(); ctx.fillStyle="rgba(0,0,0,.05)"; rr(rx-8,-10,road+16,H+20,26); ctx.fill();
-      var dashOff=(now*speed*0.06)%56;
+      // The textured road is painted behind the canvas; live dashes still move.
+      dashOff=(dashOff+step)%56;
       ctx.fillStyle="rgba(255,255,255,.85)";
       for(var l=1;l<LANES;l++){ for(var y=-56;y<H;y+=56){ ctx.fillRect(rx+lw*l-3,y+dashOff,6,30); } }
       // spawn pacing tied to speed
-      if(phase==="run"){ spawnGap-=speed; if(spawnGap<=0){ spawnRow(); spawnGap=170+Math.random()*130; } }
+      if(playing&&!document.hidden&&phase==="run"){ spawnGap-=step; if(spawnGap<=0){ spawnRow(); spawnGap=170+Math.random()*130; } }
       // things — opaque paint first: canvases modulate color-emoji glyphs by
       // the fill's alpha, and the lane dashes just left a translucent white
       ctx.fillStyle="#000"; ctx.textAlign="center"; ctx.textBaseline="middle"; ctx.font="44px sans-serif";
-      var px=laneCX(laneX=laneX+(lane-laneX)*0.25), py=PLAYY(), magnet=now<magnetUntil;
+      var px=laneCX(laneX=laneX+(lane-laneX)*(step>0?0.25:0)), py=PLAYY(), magnet=now<magnetUntil;
       for(var i=things.length-1;i>=0;i--){ var t=things[i];
-        t.y+=speed;
-        if(magnet&&t.t==="c"&&t.y>py-280&&t.y<py+30) t.lane=Math.round(laneX);   // the magnet pulls every coin nearby into your lane
+        t.y+=step;
+        if(step>0&&magnet&&t.t==="c"&&t.y>py-280&&t.y<py+30) t.lane=Math.round(laneX);   // the magnet pulls every coin nearby into your lane
         if(t.y>H+50){ things.splice(i,1); continue; }
         var tx=laneCX(t.lane);
         if(t.gold){ ctx.fillStyle="rgba(255,214,51,"+(0.35+0.25*Math.sin(now/120))+")"; ctx.beginPath(); ctx.arc(tx,t.y,30,0,7); ctx.fill(); ctx.fillStyle="#000"; }
         drawThing(t.e,tx,t.y,t.t==="c"?(t.gold?54:40):54);
         // collide near player row
-        if(!falling.on && Math.abs(t.y-py)<40 && t.lane===Math.round(laneX)){
+        if(step>0&&!falling.on && Math.abs(t.y-py)<40 && t.lane===Math.round(laneX)){
           if(t.t==="c"){ things.splice(i,1); coins++; $("coinN").textContent=coins; sfx("coin");
             if(t.gold){ magnetUntil=now+6000; flash("COIN MAGNET!"); echoT=now; } continue; }
           if(now-hurtT<1200) continue; // brief mercy window
@@ -373,7 +412,7 @@
       }
       // the finish line comes down the road; crossing it wins the race
       if((phase==="finish"||phase==="done")&&finishY!==null){
-        if(phase==="finish") finishY+=speed;
+        if(phase==="finish") finishY+=step;
         drawFinish(rx,road,finishY);
         if(ECHO.complete&&ECHO.naturalWidth){ var hp=(now-echoT)/700, ey=hp>=0&&hp<1?-Math.sin(hp*Math.PI)*24:0, es=Math.min(70,W*0.17); ctx.drawImage(ECHO,rx+road-es*0.75,finishY+Math.max(12,road/12)*2-es*1.02+ey,es,es*1.07); }
         if(phase==="finish"&&finishY>=py-24){ phase="done"; finaleDone=true; hud(); flash("YOU WIN!"); sfx("complete"); echoT=now; try{ if(S&&S.confetti)S.confetti(); }catch(e){} setTimeout(endRound,1800); }
@@ -384,34 +423,34 @@
         if(ft>=1){ falling.on=false; hurtT=now; flash("Back in the race!"); }
         else{
           ctx.save(); ctx.translate(px,py+ft*ft*300); ctx.rotate(ft*12);
-          ctx.globalAlpha=1-ft*0.4; if(!drawBuddy(0,-8,58*(1-ft*0.45))){ ctx.fillStyle="#000"; ctx.font=(54*(1-ft*0.45))+"px sans-serif"; ctx.fillText(RUNNER,0,0); } ctx.restore();
+          ctx.globalAlpha=1-ft*0.4; if(!drawBuddy(0,-8,66*(1-ft*0.45))){ ctx.fillStyle="#efaf6a";ctx.beginPath();ctx.arc(0,0,18,0,Math.PI*2);ctx.fill(); } ctx.restore();
         }
       } else {
         var blink=(now-hurtT<1200)&&(((now/120)|0)%2===0), bob=phase==="done"?0:Math.abs(Math.sin(now/110))*7;
         if(magnet){ ctx.strokeStyle="rgba(255,214,51,"+(0.55+0.3*Math.sin(now/90))+")"; ctx.lineWidth=4; ctx.beginPath(); ctx.arc(px,py-20,40,0,7); ctx.stroke(); }
-        if(!blink){ if(!drawBuddy(px,py-20-bob,58)){ ctx.fillStyle="#000"; ctx.font="54px sans-serif"; ctx.fillText(RUNNER,px,py-bob); } }
+        if(!blink){ if(!drawBuddy(px,py-20-bob,66)){ ctx.fillStyle="#efaf6a";ctx.beginPath();ctx.arc(px,py-bob,18,0,Math.PI*2);ctx.fill(); } }
       }
-      requestAnimationFrame(playing?draw:function(){});
+      requestAnimationFrame((playing||slowTurn)?draw:function(){});
     }
     function rr(x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
     startStretch(0);
-    draw();
+    requestAnimationFrame(draw);
 
-    // ── "Say your sound to keep playing": the only time this game listens ──
+    // ── Shared short listening path for checkpoints and sound-powered help ──
     // (24 Sep 2026) STAR MODE is gone. It held the mic open for the whole
     // game so a shout could fire a power-up, which kept an iPhone in
     // phone-call audio from the first frame to the last. The mic now opens
-    // only while the keep-playing card shows, after the quiet window above,
-    // and closes before the revive chime. Loudness and sound-shape numbers
-    // only: nothing is recorded, nothing leaves the device, and a revive is
-    // play, never practice data.
+    // only for checkpoints or a requested help turn, after the quiet window
+    // above, and closes before a chime. Native recognition supplements the
+    // sound-shape check for help turns when available; audio stays on device.
+    // These gameplay turns never become practice data.
     var SND="R", SAYTXT="rrrr", CAN_LISTEN=!!(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia);
     (function(){
       var snd=""; try{ snd=sessionStorage.getItem("sona.boost.sound")||""; }catch(e){}
       if(!snd){ try{ snd=((S&&S.getProfile&&S.getProfile().focusSounds)||["R"])[0]; }catch(e){ snd="R"; } }
       SND=String(snd).toUpperCase(); SAYTXT=(S&&S.soundSay)?S.soundSay(SND):"rrrr";
     })();
-    function listenNote(t){ try{ $("revListen").textContent=t; }catch(e){} }
+    function listenNote(t){ try{ $("revListen").textContent=t;if(slowTurn&&!slowTurn.finishing)$("slowStatus").textContent=t; }catch(e){} }
     function closeReviveMic(){
       rv.gen++; clearTimeout(rv.t); if(rv.raf)cancelAnimationFrame(rv.raf); rv.raf=0;
       try{ if(rv.src)rv.src.disconnect(); }catch(e){} rv.src=null;
@@ -434,11 +473,19 @@
         // the card closed (or the page hid) while the phone was asking: this
         // stream is already late, so it goes straight back
         if(gen!==rv.gen||!reviveWait||document.hidden){ try{ st.getTracks().forEach(function(t){t.stop();}); }catch(e){} micClosedAt=performance.now(); askAgain(); return; }
-        rv.st=st; listenFor(st,gen);
+        rv.st=st;
+        if(slowTurn){
+          var turn=slowTurn;
+          try{turn.native=Promise.resolve(S.speechStart?S.speechStart({words:[SAYTXT],maxMs:6500}):false);}catch(e){turn.native=Promise.resolve(false);}
+          turn.native=turn.native.then(function(v){turn.nativeSettled=true;turn.nativeStarted=!!v;return v;},function(){turn.nativeSettled=true;return false;});
+          turn.timer=setTimeout(function(){if(slowTurn===turn)finishSlowKeys(false,"Tap Echo to try again");},6500);
+        }
+        listenFor(st,gen);
       }).catch(function(){
         rv.pending--;
         // a request cut short by the page hiding asks again on the way back
         if(gen!==rv.gen||!reviveWait||document.hidden){ askAgain(); return; }
+        if(slowTurn){finishSlowKeys(false,"Microphone is off");return;}
         // no microphone: the card can't hear anyone, so the round ends kindly
         reviveWait=false; $("revOvl").classList.remove("show"); endRound();
       });
@@ -468,7 +515,7 @@
         if(rv.ctx.state==="suspended") rv.ctx.resume();
         rv.src=rv.ctx.createMediaStreamSource(st); an=rv.ctx.createAnalyser(); an.fftSize=512; rv.src.connect(an);
         td=new Uint8Array(an.fftSize); fd=new Uint8Array(an.frequencyBinCount); binHz=rv.ctx.sampleRate/an.fftSize;
-      }catch(e){ closeReviveMic(); reviveWait=false; $("revOvl").classList.remove("show"); endRound(); return; }
+      }catch(e){ if(slowTurn){finishSlowKeys(false,"Microphone unavailable");return;} closeReviveMic(); reviveWait=false; $("revOvl").classList.remove("show"); endRound(); return; }
       // family check: the burst must SOUND like the target's family (voiced
       // vs hiss) to fire — a scream or an S can't revive an R kid. Shape
       // numbers only; nothing recorded (see Sona.frameShape).
@@ -495,7 +542,15 @@
           for(var j=0;j<heard.length;j++){ var f=heard[j];
             if(f.r>thr){ voiced++;
               if(f.s){ if(!shp)shp={m:0,fm:0,hm:0}; shp.m+=f.s.m; shp.fm+=f.s.fm; shp.hm+=f.s.hm; }
-              if(voiced>=6){ if(!famOK(shp)){ voiced=0; shp=null; } else { closeReviveMic(); doRevive(); return; } } }
+              if(voiced>=6){ if(!famOK(shp)){ voiced=0; shp=null; } else {
+                if(slowTurn){
+                  if(!slowTurn.heardAt)slowTurn.heardAt=now;
+                  // Give on-device recognition the rest of a short utterance;
+                  // the first six voiced frames alone can be only its onset.
+                  if(now-slowTurn.heardAt<550){rv.raf=requestAnimationFrame(tick);return;}
+                }
+                closeReviveMic(); doRevive(); return;
+              } } }
             else { voiced=0; shp=null; } }
         }
         rv.raf=requestAnimationFrame(tick);
@@ -503,13 +558,15 @@
     }
     // lock/app-switch fires visibilitychange, NOT pagehide — a mic left open
     // there stays lit in a pocket. Coming back to the card listens again.
-    if(window.Sona&&Sona.onBackground) Sona.onBackground(closeReviveMic); else window.addEventListener("pagehide",closeReviveMic);
-    document.addEventListener("visibilitychange",function(){ if(!document.hidden&&reviveWait) openReviveMic(); });
+    function speechBackground(){if(slowTurn){slowTurn.cancelled=true;finishSlowKeys(false);}else closeReviveMic();}
+    if(window.Sona&&Sona.onBackground) Sona.onBackground(speechBackground); else window.addEventListener("pagehide",speechBackground);
+    document.addEventListener("visibilitychange",function(){ if(!document.hidden&&reviveWait&&!slowTurn) openReviveMic(); });
 
     // ---- round over ----
     function bankAndContinue(){ S.finishGameTurn("run",score()); location.href="/charge.html?daily=1&banked="+score(); }
     function score(){ return (dist/10|0)+coins*2; }
     function endRound(){
+      if(slowTurn){slowTurn.cancelled=true;return finishSlowKeys(false).then(endRound);}
       closeReviveMic();
       if(window.__ended)return; window.__ended=true;
       S.finishGameTurn("run",isDaily?score():null);
@@ -546,7 +603,11 @@
     }
     $("endCharge").onclick=function(){ location.href=isDaily?"/charge.html?daily=1":(S.gameAccess("glide").allowed?"/charge.html?game=arcade-glide.html":"/activities.html"); };
     $("endHome").onclick=function(){ S.finishGameTurn("run"); location.href="/today.html#play"; };
-    $("close").onclick=function(){ closeReviveMic(); S.finishGameTurn("run"); if(playing){ playing=false; clearInterval(distIv); clearInterval(rampIv); } if(isDaily){ bankAndContinue(); return; } location.href="/today.html#play"; };
+    $("close").onclick=function(){
+      if(window.__speechLeaving)return;window.__speechLeaving=true;
+      function leave(){closeReviveMic();playing=false;clearInterval(distIv);clearInterval(rampIv);S.finishGameTurn("run");if(isDaily){bankAndContinue();return;}location.href="/today.html#play";}
+      if(slowTurn){slowTurn.cancelled=true;finishSlowKeys(false).then(leave);}else leave();
+    };
     }
   </script>
 </body>

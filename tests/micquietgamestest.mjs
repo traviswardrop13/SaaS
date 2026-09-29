@@ -448,8 +448,13 @@ await scenario("feed", async () => {
     const wrong = await page.evaluate(() => { const m = document.getElementById("bMain").textContent.match(/Where's the (.+)\?/); const b = [...document.querySelectorAll("#grid .cardBtn")].find((x) => x.querySelector(".w").textContent !== m[1]); if (b) b.click(); return !!b; });
     if (wrong) { await page.waitForTimeout(200); ok("feed: a wrong tap while listening wobbles silently and keeps listening", (await live(page)) === 1 && /Almost/.test(await page.locator("#bSub").innerText())); }
     await page.waitForTimeout(400);   // past calibration
+    ok("feed: taps and silence have not unlocked a picture hint",await page.locator(".speechHint").count()===0);
     await voice(page, 300);
     await page.waitForFunction(() => window.__heard === 1);
+    ok("feed: speaking reveals exactly the asked picture without feeding it automatically",await page.evaluate(()=>{
+      const hint=document.querySelectorAll(".speechHint"),word=document.getElementById("bMain").textContent.match(/Where's the (.+)\?/);
+      return hint.length===1&&hint[0].querySelector(".w").textContent===word[1]&&/0\/5/.test(document.getElementById("plate").dataset.fed);
+    }));
     await page.waitForTimeout(350);
     let l = await log(page);
     const tap = l.sfx.find((c) => c.name === "tap" && c.at > l.mics[0].end);

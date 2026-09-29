@@ -120,13 +120,14 @@
     .modal{max-height:calc(100dvh - 48px);overflow-y:auto;}
     #trialBanner{margin-top:18px;}
   </style>
+  <link href="/crafted-home.css" rel="stylesheet" />
 </head>
 <body>
   <main id="libraryApp" class="library-wrap" hidden>
     <header class="library-header">
       <a id="buddyBtn" href="/customize.html" aria-label="Choose your buddy"></a>
-      <span class="library-label">Play library</span>
-      <button id="parentBtn" type="button" aria-label="Parent corner"><span class="pic-gear" aria-hidden="true"></span></button>
+      <span class="library-label">Sona</span>
+      <button id="parentBtn" type="button" aria-label="Parent corner"><span class="pic-gear" aria-hidden="true"></span><span>Grown-ups</span></button>
     </header>
     <a id="trialBanner"><span data-ic="gift" aria-hidden="true"></span> <span id="trialMsg"></span></a>
     <div class="library-intro"><div><h1>Pick a game!</h1><p>A little practice. A lot to explore.</p></div><span id="libraryEcho" aria-hidden="true"></span></div>
@@ -200,6 +201,7 @@
   <div id="toast"></div>
 
   <script src="/sona.js"></script>
+  <script src="/crafted-buddies.js"></script>
   <script>
     (function(){
       var S=window.Sona,app=document.getElementById("libraryApp"),host=document.getElementById("activityGroups");
@@ -216,6 +218,8 @@
         document.getElementById("catalogPreviewState").textContent=plan.state==="trial"?"Trial preview: all available games unlocked. No payment or subscription.":plan.state==="expired"?"Trial ended preview: free games stay available. Purchases are off.":"Free games stay available. Premium games open through the grown-ups gate. Purchases are off.";
       }
       var library=S.activityLibrary(),lockedGame=null;
+      // Home art is presentation only: the catalog still owns access and routes.
+      var craftedCards={slice:"fruit",tiles:"piano",stack:"stack",run:"run",glide:"glide",feed:"feed",hoops:"hoops"};
       var unlock=document.getElementById("libraryUnlock");
       function node(tag,className,text){var el=document.createElement(tag);if(className)el.className=className;if(text)el.textContent=text;return el;}
       function access(game){return S.gameAccess?S.gameAccess(game.key):{allowed:!S.gated(game.key),tier:game.tier,reason:S.isFree()?"free-mode":"legacy"};}
@@ -239,13 +243,17 @@
         var grant=access(game),tier=grant.reason==="free-mode"?"free":game.tier;
         var comingSoon=game.comingSoon||grant.reason==="coming-soon";
         var label=comingSoon?"Coming soon":tier==="free"?"Free":grant.allowed?"Included":"Premium";
-        button.disabled=!!comingSoon;
+        button.disabled=!!comingSoon;button.classList.toggle("is-coming",!!comingSoon);
         button.dataset.locked=grant.allowed?"false":"true";
         button.setAttribute("aria-label",comingSoon?game.name+". Coming soon.":game.name+". "+(game.playDescription||game.sub)+" "+(grant.allowed?label+".":"Premium. Ask a grown-up to unlock."));
-        var art=node("span","game-art");art.setAttribute("aria-hidden","true");var sticker=S.gameSticker(game.key);S.paintSticker(art,sticker[0],sticker[1]);button.appendChild(art);
+        var art=node("span","game-art");art.setAttribute("aria-hidden","true");
+        if(craftedCards[game.key]){
+          var picture=node("img","crafted-card-image");picture.src="/assets/crafted/home-"+craftedCards[game.key]+".webp";picture.alt="";picture.width=768;picture.height=432;picture.decoding="async";picture.loading="lazy";art.appendChild(picture);
+        }else{var sticker=S.gameSticker(game.key);S.paintSticker(art,sticker[0],sticker[1]);}
+        button.appendChild(art);
         var info=node("span","game-info");info.appendChild(node("span","game-name",game.name));
         info.appendChild(node("span","game-access"+(comingSoon?" coming-soon":tier==="premium"?" premium":""),label));
-        button.appendChild(info);button.onclick=function(){launch(game);};return button;
+        var arrow=node("span","game-arrow","›");arrow.setAttribute("aria-hidden","true");info.appendChild(arrow);button.appendChild(info);button.onclick=function(){launch(game);};return button;
       }
       // A cached pre-shelves sona.js still supplies the complete age groups.
       (library.featured || []).forEach(function(collection){
@@ -259,7 +267,10 @@
         var top=node("div","shelf-heading"),copy=node("div"),heading=node("h2","",group.name);heading.id="group-"+group.id;copy.appendChild(heading);
         copy.appendChild(node("p","",group.ageLabel));top.appendChild(copy);
         if(group.recommended)top.appendChild(node("span","shelf-tag recommended","For your child"));section.appendChild(top);
-        var grid=node("div","game-grid");group.games.forEach(function(game){grid.appendChild(gameCard(game));});section.appendChild(grid);host.appendChild(section);
+        var grid=node("div","game-grid"),parked=node("div","coming-grid");
+        group.games.forEach(function(game){(game.comingSoon?parked:grid).appendChild(gameCard(game));});section.appendChild(grid);
+        if(parked.childElementCount){var waiting=node("div","coming-shelf");waiting.appendChild(node("p","coming-heading","More to discover soon"));waiting.appendChild(parked);section.appendChild(waiting);}
+        host.appendChild(section);
       });
       var lockedKey=new URLSearchParams(location.search).get("locked");
       library.groups.forEach(function(group){group.games.forEach(function(game){if(game.key===lockedKey&&!access(game).allowed)showLocked(game);});});
@@ -274,8 +285,7 @@
       // A cached library can return after a trial expires or an adult changes
       // preview state. Re-evaluate its labels without reviving stale access.
       window.addEventListener("pageshow",function(event){if(event.persisted)location.reload();});
-      S.paintSticker(document.getElementById("libraryEcho"),"p-echo-idle","sky");
-      var echo=document.querySelector("#libraryEcho svg");if(echo)echo.setAttribute("preserveAspectRatio","xMidYMid meet");
+      var echo=node("img");echo.src="/assets/crafted/echo-welcome.webp";echo.alt="";echo.width=84;echo.height=96;document.getElementById("libraryEcho").appendChild(echo);
       S.paintSticker(document.getElementById("libraryBooksArt"),"pt-book","sky");
       // Cancel any previous spoken turn without changing the game voice preference.
       if(S.speakNow)S.speakNow("");
@@ -287,7 +297,7 @@
     var P=(S&&S.getProfile)?S.getProfile():{};
     function sfx(n){try{if(S&&S.sfx&&S.sfx[n])S.sfx[n]();}catch(e){}}
     function toast(t){var el=$("toast");el.textContent=t;el.classList.add("show");clearTimeout(toast._t);toast._t=setTimeout(function(){el.classList.remove("show");},1800);}
-    if(S&&S.buddyMarkup)$("buddyBtn").innerHTML=S.buddyMarkup(P.character||"fox",36);
+    if(S&&S.buddyMarkup)$("buddyBtn").innerHTML=SonaCraftedBuddies.markup(P.character||"fox",36);
     // Bank coins already earned by honest practice, once; browsing earns nothing.
     try{if(S&&S.mintCoins)S.mintCoins();}catch(e){}
     try{if(S&&S.repsBeacon)S.repsBeacon();}catch(e){}
@@ -315,7 +325,7 @@
       gateAns="";
       var q=$("gateQ");
       if(pin){
-        gateMode="pin"; gateNeed=pin; q.className=""; q.textContent="🔒";
+        gateMode="pin"; gateNeed=pin; q.className=""; q.innerHTML=S.icon?S.icon("lock",30):"Parent code";
         $("gateHint").textContent="Enter your parent code";
       } else {
         gateMode="words"; var d=[];
