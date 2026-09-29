@@ -144,7 +144,7 @@ await scenario('clinician setup survives a reload',async()=>{
  const {context,page,errors,requests}=await fresh();try{
   await page.locator('#slpLink').click();await page.locator('#obName').fill('Milo');await next(page);
   await page.reload();
-  ok('a reloaded clinician draft resumes on the clinician order at welcome',await page.evaluate(()=>draft.role==='slp'&&ORDER===ORDER_SLP&&document.body.dataset.setupScreen==='welcome'&&/Which child/.test(document.querySelector('[data-step="name"] .qh').textContent)));
+  ok('a reloaded clinician draft resumes on the clinician order at name',await page.evaluate(()=>draft.role==='slp'&&ORDER===ORDER_SLP&&document.body.dataset.setupScreen==='name'&&/Which child/.test(document.querySelector('[data-step="name"] .qh').textContent)&&document.getElementById('obName').value==='Milo'));
   const seen=await walk(page);
   ok('going on reaches the clinician email step, never Meet Rachel or the family mic',seen.at(-1)==='email'&&!seen.includes('rachel')&&!seen.includes('mic')&&await page.locator('[data-step="rachel"].on,[data-step="mic"].on').count()===0,seen);
   await page.locator('#obEmail').fill('clinician@example.com');await next(page);await atHandoff(page);
@@ -157,6 +157,20 @@ await scenario('clinician setup survives a reload',async()=>{
   const seen=await walk(native.page);ok('native setup never reaches the clinician email step',seen.at(-1)==='mic'&&!seen.includes('email')&&!seen.includes('slp'),seen);
   clean('native clinician draft',native.errors);
  }finally{await native.context.close();}
+});
+
+// Welcome is the fork: backing onto it undoes a mistaken tap on the clinician link.
+await scenario('a parent can back out of clinician setup',async()=>{
+ const {context,page,errors,requests}=await fresh();try{
+  await page.locator('#slpLink').click();await page.locator('#backBtn').click();
+  ok('Back to welcome returns to the family order and wording',await page.evaluate(()=>draft.role!=='slp'&&ORDER===ORDER_PARENT&&document.body.dataset.setupScreen==='welcome'&&/Who's practicing/.test(document.querySelector('[data-step="name"] .qh').textContent)&&document.querySelectorAll('#seg i').length===3));
+  await page.reload();ok('a reload after backing out stays on the family order',await page.evaluate(()=>ORDER===ORDER_PARENT&&document.body.dataset.setupScreen==='welcome'));
+  await next(page);await page.locator('#obName').fill('Milo');const seen=await walk(page);
+  ok('Continue walks the family path to the mic, never the clinician email',seen.at(-1)==='mic'&&!seen.includes('email')&&!seen.includes('slp'),seen);
+  await notNow(page);await atHandoff(page);
+  ok('the backed-out parent finishes as a parent with no clinician sign-in',await page.evaluate(()=>Sona.getProfile().role==='parent')&&!requests.some(r=>new URL(r.url).pathname==='/api/slp/auth/request'));
+  clean('clinician back-out',errors);
+ }finally{await context.close();}
 });
 
 // Freeze the step-entry clock so a quick Done press happens before any delayed
