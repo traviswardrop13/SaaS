@@ -344,6 +344,10 @@ async function waitSpoke(pg, ms) {
     r = await reader("2026-12-07T10:00:00", w, h);
     await r.pg.locator(".bookBtn", { hasText: "Rory the Rabbit" }).click(); await r.pg.waitForTimeout(250);
     for (let i = 0; i < 7; i++) { await r.pg.click("#bkNext"); await r.pg.waitForTimeout(120); }
+    // Measure only once The End is on screen and its fonts have loaded: a
+    // slower runner, or a fallback font still showing, is not the bug.
+    await r.pg.waitForFunction(() => /The End!/.test(document.getElementById("bkStage").textContent), null, { timeout: 5000 }).catch(() => {});
+    await r.pg.evaluate(() => document.fonts.ready.then(() => true));
     ends.push(await r.pg.evaluate(() => {
       const box = (id) => document.getElementById(id).getBoundingClientRect();
       const p = box("bkPrev"), n = box("bkNext");
