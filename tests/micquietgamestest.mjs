@@ -240,11 +240,15 @@ function stripComments(src) { return src.replace(/\/\*[\s\S]*?\*\//g, "").replac
 // ── the five arcade games: STAR MODE is gone; the keep-playing card is the
 // only listener, and only while it shows ──
 const ARCADE = [["run", "arcade-run.html"], ["slice", "arcade-slice.html"], ["stack", "arcade-stack.html"], ["tiles", "arcade-tiles.html"], ["glide", "arcade-glide.html"]];
-// The Great round card's "Next" follows the arcade chain (the family's
-// redesign brief, 28 Sep 2026), and each game sets its own score to reach
-// the card with points: a round with none ends on "Good try!" and no Next.
-const NEXT_GAME = { slice: "tiles", tiles: "stack", stack: "run", run: "glide", glide: "slice" };
-const SCORED = { slice: () => { score = 7; }, tiles: () => { score = 7; }, stack: () => { score = 7; }, run: () => { dist = 70; }, glide: () => { score = 7; } };
+// Each game sets its own score to reach the end card with points (a round
+// with none ends on "Good try! Wanna go again?" instead). Fruit Slice and
+// Piano Tiles also count the real fruit and notes, because their end card
+// names those, never the score.
+const SCORED = { slice: () => { score = 7; FRUITN = 5; }, tiles: () => { score = 7; NOTESN = 7; }, stack: () => { score = 7; }, run: () => { dist = 70; }, glide: () => { score = 7; } };
+// "orange" by hue, so a new value from the designer needs no test edit: the
+// crafted orange (#bf5d24) and action.css's (#ef6f23) both read as orange
+const isOrange = (c) => { const m = String(c).match(/(\d+),\s*(\d+),\s*(\d+)/); if (!m) return false; const [r, g, b] = m.slice(1).map(Number);
+  const mx = Math.max(r, g, b), mn = Math.min(r, g, b); if (mx !== r || mx - mn < 100) return false; const h = ((g - b) / (mx - mn)) * 60; return h >= 10 && h <= 40; };
 for (const [key, file] of ARCADE) {
   const code = stripComments(readFileSync(ROOT + "/" + file, "utf8"));
   // The brief's mockups still show the boost pills ("Say rrrr for FRENZY /
@@ -265,24 +269,21 @@ for (const [key, file] of ARCADE) {
       // a miss never opens it (the miss scenarios below pin that half)
       await page.evaluate(() => { if (playing) crash(); });
       await page.locator("#revOvl.show").waitFor();
-      // the redesigned card (the family's redesign brief, 28 Sep 2026), on
-      // the rounds: the ask is the heading, with the sound's letters in the
-      // sound's orange. Opened by its old name it falls back to "…to keep
-      // playing!"; between stages it is the round's own line, which each
-      // game's round test pins. No "Whoops!": the card follows a finished
-      // stage, never a miss. Under the ask, the round's three stage dots,
-      // where hearts used to be: nothing is lost on this card.
+      // the say-it card on the rounds (the crafted world's card, merged 29
+      // Sep 2026): the ask is the heading, and only the sound's letters in it
+      // are orange (Sona.soundMark picks them; the crafted sheet colours them,
+      // .ovl h2 b), the rest in the card's ink. Opened by its old name it says
+      // "…to keep playing!"; between stages it is the round's own line, which
+      // each game's round test pins. No "Whoops!": the card follows a
+      // finished stage, never a miss. Under the ask, the round's three stage
+      // dots, where hearts used to be: nothing is lost on this card.
       const card = await page.evaluate(() => {
         const snd = document.querySelector("#revTitle .snd"), dots = document.getElementById("revHearts");
-        // the sound's colour is action.css's --snd token, read through a
-        // probe, so a new value from the designer doesn't need this test edited
-        const probe = document.body.appendChild(document.createElement("i")); probe.style.color = "var(--snd)";
-        const token = getComputedStyle(probe).color; probe.remove();
         return { whoops: !!document.querySelector("#revOvl .whoops") || /whoops/i.test(document.getElementById("revOvl").textContent), title: document.getElementById("revTitle").textContent,
-          snd: snd && snd.textContent === SAYTXT, orange: snd && getComputedStyle(snd).color, token, rev: REV,
+          snd: snd && snd.textContent === SAYTXT, sound: snd && getComputedStyle(snd).color, ink: getComputedStyle(document.getElementById("revTitle")).color, rev: REV,
           dots: dots.querySelectorAll(".wdot").length, onlyDots: dots.children.length > 0 && [...dots.children].every((c) => c.classList.contains("wdot")) };
       });
-      ok(key + ": the say-it card asks for the sound (“to keep playing!” by its old name) with the sound in orange, and says no Whoops!", !card.whoops && /to keep playing!$/.test(card.title) && card.snd && !!card.token && card.token !== "rgb(0, 0, 0)" && card.orange === card.token, card);
+      ok(key + ": the say-it card asks for the sound (“to keep playing!” by its old name) with only the sound in orange, and says no Whoops!", !card.whoops && /to keep playing!$/.test(card.title) && card.snd && isOrange(card.sound) && !isOrange(card.ink), card);
       ok(key + ": under the ask, the round's three stage dots, not hearts", card.rev === 3 && card.dots === 3 && card.onlyDots, card);
       await page.waitForTimeout(150);
       ok(key + ": the card waits out the crash sound before it listens", (await live(page)) === 0 && /Get ready|Listen to Echo/.test(await page.locator("#revListen").innerText()));
@@ -313,24 +314,23 @@ for (const [key, file] of ARCADE) {
       await page.evaluate(() => { if (playing) crash(); });
       await page.locator("#revOvl.show").waitFor();
       await page.waitForFunction(() => __quiet.live() === 1);
+      const placeholder = await page.evaluate(() => document.getElementById("endTitle").textContent.trim());
       await page.evaluate(SCORED[key]);
       await page.locator("#revDone").click();
       await page.locator("#endOvl.show").waitFor();
-      // the Great round card (design 11): the game's name, "Great round!",
-      // three stars, and one next step — "Next: <the next game>" when that
-      // game opens for this family, and "Back to games" beside it (alone,
-      // and teal, when the next game is closed to them). A round the child
-      // stops early says "Great round!"; a finished round leads with its own
-      // finale line instead, which each game's round test pins.
-      const end = await page.evaluate(([k, nx]) => {
-        const vis = (id) => { const e = document.getElementById(id); return e && getComputedStyle(e).display !== "none" ? e.textContent.trim() : null; };
-        return { game: vis("endGame"), want: Sona.gameAct(k).name, title: vis("endTitle"), stars: document.querySelectorAll("#endEmoji .endStar").length, starsShown: vis("endEmoji") !== null,
-          stat: vis("endScore"), next: vis("endCharge"), home: vis("endHome"), homeTeal: document.getElementById("endHome").classList.contains("act-pill"),
-          open: Sona.gameAccess(nx).allowed, nextName: Sona.gameAct(nx).name };
-      }, [key, NEXT_GAME[key]]).catch((e) => ({ error: String(e) }));
-      ok(key + ": the Great round card names the game, says Great round!, and shows three stars and what the round earned", end.game === end.want && end.title === "Great round!" && end.stars === 3 && end.starsShown && !!end.stat, end);
-      ok(key + ": it offers \u201CNext: " + NEXT_GAME[key] + "\u201D and \u201CBack to games\u201D, or Back to games alone when that game is closed",
-        end.home === "Back to games" && (end.open ? end.next === "Next: " + end.nextName && !end.homeTeal : end.next === null && end.homeTeal), end);
+      // the end card (the crafted world's, merged 29 Sep 2026): a lit star,
+      // the round's own line in place of the markup's placeholder, never
+      // "points" (a child's copy says what they did), Echo, and two ways on:
+      // Next, which goes to the next game or, when that game is closed to
+      // this family, to the games (pinned below), and Back home.
+      const end = await page.evaluate(() => {
+        const $ = (id) => document.getElementById(id), vis = (e) => !!e && getComputedStyle(e).display !== "none";
+        return { star: vis($("endEmoji")) && !!$("endEmoji").querySelector("svg") && getComputedStyle($("endEmoji")).opacity === "1",
+          title: $("endTitle").textContent.trim(), echo: !!document.querySelector("#endOvl .echoWin img"),
+          next: vis($("endCharge")) ? $("endCharge").textContent.trim() : null, home: vis($("endHome")) ? $("endHome").textContent.trim() : null };
+      }).catch((e) => ({ error: String(e) }));
+      ok(key + ": the end card shows a lit star, the round's own line (never \u201Cpoints\u201D) and Echo", end.star && !!end.title && end.title !== placeholder && !/\bpoints?\b/i.test(end.title) && end.echo, { ...end, placeholder });
+      ok(key + ": \u2026and offers Next and Back home", /Next/.test(end.next || "") && end.home === "Back home", end);
       await page.waitForTimeout(500);
       l = await log(page);
       ok(key + ": \"I'm done playing\" closes the mic, then the round ends with a chime", (await live(page)) === 0 && l.sfx.some((c) => c.name === "complete" && c.live === 0 && c.at > l.mics[l.mics.length - 1].end));
@@ -341,12 +341,13 @@ for (const [key, file] of ARCADE) {
   });
 }
 
-// ── the Great round card when the next game is closed to this family ──
+// ── the end card's Next when the next game is closed to this family ──
 // Fruit Slice's Next is Piano Tiles, a Premium game. Through the paid seam,
-// for a family holding no plan, the card must not offer a door that bounces
-// them: "Back to games" stands alone and takes the teal. This holds whichever
-// way pricing points, because the seam shows the paid state either way.
-await scenario("slice: Great round with Piano Tiles closed", async () => {
+// for a family holding no plan, Next must not open a door that bounces them:
+// it takes them to the games instead of Piano Tiles' practice page. This
+// holds whichever way pricing points, because the seam shows the paid state
+// either way.
+await scenario("slice: Next with Piano Tiles closed", async () => {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 }, reducedMotion: "reduce" });
   await context.route("**/*", (route) => (route.request().url().startsWith(BASE + "/") ? route.continue() : route.abort()));
   await context.addInitScript(fakeDevice, { token: "arcade-slice.html" });
@@ -359,11 +360,13 @@ await scenario("slice: Great round with Piano Tiles closed", async () => {
   try {
     await page.goto(BASE + "/arcade-slice.html?from=charge");
     await page.waitForFunction(() => window.gameEntryAllowed === true && typeof endRound === "function");
-    await page.evaluate(() => { score = 7; endRound(); });
+    await page.evaluate(() => { score = 7; FRUITN = 5; endRound(); });
     await page.locator("#endOvl.show").waitFor();
-    const end = await page.evaluate(() => ({ closed: !Sona.gameAccess("tiles").allowed, next: getComputedStyle(document.getElementById("endCharge")).display,
-      home: document.getElementById("endHome").textContent.trim(), teal: document.getElementById("endHome").classList.contains("act-pill") }));
-    ok("slice: with Piano Tiles closed, the card offers Back to games alone, in teal", end.closed && end.next === "none" && end.home === "Back to games" && end.teal, end);
+    const closed = await page.evaluate(() => !Sona.gameAccess("tiles").allowed);
+    const went = page.waitForRequest((r) => r.isNavigationRequest() && r.frame() === page.mainFrame(), { timeout: 3000 }).then((r) => r.url(), () => null);
+    await page.locator("#endCharge").click();
+    const to = await went;
+    ok("slice: with Piano Tiles closed, Next goes to the games, never to Piano Tiles", closed && !!to && /\/(activities|today)\.html/.test(to) && !/tiles/.test(to), { closed, to });
     clean("slice closed-next card", errors);
   } finally { await context.close(); }
 });
@@ -572,8 +575,13 @@ await scenario("feed", async () => {
     const wrong = await page.evaluate(() => { const m = document.getElementById("bMain").textContent.match(/Where's the (.+)\?/); const b = [...document.querySelectorAll("#grid .cardBtn")].find((x) => x.querySelector(".w").textContent !== m[1]); if (b) b.click(); return !!b; });
     if (wrong) { await page.waitForTimeout(200); ok("feed: a wrong tap while listening wobbles silently and keeps listening", (await live(page)) === 1 && /Almost/.test(await page.locator("#bSub").innerText())); }
     await page.waitForTimeout(400);   // past calibration
+    ok("feed: taps and silence have not unlocked a picture hint",await page.locator(".speechHint").count()===0);
     await voice(page, 300);
     await page.waitForFunction(() => window.__heard === 1);
+    ok("feed: speaking reveals exactly the asked picture without feeding it automatically",await page.evaluate(()=>{
+      const hint=document.querySelectorAll(".speechHint"),word=document.getElementById("bMain").textContent.match(/Where's the (.+)\?/);
+      return hint.length===1&&hint[0].querySelector(".w").textContent===word[1]&&/0\/5/.test(document.getElementById("plate").dataset.fed);
+    }));
     await page.waitForTimeout(350);
     let l = await log(page);
     const tap = l.sfx.find((c) => c.name === "tap" && c.at > l.mics[0].end);

@@ -59,8 +59,9 @@
     #previewError{color:#9c3124;font-size:13px;line-height:1.5;margin-top:12px;}
     @media(max-width:350px){.premium-wrap{padding-left:17px;padding-right:17px;}h1{font-size:31px;}.more-card{padding:18px;}#premiumArt{width:106px;height:106px;}.premium-hero{margin-top:22px;}}
   </style>
+  <link rel="stylesheet" href="/crafted-family.css" />
 </head>
-<body>
+<body class="crafted-family family-premium">
   <main id="premiumApp" class="premium-wrap" hidden>
     <header class="premium-header"><a class="premium-back" href="/activities.html">‹ &nbsp; Library</a><span class="adult-label">For grown-ups</span></header>
     <aside id="premiumPreviewNotice" hidden><strong>Preview only.</strong> No payment, charge, or subscription. Trial controls affect this browser tab only.</aside>
@@ -124,6 +125,7 @@
         el("premiumCardTitle").textContent=allOpen?"Your library is ready.":"Every game. Both age groups.";
         if(!preview&&!S.isFree())paintOffer(allOpen);
         var art=S.gameSticker(key||"feed");S.paintSticker(el("premiumArt"),art[0],art[1]);
+        if(!key){el("premiumArt").innerHTML='<img src="/assets/crafted/echo-welcome.webp" alt="" />';el("premiumArt").style.backgroundImage="none";el("premiumArt").style.backgroundColor="#edf2df";}
       }
       // THE REAL OFFER (24 Sep 2026). With pricing live, every locked tile on
       // Home, "See Premium" in the parent corner and the library's unlock

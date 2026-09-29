@@ -5,16 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
   <title>Sona — Practice</title>
   <link href="/fonts.css" rel="stylesheet">
-  <!-- the one action colour (teal buttons and mic, orange only for the
-       practice sound's letters) lives in action.css, never pasted here -->
-  <link rel="stylesheet" href="/action.css">
   <link rel="manifest" href="/manifest.webmanifest" />
   <meta name="theme-color" content="#fff6e9" />
   <style>
-    /* --cream comes from action.css (the secondary pill and this page's
-       ground are the same cream), so it is not redefined here */
     :root{
-      --card:#fff; --ink:#4a2c14; --muted:#b08d63; --label:#c9a878;
+      --cream:#fff6e9; --card:#fff; --ink:#4a2c14; --muted:#b08d63; --label:#c9a878;
       --track:#f0e4d2; --chipbg:#ffe7d3; --chiptx:#ef6f23;
       --green:#58cc02; --green-d:#46a302; --orange:#ff8a3d; --orange-d:#ef6f23;
       --gold:#ffd21c; --blue:#1cb0f6; --blue-d:#1597d4;
@@ -34,30 +29,18 @@
     .g-stack{--hsh:rgba(20,16,60,.28);--tsh:rgba(40,20,80,.45);--bsh:rgba(10,6,40,.4);--sky-ink:rgba(255,255,255,.92);}
     .g-tiles{--hsh:rgba(10,6,40,.4);--tsh:rgba(10,6,40,.5);--bsh:rgba(10,6,40,.45);--sky-ink:rgba(255,255,255,.92);}
     .g-glide{--hsh:rgba(40,70,120,.24);--tsh:rgba(40,70,120,.4);--bsh:rgba(40,50,90,.3);--sky-ink:rgba(255,255,255,.95);}
-    /* ONE COLUMN, TOP TO BOTTOM (design brief, 28 Sep 2026): header, Echo's
-       bubble, the build, the mic. The build and the mic used to be pinned at
-       fixed distances from the bottom while the bubble flowed from the top,
-       so on a short phone Echo and the "Hear it slowly" pill landed on top of
-       the stack of blocks. Now the build takes whatever height is left
-       between them and scales itself down to fit it (fitBuild), and nothing
-       can overlap by construction. The markup is in that same order (no CSS
-       `order`), so focus and a screen reader follow what the child sees. */
-    #app{height:100vh;height:100dvh;max-width:560px;margin:0 auto;position:relative;overflow:hidden;overscroll-behavior:none;display:flex;flex-direction:column;}
-    #top,#titleWrap,#echoCluster{flex:0 0 auto;}
+    #app{height:100vh;height:100dvh;max-width:560px;margin:0 auto;position:relative;overflow:hidden;overscroll-behavior:none;}
     /* landscape rescue: same rule as the home screen — a short-wide viewport
        unlocks scrolling instead of crushing the practice card */
     @media (orientation:landscape) and (max-height:520px){
       html,body{overflow:auto;height:auto;}
       #app{height:auto;min-height:100dvh;overflow:visible;}
-      #reveals{flex:0 0 auto;}
     }
     #decor{position:absolute;inset:0;pointer-events:none;}
     #decor i{position:absolute;display:block;}
     /* the build centerpiece — ONE physical object that fills piece-by-piece,
-       anchored above the mic (design handoff A §4). It sits on the bottom of
-       its space; fitBuild() scales it (from its base) when the phone is short. */
-    #reveals{position:relative;flex:1 1 auto;min-height:0;padding-top:8px;display:flex;align-items:flex-end;justify-content:center;pointer-events:none;z-index:2;}
-    #reveals > *{flex:0 0 auto;transform-origin:50% 100%;}
+       anchored above the mic (design handoff A §4) */
+    #reveals{position:absolute;left:0;right:0;bottom:calc(196px + env(safe-area-inset-bottom));display:flex;justify-content:center;pointer-events:none;z-index:2;}
     #reveals .pop{animation:pop .45s cubic-bezier(.2,1.6,.4,1);}
     @keyframes pop{0%{transform:scale(.25);opacity:0}70%{transform:scale(1.12)}100%{transform:scale(1);opacity:1}}
     /* empty pieces are glassy SOLIDS — never dashed outlines */
@@ -66,13 +49,10 @@
        (README section 3): 2.5px dashed #fff at .75, fill rgba(255,255,255,.16). */
     .glass{background:rgba(255,255,255,.16)!important;border:2.5px dashed rgba(255,255,255,.75);box-shadow:none!important;}
     .glass.up{background:rgba(255,255,255,.24)!important;border-color:#fff;}
-    #reveals .ringed{outline:3px solid var(--act-glow);outline-offset:3px;}
+    #reveals .ringed{outline:3px solid rgba(88,204,2,.45);outline-offset:3px;}
 
-    /* header: close circle · the game's name pill (or the adventure's path
-       dots) · an empty twin of the close circle, so the middle is centred on
-       the screen rather than on what the close button leaves */
+    /* header: close circle · context line · star pill (design handoff A §1) */
     #top{position:relative;z-index:3;display:flex;align-items:center;gap:8px;padding:calc(14px + env(safe-area-inset-top)) 16px 0;}
-    #top::after{content:"";flex:0 0 44px;}
     #close{border:none;width:44px;height:44px;border-radius:50%;background:#fff;color:#b9a98c;font-size:18px;font-weight:800;cursor:pointer;line-height:1;box-shadow:0 4px 0 var(--hsh);flex:0 0 auto;}
     /* one line, always: "Round 1 of 5 · P sound" was wrapping to two on a 390px
        phone between the close button, the ticket pill and the star count */
@@ -87,52 +67,29 @@
     @media (max-width:359px){ #tktPill .segs i{width:11px;} }
     #sumLbl{display:flex;align-items:center;gap:6px;background:#fff;border-radius:99px;padding:10px 13px;box-shadow:0 4px 0 var(--hsh);font-family:"Baloo 2";font-weight:800;font-size:15px;color:var(--ink);flex:0 0 auto;min-height:22px;}
 
-    /* ONE NAME, ONE PILL (design brief, 28 Sep 2026). The game used to be
-       named twice: small in the header and again as a big rotated title.
-       Free play names it in the header (#ctxLine as .namePill); a daily
-       adventure keeps its path dots up there, so the pill sits just below. */
+    /* compact rotated title */
     #titleWrap{position:relative;z-index:3;display:flex;flex-direction:column;align-items:center;padding-top:8px;}
-    #gameTitle,#ctxLine.namePill{display:block;flex:0 1 auto;max-width:100%;margin:0 auto;background:#fff;border-radius:999px;padding:7px 18px;
-      font-family:"Baloo 2";font-weight:800;font-size:15px;line-height:1.35;letter-spacing:.04em;text-transform:uppercase;color:var(--ink);
-      box-shadow:0 4px 0 var(--hsh);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    #gameTitle{font-family:"Baloo 2";font-weight:800;font-size:clamp(24px,7.4vw,28px);color:#fff;text-shadow:0 3px 0 var(--tsh);transform:rotate(-2deg);letter-spacing:.02em;}
 
-    /* Echo cluster — the ONLY voice on screen: bubble (picture, Say + huge
-       target, count line) with Echo right below it (design handoff A §3) —
-       except at the fruit stand, where Echo stands ON the stand */
+    /* Echo cluster — the ONLY voice on screen: bubble (Say + huge target +
+       verb sub-line) with Echo right below it (design handoff A §3) */
     #echoCluster{position:relative;z-index:3;display:flex;flex-direction:column;align-items:center;margin-top:16px;}
-    /* Echo over "Hear it slowly"; side by side on a short phone (below) */
-    #echoRow{display:flex;flex-direction:column;align-items:center;}
-    #bubble{position:relative;background:#fff;border-radius:22px;padding:12px 20px;box-shadow:0 6px 16px var(--bsh);text-align:center;max-width:min(88vw,400px);min-width:min(64vw,250px);}
-    /* the tail points down at Echo and the slow-replay pill */
-    #bubble::after{content:"";position:absolute;left:50%;bottom:-9px;width:18px;height:18px;margin-left:-9px;background:#fff;border-radius:0 0 5px 0;transform:rotate(45deg);}
-    #bRow{display:flex;align-items:center;justify-content:center;gap:12px;}
-    /* the word's picture, on word and sentence rungs only (paintCard) */
-    /* Sona.pic() writes a fixed pixel size inline; the box sets --pic and the
-       picture follows it down on a short phone instead of being cropped. */
-    #bPic{--pic:64px;flex:0 0 auto;width:var(--pic);height:var(--pic);border-radius:16px;background:var(--cream);display:flex;align-items:center;justify-content:center;overflow:hidden;line-height:1;}
-    #bPic img,#bPic svg{width:calc(var(--pic) * .86)!important;height:calc(var(--pic) * .86)!important;}
-    #bPic span{font-size:calc(var(--pic) * .7)!important;}
-    #bMain{font-family:"Baloo 2";font-weight:800;font-size:15px;color:#795534;line-height:1.15;display:flex;flex-direction:column;align-items:center;min-width:0;}
-    #bubble.haspic #bMain{align-items:flex-start;text-align:left;}
-    #sayLbl{display:block;}
-    /* the practice sound's letters are orange (.snd, action.css); the rest of
-       the word is dark brown, so "the orange letters" means one thing */
-    #bTarget{font-family:"Baloo 2";font-weight:800;font-size:clamp(32px,10vw,40px);color:var(--ink);display:block;line-height:1.1;overflow-wrap:anywhere;}
-    #bTarget.long{font-size:clamp(22px,6.6vw,28px);}
-    #gpState{font-weight:800;font-size:14.5px;color:#8a6f52;margin-top:4px;}
-    #gpState b{color:var(--ink);font-weight:900;}
+    #bubble{background:#fff;border-radius:20px;border-bottom-left-radius:5px;padding:12px 20px;box-shadow:0 6px 16px var(--bsh);text-align:center;max-width:86vw;}
+    #bMain{font-family:"Baloo 2";font-weight:800;font-size:15px;color:#4a2c14;line-height:1.15;}
+    #bTarget{font-family:"Baloo 2";font-weight:800;font-size:clamp(32px,10vw,40px);color:#ef6f23;display:inline-block;padding-left:6px;}
+    /* Only the practice sound's letters are orange (the family's brief: "the
+       practice sound's letters are always orange"): paintCard() wraps them in
+       .snd through Sona.soundMark, and the rest of the word takes the bubble's
+       ink, like "Say". Two ids so it outranks crafted-games.css, which paints
+       the whole target; the orange is that sheet's own practice orange. */
+    body[data-crafted] #bMain #bTarget{color:inherit;}
+    #bTarget .snd{color:#d86a24;}
+    #gpState{font-weight:800;font-size:14.5px;color:#8a6f52;margin-top:2px;}
+    #gpState b{color:var(--chiptx);}
     #turnStatus{font-size:13px;font-weight:900;color:#795534;line-height:1.35;margin-bottom:5px;}
     body.echo-speaking #gpState{visibility:hidden;}
     #micBtn:disabled,#turtleBtn:disabled{cursor:default;opacity:.6;}
-    /* "Listening…" over "Tap Echo to hear it again", on one cream card so it
-       reads on every sky, the night stage included. The first line shows only
-       while the mic can actually hear (body.echo-listening, set by
-       updateTurn). The card keeps its two-line height either way (min-height)
-       and centres what it holds, so nothing below or above it jumps. */
-    #micCard{display:flex;flex-direction:column;justify-content:center;min-height:50px;background:var(--cream-card);border-radius:16px;padding:5px 16px 6px;text-align:center;box-shadow:0 3px 0 var(--bsh);max-width:100%;}
-    #micCaption{font-family:"Baloo 2";font-weight:800;font-size:18px;line-height:1.2;color:var(--ink);display:none;}
-    body.echo-listening #micCaption{display:block;}
-    #replayLabel{font-size:13px;font-weight:900;color:#795534;text-align:center;line-height:1.3;}
+    #replayLabel{font-size:12px;font-weight:900;color:var(--sky-ink);text-align:center;}
     #micBtn:focus-visible,#turtleBtn:focus-visible{outline:3px solid #795534;outline-offset:4px;}
     #leo{width:100px;height:100px;object-fit:contain;margin-top:10px;filter:drop-shadow(0 8px 10px var(--bsh));}
     #leo.cheer{animation:hop .5s ease;}
@@ -141,19 +98,15 @@
     @keyframes hop{0%,100%{transform:translateY(0)}45%{transform:translateY(-14px) rotate(-5deg)}}
 
     /* mic — auto-hot, white pulse rings on the sky; TAPPING replays the prompt */
-    #bottom{position:relative;z-index:3;flex:0 0 auto;margin:0 16px;padding:6px 0 calc(28px + env(safe-area-inset-bottom));display:flex;flex-direction:column;align-items:center;gap:6px;}
-    #micWrap{position:relative;width:96px;height:96px;display:flex;align-items:center;justify-content:center;}
+    #bottom{position:absolute;left:16px;right:16px;bottom:calc(36px + env(safe-area-inset-bottom));display:flex;flex-direction:column;align-items:center;gap:4px;z-index:3;}
+    #micWrap{position:relative;width:104px;height:104px;display:flex;align-items:center;justify-content:center;}
     #micWrap::before,#micWrap::after{content:"";position:absolute;border-radius:50%;}
     #micWrap::before{inset:0;background:rgba(255,255,255,.18);animation:ring 1.6s ease-out infinite;}
     #micWrap::after{inset:12px;background:rgba(255,255,255,.30);animation:ring 1.6s ease-out infinite .4s;}
     @keyframes ring{0%{transform:scale(.85);opacity:0}30%{opacity:1}100%{transform:scale(1.12);opacity:0}}
-    /* THE MIC IS A STATUS, NOT A BUTTON (chargepacingtest pins role=img).
-       Off: a pale disc with a faint teal mic. Listening (.go, micGo): the
-       teal disc with a white ring and a soft glow — the design's big mic. */
-    #micBtn{position:relative;z-index:1;width:84px;height:84px;border-radius:50%;border:4px solid #fff;background:var(--cream-card);color:var(--act);box-shadow:0 4px 0 var(--bsh);display:flex;align-items:center;justify-content:center;cursor:default;}
-    #micBtn svg{width:40%;height:40%;fill:currentColor;opacity:.55;}
-    #micBtn.go{background:radial-gradient(circle at 35% 30%,var(--act-hi),var(--act) 70%);color:#fff;box-shadow:0 5px 0 var(--act-d),0 0 0 8px var(--act-glow);}
-    #micBtn.go svg{opacity:1;}
+    #micBtn{position:relative;z-index:1;width:70px;height:70px;border-radius:50%;border:none;background:linear-gradient(180deg,#e7d9c4,#d8c7ad);box-shadow:0 5px 0 #c4b193;display:flex;align-items:center;justify-content:center;cursor:pointer;}
+    #micBtn svg{width:32px;height:32px;fill:#fff;}
+    #micBtn.go{background:linear-gradient(180deg,#ffa05a,#ff8a3d);box-shadow:0 5px 0 var(--orange-d);}
     /* voice-reactive mic: rings race + brighten the instant a voiced frame
        lands. Binary, never volume-scaled — a whisper and a shout look exactly
        the same (precision is the skill, not loudness). Text-free signal. */
@@ -162,15 +115,13 @@
     #micWrap.hear #micBtn{transform:scale(1.07);}
     #micBtn{transition:background .15s,transform .12s;}
     /* charged: the mic hands off to a full-width launch bar (A §states) */
-    #launchBar{display:none;border:none;width:100%;border-radius:20px;padding:16px 20px;font-family:"Baloo 2";font-weight:800;font-size:16px;letter-spacing:.06em;text-transform:uppercase;color:#fff;text-shadow:0 1px 0 var(--act-d);background:linear-gradient(180deg,var(--act-hi),var(--act));box-shadow:0 6px 0 var(--act-d),0 0 22px var(--act-glow);}
+    #launchBar{display:none;border:none;width:100%;border-radius:20px;padding:16px 20px;font-family:"Baloo 2";font-weight:800;font-size:16px;letter-spacing:.06em;text-transform:uppercase;color:#fff;background:linear-gradient(180deg,#ffa05a,#ff8a3d);box-shadow:0 6px 0 var(--orange-d),0 0 22px rgba(255,138,61,.4);}
     #launchBar.show{display:block;}
-    /* "Hear it slowly" — a white pill with a teal speaker, just under the
-       bubble. It holds its place while hidden (visibility, not display), so
-       the scene does not shift when it appears after Echo's prompt. */
-    #turtleBtn{display:inline-flex;visibility:hidden;position:static;z-index:4;border:none;background:#fff;border-radius:99px;min-height:44px;margin:14px 0 0;padding:8px 18px;font-family:"Baloo 2";font-weight:800;font-size:15px;color:var(--act-d);box-shadow:0 4px 0 var(--hsh);cursor:pointer;align-items:center;gap:8px;}
-    #turtleBtn.show{visibility:visible;}
-    #turtleBtn svg{width:22px;height:22px;flex:0 0 auto;color:var(--act);}
-    #turtleBtn:active{transform:translateY(3px);box-shadow:0 1px 0 var(--hsh);}
+    /* slow-replay pill — sits between Echo and the build on a retry */
+    #turtleBtn{display:none;position:absolute;left:50%;transform:translateX(-50%);bottom:calc(330px + env(safe-area-inset-bottom));z-index:4;border:none;background:#fff;border-radius:99px;padding:9px 16px;font-family:"Baloo 2";font-weight:800;font-size:13.5px;color:var(--ink);box-shadow:0 4px 0 var(--hsh);cursor:pointer;align-items:center;gap:6px;}
+    #turtleBtn.show{display:inline-flex;}
+    #turtleBtn svg{width:18px;height:18px;}
+    #turtleBtn:active{transform:translate(-50%,3px);box-shadow:0 1px 0 var(--hsh);}
     /* sticker chest — tease wobble, tap thump, big reveal */
     #chestBox{border:none;background:none;padding:0;display:block;width:128px;height:128px;margin:0 auto;cursor:pointer;}
     #chestBox.tease{animation:wob 1.5s ease-in-out infinite;}
@@ -181,37 +132,21 @@
     #chestStk{font-size:74px;line-height:1;animation:pop .45s cubic-bezier(.2,1.6,.4,1);margin-bottom:4px;}
 
     /* the five builds (exact values from the A mocks, ×1.3 production) */
-    /* slice — Echo's fruit stand (design 04): Echo stands on the counter top
-       (the build step moves #echoBuddy in, still tap-to-replay), and the front has
-       five ROUND slots: a fruit when earned, a dashed ring when not. Shapes
-       and colours only — the clay stand art drops in over this later. */
+    /* slice — market stand: awning + counter with five fruit wells */
     #stand{display:flex;flex-direction:column;align-items:center;}
-    #stand #echoBuddy{pointer-events:auto;margin-bottom:calc(var(--echo,150px) * -.06);}
-    #stand #leo{width:var(--echo,150px);height:var(--echo,150px);margin-top:0;}
-    #stand .awn{position:relative;z-index:1;width:min(84vw,340px);height:16px;border-radius:9px;background:#f5c26b;box-shadow:inset 0 3px 0 rgba(255,255,255,.45),0 3px 0 rgba(160,90,20,.28);}
-    #stand .cnt{position:relative;width:min(78vw,318px);height:auto;padding:12px 10px 14px;margin-bottom:16px;background:#ffdf9e;border-radius:0 0 14px 14px;box-shadow:0 6px 0 #e0b25f;display:flex;align-items:center;justify-content:space-evenly;}
-    /* two stubby legs, so it reads as a stand and not a shelf */
-    #stand .cnt::before,#stand .cnt::after{content:"";position:absolute;bottom:-22px;width:12px;height:18px;border-radius:0 0 5px 5px;background:#e0b25f;}
-    #stand .cnt::before{left:14%;}
-    #stand .cnt::after{right:14%;}
-    #stand .well{position:relative;width:min(12.4vw,52px);height:min(12.4vw,52px);border-radius:50%;background:#e8b45c;box-shadow:inset 0 3px 6px rgba(120,60,10,.35);}
-    #stand .well.up{box-shadow:inset 0 3px 6px rgba(120,60,10,.35),0 0 0 3px rgba(255,255,255,.7);}
-    #stand .well .fr{position:absolute;inset:9%;filter:drop-shadow(0 3px 4px rgba(160,60,10,.25));}
-    #stand .well .fr svg{display:block;width:100%;height:100%;}
-    /* the empty slot: a dashed white ring, with the fruit's own outline faint
-       inside it so a child still sees the shape they are about to earn */
-    #stand .well .fr.ghost{inset:6%;filter:none;border:2.5px dashed rgba(255,255,255,.9);border-radius:50%;}
-    #stand .well .fr.ghost svg{width:64%;height:64%;margin:18%;opacity:.55;}
+    #stand .awn{width:min(72vw,300px);height:28px;border-radius:12px 12px 0 0;background:repeating-linear-gradient(90deg,#fff8ec 0 22px,#ff9d6e 22px 44px);box-shadow:0 3px 0 rgba(160,70,20,.25);}
+    #stand .cnt{width:min(78vw,325px);height:80px;background:#ffdf9e;border-radius:0 0 14px 14px;box-shadow:0 6px 0 #e0b25f;display:flex;align-items:center;justify-content:space-evenly;}
+    #stand .well{position:relative;width:50px;height:52px;border-radius:11px;background:#f3c96f;box-shadow:inset 0 3px 5px rgba(120,60,10,.28);}
+    #stand .well.up{box-shadow:inset 0 3px 5px rgba(120,60,10,.28),0 0 0 2px rgba(255,255,255,.65);}
+    #stand .well .fr{position:absolute;left:50%;bottom:4px;transform:translateX(-50%);width:46px;height:46px;filter:drop-shadow(0 4px 5px rgba(160,60,10,.25));}
+    #stand .well .fr.ghost{filter:none;opacity:.75;}
+    #stand .well .fr.ghost svg *{fill:rgba(255,255,255,.16)!important;stroke:#fff!important;stroke-width:2.5!important;stroke-dasharray:5 5!important;}
     /* each heard try drops its fruit onto the counter (27 Sep 2026): the
-       five a child says here are the first five thrown in the game. The fruit
-       sits by inset (the round slot), not by a -50% translate, so the drop
-       moves it straight down from above rather than from the left. */
+       five a child says here are the first five thrown in the game */
     #stand .well .fr.pop{animation:fruitDrop .6s cubic-bezier(.3,1.25,.5,1);}
-    @keyframes fruitDrop{0%{transform:translateY(-150px) rotate(-18deg);opacity:0}25%{opacity:1}60%{transform:translateY(5px) rotate(5deg)}80%{transform:translateY(-7px) rotate(-2deg)}100%{transform:translateY(0) rotate(0)}}
+    @keyframes fruitDrop{0%{transform:translate(-50%,-150px) rotate(-18deg);opacity:0}25%{opacity:1}60%{transform:translate(-50%,5px) rotate(5deg)}80%{transform:translate(-50%,-7px) rotate(-2deg)}100%{transform:translate(-50%,0) rotate(0)}}
     /* run — one receding road; the buddy stands on the top filled slab */
-    /* padding-top: room for the rider and the coin that float above the top
-       slabs, so fitBuild() counts them and they never touch the bubble */
-    #roadCol{display:flex;flex-direction:column-reverse;gap:8px;align-items:center;padding-top:50px;}
+    #roadCol{display:flex;flex-direction:column-reverse;gap:8px;align-items:center;}
     #roadCol .slab{position:relative;height:34px;border-radius:10px;background:#b7c5d4;box-shadow:0 5px 0 rgba(40,80,120,.25);}
     #roadCol .slab i{position:absolute;top:16%;bottom:16%;left:50%;width:4px;margin-left:-2px;background:repeating-linear-gradient(180deg,#fff 0 6px,transparent 6px 13px);opacity:.85;display:block;}
     #roadCol .slab.glass i{display:none;}
@@ -233,10 +168,12 @@
 
     /* short screens: same compaction rule today.html uses */
     @media (max-height:760px){
+      #gameTitle{font-size:22px;}
+      #leo{width:84px;height:84px;margin-top:6px;}
       #bTarget{font-size:30px;}
       #echoCluster{margin-top:8px;}
-      #micWrap{width:84px;height:84px;}
-      #micBtn{width:72px;height:72px;}
+      #reveals{transform:scale(.85);transform-origin:bottom center;bottom:calc(178px + env(safe-area-inset-bottom));}
+      #turtleBtn{bottom:calc(296px + env(safe-area-inset-bottom));}
     }
     @media (prefers-reduced-motion:reduce){
       #micWrap::before,#micWrap::after{animation:none;opacity:.45;}
@@ -254,14 +191,11 @@
     .ovl .big{font-size:64px;line-height:1;}
     .ovl h2{font-family:"Baloo 2";font-weight:800;font-size:25px;color:var(--ink);line-height:1.15;}
     .ovl p{color:var(--muted);font-weight:800;font-size:14.5px;max-width:280px;}
-    /* Main action: the teal pill; a second choice ("Browse games"): the cream
-       pill. Colours come from action.css, never literals here. White on the
-       light top of the teal is faint, hence the dark teal text shadow. */
-    .btn{border:none;border-radius:999px;padding:15px 32px;min-height:52px;font-family:"Baloo 2";font-weight:800;font-size:18px;letter-spacing:.01em;color:#fff;text-shadow:0 1px 0 var(--act-d);background:linear-gradient(180deg,var(--act-hi),var(--act));box-shadow:0 6px 0 var(--act-d);cursor:pointer;transition:transform .05s;margin-top:4px;width:100%;}
-    .btn:active{transform:translateY(4px);box-shadow:0 2px 0 var(--act-d);}
-    .btn.blue{background:var(--cream);color:var(--cream-ink);text-shadow:none;border:2px solid var(--cream-line);box-shadow:0 5px 0 var(--cream-line);}
-    .btn.blue:active{box-shadow:0 2px 0 var(--cream-line);}
-    .btn.ghost{background:none;color:var(--muted);box-shadow:none;text-shadow:none;min-height:44px;font-size:13px;width:auto;}
+    .btn{border:none;border-radius:20px;padding:15px 32px;font-family:"Baloo 2";font-weight:800;font-size:17px;text-transform:uppercase;letter-spacing:.04em;color:#fff;background:linear-gradient(180deg,#ffa05a,#ff8a3d);box-shadow:0 6px 0 var(--orange-d);cursor:pointer;transition:transform .05s;margin-top:4px;width:100%;}
+    .btn:active{transform:translateY(4px);box-shadow:0 2px 0 var(--orange-d);}
+    .btn.blue{background:linear-gradient(180deg,#5cc6ff,#1cb0f6);box-shadow:0 6px 0 #1480c0;}
+    .btn.blue:active{box-shadow:0 2px 0 #1480c0;}
+    .btn.ghost{background:none;color:var(--muted);box-shadow:none;text-transform:none;font-size:13px;width:auto;}
     /* The finale scrolls inside its own card, so a short screen or larger text
        never hides the way home. Echo stays in the flow instead of above it. */
     #runOvl{background:linear-gradient(180deg,#e8f4f8 0%,#fff6e9 65%);padding:calc(16px + env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom));}
@@ -286,17 +220,16 @@
     #pauseOvl .ovlCard{padding:24px;gap:12px;max-height:calc(100dvh - 40px);overflow-y:auto;}
     #pauseOvl .ovlEcho{position:static;transform:none;width:88px;height:88px;flex-shrink:0;}
     #pauseOvl p,#pauseHome{color:#795534;line-height:1.5;}
+    #pauseResume{color:#4a2c14;}
     #pauseHome{min-height:44px;min-width:100px;font-size:15px;}
     #pauseOvl button:focus-visible{outline:3px solid #795534;outline-offset:4px;}
     body.practice-paused *{animation-play-state:paused!important;}
     body.practice-paused .ovl:not(#pauseOvl){visibility:hidden;}
 
     #ctxLine{display:flex;align-items:center;justify-content:center;gap:12px;overflow:visible;}
-    /* the adventure path: done steps in the action teal (orange is only ever
-       the practice sound's letters now) */
     .path-dot{width:12px;height:12px;background:#fff4e0;border:2px solid rgba(124,81,38,.25);border-radius:50%;}
-    .path-dot.done{background:var(--act);border-color:var(--act-d);}
-    .path-dot.current{position:relative;overflow:hidden;width:38px;height:38px;background:#fff;border:2px solid var(--act);display:grid;place-items:center;box-shadow:0 3px 0 rgba(100,60,20,.15);}
+    .path-dot.done{background:#ffa052;border-color:#dc7132;}
+    .path-dot.current{position:relative;overflow:hidden;width:38px;height:38px;background:#fff;border:2px solid #ef7931;display:grid;place-items:center;box-shadow:0 3px 0 rgba(100,60,20,.15);}
     #echoBuddy{position:relative;border:0;padding:0;background:none;border-radius:50%;cursor:pointer;line-height:0;isolation:isolate;}
     #echoBuddy:focus-visible{outline:3px solid #ad5b1d;outline-offset:6px;}
     #echoBuddy:disabled{cursor:default;}
@@ -306,12 +239,17 @@
     .echo-listening #echoBuddy::before{opacity:1;background:rgba(255,179,71,.35);box-shadow:0 0 26px #ffca78;animation:listenGlow 1.8s ease-in-out infinite;}
     #echoBuddy.heard #leo{transform:translateY(-5px) rotate(-3deg);}
     .voice-bars{display:none;position:absolute;right:0;top:45%;height:26px;align-items:center;gap:4px;}
-    .voice-bars i{width:5px;height:14px;border-radius:4px;background:var(--act);}.voice-bars i:nth-child(2){height:24px;}
+    .voice-bars i{width:5px;height:14px;border-radius:4px;background:#ed7d30;}.voice-bars i:nth-child(2){height:24px;}
     #echoBuddy.heard .voice-bars{display:flex;}
-    .echo-checking #echoBuddy::before{opacity:1;border:3px solid transparent;border-top-color:var(--act);animation:checkSpin 1.2s linear infinite;}
+    .echo-checking #echoBuddy::before{opacity:1;border:3px solid transparent;border-top-color:#ed8c4b;animation:checkSpin 1.2s linear infinite;}
     @keyframes listenGlow{50%{transform:scale(1.08);opacity:.65;}}
     @keyframes checkSpin{to{transform:rotate(360deg);}}
-    #micWrap::before,#micWrap::after{display:none;animation:none;}
+    #micWrap{width:44px;height:44px;}#micWrap::before,#micWrap::after{display:none;animation:none;}
+    #micBtn{width:38px;height:38px;box-shadow:none;cursor:default;color:#fff;}#micBtn svg{width:23px;height:23px;}
+    #bottom{bottom:calc(28px + env(safe-area-inset-bottom));}
+    #reveals{bottom:calc(120px + env(safe-area-inset-bottom));}
+    #turtleBtn{position:static;transform:none;margin:6px 0 0;min-height:38px;padding:7px 16px;}
+    #turtleBtn:active{transform:translateY(2px);}#turtleBtn svg{width:28px;height:24px;}
     #stand .well .fr.ghost svg *{fill:none!important;stroke:#fff5df!important;stroke-width:3!important;stroke-dasharray:none!important;}
     #launchArt{position:relative;overflow:hidden;border-radius:10px;width:44px;height:44px;display:block;flex-shrink:0;}
     #launchBar.show{display:flex;justify-content:center;align-items:center;gap:14px;}
@@ -320,23 +258,16 @@
     .quiet-card img{width:160px;height:150px;object-fit:contain;}
     #pauseResume span{font-size:30px;vertical-align:-3px;margin-right:8px;}
     [hidden]{display:none!important;}
-    /* Echo's size on the stand steps down with the phone's height; the build
-       as a whole still scales to fit (fitBuild) if even this is too tall. */
-    #stand{--echo:150px;}
-    @media(max-height:760px){#stand{--echo:120px;}}
-    @media(max-height:700px){#echoCluster{margin-top:7px;}#leo{width:96px;height:96px;}#bubble{padding:8px 15px;}#bPic{--pic:54px;}#turtleBtn{margin-top:12px;}#balloonBox{width:140px;}#stand{--echo:100px;}#micWrap{width:76px;height:76px;}#micBtn{width:64px;height:64px;}}
-    @media(max-height:600px){#top{padding-top:calc(8px + env(safe-area-inset-top));}#leo{width:76px;height:76px;margin-top:4px;}#bTarget{font-size:27px;}#bPic{--pic:46px;}#stand{--echo:80px;}#micWrap{width:64px;height:64px;}#micBtn{width:56px;height:56px;}#micCaption{font-size:16px;}#micCard{min-height:47px;}#bottom{padding-bottom:calc(20px + env(safe-area-inset-bottom));}}
-    /* A short phone puts Echo and "Hear it slowly" side by side. Stacked, the
-       two took ~60px that the build then lost: on a 320x568 adventure the
-       stacker hit fitBuild's smallest scale and still slid under the pill.
-       (At the fruit stand Echo is on the stand, so the row is just the pill.) */
-    @media(max-height:700px){#echoRow{flex-direction:row;flex-wrap:wrap;justify-content:center;gap:6px 14px;margin-top:10px;}#echoRow #turtleBtn,#echoRow #leo{margin-top:0;}}
+    @media(max-height:700px){#echoCluster{margin-top:7px;}#leo{width:96px;height:96px;}#bubble{padding:8px 15px;}#gameTitle{font-size:24px;}#turtleBtn{margin-top:3px;min-height:34px;}#balloonBox{width:140px;}}
     @media(prefers-reduced-motion:reduce){#echoBuddy::before,#leo,#chestBox{animation:none!important;}}
   </style>
+  <link href="/crafted-games.css" rel="stylesheet">
+  <link href="/crafted-practice.css" rel="stylesheet">
 </head>
-<body>
+<body data-crafted="practice">
     <div id="app">
     <div id="decor"></div>
+    <div id="reveals"></div>
     <div id="top">
       <button id="close" aria-label="Close">✕</button>
       <div id="ctxLine"></div>
@@ -350,26 +281,18 @@
     <div id="echoCluster">
       <div id="bubble">
         <div id="turnStatus" role="status" aria-live="polite" aria-atomic="true">Getting ready…</div>
-        <div id="bRow"><div id="bPic" aria-hidden="true" hidden></div><div id="bMain"><span id="sayLbl">Say</span><b id="bTarget">…</b></div></div>
+        <div id="bMain"><span id="sayLbl">Say</span><b id="bTarget">…</b></div>
         <div id="gpState">Say it to fill your ticket!</div>
       </div>
-      <div id="echoRow">
-        <button id="echoBuddy" aria-label="Hear it again"><img id="leo" src="/coach/echo/echo-listening.svg" alt="Echo"/><span class="voice-bars" aria-hidden="true"><i></i><i></i><i></i></span></button>
-        <button id="turtleBtn" aria-label="Hear it slowly"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9.2v5.6h4.2L12.5 19V5L7.2 9.2Z" fill="currentColor"/><path d="M15.6 8.6a4.8 4.8 0 0 1 0 6.8M18.4 5.8a8.8 8.8 0 0 1 0 12.4" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>Hear it slowly</button>
-      </div>
+      <button id="echoBuddy" aria-label="Hear it again"><img id="leo" src="/assets/crafted/echo-welcome.webp" alt="Echo"/><span class="voice-bars" aria-hidden="true"><i></i><i></i><i></i></span></button>
+      <button id="turtleBtn" aria-label="Hear it slowly"><svg viewBox="0 0 40 30" aria-hidden="true"><path d="M8 21C8 4 29 4 29 21Z" fill="#79bf73"/><path d="m14 20 4-10 7 7" fill="none" stroke="#398a58" stroke-width="2"/><circle cx="33" cy="20" r="5" fill="#b9d996"/><circle cx="35" cy="19" r="1" fill="#4a2c14"/><path d="M11 23v3m14-3v3M5 21h3" stroke="#398a58" stroke-width="3" stroke-linecap="round"/></svg>Hear it slooow</button>
     </div>
-
-    <!-- the build sits here in the markup, between Echo's bubble and the mic,
-         because that is where it sits on screen: keyboard focus and a screen
-         reader then meet Close, the bubble, Echo and the build in the order a
-         child sees them (Echo moves into the fruit stand, below) -->
-    <div id="reveals"></div>
 
     <div id="bottom">
       <div id="micWrap">
         <div id="micBtn" role="img" aria-label="Microphone off"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M6 10v2a6 6 0 0 0 12 0v-2M12 18v4M8 22h8" stroke="currentColor" stroke-width="2" fill="none"/></svg></div>
       </div>
-      <div id="micCard"><div id="micCaption" aria-hidden="true">Listening…</div><div id="replayLabel">Tap Echo to hear it again</div></div>
+      <div id="replayLabel">Tap Echo to hear it again</div>
       <button id="launchBar"></button>
     </div>
 
@@ -381,13 +304,13 @@
        final game launches. Earned by showing up; never purchasable, no timers. -->
   <div class="ovl" id="chestOvl" role="dialog" aria-modal="true" aria-labelledby="chestCap">
     <div class="ovlCard">
-      <img class="ovlEcho" src="/coach/echo/echo-celebrate.svg" alt="" />
+      <img class="ovlEcho" src="/assets/crafted/echo-welcome.webp" alt="" />
       <div id="chestStage">
         <button id="chestBox" type="button" class="tease" aria-label="Open your treasure chest"><svg viewBox="0 0 64 64"><path d="M8 32v-6q0-14 24-14t24 14v6Z" fill="#b5875a"/><rect x="8" y="30" width="48" height="26" rx="6" fill="#a06f45"/><rect x="15" y="30" width="8" height="26" rx="2" fill="#8a5a2a"/><rect x="41" y="30" width="8" height="26" rx="2" fill="#8a5a2a"/><rect x="8" y="28" width="48" height="5" rx="2.5" fill="#6e4f2f"/><rect x="26" y="26" width="12" height="14" rx="4" fill="#ffd21c"/><circle cx="32" cy="32" r="2.6" fill="#8a5a2a"/><circle cx="20" cy="20" r="2.4" fill="#fff" opacity=".7"/></svg></button>
         <div id="chestCap">A treasure chest! Tap, tap, tap to open!</div>
       </div>
       <div id="chestReveal" style="display:none">
-        <div id="chestStk">⭐</div>
+        <div id="chestStk"></div>
         <h2 id="chestName">Sticker!</h2>
         <button class="btn" id="chestClaim">Put it in my sticker book!</button>
         <p id="chestTmw" style="font-weight:800;font-size:13px;color:var(--muted);margin-top:10px;line-height:1.45;">Come back tomorrow — Echo will have a new adventure ready!</p>
@@ -397,7 +320,7 @@
 
   <div class="ovl" id="micPrime">
     <div class="ovlCard">
-      <img class="ovlEcho" src="/coach/echo/echo-listening.svg" alt="" />
+      <img class="ovlEcho" src="/assets/crafted/echo-welcome.webp" alt="" />
       <h2>Let Echo hear you practice!</h2>
       <p style="font-weight:800;font-size:13.5px;color:var(--muted);line-height:1.5;">Listen to Echo first. Then it's your turn to practice and fill the ticket for your game.</p>
       <!-- This paragraph is a PROMISE, and it went stale: it described an upload
@@ -415,7 +338,7 @@
 
   <div class="ovl" id="playedOvl">
     <div class="ovlCard">
-      <img class="ovlEcho" src="/coach/echo/echo-celebrate.svg" alt="" />
+      <img class="ovlEcho" src="/assets/crafted/echo-welcome.webp" alt="" />
       <h2>You already played today!</h2>
       <p id="playedSub"></p>
       <button class="btn blue" id="playedArcade">Browse games</button>
@@ -430,7 +353,7 @@
   <div class="ovl" id="runOvl" role="dialog" aria-modal="true" aria-labelledby="runTitle" aria-describedby="runPractice">
     <div class="ovlCard">
       <div class="run-hero">
-        <img class="ovlEcho" src="/coach/echo/echo-celebrate.svg" alt="" />
+        <img class="ovlEcho" src="/assets/crafted/echo-welcome.webp" alt="" />
         <div class="big" id="runEmoji" aria-hidden="true"><svg viewBox="0 0 64 64" style="width:56px;height:56px"><path d="M32 5l8.2 18.6L60 25.8 44.9 39.2 49.8 59 32 48.4 14.2 59l4.9-19.8L4 25.8l19.8-2.2Z" fill="#ffd21c"/><circle cx="25" cy="21" r="3" fill="#fff" opacity=".85"/></svg></div>
       </div>
       <h2 id="runTitle" tabindex="-1">Adventure complete!</h2>
@@ -444,7 +367,7 @@
 
   <div class="ovl" id="pauseOvl" role="dialog" aria-modal="true" aria-labelledby="pauseTitle" aria-describedby="pauseCopy">
     <div class="ovlCard">
-      <img class="ovlEcho" src="/coach/echo/echo-waiting.svg" alt="Echo resting" />
+      <img class="ovlEcho" src="/assets/crafted/echo-welcome.webp" alt="Echo resting" />
       <h2 id="pauseTitle">Practice paused</h2>
       <p id="pauseCopy">Take your time. We'll keep your place.</p>
       <button class="btn" id="pauseResume"><span aria-hidden="true">▶</span> Resume</button>
@@ -453,6 +376,8 @@
   </div>
 
   <script src="/sona.js"></script>
+  <script src="/crafted-buddies.js"></script>
+  <script src="/crafted-rewards.js"></script>
   <script src="/scenes.js"></script>
   <script src="/gamecontent.js"></script>
   <script>
@@ -674,9 +599,7 @@
     // shuffle still varies WHICH syllable each round gets.
     var SEQ=ITEMS.slice(); for(var si=SEQ.length-1;si>0;si--){ var sj=(Math.random()*(si+1))|0, st=SEQ[si]; SEQ[si]=SEQ[sj]; SEQ[sj]=st; }
     var ITEM=SEQ[0];
-    // Counts are said and shown in words ("Two more and we slice!"): a
-    // pre-reader hears the number, and the line reads like Echo talking.
-    var NUMWORD={1:"one",2:"two",3:"three",4:"four",5:"five",6:"six"};
+    var NUMWORD={2:"two",3:"three",4:"four",5:"five",6:"six"};
     // What Leo SPEAKS. TTS cannot perform a bare sound — a synthesized long
     // "rrrr"/"sssss" comes out mangled — so the voice asks for the sound BY
     // NAME ("make your R sound"; letter names render cleanly) and the human
@@ -845,7 +768,7 @@
       };
     });}
     async function speechBytes(t,job){
-      var revision=(S&&S.TTS_CACHE_VERSION)||"v8", key=(profile.voiceId||"echo")+"|"+revision+"|"+t;
+      var revision=(S&&S.TTS_CACHE_VERSION)||"v9", key=(profile.voiceId||"echo")+"|"+revision+"|"+t;
       var cached=await ttsGet(key,job);
       if(cached===AUDIO_CANCEL||!job.live())return AUDIO_CANCEL;
       if(cached){job.voiceEvent={source:"cache",cache:"device",revision:revision};return cached;}
@@ -860,11 +783,14 @@
           function header(name){return r.headers&&r.headers.get?r.headers.get(name):null;}
           var provider=header("X-Sona-Voice-Provider");
           job.voiceEvent={source:provider==="elevenlabs"||provider==="openai"?provider:"server",cache:header("X-Sona-Voice-Cache"),model:header("X-Sona-Voice-Model"),revision:header("X-Sona-Voice-Revision")||revision};
+          // "0": the usual voice model was busy and this is a stand-in. Play
+          // it, never save it — saved, it would replay the old voice forever.
+          job.voiceKeep=header("X-Sona-Voice-Keep")!=="0";
           return r.arrayBuffer();
         }).then(function(b){done(b&&b.byteLength?b:null);}).catch(function(){if(job.live()&&job.voiceReason!=="timeout")job.voiceReason="network-error";done(null);});
       });
       if(bytes===AUDIO_CANCEL||!job.live())return AUDIO_CANCEL;
-      if(bytes)ttsPut(key,bytes,job);
+      if(bytes&&job.voiceKeep!==false)ttsPut(key,bytes,job);
       return bytes;
     }
     function playMedia(url,slow,job){return audioWait(job,function(done,cleanup){
@@ -1022,6 +948,8 @@
       '<svg viewBox="0 0 64 64"><path d="M32 58C17 51 12 38 14 28c5-4 12-5 18-2 6-3 13-2 18 2 2 10-3 23-18 30Z" fill="#ff5470"/><path d="M32 58C17 51 12 38 14 28c5-4 12-5 18-2v32Z" fill="#ff6b8a"/><ellipse cx="32" cy="20" rx="9" ry="5" fill="#58cc02"/><circle cx="26" cy="36" r="1.5" fill="#ffe4a8"/><circle cx="36" cy="40" r="1.5" fill="#ffe4a8"/><circle cx="31" cy="47" r="1.5" fill="#ffe4a8"/></svg>',
       '<svg viewBox="0 0 64 64"><ellipse cx="32" cy="36" rx="21" ry="15" fill="#ffd21c" transform="rotate(-16 32 36)"/><ellipse cx="24" cy="30" rx="5" ry="3.4" fill="#fff3b8" transform="rotate(-16 24 30)"/><ellipse cx="47" cy="26" rx="3" ry="2" fill="#8a5a2a" transform="rotate(-16 47 26)"/></svg>'
     ];
+    var CRAFT_PRACTICE_FRUIT=["watermelon","grapes","orange","strawberry","lemon"].map(function(key){var im=new Image();im.src="/assets/crafted/fruit-"+key+".webp";return im;});
+    function earnedFruit(i){var art=CRAFT_PRACTICE_FRUIT[i];return art.complete&&art.naturalWidth?'<img src="'+art.src+'" alt="" style="width:100%;height:100%;object-fit:contain">':FRUITS[i];}
     var FRUIT_OUTLINES=[
       'M5 25a27 27 0 0 0 54 0Z',
       'M20 18Q10 23 15 33Q16 42 23 43Q24 57 32 57Q40 57 41 43Q51 39 50 29Q52 17 41 18Q31 10 20 18Z',
@@ -1032,7 +960,7 @@
     function ghostFruit(i){return '<svg viewBox="0 0 64 64" aria-hidden="true"><path d="'+FRUIT_OUTLINES[i]+'" fill="none" stroke="#fff5df" stroke-width="3" stroke-linejoin="round"/></svg>';}
     var FOX='<svg viewBox="0 0 64 64"><path d="M12 40q-7 2-8 10 7 3 12-2Z" fill="#ff8a3d"/><circle cx="7" cy="49" r="3.5" fill="#fff"/><path d="M17 10l10 12-14 4Z" fill="#ff8a3d"/><path d="M47 10l-10 12 14 4Z" fill="#ff8a3d"/><path d="M20 15l6 8-9 2.5Z" fill="#e5672a"/><path d="M44 15l-6 8 9 2.5Z" fill="#e5672a"/><circle cx="32" cy="36" r="17" fill="#ff8a3d"/><ellipse cx="32" cy="44" rx="9" ry="7" fill="#fff"/><circle cx="25" cy="34" r="2.6" fill="#4a2c14"/><circle cx="39" cy="34" r="2.6" fill="#4a2c14"/><circle cx="32" cy="42" r="2.6" fill="#4a2c14"/></svg>';
     // the buddy the child picked — never a hardcoded fox (handoff C §8)
-    function buddySvg(){ try{ if(S&&S.buddyMarkup) return S.buddyMarkup(profile.character||"fox",68); }catch(e){} return FOX; }
+    function buddySvg(){ try{ if(S&&S.buddyMarkup) return SonaCraftedBuddies.markup(profile.character||"fox",68); }catch(e){} return FOX; }
     // 3-circle cloud — replaces every pill-bar "cloud" on light skies
     var CLOUD='<svg viewBox="0 0 120 60"><ellipse cx="40" cy="42" rx="30" ry="15" fill="#fff"/><circle cx="56" cy="28" r="17" fill="#fff"/><circle cx="80" cy="38" r="19" fill="#fff"/></svg>';
     var COIN='<svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="20" fill="#ffd21c"/><circle cx="32" cy="32" r="14.5" fill="none" stroke="#f0a800" stroke-width="3"/><path d="M32 24l2.6 5.9 6.4.7-4.8 4.3 1.5 6.3L32 37.9l-5.7 3.3 1.5-6.3-4.8-4.3 6.4-.7Z" fill="#f0a800"/><circle cx="24" cy="22" r="3" fill="#fff" opacity=".8"/></svg>',
@@ -1089,9 +1017,7 @@
     };
     var SCENE=SCENES[GAME]||SCENES["arcade-slice.html"];
     document.body.className=SCENE.cls; try{ document.documentElement.classList.add(SCENE.cls); }catch(e){}
-    // A simple game in the adventure borrows the fruit stand's scene; its
-    // pill still names the game the child is about to play.
-    $("gameTitle").textContent=SCENES[GAME]?SCENE.title:GMETA.n;
+    $("gameTitle").textContent=SCENE.title;
     $("decor").innerHTML=SCENE.decor||"";
     // ---- the build: one coherent object, five pieces, wired to reveal(n) ----
     (function(){
@@ -1117,26 +1043,10 @@
         html+='</div>';
       } else if(SCENE.balloon){
         html='<div id="balloonBox"><div class="hull">'+BALLOON_HULL+'</div>'
-            +'<div id="balloonEl">'+BALLOON+'<div class="pilot">'+((S&&S.buddyMarkup)?S.buddyMarkup(profile.character||"fox",34):FOX)+'</div></div></div>';
+            +'<div id="balloonEl"><img class="craft-balloon" src="/assets/crafted/balloon-practice-v2.webp" alt=""><div class="pilot">'+((S&&S.buddyMarkup)?SonaCraftedBuddies.markup(profile.character||"fox",34):FOX)+'</div></div></div>';
       }
       R.innerHTML=html;
-      // Echo stands ON the fruit stand (design 04): the same button moves in,
-      // so tap-to-replay, its disabled rules and its listening glow are
-      // untouched. Every other scene keeps him under the bubble.
-      if(SCENE.stand){ var st=$("stand"); st.insertBefore($("echoBuddy"),st.firstChild); }
     })();
-    // The build takes the height left between the bubble and the mic and,
-    // on a phone too short for it, shrinks from its base to fit rather than
-    // slide under Echo. Never larger than designed. Re-measured whenever that
-    // space changes (a longer coaching line, the launch bar, a rotation).
-    function fitBuild(){
-      var R=$("reveals"), B=R&&R.firstElementChild; if(!B)return;
-      var room=R.clientHeight-(parseFloat(getComputedStyle(R).paddingTop)||0), need=B.offsetHeight;
-      var k=need>0?Math.max(0.4,Math.min(1,room/need)):1;
-      B.style.transform=k<0.995?"scale("+k.toFixed(3)+")":"";
-    }
-    fitBuild();
-    try{ if(window.ResizeObserver) new ResizeObserver(function(){fitBuild();}).observe($("reveals")); else window.addEventListener("resize",fitBuild); }catch(e){}
     function buildRoot(){ return $("buildRoot")||$("roadCol")||$("stackCol")||$("keyRow")||$("balloonBox"); }
     function paintTicket(n){
       try{
@@ -1153,7 +1063,7 @@
         el=slots[i]; var on=i<n, was=el._on;
         if(SCENE.stand){
           el.classList.toggle("up",!on&&i===n);
-          if(on&&!was) el.innerHTML='<div class="fr pop">'+FRUITS[i]+'</div>';
+          if(on&&!was) el.innerHTML='<div class="fr pop">'+earnedFruit(i)+'</div>';
           else if(!on) el.innerHTML='<div class="fr ghost">'+ghostFruit(i)+'</div>';
         } else if(SCENE.road){
           el.classList.toggle("glass",!on);
@@ -1163,7 +1073,7 @@
           var c0=el.querySelector(".coinUp"); if(c0) c0.remove();
           if(on&&!was){ el.classList.remove("pop"); void el.offsetWidth; el.classList.add("pop"); }
         } else if(SCENE.stackCol){
-          if(on){ var c=BLOCKC[i]; el.style.background="linear-gradient(180deg,"+c[0]+","+c[1]+")"; el.classList.remove("glass","up"); }
+          if(on){ var c=BLOCKC[i]; el.style.background="linear-gradient(180deg,"+c[0]+","+c[1]+")"; el.style.backgroundColor=c[0]; el.classList.remove("glass","up"); }
           else { el.style.background=""; el.classList.add("glass"); el.classList.toggle("up",i===n); }
           if(on&&!was){ el.classList.remove("pop"); void el.offsetWidth; el.classList.add("pop"); }
         } else if(SCENE.keyRow){
@@ -1182,20 +1092,17 @@
       }
     }
     (function(){
-      // Free play: the header IS the name pill, so the one below goes.
-      // The adventure: the header holds the path dots and the pill sits below.
-      if(!isDaily){$("ctxLine").textContent=GMETA.n;$("ctxLine").classList.add("namePill");$("titleWrap").hidden=true;return;}
+      if(!isDaily){document.body.classList.add("practice-single");$("ctxLine").textContent=GMETA.n;return;}
       $("ctxLine").setAttribute("aria-label","Adventure, round "+Math.min(ROUNDIX+1,DAILY_SEQ.length)+" of "+DAILY_SEQ.length);
       ADVENTURE.forEach(function(key,i){var dot=document.createElement("span");dot.className="path-dot"+(i<ROUNDIX?" done":i===ROUNDIX?" current":"");dot.setAttribute("aria-hidden","true");if(i===ROUNDIX){var art=S.gameSticker(key);S.paintSticker(dot,art[0],art[1]);}$("ctxLine").appendChild(dot);});
     })();
     // The bubble target, repainted on every flip (a step-down included). Only
     // the letters that make the practice sound are orange (Sona.soundMark:
-    // one rule, every page); the rest is dark brown. A bare-sound target like
-    // "rrrr" IS the sound, so it is orange whole. In a sentence only the
-    // practice word is marked — "I see a" is the frame, not the practice. The
-    // word's picture shows on word and sentence rungs only, where there is a
-    // thing to picture, never beside "rrrr" or "rah". Kept self-contained:
-    // voicetest3 runs this function's own source against ITEM, SOUND, S, $.
+    // one rule, every page); the rest is the bubble's ink. A bare-sound target
+    // like "rrrr" IS the sound, so it is orange whole. In a sentence only the
+    // practice word is marked: "I see a" is the frame, not the practice. Kept
+    // self-contained: voicetest3 runs this function's own source against
+    // ITEM, SOUND, S, $.
     function paintCard(){
       var iso=ITEM.level==="isolation", txt=String(iso?((S&&S.soundSay)?S.soundSay(SOUND):"rrrr"):(ITEM.display||ITEM.t));
       var esc=function(x){return String(x).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");};
@@ -1207,25 +1114,21 @@
       while(word&&!iso&&(f=lo.indexOf(word,from))>=0){ if(!/[a-z]/.test(lo.charAt(f-1))&&!/[a-z]/.test(lo.charAt(f+word.length))){at=f;break;} from=f+1; }
       $("bTarget").innerHTML = iso ? '<b class="snd">'+esc(txt)+'</b>'
         : at>=0 ? esc(txt.slice(0,at))+mark(txt.slice(at,at+word.length))+esc(txt.slice(at+word.length)) : mark(txt);
-      $("bTarget").classList.toggle("long",txt.length>12);
-      var emoji=ITEM.e||(info&&info.e)||"", withPic=!iso&&(ITEM.level==="word"||ITEM.level==="sentence")&&!!emoji&&!!(S&&S.pic), pic=$("bPic");
-      if(pic){ pic.innerHTML=withPic?S.pic(word||ITEM.t,emoji,56):""; pic.hidden=!withPic; }
-      if($("bubble")) $("bubble").classList.toggle("haspic",withPic);
     }
     paintCard();
     function paintReps(n){
       try{ reveal(n); }catch(e){}
-      var left=NEED-n, more=String(NUMWORD[left]||left);
+      var left=NEED-n;
       $("gpState").innerHTML = left<=0 ? "Here we go!"
         : (n===0 ? "Say it <b>"+(NUMWORD[NEED]||NEED)+" times</b> "+SCENE.go
-                 : (left===1?"<b>Just one more!</b>":"<b>"+more.charAt(0).toUpperCase()+more.slice(1)+" more</b> "+SCENE.go));
+                 : (left===1?"<b>Just 1 more!</b>":"<b>"+left+" more</b> "+SCENE.go));
     }
     paintReps(0);
     window.__paintReps=paintReps; // headless-test hook
 
 
 
-    // "Hear it slowly" — shown from the first prompt; replays the model slowly.
+    // slow-replay pill — appears on a retry; replays the model slooowly, for fun.
     // Playback runs through the speaker guard, so it can never charge a rep.
     function turtleText(){ return ITEM.level==="isolation" ? sayLine() : String(ITEM.say||ITEM.display||ITEM.t); }
     function showTurtle(on){ $("turtleBtn").classList.toggle("show",!!on); }
@@ -1983,7 +1886,7 @@
         // No glowing mic here: it lights when the window is open and the room
         // measured (listenReady), not before Echo's prompt or the quiet gap.
         NEED=n||save;turnPhase="practice";updateTurn();
-        try{$("sayLbl").textContent="Say";$("leo").src="/coach/echo/echo-listening.svg";}catch(e){}
+        try{$("sayLbl").textContent="Say";$("leo").src="/assets/crafted/echo-welcome.webp";}catch(e){}
         if(!(await startEngine()) || !(await practiceReady())){NEED=save;return null;}
         NEED=save;
         // Even a native transcript cannot manufacture a try when the mic found
@@ -2032,7 +1935,7 @@
               if(practicePaused || practiceClosed || document.hidden)return;
               var card=$("micPrime").querySelector(".ovlCard");
               if(!card){ location.href="/today.html"; return; }
-              card.innerHTML='<img class="ovlEcho" src="/coach/echo/echo-idle.svg" alt="" />'
+              card.innerHTML='<img class="ovlEcho" src="/assets/crafted/echo-welcome.webp" alt="" />'
                 +'<h2>That\'s okay!</h2>'
                 +'<p style="font-weight:800;font-size:13.5px;color:var(--muted);line-height:1.5;">Echo needs to hear you to play the games — we\'ll ask again next time you\'re ready.</p>'
                 +'<p style="font-weight:800;font-size:11.5px;color:var(--muted);line-height:1.5;">Grown-ups: you can turn the microphone on whenever you like, from this screen or your phone\'s Settings.</p>'
@@ -2123,7 +2026,7 @@
         // warm retry line below. Echo drops to the idle pose while he coaches.
         try{ $("sayLbl").textContent="Almost! "+(CUESHORT||"listen close")+" —"; }catch(e){}
         $("gpState").textContent="Try again — you've got this!";
-        try{ var li=$("leo"); if(li&&li.src) li.src="/coach/echo/echo-idle.svg"; }catch(e){}
+        try{ var li=$("leo"); if(li&&li.src) li.src="/assets/crafted/echo-welcome.webp"; }catch(e){}
         // spoken coaching drops the "— rrr!" demo (screen keeps the full tip):
         // TTS never performs the sound, it only describes the mouth move
         var tip=(c&&c.tip?c.tip.split("—")[0]:"").trim().replace(/[.!,]+$/,"")||("Let's try our "+soundName()+" sound again");
@@ -2208,7 +2111,7 @@
     }
     function showChestReveal(stk){
       $("chestStage").style.display="none";
-      $("chestStk").textContent=stk?stk.e:"⭐";
+      $("chestStk").innerHTML=window.SonaRewardArt?SonaRewardArt(stk?stk.id:"star"):S.icon("star",74);
       $("chestName").textContent=stk?("You found the "+stk.name+" sticker!"):"Superstar!";
       $("chestReveal").style.display="block";
       $("chestClaim").focus({preventScroll:true});
@@ -2252,7 +2155,7 @@
       if(!q){
         q=document.createElement("div");q.id="quietOvl";q.className="ovl";
         q.setAttribute("role","dialog");q.setAttribute("aria-modal","true");q.setAttribute("aria-labelledby","quietTitle");
-        q.innerHTML='<div class="ovlCard quiet-card"><img src="/coach/echo/echo-listening.svg" alt="Echo"/><h2 id="quietTitle" tabindex="-1"></h2><p id="quietCopy"></p><button class="btn" id="quietGo">Try again</button><button class="btn ghost" id="quietLater">Maybe later</button></div>';
+        q.innerHTML='<div class="ovlCard quiet-card"><img src="/assets/crafted/echo-welcome.webp" alt="Echo"/><h2 id="quietTitle" tabindex="-1"></h2><p id="quietCopy"></p><button class="btn" id="quietGo">Try again</button><button class="btn ghost" id="quietLater">Maybe later</button></div>';
         document.body.appendChild(q);
       }
       var microphone=cause==="microphone";
@@ -2278,10 +2181,9 @@
       paintReps(NEED);
       // charged (5/5): ring the build, celebrate pose, GOOO line, launch bar
       try{ var _br=buildRoot(); if(_br) _br.classList.add("ringed"); }catch(e){}
-      // (on the fruit stand Echo keeps the stand's size: he is part of the build there)
-      try{ var _lc=$("leo"); if(_lc&&_lc.src){ _lc.src="/coach/echo/echo-celebrate.svg"; if(!SCENE.stand){ _lc.style.width="110px"; _lc.style.height="110px"; } } }catch(e){}
-      try{ $("bMain").textContent=GMETA.simple?"Let’s play together!":"Here we go!"; $("gpState").textContent=""; $("bPic").hidden=true; $("bubble").classList.remove("haspic"); }catch(e){}
-      try{ $("micWrap").style.display="none"; $("replayLabel").hidden=true; $("micCard").hidden=true; var _lb=$("launchBar"); _lb.innerHTML="<span id=launchArt aria-hidden=true></span><span>"+GMETA.n+"</span>";var art=S.gameSticker(GAME);S.paintSticker($("launchArt"),art[0],art[1]); _lb.classList.add("show"); }catch(e){}
+      try{ var _lc=$("leo"); if(_lc&&_lc.src){ _lc.src="/assets/crafted/echo-welcome.webp"; _lc.style.width="110px"; _lc.style.height="110px"; } }catch(e){}
+      try{ $("bMain").textContent=GMETA.simple?"Let’s play together!":"Here we go!"; $("gpState").textContent=""; }catch(e){}
+      try{ $("micWrap").style.display="none"; $("replayLabel").hidden=true; var _lb=$("launchBar"); _lb.innerHTML="<span id=launchArt aria-hidden=true></span><span>"+GMETA.n+"</span>";var art=S.gameSticker(GAME);S.paintSticker($("launchArt"),art[0],art[1]); _lb.classList.add("show"); }catch(e){}
       sfx("complete"); try{ if(S&&S.confetti)S.confetti(); }catch(e){}
       try{ sessionStorage.setItem("sona.play.token",GAME); sessionStorage.setItem("sona.boost.sound",SOUND); sessionStorage.removeItem("sona.play.active"); }catch(e){}
       if(isDaily&&run){ run.pending=true; runSave(run); }

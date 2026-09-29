@@ -106,7 +106,15 @@
   function fetchVoice(t) {
     var ctl = window.AbortController ? new AbortController() : null, to = ctl ? setTimeout(function () { ctl.abort(); }, 8000) : 0;
     return fetch("/api/tts", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text: t, voice: prof().voiceId || "", stable: true }), signal: ctl ? ctl.signal : undefined })
-      .then(function (r) { clearTimeout(to); return r.ok ? r.arrayBuffer() : null; }, function () { clearTimeout(to); return null; });
+      .then(function (r) {
+        clearTimeout(to);
+        if (!r.ok) return null;
+        // "0": a stand-in while the usual voice model was busy. Play it, never
+        // save it: phones key clips by voice and text, not model, so a saved
+        // stand-in would replay the old voice forever (the same rule as sayplay.js).
+        var keep = !(r.headers && r.headers.get && r.headers.get("X-Sona-Voice-Keep") === "0");
+        return r.arrayBuffer().then(function (b) { return b ? { bytes: b, keep: keep } : null; });
+      }, function () { clearTimeout(to); return null; });
   }
 
   // One line of Echo's at a time; stop() cuts it and still calls its done.
@@ -149,18 +157,20 @@
         timer = setTimeout(end, n / 24 + 1500);
       } catch (e) { synth(); }
     }
-    var key = (prof().voiceId || "echo") + "|" + ((S && S.TTS_CACHE_VERSION) || "v8") + "|" + text;
+    var key = (prof().voiceId || "echo") + "|" + ((S && S.TTS_CACHE_VERSION) || "v9") + "|" + text;
     whenQuiet(function () {
       if (fin) return;
       ttsGet(key).then(function (cached) {
         if (fin) return;
         if (my !== vgen || document.hidden) { end(); return; }
         if (cached) { play(new Uint8Array(cached)); return; }
-        fetchVoice(text).then(function (b) {
+        fetchVoice(text).then(function (got) {
           if (fin) return;
           if (my !== vgen || document.hidden) { end(); return; }
+          var b = got && got.bytes;
           if (!b || !b.byteLength) { synth(); return; }
-          ttsPut(key, b); play(new Uint8Array(b));
+          if (got.keep) ttsPut(key, b);
+          play(new Uint8Array(b));
         });
       });
     }, my, end);

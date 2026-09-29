@@ -275,8 +275,8 @@
     // greyed and "Coming Oct 4", until that day on the phone's own calendar;
     // a book without it is open. R, S, L, SH and TH are open now. The six-page
     // picture books come after every twelve-page one: they break the rule the
-    // new books keep (the sound only at the start of a word) and are drawn
-    // with emoji, so they are last in line to be redone.
+    // new books keep (the sound only at the start of a word), so they are
+    // last in line to be redone, painted or not (`painted`, below).
     var STORIES = [
       // THE FULLER BOOKS (Travis, 26 Sep 2026: "start with a good solid book with
       // the letter R", then "I want to write a bunch of books. So do one for each
@@ -625,91 +625,91 @@
         { e: "🦆", t: "The ducks quack, \"Yum, yum!\"", art: "/assets/books/this-bear-that-bee/p10.svg", alt: "" },
         { e: "🌅", t: "Then the sun sets.", art: "/assets/books/this-bear-that-bee/p11.svg", alt: "" },
         { e: "🐻", t: "\"That was the best day!\" say the pals.", art: "/assets/books/this-bear-that-bee/p12.svg", alt: "" } ] },
-      { sound: "R", emoji: "🐰", opens: "2026-11-08", title: "Rory the Rabbit", colors: ["#ff7a6e", "#ef6557"], pages: [
+      { sound: "R", emoji: "🐰", opens: "2026-11-08", title: "Rory the Rabbit", painted: "rory", colors: ["#ff7a6e", "#ef6557"], pages: [
         { e: "🚀", t: "Rory the rabbit rides a red rocket." },
         { e: "🌈", t: "The rocket roars over the rainbow." },
         { e: "🤖", t: "Rory sees a robot on a rock." },
         { e: "💍", t: "The robot gives Rory a ring." },
         { e: "🌊", t: "They race around the river." },
         { e: "🎉", t: "Rory roars: hooray, hooray!" } ] },
-      { sound: "R", emoji: "🤖", opens: "2026-11-08", title: "Reba the Robot", colors: ["#ff9a6e", "#ef7d47"], pages: [
+      { sound: "R", emoji: "🤖", opens: "2026-11-08", title: "Reba the Robot", painted: "reba", colors: ["#ff9a6e", "#ef7d47"], pages: [
         { e: "🤖", t: "Reba the robot runs on a road." },
         { e: "🌹", t: "Reba rolls past a red rose." },
         { e: "🐇", t: "A rabbit races right by." },
         { e: "🎀", t: "Reba wraps it in a ribbon." },
         { e: "🌧️", t: "Rain! They run for the roof." },
         { e: "🌈", t: "Reba the robot: ready, ready!" } ] },
-      { sound: "R", emoji: "🐓", opens: "2026-11-08", title: "Ruby the Rooster", colors: ["#ff6e8e", "#ef5772"], pages: [
+      { sound: "R", emoji: "🐓", opens: "2026-11-08", title: "Ruby the Rooster", painted: "ruby", colors: ["#ff6e8e", "#ef5772"], pages: [
         { e: "🐓", t: "Ruby the rooster rises at dawn." },
         { e: "🌅", t: "Ruby crows: rise and shine!" },
         { e: "🏃", t: "She runs around the red barn." },
         { e: "🪱", t: "Ruby finds a wriggly worm." },
         { e: "🌽", t: "The rooster pecks rows of corn." },
         { e: "💤", t: "Ruby rests. What a great run!" } ] },
-      { sound: "R", emoji: "🦝", opens: "2026-11-15", title: "Remy the Raccoon", colors: ["#ffb066", "#ef923c"], pages: [
+      { sound: "R", emoji: "🦝", opens: "2026-11-15", title: "Remy the Raccoon", painted: "remy", colors: ["#ffb066", "#ef923c"], pages: [
         { e: "🦝", t: "Remy the raccoon roams the river." },
         { e: "🪨", t: "He reaches under a round rock." },
         { e: "🍇", t: "Remy grabs a ripe, red grape." },
         { e: "🚣", t: "He rows a raft in the rain." },
         { e: "🌿", t: "Remy rests in the reeds." },
         { e: "⭐", t: "Remy the raccoon: hooray!" } ] },
-      { sound: "R", emoji: "🦏", opens: "2026-11-15", title: "Rex the Rhino", colors: ["#ff7a6e", "#e05a9c"], pages: [
+      { sound: "R", emoji: "🦏", opens: "2026-11-15", title: "Rex the Rhino", painted: "rex", colors: ["#ff7a6e", "#e05a9c"], pages: [
         { e: "🦏", t: "Rex the rhino runs really fast." },
         { e: "🛣️", t: "He roars down the rocky road." },
         { e: "🌳", t: "Rex rolls in the rich, green grass." },
         { e: "🍎", t: "He reaches for a red apple." },
         { e: "🤝", t: "Rex meets a friendly rabbit." },
         { e: "🎉", t: "Run, Rex, run! Hooray!" } ] },
-      { sound: "S", emoji: "🦭", opens: "2026-11-15", title: "Sunny the Seal", colors: ["#62bdff", "#46a6ec"], pages: [
+      { sound: "S", emoji: "🦭", opens: "2026-11-15", title: "Sunny the Seal", painted: "sunny", colors: ["#62bdff", "#46a6ec"], pages: [
         { e: "☀️", t: "Sunny the seal sits in the sun." },
         { e: "🐍", t: "Sunny sees a silly snake." },
         { e: "🏖️", t: "The snake slides on the soft sand." },
         { e: "🥄", t: "They sip soup with a silver spoon." },
         { e: "🎵", t: "Sunny sings a silly song." },
         { e: "😴", t: "So sleepy! Sunny says goodnight." } ] },
-      { sound: "L", emoji: "🦁", opens: "2026-11-22", title: "Lily the Lion", colors: ["#ffd45e", "#f0bb33"], pages: [
+      { sound: "L", emoji: "🦁", opens: "2026-11-22", title: "Lily the Lion", painted: "lily", colors: ["#ffd45e", "#f0bb33"], pages: [
         { e: "🍭", t: "Lily the lion licks a lemon lollipop." },
         { e: "🪵", t: "Lily leaps over a little log." },
         { e: "🐞", t: "A ladybug lands on a leaf." },
         { e: "😄", t: "Lily laughs: la la la!" },
         { e: "🎈", t: "They look at a yellow balloon." },
         { e: "💛", t: "Lily loves to play all day." } ] },
-      { sound: "K", emoji: "🐨", opens: "2026-11-22", title: "Kiki the Koala", colors: ["#7dd470", "#63bd57"], pages: [
+      { sound: "K", emoji: "🐨", opens: "2026-11-22", title: "Kiki the Koala", painted: "kiki", colors: ["#7dd470", "#63bd57"], pages: [
         { e: "🍰", t: "Kiki the koala bakes a cake." },
         { e: "🔑", t: "A kind king comes with a key." },
         { e: "🪁", t: "The king flies a colorful kite." },
         { e: "🍪", t: "Kiki gives the king a cookie." },
         { e: "🐮", t: "A cat and a cow come to play." },
         { e: "🌞", t: "What a cool day for Kiki!" } ] },
-      { sound: "SH", emoji: "🐑", opens: "2026-11-22", title: "Shelly the Sheep", colors: ["#c08cf0", "#a86fe0"], pages: [
+      { sound: "SH", emoji: "🐑", opens: "2026-11-22", title: "Shelly the Sheep", painted: "shelly", colors: ["#c08cf0", "#a86fe0"], pages: [
         { e: "👟", t: "Shelly the sheep shines her shoes." },
         { e: "🐚", t: "She shows a shiny shell to a fish." },
         { e: "🚢", t: "They sail on a big ship. Shhh!" },
         { e: "⭐", t: "Shelly makes a wish on a star." },
         { e: "🥤", t: "She sips a milkshake — so fresh." },
         { e: "😴", t: "Shhh… Shelly is sleeping now." } ] },
-      { sound: "CH", emoji: "🐥", opens: "2026-11-29", title: "Charlie the Chick", colors: ["#ff9446", "#ef7d2c"], pages: [
+      { sound: "CH", emoji: "🐥", opens: "2026-11-29", title: "Charlie the Chick", painted: "charlie", colors: ["#ff9446", "#ef7d2c"], pages: [
         { e: "🍒", t: "Charlie the chick chews chewy cherries." },
         { e: "🚂", t: "Charlie rides the choo-choo train." },
         { e: "🧀", t: "He munches cheese at lunch." },
         { e: "🐿️", t: "A chipmunk sits on a chair." },
         { e: "🍫", t: "They share chocolate chips. Crunch!" },
         { e: "😁", t: "Charlie chirps: cheep, cheep, cheep." } ] },
-      { sound: "TH", emoji: "🦥", opens: "2026-11-29", title: "Theo the Sloth", colors: ["#9aa7ff", "#7f8eef"], pages: [
+      { sound: "TH", emoji: "🦥", opens: "2026-11-29", title: "Theo the Sloth", painted: "theo", colors: ["#9aa7ff", "#7f8eef"], pages: [
         { e: "💭", t: "Theo the sloth thinks happy thoughts." },
         { e: "3️⃣", t: "Theo counts: one, two, three!" },
         { e: "👍", t: "He gives a big thumbs up." },
         { e: "🦷", t: "Theo brushes his three teeth." },
         { e: "🛁", t: "Then a warm bath — both feet in." },
         { e: "🌙", t: "Thank you, moon. Theo says goodnight." } ] },
-      { sound: "G", emoji: "🐐", opens: "2026-11-29", title: "Gus the Goat", colors: ["#58c7b5", "#3fae9c"], pages: [
+      { sound: "G", emoji: "🐐", opens: "2026-11-29", title: "Gus the Goat", painted: "gus", colors: ["#58c7b5", "#3fae9c"], pages: [
         { e: "🌱", t: "Gus the goat grows a green garden." },
         { e: "🎁", t: "A goose gives Gus a gift." },
         { e: "🎸", t: "Gus plays a goofy guitar." },
         { e: "🍇", t: "They gobble grapes by the gate." },
         { e: "🐛", t: "A bug giggles on the grass." },
         { e: "🌟", t: "Good game, Gus. Goodnight!" } ] },
-      { sound: "F", emoji: "🦊", opens: "2026-12-06", title: "Fifi the Fox", colors: ["#ff7fab", "#ef6595"], pages: [
+      { sound: "F", emoji: "🦊", opens: "2026-12-06", title: "Fifi the Fox", painted: "fifi", colors: ["#ff7fab", "#ef6595"], pages: [
         { e: "🪶", t: "Fifi the fox finds four feathers." },
         { e: "🐟", t: "Fifi feeds a funny fish." },
         { e: "🔥", t: "They warm five feet by the fire." },
@@ -862,8 +862,10 @@
     STORIES.forEach(function (st) {
       var b = document.createElement("button"), open = bookOpen(st);
       b.className = "bookBtn" + (open ? "" : " soon");
-      // a fuller book shows its own drawn cover; an older one the generic book
-      b.innerHTML = '<span class="cvr">' + (st.cover ? '<img class="scvr" src="' + escAttr(st.cover) + '" alt="">' : cover(st, 76)) + '</span>'
+      // a fuller book shows its own drawn cover, a painted one the small copy
+      // of its first scene; any other the generic book
+      var face = st.cover || (st.painted ? paintedSrc(st, true) : "");
+      b.innerHTML = '<span class="cvr">' + (face ? '<img class="scvr" src="' + escAttr(face) + '" alt="">' : cover(st, 76)) + '</span>'
         + (wasRead(st) ? '<span class="doneStar">' + ((window.Sona && Sona.icon) ? Sona.icon("star", 22) : "") + '</span>' : "")
         + '<span class="rail"></span>'
         + '<span class="bt">' + st.title + '</span>'
@@ -926,6 +928,60 @@
       }
       return (window.Sona&&Sona.pic)?Sona.pic(readerWord(pg.t),pg.e,118):(pg.e||"");
     }
+    // THE PAINTED BOOKS (Codex, 28 Sep 2026, drawn with ChatGPT's image tool;
+    // in this reader from 29 Sep). Each six-page book is one picture holding
+    // its six scenes, three across and two down, in reading order, plus a
+    // small -cover copy of the first for the shelf, so a book that isn't open
+    // yet never pulls the big picture. The reader cuts the scenes out on the
+    // phone, once per book, so page i's scene becomes a picture of its own
+    // and gets exactly what a drawn page gets: shown whole at full width, its
+    // own top and bottom rows carried out to the screen's edges, the cream
+    // card over its foot. A CSS sprite can't: the edges stretch a picture's
+    // own rows and the fit reads its shape. Still one download a book; one
+    // book's scenes are kept at a time.
+    var CUT = { id: null, urls: null, failed: false, wait: [] };
+    function paintedSrc(st, small) { return "/assets/books/painted/" + st.painted + (small ? "-cover" : "") + ".webp"; }
+    // page i's scene, if it has been cut out yet
+    function sceneOf(st, i) { return st && st.painted && CUT.id === st.painted && CUT.urls ? CUT.urls[i] || null : null; }
+    function cutScenes(st, then) {
+      // a book that failed (offline) tries again the next time it's opened
+      if (CUT.id === st.painted && !CUT.failed) { if (CUT.urls) then(); else CUT.wait.push(then); return; }
+      (CUT.urls || []).forEach(function (u) { try { URL.revokeObjectURL(u); } catch (e) {} });
+      var job = CUT = { id: st.painted, urls: null, failed: false, wait: [then] };
+      function finish(urls) {
+        if (CUT !== job || job.urls || job.failed) return;
+        if (urls) job.urls = urls; else job.failed = true;
+        var w = job.wait; job.wait = [];
+        w.forEach(function (f) { try { f(); } catch (e) {} });
+      }
+      var sheet = new Image();
+      sheet.onerror = function () { finish(null); };
+      sheet.onload = function () {
+        if (CUT !== job) return;   // another book was opened meanwhile
+        try {
+          var W = Math.floor(sheet.naturalWidth / 3), H = Math.floor(sheet.naturalHeight / 2), urls = [], left = 6;
+          if (!W || !H) return finish(null);
+          for (var i = 0; i < 6; i++) (function (i) {
+            var cv = document.createElement("canvas"); cv.width = W; cv.height = H;
+            cv.getContext("2d").drawImage(sheet, (i % 3) * W, Math.floor(i / 3) * H, W, H, 0, 0, W, H);
+            function got(u) {
+              urls[i] = u;
+              if (--left) return;
+              var whole = CUT === job;
+              for (var k = 0; k < 6; k++) whole = whole && !!urls[k];
+              if (whole) return finish(urls);
+              urls.forEach(function (x) { try { URL.revokeObjectURL(x); } catch (e) {} });
+              finish(null);
+            }
+            // a blob keeps six scenes out of the page's strings; an older
+            // browser without toBlob gets the same picture as a data URL
+            if (cv.toBlob) cv.toBlob(function (b) { got(b ? URL.createObjectURL(b) : null); }, "image/jpeg", 0.92);
+            else got(cv.toDataURL("image/jpeg", 0.92));
+          })(i);
+        } catch (e) { finish(null); }
+      };
+      sheet.src = paintedSrc(st);
+    }
     function cover(st,w){ var c0=st.colors[0],c1=st.colors[1];
       var face=(window.Sona&&Sona.COVER_FACES&&Sona.COVER_FACES[st.sound])||"";
       return '<svg viewBox="0 0 60 76" style="width:'+w+'px;height:'+Math.round(w*76/60)+'px;overflow:visible">'
@@ -950,6 +1006,8 @@
       bkHead.innerHTML = '<span class="bh"><span class="bh1"></span><span class="bhsep"> · </span><span class="bh2"></span></span>';
       bkHead.querySelector(".bh1").textContent = st.title;
       bkHead.querySelector(".bh2").textContent = sndLabel(st.sound) + " sound";
+      // a painted book's picture comes down while Echo reads the title
+      if (st.painted) cutScenes(st, function () {});
       showPage();
     }
     // color every target-sound letter in a sentence (design §8 reader)
@@ -1066,17 +1124,27 @@
       bkCount.textContent = page >= 0 && page < N ? (page + 1) + " of " + N : "";
       bkCount.style.visibility = page >= 0 && page < N ? "visible" : "hidden";
       if (page === -1) {
-        bkStage.innerHTML = (BOOK.cover ? blur(BOOK.cover) + edge(BOOK.cover, "up") + edge(BOOK.cover, "down") + '<div class="bkart cvrpage"><img class="bkcover" src="' + escAttr(BOOK.cover) + '" alt="' + escAttr(BOOK.coverAlt) + '"></div>'
+        // a painted book's title page is its first scene: the shelf's small
+        // copy (already here) until the full-size cut is ready, then that
+        var cvr = BOOK.cover || (BOOK.painted ? sceneOf(BOOK, 0) || paintedSrc(BOOK, true) : "");
+        bkStage.innerHTML = (cvr ? blur(cvr) + edge(cvr, "up") + edge(cvr, "down") + '<div class="bkart cvrpage"><img class="bkcover" src="' + escAttr(cvr) + '" alt="' + escAttr(BOOK.coverAlt) + '"></div>'
             : wash + '<div class="bkart sticker"><div class="bkpic">' + cover(BOOK, 150) + '</div></div>')
           + footHTML('<div class="bktitle">' + escHtml(BOOK.title) + '</div><div class="bksub">A story full of ' + sndLabel(BOOK.sound) + ' sounds — Echo reads it to you!</div>');
         fitArt();
+        if (BOOK.painted && !sceneOf(BOOK, 0)) {
+          var titled = BOOK;
+          cutScenes(BOOK, function () {
+            var im = bkStage.querySelector("img.bkcover"), s0 = sceneOf(titled, 0);
+            if (BOOK === titled && page === -1 && im && s0) im.src = s0;
+          });
+        }
         setBar("next");
         bkNext.textContent = "Start →"; bkHear.hidden = true;
         say(BOOK.title + "! A story full of " + sndLabel(BOOK.sound).replace(" (v)", "") + " sounds.");
       } else if (page >= N) {
         // The End: the star over the last picture, Echo celebrating on the card
-        var last = BOOK.pages[N - 1];
-        bkStage.innerHTML = (last && last.art ? blur(last.art) : wash)
+        var last = BOOK.pages[N - 1], lastArt = last && (last.art || sceneOf(BOOK, N - 1));
+        bkStage.innerHTML = (lastArt ? blur(lastArt) : wash)
           + '<div class="bkart"><div class="bkpic" style="filter:drop-shadow(0 10px 22px rgba(255,190,20,.55))">' + STAR + '</div></div>'
           + footHTML('<div class="bktitle">The End!</div><div class="bksub">Great listening! Read it again or pick another story.</div>', "end", "celebrate");
         setBar("next");
@@ -1088,11 +1156,32 @@
         say("The end! Great listening!");
       } else {
         var pg = BOOK.pages[page];
-        bkStage.innerHTML = (pg.art ? blur(pg.art) + edge(pg.art, "up") + edge(pg.art, "down") + '<div class="bkart scene">' + readerArt(pg) + '</div>'
-            : wash + '<div class="bkart sticker"><div class="bkglow" style="background:radial-gradient(circle,' + hexRgba(c0, .3) + ',' + hexRgba(c1, 0) + ' 70%)"></div><div class="bkpic">' + readerArt(pg) + '</div></div>')
+        // the picture: a drawn page's file or a painted page's scene, whole
+        // at full width over its own edges; the sticker on a wash for a page
+        // with neither (or a painted book whose picture couldn't come down);
+        // and while a painted book's picture is still on its way, the wash
+        // alone, filled in below when it lands
+        var artNow = function (at) {
+          var p = BOOK.pages[at], src = p.art || sceneOf(BOOK, at);
+          if (src) return blur(src) + edge(src, "up") + edge(src, "down") + '<div class="bkart scene">'
+            + (p.art ? readerArt(p) : '<img src="' + escAttr(src) + '" alt="" data-scene="' + at + '">') + '</div>';
+          if (BOOK.painted && !(CUT.id === BOOK.painted && CUT.failed)) return wash + '<div class="bkart bkwait"></div>';
+          return wash + '<div class="bkart sticker"><div class="bkglow" style="background:radial-gradient(circle,' + hexRgba(c0, .3) + ',' + hexRgba(c1, 0) + ' 70%)"></div><div class="bkpic">' + readerArt(p) + '</div></div>';
+        };
+        bkStage.innerHTML = artNow(page)
           + footHTML('<div class="bktext">' + (BOOK.words ? tintWords(pg.t, BOOK) : tintSound(tappable(pg.t), BOOK.sound)) + '</div>'
             + (page === 0 ? '<div class="bkhint">Tap any word to hear it</div>' : ""), "", "listening");
         fitArt();
+        if (bkStage.querySelector(".bkwait")) {
+          var waitBook = BOOK, waitPage = page;
+          cutScenes(BOOK, function () {
+            var w = bkStage.querySelector(".bkwait"), foot = bkStage.querySelector(".bkfoot");
+            if (BOOK !== waitBook || page !== waitPage || !w || !foot) return;   // the page already turned
+            var wa = bkStage.querySelector(".bkbg.wash"); if (wa) wa.remove(); w.remove();
+            foot.insertAdjacentHTML("beforebegin", artNow(waitPage));
+            fitArt();
+          });
+        }
         bkNext.textContent = "Next →"; bkHear.hidden = false;
         bkStage.querySelectorAll(".bktext span").forEach(function (sp) { sp.onclick = function () { wordTap(sp); }; });
         // a page with a key word shows the mic (resting) where Next was, and

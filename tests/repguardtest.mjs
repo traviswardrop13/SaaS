@@ -157,10 +157,10 @@ function signalDevice(config){
   Object.defineProperty(window,'Sona',{configurable:true,get:()=>sona,set(value){
     sona=value;
     value.speechPerm=()=>Promise.resolve(true);
-    value.speechStart=()=>{if(config.native)h.recognizing=true;return Promise.resolve(!!config.native);};
+    value.speechStart=(o)=>{h.heardWord=(o&&o.words&&o.words[0])||'rrrr';if(config.native)h.recognizing=true;return Promise.resolve(!!config.native);};
     // With the voice on, the fake recognizer transcribes only what it heard:
     // Echo's R, if the room ever reached it while it was running.
-    value.speechStop=()=>{const heard=h.recognizing&&h.recognizerHeard;h.recognizing=false;return Promise.resolve({text:config.native&&(!config.voice||heard)?'rrrr':''});};
+    value.speechStop=()=>{const heard=h.recognizing&&h.recognizerHeard;h.recognizing=false;return Promise.resolve({text:config.native&&(!config.voice||heard)?h.heardWord:''});};
     value.isNativeApp=()=>!!config.native;
     const verdict=value.hearVerdict;
     value.hearVerdict=function(...args){h.verifyCalls++;return verdict.apply(value,args);};
@@ -243,8 +243,8 @@ try{
     const{page,context}=await fresh({native:true});
     try{
       const before=await snapshot(page);await page.waitForTimeout(500);await completeSegment(page);
-      const after=await snapshot(page),state=await page.evaluate(()=>({reps,quiet:!!document.querySelector('#quietOvl.show'),verifyCalls:__repHarness.verifyCalls,texts:recognitionTexts,effects:__repHarness.effects}));
-      ok('zero detected tries cannot be rescued by a matching native transcript',state.reps===0&&state.quiet&&state.verifyCalls===0&&state.texts.includes('rrrr'),state);
+      const after=await snapshot(page),state=await page.evaluate(()=>({reps,quiet:!!document.querySelector('#quietOvl.show'),verifyCalls:__repHarness.verifyCalls,texts:recognitionTexts,heard:__repHarness.heardWord,effects:__repHarness.effects}));
+      ok('zero detected tries cannot be rescued by a matching native transcript',state.reps===0&&state.quiet&&state.verifyCalls===0&&state.texts.includes(state.heard),state);
       ok('native zero-try transcript cannot create saved progress or clips',JSON.stringify(before)===JSON.stringify(after),{before,after,effects:state.effects});
     }finally{await close(context,page);}
   });

@@ -1,0 +1,16 @@
+/* A short speech turn stays on the stage, above the live notes and keys. */
+#slowControl{position:absolute;top:calc(73px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);z-index:6;text-align:center;max-width:88%;}
+#slowControl[hidden],#slowCancel[hidden]{display:none;}
+#slowKeys{display:flex;align-items:center;justify-content:center;gap:12px;min-width:165px;min-height:52px;margin:auto;padding:4px 14px 4px 6px;border:2px solid #ead5ae;border-radius:28px;background:#fff8e9;color:#624329;box-shadow:0 4px 0 #967043;font-family:"Baloo 2",sans-serif;font-size:27px;font-weight:800;cursor:pointer;}
+#slowKeys img{width:45px;height:45px;object-fit:contain;}#slowKeys svg{width:23px;height:23px;fill:#239a9b;}
+#slowKeys:disabled{cursor:default;}#slowKeys:focus-visible,#slowCancel:focus-visible{outline:3px solid #8fe9e2;outline-offset:4px;}
+#slowStatus{font-size:12px;font-weight:800;color:#fff7de;margin-top:7px;white-space:nowrap;text-shadow:0 1px 3px #241438;}
+#slowControl.earned #slowKeys{border-color:#65ceca;background:#ddf8ef;box-shadow:0 4px 0 #26888b;}
+.slowTrack{display:block;width:120px;height:4px;margin:4px auto 0;border-radius:4px;overflow:hidden;}#slowMeter{display:block;height:100%;background:#83e6d6;}
+#slowCancel{border:1px solid #c6ad89;border-radius:18px;background:#fff8e9;color:#624329;padding:8px 14px;font:800 12px Nunito,sans-serif;margin-top:6px;min-height:36px;}
+body[data-crafted] #banner{top:calc(174px + env(safe-area-inset-top));}
+
+#slowStatus{display:inline-block;padding:3px 9px;border-radius:12px;background:rgba(255,248,233,.94);color:#624329;text-shadow:none;}
+@media(max-width:350px){#slowControl{max-width:94%;}#slowStatus{font-size:11px;}#slowKeys{min-height:48px;font-size:24px;}}
+
+body.speech-help-active #banner{visibility:hidden;}

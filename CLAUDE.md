@@ -315,7 +315,10 @@ branch dead code — `for-slps.html` is indexable and linked from the landing
 footer, and `betatest` pins the door OPEN. Since 24 Sep 2026 the channel can
 also pay: the dashboard and the free version stay free, and a clinician who
 wants every game for their families buys Caseload Premium — one yearly price,
-never per family, never to the clinician.
+never per family, never to the clinician. **Parents come first now** (Travis,
+29 Sep 2026: "lose my attachment in stop caring about the SLP stuff, but still
+leave the $5 a day add on"): the SLP ad keeps running and the $80 offer sits in
+plain sight on the dashboard, but the new ads, and the work, go to parents.
 
 **speaksona.com is for parents and caregivers** (Travis, 26 Sep 2026: "change
 it to target parents and caregivers only. not slps"). Its yellow is pale
@@ -384,7 +387,12 @@ who went quiet, what ends soon — one action per row) → Caseload (every child
 oldest-practiced first, **Copy note on every row**) → a child page (8-week
 strip, pass rate by sound and position, the current homework, the composer)
 → Caseload Premium (its own page, 24 Sep 2026: Today keeps exactly its four
-cards, and no price ever appears there; viewing it only reads) → Settings.
+cards, and no price ever appears in them; viewing it only reads) → Settings.
+Since 29 Sep 2026 (Travis: "yes add the $80 button to the first screen") a
+**Get Premium** button with the server's price sits in the top bar of every
+page but the Premium page, because a clinician from the ad lands on Community
+and never saw the price. Only once the plan has answered, never to a covered
+caseload; `slptest` 9b pins it.
 Reviewed by three lenses — a school SLP, a district privacy
 officer, an engineer — whose rulings are now rules:
 - **Register.** "Pass rate" (defined on the page as "did that sound like this
@@ -513,12 +521,41 @@ top four or five most popular letters... everything else, we can just set a
 date on it... new drops every week"). R, S, L, SH and TH are open. Every
 other book in `STORIES` carries `opens` (a Sunday, at most three a week) and
 waits on the shelf greyed, "Coming Oct 4", until that day on the phone's own
-calendar; a tap or `openBook()` does nothing before it. The six-page emoji
-books come after every twelve-page one: they put the sound anywhere in a word
+calendar; a tap or `openBook()` does nothing before it. The six-page books
+(painted, see below) come after every twelve-page one: they put the sound anywhere in a word
 and are last in line to be redone. A child whose sounds have nothing open yet
 sees every open book first, then their own, coming. Home's card and the
 website say "new ones every week", never "a book for every sound".
 `readtest` pins the dates and the shelf; `landingtest` the website's count.
+
+**The six-page books are painted** (Codex, 28 Sep 2026, with ChatGPT's image
+tool; brought over 29 Sep): one picture per book in `public/assets/books/painted/`
+holding its six scenes, three across and two down, in reading order, plus a
+small `-cover` copy of scene 1 that the shelf shows like any drawn cover, so a
+book that isn't open yet never pulls the big picture. The full-screen reader
+cuts page i's scene out of that picture on the phone (a canvas, once per book,
+one book kept at a time, still one download) and shows it exactly as it shows
+a drawn page: whole at full width, its own top and bottom rows carried out to
+the screen's edges, the cream card over its foot. The title page is scene 1
+(the small copy until the full-size cut is ready). While the picture is on its
+way a page shows its wash and fills in; if it never comes, the old emoji
+sticker, never a blank page. The art was drawn for those exact 78 sentences,
+so `readtest` pins them (change a sentence and redraw its scene) and checks,
+by comparing pixels, that each page shows its own scene. They have no `keys`,
+so no say-the-word moment: they put the sound anywhere in a word. Codex's own
+say-a-word-to-turn-the-page prototype was not brought over; the books
+branch's version below was, and it is ON for the twelve-page books (Travis,
+29 Sep 2026: "On now", after being told it changes what a child is asked to
+say). Rachel's review is still owed: the words, Echo's lines and what counts
+as a try are listed in that PR's body.
+
+**The app's look is the crafted world** (Codex, 28 Sep 2026: Travis's five
+concept boards, in `design/crafted-world/references/`). Painted scenes and game
+objects live in `public/assets/crafted/`, each surface's styles in
+`public/crafted-*.css`, and `design/crafted-world/README.md` is the handoff.
+Real controls and game objects stay HTML and canvas; a picture is never the
+interface. New art in this style comes from an image model (Travis generates
+it in ChatGPT); the twelve-page books are still the simpler drawings.
 
 **A book page fills the screen, and the child says one word to turn it** (the
 family's redesign brief, 28 Sep 2026). The picture fills the screen and the
@@ -661,6 +698,11 @@ screen (it was 2.2 s on a small iPhone and 0.5 s on a big iPad). One tap, one
 note: `micquietgamestest` pins its loudness to the Sound setting.
 `tests/tilestest.mjs` plays a whole round.
 
+**Piano slow keys** (Travis, 28 Sep 2026: “inside the game ... they say the sound to slow down the keys”). The child taps Echo on the piano board. The current song holds while Echo speaks a short instruction and plays the existing recorded sound. A voiced, family-checked attempt earns eight active gameplay seconds at 55% speed, including the arrival of new tiles. Native Apple recognition, when available, uses the existing isolation verdict to reject a clear unrelated word; unknown keeps the existing sound-shape fallback. Tapping, silence, cancellation and timeout earn nothing. Both microphone owners must close before music or navigation resumes. The between-song prompts remain. These in-game attempts are play, not SLP practice data. `tests/tilesspeechtest.mjs` checks the mechanic and interruption cleanup.
+
+**Sound-powered help across live games** (28 Sep 2026): Fruit Slice slows fruit motion and spawning, Block Stacker slows the moving block, Sound Sprint slows its course and progress, and Flappy Glide slows hedges and their arrival while preserving balloon control. Each uses `arcade-speech-help.js`/`.css`: tap Echo, hear the existing target recording, then a qualifying attempt earns eight active seconds at 55% speed. The scene holds during speech. Between-round prompts remain. Permission/native cleanup completes before resuming audio or navigating. No gameplay attempts enter practice records. Feed Echo now reveals the matching picture after a voice burst with a compatible broad sound family; it remains a participation hint, not a pronunciation grade. Hoops already requires a word to earn each shot. `arcadespeechhelptest` drives the four new helpers; `micquietgamestest` covers the Feed hint. Books and parked games are outside this change.
+
+
 **Sound Sprint is the same round, as a race** (27 Sep 2026): the park, the
 beach and the forest, a checkpoint between each with the say-it card ("Say
 “rrrr” to run to the beach!"), and a finish line that always ends the race in
@@ -698,12 +740,19 @@ to stand in for it. What was buildable was built on 28 Sep:
 - **Teal, cream and orange.** Main buttons and the mic are teal; second
   choices are cream pills; no bright green button anywhere (the family named
   the green GO). The tokens live once, in `public/action.css`; `sona.css`,
-  `sayplay.css` and `simple-play.css` `@import` it first and every other kid
-  page links it. Never paste the hex values into a page: a page that loses
+  `sayplay.css` and `simple-play.css` `@import` it first, and the books,
+  chapter/story pages, Feed Echo, Hoops and the Say & Play pages link it. The
+  crafted pages (the five round games and the practice page `charge.html`)
+  take their colours from `public/crafted-*.css` instead (see "The app's look
+  is the crafted world"); where a crafted sheet repaints one of our rules, the
+  crafted one wins, and our rule must add nothing that shows through (a teal
+  text-shadow under the crafted cream "Share this week" button once did). Never paste the hex values into a page: a page that loses
   the tokens shows white text on nothing, and the values will change when the
-  designer's STYLE.md arrives. `tests/loadtest.mjs` section 5 bans Duolingo
-  green (press shadows too) and orange on kid buttons and mics, and checks the
-  computed teal and cream.
+  designer's STYLE.md arrives. `tests/loadtest.mjs` section 5 accepts either
+  teal and bans, over both, Duolingo green and orange on a kid button or mic,
+  pressed or not. It judges teal by hue and cream as a light warm colour, so a
+  new value from the designer needs no test edit; for a crafted page it asks
+  the browser what a child sees, at rest and pressed.
 - **Orange means only the practice sound's letters** (the r in "rabbit").
   Show a practice word through `Sona.soundMark(text, sound, pos)`: escaped
   HTML with the letters that make the sound in `<b class="snd">`. When it
@@ -711,28 +760,25 @@ to stand in for it. What was buildable was built on 28 Sep:
   a cue on the wrong letter is worse than none; a doubled letter is one sound.
   Which letters count is Rachel's call. `tests/soundmarktest.mjs` runs every
   bank word; `SOUNDMARK_TABLE=<file>` writes her review table.
-- **The practice page (`charge.html`) is one column, in the markup too:**
-  header, name pill, Echo's bubble with `#echoRow` (Echo and "Hear it
-  slowly"), the build (`#reveals`), the mic. No CSS `order`, so a screen
-  reader meets things in the order a child sees them. The build takes what
-  height is left and `fitBuild()` scales it (floor 40%); if a change hits the
-  floor, find room instead (that is why a phone 700px tall or less puts Echo
-  and "Hear it slowly" side by side). At the fruit stand Echo stands on the
-  stand and the five slots are round. The mic stays a status (`role=img`
-  DIV), and `paintCard()` stays self-contained (`voicetest3` runs its source).
-- **The five arcade games wear the new cards over their rounds.** The say-it
-  card between stages has Echo peeking over its top edge from behind, a teal
-  mic, the sound's letters orange inside the round's own title ("Say “rrrr”
-  for wave 2!"), and "I'm done playing" as a cream pill; no "Whoops!" and no
-  hearts, because the card follows a finished stage, never a miss
-  (`micquietgamestest` pins that a miss never opens it). The end card has the
-  game's name on top, three stars for any round with points ("Good try!" and
-  none for a zero round), a stat pill and a coins pill (not on Sound Sprint,
-  whose race shows its own coin count), a teal "Next: <next game>" only when
-  `Sona.gameAccess` allows that game, else "Back to games" alone, and the
-  first-game offer in the Next slot exactly as before. A finished round's
-  heading is the round's own win line ("You sliced the giant watermelon!",
-  "Blast off!"); "Great round!" is for a round the child ends early.
+- **The practice page is the crafted one** (`crafted-games.css` /
+  `crafted-practice.css`). The target in Echo's bubble (`#bTarget`) marks only
+  the practice sound's letters through `Sona.soundMark`, in the crafted
+  practice orange, the rest of the word in the bubble's ink; a bare sound like
+  "rrrr" is orange whole, and in a sentence only the practice word is marked.
+  `paintCard()` stays self-contained (`voicetest3` runs its source), and the
+  mic stays a status (`role=img` DIV).
+- **The five round games wear the crafted cards.** The say-it card keeps the
+  round's own title ("Say “rrrr” for wave 2!"); only its quoted sound's
+  letters are orange (`Sona.soundMark`). A miss never opens it
+  (`micquietgamestest`). The end card's count names real things, never the
+  score: Fruit Slice counts fruit sliced (`FRUITN`, the giant is one fruit) and
+  Piano Tiles notes played (`NOTESN`), because a golden fruit or tile scores 3
+  and the giant's cuts score 5; neither shows a "Best" beside it, because the
+  best is a score. Block Stacker counts blocks and Sound Sprint metres.
+- **Say & Play and Feed Echo** show the word with only the sound's letters
+  orange (`Sona.soundMark`) beside the crafted picture. Feed's ask keeps ONE
+  `<b>`, the word itself, with the letters in a `<span class="snd">` inside it,
+  because `craftedarttest` reads the asked word by `#bMain b`.
 
 ## Hard rules
 - Merges to main/prod only on Travis's explicit go ("merge").
@@ -779,16 +825,21 @@ are enforced in code and pinned by tests — change them only on Rachel's say-so
   2026: "I just don't want kids saying taco and getting a correct score. We
   want them to be in the ballpark"). In the iPhone app the practice page asks
   Apple's on-device recognizer what was said (SonaSpeech, never Apple's
-  servers) and `hearVerdict` in sona.js decides. Pass: the word, a close try
-  (each sound's typical errors, `HEAR_SUBS`: "wabbit", "wed", "cah"), or
-  another word with the sound in the same place. Fail: clear words that are
-  none of those ("taco", "Here is a taco", "sock" for rock). Unknown, handed
-  to the sound-shape check: nothing clear (filler like "uh", or only the
-  sentence's own words). A grown-up's "say rabbit" and a sentence's other
+  servers) and `hearVerdict` in sona.js decides. Pass: the word or a close
+  try (each sound's typical errors, `HEAR_SUBS`: "wabbit", "wed", "cah"; or a
+  letter or two off with the sound intact: "rainy", "parrot" for carrot), and
+  nothing else. A different word does not count, even one starting with the
+  sound (Travis: "ideally the exact / close word"; not "run" for rain). On a
+  bare-sound round only a short sound or mostly the sound itself counts
+  ("Er", "Rrrr"), never a word that merely has it. Fail: clear words that
+  are none of those ("taco", "poop", "fridge", "Here is a taco", "sock" for
+  rock). Unknown, handed to the sound-shape check: nothing clear (filler like
+  "uh", or only the sentence's own words). A grown-up's "say rabbit" and a sentence's other
   words ("Here is a") are set aside first. The plugin was written in August
   but never reached the app until `scripts/install-ios-speech.py`; the website
-  cannot use it and still judges by sound shape, and the games do not use it
-  yet. Which errors count as close (`HEAR_SUBS`) is Rachel's call;
+  cannot use it and still judges by sound shape. The arcade slowdown turns
+  now use it when available; older checkpoint and Feed/Hoops checks remain
+  sound-shape based. Which errors count as close (`HEAR_SUBS`) is Rachel's call;
   `heartest` pins the rules.
 - **Cueing** — TODO, Rachel to specify. Her highest-value ask was the
   "sssoup" prompt: model the target sound stretched and attached to the word

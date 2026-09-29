@@ -14,10 +14,11 @@
 // These tests run a TTS that HANGS — accepts the request and never answers —
 // and a context that will not run, the two real shapes of the failure.
 import { createServer } from "http";
-import { readFileSync, existsSync } from "fs";
+import { readFileSync, existsSync, statSync } from "fs";
+import { createHash } from "crypto";
 import { chromium, ROOT, launchOpts } from "./_env.mjs";
 
-const MIME = { html: "text/html", js: "text/javascript", svg: "image/svg+xml", css: "text/css", png: "image/png" };
+const MIME = { html: "text/html", js: "text/javascript", svg: "image/svg+xml", css: "text/css", png: "image/png", webp: "image/webp" };
 // dead → 500 now. hang → never answer (the wedge). pcm → 200 with real bytes.
 let ttsMode = "dead";
 const held = [];
@@ -311,6 +312,92 @@ async function waitSpoke(pg, ms) {
   ok("late on Saturday where the family is (already Sunday in London), Kip's Kite still waits", r.shelf.find((b) => b.t === "Kip's Kite").off, JSON.stringify(r.shelf)); await r.ctx.close();
   r = await shelfAt("2026-10-04T00:05:00-06:00", ["K"]);
   ok("…and on Sunday it opens, first on a K child's shelf", r.shelf[0].t === "Kip's Kite" && !r.shelf[0].off, JSON.stringify(r.shelf)); await r.ctx.close();
+}
+
+// ── the painted books (Codex, 28 Sep 2026) ──
+// The thirteen six-page books got their pictures from ChatGPT's image tool:
+// one picture per book holding its six scenes, three across and two down, in
+// reading order, drawn for these exact sentences. The reader shows page i's
+// scene by position; the shelf shows a small copy of the first, so a book that
+// isn't open yet never pulls the whole picture. In the full-screen reader (29
+// Sep 2026) each scene is cut out of its book's picture on the phone and fills
+// the page like any wide drawn page: whole, at full width, its own edges
+// carried to the screen's, the cream card over its foot.
+{
+  const lib = readFileSync(ROOT + "/library.html", "utf8");
+  const SIX = ["Rory the Rabbit", "Reba the Robot", "Ruby the Rooster", "Remy the Raccoon", "Rex the Rhino", "Sunny the Seal", "Lily the Lion", "Kiki the Koala", "Shelly the Sheep", "Charlie the Chick", "Theo the Sloth", "Gus the Goat", "Fifi the Fox"];
+  const painted = [...lib.matchAll(/title: "([^"]+)", painted: "([a-z]+)", colors: \[[^\]]+\], pages: \[([\s\S]*?)\] \}/g)]
+    .map((m) => ({ title: m[1], id: m[2], lines: [...m[3].matchAll(/t: "((?:[^"\\]|\\.)*)"/g)].map((x) => x[1]) }));
+  const file = (id, c) => ROOT + "/assets/books/painted/" + id + (c ? "-cover" : "") + ".webp";
+  ok("all 13 six-page books are painted, each with its picture and a small cover",
+    painted.length === 13 && SIX.every((t) => painted.some((b) => b.title === t)) && painted.every((b) => existsSync(file(b.id)) && existsSync(file(b.id, 1))),
+    JSON.stringify(painted.map((b) => b.title)));
+  ok("…small enough for a phone: each book's picture under 400 KB, each cover under 40 KB",
+    painted.every((b) => existsSync(file(b.id)) && statSync(file(b.id)).size < 400e3 && statSync(file(b.id, 1)).size < 40e3));
+  ok("…and the 78 sentences are the ones the pictures were drawn for (change one, redraw its scene)",
+    createHash("sha1").update(JSON.stringify(painted.map((b) => [b.title, b.lines]))).digest("hex") === "73b75ea59038d1d5609747e499180af69189158f");
+
+  const reader = async (when, vp) => {
+    const ctx = await browser.newContext({ viewport: vp || { width: 390, height: 844 } });
+    const pg = await ctx.newPage(); const errs = [], got = [];
+    pg.on("pageerror", (e) => errs.push(e.message));
+    pg.on("request", (q) => { const m = q.url().match(/\/painted\/([a-z-]+)\.webp/); if (m) got.push(m[1]); });
+    await pg.addInitScript(seed);
+    await pg.clock.setFixedTime(new Date(when));
+    await pg.goto("http://localhost:8153/library.html");
+    await pg.waitForTimeout(500);
+    return { ctx, pg, errs, got };
+  };
+  // Which of the book's six scenes the page is showing, found by looking:
+  // the page's picture and each sixth of the sheet, shrunk to 16 x 16 and
+  // compared, so the pin holds however the reader cuts them out.
+  const scene = (pg, id) => pg.evaluate(async (id) => {
+    const img = document.querySelector("#bkStage .bkart.scene img, #bkStage img.bkcover");
+    if (!img) return null;
+    await img.decode().catch(() => {});
+    const sheet = new Image(); sheet.src = "/assets/books/painted/" + id + ".webp"; await sheet.decode();
+    const px = (src, sx, sy, sw, sh) => { const c = document.createElement("canvas"); c.width = c.height = 16; const g = c.getContext("2d"); g.drawImage(src, sx, sy, sw, sh, 0, 0, 16, 16); return g.getImageData(0, 0, 16, 16).data; };
+    const mine = px(img, 0, 0, img.naturalWidth, img.naturalHeight), W = sheet.naturalWidth / 3, H = sheet.naturalHeight / 2;
+    const diff = [0, 1, 2, 3, 4, 5].map((i) => { const d = px(sheet, (i % 3) * W, Math.floor(i / 3) * H, W, H); let t = 0; for (let k = 0; k < d.length; k++) t += Math.abs(d[k] - mine[k]); return t / d.length; });
+    const best = diff.indexOf(Math.min(...diff)), b = img.getBoundingClientRect(), book = document.getElementById("book");
+    return { best, close: diff[best] < 12, fullSize: img.naturalWidth === W && img.naturalHeight === H, cover: img.classList.contains("bkcover"),
+      fullWidth: Math.abs(Math.min(b.width, b.height * img.naturalWidth / img.naturalHeight) - innerWidth) < 2, edges: book.classList.contains("edges"), tall: book.classList.contains("tall"), mode: window.__book && window.__book.mode };
+  }, id);
+  const fitsNow = (pg) => pg.evaluate(() => { const t = document.querySelector(".bktext").getBoundingClientRect(), n = document.getElementById("bkNext").getBoundingClientRect(), c = document.querySelector(".bkcard").getBoundingClientRect(), img = document.querySelector("#bkStage .bkart.scene img"), a = img && img.getBoundingClientRect();
+    return t.bottom <= n.top && n.bottom <= innerHeight && document.documentElement.scrollWidth <= innerWidth && !!a && a.height > 150 && a.top < c.top; });
+  let r = await reader("2026-12-07T10:00:00");
+  await r.pg.locator(".bookBtn", { hasText: "Rory the Rabbit" }).click();
+  // the title page swaps the shelf's small copy for the full-size first scene once it is cut
+  const sharp = await r.pg.waitForFunction(() => /^(blob|data):/.test((document.querySelector("#bkStage img.bkcover") || {}).src || ""), null, { timeout: 4000 }).then(() => true, () => false);
+  const seen = [await scene(r.pg, "rory")];
+  let fits = true;
+  for (let i = 0; i < 6; i++) {
+    await r.pg.click("#bkNext");
+    await r.pg.waitForFunction(() => { const i = document.querySelector("#bkStage .bkart.scene img"); return !!(i && i.complete && i.naturalWidth); }, null, { timeout: 4000 }).catch(() => {});
+    seen.push(await scene(r.pg, "rory"));
+    fits = fits && await fitsNow(r.pg);
+  }
+  ok("the reader shows the cover's scene, then each page's own, in reading order",
+    JSON.stringify(seen.map((x) => x && x.best)) === JSON.stringify([0, 0, 1, 2, 3, 4, 5]) && seen.every((x) => x.close), JSON.stringify(seen));
+  ok("…the title page at full size once it is cut (the shelf's small copy only until then)", sharp && seen[0].cover && seen[0].fullSize, JSON.stringify(seen[0]));
+  ok("…each page's scene a picture of its own, filling the page like a drawn one: whole, full width, its edges carried out, never a small square",
+    seen.slice(1).every((x) => !x.cover && x.fullSize && x.fullWidth && x.edges && !x.tall), JSON.stringify(seen.slice(1)));
+  ok("…no key-word moment in a six-page book: Next on every page", seen.slice(1).every((x) => x.mode === "next"), JSON.stringify(seen.map((x) => x && x.mode)));
+  ok("…and the line and Next stay on a 390 x 844 phone below the picture", fits);
+  ok("…with the book's picture downloaded once for all six pages", r.got.filter((n) => n === "rory").length === 1, JSON.stringify(r.got));
+  ok("…with no page errors", r.errs.length === 0, r.errs.join(" | ")); await r.ctx.close();
+  // a small phone: the scene still shows whole above the card
+  r = await reader("2026-12-07T10:00:00", { width: 320, height: 568 });
+  await r.pg.locator(".bookBtn", { hasText: "Reba the Robot" }).click(); await r.pg.waitForTimeout(200);
+  await r.pg.click("#bkNext"); await r.pg.click("#bkNext");
+  await r.pg.waitForFunction(() => { const i = document.querySelector("#bkStage .bkart.scene img"); return !!(i && i.complete && i.naturalWidth); }, null, { timeout: 4000 }).catch(() => {});
+  const small = await scene(r.pg, "reba");
+  ok("on a 320 x 568 phone a painted page shows its own scene over its edges, with the line and Next below it",
+    small && small.best === 1 && small.close && small.edges && await fitsNow(r.pg), JSON.stringify(small));
+  ok("…with no page errors", r.errs.length === 0, r.errs.join(" | ")); await r.ctx.close();
+  r = await reader("2026-09-29T10:00:00");
+  ok("a painted book that isn't open yet costs only its small cover, never its whole picture",
+    r.got.length === 5 && r.got.every((n) => /-cover$/.test(n)), JSON.stringify(r.got)); await r.ctx.close();
 }
 
 // ── chapter: a HUNG TTS cannot wedge "Read it to me" ──

@@ -28,8 +28,10 @@
     @keyframes echoHop{0%,100%{transform:translateY(0) rotate(0)}30%{transform:translateY(-34%) rotate(-10deg)}60%{transform:translateY(0) rotate(6deg)}80%{transform:translateY(-10%)}}
     @media (prefers-reduced-motion: reduce){ #courtEcho.hop{animation:none;} }
   </style>
+  <link href="/crafted-games.css" rel="stylesheet">
+  <link href="/crafted-hoops.css" rel="stylesheet">
 </head>
-<body data-phase="boot">
+<body data-phase="boot" data-crafted="hoops">
   <div id="app">
     <div id="top">
       <button id="close" aria-label="Back">✕</button>
@@ -39,14 +41,14 @@
     </div>
     <div id="stageWrap" class="court">
       <canvas id="court" role="img" aria-label="A basketball court. The hoop glides from side to side. Say the word to get the ball, then flick it up into the hoop."></canvas>
-      <img id="courtEcho" src="/coach/echo/echo-celebrate.svg" alt="" />
+      <img id="courtEcho" src="/assets/crafted/echo-welcome.webp" alt="" />
     </div>
     <div id="turnPanel" aria-live="polite">
       <div id="picBox"><span id="pic"></span></div>
       <div id="word"></div>
       <button id="hear" aria-label="Hear it again"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4Z" fill="#1cb0f6"/><path d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="#1cb0f6" stroke-width="2.2" stroke-linecap="round"/></svg><span>Hear it</span></button>
       <div id="listenRow">
-        <span id="echoWrap"><img id="echoFace" src="/coach/echo/echo-idle.svg" alt="Echo" /></span>
+        <span id="echoWrap"><img id="echoFace" src="/assets/crafted/echo-welcome.webp" alt="Echo" /></span>
         <span id="micState"></span>
         <span id="cheer"></span>
         <button id="micBtn" hidden aria-label="Listen again"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8.5" y="3" width="7" height="12" rx="3.5" fill="#fff"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M8.5 21h7" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/></svg></button>
@@ -64,7 +66,7 @@
   </div>
   <div class="ovl" id="primer">
     <div class="ovlCard">
-      <img class="ovlEcho" src="/coach/echo/echo-listening.svg" alt="" />
+      <img class="ovlEcho" src="/assets/crafted/echo-welcome.webp" alt="" />
       <h2>Let Echo hear you!</h2>
       <p>Say each word to get the ball.</p>
       <p class="small" id="micPromise"></p>
@@ -74,14 +76,14 @@
   </div>
   <div class="ovl" id="pauseOvl">
     <div class="ovlCard">
-      <img class="ovlEcho" src="/coach/echo/echo-idle.svg" alt="" />
+      <img class="ovlEcho" src="/assets/crafted/echo-welcome.webp" alt="" />
       <h2>Paused</h2>
       <button class="btn" id="resume">Keep playing</button>
     </div>
   </div>
   <div class="ovl" id="endOvl">
     <div class="ovlCard">
-      <img class="ovlEcho endStar" src="/coach/echo/echo-celebrate.svg" alt="" />
+      <img class="ovlEcho endStar" src="/assets/crafted/echo-welcome.webp" alt="" />
       <h2 id="endTitle"></h2>
       <p id="endSub"></p>
       <button class="btn" id="again">Play again</button>
@@ -90,6 +92,7 @@
   </div>
 
   <script src="/sona.js"></script>
+  <script src="/crafted-words.js"></script>
   <script src="/sayplay.js"></script>
   <script src="/hoops.js"></script>
   <script>

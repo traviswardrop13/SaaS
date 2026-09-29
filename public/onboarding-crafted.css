@@ -1,0 +1,157 @@
+/* Crafted-world welcome, based on reference board 05. Artwork is decorative;
+   the existing setup controls, permission flow and saved answers stay real. */
+body[data-setup-screen="welcome"] {
+  background: #fff6e9 url('/assets/crafted/welcome-orchard.webp') center center / cover no-repeat;
+}
+body[data-setup-screen="welcome"] .ob {
+  max-width: 480px;
+  padding-top: max(22px, env(safe-area-inset-top));
+  padding-bottom: calc(104px + env(safe-area-inset-bottom));
+}
+body[data-setup-screen="welcome"] .mascot { display: none; }
+body[data-setup-screen="welcome"] .step.on { display: flex; flex-direction: column; min-height: 0; }
+.welcome-brand { color: #48280f; font-family: 'Baloo 2', sans-serif; font-size: 38px; font-weight: 800; line-height: 1; text-align: center; text-shadow: 0 1px 12px #fff6e9; }
+.welcome-brand span { display: block; font-family: Nunito, sans-serif; font-size: 12px; font-weight: 800; margin-top: 7px; letter-spacing: .035em; }
+.welcome-copy { margin: 22px auto 0; padding: 22px 18px 18px; width: 100%; max-width: 350px; background: #fffaf0; border: 1px solid rgba(128, 85, 40, .13); border-radius: 28px; box-shadow: 0 6px 0 rgba(131, 94, 46, .1), 0 12px 24px rgba(77, 55, 28, .1); }
+body[data-setup-screen="welcome"] .welcome-copy .qh { font-size: clamp(28px, 8.6vw, 36px); line-height: 1.05; margin: 0; color: #48280f; }
+.welcome-copy .muted { font-size: 15px; line-height: 1.35; color: #77553b; margin: 12px 0 0; }
+.welcome-copy #howLong { font-size: 12px; margin: 8px 0 0; color: #77553b; font-weight: 700; }
+body[data-setup-screen="welcome"] .world-scene { flex: 1; min-height: 60px; max-height: none; margin: 0; }
+body[data-setup-screen="welcome"] .world-scene img, body[data-setup-screen="welcome"] .world-scene:before { display: none; }
+body[data-setup-screen="welcome"] #moveRow { margin: 0 !important; }
+body[data-setup-screen="welcome"] #moveLink { padding: 10px 14px; border-radius: 20px; background: rgba(255, 250, 240, .94); color: #67462e; font-size: 12px; line-height: 24px; }
+body[data-setup-screen="welcome"] #slpRow { order: 5; background: rgba(255, 250, 240, .94); border-radius: 16px; margin: 5px 0 0 !important; padding: 5px; font-size: 11px !important; }
+body[data-setup-screen="welcome"] .obfoot { background: linear-gradient(transparent, rgba(255, 246, 233, .96) 35%); padding-top: 15px; }
+body[data-setup-screen="welcome"] .obfoot .inner { max-width: 350px; }
+body[data-setup-screen="welcome"] #nextBtn { background: linear-gradient(#23b5bd, #069ca8); color: white; border: 1px solid #07959f; border-radius: 22px; box-shadow: 0 5px 0 #087e89, inset 0 1px 0 rgba(255,255,255,.45); font-size: 22px; min-height: 58px; }
+body[data-setup-screen="welcome"] #nextBtn:active { box-shadow: 0 2px 0 #087e89; }
+@media (max-height: 680px) {
+  body[data-setup-screen="welcome"] .ob { padding-top: max(12px, env(safe-area-inset-top)); }
+  .welcome-brand { font-size: 29px; }
+  .welcome-brand span { font-size: 10px; margin-top: 3px; }
+  .welcome-copy { margin-top: 12px; padding: 14px 12px; border-radius: 22px; }
+  body[data-setup-screen="welcome"] .welcome-copy .qh { font-size: 28px; }
+  .welcome-copy .muted { font-size: 13px; margin-top: 7px; }
+  .welcome-copy #howLong { font-size: 11px; margin-top: 5px; }
+}
+@media (min-width: 600px) {
+  body[data-setup-screen="welcome"] { background-size: auto 100%; background-color: #fff6e9; }
+}
+
+/* The remaining setup pages share the quieter cream-card side of the boards.
+   The scroll area stays separate from the fixed controls for native keyboards. */
+html { background: #fff6e9; }
+body:not([data-setup-screen="welcome"]) { background: radial-gradient(ellipse at 75% 0, #fffdf7, #fff6e9 75%); color: #48280f; }
+.ob { max-width: 480px; padding-left: 22px; padding-right: 22px; scroll-padding-block: 18px 24px; }
+.ob .seg { margin: 6px 0 24px; gap: 7px; flex-shrink: 0; }
+.ob .seg > i { height: 5px; background: #e6ded0; }
+.ob .seg > i::after { background: linear-gradient(90deg, #39bcc0, #078e98); }
+.ob .mascot { align-items: center; gap: 14px; margin: 0 0 24px; flex-shrink: 0; }
+.ob #leo { width: 76px !important; height: 82px !important; border-radius: 0 !important; background: transparent !important; animation: none; overflow: visible !important; }
+.ob #leo img { width: 100% !important; height: 100% !important; filter: drop-shadow(0 5px 4px #69422216); }
+.ob .bubble2 { background: #fffdf7; border: 1px solid #e9dcc7; padding: 15px 18px; border-radius: 22px; box-shadow: 0 4px 0 #eadfcd70, 0 10px 25px #6f492c09; color: #48280f; font-size: 19px; }
+.ob .bubble2:before { background: #fffdf7; border-color: #e9dcc7; border-width: 1px; }
+.ob .qh { font-size: 29px; line-height: 1.12; font-weight: 800; margin-bottom: 10px; letter-spacing: -.025em; }
+.ob .muted { color: #806348; font-size: 15px; line-height: 1.5; }
+.ob .step:not([data-step="welcome"]):not([data-step="achieve"]) { padding: 22px 20px; border: 1px solid #ecdfcb; border-radius: 26px; background: #fffcf6; box-shadow: 0 6px 0 #eadbc34a, 0 14px 35px #6f492c06; }
+.ob .setup-label { display: block; font-size: 14px; line-height: 1.4; font-weight: 800; color: #67462e; margin-top: 23px; margin-bottom: 9px; }
+.ob .setup-hint { font-size: 12px; margin-top: 9px; }
+.ob input, .move-card input { background: #fff; border: 1.5px solid #ddceb8; border-radius: 15px; min-height: 56px; padding: 14px; font-size: 18px; color: #48280f; caret-color: #078e98; box-shadow: inset 0 2px 4px #75532f05; }
+.ob input:focus, .move-card input:focus { outline: 2px solid #0b939c; outline-offset: 3px; }
+.ob input::placeholder { color: #967f67; opacity: 1; }
+.ob #obAge { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 10px; margin-top: 0; }
+.ob #obAge .sound { min-width: 0; min-height: 63px; padding: 12px 5px; font-size: 22px; }
+.ob .sound { position: relative; border-radius: 17px; border: 1.5px solid #e4d7c3; background: #fff; color: #775439; box-shadow: 0 3px 0 #e8dcc980; }
+.ob .schips .sound.on { border-color: #159aa1; color: #086c76; background: #e1f4ef; box-shadow: 0 3px 0 #98cfc4, inset 0 1px 0 #fff; }
+.ob #obSounds { gap: 9px; margin-top: 20px; }
+.ob #obSounds .sound { min-height: 58px; padding: 6px 2px; font-size: 31px; }
+.ob #obSounds .sound[data-sound="THV"] { font-size: 23px; }
+.ob #obExploreSounds { margin: 17px auto 0; padding: 10px 0; color: #087d87; min-height: 44px; font-size: 13px; }
+.ob .sound-help { font-size: 11px; text-align: center; margin: 6px 0 0; }
+.ob #micPromise { padding: 18px; margin-top: 22px !important; border-radius: 18px; background: #f4eddf; border: 1px solid #eadeca; color: #71573d; }
+.ob #micStatus:empty { display: none; }
+.ob #micStatus { font-size: 14px; }
+.ob #micNotNow { color: #087d87; text-decoration: underline; text-underline-offset: 4px; margin-top: 16px; }
+.obfoot { background: linear-gradient(transparent, #fff6e9 30%); padding: 16px 22px calc(18px + env(safe-area-inset-bottom)); }
+.obfoot .inner { max-width: 436px; gap: 12px; }
+.obfoot .btn, .move-card .btn { background: linear-gradient(#22b4bc, #069ca8); color: white; border: 1px solid #08959e; box-shadow: 0 5px 0 #087e89, inset 0 1px 0 #ffffff60; border-radius: 21px; min-height: 60px; font-size: 22px; line-height: 1.15; }
+.obfoot .btn:active, .move-card .btn:active { box-shadow: 0 1px 0 #087e89; }
+.obfoot .btn:disabled, .move-card .btn:disabled { background: #e6dccb; color: #95836c; box-shadow: none; border-color: #e6dccb; transform: none; cursor: not-allowed; }
+.obfoot #backBtn { min-height: 48px; color: #806348; font-size: 15px; }
+body[data-setup-screen="achieve"] .ob { padding-top: calc(24px + env(safe-area-inset-top)); }
+body[data-setup-screen="achieve"] #handoffTitle { font-size: 28px; line-height: 1.14; margin: 8px auto 12px; max-width: 370px; }
+body[data-setup-screen="achieve"] .world-scene { flex: 1; min-height: 80px; max-height: 190px; margin: 0; align-items: center; }
+body[data-setup-screen="achieve"] .world-scene:before { display: none; }
+body[data-setup-screen="achieve"] .world-scene img { width: 180px; height: 180px; max-height: 100%; }
+.setup-email { margin-top: 18px; background: #fffcf6; border: 1px solid #e4d7c3; border-radius: 24px; padding: 20px; text-align: left; box-shadow: 0 5px 0 #eadbc350; }
+.setup-email > div:first-child { font-size: 21px !important; line-height: 1.2; color: #48280f; }
+.setup-email .setup-label { font-size: 12px; margin: 14px 0 0; }
+.setup-email input { width: 100%; }
+#skipEmail { background: #fffcf6; color: #806348; border: 1px solid #e4d7c3; box-shadow: 0 3px 0 #eadbc350; }
+#obBuild img { width: 140px; height: 140px; }
+#obBuildT { color: #48280f; }
+#obBuildAnswers span { background: #fffcf6; border-color: #e4d7c3; border-radius: 15px; }
+body.keyboard-open .ob .mascot { margin-bottom: 12px; }
+body.keyboard-open .ob #leo { width: 48px !important; height: 52px !important; }
+body.keyboard-open .ob .bubble2 { padding: 10px 14px; font-size: 16px; }
+body.keyboard-open .ob .seg { margin-bottom: 12px; }
+body.keyboard-open .ob .step:not([data-step="welcome"]):not([data-step="achieve"]) { padding: 16px; }
+body.keyboard-open .ob .qh { font-size: 24px; }
+body.keyboard-open .world-scene { display: none; }
+@media (max-height: 700px) {
+  .ob { padding-left: 18px; padding-right: 18px; }
+  .ob .seg { margin-bottom: 12px; }
+  .ob .mascot { margin-bottom: 14px; gap: 10px; }
+  .ob #leo { width: 48px !important; height: 54px !important; }
+  .ob .bubble2 { font-size: 16px; padding: 10px 13px; border-radius: 17px; }
+  .ob .qh { font-size: 25px; }
+  .ob .step:not([data-step="welcome"]):not([data-step="achieve"]) { padding: 17px 14px; border-radius: 22px; }
+  .ob #obSounds { gap: 7px; margin-top: 13px; }
+  .ob #obSounds .sound { min-height: 44px; font-size: 27px; border-radius: 13px; }
+  .ob #obSounds .sound[data-sound="THV"] { font-size: 23px; }
+  .ob #obExploreSounds { margin-top: 10px; }
+  .obfoot .btn { font-size: 19px; padding: 14px 16px; }
+  body[data-setup-screen="achieve"] .world-scene { min-height: 65px; max-height: 95px; }
+  body[data-setup-screen="achieve"] #handoffTitle { font-size: 23px; }
+  .setup-email { padding: 16px; margin-top: 10px; }
+  .setup-email > div:first-child { font-size: 19px !important; }
+}
+
+/* Recovery belongs to setup too; these overrides are loaded only on this page. */
+#sonaMicDenied { background: #fff6e9 !important; padding: calc(22px + env(safe-area-inset-top)) 24px calc(22px + env(safe-area-inset-bottom)) !important; overflow-y: auto; }
+#sonaMicDenied > img { width: 130px !important; height: 130px !important; flex-shrink: 0; }
+#sonaMicDenied > div { color: #71573d !important; }
+#sonaMicDenied > div:first-of-type { color: #48280f !important; }
+#sonaMicRetry { background: linear-gradient(#22b4bc, #069ca8) !important; box-shadow: 0 5px 0 #087e89 !important; border-radius: 20px !important; text-transform: none !important; min-height: 52px; }
+#sonaMicBack { color: #087d87 !important; min-height: 44px; }
+@media(max-height:600px) { #sonaMicDenied > img { width: 80px !important; height: 80px !important; } }
+
+/* Give the longer TH label room without shrinking its letters or tap target. */
+.ob #obSounds .sound[data-sound="THV"] { grid-column: span 2; white-space: nowrap; }
+@media(max-height:650px) {
+  body:not([data-setup-screen="welcome"]) .ob .mascot { display: none; }
+  .ob .step[data-step="sounds"] { padding: 12px; }
+  .ob #obSounds { gap: 5px; }
+  .ob #obExploreSounds { margin-top: 6px; }
+}
+
+/* Notches and the home indicator use real room. Keep the full picker above
+   Continue on a phone without shrinking its letters or its tap targets. */
+body[data-setup-screen="sounds"] .ob .seg { margin-bottom: 12px; }
+body[data-setup-screen="sounds"] .ob .mascot { margin-bottom: 14px; }
+body[data-setup-screen="sounds"] .ob #leo { width: 48px !important; height: 54px !important; }
+@media (min-height: 701px) and (max-height: 900px) {
+  body[data-setup-screen="sounds"] .ob .step[data-step="sounds"] { padding: 18px 20px; }
+  .ob #obSounds { margin-top: 14px; gap: 8px; }
+  .ob #obSounds .sound { min-height: 52px; }
+}
+@media (max-height: 700px) {
+  body[data-setup-screen="sounds"] .ob .step[data-step="sounds"] { padding: 12px; }
+  .ob #obExploreSounds { margin-top: 6px; }
+  .ob .sound-help { margin-top: 4px; }
+}
+
+/* Keep the age choices reachable while the grown-up types a name. */
+body.keyboard-open .ob .step[data-step="name"] .setup-hint { display: none; }
+body.keyboard-open .ob .step[data-step="name"] .setup-label { margin-top: 14px; }
+body.keyboard-open .ob #obAge .sound { min-height: 50px; }

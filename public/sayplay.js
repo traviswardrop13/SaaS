@@ -119,7 +119,13 @@
   function fetchVoice(t) {
     var ctl = window.AbortController ? new AbortController() : null, to = ctl ? setTimeout(function () { ctl.abort(); }, 8000) : 0;
     return fetch("/api/tts", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text: t, voice: profile.voiceId || "", stable: true }), signal: ctl ? ctl.signal : undefined })
-      .then(function (r) { clearTimeout(to); return r.ok ? r.arrayBuffer() : null; }, function () { clearTimeout(to); return null; });
+      .then(function (r) {
+        clearTimeout(to);
+        if (!r.ok) return null;
+        // "0": a stand-in while the usual voice model was busy — play, never save.
+        var keep = !(r.headers && r.headers.get && r.headers.get("X-Sona-Voice-Keep") === "0");
+        return r.arrayBuffer().then(function (b) { return b ? { bytes: b, keep: keep } : null; });
+      }, function () { clearTimeout(to); return null; });
   }
   function settleLeft() { return Math.max(0, micClosedAt + SETTLE_MS - performance.now()); }
   // Nothing starts while the phone is still answering a mic request (an
@@ -140,11 +146,11 @@
     var generation = audioGeneration;
     if (!t || !audioAllowed(generation) || profile.voiceOn === false || volume() === 0 || speaking) return Promise.resolve();
     speaking = true;
-    var key = (profile.voiceId || "echo") + "|" + ((S && S.TTS_CACHE_VERSION) || "v8") + "|" + t;
+    var key = (profile.voiceId || "echo") + "|" + ((S && S.TTS_CACHE_VERSION) || "v9") + "|" + t;
     return micQuiet().then(function () { return ttsGet(key); }).then(function (cached) {
       if (!audioAllowed(generation)) return true;
       if (cached) return playPCM(new Uint8Array(cached), generation).then(function () { return true; });
-      return fetchVoice(t).then(function (b) { if (!audioAllowed(generation)) return true; if (!b) return false; ttsPut(key, b); return playPCM(new Uint8Array(b), generation).then(function () { return true; }); });
+      return fetchVoice(t).then(function (v) { if (!audioAllowed(generation)) return true; if (!v) return false; if (v.keep) ttsPut(key, v.bytes); return playPCM(new Uint8Array(v.bytes), generation).then(function () { return true; }); });
     }).then(function (played) { if (!played && audioAllowed(generation)) return speakFallback(t, generation); })
       .catch(function () { if (audioAllowed(generation)) return speakFallback(t, generation); })
       .then(function () { if (generation === audioGeneration) speaking = false; quietUntil = Math.max(quietUntil, performance.now() + VOICE_TAIL_MS); });
@@ -365,7 +371,7 @@
     micStop(); heardThisTurn = false; clearTimeout(nextTurn._t);
     if (!same || !word) word = pickWord();
     try {
-      $("pic").innerHTML = (S && S.pic) ? S.pic(word.w, word.e, 64) : word.e;
+      $("pic").innerHTML = ((window.SonaCraftedWords && window.SonaCraftedWords.picture(word.w, 64)) || ((S && S.pic) ? S.pic(word.w, word.e, 64) : word.e));
       // only the letters that make the sound are orange (the brief: "the r in
       // rabbit"); an older cached sona.js without the helper colours it all
       $("word").innerHTML = (S && S.soundMark) ? S.soundMark(word.w, SOUND, word.pos) : '<b class="snd">' + String(word.w).replace(/&/g, "&amp;").replace(/</g, "&lt;") + "</b>";

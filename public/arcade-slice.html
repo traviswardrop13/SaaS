@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
   <title>Sona — Fruit Slice</title>
   <link href="/fonts.css" rel="stylesheet">
-  <link rel="stylesheet" href="/action.css">
   <meta name="theme-color" content="#8fd0f5" />
   <style>
     :root{ --blue:#1cb0f6; --blue-d:#1597d4; --green:#58cc02; --green-d:#46a302; --orange:#ff8a3d; --orange-d:#ef6f23; --ink:#4a2c14; --muted:#8a6f52; --line:#f0e4d2; }
@@ -13,7 +12,7 @@
     html,body{height:100%;overflow:hidden;background:linear-gradient(180deg,#8fd0f5,#ffe9b8 45%,#ffb066 75%,#ff8a5a);}
     #app{position:fixed;inset:0;max-width:560px;margin:0 auto;overscroll-behavior:none;touch-action:none;}
     canvas{position:absolute;inset:0;width:100%;height:100%;}
-    #combo{position:absolute;left:0;right:0;top:26%;text-align:center;font-family:"Baloo 2";font-weight:800;font-size:34px;color:#ffd21c;opacity:0;transition:opacity .15s, transform .3s;z-index:4;pointer-events:none;text-shadow:0 3px 0 #a8551c,0 5px 10px rgba(0,0,0,.18);transform:rotate(-4deg);}
+    #combo{position:absolute;left:0;right:0;top:26%;text-align:center;font-family:"Baloo 2";font-weight:800;font-size:34px;color:#ffd21c;opacity:0;transition:opacity .15s, transform .3s;z-index:4;pointer-events:none;text-shadow:0 3px 0 rgba(0,0,0,.25);}
     /* ── designed HUD kit (handoff section 4) ── */
     #top{position:absolute;left:0;right:0;top:0;display:flex;align-items:center;gap:9px;padding:calc(12px + env(safe-area-inset-top)) 14px 6px;z-index:5;}
     #close{border:none;width:44px;height:44px;border-radius:50%;background:#fff;color:#b08d63;font-size:19px;font-weight:800;cursor:pointer;line-height:1;box-shadow:0 4px 0 rgba(160,80,20,.35);}
@@ -21,54 +20,36 @@
     #score{flex:none;}
     #hudspacer{flex:1;}
     #timer{color:#ff5c74;letter-spacing:1px;}
-    /* ── cards over the game (the family's redesign brief, 28 Sep 2026) ──
-       Echo peeks over the card's top edge from BEHIND it (designs 10, 11):
-       he sits in the wrapper under the card, so the card's own edge hides
-       him below the beak. Drawn inside the card he would paint over it.
-       Teal is the one action colour and cream the second choice; both come
-       from /action.css and are never pasted here. */
-    .ovl{position:fixed;inset:0;z-index:50;background:rgba(30,22,50,.55);display:none;padding:calc(16px + env(safe-area-inset-top)) 20px calc(16px + env(safe-area-inset-bottom));overflow-y:auto;}
+    /* ── warm-card overlays (handoff section 5) ── */
+    .ovl{position:fixed;inset:0;z-index:50;background:rgba(30,22,50,.55);display:none;align-items:center;justify-content:center;padding:24px;}
     .ovl.show{display:flex;}
-    .cardWrap{position:relative;width:100%;max-width:340px;margin:auto;padding-top:76px;}
-    .peek{position:absolute;top:0;left:50%;width:112px;margin-left:-56px;z-index:0;pointer-events:none;filter:drop-shadow(0 -2px 8px rgba(30,22,50,.25));animation:peekUp .45s cubic-bezier(.3,1.4,.5,1) both;}
-    @keyframes peekUp{0%{transform:translateY(56px)}100%{transform:translateY(0)}}
-    .ovlCard{position:relative;z-index:1;background:var(--cream-card);border-radius:28px;padding:22px 20px 20px;text-align:center;box-shadow:0 18px 40px rgba(30,22,50,.45);display:flex;flex-direction:column;align-items:center;gap:8px;}
-    .ovl h2{font-family:"Baloo 2";font-weight:800;font-size:23px;color:#4a2c14;line-height:1.18;}
-    .ovl h2 b{color:var(--snd);}   /* the practice sound: orange, and nothing else is */
-    .ovl p{color:#b08d63;font-weight:800;font-size:14.5px;max-width:280px;}
-    .ovlCard .act-pill,.ovlCard .cream-pill{width:100%;min-height:54px;padding:12px 20px;font-size:19px;margin-top:4px;}
-    .ovlCard .cream-pill{min-height:50px;font-size:17px;}
-    /* the say-it card between waves: its ask is the heading. No "Whoops!"
-       over it: the card follows a finished wave now, never a miss */
-    #revTitle{font-size:26px;line-height:1.15;}
-    .revMic{width:78px;height:78px;display:flex;align-items:center;justify-content:center;margin:6px 0 2px;}
-    .revMic svg{width:34px;height:34px;fill:#fff;}
-    .ovl #revListen{color:var(--act-d);font-family:"Baloo 2";font-size:18px;}
-    /* great round */
-    .eyebrow{font-family:"Baloo 2";font-weight:800;letter-spacing:.14em;text-transform:uppercase;}
-    .ovl .eyebrow{font-size:13px;color:#8a6f52;margin-bottom:-8px;}   /* the page's darker tan: the lighter one is under 3:1 on the cream at 13px */
-    #endTitle{font-size:34px;line-height:1.05;}
-    .stars{display:flex;align-items:flex-end;justify-content:center;gap:2px;height:54px;}
-    .endStar{animation:starDrop .35s cubic-bezier(.3,1.6,.5,1) both;}
-    .endStar:nth-child(2){animation-delay:.12s;} .endStar:nth-child(3){animation-delay:.24s;}
-    @keyframes starDrop{0%{transform:translateY(-64px) scale(.4);opacity:0}70%{transform:translateY(6px) scale(1.08);opacity:1}100%{transform:translateY(0) scale(1);opacity:1}}
-    .endPic{display:flex;justify-content:center;} .endPic:empty{display:none;}
-    .ovl #endSub{font-size:15px;color:#8a6f52;}
+    .ovlCard{background:#fff6e9;border-radius:28px;padding:58px 20px 22px;width:100%;max-width:330px;text-align:center;box-shadow:0 18px 40px rgba(30,22,50,.45);position:relative;display:flex;flex-direction:column;align-items:center;gap:9px;}
+    .ovlEcho{position:absolute;top:-54px;left:50%;transform:translateX(-50%);width:106px;height:106px;filter:drop-shadow(0 8px 12px rgba(30,22,50,.3));}
+    .ovl .big{font-size:56px;line-height:1;}
+    .ovl h2{font-family:"Baloo 2";font-weight:800;font-size:24px;color:#4a2c14;line-height:1.18;}
+    .ovl h2 b{color:#7048c9;}
+    .ovl p{color:#b08d63;font-weight:800;font-size:14.5px;max-width:270px;}
     .statRow{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;}
-    .statPill{display:inline-flex;align-items:center;gap:5px;background:#fff;border-radius:99px;padding:7px 16px;font-family:"Baloo 2";font-weight:800;font-size:17px;color:#4a2c14;box-shadow:0 3px 0 rgba(120,80,20,.12);}
-    /* the finale's own line ("You sliced the giant watermelon!") is the
-       heading once the giant bursts: longer than "Great round!", so smaller */
-    #endTitle.long{font-size:27px;line-height:1.12;}
-    /* a short phone (an SE is 568 tall): the same card, tighter, so both
-       buttons stay on screen without scrolling */
-    @media (max-height:680px){
-      .cardWrap{padding-top:60px;} .peek{width:92px;margin-left:-46px;}
-      .ovlCard{gap:6px;padding:18px 18px 16px;}
-      #endTitle{font-size:28px;} #endTitle.long{font-size:23px;}
-      .endPic svg{width:140px;height:84px;}
-      .ovlCard .act-pill,.ovlCard .cream-pill{min-height:48px;}
-    }
-    @media (prefers-reduced-motion: reduce){ .endStar,.peek{animation:none;} }
+    .statPill{background:#fff;border-radius:99px;padding:8px 15px;font-family:"Baloo 2";font-weight:800;font-size:14.5px;color:#4a2c14;box-shadow:0 3px 0 rgba(120,80,20,.12);}
+    .btn{border:none;border-radius:20px;padding:15px 30px;font-family:"Baloo 2";font-weight:800;font-size:17px;text-transform:uppercase;letter-spacing:.04em;color:#fff;background:linear-gradient(180deg,#ffa05a,#ff8a3d);box-shadow:0 6px 0 #ef6f23;cursor:pointer;transition:transform .05s;margin-top:4px;width:100%;}
+    .btn:active{transform:translateY(4px);box-shadow:0 2px 0 #46a302;}
+    .btn.blue{background:linear-gradient(180deg,#5cc6ff,#1cb0f6);box-shadow:0 6px 0 #1480c0;}
+    .btn.blue:active{box-shadow:0 2px 0 #1480c0;}
+    .btn.ghost{background:none;box-shadow:none;color:#b08d63;text-transform:none;font-size:13px;width:auto;padding:8px;}
+    /* Echo speaks the win: bubble with a tail toward the leap; numbers fade in later */
+    #endTitle{position:relative;background:#fff;border-radius:18px;padding:12px 18px;box-shadow:0 6px 16px rgba(74,44,20,.12);display:inline-block;}
+    #endTitle:after{content:"";position:absolute;left:50%;bottom:-8px;transform:translateX(-50%) rotate(45deg);width:16px;height:16px;background:#fff;border-radius:3px;}
+    #endSub.later{display:block!important;opacity:0;font-size:12.5px;color:var(--muted,#b08d63);transition:opacity .5s ease;margin-top:2px;}
+    #endSub.later.in{opacity:1;}
+    /* ── end-overlay celebration: star drop + Echo leap (Duolingo-ABC three-element stack) ── */
+    #endOvl .ovlCard{padding-top:24px;}
+    .endStar{animation:starDrop .35s cubic-bezier(.3,1.6,.5,1) both;}
+    @keyframes starDrop{0%{transform:translateY(-64px) scale(.4);opacity:0}70%{transform:translateY(6px) scale(1.08);opacity:1}100%{transform:translateY(0) scale(1);opacity:1}}
+    .echoWin{position:relative;width:100%;height:96px;overflow:hidden;pointer-events:none;}
+    .echoWin img{position:absolute;left:50%;bottom:-40px;width:118px;margin-left:-59px;filter:drop-shadow(0 6px 8px rgba(30,22,50,.18));animation:echoLeap .5s cubic-bezier(.3,1.4,.5,1) both,echoHop 1.5s ease-in-out .6s infinite;}
+    @keyframes echoLeap{0%{transform:translateY(110px)}100%{transform:translateY(0)}}
+    @keyframes echoHop{0%,100%{transform:translateY(0)}45%{transform:translateY(-14px) rotate(-5deg)}}
+    @media (prefers-reduced-motion: reduce){ .endStar,.echoWin img{animation:none;} }
     /* ── the round's HUD, banner and Echo at the fruit stand (27 Sep 2026) ── */
     #timer{color:#4a2c14;letter-spacing:0;gap:8px;}
     #timer .wv{white-space:nowrap;}
@@ -89,16 +70,24 @@
     #sliceEcho.hop{animation:echoJump .9s cubic-bezier(.3,1.5,.5,1);}
     @keyframes echoJump{0%,100%{transform:translateY(0) rotate(0)}30%{transform:translateY(-34%) rotate(-10deg)}60%{transform:translateY(0) rotate(6deg)}80%{transform:translateY(-10%)}}
     #sab{position:absolute;visibility:hidden;pointer-events:none;padding-bottom:env(safe-area-inset-bottom);}
-    #revHearts{display:flex;justify-content:center;gap:8px;line-height:1;}
+    #revHearts{display:flex;justify-content:center;gap:8px;}
     #revHearts .wdot{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#f3e3cf;color:#b08d63;font-family:"Baloo 2";font-weight:800;font-size:17px;}
     #revHearts .wdot.on{background:#58cc02;box-shadow:0 3px 0 #46a302;}
     #revHearts .wdot svg{width:20px;height:20px;}
     @media (prefers-reduced-motion: reduce){ #banner.in{animation-name:bannerFade;} #sliceEcho.hop{animation:none;} }
   </style>
+  <link href="/crafted-games.css" rel="stylesheet">
+  <link href="/crafted-slice.css" rel="stylesheet">
+  <link href="/arcade-speech-help.css" rel="stylesheet">
 </head>
-<body>
+<body data-crafted="slice">
   <div id="app">
     <canvas id="cv"></canvas>
+    <div id="slowControl" hidden>
+      <button id="slowKeys" type="button"><img src="/assets/crafted/echo-welcome.webp" alt=""><span id="slowSound">rrrr</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v5a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z"/></svg></button>
+      <p id="slowStatus" role="status">Tap Echo to slow the fruit</p><span class="slowTrack"><i id="slowMeter"></i></span>
+      <button id="slowCancel" type="button" hidden>Keep playing</button>
+    </div>
     <div id="top">
       <button id="close">✕</button>
       <div class="hudpill"><svg viewBox="0 0 64 64" style="width:19px;height:19px;vertical-align:-4px"><path d="M5 25a27 27 0 0 0 54 0Z" fill="#58cc02"/><path d="M10 25a22 22 0 0 0 44 0Z" fill="#eefce2"/><path d="M14 25a18 18 0 0 0 36 0Z" fill="#ff5470"/><ellipse cx="26" cy="33" rx="2" ry="3" fill="#3d2317" transform="rotate(18 26 33)"/><ellipse cx="38" cy="33" rx="2" ry="3" fill="#3d2317" transform="rotate(-18 38 33)"/></svg> <b id="score">0</b></div>
@@ -106,54 +95,48 @@
       <div id="timer" class="hudpill"></div>
     </div>
     <div id="combo"></div>
+    <div id="sliceHint" aria-hidden="true">Swipe to slice!</div>
     <div id="banner" aria-live="polite"><div class="pill"><b id="bnBig"></b><span id="bnSmall"></span></div></div>
-    <img id="sliceEcho" src="/coach/echo/echo-celebrate.svg" alt="" />
+    <img id="sliceEcho" src="/assets/crafted/echo-welcome.webp" alt="" />
     <div id="sab"></div>
   </div>
 
   <div class="ovl" id="needOvl">
-    <div class="cardWrap">
-      <img class="peek" src="/coach/echo/echo-star.svg" alt="" />
-      <div class="ovlCard">
-        <h2 id="needTitle">This game needs a ticket!</h2>
-        <p>Say your sound 5 times to fill it up</p>
-        <button class="act-pill" id="goCharge"><svg viewBox="0 0 64 64" style="width:18px;height:18px;vertical-align:-3px"><path d="M36 4 14 36h13l-5 24 24-34H33Z" fill="#ffd21c" stroke="#f0a800" stroke-width="2.5" stroke-linejoin="round"/><circle cx="30" cy="15" r="2.5" fill="#fff" opacity=".9"/></svg> Fill my ticket!</button>
-        <button class="cream-pill" id="needHome">Back home</button>
-      </div>
+    <div class="ovlCard">
+      <img class="ovlEcho" src="/assets/crafted/echo-welcome.webp" alt="" />
+      <h2 id="needTitle">This game needs a ticket!</h2>
+      <p>Say your sound 5 times to fill it up</p>
+      <button class="btn" id="goCharge"><svg viewBox="0 0 64 64" style="width:18px;height:18px;vertical-align:-3px"><path d="M36 4 14 36h13l-5 24 24-34H33Z" fill="#ffd21c" stroke="#f0a800" stroke-width="2.5" stroke-linejoin="round"/><circle cx="30" cy="15" r="2.5" fill="#fff" opacity=".9"/></svg> Fill my ticket!</button>
+      <button class="btn ghost" id="needHome">Back home</button>
     </div>
   </div>
 
   <div class="ovl" id="revOvl">
-    <div class="cardWrap">
-      <img class="peek" src="/coach/echo/echo-listening.svg" alt="" />
-      <div class="ovlCard">
-        <h2 id="revTitle">Say it!</h2>
-        <p id="revHearts"></p>
-        <div class="act-mic revMic" role="img" aria-label="Microphone"><svg viewBox="0 0 24 24"><path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v5a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z"/></svg></div>
-        <p id="revListen">Get ready…</p>
-        <button class="cream-pill" id="revDone">I'm done playing</button>
-      </div>
+    <div class="ovlCard">
+      <img class="ovlEcho" src="/assets/crafted/echo-welcome.webp" alt="" />
+      <h2 id="revTitle">Say it!</h2>
+      <p id="revHearts" style="font-size:26px;"></p>
+      <div style="width:56px;height:56px;border-radius:50%;background:linear-gradient(180deg,#ffa05a,#ff8a3d);box-shadow:0 4px 0 #ef6f23,0 0 0 10px rgba(255,138,61,.14);display:flex;align-items:center;justify-content:center;margin:2px 0;"><svg viewBox="0 0 24 24" style="width:24px;height:24px;fill:#fff"><path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v5a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z"/></svg></div>
+      <p id="revListen" style="font-size:13px;">Get ready…</p>
+      <button class="btn ghost" id="revDone">I'm done playing</button>
     </div>
   </div>
 
   <div class="ovl" id="endOvl">
-    <div class="cardWrap">
-      <img class="peek" src="/coach/echo/echo-celebrate.svg" alt="" />
-      <div class="ovlCard">
-        <p class="eyebrow" id="endGame">Fruit Slice</p>
-        <h2 id="endTitle">Great round!</h2>
-        <div class="stars" id="endEmoji" aria-hidden="true"><svg class="endStar" viewBox="0 0 64 64" style="width:42px;height:42px"><path d="M32 5l8.2 18.6L60 25.8 44.9 39.2 49.8 59 32 48.4 14.2 59l4.9-19.8L4 25.8l19.8-2.2Z" fill="#ffd21c" stroke="#f0b400" stroke-width="2" stroke-linejoin="round"/><circle cx="25" cy="21" r="3" fill="#fff" opacity=".85"/></svg><svg class="endStar" viewBox="0 0 64 64" style="width:54px;height:54px"><path d="M32 5l8.2 18.6L60 25.8 44.9 39.2 49.8 59 32 48.4 14.2 59l4.9-19.8L4 25.8l19.8-2.2Z" fill="#ffd21c" stroke="#f0b400" stroke-width="2" stroke-linejoin="round"/><circle cx="25" cy="21" r="3" fill="#fff" opacity=".85"/></svg><svg class="endStar" viewBox="0 0 64 64" style="width:42px;height:42px"><path d="M32 5l8.2 18.6L60 25.8 44.9 39.2 49.8 59 32 48.4 14.2 59l4.9-19.8L4 25.8l19.8-2.2Z" fill="#ffd21c" stroke="#f0b400" stroke-width="2" stroke-linejoin="round"/><circle cx="25" cy="21" r="3" fill="#fff" opacity=".85"/></svg></div>
-        <div class="endPic" id="endPic" aria-hidden="true"></div>
-        <p id="endSub"></p>
-        <div class="statRow" id="endStats"><span class="statPill" id="endScore"></span><span class="statPill" id="endCoins"></span></div>
-        <button class="act-pill" id="endCharge">Next</button>
-        <button class="act-pill" id="endAgain" style="display:none;"></button>
-        <button class="cream-pill" id="endHome">Back to games</button>
-      </div>
+    <div class="ovlCard">
+      <div class="big endStar" id="endEmoji"><svg viewBox="0 0 64 64" style="width:56px;height:56px"><path d="M32 5l8.2 18.6L60 25.8 44.9 39.2 49.8 59 32 48.4 14.2 59l4.9-19.8L4 25.8l19.8-2.2Z" fill="#ffd21c"/><circle cx="25" cy="21" r="3" fill="#fff" opacity=".85"/></svg></div>
+      <h2 id="endTitle">Great slicing!</h2>
+      <p id="endSub"></p>
+      <div class="echoWin"><img src="/assets/crafted/echo-welcome.webp" alt="" /></div>
+      <button class="btn blue" id="endCharge">WOOHOO! Next →</button>
+      <button class="btn" id="endAgain" style="display:none;"></button>
+      <button class="btn ghost" id="endHome">Back home</button>
     </div>
   </div>
 
   <script src="/sona.js"></script>
+  <script>window.SLOW_HELP={phase:"wave",action:"slow the fruit",earned:"Slow fruit!"};</script>
+  <script src="/arcade-speech-help.js"></script>
   <script>
     // Check access before any game resources start. The earned speech token
     // remains a separate requirement; a catalog unlock never creates one.
@@ -186,7 +169,7 @@
     var SETTLE_MS=200, QUIET_MS=900, quietUntil=0, micClosedAt=-1e9;
     var rv={st:null,pending:0,gen:0,raf:0,t:0,ctx:null,src:null,floor:-1};   // floor: the room's quiet level, measured once per page (see listenFor)
     function sfx(n){
-      if(rv.st) return;
+      if(rv.st||slowTurn) return;
       if(rv.pending){ setTimeout(function(){ sfx(n); },60); return; }
       var wait=micClosedAt+SETTLE_MS-performance.now();
       if(wait>0){ quietUntil=Math.max(quietUntil,performance.now()+wait+QUIET_MS); setTimeout(function(){ sfx(n); },wait); return; }
@@ -205,8 +188,7 @@
     // ---- canvas game: swipe-slice tossed fruit, 45s ----
     var FRUITS=["🍉","🍎","🍊","🍋","🍇","🍓","🥝","🍑","🍍"];
     // ── Hand-built vector fruit (SVG → Image), replacing the emoji set.
-    // Flat, thick-rounded, top-left light — matches the city panel style.
-    // Falls back to emoji per-sprite until its image decodes.
+    // Vector fallbacks keep fruit available while the textured art decodes.
     var SVGS={
       watermelon:'<path d="M8 58 A44 44 0 0 1 92 58 L88 64 Q50 80 12 64 Z" fill="#2f9e44"/><path d="M14 57 A38 38 0 0 1 86 57 L83 61 Q50 74 17 61 Z" fill="#d3f9d8"/><path d="M20 55 A31 31 0 0 1 80 55 L78 58 Q50 69 22 58 Z" fill="#ff6b7a"/><ellipse cx="38" cy="46" rx="2.6" ry="4" fill="#343a40" transform="rotate(-18 38 46)"/><ellipse cx="55" cy="42" rx="2.6" ry="4" fill="#343a40" transform="rotate(8 55 42)"/><ellipse cx="68" cy="49" rx="2.6" ry="4" fill="#343a40" transform="rotate(24 68 49)"/><path d="M24 50 A26 26 0 0 1 44 34" stroke="#ffd0d6" stroke-width="5" fill="none" stroke-linecap="round"/>',
       apple:'<circle cx="50" cy="56" r="34" fill="#fa5252"/><path d="M50 56 m-34 0 a34 34 0 0 1 34-34 v68 a34 34 0 0 1 -34 -34" fill="#ff8787"/><path d="M50 24 q-2 -10 6 -14" stroke="#8a5a2e" stroke-width="6" fill="none" stroke-linecap="round"/><path d="M58 14 q14 -4 16 8 q-14 6 -16 -8" fill="#69db7c"/><circle cx="38" cy="46" r="7" fill="#ffe3e3" opacity=".85"/>',
@@ -226,11 +208,23 @@
       im.onload=function(){ SPRITES[k]=im; };
       im.src="data:image/svg+xml;charset=utf-8,"+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 100 100">'+SVGS[k]+'</svg>');
     });
+    // Keep the vector sprites ready if an image cannot be decoded offline.
+    // Alpha bounds of the 384px illustrations (alpha > 8): use the painted
+    // object, not its transparent margin, when sizing it against the hit area.
+    var FRUITCROP={watermelon:[13,43,360,305],apple:[40,33,305,319],orange:[38,33,315,330],lemon:[49,32,325,321],grapes:[38,16,321,356],strawberry:[52,38,286,320],kiwi:[25,31,339,330],peach:[30,23,330,332],pineapple:[70,11,245,363]};
+    var CRAFTFRUIT={};
+    Object.keys(SVGS).forEach(function(k){var im=new Image();im.onload=function(){CRAFTFRUIT[k]=im;};im.src="/assets/crafted/fruit-"+k+".webp";});
     function drawFruit(e,size){
-      var sp=SPRITES[SPRITEKEY[e]];
+      var key=SPRITEKEY[e], sp=CRAFTFRUIT[key], crop=FRUITCROP[key];
+      if(sp&&crop){
+        var scale=size/Math.max(crop[2],crop[3]), dw=crop[2]*scale, dh=crop[3]*scale;
+        ctx.drawImage(sp,crop[0],crop[1],crop[2],crop[3],-dw/2,-dh/2,dw,dh); return;
+      }
+      sp=SPRITES[key];
       if(sp){ ctx.drawImage(sp,-size/2,-size/2,size,size); return; }
-      ctx.fillStyle="#000"; ctx.font=size+"px sans-serif"; ctx.fillText(e,0,0); // not decoded yet → emoji
     }
+    function fruitSize(f){ return 2*(f.r+8); } // retains the generous, unchanged r+16 swipe target
+
 
     var cv=$("cv"), ctx=cv.getContext("2d"), W=0,H=0,DPR=Math.min(2,window.devicePixelRatio||1), SAB=0;
     function fit(){ var r=$("app").getBoundingClientRect(); W=r.width; H=r.height; cv.width=W*DPR; cv.height=H*DPR; ctx.setTransform(DPR,0,0,DPR,0,0);
@@ -241,7 +235,6 @@
     var REV=3, reviveWait=false;   // say-the-sound cards: one between each wave
     var BESTK="sona.best.slice", BEST=0; try{ BEST=parseInt(localStorage.getItem(BESTK)||"0",10)||0; }catch(e){}
     var fruits=[], parts=[], trail=[], splats=[], floats=[];
-    var SLICED={};   // fruit kind → how many this round: the Great round card's bowl
     // Real fruit sliced this round. Not the score: a golden fruit scores 3 and
     // the giant's five cuts score 5, so "N fruits" read off the score was untrue.
     var FRUITN=0;
@@ -284,7 +277,7 @@
       }
     }
     function startWave(i){
-      wave=i; waveGot=0; waveMs=0; nextToss=900; phase="wave"; missRun=0; hud();
+      slowMs=0; $("slowStatus").textContent="Tap Echo to slow the fruit"; wave=i; waveGot=0; waveMs=0; nextToss=900; phase="wave"; missRun=0; hud();
       banner("Wave "+(i+1),"Slice "+WAVES[i].goal+" fruit!");
     }
     function endWave(){
@@ -320,11 +313,10 @@
     function echoHop(){ var e=$("sliceEcho"); if(!e) return; e.classList.remove("hop"); void e.offsetWidth; e.classList.add("hop"); }
 
     // ── the say-it card, between waves ──
-    // The ask is the card's heading, with the sound's letters in the sound's
-    // orange (Sona.soundMark: the family's redesign brief, 28 Sep 2026, keeps
-    // orange for the practice sound and nothing else). The title arrives as
-    // plain text, so it is escaped and only its quoted sound is marked; the
-    // words stay the round's own ("Say “rrrr” for wave 2!").
+    // The quoted sound in its title is the practice sound's letters, in the
+    // crafted orange (.ovl h2 b): the family's brief keeps orange for those
+    // letters alone, and Sona.soundMark decides which letters they are. The
+    // title arrives as plain text, so everything else in it is escaped.
     function esc(t){ return String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
     function sayMark(){ return (window.Sona&&Sona.soundMark)?Sona.soundMark(SAYTXT,SND):'<b class="snd">'+esc(SAYTXT)+'</b>'; }
     function markTitle(t){ var q="\u201C"+SAYTXT+"\u201D", i=t.indexOf(q); return i<0?esc(t):esc(t.slice(0,i))+"\u201C"+sayMark()+"\u201D"+esc(t.slice(i+q.length)); }
@@ -341,6 +333,7 @@
     // the quiet-mic and retry suites open the card through it.
     function crash(){ sayCard(); }
     function doRevive(){
+      if(slowTurn){finishSlowKeys(true);return;}
       reviveWait=false; REV--; hud();
       $("revOvl").classList.remove("show");
       // the mic has just closed: sfx() holds this chime SETTLE_MS
@@ -350,11 +343,11 @@
     }
     $("revDone").onclick=function(){ closeReviveMic(); reviveWait=false; $("revOvl").classList.remove("show"); endRound(); };
 
-    // ── "Say your sound to keep playing": the only time this game listens ──
+    // ── Short speech turns: between rounds and when Echo offers a slow-down ──
     // (24 Sep 2026) STAR MODE is gone. It held the mic open for the whole
     // game so a shout could fire a power-up, which kept an iPhone in
     // phone-call audio from the first frame to the last. The mic now opens
-    // only while the keep-playing card shows, after the quiet window above,
+    // only during a deliberate speech turn, after the quiet window above,
     // and closes before the revive chime. Loudness and sound-shape numbers
     // only: nothing is recorded, nothing leaves the device, and a revive is
     // play, never practice data.
@@ -364,7 +357,7 @@
       if(!snd){ try{ snd=((S&&S.getProfile&&S.getProfile().focusSounds)||["R"])[0]; }catch(e){ snd="R"; } }
       SND=String(snd).toUpperCase(); SAYTXT=(S&&S.soundSay)?S.soundSay(SND):"rrrr";
     })();
-    function listenNote(t){ try{ $("revListen").textContent=t; }catch(e){} }
+    function listenNote(t){ try{ $("revListen").textContent=t;if(slowTurn&&!slowTurn.finishing)$("slowStatus").textContent=t; }catch(e){} }
     var reviveVoice=0,reviveSpeaking=false,reviveStop=null,reviveFetch=null;
     function stopReviveVoice(){
       reviveVoice++;reviveSpeaking=false;
@@ -428,11 +421,19 @@
         // the card closed (or the page hid) while the phone was asking: this
         // stream is already late, so it goes straight back
         if(gen!==rv.gen||!reviveWait||document.hidden){ try{ st.getTracks().forEach(function(t){t.stop();}); }catch(e){} micClosedAt=performance.now(); askAgain(); return; }
-        rv.st=st; listenFor(st,gen);
+        rv.st=st;
+        if(slowTurn){
+          var turn=slowTurn;
+          try{turn.native=Promise.resolve(S.speechStart?S.speechStart({words:[SAYTXT],maxMs:6500}):false);}catch(e){turn.native=Promise.resolve(false);}
+          turn.native=turn.native.then(function(v){turn.nativeSettled=true;turn.nativeStarted=!!v;return v;},function(){turn.nativeSettled=true;return false;});
+          turn.timer=setTimeout(function(){if(slowTurn===turn)finishSlowKeys(false,"Tap Echo to try again");},6500);
+        }
+        listenFor(st,gen);
       }).catch(function(){
         rv.pending--;micClosedAt=performance.now();
         // a request cut short by the page hiding asks again on the way back
         if(gen!==rv.gen||!reviveWait||document.hidden){ askAgain(); return; }
+        if(slowTurn){finishSlowKeys(false,"Microphone is off");return;}
         // no microphone: the card can't hear anyone, so the round ends kindly
         reviveWait=false; $("revOvl").classList.remove("show"); endRound();
       });
@@ -462,7 +463,7 @@
         if(rv.ctx.state==="suspended") rv.ctx.resume();
         rv.src=rv.ctx.createMediaStreamSource(st); an=rv.ctx.createAnalyser(); an.fftSize=512; rv.src.connect(an);
         td=new Uint8Array(an.fftSize); fd=new Uint8Array(an.frequencyBinCount); binHz=rv.ctx.sampleRate/an.fftSize;
-      }catch(e){ closeReviveMic(); reviveWait=false; $("revOvl").classList.remove("show"); endRound(); return; }
+      }catch(e){ if(slowTurn){finishSlowKeys(false,"Microphone unavailable");return;} closeReviveMic(); reviveWait=false; $("revOvl").classList.remove("show"); endRound(); return; }
       // family check: the burst must SOUND like the target's family (voiced
       // vs hiss) to fire — a scream or an S can't revive an R kid. Shape
       // numbers only; nothing recorded (see Sona.frameShape).
@@ -489,7 +490,15 @@
           for(var j=0;j<heard.length;j++){ var f=heard[j];
             if(f.r>thr){ voiced++;
               if(f.s){ if(!shp)shp={m:0,fm:0,hm:0}; shp.m+=f.s.m; shp.fm+=f.s.fm; shp.hm+=f.s.hm; }
-              if(voiced>=6){ if(!famOK(shp)){ voiced=0; shp=null; } else { closeReviveMic(); doRevive(); return; } } }
+              if(voiced>=6){ if(!famOK(shp)){ voiced=0; shp=null; } else {
+                if(slowTurn){
+                  if(!slowTurn.heardAt)slowTurn.heardAt=now;
+                  // Give on-device recognition the rest of a short utterance;
+                  // the first six voiced frames alone can be only its onset.
+                  if(now-slowTurn.heardAt<550){rv.raf=requestAnimationFrame(tick);return;}
+                }
+                closeReviveMic(); doRevive(); return;
+              } } }
             else { voiced=0; shp=null; } }
         }
         rv.raf=requestAnimationFrame(tick);
@@ -497,8 +506,9 @@
     }
     // lock/app-switch fires visibilitychange, NOT pagehide — a mic left open
     // there stays lit in a pocket. Coming back to the card listens again.
-    if(window.Sona&&Sona.onBackground) Sona.onBackground(closeReviveMic); else window.addEventListener("pagehide",closeReviveMic);
-    document.addEventListener("visibilitychange",function(){ if(!document.hidden&&reviveWait) speakRevive(); });
+    function speechBackground(){if(slowTurn){slowTurn.cancelled=true;finishSlowKeys(false);}else closeReviveMic();}
+    if(window.Sona&&Sona.onBackground) Sona.onBackground(speechBackground); else window.addEventListener("pagehide",speechBackground);
+    document.addEventListener("visibilitychange",function(){ if(!document.hidden&&reviveWait&&!slowTurn) speakRevive(); });
 
     // ── the game's own sounds, made on the phone (27 Sep 2026) ──
     // They join Sona's sfx set on this page only, so each goes through sfx()
@@ -539,20 +549,23 @@
     function juice(x,y,col,n,gold){ for(var k=0;k<n;k++) parts.push({x:x,y:y,vx:(Math.random()-0.5)*7,vy:-Math.random()*6,r:3+Math.random()*4,life:1,col:gold&&k%2?"#ffd21c":col}); }
     function splat(x,y,r,col){ var d=[],a,q; for(var i=0;i<9;i++){ a=Math.random()*6.28; q=r*(0.35+Math.random()*0.9); d.push([Math.cos(a)*q,Math.sin(a)*q,r*(0.07+Math.random()*0.16)]); } splats.push({x:x,y:y,r:r*0.42,col:col,life:1,d:d}); }
     function floatText(x,y,t,col){ floats.push({x:x,y:y,t:t,col:col,life:1}); }
-    // the banner is a sticker, tilted (design 05), in words and no emoji: "3x combo!"
-    function showCombo(t){ var c=$("combo"); c.textContent=t; c.style.opacity=1; c.style.transform="rotate(-4deg) scale(1.15)"; setTimeout(function(){c.style.opacity=0;c.style.transform="rotate(-4deg) scale(1)";},550); }
+    function showCombo(t){ var c=$("combo"); c.textContent=t; c.style.opacity=1; c.style.transform="scale(1.15)"; setTimeout(function(){c.style.opacity=0;c.style.transform="scale(1)";},550); }
     function onMove(e){ if(!pDown||!playing)return; var p=pt(e), now=performance.now(); trail.push({x:p.x,y:p.y,t:now});
       var hit=0, gold=0;
       for(var i=0;i<fruits.length;i++){ var f=fruits[i];
-        if(!f.sliced && segHit(lx,ly,p.x,p.y,f.x,f.y,f.r+16)){ f.sliced=true; hit++; combo++; FRUITN++; SLICED[SPRITEKEY[f.e]]=(SLICED[SPRITEKEY[f.e]]||0)+1;
+        if(!f.sliced && segHit(lx,ly,p.x,p.y,f.x,f.y,f.r+16)){ f.sliced=true; hit++; combo++; FRUITN++;
           var worth=f.gold?3:1, col=JUICE[f.e]||"#ffd21c"; score+=worth; if(phase==="wave") waveGot+=worth;
           juice(f.x,f.y,col,f.gold?16:10,f.gold); splat(f.x,f.y,f.r,col);
-          parts.push({x:f.x,y:f.y,vx:-2.4,vy:-2,e:f.e,half:1,life:1}); parts.push({x:f.x,y:f.y,vx:2.4,vy:-2,e:f.e,half:2,life:1});
+          // Both halves keep the fruit's full painted size and the swipe's cut
+          // direction, so a big orange does not collapse into two tiny chips.
+          var cut=Math.atan2(p.y-ly,p.x-lx), nx=-Math.sin(cut), ny=Math.cos(cut);
+          parts.push({x:f.x,y:f.y,vx:-nx*2.4,vy:-ny*2.4-2,e:f.e,half:1,size:fruitSize(f),rot:f.rot,cut:cut-f.rot,vr:-0.035,life:1});
+          parts.push({x:f.x,y:f.y,vx:nx*2.4,vy:ny*2.4-2,e:f.e,half:2,size:fruitSize(f),rot:f.rot,cut:cut-f.rot,vr:0.035,life:1});
           if(f.gold){ gold++; floatText(f.x,f.y-f.r,"+3","#ffd21c"); }
         } }
       if(hit){ missRun=0; sfx(gold?"gold":"swish"); $("score").textContent=score; comboT=now; hud();
         if(gold||combo===5||combo===10) echoHop();
-        if(gold) showCombo("Golden! +3"); else if(combo>=3) showCombo(combo+"x combo!"); }
+        if(gold) showCombo("GOLDEN! +3"); else if(combo>=3) showCombo(combo+" COMBO!"); }
       if(phase==="finale"&&giant) giantMove(lx,ly,p.x,p.y,now);
       lx=p.x; ly=p.y; e.preventDefault&&e.preventDefault();
     }
@@ -591,7 +604,7 @@
       for(i=0;i<18;i++){ a=i/18*Math.PI*2; parts.push({x:g.x,y:gy,vx:Math.cos(a)*(4+Math.random()*4),vy:Math.sin(a)*(4+Math.random()*4)-4,e:"🍉",half:(i%2)+1,life:1.3}); }
       juice(g.x,gy,"#ff5470",46,false); juice(g.x,gy,"#58cc02",14,false); splat(g.x,gy,g.r*1.2,"#ff5470");
       giant=null; sfx("giant"); echoHop();
-      SLICED.watermelon=(SLICED.watermelon||0)+GIANT_CUTS; FRUITN++;   // the bowl shows its five cuts; it counts as one fruit sliced
+      FRUITN++;   // the giant is one fruit sliced, however many cuts it took
       try{ if(S&&S.confetti)S.confetti(); }catch(e){}
       banner("You did it!","The giant watermelon is sliced!");
       setTimeout(endRound,1800);
@@ -618,15 +631,16 @@
 
     // ── the stand at the bottom: fruit waiting on the counter, restocked ──
     function drawStand(now){
-      var top=standTop(), i, x, k, sw=24, lip=6, band=16;
+      var top=H*0.855, i;
       for(i=0;i<WELLS.length;i++){ var wl=WELLS[i];
         if(!wl.e&&wl.back&&now>=wl.back){ wl.e=FRUITS[(Math.random()*FRUITS.length)|0]; wl.pop=now; }
         if(!wl.e) continue;
         var t=wl.pop?Math.min(1,(now-wl.pop)/350):1, sc=t<1?0.4+0.6*t+Math.sin(t*Math.PI)*0.25:1;
-        ctx.save(); ctx.translate(wellX(i),top-12); ctx.scale(sc,sc); drawFruit(wl.e,48); ctx.restore(); }
-      ctx.fillStyle="#ffdf9e"; ctx.fillRect(0,top,W,H-top);
-      ctx.fillStyle="#e0b25f"; ctx.fillRect(0,top,W,lip);
-      for(x=0,k=0;x<W;x+=sw,k++){ ctx.fillStyle=k%2?"#ff9d6e":"#fff8ec"; ctx.beginPath(); ctx.moveTo(x,top+lip); ctx.lineTo(x+sw,top+lip); ctx.lineTo(x+sw,top+lip+band); ctx.arc(x+sw/2,top+lip+band,sw/2,0,Math.PI); ctx.closePath(); ctx.fill(); }
+        // Live stock sits in the painted market crate. An empty place still
+        // refills only on its existing timer; launch geometry stays unchanged.
+        ctx.save(); ctx.translate(W*(0.20+i*0.15),top); ctx.scale(sc,sc);
+        ctx.fillStyle="rgba(86,45,14,.18)"; ctx.beginPath(); ctx.ellipse(0,18,20,5,0,0,7); ctx.fill();
+        drawFruit(wl.e,Math.min(44,W*0.115)); ctx.restore(); }
     }
     function glow(r,now){
       var gl=ctx.createRadialGradient(0,0,r*0.4,0,0,r*1.7); gl.addColorStop(0,"rgba(255,214,51,.9)"); gl.addColorStop(1,"rgba(255,214,51,0)");
@@ -639,17 +653,18 @@
     var lastT=performance.now();
     function draw(){
       var now=performance.now(), dt=Math.min(100,now-lastT), i; lastT=now;
+      // Keep the exact board still while Echo models and listens; no game
+      // time, falling object or earned help is spent while the page is hidden.
+      if(document.hidden||slowTurn){paintSlowKeys();requestAnimationFrame(draw);return;}
+      if(playing&&phase==="wave"&&slowMs>0){slowMs=Math.max(0,slowMs-dt);if(!slowMs)$("slowStatus").textContent="Tap Echo to slow the fruit";}
+      paintSlowKeys();
       if(playing&&phase==="wave"){
-        waveMs+=dt;
+        waveMs+=dt*slowFactor();
         if(waveMs>=nextToss){ toss(); nextToss=waveMs+WAVES[wave].every*(missRun>=2?1.25:1); }
         if(waveGot>=WAVES[wave].goal||waveMs>=WAVE_CAP_MS) endWave();
       }
       ctx.clearRect(0,0,W,H);
-      // sunset skyline silhouettes (design 4: Fruit Slice sky)
-      ctx.fillStyle="rgba(200,90,60,.18)";
-      for(i=0;i<6;i++){ var bw=W*0.16, bx=i*bw*1.05-10, bh=H*(0.10+((i*37)%3)*0.035)+62; ctx.fillRect(bx,H-bh,bw,bh); }
-      ctx.fillStyle="rgba(160,60,40,.22)";
-      for(i=0;i<5;i++){ var bw2=W*0.13, bx2=i*bw2*1.55+20, bh2=H*(0.06+((i*53)%3)*0.03)+62; ctx.fillRect(bx2,H-bh2,bw2,bh2); }
+      // Illustrated orchard scenery sits beneath the transparent game canvas.
       // juice left on the sky by each slice, fading
       for(i=splats.length-1;i>=0;i--){ var s=splats[i]; s.life-=0.012; if(s.life<=0){ splats.splice(i,1); continue; }
         ctx.globalAlpha=s.life*0.42; ctx.fillStyle=s.col; ctx.beginPath(); ctx.arc(s.x,s.y,s.r,0,7); ctx.fill();
@@ -658,30 +673,47 @@
       // fruit
       ctx.textAlign="center"; ctx.textBaseline="middle";
       for(i=fruits.length-1;i>=0;i--){ var f=fruits[i];
-        f.x+=f.vx; f.y+=f.vy; f.vy+=f.g||G; f.rot+=f.vr;
+        var factor=slowFactor(); f.x+=f.vx*factor; f.y+=f.vy*factor; f.vy+=(f.g||G)*factor; f.rot+=f.vr*factor;
         if(f.sliced){ fruits.splice(i,1); continue; }
         // a miss just falls away: nothing stops and nothing is lost; the help grows instead
         if(f.y>H+80){ fruits.splice(i,1); if(playing&&phase==="wave"){ missRun++; combo=0; } continue; }
         ctx.save(); ctx.translate(f.x,f.y);
         if(f.gold) glow(f.r,now);
         ctx.rotate(f.rot);
-        // opaque paint before emoji — translucent fillStyle ghosts color glyphs
-        drawFruit(f.e,f.r*2.15); ctx.restore();
+        drawFruit(f.e,fruitSize(f)); ctx.restore();
       }
       // particles + halves
       for(i=parts.length-1;i>=0;i--){ var p=parts[i];
         p.x+=p.vx; p.y+=p.vy; p.vy+=G*0.8; p.life-=0.02;
         if(p.life<=0||p.y>H+60){ parts.splice(i,1); continue; }
-        if(p.e){ ctx.save(); ctx.globalAlpha=Math.max(0,Math.min(1,p.life)); ctx.translate(p.x,p.y);
-          ctx.beginPath(); if(p.half===1)ctx.rect(-30,-30,30,60); else ctx.rect(0,-30,30,60); ctx.clip(); drawFruit(p.e,52); ctx.restore(); }
-        else { ctx.globalAlpha=Math.max(0,Math.min(1,p.life)); ctx.fillStyle=p.col; ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,7); ctx.fill(); ctx.globalAlpha=1; }
+        if(p.e){
+          var sz=p.size||52, ca=p.cut||0; p.rot=(p.rot||0)+(p.vr||0);
+          ctx.save(); ctx.globalAlpha=Math.max(0,Math.min(1,p.life)); ctx.translate(p.x,p.y); ctx.rotate(p.rot);
+          ctx.rotate(ca); ctx.beginPath();
+          if(p.half===1) ctx.rect(-sz,-sz,sz*2,sz); else ctx.rect(-sz,0,sz*2,sz);
+          ctx.clip(); ctx.rotate(-ca); drawFruit(p.e,sz); ctx.restore();
+        } else {
+          ctx.save(); ctx.globalAlpha=Math.max(0,Math.min(1,p.life)); ctx.translate(p.x,p.y);
+          ctx.rotate(Math.atan2(p.vy,p.vx)+Math.PI/2); ctx.fillStyle=p.col;
+          ctx.beginPath(); ctx.ellipse(0,0,p.r*0.68,p.r*1.35,0,0,7); ctx.fill();
+          ctx.fillStyle="rgba(255,255,230,.65)"; ctx.beginPath(); ctx.ellipse(-p.r*0.2,-p.r*0.35,p.r*0.18,p.r*0.5,0,0,7); ctx.fill(); ctx.restore();
+        }
       }
       drawStand(now);
       if(giant) drawGiant(dt,now);
       // trail
-      if(trail.length>1){ ctx.strokeStyle="rgba(255,255,255,.85)"; ctx.lineWidth=5; ctx.lineCap="round"; ctx.beginPath();
+      if(trail.length>1){
         var pts=trail.filter(function(q){return now-q.t<130;});
-        for(i=0;i<pts.length;i++){ i?ctx.lineTo(pts[i].x,pts[i].y):ctx.moveTo(pts[i].x,pts[i].y); } ctx.stroke(); }
+        ctx.save(); ctx.lineCap="round"; ctx.lineJoin="round";
+        for(i=1;i<pts.length;i++){
+          var age=Math.max(0,1-(now-pts[i].t)/130), width=1.5+7*i/pts.length;
+          ctx.globalAlpha=age; ctx.strokeStyle="#fff4bf"; ctx.lineWidth=width+3;
+          ctx.shadowColor="rgba(255,214,98,.8)"; ctx.shadowBlur=9;
+          ctx.beginPath(); ctx.moveTo(pts[i-1].x,pts[i-1].y); ctx.lineTo(pts[i].x,pts[i].y); ctx.stroke();
+          ctx.shadowBlur=0; ctx.strokeStyle="#fffef6"; ctx.lineWidth=width; ctx.stroke();
+        }
+        ctx.restore();
+      }
       // "+3" over a golden fruit
       for(i=floats.length-1;i>=0;i--){ var ft=floats[i]; ft.y-=0.9; ft.life-=0.018; if(ft.life<=0){ floats.splice(i,1); continue; }
         ctx.globalAlpha=Math.min(1,ft.life*1.6); ctx.font='800 30px "Baloo 2",sans-serif'; ctx.lineWidth=5; ctx.strokeStyle="rgba(120,50,10,.55)"; ctx.strokeText(ft.t,ft.x,ft.y); ctx.fillStyle=ft.col; ctx.fillText(ft.t,ft.x,ft.y); ctx.globalAlpha=1; }
@@ -691,97 +723,60 @@
     draw();
 
     // ---- round over ----
-    // ── the Great round card (the family's redesign brief, 28 Sep 2026) ──
-    // It was one star, one line and Echo, with "no stat rows or coin
-    // counters". The brief asks for the game's name, three stars, what the
-    // round earned in the game's own unit, the coins the round already
-    // awarded (the coin maths is unchanged; the card only says it) and one
-    // next step. The stars are not a grade: every round with points gets all
-    // three and a round with none gets "Good try!" and no stars, so there is
-    // never an empty star to fall short of. "Next" follows the arcade chain
-    // (slice → tiles → stack → run → glide → slice) and shows only when that
-    // game opens for this family (Sona.gameAccess); otherwise "Back to games"
-    // stands alone and takes the teal.
-    var NEXT="tiles";
-    function gameName(k,fb){ try{ var a=S.gameAct(k); if(a&&a.name) return a.name; }catch(e){} return fb; }
-    function nextOpen(){ try{ return !!S.gameAct(NEXT)&&S.gameAccess(NEXT).allowed; }catch(e){ return false; } }
-    function endCard(o){
-      $("endGame").textContent=gameName("slice","Fruit Slice");
-      $("endTitle").textContent=o.title; $("endTitle").className=o.title.length>16?"long":"";
-      $("endEmoji").style.display=o.stars?"":"none";
-      $("endPic").innerHTML=o.pic||"";
-      $("endSub").textContent=o.line||""; $("endSub").style.display=o.line?"":"none";
-      $("endScore").textContent=o.stat||""; $("endScore").style.display=o.stat?"":"none";
-      var c=$("endCoins"); c.style.display=o.coins>0?"":"none";
-      if(o.coins>0){ c.innerHTML=((S&&S.icon)?S.icon("coin",20):"")+"+"+o.coins; c.setAttribute("aria-label",o.coins+" coins"); }
-      $("endStats").style.display=(o.stat||o.coins>0)?"":"none";
-      // The first game after setup (o.after, from Sona.firstGameEnd) puts its
-      // own step where Next goes: "Show a grown-up →" to the plan screen, or
-      // "Pick a game →" to Home. It shows whether or not Next's game is open.
-      var offer=!!o.buttons&&!o.again&&!!o.after, next=!!o.buttons&&!o.again&&!offer&&nextOpen(), ec=$("endCharge");
-      ec.style.display=(next||offer)?"":"none";
-      if(offer){ ec.textContent=/subscribe/.test(o.after)?"Show a grown-up →":"Pick a game →"; ec.onclick=function(){ location.href=o.after; }; }
-      else if(next) ec.textContent="Next: "+gameName(NEXT,"");
-      var ea=$("endAgain"); ea.style.display=o.again?"":"none"; if(o.again){ ea.textContent=o.again; ea.onclick=backToCharge; }
-      $("endHome").style.display=o.buttons?"":"none"; $("endHome").className=(next||offer||o.again)?"cream-pill":"act-pill";
-    }
     function fruitsSaid(n){ return n+(n===1?" fruit":" fruits"); }
-    // What the round earned, drawn (design 11): a bowl of the fruit this
-    // child sliced, the most-sliced kinds up to five, from the same vector
-    // fruit the game throws. No new art; the clay bowl replaces it later.
-    function bowlPic(){
-      var ks=Object.keys(SLICED).filter(function(k){ return SVGS[k]; }).sort(function(a,b){ return SLICED[b]-SLICED[a]; }).slice(0,5);
-      if(!ks.length) return "";
-      var slots={1:[0],2:[-17,17],3:[-32,0,32],4:[-45,-15,15,45],5:[-54,-27,0,27,54]}[ks.length].slice().sort(function(a,b){ return Math.abs(a)-Math.abs(b); });
-      // the most-sliced sits in the middle, highest and in front
-      var fruit=ks.map(function(k,i){ return {k:k,x:slots[i]}; }).reverse().map(function(f){
-        var cy=54+Math.abs(f.x)*0.12;
-        return '<g transform="translate('+(100+f.x-27)+' '+(cy-30).toFixed(1)+') scale(.54)">'+SVGS[f.k]+'</g>'; }).join("");
-      return '<svg viewBox="0 0 200 120" width="190" height="114">'+
-        '<g stroke="#ffd76a" stroke-width="5" stroke-linecap="round" opacity=".8"><path d="M100 4v12"/><path d="M50 18l7 9"/><path d="M150 18l-7 9"/><path d="M18 46l12 3"/><path d="M182 46l-12 3"/></g>'+
-        '<ellipse cx="100" cy="113" rx="66" ry="5" fill="rgba(74,44,20,.12)"/><ellipse cx="100" cy="68" rx="78" ry="12" fill="#9a6232"/>'+fruit+
-        '<path d="M22 68Q24 111 100 111Q176 111 178 68Q100 82 22 68Z" fill="#c9874a"/><path d="M22 68Q100 82 178 68" fill="none" stroke="#dea56d" stroke-width="4" stroke-linecap="round"/>'+
-        '<path d="M42 84Q52 100 78 104" fill="none" stroke="#e2b27f" stroke-width="4" stroke-linecap="round" opacity=".8"/></svg>';
-    }
     function bankAndContinue(){ S.finishGameTurn("slice",score); location.href="/charge.html?daily=1&banked="+score; }
     function endRound(){
+      if(slowTurn){slowTurn.cancelled=true;return finishSlowKeys(false).then(endRound);}
       closeReviveMic();
       if(window.__ended)return; window.__ended=true;
       S.finishGameTurn("slice",isDaily?score:null);
       playing=false; reviveWait=false; clearInterval(comboIv);
       var isBest=score>BEST; if(isBest){ BEST=score; try{ localStorage.setItem(BESTK,String(BEST)); }catch(e){} }
-      var headline=finaleDone?(isBest?"A new best! You sliced the giant watermelon!":"You sliced the giant watermelon!"):"Great round!";
       var coins=Math.min(10,(score/4)|0);
       try{ if(coins&&S&&S.addCoins)S.addCoins(coins); }catch(e){}
       sfx("complete"); try{ if(S&&S.confetti)S.confetti(); }catch(e){}
       if(isDaily){
         // Daily Run: bank the score and keep the run moving — no buttons, no stall.
-        endCard({title:score===0?"Good try!":headline, stars:score>0, stat:score?fruitsSaid(FRUITN):"", coins:coins,
-          line:score===0?"On to the next game…":"Banking your score…"});
+        if(score===0){ $("endEmoji").style.opacity=".25"; } // gentle zero tier: dim the star, keep it warm
+        $("endTitle").textContent=score===0?"Good try!":("+"+score+" points!");
+        $("endSub").textContent=score===0?"On to the next game…":"Banking your score…";
+        $("endCharge").style.display="none"; $("endAgain").style.display="none"; $("endHome").style.display="none";
         $("endOvl").classList.add("show");
         setTimeout(bankAndContinue,1400);
         return;
       }
       if(score===0){
-        // gentle zero tier: encouraging copy, happy Echo, one warm "again" button
-        endCard({title:"Good try! Wanna go again?", buttons:true, again:"Yes! Play again"});
+        // gentle zero tier: encouraging copy, dimmed star, happy Echo, one warm "again" button
+        $("endEmoji").style.opacity=".25";
+        $("endTitle").textContent="Good try! Wanna go again?";
+        $("endSub").className=""; $("endSub").style.display="none";
+        $("endCharge").style.display="none";
+        var ea=$("endAgain"); ea.textContent="Yes! Play again"; ea.style.display=""; ea.onclick=backToCharge;
         $("endOvl").classList.add("show");
         return;
       }
       // the first game after setup: the grown-up's plan screen when it is due,
-      // else Home (Sona.firstGameEnd answers once). It takes the Next
-      // button's place on the Great round card.
+      // else Home (Sona.firstGameEnd answers once)
       var after=(S&&S.firstGameEnd)?S.firstGameEnd("slice"):null;
-      // Once the giant bursts, the finale's own line is the heading; Echo's
-      // line under the stars is for a round the child stopped early
-      endCard({title:headline, stars:true, pic:bowlPic(), stat:fruitsSaid(FRUITN), coins:coins, buttons:true, after:after,
-        line:finaleDone?"":(isBest?"WOW — a new best! I saw "+FRUITN+" fruits fly!":"I saw "+FRUITN+" fruits fly! So fun!")});
+      if(after){ $("endCharge").textContent=/subscribe/.test(after)?"Show a grown-up →":"Pick a game →"; $("endCharge").onclick=function(){ location.href=after; }; }
+      // one reward per moment: star + one line + Echo — no stat rows or coin counters here
+      $("endTitle").textContent=finaleDone?(isBest?"A new best! You sliced the giant watermelon!":"You sliced the giant watermelon!"):(isBest?"WOW — a new best! I saw "+fruitsSaid(FRUITN)+" fly!":"I saw "+fruitsSaid(FRUITN)+" fly! So fun!");
+      // the fruit this child sliced, counted. "Best" is gone from this line:
+      // the best is a score (a golden fruit is 3), and said beside a fruit
+      // count it read as a number of fruit, which it never was
+      var _es=$("endSub"); _es.textContent=fruitsSaid(FRUITN); _es.className="later";
+      setTimeout(function(){ _es.classList.add("in"); },1000);
+      $("endAgain").style.display="none";
       $("endOvl").classList.add("show");
     }
-    $("endCharge").onclick=function(){ location.href=isDaily?"/charge.html?daily=1":(nextOpen()?"/charge.html?game=arcade-"+NEXT+".html":"/today.html#play"); };
+    $("endCharge").onclick=function(){ location.href=isDaily?"/charge.html?daily=1":(S.gameAccess("tiles").allowed?"/charge.html?game=arcade-tiles.html":"/activities.html"); };
     $("endAgain").onclick=function(){ location.reload(); };
     $("endHome").onclick=function(){ S.finishGameTurn("slice"); location.href="/today.html#play"; };
-    $("close").onclick=function(){ closeReviveMic(); S.finishGameTurn("slice"); if(playing){ playing=false; clearInterval(comboIv); } if(isDaily){ bankAndContinue(); return; } location.href="/today.html#play"; };
+    $("close").onclick=function(){
+      if(window.__speechLeaving)return;window.__speechLeaving=true;
+      function leave(){closeReviveMic();playing=false;clearInterval(comboIv);S.finishGameTurn("slice");if(isDaily){bankAndContinue();return;}location.href="/today.html#play";}
+      if(slowTurn){slowTurn.cancelled=true;finishSlowKeys(false).then(leave);}else leave();
+    };
     }
   </script>
 </body>
