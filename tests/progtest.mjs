@@ -434,7 +434,8 @@ ok("proof strip: named SLP credential above the plan",
     g.totals = Object.assign({}, g.totals, { sessions: 6, words: 40, stars: 3 });
     g.streak = g.streak || { count: 1, lastDate: d };
     localStorage.setItem("sona.progress.v1", JSON.stringify(g));
-    const out = {}; out.R = { attempts: 24, passes: 20, days: {} }; out.R.days[d] = { a: 24, p: 20 };
+    // A day logged since tries were counted (REPWEEKS1): sound checks alone are not reps.
+    const out = {}; out.R = { attempts: 24, passes: 20, tries: 24, days: {} }; out.R.days[d] = { a: 24, p: 20, tries: 24 };
     localStorage.setItem("sona.outcomes.v1", JSON.stringify(out));
     localStorage.removeItem("sona.rateask.v1");
   }, iso);
