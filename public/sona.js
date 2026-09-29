@@ -1391,7 +1391,7 @@
     const w = weekWins(); const mw = momWeek();
     const name = getProfile().childName || "Your kid";
     const bits = [];
-    bits.push(name + " practiced " + mw.done + (mw.done === 1 ? " day" : " days") + " this week" + (w.reps > 0 ? " and said " + w.reps + (w.reps === 1 ? " sound" : " sounds") + " out loud." : "."));
+    bits.push(name + " practiced " + mw.done + (mw.done === 1 ? " day" : " days") + " this week" + (w.reps > 0 ? " — " + w.reps + (w.reps === 1 ? " rep" : " reps") + ", each one said out loud." : "."));
     if (w.acc != null && w.accPrev != null && w.acc !== w.accPrev) bits.push("The " + w.label + " sound moved " + w.accPrev + "% → " + w.acc + "% on honest scoring.");
     bits.push("At this stage, lots of honest tries beat perfect tries — steady practice is exactly how sounds get built.");
     return bits;
@@ -2903,8 +2903,9 @@
     const end = new Date(start.getFullYear(), start.getMonth(), start.getDate() + 7);
     function inRange(k, a, b) { const d = new Date(k + "T12:00:00"); return d >= a && d < b; }
     function acc(a, b) { let at = 0, ps = 0; const bs = o[snd]; if (bs && bs.days) Object.keys(bs.days).forEach(function (k) { if (inRange(k, a, b)) { at += bs.days[k].a || 0; ps += bs.days[k].p || 0; } }); return at >= 5 ? Math.round(ps / at * 100) : null; }
-    let reps = 0; Object.keys(o).forEach(function (s) { const bs = o[s]; if (bs && bs.days) Object.keys(bs.days).forEach(function (k) { if (inRange(k, start, end)) reps += bs.days[k].a || 0; }); });
-    return { sound: snd, label: soundLabel(snd), reps: reps, acc: acc(start, end), accPrev: acc(prev, start), week: momWeek() };
+    // reps is Home's corner count (REPWEEKS1), not the number of sound checks:
+    // the two sat on the same screen and disagreed.
+    return { sound: snd, label: soundLabel(snd), reps: weekReps(0), acc: acc(start, end), accPrev: acc(prev, start), week: momWeek() };
   }
 
   // ── Sticker icon kit (design §7): flat 2-tone SVGs with a white glint dot.
@@ -3124,10 +3125,11 @@
   function outcomes() { return load(OUTKEY, {}); }
 
   // ── weekly practice volume (the parent's headline metric) ────────────────
-  // Total honest reps this Mon–Sun week, summed from the attempt log. Volume
-  // is a PARENT-side motivator: kids keep the ring, never rep quotas. The
-  // beacon ships {anonymous id, week, count} — no names, no audio, no
-  // accuracy — so families can see how their practice volume compares.
+  // Total honest reps in a Mon–Sun local week, from the day ledger. Volume is
+  // a PARENT-side motivator. Home's corner shows the week's count to whoever
+  // holds the phone — a number that only climbs, never a target — and every
+  // comparison (last week, best week) sits behind the grown-ups gate. The
+  // count stays on this device: the anonymous volume beacon is retired.
   function fid() {
     try {
       let f = localStorage.getItem("sona.fid.v1");
@@ -3144,20 +3146,62 @@
     const wk = 1 + Math.round(((t - jan4) / 86400000 - 3 + ((jan4.getDay() + 6) % 7)) / 7);
     return y + "-W" + String(wk).padStart(2, "0");
   }
-  function weekReps(offsetWeeks) {
-    const now = new Date(); if (offsetWeeks) now.setDate(now.getDate() + offsetWeeks * 7);
-    const dow = (now.getDay() + 6) % 7;
-    const mon = new Date(now); mon.setDate(now.getDate() - dow); mon.setHours(0, 0, 0, 0);
-    const sun = new Date(mon); sun.setDate(mon.getDate() + 7);
-    const out = outcomes(); let total = 0;
+  // REPWEEKS1 (Travis, 28 Sep 2026: the week's reps in Home's top corner, and
+  // week by week in Settings). ONE bucketing of the day ledger feeds Home, the
+  // parent corner, Progress and Settings, so no two surfaces can disagree about
+  // "this week" — the parent corner used to sum sound checks while Progress
+  // summed tries, and showed two different numbers for the same week.
+  //
+  // A rep is a voiced try the practice screen counted: days[day].tries. Days
+  // logged before tries were counted (22 Sep 2026) hold only .a, one per sound
+  // check — a floor, not a count — so they add nothing. Falling back to them
+  // made the first counted week look like a leap, and handed out a "best week"
+  // won against numbers that were never counted. For the same reason a week
+  // before REPS_SINCE (the Monday of that week) cannot hold a rep at all: a
+  // .tries dated earlier is a phone clock that was wrong, and would otherwise
+  // stand as a best week no child could ever beat.
+  const REPS_SINCE = "2026-09-21";
+  function _dayTries(d) { return d && typeof d.tries === "number" && d.tries > 0 ? Math.floor(d.tries) : 0; }
+  function _weekStart(y, m, d) { const t = new Date(y, m, d); t.setDate(t.getDate() - (t.getDay() + 6) % 7); return t; }
+  // Monday's local day key for the week holding dayKey ("YYYY-MM-DD"). Built
+  // from date parts, never parsed, so a DST night cannot slide a day across.
+  function _weekOf(dayKey) {
+    const p = String(dayKey).split("-"); if (p.length !== 3) return "";
+    const t = _weekStart(+p[0], +p[1] - 1, +p[2]); return isNaN(t.getTime()) ? "" : _localDay(t.getTime());
+  }
+  function _mondayKey(offsetWeeks) { const n = new Date(); return _localDay(_weekStart(n.getFullYear(), n.getMonth(), n.getDate() + 7 * (offsetWeeks || 0)).getTime()); }
+  function _repBuckets(sound) {
+    const out = outcomes(), wk = {};
     Object.keys(out).forEach((s) => {
+      if (sound && s !== sound) return;
       const days = (out[s] && out[s].days) || {};
-      Object.keys(days).forEach((d) => {
-        const t = new Date(d + "T12:00:00");
-        if (t >= mon && t < sun) total += days[d] ? (typeof days[d].tries === "number" ? days[d].tries : days[d].a || 0) : 0;
-      });
+      Object.keys(days).forEach((k) => { const n = _dayTries(days[k]); if (!n) return; const w = _weekOf(k); if (w && w >= REPS_SINCE) wk[w] = (wk[w] || 0) + n; });
     });
-    return total;
+    return wk;
+  }
+  // sound narrows the count to one sound — Progress names the week's busiest
+  // sound beside the total, and both have to come from the same rule.
+  function weekReps(offsetWeeks, sound) { return _repBuckets(sound)[_mondayKey(offsetWeeks)] || 0; }
+  // The last n weeks, oldest first, ending with this one. The list never
+  // starts before the first week with a counted rep: a zero bar for a week
+  // nobody was counting would say the child did nothing. best is the best
+  // FINISHED week, so this week is measured against it rather than itself;
+  // days dated after this week (a phone clock that was wrong) never count.
+  // Reads only — Home calls it on every load and must write nothing.
+  function repWeeks(n) {
+    n = Math.max(1, Math.min(52, parseInt(n, 10) || 8));
+    const wk = _repBuckets(), cur = _mondayKey(0);
+    const past = Object.keys(wk).filter((k) => k < cur).sort();
+    let best = null;
+    past.forEach((k) => { if (!best || wk[k] > best.reps) best = { start: k, reps: wk[k] }; });
+    const first = past.length ? past[0] : cur;
+    const weeks = [];
+    for (let i = n - 1; i >= 0; i--) {
+      const k = _mondayKey(-i); if (k < first) continue;
+      weeks.push({ start: k, reps: wk[k] || 0, current: i === 0, best: !!best && k === best.start });
+    }
+    const thisWeek = wk[cur] || 0;
+    return { weeks: weeks, thisWeek: thisWeek, lastWeek: wk[_mondayKey(-1)] || 0, best: best, newBest: !!best && thisWeek > best.reps, since: past.length ? past[0] : (thisWeek ? cur : null) };
   }
   // Retained as a no-op for cached pages. Family comparisons and their beacon
   // are retired; counts remain local except consented pilot progress sharing.
@@ -4181,5 +4225,5 @@
   try { _grandfatherFreeEra4(); } catch (e) {}
   try { installDebug(); } catch (e) {}
 
-  global.Sona = { pcmWave, libraryPreview, previewPlan, setPreviewPlan, gameKey, gameAccess, gameBounce, finishGameTurn, catalogRun, simpleAdventure, MIC_PROMISE, playStyle, pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, TTS_CACHE_VERSION, voiceDiagnostic, voiceStatus, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, saveFor, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, ladderContent, FREE_MODE, isFree, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, adventureGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, activityLibrary, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, premium, caseCovered, caseRefresh, gated, gateVerify, gateOk, requireGate, gateDest, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, planMoment, planEligible, planShown, firstGameKey, firstGameStart, firstGameEnd, speak, speakNow, speakUnlock, speechAvailable, speechPerm, speechStart, speechStop, hearVerdict, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, demoState, demoDone, demoStart, demoFinish, runActive, gateBounce, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repsBeacon, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES };
+  global.Sona = { pcmWave, libraryPreview, previewPlan, setPreviewPlan, gameKey, gameAccess, gameBounce, finishGameTurn, catalogRun, simpleAdventure, MIC_PROMISE, playStyle, pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, TTS_CACHE_VERSION, voiceDiagnostic, voiceStatus, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, saveFor, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, ladderContent, FREE_MODE, isFree, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, adventureGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, activityLibrary, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, premium, caseCovered, caseRefresh, gated, gateVerify, gateOk, requireGate, gateDest, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, planMoment, planEligible, planShown, firstGameKey, firstGameStart, firstGameEnd, speak, speakNow, speakUnlock, speechAvailable, speechPerm, speechStart, speechStop, hearVerdict, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, demoState, demoDone, demoStart, demoFinish, runActive, gateBounce, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repWeeks, repsBeacon, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES };
 })(window);
