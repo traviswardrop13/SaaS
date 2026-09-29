@@ -315,7 +315,10 @@ branch dead code — `for-slps.html` is indexable and linked from the landing
 footer, and `betatest` pins the door OPEN. Since 24 Sep 2026 the channel can
 also pay: the dashboard and the free version stay free, and a clinician who
 wants every game for their families buys Caseload Premium — one yearly price,
-never per family, never to the clinician.
+never per family, never to the clinician. **Parents come first now** (Travis,
+29 Sep 2026: "lose my attachment in stop caring about the SLP stuff, but still
+leave the $5 a day add on"): the SLP ad keeps running and the $80 offer sits in
+plain sight on the dashboard, but the new ads, and the work, go to parents.
 
 **speaksona.com is for parents and caregivers** (Travis, 26 Sep 2026: "change
 it to target parents and caregivers only. not slps"). Its yellow is pale
@@ -384,7 +387,12 @@ who went quiet, what ends soon — one action per row) → Caseload (every child
 oldest-practiced first, **Copy note on every row**) → a child page (8-week
 strip, pass rate by sound and position, the current homework, the composer)
 → Caseload Premium (its own page, 24 Sep 2026: Today keeps exactly its four
-cards, and no price ever appears there; viewing it only reads) → Settings.
+cards, and no price ever appears in them; viewing it only reads) → Settings.
+Since 29 Sep 2026 (Travis: "yes add the $80 button to the first screen") a
+**Get Premium** button with the server's price sits in the top bar of every
+page but the Premium page, because a clinician from the ad lands on Community
+and never saw the price. Only once the plan has answered, never to a covered
+caseload; `slptest` 9b pins it.
 Reviewed by three lenses — a school SLP, a district privacy
 officer, an engineer — whose rulings are now rules:
 - **Register.** "Pass rate" (defined on the page as "did that sound like this
