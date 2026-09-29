@@ -75,6 +75,18 @@
     #revHearts .wdot.on{background:#58cc02;box-shadow:0 3px 0 #46a302;}
     #revHearts .wdot svg{width:20px;height:20px;}
     @media (prefers-reduced-motion: reduce){ #banner.in{animation-name:bannerFade;} #sliceEcho.hop{animation:none;} }
+    /* ── Super Slice: a star for each try while Echo listens, then a golden
+       edge while the power lasts. The board dims while it holds still, so
+       the pause reads as a charge-up, not a freeze. ── */
+    #slowReps{display:flex;justify-content:center;gap:10px;margin-top:8px;}
+    #slowReps[hidden]{display:none;}
+    #slowReps i{width:34px;height:34px;background:rgba(255,248,233,.6);clip-path:polygon(50% 0,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%);}
+    #slowReps i.on{background:#ffd21c;animation:starPop .35s cubic-bezier(.3,1.6,.5,1);}
+    @keyframes starPop{0%{transform:scale(.3)}100%{transform:scale(1)}}
+    body.speech-help-active #app::before{content:"";position:absolute;inset:0;pointer-events:none;z-index:1;background:rgba(40,24,60,.3);}
+    body.speech-help-earned #app::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:2;box-shadow:inset 0 0 0 6px #ffd21c,inset 0 0 70px rgba(255,190,30,.85);animation:superGlow .7s ease-in-out infinite alternate;}
+    @keyframes superGlow{from{opacity:.55}to{opacity:1}}
+    @media (prefers-reduced-motion: reduce){ #slowReps i.on,body.speech-help-earned #app::after{animation:none;} }
   </style>
   <link href="/crafted-games.css" rel="stylesheet">
   <link href="/crafted-slice.css" rel="stylesheet">
@@ -85,7 +97,7 @@
     <canvas id="cv"></canvas>
     <div id="slowControl" hidden>
       <button id="slowKeys" type="button"><img src="/assets/crafted/echo-welcome.webp" alt=""><span id="slowSound">rrrr</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v5a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z"/></svg></button>
-      <p id="slowStatus" role="status">Tap Echo to slow the fruit</p><span class="slowTrack"><i id="slowMeter"></i></span>
+      <p id="slowStatus" role="status">Tap Echo for Super Slice!</p><span id="slowReps" hidden aria-hidden="true"><i></i><i></i><i></i></span><span class="slowTrack"><i id="slowMeter"></i></span>
       <button id="slowCancel" type="button" hidden>Keep playing</button>
     </div>
     <div id="top">
@@ -135,7 +147,11 @@
   </div>
 
   <script src="/sona.js"></script>
-  <script>window.SLOW_HELP={phase:"wave",action:"slow the fruit",earned:"Slow fruit!"};</script>
+  <!-- SUPER SLICE (Travis, 29 Sep 2026: "give them an option to say the sound
+       to slow the game down ... they go into some frenzy mode or easy mode or
+       beast mode when they say their target sounds"). Tap Echo, say the sound
+       up to three times, and every try adds time: 8, 10 or 12 seconds. -->
+  <script>window.SLOW_HELP={phase:"wave",action:"get Super Slice",idle:"Tap Echo for Super Slice!",earned:"SUPER SLICE!",say:"Super Slice! Say it three times.",sayOnce:true,reps:3,earnSfx:"reward",msFor:function(n){return 6000+2000*Math.min(3,n);}};</script>
   <script src="/arcade-speech-help.js"></script>
   <script>
     // Check access before any game resources start. The earned speech token
@@ -259,26 +275,34 @@
     var WELLS=[{e:"🍉"},{e:"🍇"},{e:"🍊"},{e:"🍓"},{e:"🍋"}], firstI=0;
     function standTop(){ return H-SAB-58; }
     function wellX(i){ return W*(0.29+i*0.155); }
-    function toss(){
-      var w=WAVES[wave], help=missRun>=2, n=help?1:Math.min(w.most,1+(Math.random()<0.35?1:0)+(Math.random()<0.3?1:0));
+    // opts.n throws that many at once (Super Slice's burst), opts.goldAt makes
+    // one of them golden. While Super Slice lasts, every toss is two or three.
+    function toss(opts){
+      opts=opts||{};
+      // Super Slice outranks the two-miss help: its fruit are already slow and
+      // its blade wide, and one big fruit at a time would undo the burst.
+      var w=WAVES[wave], help=!opts.n&&!(slowMs>0)&&missRun>=2, n=opts.n||(help?1:slowMs>0?2+(Math.random()<0.5?1:0):Math.min(w.most,1+(Math.random()<0.35?1:0)+(Math.random()<0.3?1:0)));
       for(var i=0;i<n;i++){
         var first=firstI<WELLS.length, well=-1, k=help?0.72:1;   // k<1: a slower fall to the same height
         if(first) well=firstI++;
         else { var full=[]; for(var j=0;j<WELLS.length;j++) if(WELLS[j].e) full.push(j); if(full.length) well=full[(Math.random()*full.length)|0]; }
         var x=well>=0?wellX(well):W*(0.2+Math.random()*0.6), e=well>=0?WELLS[well].e:FRUITS[(Math.random()*FRUITS.length)|0];
         if(well>=0){ WELLS[well].e=null; WELLS[well].back=performance.now()+2400; }
-        fruits.push({ e:e, gold:!first&&!help&&Math.random()<w.gold, x:x, y:well>=0?standTop()+10:H+40, g:G*k,
+        fruits.push({ e:e, gold:opts.goldAt===i||(!first&&!help&&Math.random()<w.gold), x:x, y:well>=0?standTop()+10:H+40, g:G*k,
           vx:(W*0.5-x)*0.0017*Math.sqrt(k)+(Math.random()-0.5)*0.8,
           vy:-(H*(0.015+Math.random()*0.0027))*Math.sqrt(k)*(well>=0?0.94:1),
           r:(32+Math.random()*12)*(help?1.3:1), rot:Math.random()*6, vr:(Math.random()-0.5)*0.08, sliced:false });
       }
     }
     function startWave(i){
-      slowMs=0; $("slowStatus").textContent="Tap Echo to slow the fruit"; wave=i; waveGot=0; waveMs=0; nextToss=900; phase="wave"; missRun=0; hud();
-      banner("Wave "+(i+1),"Slice "+WAVES[i].goal+" fruit!");
+      $("slowStatus").textContent=slowMs>0?SLOW_HELP.earned:slowIdle(); wave=i; waveGot=0; waveMs=0; nextToss=900; phase="wave"; missRun=0; hud();
+      banner("Wave "+(i+1),"Slice "+WAVES[i].goal+" fruit!"); paintSlowKeys();
     }
     function endWave(){
-      phase="break"; hud();
+      // Super Slice time left over waits through the break and carries into
+      // the next wave: the burst alone can finish wave 1, and a child who
+      // earned twelve seconds should get twelve. Only the giant ends it.
+      phase="break"; hud(); paintSlowKeys();
       var last=wave===WAVES.length-1;
       setTimeout(function(){
         if(window.__ended||!playing) return;
@@ -291,6 +315,18 @@
         },1700);
       },900);
     }
+
+    // ── Super Slice: what a heard sound buys (29 Sep 2026) ──
+    // The fruit slow to 55% (slowFactor), the stand throws a burst of five
+    // with one golden, every toss after it is two or three, and the swipe
+    // grows into a wide rainbow blade. It is play: nothing here is practice
+    // data, and a child who never says a word still finishes every wave.
+    SLOW_HELP.onEarn=function(n){
+      if(phase!=="wave"||!playing) return;
+      banner("SUPER SLICE!",n>=3?"Three tries! Slice them all!":"Slice them all!"); echoHop();
+      toss({n:5,goldAt:2}); nextToss=waveMs+WAVES[wave].every*0.45;
+    };
+    function superOn(){ return slowMs>0&&!slowTurn; }
 
     // ── the HUD: this wave's progress, then the giant's five cuts ──
     function hud(){
@@ -419,7 +455,7 @@
           var turn=slowTurn;
           try{turn.native=Promise.resolve(S.speechStart?S.speechStart({words:[SAYTXT],maxMs:6500}):false);}catch(e){turn.native=Promise.resolve(false);}
           turn.native=turn.native.then(function(v){turn.nativeSettled=true;turn.nativeStarted=!!v;return v;},function(){turn.nativeSettled=true;return false;});
-          turn.timer=setTimeout(function(){if(slowTurn===turn)finishSlowKeys(false,"Tap Echo to try again");},6500);
+          turn.timer=setTimeout(function(){if(slowTurn===turn)finishSlowKeys(!!turn.reps,turn.reps?null:"Tap Echo to try again");},6500);
         }
         listenFor(st,gen);
       }).catch(function(){
@@ -460,6 +496,31 @@
       // family check: the burst must SOUND like the target's family (voiced
       // vs hiss) to fire — a scream or an S can't revive an R kid. Shape
       // numbers only; nothing recorded (see Sona.frameShape).
+      // Super Slice counts each try, up to SLOW_HELP.reps (29 Sep 2026). A try
+      // is the card's own burst, six loud frames in a row that pass the family
+      // check, and it ends only after REP_GAP_MS below the bar, so one long
+      // "rrrrrr" is one try, never three. The turn ends at the last try (after
+      // the same 550 ms the one-try turn gives Apple's recognizer), or once a
+      // child who has said it goes quiet for REP_DONE_MS; silence earns nothing.
+      // When the room's level drops (an eager child's own voice set it on the
+      // page's first turn), everything since the last counted try is judged
+      // again against the new bar, as the card judges its last HEARD_MS: a try
+      // said before that breath still counts, and a counted one is never lost.
+      var REP_GAP_MS=160, REP_DONE_MS=1500, REP_NOTE=["Great! Again!","One more!","Got it!"];
+      function countReps(t,thr,now){
+        var c=t.count||(t.count={run:0,shp:null,inside:false,last:0,seen:0,done:0,thr:thr});
+        if(thr<c.thr&&!c.inside){ c.seen=c.done; c.run=0; c.shp=null; }
+        c.thr=thr;
+        for(var j=0;j<heard.length;j++){ var f=heard[j]; if(f.t<=c.seen) continue; c.seen=f.t;
+          if(f.r>thr){ c.last=f.t; if(c.inside) continue;
+            c.run++; if(f.s){ if(!c.shp)c.shp={m:0,fm:0,hm:0}; c.shp.m+=f.s.m; c.shp.fm+=f.s.fm; c.shp.hm+=f.s.hm; }
+            if(c.run>=6){ if(famOK(c.shp)){ c.inside=true; t.reps++; t.heardAt=f.t; listenNote(REP_NOTE[Math.min(t.reps,3)-1]); paintSlowKeys(); } else { c.run=0; c.shp=null; } } }
+          else if(!c.inside){ c.run=0; c.shp=null; }
+          else if(f.t-c.last>=REP_GAP_MS){ c.inside=false; c.run=0; c.shp=null; c.done=f.t; }
+        }
+        if(t.reps>=SLOW_HELP.reps) return now-t.heardAt>=550;
+        return t.reps>0&&!c.inside&&now-c.last>=REP_DONE_MS;
+      }
       function famOK(shp){ if(!shp||!shp.m) return true; var cent=shp.fm/shp.m, high=shp.hm/shp.m, fam=(window.Sona&&Sona.soundFamily)?Sona.soundFamily(SND):"any"; if(fam==="low") return !(cent>1800&&high>0.22); if(fam==="hiss") return !(cent<1100&&high<0.10); return true; }
       (function tick(){
         if(gen!==rv.gen) return;
@@ -480,6 +541,7 @@
         if(rv.floor>=0){
           if(!said){ said=true; listenNote("I'm listening…"); }
           var thr=Math.max(0.05,rv.floor*3.5), voiced=0, shp=null;
+          if(slowTurn&&SLOW_HELP.reps>1){ if(countReps(slowTurn,thr,now)){ closeReviveMic(); doRevive(); return; } rv.raf=requestAnimationFrame(tick); return; }
           for(var j=0;j<heard.length;j++){ var f=heard[j];
             if(f.r>thr){ voiced++;
               if(f.s){ if(!shp)shp={m:0,fm:0,hm:0}; shp.m+=f.s.m; shp.fm+=f.s.fm; shp.hm+=f.s.hm; }
@@ -546,7 +608,7 @@
     function onMove(e){ if(!pDown||!playing)return; var p=pt(e), now=performance.now(); trail.push({x:p.x,y:p.y,t:now});
       var hit=0, gold=0;
       for(var i=0;i<fruits.length;i++){ var f=fruits[i];
-        if(!f.sliced && segHit(lx,ly,p.x,p.y,f.x,f.y,f.r+16)){ f.sliced=true; hit++; combo++;
+        if(!f.sliced && segHit(lx,ly,p.x,p.y,f.x,f.y,f.r+(superOn()?34:16))){ f.sliced=true; hit++; combo++;
           var worth=f.gold?3:1, col=JUICE[f.e]||"#ffd21c"; score+=worth; if(phase==="wave") waveGot+=worth;
           juice(f.x,f.y,col,f.gold?16:10,f.gold); splat(f.x,f.y,f.r,col);
           // Both halves keep the fruit's full painted size and the swipe's cut
@@ -573,7 +635,7 @@
     // is one cut (a swipe back across counts again), five and it bursts. It
     // cannot be missed, so the round always ends on a win.
     function startFinale(){
-      phase="finale";
+      phase="finale"; slowMs=0;
       var R=Math.min(W*0.34,H*0.21);
       giant={x:W/2,y:H+R+30,ty:H*0.42,r:R,cuts:0,t:0,inside:false,lastCut:0,shake:0,gashes:[],hint:performance.now()+4000};
       hud(); banner("Giant watermelon!","Swipe it "+GIANT_CUTS+" times!"); echoHop();
@@ -648,11 +710,11 @@
       // Keep the exact board still while Echo models and listens; no game
       // time, falling object or earned help is spent while the page is hidden.
       if(document.hidden||slowTurn){paintSlowKeys();requestAnimationFrame(draw);return;}
-      if(playing&&phase==="wave"&&slowMs>0){slowMs=Math.max(0,slowMs-dt);if(!slowMs)$("slowStatus").textContent="Tap Echo to slow the fruit";}
+      if(playing&&phase==="wave"&&slowMs>0){slowMs=Math.max(0,slowMs-dt);if(!slowMs)$("slowStatus").textContent=slowIdle();}
       paintSlowKeys();
       if(playing&&phase==="wave"){
         waveMs+=dt*slowFactor();
-        if(waveMs>=nextToss){ toss(); nextToss=waveMs+WAVES[wave].every*(missRun>=2?1.25:1); }
+        if(waveMs>=nextToss){ toss(); nextToss=waveMs+WAVES[wave].every*(slowMs>0?0.45:missRun>=2?1.25:1); }
         if(waveGot>=WAVES[wave].goal||waveMs>=WAVE_CAP_MS) endWave();
       }
       ctx.clearRect(0,0,W,H);
@@ -697,10 +759,11 @@
       if(trail.length>1){
         var pts=trail.filter(function(q){return now-q.t<130;});
         ctx.save(); ctx.lineCap="round"; ctx.lineJoin="round";
+        var sup=superOn();   // Super Slice: a wide rainbow blade
         for(i=1;i<pts.length;i++){
-          var age=Math.max(0,1-(now-pts[i].t)/130), width=1.5+7*i/pts.length;
-          ctx.globalAlpha=age; ctx.strokeStyle="#fff4bf"; ctx.lineWidth=width+3;
-          ctx.shadowColor="rgba(255,214,98,.8)"; ctx.shadowBlur=9;
+          var age=Math.max(0,1-(now-pts[i].t)/130), width=(1.5+7*i/pts.length)*(sup?1.9:1), hue=(now/4+i*28)%360;
+          ctx.globalAlpha=age; ctx.strokeStyle=sup?"hsl("+hue+",95%,62%)":"#fff4bf"; ctx.lineWidth=width+3;
+          ctx.shadowColor=sup?"hsla("+hue+",95%,60%,.9)":"rgba(255,214,98,.8)"; ctx.shadowBlur=sup?16:9;
           ctx.beginPath(); ctx.moveTo(pts[i-1].x,pts[i-1].y); ctx.lineTo(pts[i].x,pts[i].y); ctx.stroke();
           ctx.shadowBlur=0; ctx.strokeStyle="#fffef6"; ctx.lineWidth=width; ctx.stroke();
         }
