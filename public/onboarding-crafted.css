@@ -155,3 +155,17 @@ body[data-setup-screen="sounds"] .ob #leo { width: 48px !important; height: 54px
 body.keyboard-open .ob .step[data-step="name"] .setup-hint { display: none; }
 body.keyboard-open .ob .step[data-step="name"] .setup-label { margin-top: 14px; }
 body.keyboard-open .ob #obAge .sound { min-height: 50px; }
+
+/* Meet Rachel: a credential card, not a question. Echo steps aside so the one
+   face on screen is hers, and the card sits in the middle of the phone. */
+body[data-setup-screen="rachel"] .ob .mascot { display: none; }
+.ob .step[data-step="rachel"].on { margin: auto 0; text-align: center; padding: 28px 22px 26px; }
+.rachel-photo { display: block; width: 168px; height: 168px; margin: 0 auto; border-radius: 50%; object-fit: cover; border: 4px solid #fff; box-shadow: 0 0 0 2px #9fd8d4, 0 10px 24px rgba(74, 44, 20, .14); }
+.rachel-kicker { margin: 22px 0 6px; color: #087d87; font-size: 12px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
+.ob .step[data-step="rachel"] .qh { margin: 0 auto; }
+.ob .step[data-step="rachel"] .qh span { font-family: inherit; white-space: nowrap; }
+@media (max-height: 700px) {
+  .ob .step[data-step="rachel"].on { padding: 20px 16px; }
+  .rachel-photo { width: 136px; height: 136px; }
+  .rachel-kicker { margin-top: 16px; }
+}

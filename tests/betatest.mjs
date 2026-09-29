@@ -99,7 +99,20 @@ for (const [who, seed] of [["a fresh family", () => {}],
 
 // ── the real walk, to finish() ──
 const clickNext = async () => { await page.evaluate(() => (document.querySelector('[data-step="mic"].on') ? document.getElementById("micNotNow") : document.getElementById("nextBtn")).click()); await page.waitForTimeout(250); };
-await clickNext(); // welcome →
+await clickNext(); // welcome → rachel
+// MEET RACHEL (29 Sep 2026): one screen between the welcome and the first
+// question — who made this, before a parent is asked anything. It is a
+// Continue, not a step: no field, no choice, and no progress segment, which
+// is why the three groups above still match the three questions.
+const meet = await page.evaluate(() => {
+  const st = document.querySelector('[data-step="rachel"]');
+  return { step: (document.querySelector(".step.on") || {}).dataset?.step,
+           asks: st ? st.querySelectorAll("input,select,textarea,button,.sound,.choice").length : -1,
+           segHidden: document.getElementById("seg").hidden };
+});
+ok("the screen after the welcome is Rachel's, and it asks nothing",
+  meet.step === "rachel" && meet.asks === 0 && meet.segHidden, JSON.stringify(meet));
+await clickNext(); // rachel → name
 await page.evaluate(() => { document.getElementById("obName").value = "Milo"; });
 await clickNext(); // name →
 if(await page.locator('#obSounds [data-sound="R"]').getAttribute('aria-pressed')!=='true')await page.locator('#obSounds [data-sound="R"]').click();
@@ -175,6 +188,8 @@ ok("onboarding no pageerrors", errs.length === 0);
   });
   ok("the welcome briefly explains setup leads to play", /setup/i.test(seen.howLong) && /play/i.test(seen.howLong) && seen.howLong.trim().split(/\s+/).length <= 10, seen.howLong);
   // Parents now go directly from the child's details to a compact sound grid.
+  // (welcome → Rachel's screen → the child's details: two taps to get there)
+  await pg2.evaluate(() => (document.querySelector('[data-step="mic"].on') ? document.getElementById("micNotNow") : document.getElementById("nextBtn")).click()); await pg2.waitForTimeout(200);
   await pg2.evaluate(() => (document.querySelector('[data-step="mic"].on') ? document.getElementById("micNotNow") : document.getElementById("nextBtn")).click()); await pg2.waitForTimeout(200);
   await pg2.evaluate(() => { document.getElementById("obName").value = "Milo"; (document.querySelector('[data-step="mic"].on') ? document.getElementById("micNotNow") : document.getElementById("nextBtn")).click(); }); await pg2.waitForTimeout(300);
   const grid = await pg2.evaluate(() => ({onSounds:document.querySelector('[data-step="sounds"]').classList.contains('on'),overflow:document.documentElement.scrollWidth>innerWidth,labels:[...document.querySelectorAll('#obSounds .sound')].map(b=>b.textContent.trim())}));
@@ -192,7 +207,8 @@ ok("onboarding no pageerrors", errs.length === 0);
   await pg.goto("http://localhost:8129/onboarding.html"); await pg.waitForTimeout(800);
   await pg.evaluate(() => { localStorage.clear(); sessionStorage.clear(); });
   await pg.goto("http://localhost:8129/onboarding.html"); await pg.waitForTimeout(800);
-  await pg.evaluate(() => (document.querySelector('[data-step="mic"].on') ? document.getElementById("micNotNow") : document.getElementById("nextBtn")).click()); await pg.waitForTimeout(250);
+  await pg.evaluate(() => (document.querySelector('[data-step="mic"].on') ? document.getElementById("micNotNow") : document.getElementById("nextBtn")).click()); await pg.waitForTimeout(250); // welcome → rachel
+  await pg.evaluate(() => (document.querySelector('[data-step="mic"].on') ? document.getElementById("micNotNow") : document.getElementById("nextBtn")).click()); await pg.waitForTimeout(250); // rachel → name
   await pg.evaluate(() => { document.getElementById("obName").value = "Rosie"; });
   await pg.evaluate(() => document.querySelector('#obAge .sound[data-age="6"]').click());
   await pg.evaluate(() => (document.querySelector('[data-step="mic"].on') ? document.getElementById("micNotNow") : document.getElementById("nextBtn")).click()); await pg.waitForTimeout(250);
@@ -210,7 +226,8 @@ ok("onboarding no pageerrors", errs.length === 0);
   // it is a scratchpad, not a profile: finishing must clear it, or a stale
   // draft shadows the real thing on the next visit
   // the reload put them back at the top with their answers intact, so this
-  // walks the whole short flow again: welcome → name → sounds → mic → finish
+  // walks the whole short flow again: welcome → rachel → name → sounds → mic → finish
+  await pg.evaluate(() => (document.querySelector('[data-step="mic"].on') ? document.getElementById("micNotNow") : document.getElementById("nextBtn")).click()); await pg.waitForTimeout(250);
   await pg.evaluate(() => (document.querySelector('[data-step="mic"].on') ? document.getElementById("micNotNow") : document.getElementById("nextBtn")).click()); await pg.waitForTimeout(250);
   await pg.evaluate(() => (document.querySelector('[data-step="mic"].on') ? document.getElementById("micNotNow") : document.getElementById("nextBtn")).click()); await pg.waitForTimeout(250);
   await pg.locator('#obExploreSounds').click();
@@ -245,7 +262,8 @@ ok("onboarding no pageerrors", errs.length === 0);
     !/recommend|we think|based on|diagnos(is|e)\b|assess(ment)?\b/i.test(door.says.replace(/doesn't test or diagnose/, "")),
     door.says.slice(0, 200));
 
-  await pg.evaluate(() => (document.querySelector('[data-step="mic"].on') ? document.getElementById("micNotNow") : document.getElementById("nextBtn")).click()); await pg.waitForTimeout(250);
+  await pg.evaluate(() => (document.querySelector('[data-step="mic"].on') ? document.getElementById("micNotNow") : document.getElementById("nextBtn")).click()); await pg.waitForTimeout(250); // welcome → rachel
+  await pg.evaluate(() => (document.querySelector('[data-step="mic"].on') ? document.getElementById("micNotNow") : document.getElementById("nextBtn")).click()); await pg.waitForTimeout(250); // rachel → name
   await pg.evaluate(() => { document.getElementById("obName").value = "Sam"; });
   await pg.evaluate(() => (document.querySelector('[data-step="mic"].on') ? document.getElementById("micNotNow") : document.getElementById("nextBtn")).click()); await pg.waitForTimeout(250);
   await pg.locator('#obExploreSounds').click();
@@ -273,7 +291,8 @@ await page.goto("http://localhost:8129/onboarding.html"); await page.waitForTime
 const nameStep = await page.evaluate(() => document.querySelector('[data-step="name"]').textContent);
 ok("name question carries justification microcopy", /cheers them on by name|knows who to cheer for/.test(nameStep));
 // This is the parent path, with an optional email after the core setup.
-await clickNext(); // welcome → name
+await clickNext(); // welcome → rachel
+await clickNext(); // rachel → name
 await page.evaluate(() => { document.getElementById("obName").value = "Zoe"; });
 await clickNext(); // name → sounds
 // SOUNDS1: the picker is open for everyone (no SLP code) — choose R and S
@@ -321,7 +340,8 @@ ok("nobody becomes an SLP by accident", skipFin.prof.role !== "slp", JSON.string
 // General play remains a one-tap option on the shared sound-selection screen.
 await page.evaluate(() => { localStorage.clear(); sessionStorage.clear(); });
 await page.goto("http://localhost:8129/onboarding.html"); await page.waitForTimeout(900);
-await clickNext(); // welcome →
+await clickNext(); // welcome → rachel
+await clickNext(); // rachel → name
 await page.evaluate(() => { document.getElementById("obName").value = "Nora"; });
 await clickNext(); // name →
 await page.locator('#obExploreSounds').click();
