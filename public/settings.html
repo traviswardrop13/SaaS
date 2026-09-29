@@ -183,6 +183,12 @@
           <span id="restoreMsg" class="muted" style="font-weight:800;"></span>
         </div>
       </div>
+      <!-- The privacy policy tells a family who said "Yes, share progress" to
+           open the grown-ups' area and choose "Stop sharing…". The control
+           lives on pilot.html, which nothing here linked to — so the promised
+           way out could not be found. Shown only while this child is sharing
+           (Sona.slpSharing(), the same answer the stop card reads). -->
+      <p id="slpShareRow" style="display:none;margin-top:10px;font-weight:800;font-size:14px;">Sharing progress with your speech therapist: <strong>on</strong> · <a href="/pilot.html?stop=1" id="slpStopLink">Stop sharing</a></p>
       <p style="margin-top:10px;font-size:14px;"><a href="/privacy">Privacy</a> · <a href="/terms">Terms</a> · <a href="/support">Support</a></p>
     </div>
 
@@ -625,6 +631,7 @@
       }
     }
     paintAcct();
+    try { if (Sona.slpSharing && Sona.slpSharing()) document.getElementById("slpShareRow").style.display = ""; } catch (e) {}
     document.getElementById("restoreBtn").onclick = async function () {
       var em = document.getElementById("restoreEmail").value, msg = document.getElementById("restoreMsg");
       msg.style.color = "var(--muted)"; msg.textContent = "Checking…";

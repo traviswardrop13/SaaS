@@ -432,8 +432,12 @@ if (A) {
     /t\.cid \? t\.cid === childId : await ticketOwnsChild\(/.test(forget) && /status: 403/.test(forget));
   ok("…performs the same deletion as the clinician's remove, and is rate limited and fails closed",
     /removeChild\(code, childId\)/.test(forget) && /rateLimit\(req, \{ key: "pilotforget", limit: 30/.test(forget) && /status: 503/.test(forget));
+  // "Sharing" is read from sona.js since 29 Sep 2026, so Settings' "on" row
+  // and this card cannot disagree — the consent + child id rule moved there.
+  const sonaSrc = read("public/sona.js");
   ok("pilot.html offers 'Stop sharing with your speech therapist' to a device that is sharing",
-    /Stop sharing with your speech therapist<\/button>/.test(pilotHtml) && /id="stopCard"/.test(pilotHtml) && /pi\.consent&&pi\.childId/.test(pilotHtml));
+    /Stop sharing with your speech therapist<\/button>/.test(pilotHtml) && /id="stopCard"/.test(pilotHtml) && /Sona\.slpSharing\(\)/.test(pilotHtml) &&
+    /function slpSharing\(\) \{[\s\S]{0,120}if \(!pi\.consent \|\| !pi\.childId\) return false;/.test(sonaSrc));
   ok("…with the confirm text agreed with the privacy review, and the two buttons",
     /Their dashboard forgets your child right away: name, age, practice history and homework are deleted, not hidden\. Sona stays free for you, and your child's progress stays on this device\./.test(pilotHtml) &&
     />Stop sharing<\/button>/.test(pilotHtml) && />Keep sharing<\/button>/.test(pilotHtml));

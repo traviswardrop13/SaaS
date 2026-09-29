@@ -14,6 +14,29 @@
       } catch (e) { window.__cred = { code: "", key: "" }; }
     })();
   </script>
+  <script>
+    /* ?stop=1 is the grown-ups' view of this page: only the "Stop sharing with
+       your speech therapist" control, reached from Settings. Parent gate
+       checked before anything paints, so without sona.js it fails CLOSED —
+       the same key + TTL as Sona.requireGate() (sona.gate.v1, 10 min), which
+       re-checks on load. The enrolment form without ?stop=1 stays open: it is
+       where clinicians' older pilot.html?code=…&k=… links land, and a bounce
+       would lose the key. */
+    (function () {
+      if (!/[?&]stop=1(&|$)/.test(location.search)) return;
+      try { document.documentElement.className += " stop"; } catch (e) {}
+      var ok = false;
+      try {
+        var t = parseInt(sessionStorage.getItem("sona.gate.v1"), 10);
+        var age = Date.now() - t;
+        ok = !!t && age >= 0 && age < 10 * 60 * 1000;
+      } catch (e) { ok = false; }
+      if (!ok) {
+        try { document.documentElement.style.visibility = "hidden"; } catch (e) {}
+        location.replace("/today.html?gate=1&to=" + encodeURIComponent("/pilot.html?stop=1"));
+      }
+    })();
+  </script>
   <title>Sona — Pilot</title>
   <link href="/fonts.css" rel="stylesheet">
   <link rel="manifest" href="/manifest.webmanifest" />
@@ -48,11 +71,17 @@
     .btn:disabled{opacity:.5;}
     .err{color:#e0457b;font-weight:800;font-size:13px;margin-top:10px;min-height:18px;text-align:center;}
     .note{color:var(--muted);font-weight:700;font-size:11.5px;text-align:center;margin-top:12px;line-height:1.45;}
+    /* the stop view: a grown-up who came to stop sharing is not shown a
+       welcome and a sign-up form above the one thing they came for */
+    #stopBack{display:none;margin-top:14px;font-weight:800;font-size:14px;color:var(--blue-d);text-decoration:none;}
+    html.stop .hero, html.stop #enrolCard{display:none;}
+    html.stop #stopBack{display:inline-block;}
   </style>
 </head>
 <body>
   <div id="app">
     <div class="brand"><img src="/coach/echo/echo-avatar.svg" alt="Sona"/> Sona</div>
+    <a id="stopBack" href="/settings.html">‹ Back to Settings</a>
 
     <div class="hero">
       <img class="leo" src="/coach/echo/echo-idle.svg" alt="Echo" onerror="this.style.display='none';" />
@@ -64,7 +93,7 @@
       <span class="slptag">✓ Built with a licensed SLP</span>
     </div>
 
-    <div class="card">
+    <div class="card" id="enrolCard">
       <label class="fl" for="cName">Child's first name</label>
       <input id="cName" type="text" placeholder="e.g. Mia" />
 
@@ -153,15 +182,28 @@
     if($("cCode")&&CRED.code) $("cCode").value=CRED.code;
     if($("cKey")&&CRED.key) $("cKey").value=CRED.key;
 
-    // Stop sharing: only offered on a device that is sharing right now. The
-    // request carries the enrolment ticket (the proof this device wrote the
-    // row), the device's own opaque child id and the clinic code — nothing
-    // typed here. On success the choice is recorded on the profile; the
-    // server has already deleted the row and marked the child gone.
+    // Stop sharing: only offered on a device that is sharing right now, and
+    // only to a grown-up — ?stop=1 re-checks the gate the head guard already
+    // passed, and without it the card needs a fresh pass too, so a child who
+    // wanders onto the enrolment form never meets a delete. Sona.slpSharing()
+    // is the same answer Settings' "Sharing … on" row reads. The request
+    // carries the enrolment ticket (the proof this device wrote the row), the
+    // device's own opaque child id and the clinic code — nothing typed here.
+    // On success the choice is recorded on the profile; the server has
+    // already deleted the row and marked the child gone.
+    var STOP=/[?&]stop=1(&|$)/.test(location.search);
+    if(STOP&&window.Sona&&Sona.requireGate){
+      Sona.requireGate();
+      // a back-swipe can restore this from the bfcache without re-running it
+      window.addEventListener("pageshow",function(e){ if(e.persisted&&window.Sona&&Sona.requireGate) Sona.requireGate(); });
+    }
     (function(){
-      var sharing=false, pi={};
-      try{ pi=(window.Sona&&Sona.pilotInfo&&Sona.pilotInfo())||{}; sharing=!!(pi.consent&&pi.childId)&&(Sona.getProfile().slpShare!==false); }catch(e){}
-      if(!sharing||!$("stopCard")) return;
+      var sharing=false, grown=false, pi={};
+      try{ pi=(window.Sona&&Sona.pilotInfo&&Sona.pilotInfo())||{}; sharing=!!(Sona.slpSharing&&Sona.slpSharing()); grown=!!(Sona.gateOk&&Sona.gateOk()); }catch(e){}
+      // nothing to stop (already stopped, or never shared): the stop view has
+      // nothing else on it, so hand the grown-up back to Settings
+      if(STOP&&grown&&!sharing){ location.replace("/settings.html"); return; }
+      if(!sharing||!grown||!$("stopCard")) return;
       $("stopCard").style.display="block";
       $("stopOpen").onclick=function(){ $("stopOpen").style.display="none"; $("stopConfirm").style.display="block"; };
       $("stopNo").onclick=function(){ $("stopConfirm").style.display="none"; $("stopOpen").style.display="block"; };
