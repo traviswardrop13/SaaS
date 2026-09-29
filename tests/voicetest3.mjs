@@ -71,13 +71,18 @@ const noSustained = (name, s) => {
 // ---- E2E round 1: isolation — human clip 404s → TTS gets the clean line ----
 await page.goto("http://localhost:8123/charge.html?sound=R&game=arcade-slice.html");
 await page.waitForTimeout(2500);
-// Isolation now plays the HUMAN model clip (/coach/say-echo/R.mp3) — the real
-// sound, which TTS can't perform. So round 1 posts NO TTS prompt; if the
-// headless env can't decode the mp3, the exact TTS fallback line is the
-// only acceptable substitute (and noSustained still guards every post).
+// 29 Sep 2026 — ECHO'S WORDS, RACHEL'S SOUND. Isolation asks the voice for
+// the WORDS around the sound, "Ready? Pull your tongue back and up, and make
+// your" and "sound, five times.", and Rachel's one recorded R
+// (/coach/say-echo/R-sound.wav) takes the letter's place — the real sound,
+// which TTS can't perform, so no post ever carries it (noSustained guards
+// every post). This server refuses TTS, so the page then falls back to the
+// exact calm whole line: the only other prompt it may post.
 // CITY1: the house's story beat is spoken FIRST now, so the prompt is not
 // necessarily post 0 — pick the prompt out by its shape, same as sylLine below.
-const r1prompt = ttsPosts.filter((l) => /^Ready\?/.test(l))[0];
+const r1halves = ttsPosts.includes("Ready? Pull your tongue back and up, and make your") && ttsPosts.includes("sound, five times.");
+ok("E2E r1 asks the voice for the words around the sound, never the sound", r1halves, true);
+const r1prompt = ttsPosts.filter((l) => /^Ready\?/.test(l) && !/make your$/.test(l))[0];
 // CALM PROMPT (24 Sep 2026, rewritten deliberately): was "...five times...
 // Go!". The voice reads "… Go!" as a jump in pitch and energy. Rewritten
 // again the same day: no spoken "Your turn." — it was said into a closed mic,
@@ -86,7 +91,7 @@ const r1prompt = ttsPosts.filter((l) => /^Ready\?/.test(l))[0];
 // unchanged (Rachel's calls).
 const r1ok = !r1prompt || r1prompt === "Ready? Pull your tongue back and up, and make your R sound, five times.";
 if (!r1ok) fails++;
-console.log((r1ok ? "PASS" : "FAIL") + "  E2E r1 human clip replaces TTS (or exact fallback)  → " + JSON.stringify(r1prompt || "(no TTS prompt — clip played)"));
+console.log((r1ok ? "PASS" : "FAIL") + "  E2E r1 whole-line fallback is the exact calm line  → " + JSON.stringify(r1prompt || "(no whole-line post — the joined line played)"));
 if (!r1ok) fails++;
 // The clip switch is Sona.humanClipsOn() (sona.js), never a local true: the
 // page's own default is false and only the shared switch turns it on. Since
