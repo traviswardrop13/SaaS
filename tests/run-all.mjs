@@ -56,6 +56,8 @@ const SUITES = [
   "micquietgamestest.mjs", // the eight games never play a sound into a live mic; STAR MODE is gone
   "slicetest.mjs", // SLICE2: Fruit Slice is a round: three waves, the say-it card between them, a giant watermelon win
   "stacktest.mjs", // STACK2: Block Stacker is a round: three floors on the practice page's five, a rocket to the moon
+  "arcadespeechhelptest.mjs", // spoken help changes live game motion and preserves quiet, local microphones
+  "tilesspeechtest.mjs", // a spoken sound earns temporary slower keys; quiet mic and native verdict
   "tilestest.mjs", // TILES2: Piano Tiles is a round: three songs a child knows, the same speed on every screen, a finale that waits
   "runtest.mjs", // RUN2: Sound Sprint is a race: park, beach, forest, a checkpoint card between, a finish line that always wins
   "glidetest.mjs", // GLIDE2: Flappy Glide is a flight: three legs, a cloud rest card between, a fireworks landing; the balloon floats
@@ -67,6 +69,7 @@ const SUITES = [
   "slpcommunitytest.mjs", // shared conversations, draft recovery and mobile layout
   "slpfeedbacktest.mjs", // authenticated feedback and call requests; confirmed receipt only
   "slpdesigntest.mjs", // SLP workspace: filters, failure recovery, bulk assignments, mobile layout
+  "craftedarttest.mjs", // every Feed word has loadable, usable illustrated artwork
   "arttest.mjs",   // ART1: every sticker renders, fits its box and stays in the safe band
 ];
 

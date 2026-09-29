@@ -4,13 +4,13 @@
 // game's sky, with the scene building one piece per successful say and the
 // unearned pieces showing as white dashed ghosts. Most of that already shipped
 // — this suite pins the parts that are easy to lose in a refactor: the sky
-// tokens themselves, the ticket pill staying in step with the scene, the ghost
+// illustrations themselves, the ticket pill staying in step with the scene, the ghost
 // treatment, and the copy rule that the word "charge" never reaches a child.
 import { createServer } from "http";
 import { readFileSync, existsSync, readdirSync } from "fs";
 import { chromium, ROOT, launchOpts } from "./_env.mjs";
 
-const MIME = { html: "text/html", js: "text/javascript", svg: "image/svg+xml", css: "text/css", woff2: "font/woff2", png: "image/png" };
+const MIME = { html: "text/html", js: "text/javascript", svg: "image/svg+xml", css: "text/css", woff2: "font/woff2", png: "image/png", webp: "image/webp" };
 const srv = createServer((req, res) => {
   const u = new URL(req.url, "http://x");
   if (u.pathname.startsWith("/api/")) { res.writeHead(200, { "content-type": "application/json" }); res.end("{}"); return; }
@@ -25,14 +25,14 @@ const browser = await chromium.launch(launchOpts());
 let fails = 0;
 const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL ") + n + (p ? "" : "  → " + (extra || ""))); };
 
-// The design's sky tokens, verbatim. A loading scene that does not open on its
-// own game's sky is the thing section 3 exists to prevent.
+// Each game has its own illustrated world. A missing asset or a scene assigned
+// to the wrong game must fail even if a fallback background still looks fine.
 const SKIES = [
-  ["arcade-slice.html", "FRUIT SLICE", ["143, 208, 245", "255, 138, 90"]],   // sunset
-  ["arcade-run.html", "SOUND SPRINT", ["174, 230, 255"]],                     // morning
-  ["arcade-stack.html", "BLOCK STACKER", ["43, 46, 107", "225, 122, 164"]],   // dusk
-  ["arcade-tiles.html", "PIANO TILES", ["35, 26, 77", "84, 64, 158"]],        // night
-  ["arcade-glide.html", "FLAPPY GLIDE", ["63, 116, 171", "255, 231, 196"]],   // golden hour
+  ["arcade-slice.html", "FRUIT SLICE", "orchard-game.webp"],
+  ["arcade-run.html", "SOUND SPRINT", "sprint-lane.webp"],
+  ["arcade-stack.html", "BLOCK STACKER", "moon-village.webp"],
+  ["arcade-tiles.html", "PIANO TILES", "piano-stage.webp"],
+  ["arcade-glide.html", "FLAPPY GLIDE", "glide-countryside.webp"],
 ];
 
 async function scene(game, fill) {
@@ -75,14 +75,22 @@ async function scene(game, fill) {
 }
 
 // ── 1. every game opens on its own sky, with its own title ──
-for (const [game, title, rgbs] of SKIES) {
+for (const [game, title, art] of SKIES) {
+  const expected = "/assets/crafted/" + art;
+  ok(`${title} has its illustrated scene asset`, existsSync(ROOT + expected), expected);
   const { ctx, pg } = await scene(game);
-  const st = await pg.evaluate(() => ({
-    sky: getComputedStyle(document.body).backgroundImage,
-    title: (document.getElementById("gameTitle") || {}).textContent || "",
-    cream: getComputedStyle(document.body).backgroundColor,
-  }));
-  ok(`${title} opens on its own sky`, rgbs.every((c) => st.sky.includes(c)), st.sky.slice(0, 90));
+  const st = await pg.evaluate(async () => {
+    const sky = getComputedStyle(document.getElementById("app")).backgroundImage;
+    const sources = [...sky.matchAll(/url\(["']?([^"')]+)["']?\)/g)].map(m => m[1]);
+    const decoded = await Promise.all(sources.map(async source => {
+      const image = new Image(); image.src = source;
+      try { await image.decode(); } catch {}
+      return {path:new URL(source, location.href).pathname, loaded:image.complete && image.naturalWidth > 0 && image.naturalHeight > 0};
+    }));
+    return {sky, decoded, title:(document.getElementById("gameTitle") || {}).textContent || ""};
+  });
+  ok(`${title} opens on its own illustrated scene`, st.decoded.length === 1 && st.decoded[0].path === expected, st.sky);
+  ok(`…and its scene image decodes`, st.decoded.length === 1 && st.decoded[0].loaded, JSON.stringify(st.decoded));
   ok(`…titled ${title}`, st.title.trim() === title, st.title);
   await ctx.close();
 }
@@ -158,12 +166,11 @@ for (const [game, title, rgbs] of SKIES) {
   ok("no child-facing copy says charge or points", bad.length === 0, bad.join(" | "));
 }
 
-// ── 5. one action colour ──
-// The Aug 10 review: "the home CTA is brand orange; the story's Next and the
-// mic primer's button are Duolingo green" — palette discipline is the top
-// premium signal, and a borrowed accent is a cheap tell. Orange is ours.
-// Greens that are NOT actions stay: --good, the call-answer button (the
-// universal answer affordance), status dots, the founding-timeline dot.
+// ── 5. intentional action colours ──
+// The crafted game screens use teal actions. The untouched book reader keeps
+// its existing orange buttons. Borrowed neon green is still not an action colour.
+// Status greens and the universal call-answer affordance stay exempt.
+
 {
   const GREEN = /#58cc02|#46a302|#6edd18|#6fd60e|#5fd216|#3c8c02/i;
   const KID = ["today.html", "activities.html", "charge.html", "story.html", "chapter.html", "check.html", "join.html",
@@ -185,14 +192,14 @@ for (const [game, title, rgbs] of SKIES) {
   }
   ok("no kid-facing action button is Duolingo green", bad.length === 0, bad.join(" | "));
 
-  // and the buttons a child actually taps are the brand orange, in the browser
+  // Verify the actual crafted primer, then retain the book reader checks.
   const ORANGE = /255, ?138, ?61|255, ?160, ?90/;
   const { ctx, pg } = await scene("arcade-slice.html");
   const primer = await pg.evaluate(() => {
     const b = document.getElementById("micPrimeBtn");
     return b ? getComputedStyle(b).backgroundImage : "";
   });
-  ok("the mic primer's button is brand orange", ORANGE.test(primer), primer.slice(0, 70));
+  ok("the mic primer's button uses the crafted teal action", primer.includes("rgb(25, 182, 187)") && primer.includes("rgb(7, 142, 157)"), primer);
   await ctx.close();
 
   const c2 = await browser.newContext();

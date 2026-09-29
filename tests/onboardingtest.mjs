@@ -27,8 +27,16 @@ function edges(config){
   if(!localStorage.getItem('sona.test.setupseed')){localStorage.setItem('sona.test.setupseed','1');localStorage.setItem('sona.profile.v1',JSON.stringify({voiceOn:true,soundOn:false,volume:0.7}));}
 }
 async function fresh(config={}){
-  const context=await browser.newContext({viewport:{width:320,height:568},reducedMotion:'reduce'});await context.addInitScript(edges,config);
-  await context.route('**/*',route=>route.request().url().startsWith(base+'/')?route.continue():route.abort());
+  const context=await browser.newContext({viewport:config.viewport||{width:320,height:568},reducedMotion:'reduce'});await context.addInitScript(edges,config);
+  await context.route('**/*',route=>{
+    const url=new URL(route.request().url());if(!url.href.startsWith(base+'/'))return route.abort();
+    // Desktop Chromium has zero safe-area insets. Substitute the device's
+    // actual inset values so footer collisions are exercised, not hidden.
+    if(config.safeArea&&/\.(html|css)$/.test(url.pathname)){
+      const file=path.join(root,url.pathname);if(existsSync(file))return route.fulfill({contentType:url.pathname.endsWith('.css')?'text/css':'text/html',body:readFileSync(file,'utf8').replace(/env\(safe-area-inset-top\)/g,config.safeArea.top+'px').replace(/env\(safe-area-inset-bottom\)/g,config.safeArea.bottom+'px')});
+    }
+    return route.continue();
+  });
   // Follow the real handoff URL without starting a second test's game/mic.
   await context.route('**/charge.html?**',route=>route.fulfill({status:200,contentType:'text/html',body:'<p>Practice destination</p>'}));
   await context.route('**/today.html',route=>route.fulfill({status:200,contentType:'text/html',body:'<p>Home destination</p>'}));
@@ -129,6 +137,19 @@ await scenario('Done closes typing without accepting setup choices',async()=>{
  }finally{await context.close();}
 });
 
+// Freeze the step-entry clock so a quick Done press happens before any delayed
+// autofocus. A stale timer must not reopen the keyboard after it was dismissed.
+await scenario('quick Done does not reopen the name keyboard',async()=>{
+ const {context,page,errors}=await fresh({native:true,keyboardPlatform:'ios'});try{
+  await page.clock.install({time:new Date('2026-09-28T00:00:00Z')});
+  await page.clock.pauseAt(new Date('2026-09-28T00:00:01Z'));
+  await next(page);await page.locator('#obName').fill('Milo');await page.locator('#obName').press('Enter');
+  await page.clock.fastForward(200);
+  ok('Done stays dismissed after the step-entry focus window',await page.evaluate(()=>document.activeElement.id!=='obName'&&document.body.dataset.setupScreen==='name'));
+  clean('quick Done',errors);
+ }finally{await context.close();}
+});
+
 // These tests check the native bridge contract, not a simulated iOS keyboard.
 await scenario('native iPhone keyboard integration and safe fallbacks',async()=>{
  for(const config of [{native:true,keyboardPlatform:'ios'},{native:true,keyboardPlatform:'android'},{keyboardPlatform:'web'},{native:true,keyboardPlatform:'ios',keyboardMissing:true}]){
@@ -198,6 +219,25 @@ await scenario('move-in code sheet',async()=>{
   }
   ok('code entry only retrieves an explicitly entered backup',pairPosts(requests).length===0);
   clean('code sheet',errors);
+ }finally{await context.close();}
+});
+await scenario('sound picker fits iPhone safe areas',async()=>{
+ for(const device of [{viewport:{width:393,height:852},safeArea:{top:59,bottom:34}},{viewport:{width:375,height:812},safeArea:{top:50,bottom:34}},{viewport:{width:375,height:667},safeArea:{top:20,bottom:0}}]){
+  const {context,page,errors}=await fresh({...device,native:true});try{
+   await enter(page);await page.evaluate(()=>document.fonts.ready);await page.locator('.step.on').evaluate(el=>el.getAnimations({subtree:true}).forEach(a=>a.finish()));
+   await page.waitForTimeout(600); // Wait for the shared step/header transition to settle.
+   const fit=await page.evaluate(()=>{const ob=document.querySelector('.ob'),card=document.querySelector('[data-step="sounds"]'),button=document.querySelector('#nextBtn');return {scrollHeight:ob.scrollHeight,height:ob.clientHeight,cardBottom:card.getBoundingClientRect().bottom,buttonTop:button.getBoundingClientRect().top};});
+   ok('all sound choices fit above Continue with safe areas at '+device.viewport.width+'×'+device.viewport.height,fit.scrollHeight<=fit.height+1&&fit.cardBottom+12<=fit.buttonTop,fit);
+   clean('safe-area sound picker',errors);
+  }finally{await context.close();}
+ }
+});
+await scenario('name and age remain visible above the iPhone keyboard',async()=>{
+ const {context,page,errors}=await fresh({native:true,keyboardPlatform:'ios',viewport:{width:393,height:852},safeArea:{top:59,bottom:34}});try{
+  await next(page);await page.locator('#obName').fill('Milo');await page.setViewportSize({width:393,height:430});await page.evaluate(()=>__setup.keyboardListeners.keyboardWillShow({keyboardHeight:422}));await page.waitForTimeout(600);
+  const layout=await page.evaluate(()=>{const b=document.querySelector('#nextBtn').getBoundingClientRect(),n=document.querySelector('#obName').getBoundingClientRect(),a=document.querySelector('#obAge').getBoundingClientRect();return {buttonTop:b.top,nameTop:n.top,nameBottom:n.bottom,ageBottom:a.bottom};});
+  ok('typing keeps the name field and age choices clear of Continue',layout.nameTop>=59&&layout.nameBottom<layout.buttonTop&&layout.ageBottom+8<=layout.buttonTop,layout);
+  clean('name keyboard fit',errors);
  }finally{await context.close();}
 });
 await scenario('phone fit and optional email close',async()=>{

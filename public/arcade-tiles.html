@@ -69,8 +69,10 @@
     #revHearts .wdot svg{width:20px;height:20px;}
     @media (prefers-reduced-motion: reduce){ #banner.in{animation-name:bannerFade;} }
   </style>
+  <link href="/crafted-games.css" rel="stylesheet">
+  <link href="/crafted-tiles.css" rel="stylesheet">
 </head>
-<body>
+<body data-crafted="tiles">
   <div id="app">
     <canvas id="cv"></canvas>
     <div id="top">
@@ -79,13 +81,18 @@
       <div id="hudspacer"></div>
       <div id="timer" class="hudpill"></div>
     </div>
+    <div id="slowControl" hidden>
+      <button id="slowKeys" type="button"><img src="/assets/crafted/echo-welcome.webp" alt=""><span id="slowSound">rrrr</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v5a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z"/></svg></button>
+      <p id="slowStatus" role="status">Tap Echo to slow the keys</p><span class="slowTrack"><i id="slowMeter"></i></span>
+      <button id="slowCancel" type="button" hidden>Keep playing</button>
+    </div>
     <div id="flash"></div>
     <div id="banner" aria-live="polite"><div class="pill"><b id="bnBig"></b><span id="bnSmall"></span></div></div>
   </div>
 
   <div class="ovl" id="needOvl">
     <div class="ovlCard">
-      <img class="ovlEcho" src="/coach/echo/echo-star.svg" alt="" />
+      <img class="ovlEcho" src="/assets/crafted/echo-welcome.webp" alt="" />
       <h2 id="needTitle">This game needs a ticket!</h2>
       <p>Say your sound 5 times to fill it up</p>
       <button class="btn" id="goCharge"><svg viewBox="0 0 64 64" style="width:18px;height:18px;vertical-align:-3px"><path d="M36 4 14 36h13l-5 24 24-34H33Z" fill="#ffd21c" stroke="#f0a800" stroke-width="2.5" stroke-linejoin="round"/><circle cx="30" cy="15" r="2.5" fill="#fff" opacity=".9"/></svg> Fill my ticket!</button>
@@ -95,7 +102,7 @@
 
   <div class="ovl" id="revOvl">
     <div class="ovlCard">
-      <img class="ovlEcho" src="/coach/echo/echo-listening.svg" alt="" />
+      <img class="ovlEcho" src="/assets/crafted/echo-welcome.webp" alt="" />
       <h2 id="revTitle">Say it!</h2>
       <p id="revHearts" style="font-size:26px;"></p>
       <div style="width:56px;height:56px;border-radius:50%;background:linear-gradient(180deg,#ffa05a,#ff8a3d);box-shadow:0 4px 0 #ef6f23,0 0 0 10px rgba(255,138,61,.14);display:flex;align-items:center;justify-content:center;margin:2px 0;"><svg viewBox="0 0 24 24" style="width:24px;height:24px;fill:#fff"><path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v5a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z"/></svg></div>
@@ -109,7 +116,7 @@
       <div class="big endStar" id="endEmoji"><svg viewBox="0 0 64 64" style="width:56px;height:56px"><path d="M32 5l8.2 18.6L60 25.8 44.9 39.2 49.8 59 32 48.4 14.2 59l4.9-19.8L4 25.8l19.8-2.2Z" fill="#ffd21c"/><circle cx="25" cy="21" r="3" fill="#fff" opacity=".85"/></svg></div>
       <h2 id="endTitle">Great round!</h2>
       <p id="endSub"></p>
-      <div class="echoWin"><img src="/coach/echo/echo-celebrate.svg" alt="" /></div>
+      <div class="echoWin"><img src="/assets/crafted/echo-welcome.webp" alt="" /></div>
       <button class="btn blue" id="endCharge">WOOHOO! Next →</button>
       <button class="btn" id="endAgain" style="display:none;"></button>
       <button class="btn ghost" id="endHome">Back home</button>
@@ -149,7 +156,7 @@
     var SETTLE_MS=200, QUIET_MS=900, quietUntil=0, micClosedAt=-1e9;
     var rv={st:null,pending:0,gen:0,raf:0,t:0,ctx:null,src:null,floor:-1};   // floor: the room's quiet level, measured once per page (see listenFor)
     function sfx(n){
-      if(rv.st) return;
+      if(rv.st||slowTurn) return;
       if(rv.pending){ setTimeout(function(){ sfx(n); },60); return; }
       var wait=micClosedAt+SETTLE_MS-performance.now();
       if(wait>0){ quietUntil=Math.max(quietUntil,performance.now()+wait+QUIET_MS); setTimeout(function(){ sfx(n); },wait); return; }
@@ -181,7 +188,7 @@
     function tone(f,dur,gain){
       // the same guard as sfx(): never over the keep-playing mic, never under
       // the phone's switch back from it (a dropped note there is one tap)
-      if(rv.st||rv.pending||performance.now()<micClosedAt+SETTLE_MS) return;
+      if(slowTurn||rv.st||rv.pending||performance.now()<micClosedAt+SETTLE_MS) return;
       var v=noteVol(); if(!v) return;
       try{
         if(!actx){var AC=window.AudioContext||window.webkitAudioContext;actx=new AC();}
@@ -224,7 +231,7 @@
     var HITY=function(){ return H-140; };   // the top of the keys
     function songNotes(i){ return SONGS[i].notes.replace(/ /g,""); }
     // pixels a second, so a tile takes the song's fall time on every screen
-    function speedPx(){ return (HITY()+90)/(SONGS[song].fall*(missRun>=2?1.3:1)); }
+    function speedPx(){ return (HITY()+90)/(SONGS[song].fall*(missRun>=2?1.3:1))*slowFactor(); }
     function spawn(){
       var s=SONGS[song], ch=songNotes(song).charAt(songIx++);
       tiles.push({lane:LANE_OF[ch],y:-90,h:88,hit:false,gone:false,note:HZ[ch],
@@ -232,7 +239,7 @@
       if(waitLeft>0) waitLeft--;
     }
     function startSong(i){
-      song=i; songIx=0; songMs=0; nextAt=900; phase="song"; missRun=0; hud();
+      slowMs=0; $("slowStatus").textContent="Tap Echo to slow the keys"; song=i; songIx=0; songMs=0; nextAt=900; phase="song"; missRun=0; hud();
       banner(SONGS[i].finale?"Grand finale!":"Song "+(i+1), SONGS[i].name);
     }
     function endSong(){
@@ -276,6 +283,7 @@
     // the quiet-mic suites open the card through it.
     function crash(){ sayCard(); }
     function doRevive(){
+      if(slowTurn){finishSlowKeys(true);return;}
       reviveWait=false; REV--; hud();
       $("revOvl").classList.remove("show");
       // the mic has just closed: sfx() holds this chime SETTLE_MS
@@ -285,7 +293,7 @@
     }
     $("revDone").onclick=function(){ closeReviveMic(); reviveWait=false; $("revOvl").classList.remove("show"); endRound(); };
 
-    var LCOL=["#ff6b8a","#4dabf7","#69db7c","#ffd43b"];
+    var LCOL=["#ee786b","#b48bdd","#91bd65","#efbe47"];
 
     // ---- input: tap a lane when a tile is over the keys ----
     function laneAt(x){ return Math.max(0,Math.min(LANES-1,(x/(W/LANES))|0)); }
@@ -312,39 +320,84 @@
     });
 
     // ---- draw ----
-    var ECHO=new Image(); ECHO.src="/coach/echo/echo-celebrate.svg";
+    var WOOD=new Image(), paintCache={}; WOOD.src="/assets/crafted/painted-wood-ivory.webp";
+    // Cache each tinted material once; the live tiles keep their original
+    // geometry and song timing while moving actual painted wood across it.
+    function paintedMaterial(col){
+      if(!WOOD.complete||!WOOD.naturalWidth) return null;
+      if(paintCache[col]) return paintCache[col];
+      var c=document.createElement("canvas"); c.width=256; c.height=256;
+      var g=c.getContext("2d"); g.drawImage(WOOD,0,0,256,256);
+      g.globalCompositeOperation="multiply"; g.fillStyle=col; g.fillRect(0,0,256,256);
+      paintCache[col]=c; return c;
+    }
+    function paintedFace(x,y,w,h,r,col,depth,edge){
+      if(w<=0||h<=0)return;
+      ctx.save(); ctx.shadowColor="rgba(16,8,30,.35)"; ctx.shadowBlur=6; ctx.shadowOffsetY=4;
+      ctx.fillStyle=edge||"#55364f"; rr(x,y+depth,w,h,r); ctx.fill();
+      ctx.shadowColor="transparent"; ctx.shadowBlur=0; ctx.shadowOffsetY=0;
+      ctx.fillStyle=col; rr(x,y,w,h,r); ctx.fill();
+      ctx.save(); rr(x,y,w,h,r); ctx.clip();
+      var material=paintedMaterial(col); if(material)ctx.drawImage(material,x,y,w,h);
+      var shade=ctx.createLinearGradient(x,y,x+w,y+h); shade.addColorStop(0,"rgba(255,255,231,.20)"); shade.addColorStop(.65,"rgba(255,255,255,0)"); shade.addColorStop(1,"rgba(56,25,45,.14)");
+      ctx.fillStyle=shade; ctx.fillRect(x,y,w,h); ctx.restore();
+      if(h>8){ctx.lineWidth=1.4;ctx.strokeStyle="rgba(255,252,227,.72)";rr(x+2,y+2,w-4,h-4,Math.max(2,r-2));ctx.stroke();}
+      ctx.restore();
+    }
+    function musicMark(x,y,size,col,pair){
+      ctx.save();ctx.translate(x,y);ctx.scale(size/64,size/64);ctx.fillStyle=col;
+      if(pair){
+        ctx.beginPath();ctx.ellipse(-16,18,11,8,-.35,0,7);ctx.ellipse(12,11,11,8,-.35,0,7);ctx.fill();
+        ctx.fillRect(-9,-21,6,39);ctx.fillRect(19,-28,6,39);
+        ctx.beginPath();ctx.moveTo(-9,-23);ctx.lineTo(25,-31);ctx.lineTo(25,-19);ctx.lineTo(-9,-11);ctx.closePath();ctx.fill();
+      }else{
+        ctx.beginPath();ctx.ellipse(-9,20,12,9,-.35,0,7);ctx.fill();ctx.fillRect(-2,-29,6,49);
+        ctx.beginPath();ctx.moveTo(2,-29);ctx.bezierCurveTo(29,-21,24,-4,13,2);ctx.bezierCurveTo(21,-13,13,-16,2,-16);ctx.closePath();ctx.fill();
+      }
+      ctx.restore();
+    }
+    function keyHalo(x,y,w,amount,now){
+      ctx.save();ctx.globalAlpha=amount;
+      var light=ctx.createRadialGradient(x,y,2,x,y,w*.72);light.addColorStop(0,"rgba(255,244,176,.9)");light.addColorStop(.5,"rgba(255,205,77,.3)");light.addColorStop(1,"rgba(255,211,78,0)");
+      ctx.fillStyle=light;ctx.fillRect(x-w,y-w,w*2,w*2);
+      ctx.strokeStyle="#ffeba0";ctx.lineWidth=2.5;ctx.shadowColor="#ffc847";ctx.shadowBlur=8;
+      ctx.beginPath();ctx.ellipse(x,y,w*.45,9+3*Math.sin(now/200),0,0,7);ctx.stroke();ctx.restore();
+    }
     var lastT=performance.now();
     function draw(){
       var now=performance.now(), dt=Math.min(100,now-lastT), i, l; lastT=now;
+      if(document.hidden)dt=0;
+      if(playing&&slowMs>0){slowMs=Math.max(0,slowMs-dt);if(!slowMs)$("slowStatus").textContent="Tap Echo to slow the keys";}
+      paintSlowKeys();
       // the song: its next tile on the beat, and none while a tile waits
       if(playing&&phase==="song"){
         var notes=songNotes(song), waiting=tiles.some(function(t){ return t.wait&&!t.hit&&!t.gone; });
-        if(!waiting) songMs+=dt;
+        if(!waiting) songMs+=dt*slowFactor();
         if(songIx<notes.length&&songMs>=nextAt&&!waiting){ spawn(); nextAt=songMs+SONGS[song].beat*(missRun>=2?1.3:1); }
         if(songIx>=notes.length&&!tiles.some(function(t){ return !t.hit&&!t.gone; })) endSong();
       }
       ctx.clearRect(0,0,W,H);
-      // concert spotlight (design 4: Piano Tiles)
-      var sp=ctx.createRadialGradient(W/2,0,10,W/2,0,H*0.85);
-      sp.addColorStop(0,"rgba(255,255,255,.10)"); sp.addColorStop(1,"rgba(255,255,255,0)");
-      ctx.fillStyle=sp; ctx.fillRect(0,0,W,H);
       var lw=W/LANES, hitY=HITY();
-      // lanes
-      for(l=0;l<LANES;l++){ ctx.fillStyle="rgba(255,255,255,"+(l%2?0.03:0.05)+")"; ctx.fillRect(l*lw,0,lw,H); }
-      for(l=1;l<LANES;l++){ ctx.fillStyle="rgba(255,255,255,.08)"; ctx.fillRect(l*lw-1,0,2,H); }
-      // hit bar — the keys run all the way to the screen bottom, no dead band
-      ctx.fillStyle="rgba(255,255,255,.12)";
-      ctx.fillRect(0,hitY-8,W,H-(hitY-8));
-      // piano keys with hard shadows; a tapped key lights up in its lane's colour
+      // Clear lanes sit inside the painted velvet stage. The keys and tiles
+      // retain the original hit geometry; no decoration consumes a tap.
+      for(l=0;l<LANES;l++){ctx.fillStyle=l%2?"rgba(255,248,237,.012)":"rgba(16,10,42,.025)";ctx.fillRect(l*lw,0,lw,hitY);}
+      for(l=1;l<LANES;l++){ctx.fillStyle="rgba(233,212,252,.11)";ctx.fillRect(l*lw-.7,58,1.4,hitY-58);}
+      ctx.fillStyle="#3c2456";ctx.fillRect(0,hitY-7,W,H-hitY+7);
+      // Full-depth ivory faces, carved edges and short ebony tops. These are
+      // four visual keys over the same four input lanes, not extra targets.
       for(l=0;l<LANES;l++){
-        var kx=l*lw+5, kw=lw-10, glow=Math.max(0,1-(now-keyGlow[l])/260);
-        ctx.fillStyle="rgba(0,0,0,.28)"; rr(kx,hitY-4,kw,H-(hitY-4)+12,10); ctx.fill();
-        ctx.fillStyle="#ffffff"; rr(kx,hitY-8,kw,H-(hitY-8)+12,10); ctx.fill();
-        if(glow>0){ ctx.globalAlpha=glow*0.75; ctx.fillStyle=LCOL[l]; rr(kx,hitY-8,kw,H-(hitY-8)+12,10); ctx.fill(); ctx.globalAlpha=1; }
-        ctx.fillStyle="rgba(0,0,0,.07)"; ctx.fillRect(kx+kw*0.36,hitY-8,kw*0.28,30);
+        var kx=l*lw+3, kw=lw-6, glow=Math.max(0,1-(now-keyGlow[l])/420), ky=hitY-10+glow*3, kh=H-ky-13;
+        paintedFace(kx,ky+9,kw,kh+4,11,"#ba996e",2,"#9e794c");
+        paintedFace(kx,ky,kw,kh,11,glow>0?"#f5d16c":"#fff9e8",9,glow>0?"#b88931":"#bba076");
+        if(glow>0)keyHalo(kx+kw/2,hitY-5,kw,glow,now);
+      }
+      for(l=1;l<LANES;l++){
+        var bx=l*lw-lw*.17, bw=lw*.34, bh=53;
+        paintedFace(bx,hitY-11,bw,bh,5,"#302943",5,"#191526");
+        ctx.fillStyle="rgba(230,212,244,.13)";rr(bx+3,hitY-8,bw-6,bh-12,3);ctx.fill();
       }
       // screen shake on miss-tap
-      var sh=now-shakeT<180 ? Math.sin(now/14)*4 : 0, fall=speedPx()*dt/1000;
+      var sh=now-shakeT<180 ? Math.sin(now/14)*4 : 0, fall=playing?speedPx()*dt/1000:0;
       // tiles
       for(i=tiles.length-1;i>=0;i--){ var t=tiles[i];
         if(t.hit){ t.h-=10; t.y+=5; if(t.h<=6){ tiles.splice(i,1); continue; } }
@@ -358,31 +411,33 @@
         }
         var x=t.lane*lw+6+sh, w=lw-12;
         ctx.globalAlpha=t.gone?Math.max(0,t.fade)*0.45:1;
-        ctx.fillStyle=t.hit?"#fff":t.gold?"#ffd21c":LCOL[t.lane];
-        rr(x,t.y,w,t.h,14); ctx.fill();
-        ctx.fillStyle="rgba(255,255,255,.25)"; rr(x,t.y,w,10,6); ctx.fill();
-        if(!t.hit&&t.wait&&!t.gone&&t.y>=hitY-t.h+39){ ctx.strokeStyle="rgba(255,255,255,"+(0.55+0.45*Math.sin(now/140))+")"; ctx.lineWidth=4; rr(x-3,t.y-3,w+6,t.h+6,16); ctx.stroke();
-          ctx.fillStyle="#fff"; ctx.font="800 18px 'Baloo 2',sans-serif"; ctx.textAlign="center"; ctx.fillText("Tap!",x+w/2,t.y-12); }
-        if(!t.hit){ ctx.fillStyle="rgba(255,255,255,.9)"; ctx.font="800 24px 'Baloo 2',sans-serif"; ctx.textAlign="center"; ctx.fillText(t.gold?"★":"♪",x+w/2,t.y+t.h/2+9); }
+        paintedFace(x,t.y,w,t.h,13,t.hit?"#fff4d3":t.gold?"#f1c54d":LCOL[t.lane],5,t.gold?"#b07a26":["#b44d48","#76539f","#5f8141","#ad7b2a"][t.lane]);
+        if(!t.hit&&t.wait&&!t.gone&&t.y>=hitY-t.h+39){
+          keyHalo(x+w/2,hitY-5,w,.65+.2*Math.sin(now/180),now);
+          ctx.strokeStyle="rgba(255,237,169,"+(.7+.2*Math.sin(now/180))+")";ctx.lineWidth=3;rr(x-2,t.y-2,w+4,t.h+4,15);ctx.stroke();
+          ctx.fillStyle="#fff6db";ctx.font="800 17px 'Baloo 2',sans-serif";ctx.textAlign="center";ctx.fillText("Tap!",x+w/2,t.y-12);
+        }
+        if(!t.hit){
+          musicMark(x+w/2,t.y+t.h/2,Math.min(w*.62,t.h*.69),t.gold?"#996216":["#a74248","#674595","#4d7a39","#a26a1c"][t.lane],t.lane%2===1);
+          if(t.gold){ctx.fillStyle="#fff3ac";ctx.beginPath();for(var starI=0;starI<10;starI++){var a=-Math.PI/2+starI*Math.PI/5,rad=starI%2?3:7;starI?ctx.lineTo(x+w-12+Math.cos(a)*rad,t.y+13+Math.sin(a)*rad):ctx.moveTo(x+w-12+Math.cos(a)*rad,t.y+13+Math.sin(a)*rad);}ctx.closePath();ctx.fill();}
+        }
         ctx.globalAlpha=1;
       }
       // sparkles over a played note; fireworks in the finale
       for(i=sparks.length-1;i>=0;i--){ var s=sparks[i]; s.x+=s.vx; s.y+=s.vy; s.vy+=0.12; s.life-=0.025; if(s.life<=0){ sparks.splice(i,1); continue; }
-        ctx.globalAlpha=s.life; ctx.fillStyle=s.c; ctx.beginPath(); ctx.arc(s.x,s.y,3+2*s.life,0,7); ctx.fill(); ctx.globalAlpha=1; }
-      // Echo dances in the corner
-      if(ECHO.complete&&ECHO.naturalWidth){ var hp=(now-echoT)/700, ey=hp>=0&&hp<1?-Math.sin(hp*Math.PI)*22:Math.sin(now/300)*2, es=Math.min(64,W*0.15);
-        ctx.drawImage(ECHO,W-es-12,78+ey,es,es*1.07); }
+        ctx.save();ctx.globalAlpha=s.life;ctx.translate(s.x,s.y);ctx.rotate(s.life*2);ctx.fillStyle=s.c;
+        var sr=3+3*s.life;ctx.beginPath();ctx.moveTo(0,-sr);ctx.quadraticCurveTo(sr*.25,-sr*.25,sr,0);ctx.quadraticCurveTo(sr*.25,sr*.25,0,sr);ctx.quadraticCurveTo(-sr*.25,sr*.25,-sr,0);ctx.quadraticCurveTo(-sr*.25,-sr*.25,0,-sr);ctx.fill();ctx.restore(); }
       requestAnimationFrame(draw);
     }
-    function rr(x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
+    function rr(x,y,w,h,r){ r=Math.max(0,Math.min(r,w/2,h/2)); ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
     startSong(0);
-    draw();
+    requestAnimationFrame(draw);
 
-    // ── "Say your sound to keep playing": the only time this game listens ──
+    // ── Short listening turns: song breaks or the in-board slow-keys control ──
     // (24 Sep 2026) STAR MODE is gone. It held the mic open for the whole
     // game so a shout could fire a power-up, which kept an iPhone in
     // phone-call audio from the first frame to the last. The mic now opens
-    // only while the keep-playing card shows, after the quiet window above,
+    // only during an explicit quiet speech turn, after the quiet window above,
     // and closes before the revive chime. Loudness and sound-shape numbers
     // only: nothing is recorded, nothing leaves the device, and a revive is
     // play, never practice data.
@@ -392,7 +447,102 @@
       if(!snd){ try{ snd=((S&&S.getProfile&&S.getProfile().focusSounds)||["R"])[0]; }catch(e){ snd="R"; } }
       SND=String(snd).toUpperCase(); SAYTXT=(S&&S.soundSay)?S.soundSay(SND):"rrrr";
     })();
-    function listenNote(t){ try{ $("revListen").textContent=t; }catch(e){} }
+    function listenNote(t){ try{ $("revListen").textContent=t;if(slowTurn&&!slowTurn.finishing)$("slowStatus").textContent=t; }catch(e){} }
+    // A deliberate, short listening turn stays inside the piano board. Holding
+    // the scene keeps notes out of the mic and preserves the child's song.
+    var slowTurn=null, slowMs=0;
+    function slowFactor(){ return slowMs>0?0.55:1; }
+    function paintSlowKeys(){
+      var visible=tok&&!window.__pianoLeaving&&phase==="song"&&!window.__ended&&(!reviveWait||!!slowTurn)&&!SONGS[song].finale;
+      $("slowControl").hidden=!visible;
+      $("slowKeys").disabled=!!slowTurn||slowMs>0;
+      $("slowCancel").hidden=!slowTurn;
+      $("slowControl").classList.toggle("earned",slowMs>0);
+      $("slowSound").textContent=SAYTXT||"rrrr";
+      $("slowKeys").setAttribute("aria-label","Say "+(SAYTXT||"rrrr")+" to slow the keys");
+      $("slowMeter").style.width=(slowMs/8000*100)+"%";
+    }
+    function stopSlowVoice(t){
+      if(t.abort){t.abort.abort();t.abort=null;}
+      if(t.audioStop){var stop=t.audioStop;t.audioStop=null;stop();}
+    }
+    function slowAudio(url,t){return new Promise(function(resolve){
+      if(slowTurn!==t||t.finishing||document.hidden)return resolve();
+      var a=new Audio(url),timer,done=false,p=S.getProfile();
+      a.volume=p.volume!=null?Math.max(0,Math.min(1,Number(p.volume)||0)):0.8;
+      function finish(){if(done)return;done=true;clearTimeout(timer);a.onended=null;a.onerror=null;try{a.pause();a.removeAttribute("src");a.load();}catch(e){}if(t.audioStop===finish)t.audioStop=null;resolve();}
+      t.audioStop=finish;a.onended=finish;a.onerror=finish;timer=setTimeout(finish,10000);
+      try{var result=a.play();if(result&&result.catch)result.catch(finish);}catch(e){finish();}
+    });}
+    function slowPrompt(t){
+      var p=S.getProfile();
+      if(p.voiceOn===false||Number(p.volume)===0)return Promise.resolve();
+      var controller=new AbortController();t.abort=controller;
+      var timeout=setTimeout(function(){controller.abort();},5000),url;
+      return fetch("/api/tts",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text:"To slow the keys, say",voice:p.voiceId||"",stable:true}),signal:controller.signal})
+        .then(function(response){return response.ok?response.arrayBuffer():null;})
+        .then(function(bytes){if(bytes&&slowTurn===t&&!t.finishing&&!document.hidden){url=URL.createObjectURL(S.pcmWave(bytes));return slowAudio(url,t);}})
+        .catch(function(){})
+        .then(function(){clearTimeout(timeout);if(url)URL.revokeObjectURL(url);if(t.abort===controller)t.abort=null;
+          // Use the existing recorded sound, never ask TTS to guess a phoneme.
+          if(slowTurn===t&&!t.finishing&&S.ALL_SOUNDS.indexOf(SND)>=0)return slowAudio("/coach/say-echo/"+SND+"-demo.mp3",t);
+        });
+    }
+    function stopSlowRecognition(t){
+      if(t.stopping)return t.stopping;
+      function stop(){try{return Promise.resolve(S.speechStop?S.speechStop():null).catch(function(){return null;});}catch(e){return Promise.resolve(null);}}
+      if(!t.native)return Promise.resolve(null);
+      var settled=t.nativeSettled,first=stop();
+      // Availability/start may settle after cancellation. Stop again then,
+      // before releasing the piano back to its speaker audio route.
+      t.stopping=(settled?first:Promise.all([first,t.native]).then(stop)).then(function(result){
+        if(t.nativeStarted)micClosedAt=performance.now();
+        return result;
+      });
+      return t.stopping;
+    }
+    function finishSlowKeys(heard,message){
+      var t=slowTurn;if(!t)return Promise.resolve();if(t.finishing)return t.done;
+      t.finishing=true;clearTimeout(t.timer);stopSlowVoice(t);reviveWait=false;closeReviveMic();
+      $("slowStatus").textContent=heard?"Listening check…":(message||"Tap Echo to try again");
+      t.done=stopSlowRecognition(t).then(function(result){
+        var accepted=!!heard&&!t.cancelled&&!document.hidden&&!window.__ended;
+        if(accepted&&t.nativeStarted&&S.hearVerdict){
+          var verdict=S.hearVerdict(result&&result.text||"",SND,SAYTXT,{level:"isolation"});
+          if(verdict==="fail")accepted=false;
+        }
+        return new Promise(function(resolve){setTimeout(function(){
+          if(slowTurn!==t){resolve();return;}
+          accepted=accepted&&!t.cancelled&&!document.hidden&&!window.__ended;
+          slowTurn=null;
+          if(accepted){slowMs=8000;$("slowStatus").textContent="Slow keys!";sfx("complete");}
+          else $("slowStatus").textContent=message||(heard?"Try your sound again":"Tap Echo to try again");
+          if(!window.__ended&&phase==="song")playing=true;
+          paintSlowKeys();resolve();
+        },Math.max(0,micClosedAt+SETTLE_MS-performance.now()));});
+      });
+      return t.done;
+    }
+    function beginSlowKeys(){
+      if(!tok||!playing||phase!=="song"||SONGS[song].finale||slowTurn||slowMs>0||rv.pending||window.__ended)return;
+      if(!CAN_LISTEN){$("slowStatus").textContent="Microphone unavailable";return;}
+      var t={finishing:false,cancelled:false,native:null,nativeSettled:false,nativeStarted:false};slowTurn=t;
+      playing=false;reviveWait=true;$("slowStatus").textContent="Listen to Echo…";paintSlowKeys();
+      function prompt(){
+        if(slowTurn!==t||t.finishing||document.hidden)return;
+        var wait=Math.max(quietUntil,micClosedAt+SETTLE_MS)-performance.now();
+        if(wait>0){t.timer=setTimeout(prompt,wait);return;}
+        slowPrompt(t).then(function(){
+          if(slowTurn!==t||t.finishing||document.hidden)return;
+          quietUntil=Math.max(quietUntil,performance.now()+QUIET_MS);
+          $("slowStatus").textContent="Get ready…";openReviveMic();
+        });
+      }
+      prompt();
+    }
+    $("slowKeys").onclick=beginSlowKeys;
+    $("slowCancel").onclick=function(){if(slowTurn)slowTurn.cancelled=true;finishSlowKeys(false,"Tap Echo to try again");};
+
     function closeReviveMic(){
       rv.gen++; clearTimeout(rv.t); if(rv.raf)cancelAnimationFrame(rv.raf); rv.raf=0;
       try{ if(rv.src)rv.src.disconnect(); }catch(e){} rv.src=null;
@@ -415,11 +565,19 @@
         // the card closed (or the page hid) while the phone was asking: this
         // stream is already late, so it goes straight back
         if(gen!==rv.gen||!reviveWait||document.hidden){ try{ st.getTracks().forEach(function(t){t.stop();}); }catch(e){} micClosedAt=performance.now(); askAgain(); return; }
-        rv.st=st; listenFor(st,gen);
+        rv.st=st;
+        if(slowTurn){
+          var turn=slowTurn;
+          try{turn.native=Promise.resolve(S.speechStart?S.speechStart({words:[SAYTXT],maxMs:6500}):false);}catch(e){turn.native=Promise.resolve(false);}
+          turn.native=turn.native.then(function(v){turn.nativeSettled=true;turn.nativeStarted=!!v;return v;},function(){turn.nativeSettled=true;return false;});
+          turn.timer=setTimeout(function(){if(slowTurn===turn)finishSlowKeys(false,"Tap Echo to try again");},6500);
+        }
+        listenFor(st,gen);
       }).catch(function(){
         rv.pending--;
         // a request cut short by the page hiding asks again on the way back
         if(gen!==rv.gen||!reviveWait||document.hidden){ askAgain(); return; }
+        if(slowTurn){finishSlowKeys(false,"Microphone is off");return;}
         // no microphone: the card can't hear anyone, so the round ends kindly
         reviveWait=false; $("revOvl").classList.remove("show"); endRound();
       });
@@ -449,7 +607,7 @@
         if(rv.ctx.state==="suspended") rv.ctx.resume();
         rv.src=rv.ctx.createMediaStreamSource(st); an=rv.ctx.createAnalyser(); an.fftSize=512; rv.src.connect(an);
         td=new Uint8Array(an.fftSize); fd=new Uint8Array(an.frequencyBinCount); binHz=rv.ctx.sampleRate/an.fftSize;
-      }catch(e){ closeReviveMic(); reviveWait=false; $("revOvl").classList.remove("show"); endRound(); return; }
+      }catch(e){ if(slowTurn){finishSlowKeys(false,"Microphone unavailable");return;} closeReviveMic(); reviveWait=false; $("revOvl").classList.remove("show"); endRound(); return; }
       // family check: the burst must SOUND like the target's family (voiced
       // vs hiss) to fire — a scream or an S can't revive an R kid. Shape
       // numbers only; nothing recorded (see Sona.frameShape).
@@ -476,7 +634,15 @@
           for(var j=0;j<heard.length;j++){ var f=heard[j];
             if(f.r>thr){ voiced++;
               if(f.s){ if(!shp)shp={m:0,fm:0,hm:0}; shp.m+=f.s.m; shp.fm+=f.s.fm; shp.hm+=f.s.hm; }
-              if(voiced>=6){ if(!famOK(shp)){ voiced=0; shp=null; } else { closeReviveMic(); doRevive(); return; } } }
+              if(voiced>=6){ if(!famOK(shp)){ voiced=0; shp=null; } else {
+                if(slowTurn){
+                  if(!slowTurn.heardAt)slowTurn.heardAt=now;
+                  // Give on-device recognition the rest of a short utterance;
+                  // the first six voiced frames alone can be only its onset.
+                  if(now-slowTurn.heardAt<550){rv.raf=requestAnimationFrame(tick);return;}
+                }
+                closeReviveMic(); doRevive(); return;
+              } } }
             else { voiced=0; shp=null; } }
         }
         rv.raf=requestAnimationFrame(tick);
@@ -484,12 +650,14 @@
     }
     // lock/app-switch fires visibilitychange, NOT pagehide — a mic left open
     // there stays lit in a pocket. Coming back to the card listens again.
-    if(window.Sona&&Sona.onBackground) Sona.onBackground(closeReviveMic); else window.addEventListener("pagehide",closeReviveMic);
-    document.addEventListener("visibilitychange",function(){ if(!document.hidden&&reviveWait) openReviveMic(); });
+    function pianoBackground(){if(slowTurn){slowTurn.cancelled=true;finishSlowKeys(false);}else closeReviveMic();}
+    if(window.Sona&&Sona.onBackground) Sona.onBackground(pianoBackground); else window.addEventListener("pagehide",pianoBackground);
+    document.addEventListener("visibilitychange",function(){ if(!document.hidden&&reviveWait&&!slowTurn) openReviveMic(); });
 
     // ---- round over ----
     function bankAndContinue(){ S.finishGameTurn("tiles",score); location.href="/charge.html?daily=1&banked="+score; }
     function endRound(){
+      if(slowTurn){slowTurn.cancelled=true;return finishSlowKeys(false).then(endRound);}
       closeReviveMic();
       if(window.__ended)return; window.__ended=true;
       S.finishGameTurn("tiles",isDaily?score:null);
@@ -525,7 +693,11 @@
     }
     $("endCharge").onclick=function(){ location.href=isDaily?"/charge.html?daily=1":(S.gameAccess("stack").allowed?"/charge.html?game=arcade-stack.html":"/activities.html"); };
     $("endHome").onclick=function(){ S.finishGameTurn("tiles"); location.href="/today.html#play"; };
-    $("close").onclick=function(){ closeReviveMic(); S.finishGameTurn("tiles"); if(playing){ playing=false; } if(isDaily){ bankAndContinue(); return; } location.href="/today.html#play"; };
+    $("close").onclick=function(){
+      if(window.__pianoLeaving)return;window.__pianoLeaving=true;
+      function leave(){closeReviveMic();playing=false;S.finishGameTurn("tiles");if(isDaily){bankAndContinue();return;}location.href="/today.html#play";}
+      if(slowTurn){slowTurn.cancelled=true;finishSlowKeys(false).then(leave);}else leave();
+    };
     }
   </script>
 </body>

@@ -1,0 +1,26 @@
+/* Painted stage and compact music HUD; all playable geometry stays in canvas. */
+body[data-crafted="tiles"] #app{background-image:url('/assets/crafted/piano-stage-v2.webp');background-size:100% 100%;background-position:center;background-color:#2e225c;}
+body[data-crafted="tiles"] #top{gap:9px;padding-left:14px;padding-right:14px;}
+body[data-crafted="tiles"] #close{width:46px;height:46px;font-size:26px;}
+body[data-crafted="tiles"] .hudpill{padding:10px 14px;min-height:45px;font-size:18px;}
+body[data-crafted="tiles"] #timer{gap:7px;font-size:15px;}
+body[data-crafted="tiles"] #banner{top:calc(82px + env(safe-area-inset-top));}
+body[data-crafted="tiles"] #banner .pill{padding:10px 22px;border-radius:20px;}
+body[data-crafted="tiles"] #banner b{font-size:26px;color:#644090;}
+body[data-crafted="tiles"] #banner span{font-size:14px;margin-top:3px;}
+body[data-crafted="tiles"] #flash{font-size:29px;top:29%;color:#fff0a3;text-shadow:0 3px 0 #3a244a;}
+body[data-crafted="tiles"] #timer .wbar{background:#e7dcec;}
+body[data-crafted="tiles"] #timer .wbar i{background:linear-gradient(90deg,#c699de,#8760ba);}
+@media(max-width:350px){body[data-crafted="tiles"] #top{gap:7px;padding-left:10px;padding-right:10px;}body[data-crafted="tiles"] .hudpill{padding:8px 10px;font-size:16px;}body[data-crafted="tiles"] #timer{font-size:13px;gap:5px;}body[data-crafted="tiles"] #timer .wbar{width:36px;}body[data-crafted="tiles"] #close{width:43px;height:43px;}body[data-crafted="tiles"] #banner b{font-size:23px;}}
+
+/* A short speech turn stays on the stage, above the live notes and keys. */
+#slowControl{position:absolute;top:calc(73px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);z-index:6;text-align:center;max-width:88%;}
+#slowControl[hidden],#slowCancel[hidden]{display:none;}
+#slowKeys{display:flex;align-items:center;justify-content:center;gap:12px;min-width:165px;min-height:52px;margin:auto;padding:4px 14px 4px 6px;border:2px solid #ead5ae;border-radius:28px;background:#fff8e9;color:#624329;box-shadow:0 4px 0 #967043;font-family:"Baloo 2",sans-serif;font-size:27px;font-weight:800;cursor:pointer;}
+#slowKeys img{width:45px;height:45px;object-fit:contain;}#slowKeys svg{width:23px;height:23px;fill:#239a9b;}
+#slowKeys:disabled{cursor:default;}#slowKeys:focus-visible,#slowCancel:focus-visible{outline:3px solid #8fe9e2;outline-offset:4px;}
+#slowStatus{font-size:12px;font-weight:800;color:#fff7de;margin-top:7px;white-space:nowrap;text-shadow:0 1px 3px #241438;}
+#slowControl.earned #slowKeys{border-color:#65ceca;background:#ddf8ef;box-shadow:0 4px 0 #26888b;}
+.slowTrack{display:block;width:120px;height:4px;margin:4px auto 0;border-radius:4px;overflow:hidden;}#slowMeter{display:block;height:100%;background:#83e6d6;}
+#slowCancel{border:1px solid #c6ad89;border-radius:18px;background:#fff8e9;color:#624329;padding:8px 14px;font:800 12px Nunito,sans-serif;margin-top:6px;min-height:36px;}
+body[data-crafted="tiles"] #banner{top:calc(174px + env(safe-area-inset-top));}

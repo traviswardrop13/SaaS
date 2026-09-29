@@ -74,6 +74,24 @@
   function rr(x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
   function poly(pts) { ctx.beginPath(); pts.forEach(function (p, i) { if (i) ctx.lineTo(p.x, p.y); else ctx.moveTo(p.x, p.y); }); ctx.closePath(); }
 
+  // One neutral painted timber swatch, tinted once per material. Rendering
+  // only: all court coordinates, ball radius and collision geometry stay above.
+  var WOOD = new Image(), woodFaces = {};
+  WOOD.src = "/assets/crafted/painted-wood-ivory.webp";
+  function timber(x, y, w, h, color, alpha) {
+    if (!WOOD.complete || !WOOD.naturalWidth || w <= 0 || h <= 0) return;
+    var face = woodFaces[color];
+    if (!face) {
+      face = document.createElement("canvas"); face.width = face.height = 256;
+      var fc = face.getContext("2d");
+      fc.drawImage(WOOD, 0, 0, 256, 256);
+      fc.globalCompositeOperation = "multiply"; fc.fillStyle = color; fc.fillRect(0, 0, 256, 256);
+      woodFaces[color] = face;
+    }
+    ctx.save(); ctx.globalAlpha = alpha == null ? 1 : alpha;
+    ctx.drawImage(face, x, y, w, h); ctx.restore();
+  }
+
   // a friendly crowd on the bleachers, in soft colours so the ball stays the
   // brightest thing on the court; they jump when a basket goes in
   var SKIN = ["#F2C9A5", "#D9A27A", "#A8714B", "#7A4E33", "#F7D7BD"], SHIRT = ["#FFB7B2", "#A8E1E8", "#FFE08A", "#C8B6FF", "#B9E8A4", "#FFD0A8"];
@@ -87,11 +105,21 @@
   function drawGym() {
     var floorY = project(0, 0, WALL_Z).y;
     var g = ctx.createLinearGradient(0, 0, 0, floorY);
-    g.addColorStop(0, "#FFF4DF"); g.addColorStop(1, "#FFE9C8");
+    g.addColorStop(0, "#FFF8E9"); g.addColorStop(1, "#EEDDC0");
     ctx.fillStyle = g; ctx.fillRect(0, 0, W, floorY + 1);
+    timber(0, 0, W, floorY, "#f2e4cd", 0.18);
+    // Broad pools of warm light across the upper gym, behind the moving hoop.
+    var light = ctx.createRadialGradient(W * 0.5, -H * 0.1, 0, W * 0.5, 0, W * 0.85);
+    light.addColorStop(0, "rgba(255,255,241,.75)"); light.addColorStop(1, "rgba(255,250,228,0)");
+    ctx.fillStyle = light; ctx.fillRect(0, 0, W, floorY);
     // bleachers and the crowd
     var seatTop = project(0, 2.05, WALL_Z).y, seatBot = project(0, 1.3, WALL_Z).y, rowH = (seatBot - seatTop) / 3;
-    for (var r = 0; r < 3; r++) { ctx.fillStyle = r % 2 ? "#F4D9B0" : "#EFCFA0"; ctx.fillRect(0, seatTop + r * rowH, W, rowH); }
+    for (var r = 0; r < 3; r++) {
+      var sy = seatTop + r * rowH;
+      ctx.fillStyle = r % 2 ? "#c69c68" : "#dcb581"; ctx.fillRect(0, sy, W, rowH);
+      timber(0, sy, W, rowH, "#d5b183", 0.65);
+      ctx.fillStyle = "rgba(105,66,30,.24)"; ctx.fillRect(0, sy + rowH - 3, W, 3);
+    }
     var jump = Math.max(0, 1 - (clock - cheerAt) / 1.2), hr = Math.max(4, rowH * 0.3);
     crowd.forEach(function (c) {
       var x = c.u * W, base = seatTop + (c.r + 1) * rowH, hop = jump > 0 ? Math.abs(Math.sin((clock - cheerAt) * 9 + c.ph)) * rowH * 0.45 * jump : Math.sin(clock * 1.3 + c.ph) * 0.8;
@@ -102,12 +130,17 @@
     });
     // the painted band under the bleachers, and soft wall pads below it
     var band = project(0, 1.2, WALL_Z).y, band2 = project(0, 1.02, WALL_Z).y;
-    ctx.fillStyle = "#FFB45C"; ctx.fillRect(0, band, W, band2 - band);
-    ctx.fillStyle = "#34BFCF"; ctx.fillRect(0, band2, W, Math.max(2, (band2 - band) * 0.4));
+    ctx.fillStyle = "#d6a76c"; ctx.fillRect(0, band, W, band2 - band);
+    ctx.fillStyle = "#509795"; ctx.fillRect(0, band2, W, Math.max(2, (band2 - band) * 0.4));
     var padTop = band2 + Math.max(2, (band2 - band) * 0.4) + 6, padH = floorY - padTop - 4, padW = W / 6;
-    if (padH > 12) for (var pi = 0; pi < 7; pi++) { ctx.fillStyle = pi % 2 ? "#FDE3BF" : "#FBDAB0"; rr(pi * padW - padW * 0.5 + 3, padTop, padW - 6, padH, 8); ctx.fill(); }
+    if (padH > 12) for (var pi = 0; pi < 7; pi++) {
+      var padX = pi * padW - padW * 0.5 + 3;
+      ctx.fillStyle = "#508e8a"; rr(padX, padTop + 3, padW - 6, padH, 7); ctx.fill();
+      ctx.fillStyle = pi % 2 ? "#86bdb2" : "#96c8b7"; rr(padX, padTop, padW - 6, padH - 3, 7); ctx.fill();
+      ctx.strokeStyle = "rgba(237,253,229,.45)"; ctx.lineWidth = 1; rr(padX + 3, padTop + 3, padW - 12, padH - 9, 4); ctx.stroke();
+    }
     // bunting along the top
-    var by = H * 0.03, cols = ["#FF6B6B", "#FFD21C", "#34BFCF", "#8A6FF2", "#58CC02"], sag = H * 0.045;
+    var by = H * 0.03, cols = ["#ed8572", "#eabf5a", "#60aaa5", "#a98ac8", "#a9c575"], sag = H * 0.045;
     ctx.strokeStyle = "rgba(90,60,30,.35)"; ctx.lineWidth = 1.2;
     ctx.beginPath(); ctx.moveTo(-10, by); ctx.quadraticCurveTo(W / 2, by + sag * 2, W + 10, by); ctx.stroke();
     for (var i = 0; i < 12; i++) {
@@ -117,13 +150,22 @@
     // the floor: wood running toward the hoop, a teal key, white lines
     var near = 1.0, wallP = project(0, 0, WALL_Z);
     g = ctx.createLinearGradient(0, wallP.y, 0, H);
-    g.addColorStop(0, "#E4A964"); g.addColorStop(1, "#F3C382");
+    g.addColorStop(0, "#c29459"); g.addColorStop(1, "#f0c78b");
     ctx.fillStyle = g; ctx.fillRect(0, wallP.y, W, H - wallP.y);
+    timber(0, wallP.y, W, H - wallP.y, "#e8bd7e", 0.78);
+    // Staggered plank ends recede into the same projected court.
+    ctx.strokeStyle = "rgba(128,80,36,.18)"; ctx.lineWidth = 1;
+    for (var plank = -6; plank < 6; plank += 0.45) for (var z = 1.1; z < WALL_Z; z += 0.9) {
+      var endZ = z + (Math.round(plank / 0.45) % 2) * 0.4;
+      if (endZ < 1 || endZ > WALL_Z) continue;
+      var pa = project(plank, 0, endZ), pb = project(plank + 0.45, 0, endZ);
+      ctx.beginPath(); ctx.moveTo(pa.x, pa.y); ctx.lineTo(pb.x, pb.y); ctx.stroke();
+    }
     ctx.strokeStyle = "rgba(160,95,35,.2)"; ctx.lineWidth = 1;
     for (var px = -6; px <= 6; px += 0.45) { var a = project(px, 0, near), b = project(px, 0, WALL_Z); ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke(); }
     var key = [project(-0.95, 0, near), project(0.95, 0, near), project(0.95, 0, WALL_Z - 0.25), project(-0.95, 0, WALL_Z - 0.25)];
-    poly(key); ctx.fillStyle = "#96D8E2"; ctx.fill();
-    ctx.save(); poly(key); ctx.clip(); ctx.strokeStyle = "rgba(255,255,255,.22)"; ctx.lineWidth = 1;
+    poly(key); ctx.fillStyle = "#84bdb5"; ctx.fill();
+    ctx.save(); poly(key); ctx.clip(); timber(0, wallP.y, W, H - wallP.y, "#8dc2b6", 0.75); ctx.strokeStyle = "rgba(255,255,255,.22)"; ctx.lineWidth = 1;
     for (var kx = -0.9; kx <= 0.9; kx += 0.45) { var ka = project(kx, 0, near), kb = project(kx, 0, WALL_Z); ctx.beginPath(); ctx.moveTo(ka.x, ka.y); ctx.lineTo(kb.x, kb.y); ctx.stroke(); }
     ctx.restore();
     ctx.strokeStyle = "rgba(255,255,255,.85)"; ctx.lineWidth = 2; poly(key); ctx.stroke();
@@ -133,13 +175,30 @@
   function drawRig() {
     // the arm the backboard hangs from; the hoop glides along the ceiling
     var top = project(hoopX, BOARD_TOP, BOARD_Z), w = Math.max(6, 0.09 * top.s);
-    ctx.fillStyle = "#6E7B91"; ctx.fillRect(top.x - w / 2, -2, w, top.y + 4);
+    ctx.fillStyle = "#71624c"; ctx.fillRect(top.x - w / 2, -2, w, top.y + 4);
+    ctx.fillStyle = "#b5a084"; ctx.fillRect(top.x - w / 2 + 1, -2, Math.max(1, w * 0.3), top.y + 4);
   }
   function drawBoard() {
     var c = [project(hoopX - BOARD_W / 2, BOARD_TOP, BOARD_Z), project(hoopX + BOARD_W / 2, BOARD_TOP, BOARD_Z), project(hoopX + BOARD_W / 2, BOARD_BOTTOM, BOARD_Z), project(hoopX - BOARD_W / 2, BOARD_BOTTOM, BOARD_Z)];
     ctx.save(); ctx.shadowColor = "rgba(90,60,30,.18)"; ctx.shadowBlur = 10; ctx.shadowOffsetY = 4;
-    poly(c); ctx.fillStyle = "#FFFFFF"; ctx.fill(); ctx.restore();
-    ctx.lineWidth = Math.max(3, c[0].s * 0.05); ctx.strokeStyle = "#FF5C5C"; ctx.lineJoin = "round"; poly(c); ctx.stroke();
+    poly(c); ctx.fillStyle = "#fff4db"; ctx.fill(); ctx.restore();
+    ctx.save(); poly(c); ctx.clip();
+    timber(c[0].x, c[0].y, c[1].x - c[0].x, c[2].y - c[0].y, "#fff3dc", 0.9);
+    var glow = ctx.createLinearGradient(0, c[0].y, 0, c[2].y);
+    glow.addColorStop(0, "rgba(255,255,255,.25)"); glow.addColorStop(1, "rgba(166,117,65,.08)");
+    ctx.fillStyle = glow; ctx.fillRect(c[0].x, c[0].y, c[1].x - c[0].x, c[2].y - c[0].y);
+    ctx.restore();
+    ctx.lineJoin = "round";
+    ctx.lineWidth = Math.max(6, c[0].s * 0.09); ctx.strokeStyle = "#98613d"; poly(c); ctx.stroke();
+    ctx.lineWidth = Math.max(4, c[0].s * 0.06); ctx.strokeStyle = "#d6a46b"; poly(c); ctx.stroke();
+    ctx.lineWidth = 1; ctx.strokeStyle = "#f6d69e"; poly(c); ctx.stroke();
+    // Tiny inset brass pins in the same backboard silhouette.
+    c.forEach(function (corner, index) {
+      var bx = corner.x + (index === 0 || index === 3 ? 6 : -6), by = corner.y + (index < 2 ? 6 : -6);
+      ctx.fillStyle = "#a27648"; ctx.beginPath(); ctx.arc(bx, by, 1.6, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = "#f6dcaa"; ctx.beginPath(); ctx.arc(bx - 0.4, by - 0.5, 0.65, 0, Math.PI * 2); ctx.fill();
+    });
+    ctx.strokeStyle = "#cf7255";
     var s = [project(hoopX - 0.3, RIM_Y + 0.45, BOARD_Z), project(hoopX + 0.3, RIM_Y + 0.45, BOARD_Z), project(hoopX + 0.3, RIM_Y + 0.03, BOARD_Z), project(hoopX - 0.3, RIM_Y + 0.03, BOARD_Z)];
     ctx.lineWidth = Math.max(2.5, c[0].s * 0.04); poly(s); ctx.stroke(); ctx.lineJoin = "miter";
     var b1 = project(hoopX, RIM_Y, BOARD_Z), b2 = project(hoopX, RIM_Y, HOOP_Z + RIM_R);
@@ -152,23 +211,28 @@
     var n = 14, drop = 0.42 + net.stretch * 0.24, top = ring(RIM_Y - 0.01, RIM_R * 0.97, n, hoopX);
     var mid = ring(RIM_Y - drop * 0.5, RIM_R * (0.8 - net.stretch * 0.08), n, hoopX + net.sway * 0.03);
     var bot = ring(RIM_Y - drop, RIM_R * (0.56 - net.stretch * 0.12), n, hoopX + net.sway * 0.06);
-    ctx.strokeStyle = front ? "rgba(255,255,255,.96)" : "rgba(225,228,236,.85)"; ctx.lineWidth = Math.max(1.2, top[0].p.s * 0.013);
+    ctx.save(); ctx.lineCap = "round";
+    ctx.strokeStyle = front ? "#fff7dd" : "#c5bda0"; ctx.lineWidth = Math.max(1.4, top[0].p.s * 0.015);
+    ctx.shadowColor = "rgba(75,55,30,.32)"; ctx.shadowOffsetY = 1; ctx.shadowBlur = 1;
     for (var i = 0; i < n; i++) {
       if ((Math.sin(top[i].a + Math.PI / n) < 0) !== front) continue;
       ctx.beginPath(); ctx.moveTo(top[i].p.x, top[i].p.y); ctx.lineTo(mid[i + 1].p.x, mid[i + 1].p.y); ctx.lineTo(bot[i].p.x, bot[i].p.y); ctx.stroke();
       ctx.beginPath(); ctx.moveTo(top[i + 1].p.x, top[i + 1].p.y); ctx.lineTo(mid[i].p.x, mid[i].p.y); ctx.lineTo(bot[i + 1].p.x, bot[i + 1].p.y); ctx.stroke();
     }
+    ctx.restore();
   }
   function drawRim(front) {
     var pts = ring(RIM_Y, RIM_R, 48, hoopX);
-    ctx.strokeStyle = front ? "#FF4B3A" : "#CF3B2E"; ctx.lineWidth = Math.max(3, pts[0].p.s * TUBE * 2.3); ctx.lineCap = "round";
+    ctx.strokeStyle = front ? "#d7663e" : "#964927"; ctx.lineWidth = Math.max(3, pts[0].p.s * TUBE * 2.3); ctx.lineCap = "round";
     ctx.beginPath();
     var on = false;
     for (var i = 0; i < pts.length; i++) {
       if ((Math.sin(pts[i].a) < 0) === front) { if (!on) { ctx.moveTo(pts[i].p.x, pts[i].p.y); on = true; } else ctx.lineTo(pts[i].p.x, pts[i].p.y); }
       else on = false;
     }
-    ctx.stroke(); ctx.lineCap = "butt";
+    ctx.stroke();
+    if (front) { ctx.lineWidth = Math.max(1, pts[0].p.s * TUBE * 0.65); ctx.strokeStyle = "#ffbd79"; ctx.stroke(); }
+    ctx.lineCap = "butt";
   }
 
   function drawBall(b) {
@@ -178,17 +242,26 @@
     if (sh.y < H + r && b.z > 0.9) { ctx.fillStyle = "rgba(90,50,15," + Math.max(0, 0.26 - b.y * 0.05).toFixed(3) + ")"; ctx.beginPath(); ctx.ellipse(sh.x, sh.y, r * 1.05, r * 0.3, 0, 0, Math.PI * 2); ctx.fill(); }
     ctx.save(); ctx.translate(p.x, p.y);
     var g = ctx.createRadialGradient(-r * 0.35, -r * 0.4, r * 0.1, 0, 0, r);
-    g.addColorStop(0, "#FFB072"); g.addColorStop(0.55, "#FF8A3D"); g.addColorStop(1, "#DB531C");
+    g.addColorStop(0, "#ffbb63"); g.addColorStop(0.5, "#eb8935"); g.addColorStop(0.85, "#c25d25"); g.addColorStop(1, "#8e3e20");
     ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.fill();
     ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.clip();
     ctx.rotate(b.spin || 0);
+    // Pebbled leather follows the ball's rotation; no glossy plastic highlight.
+    for (var dy = -0.9; dy <= 0.9; dy += 0.15) for (var dx = -0.9; dx <= 0.9; dx += 0.15) {
+      var sx = dx + (Math.round(dy / 0.15) % 2) * 0.07;
+      if (sx * sx + dy * dy > 0.92) continue;
+      var pebble = Math.max(0.5, r * 0.023);
+      ctx.fillStyle = "rgba(105,43,15,.24)"; ctx.beginPath(); ctx.arc(sx * r, dy * r, pebble, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = "rgba(255,219,139,.24)"; ctx.beginPath(); ctx.arc(sx * r - pebble * 0.3, dy * r - pebble * 0.5, pebble * 0.5, 0, Math.PI * 2); ctx.fill();
+    }
     ctx.strokeStyle = "rgba(95,38,12,.8)"; ctx.lineWidth = Math.max(1, r * 0.075);
     ctx.beginPath(); ctx.moveTo(-r, 0); ctx.lineTo(r, 0); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(0, -r); ctx.lineTo(0, r); ctx.stroke();
     ctx.beginPath(); ctx.arc(-r * 1.25, 0, r * 0.95, -0.9, 0.9); ctx.stroke();
     ctx.beginPath(); ctx.arc(r * 1.25, 0, r * 0.95, Math.PI - 0.9, Math.PI + 0.9); ctx.stroke();
     ctx.restore();
-    ctx.fillStyle = "rgba(255,255,255,.35)"; ctx.beginPath(); ctx.ellipse(p.x - r * 0.38, p.y - r * 0.42, r * 0.22, r * 0.13, -0.6, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = "rgba(91,39,19,.4)"; ctx.lineWidth = Math.max(1, r * 0.04);
+    ctx.beginPath(); ctx.arc(p.x, p.y, r - 0.5, 0, Math.PI * 2); ctx.stroke();
   }
 
   function drawFx(dt) {

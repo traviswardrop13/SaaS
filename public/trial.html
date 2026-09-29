@@ -41,12 +41,14 @@
     .resBox{ margin-top:10px; display:none; }
     .resBox.show{ display:block; }
   </style>
+  <link rel="stylesheet" href="/crafted-family.css" />
 </head>
-<body>
+<body class="crafted-family family-trial">
   <div class="wrap">
+    <header class="family-header"><a class="family-back" href="/today.html">‹ &nbsp; Back to play</a><span class="adult-label">For grown-ups</span></header>
     <div class="hero">
-      <img src="/coach/echo/echo-avatar.svg" alt="Echo" />
-      <h1 id="headline">Every game, with Sona Premium 🎉</h1>
+      <img src="/assets/crafted/echo-welcome.webp" alt="Echo" />
+      <h1 id="headline">Every game, with Sona Premium</h1>
       <!-- "your first 3 days are free" described the old local no-card trial,
            which no longer exists for anyone new: the 3 days belong to the
            plan. And since 24 Sep 2026 "the free session is done" is not true
@@ -99,7 +101,7 @@
       </ul>
       <a class="btn" href="/subscribe" style="margin-top:18px;">Start 3 days free</a>
       <div class="proof">
-        <span>🎓</span>
+        <span><svg class="family-symbol" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-5 9 5-9 5-9-5Z"/><path d="M7 12v5c3 2 7 2 10 0v-5M21 9v7"/></svg></span>
         <span><b>Built with Rachel — licensed pediatric speech-language pathologist</b> &amp; Sona co-founder. Real speech practice, disguised as games kids ask to play — practice, not therapy, and never an evaluation.</span>
       </div>
       <p class="muted" style="margin-top:12px;font-size:13px;font-weight:700;">
@@ -146,7 +148,7 @@
     var name = (p.childName || "").trim();
     // addressed to the GROWN-UP holding the phone: this is a price page, and
     // no child is sent here any more (Sona.gateBounce goes home instead)
-    if (name) document.getElementById("headline").textContent = "Every game for " + name + ", with Sona Premium 🎉";
+    if (name) document.getElementById("headline").textContent = "Every game for " + name + ", with Sona Premium";
     // already has every game — bought here or anywhere else (a free era, a
     // clinician's plan)? Straight back to the fun; never sell it twice.
     if ((Sona.premium && Sona.premium()) || (Sona.isSubscribed && Sona.isSubscribed())) location.replace("/map.html");
