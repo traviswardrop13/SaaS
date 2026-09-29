@@ -54,6 +54,7 @@ async function notNow(page){const b=page.locator('#micNotNow');if(await b.count(
 async function atHandoff(page){await page.locator('[data-step="achieve"].on').waitFor();}
 function clean(name,errors){ok(name+': no runtime errors',errors.length===0,errors);}
 function pairPosts(requests){return requests.filter(r=>new URL(r.url).pathname==='/api/pair'&&r.method==='POST');}
+function pairGets(requests){return requests.filter(r=>new URL(r.url).pathname==='/api/pair').length;}
 
 await scenario('sound selection and private paced handoff',async()=>{
  const {context,page,errors,requests}=await fresh();try{
@@ -208,7 +209,10 @@ await scenario('move-in code sheet',async()=>{
   if(await sheet.count()){
    ok('code entry receives keyboard focus',await page.evaluate(()=>document.activeElement.id==='moveInput'));
    await page.keyboard.press('Escape');ok('Escape closes and returns focus',!await sheet.isVisible()&&await page.evaluate(()=>document.activeElement.id==='moveLink'));
-   await page.locator('#moveLink').click();await page.locator('#moveInput').fill('abc');ok('an incomplete code cannot be submitted',await page.locator('#moveSubmit').isDisabled());
+   await page.locator('#moveLink').click();
+   ok('an empty field cannot be submitted',await page.locator('#moveSubmit').isDisabled());
+   await page.locator('#moveInput').fill('abc');await page.locator('#moveSubmit').click();
+   ok('a partial code is explained on the page and never sent anywhere',/isn't a backup code/.test(await page.locator('#moveError').innerText())&&await sheet.isVisible()&&pairGets(requests)===0,await page.locator('#moveError').innerText());
    await context.route('**/api/pair?code=ABC234',route=>route.fulfill({status:404,contentType:'application/json',body:JSON.stringify({ok:false,error:'That code is no longer available.'})}));
    await page.locator('#moveInput').fill('abc234');await page.locator('#moveSubmit').click();await page.waitForFunction(()=>document.getElementById('moveError').textContent.includes('no longer'));
    ok('a failed code stays in the sheet with a useful error',await sheet.isVisible()&&await page.locator('#moveSubmit').isEnabled());
@@ -219,6 +223,28 @@ await scenario('move-in code sheet',async()=>{
   }
   ok('code entry only retrieves an explicitly entered backup',pairPosts(requests).length===0);
   clean('code sheet',errors);
+ }finally{await context.close();}
+});
+// The sheet's own instructions send a parent to Settings → Copy backup code,
+// so pasting exactly what that button copies has to work here — on this
+// phone, with no request to any server.
+await scenario('move-in with a pasted backup code',async()=>{
+ const {context,page,errors,requests}=await fresh();try{
+  await page.locator('#moveLink').click();
+  const copy=await page.locator('#moveCopy').innerText();
+  ok('the sheet points at the backup code Settings really makes',/Copy backup code/.test(copy)&&/Backup & restore/.test(copy)&&!/six-character/i.test(copy),copy);
+  const backup=JSON.stringify({app:'sona',v:1,data:{'sona.profile.v1':JSON.stringify({childName:'Pasted',childAge:'6',onboarded:true,focusSounds:['L'],volume:0,voiceOn:false}),'sona.sub.v1':JSON.stringify({active:true,source:'stripe'})}});
+  await page.locator('#moveInput').fill(backup);
+  await page.locator('#moveInput').press('Enter');await page.waitForTimeout(150);
+  ok('Enter in a pasted backup is a newline, not a submit',await page.locator('#moveSheet').isVisible()&&/today\.html/.test(page.url())===false);
+  const before=requests.length;await page.locator('#moveSubmit').click();await page.waitForURL('**/today.html');
+  const after=await page.evaluate(()=>({name:JSON.parse(localStorage.getItem('sona.profile.v1')).childName,sub:localStorage.getItem('sona.sub.v1'),snap:!!localStorage.getItem('_sonaPreRestore')}));
+  ok('a pasted backup restores the save and returns Home',after.name==='Pasted',after);
+  ok('…restores practice, never access',after.sub===null,after);
+  ok('…leaves Settings\' undo able to put the device back',after.snap,after);
+  const sent=requests.slice(before).filter(r=>new URL(r.url).pathname.startsWith('/api/')).map(r=>r.url);
+  ok('…and nothing went to a server',sent.length===0&&pairGets(requests)===0,sent);
+  clean('pasted backup',errors);
  }finally{await context.close();}
 });
 await scenario('sound picker fits iPhone safe areas',async()=>{

@@ -461,6 +461,21 @@ ok("today no pageerrors", errs.length === 0);
   // …and it must not overclaim either: copying to a clipboard is not a backup
   ok("…and copying a code is reported as a copy, not a completed backup",
     !/backed up ✓|backup complete/i.test(set), "an attempted clipboard write is not a remote backup");
+  // THE MOVE-IN SHEET ASKS FOR WHAT SETTINGS MAKES (29 Sep 2026). It told a
+  // parent to "enter the six-character code from Backup & restore in
+  // Settings on your other phone"; Settings has only ever made the long
+  // backup code and a file, so the one door for a family moving phones
+  // pointed at nothing. Settings minting a short code would upload the save
+  // it promises never leaves, so the sheet changed, not Settings.
+  const moveCopy = (ob.match(/<p[^>]*id="moveCopy"[^>]*>([\s\S]*?)<\/p>/) || ["", ""])[1];
+  ok("the move-in sheet names Settings' real button",
+    /Copy backup code/.test(moveCopy) && /Backup &amp; restore/.test(moveCopy) &&
+    /id="backupCopy"[^>]*>Copy backup code</.test(set), moveCopy);
+  ok("…and no short code Settings does not make",
+    !/six-character|6-character|six character/i.test(moveCopy) && !/\/api\/pair/.test(set),
+    "if Settings starts minting a move-in code, this pin and the privacy copy change together");
+  ok("…and the field takes a whole backup code, not six characters",
+    /<textarea[^>]*id="moveInput"/.test(ob) && !/id="moveInput"[^>]*maxlength/.test(ob));
 }
 
 // ── HONEST1b: restoring a backup is reversible, and the confirm is accurate ──
