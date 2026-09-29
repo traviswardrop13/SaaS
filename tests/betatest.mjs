@@ -43,18 +43,22 @@ const ob = await page.evaluate(() => ({
   preselected: !!document.querySelector("#obBuddies .bopt.on"),
   clinicianDoor: !!document.getElementById("slpLink"),
   restoreDoor: !!document.getElementById("moveLink"),
+  echoClear: !!document.querySelector(".obfoot .welcome-doors #slpLink"),
 }));
 ok("beta step removed", !ob.betaStep);
 ok("three progress groups match the three setup questions", ob.segs === 3, "segs=" + ob.segs);
 ok("buddy is preselected, so it never needs to be a step", ob.preselected);
-// BOTH DOORS ARE BACK. The clinician door was removed on 19 Sep while the
-// SLP side was hidden and restored on 21 Sep when SLPs became the channel —
-// it is the only entrance to the clinician setup flow, so if it goes again
-// that flow becomes dead code. The other is a family who already paid or has
-// a save elsewhere. Both used to be reachable only by answering a question
-// every parent was asked.
+// The clinician door was removed on 19 Sep while the SLP side was hidden and
+// restored on 21 Sep when SLPs became the channel — it is the only entrance
+// to the clinician setup flow, so if it goes again that flow becomes dead
+// code. It used to be reachable only by answering a question every parent
+// was asked. It sits under Continue, so the middle of the screen is Echo's.
 ok("the clinician door is on the first screen — SLPs are the channel", ob.clinicianDoor);
-ok("…and so is the returning-family door", ob.restoreDoor);
+ok("…under Continue, clear of Echo", ob.echoClear);
+// The returning-family code door is gone (Travis, 29 Sep 2026: "take out the
+// moving from another phone thing"). Settings → Backup & restore moves a
+// save; Settings → Restore finds a web purchase by email.
+ok("no moving-phone code door on the first screen", !ob.restoreDoor);
 
 // ── one mascot at a time ──
 // Every bubble in setup is Echo speaking, and the buddy is the CHILD's pick.

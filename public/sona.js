@@ -1631,8 +1631,9 @@
   //
   // THE ENROLMENT TICKET TRAVELS, and so do the clinician codes (sona.slp,
   // sona.slpok) — deliberately, and later the same day. The clinician's link
-  // opens in Safari; the iOS app keeps separate storage, and the move-in code
-  // or a backup is the ONLY way anything crosses to it. Blocking the ticket
+  // opens in Safari; the iOS app keeps separate storage, and a backup is the
+  // ONLY way anything crosses to it (the move-in code box went from setup on
+  // 29 Sep 2026). Blocking the ticket
   // meant a covered family who installed the app landed on the free version
   // with no way back short of finding the link again. It is safe to carry
   // because it grants nothing here: premium() never reads it, and the only
@@ -2063,8 +2064,9 @@
   // so a paid family can unlock on a new device / after clearing storage.
   // SECURITY (F7, founder review): email-only is a weak second factor — the
   // real fix is an emailed one-time code (needs RESEND_API_KEY). The endpoint
-  // is rate-limited server-side as the interim guard; the secure hand-off path
-  // is the single-use move-in code, not this.
+  // is rate-limited server-side as the interim guard. Since 29 Sep 2026 it is
+  // also the only hand-off for a web purchase: the single-use move-in code
+  // lost its box in setup ("take out the moving from another phone thing").
   // WEB RESTORE. Same lifecycle as iapRefresh: an authoritative answer is
   // acted on, a network failure is not. This used to grant on active and do
   // NOTHING on inactive, so a cancelled Stripe subscriber stayed unlocked

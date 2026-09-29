@@ -57,7 +57,8 @@ function pairPosts(requests){return requests.filter(r=>new URL(r.url).pathname==
 
 await scenario('sound selection and private paced handoff',async()=>{
  const {context,page,errors,requests}=await fresh();try{
-  ok('welcome uses the moving-phone link without a website purchase pitch',/Moving from another phone/.test(await page.locator('#moveLink').innerText())&&!/Bought Sona/.test(await page.locator('[data-step="welcome"]').innerText()));
+  // Travis, 29 Sep 2026: "take out the moving from another phone thing".
+  ok('welcome has no moving-phone code entry and no website purchase pitch',await page.locator('#moveLink, #moveSheet').count()===0&&!/Moving from another phone|Bought Sona/.test(await page.locator('body').innerText()));
   ok('three progress groups match the three setup questions',await page.locator('#seg i').count()===3);
   ok('the younger age band includes two-year-olds',/2–4/.test(await page.locator('#obAge [data-age="4"]').innerText()));
   await enter(page);
@@ -201,26 +202,6 @@ await scenario('permission finishes after backgrounding',async()=>{
  }finally{await context.close();}
 });
 
-await scenario('move-in code sheet',async()=>{
- const {context,page,errors,requests}=await fresh();try{
-  await page.locator('#moveLink').click();const sheet=page.locator('#moveSheet');
-  ok('the returning-family door opens a labeled sheet instead of a prompt',await sheet.count()===1&&await sheet.isVisible());
-  if(await sheet.count()){
-   ok('code entry receives keyboard focus',await page.evaluate(()=>document.activeElement.id==='moveInput'));
-   await page.keyboard.press('Escape');ok('Escape closes and returns focus',!await sheet.isVisible()&&await page.evaluate(()=>document.activeElement.id==='moveLink'));
-   await page.locator('#moveLink').click();await page.locator('#moveInput').fill('abc');ok('an incomplete code cannot be submitted',await page.locator('#moveSubmit').isDisabled());
-   await context.route('**/api/pair?code=ABC234',route=>route.fulfill({status:404,contentType:'application/json',body:JSON.stringify({ok:false,error:'That code is no longer available.'})}));
-   await page.locator('#moveInput').fill('abc234');await page.locator('#moveSubmit').click();await page.waitForFunction(()=>document.getElementById('moveError').textContent.includes('no longer'));
-   ok('a failed code stays in the sheet with a useful error',await sheet.isVisible()&&await page.locator('#moveSubmit').isEnabled());
-   const backup=JSON.stringify({app:'sona',v:1,data:{'sona.profile.v1':JSON.stringify({childName:'Restored',childAge:'7',onboarded:true,focusSounds:['S'],volume:0,voiceOn:false})}});
-   await context.route('**/api/pair?code=XYZ789',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({ok:true,data:backup})}));
-   await page.locator('#moveInput').fill('XYZ789');await page.locator('#moveInput').press('Enter');await page.waitForURL('**/today.html');
-   ok('explicit code redemption restores the save and returns Home',await page.evaluate(()=>JSON.parse(localStorage.getItem('sona.profile.v1')).childName)==='Restored');
-  }
-  ok('code entry only retrieves an explicitly entered backup',pairPosts(requests).length===0);
-  clean('code sheet',errors);
- }finally{await context.close();}
-});
 await scenario('sound picker fits iPhone safe areas',async()=>{
  for(const device of [{viewport:{width:393,height:852},safeArea:{top:59,bottom:34}},{viewport:{width:375,height:812},safeArea:{top:50,bottom:34}},{viewport:{width:375,height:667},safeArea:{top:20,bottom:0}}]){
   const {context,page,errors}=await fresh({...device,native:true});try{

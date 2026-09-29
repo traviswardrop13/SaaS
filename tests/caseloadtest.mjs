@@ -990,8 +990,8 @@ const count = (pred) => S.calls.filter(pred).length;
   const lit = (/const CASELOAD_PLAN_ID = "([^"]+)"/.exec(page) || [])[1];
   ok("the success page's copy of the plan id matches lib/caseload (it cannot import a server module)", lit === C.CASELOAD_PLAN, lit);
   const branch = page.indexOf("if (j.plan === CASELOAD_PLAN_ID)");
-  ok("…and it refuses BEFORE anything is granted: no sona.sub.v1, no hand-off code, no purchase event",
-    branch > 0 && branch < page.indexOf("localStorage.setItem(") && branch < page.indexOf("/api/pair") && branch < page.indexOf("purchase completed") &&
+  ok("…and it refuses BEFORE anything is granted: no sona.sub.v1, no purchase event",
+    branch > 0 && branch < page.indexOf("localStorage.setItem(") && branch < page.indexOf("purchase completed") &&
     /if \(j\.plan === CASELOAD_PLAN_ID\) \{\s*setCaseload\(true\);\s*return;\s*\}/.test(page), String(branch));
 }
 

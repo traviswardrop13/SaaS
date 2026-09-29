@@ -144,11 +144,15 @@ t = await page.evaluate(() => ({
   line: document.getElementById("planLine").textContent,
 }));
 ok("web-bought sub pairs into the shell: no paywall anywhere", t.iap !== "block" && t.pick !== "block" && /Active/.test(t.line));
-// tripwires on the funnel's app half: code entry exists on onboarding's first
-// screen, and goHome routes subscribers straight home (never the paywall)
+// tripwires on the funnel's app half: a web buyer is sent to the app's
+// Settings → Restore (the first-screen code box went on 29 Sep 2026, so the
+// thank-you page must not mint or promise a code), and goHome routes
+// subscribers straight home (never the paywall)
 {
   const obSrc = readFileSync(ROOT + "/onboarding.html", "utf8");
-  ok("onboarding offers device-code entry", /moveLink/.test(obSrc) && /Moving from another phone/.test(obSrc));
+  const succSrc = readFileSync(ROOT + "/../app/subscribe/success/page.tsx", "utf8");
+  ok("the web thank-you page sends a buyer to Settings → Restore, with no code to enter",
+    /Settings → Restore/.test(succSrc) && !/\/api\/pair|appCode|Have a code/.test(succSrc) && !/id="moveLink"|id="moveSheet"/.test(obSrc));
   ok("onboarding goHome skips paywall for subscribers", /!\(Sona\.isSubscribed&&Sona\.isSubscribed\(\)\)/.test(obSrc));
 }
 

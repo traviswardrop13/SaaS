@@ -304,7 +304,8 @@ What reaches the app is the result, not the sale: a family whose clinician's
 caseload is covered gets Premium from the server's coverage answer, the way a
 web subscription is recognised. The clinician's link opens in Safari, and the
 app keeps separate storage, so the link state (the code and the enrolment
-ticket) travels into the app through the move-in code; the app then asks
+ticket) travels into the app through a backup (Settings → Backup & restore);
+the first screen's move-in code box went on 29 Sep 2026. The app then asks
 `/api/slp/covered` itself. The cached answer never travels. A parent's own Premium in the app stays the
 existing annual in-app purchase, priced in App Store Connect. Apple accepts
 access bought elsewhere only while the app also sells Premium itself and never

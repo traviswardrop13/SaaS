@@ -42,7 +42,6 @@ export default function SubscribeSuccess() {
   const [info, setInfo] = useState<Info | null>(null);
   const [fetched, setFetched] = useState(false);
   const [paid, setPaid] = useState(false);
-  const [appCode, setAppCode] = useState<string>("");
   const [plan, setPlan] = useState<"annual" | "monthly">("annual");
   const [charter, setCharter] = useState<boolean>(false);
   const [caseload, setCaseload] = useState<boolean>(false);
@@ -96,25 +95,9 @@ export default function SubscribeSuccess() {
         } catch {
           // ignore — non-blocking
         }
-        // Mint the app hand-off code: the ad funnel buys HERE, then downloads
-        // the iOS app — the move-in code carries the purchase into the app so
-        // no paywall ever shows there. Best-effort (no KV → email restore).
-        try {
-          const subStr = localStorage.getItem("sona.sub.v1");
-          if (subStr) {
-            const blob = JSON.stringify({ app: "sona", v: 1, data: { "sona.sub.v1": subStr } });
-            fetch("/api/pair", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ data: blob }),
-            })
-              .then((r) => r.json())
-              .then((p: { ok?: boolean; code?: string }) => { if (p?.ok && p.code) setAppCode(p.code); })
-              .catch(() => {});
-          }
-        } catch {
-          // ignore — non-blocking
-        }
+        // No hand-off code any more: the app's first screen stopped taking
+        // one on 29 Sep 2026 (Travis: "take out the moving from another phone
+        // thing"). The app finds this purchase by email, in Settings → Restore.
         // Conversion events fire on a CONFIRMED purchase only. Firing them on
         // mount also meant every stray load of this URL was reported to Meta
         // as a sale, which poisons the ad optimiser as surely as it poisoned
@@ -265,25 +248,11 @@ export default function SubscribeSuccess() {
             <strong>1.</strong> Download <strong>Sona Speech</strong> on the App Store
           </li>
           <li>
-            <strong>2.</strong> Open it and tap <strong>&ldquo;Have a code?&rdquo;</strong> on the first screen
+            <strong>2.</strong> Open it and set up your child
           </li>
           <li>
-            <strong>3.</strong>{" "}
-            {appCode ? (
-              <>
-                Enter{" "}
-                <strong className="rounded-lg bg-amber-100 px-2 py-0.5 font-display text-lg tracking-[3px] text-amber-900">{appCode}</strong>{" "}
-                — your plan comes with you, and set-up happens in the app. It
-                works once and expires in 48 hours; after that your email still
-                restores it from <strong>Settings → Restore access</strong>.
-              </>
-            ) : (
-              <>
-                Enter the 6-letter code that appears here in a few seconds. If it
-                doesn&apos;t, no problem — your email works too: in the app,{" "}
-                <strong>Settings → Restore access</strong>.
-              </>
-            )}
+            <strong>3.</strong> In the app, go to <strong>Settings → Restore</strong> and enter
+            the email you used here. Your plan comes with you.
           </li>
         </ol>
       </div>

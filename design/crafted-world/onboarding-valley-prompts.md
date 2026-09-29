@@ -45,7 +45,7 @@ a small and a big iPhone.
 
 ### 1. First screen — replaces the orange orchard
 
-File: `public/assets/crafted/welcome-orchard.webp` (1024 × 1536).
+File: `public/assets/crafted/welcome-valley.webp` (1024 × 1536). Done 29 Sep 2026 — it replaced the orange orchard.
 
 > Make a tall picture, 1024 × 1536. Echo stands on a mossy rock beside the
 > lake, waving hello with one wing and smiling big. Words and a button go on

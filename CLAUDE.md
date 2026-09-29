@@ -223,7 +223,9 @@ it, so `shiptest` pins its copy to it.
   half its 400-day life, hands back a fresh one that `Sona.caseRefresh()`
   stores — before this, from day 400 a family's coverage stuck in whatever
   state it was last in. The SLP link state (`sona.slp`, `sona.slpok`,
-  `sona.slpticket`) **travels through the move-in code and backups**, because
+  `sona.slpticket`) **travels through backups** (the first screen's move-in
+  code box went on 29 Sep 2026: "take out the moving from another phone
+  thing"; a web buyer now restores by email in Settings), because
   the iOS app keeps separate storage from Safari and that is the only way a
   covered family's Premium reaches the iPhone app; the cached answer
   (`sona.caseplan.v1`) never travels, and the server is asked afresh.

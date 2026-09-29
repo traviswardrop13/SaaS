@@ -1,12 +1,13 @@
-/* Crafted-world welcome, based on reference board 05. Artwork is decorative;
+/* Welcome: Echo waving in Travis's valley (ChatGPT, 29 Sep 2026 — see
+   design/crafted-world/onboarding-valley-prompts.md). Artwork is decorative;
    the existing setup controls, permission flow and saved answers stay real. */
 body[data-setup-screen="welcome"] {
-  background: #fff6e9 url('/assets/crafted/welcome-orchard.webp') center center / cover no-repeat;
+  background: #fff6e9 url('/assets/crafted/welcome-valley.webp') center center / cover no-repeat;
 }
 body[data-setup-screen="welcome"] .ob {
   max-width: 480px;
   padding-top: max(22px, env(safe-area-inset-top));
-  padding-bottom: calc(104px + env(safe-area-inset-bottom));
+  padding-bottom: calc(130px + env(safe-area-inset-bottom));
 }
 body[data-setup-screen="welcome"] .mascot { display: none; }
 body[data-setup-screen="welcome"] .step.on { display: flex; flex-direction: column; min-height: 0; }
@@ -18,9 +19,13 @@ body[data-setup-screen="welcome"] .welcome-copy .qh { font-size: clamp(28px, 8.6
 .welcome-copy #howLong { font-size: 12px; margin: 8px 0 0; color: #77553b; font-weight: 700; }
 body[data-setup-screen="welcome"] .world-scene { flex: 1; min-height: 60px; max-height: none; margin: 0; }
 body[data-setup-screen="welcome"] .world-scene img, body[data-setup-screen="welcome"] .world-scene:before { display: none; }
-body[data-setup-screen="welcome"] #moveRow { margin: 0 !important; }
-body[data-setup-screen="welcome"] #moveLink { padding: 10px 14px; border-radius: 20px; background: rgba(255, 250, 240, .94); color: #67462e; font-size: 12px; line-height: 24px; }
-body[data-setup-screen="welcome"] #slpRow { order: 5; background: rgba(255, 250, 240, .94); border-radius: 16px; margin: 5px 0 0 !important; padding: 5px; font-size: 11px !important; }
+/* Echo stands in the middle of the picture, so the clinician door (browsers
+   only) lives under Continue, like a "Sign in" line under a login button:
+   over the middle it covered Echo's belly, and on a small phone Echo's face. */
+.welcome-doors { display: none; }
+body[data-setup-screen="welcome"] .welcome-doors { display: block; max-width: 350px; margin: 4px auto 0; text-align: center; }
+.welcome-doors p { margin: 0; font-size: 13px; line-height: 1.3; }
+#slpRow a { display: inline-block; min-height: 44px; padding: 10px 8px 4px; color: #087d87; font-size: 11px; line-height: 1.35; }
 body[data-setup-screen="welcome"] .obfoot { background: linear-gradient(transparent, rgba(255, 246, 233, .96) 35%); padding-top: 15px; }
 body[data-setup-screen="welcome"] .obfoot .inner { max-width: 350px; }
 body[data-setup-screen="welcome"] #nextBtn { background: linear-gradient(#23b5bd, #069ca8); color: white; border: 1px solid #07959f; border-radius: 22px; box-shadow: 0 5px 0 #087e89, inset 0 1px 0 rgba(255,255,255,.45); font-size: 22px; min-height: 58px; }
@@ -56,8 +61,8 @@ body:not([data-setup-screen="welcome"]) { background: radial-gradient(ellipse at
 .ob .step:not([data-step="welcome"]):not([data-step="achieve"]) { padding: 22px 20px; border: 1px solid #ecdfcb; border-radius: 26px; background: #fffcf6; box-shadow: 0 6px 0 #eadbc34a, 0 14px 35px #6f492c06; }
 .ob .setup-label { display: block; font-size: 14px; line-height: 1.4; font-weight: 800; color: #67462e; margin-top: 23px; margin-bottom: 9px; }
 .ob .setup-hint { font-size: 12px; margin-top: 9px; }
-.ob input, .move-card input { background: #fff; border: 1.5px solid #ddceb8; border-radius: 15px; min-height: 56px; padding: 14px; font-size: 18px; color: #48280f; caret-color: #078e98; box-shadow: inset 0 2px 4px #75532f05; }
-.ob input:focus, .move-card input:focus { outline: 2px solid #0b939c; outline-offset: 3px; }
+.ob input { background: #fff; border: 1.5px solid #ddceb8; border-radius: 15px; min-height: 56px; padding: 14px; font-size: 18px; color: #48280f; caret-color: #078e98; box-shadow: inset 0 2px 4px #75532f05; }
+.ob input:focus { outline: 2px solid #0b939c; outline-offset: 3px; }
 .ob input::placeholder { color: #967f67; opacity: 1; }
 .ob #obAge { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 10px; margin-top: 0; }
 .ob #obAge .sound { min-width: 0; min-height: 63px; padding: 12px 5px; font-size: 22px; }
@@ -74,9 +79,9 @@ body:not([data-setup-screen="welcome"]) { background: radial-gradient(ellipse at
 .ob #micNotNow { color: #087d87; text-decoration: underline; text-underline-offset: 4px; margin-top: 16px; }
 .obfoot { background: linear-gradient(transparent, #fff6e9 30%); padding: 16px 22px calc(18px + env(safe-area-inset-bottom)); }
 .obfoot .inner { max-width: 436px; gap: 12px; }
-.obfoot .btn, .move-card .btn { background: linear-gradient(#22b4bc, #069ca8); color: white; border: 1px solid #08959e; box-shadow: 0 5px 0 #087e89, inset 0 1px 0 #ffffff60; border-radius: 21px; min-height: 60px; font-size: 22px; line-height: 1.15; }
-.obfoot .btn:active, .move-card .btn:active { box-shadow: 0 1px 0 #087e89; }
-.obfoot .btn:disabled, .move-card .btn:disabled { background: #e6dccb; color: #95836c; box-shadow: none; border-color: #e6dccb; transform: none; cursor: not-allowed; }
+.obfoot .btn { background: linear-gradient(#22b4bc, #069ca8); color: white; border: 1px solid #08959e; box-shadow: 0 5px 0 #087e89, inset 0 1px 0 #ffffff60; border-radius: 21px; min-height: 60px; font-size: 22px; line-height: 1.15; }
+.obfoot .btn:active { box-shadow: 0 1px 0 #087e89; }
+.obfoot .btn:disabled { background: #e6dccb; color: #95836c; box-shadow: none; border-color: #e6dccb; transform: none; cursor: not-allowed; }
 .obfoot #backBtn { min-height: 48px; color: #806348; font-size: 15px; }
 body[data-setup-screen="achieve"] .ob { padding-top: calc(24px + env(safe-area-inset-top)); }
 body[data-setup-screen="achieve"] #handoffTitle { font-size: 28px; line-height: 1.14; margin: 8px auto 12px; max-width: 370px; }
