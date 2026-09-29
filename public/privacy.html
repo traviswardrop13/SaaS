@@ -29,13 +29,19 @@
     hr { border:none; border-top:1px solid var(--line); margin:34px 0; }
     .foot { color:var(--muted); font-size:14px; }
     code { background:#eef0f6; padding:1px 6px; border-radius:6px; font-size:.92em; }
+    .back { display:inline-flex; align-items:center; min-height:44px; padding:0 4px; margin:-10px 0 6px -4px;
+      font-weight:700; font-size:15px; text-decoration:none; }
   </style>
 </head>
 <body>
   <div class="wrap">
+    <!-- Inside the iPhone app there is no back-swipe and no browser bar, so a
+         parent who opened this from Settings had no way out. Back goes where
+         they came from; opened fresh (a new tab, a shared link), it goes home. -->
+    <a class="back" id="privacyBack" href="/">&lsaquo; Back</a>
     <header><span class="leo">🦜</span><span class="name">Sona</span></header>
     <h1>Privacy Policy</h1>
-    <div class="updated">Last updated: September 24, 2026</div>
+    <div class="updated">Last updated: September 29, 2026</div>
 
     <p class="lede">Sona ("Sona," "we," "us") helps children practice their speech sounds at home,
     alongside their speech therapy. We built Sona for kids, so protecting their privacy — and giving
@@ -69,6 +75,9 @@
         pathologist typed your email address when adding your child, we use it once, to email you
         their Sona link. We do not keep it: it is not stored, not added to any email list, and not
         written to our logs.</li>
+      <li><strong>Messages you send us</strong> &mdash; if you use &ldquo;Talk to us&rdquo; in the
+        grown-ups&rsquo; area to leave feedback or ask for a call, we receive what you choose to send. See
+        &ldquo;Talk to us&rdquo; below.</li>
       <li><strong>Basic device/usage data</strong> — standard technical information (e.g., app version,
         general device type) needed to run and troubleshoot the service.</li>
     </ul>
@@ -80,6 +89,7 @@
       <li>To personalize practice (the right sounds, level, and friendly encouragement).</li>
       <li>To create the progress summary you can choose to share with your speech-language pathologist.</li>
       <li>To operate, secure, and improve the service, and to provide customer support.</li>
+      <li>To read and reply to feedback and call requests you send us.</li>
       <li>To manage subscriptions and process payments.</li>
     </ul>
 
@@ -120,6 +130,16 @@
     means the phone judged that what it heard had the shape of the target sound — not that the whole
     word was produced correctly. The dashboard says so on every screen that shows one.</p>
 
+    <h2>Talk to us</h2>
+    <p>A message from the grown-ups&rsquo; area holds only what you choose
+    to send: the topics you tap, what you write, whether you would recommend Sona, and, if you ask for a
+    call, how and when you would like to talk and your time zone. It also says whether it came from
+    the iPhone app or the website. An email address is optional with feedback and needed for a call
+    request. We use that email only to reply to you; it is not added to our email list. The message is
+    kept by our data store (Upstash) &mdash; we keep the newest 1,000 messages, and the whole inbox is
+    deleted a year after the last one arrives &mdash; and the Sona team is notified in Slack. Please
+    leave out your child&rsquo;s name and other private details: nothing on that form asks for them.</p>
+
     <h2>Service providers we share data with</h2>
     <p>We share limited information with trusted providers only so the service can function:</p>
     <ul>
@@ -135,8 +155,10 @@
         identifier. Neither is given a child&rsquo;s name.</li>
       <li><strong>Hosting</strong> — Vercel runs the site and its server routes.</li>
       <li><strong>Data store</strong> — Upstash holds clinician accounts, the caseload information
-        described above, clinician sign-in sessions, and a copy of Stripe&rsquo;s answer about whether a
-        clinician&rsquo;s Caseload Premium is active. It never holds audio.</li>
+        described above, clinician sign-in sessions, a copy of Stripe&rsquo;s answer about whether a
+        clinician&rsquo;s Caseload Premium is active, the messages parents send from &ldquo;Talk to
+        us&rdquo; and clinicians send from their dashboard, and our own copy of each email address given
+        to join our email list. It never holds audio.</li>
       <li><strong>Email delivery</strong> — Resend delivers a clinician&rsquo;s sign-in link, the one
         thank-you email when you sign up on speaksona.com, and the one
         invite email a clinician can ask us to send a parent. These emails never go to children and never
@@ -146,6 +168,11 @@
         us their address. It holds that email address, a clinician&rsquo;s own first name, and whether the
         person is a speech therapist, a parent or something else —
         never anything about a child. Unsubscribe from any of its emails.</li>
+      <li><strong>Team messaging</strong> — Slack notifies the Sona team when a parent sends a message or
+        call request from &ldquo;Talk to us&rdquo;, or a clinician sends one from their dashboard. The
+        notification carries that message and what came with it: for a parent, everything listed under
+        &ldquo;Talk to us&rdquo; above; for a clinician, their name, clinic code and reply email. It is
+        never given audio or anything from a child&rsquo;s practice.</li>
       <li><strong>Analytics</strong> — PostHog, on grown-up pages only, as described below.</li>
     </ul>
     <p>These providers may only use the information to perform their service for Sona.</p>
@@ -195,8 +222,11 @@
     <p>What we hold on a server is: a clinician&rsquo;s account (email, name, clinic, their code) for as
     long as that account exists; the caseload information described above, deleted when a parent stops
     sharing, when the clinician removes the child or their account, or automatically about 150 days
-    after that caseload last received practice; and a pending invite, which deletes itself 30 days
-    after it is created if the family never opens it.</p>
+    after that caseload last received practice; a pending invite, which deletes itself 30 days
+    after it is created if the family never opens it; the messages sent to us from &ldquo;Talk to
+    us&rdquo;, with any reply email &mdash; the newest 1,000, deleted a year after the last one arrives;
+    and our own copy of each email address given to join our email list &mdash; with where it was given, whether it came from a parent or a clinician, and the ad or
+    link that brought them, if any &mdash; until you ask us to remove it.</p>
     <p>We use reasonable safeguards, including encrypted connections. No method of transmission or
     storage is 100% secure, but we work to protect your data.</p>
 
@@ -210,5 +240,20 @@
       <strong>Sona</strong> · <a href="mailto:privacy@speaksona.com">privacy@speaksona.com</a> ·
       <a href="https://speaksona.com">speaksona.com</a></p>
   </div>
+  <script>
+    // Back to wherever the parent came from; a page opened fresh has nowhere
+    // to go back to, so the link's own href (home) is used instead.
+    (function () {
+      var a = document.getElementById("privacyBack");
+      if (!a) return;
+      a.addEventListener("click", function (e) {
+        try {
+          // back only to a Sona page: history.length also counts other sites
+          var r = document.referrer;
+          if (r && r.indexOf(location.origin + "/") === 0) { e.preventDefault(); window.history.back(); }
+        } catch (err) {}
+      });
+    })();
+  </script>
 </body>
 </html>

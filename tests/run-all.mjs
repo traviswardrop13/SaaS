@@ -37,6 +37,9 @@ const SUITES = [
   "progtest.mjs",  // sound rotation + ladder cap + daily goal ring
   "shapetest.mjs", // sound-shape gate vs real recorded sounds
   "gatecheck.mjs", // parent-gate hardening on adult-only pages
+  "familynavtest.mjs", // FAMILYNAV1: one grown-ups bar, identical and in the same place on every grown-up page
+  "talktest.mjs",  // Talk to us: feedback or a call request, reply-only email, nothing about the child
+  "familyfeedbackapi.mjs", // the family feedback route: same-origin, capped, stored or delivered, never the lead/pilot hooks
   "fittest.mjs",   // device-matrix fit: SE→Pro Max, zoomed display, landscape
   "day1.mjs", // the day: one story, then three games
   "homesessiontest.mjs", // one age-appropriate Home session, current goals and resume precedence

@@ -183,11 +183,13 @@ await scenario("the parent corner", async () => {
   await page.waitForSelector("#sheetOvl.show");
   const s = await page.evaluate(() => {
     const more = document.getElementById("wkMore"), r = more.getBoundingClientRect();
-    return { wins: document.getElementById("wkWins").textContent, story: document.getElementById("storyBits").textContent, more: more.getAttribute("href"), h: r.height, sheetBtns: document.querySelectorAll(".sheetBtn").length };
+    return { wins: document.getElementById("wkWins").textContent, story: document.getElementById("storyBits").textContent, more: more.getAttribute("href"), h: r.height, moreIsDoor: more.classList.contains("sheetBtn"), sheetBtns: document.querySelectorAll(".sheetBtn").length };
   });
   ok("the parent corner says the same 28 reps", /\b28 reps this week\b/.test(s.wins), s.wins);
   ok("the week's story says the same 28 reps, not the sound checks", /28 reps, each one said out loud/.test(s.story) && !/sounds out loud/.test(s.story), s.story);
-  ok("it links to the week-by-week card, without a third sheet button", s.more === "/settings.html#reps" && s.sheetBtns === 2, s);
+  // 29 Sep 2026: the sheet's doors are the grown-ups bar's three tabs
+  // (Progress, Settings, Talk to us); the reps link is still not one of them.
+  ok("it links to the week-by-week card, without an extra sheet button", s.more === "/settings.html#reps" && !s.moreIsDoor && s.sheetBtns === 3, s);
   ok("the link is a full-size tap target", s.h >= 44, s.h);
   ok("no page errors", errors.length === 0, errors);
   await context.close();

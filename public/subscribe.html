@@ -38,16 +38,12 @@
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-title" content="Sona" />
   <style>
-    /* standard 3-tab bottom nav (identical to Progress) */
-    .nav{position:fixed;bottom:0;left:0;right:0;max-width:480px;margin:0 auto;background:#fff;border-top:1px solid #e8eef4;display:flex;justify-content:space-around;padding:9px 0 calc(9px + env(safe-area-inset-bottom));z-index:9;}
-    .nav a{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;font-weight:800;color:#9fb0c0;text-decoration:none;}
-    .nav a .ni{font-size:21px;} .nav a.on{color:var(--blue-d);}
+    /* The plan page is reached FROM Settings, so it wears the one grown-ups
+       bar with Settings lit (29 Sep 2026) — the fixed "Back to Sona |
+       Settings" bottom bar it used to carry is gone. */
 
-    .hero{display:flex;align-items:center;gap:14px;}
-    .hero img{width:64px;height:64px;object-fit:contain;flex:none;
-      filter:drop-shadow(0 8px 14px rgba(140,60,0,.18));}
-    .planline{margin-top:10px;font-weight:800;font-size:14.5px;color:var(--ink);
-      background:linear-gradient(160deg,#eafaf0,#d6f3e2);border-radius:14px;padding:10px 14px;display:inline-block;}
+    .planline{font-weight:800;font-size:14.5px;color:var(--ink);
+      background:linear-gradient(160deg,#eafaf0,#d6f3e2);border-radius:14px;padding:10px 14px;display:block;}
 
     /* ── founding-family timeline ── */
     .tl{position:relative;margin-top:16px;padding-left:40px;}
@@ -118,14 +114,18 @@
   <link rel="stylesheet" href="/crafted-family.css" />
 </head>
 <body class="crafted-family family-subscribe">
-  <div class="wrap" style="padding-bottom:96px;">
-    <header class="app">
-      <div class="brand"><span class="leo"><img src="/assets/crafted/echo-welcome.webp" alt="Echo" /></span> Sona</div>
-      <div class="pills">
-        <a class="iconbtn" href="/today.html" title="Home" style="display:flex;align-items:center;justify-content:center;"><span class="pic-home"></span></a>
-        <a class="iconbtn" href="/settings.html" title="Settings" style="display:flex;align-items:center;justify-content:center;"><span class="pic-gear"></span></a>
-      </div>
+  <div class="wrap">
+    <header class="app family-header">
+      <a class="brand" href="/today.html" aria-label="Sona Home"><span class="leo"><img src="/assets/crafted/echo-welcome.webp" alt="" /></span> Sona</a>
+      <a class="family-back" href="/today.html"><svg class="family-symbol" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h10c2 0 3 2 3.5 4l1 5c.4 2-1.5 3-3 1.5L16 15H8l-2.5 2.5C4 19 2 18 2.5 16l1-5C4 9 5 7 7 7Z"/><path d="M7 9.5v5M4.5 12h5"/><circle cx="15.5" cy="10.5" r=".7" fill="currentColor" stroke="none"/><circle cx="18" cy="13" r=".7" fill="currentColor" stroke="none"/></svg> Back to play</a>
     </header>
+    <nav class="family-tabs" aria-label="Grown-ups">
+      <a href="/progress.html" data-tab="progress"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19.5h16"/><path d="m5 15 4-4.5 3.5 3L19 6.5"/><path d="M14.5 6.5H19V11"/></svg>Progress</a>
+      <a href="/settings.html" data-tab="settings" aria-current="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2.2"/><circle cx="9" cy="17" r="2.2"/></svg>Settings</a>
+      <a href="/talk.html" data-tab="talk"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11.5a7.5 7.5 0 0 1-11 6.6L4 19.5l1.4-4.3A7.5 7.5 0 1 1 20 11.5Z"/><path d="M8.8 10h6.4M8.8 13.3h4"/></svg>Talk to us</a>
+    </nav>
+    <a class="family-crumb" href="/settings.html">‹ Settings</a>
+    <div class="family-pagehead"><img src="/assets/crafted/echo-welcome.webp" alt="" /><div><h1>Your plan</h1><p>One plan, told plainly — for the grown-ups.</p></div></div>
 
     <!-- THE RECAP, and it only appears on the hand-off from a completed run.
          A parent arrives here having been fetched by a child who just
@@ -143,14 +143,10 @@
       <p class="muted" style="margin-top:10px;font-size:12px;line-height:1.5;">A practice snapshot, not an assessment — and it stays on this device.</p>
     </div>
 
+    <!-- Where this family stands today. The page title moved up into the
+         grown-ups page head; this line stays in the same place relative to
+         the recap and the offer, and every rail below rewrites it. -->
     <div class="card">
-      <div class="hero">
-        <img src="/assets/crafted/echo-welcome.webp" alt="Echo" />
-        <div>
-          <h1>Your plan</h1>
-          <p class="muted" style="font-weight:700;font-size:14px;margin-top:3px;">One plan, told plainly — for the grown-ups.</p>
-        </div>
-      </div>
       <span class="planline" id="planLine">Today's plan: <b>free</b> — you're a founding family.</span>
     </div>
 
@@ -331,14 +327,6 @@
     <p class="muted" style="text-align:center;margin-top:22px;font-size:12.5px;font-weight:700;max-width:420px;margin-left:auto;margin-right:auto;">
       Sona is an at-home practice companion — not a substitute for professional care.
     </p>
-    <p class="muted" style="text-align:center;margin-top:10px;font-size:13px;">
-      <a href="/settings.html">← Back to Settings</a>
-    </p>
-  </div>
-
-  <div class="nav">
-    <a href="/today.html"><span class="ni pic-home"></span>Back to Sona</a>
-    <a class="on" href="/settings.html"><span class="ni pic-gear"></span>Settings</a>
   </div>
 
   <script src="/pixel.js"></script>
@@ -704,10 +692,8 @@
       paint();
     })();
 
-    // header + nav icons from the shared icon kit (emoji stay as fallback)
+    // card icons from the shared icon kit (the inline SVG stays as fallback)
     (function () { try {
-      document.querySelectorAll(".pic-home").forEach(function (n) { n.innerHTML = Sona.icon("home", 20); });
-      document.querySelectorAll(".pic-gear").forEach(function (n) { n.innerHTML = Sona.icon("gear", 20); });
       document.querySelectorAll("[data-ic]").forEach(function (n) { var m = Sona.icon(n.dataset.ic, 18); if (m) n.innerHTML = m; });
     } catch (e) {} })();
   </script>

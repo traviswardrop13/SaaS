@@ -13,10 +13,6 @@
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-title" content="Sona" />
   <style>
-    /* standard 3-tab bottom nav (identical to Today / Play) */
-    .nav{position:fixed;bottom:0;left:0;right:0;max-width:480px;margin:0 auto;background:#fff;border-top:1px solid #e8eef4;display:flex;justify-content:space-around;padding:9px 0 calc(9px + env(safe-area-inset-bottom));z-index:9;}
-    .nav a{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;font-weight:800;color:#9fb0c0;text-decoration:none;}
-    .nav a .ni{font-size:21px;} .nav a.on{color:var(--blue-d);}
     .week{display:flex;gap:8px;margin-top:12px;}
     .gbtn{border:2px solid #e2ecf7;background:#fff;border-radius:12px;padding:8px 14px;font-family:"Baloo 2";font-weight:800;font-size:13.5px;color:#6b86a3;cursor:pointer;}
     .gbtn.on{background:#58cc02;border-color:#58cc02;color:#fff;}
@@ -254,8 +250,12 @@
       <a class="brand" href="/today.html" aria-label="Sona Home"><span class="leo"><img src="/assets/crafted/echo-welcome.webp" alt="" /></span> Sona</a>
       <a class="family-back" href="/today.html"><svg class="family-symbol" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h10c2 0 3 2 3.5 4l1 5c.4 2-1.5 3-3 1.5L16 15H8l-2.5 2.5C4 19 2 18 2.5 16l1-5C4 9 5 7 7 7Z"/><path d="M7 9.5v5M4.5 12h5"/><circle cx="15.5" cy="10.5" r=".7" fill="currentColor" stroke="none"/><circle cx="18" cy="13" r=".7" fill="currentColor" stroke="none"/></svg> Back to play</a>
     </header>
-    <div class="family-child"><img src="/assets/crafted/echo-welcome.webp" alt="" /><h1 id="title">Progress</h1></div>
-    <nav class="family-tabs" aria-label="Grown-up pages"><a href="/progress.html" aria-current="page">Overview</a><a href="/settings.html">Settings</a></nav>
+    <nav class="family-tabs" aria-label="Grown-ups">
+      <a href="/progress.html" data-tab="progress" aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19.5h16"/><path d="m5 15 4-4.5 3.5 3L19 6.5"/><path d="M14.5 6.5H19V11"/></svg>Progress</a>
+      <a href="/settings.html" data-tab="settings"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2.2"/><circle cx="9" cy="17" r="2.2"/></svg>Settings</a>
+      <a href="/talk.html" data-tab="talk"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11.5a7.5 7.5 0 0 1-11 6.6L4 19.5l1.4-4.3A7.5 7.5 0 1 1 20 11.5Z"/><path d="M8.8 10h6.4M8.8 13.3h4"/></svg>Talk to us</a>
+    </nav>
+    <div class="family-pagehead"><img src="/assets/crafted/echo-welcome.webp" alt="" /><div><h1 id="title">Progress</h1><p>How practice is going this week.</p></div></div>
 
     <div class="card" id="weekCard">
       <h2>Practice this week</h2>
@@ -327,7 +327,10 @@
       <h2>A quick favor? <svg viewBox="0 0 64 64" style="width:18px;height:18px;vertical-align:-3px"><g id="ob-heart"><path d="M32 54C12 42 8 26 18 19c6-4 12-1 14 4 2-5 8-8 14-4 10 7 6 23-14 35Z" fill="#ff5c74"></path><circle cx="24" cy="26" r="3.5" fill="#fff" opacity=".7"></circle></g></svg></h2>
       <p class="muted" style="margin-top:6px;">Parent to parent: if Sona's helping, a review helps other families find us. If something's off, tell us first — we fix fast.</p>
       <a id="rateYes" class="btn" style="margin-top:12px;display:block;text-align:center;text-decoration:none;" href="https://apps.apple.com/app/id6785755867?action=write-review" target="_blank" rel="noopener">Rate Sona <svg viewBox="0 0 24 24" style="width:14px;height:14px;vertical-align:-2px"><path d="M12 2l2.9 6.2 6.6.8-4.9 4.6 1.3 6.6L12 16.9 6.1 20.2l1.3-6.6L2.5 9l6.6-.8Z" fill="#ffd21c" stroke="#f0a800" stroke-width="1.2"/></svg><svg viewBox="0 0 24 24" style="width:14px;height:14px;vertical-align:-2px"><path d="M12 2l2.9 6.2 6.6.8-4.9 4.6 1.3 6.6L12 16.9 6.1 20.2l1.3-6.6L2.5 9l6.6-.8Z" fill="#ffd21c" stroke="#f0a800" stroke-width="1.2"/></svg><svg viewBox="0 0 24 24" style="width:14px;height:14px;vertical-align:-2px"><path d="M12 2l2.9 6.2 6.6.8-4.9 4.6 1.3 6.6L12 16.9 6.1 20.2l1.3-6.6L2.5 9l6.6-.8Z" fill="#ffd21c" stroke="#f0a800" stroke-width="1.2"/></svg><svg viewBox="0 0 24 24" style="width:14px;height:14px;vertical-align:-2px"><path d="M12 2l2.9 6.2 6.6.8-4.9 4.6 1.3 6.6L12 16.9 6.1 20.2l1.3-6.6L2.5 9l6.6-.8Z" fill="#ffd21c" stroke="#f0a800" stroke-width="1.2"/></svg><svg viewBox="0 0 24 24" style="width:14px;height:14px;vertical-align:-2px"><path d="M12 2l2.9 6.2 6.6.8-4.9 4.6 1.3 6.6L12 16.9 6.1 20.2l1.3-6.6L2.5 9l6.6-.8Z" fill="#ffd21c" stroke="#f0a800" stroke-width="1.2"/></svg></a>
-      <a id="rateNo" style="display:block;text-align:center;margin-top:10px;font-weight:800;font-size:13.5px;color:var(--muted);" href="mailto:wardroptravis@gmail.com?subject=Sona%20—%20could%20be%20better">Could be better — tell Travis first</a>
+      <!-- Every family note now goes through Talk to us (29 Sep 2026), which
+           reaches the team from inside the app — a mailto opened a mail app a
+           parent may not use, and left the app to do it. -->
+      <a id="rateNo" style="display:block;text-align:center;margin-top:10px;font-weight:800;font-size:13.5px;color:var(--muted);" href="/talk.html">Could be better? Tell us first</a>
     </div>
 
 
@@ -342,8 +345,6 @@
     </div>
 
     <div class="card"><h2>Recent practice</h2><div id="recent" style="margin-top:4px;"></div></div>
-
-    <p class="muted noprint" style="text-align:center;margin-top:22px;font-size:13px;"><a href="/today.html">← Back to Home</a></p>
   </div>
 
   <script src="/sona.js"></script>
@@ -425,7 +426,7 @@
       card.style.display = "block";
       function quiet(days) { var s2 = st(); s2.next = Date.now() + days * 86400000; put(s2); card.style.display = "none"; }
       document.getElementById("rateX").onclick = function () { quiet(60); };
-      document.getElementById("rateNo").onclick = function () { quiet(60); }; // the mailto still opens
+      document.getElementById("rateNo").onclick = function () { quiet(60); }; // the link still goes on to Talk to us
       document.getElementById("rateYes").onclick = function () { var s2 = st(); s2.rated = Date.now(); put(s2); card.style.display = "none"; };
     })();
 
@@ -697,8 +698,6 @@
 
     // parent-set stickers (design §9) — filled from the shared icon kit
     (function(){ try{
-      document.querySelectorAll(".pic-home").forEach(function(n){ n.innerHTML=Sona.icon("home",20); });
-      document.querySelectorAll(".pic-gear").forEach(function(n){ n.innerHTML=Sona.icon("gear",20); });
       document.querySelectorAll(".pic-trend").forEach(function(n){ n.innerHTML=Sona.icon("trend",17); });
     }catch(e){} })();
 

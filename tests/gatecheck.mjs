@@ -19,7 +19,9 @@ await page.addInitScript(() => {
 });
 let ok = 0, bad = 0;
 const chk = (n, p) => { p ? ok++ : bad++; console.log((p ? "PASS " : "FAIL ") + n); };
-for (const f of ["settings.html", "progress.html", "voices.html", "subscribe.html"]) {
+// talk.html joined the grown-ups bar on 29 Sep 2026; it
+// is a parent page like the rest, so a child is bounced from them too.
+for (const f of ["settings.html", "progress.html", "voices.html", "subscribe.html", "talk.html"]) {
   await page.goto(`http://localhost:8141/${f}`); await page.waitForTimeout(600);
   chk(`${f} bounces a kid to the home gate`, page.url().includes("today.html?gate=1"));
   // …and remembers where the visit was headed. Without this the parent
@@ -32,7 +34,7 @@ for (const f of ["settings.html", "progress.html", "voices.html", "subscribe.htm
 const gateOpen = await page.evaluate(() => document.getElementById("gateOvl")?.classList.contains("show"));
 chk("home gate auto-opens after the bounce", !!gateOpen);
 await page.evaluate(() => sessionStorage.setItem("sona.gate.v1", String(Date.now())));
-for (const f of ["settings.html", "progress.html", "subscribe.html"]) {
+for (const f of ["settings.html", "progress.html", "subscribe.html", "talk.html"]) {
   await page.goto(`http://localhost:8141/${f}`); await page.waitForTimeout(600);
   chk(`${f} opens for a verified parent`, page.url().includes(f));
 }

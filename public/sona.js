@@ -2289,7 +2289,7 @@
   // Everything else — other origins, protocol-relative
   // "//evil.example", any other query key — is dropped, and the visitor simply
   // stays on Home.
-  const GATE_DESTS = { "/premium.html": 1, "/subscribe.html": 1, "/progress.html": 1, "/settings.html": 1, "/voices.html": 1 };
+  const GATE_DESTS = { "/premium.html": 1, "/subscribe.html": 1, "/progress.html": 1, "/settings.html": 1, "/voices.html": 1, "/talk.html": 1 };
   function gateDest(raw) {
     try {
       const s = String(raw || "");

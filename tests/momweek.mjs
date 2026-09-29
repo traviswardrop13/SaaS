@@ -83,9 +83,10 @@ const sheet = await page.evaluate(() => {
 ok("sheet 7 dots", sheet.dots, 7);
 // The plan lives in Settings → Account, where Restore also is; duplicating it
 // in the parent sheet made a four-tap sheet into a menu.
-ok("parent sheet is a short list, not a menu", sheet.entries.length, 2);
-ok("the sheet still reaches Progress and Settings",
-  /Progress/.test(sheet.entries.join(" ")) && /Settings/.test(sheet.entries.join(" ")), true);
+// 29 Sep 2026: the sheet's doors are now exactly the grown-ups bar's three
+// tabs, in the bar's order (one bar everywhere, Travis) — still no plan entry.
+ok("parent sheet offers exactly the grown-ups bar's three places, in order", sheet.entries,
+  ["Progress", "Settings", "Talk to us"]);
 // pre-path families get one step per practiced day — nobody restarts at zero
 const pcredit = await page.evaluate(() => window.Sona.pathState().steps);
 ok("path credits practiced days", pcredit >= 3, true);

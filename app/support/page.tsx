@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import BackLink from "@/app/components/BackLink";
 
 export const metadata: Metadata = {
   title: "Support — Sona",
@@ -11,6 +12,7 @@ const SUPPORT_EMAIL = "wardroptravis@gmail.com";
 export default function SupportPage() {
   return (
     <main className="mx-auto max-w-2xl px-6 py-12 text-[#1f2937]">
+      <BackLink className="-mt-8 mb-2 text-[#0e9add]" />
       <h1 className="text-3xl font-extrabold text-[#0e9add]">Sona Support</h1>
       <p className="mt-4 leading-relaxed">
         Sona is a friendly, game-style way for kids to practice tricky speech

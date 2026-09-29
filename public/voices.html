@@ -16,10 +16,18 @@
     .vrow .info{flex:1;min-width:0;}
     .vrow .nm{display:block;font-family:"Baloo 2";font-weight:800;font-size:16px;}
     .vrow .vibe{display:block;font-size:13px;color:var(--muted);font-weight:700;}
-    .vfoot{position:fixed;left:0;right:0;bottom:0;background:linear-gradient(180deg,rgba(255,255,255,0),#fff 35%);padding:16px 16px calc(16px + env(safe-area-inset-bottom));}
-    .vfoot .inner{max-width:560px;margin:0 auto;}
   </style>
   <link rel="stylesheet" href="/crafted-family.css" />
+  <style>
+    /* Coach voice is a page OF Settings, so it wears the same grown-ups bar
+       (Settings lit) and no chrome of its own. There was a fixed "Use this
+       voice" footer, then an automatic jump back to Settings; now a tap is
+       the choice, saved on the spot, and the parent leaves when they like. */
+    body.family-voices .vhint{margin:0 2px 2px;font-size:13px;font-weight:700;color:var(--muted);}
+    body.family-voices #list{margin-top:4px;}
+    body.family-voices #saveMsg{margin:8px 4px 0;padding:8px 12px;border-radius:12px;background:#e7f1e5;color:var(--good);font-size:13px;font-weight:800;line-height:1.35;}
+    body.family-voices #saveMsg:empty{display:block;padding:0;margin:0;background:none;}
+  </style>
   <script>
     /* Parent gate, checked before anything paints: this page is reached from
        gated Settings, so it must be gated too — and fail CLOSED if sona.js is
@@ -47,23 +55,22 @@
 <body class="crafted-family family-voices">
   <div class="wrap">
     <header class="app family-header">
-      <div class="brand"><span class="leo"><img src="/assets/crafted/echo-welcome.webp" alt="Echo" /></span> Coach voice</div>
-      <a class="iconbtn" href="/settings.html" title="Back to Settings" aria-label="Back to Settings" style="display:flex;align-items:center;justify-content:center;">✕</a>
+      <a class="brand" href="/today.html" aria-label="Sona Home"><span class="leo"><img src="/assets/crafted/echo-welcome.webp" alt="" /></span> Sona</a>
+      <a class="family-back" href="/today.html"><svg class="family-symbol" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h10c2 0 3 2 3.5 4l1 5c.4 2-1.5 3-3 1.5L16 15H8l-2.5 2.5C4 19 2 18 2.5 16l1-5C4 9 5 7 7 7Z"/><path d="M7 9.5v5M4.5 12h5"/><circle cx="15.5" cy="10.5" r=".7" fill="currentColor" stroke="none"/><circle cx="18" cy="13" r=".7" fill="currentColor" stroke="none"/></svg> Back to play</a>
     </header>
-
-    <div class="card">
-      <h1>Pick Echo's voice</h1>
-      <p class="muted">Choose the voice used inside games. Menus stay quiet. Your choice is saved on this device.</p>
-    </div>
+    <nav class="family-tabs" aria-label="Grown-ups">
+      <a href="/progress.html" data-tab="progress"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19.5h16"/><path d="m5 15 4-4.5 3.5 3L19 6.5"/><path d="M14.5 6.5H19V11"/></svg>Progress</a>
+      <a href="/settings.html" data-tab="settings" aria-current="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2.2"/><circle cx="9" cy="17" r="2.2"/></svg>Settings</a>
+      <a href="/talk.html" data-tab="talk"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11.5a7.5 7.5 0 0 1-11 6.6L4 19.5l1.4-4.3A7.5 7.5 0 1 1 20 11.5Z"/><path d="M8.8 10h6.4M8.8 13.3h4"/></svg>Talk to us</a>
+    </nav>
+    <a class="family-crumb" href="/settings.html">‹ Settings</a>
+    <div class="family-pagehead"><img src="/assets/crafted/echo-welcome.webp" alt="" /><div><h1>Coach voice</h1><p>The voice Echo uses inside games. Menus stay quiet.</p></div></div>
+    <p class="vhint">Tap a voice to use it. Your choice is saved on this device.</p>
 
     <div id="list"></div>
-  </div>
-
-  <div class="vfoot">
-    <div class="inner">
-      <button class="btn" id="save">Use this voice</button>
-      <p class="muted" id="saveMsg" style="text-align:center;margin-top:8px;font-size:13px;display:none;font-weight:800;color:var(--good);">Saved ✓ — Echo will use this voice.</p>
-    </div>
+    <!-- One status line, moved under the voice just tapped so the parent sees
+         it where they are looking, even at the bottom of the list. -->
+    <p id="saveMsg" role="status" aria-live="polite"></p>
   </div>
 
   <script src="/sona.js"></script>
@@ -92,22 +99,29 @@
     ];
 
     var sel = (Sona.getProfile().voiceId) || "";
-    var list = document.getElementById("list");
-    function paint() { [].forEach.call(list.children, function (el) { el.classList.toggle("on", el.dataset.id === sel); el.setAttribute("aria-pressed", el.dataset.id === sel ? "true" : "false"); }); }
+    var list = document.getElementById("list"), msg = document.getElementById("saveMsg"), msgShow = 0;
+    function paint() { [].forEach.call(list.querySelectorAll(".vrow"), function (el) { el.classList.toggle("on", el.dataset.id === sel); el.setAttribute("aria-pressed", el.dataset.id === sel ? "true" : "false"); }); }
+    // A tap IS the choice: saved at once, and said so under the row tapped.
+    function choose(v, row) {
+      sel = v.id; paint();
+      Sona.saveProfile({ voiceId: sel });
+      clearTimeout(msgShow);
+      msg.textContent = "";
+      if (row.nextSibling !== msg) list.insertBefore(msg, row.nextSibling);
+      // the words land a beat after the move, so the live region already
+      // exists when its text changes — that change is what gets announced
+      msgShow = setTimeout(function () {
+        msg.textContent = "Saved ✓ — Echo will use " + (v.id === VOICES[0].id ? "the default voice" : v.name) + ".";
+      }, 30);
+    }
     VOICES.forEach(function (v) {
       var row = document.createElement("button"); row.type="button";
       row.className = "vrow"; row.dataset.id = v.id;
       row.innerHTML = '<span class="info"><span class="nm">' + v.name + '</span><span class="vibe">' + v.vibe + '</span></span>';
-      row.onclick = function () { sel = v.id; paint(); };
+      row.onclick = function () { choose(v, row); };
       list.appendChild(row);
     });
     paint();
-
-    document.getElementById("save").onclick = function () {
-      Sona.saveProfile({ voiceId: sel });
-      var m = document.getElementById("saveMsg"); m.style.display = "block";
-      setTimeout(function () { location.href = "/settings.html"; }, 900);
-    };
   </script>
 </body>
 </html>

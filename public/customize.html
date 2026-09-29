@@ -81,6 +81,14 @@
   <script src="/sona.js"></script>
   <script src="/crafted-buddies.js"></script>
   <script>
+    // Opened from grown-ups Settings (?from=settings): ✕ and Done lead back to
+    // Settings, not into the games. Navigation only — nothing else is read
+    // from the URL, and any other value keeps the child's way home as it was.
+    if (/[?&]from=settings(&|$)/.test(location.search)) (function () {
+      var x = document.querySelector("header .iconbtn"), d = document.getElementById("done");
+      if (x) { x.href = "/settings.html"; x.title = "Settings"; x.setAttribute("aria-label", "Back to Settings"); }
+      if (d) d.href = "/settings.html";
+    })();
     var p = Sona.getProfile();
     var sel = { character: p.character || "leo", outfit: p.outfit || "none", backdrop: p.backdrop || "sky" };
 

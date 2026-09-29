@@ -476,8 +476,10 @@ ok("proof strip: named SLP credential above the plan",
       empty.cards.length > 0 && empty.cards.every((hasAction) => !hasAction), JSON.stringify(empty.cards));
     await ctx.close();
   }
+  // "Could be better" goes to Talk to us now, not a mailto (29 Sep 2026): every
+  // family note reaches the team through that one in-app page.
   ok("review pre-gate shows after real value, Bear-style fork",
-    t.rate === "block" && /action=write-review/.test(t.yesHref) && /^mailto:/.test(t.noHref));
+    t.rate === "block" && /action=write-review/.test(t.yesHref) && t.noHref === "/talk.html");
   await page.evaluate(() => document.getElementById("rateX").click());
   await page.goto("http://localhost:8131/progress.html"); await page.waitForTimeout(700);
   t = await page.evaluate(() => document.getElementById("rateCard").style.display);

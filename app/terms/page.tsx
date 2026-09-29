@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import BackLink from "@/app/components/BackLink";
 import { FREE_MODE } from "@/lib/pricing";
 import { CASELOAD_NAME, CASELOAD_PRICE, CASELOAD_PER_MONTH, COVERED_REDEEM_CAP } from "@/lib/caseload";
 
@@ -20,6 +21,7 @@ const EFFECTIVE = "September 2026";
 export default function TermsPage() {
   return (
     <main className="mx-auto max-w-2xl px-6 py-12 text-[#1f2937]">
+      <BackLink className="-mt-8 mb-2 text-[#0e9add]" />
       <h1 className="text-3xl font-extrabold text-[#0e9add]">Terms of Service</h1>
       <p className="mt-1 text-sm text-[#6b7280]">Effective {EFFECTIVE}</p>
 
