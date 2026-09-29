@@ -40,12 +40,15 @@
       if(p.voiceOn===false||Number(p.volume)===0)return Promise.resolve();
       // A child who has heard the instruction once hears only the sound after
       // it: a second try should cost a second, not a sentence and a download.
-      var instruct=!(SLOW_HELP.sayOnce&&slowSaid);slowSaid=true;
+      var instruct=!(SLOW_HELP.sayOnce&&slowSaid);
       var controller=new AbortController();t.abort=controller;
       var timeout=setTimeout(function(){controller.abort();},5000),url;
       return (instruct?fetch("/api/tts",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text:SLOW_HELP.say||("To "+SLOW_HELP.action+", say"),voice:p.voiceId||"",stable:true}),signal:controller.signal}):Promise.resolve({ok:false}))
         .then(function(response){return response.ok?response.arrayBuffer():null;})
-        .then(function(bytes){if(bytes&&slowTurn===t&&!t.finishing&&!document.hidden){url=URL.createObjectURL(S.pcmWave(bytes));return slowAudio(url,t);}})
+        .then(function(bytes){if(bytes&&slowTurn===t&&!t.finishing&&!document.hidden){url=URL.createObjectURL(S.pcmWave(bytes));return slowAudio(url,t).then(function(){
+          // Heard only if it played out in a turn still running: a failed
+          // download or a "Keep playing" mid-line leaves it for the next turn.
+          if(slowTurn===t&&!t.finishing&&!t.cancelled&&!document.hidden)slowSaid=true;});}})
         .catch(function(){})
         .then(function(){clearTimeout(timeout);if(url)URL.revokeObjectURL(url);if(t.abort===controller)t.abort=null;
           // Use the existing recorded sound, never ask TTS to guess a phoneme.

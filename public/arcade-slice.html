@@ -279,7 +279,9 @@
     // one of them golden. While Super Slice lasts, every toss is two or three.
     function toss(opts){
       opts=opts||{};
-      var w=WAVES[wave], help=!opts.n&&missRun>=2, n=opts.n||(help?1:slowMs>0?2+(Math.random()<0.5?1:0):Math.min(w.most,1+(Math.random()<0.35?1:0)+(Math.random()<0.3?1:0)));
+      // Super Slice outranks the two-miss help: its fruit are already slow and
+      // its blade wide, and one big fruit at a time would undo the burst.
+      var w=WAVES[wave], help=!opts.n&&!(slowMs>0)&&missRun>=2, n=opts.n||(help?1:slowMs>0?2+(Math.random()<0.5?1:0):Math.min(w.most,1+(Math.random()<0.35?1:0)+(Math.random()<0.3?1:0)));
       for(var i=0;i<n;i++){
         var first=firstI<WELLS.length, well=-1, k=help?0.72:1;   // k<1: a slower fall to the same height
         if(first) well=firstI++;
@@ -497,14 +499,21 @@
       // "rrrrrr" is one try, never three. The turn ends at the last try (after
       // the same 550 ms the one-try turn gives Apple's recognizer), or once a
       // child who has said it goes quiet for REP_DONE_MS; silence earns nothing.
-      var REP_GAP_MS=160, REP_DONE_MS=1500, REP_NOTE=["Great! Again!","One more!","SUPER!"];
+      // When the room's level drops (an eager child's own voice set it on the
+      // page's first turn), everything since the last counted try is judged
+      // again against the new bar, as the card judges its last HEARD_MS: a try
+      // said before that breath still counts, and a counted one is never lost.
+      var REP_GAP_MS=160, REP_DONE_MS=1500, REP_NOTE=["Great! Again!","One more!","Got it!"];
       function countReps(t,thr,now){
-        var c=t.count||(t.count={run:0,shp:null,inside:false,last:0,seen:0});
+        var c=t.count||(t.count={run:0,shp:null,inside:false,last:0,seen:0,done:0,thr:thr});
+        if(thr<c.thr&&!c.inside){ c.seen=c.done; c.run=0; c.shp=null; }
+        c.thr=thr;
         for(var j=0;j<heard.length;j++){ var f=heard[j]; if(f.t<=c.seen) continue; c.seen=f.t;
           if(f.r>thr){ c.last=f.t; if(c.inside) continue;
             c.run++; if(f.s){ if(!c.shp)c.shp={m:0,fm:0,hm:0}; c.shp.m+=f.s.m; c.shp.fm+=f.s.fm; c.shp.hm+=f.s.hm; }
             if(c.run>=6){ if(famOK(c.shp)){ c.inside=true; t.reps++; t.heardAt=f.t; listenNote(REP_NOTE[Math.min(t.reps,3)-1]); paintSlowKeys(); } else { c.run=0; c.shp=null; } } }
-          else if(!c.inside||f.t-c.last>=REP_GAP_MS){ c.inside=false; c.run=0; c.shp=null; }
+          else if(!c.inside){ c.run=0; c.shp=null; }
+          else if(f.t-c.last>=REP_GAP_MS){ c.inside=false; c.run=0; c.shp=null; c.done=f.t; }
         }
         if(t.reps>=SLOW_HELP.reps) return now-t.heardAt>=550;
         return t.reps>0&&!c.inside&&now-c.last>=REP_DONE_MS;

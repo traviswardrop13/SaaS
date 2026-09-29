@@ -48,8 +48,10 @@ function phone(cfg) {
     createBuffer(c,n,sr){return{length:n,sampleRate:sr,duration:n/sr,getChannelData:()=>new Float32Array(n)};},
     createMediaStreamSource(){return{connect(){},disconnect(){}};},
     createAnalyser(){return{fftSize:512,frequencyBinCount:256,connect(){},disconnect(){},
-      getByteTimeDomainData(a){for(let i=0;i<a.length;i++)a[i]=h.voice?(i%2?190:66):128;},
-      getByteFrequencyData(a){a.fill(0);if(h.voice)for(let i=1;i<=10;i++)a[i]=220;},
+      // h.dips: the voice drops out for 30 ms in every 150, as a real voice wobbles.
+      getByteTimeDomainData(a){const on=h.voice&&!(h.dips&&performance.now()%150<30);for(let i=0;i<a.length;i++)a[i]=on?(i%2?190:66):128;},
+      // cfg.hiss: a hiss (bins 40-80) instead of a low voiced sound.
+      getByteFrequencyData(a){a.fill(0);if(h.voice)for(let i=cfg.hiss?40:1;i<=(cfg.hiss?80:10);i++)a[i]=220;},
       getFloatTimeDomainData(a){a.fill(0);},getFloatFrequencyData(a){a.fill(-120);}};}
   };
   Object.defineProperty(AC.prototype,'currentTime',{get:()=>performance.now()/1000});
@@ -61,7 +63,7 @@ function phone(cfg) {
     sona=value;value.confetti=()=>{};
     value.speechAvailable=()=>Promise.resolve(true);
     value.speechStart=()=>{h.starts++;h.native=1;return Promise.resolve(true);};
-    value.speechStop=()=>{h.stops++;h.native=0;return Promise.resolve({text:h.text,onDevice:true});};
+    value.speechStop=()=>{h.stops++;h.native=0;if(!h.stopAt)h.stopAt=performance.now();return Promise.resolve({text:h.text,onDevice:true});};
     for(const k of ['logAttempt','bumpReps','recordSession','recordRung','rotAdvance','repsBeacon']) {const real=value[k];value[k]=function(){h.practice.push(k);return real?real.apply(this,arguments):undefined;};}
     for(const k of Object.keys(value.sfx||{}))if(k!=='stop'&&typeof value.sfx[k]==='function')value.sfx[k]=()=>h.audio('sfx:'+k);
   }});
@@ -71,18 +73,26 @@ function phone(cfg) {
 }
 async function fresh(cfg={}) {
   const context=await browser.newContext({viewport:{width:cfg.width||393,height:cfg.width===320?568:852},reducedMotion:'reduce'});
-  await context.route('**/*',r=>{if(cfg.voiceOn&&r.request().url()===BASE+'/api/tts')return r.fulfill({status:200,contentType:'audio/pcm',body:Buffer.alloc(2400)});return r.request().url().startsWith(BASE+'/')?r.continue():r.abort();});
+  let tts=0;
+  await context.route('**/*',r=>{if(cfg.voiceOn&&r.request().url()===BASE+'/api/tts'){tts++;if(cfg.ttsFailFirst&&tts===1)return r.fulfill({status:503,body:'{}'});return r.fulfill({status:200,contentType:'audio/pcm',body:Buffer.alloc(2400)});}return r.request().url().startsWith(BASE+'/')?r.continue():r.abort();});
   await context.addInitScript(phone,cfg);
   const page=await context.newPage();page.setDefaultTimeout(8000);const errors=[];page.on('pageerror',e=>errors.push(e.message));
   await page.goto(BASE+'/arcade-slice.html?from=charge');
   await page.waitForFunction(()=>window.gameEntryAllowed===true&&typeof draw==='function');
+  // When the third star lights, for the recognizer's tail check.
+  await page.evaluate(()=>{new MutationObserver(()=>{if(!__ss.thirdAt&&document.querySelectorAll('#slowReps i.on').length>=3)__ss.thirdAt=performance.now();}).observe(document.getElementById('slowReps'),{subtree:true,attributes:true});});
   return{context,page,errors};
 }
 // One fruit, well away from the edges, and no toss for a while: the board is
 // then something a test can watch hold still or move.
 async function quietBoard(page){await page.evaluate(()=>{fruits=[{e:'🍎',x:60,y:H*.45,vx:1.5,vy:-0.5,g:.0005,rot:0,vr:.01,r:26,sliced:false}];nextToss=waveMs+60000;});}
-async function turn(page){await page.locator('#slowKeys').click();await page.waitForFunction(()=>__ss.web===1&&__ss.native===1);await page.waitForTimeout(600);}
-async function say(page,n,{on=380,off=320}={}){for(let i=0;i<n;i++){await page.evaluate(()=>{__ss.voice=true;});await page.waitForTimeout(on);await page.evaluate(()=>{__ss.voice=false;});await page.waitForTimeout(off);}}
+// turn() waits for the room level so tries start on a quiet floor; eager()
+// starts talking the moment the mic opens, as a child copying Echo does.
+async function turn(page){await page.locator('#slowKeys').click();await page.waitForFunction(()=>__ss.web===1&&__ss.native===1&&rv.floor>=0);await page.waitForTimeout(100);}
+async function eager(page){await page.locator('#slowKeys').click();await page.waitForFunction(()=>__ss.web===1&&__ss.native===1);}
+const lit=(page)=>page.evaluate(()=>document.querySelectorAll('#slowReps i.on').length);
+// n tries of on ms, off ms apart; tail is the wait after the last (default off).
+async function say(page,n,{on=380,off=320,tail=off}={}){for(let i=0;i<n;i++){await page.evaluate(()=>{__ss.voice=true;});await page.waitForTimeout(on);await page.evaluate(()=>{__ss.voice=false;});await page.waitForTimeout(i<n-1?off:tail);}}
 async function earned(page){await page.waitForFunction(()=>!slowTurn&&slowMs>0);return page.evaluate(()=>({ms:slowMs,total:slowTotal,status:document.getElementById('slowStatus').textContent}));}
 async function clean(label,page,errors){
   const h=await page.evaluate(()=>({web:__ss.web,native:__ss.native,bad:__ss.sounds.filter(s=>s.web||s.native),practice:__ss.practice}));
@@ -114,9 +124,15 @@ try {
       ok('the next toss comes sooner while it lasts',s2.next<=s2.every*0.46,s2);
       const chime=await page.evaluate(()=>__ss.sounds.filter(s=>s.kind==='sfx:reward').length);
       ok('a reward chime plays once the microphone has closed',chime===1,chime);
-      // Every toss during Super Slice is two or three fruit.
-      const burst=await page.evaluate(()=>{fruits=[];toss();return fruits.length;});
-      ok('while it lasts, every toss is two or three fruit',burst>=2&&burst<=3,burst);
+      const tail=await page.evaluate(()=>__ss.stopAt-__ss.thirdAt);
+      ok('Apple\'s recognizer keeps listening about half a second after the third try',tail>=540&&tail<1500,tail);
+      // Every toss during Super Slice is two or three fruit, even after misses.
+      const counts=await page.evaluate(()=>{var out=[];for(var k=0;k<100;k++){missRun=k%2?5:0;fruits=[];toss();out.push(fruits.length);}missRun=0;return out;});
+      ok('while it lasts, every toss is two or three fruit, missed fruit or not',counts.every(n=>n===2||n===3)&&counts.includes(2)&&counts.includes(3),counts.filter(n=>n<2||n>3));
+      await page.evaluate(()=>{fruits=[];nextToss=waveMs+1;});
+      await page.waitForFunction(()=>fruits.length>0);
+      const gap=await page.evaluate(()=>({next:nextToss-waveMs,every:WAVES[wave].every}));
+      ok('the game keeps tossing sooner, not just the first toss',gap.next<=gap.every*0.46&&gap.next>0,gap);
       // The blade: a swipe that passes 25px outside a fruit's edge slices it
       // during Super Slice, and misses it without.
       async function nearSwipe(){
@@ -134,10 +150,10 @@ try {
 
   for(const [n,ms] of [[1,8000],[2,10000]])await scenario(n+' tr'+(n===1?'y':'ies'),async()=>{
     const{context,page,errors}=await fresh();try{
-      await quietBoard(page);await turn(page);await say(page,n);
-      const t0=Date.now();const e=await earned(page);
+      await quietBoard(page);await turn(page);await say(page,n,{tail:0});
+      const t0=Date.now();const e=await earned(page);const wait=Date.now()-t0;
       ok(n+' tr'+(n===1?'y':'ies')+' then a pause earn '+ms/1000+' seconds',e.ms>ms-1000&&e.ms<=ms&&e.total===ms,e);
-      ok('the turn ends soon after the child stops, not at the listening limit',Date.now()-t0<2500,Date.now()-t0);
+      ok('the turn ends about 1.5 seconds after the child stops',wait>=1300&&wait<2300,wait);
       await clean(n+' tries',page,errors);
     }finally{await context.close();}
   });
@@ -154,6 +170,70 @@ try {
     }finally{await context.close();}
   });
 
+  await scenario('a wobbly long sound, and a real gap',async()=>{
+    const{context,page,errors}=await fresh();try{
+      await quietBoard(page);await turn(page);
+      await page.evaluate(()=>{__ss.dips=true;});await say(page,1,{on:1200,off:0});
+      ok('a long sound with little dips in it is still one try',(await lit(page))===1,await lit(page));
+      await page.waitForTimeout(250);await page.evaluate(()=>{__ss.dips=false;});
+      await say(page,1,{on:380,off:0});
+      ok('a second sound after a real gap is a second try',(await lit(page))===2,await lit(page));
+      const e=await earned(page);
+      ok('…and two tries earn ten seconds',e.total===10000,e);
+      await clean('wobbly sound',page,errors);
+    }finally{await context.close();}
+  });
+
+  await scenario('an eager child',async()=>{
+    const{context,page,errors}=await fresh();try{
+      await quietBoard(page);await eager(page);
+      await say(page,1,{on:900,off:0});
+      const e=await earned(page);
+      ok('a try said the moment the mic opens still counts once the room is measured',e.total===8000,e);
+      await clean('eager child',page,errors);
+    }finally{await context.close();}
+  });
+
+  await scenario('an eager child, three tries',async()=>{
+    const{context,page,errors}=await fresh();try{
+      await quietBoard(page);await eager(page);
+      await say(page,1,{on:1600,off:320});await say(page,2);
+      const e=await earned(page);
+      ok('a long first try from the moment the mic opens, then two more: three stars, twelve seconds',e.total===12000,e);
+      await clean('eager three',page,errors);
+    }finally{await context.close();}
+  });
+
+  await scenario('a hiss for an R',async()=>{
+    const{context,page,errors}=await fresh({hiss:true});try{
+      await quietBoard(page);await turn(page);
+      let most=0;for(let i=0;i<3;i++){await say(page,1);most=Math.max(most,await lit(page));}
+      await page.waitForFunction(()=>!slowTurn,null,{timeout:9000});
+      ok('an R child\'s hiss lights no star and earns nothing',most===0&&await page.evaluate(()=>slowMs===0&&playing),most);
+      await clean('hiss',page,errors);
+    }finally{await context.close();}
+  });
+
+  await scenario('slow tries',async()=>{
+    const{context,page,errors}=await fresh();try{
+      await quietBoard(page);await turn(page);await say(page,3,{off:1000});
+      const e=await earned(page);
+      ok('a child who takes a second between tries still gets all three',e.total===12000,e);
+      await clean('slow tries',page,errors);
+    }finally{await context.close();}
+  });
+
+  await scenario('a sound held to the limit',async()=>{
+    const{context,page,errors}=await fresh();try{
+      await quietBoard(page);await turn(page);
+      await page.evaluate(()=>{__ss.voice=true;});
+      await page.waitForFunction(()=>!slowTurn,null,{timeout:9000});await page.evaluate(()=>{__ss.voice=false;});
+      const e=await earned(page);
+      ok('a try that runs to the 6.5 second limit still earns its eight seconds',e.total===8000&&e.status==='SUPER SLICE!',e);
+      await clean('held sound',page,errors);
+    }finally{await context.close();}
+  });
+
   await scenario('silence',async()=>{
     const{context,page,errors}=await fresh();try{
       await quietBoard(page);await turn(page);
@@ -166,7 +246,8 @@ try {
 
   await scenario('keep playing',async()=>{
     const{context,page,errors}=await fresh();try{
-      await quietBoard(page);await turn(page);await say(page,2,{off:150});
+      await quietBoard(page);await turn(page);await say(page,2,{off:250});
+      ok('two stars are lit before "Keep playing"',(await lit(page))===2,await lit(page));
       await page.locator('#slowCancel').click();await page.waitForFunction(()=>!slowTurn);
       ok('"Keep playing" mid-turn leaves with no Super Slice, even after two tries',await page.evaluate(()=>slowMs===0&&playing));
       await clean('keep playing',page,errors);
@@ -193,6 +274,18 @@ try {
       ok('the next turn is quicker: only the recorded R',second.length===1&&/\/coach\/say-echo\/R-demo\.mp3$/.test(second[0]),second);
       await page.locator('#slowCancel').click();await page.waitForFunction(()=>!slowTurn);
       await clean('instruction',page,errors);
+    }finally{await context.close();}
+  });
+
+  await scenario('Echo\'s instruction, when it could not load',async()=>{
+    const{context,page,errors}=await fresh({voiceOn:true,ttsFailFirst:true});try{
+      await quietBoard(page);await turn(page);
+      await page.locator('#slowCancel').click();await page.waitForFunction(()=>!slowTurn);await page.waitForTimeout(300);
+      await turn(page);
+      const voices=await page.evaluate(()=>__ss.sounds.filter(s=>s.kind==='voice').map(s=>s.url));
+      ok('an instruction that failed to load is tried again on the next turn',voices.length===3&&/^blob:/.test(voices[1])&&/R-demo\.mp3$/.test(voices[2]),voices);
+      await page.locator('#slowCancel').click();await page.waitForFunction(()=>!slowTurn);
+      await clean('instruction retry',page,errors);
     }finally{await context.close();}
   });
 
