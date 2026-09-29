@@ -89,16 +89,12 @@ async function waitSpoke(pg, ms) {
   ok("…refuses PCM on a context that will not run", /state !== "running"/.test(sona),
     "a source scheduled on a suspended iOS context never fires onended");
   ok("…and keeps a watchdog on every started source", /duration \* 1000\) \+ 1500/.test(sona));
-  for (const f of ["chapter.html", "story.html"]) {
+  for (const f of ["chapter.html", "story.html", "library.html"]) {
     const src = noComments(readFileSync(ROOT + "/" + f, "utf8"));
     ok(f + " has no private speech pipeline", !/playPCM|speakFallback|api\/tts/.test(src),
       "the page must call Sona.speak/speakNow — a second copy is how the cure missed this page last time");
   }
-  const lib = readFileSync(ROOT + "/library.html", "utf8");
-  ok("library has a browser-voice fallback", /function speakFallback/.test(lib),
-    "without it a dead /api/tts leaves the books silent");
-  ok("library's TTS fetch can't hang forever", /AbortController/.test(lib),
-    "a hung fetch leaves `playing` true and kills the Hear button for the session");
+
 }
 
 // ── library: open a book and press "Hear it" with TTS dead ──

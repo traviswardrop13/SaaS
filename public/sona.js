@@ -3348,12 +3348,16 @@
   // The button path: a child ASKED to hear this, so it must make a sound now.
   // auto:false means a locked context falls back to the browser voice rather
   // than parking — robot-or-nothing, and nothing is worse.
-  function speakNow(text, opts) {
-    opts = Object.assign({}, opts || {}, { auto: false });
-    _spk.gen++;                                   // strand every queued unit
+  function speakStop() {
+    _spkPending = null;
+    _spk.gen++;
     try { if (_spk.src) { _spk.src.stop(); _spk.src = null; } } catch (e) {}
     try { if (global.speechSynthesis) global.speechSynthesis.cancel(); } catch (e) {}
-    _spk.q = Promise.resolve(); _spk.n = 0;       // the queue restarts clean
+    _spk.q = Promise.resolve(); _spk.n = 0;
+  }
+  function speakNow(text, opts) {
+    opts = Object.assign({}, opts || {}, { auto: false });
+    speakStop();
     return speak(text, opts);
   }
 
@@ -3394,6 +3398,313 @@
         .catch(() => webCapture());
     }
     return webCapture();
+  }
+
+  // Voiced response evidence: kept separate from practice accounting.
+  var RESPONSE_EVID={broadHz:1200, overtones:3, voicedMs:45, sibDb:8, sibMs:150, minMs:45, shortMs:1000, quietMs:130, changeDb:4.5, spanMs:800, edgeMs:30};
+    function responseSpeechEvidence(){
+      var an=null,off=false,rate=48000,binHz=46.875,etd=null,efd=null,cal=[],calAt=-1e9,bgDb=null,cur=null;
+      function db(p){ return p>0 ? 4.342944819*Math.log(p) : -Infinity; }
+      // Pitch by YIN's cumulative-mean-normalised difference: the first lag
+      // whose d' falls under 0.2, walked to its local minimum. Searching from
+      // lag 2 lets a high tone report its own pitch, not a voice-range
+      // sub-harmonic. A voice with a weak fundamental dips shallowly at half
+      // its period (Rachel's G reads 400Hz for 195Hz): when that first dip is
+      // shallow and the one at twice the lag is under half as deep, the
+      // longer period is the pitch. A clean tone or hum dips to ~0 at its own
+      // period and is never moved. Returns 0 when nothing periodic is found.
+      function pitch(x){
+        var maxLag=Math.min(Math.floor(rate/100),x.length>>1),W=x.length-maxLag,run=0,best=0,bestD=0.2,second=false,end=maxLag,alt=0,altD=1,t,n,d,v,dp;
+        for(t=1;t<=end;t++){
+          d=0; for(n=0;n<W;n++){ v=x[n]-x[n+t]; d+=v*v; }
+          run+=d; dp=run>0?d*t/run:1;
+          if(t<2) continue;
+          if(!second){
+            if(dp<bestD){ best=t; bestD=dp; }
+            else if(best){
+              if(bestD<0.05||best*1.8>maxLag) break;
+              second=true; end=Math.min(maxLag,Math.round(best*2.2));
+            }
+          }else if(t>=best*1.8&&dp<altD){ alt=t; altD=dp; }
+        }
+        if(alt&&altD<bestD/2) best=alt;
+        return best ? rate/best : 0;
+      }
+      // Harmonics 2-9 (below 5kHz) of f0 that stand clear of the room (6dB),
+      // of the spectrum halfway to their neighbours (3dB), and within 40dB
+      // of the strongest harmonic.
+      function overtones(f0){
+        var lv=[],k,c,v,top=-Infinity,n=0;
+        for(k=1;k<=9&&k*f0<5000;k++){ c=Math.round(k*f0/binHz); v=Math.max(efd[c-1],efd[c],efd[c+1]); lv.push(c,v); if(v>top)top=v; }
+        for(k=2;k*2<=lv.length;k++){
+          c=lv[k*2-2]; v=lv[k*2-1];
+          if(v>=bgDb[c]+6 && v>=top-40 && v>=Math.max(efd[Math.round((k-0.5)*f0/binHz)],efd[Math.round((k+0.5)*f0/binHz)])+3) n++;
+        }
+        return n;
+      }
+      // power-mean level of a band, in dB
+      function band(a,b){
+        var k,p=0,n=0,lo=Math.ceil(a/binHz),hi=Math.min(efd.length-1,Math.floor(b/binHz));
+        for(k=lo;k<=hi;k++){ p+=Math.pow(10,efd[k]/10); n++; }
+        return n ? db(p/n) : -Infinity;
+      }
+      function med3(a,b,c){ return Math.max(Math.min(a,b),Math.min(Math.max(a,b),c)); }
+      return {
+        attach:function(node,sampleRate){
+          an=node; rate=sampleRate||48000;
+          off=!(node.getFloatTimeDomainData&&node.getFloatFrequencyData);
+          var n=node.fftSize||1024; binHz=rate/n;
+          if(!etd||etd.length!==n){ etd=new Float32Array(n); efd=new Float32Array(n>>1); cal=[]; bgDb=null; }
+        },
+        // the same silent quarter-second that sets the rep threshold, sampled
+        // at most every 8ms so the whole of it counts at any frame rate.
+        // Exact digital silence is the audio path still starting (a phone's
+        // mic warms up), never a room: it is skipped.
+        calibrate:function(now){
+          if(!an||off||cal.length>=60||now-calAt<8) return;
+          an.getFloatFrequencyData(efd);
+          for(var k=0;k<efd.length;k++) if(efd[k]>-Infinity){
+            calAt=now; var f=new Float32Array(efd),p=0;
+            for(var j=0;j<f.length;j++) if(f[j]>-Infinity) p+=Math.pow(10,f[j]/10);
+            f.power=p; cal.push(f); return;
+          }
+        },
+        // The room is the QUIET end of what was sampled (24 Sep 2026): only
+        // frames within 6dB of the 20th-percentile frame's loudness count, so
+        // a child already talking through most of the quarter-second cannot
+        // lift the background over their own voice. A steady room keeps
+        // every frame (as the plain median did); fewer than 3 kept, all count.
+        settle:function(){
+          var k,j,n,col=[],use=cal,pw=cal.map(function(f){ return f.power; }).sort(function(a,b){ return a-b; });
+          if(pw.length){ var lim=pw[Math.floor((pw.length-1)*0.2)]*4,q=cal.filter(function(f){ return f.power<=lim; }); if(q.length>=3) use=q; }
+          n=use.length;
+          bgDb=new Float32Array(efd.length);
+          for(k=0;k<bgDb.length;k++){
+            if(!n){ bgDb[k]=-100; continue; }
+            col.length=0; for(j=0;j<n;j++) col.push(use[j][k]);
+            col.sort(function(a,b){ return a-b; });
+            bgDb[k]=Math.max(-100,col[n>>1]);
+          }
+        },
+        // ROOM FLOOR (see measureRoom). A new window samples its own quiet
+        // afresh, and a window whose samples were a voice drops them, so the
+        // background is never taken from them; the one in use is left as it
+        // is (none yet: empty, as for a mic that sent only digital zeros).
+        resample:function(){ cal=[]; },
+        // Use the page's carried background. True when it fits this analyser
+        // (or there is no evidence to feed); false changes nothing.
+        floor:function(bg){
+          if(off) return true;
+          if(!bg||!efd||bg.length!==efd.length) return false;
+          bgDb=new Float32Array(bg); return true;
+        },
+        // What this window's own samples say the room is, without touching the
+        // background in use; null when nothing was sampled.
+        measured:function(){
+          if(off||!cal.length) return null;
+          var keep=bgDb; this.settle(); var out=bgDb; bgDb=keep; return out;
+        },
+        drop:function(){ cur=null; },
+        // One loud frame of the current event. True once the event qualifies.
+        frame:function(now){
+          if(off) return true;
+          if(!bgDb) this.settle();
+          an.getFloatTimeDomainData(etd); an.getFloatFrequencyData(efd);
+          if(!cur) cur={t0:now,t1:now,n:0,broad:0,run0:-1,sib0:-1,pts:[],pt:-1e9,ok:false,why:''};
+          var lo=Math.ceil(90/binHz),hi=Math.min(efd.length-1,Math.floor(8000/binHz)),wide=0,k,s=0;
+          for(k=lo;k<=hi;k++) if(efd[k]>=bgDb[k]+12) wide++;
+          for(k=0;k<etd.length;k++) s+=etd[k]*etd[k];
+          var broad=wide*binHz>=RESPONSE_EVID.broadHz,f0=pitch(etd);
+          var voiced=f0>=100&&f0<=700&&(broad||overtones(f0)>=(f0>=250?RESPONSE_EVID.overtones-1:RESPONSE_EVID.overtones));
+          cur.voiceNow=voiced;
+          var sib=broad&&Math.max(band(2500,5000),band(5000,Math.min(10000,rate/2-200)))-band(300,1500)>=RESPONSE_EVID.sibDb;
+          cur.t1=now; cur.n++; if(broad) cur.broad++;
+          if(!voiced) cur.run0=-1; else if(cur.run0<0) cur.run0=now;
+          if(!sib) cur.sib0=-1; else if(cur.sib0<0) cur.sib0=now;
+          // loudness contour: at most one point per ~14ms, 3-point median
+          if(now-cur.pt>=14){ cur.pts.push(now,Math.max(-120,db(s/etd.length))); cur.pt=now; }
+          if(cur.run0>=0&&now-cur.run0>=RESPONSE_EVID.voicedMs){ cur.why='voiced'; return (cur.ok=true); }
+          if(cur.ok) return true;
+          if(cur.sib0>=0&&now-cur.sib0>=RESPONSE_EVID.sibMs){ cur.why='sibilant'; return (cur.ok=true); }
+          if(cur.broad*2<=cur.n||now-cur.t0<=RESPONSE_EVID.shortMs) return false;
+          // each point is the median of it and its neighbours when those
+          // sit within ~45ms (60fps and up); at slower frame rates three
+          // points would smear 100ms of breath, so the point stands alone
+          var P=cur.pts,i,a=null,b=null,c=null,ta=0,tb=0,tc=0,m,mn=Infinity,mx=-Infinity;
+          for(i=0;i<P.length;i+=2){
+            if(P[i]<cur.t0+RESPONSE_EVID.edgeMs||P[i]>now-RESPONSE_EVID.edgeMs||P[i]<now-RESPONSE_EVID.spanMs) continue;
+            a=b; b=c; c=P[i+1]; ta=tb; tb=tc; tc=P[i];
+            if(a!==null){ m=tc-ta<=45?med3(a,b,c):b; if(m<mn)mn=m; if(m>mx)mx=m; }
+          }
+          if(mx-mn>=RESPONSE_EVID.changeDb){ cur.why='changing'; cur.ok=true; }
+          return cur.ok;
+        },
+        // An event that went quiet without qualifying: was it one short sound?
+        brief:function(){
+          return off || (!!cur && cur.t1-cur.t0>=RESPONSE_EVID.minMs && cur.t1-cur.t0<=RESPONSE_EVID.shortMs && cur.broad*2>cur.n);
+        },
+        quietFor:function(now){ return cur ? now-cur.t1 : 0; },
+        voiceNow:function(){ return !!(cur && cur.voiceNow); },
+        // which evidence counted the event, for on-device debugging (__evid)
+        route:function(){ return off ? 'energy' : cur&&cur.why ? cur.why : 'short'; }
+      };
+    }
+
+
+
+  // Books wait for a voiced response, not a correct word. This deliberately
+  // returns no transcript, score or practice count. The local harmonic rule
+  // above comes from charge.html's speechEvidence; only its voiced route can
+  // complete a book turn (not energy, sibilants, changing noise or short taps).
+  // The caller closes narration and allows its quiet tail BEFORE calling.
+  // A separate handle exists before permission resolves, so closing a book
+  // can cancel a permission prompt whose eventual stream has not arrived yet.
+  function captureResponse(opts) {
+    opts = opts || {};
+    var resolveResult, settled = false, finishing = false, stream = null;
+    var ctx = null, src = null, analyser = null, recorder = null, chunks = [];
+    var raf = null, budgetTimer = null, recorderTimer = null, resumeTimer = null;
+    var abortListener = null, backgroundListener = null, heard = false, voicedMs = 0, lastVoiceAt = 0;
+    var lastFrameAt = 0, began = 0, quietLevels = [], roomRms = 0;
+    var maxMs = Math.min(30000, Math.max(1000, Number(opts.maxMs) || 15000));
+    var promise = new Promise(function (resolve) { resolveResult = resolve; });
+    function stopTracks(s) {
+      try { if (s) s.getTracks().forEach(function (track) { track.stop(); }); } catch (e) {}
+    }
+    function releaseInput() {
+      if (raf !== null) { try { cancelAnimationFrame(raf); } catch (e) {} raf = null; }
+      clearTimeout(budgetTimer); clearTimeout(resumeTimer);
+      try { if (src) src.disconnect(); } catch (e) {}
+      try { if (analyser) analyser.disconnect(); } catch (e) {}
+      stopTracks(stream); stream = null;
+      try { if (ctx && ctx.state !== 'closed') Promise.resolve(ctx.close()).catch(function () {}); } catch (e) {}
+    }
+    function resolveOnce(reason, spoke, blob) {
+      if (settled) return;
+      settled = true; clearTimeout(recorderTimer);
+      if (opts.signal && abortListener) try { opts.signal.removeEventListener('abort', abortListener); } catch (e) {}
+      try { if (backgroundListener) document.removeEventListener('visibilitychange', backgroundListener); global.removeEventListener('pagehide', cancel); } catch (e) {}
+      resolveResult({ spoke: !!spoke, blob: spoke ? (blob || null) : null, reason: reason });
+      chunks = [];
+    }
+    function finish(reason, spoke) {
+      if (finishing || settled) return;
+      finishing = true;
+      // Recorder completion is awaited on success so its final data event is
+      // included. Cancellation releases the device and resolves immediately.
+      var waitForClip = !!spoke && recorder && recorder.state !== 'inactive';
+      if (waitForClip) recorderTimer = setTimeout(function () { resolveOnce('error', false, null); }, 1500);
+      if (recorder) {
+        recorder.onstop = function () {
+          if (settled) return;
+          var blob = null;
+          try { if (chunks.length) blob = new Blob(chunks, { type: recorder.mimeType || 'audio/webm' }); } catch (e) {}
+          if (spoke && blob && blob.size) resolveOnce(reason, true, blob);
+          else resolveOnce(spoke ? 'error' : reason, false, null);
+        };
+        try { if (recorder.state !== 'inactive') recorder.stop(); } catch (e) { waitForClip = false; spoke = false; reason = 'error'; }
+      }
+      releaseInput();
+      if (!waitForClip) resolveOnce(reason, false, null);
+    }
+    function cancel() {
+      if (settled) return;
+      finishing = true;
+      // Cancellation also wins while a successful recorder is delivering its
+      // final chunk: a closed book must never receive that late response.
+      resolveOnce('cancelled', false, null);
+      try { if (recorder && recorder.state !== 'inactive') recorder.stop(); } catch (e) {}
+      releaseInput();
+    }
+    var handle = { promise: promise, cancel: cancel };
+    backgroundListener = function () { if (document.hidden) cancel(); };
+    try { document.addEventListener('visibilitychange', backgroundListener); global.addEventListener('pagehide', cancel); } catch (e) {}
+    if (opts.signal) {
+      abortListener = cancel;
+      if (opts.signal.aborted) { cancel(); return handle; }
+      try { opts.signal.addEventListener('abort', abortListener, { once: true }); } catch (e) {}
+    }
+    if (!global.navigator || !global.navigator.mediaDevices || !global.navigator.mediaDevices.getUserMedia || !global.MediaRecorder) {
+      finish('unavailable', false); return handle;
+    }
+    Promise.resolve().then(function () {
+      if (finishing) return null;
+      if (document.hidden) { cancel(); return null; }
+      return global.navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+    }).then(function (incoming) {
+      if (!incoming) return;
+      if (finishing || settled || document.hidden) { stopTracks(incoming); if (!settled) cancel(); return; }
+      stream = incoming;
+      var Audio = global.AudioContext || global.webkitAudioContext;
+      if (!Audio) { finish('unavailable', false); return; }
+      ctx = new Audio();
+      resumeTimer = setTimeout(function () { finish('unavailable', false); }, 2000);
+      return Promise.resolve(ctx.state === 'suspended' ? ctx.resume() : null).then(function () {
+        clearTimeout(resumeTimer);
+        if (finishing || settled) return;
+        if (ctx.state && ctx.state !== 'running') { finish('unavailable', false); return; }
+        src = ctx.createMediaStreamSource(stream);
+        analyser = ctx.createAnalyser();
+        analyser.fftSize = ctx.sampleRate >= 88200 ? 2048 : ctx.sampleRate >= 32000 ? 1024 : 512;
+        analyser.smoothingTimeConstant = 0;
+        // Old analysers without float spectra cannot establish voicing. They
+        // never fall back to byte energy or the presence of a recording blob.
+        if (!analyser.getFloatTimeDomainData || !analyser.getFloatFrequencyData) { finish('unavailable', false); return; }
+        src.connect(analyser);
+        var samples = new Float32Array(analyser.fftSize), evidence = responseSpeechEvidence();
+        evidence.attach(analyser, ctx.sampleRate);
+        recorder = new global.MediaRecorder(stream);
+        recorder.ondataavailable = function (event) { if (!settled && event.data && event.data.size) chunks.push(event.data); };
+        recorder.onerror = function () { finish('error', false); };
+        recorder.start(200);
+        try { stream.getAudioTracks().forEach(function (track) { if (track.addEventListener) track.addEventListener('ended', function () { if (!finishing) finish('unavailable', false); }, { once: true }); }); } catch (e) {}
+        began = lastFrameAt = performance.now();
+        budgetTimer = setTimeout(function () { finish('timeout', false); }, maxMs);
+        try { if (opts.onListening) opts.onListening(); } catch (e) {}
+        function sampleFrame() {
+          raf = null;
+          if (finishing || settled) return;
+          if (document.hidden || (ctx.state && ctx.state !== 'running')) { finish('cancelled', false); return; }
+          var now = performance.now(), dt = Math.min(80, Math.max(0, now - lastFrameAt));
+          lastFrameAt = now;
+          analyser.getFloatTimeDomainData(samples);
+          var sum = 0;
+          for (var k = 0; k < samples.length; k++) sum += samples[k] * samples[k];
+          var level = Math.sqrt(sum / samples.length);
+          try { if (opts.onLevel) opts.onLevel(Math.min(1, level * 6)); } catch (e) {}
+          if (finishing || settled) return;
+          var above = level > Math.min(0.09, Math.max(0.012, roomRms * 3)), voiced = false;
+          if (above) { evidence.frame(now); voiced = evidence.voiceNow(); }
+          // Only quiet, non-voiced frames can describe the room. In particular
+          // an eager answer as the mic opens is never learnt as background.
+          if (!heard && !voiced && level > 0 && level <= 0.03 && now - began < 600) {
+            quietLevels.push(level); evidence.calibrate(now);
+            if (quietLevels.length >= 4) {
+              var sorted = quietLevels.slice().sort(function (a, b) { return a - b; });
+              roomRms = sorted[Math.floor((sorted.length - 1) * 0.2)];
+              var background = evidence.measured(); if (background) evidence.floor(background);
+            }
+          }
+          if (voiced) {
+            if (lastVoiceAt && now - lastVoiceAt > 250 && !heard) voicedMs = 0;
+            voicedMs += dt; lastVoiceAt = now;
+            if (voicedMs >= 120 && evidence.route() === 'voiced') heard = true;
+          } else if (!heard && lastVoiceAt && now - lastVoiceAt > 250) {
+            voicedMs = 0; evidence.drop();
+          }
+          if (heard && now - lastVoiceAt >= 650) { finish('response', true); return; }
+          raf = requestAnimationFrame(frame);
+        }
+        function frame() {
+          try { sampleFrame(); } catch (e) { finish('error', false); }
+        }
+        frame();
+      });
+    }).catch(function (error) {
+      if (finishing || settled) return;
+      finish(error && (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') ? 'denied' : 'error', false);
+    });
+    return handle;
   }
 
   // ── Apple in-app purchases (RevenueCat, native shell only) ───────────────
@@ -3990,5 +4301,5 @@
   try { _grandfatherFreeEra4(); } catch (e) {}
   try { installDebug(); } catch (e) {}
 
-  global.Sona = { libraryPreview, previewPlan, setPreviewPlan, gameKey, gameAccess, gameBounce, finishGameTurn, catalogRun, simpleAdventure, MIC_PROMISE, playStyle, pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, TTS_CACHE_VERSION, voiceDiagnostic, voiceStatus, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, saveFor, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, ladderContent, FREE_MODE, isFree, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, adventureGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, activityLibrary, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, premium, caseCovered, caseRefresh, gated, gateVerify, gateOk, requireGate, gateDest, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, planMoment, planEligible, planShown, speak, speakNow, speakUnlock, speechAvailable, speechPerm, speechStart, speechStop, hearVerdict, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, demoState, demoDone, demoStart, demoFinish, runActive, gateBounce, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repsBeacon, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES };
+  global.Sona = { libraryPreview, previewPlan, setPreviewPlan, gameKey, gameAccess, gameBounce, finishGameTurn, catalogRun, simpleAdventure, MIC_PROMISE, playStyle, pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, TTS_CACHE_VERSION, voiceDiagnostic, voiceStatus, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, saveFor, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, ladderContent, FREE_MODE, isFree, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, adventureGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, activityLibrary, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, premium, caseCovered, caseRefresh, gated, gateVerify, gateOk, requireGate, gateDest, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, planMoment, planEligible, planShown, speak, speakNow, speakStop, speakUnlock, speechAvailable, speechPerm, speechStart, speechStop, hearVerdict, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, demoState, demoDone, demoStart, demoFinish, runActive, gateBounce, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repsBeacon, hasNativeAudio, captureClip, captureResponse, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES };
 })(window);

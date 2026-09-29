@@ -20,6 +20,7 @@ const SUITES = [
   "ttsroutetest.mjs", // voice provider, delivery cache, safe fallback and request deadline
   "voiceclienttest.mjs", // actual playback source, old-cache refresh and complete spoken turns
   "chargepacingtest.mjs", // listen/model/child-turn handoff and replay ordering
+  "bookflowtest.mjs", // book narration/response handoff, silent turns, local capture cleanup
   "readtest.mjs",  // books never go silent: browser-voice fallback when TTS dies
   "momweek.mjs",   // parent weekly goal + streak math + the three UIs
   "nativefamilytest.mjs", // native family entry; clinician routes stay browser-only

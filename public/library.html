@@ -11,120 +11,47 @@
   <meta name="theme-color" content="#fff6e9" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="mobile-web-app-capable" content="yes" />
-  <style>
-    body{background:linear-gradient(180deg,#fff7ec,#ffe9d2) fixed;}
-    .shelfhead{display:flex;align-items:center;gap:10px;margin:18px 2px 8px;}
-    .shelfhead h2{margin:0;}
-    /* warm tag pair (fix pack 1c) — the green pair was legacy Duolingo chrome */
-    .shelfhead .tag{font-size:11px;font-weight:800;color:#7a5200;background:#ffe7c4;border-radius:99px;padding:3px 9px;}
-    /* story shelf (D1): covers standing on rails — no gradient buttons */
-    .shelf{display:grid;grid-template-columns:repeat(3,1fr);gap:14px 10px;}
-    .bookBtn{position:relative;border:none;cursor:pointer;background:none;padding:0;text-align:center;
-      font-family:"Baloo 2";font-weight:800;transition:transform .06s;display:flex;flex-direction:column;align-items:center;}
-    .bookBtn:active{transform:translateY(2px);}
-    .bookBtn .cvr{position:relative;display:block;z-index:1;}
-    .bookBtn .rail{display:block;width:100%;height:9px;border-radius:3px;background:#ecd2a8;box-shadow:0 3px 0 #d9bc8c;margin-top:-5px;}
-    .bookBtn .bt{display:block;font-size:13px;margin-top:8px;line-height:1.2;color:#4a2c14;}
-    .bookBtn .bs{display:block;font-size:9.5px;margin-top:2px;letter-spacing:.06em;text-transform:uppercase;color:#b08d63;}
-    .bookBtn .doneStar{position:absolute;top:-7px;left:2px;z-index:2;filter:drop-shadow(0 2px 2px rgba(120,60,10,.3));}
-    /* word box */
-    .wordgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:10px;}
-    .wcard{border:2px solid var(--line);border-bottom-width:4px;background:#fff;border-radius:16px;padding:14px 6px 10px;cursor:pointer;
-      display:flex;flex-direction:column;align-items:center;gap:5px;transition:transform .06s;}
-    .wcard:active{transform:scale(.94);}
-    .wcard .we{font-size:42px;line-height:1;}
-    .wcard .ww{font-family:"Baloo 2";font-weight:800;font-size:13px;color:var(--blue-d);}
-
-    /* ── full-screen picture book (D2): the page is PAPER ── */
-    #book{position:fixed;inset:0;z-index:50;display:none;flex-direction:column;background:#fff6e9;}
-    #book.show{display:flex;}
-    .bktop{display:flex;align-items:center;gap:12px;padding:calc(14px + env(safe-area-inset-top)) 16px 6px;}
-    .bkclose{width:44px;height:44px;border-radius:50%;border:none;background:#fff;color:#b9a98c;font-size:18px;font-weight:800;cursor:pointer;
-      box-shadow:0 3px 0 0 rgba(120,80,20,.15);flex:0 0 auto;}
-    #bkHead{flex:1;text-align:center;font-family:"Baloo 2";font-weight:800;font-size:14px;}
-    .bkstage{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:0 22px;}
-    /* the paper spread + the page-edge stack (progress you can feel) */
-    .paperWrap{position:relative;width:100%;max-width:420px;}
-    .pstack{position:absolute;inset:0;border-radius:18px;background:#f9efdc;transform:translate(5px,5px);}
-    .pstack.two{background:#f0e2c8;transform:translate(9px,9px);}
-    .paper{position:relative;background:#fffdf7;border-radius:18px;box-shadow:0 14px 30px rgba(140,90,20,.16);padding:22px 18px 24px 30px;overflow:visible;}
-    .paper::before{content:"";position:absolute;left:0;top:0;bottom:0;width:14px;border-radius:18px 0 0 18px;background:linear-gradient(90deg,rgba(150,95,30,.13),rgba(150,95,30,0));}
-    .ribbon{position:absolute;top:-2px;right:16px;width:31px;height:62px;background:#ff7a6e;
-      clip-path:polygon(0 0,100% 0,100% 100%,50% 84%,0 100%);display:flex;flex-direction:column;align-items:center;
-      font-family:"Baloo 2";font-weight:800;font-size:11px;color:#fff;padding-top:8px;line-height:1.25;filter:drop-shadow(0 2px 2px rgba(120,60,10,.2));}
-    .bkart{width:min(52vw,190px);height:min(52vw,190px);margin:0 auto 10px;border-radius:14px;display:flex;align-items:center;justify-content:center;}
-    .bkpic{line-height:1;filter:drop-shadow(0 10px 16px rgba(150,90,10,.16));animation:bkfloat 3.4s ease-in-out infinite;}
-    @keyframes bkfloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
-    .bktext{margin-top:10px;font-family:"Baloo 2";font-weight:800;font-size:clamp(20px,5.8vw,25px);color:#5b2d05;line-height:1.4;}
-    .bktext span{cursor:pointer;border-radius:8px;padding:0 2px;}
-    .bktext span:active{background:#ffe2b3;}
-    .bkhint{margin-top:10px;font-weight:800;font-size:11px;letter-spacing:.08em;color:#a17c4a;}
-    .pgEcho{position:absolute;left:-12px;bottom:-16px;width:72px;height:72px;transform:rotate(-6deg);filter:drop-shadow(0 5px 7px rgba(120,60,10,.25));}
-    .bktitle{font-family:"Baloo 2";font-weight:800;font-size:clamp(30px,8vw,40px);color:#5b2d05;margin-top:18px;}
-    .bksub{font-weight:800;color:rgba(91,45,5,.7);margin-top:8px;}
-    .bkbottom{display:flex;align-items:center;justify-content:center;gap:12px;padding:12px 18px calc(22px + env(safe-area-inset-bottom));}
-    .bknav{border:none;border-radius:16px;padding:15px 22px;font-family:"Baloo 2";font-weight:800;font-size:16px;cursor:pointer;
-      letter-spacing:.03em;transition:transform .05s;}
-    .bknav:active{transform:translateY(3px);}
-    .bknext{flex:1;max-width:280px;color:#fff;text-transform:uppercase;white-space:nowrap;background:linear-gradient(180deg,#ffa05a,#ff8a3d);box-shadow:0 5px 0 0 #ef6f23;}
-    .bknext:active{box-shadow:0 1px 0 0 #ef6f23;}
-    .bkback{width:44px;height:44px;border-radius:50%;padding:0;background:#fff;color:#8a6f52;font-size:18px;box-shadow:0 5px 0 0 rgba(120,80,20,.18);flex:0 0 auto;}
-    .bkback.pill{width:auto;border-radius:16px;padding:15px 20px;font-size:15px;}
-    /* Hear it: white pill with the warm speaker (was a blue circle) */
-    .bkhear{display:flex;align-items:center;gap:7px;border:none;border-radius:99px;background:#fff;color:#ef6f23;
-      font-family:"Baloo 2";font-weight:800;font-size:14px;padding:12px 18px;cursor:pointer;box-shadow:0 5px 0 0 rgba(120,80,20,.18);flex:0 0 auto;}
-    .bkhear:active{transform:translateY(3px);box-shadow:0 1px 0 0 rgba(120,80,20,.18);}
-    @media (prefers-reduced-motion:reduce){ .bkpic{animation:none;} }
-  </style>
+  <link rel="stylesheet" href="/books.css" />
 </head>
 <body>
-  <div class="wrap">
+  <main class="wrap" id="libraryMain">
     <header class="app">
-      <div class="brand"><span class="leo"><svg viewBox="0 0 64 64" style="width:22px;height:22px;vertical-align:-4px"><path d="M10 14c8-4 15-4 22 0v38c-7-4-14-4-22 0Z" fill="#4db3f2"/><path d="M54 14c-8-4-15-4-22 0v38c7-4 14-4 22 0Z" fill="#2a8fd4"/><line x1="32" y1="14" x2="32" y2="52" stroke="#1c6fa8" stroke-width="2"/><circle cx="19" cy="22" r="3" fill="#fff" opacity=".8"/></svg></span> Library</div>
-      <div class="pills">
-        <a class="iconbtn" href="/today.html" title="Home" style="display:flex;align-items:center;justify-content:center;">✕</a>
-      </div>
+      <a class="library-back" href="/today.html" aria-label="Back to games"><span aria-hidden="true">←</span></a>
+      <div class="brand">Sona<span class="brand-section">Books</span></div>
+      <img class="library-echo" src="/coach/echo/echo-avatar.svg" alt="Echo" />
     </header>
-
-    <div class="card" style="display:flex;gap:12px;align-items:center;">
-      <img src="/coach/echo/echo-idle.svg" alt="Echo" style="width:58px;height:58px;object-fit:contain;flex:0 0 auto;" />
-      <div><b style="font-family:'Baloo 2';font-size:17px;">Just for fun!</b>
-      <p class="muted" style="font-size:13px;font-weight:700;">No scores in here — read picture books with Echo and play with words.</p></div>
-    </div>
-
-    <!-- Feed Echo lives here for EVERYONE (it's the littles' main game, but
-         big kids love feeding him too) — the library is the no-scores zone -->
-    <button id="feedTile" onclick="location.href='/arcade-feed.html'" style="width:100%;border:none;cursor:pointer;border-radius:18px;padding:14px 16px;margin-top:14px;text-align:left;display:flex;align-items:center;gap:14px;background:linear-gradient(120deg,#cef0b8,#a9e18f);box-shadow:0 6px 0 rgba(90,150,60,.35);">
-      <svg viewBox="0 0 64 64" style="width:40px;height:40px;flex:0 0 auto"><circle cx="32" cy="32" r="30" fill="#fff" opacity=".85"/><ellipse cx="32" cy="46" rx="16" ry="6" fill="#8fdc7a"/><circle cx="32" cy="30" r="13" fill="#ff5c5c"/><path d="M32 18q4-4 8-2-3 4-8 2Z" fill="#58cc02"/><rect x="31" y="14" width="2.5" height="6" rx="1.2" fill="#8a5a2a"/><circle cx="27" cy="26" r="2" fill="#fff" opacity=".85"/></svg>
-      <span><b style="display:block;font-family:'Baloo 2';font-weight:800;font-size:16px;color:#2e5c1a;">Feed Echo</b>
-      <span style="display:block;font-weight:800;font-size:12px;color:#3f7d2a;margin-top:2px;">Say the word, tap the picture — watch Echo grow!</span></span>
-    </button>
-
-    <button id="advTile" onclick="location.href='/story.html'" style="width:100%;border:none;cursor:pointer;border-radius:18px;padding:16px;margin-top:14px;text-align:left;display:flex;align-items:center;gap:14px;background:linear-gradient(120deg,#35407e,#6a5aa8 70%,#8a6fc4);box-shadow:0 6px 0 rgba(30,24,70,.35);">
-      <svg viewBox="0 0 64 64" style="width:44px;height:44px;flex:0 0 auto"><path d="M32 5l8.2 18.6L60 25.8 44.9 39.2 49.8 59 32 48.4 14.2 59l4.9-19.8L4 25.8l19.8-2.2Z" fill="#ffd21c"/><circle cx="25" cy="21" r="3" fill="#fff" opacity=".85"/></svg>
-      <span><b id="advTitle" style="display:block;font-family:'Baloo 2';font-weight:800;font-size:17px;color:#fff;">Your Adventure</b>
-      <span id="advSub" style="display:block;font-weight:800;font-size:12px;color:rgba(255,255,255,.85);margin-top:2px;">A brand-new story, written just for you — never the same twice</span></span>
-    </button>
-
-    <div class="shelfhead"><h2>Sound stories</h2><span class="tag">ECHO READS</span></div>
+    <section class="library-intro" aria-labelledby="libraryTitle">
+      <p class="eyebrow">A LITTLE WORLD OF STORIES</p>
+      <h1 id="libraryTitle">Let's read!</h1>
+      <p>Find a little adventure.<br>Echo will read along with you.</p>
+    </section>
+    <div class="shelfhead"><h2>Pick a story</h2><span class="tag" id="bookCount"></span></div>
     <div class="shelf" id="shelf"></div>
-
-    <div class="shelfhead"><h2>Word box</h2><span class="tag">TAP TO HEAR</span></div>
-    <div class="sounds" id="wbSounds" style="margin-top:2px;"></div>
-    <div class="wordgrid" id="wordgrid"></div>
-  </div>
+    <p class="library-note">Just for fun. No scores, no hurry.</p>
+    <details class="library-extras">
+      <summary>More to explore<span aria-hidden="true">+</span></summary>
+      <button id="feedTile" class="extra-tile" onclick="location.href='/arcade-feed.html'"><img src="/coach/echo/echo-idle.svg" alt="" /><span><b>Feed Echo</b><small>Say the word, tap the picture — watch Echo grow!</small></span><span aria-hidden="true">→</span></button>
+      <button id="advTile" class="extra-tile" onclick="location.href='/story.html'"><span class="extra-book" aria-hidden="true">✦</span><span><b id="advTitle">Your Adventure</b><small id="advSub">A brand-new story, written just for you — never the same twice</small></span><span aria-hidden="true">→</span></button>
+      <div class="shelfhead"><h2>Word box</h2><span class="tag">TAP TO HEAR</span></div>
+      <div class="sounds" id="wbSounds"></div>
+      <div class="wordgrid" id="wordgrid"></div>
+    </details>
+  </main>
 
   <!-- full-screen picture book -->
-  <div id="book">
+  <div id="book" role="dialog" aria-modal="true" aria-labelledby="bkHead" tabindex="-1">
     <div class="bktop">
-      <button class="bkclose" id="bkClose">✕</button>
+      <button class="bkclose" id="bkClose" aria-label="Close book">✕</button>
       <div id="bkHead"></div>
-      <div style="width:44px;flex:0 0 auto;"></div>
+      <div id="bkCount" class="page-count"></div>
     </div>
     <div class="bkstage" id="bkStage"></div>
+    <div id="bkProgress" class="book-progress" aria-label="Book progress"></div>
     <div class="bkbottom">
+      <div id="bookTurn" role="status" aria-live="polite"><div class="turn-word" id="bookPrompt"></div><div class="turn-status" id="bookStatus"></div></div>
       <button class="bknav bkback" id="bkPrev" aria-label="Back a page">←</button>
-      <button class="bkhear" id="bkHear" title="Hear it again"><svg viewBox="0 0 24 24" style="width:18px;height:18px"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="#ef6f23"/><path d="M16 8.5a5 5 0 0 1 0 7" stroke="#ef6f23" stroke-width="2" fill="none" stroke-linecap="round"/></svg>Hear it</button>
+      <button class="bkhear" id="bkHear" title="Hear it again"><svg viewBox="0 0 24 24" style="width:18px;height:18px"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor"/><path d="M16 8.5a5 5 0 0 1 0 7" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg>Hear it</button>
+      <button class="bkhear" id="bkMic" type="button" hidden>Try microphone</button>
       <button class="bknav bknext" id="bkNext">Next →</button>
     </div>
   </div>
@@ -232,74 +159,98 @@
         { e: "👋", t: "Fifi waves: farewell, farewell!" } ] },
     ];
 
-    /* ---- speech (no scoring, just listening) ---- */
-    var audioCtx = null, playing = false, curSrc = null, sayToken = 0;
-    function getCtx() { if (!audioCtx) { var AC = window.AudioContext || window.webkitAudioContext; audioCtx = new AC(); } if (audioCtx.state === "suspended") audioCtx.resume(); return audioCtx; }
-    // iOS blocks audio that starts OUTSIDE a tap: the say() pipeline creates
-    // its context after an async fetch, which Safari treats as gesture-less →
-    // silence. Unlock synchronously inside every tap that leads to speech.
-    function unlockAudio(){ try{ var c=getCtx(); if(c.state==="suspended")c.resume(); var b=c.createBuffer(1,1,22050), s=c.createBufferSource(); s.buffer=b; s.connect(c.destination); s.start(0); }catch(e){} }
+    /* Narration uses the shared, bounded speech pipeline. A turn token keeps
+       a cancelled page from opening its microphone after a late TTS result. */
+    var playing = false, sayToken = 0, bookMicClosedAt = 0;
+    function unlockAudio() { try { Sona.speakUnlock(); } catch (e) {} }
     document.addEventListener("pointerdown", unlockAudio, { passive:true, capture:true });
-    function stopSpeech() { sayToken++; try { curSrc && curSrc.stop(); } catch (e) {} curSrc = null; playing = false; try { window.speechSynthesis && speechSynthesis.cancel(); } catch (e) {} }
-
-    // Guaranteed-audio fallback. library.html was the ONLY speaking page with
-    // no browser-voice path: when /api/tts failed (quota, key, network) the
-    // books just went quiet, while every other page kept talking. A child
-    // pressing "Hear it" must never get silence.
-    function speakFallback(text) {
-      return new Promise(function (resolve) {
-        try {
-          if (!window.speechSynthesis) return resolve();
-          var u = new SpeechSynthesisUtterance(text);
-          u.rate = 0.95; u.pitch = 1.05;
-          u.volume = (profile.volume != null ? profile.volume : 0.8);
-          var done = false;
-          function fin() { if (done) return; done = true; resolve(); }
-          u.onend = fin; u.onerror = fin;
-          // poll instead of trusting a fixed timer — the fixed-timeout version
-          // of this pattern released too early and let two voices overlap
-          var t0 = Date.now();
-          (function watch() {
-            if (done) return;
-            if (!speechSynthesis.speaking && Date.now() - t0 > 400) return fin();
-            if (Date.now() - t0 > 15000) return fin();
-            setTimeout(watch, 400);
-          })();
-          speechSynthesis.speak(u);
-        } catch (e) { resolve(); }
-      });
+    function stopSpeech() { sayToken++; playing = false; try { Sona.speakStop(); } catch (e) {} }
+    function say(text) {
+      var token = ++sayToken; playing = true;
+      // Give the phone's input audio session time to release before output.
+      var quietMs = Math.max(0, 250 - (Date.now() - bookMicClosedAt));
+      return new Promise(function (resolve) { if (quietMs) setTimeout(resolve, quietMs); else resolve(); }).then(function () {
+        if (token !== sayToken) return;
+        return Sona.speakNow(text, { auto:false });
+      }).then(function () { if (token === sayToken) playing = false; });
     }
 
-    function say(text) {
-      return new Promise(function (resolve) {
-        if (!text) return resolve();
-        var tok = ++sayToken;
-        playing = true;
-        function fin() { if (tok === sayToken) playing = false; resolve(); }
-        // a hung fetch used to leave `playing` true forever, which silently
-        // disabled the Hear button for the rest of the session
-        var ctrl = null, to = null;
-        try { ctrl = new AbortController(); to = setTimeout(function () { try { ctrl.abort(); } catch (e) {} }, 7000); } catch (e) {}
-        fetch("/api/tts", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text: text, voice: profile.voiceId || "" }), signal: ctrl ? ctrl.signal : undefined })
-          .then(function (r) { if (to) clearTimeout(to); if (!r.ok) throw 0; return r.arrayBuffer(); })
-          .then(function (buf) {
-            if (tok !== sayToken) { playing = false; return resolve(); } // superseded — don't overlap
-            if (!buf || !buf.byteLength) throw 0;
-            var bytes = new Uint8Array(buf), ctx = getCtx(), n = bytes.byteLength >> 1;
-            var ab = ctx.createBuffer(1, n, 24000), ch = ab.getChannelData(0);
-            var dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
-            for (var i = 0; i < n; i++) ch[i] = dv.getInt16(i * 2, true) / 32768;
-            var s = ctx.createBufferSource(); s.buffer = ab; s.playbackRate.value = PITCH; var g = ctx.createGain(); g.gain.value = (profile.volume != null ? profile.volume : 0.8); s.connect(g); g.connect(ctx.destination);
-            curSrc = s;
-            s.onended = function () { curSrc = null; fin(); };
-            s.start();
-          })
-          .catch(function () {
-            if (to) clearTimeout(to);
-            if (tok !== sayToken) { playing = false; return resolve(); }
-            speakFallback(text).then(fin, fin);
-          });
+    // Explicit words preserve phonemes, including final TH in bath/teeth and
+    // SH in wish. Letter matching would pick voiced "the" or S in "sleeping".
+    // Requested prototype: mapping/response rule is documented for Rachel.
+    var BOOK_TARGETS = {
+      rory:["Rory","rocket","rock","ring","river","Rory"],
+      reba:["Reba","rose","rabbit","ribbon","Rain","ready"],
+      ruby:["Ruby","rise","red","Ruby","rooster","run"],
+      remy:["Remy","rock","red","raft","reeds","Remy"],
+      rex:["Rex","road","rolls","red","rabbit","Run"],
+      sunny:["sun","silly","sand","soup","song","Sunny"],
+      lily:["lemon","log","leaf","laughs","look","loves"],
+      kiki:["cake","key","kite","cookie","cat","cool"],
+      shelly:["shoes","shell","ship","wish","milkshake","Shelly"],
+      charlie:["cherries","Charlie","cheese","chair","chips","cheep"],
+      theo:["thinks","three","thumbs","teeth","bath","Thank"],
+      gus:["goat","gift","guitar","gate","giggles","game"],
+      fifi:["Fifi","fish","feet","fast","fun","Fifi"]
+    };
+    var bookEpoch = 0, bookCapture = null, bookTimer = null, pageReady = false;
+    function cancelBookTurn() {
+      bookEpoch++; clearTimeout(bookTimer); bookTimer = null;
+      if (bookCapture) { bookCapture.cancel(); bookCapture = null; bookMicClosedAt = Date.now(); }
+      stopSpeech();
+    }
+    function liveTurn(token) { return token === bookEpoch && BOOK && page >= 0 && page < BOOK.pages.length && !document.hidden; }
+    function turnUI(phase, word, status) {
+      document.getElementById("book").setAttribute("data-turn", phase);
+      document.getElementById("bookPrompt").textContent = word;
+      document.getElementById("bookStatus").textContent = status;
+      var mic = document.getElementById("bkMic");
+      mic.hidden = false;
+      mic.disabled = phase !== "retry" && phase !== "paused";
+      mic.textContent = phase === "listening" ? "Listening…" : (phase === "retry" ? "Try microphone" : (phase === "paused" ? "Resume" : "Your turn"));
+      document.getElementById("bkNext").disabled = !pageReady;
+    }
+    function repeatPage(readPage) {
+      if (!BOOK || page < 0 || page >= BOOK.pages.length) return;
+      cancelBookTurn(); pageReady = false;
+      var token = bookEpoch, word = BOOK_TARGETS[bookSlug(BOOK)][page], sentence = BOOK.pages[page].t;
+      turnUI("reading", readPage ? "Listen to Echo" : "Your turn", readPage ? "Then it is your turn." : "Listen to your word.");
+      var first = readPage ? say(sentence) : Promise.resolve();
+      first.then(function () {
+        if (!liveTurn(token)) return;
+        turnUI("prompting", "Say " + word, "");
+        return say("Say " + word + ".").then(function () {
+          if (!liveTurn(token)) return;
+          // The browser voice watchdog can return before a stuck utterance
+          // ends. Never let that utterance become the child's response.
+          if (window.speechSynthesis && speechSynthesis.speaking) {
+            stopSpeech(); turnUI("paused", "Say " + word, "Tap Resume to hear your word again."); return;
+          }
+          bookTimer = setTimeout(function () { listenOnPage(token, word); }, 400);
+        });
+      }).catch(function () { if (liveTurn(token)) turnUI("paused", "Say " + word, "Tap Resume to try again."); });
+    }
+    function listenOnPage(token, word) {
+      if (!liveTurn(token)) return;
+      turnUI("opening", "Say " + word, "Opening the microphone…");
+      var capture = Sona.captureResponse({ maxMs:15000,
+        onListening:function () { if (liveTurn(token)) turnUI("listening", "Say " + word, "I'm listening. Take your time."); },
+        onLevel:function (level) { if (liveTurn(token)) document.getElementById("bkMic").style.setProperty("--voice-level", level); }
       });
+      bookCapture = capture;
+      capture.promise.then(function (result) {
+        if (!liveTurn(token)) return;
+        bookCapture = null; bookMicClosedAt = Date.now();
+        if (!result.spoke || result.reason !== "response") {
+          var status = result.reason === "denied" ? "Ask a grown-up to allow the microphone in your browser or app settings, then try again." : (result.reason === "unavailable" ? "A microphone is needed to turn the page." : "I didn't hear you yet. Let's try again.");
+          turnUI("retry", "Say " + word, status); return;
+        }
+        // A voiced attempt moves the story. It is not a word-correctness
+        // grade and never adds a scored rep or a clinician outcome.
+        pageReady = true; turnUI("heard", "I heard you!", "Turning the page…");
+        if (result.blob) Sona.saveRecording({ sound:BOOK.sound, word:word, level:"book", blob:result.blob });
+        bookTimer = setTimeout(function () { if (liveTurn(token) && pageReady) { page++; showPage(); } }, 650);
+      }).catch(function () { if (liveTurn(token)) { bookCapture = null; turnUI("retry", "Say " + word, "Try the microphone again."); } });
     }
 
     /* ---- shelf ---- */
@@ -331,14 +282,16 @@
       try { if (libRead()[st.title]) return true; } catch (e) {}
       try { var g = JSON.parse(localStorage.getItem((window.Sona&&Sona.kkey)?Sona.kkey("sona.games.v1"):"sona.games.v1") || "{}"); return !!(g[st.sound] && g[st.sound].story && g[st.sound].story.done); } catch (e) { return false; }
     }
+    document.getElementById("bookCount").textContent = STORIES.length + " books";
     STORIES.forEach(function (st) {
       var b = document.createElement("button");
       b.className = "bookBtn";
+      b.setAttribute("aria-label", st.title + ", " + st.sound + " sound, " + st.pages.length + " pages" + (wasRead(st) ? ", read" : ""));
+      st.shelfButton = b;
       b.innerHTML = '<span class="cvr">' + cover(st, 76) + '</span>'
         + (wasRead(st) ? '<span class="doneStar">' + ((window.Sona && Sona.icon) ? Sona.icon("star", 22) : "") + '</span>' : "")
-        + '<span class="rail"></span>'
         + '<span class="bt">' + st.title + '</span>'
-        + '<span class="bs">' + st.pages.length + ' pages</span>';
+        + '<span class="bs">' + st.sound + ' sound<span aria-hidden="true"> · </span>' + st.pages.length + ' pages<span class="book-open" aria-hidden="true">→</span></span>';
       b.onclick = function () { if (window.Sona) Sona.sfx.tap(); openBook(st); };
       shelf.appendChild(b);
     });
@@ -391,7 +344,7 @@
       }
       return (window.Sona&&Sona.pic)?Sona.pic(readerWord(pg.t),pg.e,118):(pg.e||"");
     }
-    function cover(st,w){ var c0=st.colors[0],c1=st.colors[1];
+    function legacyCover(st,w){ var c0=st.colors[0],c1=st.colors[1];
       var face=(window.Sona&&Sona.COVER_FACES&&Sona.COVER_FACES[st.sound])||"";
       return '<svg viewBox="0 0 60 76" style="width:'+w+'px;height:'+Math.round(w*76/60)+'px;overflow:visible">'
         +'<rect x="2" y="8" width="52" height="62" rx="7" fill="#fff" style="filter:drop-shadow(0 3px 5px rgba(0,0,0,.18))"/>'
@@ -401,20 +354,32 @@
         +'<circle cx="52" cy="10" r="10" fill="'+c1+'"/>'
         +'<text x="52" y="14" text-anchor="middle" font-family="Baloo 2" font-weight="800" font-size="'+(String(st.sound).length>1?8:10)+'" fill="#fff">'+st.sound+'</text>'
         +'</svg>'; }
-    // per-story wash for the reader background (D2): story tint over cream
-    function hexRgba(hex, a) { try { var h = hex.replace("#", ""); return "rgba(" + parseInt(h.substr(0, 2), 16) + "," + parseInt(h.substr(2, 2), 16) + "," + parseInt(h.substr(4, 2), 16) + "," + a + ")"; } catch (e) { return "rgba(255,122,110," + a + ")"; } }
-    var BOOK = null, page = -1; // -1 = cover, pages.length = The End
+    // The atlas is six equal illustrations, in reading order. The page's
+    // original picture stays available if its artwork cannot load.
+    function bookSlug(st) { return st.title.split(" ")[0].toLowerCase(); }
+    function scene(st, n, isCover) {
+      var col = n % 3, row = Math.floor(n / 3);
+      var label = isCover ? st.title : st.pages[n].t;
+      var fallback = isCover ? legacyCover(st, 110) : readerArt(st.pages[n]);
+      return '<span class="story-scene" role="img" aria-label="' + label.replace(/"/g, "&quot;") + '">'
+        + '<span class="scene-fallback">' + fallback + '</span>'
+        + '<img class="story-atlas" src="/assets/books/' + bookSlug(st) + '.jpg" alt="" aria-hidden="true" loading="lazy" decoding="async" style="left:' + (-col * 100) + '%;top:' + (-row * 100) + '%" onerror="this.parentNode.classList.add(&quot;art-missing&quot;);this.style.display=&quot;none&quot;;" />'
+        + '</span>';
+    }
+    function cover(st) { return '<span class="cover-art">' + scene(st, 0, true) + '<span class="cover-spine" aria-hidden="true"></span></span>'; }
+    var BOOK = null, page = -1, returnFocus = null;
     var bkStage = document.getElementById("bkStage"), bkHead = document.getElementById("bkHead");
 
     function openBook(st) {
+      returnFocus = document.activeElement;
       BOOK = st; page = -1;
       var bk = document.getElementById("book");
       bk.classList.add("show");
-      // tint layers OVER the opaque cream (backgroundImage keeps the base color)
-      bk.style.backgroundImage = "linear-gradient(180deg," + hexRgba(st.colors[0], .18) + ", #fff6e9 52%, #ffedd8)";
-      bkHead.textContent = st.title + " · " + st.sound + " sound";
-      bkHead.style.color = st.colors[1];
+      document.body.classList.add("reading");
+      document.getElementById("libraryMain").setAttribute("inert", "");
+      bkHead.textContent = st.title;
       showPage();
+      document.getElementById("bkNext").focus();
     }
     // color every target-sound letter in a sentence (design §8 reader)
     function readerWord(t){ try{ var ws=String(t||"").toLowerCase().replace(/[^a-z ]/g," ").split(/\s+/);
@@ -424,71 +389,107 @@
       return html.replace(/>([^<]+)</g, function(m, txt){
         return ">"+txt.replace(new RegExp("(["+L.toLowerCase()+L.toUpperCase()+"])","g"), '<b style="color:#ef6f23">$1</b>')+"<"; // kid accent, matches the sound chip (1c)
       }); }catch(e){ return html; } }
-    function closeBook() { stopSpeech(); document.getElementById("book").classList.remove("show"); BOOK = null; }
+    function closeBook() {
+      cancelBookTurn(); document.getElementById("book").classList.remove("show");
+      document.body.classList.remove("reading");
+      document.getElementById("libraryMain").removeAttribute("inert");
+      BOOK = null;
+      if (returnFocus && returnFocus.focus) returnFocus.focus();
+    }
 
     function tappable(t) {
-      return t.split(" ").map(function (w) { return "<span>" + w + "</span>"; }).join(" ");
-    }
-    // Echo leans on the page corner and reads along: listening while the line
-    // plays, idle after (celebrate on The End).
-    function readAlong(text) {
-      var e = document.getElementById("pgEcho");
-      if (e) e.src = "/coach/echo/echo-listening.svg";
-      return say(text).then(function () { var e2 = document.getElementById("pgEcho"); if (e2) e2.src = "/coach/echo/echo-idle.svg"; });
+      return t.split(" ").map(function (w) {
+        var word = w.replace(/[^a-zA-Z']/g, "");
+        if (!word) return w;
+        return '<span role="button" tabindex="0" aria-label="Hear ' + word + '">' + w + '</span>';
+      }).join(" ");
     }
     function showPage() {
-      stopSpeech();
+      if (!BOOK) return;
+      cancelBookTurn(); pageReady = false;
+      document.getElementById("bookTurn").hidden = page < 0 || page >= BOOK.pages.length;
+      document.getElementById("bkMic").hidden = true;
+      document.getElementById("book").removeAttribute("data-turn");
       var prev = document.getElementById("bkPrev"), next = document.getElementById("bkNext"), hear = document.getElementById("bkHear");
-      prev.classList.remove("pill"); prev.textContent = "←";
+      next.disabled = false;
+      var N = BOOK.pages.length;
+      prev.classList.remove("pill"); prev.textContent = "←"; prev.setAttribute("aria-label", "Back a page");
       prev.style.visibility = page <= -1 ? "hidden" : "visible";
-      var N = BOOK.pages.length, left = N - 1 - page; // pages after this one
+      bkStage.scrollTop = 0;
+      document.getElementById("book").setAttribute("data-page", page < 0 ? "cover" : (page >= N ? "end" : "story"));
+      document.getElementById("bkCount").textContent = page < 0 ? N + " pages" : (page >= N ? "Finished" : (page + 1) + " / " + N);
+      var progress = document.getElementById("bkProgress"), dots = "";
+      for (var dot = 0; dot < N; dot++) dots += '<span class="' + (dot <= page ? "done" : "") + (dot === page ? " current" : "") + '"></span>';
+      progress.innerHTML = dots;
+      progress.setAttribute("aria-label", page < 0 ? "Book cover" : (page >= N ? "Book finished" : "Page " + (page + 1) + " of " + N));
       if (page === -1) {
-        bkStage.innerHTML = '<div class="bkpic">' + cover(BOOK, 150) + '</div><div class="bktitle">' + BOOK.title + '</div><div class="bksub">A story full of ' + BOOK.sound + ' sounds — Echo reads it to you!</div>';
-        next.textContent = "Start →"; hear.style.visibility = "hidden";
+        bkStage.innerHTML = '<div class="cover-page">' + cover(BOOK) + '<div class="cover-copy"><p class="eyebrow">READ WITH ECHO</p><h1 class="bktitle">' + BOOK.title + '</h1><p class="bksub">A story full of ' + BOOK.sound + ' sounds.</p><p class="book-mic-note" id="bookMicPromise"></p></div></div>';
+        document.getElementById("bookMicPromise").textContent = Sona.MIC_PROMISE;
+        next.textContent = "Read & say it →"; hear.style.visibility = "hidden";
         say(BOOK.title + "! A story full of " + BOOK.sound + " sounds.");
       } else if (page >= N) {
-        // The End: star burst IN the art panel, no page-edge stack left
-        bkStage.innerHTML = '<div class="paperWrap"><div class="paper">'
-          + '<div class="bkart" style="background:radial-gradient(circle,rgba(255,210,28,.3),rgba(255,210,28,0) 72%)"><div class="bkpic" style="filter:none"><svg viewBox="0 0 64 64" style="width:120px;height:120px"><path d="M32 5l8.2 18.6L60 25.8 44.9 39.2 49.8 59 32 48.4 14.2 59l4.9-19.8L4 25.8l19.8-2.2Z" fill="#ffd21c"/><circle cx="25" cy="21" r="3" fill="#fff" opacity=".85"/></svg></div></div>'
-          + '<div class="bktitle" style="margin-top:4px;">The End!</div><div class="bksub">Great listening! Read it again or pick another story.</div>'
-          + '<img class="pgEcho" id="pgEcho" src="/coach/echo/echo-celebrate.svg" alt="Echo" />'
-          + '</div></div>';
-        next.textContent = "All done ✓"; hear.style.visibility = "hidden";
-        prev.classList.add("pill"); prev.textContent = "Read again"; prev.style.visibility = "visible";
+        bkStage.innerHTML = '<div class="end-page">' + scene(BOOK, N - 1, false) + '<div class="end-copy"><p class="eyebrow">ONE LITTLE ADVENTURE, ALL READ</p><h1 class="bktitle">The End!</h1><p class="bksub">Great reading! Pick another little adventure.</p></div></div>';
+        next.textContent = "Back to books"; hear.style.visibility = "hidden";
+        prev.classList.add("pill"); prev.textContent = "Read again"; prev.setAttribute("aria-label", "Read again"); prev.style.visibility = "visible";
         markRead(BOOK.title);
+        if (BOOK.shelfButton && !BOOK.shelfButton.querySelector(".doneStar")) {
+          var star = document.createElement("span"); star.className = "doneStar"; star.setAttribute("aria-label", "Read");
+          star.innerHTML = Sona.icon ? Sona.icon("star", 20) : ""; BOOK.shelfButton.appendChild(star);
+          BOOK.shelfButton.setAttribute("aria-label", BOOK.shelfButton.getAttribute("aria-label") + ", read");
+        }
         if (window.Sona) { Sona.confetti({ count: 130, duration: 2200 }); Sona.sfx.star(); }
-        say("The end! Great listening!");
+        say("The end! Great reading!");
       } else {
         var pg = BOOK.pages[page];
-        bkStage.innerHTML = '<div class="paperWrap">'
-          + (left >= 2 ? '<div class="pstack two"></div>' : "")
-          + (left >= 1 ? '<div class="pstack"></div>' : "")
-          + '<div class="paper">'
-          + '<span class="ribbon" style="background:' + BOOK.colors[0] + '">' + (page + 1) + '<span style="font-size:8.5px;opacity:.85">of ' + N + '</span></span>'
-          + '<div class="bkart" style="background:radial-gradient(circle,' + hexRgba(BOOK.colors[0], .16) + ',' + hexRgba(BOOK.colors[1], .05) + ' 75%)"><div class="bkpic" style="filter:none">' + readerArt(pg) + '</div></div>'
-          + '<div style="display:inline-block;background:#ffe7d3;color:#ef6f23;font-family:Baloo 2;font-weight:800;font-size:11px;letter-spacing:.08em;border-radius:99px;padding:4px 12px;">' + BOOK.sound + ' SOUND</div>'
-          + '<div class="bktext">' + tintSound(tappable(pg.t), BOOK.sound) + '</div>'
-          + '<div class="bkhint">TAP ANY WORD TO HEAR IT</div>'
-          + '<img class="pgEcho" id="pgEcho" src="/coach/echo/echo-listening.svg" alt="Echo" />'
-          + '</div></div>';
-        next.textContent = "Next →"; hear.style.visibility = "visible";
+        bkStage.innerHTML = '<article class="paperWrap"><div class="paper">' + scene(BOOK, page, false)
+          + '<div class="page-copy"><div class="bktext">' + tintSound(tappable(pg.t), BOOK.sound) + '</div>'
+          + '<div class="bkhint">Listen. Say your word. Turn the page.</div></div></div></article>';
+        next.textContent = page === N - 1 ? "Finish →" : "Next →"; hear.style.visibility = "visible";
         bkStage.querySelectorAll(".bktext span").forEach(function (sp) {
-          sp.onclick = function () { if (playing) return; readAlong(sp.textContent.replace(/[^a-zA-Z']/g, "")); };
+          sp.onclick = function () {
+            cancelBookTurn(); pageReady = false;
+            var token = bookEpoch, word = BOOK_TARGETS[bookSlug(BOOK)][page];
+            turnUI("reading", "Listen to Echo", "Then say your word.");
+            say(sp.textContent.replace(/[^a-zA-Z']/g, "")).then(function () { if (liveTurn(token)) repeatPage(false); });
+          };
+          sp.onkeydown = function (event) { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); sp.click(); } };
         });
-        readAlong(pg.t);
+        repeatPage(true);
       }
     }
     document.getElementById("bkNext").onclick = function () {
-      if (window.Sona) Sona.sfx.tap();
+      if (!BOOK || (page >= 0 && page < BOOK.pages.length && !pageReady)) return;
+      unlockAudio();
       if (BOOK && page >= BOOK.pages.length) { closeBook(); return; }
       page++; showPage();
     };
     document.getElementById("bkPrev").onclick = function () {
+      unlockAudio();
       if (BOOK && page >= BOOK.pages.length) { page = -1; showPage(); return; } // Read again
       if (page > -1) { page--; showPage(); }
     };
-    document.getElementById("bkHear").onclick = function () { if (BOOK && page >= 0 && page < BOOK.pages.length && !playing) say(BOOK.pages[page].t); };
+    document.getElementById("bkHear").onclick = function () { unlockAudio(); repeatPage(true); };
+    document.getElementById("bkMic").onclick = function () { unlockAudio(); repeatPage(false); };
     document.getElementById("bkClose").onclick = closeBook;
+    Sona.onBackground(function () {
+      if (!BOOK) return;
+      cancelBookTurn(); pageReady = false;
+      if (page >= 0 && page < BOOK.pages.length) turnUI("paused", "Take a little break", "Tap Resume when you're ready.");
+    });
+
+    document.addEventListener("keydown", function (event) {
+      if (!BOOK) return;
+      if (event.key === "Escape") { event.preventDefault(); closeBook(); return; }
+      if (event.key === "ArrowRight") { event.preventDefault(); document.getElementById("bkNext").click(); }
+      if (event.key === "ArrowLeft") { event.preventDefault(); document.getElementById("bkPrev").click(); }
+      if (event.key === "Tab") {
+        var controls = document.getElementById("book").querySelectorAll("button, [tabindex='0']"), visible = [];
+        for (var i = 0; i < controls.length; i++) if (!controls[i].disabled && getComputedStyle(controls[i]).visibility !== "hidden" && controls[i].getClientRects().length) visible.push(controls[i]);
+        var first = visible[0], last = visible[visible.length - 1];
+        if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+        else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+      }
+    });
 
     /* ---- word box ---- */
     var wbHost = document.getElementById("wbSounds"), grid = document.getElementById("wordgrid");
