@@ -284,14 +284,20 @@ await scenario("catalog in the app", async () => {
     const simple = cat.lib.find((g) => g.id === "simple").keys, arcade = cat.lib.find((g) => g.id === "arcade").keys;
     ok("Home lists the ages 3-4 games under Simple play and the 5-8 games under Arcade",
       GAMES.every((g) => (g.group === "simple" ? simple : arcade).includes(g.key)));
-    ok("the parked titles still close the Simple play shelf", simple.slice(-2).join() === "bubbles,peekaboo", simple);
+    // Monday drops (30 Sep 2026): playable games first, then the parked ones,
+    // soonest Monday first
+    const days = await page.evaluate((keys) => keys.map((k) => ({ k, parked: !!Sona.GAME_ACTS[k].comingSoon, on: Sona.GAME_ACTS[k].comingOn || "" })), simple);
+    const firstParked = days.findIndex((d) => d.parked);
+    ok("the Simple play shelf lists its playable games, then the parked ones soonest Monday first",
+      firstParked > 0 && days.slice(firstParked).every((d, i, a) => d.parked && d.on && (i === 0 || a[i - 1].on <= d.on)), days);
     ok("no Say & Play game joins the daily adventure", !cat.adventure.some((k) => KEYS.includes(k)), cat.adventure);
     ok("each game wears its own sticker", cat.stickers.every((s, i) => s === "sp-" + KEYS[i]));
     ok("Home shows a card for every game", KEYS.every((k) => cat.cards.includes(k)));
     // COMING SOON: the card is there, greyed out, and says so.
     const parked = KEYS.filter((k, i) => cat.acts[i] && cat.acts[i].comingSoon);
     const cards = await page.evaluate((keys) => keys.map((k) => { const b = document.querySelector('#activityGroups button[data-game="' + k + '"]'); return { k, disabled: !!b && b.disabled, text: b ? b.innerText : "", faded: b ? getComputedStyle(b.querySelector(".game-art")).opacity : "" }; }), parked);
-    ok("every parked game shows a greyed-out Coming soon card that cannot be tapped", parked.length > 0 && cards.every((c) => c.disabled && /Coming soon/.test(c.text) && Number(c.faded) < 1), cards.filter((c) => !c.disabled || !/Coming soon/.test(c.text)));
+    const coming = /Coming (soon|[A-Z][a-z]{2} \d{1,2})\b/;
+    ok("every parked game shows a greyed-out card, saying its Monday or Coming soon, that cannot be tapped", parked.length > 0 && cards.every((c) => c.disabled && coming.test(c.text) && Number(c.faded) < 1), cards.filter((c) => !c.disabled || !coming.test(c.text)));
     clean("catalog", errors);
   } finally { await context.close(); }
 });
@@ -304,7 +310,7 @@ for (const key of KEYS.filter((k) => /\bsay: true, comingSoon: true\b/.test((rea
       await page.waitForURL(/\/(?:activities|today)\.html/, { timeout: 6000 });
       await page.waitForFunction(() => !!document.getElementById("libraryMessage"), null, { timeout: 6000 });
       ok(key + ": a typed address goes back to Home, before any mic or sound", (await page.evaluate(() => __quiet.requests)) === 0 && (await page.evaluate(() => __quiet.sounds.length)) === 0);
-      ok(key + ": …which says the game is coming soon", await until(page, () => /is coming soon/.test(document.getElementById("libraryMessage").textContent), 4000));
+      ok(key + ": …which says the game is coming, on its Monday or soon", await until(page, () => /is coming (soon|[A-Z][a-z]{2} \d{1,2})\b/.test(document.getElementById("libraryMessage").textContent), 4000));
       clean(key + " parked", errors);
     } finally { await context.close(); }
   });
