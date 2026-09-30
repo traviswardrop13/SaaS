@@ -1,6 +1,8 @@
-// The ten Say & Play games for ages 5-8: eight words a game and a goal to
-// reach (the finish line, the treasure, the last planet). No timer, no score
-// to lose, and nothing to aim at: every word the child says moves them on.
+// Nine of the ten Say & Play games for ages 5-8: eight words a game and a goal
+// to reach (the finish line, the treasure, the last planet). No timer, no score
+// to lose, and nothing to aim at: every word the child says moves them on. The
+// tenth, Hoops, is played rather than built, so it is written by hand
+// (public/arcade-hoops.html, public/hoops.js) and has no scene here.
 import { C, E, R, P, L, G, at, W, sky, sun, cloud, hills, star, heart, sparkle, note, face } from "../bookart/kit.mjs";
 import { meadowBg, starsList } from "../bookart/scene.mjs";
 import * as cast from "../bookart/cast.mjs";

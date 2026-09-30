@@ -13,10 +13,11 @@ import { useEffect, useState } from "react";
 
 const PLAN_CENTS = { annual: 5999, monthly: 999 } as const;
 const TRIAL_DAYS = 3;
-// CASELOAD_PLAN in lib/caseload.ts, written out because that module is
-// server-only (Stripe, the store) and cannot ride into a client bundle.
-// tests/caseloadtest.mjs fails if the two ever differ.
+// CASELOAD_PLAN and SELF_PLAN in lib/caseload.ts, written out because that
+// module is server-only (Stripe, the store) and cannot ride into a client
+// bundle. tests/caseloadtest.mjs fails if they ever differ.
 const CASELOAD_PLAN_ID = "slp-caseload";
+const SELF_PLAN_ID = "slp-self";
 
 type Info = {
   amountCents: number | null;
@@ -75,7 +76,7 @@ export default function SubscribeSuccess() {
         // the server on every family device — not whichever browser this
         // session id is opened in. Nothing is written, no code is minted and
         // no purchase is reported: this was not a family's purchase.
-        if (j.plan === CASELOAD_PLAN_ID) {
+        if (j.plan === CASELOAD_PLAN_ID || j.plan === SELF_PLAN_ID) {
           setCaseload(true);
           return;
         }
@@ -155,8 +156,9 @@ export default function SubscribeSuccess() {
           This is a clinician&apos;s plan
         </h1>
         <p className="mt-3 max-w-md text-lg text-gray-600">
-          Sona Premium for your caseload covers the families who join through the clinician&apos;s
-          link, on their own phones. It doesn&apos;t switch Premium on in this browser.
+          A clinician&apos;s Premium reaches their own phone by a link from their dashboard,
+          and their caseload&apos;s families through the clinician&apos;s link. It doesn&apos;t
+          switch Premium on in this browser.
         </p>
         <div className="mt-6 flex flex-col gap-3">
           <a

@@ -38,9 +38,15 @@ let ACCT = acct;
 // line that names the family price. Every other /api/* call is logged, so a
 // page view that writes anything is caught.
 const PERIOD_END = Math.floor(new Date(2027, 8, 24, 12).getTime() / 1000);
-const SELF = { eligible:true, workEmail:true, approved:false, requested:false };
+// The clinician's own Premium (29 Sep 2026), in the route's shape: on by
+// default (a 24–29 Sep work email), so the caseload add-on can be bought.
+const SELF_BASE = { price:"$59.99", perMonth:"under $5 a month", periodEnd:null, cancelAtPeriodEnd:false, canRequest:false, workEmail:true, approved:false, requested:false };
+const SELF = { ...SELF_BASE, active:true, eligible:true, source:"work-email" };
+const SELF_OFF = { ...SELF_BASE, active:false, eligible:false, source:"none" };
+const SELF_PAID = { ...SELF_BASE, active:true, eligible:true, source:"paid", periodEnd:PERIOD_END };
+const SELF_ASK = { ...SELF_OFF, workEmail:false, canRequest:true };
 const plan = (state, self = SELF) => ({
-  ok:true, price:"$79.99", perMonth:"under $7 a month", self,
+  ok:true, price:"$59.99", perMonth:"under $5 a month", both:{ price:"$119.98", perMonth:"under $10 a month" }, self,
   ...{ none:{ active:false, source:"none", periodEnd:null, cancelAtPeriodEnd:false },
        paid:{ active:true, source:"paid", periodEnd:PERIOD_END, cancelAtPeriodEnd:false },
        cancelling:{ active:true, source:"paid", periodEnd:PERIOD_END, cancelAtPeriodEnd:true },
@@ -176,9 +182,10 @@ try {
     ok("Caseload Premium is available without preview injection",await visible(pg,"#page-premium")&&await visible(pg,'[data-page="premium"]'));
     const nav=await pg.locator(".sidebar nav").evaluate(n=>[...n.children].map(c=>c.dataset.page||c.textContent.trim()));
     ok("…and sits in Workspace, right after Caseload",JSON.stringify(nav.slice(0,4))===JSON.stringify(["Workspace","today","caseload","premium"]),nav.join(","));
-    ok("…with its own crumb",(await pg.locator("#pageCrumb").textContent())==="Caseload Premium");
+    ok("…with its own crumb",(await pg.locator("#pageCrumb").textContent())==="Premium");
     const page=await pg.locator("#page-premium").innerText();
-    ok("the offer names the plan and prints the server's price and per-month reading",/Sona Premium for your whole caseload/.test(page)&&/\$79\.99 a year · under \$7 a month/.test(page),page);
+    ok("the offer names the plan and prints the server's price and per-month reading",/Add every family on your caseload/.test(page)&&/\$59\.99 a year more · under \$5 a month/.test(page),page);
+    ok("…and, their own Premium being free, no total for both (they would pay the add-on alone)",!await visible(pg,"#premiumBoth")&&!/119\.98/.test(page),page);
     // The shared promise avoids counting games that are still Coming soon.
     ok("…says what families get, and that the free version stays free",/every game, every sound/i.test(page)&&/free version at home — daily practice and free games/.test(page)&&!/two games/.test(page),page);
     // With its conditions (24 Sep 2026): the bare "$59.99 a year" was true
@@ -194,7 +201,7 @@ try {
     await pg.locator("#premiumBuy").click();
     await pg.waitForURL("**/stripe-checkout-fixture",{timeout:3000}).catch(()=>{});
     const buy=writes.filter(w=>w.path==="/api/slp/plan"&&w.method==="POST");
-    ok("the buy button posts once and follows the checkout link the server returned",buy.length===1&&/\/stripe-checkout-fixture$/.test(pg.url()),pg.url()+" "+JSON.stringify(buy));
+    ok("the buy button posts once, for the caseload, and follows the checkout link the server returned",buy.length===1&&buy[0].body.plan==="caseload"&&/\/stripe-checkout-fixture$/.test(pg.url()),pg.url()+" "+JSON.stringify(buy));
     ok("no runtime errors on the offer",errors.length===0,errors.join("; "));
     await ctx.close();
   });
@@ -251,9 +258,9 @@ try {
     const send=writes.find(w=>w.path==="/api/slp/self");
     ok("…and one tap posts send, then says check your inbox",send&&send.body.action==="send"&&/Check your inbox/.test(await pg.locator("#selfDone").innerText()),JSON.stringify(send));
     await ctx.close();
-    PLAN=plan("paid",{eligible:false,workEmail:false,approved:false,requested:false});writes.length=0;({ctx,pg}=await open("#premium"));await pg.waitForTimeout(150);
+    PLAN=plan("paid",SELF_ASK);writes.length=0;({ctx,pg}=await open("#premium"));await pg.waitForTimeout(150);
     const self=await pg.locator("#premiumSelf").innerText();
-    ok("free-mail address: says a work email is needed, and offers a request",/Premium on your own phone or tablet needs a work email — your school or clinic address\./.test(self)&&await visible(pg,"#selfRequest")&&!await visible(pg,"#selfSend")&&!await visible(pg,"#selfPending"),self);
+    ok("24–29 Sep free-mail address: says a work email is needed, and offers a request — no price",!await visible(pg,"#selfBuy")&&!/\$\d/.test(self)&&/Premium on your own phone or tablet needs a work email — your school or clinic address\./.test(self)&&await visible(pg,"#selfRequest")&&!await visible(pg,"#selfSend")&&!await visible(pg,"#selfPending"),self);
     await pg.locator("#selfRequest").click();await pg.waitForTimeout(150);
     // Was "Requested — we'll email you." until 24 Sep 2026, and nothing sends
     // that email: approval only flips a flag. So the card promises what the
@@ -263,9 +270,62 @@ try {
     ok("…the request is one POST, then says what approval changes — and promises no email",writes.some(w=>w.path==="/api/slp/self"&&w.body.action==="request")&&REQUESTED.test(asked)&&!/we'll email you/i.test(asked)&&!await visible(pg,"#selfRequest"),asked);
     ok("…beside the button it will turn on, shown and greyed out",await visible(pg,"#selfPending")&&await pg.locator("#selfPending").isDisabled()&&(await pg.locator("#selfPending").innerText()).trim()==="Email me my Premium link");
     await ctx.close();
-    PLAN=plan("none",{eligible:false,workEmail:false,approved:false,requested:true});({ctx,pg}=await open("#premium"));await pg.waitForTimeout(150);
+    PLAN=plan("none",{...SELF_ASK,requested:true});({ctx,pg}=await open("#premium"));await pg.waitForTimeout(150);
     ok("already requested: says so, with nothing to press",REQUESTED.test(await pg.locator("#premiumSelf").innerText())&&!await visible(pg,"#selfRequest")&&await pg.locator("#selfPending").isDisabled());
     await ctx.close();
+  });
+  await run("Premium for you, then the caseload (29 Sep 2026)",async()=>{
+    // A clinician who signed up from 29 Sep: their own Premium is bought, and
+    // the caseload is added on top of it. Every figure is the server's.
+    PLAN=plan("none",SELF_OFF);writes.length=0;buyReply=null;
+    let {ctx,pg,errors}=await open("#premium");await pg.waitForTimeout(150);
+    let self=await pg.locator("#premiumSelf").innerText();
+    ok("own Premium off: the card sells it — the server's price and per-month reading",await visible(pg,"#selfBuy")&&/Every game on your own phone or tablet/.test(self)&&/\$59\.99 a year · under \$5 a month/.test(self)&&!await visible(pg,"#selfSend")&&!await visible(pg,"#selfRequest"),self);
+    ok("…and the caseload card says it comes second, its button off, with the total for both",await visible(pg,"#premiumNeedSelf")&&await pg.locator("#premiumBuy").isDisabled()&&
+      /Get Premium for you first, then add your caseload/.test(await pg.locator("#premiumNeedSelf").innerText())&&/With Premium for you, \$119\.98 a year for both \(under \$10 a month\)\./.test(await pg.locator("#premiumBoth").innerText()));
+    ok("…never a trial, never 'unlimited'",!/trial|unlimited/i.test(await pg.locator("#page-premium").innerText()));
+    await pg.locator("#selfBuy").click();
+    await pg.waitForURL("**/stripe-checkout-fixture",{timeout:3000}).catch(()=>{});
+    const buy=writes.filter(w=>w.path==="/api/slp/plan"&&w.method==="POST");
+    ok("Get Premium for me posts { plan: \"self\" } once and follows the checkout link",buy.length===1&&buy[0].body.plan==="self"&&/\/stripe-checkout-fixture$/.test(pg.url()),JSON.stringify(buy));
+    ok("no runtime errors",errors.length===0,errors.join("; "));
+    await ctx.close();
+
+    PLAN=plan("none",SELF_PAID);writes.length=0;({ctx,pg,errors}=await open("#premium"));await pg.waitForTimeout(150);
+    self=await pg.locator("#premiumSelf").innerText();
+    ok("own Premium paid: on, when it renews, the link to send, and billing",/Premium is on for you/.test(self)&&/Renews Sep 24, 2027\./.test(self)&&await visible(pg,"#selfSend")&&await visible(pg,"#selfManage")&&!await visible(pg,"#selfBuy"),self);
+    ok("…and now the caseload can be added, with the total for both",!await pg.locator("#premiumBuy").isDisabled()&&!await visible(pg,"#premiumNeedSelf")&&(await pg.locator("#premiumBuy").innerText()).trim()==="Add my caseload"&&await visible(pg,"#premiumBoth"));
+    await ctx.close();
+
+    // SETTINGS carries the same two plans (Travis, 29 Sep 2026: "an upsell
+    // within the app, in like the SLP settings").
+    PLAN=plan("none",SELF_PAID);writes.length=0;({ctx,pg,errors}=await open("#settings"));await pg.waitForTimeout(200);
+    let card=await pg.locator("#setPremium").innerText();
+    ok("Settings: a Premium card — you: on, renews; your caseload: $59.99 a year more, with its button",
+      /For you/.test(card)&&/On\. Renews Sep 24, 2027\./.test(card)&&/For your caseload/.test(card)&&/\$59\.99 a year more: every family who joins through your link gets every game\./.test(card)&&
+      await visible(pg,"#setCaseBuy")&&!await pg.locator("#setCaseBuy").isDisabled()&&!await visible(pg,"#setSelfBuy")&&await visible(pg,"#setManage"),card);
+    ok("…showing it is a read, never a write",writes.filter(w=>w.method!=="GET").length===0,JSON.stringify(writes));
+    await pg.locator("#setCaseBuy").click();
+    await pg.waitForURL("**/stripe-checkout-fixture",{timeout:3000}).catch(()=>{});
+    const add=writes.filter(w=>w.path==="/api/slp/plan"&&w.method==="POST");
+    ok("…and Add my caseload there opens the same checkout: { plan: \"caseload\" }, once",add.length===1&&add[0].body.plan==="caseload"&&/\/stripe-checkout-fixture$/.test(pg.url()),JSON.stringify(add));
+    await ctx.close();
+
+    PLAN=plan("none",SELF_OFF);writes.length=0;({ctx,pg}=await open("#settings"));await pg.waitForTimeout(200);
+    card=await pg.locator("#setPremium").innerText();
+    ok("Settings, own Premium off: offers it at the server's price; the caseload button waits for it",
+      /\$59\.99 a year: every game on your own phone or tablet\./.test(card)&&await visible(pg,"#setSelfBuy")&&await pg.locator("#setCaseBuy").isDisabled()&&/Added to Premium for you, so that comes first\./.test(card)&&!await visible(pg,"#setManage"),card);
+    await ctx.close();
+
+    PLAN=plan("grandfathered",{...SELF,source:"grandfathered"});({ctx,pg}=await open("#settings"));await pg.waitForTimeout(200);
+    card=await pg.locator("#setPremium").innerText();
+    ok("Settings, grandfathered: both on, free, as promised — nothing to buy, no billing",
+      (card.match(/On, free, as promised when you signed up\./g)||[]).length===2&&!await visible(pg,"#setSelfBuy")&&!await visible(pg,"#setCaseBuy")&&!await visible(pg,"#setManage")&&!/\$\d/.test(card),card);
+    await ctx.close();
+
+    failPlan=true;({ctx,pg}=await open("#settings"));await pg.waitForTimeout(200);
+    ok("Settings, the plan didn't answer: no figure and no button, only 'Checking'",/Checking your plan/.test(await pg.locator("#setPremium").innerText())&&!await visible(pg,"#setSelfBuy")&&!await visible(pg,"#setCaseBuy"));
+    failPlan=false;await ctx.close();
   });
   await run("The clinician's email survives a save",async()=>{
     // POST /api/slp/account answers without the email (only auth/me carries

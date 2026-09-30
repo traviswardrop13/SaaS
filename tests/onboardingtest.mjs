@@ -6,7 +6,7 @@ import path from 'path';
 import {tmpdir} from 'os';
 import {chromium,ROOT,launchOpts} from './_env.mjs';
 const root=process.env.SONATEST_PUBLIC_ROOT||ROOT,base='http://127.0.0.1:8198';
-const mime={html:'text/html',js:'text/javascript',css:'text/css',svg:'image/svg+xml',png:'image/png',webp:'image/webp',woff2:'font/woff2'};
+const mime={html:'text/html',js:'text/javascript',css:'text/css',svg:'image/svg+xml',png:'image/png',jpg:'image/jpeg',webp:'image/webp',woff2:'font/woff2'};
 const server=createServer((req,res)=>{const u=new URL(req.url,base),file=path.join(root,u.pathname);if(u.pathname.startsWith('/api/')){res.writeHead(503,{'content-type':'application/json'});res.end('{}');return;}if(!existsSync(file)||!statSync(file).isFile()){res.writeHead(404);res.end();return;}res.writeHead(200,{'content-type':mime[file.split('.').pop()]||'application/octet-stream'});res.end(readFileSync(file));});
 await new Promise(resolve=>server.listen(8198,'127.0.0.1',resolve));
 const browser=await chromium.launch(launchOpts());let checks=0,failures=0;
@@ -45,7 +45,9 @@ async function fresh(config={}){
   page.on('dialog',dialog=>dialog.dismiss());await page.goto(base+'/onboarding.html');return {context,page,errors,requests};
 }
 async function next(page){await page.locator('#nextBtn').click();}
-async function enter(page,{mode='speech',age='4',name='Milo'}={}){await next(page);await page.locator('#obName').fill(name);await page.locator('#obAge [data-age="'+age+'"]').click();await next(page);if(mode!=='speech')await page.locator('#obExploreSounds').click();}
+// Welcome, then Meet Rachel (asks nothing), then name: a parent taps Continue on both.
+async function toName(page){await next(page);await page.locator('[data-step="rachel"].on').waitFor();await next(page);}
+async function enter(page,{mode='speech',age='4',name='Milo'}={}){await toName(page);await page.locator('#obName').fill(name);await page.locator('#obAge [data-age="'+age+'"]').click();await next(page);if(mode!=='speech')await page.locator('#obExploreSounds').click();}
 async function choose(page,sound='R'){
   const chip=page.locator('#obSounds [data-sound="'+sound+'"]');
   if(await chip.count()){if(await chip.getAttribute('aria-pressed')!=='true')await chip.click();}else await page.locator('#obSounds .sound').filter({hasText:new RegExp('^'+sound+'$')}).click();
@@ -102,6 +104,52 @@ await scenario('sound selection and private paced handoff',async()=>{
  }finally{await context.close();}
 });
 
+// Meet Rachel (Travis, 29 Sep 2026): one tap, no question, between welcome and
+// name: her photo, "Built with", and "Rachel Wardrop, MS, CF-SLP" — nothing
+// else (Travis). The fellowship is named here because it is true; never CCC or
+// certified (CLAUDE.md). Clinicians skip it; parents still count three.
+await scenario('Meet Rachel sits between welcome and the first question',async()=>{
+ {const {context,page,errors}=await fresh();try{
+  await next(page);const card=page.locator('[data-step="rachel"]');
+  ok('welcome Continue opens Meet Rachel before any question',await page.locator('[data-step="rachel"].on').count()===1&&await page.evaluate(()=>document.body.dataset.setupScreen)==='rachel');
+  const shown=await card.evaluate(async el=>{const img=el.querySelector('img');return {photo:await img.decode().then(()=>img.naturalWidth,()=>0),src:img.getAttribute('src'),alt:img.alt,text:el.innerText,page:document.body.innerText,asks:el.querySelectorAll('input,select,textarea,button').length};});
+  ok('her photo actually loads',shown.photo>0&&/\/rachel-wardrop-profile\.jpg$/.test(shown.src)&&/Rachel/.test(shown.alt),shown);
+  ok('the card says only "Built with Rachel Wardrop, MS, CF-SLP" under her photo',shown.text.replace(/\s+/g,' ').trim()==='BUILT WITH Rachel Wardrop, MS, CF-SLP',shown.text);
+  ok('no CCC, certification or claim that the fellowship is behind her',!/\bCCC\b|certified|fully licen[sc]ed/i.test(shown.page+' '+shown.alt),shown.page);
+  ok('it asks nothing: Continue is ready and the progress bar is hidden',shown.asks===0&&(await page.locator('#nextBtn').innerText()).trim()==='Continue'&&await page.locator('#nextBtn').isEnabled()&&await page.locator('#seg').isHidden());
+  await next(page);
+  ok('Continue goes to name, the first of exactly three progress segments',await page.locator('[data-step="name"].on').count()===1&&await page.locator('#seg').isVisible()&&await page.locator('#seg i').count()===3&&await page.locator('#seg i.on').count()===1);
+  await page.locator('#backBtn').click();ok('Back from name returns to Meet Rachel',await page.locator('[data-step="rachel"].on').count()===1&&await page.locator('#seg').isHidden());
+  await page.locator('#backBtn').click();ok('Back from Meet Rachel returns to welcome',await page.locator('[data-step="welcome"].on').count()===1&&await page.locator('#backBtn').isHidden());
+  clean('meet rachel',errors);
+ }finally{await context.close();}}
+ {const {context,page,errors}=await fresh();try{
+  await page.evaluate(()=>{window.__screens=[];new MutationObserver(()=>__screens.push(document.body.dataset.setupScreen)).observe(document.body,{attributes:true,attributeFilter:['data-setup-screen']});});
+  // Back to welcome leaves the clinician path (a mistaken tap), so the link is tapped again.
+  await page.locator('#slpLink').click();await page.locator('#backBtn').click();await page.locator('#slpLink').click();
+  await page.locator('#obName').fill('Milo');await page.locator('#obAge [data-age="4"]').click();await next(page);await choose(page,'S');await next(page);
+  const screens=await page.evaluate(()=>__screens);
+  ok('the clinician door never shows Meet Rachel, forward or back',screens[0]==='name'&&!screens.includes('rachel')&&await page.locator('[data-step="slp"].on').count()===1,screens);
+  clean('clinician skips rachel',errors);
+ }finally{await context.close();}}
+ {const {context,page,errors}=await fresh();try{
+  // Settings → Add a child: the household already has a child, and the parent met Rachel with them.
+  await page.evaluate(()=>localStorage.setItem('sona.kids.v1',JSON.stringify({active:'k2',list:[{slot:'',name:'Milo'},{slot:'k2',name:'Rosie'}]})));await page.reload();
+  await next(page);
+  ok('a parent adding a second child goes from welcome straight to the name',await page.locator('[data-step="name"].on').count()===1&&await page.locator('#seg i').count()===3&&await page.locator('#seg i.on').count()===1);
+  clean('second child skips rachel',errors);
+ }finally{await context.close();}}
+ for(const viewport of [{width:375,height:667},{width:320,height:568}]){
+  const {context,page,errors}=await fresh({viewport});try{
+   await next(page);await page.locator('[data-step="rachel"].on').waitFor();await page.evaluate(()=>Promise.all([document.fonts.ready,document.querySelector('.rachel-photo').decode().catch(()=>{})]));await page.locator('.step.on').evaluate(el=>el.getAnimations({subtree:true}).forEach(a=>a.finish()));
+   await page.waitForTimeout(600); // Wait for the shared step/header transition to settle.
+   const fit=await page.evaluate(()=>{const ob=document.querySelector('.ob'),c=document.querySelector('[data-step="rachel"]').getBoundingClientRect(),b=document.querySelector('#nextBtn').getBoundingClientRect();return {scrollHeight:ob.scrollHeight,height:ob.clientHeight,cardTop:c.top,cardBottom:c.bottom,buttonTop:b.top,buttonBottom:b.bottom,innerHeight};});
+   ok('Meet Rachel fits without scrolling, card clear of Continue, at '+viewport.width+'×'+viewport.height,fit.scrollHeight<=fit.height+1&&fit.cardTop>=0&&fit.cardBottom<=fit.buttonTop&&fit.buttonTop>=0&&fit.buttonBottom<=fit.innerHeight,fit);
+   clean('meet rachel fit',errors);
+  }finally{await context.close();}
+ }
+});
+
 await scenario('exploring sounds stays optional and can be changed before finishing',async()=>{
  const {context,page,errors}=await fresh();try{
   await enter(page);await choose(page,'R');await page.locator('#obExploreSounds').click();
@@ -137,13 +185,49 @@ await scenario('Done closes typing without accepting setup choices',async()=>{
  }finally{await context.close();}
 });
 
+// A reload restores draft.role; the order has to follow it or a clinician
+// finishes on the family path with no email step and no account.
+async function walk(page){const seen=[];for(let i=0;i<8;i++){const s=await page.evaluate(()=>document.body.dataset.setupScreen);seen.push(s);if(s==='email'||s==='mic')break;if(s==='name'&&!await page.locator('#obName').inputValue())await page.locator('#obName').fill('Milo');await next(page);}return seen;}
+await scenario('clinician setup survives a reload',async()=>{
+ const {context,page,errors,requests}=await fresh();try{
+  await page.locator('#slpLink').click();await page.locator('#obName').fill('Milo');await next(page);
+  await page.reload();
+  ok('a reloaded clinician draft resumes on the clinician order at name',await page.evaluate(()=>draft.role==='slp'&&ORDER===ORDER_SLP&&document.body.dataset.setupScreen==='name'&&/Which child/.test(document.querySelector('[data-step="name"] .qh').textContent)&&document.getElementById('obName').value==='Milo'));
+  const seen=await walk(page);
+  ok('going on reaches the clinician email step, never Meet Rachel or the family mic',seen.at(-1)==='email'&&!seen.includes('rachel')&&!seen.includes('mic')&&await page.locator('[data-step="rachel"].on,[data-step="mic"].on').count()===0,seen);
+  await page.locator('#obEmail').fill('clinician@example.com');await next(page);await atHandoff(page);
+  ok('the reloaded clinician still gets an account and a sign-in email',await page.evaluate(()=>Sona.getProfile().role==='slp'&&Sona.getProfile().childName==='Milo')&&requests.filter(r=>r.method==='POST'&&new URL(r.url).pathname==='/api/slp/auth/request').length===1);
+  clean('clinician reload',errors);
+ }finally{await context.close();}
+ const native=await fresh({native:true});try{
+  await native.page.evaluate(()=>localStorage.setItem('sona.obdraft.v1',JSON.stringify({role:'slp',childName:'Milo'})));await native.page.reload();
+  ok('a native reload with a clinician draft stays on the family order',await native.page.evaluate(()=>draft.role==='parent'&&ORDER===ORDER_PARENT));
+  const seen=await walk(native.page);ok('native setup never reaches the clinician email step',seen.at(-1)==='mic'&&!seen.includes('email')&&!seen.includes('slp'),seen);
+  clean('native clinician draft',native.errors);
+ }finally{await native.context.close();}
+});
+
+// Welcome is the fork: backing onto it undoes a mistaken tap on the clinician link.
+await scenario('a parent can back out of clinician setup',async()=>{
+ const {context,page,errors,requests}=await fresh();try{
+  await page.locator('#slpLink').click();await page.locator('#backBtn').click();
+  ok('Back to welcome returns to the family order and wording',await page.evaluate(()=>draft.role!=='slp'&&ORDER===ORDER_PARENT&&document.body.dataset.setupScreen==='welcome'&&/Who's practicing/.test(document.querySelector('[data-step="name"] .qh').textContent)&&document.querySelectorAll('#seg i').length===3));
+  await page.reload();ok('a reload after backing out stays on the family order',await page.evaluate(()=>ORDER===ORDER_PARENT&&document.body.dataset.setupScreen==='welcome'));
+  const seen=await walk(page);
+  ok('Continue walks the family path past Meet Rachel to the mic, never the clinician email',seen.join()==='welcome,rachel,name,sounds,mic',seen);
+  await notNow(page);await atHandoff(page);
+  ok('the backed-out parent finishes as a parent with no clinician sign-in',await page.evaluate(()=>Sona.getProfile().role==='parent')&&!requests.some(r=>new URL(r.url).pathname==='/api/slp/auth/request'));
+  clean('clinician back-out',errors);
+ }finally{await context.close();}
+});
+
 // Freeze the step-entry clock so a quick Done press happens before any delayed
 // autofocus. A stale timer must not reopen the keyboard after it was dismissed.
 await scenario('quick Done does not reopen the name keyboard',async()=>{
  const {context,page,errors}=await fresh({native:true,keyboardPlatform:'ios'});try{
   await page.clock.install({time:new Date('2026-09-28T00:00:00Z')});
   await page.clock.pauseAt(new Date('2026-09-28T00:00:01Z'));
-  await next(page);await page.locator('#obName').fill('Milo');await page.locator('#obName').press('Enter');
+  await toName(page);await page.locator('#obName').fill('Milo');await page.locator('#obName').press('Enter');
   await page.clock.fastForward(200);
   ok('Done stays dismissed after the step-entry focus window',await page.evaluate(()=>document.activeElement.id!=='obName'&&document.body.dataset.setupScreen==='name'));
   clean('quick Done',errors);
@@ -158,7 +242,7 @@ await scenario('native iPhone keyboard integration and safe fallbacks',async()=>
    const bridge=await page.evaluate(()=>({calls:__setup.keyboardCalls,listeners:Object.keys(__setup.keyboardListeners)}));
    ok('keyboard toolbar changes only inside a supported iPhone app: '+JSON.stringify(config),enabled?bridge.calls.length===1&&bridge.calls[0].isVisible===false&&bridge.listeners.includes('keyboardWillShow')&&bridge.listeners.includes('keyboardWillHide'):bridge.calls.length===0&&bridge.listeners.length===0,bridge);
    if(enabled){
-    await next(page);await page.locator('#obName').fill('Milo');await page.locator('#obName').focus();
+    await toName(page);await page.locator('#obName').fill('Milo');await page.locator('#obName').focus();
     await page.evaluate(()=>__setup.keyboardListeners.keyboardWillShow({keyboardHeight:260}));
     ok('the native show event applies the keyboard layout without advancing setup',await page.evaluate(()=>document.body.classList.contains('keyboard-open')&&document.body.dataset.setupScreen==='name'));
     await page.locator('#obName').press('Enter');await page.evaluate(()=>__setup.keyboardListeners.keyboardWillHide());
@@ -234,7 +318,7 @@ await scenario('sound picker fits iPhone safe areas',async()=>{
 });
 await scenario('name and age remain visible above the iPhone keyboard',async()=>{
  const {context,page,errors}=await fresh({native:true,keyboardPlatform:'ios',viewport:{width:393,height:852},safeArea:{top:59,bottom:34}});try{
-  await next(page);await page.locator('#obName').fill('Milo');await page.setViewportSize({width:393,height:430});await page.evaluate(()=>__setup.keyboardListeners.keyboardWillShow({keyboardHeight:422}));await page.waitForTimeout(600);
+  await toName(page);await page.locator('#obName').fill('Milo');await page.setViewportSize({width:393,height:430});await page.evaluate(()=>__setup.keyboardListeners.keyboardWillShow({keyboardHeight:422}));await page.waitForTimeout(600);
   const layout=await page.evaluate(()=>{const b=document.querySelector('#nextBtn').getBoundingClientRect(),n=document.querySelector('#obName').getBoundingClientRect(),a=document.querySelector('#obAge').getBoundingClientRect();return {buttonTop:b.top,nameTop:n.top,nameBottom:n.bottom,ageBottom:a.bottom};});
   ok('typing keeps the name field and age choices clear of Continue',layout.nameTop>=59&&layout.nameBottom<layout.buttonTop&&layout.ageBottom+8<=layout.buttonTop,layout);
   clean('name keyboard fit',errors);

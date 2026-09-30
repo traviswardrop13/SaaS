@@ -17,6 +17,12 @@ export const SPEAKER = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 
 export const MIC = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8.5" y="3" width="7" height="12" rx="3.5" fill="#fff"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M8.5 21h7" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/></svg>';
 export const PLAY = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15a1 1 0 0 0 1.5.9l12-7.5a1 1 0 0 0 0-1.8l-12-7.5A1 1 0 0 0 7 4.5Z" fill="#fff"/></svg>';
 
+// Every page this generator writes says so, in its head comment, in these
+// words. build.mjs overwrites a page only if it carries them, so a page written
+// by hand (arcade-hoops.html, and the older arcade pages) can't be clobbered by
+// a game that reuses its key; tests/arttooltest.mjs reads the same string.
+export const MARK = "Written by tools/gameart/build.mjs";
+
 export function partSvg(p) {
   const style = p.o ? ` style="--o:${p.o}"` : "";
   // a part that starts small (s) or turned (r) says so twice: the drawn
@@ -43,6 +49,10 @@ export function check(g) {
   return g;
 }
 
+// The start card's button says "Let's play" beside the play triangle: the words
+// for the grown-up reading along (the redesign brief's teal "Let's play"
+// button), the triangle for a child of three who can't read them yet. The
+// words are the button's name too, so a screen reader says what it shows.
 export function page(g) {
   check(g);
   const run = { key: g.key, title: g.title, steps: g.steps, finale: g.finale, done: g.done };
@@ -54,11 +64,12 @@ export function page(g) {
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
   <title>Sona — ${esc(g.title)}</title>
   <link href="/fonts.css" rel="stylesheet">
+  <link href="/action.css" rel="stylesheet">
   <link href="/sayplay.css" rel="stylesheet">
   <meta name="theme-color" content="${g.top}" />
   <!--
     ${esc(g.title)}: a Say & Play game (suggested ages ${ages}). ${esc(g.blurb)}
-    Written by tools/gameart/build.mjs: change the game there and rebuild,
+    ${MARK}: change the game there and rebuild,
     not here. What the mic may do, and why a spoken move is play and never
     practice data, is at the top of /sayplay.js.
   -->
@@ -91,7 +102,7 @@ export function page(g) {
       <h2 id="startTitle">${esc(g.title)}</h2>
       <p>${esc(g.how)}</p>
       <p class="small" id="startSound"></p>
-      <button id="startBtn" aria-label="Play">${PLAY}</button>
+      <button id="startBtn" class="act-pill">${PLAY}<span>Let's play</span></button>
     </div>
   </div>
   <div class="ovl" id="primer">

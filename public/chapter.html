@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
   <title>Sona — Today's Story</title>
   <link href="/fonts.css" rel="stylesheet">
+  <link href="/action.css" rel="stylesheet">
   <link rel="manifest" href="/manifest.webmanifest" />
   <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
   <meta name="theme-color" content="#0d1b3e" />
@@ -47,9 +48,10 @@
 
     #bottom{flex:none;display:flex;gap:10px;align-items:center;}
     #hear{flex:none;border:none;border-radius:16px;padding:14px 16px;background:rgba(255,255,255,.15);color:#fff;font-family:"Baloo 2";font-weight:800;font-size:14px;cursor:pointer;}
-    #next{flex:1;border:none;border-radius:18px;padding:16px;font-family:"Baloo 2";font-weight:800;font-size:19px;color:#fff;
-      background:linear-gradient(180deg,#ffa05a,#ff8a3d);box-shadow:0 5px 0 #ef6f23;cursor:pointer;}
-    #next:active{transform:translateY(4px);box-shadow:0 1px 0 #ef6f23;}
+    /* the teal action pill (action.css; design brief, 28 Sep 2026) */
+    #next{flex:1;border:none;border-radius:999px;padding:16px;font-family:"Baloo 2";font-weight:800;font-size:19px;color:#fff;text-shadow:0 1px 0 var(--act-d);
+      background:linear-gradient(180deg,var(--act-hi),var(--act));box-shadow:0 5px 0 var(--act-d);cursor:pointer;}
+    #next:active{transform:translateY(4px);box-shadow:0 1px 0 var(--act-d);}
 
     /* the finish beat: the three games visibly unlock */
     #done{position:fixed;inset:0;z-index:20;display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;
@@ -61,8 +63,8 @@
       font-size:30px;border:2px solid rgba(255,255,255,.22);animation:unlock .5s backwards;}
     #unlocked div:nth-child(2){animation-delay:.14s;} #unlocked div:nth-child(3){animation-delay:.28s;}
     @keyframes unlock{from{transform:scale(.6) rotate(-12deg);opacity:0;}to{transform:none;opacity:1;}}
-    #doneBtn{margin-top:26px;width:100%;max-width:320px;border:none;border-radius:18px;padding:17px;font-family:"Baloo 2";font-weight:800;font-size:20px;
-      color:#fff;background:linear-gradient(180deg,#ffa05a,#ff8a3d);box-shadow:0 5px 0 var(--orange-d);cursor:pointer;}
+    #doneBtn{margin-top:26px;width:100%;max-width:320px;border:none;border-radius:999px;padding:17px;font-family:"Baloo 2";font-weight:800;font-size:20px;
+      color:#fff;text-shadow:0 1px 0 var(--act-d);background:linear-gradient(180deg,var(--act-hi),var(--act));box-shadow:0 5px 0 var(--act-d);cursor:pointer;}
     #hook{color:var(--gold);font-weight:800;font-size:13px;margin-top:18px;max-width:28ch;line-height:1.5;}
   </style>
 </head>

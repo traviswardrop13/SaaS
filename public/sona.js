@@ -1221,7 +1221,7 @@
   // refreshes and across a parent and child looking at the same phone, because
   // the chapter is pinned for the day — so "did I already play today's set?"
   // has one answer, and the answer never changes underneath a child.
-  const MIC_PROMISE = "Grown-ups: the mic listens during practice and optional voice-enabled games. Sounds are checked on this phone; Sona never uploads recordings. Up to one clear practice try a day may be saved on this phone so you can listen back.";
+  const MIC_PROMISE = "Grown-ups: the mic listens during practice and optional voice-enabled games and books. Sounds are checked on this phone; Sona never uploads recordings. Up to one clear practice try a day may be saved on this phone so you can listen back.";
   // Rachel-approved play recommendation. Every game remains available by choice.
   function playStyle() {
     var age = Number(getProfile().childAge);
@@ -2004,9 +2004,9 @@
   }
 
   // ── CASELOAD COVERAGE: Premium that a clinician's plan pays for ─────────
-  // A family who joined through a clinician whose caseload is covered (the
-  // $79.99 "Sona Premium for your caseload" plan, or a clinician grandfathered
-  // from before it existed) gets Premium — whether or not they chose to share
+  // A family who joined through a clinician whose caseload is covered ("Sona
+  // Premium for your caseload", or a clinician grandfathered from before it
+  // existed) gets Premium — whether or not they chose to share
   // progress. Access and sharing stay separate decisions.
   //
   // The SERVER decides, from the enrolment ticket this device earned by
@@ -2958,6 +2958,147 @@
     P: "puh", B: "buh", M: "mmm", N: "nnn", T: "tuh", D: "duh",
   };
   function soundSay(sound) { return SOUND_SAY[String(sound || "").toUpperCase()] || String(sound || "").toLowerCase(); }
+
+  // ── the practice sound's LETTERS, in orange (design brief, 28 Sep 2026) ──
+  // "The practice sound's letters are always orange (the r in rabbit, rrrr)."
+  // soundMark(text, sound, pos) returns the text as HTML, escaped, with only
+  // the letters that make the sound wrapped in <b class="snd"> (action.css).
+  // Which letters those are is a spelling question English makes hard: "sure"
+  // is an SH word, the c in "bicycle" is an S and the one after it a K, the
+  // s at the end of "cheese" is a Z. A cue pointing at a letter that doesn't
+  // make the sound teaches the wrong thing, which is worse than no narrowing —
+  // so each rule below narrows only where the spelling proves it, and anything
+  // it can't prove gets today's behaviour: the whole text orange.
+  // tests/soundmarktest.mjs runs every word in WORDS and writes the table
+  // Rachel reviews; how a sound is shown to a child is her call.
+  // At the start of a word: the book reader's LEAD map (library.html), plus gn.
+  var SM_LEAD = { SH: ["sh", "s"], CH: ["ch"], TH: ["th"], THV: ["th"], K: ["k", "c", "q"], N: ["kn", "gn", "n"],
+    R: ["wr", "r"], F: ["ph", "f"], J: ["j", "g"], S: ["s", "c"], Z: ["z", "x"], G: ["gh", "g"] };
+  // Inside a word (middle, end, blends), longest first so "ck" beats "c".
+  var SM_SPELL = { R: ["rr", "r"], S: ["ss", "s", "c"], Z: ["zz", "z", "ss", "s"], L: ["ll", "l"], K: ["ck", "k", "c", "q"],
+    G: ["gg", "g"], F: ["ff", "ph", "gh", "f"], SH: ["sh", "ss", "ti", "ci", "ce", "ch"], CH: ["tch", "ch", "t"],
+    TH: ["th"], THV: ["th"], J: ["dg", "j", "g"], P: ["pp", "p"], B: ["bb", "b"], M: ["mm", "m"], N: ["nn", "n"],
+    T: ["tt", "t"], D: ["dd", "d"], V: ["v"] };
+  // Vocalic R is the vowel the r colours, so the mark takes the vowel with it.
+  var SM_VOC = ["ear", "air", "eer", "our", "oar", "oor", "ar", "er", "ir", "or", "ur"];
+  function smEsc(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;"); }
+  // A spelling that looks right but, here, makes another sound (or none).
+  function smOk(snd, sp, w, i) {
+    var a = w.charAt(i + sp.length), b = w.charAt(i - 1), rest = w.slice(i + sp.length), soft = /[eiy]/.test(a);
+    if (sp === "c") return snd === "S" ? soft : (!soft && a !== "h");        // city is S, cat is K, chip is neither
+    if (sp === "g") return snd === "J" ? soft : (a !== "h" && !(b === "n" && /^(s|ue|ues)?$/.test(rest))); // gem; night; ring, tongue
+    if (sp === "dg") return soft;                                              // badge: one J
+    if (sp === "gh") return snd === "G" ? i === 0 : rest === "";               // ghost; laugh
+    if (sp === "s") return a !== "h";                                          // sh is its own sound
+    if (sp === "p") return a !== "h";                                          // phone is F
+    if (sp === "k") return a !== "n";                                          // knife: silent k
+    if (sp === "ch") return b !== "s";                                         // school
+    if (sp === "t") return snd === "CH" ? rest.indexOf("ure") === 0          // picture
+      : (a !== "h" && rest.indexOf("ch") !== 0 && !/^i[ao]/.test(rest) && rest.indexOf("ure") !== 0);
+    if (sp === "n") return a !== "k" && !(a === "g" && /^g(s|ue|ues)?$/.test(rest)); // ink, ring: the ng sound
+    if (sp === "b") return !(b === "m" && /^s?$/.test(rest));                 // lamb: silent b
+    if (sp === "d") return !(a === "g" && /[eiy]/.test(w.charAt(i + 2)));      // badge is J
+    if (snd === "SH" && /^(ti|ci|ce|ss)$/.test(sp)) return /[aeiou]/.test(a); // nation, special, ocean, tissue
+    return true;
+  }
+  function smAt(snd, list, w, i) {
+    for (var k = 0; k < list.length; k++) if (w.substr(i, list[k].length) === list[k] && smOk(snd, list[k], w, i)) return [i, i + list[k].length];
+    return null;
+  }
+  function smCons(c) { return /[a-z]/.test(c) && !/[aeiouy]/.test(c); }
+  // [start, end) of the sound in lower-case word w at position pos, or null.
+  function smFind(snd, w, pos) {
+    var lead = SM_LEAD[snd] || [snd.charAt(0).toLowerCase()], spell = SM_SPELL[snd] || lead, i, h, k, tails, t, end, rest;
+    if (pos === "i") return smAt(snd, lead, w, 0);
+    if (pos === "m") {                   // inside: never the first letter, never the last sound
+      for (i = 1; i < w.length; i++) { h = smAt(snd, spell, w, i); rest = h && w.slice(h[1]); if (h && rest && rest !== "e" && rest !== "ue") return h; }
+      return null;
+    }
+    if (pos === "f") {                   // last sound, past a silent e (cake, nose, cage) or the b of lamb
+      tails = snd === "M" ? ["", "e", "ue", "b"] : ["", "e", "ue"];
+      for (t = 0; t < tails.length; t++) {
+        end = w.length - tails[t].length;
+        if (end < 1 || w.slice(end) !== tails[t]) continue;
+        for (k = 0; k < spell.length; k++) if (end - spell[k].length >= 0 && w.substr(end - spell[k].length, spell[k].length) === spell[k] && smOk(snd, spell[k], w, end - spell[k].length)) return [end - spell[k].length, end];
+      }
+      return null;
+    }
+    if (pos === "v") {                   // vocalic R: an r after a vowel, before no vowel (bird, chair, tiger)
+      if (snd !== "R") return null;
+      for (i = 0; i < w.length; i++) { h = smAt(snd, SM_VOC, w, i); rest = h && w.slice(h[1]); if (h && (/^es?$/.test(rest) || !/^[aeiouyr]/.test(rest))) return h; }
+      return null;
+    }
+    if (pos === "b") {                   // a blend: the sound's own letter, beside ANOTHER consonant (tree, spoon) —
+      // the twin of a doubled letter is the same sound, not a blend: "glass" must not mark its last s alone
+      for (i = 0; i < w.length; i++) {
+        h = smAt(snd, i === 0 ? lead : spell, w, i);
+        if (h && ((smCons(w.charAt(i - 1)) && w.charAt(i - 1) !== w.charAt(i)) || (smCons(w.charAt(h[1])) && w.charAt(h[1]) !== w.charAt(h[1] - 1)))) return h;
+      }
+      return null;
+    }
+    return null;
+  }
+  // When the position rule finds nothing: if the sound's spellings occur
+  // exactly once in the word, that one IS the sound ("sandwich" is filed
+  // under middle CH, but its only ch is at the end). Two or more is a guess.
+  function smOnly(snd, w) {
+    var lead = SM_LEAD[snd] || [snd.charAt(0).toLowerCase()], spell = SM_SPELL[snd] || lead, hits = [], i = 0, h;
+    var all = lead.concat(spell).sort(function (a, b) { return b.length - a.length; });
+    while (i < w.length) { h = smAt(snd, i === 0 ? all : spell, w, i); if (h) { hits.push(h); i = h[1]; } else i++; }
+    return hits.length === 1 ? hits[0] : null;
+  }
+  // The word bank's own position for w, preferring the one asked for.
+  function smBankPos(snd, w, pos) {
+    var hit = (WORDS[snd] || []).filter(function (x) { return x && String(x.w).toLowerCase() === w; });
+    if (!hit.length) return "";
+    for (var k = 0; k < hit.length; k++) if ((hit[k].pos || "i") === pos) return pos;
+    return hit[0].pos || "i";
+  }
+  // "rrrr", "sh sh", "shhh", "kuh": the sound on its own, so all of it is the sound.
+  function smIsolation(t, snd) {
+    var s = t.toLowerCase().trim(), toks, k, j, sp, ok, spells;
+    if (s === soundSay(snd) || s === snd.toLowerCase() || s === String(soundLabel(snd)).toLowerCase()) return true;
+    toks = s.replace(/[^a-z\s]/g, " ").trim().split(/\s+/);
+    if (!toks[0]) return false;
+    spells = (SM_LEAD[snd] || [snd.charAt(0).toLowerCase()]).concat(SM_SPELL[snd] || []);
+    for (k = 0; k < toks.length; k++) {
+      ok = toks[k] === soundSay(snd);
+      for (j = 0; !ok && j < spells.length; j++) { sp = spells[j]; ok = new RegExp("^(?:" + sp + ")+" + sp.slice(-1) + "*$").test(toks[k]); }
+      if (!ok) return false;
+    }
+    return true;
+  }
+  // One word, with any punctuation around it kept outside the mark. null = unsure.
+  function smWord(tok, snd, pos) {
+    var m = String(tok).match(/^([^A-Za-z]*)([\s\S]*?)([^A-Za-z]*)$/), core = m[2], w = core.toLowerCase(), hit = null;
+    if (!w) return null;
+    var p = /^[imfvb]$/.test(pos || "") ? pos : "", bank = smBankPos(snd, w, p);
+    if (p) hit = smFind(snd, w, p);
+    if (!hit && bank && bank !== p) hit = smFind(snd, w, bank);
+    if (!hit && !p && !bank) hit = smFind(snd, w, "i");
+    if (!hit) hit = smOnly(snd, w);
+    if (!hit) return null;
+    return smEsc(m[1]) + smEsc(core.slice(0, hit[0])) + '<b class="snd">' + smEsc(core.slice(hit[0], hit[1])) + "</b>" + smEsc(core.slice(hit[1])) + smEsc(m[3]);
+  }
+  function soundMark(text, sound, pos) {
+    var t = String(text == null ? "" : text), snd = String(sound || "").toUpperCase(), whole = '<b class="snd">' + smEsc(t) + "</b>";
+    if (!t.trim() || !snd) return t.trim() ? whole : smEsc(t);
+    try {
+      if (smIsolation(t, snd)) return whole;
+      var parts = t.split(/(\s+)/), words = parts.filter(function (x) { return x && !/^\s+$/.test(x); });
+      if (words.length === 1) return smWord(t, snd, pos) || whole;
+      // A sentence: mark only its practice words (the bank's words for this
+      // sound). "Here is a bus" must not light up the z-sounding s of "is".
+      var out = "", marked = 0;
+      for (var k = 0; k < parts.length; k++) {
+        var x = parts[k], core = x.replace(/^[^A-Za-z]+|[^A-Za-z]+$/g, "").toLowerCase(), html = null;
+        if (core && smBankPos(snd, core, pos)) html = smWord(x, snd, pos);
+        if (html) marked++;
+        out += html || smEsc(x);
+      }
+      return marked ? out : whole;
+    } catch (e) { return whole; }
+  }
   // "Are you ready? Say rrrr 4 times to rev your engine!"  — reps>1 adds the
   // count; action is the game's verb ("rev your engine", "pop the bubble").
   function actionCue(sound, reps, action) {
@@ -4231,5 +4372,5 @@
   try { _grandfatherFreeEra4(); } catch (e) {}
   try { installDebug(); } catch (e) {}
 
-  global.Sona = { pcmWave, libraryPreview, previewPlan, setPreviewPlan, gameKey, gameAccess, gameBounce, finishGameTurn, catalogRun, simpleAdventure, MIC_PROMISE, playStyle, pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, TTS_CACHE_VERSION, voiceDiagnostic, voiceStatus, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, saveFor, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, ladderContent, FREE_MODE, isFree, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, adventureGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, activityLibrary, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, premium, caseCovered, caseRefresh, gated, gateVerify, gateOk, requireGate, gateDest, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, planMoment, planEligible, planShown, firstGameKey, firstGameStart, firstGameEnd, speak, speakNow, speakUnlock, speechAvailable, speechPerm, speechStart, speechStop, hearVerdict, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, demoState, demoDone, demoStart, demoFinish, runActive, gateBounce, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repWeeks, repsBeacon, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES };
+  global.Sona = { pcmWave, libraryPreview, previewPlan, setPreviewPlan, gameKey, gameAccess, gameBounce, finishGameTurn, catalogRun, simpleAdventure, MIC_PROMISE, playStyle, pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, TTS_CACHE_VERSION, voiceDiagnostic, voiceStatus, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, saveFor, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, ladderContent, FREE_MODE, isFree, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, adventureGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, activityLibrary, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, premium, caseCovered, caseRefresh, gated, gateVerify, gateOk, requireGate, gateDest, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, planMoment, planEligible, planShown, firstGameKey, firstGameStart, firstGameEnd, speak, speakNow, speakUnlock, speechAvailable, speechPerm, speechStart, speechStop, hearVerdict, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, demoState, demoDone, demoStart, demoFinish, runActive, gateBounce, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repWeeks, repsBeacon, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES, soundMark };
 })(window);

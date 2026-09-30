@@ -251,6 +251,9 @@
     var REV=3, reviveWait=false;   // say-the-sound cards: one between each wave
     var BESTK="sona.best.slice", BEST=0; try{ BEST=parseInt(localStorage.getItem(BESTK)||"0",10)||0; }catch(e){}
     var fruits=[], parts=[], trail=[], splats=[], floats=[];
+    // Real fruit sliced this round. Not the score: a golden fruit scores 3 and
+    // the giant's five cuts score 5, so "N fruits" read off the score was untrue.
+    var FRUITN=0;
     // Kid-tuned physics: floaty gravity + launch speed derived from the screen
     // so every fruit rises to ~55-75% of the screen and hangs ~1.8s.
     var G=H*0.0002||0.18; // kid-slow: same arc height as before, ~1.5x hang time
@@ -302,6 +305,10 @@
       // Super Slice time left over waits through the break and carries into
       // the next wave: the burst alone can finish wave 1, and a child who
       // earned twelve seconds should get twelve. Only the giant ends it.
+      // A banner still showing (Super Slice can finish a wave) stays where it
+      // appeared: hiding the Echo button would otherwise drop it 92 px up the
+      // screen mid-animation. The next banner() lets go.
+      var bn=$("banner"); bn.style.top=getComputedStyle(bn).top;
       phase="break"; hud(); paintSlowKeys();
       var last=wave===WAVES.length-1;
       setTimeout(function(){
@@ -342,15 +349,22 @@
     }
     var TICK='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
     function waveDots(){ var s=""; for(var i=0;i<WAVES.length;i++) s+='<span class="wdot'+(i<=wave?' on':'')+'">'+(i<=wave?TICK:String(i+1))+'</span>'; return s; }
-    function banner(big,small){ var b=$("banner"); $("bnBig").textContent=big; $("bnSmall").textContent=small||""; b.classList.remove("in"); void b.offsetWidth; b.classList.add("in"); }
+    function banner(big,small){ var b=$("banner"); b.style.top=""; $("bnBig").textContent=big; $("bnSmall").textContent=small||""; b.classList.remove("in"); void b.offsetWidth; b.classList.add("in"); }
     function echoHop(){ var e=$("sliceEcho"); if(!e) return; e.classList.remove("hop"); void e.offsetWidth; e.classList.add("hop"); }
 
     // ── the say-it card, between waves ──
+    // The quoted sound in its title is the practice sound's letters, in the
+    // crafted orange (.ovl h2 b): the family's brief keeps orange for those
+    // letters alone, and Sona.soundMark decides which letters they are. The
+    // title arrives as plain text, so everything else in it is escaped.
+    function esc(t){ return String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+    function sayMark(){ return (window.Sona&&Sona.soundMark)?Sona.soundMark(SAYTXT,SND):'<b class="snd">'+esc(SAYTXT)+'</b>'; }
+    function markTitle(t){ var q="\u201C"+SAYTXT+"\u201D", i=t.indexOf(q); return i<0?esc(t):esc(t.slice(0,i))+"\u201C"+sayMark()+"\u201D"+esc(t.slice(i+q.length)); }
     function sayCard(title,snd){
       if(!playing) return;
       playing=false; fruits=[]; trail.length=0; if(snd!=="none") sfx(snd||"tap");
       if(REV>0 && CAN_LISTEN){
-        $("revTitle").textContent=title||("Say \u201C"+SAYTXT+"\u201D to keep playing!");
+        $("revTitle").innerHTML=markTitle(title||("Say \u201C"+SAYTXT+"\u201D to keep playing!"));
         $("revHearts").innerHTML=waveDots();
         reviveWait=true; $("revOvl").classList.add("show"); speakRevive();
       } else { endRound(); }
@@ -608,7 +622,7 @@
     function onMove(e){ if(!pDown||!playing)return; var p=pt(e), now=performance.now(); trail.push({x:p.x,y:p.y,t:now});
       var hit=0, gold=0;
       for(var i=0;i<fruits.length;i++){ var f=fruits[i];
-        if(!f.sliced && segHit(lx,ly,p.x,p.y,f.x,f.y,f.r+(superOn()?34:16))){ f.sliced=true; hit++; combo++;
+        if(!f.sliced && segHit(lx,ly,p.x,p.y,f.x,f.y,f.r+(superOn()?34:16))){ f.sliced=true; hit++; combo++; FRUITN++;
           var worth=f.gold?3:1, col=JUICE[f.e]||"#ffd21c"; score+=worth; if(phase==="wave") waveGot+=worth;
           juice(f.x,f.y,col,f.gold?16:10,f.gold); splat(f.x,f.y,f.r,col);
           // Both halves keep the fruit's full painted size and the swipe's cut
@@ -659,6 +673,7 @@
       for(i=0;i<18;i++){ a=i/18*Math.PI*2; parts.push({x:g.x,y:gy,vx:Math.cos(a)*(4+Math.random()*4),vy:Math.sin(a)*(4+Math.random()*4)-4,e:"🍉",half:(i%2)+1,life:1.3}); }
       juice(g.x,gy,"#ff5470",46,false); juice(g.x,gy,"#58cc02",14,false); splat(g.x,gy,g.r*1.2,"#ff5470");
       giant=null; sfx("giant"); echoHop();
+      FRUITN++;   // the giant is one fruit sliced, however many cuts it took
       try{ if(S&&S.confetti)S.confetti(); }catch(e){}
       banner("You did it!","The giant watermelon is sliced!");
       setTimeout(endRound,1800);
@@ -778,6 +793,7 @@
     draw();
 
     // ---- round over ----
+    function fruitsSaid(n){ return n+(n===1?" fruit":" fruits"); }
     function bankAndContinue(){ S.finishGameTurn("slice",score); location.href="/charge.html?daily=1&banked="+score; }
     function endRound(){
       if(slowTurn){slowTurn.cancelled=true;return finishSlowKeys(false).then(endRound);}
@@ -814,8 +830,11 @@
       var after=(S&&S.firstGameEnd)?S.firstGameEnd("slice"):null;
       if(after){ $("endCharge").textContent=/subscribe/.test(after)?"Show a grown-up →":"Pick a game →"; $("endCharge").onclick=function(){ location.href=after; }; }
       // one reward per moment: star + one line + Echo — no stat rows or coin counters here
-      $("endTitle").textContent=finaleDone?(isBest?"A new best! You sliced the giant watermelon!":"You sliced the giant watermelon!"):(isBest?"WOW — a new best! I saw "+score+" fruits fly!":"I saw "+score+" fruits fly! So fun!");
-      var _es=$("endSub"); _es.textContent=score+" fruits · Best: "+BEST; _es.className="later";
+      $("endTitle").textContent=finaleDone?(isBest?"A new best! You sliced the giant watermelon!":"You sliced the giant watermelon!"):(isBest?"WOW — a new best! I saw "+fruitsSaid(FRUITN)+" fly!":"I saw "+fruitsSaid(FRUITN)+" fly! So fun!");
+      // the fruit this child sliced, counted. "Best" is gone from this line:
+      // the best is a score (a golden fruit is 3), and said beside a fruit
+      // count it read as a number of fruit, which it never was
+      var _es=$("endSub"); _es.textContent=fruitsSaid(FRUITN); _es.className="later";
       setTimeout(function(){ _es.classList.add("in"); },1000);
       $("endAgain").style.display="none";
       $("endOvl").classList.add("show");

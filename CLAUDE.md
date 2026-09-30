@@ -78,12 +78,17 @@ Rachel and "SLP" or "speech-language pathologist" in one sentence without
 "MS, CF-SLP" somewhere on it; any CCC or "certified" claim; and any of the
 pages that introduce her (parents, subscribe, trial, progress, talk, slp)
 missing it.
+One of those places is the Meet Rachel setup screen (Travis, 29 Sep 2026):
+her photo, "Built with", and "Rachel Wardrop, MS, CF-SLP". She still is a
+Clinical Fellow: if an SLP, a district or a board asks, the answer is yes.
 
 **Never "CCC", "certified", "board-certified" or "ASHA-certified".** The
 landing page claimed "Licensed & board-certified (CCC-SLP)" until it was caught
 — a specific, checkable false claim about a trademarked certification, on the
 page that sells the app. `tests/iaptest.mjs` fails if it comes back, and if
-the licence ever lapses or she moves state, that pin is where to start.
+the licence ever lapses or she moves state, that pin is where to start — and
+the Meet Rachel setup screen (`onboarding.html`, pinned in
+`tests/onboardingtest.mjs`) shows her credential to every new family.
 If a change
 touches what a child is asked to say, how a sound is cued, what counts as
 practice, or what an SLP is shown, it is Rachel's call, not an engineering
@@ -197,16 +202,39 @@ decided and consumed in the same breath — so a parent who backed out of the
 grown-ups gate in between lost the only ask Sona will ever make, while the
 funnel counted an impression nobody saw. `iaptest.mjs` pins both halves.
 
-### Caseload Premium — the clinician's plan
-**"Sona Premium for your caseload": $79.99 a year, bought on the web by the
-clinician** (Travis, 24 Sep 2026 — this reverses "there is no payment path for
-an SLP or clinic"). Stripe hosted checkout from the dashboard's Caseload
-Premium page, **no trial**, renews yearly, cancel anytime in Stripe's billing
-portal. Every family who joins through that clinician's link gets Premium —
-whether or not they say "Yes, share progress": access and sharing are separate
-promises. $79.99 ÷ 12 = $6.6658, so "**under $7 a month**", never "$6.67".
+### Clinician Premium — for you, then for your caseload
+**Two yearly plans, bought on the web by the clinician** (Travis, 24 Sep 2026
+— this reversed "there is no payment path for an SLP or clinic"; re-priced 29
+Sep 2026: "they're going to still pay the 60 bucks for an account, and they
+can pay an extra 60 bucks a year for all of their caseload"):
+- **"Sona Premium for you", $59.99 a year** (`plan: slp-self`): every game on
+  the clinician's own phone or tablet, by the emailed own-phone link.
+- **"Sona Premium for your caseload", $59.99 a year MORE** (`plan:
+  slp-caseload, addon: "1"`): every family who joins through that clinician's
+  link gets Premium — whether or not they say "Yes, share progress": access
+  and sharing are separate promises. **An add-on:** `/api/slp/plan` refuses
+  it (`needSelf`) until the clinician's own Premium is on, and the page and
+  Settings say so. Its own subscription, under the same Stripe customer, so
+  Manage billing shows both and each cancels on its own.
+Stripe hosted checkout from the dashboard's Premium page or the Premium card
+in Settings, **no trial**, renews yearly, cancel anytime in Stripe's billing
+portal. $59.99 ÷ 12 = $4.9991, so "**under $5 a month**"; both, $119.98 ÷ 12
+= $9.998, "**under $10 a month**". Neither is the family plan at the same
+figure: never a charter spot, never $99.99 when the spots run out.
 `lib/caseload.ts` holds every constant; the static landing page cannot import
-it, so `shiptest` pins its copy to it.
+it, so `shiptest` pins its copy to it. The caseload's fixed-Price env var is
+`STRIPE_PRICE_ID_SLP_CASELOAD_ADDON` (new, so an old $79.99
+`STRIPE_PRICE_ID_SLP_CASELOAD` can never be charged under a $59.99 page); the
+own plan's is `STRIPE_PRICE_ID_SLP_SELF`. Both optional.
+- **Three account eras, one `terms` stamp, never backfilled.** No `terms`
+  (before 24 Sep): caseload AND own phone free forever. `terms:
+  "caseload-2026-09"` (`FREE_SELF_TERMS`, 24–29 Sep): own Premium free with a
+  work email or a founder's approval, as they were told; caseload is the
+  add-on. `terms: "premium-2026-09-29"` (`CASELOAD_TERMS`, from 29 Sep): buy
+  both. A caseload subscription sold before 29 Sep has no `addon` stamp: it
+  keeps renewing at $79.99 (`LEGACY_CASELOAD_PRICE`) and keeps switching on the
+  clinician's own phone. `selfStatus()` in `lib/caseload.ts` is the one place
+  those rules live; `/api/slp/covered` reads it for an own-phone ticket.
 - **Covered = paid or grandfathered.** Paid is a Stripe subscription stamped
   `plan: slp-caseload, slp: <email>` in active, trialing or past_due. Stripe
   keeps a cancelled plan active to its period end, so families keep Premium to
@@ -221,11 +249,10 @@ it, so `shiptest` pins its copy to it.
   default portal, which the family billing page shares, is only the fallback
   if Stripe refuses that configuration. Never a `tier` stamp: only
   `tier: charter` is a charter spot.
-- **Clinicians who signed up before this build keep "free forever".** They were
+- **Clinicians who signed up before 24 Sep keep "free forever".** They were
   promised "Free forever, unlimited families — for you and every kid on your
-  caseload", and their caseload stays covered, free. Structural, no dates:
-  every account this build creates carries `terms: "caseload-2026-09"`, and an
-  account with no `terms` predates it. Never backfill that field.
+  caseload", and they and their caseload stay covered, free. Structural, no
+  dates: an account with no `terms` predates it. Never backfill that field.
 - **"Every family on your caseload", never "unlimited".** The redeem cap is
   300 for a covered clinician (60 uncovered), counted **per code AND per
   clinician** (`slpredeem:<code>` and `slpredeem-owner:<email>`, ~a year each)
@@ -252,18 +279,22 @@ it, so `shiptest` pins its copy to it.
   `/api/charter`), "on the web, $99.99 a year" once the charter spots are
   gone, and nothing when the route doesn't answer. A clinician repeats what
   she reads, and a bare launch price is a figure most families will not see.
-- **Their own phone needs a work email.** The dashboard stays open to any email
-  (the landing page collects every one), but the clinician's own free Premium
-  link is emailed only to a work address; free-mail domains get "No work
-  email? Request access", approved by hand on `/leads.html`. Approval sends
-  no email, so the card says "Requested — once we approve it, this button will
-  work." beside the greyed-out button. **Never "one phone":** each link works
-  once, but three can be sent a day and none is retired, so the copy is
-  "Premium on your own phone or tablet. Each link works once." How many
-  devices a clinician may have is Travis's open call.
-- **Web only.** Clinician pages never render in the iOS shell, so this plan has
-  no App Store product and meets no in-app purchase rule (`NATIVE.md`). It
-  does not read `FREE_MODE`, which is the FAMILY paywall switch.
+- **Their own phone: bought, or free where it was promised.** The dashboard
+  stays open to any email (the landing page collects every one). The
+  own-phone link is emailed to anyone whose own Premium is on. Only a 24–29
+  Sep account without a work email sees "No work email? Request access",
+  approved by hand on `/leads.html` (which, and `/api/founders/approve`,
+  refuse an approval for any other account: it would change nothing).
+  Approval sends no email, so the card says "Requested — once we approve it,
+  this button will work." beside the greyed-out button. **Never "one phone":**
+  each link works once, but three can be sent a day and none is retired, so
+  the copy is "Premium on your own phone or tablet. Each link works once."
+  How many devices a clinician may have is Travis's open call.
+- **The family surfaces refuse both clinician receipts** (`isClinicianPlan()`):
+  restore-by-email, the family billing page and the family success page.
+- **Web only.** Clinician pages never render in the iOS shell, so neither plan
+  has an App Store product or meets an in-app purchase rule (`NATIVE.md`).
+  They do not read `FREE_MODE`, which is the FAMILY paywall switch.
 
 ### Four free eras, and the sweeps that honour them
 `_grandfatherFreeEra()` through `_grandfatherFreeEra4()` run at load and are
@@ -332,10 +363,10 @@ the only entrance to `ORDER_SLP`, so removing it again makes that whole
 branch dead code — `for-slps.html` is indexable and linked from the landing
 footer, and `betatest` pins the door OPEN. Since 24 Sep 2026 the channel can
 also pay: the dashboard and the free version stay free, and a clinician who
-wants every game for their families buys Caseload Premium — one yearly price,
-never per family, never to the clinician. **Parents come first now** (Travis,
+wants every game for their families buys their own Premium and adds their
+caseload — yearly prices, never per family, never to the clinician. **Parents come first now** (Travis,
 29 Sep 2026: "lose my attachment in stop caring about the SLP stuff, but still
-leave the $5 a day add on"): the SLP ad keeps running and the $80 offer sits in
+leave the $5 a day add on"): the SLP ad keeps running and the offer sits in
 plain sight on the dashboard, but the new ads, and the work, go to parents.
 
 **speaksona.com is for parents and caregivers** (Travis, 26 Sep 2026: "change
@@ -404,13 +435,16 @@ see that it happened and paste it into a note. Not "assigning homework"
 who went quiet, what ends soon — one action per row) → Caseload (every child,
 oldest-practiced first, **Copy note on every row**) → a child page (8-week
 strip, pass rate by sound and position, the current homework, the composer)
-→ Caseload Premium (its own page, 24 Sep 2026: Today keeps exactly its four
-cards, and no price ever appears in them; viewing it only reads) → Settings.
+→ Premium (its own page, 24 Sep 2026: Today keeps exactly its four
+cards, and no price ever appears in them; viewing it only reads) → Settings
+(which carries a Premium card with the same two plans and buy buttons, 29 Sep
+2026: "an upsell … in like the SLP settings").
 Since 29 Sep 2026 (Travis: "yes add the $80 button to the first screen") a
-**Get Premium** button with the server's price sits in the top bar of every
-page but the Premium page, because a clinician from the ad lands on Community
-and never saw the price. Only once the plan has answered, never to a covered
-caseload; `slptest` 9b pins it.
+button with the server's price sits in the top bar of every page but the
+Premium page, because a clinician from the ad lands on Community and never
+saw the price. It offers the next thing to buy: **Get Premium** (their own)
+until that is on, then **Add your caseload**, then nothing. Only once the
+plan has answered; `slptest` 9b pins it.
 Reviewed by three lenses — a school SLP, a district privacy
 officer, an engineer — whose rulings are now rules:
 - **Register.** "Pass rate" (defined on the page as "did that sound like this
@@ -515,6 +549,20 @@ Every page is a drawn scene: Rory and the Rainbow's were drawn by hand on a
 Claude Design canvas (`public/assets/books/rory-rainbow/`); the other 18 are
 built from one shared cast by `node tools/bookart/build.mjs`. Edit the layouts
 in `tools/bookart/`, rebuild, and commit the SVGs; the app only loads files.
+**The builder never draws over hand-made art** (the family's redesign brief,
+28 Sep 2026: new pictures are coming from a designer, a book at a time). Every
+SVG it writes opens with its marker comment straight after the `<svg>` tag
+(`MARK` and `builtHere()` in `tools/bookart/book.mjs`). It plans every file
+first and writes nothing at all if a target folder holds anything it did not
+write: a .webp or .png, or an .svg that doesn't open with the marker (an old
+page redrawn in an editor that kept the comment counts as hand-made). It also
+refuses a book name it doesn't build (it used to print "built 0 books" and
+exit 0). Hand-made books are listed in `tools/bookart/handmade.mjs` (today
+only `rory-rainbow`). When a book's redrawn art lands: add its slug there,
+delete it from `books1.mjs`/`books2.mjs`, delete its old SVGs, and point its
+paths in `library.html` and `parents.html` at the new files, in one commit.
+`tests/arttooltest.mjs` pins the two lists against the shelf, the generated
+bytes on disk, every book-picture path any page uses, and the refusals.
 **The books are on** (Travis, 26 Sep 2026: "yes turn them on"): Home's Books
 card opens `library.html`. Books are Premium content (`Sona.gated("books")`),
 free while the app is free; a locked family gets the grown-up message, and
@@ -525,8 +573,8 @@ top four or five most popular letters... everything else, we can just set a
 date on it... new drops every week"). R, S, L, SH and TH are open. Every
 other book in `STORIES` carries `opens` (a Sunday, at most three a week) and
 waits on the shelf greyed, "Coming Oct 4", until that day on the phone's own
-calendar; a tap or `openBook()` does nothing before it. The six-page emoji
-books come after every twelve-page one: they put the sound anywhere in a word
+calendar; a tap or `openBook()` does nothing before it. The six-page books
+(painted, see below) come after every twelve-page one: they put the sound anywhere in a word
 and are last in line to be redone. A child whose sounds have nothing open yet
 sees every open book first, then their own, coming. Home's card and the
 website say "new ones every week", never "a book for every sound".
@@ -535,11 +583,23 @@ website say "new ones every week", never "a book for every sound".
 **The six-page books are painted** (Codex, 28 Sep 2026, with ChatGPT's image
 tool; brought over 29 Sep): one picture per book in `public/assets/books/painted/`
 holding its six scenes, three across and two down, in reading order, plus a
-small `-cover` copy of scene 1 for the shelf. The reader shows each page's
-scene by position. The art was drawn for those exact 78 sentences, so
-`readtest` pins them: change a sentence and redraw its scene. Codex's
-say-a-word-to-turn-the-page prototype was not brought over; it changes what a
-child is asked to say, so it waits for Rachel.
+small `-cover` copy of scene 1 that the shelf shows like any drawn cover, so a
+book that isn't open yet never pulls the big picture. The full-screen reader
+cuts page i's scene out of that picture on the phone (a canvas, once per book,
+one book kept at a time, still one download) and shows it exactly as it shows
+a drawn page: whole at full width, its own top and bottom rows carried out to
+the screen's edges, the cream card over its foot. The title page is scene 1
+(the small copy until the full-size cut is ready). While the picture is on its
+way a page shows its wash and fills in; if it never comes, the old emoji
+sticker, never a blank page. The art was drawn for those exact 78 sentences,
+so `readtest` pins them (change a sentence and redraw its scene) and checks,
+by comparing pixels, that each page shows its own scene. They have no `keys`,
+so no say-the-word moment: they put the sound anywhere in a word. Codex's own
+say-a-word-to-turn-the-page prototype was not brought over; the books
+branch's version below was, and it is ON for the twelve-page books (Travis,
+29 Sep 2026: "On now", after being told it changes what a child is asked to
+say). Rachel's review is still owed: the words, Echo's lines and what counts
+as a try are listed in that PR's body.
 
 **The app's look is the crafted world** (Codex, 28 Sep 2026: Travis's five
 concept boards, in `design/crafted-world/references/`). Painted scenes and game
@@ -549,14 +609,61 @@ Real controls and game objects stay HTML and canvas; a picture is never the
 interface. New art in this style comes from an image model (Travis generates
 it in ChatGPT); the twelve-page books are still the simpler drawings.
 
+**A book page fills the screen, and the child says one word to turn it** (the
+family's redesign brief, 28 Sep 2026). The picture fills the screen and the
+page's words sit on a cream card over its bottom; the shelf shows each fuller
+book's drawn cover. Pictures pick their fit once loaded: portrait art (taller
+than 1.2x its width, the designer's coming 1024x1536 pages) covers the screen;
+today's wide SVGs are shown whole at full width, their own top and bottom rows
+stretched to the edges. `#bkStage .bkart.scene img` stays the only picture
+`<img>`. On a short phone the picture makes room for Echo's question
+(`roomForAsk`): it slides up under the top bar first, then shrinks only by
+what is still missing; its box must never animate, because sona.css makes
+transitions near-instant under Reduce Motion and a box mid-transition reports
+where it WAS (that once collapsed the picture to nothing).
+Each fuller book has `keys`, one word per page (the brief's list; readtest
+holds every key to the book's sound rule). After Echo reads a page the key
+word glows, Echo asks "Can you say... <word>." and the teal mic listens:
+- **The check is Say & Play's**, copied into `public/saycheck.js`
+  (`window.SayCheck`) because `sayplaytest` pins `sayplay.js`'s source as it
+  stands. `tests/booktest.mjs` fails if a timing, the loudness bar or the
+  sound-type test drifts between them: change one, change both.
+- **Heard means "a voice of the right kind"**, never "the word was right" (the
+  phone can't tell words on the web), so Echo says "I heard you!", never
+  "correct". Then a small celebration, and the page turns itself.
+- **Silence never turns the page and is never a try.** A quiet window closes
+  the mic and waits for a tap on it; the tap only listens again. A try is a
+  loud sound of the wrong kind for the book; after 3, Echo says a kind line and
+  the page turns. A grown-up's small Skip turns it any time.
+- **A book word is play, not practice.** No logAttempt, bumpReps, coins or
+  stickers, and no `sona.*` practice key changes. Whether it should count is
+  Rachel's call.
+- **The phone is asked for the mic only from the grown-up's "Yes, use the
+  mic" tap inside the book.** "Not now", or a refused or missing mic, means
+  the book reads with Next for the rest of that visit; never a dead end.
+- **No word moment for a child younger than `Sona.soundNorm(book.sound)`**
+  (setup stores the top of the age band: 2-4 is 4, 5-6 is 6, 7+ is 8).
+- **Every way off the moment closes the mic first**, and nothing plays while
+  it is on, while it is being asked for, or within 200 ms of its close,
+  including the book's own reading voice. Stopping speech ends the line in
+  flight at once, so a page turned mid-load never holds the next page's mic.
+
 **Say & Play** (Travis, 26 Sep 2026: "10 more games for ages 3-4 and 10
 more games for ages 5-8 ... incorporating practice into it"): twenty games
 where every word the child says moves the game one step, five words for 3-4
 (Simple play) and eight for 5-8 (Arcade). One engine, `public/sayplay.js`;
 each `arcade-<key>.html` is written by `node tools/gameart/build.mjs` from
 `tools/gameart/little.mjs` and `big.mjs` (edit there and rebuild:
-`sayplaytest` fails if a page drifts), and `node tools/gameart/cards.mjs`
-draws their Home cards. Only a voice moves a game: no tap stands in for
+`sayplaytest` and `arttooltest` fail if a page drifts). The builder overwrites
+only pages that carry its marker (`MARK` in `tools/gameart/page.mjs`); if any
+target page lacks it, it writes nothing, so a key that collides with Hoops or
+an older hand-written arcade page can't overwrite it. The start card's button
+is a teal pill, "Let's play" beside the play triangle (the triangle stays for
+a three-year-old who can't read). `node tools/gameart/cards.mjs` draws their
+Home cards, except the hand-drawn ones listed in `PLAYED` in
+`tools/gameart/games.mjs`; if a new card picture (say `balloon.webp`) lands for
+a game it still draws, it refuses and writes nothing until that game is added
+to `PLAYED`. Only a voice moves a game: no tap stands in for
 talking, and the mic button only listens again (in a play game like Hoops
 a finger plays the move, but only a move a word has earned). The mic keeps every quiet
 rule the other games keep. A spoken move is play, never practice data:
@@ -600,7 +707,8 @@ its quiet rules stay `sayplay.js`'s. What it keeps:
   bounce, made on the phone), so each waits for a closed mic like a chime.
 - **Nothing is practice data**, as in every Say & Play game.
 Its Home card, `public/assets/games/hoops.webp`, is a frame of the court
-itself; `tools/gameart/cards.mjs` points `sp-hoops` at it.
+itself; its `PLAYED` entry in `tools/gameart/games.mjs` makes
+`tools/gameart/cards.mjs` point `sp-hoops` at it and never draw a card over it.
 
 **Fruit Slice is a round now** (Travis, 27 Sep 2026, yes to: "three waves of
 fruit, then one giant watermelon to finish. It always ends in a win. Missing is
@@ -702,6 +810,54 @@ Their engines remain in the repo for future work. The adventure
 stay, but no public menu opens them, and the bookshelf hides its adventure tile.
 The existing practice, honest-rep, rotation and earned arcade-turn rules
 still apply after a child chooses an available game.
+
+## The look: the family's redesign brief (28 Sep 2026)
+The family sent a brief for a designer (ChatGPT) to redraw the whole app as
+"a crafted little world" of soft clay toys. **The new art has not arrived.**
+Build behaviour and layout so each picture drops in later; never invent art
+to stand in for it. What was buildable was built on 28 Sep:
+- **Teal, cream and orange.** Main buttons and the mic are teal; second
+  choices are cream pills; no bright green button anywhere (the family named
+  the green GO). The tokens live once, in `public/action.css`; `sona.css`,
+  `sayplay.css` and `simple-play.css` `@import` it first, and the books,
+  chapter/story pages, Feed Echo, Hoops and the Say & Play pages link it. The
+  crafted pages (the five round games and the practice page `charge.html`)
+  take their colours from `public/crafted-*.css` instead (see "The app's look
+  is the crafted world"); where a crafted sheet repaints one of our rules, the
+  crafted one wins, and our rule must add nothing that shows through (a teal
+  text-shadow under the crafted cream "Share this week" button once did). Never paste the hex values into a page: a page that loses
+  the tokens shows white text on nothing, and the values will change when the
+  designer's STYLE.md arrives. `tests/loadtest.mjs` section 5 accepts either
+  teal and bans, over both, Duolingo green and orange on a kid button or mic,
+  pressed or not. It judges teal by hue and cream as a light warm colour, so a
+  new value from the designer needs no test edit; for a crafted page it asks
+  the browser what a child sees, at rest and pressed.
+- **Orange means only the practice sound's letters** (the r in "rabbit").
+  Show a practice word through `Sona.soundMark(text, sound, pos)`: escaped
+  HTML with the letters that make the sound in `<b class="snd">`. When it
+  can't prove which letters make the sound it colours the whole word, because
+  a cue on the wrong letter is worse than none; a doubled letter is one sound.
+  Which letters count is Rachel's call. `tests/soundmarktest.mjs` runs every
+  bank word; `SOUNDMARK_TABLE=<file>` writes her review table.
+- **The practice page is the crafted one** (`crafted-games.css` /
+  `crafted-practice.css`). The target in Echo's bubble (`#bTarget`) marks only
+  the practice sound's letters through `Sona.soundMark`, in the crafted
+  practice orange, the rest of the word in the bubble's ink; a bare sound like
+  "rrrr" is orange whole, and in a sentence only the practice word is marked.
+  `paintCard()` stays self-contained (`voicetest3` runs its source), and the
+  mic stays a status (`role=img` DIV).
+- **The five round games wear the crafted cards.** The say-it card keeps the
+  round's own title ("Say “rrrr” for wave 2!"); only its quoted sound's
+  letters are orange (`Sona.soundMark`). A miss never opens it
+  (`micquietgamestest`). The end card's count names real things, never the
+  score: Fruit Slice counts fruit sliced (`FRUITN`, the giant is one fruit) and
+  Piano Tiles notes played (`NOTESN`), because a golden fruit or tile scores 3
+  and the giant's cuts score 5; neither shows a "Best" beside it, because the
+  best is a score. Block Stacker counts blocks and Sound Sprint metres.
+- **Say & Play and Feed Echo** show the word with only the sound's letters
+  orange (`Sona.soundMark`) beside the crafted picture. Feed's ask keeps ONE
+  `<b>`, the word itself, with the letters in a `<span class="snd">` inside it,
+  because `craftedarttest` reads the asked word by `#bMain b`.
 
 ## Hard rules
 - Merges to main/prod only on Travis's explicit go ("merge").

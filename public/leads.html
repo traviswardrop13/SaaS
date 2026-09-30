@@ -79,7 +79,7 @@
 
     <h2>Therapist accounts</h2>
     <p class="muted">Everyone who signed up for the dashboard, from the start. "Not yet" means Kit doesn't have them yet: the Kit button above sends them, and so does their next sign-in.</p>
-    <p class="muted">Their own Premium, on their own phone, needs a work email. Someone on gmail, yahoo or the like can press "Request access"; check they're a real clinician, then Approve. Caseload: "paid" is the $79.99 plan, "grandfathered" signed up before it and is covered free forever, "none" is neither.</p>
+    <p class="muted">Own Premium (every game on their own phone): therapists who signed up from 29 Sep 2026 buy it, $59.99 a year. Those who signed up 24–29 Sep were told it was free with a work email; one of them on gmail, yahoo or the like can press "Request access", and an Approve button shows here: check they're a real clinician, then Approve. "Older plan" means their own Premium comes with the $79.99 caseload plan sold before 29 Sep. Caseload: "paid" is a caseload plan ($59.99 a year on top of their own, or the older $79.99), "grandfathered" signed up before 24 Sep and is covered free forever, "none" is neither.</p>
     <span class="muted" id="approveMsg" role="status"></span>
     <div class="row"><button class="ghost" id="csvSlp">Download CSV</button></div>
     <div class="tw"><table id="tSlp"></table></div>
@@ -126,6 +126,9 @@
           // approved. A work email needs no approval, and an approved one
           // needs no second click.
           if (c[0] === "approve") {
+            // Only a 24–29 Sep account can still be approved; everyone else's
+            // own Premium is bought (or was free from the start).
+            if (r.canApprove === "no") return '<td class="' + (r.own === "none" ? "muted" : "ok") + '">' + esc(r.own || "none") + "</td>";
             if (r.workEmail === "yes") return '<td class="muted">work email</td>';
             if (r.approved === "yes") return '<td class="ok">approved</td>';
             return '<td><button class="ghost" data-approve="' + esc(r.email) + '">Approve</button></td>';

@@ -17,11 +17,14 @@ const SUITES = [
   "kidtest.mjs",   // KIDS1: per-child progress, switching, family-wide entitlement
   "slpcode.mjs",   // CODES1: SLP family credential — verified redemption, honest gate
   "slpapi.mjs",    // SLPAPI1: the clinician's roster — invites ahead of the family, removal, meta the device can't overwrite
-  "caseloadtest.mjs", // CASELOAD1: the clinician's $79.99 plan — who is covered, grandfathering, own phone, parent invites
+  "caseloadtest.mjs", // CASELOAD1: the clinician's plans ($59.99 for you, $59.99 more for the caseload) — who is covered, grandfathering, own phone, parent invites
   "ttsroutetest.mjs", // voice provider, delivery cache, safe fallback and request deadline
   "voiceclienttest.mjs", // actual playback source, old-cache refresh and complete spoken turns
   "chargepacingtest.mjs", // listen/model/child-turn handoff and replay ordering
   "readtest.mjs",  // books never go silent: browser-voice fallback when TTS dies
+  "booktest.mjs",  // BOOKS2: full-screen pages; say the key word to turn the page — Say & Play's check, a quiet mic, silence never turns it, no practice data
+  "arttooltest.mjs", // ART2: the book and game art tools never draw over hand-made art
+  "soundmarktest.mjs", // SNDMARK1: only the practice sound's letters are orange, for every bank word
   "momweek.mjs",   // parent weekly goal + streak math + the three UIs
   "repweektest.mjs", // REPWEEKS1: the week's reps in Home's corner, week by week in Settings — one count everywhere
   "nativefamilytest.mjs", // native family entry; clinician routes stay browser-only
@@ -78,11 +81,14 @@ const SUITES = [
   "arttest.mjs",   // ART1: every sticker renders, fits its box and stays in the safe band
 ];
 
-let bad = 0;
+// The failed suites are named again at the very end: CI's log runs to about
+// 7,000 lines, and a tool that can read only its last few thousand could see
+// "1 SUITE(S) FAILED" but not which one (PR #166, 29 Sep 2026).
+const bad = [];
 for (const s of SUITES) {
   console.log("\n━━━ " + s + " ━━━");
   const r = spawnSync(process.execPath, [path.join(dir, s)], { stdio: "inherit", timeout: 300000 });
-  if (r.status !== 0) { bad++; console.log("SUITE FAILED: " + s + (r.signal ? " (" + r.signal + ")" : "")); }
+  if (r.status !== 0) { bad.push(s + (r.signal ? " (" + r.signal + ")" : "")); console.log("SUITE FAILED: " + bad[bad.length - 1]); }
 }
-console.log(bad ? "\n" + bad + " SUITE(S) FAILED" : "\nALL SUITES GREEN");
-process.exit(bad ? 1 : 0);
+console.log(bad.length ? "\n" + bad.length + " SUITE(S) FAILED: " + bad.join(", ") : "\nALL SUITES GREEN");
+process.exit(bad.length ? 1 : 0);

@@ -228,31 +228,37 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
     // "Free for SLPs", not "Free for you" (25 Sep 2026): "you" is anyone now.
     /<b>Free for SLPs<\/b>/.test(shown) && /<b>Free for every family<\/b>/.test(shown) && /Daily practice and free games/.test(shown));
   ok("…answers 'What does it cost?'",
-    /What does it cost\?/.test(shown) && /Caseload Premium is optional: \$79\.99 a year \(under \$7 a month\) gives every family who joins through your link every game/.test(shown));
+    /What does it cost\?/.test(shown) && /Premium is optional, in two steps\. Sona Premium for you is \$59\.99 a year \(under \$5 a month\): every game on your own phone or tablet\. Add your caseload for \$59\.99 a year more \(under \$5 a month\), and every family who joins through your link gets every game/.test(shown));
   ok("…with the plan's real terms: no trial, yearly, cancel anytime, families keep it to the end of the paid year",
-    /there is no trial, it renews yearly, and you can cancel anytime/.test(shown) && /your families keep Premium to the end of the year you paid for/.test(shown));
+    /there is no trial, each renews yearly, and you can cancel anytime/.test(shown) && /your families keep Premium to the end of the year you paid for/.test(shown));
   ok("…and that the clinician never earns on their own caseload", /You never earn anything on your own caseload\./.test(shown));
   ok("…and tells a clinician who signed up under the old promise that it stands",
-    /Signed up before Caseload Premium existed\? Your caseload already has it, free/.test(shown));
+    /Signed up before 24 September 2026\? You and your caseload already have it, free/.test(shown));
   // The family price moves with the charter count, and only /api/charter may
   // print it. A static page that typed it would be right until spot fifty.
-  ok("…and never quotes a family price", !/\$59\.99|\$99\.99/.test(shown));
+  // 29 Sep 2026: the clinician's two prices are also $59.99, so the check is
+  // on what a figure is attached to, not the digits: no $99.99 anywhere, and
+  // no figure in the sentence about families buying for themselves.
+  ok("…and never quotes a family price", !/\$99\.99/.test(shown) && /Families you don't cover can buy Premium themselves\./.test(shown) && !/can buy Premium themselves[^.]*\$/.test(shown));
   // This page is static and cannot import lib/caseload.ts, so the one copy of
   // the caseload price it has to carry is pinned to the library's.
   const lib = readFileSync(APP + "/lib/caseload.ts", "utf8");
-  const price = (lib.match(/CASELOAD_PRICE = "([^"]+)"/) || [])[1];
-  const perMonth = (lib.match(/CASELOAD_PER_MONTH = "([^"]+)"/) || [])[1];
-  // (a price has cents; "under $7 a month" is the reading, checked next)
+  const price = (lib.match(/\bCASELOAD_PRICE = "([^"]+)"/) || [])[1];
+  const perMonth = (lib.match(/\bCASELOAD_PER_MONTH = "([^"]+)"/) || [])[1];
+  const selfPrice = (lib.match(/\bSELF_PRICE = "([^"]+)"/) || [])[1];
+  const selfPerMonth = (lib.match(/\bSELF_PER_MONTH = "([^"]+)"/) || [])[1];
+  // (a price has cents; "under $5 a month" is the reading, checked next)
   const figures = shown.match(/\$\d+\.\d\d/g) || [];
-  ok("every dollar figure on the landing page is lib/caseload.ts's caseload price",
-    !!price && figures.length > 0 && figures.every((f) => f === price), price + " vs " + figures.join(","));
-  ok("…and its per-month reading is the library's, never a rounded $6.67", !!perMonth && shown.includes("(" + perMonth + ")") && !/\$6\.6\d/.test(shown));
+  ok("every dollar figure on the landing page is one of lib/caseload.ts's clinician prices",
+    !!price && !!selfPrice && figures.length > 0 && figures.every((f) => f === price || f === selfPrice), price + " / " + selfPrice + " vs " + figures.join(","));
+  ok("…and its per-month readings are the library's, never a rounded $4.99", !!perMonth && !!selfPerMonth &&
+    shown.includes("(" + perMonth + ")") && shown.includes("(" + selfPerMonth + ")") && !/\$4\.99|\$6\.6\d/.test(shown));
   // REWRITTEN 24 Sep 2026. This pinned "we use it once … and keep it
   // nowhere", and Resend only for "sign-in emails". The parent's address and
   // the link do reach Resend, which keeps delivery logs; privacy.html said so
   // and this page contradicted it, in the answer written for an IT reviewer.
   ok("the storage answer names Stripe, and says who a parent's email is handed to and that Sona keeps no copy",
-    /If you buy Caseload Premium, Stripe takes the payment/.test(shown) &&
+    /If you buy Premium, Stripe takes the payment/.test(shown) &&
     /we hand it to Resend to deliver that one email[^.]*, and Sona keeps no copy: not stored, not logged, not added to any list\./.test(shown) &&
     !/keep it nowhere/.test(shown));
   ok("…and names Resend for every email it sends, not only sign-in", /emails via Resend/.test(shown) && !/sign-in emails via Resend/.test(shown));

@@ -437,7 +437,7 @@
     </div>
     <div class="q">
       <button type="button" aria-expanded="false" aria-controls="a2" id="q2">What's stored, and where?<span>+</span></button>
-      <p class="a" id="a2" hidden>If you start from this page: your email and whether you're a parent, a speech therapist or something else, kept by Sona and sent to Kit so Rachel's tips can reach you. A speech therapist's account: email, name, clinic, code. For each consenting family: the child's first name and age, target sounds, practice days and counts, pass rate per sound, your assignments, and when the parent consented. Hosted on Vercel, stored in Upstash, emails via Resend, and the occasional email from Rachel via Kit. If you buy Caseload Premium, Stripe takes the payment and holds your email and card; we never see the card number, and nothing about a child goes to Stripe. If you type a parent's email when you add a child, we hand it to Resend to deliver that one email with the link, and Sona keeps no copy: not stored, not logged, not added to any list. Analytics (PostHog) on grown-up pages only, and a Meta ad pixel on this sign-up page so we can tell which of our ads work — neither ever runs where a child practices, and neither is sent a child's name. No ads in the app, no data sales, no profiling.</p>
+      <p class="a" id="a2" hidden>If you start from this page: your email and whether you're a parent, a speech therapist or something else, kept by Sona and sent to Kit so Rachel's tips can reach you. A speech therapist's account: email, name, clinic, code. For each consenting family: the child's first name and age, target sounds, practice days and counts, pass rate per sound, your assignments, and when the parent consented. Hosted on Vercel, stored in Upstash, emails via Resend, and the occasional email from Rachel via Kit. If you buy Premium, Stripe takes the payment and holds your email and card; we never see the card number, and nothing about a child goes to Stripe. If you type a parent's email when you add a child, we hand it to Resend to deliver that one email with the link, and Sona keeps no copy: not stored, not logged, not added to any list. Analytics (PostHog) on grown-up pages only, and a Meta ad pixel on this sign-up page so we can tell which of our ads work — neither ever runs where a child practices, and neither is sent a child's name. No ads in the app, no data sales, no profiling.</p>
     </div>
     <div class="q">
       <button type="button" aria-expanded="false" aria-controls="a3" id="q3">How is data deleted?<span>+</span></button>
@@ -447,12 +447,14 @@
       <button type="button" aria-expanded="false" aria-controls="a4" id="q4">Do you sign agreements, like a BAA?<span>+</span></button>
       <p class="a" id="a4" hidden>Ask us and we'll answer in writing, ideally before you share the link. Families share data with us directly after consenting on their own phone, rather than the clinic sharing it for them. If we confirm a breach, we notify affected clinicians and parents within 72 hours.</p>
     </div>
-    <!-- The money answer, in full. Every figure is lib/caseload.ts's; the
-         family price is deliberately not quoted here — it moves with the
-         charter count, and only /api/charter may print it. -->
+    <!-- The money answer, in full. Every figure is lib/caseload.ts's
+         (SELF_PRICE, CASELOAD_PRICE; shiptest pins them); the family price is
+         deliberately not quoted here — it moves with the charter count, and
+         only /api/charter may print it. That the clinician's figures are
+         also $59.99 is a coincidence of 29 Sep 2026, not a family price. -->
     <div class="q">
       <button type="button" aria-expanded="false" aria-controls="a5" id="q5">What does it cost?<span>+</span></button>
-      <p class="a" id="a5" hidden>Your dashboard is free, and so is Sona's free version for every family: daily practice and free games, with no card. Caseload Premium is optional: $79.99 a year (under $7 a month) gives every family who joins through your link every game, whether or not they share practice with you. You buy it on the web through Stripe; there is no trial, it renews yearly, and you can cancel anytime — your families keep Premium to the end of the year you paid for. Families you don't cover can buy Premium themselves. You never earn anything on your own caseload. Signed up before Caseload Premium existed? Your caseload already has it, free: that was the promise, and it stands.</p>
+      <p class="a" id="a5" hidden>Your dashboard is free, and so is Sona's free version for every family: daily practice and free games, with no card. Premium is optional, in two steps. Sona Premium for you is $59.99 a year (under $5 a month): every game on your own phone or tablet. Add your caseload for $59.99 a year more (under $5 a month), and every family who joins through your link gets every game, whether or not they share practice with you. You buy them on the web through Stripe; there is no trial, each renews yearly, and you can cancel anytime — your families keep Premium to the end of the year you paid for. Families you don't cover can buy Premium themselves. You never earn anything on your own caseload. Signed up before 24 September 2026? You and your caseload already have it, free: that was the promise, and it stands.</p>
     </div>
   </div>
 </section>

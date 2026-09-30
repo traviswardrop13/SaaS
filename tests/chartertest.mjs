@@ -51,7 +51,7 @@ ok("…and a checkout that never finished paying is not", s.taken === 3);
 ok("the count says what is left, and that the door is open", s.left === CHARTER_CAP - 3 && s.open === true, JSON.stringify(s));
 
 // ── a clinician's caseload plan is not a family's charter spot (24 Sep 2026) ──
-// "Sona Premium for your caseload" is a $79.99 YEARLY subscription, live, and
+// "Sona Premium for your caseload" is a YEARLY subscription, live, and
 // stamped plan + slp by /api/slp/plan — never `tier`. Were it ever counted,
 // every clinician who bought it would quietly take one of the fifty $59.99
 // family spots, and "for the first 50 families" would stop being true. Even

@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { kvCmd, kvConfigured } from "@/lib/slpAuth";
-import { grandfathered, recordActive, accessKey, planKey, type PlanRecord } from "@/lib/caseload";
+import { grandfathered, recordActive, accessKey, planKey, FREE_SELF_TERMS, type PlanRecord } from "@/lib/caseload";
 import { isWorkEmail } from "@/lib/workEmail";
 
 /**
@@ -48,6 +48,11 @@ export type Clinician = {
   accessRequested: string;           // ISO time of the first request, or ""
   approved: "yes" | "no";
   caseload: "paid" | "grandfathered" | "none";
+  // Their own Premium (29 Sep 2026): how it is on, if it is. Only a 24 to
+  // 29 Sep account without a work email can still be approved by hand
+  // (`canApprove`); everyone after that buys it.
+  own: "paid" | "free" | "older plan" | "none";
+  canApprove: "yes" | "no";
 };
 
 /** An Upstash HGETALL answer — a flat [field, value, …] list — as an object. */
@@ -61,7 +66,7 @@ function hashObj(flat: unknown): Record<string, string> {
  * Every clinician account, however it was created. SCAN, not KEYS, so a large
  * store is walked in pages instead of blocked; capped at 5000.
  *
- * "paid" here is the plan mirror as last written (slpplan), not a fresh
+ * "paid" here is the plan mirrors as last written (slpplan, slpplan-self), not a fresh
  * Stripe call per clinician: this is a list of everyone, and the mirror is
  * at most ten minutes behind for anyone whose families are checking in.
  */
@@ -81,6 +86,10 @@ export async function readClinicians(): Promise<Clinician[]> {
         const access = hashObj(await kvCmd(["HGETALL", accessKey(email)]));
         let plan: PlanRecord | null = null;
         try { plan = JSON.parse(String(await kvCmd(["GET", planKey(email)]))) as PlanRecord | null; } catch { plan = null; }
+        let mine: PlanRecord | null = null;
+        try { mine = JSON.parse(String(await kvCmd(["GET", planKey(email, "self")]))) as PlanRecord | null; } catch { mine = null; }
+        const earlier = a.terms === FREE_SELF_TERMS;
+        const freeSelf = grandfathered(a) || (earlier && (isWorkEmail(email) || access.approved === "1"));
         out.push({
           email,
           name: String(a.name || ""),
@@ -92,6 +101,8 @@ export async function readClinicians(): Promise<Clinician[]> {
           accessRequested: access.requestedAt || "",
           approved: access.approved === "1" ? "yes" : "no",
           caseload: grandfathered(a) ? "grandfathered" : recordActive(plan) ? "paid" : "none",
+          own: freeSelf ? "free" : recordActive(mine) ? "paid" : recordActive(plan) && plan!.addon !== true ? "older plan" : "none",
+          canApprove: earlier && !isWorkEmail(email) && access.approved !== "1" ? "yes" : "no",
         });
       } catch { /* skip */ }
     }
