@@ -420,7 +420,7 @@ if (hasContract && premiumPresent) {
         Sona.gateDest("/../premium.html?game=stack"),
         Sona.gateDest("/premium.html?game=https%3A%2F%2Fevil.example"),
       ]);
-      ok("only a known game survives the Premium destination allowlist", destinations[0] === "/premium.html?game=tiles" && ["", "/premium.html"].includes(destinations[1]) && destinations[2] === "" && destinations[3] === "" && ["", "/premium.html"].includes(destinations[4]), destinations);
+      ok("only a known game survives the Premium destination allowlist", destinations[0] === "/premium.html?game=stack" && ["", "/premium.html"].includes(destinations[1]) && destinations[2] === "" && destinations[3] === "" && ["", "/premium.html"].includes(destinations[4]), destinations);
       await solveGate(pg); await pg.waitForURL(/\/premium\.html/);
       await pg.evaluate(() => { sessionStorage.removeItem("sona.gate.v1"); window.__sonaGateOk=0; window.dispatchEvent(new PageTransitionEvent("pageshow",{persisted:true})); });
       await pg.waitForURL(/\/today\.html\?gate=1/);
@@ -430,7 +430,7 @@ if (hasContract && premiumPresent) {
 
   // Follow the configured release without pinning the business switch.
   await section("the parent offer follows the configured release", async () => {
-    const { ctx, pg, errors, calls } = await fixture({ path: "/premium.html?game=tiles", gate: true });
+    const { ctx, pg, errors, calls } = await fixture({ path: "/premium.html?game=stack", gate: true });
     try {
       await pg.locator("#premiumApp").waitFor();
       const st = await pg.evaluate(() => ({
@@ -442,8 +442,8 @@ if (hasContract && premiumPresent) {
         ok("an ordinary family needs no entitlement or purchase to play", !st.preview && st.free && !st.premium && !st.offerShown && st.disabled && same(await allowed(pg), PLAYABLE), st);
         ok("the free release shows no active purchase button or price", !await pg.locator("#premiumBuy").isVisible() && !/\$\s?\d/.test(await pg.locator("body").innerText()));
         await pg.locator("#premiumContinue").click();
-        await pg.waitForURL(/\/charge\.html\?game=arcade-tiles\.html/);
-        ok("the parent returns to the selected playable game", new URL(pg.url()).searchParams.get("game") === "arcade-tiles.html");
+        await pg.waitForURL(/\/charge\.html\?game=arcade-stack\.html/);
+        ok("the parent returns to the selected playable game", new URL(pg.url()).searchParams.get("game") === "arcade-stack.html");
         ok("playing free starts no real purchase or trial", await pg.evaluate(() => JSON.parse(sessionStorage.getItem("test.realCalls") || "[]").length) === 0 && !calls.some(url => /checkout|subscription|\/trial|revenuecat|purchases/i.test(url)), calls);
       } else {
         ok("the paid release offers a plan only to a family without Premium", !st.preview && !st.free && !st.premium && st.offerShown && !st.disabled && await pg.locator("#premiumBuy").isVisible(), st);
@@ -461,7 +461,7 @@ if (hasContract && premiumPresent) {
     ["a grandfathered family", { "sona.profile.v1": { childName: "Mia", childAge: "7", focusSounds: ["S"], onboarded: true, earlyAdopter: true, volume: 0, voiceOn: false, soundOn: false } }, /Every available game in the library is open/],
   ]) {
     await section(who + " is told they have Premium", async () => {
-      const { ctx, pg } = await fixture({ path: "/premium.html?game=tiles&paid=1", gate: true, paid: true, local });
+      const { ctx, pg } = await fixture({ path: "/premium.html?game=stack&paid=1", gate: true, paid: true, local });
       try {
         await pg.locator("#premiumApp").waitFor();
         const st = await pg.evaluate(() => ({
