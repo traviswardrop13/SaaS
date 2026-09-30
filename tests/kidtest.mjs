@@ -150,7 +150,7 @@ ok("the last child can never be removed", st.blocked === false && st.n === 1, JS
   const seed = (early) => p2.evaluate((early) => {
     localStorage.clear();
     localStorage.setItem("sona.freeera.v1", "post"); localStorage.setItem("sona.freeera2.v1", "done");
-    localStorage.setItem("sona.freeera3.v1", "done"); localStorage.setItem("sona.freeera4.v1", "done");
+    localStorage.setItem("sona.freeera3.v1", "done"); localStorage.setItem("sona.freeera4.v1", "done"); localStorage.setItem("sona.freeera5.v1", "done");
     localStorage.setItem("sona.profile.v1", JSON.stringify(Object.assign({ childName: "Ada", childAge: "6", focusSounds: ["R"], onboarded: true }, early ? { earlyAdopter: true, freeEra: true, freeEra4: true } : {})));
     sessionStorage.setItem("sona.paidui", "1");
     localStorage.setItem("sona.demo.v1", JSON.stringify({ started: 1, done: 1 }));

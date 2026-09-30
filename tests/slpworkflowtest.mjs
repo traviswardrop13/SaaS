@@ -60,31 +60,26 @@ async function go(pg,hash){await pg.evaluate(hash=>location.hash=hash,hash);awai
 const text=async(pg,selector)=>await exists(pg,selector)?await pg.locator(selector).textContent():'';
 const date=n=>{const d=new Date();d.setDate(d.getDate()+n);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');};
 try {
-  await section('Feedback and call request',async()=>{
+  // NO CALLS (Travis, 30 Sep 2026: "I don't want request to call to be an
+  // option"; Rachel doesn't take phone calls): Talk to Rachel is feedback only.
+  await section('Feedback, and no call request',async()=>{
     const {ctx,pg}=await open('#feedback');
-    ok('feedback and call are explicit modes',await exists(pg,'#fbModeFeedback')&&await exists(pg,'#fbModeCall'));
-    if(!await exists(pg,'#fbModeCall')){await ctx.close();return;}
+    ok('there is no call mode, call form or call link',!await exists(pg,'#fbModeCall')&&!await exists(pg,'#callFields')&&!await exists(pg,'#callAvailability')&&!await exists(pg,'#rachelCall'));
     const intro=await text(pg,'#page-feedback');
     // 29 Sep 2026: Travis reversed "no fellowship in copy" — her name now carries "MS, CF-SLP"; never CCC or "certified".
     ok('feedback introduces Rachel with her current product credential',/Rachel/.test(intro)&&/licensed pediatric speech-language pathologist/i.test(intro)&&/Rachel, MS, CF-SLP/.test(intro)&&!/Clinical Fellow|\bCCC\b|certified|fully licen[sc]ed/i.test(intro),intro);
-    ok('normal feedback keeps call scheduling fields hidden',!await visible(pg,'#callFields'));
+    ok('…and never offers a call',!/\bcall\b/i.test(intro),intro.match(/.{0,40}\bcall\b.{0,40}/i));
     await pg.locator('#fbTopic').selectOption('dashboard');await pg.locator('#fbText').fill('The child switcher is useful.');await pg.locator('#fbSend').click();await pg.waitForTimeout(100);
     const fb=writes('/api/slp/feedback').at(-1);
-    ok('feedback sends selected scope and supplied text',fb?.body.kind==='feedback'&&fb.body.category==='dashboard'&&fb.body.text==='The child switcher is useful.',JSON.stringify(fb));
-    await pg.locator('#fbModeCall').click();ok('call mode reveals availability',await visible(pg,'#callFields'));
-    await pg.locator('#fbTopic').selectOption('question');await pg.locator('#fbText').fill('I would love to discuss the project.');await pg.locator('#callAvailability').fill('Tuesday or Thursday after 3 pm');await pg.locator('#fbSend').click();await pg.waitForTimeout(100);
-    const call=writes('/api/slp/feedback').at(-1);
-    ok('call request includes timing and timezone',call?.body.kind==='call'&&/Thursday/.test(call.body.availability||'')&&!!call.body.timezone,JSON.stringify(call));
-    const success=await text(pg,'#fbSuccess');
-    ok('call success confirms request, not a booked appointment',await visible(pg,'#fbSuccess')&&/request|reach out|received|in touch/i.test(success)&&!/appointment (is )?booked|call (is )?booked/i.test(success),success);
+    ok('feedback sends selected scope and supplied text, and nothing about a call',fb?.body.kind==='feedback'&&fb.body.category==='dashboard'&&fb.body.text==='The child switcher is useful.'&&!('availability' in fb.body)&&!('timezone' in fb.body),JSON.stringify(fb));
+    ok('feedback success says it was received',await visible(pg,'#fbSuccess')&&/received/i.test(await text(pg,'#fbSuccess')));
     ok('reply email is the signed-in account, not a required duplicate field',/rachel@example.com/.test(await text(pg,'#page-feedback')));
     await ctx.close();
   });
   await section('Feedback failure preserves draft',async()=>{
     failFeedback=true;const {ctx,pg}=await open('#feedback');
-    if(!await exists(pg,'#fbModeCall')){ok('feedback modes available for failure check',false);await ctx.close();return;}
-    await pg.locator('#fbModeCall').click();await pg.locator('#fbText').fill('Keep this draft after a send failure');await pg.locator('#callAvailability').fill('Friday at noon');await pg.locator('#fbSend').click();await pg.waitForTimeout(100);
-    ok('failed request retains message and timing',await pg.locator('#fbText').inputValue()==='Keep this draft after a send failure'&&await pg.locator('#callAvailability').inputValue()==='Friday at noon');
+    await pg.locator('#fbText').fill('Keep this draft after a send failure');await pg.locator('#fbSend').click();await pg.waitForTimeout(100);
+    ok('failed request retains the message',await pg.locator('#fbText').inputValue()==='Keep this draft after a send failure');
     ok('failed request permits retry without showing success',!await pg.locator('#fbSend').isDisabled()&&!await visible(pg,'#fbSuccess'));
     await ctx.close();
   });

@@ -186,7 +186,7 @@ function fakeDevice(cfg) {
 
   if (!localStorage.getItem("sona.test.quietSeed")) {
     localStorage.setItem("sona.test.quietSeed", "1");
-    localStorage.setItem("sona.freeera.v1", "post"); localStorage.setItem("sona.freeera2.v1", "done"); localStorage.setItem("sona.freeera3.v1", "done"); localStorage.setItem("sona.freeera4.v1", "done");
+    localStorage.setItem("sona.freeera.v1", "post"); localStorage.setItem("sona.freeera2.v1", "done"); localStorage.setItem("sona.freeera3.v1", "done"); localStorage.setItem("sona.freeera4.v1", "done"); localStorage.setItem("sona.freeera5.v1", "done");
     // earlyAdopter: a family holding every game, so this holds whichever way pricing points
     localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Mia", childAge: cfg.age || "7", focusSounds: ["R"], onboarded: true, earlyAdopter: true,
       voiceOn: cfg.voiceOn !== false, soundOn: cfg.soundOn !== false, volume: cfg.volume == null ? 0.6 : cfg.volume }));
@@ -342,15 +342,19 @@ for (const [key, file] of ARCADE) {
 }
 
 // ── the end card's Next when the next game is closed to this family ──
-// Fruit Slice's Next is Piano Tiles, a Premium game. Through the paid seam,
+// Piano Tiles' Next is Block Stacker, a Premium game. Through the paid seam,
 // for a family holding no plan, Next must not open a door that bounces them:
-// it takes them to the games instead of Piano Tiles' practice page. This
+// it takes them to the games instead of Block Stacker's practice page. This
 // holds whichever way pricing points, because the seam shows the paid state
-// either way.
-await scenario("slice: Next with Piano Tiles closed", async () => {
+// either way. (It was Fruit Slice → Piano Tiles until Piano Tiles turned free
+// on 30 Sep 2026; Fruit Slice's Next now opens Piano Tiles for everyone.)
+for (const [key, token, set, next, nextName] of [
+  ["tiles", "arcade-tiles.html", () => { score = 7; NOTESN = 7; }, "stack", "Block Stacker"],
+  ["slice", "arcade-slice.html", () => { score = 7; FRUITN = 5; }, "tiles", "Piano Tiles"],
+]) await scenario(key + ": Next with the paid seam", async () => {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 }, reducedMotion: "reduce" });
   await context.route("**/*", (route) => (route.request().url().startsWith(BASE + "/") ? route.continue() : route.abort()));
-  await context.addInitScript(fakeDevice, { token: "arcade-slice.html" });
+  await context.addInitScript(fakeDevice, { token });
   await context.addInitScript(() => {
     sessionStorage.setItem("sona.paidui", "1");
     try { const p = JSON.parse(localStorage.getItem("sona.profile.v1") || "{}"); delete p.earlyAdopter; localStorage.setItem("sona.profile.v1", JSON.stringify(p)); } catch (e) {}
@@ -358,16 +362,20 @@ await scenario("slice: Next with Piano Tiles closed", async () => {
   const page = await context.newPage(); page.setDefaultTimeout(5000);
   const errors = []; page.on("pageerror", (e) => errors.push(e.message));
   try {
-    await page.goto(BASE + "/arcade-slice.html?from=charge");
+    await page.goto(BASE + "/" + token + "?from=charge");
     await page.waitForFunction(() => window.gameEntryAllowed === true && typeof endRound === "function");
-    await page.evaluate(() => { score = 7; FRUITN = 5; endRound(); });
+    await page.evaluate(set);
+    await page.evaluate(() => endRound());
     await page.locator("#endOvl.show").waitFor();
-    const closed = await page.evaluate(() => !Sona.gameAccess("tiles").allowed);
+    const open = await page.evaluate((n) => Sona.gameAccess(n).allowed, next);
     const went = page.waitForRequest((r) => r.isNavigationRequest() && r.frame() === page.mainFrame(), { timeout: 3000 }).then((r) => r.url(), () => null);
     await page.locator("#endCharge").click();
     const to = await went;
-    ok("slice: with Piano Tiles closed, Next goes to the games, never to Piano Tiles", closed && !!to && /\/(activities|today)\.html/.test(to) && !/tiles/.test(to), { closed, to });
-    clean("slice closed-next card", errors);
+    if (next === "stack")
+      ok(key + ": with " + nextName + " closed, Next goes to the games, never to " + nextName, !open && !!to && /\/(activities|today)\.html/.test(to) && !/stack/.test(to), { open, to });
+    else
+      ok(key + ": " + nextName + " is free, so Next goes on to its practice page", open && !!to && /\/charge\.html\?game=arcade-tiles\.html/.test(to), { open, to });
+    clean(key + " next card", errors);
   } finally { await context.close(); }
 });
 

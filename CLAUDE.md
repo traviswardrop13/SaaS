@@ -96,25 +96,36 @@ one. Surface those in the PR body so she can review them without reading
 the diff.
 
 ## Pricing — a free version, Premium, and the cohorts no flip can take back
-**Current release: the family app is free again (Travis, 24 Sep 2026, after the
-Caseload Premium merge).** `FREE_MODE = true` in `public/sona.js` and
-`lib/pricing.ts`. Do not make family pricing live until Travis explicitly
-approves it. All six released games are available; Bubble Pop and Peekaboo
-are disabled “Coming soon” cards, regardless of subscription, free mode,
-trial, or earned access. The books are on (Travis, 26 Sep 2026: "yes turn
-them on"): Premium content, free while the app is free.
+**Current release: pricing is ON (Travis, 30 Sep 2026: "separate free from
+paid" ... "we add the paywall today").** `FREE_MODE = false` in
+`public/sona.js` and `lib/pricing.ts`. Families first meet it on launch day,
+when the launch lock lifts (see "The family app is locked until launch day").
+**The free version:** daily practice, **Fruit Slice, Piano Tiles and Feed
+Echo** (Piano Tiles turned free that day; Block Stacker, Sound Sprint, Flappy
+Glide and Hoops are Premium), and **one book, Rory and the Rainbow**
+(`FREE_BOOKS` in sona.js). Everything else is Premium and greyed out ("ask a
+grown-up"); buying opens every finished game and every book. There is no
+other finished game for ages 3-4 yet; Bubble Pop keeps `tier: "free"`, so it
+joins the free version the day it is rebuilt. Unfinished games stay disabled
+"Coming …" cards (see "Monday drops") regardless of subscription, trial or
+earned access.
 
-The dormant paid rail remains tested: daily practice and the free games
-(Fruit Slice and Feed Echo; Block Stacker joined Premium on 27 Sep 2026)
-stay free, while `premium()` recognizes subscriptions, founders, free-era
-families, founding pilots, and covered caseloads. Never a fixed count of free
-games: the plan screen names them from the catalog. Clinician dashboard and
-Caseload Premium work from the earlier merge stays separate and intact.
+`premium()` recognizes subscriptions, founders, free-era families, founding
+pilots, and covered caseloads. Never a fixed count of free games: the plan
+screens name them from the catalog, and the free book from `FREE_BOOKS`.
+Clinician dashboard and Caseload Premium work stays separate and intact.
 
-The earlier paid release shipped `_grandfatherFreeEra4()`; preserve all four
-sweeps. This newly restored free window needs its own sweep in the future
-build that turns pricing on, never before. `tests/freetest.mjs` checks that
-both pricing switches agree. Planned prices remain on the dormant rail.
+**Era five shipped in this build:** `_grandfatherFreeEra5()` keeps Premium for
+every device already onboarded when it first loads this build (the window
+that opened when #140 restored free on 24 Sep 2026). Preserve all five
+sweeps. `tests/freetest.mjs` checks that both pricing switches agree. The
+next free window, if there is one, gets its own sweep in the build that ends
+it, never before.
+
+**Before families can buy on the iPhone** (Travis's App Store Connect task,
+not this repo): the yearly subscription must be approved in App Store Connect
+at $59.99. Until Apple approves it, the in-app purchase fails on the iPhone
+and only the web checkout sells.
 
 **THE CHARTER PRICE IS TRUE BY CONSTRUCTION, OR IT IS THE BANNED ANCHOR AGAIN
 (19 Sep 2026).** This repo already threw out one struck-through price
@@ -191,7 +202,7 @@ end. `Sona.firstGameStart()` marks the game for this tab and
 during onboarding, which used to end at a price screen before the child had
 said a word. It is an offer, not a wall, it is inert while free, and it never
 fires for anyone already entitled. Declining leaves Home with every game but
-the two free ones greyed out (still tappable: "ask a grown-up").
+the free ones greyed out (still tappable: "ask a grown-up").
 
 **Eligibility and impression are two functions, and merging them is the bug.**
 `planEligible()` answers "should we take them to the plan screen" and changes
@@ -296,8 +307,8 @@ own plan's is `STRIPE_PRICE_ID_SLP_SELF`. Both optional.
   has an App Store product or meets an in-app purchase rule (`NATIVE.md`).
   They do not read `FREE_MODE`, which is the FAMILY paywall switch.
 
-### Four free eras, and the sweeps that honour them
-`_grandfatherFreeEra()` through `_grandfatherFreeEra4()` run at load and are
+### Five free eras, and the sweeps that honour them
+`_grandfatherFreeEra()` through `_grandfatherFreeEra5()` run at load and are
 pinned in `iaptest.mjs` and `freetest.mjs`. **Do not "clean them up".** Each is
 a promise to a real cohort that no later flip can revoke:
 - **Era one** — before pricing existed. An onboarded device carrying no stamp
@@ -314,6 +325,15 @@ a promise to a real cohort that no later flip can revoke:
   the build that ends a free window that actually SHIPPED (merged to main) —
   never earlier, because a sweep shipped during the window stamps the very
   families it exists to protect before they onboard, and they would pay.
+- **Era five** — 24 Sep 2026 (#140 made the family app free again the
+  afternoon Caseload Premium merged) to the paywall build of 30 Sep 2026.
+  **`_grandfatherFreeEra5()` shipped in that build**: every device already
+  onboarded on its first load keeps Premium for good (`freeEra5` on the
+  profile, `sona.freeera5.v1` stamped). Unlike era four, a clinician's link on
+  its own is not this era's evidence: since 24 Sep a redemption is a ticket
+  whose Premium is the clinician's coverage, and that promise keeps itself.
+  The launch lock means most families meet this sweep on launch day, their
+  first load of the build.
 
 **The sweeps are one-shot and structural, and that is load-bearing.** A device
 already onboarded on the first load of the build carrying a sweep necessarily
@@ -333,9 +353,11 @@ so they hold in either state. A test that must be hand-edited on a business
 decision guards nothing and taxes every flip. `IS_FREE_NOW` in `iaptest.mjs`
 reads the live state from source where a suite genuinely needs it.
 
-Free regardless of the switch: practice and the free games (Fruit Slice and
-Feed Echo), for every family; founding pilots (`ff-` codes) and founders; every device onboarded, or
-that redeemed a clinician's link, before the Caseload Premium build. **Not**
+Free regardless of the switch: practice, the free games (Fruit Slice, Piano
+Tiles and Feed Echo) and the free book (Rory and the Rainbow), for every
+family; founding pilots (`ff-` codes) and founders; every device onboarded, or
+that redeemed a clinician's link, before the Caseload Premium build; every
+device onboarded before the paywall build of 30 Sep 2026. **Not**
 an SLP-code pilot: "Yes, share progress" makes every consenting family a
 pilot, so counting `isPilot()` in `premium()` would hand every uncovered
 clinician's families Premium and undo the caseload plan.
@@ -581,16 +603,28 @@ delete it from `books1.mjs`/`books2.mjs`, delete its old SVGs, and point its
 paths in `library.html` and `parents.html` at the new files, in one commit.
 `tests/arttooltest.mjs` pins the two lists against the shelf, the generated
 bytes on disk, every book-picture path any page uses, and the refusals.
-**The books are on** (Travis, 26 Sep 2026: "yes turn them on"): Home's Books
-card opens `library.html`. Books are Premium content (`Sona.gated("books")`),
-free while the app is free; a locked family gets the grown-up message, and
-`library.html` sends a typed address back to Home (`?locked=books`).
+**The books are on** (Travis, 26 Sep 2026: "yes turn them on"), and **one is
+free** (30 Sep 2026: "one book uh so like the letter r book ... to be free and
+the rest is grayed out"). Home's Books card always opens `library.html` and
+says "1 free book" to a family without Premium. On the shelf each book asks
+`Sona.bookLocked(title)`: the books in `FREE_BOOKS` (Rory and the Rainbow) are
+open in every pricing state, marked "Free" while others are locked; every
+other book that is out is Premium and opens exactly when a Premium game does
+(`booksOpen()`: Sona free, Premium from any source, or a trial; never the
+three-day demonstration window `gated()` honours, or a new family would watch
+the shelf lock under them), greyed and marked "Premium", and a tap shows the
+grown-up message ("Ask a
+grown-up to help open …", naming the free one) with the button to
+`premium.html`, behind the grown-ups gate. `openBook()` refuses a locked book
+too. A child whose own books are all locked or coming sees the free book first.
+Rename Rory and the Rainbow and `FREE_BOOKS` must follow (`readtest` pins it).
 
 **The books open a few a week** (Travis, 27 Sep 2026: "a solid book for the
 top four or five most popular letters... everything else, we can just set a
 date on it... new drops every week"). R, S, L, SH and TH are open. Every
-other book in `STORIES` carries `opens` (a Sunday, at most three a week) and
-waits on the shelf greyed, "Coming Oct 4", until that day on the phone's own
+other book in `STORIES` carries `opens` (a **Monday**, at most three a week:
+Travis, 30 Sep 2026, "new ones each monday dropping"; they were Sundays) and
+waits on the shelf greyed, "Coming Oct 5", until that day on the phone's own
 calendar; a tap or `openBook()` does nothing before it. The six-page books
 (painted, see below) come after every twelve-page one: they put the sound anywhere in a word
 and are last in line to be redone. A child whose sounds have nothing open yet
@@ -701,6 +735,18 @@ played by him on his phone — by taking `comingSoon` off its own line in
 `GAME_ACTS`. Home lists playable games before parked ones. `sayplaytest`
 still plays the engine, on a copy of `sona.js` with the parking lifted, and
 checks every parked page sends a typed address home before any mic or sound.
+
+**Monday drops for the unfinished games** (Travis, 30 Sep 2026: "games that
+aren't finished ... label them ... coming October 8th or whatever", then "a
+few games/books per week w new ones each monday dropping"). Every parked game
+carries `comingOn`, a Monday: one game for ages 3-4 and one for 5-8 a week,
+from 12 Oct (Bubble Pop and Soccer Goal first) to 28 Dec. Home says "Coming
+Oct 12" until that day on the family's calendar, then "Coming soon" again if
+the game still isn't ready, and each shelf's parked games sit soonest first.
+**The date is a label, never a switch:** `gameAccess` never reads it, and
+only taking `comingSoon` off (after Travis has played the rebuilt game) opens
+one. Keeping those dates means finishing two games a week; move a date by
+editing it. `activitytest` pins the Mondays, the labels and the order.
 
 **Hoops is the first one back, rebuilt to be played** (Travis, 26 Sep 2026:
 "yes build hoops", to the plan: the hoop slides slowly side to side; say the
@@ -839,7 +885,7 @@ after two bumps in a leg the gaps open wider and the hedges slow. Stars in the
 gaps can be caught. **Hold-to-rise**, the review's other idea, changes the
 control, so it waits for Travis. `tests/glidetest.mjs` flies a whole flight.
 
-Bubble Pop and Peekaboo stay visible only as disabled “Coming soon” cards,
+Bubble Pop and Peekaboo stay visible only as disabled "Coming …" cards,
 with no New shelf promotion and no direct-link, paid or earned bypass.
 Their engines remain in the repo for future work. The adventure
 (`story.html`) and chapter readers are still parked: their engines and tests
@@ -906,6 +952,18 @@ to stand in for it. What was buildable was built on 28 Sep:
   its preloads in a variable (an unheld `new Image()` is thrown away and the
   swap loads late) and falls back to `echo-welcome.webp` on error. The old
   flat `/coach/echo/*.svg` remain only on parked or clinician pages.
+
+## Talking to Sona: messages, never calls
+**No call requests** (Travis, 30 Sep 2026: "I don't want request to call to be
+an option. Rachel doesn't want to talk to people on the phone"). "Talk to us"
+(`talk.html`, the grown-ups' tab) and "Talk to Rachel" (the clinician
+dashboard) take written feedback only: no call tab, no "I'd love to talk"
+link, no time or time zone asked. Both routes (`/api/family/feedback`,
+`/api/slp/feedback`) refuse `kind: "call"` in words ("We don't take call
+requests. Send us a message, and we'll reply by email.") and keep nothing, so
+a page left open from before can't book one either. Old call requests still
+show on `/leads.html`. A limited "ask Rachel" chat (WhatsApp, or messages in
+the app) is a later idea, not built; it is Rachel's to shape.
 
 ## Hard rules
 - Merges to main/prod only on Travis's explicit go ("merge").

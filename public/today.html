@@ -160,9 +160,10 @@
     <div id="activityGroups"></div>
     <!-- BOOKS ARE ON (Travis, 26 Sep 2026: "yes turn them on"). One card opens
          the bookshelf: a twelve-page picture book for every sound, opening
-         a few a week (27 Sep 2026; the dates live in library.html). Books are
-         Premium content (Sona.gated("books")), so they are free while the app
-         is free, and a locked family gets the grown-up message a game gets. -->
+         a few a week, on Mondays (the dates live in library.html). The shelf
+         opens for every family (30 Sep 2026): one book is free (FREE_BOOKS in
+         sona.js) and the rest are Premium, each asking for a grown-up on the
+         shelf the way a Premium game does here. -->
     <button id="booksCard" type="button">
       <span class="book-art" id="libraryBooksArt" aria-hidden="true"></span>
       <span class="books-copy"><span class="books-head"><span id="booksHeading">Books</span><span class="shelf-tag" id="booksTag">Free</span></span><span id="booksLine">Picture books Echo reads with you. New ones every week.</span></span>
@@ -241,7 +242,7 @@
       function showLocked(game){
         var comingSoon=game.comingSoon||access(game).reason==="coming-soon";
         lockedGame=comingSoon?null:game;unlock.hidden=!!comingSoon;notice.hidden=false;app.classList.add("has-message");
-        if(comingSoon){message.textContent=game.name+" is coming soon. Pick another game to play.";return;}
+        if(comingSoon){message.textContent=game.name+" is "+(game.comingLabel||"Coming soon").replace(/^Coming/,"coming")+". Pick another game to play.";return;}
         message.textContent="Ask a grown-up to help open "+game.name+". Your free games are still ready to play!";
       }
       document.getElementById("libraryMessageClose").onclick=clearMessage;
@@ -256,10 +257,11 @@
         var button=node("button","game-card");button.type="button";button.dataset.game=game.key;
         var grant=access(game),tier=grant.reason==="free-mode"?"free":game.tier;
         var comingSoon=game.comingSoon||grant.reason==="coming-soon";
-        var label=comingSoon?"Coming soon":tier==="free"?"Free":grant.allowed?"Included":"Premium";
+        // a parked game says its Monday ("Coming Oct 12"), then "Coming soon"
+        var label=comingSoon?(game.comingLabel||"Coming soon"):tier==="free"?"Free":grant.allowed?"Included":"Premium";
         button.disabled=!!comingSoon;button.classList.toggle("is-coming",!!comingSoon);
         button.dataset.locked=grant.allowed?"false":"true";
-        button.setAttribute("aria-label",comingSoon?game.name+". Coming soon.":game.name+". "+(game.playDescription||game.sub)+" "+(grant.allowed?label+".":"Premium. Ask a grown-up to unlock."));
+        button.setAttribute("aria-label",comingSoon?game.name+". "+label+".":game.name+". "+(game.playDescription||game.sub)+" "+(grant.allowed?label+".":"Premium. Ask a grown-up to unlock."));
         var art=node("span","game-art");art.setAttribute("aria-hidden","true");
         if(craftedCards[game.key]){
           var picture=node("img","crafted-card-image");picture.src="/assets/crafted/home-"+craftedCards[game.key]+".webp";picture.alt="";picture.width=768;picture.height=432;picture.decoding="async";picture.loading="lazy";art.appendChild(picture);
@@ -288,14 +290,14 @@
       });
       var lockedKey=new URLSearchParams(location.search).get("locked");
       library.groups.forEach(function(group){group.games.forEach(function(game){if(game.key===lockedKey&&!access(game).allowed)showLocked(game);});});
-      // BOOKS: free while the app is free, then Premium. The bookshelf page
-      // bounces a locked family back here with ?locked=books, so a typed
-      // address meets the same message as the card.
+      // BOOKS: the shelf opens for every family (30 Sep 2026). Without
+      // Premium, one book is free and the rest ask for a grown-up there; the
+      // tag says which, so a parent reads "1 free book", not "Premium".
       var booksCard=document.getElementById("booksCard");
-      document.getElementById("booksTag").textContent=S.isFree()?"Free":S.gated("books")?"Premium":"Included";
-      function showBooksLocked(){lockedGame={key:"books",name:"the books"};unlock.hidden=false;notice.hidden=false;app.classList.add("has-message");message.textContent="Ask a grown-up to help open the books. Your free games are still ready to play!";}
-      booksCard.onclick=function(){if(S.gated("books")){showBooksLocked();return;}clearMessage();location.href="/library.html";};
-      if(lockedKey==="books"&&S.gated("books"))showBooksLocked();
+      var freeBooks=(S.FREE_BOOKS||[]).length;
+      var booksOpen=S.booksOpen?S.booksOpen():!S.gated("books");
+      document.getElementById("booksTag").textContent=S.isFree()?"Free":booksOpen?"Included":freeBooks?(freeBooks===1?"1 free book":freeBooks+" free books"):"Premium";
+      booksCard.onclick=function(){clearMessage();location.href="/library.html";};
       // A cached library can return after a trial expires or an adult changes
       // preview state. Re-evaluate its labels without reviving stale access.
       window.addEventListener("pageshow",function(event){if(event.persisted)location.reload();});

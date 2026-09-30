@@ -139,15 +139,15 @@ for (const [cred, isCovered] of [[CRED, true], [CRED2, false]]) {
     sessionStorage.setItem("sona.paidui", "1");
     localStorage.setItem(Sona.kkey("sona.trial.v1"), JSON.stringify({ start: Date.now() - 10 * 86400000, days: 3 })); localStorage.setItem("sona.demo.v1", JSON.stringify({ started: 1, done: 1 }));
     return { early: Sona.getProfile().earlyAdopter, covered: Sona.caseCovered(), premium: Sona.premium(),
-      tiles: Sona.gameAccess("tiles").allowed, gated: Sona.gated(), practice: Sona.gated("practice") };
+      stack: Sona.gameAccess("stack").allowed, gated: Sona.gated(), practice: Sona.gated("practice") };
   });
   ok("a verified family is no longer written founding access (" + cred.code + ")", !granted.early, JSON.stringify(granted));
   if (isCovered) {
     ok("…on a covered caseload they hold Premium, through coverage, dead trial and all",
-      granted.covered === true && granted.premium === true && granted.tiles === true && granted.gated === false, JSON.stringify(granted));
+      granted.covered === true && granted.premium === true && granted.stack === true && granted.gated === false, JSON.stringify(granted));
   } else {
     ok("…on an uncovered caseload they have the free version: Premium locked, practice open",
-      granted.covered === false && granted.premium === false && granted.tiles === false && granted.gated === true && granted.practice === false, JSON.stringify(granted));
+      granted.covered === false && granted.premium === false && granted.stack === false && granted.gated === true && granted.practice === false, JSON.stringify(granted));
   }
   await pg.context().close();
 }
@@ -350,13 +350,13 @@ for (const [cred, isCovered] of [[CRED, true], [CRED2, false]]) {
     sessionStorage.setItem("sona.paidui", "1");
     localStorage.setItem("sona.demo.v1", JSON.stringify({ started: 1, done: 1 }));
     return { verified: Sona.slpVerified(), covered: Sona.caseCovered(), premium: Sona.premium(), early: Sona.getProfile().earlyAdopter,
-      practice: Sona.gated("practice"), tiles: Sona.gameAccess("tiles").allowed, slice: Sona.gameAccess("slice").allowed,
+      practice: Sona.gated("practice"), stack: Sona.gameAccess("stack").allowed, slice: Sona.gameAccess("slice").allowed,
       promise: document.getElementById("jConsentBody").textContent, msg: document.getElementById("jMsg").textContent,
       title: document.getElementById("jTitle").textContent, tab: document.title, page: document.body.innerText };
   });
   ok("an uncovered clinician's family verifies, and is not covered", st.verified && st.covered === false && !st.early, JSON.stringify(st));
   ok("…so they have the free version: practice and free games open, Premium locked",
-    st.practice === false && st.slice === true && st.tiles === false && st.premium === false, JSON.stringify(st));
+    st.practice === false && st.slice === true && st.stack === false && st.premium === false, JSON.stringify(st));
   ok("…and every word on the page stays true: free, and no promise of every game",
     /Sona stays free for you/.test(st.promise) && !/every game/i.test(st.msg), JSON.stringify(st));
   // REWORDED 24 Sep 2026: this page said "Unlocking your free access…",
@@ -410,17 +410,17 @@ for (const [cred, isCovered] of [[CRED, true], [CRED2, false]]) {
   const res = await pg.evaluate(() => {
     sessionStorage.setItem("sona.paidui", "1");
     localStorage.setItem("sona.trial.v1", JSON.stringify({ start: Date.now() - 40 * 86400000, days: 3 })); localStorage.setItem("sona.demo.v1", JSON.stringify({ started: 1, done: 1 }));
-    return { verified: Sona.slpVerified(), early: Sona.getProfile().earlyAdopter, gated: Sona.gated(), tiles: Sona.gameAccess("tiles").allowed };
+    return { verified: Sona.slpVerified(), early: Sona.getProfile().earlyAdopter, gated: Sona.gated(), stack: Sona.gameAccess("stack").allowed };
   });
   ok("a free-window SLP family still counts as verified", res.verified === true, JSON.stringify(res));
   ok("and is grandfathered by the era-four sweep — never sent to a paywall",
-    res.early === true && res.gated === false && res.tiles === true, JSON.stringify(res));
+    res.early === true && res.gated === false && res.stack === true, JSON.stringify(res));
 
   // …while a link redeemed after the build earns nothing from the sweep: it
   // has only what coverage gives it (none here — no ticket was ever issued)
   await pg.evaluate(() => {
     localStorage.clear();
-    localStorage.setItem("sona.freeera.v1", "post"); localStorage.setItem("sona.freeera2.v1", "done"); localStorage.setItem("sona.freeera3.v1", "done"); localStorage.setItem("sona.freeera4.v1", "done");
+    localStorage.setItem("sona.freeera.v1", "post"); localStorage.setItem("sona.freeera2.v1", "done"); localStorage.setItem("sona.freeera3.v1", "done"); localStorage.setItem("sona.freeera4.v1", "done"); localStorage.setItem("sona.freeera5.v1", "done");
     localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Ora", childAge: "6", focusSounds: ["R"], onboarded: true }));
     localStorage.setItem("sona.slpok", "RACHEL-K4"); localStorage.setItem("sona.slpunlock", "1");
   });
@@ -428,10 +428,10 @@ for (const [cred, isCovered] of [[CRED, true], [CRED2, false]]) {
   const late = await pg.evaluate(() => {
     sessionStorage.setItem("sona.paidui", "1");
     localStorage.setItem("sona.demo.v1", JSON.stringify({ started: 1, done: 1 }));
-    return { verified: Sona.slpVerified(), early: Sona.getProfile().earlyAdopter, premium: Sona.premium(), practice: Sona.gated("practice"), tiles: Sona.gated("tiles") };
+    return { verified: Sona.slpVerified(), early: Sona.getProfile().earlyAdopter, premium: Sona.premium(), practice: Sona.gated("practice"), stack: Sona.gated("stack") };
   });
   ok("a credential redeemed after this build is verified, but is not Premium by itself",
-    late.verified === true && !late.early && late.premium === false && late.tiles === true, JSON.stringify(late));
+    late.verified === true && !late.early && late.premium === false && late.stack === true, JSON.stringify(late));
   ok("…and never costs the family practice", late.practice === false, JSON.stringify(late));
   await ctx.close();
 }
@@ -496,10 +496,10 @@ for (const [cred, isCovered] of [[CRED, true], [CRED2, false]]) {
   const removed = await pg.evaluate(() => {
     sessionStorage.setItem("sona.paidui", "1");
     Sona.removeKid("");                               // the one the sweep marked
-    return { kids: Sona.kids().length, premium: Sona.premium(), tiles: Sona.gameAccess("tiles").allowed };
+    return { kids: Sona.kids().length, premium: Sona.premium(), stack: Sona.gameAccess("stack").allowed };
   });
   ok("removing the first child — the one the sweep marked — keeps the household's Premium",
-    removed.kids === 1 && removed.premium === true && removed.tiles === true, JSON.stringify(removed));
+    removed.kids === 1 && removed.premium === true && removed.stack === true, JSON.stringify(removed));
   await ctx.close();
 }
 
@@ -696,14 +696,14 @@ for (const [cred, isCovered] of [[CRED, true], [CRED2, false]]) {
       const now = { premium: Sona.premium(), covered: Sona.caseCovered() };
       for (let i = 0; i < 40 && !localStorage.getItem("sona.caseplan.v1"); i++) await new Promise((res) => setTimeout(res, 50));
       return { r, now, ticket: localStorage.getItem("sona.slpticket"), slpok: localStorage.getItem("sona.slpok"),
-        later: { premium: Sona.premium(), covered: Sona.caseCovered(), tiles: Sona.gameAccess("tiles").allowed } };
+        later: { premium: Sona.premium(), covered: Sona.caseCovered(), stack: Sona.gameAccess("stack").allowed } };
     }, backup);
     ok(cred.code + ": the backup carries the clinician code and the enrolment ticket across",
       st.r.ok && st.ticket === "TICKET:" + cred.code && st.slpok === cred.code.toUpperCase(), JSON.stringify(st));
     ok(cred.code + ": …which is not Premium the moment it lands", st.now.premium === false && st.now.covered === false, JSON.stringify(st.now));
     ok(cred.code + (covered ? ": the import asks the server, and a covered caseload's family gets Premium from its answer"
                             : ": the import asks the server, and an uncovered caseload's family keeps the free version"),
-      st.later.covered === covered && st.later.premium === covered && st.later.tiles === covered, JSON.stringify(st.later));
+      st.later.covered === covered && st.later.premium === covered && st.later.stack === covered, JSON.stringify(st.later));
     // …and the era-four sweep is not re-opened by a credential that arrived
     // AFTER this device's first load: it is one-shot and already stamped
     await pg.reload(); await pg.waitForTimeout(500);
@@ -783,13 +783,13 @@ for (const [cred, isCovered] of [[CRED, true], [CRED2, false]]) {
   await pg.evaluate(() => document.getElementById("jYes").click());
   const joined = await pg.evaluate(() => {
     sessionStorage.setItem("sona.paidui", "1");
-    const out = { code: Sona.pilotInfo().code, covered: Sona.caseCovered(), premium: Sona.premium(), tiles: Sona.gameAccess("tiles").allowed };
+    const out = { code: Sona.pilotInfo().code, covered: Sona.caseCovered(), premium: Sona.premium(), stack: Sona.gameAccess("stack").allowed };
     Sona.addKid("Sib", "5");
     out.sibling = Sona.premium();
     return out;
   });
   ok("…and keeps Premium after 'Yes, share progress' with an uncovered clinician replaces the pilot code",
-    joined.code === "SAM-P2" && joined.covered === false && joined.premium === true && joined.tiles === true, JSON.stringify(joined));
+    joined.code === "SAM-P2" && joined.covered === false && joined.premium === true && joined.stack === true, JSON.stringify(joined));
   ok("…for every child in the household", joined.sibling === true, JSON.stringify(joined));
   await ctx.close();
   const c2 = await browser.newContext(); const p2 = await c2.newPage();
@@ -1094,7 +1094,7 @@ for (const [cred, isCovered] of [[CRED, true], [CRED2, false]]) {
     // and an import that carries a ticket asks the server straight away.
     const noImport = (sona.match(/const NO_IMPORT = \[[^\]]*\]/) || [""])[0];
     ok("…including cached caseload coverage, the unlock flag, the founding mark and every free-era stamp",
-      ["sona.caseplan.v1", "sona.slpunlock", "sona.founding.v1", "sona.freeera.v1", "sona.freeera2.v1", "sona.freeera3.v1", "sona.freeera4.v1"].every((k) => noImport.includes('"' + k + '"')), noImport);
+      ["sona.caseplan.v1", "sona.slpunlock", "sona.founding.v1", "sona.freeera.v1", "sona.freeera2.v1", "sona.freeera3.v1", "sona.freeera4.v1", "sona.freeera5.v1"].every((k) => noImport.includes('"' + k + '"')), noImport);
     ok("…while the ticket travels, and is re-verified the moment it lands",
       !/"sona\.slpticket"/.test(noImport) && /if \(ticket\) \{ try \{ caseRefresh\(true\); \} catch/.test(sona), noImport);
   }

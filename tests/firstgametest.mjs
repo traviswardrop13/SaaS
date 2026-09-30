@@ -36,7 +36,7 @@ function phone(cfg) {
   if (cfg.profile && !localStorage.getItem("sona.test.seeded")) {
     localStorage.setItem("sona.test.seeded", "1");
     // every free-era sweep has run on this device, so it belongs to no free cohort
-    localStorage.setItem("sona.freeera.v1", "post"); ["sona.freeera2.v1", "sona.freeera3.v1", "sona.freeera4.v1"].forEach((k) => localStorage.setItem(k, "done"));
+    localStorage.setItem("sona.freeera.v1", "post"); ["sona.freeera2.v1", "sona.freeera3.v1", "sona.freeera4.v1", "sona.freeera5.v1"].forEach((k) => localStorage.setItem(k, "done"));
     localStorage.setItem("sona.profile.v1", JSON.stringify(cfg.profile));
   }
   if (cfg.first) sessionStorage.setItem("sona.firstgame.v1", cfg.first);
@@ -72,7 +72,10 @@ await scenario("Feed Echo, free", async () => {
     await page.waitForFunction(() => typeof finish === "function");
     await page.evaluate(() => finish());
     await page.locator("#endOvl.show").waitFor();
-    ok("while Sona is free, the first game's end card is the usual one", (await page.locator("#goHome").innerText()) === "Back home");
+    // Either state, no seam: free, the usual end; priced, the one offer.
+    const free = await page.evaluate(() => Sona.isFree());
+    ok(free ? "while Sona is free, the first game's end card is the usual one" : "with pricing on and no seam, the first game's end card makes the one offer",
+      (await page.locator("#goHome").innerText()) === (free ? "Back home" : "Show a grown-up →"));
     ok("…and the first-game mark is spent, so it is only ever the first", await page.evaluate(() => sessionStorage.getItem("sona.firstgame.v1") === null));
     ok("Feed Echo free: no page errors", errors.length === 0, errors);
   } finally { await context.close(); }
@@ -114,7 +117,7 @@ await scenario("Fruit Slice, paying", async () => {
   } finally { await context.close(); }
 });
 
-// ── Home after the plan screen, without Premium: only the two first games open ──
+// ── Home after the plan screen, without Premium: only the free games open ──
 await scenario("Home, paying, no Premium", async () => {
   const { context, page, errors } = await open("/today.html", { profile: kid("7"), paid: true });
   try {
@@ -122,7 +125,8 @@ await scenario("Home, paying, no Premium", async () => {
     const cards = await page.evaluate(() => [...document.querySelectorAll("#activityGroups button[data-game]")].filter((b) => !b.disabled)
       .map((b) => ({ key: b.dataset.game, locked: b.dataset.locked === "true", fade: getComputedStyle(b.querySelector(".game-art")).opacity })));
     const open = cards.filter((c) => !c.locked).map((c) => c.key).sort();
-    ok("only Feed Echo and Fruit Slice are open", JSON.stringify(open) === JSON.stringify(["feed", "slice"]), open);
+    // Travis, 30 Sep 2026: "fruit slice and piano tiles free ... feed echo to be free"
+    ok("only Feed Echo, Fruit Slice and Piano Tiles are open", JSON.stringify(open) === JSON.stringify(["feed", "slice", "tiles"]), open);
     ok("every other game is greyed out", cards.filter((c) => c.locked).length >= 4 && cards.filter((c) => c.locked).every((c) => Number(c.fade) < 0.7), cards);
     await page.locator('#activityGroups button[data-game="stack"]').click();
     ok("a greyed game still answers a tap: ask a grown-up", await page.locator("#libraryNotice").isVisible() && new URL(page.url()).pathname === "/today.html");
@@ -135,7 +139,9 @@ await scenario("the plan screen's free games", async () => {
   const { context, page } = await open("/subscribe.html?first=1", { profile: kid("7"), paid: true });
   try {
     const line = await page.locator("#freeGames").innerText();
-    ok("the plan screen names the free games instead of a count that goes stale", line === "Fruit Slice and Feed Echo, free for every child", line);
+    ok("the plan screen names the free games instead of a count that goes stale", line === "Fruit Slice, Piano Tiles and Feed Echo, free for every child", line);
+    const book = await page.locator("#freeBooks").innerText();
+    ok("…and the free book, from sona.js", book === "Rory and the Rainbow, a picture book Echo reads with you", book);
   } finally { await context.close(); }
 });
 

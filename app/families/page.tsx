@@ -230,7 +230,7 @@ function PricingPaid({ spots }: { spots: Spots }) {
           <div style={{ font: `800 52px/1 ${B}` }}>Free</div>
         </div>
         <div style={{ fontSize: 12.5, fontWeight: 700, color: MUTED, margin: "4px 0 16px" }}>Daily practice and free games. No card, no trial, nothing to cancel.</div>
-        <Perks items={["Daily practice that really hears every rep", "Four free games to play after practice", "Progress you can see on your phone", "Works on iPhone, iPad and in any browser"]} />
+        <Perks items={["Daily practice that really hears every rep", "Free games and a free picture book after practice", "Progress you can see on your phone", "Works on iPhone, iPad and in any browser"]} />
         <CtaButton />
         <Steps steps={[["1", "Open Sona"], ["2", "Pick your sound"], ["3", "Practice today"]]} />
       </div>
@@ -260,15 +260,16 @@ function PricingPaid({ spots }: { spots: Spots }) {
           <div style={{ font: `800 19px ${B}`, color: "#46a302" }}>{perMonth[0].toUpperCase() + perMonth.slice(1)}</div>
           <div style={{ fontSize: 12.5, lineHeight: 1.45, fontWeight: 700, color: INK, marginTop: 3 }}>One plan, billed once a year. Nothing is charged for the first 3 days.</div>
         </div>
-        <Perks items={["Every game in the library, for every sound", "3 days free — nothing charged before day 3", "Every new game included as it ships", "Upgrade inside the app, whenever you want"]} />
+        <Perks items={["Every game and every book, for every sound", "3 days free — nothing charged before day 3", "New games and books every Monday, included", "Upgrade inside the app, whenever you want"]} />
         <div style={{ ...footNote, lineHeight: 1.5 }}>Start free, then upgrade inside Sona. On the web, secure checkout by Stripe; in the iPhone and iPad app, through the App Store at the price shown there.</div>
       </div>
       {/* Families who arrived during a free era keep it free — a grandfather
           sweep ships with every return to pricing. This line is only true
-          while those sweeps exist: _grandfatherFreeEra4() ships in the build
-          that brought Premium, and if it ever doesn't, this sentence is the
-          false claim, not the code. */}
-      <div style={{ textAlign: "center", fontSize: 12, lineHeight: 1.5, fontWeight: 700, color: MUTED, marginTop: 14 }}>Already practicing with Sona while it was free? Every game stays free for you — nothing to pay, nothing to do.</div>
+          while those sweeps exist: _grandfatherFreeEra5() ships in the build
+          that brought the paywall back (30 Sep 2026), and if a later return
+          ever doesn't carry its own, this sentence is the false claim, not
+          the code. */}
+      <div style={{ textAlign: "center", fontSize: 12, lineHeight: 1.5, fontWeight: 700, color: MUTED, marginTop: 14 }}>Already practicing with Sona while it was free? Every game and book stays free for you — nothing to pay, nothing to do.</div>
     </>
   );
 }
@@ -303,12 +304,12 @@ export default async function Landing() {
   const heroSubline = FREE_MODE ? (
     <>Free — every game, every sound. No card, no trial, nothing to cancel.</>
   ) : (
-    <>Free: daily practice and free games, no card. Every game with Premium — {priceNow}/yr after 3 free days.</>
+    <>Free: daily practice and free games, no card. Every game and book with Premium — {priceNow}/yr after 3 free days.</>
   );
   const finalPriceLine = FREE_MODE ? (
     <><span style={{ color: INK, font: `800 20px ${B}` }}>Free</span> — every game, every sound</>
   ) : (
-    <><span style={{ color: INK, font: `800 20px ${B}` }}>Free</span> to start — every game with Premium, {priceNow}/yr</>
+    <><span style={{ color: INK, font: `800 20px ${B}` }}>Free</span> to start — every game and book with Premium, {priceNow}/yr</>
   );
   // "Under $5 a month" used to be typed here, which was only true at the
   // charter tier; the reading now comes with the tier it belongs to.
@@ -323,7 +324,7 @@ export default async function Landing() {
       "What does it cost?",
       FREE_MODE
         ? "Nothing. Every game, every sound and the Sound Check are free right now — there is no card to enter and no trial running out."
-        : `The free version costs nothing: daily practice and free games, with no card. Premium unlocks every game for ${priceNow} a year — ${perMonthNow} — starting with 3 free days on the web: nothing is charged before day 3, and only if you keep it. Upgrade inside the app whenever you want, and cancel anytime.`,
+        : `The free version costs nothing: daily practice and free games, plus a free picture book, with no card. Premium unlocks every game and every book for ${priceNow} a year — ${perMonthNow} — starting with 3 free days on the web: nothing is charged before day 3, and only if you keep it. Upgrade inside the app whenever you want, and cancel anytime.`,
     ],
     [
       "What do I need to start?",

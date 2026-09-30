@@ -1,5 +1,7 @@
 // SLPFEEDBACK1: feedback must be attributable, delivered honestly, and kept
-// out of generic lead/CRM destinations. Every network call is mocked locally.
+// out of generic lead/CRM destinations. No call requests (Travis, 30 Sep
+// 2026: "I don't want request to call to be an option"). Every network call
+// is mocked locally.
 import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
@@ -83,7 +85,7 @@ try {
   ok("feedback requires nonempty text", result.status === 400 && result.records.length === 0);
   result = await submit({ kind: "booked", text: "hello" });
   ok("unsupported request kinds are rejected", result.status === 400 && result.records.length === 0);
-  for (const [field, value] of [["text", "a".repeat(2001)], ["availability", "a".repeat(241)], ["timezone", "a".repeat(81)], ["text", { bad: true }]]) {
+  for (const [field, value] of [["text", "a".repeat(2001)], ["text", { bad: true }]]) {
     result = await submit({ text: "hello", [field]: value });
     ok("invalid " + field + " is rejected without saving", result.status === 400 && result.records.length === 0);
   }
@@ -94,10 +96,10 @@ try {
   ok("dashboard category and trimmed text survive persistence", record?.category === "dashboard" && record.text === "The new dashboard is helpful." && record.kind === "feedback");
   ok("message storage preserves bounded retention atomically", result.calls.some(c => c.payload?.[0] === "EVAL" && /LTRIM/.test(c.payload[1]) && /EXPIRE/.test(c.payload[1]) && c.payload[5] === 31536000));
   ok("generic pilot and lead destinations never receive feedback", result.calls.every(c => c.url === KV));
-  result = await submit({ kind: "call", category: "question", availability: "Tuesday afternoon", timezone: "America/Boise" });
-  record = result.records[0];
-  ok("a call can be requested without typing a message", result.status === 200 && record?.kind === "call" && !!record.text);
-  ok("call preferences and reply address are retained", record?.availability === "Tuesday afternoon" && record.timezone === "America/Boise" && record.replyEmail === "morgan@example.test");
+  ok("…keeping no time zone or call details", record && !("timezone" in record) && !("availability" in record), record);
+  result = await submit({ kind: "call", text: "Let's connect", category: "question", availability: "Tuesday afternoon", timezone: "America/Boise" }, { slack: true, webhook: true });
+  ok("a call request, from a dashboard left open since before, is refused in words and goes nowhere",
+    result.status === 400 && result.json.error === "We don't take call requests. Send us a message, and we'll reply by email." && result.records.length === 0 && result.calls.every(c => c.url === KV), result.json);
   result = await submit({ text: "Profile setup question", category: "unknown" }, { accountMissing: true });
   ok("an unfinished profile can still get a reply", result.status === 200 && result.records[0]?.replyEmail === "morgan@example.test" && result.records[0].slpCode === "");
   ok("unsupported categories become general feedback", result.records[0]?.category === "general");
@@ -105,10 +107,10 @@ try {
     result = await submit({ text: "Please keep my draft if this fails." }, opts);
     ok("missing or failed destinations never report success: " + JSON.stringify(opts), result.status === 503 && result.json.ok === false && result.calls.every(c => c.url === KV));
   }
-  result = await submit({ kind: "call", text: "Let's connect", category: "app", availability: "Friday", timezone: "UTC" }, { kv: false, webhook: true });
+  result = await submit({ text: "Let's talk about homework", category: "app" }, { kv: false, webhook: true });
   record = result.calls.find(c => c.url === FEEDBACK)?.payload;
   ok("dedicated webhook acceptance confirms receipt when KV is absent", result.status === 200 && result.json.delivered && !result.json.stored);
-  ok("the dedicated webhook receives reply and call details", record?.kind === "call" && record.replyEmail === "morgan@example.test" && record.availability === "Friday" && record.timezone === "UTC");
+  ok("the dedicated webhook receives the message and the reply address", record?.kind === "feedback" && record.replyEmail === "morgan@example.test" && record.text === "Let's talk about homework");
   result = await submit({ text: "hello" }, { kv: false, webhook: true, webhookFails: true });
   ok("a non-2xx webhook response is a failure", result.status === 503 && !result.json.ok);
   result = await submit({ text: "hello" }, { kv: false, webhook: true, webhookThrows: true });

@@ -2,13 +2,18 @@ import { NextRequest, NextResponse } from "next/server";
 import { readSession, kvCmd } from "@/lib/slpAuth";
 import { rateLimit } from "@/lib/rateLimit";
 
-/** Feedback and requests to connect go only to the team's feedback inbox.
+/** Feedback goes only to the team's feedback inbox.
  * A 2xx means at least one destination accepted the message, never just that
  * the browser submitted it. KV retains the latest 500 messages for one year.
  * Optional notifications: SLACK_FEEDBACK_WEBHOOK_URL or FEEDBACK_WEBHOOK_URL.
+ *
+ * NO CALLS (Travis, 30 Sep 2026: "I don't want request to call to be an
+ * option" — Rachel doesn't take phone calls). A request for one, from a
+ * dashboard left open since before, is refused in words and nothing is kept.
  */
 export const runtime = "nodejs";
 
+const NO_CALLS = "We don't take call requests. Send us a message, and we'll reply by email.";
 const CATEGORIES = new Set([
   "dashboard", "app", "question", "affiliate", "general", "bug", "feature", "content", "praise",
 ]);
@@ -40,17 +45,17 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: "Invalid JSON." }, { status: 400 });
   }
 
-  const kind = body.kind === undefined ? "feedback" : body.kind;
-  if (kind !== "feedback" && kind !== "call") {
-    return NextResponse.json({ ok: false, error: "Choose feedback or a call request." }, { status: 400 });
+  if (body.kind === "call") return NextResponse.json({ ok: false, error: NO_CALLS }, { status: 400 });
+  if (body.kind !== undefined && body.kind !== "feedback") {
+    return NextResponse.json({ ok: false, error: "Choose feedback." }, { status: 400 });
   }
-  for (const [field, max] of [["text", 2000], ["availability", 240], ["timezone", 80]] as const) {
+  for (const [field, max] of [["text", 2000]] as const) {
     if (body[field] !== undefined && (typeof body[field] !== "string" || (body[field] as string).length > max)) {
       return NextResponse.json({ ok: false, error: `Please keep ${field} to ${max} characters.` }, { status: 400 });
     }
   }
   const text = typeof body.text === "string" ? body.text.trim() : "";
-  if (kind === "feedback" && !text) {
+  if (!text) {
     return NextResponse.json({ ok: false, error: "Please add your feedback or question." }, { status: 400 });
   }
 
@@ -63,11 +68,9 @@ export async function POST(req: NextRequest) {
     if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) account = parsed;
   } catch { /* the session's reply address is enough */ }
   const rec = {
-    kind,
-    text: text || "I'd like to connect with Rachel and the Sona team.",
+    kind: "feedback",
+    text,
     category: typeof body.category === "string" && CATEGORIES.has(body.category) ? body.category : "general",
-    availability: typeof body.availability === "string" ? body.availability.trim() : "",
-    timezone: typeof body.timezone === "string" ? body.timezone.trim() : "",
     replyEmail: session.email,
     slpName: typeof account.name === "string" ? account.name.slice(0, 120) : "",
     slpCode: typeof account.code === "string" ? account.code.slice(0, 48) : "",
@@ -90,15 +93,14 @@ export async function POST(req: NextRequest) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          text: rec.kind === "call" ? "SLP call request" : "SLP feedback",
+          text: "SLP feedback",
           blocks: [
-            { type: "header", text: { type: "plain_text", text: rec.kind === "call" ? "SLP call request" : "SLP feedback" } },
+            { type: "header", text: { type: "plain_text", text: "SLP feedback" } },
             { type: "section", fields: [
               { type: "plain_text", text: `From: ${rec.slpName || "SLP"}\nReply to: ${rec.replyEmail}` },
               { type: "plain_text", text: `About: ${rec.category}\nCode: ${rec.slpCode || "profile not finished"}` },
             ] },
             { type: "section", text: { type: "plain_text", text: rec.text } },
-            ...(rec.kind === "call" ? [{ type: "section", text: { type: "plain_text", text: `Availability: ${rec.availability || "Ask by email"}\nTime zone: ${rec.timezone || "Ask by email"}` } }] : []),
             { type: "context", elements: [{ type: "plain_text", text: `Sent at ${rec.at}` }] },
           ],
         }),

@@ -187,9 +187,9 @@ ok("the parent page carries the launch note", !!P_NOTE);
 // ── WHAT IT COSTS, FROM THE SWITCH: /api/charter says whether Sona is free ──
 // The page never quotes a dollar figure, whatever the route says.
 for (const [label, reply, want] of [
-  ["no answer", null, /^Sona is free to start: daily practice and free games, with no card\.$/],
+  ["no answer", null, /^Sona is free to start: daily practice and free games, plus a free picture book, with no card\.$/],
   ["free right now", { ok: true, free: true }, /^Right now, all of Sona is free: daily practice, every game and every book, with no card\.$/],
-  ["priced", { ok: true, free: false, price: 59.99, standard: 99.99, left: 12, cap: 50 }, /^Daily practice and free games are free, with no card\. Premium unlocks every game and every book, and the app shows its price before you pay anything\.$/],
+  ["priced", { ok: true, free: false, price: 59.99, standard: 99.99, left: 12, cap: 50 }, /^Daily practice and free games are free, plus a picture book, with no card\. Premium unlocks every game and every book, and the app shows its price before you pay anything\.$/],
 ]) {
   charterReply = reply;
   const { context, page, errors } = await fresh({ path: "/" });
@@ -351,7 +351,9 @@ for (const [label, reply, want] of [
 // The page counts only the books the shelf has opened and tags the rest with
 // their day, worked out on the visitor's own calendar, so a parent is never
 // promised a book their child can't open yet.
-for (const [when, count, first] of [["2026-09-28T09:00:00", 5, "Coming Oct 4"], ["2026-10-04T09:00:00", 8, "Coming Oct 11"], ["2026-11-02T09:00:00", 19, null]]) {
+// Every book comes out on a Monday (30 Sep 2026), so the Sunday before is
+// still the week before.
+for (const [when, count, first] of [["2026-09-28T09:00:00", 5, "Coming Oct 5"], ["2026-10-04T09:00:00", 5, "Coming Oct 5"], ["2026-10-05T09:00:00", 8, "Coming Oct 12"], ["2026-11-02T09:00:00", 19, null]]) {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 }, reducedMotion: "reduce" });
   await context.route("**/*", (route) => (route.request().url().startsWith(origin) ? route.continue() : route.abort()));
   const page = await context.newPage(); const errors = []; page.on("pageerror", (e) => errors.push(e.message));

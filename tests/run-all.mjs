@@ -42,7 +42,7 @@ const SUITES = [
   "shapetest.mjs", // sound-shape gate vs real recorded sounds
   "gatecheck.mjs", // parent-gate hardening on adult-only pages
   "familynavtest.mjs", // FAMILYNAV1: one grown-ups bar, identical and in the same place on every grown-up page
-  "talktest.mjs",  // Talk to us: feedback or a call request, reply-only email, nothing about the child
+  "talktest.mjs",  // Talk to us: feedback only (no calls), reply-only email, nothing about the child
   "familyfeedbackapi.mjs", // the family feedback route: same-origin, capped, stored or delivered, never the lead/pilot hooks
   "fittest.mjs",   // device-matrix fit: SE→Pro Max, zoomed display, landscape
   "day1.mjs", // the day: one story, then three games
@@ -76,7 +76,7 @@ const SUITES = [
   "slpworkflowtest.mjs", // quick homework, per-child plans, feedback/call UI and failure recovery
   "slpcommunityapi.mjs", // shared community access, persistence, privacy and ownership
   "slpcommunitytest.mjs", // shared conversations, draft recovery and mobile layout
-  "slpfeedbacktest.mjs", // authenticated feedback and call requests; confirmed receipt only
+  "slpfeedbacktest.mjs", // authenticated feedback, call requests refused; confirmed receipt only
   "slpdesigntest.mjs", // SLP workspace: filters, failure recovery, bulk assignments, mobile layout
   "craftedarttest.mjs", // every Feed word has loadable, usable illustrated artwork
   "arttest.mjs",   // ART1: every sticker renders, fits its box and stays in the safe band

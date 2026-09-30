@@ -1,6 +1,7 @@
 // TALKTEST1: the grown-ups' "Talk to us" tab (public/talk.html) in a real
-// browser. The page is a parent's one place to leave feedback or ask for a
-// call, so this pins: it is behind the grown-ups gate; it wears the same bar
+// browser. The page is a parent's one place to leave feedback, and never a
+// place to ask for a call (Travis, 30 Sep 2026: "I don't want request to call
+// to be an option"), so this pins: it is behind the grown-ups gate; it wears the same bar
 // as every grown-up page; it posts EXACTLY the allowlisted fields — never a
 // child's name, a clinician code or a child id, even when the profile holds
 // them; a failed send keeps the draft; the copy never says "booked"; Rachel's
@@ -16,7 +17,7 @@ function ok(label, pass, detail) { checks++; if (!pass) fails++; console.log((pa
 async function scenario(label, run) { try { await run(); } catch (e) { ok(label + ' completes', false, e.stack); } }
 
 const SOURCE = readFileSync(path.join(ROOT, 'talk.html'), 'utf8');
-const BODY_KEYS = ['app', 'availability', 'chips', 'email', 'from', 'kind', 'prefer', 'recommend', 'text', 'timezone', 'website'];
+const BODY_KEYS = ['app', 'chips', 'email', 'from', 'kind', 'recommend', 'text', 'website'];
 const FAMILY_CHIPS = ['More games', 'New sounds to practice', 'Progress reports', 'Easier for my kid', "Something's broken", 'Something else'];
 
 const MIME = { html: 'text/html', js: 'text/javascript', svg: 'image/svg+xml', css: 'text/css', png: 'image/png', jpg: 'image/jpeg', webp: 'image/webp', woff2: 'font/woff2', json: 'application/json', webmanifest: 'application/manifest+json' };
@@ -51,7 +52,7 @@ async function fresh({ gate = true, role = 'parent', native = false, viewport = 
     if (native) window.Capacitor = { isNativePlatform: () => true };
     if (sessionStorage.getItem('talk-test-seeded')) return;
     sessionStorage.setItem('talk-test-seeded', '1');
-    localStorage.setItem('sona.freeera.v1', 'post'); localStorage.setItem('sona.freeera2.v1', 'done'); localStorage.setItem('sona.freeera3.v1', 'done'); localStorage.setItem('sona.freeera4.v1', 'done');
+    localStorage.setItem('sona.freeera.v1', 'post'); localStorage.setItem('sona.freeera2.v1', 'done'); localStorage.setItem('sona.freeera3.v1', 'done'); localStorage.setItem('sona.freeera4.v1', 'done'); localStorage.setItem('sona.freeera5.v1', 'done');
     // A profile holding everything the page must NOT send.
     localStorage.setItem('sona.profile.v1', JSON.stringify({ role, onboarded: true, childName: 'Mia', childAge: '6', slpCode: 'ABC123', childId: 'kid-77', mode: 'speech', focusSounds: ['S'], email: 'mom@example.test', earlyAdopter: true, voiceOn: false, soundOn: false, volume: 0 }));
     localStorage.setItem('sona.slp', 'ABC123');
@@ -95,7 +96,7 @@ try {
       });
       ok('the grown-ups bar sits right under the header', bar && bar.afterHeader, bar);
       ok('…three tabs, Talk to us marked current', JSON.stringify(bar && bar.tabs) === JSON.stringify([['Progress', '/progress.html', null], ['Settings', '/settings.html', null], ['Talk to us', '/talk.html', 'page']]), bar && bar.tabs);
-      ok('the page is titled Talk to us', bar && bar.head === 'Talk to us' && /ask for a call/.test(bar.sub || ''), bar);
+      ok('the page is titled Talk to us, and offers no call', bar && bar.head === 'Talk to us' && !/call/i.test(bar.sub || ''), bar);
       const rachel = await t.page.locator('.talk-rachel').innerText();
       ok("Rachel's card says licensed pediatric speech-language pathologist", /licensed pediatric speech-language pathologist/.test(rachel) && await t.page.locator('.talk-rachel img[alt="Rachel Wardrop"]').count() === 1, rachel);
       // 29 Sep 2026: Travis asked for her credentials after her name ("MS, CF-SLP") and his own name off her card.
@@ -114,11 +115,12 @@ try {
         return { name: el.name, right: r.right, bottom: r.bottom, tab: el.tabIndex, auto: el.getAttribute('autocomplete'), hidden: el.closest('[aria-hidden="true"]') !== null };
       });
       ok('the honeypot is off-screen, out of the tab order and hidden from screen readers', hp.name === 'website' && (hp.right <= 0 || hp.bottom <= 0) && hp.tab === -1 && hp.auto === 'off' && hp.hidden, hp);
-      await t.page.click('#rachelCall');
-      ok("Rachel's \"I'd love to talk\" opens the call request", await t.page.getAttribute('#fbModeCall', 'aria-pressed') === 'true' && await t.page.isVisible('#callFields') && !(await t.page.isVisible('#feedbackFields')));
-      ok('…and the call form opens on a video call', await chip(t.page, '#callPrefer', 'Video call').getAttribute('aria-pressed') === 'true');
-      ok('…and says it is a request, not a booking, and what a call is for',
-        /a request, not a booking/.test(await t.page.locator('#callFields').innerText()) && /your child's speech-language pathologist is the right person/.test(await t.page.locator('#callFields').innerText()));
+      // NO CALLS (Travis, 30 Sep 2026): no tab, no form, no link, anywhere
+      // on the page or in its source's markup and script.
+      const code = SOURCE.replace(/<!--[\s\S]*?-->/g, '').replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+      ok('there is no way to ask for a call: no tab, no form, no link, no "call" in what a parent reads',
+        await t.page.locator('#fbModeCall, #callFields, #rachelCall, #callPrefer, #callEmail, #callAvailability').count() === 0
+          && !/\bcall\b/i.test(all) && !/fbModeCall|callFields|rachelCall|availability|timezone|"call"/.test(code), all.match(/.{0,40}\bcall\b.{0,40}/i));
       ok('no page errors', t.errors.length === 0, t.errors);
     } finally { await t.context.close(); }
   });
@@ -145,9 +147,7 @@ try {
       ok('it is a JSON POST', p.method === 'POST' && /application\/json/.test(p.type), p);
       ok('the body is exactly the allowlisted fields', JSON.stringify(Object.keys(b).sort()) === JSON.stringify(BODY_KEYS), Object.keys(b));
       ok('…carrying the chips, the answer and the words',
-        b.kind === 'feedback' && JSON.stringify(b.chips) === JSON.stringify(['More games', "Something's broken"]) && b.recommend === 'Maybe' && b.text === 'More animal words please.' && b.email === 'mom@example.test' && b.prefer === '' && b.availability === '' && b.app === 'web' && b.from === 'family' && b.website === '', b);
-      // the privacy policy: a time zone comes only with a call request
-      ok('…and no time zone, which only a call request carries', b.timezone === '', b.timezone);
+        b.kind === 'feedback' && JSON.stringify(b.chips) === JSON.stringify(['More games', "Something's broken"]) && b.recommend === 'Maybe' && b.text === 'More animal words please.' && b.email === 'mom@example.test' && b.app === 'web' && b.from === 'family' && b.website === '', b);
       ok("never the child's name, the clinician code or a child id, though the profile holds them", noChildData(p.raw), p.raw);
       const done = await t.page.locator('#fbSuccess').innerText();
       ok('the thank-you says it reached the team, never booked', /reached|received/.test(done) && !/booked/i.test(done), done);
@@ -156,34 +156,6 @@ try {
       await t.page.fill('#fbEmail', 'not-an-email');
       await t.page.click('#fbSend');
       ok('a mistyped optional email is caught before sending', /check your email/.test(await t.page.locator('#fbStatus').innerText()) && t.posts.length === 1);
-    } finally { await t.context.close(); }
-  });
-
-  await scenario('call', async () => {
-    const t = await fresh();
-    try {
-      await open(t);
-      await t.page.click('#fbModeCall');
-      ok('Request a call swaps the form and the button', await t.page.isVisible('#callFields') && !(await t.page.isVisible('#feedbackFields')) && (await t.page.locator('#fbSend').innerText()) === 'Request a call');
-      await t.page.fill('#callEmail', '');
-      await t.page.click('#fbSend');
-      ok('a call request needs an email, and posts nothing without one', (await t.page.locator('#fbStatus').innerText()) === 'Please add an email so we can reply.' && t.posts.length === 0);
-      await t.page.fill('#callEmail', 'nope');
-      await t.page.click('#fbSend');
-      ok('…a real one', /check your email/.test(await t.page.locator('#fbStatus').innerText()) && t.posts.length === 0);
-      await t.page.fill('#callEmail', 'dad@example.test');
-      await chip(t.page, '#callPrefer', 'Phone call').click();
-      await t.page.fill('#callAvailability', 'weekday evenings');
-      await t.page.fill('#callText', 'How do the games pick words?');
-      await t.page.click('#fbSend');
-      await t.page.locator('#fbSuccess').waitFor({ state: 'visible' });
-      const p = t.posts[0], b = p && p.body;
-      ok('a call request posts once, with exactly the allowlisted fields', t.posts.length === 1 && JSON.stringify(Object.keys(b).sort()) === JSON.stringify(BODY_KEYS), b);
-      ok('…how and when to talk, where to reply, and the time zone',
-        b.kind === 'call' && b.email === 'dad@example.test' && b.prefer === 'phone' && b.availability === 'weekday evenings' && b.text === 'How do the games pick words?' && JSON.stringify(b.chips) === '[]' && b.recommend === '' && b.timezone === await t.page.evaluate(() => Intl.DateTimeFormat().resolvedOptions().timeZone) && b.timezone.length > 0 && b.app === 'web', b);
-      ok('…and nothing about the child', noChildData(p.raw), p.raw);
-      const done = await t.page.locator('#fbSuccess').innerText();
-      ok('the confirmation says received, never booked', /received/.test(done) && !/booked/i.test(done), done);
     } finally { await t.context.close(); }
   });
 
@@ -234,8 +206,7 @@ try {
       const t = await fresh({ viewport });
       try {
         await open(t);
-        for (const mode of ['feedback', 'call']) {
-          if (mode === 'call') await t.page.click('#fbModeCall');
+        for (const mode of ['feedback']) {
           const m = await t.page.evaluate(() => ({
             overflow: document.documentElement.scrollWidth - innerWidth,
             fixedBottom: [...document.querySelectorAll('body *')].filter(el => {

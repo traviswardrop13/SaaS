@@ -3,7 +3,9 @@
 // sign in, so this route is guarded differently from the SLP one — same
 // origin, a body cap, a rate limit, a honeypot — and its reply address is for
 // replying only: it never reaches a lead, pilot or CRM destination, and
-// nothing about a child is ever kept beside it. Every network call is mocked.
+// nothing about a child is ever kept beside it. It takes no call requests
+// (Travis, 30 Sep 2026: "I don't want request to call to be an option").
+// Every network call is mocked.
 import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
@@ -33,7 +35,8 @@ function ok(label, condition, detail) { checks++; if (!condition) fails++; conso
 const KV = "https://kv.test.invalid", SLACK = "https://slack.test.invalid", FEEDBACK = "https://feedback.test.invalid";
 const LEAD = "https://lead.test.invalid", PILOT = "https://pilot.test.invalid";
 const SITE = "https://sona.test.invalid";
-const GOOD = { kind: "feedback", chips: ["More games"], text: "", recommend: "", email: "", prefer: "", availability: "", timezone: "America/Boise", app: "web", website: "" };
+const GOOD = { kind: "feedback", chips: ["More games"], text: "", recommend: "", email: "", app: "web", website: "" };
+const NO_CALLS = "We don't take call requests. Send us a message, and we'll reply by email.";
 
 async function submit(body, opts = {}) {
   for (const k of ENV_KEYS) delete process.env[k];
@@ -109,13 +112,10 @@ try {
     ["an unknown kind", { ...GOOD, kind: "booked" }],
     ["text over 2000", { ...GOOD, text: "a".repeat(2001) }],
     ["text that is not a string", { ...GOOD, text: { bad: true } }],
-    ["availability over 240", { ...GOOD, kind: "call", email: "a@b.co", availability: "a".repeat(241) }],
-    ["timezone over 80", { ...GOOD, timezone: "a".repeat(81) }],
     ["an email over 254", { ...GOOD, email: "a".repeat(250) + "@b.co" }],
     ["a malformed email", { ...GOOD, email: "not-an-email" }],
     ["an email with markup in it", { ...GOOD, email: "<x>@evil.test" }],
     ["a made-up recommend answer", { ...GOOD, recommend: "Absolutely!!" }],
-    ["a made-up call preference", { ...GOOD, kind: "call", email: "a@b.co", prefer: "fax" }],
     ["an unknown app", { ...GOOD, app: "android" }],
     ["chips that are not a list", { ...GOOD, chips: "More games" }],
     ["more than six chips", { ...GOOD, chips: ["More games", "More games", "More games", "More games", "More games", "More games", "More games"] }],
@@ -123,8 +123,10 @@ try {
     r = await submit(body);
     ok("refused: " + label, r.status === 400 && r.records.length === 0 && outbound(r).length === 0, r);
   }
-  r = await submit({ ...GOOD, kind: "call", chips: [], email: "" });
-  ok("a call request needs an email, and says why", r.status === 400 && r.json.error === "Please add an email so we can reply." && r.records.length === 0, r.json);
+  // NO CALLS: a page left open from before may still ask for one
+  r = await submit({ kind: "call", chips: [], text: "How do the games pick words?", recommend: "", email: "dad@example.test", prefer: "phone", availability: "weekday evenings", timezone: "America/New_York", app: "web", website: "" }, { slack: true });
+  ok("a call request is refused in words, and nothing is kept or sent, not even to Slack",
+    r.status === 400 && r.json.error === NO_CALLS && r.records.length === 0 && outbound(r).length === 0, r.json);
   r = await submit({ ...GOOD, chips: [], text: "   " });
   ok("feedback needs a chip or some text", r.status === 400 && r.records.length === 0, r.json);
   r = await submit({ ...GOOD, chips: ["Rate my child", "<!channel>"], text: "" });
@@ -140,11 +142,11 @@ try {
   ok("feedback is accepted once the store confirms it", r.status === 200 && r.json.ok && r.json.stored === true && r.json.delivered === false, r.json);
   ok("unknown and repeated chips are dropped; known ones from either set survive", JSON.stringify(rec?.chips) === JSON.stringify(["More games", "Easier to assign"]), rec?.chips);
   ok("the record is exactly the allowlisted fields",
-    JSON.stringify(Object.keys(rec || {}).sort()) === JSON.stringify(["app", "at", "availability", "chips", "from", "kind", "prefer", "recommend", "replyEmail", "text", "timezone"]), Object.keys(rec || {}));
+    JSON.stringify(Object.keys(rec || {}).sort()) === JSON.stringify(["app", "at", "chips", "from", "kind", "recommend", "replyEmail", "text"]), Object.keys(rec || {}));
   ok("text and email are trimmed; the reply address is the one typed, never a spoofed field",
     rec?.text === "More dinosaur words please." && rec.replyEmail === "parent@example.test" && rec.recommend === "Definitely" && rec.app === "ios" && rec.at !== "1999-01-01");
-  // The privacy policy says a time zone comes only with a call request.
-  ok("plain feedback keeps no time zone, even when one is sent", rec?.timezone === "", rec?.timezone);
+  // The privacy policy lists what a message holds, and a time zone is not on it.
+  ok("feedback keeps no time zone or call details, even when a stale page sends them", rec && !("timezone" in rec) && !("prefer" in rec) && !("availability" in rec), rec);
   ok("…and is filed as a family's unless it says otherwise", rec?.from === "family", rec?.from);
   const everything = JSON.stringify(r.calls.map((c) => c.raw));
   ok("a child's name, a clinician code, a child id or a pilot code never reach the store or any request",
@@ -153,14 +155,10 @@ try {
     r.calls.some((c) => c.payload?.[0] === "EVAL" && /RPUSH/.test(c.payload[1]) && /LTRIM', KEYS\[1\], -1000, -1/.test(c.payload[1]) && /EXPIRE/.test(c.payload[1]) && c.payload[3] === "family-feedback" && c.payload[5] === 31536000));
   ok("the lead and pilot webhooks, and Kit, never hear of it", r.calls.every((c) => c.url === KV), r.calls.map((c) => c.url));
 
-  r = await submit({ kind: "call", chips: [], text: "", recommend: "", email: "dad@example.test", prefer: "phone", availability: "weekday evenings", timezone: "America/New_York", app: "web", website: "" });
-  rec = r.records[0];
-  ok("a call can be requested without a message", r.status === 200 && rec?.kind === "call" && rec.text === "", r.json);
-  ok("…keeping how and when to talk, and where to reply", rec?.prefer === "phone" && rec.availability === "weekday evenings" && rec.timezone === "America/New_York" && rec.replyEmail === "dad@example.test", rec);
   r = await submit({ ...GOOD, chips: [], text: "Just text is fine", email: "" });
   ok("feedback needs no email", r.status === 200 && r.records[0]?.replyEmail === "" && JSON.stringify(r.records[0].chips) === "[]");
   r = await submit({ kind: "feedback", text: "Only the essentials" });
-  ok("optional fields may be left out entirely", r.status === 200 && r.records[0]?.app === "web" && r.records[0].prefer === "" && r.records[0].recommend === "", r.json);
+  ok("optional fields may be left out entirely", r.status === 200 && r.records[0]?.app === "web" && r.records[0].recommend === "", r.json);
 
   // ── honest delivery ──
   for (const opts of [{ kv: false }, { storeFails: true }, { storeHttpFailure: true }, { storeThrows: true }]) {
@@ -170,7 +168,7 @@ try {
   // No generic webhook for family messages: the privacy policy names Upstash
   // and Slack, and a third destination for a parent's reply email would be
   // one it doesn't name.
-  r = await submit({ ...GOOD, kind: "call", email: "mom@example.test", prefer: "video", availability: "Friday", timezone: "UTC" }, { kv: false, webhook: true });
+  r = await submit({ ...GOOD, email: "mom@example.test" }, { kv: false, webhook: true });
   ok("FEEDBACK_WEBHOOK_URL is never called for a family message, so with no store it is a 503",
     r.status === 503 && !r.json.ok && !r.calls.some((c) => c.url === FEEDBACK), r.calls.map((c) => c.url));
 
@@ -183,10 +181,6 @@ try {
   const types = []; JSON.stringify(slack, (k, v) => { if (k === "type" && typeof v === "string") types.push(v); return v; });
   ok("…and never as mrkdwn anywhere in the message", !types.includes("mrkdwn") && !/mrkdwn/.test(JSON.stringify(slack)), types);
   ok("…and the notification line Slack does parse is a fixed phrase", !/channel/.test(slack?.text || ""));
-  r = await submit({ ...GOOD, kind: "call", email: "gran@example.test", prefer: "email" }, { kv: false, slack: true });
-  const callSlack = r.calls.find((c) => c.url === SLACK)?.payload;
-  ok("a call request is headed Parent call request and says how they'd like to talk",
-    callSlack?.blocks[0].text.text === "Parent call request" && /Prefers: Just email/.test(JSON.stringify(callSlack)) && /gran@example\.test/.test(JSON.stringify(callSlack)));
   r = await submit(GOOD, { slack: true, slackFails: true, webhook: true });
   ok("when Slack fails, nothing else is tried; the stored copy is the receipt",
     r.status === 200 && r.json.stored && !r.json.delivered && onlyApproved(r) && !r.calls.some((c) => c.url === FEEDBACK), r.calls.map((c) => c.url));

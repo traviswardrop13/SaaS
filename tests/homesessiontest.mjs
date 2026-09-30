@@ -21,7 +21,7 @@ async function fixture(config={}){
   let sona;Object.defineProperty(window,'Sona',{configurable:true,get:()=>sona,set:value=>{sona=value;value.speak=record;value.speakNow=record;}});
   if(window.speechSynthesis)window.speechSynthesis.speak=utterance=>record(utterance.text);
   if(localStorage.getItem('sona.test.homeSession'))return;localStorage.setItem('sona.test.homeSession','1');
-  localStorage.setItem('sona.freeera.v1','post');localStorage.setItem('sona.freeera2.v1','done');localStorage.setItem('sona.freeera3.v1','done');localStorage.setItem('sona.freeera4.v1','done');
+  localStorage.setItem('sona.freeera.v1','post');localStorage.setItem('sona.freeera2.v1','done');localStorage.setItem('sona.freeera3.v1','done');localStorage.setItem('sona.freeera4.v1','done');localStorage.setItem('sona.freeera5.v1','done');
   localStorage.setItem('sona.profile.v1',JSON.stringify({childName:'Mia',childAge:config.age===undefined?'4':config.age,focusSounds:['M'],onboarded:true,voiceOn:true,soundOn:false,volume:0.7}));
   if(config.paid){sessionStorage.setItem('sona.paidui','1');localStorage.setItem('sona.demo.v1',JSON.stringify({started:1,done:1}));}
   if(config.run)sessionStorage.setItem('sona.run.v1',JSON.stringify(config.run));
@@ -46,7 +46,8 @@ for(const age of ['2','3','4','5','8',null,'4 years','4.5'])await scenario('age 
   await page.waitForTimeout(200);const st=await state(page);
   ok('age '+age+': Home itself presents every catalog card',JSON.stringify(st.keys)===JSON.stringify(ALL),st.keys);
   const parked=await page.locator('#activityGroups button[data-game]:disabled').evaluateAll(els=>els.map(el=>({key:el.dataset.game,text:el.innerText})).sort((a,b)=>a.key.localeCompare(b.key)));
-  ok('age '+age+': Bubble Pop, Peekaboo and the parked Say & Play games are explicitly Coming soon',JSON.stringify(parked.map(game=>game.key))===JSON.stringify(PARKED)&&parked.every(game=>/Coming soon/.test(game.text)),parked);
+  // each says its Monday ("Coming Oct 12"), or "Coming soon" once that day has passed (30 Sep 2026)
+  ok('age '+age+': Bubble Pop, Peekaboo and the parked Say & Play games are explicitly Coming',JSON.stringify(parked.map(game=>game.key))===JSON.stringify(PARKED)&&parked.every(game=>/Coming (soon|[A-Z][a-z]{2} \d{1,2})\b/.test(game.text)),parked);
   ok('age '+age+': Home invites a choice',await page.getByRole('heading',{name:'Pick a game!',exact:true}).count()===1);
   ok('age '+age+': no adventure hero or auto-start replaces the choice',await page.locator('#goBtn,#heroCard,#jarRow').count()===0&&new URL(page.url()).pathname==='/today.html');
   const recommended=['2','3','4'].includes(age)?'simple':['5','8'].includes(age)?'arcade':null;
@@ -88,8 +89,9 @@ for(const age of ['4','7'])await scenario('paid gate age '+age,async()=>{
   const access=await page.evaluate(()=>({allowed:Object.keys(Sona.GAME_ACTS).filter(key=>Sona.gameAccess(key).allowed).sort(),free:Object.keys(Sona.GAME_ACTS).filter(key=>{const game=Sona.GAME_ACTS[key];return game.tier==='free'&&game.available!==false&&!game.comingSoon;}).sort()}));
   ok('paid age '+age+': browsing retains the playable free games',access.free.length>0&&JSON.stringify(access.allowed)===JSON.stringify(access.free),access);
   ok('paid age '+age+': browsing does not enter a game or purchase page',new URL(page.url()).pathname==='/today.html');
-  if(await page.locator('#activityGroups button[data-game="tiles"]').count()){
-   await page.locator('#activityGroups button[data-game="tiles"]').click();
+  // Block Stacker: Premium (Piano Tiles turned free on 30 Sep 2026)
+  if(await page.locator('#activityGroups button[data-game="stack"]').count()){
+   await page.locator('#activityGroups button[data-game="stack"]').click();
    ok('paid age '+age+': a locked title invites a grown-up without leaving Home',new URL(page.url()).pathname==='/today.html'&&await page.locator('#libraryNotice').isVisible());
   }else ok('paid Home keeps the full catalog visible',false);
   clean('paid gate',errors);

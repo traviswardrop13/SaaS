@@ -476,9 +476,6 @@
     .plan-context { display:flex; flex-wrap:wrap; gap:8px; margin:12px 0 18px; }
     .plan-context span { background:#f2f5f2; padding:6px 9px; border-radius:6px; font-size:11px; color:var(--muted); }
     .feedback-layout { display:grid; grid-template-columns:minmax(0,1.45fr) minmax(250px,1fr); gap:24px; align-items:start; }
-    .feedback-tabs { display:flex; gap:7px; padding:5px; background:#f2f5f3; border-radius:8px; margin-bottom:22px; }
-    .feedback-tabs button { flex:1; background:transparent; border:1px solid transparent; padding:10px; border-radius:6px; font-size:12px; color:var(--muted); cursor:pointer; }
-    .feedback-tabs button[aria-pressed=true] { background:white; color:var(--blue-d); border-color:var(--line); box-shadow:0 1px 2px #16384f08; }
     .feedback-intro { background:#edf4ef; border:1px solid #dce8df; border-radius:12px; padding:25px; }
     .rachel-avatar { display:block; width:88px; height:88px; border-radius:50%; object-fit:cover; margin-bottom:18px; }
     .rachel-about { margin:-4px 0 18px; font-size:13px; line-height:1.75; }
@@ -665,8 +662,7 @@
     .tbl th { background:#faf6ef; font-weight:800; }
     .tbl tr:hover td { background:#fffaf3; }
     .workflow-preview, .feedback-intro { border-radius:18px; background:#edf7f4; }
-    .feedback-tabs, .child-tabs .filter-tab { border-radius:12px; }
-    .feedback-tabs button { font-weight:800; border-radius:9px; }
+    .child-tabs .filter-tab { border-radius:12px; }
     .step-number { background:#e2f5f5; font-weight:800; }
     .community-layout { max-width:880px; }
     .community-membership { border-style:solid; background:#fffdf8; border-color:#eee3cf; border-radius:12px; font-size:12px; color:#756951; }
@@ -1252,17 +1248,15 @@
       </div>
 
       <div class="page" id="page-feedback">
-        <div class="page-header"><div><div class="eyebrow">Built with you, for your day</div><h1>Let's make Sona better.</h1><p>Share a thought, ask a question, or request a call. We'd love to connect.</p></div></div>
+        <div class="page-header"><div><div class="eyebrow">Built with you, for your day</div><h1>Let's make Sona better.</h1><p>Share a thought or ask a question. Rachel reads every message.</p></div></div>
         <div class="feedback-layout"><div class="card">
-          <div class="feedback-tabs" role="group" aria-label="How would you like to connect?"><button id="fbModeFeedback" aria-pressed="true">Leave feedback</button><button id="fbModeCall" aria-pressed="false">Request a call</button></div>
           <h2 id="fbHeading">What's on your mind?</h2><p class="sub" id="fbIntro">A quick thought is enough. Tell Rachel what's working or what would make your day easier.</p>
           <label class="fl" for="fbTopic">About</label><select id="fbTopic"><option value="dashboard">The SLP dashboard</option><option value="app">The family app</option><option value="question">A question about Sona</option><option value="affiliate">Affiliate partnerships</option></select>
           <label class="fl" for="fbText" id="fbTextLabel">Your message</label><textarea id="fbText" maxlength="2000" placeholder="I wish the dashboard could…"></textarea>
-          <div class="workflow-fields" id="callFields" hidden><label class="fl" for="callAvailability">A good time to connect (optional)</label><input id="callAvailability" maxlength="240" placeholder="e.g. Tuesday afternoons, Mountain Time" /><p class="sub">This is a request, not a booking. We'll email you to find a time together.</p></div>
           <p class="workflow-note">Please keep feedback about the product. Leave out children's names and private information.</p><p class="workflow-note" id="fbReply"></p>
           <div class="row" style="margin-top:18px;"><button class="btn green" id="fbSend">Send to Rachel</button><span class="sub" id="fbStatus" role="status"></span></div>
           <div class="fb-success" id="fbSuccess" role="status" style="display:none;"></div>
-        </div><aside class="feedback-intro"><img class="rachel-avatar" src="/assets/rachel-wardrop-profile.jpg" width="88" height="88" alt="Rachel Wardrop"><h2>Hi, I'm Rachel.</h2><p>I'm Sona's co-founder and a licensed pediatric speech-language pathologist.</p><p>I'd love to hear how Sona fits into your day, what could work better, and what you're curious about. A little feedback helps us build something more useful for you and your families.</p><p class="signature">Rachel, MS, CF-SLP · Co-founder</p><p class="credential">Licensed pediatric speech-language pathologist</p><button class="btn ghost sm" id="rachelCall">I'd love to connect →</button></aside></div>
+        </div><aside class="feedback-intro"><img class="rachel-avatar" src="/assets/rachel-wardrop-profile.jpg" width="88" height="88" alt="Rachel Wardrop"><h2>Hi, I'm Rachel.</h2><p>I'm Sona's co-founder and a licensed pediatric speech-language pathologist.</p><p>I'd love to hear how Sona fits into your day, what could work better, and what you're curious about. A little feedback helps us build something more useful for you and your families.</p><p class="signature">Rachel, MS, CF-SLP · Co-founder</p><p class="credential">Licensed pediatric speech-language pathologist</p></aside></div>
       </div>
 
     </div>
@@ -2371,35 +2365,26 @@
     };
 
 
-    /* Feedback is submitted only by the clinician; a call request isn't a booking. */
-    var FB_MODE="feedback", FB_BUSY=false;
+    /* Feedback is submitted only by the clinician. No calls (Travis, 30 Sep
+       2026: "I don't want request to call to be an option"): /api/slp/feedback
+       refuses one. */
+    var FB_BUSY=false;
     function paintFeedback(){
-      var call=FB_MODE==="call";
-      $("fbModeFeedback").setAttribute("aria-pressed",String(!call));$("fbModeCall").setAttribute("aria-pressed",String(call));
-      $("callFields").hidden=!call;$("fbHeading").textContent=call?"We'd love to connect.":"What's on your mind?";
-      $("fbIntro").textContent=call?"Talk through feedback, ask a question, or tell us about your experience. We'll find a time together.":"A quick thought is enough. Tell Rachel what's working or what would make your day easier.";
-      $("fbTextLabel").textContent=call?"What would you like to talk about? (optional)":"Your message";
-      $("fbText").placeholder=call?"I'd love to talk about…":"I wish the dashboard could…";
-      $("fbSend").textContent=FB_BUSY?"Sending…":(call?"Request a call with Rachel":"Send to Rachel");
+      $("fbSend").textContent=FB_BUSY?"Sending…":"Send to Rachel";
       $("fbReply").textContent="We'll reply to "+((account&&account.email)||"your signed-in email")+".";
     }
-    function feedbackMode(mode){if(FB_BUSY)return;FB_MODE=mode;$("fbSuccess").style.display="none";$("fbStatus").textContent="";paintFeedback();}
-    $("fbModeFeedback").onclick=function(){feedbackMode("feedback");};
-    $("fbModeCall").onclick=function(){feedbackMode("call");};
-    $("rachelCall").onclick=function(){feedbackMode("call");$("fbText").focus();};
     function feedbackBusy(busy){
-      FB_BUSY=busy;["fbModeFeedback","fbModeCall","fbText","fbTopic","callAvailability","fbSend","rachelCall"].forEach(function(id){$(id).disabled=busy;});paintFeedback();
+      FB_BUSY=busy;["fbText","fbTopic","fbSend"].forEach(function(id){$(id).disabled=busy;});paintFeedback();
     }
     $("fbSend").onclick=function(){
       if(FB_BUSY)return;
-      var text=($("fbText").value||"").trim(),kind=FB_MODE;
-      if(kind==="feedback"&&!text){$("fbStatus").textContent="Add a quick thought before sending.";$("fbText").focus();return;}
-      var timezone="";try{timezone=Intl.DateTimeFormat().resolvedOptions().timeZone||"";}catch(e){}
-      var body={text:text,category:$("fbTopic").value,kind:kind,availability:kind==="call"?$("callAvailability").value.trim():"",timezone:timezone};
+      var text=($("fbText").value||"").trim();
+      if(!text){$("fbStatus").textContent="Add a quick thought before sending.";$("fbText").focus();return;}
+      var body={text:text,category:$("fbTopic").value,kind:"feedback"};
       feedbackBusy(true);$("fbStatus").textContent="Sending…";$("fbSuccess").style.display="none";
       fetch("/api/slp/feedback",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)}).then(function(r){return r.json();}).then(function(j){
         feedbackBusy(false);
-        if(j&&j.ok){$("fbText").value="";$("callAvailability").value="";$("fbStatus").textContent="";$("fbSuccess").textContent=kind==="call"?"Call request received. We'll email you to arrange a time — we'd love to connect.":"Thank you. Your feedback has been received for Rachel and the Sona team.";$("fbSuccess").style.display="block";}
+        if(j&&j.ok){$("fbText").value="";$("fbStatus").textContent="";$("fbSuccess").textContent="Thank you. Your feedback has been received for Rachel and the Sona team.";$("fbSuccess").style.display="block";}
         else $("fbStatus").textContent=(j&&j.error)||"Couldn't send. Your message is still here; please try again.";
       }).catch(function(){feedbackBusy(false);$("fbStatus").textContent="Couldn't send. Your message is still here; please try again.";});
     };
