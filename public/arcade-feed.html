@@ -113,7 +113,7 @@
       <div id="echoSpot">
         <div id="mound"></div>
         <img id="echo" src="/assets/crafted/echo-welcome.webp" alt="Echo"
-             onerror="this.onerror=null;this.src='/coach/echo/echo-idle.svg';" />
+             onerror="if(this.src.indexOf('echo-welcome')<0)this.src='/assets/crafted/echo-welcome.webp'" />
         <div id="plate" data-fed="0/5"><span class="well"></span><span class="well"></span><span class="well"></span><span class="well"></span><span class="well"></span></div>
       </div>
     </div>
@@ -127,7 +127,7 @@
       <h2 id="endTitle">Yum! You fed Echo!</h2>
       <p id="endSub"></p>
       <div class="echoWin" id="concert">
-        <img src="/assets/crafted/echo-welcome.webp" alt="" />
+        <img src="/assets/crafted/echo-cheer.webp" alt="" onerror="if(this.src.indexOf('echo-welcome')<0)this.src='/assets/crafted/echo-welcome.webp'" />
         <span class="uke" aria-hidden><svg viewBox="0 0 64 64" style="width:44px;height:44px"><ellipse cx="24" cy="42" rx="16" ry="14" fill="#e09a5a"/><circle cx="24" cy="42" r="5.5" fill="#7a4a22"/><rect x="34" y="10" width="7" height="26" rx="3" transform="rotate(35 37 23)" fill="#8a5a30"/><rect x="44" y="4" width="9" height="8" rx="2" transform="rotate(35 48 8)" fill="#6f4522"/><path d="M14 36l20 12M13 40l20 12M12 44l19 11" stroke="#fff" stroke-width="1.1" opacity=".85"/><circle cx="17" cy="33" r="2" fill="#fff" opacity=".75"/></svg></span>
         <span class="note" style="left:22%;animation-delay:0s;"><svg viewBox="0 0 64 64" style="width:20px;height:20px"><ellipse cx="24" cy="46" rx="9" ry="7" fill="#ffd21c" transform="rotate(-20 24 46)"/><rect x="30" y="14" width="4.5" height="32" rx="2" fill="#ffd21c"/><path d="M34.5 14c8 2 12 7 10 14-1-4-5-7-10-8Z" fill="#f0a800"/></svg></span>
         <span class="note" style="left:70%;animation-delay:.5s;"><svg viewBox="0 0 64 64" style="width:20px;height:20px"><ellipse cx="24" cy="46" rx="9" ry="7" fill="#fff" transform="rotate(-20 24 46)"/><rect x="30" y="14" width="4.5" height="32" rx="2" fill="#fff"/><path d="M34.5 14c8 2 12 7 10 14-1-4-5-7-10-8Z" fill="#fff" opacity=".85"/></svg></span>
@@ -335,7 +335,15 @@
     // answer given before the first quiet breath still counts once it comes.
     var FLOOR_MS=250, HEARD_MS=3000, micFloor=-1;
     function p20(list){ var a=list.slice().sort(function(x,y){ return x-y; }); return a[Math.floor((a.length-1)*0.2)]; }
+    // Echo's clay pose (29 Sep 2026): he talks while he asks, listens while the
+    // mic can hear the child, and cheers a heard word or a munch; otherwise he
+    // rests, as before.
+    var POSE="/assets/crafted/echo-";
+    function echoPose(p){ var e=$("echo"); if(e&&e.getAttribute("src")!==POSE+p+".webp")e.src=POSE+p+".webp"; }
+    // held in a variable: a preload nobody holds is collected and loads late
+    var POSE_KEEP=["talk","listen","cheer","welcome"].map(function(p){ var i=new Image(); i.src=POSE+p+".webp"; return i; });
     function feedMicStop(){
+      echoPose("welcome");
       micGen++; clearTimeout(micT); if(micRaf)cancelAnimationFrame(micRaf); micRaf=0;
       try{ if(micSrc)micSrc.disconnect(); }catch(e){} micSrc=null;
       if(micStream){ try{ micStream.getTracks().forEach(function(t){t.stop();}); }catch(e){} micStream=null; micClosedAt=performance.now(); }
@@ -361,6 +369,7 @@
         // it would hear nothing and silence every chime until the turn ended
         try{ var ctx=getCtx(),src=ctx.createMediaStreamSource(stream),an=ctx.createAnalyser(); an.fftSize=512; src.connect(an); micSrc=src; }
         catch(e){ feedMicStop(); return; }
+        echoPose("listen");
         var td=new Uint8Array(an.fftSize),fd=new Uint8Array(an.frequencyBinCount),binHz=ctx.sampleRate/an.fftSize,heard=[];
         (function tick(){
           if(gen!==micGen)return;
@@ -395,8 +404,8 @@
               for(var c=0;c<cards.length;c++)if(cards[c].querySelector(".w").textContent===target.w)cards[c].classList.add("speechHint");
               $("bSub").textContent="Tap the glowing picture!";
               heardThisTurn=true; stars++; try{ window.__heard=stars; }catch(e){} try{ $("starN").textContent=stars; }catch(e){}
-              $("heard").classList.add("show"); setTimeout(function(){ $("heard").classList.remove("show"); },1400);
-              feedMicStop(); sfx("tap"); return;   // heard once is the whole turn: close, THEN the little chime
+              $("heard").classList.add("show"); setTimeout(function(){ $("heard").classList.remove("show"); if(turnLive&&heardThisTurn)echoPose("welcome"); },1400);
+              feedMicStop(); echoPose("cheer"); sfx("tap"); return;   // heard once is the whole turn: close, THEN the little chime
             }
           }
           micRaf=requestAnimationFrame(tick);
@@ -437,7 +446,10 @@
       turnLive=true;
       // Calm: the ask ends on a period, not "!", which the voice reads as a
       // burst of energy (24 Sep 2026). The practice word itself is unchanged.
+      echoPose("talk");
       say("Where is the "+target.w+"? Say... "+target.w+".").then(function(){
+        // back to resting only if nothing newer (a munch, a heard word) took over
+        var e=$("echo"); if(e&&/echo-talk/.test(e.getAttribute("src")||"")) echoPose("welcome");
         // listenable() decides whether this is still somebody's turn, so an
         // older ask finishing late opens the mic for the current one
         quietUntil=Math.max(quietUntil,performance.now()+VOICE_TAIL_MS);
@@ -454,7 +466,7 @@
         sfx("tap");
         return; // no fail state, no strikes — littles just try again
       }
-      turnLive=false; fed++; feedMicStop(); // the turn is over: the mic closes before the chime
+      turnLive=false; fed++; feedMicStop(); echoPose("cheer"); // the turn is over: the mic closes before the chime
       roundBump=fed*0.07;
       var f=feedState(); f.fed=(f.fed||0)+1; feedSave(f);
       btn.classList.add("right"); sfx("correct");

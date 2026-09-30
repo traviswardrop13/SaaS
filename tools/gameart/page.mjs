@@ -89,7 +89,7 @@ export function page(g) {
       <div id="word"></div>
       <button id="hear" aria-label="Hear it again">${SPEAKER}<span>Hear it</span></button>
       <div id="listenRow">
-        <span id="echoWrap"><img id="echoFace" src="/coach/echo/echo-idle.svg" alt="Echo" /></span>
+        <span id="echoWrap"><img id="echoFace" src="/assets/crafted/echo-welcome.webp" alt="Echo" onerror="if(this.src.indexOf('echo-welcome')<0)this.src='/assets/crafted/echo-welcome.webp'" /></span>
         <span id="micState"></span>
         <span id="cheer"></span>
         <button id="micBtn" hidden aria-label="Listen again">${MIC}</button>
@@ -107,7 +107,7 @@ export function page(g) {
   </div>
   <div class="ovl" id="primer">
     <div class="ovlCard">
-      <img class="ovlEcho" src="/coach/echo/echo-listening.svg" alt="" />
+      <img class="ovlEcho" src="/assets/crafted/echo-listen.webp" alt="" onerror="if(this.src.indexOf('echo-welcome')<0)this.src='/assets/crafted/echo-welcome.webp'" />
       <h2>Let Echo hear you!</h2>
       <p>Say each word, and watch what happens.</p>
       <p class="small" id="micPromise"></p>
@@ -117,14 +117,14 @@ export function page(g) {
   </div>
   <div class="ovl" id="pauseOvl">
     <div class="ovlCard">
-      <img class="ovlEcho" src="/coach/echo/echo-idle.svg" alt="" />
+      <img class="ovlEcho" src="/assets/crafted/echo-think.webp" alt="" onerror="if(this.src.indexOf('echo-welcome')<0)this.src='/assets/crafted/echo-welcome.webp'" />
       <h2>Paused</h2>
       <button class="btn" id="resume">Keep playing</button>
     </div>
   </div>
   <div class="ovl" id="endOvl">
     <div class="ovlCard">
-      <img class="ovlEcho endStar" src="/coach/echo/echo-celebrate.svg" alt="" />
+      <img class="ovlEcho endStar" src="/assets/crafted/echo-cheer.webp" alt="" onerror="if(this.src.indexOf('echo-welcome')<0)this.src='/assets/crafted/echo-welcome.webp'" />
       <h2 id="endTitle"></h2>
       <p id="endSub"></p>
       <button class="btn" id="again">Play again</button>

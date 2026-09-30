@@ -1769,7 +1769,7 @@
       d.id = "sonaMicDenied";
       d.style.cssText = "position:fixed;inset:0;z-index:9999;background:rgba(255,255,255,.97);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:30px;gap:10px;";
       d.innerHTML =
-        '<img src="/coach/echo/echo-idle.svg" alt="Echo" style="width:100px;height:100px;object-fit:contain;" onerror="this.outerHTML=\'<div style=&quot;font-size:64px&quot;>🦜</div>\'" />' +
+        '<img src="/assets/crafted/echo-think.webp" alt="Echo" style="width:100px;height:100px;object-fit:contain;" onerror="if(this.src.indexOf(\'echo-welcome\')<0)this.src=\'/assets/crafted/echo-welcome.webp\';else this.outerHTML=\'<div style=&quot;font-size:64px&quot;>🦜</div>\'" />' +
         '<div style="font-family:\'Baloo 2\',sans-serif;font-weight:800;font-size:24px;color:#3c3c3c;">Echo can’t hear you yet!</div>' +
         '<div style="font-family:Nunito,sans-serif;font-weight:700;font-size:15px;color:#777;max-width:300px;">Ask a grown-up to turn Echo’s ears back on:</div>' +
         '<div style="text-align:left;background:#fff6e9;border-radius:16px;padding:13px 18px;font-family:Nunito,sans-serif;font-weight:800;font-size:14px;color:#5b4a36;line-height:1.9;max-width:300px;">' +

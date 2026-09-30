@@ -32,6 +32,6 @@ body[data-crafted="hoops"] #cheer{font-size:19px;}
 body[data-crafted="hoops"] #pic{display:flex;align-items:center;justify-content:center;width:100%;height:100%;padding:3px;}
 body[data-crafted="hoops"] #pic>.crafted-word{display:inline-flex;flex:none;align-items:center;justify-content:center;vertical-align:middle;width:100%!important;height:100%!important;}
 body[data-crafted="hoops"] #pic .crafted-word-crop{display:block;flex:none;background-repeat:no-repeat;}
-/* The engine still updates listening state and its accessible Echo image. */
-body[data-crafted="hoops"] #echoWrap{background:url('/assets/crafted/echo-welcome.webp') center/contain no-repeat;}
-body[data-crafted="hoops"] #echoFace{opacity:0;}
+/* Echo beside the word is the engine's own clay pose (sayplay.js face()),
+   shown as it is: the wrap stays clear of the kit's green square. */
+body[data-crafted="hoops"] #echoWrap{background:none;}

@@ -253,20 +253,27 @@
     });
   }
   function denied() { setPhase("denied"); if (S && S.micDenied) S.micDenied({ back: "/today.html" }); }
+  // Echo's clay pose beside the word shows what he is doing (29 Sep 2026):
+  // talking while "Listen" is up (he is saying the word), listening while the
+  // mic can hear, cheering a heard word or a basket, thinking while he waits
+  // for a tap on the mic, and resting otherwise.
+  var POSE = "/assets/crafted/echo-", poseKeep = null;
+  function face(p) { try { var img = $("echoFace"); if (img.getAttribute("src") !== POSE + p + ".webp") img.src = POSE + p + ".webp"; } catch (e) {} }
   // "Your turn" means the mic can hear right now, and nothing else.
   function showTurn(on) {
     listening = !!on; publish();
     try {
       document.body.setAttribute("data-listen", on ? "on" : "off");
       $("micState").textContent = on ? "Your turn!" : (turnLive ? "Listen" : "");
-      $("echoFace").src = on ? "/coach/echo/echo-listening.svg" : "/coach/echo/echo-idle.svg";
     } catch (e) {}
+    face(on ? "listen" : (turnLive ? "talk" : "welcome"));
   }
   // No voice in the listening window: the mic closes and waits for a tap to
   // listen again. The tap only reopens the mic; it never moves the game.
   function nudge() {
     if (!turnLive) return;
     try { $("micState").textContent = "Tap the mic, then say it"; $("micBtn").hidden = false; } catch (e) {}
+    face("think");
     setPhase("nudge");
   }
 
@@ -305,7 +312,7 @@
   }
   function byeCard(title, text) {
     var card = $("primer").querySelector(".ovlCard");
-    card.innerHTML = '<img class="ovlEcho" src="/coach/echo/echo-idle.svg" alt="" />'
+    card.innerHTML = '<img class="ovlEcho" src="/assets/crafted/echo-think.webp" alt="" onerror="if(this.src.indexOf(\'echo-welcome\')<0)this.src=\'/assets/crafted/echo-welcome.webp\'" />'
       + "<h2></h2><p></p>"
       + '<p class="small">Grown-ups: you can turn the microphone on whenever you like, from this screen or your phone’s Settings.</p>'
       + '<button class="btn" id="byeBtn">Okay</button>';
@@ -390,7 +397,7 @@
   var CHEERS = ["Yes!", "You did it!", "Great talking!", "Wow!", "Nice!", "Super!"];
   function gotIt() {
     if (!turnLive) return;
-    heardThisTurn = true; turnLive = false; micStop();
+    heardThisTurn = true; turnLive = false; micStop(); face("cheer");
     if (G.play) {
       // the word earned the move; the child makes it (see moveDone)
       try {
@@ -422,7 +429,7 @@
     else nextTurn._t = setTimeout(function () { if (!paused) nextTurn(); }, 250);
   }
   function finish() {
-    micStop(); turnLive = false; setPhase("finale");
+    micStop(); turnLive = false; face("cheer"); setPhase("finale");
     try { $("turnPanel").classList.add("done"); } catch (e) {}
     run(G.finale);
     if (G.play && G.play.finale) G.play.finale();
@@ -474,6 +481,8 @@
     // Catalog access is checked before any mic or audio work starts.
     if (!S.gameAccess(G.key).allowed) { document.body.hidden = true; S.gameBounce(G.key); return; }
     profile = S.getProfile ? S.getProfile() : {};
+    // held, not thrown away: a preload nobody holds is collected and loads late
+    poseKeep = ["welcome", "talk", "listen", "cheer", "think"].map(function (p) { var i = new Image(); i.src = POSE + p + ".webp"; return i; });
     SOUND = String((S.rotSound && S.rotSound()) || "R").toUpperCase();
     WORDS = pool(SOUND); if (!WORDS.length) { SOUND = "R"; WORDS = pool("R"); }
     // the grown-up reads the practice sound on the start card; the bar keeps
@@ -486,12 +495,13 @@
       done: moveDone,
       hint: function (t) { try { $("micState").textContent = t; } catch (e) {} },
       cheer: function (t) { try { $("cheer").textContent = t; } catch (e) {} },
+      face: face,
     }, G.steps.length);
     $("close").onclick = home; $("goHome").onclick = home; $("again").onclick = again; $("startBtn").onclick = begin;
     $("hear").onclick = function () { if (!turnLive || paused) return; nextTurn(true); };
     $("micBtn").onclick = function () {
       if (!turnLive || paused) return;
-      $("micBtn").hidden = true; audioPaused = false; setPhase("turn"); showTurn(false); micOpen();
+      $("micBtn").hidden = true; audioPaused = false; setPhase("turn"); showTurn(false); face("listen"); micOpen();
     };
     $("resume").onclick = resume;
     S.onBackground(pause);

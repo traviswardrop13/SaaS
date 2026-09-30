@@ -409,8 +409,10 @@
     shout(lastShot === "swish" ? "SWISH!" : lastShot === "bank" ? "Bank shot!" : "It's in!");
     sound("swish");
     cheerAt = clock;
-    try { api.cheer(lastShot === "swish" ? "Swish!" : "Basket!"); api.hint(""); } catch (e) {}
-    try { var e = document.getElementById("courtEcho"); if (e) { e.classList.remove("hop"); void e.offsetWidth; e.classList.add("hop"); } } catch (x) {}
+    try { api.cheer(lastShot === "swish" ? "Swish!" : "Basket!"); api.hint(""); if (api.face) api.face("cheer"); } catch (e) {}
+    // Echo on the court cheers for the length of his hop, then rests again
+    try { var e = document.getElementById("courtEcho"); if (e) { e.classList.remove("hop"); void e.offsetWidth; e.classList.add("hop");
+      e.src = "/assets/crafted/echo-cheer.webp"; clearTimeout(scored.t); scored.t = setTimeout(function () { e.src = "/assets/crafted/echo-welcome.webp"; }, 900); } } catch (x) {}
     // the next word waits for the celebration, on the game's own clock, so a
     // pause in between holds it rather than skipping it
     doneAt = clock + 1.15;
@@ -418,7 +420,7 @@
   }
   function missed() {
     misses++; state = "back";
-    try { api.cheer(misses >= 3 ? "Nearly!" : "So close!"); api.hint(misses >= 2 ? "Aim for the hoop!" : "Try again!"); } catch (e) {}
+    try { api.cheer(misses >= 3 ? "Nearly!" : "So close!"); api.hint(misses >= 2 ? "Aim for the hoop!" : "Try again!"); if (api.face) api.face("think"); } catch (e) {}
     ball.fx = Math.max(-1.2, Math.min(1.2, ball.x)); ball.fy = -0.35; ball.fz = HAND.z; ball.k = 0;
     publish();
   }

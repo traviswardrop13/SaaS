@@ -194,7 +194,7 @@
     </header>
 
     <div class="card" style="display:flex;gap:12px;align-items:center;">
-      <img src="/coach/echo/echo-idle.svg" alt="Echo" style="width:58px;height:58px;object-fit:contain;flex:0 0 auto;" />
+      <img src="/assets/crafted/echo-welcome.webp" alt="Echo" style="width:58px;height:58px;object-fit:contain;flex:0 0 auto;" />
       <div><b style="font-family:'Baloo 2';font-size:17px;">Just for fun!</b>
       <p class="muted" style="font-size:13px;font-weight:700;">No scores in here — read picture books with Echo and play with words.</p></div>
     </div>
@@ -246,7 +246,7 @@
     </div>
     <div class="bkovl" id="bkPrimer" hidden>
       <div class="bkovlCard" role="dialog" aria-labelledby="bkPrimerTitle">
-        <img src="/coach/echo/echo-listening.svg" alt="" />
+        <img src="/assets/crafted/echo-listen.webp" alt="" onerror="if(this.src.indexOf('echo-welcome')<0)this.src='/assets/crafted/echo-welcome.webp'" />
         <h2 id="bkPrimerTitle">Echo wants to hear the words</h2>
         <p>On each page, Echo asks your child to say one word out loud.</p>
         <p class="small" id="bkMicPromise"></p>
@@ -1050,14 +1050,23 @@
     function tappable(t) {
       return t.split(" ").map(function (w) { return "<span>" + w + "</span>"; }).join(" ");
     }
-    // Echo stands behind the card and reads along: listening while the line
-    // plays, idle after (celebrate on The End and when he hears the word).
-    function echoPose(p) { var e = document.getElementById("pgEcho"); if (e) e.src = "/coach/echo/echo-" + p + ".svg"; }
+    // Echo stands behind the card in the clay pose for what he is doing:
+    // "talk" while he reads a line, "wave" when he asks the child to have a
+    // go, "listen" while the mic is open, "think" for one more try and for a
+    // quiet mic waiting for a tap, "cheer" when he hears the word and on The
+    // End, and "welcome" when he is simply there. All six load with the shelf
+    // so a swap never flashes empty; a missing file falls back to "welcome".
+    var ECHO_POSES = ["welcome", "talk", "wave", "listen", "think", "cheer"];
+    function echoSrc(p) { return "/assets/crafted/echo-" + p + ".webp"; }
+    var ECHO_BACKUP = "if(this.src.indexOf('echo-welcome')<0)this.src='/assets/crafted/echo-welcome.webp'";
+    var ECHO_PRELOAD = ECHO_POSES.map(function (p) { var i = new Image(); i.src = echoSrc(p); return i; });
+    function echoPose(p) { var e = document.getElementById("pgEcho"); if (e) e.src = echoSrc(p); }
+    function echoIs(p) { var e = document.getElementById("pgEcho"); return !!e && e.getAttribute("src") === echoSrc(p); }
     function readAlong(text) {
-      echoPose("listening");
-      // a line cut short by a page turn must not set the NEW page's Echo idle
+      echoPose("talk");
+      // a line cut short by a page turn must not set the NEW page's Echo resting
       var p = say(text), tok = sayToken;
-      return p.then(function () { if (tok === sayToken) echoPose("idle"); });
+      return p.then(function () { if (tok === sayToken) echoPose("welcome"); });
     }
     // A page's picture fits by its own shape, decided once it has loaded:
     // portrait art (taller than 1.2x its width) covers the screen, anything
@@ -1109,7 +1118,7 @@
     // the cream card, with Echo behind its top edge and his bubble beside him
     function footHTML(inner, cls, pose) {
       return '<div class="bkfoot' + (cls ? " " + cls : "") + '">'
-        + '<div class="bkecho"><img id="pgEcho" src="/coach/echo/echo-' + (pose || "idle") + '.svg" alt="Echo" /></div>'
+        + '<div class="bkecho"><img id="pgEcho" src="' + echoSrc(pose || "welcome") + '" alt="Echo" onerror="' + ECHO_BACKUP + '" /></div>'
         + '<div class="bkcard">' + inner + '</div>'
         + '<div class="bkbubble" id="bkBubble" aria-live="polite" hidden><div class="bq" id="bkAsk"></div><div id="bkMicState"></div></div>'
         + '</div>';
@@ -1144,13 +1153,13 @@
         }
         setBar("next");
         bkNext.textContent = "Start →"; bkHear.hidden = true;
-        say(BOOK.title + "! A story full of " + sndLabel(BOOK.sound).replace(" (v)", "") + " sounds.");
+        readAlong(BOOK.title + "! A story full of " + sndLabel(BOOK.sound).replace(" (v)", "") + " sounds.");
       } else if (page >= N) {
         // The End: the star over the last picture, Echo celebrating on the card
         var last = BOOK.pages[N - 1], lastArt = last && (last.art || sceneOf(BOOK, N - 1));
         bkStage.innerHTML = (lastArt ? blur(lastArt) : wash)
           + '<div class="bkart"><div class="bkpic" style="filter:drop-shadow(0 10px 22px rgba(255,190,20,.55))">' + STAR + '</div></div>'
-          + footHTML('<div class="bktitle">The End!</div><div class="bksub">Great listening! Read it again or pick another story.</div>', "end", "celebrate");
+          + footHTML('<div class="bktitle">The End!</div><div class="bksub">Great listening! Read it again or pick another story.</div>', "end", "cheer");
         setBar("next");
         bkNext.textContent = "All done ✓"; bkHear.hidden = true;
         bkPrev.classList.add("pill"); bkPrev.textContent = "Read again";
@@ -1174,7 +1183,7 @@
         };
         bkStage.innerHTML = artNow(page)
           + footHTML('<div class="bktext">' + (BOOK.words ? tintWords(pg.t, BOOK) : tintSound(tappable(pg.t), BOOK.sound)) + '</div>'
-            + (page === 0 ? '<div class="bkhint">Tap any word to hear it</div>' : ""), "", "listening");
+            + (page === 0 ? '<div class="bkhint">Tap any word to hear it</div>' : ""), "", "talk");
         fitArt();
         if (bkStage.querySelector(".bkwait")) {
           var waitBook = BOOK, waitPage = page;
@@ -1264,7 +1273,7 @@
       endMoment();
       var foot = bkStage.querySelector(".bkfoot"), bub = document.getElementById("bkBubble"), kw = bkStage.querySelector(".bktext .kw");
       if (foot) foot.classList.remove("ask"); if (bub) bub.hidden = true; if (kw) kw.classList.remove("kw");
-      setBar("next"); echoPose("idle"); roomForAsk();
+      setBar("next"); echoPose("welcome"); roomForAsk();
     }
     function markKey(word) {
       var spans = bkStage.querySelectorAll(".bktext span"), w = String(word).toLowerCase();
@@ -1305,8 +1314,8 @@
       document.getElementById("bkAsk").innerHTML = askHTML(M.word);
       if (bub) bub.hidden = false; if (foot) foot.classList.add("ask");
       roomForAsk();
-      echoPose("idle");
-      if (document.hidden) { setBar("nudge"); return; }
+      echoPose("wave");
+      if (document.hidden) { setBar("nudge"); echoPose("think"); return; }
       setBar("wait", "Listen…");
       SC.ready(function (st) {
         if (tok !== momTok) return;
@@ -1350,7 +1359,7 @@
       if (!M) return;
       var tok = momTok;
       setBar("wait", again ? "One more time…" : "Listen…");
-      echoPose("idle");
+      echoPose(again ? "think" : "wave");
       SC.say((again ? "One more time... " : "Can you say... ") + M.word + ".", function () { if (tok === momTok) listenNow(); });
     }
     function listenNow() {
@@ -1358,7 +1367,7 @@
       var tok = momTok;
       setBar("wait", "");
       SC.listen(BOOK.sound, function (out) { if (tok === momTok) answer(out); },
-        function () { if (tok === momTok) { setBar("live"); echoPose("listening"); } });
+        function () { if (tok === momTok) { setBar("live"); echoPose("listen"); } });
     }
     function answer(out) {
       if (!M) return;
@@ -1367,7 +1376,7 @@
         // SayCheck has already closed the mic; the chime still waits its beat
         M.leaving = true;
         setBar("yay", "I heard you!");
-        echoPose("celebrate");
+        echoPose("cheer");
         var kw = bkStage.querySelector(".bktext .kw"); if (kw) kw.classList.add("yay");
         chime("correct");
         SC.quiet(function () { if (tok === momTok && window.Sona && Sona.confetti) Sona.confetti({ count: 60, duration: 1100 }); });
@@ -1379,7 +1388,8 @@
         if (M.tries < 3) return ask(true);
         M.leaving = true;
         setBar("bye", "Great trying! Let's turn the page.");
-        echoPose("celebrate");
+        // cheer, not think: the page turns on this, and a round ends on a win
+        echoPose("cheer");
         SC.say("Great trying. Let's turn the page.", function () { if (tok === momTok) turnPage(); });
         return;
       }
@@ -1388,7 +1398,7 @@
       if (out === "failed") return momentOff(true);
       // "quiet" (no voice in the window) or "hidden": nothing moves. The mic
       // waits for a tap, and the tap only listens again.
-      setBar("nudge"); echoPose("idle");
+      setBar("nudge"); echoPose("think");
     }
     function turnPage() { endMoment(); if (BOOK && page < BOOK.pages.length) { page++; showPage(); } }
     function wordTap(sp) {
@@ -1437,8 +1447,9 @@
     // is left to turn.
     if (window.Sona && Sona.onBackground) Sona.onBackground(function () {
       stopSpeech();
+      if (echoIs("talk")) echoPose("welcome");   // his line stopped, so does his beak
       if (!BOOK || barMode === "next" || (M && M.leaving)) return;
-      hush(); setBar("nudge");
+      hush(); setBar("nudge"); echoPose("think");
     });
 
     /* ---- word box ---- */

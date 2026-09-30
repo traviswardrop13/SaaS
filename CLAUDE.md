@@ -859,6 +859,18 @@ to stand in for it. What was buildable was built on 28 Sep:
   `<b>`, the word itself, with the letters in a `<span class="snd">` inside it,
   because `craftedarttest` reads the asked word by `#bMain b`.
 
+- **Echo's clay poses** (Travis's ChatGPT art, 29 Sep 2026; originals in
+  `design/crafted-world/echo-2026-09-29/`). Six 512px transparent WebPs in
+  `public/assets/crafted/`, one per thing Echo is doing: `echo-welcome`
+  (resting, headers, brand marks), `echo-talk` (he is speaking: reading a
+  page, modelling the word, an instruction), `echo-wave` (asking the child to
+  have a go: "Can you say…?"), `echo-listen` (the mic is open), `echo-think`
+  ("Almost!", a gentle try-again, can't hear you, paused) and `echo-cheer` (a
+  heard word, a page turned, every end card). A page that swaps poses keeps
+  its preloads in a variable (an unheld `new Image()` is thrown away and the
+  swap loads late) and falls back to `echo-welcome.webp` on error. The old
+  flat `/coach/echo/*.svg` remain only on parked or clinician pages.
+
 ## Hard rules
 - Merges to main/prod only on Travis's explicit go ("merge").
 - **No audio ever leaves the device.** There is no cloud scorer: every verdict

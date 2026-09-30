@@ -496,7 +496,8 @@
           if(Sona.micDenied){
             Sona.micDenied({onClose:function(){nextBtn.focus();}});
             var deniedEcho=document.querySelector("#sonaMicDenied img");
-            if(deniedEcho)deniedEcho.src="/assets/crafted/echo-welcome.webp";
+            // the shared screen already shows the thinking Echo, as everywhere else
+            if(deniedEcho&&!/echo-think/.test(deniedEcho.getAttribute("src")||""))deniedEcho.src="/assets/crafted/echo-think.webp";
             var close=document.getElementById("sonaMicBack"),retry=document.getElementById("sonaMicRetry");
             if(close)close.textContent="Back to setup";
             if(retry)retry.onclick=function(){var dialog=document.getElementById("sonaMicDenied");if(dialog)dialog.remove();requestSetupMic();};

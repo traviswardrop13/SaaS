@@ -80,6 +80,9 @@ const strip = (s) => s.replace(/<!--[\s\S]*?-->/g, " ").replace(/\/\*[\s\S]*?\*\
     "the reader reaches the mic only through SayCheck");
   // orange is the practice sound's letters now, never a button (action.css)
   const css = (lib.match(/<style>[\s\S]*?<\/style>/) || [""])[0], inline = (lib.match(/<button[^>]*style="[^"]*"/g) || []).join(" ");
+  const poses = ((((lib.match(/var ECHO_POSES = \[([^\]]*)\]/) || [])[1] || "").match(/\w+/g)) || []).map((p) => "/assets/crafted/echo-" + p + ".webp");
+  const echoFiles = [...new Set((lib.match(/\/assets\/crafted\/echo-\w+\.webp/g) || []).concat(poses))];
+  ok("the reader's Echo is the clay one: no flat SVG pose left, and every pose it can show is a file", !/\/coach\/echo\//.test(lib) && poses.length === 6 && echoFiles.every((p) => existsSync(ROOT + p)), echoFiles);
   ok("Next is the teal pill, and no button in the reader is orange any more", /class="act-pill" id="bkNext"/.test(lib) && !/#ffa05a|#ff8a3d|#ef6f23/i.test(css + inline) && /<b class="snd">/.test(lib));
 }
 
@@ -292,6 +295,8 @@ await scenario("heard", async () => {
   await voice(page, 260);
   const end = await until(page, () => /The End!/.test(document.getElementById("bkStage").textContent), 4000);
   await page.waitForTimeout(400);
+  const endEcho = await page.evaluate(() => { const i = document.getElementById("pgEcho"); return { src: i.getAttribute("src"), loaded: i.complete && i.naturalWidth > 0 }; });
+  ok("The End: Echo cheers on the card", end && endEcho.src === "/assets/crafted/echo-cheer.webp" && endEcho.loaded, endEcho);
   const after = await snapshot(page);
   const readKey = await page.evaluate(() => Sona.kkey("sona.lib.read.v1"));
   const moved = Object.keys(Object.assign({}, before, after)).filter((k) => before[k] !== after[k] && k !== "sona.micok" && k !== readKey);
@@ -342,6 +347,48 @@ await scenario("three tries", async () => {
   ok("…with no celebration chime (nothing was heard)", !l.sfx.some((s) => s.name === "correct"), l.sfx);
   noOverlap("three tries", l);
   clean("three tries", errors);
+  await context.close();
+});
+
+// ── Echo's clay poses (29 Sep 2026): the picture says what he is doing ──
+// Every pose Echo takes on the card, page by page. "welcome" (resting) is
+// left out of the sequences: between his reading and his asking it lasts no
+// longer than a microtask, and the child never sees it.
+await scenario("poses", async () => {
+  const { context, page, errors } = await fresh({ micok: true });
+  await page.evaluate(() => {
+    const seen = window.__poses = [];
+    new MutationObserver(() => {
+      const e = document.getElementById("pgEcho"), m = e && /^\/assets\/crafted\/echo-(\w+)\.webp$/.exec(e.getAttribute("src") || ""), b = window.__book || {}, last = seen[seen.length - 1];
+      if (m && (!last || last.pose !== m[1] || last.page !== b.page)) seen.push({ pose: m[1], page: b.page, mode: b.mode, live: __quiet.live() });
+    }).observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ["src"] });
+  });
+  await openBook(page, "Rory and the Rainbow");
+  await waitLive(page);
+  await until(page, () => window.__book && window.__book.mode === "nudge", 16000);
+  await click(page, "bkMic");
+  await waitLive(page, 4000);
+  await page.waitForTimeout(80);
+  await voice(page, 260);
+  await until(page, () => window.__book && window.__book.page === 1, 3000);
+  await page.evaluate(() => { __quiet.shape = "hiss"; });
+  for (let i = 1; i <= 3; i++) {
+    await waitLive(page);
+    await page.waitForTimeout(80);
+    await voice(page, 260);
+    await until(page, (n) => window.__book && (window.__book.tries >= n || window.__book.page > 1), 3000, i);
+  }
+  await until(page, () => window.__book && window.__book.page === 2, 5000);
+  const seen = await page.evaluate(() => window.__poses);
+  const on = (pg) => seen.filter((s) => s.page === pg && s.pose !== "welcome").map((s) => s.pose).join(" ");
+  ok("the title page: Echo talks while he reads the title", seen.some((s) => s.page === -1 && s.pose === "talk"), seen);
+  ok("a page: Echo talks while he reads it, waves as he asks, listens only while the mic is open", /^talk wave listen\b/.test(on(0)) && seen.filter((s) => s.pose === "listen").every((s) => s.mode === "live" && s.live === 1), seen);
+  ok("…thinks while a quiet mic waits for a tap, and cheers when he hears the word", on(0) === "talk wave listen think listen cheer", on(0));
+  ok("…thinks as he asks for one more try, and cheers the kind line that turns the page", on(1) === "talk wave listen think listen think listen cheer", on(1));
+  ok("…and the next page starts with him reading again", on(2).startsWith("talk"), on(2));
+  const loaded = await page.evaluate(() => Promise.all(["welcome", "talk", "wave", "listen", "think", "cheer"].map((p) => new Promise((r) => { const i = new Image(); i.onload = () => r(i.naturalWidth); i.onerror = () => r(0); i.src = "/assets/crafted/echo-" + p + ".webp"; }))));
+  ok("…and every pose he can take loads", loaded.every((w) => w > 0), loaded);
+  clean("poses", errors);
   await context.close();
 });
 
@@ -410,8 +457,9 @@ await scenario("hidden", async () => {
   await waitLive(page);
   await page.evaluate(() => __quiet.background());
   await page.waitForTimeout(100);
-  const st = await page.evaluate(() => ({ live: __quiet.live(), speaking: __quiet.speaking, mode: window.__book.mode }));
+  const st = await page.evaluate(() => ({ live: __quiet.live(), speaking: __quiet.speaking, mode: window.__book.mode, echo: document.getElementById("pgEcho").getAttribute("src") }));
   ok("hiding the page closes the mic and stops Echo", st.live === 0 && st.speaking === 0, st);
+  ok("…and Echo waits, thinking (he isn't listening any more)", st.echo === "/assets/crafted/echo-think.webp", st);
   const req = await page.evaluate(() => __quiet.requests);
   await page.evaluate(() => __quiet.foreground());
   await page.waitForTimeout(1500);
@@ -429,6 +477,9 @@ await scenario("denied", async () => {
   await openBook(page, "Rory and the Rainbow");
   const shownDenied = await until(page, () => !!document.getElementById("sonaMicDenied"), 6000);
   ok("a refused mic shows the shared \"Echo can't hear you yet\" help", shownDenied);
+  const helpEcho = await until(page, () => { const i = document.querySelector("#sonaMicDenied img"); return !!(i && i.complete && i.naturalWidth); }, 3000);
+  const helpSrc = await page.evaluate(() => { const i = document.querySelector("#sonaMicDenied img"); return i ? i.getAttribute("src") : null; });
+  ok("…with Echo thinking there (the clay pose, and it loads)", helpEcho && helpSrc === "/assets/crafted/echo-think.webp", helpSrc);
   const label = await page.evaluate(() => (document.getElementById("sonaMicBack") || {}).textContent);
   ok("…whose way out says \"Keep reading\" (it closes the help and the book reads on; it never goes home)", label === "Keep reading", label);
   await click(page, "sonaMicBack");
@@ -467,7 +518,7 @@ await scenario("stale line", async () => {
   await click(page, "bkSkip");
   await page.waitForTimeout(60);
   const pose = await page.evaluate(() => ({ page: window.__book.page, echo: (document.getElementById("pgEcho") || {}).src || "" }));
-  ok("a line cut off by a page turn doesn't set the new page's Echo idle while he reads it", pose.page === 1 && /echo-listening/.test(pose.echo), { pose0, pose });
+  ok("a line cut off by a page turn doesn't set the new page's Echo resting while he reads it (he's still talking)", pose.page === 1 && /\/assets\/crafted\/echo-talk\.webp$/.test(pose.echo), { pose0, pose });
   const t0 = Date.now(), went = await waitLive(page, 3500);
   ok("…and doesn't hold the next page's mic shut while its fetch runs out (the mic opens in the usual time)", went && (await book(page)).page === 1, { ms: Date.now() - t0, b: await book(page) });
   noOverlap("stale line", await log(page));

@@ -284,7 +284,7 @@
         <div id="bMain"><span id="sayLbl">Say</span><b id="bTarget">…</b></div>
         <div id="gpState">Say it to fill your ticket!</div>
       </div>
-      <button id="echoBuddy" aria-label="Hear it again"><img id="leo" src="/assets/crafted/echo-welcome.webp" alt="Echo"/><span class="voice-bars" aria-hidden="true"><i></i><i></i><i></i></span></button>
+      <button id="echoBuddy" aria-label="Hear it again"><img id="leo" src="/assets/crafted/echo-welcome.webp" alt="Echo" onerror="if(this.src.indexOf('echo-welcome')<0)this.src='/assets/crafted/echo-welcome.webp'"/><span class="voice-bars" aria-hidden="true"><i></i><i></i><i></i></span></button>
       <button id="turtleBtn" aria-label="Hear it slowly"><svg viewBox="0 0 40 30" aria-hidden="true"><path d="M8 21C8 4 29 4 29 21Z" fill="#79bf73"/><path d="m14 20 4-10 7 7" fill="none" stroke="#398a58" stroke-width="2"/><circle cx="33" cy="20" r="5" fill="#b9d996"/><circle cx="35" cy="19" r="1" fill="#4a2c14"/><path d="M11 23v3m14-3v3M5 21h3" stroke="#398a58" stroke-width="3" stroke-linecap="round"/></svg>Hear it slooow</button>
     </div>
 
@@ -304,7 +304,7 @@
        final game launches. Earned by showing up; never purchasable, no timers. -->
   <div class="ovl" id="chestOvl" role="dialog" aria-modal="true" aria-labelledby="chestCap">
     <div class="ovlCard">
-      <img class="ovlEcho" src="/assets/crafted/echo-welcome.webp" alt="" />
+      <img class="ovlEcho" src="/assets/crafted/echo-cheer.webp" alt="" onerror="this.onerror=null;this.src='/assets/crafted/echo-welcome.webp'" />
       <div id="chestStage">
         <button id="chestBox" type="button" class="tease" aria-label="Open your treasure chest"><svg viewBox="0 0 64 64"><path d="M8 32v-6q0-14 24-14t24 14v6Z" fill="#b5875a"/><rect x="8" y="30" width="48" height="26" rx="6" fill="#a06f45"/><rect x="15" y="30" width="8" height="26" rx="2" fill="#8a5a2a"/><rect x="41" y="30" width="8" height="26" rx="2" fill="#8a5a2a"/><rect x="8" y="28" width="48" height="5" rx="2.5" fill="#6e4f2f"/><rect x="26" y="26" width="12" height="14" rx="4" fill="#ffd21c"/><circle cx="32" cy="32" r="2.6" fill="#8a5a2a"/><circle cx="20" cy="20" r="2.4" fill="#fff" opacity=".7"/></svg></button>
         <div id="chestCap">A treasure chest! Tap, tap, tap to open!</div>
@@ -320,7 +320,9 @@
 
   <div class="ovl" id="micPrime">
     <div class="ovlCard">
-      <img class="ovlEcho" src="/assets/crafted/echo-welcome.webp" alt="" />
+      <!-- The same listening Echo as the games' and books' "Echo wants to hear
+           you" cards (the flat art here was the listening pose too). -->
+      <img class="ovlEcho" src="/assets/crafted/echo-listen.webp" alt="" onerror="this.onerror=null;this.src='/assets/crafted/echo-welcome.webp'" />
       <h2>Let Echo hear you practice!</h2>
       <p style="font-weight:800;font-size:13.5px;color:var(--muted);line-height:1.5;">Listen to Echo first. Then it's your turn to practice and fill the ticket for your game.</p>
       <!-- This paragraph is a PROMISE, and it went stale: it described an upload
@@ -338,7 +340,7 @@
 
   <div class="ovl" id="playedOvl">
     <div class="ovlCard">
-      <img class="ovlEcho" src="/assets/crafted/echo-welcome.webp" alt="" />
+      <img class="ovlEcho" src="/assets/crafted/echo-cheer.webp" alt="" onerror="this.onerror=null;this.src='/assets/crafted/echo-welcome.webp'" />
       <h2>You already played today!</h2>
       <p id="playedSub"></p>
       <button class="btn blue" id="playedArcade">Browse games</button>
@@ -353,7 +355,7 @@
   <div class="ovl" id="runOvl" role="dialog" aria-modal="true" aria-labelledby="runTitle" aria-describedby="runPractice">
     <div class="ovlCard">
       <div class="run-hero">
-        <img class="ovlEcho" src="/assets/crafted/echo-welcome.webp" alt="" />
+        <img class="ovlEcho" src="/assets/crafted/echo-cheer.webp" alt="" onerror="this.onerror=null;this.src='/assets/crafted/echo-welcome.webp'" />
         <div class="big" id="runEmoji" aria-hidden="true"><svg viewBox="0 0 64 64" style="width:56px;height:56px"><path d="M32 5l8.2 18.6L60 25.8 44.9 39.2 49.8 59 32 48.4 14.2 59l4.9-19.8L4 25.8l19.8-2.2Z" fill="#ffd21c"/><circle cx="25" cy="21" r="3" fill="#fff" opacity=".85"/></svg></div>
       </div>
       <h2 id="runTitle" tabindex="-1">Adventure complete!</h2>
@@ -367,7 +369,7 @@
 
   <div class="ovl" id="pauseOvl" role="dialog" aria-modal="true" aria-labelledby="pauseTitle" aria-describedby="pauseCopy">
     <div class="ovlCard">
-      <img class="ovlEcho" src="/assets/crafted/echo-welcome.webp" alt="Echo resting" />
+      <img class="ovlEcho" src="/assets/crafted/echo-think.webp" alt="Echo resting" onerror="this.onerror=null;this.src='/assets/crafted/echo-welcome.webp'" />
       <h2 id="pauseTitle">Practice paused</h2>
       <p id="pauseCopy">Take your time. We'll keep your place.</p>
       <button class="btn" id="pauseResume"><span aria-hidden="true">▶</span> Resume</button>
@@ -694,6 +696,23 @@
     // practiceDelay, so a pause or close wakes it rather than being slept through.
     function micSettled(){var wait=micClosedAt+SETTLE_MS-performance.now();return wait>0?practiceDelay(wait):Promise.resolve(true);}
     var turnPhase="ready";
+    // Echo's clay pose follows the same state as the status line: talking
+    // while his voice plays, listening while the mic is open, thinking while
+    // a try is checked, cheering on a heard try and the win, resting between.
+    // The "Almost!" coaching line is said in the thinking pose, not talking:
+    // it is the kind moment, and it holds until the next try opens.
+    var ECHO_ART="/assets/crafted/echo-", echoShown="welcome", echoCoach=false;
+    var ECHO_POSES=["welcome","talk","listen","think","cheer"].map(function(p){var im=new Image();im.src=ECHO_ART+p+".webp";return im;});
+    function echoPose(){
+      var pose=turnPhase==="game"||(turnPhase==="checking"&&lastVerdict==="pass")?"cheer"
+        :echoCoach||practicePaused||turnPhase==="quiet"?"think"
+        :$("echoBuddy").classList.contains("heard")?"cheer"
+        :ttsPlaying?"talk"
+        :turnPhase==="checking"?"think"
+        :document.body.classList.contains("echo-listening")?"listen":"welcome";
+      if(pose===echoShown)return;
+      echoShown=pose;$("leo").src=ECHO_ART+pose+".webp";
+    }
     // "Your turn" and the glowing mic wait for a window that can actually hear
     // the child: mic open AND the room known (listenReady, set by tick) —
     // at once when the page already measured the room (ROOM FLOOR), after the
@@ -710,6 +729,7 @@
       document.body.classList.toggle("echo-listening",live);
       document.body.classList.toggle("echo-checking",turnPhase==="checking"&&!busy);
       $("micBtn").setAttribute("aria-label",live?"Microphone listening":"Microphone off");
+      echoPose();
     }
     function ttsBegin(){_ttsN++;ttsPlaying=true;updateTurn();}
     function ttsEnd(){if(_ttsN>0)_ttsN--;ttsPlaying=_ttsN>0;appSoundEnded();updateTurn();}
@@ -1659,7 +1679,7 @@
             elapsed=Math.min(20000,activeMs()); engineOn=false; listenReady=false; micGo(false);
             seg.timers.forEach(clearTimeout); if(seg.raf!=null)cancelAnimationFrame(seg.raf);
             try{if(seg.src)seg.src.disconnect();}catch(e){}
-            try{$("micWrap").classList.remove("hear");$("echoBuddy").classList.remove("heard");}catch(e){}
+            try{$("micWrap").classList.remove("hear");$("echoBuddy").classList.remove("heard");echoPose();}catch(e){}
             Promise.all([recorderStop(),recognitionStop()]).then(function(){
               // The mic closes at the end of EVERY window, not only before a
               // sound (24 Sep 2026): the next window reopens it into silence.
@@ -1758,7 +1778,7 @@
               }else{
                 silent++;voiced=0;
                 if(!inBurst){burstFrames=[];evid.drop();if(seg.learn&&rms<=ROOM_MAX)learnRoom(now,rms);}
-                if(silent>=3&&now-heardAt>250){try{mw.classList.remove("hear");$("echoBuddy").classList.remove("heard");}catch(e){}}
+                if(silent>=3&&now-heardAt>250){try{mw.classList.remove("hear");$("echoBuddy").classList.remove("heard");echoPose();}catch(e){}}
                 // A short sound (a T/K/P release, a quick "fff") is judged once
                 // it has been quiet ~130ms, or when the event closes if sooner.
                 if(inBurst&&!counted&&(silent>=8||evid.quietFor(now)>=EVID.quietMs)&&heardTry())countRep(now);
@@ -1837,7 +1857,7 @@
               // whole reward. A chime here would sound into the open mic.
               paintReps(reps);
               var l=$("leo");l.classList.remove("cheer");void l.offsetWidth;l.classList.add("cheer");
-              try{mw.classList.add("hear");$("echoBuddy").classList.add("heard");}catch(e){}
+              try{mw.classList.add("hear");$("echoBuddy").classList.add("heard");echoPose();}catch(e){}
               if(reps>=NEED){successAt=activeMs()+350;later(finishTail,350);}
             }
             // A short sound that ended just before time ran out or Echo spoke
@@ -1954,7 +1974,7 @@
         // No glowing mic here: it lights when the window is open and the room
         // measured (listenReady), not before Echo's prompt or the quiet gap.
         NEED=n||save;turnPhase="practice";updateTurn();
-        try{$("sayLbl").textContent="Say";$("leo").src="/assets/crafted/echo-welcome.webp";}catch(e){}
+        try{$("sayLbl").textContent="Say";echoCoach=false;echoPose();}catch(e){}
         if(!(await startEngine()) || !(await practiceReady())){NEED=save;return null;}
         NEED=save;
         // Even a native transcript cannot manufacture a try when the mic found
@@ -2003,7 +2023,7 @@
               if(practicePaused || practiceClosed || document.hidden)return;
               var card=$("micPrime").querySelector(".ovlCard");
               if(!card){ location.href="/today.html"; return; }
-              card.innerHTML='<img class="ovlEcho" src="/assets/crafted/echo-welcome.webp" alt="" />'
+              card.innerHTML='<img class="ovlEcho" src="/assets/crafted/echo-think.webp" alt="" onerror="this.onerror=null;this.src=\'/assets/crafted/echo-welcome.webp\'" />'
                 +'<h2>That\'s okay!</h2>'
                 +'<p style="font-weight:800;font-size:13.5px;color:var(--muted);line-height:1.5;">Echo needs to hear you to play the games — we\'ll ask again next time you\'re ready.</p>'
                 +'<p style="font-weight:800;font-size:11.5px;color:var(--muted);line-height:1.5;">Grown-ups: you can turn the microphone on whenever you like, from this screen or your phone\'s Settings.</p>'
@@ -2092,10 +2112,10 @@
         // (a kid is never hard-stuck) but the stats keep the truth.
         var c=(S&&S.cue)?S.cue(SOUND):null;
         // coaching moves INTO Echo's bubble: small cue line, huge target stays,
-        // warm retry line below. Echo drops to the idle pose while he coaches.
+        // warm retry line below. Echo takes the thinking pose while he coaches.
         try{ $("sayLbl").textContent="Almost! "+(CUESHORT||"listen close")+" —"; }catch(e){}
         $("gpState").textContent="Try again — you've got this!";
-        try{ var li=$("leo"); if(li&&li.src) li.src="/assets/crafted/echo-welcome.webp"; }catch(e){}
+        try{ echoCoach=true; echoPose(); }catch(e){}
         // spoken coaching drops the "— rrr!" demo (screen keeps the full tip):
         // TTS never performs the sound, it only describes the mouth move
         var tip=(c&&c.tip?c.tip.split("—")[0]:"").trim().replace(/[.!,]+$/,"")||("Let's try our "+soundName()+" sound again");
@@ -2224,7 +2244,7 @@
       if(!q){
         q=document.createElement("div");q.id="quietOvl";q.className="ovl";
         q.setAttribute("role","dialog");q.setAttribute("aria-modal","true");q.setAttribute("aria-labelledby","quietTitle");
-        q.innerHTML='<div class="ovlCard quiet-card"><img src="/assets/crafted/echo-welcome.webp" alt="Echo"/><h2 id="quietTitle" tabindex="-1"></h2><p id="quietCopy"></p><button class="btn" id="quietGo">Try again</button><button class="btn ghost" id="quietLater">Maybe later</button></div>';
+        q.innerHTML='<div class="ovlCard quiet-card"><img src="/assets/crafted/echo-think.webp" alt="Echo" onerror="this.onerror=null;this.src=\'/assets/crafted/echo-welcome.webp\'"/><h2 id="quietTitle" tabindex="-1"></h2><p id="quietCopy"></p><button class="btn" id="quietGo">Try again</button><button class="btn ghost" id="quietLater">Maybe later</button></div>';
         document.body.appendChild(q);
       }
       var microphone=cause==="microphone";
@@ -2250,7 +2270,9 @@
       paintReps(NEED);
       // charged (5/5): ring the build, celebrate pose, GOOO line, launch bar
       try{ var _br=buildRoot(); if(_br) _br.classList.add("ringed"); }catch(e){}
-      try{ var _lc=$("leo"); if(_lc&&_lc.src){ _lc.src="/assets/crafted/echo-welcome.webp"; _lc.style.width="110px"; _lc.style.height="110px"; } }catch(e){}
+      // The cheer keeps Echo's own size: the 110px here grew the old 100px
+      // flat SVG, and in the crafted layout it shrank him at the win.
+      try{ echoPose(); }catch(e){}
       try{ $("bMain").textContent=GMETA.simple?"Let’s play together!":"Here we go!"; $("gpState").textContent=""; }catch(e){}
       try{ $("micWrap").style.display="none"; $("replayLabel").hidden=true; var _lb=$("launchBar"); _lb.innerHTML="<span id=launchArt aria-hidden=true></span><span>"+GMETA.n+"</span>";var art=S.gameSticker(GAME);S.paintSticker($("launchArt"),art[0],art[1]); _lb.classList.add("show"); }catch(e){}
       sfx("complete"); try{ if(S&&S.confetti)S.confetti(); }catch(e){}
