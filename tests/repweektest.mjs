@@ -246,7 +246,7 @@ await scenario("the Settings card", async () => {
   ok("a week with no counted reps is a stub, never a gap in the list", c.bars[1].val === "0" && c.bars[1].h <= 3 && c.bars[1].sr === "Week of Sep 28: 0 reps", c.bars[1]);
   ok("bars scale to the tallest week", c.bars[3].h > c.bars[2].h && c.bars[2].h > c.bars[0].h, c.bars.map((b) => b.h));
   ok("a screen reader hears each week in words, from inside the item", s.list === "list" && s.items, s);
-  ok("the card says what a rep is, that it is not a verdict, and that silence never counts", /says the practice sound or word out loud/.test(s.text) && /when a game asks for it/.test(s.text) && /whether or not it sounded right yet/.test(s.text) && /Silence never counts/.test(s.text) && /Monday to Sunday/.test(s.text), s.text);
+  ok("the card says what a rep is, that it is not a verdict, and that silence never counts", /says the practice sound or word out loud/.test(s.text) && /each time a game asks for it and hears it/.test(s.text) && /whether or not it sounded right yet/.test(s.text) && /Silence never counts/.test(s.text) && /Monday to Sunday/.test(s.text), s.text);
   ok("no percentages, scores or grades on the card", !/%|score|accura|grade|diagnos/i.test(s.text), s.text);
   ok("nothing on the card is red", s.reds === 0, s.reds);
   ok("no sideways scroll at 375px", (await overflow(page)) <= 1);
@@ -346,12 +346,41 @@ await scenario("sounds said in games are reps too", async () => {
   ok("…and never touches the practice records (pass rates, the clinician's view)", r.outcomes === before);
   await settings(page);
   const card = await page.evaluate(() => ({ now: document.getElementById("rwThis").textContent, note: document.querySelector(".rw-note").innerText }));
-  ok("Settings counts them, and says a game's asking counts", card.now === "35" && /when a game asks for it/.test(card.note) && !/add none/.test(card.note), card);
+  ok("Settings counts them, and says a game counts the sound it asks for and hears", card.now === "35" && /each time a game asks for it and hears it/.test(card.note) && !/add none/.test(card.note), card);
   await page.evaluate(() => Sona.addKid("Ana", 4));
   ok("a second child's game reps start at 0", await page.evaluate(() => Sona.weekReps(0) === 0));
   await page.evaluate(() => Sona.gameRep("R"));
   await page.evaluate(() => Sona.switchKid(""));
   ok("…and a rep for the second child never lands on the first", await page.evaluate(() => Sona.weekReps(0) === 35));
+  ok("no page errors", errors.length === 0, errors);
+  await context.close();
+});
+
+await scenario("Progress keeps practice apart from game sounds", async () => {
+  // What Progress hands a clinician (the summary and its card) says free play
+  // is not included, so its tries stay the practice page's; the game sounds
+  // get their own line, and the week still adds up to Home's reps.
+  const { context, page, errors } = await fresh({ at: THU });
+  await context.addInitScript(() => { window.__copies = []; Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText: async (t) => { window.__copies.push(t); } } }); });
+  await seed(page, HISTORY);
+  await page.evaluate(() => { localStorage.setItem("sona.gamereps.v1", JSON.stringify({ "2026-10-15": { R: 3, S: 2 } })); sessionStorage.setItem("sona.gate.v1", String(Date.now())); });
+  await page.goto(origin + "/progress.html"); await page.waitForFunction(() => window.Sona && document.getElementById("storyLine").textContent);
+  let p = await page.evaluate(() => ({ tries: document.getElementById("volReps").textContent, games: document.getElementById("volGames").hidden ? null : document.getElementById("volGames").textContent, lead: document.getElementById("storyLine").textContent }));
+  ok("Progress's tries are the practice page's 28", p.tries === "28", p);
+  ok("…with the 5 game sounds on their own line, adding up to Home's 33", p.games === "Plus 5 sounds said out loud in games: 33 reps in all.", p);
+  ok("…and its lead counts practice only", /R sound with 23 tries this week — 28 tries in all/.test(p.lead), p.lead);
+  await page.click("#copySummary"); await page.waitForTimeout(150);
+  const copied = await page.evaluate(() => window.__copies[0] || "");
+  ok("the summary for the clinician counts practice tries only, so 'free play is not included' stays true", /\b28 tries\b/.test(copied) && !/\b33\b/.test(copied) && /Free-play games are not included/.test(copied), copied);
+  // A child who only played games this week.
+  await seed(page, null);
+  await page.evaluate(() => localStorage.setItem("sona.gamereps.v1", JSON.stringify({ "2026-10-15": { R: 7 } })));
+  await page.goto(origin + "/progress.html"); await page.waitForFunction(() => window.Sona && document.getElementById("storyLine").textContent);
+  p = await page.evaluate(() => ({ tries: document.getElementById("volReps").textContent, games: document.getElementById("volGames").textContent }));
+  ok("a week of only game sounds: 0 practice tries, and the 7 said in games", p.tries === "0" && p.games === "Plus 7 sounds said out loud in games: 7 reps in all.", p);
+  await home(page);
+  const story = await page.evaluate(() => Sona.soundStory()[0]);
+  ok("the parent corner never says 'practiced 0 days' beside reps", story === "Milo said the practice sound out loud 7 times in games this week." && !/0 days/.test(story), story);
   ok("no page errors", errors.length === 0, errors);
   await context.close();
 });

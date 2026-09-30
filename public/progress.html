@@ -266,6 +266,7 @@
       <h2>Practice this week</h2>
       <div class="week-totals"><span><span id="volReps">0</span> <b>tries this week</b></span>
       <span id="volLast" class="muted"></span></div>
+      <p id="volGames" class="muted" style="font-size:12.5px;font-weight:800;margin-top:4px;" hidden></p>
       <div class="week" id="week"></div>
       <p id="wkGoalMsg" style="font-weight:800;font-size:13.5px;margin-top:10px;color:#6b86a3;"></p>
       <div id="wkGoalPick" style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
@@ -379,9 +380,15 @@
       Object.keys(o.byPos).forEach(function (pos) { var x = o.byPos[pos]; if (x.a > 0) parts.push((POSLBL[pos] || pos) + " · " + count(x.p) + " of " + count(x.a)); });
       return parts.join("; ");
     }
-    var thisWeekTries = Sona.weekReps ? Sona.weekReps() : 0;
-    var lastWeekTries = Sona.weekReps ? Sona.weekReps(-1) : 0;
+    // Tries here are the practice page's alone (GAMEREPS1): this page's summary
+    // and card go to the clinician and say free play is not included, and
+    // Rachel's "How scoring works" says game boosts add no tries. Sounds said
+    // in games get their own line, so the week still adds up to Home's reps.
+    var thisWeekTries = Sona.weekReps ? Sona.weekReps(0, null, true) : 0;
+    var lastWeekTries = Sona.weekReps ? Sona.weekReps(-1, null, true) : 0;
+    var gameWeek = Sona.weekReps ? Sona.weekReps(0) - thisWeekTries : 0;
     document.getElementById("volReps").textContent = thisWeekTries;
+    if (gameWeek > 0) { var vg = document.getElementById("volGames"); vg.hidden = false; vg.textContent = "Plus " + gameWeek + (gameWeek === 1 ? " sound" : " sounds") + " said out loud in games: " + (thisWeekTries + gameWeek) + " reps in all."; }
     document.getElementById("volLast").textContent = lastWeekTries > 0 && thisWeekTries > lastWeekTries
       ? "Up from " + lastWeekTries + " tries last week" : "Last week: " + lastWeekTries + " tries";
     var clearestKey = null;
@@ -400,7 +407,7 @@
       var end = new Date(mon); end.setDate(mon.getDate() + 7);
       keys.forEach(function (k) {
         var n = 0;
-        if (Sona.repWeeks) n = Sona.weekReps(0, k);
+        if (Sona.repWeeks) n = Sona.weekReps(0, k, true);
         else Object.keys(out[k].days || {}).forEach(function (day) {
           var d = new Date(day + "T12:00:00"); if (d >= mon && d < end) n += dayTries(out[k].days[day]);
         });

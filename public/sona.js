@@ -1391,7 +1391,12 @@
     const w = weekWins(); const mw = momWeek();
     const name = getProfile().childName || "Your kid";
     const bits = [];
-    bits.push(name + " practiced " + mw.done + (mw.done === 1 ? " day" : " days") + " this week" + (w.reps > 0 ? " — " + w.reps + (w.reps === 1 ? " rep" : " reps") + ", each one said out loud." : "."));
+    // A day of practice is a practice-page day; sounds said in games are reps
+    // without one (Feed Echo and Hoops open straight from Home), so a week
+    // whose reps all came from games says so instead of "practiced 0 days ...
+    // 7 reps".
+    if (w.reps > 0 && weekReps(0, null, true) === 0) bits.push(name + " said the practice sound out loud " + w.reps + (w.reps === 1 ? " time" : " times") + " in games this week.");
+    else bits.push(name + " practiced " + mw.done + (mw.done === 1 ? " day" : " days") + " this week" + (w.reps > 0 ? " — " + w.reps + (w.reps === 1 ? " rep" : " reps") + ", each one said out loud." : "."));
     if (w.acc != null && w.accPrev != null && w.acc !== w.accPrev) bits.push("The " + w.label + " sound moved " + w.accPrev + "% → " + w.acc + "% on honest scoring.");
     bits.push("At this stage, lots of honest tries beat perfect tries — steady practice is exactly how sounds get built.");
     return bits;
@@ -3311,7 +3316,7 @@
     const t = _weekStart(+p[0], +p[1] - 1, +p[2]); return isNaN(t.getTime()) ? "" : _localDay(t.getTime());
   }
   function _mondayKey(offsetWeeks) { const n = new Date(); return _localDay(_weekStart(n.getFullYear(), n.getMonth(), n.getDate() + 7 * (offsetWeeks || 0)).getTime()); }
-  function _repBuckets(sound) {
+  function _repBuckets(sound, practiceOnly) {
     const out = outcomes(), wk = {};
     function add(k, n) { if (!n) return; const w = _weekOf(k); if (w && w >= REPS_SINCE) wk[w] = (wk[w] || 0) + n; }
     Object.keys(out).forEach((s) => {
@@ -3319,7 +3324,9 @@
       const days = (out[s] && out[s].days) || {};
       Object.keys(days).forEach((k) => add(k, _dayTries(days[k])));
     });
-    const gr = load(GAMEREPKEY, {});
+    // practiceOnly: the practice page's tries alone, for what a clinician is
+    // handed (Progress's summary and card say "Free-play games are not included").
+    const gr = practiceOnly ? {} : load(GAMEREPKEY, {});
     Object.keys(gr).forEach((k) => { const d = gr[k] || {}; Object.keys(d).forEach((s) => { if (!sound || s === sound) add(k, Math.max(0, Math.floor(Number(d[s]) || 0))); }); });
     return wk;
   }
@@ -3342,7 +3349,7 @@
   }
   // sound narrows the count to one sound — Progress names the week's busiest
   // sound beside the total, and both have to come from the same rule.
-  function weekReps(offsetWeeks, sound) { return _repBuckets(sound)[_mondayKey(offsetWeeks)] || 0; }
+  function weekReps(offsetWeeks, sound, practiceOnly) { return _repBuckets(sound, practiceOnly)[_mondayKey(offsetWeeks)] || 0; }
   // The last n weeks, oldest first, ending with this one. The list never
   // starts before the first week with a counted rep: a zero bar for a week
   // nobody was counting would say the child did nothing. best is the best

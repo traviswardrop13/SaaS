@@ -445,9 +445,11 @@
         c.fillStyle="#ef6f23"; c.font="800 44px 'Baloo 2', sans-serif"; c.textAlign="center";
         c.fillText("SPEECH WINS THIS WEEK",540,230);
         c.fillStyle="#4a2c14"; c.font="800 76px 'Baloo 2', sans-serif";
-        c.fillText(name+" practiced",540,360);
+        // a week of only game sounds has reps but no practice day: say that
+        var onlyGames=w.reps>0&&S.weekReps(0,null,true)===0;
+        c.fillText(name+(onlyGames?" said their sound":" practiced"),540,360);
         c.fillStyle="#ff8a3d"; c.font="800 150px 'Baloo 2', sans-serif";
-        c.fillText(w.week.done+(w.week.done===1?" day":" days"),540,540);
+        c.fillText(onlyGames?(repNum(w.reps)+(w.reps===1?" time":" times")):(w.week.done+(w.week.done===1?" day":" days")),540,540);
         var L=["M","T","W","T","F","S","S"];
         for(var i=0;i<7;i++){ var x=250+i*97, y=640;
           c.beginPath(); c.arc(x,y,36,0,7);
@@ -455,7 +457,7 @@
           c.fillStyle=w.week.days[i]?"#fff":"#c9a878"; c.font="800 34px 'Baloo 2', sans-serif"; c.fillText(w.week.days[i]?"\u2713":L[i],x,y+12);
         }
         c.fillStyle="#4a2c14"; c.font="800 58px 'Baloo 2', sans-serif";
-        c.fillText(w.reps>0?(repNum(w.reps)+(w.reps===1?" rep":" reps")+", said out loud"):"Real practice, honestly scored",540,790);
+        c.fillText(onlyGames?"out loud, in games":w.reps>0?(repNum(w.reps)+(w.reps===1?" rep":" reps")+", said out loud"):"Real practice, honestly scored",540,790);
         if(w.acc!=null&&w.accPrev!=null&&w.acc!==w.accPrev){
           c.fillStyle="#58cc02"; c.font="800 88px 'Baloo 2', sans-serif";
           c.fillText(w.label+" sound: "+w.accPrev+"% \u2192 "+w.acc+"%",540,930);

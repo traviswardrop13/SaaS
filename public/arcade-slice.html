@@ -300,7 +300,7 @@
     function endWave(){
       // Super Slice time left over waits through the break and carries into
       // the next wave: the burst alone can finish wave 1, and a child who
-      // earned twelve seconds should get twelve. Only the giant ends it.
+      // earned ten seconds should get ten. Only the giant ends it.
       // A banner still showing (Super Slice can finish a wave) stays where it
       // appeared: hiding the Echo button would otherwise drop it 92 px up the
       // screen mid-animation. The next banner() lets go.
@@ -467,7 +467,8 @@
           var turn=slowTurn;
           try{turn.native=Promise.resolve(S.speechStart?S.speechStart({words:[SAYTXT],maxMs:6500}):false);}catch(e){turn.native=Promise.resolve(false);}
           turn.native=turn.native.then(function(v){turn.nativeSettled=true;turn.nativeStarted=!!v;return v;},function(){turn.nativeSettled=true;return false;});
-          turn.timer=setTimeout(function(){if(slowTurn===turn)finishSlowKeys(!!turn.reps,turn.reps?null:"Tap Echo to try again");},6500);
+          // a sound heard just before the limit still earns it: "Got it!" is a promise
+          turn.timer=setTimeout(function(){if(slowTurn===turn)finishSlowKeys(!!turn.heardAt,turn.heardAt?null:"Tap Echo to try again");},6500);
         }
         listenFor(st,gen);
       }).catch(function(){

@@ -38,7 +38,7 @@ function phone(cfg) {
   navigator.mediaDevices.getUserMedia=()=>{
     h.requests++;h.webPending++;
     return new Promise(resolve=>setTimeout(()=>{
-      h.webPending--;h.web++;
+      h.webPending--;h.web++;h.openedAt=performance.now();
       const t={kind:'audio',readyState:'live',stop(){if(this.readyState==='live'){this.readyState='ended';h.web--;}}};
       resolve({getTracks:()=>[t],getAudioTracks:()=>[t]});
     },0));
@@ -171,6 +171,18 @@ try {
       const e=await earned(page);
       ok('a sound said the moment the mic opens still counts once the room is measured',e.total===10000,e);
       await clean('eager child',page,errors);
+    }finally{await context.close();}
+  });
+
+  await scenario('a sound just before the limit',async()=>{
+    const{context,page,errors}=await fresh();try{
+      await quietBoard(page);await turn(page);
+      await page.waitForFunction(()=>performance.now()-__ss.openedAt>=5950,null,{timeout:9000});
+      await page.evaluate(()=>{__ss.voice=true;});
+      await page.waitForFunction(()=>document.getElementById('slowStatus').textContent==='Got it!');
+      const e=await earned(page);await page.evaluate(()=>{__ss.voice=false;});
+      ok('"Got it!" in the last moment before the limit is kept: Super Slice, not "try again"',e.total===10000&&e.status==='SUPER SLICE!',e);
+      await clean('late sound',page,errors);
     }finally{await context.close();}
   });
 

@@ -773,8 +773,12 @@ between rounds, Echo's sound powers, a Hoops word, Feed Echo's picture hint.
 Game reps live in their own per-child ledger (`sona.gamereps.v1`) and never
 enter `outcomes()`, so no pass rate, clinician's note, shared progress or
 coin sees them: the hard rule "voice boosts never logged as SLP data" holds.
-Only a voiced try that passed the game's own check counts; silence never
-does. `tests/repweektest.mjs` pins it.
+Only a voiced try that passed the game's own check counts, once per ask;
+silence never does. **Progress keeps practice apart:** its "tries" and
+everything it hands a clinician (the summary, the card, "Free-play games are
+not included") are the practice page's alone (`weekReps(offset, sound,
+true)`), with a "Plus N said out loud in games" line so the week still adds
+up to Home's number. `tests/repweektest.mjs` pins it.
 
 
 **Sound Sprint is the same round, as a race** (27 Sep 2026): the park, the
