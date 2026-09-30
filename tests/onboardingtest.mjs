@@ -125,7 +125,8 @@ await scenario('Meet Rachel sits between welcome and the first question',async()
  }finally{await context.close();}}
  {const {context,page,errors}=await fresh();try{
   await page.evaluate(()=>{window.__screens=[];new MutationObserver(()=>__screens.push(document.body.dataset.setupScreen)).observe(document.body,{attributes:true,attributeFilter:['data-setup-screen']});});
-  await page.locator('#slpLink').click();await page.locator('#backBtn').click();await next(page);
+  // Back to welcome leaves the clinician path (a mistaken tap), so the link is tapped again.
+  await page.locator('#slpLink').click();await page.locator('#backBtn').click();await page.locator('#slpLink').click();
   await page.locator('#obName').fill('Milo');await page.locator('#obAge [data-age="4"]').click();await next(page);await choose(page,'S');await next(page);
   const screens=await page.evaluate(()=>__screens);
   ok('the clinician door never shows Meet Rachel, forward or back',screens[0]==='name'&&!screens.includes('rachel')&&await page.locator('[data-step="slp"].on').count()===1,screens);
@@ -181,6 +182,42 @@ await scenario('Done closes typing without accepting setup choices',async()=>{
   await next(page);await atHandoff(page);
   ok('Continue still accepts the clinician email and sends each intended request once',await page.evaluate(()=>Sona.getProfile().email==='clinician@example.com')&&accountPosts().filter(r=>new URL(r.url).pathname==='/api/lead').length===1&&accountPosts().filter(r=>new URL(r.url).pathname==='/api/slp/auth/request').length===1,accountPosts());
   clean('Done actions',errors);
+ }finally{await context.close();}
+});
+
+// A reload restores draft.role; the order has to follow it or a clinician
+// finishes on the family path with no email step and no account.
+async function walk(page){const seen=[];for(let i=0;i<8;i++){const s=await page.evaluate(()=>document.body.dataset.setupScreen);seen.push(s);if(s==='email'||s==='mic')break;if(s==='name'&&!await page.locator('#obName').inputValue())await page.locator('#obName').fill('Milo');await next(page);}return seen;}
+await scenario('clinician setup survives a reload',async()=>{
+ const {context,page,errors,requests}=await fresh();try{
+  await page.locator('#slpLink').click();await page.locator('#obName').fill('Milo');await next(page);
+  await page.reload();
+  ok('a reloaded clinician draft resumes on the clinician order at name',await page.evaluate(()=>draft.role==='slp'&&ORDER===ORDER_SLP&&document.body.dataset.setupScreen==='name'&&/Which child/.test(document.querySelector('[data-step="name"] .qh').textContent)&&document.getElementById('obName').value==='Milo'));
+  const seen=await walk(page);
+  ok('going on reaches the clinician email step, never Meet Rachel or the family mic',seen.at(-1)==='email'&&!seen.includes('rachel')&&!seen.includes('mic')&&await page.locator('[data-step="rachel"].on,[data-step="mic"].on').count()===0,seen);
+  await page.locator('#obEmail').fill('clinician@example.com');await next(page);await atHandoff(page);
+  ok('the reloaded clinician still gets an account and a sign-in email',await page.evaluate(()=>Sona.getProfile().role==='slp'&&Sona.getProfile().childName==='Milo')&&requests.filter(r=>r.method==='POST'&&new URL(r.url).pathname==='/api/slp/auth/request').length===1);
+  clean('clinician reload',errors);
+ }finally{await context.close();}
+ const native=await fresh({native:true});try{
+  await native.page.evaluate(()=>localStorage.setItem('sona.obdraft.v1',JSON.stringify({role:'slp',childName:'Milo'})));await native.page.reload();
+  ok('a native reload with a clinician draft stays on the family order',await native.page.evaluate(()=>draft.role==='parent'&&ORDER===ORDER_PARENT));
+  const seen=await walk(native.page);ok('native setup never reaches the clinician email step',seen.at(-1)==='mic'&&!seen.includes('email')&&!seen.includes('slp'),seen);
+  clean('native clinician draft',native.errors);
+ }finally{await native.context.close();}
+});
+
+// Welcome is the fork: backing onto it undoes a mistaken tap on the clinician link.
+await scenario('a parent can back out of clinician setup',async()=>{
+ const {context,page,errors,requests}=await fresh();try{
+  await page.locator('#slpLink').click();await page.locator('#backBtn').click();
+  ok('Back to welcome returns to the family order and wording',await page.evaluate(()=>draft.role!=='slp'&&ORDER===ORDER_PARENT&&document.body.dataset.setupScreen==='welcome'&&/Who's practicing/.test(document.querySelector('[data-step="name"] .qh').textContent)&&document.querySelectorAll('#seg i').length===3));
+  await page.reload();ok('a reload after backing out stays on the family order',await page.evaluate(()=>ORDER===ORDER_PARENT&&document.body.dataset.setupScreen==='welcome'));
+  const seen=await walk(page);
+  ok('Continue walks the family path past Meet Rachel to the mic, never the clinician email',seen.join()==='welcome,rachel,name,sounds,mic',seen);
+  await notNow(page);await atHandoff(page);
+  ok('the backed-out parent finishes as a parent with no clinician sign-in',await page.evaluate(()=>Sona.getProfile().role==='parent')&&!requests.some(r=>new URL(r.url).pathname==='/api/slp/auth/request'));
+  clean('clinician back-out',errors);
  }finally{await context.close();}
 });
 

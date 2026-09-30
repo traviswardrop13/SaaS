@@ -430,7 +430,12 @@
     // they met Rachel the first time, so the second child starts at the name.
     try{ if(Sona.kids().length>1) ORDER_PARENT.splice(ORDER_PARENT.indexOf("rachel"),1); }catch(e){}
     var ORDER_SLP    = ["welcome","name","sounds","slp","email"];
-    var ORDER = ORDER_PARENT;
+    // A reload mid-setup restores draft.role, so the order must follow it.
+    // Always starting on ORDER_PARENT sent a clinician down the family path:
+    // no email step, so no account and no sign-in link, yet finish() still
+    // saved role "slp". They resume on name, where the link itself lands:
+    // welcome is the fork, and its Continue always means the family path.
+    var ORDER = (!nativeFamily && draft.role === "slp") ? ORDER_SLP : ORDER_PARENT;
     var BUBBLES = {
       welcome: "Hi! I'm Echo!",
       role:    "Who am I meeting?",
@@ -445,7 +450,7 @@
       mic:     "Let's hear you!",
     };
     var CTA = { email: "Continue", mic: "Turn on Echo's ears" };
-    var idx = 0;
+    var idx = ORDER === ORDER_SLP ? 1 : 0;
 
     var segEl = document.getElementById("seg");
     function paintSeg(){ segEl.innerHTML=""; var count=ORDER===ORDER_PARENT?3:ORDER.length-1; for(var i=0;i<count;i++)segEl.appendChild(document.createElement("i")); }
@@ -633,7 +638,7 @@
         var sw=document.getElementById("obSlp");
         if(sw) sw.style.display = slp ? "none" : "";
         var gw=document.getElementById("obGoalsWrap");
-        if(gw && slp) gw.style.display="block";
+        if(gw) gw.style.display = (slp || draft.slpEvaluated==="yes") ? "block" : "none";
         // The step's own markup is the clinician's wording: it is the only
         // path that reaches it (ORDER_SLP), so there is nothing to swap.
         // an SLP can't skip email: the credential IS the account
@@ -747,6 +752,9 @@
     function back(){
       if(idx<=0||micBusy||finished) return;
       Sona.sfx.tap(); idx--;
+      // Backing onto welcome undoes the clinician link. Otherwise a parent who
+      // tapped it by mistake could only finish as a clinician, email and all.
+      if(idx===0&&ORDER===ORDER_SLP){ draft.role="parent"; ORDER=ORDER_PARENT; applyRoleCopy(); paintSeg(); }
       render();
     }
     // Email stays the default ask (it's the ad-funnel lead), but never a gate:
