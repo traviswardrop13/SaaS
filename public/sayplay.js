@@ -398,6 +398,9 @@
   function gotIt() {
     if (!turnLive) return;
     heardThisTurn = true; turnLive = false; micStop(); face("cheer");
+    // a word the game asked for and heard: one rep on the week's count
+    // (Travis, 29 Sep 2026). Still play, never practice data (Sona.gameRep).
+    try { if (S && S.gameRep) S.gameRep(SOUND); } catch (e) {}
     if (G.play) {
       // the word earned the move; the child makes it (see moveDone)
       try {

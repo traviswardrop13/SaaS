@@ -404,6 +404,7 @@
               for(var c=0;c<cards.length;c++)if(cards[c].querySelector(".w").textContent===target.w)cards[c].classList.add("speechHint");
               $("bSub").textContent="Tap the glowing picture!";
               heardThisTurn=true; stars++; try{ window.__heard=stars; }catch(e){} try{ $("starN").textContent=stars; }catch(e){}
+              try{ if(S&&S.gameRep)S.gameRep(SOUND); }catch(e){}   // one rep on the week's count, never practice data
               $("heard").classList.add("show"); setTimeout(function(){ $("heard").classList.remove("show"); if(turnLive&&heardThisTurn)echoPose("welcome"); },1400);
               feedMicStop(); echoPose("cheer"); sfx("tap"); return;   // heard once is the whole turn: close, THEN the little chime
             }

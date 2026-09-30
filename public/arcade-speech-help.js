@@ -3,11 +3,13 @@
     // the scene keeps game sounds out of the mic and preserves the child's progress.
     var slowTurn=null, slowMs=0, slowTotal=8000, slowSaid=false;
     function slowFactor(){ return slowMs>0?0.55:1; }
-    // Optional, per page (SLOW_HELP): reps counts more than one try in a turn,
-    // msFor(n) sets the earned time for n tries, onEarn(n) starts the page's
-    // own show, say/sayOnce replace Echo's instruction and speak it only on
-    // the first turn, and idle is the resting status. A page that sets none of
-    // them keeps the one-try, eight-second help unchanged.
+    // Optional, per page (SLOW_HELP): ms is the earned time (else eight
+    // seconds), onEarn() starts the page's own show, say/sayOnce replace Echo's
+    // instruction and speak it only on the first turn, earnSfx is the chime,
+    // and idle is the resting status. One heard try earns it, a quick sound or
+    // a long, held one (Travis, 29 Sep 2026: "1 time to get it slow mode is
+    // fine"), and every earned turn is one rep on the week's count
+    // (Sona.gameRep) — never practice data.
     function slowIdle(){ return SLOW_HELP.idle||("Tap Echo to "+SLOW_HELP.action); }
     function paintSlowKeys(){
       var visible=tok&&!window.__speechLeaving&&phase===SLOW_HELP.phase&&!window.__ended&&(!reviveWait||!!slowTurn)&&(!!slowTurn||!SLOW_HELP.eligible||SLOW_HELP.eligible());
@@ -17,8 +19,6 @@
       $("slowCancel").hidden=!slowTurn;
       $("slowControl").classList.toggle("earned",slowMs>0);
       document.body.classList.toggle("speech-help-earned",slowMs>0&&!slowTurn&&phase===SLOW_HELP.phase);
-      var reps=document.getElementById("slowReps");
-      if(reps){ reps.hidden=!slowTurn; var said=slowTurn?slowTurn.reps||0:0; for(var i=0;i<reps.children.length;i++) reps.children[i].className=i<said?"on":""; }
       $("slowSound").textContent=SAYTXT||"rrrr";
       $("slowKeys").setAttribute("aria-label","Say "+(SAYTXT||"rrrr")+" to "+SLOW_HELP.action);
       $("slowMeter").style.width=(slowMs/slowTotal*100)+"%";
@@ -51,8 +51,10 @@
           if(slowTurn===t&&!t.finishing&&!t.cancelled&&!document.hidden)slowSaid=true;});}})
         .catch(function(){})
         .then(function(){clearTimeout(timeout);if(url)URL.revokeObjectURL(url);if(t.abort===controller)t.abort=null;
-          // Use the existing recorded sound, never ask TTS to guess a phoneme.
-          if(slowTurn===t&&!t.finishing&&S.ALL_SOUNDS.indexOf(SND)>=0)return slowAudio("/coach/say-echo/"+SND+"-demo.mp3",t);
+          // Model the sound from Rachel's recording, never a TTS guess at a
+          // phoneme: ONE take of it, as the say-it card between rounds plays
+          // (her demo holds it up to seven times; S ran 15 s of held game).
+          if(slowTurn===t&&!t.finishing&&S.ALL_SOUNDS.indexOf(SND)>=0&&S.humanClipsOn&&S.humanClipsOn())return slowAudio("/coach/say-echo/"+SND+"-sound.wav",t);
         });
     }
     function stopSlowRecognition(t){
@@ -84,11 +86,10 @@
           if(slowTurn!==t){resolve();return;}
           accepted=accepted&&!t.cancelled&&!document.hidden&&!window.__ended;
           slowTurn=null;
-          var n=Math.max(1,t.reps||1);
-          if(accepted){slowTotal=slowMs=SLOW_HELP.msFor?SLOW_HELP.msFor(n):8000;$("slowStatus").textContent=SLOW_HELP.earned;sfx(SLOW_HELP.earnSfx||"complete");}
+          if(accepted){slowTotal=slowMs=SLOW_HELP.ms||8000;$("slowStatus").textContent=SLOW_HELP.earned;sfx(SLOW_HELP.earnSfx||"complete");try{if(S.gameRep)S.gameRep(SND);}catch(e){}}
           else $("slowStatus").textContent=message||(heard?"Try your sound again":"Tap Echo to try again");
           if(!window.__ended&&phase===SLOW_HELP.phase)playing=true;
-          paintSlowKeys();if(accepted&&SLOW_HELP.onEarn)SLOW_HELP.onEarn(n);resolve();
+          paintSlowKeys();if(accepted&&SLOW_HELP.onEarn)SLOW_HELP.onEarn();resolve();
         },Math.max(0,micClosedAt+SETTLE_MS-performance.now()));});
       });
       return t.done;
@@ -96,7 +97,7 @@
     function beginSlowKeys(){
       if(!tok||!playing||phase!==SLOW_HELP.phase||(SLOW_HELP.eligible&&!SLOW_HELP.eligible())||slowTurn||slowMs>0||rv.pending||window.__ended)return;
       if(!CAN_LISTEN){$("slowStatus").textContent="Microphone unavailable";return;}
-      var t={finishing:false,cancelled:false,native:null,nativeSettled:false,nativeStarted:false,reps:0};slowTurn=t;
+      var t={finishing:false,cancelled:false,native:null,nativeSettled:false,nativeStarted:false};slowTurn=t;
       playing=false;reviveWait=true;$("slowStatus").textContent="Listen to Echo…";paintSlowKeys();
       function prompt(){
         if(slowTurn!==t||t.finishing||document.hidden)return;

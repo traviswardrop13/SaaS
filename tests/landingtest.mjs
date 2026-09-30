@@ -148,8 +148,9 @@ ok("the parent page carries the launch note", !!P_NOTE);
     ok("parent page: thanked with the launch note, and nothing to tap to leave",
       (await page.textContent("#sentT")) === "You're on the list!" && (await page.textContent("#sentMsg")) === P_NOTE && !(await page.isVisible("#nextGo")));
     ok("parent page: and it stays on the page: no App Store, no web app", !(await leftFor(page, "/", 2500)), page.url());
-    ok("parent page: the launch pill and the phones answer say it launches next week",
-      await page.isVisible("text=Coming to iPhone and iPad next week") && /launches next week/.test(await page.evaluate(() => document.getElementById("a7").textContent.replace(/\s+/g, " ")) || ""));
+    // The date Travis emailed the list (30 Sep 2026), the same as the lock's.
+    ok("parent page: the launch pill and the phones answer say it launches Friday, October 2",
+      await page.isVisible("text=Coming to iPhone and iPad Friday, October 2") && /launches Friday, October 2/.test(await page.evaluate(() => document.getElementById("a7").textContent.replace(/\s+/g, " ")) || ""));
   } else {
     ok("parent page: then it goes to the App Store listing", await page.waitForURL(/apps\.apple\.com/, { timeout: 5000 }).then(() => true, () => false));
   }
@@ -254,7 +255,7 @@ charterReply = null;
 }
 
 // UNTIL THE APP IS READY (Travis, 25 Sep 2026): no App Store and no web app.
-// A parent or "other" is thanked and told the app launches next week (and
+// A parent or "other" is thanked and told the app launches Friday (and
 // emailed, by /api/lead); a speech therapist goes to their dashboard.
 const PAGE = readFileSync(ROOT + "/for-slps.html", "utf8");
 const READY = /var APP_READY = true;/.test(PAGE);
@@ -313,8 +314,8 @@ for (const role of ["parent", "other"]) {
   const p = posts[0] || { body: {} };
   ok("SLP: one post, to the clinician sign-up (which forwards the lead itself)", posts.length === 1 && p.path === "/api/slp/auth/request", posts);
   ok("SLP: it carries the email and the ad, and no name", p.body.email === "sam@clinic.org" && !("name" in p.body) && p.body.attrib && p.body.attrib.fbclid === "abc123", p.body);
-  ok("SLP: told the dashboard link is in their email" + (READY ? "" : " and the family app launches next week"),
-    /emailed sam@clinic\.org a link/.test(await page.textContent("#sentMsg")) && (READY || /launches next week/.test(await page.textContent("#sentMsg"))));
+  ok("SLP: told the dashboard link is in their email" + (READY ? "" : " and the family app launches Friday, October 2"),
+    /emailed sam@clinic\.org a link/.test(await page.textContent("#sentMsg")) && (READY || /launches Friday, October 2/.test(await page.textContent("#sentMsg"))));
   ok("SLP: a new clinician is marked as one", JSON.stringify(await page.evaluate(() => window.__track)) === '["Lead","CompleteRegistration"]');
   ok("SLP: then into " + (READY ? "the App Store" : "the dashboard's community"), await nav, page.url());
   ok("SLP: no page errors", errors.filter((e) => !/api\/slp/.test(e)).length === 0, errors);

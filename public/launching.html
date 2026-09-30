@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="robots" content="noindex" />
+  <title>Sona opens Friday, October 2</title>
+  <link href="/fonts.css" rel="stylesheet">
+  <link href="/action.css" rel="stylesheet">
+  <style>
+    /* THE LAUNCH LOCK (Travis, 30 Sep 2026). Until launch day every page of
+       the family app answers with this one instead (middleware.ts, the date in
+       lib/launch.ts): the date, one email box, nothing else. */
+    *{box-sizing:border-box;}
+    /* the layout's display:flex would otherwise show a hidden box */
+    [hidden]{display:none!important;}
+    html,body{margin:0;min-height:100%;background:#fff6e9;color:var(--cream-ink,#5b2d05);font-family:Nunito,system-ui,sans-serif;}
+    body{display:flex;justify-content:center;padding:calc(28px + env(safe-area-inset-top)) 20px calc(28px + env(safe-area-inset-bottom));}
+    main{width:100%;max-width:420px;display:flex;flex-direction:column;align-items:center;text-align:center;gap:14px;}
+    #echo{width:min(46vw,190px);height:auto;aspect-ratio:1;cursor:default;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;}
+    .pill{display:inline-block;padding:7px 14px;border-radius:999px;background:#ffe9c7;color:#7a4a10;font-weight:800;font-size:14px;}
+    h1{font-family:"Baloo 2",system-ui,sans-serif;font-weight:800;font-size:clamp(30px,8.5vw,40px);line-height:1.08;margin:0;text-wrap:balance;}
+    p{margin:0;font-size:17px;line-height:1.45;}
+    form{width:100%;display:flex;flex-direction:column;gap:10px;margin-top:6px;}
+    input{width:100%;font:inherit;font-size:18px;padding:15px 16px;border-radius:16px;border:2px solid var(--cream-line,#ecdcc5);background:#fffdf8;color:#3b2107;}
+    input:focus{outline:3px solid var(--act-glow,rgba(31,152,166,.35));border-color:var(--act,#1f98a6);}
+    #go{min-height:56px;font-size:20px;padding:0 22px;}
+    #go[disabled]{opacity:.7;}
+    .small{font-size:14px;color:#8a6a45;}
+    #err{min-height:1.2em;color:#b3261e;font-weight:700;font-size:15px;}
+    #done{display:flex;flex-direction:column;gap:8px;align-items:center;}
+    #team{width:100%;display:flex;flex-direction:column;gap:8px;margin-top:10px;}
+    #team input{font-size:16px;padding:12px 14px;}
+    #teamGo{min-height:46px;font-size:17px;padding:0 18px;}
+  </style>
+</head>
+<body>
+  <main>
+    <img id="echo" src="/assets/crafted/echo-welcome.webp" alt="Echo, Sona's bird, waving" width="190" height="190">
+    <span class="pill">Launching Friday, October 2</span>
+    <h1>Sona opens Friday, October 2</h1>
+    <p>The games, the books and Echo are almost ready. Leave your email and we'll tell you the moment Sona opens.</p>
+
+    <form id="notify" novalidate>
+      <label for="email" class="small" style="text-align:left;">Your email</label>
+      <input id="email" type="email" inputmode="email" autocomplete="email" autocapitalize="off" spellcheck="false" placeholder="you@example.com">
+      <button id="go" class="act-pill" type="submit">Notify me</button>
+      <p class="small">We'll also send occasional tips from Rachel. Unsubscribe anytime.</p>
+      <p id="err" role="alert"></p>
+    </form>
+
+    <div id="done" hidden>
+      <h1 style="font-size:clamp(26px,7vw,32px);">You're on the list!</h1>
+      <p id="doneMsg"></p>
+    </div>
+
+    <!-- The team door: five taps on Echo, then the founder key. -->
+    <form id="team" hidden>
+      <label for="teamKey" class="small">Team key</label>
+      <input id="teamKey" type="password" autocomplete="off" autocapitalize="off" spellcheck="false">
+      <button id="teamGo" class="cream-pill" type="submit">Open Sona</button>
+      <p id="teamErr" class="small" role="alert"></p>
+    </form>
+  </main>
+  <script>
+  (function () {
+    var $ = function (id) { return document.getElementById(id); };
+    // The launch instant, a copy of LAUNCH_AT in lib/launch.ts (this page is
+    // static and cannot import it). tests/launchtest.mjs pins the two equal.
+    var LAUNCH_AT = "2026-10-02T06:00:00Z";
+    // A copy of LAUNCH_NOTE in lib/launch.ts, the words the welcome email uses.
+    var LAUNCH_NOTE = "Sona launches Friday, October 2. We'll email you the moment it's ready.";
+
+    // Open by itself at launch: a phone left on this page overnight, or an
+    // app brought back from the background, reloads the address it asked for,
+    // which is then the real page. A minute late, so a phone clock a little
+    // ahead of the server's never reloads into this page again, and at most
+    // once in five minutes, in case the two still disagree.
+    var at = Date.parse(LAUNCH_AT) + 60000;
+    // Reloading the address the family asked for shows the real page; this
+    // page's own address would only show this page again, so it goes Home.
+    function reopen() { if (/\/launching\.html$/.test(location.pathname)) location.replace("/today.html"); else location.reload(); }
+    function openIfTime() {
+      if (Date.now() < at) return;
+      var last = 0;
+      try { last = +sessionStorage.getItem("sona.launch.reload") || 0; } catch (e) {}
+      if (Date.now() - last < 300000) return;
+      try { sessionStorage.setItem("sona.launch.reload", String(Date.now())); } catch (e) {}
+      reopen();
+    }
+    openIfTime();
+    if (at - Date.now() < 86400000) setTimeout(openIfTime, Math.max(0, at - Date.now()) + 500);
+    document.addEventListener("visibilitychange", function () { if (!document.hidden) openIfTime(); });
+
+    function busy(on) { $("go").disabled = on; $("go").textContent = on ? "Sending…" : "Notify me"; }
+    $("notify").addEventListener("submit", function (e) {
+      e.preventDefault();
+      var email = ($("email").value || "").trim();
+      $("err").textContent = "";
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { $("err").textContent = "Enter a valid email."; $("email").focus(); return; }
+      busy(true);
+      // The grown-up's email, "parent" and where it came from: no name, and
+      // nothing about a child. welcome: the one launch email (/api/lead, once).
+      fetch("/api/lead", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email, role: "parent", source: "app-launch", welcome: true }),
+      }).then(function (r) { return r.json(); }).then(function (j) {
+        busy(false);
+        if (!j || !j.ok) { $("err").textContent = (j && j.error) || "We couldn't save that just now. Try again."; return; }
+        $("doneMsg").textContent = LAUNCH_NOTE;
+        $("notify").hidden = true; $("done").hidden = false;
+      }).catch(function () {
+        busy(false);
+        $("err").textContent = "Network hiccup. Try again.";
+      });
+    });
+
+    // THE TEAM DOOR: five taps on Echo within four seconds show the key box.
+    var taps = [];
+    $("echo").addEventListener("click", function () {
+      var now = Date.now();
+      taps = taps.filter(function (t) { return now - t < 4000; });
+      taps.push(now);
+      if (taps.length >= 5) { $("team").hidden = false; try { $("teamKey").focus(); } catch (e) {} }
+    });
+    $("team").addEventListener("submit", function (e) {
+      e.preventDefault();
+      $("teamErr").textContent = "";
+      fetch("/api/launch/preview", { method: "POST", headers: { "x-founder-key": $("teamKey").value || "" } })
+        .then(function (r) { return r.json(); })
+        .then(function (j) {
+          if (j && j.ok) { reopen(); return; }
+          $("teamErr").textContent = (j && j.error) || "That key didn't work.";
+        })
+        .catch(function () { $("teamErr").textContent = "Network hiccup. Try again."; });
+    });
+  })();
+  </script>
+</body>
+</html>

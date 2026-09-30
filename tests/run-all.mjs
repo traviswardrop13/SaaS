@@ -12,6 +12,7 @@ const SUITES = [
   "chartertest.mjs",   // CHARTER1: $59.99 for the first 50 families, then $99.99 — true by construction
   "shiptest.mjs",      // SHIP1: what reaches the phone — the header that makes a deploy visible, without re-downloading the app every page
   "landingtest.mjs", // LANDING1: speaksona.com's Start free pop-up: who they are, the lead, then the App Store
+  "launchtest.mjs", // LAUNCH1: the family app is locked until launch day (Friday 2 Oct), one email box, a team door, open by itself
   "soundmap.mjs",  // every sound is scorable + the daily ring can actually fill
   "storytest.mjs", // STORY1: episode beats, chapter pacing, cliffhanger
   "kidtest.mjs",   // KIDS1: per-child progress, switching, family-wide entitlement
@@ -62,7 +63,7 @@ const SUITES = [
   "loudroomtest.mjs", // a room too loud to be a room is never a try, in any window of an attempt
   "micquietgamestest.mjs", // the eight games never play a sound into a live mic; STAR MODE is gone
   "slicetest.mjs", // SLICE2: Fruit Slice is a round: three waves, the say-it card between them, a giant watermelon win
-  "superslicetest.mjs", // SUPERSLICE1: say the sound up to three times mid-wave for Super Slice: slow fruit, a burst, a rainbow blade; still play, never practice
+  "superslicetest.mjs", // SUPERSLICE1: say the sound once, quick or held, mid-wave for ten seconds of Super Slice; a rep on the week's count, never practice data
   "stacktest.mjs", // STACK2: Block Stacker is a round: three floors on the practice page's five, a rocket to the moon
   "arcadespeechhelptest.mjs", // spoken help changes live game motion and preserves quiet, local microphones
   "tilesspeechtest.mjs", // a spoken sound earns temporary slower keys; quiet mic and native verdict

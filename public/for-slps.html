@@ -518,17 +518,18 @@
      */
     var APP_STORE = "https://apps.apple.com/us/app/sona-speech/id6785755867";
     /**
-     * IS THE APP READY? (Travis, 25 Sep 2026: "the app launches next week".)
+     * IS THE APP READY? (Travis, 25 Sep 2026: "the app launches next week";
+     * 30 Sep: it launches Friday, 2 October.)
      * While false, nobody is sent to the App Store, where the iOS 27 build
-     * closes on launch: a parent or "other" is thanked, told the app launches
-     * next week and emailed the same (/api/lead, once), and a speech therapist
+     * closes on launch: a parent or "other" is thanked, told when the app
+     * launches and emailed the same (/api/lead, once), and a speech therapist
      * goes to their dashboard's community. One switch, three copies: this,
      * parents.html's and APP_READY in lib/launch.ts, pinned equal by
      * tests/shiptest.mjs. When the app is live, set all three to true and
      * everyone goes to the App Store again.
      */
     var APP_READY = false;
-    var LAUNCH_NOTE = "The Sona app launches next week. We'll email you the moment it's ready.";
+    var LAUNCH_NOTE = "Sona launches Friday, October 2. We'll email you the moment it's ready.";
     var android = /Android/i.test(navigator.userAgent || "");
     var NEXT_URL = android ? "/onboarding.html" : APP_STORE;
     var OPENING = android ? "Opening Sona…" : "Opening the App Store…";
@@ -650,7 +651,7 @@
           showDone("You're in", (j.signedIn
             ? "Your free dashboard is opening now, and we've emailed " + email + " a link to it. "
             : "Your sign-in link is on its way to " + email + ". It opens straight into your dashboard. ") +
-            "The Sona app for families launches next week. We'll email you when it's ready.",
+            "The Sona app for families launches Friday, October 2. We'll email you when it's ready.",
             { dashboard: !!j.signedIn });
           if (j.signedIn && !j.devLink) toDashboard(1500);
         }

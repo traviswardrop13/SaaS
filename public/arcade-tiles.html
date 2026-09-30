@@ -295,6 +295,8 @@
     function doRevive(){
       if(slowTurn){finishSlowKeys(true);return;}
       reviveWait=false; REV--; hud();
+      // the card heard the child's sound: one rep on the week's count (Sona.gameRep)
+      try{ if(S&&S.gameRep)S.gameRep(SND); }catch(e){}
       $("revOvl").classList.remove("show");
       // the mic has just closed: sfx() holds this chime SETTLE_MS
       sfx("complete"); try{ if(S&&S.confetti)S.confetti(); }catch(e){}
@@ -538,7 +540,7 @@
           if(slowTurn!==t){resolve();return;}
           accepted=accepted&&!t.cancelled&&!document.hidden&&!window.__ended;
           slowTurn=null;
-          if(accepted){slowMs=8000;$("slowStatus").textContent="Slow keys!";sfx("complete");}
+          if(accepted){slowMs=8000;$("slowStatus").textContent="Slow keys!";sfx("complete");try{if(S.gameRep)S.gameRep(SND);}catch(e){}}
           else $("slowStatus").textContent=message||(heard?"Try your sound again":"Tap Echo to try again");
           if(!window.__ended&&phase==="song")playing=true;
           paintSlowKeys();resolve();

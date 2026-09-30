@@ -251,6 +251,8 @@
     function doRevive(){
       if(slowTurn){finishSlowKeys(true);return;}
       reviveWait=false; REV--; hud();
+      // the card heard the child's sound: one rep on the week's count (Sona.gameRep)
+      try{ if(S&&S.gameRep)S.gameRep(SND); }catch(e){}
       $("revOvl").classList.remove("show");
       // the mic has just closed: sfx() holds this chime SETTLE_MS
       sfx("complete"); try{ if(S&&S.confetti)S.confetti(); }catch(e){}
