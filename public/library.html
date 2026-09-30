@@ -6,6 +6,7 @@
   <title>Sona — Library</title>
   <link href="/fonts.css" rel="stylesheet">
   <link rel="stylesheet" href="/sona.css" />
+  <link rel="stylesheet" href="/action.css" />
   <link rel="manifest" href="/manifest.webmanifest" />
   <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
   <meta name="theme-color" content="#fff6e9" />
@@ -29,6 +30,9 @@
       font-family:"Baloo 2";font-weight:800;transition:transform .06s;display:flex;flex-direction:column;align-items:center;}
     .bookBtn:active{transform:translateY(2px);}
     .bookBtn .cvr{position:relative;display:block;z-index:1;}
+    /* a fuller book stands on the shelf in its own drawn cover */
+    .bookBtn .scvr{display:block;width:min(100%,96px);aspect-ratio:1;margin:0 auto;border-radius:14px;object-fit:cover;background:var(--cream-card);
+      box-shadow:0 4px 8px rgba(91,45,5,.2);}
     .bookBtn .rail{display:block;width:100%;height:9px;border-radius:3px;background:#ecd2a8;box-shadow:0 3px 0 #d9bc8c;margin-top:-5px;}
     .bookBtn .bt{display:block;font-size:13px;margin-top:8px;line-height:1.2;color:#4a2c14;}
     .bookBtn .bs{display:block;font-size:9.5px;margin-top:2px;letter-spacing:.06em;text-transform:uppercase;color:#b08d63;}
@@ -45,60 +49,139 @@
     .wcard .we{font-size:42px;line-height:1;}
     .wcard .ww{font-family:"Baloo 2";font-weight:800;font-size:13px;color:var(--blue-d);}
 
-    /* ── full-screen picture book (D2): the page is PAPER ── */
-    #book{position:fixed;inset:0;z-index:50;display:none;flex-direction:column;background:#fff6e9;}
-    #book.show{display:flex;}
-    .bktop{display:flex;align-items:center;gap:12px;padding:calc(14px + env(safe-area-inset-top)) 16px 6px;}
-    .bkclose{width:44px;height:44px;border-radius:50%;border:none;background:#fff;color:#b9a98c;font-size:18px;font-weight:800;cursor:pointer;
-      box-shadow:0 3px 0 0 rgba(120,80,20,.15);flex:0 0 auto;}
-    #bkHead{flex:1;text-align:center;font-family:"Baloo 2";font-weight:800;font-size:14px;}
-    .bkstage{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:0 22px;}
-    /* the paper spread + the page-edge stack (progress you can feel) */
-    .paperWrap{position:relative;width:100%;max-width:420px;}
-    .pstack{position:absolute;inset:0;border-radius:18px;background:#f9efdc;transform:translate(5px,5px);}
-    .pstack.two{background:#f0e2c8;transform:translate(9px,9px);}
-    .paper{position:relative;background:#fffdf7;border-radius:18px;box-shadow:0 14px 30px rgba(140,90,20,.16);padding:22px 18px 24px 30px;overflow:visible;}
-    .paper::before{content:"";position:absolute;left:0;top:0;bottom:0;width:14px;border-radius:18px 0 0 18px;background:linear-gradient(90deg,rgba(150,95,30,.13),rgba(150,95,30,0));}
-    .ribbon{position:absolute;top:-2px;right:16px;width:31px;height:62px;background:#ff7a6e;
-      clip-path:polygon(0 0,100% 0,100% 100%,50% 84%,0 100%);display:flex;flex-direction:column;align-items:center;
-      font-family:"Baloo 2";font-weight:800;font-size:11px;color:#fff;padding-top:8px;line-height:1.25;filter:drop-shadow(0 2px 2px rgba(120,60,10,.2));}
-    .bkart{width:min(52vw,190px);height:min(52vw,190px);margin:0 auto 10px;border-radius:14px;display:flex;align-items:center;justify-content:center;}
-    /* a drawn scene (the fuller books): the whole picture, edge to edge — no
-       float and no sticker glow, which suit a lone sticker, not a scene */
-    .bkart.scene{width:100%;height:auto;aspect-ratio:440/400;overflow:hidden;background:#bfe8fb;}
-    .bkart.scene img{display:block;width:100%;height:100%;}
-    .bkcover{display:block;width:min(74vw,300px);height:auto;aspect-ratio:1;margin:0 auto;border-radius:22px;box-shadow:0 14px 30px rgba(140,90,20,.2);}
-    /* Painted books: one picture per book holds all six scenes, three across
-       and two down; each page shows its own by position. Square, and no
-       taller than the phone allows, so the line and the buttons still fit. */
-    .painted{background-size:300% 200%;background-repeat:no-repeat;background-color:#f6ead8;}
-    .bkart.scene.painted{aspect-ratio:1;width:min(100%,44vh);margin:0 auto 10px;}
-    .bkcover.painted{width:min(74vw,300px,40vh);}
-    .bkpic{line-height:1;filter:drop-shadow(0 10px 16px rgba(150,90,10,.16));animation:bkfloat 3.4s ease-in-out infinite;}
+    /* ── the picture book (family redesign brief, 28 Sep 2026): "Pictures fill
+       the whole screen. The page text sits on a cream card over the bottom of
+       the picture." Layers, back to front: a blurred copy of the page's
+       picture over the whole screen, the picture itself, the cream card with
+       Echo peeking over it, and the two slim bars. The art decides its own
+       fit once it has loaded: today's pages are 440x400 (wide) and are shown
+       whole, at full width, over the blur, because covering a phone with
+       them would cut away more than half of each scene; the coming
+       1024x1536 portrait pages (#book.tall) cover the screen, which the brief
+       drew them for (what matters in the middle 70%, the bottom quarter calm
+       for the card). ── */
+    #book{position:fixed;inset:0;z-index:50;display:none;overflow:hidden;background:var(--cream);
+      --bk-top:calc(68px + env(safe-area-inset-top));--bk-bot:calc(90px + env(safe-area-inset-bottom));--bk-card:104px;}
+    #book.show{display:block;}
+    .bkstage{position:absolute;inset:0;}
+    /* a div, never a second <img>: the page's picture stays the one image */
+    .bkbg{position:absolute;inset:-48px;background-size:cover;background-position:center;filter:blur(20px) saturate(1.1);transform:scale(1.06);}
+    .bkbg.wash{inset:0;filter:none;transform:none;}
+    /* ...and above and below a wide picture, its own top and bottom rows
+       carried out to the edges of the screen (sky up, ground down), so what
+       shows around it is the scene continuing, not a blur of its middle.
+       Each is a copy laid over the picture and flipped out from its edge,
+       stretched: CSS can't stretch an SVG background (it keeps its shape). */
+    .bkedge{position:absolute;left:0;right:0;top:var(--art-t,0px);height:calc(var(--art-b,0px) - var(--art-t,0px));background-size:100% 100%;
+      background-repeat:no-repeat;filter:blur(8px) saturate(1.05);opacity:0;transition:opacity .2s;}
+    .bkedge.up{transform-origin:50% 0;transform:scaleY(-12);}
+    .bkedge.down{transform-origin:50% 100%;transform:scaleY(-12);}
+    #book.edges .bkedge{opacity:1;}
+    #book.tall .bkbg,#book.tall .bkedge{display:none;}
+    /* the picture's space: between the bars, above the card and room for
+       Echo's question over it, so on a short phone the bubble lands on the
+       ground, not on the characters */
+    .bkart{position:absolute;left:0;right:0;top:var(--bk-top);bottom:calc(var(--bk-bot) + var(--bk-card) + 36px);display:flex;align-items:center;justify-content:center;}
+    /* --bk-lift/--bk-ask: room for Echo's question on a short phone (roomForAsk).
+       Never a transition: Reduce Motion (sona.css) makes every transition a
+       .01ms one, and a box mid-transition reports where it WAS, so the room
+       check would measure a picture that has already moved. */
+    .bkart.scene{top:calc(var(--bk-top) - var(--bk-lift,0px));bottom:calc(var(--bk-bot) + var(--bk-card) + 36px + var(--bk-lift,0px) + var(--bk-ask,0px));transition:none!important;}
+    /* wide art: the whole scene at full width, its top and bottom edges
+       feathered into the blur so it reads as one picture, not a card */
+    .bkart.scene img{display:block;width:100%;height:auto;max-height:100%;object-fit:contain;opacity:0;transition:opacity .2s;
+      -webkit-mask-image:linear-gradient(180deg,transparent,#000 6%,#000 94%,transparent);mask-image:linear-gradient(180deg,transparent,#000 6%,#000 94%,transparent);}
+    .bkart.scene img.in,.bkcover.in{opacity:1;}
+    #book.tall .bkart.scene{top:0;bottom:0;}
+    #book.tall .bkart.scene img{position:absolute;inset:0;width:100%;height:100%;max-height:none;object-fit:cover;object-position:50% 40%;-webkit-mask-image:none;mask-image:none;}
+    /* the title page: the drawn cover, large (the app draws the title) */
+    .bkcover{display:block;width:min(84vw,440px);height:auto;max-height:94%;aspect-ratio:1;object-fit:contain;border-radius:24px;
+      box-shadow:0 16px 34px rgba(91,45,5,.28);opacity:0;transition:opacity .2s;}
+    /* the older six-page books: their sticker on a soft wash */
+    .bkart.sticker{--stk:min(50vw,210px);}
+    .bkglow{position:absolute;width:calc(var(--stk) * 1.7);height:calc(var(--stk) * 1.7);border-radius:50%;}
+    .bkpic{position:relative;line-height:1;filter:drop-shadow(0 12px 18px rgba(150,90,10,.18));animation:bkfloat 3.4s ease-in-out infinite;}
+    .bkpic svg,.bkpic img{width:var(--stk,150px)!important;height:var(--stk,150px)!important;}
+    .bkpic span{font-size:var(--stk,150px)!important;}
     @keyframes bkfloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
-    .bktext{margin-top:10px;font-family:"Baloo 2";font-weight:800;font-size:clamp(20px,5.8vw,25px);color:#5b2d05;line-height:1.4;}
-    .bktext span{cursor:pointer;border-radius:8px;padding:0 2px;}
-    .bktext span:active{background:#ffe2b3;}
-    .bkhint{margin-top:10px;font-weight:800;font-size:11px;letter-spacing:.08em;color:#a17c4a;}
-    .pgEcho{position:absolute;left:-12px;bottom:-16px;width:72px;height:72px;transform:rotate(-6deg);filter:drop-shadow(0 5px 7px rgba(120,60,10,.25));}
-    .bktitle{font-family:"Baloo 2";font-weight:800;font-size:clamp(30px,8vw,40px);color:#5b2d05;margin-top:18px;}
-    .bksub{font-weight:800;color:rgba(91,45,5,.7);margin-top:8px;}
-    .bkbottom{display:flex;align-items:center;justify-content:center;gap:12px;padding:12px 18px calc(22px + env(safe-area-inset-bottom));}
-    .bknav{border:none;border-radius:16px;padding:15px 22px;font-family:"Baloo 2";font-weight:800;font-size:16px;cursor:pointer;
-      letter-spacing:.03em;transition:transform .05s;}
-    .bknav:active{transform:translateY(3px);}
-    .bknext{flex:1;max-width:280px;color:#fff;text-transform:uppercase;white-space:nowrap;background:linear-gradient(180deg,#ffa05a,#ff8a3d);box-shadow:0 5px 0 0 #ef6f23;}
-    .bknext:active{box-shadow:0 1px 0 0 #ef6f23;}
-    .bkback{width:44px;height:44px;border-radius:50%;padding:0;background:#fff;color:#8a6f52;font-size:18px;box-shadow:0 5px 0 0 rgba(120,80,20,.18);flex:0 0 auto;}
-    .bkback.pill{width:auto;border-radius:16px;padding:15px 20px;font-size:15px;}
-    /* On The End the hidden "Hear it" still took 104px, pushing "Read again" and
-       "All done" off both sides of a 375px phone. */
-    .bkback.pill + .bkhear{display:none;}
-    /* Hear it: white pill with the warm speaker (was a blue circle) */
-    .bkhear{display:flex;align-items:center;gap:7px;border:none;border-radius:99px;background:#fff;color:#ef6f23;
-      font-family:"Baloo 2";font-weight:800;font-size:14px;padding:12px 18px;cursor:pointer;box-shadow:0 5px 0 0 rgba(120,80,20,.18);flex:0 0 auto;}
-    .bkhear:active{transform:translateY(3px);box-shadow:0 1px 0 0 rgba(120,80,20,.18);}
-    @media (prefers-reduced-motion:reduce){ .bkpic{animation:none;} }
+    /* the cream card, anchored above the bottom bar; Echo stands BEHIND its
+       top edge (he comes first, so the card covers his feet) */
+    .bkfoot{position:absolute;left:12px;right:12px;bottom:calc(var(--bk-bot) + 2px);z-index:2;max-width:560px;margin:0 auto;}
+    .bkcard{position:relative;background:var(--cream-card);border:2px solid var(--cream-line);border-radius:26px;padding:14px 18px 13px;
+      box-shadow:0 10px 26px rgba(91,45,5,.2);text-align:center;}
+    .bkecho{position:absolute;left:8px;bottom:calc(100% - 24px);width:76px;height:70px;transition:transform .4s cubic-bezier(.3,1.6,.5,1);transform-origin:50% 100%;}
+    .bkecho img{width:100%;height:100%;object-fit:contain;display:block;}
+    .bkfoot.ask .bkecho{transform:translateY(-10px) scale(1.12);}
+    .bkfoot.end .bkecho{left:50%;margin-left:-56px;width:112px;height:104px;bottom:calc(100% - 18px);}
+    .bktext{font-family:"Baloo 2";font-weight:800;font-size:clamp(21px,6vw,26px);color:var(--cream-ink);line-height:1.36;}
+    .bktext span{cursor:pointer;border-radius:10px;padding:0 2px;}
+    .bktext span:active{background:rgba(255,206,84,.35);}
+    /* the key word lifts and glows (a class on its word, never a <b>: the
+       <b> inside is the sound's letters) */
+    .bktext span.kw{display:inline-block;background:rgba(255,206,84,.42);box-shadow:0 0 0 3px rgba(255,206,84,.3);transform:translateY(-2px) scale(1.07);
+      transition:transform .3s cubic-bezier(.3,1.6,.5,1),background .3s;}
+    .bktext span.kw.yay{animation:kwpop .6s cubic-bezier(.3,1.6,.5,1);}
+    @keyframes kwpop{0%{transform:translateY(-2px) scale(1.07)}40%{transform:translateY(-8px) scale(1.3)}100%{transform:translateY(-2px) scale(1.07)}}
+    .bkhint{margin-top:5px;font-weight:800;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:rgba(91,45,5,.5);}
+    .bktitle{font-family:"Baloo 2";font-weight:800;font-size:clamp(28px,7.6vw,36px);line-height:1.12;color:var(--cream-ink);}
+    .bksub{font-weight:800;font-size:15px;color:rgba(91,45,5,.7);margin-top:6px;}
+    .bktext,.bktitle,.bksub,.bkbubble .bq{text-wrap:balance;}
+    /* Echo's question, beside him, over the picture's calm bottom */
+    .bkbubble{position:absolute;left:94px;bottom:calc(100% + 12px);max-width:calc(100% - 98px);background:var(--cream-card);border:2px solid var(--cream-line);
+      border-radius:20px;padding:7px 14px 8px;box-shadow:0 8px 20px rgba(91,45,5,.2);font-family:"Baloo 2";font-weight:800;color:var(--cream-ink);
+      animation:bubIn .35s cubic-bezier(.3,1.6,.5,1) both;}
+    .bkbubble::before{content:"";position:absolute;left:-11px;bottom:12px;border:9px solid transparent;border-right:11px solid var(--cream-line);border-left:0;}
+    .bkbubble::after{content:"";position:absolute;left:-7px;bottom:14px;border:7px solid transparent;border-right:8px solid var(--cream-card);border-left:0;}
+    .bkbubble .bq{font-size:19px;line-height:1.2;}
+    .bkbubble .bkw{font-size:24px;}
+    #bkMicState{font-size:14px;line-height:1.25;color:var(--act-d);min-height:1.25em;}
+    @keyframes bubIn{0%{transform:scale(.5);opacity:0}100%{transform:scale(1);opacity:1}}
+    /* the slim bars, over the picture */
+    .bktop{position:absolute;left:0;right:0;top:0;z-index:3;display:flex;align-items:center;gap:10px;padding:calc(12px + env(safe-area-inset-top)) 14px 10px;}
+    #book.tall .bktop{background:linear-gradient(180deg,rgba(40,24,10,.28),rgba(40,24,10,0));}
+    .bkround{width:44px;height:44px;border-radius:50%;padding:0;flex:0 0 auto;display:flex;align-items:center;justify-content:center;font-size:18px;}
+    #bkHead{flex:1;min-width:0;display:flex;justify-content:center;}
+    #bkHead .bh{display:flex;flex-direction:column;align-items:center;max-width:100%;background:rgba(255,250,241,.92);border:2px solid var(--cream-line);
+      border-radius:18px;padding:3px 14px 4px;box-shadow:0 3px 0 rgba(91,45,5,.1);}
+    #bkHead .bh1{font-family:"Baloo 2";font-weight:800;font-size:15px;line-height:1.2;color:var(--cream-ink);max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    #bkHead .bhsep{display:none;}
+    #bkHead .bh2{font-weight:800;font-size:10.5px;line-height:1.2;letter-spacing:.07em;text-transform:uppercase;color:rgba(91,45,5,.6);}
+    .bkcount{flex:0 0 auto;min-width:44px;height:32px;border-radius:99px;background:rgba(255,250,241,.92);border:2px solid var(--cream-line);
+      display:flex;align-items:center;justify-content:center;padding:0 9px;font-family:"Baloo 2";font-weight:800;font-size:13px;color:var(--cream-ink);white-space:nowrap;}
+    .bkbottom{position:absolute;left:0;right:0;bottom:0;z-index:3;display:flex;align-items:center;gap:10px;min-height:var(--bk-bot);box-sizing:border-box;
+      padding:10px 16px calc(14px + env(safe-area-inset-bottom));}
+    #book.tall .bkbottom{background:linear-gradient(0deg,rgba(40,24,10,.22),rgba(40,24,10,0));}
+    #bkPrev{width:48px;height:48px;font-size:20px;}
+    #bkPrev.pill{width:auto;border-radius:99px;padding:0 20px;font-size:17px;}
+    #bkHear{display:flex;align-items:center;gap:7px;height:48px;padding:0 16px;font-size:15px;flex:0 0 auto;}
+    #bkHear svg{width:19px;height:19px;color:var(--act-d);}
+    #bkNext{flex:1;max-width:300px;min-height:56px;margin-left:auto;padding:0 18px;font-size:19px;white-space:nowrap;}
+    #bkPrev[hidden]~#bkHear[hidden]~#bkNext{margin-right:auto;}   /* the title page: Start, centred */
+    /* the key-word moment: the teal mic where Next was, and the grown-ups' Skip */
+    #bkMicWrap{flex:1;display:flex;align-items:center;min-width:0;gap:6px;}
+    .bkmic{width:64px;height:64px;border:none;padding:0;margin:0 auto;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none;
+      transition:opacity .25s,transform .25s;}
+    .bkmic svg{width:30px;height:30px;}
+    /* resting (Echo is talking, or the page is turning): greyed, never see-
+       through; at .4 opacity over the grass it read as a green button */
+    .bkmic.wait,.bkmic.bye,.bkmic.yay{filter:saturate(.25) brightness(1.12);transform:scale(.88);cursor:default;}
+    .bkmic.live{animation:micRing 1.3s ease-out infinite;}
+    .bkmic.nudge{animation:micNudge 1.4s ease-in-out infinite;}
+    .bkmic.nudge:active{transform:translateY(3px);}
+    @keyframes micRing{0%{box-shadow:0 5px 0 var(--act-d),0 0 0 0 var(--act-glow)}100%{box-shadow:0 5px 0 var(--act-d),0 0 0 18px rgba(31,152,166,0)}}
+    @keyframes micNudge{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+    #bkSkip{flex:0 0 auto;min-height:44px;min-width:52px;border:none;background:rgba(255,250,241,.85);border-radius:99px;padding:0 13px;cursor:pointer;
+      font-family:"Baloo 2";font-weight:800;font-size:14px;color:rgba(91,45,5,.72);}
+    /* a grown-up says yes to the mic, inside the book */
+    .bkovl{position:absolute;inset:0;z-index:6;background:rgba(40,24,10,.5);display:flex;align-items:center;justify-content:center;padding:22px;}
+    .bkovlCard{background:var(--cream);border-radius:28px;padding:20px 20px 18px;width:100%;max-width:340px;text-align:center;display:flex;flex-direction:column;
+      align-items:center;gap:9px;box-shadow:0 18px 40px rgba(40,24,10,.4);}
+    .bkovlCard img{width:88px;height:82px;object-fit:contain;}
+    .bkovlCard h2{margin:0;font-family:"Baloo 2";font-weight:800;font-size:23px;line-height:1.18;color:var(--cream-ink);}
+    .bkovlCard p{margin:0;font-weight:800;font-size:14.5px;line-height:1.42;color:rgba(91,45,5,.78);}
+    .bkovlCard p.small{font-size:12px;color:rgba(91,45,5,.62);}
+    .bkovlCard button{width:100%;min-height:52px;font-size:18px;margin-top:2px;}
+    @media (prefers-reduced-motion:reduce){ .bkpic,.bkmic.live,.bkmic.nudge,.bktext span.kw.yay{animation:none;} .bkecho{transition:none;} }
   </style>
 </head>
 <body>
@@ -142,22 +225,39 @@
     <div class="wordgrid" id="wordgrid"></div>
   </div>
 
-  <!-- full-screen picture book -->
+  <!-- full-screen picture book: the stage (picture + cream card) under two
+       slim bars. The mic, Skip and the grown-ups' mic question belong to the
+       key-word moment and show only while it runs. -->
   <div id="book">
-    <div class="bktop">
-      <button class="bkclose" id="bkClose">✕</button>
-      <div id="bkHead"></div>
-      <div style="width:44px;flex:0 0 auto;"></div>
-    </div>
     <div class="bkstage" id="bkStage"></div>
+    <div class="bktop">
+      <button class="bkround cream-pill" id="bkClose" aria-label="Close the book">✕</button>
+      <div id="bkHead"></div>
+      <div class="bkcount" id="bkCount"></div>
+    </div>
     <div class="bkbottom">
-      <button class="bknav bkback" id="bkPrev" aria-label="Back a page">←</button>
-      <button class="bkhear" id="bkHear" title="Hear it again"><svg viewBox="0 0 24 24" style="width:18px;height:18px"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="#ef6f23"/><path d="M16 8.5a5 5 0 0 1 0 7" stroke="#ef6f23" stroke-width="2" fill="none" stroke-linecap="round"/></svg>Hear it</button>
-      <button class="bknav bknext" id="bkNext">Next →</button>
+      <button class="bkround cream-pill" id="bkPrev" aria-label="Back a page">←</button>
+      <button class="cream-pill" id="bkHear" title="Hear it again"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor"/><path d="M16 8.5a5 5 0 0 1 0 7" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg>Hear it</button>
+      <button class="act-pill" id="bkNext">Next →</button>
+      <div id="bkMicWrap" hidden>
+        <button class="act-mic bkmic wait" id="bkMic" aria-label="Microphone"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8.5" y="3" width="7" height="12" rx="3.5" fill="#fff"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M8.5 21h7" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/></svg></button>
+        <button id="bkSkip" aria-label="Skip: turn the page (for grown-ups)">Skip</button>
+      </div>
+    </div>
+    <div class="bkovl" id="bkPrimer" hidden>
+      <div class="bkovlCard" role="dialog" aria-labelledby="bkPrimerTitle">
+        <img src="/coach/echo/echo-listening.svg" alt="" />
+        <h2 id="bkPrimerTitle">Echo wants to hear the words</h2>
+        <p>On each page, Echo asks your child to say one word out loud.</p>
+        <p class="small" id="bkMicPromise"></p>
+        <button class="act-pill" id="bkPrimerYes">Yes, use the mic</button>
+        <button class="cream-pill" id="bkPrimerNo">Not now</button>
+      </div>
     </div>
   </div>
 
   <script src="/sona.js"></script>
+  <script src="/saycheck.js"></script>
   <script>
     // BOOKS ARE PREMIUM CONTENT (Travis, 26 Sep 2026: "yes turn them on").
     // Free while the app is free; a family without access who opens this
@@ -179,8 +279,8 @@
     // greyed and "Coming Oct 4", until that day on the phone's own calendar;
     // a book without it is open. R, S, L, SH and TH are open now. The six-page
     // picture books come after every twelve-page one: they break the rule the
-    // new books keep (the sound only at the start of a word) and are drawn
-    // with emoji, so they are last in line to be redone.
+    // new books keep (the sound only at the start of a word), so they are
+    // last in line to be redone, painted or not (`painted`, below).
     var STORIES = [
       // THE FULLER BOOKS (Travis, 26 Sep 2026: "start with a good solid book with
       // the letter R", then "I want to write a bunch of books. So do one for each
@@ -199,6 +299,12 @@
       // exception (Rory, whose second r is mid-word), and `forbid` keeps the
       // other th out of each th book. Which words a child hears is Rachel's call.
       //
+      // `keys` is each page's KEY WORD, in page order: the one word Echo asks
+      // the child to say before the page turns (family redesign brief, 28 Sep
+      // 2026). Copied from the brief's book-keywords.json, which says they were
+      // picked automatically; readtest holds each to the same sound rule as
+      // `words`. Which word a child is asked to say is Rachel's call.
+      //
       // Every page is a drawn scene (`art`). Rory's were drawn by hand on a
       // Claude Design canvas; the other eighteen are built from one shared cast
       // by tools/bookart (node tools/bookart/build.mjs), so the shelf reads as
@@ -206,6 +312,7 @@
       // already says what it shows, and Echo reads it aloud.
       { sound: "R", emoji: "🌈", title: "Rory and the Rainbow", colors: ["#ff7a6e", "#8a6fc4"],
         cover: "/assets/books/rory-rainbow/cover.svg", coverAlt: "Rory the rabbit cheers on a green hill under a big rainbow",
+        keys: ["rabbit", "rain", "reach", "rushing", "reeds", "river", "raccoon", "robot", "ribbon", "rocket", "rainbow", "robot"],
         words: ["rabbit", "raccoon", "raft", "rain", "rainbow", "reach", "red", "reeds", "remy", "ribbon", "ride", "river", "road", "robot", "rocket", "roof", "room", "rory", "roses", "rows", "run", "runs", "rushing"],
         allow: ["rory"], pages: [
         { e: "🌧️", t: "Rain taps on the roof. Rory the rabbit looks up.",
@@ -234,6 +341,7 @@
           art: "/assets/books/rory-rainbow/p12.svg", alt: "Under the rainbow, Rory jumps for a red ball, Remy runs and the robot hops, with confetti everywhere." } ] },
       { sound: "P", emoji: "🐧", opens: "2026-10-25", title: "Penny's Pebble Party", colors: ["#6ec3ff", "#3d9be0"],
         cover: "/assets/books/penny-pebble-party/cover.svg", coverAlt: "",
+        keys: ["penguin", "pond", "pebble", "pebbles", "paint", "paint", "pink", "parrot", "party", "pie", "pebbles", "penny"],
         words: ["pail", "paint", "parrot", "party", "pat", "peach", "pebble", "pebbles", "peeks", "penguin", "penny", "penny's", "pie", "pig", "pink", "pole", "polly", "pond", "put", "puts"], pages: [
         { e: "🐧", t: "Penny the penguin has a pink pail.", art: "/assets/books/penny-pebble-party/p01.svg", alt: "" },
         { e: "🐧", t: "Penny waddles down to the pond.", art: "/assets/books/penny-pebble-party/p02.svg", alt: "" },
@@ -249,6 +357,7 @@
         { e: "🎉", t: "Penny, Pat, and Polly have a pebble party!", art: "/assets/books/penny-pebble-party/p12.svg", alt: "" } ] },
       { sound: "B", emoji: "🐻", opens: "2026-11-01", title: "Bo's Beach Day", colors: ["#ffb75e", "#f0932b"],
         cover: "/assets/books/bo-beach-day/cover.svg", coverAlt: "",
+        keys: ["bear", "boat", "banana", "boat", "bee", "bee", "beach", "ball", "ball", "bumps", "berries", "bo"],
         words: ["back", "ball", "banana", "basket", "beach", "bear", "bee", "bella", "ben", "berries", "big", "bo", "bo's", "boat", "bounces", "bumps", "bunny", "buns", "buzz", "buzzes", "by"], pages: [
         { e: "🐻", t: "Bo the bear has a big boat.", art: "/assets/books/bo-beach-day/p01.svg", alt: "" },
         { e: "🧺", t: "Bo puts a basket in the boat.", art: "/assets/books/bo-beach-day/p02.svg", alt: "" },
@@ -264,6 +373,7 @@
         { e: "🏖️", t: "What a fun day at the beach, Bo!", art: "/assets/books/bo-beach-day/p12.svg", alt: "" } ] },
       { sound: "M", emoji: "🐭", opens: "2026-11-01", title: "Mia Makes Muffins", colors: ["#c49cff", "#9b6fe0"],
         cover: "/assets/books/mia-makes-muffins/cover.svg", coverAlt: "",
+        keys: ["mouse", "milk", "mixes", "milk", "melon", "muffins", "moon", "muffins", "munch", "molly", "moose", "moon"],
         words: ["make", "makes", "many", "maple", "max", "may", "meadow", "meal", "melon", "mess", "mia", "milk", "mixes", "mixing", "mole", "molly", "moon", "moose", "more", "mouse", "muffins", "munch"], pages: [
         { e: "🐭", t: "Mia the mouse wants to make muffins.", art: "/assets/books/mia-makes-muffins/p01.svg", alt: "" },
         { e: "🥛", t: "Mia gets milk and a mixing bowl.", art: "/assets/books/mia-makes-muffins/p02.svg", alt: "" },
@@ -279,6 +389,7 @@
         { e: "🌙", t: "Mia, Max, and Molly share a meal under the moon.", art: "/assets/books/mia-makes-muffins/p12.svg", alt: "" } ] },
       { sound: "N", emoji: "🦎", opens: "2026-10-25", title: "Ned Needs a Net", colors: ["#5fcf9a", "#2fae74"],
         cover: "/assets/books/ned-needs-a-net/cover.svg", coverAlt: "",
+        keys: ["nest", "nap", "knock", "net", "nest", "ned", "net", "net", "nose", "neat", "noodles", "night"],
         words: ["knock", "nap", "near", "neat", "ned", "needs", "nest", "net", "newt", "nice", "night", "no", "noise", "noodles", "nora", "nose", "nudges"], pages: [
         { e: "🪺", t: "Nora the newt has a nice, neat nest.", art: "/assets/books/ned-needs-a-net/p01.svg", alt: "" },
         { e: "💤", t: "Nora takes a nap.", art: "/assets/books/ned-needs-a-net/p02.svg", alt: "" },
@@ -294,6 +405,7 @@
         { e: "🌙", t: "Ned eats noodles with Nora. What a nice night!", art: "/assets/books/ned-needs-a-net/p12.svg", alt: "" } ] },
       { sound: "T", emoji: "🐯", opens: "2026-10-18", title: "Toby's Tiny Tuba", colors: ["#ff9f5a", "#e6762b"],
         cover: "/assets/books/toby-tiny-tuba/cover.svg", coverAlt: "",
+        keys: ["tiger", "taps", "tuba", "toucan", "tune", "town", "ten", "turkeys", "toad", "toad", "toby", "tea"],
         words: ["takes", "tap", "taps", "tea", "ten", "tia", "tiger", "time", "tiny", "to", "toad", "toby", "toby's", "toes", "too", "toucan", "town", "tuba", "tune", "turkeys"], pages: [
         { e: "🐯", t: "Toby the tiger has a tiny tuba.", art: "/assets/books/toby-tiny-tuba/p01.svg", alt: "" },
         { e: "🐯", t: "Toby taps his toes.", art: "/assets/books/toby-tiny-tuba/p02.svg", alt: "" },
@@ -309,6 +421,7 @@
         { e: "🍵", t: "\"Time for tea!\" says Toby.", art: "/assets/books/toby-tiny-tuba/p12.svg", alt: "" } ] },
       { sound: "D", emoji: "🦆", opens: "2026-10-25", title: "Dot Digs a Pool", colors: ["#ffd45e", "#e6b12b"],
         cover: "/assets/books/dot-digs-a-pool/cover.svg", coverAlt: "",
+        keys: ["duck", "digs", "dog", "dust", "deep", "down", "day", "dot", "dips", "dive", "dives", "duck"],
         words: ["dan", "day", "deep", "dig", "digs", "dips", "dive", "dives", "dog", "dot", "down", "duck", "dust"], pages: [
         { e: "🦆", t: "Dot the duck wants a pool to dive in.", art: "/assets/books/dot-digs-a-pool/p01.svg", alt: "" },
         { e: "🕳️", t: "Dot digs a hole. Dig, dig, dig!", art: "/assets/books/dot-digs-a-pool/p02.svg", alt: "" },
@@ -324,6 +437,7 @@
         { e: "🦆", t: "Dot is a happy duck. Dan is a happy dog!", art: "/assets/books/dot-digs-a-pool/p12.svg", alt: "" } ] },
       { sound: "K", emoji: "🦘", opens: "2026-10-04", title: "Kip's Kite", colors: ["#7fd1ff", "#43a8e6"],
         cover: "/assets/books/kip-kite/cover.svg", coverAlt: "",
+        keys: ["kangaroo", "kite", "kip", "kite", "kite", "cow", "cody", "kite", "carries", "come", "corn", "carrot"],
         words: ["calls", "can", "carries", "carrot", "catches", "cody", "come", "comes", "corn", "cow", "kangaroo", "kip", "kip's", "kite"], pages: [
         { e: "🦘", t: "Kip the kangaroo has a kite.", art: "/assets/books/kip-kite/p01.svg", alt: "" },
         { e: "🪁", t: "The kite has a long tail.", art: "/assets/books/kip-kite/p02.svg", alt: "" },
@@ -339,6 +453,7 @@
         { e: "🥕", t: "Kip gives Cody a carrot. What a day!", art: "/assets/books/kip-kite/p12.svg", alt: "" } ] },
       { sound: "G", emoji: "🪿", opens: "2026-10-11", title: "Goldie's Guitar", colors: ["#ffcf6e", "#e0a73a"],
         cover: "/assets/books/goldie-guitar/cover.svg", coverAlt: "",
+        keys: ["goose", "guitar", "garden", "goldie", "goat", "gus", "guitar", "good", "goldie", "gets", "gophers", "garden"],
         words: ["garden", "gate", "gets", "gift", "give", "go", "goat", "goes", "goldie", "goldie's", "good", "goose", "gophers", "guitar", "gus"], pages: [
         { e: "🎁", t: "Goldie the goose gets a gift.", art: "/assets/books/goldie-guitar/p01.svg", alt: "" },
         { e: "🎸", t: "The gift is a guitar!", art: "/assets/books/goldie-guitar/p02.svg", alt: "" },
@@ -354,6 +469,7 @@
         { e: "🎶", t: "Goldie and Gus give a garden show!", art: "/assets/books/goldie-guitar/p12.svg", alt: "" } ] },
       { sound: "F", emoji: "🐟", opens: "2026-10-18", title: "Finn Finds a Feather", colors: ["#5fc6e8", "#2f9fc6"],
         cover: "/assets/books/finn-finds-a-feather/cover.svg", coverAlt: "",
+        keys: ["fish", "fins", "feather", "finn", "fast", "fox", "fay", "family", "feather", "feather", "finn", "fine"],
         words: ["family", "far", "fast", "fay", "feather", "feels", "finds", "fine", "finn", "fins", "fish", "fox", "fun"], pages: [
         { e: "🐟", t: "Finn the fish lives by a big rock.", art: "/assets/books/finn-finds-a-feather/p01.svg", alt: "" },
         { e: "🐟", t: "Finn has fast fins.", art: "/assets/books/finn-finds-a-feather/p02.svg", alt: "" },
@@ -369,6 +485,7 @@
         { e: "🐟", t: "Finn feels fine. What a fun day!", art: "/assets/books/finn-finds-a-feather/p12.svg", alt: "" } ] },
       { sound: "V", emoji: "🚐", opens: "2026-10-18", title: "Val the Van", colors: ["#ff8fb0", "#e0648a"],
         cover: "/assets/books/val-the-van/cover.svg", coverAlt: "",
+        keys: ["van", "village", "val", "vase", "vase", "vegetables", "vet", "violin", "vince", "village", "vicky", "val"],
         words: ["val", "valley", "van", "vase", "vegetables", "very", "vet", "vicky", "village", "vince", "violet", "violin"], pages: [
         { e: "🚐", t: "Val the van is in a valley.", art: "/assets/books/val-the-van/p01.svg", alt: "" },
         { e: "🏘️", t: "Val goes to the village.", art: "/assets/books/val-the-van/p02.svg", alt: "" },
@@ -384,6 +501,7 @@
         { e: "🚐", t: "\"Thank you, Val!\" says the village.", art: "/assets/books/val-the-van/p12.svg", alt: "" } ] },
       { sound: "S", emoji: "🐦", title: "Sid the Seagull", colors: ["#6fd0e0", "#3aaec2"],
         cover: "/assets/books/sid-the-seagull/cover.svg", coverAlt: "",
+        keys: ["seagull", "sand", "sandwich", "sadie", "sid", "sings", "sand", "sand", "seashell", "sea", "sad", "silly"],
         words: ["sad", "sadie", "sand", "sandwich", "says", "sea", "seagull", "seashell", "seat", "sees", "sid", "silly", "sings", "sit", "some", "song", "sun"], pages: [
         { e: "🐦", t: "Sid the seagull lives by the sea.", art: "/assets/books/sid-the-seagull/p01.svg", alt: "" },
         { e: "☀️", t: "The sun is up. The sand is warm.", art: "/assets/books/sid-the-seagull/p02.svg", alt: "" },
@@ -399,6 +517,7 @@
         { e: "👧", t: "\"Silly Sid! We can make one more!\" says Sadie.", art: "/assets/books/sid-the-seagull/p12.svg", alt: "" } ] },
       { sound: "Z", emoji: "🦓", opens: "2026-10-04", title: "Zoe and the Zipper", colors: ["#9aa7b8", "#5b6474"],
         cover: "/assets/books/zoe-and-the-zipper/cover.svg", coverAlt: "",
+        keys: ["zebra", "zoe", "zipper", "zipper", "zookeeper", "zip", "zipper", "zack", "zoomed", "zoo", "zucchini", "zebra"],
         words: ["zack", "zap", "zebra", "zip", "zipper", "zoe", "zoo", "zookeeper", "zoom", "zoomed", "zucchini"], pages: [
         { e: "🦓", t: "Zoe the zebra woke up at the zoo.", art: "/assets/books/zoe-and-the-zipper/p01.svg", alt: "" },
         { e: "🧥", t: "It felt cold. Zoe got her coat.", art: "/assets/books/zoe-and-the-zipper/p02.svg", alt: "" },
@@ -414,6 +533,7 @@
         { e: "🦓", t: "Zoe the zebra felt warm and happy.", art: "/assets/books/zoe-and-the-zipper/p12.svg", alt: "" } ] },
       { sound: "SH", emoji: "🦈", title: "Shay the Shy Shark", colors: ["#7fb8ff", "#4f8fe0"],
         cover: "/assets/books/shay-the-shy-shark/cover.svg", coverAlt: "",
+        keys: ["shark", "ship", "shout", "shakes", "shimmer", "shay", "sure", "shell", "shake", "shell", "shay", "shines"],
         words: ["shadow", "shake", "shakes", "shark", "shay", "she", "shell", "shimmer", "shines", "shiny", "ship", "shout", "show", "shows", "shy", "sure"], pages: [
         { e: "🦈", t: "Shay the shark is shy.", art: "/assets/books/shay-the-shy-shark/p01.svg", alt: "" },
         { e: "🚢", t: "Shay hides in the shadow of a ship.", art: "/assets/books/shay-the-shy-shark/p02.svg", alt: "" },
@@ -429,6 +549,7 @@
         { e: "⭐", t: "Shay is not shy now. She shines!", art: "/assets/books/shay-the-shy-shark/p12.svg", alt: "" } ] },
       { sound: "CH", emoji: "🐿️", opens: "2026-10-04", title: "Chip the Chipmunk", colors: ["#ff9b7a", "#e66f4b"],
         cover: "/assets/books/chip-the-chipmunk/cover.svg", coverAlt: "",
+        keys: ["chipmunk", "chestnuts", "chilly", "chimney", "chick", "cheep", "chilly", "chip", "chat", "chair", "chair", "chirps"],
         words: ["chair", "chat", "checks", "cheeks", "cheep", "cheers", "chestnuts", "chew", "chews", "chick", "chilly", "chimney", "chip", "chipmunk", "chirps", "chubby"], pages: [
         { e: "🐿️", t: "Chip the chipmunk has chubby cheeks.", art: "/assets/books/chip-the-chipmunk/p01.svg", alt: "" },
         { e: "🌰", t: "Chip chews on chestnuts.", art: "/assets/books/chip-the-chipmunk/p02.svg", alt: "" },
@@ -444,6 +565,7 @@
         { e: "🐤", t: "\"Cheers for a new pal!\" chirps the chick.", art: "/assets/books/chip-the-chipmunk/p12.svg", alt: "" } ] },
       { sound: "J", emoji: "🐆", opens: "2026-10-11", title: "Jax and the Jam Jar", colors: ["#7ccf5a", "#4fae32"],
         cover: "/assets/books/jax-and-the-jam-jar/cover.svg", coverAlt: "",
+        keys: ["jaguar", "jump", "jar", "jam", "jar", "giraffe", "jar", "jar", "jam", "juice", "joke", "jungle"],
         words: ["giraffe", "jaguar", "jam", "jar", "jax", "jill", "jog", "join", "joke", "jolly", "joy", "juice", "jump", "jumps", "jungle"], pages: [
         { e: "🐆", t: "Jax the jaguar lives in the jungle.", art: "/assets/books/jax-and-the-jam-jar/p01.svg", alt: "" },
         { e: "🐆", t: "Jax likes to jump and jog.", art: "/assets/books/jax-and-the-jam-jar/p02.svg", alt: "" },
@@ -459,6 +581,7 @@
         { e: "🌴", t: "What a jolly day in the jungle!", art: "/assets/books/jax-and-the-jam-jar/p12.svg", alt: "" } ] },
       { sound: "L", emoji: "🐑", title: "Leo's Lucky Leaf", colors: ["#9fdc7a", "#6fbf4a"],
         cover: "/assets/books/leo-lucky-leaf/cover.svg", coverAlt: "",
+        keys: ["lamb", "leaps", "leaf", "leaf", "leaf", "lizard", "lucky", "licks", "lucy", "lake", "ladybug", "luck"],
         words: ["ladybug", "lake", "lamb", "lands", "laughs", "lay", "lazy", "leaf", "leap", "leaps", "leo", "leo's", "let's", "licks", "likes", "lips", "lizard", "log", "look", "luck", "lucky", "lucy", "lunch"], pages: [
         { e: "🐑", t: "Leo the lamb likes to leap.", art: "/assets/books/leo-lucky-leaf/p01.svg", alt: "" },
         { e: "🐑", t: "Leo leaps by the lake.", art: "/assets/books/leo-lucky-leaf/p02.svg", alt: "" },
@@ -474,6 +597,7 @@
         { e: "🐞", t: "Leo and Lucy wave. What luck!", art: "/assets/books/leo-lucky-leaf/p12.svg", alt: "" } ] },
       { sound: "TH", emoji: "🦥", title: "Theo's Thunder Day", colors: ["#a7b4ff", "#7a88e6"],
         cover: "/assets/books/theo-thunder-day/cover.svg", coverAlt: "",
+        keys: ["theo", "thirsty", "thump", "thunder", "theo", "thea", "think", "thick", "thick", "thumb", "thunder", "thumbs"],
         words: ["thanks", "thea", "theo", "theo's", "thick", "thing", "think", "thinks", "thirsty", "thud", "thumb", "thumbs", "thump", "thunder"],
         forbid: ["DH"], pages: [
         { e: "🦥", t: "Theo thinks it is a fun day.", art: "/assets/books/theo-thunder-day/p01.svg", alt: "" },
@@ -490,6 +614,7 @@
         { e: "👍", t: "\"Thanks, Thea!\" Theo gives a big thumbs up.", art: "/assets/books/theo-thunder-day/p12.svg", alt: "" } ] },
       { sound: "THV", emoji: "🐻", opens: "2026-10-11", title: "This Bear, That Bee", colors: ["#ffb3c7", "#e68aa3"],
         cover: "/assets/books/this-bear-that-bee/cover.svg", coverAlt: "",
+        keys: ["this", "they", "there", "the", "then", "those", "the", "these", "they", "the", "then", "that"],
         words: ["that", "the", "them", "then", "there", "these", "they", "this", "those"],
         forbid: ["TH"], pages: [
         { e: "🐻", t: "This is a big bear. That is a little bee.", art: "/assets/books/this-bear-that-bee/p01.svg", alt: "" },
@@ -599,13 +724,19 @@
 
     /* ---- speech (no scoring, just listening) ---- */
     var audioCtx = null, playing = false, curSrc = null, sayToken = 0;
+    // The key-word moment's mic (public/saycheck.js: Say & Play's own check).
+    // Absent (an old cached page, a failed load), the books read as before.
+    var SC = window.SayCheck || null;
     function getCtx() { if (!audioCtx) { var AC = window.AudioContext || window.webkitAudioContext; audioCtx = new AC(); } if (audioCtx.state === "suspended") audioCtx.resume(); return audioCtx; }
     // iOS blocks audio that starts OUTSIDE a tap: the say() pipeline creates
     // its context after an async fetch, which Safari treats as gesture-less →
     // silence. Unlock synchronously inside every tap that leads to speech.
     function unlockAudio(){ try{ var c=getCtx(); if(c.state==="suspended")c.resume(); var b=c.createBuffer(1,1,22050), s=c.createBufferSource(); s.buffer=b; s.connect(c.destination); s.start(0); }catch(e){} }
     document.addEventListener("pointerdown", unlockAudio, { passive:true, capture:true });
-    function stopSpeech() { sayToken++; try { curSrc && curSrc.stop(); } catch (e) {} curSrc = null; playing = false; try { window.speechSynthesis && speechSynthesis.cancel(); } catch (e) {} }
+    // curStop ends the line in flight at once (see say()): a line cut off by a
+    // page turn must not go on holding the mic shut while its fetch runs out
+    var curStop = null;
+    function stopSpeech() { sayToken++; var s = curSrc, f = curStop; curSrc = null; curStop = null; playing = false; try { s && s.stop(); } catch (e) {} try { window.speechSynthesis && speechSynthesis.cancel(); } catch (e) {} if (f) f(); }
 
     // Guaranteed-audio fallback. library.html was the ONLY speaking page with
     // no browser-voice path: when /api/tts failed (quota, key, network) the
@@ -635,37 +766,63 @@
       });
     }
 
+    // Echo reads the page. Since the books listen (the key-word moment), this
+    // voice keeps the mic's quiet like every other sound: it never starts while
+    // the mic is open or still being asked for, nor inside a beat of its close
+    // (an iPhone holding the mic is on a phone call), and the mic never opens
+    // under it (SC.hold). A line that can't end on its own would hold that
+    // mic shut for the rest of the book, so every path ends: the 7s abort, a
+    // context that isn't running goes to the browser voice, and a started
+    // source has a watchdog of its own length plus a beat.
     function say(text) {
       return new Promise(function (resolve) {
         if (!text) return resolve();
-        var tok = ++sayToken;
+        var tok = ++sayToken, held = false, over = false, dog = null, ctrl = null;
         playing = true;
-        function fin() { if (tok === sayToken) playing = false; resolve(); }
-        // a hung fetch used to leave `playing` true forever, which silently
-        // disabled the Hear button for the rest of the session
-        var ctrl = null, to = null;
-        try { ctrl = new AbortController(); to = setTimeout(function () { try { ctrl.abort(); } catch (e) {} }, 7000); } catch (e) {}
-        fetch("/api/tts", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text: text, voice: profile.voiceId || "" }), signal: ctrl ? ctrl.signal : undefined })
-          .then(function (r) { if (to) clearTimeout(to); if (!r.ok) throw 0; return r.arrayBuffer(); })
-          .then(function (buf) {
-            if (tok !== sayToken) { playing = false; return resolve(); } // superseded — don't overlap
-            if (!buf || !buf.byteLength) throw 0;
-            var bytes = new Uint8Array(buf), ctx = getCtx(), n = bytes.byteLength >> 1;
-            var ab = ctx.createBuffer(1, n, 24000), ch = ab.getChannelData(0);
-            var dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
-            for (var i = 0; i < n; i++) ch[i] = dv.getInt16(i * 2, true) / 32768;
-            var s = ctx.createBufferSource(); s.buffer = ab; s.playbackRate.value = PITCH; var g = ctx.createGain(); g.gain.value = (profile.volume != null ? profile.volume : 0.8); s.connect(g); g.connect(ctx.destination);
-            curSrc = s;
-            s.onended = function () { curSrc = null; fin(); };
-            s.start();
-          })
-          .catch(function () {
-            if (to) clearTimeout(to);
-            if (tok !== sayToken) { playing = false; return resolve(); }
-            speakFallback(text).then(fin, fin);
-          });
+        function fin() {
+          if (over) return; over = true; clearTimeout(dog);
+          if (curStop === halt) curStop = null;
+          if (held) { held = false; SC.hold(false); }
+          if (tok === sayToken) playing = false;
+          resolve();
+        }
+        function halt() { try { if (ctrl) ctrl.abort(); } catch (e) {} fin(); }
+        curStop = halt;
+        function go() {
+          if (tok !== sayToken || document.hidden) return fin();
+          if (SC) { SC.hold(true); held = true; }
+          // a hung fetch used to leave `playing` true forever, which silently
+          // disabled the Hear button for the rest of the session
+          var to = null;
+          try { ctrl = new AbortController(); to = setTimeout(function () { try { ctrl.abort(); } catch (e) {} }, 7000); } catch (e) {}
+          fetch("/api/tts", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text: text, voice: profile.voiceId || "" }), signal: ctrl ? ctrl.signal : undefined })
+            .then(function (r) { if (to) clearTimeout(to); if (!r.ok) throw 0; return r.arrayBuffer(); })
+            .then(function (buf) {
+              if (tok !== sayToken) return fin(); // superseded — don't overlap
+              if (!buf || !buf.byteLength) throw 0;
+              var ctx = getCtx();
+              if (ctx.state !== "running") throw 0;
+              var bytes = new Uint8Array(buf), n = bytes.byteLength >> 1;
+              var ab = ctx.createBuffer(1, n, 24000), ch = ab.getChannelData(0);
+              var dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+              for (var i = 0; i < n; i++) ch[i] = dv.getInt16(i * 2, true) / 32768;
+              var s = ctx.createBufferSource(); s.buffer = ab; s.playbackRate.value = PITCH; var g = ctx.createGain(); g.gain.value = (profile.volume != null ? profile.volume : 0.8); s.connect(g); g.connect(ctx.destination);
+              curSrc = s;
+              s.onended = function () { if (curSrc === s) curSrc = null; fin(); };
+              s.start();
+              dog = setTimeout(function () { if (curSrc === s) curSrc = null; fin(); }, n / 24 / PITCH + 1500);
+            })
+            .catch(function () {
+              if (to) clearTimeout(to);
+              if (tok !== sayToken) return fin();
+              speakFallback(text).then(fin, fin);
+            });
+        }
+        if (SC) SC.quiet(go); else go();
       });
     }
+    // Chimes keep the same quiet (SC.chime waits out the mic and its beat).
+    function chime(name) { if (SC) SC.chime(name); else if (window.Sona && Sona.sfx && Sona.sfx[name]) Sona.sfx[name](); }
 
     function todayLocal(){ var d=new Date(); return d.getFullYear()+"-"+("0"+(d.getMonth()+1)).slice(-2)+"-"+("0"+d.getDate()).slice(-2); }
     function bookOpen(st){ return !st.opens || st.opens<=todayLocal(); }
@@ -709,13 +866,16 @@
     STORIES.forEach(function (st) {
       var b = document.createElement("button"), open = bookOpen(st);
       b.className = "bookBtn" + (open ? "" : " soon");
-      b.innerHTML = '<span class="cvr">' + cover(st, 76) + '</span>'
+      // a fuller book shows its own drawn cover, a painted one the small copy
+      // of its first scene; any other the generic book
+      var face = st.cover || (st.painted ? paintedSrc(st, true) : "");
+      b.innerHTML = '<span class="cvr">' + (face ? '<img class="scvr" src="' + escAttr(face) + '" alt="">' : cover(st, 76)) + '</span>'
         + (wasRead(st) ? '<span class="doneStar">' + ((window.Sona && Sona.icon) ? Sona.icon("star", 22) : "") + '</span>' : "")
         + '<span class="rail"></span>'
         + '<span class="bt">' + st.title + '</span>'
         + '<span class="bs">' + (open ? st.pages.length + ' pages' : 'Coming ' + opensLabel(st)) + '</span>';
       if (!open) { b.disabled = true; b.setAttribute("aria-label", st.title + ", coming " + opensLabel(st)); }
-      b.onclick = function () { if (!bookOpen(st)) return; if (window.Sona) Sona.sfx.tap(); openBook(st); };
+      b.onclick = function () { if (!bookOpen(st)) return; chime("tap"); openBook(st); };
       shelf.appendChild(b);
     });
 
@@ -761,6 +921,7 @@
     // THV is the code for the voiced th ("this"); people see Sona's label for it
     function sndLabel(s){ return (window.Sona&&Sona.soundLabel)?Sona.soundLabel(s):s; }
     function escAttr(s){ return String(s||"").replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;"); }
+    function escHtml(s){ return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
     function readerArt(pg){
       if(pg.art) return '<img src="'+escAttr(pg.art)+'" alt="'+escAttr(pg.alt)+'">';
       var a=READER_ART[pg.e];
@@ -771,43 +932,86 @@
       }
       return (window.Sona&&Sona.pic)?Sona.pic(readerWord(pg.t),pg.e,118):(pg.e||"");
     }
-    // A painted book (Codex, 28 Sep 2026, drawn with ChatGPT's image tool) is
-    // one picture holding its six scenes in reading order, three across and
-    // two down. The reader shows page i's scene by position, so a whole book
-    // is one download; the shelf shows a small copy of scene 1, so a book
-    // that isn't open yet never pulls the big picture.
-    function paintedScene(st,i,cls){
-      return '<div class="'+cls+' painted" aria-hidden="true" style="background-image:url(/assets/books/painted/'+st.painted+'.webp);background-position:'+(i%3*50)+'% '+(Math.floor(i/3)*100)+'%"></div>';
+    // THE PAINTED BOOKS (Codex, 28 Sep 2026, drawn with ChatGPT's image tool;
+    // in this reader from 29 Sep). Each six-page book is one picture holding
+    // its six scenes, three across and two down, in reading order, plus a
+    // small -cover copy of the first for the shelf, so a book that isn't open
+    // yet never pulls the big picture. The reader cuts the scenes out on the
+    // phone, once per book, so page i's scene becomes a picture of its own
+    // and gets exactly what a drawn page gets: shown whole at full width, its
+    // own top and bottom rows carried out to the screen's edges, the cream
+    // card over its foot. A CSS sprite can't: the edges stretch a picture's
+    // own rows and the fit reads its shape. Still one download a book; one
+    // book's scenes are kept at a time.
+    var CUT = { id: null, urls: null, failed: false, wait: [] };
+    function paintedSrc(st, small) { return "/assets/books/painted/" + st.painted + (small ? "-cover" : "") + ".webp"; }
+    // page i's scene, if it has been cut out yet
+    function sceneOf(st, i) { return st && st.painted && CUT.id === st.painted && CUT.urls ? CUT.urls[i] || null : null; }
+    function cutScenes(st, then) {
+      // a book that failed (offline) tries again the next time it's opened
+      if (CUT.id === st.painted && !CUT.failed) { if (CUT.urls) then(); else CUT.wait.push(then); return; }
+      (CUT.urls || []).forEach(function (u) { try { URL.revokeObjectURL(u); } catch (e) {} });
+      var job = CUT = { id: st.painted, urls: null, failed: false, wait: [then] };
+      function finish(urls) {
+        if (CUT !== job || job.urls || job.failed) return;
+        if (urls) job.urls = urls; else job.failed = true;
+        var w = job.wait; job.wait = [];
+        w.forEach(function (f) { try { f(); } catch (e) {} });
+      }
+      var sheet = new Image();
+      sheet.onerror = function () { finish(null); };
+      sheet.onload = function () {
+        if (CUT !== job) return;   // another book was opened meanwhile
+        try {
+          var W = Math.floor(sheet.naturalWidth / 3), H = Math.floor(sheet.naturalHeight / 2), urls = [], left = 6;
+          if (!W || !H) return finish(null);
+          for (var i = 0; i < 6; i++) (function (i) {
+            var cv = document.createElement("canvas"); cv.width = W; cv.height = H;
+            cv.getContext("2d").drawImage(sheet, (i % 3) * W, Math.floor(i / 3) * H, W, H, 0, 0, W, H);
+            function got(u) {
+              urls[i] = u;
+              if (--left) return;
+              var whole = CUT === job;
+              for (var k = 0; k < 6; k++) whole = whole && !!urls[k];
+              if (whole) return finish(urls);
+              urls.forEach(function (x) { try { URL.revokeObjectURL(x); } catch (e) {} });
+              finish(null);
+            }
+            // a blob keeps six scenes out of the page's strings; an older
+            // browser without toBlob gets the same picture as a data URL
+            if (cv.toBlob) cv.toBlob(function (b) { got(b ? URL.createObjectURL(b) : null); }, "image/jpeg", 0.92);
+            else got(cv.toDataURL("image/jpeg", 0.92));
+          })(i);
+        } catch (e) { finish(null); }
+      };
+      sheet.src = paintedSrc(st);
     }
     function cover(st,w){ var c0=st.colors[0],c1=st.colors[1];
       var face=(window.Sona&&Sona.COVER_FACES&&Sona.COVER_FACES[st.sound])||"";
-      var clip="pc-"+st.painted;
       return '<svg viewBox="0 0 60 76" style="width:'+w+'px;height:'+Math.round(w*76/60)+'px;overflow:visible">'
         +'<rect x="2" y="8" width="52" height="62" rx="7" fill="#fff" style="filter:drop-shadow(0 3px 5px rgba(0,0,0,.18))"/>'
-        +(st.painted
-          ?('<clipPath id="'+clip+'"><rect x="2" y="8" width="52" height="62" rx="7"/></clipPath>'
-            +'<image href="/assets/books/painted/'+st.painted+'-cover.webp" x="2" y="8" width="52" height="62" preserveAspectRatio="xMidYMid slice" clip-path="url(#'+clip+')"/>'
-            +'<rect x="2" y="8" width="6" height="62" rx="3" fill="'+c0+'"/>')
-          :('<rect x="2" y="8" width="6" height="62" rx="3" fill="'+c0+'"/>'
-            +'<circle cx="30" cy="39" r="20" fill="'+c0+'" opacity=".15"/>'
-            +(face?('<g transform="translate(12,21) scale(0.56)">'+face+'</g>'):'')))
+        +'<rect x="2" y="8" width="6" height="62" rx="3" fill="'+c0+'"/>'
+        +'<circle cx="30" cy="39" r="20" fill="'+c0+'" opacity=".15"/>'
+        +(face?('<g transform="translate(12,21) scale(0.56)">'+face+'</g>'):'')
         +'<circle cx="52" cy="10" r="10" fill="'+c1+'"/>'
         +'<text x="52" y="14" text-anchor="middle" font-family="Baloo 2" font-weight="800" font-size="'+(sndLabel(st.sound).length>3?6:sndLabel(st.sound).length>1?8:10)+'" fill="#fff">'+sndLabel(st.sound)+'</text>'
         +'</svg>'; }
     // per-story wash for the reader background (D2): story tint over cream
     function hexRgba(hex, a) { try { var h = hex.replace("#", ""); return "rgba(" + parseInt(h.substr(0, 2), 16) + "," + parseInt(h.substr(2, 2), 16) + "," + parseInt(h.substr(4, 2), 16) + "," + a + ")"; } catch (e) { return "rgba(255,122,110," + a + ")"; } }
     var BOOK = null, page = -1; // -1 = cover, pages.length = The End
-    var bkStage = document.getElementById("bkStage"), bkHead = document.getElementById("bkHead");
+    var bookEl = document.getElementById("book"), bkStage = document.getElementById("bkStage"), bkHead = document.getElementById("bkHead"), bkCount = document.getElementById("bkCount");
+    var bkPrev = document.getElementById("bkPrev"), bkNext = document.getElementById("bkNext"), bkHear = document.getElementById("bkHear");
+    var bkMicWrap = document.getElementById("bkMicWrap"), bkMic = document.getElementById("bkMic"), bkSkip = document.getElementById("bkSkip"), bkPrimer = document.getElementById("bkPrimer");
 
     function openBook(st) {
       if (!bookOpen(st)) return;
       BOOK = st; page = -1;
-      var bk = document.getElementById("book");
-      bk.classList.add("show");
-      // tint layers OVER the opaque cream (backgroundImage keeps the base color)
-      bk.style.backgroundImage = "linear-gradient(180deg," + hexRgba(st.colors[0], .18) + ", #fff6e9 52%, #ffedd8)";
-      bkHead.textContent = st.title + " · " + sndLabel(st.sound) + " sound";
-      bkHead.style.color = st.colors[1];
+      bookEl.classList.add("show");
+      bkHead.innerHTML = '<span class="bh"><span class="bh1"></span><span class="bhsep"> · </span><span class="bh2"></span></span>';
+      bkHead.querySelector(".bh1").textContent = st.title;
+      bkHead.querySelector(".bh2").textContent = sndLabel(st.sound) + " sound";
+      // a painted book's picture comes down while Echo reads the title
+      if (st.painted) cutScenes(st, function () {});
       showPage();
     }
     // color every target-sound letter in a sentence (design §8 reader)
@@ -816,7 +1020,7 @@
       return ""; }catch(e){ return ""; } }
     function tintSound(html, snd){ try{ var L=String(snd||"").charAt(0);
       return html.replace(/>([^<]+)</g, function(m, txt){
-        return ">"+txt.replace(new RegExp("(["+L.toLowerCase()+L.toUpperCase()+"])","g"), '<b style="color:#ef6f23">$1</b>')+"<"; // kid accent, matches the sound chip (1c)
+        return ">"+txt.replace(new RegExp("(["+L.toLowerCase()+L.toUpperCase()+"])","g"), '<b class="snd">$1</b>')+"<"; // the sound's orange (action.css), matches the sound chip
       }); }catch(e){ return html; } }
     // A book that lists its practice words tints only the START of those words
     // (the letters that make the sound). tintSound above colours every matching
@@ -834,81 +1038,408 @@
           var i = w.search(/[A-Za-z]/), lw = w.slice(i).toLowerCase();
           for (var k = 0; k < leads.length; k++) if (lw.indexOf(leads[k]) === 0) {
             var n = leads[k].length;
-            html = w.slice(0, i) + '<b style="color:#ef6f23">' + w.slice(i, i + n) + "</b>" + w.slice(i + n);
+            html = w.slice(0, i) + '<b class="snd">' + w.slice(i, i + n) + "</b>" + w.slice(i + n);
             break;
           }
         }
         return "<span>" + html + "</span>";
       }).join(" ");
     }
-    function closeBook() { stopSpeech(); document.getElementById("book").classList.remove("show"); BOOK = null; }
+    function closeBook() { endMoment(); stopSpeech(); setBar("next"); bookEl.classList.remove("show"); bookEl.classList.remove("tall"); BOOK = null; publish(); }
 
     function tappable(t) {
       return t.split(" ").map(function (w) { return "<span>" + w + "</span>"; }).join(" ");
     }
-    // Echo leans on the page corner and reads along: listening while the line
-    // plays, idle after (celebrate on The End).
+    // Echo stands behind the card and reads along: listening while the line
+    // plays, idle after (celebrate on The End and when he hears the word).
+    function echoPose(p) { var e = document.getElementById("pgEcho"); if (e) e.src = "/coach/echo/echo-" + p + ".svg"; }
     function readAlong(text) {
-      var e = document.getElementById("pgEcho");
-      if (e) e.src = "/coach/echo/echo-listening.svg";
-      return say(text).then(function () { var e2 = document.getElementById("pgEcho"); if (e2) e2.src = "/coach/echo/echo-idle.svg"; });
+      echoPose("listening");
+      // a line cut short by a page turn must not set the NEW page's Echo idle
+      var p = say(text), tok = sayToken;
+      return p.then(function () { if (tok === sayToken) echoPose("idle"); });
     }
+    // A page's picture fits by its own shape, decided once it has loaded:
+    // portrait art (taller than 1.2x its width) covers the screen, anything
+    // else is shown whole at full width over its blurred copy.
+    function fitArt() {
+      var img = bkStage.querySelector(".bkart.scene img, img.bkcover");
+      if (!img) return;
+      function apply() {
+        if (!bkStage.contains(img)) return;   // the page already turned
+        if (!img.classList.contains("bkcover")) {
+          var w = img.naturalWidth, h = img.naturalHeight;
+          if (w && h > w * 1.2) bookEl.classList.add("tall"); else bookEl.classList.remove("tall");
+        }
+        roomForAsk();
+        img.classList.add("in");
+      }
+      if (img.complete && img.naturalWidth) apply();
+      else { img.addEventListener("load", apply); img.addEventListener("error", function () { img.classList.add("in"); }); }
+    }
+    // where a wide picture's (or the cover's) top and bottom edges fall, for .bkedge
+    function placeEdges() {
+      var img = bkStage.querySelector(".bkart.scene img, img.bkcover");
+      if (!img || !img.naturalWidth || bookEl.classList.contains("tall")) { bookEl.classList.remove("edges"); return; }
+      var r = img.getBoundingClientRect();
+      bookEl.style.setProperty("--art-t", Math.round(r.top) + "px");
+      bookEl.style.setProperty("--art-b", Math.round(r.bottom) + "px");
+      bookEl.classList.add("edges");
+    }
+    // On a short phone a wide picture fills all the room above the card, so
+    // Echo's question landed on the scene (at 320x568, on Rory himself). While
+    // he asks, the picture first slides up under the top bar (a picture's top
+    // is sky; the bars already float over it), and only if that isn't room
+    // enough does it shrink by the rest. The bubble going gives it all back.
+    // Tall art keeps the screen: the brief keeps its bottom quarter calm for
+    // exactly this.
+    function roomForAsk() {
+      var img = bkStage.querySelector(".bkart.scene img"), bub = document.getElementById("bkBubble"), foot = bkStage.querySelector(".bkfoot");
+      bookEl.style.removeProperty("--bk-lift"); bookEl.style.removeProperty("--bk-ask");
+      // where the bubble sits, not where its pop-in scale has it this instant
+      function over() { return img.getBoundingClientRect().bottom + 6 - (foot.getBoundingClientRect().top + bub.offsetTop); }
+      if (img && img.naturalWidth && bub && foot && !bub.hidden && !bookEl.classList.contains("tall") && over() >= 1) {
+        var lift = Math.ceil(Math.min(over(), Math.max(0, img.getBoundingClientRect().top)));
+        bookEl.style.setProperty("--bk-lift", lift + "px");
+        for (var i = 0, add = 0, o; i < 4 && (o = over()) >= 1; i++) { add += o; bookEl.style.setProperty("--bk-ask", Math.ceil(add) + "px"); }
+      }
+      placeEdges();
+    }
+    window.addEventListener("resize", function () { if (BOOK) roomForAsk(); });
+    // the cream card, with Echo behind its top edge and his bubble beside him
+    function footHTML(inner, cls, pose) {
+      return '<div class="bkfoot' + (cls ? " " + cls : "") + '">'
+        + '<div class="bkecho"><img id="pgEcho" src="/coach/echo/echo-' + (pose || "idle") + '.svg" alt="Echo" /></div>'
+        + '<div class="bkcard">' + inner + '</div>'
+        + '<div class="bkbubble" id="bkBubble" aria-live="polite" hidden><div class="bq" id="bkAsk"></div><div id="bkMicState"></div></div>'
+        + '</div>';
+    }
+    var STAR = '<svg viewBox="0 0 64 64" style="width:min(44vw,170px);height:min(44vw,170px)"><path d="M32 5l8.2 18.6L60 25.8 44.9 39.2 49.8 59 32 48.4 14.2 59l4.9-19.8L4 25.8l19.8-2.2Z" fill="#ffd21c"/><circle cx="25" cy="21" r="3" fill="#fff" opacity=".85"/></svg>';
     function showPage() {
+      endMoment();
       stopSpeech();
-      var prev = document.getElementById("bkPrev"), next = document.getElementById("bkNext"), hear = document.getElementById("bkHear");
-      prev.classList.remove("pill"); prev.textContent = "←";
-      prev.style.visibility = page <= -1 ? "hidden" : "visible";
-      var N = BOOK.pages.length, left = N - 1 - page; // pages after this one
+      bookEl.classList.remove("tall"); bookEl.classList.remove("edges"); bookEl.style.removeProperty("--bk-lift"); bookEl.style.removeProperty("--bk-ask");
+      bkPrev.classList.remove("pill"); bkPrev.textContent = "←";
+      bkPrev.hidden = page <= -1;
+      var N = BOOK.pages.length, c0 = BOOK.colors[0], c1 = BOOK.colors[1];
+      var wash = '<div class="bkbg wash" style="background:linear-gradient(180deg,' + hexRgba(c0, .34) + ',' + hexRgba(c1, .14) + ' 58%,var(--cream))"></div>';
+      var blur = function (src) { return '<div class="bkbg" style="background-image:url(&quot;' + escAttr(src) + '&quot;)"></div>'; };
+      var edge = function (src, at) { return '<div class="bkedge ' + at + '" style="background-image:url(&quot;' + escAttr(src) + '&quot;)"></div>'; };
+      bkCount.textContent = page >= 0 && page < N ? (page + 1) + " of " + N : "";
+      bkCount.style.visibility = page >= 0 && page < N ? "visible" : "hidden";
       if (page === -1) {
-        bkStage.innerHTML = (BOOK.painted ? paintedScene(BOOK, 0, "bkcover") : BOOK.cover ? '<img class="bkcover" src="' + escAttr(BOOK.cover) + '" alt="' + escAttr(BOOK.coverAlt) + '">' : '<div class="bkpic">' + cover(BOOK, 150) + '</div>')
-          + '<div class="bktitle">' + BOOK.title + '</div><div class="bksub">A story full of ' + sndLabel(BOOK.sound) + ' sounds — Echo reads it to you!</div>';
-        next.textContent = "Start →"; hear.style.visibility = "hidden";
+        // a painted book's title page is its first scene: the shelf's small
+        // copy (already here) until the full-size cut is ready, then that
+        var cvr = BOOK.cover || (BOOK.painted ? sceneOf(BOOK, 0) || paintedSrc(BOOK, true) : "");
+        bkStage.innerHTML = (cvr ? blur(cvr) + edge(cvr, "up") + edge(cvr, "down") + '<div class="bkart cvrpage"><img class="bkcover" src="' + escAttr(cvr) + '" alt="' + escAttr(BOOK.coverAlt) + '"></div>'
+            : wash + '<div class="bkart sticker"><div class="bkpic">' + cover(BOOK, 150) + '</div></div>')
+          + footHTML('<div class="bktitle">' + escHtml(BOOK.title) + '</div><div class="bksub">A story full of ' + sndLabel(BOOK.sound) + ' sounds — Echo reads it to you!</div>');
+        fitArt();
+        if (BOOK.painted && !sceneOf(BOOK, 0)) {
+          var titled = BOOK;
+          cutScenes(BOOK, function () {
+            var im = bkStage.querySelector("img.bkcover"), s0 = sceneOf(titled, 0);
+            if (BOOK === titled && page === -1 && im && s0) im.src = s0;
+          });
+        }
+        setBar("next");
+        bkNext.textContent = "Start →"; bkHear.hidden = true;
         say(BOOK.title + "! A story full of " + sndLabel(BOOK.sound).replace(" (v)", "") + " sounds.");
       } else if (page >= N) {
-        // The End: star burst IN the art panel, no page-edge stack left
-        bkStage.innerHTML = '<div class="paperWrap"><div class="paper">'
-          + '<div class="bkart" style="background:radial-gradient(circle,rgba(255,210,28,.3),rgba(255,210,28,0) 72%)"><div class="bkpic" style="filter:none"><svg viewBox="0 0 64 64" style="width:120px;height:120px"><path d="M32 5l8.2 18.6L60 25.8 44.9 39.2 49.8 59 32 48.4 14.2 59l4.9-19.8L4 25.8l19.8-2.2Z" fill="#ffd21c"/><circle cx="25" cy="21" r="3" fill="#fff" opacity=".85"/></svg></div></div>'
-          + '<div class="bktitle" style="margin-top:4px;">The End!</div><div class="bksub">Great listening! Read it again or pick another story.</div>'
-          + '<img class="pgEcho" id="pgEcho" src="/coach/echo/echo-celebrate.svg" alt="Echo" />'
-          + '</div></div>';
-        next.textContent = "All done ✓"; hear.style.visibility = "hidden";
-        prev.classList.add("pill"); prev.textContent = "Read again"; prev.style.visibility = "visible";
+        // The End: the star over the last picture, Echo celebrating on the card
+        var last = BOOK.pages[N - 1], lastArt = last && (last.art || sceneOf(BOOK, N - 1));
+        bkStage.innerHTML = (lastArt ? blur(lastArt) : wash)
+          + '<div class="bkart"><div class="bkpic" style="filter:drop-shadow(0 10px 22px rgba(255,190,20,.55))">' + STAR + '</div></div>'
+          + footHTML('<div class="bktitle">The End!</div><div class="bksub">Great listening! Read it again or pick another story.</div>', "end", "celebrate");
+        setBar("next");
+        bkNext.textContent = "All done ✓"; bkHear.hidden = true;
+        bkPrev.classList.add("pill"); bkPrev.textContent = "Read again";
         markRead(BOOK.title);
-        if (window.Sona) { Sona.confetti({ count: 130, duration: 2200 }); Sona.sfx.star(); }
+        if (window.Sona && Sona.confetti) Sona.confetti({ count: 130, duration: 2200 });
+        chime("star");
         say("The end! Great listening!");
       } else {
         var pg = BOOK.pages[page];
-        bkStage.innerHTML = '<div class="paperWrap">'
-          + (left >= 2 ? '<div class="pstack two"></div>' : "")
-          + (left >= 1 ? '<div class="pstack"></div>' : "")
-          + '<div class="paper">'
-          + '<span class="ribbon" style="background:' + BOOK.colors[0] + '">' + (page + 1) + '<span style="font-size:8.5px;opacity:.85">of ' + N + '</span></span>'
-          + (BOOK.painted ? paintedScene(BOOK, page, "bkart scene")
-            : pg.art ? '<div class="bkart scene">' + readerArt(pg) + '</div>'
-            : '<div class="bkart" style="background:radial-gradient(circle,' + hexRgba(BOOK.colors[0], .16) + ',' + hexRgba(BOOK.colors[1], .05) + ' 75%)"><div class="bkpic" style="filter:none">' + readerArt(pg) + '</div></div>')
-          + '<div style="display:inline-block;background:#ffe7d3;color:#ef6f23;font-family:Baloo 2;font-weight:800;font-size:11px;letter-spacing:.08em;border-radius:99px;padding:4px 12px;">' + sndLabel(BOOK.sound) + ' SOUND</div>'
-          + '<div class="bktext">' + (BOOK.words ? tintWords(pg.t, BOOK) : tintSound(tappable(pg.t), BOOK.sound)) + '</div>'
-          + '<div class="bkhint">TAP ANY WORD TO HEAR IT</div>'
-          + '<img class="pgEcho" id="pgEcho" src="/coach/echo/echo-listening.svg" alt="Echo" />'
-          + '</div></div>';
-        next.textContent = "Next →"; hear.style.visibility = "visible";
-        bkStage.querySelectorAll(".bktext span").forEach(function (sp) {
-          sp.onclick = function () { if (playing) return; readAlong(sp.textContent.replace(/[^a-zA-Z']/g, "")); };
-        });
-        readAlong(pg.t);
+        // the picture: a drawn page's file or a painted page's scene, whole
+        // at full width over its own edges; the sticker on a wash for a page
+        // with neither (or a painted book whose picture couldn't come down);
+        // and while a painted book's picture is still on its way, the wash
+        // alone, filled in below when it lands
+        var artNow = function (at) {
+          var p = BOOK.pages[at], src = p.art || sceneOf(BOOK, at);
+          if (src) return blur(src) + edge(src, "up") + edge(src, "down") + '<div class="bkart scene">'
+            + (p.art ? readerArt(p) : '<img src="' + escAttr(src) + '" alt="" data-scene="' + at + '">') + '</div>';
+          if (BOOK.painted && !(CUT.id === BOOK.painted && CUT.failed)) return wash + '<div class="bkart bkwait"></div>';
+          return wash + '<div class="bkart sticker"><div class="bkglow" style="background:radial-gradient(circle,' + hexRgba(c0, .3) + ',' + hexRgba(c1, 0) + ' 70%)"></div><div class="bkpic">' + readerArt(p) + '</div></div>';
+        };
+        bkStage.innerHTML = artNow(page)
+          + footHTML('<div class="bktext">' + (BOOK.words ? tintWords(pg.t, BOOK) : tintSound(tappable(pg.t), BOOK.sound)) + '</div>'
+            + (page === 0 ? '<div class="bkhint">Tap any word to hear it</div>' : ""), "", "listening");
+        fitArt();
+        if (bkStage.querySelector(".bkwait")) {
+          var waitBook = BOOK, waitPage = page;
+          cutScenes(BOOK, function () {
+            var w = bkStage.querySelector(".bkwait"), foot = bkStage.querySelector(".bkfoot");
+            if (BOOK !== waitBook || page !== waitPage || !w || !foot) return;   // the page already turned
+            var wa = bkStage.querySelector(".bkbg.wash"); if (wa) wa.remove(); w.remove();
+            foot.insertAdjacentHTML("beforebegin", artNow(waitPage));
+            fitArt();
+          });
+        }
+        bkNext.textContent = "Next →"; bkHear.hidden = false;
+        bkStage.querySelectorAll(".bktext span").forEach(function (sp) { sp.onclick = function () { wordTap(sp); }; });
+        // a page with a key word shows the mic (resting) where Next was, and
+        // asks once Echo has finished reading it
+        var on = momentOn(), tok = momTok;
+        setBar(on ? "wait" : "next", "");
+        readAlong(pg.t).then(function () { if (on && tok === momTok) startMoment(); });
+      }
+      publish();
+    }
+
+    /* ---- the key-word moment (family redesign brief, 28 Sep 2026) ----
+       "The key word lights up in the text. Echo pops up and asks 'Can you say
+       boat?', and the teal mic appears. When the child says it, a small
+       celebration plays and the page turns. After 3 tries, Echo says
+       something kind and the page turns anyway. A small Skip for grown-ups."
+       The listening is Say & Play's check (SayCheck): a voice of the book's
+       sound family. It can't tell the word, so "heard" means Echo heard the
+       child, never that the word was right, and nothing here grades.
+       The rules it keeps:
+       - PLAY, NOT PRACTICE. Nothing here logs an attempt, a rep, a session,
+         a rung, a rotation step, coins or a sticker, and no sona.* practice
+         key changes. Whether a book word should count is Rachel's call.
+       - SILENCE NEVER TURNS THE PAGE and is never a try: a quiet window
+         closes the mic and waits for a tap on it, which only listens again.
+         A try is a voice in the other family ("shape"); three of those, and
+         Echo says something kind and turns the page (the brief's "3 tries").
+       - ONE TARGET, IN ISOLATION: Echo's model ends on the word alone
+         ("Can you say... boat."), calm, so what the child copies is the one
+         word; nothing is glued onto it.
+       - DEVELOPMENTAL ORDER: a child younger than the age the book's sound is
+         usually acquired (Sona.soundNorm) is never asked to say it; the book
+         reads with Next, as before. Play mode shows every sound's books.
+       - THE MIC IS QUIET'S: nothing plays while it is live or being asked
+         for, nor inside a beat of its close; every way off a page closes it
+         first; a hidden page closes it and coming back needs a tap on it.
+       - A GROWN-UP SAYS YES FIRST, inside the book, and the phone is asked
+         only from that tap. "Not now", a refused or missing mic: the books
+         read with Next for the rest of the visit. Never a dead end. */
+    var M = null, momTok = 0, micOff = false, barMode = "next", turnT = 0;
+    function momentOn() {
+      if (!BOOK || !BOOK.keys || page < 0 || page >= BOOK.pages.length || !BOOK.keys[page]) return false;
+      if (!SC || micOff || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return false;
+      var age = parseInt(profile.childAge, 10) || 0, norm = (window.Sona && Sona.soundNorm) ? Sona.soundNorm(BOOK.sound) : null;
+      return !(age && norm && age < norm);
+    }
+    // What tests read; the page's internals stay put otherwise.
+    function publish() {
+      try { window.__book = { page: page, mode: barMode, word: M ? M.word : null, tries: M ? M.tries : 0, primer: !bkPrimer.hidden, micOff: micOff }; } catch (e) {}
+    }
+    var MIC_NOTE = { live: "Your turn!", nudge: "Tap the mic, then say it" };
+    // The bottom bar: Next ("next"), or the mic, resting while Echo talks
+    // ("wait"), listening ("live": "Your turn!" shows then and never before),
+    // waiting for a tap after a quiet window ("nudge"), or done ("yay", "bye").
+    function setBar(mode, note) {
+      barMode = mode;
+      var mic = mode !== "next";
+      bkNext.hidden = mic; bkMicWrap.hidden = !mic;
+      bkMic.className = "act-mic bkmic " + mode;
+      bkMic.setAttribute("aria-label", mode === "live" ? "Echo is listening" : mode === "nudge" ? "Tap the mic, then say it" : "Microphone");
+      var st = document.getElementById("bkMicState");
+      if (st) st.textContent = note != null ? note : (MIC_NOTE[mode] || "");
+      var bub = document.getElementById("bkBubble"); if (bub && !bub.hidden) roomForAsk();
+      try { document.body.setAttribute("data-bkmic", mode); } catch (e) {}
+      publish();
+    }
+    // Every way off the moment starts here: the mic closes, Echo's line and
+    // any chime still waiting are dropped, the grown-ups' question goes.
+    function hush() { momTok++; clearTimeout(turnT); if (SC) SC.stop(); bkPrimer.hidden = true; return momTok; }
+    function endMoment() { hush(); M = null; publish(); }
+    // "Not now", a refused mic, no mic: the rest of this visit reads with Next.
+    // A mic that wouldn't open this once (busy): this page does, and the next
+    // page asks again.
+    function momentOff(justThisPage) {
+      if (!justThisPage) micOff = true;
+      endMoment();
+      var foot = bkStage.querySelector(".bkfoot"), bub = document.getElementById("bkBubble"), kw = bkStage.querySelector(".bktext .kw");
+      if (foot) foot.classList.remove("ask"); if (bub) bub.hidden = true; if (kw) kw.classList.remove("kw");
+      setBar("next"); echoPose("idle"); roomForAsk();
+    }
+    function markKey(word) {
+      var spans = bkStage.querySelectorAll(".bktext span"), w = String(word).toLowerCase();
+      for (var i = 0; i < spans.length; i++) {
+        var k = spans[i].textContent.toLowerCase().replace(/[^a-z']/g, "").replace(/^'+|'+$/g, "");
+        if (k === w) { spans[i].classList.add("kw"); return; }   // the first, if it's there twice
       }
     }
-    document.getElementById("bkNext").onclick = function () {
-      if (window.Sona) Sona.sfx.tap();
-      if (BOOK && page >= BOOK.pages.length) { closeBook(); return; }
-      page++; showPage();
+    // The key words are stored lower-case; a name keeps its capital when Echo
+    // shows it ("Can you say Finn?"). A name is the title's first word (never
+    // one of the voiced-th book's little words: "This Bear, That Bee"), or a
+    // word the book capitalises mid-sentence and never writes lower-case (a
+    // capital after a full stop proves nothing: "Then the sun sets.").
+    function keyShown(word) {
+      var w = String(word).replace(/[^a-z']/gi, ""), cap = w.charAt(0).toUpperCase() + w.slice(1);
+      if (/^th(e|is|at|ese|ose|en|ey|ere|em)$/i.test(w)) return w;
+      if (String(BOOK.title).split(" ")[0].replace(/'s$/, "") === cap) return cap;
+      var re = new RegExp("\\b" + w + "\\b", "gi"), mid = 0, low = 0, m;
+      BOOK.pages.forEach(function (p) {
+        re.lastIndex = 0;
+        while ((m = re.exec(p.t))) {
+          if (m[0].charAt(0) === m[0].charAt(0).toLowerCase()) low++;
+          else if (/[a-z,]\s*$/i.test(p.t.slice(0, m.index))) mid++;
+        }
+      });
+      return mid && !low ? cap : w;
+    }
+    function askHTML(word) {
+      var mark = (window.Sona && Sona.soundMark) ? Sona.soundMark(word, BOOK.sound, "i") : '<b class="snd">' + escHtml(word) + "</b>";
+      return 'Can you say <span class="bkw">' + mark + "</span>?";
+    }
+    function startMoment() {
+      if (!momentOn()) { setBar("next"); return; }
+      var tok = momTok;
+      M = { word: keyShown(BOOK.keys[page]), tries: 0, ok: false, leaving: false };
+      markKey(BOOK.keys[page]);
+      var foot = bkStage.querySelector(".bkfoot"), bub = document.getElementById("bkBubble");
+      document.getElementById("bkAsk").innerHTML = askHTML(M.word);
+      if (bub) bub.hidden = false; if (foot) foot.classList.add("ask");
+      roomForAsk();
+      echoPose("idle");
+      if (document.hidden) { setBar("nudge"); return; }
+      setBar("wait", "Listen…");
+      SC.ready(function (st) {
+        if (tok !== momTok) return;
+        if (st === "nomic") return momentOff();
+        if (st === "go") { M.ok = true; return ask(false); }
+        primer(tok);
+      });
+    }
+    // The grown-up's yes. The phone's own mic prompt rides on this tap, and
+    // is never shown from anywhere else.
+    function primer(tok) {
+      document.getElementById("bkMicPromise").textContent = (window.Sona && Sona.MIC_PROMISE) || "";
+      bkPrimer.hidden = false; publish();
+      document.getElementById("bkPrimerYes").onclick = function () {
+        if (tok !== momTok || !M || document.hidden) return;
+        bkPrimer.hidden = true; publish();
+        // The phone's mic prompt must never open under a voice: a word tapped
+        // just before this question came up may still be reading.
+        if (playing) stopSpeech();
+        SC.permit(function (r) {
+          if (tok !== momTok || !M) return;
+          if (r === "denied") return denied();
+          if (r === "nomic") return momentOff();
+          if (r === "failed") return momentOff(true);
+          M.ok = true; ask(false);
+        });
+      };
+      document.getElementById("bkPrimerNo").onclick = function () { if (tok === momTok) momentOff(); };
+    }
+    function denied() {
+      momentOff();
+      if (!window.Sona || !Sona.micDenied) return;
+      Sona.micDenied({ onClose: function () {} });
+      // The shared screen's way out says "Back home"; here it only closes it
+      // and the book reads on with Next, so it says that instead.
+      var back = document.getElementById("sonaMicBack");
+      if (back && /back home/i.test(back.textContent)) back.textContent = "Keep reading";
+    }
+    // Echo models the word, calm, the word alone at the end; then the mic.
+    function ask(again) {
+      if (!M) return;
+      var tok = momTok;
+      setBar("wait", again ? "One more time…" : "Listen…");
+      echoPose("idle");
+      SC.say((again ? "One more time... " : "Can you say... ") + M.word + ".", function () { if (tok === momTok) listenNow(); });
+    }
+    function listenNow() {
+      if (!M) return;
+      var tok = momTok;
+      setBar("wait", "");
+      SC.listen(BOOK.sound, function (out) { if (tok === momTok) answer(out); },
+        function () { if (tok === momTok) { setBar("live"); echoPose("listening"); } });
+    }
+    function answer(out) {
+      if (!M) return;
+      var tok = momTok;
+      if (out === "heard") {
+        // SayCheck has already closed the mic; the chime still waits its beat
+        M.leaving = true;
+        setBar("yay", "I heard you!");
+        echoPose("celebrate");
+        var kw = bkStage.querySelector(".bktext .kw"); if (kw) kw.classList.add("yay");
+        chime("correct");
+        SC.quiet(function () { if (tok === momTok && window.Sona && Sona.confetti) Sona.confetti({ count: 60, duration: 1100 }); });
+        turnT = setTimeout(function () { if (tok === momTok) turnPage(); }, 1200);
+        return;
+      }
+      if (out === "shape") {
+        M.tries++;
+        if (M.tries < 3) return ask(true);
+        M.leaving = true;
+        setBar("bye", "Great trying! Let's turn the page.");
+        echoPose("celebrate");
+        SC.say("Great trying. Let's turn the page.", function () { if (tok === momTok) turnPage(); });
+        return;
+      }
+      if (out === "denied") return denied();
+      if (out === "nomic") return momentOff();
+      if (out === "failed") return momentOff(true);
+      // "quiet" (no voice in the window) or "hidden": nothing moves. The mic
+      // waits for a tap, and the tap only listens again.
+      setBar("nudge"); echoPose("idle");
+    }
+    function turnPage() { endMoment(); if (BOOK && page < BOOK.pages.length) { page++; showPage(); } }
+    function wordTap(sp) {
+      if (playing || (M && M.leaving)) return;
+      var w = sp.textContent.replace(/[^a-zA-Z']/g, ""), tok = hush();
+      if (M && M.ok) setBar("wait", "");
+      // a moment the tap cut off before the grown-up's answer starts over, so
+      // the mic is never left resting with nothing that wakes it
+      readAlong(w).then(function () { if (tok !== momTok || !M) return; if (M.ok) listenNow(); else startMoment(); });
+    }
+
+    bkNext.onclick = function () {
+      if (!BOOK) return;
+      if (page >= BOOK.pages.length) { closeBook(); return; }
+      endMoment(); page++; showPage(); chime("tap");
     };
-    document.getElementById("bkPrev").onclick = function () {
-      if (BOOK && page >= BOOK.pages.length) { page = -1; showPage(); return; } // Read again
+    // for grown-ups: turns the page with no word said
+    bkSkip.onclick = function () { if (!BOOK || page < 0 || page >= BOOK.pages.length) return; turnPage(); };
+    bkPrev.onclick = function () {
+      if (!BOOK) return;
+      endMoment();
+      if (page >= BOOK.pages.length) { page = -1; showPage(); return; } // Read again
       if (page > -1) { page--; showPage(); }
     };
-    document.getElementById("bkHear").onclick = function () { if (BOOK && page >= 0 && page < BOOK.pages.length && !playing) say(BOOK.pages[page].t); };
+    // Hear it: the mic closes, Echo reads the page again, then asks again
+    bkHear.onclick = function () {
+      if (!BOOK || page < 0 || page >= BOOK.pages.length || playing || (M && M.leaving)) return;
+      var tok = hush(), pg = BOOK.pages[page];
+      if (barMode !== "next") setBar("wait", M ? "Listen…" : "");
+      readAlong(pg.t).then(function () {
+        if (tok !== momTok) return;
+        if (M && M.ok) ask(false); else if (momentOn()) startMoment();
+      });
+    };
+    // after a quiet window (or coming back to the page): the tap listens again
+    bkMic.onclick = function () {
+      // not while the book is reading a tapped word: hush() stops only the
+      // mic, so asking for it now would open it under the book's own voice
+      if (!BOOK || barMode !== "nudge" || playing) return;
+      hush();
+      if (M && M.ok) listenNow(); else startMoment();
+    };
     document.getElementById("bkClose").onclick = closeBook;
+    // A hidden page closes the mic and stops Echo (SayCheck closes its own
+    // side too); coming back needs a tap on the mic. A page already turning
+    // is left to turn.
+    if (window.Sona && Sona.onBackground) Sona.onBackground(function () {
+      stopSpeech();
+      if (!BOOK || barMode === "next" || (M && M.leaving)) return;
+      hush(); setBar("nudge");
+    });
 
     /* ---- word box ---- */
     var wbHost = document.getElementById("wbSounds"), grid = document.getElementById("wordgrid");
@@ -923,8 +1454,8 @@
       order.forEach(function (s) {
         var c = document.createElement("div");
         c.className = "sound" + (s === curSound ? " on" : "");
-        c.textContent = s;
-        c.onclick = function () { if (window.Sona) Sona.sfx.tap(); curSound = s; paintChips(); paintGrid(); };
+        c.textContent = sndLabel(s);   // "TH (v)", never the internal code THV
+        c.onclick = function () { chime("tap"); curSound = s; paintChips(); paintGrid(); };
         wbHost.appendChild(c);
       });
     }

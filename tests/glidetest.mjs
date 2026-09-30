@@ -123,7 +123,8 @@ await scenario("a whole flight", async () => {
     s = await st(page);
     ok("after leg 3 the balloon lands with fireworks, with no card", !s.card && s.mics === 2 && s.REV === 1, s);
     await page.locator("#endOvl.show").waitFor({ timeout: 8000 });
-    ok("…and the flight is won", /You landed with fireworks!/.test(await page.locator("#endTitle").innerText()) && (await page.evaluate(() => finaleDone)));
+    const wonTitle = await page.locator("#endTitle").innerText();
+    ok("…and the flight is won, and the card leads with that win", /^What a flight![\s\S]*You landed with fireworks!/.test(wonTitle) && !/Great round/.test(wonTitle) && (await page.evaluate(() => finaleDone)), wonTitle);
     ok("the earned turn is spent once the flight ends", await page.evaluate(() => sessionStorage.getItem("sona.play.active") === null && sessionStorage.getItem("sona.play.token") === null));
     const sfx = await page.evaluate(() => __f.sfx);
     ok("no sound ever played while the card's mic was open", sfx.length > 0 && sfx.every((c) => !c.live), sfx.filter((c) => c.live));

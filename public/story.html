@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
   <title>Sona — Story Time</title>
   <link href="/fonts.css" rel="stylesheet">
+  <link href="/action.css" rel="stylesheet">
   <link rel="manifest" href="/manifest.webmanifest" />
   <meta name="theme-color" content="#fff6e9" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -51,11 +52,12 @@
     /* Read it to me: white pill with the warm speaker */
     #hear{display:flex;align-items:center;gap:6px;border:none;background:#fff;border-radius:99px;padding:10px 16px;font-family:"Baloo 2";font-weight:800;color:#ef6f23;cursor:pointer;font-size:14px;box-shadow:0 4px 0 rgba(120,80,20,.16);}
     #hear:active{transform:translateY(3px);box-shadow:0 1px 0 rgba(120,80,20,.16);}
-    /* mic: app orange with the pulse ring (the blue radial is gone — blue is the parent color) */
-    .mic{width:70px;height:70px;border-radius:50%;border:none;background:linear-gradient(180deg,#ffa05a,#ff8a3d);cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 5px 0 0 var(--orange-d);transition:transform .05s;}
-    .mic:active{transform:translateY(4px);box-shadow:0 2px 0 0 var(--orange-d);} .mic.rec{animation:mpulse 1.4s infinite;} .mic svg{width:32px;height:32px;fill:#fff;}
+    /* mic: the teal disc with the pulse ring (action.css; design brief, 28 Sep
+       2026 — orange is only the practice sound's letters now) */
+    .mic{width:70px;height:70px;border-radius:50%;border:none;background:radial-gradient(circle at 35% 30%,var(--act-hi),var(--act) 70%);cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 5px 0 0 var(--act-d);transition:transform .05s;}
+    .mic:active{transform:translateY(4px);box-shadow:0 2px 0 0 var(--act-d);} .mic.rec{animation:mpulse 1.4s infinite;} .mic svg{width:32px;height:32px;fill:#fff;}
     .wavebars{display:flex;gap:4px;align-items:center;justify-content:center;height:32px;max-height:32px;overflow:hidden;} .wavebars i{width:5px;height:8px;background:#fff;border-radius:99px;transition:height .07s linear;}
-    @keyframes mpulse{0%{box-shadow:0 0 0 0 rgba(255,138,61,.45),0 5px 0 0 var(--orange-d)}70%{box-shadow:0 0 0 16px rgba(255,138,61,0),0 5px 0 0 var(--orange-d)}100%{box-shadow:0 0 0 0 rgba(255,138,61,0),0 5px 0 0 var(--orange-d)}}
+    @keyframes mpulse{0%{box-shadow:0 0 0 0 var(--act-glow),0 5px 0 0 var(--act-d)}70%{box-shadow:0 0 0 16px transparent,0 5px 0 0 var(--act-d)}100%{box-shadow:0 0 0 0 transparent,0 5px 0 0 var(--act-d)}}
     #win{position:fixed;inset:0;z-index:50;background:var(--cream);display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:30px;}
     #win.show{display:flex;} #win .leoWin{width:140px;height:140px;object-fit:contain;filter:drop-shadow(0 10px 16px rgba(120,80,20,.22));animation:lpop .6s ease;}
     #winChip{font-family:"Baloo 2";font-weight:800;font-size:12px;letter-spacing:.08em;background:rgba(255,255,255,.8);border-radius:99px;padding:6px 15px;color:#8a5a1a;}
@@ -63,8 +65,8 @@
     #win .rewards{display:flex;gap:12px;margin-top:18px;}
     #win .reward{background:#fff;border-radius:18px;padding:14px 22px;font-family:"Baloo 2";font-weight:800;font-size:22px;color:var(--ink);box-shadow:0 6px 16px rgba(120,80,20,.14);}
     #win .reward small{display:block;font-family:"Nunito";font-weight:700;font-size:12px;color:var(--muted);text-transform:uppercase;}
-    #win .btn{margin-top:22px;border:none;border-radius:16px;padding:15px 44px;font-family:"Baloo 2";font-weight:800;font-size:18px;text-transform:uppercase;color:#fff;background:linear-gradient(180deg,#ffa05a,#ff8a3d);box-shadow:0 5px 0 0 #ef6f23;cursor:pointer;}
-    #win .btn:active{transform:translateY(4px);box-shadow:0 1px 0 0 #ef6f23;} #win a{margin-top:14px;color:var(--muted);font-weight:800;font-size:14px;text-decoration:none;}
+    #win .btn{margin-top:22px;border:none;border-radius:999px;padding:15px 44px;font-family:"Baloo 2";font-weight:800;font-size:18px;text-transform:uppercase;color:#fff;text-shadow:0 1px 0 var(--act-d);background:linear-gradient(180deg,var(--act-hi),var(--act));box-shadow:0 5px 0 0 var(--act-d);cursor:pointer;}
+    #win .btn:active{transform:translateY(4px);box-shadow:0 1px 0 0 var(--act-d);} #win a{margin-top:14px;color:var(--muted);font-weight:800;font-size:14px;text-decoration:none;}
     @media (max-height:760px){ #pageEmoji{font-size:74px;} #pageText{font-size:20px;} #echo{width:54px;height:54px;} #artWrap{width:min(38vw,140px);height:min(38vw,140px);} }
     @media (prefers-reduced-motion:reduce){ #book.flip,#echoWrap.react,#win .leoWin,.mic.rec{animation:none;} }
   </style>
@@ -104,7 +106,7 @@
       <img src="/coach/echo/echo-celebrate.svg" alt="" onerror="this.onerror=null;this.src='/coach/echo/echo-idle.svg';" style="width:170px;height:170px;object-fit:contain;filter:drop-shadow(0 10px 14px rgba(90,120,20,.22));" />
       <h1 id="startTitle" style="font-family:'Baloo 2';font-weight:800;font-size:28px;color:#3f8a06;margin-top:12px;line-height:1.15;">Story time!</h1>
       <p style="font-weight:700;color:#5a7a3c;font-size:15.5px;margin-top:8px;">I'll read each page out loud — then you read it back to me!</p>
-      <button id="startBtn" style="margin-top:22px;width:100%;border:none;border-radius:18px;padding:17px;font-family:'Baloo 2';font-weight:800;font-size:20px;color:#fff;background:linear-gradient(180deg,#ffa05a,#ff8a3d);box-shadow:0 5px 0 #ef6f23;cursor:pointer;">Start the story!</button>
+      <button id="startBtn" style="margin-top:22px;width:100%;border:none;border-radius:999px;padding:17px;font-family:'Baloo 2';font-weight:800;font-size:20px;color:#fff;text-shadow:0 1px 0 var(--act-d);background:linear-gradient(180deg,var(--act-hi),var(--act));box-shadow:0 5px 0 var(--act-d);cursor:pointer;">Start the story!</button>
     </div>
   </div>
   <div id="win">

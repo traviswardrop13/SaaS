@@ -304,10 +304,12 @@ ok("no pageerrors", errs.length === 0, errs.join(" | "));
   ok("Echo is an actor, not a portrait — his pose changes across a chapter",
     new Set(poses).size >= 2, JSON.stringify(poses.map((p) => String(p).split("/").pop())));
 
-  // the borrowed Duolingo green is gone from the story's primary action
+  // the borrowed Duolingo green is gone from the story's primary action, and
+  // so is the old orange: buttons are the action teal (the family's design
+  // brief, 28 Sep 2026); orange is only the practice sound's letters now
   const cta = await pg.evaluate(() => getComputedStyle(document.getElementById("next")).backgroundImage);
-  ok("the story CTA is Sona orange, not Duolingo green",
-    /255, 138, 61|255, 160, 90/.test(cta) && !/88, 204, 2/.test(cta), cta.slice(0, 70));
+  ok("the story CTA is Sona teal, not Duolingo green (nor the old orange)",
+    /72, 204, 215|31, 152, 166/.test(cta) && !/88, 204, 2/.test(cta) && !/255, 138, 61|255, 160, 90/.test(cta), cta.slice(0, 70));
   await pg.close();
 }
 

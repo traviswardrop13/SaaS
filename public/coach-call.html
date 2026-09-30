@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
   <title>Sona — Coach Call</title>
   <link href="/fonts.css" rel="stylesheet">
+  <link rel="stylesheet" href="/action.css">
   <meta name="theme-color" content="#35407e" />
   <style>
     :root{
@@ -80,8 +81,12 @@
     .ovlEcho{position:absolute;top:-52px;left:50%;transform:translateX(-50%);width:104px;height:104px;filter:drop-shadow(0 8px 12px rgba(30,24,70,.3));}
     .ovl h2{font-family:"Baloo 2";font-weight:800;font-size:24px;color:var(--ink);line-height:1.15;}
     .ovl p{color:var(--muted);font-weight:800;font-size:14.5px;max-width:280px;}
-    .btn{border:none;border-radius:20px;padding:15px 32px;font-family:"Baloo 2";font-weight:800;font-size:17px;text-transform:uppercase;letter-spacing:.04em;color:#fff;background:linear-gradient(180deg,#ffa05a,#ff8a3d);box-shadow:0 6px 0 var(--orange-d);cursor:pointer;width:100%;margin-top:4px;}
-    .btn:active{transform:translateY(4px);box-shadow:0 2px 0 var(--green-d);}
+    /* The action teal from /action.css (the family's redesign brief, 28 Sep
+       2026: every kid button is teal, orange is only the practice sound's
+       letters). This page is parked, but it pressed green, the banned
+       Duolingo action colour, so it takes the shared tokens like the rest. */
+    .btn{border:none;border-radius:20px;padding:15px 32px;font-family:"Baloo 2";font-weight:800;font-size:17px;text-transform:uppercase;letter-spacing:.04em;color:#fff;text-shadow:0 1px 0 var(--act-d);background:linear-gradient(180deg,var(--act-hi),var(--act));box-shadow:0 6px 0 var(--act-d);cursor:pointer;width:100%;margin-top:4px;}
+    .btn:active{transform:translateY(4px);box-shadow:0 2px 0 var(--act-d);}
     .btn.ghost{background:none;color:var(--muted);box-shadow:none;text-transform:none;font-size:13px;width:auto;}
   </style>
 </head>

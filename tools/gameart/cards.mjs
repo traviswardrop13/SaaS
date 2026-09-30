@@ -5,11 +5,19 @@
 // sheet (public/assets/sona-stickers.svg), which Home paints like every other
 // game card (Sona.gameSticker). The prefix is sp- (Say & Play), not the
 // scene stickers' st-: Flappy Glide already wears st-balloon. A card is an
-// <image> of its file rather than the scene pasted into the sheet: twenty
+// <image> of its file rather than the scene pasted into the sheet: nineteen
 // scenes would triple the sheet every page loads, and a card file is fetched
 // only where a card is shown.
-import { readFileSync, writeFileSync, mkdirSync } from "fs";
-import { GAMES } from "./games.mjs";
+//
+// Like the page and book builders it plans first and writes nothing if it
+// would hide hand-made art: a card picture in any other format already beside
+// a scene's card (the redesign's Home tiles, <key>.webp) means that game's
+// card is drawn by hand now, and writing <key>.svg and pointing sp-<key> at it
+// would keep the old picture on Home. Paths are relative to the working
+// directory: run it from the repo root (tests/arttooltest.mjs runs it from a
+// scratch folder instead).
+import { existsSync, readdirSync, readFileSync, writeFileSync, mkdirSync } from "fs";
+import { GAMES, PLAYED } from "./games.mjs";
 import { check } from "./page.mjs";
 
 const SHEET = "public/assets/sona-stickers.svg";
@@ -39,22 +47,33 @@ export function finalScene(g, withFinale = false) {
   }).join("") + (g.fg || "");
 }
 
-mkdirSync("public/assets/games", { recursive: true });
-const groups = [];
-// Hoops is a real game now (public/hoops.js), not a scene: its card is a
-// frame of the court itself, public/assets/games/hoops.webp, drawn once.
-const PLAYED = [["hoops", "/assets/games/hoops.webp"]];
+const refuse = (why) => { console.error("tools/gameart/cards.mjs refused: " + why + "\nNothing was written."); process.exit(1); };
+const DIR = "public/assets/games";
+const groups = [], cards = [];
+// a hand-drawn card (games.mjs PLAYED) wins over the scene: no <key>.svg
+// written over or beside it, and no second sp-<key>, which would leave Home
+// showing whichever group the sheet happens to list first
+const byHand = new Set(PLAYED.map(([key]) => key));
+const landed = existsSync(DIR) ? readdirSync(DIR).filter((f) => !f.startsWith(".") && !f.endsWith(".svg") && f.includes(".")) : [];
 for (const g of GAMES) {
   check(g);
+  if (byHand.has(g.key)) continue;
+  const art = landed.find((f) => f.slice(0, f.indexOf(".")) === g.key);
+  if (art) refuse(DIR + "/" + art + " is a card picture for " + g.key + ", which this tool still draws. If it is the game's new card, add [\"" + g.key + "\", \"/assets/games/" + art + "\"] to PLAYED in tools/gameart/games.mjs (and delete " + g.key + ".svg); if it is stray, remove it.");
   const [x, y, size] = (g.card && g.card.crop) || [20, 0, 400];
-  writeFileSync(`public/assets/games/${g.key}.svg`,
-    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${x} ${y} ${size} ${size}" width="240" height="240">${finalScene(g, g.card && g.card.finale)}</svg>\n`);
+  cards.push([`${DIR}/${g.key}.svg`,
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${x} ${y} ${size} ${size}" width="240" height="240">${finalScene(g, g.card && g.card.finale)}</svg>\n`]);
   groups.push(`<g id="sp-${g.key}"><image href="/assets/games/${g.key}.svg" xlink:href="/assets/games/${g.key}.svg" width="120" height="120" preserveAspectRatio="xMidYMid slice"></image></g>`);
 }
 for (const [key, file] of PLAYED) groups.push(`<g id="sp-${key}"><image href="${file}" xlink:href="${file}" width="120" height="120" preserveAspectRatio="xMidYMid slice"></image></g>`);
 let sheet = readFileSync(SHEET, "utf8");
 const block = OPEN + "\n" + groups.join("\n") + "\n" + CLOSE + "\n";
 const a = sheet.indexOf(OPEN), b = sheet.indexOf(CLOSE);
+// a sheet with the opening comment but not the closing one after it has been
+// edited by hand; splicing at -1 would cut the rest of the sheet off
+if (a >= 0 && b < a) refuse(SHEET + " has \"" + OPEN + "\" without \"" + CLOSE + "\" after it.");
 sheet = a >= 0 ? sheet.slice(0, a) + block + sheet.slice(b + CLOSE.length + 1) : sheet.replace("</defs></svg>", block + "</defs></svg>");
+mkdirSync(DIR, { recursive: true });
+for (const [file, svg] of cards) writeFileSync(file, svg);
 writeFileSync(SHEET, sheet);
 console.log("wrote", groups.length, "game cards");

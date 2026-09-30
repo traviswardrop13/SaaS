@@ -1,5 +1,11 @@
+/* The action colour (teal pill, cream pill, teal mic, orange sound letters)
+   is defined once, in action.css, for the kid pages that don't load this
+   sheet; imported here so a page on this sheet gets the same tokens without
+   a second copy to drift (design brief, 28 Sep 2026). @import must come first. */
+@import url("/action.css");
 /* Warm brand neutrals — the parent surfaces (settings/progress) share the
-   kid app's cream/ink language now; blue stays as a secondary accent. */
+   kid app's cream/ink language now; blue stays as a secondary accent.
+   --orange stays for stars, chips, bars and the active tab: not for buttons. */
 :root{
   --blue:#1cb0f6; --blue-d:#1597d4; --orange:#ff8a3d; --orange-d:#ef6f23;
   --ink:#4a2c14; --muted:#8a6f52; --line:#f0e4d2; --card:#ffffff;
@@ -39,15 +45,18 @@ nav.app a.active{color:var(--orange-d);background:#ffe7d3;}
 .card + .card{margin-top:14px;}
 h1{font-size:24px;} h2{font-size:19px;}
 .row{display:flex;gap:12px;flex-wrap:wrap;}
+/* The main button is the teal pill (action.css); its white text carries a
+   dark teal shadow because the light top of the gradient is only ~2:1. */
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:none;cursor:pointer;width:100%;
-  font-weight:800;font-size:18px;color:#fff;background:var(--orange);padding:16px 24px;border-radius:18px;
-  box-shadow:0 5px 0 0 var(--orange-d);transition:transform .05s;text-decoration:none;}
-.btn:active{transform:translateY(4px);box-shadow:0 1px 0 0 var(--orange-d);}
-.btn.blue{background:var(--blue);box-shadow:0 5px 0 0 var(--blue-d);}
+  font-weight:800;font-size:18px;color:#fff;background:var(--act);padding:16px 24px;border-radius:18px;
+  box-shadow:0 5px 0 0 var(--act-d);text-shadow:0 1px 0 var(--act-d);transition:transform .05s;text-decoration:none;}
+.btn:active{transform:translateY(4px);box-shadow:0 1px 0 0 var(--act-d);}
+.btn.blue{background:var(--blue);box-shadow:0 5px 0 0 var(--blue-d);text-shadow:none;}
 .btn.blue:active{box-shadow:0 1px 0 0 var(--blue-d);}
-.btn.ghost{background:#fff;color:var(--ink);box-shadow:inset 0 0 0 1px var(--line);}
-.btn.ghost:active{transform:translateY(2px);}
-.btn:disabled,.btn:disabled:active{background:#e3d7c8;color:#88745d;box-shadow:none;transform:none;cursor:not-allowed;opacity:.8;}
+/* the second choice is the cream pill */
+.btn.ghost{background:var(--cream);color:var(--cream-ink);text-shadow:none;box-shadow:inset 0 0 0 2px var(--cream-line),0 4px 0 0 var(--cream-line);}
+.btn.ghost:active{transform:translateY(2px);box-shadow:inset 0 0 0 2px var(--cream-line),0 2px 0 0 var(--cream-line);}
+.btn:disabled,.btn:disabled:active{background:#e3d7c8;color:#88745d;box-shadow:none;text-shadow:none;transform:none;cursor:not-allowed;opacity:.8;}
 .stat{flex:1;min-width:96px;background:#fff;border:1px solid var(--line);border-radius:18px;padding:14px;text-align:center;}
 .stat .n{font-size:28px;font-weight:800;line-height:1;}
 .stat .l{font-size:12px;color:var(--muted);font-weight:700;margin-top:6px;}
@@ -127,8 +136,8 @@ code{background:#f7efe2;padding:2px 6px;border-radius:6px;font-family:ui-monospa
    ═══════════════════════════════════════════════════════════════════ */
 
 /* Buttons: a soft top-light gradient for depth + a micro hover lift.
-   (.btn.ghost keeps its flat white via higher specificity.) */
-.btn{background:linear-gradient(180deg,#ffa05a,var(--orange));}
+   (.btn.ghost keeps its flat cream via higher specificity.) */
+.btn{background:linear-gradient(180deg,var(--act-hi),var(--act));}
 .btn.blue{background:linear-gradient(180deg,#56b4ff,var(--blue));}
 .btn:hover{filter:brightness(1.04);}
 .btn:focus-visible{outline:3px solid rgba(42,157,244,.5);outline-offset:2px;}
