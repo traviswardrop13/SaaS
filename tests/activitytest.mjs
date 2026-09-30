@@ -72,7 +72,7 @@ async function fixture({ age = "4", paid = false, premium = false, viewport = { 
       localStorage.setItem("sona.test.librarySeed", "1");
       localStorage.setItem("sona.freeera.v1", "post");
       localStorage.setItem("sona.freeera2.v1", "done");
-      localStorage.setItem("sona.freeera3.v1", "done"); localStorage.setItem("sona.freeera4.v1", "done");
+      localStorage.setItem("sona.freeera3.v1", "done"); localStorage.setItem("sona.freeera4.v1", "done"); localStorage.setItem("sona.freeera5.v1", "done");
       const profile = { childName: "Mia", focusSounds: ["S"], onboarded: true, volume: 0, voiceOn: false, soundOn: false };
       if (premium) profile.earlyAdopter = true;
       if (age !== null) profile.childAge = age;
@@ -157,7 +157,13 @@ if (present && hasContract) {
       const simple = model.groups.find((g) => g.id === "simple");
       const arcade = model.groups.find((g) => g.id === "arcade");
       ok("Simple play contains Feed Echo, Bubble Pop, Peekaboo and the ten Say & Play games for 3-4", same(sorted(simple.games.map((g) => g.key)), simpleKeys));
-      ok("the daily adventure remains five arcade games", same(sorted(await pg.evaluate(() => Sona.adventureGames())), adventureKeys));
+      // Five rounds of the arcade games this family can open: all five with
+      // Premium or while Sona is free, the free ones on the free version.
+      const adventure = await pg.evaluate(() => Sona.adventureGames().map((key) => ({ key, open: Sona.gameAccess(key).allowed })));
+      const everyGame = await pg.evaluate(() => Sona.isFree() || Sona.premium());
+      ok("the daily adventure is five rounds of arcade games the family can open",
+        adventure.length === 5 && adventure.every((g) => adventureKeys.includes(g.key) && g.open)
+          && (!everyGame || same(sorted(adventure.map((g) => g.key)), adventureKeys)), adventure);
       ok("Arcade contains the five earned arcade games and the ten Say & Play games for 5-8", same(sorted(arcade.games.map((g) => g.key)), arcadeKeys));
       ok("Simple play presents the suggested 3–4 range", simple.ageLabel === "Suggested ages 3–4", simple.ageLabel);
       ok("Arcade presents the suggested 5–8 range", arcade.ageLabel === "Suggested ages 5–8", arcade.ageLabel);
@@ -165,8 +171,8 @@ if (present && hasContract) {
         model.groups.every((g) => g.games.every((game) => ["free", "premium"].includes(game.tier)
           && Object.hasOwn(game, "releasedOn") && (game.releasedOn === null || /^\d{4}-\d{2}-\d{2}$/.test(game.releasedOn)) && game.available === true && typeof game.comingSoon === "boolean")));
       ok("each suggested age group retains a playable free game", model.groups.every((g) => g.games.some((game) => game.tier === "free" && !game.comingSoon)));
-      // Travis, 27 Sep 2026: once the plan screen has been seen, only Feed Echo and Fruit Slice stay open
-      ok("the playable free games are Feed Echo and Fruit Slice", same(freeKeys, ["feed", "slice"]));
+      // Travis, 30 Sep 2026: "fruit slice and piano tiles free ... feed echo to be free"
+      ok("the playable free games are Feed Echo, Fruit Slice and Piano Tiles", same(freeKeys, ["feed", "slice", "tiles"]), freeKeys);
       ok("every game has a usable name, description and destination",
         model.groups.every((g) => [g.name, g.ageLabel, g.description].every((v) => typeof v === "string" && v.trim())
           && g.games.every((game) => [game.name, game.sub, game.go, game.playDescription].every((v) => typeof v === "string" && v.trim()))));
@@ -205,7 +211,7 @@ if (present && hasContract) {
         const isFree = await pg.evaluate(() => Sona.isFree());
         if (isFree) ok("age " + age + ": normal free access is labeled Free on every playable card", cards.every((text) => /\bFree\b/.test(text) && !/\bPremium\b/.test(text)), cards);
         const parked = await pg.locator("#activityGroups button[data-game]:disabled").allInnerTexts();
-        ok("age " + age + ": every parked title says Coming soon", parked.length === comingSoonKeys.length && parked.every(text => /Coming soon/.test(text)), parked);
+        ok("age " + age + ": every parked title says when it is coming: its Monday, or Coming soon", parked.length === comingSoonKeys.length && parked.every(text => /Coming (soon|[A-Z][a-z]{2} \d{1,2})\b/.test(text)), parked);
         ok("age " + age + ": proposed tier preview stays hidden by default", !await pg.locator("#catalogPreviewNotice").isVisible());
         // BOOKS ARE ON (Travis, 26 Sep 2026: "yes turn them on"): one card,
         // free while the app is free, that opens the bookshelf.
@@ -267,6 +273,40 @@ if (present && hasContract) {
     } finally { await ctx.close(); }
   });
 
+  // MONDAY DROPS (Travis, 30 Sep 2026: "games that aren't finished ... label
+  // them ... coming October 8th or whatever", then "new ones each monday
+  // dropping"). Each parked game carries a Monday; Home says it until that
+  // day and "Coming soon" after, soonest first on its shelf, and the date
+  // never opens anything: only taking comingSoon off does.
+  await section("parked games say their Monday", async () => {
+    const dated = [...SONA_SRC.matchAll(/^\s{4}(\w+): \{[^\n]*group: "(\w+)"[^\n]*\bcomingSoon: true, comingOn: "(\d{4}-\d{2}-\d{2})"/gm)].map((m) => ({ key: m[1], group: m[2], on: m[3] }));
+    const perWeek = dated.reduce((n, d) => ((n[d.group + d.on] = (n[d.group + d.on] || 0) + 1), n), {});
+    ok("every parked game has a Monday, one game per age group a week at most",
+      same(sorted(dated.map((d) => d.key)), comingSoonKeys) && dated.every((d) => new Date(d.on + "T12:00:00Z").getUTCDay() === 1)
+        && Object.values(perWeek).every((c) => c === 1), dated);
+    const cardsAt = async (now) => {
+      const { ctx, pg, errors } = await fixture({ now });
+      try {
+        const got = await pg.evaluate(() => {
+          const tag = (key) => { const b = document.querySelector('#activityGroups button[data-game="' + key + '"]'); return b ? { label: b.querySelector(".game-access").textContent, disabled: b.disabled, aria: b.getAttribute("aria-label") } : null; };
+          const firstParked = [...document.querySelectorAll("#activityGroups .activity-group")].map((g) => g.querySelector(".coming-grid button[data-game]")?.dataset.game);
+          return { bubbles: tag("bubbles"), soccer: tag("soccer"), racecar: tag("racecar"), firstParked, access: Sona.gameAccess("bubbles") };
+        });
+        return { got, errors };
+      } finally { await ctx.close(); }
+    };
+    let r = await cardsAt(Date.UTC(2026, 9, 1, 12));
+    ok("before its Monday a parked game says the day: Bubble Pop and Soccer Goal \"Coming Oct 12\", Race Car \"Coming Oct 19\"",
+      r.got.bubbles.label === "Coming Oct 12" && r.got.soccer.label === "Coming Oct 12" && r.got.racecar.label === "Coming Oct 19"
+        && r.got.bubbles.disabled && /Coming Oct 12/.test(r.got.bubbles.aria), JSON.stringify(r.got));
+    ok("…each shelf's parked games soonest first", same(sorted(r.got.firstParked), ["bubbles", "soccer"]), r.got.firstParked);
+    ok("…with no page errors", r.errors.length === 0, r.errors);
+    r = await cardsAt(Date.UTC(2026, 9, 13, 12));
+    ok("past its Monday and still unfinished, a game goes back to \"Coming soon\", while the next one keeps its day",
+      r.got.bubbles.label === "Coming soon" && r.got.soccer.label === "Coming soon" && r.got.racecar.label === "Coming Oct 19", JSON.stringify(r.got));
+    ok("…and the date never opens it", r.got.bubbles.disabled && r.got.access.allowed === false && r.got.access.reason === "coming-soon", JSON.stringify(r.got));
+  });
+
   await section("featured cards are extra working choices", async () => {
     const catalog = Object.fromEntries(allKeys.map((key) => [key, { releasedOn: "2000-01-01", season: null }]));
     catalog.feed.releasedOn = catalog.slice.releasedOn = "2028-04-30";
@@ -306,7 +346,7 @@ if (present && hasContract) {
         ok(origin + ": preview does not change the real pricing switch or general practice gate", same(await pg.evaluate(() => ({ free: Sona.isFree(), gated: Sona.gated("practice") })), access));
         ok(origin + ": preview creates no entitlement, plan impression or practice state", same(await state(pg), before), { before, after: await state(pg) });
         if (local && !access.gated) {
-          await pg.locator('#activityGroups button[data-game="tiles"]').click();
+          await pg.locator('#activityGroups button[data-game="stack"]').click();
           ok(origin + ": a Premium preview choice stays on Home with a parent invitation", new URL(pg.url()).pathname === "/today.html" && await pg.locator("#libraryNotice").isVisible());
           ok(origin + ": the preview keeps the playable free games open", same(await pg.evaluate(() => Object.keys(Sona.GAME_ACTS).filter(key => Sona.gameAccess(key).allowed).sort()), freeKeys));
         }
@@ -319,8 +359,8 @@ if (present && hasContract) {
     try {
       const before = await state(pg);
       ok("preview leaves Premium locked while practice stays open", await pg.evaluate(() => Sona.gated("story") === true && Sona.gated("practice") === false));
-      ok("free preview games are accessible without a real entitlement", await pg.evaluate(() => Sona.gameAccess("feed").allowed && !Sona.gameAccess("tiles").allowed));
-      await pg.locator('#activityGroups button[data-game="tiles"]').click();
+      ok("free preview games are accessible without a real entitlement", await pg.evaluate(() => Sona.gameAccess("feed").allowed && !Sona.gameAccess("stack").allowed));
+      await pg.locator('#activityGroups button[data-game="stack"]').click();
       ok("Premium stays behind the parent invitation in a paid-state preview", new URL(pg.url()).pathname === "/today.html" && await pg.locator("#libraryNotice").isVisible());
       ok("preview gate checks create no access or practice", same(await state(pg), before));
     } finally { await ctx.close(); }
@@ -376,8 +416,10 @@ if (present && hasContract) {
     } finally { await ctx.close(); }
   });
 
+  // every playable game's own route, so asked by a family with Premium: on
+  // the free version a Premium card asks for a grown-up instead (below)
   await section("existing game launch routes", async () => {
-    const { ctx, pg } = await fixture({ age: "4" });
+    const { ctx, pg } = await fixture({ age: "4", premium: true });
     try {
       for (const key of playableKeys) {
         await pg.goto(BASE + "/activities.html");
@@ -421,9 +463,11 @@ if (present && hasContract) {
     } finally { await ctx.close(); }
   });
 
-  // BOOKS ARE ON (Travis, 26 Sep 2026: "yes turn them on"). Premium content:
-  // open while the app is free, a grown-up's message when it is not, and the
-  // bookshelf's own address cannot get round that.
+  // BOOKS ARE ON (Travis, 26 Sep 2026: "yes turn them on"), and since 30 Sep
+  // 2026 the shelf opens for every family: "one book uh so like the letter r
+  // book ... to be free and the rest is grayed out". The card always opens
+  // it and says how many books are free; on the shelf a Premium book asks for
+  // a grown-up (readtest plays that part).
   await section("the Books card", async () => {
     const free = await fixture();
     try {
@@ -433,22 +477,26 @@ if (present && hasContract) {
         ok("the Books card opens the bookshelf", new URL(free.pg.url()).pathname === "/library.html");
         ok("…which leads with the books: the adventure and Feed Echo tiles are hidden",
           await free.pg.locator("#shelf .bookBtn").count() > 0 && !await free.pg.locator("#advTile").isVisible() && !await free.pg.locator("#feedTile").isVisible());
-      } else ok("the paid release still has a free-mode Books test to run", true);
+      } else ok("the free release's Books test waits for a free release", true);
     } finally { await free.ctx.close(); }
     const { ctx, pg } = await fixture({ paid: true });
     try {
       const before = await state(pg);
-      ok("a family without Premium sees the books marked Premium", /Premium/.test(await pg.locator("#booksCard").innerText()), await pg.locator("#booksCard").innerText());
+      ok("a family without Premium sees how many books are free", /\b1 free book\b/.test(await pg.locator("#booksCard").innerText()), await pg.locator("#booksCard").innerText());
       await pg.locator("#booksCard").click();
-      await pg.waitForTimeout(50);
-      ok("…tapping it stays on Home and asks for a grown-up", new URL(pg.url()).pathname === "/today.html"
-        && await pg.locator("#libraryMessage").isVisible() && /grown[\s-]*up/i.test(await pg.locator("#libraryMessage").innerText()) && /books/i.test(await pg.locator("#libraryMessage").innerText()));
-      await pg.goto(BASE + "/library.html");
-      await pg.waitForURL(/\/today\.html\?locked=books/);
-      ok("…and typing the bookshelf's address comes back to Home with the same message",
-        await pg.locator("#libraryMessage").isVisible() && /books/i.test(await pg.locator("#libraryMessage").innerText()));
+      await pg.waitForURL(/\/library\.html(?:[?#]|$)/);
+      await pg.waitForSelector("#shelf .bookBtn");
+      const shelf = await pg.evaluate(() => [...document.querySelectorAll("#shelf .bookBtn")].map((b) => ({ t: b.querySelector(".bt").textContent, s: b.querySelector(".bs").textContent, locked: b.classList.contains("locked"), soon: b.classList.contains("soon") })));
+      ok("…the card opens the bookshelf, where the free book reads and every other book that is out says Premium",
+        shelf.some((b) => b.t === "Rory and the Rainbow" && !b.locked && !b.soon && b.s === "Free")
+          && shelf.filter((b) => !b.soon && b.t !== "Rory and the Rainbow").length > 0
+          && shelf.filter((b) => !b.soon && b.t !== "Rory and the Rainbow").every((b) => b.locked && b.s === "Premium"), JSON.stringify(shelf));
       ok("…without granting access or starting practice", same(await state(pg), before));
     } finally { await ctx.close(); }
+    const owner = await fixture({ paid: true, premium: true });
+    try {
+      ok("a family with Premium sees the books Included", /Included/.test(await owner.pg.locator("#booksCard").innerText()), await owner.pg.locator("#booksCard").innerText());
+    } finally { await owner.ctx.close(); }
   });
 
   await section("silent menus and immediate deliberate game choice", async () => {
@@ -473,11 +521,11 @@ if (present && hasContract) {
   });
 
   await section("the legacy library alias preserves navigation state", async () => {
-    const {ctx,pg}=await fixture({path:'/activities.html?libraryPreview=1&locked=tiles#games'});
+    const {ctx,pg}=await fixture({path:'/activities.html?libraryPreview=1&locked=stack#games'});
     try {
       const url=new URL(pg.url());
-      ok("the old library link resolves to Home with its full query and hash",url.pathname==='/today.html'&&url.searchParams.get('libraryPreview')==='1'&&url.searchParams.get('locked')==='tiles'&&url.hash==='#games',url.href);
-      ok("the redirected preview still explains the selected locked game",await pg.locator('#libraryNotice').isVisible()&&/Piano Tiles/.test(await pg.locator('#libraryNotice').innerText()));
+      ok("the old library link resolves to Home with its full query and hash",url.pathname==='/today.html'&&url.searchParams.get('libraryPreview')==='1'&&url.searchParams.get('locked')==='stack'&&url.hash==='#games',url.href);
+      ok("the redirected preview still explains the selected locked game",await pg.locator('#libraryNotice').isVisible()&&/Block Stacker/.test(await pg.locator('#libraryNotice').innerText()));
     }finally{await ctx.close();}
   });
 

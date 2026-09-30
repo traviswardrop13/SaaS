@@ -51,7 +51,7 @@ async function scene(game, fill) {
   });
   await pg.goto("http://localhost:8198/today.html");
   await pg.evaluate(() => {
-    localStorage.setItem("sona.freeera.v1","post"); localStorage.setItem("sona.freeera2.v1","done"); localStorage.setItem("sona.freeera3.v1","done");localStorage.setItem("sona.freeera4.v1","done");
+    localStorage.setItem("sona.freeera.v1","post"); localStorage.setItem("sona.freeera2.v1","done"); localStorage.setItem("sona.freeera3.v1","done");localStorage.setItem("sona.freeera4.v1","done");localStorage.setItem("sona.freeera5.v1","done");
     localStorage.setItem("sona.micok", "1");
     // earlyAdopter: a family holding every game. This measures each game's
     // SCENE, and since 24 Sep 2026 a family on the free version is sent back

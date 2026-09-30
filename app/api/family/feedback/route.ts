@@ -4,13 +4,17 @@ import { rateLimit } from "@/lib/rateLimit";
 
 /**
  * "TALK TO US" FROM THE FAMILY APP (29 Sep 2026) — public/talk.html posts
- * here: a parent's feedback, or a request for a call.
+ * here: a parent's feedback.
+ *
+ * NO CALLS (Travis, 30 Sep 2026: "I don't want request to call to be an
+ * option" — Rachel doesn't take phone calls). A request for one, from a page
+ * left open since before, is refused in words and nothing is kept or sent:
+ * hiding the button alone would leave the door open to a stale tab.
  *
  * Why this is its own route and not either of the two that already exist:
  *  - Not /api/slp/feedback: families never sign in, so there is no session to
  *    say who wrote or where to reply. The reply address is whatever the parent
- *    types, it is optional for feedback and required for a call, and it is
- *    used ONLY to reply. It never reaches /api/lead, Kit, or the lead/pilot
+ *    types, it is optional, and it is used ONLY to reply. It never reaches /api/lead, Kit, or the lead/pilot
  *    webhooks: asking for help must not sign a parent up for marketing email,
  *    and the page promises exactly that ("It isn't added to any mailing list").
  *  - Not /api/feedback: that route falls back to PILOT_WEBHOOK_URL and
@@ -46,8 +50,7 @@ const CHIPS = new Set([
   "More sounds", "Better progress data", "Easier to assign", "More game variety",
 ]);
 const RECOMMEND = new Set(["Definitely", "Maybe", "Not yet", ""]);
-const PREFER = new Set(["phone", "video", "email", ""]);
-const PREFER_LABEL: Record<string, string> = { phone: "Phone call", video: "Video call", email: "Just email", "": "Not said" };
+const NO_CALLS = "We don't take call requests. Send us a message, and we'll reply by email.";
 const EMAIL = /^[^\s@<>()[\]\\,;:"]+@[^\s@<>()[\]\\,;:"]+\.[^\s@<>()[\]\\,;:"]{2,}$/;
 // A lone UTF-16 surrogate passes EMAIL but makes encodeURIComponent throw
 // wherever the address is later turned into a mailto: link.
@@ -92,9 +95,9 @@ export async function POST(req: NextRequest) {
   const limited = await rateLimit(req, { key: "familyfeedback", limit: 10, windowSec: 3600 });
   if (limited) return limited;
 
-  const kind = body.kind;
-  if (kind !== "feedback" && kind !== "call") return fail("Choose feedback or a call request.");
-  for (const [field, max] of [["text", 2000], ["email", 254], ["availability", 240], ["timezone", 80]] as const) {
+  if (body.kind === "call") return fail(NO_CALLS);
+  if (body.kind !== "feedback") return fail("Choose feedback.");
+  for (const [field, max] of [["text", 2000], ["email", 254]] as const) {
     if (body[field] !== undefined && (typeof body[field] !== "string" || (body[field] as string).length > max)) {
       return fail(`Please keep ${field} to ${max} characters.`);
     }
@@ -108,8 +111,6 @@ export async function POST(req: NextRequest) {
   }
   const recommend = body.recommend === undefined ? "" : body.recommend;
   if (typeof recommend !== "string" || !RECOMMEND.has(recommend)) return fail("Please choose Definitely, Maybe or Not yet.");
-  const prefer = body.prefer === undefined ? "" : body.prefer;
-  if (typeof prefer !== "string" || !PREFER.has(prefer)) return fail("Choose a phone call, a video call or email.");
   const app = body.app === undefined ? "web" : body.app;
   if (app !== "ios" && app !== "web") return fail("Unknown app.");
   // Who is writing: a clinician using the family app on the web sees the
@@ -120,19 +121,14 @@ export async function POST(req: NextRequest) {
   const text = typeof body.text === "string" ? body.text.trim() : "";
   const email = typeof body.email === "string" ? body.email.trim() : "";
   if (email && (!EMAIL.test(email) || LONE_SURROGATE.test(email))) return fail("Please check your email address.");
-  if (kind === "call" && !email) return fail("Please add an email so we can reply.");
-  if (kind === "feedback" && !chips.length && !text) return fail("Pick a topic or write a quick thought first.");
+  if (!chips.length && !text) return fail("Pick a topic or write a quick thought first.");
 
   const rec = {
-    kind,
+    kind: "feedback",
     chips,
     text,
     recommend,
     replyEmail: email,
-    prefer,
-    availability: typeof body.availability === "string" ? body.availability.trim() : "",
-    // Only a call request keeps a time zone — it is there to find a time.
-    timezone: kind === "call" && typeof body.timezone === "string" ? body.timezone.trim() : "",
     app,
     from,
     at: new Date().toISOString(),
@@ -150,11 +146,9 @@ export async function POST(req: NextRequest) {
   const slackUrl = process.env.SLACK_FEEDBACK_WEBHOOK_URL;
   if (slackUrl) {
     const sender = rec.from === "slp" ? "Clinician" : "Parent";
-    const title = rec.kind === "call" ? `${sender} call request` : `${sender} feedback`;
+    const title = `${sender} feedback`;
     const who = `Reply to: ${rec.replyEmail || "no email given"}\nFrom: the ${rec.app === "ios" ? "iPhone app" : "web app"}`;
-    const what = rec.kind === "call"
-      ? `Prefers: ${PREFER_LABEL[rec.prefer]}\nGood time: ${rec.availability || "Ask by email"}\nTime zone: ${rec.timezone || "Ask by email"}`
-      : `Topics: ${rec.chips.join(", ") || "none picked"}\nWould recommend: ${rec.recommend || "not answered"}`;
+    const what = `Topics: ${rec.chips.join(", ") || "none picked"}\nWould recommend: ${rec.recommend || "not answered"}`;
     try {
       const response = await fetch(slackUrl, {
         method: "POST",
@@ -164,7 +158,7 @@ export async function POST(req: NextRequest) {
           blocks: [
             { type: "header", text: { type: "plain_text", text: title } },
             { type: "section", fields: [{ type: "plain_text", text: who }, { type: "plain_text", text: what }] },
-            { type: "section", text: { type: "plain_text", text: rec.text || (rec.kind === "call" ? "No message: they'd like to talk." : "No message: topics only.") } },
+            { type: "section", text: { type: "plain_text", text: rec.text || "No message: topics only." } },
             { type: "context", elements: [{ type: "plain_text", text: `Sent at ${rec.at}` }] },
           ],
         }),

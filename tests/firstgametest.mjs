@@ -36,7 +36,7 @@ function phone(cfg) {
   if (cfg.profile && !localStorage.getItem("sona.test.seeded")) {
     localStorage.setItem("sona.test.seeded", "1");
     // every free-era sweep has run on this device, so it belongs to no free cohort
-    localStorage.setItem("sona.freeera.v1", "post"); ["sona.freeera2.v1", "sona.freeera3.v1", "sona.freeera4.v1"].forEach((k) => localStorage.setItem(k, "done"));
+    localStorage.setItem("sona.freeera.v1", "post"); ["sona.freeera2.v1", "sona.freeera3.v1", "sona.freeera4.v1", "sona.freeera5.v1"].forEach((k) => localStorage.setItem(k, "done"));
     localStorage.setItem("sona.profile.v1", JSON.stringify(cfg.profile));
   }
   if (cfg.first) sessionStorage.setItem("sona.firstgame.v1", cfg.first);

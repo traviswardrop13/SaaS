@@ -504,7 +504,7 @@ ok("today no pageerrors", errs.length === 0);
   await pg.goto("http://localhost:8129/today.html"); await pg.waitForTimeout(500);
   const backup = await pg.evaluate(() => {
     localStorage.clear();
-    localStorage.setItem("sona.freeera.v1", "post"); localStorage.setItem("sona.freeera2.v1", "done"); localStorage.setItem("sona.freeera3.v1", "done"); localStorage.setItem("sona.freeera4.v1", "done");
+    localStorage.setItem("sona.freeera.v1", "post"); localStorage.setItem("sona.freeera2.v1", "done"); localStorage.setItem("sona.freeera3.v1", "done"); localStorage.setItem("sona.freeera4.v1", "done"); localStorage.setItem("sona.freeera5.v1", "done");
     Sona.saveProfile({ childName: "Ada", childAge: "7", focusSounds: ["R"], onboarded: true });
     Sona.addCoins(40);
     const old = Sona.exportString();   // the backup they will paste, later

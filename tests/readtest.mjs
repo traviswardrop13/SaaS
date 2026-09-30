@@ -275,26 +275,36 @@ async function waitSpoke(pg, ms) {
 // "a solid book for the top four or five most popular letters... everything
 // else, we can just set a date on it... new drops every week." R, S, L, SH and
 // TH are open; every other book waits on the shelf, greyed, saying the day it
-// opens, and that day is the phone's own, not London's.
+// opens, and that day is the phone's own, not London's. Every day is a Monday
+// (30 Sep 2026: "new ones each monday dropping").
 {
   const lib = readFileSync(ROOT + "/library.html", "utf8");
   const dated = [...lib.matchAll(/opens: "([\d-]+)", title: "([^"]+)"/g)].map((m) => ({ opens: m[1], title: m[2] }));
   const open12 = [...lib.matchAll(/\{ sound: "(\w+)", emoji: "[^"]*", title: "([^"]+)"[^\n]*\n\s*cover: "\/assets\/books\//g)].map((m) => m[1]).sort();
   ok("R, S, L, SH and TH are the twelve-page books open now", JSON.stringify(open12) === JSON.stringify(["L", "R", "S", "SH", "TH"]), open12.join(" "));
-  ok("every other book has a Sunday it opens, a few at a time, the six-page ones last",
-    dated.length === 27 && dated.every((d) => new Date(d.opens + "T12:00:00").getDay() === 0) &&
+  ok("every other book has a Monday it comes out, a few at a time, the six-page ones last",
+    dated.length === 27 && dated.every((d) => new Date(d.opens + "T12:00:00").getDay() === 1) &&
     Object.values(dated.reduce((n, d) => ((n[d.opens] = (n[d.opens] || 0) + 1), n), {})).every((c) => c <= 3) &&
-    dated.filter((d) => /^(Rory the Rabbit|Reba the Robot|Ruby the Rooster|Remy the Raccoon|Rex the Rhino|Sunny the Seal|Lily the Lion|Kiki the Koala|Shelly the Sheep|Charlie the Chick|Theo the Sloth|Gus the Goat|Fifi the Fox)$/.test(d.title)).every((d) => d.opens > "2026-11-01"),
+    dated.filter((d) => /^(Rory the Rabbit|Reba the Robot|Ruby the Rooster|Remy the Raccoon|Rex the Rhino|Sunny the Seal|Lily the Lion|Kiki the Koala|Shelly the Sheep|Charlie the Chick|Theo the Sloth|Gus the Goat|Fifi the Fox)$/.test(d.title)).every((d) => d.opens > "2026-11-02"),
     JSON.stringify(dated.slice(0, 4)));
-  const shelfAt = async (when, focus) => {
+  // premium: false is a family on the free version, paywall on: every free
+  // era already judged (so no sweep adopts them), the demonstration over, no
+  // trial, no subscription. The books then lock one by one.
+  const shelfAt = async (when, focus, premium = true) => {
     const ctx = await browser.newContext({ viewport: { width: 430, height: 932 }, timezoneId: "America/Denver" });
     const pg = await ctx.newPage(); const errs = []; pg.on("pageerror", (e) => errs.push(e.message));
     await pg.addInitScript(seed);
-    await pg.addInitScript((f) => localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Milo", childAge: "7", focusSounds: f, onboarded: true, earlyAdopter: true })), focus);
+    await pg.addInitScript(([f, premium]) => {
+      localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Milo", childAge: "7", focusSounds: f, onboarded: true, earlyAdopter: premium }));
+      if (!premium) {
+        ["sona.freeera2.v1", "sona.freeera3.v1", "sona.freeera4.v1", "sona.freeera5.v1"].forEach((k) => localStorage.setItem(k, "done"));
+        localStorage.setItem("sona.demo.v1", JSON.stringify({ started: 1, done: 1 }));
+      }
+    }, [focus, premium]);
     await pg.clock.setFixedTime(new Date(when));
     await pg.goto("http://localhost:8153/library.html");
     await pg.waitForTimeout(500);
-    const shelf = await pg.evaluate(() => [...document.querySelectorAll("#shelf .bookBtn")].map((b) => ({ t: b.querySelector(".bt").textContent, off: b.disabled, s: b.querySelector(".bs").textContent })));
+    const shelf = await pg.evaluate(() => [...document.querySelectorAll("#shelf .bookBtn")].map((b) => ({ t: b.querySelector(".bt").textContent, off: b.disabled, s: b.querySelector(".bs").textContent, locked: b.classList.contains("locked") })));
     return { ctx, pg, errs, shelf };
   };
   let r = await shelfAt("2026-09-28T09:00:00-06:00", ["R"]);
@@ -306,12 +316,48 @@ async function waitSpoke(pg, ms) {
   ok("…no page errors on a dated shelf", r.errs.length === 0, r.errs.join(" | ")); await r.ctx.close();
   r = await shelfAt("2026-09-28T09:00:00-06:00", ["K"]);
   ok("a child whose sound has nothing open yet gets every open book first, then their own, coming",
-    r.shelf.slice(0, 5).every((b) => !b.off) && JSON.stringify(r.shelf.slice(5).map((b) => b.t)) === JSON.stringify(["Kip's Kite", "Kiki the Koala"]) && r.shelf.slice(5).every((b) => b.off) && r.shelf[5].s === "Coming Oct 4",
+    r.shelf.slice(0, 5).every((b) => !b.off) && JSON.stringify(r.shelf.slice(5).map((b) => b.t)) === JSON.stringify(["Kip's Kite", "Kiki the Koala"]) && r.shelf.slice(5).every((b) => b.off) && r.shelf[5].s === "Coming Oct 5",
     JSON.stringify(r.shelf)); await r.ctx.close();
-  r = await shelfAt("2026-10-03T23:55:00-06:00", ["K"]);
-  ok("late on Saturday where the family is (already Sunday in London), Kip's Kite still waits", r.shelf.find((b) => b.t === "Kip's Kite").off, JSON.stringify(r.shelf)); await r.ctx.close();
-  r = await shelfAt("2026-10-04T00:05:00-06:00", ["K"]);
-  ok("…and on Sunday it opens, first on a K child's shelf", r.shelf[0].t === "Kip's Kite" && !r.shelf[0].off, JSON.stringify(r.shelf)); await r.ctx.close();
+  r = await shelfAt("2026-10-04T23:55:00-06:00", ["K"]);
+  ok("late on Sunday where the family is (already Monday in London), Kip's Kite still waits", r.shelf.find((b) => b.t === "Kip's Kite").off, JSON.stringify(r.shelf)); await r.ctx.close();
+  r = await shelfAt("2026-10-05T00:05:00-06:00", ["K"]);
+  ok("…and on Monday it opens, first on a K child's shelf", r.shelf[0].t === "Kip's Kite" && !r.shelf[0].off, JSON.stringify(r.shelf)); await r.ctx.close();
+
+  // ── ONE FREE BOOK, THE REST PREMIUM (Travis, 30 Sep 2026) ──
+  // "one book uh so like the letter r book ... to be free and the rest is
+  // grayed out ... once they purchase it'll open up everything else." The
+  // shelf opens for every family; without Premium, Rory and the Rainbow reads
+  // and every other book that is out asks for a grown-up.
+  const free = JSON.parse((readFileSync(ROOT + "/sona.js", "utf8").match(/const FREE_BOOKS = (\[[^\]]*\]);/) || [, "[]"])[1]);
+  ok("the free book is named once, in sona.js, and it is a book on the shelf",
+    JSON.stringify(free) === JSON.stringify(["Rory and the Rainbow"]) && free.every((t) => lib.includes('title: "' + t + '"')), JSON.stringify(free));
+  r = await shelfAt("2026-09-28T09:00:00-06:00", ["R"], false);
+  ok("without Premium, a child on R: Rory and the Rainbow first, open and marked Free, the six-page R books still dated",
+    r.shelf[0].t === "Rory and the Rainbow" && !r.shelf[0].off && r.shelf[0].s === "Free" && r.shelf.length === 6 && r.shelf.slice(1).every((b) => b.off && /^Coming (Nov|Dec) \d+$/.test(b.s)), JSON.stringify(r.shelf));
+  await r.pg.evaluate(() => [...document.querySelectorAll("#shelf .bookBtn")][0].click());
+  ok("…and the free book opens", await r.pg.waitForFunction(() => document.getElementById("book").classList.contains("show"), null, { timeout: 3000 }).then(() => true, () => false));
+  ok("…no page errors", r.errs.length === 0, r.errs.join(" | ")); await r.ctx.close();
+  r = await shelfAt("2026-09-28T09:00:00-06:00", ["S"], false);
+  ok("without Premium, a child on S: the free book first, then Sid the Seagull greyed and marked Premium, then Sunny the Seal with its day",
+    JSON.stringify(r.shelf.map((b) => b.t)) === JSON.stringify(["Rory and the Rainbow", "Sid the Seagull", "Sunny the Seal"])
+      && r.shelf[0].s === "Free" && !r.shelf[0].locked
+      && r.shelf[1].s === "Premium" && r.shelf[1].locked && !r.shelf[1].off
+      && r.shelf[2].off && /^Coming Nov \d+$/.test(r.shelf[2].s), JSON.stringify(r.shelf));
+  await r.pg.evaluate(() => [...document.querySelectorAll("#shelf .bookBtn")][1].click());
+  await r.pg.waitForTimeout(100);
+  const asked = await r.pg.evaluate(() => ({ open: document.getElementById("book").classList.contains("show"), notice: !document.getElementById("bookNotice").hidden,
+    msg: document.getElementById("bookMessage").textContent, role: document.getElementById("bookMessage").getAttribute("role"), url: location.pathname }));
+  ok("…a tap on the Premium book stays on the shelf and asks for a grown-up, naming the book and the free one",
+    !asked.open && asked.notice && asked.role === "status" && asked.url === "/library.html" && /grown-up/.test(asked.msg) && /Sid the Seagull/.test(asked.msg) && /Rory and the Rainbow is free/.test(asked.msg), JSON.stringify(asked));
+  const sealed = await r.pg.evaluate(() => { openBook(STORIES.filter((b) => b.title === "Sid the Seagull")[0]); return !document.getElementById("book").classList.contains("show"); });
+  ok("…and the reader itself refuses it", sealed);
+  await r.pg.locator("#bookUnlock").click();
+  await r.pg.waitForURL((u) => !/\/library\.html/.test(u.pathname), { timeout: 3000 }).catch(() => {});
+  ok("…while \"Ask a grown-up\" goes to the grown-ups' side, never straight to a price", /\/(premium|today)\.html/.test(new URL(r.pg.url()).pathname), r.pg.url());
+  ok("…no page errors", r.errs.length === 0, r.errs.join(" | ")); await r.ctx.close();
+  r = await shelfAt("2026-09-28T09:00:00-06:00", ["S"], true);
+  ok("with Premium, the same shelf opens Sid the Seagull, and nothing says Free or Premium",
+    r.shelf[0].t === "Sid the Seagull" && !r.shelf[0].off && !r.shelf.some((b) => b.locked || /^(Free|Premium)$/.test(b.s)), JSON.stringify(r.shelf)); await r.ctx.close();
 }
 
 // ── the painted books (Codex, 28 Sep 2026) ──

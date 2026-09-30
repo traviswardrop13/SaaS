@@ -37,19 +37,16 @@
   <link rel="stylesheet" href="/crafted-family.css" />
   <style>
     /* TALK TO US (29 Sep 2026). The family's version of the dashboard's
-       "Talk to Rachel": feedback or a request for a call, from one card.
-       Travis: "a spot that's easy for leaving feedback … or request a call". */
+       "Talk to Rachel": feedback, from one card. It offered a call too until
+       30 Sep 2026 (Travis: "I don't want request to call to be an option";
+       Rachel doesn't take phone calls), and /api/family/feedback now refuses
+       one. */
     .family-talk [hidden]{display:none!important;}
     .family-talk .talk-rachel{display:flex;gap:14px;align-items:flex-start;background:linear-gradient(150deg,#f3f8f1,#eaf3ec);border-color:#d7e5da;}
     .family-talk .talk-avatar{width:64px;height:64px;flex:none;border-radius:50%;object-fit:cover;border:3px solid #fff;box-shadow:0 3px 8px #4a6a5226;}
     .family-talk .talk-rachel h2{font-size:19px;margin-bottom:4px;}
     .family-talk .talk-rachel p{font-size:14px;color:#4f6558;font-weight:700;}
     .family-talk .talk-sign{margin-top:8px;color:var(--ink)!important;font-size:13px!important;}
-    .family-talk .talk-link{display:inline-flex;align-items:center;min-height:44px;margin-top:4px;padding:0;border:0;background:none;color:var(--family-teal-dark);font-weight:800;font-size:14px;cursor:pointer;}
-    .family-talk .talk-link:disabled{color:#948472;cursor:default;}
-    .family-talk .talk-modes{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:4px;background:#f9efdf;border:1px solid var(--line);border-radius:16px;margin-bottom:18px;}
-    .family-talk .talk-modes button{min-width:0;min-height:44px;padding:8px 6px;border:0;border-radius:12px;background:transparent;color:var(--muted);font-weight:800;font-size:14px;cursor:pointer;}
-    .family-talk .talk-modes button[aria-pressed="true"]{color:#844821;background:linear-gradient(#ffe3ba,#ffd8aa);box-shadow:inset 0 1px 0 #fff9ef,0 1px 2px #d6b68b44;}
     .family-talk .talk-form h2{font-size:20px;}
     .family-talk .talk-hint{margin-top:4px;font-size:13px;font-weight:700;color:var(--muted);}
     .family-talk .talk-chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;}
@@ -72,7 +69,6 @@
       .family-talk .talk-rachel{gap:11px;}
       .family-talk .talk-avatar{width:52px;height:52px;}
       .family-talk .talk-chip{padding:8px 12px;font-size:13px;}
-      .family-talk .talk-modes button{font-size:13px;}
     }
   </style>
 </head>
@@ -87,7 +83,7 @@
       <a href="/settings.html" data-tab="settings"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2.2"/><circle cx="9" cy="17" r="2.2"/></svg>Settings</a>
       <a href="/talk.html" data-tab="talk" aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11.5a7.5 7.5 0 0 1-11 6.6L4 19.5l1.4-4.3A7.5 7.5 0 1 1 20 11.5Z"/><path d="M8.8 10h6.4M8.8 13.3h4"/></svg>Talk to us</a>
     </nav>
-    <div class="family-pagehead"><img src="/assets/crafted/echo-welcome.webp" alt="" /><div><h1>Talk to us</h1><p>Share a thought, ask a question, or ask for a call.</p></div></div>
+    <div class="family-pagehead"><img src="/assets/crafted/echo-welcome.webp" alt="" /><div><h1>Talk to us</h1><p>Share a thought or ask a question.</p></div></div>
 
     <!-- Rachel's credential (CLAUDE.md; Travis, 29 Sep 2026): "MS, CF-SLP"
          after her name, beside the plain words a parent reads, and nothing
@@ -99,16 +95,10 @@
         <h2 id="rachelHi">Hi, I'm Rachel.</h2>
         <p>I'm Sona's co-founder and a licensed pediatric speech-language pathologist. We read every message — tell us how Sona fits your family's day, what could work better, and what you'd love to see.</p>
         <p class="talk-sign">Rachel, MS, CF-SLP · Co-founder</p>
-        <button type="button" class="talk-link" id="rachelCall">I'd love to talk →</button>
       </div>
     </section>
 
     <section class="card talk-form" id="talkCard" aria-label="Send a message">
-      <div class="talk-modes" role="group" aria-label="How would you like to connect?">
-        <button type="button" id="fbModeFeedback" aria-pressed="true">Leave feedback</button>
-        <button type="button" id="fbModeCall" aria-pressed="false">Request a call</button>
-      </div>
-
       <!-- FEEDBACK: chips first, typing optional. A blank box gets blank
            answers; a tapped chip gets an answer from someone who'd never have
            written in. (Moved here from Settings' "Help us improve".) -->
@@ -122,24 +112,6 @@
         <div id="fbRec" class="talk-chips" role="group" aria-labelledby="fbRecLabel"></div>
         <label class="field" for="fbEmail">Want a reply? Your email (optional)</label>
         <input id="fbEmail" type="email" maxlength="254" inputmode="email" autocomplete="email" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="you@email.com" />
-      </div>
-
-      <!-- CALL: a request, never a booking — nobody is on a calendar until
-           the team emails back. The scope line keeps a call about Sona, not
-           a consult about a child. -->
-      <div id="callFields" hidden>
-        <h2>We'd love to talk.</h2>
-        <p class="talk-hint">Tell us what's working, what's confusing, or what you'd love to see.</p>
-        <label class="field" for="callEmail">Your email</label>
-        <input id="callEmail" type="email" required maxlength="254" inputmode="email" autocomplete="email" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="you@email.com" />
-        <div class="field" id="callPreferLabel">How would you like to talk?</div>
-        <div id="callPrefer" class="talk-chips" role="group" aria-labelledby="callPreferLabel"></div>
-        <label class="field" for="callAvailability">A good time (optional)</label>
-        <input id="callAvailability" type="text" maxlength="240" placeholder="e.g. weekday evenings, Eastern Time" />
-        <label class="field" for="callText">What would you like to talk about? (optional)</label>
-        <textarea id="callText" rows="3" maxlength="2000" placeholder="I'd love to talk about…"></textarea>
-        <p class="talk-note">This is a request, not a booking. We'll email you to find a time together.</p>
-        <p class="talk-note">Calls are about Sona — how it works and what would make it better. For advice about your child's speech, your child's speech-language pathologist is the right person.</p>
       </div>
 
       <div class="talk-notes">
@@ -181,10 +153,9 @@
         ? ["More sounds", "Better progress data", "Easier to assign", "More game variety", "Something's broken", "Something else"]
         : ["More games", "New sounds to practice", "Progress reports", "Easier for my kid", "Something's broken", "Something else"];
       var REC = ["Definitely", "Maybe", "Not yet"];
-      var PREFER = [["phone", "Phone call"], ["video", "Video call"], ["email", "Just email"]];
       var EMAIL = /^[^\s@<>()[\]\\,;:"]+@[^\s@<>()[\]\\,;:"]+\.[^\s@<>()[\]\\,;:"]{2,}$/;
       var FAIL = "Couldn't send. Your message is still here — please try again.";
-      var MODE = "feedback", BUSY = false, picked = {}, rec = "", prefer = "video";
+      var BUSY = false, picked = {}, rec = "";
 
       if (isSlp) $("fbLead").textContent = "You're the expert — what would make Sona more useful on your caseload?";
       if (isSlp) $("talkPrivate").textContent = "Please leave out any child's or student's name and anything private.";
@@ -192,7 +163,6 @@
       // is for one reply, not a change to the profile.
       var saved = typeof p.email === "string" ? p.email : "";
       $("fbEmail").value = saved;
-      $("callEmail").value = saved;
 
       function chip(label, host, onTap) {
         var b = document.createElement("button");
@@ -222,38 +192,13 @@
           paintSingle($("fbRec"), rec, REC);
         });
       });
-      PREFER.forEach(function (pair) {
-        chip(pair[1], $("callPrefer"), function () {
-          prefer = pair[0];
-          paintSingle($("callPrefer"), prefer, PREFER.map(function (x) { return x[0]; }));
-        });
-      });
-      paintSingle($("callPrefer"), prefer, PREFER.map(function (x) { return x[0]; }));
 
       function paint() {
-        var call = MODE === "call";
-        $("fbModeFeedback").setAttribute("aria-pressed", String(!call));
-        $("fbModeCall").setAttribute("aria-pressed", String(call));
-        $("feedbackFields").hidden = call;
-        $("callFields").hidden = !call;
-        $("fbSend").textContent = BUSY ? "Sending…" : (call ? "Request a call" : "Send");
-      }
-      function setMode(mode) {
-        if (BUSY || mode === MODE) return;
-        // Carry a typed address across, so switching never asks twice — also
-        // over the untouched setup address, or a corrected email would be
-        // left behind and the reply would go to the old one.
-        var from = mode === "call" ? $("fbEmail") : $("callEmail"), to = mode === "call" ? $("callEmail") : $("fbEmail");
-        var f = from.value.trim(), t = to.value.trim();
-        if (f && (!t || t === saved)) to.value = f;
-        MODE = mode;
-        clearNotices();
-        paint();
+        $("fbSend").textContent = BUSY ? "Sending…" : "Send";
       }
       function setBusy(busy) {
         BUSY = busy;
-        var ids = ["fbModeFeedback", "fbModeCall", "rachelCall", "fbText", "fbEmail", "callEmail", "callAvailability", "callText", "fbSend"];
-        ids.forEach(function (id) { $(id).disabled = busy; });
+        ["fbText", "fbEmail", "fbSend"].forEach(function (id) { $(id).disabled = busy; });
         [].slice.call(document.querySelectorAll("#talkCard .talk-chip")).forEach(function (b) { b.disabled = busy; });
         paint();
       }
@@ -262,39 +207,23 @@
         if (focusId) { try { $(focusId).focus(); } catch (e) {} }
       }
 
-      $("fbModeFeedback").onclick = function () { setMode("feedback"); };
-      $("fbModeCall").onclick = function () { setMode("call"); };
-      $("rachelCall").onclick = function () {
-        setMode("call");
-        try { $("talkCard").scrollIntoView({ behavior: "smooth", block: "start" }); } catch (e) {}
-        try { $("callEmail").value.trim() ? $("callText").focus({ preventScroll: true }) : $("callEmail").focus({ preventScroll: true }); } catch (e) {}
-      };
-
       $("fbSend").onclick = function () {
         if (BUSY) return;
         clearNotices();
-        var kind = MODE, call = kind === "call";
-        var chips = call ? [] : CHIPS.filter(function (k) { return picked[k]; });
-        var text = ((call ? $("callText") : $("fbText")).value || "").trim();
-        var email = ((call ? $("callEmail") : $("fbEmail")).value || "").trim();
-        if (!call && !chips.length && !text) return say("Pick a chip or write a quick thought first.");
-        if (call && !email) return say("Please add an email so we can reply.", "callEmail");
-        if (email && !EMAIL.test(email)) return say(call ? "Please check your email address." : "Please check your email address, or leave it blank.", call ? "callEmail" : "fbEmail");
-        // The time zone only helps find a call time, so only a call carries it.
-        var timezone = "";
-        try { timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || ""; } catch (e) { timezone = ""; }
+        var chips = CHIPS.filter(function (k) { return picked[k]; });
+        var text = ($("fbText").value || "").trim();
+        var email = ($("fbEmail").value || "").trim();
+        if (!chips.length && !text) return say("Pick a chip or write a quick thought first.");
+        if (email && !EMAIL.test(email)) return say("Please check your email address, or leave it blank.", "fbEmail");
         // EXACTLY these fields. Never the child's name, a clinician code, a
         // child id or a pilot code, even though the profile holds them: a
         // reply address sitting beside any of those is a record about a child.
         var body = {
-          kind: kind,
+          kind: "feedback",
           chips: chips,
           text: text,
-          recommend: call ? "" : rec,
+          recommend: rec,
           email: email,
-          prefer: call ? prefer : "",
-          availability: call ? ($("callAvailability").value || "").trim() : "",
-          timezone: call ? timezone.slice(0, 80) : "",
           app: native ? "ios" : "web",
           from: isSlp ? "slp" : "family",
           website: $("website").value || "",
@@ -305,15 +234,10 @@
           .then(function (j) {
             setBusy(false);
             if (!j || !j.ok) return say((j && typeof j.error === "string" && j.error) || FAIL);
-            if (call) { $("callText").value = ""; $("callAvailability").value = ""; }
-            else {
-              picked = {}; rec = "";
-              $("fbText").value = "";
-              [].slice.call(document.querySelectorAll("#fbChips .talk-chip, #fbRec .talk-chip")).forEach(function (b) { b.setAttribute("aria-pressed", "false"); });
-            }
-            $("fbSuccess").textContent = call
-              ? "Request received. We'll email you to find a time together."
-              : "Thank you — your message reached the Sona team.";
+            picked = {}; rec = "";
+            $("fbText").value = "";
+            [].slice.call(document.querySelectorAll("#fbChips .talk-chip, #fbRec .talk-chip")).forEach(function (b) { b.setAttribute("aria-pressed", "false"); });
+            $("fbSuccess").textContent = "Thank you — your message reached the Sona team.";
             $("fbSuccess").hidden = false;
             try { $("fbSuccess").scrollIntoView({ behavior: "smooth", block: "nearest" }); } catch (e) {}
           })

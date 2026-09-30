@@ -420,7 +420,7 @@ for (const [cred, isCovered] of [[CRED, true], [CRED2, false]]) {
   // has only what coverage gives it (none here — no ticket was ever issued)
   await pg.evaluate(() => {
     localStorage.clear();
-    localStorage.setItem("sona.freeera.v1", "post"); localStorage.setItem("sona.freeera2.v1", "done"); localStorage.setItem("sona.freeera3.v1", "done"); localStorage.setItem("sona.freeera4.v1", "done");
+    localStorage.setItem("sona.freeera.v1", "post"); localStorage.setItem("sona.freeera2.v1", "done"); localStorage.setItem("sona.freeera3.v1", "done"); localStorage.setItem("sona.freeera4.v1", "done"); localStorage.setItem("sona.freeera5.v1", "done");
     localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Ora", childAge: "6", focusSounds: ["R"], onboarded: true }));
     localStorage.setItem("sona.slpok", "RACHEL-K4"); localStorage.setItem("sona.slpunlock", "1");
   });
@@ -1094,7 +1094,7 @@ for (const [cred, isCovered] of [[CRED, true], [CRED2, false]]) {
     // and an import that carries a ticket asks the server straight away.
     const noImport = (sona.match(/const NO_IMPORT = \[[^\]]*\]/) || [""])[0];
     ok("…including cached caseload coverage, the unlock flag, the founding mark and every free-era stamp",
-      ["sona.caseplan.v1", "sona.slpunlock", "sona.founding.v1", "sona.freeera.v1", "sona.freeera2.v1", "sona.freeera3.v1", "sona.freeera4.v1"].every((k) => noImport.includes('"' + k + '"')), noImport);
+      ["sona.caseplan.v1", "sona.slpunlock", "sona.founding.v1", "sona.freeera.v1", "sona.freeera2.v1", "sona.freeera3.v1", "sona.freeera4.v1", "sona.freeera5.v1"].every((k) => noImport.includes('"' + k + '"')), noImport);
     ok("…while the ticket travels, and is re-verified the moment it lands",
       !/"sona\.slpticket"/.test(noImport) && /if \(ticket\) \{ try \{ caseRefresh\(true\); \} catch/.test(sona), noImport);
   }

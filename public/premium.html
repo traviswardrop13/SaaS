@@ -77,7 +77,7 @@
         <li id="premiumGameCount">Every game in the library</li>
         <li>Simple play and arcade adventures</li>
         <li>Switch games whenever your child wants a change</li>
-        <li>A picture book for every sound, read along with Echo</li>
+        <li>Every picture book, read along with Echo, with new ones each Monday</li>
       </ul>
       <div class="plan-price" id="premiumOffer">
         <p id="premiumPrice">Annual price to be confirmed</p>
@@ -108,8 +108,10 @@
         if(!checkGate())return;
         var plan=S.previewPlan(),allOpen=catalog.length>0&&catalog.every(function(item){return S.gameAccess(item.key).allowed;}),chosenOpen=game&&S.gameAccess(key).allowed;
         el("premiumGameCount").textContent="All "+catalog.length+" available games in the library";
-        var freeNames=catalog.filter(function(item){return item.tier==="free";}).map(function(item){return item.name;});
-        el("premiumFreeNote").textContent=freeNames.join(", ")+" stay free.";
+        // what stays free, named from the catalog and sona.js's free book
+        var freeNames=catalog.filter(function(item){return item.tier==="free";}).map(function(item){return item.name;})
+          .concat((S.FREE_BOOKS||[]).map(function(title){return "the book "+title;}));
+        el("premiumFreeNote").textContent=(freeNames.length>1?freeNames.slice(0,-1).join(", ")+" and "+freeNames[freeNames.length-1]:freeNames.join(""))+" stay free.";
         el("premiumPreviewNotice").hidden=!preview;
         el("previewTrial").hidden=!preview||plan.state==="trial";
         el("previewExpire").hidden=!preview||plan.state!=="trial";

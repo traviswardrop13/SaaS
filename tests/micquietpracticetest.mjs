@@ -207,7 +207,7 @@ function device(config) {
     const q = document.getElementById('quietTitle'); if (q && /grown-up/.test(q.textContent)) h.grownUp = true;
   }).observe(document, { subtree: true, childList: true, characterData: true });
 
-  localStorage.setItem('sona.freeera.v1', 'post'); localStorage.setItem('sona.freeera2.v1', 'done'); localStorage.setItem('sona.freeera3.v1', 'done'); localStorage.setItem('sona.freeera4.v1', 'done'); localStorage.setItem('sona.micok', '1');
+  localStorage.setItem('sona.freeera.v1', 'post'); localStorage.setItem('sona.freeera2.v1', 'done'); localStorage.setItem('sona.freeera3.v1', 'done'); localStorage.setItem('sona.freeera4.v1', 'done'); localStorage.setItem('sona.freeera5.v1', 'done'); localStorage.setItem('sona.micok', '1');
   localStorage.setItem('sona.profile.v1', JSON.stringify({ childName: 'Mia', childAge: '7', focusSounds: ['R'], onboarded: true, earlyAdopter: true, voiceOn: true, soundOn: true, volume: 0.5 }));
   const n = config.round || 0;
   sessionStorage.setItem('sona.run.v1', JSON.stringify({ active: true, round: n, scores: Array(n).fill(7), sum: n * 7, sound: 'R', level: 1, pending: false, games: ['slice', 'tiles', 'stack', 'run', 'glide'], tries: n * 5 }));

@@ -169,7 +169,7 @@ async function readLibrary(){return page.evaluate(()=>({
   group:document.querySelector('.activity-group').dataset.group,
   games:[...document.querySelectorAll('.activity-group .game-card')].map(t=>t.dataset.game),
   playable:[...document.querySelectorAll('.activity-group .game-card')].filter(card=>!card.disabled).map(card=>card.dataset.game),
-  comingSoon:[...document.querySelectorAll('.activity-group .game-card')].filter(card=>card.disabled&&/coming soon/i.test(card.textContent)).map(card=>card.dataset.game).sort(),
+  comingSoon:[...document.querySelectorAll('.activity-group .game-card')].filter(card=>card.disabled&&/coming (soon|[a-z]{3} \d{1,2})\b/i.test(card.textContent)).map(card=>card.dataset.game).sort(),
   hero:!!document.getElementById('goBtn'),
   trio:Sona.dailyGames()
 }));}

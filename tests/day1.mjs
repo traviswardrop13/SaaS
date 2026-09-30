@@ -23,7 +23,7 @@ const ok = (n, p, extra) => { if (!p) fails++; console.log((p ? "PASS " : "FAIL 
 // Explicit cohorts keep entitlement checks independent of the family pricing
 // switch. `premium` represents a grandfathered family; ordinary seeds are
 // post-era families, with paid-state behavior exercised only through the seam.
-const seed = (age, premium) => `for(const key of ["sona.freeera.v1","sona.freeera2.v1","sona.freeera3.v1","sona.freeera4.v1"])localStorage.setItem(key,key==="sona.freeera.v1"?"post":"done");localStorage.setItem("sona.profile.v1",JSON.stringify({childName:"Mia",childAge:"${age}",focusSounds:["R"],onboarded:true,voiceOn:false${premium ? ",earlyAdopter:true" : ""}}))`;
+const seed = (age, premium) => `for(const key of ["sona.freeera.v1","sona.freeera2.v1","sona.freeera3.v1","sona.freeera4.v1","sona.freeera5.v1"])localStorage.setItem(key,key==="sona.freeera.v1"?"post":"done");localStorage.setItem("sona.profile.v1",JSON.stringify({childName:"Mia",childAge:"${age}",focusSounds:["R"],onboarded:true,voiceOn:false${premium ? ",earlyAdopter:true" : ""}}))`;
 
 async function home(age, premium) {
   const ctx = await browser.newContext();
@@ -57,7 +57,7 @@ for (const age of ["3", "4", "5", "8"]) {
   ok("age " + age + ": both suggested age groups remain available, with the six first games playable", st.groups.length === 2 && st.playable.length >= 6 && st.playable.every(e => e.accessible) &&
     ["slice", "tiles", "stack", "run", "glide", "feed"].every(k => st.playable.some(e => e.key === k)), JSON.stringify(st));
   ok("age " + age + ": Bubble Pop, Peekaboo and the parked Say & Play games stay visible as disabled Coming soon cards", st.parked.length === 28 - st.playable.length && ["bubbles", "peekaboo"].every(k => st.parked.some(e => e.key === k)) &&
-    st.parked.every(e => e.disabled && /coming soon/i.test(e.label) && e.access.allowed === false && e.access.reason === "coming-soon"), JSON.stringify(st.parked));
+    st.parked.every(e => e.disabled && /coming (soon|[a-z]{3} \d{1,2})\b/i.test(e.label) && e.access.allowed === false && e.access.reason === "coming-soon"), JSON.stringify(st.parked));
   ok("age " + age + ": opening Home does not start a journey or display the retired adventure", !st.run && !st.forbidden, JSON.stringify(st));
   // The books are on (Travis, 26 Sep 2026: "yes turn them on"); the
   // adventure and chapter readers stay parked.
@@ -78,7 +78,7 @@ for (const age of ["3", "4", "5", "8"]) {
   const released=st.cards.filter(c => !c.comingSoon), parked=st.cards.filter(c => c.comingSoon);
   ok("the paid-state seam still opens directly to the game library", /pick a game/i.test(st.heading) && await pg.locator("#goBtn").count()===0, st);
   ok("the paid-state seam locks exactly the released Premium games without prices", released.length>=6&&released.length+parked.length===28&&released.every(c=>c.locked===(c.tier==="premium")&&!c.disabled&&c.tag===(c.tier==="premium"?"Premium":"Free")), released);
-  ok("Coming soon stays disabled even on the paid-state seam", parked.length>=2&&parked.every(c=>c.locked&&c.disabled&&c.tag==="Coming soon"), parked);
+  ok("Coming soon stays disabled even on the paid-state seam", parked.length>=2&&parked.every(c=>c.locked&&c.disabled&&/^Coming (soon|[A-Z][a-z]{2} \d{1,2})$/.test(c.tag)), parked);
   await pg.locator('#activityGroups .game-card[data-game="slice"]').click();
   await pg.waitForURL(/charge\.html/);
   ok("the paid-state seam keeps free game practice one tap away",new URL(pg.url()).pathname==="/charge.html"&&new URL(pg.url()).searchParams.get("game")==="arcade-slice.html",pg.url());

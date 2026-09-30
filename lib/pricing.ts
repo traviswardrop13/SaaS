@@ -24,4 +24,4 @@
  * separate product on a separate route and deliberately does not read this
  * switch: it pays for a caseload's families, whatever families pay today.
  */
-export const FREE_MODE = true; // mirrors sona.js — Travis, 24 Sep 2026: restore family access to free
+export const FREE_MODE = false; // mirrors sona.js — Travis, 30 Sep 2026: "we add the paywall today"

@@ -1657,11 +1657,11 @@
   // device, not the family — and a pasted empty stamp would re-open a sweep
   // on the next load and adopt whatever the backup brought with it.
   const NO_IMPORT = ["sona.sub.v1", "sona.slpunlock", "sona.caseplan.v1", "sona.founder", "sona.founding.v1", "sona.paidui", "sona.pilot.v1", "sona.trial.v1",
-    "sona.freeera.v1", "sona.freeera2.v1", "sona.freeera3.v1", "sona.freeera4.v1"];
+    "sona.freeera.v1", "sona.freeera2.v1", "sona.freeera3.v1", "sona.freeera4.v1", "sona.freeera5.v1"];
   // The free-era marks a sweep writes onto a profile. A backup may never
   // bring them (it would forge the promise), and it may never take them away
   // from the device it is restored onto (that would break one).
-  const ERA_MARKS = ["earlyAdopter", "freeEra", "freeEra2", "freeEra3", "freeEra4"];
+  const ERA_MARKS = ["earlyAdopter", "freeEra", "freeEra2", "freeEra3", "freeEra4", "freeEra5"];
   function importData(payload) {
     try {
       const obj = (typeof payload === "string") ? JSON.parse(payload) : payload;
@@ -1939,6 +1939,16 @@
     if (t && t.start && !trialExpired()) return false;
     return true;
   }
+  // THE FREE BOOK (Travis, 30 Sep 2026: "one book uh so like the letter r
+  // book ... to be free and the rest is grayed out ... once they purchase it'll
+  // open up everything else"). The shelf opens for every family; each book on
+  // it is Premium, gated exactly as the whole shelf was, except the ones named
+  // here, which are open in every pricing state. Named by title because the
+  // books themselves live on the shelf (library.html), and a title is what a
+  // parent sees. Rename that book and this list must follow (readtest pins it).
+  const FREE_BOOKS = ["Rory and the Rainbow"];
+  function bookFree(title) { return FREE_BOOKS.indexOf(String(title || "")) !== -1; }
+  function bookLocked(title) { return !bookFree(title) && gated("books"); }
   // earlyAdopter lives on the PROFILE, and the profile is per-kid — so a
   // founding or SLP-referred family that added a second child had the first one
   // playing free while the sibling hit a paywall on the same device. Access was
@@ -1946,10 +1956,10 @@
   //
   // Since 24 Sep 2026 NOTHING NEW WRITES IT except the free-era sweeps. It is
   // the mark of a family who was promised Sona free before pricing returned
-  // (eras one to four, including every device that redeemed a clinician's link
-  // before this build — see _grandfatherFreeEra4). A redemption made AFTER
-  // this build earns Premium only through the clinician's coverage, which can
-  // end; a promise already made cannot.
+  // (eras one to five, including every device that redeemed a clinician's
+  // link before the Caseload Premium build — see _grandfatherFreeEra4). A
+  // redemption made AFTER that build earns Premium only through the
+  // clinician's coverage, which can end; a promise already made cannot.
   function earlyAdopterAnyKid() {
     try {
       const list = _kids().list || [];
@@ -2583,7 +2593,10 @@
   // screen paints, and two copies of a list is one copy that goes stale.
   const GAME_ACTS = {
     slice: { name: "Fruit Slice",   sub: "Say it 5× to play",          go: "/charge.html?game=arcade-slice.html", group: "arcade", tier: "free", playDescription: "Swipe through the fruit." },
-    tiles: { name: "Piano Tiles",   sub: "Say it 5× to play",          go: "/charge.html?game=arcade-tiles.html", group: "arcade", tier: "premium", playDescription: "Tap each tile as it reaches the line." },
+    // Free since 30 Sep 2026 (Travis: "fruit slice and piano tiles free ...
+    // feed echo to be free"): the free version is practice, these three games
+    // and one book. Every other game is Premium.
+    tiles: { name: "Piano Tiles",   sub: "Say it 5× to play",          go: "/charge.html?game=arcade-tiles.html", group: "arcade", tier: "free", playDescription: "Tap each tile as it reaches the line." },
     // Premium since 27 Sep 2026 (Travis: once the plan screen has been seen,
     // "all the other games are ... grayed out except they can replay feed echo
     // and fruit slice"). Only matters when pricing is on; free while Sona is.
@@ -2591,8 +2604,8 @@
     run:   { name: "Sound Sprint",  sub: "Say it 5× to play",          go: "/charge.html?game=arcade-run.html", group: "arcade", tier: "premium", playDescription: "Switch lanes and collect coins." },
     glide: { name: "Flappy Glide",  sub: "Say it 5× to play",          go: "/charge.html?game=arcade-glide.html", group: "arcade", tier: "premium", playDescription: "Tap to glide through the gaps." },
     feed:  { name: "Feed Echo",     sub: "Say it & tap — Echo's hungry!", go: "/arcade-feed.html", group: "simple", tier: "free", playDescription: "Find the picture and feed Echo. No timer." },
-    bubbles: { name: "Bubble Pop", sub: "Pop, discover and say it together", go: "/arcade-bubbles.html", group: "simple", tier: "free", comingSoon: true, releasedOn: "2026-09-21", playDescription: "Pop a bubble. Find a little surprise." },
-    peekaboo: { name: "Peekaboo", sub: "Open a door and say it together", go: "/arcade-peekaboo.html", group: "simple", tier: "premium", comingSoon: true, releasedOn: "2026-09-21", playDescription: "Knock, knock! See what’s hiding." },
+    bubbles: { name: "Bubble Pop", sub: "Pop, discover and say it together", go: "/arcade-bubbles.html", group: "simple", tier: "free", comingSoon: true, comingOn: "2026-10-12", releasedOn: "2026-09-21", playDescription: "Pop a bubble. Find a little surprise." },
+    peekaboo: { name: "Peekaboo", sub: "Open a door and say it together", go: "/arcade-peekaboo.html", group: "simple", tier: "premium", comingSoon: true, comingOn: "2026-10-19", releasedOn: "2026-09-21", playDescription: "Knock, knock! See what’s hiding." },
     // Say & Play (Travis, 26 Sep 2026: "10 more games for ages 3-4 and 10
     // more games for ages 5-8 ... incorporating practice into it"). Every
     // word the child says moves the game one step, so each opens straight to
@@ -2606,28 +2619,36 @@
     // child only talked and watched; none of them let a child PLAY. Each comes
     // back one at a time, rebuilt as a real game and played by Travis first,
     // by taking comingSoon off its own line — never all at once.
-    balloon: { name: "Balloon Party", sub: "Say it to blow up the balloon", go: "/arcade-balloon.html", group: "simple", tier: "premium", say: true, comingSoon: true, playDescription: "Every word you say blows the balloon bigger." },
-    flower: { name: "Grow a Flower", sub: "Say it to water the seed", go: "/arcade-flower.html", group: "simple", tier: "premium", say: true, comingSoon: true, playDescription: "Water the seed with your words and watch it grow." },
-    rocket: { name: "Rocket Blast", sub: "Say it to count down", go: "/arcade-rocket.html", group: "simple", tier: "premium", say: true, comingSoon: true, playDescription: "Every word lights the countdown. Then blast off!" },
-    snowman: { name: "Build a Snowman", sub: "Say it to build a snowman", go: "/arcade-snowman.html", group: "simple", tier: "premium", say: true, comingSoon: true, playDescription: "Every word you say builds the snowman." },
-    train: { name: "Choo-Choo Train", sub: "Say it to help a friend aboard", go: "/arcade-train.html", group: "simple", tier: "premium", say: true, comingSoon: true, playDescription: "Every word helps a friend climb aboard the train." },
-    puppy: { name: "Puppy Bath", sub: "Say it to wash the puppy", go: "/arcade-puppy.html", group: "simple", tier: "premium", say: true, comingSoon: true, playDescription: "Every word washes a muddy spot away." },
-    stars: { name: "Bedtime Stars", sub: "Say it to light a star", go: "/arcade-stars.html", group: "simple", tier: "premium", say: true, comingSoon: true, playDescription: "Every word lights a star in the night sky." },
-    cake: { name: "Birthday Cake", sub: "Say it to make the cake", go: "/arcade-cake.html", group: "simple", tier: "premium", say: true, comingSoon: true, playDescription: "Every word adds to the birthday cake." },
-    gifts: { name: "Surprise Boxes", sub: "Say it to open a present", go: "/arcade-gifts.html", group: "simple", tier: "premium", say: true, comingSoon: true, playDescription: "Every word opens a present. Who is inside?" },
-    fishtank: { name: "Fish Tank", sub: "Say it to add a fish", go: "/arcade-fishtank.html", group: "simple", tier: "premium", say: true, comingSoon: true, playDescription: "Every word brings a new fish to the tank." },
-    racecar: { name: "Race Car", sub: "Say it to zoom ahead", go: "/arcade-racecar.html", group: "arcade", tier: "premium", say: true, comingSoon: true, playDescription: "Every word zooms your race car closer to the finish line." },
-    treasure: { name: "Treasure Map", sub: "Say it to sail to the treasure", go: "/arcade-treasure.html", group: "arcade", tier: "premium", say: true, comingSoon: true, playDescription: "Every word sails your boat to the next stop on the map." },
-    soccer: { name: "Soccer Goal", sub: "Say it to kick a goal", go: "/arcade-soccer.html", group: "arcade", tier: "premium", say: true, comingSoon: true, playDescription: "Every word kicks the ball into the net." },
+    //
+    // MONDAY DROPS (Travis, 30 Sep 2026: "games that aren't finished ...
+    // label them ... coming October 8th or whatever", then "a few games/books
+    // per week w new ones each monday dropping"). Each parked game carries
+    // `comingOn`, a Monday: one for little kids and one for big kids a week
+    // from 12 Oct. It is a LABEL, never a switch: Home says "Coming Oct 12"
+    // until that day, then "Coming soon" again if the game still isn't ready,
+    // and only taking comingSoon off opens a game. Move a date by editing it.
+    balloon: { name: "Balloon Party", sub: "Say it to blow up the balloon", go: "/arcade-balloon.html", group: "simple", tier: "premium", say: true, comingSoon: true, comingOn: "2026-10-26", playDescription: "Every word you say blows the balloon bigger." },
+    flower: { name: "Grow a Flower", sub: "Say it to water the seed", go: "/arcade-flower.html", group: "simple", tier: "premium", say: true, comingSoon: true, comingOn: "2026-11-23", playDescription: "Water the seed with your words and watch it grow." },
+    rocket: { name: "Rocket Blast", sub: "Say it to count down", go: "/arcade-rocket.html", group: "simple", tier: "premium", say: true, comingSoon: true, comingOn: "2026-11-09", playDescription: "Every word lights the countdown. Then blast off!" },
+    snowman: { name: "Build a Snowman", sub: "Say it to build a snowman", go: "/arcade-snowman.html", group: "simple", tier: "premium", say: true, comingSoon: true, comingOn: "2026-11-16", playDescription: "Every word you say builds the snowman." },
+    train: { name: "Choo-Choo Train", sub: "Say it to help a friend aboard", go: "/arcade-train.html", group: "simple", tier: "premium", say: true, comingSoon: true, comingOn: "2026-11-30", playDescription: "Every word helps a friend climb aboard the train." },
+    puppy: { name: "Puppy Bath", sub: "Say it to wash the puppy", go: "/arcade-puppy.html", group: "simple", tier: "premium", say: true, comingSoon: true, comingOn: "2026-11-02", playDescription: "Every word washes a muddy spot away." },
+    stars: { name: "Bedtime Stars", sub: "Say it to light a star", go: "/arcade-stars.html", group: "simple", tier: "premium", say: true, comingSoon: true, comingOn: "2026-12-28", playDescription: "Every word lights a star in the night sky." },
+    cake: { name: "Birthday Cake", sub: "Say it to make the cake", go: "/arcade-cake.html", group: "simple", tier: "premium", say: true, comingSoon: true, comingOn: "2026-12-07", playDescription: "Every word adds to the birthday cake." },
+    gifts: { name: "Surprise Boxes", sub: "Say it to open a present", go: "/arcade-gifts.html", group: "simple", tier: "premium", say: true, comingSoon: true, comingOn: "2026-12-14", playDescription: "Every word opens a present. Who is inside?" },
+    fishtank: { name: "Fish Tank", sub: "Say it to add a fish", go: "/arcade-fishtank.html", group: "simple", tier: "premium", say: true, comingSoon: true, comingOn: "2026-12-21", playDescription: "Every word brings a new fish to the tank." },
+    racecar: { name: "Race Car", sub: "Say it to zoom ahead", go: "/arcade-racecar.html", group: "arcade", tier: "premium", say: true, comingSoon: true, comingOn: "2026-10-19", playDescription: "Every word zooms your race car closer to the finish line." },
+    treasure: { name: "Treasure Map", sub: "Say it to sail to the treasure", go: "/arcade-treasure.html", group: "arcade", tier: "premium", say: true, comingSoon: true, comingOn: "2026-11-02", playDescription: "Every word sails your boat to the next stop on the map." },
+    soccer: { name: "Soccer Goal", sub: "Say it to kick a goal", go: "/arcade-soccer.html", group: "arcade", tier: "premium", say: true, comingSoon: true, comingOn: "2026-10-12", playDescription: "Every word kicks the ball into the net." },
     // REBUILT (Travis, 26 Sep 2026: "yes build hoops"): the word earns the
     // ball and the child swipes it into a gliding hoop (public/hoops.js).
     hoops: { name: "Hoops", sub: "Say it, then shoot!", go: "/arcade-hoops.html", group: "arcade", tier: "premium", say: true, playDescription: "Say the word to get the ball, then swipe up to shoot hoops." },
-    robot: { name: "Robot Builder", sub: "Say it to build a robot", go: "/arcade-robot.html", group: "arcade", tier: "premium", say: true, comingSoon: true, playDescription: "Every word adds a new part to your robot." },
-    castle: { name: "Castle Builder", sub: "Say it to build a castle", go: "/arcade-castle.html", group: "arcade", tier: "premium", say: true, comingSoon: true, playDescription: "Every word builds another part of your castle." },
-    dino: { name: "Dino Dig", sub: "Say it to dig up a dinosaur", go: "/arcade-dino.html", group: "arcade", tier: "premium", say: true, comingSoon: true, playDescription: "Every word brushes the sand off a dinosaur bone." },
-    space: { name: "Space Trip", sub: "Say it to fly to a planet", go: "/arcade-space.html", group: "arcade", tier: "premium", say: true, comingSoon: true, playDescription: "Every word flies your rocket to the next planet." },
-    pizza: { name: "Pizza Chef", sub: "Say it to make a pizza", go: "/arcade-pizza.html", group: "arcade", tier: "premium", say: true, comingSoon: true, playDescription: "Every word adds something to your pizza." },
-    monster: { name: "Monster Makeover", sub: "Say it to dress up the monster", go: "/arcade-monster.html", group: "arcade", tier: "premium", say: true, comingSoon: true, playDescription: "Every word gives the monster a silly new look." },
+    robot: { name: "Robot Builder", sub: "Say it to build a robot", go: "/arcade-robot.html", group: "arcade", tier: "premium", say: true, comingSoon: true, comingOn: "2026-11-16", playDescription: "Every word adds a new part to your robot." },
+    castle: { name: "Castle Builder", sub: "Say it to build a castle", go: "/arcade-castle.html", group: "arcade", tier: "premium", say: true, comingSoon: true, comingOn: "2026-11-30", playDescription: "Every word builds another part of your castle." },
+    dino: { name: "Dino Dig", sub: "Say it to dig up a dinosaur", go: "/arcade-dino.html", group: "arcade", tier: "premium", say: true, comingSoon: true, comingOn: "2026-10-26", playDescription: "Every word brushes the sand off a dinosaur bone." },
+    space: { name: "Space Trip", sub: "Say it to fly to a planet", go: "/arcade-space.html", group: "arcade", tier: "premium", say: true, comingSoon: true, comingOn: "2026-11-09", playDescription: "Every word flies your rocket to the next planet." },
+    pizza: { name: "Pizza Chef", sub: "Say it to make a pizza", go: "/arcade-pizza.html", group: "arcade", tier: "premium", say: true, comingSoon: true, comingOn: "2026-11-23", playDescription: "Every word adds something to your pizza." },
+    monster: { name: "Monster Makeover", sub: "Say it to dress up the monster", go: "/arcade-monster.html", group: "arcade", tier: "premium", say: true, comingSoon: true, comingOn: "2026-12-07", playDescription: "Every word gives the monster a silly new look." },
   };
   // Catalog access is separate from the speech needed to earn an arcade turn.
   // Free access opens released games; unfinished games stay parked for everyone.
@@ -2757,18 +2778,41 @@
       var parsed = Date.parse(value + "T00:00:00Z");
       return isFinite(parsed) && new Date(parsed).toISOString().slice(0, 10) === value ? parsed : NaN;
     }
+    // A parked game's Monday (comingOn, see GAME_ACTS) on the family's own
+    // calendar, the way the bookshelf dates its books: "Coming Oct 12" until
+    // the day, then "Coming soon" again if the game still isn't ready. A label
+    // only; gameAccess never reads it.
+    var localToday = _localDay(now);
+    function comingOn(act) {
+      var d = act.comingSoon && typeof act.comingOn === "string" && isFinite(catalogDay(act.comingOn)) ? act.comingOn : "";
+      return d && d > localToday ? d : null;
+    }
+    function comingLabel(on) {
+      if (!on) return "Coming soon";
+      try { var p = on.split("-"); return "Coming " + new Date(+p[0], +p[1] - 1, +p[2]).toLocaleDateString(undefined, { month: "short", day: "numeric" }); }
+      catch (e) { return "Coming soon"; }
+    }
     function entry(key) {
-      var act = GAME_ACTS[key];
+      var act = GAME_ACTS[key], on = comingOn(act);
       return { key: key, name: act.name, sub: act.sub, go: act.go, playDescription: act.playDescription,
-        tier: act.tier, releasedOn: act.releasedOn || null, available: act.available !== false, comingSoon: !!act.comingSoon };
+        tier: act.tier, releasedOn: act.releasedOn || null, available: act.available !== false, comingSoon: !!act.comingSoon,
+        comingOn: on, comingLabel: act.comingSoon ? comingLabel(on) : null };
+    }
+    // Playable games keep the catalog's order; the parked ones follow,
+    // soonest Monday first, and any without a date last.
+    function parkedOrder(a, b) {
+      var x = GAME_ACTS[a].comingOn || "9999", y = GAME_ACTS[b].comingOn || "9999";
+      return x < y ? -1 : x > y ? 1 : 0;
     }
     var groups = ACTIVITY_GROUPS.map(function (group) {
+      var keys = ACTIVITY_KEYS.filter(function (key) {
+        return GAME_ACTS[key].group === group.id && GAME_ACTS[key].available !== false;
+      });
       return {
         id: group.id, name: group.name, ageLabel: group.ageLabel,
         description: group.description, recommended: group.id === recommended,
-        games: ACTIVITY_KEYS.filter(function (key) {
-          return GAME_ACTS[key].group === group.id && GAME_ACTS[key].available !== false;
-        }).map(entry),
+        games: keys.filter(function (key) { return !GAME_ACTS[key].comingSoon; })
+          .concat(keys.filter(function (key) { return GAME_ACTS[key].comingSoon; }).sort(parkedOrder)).map(entry),
       };
     });
     if (recommended === "arcade") groups.reverse();
@@ -4109,6 +4153,52 @@
     } catch (e) {}
   }
 
+  // FIFTH FREE ERA, KEPT — and it ships in the build that ends it.
+  //
+  // Sona went free again on 24 Sep 2026, the afternoon Caseload Premium
+  // merged, and stayed free until this build brought the paywall back
+  // (Travis, 30 Sep 2026: "we add the paywall today"; families first meet it
+  // on launch day, when the launch lock lifts). The rule is the one every
+  // window has kept: the sweep ships in the build that ENDS the window,
+  // never earlier, or it stamps the families it exists for before they
+  // onboard.
+  //
+  // The cohort is structural, as in eras one to three: a device already
+  // ONBOARDED on its first load of this build used Sona while it was free,
+  // and keeps Premium for good. A clinician's link redeemed in this window is
+  // not a cohort of its own, unlike era four's: since the Caseload Premium
+  // build a redemption is a ticket whose Premium is the clinician's coverage
+  // (caseCovered), and that promise keeps itself. A family whose first load
+  // is this build or later is stamped here before they onboard, and pays.
+  //
+  // Deliberately NOT gated on any earlier era's stamp: a device that first
+  // loaded during era five carries all four of them and belongs to none.
+  const GF5KEY = "sona.freeera5.v1";
+  function _grandfatherFreeEra5() {
+    try {
+      if (localStorage.getItem(GF5KEY)) return;     // swept once, on the way in
+      localStorage.setItem(GF5KEY, "done");
+      let slots = [""];
+      try {
+        const v = JSON.parse(localStorage.getItem(KIDSKEY) || "null");
+        if (v && v.list && v.list.length) slots = v.list.map((k) => k.slot || "");
+      } catch (e) {}
+      let any = false;
+      slots.forEach(function (slot) {
+        const key = slot ? PKEY + "@" + slot : PKEY;
+        try {
+          const pr = JSON.parse(localStorage.getItem(key) || "null");
+          if (pr && (pr.onboarded || pr.childName)) {
+            pr.earlyAdopter = true; pr.freeEra = true; pr.freeEra5 = true;
+            localStorage.setItem(key, JSON.stringify(pr));
+            any = true;
+          }
+        } catch (e) {}
+      });
+      if (any) localStorage.setItem(GFKEY, "grandfathered");
+    } catch (e) {}
+  }
+
   const HUMAN_CLIPS = true;
   function humanClipsOn() { return HUMAN_CLIPS; }
 
@@ -4119,25 +4209,26 @@
   // Since 24 Sep 2026 "off" no longer means "everything behind a wall". Sona
   // has a FREE VERSION — daily practice and released free-tier games —
   // and PREMIUM, which opens every released game:
-  //   OFF — the free version for everyone; Premium for premium(): a
+  //   OFF (now) — the free version for everyone; Premium for premium(): a
   //     subscription (yearly, 3 days free; the web price comes from
   //     lib/charter.ts via /api/charter, the iOS price from App Store
   //     Connect), a covered clinician's caseload, a founder or founding
-  //     pilot, or any of the four free eras' promises;
-  //   ON (now) — every released game for everyone, nothing sold.
+  //     pilot, or any of the five free eras' promises;
+  //   ON — every released game for everyone, nothing sold.
   // Practice is never gated in either state; gated() says so before anything.
   //
   // The CLINICIAN plan ("Sona Premium for your caseload", bought on the
   // dashboard) is separate and deliberately does not read this switch: what
   // it pays for is its families' Premium, reported back here by caseRefresh.
   //
-  // Era four ended in the earlier paid build; its shipped sweep stays.
-  // This new free window needs its own sweep when pricing returns, not now.
+  // Era five, the window that opened on 24 Sep 2026, ends with this build,
+  // and its sweep (_grandfatherFreeEra5) ships in it. The next free window,
+  // if there is one, gets its own sweep in the build that ends it.
   //
   // The paid rails stay TESTED in either state through the ?paid=1 seam below,
   // because a switch nobody can flip is not a switch — and every free era so
   // far has proved how fast an unexercised path rots into archaeology.
-  const FREE_MODE = true;  // Travis, 24 Sep 2026: restore family access to free; pricing needs explicit approval
+  const FREE_MODE = false;  // Travis, 30 Sep 2026: "we add the paywall today" — era five ends the day this merges
   // QA seam: ?paid=1 (or the sticky sona.paidui flag) reveals the purchase
   // rails on this device so the paid path stays exercisable — and TESTED —
   // while free mode ships. It only controls VISIBILITY; it can't unlock
@@ -4397,7 +4488,10 @@
   // both are asynchronous or user-driven, so a device whose first load is
   // this build is always judged as it arrived, never as it will be.
   try { _grandfatherFreeEra4(); } catch (e) {}
+  // era five, likewise independent of every earlier stamp, and for the same
+  // reason run before anything on this load can finish setup.
+  try { _grandfatherFreeEra5(); } catch (e) {}
   try { installDebug(); } catch (e) {}
 
-  global.Sona = { pcmWave, libraryPreview, previewPlan, setPreviewPlan, gameKey, gameAccess, gameBounce, finishGameTurn, catalogRun, simpleAdventure, MIC_PROMISE, playStyle, pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, TTS_CACHE_VERSION, voiceDiagnostic, voiceStatus, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, saveFor, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, ladderContent, FREE_MODE, isFree, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, adventureGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, activityLibrary, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, premium, caseCovered, caseRefresh, gated, gateVerify, gateOk, requireGate, gateDest, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, planMoment, planEligible, planShown, firstGameKey, firstGameStart, firstGameEnd, speak, speakNow, speakUnlock, speechAvailable, speechPerm, speechStart, speechStop, hearVerdict, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, demoState, demoDone, demoStart, demoFinish, runActive, gateBounce, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repWeeks, gameRep, repsBeacon, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES, soundMark };
+  global.Sona = { pcmWave, libraryPreview, previewPlan, setPreviewPlan, gameKey, gameAccess, gameBounce, finishGameTurn, catalogRun, simpleAdventure, MIC_PROMISE, playStyle, pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, TTS_CACHE_VERSION, voiceDiagnostic, voiceStatus, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, saveFor, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, ladderContent, FREE_MODE, isFree, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, adventureGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, activityLibrary, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, premium, caseCovered, caseRefresh, gated, FREE_BOOKS, bookFree, bookLocked, gateVerify, gateOk, requireGate, gateDest, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, planMoment, planEligible, planShown, firstGameKey, firstGameStart, firstGameEnd, speak, speakNow, speakUnlock, speechAvailable, speechPerm, speechStart, speechStop, hearVerdict, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, demoState, demoDone, demoStart, demoFinish, runActive, gateBounce, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repWeeks, gameRep, repsBeacon, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES, soundMark };
 })(window);

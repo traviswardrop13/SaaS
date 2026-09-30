@@ -56,7 +56,7 @@ async function fresh({ paid = false, replay = false, sound = "R", width = 390, h
   await page.evaluate(({ paid, replay, sound, games }) => {
     localStorage.setItem("sona.freeera.v1", "post");
     localStorage.setItem("sona.freeera2.v1", "done");
-    localStorage.setItem("sona.freeera3.v1", "done"); localStorage.setItem("sona.freeera4.v1", "done");
+    localStorage.setItem("sona.freeera3.v1", "done"); localStorage.setItem("sona.freeera4.v1", "done"); localStorage.setItem("sona.freeera5.v1", "done");
     localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Mia", childAge: "7", focusSounds: [sound], onboarded: true, volume: 0, voiceOn: false, soundOn: false, earlyAdopter: !paid }));
     if (paid) sessionStorage.setItem("sona.paidui", "1");
     if (replay) localStorage.setItem("sona.demo.v1", JSON.stringify({ started: Date.now() - 1000, done: Date.now() }));

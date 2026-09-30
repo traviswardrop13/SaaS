@@ -63,7 +63,7 @@ async function fixture({ origin = BASE, path = "/activities.html?libraryPreview=
       localStorage.setItem("test.freemium.seed", "1");
       localStorage.setItem("sona.freeera.v1", "post");
       localStorage.setItem("sona.freeera2.v1", "done");
-      localStorage.setItem("sona.freeera3.v1", "done"); localStorage.setItem("sona.freeera4.v1", "done");
+      localStorage.setItem("sona.freeera3.v1", "done"); localStorage.setItem("sona.freeera4.v1", "done"); localStorage.setItem("sona.freeera5.v1", "done");
       localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Mia", childAge: "7", focusSounds: ["S"], onboarded: true, volume: 0, voiceOn: false, soundOn: false }));
       localStorage.setItem("sona.demo.v1", JSON.stringify({ started: Date.now() - 8 * 86400000, done: Date.now() - 7 * 86400000 }));
       Object.entries(local).forEach(([key, value]) => localStorage.setItem(key, typeof value === "string" ? value : JSON.stringify(value)));
@@ -317,7 +317,7 @@ if (hasContract) {
       for (const path of ["/arcade-" + key + ".html?daily=1&from=charge", "/charge.html?game=arcade-" + key + ".html", "/premium.html?game=" + key]) {
         await pg.goto(BASE + path); await pg.waitForTimeout(100);
         ok(key + " " + mode + ": " + path + " returns to Home", new URL(pg.url()).pathname === "/today.html", pg.url());
-        if (new URL(pg.url()).pathname === "/today.html") ok(key + " " + mode + ": Coming soon explains the return without an unlock offer", /coming soon/i.test(await pg.locator("#libraryNotice").innerText()) && !await pg.locator("#libraryUnlock").isVisible());
+        if (new URL(pg.url()).pathname === "/today.html") ok(key + " " + mode + ": Coming soon explains the return without an unlock offer", /coming (soon|[a-z]{3} \d{1,2})\b/i.test(await pg.locator("#libraryNotice").innerText()) && !await pg.locator("#libraryUnlock").isVisible());
       }
       ok(key + " " + mode + ": denied routes never request microphone access", await pg.evaluate(() => Number(sessionStorage.getItem("test.micCalls") || 0)) === 0);
       ok(key + " " + mode + ": denied routes preserve real family state", same(await realState(pg), before));
