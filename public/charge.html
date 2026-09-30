@@ -77,6 +77,13 @@
     #bubble{background:#fff;border-radius:20px;border-bottom-left-radius:5px;padding:12px 20px;box-shadow:0 6px 16px var(--bsh);text-align:center;max-width:86vw;}
     #bMain{font-family:"Baloo 2";font-weight:800;font-size:15px;color:#4a2c14;line-height:1.15;}
     #bTarget{font-family:"Baloo 2";font-weight:800;font-size:clamp(32px,10vw,40px);color:#ef6f23;display:inline-block;padding-left:6px;}
+    /* Only the practice sound's letters are orange (the family's brief: "the
+       practice sound's letters are always orange"): paintCard() wraps them in
+       .snd through Sona.soundMark, and the rest of the word takes the bubble's
+       ink, like "Say". Two ids so it outranks crafted-games.css, which paints
+       the whole target; the orange is that sheet's own practice orange. */
+    body[data-crafted] #bMain #bTarget{color:inherit;}
+    #bTarget .snd{color:#d86a24;}
     #gpState{font-weight:800;font-size:14.5px;color:#8a6f52;margin-top:2px;}
     #gpState b{color:var(--chiptx);}
     #turnStatus{font-size:13px;font-weight:900;color:#795534;line-height:1.35;margin-bottom:5px;}
@@ -1157,9 +1164,24 @@
       $("ctxLine").setAttribute("aria-label","Adventure, round "+Math.min(ROUNDIX+1,DAILY_SEQ.length)+" of "+DAILY_SEQ.length);
       ADVENTURE.forEach(function(key,i){var dot=document.createElement("span");dot.className="path-dot"+(i<ROUNDIX?" done":i===ROUNDIX?" current":"");dot.setAttribute("aria-hidden","true");if(i===ROUNDIX){var art=S.gameSticker(key);S.paintSticker(dot,art[0],art[1]);}$("ctxLine").appendChild(dot);});
     })();
-    // the bubble target — huge, orange, repainted on every syllable flip
+    // The bubble target, repainted on every flip (a step-down included). Only
+    // the letters that make the practice sound are orange (Sona.soundMark:
+    // one rule, every page); the rest is the bubble's ink. A bare-sound target
+    // like "rrrr" IS the sound, so it is orange whole. In a sentence only the
+    // practice word is marked: "I see a" is the frame, not the practice. Kept
+    // self-contained: voicetest3 runs this function's own source against
+    // ITEM, SOUND, S, $.
     function paintCard(){
-      $("bTarget").textContent = ITEM.level==="isolation" ? ((S&&S.soundSay)?S.soundSay(SOUND):"rrrr") : (ITEM.display||ITEM.t);
+      var iso=ITEM.level==="isolation", txt=String(iso?((S&&S.soundSay)?S.soundSay(SOUND):"rrrr"):(ITEM.display||ITEM.t));
+      var esc=function(x){return String(x).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");};
+      var word=String(ITEM.word||"").toLowerCase(), info=null;
+      ((S&&S.WORDS&&S.WORDS[SOUND])||[]).forEach(function(w){ if(!info&&w.w===word)info=w; });
+      var pos=(info&&info.pos)||"", mark=function(x){ return (S&&S.soundMark)?S.soundMark(x,SOUND,pos):'<b class="snd">'+esc(x)+'</b>'; };
+      // the practice word as a whole word: "ear" must not light up inside "hear"
+      var lo=txt.toLowerCase(), at=-1, from=0, f;
+      while(word&&!iso&&(f=lo.indexOf(word,from))>=0){ if(!/[a-z]/.test(lo.charAt(f-1))&&!/[a-z]/.test(lo.charAt(f+word.length))){at=f;break;} from=f+1; }
+      $("bTarget").innerHTML = iso ? '<b class="snd">'+esc(txt)+'</b>'
+        : at>=0 ? esc(txt.slice(0,at))+mark(txt.slice(at,at+word.length))+esc(txt.slice(at+word.length)) : mark(txt);
     }
     paintCard();
     function paintReps(n){

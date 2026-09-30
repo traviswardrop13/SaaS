@@ -1,6 +1,14 @@
 /* Say & Play: the one stylesheet for the twenty say-it-to-play games
-   (sayplay.js is the engine; tools/gameart/ writes each game's page). */
-:root{ --ink:#4a2c14; --muted:#8a6f52; --cream:#fff6e9; --orange:#ff8a3d; --orange-d:#ef6f23; --green:#58cc02; --green-d:#46a302; --top:#fff6e9; --bottom:#ffeccb; }
+   (sayplay.js is the engine; tools/gameart/ writes each game's page).
+   The teal buttons and mic, the cream second choice and the orange sound
+   letters take their colours from /action.css (design brief, 28 Sep 2026),
+   so none is pasted here. It is imported as well as linked by each page:
+   every button below is white text on var(--act), so a page that lost the
+   link would show invisible buttons, and twenty generated pages are
+   twenty chances to lose it. Green stays a status only (a word heard),
+   never a button: the family named the green GO. @import must come first. */
+@import url("/action.css");
+:root{ --ink:#4a2c14; --muted:#8a6f52; --cream:#fff6e9; --green-d:#46a302; --top:#fff6e9; --bottom:#ffeccb; }
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;font-family:"Nunito",sans-serif;}
 html,body{min-height:100%;}
 body{background:linear-gradient(180deg,var(--top) 0%,var(--bottom) 100%);color:var(--ink);overscroll-behavior:none;}
@@ -33,25 +41,29 @@ button{font:inherit;}
 #turnPanel.yay{box-shadow:0 5px 0 var(--green-d),0 0 0 4px #c9f5a3;}
 #turnPanel.done{opacity:.35;}
 #picBox{width:78px;height:78px;border-radius:20px;background:var(--cream);display:flex;align-items:center;justify-content:center;overflow:hidden;}
-#word{font-family:"Baloo 2",sans-serif;font-weight:800;font-size:clamp(28px,8.5vw,38px);color:var(--orange-d);line-height:1;overflow-wrap:anywhere;}
+/* the word is dark brown and only the sound's letters are orange (.snd,
+   wrapped by Sona.soundMark): "the r in rabbit", not the whole word */
+#word{font-family:"Baloo 2",sans-serif;font-weight:800;font-size:clamp(28px,8.5vw,38px);color:var(--ink);line-height:1;overflow-wrap:anywhere;}
+#word b{font-weight:inherit;}
 #hear{border:none;background:#e8f6fe;color:#1597d4;border-radius:18px;padding:9px 12px 7px;font-family:"Baloo 2",sans-serif;font-weight:800;font-size:13px;display:flex;flex-direction:column;align-items:center;gap:1px;cursor:pointer;box-shadow:0 3px 0 #bfe3f7;}
 #hear:active{transform:translateY(2px);box-shadow:0 1px 0 #bfe3f7;}
 #hear svg{width:26px;height:26px;}
 #listenRow{grid-column:1/-1;display:flex;align-items:center;gap:10px;min-height:56px;}
 #echoWrap{position:relative;width:54px;height:54px;flex:none;}
-#echoWrap:before{content:"";position:absolute;inset:-3px;border-radius:50%;background:var(--green);opacity:0;}
+#echoWrap:before{content:"";position:absolute;inset:-3px;border-radius:50%;background:var(--act);opacity:0;}
 body[data-listen=on] #echoWrap:before{animation:ring 1.2s ease-out infinite;}
 @keyframes ring{0%{opacity:.5;transform:scale(.85)}100%{opacity:0;transform:scale(1.55)}}
 #echoFace{position:relative;z-index:1;width:54px;height:54px;object-fit:contain;}
 #micState{font-family:"Baloo 2",sans-serif;font-weight:800;font-size:19px;color:var(--muted);line-height:1.1;}
-body[data-listen=on] #micState{color:var(--green-d);}
-#cheer{margin-left:auto;font-family:"Baloo 2",sans-serif;font-weight:800;font-size:21px;color:var(--orange);white-space:nowrap;}
+body[data-listen=on] #micState{color:var(--act-d);}
+#cheer{margin-left:auto;font-family:"Baloo 2",sans-serif;font-weight:800;font-size:21px;color:var(--act-d);white-space:nowrap;}
 #cheer:not(:empty){animation:cheerIn .45s cubic-bezier(.3,1.6,.5,1) both;}
 @keyframes cheerIn{0%{transform:scale(.4);opacity:0}100%{transform:scale(1);opacity:1}}
-#micBtn{margin-left:auto;border:none;width:58px;height:58px;border-radius:50%;background:linear-gradient(180deg,#ffa05a,var(--orange));box-shadow:0 5px 0 var(--orange-d);display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none;animation:micNudge 1.4s ease-in-out infinite;}
+/* the mic is the teal disc, listening or not: the same mic as everywhere */
+#micBtn{margin-left:auto;border:none;width:58px;height:58px;border-radius:50%;background:radial-gradient(circle at 35% 30%,var(--act-hi),var(--act) 70%);box-shadow:0 5px 0 var(--act-d);display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none;animation:micNudge 1.4s ease-in-out infinite;}
 #micBtn[hidden]{display:none;}
 #micBtn svg{width:28px;height:28px;}
-#micBtn:active{transform:translateY(3px);box-shadow:0 2px 0 var(--orange-d);}
+#micBtn:active{transform:translateY(3px);box-shadow:0 2px 0 var(--act-d);}
 @keyframes micNudge{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
 
 /* overlays (the warm-card kit) */
@@ -62,14 +74,22 @@ body[data-listen=on] #micState{color:var(--green-d);}
 .ovl h2{font-family:"Baloo 2",sans-serif;font-weight:800;font-size:24px;color:var(--ink);line-height:1.18;}
 .ovl p{color:var(--muted);font-weight:800;font-size:14.5px;line-height:1.45;max-width:280px;}
 .ovl p.small{font-size:12px;}
-.btn{border:none;border-radius:20px;padding:15px 30px;font-family:"Baloo 2",sans-serif;font-weight:800;font-size:17px;text-transform:uppercase;letter-spacing:.04em;color:#fff;background:linear-gradient(180deg,#ffa05a,var(--orange));box-shadow:0 6px 0 var(--orange-d);cursor:pointer;width:100%;margin-top:4px;}
-.btn:active{transform:translateY(4px);box-shadow:0 2px 0 var(--orange-d);}
-.ghost{background:none;border:none;box-shadow:none;color:var(--muted);font-family:"Baloo 2",sans-serif;font-weight:800;font-size:14px;cursor:pointer;padding:8px;}
+/* the main button is the teal pill, the second choice the cream pill (the
+   brief's "Next: Piano Tiles" / "Back to games"), in the same sizes as the
+   arcade cards so a child meets one button everywhere */
+.btn{border:none;border-radius:999px;min-height:54px;padding:12px 24px;font-family:"Baloo 2",sans-serif;font-weight:800;font-size:19px;color:#fff;text-shadow:0 1px 0 var(--act-d);background:linear-gradient(180deg,var(--act-hi),var(--act));box-shadow:0 6px 0 var(--act-d);cursor:pointer;width:100%;margin-top:4px;}
+.btn:active{transform:translateY(4px);box-shadow:0 2px 0 var(--act-d);}
+.ghost{background:var(--cream-card);border:2px solid var(--cream-line);box-shadow:0 5px 0 var(--cream-line);border-radius:999px;color:var(--cream-ink);font-family:"Baloo 2",sans-serif;font-weight:800;font-size:17px;cursor:pointer;width:100%;min-height:50px;padding:10px 20px;margin-top:4px;}
+.ghost:active{transform:translateY(3px);box-shadow:0 2px 0 var(--cream-line);}
 #startOvl{background:rgba(30,22,50,.35);}
 #startTitle{font-size:28px;}
-#startBtn{border:none;width:118px;height:118px;border-radius:50%;background:linear-gradient(180deg,#7ee23a,var(--green));box-shadow:0 8px 0 var(--green-d);display:flex;align-items:center;justify-content:center;cursor:pointer;margin:4px 0 6px;animation:micNudge 1.6s ease-in-out infinite;}
-#startBtn svg{width:54px;height:54px;margin-left:8px;}
-#startBtn:active{transform:translateY(5px);box-shadow:0 3px 0 var(--green-d);}
+/* START: the teal "Let's play" pill (the brief; the family disliked the old
+   bright green round GO). The play triangle stays beside the words for a
+   child of three who can't read them yet. A page still on the older markup
+   (the triangle alone, aria-label="Play") gets the same pill, just shorter. */
+#startBtn{border:none;min-width:118px;min-height:64px;padding:12px 34px 12px 28px;border-radius:999px;background:linear-gradient(180deg,var(--act-hi),var(--act));box-shadow:0 7px 0 var(--act-d);color:#fff;text-shadow:0 1px 0 var(--act-d);font-family:"Baloo 2",sans-serif;font-weight:800;font-size:22px;line-height:1;display:flex;align-items:center;justify-content:center;gap:10px;cursor:pointer;margin:6px 0 10px;animation:micNudge 1.6s ease-in-out infinite;}
+#startBtn svg{width:30px;height:30px;flex:none;filter:drop-shadow(0 1px 0 var(--act-d));}
+#startBtn:active{transform:translateY(5px);box-shadow:0 2px 0 var(--act-d);}
 .endStar{animation:starDrop .5s cubic-bezier(.3,1.6,.5,1) both;}
 @keyframes starDrop{0%{transform:translateY(-64px) scale(.4);opacity:0}70%{transform:translateY(6px) scale(1.08);opacity:1}100%{transform:translateY(0) scale(1);opacity:1}}
 

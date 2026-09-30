@@ -372,7 +372,9 @@
     if (!same || !word) word = pickWord();
     try {
       $("pic").innerHTML = ((window.SonaCraftedWords && window.SonaCraftedWords.picture(word.w, 64)) || ((S && S.pic) ? S.pic(word.w, word.e, 64) : word.e));
-      $("word").textContent = word.w;
+      // only the letters that make the sound are orange (the brief: "the r in
+      // rabbit"); an older cached sona.js without the helper colours it all
+      $("word").innerHTML = (S && S.soundMark) ? S.soundMark(word.w, SOUND, word.pos) : '<b class="snd">' + String(word.w).replace(/&/g, "&amp;").replace(/</g, "&lt;") + "</b>";
       $("micBtn").hidden = true;
       $("cheer").textContent = "";
       $("turnPanel").classList.remove("yay");

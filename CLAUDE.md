@@ -501,6 +501,20 @@ Every page is a drawn scene: Rory and the Rainbow's were drawn by hand on a
 Claude Design canvas (`public/assets/books/rory-rainbow/`); the other 18 are
 built from one shared cast by `node tools/bookart/build.mjs`. Edit the layouts
 in `tools/bookart/`, rebuild, and commit the SVGs; the app only loads files.
+**The builder never draws over hand-made art** (the family's redesign brief,
+28 Sep 2026: new pictures are coming from a designer, a book at a time). Every
+SVG it writes opens with its marker comment straight after the `<svg>` tag
+(`MARK` and `builtHere()` in `tools/bookart/book.mjs`). It plans every file
+first and writes nothing at all if a target folder holds anything it did not
+write: a .webp or .png, or an .svg that doesn't open with the marker (an old
+page redrawn in an editor that kept the comment counts as hand-made). It also
+refuses a book name it doesn't build (it used to print "built 0 books" and
+exit 0). Hand-made books are listed in `tools/bookart/handmade.mjs` (today
+only `rory-rainbow`). When a book's redrawn art lands: add its slug there,
+delete it from `books1.mjs`/`books2.mjs`, delete its old SVGs, and point its
+paths in `library.html` and `parents.html` at the new files, in one commit.
+`tests/arttooltest.mjs` pins the two lists against the shelf, the generated
+bytes on disk, every book-picture path any page uses, and the refusals.
 **The books are on** (Travis, 26 Sep 2026: "yes turn them on"): Home's Books
 card opens `library.html`. Books are Premium content (`Sona.gated("books")`),
 free while the app is free; a locked family gets the grown-up message, and
@@ -511,8 +525,8 @@ top four or five most popular letters... everything else, we can just set a
 date on it... new drops every week"). R, S, L, SH and TH are open. Every
 other book in `STORIES` carries `opens` (a Sunday, at most three a week) and
 waits on the shelf greyed, "Coming Oct 4", until that day on the phone's own
-calendar; a tap or `openBook()` does nothing before it. The six-page emoji
-books come after every twelve-page one: they put the sound anywhere in a word
+calendar; a tap or `openBook()` does nothing before it. The six-page books
+(painted, see below) come after every twelve-page one: they put the sound anywhere in a word
 and are last in line to be redone. A child whose sounds have nothing open yet
 sees every open book first, then their own, coming. Home's card and the
 website say "new ones every week", never "a book for every sound".
@@ -521,11 +535,23 @@ website say "new ones every week", never "a book for every sound".
 **The six-page books are painted** (Codex, 28 Sep 2026, with ChatGPT's image
 tool; brought over 29 Sep): one picture per book in `public/assets/books/painted/`
 holding its six scenes, three across and two down, in reading order, plus a
-small `-cover` copy of scene 1 for the shelf. The reader shows each page's
-scene by position. The art was drawn for those exact 78 sentences, so
-`readtest` pins them: change a sentence and redraw its scene. Codex's
-say-a-word-to-turn-the-page prototype was not brought over; it changes what a
-child is asked to say, so it waits for Rachel.
+small `-cover` copy of scene 1 that the shelf shows like any drawn cover, so a
+book that isn't open yet never pulls the big picture. The full-screen reader
+cuts page i's scene out of that picture on the phone (a canvas, once per book,
+one book kept at a time, still one download) and shows it exactly as it shows
+a drawn page: whole at full width, its own top and bottom rows carried out to
+the screen's edges, the cream card over its foot. The title page is scene 1
+(the small copy until the full-size cut is ready). While the picture is on its
+way a page shows its wash and fills in; if it never comes, the old emoji
+sticker, never a blank page. The art was drawn for those exact 78 sentences,
+so `readtest` pins them (change a sentence and redraw its scene) and checks,
+by comparing pixels, that each page shows its own scene. They have no `keys`,
+so no say-the-word moment: they put the sound anywhere in a word. Codex's own
+say-a-word-to-turn-the-page prototype was not brought over; the books
+branch's version below was, and it is ON for the twelve-page books (Travis,
+29 Sep 2026: "On now", after being told it changes what a child is asked to
+say). Rachel's review is still owed: the words, Echo's lines and what counts
+as a try are listed in that PR's body.
 
 **The app's look is the crafted world** (Codex, 28 Sep 2026: Travis's five
 concept boards, in `design/crafted-world/references/`). Painted scenes and game
@@ -535,14 +561,61 @@ Real controls and game objects stay HTML and canvas; a picture is never the
 interface. New art in this style comes from an image model (Travis generates
 it in ChatGPT); the twelve-page books are still the simpler drawings.
 
+**A book page fills the screen, and the child says one word to turn it** (the
+family's redesign brief, 28 Sep 2026). The picture fills the screen and the
+page's words sit on a cream card over its bottom; the shelf shows each fuller
+book's drawn cover. Pictures pick their fit once loaded: portrait art (taller
+than 1.2x its width, the designer's coming 1024x1536 pages) covers the screen;
+today's wide SVGs are shown whole at full width, their own top and bottom rows
+stretched to the edges. `#bkStage .bkart.scene img` stays the only picture
+`<img>`. On a short phone the picture makes room for Echo's question
+(`roomForAsk`): it slides up under the top bar first, then shrinks only by
+what is still missing; its box must never animate, because sona.css makes
+transitions near-instant under Reduce Motion and a box mid-transition reports
+where it WAS (that once collapsed the picture to nothing).
+Each fuller book has `keys`, one word per page (the brief's list; readtest
+holds every key to the book's sound rule). After Echo reads a page the key
+word glows, Echo asks "Can you say... <word>." and the teal mic listens:
+- **The check is Say & Play's**, copied into `public/saycheck.js`
+  (`window.SayCheck`) because `sayplaytest` pins `sayplay.js`'s source as it
+  stands. `tests/booktest.mjs` fails if a timing, the loudness bar or the
+  sound-type test drifts between them: change one, change both.
+- **Heard means "a voice of the right kind"**, never "the word was right" (the
+  phone can't tell words on the web), so Echo says "I heard you!", never
+  "correct". Then a small celebration, and the page turns itself.
+- **Silence never turns the page and is never a try.** A quiet window closes
+  the mic and waits for a tap on it; the tap only listens again. A try is a
+  loud sound of the wrong kind for the book; after 3, Echo says a kind line and
+  the page turns. A grown-up's small Skip turns it any time.
+- **A book word is play, not practice.** No logAttempt, bumpReps, coins or
+  stickers, and no `sona.*` practice key changes. Whether it should count is
+  Rachel's call.
+- **The phone is asked for the mic only from the grown-up's "Yes, use the
+  mic" tap inside the book.** "Not now", or a refused or missing mic, means
+  the book reads with Next for the rest of that visit; never a dead end.
+- **No word moment for a child younger than `Sona.soundNorm(book.sound)`**
+  (setup stores the top of the age band: 2-4 is 4, 5-6 is 6, 7+ is 8).
+- **Every way off the moment closes the mic first**, and nothing plays while
+  it is on, while it is being asked for, or within 200 ms of its close,
+  including the book's own reading voice. Stopping speech ends the line in
+  flight at once, so a page turned mid-load never holds the next page's mic.
+
 **Say & Play** (Travis, 26 Sep 2026: "10 more games for ages 3-4 and 10
 more games for ages 5-8 ... incorporating practice into it"): twenty games
 where every word the child says moves the game one step, five words for 3-4
 (Simple play) and eight for 5-8 (Arcade). One engine, `public/sayplay.js`;
 each `arcade-<key>.html` is written by `node tools/gameart/build.mjs` from
 `tools/gameart/little.mjs` and `big.mjs` (edit there and rebuild:
-`sayplaytest` fails if a page drifts), and `node tools/gameart/cards.mjs`
-draws their Home cards. Only a voice moves a game: no tap stands in for
+`sayplaytest` and `arttooltest` fail if a page drifts). The builder overwrites
+only pages that carry its marker (`MARK` in `tools/gameart/page.mjs`); if any
+target page lacks it, it writes nothing, so a key that collides with Hoops or
+an older hand-written arcade page can't overwrite it. The start card's button
+is a teal pill, "Let's play" beside the play triangle (the triangle stays for
+a three-year-old who can't read). `node tools/gameart/cards.mjs` draws their
+Home cards, except the hand-drawn ones listed in `PLAYED` in
+`tools/gameart/games.mjs`; if a new card picture (say `balloon.webp`) lands for
+a game it still draws, it refuses and writes nothing until that game is added
+to `PLAYED`. Only a voice moves a game: no tap stands in for
 talking, and the mic button only listens again (in a play game like Hoops
 a finger plays the move, but only a move a word has earned). The mic keeps every quiet
 rule the other games keep. A spoken move is play, never practice data:
@@ -586,7 +659,8 @@ its quiet rules stay `sayplay.js`'s. What it keeps:
   bounce, made on the phone), so each waits for a closed mic like a chime.
 - **Nothing is practice data**, as in every Say & Play game.
 Its Home card, `public/assets/games/hoops.webp`, is a frame of the court
-itself; `tools/gameart/cards.mjs` points `sp-hoops` at it.
+itself; its `PLAYED` entry in `tools/gameart/games.mjs` makes
+`tools/gameart/cards.mjs` point `sp-hoops` at it and never draw a card over it.
 
 **Fruit Slice is a round now** (Travis, 27 Sep 2026, yes to: "three waves of
 fruit, then one giant watermelon to finish. It always ends in a win. Missing is
@@ -688,6 +762,54 @@ Their engines remain in the repo for future work. The adventure
 stay, but no public menu opens them, and the bookshelf hides its adventure tile.
 The existing practice, honest-rep, rotation and earned arcade-turn rules
 still apply after a child chooses an available game.
+
+## The look: the family's redesign brief (28 Sep 2026)
+The family sent a brief for a designer (ChatGPT) to redraw the whole app as
+"a crafted little world" of soft clay toys. **The new art has not arrived.**
+Build behaviour and layout so each picture drops in later; never invent art
+to stand in for it. What was buildable was built on 28 Sep:
+- **Teal, cream and orange.** Main buttons and the mic are teal; second
+  choices are cream pills; no bright green button anywhere (the family named
+  the green GO). The tokens live once, in `public/action.css`; `sona.css`,
+  `sayplay.css` and `simple-play.css` `@import` it first, and the books,
+  chapter/story pages, Feed Echo, Hoops and the Say & Play pages link it. The
+  crafted pages (the five round games and the practice page `charge.html`)
+  take their colours from `public/crafted-*.css` instead (see "The app's look
+  is the crafted world"); where a crafted sheet repaints one of our rules, the
+  crafted one wins, and our rule must add nothing that shows through (a teal
+  text-shadow under the crafted cream "Share this week" button once did). Never paste the hex values into a page: a page that loses
+  the tokens shows white text on nothing, and the values will change when the
+  designer's STYLE.md arrives. `tests/loadtest.mjs` section 5 accepts either
+  teal and bans, over both, Duolingo green and orange on a kid button or mic,
+  pressed or not. It judges teal by hue and cream as a light warm colour, so a
+  new value from the designer needs no test edit; for a crafted page it asks
+  the browser what a child sees, at rest and pressed.
+- **Orange means only the practice sound's letters** (the r in "rabbit").
+  Show a practice word through `Sona.soundMark(text, sound, pos)`: escaped
+  HTML with the letters that make the sound in `<b class="snd">`. When it
+  can't prove which letters make the sound it colours the whole word, because
+  a cue on the wrong letter is worse than none; a doubled letter is one sound.
+  Which letters count is Rachel's call. `tests/soundmarktest.mjs` runs every
+  bank word; `SOUNDMARK_TABLE=<file>` writes her review table.
+- **The practice page is the crafted one** (`crafted-games.css` /
+  `crafted-practice.css`). The target in Echo's bubble (`#bTarget`) marks only
+  the practice sound's letters through `Sona.soundMark`, in the crafted
+  practice orange, the rest of the word in the bubble's ink; a bare sound like
+  "rrrr" is orange whole, and in a sentence only the practice word is marked.
+  `paintCard()` stays self-contained (`voicetest3` runs its source), and the
+  mic stays a status (`role=img` DIV).
+- **The five round games wear the crafted cards.** The say-it card keeps the
+  round's own title ("Say “rrrr” for wave 2!"); only its quoted sound's
+  letters are orange (`Sona.soundMark`). A miss never opens it
+  (`micquietgamestest`). The end card's count names real things, never the
+  score: Fruit Slice counts fruit sliced (`FRUITN`, the giant is one fruit) and
+  Piano Tiles notes played (`NOTESN`), because a golden fruit or tile scores 3
+  and the giant's cuts score 5; neither shows a "Best" beside it, because the
+  best is a score. Block Stacker counts blocks and Sound Sprint metres.
+- **Say & Play and Feed Echo** show the word with only the sound's letters
+  orange (`Sona.soundMark`) beside the crafted picture. Feed's ask keeps ONE
+  `<b>`, the word itself, with the letters in a `<span class="snd">` inside it,
+  because `craftedarttest` reads the asked word by `#bMain b`.
 
 ## Hard rules
 - Merges to main/prod only on Travis's explicit go ("merge").

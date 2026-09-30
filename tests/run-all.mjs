@@ -22,6 +22,9 @@ const SUITES = [
   "voiceclienttest.mjs", // actual playback source, old-cache refresh and complete spoken turns
   "chargepacingtest.mjs", // listen/model/child-turn handoff and replay ordering
   "readtest.mjs",  // books never go silent: browser-voice fallback when TTS dies
+  "booktest.mjs",  // BOOKS2: full-screen pages; say the key word to turn the page — Say & Play's check, a quiet mic, silence never turns it, no practice data
+  "arttooltest.mjs", // ART2: the book and game art tools never draw over hand-made art
+  "soundmarktest.mjs", // SNDMARK1: only the practice sound's letters are orange, for every bank word
   "momweek.mjs",   // parent weekly goal + streak math + the three UIs
   "repweektest.mjs", // REPWEEKS1: the week's reps in Home's corner, week by week in Settings — one count everywhere
   "nativefamilytest.mjs", // native family entry; clinician routes stay browser-only

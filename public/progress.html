@@ -155,17 +155,22 @@
       border-left:1px solid var(--line);border-top:1px solid var(--line);border-radius:3px;
     }
 
-    /* ── Share / Print button: more prominent with a subtle warm gradient.
-       It's .btn.ghost (flat white by default) — promote to a soft blue. ── */
+    /* ── Share / Print button: more prominent than a plain ghost button.
+       It's .btn.ghost (the cream pill by default); promote it to the action
+       teal, which sona.css takes from /action.css (design brief, 28 Sep 2026:
+       orange is only for the practice sound's letters now, never a button).
+       The crafted family sheet (crafted-family.css, 29 Sep 2026) repaints it
+       as its own cream button with dark ink, and wins on specificity, so this
+       sets no text-shadow: a teal one would sit under that ink. ── */
     #share.btn.ghost{
-      color:#fff;font-size:16px;
-      background:linear-gradient(180deg,#ffa05a,var(--orange));
-      box-shadow:0 5px 0 0 var(--orange-d),0 8px 18px rgba(255,138,61,.28);
+      color:#fff;font-size:16px;border-color:transparent;text-shadow:none;
+      background:linear-gradient(180deg,var(--act-hi),var(--act));
+      box-shadow:0 5px 0 0 var(--act-d),0 8px 18px var(--act-glow);
     }
     #share.btn.ghost:hover{filter:brightness(1.04);}
-    #share.btn.ghost:active{transform:translateY(3px);box-shadow:0 2px 0 0 var(--orange-d);}
+    #share.btn.ghost:active{transform:translateY(3px);box-shadow:0 2px 0 0 var(--act-d);}
     /* the existing "Send progress to my SLP" CTA: a gentle glow to draw the eye */
-    #sendProg{box-shadow:0 5px 0 0 var(--orange-d),0 8px 18px rgba(255,138,61,.26);}
+    #sendProg{box-shadow:0 5px 0 0 var(--act-d),0 8px 18px var(--act-glow);}
 
     /* ── Stat-tile baselines: this week vs last week, small and gray under
        the lifetime number (Whoop-style self-comparison, growth-only). ── */

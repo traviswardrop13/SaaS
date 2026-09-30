@@ -1,7 +1,10 @@
 // Contact sheets for checking the art by eye:
 //   node tools/bookart/preview.mjs cast <out.png>            every character, a few poses
 //   node tools/bookart/preview.mjs book <slug> <out.png>      one book's cover and pages
-//   node tools/bookart/preview.mjs files <dir> <out.png>      any folder of page SVGs
+//   node tools/bookart/preview.mjs files <dir> <out.png>      any folder of pages
+// A book or folder sheet takes .webp and .png as well as .svg, so a book's
+// redrawn art can be checked the same way once it lands (BOOKS.md: portrait
+// pages, square cover). A folder holding both shows both, side by side.
 import { readFileSync, readdirSync } from "fs";
 import { chromium, launchOpts } from "../../tests/_env.mjs";
 import * as cast from "./cast.mjs";
@@ -23,8 +26,10 @@ if (mode === "cast") {
 } else {
   const dir = mode === "book" ? "public/assets/books/" + a1 : a1;
   const out = mode === "book" ? a2 : a2;
-  const names = readdirSync(dir).filter((f) => f.endsWith(".svg")).sort((x, y) => (x === "cover.svg" ? -1 : y === "cover.svg" ? 1 : x < y ? -1 : 1));
-  cells = names.map((n) => [n, b64(readFileSync(dir + "/" + n, "utf8"))]);
+  const MIME = { svg: "image/svg+xml", webp: "image/webp", png: "image/png" };
+  const ext = (f) => f.slice(f.lastIndexOf(".") + 1);
+  const names = readdirSync(dir).filter((f) => MIME[ext(f)]).map((f) => (f.startsWith("cover.") ? "0" : "1") + f).sort().map((k) => k.slice(1));
+  cells = names.map((n) => [n, "data:" + MIME[ext(n)] + ";base64," + readFileSync(dir + "/" + n).toString("base64")]);
   process.argv[4] = out;
 }
 const out = mode === "cast" ? a1 : a2;
