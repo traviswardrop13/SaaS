@@ -21,7 +21,7 @@ const PAGES = [
   { file: 'progress.html', tab: 'progress', current: 'page' },
   { file: 'settings.html', tab: 'settings', current: 'page' },
   { file: 'talk.html', tab: 'talk', current: 'page' },
-  { file: 'voices.html', tab: 'settings', current: 'true' },
+  // voices.html removed 29 Sep 2026: one coach voice, so no picker page.
   { file: 'subscribe.html', tab: 'settings', current: 'true' },
 ];
 const TABS = [

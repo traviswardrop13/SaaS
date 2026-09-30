@@ -4,7 +4,7 @@
 // line composition for R/S/SH/THV/word/fail plus card rotation.
 // Since 24 Sep 2026 it also pins the calm voice: no "!" in any practice line,
 // the praise list, or what Echo says on Home, in setup and in the game picker;
-// the trimmed win chimes; and no coach voice labelled "Rachel".
+// the trimmed win chimes; and (29 Sep 2026) one coach voice for everyone.
 import { createServer } from "http";
 import { readFileSync, existsSync } from "fs";
 import { chromium, ROOT, OUT, launchOpts } from "./_env.mjs";
@@ -249,17 +249,27 @@ for (const file of ["today.html", "onboarding.html", "activities.html"]) {
   for (const l of lines) noBang(file + ": " + l, l);
 }
 
-// ---- No coach voice is labelled "Rachel" (24 Sep 2026) ----
-// ElevenLabs' stock voice of that name sat in Settings → Choose coach voice,
-// and Sona's co-founder SLP is Rachel: a parent could think they were hearing
-// her. The voice stays (same id, so a family who chose it keeps it); the label
-// is one that belongs to nobody at Sona.
+// ---- One coach voice for everyone (29 Sep 2026) ----
+// This used to read the picker's list and pin that no voice was labelled
+// "Rachel" (24 Sep). Travis, 29 Sep 2026: one coach voice. The picker page is
+// gone, so nobody can be shown a voice named after anyone at Sona, and a voice
+// a family saved from it before (here the old stock "Rachel"/"Gentle" id and
+// Sarah) must give way to the default: there is no picker left to change back.
 {
-  const voices = readFileSync(ROOT + "/voices.html", "utf8");
-  const names = [...voices.matchAll(/\{\s*id:\s*"([^"]+)",\s*name:\s*"([^"]+)"/g)].map((m) => ({ id: m[1], name: m[2] }));
-  ok("the voice picker lists its voices", names.length >= 8, true);
-  ok("no coach voice is named Rachel", names.some((v) => /rachel/i.test(v.name)), false);
-  ok("the stock voice is still offered under a new label", names.find((v) => v.id === "21m00Tcm4TlvDq8ikWAM")?.name, "Gentle");
+  ok("there is no voice picker page", existsSync(ROOT + "/voices.html"), false);
+  const settings = readFileSync(ROOT + "/settings.html", "utf8").replace(/<!--[\s\S]*?-->/g, "");
+  ok("Settings links to no voice picker", /voices\.html|coach voice/i.test(settings), false);
+  const DEFAULT_VOICE = (readFileSync(ROOT + "/sona.js", "utf8").match(/DEFAULT_PROFILE = \{[^\n]*?voiceId: "([^"]+)"/) || [])[1];
+  ok("sona.js names a default coach voice", !!DEFAULT_VOICE, true);
+  const cv = await browser.newContext();
+  const pv = await cv.newPage();
+  await pv.goto("http://localhost:8123/sfx-harness");
+  const heard = await pv.evaluate(() => ["21m00Tcm4TlvDq8ikWAM", "EXAVITQu4vr4xnSDxMaL", ""].map((id) => {
+    localStorage.setItem("sona.profile.v1", JSON.stringify({ childName: "Demo", onboarded: true, voiceId: id }));
+    return Sona.getProfile().voiceId;
+  }));
+  ok("a voice saved before the picker went still gives the default voice", JSON.stringify(heard), JSON.stringify([DEFAULT_VOICE, DEFAULT_VOICE, DEFAULT_VOICE]));
+  await cv.close();
 }
 
 // ---- Win chimes trimmed (24 Sep 2026) ----

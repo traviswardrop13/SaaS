@@ -79,6 +79,8 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
     /og:title" content="Speech practice kids ask for\."/.test(parents) &&
     /twitter:title" content="Speech practice kids ask for\."/.test(parents));
   ok("…and it names Rachel's credential in the settled words", /a licensed pediatric speech-language pathologist/.test(parents));
+  // 29 Sep 2026: Travis asked for "MS, CF-SLP" wherever Rachel is presented as an SLP — her byline on the parent page carries it.
+  ok("…and her byline carries her credentials: Rachel Wardrop, MS, CF-SLP", /Rachel Wardrop, MS, CF-SLP &middot; Co-founder/.test(parents));
 
   // A PARENT PAGE HAS NO SIGN IN. A speech therapist finds their own page,
   // and its Sign in, from the footer.
@@ -314,6 +316,46 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
   ok("STRIPE_SETUP.md names the caseload portal env var lib/caseload.ts reads, and says the configuration cancels at period end",
     /STRIPE_PORTAL_CONFIG_CASELOAD/.test(setup) && /process\.env\.STRIPE_PORTAL_CONFIG_CASELOAD/.test(cl) &&
     /created|creates/.test(setup) && /mode: "at_period_end"/.test(cl));
+}
+
+// ── Rachel's credentials, everywhere she is presented as an SLP (29 Sep 2026) ──
+// Travis: "make sure that it says everywhere that you're talking about her
+// being a SLP … that she's a CF. So like MS, CF-SLP." She holds an Idaho CF
+// licence and a master's and is in her fellowship year, so "Rachel, MS,
+// CF-SLP" is exactly true. Wherever her name is followed by a description of
+// her as a clinician ("Rachel — licensed…", "Rachel, a licensed…", "Rachel
+// Wardrop, MS ·", "Rachel (pediatric SLP)"), it must be that post-nominal.
+// And no page or app surface may claim more: no CCC, no "certified".
+// Since the follow-up the same day, the anonymous line is gone too: copy that
+// presents Sona's own SLP without her name ("Built with a licensed SLP", "our
+// SLP", "reviewed by a pediatric SLP") names her instead, and a page that
+// pairs Rachel with "SLP" or "speech-language pathologist" in one sentence
+// carries "MS, CF-SLP" somewhere on it. A child's OWN therapist ("your SLP",
+// "your child's speech-language pathologist") is someone else, and is not
+// matched.
+{
+  const files = ["public/manifest.webmanifest"];
+  for (const f of readdirSync(APP + "/public")) if (f.endsWith(".html")) files.push("public/" + f);
+  const walk = (d) => { for (const e of readdirSync(APP + "/" + d, { withFileTypes: true })) {
+    if (e.isDirectory()) walk(d + "/" + e.name); else if (/\.tsx?$/.test(e.name)) files.push(d + "/" + e.name); } };
+  walk("app"); walk("lib");
+  const visible = (f) => readFileSync(APP + "/" + f, "utf8")
+    .replace(/<!--[\s\S]*?-->/g, " ").replace(/\/\*[\s\S]*?\*\//g, " ").replace(/^\s*\/\/.*$/gm, " ");
+  const bare = [], claims = [], anon = [], unpaired = [];
+  for (const f of files) {
+    const t = visible(f);
+    for (const m of t.match(/Rachel(?: Wardrop)?(?!, MS, CF-SLP)[^<.\n]{0,6}(?:[Ll]icensed|[Pp]ediatric|speech-language|SLP|MS\b)/g) || []) bare.push(f + ": " + m);
+    for (const m of t.match(/\bCCC\b|board.certified|ASHA.certified|\bcertified\b|fully licen[sc]ed/gi) || []) claims.push(f + ": " + m);
+    for (const m of t.match(/\b(?:built|made|designed|shaped|reviewed|created|developed)\s+(?:with|by)\s+(?:a|an|our)\s+(?:licensed\s+)?(?:pediatric\s+)?(?:SLP|speech-language pathologist)\b|\bour SLP\b/gi) || []) anon.push(f + ": " + m);
+    if (/Rachel[^<>.]{0,160}?(?:speech-language pathologist|\bSLP\b)|(?:speech-language pathologist|\bSLP\b)[^<>.]{0,160}?Rachel/.test(t) && !/MS, CF-SLP/.test(t)) unpaired.push(f);
+  }
+  ok("every place Rachel is named as a clinician says 'Rachel, MS, CF-SLP'", bare.length === 0, bare.join(" | "));
+  ok("…and no page or app surface claims a certification she does not hold", claims.length === 0, claims.join(" | "));
+  ok("…and no line presents Sona's own SLP without naming her ('Built with a licensed SLP', 'our SLP')", anon.length === 0, anon.join(" | "));
+  ok("…and every page that calls Rachel an SLP carries 'MS, CF-SLP'", unpaired.length === 0, unpaired.join(", "));
+  const carry = ["parents", "subscribe", "trial", "progress", "talk", "slp"]
+    .filter((n) => !/Rachel(?: Wardrop)?, MS, CF-SLP/.test(visible("public/" + n + ".html")));
+  ok("…and the pages that introduce her all carry it", carry.length === 0, carry.join(", "));
 }
 
 console.log(fails ? fails + " FAILURES" : "ALL GREEN");

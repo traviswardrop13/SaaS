@@ -4,7 +4,7 @@ import type { Metadata, Viewport } from "next";
 export const metadata: Metadata = {
   title: "Sona — speech practice for kids",
   description:
-    "A friendly, game-style app that helps kids practice tricky speech sounds — built with a licensed speech-language pathologist.",
+    "A friendly, game-style app that helps kids practice tricky speech sounds — built with Rachel, MS, CF-SLP, a licensed pediatric speech-language pathologist.",
   manifest: "/manifest.webmanifest",
   icons: { apple: "/apple-touch-icon.png", icon: "/icon-192.png" },
   appleWebApp: { capable: true, title: "Sona", statusBarStyle: "default" },

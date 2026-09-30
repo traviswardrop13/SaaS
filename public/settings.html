@@ -98,7 +98,7 @@
     .family-settings #playNote a{font-weight:800;}
     .family-settings .sound .hint{display:block;margin-top:1px;font-family:"Nunito",sans-serif;font-size:9.5px;font-weight:800;color:var(--muted);}
     .family-settings .sound .hint.early{color:#c0392b;}
-    /* sound & voice */
+    /* sound */
     .family-settings .vol-row{display:flex;align-items:center;gap:12px;margin-top:2px;color:var(--muted);}
     .family-settings .vol-row input{flex:1;min-width:0;}
     .family-settings #volLbl{margin-top:2px;font-size:12.5px;font-weight:800;}
@@ -218,7 +218,7 @@
     </section>
 
     <section class="card" id="soundCard" aria-labelledby="soundTitle">
-      <div class="set-head"><h2 id="soundTitle">Sound &amp; voice</h2></div>
+      <div class="set-head"><h2 id="soundTitle">Sound</h2></div>
       <!-- ONE sound control. There used to be three checkboxes (voice, effects,
            music) and no way to set the actual level — while 22 pages were
            already reading profile.volume, which nothing exposed. So a parent
@@ -232,11 +232,8 @@
         <svg class="family-symbol" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M10 5 5 9H2v6h3l5 4V5ZM14 8a6 6 0 0 1 0 8M17 4a11 11 0 0 1 0 16"/></svg>
       </div>
       <p class="muted" id="volLbl"></p>
-      <a class="set-row" href="/voices.html" id="voiceRow">
-        <span class="set-row-art"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M8.5 21h7"/></svg></span>
-        <span class="set-row-text"><b>Choose coach voice</b><span>The voice Echo uses inside games.</span></span>
-        <span class="set-chev" aria-hidden="true">›</span>
-      </a>
+      <!-- No coach-voice row: every family hears the one coach voice
+           (Travis, 29 Sep 2026), so there is nothing here to choose. -->
     </section>
 
     <section class="card" id="buddyCard" aria-labelledby="buddyTitle">

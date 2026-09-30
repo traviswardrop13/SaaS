@@ -1,6 +1,6 @@
 // REPWEEKS1: the week's reps in Home's top corner, and week by week in
-// Settings (Travis, 28 Sep 2026). One count everywhere: Home's corner, the
-// parent corner, Progress and Settings all read the same voiced tries, never
+// Settings (Travis, 28 Sep 2026). One count everywhere: Home's corner,
+// Progress and Settings all read the same voiced tries, never
 // the number of sound checks, and legacy days that only hold sound checks add
 // nothing. The corner only reads, sets no target, and a tap on it meets the
 // grown-ups gate before landing on the Settings card.
@@ -181,16 +181,18 @@ await scenario("the parent corner", async () => {
   await seed(page, HISTORY); await home(page);
   await page.click("#parentBtn"); await passGate(page);
   await page.waitForSelector("#sheetOvl.show");
+  // 29 Sep 2026: the pop-up no longer carries the week (Travis) — no wins
+  // line, no story, no "Reps, week by week" link; Home's corner is the way to
+  // the week-by-week card (next scenario). Sona.weekWins() and soundStory()
+  // still exist, so their count is checked at the source.
   const s = await page.evaluate(() => {
-    const more = document.getElementById("wkMore"), r = more.getBoundingClientRect();
-    return { wins: document.getElementById("wkWins").textContent, story: document.getElementById("storyBits").textContent, more: more.getAttribute("href"), h: r.height, moreIsDoor: more.classList.contains("sheetBtn"), sheetBtns: document.querySelectorAll(".sheetBtn").length };
+    const ovl = document.getElementById("sheetOvl");
+    return { wins: Sona.weekWins().reps, story: Sona.soundStory().join(" "), week: !!ovl.querySelector("#weekCard, #wkWins, #wkMore, #planCard, #storyBits, #shareWeek"), doors: [...ovl.querySelectorAll(".sheetBtn")].map((b) => b.id) };
   });
-  ok("the parent corner says the same 28 reps", /\b28 reps this week\b/.test(s.wins), s.wins);
+  ok("weekWins says the same 28 reps", s.wins === 28, s.wins);
   ok("the week's story says the same 28 reps, not the sound checks", /28 reps, each one said out loud/.test(s.story) && !/sounds out loud/.test(s.story), s.story);
-  // 29 Sep 2026: the sheet's doors are the grown-ups bar's three tabs
-  // (Progress, Settings, Talk to us); the reps link is still not one of them.
-  ok("it links to the week-by-week card, without an extra sheet button", s.more === "/settings.html#reps" && !s.moreIsDoor && s.sheetBtns === 3, s);
-  ok("the link is a full-size tap target", s.h >= 44, s.h);
+  ok("the pop-up has no week card", !s.week, s);
+  ok("the pop-up has exactly the three doors", JSON.stringify(s.doors) === JSON.stringify(["goProgress", "goSettings", "goTalk"]), s.doors);
   ok("no page errors", errors.length === 0, errors);
   await context.close();
 });

@@ -48,11 +48,11 @@ export default function TermsPage() {
       </Section>
 
       <Section title="What Sona is — and isn't">
-        {/* "(Clinical Fellow)" came out on 24 Sep 2026, as it did from every
-            product surface on 23 Sep (CLAUDE.md). She still is one, and nothing
-            here says otherwise; the credential line is "licensed" and stops. */}
+        {/* Wherever copy presents Sona's SLP it names her: "Rachel, MS, CF-SLP"
+            (Travis, 29 Sep 2026, CLAUDE.md). She is in her fellowship year, and
+            nothing here says otherwise. */}
         Sona is an at-home <strong>speech practice and coaching</strong> tool
-        designed with a licensed pediatric speech-language pathologist. It is{" "}
+        designed with Rachel, MS, CF-SLP, a licensed pediatric speech-language pathologist. It is{" "}
         <strong>not therapy, not a medical device, not a diagnosis, and not a
         substitute for professional speech-language services</strong>. If you have
         concerns about your child&apos;s speech or development, please consult a

@@ -180,15 +180,7 @@ body.crafted-family{
 .family-stickers .st .e{width:44px;height:44px;display:flex;align-items:center;justify-content:center;}
 .family-stickers .st .e>svg{width:44px;height:44px;display:block;filter:drop-shadow(0 2px 2px #76501d22);}
 
-/* The two quieter family entry points use the same paper and teal controls. */
-.family-voices .card p{font-size:14px;margin-top:8px;}
-.family-voices #list{margin-top:20px;}
-.family-voices .vrow{min-height:74px;padding:13px 16px;border:1px solid var(--line);border-radius:18px;background:linear-gradient(145deg,#fffefa,#fffaf1);box-shadow:0 3px 0 #e4d3b94d,0 5px 12px #82652809;}
-.family-voices .vrow .nm{font-size:18px;line-height:1.3;}
-.family-voices .vrow .vibe{margin-top:3px;font-size:13px;line-height:1.4;}
-.family-voices .vrow::after{content:"";flex:none;width:21px;height:21px;border:2px solid #d8c8b1;border-radius:50%;background:#fffdf8;}
-.family-voices .vrow.on{border-color:#65a89c;background:linear-gradient(145deg,#f6faf0,#eaf3e5);box-shadow:inset 0 0 0 1px #65a89c40,0 3px 0 #bcd4c3;}
-.family-voices .vrow.on::after{border-color:var(--family-teal);background:var(--family-teal);box-shadow:inset 0 0 0 4px #fffdf8;}
+/* The quieter family entry point (join) uses the same paper and teal controls. */
 .family-join .jwrap{max-width:500px;padding:calc(24px + env(safe-area-inset-top)) 20px calc(40px + env(safe-area-inset-bottom));}
 .family-join .jhero img{width:108px;height:116px;filter:drop-shadow(0 7px 9px #79551e20);}
 .family-join .jhero h1{font-size:28px;letter-spacing:-.025em;line-height:1.2;margin-top:12px;}
@@ -203,13 +195,12 @@ body.crafted-family{
  .family-join .jwrap{padding-left:14px;padding-right:14px;}.family-join .jcard{padding:16px;border-radius:19px;}
  .family-join .jhero h1{font-size:25px;}
 }
-@media(prefers-reduced-motion:reduce){.family-voices .vrow{transition:none;}}
 
 /* Keep the grown-up overview as compact as the original paper-card board.
    Navigation is at the top, so no duplicate bar hides saved tries below. */
 /* Every page that carries the grown-ups bar keeps the same 12px between the
    header and the bar, so the bar never jumps between tabs (familynavtest). */
-.family-progress .family-header,.family-settings .family-header,.family-talk .family-header,.family-voices .family-header,.family-subscribe .family-header{padding-bottom:12px;}
+.family-progress .family-header,.family-settings .family-header,.family-talk .family-header,.family-subscribe .family-header{padding-bottom:12px;}
 .family-progress .family-child{padding:8px 12px;margin-bottom:10px;min-height:54px;border-radius:15px;}
 .family-progress .family-child img{width:34px;height:38px;}
 .family-progress .family-child h1{font-size:18px;}

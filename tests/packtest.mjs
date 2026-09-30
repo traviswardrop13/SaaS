@@ -50,7 +50,7 @@ await page.waitForTimeout(700);
 const s3 = await page.evaluate(() => window.__call.script.map((s) => s.say || (s.ask && s.ask.line)).join(" | "));
 ok("detective variant on call #3", /sound detectives/.test(s3));
 
-// 3) parent corner wins card (seed outcomes: this week 70%, last week 50%)
+// 3) weekly wins (seed outcomes: this week 70%, last week 50%)
 await page.addInitScript(() => {
   const day = (off) => { const d = new Date(); d.setDate(d.getDate() + off); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); };
   const dow = (new Date().getDay() + 6) % 7;
@@ -59,12 +59,18 @@ await page.addInitScript(() => {
 });
 await page.goto("http://localhost:8134/today.html");
 await page.waitForTimeout(1000);
-const wins = await page.evaluate(() => ({ txt: document.getElementById("wkWins").textContent, share: getComputedStyle(document.getElementById("shareWeek")).display !== "none" }));
-console.log("      wins:", wins.txt);
+// 29 Sep 2026: the wins line and "Share this week" left the Grown-ups pop-up
+// with the rest of the week (Travis). Sona.weekWins() still exists, so its
+// count is checked at the source; the pop-up is checked for carrying none of it.
+const wins = await page.evaluate(() => {
+  const w = window.Sona.weekWins(), ovl = document.getElementById("sheetOvl");
+  ovl.classList.add("show");
+  return { reps: w.reps, acc: w.acc, accPrev: w.accPrev, inSheet: !!ovl.querySelector("#weekCard, #wkWins, #shareWeek") };
+});
+console.log("      wins:", JSON.stringify(wins));
 // REPWEEKS1: the same reps as Home's corner (60 voiced tries), not the 20 sound checks.
-ok("wins line shows reps + delta", /\b60 reps this week\b/.test(wins.txt) && !/\b20 reps\b/.test(wins.txt) && /%/.test(wins.txt));
-ok("share button visible", wins.share);
-await page.evaluate(() => { document.getElementById("sheetOvl").classList.add("show"); });
+ok("weekWins counts reps + delta", wins.reps === 60 && wins.acc != null && wins.accPrev != null && wins.acc !== wins.accPrev);
+ok("the pop-up carries no wins line or share button", !wins.inSheet);
 await page.screenshot({ path: OUT + "/pack-sheet.png" });
 
 // 4) buddy sprite in glide (dragon buddy instead of fox emoji)

@@ -27,7 +27,10 @@ let checks = 0, fails = 0, sequence = 0, redisProcess, redisDir;
 function ok(label, condition) { checks++; if (!condition) fails++; console.log((condition ? 'PASS ' : 'FAIL ') + label); }
 const accountA = 'morgan@example.test', accountB = 'casey@example.test', moderator = 'moderator@example.test';
 const welcomeId = '71109159-5b68-4af1-851c-35c918bc3050';
-const welcomeText = 'I’m Rachel! My husband Travis and I started Sona, and I’m so happy you’re here.\n\nI’d love for this to be a place where we can swap ideas, share resources, and help each other make homework and planning a little easier. And if something in Sona is confusing or could work better, tell us—we’re building it with you.\n\nCome say hi! What setting do you work in, and what’s one thing you’d love help with right now?';
+// 29 Sep 2026: the seed no longer names Travis (his ask) — a fresh seed must say "My husband and I".
+const welcomeText = 'I’m Rachel! My husband and I started Sona, and I’m so happy you’re here.\n\nI’d love for this to be a place where we can swap ideas, share resources, and help each other make homework and planning a little easier. And if something in Sona is confusing or could work better, tell us—we’re building it with you.\n\nCome say hi! What setting do you work in, and what’s one thing you’d love help with right now?';
+// …and the live post, stored once with the old seed, is corrected in place on read.
+const oldWelcomeText = 'I’m Rachel! My husband Travis and I started Sona, and I’m so happy you’re here.\n\nI’d love for this to be a place where we can swap ideas, share resources, and help each other make homework and planning a little easier. And if something in Sona is confusing or could work better, tell us—we’re building it with you.\n\nCome say hi! What setting do you work in, and what’s one thing you’d love help with right now?';
 const accounts = new Map([
   ['slpacct:' + accountA, JSON.stringify({ email: accountA, name: 'Morgan PRIVATE_LASTNAME', code: '', familyKey: 'PRIVATE_KEY', clinic: 'PRIVATE_CLINIC', children: ['PRIVATE_CHILD'] })],
   ['slpacct:' + accountB, JSON.stringify({ email: accountB, name: 'Casey Other', code: 'private-code' })],
@@ -49,6 +52,9 @@ function model(cmd) {
   if (script.includes('HSETNX')) {
     const marker = a[0] + ':seeded';
     if (!posts.has(marker)) { posts.set(marker, '1'); if (!posts.has(a[0])) posts.set(a[0], JSON.parse(a[1])); }
+    // 29 Sep 2026: the one-time correction — only a welcome whose text is exactly the old seed (ARGV[3]).
+    const live = posts.get(a[0]);
+    if (live && a[2] !== undefined && live.text === a[2]) live.text = JSON.parse(a[1]).text;
     return posts.has(a[0]) ? JSON.stringify(posts.get(a[0])) : null;
   }
   if (!script.includes('local previous') && !script.includes('ZREVRANGEBYSCORE')) {
@@ -110,6 +116,13 @@ async function request(method = 'GET', body, opts = {}) {
 let requestSeq = 0;
 function post(overrides = {}, opts) { return request('POST', { action: 'post', title: 'Sharing a practice idea', text: 'A text-only discussion.', category: 'discussions', requestId: 'request_' + (++requestSeq), ...overrides }, opts); }
 function reply(postId, overrides = {}, opts) { return request('POST', { action: 'reply', postId, text: 'Thanks for sharing.', requestId: 'request_' + (++requestSeq), ...overrides }, opts); }
+// The stored welcome, read and written the way the live store holds it (both modes).
+const POSTS_KEY = '{slp-community}:posts';
+async function storedWelcome() {
+  if (usingRedis) { const raw = await realRedis(['HGET', POSTS_KEY, welcomeId]); return raw == null ? null : JSON.parse(raw); }
+  return posts.has(welcomeId) ? JSON.parse(JSON.stringify(posts.get(welcomeId))) : null;
+}
+async function storeWelcome(p) { if (usingRedis) await realRedis(['HSET', POSTS_KEY, welcomeId, JSON.stringify(p)]); else posts.set(welcomeId, p); }
 
 try {
   for (const k of KEYS) delete process.env[k];
@@ -210,6 +223,22 @@ try {
   const categoryWithWelcome = await request('GET', undefined, { query: '?category=resources' });
   ok('welcome stays separate on later pages and category filters without changing normal pagination', [pageOne, pageTwo, categoryWithWelcome].every(x => x.json.pinned?.length === 1 && x.json.pinned[0].id === welcomeId && x.json.pinned[0].replies.length === 1 && !x.json.posts?.some(p => p.id === welcomeId)) && categoryWithWelcome.json.posts?.length === 0);
   for (const query of ['?cursor=-1', '?cursor=abc', '?category=admin']) { r = await request('GET', undefined, { query }); ok('invalid query is rejected: ' + query, r.status === 400); }
+  // THE LIVE WELCOME, CORRECTED ONCE (29 Sep 2026). The post already in the
+  // store was seeded with "My husband Travis"; a read rewrites that exact text
+  // and nothing else, and never touches a welcome a moderator changed.
+  {
+    const live = await storedWelcome();
+    await storeWelcome({ ...live, text: oldWelcomeText });
+    r = await request();
+    const after = await storedWelcome();
+    ok('the live welcome still holding the old seed is corrected in place on read', r.status === 200 && r.json.pinned?.[0]?.text === welcomeText && after?.text === welcomeText);
+    ok('…keeping its id, date, author, pin and replies', after?.id === welcomeId && after.createdAt === live.createdAt && after.author === 'Rachel' && after.authorId === 'sona-team-rachel' && after.title === live.title && r.json.pinned[0].pinned === true && r.json.pinned[0].replies.length === 1 && r.json.pinned[0].replies[0].text === live.replies[0].text);
+    const edited = 'I’m Rachel! My husband Travis and I started Sona. (Edited by a moderator.)';
+    await storeWelcome({ ...after, text: edited });
+    r = await request();
+    ok('a welcome whose text a moderator changed is left alone, even if it still names him', r.status === 200 && r.json.pinned?.[0]?.text === edited && (await storedWelcome())?.text === edited);
+    await storeWelcome(after);
+  }
   failWelcome = true; r = await request(); ok('welcome storage outage fails closed instead of inventing an empty pinned feed', r.status === 503 && !r.json.ok); failWelcome = false;
   const moderatorFeed = await request('GET', undefined, { email: moderator });
   r = await request('DELETE', { postId: welcomeId }, { email: moderator });
@@ -217,6 +246,7 @@ try {
   const afterRemoval = await Promise.all([request(), request('GET', undefined, { email: accountB })]);
   r = await reply(welcomeId);
   ok('later and concurrent reads never resurrect a removed welcome or permit new replies', afterRemoval.every(x => x.status === 200 && Array.isArray(x.json.pinned) && x.json.pinned.length === 0) && r.status === 404);
+  ok('…and the one-time correction never writes a removed welcome back', (await storedWelcome()) === null);
   forcedCount = 121; r = await request(); ok('read rate limit enforced', r.status === 429);
   forcedCount = 61; r = await post(); ok('write rate limit enforced', r.status === 429);
   r = await post({ title: '<img src=x onerror=alert(1)>', text: '<script>alert(1)</script> 雪', author: 'Spoof', email: 'spoof@example.test', requestId: 'stable_request_01' }); ok('successful retries still recover receipt at rate limit', r.status === 200 && r.json.duplicate); forcedCount = 0;
@@ -226,6 +256,8 @@ try {
   ok('no community messages or member details are sent to external services', externalCalls === 0);
   const writes = commands.filter(c => c[0] === 'EVAL' && c[1].includes('local previous'));
   ok('mutations use an atomic script with ownership, rate limits and expiring retry receipts', writes.length > 0 && writes.every(c => /target\.authorId/.test(c[1]) && /'INCR'/.test(c[1]) && /86400/.test(c[1]) && /'HSET'/.test(c[1])));
+  const welcomeReads = commands.filter(c => c[0] === 'EVAL' && c[1].includes('HSETNX'));
+  ok('the welcome correction is inside the same atomic read script, guarded on the exact old text', welcomeReads.length > 0 && welcomeReads.every(c => /post\.text == ARGV\[3\]/.test(c[1]) && /'HSET', KEYS\[1\], ARGV\[1\], raw/.test(c[1]) && c[c.length - 1] === oldWelcomeText));
 } finally {
   globalThis.fetch = oldFetch;
   for (const k of KEYS) oldEnv[k] === undefined ? delete process.env[k] : process.env[k] = oldEnv[k];

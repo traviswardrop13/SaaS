@@ -73,14 +73,17 @@ ok("hit after 3rd day", r2.hit, true);
 ok("weekStreak now 3", r2.weekStreak, 3);
 ok("practicedToday", r2.practicedToday, true);
 
-// UI: parent sheet card renders
+// UI: the parent sheet
 await page.reload(); await page.waitForTimeout(900);
 const sheet = await page.evaluate(() => {
-  document.getElementById("sheetOvl").classList.add("show");
-  // paintWeek runs on load; read what it rendered
-  return { dots: document.getElementById("wkDots").children.length, msg: document.getElementById("wkMsg").textContent, streak: document.getElementById("wkStreak").textContent, entries: [...document.querySelectorAll(".sheetBtn")].map((b) => b.textContent.trim()) };
+  const ovl = document.getElementById("sheetOvl");
+  ovl.classList.add("show");
+  return { weekCard: !!ovl.querySelector("#weekCard, #wkDots, #wkMsg, #wkStreak, #planCard"), entries: [...document.querySelectorAll(".sheetBtn")].map((b) => b.textContent.trim()) };
 });
-ok("sheet 7 dots", sheet.dots, 7);
+// 29 Sep 2026: the Monday–Sunday week left the Grown-ups pop-up (Travis: not
+// needed the first time a parent opens it). The weekly goal now lives only on
+// Progress, checked below.
+ok("the pop-up has no week card", sheet.weekCard, false);
 // The plan lives in Settings → Account, where Restore also is; duplicating it
 // in the parent sheet made a four-tap sheet into a menu.
 // 29 Sep 2026: the sheet's doors are now exactly the grown-ups bar's three
@@ -90,7 +93,6 @@ ok("parent sheet offers exactly the grown-ups bar's three places, in order", she
 // pre-path families get one step per practiced day — nobody restarts at zero
 const pcredit = await page.evaluate(() => window.Sona.pathState().steps);
 ok("path credits practiced days", pcredit >= 3, true);
-console.log("      msg:", sheet.msg, "| streak:", sheet.streak);
 await page.screenshot({ path: OUT + "/mom-sheet.png" });
 
 // progress page
@@ -99,9 +101,14 @@ await page.evaluate(() => sessionStorage.setItem("sona.gate.v1", String(Date.now
 await page.goto("http://localhost:8128/progress.html"); await page.waitForTimeout(1000);
 const prog = await page.evaluate(() => ({
   msg: document.getElementById("wkGoalMsg").textContent,
+  days: document.querySelectorAll("#week .day").length,
   on: document.querySelector("#wkGoalPick .gbtn.on") ? document.querySelector("#wkGoalPick .gbtn.on").dataset.g : null,
 }));
 ok("progress goal button on", prog.on, "3");
+// 29 Sep 2026: the seven Monday–Sunday days and the week streak, checked here
+// now that Progress is the only place they are drawn.
+ok("progress 7 days", prog.days, 7);
+ok("progress names the week streak", /3 weeks in a row at your goal/.test(prog.msg), true);
 console.log("      progress msg:", prog.msg);
 console.log(errs.length ? "FAIL progress pageerrors: " + errs[0] : "PASS progress no pageerrors");
 if (errs.length) fails++;

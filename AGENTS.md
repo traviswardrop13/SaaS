@@ -81,7 +81,9 @@ it must pass before any push. Two things learned the hard way:
 ## Credentials and claims — checkable, and checked
 
 Rachel is a co-founder and a **licensed pediatric speech-language pathologist
-(Clinical Fellow)**, Idaho. She does **not** hold ASHA's CCC. **Never write
+(Clinical Fellow)**, Idaho. Wherever copy presents Sona's SLP it names her,
+**"Rachel, MS, CF-SLP"** (Travis, 29 Sep 2026; `tests/shiptest.mjs` checks).
+She does **not** hold ASHA's CCC. **Never write
 "CCC", "certified", "board-certified" or "ASHA-certified"** — a false
 board-certification claim shipped once on the page that sells the app.
 `tests/iaptest.mjs` fails if it returns.

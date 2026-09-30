@@ -116,17 +116,39 @@ const READ_POSTS = `
 // Seed once in the same hash as member posts, so existing reply and ownership
 // rules apply. Keep the marker after deletion: a moderator's removal must stick.
 // The welcome has no index entry and cannot consume a normal feed page slot.
+//
+// Travis, 29 Sep 2026: "don't mention my name". The live welcome was stored
+// once, on first read, with the old line, so the seed's new text alone would
+// never reach it. The same script corrects it in place, once: only when the
+// stored text is EXACTLY the old seed (ARGV[3]) — a post a moderator changed
+// is theirs and is left alone, and a deleted one stays deleted (there is
+// nothing to read, so nothing is written). Only `text` changes; id, date,
+// replies and the rest are kept (an empty replies list re-encodes as {}, as
+// it does after MUTATE, and publicPost reads that as []). The plain-string
+// find keeps the decode off every other read.
 const READ_WELCOME = `
   if redis.call('HSETNX', KEYS[1], ARGV[1] .. ':seeded', '1') == 1 then
     redis.call('HSETNX', KEYS[1], ARGV[1], ARGV[2])
   end
-  return redis.call('HGET', KEYS[1], ARGV[1])
+  local raw = redis.call('HGET', KEYS[1], ARGV[1])
+  if raw and string.find(raw, 'husband Travis', 1, true) then
+    local ok, post = pcall(cjson.decode, raw)
+    if ok and type(post) == 'table' and post.text == ARGV[3] then
+      post.text = cjson.decode(ARGV[2]).text
+      raw = cjson.encode(post)
+      redis.call('HSET', KEYS[1], ARGV[1], raw)
+    end
+  end
+  return raw
 `;
+// The welcome as it was seeded from #135 until 29 Sep 2026 — the only text the
+// correction above will replace.
+const WELCOME_TEXT_BEFORE_29_SEP = "I’m Rachel! My husband Travis and I started Sona, and I’m so happy you’re here.\n\nI’d love for this to be a place where we can swap ideas, share resources, and help each other make homework and planning a little easier. And if something in Sona is confusing or could work better, tell us—we’re building it with you.\n\nCome say hi! What setting do you work in, and what’s one thing you’d love help with right now?";
 function welcomePost(): Post {
   return {
     id: WELCOME_ID, authorId: WELCOME_AUTHOR_ID, author: "Rachel",
     title: "Hey everyone! 👋", category: "discussions", replies: [], createdAt: new Date().toISOString(),
-    text: "I’m Rachel! My husband Travis and I started Sona, and I’m so happy you’re here.\n\nI’d love for this to be a place where we can swap ideas, share resources, and help each other make homework and planning a little easier. And if something in Sona is confusing or could work better, tell us—we’re building it with you.\n\nCome say hi! What setting do you work in, and what’s one thing you’d love help with right now?",
+    text: "I’m Rachel! My husband and I started Sona, and I’m so happy you’re here.\n\nI’d love for this to be a place where we can swap ideas, share resources, and help each other make homework and planning a little easier. And if something in Sona is confusing or could work better, tell us—we’re building it with you.\n\nCome say hi! What setting do you work in, and what’s one thing you’d love help with right now?",
   };
 }
 
@@ -149,7 +171,7 @@ export async function GET(req: NextRequest) {
   }
   const rows = await kvCmd(["EVAL", READ_POSTS, 2, PREFIX + "index" + (category ? ":" + category : ""), PREFIX + "posts", cursor ? "(" + cursor : "+inf", PAGE_SIZE + 1]);
   if (!Array.isArray(rows) || rows.length % 2) return unavailable();
-  const welcome = await kvCmd(["EVAL", READ_WELCOME, 1, PREFIX + "posts", WELCOME_ID, JSON.stringify(welcomePost())]);
+  const welcome = await kvCmd(["EVAL", READ_WELCOME, 1, PREFIX + "posts", WELCOME_ID, JSON.stringify(welcomePost()), WELCOME_TEXT_BEFORE_29_SEP]);
   if (welcome !== null && typeof welcome !== "string") return unavailable();
   try {
     const posts = [];
