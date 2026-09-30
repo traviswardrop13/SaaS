@@ -78,11 +78,14 @@ const SUITES = [
   "arttest.mjs",   // ART1: every sticker renders, fits its box and stays in the safe band
 ];
 
-let bad = 0;
+// The failed suites are named again at the very end: CI's log runs to about
+// 7,000 lines, and a tool that can read only its last few thousand could see
+// "1 SUITE(S) FAILED" but not which one (PR #166, 29 Sep 2026).
+const bad = [];
 for (const s of SUITES) {
   console.log("\n━━━ " + s + " ━━━");
   const r = spawnSync(process.execPath, [path.join(dir, s)], { stdio: "inherit", timeout: 300000 });
-  if (r.status !== 0) { bad++; console.log("SUITE FAILED: " + s + (r.signal ? " (" + r.signal + ")" : "")); }
+  if (r.status !== 0) { bad.push(s + (r.signal ? " (" + r.signal + ")" : "")); console.log("SUITE FAILED: " + bad[bad.length - 1]); }
 }
-console.log(bad ? "\n" + bad + " SUITE(S) FAILED" : "\nALL SUITES GREEN");
-process.exit(bad ? 1 : 0);
+console.log(bad.length ? "\n" + bad.length + " SUITE(S) FAILED: " + bad.join(", ") : "\nALL SUITES GREEN");
+process.exit(bad.length ? 1 : 0);

@@ -866,6 +866,9 @@
           try{if(window.SonaAnalytics)SonaAnalytics.track("onboarding completed");}catch(e){}
           var pay=false;try{pay=!(Sona.isFree&&Sona.isFree())&&!(Sona.isSubscribed&&Sona.isSubscribed())&&!(Sona.isPilot&&Sona.isPilot())&&!(Sona.getProfile&&Sona.getProfile().earlyAdopter);}catch(e){}
           if(pay){try{sessionStorage.setItem("sona.gate.v1",String(Date.now()));}catch(e){}}
+          // Close the keyboard first: the app resizes its web view for the
+          // keyboard, and the first game must open at full height.
+          if(document.activeElement&&document.activeElement.blur)document.activeElement.blur();
           // Straight into the first game (Travis, 27 Sep 2026): Feed Echo for
           // ages 3-4, Fruit Slice (its practice page first) from 5. A
           // clinician setting up their own phone still lands on Home.

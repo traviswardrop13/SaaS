@@ -8,7 +8,9 @@
 #slowControl.earned #slowKeys{border-color:#65ceca;background:#ddf8ef;box-shadow:0 4px 0 #26888b;}
 .slowTrack{display:block;width:120px;height:4px;margin:4px auto 0;border-radius:4px;overflow:hidden;}#slowMeter{display:block;height:100%;background:#83e6d6;}
 #slowCancel{border:1px solid #c6ad89;border-radius:18px;background:#fff8e9;color:#624329;padding:8px 14px;font:800 12px Nunito,sans-serif;margin-top:6px;min-height:36px;}
-body[data-crafted] #banner{top:calc(174px + env(safe-area-inset-top));}
+/* Only while the speech-help button is on screen: in a finale it is hidden, and a
+   banner pushed down to 174px sat on the giant watermelon the child has to swipe. */
+body[data-crafted] #slowControl:not([hidden]) ~ #banner{top:calc(174px + env(safe-area-inset-top));}
 
 #slowStatus{display:inline-block;padding:3px 9px;border-radius:12px;background:rgba(255,248,233,.94);color:#624329;text-shadow:none;}
 @media(max-width:350px){#slowControl{max-width:94%;}#slowStatus{font-size:11px;}#slowKeys{min-height:48px;font-size:24px;}}

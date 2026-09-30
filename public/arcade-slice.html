@@ -305,6 +305,10 @@
       // Super Slice time left over waits through the break and carries into
       // the next wave: the burst alone can finish wave 1, and a child who
       // earned twelve seconds should get twelve. Only the giant ends it.
+      // A banner still showing (Super Slice can finish a wave) stays where it
+      // appeared: hiding the Echo button would otherwise drop it 92 px up the
+      // screen mid-animation. The next banner() lets go.
+      var bn=$("banner"); bn.style.top=getComputedStyle(bn).top;
       phase="break"; hud(); paintSlowKeys();
       var last=wave===WAVES.length-1;
       setTimeout(function(){
@@ -345,7 +349,7 @@
     }
     var TICK='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
     function waveDots(){ var s=""; for(var i=0;i<WAVES.length;i++) s+='<span class="wdot'+(i<=wave?' on':'')+'">'+(i<=wave?TICK:String(i+1))+'</span>'; return s; }
-    function banner(big,small){ var b=$("banner"); $("bnBig").textContent=big; $("bnSmall").textContent=small||""; b.classList.remove("in"); void b.offsetWidth; b.classList.add("in"); }
+    function banner(big,small){ var b=$("banner"); b.style.top=""; $("bnBig").textContent=big; $("bnSmall").textContent=small||""; b.classList.remove("in"); void b.offsetWidth; b.classList.add("in"); }
     function echoHop(){ var e=$("sliceEcho"); if(!e) return; e.classList.remove("hop"); void e.offsetWidth; e.classList.add("hop"); }
 
     // ── the say-it card, between waves ──

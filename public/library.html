@@ -16,6 +16,10 @@
     /* the hidden attribute beats the inline display:flex on the two tiles */
     [hidden]{display:none!important;}
     body{background:linear-gradient(180deg,#fff7ec,#ffe9d2) fixed;}
+    /* The shelf scrolled up under the clock; this covers the status bar's band.
+       See-through and blurred: the page's gradient scrolls on an iPhone (it
+       ignores background-attachment:fixed), and a solid strip showed as a band. */
+    body::before{content:"";position:fixed;left:0;right:0;top:0;height:env(safe-area-inset-top);background:rgba(255,247,236,.86);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);z-index:30;pointer-events:none;}
     .shelfhead{display:flex;align-items:center;gap:10px;margin:18px 2px 8px;}
     .shelfhead h2{margin:0;}
     /* warm tag pair (fix pack 1c) — the green pair was legacy Duolingo chrome */
