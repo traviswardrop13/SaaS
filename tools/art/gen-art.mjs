@@ -16,8 +16,9 @@ import { execFileSync } from "child_process";
 const here = path.dirname(new URL(import.meta.url).pathname);
 const root = path.resolve(here, "../..");
 const arg = (n) => { const i = process.argv.indexOf("--" + n); return i > 0 ? process.argv[i + 1] : null; };
-const KEY = process.env.OPENAI_API_KEY;
-if (!KEY) { console.error("Set OPENAI_API_KEY first (platform.openai.com → API keys)."); process.exit(1); }
+// Locally: set OPENAI_API_KEY. In a Claude cloud session the key is stored as an
+// API credential and the proxy adds it to the request, so none is needed here.
+const KEY = process.env.OPENAI_API_KEY || "injected-by-proxy";
 const MODEL = process.env.ART_MODEL || "gpt-image-1";
 const QUALITY = process.env.ART_QUALITY || "medium"; // low | medium | high — cost rises with it
 const PARALLEL = Number(arg("parallel") || 4);
