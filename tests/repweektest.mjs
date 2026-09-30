@@ -246,7 +246,7 @@ await scenario("the Settings card", async () => {
   ok("a week with no counted reps is a stub, never a gap in the list", c.bars[1].val === "0" && c.bars[1].h <= 3 && c.bars[1].sr === "Week of Sep 28: 0 reps", c.bars[1]);
   ok("bars scale to the tallest week", c.bars[3].h > c.bars[2].h && c.bars[2].h > c.bars[0].h, c.bars.map((b) => b.h));
   ok("a screen reader hears each week in words, from inside the item", s.list === "list" && s.items, s);
-  ok("the card says what a rep is, that it is not a verdict, and that silence never counts", /says the practice sound or word out loud/.test(s.text) && /whether or not it sounded right yet/.test(s.text) && /Silence never counts/.test(s.text) && /Monday to Sunday/.test(s.text), s.text);
+  ok("the card says what a rep is, that it is not a verdict, and that silence never counts", /says the practice sound or word out loud/.test(s.text) && /when a game asks for it/.test(s.text) && /whether or not it sounded right yet/.test(s.text) && /Silence never counts/.test(s.text) && /Monday to Sunday/.test(s.text), s.text);
   ok("no percentages, scores or grades on the card", !/%|score|accura|grade|diagnos/i.test(s.text), s.text);
   ok("nothing on the card is red", s.reds === 0, s.reds);
   ok("no sideways scroll at 375px", (await overflow(page)) <= 1);
@@ -324,6 +324,34 @@ await scenario("Progress reads the same count", async () => {
   await page.goto(origin + "/progress.html"); await page.waitForFunction(() => window.Sona && document.getElementById("storyLine").textContent);
   const s = await page.evaluate(() => ({ vol: document.getElementById("volReps").textContent, lead: document.getElementById("storyLine").textContent }));
   ok("Progress's weekly card and its lead name the same number", s.vol === "5" && /S sound with 5 tries this week/.test(s.lead) && !/24/.test(s.lead), s);
+  ok("no page errors", errors.length === 0, errors);
+  await context.close();
+});
+
+await scenario("sounds said in games are reps too", async () => {
+  // GAMEREPS1 (Travis, 29 Sep 2026: "yeah count as reps"): a sound a game
+  // asked for and heard adds to the week, from its own ledger, never outcomes.
+  const { context, page, errors } = await fresh({ at: THU });
+  await seed(page, HISTORY);
+  await page.evaluate(() => localStorage.setItem("sona.gamereps.v1", JSON.stringify({ "2026-10-15": { R: 3, S: 2 }, "2026-10-07": { R: 4 }, "2026-09-10": { R: 9 } })));
+  await home(page);
+  const before = await page.evaluate(() => localStorage.getItem("sona.outcomes.v1"));
+  let r = await page.evaluate(() => ({ now: Sona.weekReps(0), last: Sona.weekReps(-1), s: Sona.weekReps(0, "S"), pill: document.getElementById("repPillN").textContent }));
+  ok("this week adds the game's 5 to practice's 28, and Home's corner says 33", r.now === 33 && r.pill === "33", r);
+  ok("last week adds its game reps too; a date before reps were counted adds none", r.last === 22, r);
+  ok("one sound's count includes its game reps", r.s === 7, r);
+  await page.evaluate(() => { Sona.gameRep("r"); Sona.gameRep("R"); Sona.gameRep("X"); Sona.gameRep(""); });
+  r = await page.evaluate(() => ({ now: Sona.weekReps(0), ledger: JSON.parse(localStorage.getItem("sona.gamereps.v1"))["2026-10-15"], outcomes: localStorage.getItem("sona.outcomes.v1") }));
+  ok("Sona.gameRep adds one per heard sound, for real sounds only", r.now === 35 && r.ledger.R === 5 && r.ledger.S === 2, r);
+  ok("…and never touches the practice records (pass rates, the clinician's view)", r.outcomes === before);
+  await settings(page);
+  const card = await page.evaluate(() => ({ now: document.getElementById("rwThis").textContent, note: document.querySelector(".rw-note").innerText }));
+  ok("Settings counts them, and says a game's asking counts", card.now === "35" && /when a game asks for it/.test(card.note) && !/add none/.test(card.note), card);
+  await page.evaluate(() => Sona.addKid("Ana", 4));
+  ok("a second child's game reps start at 0", await page.evaluate(() => Sona.weekReps(0) === 0));
+  await page.evaluate(() => Sona.gameRep("R"));
+  await page.evaluate(() => Sona.switchKid(""));
+  ok("…and a rep for the second child never lands on the first", await page.evaluate(() => Sona.weekReps(0) === 35));
   ok("no page errors", errors.length === 0, errors);
   await context.close();
 });

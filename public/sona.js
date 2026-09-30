@@ -162,7 +162,7 @@
     "sona.rotation.v1", "sona.today.v1", "sona.episode.v2", "sona.reps.v1",
     "sona.day.v2", "sona.coinmint.v1", "sona.tickets.v1", "sona.charge.v1",
     "sona.daily.v1", "sona.session.v1", "sona.levels.v1", "sona.campaign.v1",
-    "sona.stickers.v1", "sona.attempts.v1", "sona.outcomes.v1",
+    "sona.stickers.v1", "sona.attempts.v1", "sona.outcomes.v1", "sona.gamereps.v1",
     "sona.lib.read.v1", "sona.feed.v1", "sona.call.v1", "sona.callhist.v1",
     "sona.games.v1", "sona.homework.v1", "sona.reclast",
     // PER-CHILD, and it must be. This key holds the clinician code, the
@@ -3313,12 +3313,32 @@
   function _mondayKey(offsetWeeks) { const n = new Date(); return _localDay(_weekStart(n.getFullYear(), n.getMonth(), n.getDate() + 7 * (offsetWeeks || 0)).getTime()); }
   function _repBuckets(sound) {
     const out = outcomes(), wk = {};
+    function add(k, n) { if (!n) return; const w = _weekOf(k); if (w && w >= REPS_SINCE) wk[w] = (wk[w] || 0) + n; }
     Object.keys(out).forEach((s) => {
       if (sound && s !== sound) return;
       const days = (out[s] && out[s].days) || {};
-      Object.keys(days).forEach((k) => { const n = _dayTries(days[k]); if (!n) return; const w = _weekOf(k); if (w && w >= REPS_SINCE) wk[w] = (wk[w] || 0) + n; });
+      Object.keys(days).forEach((k) => add(k, _dayTries(days[k])));
     });
+    const gr = load(GAMEREPKEY, {});
+    Object.keys(gr).forEach((k) => { const d = gr[k] || {}; Object.keys(d).forEach((s) => { if (!sound || s === sound) add(k, Math.max(0, Math.floor(Number(d[s]) || 0))); }); });
     return wk;
+  }
+  // ── GAMEREPS1: a sound said inside a game is a rep too (Travis, 29 Sep
+  // 2026: "yeah count as reps"). Every place a game asks for the sound and
+  // hears it (the say-it card between rounds, Echo's sound powers, a Hoops
+  // word, Feed Echo's picture hint) adds one here, and the week's count
+  // above reads it with the practice page's tries. It is NOT practice data:
+  // it never enters outcomes(), so no pass rate, clinician's note or shared
+  // progress sees it, and it mints no coins. Only a voiced try that passed
+  // the game's own check ever calls it, so silence still never counts.
+  const GAMEREPKEY = "sona.gamereps.v1";
+  function gameRep(sound) {
+    try {
+      const s = String(sound || "").toUpperCase(); if (ALL_SOUNDS.indexOf(s) < 0) return;
+      const t = today(), gr = load(GAMEREPKEY, {}), d = gr[t] || (gr[t] = {});
+      // kept like the day ledger, unpruned: the best week reads all of it
+      d[s] = (d[s] || 0) + 1; save(GAMEREPKEY, gr);
+    } catch (e) {}
   }
   // sound narrows the count to one sound — Progress names the week's busiest
   // sound beside the total, and both have to come from the same rule.
@@ -4366,5 +4386,5 @@
   try { _grandfatherFreeEra4(); } catch (e) {}
   try { installDebug(); } catch (e) {}
 
-  global.Sona = { pcmWave, libraryPreview, previewPlan, setPreviewPlan, gameKey, gameAccess, gameBounce, finishGameTurn, catalogRun, simpleAdventure, MIC_PROMISE, playStyle, pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, TTS_CACHE_VERSION, voiceDiagnostic, voiceStatus, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, saveFor, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, ladderContent, FREE_MODE, isFree, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, adventureGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, activityLibrary, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, premium, caseCovered, caseRefresh, gated, gateVerify, gateOk, requireGate, gateDest, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, planMoment, planEligible, planShown, firstGameKey, firstGameStart, firstGameEnd, speak, speakNow, speakUnlock, speechAvailable, speechPerm, speechStart, speechStop, hearVerdict, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, demoState, demoDone, demoStart, demoFinish, runActive, gateBounce, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repWeeks, repsBeacon, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES, soundMark };
+  global.Sona = { pcmWave, libraryPreview, previewPlan, setPreviewPlan, gameKey, gameAccess, gameBounce, finishGameTurn, catalogRun, simpleAdventure, MIC_PROMISE, playStyle, pic, ICONS, icon, heartRow, WORD_STICKERS, COVER_FACES, momWeek, weeklyGoalDays, weekWins, ALL_SOUNDS, PLAY_ORDER, playMode, soundLabel, SOUND_NORM, soundNorm, STAGES, CHARACTERS, OUTFITS, BACKDROPS, VOICE_PITCH, TTS_CACHE_VERSION, voiceDiagnostic, voiceStatus, HOUSE_PALETTE, WORDS, wordsFor, POSITIONS, THEMES, houseArt, dayNum, dayTheme, dailyPick, characterById, outfitById, backdropById, buddyMarkup, kids, activeKid, addKid, switchKid, removeKid, kkey, saveFor, getProfile, saveProfile, getProgress, recordSession, resetProgress, exportData, exportString, importData, tickets, addTickets, spendTicket, chargeState, chargeAdd, chargeReset, dailyInfo, dailyFinish, micDenied, stageOf, completeStage, LADDER, LADDER_LABEL, rungOf, rungName, rungLabel, recordRung, ladderContent, FREE_MODE, isFree, HUMAN_CLIPS, humanClipsOn, onBackground, ROT_LEN, rotSounds, rotState, rotSound, rotRound, rotAdvance, todayRing, track, EPISODES, episode, episodeNum, episodeBeat, episodeHook, episodeAdvance, dailyStory, dailyChapterNum, chapterScene, chapterPose, storyRead, markStoryRead, dailyGames, adventureGames, DAILY_GAMES, GAME_ACTS, GAME_KEYS, gameAct, activityLibrary, bumpReps, repsToday, repGoal, goalState, mintCoins, mintStoryBonus, mysteryCost, mysteryGame, canBuyMystery, buyMystery, pathState, localDay: () => _localDay(), soundFamily, frameShape, soundStory, chestClaimed, claimChest, getMissed: () => getProgress().missed, getCoins, addCoins, spendCoins, owns, addOwned, getSub, saveSub, isSubscribed, premium, caseCovered, caseRefresh, gated, gateVerify, gateOk, requireGate, gateDest, slpCode, slpRedeem, slpVerified, slpJoinCaseload, isFounder, founderUnlock, offerCode, homework, homeworkSounds, syncHomework, practicePos, planMoment, planEligible, planShown, firstGameKey, firstGameStart, firstGameEnd, speak, speakNow, speakUnlock, speechAvailable, speechPerm, speechStart, speechStop, hearVerdict, stickerSheet, stickerBox, paintSticker, gameSticker, STICKER_FIELDS, isNativeApp, iapAvailable, iapProduct, iapPurchase, iapRestore, iapRefresh, getTrial, startTrial, ensureTrial, demoState, demoDone, demoStart, demoFinish, runActive, gateBounce, trialActive, trialExpired, trialDaysLeft, restore, saveRecording, listRecordings, sfx, music, confetti, pop, GAME_META, gameMeta, session, diff, markLevelDone, levelDone, sessionButtons, utm, startPilot, isPilot, pilotInfo, unlockedThru, logAttempt, outcomes, fid, isoWeek, weekReps, repWeeks, gameRep, repsBeacon, hasNativeAudio, captureClip, sendProgress, sendFeedback, reportError, debugOn, STICKERS, stickersEarned, hasSticker, awardSticker, awardNextSticker, awardRandomSticker, cue, CUES, coachLine, soundSay, SOUND_SAY, actionCue, repeatCue, praiseLine, PRAISES, soundMark };
 })(window);

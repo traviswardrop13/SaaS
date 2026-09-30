@@ -647,10 +647,10 @@ a game it still draws, it refuses and writes nothing until that game is added
 to `PLAYED`. Only a voice moves a game: no tap stands in for
 talking, and the mic button only listens again (in a play game like Hoops
 a finger plays the move, but only a move a word has earned). The mic keeps every quiet
-rule the other games keep. A spoken move is play, never practice data:
-whether it should count toward the day's practice is Rachel's call, and until
-she makes it, it doesn't. They open straight from Home and never join the
-daily adventure.
+rule the other games keep. A spoken move is play, never practice data (no
+pass rate, no clinician sees it), but each heard word is one rep on the
+week's count (Travis, 29 Sep 2026; see "The week's reps"). They open straight
+from Home and never join the daily adventure.
 
 **All twenty are parked as Coming soon** (Travis, 26 Sep 2026: "these games
 are not good. they are essentially all the exact same but with a different
@@ -738,29 +738,43 @@ note: `micquietgamestest` pins its loudness to the Sound setting.
 **Super Slice: Fruit Slice's sound power** (Travis, 29 Sep 2026: "give them an
 option to say the sound to slow the game down ... they go into some frenzy
 mode or easy mode or beast mode when they say their target sounds ... one at
-a time"). Fruit Slice's help became a mode a child wants to earn, and the
-other games copy it one at a time:
-- **Tap Echo, then say it up to three times.** The board holds and dims (the
-  mic may only open while nothing plays), three stars show, and each try
-  lights one. The first turn Echo says "Super Slice! Say it three times."
-  then plays the recorded sound; later turns play only the sound.
-- **Every try buys time:** one try 8 seconds, two 10, three 12. A try is the
-  say-it card's own burst (six loud frames that pass the family check); it
-  ends after 160 ms below the bar, so one long "rrrrrr" is one try. The turn
-  ends at the third try, or 1.5 s after a child who has said it stops.
-  Silence, "Keep playing" and (on the iPhone) "taco" earn nothing.
-- **Super Slice itself:** the fruit slow to 55%, the stand throws five at
-  once (one golden), every toss after is two or three, the swipe becomes a
-  wide rainbow blade (it slices 34 px past a fruit's edge, not 16), and the
-  screen edge glows gold. Time left when a wave ends waits through the
-  break and carries into the next wave (the burst alone can finish wave 1);
-  the giant watermelon ends it.
-- **Still play, never practice data**, and the round still ends on the giant
-  watermelon whether or not a child ever says a word. Whether these tries
-  count toward the week's reps, and the three-tries ask itself, are Rachel's
-  calls. The retired names (STAR MODE, FRUIT FRENZY, SLOW-MO…) stay banned.
-  `tests/superslicetest.mjs` plays it; Block Stacker, Sound Sprint and Flappy
-  Glide keep the one-try, eight-second help until each gets its own.
+a time", then "1 time to get it slow mode is fine ... or just to say it and
+hold"). Fruit Slice's help became a mode a child wants to earn, and the other
+games copy it one at a time:
+- **Tap Echo and say the sound once**, quick or held. The board holds and
+  dims (the mic may only open while nothing plays). The first turn Echo says
+  "Super Slice! Say" and then plays one take of Rachel's recorded sound
+  (`{SND}-sound.wav`, as the say-it card does); later turns play only the
+  sound. A heard try shows "Got it!" and ends the turn after the 550 ms
+  Apple's recognizer gets. Silence, "Keep playing" and (on the iPhone) a
+  clearly different word earn nothing. **"wow" for "rrrr" does not count**
+  (Travis, 29 Sep 2026: "no wow should not count"): `hearVerdict` keeps
+  failing it.
+- **Ten seconds of Super Slice:** the fruit slow to 55%, the stand throws
+  five at once (one golden), every toss after is two or three (it outranks
+  the two-miss help), the swipe becomes a wide rainbow blade (it slices 34 px
+  past a fruit's edge, not 16), and the screen edge glows gold. Time left
+  when a wave ends waits through the break and carries into the next wave
+  (the burst alone can finish wave 1); the giant watermelon ends it.
+- **Every earned turn is a rep** on the week's count (see "The week's reps");
+  still never practice data. The round still ends on the giant watermelon
+  whether or not a child ever says a word. The retired names (STAR MODE,
+  FRUIT FRENZY, SLOW-MO…) stay banned. `tests/superslicetest.mjs` plays it;
+  Block Stacker, Sound Sprint and Flappy Glide keep the eight-second slow
+  help (now with the same one-take sound) until each gets its own mode.
+
+**The week's reps** (Travis, 28-29 Sep 2026). Home's top corner shows this
+week's reps, the parent corner and Progress say the same number, and
+Settings shows them week by week. One count, `Sona.repWeeks`/`weekReps`:
+the practice page's voiced tries (`outcomes().days[].tries`, only days since
+tries were counted, 22 Sep 2026) **plus every sound a game asked for and
+heard** (`Sona.gameRep`, Travis: "yeah count as reps"): the say-it card
+between rounds, Echo's sound powers, a Hoops word, Feed Echo's picture hint.
+Game reps live in their own per-child ledger (`sona.gamereps.v1`) and never
+enter `outcomes()`, so no pass rate, clinician's note, shared progress or
+coin sees them: the hard rule "voice boosts never logged as SLP data" holds.
+Only a voiced try that passed the game's own check counts; silence never
+does. `tests/repweektest.mjs` pins it.
 
 
 **Sound Sprint is the same round, as a race** (27 Sep 2026): the park, the
