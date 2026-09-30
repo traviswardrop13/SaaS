@@ -386,13 +386,31 @@ both pages.
 Sep 2026: "the app launches next week"; the iOS 27 build closes on launch).
 `APP_READY = false` in `lib/launch.ts` and `var APP_READY` in `parents.html`
 and `for-slps.html`, pinned equal by `shiptest`. A parent or "other" is thanked
-on the page ("The Sona app launches next week. We'll email you the moment
-it's ready.") and emailed the same once through Resend (`/api/lead`,
+on the page ("Sona launches Friday, October 2. We'll email you the moment it's
+ready.", the date Travis emailed the list on 30 Sep) and emailed the same once through Resend (`/api/lead`,
 `launchmail:<email>`; a reply goes to `RESEND_REPLY_TO` when it is set, and
 nowhere otherwise); a speech therapist goes to their dashboard's
 community (`/slp.html#community`) and their sign-in email carries the same
 P.S. Not the web app: Travis chose to wait for the app. When the app is
 live, set all three switches to true.
+
+**The family app is locked until launch day** (Travis, 30 Sep 2026: "the
+official V1 of Sona launches Friday, October 2nd ... lock the app until
+Friday ... they can turn on a notification if they press notify me or ... put
+in their email"). Until `LAUNCH_AT` in `lib/launch.ts` (midnight at the start
+of Friday 2 October in Idaho, 06:00 UTC), `middleware.ts` answers every
+family page, on the iPhone and the web, with `public/launching.html` at the
+same address: the date and one email box (`/api/lead`, role `parent`, source
+`app-launch`, the one launch email). `OPEN_PAGES` stay open: the two
+websites, the clinician's dashboard and sign-in, the founder pages, privacy
+and the lock page. Every other .html page locks, a new one included. At
+`LAUNCH_AT` the app opens by itself with no deploy, and a phone left on the
+lock page reloads into it. **The team door:** five taps on Echo, then the
+founder key (`/api/launch/preview`, sent in a header, never the address)
+sets an HttpOnly cookie that is an HMAC of the key; the iPhone app keeps its
+own cookies, so open the door from inside the app. `APP_READY` still flips by
+hand, once the App Store shows Get. An App Review build before launch sees the
+lock page. `tests/launchtest.mjs` pins all of it.
 
 **The SLP community shows who is there** (Travis, 25 Sep 2026): the real
 number of SLP accounts and up to a dozen members' first names, newest first,
