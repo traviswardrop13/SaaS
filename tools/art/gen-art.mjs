@@ -16,6 +16,8 @@ import { execFileSync } from "child_process";
 const here = path.dirname(new URL(import.meta.url).pathname);
 const root = path.resolve(here, "../..");
 const arg = (n) => { const i = process.argv.indexOf("--" + n); return i > 0 ? process.argv[i + 1] : null; };
+// In a Claude cloud session, run with NODE_USE_ENV_PROXY=1 — Node's fetch
+// ignores HTTPS_PROXY otherwise and the egress proxy refuses the direct call.
 // Locally: set OPENAI_API_KEY. In a Claude cloud session the key is stored as an
 // API credential and the proxy adds it to the request, so none is needed here.
 const KEY = process.env.OPENAI_API_KEY || "injected-by-proxy";

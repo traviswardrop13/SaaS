@@ -1,14 +1,14 @@
 key,word,emoji,sounds,priority,status
-ball,ball,⚽,L B,1-first,todo
-banana,banana,🍌,B N,1-first,todo
-bear,bear,🐻,R B,1-first,todo
-bed,bed,🛏️,B D,1-first,todo
-bee,bee,🐝,B,1-first,todo
-boat,boat,⛵,B T,1-first,todo
-book,book,📖,K B,1-first,todo
-bus,bus,🚌,S B,1-first,todo
-cake,cake,🍰,K,1-first,todo
-cat,cat,🐱,K T,1-first,todo
+ball,ball,⚽,L B,1-first,done
+banana,banana,🍌,B N,1-first,done
+bear,bear,🐻,R B,1-first,done
+bed,bed,🛏️,B D,1-first,done
+bee,bee,🐝,B,1-first,done
+boat,boat,⛵,B T,1-first,done
+book,book,📖,K B,1-first,done
+bus,bus,🚌,S B,1-first,done
+cake,cake,🍰,K,1-first,done
+cat,cat,🐱,K T,1-first,done
 chair,chair,🪑,R CH,1-first,todo
 cheese,cheese,🧀,CH Z,1-first,todo
 cherry,cherry,🍒,CH,1-first,todo
