@@ -42,7 +42,9 @@ const allKeys = [...simpleKeys, ...arcadeKeys].sort();
 // one at a time by taking comingSoon off its own line in sona.js.
 const SONA_SRC = readFileSync(ROOT + "/sona.js", "utf8");
 const parkedSay = [...SONA_SRC.matchAll(/^\s{4}(\w+): \{[^\n]*\bsay: true, comingSoon: true\b/gm)].map((m) => m[1]);
-const comingSoonKeys = ["bubbles", "peekaboo", ...parkedSay].sort();
+// Bubble Pop came back on 30 Sep 2026 (Travis: "the two free games for
+// younger kids"); Peekaboo is still parked.
+const comingSoonKeys = ["peekaboo", ...parkedSay].sort();
 let playableKeys = [], freeKeys = [], premiumKeys = [];
 const sorted = (values) => [...values].sort();
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
@@ -123,7 +125,7 @@ await section("library prerequisites", async () => {
       playableKeys = games.filter(game => game.available && !game.comingSoon).map(game => game.key).sort();
       freeKeys = games.filter(game => game.available && !game.comingSoon && game.tier === "free").map(game => game.key).sort();
       premiumKeys = games.filter(game => game.available && !game.comingSoon && game.tier === "premium").map(game => game.key).sort();
-      ok("Coming soon: Bubble Pop, Peekaboo and every Say & Play game not rebuilt yet", same(games.filter(game => game.comingSoon).map(game => game.key).sort(), comingSoonKeys) && parkedSay.every((key) => sayLittle.includes(key) || sayBig.includes(key)));
+      ok("Coming soon: Peekaboo and every Say & Play game not rebuilt yet", same(games.filter(game => game.comingSoon).map(game => game.key).sort(), comingSoonKeys) && parkedSay.every((key) => sayLittle.includes(key) || sayBig.includes(key)));
       ok("…and the six first games are never Coming soon", ["feed", ...adventureKeys].every((key) => playableKeys.includes(key)), playableKeys);
     }
     ok("Home itself presents the game picker", await pg.getByRole("heading", {name:"Pick a game!",exact:true}).count() === 1 && await pg.locator("#activityGroups button[data-game]").count() === allKeys.length);
@@ -171,8 +173,8 @@ if (present && hasContract) {
         model.groups.every((g) => g.games.every((game) => ["free", "premium"].includes(game.tier)
           && Object.hasOwn(game, "releasedOn") && (game.releasedOn === null || /^\d{4}-\d{2}-\d{2}$/.test(game.releasedOn)) && game.available === true && typeof game.comingSoon === "boolean")));
       ok("each suggested age group retains a playable free game", model.groups.every((g) => g.games.some((game) => game.tier === "free" && !game.comingSoon)));
-      // Travis, 30 Sep 2026: "fruit slice and piano tiles free ... feed echo to be free"
-      ok("the playable free games are Feed Echo, Fruit Slice and Piano Tiles", same(freeKeys, ["feed", "slice", "tiles"]), freeKeys);
+      // Travis, 30 Sep 2026: "the two free games for older kids, the two free games for younger kids"
+      ok("the playable free games are two for each age group: Feed Echo and Bubble Pop, Fruit Slice and Piano Tiles", same(freeKeys, ["bubbles", "feed", "slice", "tiles"]), freeKeys);
       ok("every game has a usable name, description and destination",
         model.groups.every((g) => [g.name, g.ageLabel, g.description].every((v) => typeof v === "string" && v.trim())
           && g.games.every((game) => [game.name, game.sub, game.go, game.playDescription].every((v) => typeof v === "string" && v.trim()))));
@@ -290,21 +292,21 @@ if (present && hasContract) {
         const got = await pg.evaluate(() => {
           const tag = (key) => { const b = document.querySelector('#activityGroups button[data-game="' + key + '"]'); return b ? { label: b.querySelector(".game-access").textContent, disabled: b.disabled, aria: b.getAttribute("aria-label") } : null; };
           const firstParked = [...document.querySelectorAll("#activityGroups .activity-group")].map((g) => g.querySelector(".coming-grid button[data-game]")?.dataset.game);
-          return { bubbles: tag("bubbles"), soccer: tag("soccer"), racecar: tag("racecar"), firstParked, access: Sona.gameAccess("bubbles") };
+          return { peekaboo: tag("peekaboo"), soccer: tag("soccer"), racecar: tag("racecar"), firstParked, access: Sona.gameAccess("peekaboo") };
         });
         return { got, errors };
       } finally { await ctx.close(); }
     };
     let r = await cardsAt(Date.UTC(2026, 9, 1, 12));
-    ok("before its Monday a parked game says the day: Bubble Pop and Soccer Goal \"Coming Oct 12\", Race Car \"Coming Oct 19\"",
-      r.got.bubbles.label === "Coming Oct 12" && r.got.soccer.label === "Coming Oct 12" && r.got.racecar.label === "Coming Oct 19"
-        && r.got.bubbles.disabled && /Coming Oct 12/.test(r.got.bubbles.aria), JSON.stringify(r.got));
-    ok("…each shelf's parked games soonest first", same(sorted(r.got.firstParked), ["bubbles", "soccer"]), r.got.firstParked);
+    ok("before its Monday a parked game says the day: Peekaboo and Soccer Goal \"Coming Oct 12\", Race Car \"Coming Oct 19\"",
+      r.got.peekaboo.label === "Coming Oct 12" && r.got.soccer.label === "Coming Oct 12" && r.got.racecar.label === "Coming Oct 19"
+        && r.got.peekaboo.disabled && /Coming Oct 12/.test(r.got.peekaboo.aria), JSON.stringify(r.got));
+    ok("…each shelf's parked games soonest first", same(sorted(r.got.firstParked), ["peekaboo", "soccer"]), r.got.firstParked);
     ok("…with no page errors", r.errors.length === 0, r.errors);
     r = await cardsAt(Date.UTC(2026, 9, 13, 12));
     ok("past its Monday and still unfinished, a game goes back to \"Coming soon\", while the next one keeps its day",
-      r.got.bubbles.label === "Coming soon" && r.got.soccer.label === "Coming soon" && r.got.racecar.label === "Coming Oct 19", JSON.stringify(r.got));
-    ok("…and the date never opens it", r.got.bubbles.disabled && r.got.access.allowed === false && r.got.access.reason === "coming-soon", JSON.stringify(r.got));
+      r.got.peekaboo.label === "Coming soon" && r.got.soccer.label === "Coming soon" && r.got.racecar.label === "Coming Oct 19", JSON.stringify(r.got));
+    ok("…and the date never opens it", r.got.peekaboo.disabled && r.got.access.allowed === false && r.got.access.reason === "coming-soon", JSON.stringify(r.got));
   });
 
   await section("featured cards are extra working choices", async () => {

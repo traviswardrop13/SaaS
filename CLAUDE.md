@@ -100,15 +100,16 @@ the diff.
 paid" ... "we add the paywall today").** `FREE_MODE = false` in
 `public/sona.js` and `lib/pricing.ts`. Families first meet it on launch day,
 when the launch lock lifts (see "The family app is locked until launch day").
-**The free version:** daily practice, **Fruit Slice, Piano Tiles and Feed
-Echo** (Piano Tiles turned free that day; Block Stacker, Sound Sprint, Flappy
-Glide and Hoops are Premium), and **one book, Rory and the Rainbow**
-(`FREE_BOOKS` in sona.js). Everything else is Premium and greyed out ("ask a
-grown-up"); buying opens every finished game and every book. There is no
-other finished game for ages 3-4 yet; Bubble Pop keeps `tier: "free"`, so it
-joins the free version the day it is rebuilt. Unfinished games stay disabled
-"Coming …" cards (see "Monday drops") regardless of subscription, trial or
-earned access.
+**The free version:** daily practice, **two games for each age group**
+(Travis, 30 Sep 2026: "the two free games for older kids, the two free games
+for younger kids"): **Fruit Slice and Piano Tiles** for 5-8 (Piano Tiles
+turned free that day; Block Stacker, Sound Sprint, Flappy Glide and Hoops are
+Premium), **Feed Echo and Bubble Pop** for 3-4 (Bubble Pop came back from
+Coming soon that day), and **one book, Rory and the Rainbow** (`FREE_BOOKS`
+in sona.js). Everything else is Premium and greyed out ("ask a grown-up");
+buying opens every finished game and every book. Unfinished games stay
+disabled "Coming …" cards (see "Monday drops") regardless of subscription,
+trial or earned access.
 
 `premium()` recognizes subscriptions, founders, free-era families, founding
 pilots, and covered caseloads. Never a fixed count of free games: the plan
@@ -354,7 +355,7 @@ decision guards nothing and taxes every flip. `IS_FREE_NOW` in `iaptest.mjs`
 reads the live state from source where a suite genuinely needs it.
 
 Free regardless of the switch: practice, the free games (Fruit Slice, Piano
-Tiles and Feed Echo) and the free book (Rory and the Rainbow), for every
+Tiles, Feed Echo and Bubble Pop) and the free book (Rory and the Rainbow), for every
 family; founding pilots (`ff-` codes) and founders; every device onboarded, or
 that redeemed a clinician's link, before the Caseload Premium build; every
 device onboarded before the paywall build of 30 Sep 2026. **Not**
@@ -452,6 +453,16 @@ sets an HttpOnly cookie that is an HMAC of the key; the iPhone app keeps its
 own cookies, so open the door from inside the app. `APP_READY` still flips by
 hand, once the App Store shows Get. An App Review build before launch sees the
 lock page. `tests/launchtest.mjs` pins all of it.
+
+**The lock was lifted early** (Travis, 30 Sep 2026: "Reopen the app so that I
+can more easily edit", and yes to opening it for everyone now, before the
+Friday launch he emailed). One switch, `LAUNCH_LOCK` in `lib/launch.ts`:
+`false` opens every family page whatever the date; `true` locks them until
+`LAUNCH_AT` again, as above. The date, the lock page and the team door stay,
+unused, and the websites still say the app launches Friday. A lock page left
+open (an iPhone app in the background) asks the server when it comes back to
+the front and opens the app once Home is no longer the lock page.
+`launchtest` tests the lock switched on and off, whichever way it ships.
 
 **The SLP community shows who is there** (Travis, 25 Sep 2026): the real
 number of SLP accounts and up to a dozen members' first names, newest first,
@@ -740,7 +751,8 @@ checks every parked page sends a typed address home before any mic or sound.
 aren't finished ... label them ... coming October 8th or whatever", then "a
 few games/books per week w new ones each monday dropping"). Every parked game
 carries `comingOn`, a Monday: one game for ages 3-4 and one for 5-8 a week,
-from 12 Oct (Bubble Pop and Soccer Goal first) to 28 Dec. Home says "Coming
+from 12 Oct (Peekaboo and Soccer Goal first; Bubble Pop came back early, so
+the little kids' games moved up a week) to 21 Dec. Home says "Coming
 Oct 12" until that day on the family's calendar, then "Coming soon" again if
 the game still isn't ready, and each shelf's parked games sit soonest first.
 **The date is a label, never a switch:** `gameAccess` never reads it, and
@@ -885,9 +897,13 @@ after two bumps in a leg the gaps open wider and the hedges slow. Stars in the
 gaps can be caught. **Hold-to-rise**, the review's other idea, changes the
 control, so it waits for Travis. `tests/glidetest.mjs` flies a whole flight.
 
-Bubble Pop and Peekaboo stay visible only as disabled "Coming …" cards,
-with no New shelf promotion and no direct-link, paid or earned bypass.
-Their engines remain in the repo for future work. The adventure
+Peekaboo stays visible only as a disabled "Coming …" card, with no New
+shelf promotion and no direct-link, paid or earned bypass; its engine
+remains in the repo. **Bubble Pop is back** (Travis, 30 Sep 2026), free, the
+second game for ages 3-4 beside Feed Echo: the same engine
+(`simple-play.js`), a full-width Home card like Feed Echo's
+(`crafted-home.css`), no release date so no New shelf, and a website tile
+drawn from its own sticker (`/assets/site/games/bubbles.webp`). The adventure
 (`story.html`) and chapter readers are still parked: their engines and tests
 stay, but no public menu opens them, and the bookshelf hides its adventure tile.
 The existing practice, honest-rep, rotation and earned arcade-turn rules

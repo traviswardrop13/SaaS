@@ -294,9 +294,9 @@ if (appFree) {
     st.practice.every((g) => g === false), JSON.stringify(st.practice));
   ok("…plays every released free-tier game",
     st.free.length >= 2 && st.free.every(([, a]) => a === true), JSON.stringify(st.free));
-  // Bubble Pop, Peekaboo and every Say & Play game until it is rebuilt
-  // (Travis, 26 Sep 2026: "put the 20 games as coming soon").
-  ok("…but Coming soon games remain unavailable to this family", st.parked.length>=2&&["bubbles","peekaboo"].every(k=>st.parked.some(g=>g.key===k))&&st.parked.every(g=>!g.access.allowed&&g.access.reason==="coming-soon"),JSON.stringify(st.parked));
+  // Peekaboo and every Say & Play game until it is rebuilt (Travis, 26 Sep
+  // 2026: "put the 20 games as coming soon"; Bubble Pop came back 30 Sep).
+  ok("…but Coming soon games remain unavailable to this family", st.parked.length>=2&&["peekaboo"].every(k=>st.parked.some(g=>g.key===k))&&st.parked.every(g=>!g.access.allowed&&g.access.reason==="coming-soon"),JSON.stringify(st.parked));
   ok("…but no Premium game, asked by the catalog or the gate",
     st.paid.length > 0 && st.paid.every(([, a, g]) => a === false && g === true), JSON.stringify(st.paid));
   ok("…and Premium content that is not a game stays Premium",

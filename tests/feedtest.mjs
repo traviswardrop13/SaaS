@@ -178,7 +178,7 @@ let deck=await readLibrary();
 ok("age 4: simple play is suggested first",deck.group==='simple',JSON.stringify(deck));
 // The Say & Play games are Coming soon until each is rebuilt (Travis, 26 Sep
 // 2026); the six first games, Feed Echo among them, always play.
-const PARKED=['bubbles','peekaboo',...[...readFileSync(ROOT+'/sona.js','utf8').matchAll(/^\s{4}(\w+): \{[^\n]*\bsay: true, comingSoon: true\b/gm)].map(m=>m[1])].sort();
+const PARKED=['peekaboo',...[...readFileSync(ROOT+'/sona.js','utf8').matchAll(/^\s{4}(\w+): \{[^\n]*\bsay: true, comingSoon: true\b/gm)].map(m=>m[1])].sort();
 ok("Home shows all 28 titles: the six first games and any rebuilt ones playable, the rest Coming soon",deck.games.length===28&&deck.playable.length===28-PARKED.length&&['feed','slice','tiles','stack','run','glide'].every(k=>deck.playable.includes(k))&&JSON.stringify(deck.comingSoon)===JSON.stringify(PARKED),JSON.stringify(deck));
 ok("Home waits for a choice instead of starting an adventure",!deck.hero&&page.url().endsWith('/today.html'));
 await page.evaluate(()=>Sona.dailyFinish(10));

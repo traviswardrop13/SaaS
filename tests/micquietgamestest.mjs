@@ -48,7 +48,7 @@ const server = createServer((req, res) => {
   if (url.pathname.startsWith("/api/")) { res.writeHead(503, { "content-type": "application/json" }); res.end("{}"); return; }
   if (!existsSync(file) || !statSync(file).isFile()) { res.writeHead(404); res.end(); return; }
   res.writeHead(200, { "content-type": MIME[file.split(".").pop()] || "application/octet-stream" });
-  // Bubble Pop and Peekaboo are parked as Coming soon in the shipped catalog
+  // Peekaboo is parked as Coming soon in the shipped catalog (Bubble Pop came back 30 Sep 2026)
   // (#140). Their engines still ship, so they are still audited here: the
   // test server flips only their comingSoon flag in the sona.js it serves —
   // the same fixture simpleplaytest uses; the app has no runtime unlock.

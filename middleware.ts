@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { launched, lockedPage, PREVIEW_COOKIE, previewToken } from "@/lib/launch";
+import { locked, lockedPage, PREVIEW_COOKIE, previewToken } from "@/lib/launch";
 
 /**
  * The launch lock (Travis, 30 Sep 2026; see LAUNCH_AT in lib/launch.ts).
@@ -8,9 +8,11 @@ import { launched, lockedPage, PREVIEW_COOKIE, previewToken } from "@/lib/launch
  * the iPhone app, which loads the site on every open, needs no new build.
  * Everything else passes: the websites, the clinician's dashboard, the API,
  * and every picture, script and sound (the matcher sends only .html here).
+ * With LAUNCH_LOCK off (Travis reopened the app early, 30 Sep 2026) nothing
+ * is locked at all.
  */
 export async function middleware(req: NextRequest) {
-  if (launched() || !lockedPage(req.nextUrl.pathname)) return NextResponse.next();
+  if (!locked() || !lockedPage(req.nextUrl.pathname)) return NextResponse.next();
   // The team door: a cookie only the founder key can make (app/api/launch/preview).
   const key = process.env.FOUNDER_KEY || "";
   const given = req.cookies.get(PREVIEW_COOKIE)?.value || "";

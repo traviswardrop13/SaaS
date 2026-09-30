@@ -2600,8 +2600,10 @@
   const GAME_ACTS = {
     slice: { name: "Fruit Slice",   sub: "Say it 5× to play",          go: "/charge.html?game=arcade-slice.html", group: "arcade", tier: "free", playDescription: "Swipe through the fruit." },
     // Free since 30 Sep 2026 (Travis: "fruit slice and piano tiles free ...
-    // feed echo to be free"): the free version is practice, these three games
-    // and one book. Every other game is Premium.
+    // feed echo to be free", then "two free games for older kids, the two free
+    // games for younger kids"): the free version is practice, two games for
+    // each age group (these two, Feed Echo and Bubble Pop) and one book.
+    // Every other game is Premium.
     tiles: { name: "Piano Tiles",   sub: "Say it 5× to play",          go: "/charge.html?game=arcade-tiles.html", group: "arcade", tier: "free", playDescription: "Tap each tile as it reaches the line." },
     // Premium since 27 Sep 2026 (Travis: once the plan screen has been seen,
     // "all the other games are ... grayed out except they can replay feed echo
@@ -2610,8 +2612,11 @@
     run:   { name: "Sound Sprint",  sub: "Say it 5× to play",          go: "/charge.html?game=arcade-run.html", group: "arcade", tier: "premium", playDescription: "Switch lanes and collect coins." },
     glide: { name: "Flappy Glide",  sub: "Say it 5× to play",          go: "/charge.html?game=arcade-glide.html", group: "arcade", tier: "premium", playDescription: "Tap to glide through the gaps." },
     feed:  { name: "Feed Echo",     sub: "Say it & tap — Echo's hungry!", go: "/arcade-feed.html", group: "simple", tier: "free", playDescription: "Find the picture and feed Echo. No timer." },
-    bubbles: { name: "Bubble Pop", sub: "Pop, discover and say it together", go: "/arcade-bubbles.html", group: "simple", tier: "free", comingSoon: true, comingOn: "2026-10-12", releasedOn: "2026-09-21", playDescription: "Pop a bubble. Find a little surprise." },
-    peekaboo: { name: "Peekaboo", sub: "Open a door and say it together", go: "/arcade-peekaboo.html", group: "simple", tier: "premium", comingSoon: true, comingOn: "2026-10-19", releasedOn: "2026-09-21", playDescription: "Knock, knock! See what’s hiding." },
+    // Back from Coming soon on 30 Sep 2026 (Travis: "the two free games for
+    // older kids, the two free games for younger kids"): with Feed Echo, the
+    // free version's games for ages 3-4. No release date, so no New shelf.
+    bubbles: { name: "Bubble Pop", sub: "Pop, discover and say it together", go: "/arcade-bubbles.html", group: "simple", tier: "free", playDescription: "Pop a bubble. Find a little surprise." },
+    peekaboo: { name: "Peekaboo", sub: "Open a door and say it together", go: "/arcade-peekaboo.html", group: "simple", tier: "premium", comingSoon: true, comingOn: "2026-10-12", releasedOn: "2026-09-21", playDescription: "Knock, knock! See what’s hiding." },
     // Say & Play (Travis, 26 Sep 2026: "10 more games for ages 3-4 and 10
     // more games for ages 5-8 ... incorporating practice into it"). Every
     // word the child says moves the game one step, so each opens straight to
@@ -2630,19 +2635,20 @@
     // label them ... coming October 8th or whatever", then "a few games/books
     // per week w new ones each monday dropping"). Each parked game carries
     // `comingOn`, a Monday: one for little kids and one for big kids a week
-    // from 12 Oct. It is a LABEL, never a switch: Home says "Coming Oct 12"
+    // from 12 Oct (Bubble Pop came back early, so the little kids' games moved
+    // up a week). It is a LABEL, never a switch: Home says "Coming Oct 12"
     // until that day, then "Coming soon" again if the game still isn't ready,
     // and only taking comingSoon off opens a game. Move a date by editing it.
-    balloon: { name: "Balloon Party", sub: "Say it to blow up the balloon", go: "/arcade-balloon.html", group: "simple", tier: "premium", say: true, comingSoon: true, comingOn: "2026-10-26", playDescription: "Every word you say blows the balloon bigger." },
-    flower: { name: "Grow a Flower", sub: "Say it to water the seed", go: "/arcade-flower.html", group: "simple", tier: "premium", say: true, comingSoon: true, comingOn: "2026-11-23", playDescription: "Water the seed with your words and watch it grow." },
-    rocket: { name: "Rocket Blast", sub: "Say it to count down", go: "/arcade-rocket.html", group: "simple", tier: "premium", say: true, comingSoon: true, comingOn: "2026-11-09", playDescription: "Every word lights the countdown. Then blast off!" },
-    snowman: { name: "Build a Snowman", sub: "Say it to build a snowman", go: "/arcade-snowman.html", group: "simple", tier: "premium", say: true, comingSoon: true, comingOn: "2026-11-16", playDescription: "Every word you say builds the snowman." },
-    train: { name: "Choo-Choo Train", sub: "Say it to help a friend aboard", go: "/arcade-train.html", group: "simple", tier: "premium", say: true, comingSoon: true, comingOn: "2026-11-30", playDescription: "Every word helps a friend climb aboard the train." },
-    puppy: { name: "Puppy Bath", sub: "Say it to wash the puppy", go: "/arcade-puppy.html", group: "simple", tier: "premium", say: true, comingSoon: true, comingOn: "2026-11-02", playDescription: "Every word washes a muddy spot away." },
-    stars: { name: "Bedtime Stars", sub: "Say it to light a star", go: "/arcade-stars.html", group: "simple", tier: "premium", say: true, comingSoon: true, comingOn: "2026-12-28", playDescription: "Every word lights a star in the night sky." },
-    cake: { name: "Birthday Cake", sub: "Say it to make the cake", go: "/arcade-cake.html", group: "simple", tier: "premium", say: true, comingSoon: true, comingOn: "2026-12-07", playDescription: "Every word adds to the birthday cake." },
-    gifts: { name: "Surprise Boxes", sub: "Say it to open a present", go: "/arcade-gifts.html", group: "simple", tier: "premium", say: true, comingSoon: true, comingOn: "2026-12-14", playDescription: "Every word opens a present. Who is inside?" },
-    fishtank: { name: "Fish Tank", sub: "Say it to add a fish", go: "/arcade-fishtank.html", group: "simple", tier: "premium", say: true, comingSoon: true, comingOn: "2026-12-21", playDescription: "Every word brings a new fish to the tank." },
+    balloon: { name: "Balloon Party", sub: "Say it to blow up the balloon", go: "/arcade-balloon.html", group: "simple", tier: "premium", say: true, comingSoon: true, comingOn: "2026-10-19", playDescription: "Every word you say blows the balloon bigger." },
+    flower: { name: "Grow a Flower", sub: "Say it to water the seed", go: "/arcade-flower.html", group: "simple", tier: "premium", say: true, comingSoon: true, comingOn: "2026-11-16", playDescription: "Water the seed with your words and watch it grow." },
+    rocket: { name: "Rocket Blast", sub: "Say it to count down", go: "/arcade-rocket.html", group: "simple", tier: "premium", say: true, comingSoon: true, comingOn: "2026-11-02", playDescription: "Every word lights the countdown. Then blast off!" },
+    snowman: { name: "Build a Snowman", sub: "Say it to build a snowman", go: "/arcade-snowman.html", group: "simple", tier: "premium", say: true, comingSoon: true, comingOn: "2026-11-09", playDescription: "Every word you say builds the snowman." },
+    train: { name: "Choo-Choo Train", sub: "Say it to help a friend aboard", go: "/arcade-train.html", group: "simple", tier: "premium", say: true, comingSoon: true, comingOn: "2026-11-23", playDescription: "Every word helps a friend climb aboard the train." },
+    puppy: { name: "Puppy Bath", sub: "Say it to wash the puppy", go: "/arcade-puppy.html", group: "simple", tier: "premium", say: true, comingSoon: true, comingOn: "2026-10-26", playDescription: "Every word washes a muddy spot away." },
+    stars: { name: "Bedtime Stars", sub: "Say it to light a star", go: "/arcade-stars.html", group: "simple", tier: "premium", say: true, comingSoon: true, comingOn: "2026-12-21", playDescription: "Every word lights a star in the night sky." },
+    cake: { name: "Birthday Cake", sub: "Say it to make the cake", go: "/arcade-cake.html", group: "simple", tier: "premium", say: true, comingSoon: true, comingOn: "2026-11-30", playDescription: "Every word adds to the birthday cake." },
+    gifts: { name: "Surprise Boxes", sub: "Say it to open a present", go: "/arcade-gifts.html", group: "simple", tier: "premium", say: true, comingSoon: true, comingOn: "2026-12-07", playDescription: "Every word opens a present. Who is inside?" },
+    fishtank: { name: "Fish Tank", sub: "Say it to add a fish", go: "/arcade-fishtank.html", group: "simple", tier: "premium", say: true, comingSoon: true, comingOn: "2026-12-14", playDescription: "Every word brings a new fish to the tank." },
     racecar: { name: "Race Car", sub: "Say it to zoom ahead", go: "/arcade-racecar.html", group: "arcade", tier: "premium", say: true, comingSoon: true, comingOn: "2026-10-19", playDescription: "Every word zooms your race car closer to the finish line." },
     treasure: { name: "Treasure Map", sub: "Say it to sail to the treasure", go: "/arcade-treasure.html", group: "arcade", tier: "premium", say: true, comingSoon: true, comingOn: "2026-11-02", playDescription: "Every word sails your boat to the next stop on the map." },
     soccer: { name: "Soccer Goal", sub: "Say it to kick a goal", go: "/arcade-soccer.html", group: "arcade", tier: "premium", say: true, comingSoon: true, comingOn: "2026-10-12", playDescription: "Every word kicks the ball into the net." },

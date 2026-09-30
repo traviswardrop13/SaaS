@@ -125,8 +125,8 @@ await scenario("Home, paying, no Premium", async () => {
     const cards = await page.evaluate(() => [...document.querySelectorAll("#activityGroups button[data-game]")].filter((b) => !b.disabled)
       .map((b) => ({ key: b.dataset.game, locked: b.dataset.locked === "true", fade: getComputedStyle(b.querySelector(".game-art")).opacity })));
     const open = cards.filter((c) => !c.locked).map((c) => c.key).sort();
-    // Travis, 30 Sep 2026: "fruit slice and piano tiles free ... feed echo to be free"
-    ok("only Feed Echo, Fruit Slice and Piano Tiles are open", JSON.stringify(open) === JSON.stringify(["feed", "slice", "tiles"]), open);
+    // Travis, 30 Sep 2026: "the two free games for older kids, the two free games for younger kids"
+    ok("only the free games are open: Bubble Pop, Feed Echo, Fruit Slice and Piano Tiles", JSON.stringify(open) === JSON.stringify(["bubbles", "feed", "slice", "tiles"]), open);
     ok("every other game is greyed out", cards.filter((c) => c.locked).length >= 4 && cards.filter((c) => c.locked).every((c) => Number(c.fade) < 0.7), cards);
     await page.locator('#activityGroups button[data-game="stack"]').click();
     ok("a greyed game still answers a tap: ask a grown-up", await page.locator("#libraryNotice").isVisible() && new URL(page.url()).pathname === "/today.html");
@@ -139,7 +139,7 @@ await scenario("the plan screen's free games", async () => {
   const { context, page } = await open("/subscribe.html?first=1", { profile: kid("7"), paid: true });
   try {
     const line = await page.locator("#freeGames").innerText();
-    ok("the plan screen names the free games instead of a count that goes stale", line === "Fruit Slice, Piano Tiles and Feed Echo, free for every child", line);
+    ok("the plan screen names the free games instead of a count that goes stale", line === "Fruit Slice, Piano Tiles, Feed Echo and Bubble Pop, free for every child", line);
     const book = await page.locator("#freeBooks").innerText();
     ok("…and the free book, from sona.js", book === "Rory and the Rainbow, a picture book Echo reads with you", book);
   } finally { await context.close(); }

@@ -13,7 +13,7 @@ const ALL = ["bubbles", "feed", "glide", "peekaboo", "run", "slice", "stack", "t
 // Bubble Pop and Peekaboo, and every Say & Play game until it is rebuilt as a
 // real game (Travis, 26 Sep 2026: "put the 20 games as coming soon"); the
 // catalog says which are still parked.
-const COMING_SOON = ["bubbles", "peekaboo", ...[...readFileSync(ROOT + "/sona.js", "utf8").matchAll(/^\s{4}(\w+): \{[^\n]*\bsay: true, comingSoon: true\b/gm)].map((m) => m[1])].sort();
+const COMING_SOON = ["peekaboo", ...[...readFileSync(ROOT + "/sona.js", "utf8").matchAll(/^\s{4}(\w+): \{[^\n]*\bsay: true, comingSoon: true\b/gm)].map((m) => m[1])].sort();
 let FREE = [], PREMIUM = [], PLAYABLE = [];
 const MIME = { html: "text/html", js: "text/javascript", css: "text/css", svg: "image/svg+xml", png: "image/png", webp: "image/webp", woff2: "font/woff2" };
 const browser = await chromium.launch(launchOpts());
@@ -128,7 +128,7 @@ await section("preview contract", async () => {
       FREE = sorted(playable.filter(game => game.tier === "free").map(game => game.key));
       PREMIUM = sorted(playable.filter(game => game.tier === "premium").map(game => game.key));
       PLAYABLE = sorted(playable.map(game => game.key));
-      ok("Bubble Pop, Peekaboo and the parked Say & Play games are explicitly Coming soon", same(sorted(games.filter(game => game.comingSoon).map(game => game.key)), COMING_SOON));
+      ok("Peekaboo and the parked Say & Play games are explicitly Coming soon", same(sorted(games.filter(game => game.comingSoon).map(game => game.key)), COMING_SOON));
       ok("…and the six first games stay playable", ["slice", "tiles", "stack", "run", "glide", "feed"].every((key) => PLAYABLE.includes(key)), PLAYABLE);
       ok("ordinary visits do not enable the preview", await pg.evaluate(() => Sona.libraryPreview()) === false);
       ok("an ordinary family receives the configured release without an entitlement", await pg.evaluate(() => ({free:Sona.isFree(),premium:Sona.premium()})).then(state => state.free === appFree && !state.premium));
