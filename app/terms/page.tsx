@@ -108,11 +108,12 @@ export default function TermsPage() {
                 longer means a wall: daily practice is never behind the paywall
                 (sona.js gated() answers it before any entitlement check, pinned
                 in tests/freetest.mjs), so the Terms say so before any price.
-                "Four free games", the one phrase every surface uses: gameAccess()
-                opens all four to every child, and "two games" understated it. */}
+                "Daily practice and free games" is the one phrase every surface
+                uses, never a count: the free games have changed more than once
+                (three and a free book since 30 Sep 2026). */}
             <strong>Sona has a free version and Premium.</strong> The free version
-            — daily practice and free games — costs nothing and needs no
-            card. Premium adds every game.
+            — daily practice and free games, plus a free picture book — costs
+            nothing and needs no card. Premium adds every game and every book.
             <br />
             <br />
             <PlanTerms />
@@ -124,7 +125,7 @@ export default function TermsPage() {
                 a broken promise — delete it in the same commit or not at all. */}
             <strong>
               Families who were already practicing with Sona while it was free
-              keep every game free.
+              keep every game and book free.
             </strong>{" "}
             Your access continues at no cost — there is nothing to buy and
             nothing to cancel.
@@ -279,8 +280,8 @@ function PlanTerms() {
       <br />
       <br />
       Prices are in US dollars and exclude any applicable taxes. Premium
-      includes every game, for every sound, plus every new game and sound we
-      ship while it is active. Daily speech practice is part of the free
+      includes every game and every book, for every sound, plus every new
+      game, book and sound we ship while it is active. Daily speech practice is part of the free
       version and is never behind the paywall.
       <br />
       <br />

@@ -187,9 +187,9 @@ ok("the parent page carries the launch note", !!P_NOTE);
 // ── WHAT IT COSTS, FROM THE SWITCH: /api/charter says whether Sona is free ──
 // The page never quotes a dollar figure, whatever the route says.
 for (const [label, reply, want] of [
-  ["no answer", null, /^Sona is free to start: daily practice, free games and a free picture book, with no card\.$/],
+  ["no answer", null, /^Sona is free to start: daily practice and free games, plus a free picture book, with no card\.$/],
   ["free right now", { ok: true, free: true }, /^Right now, all of Sona is free: daily practice, every game and every book, with no card\.$/],
-  ["priced", { ok: true, free: false, price: 59.99, standard: 99.99, left: 12, cap: 50 }, /^Daily practice, free games and a free picture book, with no card\. Premium unlocks every game and every book, and the app shows its price before you pay anything\.$/],
+  ["priced", { ok: true, free: false, price: 59.99, standard: 99.99, left: 12, cap: 50 }, /^Daily practice and free games are free, plus a picture book, with no card\. Premium unlocks every game and every book, and the app shows its price before you pay anything\.$/],
 ]) {
   charterReply = reply;
   const { context, page, errors } = await fresh({ path: "/" });

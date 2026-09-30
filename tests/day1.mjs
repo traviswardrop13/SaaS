@@ -412,7 +412,8 @@ for (const age of ["3", "4", "5", "8"]) {
   // to a price
   for (const g of ARCADE) {
     const key = g.replace(/^arcade-|\.html$/g, "");
-    const tier = key === "slice" ? "free" : "premium";   // Block Stacker joined Premium, 27 Sep 2026
+    // Block Stacker joined Premium, 27 Sep 2026; Piano Tiles turned free, 30 Sep 2026
+    const tier = key === "slice" || key === "tiles" ? "free" : "premium";
     const to = await land(g, 'sessionStorage.setItem("sona.paidui","1")', true);
     ok(`on the free version, typed ${g} is refused (${tier})`,
       tier === "free" ? to === "/today.html" : to === "/today.html?locked=" + key, to);
@@ -425,7 +426,7 @@ for (const age of ["3", "4", "5", "8"]) {
   // A URL flag is not an earned ticket. An expired Premium choice returns
   // to the child-safe library, which keeps the selected game and free choices.
   ok("an expired Premium hand-off without an earned ticket returns to its library choice",
-    (await land("arcade-tiles.html?from=charge", 'sessionStorage.setItem("sona.paidui","1");localStorage.setItem("sona.demo.v1",JSON.stringify({started:1,done:1}));localStorage.setItem("sona.trial.v1",JSON.stringify({start:Date.now()-40*86400000,days:3}))', true)) === "/today.html?locked=tiles");
+    (await land("arcade-stack.html?from=charge", 'sessionStorage.setItem("sona.paidui","1");localStorage.setItem("sona.demo.v1",JSON.stringify({started:1,done:1}));localStorage.setItem("sona.trial.v1",JSON.stringify({start:Date.now()-40*86400000,days:3}))', true)) === "/today.html?locked=stack");
   ok("a LIVE trial still does not open a typed game URL — every game is entered through charge.html",
     (await land("arcade-tiles.html", 'localStorage.setItem("sona.demo.v1",JSON.stringify({started:1,done:1}));localStorage.setItem("sona.trial.v1",JSON.stringify({start:Date.now(),days:3}))')) === "/today.html");
   ok("…while the charge hand-off opens it on that live trial",

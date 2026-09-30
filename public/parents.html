@@ -631,7 +631,7 @@ document.documentElement.className += " js";
     <div class="faq" id="faq">
       <div class="q">
         <button type="button" aria-expanded="true" aria-controls="a0" id="q0">What does it cost?<span aria-hidden="true">+</span></button>
-        <p class="a" id="a0"><span id="costText">Sona is free to start: daily practice, free games and a free picture book, with no card.</span></p>
+        <p class="a" id="a0"><span id="costText">Sona is free to start: daily practice and free games, plus a free picture book, with no card.</span></p>
       </div>
       <div class="q">
         <button type="button" aria-expanded="false" aria-controls="a1" id="q1">What ages is it for?<span aria-hidden="true">+</span></button>
@@ -822,7 +822,7 @@ document.documentElement.className += " js";
         if (!j || !j.ok || typeof j.free !== "boolean") return;
         $("costText").textContent = j.free
           ? "Right now, all of Sona is free: daily practice, every game and every book, with no card."
-          : "Daily practice, free games and a free picture book, with no card. Premium unlocks every game and every book, and the app shows its price before you pay anything.";
+          : "Daily practice and free games are free, plus a picture book, with no card. Premium unlocks every game and every book, and the app shows its price before you pay anything.";
       }).catch(function () {});
     } catch (e) {}
 

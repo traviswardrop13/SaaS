@@ -295,7 +295,8 @@
       // tag says which, so a parent reads "1 free book", not "Premium".
       var booksCard=document.getElementById("booksCard");
       var freeBooks=(S.FREE_BOOKS||[]).length;
-      document.getElementById("booksTag").textContent=S.isFree()?"Free":!S.gated("books")?"Included":freeBooks?(freeBooks===1?"1 free book":freeBooks+" free books"):"Premium";
+      var booksOpen=S.booksOpen?S.booksOpen():!S.gated("books");
+      document.getElementById("booksTag").textContent=S.isFree()?"Free":booksOpen?"Included":freeBooks?(freeBooks===1?"1 free book":freeBooks+" free books"):"Premium";
       booksCard.onclick=function(){clearMessage();location.href="/library.html";};
       // A cached library can return after a trial expires or an adult changes
       // preview state. Re-evaluate its labels without reviving stale access.

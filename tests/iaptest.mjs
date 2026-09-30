@@ -759,7 +759,7 @@ ok("no pageerrors", errs.length === 0, errs.join(" | "));
     localStorage.setItem("sona.demo.v1", JSON.stringify({ started: 1, done: 1 }));
     localStorage.setItem(Sona.kkey("sona.trial.v1"), JSON.stringify({ start: Date.now() - 60 * 86400000, days: 3 }));
     const out = { stamp5: localStorage.getItem("sona.freeera5.v1"), early: Sona.getProfile().earlyAdopter, era5: Sona.getProfile().freeEra5,
-      premium: Sona.premium(), stack: Sona.gameAccess("stack").allowed, story: Sona.gated("story"), books: Sona.gated("books") };
+      premium: Sona.premium(), stack: Sona.gameAccess("stack").allowed, story: Sona.gated("story"), books: Sona.bookLocked("Sid the Seagull") };
     sessionStorage.removeItem("sona.paidui");
     return out;
   });
@@ -808,6 +808,18 @@ ok("no pageerrors", errs.length === 0, errs.join(" | "));
     r.stamp5 === "done" && !r.early && r.premium === false, JSON.stringify(r));
   ok("…and meets Premium games and books locked — practice never — whenever pricing is on",
     r.stack === false && r.story === true && r.books === true, JSON.stringify(r));
+  // the demonstration window (three days from the first practice) is not a
+  // Premium book: the shelf would otherwise lock under a new family's eyes
+  const demo = await p.evaluate(() => {
+    sessionStorage.setItem("sona.paidui", "1");
+    localStorage.setItem("sona.demo.v1", JSON.stringify({ started: Date.now() - 3600000, done: 0 }));
+    localStorage.removeItem(Sona.kkey("sona.trial.v1"));
+    const out = { inDemo: !Sona.demoDone(), sid: Sona.bookLocked("Sid the Seagull"), rory: Sona.bookLocked("Rory and the Rainbow"), stack: Sona.gameAccess("stack").allowed, practice: Sona.gated("practice") };
+    sessionStorage.removeItem("sona.paidui");
+    return out;
+  });
+  ok("…and a Premium book stays locked inside the first three days too, the way a Premium game does, while the free book reads",
+    demo.inDemo && demo.sid === true && demo.rory === false && demo.stack === false && demo.practice === false, JSON.stringify(demo));
   const kept = await p.evaluate(() => { sessionStorage.setItem("sona.paidui", "1"); const out = { practice: Sona.gated("practice"), slice: Sona.gameAccess("slice").allowed,
     tiles: Sona.gameAccess("tiles").allowed, feed: Sona.gameAccess("feed").allowed, rory: !Sona.bookLocked("Rory and the Rainbow"), sid: !Sona.bookLocked("Sid the Seagull") };
     sessionStorage.removeItem("sona.paidui"); return out; });
