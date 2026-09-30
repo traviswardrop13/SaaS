@@ -70,6 +70,7 @@ const SUITES = [
   "slpcommunityapi.mjs", // shared community access, persistence, privacy and ownership
   "slpcommunitytest.mjs", // shared conversations, draft recovery and mobile layout
   "slpfeedbacktest.mjs", // authenticated feedback and call requests; confirmed receipt only
+  "feedbacktest.mjs", // FEEDBACK1: the in-app quick notes: same-origin, no childId, one list, confirmed receipt, founder read by header
   "slpdesigntest.mjs", // SLP workspace: filters, failure recovery, bulk assignments, mobile layout
   "craftedarttest.mjs", // every Feed word has loadable, usable illustrated artwork
   "arttest.mjs",   // ART1: every sticker renders, fits its box and stays in the safe band

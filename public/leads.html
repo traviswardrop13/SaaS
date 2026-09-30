@@ -26,6 +26,7 @@
     .card{background:#fff;border:2px solid #F0E8DB;border-radius:16px;padding:12px 16px;min-width:150px;}
     .card b{display:block;font-family:"Baloo 2",Nunito,sans-serif;font-size:26px;}
     .tw{overflow-x:auto;background:#fff;border:2px solid #F0E8DB;border-radius:16px;}
+    #tAnswers td:last-child{white-space:normal;min-width:280px;overflow-wrap:anywhere;}
     table{border-collapse:collapse;width:100%;font-size:14px;}
     th,td{text-align:left;padding:9px 12px;border-bottom:1px solid #F0E8DB;white-space:nowrap;}
     th{font-weight:800;color:#4A4766;background:#FBF6EE;}
@@ -59,6 +60,11 @@
       <div class="card"><span class="muted">Other</span><b id="sOther">0</b></div>
     </div>
     <p class="muted" id="sNone" hidden></p>
+
+    <h2>In-app answers</h2>
+    <p class="muted">The quick notes parents tap inside the app: the beta pulse on Home, the chips in Settings, and the card on a game’s win screen in a pilot session. Newest first. No reply address — these never ask for one. Code is the clinician’s link or founding code the family came through, never the child.</p>
+    <span class="muted" id="ansMsg" role="status"></span>
+    <div class="tw"><table id="tAnswers"></table></div>
 
     <h2>Kit</h2>
     <p class="muted">Sends everyone below — every captured email and every therapist account — to your Kit list, tagged therapist or parent. Safe to run again: Kit updates people it already has.</p>
@@ -157,6 +163,28 @@
       $("sNone").hidden = !n.none;
     }
 
+    // IN-APP ANSWERS (29 Sep 2026): /api/feedback's list. Only the pulse
+    // answers reached it before, and only a URL with the key in it could read
+    // them. Its own request, so a hiccup here never hides the leads; table()
+    // escapes every cell, and every one of them was typed on someone's phone.
+    var ANS_COLS = [["at", "When"], ["where", "Where"], ["sound", "Sound"], ["code", "Code"], ["text", "What they said"]];
+    var ANS_WHERE = { pulse: "Home pulse", settings: "Settings", "settings-slp": "Settings (clinician)", onboarding: "Setup survey" };
+    function loadAnswers(key) {
+      $("ansMsg").textContent = "Loading answers…";
+      fetch("/api/feedback", { headers: { "x-founder-key": key }, cache: "no-store" })
+        .then(function (r) { return r.json(); })
+        .then(function (j) {
+          if (!j || !j.ok) { $("ansMsg").textContent = (j && j.error) || "Couldn't load answers."; return; }
+          $("ansMsg").textContent = "";
+          table($("tAnswers"), ANS_COLS, (Array.isArray(j.items) ? j.items : []).map(function (r) {
+            r.where = r.src ? (ANS_WHERE[r.src] || "The app")
+              : (r.game || "A game") + " win screen" + (r.level !== "" && r.level != null ? ", level " + r.level : "");
+            return r;
+          }));
+        })
+        .catch(function () { $("ansMsg").textContent = "Couldn't load answers — refresh to try again."; });
+    }
+
     function load() {
       var key = ($("key").value || "").trim();
       $("err").textContent = "";
@@ -176,6 +204,7 @@
           $("nCrm").textContent = uniq(j.leads.filter(function (l) { return /^added/.test(String(l.kit || "")); }));
           $("nSlp").textContent = j.clinicians.length;
           paintSince(j.leads);
+          loadAnswers(key);
           table($("tLeads"), LEAD_COLS, j.leads);
           table($("tSlp"), SLP_COLS, j.clinicians);
           $("out").hidden = false;

@@ -3000,9 +3000,10 @@
   } catch (e) {}
   function gameFeedbackCard() {
     const game = gameMeta(location.pathname).name;
-    let sound = "", code = "", childId = "", level = "";
+    // No childId: /api/feedback drops it, so it no longer leaves the phone.
+    let sound = "", code = "", level = "";
     try { sound = new URLSearchParams(location.search).get("sound") || ""; } catch (e) {}
-    try { const pi = pilotInfo(); code = pi.code || ""; childId = pi.childId || ""; } catch (e) {}
+    try { code = pilotInfo().code || ""; } catch (e) {}
     try { const s0 = load(SESKEY, null); level = s0 ? s0.level : ""; } catch (e) {}
     const card = document.createElement("div");
     card.className = "sona-fb";
@@ -3015,7 +3016,7 @@
     const ta = card.querySelector("textarea"), send = card.querySelector("button"), msg = card.querySelector("span");
     send.onclick = function () {
       const text = (ta.value || "").trim(); if (!text) { ta.focus(); return; }
-      sendFeedback({ game: game, sound: sound, text: text, code: code, childId: childId, level: level });
+      sendFeedback({ game: game, sound: sound, text: text, code: code, level: level });
       msg.textContent = "Thanks! ✓"; send.disabled = true; send.style.opacity = ".5"; ta.disabled = true;
     };
     return card;
