@@ -392,7 +392,7 @@ ok("Settings shows the play-mode note", noteShown);
 await page.evaluate(() => {
   const chips = [...document.querySelectorAll("#sounds .sound")];
   chips.filter((b) => !/^R\b/.test(b.textContent.trim())).slice(0, 18).forEach((b) => b.click()); // deselect all but one
-  document.getElementById("save").click();
+  // no Save button any more (29 Sep 2026): each chip tap saves on its own
 });
 await page.waitForTimeout(300);
 const flipped = await page.evaluate(() => JSON.parse(localStorage.getItem("sona.profile.v1") || "{}").mode);
@@ -516,7 +516,8 @@ ok("today no pageerrors", errs.length === 0);
     (await pg.evaluate(() => Sona.getCoins())) === 100);
 
   await pg.goto("http://localhost:8129/settings.html"); await pg.waitForTimeout(800);
-  // The restore box sits inside two nested collapsed <details> — a parent has
+  // The restore box sits inside a collapsed <details> (the "More settings"
+  // fold around it went on 29 Sep 2026) — a parent has
   // to go looking for it, which is the right default for a destructive
   // control. Drive it from script rather than fighting the disclosure widget:
   // what is under test is the restore and its safety net, not the accordion.

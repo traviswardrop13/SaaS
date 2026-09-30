@@ -79,10 +79,10 @@ const TRACKER = `document.addEventListener("click",function(e){var a=e.target&&e
 export const metadata = {
   title: "Sona — R-sound practice kids actually love",
   description: FREE_MODE
-    ? "Still saying “wabbit” instead of rabbit? Sona turns daily R practice into a game kids ask to play — built with a licensed pediatric speech-language pathologist. Free right now: every game, every sound, no card."
+    ? "Still saying “wabbit” instead of rabbit? Sona turns daily R practice into a game kids ask to play — built with Rachel, MS, CF-SLP, a licensed pediatric speech-language pathologist. Free right now: every game, every sound, no card."
     // No figure here: metadata is fixed at build, and the price moves with the
     // charter count. The page body prints it, per request, from that count.
-    : "Still saying “wabbit” instead of rabbit? Sona turns daily R practice into a game kids ask to play — built with a licensed pediatric speech-language pathologist. Daily practice is free; Premium adds every game.",
+    : "Still saying “wabbit” instead of rabbit? Sona turns daily R practice into a game kids ask to play — built with Rachel, MS, CF-SLP, a licensed pediatric speech-language pathologist. Daily practice is free; Premium adds every game.",
 };
 
 /* ---------- shared bits ---------- */
@@ -318,7 +318,7 @@ export default async function Landing() {
   const stickyTitle = FREE_MODE ? "Free to play" : "Start free";
   const stickySub = FREE_MODE ? "every game, every sound" : "daily practice + free games";
   const faq: [string, string][] = [
-    ["Does Sona replace working with an SLP?", "No — it's daily practice designed by one. If your child already sees a speech professional, Sona is the between-sessions coach that makes each visit count."],
+    ["Does Sona replace working with an SLP?", "No — it's daily practice designed by one: Rachel, MS, CF-SLP. If your child already sees a speech professional, Sona is the between-sessions coach that makes each visit count."],
     [
       "What does it cost?",
       FREE_MODE
@@ -390,7 +390,7 @@ export default async function Landing() {
             </div>
           </div>
           <div style={{ display: "flex", gap: 8, marginTop: 14, flexWrap: "wrap" }}>
-            <span style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "#fff", borderRadius: 999, padding: "6px 12px", boxShadow: `0 3px 0 ${LINE}`, fontSize: 11.5, fontWeight: 800 }}><StarBadge s={14} />Built with a licensed SLP</span>
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "#fff", borderRadius: 999, padding: "6px 12px", boxShadow: `0 3px 0 ${LINE}`, fontSize: 11.5, fontWeight: 800 }}><StarBadge s={14} />Built with Rachel, MS, CF-SLP</span>
             <span style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "#fff", borderRadius: 999, padding: "6px 12px", boxShadow: `0 3px 0 ${LINE}`, fontSize: 11.5, fontWeight: 800 }}><Mic s={14} />Really hears every rep</span>
           </div>
         </section>
@@ -398,23 +398,23 @@ export default async function Landing() {
         {/* 2 — CREDIBILITY */}
         <section style={{ background: "#fff", padding: "30px 20px" }}>
           <div style={kicker("#46a302")}>THE COACH BEHIND IT</div>
-          <h2 style={h2}>Built with a licensed pediatric speech-language pathologist</h2>
+          <h2 style={h2}>Built with Rachel, MS, CF-SLP</h2>
           <div style={{ background: CREAM, borderRadius: 24, padding: 18, position: "relative" }}>
             <div style={{ position: "absolute", top: 14, right: 14 }}><StarBadge s={40} /></div>
-            <div style={{ font: `700 17px ${B}`, marginBottom: 10, paddingRight: 46 }}>Designed by a licensed pediatric SLP — not an algorithm</div>
+            <div style={{ font: `700 17px ${B}`, marginBottom: 10, paddingRight: 46 }}>Designed by Rachel — not an algorithm</div>
             <p style={{ margin: "0 0 14px", fontSize: 14.5, lineHeight: 1.55, fontWeight: 600 }}>
-              A licensed speech-language pathologist designed every game, cue, and level in Sona — the same step-by-step R practice used with kids 4–9, without the waitlist.
+              Every game, cue, and level in Sona is her design — the same step-by-step R practice used with kids 4–9, without the waitlist.
             </p>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {/* Rachel holds an Idaho CF licence (confirmed by Travis, 1 Sep 2026), so
-                  "licensed speech-language pathologist" is TRUE and is used across the
-                  app. She is a Clinical Fellow (master's complete, supervised year in
-                  progress); since 23 Sep 2026 the copy says "licensed" without the
-                  fellowship, on Travis's call, and never implies more. What must NEVER come back is the CCC: that is ASHA's
-                  certification, she does not hold it, and "board-certified (CCC-SLP)"
-                  shipped once on this very page as a checkable false claim about a
-                  trademarked credential. Pinned in iaptest.mjs. */}
-              {["Licensed speech-language pathologist", "Specializes in kids ages 4–9", "Reviews every exercise before it ships"].map((t) => (
+              {/* Rachel holds an Idaho CF licence (confirmed by Travis, 1 Sep 2026) and a
+                  master's, and is in her supervised Clinical Fellowship year, so
+                  "licensed pediatric speech-language pathologist" is TRUE, and since
+                  29 Sep 2026 (Travis) her name carries "MS, CF-SLP". What must NEVER
+                  come back is the CCC: that is ASHA's certification, she does not hold
+                  it, and "board-certified (CCC-SLP)" shipped once on this very page as a
+                  checkable false claim about a trademarked credential. Pinned in
+                  iaptest.mjs and shiptest.mjs. */}
+              {["Rachel, MS, CF-SLP — licensed pediatric speech-language pathologist", "Specializes in kids ages 4–9", "Reviews every exercise before it ships"].map((t) => (
                 <div key={t} style={{ display: "flex", gap: 8, fontSize: 13.5, fontWeight: 700 }}><Check />{t}</div>
               ))}
             </div>
@@ -519,7 +519,7 @@ export default async function Landing() {
           <div style={{ fontSize: 11.5, fontWeight: 700, color: MUTED, margin: "12px 0 14px" }}>{finalFootnote}</div>
           <div style={{ display: "flex", justifyContent: "center", marginBottom: 22 }}><AppStoreBadge /></div>
           <div style={{ fontSize: 11.5, fontWeight: 700, color: MUTED, borderTop: `2px solid ${LINE}`, paddingTop: 14 }}>
-            speaksona.com · <a href="/privacy" style={{ color: MUTED }}>Privacy</a> · <a href="/terms" style={{ color: MUTED }}>Terms</a> · <a href="/for-slps.html" style={{ color: MUTED }}>For SLPs</a><br />Made with a licensed pediatric SLP
+            speaksona.com · <a href="/privacy" style={{ color: MUTED }}>Privacy</a> · <a href="/terms" style={{ color: MUTED }}>Terms</a> · <a href="/for-slps.html" style={{ color: MUTED }}>For SLPs</a><br />Made with Rachel, MS, CF-SLP
           </div>
         </section>
       </div>

@@ -53,15 +53,34 @@ speech-language pathologist and co-founder — she owns clinical correctness.
 Fellow (CF-SLP)**: master's complete, supervised fellowship year in progress.
 She does **not** hold ASHA's CCC.
 
-So: **"licensed speech-language pathologist" is TRUE** and is used across the
-app — under-claiming a real credential is not a virtue. **The fellowship is no
-longer named in product copy** (Travis, 23 Sep 2026: "we can take out clinical
-fellow") — "licensed pediatric speech-language pathologist" and nothing after
-it. **One exception, by Travis (29 Sep 2026): the Meet Rachel setup screen
-is her photo, "Built with", and "Rachel Wardrop, MS, CF-SLP"** — letters after
-a name, where the fellowship is stated plainly rather than implied away. She still is a Clinical Fellow: if an SLP, a district or a board asks, the
-answer is yes, and no copy may imply otherwise — never "fully licensed", never
-anything that suggests the fellowship is behind her.
+So: **wherever Rachel is presented as an SLP, her name carries "MS, CF-SLP"**
+(Travis, 29 Sep 2026: "make sure that it says everywhere that you're talking
+about her being a SLP … that she's a CF. So like MS, CF-SLP" — reversing the
+23 Sep call to leave the fellowship out). The plain words a parent understands
+stay beside it: "Built with Rachel, MS, CF-SLP — licensed pediatric
+speech-language pathologist", "Rachel Wardrop, MS, CF-SLP · Co-founder ·
+Licensed pediatric speech-language pathologist", a sign-off "Rachel, MS,
+CF-SLP · Co-founder". **"Licensed" is TRUE** — under-claiming a real credential
+is not a virtue — and it is always "licensed **pediatric** speech-language
+pathologist". **Wherever copy presents Sona's SLP, it names her**: "Built
+with Rachel, MS, CF-SLP", "reviewed by Rachel, MS, CF-SLP, a licensed
+pediatric speech-language pathologist" — never an anonymous "built with a
+licensed SLP" or "our SLP". (A child's OWN therapist — "your SLP", "your
+child's speech-language pathologist" — is someone else, and stays generic.)
+**Her cards name nobody else** (Travis, 29 Sep 2026: "don't mention my name").
+Never "fully licensed", never anything that suggests the fellowship is behind
+her. `tests/shiptest.mjs` scans every public page, the manifest and every
+`app/` and `lib/` source with comments stripped, and fails on: "Rachel" or
+"Rachel Wardrop" followed by a clinician word without ", MS, CF-SLP"; an
+anonymous "built / made / designed / shaped / reviewed with / by a (licensed)
+(pediatric) SLP / speech-language pathologist" or "our SLP"; a page that puts
+Rachel and "SLP" or "speech-language pathologist" in one sentence without
+"MS, CF-SLP" somewhere on it; any CCC or "certified" claim; and any of the
+pages that introduce her (parents, subscribe, trial, progress, talk, slp)
+missing it.
+One of those places is the Meet Rachel setup screen (Travis, 29 Sep 2026):
+her photo, "Built with", and "Rachel Wardrop, MS, CF-SLP". She still is a
+Clinical Fellow: if an SLP, a district or a board asks, the answer is yes.
 
 **Never "CCC", "certified", "board-certified" or "ASHA-certified".** The
 landing page claimed "Licensed & board-certified (CCC-SLP)" until it was caught

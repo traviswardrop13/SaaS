@@ -52,8 +52,17 @@ try{
   const {ctx,page,requests}=await fresh(mode);try{
    await page.goto(origin+'/settings.html',{waitUntil:'domcontentloaded'});await page.waitForFunction(()=>window.Sona);
    const visible=await page.locator('#slpCard').isVisible();ok(mode+' settings show appropriate family/clinician controls',visible===(mode==='browser'),visible);
-   if(mode==='native'){ok('native settings make no clinician API calls',requests.length===0,requests);ok('native feedback uses family wording',!/caseload/.test(await page.locator('#fbLead').innerText()));}
+   if(mode==='native')ok('native settings make no clinician API calls',requests.length===0,requests);
    ok(mode+' retains saved role/data',await page.evaluate(()=>Sona.getProfile().role==='slp'&&Sona.getProfile().childName==='Milo'));
+  }finally{await ctx.close();}
+ }
+ // The feedback form moved from Settings to the "Talk to us" tab (29 Sep 2026), so its wording check moved with it.
+ for(const mode of ['native','browser']){
+  const {ctx,page,requests}=await fresh(mode);try{
+   await page.goto(origin+'/talk.html',{waitUntil:'domcontentloaded'});await page.waitForFunction(()=>window.Sona);
+   const lead=await page.locator('#fbLead').innerText();
+   if(mode==='native'){ok('native Talk to us uses family wording',!/caseload/.test(lead),lead);ok('native Talk to us makes no clinician API calls',requests.length===0,requests);}
+   else ok('a clinician in a browser gets the caseload wording on Talk to us',/caseload/.test(lead),lead);
   }finally{await ctx.close();}
  }
  const {ctx,page}=await fresh('native',false);try{await page.goto(origin+'/onboarding.html',{waitUntil:'domcontentloaded'});ok('native setup ignores a saved clinician draft',await page.evaluate(()=>draft.role==='parent'&&ORDER===ORDER_PARENT));ok('native setup hides the browser clinician door',!(await page.locator('#slpLink').isVisible()));await page.locator('#slpLink').evaluate(el=>el.click());ok('a hidden clinician action cannot switch native setup',await page.evaluate(()=>draft.role==='parent'&&ORDER===ORDER_PARENT));}finally{await ctx.close();}

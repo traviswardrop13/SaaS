@@ -336,7 +336,8 @@ for (const [game, title, art] of SKIES) {
     ["chapter.html", ["#next", "#doneBtn"]],
     ["story.html", ["#startBtn", "#again", ".mic"]],
     ["library.html", ["#bkNext"]],
-    ["today.html", ["#shareWeek", "#libraryUnlock"]],
+    // 29 Sep 2026: "Share this week" left the Grown-ups pop-up (Progress keeps it)
+    ["today.html", ["#libraryUnlock"]],
     ["settings.html", ["button.btn:not(.ghost):not(.blue)"]],
   ];
   const notTeal = [];

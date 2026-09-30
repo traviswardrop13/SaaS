@@ -61,6 +61,77 @@
     })();
   </script>
   <link rel="stylesheet" href="/crafted-family.css" />
+  <style>
+    /* ONE TITLED CARD PER JOB (29 Sep 2026). Settings was one long card with a
+       Save button at the bottom and half the page folded into "More settings";
+       a parent had to know where things were to find them. Now each card says
+       what it holds, and every control saves itself. */
+    .family-settings .set-head{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:30px;}
+    .family-settings .set-head h2{font-size:20px;min-width:0;overflow-wrap:anywhere;}
+    .family-settings .set-head+label.field,.family-settings .set-head+div.field{margin-top:12px;}
+    .family-settings .set-lead{margin-top:4px;font-size:13px;font-weight:700;line-height:1.45;}
+    .family-settings .set-divider{margin:28px 4px 10px;font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);}
+    .family-settings .set-divider+.card{margin-top:0;}
+    /* "Saved ✓" — one live region, moved into the card that just changed so
+       the confirmation appears beside the thing the parent touched. It is
+       always rendered (an element that is display:none when its text changes
+       is never announced), just empty and invisible between saves. */
+    .family-settings #saved{display:inline-flex;align-items:center;flex:none;padding:5px 11px;border-radius:999px;background:#e7f1e5;color:var(--good);font-size:13px;font-weight:800;line-height:1.2;white-space:nowrap;opacity:0;transition:opacity .15s;}
+    .family-settings #saved:empty{padding:0;}
+    .family-settings #saved.show{opacity:1;}
+    .family-settings #saved.warn{background:#fcefdc;color:#8a4b12;}
+    /* the family list */
+    .family-settings #kidList{display:flex;flex-direction:column;gap:8px;}
+    .family-settings .kid-row{display:flex;align-items:center;gap:10px;border:2px solid transparent;border-radius:14px;padding:10px 12px;}
+    .family-settings #kidList>.kid-row.kid-on{border:2px solid #7fb6aa!important;background:#eef6f0!important;}
+    .family-settings .kid-name{flex:1;min-width:0;font-family:"Baloo 2",sans-serif;font-weight:800;font-size:16px;color:var(--ink);overflow-wrap:anywhere;}
+    .family-settings .kid-row .btn{width:auto;min-height:40px;padding:8px 14px;font-size:14px;}
+    .family-settings .kid-row .btn.ghost{padding:8px 12px;font-size:13px;}
+    .family-settings #addKidRow{gap:8px;margin-top:10px;flex-wrap:wrap;align-items:flex-end;}
+    .family-settings #addKidRow .kid-new-name{flex:1 1 140px;min-width:0;}
+    .family-settings #addKidRow .kid-new-age{flex:0 0 90px;}
+    .family-settings #addKidRow .btn{width:auto;flex:0 0 auto;}
+    .family-settings #addKidBtn{margin-top:10px;}
+    /* practice */
+    .family-settings #playNote{margin:8px 0 10px;padding:11px 14px;border:1px solid #f0dcbc;border-radius:14px;background:#fff3df;font-weight:800;font-size:12.5px;line-height:1.45;color:var(--muted);}
+    .family-settings #playNote b{color:var(--ink);}
+    .family-settings #playNote a{font-weight:800;}
+    .family-settings .sound .hint{display:block;margin-top:1px;font-family:"Nunito",sans-serif;font-size:9.5px;font-weight:800;color:var(--muted);}
+    .family-settings .sound .hint.early{color:#c0392b;}
+    /* sound */
+    .family-settings .vol-row{display:flex;align-items:center;gap:12px;margin-top:2px;color:var(--muted);}
+    .family-settings .vol-row input{flex:1;min-width:0;}
+    .family-settings #volLbl{margin-top:2px;font-size:12.5px;font-weight:800;}
+    /* a row that opens another page */
+    .family-settings .set-row{display:flex;align-items:center;gap:12px;margin-top:14px;padding:12px 14px;min-height:64px;border:1px solid var(--line);border-radius:16px;background:#fffdf8;color:var(--ink);text-decoration:none;box-shadow:0 3px 0 #e8d9c54d;}
+    .family-settings .set-row:active{transform:translateY(1px);box-shadow:0 1px 0 #e8d9c54d;}
+    .family-settings .set-row-art{width:44px;height:44px;flex:none;display:flex;align-items:center;justify-content:center;border-radius:50%;background:linear-gradient(#fff4c9,#f8dc9d);color:#8a5a22;box-shadow:0 2px 0 #dfcaa9;}
+    .family-settings .set-row-art img{width:40px;height:40px;object-fit:contain;}
+    .family-settings .set-row-art svg{width:22px;height:22px;}
+    .family-settings .set-row-text{flex:1;min-width:0;}
+    .family-settings .set-row-text b{display:block;font-family:"Baloo 2",sans-serif;font-size:16px;font-weight:800;line-height:1.25;}
+    .family-settings .set-row-text span{display:block;margin-top:1px;font-size:13px;font-weight:700;line-height:1.35;color:var(--muted);}
+    .family-settings .set-chev{flex:none;font-size:24px;line-height:1;color:var(--muted);}
+    /* buttons and messages inside a card */
+    .family-settings .set-actions{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:12px;}
+    .family-settings .set-actions .btn{width:auto;min-height:46px;padding:11px 18px;font-size:15px;}
+    .family-settings .set-msg{font-size:13px;font-weight:800;}
+    .family-settings .set-links{margin-top:12px;font-size:14px;}
+    .family-settings #restoreBox{margin-top:10px;}
+    .family-settings .set-details{margin-top:12px;}
+    .family-settings .set-details summary{display:flex;align-items:center;min-height:44px;cursor:pointer;font-weight:800;color:var(--family-teal-dark);}
+    .family-settings #restoreIn{min-height:80px;font:600 12px/1.4 ui-monospace,Menlo,monospace;}
+    .family-settings #undoRow p{margin-top:6px;font-size:12px;font-weight:800;}
+    /* reset: the one control here that cannot be taken back */
+    .family-settings .set-danger{border-color:#efd2c7;}
+    .family-settings .set-danger h2{color:#9b2f22;}
+    .family-settings #reset{width:auto;margin-top:12px;min-height:46px;padding:11px 18px;font-size:15px;color:#a3301f;border-color:#e9b9ab;background:#fff8f5;}
+    @media(max-width:350px){
+      .family-settings .set-head h2{font-size:19px;}
+      .family-settings .set-row{padding:11px 12px;gap:10px;}
+    }
+    @media(prefers-reduced-motion:reduce){.family-settings #saved{transition:none;}}
+  </style>
 </head>
 <body class="crafted-family family-settings">
   <div class="wrap">
@@ -68,27 +139,32 @@
       <a class="brand" href="/today.html" aria-label="Sona Home"><span class="leo"><img src="/assets/crafted/echo-welcome.webp" alt="" /></span> Sona</a>
       <a class="family-back" href="/today.html"><svg class="family-symbol" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h10c2 0 3 2 3.5 4l1 5c.4 2-1.5 3-3 1.5L16 15H8l-2.5 2.5C4 19 2 18 2.5 16l1-5C4 9 5 7 7 7Z"/><path d="M7 9.5v5M4.5 12h5"/><circle cx="15.5" cy="10.5" r=".7" fill="currentColor" stroke="none"/><circle cx="18" cy="13" r=".7" fill="currentColor" stroke="none"/></svg> Back to play</a>
     </header>
-    <nav class="family-tabs" aria-label="Grown-up pages"><a href="/progress.html">Overview</a><a href="/settings.html" aria-current="page">Settings</a></nav>
+    <nav class="family-tabs" aria-label="Grown-ups">
+      <a href="/progress.html" data-tab="progress"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19.5h16"/><path d="m5 15 4-4.5 3.5 3L19 6.5"/><path d="M14.5 6.5H19V11"/></svg>Progress</a>
+      <a href="/settings.html" data-tab="settings" aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2.2"/><circle cx="9" cy="17" r="2.2"/></svg>Settings</a>
+      <a href="/talk.html" data-tab="talk"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11.5a7.5 7.5 0 0 1-11 6.6L4 19.5l1.4-4.3A7.5 7.5 0 1 1 20 11.5Z"/><path d="M8.8 10h6.4M8.8 13.3h4"/></svg>Talk to us</a>
+    </nav>
+    <div class="family-pagehead"><img src="/assets/crafted/echo-welcome.webp" alt="" /><div><h1>Settings</h1><p id="pageSub">Everything below is for the child you pick here.</p></div></div>
 
     <!-- KIDS1: siblings share a phone and an SLP shares one iPad. Each child
          gets their own saved progress; switching is one tap. -->
     <div class="card" id="kidsCard">
       <h2>Your family</h2>
-      <p class="muted" style="font-size:13px;font-weight:700;">Each child keeps their own sounds, progress and stickers. Everything below this card belongs to whoever is selected.</p>
-      <div id="kidList" style="display:flex;flex-direction:column;gap:8px;margin-top:12px;"></div>
-      <div id="addKidRow" style="display:none;gap:8px;margin-top:10px;flex-wrap:wrap;align-items:flex-end;">
-        <div style="flex:1 1 140px;">
+      <p class="muted">Each child keeps their own sounds, progress and stickers. Everything below this card belongs to whoever is selected.</p>
+      <div id="kidList"></div>
+      <div id="addKidRow" style="display:none;">
+        <div class="kid-new-name">
           <label class="field" for="newKidName">Name</label>
           <input id="newKidName" type="text" maxlength="24" placeholder="e.g. Ana" />
         </div>
-        <div style="flex:0 0 90px;">
+        <div class="kid-new-age">
           <label class="field" for="newKidAge">Age</label>
           <input id="newKidAge" type="number" min="2" max="14" inputmode="numeric" placeholder="5" />
         </div>
-        <button id="newKidSave" class="btn" style="flex:0 0 auto;">Add</button>
-        <button id="newKidCancel" class="btn ghost" style="flex:0 0 auto;">Cancel</button>
+        <button id="newKidSave" class="btn">Add</button>
+        <button id="newKidCancel" class="btn ghost">Cancel</button>
       </div>
-      <button id="addKidBtn" class="btn ghost" style="margin-top:10px;">+ Add a kid</button>
+      <button id="addKidBtn" class="btn ghost">+ Add a kid</button>
     </div>
 
     <!-- REPWEEKS1 (Travis, 28 Sep 2026): the week's reps — the same count as
@@ -107,28 +183,29 @@
       <p class="muted rw-note">A rep is each time <span id="rwWho">your child</span> says the practice sound or word out loud in the practice before a game, whether or not it sounded right yet, and each time a game asks for it and hears it. Silence never counts. Weeks run Monday to Sunday, counted on this device.</p>
     </div>
 
-    <div class="card settings-main">
-      <h1>Settings</h1>
+    <section class="card" id="aboutCard" aria-labelledby="aboutTitle">
+      <div class="set-head"><h2 id="aboutTitle">About <span class="kid-label">your child</span></h2><span id="saved" role="status" aria-live="polite"></span></div>
       <div class="settings-identity"><div>
-      <label class="field" for="childName">Child's name</label>
-      <input id="childName" type="text" placeholder="e.g. Mia" />
-
+        <label class="field" for="childName">Name</label>
+        <input id="childName" type="text" maxlength="24" autocomplete="off" placeholder="e.g. Mia" />
       </div><div>
-      <label class="field" for="childAge">Child's age <span class="muted" style="font-weight:700;font-size:12px;">— helps pick developmentally-right sounds</span></label>
-      <input id="childAge" type="number" min="2" max="14" inputmode="numeric" placeholder="e.g. 5" />
-
+        <label class="field" for="childAge">Age</label>
+        <input id="childAge" type="number" min="2" max="14" inputmode="numeric" placeholder="e.g. 5" />
       </div></div>
-      <label class="field" for="parentPin">Parent code <span class="muted" style="font-weight:700;font-size:12px;">— unlocks this parent corner from the home screen (blank = four number words to read instead)</span></label>
-      <input id="parentPin" type="text" inputmode="numeric" maxlength="6" placeholder="e.g. 2468" />
+      <p class="muted set-lead">Age helps pick developmentally-right sounds.</p>
+    </section>
 
-      <div class="field">Focus sounds</div>
+    <section class="card" id="practiceCard" aria-labelledby="practiceTitle">
+      <div class="set-head"><h2 id="practiceTitle">Practice</h2></div>
+      <div class="field" id="soundsLbl">Focus sounds</div>
+      <p class="muted set-lead">Tap a sound to add or remove it.</p>
       <!-- PLAY1: a play-mode family rotates through every sound; picking
            specific chips below switches them to focus mode. -->
-      <div id="playNote" style="display:none;background:#fff6e9;border-radius:14px;padding:11px 14px;margin-bottom:10px;font-weight:800;font-size:12.5px;color:var(--muted);">
-        <b style="color:var(--ink);">Play mode</b> — Echo rotates through every sound, easiest first.
-        Picking sounds below switches to focus mode. <a href="#" id="playKeep" style="font-weight:800;">Stay in play mode</a>
+      <div id="playNote" style="display:none;">
+        <b>Play mode</b> — Echo rotates through every sound, easiest first.
+        Picking sounds below switches to focus mode. <a href="#" id="playKeep">Stay in play mode</a>
       </div>
-      <div class="sounds" id="sounds"></div>
+      <div class="sounds" id="sounds" role="group" aria-labelledby="soundsLbl"></div>
       <label class="field" for="practicePos">Word position</label>
       <select id="practicePos">
         <option value="i">Beginning of word</option>
@@ -138,53 +215,56 @@
         <option value="b">Blends (tr, st, bl…)</option>
         <option value="mix">Mixed — all positions</option>
       </select>
+    </section>
 
+    <section class="card" id="soundCard" aria-labelledby="soundTitle">
+      <div class="set-head"><h2 id="soundTitle">Sound</h2></div>
       <!-- ONE sound control. There used to be three checkboxes (voice, effects,
            music) and no way to set the actual level — while 22 pages were
            already reading profile.volume, which nothing exposed. So a parent
            could silence Echo but never turn Sona *down*. Slider to zero mutes
            everything; anything above zero turns voice and effects back on, so
            the flags the game pages read can never contradict what a parent set. -->
-      <label class="field" for="volume">Sound</label>
-      <div style="display:flex;align-items:center;gap:12px;">
-        <span style="font-size:17px;"><svg class="family-symbol" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M10 5 5 9H2v6h3l5 4V5Z"/></svg></span>
-        <input id="volume" type="range" min="0" max="100" step="5" style="flex:1;accent-color:var(--orange,#ff8a3d);" />
-        <span style="font-size:19px;"><svg class="family-symbol" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M10 5 5 9H2v6h3l5 4V5ZM14 8a6 6 0 0 1 0 8M17 4a11 11 0 0 1 0 16"/></svg></span>
+      <label class="field" for="volume">Volume</label>
+      <div class="vol-row">
+        <svg class="family-symbol" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M10 5 5 9H2v6h3l5 4V5Z"/></svg>
+        <input id="volume" type="range" min="0" max="100" step="5" />
+        <svg class="family-symbol" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M10 5 5 9H2v6h3l5 4V5ZM14 8a6 6 0 0 1 0 8M17 4a11 11 0 0 1 0 16"/></svg>
       </div>
-      <p class="muted" id="volLbl" style="font-weight:800;font-size:12.5px;margin-top:6px;"></p>
+      <p class="muted" id="volLbl"></p>
+      <!-- No coach-voice row: every family hears the one coach voice
+           (Travis, 29 Sep 2026), so there is nothing here to choose. -->
+    </section>
 
-      <label class="field">Coach voice</label>
-      <a class="btn ghost" href="/voices.html" style="width:auto;padding:12px 18px;">Choose coach voice →</a>
+    <section class="card" id="buddyCard" aria-labelledby="buddyTitle">
+      <div class="set-head"><h2 id="buddyTitle">Buddy &amp; world</h2></div>
+      <a class="set-row" href="/customize.html?from=settings">
+        <span class="set-row-art"><img src="/assets/crafted/echo-welcome.webp" alt="" /></span>
+        <span class="set-row-text"><b>Change buddy &amp; world</b><span>Choose a buddy, an outfit, and a backdrop.</span></span>
+        <span class="set-chev" aria-hidden="true">›</span>
+      </a>
+    </section>
 
+    <section class="card" id="pinCard" aria-labelledby="pinTitle">
+      <div class="set-head"><h2 id="pinTitle">Parent code</h2></div>
+      <label class="field" for="parentPin">Your code <span class="muted">Unlocks the grown-ups area from the home screen. Up to six digits. Leave it blank and you'll read four number words instead.</span></label>
+      <input id="parentPin" type="text" inputmode="numeric" maxlength="6" autocomplete="off" placeholder="e.g. 2468" />
+    </section>
 
-      <div style="margin-top:24px;display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
-        <button class="btn" id="save">Save</button>
-        <a class="btn ghost" href="/today.html">Back to Home</a>
-        <span id="saved" class="muted" role="status" aria-live="polite" style="display:none;font-weight:800;">Saved ✓</span>
-      </div>
-    </div>
+    <p class="set-divider">Your account &amp; this device</p>
 
-    <a class="card" href="/customize.html" style="display:flex;gap:14px;align-items:center;color:inherit;">
-      <div class="leo" style="width:56px;height:56px;flex:0 0 auto;"><img src="/assets/crafted/echo-welcome.webp" alt="Echo" style="width:52px;height:52px;object-fit:contain;" /></div>
-      <div style="flex:1;min-width:0;">
-        <h2>Character &amp; world</h2>
-        <p class="muted">Choose your buddy, an outfit, and a backdrop.</p>
-      </div>
-      <span style="font-size:22px;color:var(--muted);">›</span>
-    </a>
-
-    <div class="card">
-      <h2>Account</h2>
+    <section class="card" id="acctCard" aria-labelledby="acctTitle">
+      <div class="set-head"><h2 id="acctTitle">Account</h2></div>
       <p class="muted" id="acct">Checking your plan… · <a href="/subscribe">See plans →</a> · <a href="#" id="restoreLink">Restore</a></p>
-      <div id="restoreBox" style="display:none;margin-top:10px;">
+      <div id="restoreBox" style="display:none;">
         <input id="restoreEmail" type="email" inputmode="email" placeholder="Email you subscribed with" />
-        <div style="display:flex;gap:10px;align-items:center;margin-top:8px;">
-          <button class="btn" id="restoreBtn" style="width:auto;padding:12px 20px;">Restore access</button>
-          <span id="restoreMsg" class="muted" style="font-weight:800;"></span>
+        <div class="set-actions">
+          <button class="btn" id="restoreBtn">Restore access</button>
+          <span id="restoreMsg" class="muted set-msg"></span>
         </div>
       </div>
-      <p style="margin-top:10px;font-size:14px;"><a href="/privacy">Privacy</a> · <a href="/terms">Terms</a> · <a href="/support">Support</a></p>
-    </div>
+      <p class="set-links"><a href="/privacy">Privacy</a> · <a href="/terms">Terms</a> · <a href="/talk.html">Help</a></p>
+    </section>
 
     <!-- SLP corner: only for clinicians (profile.role === "slp"). Their job
          isn't setting a goal for one child — it's getting Sona into the hands
@@ -221,54 +301,36 @@
       <p class="muted" style="font-size:12px;margin-top:12px;line-height:1.5;">Families only appear here after their grown-up taps <b>Yes, share progress</b> when they open your link. Sona never sends you audio — counts and accuracy only.</p>
     </div>
 
-    <details class="card" id="moreCard">
-      <summary style="cursor:pointer;font-family:'Baloo 2';font-weight:800;font-size:16px;list-style:none;">More settings</summary>
-    <div style="margin-top:18px;">
-      <h3 style="font-family:'Baloo 2';font-weight:800;font-size:15px;margin-bottom:6px;">Help us improve</h3>
-      <p class="muted" style="margin-bottom:4px;" id="fbLead">Sona is in beta — what would you change?</p>
-      <!-- Chips first, typing optional. A blank box gets blank answers; a
-           tapped chip gets an answer from someone who'd never have written in. -->
-      <div id="fbChips" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;"></div>
-      <div id="fbMore" style="display:none;">
-        <textarea id="fbText" rows="2" placeholder="Anything else? (optional)"
-          style="width:100%;border:2px solid var(--line);border-radius:14px;padding:12px;font-family:Nunito,sans-serif;font-weight:700;font-size:14px;color:var(--ink);resize:none;margin-top:12px;"></textarea>
-        <div style="margin-top:10px;">
-          <div style="font-weight:800;font-size:13.5px;color:var(--ink);">Would you recommend Sona to a friend?</div>
-          <div id="fbRec" style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;"></div>
-        </div>
-        <button class="btn" id="fbSend" style="width:auto;padding:12px 22px;margin-top:14px;">Send it</button>
+    <section class="card" id="backupCard" aria-labelledby="backupTitle">
+      <div class="set-head"><h2 id="backupTitle">Backup &amp; restore</h2></div>
+      <p class="muted set-lead">This is the only way to move practice off this device — it is never uploaded anywhere, so nothing restores it but the code or file you keep. The code does not expire.</p>
+      <div class="set-actions">
+        <button class="btn ghost" id="backupCopy">Copy backup code</button>
+        <button class="btn ghost" id="backupDl">Download file</button>
+        <span id="backupMsg" class="muted set-msg"></span>
       </div>
-      <p id="fbDone" style="display:none;margin-top:12px;font-weight:800;color:#2e7d32;">Thank you — we build fast. ✓</p>
-    </div>
-
-    <div style="margin-top:18px;">
-      <h3 style="font-family:'Baloo 2';font-weight:800;font-size:15px;margin-bottom:6px;">Backup &amp; restore</h3>
-      <p class="muted" style="margin-bottom:10px;">This is the only way to move practice off this device — it is never uploaded anywhere, so nothing restores it but the code or file you keep. The code does not expire.</p>
-      <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
-        <button class="btn ghost" id="backupCopy" style="width:auto;padding:12px 18px;">Copy backup code</button>
-        <button class="btn ghost" id="backupDl" style="width:auto;padding:12px 18px;">Download file</button>
-        <span id="backupMsg" class="muted" style="font-weight:800;"></span>
+      <!-- Undo sits OUTSIDE the fold: restoring reloads the page, and an Undo
+           hidden behind a collapsed "Restore from a backup code" was an Undo
+           the parent who needed it most would never see. -->
+      <div id="undoRow" style="display:none;margin-top:12px;">
+        <button class="btn ghost" id="undoRestore" style="width:auto;">Undo last restore</button>
+        <p class="muted">Puts this device back the way it was before.</p>
       </div>
-      <details style="margin-top:12px;">
-        <summary style="cursor:pointer;font-weight:800;color:var(--muted);">Restore from a backup code →</summary>
-        <textarea id="restoreIn" placeholder="Paste your backup code here" style="width:100%;margin-top:10px;min-height:70px;border:2px solid #cfe6f7;border-radius:12px;padding:10px;font-family:monospace;font-size:12px;"></textarea>
-        <div style="display:flex;gap:10px;align-items:center;margin-top:8px;">
-          <button class="btn" id="restoreBk" style="width:auto;padding:12px 20px;">Restore</button>
-          <span id="restoreBkMsg" class="muted" style="font-weight:800;"></span>
-        </div>
-        <div id="undoRow" style="display:none;margin-top:10px;">
-          <button class="btn ghost" id="undoRestore" style="width:auto;padding:10px 16px;">Undo last restore</button>
-          <span class="muted" style="font-weight:800;font-size:12px;margin-left:8px;">Puts this device back the way it was before.</span>
+      <details class="set-details">
+        <summary>Restore from a backup code →</summary>
+        <textarea id="restoreIn" placeholder="Paste your backup code here"></textarea>
+        <div class="set-actions">
+          <button class="btn" id="restoreBk">Restore</button>
+          <span id="restoreBkMsg" class="muted set-msg"></span>
         </div>
       </details>
-    </div>
+    </section>
 
-    <div style="margin-top:18px;">
-      <h3 style="font-family:'Baloo 2';font-weight:800;font-size:15px;margin-bottom:6px;">Reset</h3>
-      <p class="muted" style="margin-bottom:10px;">Clear all saved progress on this device.</p>
+    <section class="card set-danger" id="resetCard" aria-labelledby="resetTitle">
+      <div class="set-head"><h2 id="resetTitle">Reset</h2></div>
+      <p class="muted set-lead">Clear <span class="kid-poss">your child's</span> saved progress on this device.</p>
       <button class="btn ghost" id="reset">Reset progress</button>
-    </div>
-    </details>
+    </section>
   </div>
 
   <script src="/sona.js"></script>
@@ -282,12 +344,25 @@
     window.addEventListener("pageshow", function (e) { if (e.persisted && window.Sona && Sona.requireGate) Sona.requireGate(); });
     var p = Sona.getProfile();
     var childEl = document.getElementById("childName"),
+        ageEl = document.getElementById("childAge"),
+        pinEl = document.getElementById("parentPin"),
         volEl = document.getElementById("volume"),
         posEl = document.getElementById("practicePos"),
         wrap = document.getElementById("sounds");
+
+    // THE FORM BELONGS TO ONE CHILD. It was painted for whoever was active
+    // when the page loaded, and now that every control saves on its own, a
+    // stale copy of it is a way to write one child's settings onto another:
+    // "+ Add a kid" → back-swipe to this page (restored from the bfcache with
+    // the first child's values) → nudge the volume. So if the active child is
+    // no longer the one painted here, repaint by reloading instead of saving.
+    function activeSlot() { try { var k = Sona.activeKid && Sona.activeKid(); return k ? k.slot : ""; } catch (e) { return ""; } }
+    var loadSlot = activeSlot();
+    window.addEventListener("pageshow", function (e) { if (e.persisted && activeSlot() !== loadSlot) location.reload(); });
+
     childEl.value = p.childName || "";
-    var ageEl = document.getElementById("childAge"); ageEl.value = p.childAge || "";
-    document.getElementById("parentPin").value = p.parentPin || "";
+    ageEl.value = p.childAge || "";
+    pinEl.value = p.parentPin || "";
     // profile.volume is a 0-1 gain that 22 pages already multiply into their
     // audio; the slider is just the missing UI for it.
     volEl.value = String(Math.round((p.volume != null ? p.volume : 0.6) * 100));
@@ -299,36 +374,42 @@
     }
     volEl.oninput = volLabel; volLabel();
     posEl.value = p.practicePosition || "i";
+
+    // The child's name, wherever the page names them. textContent only: a
+    // name is typed by a grown-up and never parsed as markup.
+    function paintName() {
+      var nm = (childEl.value || "").trim();
+      document.getElementById("pageSub").textContent = nm
+        ? "Everything below is for " + nm + "."
+        : "Everything below is for the child you pick here.";
+      [].forEach.call(document.querySelectorAll(".kid-label"), function (n) { n.textContent = nm || "your child"; });
+      [].forEach.call(document.querySelectorAll(".kid-poss"), function (n) { n.textContent = (nm || "your child") + "'s"; });
+    }
+    paintName();
+
+    // ── "Saved ✓", beside whatever just changed ─────────────────────────
+    var savedEl = document.getElementById("saved"), savedHide = 0, savedShow = 0;
+    function cardOf(el) { while (el && !(el.classList && el.classList.contains("card"))) el = el.parentNode; return el; }
+    function showSaved(from, text) {
+      var card = cardOf(from), head = card && card.querySelector(".set-head");
+      clearTimeout(savedHide); clearTimeout(savedShow);
+      savedEl.classList.remove("show"); savedEl.textContent = "";
+      if (head && savedEl.parentNode !== head) head.appendChild(savedEl);
+      savedEl.classList.toggle("warn", !!text);
+      // set the words a beat AFTER any move, so the live region already
+      // exists when its text changes — that change is what gets announced
+      savedShow = setTimeout(function () { savedEl.textContent = text || "Saved ✓"; savedEl.classList.add("show"); }, 30);
+      savedHide = setTimeout(function () { savedEl.classList.remove("show"); savedEl.textContent = ""; }, 2200);
+    }
+
     var sel = new Set(p.focusSounds || []);
-    var kidAge = parseInt(p.childAge, 10) || 0;
-    Sona.ALL_SOUNDS.forEach(function (s) {
-      var b = document.createElement("button"); b.type = "button"; b.setAttribute("aria-pressed", String(sel.has(s)));
-      var norm = Sona.soundNorm ? Sona.soundNorm(s) : null;
-      var early = !!(norm && kidAge && kidAge < norm);
-      // every sound is selectable (SLP caseloads work letters beyond R);
-      // the age-norm hint stays so parents target developmentally-right sounds
-      b.className = "sound" + (sel.has(s) ? " on" : "");
-      b.innerHTML = (Sona.soundLabel ? Sona.soundLabel(s) : s) +
-        (norm ? '<span style="display:block;font-size:9.5px;font-weight:800;margin-top:1px;color:' + (early ? "#c0392b" : "var(--muted)") + ';">' + (early ? "⚠ " : "") + "by ~" + norm + 'y</span>' : "");
-      if (norm) b.title = "Most children produce this sound by about age " + norm + (early ? " — older than your child, so check with your SLP before targeting it." : ".");
-      b.onclick = function () { if (sel.has(s)) { if (sel.size > 1) { sel.delete(s); b.classList.remove("on"); } } else { sel.add(s); b.classList.add("on"); } b.setAttribute("aria-pressed", String(sel.has(s))); };
-      wrap.appendChild(b);
-    });
-    // PLAY1: the note shows in play mode; changing the chips is how a family
-    // moves to focus mode (the save below records it), and "stay in play mode"
-    // restores the full developmental rotation.
-    (function(){
-      var note=document.getElementById("playNote"); if(!note) return;
-      if(p.mode==="play") note.style.display="block";
-      var keep=document.getElementById("playKeep");
-      if(keep) keep.onclick=function(ev){ ev.preventDefault();
-        sel=new Set(Sona.PLAY_ORDER);
-        wrap.querySelectorAll(".sound").forEach(function(b){ b.classList.add("on"); b.setAttribute("aria-pressed", "true"); });
-        Sona.saveProfile({ mode:"play", focusSounds: Sona.PLAY_ORDER.slice() });
-        var sv=document.getElementById("saved"); sv.style.display="inline"; setTimeout(function(){ sv.style.display="none"; },1800);
-      };
-    })();
-    document.getElementById("save").onclick = function () {
+    // AUTOSAVE (29 Sep 2026). One Save button at the foot of a page of cards
+    // meant a parent who changed the sounds and then tapped Back to play lost
+    // the change without a word. Every control now saves on its own "change"
+    // event through this ONE function, which writes exactly what that button
+    // wrote — so nothing the game pages read can drift from what Settings shows.
+    function saveAll(from) {
+      if (activeSlot() !== loadSlot) { location.reload(); return; }
       // a play family that hand-picks sounds has chosen focus mode — record it,
       // or the picker and the greeting copy contradict each other
       var pickedMode = p.mode;
@@ -341,13 +422,93 @@
       // to drift — a parent who drags to zero must not find Echo still talking
       // because some page checks a different flag.
       var vol = (parseInt(volEl.value, 10) || 0) / 100;
-      Sona.saveProfile({ mode: pickedMode || "speech", childName: childEl.value.trim(), childAge: ageEl.value,
-        parentPin: (document.getElementById("parentPin").value||"").replace(/\D/g,"").slice(0,6),
+      var name = childEl.value.trim(), pin = (pinEl.value || "").replace(/\D/g, "").slice(0, 6);
+      Sona.saveProfile({ mode: pickedMode || "speech", childName: name, childAge: ageEl.value,
+        parentPin: pin,
         volume: vol, voiceOn: vol > 0, soundOn: vol > 0, musicOn: false,
         focusArea: "articulation",
         practicePosition: posEl.value, focusSounds: [].concat(Array.from(sel)) });
-      var s = document.getElementById("saved"); s.style.display = "inline"; setTimeout(function () { s.style.display = "none"; }, 1800);
-    };
+      // show what was kept, so a typed "24a6" doesn't read as saved as typed
+      childEl.value = name; pinEl.value = pin;
+      paintName();
+      if (typeof repaintKids === "function") repaintKids();
+      showSaved(from);
+    }
+
+    // Focus sounds. every sound is selectable (SLP caseloads work letters
+    // beyond R); the age-norm hint stays so parents target developmentally-
+    // right sounds, and it follows the age field as it changes.
+    function chipInner(s) {
+      var norm = Sona.soundNorm ? Sona.soundNorm(s) : null;
+      var kidAge = parseInt(ageEl.value, 10) || 0;
+      var early = !!(norm && kidAge && kidAge < norm);
+      return {
+        html: (Sona.soundLabel ? Sona.soundLabel(s) : s) +
+          (norm ? '<span class="hint' + (early ? " early" : "") + '">' + (early ? "⚠ " : "") + "by ~" + norm + "y</span>" : ""),
+        title: norm ? "Most children produce this sound by about age " + norm + (early ? " — older than your child, so check with your SLP before targeting it." : ".") : ""
+      };
+    }
+    function paintHints() {
+      [].forEach.call(wrap.querySelectorAll(".sound"), function (b) {
+        var c = chipInner(b.dataset.s); b.innerHTML = c.html; if (c.title) b.title = c.title; else b.removeAttribute("title");
+      });
+    }
+    Sona.ALL_SOUNDS.forEach(function (s) {
+      var b = document.createElement("button"); b.type = "button"; b.dataset.s = s;
+      b.className = "sound" + (sel.has(s) ? " on" : "");
+      b.setAttribute("aria-pressed", String(sel.has(s)));
+      b.onclick = function () {
+        if (sel.has(s)) {
+          // never zero sounds: the rotation would have nothing to practice
+          if (sel.size <= 1) { showSaved(b, "Keep at least one sound"); return; }
+          sel.delete(s); b.classList.remove("on");
+        } else { sel.add(s); b.classList.add("on"); }
+        b.setAttribute("aria-pressed", String(sel.has(s)));
+        saveAll(b);
+      };
+      wrap.appendChild(b);
+    });
+    paintHints();
+
+    // PLAY1: the note shows in play mode; changing the chips is how a family
+    // moves to focus mode (saveAll records it), and "stay in play mode"
+    // restores the full developmental rotation.
+    (function(){
+      var note=document.getElementById("playNote"); if(!note) return;
+      if(p.mode==="play") note.style.display="block";
+      var keep=document.getElementById("playKeep");
+      if(keep) keep.onclick=function(ev){ ev.preventDefault();
+        if (activeSlot() !== loadSlot) { location.reload(); return; }
+        sel=new Set(Sona.PLAY_ORDER);
+        wrap.querySelectorAll(".sound").forEach(function(b){ b.classList.add("on"); b.setAttribute("aria-pressed", "true"); });
+        Sona.saveProfile({ mode:"play", focusSounds: Sona.PLAY_ORDER.slice() });
+        showSaved(keep);
+      };
+    })();
+
+    // Text fields save when the parent leaves them (or presses return), not on
+    // every keystroke: a half-typed name should not flash across the page.
+    // With no Save button, leaving mid-edit must not lose the edit: Back
+    // swipes, the app switcher and a tab close don't blur the field, so no
+    // "change" fires. Hiding the page commits what was typed (only if this
+    // page still belongs to the child it was painted for).
+    var textDirty = false;
+    [childEl, ageEl, pinEl].forEach(function (el) {
+      el.addEventListener("input", function () { textDirty = true; });
+      el.addEventListener("change", function () { if (el === ageEl) paintHints(); textDirty = false; saveAll(el); });
+      el.addEventListener("keydown", function (e) { if (e.key === "Enter") el.blur(); });
+    });
+    function flushText() {
+      if (!textDirty || activeSlot() !== loadSlot) return;
+      textDirty = false;
+      var a = document.activeElement;
+      saveAll(a === childEl || a === ageEl || a === pinEl ? a : childEl);
+    }
+    window.addEventListener("pagehide", flushText);
+    document.addEventListener("visibilitychange", function () { if (document.visibilityState === "hidden") flushText(); });
+    volEl.addEventListener("change", function () { saveAll(volEl); });
+    posEl.addEventListener("change", function () { saveAll(posEl); });
+
     // REPWEEKS1: week by week, from Sona.repWeeks — the one count Home, the
     // parent corner and Progress read too. A week behind is said as how many
     // more reps pass it, never as a drop, and nothing here is ever red.
@@ -395,8 +556,16 @@
         d.className = w.current ? "now" : ""; d.appendChild(document.createTextNode(dl[0])); d.appendChild(document.createElement("br")); d.appendChild(document.createTextNode(dl[1])); days.appendChild(d);
       });
     })();
+    // Same rule as saveAll: this page belongs to the child it was painted for.
+    // A switch in another tab reloads rather than resetting someone else's
+    // practice under this child's name. Checked again after the dialog, which
+    // blocks only this tab.
     document.getElementById("reset").onclick = function () {
-      if (confirm("Reset all progress on this device? This cannot be undone.")) { Sona.resetProgress(); alert("Progress reset."); }
+      if (activeSlot() !== loadSlot) { location.reload(); return; }
+      var nm = (childEl.value || "").trim();
+      if (!confirm("Reset " + (nm ? nm + "'s" : "all") + " progress on this device? This cannot be undone.")) return;
+      if (activeSlot() !== loadSlot) { location.reload(); return; }
+      Sona.resetProgress(); alert("Progress reset.");
     };
 
     // Backup & restore — the data-loss safety net.
@@ -404,7 +573,7 @@
       var bmsg = document.getElementById("backupMsg");
       var copyB = document.getElementById("backupCopy"), dlB = document.getElementById("backupDl"), rBtn = document.getElementById("restoreBk");
       if (copyB) copyB.onclick = function () {
-        try { var s = Sona.exportString(); (navigator.clipboard ? navigator.clipboard.writeText(s) : Promise.reject()).then(function () { bmsg.textContent = "Copied ✓ — paste it somewhere safe."; }, function () { document.getElementById("restoreIn").value = s; bmsg.textContent = "Copy the code shown below ↓"; }); } catch (e) { bmsg.textContent = "Couldn't create a backup."; }
+        try { var s = Sona.exportString(); (navigator.clipboard ? navigator.clipboard.writeText(s) : Promise.reject()).then(function () { bmsg.textContent = "Copied ✓ — paste it somewhere safe."; }, function () { var d = document.querySelector("#backupCard details"); if (d) d.open = true; document.getElementById("restoreIn").value = s; bmsg.textContent = "Copy the code shown below ↓"; }); } catch (e) { bmsg.textContent = "Couldn't create a backup."; }
       };
       if (dlB) dlB.onclick = function () {
         try { var s = Sona.exportString(); var blob = new Blob([s], { type: "application/json" }); var a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "sona-backup.json"; document.body.appendChild(a); a.click(); a.remove(); setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000); bmsg.textContent = "Downloaded ✓"; } catch (e) { bmsg.textContent = "Download failed."; }
@@ -447,7 +616,7 @@
       };
       var uBtn = document.getElementById("undoRestore");
       if (uBtn) uBtn.onclick = function () {
-        var m = document.getElementById("restoreBkMsg");
+        var m = document.getElementById("backupMsg");
         var snap = ""; try { snap = localStorage.getItem(SNAP) || ""; } catch (e) {}
         if (!snap) { paintUndo(); return; }
         if (!confirm("Put this device back the way it was before the last restore?")) return;
@@ -506,65 +675,6 @@
           if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(m).then(done, function () { window.prompt("Copy and send this to a family:", m); });
           else window.prompt("Copy and send this to a family:", m);
         } catch (e) { window.prompt("Copy and send this to a family:", m); }
-      };
-    })();
-
-    // ── feedback: chips first, typing optional ──────────────────────────
-    // A blank box gets blank answers. A tapped chip gets an answer from
-    // someone who'd never have written in — and the recommend question is the
-    // one number that actually predicts word-of-mouth.
-    (function () {
-      var host = document.getElementById("fbChips"); if (!host) return;
-      var isSlp = (p.role || "") === "slp" && !(Sona.isNativeApp && Sona.isNativeApp());
-      var CHIPS = isSlp
-        ? ["More sounds", "Better progress data", "Easier to assign", "More game variety", "Something's broken", "Something else"]
-        : ["More games", "New sounds to practice", "Progress reports", "Easier for my kid", "Something's broken", "Something else"];
-      var REC = ["Definitely", "Maybe", "Not yet"];
-      try { if (isSlp) document.getElementById("fbLead").textContent = "You're the expert — what would make Sona more useful on your caseload?"; } catch (e) {}
-      var picked = {}, rec = "";
-      function chip(label, on) {
-        var b = document.createElement("button");
-        b.type = "button"; b.textContent = label;
-        b.style.cssText = "border:2px solid var(--line);border-radius:999px;padding:9px 14px;background:" +
-          (on ? "linear-gradient(180deg,#ffa05a,#ff8a3d)" : "#fff") + ";color:" + (on ? "#fff" : "var(--ink)") +
-          ";font-family:'Baloo 2';font-weight:800;font-size:13px;cursor:pointer;";
-        return b;
-      }
-      CHIPS.forEach(function (label) {
-        var b = chip(label, false);
-        b.onclick = function () {
-          picked[label] = !picked[label];
-          b.style.background = picked[label] ? "linear-gradient(180deg,#ffa05a,#ff8a3d)" : "#fff";
-          b.style.color = picked[label] ? "#fff" : "var(--ink)";
-          var any = CHIPS.some(function (k) { return picked[k]; });
-          document.getElementById("fbMore").style.display = any ? "block" : "none";
-        };
-        host.appendChild(b);
-      });
-      var recHost = document.getElementById("fbRec");
-      REC.forEach(function (label) {
-        var b = chip(label, false);
-        b.onclick = function () {
-          rec = label;
-          [].slice.call(recHost.children).forEach(function (n) { n.style.background = "#fff"; n.style.color = "var(--ink)"; });
-          b.style.background = "linear-gradient(180deg,#ffa05a,#ff8a3d)"; b.style.color = "#fff";
-        };
-        recHost.appendChild(b);
-      });
-      document.getElementById("fbSend").onclick = function () {
-        var chips = CHIPS.filter(function (k) { return picked[k]; });
-        if (!chips.length) return;
-        var note = (document.getElementById("fbText").value || "").trim().slice(0, 600);
-        var code = ""; try { code = (p.slpCode || (Sona.pilotInfo && Sona.pilotInfo().code) || ""); } catch (e) {}
-        var text = chips.join(" + ") + (rec ? " · recommend: " + rec : "") + (note ? " · " + note : "");
-        try {
-          fetch("/api/feedback", { method: "POST", headers: { "Content-Type": "application/json" }, keepalive: true,
-            body: JSON.stringify({ q: "settings.chips", text: text, src: isSlp ? "settings-slp" : "settings", code: code }) }).catch(function () {});
-        } catch (e) {}
-        document.getElementById("fbChips").style.display = "none";
-        document.getElementById("fbMore").style.display = "none";
-        document.getElementById("fbLead").style.display = "none";
-        document.getElementById("fbDone").style.display = "block";
       };
     })();
 
@@ -638,6 +748,7 @@
     // Every field below the Kids card belongs to whoever is selected here, so a
     // switch reloads the page rather than trying to repaint each control — a
     // half-repainted form is how one child's sounds get saved onto another.
+    var repaintKids = null;
     (function(){
       var listEl=document.getElementById("kidList");
       if(!listEl||!(Sona.kids)) return;
@@ -646,17 +757,16 @@
         listEl.innerHTML="";
         ks.forEach(function(k){
           var row=document.createElement("div");
-          row.style.cssText="display:flex;align-items:center;gap:10px;background:"+(k.active?"#fff1dc":"#fff6e9")
-            +";border:2px solid "+(k.active?"var(--orange)":"transparent")+";border-radius:14px;padding:11px 13px;";
+          row.className="kid-row"+(k.active?" kid-on":"");
           row.dataset.slot=k.slot;
           if(k.active) row.dataset.active="1";
           var nm=document.createElement("div");
-          nm.style.cssText="flex:1;font-family:'Baloo 2';font-weight:800;font-size:16px;color:var(--ink);";
+          nm.className="kid-name";
           nm.textContent=(k.name||"Unnamed")+(k.active?" · practicing now":"");
           row.appendChild(nm);
           if(!k.active){
             var sw=document.createElement("button");
-            sw.className="btn"; sw.style.cssText="width:auto;padding:9px 15px;font-size:14px;";
+            sw.className="btn";
             sw.textContent="Switch"; sw.dataset.switch=k.slot;
             sw.onclick=function(){ if(Sona.switchKid(k.slot)) location.reload(); };
             row.appendChild(sw);
@@ -665,7 +775,7 @@
           // last one standing
           if(!k.active && ks.length>1){
             var rm=document.createElement("button");
-            rm.className="btn ghost"; rm.style.cssText="width:auto;padding:9px 12px;font-size:13px;";
+            rm.className="btn ghost";
             rm.textContent="Remove"; rm.dataset.remove=k.slot;
             rm.onclick=function(){
               if(!confirm("Remove "+(k.name||"this child")+"? Their practice history is deleted from this device and can't be undone.")) return;
@@ -677,6 +787,7 @@
         });
       }
       paintKids();
+      repaintKids = paintKids;
       var addRow=document.getElementById("addKidRow"), addBtn=document.getElementById("addKidBtn");
       addBtn.onclick=function(){ addRow.style.display="flex"; addBtn.style.display="none"; document.getElementById("newKidName").focus(); };
       document.getElementById("newKidCancel").onclick=function(){ addRow.style.display="none"; addBtn.style.display=""; };

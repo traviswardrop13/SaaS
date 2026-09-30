@@ -99,7 +99,8 @@ ok("the parent page carries the launch note", !!P_NOTE);
   ok("the footer sends a speech therapist to /for-slps", await page.evaluate(() => !!document.querySelector('footer a[href="/for-slps"]')));
   ok("…and nothing else on the page speaks to clinicians", await page.evaluate(() => {
     const main = document.querySelector("main").innerText;
-    return !/caseload|dashboard|\bSLPA?\b|clinician/i.test(main);
+    // 29 Sep 2026: Rachel's byline now reads "MS, CF-SLP" (Travis) — her credential, not copy aimed at clinicians.
+    return !/caseload|dashboard|(?<!CF-)\bSLPA?\b|clinician/i.test(main);
   }));
   const fit = await page.evaluate(() => { const r = document.getElementById("signup").getBoundingClientRect(); return { l: r.left, r: r.right, w: innerWidth, overflow: document.documentElement.scrollWidth > innerWidth || document.body.scrollWidth > innerWidth }; });
   ok("on a phone the form fits the screen, and nothing on the page scrolls sideways", fit.l >= 0 && fit.r <= fit.w && !fit.overflow, fit);

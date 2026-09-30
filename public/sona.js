@@ -374,8 +374,14 @@
 
   function getProfile() {
     const p = Object.assign(clone(DEFAULT_PROFILE), load(PKEY, {}));
-    // migrate old/empty default voices (Jessica, Will, and the prior Leo) to the current voice
-    if (!p.voiceId || p.voiceId === "cgSgspJ2msm6clMCkdW9" || p.voiceId === "bIHbv24MWmeRgasZH58o" || p.voiceId === "SF6OznV7UB2AxeidTpie") p.voiceId = DEFAULT_PROFILE.voiceId;
+    // ONE coach voice for every family (Travis, 29 Sep 2026). The voice picker
+    // is gone, so a voice saved from it (Sarah, George…) is overridden here
+    // rather than honoured: with no picker left, an old pick would strand that
+    // family on a voice nobody else hears and they could never change back.
+    // The old pick is not kept, either: saveProfile() writes this result back,
+    // so the next save of any setting replaces it with the default. Harmless —
+    // nothing reads the saved field any more, and there is no picker to undo.
+    p.voiceId = DEFAULT_PROFILE.voiceId;
     // one-time repair: the default used to be 0.3 and the Settings slider that
     // could change it was removed, so families were stuck at 30% volume with
     // no way up. Lift only that exact value — a deliberate 0.3 is unreachable
@@ -2248,7 +2254,7 @@
   // ── parent gate: adults-only pages ─────────────────────────────────────
   // The home screen's grown-ups gate (PIN or math, in today.html) calls
   // gateVerify() when the adult passes it. Parent-only pages (progress,
-  // settings, voices, subscribe) call requireGate() on load so a child can't
+  // settings, talk, subscribe) call requireGate() on load so a child can't
   // reach them by direct URL or back-swipe: without a fresh pass they're sent
   // back to the home screen with the gate open — never a scary error. The
   // pass lives in sessionStorage (per tab, gone when the app closes) and
@@ -2294,7 +2300,7 @@
   // Everything else — other origins, protocol-relative
   // "//evil.example", any other query key — is dropped, and the visitor simply
   // stays on Home.
-  const GATE_DESTS = { "/premium.html": 1, "/subscribe.html": 1, "/progress.html": 1, "/settings.html": 1, "/voices.html": 1 };
+  const GATE_DESTS = { "/premium.html": 1, "/subscribe.html": 1, "/progress.html": 1, "/settings.html": 1, "/talk.html": 1 };
   function gateDest(raw) {
     try {
       const s = String(raw || "");
@@ -3511,7 +3517,7 @@
     try { ctrl = new AbortController(); to = setTimeout(() => { try { ctrl.abort(); } catch (e) {} }, 7000); } catch (e) {}
     return fetch("/api/tts", {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text: String(text), voice: opts.voice || getProfile().voiceId || "" }),
+      body: JSON.stringify({ text: String(text), voice: getProfile().voiceId || "" }),
       signal: ctrl ? ctrl.signal : undefined,
     })
       .then((r) => {
