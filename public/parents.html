@@ -381,7 +381,7 @@ document.documentElement.className += " js";
 <section class="hero">
   <div class="wrap hero-in">
     <div class="hero-l">
-      <div class="launch"><span class="dot" aria-hidden="true"></span><span data-ready="no">Coming to iPhone and iPad next week</span><span data-ready="yes" hidden>Now on iPhone and iPad</span></div>
+      <div class="launch"><span class="dot" aria-hidden="true"></span><span data-ready="no">Coming to iPhone and iPad Friday, October 2</span><span data-ready="yes" hidden>Now on iPhone and iPad</span></div>
       <!-- The parent ads' own headline, so the page says what the ad said. -->
       <h1>Speech practice kids ask for.</h1>
       <p class="lede">A few playful minutes a day, at home. Echo says a word, your child says it back, and practice unlocks the games.</p>
@@ -659,7 +659,7 @@ document.documentElement.className += " js";
       </div>
       <div class="q">
         <button type="button" aria-expanded="false" aria-controls="a7" id="q7">Which phones and tablets?<span aria-hidden="true">+</span></button>
-        <p class="a" id="a7" hidden><span data-ready="no">The iPhone and iPad app launches next week, and we&rsquo;ll email you the moment it&rsquo;s ready. </span>Sona is made for iPhone and iPad, through the App Store. On an Android phone, it works in the web browser.</p>
+        <p class="a" id="a7" hidden><span data-ready="no">The iPhone and iPad app launches Friday, October 2, and we&rsquo;ll email you the moment it&rsquo;s ready. </span>Sona is made for iPhone and iPad, through the App Store. On an Android phone, it works in the web browser.</p>
       </div>
     </div>
   </div>
@@ -718,15 +718,16 @@ document.documentElement.className += " js";
      */
     var APP_STORE = "https://apps.apple.com/us/app/sona-speech/id6785755867";
     /**
-     * IS THE APP READY? (Travis, 25 Sep 2026: "the app launches next week".)
+     * IS THE APP READY? (Travis, 25 Sep 2026: "the app launches next week";
+     * 30 Sep: it launches Friday, 2 October.)
      * While false, nobody is sent to the App Store: a parent is thanked, told
-     * the app launches next week and emailed the same (/api/lead, once). One
+     * when the app launches and emailed the same (/api/lead, once). One
      * switch, three copies: this, for-slps.html's and APP_READY in
      * lib/launch.ts, pinned equal by tests/shiptest.mjs. When the app is
      * live, set all three to true.
      */
     var APP_READY = false;
-    var LAUNCH_NOTE = "The Sona app launches next week. We'll email you the moment it's ready.";
+    var LAUNCH_NOTE = "Sona launches Friday, October 2. We'll email you the moment it's ready.";
     var android = /Android/i.test(navigator.userAgent || "");
     var NEXT_URL = android ? "/onboarding.html" : APP_STORE;
     var OPENING = android ? "Opening Sona…" : "Opening the App Store…";
