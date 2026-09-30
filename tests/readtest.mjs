@@ -352,7 +352,7 @@ async function waitSpoke(pg, ms) {
       const box = (id) => document.getElementById(id).getBoundingClientRect();
       const p = box("bkPrev"), n = box("bkNext");
       return { w: innerWidth, end: /The End!/.test(document.getElementById("bkStage").textContent), prev: [p.left, p.right], next: [n.left, n.right],
-        fits: p.left >= 0 && n.right <= innerWidth && p.right <= n.left && document.getElementById("bkNext").scrollWidth <= document.getElementById("bkNext").clientWidth };
+        fits: p.width > 40 && n.width > 40 && p.left >= 0 && n.right <= innerWidth && p.right <= n.left && document.getElementById("bkNext").scrollWidth <= document.getElementById("bkNext").clientWidth };
     }));
     await r.ctx.close();
   }
