@@ -90,7 +90,27 @@
     }
     openIfTime();
     if (at - Date.now() < 86400000) setTimeout(openIfTime, Math.max(0, at - Date.now()) + 500);
-    document.addEventListener("visibilitychange", function () { if (!document.hidden) openIfTime(); });
+    // THE LOCK CAN LIFT BEFORE ITS DATE (Travis reopened the app on 30 Sep
+    // 2026, LAUNCH_LOCK in lib/launch.ts), and the date alone can't know that.
+    // So a page brought back to the front asks the server whether Home is
+    // still this page, and opens the app when it isn't: an iPhone app left on
+    // this page in the background would otherwise wait for Friday. The same
+    // five-minute guard as the launch reload, so a page can never loop.
+    function openIfLifted() {
+      try {
+        fetch("/today.html", { cache: "no-store", credentials: "same-origin" })
+          .then(function (r) { return r.ok ? r.text() : ""; })
+          .then(function (t) {
+            if (!t || /<title>Sona opens /.test(t)) return;     // still locked, or no answer
+            var last = 0;
+            try { last = +sessionStorage.getItem("sona.launch.reload") || 0; } catch (e) {}
+            if (Date.now() - last < 300000) return;
+            try { sessionStorage.setItem("sona.launch.reload", String(Date.now())); } catch (e) {}
+            reopen();
+          }, function () {});
+      } catch (e) {}
+    }
+    document.addEventListener("visibilitychange", function () { if (!document.hidden) { openIfTime(); openIfLifted(); } });
 
     function busy(on) { $("go").disabled = on; $("go").textContent = on ? "Sending…" : "Notify me"; }
     $("notify").addEventListener("submit", function (e) {

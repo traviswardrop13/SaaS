@@ -37,11 +37,11 @@ body::before{content:"";position:fixed;left:0;right:0;top:0;height:env(safe-area
 .game-grid [data-game="glide"]{grid-column:1/-1;}
 .game-grid [data-game="glide"] .game-art{aspect-ratio:4;}
 .game-grid [data-game="glide"] .crafted-card-image{object-position:center 53%;}
-.game-grid [data-game="hoops"],.game-grid [data-game="feed"]{grid-column:1/-1;flex-direction:row;align-items:stretch;min-height:89px;overflow:visible;}
-.game-grid [data-game="hoops"] .game-art,.game-grid [data-game="feed"] .game-art{width:43%;flex:none;aspect-ratio:1.7;border-radius:16px 0 0 16px;overflow:hidden;}
-.game-grid [data-game="hoops"] .game-info,.game-grid [data-game="feed"] .game-info{padding:14px 13px;}
-.game-grid [data-game="hoops"] .game-name,.game-grid [data-game="feed"] .game-name{font-size:19px;}
-.game-grid [data-game="hoops"] .game-access,.game-grid [data-game="feed"] .game-access{position:static;box-shadow:none;font-size:9px;padding:3px 4px;}
+.game-grid [data-game="hoops"],.game-grid [data-game="feed"],.game-grid [data-game="bubbles"]{grid-column:1/-1;flex-direction:row;align-items:stretch;min-height:89px;overflow:visible;}
+.game-grid [data-game="hoops"] .game-art,.game-grid [data-game="feed"] .game-art,.game-grid [data-game="bubbles"] .game-art{width:43%;flex:none;aspect-ratio:1.7;border-radius:16px 0 0 16px;overflow:hidden;}
+.game-grid [data-game="hoops"] .game-info,.game-grid [data-game="feed"] .game-info,.game-grid [data-game="bubbles"] .game-info{padding:14px 13px;}
+.game-grid [data-game="hoops"] .game-name,.game-grid [data-game="feed"] .game-name,.game-grid [data-game="bubbles"] .game-name{font-size:19px;}
+.game-grid [data-game="hoops"] .game-access,.game-grid [data-game="feed"] .game-access,.game-grid [data-game="bubbles"] .game-access{position:static;box-shadow:none;font-size:9px;padding:3px 4px;}
 .coming-shelf{margin-top:17px;}
 .coming-heading{color:#947e66;font-size:10px;font-weight:800;margin-bottom:8px;letter-spacing:.02em;}
 .coming-grid{display:flex;gap:9px;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x proximity;padding:1px 1px 7px;scrollbar-width:thin;scrollbar-color:#ddccb3 transparent;}
@@ -69,7 +69,7 @@ body::before{content:"";position:fixed;left:0;right:0;top:0;height:env(safe-area
 #gateQ,#wkStreak{color:#15808a;}
 #shareWeek{background:linear-gradient(#239ca2,#14858d)!important;box-shadow:0 4px 0 #0c656b!important;}
 @media(min-width:600px){.library-wrap{padding-left:30px;padding-right:30px;}.library-intro{margin:27px 0;}.library-intro h1{font-size:42px;}.library-intro p{font-size:16px;}.library-label{font-size:32px;}#libraryEcho{width:102px;height:113px;}.game-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:20px;}.game-grid [data-game="glide"],.game-grid [data-game="hoops"]{grid-column:auto;flex-direction:column;overflow:hidden;}.game-grid [data-game="glide"] .game-art,.game-grid [data-game="hoops"] .game-art{width:100%;aspect-ratio:1.8;border-radius:16px 16px 0 0;}.game-grid [data-game="hoops"] .game-info{padding:10px 11px 11px;}.game-grid [data-game="hoops"] .game-access{position:absolute;right:7px;bottom:calc(100% + 7px);}.game-name,.game-grid [data-game="hoops"] .game-name{font-size:18px;}.coming-grid .game-card{flex-basis:125px;}.coming-grid .game-name{font-size:12px;}.coming-grid .game-access{font-size:10px;}.coming-grid .game-art{width:52px;height:48px;}}
-@media(max-width:350px){.library-wrap{padding-left:16px;padding-right:16px;}.library-label{font-size:25px;}#parentBtn{font-size:11px;padding:8px;}.library-header{gap:9px;}.library-intro h1{font-size:29px;}.library-intro p{font-size:11px;}#libraryEcho{width:66px;height:82px;}.game-name{font-size:14px;}.game-info{padding:9px 8px;}.game-grid{gap:11px 10px;}.game-grid [data-game="hoops"] .game-name,.game-grid [data-game="feed"] .game-name{font-size:16px;}.shelf-heading h2{font-size:22px;}.shelf-tag.recommended{font-size:8px;}}
+@media(max-width:350px){.library-wrap{padding-left:16px;padding-right:16px;}.library-label{font-size:25px;}#parentBtn{font-size:11px;padding:8px;}.library-header{gap:9px;}.library-intro h1{font-size:29px;}.library-intro p{font-size:11px;}#libraryEcho{width:66px;height:82px;}.game-name{font-size:14px;}.game-info{padding:9px 8px;}.game-grid{gap:11px 10px;}.game-grid [data-game="hoops"] .game-name,.game-grid [data-game="feed"] .game-name,.game-grid [data-game="bubbles"] .game-name{font-size:16px;}.shelf-heading h2{font-size:22px;}.shelf-tag.recommended{font-size:8px;}}
 @media(prefers-reduced-motion:reduce){.game-card,.crafted-card-image{transition:none;}.game-card:not(:disabled):hover .crafted-card-image{transform:none;}}
 
 /* Keyboard and switch access receive the same clear focus as touch. */

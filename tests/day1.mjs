@@ -56,7 +56,7 @@ for (const age of ["3", "4", "5", "8"]) {
   ok("age " + age + ": every catalog game appears once in the age shelves", st.keys.length === 28 && new Set(st.keys).size === 28, JSON.stringify(st.keys));
   ok("age " + age + ": both suggested age groups remain available, with the six first games playable", st.groups.length === 2 && st.playable.length >= 6 && st.playable.every(e => e.accessible) &&
     ["slice", "tiles", "stack", "run", "glide", "feed"].every(k => st.playable.some(e => e.key === k)), JSON.stringify(st));
-  ok("age " + age + ": Bubble Pop, Peekaboo and the parked Say & Play games stay visible as disabled Coming soon cards", st.parked.length === 28 - st.playable.length && ["bubbles", "peekaboo"].every(k => st.parked.some(e => e.key === k)) &&
+  ok("age " + age + ": Peekaboo and the parked Say & Play games stay visible as disabled Coming soon cards", st.parked.length === 28 - st.playable.length && ["peekaboo"].every(k => st.parked.some(e => e.key === k)) && !st.parked.some(e => e.key === "bubbles") &&
     st.parked.every(e => e.disabled && /coming (soon|[a-z]{3} \d{1,2})\b/i.test(e.label) && e.access.allowed === false && e.access.reason === "coming-soon"), JSON.stringify(st.parked));
   ok("age " + age + ": opening Home does not start a journey or display the retired adventure", !st.run && !st.forbidden, JSON.stringify(st));
   // The books are on (Travis, 26 Sep 2026: "yes turn them on"); the
@@ -490,7 +490,8 @@ for (const key of ["feed", "slice", "tiles", "stack", "run", "glide"]) {
 
 // A parked game is unavailable even on a previously earned or paid return.
 // It keeps a visible place in the library without becoming a hidden launch door.
-for (const key of ["bubbles", "peekaboo"]) {
+// (Bubble Pop came back on 30 Sep 2026; Peekaboo is still parked.)
+for (const key of ["peekaboo"]) {
   const {ctx, pg} = await home("4");
   const before = await pg.evaluate(() => ({run:sessionStorage.getItem("sona.run.v1"),ticket:sessionStorage.getItem("sona.play.token"),reps:Sona.repsToday()}));
   await pg.locator('#activityGroups .game-card[data-game="' + key + '"]').evaluate(el => el.click());

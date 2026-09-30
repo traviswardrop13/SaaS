@@ -8,7 +8,7 @@ import { chromium, ROOT as SOURCE_ROOT, launchOpts } from './_env.mjs';
 const ROOT = process.env.SONATEST_PUBLIC_ROOT || SOURCE_ROOT;
 const BASE = 'http://127.0.0.1:8196';
 const MIME = { html:'text/html', js:'text/javascript', css:'text/css', svg:'image/svg+xml', png:'image/png', webp:'image/webp', woff2:'font/woff2' };
-// Bubble Pop and Peekaboo are parked in the shipped catalog. Keep exercising
+// Peekaboo is parked in the shipped catalog (Bubble Pop came back on 30 Sep 2026). Keep exercising
 // their retained engines by changing only their flags in this test server's
 // source response; the app has no runtime flag that unlocks parked games.
 function enableParkedEngineFixture(source) {

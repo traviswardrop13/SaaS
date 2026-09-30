@@ -24,21 +24,32 @@ const ok = (name, cond, info) => {
 };
 
 // ── the loader: TS → CJS, "@/x" → the repo ──
-const cache = new Map();
-function loadTs(file) {
-  if (cache.has(file)) return cache.get(file).exports;
-  const mod = { exports: {} }; cache.set(file, mod);
-  const js = ts.transpileModule(readFileSync(file, "utf8"), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, esModuleInterop: true } }).outputText;
-  const req = (s) => s.startsWith("@/") ? loadTs(path.join(REPO, s.slice(2) + (s.endsWith(".ts") ? "" : ".ts")))
-    : s === "next/server" ? require(path.join(REPO, "node_modules/next/server"))
-    : require(s);
-  new Function("require", "module", "exports", js)(req, mod, mod.exports);
-  return mod.exports;
+// `lock` loads lib/launch.ts with LAUNCH_LOCK set to that value instead, so
+// the lock is tested switched on and off whichever way the code ships it
+// (Travis lifted it early on 30 Sep 2026: "Reopen the app").
+function loader(lock) {
+  const cache = new Map();
+  return function loadTs(file) {
+    if (cache.has(file)) return cache.get(file).exports;
+    const mod = { exports: {} }; cache.set(file, mod);
+    let src = readFileSync(file, "utf8");
+    if (lock !== undefined && file === path.join(REPO, "lib/launch.ts")) src = src.replace(/export const LAUNCH_LOCK = (true|false);/, "export const LAUNCH_LOCK = " + lock + ";");
+    const js = ts.transpileModule(src, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, esModuleInterop: true } }).outputText;
+    const req = (s) => s.startsWith("@/") ? loadTs(path.join(REPO, s.slice(2) + (s.endsWith(".ts") ? "" : ".ts")))
+      : s === "next/server" ? require(path.join(REPO, "node_modules/next/server"))
+      : require(s);
+    new Function("require", "module", "exports", js)(req, mod, mod.exports);
+    return mod.exports;
+  };
 }
+const loadTs = loader();
 const { NextRequest } = require(path.join(REPO, "node_modules/next/server"));
 const L = loadTs(path.join(REPO, "lib/launch.ts"));
-const MW = loadTs(path.join(REPO, "middleware.ts"));
 const PREVIEW = loadTs(path.join(REPO, "app/api/launch/preview/route.ts"));
+// the lock switched on, for sections 3 and 4; the shipped switch, below
+const MW = loader(true)(path.join(REPO, "middleware.ts"));
+const MW_OFF = loader(false)(path.join(REPO, "middleware.ts"));
+const MW_SHIPPED = loadTs(path.join(REPO, "middleware.ts"));
 
 // ── 1. the date, and its copies ──
 const AT = Date.parse(L.LAUNCH_AT);
@@ -66,7 +77,7 @@ const hits = (p) => matcher.some((m) => pathToRegexp(m).test(p));
 ok("the middleware is asked only about .html pages, never the API or Next's own files",
   hits("/today.html") && hits("/arcade-slice.html") && !hits("/api/lead") && !hits("/api/x.html") && !hits("/_next/static/a.html") && !hits("/sona.js") && !hits("/assets/crafted/echo-welcome.webp"), matcher);
 
-// ── 3. the middleware ──
+// ── 3. the middleware (the lock switched on) ──
 const realNow = Date.now;
 const at = (t, fn) => async (...a) => { Date.now = () => t; try { return await fn(...a); } finally { Date.now = realNow; } };
 const ask = (p, cookie) => MW.middleware(new NextRequest("https://speaksona.com" + p, { headers: cookie ? { cookie } : {} }));
@@ -95,6 +106,20 @@ ok("…nor one made with another key (a changed key closes every old cookie)", r
 process.env.FOUNDER_KEY = "short";
 r = await at(before, ask)("/today.html", L.PREVIEW_COOKIE + "=" + (await L.previewToken("short")));
 ok("…and with no proper founder key set, there is no team door at all", rewrittenTo(r) === "/launching.html");
+
+// ── 3b. the switch ──
+// LAUNCH_LOCK off opens every page whatever the date; the shipped code is
+// whichever Travis last chose, and the middleware obeys it.
+ok("the lock has one switch, LAUNCH_LOCK in lib/launch.ts", typeof L.LAUNCH_LOCK === "boolean" && /export const LAUNCH_LOCK = (true|false);/.test(readFileSync(path.join(REPO, "lib/launch.ts"), "utf8")));
+const askWith = (mw) => (p) => mw.middleware(new NextRequest("https://speaksona.com" + p));
+r = await at(before, askWith(MW_OFF))("/today.html");
+ok("with the switch off, Home is Home even before the launch date", passes_(r), Object.fromEntries(r.headers));
+r = await at(before, askWith(MW_OFF))("/charge.html?game=arcade-slice.html");
+ok("…and so is every other family page", passes_(r));
+r = await at(before, askWith(MW_SHIPPED))("/today.html");
+ok("the middleware as shipped obeys the shipped switch (" + (L.LAUNCH_LOCK ? "locked until launch" : "open now") + ")",
+  L.LAUNCH_LOCK ? rewrittenTo(r) === "/launching.html" : passes_(r), Object.fromEntries(r.headers));
+ok("locked() is the switch and the date together", L.locked(before) === L.LAUNCH_LOCK && L.locked(after) === false);
 
 // ── 4. the team door's route ──
 const door = async (key, envKey) => {
@@ -180,6 +205,23 @@ const went = p.pg.waitForURL(/\/today\.html$/, { timeout: 4000 }).then(() => tru
 await p.pg.goto(BASE + "/launching.html");
 ok("after launch the lock page opens the app by itself", await went, p.pg.url());
 await p.ctx.close();
+
+// a lock page brought back to the front opens the app once the lock has
+// lifted early, and stays while Home is still the lock page
+for (const lifted of [false, true]) {
+  p = await phone(before);
+  await p.ctx.route("**/today.html", (route) => route.fulfill({ status: 200, contentType: "text/html",
+    body: lifted ? "<!doctype html><title>Pick a game</title><p>Home</p>" : LOCKPAGE }));
+  await p.pg.goto(BASE + "/launching.html");
+  await p.pg.waitForTimeout(300);
+  const moved = p.pg.waitForURL(/\/today\.html$/, { timeout: 2500 }).then(() => true, () => false);
+  await p.pg.evaluate(() => document.dispatchEvent(new Event("visibilitychange")));
+  const wentHome = await moved;
+  ok(lifted ? "a lock page brought back to the front opens the app once the lock has lifted early" : "…and stays put while Home is still the lock page",
+    wentHome === lifted, { lifted, url: p.pg.url() });
+  ok("…with no page errors", p.errs.length === 0, p.errs);
+  await p.ctx.close();
+}
 
 // and it fits a small phone
 p = await phone(before, { width: 320, height: 568 });

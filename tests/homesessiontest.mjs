@@ -5,8 +5,8 @@ import { readFileSync, existsSync, statSync } from 'fs';
 import path from 'path';
 import { chromium, ROOT as SOURCE_ROOT, launchOpts } from './_env.mjs';
 const ROOT=process.env.SONATEST_PUBLIC_ROOT||SOURCE_ROOT, BASE='http://127.0.0.1:8198';
-// Coming soon: Bubble Pop, Peekaboo and every Say & Play game until it is rebuilt (Travis, 26 Sep 2026).
-const PARKED=['bubbles','peekaboo',...[...readFileSync(ROOT+'/sona.js','utf8').matchAll(/^\s{4}(\w+): \{[^\n]*\bsay: true, comingSoon: true\b/gm)].map(m=>m[1])].sort();
+// Coming soon: Peekaboo and every Say & Play game until it is rebuilt (Travis, 26 Sep 2026; Bubble Pop came back 30 Sep).
+const PARKED=['peekaboo',...[...readFileSync(ROOT+'/sona.js','utf8').matchAll(/^\s{4}(\w+): \{[^\n]*\bsay: true, comingSoon: true\b/gm)].map(m=>m[1])].sort();
 const MIME={html:'text/html',js:'text/javascript',css:'text/css',svg:'image/svg+xml',png:'image/png',webp:'image/webp',woff2:'font/woff2'};
 const server=createServer((req,res)=>{const u=new URL(req.url,BASE),f=path.join(ROOT,u.pathname);if(u.pathname.startsWith('/api/')){res.writeHead(503);res.end('{}');return;}if(!existsSync(f)||!statSync(f).isFile()){res.writeHead(404);res.end();return;}res.writeHead(200,{'content-type':MIME[f.split('.').pop()]||'application/octet-stream'});res.end(readFileSync(f));});
 await new Promise(resolve=>server.listen(8198,'127.0.0.1',resolve));
@@ -47,7 +47,7 @@ for(const age of ['2','3','4','5','8',null,'4 years','4.5'])await scenario('age 
   ok('age '+age+': Home itself presents every catalog card',JSON.stringify(st.keys)===JSON.stringify(ALL),st.keys);
   const parked=await page.locator('#activityGroups button[data-game]:disabled').evaluateAll(els=>els.map(el=>({key:el.dataset.game,text:el.innerText})).sort((a,b)=>a.key.localeCompare(b.key)));
   // each says its Monday ("Coming Oct 12"), or "Coming soon" once that day has passed (30 Sep 2026)
-  ok('age '+age+': Bubble Pop, Peekaboo and the parked Say & Play games are explicitly Coming',JSON.stringify(parked.map(game=>game.key))===JSON.stringify(PARKED)&&parked.every(game=>/Coming (soon|[A-Z][a-z]{2} \d{1,2})\b/.test(game.text)),parked);
+  ok('age '+age+': Peekaboo and the parked Say & Play games are explicitly Coming',JSON.stringify(parked.map(game=>game.key))===JSON.stringify(PARKED)&&parked.every(game=>/Coming (soon|[A-Z][a-z]{2} \d{1,2})\b/.test(game.text)),parked);
   ok('age '+age+': Home invites a choice',await page.getByRole('heading',{name:'Pick a game!',exact:true}).count()===1);
   ok('age '+age+': no adventure hero or auto-start replaces the choice',await page.locator('#goBtn,#heroCard,#jarRow').count()===0&&new URL(page.url()).pathname==='/today.html');
   const recommended=['2','3','4'].includes(age)?'simple':['5','8'].includes(age)?'arcade':null;

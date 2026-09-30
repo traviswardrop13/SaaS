@@ -1418,7 +1418,7 @@ ok("no pageerrors", errs.length === 0, errs.join(" | "));
   const freeCards = home.cards.filter(card => !card.comingSoon && card.tier === "free"), premiumCards = home.cards.filter(card => !card.comingSoon && card.tier === "premium"), comingSoonCards = home.cards.filter(card => card.comingSoon);
   // Bubble Pop, Peekaboo and every Say & Play game not yet rebuilt (Travis,
   // 26 Sep 2026: "put the 20 games as coming soon")
-  ok("coming-soon games stay visible without a purchase or play action", comingSoonCards.length >= 2 && ["bubbles", "peekaboo"].every(k => comingSoonCards.some(card => card.key === k)) && comingSoonCards.every(card => card.disabled && /coming (soon|[a-z]{3} \d{1,2})\b/i.test(card.label)), JSON.stringify(comingSoonCards));
+  ok("coming-soon games stay visible without a purchase or play action", comingSoonCards.length >= 2 && ["peekaboo"].every(k => comingSoonCards.some(card => card.key === k)) && comingSoonCards.every(card => card.disabled && /coming (soon|[a-z]{3} \d{1,2})\b/i.test(card.label)), JSON.stringify(comingSoonCards));
   ok("Home leaves free cards open and marks Premium choices for grown-ups",
     freeCards.length > 0 && freeCards.every(card => !card.locked) && premiumCards.length > 0 && premiumCards.every(card => card.locked), JSON.stringify(home.cards));
   // Parked titles must not inflate the available free-game promise.

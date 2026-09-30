@@ -36,6 +36,18 @@ export function launched(now: number = Date.now()): boolean {
 }
 
 /**
+ * THE LOCK'S SWITCH (Travis, 30 Sep 2026, two days before launch: "Reopen the
+ * app so that I can more easily edit", and yes to opening it for everyone
+ * now). False: the family app is open whatever the date, and the date, the
+ * lock page and the team door below wait, unused, in case the lock is wanted
+ * again. True: every family page is locked until LAUNCH_AT, as it was.
+ */
+export const LAUNCH_LOCK = false;
+export function locked(now: number = Date.now()): boolean {
+  return LAUNCH_LOCK && !launched(now);
+}
+
+/**
  * What stays open while the app is locked: the two websites, the clinician's
  * dashboard and its sign-in, the founder pages, privacy, and the lock page
  * itself. Every other .html page is part of the family app and is locked.
