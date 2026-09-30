@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { kvCmd, kvConfigured, readTicket, signTicket, authSecretOk } from "@/lib/slpAuth";
 import { rateLimit } from "@/lib/rateLimit";
-import { covered, selfAccess, StoreUnavailable } from "@/lib/caseload";
+import { covered, selfStatus, StoreUnavailable } from "@/lib/caseload";
 
 /**
  * POST /api/slp/covered { code, ticket } → { ok, covered, ticket? }
@@ -21,9 +21,12 @@ import { covered, selfAccess, StoreUnavailable } from "@/lib/caseload";
  * above all, it never INCRs slpredeem: asking again is not joining again.
  *
  * THE CLINICIAN'S OWN PHONE. A ticket minted from the single-use link that
- * was emailed to the clinician's own address carries `self: 1`; that phone
- * is covered while the clinician is self-eligible (a work email, or the
- * founder's approval) even when their caseload is not.
+ * was emailed to the clinician's own address carries `self: 1`, and that
+ * phone is covered while the clinician's OWN Premium is on (lib/caseload
+ * selfStatus: bought, grandfathered, free with a work email for the 24 to
+ * 29 Sep accounts, or the older $79.99 caseload plan). From 29 Sep 2026 a
+ * caseload add-on alone does not cover it: that is the family plan, and the
+ * clinician's own is the $59.99 it is added to.
  *
  * Only an AUTHORITATIVE answer is a 200. When the store cannot be read this
  * is a 503, and the device keeps whatever it had: a blip must never read as
@@ -86,8 +89,7 @@ export async function POST(req: NextRequest) {
   if (!owner || typeof owner !== "string") return NextResponse.json({ ok: true, covered: false }, { headers: NO_STORE });
 
   try {
-    let yes = await covered(owner);
-    if (!yes && t.self === 1) yes = (await selfAccess(owner)).eligible;
+    const yes = t.self === 1 ? (await selfStatus(owner)).active : await covered(owner);
     // Re-issued only here, after the answer — a 503 or a 401 hands out
     // nothing. Same code, same child binding, same own-phone flag: renewal
     // extends the proof the device already had and never widens it.

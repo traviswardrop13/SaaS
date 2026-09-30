@@ -183,16 +183,39 @@ decided and consumed in the same breath — so a parent who backed out of the
 grown-ups gate in between lost the only ask Sona will ever make, while the
 funnel counted an impression nobody saw. `iaptest.mjs` pins both halves.
 
-### Caseload Premium — the clinician's plan
-**"Sona Premium for your caseload": $79.99 a year, bought on the web by the
-clinician** (Travis, 24 Sep 2026 — this reverses "there is no payment path for
-an SLP or clinic"). Stripe hosted checkout from the dashboard's Caseload
-Premium page, **no trial**, renews yearly, cancel anytime in Stripe's billing
-portal. Every family who joins through that clinician's link gets Premium —
-whether or not they say "Yes, share progress": access and sharing are separate
-promises. $79.99 ÷ 12 = $6.6658, so "**under $7 a month**", never "$6.67".
+### Clinician Premium — for you, then for your caseload
+**Two yearly plans, bought on the web by the clinician** (Travis, 24 Sep 2026
+— this reversed "there is no payment path for an SLP or clinic"; re-priced 29
+Sep 2026: "they're going to still pay the 60 bucks for an account, and they
+can pay an extra 60 bucks a year for all of their caseload"):
+- **"Sona Premium for you", $59.99 a year** (`plan: slp-self`): every game on
+  the clinician's own phone or tablet, by the emailed own-phone link.
+- **"Sona Premium for your caseload", $59.99 a year MORE** (`plan:
+  slp-caseload, addon: "1"`): every family who joins through that clinician's
+  link gets Premium — whether or not they say "Yes, share progress": access
+  and sharing are separate promises. **An add-on:** `/api/slp/plan` refuses
+  it (`needSelf`) until the clinician's own Premium is on, and the page and
+  Settings say so. Its own subscription, under the same Stripe customer, so
+  Manage billing shows both and each cancels on its own.
+Stripe hosted checkout from the dashboard's Premium page or the Premium card
+in Settings, **no trial**, renews yearly, cancel anytime in Stripe's billing
+portal. $59.99 ÷ 12 = $4.9991, so "**under $5 a month**"; both, $119.98 ÷ 12
+= $9.998, "**under $10 a month**". Neither is the family plan at the same
+figure: never a charter spot, never $99.99 when the spots run out.
 `lib/caseload.ts` holds every constant; the static landing page cannot import
-it, so `shiptest` pins its copy to it.
+it, so `shiptest` pins its copy to it. The caseload's fixed-Price env var is
+`STRIPE_PRICE_ID_SLP_CASELOAD_ADDON` (new, so an old $79.99
+`STRIPE_PRICE_ID_SLP_CASELOAD` can never be charged under a $59.99 page); the
+own plan's is `STRIPE_PRICE_ID_SLP_SELF`. Both optional.
+- **Three account eras, one `terms` stamp, never backfilled.** No `terms`
+  (before 24 Sep): caseload AND own phone free forever. `terms:
+  "caseload-2026-09"` (`FREE_SELF_TERMS`, 24–29 Sep): own Premium free with a
+  work email or a founder's approval, as they were told; caseload is the
+  add-on. `terms: "premium-2026-09-29"` (`CASELOAD_TERMS`, from 29 Sep): buy
+  both. A caseload subscription sold before 29 Sep has no `addon` stamp: it
+  keeps renewing at $79.99 (`LEGACY_CASELOAD_PRICE`) and keeps switching on the
+  clinician's own phone. `selfStatus()` in `lib/caseload.ts` is the one place
+  those rules live; `/api/slp/covered` reads it for an own-phone ticket.
 - **Covered = paid or grandfathered.** Paid is a Stripe subscription stamped
   `plan: slp-caseload, slp: <email>` in active, trialing or past_due. Stripe
   keeps a cancelled plan active to its period end, so families keep Premium to
@@ -207,11 +230,10 @@ it, so `shiptest` pins its copy to it.
   default portal, which the family billing page shares, is only the fallback
   if Stripe refuses that configuration. Never a `tier` stamp: only
   `tier: charter` is a charter spot.
-- **Clinicians who signed up before this build keep "free forever".** They were
+- **Clinicians who signed up before 24 Sep keep "free forever".** They were
   promised "Free forever, unlimited families — for you and every kid on your
-  caseload", and their caseload stays covered, free. Structural, no dates:
-  every account this build creates carries `terms: "caseload-2026-09"`, and an
-  account with no `terms` predates it. Never backfill that field.
+  caseload", and they and their caseload stay covered, free. Structural, no
+  dates: an account with no `terms` predates it. Never backfill that field.
 - **"Every family on your caseload", never "unlimited".** The redeem cap is
   300 for a covered clinician (60 uncovered), counted **per code AND per
   clinician** (`slpredeem:<code>` and `slpredeem-owner:<email>`, ~a year each)
@@ -238,18 +260,22 @@ it, so `shiptest` pins its copy to it.
   `/api/charter`), "on the web, $99.99 a year" once the charter spots are
   gone, and nothing when the route doesn't answer. A clinician repeats what
   she reads, and a bare launch price is a figure most families will not see.
-- **Their own phone needs a work email.** The dashboard stays open to any email
-  (the landing page collects every one), but the clinician's own free Premium
-  link is emailed only to a work address; free-mail domains get "No work
-  email? Request access", approved by hand on `/leads.html`. Approval sends
-  no email, so the card says "Requested — once we approve it, this button will
-  work." beside the greyed-out button. **Never "one phone":** each link works
-  once, but three can be sent a day and none is retired, so the copy is
-  "Premium on your own phone or tablet. Each link works once." How many
-  devices a clinician may have is Travis's open call.
-- **Web only.** Clinician pages never render in the iOS shell, so this plan has
-  no App Store product and meets no in-app purchase rule (`NATIVE.md`). It
-  does not read `FREE_MODE`, which is the FAMILY paywall switch.
+- **Their own phone: bought, or free where it was promised.** The dashboard
+  stays open to any email (the landing page collects every one). The
+  own-phone link is emailed to anyone whose own Premium is on. Only a 24–29
+  Sep account without a work email sees "No work email? Request access",
+  approved by hand on `/leads.html` (which, and `/api/founders/approve`,
+  refuse an approval for any other account: it would change nothing).
+  Approval sends no email, so the card says "Requested — once we approve it,
+  this button will work." beside the greyed-out button. **Never "one phone":**
+  each link works once, but three can be sent a day and none is retired, so
+  the copy is "Premium on your own phone or tablet. Each link works once."
+  How many devices a clinician may have is Travis's open call.
+- **The family surfaces refuse both clinician receipts** (`isClinicianPlan()`):
+  restore-by-email, the family billing page and the family success page.
+- **Web only.** Clinician pages never render in the iOS shell, so neither plan
+  has an App Store product or meets an in-app purchase rule (`NATIVE.md`).
+  They do not read `FREE_MODE`, which is the FAMILY paywall switch.
 
 ### Four free eras, and the sweeps that honour them
 `_grandfatherFreeEra()` through `_grandfatherFreeEra4()` run at load and are
@@ -318,10 +344,10 @@ the only entrance to `ORDER_SLP`, so removing it again makes that whole
 branch dead code — `for-slps.html` is indexable and linked from the landing
 footer, and `betatest` pins the door OPEN. Since 24 Sep 2026 the channel can
 also pay: the dashboard and the free version stay free, and a clinician who
-wants every game for their families buys Caseload Premium — one yearly price,
-never per family, never to the clinician. **Parents come first now** (Travis,
+wants every game for their families buys their own Premium and adds their
+caseload — yearly prices, never per family, never to the clinician. **Parents come first now** (Travis,
 29 Sep 2026: "lose my attachment in stop caring about the SLP stuff, but still
-leave the $5 a day add on"): the SLP ad keeps running and the $80 offer sits in
+leave the $5 a day add on"): the SLP ad keeps running and the offer sits in
 plain sight on the dashboard, but the new ads, and the work, go to parents.
 
 **speaksona.com is for parents and caregivers** (Travis, 26 Sep 2026: "change
@@ -390,13 +416,16 @@ see that it happened and paste it into a note. Not "assigning homework"
 who went quiet, what ends soon — one action per row) → Caseload (every child,
 oldest-practiced first, **Copy note on every row**) → a child page (8-week
 strip, pass rate by sound and position, the current homework, the composer)
-→ Caseload Premium (its own page, 24 Sep 2026: Today keeps exactly its four
-cards, and no price ever appears in them; viewing it only reads) → Settings.
+→ Premium (its own page, 24 Sep 2026: Today keeps exactly its four
+cards, and no price ever appears in them; viewing it only reads) → Settings
+(which carries a Premium card with the same two plans and buy buttons, 29 Sep
+2026: "an upsell … in like the SLP settings").
 Since 29 Sep 2026 (Travis: "yes add the $80 button to the first screen") a
-**Get Premium** button with the server's price sits in the top bar of every
-page but the Premium page, because a clinician from the ad lands on Community
-and never saw the price. Only once the plan has answered, never to a covered
-caseload; `slptest` 9b pins it.
+button with the server's price sits in the top bar of every page but the
+Premium page, because a clinician from the ad lands on Community and never
+saw the price. It offers the next thing to buy: **Get Premium** (their own)
+until that is on, then **Add your caseload**, then nothing. Only once the
+plan has answered; `slptest` 9b pins it.
 Reviewed by three lenses — a school SLP, a district privacy
 officer, an engineer — whose rulings are now rules:
 - **Register.** "Pass rate" (defined on the page as "did that sound like this

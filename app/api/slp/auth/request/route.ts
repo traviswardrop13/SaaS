@@ -232,10 +232,11 @@ export async function POST(req: NextRequest) {
   // The name they gave at sign-up is the name on their homework notes, so the
   // dashboard does not have to ask for it a second time.
   //
-  // `terms` is the caseload-plan rule (lib/caseload, 24 Sep 2026): an account
-  // made from this build on carries it and its caseload is covered only by
-  // the $79.99 plan. An account WITHOUT it predates the plan and keeps the
-  // "free forever, every kid on your caseload" promise it signed up under.
+  // `terms` is the caseload-plan rule (lib/caseload, 24 Sep 2026; its value
+  // moved on 29 Sep): an account made from this build on carries it and pays
+  // for its own Premium and its caseload. An account WITHOUT it predates the
+  // plan and keeps the "free forever, every kid on your caseload" promise it
+  // signed up under.
   // Structural, not a date — so it is stamped on every new account, here and
   // in the verify and account routes, and never on an existing one.
   const name = String(body.name || "").trim().slice(0, 60);
