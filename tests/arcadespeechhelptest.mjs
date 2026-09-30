@@ -130,7 +130,9 @@ try {
         // consult the real isolation verdict before the reward may appear.
         await page.locator('#slowKeys').click();await ready(page);await voiced(page);
         await page.waitForFunction(()=>slowMs>0&&!slowTurn);
-        ok(game+': voiced R and native R earn eight seconds of help',await page.evaluate(()=>slowMs>7000&&slowMs<=8000));
+        // Fruit Slice's is Super Slice, ten seconds (29 Sep 2026); the rest keep eight.
+        const earnedMs=game==='slice'?10000:8000;
+        ok(game+': voiced R and native R earn '+earnedMs/1000+' seconds of help',await page.evaluate(ms=>slowMs>ms-1000&&slowMs<=ms,earnedMs));
         ok(game+': accepted help does not spend a between-round prompt',await page.evaluate(r=>REV===r,held.rev));
         await seed(page,game);const a=await state(page,game);await page.waitForTimeout(500);const b=await state(page,game);
         const frames=b.frames-a.frames,elapsed=b.at-a.at;
@@ -191,7 +193,7 @@ try {
     const{context,page,errors}=await fresh({game:'slice',voiceOn:true});try{
       await page.locator('#slowKeys').click();await ready(page);
       const h=await page.evaluate(()=>({audio:__slowTest.sounds.filter(s=>s.kind==='voice'),opened:__slowTest.openedAt}));
-      ok('Echo speaks the instruction, then models the recorded R sound',h.audio.length===2&&/^blob:/.test(h.audio[0].url)&&/\/coach\/say-echo\/R-demo\.mp3$/.test(h.audio[1].url),h);
+      ok('Echo speaks the instruction, then models one take of the recorded R sound',h.audio.length===2&&/^blob:/.test(h.audio[0].url)&&/\/coach\/say-echo\/R-sound\.wav$/.test(h.audio[1].url),h);
       ok('listening starts only after the recording and its quiet tail',h.audio.length===2&&h.audio[1].end!==null&&h.opened-h.audio[1].end>=850,h);
       await page.locator('#slowCancel').click();await page.waitForFunction(()=>!slowTurn);await clean('spoken instruction',page,errors);
     }finally{await context.close();}

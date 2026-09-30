@@ -63,7 +63,7 @@ const SUITES = [
   "loudroomtest.mjs", // a room too loud to be a room is never a try, in any window of an attempt
   "micquietgamestest.mjs", // the eight games never play a sound into a live mic; STAR MODE is gone
   "slicetest.mjs", // SLICE2: Fruit Slice is a round: three waves, the say-it card between them, a giant watermelon win
-  "superslicetest.mjs", // SUPERSLICE1: say the sound up to three times mid-wave for Super Slice: slow fruit, a burst, a rainbow blade; still play, never practice
+  "superslicetest.mjs", // SUPERSLICE1: say the sound once, quick or held, mid-wave for ten seconds of Super Slice; a rep on the week's count, never practice data
   "stacktest.mjs", // STACK2: Block Stacker is a round: three floors on the practice page's five, a rocket to the moon
   "arcadespeechhelptest.mjs", // spoken help changes live game motion and preserves quiet, local microphones
   "tilesspeechtest.mjs", // a spoken sound earns temporary slower keys; quiet mic and native verdict
