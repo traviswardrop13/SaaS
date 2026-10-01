@@ -130,7 +130,9 @@ ok("there are pages for the glob to cover", pages.length > 20, String(pages.leng
   const games = all.filter((m) => !/comingSoon: true/.test(m[3])), parkedGames = all.filter((m) => /comingSoon: true/.test(m[3]));
   // A drawn book is a folder with a cover.svg, or cover.webp once redrawn. /assets/books/painted/ holds the
   // six-page books' painted pictures (29 Sep 2026), and is not a book.
-  const books = (readFileSync(APP + "/public/library.html", "utf8").match(/\/assets\/books\/[a-z-]+\/cover\.(?:svg|webp)/g) || []).filter((v, i, a) => a.indexOf(v) === i);
+  // a limited-time book (season: …) is never on the website's strip
+  const seasonal = [...readFileSync(APP + "/public/library.html", "utf8").matchAll(/season: \{[^}]*\}, title: "[^"]+"[^\n]*\n\s*cover: "(\/assets\/books\/[a-z-]+\/cover\.(?:svg|webp))"/g)].map((m) => m[1]);
+  const books = (readFileSync(APP + "/public/library.html", "utf8").match(/\/assets\/books\/[a-z-]+\/cover\.(?:svg|webp)/g) || []).filter((v, i, a) => a.indexOf(v) === i && !seasonal.includes(v));
   const sounds = JSON.parse((sona.match(/const ALL_SOUNDS = (\[[^\]]*\]);/) || [, "[]"])[1]);
   ok("the parent page's game count is the catalog's", games.length >= 6 && new RegExp('<span class="n">' + games.length + "</span> games\\.").test(parents), games.length);
   ok("…and its game strip shows every one of them", (parents.match(/<li class="tile g">/g) || []).length === games.length &&

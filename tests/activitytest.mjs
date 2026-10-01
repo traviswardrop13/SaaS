@@ -236,7 +236,8 @@ if (present && hasContract) {
       const before = await state(pg);
       const initial = await pg.evaluate(() => Sona.activityLibrary());
       ok("featured shelves use an explicit array of nonempty groups", Array.isArray(initial.featured) && initial.featured.every((group) => ["new", "seasonal"].includes(group.id) && group.name?.trim() && group.games?.length > 0), initial.featured);
-      ok("the catalog does not invent an empty seasonal shelf", Array.isArray(initial.featured) && !initial.featured.some((group) => group.id === "seasonal"));
+      // a Limited time row only ever holds something real (the Halloween book this October)
+      ok("the catalog does not invent an empty seasonal shelf", Array.isArray(initial.featured) && initial.featured.filter((group) => group.id === "seasonal").every((group) => group.games.length > 0));
       const samples = await pg.evaluate(() => {
         const saved = JSON.stringify(Sona.GAME_ACTS);
         const now = Date.UTC(2028, 3, 30, 12);
