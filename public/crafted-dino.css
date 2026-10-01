@@ -1,0 +1,38 @@
+/* Dino Dig: a warm sandy dig site. Gameplay lives in dino.js. */
+body[data-crafted="dino"] #app{height:100dvh;min-height:0;gap:12px;padding-top:calc(10px + env(safe-area-inset-top));padding-bottom:calc(14px + env(safe-area-inset-bottom));background:radial-gradient(ellipse at 50% 15%,#fffbf2 0,#f8ecd6 68%,#efdcbd 100%);}
+body[data-crafted="dino"] #stageWrap.dig{flex:none;width:min(100%,calc((100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 230px) * .7857));border:5px solid #fffdf3;border-radius:24px;box-shadow:0 3px 0 #b98450,0 7px 0 #efd9b6,0 13px 20px #61402326;}
+body[data-crafted="dino"] #top{gap:8px;}
+body[data-crafted="dino"] .hudpill{background:#fffaf0;border:1px solid #ead8b8;box-shadow:0 3px 0 #ccb08a;font-size:17px;}
+body[data-crafted="dino"] #dots{gap:5px;padding:11px 10px;box-shadow:0 3px 0 #b39062,inset 0 1px 0 #fffaf0;background:#f3e3c4;}
+body[data-crafted="dino"] #dots i{width:8px;height:8px;background:#d6bf98;box-shadow:inset 0 1px 2px #8c6a3b55;}
+body[data-crafted="dino"] #dots i.on{background:#129fa6;box-shadow:0 1px 1px #0a6a7080,inset 0 0 0 1px #0a6a7055;}
+body[data-crafted="dino"] #turnPanel{width:100%;padding:10px 12px;gap:6px 10px;background:linear-gradient(#fffdf6,#fbf1e0);border:1px solid #fffaf0;border-radius:23px;box-shadow:0 4px 0 #ccb08a,0 7px 14px #7856361c;}
+body[data-crafted="dino"] #picBox{width:66px;height:66px;border-radius:17px;background:#f8ecd8;box-shadow:inset 0 2px 4px #b5986b25;}
+body[data-crafted="dino"] #hear{background:#e0f1eb;box-shadow:0 3px 0 #9fbba6;color:#087d86;border:1px solid #edf9ea;}
+body[data-crafted="dino"] #hear svg path{fill:#378d88;}
+body[data-crafted="dino"] #hear svg path+path{fill:none;stroke:#378d88;}
+body[data-crafted="dino"] #startBtn,body[data-crafted="dino"] #micBtn{background:linear-gradient(#22b8bd,#078d9a);box-shadow:0 4px 0 #086d78;}
+body[data-crafted="dino"] #listenRow{min-height:48px;}
+body[data-crafted="dino"] #echoWrap,body[data-crafted="dino"] #echoFace{width:46px;height:46px;}
+body[data-crafted="dino"] #micState{font-size:18px;}
+body[data-crafted="dino"] #cheer{font-size:19px;}
+@media(max-height:650px){
+ body[data-crafted="dino"] #app{gap:9px;padding-left:12px;padding-right:12px;padding-top:calc(8px + env(safe-area-inset-top));padding-bottom:calc(10px + env(safe-area-inset-bottom));}
+ body[data-crafted="dino"] #stageWrap.dig{width:min(100%,calc((100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 212px) * .7857));border-width:4px;border-radius:21px;}
+ body[data-crafted="dino"] #turnPanel{padding:8px 10px;gap:4px 9px;}
+ body[data-crafted="dino"] #picBox{width:54px;height:54px;}
+ body[data-crafted="dino"] #listenRow{min-height:42px;}
+ body[data-crafted="dino"] #echoWrap,body[data-crafted="dino"] #echoFace{width:40px;height:40px;}
+ body[data-crafted="dino"] #word{font-size:28px;}
+ body[data-crafted="dino"] #micState,body[data-crafted="dino"] #cheer{font-size:16px;}
+ body[data-crafted="dino"] .hudpill{font-size:15px;padding:8px 10px;}
+ body[data-crafted="dino"] #dots{gap:4px;padding:11px 8px;}
+}
+
+/* Illustrated word art is opt-in on this page; speech still owns the target. */
+body[data-crafted="dino"] #pic{display:flex;align-items:center;justify-content:center;width:100%;height:100%;padding:3px;}
+body[data-crafted="dino"] #pic>.crafted-word{display:inline-flex;flex:none;align-items:center;justify-content:center;vertical-align:middle;width:100%!important;height:100%!important;}
+body[data-crafted="dino"] #pic .crafted-word-crop{display:block;flex:none;background-repeat:no-repeat;}
+/* Echo beside the word is the engine's own clay pose (sayplay.js face()),
+   shown as it is: the wrap stays clear of the kit's green square. */
+body[data-crafted="dino"] #echoWrap{background:none;}

@@ -1,16 +1,17 @@
 // Writes every generated Say & Play game page: public/arcade-<key>.html.
-//   node tools/gameart/build.mjs            all nineteen
+//   node tools/gameart/build.mjs            all seventeen
 //   node tools/gameart/build.mjs balloon    one game
 // The page is generated; the game lives here (little.mjs for ages 3-4,
-// big.mjs for ages 5-8), its engine in public/sayplay.js. Hoops, the twentieth,
-// is written by hand (public/arcade-hoops.html and hoops.js), as are the older
-// arcade pages (slice, run, stack, …). Paths are relative to the working
+// big.mjs for ages 5-8), its engine in public/sayplay.js. Hoops, Soccer Goal
+// and Dino Dig, the other three, are written by hand (public/arcade-<key>.html
+// with hoops.js, soccer.js and dino.js), as are the older arcade pages (slice,
+// run, stack, …). Paths are relative to the working
 // directory: run it from the repo root (tests/arttooltest.mjs runs it from a
 // scratch folder instead).
 //
 // It overwrites only its own pages: one that exists without page.mjs's MARK
-// was written by hand, and a game that reuses its key (Hoops was a scene here
-// until it was rebuilt to be played) would clobber it. So it checks every page
+// was written by hand, and a game that reuses its key (Hoops, Soccer Goal and
+// Dino Dig were scenes here until each was rebuilt to be played) would clobber it. So it checks every page
 // first and writes only if all of them are clean; a refusal touches nothing.
 import { existsSync, readFileSync, writeFileSync } from "fs";
 import { GAMES } from "./games.mjs";

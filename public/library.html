@@ -197,16 +197,16 @@
 <body>
   <div class="wrap">
     <header class="app">
-      <div class="brand"><span class="leo"><svg viewBox="0 0 64 64" style="width:22px;height:22px;vertical-align:-4px"><path d="M10 14c8-4 15-4 22 0v38c-7-4-14-4-22 0Z" fill="#4db3f2"/><path d="M54 14c-8-4-15-4-22 0v38c7-4 14-4 22 0Z" fill="#2a8fd4"/><line x1="32" y1="14" x2="32" y2="52" stroke="#1c6fa8" stroke-width="2"/><circle cx="19" cy="22" r="3" fill="#fff" opacity=".8"/></svg></span> Library</div>
+      <div class="brand"><img src="/assets/crafted/echo-welcome.webp" alt="" style="width:34px;height:34px;vertical-align:-10px;object-fit:contain;"> Library</div>
       <div class="pills">
-        <a class="iconbtn" href="/today.html" title="Home" style="display:flex;align-items:center;justify-content:center;">✕</a>
+        <a class="iconbtn" href="/today.html" title="Home" style="display:flex;align-items:center;justify-content:center;background:var(--cream);border:1.5px solid var(--cream-line);color:var(--cream-ink);box-shadow:0 3px 0 var(--cream-line);">✕</a>
       </div>
     </header>
 
     <div class="card" style="display:flex;gap:12px;align-items:center;">
       <img src="/assets/crafted/echo-welcome.webp" alt="Echo" style="width:58px;height:58px;object-fit:contain;flex:0 0 auto;" />
       <div><b style="font-family:'Baloo 2';font-size:17px;">Just for fun!</b>
-      <p class="muted" style="font-size:13px;font-weight:700;">No scores in here — read picture books with Echo and play with words.</p></div>
+      <p class="muted" style="font-size:13px;font-weight:700;">No scores in here — just picture books Echo reads with you.</p></div>
     </div>
 
     <!-- Feed Echo lives here for EVERYONE (it's the littles' main game, but
@@ -896,10 +896,16 @@
     // Absent (an old cached page, a failed load), the books read as before.
     var SC = window.SayCheck || null;
     function getCtx() { if (!audioCtx) { var AC = window.AudioContext || window.webkitAudioContext; audioCtx = new AC(); } if (audioCtx.state === "suspended") audioCtx.resume(); return audioCtx; }
+    // The iPhone app reads the book as media, never Web Audio (Sona.mediaPCM
+    // says why: after the word moment's mic, Web Audio was quiet, on the call
+    // volume, and silenced by the ring/silent switch). An older cached sona.js
+    // has no mediaPCM, and the page reads as before.
+    function media() { try { return !!(window.Sona && Sona.mediaPCM && Sona.voiceAsMedia && Sona.voiceAsMedia()); } catch (e) { return false; } }
     // iOS blocks audio that starts OUTSIDE a tap: the say() pipeline creates
     // its context after an async fetch, which Safari treats as gesture-less →
     // silence. Unlock synchronously inside every tap that leads to speech.
-    function unlockAudio(){ try{ var c=getCtx(); if(c.state==="suspended")c.resume(); var b=c.createBuffer(1,1,22050), s=c.createBufferSource(); s.buffer=b; s.connect(c.destination); s.start(0); }catch(e){} }
+    // The app needs no unlock: it plays media, and makes no context to keep.
+    function unlockAudio(){ if (media()) return; try{ var c=getCtx(); if(c.state==="suspended")c.resume(); var b=c.createBuffer(1,1,22050), s=c.createBufferSource(); s.buffer=b; s.connect(c.destination); s.start(0); }catch(e){} }
     document.addEventListener("pointerdown", unlockAudio, { passive:true, capture:true });
     // curStop ends the line in flight at once (see say()): a line cut off by a
     // page turn must not go on holding the mic shut while its fetch runs out
@@ -968,6 +974,17 @@
             .then(function (buf) {
               if (tok !== sayToken) return fin(); // superseded — don't overlap
               if (!buf || !buf.byteLength) throw 0;
+              if (media()) {
+                // stopSpeech() stops it like a source; one that never starts
+                // still gets the browser voice, so "Hear it" is never silent
+                var m = Sona.mediaPCM(new Uint8Array(buf), { volume: (profile.volume != null ? profile.volume : 0.8), rate: PITCH });
+                curSrc = m;
+                m.done.then(function (how) {
+                  if (curSrc === m) curSrc = null;
+                  if (how === "failed" && tok === sayToken) speakFallback(text).then(fin, fin); else fin();
+                });
+                return;
+              }
               var ctx = getCtx();
               if (ctx.state !== "running") throw 0;
               var bytes = new Uint8Array(buf), n = bytes.byteLength >> 1;

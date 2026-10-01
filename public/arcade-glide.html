@@ -85,7 +85,7 @@
     </div>
     <div id="slowControl" hidden>
       <button id="slowKeys" type="button"><img src="/assets/crafted/echo-welcome.webp" alt="" onerror="if(this.src.indexOf('echo-welcome')<0)this.src='/assets/crafted/echo-welcome.webp'"><span id="slowSound">rrrr</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v5a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z"/></svg></button>
-      <p id="slowStatus" role="status">Tap Echo to slow the hedges</p><span class="slowTrack"><i id="slowMeter"></i></span>
+      <p id="slowStatus" role="status">Tap Echo to slow the beams</p><span class="slowTrack"><i id="slowMeter"></i></span>
       <button id="slowCancel" type="button" hidden>Keep playing</button>
     </div>
     <div id="flash"></div>
@@ -142,7 +142,7 @@
       gameEntryAllowed=true;
     })();
   </script>
-  <script>window.SLOW_HELP={phase:"fly",action:"slow the hedges",earned:"Slow hedges!",eligible:function(){return !falling.on;}};</script>
+  <script>window.SLOW_HELP={phase:"fly",action:"slow the beams",earned:"Slow beams!",eligible:function(){return !falling.on;}};</script>
   <script src="/arcade-speech-help.js"></script>
   <script>
     if(gameEntryAllowed){
@@ -313,17 +313,23 @@
         ctx.drawImage(CRAFTBAL,235,25,790,1170,-bw/2,22-bh,bw,bh);
       }else{ctx.drawImage(BAL,-40,-78,80,100);}
     }
-    var HEDGEART=null,hedgeArt=new Image();
-    hedgeArt.onload=function(){HEDGEART=hedgeArt;};hedgeArt.src="/assets/crafted/hedge-leaves-v2.webp";
-    // Dense painted leaves fill the live hedge's exact collision area.
-    // Rounded edges and soft shading replace the old pipe-shaped caps.
+    // Plain wooden beams (Travis, 1 Oct 2026: "I don't like the beams as
+    // vines, I just want them to be like normal beams"): the clay wood is
+    // stretched over the live hedge's exact collision area, with a wider cap
+    // at the gap end; a flat wood colour until the picture loads.
+    var BEAMART=null,beamArt=new Image();
+    beamArt.onload=function(){BEAMART=beamArt;};beamArt.src="/assets/crafted/game/beam-body.webp";
     function paintHedge(x,y,w,h,fromTop){
       if(h<=0)return;
-      ctx.save();rr(x,y,w,h,Math.min(16,w/4,h/2));
-      ctx.shadowColor="rgba(36,70,39,.22)";ctx.shadowBlur=7;ctx.shadowOffsetX=2;ctx.shadowOffsetY=3;
-      ctx.fillStyle="#568d39";ctx.fill();ctx.shadowColor="transparent";ctx.clip();
-      if(HEDGEART){var tile=w*1.65;for(var hy=y;hy<y+h;hy+=tile){ctx.drawImage(HEDGEART,x-w*.3,hy,tile,tile);}}
-      var shade=ctx.createLinearGradient(x,0,x+w,0);shade.addColorStop(0,"rgba(31,68,36,.2)");shade.addColorStop(.3,"rgba(244,253,169,.08)");shade.addColorStop(.7,"rgba(40,68,30,0)");shade.addColorStop(1,"rgba(25,54,30,.28)");
+      var capH=Math.min(22,h),capW=w+12,capY=fromTop?y:y+h-capH;
+      ctx.save();
+      ctx.shadowColor="rgba(70,44,20,.25)";ctx.shadowBlur=7;ctx.shadowOffsetX=2;ctx.shadowOffsetY=3;
+      rr(x,y,w,h,6);ctx.fillStyle="#c98a45";ctx.fill();ctx.shadowColor="transparent";
+      ctx.save();rr(x,y,w,h,6);ctx.clip();if(BEAMART)ctx.drawImage(BEAMART,x,y,w,h);ctx.restore();
+      rr(x-6,capY,capW,capH,9);ctx.fillStyle="#b97636";ctx.fill();
+      ctx.save();rr(x-6,capY,capW,capH,9);ctx.clip();if(BEAMART)ctx.drawImage(BEAMART,x-6,capY,capW,capH);
+      ctx.fillStyle="rgba(90,50,15,.18)";ctx.fillRect(x-6,capY,capW,capH);ctx.restore();
+      var shade=ctx.createLinearGradient(x,0,x+w,0);shade.addColorStop(0,"rgba(255,240,210,.18)");shade.addColorStop(.5,"rgba(0,0,0,0)");shade.addColorStop(1,"rgba(70,40,10,.22)");
       ctx.fillStyle=shade;ctx.fillRect(x,y,w,h);ctx.restore();
     }
     var COLW=74;
@@ -339,7 +345,7 @@
     function star50(x,y,r){ ctx.beginPath(); for(var k=0;k<10;k++){ var rr2=k%2?r*0.45:r, a=-Math.PI/2+k*Math.PI/5; ctx.lineTo(x+Math.cos(a)*rr2,y+Math.sin(a)*rr2); } ctx.closePath(); ctx.fill(); }
     function draw(){
       var now=performance.now(), dt=document.hidden?0:Math.min(100,now-lastT), i; lastT=now;
-      if(playing&&phase==="fly"&&slowMs>0){slowMs=Math.max(0,slowMs-dt);if(!slowMs)$("slowStatus").textContent="Tap Echo to slow the hedges";}
+      if(playing&&phase==="fly"&&slowMs>0){slowMs=Math.max(0,slowMs-dt);if(!slowMs)$("slowStatus").textContent="Tap Echo to slow the beams";}
       paintSlowKeys();
       var moving=playing&&!document.hidden,pace=phase==="fly"?slowFactor():1;
       if(slowTurn)mercyT+=dt;

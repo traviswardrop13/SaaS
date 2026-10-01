@@ -141,7 +141,9 @@ for (const url of ["/charge.html?daily=1&sound=R", "/charge.html?game=arcade-sli
     ok("no page plays Rachel's raw takes from /coach/say/", raw.length === 0, raw.join(", "));
     // 29 Sep 2026: practice and Fruit Slice play ONE cut take of her sound
     // (tools/soundclips.mjs) inside Echo's v4 Turbo words; parked Coach Call
-    // still reaches for the demos.
+    // still reaches for the demos. Since 1 Oct 2026 R's cut take is her own
+    // voice, cut by the tool from her raw demo: re-voicing moved her R
+    // toward W. It still plays from /coach/say-echo/, so this pin holds.
     const slice = readFileSync(ROOT + "/arcade-slice.html", "utf8");
     ok("practice, Fruit Slice and Coach Call play the re-voiced set", /"\/coach\/say-echo\/"\+SOUND\+"-sound\.wav"/.test(src) && /"\/coach\/say-echo\/"\+SND\+"-sound\.wav"/.test(slice) && /"\/coach\/say-echo\/"\+SOUND\+"-demo\.mp3"/.test(call));
     // Her whole July line is kept for ONE case: the voice service is down

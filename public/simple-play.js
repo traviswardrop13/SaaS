@@ -316,6 +316,16 @@
   }
   function pcm(job, bytes) {
     return operation(job, function (done, cleanup) {
+      if (S.mediaPCM && S.voiceAsMedia && S.voiceAsMedia()) {
+        // the iPhone app plays the word as media (sona.js mediaPCM says why);
+        // one that never starts goes to the browser voice like a refused context
+        var m = S.mediaPCM(bytes, { volume: volume() });
+        cleanup(function () { m.stop(); });
+        m.done.then(function (how) { done(how !== "failed"); });
+        $("promptHint").textContent = "Listen to Echo.";
+        if (S.voiceDiagnostic) S.voiceDiagnostic(job.voiceInfo || { source: "server" });
+        return;
+      }
       unlockContext();
       var node = null, gain = null, timer = setTimeout(function () { done(false); }, 1000), ended = false;
       cleanup(function () { ended = true; clearTimeout(timer); if (node) { node.onended = null; try { node.stop(); node.disconnect(); } catch (e) {} } if (gain) gain.disconnect(); });

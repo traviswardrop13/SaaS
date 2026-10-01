@@ -146,6 +146,14 @@
     }
     function play(b) {
       if (fin) return;
+      // the iPhone app plays the voice as media (sona.js mediaPCM says why);
+      // cancel() stops it like a source, and one that never starts gets synth
+      if (S && S.mediaPCM && S.voiceAsMedia && S.voiceAsMedia()) {
+        var m = S.mediaPCM(b, { volume: vol() });
+        src = m;
+        m.done.then(function (how) { if (how === "failed") synth(); else end(); });
+        return;
+      }
       try {
         var c = getCtx();
         // a context the phone never let start would hold this line forever
