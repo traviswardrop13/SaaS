@@ -291,7 +291,7 @@ if (present && hasContract) {
       try {
         const got = await pg.evaluate(() => {
           const tag = (key) => { const b = document.querySelector('#activityGroups button[data-game="' + key + '"]'); return b ? { label: b.querySelector(".game-access").textContent, disabled: b.disabled, aria: b.getAttribute("aria-label") } : null; };
-          const firstParked = [...document.querySelectorAll("#activityGroups .activity-group")].map((g) => g.querySelector(".coming-grid button[data-game]")?.dataset.game);
+          const firstParked = [...document.querySelectorAll("#activityGroups .coming-shelf")].map((g) => g.querySelector(".coming-grid button[data-game]")?.dataset.game)   // one Coming soon section since 1 Oct 2026;
           return { peekaboo: tag("peekaboo"), soccer: tag("soccer"), racecar: tag("racecar"), firstParked, access: Sona.gameAccess("peekaboo") };
         });
         return { got, errors };

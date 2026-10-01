@@ -1656,6 +1656,17 @@
       if (!BOOK || barMode === "next" || (M && M.leaving)) return;
       hush(); setBar("nudge"); echoPose("think");
     });
+    // Home's What's new / Limited time rows open a book straight from its
+    // card (?book=<folder>). The shelf's own rules still decide: a book not
+    // out yet does nothing, a Premium one shows the grown-up message.
+    (function () {
+      var want = ""; try { want = new URLSearchParams(location.search).get("book") || ""; } catch (e) {}
+      if (!/^[a-z0-9-]+$/.test(want)) return;
+      var st = STORIES.filter(function (b) { return (b.cover || "").split("/")[3] === want; })[0];
+      if (!st || !bookOpen(st)) return;
+      if (bookLocked(st)) { showLocked(st); return; }
+      openBook(st);
+    })();
 
   </script>
 </body>

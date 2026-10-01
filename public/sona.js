@@ -2790,6 +2790,16 @@
     { id: "simple", name: "Simple play", ageLabel: "Suggested ages 3–4", description: "Little taps. Big discoveries." },
     { id: "arcade", name: "Arcade", ageLabel: "Suggested ages 5–8", description: "A little more action and adventure." },
   ];
+  // The books Home's top rows can show. releasedOn: the day it came out (it
+  // sits under What's new for 30 days). season: { startsOn, endsOn } puts it
+  // under Limited time for that window instead. Folder = public/assets/books/<slug>.
+  const HOME_BOOKS = [
+    { slug: "rosie-red-wagon", title: "Rosie and the Red Wagon", releasedOn: "2026-10-01" },
+    { slug: "sam-sailboat", title: "Sam's Sailboat", releasedOn: "2026-10-01" },
+    { slug: "libby-lemon", title: "Libby and the Lemon", releasedOn: "2026-10-01" },
+    { slug: "shane-shiny-shell", title: "Shane and the Shiny Shell", releasedOn: "2026-10-01" },
+    { slug: "thor-thank-you", title: "Thor Says Thank You", releasedOn: "2026-10-01" },
+  ];
   function activityLibrary(options) {
     var age = Number(getProfile().childAge);
     var validAge = age >= 2 && age <= 14 && Math.floor(age) === age;
@@ -2849,9 +2859,19 @@
       var act = GAME_ACTS[key], season = act.season;
       return act.available !== false && !act.comingSoon && season && catalogDay(season.startsOn) <= day && day <= catalogDay(season.endsOn);
     }).map(entry);
+    // Books join the two top rows (Travis, 1 Oct 2026: "at the top ... what's
+    // new ... the next section like limited time where we have books and
+    // games"). HOME_BOOKS names each book's day out and, for a limited-time
+    // one, its window; a book is still opened (or not) by the shelf's rules.
+    function bookEntry(b) { return { key: "book:" + b.slug, kind: "book", name: b.title, slug: b.slug, cover: "/assets/books/" + b.slug + "/cover.webp", go: "/library.html?book=" + b.slug, tier: bookFree(b.title) ? "free" : "premium", available: true, comingSoon: false }; }
+    var freshBooks = HOME_BOOKS.filter(function (b) { var r = catalogDay(b.releasedOn); return !b.season && r <= day && day - r < 30 * 86400000; })
+      .sort(function (a, b) { return catalogDay(b.releasedOn) - catalogDay(a.releasedOn); }).map(bookEntry);
+    var limitedBooks = HOME_BOOKS.filter(function (b) { return b.season && catalogDay(b.season.startsOn) <= day && day <= catalogDay(b.season.endsOn); }).map(bookEntry);
+    // At most five across, so a row never becomes a long side-scroll.
+    var ROW = 5, newRow = fresh.concat(freshBooks).slice(0, ROW), limitedRow = seasonal.concat(limitedBooks).slice(0, ROW);
     var featured = [];
-    if (fresh.length) featured.push({ id: "new", name: "New to Sona", games: fresh });
-    if (seasonal.length) featured.push({ id: "seasonal", name: "Seasonal favorites", games: seasonal });
+    if (newRow.length) featured.push({ id: "new", name: "What's new", games: newRow });
+    if (limitedRow.length) featured.push({ id: "seasonal", name: "Limited time", games: limitedRow });
     return { recommended: recommended, groups: groups, featured: featured };
   }
   // Home previews the same adventure that practice launches. Feed Echo has
