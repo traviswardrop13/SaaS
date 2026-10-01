@@ -88,6 +88,14 @@
   function playPCM(b, generation) {
     return new Promise(function (res) {
       if (!audioAllowed(generation)) return res();
+      if (S && S.mediaPCM && S.voiceAsMedia && S.voiceAsMedia()) {
+        // The iPhone app plays the voice as media (sona.js mediaPCM says why).
+        // false: it never started, so say() falls back to the browser voice.
+        var m = S.mediaPCM(b, { volume: volume() }), stopMedia = function () { m.stop(); };
+        ttsPlaying = true; audioStop = stopMedia;
+        m.done.then(function (how) { if (audioStop === stopMedia) audioStop = null; if (generation === audioGeneration) ttsPlaying = false; res(how !== "failed"); });
+        return;
+      }
       var done = false, source = null, timer = null; ttsPlaying = true;
       function fin() { if (done) return; done = true; clearTimeout(timer); if (audioStop === cancel) audioStop = null; if (generation === audioGeneration) ttsPlaying = false; res(); }
       function cancel() { try { if (source) source.stop(); } catch (e) {} fin(); }
@@ -149,8 +157,8 @@
     var key = (profile.voiceId || "echo") + "|" + ((S && S.TTS_CACHE_VERSION) || "v9") + "|" + t;
     return micQuiet().then(function () { return ttsGet(key); }).then(function (cached) {
       if (!audioAllowed(generation)) return true;
-      if (cached) return playPCM(new Uint8Array(cached), generation).then(function () { return true; });
-      return fetchVoice(t).then(function (v) { if (!audioAllowed(generation)) return true; if (!v) return false; if (v.keep) ttsPut(key, v.bytes); return playPCM(new Uint8Array(v.bytes), generation).then(function () { return true; }); });
+      if (cached) return playPCM(new Uint8Array(cached), generation).then(function (ok) { return ok !== false; });
+      return fetchVoice(t).then(function (v) { if (!audioAllowed(generation)) return true; if (!v) return false; if (v.keep) ttsPut(key, v.bytes); return playPCM(new Uint8Array(v.bytes), generation).then(function (ok) { return ok !== false; }); });
     }).then(function (played) { if (!played && audioAllowed(generation)) return speakFallback(t, generation); })
       .catch(function () { if (audioAllowed(generation)) return speakFallback(t, generation); })
       .then(function () { if (generation === audioGeneration) speaking = false; quietUntil = Math.max(quietUntil, performance.now() + VOICE_TAIL_MS); });

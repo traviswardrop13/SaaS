@@ -1141,5 +1141,16 @@ are enforced in code and pinned by tests — change them only on Rachel's say-so
   in `PER_KID` that bypasses them is a promise the code doesn't keep.
 - Entitlement is never granted from a URL parameter or an unverified page
   load. If a link unlocks something, a server verified it first.
+- **In the iPhone app, Echo's voice plays as media, never Web Audio**
+  (Travis, 1 Oct 2026: "Sounds not working again on books", with the
+  phone-call volume slider on screen). After a page has had the mic open, an
+  iPhone plays Web Audio as a call: quiet, and the volume buttons move call
+  volume. Web Audio is also silenced by the ring/silent switch. So a voice line
+  goes through `Sona.mediaPCM(bytes, {volume})` when `Sona.voiceAsMedia()`
+  says so (the app), and falls back to the browser voice when it reports
+  "failed". The practice page, Fruit Slice, Feed Echo, the books, the Say &
+  Play games and Bubble Pop all do; a new page that speaks does too. The
+  browser keeps Web Audio, where a tap unlocks it. `iphonepolishtest` pins it.
+  The chimes are still Web Audio.
 - Comments explain *why*, especially where the obvious implementation is
   wrong. Match the surrounding density.
