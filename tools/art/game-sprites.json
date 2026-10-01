@@ -202,5 +202,17 @@
   "size": "1536x1024",
   "transparent": false,
   "prompt": "A game card picture: Echo the round blue clay bird (exactly like the attached reference) next to a fluffy friendly purple monster wearing silly glasses and a party hat. Wide, cheerful, simple background, the action easy to read at a small size."
+ },
+ {
+  "name": "beam-body",
+  "size": "1024x1536",
+  "transparent": true,
+  "prompt": "One straight upright smooth wooden beam / post, warm honey-brown painted wood with soft clay finish, perfectly vertical, plain and even along its whole length (so it can be stretched taller), seen straight from the front, filling the frame top to bottom, no top or bottom ends visible, no leaves, no vines, no nails."
+ },
+ {
+  "name": "beam-cap",
+  "size": "1536x1024",
+  "transparent": true,
+  "prompt": "The rounded end cap of a wooden beam: a short, slightly wider, smooth rounded block of warm honey-brown painted wood with a soft highlight, seen straight from the front, wide and short, filling the frame width. No leaves, no vines."
  }
 ]
