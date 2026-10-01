@@ -10,4 +10,4 @@
 // delete its entry from books1.mjs or books2.mjs in the same commit, the way
 // Hoops left tools/gameart/big.mjs when it was rebuilt by hand. Until then the
 // builder refuses that folder rather than write old pictures beside the new.
-export const HANDMADE = ["rory-rainbow"];
+export const HANDMADE = ["rory-rainbow", "sid-the-seagull"];

@@ -96,7 +96,7 @@ ok("Rory and the Rainbow is hand-made, so the builder never writes it", hand.has
   ok("run on an empty folder, the book builder writes every built book and nothing else", same && readdirSync(out).sort().join() === [...built].sort().join(), r.stderr || r.stdout);
   put(out + "/kip-kite/.DS_Store", "finder");
   const again = run(BOOK_TOOL, d);
-  ok("…and runs again over its own pictures (and Finder's .DS_Store) without a word", again.status === 0 && /built 18 books/.test(again.stdout), again.stderr);
+  ok("…and runs again over its own pictures (and Finder's .DS_Store) without a word", again.status === 0 && new RegExp("built " + BUILT.length + " books").test(again.stdout), again.stderr);
 }
 function refusal(label, seeds, args, expect) {
   const d = scratch();

@@ -298,4 +298,4 @@ export const THV_BOOK = {
   ],
 };
 
-export const BOOKS2 = [V_BOOK, S_BOOK, Z_BOOK, SH_BOOK, CH_BOOK, J_BOOK, L_BOOK, TH_BOOK, THV_BOOK];
+export const BOOKS2 = [V_BOOK, Z_BOOK, SH_BOOK, CH_BOOK, J_BOOK, L_BOOK, TH_BOOK, THV_BOOK];
